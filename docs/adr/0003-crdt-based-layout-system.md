@@ -160,6 +160,55 @@ entry. All three entity types key by `makeScopedLayoutKey(rootGraphId, id)`, and
 every graph — root or nested — drops its entries individually through
 `unregisterAllGraphLayout`.
 
+### Amendment (2026-08-04): the replicated document holds intent, not measurement
+
+`NodeLayout.size` conflates two values with different natures. **Requested**
+size is what a user, a workflow file, or `computeSize()` asked for. **Rendered**
+size is what the DOM produced, which for height is `max(requested, natural
+content)` because the node container is `min-h-(--node-height)`. A shared
+`ResizeObserver` in `useVueNodeResizeTracking.ts` measures the second and writes
+it into the first through `batchUpdateNodeBounds`.
+
+A measurement is not a command. Replayed on a peer with different fonts, locale,
+browser, or installed custom-node versions it produces a different — and equally
+correct — answer, so it is neither deterministic nor meaningfully undoable. This
+is the contract in ADR 0008 that every mutation is supposed to satisfy, and the
+observer's write is the one place in the layout system that structurally cannot.
+
+Three consequences follow, and they are the reason to act rather than to
+document and move on:
+
+- `serialize()` reads `this.size`, which reads through to the store. Saved
+  workflows therefore carry a DOM measurement and are not byte-portable across
+  machines. Saving while a node is collapsed persists the header box as the
+  node's size; on reload `min-h` heals the height and nothing heals the width.
+- Under `min-h` semantics with last-writer-wins, a replicated height converges
+  to the largest natural height across every connected peer's rendering
+  environment. Node geometry becomes a function of who has the document open.
+- Collapse is not stored. It is inferred from a box shrinking to its header,
+  which is why the store holds rendered rather than requested geometry at all.
+  In Vue mode the collapsed width this produces is read by nothing:
+  `_collapsed_width` is assigned only in the branch `vueNodesMode` skips
+  (`LGraphNode.ts`), so every reader falls through to `NODE_COLLAPSED_WIDTH`.
+
+**Decision.** The Yjs document holds requested geometry, written only by named
+commands. Measured geometry belongs to the local, view-scoped tier that
+`slotLayouts` already occupies — a plain map, not replicated, dropped by
+`clearViewGeometry`. Slot geometry is measured from the DOM at higher frequency
+than node height and has never been considered a violation, because it lands in
+a tier that nothing replicates and nothing writes back into the DOM. Recording a
+measurement stays an explicit, named mutation rather than an ambient observer
+write. Collapse becomes stored data.
+
+**This does not forbid measurement.** Content-driven height is real: widget
+hydration, media loading, badges, slot changes, and third-party DOM inserted by
+reference through `WidgetDOM.vue`. Making layout strictly one-directional would
+mean modelling in TypeScript what CSS already computes, enforced as a height
+contract across 40+ repositories we do not control, and paid for in clipped
+content in someone else's node. The defect was never that a measurement exists.
+It was that a view-derived value was promoted into replicated entity state by a
+mutation with no name.
+
 ## Notes
 
 This centralized state + CRDT architecture follows patterns from modern collaborative applications:

@@ -623,6 +623,7 @@ export class LGraphNode
   }
 
   _posSize = new Rectangle()
+  private _contentHeight = 0
   _pos: Point = this._posSize.pos
   _size: Size = this._posSize.size
   private readonly posView = createGeometryView(this._pos, {
@@ -645,7 +646,23 @@ export class LGraphNode
     if (geometryVersion === this._geometryVersion) return
 
     this._geometryVersion = geometryVersion
-    layoutStore.readNodeRect(this.graph.rootGraph.id, this.id, this._posSize)
+    const rootGraphId = this.graph.rootGraph.id
+    layoutStore.readNodeRect(rootGraphId, this.id, this._posSize)
+    this._contentHeight = layoutStore.contentHeightOf(rootGraphId, this.id)
+  }
+
+  /**
+   * Position and size including any content the node has grown past its
+   * requested height. `size` stays the requested value, which is what
+   * {@link serialize} persists.
+   */
+  /**
+   * Height including any content the node has grown past its requested size.
+   * `size` stays the requested value, which is what {@link serialize} persists.
+   */
+  private get renderedHeight(): number {
+    this.refreshGeometry()
+    return Math.max(this.size[1], this._contentHeight)
   }
 
   public get pos() {
@@ -2273,7 +2290,7 @@ export class LGraphNode
     out[1] = this.pos[1] + -titleHeight
     if (!this.flags?.collapsed || LiteGraph.vueNodesMode) {
       out[2] = this.size[0]
-      out[3] = this.size[1] + titleHeight
+      out[3] = this.renderedHeight + titleHeight
     } else {
       if (ctx) ctx.font = this.innerFontStyle
       this._collapsed_width = Math.min(

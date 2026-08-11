@@ -73,6 +73,43 @@ test.describe(
       }
     })
 
+    test('should keep a resized width across a save and reload', async ({
+      comfyPage
+    }) => {
+      test.setTimeout(30000)
+
+      const measureWidth = async (title: string) => {
+        const node = await comfyPage.vueNodes.getFixtureByTitle(title)
+        await expect(node.root).toBeVisible()
+        const box = await node.boundingBox()
+        if (!box) throw new Error(`Failed to measure node "${title}"`)
+        return box.width
+      }
+
+      const initialWidth = await measureWidth('KSampler')
+      const referenceWidth = await measureWidth('Save Image')
+
+      const vueNode = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+      const beforeResize = Date.now()
+      await vueNode.resizeFromCorner('SE', 120, 0)
+      await comfyPage.nextFrame()
+      const resizedWidth = await measureWidth('KSampler')
+      expect(resizedWidth).toBeGreaterThan(initialWidth + 100)
+
+      await comfyPage.workflow.waitForDraftIndexUpdatedSince(beforeResize)
+      await comfyPage.workflow.reloadAndWaitForApp()
+
+      // Untouched node keeps its width, proving the viewport scale is
+      // comparable across the reload.
+      await expect
+        .poll(async () => measureWidth('Save Image'))
+        .toBeCloseTo(referenceWidth, 0)
+
+      await expect
+        .poll(async () => measureWidth('KSampler'))
+        .toBeGreaterThan(resizedWidth - 5)
+    })
+
     test.describe('minimum size enforcement', () => {
       test('SW resize clamps width, keeping right edge fixed', async ({
         comfyPage
