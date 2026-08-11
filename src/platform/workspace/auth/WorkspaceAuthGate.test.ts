@@ -114,7 +114,6 @@ vi.mock(
 
 describe('WorkspaceAuthGate', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockIsCloud.value = true
     mockIsInitialized.value = false
     mockCurrentUser.value = null

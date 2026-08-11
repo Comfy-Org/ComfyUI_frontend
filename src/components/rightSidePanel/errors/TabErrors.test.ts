@@ -62,10 +62,10 @@ vi.mock('@/stores/comfyRegistryStore', () => ({
 
 vi.mock('@/platform/missingModel/missingModelDownload', () => ({
   downloadModel: vi.fn(),
-  fetchModelMetadata: vi.fn().mockResolvedValue({
+  fetchModelMetadata: vi.fn(async () => ({
     fileSize: null,
     gatedRepoUrl: null
-  }),
+  })),
   isModelDownloadable: vi.fn(() => true),
   toBrowsableUrl: vi.fn((url: string) => url)
 }))
@@ -74,7 +74,6 @@ describe('TabErrors.vue', () => {
   let i18n: ReturnType<typeof createI18n>
 
   beforeEach(() => {
-    vi.clearAllMocks()
     i18n = createI18n({
       legacy: false,
       locale: 'en',

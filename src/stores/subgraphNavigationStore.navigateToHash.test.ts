@@ -138,7 +138,6 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
   beforeEach(() => {
     pinia = createTestingPinia({ stubActions: false })
     setActivePinia(pinia)
-    vi.clearAllMocks()
     app.rootGraph.id = ids.root
     app.rootGraph.subgraphs.clear()
     app.canvas.subgraph = undefined

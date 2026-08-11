@@ -15719,6 +15719,96 @@
       }
     }
   },
+  "QwenImageEditApi": {
+    "description": "Modifie ou combine jusqu'à 3 images de référence guidées par une instruction textuelle à l'aide des modèles Qwen-Image 3.0.",
+    "display_name": "Qwen Image 3 Édition",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Modèle à utiliser."
+      },
+      "model_negative_prompt": {
+        "name": "prompt_négatif"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "Nombre d'images à générer, retournées en lot."
+      },
+      "prompt_extend": {
+        "name": "extension de prompt",
+        "tooltip": "Permet d'améliorer l'instruction avec l'aide de l'IA."
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "Graine à utiliser pour la génération."
+      },
+      "size": {
+        "name": "taille",
+        "tooltip": "Résolution de sortie. 'correspondre à l'entrée' réutilise la taille de la première image de référence, 'auto' laisse le modèle choisir une taille avec le même ratio d'aspect, 'personnalisé' définit une largeur et une hauteur explicites."
+      },
+      "watermark": {
+        "name": "filigrane",
+        "tooltip": "Ajouter ou non un filigrane généré par l'IA au résultat."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QwenImageTextToImageApi": {
+    "description": "Génère des images à partir d'une instruction textuelle à l'aide des modèles Qwen-Image 3.0.",
+    "display_name": "Qwen Image 3 Texte vers Image",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Modèle à utiliser."
+      },
+      "model_height": {
+        "name": "hauteur"
+      },
+      "model_negative_prompt": {
+        "name": "prompt_négatif"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_width": {
+        "name": "largeur"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "Nombre d'images à générer, retournées en lot."
+      },
+      "prompt_extend": {
+        "name": "extension de prompt",
+        "tooltip": "Permet d'améliorer l'instruction avec l'aide de l'IA."
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "Graine à utiliser pour la génération."
+      },
+      "watermark": {
+        "name": "filigrane",
+        "tooltip": "Ajouter ou non un filigrane généré par l'IA au résultat."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "RTDETR_detect": {
     "display_name": "Détection RT-DETR",
     "inputs": {

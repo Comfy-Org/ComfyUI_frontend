@@ -113,7 +113,6 @@ describe('useModelStore', () => {
 
   beforeEach(async () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.resetAllMocks()
     isCloudRef.value = false
     remoteConfig.value = {}
   })

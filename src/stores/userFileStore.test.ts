@@ -22,7 +22,6 @@ describe('useUserFileStore', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useUserFileStore()
-    vi.resetAllMocks()
   })
 
   it('should initialize with empty files', () => {

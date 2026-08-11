@@ -21,6 +21,14 @@ which is always loaded. In addition:
 - Use Vitest's mocking utilities (`vi.mock`, `vi.spyOn`)
 - Keep module mocks contained - no global mutable state
 - Use `vi.hoisted()` for per-test mock manipulation
+- Vitest automatically resets mocks, restores spies, and unstubs globals and
+  environment variables before each test. Do not repeat that cleanup in test
+  lifecycle hooks.
+- Install `vi.stubGlobal()` and `vi.spyOn()` calls in `beforeEach` or in the
+  test that needs them. Module-scope stubs and spies are removed before the
+  first test runs.
+- Module-scope `vi.fn()` declarations may provide reset-persistent defaults by
+  passing the implementation directly to `vi.fn(implementation)`.
 
 ## Component Testing
 

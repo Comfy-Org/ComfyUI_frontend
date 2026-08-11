@@ -15719,6 +15719,96 @@
       }
     }
   },
+  "QwenImageEditApi": {
+    "description": "עריכה או שילוב של עד 3 תמונות ייחוס בהנחיית פרומפט טקסטואלי באמצעות מודלי Qwen-Image 3.0.",
+    "display_name": "Qwen Image 3 Edit",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "המודל בו ייעשה שימוש."
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "מספר התמונות להפקה, מוחזרות כמקבץ."
+      },
+      "prompt_extend": {
+        "name": "prompt_extend",
+        "tooltip": "האם לשפר את ההנחיה בעזרת בינה מלאכותית."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "ה-seed בו ייעשה שימוש להפקה."
+      },
+      "size": {
+        "name": "size",
+        "tooltip": "רזולוציית הפלט. 'match input' משתמש בגודל של תמונת הייחוס הראשונה, 'auto' מאפשר למודל לבחור גודל עם יחס ממדים זהה, 'custom' מגדיר רוחב וגובה מפורשים."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "האם להוסיף סימן מים שנוצר על ידי בינה מלאכותית לתוצאה."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QwenImageTextToImageApi": {
+    "description": "יוצר תמונות מתוך פרומפט טקסטואלי באמצעות מודלי Qwen-Image 3.0.",
+    "display_name": "Qwen Image 3 Text to Image",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "המודל בו ייעשה שימוש."
+      },
+      "model_height": {
+        "name": "height"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_width": {
+        "name": "width"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "מספר התמונות להפקה, מוחזרות כמקבץ."
+      },
+      "prompt_extend": {
+        "name": "prompt_extend",
+        "tooltip": "האם לשפר את ההנחיה בעזרת בינה מלאכותית."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "ה-seed בו ייעשה שימוש להפקה."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "האם להוסיף סימן מים שנוצר על ידי בינה מלאכותית לתוצאה."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "RTDETR_detect": {
     "display_name": "הרצת זיהוי בזמן אמת (RT-DETR)",
     "inputs": {

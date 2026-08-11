@@ -59,7 +59,6 @@ function makeModelCandidate(
 describe('missingModelStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    vi.restoreAllMocks()
     mockNodeLocatorIdToNodeExecutionId.mockImplementation(
       (nodeLocatorId: string) => nodeLocatorId
     )

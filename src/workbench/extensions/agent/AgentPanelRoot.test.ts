@@ -142,14 +142,13 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
 
 vi.mock('@/renderer/core/canvas/canvasStore', async () => {
   const { reactive } = await import('vue')
-  const updateSelectedItems = vi.fn()
+  const updateSelectedItems = () => {
+    hostStores.canvas.selectedItems = [...(appMock.canvas?.selectedItems ?? [])]
+  }
   const store = reactive({
     selectedItems: [] as unknown[],
     updateSelectedItems,
     currentGraph: null as unknown | null
-  })
-  updateSelectedItems.mockImplementation(() => {
-    store.selectedItems = [...(appMock.canvas?.selectedItems ?? [])]
   })
   hostStores.canvas = store
   return { useCanvasStore: () => store }
