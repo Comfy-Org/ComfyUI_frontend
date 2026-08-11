@@ -23,9 +23,10 @@
  * shown and `destroy` when it is hidden — so a tab may be mounted and torn
  * down many times.
  */
-import { markRaw } from 'vue'
+import { defineComponent, h, markRaw, onMounted, onUnmounted, ref } from 'vue'
 import type { Component } from 'vue'
 
+import { useDialogStore } from '@/stores/dialogStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 import { ComfyApiError } from './errors'
@@ -84,11 +85,75 @@ export interface VueSidebarTab extends SidebarTabBase {
 /** @knipIgnoreUnusedButUsedByCustomNodes */
 export type SidebarTabDef = MountedSidebarTab | VueSidebarTab
 
+interface DialogBase {
+  /**
+   * Unique across every pack, so namespace it. The host prefixes it with
+   * `extension-`, which keeps packs out of the internal dialog keyspace.
+   */
+  readonly key: string
+  readonly title?: string
+}
+
+/** A dialog the pack draws into a container itself. */
+/** @knipIgnoreUnusedButUsedByCustomNodes */
+export interface MountedDialog extends DialogBase {
+  render(container: HTMLElement): void
+  destroy?(): void
+}
+
+/** A dialog that is a Vue component, mounted and torn down by the host. */
+/** @knipIgnoreUnusedButUsedByCustomNodes */
+export interface VueDialog extends DialogBase {
+  readonly component: Component
+  readonly props?: Readonly<Record<string, unknown>>
+}
+
+/** @knipIgnoreUnusedButUsedByCustomNodes */
+export type DialogDef = MountedDialog | VueDialog
+
+/** @knipIgnoreUnusedButUsedByCustomNodes */
+export interface DialogHandle {
+  close(): void
+}
+
+/**
+ * Wraps a pack's `render`/`destroy` pair in a component, because the host's
+ * dialog stack takes a component and nothing else.
+ *
+ * Deliberately the same contract as `widgets.mount` and the sidebar's mounted
+ * arm: the host owns the lifecycle, `render` may run more than once, and
+ * teardown belongs in `destroy`.
+ */
+function mountedDialogComponent(def: MountedDialog): Component {
+  return markRaw(
+    defineComponent({
+      name: `PackDialog_${def.key.replace(/\W/g, '_')}`,
+      setup() {
+        const host = ref<HTMLElement>()
+        onMounted(() => {
+          if (host.value) def.render(host.value)
+        })
+        onUnmounted(() => def.destroy?.())
+        return () => h('div', { ref: host })
+      }
+    })
+  )
+}
+
 export interface UiHandle {
   /**
    * Adds a tab to the sidebar. Returns a function that removes it again.
    */
   addSidebarTab(def: SidebarTabDef): Unsubscribe
+  /**
+   * Opens a modal dialog. Returns a handle that closes it again.
+   *
+   * Replaces `app.ui.dialog` and the `new app.ui.dialog.constructor()` idiom.
+   * Several conversions hand-rolled a native `<dialog>` or borrowed core's
+   * `.comfy-modal` class names instead — the latter couples a pack to markup
+   * we rename freely, so both are worth retiring.
+   */
+  showDialog(def: DialogDef): DialogHandle
 }
 
 export function createUiHandle(): UiHandle {
@@ -128,6 +193,30 @@ export function createUiHandle(): UiHandle {
       )
 
       return () => useSidebarTabStore().unregisterSidebarTab(def.id)
+    },
+
+    showDialog(def) {
+      if (!def.key.trim()) {
+        throw new ComfyApiError('A dialog needs a key.')
+      }
+      const store = useDialogStore()
+      const component =
+        'component' in def
+          ? markRaw(def.component)
+          : mountedDialogComponent(def)
+
+      store.showExtensionDialog({
+        key: def.key,
+        component,
+        ...(def.title === undefined ? {} : { title: def.title }),
+        ...('component' in def && def.props ? { props: def.props } : {})
+      })
+
+      // The host prefixes the key; closing has to use the same one it stored.
+      const stored = def.key.startsWith('extension-')
+        ? def.key
+        : `extension-${def.key}`
+      return { close: () => useDialogStore().closeDialog({ key: stored }) }
     }
   }
 }

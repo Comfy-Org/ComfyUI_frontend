@@ -188,10 +188,36 @@ export interface BeforeConnectEvent {
   readonly peerType: string | undefined
 }
 
+/** One entry inside a menu item's submenu. */
 /** @knipIgnoreUnusedButUsedByCustomNodes */
-export interface NodeMenuItem {
+export interface NodeSubMenuItem {
   readonly label: string
   run(node: NodeHandle): void
+}
+
+/** @knipIgnoreUnusedButUsedByCustomNodes */
+export interface NodeMenuItem {
+  /**
+   * A function when the text depends on the node — packs label entries with
+   * the current state ("Unmute 3 nodes"), which a string fixed at
+   * registration cannot express.
+   */
+  readonly label: string | ((node: NodeHandle) => string)
+  /**
+   * Shown only when this returns true. Without it a pack that wants an entry
+   * to appear conditionally has to either show it always or not at all —
+   * efficiency-nodes hides its seed submenu when the feature is off, and
+   * flattening that to a permanent entry is a worse lie than omitting it.
+   */
+  when?(node: NodeHandle): boolean
+  /** Omit when the item only opens a submenu. */
+  run?(node: NodeHandle): void
+  /**
+   * Turns the entry into a submenu. One level deep, deliberately: every
+   * measured pack uses exactly one, and nesting further is a menu design
+   * problem rather than an API one.
+   */
+  readonly items?: readonly NodeSubMenuItem[]
 }
 
 /**
@@ -841,9 +867,33 @@ export function createDefRegistry(): {
             )?.call(this, canvas, options)
             const id = String(this.id)
             for (const { item, handleFor } of menuItems) {
+              const handle = handleFor(id)
+              if (item.when && !item.when(handle)) continue
+              const content =
+                typeof item.label === 'function'
+                  ? item.label(handle)
+                  : item.label
+
+              if (item.items?.length) {
+                // Static options rather than a callback-built submenu: the
+                // Nodes 2.0 converter reads `submenu.options` directly, so
+                // this is the one shape both renderers understand.
+                options.push({
+                  content,
+                  has_submenu: true,
+                  submenu: {
+                    options: item.items.map((child) => ({
+                      content: child.label,
+                      callback: () => child.run(handleFor(id))
+                    }))
+                  }
+                })
+                continue
+              }
+
               options.push({
-                content: item.label,
-                callback: () => item.run(handleFor(id))
+                content,
+                callback: () => item.run?.(handleFor(id))
               })
             }
           }

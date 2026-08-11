@@ -611,6 +611,60 @@ describe('connection veto and menu items', () => {
     options.find((o) => o.content === 'Do it')!.callback()
     expect(seen).toEqual([String(node.id)])
   })
+
+  it('hides an entry whose predicate says no', () => {
+    // efficiency-nodes hides its seed submenu when the feature is off.
+    // Without a predicate a pack must show the entry always or never.
+    const node = build((b) => {
+      b.addMenuItem({ label: 'Shown', when: () => true, run: () => {} })
+      b.addMenuItem({ label: 'Hidden', when: () => false, run: () => {} })
+    })
+    const options: { content: string }[] = []
+    node.getExtraMenuOptions?.(undefined as never, options as never)
+
+    const labels = options.map((o) => o.content)
+    expect(labels).toContain('Shown')
+    expect(labels).not.toContain('Hidden')
+  })
+
+  it('computes a label from the node when given a function', () => {
+    const node = build((b) =>
+      b.addMenuItem({ label: (n) => `Act on ${n.id}`, run: () => {} })
+    )
+    const options: { content: string }[] = []
+    node.getExtraMenuOptions?.(undefined as never, options as never)
+
+    expect(options.map((o) => o.content)).toContain(`Act on ${node.id}`)
+  })
+
+  it('builds a submenu whose children reach the node', () => {
+    const seen: string[] = []
+    const node = build((b) =>
+      b.addMenuItem({
+        label: 'Swap with',
+        items: [
+          { label: 'KSampler', run: (n) => seen.push(`k:${n.id}`) },
+          { label: 'Loader', run: (n) => seen.push(`l:${n.id}`) }
+        ]
+      })
+    )
+    const options: {
+      content: string
+      has_submenu?: boolean
+      submenu?: { options: { content: string; callback: () => void }[] }
+    }[] = []
+    node.getExtraMenuOptions?.(undefined as never, options as never)
+
+    const entry = options.find((o) => o.content === 'Swap with')!
+    expect(entry.has_submenu).toBe(true)
+    expect(entry.submenu?.options.map((o) => o.content)).toEqual([
+      'KSampler',
+      'Loader'
+    ])
+
+    entry.submenu!.options[1].callback()
+    expect(seen).toEqual([`l:${node.id}`])
+  })
 })
 
 describe('renaming a definition', () => {
