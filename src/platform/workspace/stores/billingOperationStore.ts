@@ -635,10 +635,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     const superseded = errorMessage === CHECKOUT_SUPERSEDED_REASON
     const failureCategory = superseded ? 'stale_operation' : 'unknown'
     const defaultMessage = failureMessage(operation.type)
-    const detail =
-      operation.type === 'subscription'
-        ? t('billingOperation.subscriptionFailedDetail')
-        : errorMessage
+    const detail = billingFailureDetail(operation.type, errorMessage)
 
     updateOperationStatus(opId, 'failed', detail ?? defaultMessage)
     cleanup(opId)
@@ -745,6 +742,53 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     if (type === 'subscription') return t('billingOperation.subscriptionFailed')
     if (type === 'topup') return t('billingOperation.topupFailed')
     return t('billingOperation.cancelFailed')
+  }
+
+  function billingFailureDetail(
+    type: OperationType,
+    errorMessage: string | null
+  ) {
+    switch (errorMessage) {
+      case 'insufficient_funds':
+        return t('billingOperation.insufficientFundsDetail')
+      case 'expired_card':
+        return t('billingOperation.expiredCardDetail')
+      case 'incorrect_cvc':
+      case 'invalid_cvc':
+        return t('billingOperation.incorrectCvcDetail')
+      case 'authentication_required':
+      case 'payment_intent_authentication_failure':
+        return t('billingOperation.authenticationFailedDetail')
+      case 'processing_error':
+      case 'issuer_not_available':
+      case 'try_again_later':
+        return t('billingOperation.processingErrorDetail')
+      case 'card_declined':
+      case 'generic_decline':
+      case 'approve_with_id':
+      case 'call_issuer':
+      case 'do_not_honor':
+      case 'do_not_try_again':
+      case 'not_permitted':
+      case 'restricted_card':
+      case 'security_violation':
+      case 'service_not_allowed':
+      case 'transaction_not_allowed':
+      case 'initial_subscription_rejected':
+      case 'subscribe_invoice_payment_failed':
+      case 'topup_payment_declined':
+      case 'topup_invoice_payment_failed':
+      case 'upgrade_payment_declined':
+      case 'upgrade_invoice_payment_failed':
+      case 'team_credit_raise_payment_declined':
+      case 'reset_now_payment_declined':
+      case 'reset_now_invoice_payment_failed':
+        return t('billingOperation.paymentDeclinedDetail')
+    }
+    if (type === 'subscription')
+      return t('billingOperation.subscriptionFailedDetail')
+    if (type === 'topup' && errorMessage) return t('credits.topUp.unknownError')
+    return errorMessage
   }
 
   function timeoutMessage(type: OperationType) {

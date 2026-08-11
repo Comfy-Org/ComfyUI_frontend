@@ -592,28 +592,43 @@ describe('billingOperationStore', () => {
       })
     })
 
-    it('preserves backend details on top-up failure', async () => {
-      const errorMessage = 'Payment method declined'
-      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
-        id: 'op-1',
-        status: 'failed',
-        error_message: errorMessage,
-        started_at: new Date().toISOString()
-      })
-
-      const store = useBillingOperationStore()
-      void store.startOperation('op-1', 'topup')
-
-      await vi.advanceTimersByTimeAsync(0)
-
-      expect(store.getOperation('op-1')?.errorMessage).toBe(errorMessage)
-      expect(mockToastAdd).toHaveBeenCalledWith({
-        severity: 'error',
+    it.for([
+      {
+        type: 'subscription' as const,
+        errorMessage: 'insufficient_funds',
+        summary: 'billingOperation.subscriptionFailed',
+        detail: 'billingOperation.insufficientFundsDetail'
+      },
+      {
+        type: 'topup' as const,
+        errorMessage: 'card_declined',
         summary: 'billingOperation.topupFailed',
-        detail: errorMessage,
-        life: 7000
-      })
-    })
+        detail: 'billingOperation.paymentDeclinedDetail'
+      }
+    ])(
+      'shows an actionable $errorMessage message for $type failures',
+      async ({ type, errorMessage, summary, detail }) => {
+        vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+          id: 'op-1',
+          status: 'failed',
+          error_message: errorMessage,
+          started_at: new Date().toISOString()
+        })
+
+        const store = useBillingOperationStore()
+        void store.startOperation('op-1', type)
+
+        await vi.advanceTimersByTimeAsync(0)
+
+        expect(store.getOperation('op-1')?.errorMessage).toBe(detail)
+        expect(mockToastAdd).toHaveBeenCalledWith({
+          severity: 'error',
+          summary,
+          detail,
+          life: 7000
+        })
+      }
+    )
   })
 
   describe('payment authentication recovery', () => {

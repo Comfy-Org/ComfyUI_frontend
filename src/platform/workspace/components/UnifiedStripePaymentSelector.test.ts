@@ -142,6 +142,24 @@ describe('UnifiedStripePaymentSelector', () => {
     expect(emitted().confirm).toBeUndefined()
   })
 
+  it('shows Stripe confirmation-token errors without leaving the form', async () => {
+    const user = userEvent.setup()
+    stripeMocks.createConfirmationToken.mockResolvedValue({
+      error: { message: 'Your card was declined.' }
+    })
+    const { emitted } = renderSelector()
+
+    await waitFor(() => expect(stripeMocks.mount).toHaveBeenCalledTimes(1))
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Pay and subscribe'
+      })
+    )
+
+    expect(await screen.findByText('Your card was declined.')).toBeTruthy()
+    expect(emitted().confirm).toBeUndefined()
+  })
+
   it('blocks paying while a verification is pending', async () => {
     render(UnifiedStripePaymentSelector, {
       props: {
