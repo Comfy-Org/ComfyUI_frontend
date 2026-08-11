@@ -90,7 +90,6 @@ import { useDialogService } from '@/services/dialogService'
 
 describe('showDowngradeToPersonalDialog', () => {
   beforeEach(() => {
-    vi.resetAllMocks()
     hasOtherMembers.value = false
     openDialogKeys.value = []
     refreshMembers.mockResolvedValue(undefined)

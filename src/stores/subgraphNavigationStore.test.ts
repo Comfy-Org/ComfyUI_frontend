@@ -67,7 +67,6 @@ vi.mock('@vueuse/router', () => ({ useRouteHash: vi.fn() }))
 describe('useSubgraphNavigationStore', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.resetAllMocks()
     app.rootGraph.subgraphs.clear()
     app.canvas.subgraph = undefined
     app.canvas.ds.scale = 1

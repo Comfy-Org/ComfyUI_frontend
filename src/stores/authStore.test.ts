@@ -46,7 +46,6 @@ type MockAuth = Record<string, unknown>
 
 // Mock fetch
 const mockFetch = vi.fn()
-vi.stubGlobal('fetch', mockFetch)
 
 const customerRequestBody = (): Record<string, unknown> | undefined => {
   const customerCall = mockFetch.mock.calls.find(([url]) =>
@@ -174,7 +173,7 @@ describe('useAuthStore', () => {
   } as Partial<User> as MockUser
 
   beforeEach(() => {
-    vi.resetAllMocks()
+    vi.stubGlobal('fetch', mockFetch)
     sessionStorage.clear()
     clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.SHARE_AUTH)
 

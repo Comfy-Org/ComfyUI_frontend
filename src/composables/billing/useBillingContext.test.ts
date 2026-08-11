@@ -21,7 +21,6 @@ const DEFAULT_BILLING_STATUS: BillingStatusResponse = {
 }
 
 const {
-  mockConsolidatedBillingEnabled,
   mockIsPersonal,
   mockBillingRail,
   mockPlans,
@@ -32,19 +31,26 @@ const {
   mockPurchaseCredits,
   mockUpdateActiveWorkspace,
   mockSetWorkspaceBillingRail,
+  mockLegacyStatus,
   mockBillingStatus
 } = vi.hoisted(() => ({
-  mockConsolidatedBillingEnabled: { value: true },
   mockIsPersonal: { value: true },
   mockBillingRail: { value: undefined as BillingRail | undefined },
   mockPlans: { value: [] as Plan[] },
-  mockFetchPlans: vi.fn().mockResolvedValue(undefined),
-  mockLegacyFetchStatus: vi.fn().mockResolvedValue(undefined),
-  mockLegacyFetchBalance: vi.fn().mockResolvedValue(undefined),
-  mockLegacySubscribe: vi.fn().mockResolvedValue(undefined),
+  mockFetchPlans: vi.fn(async () => undefined),
+  mockLegacyFetchStatus: vi.fn(async () => undefined),
+  mockLegacyFetchBalance: vi.fn(async () => undefined),
+  mockLegacySubscribe: vi.fn(async () => undefined),
   mockPurchaseCredits: vi.fn(),
   mockUpdateActiveWorkspace: vi.fn(),
   mockSetWorkspaceBillingRail: vi.fn(),
+  mockLegacyStatus: {
+    value: {
+      is_active: true,
+      has_funds: true,
+      renewal_date: '2025-01-01T00:00:00Z'
+    } as BillingStatusResponse
+  },
   mockBillingStatus: {
     value: {
       is_active: true,
@@ -53,16 +59,6 @@ const {
       subscription_duration: 'MONTHLY'
     } as Partial<BillingStatusResponse>
   }
-}))
-
-vi.mock('@/composables/useFeatureFlags', () => ({
-  useFeatureFlags: () => ({
-    flags: {
-      get consolidatedBillingEnabled() {
-        return mockConsolidatedBillingEnabled.value
-      }
-    }
-  })
 }))
 
 vi.mock('@vueuse/core', async (importOriginal) => {
@@ -109,11 +105,17 @@ vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
     subscriptionTier: { value: 'PRO' },
     subscriptionDuration: { value: 'MONTHLY' },
     subscriptionStatus: {
-      value: { renewal_date: '2025-01-01T00:00:00Z', end_date: null }
+      get value() {
+        return mockLegacyStatus.value
+      }
     },
-    isCancelled: { value: false },
+    isCancelled: {
+      get value() {
+        return Boolean(mockLegacyStatus.value.cancel_at)
+      }
+    },
     fetchStatus: mockLegacyFetchStatus,
-    manageSubscription: vi.fn().mockResolvedValue(undefined),
+    manageSubscription: vi.fn(async () => undefined),
     subscribe: mockLegacySubscribe,
     showSubscriptionDialog: vi.fn()
   })
@@ -151,7 +153,7 @@ vi.mock('@/platform/cloud/subscription/composables/useBillingPlans', () => ({
     isLoading: { value: false },
     error: { value: null },
     fetchPlans: mockFetchPlans,
-    getPlanBySlug: vi.fn().mockReturnValue(null)
+    getPlanBySlug: vi.fn(() => null)
   })
 }))
 
@@ -160,20 +162,18 @@ vi.mock('@/platform/workspace/api/workspaceApi', () => ({
     getBillingStatus: vi.fn(() =>
       Promise.resolve({ ...DEFAULT_BILLING_STATUS, ...mockBillingStatus.value })
     ),
-    getBillingBalance: vi.fn().mockResolvedValue({
+    getBillingBalance: vi.fn(async () => ({
       amount_micros: 10000000,
       currency: 'usd'
-    }),
-    subscribe: vi.fn().mockResolvedValue({ status: 'subscribed' }),
-    previewSubscribe: vi.fn().mockResolvedValue({ allowed: true })
+    })),
+    subscribe: vi.fn(async () => ({ status: 'subscribed' })),
+    previewSubscribe: vi.fn(async () => ({ allowed: true }))
   }
 }))
 
 describe('useBillingContext', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    vi.clearAllMocks()
-    mockConsolidatedBillingEnabled.value = true
     mockIsPersonal.value = true
     mockBillingRail.value = undefined
     mockSetWorkspaceBillingRail.mockImplementation(
@@ -182,6 +182,11 @@ describe('useBillingContext', () => {
       }
     )
     mockPlans.value = []
+    mockLegacyStatus.value = {
+      is_active: true,
+      has_funds: true,
+      renewal_date: '2025-01-01T00:00:00Z'
+    }
     mockBillingStatus.value = { ...DEFAULT_BILLING_STATUS }
   })
 
@@ -190,14 +195,6 @@ describe('useBillingContext', () => {
 
     const { type } = useBillingContext()
     expect(type.value).toBe('workspace')
-  })
-
-  it('keeps a Cloud personal workspace on legacy while consolidation is off', () => {
-    mockConsolidatedBillingEnabled.value = false
-
-    const { type } = useBillingContext()
-
-    expect(type.value).toBe('legacy')
   })
 
   it('selects workspace type for a Cloud team workspace', () => {
@@ -233,6 +230,31 @@ describe('useBillingContext', () => {
       effectiveBalanceMicros: 5000000,
       prepaidBalanceMicros: 0,
       cloudCreditBalanceMicros: 0
+    })
+  })
+
+  it('passes canonical status fields through legacy billing', () => {
+    mockBillingRail.value = 'legacy_stripe'
+    mockLegacyStatus.value = {
+      ...DEFAULT_BILLING_STATUS,
+      billing_status: 'payment_failed',
+      subscription_status: 'ended',
+      team_credit_stop: {
+        id: 'stop-1',
+        credits_monthly: 1000,
+        stop_usd: 10
+      }
+    }
+
+    const { billingStatus, subscriptionStatus, currentTeamCreditStop } =
+      useBillingContext()
+
+    expect(billingStatus.value).toBe('payment_failed')
+    expect(subscriptionStatus.value).toBe('ended')
+    expect(currentTeamCreditStop.value).toEqual({
+      id: 'stop-1',
+      credits_monthly: 1000,
+      stop_usd: 10
     })
   })
 

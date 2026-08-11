@@ -1,4 +1,4 @@
-import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { acquireSharedGL } from '@/renderer/glsl/sharedGLContext'
 
@@ -24,29 +24,24 @@ function createMockGL(): MockGL {
   }
 }
 
-vi.stubGlobal(
-  'OffscreenCanvas',
-  class {
-    width: number
-    height: number
-    constructor(w: number, h: number) {
-      this.width = w
-      this.height = h
-    }
-    getContext(contextId: string) {
-      if (contextId !== 'webgl2') return null
-      getContextCalls++
-      return mockGL as unknown as WebGL2RenderingContext
-    }
-  }
-)
-
-afterAll(() => {
-  vi.unstubAllGlobals()
-})
-
 describe('acquireSharedGL', () => {
   beforeEach(() => {
+    vi.stubGlobal(
+      'OffscreenCanvas',
+      class {
+        width: number
+        height: number
+        constructor(w: number, h: number) {
+          this.width = w
+          this.height = h
+        }
+        getContext(contextId: string) {
+          if (contextId !== 'webgl2') return null
+          getContextCalls++
+          return mockGL as unknown as WebGL2RenderingContext
+        }
+      }
+    )
     loseContext = vi.fn()
     mockGL = createMockGL()
     getContextCalls = 0
