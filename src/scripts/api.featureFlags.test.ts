@@ -428,6 +428,64 @@ describe('API Feature Flags', () => {
     expect(autoQueueGraphChanged).toHaveBeenCalledTimes(2)
   })
 
+  /**
+   * Pins the resolution behaviour `getServerFeature` had before any override
+   * layer was placed in front of it, so a future layer cannot quietly change
+   * how server values, falsy values, nested paths or defaults resolve.
+   */
+  describe('characterization: resolution with no override present', () => {
+    afterEach(() => {
+      localStorage.clear()
+    })
+
+    it('returns the server value verbatim', () => {
+      api.serverFeatureFlags.value = { some_flag: 'server_value' }
+
+      expect(api.getServerFeature('some_flag')).toBe('server_value')
+    })
+
+    it.for([
+      ['false', false],
+      ['zero', 0],
+      ['empty string', '']
+    ] as [label: string, serverValue: unknown][])(
+      'keeps a server value of %s instead of falling back to the default',
+      ([, serverValue]) => {
+        api.serverFeatureFlags.value = { some_flag: serverValue }
+
+        expect(api.getServerFeature('some_flag', 'DEFAULT')).toBe(serverValue)
+      }
+    )
+
+    it('returns the default when the flag is absent', () => {
+      api.serverFeatureFlags.value = {}
+
+      expect(api.getServerFeature('missing_flag', 'DEFAULT')).toBe('DEFAULT')
+    })
+
+    it('returns undefined when the flag is absent and no default is given', () => {
+      api.serverFeatureFlags.value = {}
+
+      expect(api.getServerFeature('missing_flag')).toBeUndefined()
+    })
+
+    it('resolves a nested flag through dot notation', () => {
+      api.serverFeatureFlags.value = {
+        extension: { manager: { supports_v4: true } }
+      }
+
+      expect(api.getServerFeature('extension.manager.supports_v4')).toBe(true)
+    })
+
+    it('returns the default for a nested path that does not exist', () => {
+      api.serverFeatureFlags.value = { extension: {} }
+
+      expect(
+        api.getServerFeature('extension.manager.supports_v4', 'DEFAULT')
+      ).toBe('DEFAULT')
+    })
+  })
+
   describe('Dev override via localStorage', () => {
     afterEach(() => {
       localStorage.clear()
