@@ -427,13 +427,11 @@ describe('API Feature Flags', () => {
    */
   describe('characterization: resolution with no override present', () => {
     beforeEach(() => {
-      localStorage.clear()
       sessionStorage.clear()
       window.history.replaceState({}, '', '/')
     })
 
     afterEach(() => {
-      localStorage.clear()
       sessionStorage.clear()
       window.history.replaceState({}, '', '/')
     })
@@ -487,10 +485,6 @@ describe('API Feature Flags', () => {
   })
 
   describe('Dev override via localStorage', () => {
-    afterEach(() => {
-      localStorage.clear()
-    })
-
     it('getServerFeature returns localStorage override over server value', () => {
       api.serverFeatureFlags.value = { some_flag: false }
       localStorage.setItem('ff:some_flag', 'true')

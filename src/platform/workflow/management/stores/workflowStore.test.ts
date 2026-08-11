@@ -100,7 +100,6 @@ describe('useWorkflowStore', () => {
 
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    localStorage.clear()
     sessionStorage.clear()
     store = useWorkflowStore()
     bookmarkStore = useWorkflowBookmarkStore()
@@ -116,7 +115,6 @@ describe('useWorkflowStore', () => {
   })
 
   afterEach(() => {
-    localStorage.clear()
     sessionStorage.clear()
   })
 
