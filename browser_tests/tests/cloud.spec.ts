@@ -50,10 +50,21 @@ test.describe('Cloud distribution UI', { tag: '@cloud' }, () => {
   test('unknown paths redirect to cloud login instead of hanging on splash screen', async ({
     page
   }) => {
-    await page.goto(new URL('/woiadawd', APP_URL).toString())
-    // Catch-all redirects unknown paths to /, auth guard sends unauthenticated
-    // users to /cloud/login. Regression: before the fix the SPA had no route
-    // match and startStoreBootstrap hung indefinitely on the splash screen.
+    // Load the SPA at root (the backend serves index.html for /).
+    // Then push an unknown path client-side so Vue Router handles it.
+    // The backend serves ComfyUI file responses for arbitrary paths, so a
+    // direct page.goto('/woiadawd') would trigger a download rather than the SPA.
+    await page.goto(APP_URL)
+    await expect(page).toHaveURL(/\/cloud\/login/, { timeout: 10_000 })
+
+    // Navigate client-side to an unknown path. The catch-all route redirects to /,
+    // then the auth guard sends unauthenticated users back to /cloud/login.
+    // Regression: before the catch-all was added, the SPA found no route and
+    // startStoreBootstrap hung indefinitely on the splash screen.
+    await page.evaluate(() => {
+      window.history.pushState(null, '', '/woiadawd')
+      window.dispatchEvent(new PopStateEvent('popstate'))
+    })
     await expect(page).toHaveURL(/\/cloud\/login/, { timeout: 10_000 })
   })
 })
