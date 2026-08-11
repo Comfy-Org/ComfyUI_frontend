@@ -17,6 +17,7 @@ const test = mergeTests(comfyPageFixture, webSocketFixture, jobsRouteFixture)
 // transitive deps) into the Playwright TS loader.
 const BANNER_DISMISS_DELAY_MS = 4000
 const BANNER_ASSERT_TIMEOUT_MS = BANNER_DISMISS_DELAY_MS + 2000
+const BANNER_MOCK_FINISH_SKEW_MS = 60_000
 
 const REQUEST_ID_PRIMARY = 1
 const REQUEST_ID_SECONDARY = 2
@@ -162,11 +163,13 @@ test.describe('Queue notification banners', { tag: ['@ui'] }, () => {
       jobsRoutes
     }) => {
       const failedJobId = 'failed-job-1'
+      // The banner only reports jobs that finished after the queue last went
+      // active, and that moment is later than this mock is built.
       await jobsRoutes.mockJobsHistory([
         createRouteMockJob({
           id: failedJobId,
           status: 'failed',
-          execution_end_time: Date.now()
+          execution_end_time: Date.now() + BANNER_MOCK_FINISH_SKEW_MS
         })
       ])
 
