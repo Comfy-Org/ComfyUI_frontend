@@ -140,6 +140,15 @@ describe('computeNextControlledValue (combo)', () => {
     expect(typeof result).toBe('number')
   })
 
+  it('selects the seeded index when randomizing a numeric combo', () => {
+    const widget = makeNumericComboWidget(6, [6, 8, 10])
+    vi.spyOn(Math, 'random').mockReturnValue(0.6)
+
+    const result = computeNextControlledValue(widget, 'randomize')
+
+    expect(result).toBe(8)
+  })
+
   it('matches numeric combo filters against stringified options', () => {
     const widget = makeNumericComboWidget(1, [1, 10, 20])
     const result = computeNextControlledValue(widget, 'increment', {

@@ -1,9 +1,13 @@
 import { clamp } from 'es-toolkit/compat'
 
-import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
+import type {
+  IContextMenuOptions,
+  IContextMenuValue
+} from '@/lib/litegraph/src/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
+  ComboWidgetValues,
   IComboWidget,
   IStringComboWidget
 } from '@/lib/litegraph/src/types/widgets'
@@ -19,8 +23,10 @@ import type { WidgetEventOptions } from './BaseWidget'
  * https://github.com/kijai/ComfyUI-KJNodes/blob/c3dc82108a2a86c17094107ead61d63f8c76200e/web/js/setgetnodes.js#L401-L404
  */
 type Values =
-  | (string | number)[]
-  | Record<string, string>
+  | Exclude<
+      ComboWidgetValues,
+      (widget?: IComboWidget, node?: LGraphNode) => string[]
+    >
   | ((widget?: ComboWidget, node?: LGraphNode) => string[])
 
 function toArray(values: Values): (string | number)[] {
@@ -45,11 +51,13 @@ export class ComboWidget
 
     const getOptionLabel = this.options.getOptionLabel
     if (getOptionLabel) {
+      const stringValue =
+        typeof this.value === 'number' ? String(this.value) : this.value
       try {
-        return getOptionLabel(this.value ? String(this.value) : null)
+        return getOptionLabel(stringValue || null)
       } catch (e) {
         console.error('Failed to map value:', e)
-        return this.value ? String(this.value) : ''
+        return stringValue
       }
     }
 
@@ -186,12 +194,12 @@ export class ComboWidget
       scale: Math.max(1, canvas.ds.scale),
       event: e,
       className: 'dark',
-      callback: (value: string) => {
+      callback: ((value?: string | number) => {
         this.setValue(
-          values != values_list ? text_values.indexOf(value) : value,
+          values != values_list ? text_values.indexOf(value!) : value!,
           { e, node, canvas }
         )
-      }
+      }) as IContextMenuOptions['callback']
     })
   }
 }

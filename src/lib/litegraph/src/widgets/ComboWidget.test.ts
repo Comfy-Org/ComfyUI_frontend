@@ -113,6 +113,19 @@ describe('ComboWidget', () => {
 
       expect(widget._displayValue).toBe('42')
     })
+
+    it('renders numeric zero without an option label formatter', () => {
+      widget = new ComboWidget(
+        createMockWidgetConfig({
+          name: 'index',
+          value: 0,
+          options: { values: [0, 1] }
+        }),
+        node
+      )
+
+      expect(widget._displayValue).toBe('0')
+    })
   })
 
   describe('canIncrement / canDecrement', () => {
@@ -364,6 +377,40 @@ describe('ComboWidget', () => {
         node,
         canvas: mockCanvas
       })
+    })
+
+    it('steps record-backed values by index and disables arrows at the ends', () => {
+      const values = {
+        0: 'Low Quality',
+        1: 'Medium Quality',
+        2: 'High Quality'
+      }
+      const { mockCanvas, mockEvent } = setupIncrementDecrementTest()
+
+      widget = new ComboWidget(
+        createMockWidgetConfig({ value: 1, options: { values } }),
+        node
+      )
+
+      expect(widget.canIncrement()).toBe(true)
+      expect(widget.canDecrement()).toBe(true)
+
+      widget.incrementValue({ e: mockEvent, node, canvas: mockCanvas })
+
+      expect(widget.value).toBe(2)
+      expect(widget.canIncrement()).toBe(false)
+      expect(widget.canDecrement()).toBe(true)
+
+      widget = new ComboWidget(
+        createMockWidgetConfig({ value: 1, options: { values } }),
+        node
+      )
+
+      widget.decrementValue({ e: mockEvent, node, canvas: mockCanvas })
+
+      expect(widget.value).toBe(0)
+      expect(widget.canIncrement()).toBe(true)
+      expect(widget.canDecrement()).toBe(false)
     })
   })
 
@@ -791,6 +838,25 @@ describe('ComboWidget', () => {
 
         expect(widget._displayValue).toBe('Number: 42')
         expect(mockGetOptionLabel).toHaveBeenCalledWith('42')
+      })
+
+      it('passes numeric zero to getOptionLabel as a string', () => {
+        const mockGetOptionLabel = vi.fn((value) => `Number: ${value}`)
+
+        widget = new ComboWidget(
+          createMockWidgetConfig({
+            name: 'index',
+            value: 0,
+            options: {
+              values: [0, 1],
+              getOptionLabel: mockGetOptionLabel
+            }
+          }),
+          node
+        )
+
+        expect(widget._displayValue).toBe('Number: 0')
+        expect(mockGetOptionLabel).toHaveBeenCalledWith('0')
       })
     })
 
