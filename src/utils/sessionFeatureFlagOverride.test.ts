@@ -13,8 +13,8 @@ type MockUser = { email: string | null; emailVerified: boolean }
 const mockCurrentUser = vi.hoisted(() => ({
   value: null as MockUser | null | undefined
 }))
-vi.mock('vuefire', () => ({
-  useCurrentUser: vi.fn(() => mockCurrentUser)
+vi.mock('@/platform/auth/identity/currentUserIdentity', () => ({
+  getCurrentUserIdentity: vi.fn(() => mockCurrentUser.value)
 }))
 
 const COMFY_EMPLOYEE = { email: 'dev@comfy.org', emailVerified: true }
@@ -89,15 +89,21 @@ describe('getSessionOverride', () => {
     expect(getSessionOverride('onboarding_tour_enabled')).toBeUndefined()
   })
 
-  it('warns once per URL no matter how often a flag is read', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    visit('/?ff=bogus_flag_name')
+  it('overrides any flag, with no opt-in registry to join', () => {
+    visit('/?ff=unified_cloud_auth&ff=some_flag_invented_tomorrow:42')
 
-    getSessionOverride('onboarding_tour_enabled')
-    getSessionOverride('onboarding_tour_enabled')
-    getSessionOverride('signup_turnstile')
+    expect(getSessionOverride('unified_cloud_auth')).toBe(true)
+    expect(getSessionOverride('some_flag_invented_tomorrow')).toBe(42)
+  })
 
-    expect(warn).toHaveBeenCalledTimes(1)
+  it('writes storage once per URL no matter how often a flag is read', () => {
+    visit('/?ff=onboarding_tour_enabled')
+    getSessionOverride('onboarding_tour_enabled')
+
+    const write = vi.spyOn(Storage.prototype, 'setItem')
+    for (let i = 0; i < 50; i++) getSessionOverride('onboarding_tour_enabled')
+
+    expect(write).not.toHaveBeenCalled()
   })
 
   it('leaves storage untouched for a session that never asks for an override', () => {
@@ -107,49 +113,46 @@ describe('getSessionOverride', () => {
     expect(sessionStorage.getItem(STORAGE_KEY)).toBeNull()
   })
 
-  describe('rejected requests', () => {
-    it('ignores a flag that has not opted in', () => {
+  describe('value parsing', () => {
+    it('reads a numeric value as a number', () => {
+      visit('/?ff=max_upload_size:209715200')
+
+      expect(getSessionOverride('max_upload_size')).toBe(209715200)
+    })
+
+    it('keeps a quoted numeric value a string', () => {
+      visit('/?ff=churnkey_app_id:"12345"')
+
+      expect(getSessionOverride('churnkey_app_id')).toBe('12345')
+    })
+
+    it('reads a JSON object value', () => {
+      visit('/?ff=node_replacements:{"a":"b"}')
+
+      expect(getSessionOverride('node_replacements')).toEqual({ a: 'b' })
+    })
+
+    it('reads an empty value as an empty string', () => {
+      visit('/?ff=churnkey_app_id:')
+
+      expect(getSessionOverride('churnkey_app_id')).toBe('')
+    })
+
+    it('never logs the submitted value, which may carry a pasted secret', () => {
       const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-      visit('/?ff=unified_cloud_auth')
+      const log = vi.spyOn(console, 'log').mockImplementation(() => {})
+      visit('/?ff=some_flag:sk-live-not-a-real-secret')
 
-      expect(getSessionOverride('unified_cloud_auth')).toBeUndefined()
-      expect(warn).toHaveBeenCalledWith(
-        '[ff] "unified_cloud_auth" is not registered as an overridable flag'
-      )
+      expect(getSessionOverride('some_flag')).toBe('sk-live-not-a-real-secret')
+      expect(warn).not.toHaveBeenCalled()
+      expect(log).not.toHaveBeenCalled()
     })
 
-    it('ignores a value that is not valid for the declared type', () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-      visit('/?ff=onboarding_tour_enabled:yes')
+    it('discards a hand-written storage payload that is not an object', () => {
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(['nope']))
+      visit('/?ff=onboarding_tour_enabled')
 
-      expect(getSessionOverride('onboarding_tour_enabled')).toBeUndefined()
-      expect(warn).toHaveBeenCalledWith(
-        '[ff] Invalid boolean value for "onboarding_tour_enabled":',
-        'yes'
-      )
-    })
-
-    it('ignores a string flag requested without a value', () => {
-      visit('/?ff=signup_turnstile')
-
-      expect(getSessionOverride('signup_turnstile')).toBeUndefined()
-    })
-
-    it('ignores hand-written sessionStorage entries', () => {
-      sessionStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({
-          search: '',
-          overrides: {
-            unified_cloud_auth: true,
-            onboarding_tour_enabled: 'not-a-boolean'
-          }
-        })
-      )
-      visit('/')
-
-      expect(getSessionOverride('unified_cloud_auth')).toBeUndefined()
-      expect(getSessionOverride('onboarding_tour_enabled')).toBeUndefined()
+      expect(getSessionOverride('onboarding_tour_enabled')).toBe(true)
     })
 
     it('ignores a corrupt storage payload', () => {

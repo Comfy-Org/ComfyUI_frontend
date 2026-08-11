@@ -11,6 +11,7 @@ import {
   shouldRemintCloudRequest
 } from '@/platform/auth/unified/remintRetry'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
+import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 import type {
   ModelFile,
   ModelFolderInfo
@@ -1618,6 +1619,9 @@ export class ComfyApi extends EventTarget {
    * @returns The feature value or default
    */
   getServerFeature<T = unknown>(featureName: string, defaultValue?: T): T {
+    const sessionOverride = getSessionOverride<T>(featureName)
+    if (sessionOverride !== undefined) return sessionOverride
+
     const override = getDevOverride<T>(featureName)
     if (override !== undefined) return override
     return get(this.serverFeatureFlags.value, featureName, defaultValue) as T

@@ -499,6 +499,8 @@ describe('useFeatureFlags', () => {
     afterEach(() => {
       vi.mocked(getSessionOverride).mockReset()
       vi.mocked(distributionTypes).isCloud = false
+      remoteConfigState.value = 'unloaded'
+      cachedBillingControlEnabled.value = undefined
       localStorage.clear()
       remoteConfig.value = {}
     })
@@ -530,8 +532,10 @@ describe('useFeatureFlags', () => {
       expect(flags.workflowSharingEnabled).toBe(false)
     })
 
-    it('beats the isCloud and auth-window guards on auth-gated flags', () => {
-      vi.mocked(distributionTypes).isCloud = false
+    it('beats the auth-window fallback on auth-gated flags', () => {
+      vi.mocked(distributionTypes).isCloud = true
+      remoteConfigState.value = 'unloaded'
+      cachedBillingControlEnabled.value = false
       vi.mocked(getSessionOverride).mockImplementation((flagKey) =>
         flagKey === ServerFeatureFlag.BILLING_CONTROL_ENABLED ? true : undefined
       )

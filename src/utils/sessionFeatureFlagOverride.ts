@@ -1,90 +1,45 @@
-import { useCurrentUser } from 'vuefire'
-
-import type { ServerFeatureFlag } from '@/composables/useFeatureFlags'
+import { getCurrentUserIdentity } from '@/platform/auth/identity/currentUserIdentity'
 import { isCloud } from '@/platform/distribution/types'
 
 const STORAGE_KEY = 'Comfy.FeatureFlagOverride'
 const QUERY_PARAM = 'ff'
 const EMPLOYEE_EMAIL_DOMAIN = '@comfy.org'
 
-type OverridableFlagType = 'boolean' | 'string'
-type OverrideValue = boolean | string
-
-/**
- * Flags that opt in to session overrides, and the value type each one accepts.
- *
- * Adding a key here is the only way to make a flag overridable — an unlisted
- * flag is ignored, so a stale link can never reach into unrelated behaviour.
- * The declared type is what makes `?ff=some_flag:false` resolve to the boolean
- * `false` rather than the truthy string `'false'`.
- */
-const OVERRIDABLE_FEATURE_FLAGS = {
-  asset_rename_enabled: 'boolean',
-  comfyhub_profile_gate_enabled: 'boolean',
-  comfyhub_upload_enabled: 'boolean',
-  model_upload_button_enabled: 'boolean',
-  onboarding_survey_enabled: 'boolean',
-  onboarding_tour_enabled: 'boolean',
-  partner_node_governance_enabled: 'boolean',
-  private_models_enabled: 'boolean',
-  signup_turnstile: 'string',
-  supports_model_type_tags: 'boolean',
-  user_secrets_enabled: 'boolean',
-  workflow_sharing_enabled: 'boolean'
-} as const satisfies Partial<
-  Record<`${ServerFeatureFlag}`, OverridableFlagType>
->
-
-type OverridableFlag = keyof typeof OVERRIDABLE_FEATURE_FLAGS
-type OverrideMap = Partial<Record<OverridableFlag, OverrideValue>>
-
-function isOverridableFlag(name: string): name is OverridableFlag {
-  return Object.hasOwn(OVERRIDABLE_FEATURE_FLAGS, name)
-}
-
-/**
- * Reads Firebase auth straight from VueFire rather than through `authStore`,
- * which would pull the whole app module graph into every feature flag read.
- * The ref holds undefined until auth resolves and null when signed out.
- */
-function currentFirebaseUser() {
-  try {
-    return useCurrentUser().value
-  } catch {
-    return null
-  }
-}
+type OverrideMap = Record<string, unknown>
 
 /**
  * Overrides apply only to a signed-in Comfy employee, so a link handed to a
- * customer stays inert on their machine.
+ * customer stays inert on their machine. With every flag overridable, this is
+ * the only thing standing between a `?ff=` link and the app's behaviour.
  */
 function isComfyEmployee(): boolean {
-  const user = currentFirebaseUser()
+  const user = getCurrentUserIdentity()
   if (!user?.emailVerified) return false
 
   return user.email?.toLowerCase().endsWith(EMPLOYEE_EMAIL_DOMAIN) ?? false
 }
 
-function parseOverrideValue(
-  flag: OverridableFlag,
-  rawValue: string | undefined
-): OverrideValue | undefined {
-  if (OVERRIDABLE_FEATURE_FLAGS[flag] === 'string') {
-    return rawValue || undefined
-  }
+/**
+ * Reads the value with the same JSON semantics as the `ff:` localStorage
+ * override, so `:false` is the boolean and `:12` the number rather than a
+ * truthy string. Anything JSON rejects is taken as a plain string, which is
+ * what makes `:enforce` work; quote it (`:"12"`) to force a numeric-looking
+ * value to stay a string. A bare `?ff=name` means "turn this on".
+ */
+function parseOverrideValue(rawValue: string | undefined): unknown {
   if (rawValue === undefined) return true
 
-  const normalized = rawValue.toLowerCase()
-  if (normalized === 'true') return true
-  if (normalized === 'false') return false
-  return undefined
+  try {
+    return JSON.parse(rawValue)
+  } catch {
+    return rawValue
+  }
 }
 
 /**
  * The captured overrides plus the query string they came from. Remembering the
- * source makes capture idempotent: re-reading the same URL neither re-warns nor
- * rewrites, so a flag can be read as often as a render needs.
+ * source makes capture idempotent: re-reading the same URL does not rewrite
+ * storage, so a flag can be read as often as a render needs.
  */
 type StoredState = { search: string; overrides: OverrideMap }
 
@@ -93,16 +48,10 @@ function emptyState(): StoredState {
 }
 
 function coerceStoredOverrides(value: unknown): OverrideMap {
-  if (typeof value !== 'object' || value === null) return {}
-
-  const overrides: OverrideMap = {}
-  for (const [name, entry] of Object.entries(value)) {
-    if (!isOverridableFlag(name)) continue
-    if (typeof entry !== 'boolean' && typeof entry !== 'string') continue
-    if (typeof entry !== OVERRIDABLE_FEATURE_FLAGS[name]) continue
-    overrides[name] = entry
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    return {}
   }
-  return overrides
+  return { ...value }
 }
 
 function readStoredState(): StoredState {
@@ -169,22 +118,7 @@ function captureRequests(
   const overrides: OverrideMap = { ...stored }
   for (const request of requests) {
     const [name, rawValue] = splitRequest(request)
-
-    if (!isOverridableFlag(name)) {
-      console.warn(`[ff] "${name}" is not registered as an overridable flag`)
-      continue
-    }
-
-    const value = parseOverrideValue(name, rawValue)
-    if (value === undefined) {
-      console.warn(
-        `[ff] Invalid ${OVERRIDABLE_FEATURE_FLAGS[name]} value for "${name}":`,
-        rawValue
-      )
-      continue
-    }
-
-    overrides[name] = value
+    overrides[name] = parseOverrideValue(rawValue)
   }
 
   writeStoredState({ search, overrides })
@@ -203,8 +137,9 @@ function loadSessionOverrides(): OverrideMap {
 }
 
 /**
- * Gets a session feature flag override requested via `?ff=name` (boolean flags)
- * or `?ff=name:value`, repeatable to override several flags at once.
+ * Gets a session override for any feature flag, requested via `?ff=name` to
+ * turn it on or `?ff=name:value` for a specific value, repeatable to override
+ * several flags at once. A nameless `?ff=` clears the session.
  *
  * The request is captured into `sessionStorage` on the first read, so it
  * survives reloads and in-app navigation but dies when the tab closes. Capture
@@ -218,7 +153,6 @@ export function getSessionOverride<T>(flagKey: string): T | undefined {
   if (!isCloud) return undefined
 
   const overrides = loadSessionOverrides()
-  if (!isOverridableFlag(flagKey)) return undefined
   if (!Object.hasOwn(overrides, flagKey)) return undefined
   if (!isComfyEmployee()) return undefined
 
