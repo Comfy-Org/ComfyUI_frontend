@@ -1027,23 +1027,23 @@ describe('_removeDuplicateLinks', () => {
     const linkId = toLinkId(Number(graph.state.lastLinkId) + 1)
     graph.state.lastLinkId = linkId
     const dup = new LLink(linkId, 'number', source.id, 0, target.id, 0)
-    graph._links.set(linkId, dup)
+    graph.links.set(linkId, dup)
     return dup
   }
 
-  it('removes orphaned duplicate links from _links and output.links', () => {
+  it('rejects orphaned duplicate links before they enter the graph view', () => {
     const { graph, source, target } = createConnectedGraph()
     const store = useLinkStore()
 
     for (let i = 0; i < 3; i++) injectDuplicateLink(graph, source, target)
 
-    expect(graph._links.size).toBe(4)
+    expect(graph.links.size).toBe(1)
     // The derived output.links view never contained the contested duplicates.
     expect(source.outputs[0].links).toHaveLength(1)
 
     graph._removeDuplicateLinks()
 
-    expect(graph._links.size).toBe(1)
+    expect(graph.links.size).toBe(1)
     expect(source.outputs[0].links).toHaveLength(1)
     expect(store.getInputSlotLink(graphScopeOf(graph), target.id, 0)?.id).toBe(
       source.outputs[0].links![0]
@@ -1060,10 +1060,10 @@ describe('_removeDuplicateLinks', () => {
 
     graph._removeDuplicateLinks()
 
-    expect(graph._links.size).toBe(1)
+    expect(graph.links.size).toBe(1)
     expect(store.getInputSlotLink(graphId, target.id, 0)?.id).toBe(keptLinkId)
-    expect(graph._links.has(keptLinkId)).toBe(true)
-    expect(graph._links.has(dupLink.id)).toBe(false)
+    expect(graph.links.has(keptLinkId)).toBe(true)
+    expect(graph.links.has(dupLink.id)).toBe(false)
   })
 
   it('drops purged duplicates from the link store and keeps the survivor indexed', () => {
@@ -1098,13 +1098,13 @@ describe('_removeDuplicateLinks', () => {
 
     const dupLink = injectDuplicateLink(graph, source, target)
 
-    expect(graph._links.size).toBe(2)
+    expect(graph.links.size).toBe(1)
 
     graph._removeDuplicateLinks()
 
-    expect(graph._links.size).toBe(1)
-    expect(graph._links.has(validLinkId)).toBe(true)
-    expect(graph._links.has(dupLink.id)).toBe(false)
+    expect(graph.links.size).toBe(1)
+    expect(graph.links.has(validLinkId)).toBe(true)
+    expect(graph.links.has(dupLink.id)).toBe(false)
     expect(store.getInputSlotLink(graphScopeOf(graph), target.id, 0)?.id).toBe(
       validLinkId
     )
@@ -1118,25 +1118,25 @@ describe('_removeDuplicateLinks', () => {
 
     graph._removeDuplicateLinks()
 
-    expect(graph._links.size).toBe(1)
-    expect(graph._links.has(dupLink.id)).toBe(false)
-    const survivingId = graph._links.keys().next().value!
+    expect(graph.links.size).toBe(1)
+    expect(graph.links.has(dupLink.id)).toBe(false)
+    const survivingId = graph.links.keys().next().value!
     const registeredLink = store.getInputSlotLink(
       graphScopeOf(graph),
       target.id,
       0
     )
     expect(registeredLink?.id).toBe(survivingId)
-    expect(graph._links.has(registeredLink!.id)).toBe(true)
+    expect(graph.links.has(registeredLink!.id)).toBe(true)
   })
 
   it('is a no-op when no duplicates exist', () => {
     const { graph } = createConnectedGraph()
-    const linksBefore = graph._links.size
+    const linksBefore = graph.links.size
 
     graph._removeDuplicateLinks()
 
-    expect(graph._links.size).toBe(linksBefore)
+    expect(graph.links.size).toBe(linksBefore)
   })
 
   it('cleans up duplicate links in subgraph during configure', () => {
@@ -1154,12 +1154,12 @@ describe('_removeDuplicateLinks', () => {
     source.connect(0, target, 0)
 
     for (let i = 0; i < 3; i++) injectDuplicateLink(subgraph, source, target)
-    expect(subgraph._links.size).toBe(4)
+    expect(subgraph.links.size).toBe(1)
 
     const serialized = subgraph.asSerialisable()
     subgraph.configure(serialized as never)
 
-    expect(subgraph._links.size).toBe(1)
+    expect(subgraph.links.size).toBe(1)
   })
 
   it('removes duplicate links via root graph configure()', () => {
@@ -1167,8 +1167,8 @@ describe('_removeDuplicateLinks', () => {
     const graph = new LGraph()
     graph.configure(duplicateLinksRoot)
 
-    expect(graph._links.size).toBe(1)
-    const survivingLink = graph._links.values().next().value!
+    expect(graph.links.size).toBe(1)
+    const survivingLink = graph.links.values().next().value!
     const targetNode = graph.getNodeById(survivingLink.target_id)!
     expect(targetNode.inputs[0].link).toBe(survivingLink.id)
     const sourceNode = graph.getNodeById(survivingLink.origin_id)!
@@ -1180,9 +1180,9 @@ describe('_removeDuplicateLinks', () => {
     const graph = new LGraph()
     graph.configure(duplicateLinksSlotShift)
 
-    expect(graph._links.size).toBe(1)
+    expect(graph.links.size).toBe(1)
 
-    const link = graph._links.values().next().value!
+    const link = graph.links.values().next().value!
     const target = graph.getNodeById(link.target_id)!
     const linkedInput = target.inputs.find((inp) => inp.link === link.id)
     expect(linkedInput).toBeDefined()
@@ -1196,9 +1196,9 @@ describe('_removeDuplicateLinks', () => {
     graph.configure(duplicateLinksSubgraph)
 
     const subgraph = graph.subgraphs.values().next().value!
-    expect(subgraph._links.size).toBe(1)
+    expect(subgraph.links.size).toBe(1)
 
-    const link = subgraph._links.values().next().value!
+    const link = subgraph.links.values().next().value!
     const target = subgraph.getNodeById(link.target_id)!
     expect(target.inputs[0].link).toBe(link.id)
   })
@@ -1232,7 +1232,7 @@ describe('Subgraph Unpacking', () => {
   }
 
   function duplicateExistingLink(graph: LGraph) {
-    const existingLink = graph._links.values().next().value!
+    const existingLink = graph.links.values().next().value!
     const linkId = toLinkId(Number(graph.state.lastLinkId) + 1)
     graph.state.lastLinkId = linkId
     const dup = new LLink(
@@ -1243,7 +1243,7 @@ describe('Subgraph Unpacking', () => {
       existingLink.target_id,
       existingLink.target_slot
     )
-    graph._links.set(dup.id, dup)
+    graph.links.set(dup.id, dup)
     return dup
   }
 
@@ -1260,7 +1260,7 @@ describe('Subgraph Unpacking', () => {
     sourceNode.connect(0, targetNode, 0)
 
     for (let i = 0; i < 3; i++) duplicateExistingLink(subgraph)
-    expect(subgraph._links.size).toBe(4)
+    expect(subgraph.links.size).toBe(1)
 
     const subgraphNode = createTestSubgraphNode(subgraph, { pos: [100, 100] })
     rootGraph.add(subgraphNode)
@@ -1298,6 +1298,25 @@ describe('Subgraph Unpacking', () => {
     expect(
       layoutStore.getGroupLayout(secondRoot.id, SHARED_GROUP)
     ).not.toBeNull()
+  })
+
+  it('keeps runtime entity IDs unique across a root and its subgraphs', () => {
+    const rootGraph = new LGraph()
+    const subgraph = createSubgraphOnGraph(rootGraph)
+    const rootNode = new LGraphNode('root')
+    const subgraphNode = new LGraphNode('subgraph')
+    rootNode.id = toNodeId(42)
+    subgraphNode.id = toNodeId(42)
+    const rootGroup = new LGraphGroup('root', toGroupId(42))
+    const subgraphGroup = new LGraphGroup('subgraph', toGroupId(42))
+
+    rootGraph.add(rootNode)
+    subgraph.add(subgraphNode)
+    rootGraph.add(rootGroup)
+    subgraph.add(subgraphGroup)
+
+    expect(subgraphNode.id).not.toBe(rootNode.id)
+    expect(subgraphGroup.id).not.toBe(rootGroup.id)
   })
 
   it('offsets unpacked group geometry in the layout store too', () => {
@@ -1421,6 +1440,16 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
     for (const id of idsA) {
       expect(idsB.has(id)).toBe(false)
     }
+  })
+
+  it('remaps duplicate link IDs across subgraph definitions', () => {
+    const { graph } = configureFromFixture()
+    const ids = [...graph.subgraphs.values()].flatMap((subgraph) => [
+      ...subgraph.links.keys(),
+      ...subgraph.floatingLinks.keys()
+    ])
+
+    expect(new Set(ids).size).toBe(ids.length)
   })
 
   it('patches link references in remapped subgraph', () => {

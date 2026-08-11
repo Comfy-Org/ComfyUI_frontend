@@ -17,6 +17,7 @@ import {
 } from '@/renderer/core/layout/operations/graphLayoutRegistration'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { toLinkId } from '@/types/linkId'
+import { isFloatingTopology } from '@/types/linkTopology'
 import { toRerouteId } from '@/types/rerouteId'
 import { graphScopeOf, toRootGraphId } from '@/types/graphScopeId'
 import {
@@ -65,9 +66,11 @@ import {
 import {
   LLink,
   registerLinkTopology,
+  resolveLinkTopology,
   unregisterAllLinkTopologies,
   unregisterLinkTopology
 } from './LLink'
+import { LinkMap } from './LinkMap'
 import type { LinkId } from './LLink'
 import { MapProxyHandler } from './MapProxyHandler'
 import {
@@ -137,8 +140,10 @@ import type {
 import { getAllNestedItems } from './utils/collections'
 import {
   collectReservedGroupIds,
+  collectReservedLinkIds,
   collectReservedRerouteIds,
   deduplicateSubgraphGroupIds,
+  deduplicateSubgraphLinkIds,
   deduplicateSubgraphNodeIds,
   deduplicateSubgraphRerouteIds,
   topologicalSortSubgraphs
@@ -326,8 +331,6 @@ export class LGraph
   set _version(value: number) {
     toRaw(this)._versionRef.value = value
   }
-  /** The backing store for links.  Keys are wrapped in String() */
-  _links: Map<LinkId, LLink> = new Map()
   /**
    * Indexed property access is deprecated.
    * Backwards compatibility with a Proxy has been added, but will eventually be removed.
@@ -464,7 +467,22 @@ export class LGraph
    */
   constructor(o?: ISerialisedGraph | SerialisableGraph) {
     /** @see MapProxyHandler */
-    const links = this._links
+    const links = new LinkMap(
+      () => (this.rootGraph ? graphScopeOf(this) : undefined),
+      (scope, id) => {
+        const topology = useLinkStore().getTopology(scope.rootGraphId, id)
+        return topology?.graphId === scope.owningGraphId
+          ? resolveLinkTopology(topology)
+          : undefined
+      },
+      (scope) =>
+        [...useLinkStore().graphTopologies(scope)]
+          .filter((topology) => !isFloatingTopology(topology))
+          .map(resolveLinkTopology)
+          .filter((link): link is LLink => link !== undefined),
+      (link) => this._addLink(link),
+      (id) => this._removeLink(id)
+    )
     MapProxyHandler.bindAllMethods(links)
     const handler = new MapProxyHandler<LinkId, LLink>((value) =>
       toLinkId(Number(value))
@@ -526,7 +544,7 @@ export class LGraph
     // nodes that contain onExecute sorted in execution order
     this._nodes_executable = null
 
-    this._links.clear()
+    this.links.clear()
     this.reroutes.clear()
     this.floatingLinksInternal.clear()
 
@@ -1061,8 +1079,20 @@ export class LGraph
     // LEGACY: This was changed from constructor === LGraphGroup
     // groups
     if (node instanceof LGraphGroup) {
-      // Assign group ID
-      if (node.id == null || node.id === -1) node.id = mintGroupId(state)
+      const rootGroups = [
+        ...this.rootGraph.groups,
+        ...[...this.rootGraph.subgraphs.values()].flatMap(
+          (subgraph) => subgraph.groups
+        )
+      ]
+      if (
+        node.id == null ||
+        node.id === -1 ||
+        rootGroups.some((group) => group.id === node.id)
+      ) {
+        do node.id = mintGroupId(state)
+        while (rootGroups.some((group) => group.id === node.id))
+      }
       observeGroupId(state, node.id)
 
       this._groups.push(node)
@@ -1101,8 +1131,7 @@ export class LGraph
 
     node.graph = this
 
-    // Adopt the node-data store proxy now that the node has a valid id and graph.
-    registerNodeState(this, node)
+    while (!registerNodeState(this, node)) node.id = mintNodeId(state)
 
     // Register all widgets with the WidgetValueStore now that node has a
     // valid ID and graph reference.
@@ -1488,7 +1517,7 @@ export class LGraph
    * clears the triggered slot animation in all links (stop visual animation)
    */
   clearTriggeredSlots(): void {
-    for (const link_info of this._links.values()) {
+    for (const link_info of this.links.values()) {
       if (!link_info) continue
 
       if (link_info._last_time) link_info._last_time = 0
@@ -1510,14 +1539,14 @@ export class LGraph
       do {
         link.id = toLinkId(++this._lastFloatingLinkId)
       } while (
-        this._links.has(link.id) ||
+        this.links.has(link.id) ||
         this.floatingLinksInternal.has(link.id)
       )
     } else {
       const incumbent = this.floatingLinksInternal.get(link.id)
       if (incumbent === link) return link
 
-      if (incumbent || this._links.has(link.id)) {
+      if (incumbent || this.links.has(link.id)) {
         console.error(
           'LiteGraph: refusing to add floating link with duplicate id',
           link.id
@@ -1548,12 +1577,10 @@ export class LGraph
   }
 
   /**
-   * Adds a link to this graph's {@link _links} map and registers its topology
-   * with the link store. The single entry point for populating {@link _links};
-   * routing every add through here keeps the store from silently desyncing.
+   * Registers a link in the root-wide identity store.
    */
   _addLink(link: LLink): void {
-    const existing = this._links.get(link.id)
+    const existing = this.links.get(link.id)
     if (existing) {
       if (existing !== link) {
         console.warn(`LiteGraph: refusing to add duplicate link id ${link.id}`)
@@ -1561,21 +1588,17 @@ export class LGraph
       return
     }
     if (!registerLinkTopology(this, link)) return
-    this._links.set(link.id, link)
   }
 
   /**
-   * Removes a link from this graph's {@link _links} map and unregisters it
-   * from the link and layout stores. The delete-side counterpart to
-   * {@link _addLink}; routing every removal through here keeps the stores
-   * from silently desyncing.
+   * Removes a link from the root-wide identity store and its layout store.
    */
-  _removeLink(linkId: LinkId): void {
-    const link = this._links.get(linkId)
-    if (!link) return
-    this._links.delete(linkId)
+  _removeLink(linkId: LinkId): boolean {
+    const link = this.links.get(linkId)
+    if (!link) return false
     unregisterLinkTopology(link)
     layoutStore.deleteLinkLayout(linkId)
+    return true
   }
 
   /**
@@ -1586,7 +1609,7 @@ export class LGraph
   getLink(id: null | undefined): undefined
   getLink(id: LinkId | null | undefined): LLink | undefined
   getLink(id: LinkId | null | undefined): LLink | undefined {
-    return id == null ? undefined : this._links.get(id)
+    return id == null ? undefined : this.links.get(id)
   }
 
   /**
@@ -1666,7 +1689,7 @@ export class LGraph
     const chainLinks =
       before instanceof Reroute
         ? [
-            ...[...before.linkIds].map((id) => this._links.get(id)),
+            ...[...before.linkIds].map((id) => this.links.get(id)),
             ...[...before.floatingLinkIds].map((id) =>
               this.floatingLinks.get(id)
             )
@@ -1707,7 +1730,7 @@ export class LGraph
     }
 
     for (const linkId of linkIds) {
-      const link = this._links.get(linkId)
+      const link = this.links.get(linkId)
       if (link && link.parentId === id) link.parentId = parentId
     }
 
@@ -1747,7 +1770,7 @@ export class LGraph
    * Destroys a link
    */
   removeLink(link_id: LinkId): void {
-    const link = this._links.get(link_id)
+    const link = this.links.get(link_id)
     if (!link) return
 
     const node = this.getNodeById(link.target_id)
@@ -1757,13 +1780,13 @@ export class LGraph
   }
 
   _removeDuplicateLinks(): Map<LinkId, LinkId> {
-    const groups = groupLinksByTuple(this._links)
+    const groups = groupLinksByTuple(this.links)
     const survivorByPurged = new Map<LinkId, LinkId>()
 
     for (const ids of groups.values()) {
       if (ids.length <= 1) continue
 
-      const sampleLink = this._links.get(ids[0])!
+      const sampleLink = this.links.get(ids[0])!
       const node = this.getNodeById(sampleLink.target_id)
       const keepId = selectSurvivorLink(ids, node)
 
@@ -2156,7 +2179,7 @@ export class LGraph
       eparent?: RerouteId
       externalFirst: boolean
     }[] = []
-    for (const [, link] of subgraphNode.subgraph._links) {
+    for (const [, link] of subgraphNode.subgraph.links) {
       let externalParentId: RerouteId | undefined
       if (link.origin_id === SUBGRAPH_INPUT_ID) {
         const outerLinkId = inputLinkId(this, subgraphNode.id, link.origin_slot)
@@ -2394,7 +2417,7 @@ export class LGraph
       floatingLinks,
       definitions
     } = this.asSerialisable(option)
-    const linkArray = [...this._links.values()]
+    const linkArray = [...this.links.values()]
     const links = linkArray.map((x) => x.serialize())
 
     if (reroutes?.length) {
@@ -2456,8 +2479,8 @@ export class LGraph
     const nodes = nodeList.map((node) => node.serialize())
     const groups = this._groups.map((x) => x.serialize())
 
-    const links = this._links.size
-      ? [...this._links.values()].map((x) => x.asSerialisable())
+    const links = this.links.size
+      ? [...this.links.values()].map((x) => x.asSerialisable())
       : undefined
     const floatingLinks = this.floatingLinks.size
       ? [...this.floatingLinks.values()].map((x) => x.asSerialisable())
@@ -2558,7 +2581,7 @@ export class LGraph
         if (Array.isArray(data.links)) {
           for (const linkData of data.links) {
             const link = LLink.createFromArray(linkData)
-            if (!this._links.has(link.id)) this._links.set(link.id, link)
+            if (!this.links.has(link.id)) this.links.set(link.id, link)
           }
         }
         // #region `extra` embeds for v0.4
@@ -2566,7 +2589,7 @@ export class LGraph
         // LLink parentIds
         if (Array.isArray(extra?.linkExtensions)) {
           for (const linkEx of extra.linkExtensions) {
-            const link = this._links.get(linkEx.id)
+            const link = this.links.get(linkEx.id)
             if (link) link.parentId = linkEx.parentId
           }
         }
@@ -2599,7 +2622,7 @@ export class LGraph
         if (Array.isArray(data.links)) {
           for (const linkData of data.links) {
             const link = LLink.create(linkData)
-            if (!this._links.has(link.id)) this._links.set(link.id, link)
+            if (!this.links.has(link.id)) this.links.set(link.id, link)
           }
         }
 
@@ -2657,6 +2680,19 @@ export class LGraph
           deduplicateSubgraphGroupIds(
             deduplicated.subgraphs,
             collectReservedGroupIds(this, data.groups),
+            this.state
+          )
+          deduplicateSubgraphLinkIds(
+            deduplicated.subgraphs,
+            collectReservedLinkIds(
+              this,
+              data.links?.map((link) =>
+                Array.isArray(link)
+                  ? LLink.createFromArray(link).asSerialisable()
+                  : link
+              ),
+              data.floatingLinks
+            ),
             this.state
           )
           deduplicateSubgraphRerouteIds(
@@ -2723,20 +2759,18 @@ export class LGraph
         }
       }
 
-      for (const link of this._links.values()) registerLinkTopology(this, link)
-
       // Floating links
       if (Array.isArray(data.floatingLinks)) {
         for (const linkData of data.floatingLinks) {
           const floatingLink = LLink.create(linkData)
           if (
-            this._links.has(floatingLink.id) ||
+            this.links.has(floatingLink.id) ||
             this.floatingLinksInternal.has(floatingLink.id)
           ) {
             do {
               floatingLink.id = toLinkId(++this._lastFloatingLinkId)
             } while (
-              this._links.has(floatingLink.id) ||
+              this.links.has(floatingLink.id) ||
               this.floatingLinksInternal.has(floatingLink.id)
             )
           }
@@ -3005,7 +3039,7 @@ export class Subgraph
     slotIndex: number
   ): void {
     const repaired = linkIds.map((id) =>
-      this._links.has(id)
+      this.links.has(id)
         ? id
         : (this._findLinkBySlot(ioNodeId, slotIndex)?.id ?? id)
     )
@@ -3018,7 +3052,7 @@ export class Subgraph
     nodeId: NodeId,
     slotIndex: number
   ): LLink | undefined {
-    for (const link of this._links.values()) {
+    for (const link of this.links.values()) {
       if (
         (link.origin_id === nodeId && link.origin_slot === slotIndex) ||
         (link.target_id === nodeId && link.target_slot === slotIndex)

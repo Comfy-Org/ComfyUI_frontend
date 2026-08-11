@@ -4,8 +4,9 @@ import { EMPTY_MEMBERSHIP, useRerouteStore } from '@/stores/rerouteStore'
 import type { RerouteMembership } from '@/stores/rerouteStore'
 import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
-import { graphScopeOf } from '@/types/graphScopeId'
+import { graphScopeOf, toOwningGraphId } from '@/types/graphScopeId'
 import type { GraphScope } from '@/types/graphScopeId'
+import { zeroUuid } from '@/utils/uuid'
 import type { FloatingRerouteSlot, RerouteChain } from '@/types/rerouteChain'
 import type { RerouteId } from '@/types/rerouteId'
 import type { UUID } from '@/utils/uuid'
@@ -294,7 +295,7 @@ export class Reroute
     this.id = id
     this.network = new WeakRef(network)
     this.rootGraphId = network.rootGraph.id
-    this._chain = { id }
+    this._chain = { id, graphId: toOwningGraphId(zeroUuid) }
     this.parentId = parentId
 
     layoutMutations.setSource(LayoutSource.Canvas)

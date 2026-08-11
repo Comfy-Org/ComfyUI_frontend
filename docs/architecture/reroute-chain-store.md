@@ -41,19 +41,19 @@ disagree, and every dual write site survives.
 reference (the class reads through them, mirroring `LLink._state`):
 
 ```
-RerouteChain { id, parentId?, floating? }
+RerouteChain { id, graphId, parentId?, floating? }
 ```
 
 Buckets use the shared graph-scoped lifecycle:
 
 ```
-RootGraphId -> OwningGraphId -> RerouteBucket
+RootGraphId -> { chains, idsByOwner, membershipByOwner }
 ```
 
-The root key groups one loaded workflow and the owner key isolates its root
-graph and subgraph definitions. Link, reroute, and node-data stores share the
-same bucket lookup, creation, pruning, owner-clear, and root-clear mechanics.
-`RerouteId` keys the chain map inside each owner bucket.
+The root key groups one loaded workflow. `chains` is a flat root-wide identity
+map; `idsByOwner` is a secondary index for owner-local lookup and teardown.
+`graphId` associates a chain with its owning graph without namespacing its
+identity.
 
 `RerouteId` is the domain key because runtime allocation is already
 per-root-unique: `Subgraph.state` delegates to the root graph's state, so
@@ -62,8 +62,9 @@ all graphs increment one shared `lastRerouteId` counter.
 ## Decision 3: Load-time reroute-id dedup
 
 Serialized workflows from older frontends or external tools can carry
-colliding reroute ids within an owning graph. Registration does not overwrite
-the incumbent, so import repairs those collisions before registration.
+colliding reroute ids anywhere in one root graph. Registration does not
+overwrite the incumbent, so import repairs those collisions before
+registration.
 
 On configure, colliding subgraph reroute ids are rewritten to fresh ids
 from the shared counter, patching that subgraph's `link.parentId` and
@@ -91,10 +92,9 @@ APIs leave a colliding state detached instead of returning the incumbent.
 The `Reroute` class reads and writes chain state through a successful proxy,
 so `reroute.parentId` mutations are tracked with no action chokepoint.
 
-Each owner bucket keeps its derived membership as a direct `ComputedRef`.
-The owner map is shallow-reactive: owner insertion and deletion remain
-observable, while bucket values are not deep-unwrapped. The chain map itself
-remains reactive, so chain changes still invalidate membership.
+Each root bucket keeps one derived membership `ComputedRef` per owner. The
+chain map and owner indexes are reactive, so chain, link, and lifecycle changes
+invalidate the relevant membership view.
 
 `LLink` previously deviated — `registerLinkTopology` left `link._state`
 raw, which is why `linkStore.updateEndpoint` must re-wrap with

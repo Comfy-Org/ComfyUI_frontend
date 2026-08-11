@@ -29,6 +29,7 @@ const graphASibling = {
 function chain(id: number, parentId?: number): RerouteChain {
   return {
     id: toRerouteId(id),
+    graphId: graphA.owningGraphId,
     parentId: parentId === undefined ? undefined : toRerouteId(parentId)
   }
 }
@@ -36,6 +37,7 @@ function chain(id: number, parentId?: number): RerouteChain {
 function link(id: number, targetSlot: number, parentId?: number): LinkTopology {
   return {
     id: toLinkId(id),
+    graphId: graphA.owningGraphId,
     originNodeId: toNodeId(5),
     originSlot: 0,
     targetNodeId: toNodeId(9),
@@ -233,29 +235,55 @@ describe('useRerouteStore', () => {
     expect(store.getReroute(graphB, toRerouteId(1))).toBeUndefined()
   })
 
+  it('rejects a duplicate id without changing either registration', () => {
+    const store = useRerouteStore()
+    const first = chain(1)
+    const duplicate = chain(1, 7)
+
+    const registered = store.registerReroute(graphA, first)
+    const rejected = store.registerReroute(graphASibling, duplicate)
+
+    expect(registered?.id).toBe(first.id)
+    expect(rejected).toBeUndefined()
+    expect(duplicate).not.toHaveProperty('graphId', graphASibling.owningGraphId)
+    expect(store.getReroute(graphA, toRerouteId(1))).toBe(registered)
+    expect(store.getReroute(graphASibling, toRerouteId(1))).toBeUndefined()
+  })
+
+  it('only deletes the registered identity from its owning graph', () => {
+    const store = useRerouteStore()
+    const registered = store.registerReroute(graphA, chain(1))
+    assert(registered)
+    const impostor = chain(1)
+
+    expect(store.deleteReroute(graphASibling, registered)).toBe(false)
+    expect(store.deleteReroute(graphA, impostor)).toBe(false)
+    expect(store.getReroute(graphA, toRerouteId(1))).toBe(registered)
+  })
+
   it('isolates chains and memberships by owner', () => {
     const store = useRerouteStore()
     const linkStore = useLinkStore()
     store.registerReroute(graphA, chain(1))
-    store.registerReroute(graphASibling, chain(1, 7))
+    store.registerReroute(graphASibling, chain(2, 7))
     linkStore.registerLink(graphA, link(10, 0, 1))
-    linkStore.registerLink(graphASibling, link(20, 0, 1))
+    linkStore.registerLink(graphASibling, link(20, 0, 2))
 
     expect([...store.getMembership(graphA, toRerouteId(1)).linkIds]).toEqual([
       10
     ])
     expect([
-      ...store.getMembership(graphASibling, toRerouteId(1)).linkIds
+      ...store.getMembership(graphASibling, toRerouteId(2)).linkIds
     ]).toEqual([20])
 
     store.clearOwner(graphA)
 
     expect(store.getReroute(graphA, toRerouteId(1))).toBeUndefined()
-    expect(store.getReroute(graphASibling, toRerouteId(1))?.parentId).toBe(7)
+    expect(store.getReroute(graphASibling, toRerouteId(2))?.parentId).toBe(7)
 
     store.clearGraph(graphA.rootGraphId)
 
-    expect(store.getReroute(graphASibling, toRerouteId(1))).toBeUndefined()
+    expect(store.getReroute(graphASibling, toRerouteId(2))).toBeUndefined()
   })
 
   it('re-evaluates membership when the owner is cleared', () => {

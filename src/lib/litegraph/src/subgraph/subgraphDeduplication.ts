@@ -2,15 +2,18 @@ import type { LGraph } from '../LGraph'
 import { toGroupId } from '@/types/groupId'
 import {
   mintGroupId,
+  mintLinkId,
   mintNodeId,
   mintRerouteId,
   observeGroupId,
+  observeLinkId,
   observeNodeId,
   observeRerouteId
 } from '../idAllocation'
 import type { LGraphState } from '../idAllocation'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
+import { toLinkId } from '@/types/linkId'
 import { toRerouteId } from '@/types/rerouteId'
 import type {
   ExportedSubgraph,
@@ -62,7 +65,10 @@ export function deduplicateSubgraphNodeIds(
     if (remappedIds.size === 0) continue
     remapBySubgraph.set(subgraph.id, remappedIds)
 
-    patchSerialisedLinks(subgraph.links ?? [], remappedIds)
+    patchSerialisedLinks(
+      [...(subgraph.links ?? []), ...(subgraph.floatingLinks ?? [])],
+      remappedIds
+    )
     patchPromotedWidgets(subgraph.widgets ?? [], remappedIds)
   }
 
@@ -180,6 +186,81 @@ export function collectReservedGroupIds(
       g.groups.map((group) => group.id)
     )
   ])
+}
+
+export function collectReservedLinkIds(
+  graph: Pick<LGraph, 'links' | 'floatingLinks' | 'subgraphs'>,
+  serializedLinks: SerialisableLLink[] = [],
+  serializedFloatingLinks: SerialisableLLink[] = []
+): Set<number> {
+  return new Set([
+    ...serializedLinks.map((link) => link.id),
+    ...serializedFloatingLinks.map((link) => link.id),
+    ...[graph, ...graph.subgraphs.values()].flatMap((owner) => [
+      ...owner.links.keys(),
+      ...owner.floatingLinks.keys()
+    ])
+  ])
+}
+
+export function deduplicateSubgraphLinkIds(
+  subgraphs: ExportedSubgraph[],
+  reservedLinkIds: Set<number>,
+  state: LGraphState
+): void {
+  const usedLinkIds = new Set(reservedLinkIds)
+  for (const id of reservedLinkIds) observeLinkId(state, toLinkId(id))
+
+  for (const subgraph of subgraphs) {
+    const remapped = new Map<number, number>()
+    for (const link of [
+      ...(subgraph.links ?? []),
+      ...(subgraph.floatingLinks ?? [])
+    ]) {
+      const oldId = link.id
+      if (usedLinkIds.has(oldId)) {
+        const newId = findNextAvailableId(usedLinkIds, () =>
+          Number(mintLinkId(state))
+        )
+        link.id = newId
+        remapped.set(oldId, newId)
+        usedLinkIds.add(newId)
+      } else {
+        usedLinkIds.add(oldId)
+        observeLinkId(state, toLinkId(oldId))
+      }
+    }
+    if (remapped.size > 0) patchLinkReferences(subgraph, remapped)
+  }
+}
+
+function patchLinkReferences(
+  subgraph: ExportedSubgraph,
+  remapped: Map<number, number>
+): void {
+  for (const node of subgraph.nodes ?? []) {
+    for (const input of node.inputs ?? []) {
+      if (input.link == null) continue
+      input.link = remapped.get(input.link) ?? input.link
+    }
+    for (const output of node.outputs ?? []) {
+      if (!output.links) continue
+      output.links = output.links.map((id) => remapped.get(id) ?? id)
+    }
+  }
+  for (const slot of [
+    ...(subgraph.inputs ?? []),
+    ...(subgraph.outputs ?? [])
+  ]) {
+    if (!slot.linkIds) continue
+    slot.linkIds = slot.linkIds.map((id) => remapped.get(id) ?? id)
+  }
+  for (const reroute of subgraph.reroutes ?? []) {
+    reroute.linkIds = reroute.linkIds.map((id) => remapped.get(id) ?? id)
+  }
+  for (const extension of subgraph.extra?.linkExtensions ?? []) {
+    extension.id = toLinkId(remapped.get(extension.id) ?? extension.id)
+  }
 }
 
 /**

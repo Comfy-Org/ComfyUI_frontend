@@ -174,7 +174,7 @@ describe('Reroute ↔ rerouteStore integration', () => {
       expect(store.getReroute(graphScopeOf(sg), reroute.id)?.id).toBe(
         reroute.id
       )
-      const [link] = [...sg._links.values()]
+      const [link] = [...sg.links.values()]
       expect(link.parentId).toBe(reroute.id)
     }
   })
@@ -301,7 +301,7 @@ describe('Reroute ↔ rerouteStore integration', () => {
     const converted = subgraph.reroutes.get(reroute.id)
     expect(converted).toBeDefined()
 
-    const [innerLink] = [...subgraph._links.values()]
+    const [innerLink] = [...subgraph.links.values()]
     expect(innerLink.parentId).toBe(reroute.id)
     expect(store.getReroute(graphScopeOf(subgraph), reroute.id)).toBeDefined()
 

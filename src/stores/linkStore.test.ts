@@ -33,6 +33,7 @@ function link(
 ): LinkTopology {
   return {
     id: toLinkId(id),
+    graphId: graphA.owningGraphId,
     originNodeId: toNodeId(originNode),
     originSlot,
     targetNodeId: toNodeId(targetNode),
@@ -118,16 +119,16 @@ describe('useLinkStore', () => {
     expect(store.isInputSlotConnected(graphA, toNodeId(9), 2)).toBe(true)
   })
 
-  it('lets sibling subgraphs register output-node links without clobbering', () => {
+  it('rejects duplicate link IDs across sibling subgraphs', () => {
     const store = useLinkStore()
     const first = link(1, 5, 0, Number(SUBGRAPH_OUTPUT_ID), 0)
     const second = link(1, 7, 0, Number(SUBGRAPH_OUTPUT_ID), 0)
 
     expect(store.registerLink(graphA, first)).toBeDefined()
-    expect(store.registerLink(graphASibling, second)).toBeDefined()
+    expect(store.registerLink(graphASibling, second)).toBeUndefined()
 
     expect(store.deleteLink(graphA, first)).toBe(true)
-    expect(store.deleteLink(graphASibling, second)).toBe(true)
+    expect(store.deleteLink(graphASibling, second)).toBe(false)
   })
 
   it('re-evaluates connectedness when a graph gains its first link', () => {
@@ -168,10 +169,10 @@ describe('useLinkStore', () => {
     expect(store.isInputSlotConnected(graphB, toNodeId(9), 2)).toBe(false)
   })
 
-  it('isolates identical links and slot indexes by owner', () => {
+  it('isolates links and slot indexes by owner', () => {
     const store = useLinkStore()
     const first = link(1, 5, 0, 9, 2)
-    const sibling = link(1, 5, 0, 9, 2)
+    const sibling = link(2, 5, 0, 9, 2)
 
     const registeredFirst = store.registerLink(graphA, first)
     const registeredSibling = store.registerLink(graphASibling, sibling)
@@ -197,7 +198,7 @@ describe('useLinkStore', () => {
   it('re-evaluates owner queries when the owner is cleared', () => {
     const store = useLinkStore()
     const registered = store.registerLink(graphA, link(1, 5, 0, 9, 2))
-    const sibling = store.registerLink(graphASibling, link(1, 5, 0, 9, 2))
+    const sibling = store.registerLink(graphASibling, link(2, 5, 0, 9, 2))
     const current = computed(() => [...store.graphTopologies(graphA)][0])
     const siblingCurrent = computed(
       () => [...store.graphTopologies(graphASibling)][0]

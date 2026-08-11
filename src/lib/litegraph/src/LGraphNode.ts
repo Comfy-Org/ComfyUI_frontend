@@ -340,7 +340,11 @@ export class LGraphNode
   }
 
   set id(value: NodeId) {
-    this._state.id = value
+    if (this._graphScope && value !== this._state.id) {
+      console.error('LiteGraph: refusing to change a registered node id')
+      return
+    }
+    this._state = { ...this._state, id: value }
   }
 
   get type(): string {
@@ -1068,7 +1072,7 @@ export class LGraphNode
       const serialisedLink = info.inputs?.[i]?.link
       const link =
         this.graph && serialisedLink != null
-          ? this.graph._links.get(toLinkId(serialisedLink))
+          ? this.graph.links.get(toLinkId(serialisedLink))
           : null
       this.onConnectionsChange?.(NodeSlotType.INPUT, i, true, link, input)
       this.onInputAdded?.(input)
@@ -1082,7 +1086,7 @@ export class LGraphNode
       if (!serialisedLinks) continue
 
       for (const linkId of serialisedLinks) {
-        const link = this.graph ? this.graph._links.get(toLinkId(linkId)) : null
+        const link = this.graph ? this.graph.links.get(toLinkId(linkId)) : null
         this.onConnectionsChange?.(NodeSlotType.OUTPUT, i, true, link, output)
       }
       this.onOutputAdded?.(output)
@@ -3361,7 +3365,7 @@ export class LGraphNode
     const link_id = inputLinkId(graph, this.id, slot) ?? null
     if (link_id !== null) {
       // remove other side
-      const link_info = graph._links.get(link_id)
+      const link_info = graph.links.get(link_id)
       if (link_info) {
         // Let SubgraphInput do the disconnect.
         if (link_info.origin_id === SUBGRAPH_INPUT_ID && 'inputNode' in graph) {
@@ -4384,7 +4388,9 @@ export function registerNodeState(
 ): boolean {
   const graphScope = graphScopeOf(graph)
   node._state.graphId = graph.id
-  node._state = useNodeDataStore().registerNode(graphScope, node._state)
+  const registered = useNodeDataStore().registerNode(graphScope, node._state)
+  if (!registered) return false
+  node._state = registered
   node._graphScope = graphScope
   return true
 }

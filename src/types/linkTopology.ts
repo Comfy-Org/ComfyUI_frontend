@@ -3,9 +3,11 @@ import type { LinkId } from '@/types/linkId'
 import type { NodeId } from '@/types/nodeId'
 import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import type { RerouteId } from '@/types/rerouteId'
+import type { OwningGraphId } from '@/types/graphScopeId'
 
 export interface LinkTopology {
-  id: LinkId
+  readonly id: LinkId
+  graphId: OwningGraphId
   /** Output node; UNASSIGNED_NODE_ID when the output end is floating. */
   originNodeId: NodeId
   originSlot: number
@@ -16,6 +18,8 @@ export interface LinkTopology {
   /** Terminal reroute of the segment chain, when the link routes through one. */
   parentId?: RerouteId
 }
+
+export type UnownedLinkTopology = Omit<LinkTopology, 'graphId'>
 
 /**
  * A floating link is not yet a link: it is reroute-chain state kept alive so

@@ -60,7 +60,7 @@ export function purgeOrphanedLinks(
   for (const id of ids) {
     if (id === keepId) continue
 
-    const link = graph._links.get(id)
+    const link = graph.links.get(id)
     if (!link) continue
 
     graph._removeLink(id)
@@ -68,7 +68,7 @@ export function purgeOrphanedLinks(
 
   // Purging a duplicate that owned the survivor's target-slot index entry
   // removes that entry, so re-assert the survivor's registration afterwards.
-  const survivor = graph._links.get(keepId)
+  const survivor = graph.links.get(keepId)
   if (survivor) registerLinkTopology(graph, survivor)
 }
 
@@ -117,7 +117,7 @@ export function realignInputLinkSlots(
       if (input.link == null) continue
       const serializedId = toLinkId(input.link)
       const linkId = survivorByPurged.get(serializedId) ?? serializedId
-      const link = graph._links.get(linkId)
+      const link = graph.links.get(linkId)
       if (!link || link.target_id !== toNodeId(nodeData.id)) continue
       const slots = referencedSlots.get(link) ?? []
       slots.push(slot)

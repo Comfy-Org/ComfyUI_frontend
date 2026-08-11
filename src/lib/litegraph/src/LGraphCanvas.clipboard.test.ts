@@ -304,7 +304,7 @@ describe('_deserializeItems paste-time migration & auto-expose', () => {
       throw new Error('Expected pasted input link')
     }
 
-    const pastedInputLink = rootGraph._links.get(pastedInputLinkId)
+    const pastedInputLink = rootGraph.links.get(pastedInputLinkId)
     expect(pastedInputLink?.origin_id).toBe(source.id)
     expect(pastedInputLink?.target_id).toBe(pastedTarget.id)
   })
@@ -577,7 +577,7 @@ describe('clipboard reroute id integrity', () => {
     expect(pastedIds).toHaveLength(2)
     expect(new Set([...liveIds, ...pastedIds]).size).toBe(4)
 
-    const [pastedLink] = [...pasted._links.values()]
+    const [pastedLink] = [...pasted.links.values()]
     expect(pastedIds).toContain(pastedLink.parentId)
 
     const store = useRerouteStore()

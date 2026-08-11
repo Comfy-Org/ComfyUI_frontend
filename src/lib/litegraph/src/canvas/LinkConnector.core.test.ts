@@ -57,7 +57,7 @@ const test = baseTest.extend<TestContext>({
     const reroutes = new Map<RerouteId, Reroute>()
 
     await use({
-      links: graph._links,
+      links: graph.links,
       reroutes,
       floatingLinks,
       getLink: graph.getLink.bind(graph),

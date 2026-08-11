@@ -16,8 +16,8 @@ store; shared vocabulary lives in the
 object,
 
 ```
-LinkTopology { id, originNodeId, originSlot, targetNodeId, targetSlot,
-               type, parentId? }
+LinkTopology { id, graphId, originNodeId, originSlot, targetNodeId,
+               targetSlot, type, parentId? }
 ```
 
 backs the link: `LLink._state` holds it, and `id`, `type`, `origin_id`,
@@ -35,9 +35,10 @@ byte-identical round-trips) pin the wire format.
 
 ## Decision 2: Identity ownership with query-specific indexes
 
-`LGraph._links` remains the runtime authority for `LinkId -> LLink` identity.
-The topology store holds an identity-based set of the plain `LinkTopology`
-states accepted by that graph and derives query indexes from it:
+The topology store's root-scoped `byId` map is the sole authority for
+`LinkId -> LinkTopology` identity. `LGraph.links` is an owner-filtered live
+view over that map; `LGraph` does not keep a second link map. Query indexes
+are derived from the authoritative components:
 
 - `targetIndex`, keyed by `` `${targetNodeId}:${targetSlot}` ``, answers
   input-connectivity queries in one lookup. It contains only links whose
@@ -46,33 +47,33 @@ states accepted by that graph and derives query indexes from it:
   output-connectivity queries without scanning the graph.
 
 Floating links and links targeting `SUBGRAPH_OUTPUT_ID` do not have a unique
-target key but still belong to the topology set. The store does not duplicate
-the graph's link-id registry or hold `LLink` class instances.
+target key but still belong to `byId`. The store holds no `LLink` class
+instances; a weak resolver connects each component to its compatibility shell.
 
-Link ids are unique per owning graph, not per root graph. Owner partitioning
-therefore isolates sibling subgraph definitions without rewriting otherwise
-valid ids.
+Link ids are unique across the root graph and all of its subgraph definitions.
+Persisted collisions are remapped before registration, including clipboard
+imports. `graphId` is association data, not part of entity identity.
 
 ## Decision 3: Root-and-owner-scoped bucket lifecycle
 
 Buckets use the shared graph-scoped lifecycle:
 
 ```
-RootGraphId -> OwningGraphId -> GraphTopologyBucket
+RootGraphId -> { byId, idsByOwner, targetIndex, originIndex }
 ```
 
-The root key groups one loaded workflow. The owner key isolates the root graph
-and each subgraph definition within it. Link, reroute, and node-data stores
-share the same lookup, creation, pruning, owner-clear, and root-clear
-lifecycle so their graph ownership cannot drift independently.
+The root key groups one loaded workflow. `byId` is flat; `idsByOwner` is a
+secondary membership index for owner-local iteration and teardown. Slot keys
+include the owner because fixed subgraph boundary node ids are wire sentinels
+shared by every definition.
 
 ## Decision 4: Registration protocol
 
 - `registerLink` returns the store-held reactive `LinkTopology` when
   registration succeeds or the same topology is already registered. It
-  returns `undefined` when another topology owns the target slot. Link-id
-  collisions are rejected by the graph's runtime registry before registration.
-- The topology set is the ownership check for deletion, re-registration, and
+  returns `undefined` when another topology owns the root-wide id or target
+  slot.
+- The `byId` map is the ownership check for deletion, re-registration, and
   endpoint updates. Query indexes never establish ownership.
 - `deleteLink` is **identity-checked** (`toRaw` comparison): only the
   registered topology can vacate its slot.
@@ -89,8 +90,8 @@ lifecycle so their graph ownership cannot drift independently.
 
 ## Decision 5: Mutation chokepoints
 
-All `graph._links` map mutation funnels through `LGraph._addLink` /
-`_removeLink`, which pair the map write with store
+All `graph.links` mutation funnels through its store-backed `LinkMap` and
+`LGraph._addLink` / `_removeLink`, which perform store
 registration/unregistration (and link-layout cleanup on removal).
 `addFloatingLink` / `removeFloatingLink` do the same for the floating
 map. `LLink.disconnect` performs the equivalent effects inline because

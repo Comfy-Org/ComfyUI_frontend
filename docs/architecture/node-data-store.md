@@ -18,25 +18,24 @@ registered by reference with proxy-returning registration (the
 ADR 0008's Node component rows (`NodeVisual`, `Execution`, ...) become
 field groupings inside `NodeState`, not separate records or stores.
 
-Buckets use the same root-and-owner-scoped lifecycle as the link and reroute
-stores:
+The store uses the same flat root-scoped identity model as link and reroute
+components:
 
 ```
-RootGraphId -> OwningGraphId -> Set<NodeState>
+RootGraphId -> { byId, idsByOwner }
 ```
 
-The root key groups one loaded workflow, while the owner key gives the root
-graph and each subgraph definition direct membership lookup and teardown.
-The three stores share bucket lookup, creation, pruning, owner-clear, and
-root-clear mechanics. Node membership remains by state identity, so
-renumbering a registered node cannot strand its entry.
+The root key groups one loaded workflow. `byId` enforces root-wide node
+identity, while `idsByOwner` provides direct owner-local lookup and teardown.
+`graphId` is association data, not an identity namespace. Registered ids are
+immutable; deletion also verifies component identity and owner.
 
 ## Decision 2: Field set — what is NodeState, what is elsewhere
 
 ```
 NodeState {
   id: NodeId
-  graphId: UUID            // owning (sub)graph — partitioning + locator ids
+  graphId: UUID            // owning (sub)graph association + locator ids
   type: string             // identity
   title: string
   titleMode?: TitleMode

@@ -74,6 +74,32 @@ describe('useNodeDataStore', () => {
     expect(store.getGraphNodesFor(rootA, sub)).toEqual([])
     expect(store.getGraphNodesFor(rootA, rootA)).toEqual([rootNode])
   })
+
+  it('rejects a duplicate id without changing either registration', () => {
+    const store = useNodeDataStore()
+    const first = node(1)
+    const duplicate = node(1, 'sub-1')
+
+    const registered = store.registerNode(graphScope(rootA, rootA), first)
+    const rejected = store.registerNode(graphScope(rootA, 'sub-1'), duplicate)
+
+    expect(registered?.id).toBe(first.id)
+    expect(rejected).toBeUndefined()
+    expect(duplicate.graphId).toBe('sub-1')
+    expect(store.getGraphNodesFor(rootA, rootA)).toEqual([registered])
+    expect(store.getGraphNodesFor(rootA, 'sub-1')).toEqual([])
+  })
+
+  it('only deletes the registered identity from its owning graph', () => {
+    const store = useNodeDataStore()
+    const registered = node(1)
+    const impostor = node(1)
+    store.registerNode(graphScope(rootA, rootA), registered)
+
+    expect(store.deleteNode(graphScope(rootA, 'sub-1'), registered)).toBe(false)
+    expect(store.deleteNode(graphScope(rootA, rootA), impostor)).toBe(false)
+    expect(store.getGraphNodesFor(rootA, rootA)).toEqual([registered])
+  })
 })
 
 describe('nodeDataStore registration via LGraph', () => {

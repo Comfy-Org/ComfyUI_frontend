@@ -6,8 +6,9 @@ import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLinkStore } from '@/stores/linkStore'
-import { graphScopeOf } from '@/types/graphScopeId'
+import { graphScopeOf, toOwningGraphId } from '@/types/graphScopeId'
 import type { GraphScope } from '@/types/graphScopeId'
+import { zeroUuid } from '@/utils/uuid'
 import { toLinkId } from '@/types/linkId'
 import { UNASSIGNED_NODE_ID, toNodeId, serializeNodeId } from '@/types/nodeId'
 import { toRerouteId } from '@/types/rerouteId'
@@ -31,6 +32,7 @@ import type {
   ReadonlyLinkNetwork
 } from './interfaces'
 import type { Serialisable, SerialisableLLink } from './types/serialisation'
+import { toRaw } from 'vue'
 
 export type { LinkId } from '@/types/linkId'
 export type SerialisedLLinkArray = [
@@ -41,6 +43,12 @@ export type SerialisedLLinkArray = [
   target_slot: number,
   type: ISlotType
 ]
+
+const linkByTopology = new WeakMap<LinkTopology, LLink>()
+
+export function resolveLinkTopology(topology: LinkTopology): LLink | undefined {
+  return linkByTopology.get(toRaw(topology))
+}
 
 // Resolved connection union; eliminates subgraph in/out as a possibility
 export type ResolvedConnection = BaseResolvedConnection &
@@ -135,7 +143,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
       console.error('LiteGraph: refusing to change a registered link id')
       return
     }
-    this._state.id = value
+    this._state = { ...this._state, id: value }
   }
 
   get type() {
@@ -247,6 +255,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   ) {
     this._state = {
       id,
+      graphId: toOwningGraphId(zeroUuid),
       type,
       originNodeId: toNodeId(origin_id),
       originSlot: origin_slot,
@@ -544,7 +553,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
       network.addFloatingLink(newLink)
     }
 
-    network.links.delete(this.id)
+    if (network.links.get(this.id) === this) network.links.delete(this.id)
     unregisterLinkTopology(this)
     layoutStore.deleteLinkLayout(this.id)
 
@@ -632,6 +641,7 @@ export function registerLinkTopology(
   if (!registered) return false
   link._state = registered
   link._graphScope = scope
+  linkByTopology.set(toRaw(registered), link)
   return true
 }
 

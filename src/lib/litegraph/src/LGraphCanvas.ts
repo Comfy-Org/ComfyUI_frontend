@@ -102,8 +102,10 @@ import { NodeInputSlot } from './node/NodeInputSlot'
 import type { Subgraph } from './subgraph/Subgraph'
 import {
   collectReservedGroupIds,
+  collectReservedLinkIds,
   collectReservedRerouteIds,
   deduplicateSubgraphGroupIds,
+  deduplicateSubgraphLinkIds,
   deduplicateSubgraphRerouteIds,
   topologicalSortSubgraphs
 } from './subgraph/subgraphDeduplication'
@@ -4071,7 +4073,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           for (const { link: linkId } of item.inputs) {
             if (linkId == null) continue
 
-            const link = this.graph?._links.get(linkId)?.asSerialisable()
+            const link = this.graph?.links.get(linkId)?.asSerialisable()
             if (link) serialisable.links.push(link)
           }
         }
@@ -4224,6 +4226,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     deduplicateSubgraphRerouteIds(
       parsed.subgraphs,
       collectReservedRerouteIds(graph.rootGraph),
+      graph.rootGraph.state
+    )
+    deduplicateSubgraphLinkIds(
+      parsed.subgraphs,
+      collectReservedLinkIds(graph.rootGraph),
       graph.rootGraph.state
     )
 
