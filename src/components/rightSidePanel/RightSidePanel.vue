@@ -229,9 +229,6 @@ function isActiveTabAvailable() {
   )
 }
 
-// Use global state for activeTab and ensure it's valid. Deferred scans
-// (e.g. pasted-node missing-model detection) can restore the active tab
-// within the same tick, so re-check before falling back.
 watchEffect(() => {
   if (isActiveTabAvailable()) return
   queueMicrotask(() => {
