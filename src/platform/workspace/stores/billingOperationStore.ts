@@ -684,7 +684,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
           operation: 'downgrade_to_personal',
           stage: 'succeeded',
           outcome: 'success',
-          member_removal_count: operation.downgradeToPersonal.memberRemovalCount,
+          member_removal_count:
+            operation.downgradeToPersonal.memberRemovalCount,
           member_removal_failures:
             operation.downgradeToPersonal.memberRemovalFailures,
           target_tier: operation.downgradeToPersonal.targetTier,
