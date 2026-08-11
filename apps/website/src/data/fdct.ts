@@ -41,7 +41,7 @@ const technologistIdentities = {
   'robert-paige': {
     name: 'Robert Paige',
     avatarSrc:
-      'https://media.comfy.org/website/technologists/robert-paige_v2.png'
+      'https://media.comfy.org/website/technologists/robert-paige_v3.png'
   }
 } as const
 
