@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
+
 const mockDistribution = vi.hoisted(() => ({
   isCloud: true,
   isNightly: false
@@ -16,15 +18,10 @@ vi.mock('vuefire', () => ({
 }))
 
 const COMFY_EMPLOYEE = { email: 'dev@comfy.org', emailVerified: true }
+const STORAGE_KEY = 'Comfy.FeatureFlagOverride'
 
-/**
- * Overrides are captured once per page load, so each case re-imports the module
- * behind a fresh URL.
- */
-async function visit(search: string) {
+function visit(search: string) {
   window.history.replaceState({}, '', search)
-  vi.resetModules()
-  return import('@/utils/sessionFeatureFlagOverride')
 }
 
 describe('getSessionOverride', () => {
@@ -39,68 +36,81 @@ describe('getSessionOverride', () => {
     vi.restoreAllMocks()
   })
 
-  it('reads a bare flag as boolean true', async () => {
-    const { getSessionOverride } = await visit('/?ff=onboarding_tour_enabled')
+  it('reads a bare flag as boolean true', () => {
+    visit('/?ff=onboarding_tour_enabled')
 
     expect(getSessionOverride('onboarding_tour_enabled')).toBe(true)
   })
 
-  it('parses an explicit boolean rather than a truthy string', async () => {
-    const { getSessionOverride } = await visit(
-      '/?ff=onboarding_tour_enabled:false'
-    )
+  it('parses an explicit boolean rather than a truthy string', () => {
+    visit('/?ff=onboarding_tour_enabled:false')
 
     expect(getSessionOverride('onboarding_tour_enabled')).toBe(false)
   })
 
-  it('carries a string value for multivariate flags', async () => {
-    const { getSessionOverride } = await visit('/?ff=signup_turnstile:enforce')
+  it('carries a string value for multivariate flags', () => {
+    visit('/?ff=signup_turnstile:enforce')
 
     expect(getSessionOverride('signup_turnstile')).toBe('enforce')
   })
 
-  it('keeps colons inside a string value', async () => {
-    const { getSessionOverride } = await visit('/?ff=signup_turnstile:a:b')
+  it('keeps colons inside a string value', () => {
+    visit('/?ff=signup_turnstile:a:b')
 
     expect(getSessionOverride('signup_turnstile')).toBe('a:b')
   })
 
-  it('applies every flag in a repeated query param', async () => {
-    const { getSessionOverride } = await visit(
-      '/?ff=workflow_sharing_enabled&ff=signup_turnstile:shadow'
-    )
+  it('applies every flag in a repeated query param', () => {
+    visit('/?ff=workflow_sharing_enabled&ff=signup_turnstile:shadow')
 
     expect(getSessionOverride('workflow_sharing_enabled')).toBe(true)
     expect(getSessionOverride('signup_turnstile')).toBe('shadow')
   })
 
-  it('returns undefined for a flag nobody requested', async () => {
-    const { getSessionOverride } = await visit('/?ff=onboarding_tour_enabled')
+  it('returns undefined for a flag nobody requested', () => {
+    visit('/?ff=onboarding_tour_enabled')
 
     expect(getSessionOverride('workflow_sharing_enabled')).toBeUndefined()
   })
 
-  it('survives navigation away from the ?ff= URL', async () => {
-    const first = await visit('/?ff=onboarding_tour_enabled')
-    expect(first.getSessionOverride('onboarding_tour_enabled')).toBe(true)
+  it('survives navigation away from the ?ff= URL', () => {
+    visit('/?ff=onboarding_tour_enabled')
+    expect(getSessionOverride('onboarding_tour_enabled')).toBe(true)
 
-    const { getSessionOverride } = await visit('/some/other/page')
+    visit('/some/other/page')
     expect(getSessionOverride('onboarding_tour_enabled')).toBe(true)
   })
 
-  it('clears every override for the session on a nameless ?ff=', async () => {
-    const first = await visit('/?ff=onboarding_tour_enabled')
-    expect(first.getSessionOverride('onboarding_tour_enabled')).toBe(true)
+  it('clears every override for the session on a nameless ?ff=', () => {
+    visit('/?ff=onboarding_tour_enabled')
+    expect(getSessionOverride('onboarding_tour_enabled')).toBe(true)
 
-    const { getSessionOverride } = await visit('/?ff=')
+    visit('/?ff=')
     expect(getSessionOverride('onboarding_tour_enabled')).toBeUndefined()
-    expect(sessionStorage.getItem('Comfy.FeatureFlagOverride')).toBeNull()
+  })
+
+  it('warns once per URL no matter how often a flag is read', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    visit('/?ff=bogus_flag_name')
+
+    getSessionOverride('onboarding_tour_enabled')
+    getSessionOverride('onboarding_tour_enabled')
+    getSessionOverride('signup_turnstile')
+
+    expect(warn).toHaveBeenCalledTimes(1)
+  })
+
+  it('leaves storage untouched for a session that never asks for an override', () => {
+    visit('/?unrelated=1')
+
+    expect(getSessionOverride('onboarding_tour_enabled')).toBeUndefined()
+    expect(sessionStorage.getItem(STORAGE_KEY)).toBeNull()
   })
 
   describe('rejected requests', () => {
-    it('ignores a flag that has not opted in', async () => {
+    it('ignores a flag that has not opted in', () => {
       const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-      const { getSessionOverride } = await visit('/?ff=unified_cloud_auth')
+      visit('/?ff=unified_cloud_auth')
 
       expect(getSessionOverride('unified_cloud_auth')).toBeUndefined()
       expect(warn).toHaveBeenCalledWith(
@@ -108,11 +118,9 @@ describe('getSessionOverride', () => {
       )
     })
 
-    it('ignores a value that is not valid for the declared type', async () => {
+    it('ignores a value that is not valid for the declared type', () => {
       const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-      const { getSessionOverride } = await visit(
-        '/?ff=onboarding_tour_enabled:yes'
-      )
+      visit('/?ff=onboarding_tour_enabled:yes')
 
       expect(getSessionOverride('onboarding_tour_enabled')).toBeUndefined()
       expect(warn).toHaveBeenCalledWith(
@@ -121,24 +129,34 @@ describe('getSessionOverride', () => {
       )
     })
 
-    it('ignores a string flag requested without a value', async () => {
-      const { getSessionOverride } = await visit('/?ff=signup_turnstile')
+    it('ignores a string flag requested without a value', () => {
+      visit('/?ff=signup_turnstile')
 
       expect(getSessionOverride('signup_turnstile')).toBeUndefined()
     })
 
-    it('ignores hand-written sessionStorage entries', async () => {
+    it('ignores hand-written sessionStorage entries', () => {
       sessionStorage.setItem(
-        'Comfy.FeatureFlagOverride',
+        STORAGE_KEY,
         JSON.stringify({
-          unified_cloud_auth: true,
-          onboarding_tour_enabled: 'not-a-boolean'
+          search: '',
+          overrides: {
+            unified_cloud_auth: true,
+            onboarding_tour_enabled: 'not-a-boolean'
+          }
         })
       )
-      const { getSessionOverride } = await visit('/')
+      visit('/')
 
       expect(getSessionOverride('unified_cloud_auth')).toBeUndefined()
       expect(getSessionOverride('onboarding_tour_enabled')).toBeUndefined()
+    })
+
+    it('ignores a corrupt storage payload', () => {
+      sessionStorage.setItem(STORAGE_KEY, 'not json')
+      visit('/?ff=onboarding_tour_enabled')
+
+      expect(getSessionOverride('onboarding_tour_enabled')).toBe(true)
     })
   })
 
@@ -161,30 +179,36 @@ describe('getSessionOverride', () => {
 
     it.for(blockedIdentities)(
       'withholds the override for %s',
-      async ([, currentUser]) => {
+      ([, currentUser]) => {
         mockCurrentUser.value = currentUser
-        const { getSessionOverride } = await visit(
-          '/?ff=onboarding_tour_enabled'
-        )
+        visit('/?ff=onboarding_tour_enabled')
 
         expect(getSessionOverride('onboarding_tour_enabled')).toBeUndefined()
       }
     )
 
-    it('applies the override once auth resolves mid-session', async () => {
+    it('applies the override once auth resolves mid-session', () => {
       mockCurrentUser.value = undefined
-      const { getSessionOverride } = await visit('/?ff=onboarding_tour_enabled')
+      visit('/?ff=onboarding_tour_enabled')
       expect(getSessionOverride('onboarding_tour_enabled')).toBeUndefined()
 
       mockCurrentUser.value = COMFY_EMPLOYEE
       expect(getSessionOverride('onboarding_tour_enabled')).toBe(true)
     })
 
-    it('withholds the override outside the cloud distribution', async () => {
+    it('accepts a verified address regardless of case', () => {
+      mockCurrentUser.value = { email: 'Dev@Comfy.org', emailVerified: true }
+      visit('/?ff=onboarding_tour_enabled')
+
+      expect(getSessionOverride('onboarding_tour_enabled')).toBe(true)
+    })
+
+    it('withholds the override outside the cloud distribution', () => {
       mockDistribution.isCloud = false
-      const { getSessionOverride } = await visit('/?ff=onboarding_tour_enabled')
+      visit('/?ff=onboarding_tour_enabled')
 
       expect(getSessionOverride('onboarding_tour_enabled')).toBeUndefined()
+      expect(sessionStorage.getItem(STORAGE_KEY)).toBeNull()
     })
   })
 })

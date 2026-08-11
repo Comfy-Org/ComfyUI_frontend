@@ -81,40 +81,58 @@ function parseOverrideValue(
   return undefined
 }
 
-function readStoredOverrides(): OverrideMap {
+/**
+ * The captured overrides plus the query string they came from. Remembering the
+ * source makes capture idempotent: re-reading the same URL neither re-warns nor
+ * rewrites, so a flag can be read as often as a render needs.
+ */
+type StoredState = { search: string; overrides: OverrideMap }
+
+function emptyState(): StoredState {
+  return { search: '', overrides: {} }
+}
+
+function coerceStoredOverrides(value: unknown): OverrideMap {
+  if (typeof value !== 'object' || value === null) return {}
+
+  const overrides: OverrideMap = {}
+  for (const [name, entry] of Object.entries(value)) {
+    if (!isOverridableFlag(name)) continue
+    if (typeof entry !== 'boolean' && typeof entry !== 'string') continue
+    if (typeof entry !== OVERRIDABLE_FEATURE_FLAGS[name]) continue
+    overrides[name] = entry
+  }
+  return overrides
+}
+
+function readStoredState(): StoredState {
   let raw: string | null
   try {
     raw = sessionStorage.getItem(STORAGE_KEY)
   } catch {
-    return {}
+    return emptyState()
   }
-  if (!raw) return {}
+  if (!raw) return emptyState()
 
   let parsed: unknown
   try {
     parsed = JSON.parse(raw)
   } catch {
-    return {}
+    return emptyState()
   }
-  if (typeof parsed !== 'object' || parsed === null) return {}
+  if (typeof parsed !== 'object' || parsed === null) return emptyState()
 
-  const overrides: OverrideMap = {}
-  for (const [name, value] of Object.entries(parsed)) {
-    if (!isOverridableFlag(name)) continue
-    if (typeof value !== 'boolean' && typeof value !== 'string') continue
-    if (typeof value !== OVERRIDABLE_FEATURE_FLAGS[name]) continue
-    overrides[name] = value
+  const search = 'search' in parsed ? parsed.search : undefined
+  const overrides = 'overrides' in parsed ? parsed.overrides : undefined
+  return {
+    search: typeof search === 'string' ? search : '',
+    overrides: coerceStoredOverrides(overrides)
   }
-  return overrides
 }
 
-function writeStoredOverrides(overrides: OverrideMap): void {
+function writeStoredState(state: StoredState): void {
   try {
-    if (Object.keys(overrides).length === 0) {
-      sessionStorage.removeItem(STORAGE_KEY)
-      return
-    }
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(overrides))
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state))
   } catch {
     console.warn('[ff] Failed to persist session feature flag overrides')
   }
@@ -126,21 +144,25 @@ function splitRequest(request: string): [name: string, value?: string] {
   return [request.slice(0, separator), request.slice(separator + 1)]
 }
 
+function readOverrideRequests(search: string): string[] {
+  try {
+    return new URLSearchParams(search).getAll(QUERY_PARAM)
+  } catch {
+    return []
+  }
+}
+
 /**
  * Merges `?ff=` requests from the current URL into the overrides already held
  * for this tab. An `?ff=` with no name clears every override in the session.
  */
-function captureUrlOverrides(stored: OverrideMap): OverrideMap {
-  let requests: string[]
-  try {
-    requests = new URLSearchParams(window.location.search).getAll(QUERY_PARAM)
-  } catch {
-    return stored
-  }
-  if (requests.length === 0) return stored
-
+function captureRequests(
+  requests: string[],
+  stored: OverrideMap,
+  search: string
+): OverrideMap {
   if (requests.includes('')) {
-    writeStoredOverrides({})
+    writeStoredState({ search, overrides: {} })
     return {}
   }
 
@@ -165,15 +187,19 @@ function captureUrlOverrides(stored: OverrideMap): OverrideMap {
     overrides[name] = value
   }
 
-  writeStoredOverrides(overrides)
+  writeStoredState({ search, overrides })
   return overrides
 }
 
-let sessionOverrides: OverrideMap | undefined
-
 function loadSessionOverrides(): OverrideMap {
-  sessionOverrides ??= captureUrlOverrides(readStoredOverrides())
-  return sessionOverrides
+  const stored = readStoredState()
+  const search = window.location.search
+  if (search === stored.search) return stored.overrides
+
+  const requests = readOverrideRequests(search)
+  if (requests.length === 0) return stored.overrides
+
+  return captureRequests(requests, stored.overrides, search)
 }
 
 /**
