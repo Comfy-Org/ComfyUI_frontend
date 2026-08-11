@@ -356,6 +356,22 @@ describe('WidgetSelectDefault', () => {
       ).toHaveAttribute('data-capture-wheel', 'true')
     })
 
+    it('treats a null value like no selection instead of an invalid value', () => {
+      renderComponent(createWidget(['a', 'b']), null)
+
+      const trigger = screen.getByTestId('widget-select-default-trigger')
+      expect(trigger).not.toHaveAttribute('aria-invalid')
+      expect(trigger).not.toHaveTextContent('null')
+    })
+
+    it('does not render "null" while the option list is still empty', () => {
+      renderComponent(createWidget([]), null)
+
+      const trigger = screen.getByTestId('widget-select-default-trigger')
+      expect(trigger).not.toHaveTextContent('null')
+      expect(trigger).not.toHaveAttribute('aria-invalid')
+    })
+
     it('shows invalid current values as the trigger label', () => {
       renderComponent(createWidget(['a', 'b']), 'missing')
 
