@@ -32,6 +32,13 @@ test.describe('shared custom-node session pure contracts', () => {
     ).not.toThrow()
   })
 
+  test('treats the persistent context initial page as unbooted', async ({
+    page
+  }) => {
+    expect(page.url()).toBe('about:blank')
+    await expect(readSharedCustomNodeSession(page)).resolves.toBeNull()
+  })
+
   test('rejects missing, incomplete, repeated, and unidentified boots', () => {
     expect(() => assertSharedCustomNodeSession(null)).toThrow(
       'application boot is unavailable'

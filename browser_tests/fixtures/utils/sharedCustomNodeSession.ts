@@ -61,6 +61,7 @@ export async function installSharedCustomNodeBootProbe(
 export function readSharedCustomNodeSession(
   page: Page
 ): Promise<SharedCustomNodeSessionState | null> {
+  if (!/^https?:/.test(page.url())) return Promise.resolve(null)
   return page.evaluate((stateKey) => {
     const stored = sessionStorage.getItem(stateKey)
     if (!stored) return null
