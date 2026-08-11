@@ -129,30 +129,27 @@ export const useWorkflowService = () => {
 
   /**
    * Export the current workflow as a JSON file
-   * @param filename The filename to save the workflow as
+   * @param defaultFilename The default filename to save the workflow as
    * @param promptProperty The property of the prompt to export
+   * @param options.filename Pre-supplied filename (skips the prompt dialog)
    */
   const exportWorkflow = async (
-    filename: string,
+    defaultFilename: string,
     promptProperty: 'workflow' | 'output',
-    options: {
-      useWorkflowFilename?: boolean
-      promptFilename?: boolean
-    } = {}
+    options: { filename?: string } = {}
   ): Promise<void> => {
     const workflow = workflowStore.activeWorkflow
-    if (options.useWorkflowFilename !== false && workflow?.path) {
-      filename = workflow.filename
-    }
+    const filename =
+      options.filename ?? (workflow?.path ? workflow.filename : defaultFilename)
     const p = await app.graphToPrompt()
 
     addViewRestore(p.workflow)
     const json = JSON.stringify(p[promptProperty], null, 2)
     const blob = new Blob([json], { type: 'application/json' })
     const file =
-      options.promptFilename === false
-        ? appendJsonExt(filename)
-        : await getFilename(filename)
+      options.filename === undefined
+        ? await getFilename(filename)
+        : appendJsonExt(filename)
     if (!file) return
     downloadBlob(file, blob)
   }

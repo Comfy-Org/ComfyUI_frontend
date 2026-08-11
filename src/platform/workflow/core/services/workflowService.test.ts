@@ -293,52 +293,19 @@ describe('useWorkflowService', () => {
       )
     })
 
-    it('adds the JSON extension without prompting when requested', async () => {
+    it('uses a supplied filename without prompting', async () => {
       const workflowStore = useWorkflowStore()
       workflowStore.activeWorkflow = createModeTestWorkflow({
         path: 'workflows/current.json'
       })
 
-      await useWorkflowService().exportWorkflow('renamed', 'output', {
-        useWorkflowFilename: false,
-        promptFilename: false
+      await useWorkflowService().exportWorkflow('workflow_api', 'output', {
+        filename: 'renamed'
       })
 
       expect(mockPrompt).not.toHaveBeenCalled()
       expect(mockDownloadBlob).toHaveBeenCalledWith(
         'renamed.json',
-        expect.any(Blob)
-      )
-    })
-
-    it('appends the JSON extension to a prompted filename', async () => {
-      mockPrompt.mockResolvedValue('renamed')
-
-      await useWorkflowService().exportWorkflow('workflow_api.json', 'output', {
-        promptFilename: true
-      })
-
-      expect(mockPrompt).toHaveBeenCalled()
-      expect(mockDownloadBlob).toHaveBeenCalledWith(
-        'renamed.json',
-        expect.any(Blob)
-      )
-    })
-
-    it('uses the active workflow filename by default', async () => {
-      const workflowStore = useWorkflowStore()
-      workflowStore.activeWorkflow = createModeTestWorkflow({
-        path: 'workflows/current.json'
-      })
-      mockPrompt.mockResolvedValue('current')
-
-      await useWorkflowService().exportWorkflow('supplied.json', 'output')
-
-      expect(mockPrompt).toHaveBeenCalledWith(
-        expect.objectContaining({ defaultValue: 'current' })
-      )
-      expect(mockDownloadBlob).toHaveBeenCalledWith(
-        'current.json',
         expect.any(Blob)
       )
     })

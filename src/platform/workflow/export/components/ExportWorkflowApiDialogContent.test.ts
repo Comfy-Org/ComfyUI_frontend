@@ -120,9 +120,9 @@ describe('ExportWorkflowApiDialogContent', () => {
     )
 
     expect(mockWorkflowService.exportWorkflow).toHaveBeenCalledWith(
-      'image_flux2.json',
+      'workflow_api',
       'output',
-      { useWorkflowFilename: false, promptFilename: false }
+      { filename: 'image_flux2.json' }
     )
     expect(onClose).toHaveBeenCalledOnce()
   })

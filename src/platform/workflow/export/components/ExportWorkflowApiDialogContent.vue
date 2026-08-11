@@ -38,9 +38,8 @@ function downloadWorkflow() {
   normalizeWorkflowBaseName()
   isDownloading.value = true
   void workflowService
-    .exportWorkflow(exportFilename.value, 'output', {
-      useWorkflowFilename: false,
-      promptFilename: false
+    .exportWorkflow('workflow_api', 'output', {
+      filename: exportFilename.value
     })
     .then(onClose)
     .catch(toastErrorHandler)
