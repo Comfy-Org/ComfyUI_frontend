@@ -1,3 +1,4 @@
+import { parseQuery } from 'vue-router'
 import { useCurrentUser } from 'vuefire'
 
 import { isCloud } from '@/platform/distribution/types'
@@ -103,11 +104,9 @@ function splitRequest(request: string): [name: string, value?: string] {
 }
 
 function readOverrideRequests(search: string): string[] {
-  try {
-    return new URLSearchParams(search).getAll(QUERY_PARAM)
-  } catch {
-    return []
-  }
+  const value = parseQuery(search)[QUERY_PARAM]
+  if (value === undefined) return []
+  return (Array.isArray(value) ? value : [value]).map((value) => value ?? '')
 }
 
 /**
