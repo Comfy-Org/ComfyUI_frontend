@@ -1,4 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type {
+  RouteRecordSingleView,
+  RouteRecordSingleViewWithChildren
+} from 'vue-router'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 import {
@@ -52,10 +56,18 @@ describe('cloudOnboardingRoutes', () => {
       (route) => route.path === '/login'
     )
     const cloudLayoutRoute = cloudOnboardingRoutes.find(
-      (route) => route.path === '/cloud'
+      (route): route is RouteRecordSingleViewWithChildren =>
+        route.path === '/cloud' &&
+        'component' in route &&
+        'children' in route &&
+        !('components' in route)
     )
     const cloudLoginRoute = cloudLayoutRoute?.children?.find(
-      (route) => route.name === 'cloud-login'
+      (route): route is RouteRecordSingleView =>
+        route.name === 'cloud-login' &&
+        'component' in route &&
+        !('children' in route) &&
+        !('components' in route)
     )
     expect(legacyLoginRoute).toBeDefined()
     expect(cloudLayoutRoute).toBeDefined()
