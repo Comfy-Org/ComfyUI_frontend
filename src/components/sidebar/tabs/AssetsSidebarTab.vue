@@ -529,7 +529,8 @@ async function ensureGeneratedMediaResults() {
     activeTab.value !== 'output' ||
     isInFolderView.value ||
     generatedMediaKind.value === 'all' ||
-    loading.value
+    loading.value ||
+    outputAssets.isLoadingMore.value
   ) {
     return
   }
