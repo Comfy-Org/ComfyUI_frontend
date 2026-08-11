@@ -181,8 +181,7 @@ export const seedancePage: ModelLaunchPage = {
       labelKey: 'seedance.hero.secondaryCta',
       href: externalLinks.workflows,
       target: '_blank'
-    },
-    footnoteKey: 'seedance.hero.footnote'
+    }
   },
   gallery: {
     headingKey: 'seedance.models.heading',
