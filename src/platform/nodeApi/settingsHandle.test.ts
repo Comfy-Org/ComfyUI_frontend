@@ -89,4 +89,35 @@ describe('pack settings', () => {
   it('returns undefined for a setting nobody declared', () => {
     expect(settings.get('KJNodes.neverDeclared')).toBeUndefined()
   })
+
+  it('keeps a stored value that is not its own label', () => {
+    // Several packs store a semantic number and show words for it, then
+    // compare numerically (`showlinks > 0`). A string-only option list would
+    // silently re-type every user's saved choice.
+    settings.declare({
+      id: 'UE.showlinks',
+      name: 'Show links',
+      type: 'combo',
+      defaultValue: 0,
+      options: [
+        { value: 0, label: 'off' },
+        { value: 1, label: 'selected' },
+        { value: 2, label: 'all' }
+      ]
+    })
+
+    expect(settings.get('UE.showlinks')).toBe(0)
+  })
+
+  it('passes slider bounds through', () => {
+    settings.declare({
+      id: 'MyPack.size',
+      name: 'Size',
+      type: 'slider',
+      defaultValue: 5,
+      attrs: { min: 1, max: 10, step: 1 }
+    })
+
+    expect(settings.get('MyPack.size')).toBe(5)
+  })
 })
