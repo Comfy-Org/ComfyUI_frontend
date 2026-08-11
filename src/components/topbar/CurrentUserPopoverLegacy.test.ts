@@ -80,6 +80,7 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     subscription: mockSubscription,
     balance: mockBalance,
     isLoading: mockIsLoading,
+    isTeamPlan: ref(false),
     fetchStatus: mockFetchStatus,
     fetchBalance: mockFetchBalance
   }))
@@ -165,7 +166,7 @@ describe('CurrentUserPopoverLegacy', () => {
     mockIsLoading.value = false
   })
 
-  function renderComponent() {
+  function renderComponent(teamWorkspaceState?: Record<string, unknown>) {
     const i18n = createI18n({
       legacy: false,
       locale: 'en',
@@ -176,7 +177,15 @@ describe('CurrentUserPopoverLegacy', () => {
 
     render(CurrentUserPopoverLegacy, {
       global: {
-        plugins: [i18n, createTestingPinia({ createSpy: vi.fn })],
+        plugins: [
+          i18n,
+          createTestingPinia({
+            createSpy: vi.fn,
+            initialState: teamWorkspaceState
+              ? { teamWorkspace: teamWorkspaceState }
+              : {}
+          })
+        ],
         stubs: {
           Divider: true
         }
@@ -530,6 +539,60 @@ describe('CurrentUserPopoverLegacy', () => {
     it('still shows logout menu item', () => {
       renderComponent()
       expect(screen.getByTestId('logout-menu-item')).toBeInTheDocument()
+    })
+  })
+
+  describe('workspace selector (non-cloud)', () => {
+    const workspace = (overrides: Record<string, unknown>) => ({
+      isSubscribed: false,
+      subscriptionPlan: null,
+      subscriptionTier: null,
+      members: [],
+      pendingInvites: [],
+      ...overrides
+    })
+
+    const readyWorkspaceState = {
+      initState: 'ready',
+      activeWorkspaceId: 'ws-personal',
+      isFetchingWorkspaces: false,
+      workspaces: [
+        workspace({
+          id: 'ws-personal',
+          name: 'Personal Workspace',
+          type: 'personal',
+          role: 'owner'
+        }),
+        workspace({
+          id: 'ws-team',
+          name: 'Team Comfy',
+          type: 'team',
+          role: 'member'
+        })
+      ]
+    }
+
+    beforeEach(() => {
+      mockIsCloud.value = false
+    })
+
+    it('stays hidden while the workspace store is not hydrated', () => {
+      renderComponent()
+
+      expect(screen.queryByTestId('workspace-switcher-trigger')).toBeNull()
+    })
+
+    it('shows the trigger and opens the switcher once the store is ready', async () => {
+      const { user } = renderComponent(readyWorkspaceState)
+
+      const trigger = screen.getByTestId('workspace-switcher-trigger')
+      expect(trigger).toHaveAttribute('aria-expanded', 'false')
+      expect(screen.queryByTestId('workspace-switcher-panel')).toBeNull()
+
+      await user.click(trigger)
+
+      expect(screen.getByTestId('workspace-switcher-panel')).toBeInTheDocument()
+      expect(trigger).toHaveAttribute('aria-expanded', 'true')
     })
   })
 })

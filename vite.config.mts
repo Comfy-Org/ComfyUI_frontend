@@ -165,7 +165,8 @@ const cloudProxyConfig =
 // against a local ComfyUI backend, set WORKSPACE_DEV_PROXY (e.g.
 // https://cloud.comfy.org) to route them there so the workspace switcher can
 // be exercised; everything else keeps hitting DEV_SERVER_COMFYUI_URL.
-const WORKSPACE_DEV_PROXY = process.env.WORKSPACE_DEV_PROXY
+const WORKSPACE_DEV_PROXY =
+  DISTRIBUTION !== 'cloud' ? process.env.WORKSPACE_DEV_PROXY : undefined
 const workspaceDevProxyConfig = WORKSPACE_DEV_PROXY
   ? Object.fromEntries(
       [
@@ -176,7 +177,7 @@ const workspaceDevProxyConfig = WORKSPACE_DEV_PROXY
         '/api/auth/session'
       ].map((route) => [
         route,
-        { target: WORKSPACE_DEV_PROXY, secure: false, changeOrigin: true }
+        { target: WORKSPACE_DEV_PROXY, secure: true, changeOrigin: true }
       ])
     )
   : {}

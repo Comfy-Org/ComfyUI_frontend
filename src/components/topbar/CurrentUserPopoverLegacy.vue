@@ -32,9 +32,11 @@
 
     <!-- Workspace Selector -->
     <div v-if="showWorkspaceSwitcher" class="relative">
-      <div
+      <Button
         v-tooltip="{ value: workspaceName, showDelay: 300 }"
-        class="flex cursor-pointer items-center justify-between rounded-lg px-4 py-2 hover:bg-secondary-background-hover"
+        variant="muted-textonly"
+        class="flex h-auto w-full items-center justify-between rounded-lg px-4 py-2 hover:bg-secondary-background-hover"
+        :aria-expanded="isWorkspaceSwitcherOpen"
         data-testid="workspace-switcher-trigger"
         @click="isWorkspaceSwitcherOpen = !isWorkspaceSwitcherOpen"
       >
@@ -48,7 +50,7 @@
           </span>
         </div>
         <i class="pi pi-chevron-down shrink-0 text-sm text-muted-foreground" />
-      </div>
+      </Button>
 
       <div
         v-if="isWorkspaceSwitcherOpen"
@@ -89,7 +91,7 @@
         {{ $t('subscription.upgradeToAddCredits') }}
       </Button>
       <Button
-        v-else-if="canAccessSubscriptionFeatures"
+        v-else-if="showAddCredits"
         variant="secondary"
         size="sm"
         class="text-base-foreground"
@@ -209,6 +211,7 @@ import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDi
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import WorkspaceSwitcherPopover from '@/platform/workspace/components/WorkspaceSwitcherPopover.vue'
 import { useWorkspaceTierLabel } from '@/platform/workspace/composables/useWorkspaceTierLabel'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
 
@@ -242,6 +245,13 @@ const { initState, workspaces, workspaceName } = storeToRefs(
 const isWorkspaceSwitcherOpen = ref(false)
 const showWorkspaceSwitcher = computed(
   () => initState.value === 'ready' && workspaces.value.length > 0
+)
+
+const { permissions } = useWorkspaceUI()
+const showAddCredits = computed(
+  () =>
+    canAccessSubscriptionFeatures.value &&
+    (!showWorkspaceSwitcher.value || permissions.value.canTopUp)
 )
 
 const subscriptionTierName = computed(() =>
