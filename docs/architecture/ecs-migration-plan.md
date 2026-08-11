@@ -948,6 +948,14 @@ current implementation:
   graph queries. In the current contract, callers normally use the root graph
   for the bucket and the node's direct owner for the query key; these IDs are
   the same for root-owned nodes.
+- Defer a persistent root-wide group ID index until profiling shows it is
+  warranted. `LGraph.add()` currently scans root and subgraph groups for each
+  group insertion, which can make loading G groups take quadratic time. A
+  `Set` per insertion has the same asymptotic cost, while a persistent index
+  duplicates lifecycle state. Measure representative large workflow load,
+  deserialization, paste, and unpack paths first. If the scan has material
+  impact, evaluate a root-scoped identity index or a high-water allocator whose
+  import boundaries account for every existing group ID.
 
 ---
 
