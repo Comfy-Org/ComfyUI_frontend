@@ -11,7 +11,7 @@ import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 import { toRerouteId } from '@/types/rerouteId'
 import { NodeSlotType } from './types/globalEnums'
 
-import { registerLinkTopology } from './LLink'
+import { registerLinkTopology, resolveLinkTopology } from './LLink'
 import {
   createTestSubgraph,
   createTestSubgraphNode
@@ -356,6 +356,35 @@ describe('LLink ↔ linkStore integration', () => {
     graph.clear()
 
     expect(store.isInputSlotConnected(graphId, b.id, 0)).toBe(false)
+  })
+
+  it('detaches root links when the graph is cleared', () => {
+    const graph = new LGraph()
+    const a = new LGraphNode('A')
+    const b = new LGraphNode('B')
+    a.addOutput('out', 'INT')
+    b.addInput('in', 'INT')
+    graph.add(a)
+    graph.add(b)
+    const link = a.connect(0, b, 0)!
+    const floating = new LLink(
+      toLinkId(7),
+      '*',
+      a.id,
+      0,
+      UNASSIGNED_NODE_ID,
+      -1
+    )
+    graph.addFloatingLink(floating)
+    const linkState = link._state
+    const floatingState = floating._state
+
+    graph.clear()
+
+    expect(link._graphScope).toBeUndefined()
+    expect(floating._graphScope).toBeUndefined()
+    expect(resolveLinkTopology(linkState)).toBeUndefined()
+    expect(resolveLinkTopology(floatingState)).toBeUndefined()
   })
 
   it('detaches a floating link from the store when it is removed', () => {

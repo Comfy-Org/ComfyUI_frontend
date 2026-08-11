@@ -372,6 +372,7 @@ export class LGraph
    * ```
    */
   links: Map<LinkId, LLink> & Record<LinkId, LLink>
+  readonly floatingLinks: ReadonlyMap<LinkId, LLink>
   list_of_graphcanvas: LGraphCanvas[] | null
   status: number = LGraph.STATUS_STOPPED
 
@@ -431,11 +432,6 @@ export class LGraph
     for (const group of this._groups) yield group
     for (const reroute of this.reroutes.values()) yield reroute
     return
-  }
-
-  private readonly floatingLinksInternal: Map<LinkId, LLink> = new Map()
-  get floatingLinks(): ReadonlyMap<LinkId, LLink> {
-    return this.floatingLinksInternal
   }
 
   private readonly reroutesInternal = new Map<RerouteId, Reroute>()
@@ -498,7 +494,8 @@ export class LGraph
         getActivePinia() && this.rootGraph ? graphScopeOf(this) : undefined,
       (scope, id) => {
         const topology = useLinkStore().getTopology(scope.rootGraphId, id)
-        return topology?.graphId === scope.owningGraphId
+        return topology?.graphId === scope.owningGraphId &&
+          !isFloatingTopology(topology)
           ? resolveLinkTopology(topology)
           : undefined
       },
@@ -517,6 +514,30 @@ export class LGraph
     this.links = new Proxy(links, handler) as Map<LinkId, LLink> &
       Record<LinkId, LLink>
 
+    this.floatingLinks = new LinkMap(
+      () =>
+        getActivePinia() && this.rootGraph ? graphScopeOf(this) : undefined,
+      (scope, id) => {
+        const topology = useLinkStore().getTopology(scope.rootGraphId, id)
+        return topology?.graphId === scope.owningGraphId &&
+          isFloatingTopology(topology)
+          ? resolveLinkTopology(topology)
+          : undefined
+      },
+      (scope) =>
+        [...useLinkStore().graphTopologies(scope)]
+          .filter(isFloatingTopology)
+          .map(resolveLinkTopology)
+          .filter((link): link is LLink => link !== undefined),
+      (link) => this.addFloatingLink(link),
+      (id) => {
+        const link = this.floatingLinks.get(id)
+        if (!link) return false
+        this.removeFloatingLink(link)
+        return true
+      }
+    )
+
     this.list_of_graphcanvas = null
     this.clear()
 
@@ -530,8 +551,15 @@ export class LGraph
     this.stop()
     this.status = LGraph.STATUS_STOPPED
 
+    if (this._nodes) {
+      for (const node of this._nodes) fireNodeRemovalLifecycle(node)
+    }
+
     const graphId = this.id
     if (this.isRootGraph && graphId !== zeroUuid) {
+      for (const graph of [this, ...this._subgraphs.values()]) {
+        unregisterAllLinkTopologies(graph)
+      }
       usePreviewExposureStore().clearGraph(graphId)
       useWidgetValueStore().clearGraph(graphId)
       useLinkStore().clearGraph(toRootGraphId(graphId))
@@ -556,13 +584,6 @@ export class LGraph
     this._version = -1
     this._subgraphs.clear()
 
-    // safe clear
-    if (this._nodes) {
-      for (const _node of this._nodes) {
-        fireNodeRemovalLifecycle(_node)
-      }
-    }
-
     // nodes
     this._nodes = []
     this._nodes_by_id = {}
@@ -572,7 +593,6 @@ export class LGraph
     this._nodes_executable = null
 
     this.reroutes.clear()
-    this.floatingLinksInternal.clear()
 
     // other scene stuff
     this._groups = []
@@ -1558,13 +1578,11 @@ export class LGraph
 
     if (!registerLinkTopology(this, link)) return
     observeLinkId(this.state, link.id)
-    this.floatingLinksInternal.set(link.id, link)
     return link
   }
 
   removeFloatingLink(link: LLink): void {
-    if (this.floatingLinksInternal.get(link.id) !== link) return
-    this.floatingLinksInternal.delete(link.id)
+    if (this.floatingLinks.get(link.id) !== link) return
     unregisterLinkTopology(link)
 
     const reroutes = LLink.getReroutes(this, link)
@@ -2750,7 +2768,7 @@ export class LGraph
           const floatingLink = LLink.create(linkData)
           if (
             this.links.has(floatingLink.id) ||
-            this.floatingLinksInternal.has(floatingLink.id)
+            this.floatingLinks.has(floatingLink.id)
           ) {
             floatingLink.id = toLinkId(-1)
           }

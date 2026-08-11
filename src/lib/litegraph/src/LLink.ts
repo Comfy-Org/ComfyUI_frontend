@@ -687,6 +687,7 @@ function adoptLinkTopology(
 export function unregisterLinkTopology(link: LLink): void {
   if (!link._graphScope) return
   useLinkStore().deleteLink(link._graphScope, link._state)
+  linkByTopology.delete(toRaw(link._state))
   link._graphScope = undefined
 }
 
@@ -699,6 +700,10 @@ export function unregisterLinkTopology(link: LLink): void {
 export function unregisterAllLinkTopologies(
   graph: Pick<LGraph, 'links' | 'floatingLinks'>
 ): void {
-  for (const link of graph.links.values()) unregisterLinkTopology(link)
-  for (const link of graph.floatingLinks.values()) unregisterLinkTopology(link)
+  for (const link of [
+    ...graph.links.values(),
+    ...graph.floatingLinks.values()
+  ]) {
+    unregisterLinkTopology(link)
+  }
 }

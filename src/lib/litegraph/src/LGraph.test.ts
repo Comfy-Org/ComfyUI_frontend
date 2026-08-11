@@ -196,7 +196,9 @@ describe('Floating Links / Reroutes', () => {
     expect(firstResult).toBe(link)
     expect(secondResult).toBe(link)
     expect(link.id).toBe(toLinkId(7))
-    expect(graph.floatingLinks).toEqual(new Map([[toLinkId(7), link]]))
+    expect(graph.floatingLinks.size).toBe(1)
+    expect(graph.floatingLinks.get(toLinkId(7))).toBe(link)
+    expect(graph.links.has(toLinkId(7))).toBe(false)
   })
 
   test('rejects a runtime floating link id collision without mutation', () => {
@@ -217,7 +219,8 @@ describe('Floating Links / Reroutes', () => {
 
     expect(result).toBeUndefined()
     expect(collision.id).toBe(toLinkId(7))
-    expect(graph.floatingLinks).toEqual(new Map([[toLinkId(7), incumbent]]))
+    expect(graph.floatingLinks.size).toBe(1)
+    expect(graph.floatingLinks.get(toLinkId(7))).toBe(incumbent)
     expect(consoleError).toHaveBeenCalledOnce()
   })
 
@@ -703,6 +706,22 @@ describe('node:before-removed event', () => {
       fired,
       'clear() must dispatch node:before-removed so subscribers can drop refs before nodes detach'
     ).toHaveBeenCalledTimes(2)
+  })
+
+  it('keeps floating links available during clear removal callbacks', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('node')
+    graph.add(node)
+    const link = new LLink(toLinkId(1), '*', node.id, 0, UNASSIGNED_NODE_ID, -1)
+    graph.addFloatingLink(link)
+    node.onRemoved = vi.fn(() => {
+      expect(graph.floatingLinks.get(link.id)).toBe(link)
+    })
+
+    graph.clear()
+
+    expect(node.onRemoved).toHaveBeenCalledOnce()
+    expect(graph.floatingLinks.size).toBe(0)
   })
 })
 
