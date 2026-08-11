@@ -82,7 +82,6 @@ async function freshEntry() {
 describe('useFirstRunEntry', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
     mocks.isCloud = true
     mocks.isDesktopWidth = true
     mocks.subscriptionEnabled = true

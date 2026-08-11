@@ -15719,6 +15719,96 @@
       }
     }
   },
+  "QwenImageEditApi": {
+    "description": "Редактирует или комбинирует до 3 референсных изображений, используя текстовый промпт и модели Qwen-Image 3.0.",
+    "display_name": "Qwen Image 3 Edit",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Модель для использования."
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "Количество изображений для генерации, возвращается пакетом."
+      },
+      "prompt_extend": {
+        "name": "prompt_extend",
+        "tooltip": "Улучшать ли промпт с помощью ИИ."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Сид для генерации."
+      },
+      "size": {
+        "name": "size",
+        "tooltip": "Выходное разрешение. 'match input' использует размер первого референсного изображения, 'auto' позволяет модели выбрать размер с тем же соотношением сторон, 'custom' задаёт явную ширину и высоту."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Добавлять ли сгенерированный ИИ водяной знак к результату."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QwenImageTextToImageApi": {
+    "description": "Генерирует изображения по текстовому промпту с помощью моделей Qwen-Image 3.0.",
+    "display_name": "Qwen Image 3 Text to Image",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Модель для использования."
+      },
+      "model_height": {
+        "name": "height"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_width": {
+        "name": "width"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "Количество изображений для генерации, возвращается пакетом."
+      },
+      "prompt_extend": {
+        "name": "prompt_extend",
+        "tooltip": "Улучшать ли промпт с помощью ИИ."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Сид для генерации."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Добавлять ли сгенерированный ИИ водяной знак к результату."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "RTDETR_detect": {
     "display_name": "RT-DETR Обнаружение",
     "inputs": {

@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { ref } from 'vue'
 
 import type { components } from '@/types/comfyRegistryTypes'
@@ -48,13 +48,8 @@ describe('usePacksStatus', () => {
   })
 
   beforeEach(() => {
-    vi.clearAllMocks()
     setActivePinia(createTestingPinia({ stubActions: false }))
     conflictDetectionStore = useConflictDetectionStore()
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   describe('hasImportFailed', () => {

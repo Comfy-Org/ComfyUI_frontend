@@ -109,7 +109,6 @@ describe('useCurveEditor', () => {
   afterEach(() => {
     harness?.unmount()
     document.body.innerHTML = ''
-    vi.restoreAllMocks()
   })
 
   describe('curvePath', () => {

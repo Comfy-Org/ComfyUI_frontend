@@ -4,7 +4,6 @@ import type { Ref } from 'vue'
 import { isCloud, isNightly } from '@/platform/distribution/types'
 import {
   cachedBillingControlEnabled,
-  cachedConsolidatedBillingEnabled,
   cachedV1PaymentRecovery,
   isAuthenticatedConfigLoaded,
   remoteConfig
@@ -33,7 +32,6 @@ export enum ServerFeatureFlag {
   COMFYHUB_PROFILE_GATE_ENABLED = 'comfyhub_profile_gate_enabled',
   SHOW_SIGNIN_BUTTON = 'show_signin_button',
   UNIFIED_CLOUD_AUTH = 'unified_cloud_auth',
-  CONSOLIDATED_BILLING_ENABLED = 'consolidated_billing_enabled',
   BILLING_CONTROL_ENABLED = 'billing_control_enabled',
   V1_PAYMENT_RECOVERY = 'v1_payment_recovery',
   FREE_TIER_JOB_ALLOWANCE_ENABLED = 'free_tier_job_allowance_enabled',
@@ -189,13 +187,6 @@ export function useFeatureFlags() {
         ServerFeatureFlag.UNIFIED_CLOUD_AUTH,
         remoteConfig.value.unified_cloud_auth,
         false
-      )
-    },
-    get consolidatedBillingEnabled() {
-      return resolveAuthGatedFlag(
-        ServerFeatureFlag.CONSOLIDATED_BILLING_ENABLED,
-        remoteConfig.value.consolidated_billing_enabled,
-        cachedConsolidatedBillingEnabled
       )
     },
     get billingControlEnabled() {

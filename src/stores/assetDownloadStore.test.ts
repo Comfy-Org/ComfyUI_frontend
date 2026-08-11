@@ -57,7 +57,6 @@ describe('useAssetDownloadStore', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.useFakeTimers({ shouldAdvanceTime: false })
-    vi.resetAllMocks()
     eventHandler.current = null
   })
 

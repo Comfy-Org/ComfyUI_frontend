@@ -15719,6 +15719,96 @@
       }
     }
   },
+  "QwenImageEditApi": {
+    "description": "Qwen-Image 3.0 모델을 사용하여 최대 3개의 참조 이미지를 텍스트 프롬프트로 안내하여 편집하거나 결합합니다.",
+    "display_name": "Qwen Image 3 편집",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "사용할 모델."
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "생성할 이미지 수. 배치로 반환됩니다."
+      },
+      "prompt_extend": {
+        "name": "prompt_extend",
+        "tooltip": "AI 지원으로 프롬프트를 향상시킬지 여부."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "생성에 사용할 시드."
+      },
+      "size": {
+        "name": "size",
+        "tooltip": "출력 해상도. '입력과 일치'는 첫 번째 참조 이미지의 크기를 재사용하고, '자동'은 동일한 종횡비로 모델이 크기를 선택하며, '사용자 지정'은 명시적으로 너비와 높이를 설정합니다."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "결과에 AI 생성 워터마크를 추가할지 여부."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QwenImageTextToImageApi": {
+    "description": "Qwen-Image 3.0 모델을 사용하여 텍스트 프롬프트로부터 이미지를 생성합니다.",
+    "display_name": "Qwen Image 3 텍스트 투 이미지",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "사용할 모델."
+      },
+      "model_height": {
+        "name": "height"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_width": {
+        "name": "width"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "생성할 이미지 수. 배치로 반환됩니다."
+      },
+      "prompt_extend": {
+        "name": "prompt_extend",
+        "tooltip": "AI 지원으로 프롬프트를 향상시킬지 여부."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "생성에 사용할 시드."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "결과에 AI 생성 워터마크를 추가할지 여부."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "RTDETR_detect": {
     "display_name": "RT-DETR 감지",
     "inputs": {

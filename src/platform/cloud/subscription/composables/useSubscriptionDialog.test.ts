@@ -107,7 +107,6 @@ function expectRekaPricingDialogProps(
 
 describe('useSubscriptionDialog', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockIsCloud.value = true
     mockIsInPersonalWorkspace.value = true
     mockIsFreeTier.value = false
