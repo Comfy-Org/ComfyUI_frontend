@@ -98,6 +98,7 @@ import {
 } from '@/types/nodeIdentification'
 import { KeyComboImpl } from '@/platform/keybindings/keyCombo'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
+import { applyLayoutOnlyDeclarations } from '@/services/layoutOnlyNodeTypes'
 import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
 
@@ -1086,6 +1087,8 @@ export class ComfyApp {
       ...defs,
       ...SYSTEM_NODE_DEFS
     }
+
+    applyLayoutOnlyDeclarations(allNodeDefs)
 
     const nodeDefStore = useNodeDefStore()
     const nodeDefArray: ComfyNodeDefV1[] = Object.values(allNodeDefs)

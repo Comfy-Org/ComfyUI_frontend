@@ -8,8 +8,9 @@ import { createI18n } from 'vue-i18n'
 import AppBuilder from '@/components/builder/AppBuilder.vue'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
-import { useExtensionStore } from '@/stores/extensionStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { toNodeId } from '@/types/nodeId'
+import { createTestNodeDef } from '@/utils/__tests__/litegraphTestUtils'
 
 const mockState = vi.hoisted(() => ({
   nodes: [] as LGraphNode[],
@@ -112,16 +113,12 @@ describe('AppBuilder', () => {
   })
 
   it('renders output overlays only for execution-relevant node types', () => {
-    useExtensionStore().registerExtension({
-      name: 'app-builder.presentation-output',
-      presentationOnlyNodeTypes: ['LegacyPresentationOutputNode']
-    })
+    useNodeDefStore().updateNodeDefs([
+      createTestNodeDef('LayoutOnlyOutputNode', { layout_only: true })
+    ])
     const regularOutput = createOutputNode(1, 'RegularOutputNode')
-    const presentationOutput = createOutputNode(
-      2,
-      'LegacyPresentationOutputNode'
-    )
-    mockState.nodes = [regularOutput, presentationOutput]
+    const layoutOnlyOutput = createOutputNode(2, 'LayoutOnlyOutputNode')
+    mockState.nodes = [regularOutput, layoutOnlyOutput]
 
     render(AppBuilder, {
       global: {
@@ -140,7 +137,7 @@ describe('AppBuilder', () => {
       screen.getByTestId(`builder-output-overlay-${regularOutput.id}`)
     ).toBeInTheDocument()
     expect(
-      screen.queryByTestId(`builder-output-overlay-${presentationOutput.id}`)
+      screen.queryByTestId(`builder-output-overlay-${layoutOnlyOutput.id}`)
     ).not.toBeInTheDocument()
   })
 })

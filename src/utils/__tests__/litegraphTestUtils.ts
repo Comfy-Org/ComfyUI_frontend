@@ -15,10 +15,33 @@ import type {
 import { LGraphEventMode, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { vi } from 'vitest'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { ChangeTracker } from '@/scripts/changeTracker'
 import type { LinkId } from '@/types/linkId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
+
+/**
+ * Creates a minimal V1 node definition for tests
+ */
+export function createTestNodeDef(
+  name: string,
+  overrides: Partial<ComfyNodeDef> = {}
+): ComfyNodeDef {
+  return {
+    name,
+    display_name: name,
+    category: 'utilities',
+    input: { required: {}, optional: {} },
+    output: [],
+    output_name: [],
+    output_is_list: [],
+    output_node: false,
+    python_module: 'nodes',
+    description: '',
+    ...overrides
+  }
+}
 
 /**
  * Creates a mock LGraphNode with minimal required properties

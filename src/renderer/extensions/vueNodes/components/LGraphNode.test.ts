@@ -15,7 +15,8 @@ import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composable
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
-import { registerPresentationOnlyNodeTypes } from '@/services/presentationOnlyNodeTypeRegistry'
+import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
+import { createTestNodeDef } from '@/utils/__tests__/litegraphTestUtils'
 
 const mockData = vi.hoisted(() => ({
   mockExecuting: false,
@@ -260,7 +261,10 @@ describe('LGraphNode', () => {
   })
 
   it('renders AppOutput only for execution-relevant output nodes', async () => {
-    registerPresentationOnlyNodeTypes(['VuePresentationOutputNode'])
+    useNodeDefStore().nodeDefsByName['LayoutOnlyOutputNode'] =
+      new ComfyNodeDefImpl(
+        createTestNodeDef('LayoutOnlyOutputNode', { layout_only: true })
+      )
     mockData.mockLgraphNode = {
       constructor: { nodeData: { output_node: true } },
       isSubgraphNode: () => false
@@ -271,7 +275,7 @@ describe('LGraphNode', () => {
     expect(screen.getByTestId('app-output')).toBeInTheDocument()
 
     await rerender({
-      nodeData: { ...mockNodeData, type: 'VuePresentationOutputNode' }
+      nodeData: { ...mockNodeData, type: 'LayoutOnlyOutputNode' }
     })
 
     expect(screen.queryByTestId('app-output')).not.toBeInTheDocument()

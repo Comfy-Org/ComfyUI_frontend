@@ -139,26 +139,34 @@ DEV_SERVER_COMFYUI_URL=https://stagingcloud.comfy.org/
 - Core extensions provide built-in functionality - see [Core Extensions Documentation](./core.md) for the complete list
 - The `ComfyExtension` interface defines all available hooks for extending the frontend
 
-### Declaring Presentation-Only Node Types
+### Declaring Layout-Only Node Types
 
-An enabled extension can declare node types that never affect workflow
-execution:
+An enabled extension can declare node types that are editor layout state only
+and never affect workflow execution:
 
 ```javascript
 app.registerExtension({
   name: 'example.annotation-nodes',
-  presentationOnlyNodeTypes: ['StickyNote']
+  layoutOnlyNodeTypes: ['StickyNote']
 })
 ```
 
-Declared types are excluded from Run on Change detection and from App Mode
-input/output selection. Only use this field for whole node types that never
-affect execution. Disabled extensions do not activate their declarations, and
-unknown node types remain execution-relevant by default.
+Declared types get `layout_only: true` on their node definition and are
+excluded from Run on Change detection and App Mode input/output selection.
+Only use this field for whole node types that never affect execution.
+Disabled extensions do not activate their declarations, and unknown node
+types remain execution-relevant by default.
 
 Declare the complete list in the extension's initial `app.registerExtension()`
-call during app startup. Changing the declaration requires an app reload. Late
-registration after workflow tracking starts is unsupported.
+call during app startup. Changing the declaration requires an app reload.
+
+This field is the declaration surface for node types that exist only in
+frontend JavaScript (for example, types registered via `registerCustomNodes`).
+Declarations are ignored, with a console warning, for node types whose
+definition can affect execution — types with output slots or `OUTPUT_NODE` —
+so backend-defined execution semantics always win. A future `layout_only`
+flag on backend node definitions flows through the same merge and becomes the
+preferred declaration path for Python-defined types.
 
 ## Further Reading
 

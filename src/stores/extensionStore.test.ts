@@ -2,8 +2,9 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { isPresentationOnlyNodeType } from '@/services/presentationOnlyNodeTypeRegistry'
+import { applyLayoutOnlyDeclarations } from '@/services/layoutOnlyNodeTypes'
 import { useExtensionStore } from '@/stores/extensionStore'
+import { createTestNodeDef } from '@/utils/__tests__/litegraphTestUtils'
 
 describe('extensionStore', () => {
   beforeEach(() => {
@@ -48,21 +49,27 @@ describe('extensionStore', () => {
       }
     })
 
-    it('activates presentation-only node types only for enabled extensions', () => {
+    it('ignores layout-only declarations from disabled extensions', () => {
       const store = useExtensionStore()
-      store.loadDisabledExtensionNames(['disabled.presentation'])
+      store.loadDisabledExtensionNames(['disabled.layout-only'])
 
       store.registerExtension({
-        name: 'enabled.presentation',
-        presentationOnlyNodeTypes: ['EnabledPresentationNode']
+        name: 'enabled.layout-only',
+        layoutOnlyNodeTypes: ['EnabledStickyNote']
       })
       store.registerExtension({
-        name: 'disabled.presentation',
-        presentationOnlyNodeTypes: ['DisabledPresentationNode']
+        name: 'disabled.layout-only',
+        layoutOnlyNodeTypes: ['DisabledStickyNote']
       })
 
-      expect(isPresentationOnlyNodeType('EnabledPresentationNode')).toBe(true)
-      expect(isPresentationOnlyNodeType('DisabledPresentationNode')).toBe(false)
+      const nodeDefs = {
+        EnabledStickyNote: createTestNodeDef('EnabledStickyNote'),
+        DisabledStickyNote: createTestNodeDef('DisabledStickyNote')
+      }
+      applyLayoutOnlyDeclarations(nodeDefs)
+
+      expect(nodeDefs.EnabledStickyNote.layout_only).toBe(true)
+      expect(nodeDefs.DisabledStickyNote.layout_only).toBeUndefined()
     })
   })
 

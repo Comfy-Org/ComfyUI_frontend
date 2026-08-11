@@ -109,14 +109,16 @@ export interface ComfyExtension {
    */
   name: string
   /**
-   * Node types that never affect workflow execution. These types are excluded
-   * from Run on Change detection and App Mode input/output selection.
+   * Node types that are editor layout state only and never affect execution.
+   * Declared types get `layout_only: true` on their node definition and are
+   * excluded from Run on Change detection and App Mode input/output
+   * selection.
    *
-   * Declare the complete list in the extension's initial registration during
-   * app startup. Changing it requires an app reload; late registration after
-   * workflow tracking starts is unsupported.
+   * Declare the full list at startup registration; changes require a reload.
+   * Declarations are ignored, with a console warning, for types whose node
+   * definition can affect execution (output slots or an output node).
    */
-  presentationOnlyNodeTypes?: readonly string[]
+  layoutOnlyNodeTypes?: readonly string[]
   /**
    * The commands defined by the extension
    */

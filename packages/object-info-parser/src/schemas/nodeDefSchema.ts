@@ -287,6 +287,11 @@ export const zComfyNodeDef = z.object({
   category: z.string(),
   main_category: z.string().optional(),
   output_node: z.boolean(),
+  /**
+   * Whether the node type is editor layout state only and never affects
+   * execution.
+   */
+  layout_only: z.boolean().optional(),
   python_module: z.string(),
   deprecated: z.boolean().optional(),
   experimental: z.boolean().optional(),
