@@ -348,8 +348,6 @@ describe('usePanAndZoom', () => {
     })
 
     it('triggers undo on two-finger double-tap', () => {
-      vi.useFakeTimers()
-
       const pz = usePanAndZoom()
       const touches = createTouchList({ x: 100, y: 200 }, { x: 300, y: 200 })
 

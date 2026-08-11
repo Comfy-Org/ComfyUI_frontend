@@ -58,7 +58,6 @@ vi.mock('@/platform/settings/settingStore', () => ({
 describe('useReconnectingNotification', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.useFakeTimers()
     settingMocks.disableToast = false
   })
 

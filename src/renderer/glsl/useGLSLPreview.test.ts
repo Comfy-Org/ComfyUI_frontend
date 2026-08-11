@@ -177,10 +177,6 @@ describe('useGLSLPreview', () => {
   })
 
   describe('autogrow config extraction', () => {
-    beforeEach(() => {
-      vi.useFakeTimers()
-    })
-
     async function triggerRender(node: LGraphNode) {
       mockNodeOutputs[String(node.id)] = {
         images: [{ filename: 'test.png', subfolder: '', type: 'temp' }]
@@ -240,10 +236,6 @@ describe('useGLSLPreview', () => {
   })
 
   describe('render pipeline', () => {
-    beforeEach(() => {
-      vi.useFakeTimers()
-    })
-
     async function setupAndRender(node: LGraphNode) {
       mockNodeOutputs[String(node.id)] = {
         images: [{ filename: 'test.png', subfolder: '', type: 'temp' }]

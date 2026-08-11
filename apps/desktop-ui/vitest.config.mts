@@ -18,6 +18,7 @@ export default defineConfig({
     restoreMocks: true,
     unstubEnvs: true,
     unstubGlobals: true,
+    fakeTimers: { shouldAdvanceTime: true },
     globals: true,
     environment: 'happy-dom',
     include: ['src/**/*.{test,spec}.{ts,tsx}'],

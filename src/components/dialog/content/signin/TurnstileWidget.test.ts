@@ -306,7 +306,6 @@ describe('TurnstileWidget', () => {
     })
 
     it('falls back once the widget fails to resolve within the load timeout', async () => {
-      vi.useFakeTimers()
       const { api, options } = fakeTurnstile()
       mockLoadTurnstile.mockResolvedValue(api)
 
@@ -323,7 +322,6 @@ describe('TurnstileWidget', () => {
     })
 
     it('does not fall back once a token arrives before the load timeout', async () => {
-      vi.useFakeTimers()
       const { api, options } = fakeTurnstile()
       mockLoadTurnstile.mockResolvedValue(api)
 
@@ -352,7 +350,6 @@ describe('TurnstileWidget', () => {
     })
 
     it('falls back if a post-solve expiry is not followed by a fresh token within the load timeout', async () => {
-      vi.useFakeTimers()
       const { api, options } = fakeTurnstile()
       mockLoadTurnstile.mockResolvedValue(api)
       window.turnstile = api as unknown as NonNullable<Window['turnstile']>

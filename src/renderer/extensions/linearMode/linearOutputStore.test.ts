@@ -131,7 +131,6 @@ describe('linearOutputStore', () => {
   })
 
   it('transitions to latent on preview', () => {
-    vi.useFakeTimers()
     const store = useLinearOutputStore()
     setJobWorkflowPath('job-1', 'workflows/test-workflow.json')
     store.onJobStart('job-1')
@@ -300,7 +299,6 @@ describe('linearOutputStore', () => {
   })
 
   it('creates skeleton on-demand when latent arrives after execute', () => {
-    vi.useFakeTimers()
     const store = useLinearOutputStore()
     store.onJobStart('job-1')
     store.onNodeExecuted('job-1', makeExecutedDetail('job-1'))
@@ -359,7 +357,6 @@ describe('linearOutputStore', () => {
   })
 
   it('transitions to latent via previews watcher', async () => {
-    vi.useFakeTimers()
     const { nextTick } = await import('vue')
     const store = useLinearOutputStore()
 
@@ -523,7 +520,6 @@ describe('linearOutputStore', () => {
   })
 
   it('discards latent previews for already-executed nodes', () => {
-    vi.useFakeTimers()
     const store = useLinearOutputStore()
     store.onJobStart('job-1')
 
@@ -543,7 +539,6 @@ describe('linearOutputStore', () => {
   })
 
   it('accepts latent previews for new nodes after prior node executed', () => {
-    vi.useFakeTimers()
     const store = useLinearOutputStore()
     store.onJobStart('job-1')
 
@@ -561,7 +556,6 @@ describe('linearOutputStore', () => {
   })
 
   it('cancels pending RAF when a node executes', () => {
-    vi.useFakeTimers()
     const store = useLinearOutputStore()
     store.onJobStart('job-1')
 
@@ -581,7 +575,6 @@ describe('linearOutputStore', () => {
   })
 
   it('discards latent previews arriving after job completion', () => {
-    vi.useFakeTimers()
     const store = useLinearOutputStore()
     store.onJobStart('job-1')
     store.onNodeExecuted('job-1', makeExecutedDetail('job-1'))
@@ -600,7 +593,6 @@ describe('linearOutputStore', () => {
   })
 
   it('discards latent previews for completed job after RAF', () => {
-    vi.useFakeTimers()
     const store = useLinearOutputStore()
     store.onJobStart('job-1')
     store.onNodeExecuted('job-1', makeExecutedDetail('job-1'))
@@ -666,7 +658,6 @@ describe('linearOutputStore', () => {
   })
 
   it('recovers latent preview when re-entering app mode', async () => {
-    vi.useFakeTimers()
     const { nextTick } = await import('vue')
     const store = useLinearOutputStore()
 
@@ -738,7 +729,6 @@ describe('linearOutputStore', () => {
   })
 
   it('scopes in-progress items per workflow with concurrent jobs', () => {
-    vi.useFakeTimers()
     const store = useLinearOutputStore()
 
     // Job-1 on workflow-a (dog)
@@ -837,7 +827,6 @@ describe('linearOutputStore', () => {
 
   describe('workflow switching during generation', () => {
     async function setup() {
-      vi.useFakeTimers()
       const { nextTick } = await import('vue')
       const store = useLinearOutputStore()
       return { store, nextTick }
@@ -1085,7 +1074,6 @@ describe('linearOutputStore', () => {
     })
 
     it('evicts prior pendingResolve entries when a new job completes', () => {
-      vi.useFakeTimers()
       const store = useLinearOutputStore()
 
       // Job 1: produce image, complete
@@ -1136,7 +1124,6 @@ describe('linearOutputStore', () => {
     })
 
     it('does not leak items across many job cycles', () => {
-      vi.useFakeTimers()
       const store = useLinearOutputStore()
 
       for (let i = 1; i <= 5; i++) {

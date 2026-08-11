@@ -268,7 +268,6 @@ describe('getCheckoutAttribution', () => {
   })
 
   it('continues checkout attribution when Rewardful ready never runs', async () => {
-    vi.useFakeTimers()
     window.rewardful = vi.fn() as Window['rewardful']
 
     const attributionPromise = getCheckoutAttribution()

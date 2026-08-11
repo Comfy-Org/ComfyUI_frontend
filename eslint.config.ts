@@ -103,7 +103,8 @@ export default defineConfig([
           allowDefaultProject: [
             'packages/object-info-parser/vitest.config.ts',
             'vite.electron.config.mts',
-            'vite.types.config.mts'
+            'vite.types.config.mts',
+            'vitest.timer.setup.ts'
           ]
         }
       }

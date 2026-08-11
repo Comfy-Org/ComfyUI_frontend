@@ -273,7 +273,6 @@ describe('onboardingTourStore', () => {
     })
 
     it('records a tour torn down by a target that never mounted', async () => {
-      vi.useFakeTimers()
       const store = mountStore()
       store.replayTour('appMode')
       await vi.advanceTimersByTimeAsync(0)
@@ -345,7 +344,6 @@ describe('onboardingTourStore', () => {
   })
 
   it('holds the card on its step while a deferred target is awaited', async () => {
-    vi.useFakeTimers()
     const store = mountStore()
     store.replayTour('appMode')
     await vi.advanceTimersByTimeAsync(0)
@@ -362,7 +360,6 @@ describe('onboardingTourStore', () => {
   })
 
   it('skips without the seen-flag and toasts when a deferred target never appears', async () => {
-    vi.useFakeTimers()
     const store = mountStore()
     store.replayTour('appMode')
     await vi.advanceTimersByTimeAsync(0)
@@ -406,7 +403,6 @@ describe('onboardingTourStore', () => {
   })
 
   it('keeps the original deadline when advance is requested again mid-wait', async () => {
-    vi.useFakeTimers()
     const store = mountStore()
     store.replayTour('appMode')
     await vi.advanceTimersByTimeAsync(0)
@@ -421,7 +417,6 @@ describe('onboardingTourStore', () => {
   })
 
   it('does not toast or double-report when the user skips during a deferred wait', async () => {
-    vi.useFakeTimers()
     const store = mountStore()
     store.replayTour('appMode')
     await vi.advanceTimersByTimeAsync(0)
@@ -462,7 +457,6 @@ describe('onboardingTourStore', () => {
   })
 
   it('aborts a pending deferred wait without a toast when the trigger stops holding', async () => {
-    vi.useFakeTimers()
     const store = mountStore()
     enterApp('app', true)
     await vi.advanceTimersByTimeAsync(0)

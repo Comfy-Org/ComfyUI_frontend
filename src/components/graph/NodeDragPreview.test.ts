@@ -1,5 +1,5 @@
 import { render } from '@testing-library/vue'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import NodeDragPreview from '@/components/graph/NodeDragPreview.vue'
@@ -26,10 +26,6 @@ function ghostElement() {
 }
 
 describe('NodeDragPreview', () => {
-  beforeEach(() => {
-    vi.useFakeTimers()
-  })
-
   afterEach(() => {
     useNodeDragToCanvas().cancelDrag()
   })

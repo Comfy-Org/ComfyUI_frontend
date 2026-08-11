@@ -313,7 +313,6 @@ describe('ReleaseNotificationToast', () => {
   })
 
   it('auto-hides after timeout', async () => {
-    vi.useFakeTimers()
     mockReleaseStore.recentRelease = {
       version: '1.2.3',
       content: '# Test Release'
@@ -330,7 +329,6 @@ describe('ReleaseNotificationToast', () => {
   })
 
   it('clears auto-hide timer when manually dismissed', async () => {
-    vi.useFakeTimers()
     mockReleaseStore.recentRelease = {
       version: '1.2.3',
       content: '# Test Release'

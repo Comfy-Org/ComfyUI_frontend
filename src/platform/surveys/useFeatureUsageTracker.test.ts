@@ -32,7 +32,6 @@ describe('useFeatureUsageTracker', () => {
   })
 
   it('sets firstUsed only on first use', () => {
-    vi.useFakeTimers()
     const firstTs = 1000000
     vi.setSystemTime(firstTs)
     const { usage, trackUsage } = useFeatureUsageTracker('test-feature-3')
@@ -46,7 +45,6 @@ describe('useFeatureUsageTracker', () => {
   })
 
   it('updates lastUsed on each use', () => {
-    vi.useFakeTimers()
     const { usage, trackUsage } = useFeatureUsageTracker('test-feature-4')
 
     trackUsage()
@@ -83,7 +81,6 @@ describe('useFeatureUsageTracker', () => {
   })
 
   it('persists to localStorage', async () => {
-    vi.useFakeTimers()
     const { trackUsage } = useFeatureUsageTracker('persisted-feature')
 
     trackUsage()

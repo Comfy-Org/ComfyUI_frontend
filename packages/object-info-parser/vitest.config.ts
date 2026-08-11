@@ -6,6 +6,7 @@ export default defineConfig({
     restoreMocks: true,
     unstubEnvs: true,
     unstubGlobals: true,
+    fakeTimers: { shouldAdvanceTime: true },
     environment: 'node',
     include: ['src/__tests__/**/*.test.ts'],
     globals: false,

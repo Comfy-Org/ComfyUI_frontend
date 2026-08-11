@@ -8,7 +8,6 @@ describe('useTransformSettling', () => {
   let element: HTMLDivElement
 
   beforeEach(() => {
-    vi.useFakeTimers()
     element = document.createElement('div')
     document.body.appendChild(element)
   })

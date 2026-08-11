@@ -128,7 +128,6 @@ async function setup(
 describe('installDesktopLoginRedemption', () => {
   beforeEach(() => {
     vi.resetModules()
-    vi.useFakeTimers()
     sessionStorage.clear()
     vi.stubGlobal('fetch', mockFetch)
     vi.spyOn(console, 'warn').mockImplementation(() => {})

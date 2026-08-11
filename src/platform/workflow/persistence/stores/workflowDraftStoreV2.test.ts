@@ -80,8 +80,6 @@ describe('workflowDraftStoreV2', () => {
     })
 
     it('keeps payload updatedAt stable when only recency is refreshed', () => {
-      vi.useFakeTimers()
-
       const store = useWorkflowDraftStoreV2()
 
       vi.setSystemTime(new Date('2026-03-21T10:00:00Z'))
@@ -212,8 +210,6 @@ describe('workflowDraftStoreV2', () => {
     })
 
     it('preserves payload updatedAt when moving a draft', () => {
-      vi.useFakeTimers()
-
       const store = useWorkflowDraftStoreV2()
 
       vi.setSystemTime(new Date('2026-05-13T00:00:00Z'))

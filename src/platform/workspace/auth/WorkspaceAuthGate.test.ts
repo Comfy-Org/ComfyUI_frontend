@@ -180,7 +180,6 @@ describe('WorkspaceAuthGate', () => {
     })
 
     it('shows the recovery panel when Firebase initialization times out', async () => {
-      vi.useFakeTimers()
       mountComponent()
 
       await vi.advanceTimersByTimeAsync(16_001)
@@ -304,7 +303,6 @@ describe('WorkspaceAuthGate', () => {
     })
 
     it('shows a recoverable error when remote config refresh times out', async () => {
-      vi.useFakeTimers()
       // Never-resolving promise simulates a hanging request
       mockRefreshRemoteConfig.mockReturnValue(new Promise(() => {}))
 

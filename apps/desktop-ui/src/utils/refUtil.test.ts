@@ -6,7 +6,7 @@ import { useMinLoadingDurationRef } from '@/utils/refUtil'
 
 describe('useMinLoadingDurationRef', () => {
   beforeEach(() => {
-    vi.useFakeTimers()
+    vi.useFakeTimers({ shouldAdvanceTime: false })
   })
 
   it('reflects false when source is initially false', () => {

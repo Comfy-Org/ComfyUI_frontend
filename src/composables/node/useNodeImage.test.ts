@@ -27,7 +27,6 @@ vi.mock('@/utils/imageUtil', () => ({
 describe('useNodeVideo', () => {
   async function setup() {
     vi.clearAllMocks()
-    vi.useFakeTimers()
 
     nodeOutputStoreMock.getNodeImageUrls.mockReturnValue(['http://video/1.mp4'])
     const node = createMockMediaNode({

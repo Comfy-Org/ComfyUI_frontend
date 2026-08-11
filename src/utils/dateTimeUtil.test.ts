@@ -151,7 +151,6 @@ describe('dateKey', () => {
 
 describe('isToday', () => {
   beforeEach(() => {
-    vi.useFakeTimers()
     vi.setSystemTime(new Date(2024, 5, 15, 14, 0, 0))
   })
 
@@ -173,7 +172,6 @@ describe('isToday', () => {
 
 describe('isYesterday', () => {
   beforeEach(() => {
-    vi.useFakeTimers()
     vi.setSystemTime(new Date(2024, 5, 15, 14, 0, 0))
   })
 

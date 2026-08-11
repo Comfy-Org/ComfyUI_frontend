@@ -119,7 +119,6 @@ describe(useQueueNotificationBanners, () => {
   }
 
   beforeEach(() => {
-    vi.useFakeTimers()
     vi.setSystemTime(0)
     resetState()
   })

@@ -450,8 +450,6 @@ describe('PrimitiveNode', () => {
     })
 
     it('temporarily stores controlValues and lastType for recreation', () => {
-      vi.useFakeTimers()
-
       const node = createPrimitiveNode()
       node.widgets = [
         makeWidget({ value: 42 }),
