@@ -5458,17 +5458,23 @@ const translations = {
     'zh-CN': '前沿驻场创意服务'
   },
   'fdct.hero.contactCta': { en: 'Contact us', 'zh-CN': '联系我们' },
-  'fdct.hero.applyCta': { en: 'Apply as an FDCT', 'zh-CN': '申请成为 FDCT' },
+  'fdct.hero.applyCta': {
+    en: 'Apply as a forward deployed creative',
+    'zh-CN': '申请成为前沿驻场创意人'
+  },
   'fdct.builders.title': {
     en: 'Builders, not advisors',
     'zh-CN': '实干者，而非顾问'
   },
   'fdct.builders.lead': {
-    en: 'From “is this possible?” to a workflow your team owns. An FDCT is the person who builds it.',
+    en: 'From “is this possible?” to a workflow your team owns. A forward deployed creative is the person who builds it.',
     'zh-CN':
-      '从“这可能吗？”到你的团队自己拥有的工作流。FDCT 就是把它构建出来的人。'
+      '从“这可能吗？”到你的团队自己拥有的工作流。前沿驻场创意人就是把它构建出来的人。'
   },
-  'fdct.builders.nodeLabel': { en: 'An FDCT', 'zh-CN': '一位 FDCT' },
+  'fdct.builders.nodeLabel': {
+    en: 'A forward deployed creative',
+    'zh-CN': '一位前沿驻场创意人'
+  },
   'fdct.builders.reason1': {
     en: 'validates the use case. We build the workflow and install it in your environment.',
     'zh-CN': '验证用例。我们构建工作流，并将其部署到你的环境中。'
@@ -5537,9 +5543,9 @@ const translations = {
     'zh-CN': '精选技术专家'
   },
   'fdct.technologists.lead': {
-    en: 'FDCTs come from real production: feature film, commercial, and experiential backgrounds, with ComfyUI on the back end of shipped work. We match technologists to each engagement based on the work, your stack, and the timeline.',
+    en: 'Forward deployed creatives come from real production: feature film, commercial, and experiential backgrounds, with ComfyUI on the back end of shipped work. We match technologists to each engagement based on the work, your stack, and the timeline.',
     'zh-CN':
-      'FDCT 来自真实制作一线：拥有电影长片、商业广告与体验项目背景，ComfyUI 支撑着已交付的作品。我们会根据项目内容、你的技术栈和时间表，为每次合作匹配合适的技术专家。'
+      '前沿驻场创意人来自真实制作一线：拥有电影长片、商业广告与体验项目背景，ComfyUI 支撑着已交付的作品。我们会根据项目内容、你的技术栈和时间表，为每次合作匹配合适的技术专家。'
   },
   'fdct.technologists.seeWork': {
     en: 'See {name}’s work',
@@ -5657,9 +5663,9 @@ const translations = {
     'zh-CN': '会有人全职驻场加入我们的团队吗？'
   },
   'fdct.faq.a3': {
-    en: 'FDCTs work with you on defined milestones and deliverables, with optional in-person time as well. We will customize this based on what your team needs.',
+    en: 'Forward deployed creatives work with you on defined milestones and deliverables, with optional in-person time as well. We will customize this based on what your team needs.',
     'zh-CN':
-      'FDCT 按明确的里程碑和交付物与你协作，也可选择安排现场时间。我们会根据你团队的需求定制协作方式。'
+      '前沿驻场创意人按明确的里程碑和交付物与你协作，也可选择安排现场时间。我们会根据你团队的需求定制协作方式。'
   },
   'fdct.faq.q4': {
     en: 'What happens after the initial build?',
@@ -5684,8 +5690,9 @@ const translations = {
     'zh-CN': '面向企业'
   },
   'fdct.bands.enterprise.text': {
-    en: "Tell us what you're trying to make. An FDCT validates it after the first call and builds from there.",
-    'zh-CN': '告诉我们你想做什么。首次沟通后，FDCT 会验证它并从此开始构建。'
+    en: "Tell us what you're trying to make. A forward deployed creative validates it after the first call and builds from there.",
+    'zh-CN':
+      '告诉我们你想做什么。首次沟通后，前沿驻场创意人会验证它并从此开始构建。'
   },
   'fdct.bands.enterprise.cta': { en: 'Contact us', 'zh-CN': '联系我们' },
   'fdct.bands.creators.label': {

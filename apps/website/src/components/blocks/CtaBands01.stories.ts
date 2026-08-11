@@ -11,7 +11,7 @@ const meta: Meta<typeof CtaBands01> = {
       {
         id: 'enterprise',
         label: 'For Enterprise',
-        text: "Tell us what you're trying to make. An FDCT validates it after the first call and builds from there.",
+        text: "Tell us what you're trying to make. A forward deployed creative validates it after the first call and builds from there.",
         cta: { label: 'Contact us', href: '/contact' }
       },
       {
@@ -35,7 +35,7 @@ export const SingleBand: Story = {
       {
         id: 'enterprise',
         label: 'For Enterprise',
-        text: "Tell us what you're trying to make. An FDCT validates it after the first call and builds from there.",
+        text: "Tell us what you're trying to make. A forward deployed creative validates it after the first call and builds from there.",
         cta: { label: 'Contact us', href: '/contact' }
       }
     ]
