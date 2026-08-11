@@ -64,7 +64,6 @@ describe('LGraphCanvas ghost placement auto-pan', () => {
   afterEach(() => {
     if (canvas.state.ghostNodeId != null) canvas.finalizeGhostPlacement(false)
     canvasElement.remove()
-    vi.useRealTimers()
   })
 
   it('moves the ghost node when pointer is near edge', () => {

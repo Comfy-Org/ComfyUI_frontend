@@ -1,5 +1,5 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   downloadFile,
@@ -320,10 +320,6 @@ describe('downloadUtil', () => {
     beforeEach(() => {
       vi.useFakeTimers()
       windowOpenSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
-    })
-
-    afterEach(() => {
-      vi.useRealTimers()
     })
 
     it('opens URL directly when not in cloud mode', async () => {

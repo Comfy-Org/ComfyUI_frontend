@@ -16,6 +16,7 @@ export default defineConfig({
     unstubGlobals: true,
     environment: 'node',
     include: ['src/**/*.{test,spec}.ts'],
-    globals: false
+    globals: false,
+    setupFiles: ['../../vitest.timer.setup.ts']
   }
 })

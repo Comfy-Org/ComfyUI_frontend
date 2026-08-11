@@ -1335,6 +1335,15 @@ const translations = {
   },
   'pricing.plan.period': { en: '/month', 'zh-CN': '/月' },
   'pricing.creditsLabel': { en: 'monthly credits', 'zh-CN': '每月积分' },
+  'pricing.banner.title': {
+    en: "Start free. Upgrade when you're ready.",
+    'zh-CN': '免费开始，准备好了再升级。'
+  },
+  'pricing.banner.subtitle': {
+    en: '5 free runs on real GPUs — no credit card required.',
+    'zh-CN': '在真实 GPU 上免费运行 5 次 — 无需信用卡。'
+  },
+  'pricing.banner.cta': { en: 'TRY FREE', 'zh-CN': '免费试用' },
 
   'pricing.feature.educationalSavings': {
     en: 'Educational savings – 10% off',
@@ -4837,10 +4846,6 @@ const translations = {
     'zh-CN': '运行 Seedance 2.5'
   },
   'seedance.hero.secondaryCta': { en: 'TRY WORKFLOWS', 'zh-CN': '试用工作流' },
-  'seedance.hero.footnote': {
-    en: 'Pay-as-you-go credits · No watermark · Commercial use included',
-    'zh-CN': '按量付费积分 · 无水印 · 包含商业使用授权'
-  },
   'seedance.models.heading': {
     en: 'Shot on Seedance',
     'zh-CN': '用 Seedance 拍摄'
@@ -5269,10 +5274,6 @@ const translations = {
     en: 'RUN WAN ANIMATE 2',
     'zh-CN': '运行 Wan Animate 2'
   },
-  'wanAnimate2.hero.footnote': {
-    en: 'Open source · Free to try on Comfy Cloud · Pay-as-you-go after that',
-    'zh-CN': '开源 · 可在 Comfy Cloud 免费试用 · 之后按量付费'
-  },
   'wanAnimate2.hero.tagOpenSource': {
     en: 'Open Source',
     'zh-CN': '开源'
@@ -5368,10 +5369,6 @@ const translations = {
   'minimax.hero.tagPartnerNodes': {
     en: 'Partner Nodes',
     'zh-CN': '合作伙伴节点'
-  },
-  'minimax.hero.footnote': {
-    en: 'Free to start · No watermark · Commercial use included',
-    'zh-CN': '免费开始 · 无水印 · 包含商业使用授权'
   },
   'minimax.models.heading': {
     en: 'Made with MiniMax H3',

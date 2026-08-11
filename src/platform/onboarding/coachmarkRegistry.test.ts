@@ -69,7 +69,6 @@ describe('waitForTarget', () => {
   afterEach(() => {
     clearCoachmarks()
     document.body.replaceChildren()
-    vi.useRealTimers()
   })
 
   /** Lets the poll sample once, and the resulting promise settle. */

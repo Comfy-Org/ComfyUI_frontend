@@ -1,5 +1,5 @@
 import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { app } from '@/scripts/app'
@@ -469,10 +469,6 @@ describe('useExecutionStore - nodeProgressStatesByJob eviction', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionStore()
     store.bindExecutionEvents()
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
   })
 
   it('should retain entries below the limit', () => {
@@ -1493,10 +1489,6 @@ describe('useExecutionStore - RAF batching', () => {
     store.bindExecutionEvents()
   })
 
-  afterEach(() => {
-    vi.useRealTimers()
-  })
-
   describe('handleProgress', () => {
     function makeProgressEvent(value: number, max: number): CustomEvent {
       return new CustomEvent('progress', {
@@ -2156,35 +2148,27 @@ describe('useExecutionStore - WebSocket event handlers', () => {
 
     it('discards a progress update still queued when the next node starts', () => {
       vi.useFakeTimers()
-      try {
-        fire('progress', { value: 3, max: 10, prompt_id: 'job-1', node: 'n1' })
+      fire('progress', { value: 3, max: 10, prompt_id: 'job-1', node: 'n1' })
 
-        fire('executing', 'n2')
-        vi.advanceTimersToNextFrame()
+      fire('executing', 'n2')
+      vi.advanceTimersToNextFrame()
 
-        expect(store._executingNodeProgress).toBeNull()
-      } finally {
-        vi.useRealTimers()
-      }
+      expect(store._executingNodeProgress).toBeNull()
     })
   })
 
   describe('progress', () => {
     it('sets _executingNodeProgress from the event payload (RAF-batched)', () => {
       vi.useFakeTimers()
-      try {
-        const payload = { value: 3, max: 10, prompt_id: 'job-1', node: 'n1' }
+      const payload = { value: 3, max: 10, prompt_id: 'job-1', node: 'n1' }
 
-        fire('progress', payload)
-        // RAF-batched: not applied synchronously
-        expect(store._executingNodeProgress).toBeNull()
+      fire('progress', payload)
+      // RAF-batched: not applied synchronously
+      expect(store._executingNodeProgress).toBeNull()
 
-        vi.advanceTimersToNextFrame()
+      vi.advanceTimersToNextFrame()
 
-        expect(store._executingNodeProgress).toEqual(payload)
-      } finally {
-        vi.useRealTimers()
-      }
+      expect(store._executingNodeProgress).toEqual(payload)
     })
   })
 

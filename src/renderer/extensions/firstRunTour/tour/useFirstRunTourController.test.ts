@@ -251,7 +251,6 @@ describe('useFirstRunTourController', () => {
     controllerScope = undefined
     document.body.innerHTML = ''
     setViewportWidth(1280)
-    vi.useRealTimers()
   })
 
   describe('starting', () => {

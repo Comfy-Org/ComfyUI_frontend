@@ -14,7 +14,6 @@ describe('useTransformSettling', () => {
   })
 
   afterEach(() => {
-    vi.useRealTimers()
     document.body.removeChild(element)
   })
 

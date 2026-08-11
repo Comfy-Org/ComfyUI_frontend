@@ -180,7 +180,6 @@ describe('useWorkspaceBilling', () => {
   afterEach(() => {
     scope?.stop()
     scope = undefined
-    vi.useRealTimers()
   })
 
   describe('initialize', () => {

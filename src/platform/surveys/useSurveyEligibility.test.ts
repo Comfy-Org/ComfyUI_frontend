@@ -41,7 +41,6 @@ describe('useSurveyEligibility', () => {
 
   afterEach(() => {
     localStorage.clear()
-    vi.useRealTimers()
   })
 
   function setFeatureUsage(featureId: string, useCount: number) {

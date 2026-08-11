@@ -101,7 +101,6 @@ describe('AutoPanController', () => {
 
   afterEach(() => {
     controller.stop()
-    vi.useRealTimers()
   })
 
   it('does not pan when pointer is in the center', () => {

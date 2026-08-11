@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ModelExporter } from './ModelExporter'
 
@@ -59,10 +59,6 @@ vi.mock('@comfyorg/fbx-exporter-three', () => ({
 describe('ModelExporter', () => {
   beforeEach(() => {
     vi.useFakeTimers()
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
   })
 
   describe('detectFormatFromURL', () => {

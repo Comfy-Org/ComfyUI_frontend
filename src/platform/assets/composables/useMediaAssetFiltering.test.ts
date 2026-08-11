@@ -1,7 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import { createPinia, setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, ref } from 'vue'
 
 import { useMediaAssetFiltering } from '@/platform/assets/composables/useMediaAssetFiltering'
@@ -45,10 +45,6 @@ function ids(assets: AssetItem[]): string[] {
 describe('useMediaAssetFiltering', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
   })
 
   describe('media-type filter', () => {

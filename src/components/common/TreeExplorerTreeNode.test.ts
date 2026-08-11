@@ -3,7 +3,7 @@ import { fireEvent, render, screen } from '@testing-library/vue'
 import Badge from 'primevue/badge'
 import PrimeVue from 'primevue/config'
 import InputText from 'primevue/inputtext'
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { createApp } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -35,10 +35,6 @@ describe('TreeExplorerTreeNode', () => {
     const app = createApp({})
     app.use(PrimeVue)
     vi.useFakeTimers()
-  })
-
-  afterAll(() => {
-    vi.useRealTimers()
   })
 
   it('renders correctly', () => {

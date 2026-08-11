@@ -1,6 +1,6 @@
 import { fromAny } from '@total-typescript/shoehorn'
 import { createPinia, setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, reactive, ref, shallowRef } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
@@ -181,10 +181,6 @@ describe('useGLSLPreview', () => {
       vi.useFakeTimers()
     })
 
-    afterEach(() => {
-      vi.useRealTimers()
-    })
-
     async function triggerRender(node: LGraphNode) {
       mockNodeOutputs[String(node.id)] = {
         images: [{ filename: 'test.png', subfolder: '', type: 'temp' }]
@@ -246,10 +242,6 @@ describe('useGLSLPreview', () => {
   describe('render pipeline', () => {
     beforeEach(() => {
       vi.useFakeTimers()
-    })
-
-    afterEach(() => {
-      vi.useRealTimers()
     })
 
     async function setupAndRender(node: LGraphNode) {

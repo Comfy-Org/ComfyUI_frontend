@@ -57,7 +57,6 @@ describe('ColorWidget', () => {
   })
 
   afterEach(() => {
-    vi.useRealTimers()
     document
       .querySelectorAll('input[type="color"]')
       .forEach((el) => el.remove())

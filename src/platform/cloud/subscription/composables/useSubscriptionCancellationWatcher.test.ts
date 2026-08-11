@@ -57,7 +57,6 @@ describe('useSubscriptionCancellationWatcher', () => {
   afterEach(() => {
     activeScopes.forEach((scope) => scope.stop())
     activeScopes.length = 0
-    vi.useRealTimers()
   })
 
   it('polls with exponential backoff and fires telemetry once cancellation detected', async () => {

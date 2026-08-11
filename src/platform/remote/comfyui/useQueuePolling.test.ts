@@ -1,6 +1,6 @@
 import { render } from '@testing-library/vue'
 import { nextTick, reactive } from 'vue'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useQueuePolling } from '@/platform/remote/comfyui/useQueuePolling'
 
@@ -43,10 +43,6 @@ describe('useQueuePolling', () => {
     store.activeJobsCount = 0
     store.isLoading = false
     store.update.mockReset()
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
   })
 
   it('does not call update on creation', () => {
