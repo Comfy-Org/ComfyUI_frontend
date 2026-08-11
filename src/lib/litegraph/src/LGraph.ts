@@ -24,6 +24,7 @@ import { graphScopeOf, toRootGraphId } from '@/types/graphScopeId'
 import {
   createLGraphState,
   mintGroupId,
+  mintLinkId,
   mintNodeId,
   mintRerouteId,
   observeGroupId,
@@ -432,9 +433,6 @@ export class LGraph
     return
   }
 
-  /** Internal only.  Not required for serialisation; calculated on deserialise. */
-  private _lastFloatingLinkId: number = 0
-
   private readonly floatingLinksInternal: Map<LinkId, LLink> = new Map()
   get floatingLinks(): ReadonlyMap<LinkId, LLink> {
     return this.floatingLinksInternal
@@ -575,8 +573,6 @@ export class LGraph
 
     this.reroutes.clear()
     this.floatingLinksInternal.clear()
-
-    this._lastFloatingLinkId = 0
 
     // other scene stuff
     this._groups = []
@@ -1564,12 +1560,7 @@ export class LGraph
 
   addFloatingLink(link: LLink): LLink | undefined {
     if (link.id === -1) {
-      do {
-        link.id = toLinkId(++this._lastFloatingLinkId)
-      } while (
-        this.links.has(link.id) ||
-        this.floatingLinksInternal.has(link.id)
-      )
+      link.id = mintLinkId(this.state)
     } else {
       const incumbent = this.floatingLinksInternal.get(link.id)
       if (incumbent === link) return link
@@ -1583,8 +1574,8 @@ export class LGraph
       }
     }
 
-    observeLinkId(this.state, link.id)
     if (!registerLinkTopology(this, link)) return
+    observeLinkId(this.state, link.id)
     this.floatingLinksInternal.set(link.id, link)
     return link
   }
@@ -1615,7 +1606,9 @@ export class LGraph
       }
       return existing === link
     }
-    return registerLinkTopology(this, link)
+    if (!registerLinkTopology(this, link)) return false
+    observeLinkId(this.state, link.id)
+    return true
   }
 
   /**
@@ -2795,9 +2788,6 @@ export class LGraph
             floatingLink.id = toLinkId(-1)
           }
           this.addFloatingLink(floatingLink)
-
-          if (floatingLink.id > this._lastFloatingLinkId)
-            this._lastFloatingLinkId = floatingLink.id
         }
       }
 

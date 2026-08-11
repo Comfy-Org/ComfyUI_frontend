@@ -99,6 +99,28 @@ describe('LLink ↔ linkStore integration', () => {
     expect(store.isInputSlotConnected(graphScopeOf(graph), b.id, 0)).toBe(false)
   })
 
+  it('allocates after an explicitly registered link id', () => {
+    const graph = new LGraph()
+    const explicit = new LLink(
+      toLinkId(100),
+      '*',
+      toNodeId(100),
+      0,
+      toNodeId(101),
+      0
+    )
+    expect(graph._addLink(explicit)).toBe(true)
+
+    const a = new LGraphNode('A')
+    const b = new LGraphNode('B')
+    a.addOutput('out', '*')
+    b.addInput('in', '*')
+    graph.add(a)
+    graph.add(b)
+
+    expect(a.connect(0, b, 0)?.id).toBe(toLinkId(101))
+  })
+
   it('link.parentId writes are observable through the store query', () => {
     const graph = new LGraph()
     const a = new LGraphNode('A')

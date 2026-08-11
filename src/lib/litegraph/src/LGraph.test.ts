@@ -265,6 +265,26 @@ describe('Floating Links / Reroutes', () => {
     expect(graph.floatingLinks.size).toBe(1)
   })
 
+  test('mints floating link ids across a root and its subgraphs', () => {
+    const graph = new LGraph()
+    const subgraph = graph.createSubgraph(createTestSubgraphData())
+    const rootLink = new LLink(
+      toLinkId(-1),
+      '*',
+      UNASSIGNED_NODE_ID,
+      -1,
+      UNASSIGNED_NODE_ID,
+      -1
+    )
+    const subgraphLink = LLink.create(rootLink)
+
+    expect(graph.addFloatingLink(rootLink)).toBe(rootLink)
+    expect(subgraph.addFloatingLink(subgraphLink)).toBe(subgraphLink)
+    expect(subgraphLink.id).not.toBe(rootLink.id)
+    expect(graph.floatingLinks.get(rootLink.id)).toBe(rootLink)
+    expect(subgraph.floatingLinks.get(subgraphLink.id)).toBe(subgraphLink)
+  })
+
   test('Floating reroute should be removed when node and link are removed', ({
     expect,
     floatingLinkGraph
