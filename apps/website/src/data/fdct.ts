@@ -13,9 +13,12 @@ export interface FdctPageData {
 export interface FdctTechnologist {
   id: string
   name: string
+  // Optional preferred first name for the "See {name}'s work" CTA when it
+  // differs from the leading token of `name` (e.g. Robert Paige → "Bert").
+  nickname?: string
   avatarSrc: string
   description: string
-  tags: readonly string[]
+  tags?: readonly string[]
 }
 
 // Headshots live on the media CDN; bios, tag labels, and workflow
@@ -34,6 +37,10 @@ const technologistIdentities = {
   'rob-losch': {
     name: 'Rob Losch',
     avatarSrc: 'https://media.comfy.org/website/technologists/rob-losch.png'
+  },
+  'robert-paige': {
+    name: 'Robert Paige',
+    avatarSrc: 'https://media.comfy.org/website/technologists/robert-paige.png'
   }
 } as const
 
@@ -68,6 +75,14 @@ export function technologists(
         t('fdct.tags.marketing', locale),
         t('fdct.tags.advertising', locale)
       ]
+    },
+    {
+      id: 'robert-paige',
+      ...technologistIdentities['robert-paige'],
+      // Design 10769:8658 shows no technologist-level tag badges for Robert;
+      // his dialog leads straight from bio into the workflow cards.
+      nickname: 'Bert',
+      description: t('fdct.technologists.robertPaige.description', locale)
     }
   ]
 }
@@ -246,6 +261,54 @@ export function projects(locale: Locale = 'en'): readonly FdctProject[] {
         t('fdct.tags.imageToVideo', locale),
         t('fdct.tags.characterReference', locale)
       ],
+      dialogOnly: true
+    },
+    // Robert Paige's highlighted workflows (design 10769:8658). Placeholder
+    // cover media and hub links until Robert's real workflow URLs land; only
+    // titles and tags are final. Replace `media`/`href` when the links arrive.
+    {
+      id: 'remove-object-from-video',
+      title: 'Remove Object from Video',
+      category: 'advertisement',
+      media: {
+        type: 'image',
+        src: 'https://media.comfy.org/website/fdct/headphones.png'
+      },
+      author: technologistIdentities['robert-paige'],
+      href: '#',
+      description: t('fdct.projects.removeObjectFromVideo.description', locale),
+      tags: [t('fdct.tags.advertising', locale)],
+      dialogOnly: true
+    },
+    {
+      id: 'minimax-h3-image-to-video',
+      title: 'MiniMax H3: Image to Video',
+      category: 'advertisement',
+      media: {
+        type: 'image',
+        src: 'https://media.comfy.org/website/fdct/headphones.png'
+      },
+      author: technologistIdentities['robert-paige'],
+      href: '#',
+      description: t('fdct.projects.minimaxH3ImageToVideo.description', locale),
+      tags: [
+        t('fdct.tags.marketing', locale),
+        t('fdct.tags.advertising', locale)
+      ],
+      dialogOnly: true
+    },
+    {
+      id: 'swap-product-ugc-style',
+      title: "Swap Product in Character's Hand, UGC Style",
+      category: 'advertisement',
+      media: {
+        type: 'image',
+        src: 'https://media.comfy.org/website/fdct/headphones.png'
+      },
+      author: technologistIdentities['robert-paige'],
+      href: '#',
+      description: t('fdct.projects.swapProductUgcStyle.description', locale),
+      tags: [t('fdct.tags.ugcAds', locale)],
       dialogOnly: true
     }
   ]

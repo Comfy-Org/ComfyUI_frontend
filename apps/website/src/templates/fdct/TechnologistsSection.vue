@@ -28,7 +28,7 @@ const people = technologists(locale).map((person) => ({
   ...person,
   ctaLabel: t('fdct.technologists.seeWork', locale).replace(
     '{name}',
-    person.name.split(' ')[0]
+    person.nickname ?? person.name.split(' ')[0]
   ),
   workflows: workflowsOf(person)
 }))

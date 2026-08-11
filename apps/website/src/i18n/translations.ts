@@ -5561,6 +5561,11 @@ const translations = {
     'zh-CN':
       'Rob 从第一天起就活跃在 ComfyUI。他拥有大量覆盖营销与广告场景的工作流，并能精准找到你正在寻找的那一个。'
   },
+  'fdct.technologists.robertPaige.description': {
+    en: "Robert's work spans rapid-growth companies like Instacart and Lyft, with deep expertise in creative ecosystems and AI integration. At the intersection of craft and system, he architects production infrastructure that helps organizations tell their story.",
+    'zh-CN':
+      'Robert 曾服务于 Instacart、Lyft 等高速成长的公司，在创意生态与 AI 集成方面拥有深厚经验。他游走于工艺与系统之间，构建帮助组织讲好品牌故事的制作基础设施。'
+  },
   'fdct.tags.entertainment': { en: 'Entertainment', 'zh-CN': '娱乐' },
   'fdct.tags.nuke': { en: 'Nuke', 'zh-CN': 'Nuke' },
   'fdct.tags.vfx': { en: 'VFX', 'zh-CN': 'VFX' },
@@ -5578,6 +5583,7 @@ const translations = {
   'fdct.tags.video': { en: 'Video', 'zh-CN': '视频' },
   'fdct.tags.virtualTryOn': { en: 'Virtual Try On', 'zh-CN': '虚拟试穿' },
   'fdct.tags.fashion': { en: 'Fashion', 'zh-CN': '时尚' },
+  'fdct.tags.ugcAds': { en: 'UGC Ads', 'zh-CN': 'UGC 广告' },
   'fdct.projects.title': { en: 'Past projects', 'zh-CN': '过往项目' },
   'fdct.projects.category.advertisement': {
     en: 'Advertisement',
@@ -5632,6 +5638,19 @@ const translations = {
     en: 'Turn a headshot into a branded still and a quick motion test for casting previs, using Gemini image-to-image and Kling image-to-video.',
     'zh-CN':
       '通过 Gemini 图生图与 Kling 图生视频，将头像照片转化为品牌风格静帧与快速动态测试，用于选角预览。'
+  },
+  // Robert Paige's highlights — placeholder copy until final descriptions land.
+  'fdct.projects.removeObjectFromVideo.description': {
+    en: 'Cleanly remove unwanted objects from a video clip while keeping the background and motion intact.',
+    'zh-CN': '干净地移除视频片段中的多余物体，同时保留背景与运动的完整性。'
+  },
+  'fdct.projects.minimaxH3ImageToVideo.description': {
+    en: 'Animate a still image into a short video with MiniMax H3, ready for social and ad placements.',
+    'zh-CN': '使用 MiniMax H3 将静态图像转化为短视频，适配社交与广告投放。'
+  },
+  'fdct.projects.swapProductUgcStyle.description': {
+    en: "Swap a product into a character's hand for authentic, UGC-style ad creative.",
+    'zh-CN': '将产品替换到角色手中，打造真实的 UGC 风格广告创意。'
   },
   'fdct.faq.title': { en: 'Q&A', 'zh-CN': '问答' },
   'fdct.faq.q1': {

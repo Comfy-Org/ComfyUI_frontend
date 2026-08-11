@@ -48,7 +48,7 @@ const {
     </p>
 
     <div
-      class="grid grid-cols-1 gap-4 md:grid-cols-3"
+      class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4"
       :class="(heading || lead) && 'mt-12 lg:mt-16'"
     >
       <Card
