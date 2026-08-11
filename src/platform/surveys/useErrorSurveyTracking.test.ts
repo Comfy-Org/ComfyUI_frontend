@@ -32,7 +32,6 @@ describe('useErrorSurveyTracking', () => {
   }
 
   beforeEach(() => {
-    trackFeatureUsed.mockReset()
     setActivePinia(createPinia())
     store = useFakeExecutionErrorStore()
   })

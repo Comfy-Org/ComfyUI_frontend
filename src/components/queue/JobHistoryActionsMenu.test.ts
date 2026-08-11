@@ -65,9 +65,6 @@ const renderMenu = () =>
 describe('JobHistoryActionsMenu', () => {
   beforeEach(() => {
     i18n.global.locale.value = 'en'
-    popoverCloseSpy.mockClear()
-    mockSetSetting.mockClear()
-    mockSetMany.mockClear()
     mockSidebarTabStore.activeSidebarTabId = null
     mockGetSetting.mockImplementation((key: string) =>
       key === 'Comfy.Queue.QPOV2' || key === 'Comfy.Queue.ShowRunProgressBar'

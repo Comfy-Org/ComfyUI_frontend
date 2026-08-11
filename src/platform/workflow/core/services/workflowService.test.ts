@@ -939,7 +939,6 @@ describe('useWorkflowService', () => {
       service = useWorkflowService()
       vi.spyOn(workflowStore, 'saveWorkflow').mockResolvedValue()
       vi.spyOn(workflowStore, 'renameWorkflow').mockResolvedValue()
-      mockTrackWorkflowSaved.mockClear()
       app.rootGraph.extra = {}
     })
 

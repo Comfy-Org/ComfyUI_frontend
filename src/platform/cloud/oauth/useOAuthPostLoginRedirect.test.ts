@@ -45,7 +45,6 @@ function mountRedirect() {
 describe('useOAuthPostLoginRedirect', () => {
   beforeEach(() => {
     sessionStorage.clear()
-    routerPush.mockClear()
     createSessionOrThrow.mockReset().mockResolvedValue(undefined)
   })
 

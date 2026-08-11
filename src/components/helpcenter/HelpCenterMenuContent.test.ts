@@ -120,7 +120,6 @@ describe('HelpCenterMenuContent feedback item', () => {
     distribution.isCloud = false
     distribution.isDesktop = false
     distribution.isNightly = false
-    commandStoreExecute.mockReset()
     openSpy = vi.spyOn(window, 'open').mockReturnValue(null)
   })
 

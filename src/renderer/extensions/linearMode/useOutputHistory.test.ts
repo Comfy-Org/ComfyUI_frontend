@@ -165,8 +165,6 @@ describe(useOutputHistory, () => {
     pendingTasksRef.value = []
     resolvedOutputsCacheRef.clear()
     jobDetailResults.clear()
-    selectAsLatestFn.mockReset()
-    resolveIfReadyFn.mockReset()
   })
 
   describe('sessionMedia filtering', () => {

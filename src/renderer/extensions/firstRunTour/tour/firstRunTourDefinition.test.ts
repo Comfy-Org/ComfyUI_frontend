@@ -103,7 +103,6 @@ function loadTemplate(templateId: keyof typeof TOUR_ROLE_PINS): LGraph {
 describe('firstRunTourSteps', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    disposals.spy.mockClear()
   })
 
   afterEach(() => {

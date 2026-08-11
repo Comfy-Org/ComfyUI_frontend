@@ -389,9 +389,6 @@ describe('useCoreCommands', () => {
 
     beforeEach(() => {
       app.canvas.selectedItems = new Set()
-      vi.mocked(app.canvas.copyToClipboard).mockClear()
-      vi.mocked(app.canvas.pasteFromClipboard).mockClear()
-      vi.mocked(app.canvas.selectItems).mockClear()
     })
 
     it('should copy selected items when selection exists', async () => {

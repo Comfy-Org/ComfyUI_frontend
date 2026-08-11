@@ -216,7 +216,6 @@ describe('useErrorGroups', () => {
     setActivePinia(createPinia())
     mockIsCloud.value = false
     vi.mocked(isLGraphNode).mockReturnValue(false)
-    vi.mocked(getNodeByExecutionId).mockReset()
   })
 
   describe('missingPackGroups', () => {

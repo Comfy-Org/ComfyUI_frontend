@@ -130,7 +130,6 @@ describe('useSlotElementTracking', () => {
     })
     mockGraph._nodes = [{ id: 1 }]
     mockCanvasState.canvas = {}
-    mockClientPosToCanvasPos.mockClear()
   })
 
   it.for([

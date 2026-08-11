@@ -130,7 +130,6 @@ describe('display label behavior', () => {
 describe('useWidgetSelectItems', () => {
   beforeEach(() => {
     mockMediaAssets = createMockMediaAssets()
-    mockResolveOutputAssetItems.mockReset()
     mockAssetsData.items = []
   })
 

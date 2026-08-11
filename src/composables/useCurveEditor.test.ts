@@ -103,7 +103,6 @@ describe('useCurveEditor', () => {
   beforeEach(() => {
     ensureMatrixTransformPolyfill()
     harness = undefined
-    mockCreateInterpolator.mockClear()
   })
 
   afterEach(() => {

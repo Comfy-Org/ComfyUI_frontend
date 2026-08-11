@@ -59,8 +59,6 @@ describe('FE-230 regression — workflow-load missing-media flagging must not wi
     setActivePinia(createPinia())
     mockApp.isGraphReady = true
     mockApp.rootGraph = { nodes: [], _nodes: [] } as unknown as LGraph
-    mockRemoveNodeOutputs.mockReset()
-    mockGetNodeByExecutionId.mockReset()
   })
 
   it('does not clear node.imgs when verification flags a Load Image as missing on workflow load (e.g. mask-editor saved value)', async () => {

@@ -48,8 +48,6 @@ describe('ComfyUI file input', () => {
         unobserve = vi.fn()
       }
     )
-    mockApp.handleFile.mockReset()
-    mockApp.showErrorOnFileLoad.mockReset()
   })
 
   afterEach(() => {

@@ -32,7 +32,6 @@ describe('FE-230 markDeletedAssetsAsMissingMedia', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     seedMediaNodeDefs()
-    mockScanNodeMediaCandidates.mockReset()
     mockScanNodeMediaCandidates.mockReturnValue([])
   })
 

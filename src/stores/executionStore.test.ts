@@ -187,9 +187,6 @@ describe('useExecutionStore - NodeLocatorId conversions', () => {
 
   beforeEach(() => {
     // Reset mock implementations
-    mockNodeIdToNodeLocatorId.mockReset()
-    mockNodeLocatorIdToNodeExecutionId.mockReset()
-    mockExecutionIdToCurrentId.mockReset()
 
     store = useExecutionStore()
   })
@@ -272,10 +269,6 @@ describe('useExecutionStore - nodeLocationProgressStates caching', () => {
   let store: ReturnType<typeof useExecutionStore>
 
   beforeEach(() => {
-    mockNodeIdToNodeLocatorId.mockReset()
-    mockNodeLocatorIdToNodeExecutionId.mockReset()
-    mockExecutionIdToCurrentId.mockReset()
-
     store = useExecutionStore()
   })
 
@@ -1469,7 +1462,6 @@ describe('useExecutionStore - RAF batching', () => {
   }
 
   beforeEach(() => {
-    vi.clearAllMocks()
     store = useExecutionStore()
     store.bindExecutionEvents()
   })

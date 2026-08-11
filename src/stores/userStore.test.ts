@@ -14,7 +14,6 @@ vi.mock('@/scripts/api', () => ({
 describe('userStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    getUserConfig.mockReset()
   })
 
   describe('initialize', () => {
