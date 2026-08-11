@@ -14,6 +14,7 @@ import AssetsSidebarTab from './AssetsSidebarTab.vue'
 const flatOutputMocks = vi.hoisted(() => ({
   media: undefined as unknown as Ref<AssetItem[]>,
   hasMore: undefined as unknown as Ref<boolean>,
+  isLoadingMore: undefined as unknown as Ref<boolean>,
   loadMore: vi.fn()
 }))
 
@@ -42,6 +43,16 @@ const videoAsset = vi.hoisted(
     }) satisfies AssetItem
 )
 
+const audioAsset = vi.hoisted(
+  () =>
+    ({
+      id: 'audio-output',
+      name: 'audio-output.mp3',
+      mime_type: 'audio/mpeg',
+      tags: ['output']
+    }) satisfies AssetItem
+)
+
 vi.mock('@/platform/distribution/types', () => ({ isCloud: false }))
 
 vi.mock('@/platform/assets/composables/media/useAssetsApi', async () => {
@@ -64,6 +75,7 @@ vi.mock('@/platform/assets/composables/media/useFlatOutputAssets', async () => {
   const { ref } = await import('vue')
   flatOutputMocks.media = ref([folderAsset, videoAsset])
   flatOutputMocks.hasMore = ref(false)
+  flatOutputMocks.isLoadingMore = ref(false)
 
   return {
     useFlatOutputAssets: () => ({
@@ -73,7 +85,7 @@ vi.mock('@/platform/assets/composables/media/useFlatOutputAssets', async () => {
       fetchMediaList: vi.fn().mockResolvedValue(flatOutputMocks.media.value),
       loadMore: flatOutputMocks.loadMore,
       hasMore: flatOutputMocks.hasMore,
-      isLoadingMore: ref(false)
+      isLoadingMore: flatOutputMocks.isLoadingMore
     })
   }
 })
@@ -207,6 +219,7 @@ describe('AssetsSidebarTab folder navigation', () => {
     vi.spyOn(api, 'getServerFeature').mockReturnValue(true)
     flatOutputMocks.media.value = [folderAsset, videoAsset]
     flatOutputMocks.hasMore.value = false
+    flatOutputMocks.isLoadingMore.value = false
     flatOutputMocks.loadMore.mockReset()
   })
 
@@ -266,6 +279,44 @@ describe('AssetsSidebarTab folder navigation', () => {
 
     expect(flatOutputMocks.loadMore).toHaveBeenCalledOnce()
     expect(screen.getByText('video-output.mp4')).toBeVisible()
+  })
+
+  it('waits for active pagination before loading a newly selected media type', async () => {
+    let resolveFirstLoad!: () => void
+    const firstLoad = new Promise<void>((resolve) => {
+      resolveFirstLoad = resolve
+    })
+    flatOutputMocks.media.value = [folderAsset]
+    flatOutputMocks.hasMore.value = true
+    flatOutputMocks.loadMore
+      .mockImplementationOnce(async () => {
+        flatOutputMocks.isLoadingMore.value = true
+        await firstLoad
+        flatOutputMocks.media.value = [folderAsset, videoAsset]
+        flatOutputMocks.isLoadingMore.value = false
+      })
+      .mockImplementationOnce(async () => {
+        flatOutputMocks.isLoadingMore.value = true
+        flatOutputMocks.media.value = [folderAsset, videoAsset, audioAsset]
+        flatOutputMocks.hasMore.value = false
+        flatOutputMocks.isLoadingMore.value = false
+      })
+    renderTab()
+
+    await userEvent.click(screen.getByText('Videos'))
+    await vi.waitFor(() => {
+      expect(flatOutputMocks.loadMore).toHaveBeenCalledOnce()
+    })
+
+    await userEvent.click(screen.getByText('Audio'))
+    await nextTick()
+    expect(flatOutputMocks.loadMore).toHaveBeenCalledOnce()
+
+    resolveFirstLoad()
+    await vi.waitFor(() => {
+      expect(flatOutputMocks.loadMore).toHaveBeenCalledTimes(2)
+    })
+    expect(screen.getByText('audio-output.mp3')).toBeVisible()
   })
 
   it('keeps history-backed generated assets when the asset API is disabled', () => {
