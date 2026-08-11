@@ -1,9 +1,6 @@
 import { clamp } from 'es-toolkit/compat'
 
-import type {
-  IContextMenuOptions,
-  IContextMenuValue
-} from '@/lib/litegraph/src/interfaces'
+import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
@@ -129,7 +126,9 @@ export class ComboWidget
     options.canvas.last_mouseclick = 0
 
     const foundIndex = Array.isArray(values)
-      ? indexedValues.indexOf(this.value) + delta
+      ? indexedValues.findIndex(
+          (value) => String(value) === String(this.value)
+        ) + delta
       : indexedValues.indexOf(String(this.value)) + delta
 
     const index = clamp(foundIndex, 0, indexedValues.length - 1)
@@ -194,12 +193,13 @@ export class ComboWidget
       scale: Math.max(1, canvas.ds.scale),
       event: e,
       className: 'dark',
-      callback: ((value?: string | number) => {
+      callback: (value?: string | number | IContextMenuValue<unknown>) => {
+        if (value === undefined || typeof value === 'object') return
         this.setValue(
-          values != values_list ? text_values.indexOf(value!) : value!,
+          values != values_list ? text_values.indexOf(value) : value,
           { e, node, canvas }
         )
-      }) as IContextMenuOptions['callback']
+      }
     })
   }
 }
