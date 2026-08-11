@@ -215,7 +215,7 @@ test('a backend 5xx during submission cannot be pinned on the node under test', 
       timeoutMs: 60_000
     })
   ).rejects.toThrow(
-    'prompt submission failed server-side (HTTP 500 POST /prompt) - Failed to create job record - backend/environment fault, not a pack validation reject'
+    'prompt submission failed server-side (HTTP 500 POST /prompt) - Failed to create job record [type: DATABASE_ERROR] - backend/environment fault, not a pack validation reject'
   )
   expect(waitedForExecution).toBe(false)
   expect(listeners.size).toBe(0)

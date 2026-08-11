@@ -60,9 +60,20 @@ export function summarizePromptError(body: unknown): string | undefined {
 // A non-2xx /prompt response, with attribution decided by its status: 400 is
 // the backend REJECTING this graph (pack-attributable validation), 5xx is the
 // backend FAILING (an environment fault that is never a per-node verdict).
+// errorType is the body's typed provenance when the backend supplies one
+// (Cloud infra faults carry e.g. DATABASE_ERROR; an OSS validation-time crash
+// or a proxy 5xx arrives untyped, which is itself diagnostic).
 interface PromptRejection {
   status: number
   summary?: string
+  errorType?: string
+}
+
+export function extractPromptErrorType(body: unknown): string | undefined {
+  const error = (body as Partial<PromptResponse> | null)?.error
+  if (typeof error !== 'object' || error === null) return undefined
+  const type = (error as { type?: unknown }).type
+  return typeof type === 'string' && type ? type : undefined
 }
 
 const describeRejection = (rejection: PromptRejection): string =>
@@ -72,6 +83,7 @@ const serverSideFault = (rejection: PromptRejection): Error =>
   new Error(
     `prompt submission failed server-side (HTTP ${rejection.status} POST /prompt)` +
       (rejection.summary ? ` - ${rejection.summary}` : '') +
+      (rejection.errorType ? ` [type: ${rejection.errorType}]` : '') +
       ' - backend/environment fault, not a pack validation reject'
   )
 
@@ -190,7 +202,11 @@ export class LocalDesktopTarget {
         capturedPromptId = promptId
         capturedRejection =
           status >= 400
-            ? { status, summary: summarizePromptError(body) }
+            ? {
+                status,
+                summary: summarizePromptError(body),
+                errorType: extractPromptErrorType(body)
+              }
             : undefined
       }
     )
