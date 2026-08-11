@@ -85,14 +85,12 @@ subgraphId:nodeId"]
 `WidgetId = graphId:nodeId:name` is itself a branded string (see
 `src/types/widgetId.ts`). `nodeLocatorId = subgraphId:nodeId` addresses node
 outputs. `layoutStore` keys geometry records by raw `nodeId` / `linkId` /
-`rerouteId`. `linkStore` keys `LinkTopology` by **target input slot**
-(`targetNodeId:targetSlot`) inside root-graph-scoped buckets — the link id is
-NOT the key; at most one live link can target an input slot, so the target is
-the natural primary key (see
-[link-topology-store.md](link-topology-store.md)). Links without a unique
-target (floating links, `SUBGRAPH_OUTPUT_ID` targets) live in a per-graph
-unkeyed side set. `rerouteStore` keys `RerouteChain` by raw `rerouteId` in
-root-graph-scoped buckets (see
+`rerouteId`. `linkStore` keys `LinkTopology` identity by `linkId` inside
+root-graph-scoped buckets. Owner-local and endpoint indexes provide graph
+iteration and slot queries; the target index includes only links whose target
+slot is unique (see [link-topology-store.md](link-topology-store.md)).
+`rerouteStore` keys `RerouteChain` by raw `rerouteId` in root-graph-scoped
+buckets (see
 [reroute-chain-store.md](reroute-chain-store.md)). Each store enforces its own
 key shape; there is no single shared entity-ID type across stores.
 
