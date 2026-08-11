@@ -3,6 +3,7 @@ import { expect } from '@playwright/test'
 import {
   fdctFaqs,
   featuredProjects as featuredProjectsOf,
+  projects as hubProjectsOf,
   technologists as technologistsOf
 } from '../src/data/fdct'
 import { t } from '../src/i18n/translations'
@@ -126,6 +127,47 @@ test.describe('FDCT page @smoke', () => {
         section.getByText(person.name, { exact: true })
       ).toBeVisible()
     }
+  })
+
+  test('opens a technologist dialog with their workflow cards and closes on Escape', async ({
+    page
+  }) => {
+    await page.goto('/forward-deployed-creatives')
+    // Chris V.'s workflows render only inside his bio dialog, so this is the
+    // suite's only coverage of the dialog + its CardWorkflow01 grid.
+    const person = technologists.find((t) => t.name === 'Chris V.')!
+    const personWorkflows = hubProjectsOf('en').filter(
+      (project) => project.author.name === person.name
+    )
+    expect(personWorkflows.length).toBeGreaterThan(0)
+
+    const section = page.locator('section', {
+      has: page.getByRole('heading', {
+        name: t('fdct.technologists.title', 'en')
+      })
+    })
+    const seeWork = t('fdct.technologists.seeWork', 'en').replace(
+      '{name}',
+      person.nickname ?? person.name.split(' ')[0]
+    )
+    const trigger = section.getByRole('button', { name: seeWork })
+    const dialog = page.getByRole('dialog')
+    // reka-ui server-renders the trigger, so a click can land before the island
+    // hydrates and be a no-op. Retry the open only while the dialog is still
+    // closed (the trigger toggles, so an unconditional re-click could close it).
+    await expect(async () => {
+      if (!(await dialog.isVisible())) await trigger.click()
+      await expect(dialog).toBeVisible({ timeout: 1000 })
+    }).toPass()
+    await expect(
+      dialog.getByRole('heading', { name: person.name })
+    ).toBeVisible()
+    await expect(
+      dialog.getByRole('heading', { name: personWorkflows[0].title })
+    ).toBeVisible()
+
+    await page.keyboard.press('Escape')
+    await expect(dialog).toBeHidden()
   })
 
   test('past projects renders six unlinked cards with tags', async ({
