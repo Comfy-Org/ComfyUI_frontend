@@ -648,10 +648,11 @@ describe('ExecutableNodeDTO Integration', () => {
   })
 
   it('should handle execution context correctly', () => {
-    const subgraph = createTestSubgraph({ nodeCount: 1 })
+    const subgraph = createTestSubgraph()
     const subgraphNode = createTestSubgraphNode(subgraph, { id: 99 })
-    const innerNode = subgraph.nodes[0]
+    const innerNode = new LGraphNode('Inner')
     innerNode.id = toNodeId(55)
+    subgraph.add(innerNode)
 
     const dto = new ExecutableNodeDTO(
       innerNode,

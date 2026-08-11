@@ -1,4 +1,5 @@
 import { toString } from 'es-toolkit/compat'
+import { getActivePinia } from 'pinia'
 import { shallowRef, toRaw } from 'vue'
 
 import {
@@ -274,6 +275,25 @@ function walkSegment(
  * + onNodeAdded: when a new node is added to the graph
  * + onNodeRemoved: when a node inside this graph is removed
  */
+function registerConfiguredLink(
+  graph: LGraph,
+  link: LLink,
+  survivorByRejected: Map<LinkId, LinkId>
+): void {
+  if (graph.links.has(link.id) || graph._addLink(link)) return
+  const incumbent = useLinkStore().getInputSlotLink(
+    graphScopeOf(graph),
+    link.target_id,
+    link.target_slot
+  )
+  if (
+    incumbent?.originNodeId === link.origin_id &&
+    incumbent.originSlot === link.origin_slot
+  ) {
+    survivorByRejected.set(link.id, incumbent.id)
+  }
+}
+
 export class LGraph
   implements LinkNetwork, BaseLGraph, Serialisable<SerialisableGraph>
 {
@@ -468,7 +488,8 @@ export class LGraph
   constructor(o?: ISerialisedGraph | SerialisableGraph) {
     /** @see MapProxyHandler */
     const links = new LinkMap(
-      () => (this.rootGraph ? graphScopeOf(this) : undefined),
+      () =>
+        getActivePinia() && this.rootGraph ? graphScopeOf(this) : undefined,
       (scope, id) => {
         const topology = useLinkStore().getTopology(scope.rootGraphId, id)
         return topology?.graphId === scope.owningGraphId
@@ -1579,15 +1600,15 @@ export class LGraph
   /**
    * Registers a link in the root-wide identity store.
    */
-  _addLink(link: LLink): void {
+  _addLink(link: LLink): boolean {
     const existing = this.links.get(link.id)
     if (existing) {
       if (existing !== link) {
         console.warn(`LiteGraph: refusing to add duplicate link id ${link.id}`)
       }
-      return
+      return existing === link
     }
-    if (!registerLinkTopology(this, link)) return
+    return registerLinkTopology(this, link)
   }
 
   /**
@@ -2565,14 +2586,20 @@ export class LGraph
       this._configureBase(data)
 
       if (options.clearGraph) {
-        // The payload is authoritative for this owner's topology: drop any
-        // stale bucket left by a graph that previously held this id.
         const topologyScope = graphScopeOf(this)
-        useLinkStore().clearOwner(topologyScope)
-        useRerouteStore().clearOwner(topologyScope)
+        if (this.isRootGraph) {
+          useLinkStore().clearGraph(topologyScope.rootGraphId)
+          useRerouteStore().clearGraph(topologyScope.rootGraphId)
+          useNodeDataStore().clearGraph(this.id)
+        } else {
+          useLinkStore().clearOwner(topologyScope)
+          useRerouteStore().clearOwner(topologyScope)
+          useNodeDataStore().clearOwner(topologyScope)
+        }
       }
 
       let reroutes: SerialisableReroute[] | undefined
+      const survivorByRejected = new Map<LinkId, LinkId>()
 
       // TODO: Determine whether this should this fall back to 0.4.
       if (data.version === 0.4) {
@@ -2581,7 +2608,7 @@ export class LGraph
         if (Array.isArray(data.links)) {
           for (const linkData of data.links) {
             const link = LLink.createFromArray(linkData)
-            if (!this.links.has(link.id)) this.links.set(link.id, link)
+            registerConfiguredLink(this, link, survivorByRejected)
           }
         }
         // #region `extra` embeds for v0.4
@@ -2622,7 +2649,7 @@ export class LGraph
         if (Array.isArray(data.links)) {
           for (const linkData of data.links) {
             const link = LLink.create(linkData)
-            if (!this.links.has(link.id)) this.links.set(link.id, link)
+            registerConfiguredLink(this, link, survivorByRejected)
           }
         }
 
@@ -2789,6 +2816,9 @@ export class LGraph
       }
 
       const survivorByPurged = this._removeDuplicateLinks()
+      for (const [rejected, survivor] of survivorByRejected) {
+        survivorByPurged.set(rejected, survivor)
+      }
 
       // Node configure() overrides may have reordered serialized inputs in
       // place to match current node definitions; re-key links to the slots
