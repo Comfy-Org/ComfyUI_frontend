@@ -502,7 +502,7 @@ export class LGraph
       unregisterAllGraphLayout(this)
     }
 
-    this.id = zeroUuid
+    this.id = this.isRootGraph ? createUuidv4() : zeroUuid
     this.revision = 0
 
     this.state = createLGraphState()
