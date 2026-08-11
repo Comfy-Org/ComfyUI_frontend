@@ -15,6 +15,9 @@ test.describe('Load Image upload persistence', () => {
   test('keeps a dropped image across a reload without saving', async ({
     comfyPage
   }) => {
+    test.setTimeout(30000)
+
+    await comfyPage.settings.setSetting('Comfy.Workflow.Persist', true)
     await comfyPage.nodeOps.clearGraph()
     await comfyPage.searchBoxV2.addNode('Load Image')
 
@@ -53,7 +56,7 @@ test.describe('Load Image upload persistence', () => {
             }
             return false
           }, valueAfterDrop),
-        { timeout: 15_000 }
+        { timeout: 10_000 }
       )
       .toBe(true)
 
