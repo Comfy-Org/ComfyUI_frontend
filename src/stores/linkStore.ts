@@ -188,16 +188,25 @@ export const useLinkStore = defineStore('link', () => {
     const bucket = rootBucket(scope.rootGraphId)
     const incumbent = bucket.byId.get(topology.id)
     if (toRaw(incumbent) === toRaw(topology)) return incumbent
-    if (incumbent) return undefined
-    const owned = Object.assign(topology, { graphId: scope.owningGraphId })
-    if (hasUniqueTarget(owned)) {
-      const key = targetKey(owned.graphId, owned.targetNodeId, owned.targetSlot)
+    if (incumbent) {
+      console.error(
+        `Link ${topology.id} belongs to graph ${incumbent.graphId}; graph ${scope.owningGraphId} cannot overwrite it.`
+      )
+      return undefined
+    }
+    if (hasUniqueTarget(topology)) {
+      const key = targetKey(
+        scope.owningGraphId,
+        topology.targetNodeId,
+        topology.targetSlot
+      )
       const existing = bucket.targetIndex.get(key)
-      if (existing && toRaw(existing) !== toRaw(owned)) {
+      if (existing && toRaw(existing) !== toRaw(topology)) {
         console.error(`Link target slot ${key} is already occupied`)
         return undefined
       }
     }
+    const owned = Object.assign(topology, { graphId: scope.owningGraphId })
     return placeValidated(bucket, owned)
   }
 

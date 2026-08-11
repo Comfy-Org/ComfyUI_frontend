@@ -55,10 +55,12 @@ describe('useLinkStore', () => {
     const store = useLinkStore()
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     store.registerLink(graphA, link(1, 5, 0, 9, 2))
+    const rejected = { ...link(2, 5, 0, 9, 2), graphId: graphB.owningGraphId }
 
-    expect(store.registerLink(graphA, link(2, 5, 0, 9, 2))).toBeUndefined()
+    expect(store.registerLink(graphA, rejected)).toBeUndefined()
 
     expect(store.getInputSlotLink(graphA, toNodeId(9), 2)?.id).toBe(toLinkId(1))
+    expect(rejected.graphId).toBe(graphB.owningGraphId)
     expect(consoleError).toHaveBeenCalledOnce()
   })
 
@@ -128,6 +130,7 @@ describe('useLinkStore', () => {
     const store = useLinkStore()
     const first = link(1, 5, 0, Number(SUBGRAPH_OUTPUT_ID), 0)
     const second = link(1, 7, 0, Number(SUBGRAPH_OUTPUT_ID), 0)
+    vi.spyOn(console, 'error').mockImplementation(() => {})
 
     expect(store.registerLink(graphA, first)).toBeDefined()
     expect(store.registerLink(graphASibling, second)).toBeUndefined()

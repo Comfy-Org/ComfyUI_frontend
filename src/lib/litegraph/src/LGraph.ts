@@ -1130,13 +1130,6 @@ export class LGraph
 
     node.id = parseNodeId(node.id) ?? UNASSIGNED_NODE_ID
 
-    if (node.id !== UNASSIGNED_NODE_ID && this._nodes_by_id[node.id] != null) {
-      console.warn(
-        'LiteGraph: there is already a node with this ID, changing it'
-      )
-      node.id = mintNodeId(state)
-    }
-
     if (this._nodes.length >= LiteGraph.MAX_NUMBER_OF_NODES) {
       throw 'LiteGraph: max number of nodes in a graph reached'
     }
@@ -1561,17 +1554,6 @@ export class LGraph
   addFloatingLink(link: LLink): LLink | undefined {
     if (link.id === -1) {
       link.id = mintLinkId(this.state)
-    } else {
-      const incumbent = this.floatingLinksInternal.get(link.id)
-      if (incumbent === link) return link
-
-      if (incumbent || this.links.has(link.id)) {
-        console.error(
-          'LiteGraph: refusing to add floating link with duplicate id',
-          link.id
-        )
-        return
-      }
     }
 
     if (!registerLinkTopology(this, link)) return
@@ -1599,13 +1581,6 @@ export class LGraph
    * Registers a link in the root-wide identity store.
    */
   _addLink(link: LLink): boolean {
-    const existing = this.links.get(link.id)
-    if (existing) {
-      if (existing !== link) {
-        console.warn(`LiteGraph: refusing to add duplicate link id ${link.id}`)
-      }
-      return existing === link
-    }
     if (!registerLinkTopology(this, link)) return false
     observeLinkId(this.state, link.id)
     return true
