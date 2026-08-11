@@ -316,6 +316,7 @@ describe('AssetsSidebarTab folder navigation', () => {
     await vi.waitFor(() => {
       expect(flatOutputMocks.loadMore).toHaveBeenCalledTimes(2)
     })
+    await nextTick()
     expect(screen.getByText('audio-output.mp3')).toBeVisible()
   })
 
