@@ -78,10 +78,13 @@ describe('cloudOnboardingRoutes', () => {
   })
 
   it('preserves the query and hash through the legacy /login redirect', async () => {
-    const to = await attemptNavigation('/login?previousFullPath=%2Ffoo#section')
+    const to = await attemptNavigation(
+      '/login?previousFullPath=%2Ffoo&campaign=one&campaign=two#section'
+    )
 
     expect(to.name).toBe('cloud-login')
     expect(to.query.previousFullPath).toBe('/foo')
+    expect(to.query.campaign).toEqual(['one', 'two'])
     expect(to.hash).toBe('#section')
   })
 
