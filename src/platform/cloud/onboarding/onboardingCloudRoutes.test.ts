@@ -51,17 +51,31 @@ describe('cloudOnboardingRoutes', () => {
     const legacyLoginRoute = cloudOnboardingRoutes.find(
       (route) => route.path === '/login'
     )
+    const cloudLayoutRoute = cloudOnboardingRoutes.find(
+      (route) => route.path === '/cloud'
+    )
+    const cloudLoginRoute = cloudLayoutRoute?.children?.find(
+      (route) => route.name === 'cloud-login'
+    )
     expect(legacyLoginRoute).toBeDefined()
-    if (!legacyLoginRoute) return
+    expect(cloudLayoutRoute).toBeDefined()
+    expect(cloudLoginRoute).toBeDefined()
+    if (!legacyLoginRoute || !cloudLayoutRoute || !cloudLoginRoute) return
 
     const router = createRouter({
       history: createMemoryHistory(),
       routes: [
         legacyLoginRoute,
         {
-          path: '/cloud/login',
-          name: 'cloud-login',
-          component: { template: '<div />' }
+          ...cloudLayoutRoute,
+          component: { template: '<div />' },
+          children: [
+            {
+              ...cloudLoginRoute,
+              component: { template: '<div />' },
+              beforeEnter: undefined
+            }
+          ]
         }
       ]
     })
