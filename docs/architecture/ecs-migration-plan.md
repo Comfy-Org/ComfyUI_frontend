@@ -133,12 +133,15 @@ cheaper to derive on read than to store, so `src/systems/badgeSystem.ts`
 computes them from the stores that already own the inputs. No badge store
 exists. See [Node Badge Store](node-badge-store.md) for the reversal.
 
-`linkStore` holds `LinkTopology` records (`src/types/linkTopology.ts`) keyed by
-target input slot (`` `${targetNodeId}:${targetSlot}` ``) in root-graph-scoped
-buckets — subgraphs share their root's bucket; floating links and links
-targeting subgraph outputs live in a per-graph unkeyed side set. `rerouteStore`
-holds `RerouteChain` records keyed by `RerouteId` in root-graph-scoped buckets;
-link membership is not stored but derived from the links' `parentId` chains.
+`linkStore` holds `LinkTopology` records (`src/types/linkTopology.ts`) in
+root-graph-scoped buckets. Link identity is root-wide; input and output query
+indexes use owner-qualified slot keys
+(`` `${owningGraphId}:${nodeId}:${slot}` ``). Subgraphs share their root's
+identity bucket while retaining owner-local queries and teardown. Floating
+links remain in the root-wide identity map but are omitted from slot indexes.
+`rerouteStore` holds `RerouteChain` records keyed by `RerouteId` in
+root-graph-scoped buckets; link membership is not stored but derived from the
+links' `parentId` chains.
 Design records: [Link Topology Store](link-topology-store.md),
 [Reroute Chain Store](reroute-chain-store.md).
 
@@ -896,16 +899,16 @@ state between these calls.
 
 The dedicated stores use per-concern keying strategies:
 
-| Store                     | Key Format                                                                           |
-| ------------------------- | ------------------------------------------------------------------------------------ |
-| `widgetValueStore`        | `WidgetId` (`graphId:nodeId:name`)                                                   |
-| `domWidgetStore`          | Widget UUID                                                                          |
-| `layoutStore`             | Raw node/link IDs; `${rootGraphId}:${localId}` for group/reroute geometry            |
-| `nodeOutputStore`         | `"${subgraphId}:${nodeId}"`                                                          |
-| `subgraphNavigationStore` | subgraphId or `'root'`                                                               |
-| `linkStore`               | `` `${targetNodeId}:${targetSlot}` `` (target input slot), root-graph-scoped buckets |
-| `rerouteStore`            | `RerouteId`, root-graph-scoped buckets                                               |
-| `nodeDataStore`           | `NodeState` identity (`Set`), root-graph-scoped buckets                              |
+| Store                     | Key Format                                                                      |
+| ------------------------- | ------------------------------------------------------------------------------- |
+| `widgetValueStore`        | `WidgetId` (`graphId:nodeId:name`)                                              |
+| `domWidgetStore`          | Widget UUID                                                                     |
+| `layoutStore`             | Raw node/link IDs; `${rootGraphId}:${localId}` for group/reroute geometry       |
+| `nodeOutputStore`         | `"${subgraphId}:${nodeId}"`                                                     |
+| `subgraphNavigationStore` | subgraphId or `'root'`                                                          |
+| `linkStore`               | `` `${owningGraphId}:${nodeId}:${slot}` `` query indexes in root-scoped buckets |
+| `rerouteStore`            | `RerouteId`, root-graph-scoped buckets                                          |
+| `nodeDataStore`           | `NodeState` identity (`Set`), root-graph-scoped buckets                         |
 
 ADR 0009 refines the promoted-widget target: promoted value widgets should use
 host boundary identity (`host node locator + SubgraphInput.name`), not interior
@@ -920,6 +923,31 @@ recovers the parts on demand.
 **Resolution:** Self-documenting composite keys, parsed at boundaries. Each store
 keeps the key format that matches its concern; there is no forced unification
 under a single ID space.
+
+### Deferred topology follow-ups
+
+The scoped-topology migration deliberately leaves these decisions outside its
+current implementation:
+
+- Keep entity identity flat and root-wide. Replacing it with owner-nested
+  identity would reverse the current architecture rather than simplify it.
+- Keep `idsByOwner` for owner-local iteration and teardown; removing it would
+  replace indexed access with root-bucket scans.
+- Keep cached reroute membership; recomputing it would add graph walks to read
+  paths.
+- Do not restore the legacy `_links` mirror or broaden that compatibility
+  surface.
+- Keep registration failure as an explicit return value rather than adding
+  thrown errors.
+- Keep `createSubgraph` normalization until its direct callers can rely on a
+  single earlier normalization boundary.
+- Keep the browser hydration test as the workflow-level composition check.
+- Investigate separately whether link geometry in `layoutStore`, still keyed by
+  bare `LinkId`, can collide across simultaneously live root graphs.
+- Clarify API guidance for root-only identity lookups versus owner-qualified
+  graph queries. In the current contract, callers normally use the root graph
+  for the bucket and the node's direct owner for the query key; these IDs are
+  the same for root-owned nodes.
 
 ---
 

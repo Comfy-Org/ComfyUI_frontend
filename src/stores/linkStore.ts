@@ -48,10 +48,10 @@ function patchedEndpoints(
   }
 }
 /**
- * Endpoint slot keys are `${nodeId}:${slot}`; slot is numeric so the
- * separator is unambiguous for any node id. Target (input side) and origin
- * (output side) keys are branded separately so a key built for one index
- * cannot be looked up in the other.
+ * Endpoint slot keys are `${owningGraphId}:${nodeId}:${slot}`; slot is numeric
+ * so the separator is unambiguous for any node id. Target (input side) and
+ * origin (output side) keys are branded separately so a key built for one
+ * index cannot be looked up in the other.
  */
 type TargetSlotKey = string & { readonly __brand: 'TargetSlotKey' }
 type OriginSlotKey = string & { readonly __brand: 'OriginSlotKey' }

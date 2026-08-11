@@ -40,10 +40,12 @@ The topology store's root-scoped `byId` map is the sole authority for
 view over that map; `LGraph` does not keep a second link map. Query indexes
 are derived from the authoritative components:
 
-- `targetIndex`, keyed by `` `${targetNodeId}:${targetSlot}` ``, answers
-  input-connectivity queries in one lookup. It contains only links whose
-  target slot is unique.
-- `originIndex`, keyed by `` `${originNodeId}:${originSlot}` ``, answers
+- `targetIndex`, keyed by
+  `` `${owningGraphId}:${targetNodeId}:${targetSlot}` ``, answers
+  input-connectivity queries in one lookup. It contains only links whose target
+  slot is unique.
+- `originIndex`, keyed by
+  `` `${owningGraphId}:${originNodeId}:${originSlot}` ``, answers
   output-connectivity queries without scanning the graph.
 
 Floating links do not have a unique target key but still belong to `byId`. The
@@ -66,6 +68,14 @@ The root key groups one loaded workflow. `byId` is flat; `idsByOwner` is a
 secondary membership index for owner-local iteration and teardown. Slot keys
 include the owner because fixed subgraph boundary node ids are wire sentinels
 shared by every definition.
+
+Callers pass both parts as a `GraphScope`: `rootGraphId` selects the workflow
+bucket, while `owningGraphId` identifies the graph that directly owns the node
+and link endpoints. The two IDs are equal for root-graph nodes. A node inside a
+subgraph definition still uses the root workflow's `rootGraphId`, but uses the
+definition's ID as `owningGraphId`; querying it with the root graph as owner
+would address a different slot. Code with an `LGraph` should derive this pair
+with `graphScopeOf(graph)` rather than constructing it manually.
 
 ## Decision 4: Registration protocol
 
