@@ -22,12 +22,10 @@ vi.mock('@/scripts/app', () => ({
 describe('workflowDraftStoreV2', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    localStorage.clear()
     sessionStorage.clear()
   })
 
   afterEach(() => {
-    localStorage.clear()
     sessionStorage.clear()
   })
 

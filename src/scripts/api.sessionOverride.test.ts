@@ -31,14 +31,12 @@ describe('api.getServerFeature session override outside component setup', () => 
     mockCurrentUser.value = { email: 'dev@comfy.org', emailVerified: true }
     api.serverFeatureFlags.value = {}
     sessionStorage.clear()
-    localStorage.clear()
   })
 
   afterEach(() => {
     window.history.replaceState({}, '', '/')
     api.serverFeatureFlags.value = {}
     sessionStorage.clear()
-    localStorage.clear()
     vi.restoreAllMocks()
   })
 

@@ -7,7 +7,6 @@ import {
 
 describe('getCheckoutAttribution', () => {
   beforeEach(() => {
-    window.localStorage.clear()
     window.__CONFIG__ = {
       ...window.__CONFIG__,
       ga_measurement_id: undefined

@@ -187,7 +187,6 @@ describe('useWorkflowPersistenceV2', () => {
 
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    localStorage.clear()
     sessionStorage.clear()
     settingMocks.persistRef!.value = true
     settingMocks.values = {}

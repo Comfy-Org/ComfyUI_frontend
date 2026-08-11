@@ -1,18 +1,10 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { useFeatureUsageTracker } from './useFeatureUsageTracker'
 
 const STORAGE_KEY = 'Comfy.FeatureUsage'
 
 describe('useFeatureUsageTracker', () => {
-  beforeEach(() => {
-    localStorage.clear()
-  })
-
-  afterEach(() => {
-    localStorage.clear()
-  })
-
   it('initializes with zero count for new feature', () => {
     const { useCount } = useFeatureUsageTracker('test-feature-1')
 
