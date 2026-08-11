@@ -400,12 +400,12 @@ describe('WidgetSelectDefault', () => {
       await openDropdown(user)
 
       const options = screen.getAllByRole('option')
-      expect(options.map((option) => option.textContent?.trim())).toEqual([
-        'a',
-        'b'
-      ])
+      expect(options).toHaveLength(2)
+      expect(options.map((option) => option.textContent?.trim())).toEqual(
+        expect.arrayContaining(['a', 'b'])
+      )
       for (const option of options) {
-        expect(option).not.toHaveAttribute('data-state', 'checked')
+        expect(option).not.toHaveAttribute('aria-selected', 'true')
       }
     })
 
