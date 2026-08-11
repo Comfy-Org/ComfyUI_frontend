@@ -11,8 +11,6 @@ import { api } from '@/scripts/api'
 
 import AssetsSidebarTab from './AssetsSidebarTab.vue'
 
-const mockGetServerFeature = vi.spyOn(api, 'getServerFeature')
-
 const flatOutputMocks = vi.hoisted(() => ({
   media: undefined as unknown as Ref<AssetItem[]>,
   hasMore: undefined as unknown as Ref<boolean>,
@@ -206,7 +204,7 @@ function renderTab() {
 
 describe('AssetsSidebarTab folder navigation', () => {
   beforeEach(() => {
-    mockGetServerFeature.mockReturnValue(true)
+    vi.spyOn(api, 'getServerFeature').mockReturnValue(true)
     flatOutputMocks.media.value = [folderAsset, videoAsset]
     flatOutputMocks.hasMore.value = false
     flatOutputMocks.loadMore.mockReset()
@@ -271,7 +269,7 @@ describe('AssetsSidebarTab folder navigation', () => {
   })
 
   it('keeps history-backed generated assets when the asset API is disabled', () => {
-    mockGetServerFeature.mockReturnValue(false)
+    vi.mocked(api.getServerFeature).mockReturnValue(false)
 
     renderTab()
 
