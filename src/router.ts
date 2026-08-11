@@ -1,32 +1,32 @@
-import { until } from "@vueuse/core";
-import { storeToRefs } from "pinia";
+import { until } from '@vueuse/core'
+import { storeToRefs } from 'pinia'
 import {
   createRouter,
   createWebHashHistory,
-  createWebHistory,
-} from "vue-router";
-import type { RouteLocationNormalized } from "vue-router";
+  createWebHistory
+} from 'vue-router'
+import type { RouteLocationNormalized } from 'vue-router'
 
-import { useFeatureFlags } from "@/composables/useFeatureFlags";
-import { isCloud, isDesktop } from "@/platform/distribution/types";
-import { useTelemetry } from "@/platform/telemetry";
-import { useDialogService } from "@/services/dialogService";
-import { useAuthStore } from "@/stores/authStore";
-import { useUserStore } from "@/stores/userStore";
-import LayoutDefault from "@/views/layouts/LayoutDefault.vue";
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { isCloud, isDesktop } from '@/platform/distribution/types'
+import { useTelemetry } from '@/platform/telemetry'
+import { useDialogService } from '@/services/dialogService'
+import { useAuthStore } from '@/stores/authStore'
+import { useUserStore } from '@/stores/userStore'
+import LayoutDefault from '@/views/layouts/LayoutDefault.vue'
 
-import { captureOAuthRequestId } from "@/platform/cloud/oauth/oauthState";
-import { installDesktopLoginRedemption } from "@/platform/cloud/onboarding/desktopLoginRedemption";
-import { installPreservedQueryTracker } from "@/platform/navigation/preservedQueryTracker";
-import { PRESERVED_QUERY_NAMESPACES } from "@/platform/navigation/preservedQueryNamespaces";
-import { preserveLoggedOutShareAuthAttribution } from "@/platform/workflow/sharing/utils/shareAuthAttribution";
+import { captureOAuthRequestId } from '@/platform/cloud/oauth/oauthState'
+import { installDesktopLoginRedemption } from '@/platform/cloud/onboarding/desktopLoginRedemption'
+import { installPreservedQueryTracker } from '@/platform/navigation/preservedQueryTracker'
+import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+import { preserveLoggedOutShareAuthAttribution } from '@/platform/workflow/sharing/utils/shareAuthAttribution'
 
 const cloudOnboardingRoutes = isCloud
-  ? (await import("./platform/cloud/onboarding/onboardingCloudRoutes"))
+  ? (await import('./platform/cloud/onboarding/onboardingCloudRoutes'))
       .cloudOnboardingRoutes
-  : [];
+  : []
 
-const isFileProtocol = window.location.protocol === "file:";
+const isFileProtocol = window.location.protocol === 'file:'
 
 /**
  * Determine base path for the router.
@@ -36,17 +36,17 @@ const isFileProtocol = window.location.protocol === "file:";
  *   to support deployments like http://mysite.com/ComfyUI/
  */
 function getBasePath(): string {
-  if (isDesktop) return "/";
-  if (isCloud) return import.meta.env?.BASE_URL || "/";
-  return window.location.pathname;
+  if (isDesktop) return '/'
+  if (isCloud) return import.meta.env?.BASE_URL || '/'
+  return window.location.pathname
 }
 
-const basePath = getBasePath();
+const basePath = getBasePath()
 
 function trackPageView(): void {
   useTelemetry()?.trackPageView(document.title, {
-    path: window.location.href,
-  });
+    path: window.location.href
+  })
 }
 
 const router = createRouter({
@@ -59,213 +59,213 @@ const router = createRouter({
   routes: [
     ...(isCloud ? cloudOnboardingRoutes : []),
     {
-      path: "/",
+      path: '/',
       component: LayoutDefault,
       children: [
         {
-          path: "",
-          name: "GraphView",
-          component: () => import("@/views/GraphView.vue"),
+          path: '',
+          name: 'GraphView',
+          component: () => import('@/views/GraphView.vue'),
           beforeEnter: async (_to, _from, next) => {
             // Then check user store
-            const userStore = useUserStore();
-            await userStore.initialize();
+            const userStore = useUserStore()
+            await userStore.initialize()
             if (userStore.needsLogin) {
-              next("/user-select");
+              next('/user-select')
             } else {
-              next();
+              next()
             }
-          },
+          }
         },
         {
-          path: "user-select",
-          name: "UserSelectView",
-          component: () => import("@/views/UserSelectView.vue"),
-        },
-      ],
+          path: 'user-select',
+          name: 'UserSelectView',
+          component: () => import('@/views/UserSelectView.vue')
+        }
+      ]
     },
     // Catch-all: unknown paths redirect to root rather than hanging on the
     // splash screen with no route match. The global auth guard then routes
     // unauthenticated users to /cloud/login as normal.
-    { path: "/:pathMatch(.*)*", redirect: "/" },
+    { path: '/:pathMatch(.*)*', redirect: '/' }
   ],
 
   scrollBehavior(_to, _from, savedPosition) {
     if (savedPosition) {
-      return savedPosition;
+      return savedPosition
     } else {
-      return { top: 0 };
+      return { top: 0 }
     }
-  },
-});
+  }
+})
 
 installPreservedQueryTracker(router, [
   {
     namespace: PRESERVED_QUERY_NAMESPACES.TEMPLATE,
-    keys: ["template", "source", "mode"],
+    keys: ['template', 'source', 'mode']
   },
   {
     namespace: PRESERVED_QUERY_NAMESPACES.SHARE,
-    keys: ["share"],
+    keys: ['share']
   },
   {
     namespace: PRESERVED_QUERY_NAMESPACES.INVITE,
-    keys: ["invite"],
+    keys: ['invite']
   },
   {
     namespace: PRESERVED_QUERY_NAMESPACES.CREATE_WORKSPACE,
-    keys: ["create_workspace"],
+    keys: ['create_workspace']
   },
   {
     namespace: PRESERVED_QUERY_NAMESPACES.OAUTH,
-    keys: ["oauth_request_id"],
+    keys: ['oauth_request_id']
   },
   {
     namespace: PRESERVED_QUERY_NAMESPACES.PRICING,
-    keys: ["pricing", "stop", "cycle"],
-    requiredKey: "pricing",
+    keys: ['pricing', 'stop', 'cycle'],
+    requiredKey: 'pricing'
   },
   {
     namespace: PRESERVED_QUERY_NAMESPACES.TOPUP,
-    keys: ["topup"],
+    keys: ['topup']
   },
   {
     namespace: PRESERVED_QUERY_NAMESPACES.DESKTOP_LOGIN,
-    keys: ["desktop_login_code"],
-    stripAfterCapture: true,
-  },
-]);
+    keys: ['desktop_login_code'],
+    stripAfterCapture: true
+  }
+])
 
 router.beforeEach((to, _from, next) => {
-  captureOAuthRequestId(to.query);
-  next();
-});
+  captureOAuthRequestId(to.query)
+  next()
+})
 
 router.afterEach(() => {
-  trackPageView();
-});
+  trackPageView()
+})
 
 if (isCloud) {
-  const { flags } = useFeatureFlags();
+  const { flags } = useFeatureFlags()
   const PUBLIC_ROUTE_NAMES = new Set([
-    "cloud-login",
-    "cloud-signup",
-    "cloud-forgot-password",
-    "cloud-oauth-consent",
-    "cloud-sorry-contact-support",
-  ]);
+    'cloud-login',
+    'cloud-signup',
+    'cloud-forgot-password',
+    'cloud-oauth-consent',
+    'cloud-sorry-contact-support'
+  ])
   const PUBLIC_ROUTE_PATHS = new Set([
-    "/cloud/login",
-    "/cloud/signup",
-    "/cloud/forgot-password",
-    "/oauth/consent",
-    "/cloud/sorry-contact-support",
-  ]);
+    '/cloud/login',
+    '/cloud/signup',
+    '/cloud/forgot-password',
+    '/oauth/consent',
+    '/cloud/sorry-contact-support'
+  ])
 
   function isPublicRoute(to: RouteLocationNormalized) {
-    const name = String(to.name);
-    if (PUBLIC_ROUTE_NAMES.has(name)) return true;
-    const path = to.path;
-    return PUBLIC_ROUTE_PATHS.has(path);
+    const name = String(to.name)
+    if (PUBLIC_ROUTE_NAMES.has(name)) return true
+    const path = to.path
+    return PUBLIC_ROUTE_PATHS.has(path)
   }
   // Global authentication guard
   router.beforeEach(async (to, _from, next) => {
-    const authStore = useAuthStore();
+    const authStore = useAuthStore()
 
     // Wait for Firebase auth to initialize
     // Timeout after 16 seconds
     if (!authStore.isInitialized) {
       try {
-        const { isInitialized } = storeToRefs(authStore);
-        await until(isInitialized).toBe(true, { timeout: 16_000 });
+        const { isInitialized } = storeToRefs(authStore)
+        await until(isInitialized).toBe(true, { timeout: 16_000 })
       } catch (error) {
-        console.error("Auth initialization failed:", error);
-        return next({ name: "cloud-auth-timeout" });
+        console.error('Auth initialization failed:', error)
+        return next({ name: 'cloud-auth-timeout' })
       }
     }
 
     // Pass authenticated users
-    const authHeader = await authStore.getAuthHeader();
-    const isLoggedIn = !!authHeader;
-    preserveLoggedOutShareAuthAttribution(to.query, isLoggedIn);
+    const authHeader = await authStore.getAuthHeader()
+    const isLoggedIn = !!authHeader
+    preserveLoggedOutShareAuthAttribution(to.query, isLoggedIn)
 
     // Allow public routes
     if (isPublicRoute(to)) {
-      return next();
+      return next()
     }
 
     // Special handling for user-check
     // These routes need auth but handle their own routing logic
-    if (to.name === "cloud-user-check") {
+    if (to.name === 'cloud-user-check') {
       if (to.meta.requiresAuth && !isLoggedIn) {
-        return next({ name: "cloud-login" });
+        return next({ name: 'cloud-login' })
       }
-      return next();
+      return next()
     }
 
     // Prevent redirect loop when coming from user-check
-    if (_from.name === "cloud-user-check" && to.path === "/") {
-      return next();
+    if (_from.name === 'cloud-user-check' && to.path === '/') {
+      return next()
     }
 
     const query =
-      to.fullPath === "/"
+      to.fullPath === '/'
         ? undefined
-        : { previousFullPath: encodeURIComponent(to.fullPath) };
+        : { previousFullPath: encodeURIComponent(to.fullPath) }
 
     // Check if route requires authentication
     if (to.meta.requiresAuth && !isLoggedIn) {
       return next({
-        name: "cloud-login",
-        query,
-      });
+        name: 'cloud-login',
+        query
+      })
     }
 
     // Handle other protected routes
     if (!isLoggedIn) {
       // For Electron, use dialog
       if (isDesktop) {
-        const dialogService = useDialogService();
-        const loginSuccess = await dialogService.showSignInDialog();
-        return loginSuccess ? next() : next(false);
+        const dialogService = useDialogService()
+        const loginSuccess = await dialogService.showSignInDialog()
+        return loginSuccess ? next() : next(false)
       }
 
       // For web, redirect to login
       return next({
-        name: "cloud-login",
-        query,
-      });
+        name: 'cloud-login',
+        query
+      })
     }
 
     // User is logged in - check if they need onboarding (when enabled)
     // For root path, check actual user status to handle waitlisted users
-    if (!isDesktop && isLoggedIn && to.path === "/") {
+    if (!isDesktop && isLoggedIn && to.path === '/') {
       if (!flags.onboardingSurveyEnabled) {
-        return next();
+        return next()
       }
       // Import auth functions dynamically to avoid circular dependency
       const { getSurveyCompletedStatus } =
-        await import("@/platform/cloud/onboarding/auth");
+        await import('@/platform/cloud/onboarding/auth')
       try {
         // Check user's actual status
-        const surveyCompleted = await getSurveyCompletedStatus();
+        const surveyCompleted = await getSurveyCompletedStatus()
 
         // Survey is required for all users (when feature flag enabled)
         if (!surveyCompleted) {
-          return next({ name: "cloud-survey" });
+          return next({ name: 'cloud-survey' })
         }
       } catch (error) {
-        console.error("Failed to check user status:", error);
+        console.error('Failed to check user status:', error)
         // On error, redirect to user-check as fallback
-        return next({ name: "cloud-user-check" });
+        return next({ name: 'cloud-user-check' })
       }
     }
 
     // User is logged in and accessing protected route
-    return next();
-  });
+    return next()
+  })
 
-  installDesktopLoginRedemption(router);
+  installDesktopLoginRedemption(router)
 }
 
-export default router;
+export default router
