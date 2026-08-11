@@ -9,11 +9,12 @@ const registeredLink = graph.addFloatingLink(link)
 if (!registeredLink) return
 ```
 
-Registration returns the stored link when it succeeds or when the same link
-is already present in the floating-link registry. If another runtime link, or
-a live link, already owns the id, registration logs an error, leaves the
-incoming link detached, and returns `undefined`. It does not silently replace
-the live link or assign the incoming link another identity.
+Registration returns the stored link when it succeeds or when the same link is
+already present in the topology store. If another runtime link already owns the
+id, registration logs an error, leaves the incoming link detached, and returns
+`undefined`. It does not silently replace the live link or assign the incoming
+link another identity. `graph.floatingLinks` remains the filtered compatibility
+view for one-ended links.
 
 Extensions that previously ignored the return value should handle
 `undefined` before retaining, rendering, or mutating the incoming link. Do not

@@ -977,6 +977,11 @@ current implementation:
   allocation makes registration rejection unreachable without externally
   corrupted state; future transaction work should wrap the centralized store
   mutation rather than add compensation to this path now.
+- Treat floating as one-ended link state, not a separate entity category. The
+  runtime topology collection is unified; `graph.links` and
+  `graph.floatingLinks` remain filtered compatibility views. Keep the separate
+  serialized `floatingLinks` field until a versioned workflow migration has
+  enough value to justify its extension and fixture impact.
 
 ---
 

@@ -82,10 +82,9 @@ function outputIndex(graphId: UUID): ComputedRef<OriginIndex> {
 }
 ```
 
-The index spans both collections that `graphTopologies` yields, the keyed
-targets and the unkeyed side set. Floating links are skipped
-(`isFloatingTopology`): the queries see fully-assigned links only,
-matching the mirror they replace (Decision 6). A `SUBGRAPH_INPUT_ID`
+The index is populated from the owner-scoped topology collection. Floating
+links are skipped (`isFloatingTopology`): the queries see fully-assigned links
+only, matching the mirror they replace (Decision 6). A `SUBGRAPH_INPUT_ID`
 origin indexes like any other id.
 
 ## Decision 3: Two public queries, mirroring the input pair
@@ -96,14 +95,13 @@ getOutputSlotLinks(graphId, nodeId, slot): ReadonlySet<LinkTopology>
 ```
 
 These match `isInputSlotConnected` / `getInputSlotLink` in name and shape.
-The input side returns a single `LinkTopology`, since at most one link
-targets an input; the output side returns a set, since an output fans out
-to many. The set holds topologies rather than bare `LinkId`s: floating
-links draw their ids from a separate counter (`_lastFloatingLinkId`), so
-an id alone cannot be resolved safely through `graph.links` — a floating
-id can collide with an unrelated regular link. Topologies carry the
-endpoints most readers want and make floating links identifiable
-(`targetNodeId === UNASSIGNED_NODE_ID`) without resolution.
+The input side returns a single `LinkTopology`, since at most one link targets
+an input; the output side returns a set, since an output fans out to many. The
+set holds topologies rather than bare `LinkId`s because readers need endpoints,
+and because `graph.links` deliberately exposes only fully-assigned links.
+Floating and fully-assigned links share one root-wide ID namespace and topology
+collection; endpoint state determines which compatibility view and indexes
+expose them.
 
 ## Decision 4: Migrate readers incrementally, keep the mirror written by hand
 

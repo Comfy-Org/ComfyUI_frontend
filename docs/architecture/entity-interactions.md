@@ -147,18 +147,20 @@ graph TD
 graph LR
     Slot["Source Slot"] -->|"drag starts"| FL["Floating LLink
 origin or target = UNASSIGNED_NODE_ID"]
-    FL -->|"stored in"| FLMap["graph.floatingLinks Map"]
-    FL -->|"registered in"| SideSet["linkStore unkeyed side set
-(no unique target slot)"]
+    FL -->|"registered in"| Store["linkStore.byId"]
+    Store -->|"filtered view"| FLMap["graph.floatingLinks"]
+    FL -.->|"excluded from"| Indexes["connectivity indexes"]
     FL -.->|"may pass through"| Reroute
     Reroute -.-|"floatingLinkIds (derived)"| FL
-    FL -->|"on drop"| Permanent["Permanent LLink
-(graph._links + linkStore target index)"]
+    FL -->|"on drop"| Permanent["Fully-assigned LLink
+(graph.links view + connectivity indexes)"]
 ```
 
 A floating link's slot attachment is fully encoded in its own endpoints —
 slots hold no floating-link sets (`slotFloatingLinks()` in `LLink.ts` derives
-attachment by scanning `graph.floatingLinks`).
+attachment by scanning the filtered `graph.floatingLinks` view). Floating is an
+endpoint state, not a separate entity category; persistent dangling reroute
+branches still require that state outside an active drag.
 
 ## 3. Rendering
 

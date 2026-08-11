@@ -36,9 +36,10 @@ byte-identical round-trips) pin the wire format.
 ## Decision 2: Identity ownership with query-specific indexes
 
 The topology store's root-scoped `byId` map is the sole authority for
-`LinkId -> LinkTopology` identity. `LGraph.links` is an owner-filtered live
-view over that map; `LGraph` does not keep a second link map. Query indexes
-are derived from the authoritative components:
+`LinkId -> LinkTopology` identity. `LGraph.links` and `LGraph.floatingLinks`
+are owner-filtered compatibility views over that map, partitioned by endpoint
+state; `LGraph` does not keep separate topology maps. Query indexes are derived
+from the authoritative components:
 
 - `targetIndex`, keyed by
   `` `${owningGraphId}:${targetNodeId}:${targetSlot}` ``, answers
@@ -103,11 +104,11 @@ with `graphScopeOf(graph)` rather than constructing it manually.
 All `graph.links` mutation funnels through its store-backed `LinkMap` and
 `LGraph._addLink` / `_removeLink`, which perform store
 registration/unregistration (and link-layout cleanup on removal).
-`addFloatingLink` / `removeFloatingLink` do the same for the floating
-map. `LLink.disconnect` performs the equivalent effects inline because
-it only holds a `LinkNetwork`, and unregisters before reroute pruning so
-derived reroute counts exclude the dying link. `clear()` and
-subgraph-definition GC unregister whole graphs
+`addFloatingLink` / `removeFloatingLink` apply floating-specific lifecycle
+policy through the same topology collection. `LLink.disconnect` performs the
+equivalent effects inline because it only holds a `LinkNetwork`, and
+unregisters before reroute pruning so derived reroute counts exclude the dying
+link. `clear()` and subgraph-definition GC unregister whole graphs
 (`unregisterAllLinkTopologies` / `clearGraph`).
 
 `addFloatingLink` is the defensive runtime and extension boundary. It mints
