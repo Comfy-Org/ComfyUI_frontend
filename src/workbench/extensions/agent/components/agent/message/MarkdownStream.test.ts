@@ -18,48 +18,80 @@ describe('MarkdownStream', () => {
   })
 
   it('renders the complete asset URL as the link text and target', () => {
-    const assetPath =
-      'view?filename=ComfyUI_00001_32f6b8c7.png&subfolder=agent%2Foutputs&type=output'
-    const assetUrl = `/api/${assetPath}`
+    const assetUrl =
+      'https://cloud.comfy.org/api/view?filename=ComfyUI_00001_32f6b8c7.png&subfolder=agent%2Foutputs&type=output'
     render(MarkdownStream, {
-      props: { text: `[${assetUrl}](${assetPath})` }
+      props: { text: `[${assetUrl}](${assetUrl})` }
     })
-    expect(screen.getByRole('link', { name: assetUrl })).toHaveAttribute(
+    const expectedUrl = assetUrl.replace(
+      'https://cloud.comfy.org',
+      window.location.origin
+    )
+    expect(screen.getByRole('link', { name: expectedUrl })).toHaveAttribute(
       'href',
-      assetUrl
+      expectedUrl
+    )
+  })
+
+  it('preserves a filename label supplied for an asset link', () => {
+    const assetUrl =
+      'https://cloud.comfy.org/api/view?filename=ComfyUI_00070_.png&type=output'
+    render(MarkdownStream, {
+      props: { text: `[ComfyUI_00070_.png](${assetUrl})` }
+    })
+
+    expect(
+      screen.getByRole('link', { name: 'ComfyUI_00070_.png' })
+    ).toHaveAttribute(
+      'href',
+      assetUrl.replace('https://cloud.comfy.org', window.location.origin)
     )
   })
 
   it('renders multiple asset links as separate list items', () => {
+    const contactUrl = 'https://cloud.comfy.org/api/view?filename=contact.png'
+    const fluxUrl = 'https://cloud.comfy.org/api/view?filename=flux.png'
     render(MarkdownStream, {
       props: {
         text: [
-          '- [/api/view?filename=contact.png](view?filename=contact.png)',
-          '- [/api/view?filename=flux.png](view?filename=flux.png)'
+          `- [${contactUrl}](${contactUrl})`,
+          `- [${fluxUrl}](${fluxUrl})`
         ].join('\n')
       }
     })
 
     const items = screen.getAllByRole('listitem')
+    const localContactUrl = contactUrl.replace(
+      'https://cloud.comfy.org',
+      window.location.origin
+    )
+    const localFluxUrl = fluxUrl.replace(
+      'https://cloud.comfy.org',
+      window.location.origin
+    )
     expect(items).toHaveLength(2)
-    expect(
-      screen.getByRole('link', { name: '/api/view?filename=contact.png' })
-    ).toHaveAttribute('href', '/api/view?filename=contact.png')
-    expect(
-      screen.getByRole('link', { name: '/api/view?filename=flux.png' })
-    ).toHaveAttribute('href', '/api/view?filename=flux.png')
+    expect(screen.getByRole('link', { name: localContactUrl })).toHaveAttribute(
+      'href',
+      localContactUrl
+    )
+    expect(screen.getByRole('link', { name: localFluxUrl })).toHaveAttribute(
+      'href',
+      localFluxUrl
+    )
   })
 
   it('preserves the asset preview when the response uses markdown image syntax', () => {
-    const assetPath =
-      'view?filename=ComfyUI_00001_32f6b8c7.png&subfolder=agent%2Foutputs&type=output'
+    const assetUrl =
+      'https://cloud.comfy.org/api/view?filename=ComfyUI_00001_32f6b8c7.png&subfolder=agent%2Foutputs&type=output'
     render(MarkdownStream, {
-      props: { text: `![Generated asset](${assetPath})` }
+      props: { text: `![Generated asset](${assetUrl})` }
     })
 
-    expect(
-      screen.getByRole('img', { name: 'Generated asset' })
-    ).toHaveAttribute('src', `/api/${assetPath}`)
+    const image = screen.getByRole('img', { name: 'Generated asset' })
+    expect(image).toHaveAttribute(
+      'src',
+      assetUrl.replace('https://cloud.comfy.org', window.location.origin)
+    )
   })
 
   it('strips a script tag (XSS guard)', () => {
