@@ -217,17 +217,22 @@ export function useWorkflowActionsMenu(
     })
 
     addItem({
-      id: isLinearMode ? 'exit-app-mode' : 'enter-app-mode',
-      label: t(
-        isLinearMode
-          ? 'breadcrumbsMenu.exitAppMode'
-          : 'breadcrumbsMenu.enterAppMode'
-      ),
-      icon: isLinearMode
-        ? 'icon-[comfy--workflow]'
-        : 'icon-[lucide--panels-top-left]',
+      id: 'enter-app-mode',
+      label: t('breadcrumbsMenu.enterAppMode'),
+      icon: 'icon-[lucide--panels-top-left]',
       command: toggleLinear,
-      visible: showAppModeItems || isLinearMode,
+      visible: showAppModeItems && !isLinearMode,
+      prependSeparator: true,
+      isNew: true,
+      badgeSeverity: 'secondary'
+    })
+
+    addItem({
+      id: 'exit-app-mode',
+      label: t('breadcrumbsMenu.exitAppMode'),
+      icon: 'icon-[comfy--workflow]',
+      command: toggleLinear,
+      visible: isLinearMode,
       prependSeparator: true,
       isNew: true,
       badgeSeverity: 'secondary'
