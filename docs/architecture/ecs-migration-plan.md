@@ -139,6 +139,9 @@ indexes use owner-qualified slot keys
 (`` `${owningGraphId}:${nodeId}:${slot}` ``). Subgraphs share their root's
 identity bucket while retaining owner-local queries and teardown. Floating
 links remain in the root-wide identity map but are omitted from slot indexes.
+Entity store registration is idempotent only when the existing entity has the
+same owner and raw object identity. The stores perform every collision check at
+the registration mutation boundary.
 `rerouteStore` holds `RerouteChain` records keyed by `RerouteId` in
 root-graph-scoped buckets; link membership is not stored but derived from the
 links' `parentId` chains.
@@ -881,8 +884,9 @@ target availability before changing its indexes. These operations are atomic
 only within `linkStore`; they do not provide rollback across callbacks, layout,
 reroutes, graph maps, versioning, or other stores.
 
-Centralizing each mutation point removes duplicated caller checks and provides
-one boundary for future atomic validation and rollback. Command-executor
+Centralizing each mutation point removes duplicated caller checks, reduces the
+number of paths that can violate store invariants, and provides one place for
+atomic validation and rollback as the migration continues. Command-executor
 transactions should wrap these store mutation points rather than adding
 caller-specific compensation.
 
@@ -893,6 +897,8 @@ caller-specific compensation.
 | Preflight in each graph caller           | Duplicates store invariants and leaves a check-to-mutation race.                   |
 | Disconnect, register, then restore       | Callbacks and multi-store cleanup make the removed state unsafe to reconstruct.    |
 | Add caller-specific failure compensation | Spreads rollback policy across paths instead of establishing one transaction seam. |
+| Normalize only in `createSubgraph`       | Misses workflow load, paste, and conversion paths and can mutate caller input.     |
+| Add pseudo-live `LinkMap` iterators      | Does not preserve native iterator semantics; snapshot compatibility needs design.  |
 
 **Phase 4 baseline semantics:**
 
@@ -944,8 +950,24 @@ under a single ID space.
 
 ### Deferred topology follow-ups
 
-The scoped-topology migration deliberately leaves these decisions outside its
-current implementation:
+The scoped-topology migration now has the following boundaries and leaves the
+remaining decisions for later work.
+
+**Implemented boundaries:**
+
+- `createSubgraphs` and `createSubgraph` share one immutable normalization
+  boundary used by workflow loading, direct creation, clipboard/paste, and
+  conversion. It creates shells first and fills leaves first without changing
+  caller input. Malformed same-owner duplicate IDs are deterministic:
+  first-wins and later duplicates are dropped because references cannot
+  disambiguate them.
+- Graph clear uses one exact-entity teardown traversal. Lifecycle callbacks run
+  first while topology remains observable, followed by link, reroute, node, and
+  layout detachment. Only the root clear defensively clears whole store buckets.
+- Root and subgraph serialization consume one owner-local topology partition.
+  It preserves the regular and floating wire categories in workflow output.
+
+**Still deferred:**
 
 - Keep entity identity flat and root-wide. Replacing it with owner-nested
   identity would reverse the current architecture rather than simplify it.
@@ -957,8 +979,8 @@ current implementation:
   surface.
 - Keep registration failure as an explicit return value rather than adding
   thrown errors.
-- Keep `createSubgraph` normalization until its direct callers can rely on a
-  single earlier normalization boundary.
+- Keep `LinkMap` snapshot iterator compatibility deferred. Do not add
+  pseudo-live iterators as part of this work.
 - Keep the browser hydration test as the workflow-level composition check.
 - Investigate separately whether link geometry in `layoutStore`, still keyed by
   bare `LinkId`, can collide across simultaneously live root graphs.
@@ -969,10 +991,11 @@ current implementation:
   warranted. `LGraph.add()` currently scans root and subgraph groups for each
   group insertion, which can make loading G groups take quadratic time. A
   `Set` per insertion has the same asymptotic cost, while a persistent index
-  duplicates lifecycle state. Measure representative large workflow load,
-  deserialization, paste, and unpack paths first. If the scan has material
-  impact, optimize the insertion path while preserving the existing root-shared
-  high-water allocator and import-time collision repair.
+  duplicates lifecycle state. Defer evaluation of its real workflow load-speed
+  impact. Measure representative large workflow load, deserialization, paste,
+  and unpack paths first. If the scan has material impact, optimize the
+  insertion path while preserving the existing root-shared high-water allocator
+  and import-time collision repair.
 - Defer floating reroute/link multi-store rollback. Normal root-shared link ID
   allocation makes registration rejection unreachable without externally
   corrupted state; future transaction work should wrap the centralized store
