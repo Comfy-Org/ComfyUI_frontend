@@ -306,13 +306,17 @@ jobs:
           [ "$SUITE_OUTCOME" = failure ] || { echo "::error::S$PROOF_ROW did not break its witness"; exit 1; }
 
           jq -e '.. | objects | select(.title? == "shared session continuity after broken tier @custom-nodes") | .tests[] | select(.status == "expected")' custom-nodes-results.json >/dev/null
+          {
+            jq -r '.. | objects | select(.status? == "unexpected") | .results[]? | .error?.message? // empty' custom-nodes-results.json
+            jq -r '.. | objects | select(.status? == "unexpected") | .results[]?.attachments[]? | select(.contentType? == "application/json" and has("body")) | (.body | @base64d | fromjson) | if type == "array" then .[] else . end' custom-nodes-results.json
+          } > shared-boot-proof-evidence.txt
           case "$PROOF_ROW" in
-            1) pat='instance is missing declared input' ;;
+            1) pat='ImpactInt: instance is missing declared input \\"value\\" \(litegraph\)' ;;
             3) pat='on (pristine|set-values) reload' ;;
             7) pat="Error calling extension 'Comfy\\.NodeBadge' method 'afterConfigureGraph'.*DETECTION PROOF: afterConfigureGraph crash" ;;
             9) pat='DETECTION PROOF \(row 9\): pack node runtime failure' ;;
           esac
-          grep -Eq -- "$pat" custom-nodes.log || { echo "::error::S$PROOF_ROW failure was not attributable to its Detection Proof break"; exit 1; }
+          grep -Eq -- "$pat" shared-boot-proof-evidence.txt || { echo "::error::S$PROOF_ROW failure was not attributable to its Detection Proof break"; exit 1; }
 
           mapfile -t sessions < <(grep -oE '\[shared-session\] pid=[0-9]+ id=[^ ]+ bootCount=[0-9]+' custom-nodes.log)
           [ "${#sessions[@]}" -eq 2 ] || { echo "::error::S$PROOF_ROW recorded ${#sessions[@]} session identities, expected 2"; exit 1; }
@@ -333,5 +337,6 @@ jobs:
             playwright-report/
             custom-nodes-results.json
             custom-nodes.log
+            shared-boot-proof-evidence.txt
           retention-days: 7
           if-no-files-found: warn
