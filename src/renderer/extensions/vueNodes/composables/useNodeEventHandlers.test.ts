@@ -8,6 +8,7 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
+import { LayoutSource } from '@/renderer/core/layout/types'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { toNodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
@@ -49,11 +50,9 @@ vi.mock('@/renderer/core/canvas/useCanvasInteractions', () => ({
 }))
 
 vi.mock('@/renderer/core/layout/operations/layoutMutations', () => {
-  const setSource = vi.fn()
   const bringNodeToFront = vi.fn()
   return {
     useLayoutMutations: vi.fn(() => ({
-      setSource,
       bringNodeToFront
     }))
   }
@@ -61,7 +60,7 @@ vi.mock('@/renderer/core/layout/operations/layoutMutations', () => {
 
 describe('useNodeEventHandlers', () => {
   const mockNode = graphNode as Partial<LGraphNode> as LGraphNode
-  const mockLayoutMutations = useLayoutMutations()
+  const mockLayoutMutations = useLayoutMutations(LayoutSource.Vue)
 
   const testNodeId = toNodeId('node-1')
 

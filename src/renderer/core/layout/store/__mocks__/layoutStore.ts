@@ -9,12 +9,9 @@ export const layoutStore = fromPartial<typeof RealLayoutStore>({
   applyOperation: vi.fn(() => 'applied'),
   applyOperations: vi.fn(() => 'applied'),
   batchUpdateNodeBounds: vi.fn(),
-  clearGraph: vi.fn(),
   clearViewGeometry: vi.fn(),
   geometryVersion: 0,
   getAllGroups: vi.fn(() => ({ value: new Map() })),
-  getCurrentActor: vi.fn(() => 'test-actor'),
-  getCurrentSource: vi.fn(() => 'canvas'),
   getGroupLayout: vi.fn(() => null),
   getLinkLayout: vi.fn(() => null),
   getNodeLayout: vi.fn(() => null),
@@ -32,7 +29,5 @@ export const layoutStore = fromPartial<typeof RealLayoutStore>({
   queryRerouteAtPoint: vi.fn(() => null),
   querySlotAtPoint: vi.fn(() => null),
   readNodeRect: vi.fn(() => false),
-  setActor: vi.fn(),
-  setPendingSlotSync: vi.fn(),
-  setSource: vi.fn()
+  setPendingSlotSync: vi.fn()
 })

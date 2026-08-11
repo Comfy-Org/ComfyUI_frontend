@@ -10,6 +10,7 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import type { Rect } from '@/lib/litegraph/src/interfaces'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { LayoutSource } from '@/renderer/core/layout/types'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
@@ -880,12 +881,16 @@ describe('layout geometry projection', () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')
     graph.add(node)
-    layoutStore.batchUpdateNodeBounds(graph.rootGraph.id, [
-      {
-        nodeId: node.id,
-        bounds: { x: 30, y: 40, width: 200, height: 80 }
-      }
-    ])
+    layoutStore.batchUpdateNodeBounds(
+      graph.rootGraph.id,
+      [
+        {
+          nodeId: node.id,
+          bounds: { x: 30, y: 40, width: 200, height: 80 }
+        }
+      ],
+      { source: LayoutSource.Canvas }
+    )
 
     node.move(5, 10)
 
@@ -898,12 +903,16 @@ describe('layout geometry projection', () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')
     graph.add(node)
-    layoutStore.batchUpdateNodeBounds(graph.rootGraph.id, [
-      {
-        nodeId: node.id,
-        bounds: { x: 103, y: 97, width: 200, height: 80 }
-      }
-    ])
+    layoutStore.batchUpdateNodeBounds(
+      graph.rootGraph.id,
+      [
+        {
+          nodeId: node.id,
+          bounds: { x: 103, y: 97, width: 200, height: 80 }
+        }
+      ],
+      { source: LayoutSource.Canvas }
+    )
 
     node.snapToGrid(20)
 
@@ -916,12 +925,16 @@ describe('layout geometry projection', () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')
     graph.add(node)
-    layoutStore.batchUpdateNodeBounds(graph.rootGraph.id, [
-      {
-        nodeId: node.id,
-        bounds: { x: 30, y: 40, width: 200, height: 80 }
-      }
-    ])
+    layoutStore.batchUpdateNodeBounds(
+      graph.rootGraph.id,
+      [
+        {
+          nodeId: node.id,
+          bounds: { x: 30, y: 40, width: 200, height: 80 }
+        }
+      ],
+      { source: LayoutSource.Canvas }
+    )
 
     graph.remove(node)
     graph.add(node)
@@ -943,12 +956,16 @@ describe('layout geometry projection', () => {
     const pos = node.pos
     const size = node.size
 
-    layoutStore.batchUpdateNodeBounds(graph.rootGraph.id, [
-      {
-        nodeId: node.id,
-        bounds: { x: 30, y: 40, width: 200, height: 80 }
-      }
-    ])
+    layoutStore.batchUpdateNodeBounds(
+      graph.rootGraph.id,
+      [
+        {
+          nodeId: node.id,
+          bounds: { x: 30, y: 40, width: 200, height: 80 }
+        }
+      ],
+      { source: LayoutSource.Canvas }
+    )
     pos[0] = 50
     size[1] = 90
 
@@ -970,12 +987,16 @@ describe('layout geometry projection', () => {
     node.pos = [10, 20]
     node.size = [100, 50]
     graph.add(node)
-    layoutStore.batchUpdateNodeBounds(graph.rootGraph.id, [
-      {
-        nodeId: node.id,
-        bounds: { x: 30, y: 40, width: 200, height: 80 }
-      }
-    ])
+    layoutStore.batchUpdateNodeBounds(
+      graph.rootGraph.id,
+      [
+        {
+          nodeId: node.id,
+          bounds: { x: 30, y: 40, width: 200, height: 80 }
+        }
+      ],
+      { source: LayoutSource.Canvas }
+    )
 
     node.pos = [50, 60]
 
@@ -988,12 +1009,16 @@ describe('layout geometry projection', () => {
     node.pos = [10, 20]
     node.size = [100, 50]
     graph.add(node)
-    layoutStore.batchUpdateNodeBounds(graph.rootGraph.id, [
-      {
-        nodeId: node.id,
-        bounds: { x: 30, y: 40, width: 200, height: 80 }
-      }
-    ])
+    layoutStore.batchUpdateNodeBounds(
+      graph.rootGraph.id,
+      [
+        {
+          nodeId: node.id,
+          bounds: { x: 30, y: 40, width: 200, height: 80 }
+        }
+      ],
+      { source: LayoutSource.Canvas }
+    )
 
     node.size = [300, 90]
 
@@ -1006,12 +1031,16 @@ describe('layout geometry projection', () => {
     node.pos = [10, 20]
     node.size = [100, 50]
     graph.add(node)
-    layoutStore.batchUpdateNodeBounds(graph.rootGraph.id, [
-      {
-        nodeId: node.id,
-        bounds: { x: 30, y: 40, width: 200, height: 80 }
-      }
-    ])
+    layoutStore.batchUpdateNodeBounds(
+      graph.rootGraph.id,
+      [
+        {
+          nodeId: node.id,
+          bounds: { x: 30, y: 40, width: 200, height: 80 }
+        }
+      ],
+      { source: LayoutSource.Canvas }
+    )
 
     node.pos = [50, 60]
     node.setSize([node.size[0], 120])

@@ -31,12 +31,10 @@ const rerouteAttachments = new WeakMap<
   LayoutAttachment<Reroute['id']>
 >()
 
-/** Stamps the canvas as the operation source and returns the shared meta. */
+/** Shared operation meta attributing the operation to the canvas. */
 function canvasOperationMeta() {
-  layoutStore.setSource(LayoutSource.Canvas)
   return {
-    actor: layoutStore.getCurrentActor(),
-    source: layoutStore.getCurrentSource(),
+    source: LayoutSource.Canvas,
     timestamp: Date.now()
   }
 }

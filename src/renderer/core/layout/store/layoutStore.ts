@@ -1,12 +1,12 @@
 import log from 'loglevel'
-import { computed, customRef, ref } from 'vue'
-import type { ComputedRef, Ref } from 'vue'
+import { computed, ref } from 'vue'
+import type { ComputedRef } from 'vue'
 import * as Y from 'yjs'
 
 import { toGroupId } from '@/types/groupId'
+import { toNodeId } from '@/types/nodeId'
 import type { GroupId } from '@/types/groupId'
 import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
-import { toNodeId } from '@/types/nodeId'
 import { toRerouteId } from '@/types/rerouteId'
 import type { UUID } from '@/utils/uuid'
 
@@ -131,7 +131,12 @@ interface TypedYMap<T> {
   get<K extends keyof T>(key: K, defaultValue: T[K]): T[K]
 }
 
-class LayoutStore {
+interface BatchUpdateBoundsOptions {
+  boundsIncludeTitleHeight?: boolean
+  source: LayoutSource
+}
+
+class LayoutStoreImpl {
   private static readonly REROUTE_DEFAULTS: RerouteData = {
     id: toRerouteId(0),
     position: { x: 0, y: 0 }
@@ -145,8 +150,6 @@ class LayoutStore {
 
   // Vue reactivity layer
   private version = ref(0)
-  private currentSource: LayoutSource =
-    ACTOR_CONFIG.DEFAULT_SOURCE as LayoutSource
   private currentActor = `${ACTOR_CONFIG.USER_PREFIX}${Math.random()
     .toString(36)
     .substring(2, 2 + ACTOR_CONFIG.ID_LENGTH)}`
@@ -160,8 +163,8 @@ class LayoutStore {
   private pendingGlobalChanges: LayoutChange[] = []
   private isGlobalDispatchQueued = false
 
-  // CustomRef cache and trigger functions
-  private nodeRefs = new Map<ScopedLayoutKey, Ref<NodeLayout | null>>()
+  // Node layout ref cache and trigger functions
+  private nodeRefs = new Map<ScopedLayoutKey, ComputedRef<NodeLayout | null>>()
   private nodeTriggers = new Map<ScopedLayoutKey, () => void>()
   private pendingGeometryGraphIds = new Set<UUID>()
   private geometryListeners = new Set<(graphIds: ReadonlySet<UUID>) => void>()
@@ -254,7 +257,7 @@ class LayoutStore {
   private getRerouteField<K extends keyof RerouteData>(
     yreroute: Y.Map<unknown>,
     field: K,
-    defaultValue: RerouteData[K] = LayoutStore.REROUTE_DEFAULTS[field]
+    defaultValue: RerouteData[K] = LayoutStoreImpl.REROUTE_DEFAULTS[field]
   ): RerouteData[K] {
     const typedReroute = yreroute as TypedYMap<RerouteData>
     const value = typedReroute.get(field)
@@ -266,95 +269,26 @@ class LayoutStore {
     return ynode ? yNodeToLayout(ynode) : null
   }
 
-  /**
-   * Get or create a customRef for a node layout
-   */
-  getNodeLayoutRef(rootGraphId: UUID, nodeId: NodeId): Ref<NodeLayout | null> {
+  /** Get or create a read-only ref for a node layout. */
+  getNodeLayoutRef(
+    rootGraphId: UUID,
+    nodeId: NodeId
+  ): ComputedRef<NodeLayout | null> {
     const nodeKey = makeScopedLayoutKey(rootGraphId, nodeId)
-    let nodeRef = this.nodeRefs.get(nodeKey)
+    const cached = this.nodeRefs.get(nodeKey)
+    if (cached) return cached
 
-    if (!nodeRef) {
-      nodeRef = customRef<NodeLayout | null>((track, trigger) => {
-        this.nodeTriggers.set(nodeKey, trigger)
+    const revision = ref(0)
+    this.nodeTriggers.set(nodeKey, () => {
+      revision.value++
+    })
+    const nodeRef = computed(() => {
+      void revision.value
+      const ynode = this.ynodes.get(nodeKey)
+      return ynode ? yNodeToLayout(ynode) : null
+    })
 
-        return {
-          get: () => {
-            track()
-            return this.getNodeLayout(rootGraphId, nodeId)
-          },
-          set: (newLayout: NodeLayout | null) => {
-            // No caller assigns null through this ref; deletion goes through
-            // layoutMutations.deleteNode, which carries a graphId.
-            if (newLayout === null) return
-
-            // Update operation - detect what changed
-            const existing = this.ynodes.get(nodeKey)
-            if (!existing) {
-              // Create operation
-              this.applyOperation({
-                type: 'createNode',
-                entity: 'node',
-                graphId: rootGraphId,
-                nodeId,
-                layout: newLayout,
-                timestamp: Date.now(),
-                source: this.currentSource,
-                actor: this.currentActor
-              })
-            } else {
-              const existingLayout = yNodeToLayout(existing)
-
-              // Check what properties changed
-              if (
-                existingLayout.position.x !== newLayout.position.x ||
-                existingLayout.position.y !== newLayout.position.y
-              ) {
-                this.applyOperation({
-                  type: 'moveNode',
-                  entity: 'node',
-                  graphId: rootGraphId,
-                  nodeId,
-                  position: newLayout.position,
-                  timestamp: Date.now(),
-                  source: this.currentSource,
-                  actor: this.currentActor
-                })
-              }
-              if (
-                existingLayout.size.width !== newLayout.size.width ||
-                existingLayout.size.height !== newLayout.size.height
-              ) {
-                this.applyOperation({
-                  type: 'resizeNode',
-                  entity: 'node',
-                  graphId: rootGraphId,
-                  nodeId,
-                  size: newLayout.size,
-                  timestamp: Date.now(),
-                  source: this.currentSource,
-                  actor: this.currentActor
-                })
-              }
-              if (existingLayout.zIndex !== newLayout.zIndex) {
-                this.applyOperation({
-                  type: 'setNodeZIndex',
-                  entity: 'node',
-                  graphId: rootGraphId,
-                  nodeId,
-                  zIndex: newLayout.zIndex,
-                  timestamp: Date.now(),
-                  source: this.currentSource,
-                  actor: this.currentActor
-                })
-              }
-            }
-          }
-        }
-      })
-
-      this.nodeRefs.set(nodeKey, nodeRef)
-    }
-
+    this.nodeRefs.set(nodeKey, nodeRef)
     return nodeRef
   }
 
@@ -779,10 +713,11 @@ class LayoutStore {
    * Apply a layout operation using Yjs transactions
    */
   applyOperation(operation: LayoutOperation): void {
-    const change = createLayoutChange(operation)
+    const stamped = this.stampActor(operation)
+    const change = createLayoutChange(stamped)
     let applied = false
     this.ydoc.transact(() => {
-      applied = this.applyOperationInTransaction(operation, change)
+      applied = this.applyOperationInTransaction(stamped, change)
     }, this.currentActor)
     if (!applied) return
 
@@ -796,14 +731,22 @@ class LayoutStore {
     const appliedChanges: LayoutChange[] = []
     this.ydoc.transact(() => {
       for (const operation of operations) {
-        const change = createLayoutChange(operation)
-        if (this.applyOperationInTransaction(operation, change)) {
+        const stamped = this.stampActor(operation)
+        const change = createLayoutChange(stamped)
+        if (this.applyOperationInTransaction(stamped, change)) {
           appliedChanges.push(change)
         }
       }
     }, this.currentActor)
 
     for (const change of appliedChanges) this.finalizeOperation(change)
+  }
+
+  /** Stamps this session's actor on operations that carry none. */
+  private stampActor(operation: LayoutOperation): LayoutOperation {
+    return operation.actor === undefined
+      ? { ...operation, actor: this.currentActor }
+      : operation
   }
 
   /**
@@ -937,38 +880,18 @@ class LayoutStore {
   }
 
   /**
-   * Set the current operation source
+   * Claims a stacking order above every node the store has seen. Stacking is
+   * the store's own sequence, independent of a node's position in
+   * {@link LGraph._nodes}.
    */
-  setSource(source: LayoutSource): void {
-    this.currentSource = source
-  }
-
-  /**
-   * Set the current actor (for CRDT)
-   */
-  setActor(actor: string): void {
-    this.currentActor = actor
-  }
-
-  /**
-   * Get the current operation source
-   */
-  getCurrentSource(): LayoutSource {
-    return this.currentSource
-  }
-
-  /**
-   * Get the current actor
-   */
-  getCurrentActor(): string {
-    return this.currentActor
-  }
-
-  /** Allocates store-local stacking order, independent of `LGraph._nodes`. */
   allocateZIndex(): number {
     return ++this.highestZIndex
   }
 
+  /**
+   * Clean up refs and triggers for a node when its Vue component unmounts.
+   * This should be called from the component's onUnmounted hook.
+   */
   cleanupNodeRef(rootGraphId: UUID, nodeId: NodeId): void {
     const nodeKey = makeScopedLayoutKey(rootGraphId, nodeId)
     this.nodeRefs.delete(nodeKey)
@@ -982,12 +905,15 @@ class LayoutStore {
       entity: 'graph',
       graphId: rootGraphId,
       timestamp: Date.now(),
-      source: this.currentSource,
-      actor: this.currentActor
+      source: LayoutSource.Canvas
     })
   }
 
-  /** Test-only full reset; attached graph entities become desynchronized. */
+  /**
+   * Test-only escape hatch: drops everything, including entity entries that
+   * production drops through `unregisterAllGraphLayout`. Calling it with a
+   * graph attached desyncs the store from every entity in it.
+   */
   resetForTests(): void {
     this.highestZIndex = 0
     this.ydoc.transact(() => {
@@ -1001,12 +927,15 @@ class LayoutStore {
   }
 
   /**
-   * Clears view geometry and subscriptions; entity geometry has separate
-   * lifecycle cleanup.
+   * Drops the geometry scoped to the graph being left: slot and link layouts,
+   * the spatial indexes over them, and the listeners and queues bound to them.
+   * Entity geometry lives with the entity, and leaves through
+   * `unregisterAllGraphLayout`.
    */
   clearViewGeometry(): void {
     this.ydoc.transact(() => {
-      // Preserve refs held by components so reactivity survives view changes.
+      // nodeRefs and nodeTriggers outlive the view: components already hold
+      // these refs, and reusing them keeps the reactivity chain intact.
       this.nodeChangeListeners.clear()
       this.linkSegmentSpatialIndex.clear()
       this.slotSpatialIndex.clear()
@@ -1365,46 +1294,40 @@ class LayoutStore {
   /**
    * Batch update node bounds using Yjs transaction for atomicity.
    */
-  batchUpdateNodeBounds(rootGraphId: UUID, updates: NodeBoundsUpdate[]): void {
+  batchUpdateNodeBounds(
+    rootGraphId: UUID,
+    updates: NodeBoundsUpdate[],
+    options: BatchUpdateBoundsOptions
+  ): void {
     if (updates.length === 0) return
 
-    const originalSource = this.currentSource
-    const shouldNormalizeHeights = originalSource === LayoutSource.DOM
-    this.currentSource = LayoutSource.Vue
-
+    const { source, boundsIncludeTitleHeight = false } = options
     const nodeIds: NodeId[] = []
     const boundsRecord: BatchUpdateBoundsOperation['bounds'] = {}
 
     for (const { nodeId, bounds } of updates) {
       if (!this.ynodes.has(makeScopedLayoutKey(rootGraphId, nodeId))) continue
 
-      boundsRecord[nodeId] = shouldNormalizeHeights
+      boundsRecord[nodeId] = boundsIncludeTitleHeight
         ? { ...bounds, height: removeNodeTitleHeight(bounds.height) }
         : bounds
       nodeIds.push(nodeId)
     }
 
-    if (!nodeIds.length) {
-      this.currentSource = originalSource
-      return
-    }
+    if (!nodeIds.length) return
 
-    const operation: BatchUpdateBoundsOperation = {
+    this.applyOperation({
       type: 'batchUpdateBounds',
       entity: 'node',
       graphId: rootGraphId,
       nodeIds,
       bounds: boundsRecord,
       timestamp: Date.now(),
-      source: this.currentSource,
+      source,
       actor: this.currentActor
-    }
-
-    this.applyOperation(operation)
-
-    this.currentSource = originalSource
+    })
   }
 }
 
 // Create singleton instance
-export const layoutStore = new LayoutStore()
+export const layoutStore = new LayoutStoreImpl()

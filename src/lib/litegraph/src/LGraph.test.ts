@@ -9,6 +9,7 @@ import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { LayoutSource } from '@/renderer/core/layout/types'
 import {
   LGraph,
   LGraphGroup,
@@ -1730,12 +1731,16 @@ describe('node layout registration', () => {
     node.id = toNodeId(42)
     node.pos = [10, 20]
     node.size = [100, 80]
-    useLayoutMutations().createNode(graph.rootGraph.id, node.id, {
-      position: { x: 300, y: 400 },
-      size: { width: 220, height: 160 },
-      zIndex: 1,
-      visible: true
-    })
+    useLayoutMutations(LayoutSource.Canvas).createNode(
+      graph.rootGraph.id,
+      node.id,
+      {
+        position: { x: 300, y: 400 },
+        size: { width: 220, height: 160 },
+        zIndex: 1,
+        visible: true
+      }
+    )
 
     graph.add(node)
 
@@ -1747,7 +1752,7 @@ describe('node layout registration', () => {
     const graph = new LGraph()
     const adopted = new LGraphNode('adopted')
     adopted.id = toNodeId(42)
-    useLayoutMutations().createNode(graph.id, adopted.id, {
+    useLayoutMutations(LayoutSource.Canvas).createNode(graph.id, adopted.id, {
       position: { x: 0, y: 0 },
       size: { width: 100, height: 80 },
       zIndex: 1,
@@ -1765,7 +1770,7 @@ describe('node layout registration', () => {
     const graph = new LGraph()
     const group = new LGraphGroup('group')
     graph.add(group)
-    useLayoutMutations().setGroupBounds(
+    useLayoutMutations(LayoutSource.Canvas).setGroupBounds(
       graph.id,
       group.id,
       { x: 300, y: 400 },

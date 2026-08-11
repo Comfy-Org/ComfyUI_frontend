@@ -2,7 +2,6 @@ import { toGroupId } from '@/types/groupId'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { watch } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { toLinkId } from '@/types/linkId'
@@ -25,24 +24,6 @@ import type {
 } from '@/renderer/core/layout/types'
 
 const GRAPH = createUuidv4()
-
-function getOperationsAddedBy(action: () => void): LayoutOperation[] {
-  const applySpy = vi.spyOn(layoutStore, 'applyOperation')
-  try {
-    action()
-    return applySpy.mock.calls.map(([operation]) => operation)
-  } finally {
-    applySpy.mockRestore()
-  }
-}
-
-function expectSingleOperation(
-  operations: LayoutOperation[],
-  expectedOperation: Record<string, unknown>
-): void {
-  expect(operations).toHaveLength(1)
-  expect(operations[0]).toEqual(expect.objectContaining(expectedOperation))
-}
 
 beforeEach(() => {
   setActivePinia(createTestingPinia({ stubActions: false }))
@@ -68,7 +49,6 @@ describe('layoutStore CRDT operations', () => {
     const layout = createTestNode(nodeId)
 
     // Create node
-    layoutStore.setSource(LayoutSource.External)
     layoutStore.applyOperation({
       type: 'createNode',
       entity: 'node',
@@ -76,7 +56,7 @@ describe('layoutStore CRDT operations', () => {
       nodeId,
       layout,
       timestamp: Date.now(),
-      source: LayoutSource.External,
+      source: LayoutSource.Canvas,
       actor: 'test'
     })
 
@@ -97,7 +77,7 @@ describe('layoutStore CRDT operations', () => {
       nodeId,
       layout,
       timestamp: Date.now(),
-      source: LayoutSource.External,
+      source: LayoutSource.Canvas,
       actor: 'test'
     })
 
@@ -131,7 +111,7 @@ describe('layoutStore CRDT operations', () => {
       nodeId,
       layout,
       timestamp: Date.now(),
-      source: LayoutSource.External,
+      source: LayoutSource.Canvas,
       actor: 'test'
     })
 
@@ -165,7 +145,7 @@ describe('layoutStore CRDT operations', () => {
       nodeId,
       layout,
       timestamp: Date.now(),
-      source: LayoutSource.External,
+      source: LayoutSource.Canvas,
       actor: 'test'
     })
 
@@ -176,7 +156,7 @@ describe('layoutStore CRDT operations', () => {
       graphId: GRAPH,
       nodeId,
       timestamp: Date.now(),
-      source: LayoutSource.External,
+      source: LayoutSource.Canvas,
       actor: 'test'
     })
 
@@ -185,40 +165,33 @@ describe('layoutStore CRDT operations', () => {
     expect(nodeRef.value).toBeNull()
   })
 
-  it('should handle source and actor tracking', async () => {
-    const nodeId = toNodeId('test-node-5')
-    const layout = createTestNode(nodeId)
-
-    // Set source and actor
-    layoutStore.setSource(LayoutSource.Vue)
-    layoutStore.setActor('user-123')
-
-    // Track change notifications AFTER setting source/actor
+  it('carries the operation source and stamps one session actor', async () => {
     const changes: LayoutChange[] = []
     const unsubscribe = layoutStore.onChange((change) => {
       changes.push(change)
     })
 
-    // Create node
-    layoutStore.applyOperation({
-      type: 'createNode',
-      entity: 'node',
-      graphId: GRAPH,
-      nodeId,
-      layout,
-      timestamp: Date.now(),
-      source: layoutStore.getCurrentSource(),
-      actor: layoutStore.getCurrentActor()
-    })
+    for (const nodeId of [toNodeId('test-node-5a'), toNodeId('test-node-5b')]) {
+      layoutStore.applyOperation({
+        type: 'createNode',
+        entity: 'node',
+        graphId: GRAPH,
+        nodeId,
+        layout: createTestNode(nodeId),
+        timestamp: Date.now(),
+        source: LayoutSource.Vue
+      })
+    }
 
     // onChange notifications are deferred to a microtask.
     await vi.waitFor(() => {
-      expect(changes.length).toBeGreaterThanOrEqual(1)
+      expect(changes.length).toBe(2)
     })
 
-    const lastChange = changes[changes.length - 1]
-    expect(lastChange.source).toBe('vue')
-    expect(lastChange.operation.actor).toBe('user-123')
+    const [first, second] = changes
+    expect(first.source).toBe(LayoutSource.Vue)
+    expect(first.operation.actor).toEqual(expect.any(String))
+    expect(second.operation.actor).toBe(first.operation.actor)
 
     unsubscribe()
   })
@@ -236,7 +209,7 @@ describe('layoutStore CRDT operations', () => {
       nodeId: nodeA,
       layout: layoutA,
       timestamp: Date.now(),
-      source: LayoutSource.External,
+      source: LayoutSource.Canvas,
       actor: 'test'
     })
 
@@ -247,7 +220,7 @@ describe('layoutStore CRDT operations', () => {
       nodeId: nodeB,
       layout: layoutB,
       timestamp: Date.now(),
-      source: LayoutSource.External,
+      source: LayoutSource.Canvas,
       actor: 'test'
     })
 
@@ -305,7 +278,7 @@ describe('layoutStore CRDT operations', () => {
       nodeId,
       layout,
       timestamp: Date.now(),
-      source: LayoutSource.External,
+      source: LayoutSource.Canvas,
       actor: 'test'
     })
 
@@ -345,8 +318,7 @@ describe('layoutStore CRDT operations', () => {
     layoutStore.onNodeChange(GRAPH, nodeId, staleListener)
 
     layoutStore.clearViewGeometry()
-    const mutations = useLayoutMutations()
-    mutations.setSource(LayoutSource.Canvas)
+    const mutations = useLayoutMutations(LayoutSource.Canvas)
     mutations.createNode(GRAPH, nodeId, {
       position: { x: 0, y: 0 },
       size: { width: 200, height: 100 },
@@ -379,7 +351,7 @@ describe('layoutStore CRDT operations', () => {
       nodeId,
       layout,
       timestamp: Date.now(),
-      source: LayoutSource.External,
+      source: LayoutSource.Canvas,
       actor: 'test'
     })
 
@@ -395,7 +367,7 @@ describe('layoutStore CRDT operations', () => {
       nodeId,
       position: { x: 120, y: 110 },
       timestamp: Date.now(),
-      source: LayoutSource.External,
+      source: LayoutSource.Canvas,
       actor: 'test'
     })
     layoutStore.applyOperation({
@@ -405,7 +377,7 @@ describe('layoutStore CRDT operations', () => {
       nodeId,
       position: { x: 150, y: 140 },
       timestamp: Date.now(),
-      source: LayoutSource.External,
+      source: LayoutSource.Canvas,
       actor: 'test'
     })
 
@@ -433,7 +405,7 @@ describe('layoutStore CRDT operations', () => {
       nodeId,
       layout,
       timestamp: Date.now(),
-      source: LayoutSource.External,
+      source: LayoutSource.Canvas,
       actor: 'test'
     })
 
@@ -443,7 +415,9 @@ describe('layoutStore CRDT operations', () => {
     })
 
     const newBounds = { x: 40, y: 60, width: 220, height: 120 }
-    layoutStore.batchUpdateNodeBounds(GRAPH, [{ nodeId, bounds: newBounds }])
+    layoutStore.batchUpdateNodeBounds(GRAPH, [{ nodeId, bounds: newBounds }], {
+      source: LayoutSource.Vue
+    })
 
     // onChange notifications are deferred to a microtask.
     await vi.waitFor(() => {
@@ -476,22 +450,25 @@ describe('layoutStore CRDT operations', () => {
       nodeId,
       layout,
       timestamp: Date.now(),
-      source: LayoutSource.External,
+      source: LayoutSource.Canvas,
       actor: 'test'
     })
 
-    layoutStore.setSource(LayoutSource.DOM)
-    layoutStore.batchUpdateNodeBounds(GRAPH, [
-      {
-        nodeId,
-        bounds: {
-          x: layout.bounds.x,
-          y: layout.bounds.y,
-          width: layout.size.width,
-          height: layout.size.height + LiteGraph.NODE_TITLE_HEIGHT
+    layoutStore.batchUpdateNodeBounds(
+      GRAPH,
+      [
+        {
+          nodeId,
+          bounds: {
+            x: layout.bounds.x,
+            y: layout.bounds.y,
+            width: layout.size.width,
+            height: layout.size.height + LiteGraph.NODE_TITLE_HEIGHT
+          }
         }
-      }
-    ])
+      ],
+      { source: LayoutSource.Vue, boundsIncludeTitleHeight: true }
+    )
 
     const nodeRef = layoutStore.getNodeLayoutRef(GRAPH, nodeId)
     expect(nodeRef.value?.size.height).toBe(layout.size.height)
@@ -511,22 +488,25 @@ describe('layoutStore CRDT operations', () => {
       nodeId,
       layout,
       timestamp: Date.now(),
-      source: LayoutSource.External,
+      source: LayoutSource.Canvas,
       actor: 'test'
     })
 
-    layoutStore.setSource(LayoutSource.DOM)
-    layoutStore.batchUpdateNodeBounds(GRAPH, [
-      {
-        nodeId,
-        bounds: {
-          x: layout.bounds.x,
-          y: layout.bounds.y,
-          width: layout.size.width,
-          height: layout.size.height + LiteGraph.NODE_TITLE_HEIGHT
+    layoutStore.batchUpdateNodeBounds(
+      GRAPH,
+      [
+        {
+          nodeId,
+          bounds: {
+            x: layout.bounds.x,
+            y: layout.bounds.y,
+            width: layout.size.width,
+            height: layout.size.height + LiteGraph.NODE_TITLE_HEIGHT
+          }
         }
-      }
-    ])
+      ],
+      { source: LayoutSource.Vue, boundsIncludeTitleHeight: true }
+    )
 
     const nodeRef = layoutStore.getNodeLayoutRef(GRAPH, nodeId)
     expect(nodeRef.value?.size.height).toBeGreaterThanOrEqual(0)
@@ -543,7 +523,7 @@ describe('layoutStore CRDT operations', () => {
       nodeId,
       layout,
       timestamp: Date.now(),
-      source: LayoutSource.External,
+      source: LayoutSource.Canvas,
       actor: 'test'
     })
 
@@ -558,18 +538,21 @@ describe('layoutStore CRDT operations', () => {
     })
 
     try {
-      layoutStore.setSource(LayoutSource.DOM)
-      layoutStore.batchUpdateNodeBounds(GRAPH, [
-        {
-          nodeId,
-          bounds: {
-            x: layout.bounds.x,
-            y: layout.bounds.y,
-            width: layout.size.width,
-            height: layout.size.height
+      layoutStore.batchUpdateNodeBounds(
+        GRAPH,
+        [
+          {
+            nodeId,
+            bounds: {
+              x: layout.bounds.x,
+              y: layout.bounds.y,
+              width: layout.size.width,
+              height: layout.size.height
+            }
           }
-        }
-      ])
+        ],
+        { source: LayoutSource.Vue, boundsIncludeTitleHeight: true }
+      )
 
       const nodeRef = layoutStore.getNodeLayoutRef(GRAPH, nodeId)
       expect(nodeRef.value?.size.height).toBe(layout.size.height)
@@ -600,7 +583,7 @@ describe('layoutStore CRDT operations', () => {
         nodeId,
         layout,
         timestamp: Date.now(),
-        source: LayoutSource.External,
+        source: LayoutSource.Canvas,
         actor: 'test'
       })
 
@@ -621,7 +604,7 @@ describe('layoutStore CRDT operations', () => {
         graphId: GRAPH,
         nodeId,
         timestamp: Date.now(),
-        source: LayoutSource.External,
+        source: LayoutSource.Canvas,
         actor: 'test'
       })
 
@@ -637,7 +620,6 @@ describe('reroute layouts outlive an active-graph reseed', () => {
   const POSITION = { x: 372, y: 415 }
 
   function createReroute() {
-    layoutStore.setSource(LayoutSource.Canvas)
     layoutStore.applyOperation({
       type: 'createReroute',
       entity: 'reroute',
@@ -666,7 +648,6 @@ describe('reroute layouts outlive an active-graph reseed', () => {
   it('drops layout and spatial index together on delete', () => {
     createReroute()
 
-    layoutStore.setSource(LayoutSource.Canvas)
     layoutStore.applyOperation({
       type: 'deleteReroute',
       entity: 'reroute',
@@ -894,114 +875,6 @@ describe('root-scoped node layouts', () => {
     expect(
       layoutStore.getRerouteLayout(SECOND_GRAPH, REROUTE_ID)
     ).not.toBeNull()
-  })
-})
-
-describe('layoutStore getNodeLayoutRef setter', () => {
-  beforeEach(() => {
-    layoutStore.resetForTests()
-  })
-
-  const REF_NODE = toNodeId('ref-node')
-
-  function baseLayout(): NodeLayout {
-    return {
-      id: REF_NODE,
-      position: { x: 10, y: 20 },
-      size: { width: 100, height: 50 },
-      zIndex: 0,
-      visible: true,
-      bounds: { x: 10, y: 20, width: 100, height: 50 }
-    }
-  }
-
-  it('creates a node when setter receives a layout for an unknown id', () => {
-    const ref = layoutStore.getNodeLayoutRef(GRAPH, REF_NODE)
-    const layout = baseLayout()
-    const onChange = vi.fn()
-    const stop = watch(ref, onChange, { flush: 'sync' })
-    expect(ref.value).toBeNull()
-
-    const operations = getOperationsAddedBy(() => {
-      ref.value = layout
-    })
-
-    expect(onChange).toHaveBeenCalledOnce()
-    expectSingleOperation(operations, {
-      type: 'createNode',
-      nodeId: REF_NODE,
-      layout
-    })
-    expect(ref.value).toEqual(layout)
-    stop()
-  })
-
-  it.for<{
-    name: string
-    nextLayout: NodeLayout
-    expectedOperation: Record<string, unknown>
-  }>([
-    {
-      name: 'moveNode',
-      nextLayout: {
-        ...baseLayout(),
-        position: { x: 99, y: 88 },
-        bounds: { x: 99, y: 88, width: 100, height: 50 }
-      },
-      expectedOperation: {
-        type: 'moveNode',
-        nodeId: REF_NODE,
-        position: { x: 99, y: 88 }
-      }
-    },
-    {
-      name: 'resizeNode',
-      nextLayout: {
-        ...baseLayout(),
-        size: { width: 200, height: 80 },
-        bounds: { x: 10, y: 20, width: 200, height: 80 }
-      },
-      expectedOperation: {
-        type: 'resizeNode',
-        nodeId: REF_NODE,
-        size: { width: 200, height: 80 }
-      }
-    },
-    {
-      name: 'setNodeZIndex',
-      nextLayout: { ...baseLayout(), zIndex: 5 },
-      expectedOperation: {
-        type: 'setNodeZIndex',
-        nodeId: REF_NODE,
-        zIndex: 5
-      }
-    }
-  ])(
-    'emits a $name operation for layout-only updates',
-    ({ nextLayout, expectedOperation }) => {
-      const ref = layoutStore.getNodeLayoutRef(GRAPH, REF_NODE)
-      ref.value = baseLayout()
-
-      const operations = getOperationsAddedBy(() => {
-        ref.value = nextLayout
-      })
-
-      expectSingleOperation(operations, expectedOperation)
-      expect(ref.value).toEqual(nextLayout)
-    }
-  )
-
-  it('ignores a null assignment; deletion goes through layoutMutations.deleteNode', () => {
-    const ref = layoutStore.getNodeLayoutRef(GRAPH, REF_NODE)
-    const layout = baseLayout()
-    ref.value = layout
-
-    const operations = getOperationsAddedBy(() => {
-      ref.value = null
-    })
-
-    expect(operations).toEqual([])
-    expect(ref.value).toEqual(layout)
   })
 })
 

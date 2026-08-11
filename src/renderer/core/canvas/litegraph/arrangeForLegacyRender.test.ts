@@ -52,8 +52,7 @@ describe('arrangeForLegacyRender', () => {
     const graph = new LGraph()
     const first = addedNode(graph)
     const second = addedNode(graph)
-    const mutations = useLayoutMutations()
-    mutations.setSource(LayoutSource.Canvas)
+    const mutations = useLayoutMutations(LayoutSource.Canvas)
     mutations.setNodeZIndex(graph.id, first.id, 2)
     mutations.setNodeZIndex(graph.id, second.id, 1)
 
