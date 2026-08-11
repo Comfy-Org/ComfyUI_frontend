@@ -247,11 +247,13 @@ const showWorkspaceSwitcher = computed(
   () => initState.value === 'ready' && workspaces.value.length > 0
 )
 
+// Local keeps its top-up-and-go model: with a workspace context, top-up needs
+// only billing rights, not an active subscription (unlike cloud's rail).
 const { permissions } = useWorkspaceUI()
-const showAddCredits = computed(
-  () =>
-    canAccessSubscriptionFeatures.value &&
-    (!showWorkspaceSwitcher.value || permissions.value.canTopUp)
+const showAddCredits = computed(() =>
+  showWorkspaceSwitcher.value
+    ? permissions.value.canTopUp
+    : canAccessSubscriptionFeatures.value
 )
 
 const subscriptionTierName = computed(() =>
