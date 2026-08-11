@@ -29,7 +29,7 @@ const {
   /**
    * 'split' — title card + label pill on the left, wired to the reasons and
    * on to the right card (/careers, /about). 'node' — a single label card
-   * wired to the reasons only (/fdct).
+   * wired to the reasons only (/forward-deployed-creatives).
    */
   variant?: 'split' | 'node'
   locale?: Locale

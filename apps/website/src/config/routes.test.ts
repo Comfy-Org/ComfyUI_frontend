@@ -60,10 +60,10 @@ describe('getRoutes flux3', () => {
 
 describe('getRoutes fdct', () => {
   it('serves the fdct page at its canonical path for en', () => {
-    expect(getRoutes('en').fdct).toBe('/fdct')
+    expect(getRoutes('en').fdct).toBe('/forward-deployed-creatives')
   })
 
   it('serves a localized fdct path for zh-CN', () => {
-    expect(getRoutes('zh-CN').fdct).toBe('/zh-CN/fdct')
+    expect(getRoutes('zh-CN').fdct).toBe('/zh-CN/forward-deployed-creatives')
   })
 })

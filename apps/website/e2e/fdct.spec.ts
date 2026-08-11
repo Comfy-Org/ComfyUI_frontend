@@ -38,7 +38,7 @@ const whatYouGetItemKeys = [
 
 test.describe('FDCT page @smoke', () => {
   test('responds 200 and has the localized title', async ({ page }) => {
-    const response = await page.goto('/fdct')
+    const response = await page.goto('/forward-deployed-creatives')
     expect(response?.status()).toBe(200)
     await expect(page).toHaveTitle(t('fdct.meta.title', 'en'))
   })
@@ -46,7 +46,7 @@ test.describe('FDCT page @smoke', () => {
   test('hero renders the h1 and CTA pair with decided hrefs', async ({
     page
   }) => {
-    await page.goto('/fdct')
+    await page.goto('/forward-deployed-creatives')
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
       t('fdct.hero.title', 'en')
     )
@@ -65,7 +65,7 @@ test.describe('FDCT page @smoke', () => {
   test('builders section renders the node label, reasons, and marquee', async ({
     page
   }) => {
-    await page.goto('/fdct')
+    await page.goto('/forward-deployed-creatives')
     await expect(
       page.getByRole('heading', { name: t('fdct.builders.title', 'en') })
     ).toBeVisible()
@@ -83,7 +83,7 @@ test.describe('FDCT page @smoke', () => {
   test('how it works steps and what-you-get checklist render', async ({
     page
   }) => {
-    await page.goto('/fdct')
+    await page.goto('/forward-deployed-creatives')
     await expect(
       page.getByRole('heading', { name: t('fdct.howItWorks.title', 'en') })
     ).toBeVisible()
@@ -106,7 +106,7 @@ test.describe('FDCT page @smoke', () => {
   test('featured technologists renders the heading and three cards', async ({
     page
   }) => {
-    await page.goto('/fdct')
+    await page.goto('/forward-deployed-creatives')
     const section = page.locator('section', {
       has: page.getByRole('heading', {
         name: t('fdct.technologists.title', 'en')
@@ -127,7 +127,7 @@ test.describe('FDCT page @smoke', () => {
   test('past projects renders six cards with author and category', async ({
     page
   }) => {
-    await page.goto('/fdct')
+    await page.goto('/forward-deployed-creatives')
     const section = page.locator('section', {
       has: page.getByRole('heading', { name: t('fdct.projects.title', 'en') })
     })
@@ -156,7 +156,7 @@ test.describe('FDCT page @smoke', () => {
   test('Q&A renders five questions and expands one to reveal its answer', async ({
     page
   }) => {
-    await page.goto('/fdct')
+    await page.goto('/forward-deployed-creatives')
     await expect(
       page.getByRole('heading', { name: t('fdct.faq.title', 'en') })
     ).toBeVisible()
@@ -174,7 +174,7 @@ test.describe('FDCT page @smoke', () => {
   test('emits FAQPage structured data with the five Q&A pairs', async ({
     page
   }) => {
-    await page.goto('/fdct')
+    await page.goto('/forward-deployed-creatives')
     const faqJsonLd = await page.evaluate(() => {
       const scripts = Array.from(
         document.querySelectorAll<HTMLScriptElement>(
@@ -201,7 +201,7 @@ test.describe('FDCT page @smoke', () => {
   test('CTA bands render both labels with the decided hrefs', async ({
     page
   }) => {
-    await page.goto('/fdct')
+    await page.goto('/forward-deployed-creatives')
     const section = page.locator('section', {
       has: page.getByRole('heading', {
         name: t('fdct.bands.enterprise.label', 'en')
@@ -230,7 +230,7 @@ test.describe('FDCT hero @mobile', () => {
   test('shows the enterprise eyebrow and the stacked collage', async ({
     page
   }) => {
-    await page.goto('/fdct')
+    await page.goto('/forward-deployed-creatives')
     await expect(page.getByText(t('fdct.hero.eyebrow', 'en'))).toBeVisible()
     await expect(page.locator('img[src*="desert"]:visible')).toHaveCount(1)
     await expect(page.locator('img[src*="dark-fluid"]:visible')).toHaveCount(1)
@@ -251,7 +251,7 @@ test.describe('FDCT hero @mobile', () => {
 
 test.describe('FDCT page (zh-CN) @smoke', () => {
   test('responds 200 and has the localized title', async ({ page }) => {
-    const response = await page.goto('/zh-CN/fdct')
+    const response = await page.goto('/zh-CN/forward-deployed-creatives')
     expect(response?.status()).toBe(200)
     await expect(page).toHaveTitle(t('fdct.meta.title', 'zh-CN'))
   })
@@ -259,7 +259,7 @@ test.describe('FDCT page (zh-CN) @smoke', () => {
   test('hero renders the localized h1 and locale-prefixed contact CTA', async ({
     page
   }) => {
-    await page.goto('/zh-CN/fdct')
+    await page.goto('/zh-CN/forward-deployed-creatives')
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
       t('fdct.hero.title', 'zh-CN')
     )
@@ -277,7 +277,7 @@ test.describe('FDCT page (zh-CN) @smoke', () => {
   test('builders section renders the localized node label and reasons', async ({
     page
   }) => {
-    await page.goto('/zh-CN/fdct')
+    await page.goto('/zh-CN/forward-deployed-creatives')
     await expect(
       page.getByRole('heading', { name: t('fdct.builders.title', 'zh-CN') })
     ).toBeVisible()
@@ -294,7 +294,7 @@ test.describe('FDCT page (zh-CN) @smoke', () => {
   test('how it works steps and what-you-get checklist render localized', async ({
     page
   }) => {
-    await page.goto('/zh-CN/fdct')
+    await page.goto('/zh-CN/forward-deployed-creatives')
     await expect(
       page.getByRole('heading', { name: t('fdct.howItWorks.title', 'zh-CN') })
     ).toBeVisible()
@@ -317,7 +317,7 @@ test.describe('FDCT page (zh-CN) @smoke', () => {
   test('featured technologists renders the localized heading and three cards', async ({
     page
   }) => {
-    await page.goto('/zh-CN/fdct')
+    await page.goto('/zh-CN/forward-deployed-creatives')
     const section = page.locator('section', {
       has: page.getByRole('heading', {
         name: t('fdct.technologists.title', 'zh-CN')
@@ -338,7 +338,7 @@ test.describe('FDCT page (zh-CN) @smoke', () => {
   test('past projects renders six cards under the localized heading', async ({
     page
   }) => {
-    await page.goto('/zh-CN/fdct')
+    await page.goto('/zh-CN/forward-deployed-creatives')
     const section = page.locator('section', {
       has: page.getByRole('heading', {
         name: t('fdct.projects.title', 'zh-CN')
@@ -360,7 +360,7 @@ test.describe('FDCT page (zh-CN) @smoke', () => {
   test('Q&A renders the five localized questions and expands one', async ({
     page
   }) => {
-    await page.goto('/zh-CN/fdct')
+    await page.goto('/zh-CN/forward-deployed-creatives')
     await expect(
       page.getByRole('heading', { name: t('fdct.faq.title', 'zh-CN') })
     ).toBeVisible()
@@ -378,7 +378,7 @@ test.describe('FDCT page (zh-CN) @smoke', () => {
   test('CTA bands render localized labels with locale-prefixed hrefs', async ({
     page
   }) => {
-    await page.goto('/zh-CN/fdct')
+    await page.goto('/zh-CN/forward-deployed-creatives')
     const section = page.locator('section', {
       has: page.getByRole('heading', {
         name: t('fdct.bands.enterprise.label', 'zh-CN')

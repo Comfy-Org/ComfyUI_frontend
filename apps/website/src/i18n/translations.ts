@@ -5434,7 +5434,7 @@ const translations = {
     'zh-CN': '在真实 GPU 上免费运行 5 次 — 无需信用卡。'
   },
   'minimax.pricing.banner.cta': { en: 'TRY FREE', 'zh-CN': '免费试用' },
-  // FDCT page (/fdct) — Forward Deployed Creatives
+  // FDCT page (/forward-deployed-creatives) — Forward Deployed Creatives
   'fdct.meta.title': {
     en: 'Forward Deployed Creatives | Comfy',
     'zh-CN': '前沿驻场创意人才 | Comfy'
