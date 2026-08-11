@@ -1,4 +1,4 @@
-import { reactive, shallowReactive, toValue } from 'vue'
+import { shallowReactive, toValue } from 'vue'
 
 import {
   calculateInputSlotPosFromSlot,
@@ -9,6 +9,8 @@ import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMuta
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { toLinkId } from '@/types/linkId'
+import { graphScopeOf } from '@/types/graphScopeId'
+import type { GraphScope } from '@/types/graphScopeId'
 import { mintLinkId } from './idAllocation'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -18,7 +20,6 @@ import type { NodeState } from '@/types/nodeState'
 import { adjustColor } from '@/utils/colorUtil'
 import type { ColorAdjustOptions } from '@/utils/colorUtil'
 import { zeroUuid } from '@/utils/uuid'
-import type { UUID } from '@/utils/uuid'
 import {
   commonType,
   isNodeBindable,
@@ -332,7 +333,7 @@ export class LGraphNode
   _state: NodeState
 
   /** The root graph this node is registered with in {@link useNodeDataStore}, if any. */
-  _graphId?: UUID
+  _graphScope?: GraphScope
 
   get id(): NodeId {
     return this._state.id
@@ -1030,7 +1031,7 @@ export class LGraphNode
         // Once registered, the owning graph owns the id — it may have
         // renumbered this node to resolve a collision that the serialised id
         // would reinstate.
-        if (this._graphId) continue
+        if (this._graphScope) continue
         const id = toNodeId(info.id)
         if (id !== UNASSIGNED_NODE_ID) this.id = id
         continue
@@ -4380,12 +4381,12 @@ export class LGraphNode
 export function registerNodeState(
   graph: Pick<LGraph, 'rootGraph' | 'id'>,
   node: LGraphNode
-): void {
-  const rootGraphId = graph.rootGraph.id
+): boolean {
+  const graphScope = graphScopeOf(graph)
   node._state.graphId = graph.id
-  node._state = reactive(node._state)
-  useNodeDataStore().registerNode(rootGraphId, node._state)
-  node._graphId = rootGraphId
+  node._state = useNodeDataStore().registerNode(graphScope, node._state)
+  node._graphScope = graphScope
+  return true
 }
 
 /**
@@ -4394,9 +4395,9 @@ export function registerNodeState(
  * @param node The node to unregister
  */
 export function unregisterNodeState(node: LGraphNode): void {
-  if (!node._graphId) return
-  useNodeDataStore().deleteNode(node._graphId, node._state)
-  node._graphId = undefined
+  if (!node._graphScope) return
+  useNodeDataStore().deleteNode(node._graphScope, node._state)
+  node._graphScope = undefined
 }
 
 /**

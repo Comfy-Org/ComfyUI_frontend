@@ -851,12 +851,13 @@ export function anchorRerouteChain(network: LinkNetwork, link: LLink): void {
 export function registerRerouteChain(
   graph: Pick<LGraph, 'rootGraph' | 'id'>,
   reroute: Reroute
-): void {
+): boolean {
   const scope = graphScopeOf(graph)
   const registered = useRerouteStore().registerReroute(scope, reroute._chain)
-  if (!registered) return
+  if (!registered) return false
   reroute._chain = registered
   reroute._graphScope = scope
+  return true
 }
 
 /**

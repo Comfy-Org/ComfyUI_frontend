@@ -3,7 +3,6 @@ import { reactive, toRaw } from 'vue'
 
 import { SUBGRAPH_OUTPUT_ID } from '@/lib/litegraph/src/constants'
 import type { GraphScope, RootGraphId } from '@/types/graphScopeId'
-import type { LinkId } from '@/types/linkId'
 import type { LinkTopology } from '@/types/linkTopology'
 import { isFloatingTopology } from '@/types/linkTopology'
 import type { NodeId } from '@/types/nodeId'
@@ -66,7 +65,7 @@ function originKey(nodeId: NodeId, slot: number): OriginSlotKey {
 type OriginIndex = Map<OriginSlotKey, Set<LinkTopology>>
 
 interface GraphTopologyBucket {
-  byId: Map<LinkId, LinkTopology>
+  topologies: Set<LinkTopology>
   targetIndex: Map<TargetSlotKey, LinkTopology>
   originIndex: OriginIndex
 }
@@ -92,18 +91,18 @@ function hasUniqueTarget(topology: LinkTopology): boolean {
  * link can target a given input slot — litegraph disconnects the previous
  * link before connecting a new one — so the target is the natural primary key
  * and the dominant query ("is this input connected, and by what?") is one
- * lookup. The id index is the sole ownership authority; slot indexes are
- * derived query indexes.
+ * lookup. The topology set tracks registration ownership; slot maps are
+ * derived query indexes. `LGraph` remains the link-id authority.
  */
 export const useLinkStore = defineStore('link', () => {
   const buckets = createGraphScopedBuckets<GraphTopologyBucket>({
     createBucket: () =>
       reactive<GraphTopologyBucket>({
-        byId: new Map(),
+        topologies: new Set(),
         targetIndex: new Map(),
         originIndex: new Map()
       }),
-    isEmpty: ({ byId }) => byId.size === 0
+    isEmpty: ({ topologies }) => topologies.size === 0
   })
 
   function indexOrigin(
@@ -136,7 +135,7 @@ export const useLinkStore = defineStore('link', () => {
     topology: LinkTopology
   ): LinkTopology {
     const placed = reactive(topology)
-    bucket.byId.set(topology.id, placed)
+    bucket.topologies.add(placed)
     if (hasUniqueTarget(topology)) {
       const key = targetKey(topology.targetNodeId, topology.targetSlot)
       bucket.targetIndex.set(key, placed)
@@ -158,11 +157,7 @@ export const useLinkStore = defineStore('link', () => {
     topology: LinkTopology
   ): LinkTopology | undefined {
     const bucket = buckets.getOrCreate(scope)
-    const existingId = bucket.byId.get(topology.id)
-    if (existingId && toRaw(existingId) !== toRaw(topology)) {
-      console.error(`Link id ${topology.id} is already registered`)
-      return undefined
-    }
+    if (bucket.topologies.has(topology)) return reactive(topology)
     if (hasUniqueTarget(topology)) {
       const key = targetKey(topology.targetNodeId, topology.targetSlot)
       const existing = bucket.targetIndex.get(key)
@@ -176,14 +171,14 @@ export const useLinkStore = defineStore('link', () => {
 
   /** Removes a link's placement; only the registered topology may vacate it. */
   function displace(bucket: GraphTopologyBucket, topology: LinkTopology) {
-    if (toRaw(bucket.byId.get(topology.id)) !== toRaw(topology)) return false
+    if (!bucket.topologies.has(topology)) return false
     if (hasUniqueTarget(topology)) {
       const key = targetKey(topology.targetNodeId, topology.targetSlot)
       if (toRaw(bucket.targetIndex.get(key)) === toRaw(topology)) {
         bucket.targetIndex.delete(key)
       }
     }
-    bucket.byId.delete(topology.id)
+    bucket.topologies.delete(topology)
     unindexOrigin(bucket, topology)
     return true
   }
@@ -199,7 +194,7 @@ export const useLinkStore = defineStore('link', () => {
     bucket: GraphTopologyBucket,
     topology: LinkTopology
   ): boolean {
-    return toRaw(bucket.byId.get(topology.id)) === toRaw(topology)
+    return bucket.topologies.has(topology)
   }
 
   function validateEndpointUpdates(
@@ -320,12 +315,8 @@ export const useLinkStore = defineStore('link', () => {
 
   /** Iterates every registered topology owned by a graph. */
   function* graphTopologies(scope: GraphScope): Generator<LinkTopology> {
-    const byId = buckets.get(scope)?.byId
-    if (byId) yield* byId.values()
-  }
-
-  function getLink(scope: GraphScope, linkId: LinkTopology['id']) {
-    return buckets.get(scope)?.byId.get(linkId)
+    const topologies = buckets.get(scope)?.topologies
+    if (topologies) yield* topologies.values()
   }
 
   function clearGraph(graphId: RootGraphId): void {
@@ -340,14 +331,12 @@ export const useLinkStore = defineStore('link', () => {
     registerLink,
     updateEndpoint,
     updateEndpoints,
-    validateEndpointUpdates,
     deleteLink,
     isInputSlotConnected,
     getInputSlotLink,
     isOutputSlotConnected,
     getOutputSlotLinks,
     graphTopologies,
-    getLink,
     clearOwner,
     clearGraph
   }

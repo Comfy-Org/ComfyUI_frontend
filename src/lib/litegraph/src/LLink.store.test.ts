@@ -1,13 +1,13 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
 import { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
-import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
+import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 import { toRerouteId } from '@/types/rerouteId'
 
 import { registerLinkTopology } from './LLink'
@@ -18,6 +18,52 @@ import {
 
 describe('LLink ↔ linkStore integration', () => {
   beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
+
+  it('preserves the id of a registered link', () => {
+    const graph = new LGraph()
+    const link = new LLink(
+      toLinkId(1),
+      '*',
+      UNASSIGNED_NODE_ID,
+      -1,
+      UNASSIGNED_NODE_ID,
+      -1
+    )
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    graph.addFloatingLink(link)
+
+    link.id = toLinkId(2)
+
+    expect(link.id).toBe(toLinkId(1))
+    expect(graph.floatingLinks.get(toLinkId(1))).toBe(link)
+  })
+
+  it('does not add a link when topology registration is rejected', () => {
+    const graph = new LGraph()
+    const incumbent = new LLink(
+      toLinkId(1),
+      '*',
+      toNodeId(1),
+      0,
+      toNodeId(2),
+      0
+    )
+    const collision = new LLink(
+      toLinkId(2),
+      '*',
+      toNodeId(3),
+      0,
+      toNodeId(2),
+      0
+    )
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    useLinkStore().registerLink(graphScopeOf(graph), incumbent._state)
+
+    graph._addLink(collision)
+
+    expect(graph.links.has(collision.id)).toBe(false)
+    expect(collision._graphScope).toBeUndefined()
+  })
 
   it('connect registers, disconnect removes', () => {
     const graph = new LGraph()

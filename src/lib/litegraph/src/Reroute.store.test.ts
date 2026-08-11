@@ -48,6 +48,19 @@ describe('Reroute ↔ rerouteStore integration', () => {
     expect(store.getReroute(graphScopeOf(graph), reroute.id)).toBeUndefined()
   })
 
+  it('does not add a reroute when chain registration is rejected', () => {
+    const graph = new LGraph()
+    const incumbent = new Reroute(toRerouteId(1), graph, [0, 0])
+    const collision = new Reroute(toRerouteId(1), graph, [10, 10])
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    useRerouteStore().registerReroute(graphScopeOf(graph), incumbent._chain)
+
+    graph._addReroute(collision)
+
+    expect(graph.reroutes.has(collision.id)).toBe(false)
+    expect(collision._graphScope).toBeUndefined()
+  })
+
   it('setReroute creates and updates geometry in one layout write', () => {
     const { graph } = connectedGraph()
     const store = useRerouteStore()

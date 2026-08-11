@@ -70,7 +70,10 @@ function createMockGraph(
 /** Adds a node to `nodeDataStore`, which is how the layout source scopes. */
 function registerNodeState(id: string, graphId: UUID = GRAPH_ID) {
   useNodeDataStore().registerNode(
-    GRAPH_ID,
+    {
+      rootGraphId: toRootGraphId(GRAPH_ID),
+      owningGraphId: toOwningGraphId(graphId)
+    },
     createNodeState({
       id: toNodeId(id),
       graphId,

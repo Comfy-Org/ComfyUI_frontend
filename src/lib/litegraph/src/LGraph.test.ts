@@ -221,6 +221,26 @@ describe('Floating Links / Reroutes', () => {
     expect(consoleError).toHaveBeenCalledOnce()
   })
 
+  test('removing a rejected floating link preserves the incumbent', () => {
+    const graph = new LGraph()
+    const incumbent = new LLink(
+      toLinkId(7),
+      '*',
+      UNASSIGNED_NODE_ID,
+      -1,
+      UNASSIGNED_NODE_ID,
+      -1
+    )
+    const collision = LLink.create(incumbent)
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    graph.addFloatingLink(incumbent)
+    graph.addFloatingLink(collision)
+
+    graph.removeFloatingLink(collision)
+
+    expect(graph.floatingLinks.get(toLinkId(7))).toBe(incumbent)
+  })
+
   test('remints persisted floating link id collisions during configure', ({
     linkedNodesGraph
   }) => {
@@ -1007,7 +1027,7 @@ describe('_removeDuplicateLinks', () => {
     const linkId = toLinkId(Number(graph.state.lastLinkId) + 1)
     graph.state.lastLinkId = linkId
     const dup = new LLink(linkId, 'number', source.id, 0, target.id, 0)
-    graph._addLink(dup)
+    graph._links.set(linkId, dup)
     return dup
   }
 

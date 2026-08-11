@@ -1527,12 +1527,13 @@ export class LGraph
     }
 
     observeLinkId(this.state, link.id)
+    if (!registerLinkTopology(this, link)) return
     this.floatingLinksInternal.set(link.id, link)
-    registerLinkTopology(this, link)
     return link
   }
 
   removeFloatingLink(link: LLink): void {
+    if (this.floatingLinksInternal.get(link.id) !== link) return
     this.floatingLinksInternal.delete(link.id)
     unregisterLinkTopology(link)
 
@@ -1559,8 +1560,8 @@ export class LGraph
       }
       return
     }
+    if (!registerLinkTopology(this, link)) return
     this._links.set(link.id, link)
-    registerLinkTopology(this, link)
   }
 
   /**
@@ -1606,8 +1607,10 @@ export class LGraph
    * store from silently desyncing.
    */
   _addReroute(reroute: Reroute): void {
+    const existing = this.reroutesInternal.get(reroute.id)
+    if (existing === reroute) return
+    if (existing || !registerRerouteChain(this, reroute)) return
     this.reroutesInternal.set(reroute.id, reroute)
-    registerRerouteChain(this, reroute)
   }
 
   /**

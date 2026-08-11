@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { computed, toRaw } from 'vue'
 
 import { useNodeDataStore } from '@/stores/nodeDataStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 
 import type { NodeState } from '@/types/nodeState'
 
@@ -36,7 +37,7 @@ describe('LGraphNode node-data adoption', () => {
     const rootId = subgraph.rootGraph.id
 
     expect(rootId).not.toBe(subgraph.id)
-    expect(node._graphId).toBe(rootId)
+    expect(node._graphScope).toEqual(graphScopeOf(subgraph))
     expect(node._state.graphId).toBe(subgraph.id)
 
     const [registered] = statesIn(subgraph)
@@ -63,7 +64,7 @@ describe('LGraphNode node-data adoption', () => {
     subgraph.remove(node)
 
     expect(statesIn(subgraph)).toEqual([])
-    expect(node._graphId).toBeUndefined()
+    expect(node._graphScope).toBeUndefined()
   })
 
   it('keeps the registration when configure carries a stale id', () => {

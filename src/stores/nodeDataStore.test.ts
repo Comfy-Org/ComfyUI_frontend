@@ -4,6 +4,8 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { computed } from 'vue'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
+import type { GraphScope } from '@/types/graphScopeId'
 import type { NodeState } from '@/types/nodeState'
 import { toNodeId } from '@/types/nodeId'
 import { createNodeState } from '@/utils/__tests__/litegraphTestUtils'
@@ -15,6 +17,13 @@ const rootA: UUID = 'root-a'
 
 function node(id: number, graphId: UUID = rootA): NodeState {
   return createNodeState({ id: toNodeId(id), graphId, title: `Node ${id}` })
+}
+
+function graphScope(rootGraphId: UUID, owningGraphId: UUID): GraphScope {
+  return {
+    rootGraphId: toRootGraphId(rootGraphId),
+    owningGraphId: toOwningGraphId(owningGraphId)
+  }
 }
 
 describe('useNodeDataStore', () => {
@@ -30,20 +39,20 @@ describe('useNodeDataStore', () => {
     expect(ids.value).toEqual([])
 
     const first = node(1)
-    store.registerNode(rootA, first)
-    store.registerNode(rootA, node(2))
+    store.registerNode(graphScope(rootA, rootA), first)
+    store.registerNode(graphScope(rootA, rootA), node(2))
     expect(ids.value).toEqual(['1', '2'])
 
-    store.deleteNode(rootA, first)
+    store.deleteNode(graphScope(rootA, rootA), first)
     expect(ids.value).toEqual(['2'])
   })
 
   it('isolates nodes by owning graph id', () => {
     const store = useNodeDataStore()
     const sub: UUID = 'sub-1'
-    store.registerNode(rootA, node(1, rootA))
-    store.registerNode(rootA, node(2, sub))
-    store.registerNode(rootA, node(3, rootA))
+    store.registerNode(graphScope(rootA, rootA), node(1, rootA))
+    store.registerNode(graphScope(rootA, sub), node(2, sub))
+    store.registerNode(graphScope(rootA, rootA), node(3, rootA))
 
     expect(store.getGraphNodesFor(rootA, rootA).map((n) => n.id)).toEqual([
       '1',
@@ -57,10 +66,10 @@ describe('useNodeDataStore', () => {
     const sub: UUID = 'sub-1'
     const rootNode = node(1, rootA)
     const subNode = node(2, sub)
-    store.registerNode(rootA, rootNode)
-    store.registerNode(rootA, subNode)
+    store.registerNode(graphScope(rootA, rootA), rootNode)
+    store.registerNode(graphScope(rootA, sub), subNode)
 
-    store.deleteNode(rootA, subNode)
+    store.deleteNode(graphScope(rootA, sub), subNode)
 
     expect(store.getGraphNodesFor(rootA, sub)).toEqual([])
     expect(store.getGraphNodesFor(rootA, rootA)).toEqual([rootNode])

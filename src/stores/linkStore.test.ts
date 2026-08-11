@@ -69,21 +69,6 @@ describe('useLinkStore', () => {
     expect(consoleError).toHaveBeenCalledOnce()
   })
 
-  it('keeps the first registration for a contested link id', () => {
-    const store = useLinkStore()
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
-    const incumbent = link(1, 5, 0, 9, 2)
-    store.registerLink(graphA, incumbent)
-
-    expect(store.registerLink(graphA, link(1, 7, 1, 8, 3))).toBeUndefined()
-
-    expect(store.getLink(graphA, toLinkId(1))).toMatchObject({
-      originNodeId: toNodeId(5),
-      targetNodeId: toNodeId(9)
-    })
-    expect(consoleError).toHaveBeenCalledOnce()
-  })
-
   it('only the registered link can vacate its slot', () => {
     const store = useLinkStore()
     const registered = link(1, 5, 0, 9, 2)
@@ -101,7 +86,7 @@ describe('useLinkStore', () => {
   it('re-registers a link after deleting its owner bucket', () => {
     const store = useLinkStore()
     const topology = link(1, 5, 0, 9, 2)
-    const current = computed(() => store.getLink(graphA, topology.id))
+    const current = computed(() => [...store.graphTopologies(graphA)][0])
     store.registerLink(graphA, topology)
     expect(current.value).toBeDefined()
 
@@ -192,30 +177,30 @@ describe('useLinkStore', () => {
     const registeredSibling = store.registerLink(graphASibling, sibling)
     expect(registeredFirst).toBeDefined()
     expect(registeredSibling).toBeDefined()
-    expect(store.getLink(graphA, toLinkId(1))).toBe(registeredFirst)
-    expect(store.getLink(graphASibling, toLinkId(1))).toBe(registeredSibling)
     expect([...store.graphTopologies(graphA)]).toEqual([first])
     expect([...store.graphTopologies(graphASibling)]).toEqual([sibling])
 
     store.clearOwner(graphA)
 
-    expect(store.getLink(graphA, toLinkId(1))).toBeUndefined()
+    expect([...store.graphTopologies(graphA)]).toEqual([])
     expect(store.isInputSlotConnected(graphA, toNodeId(9), 2)).toBe(false)
     expect(store.isOutputSlotConnected(graphA, toNodeId(5), 0)).toBe(false)
-    expect(store.getLink(graphASibling, toLinkId(1))).toBe(registeredSibling)
+    expect([...store.graphTopologies(graphASibling)]).toEqual([
+      registeredSibling
+    ])
 
     store.clearGraph(graphA.rootGraphId)
 
-    expect(store.getLink(graphASibling, toLinkId(1))).toBeUndefined()
+    expect([...store.graphTopologies(graphASibling)]).toEqual([])
   })
 
   it('re-evaluates owner queries when the owner is cleared', () => {
     const store = useLinkStore()
     const registered = store.registerLink(graphA, link(1, 5, 0, 9, 2))
     const sibling = store.registerLink(graphASibling, link(1, 5, 0, 9, 2))
-    const current = computed(() => store.getLink(graphA, toLinkId(1)))
-    const siblingCurrent = computed(() =>
-      store.getLink(graphASibling, toLinkId(1))
+    const current = computed(() => [...store.graphTopologies(graphA)][0])
+    const siblingCurrent = computed(
+      () => [...store.graphTopologies(graphASibling)][0]
     )
     expect(current.value).toBe(registered)
     expect(siblingCurrent.value).toBe(sibling)
@@ -229,7 +214,7 @@ describe('useLinkStore', () => {
   it('re-evaluates owner queries when the root graph is cleared', () => {
     const store = useLinkStore()
     const registered = store.registerLink(graphA, link(1, 5, 0, 9, 2))
-    const current = computed(() => store.getLink(graphA, toLinkId(1)))
+    const current = computed(() => [...store.graphTopologies(graphA)][0])
     expect(current.value).toBe(registered)
 
     store.clearGraph(graphA.rootGraphId)

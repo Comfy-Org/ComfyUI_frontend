@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { reactive } from 'vue'
 
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
+import type { GraphScope } from '@/types/graphScopeId'
 import type { NodeState } from '@/types/nodeState'
 import type { UUID } from '@/utils/uuid'
 
@@ -25,8 +26,10 @@ export const useNodeDataStore = defineStore('nodeData', () => {
     }
   }
 
-  function registerNode(rootGraphId: UUID, state: NodeState): void {
-    buckets.getOrCreate(scope(rootGraphId, state.graphId)).add(state)
+  function registerNode(graphScope: GraphScope, state: NodeState): NodeState {
+    const registered = reactive(state)
+    buckets.getOrCreate(graphScope).add(registered)
+    return registered
   }
 
   function getGraphNodesFor(
@@ -36,8 +39,7 @@ export const useNodeDataStore = defineStore('nodeData', () => {
     return [...(buckets.get(scope(rootGraphId, owningGraphId)) ?? [])]
   }
 
-  function deleteNode(rootGraphId: UUID, state: NodeState): boolean {
-    const graphScope = scope(rootGraphId, state.graphId)
+  function deleteNode(graphScope: GraphScope, state: NodeState): boolean {
     const bucket = buckets.get(graphScope)
     if (!bucket?.delete(state)) return false
     buckets.prune(graphScope, bucket)
@@ -48,7 +50,12 @@ export const useNodeDataStore = defineStore('nodeData', () => {
     buckets.clearRoot(toRootGraphId(rootGraphId))
   }
 
+  function clearOwner(graphScope: GraphScope): void {
+    buckets.clearOwner(graphScope)
+  }
+
   return {
+    clearOwner,
     clearGraph,
     deleteNode,
     getGraphNodesFor,

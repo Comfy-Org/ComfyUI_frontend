@@ -33,11 +33,11 @@ The store is runtime state only; `LLink.asSerialisable` reads the same
 fields it always did, and serialization goldens (key order plus
 byte-identical round-trips) pin the wire format.
 
-## Decision 2: One ownership registry, query-specific indexes
+## Decision 2: Identity ownership with query-specific indexes
 
-Each owning graph has one `byId` map keyed by `LinkId`. It is the sole
-authority for whether a topology is registered. The other maps are derived
-query indexes, not alternative ownership registries:
+`LGraph._links` remains the runtime authority for `LinkId -> LLink` identity.
+The topology store holds an identity-based set of the plain `LinkTopology`
+states accepted by that graph and derives query indexes from it:
 
 - `targetIndex`, keyed by `` `${targetNodeId}:${targetSlot}` ``, answers
   input-connectivity queries in one lookup. It contains only links whose
@@ -46,8 +46,8 @@ query indexes, not alternative ownership registries:
   output-connectivity queries without scanning the graph.
 
 Floating links and links targeting `SUBGRAPH_OUTPUT_ID` do not have a unique
-target key, but still belong in `byId`. They need no separate ownership set.
-This keeps registration, identity checks, and deletion anchored to one map.
+target key but still belong to the topology set. The store does not duplicate
+the graph's link-id registry or hold `LLink` class instances.
 
 Link ids are unique per owning graph, not per root graph. Owner partitioning
 therefore isolates sibling subgraph definitions without rewriting otherwise
@@ -70,10 +70,10 @@ lifecycle so their graph ownership cannot drift independently.
 
 - `registerLink` returns the store-held reactive `LinkTopology` when
   registration succeeds or the same topology is already registered. It
-  returns `undefined` when another topology owns either the link id or target
-  slot. The loser stays detached.
-- `byId` is the ownership check for deletion, re-registration, and endpoint
-  updates. Query indexes never establish ownership.
+  returns `undefined` when another topology owns the target slot. Link-id
+  collisions are rejected by the graph's runtime registry before registration.
+- The topology set is the ownership check for deletion, re-registration, and
+  endpoint updates. Query indexes never establish ownership.
 - `deleteLink` is **identity-checked** (`toRaw` comparison): only the
   registered topology can vacate its slot.
 - updateEndpoints validates a complete endpoint batch before mutation.

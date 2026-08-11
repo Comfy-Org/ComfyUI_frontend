@@ -131,6 +131,10 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   }
 
   set id(value: LinkId) {
+    if (this._graphScope && value !== this._state.id) {
+      console.error('LiteGraph: refusing to change a registered link id')
+      return
+    }
     this._state.id = value
   }
 
@@ -621,14 +625,14 @@ export function slotFloatingLinks(
 export function registerLinkTopology(
   graph: Pick<LGraph, 'rootGraph' | 'id'>,
   link: LLink
-): void {
-  if (link.id === toLinkId(-1)) return // transient toFloating clone
+): boolean {
+  if (link.id === toLinkId(-1)) return false
   const scope = graphScopeOf(graph)
   const registered = useLinkStore().registerLink(scope, link._state)
-  if (registered) {
-    link._state = registered
-    link._graphScope = scope
-  }
+  if (!registered) return false
+  link._state = registered
+  link._graphScope = scope
+  return true
 }
 
 /**
