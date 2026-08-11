@@ -240,10 +240,11 @@ test.describe(
       await expect(panel.errorsTab).toHaveAttribute('aria-selected', 'true')
 
       visibleAssets = [FAKE_MODEL_ASSET]
-      await comfyPage.page
-        .getByTestId(TestIds.dialogs.missingModelRefresh)
-        .click()
+      await source.click('title')
+      await comfyPage.clipboard.copy()
+      await comfyPage.clipboard.paste()
 
+      await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(3)
       await expect(missingModelsGroup).toBeHidden()
       await expect(panel.errorsTab).toBeHidden()
       await expect(panel.getTab('Parameters')).toHaveAttribute(
