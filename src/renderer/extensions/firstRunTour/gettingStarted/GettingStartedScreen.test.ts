@@ -1,7 +1,5 @@
-import { createTestingPinia } from '@pinia/testing'
 import userEvent from '@testing-library/user-event'
 import { cleanup, render, screen, waitFor } from '@testing-library/vue'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -79,7 +77,6 @@ async function renderScreen() {
 
 describe('GettingStartedScreen', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     mocks.isLoaded = true
     mocks.catalog = CURATED_TEMPLATE_IDS.map((name) => ({ name }))
     mocks.loadTemplate.mockResolvedValue(true)

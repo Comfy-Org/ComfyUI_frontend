@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -112,7 +110,6 @@ describe('useModelStore', () => {
   let store: ReturnType<typeof useModelStore>
 
   beforeEach(async () => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     isCloudRef.value = false
     remoteConfig.value = {}
   })

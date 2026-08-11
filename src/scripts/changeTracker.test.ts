@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -219,7 +217,6 @@ function omitOptionalSubgraphCollections(state: ComfyWorkflowJSON) {
 describe('ChangeTracker', () => {
   beforeEach(() => {
     vi.mocked(api.dispatchCustomEvent).mockReset()
-    setActivePinia(createTestingPinia({ stubActions: false }))
     resetSubgraphFixtureState()
     nodeIdCounter = 0
     ChangeTracker.isLoadingGraph = false
