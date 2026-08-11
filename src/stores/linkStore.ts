@@ -186,7 +186,11 @@ export const useLinkStore = defineStore('link', () => {
     topology: LinkTopology
   ): LinkTopology | undefined {
     const incumbent = roots.get(scope.rootGraphId)?.byId.get(topology.id)
-    if (toRaw(incumbent) === toRaw(topology)) return incumbent
+    if (
+      toRaw(incumbent) === toRaw(topology) &&
+      incumbent?.graphId === scope.owningGraphId
+    )
+      return incumbent
     return replaceLink(scope, undefined, topology)
   }
 

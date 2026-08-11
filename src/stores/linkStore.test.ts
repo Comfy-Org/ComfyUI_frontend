@@ -103,6 +103,18 @@ describe('useLinkStore', () => {
     ])
   })
 
+  it('rejects the registered link identity from a sibling owner', () => {
+    const store = useLinkStore()
+    const topology = link(1, 5, 0, 9, 2)
+    const registered = store.registerLink(graphA, topology)
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    expect(store.registerLink(graphASibling, topology)).toBeUndefined()
+    expect(topology.graphId).toBe(graphA.owningGraphId)
+    expect([...store.graphTopologies(graphASibling)]).toEqual([])
+    expect(store.getInputSlotLink(graphA, toNodeId(9), 2)).toBe(registered)
+  })
+
   it('re-registers a link after deleting its owner bucket', () => {
     const store = useLinkStore()
     const topology = link(1, 5, 0, 9, 2)

@@ -47,7 +47,12 @@ export const useNodeDataStore = defineStore('nodeData', () => {
   ): NodeState | undefined {
     const existingBucket = roots.get(graphScope.rootGraphId)
     const incumbent = existingBucket?.byId.get(state.id)
-    if (incumbent && toRaw(incumbent) === toRaw(state)) return incumbent
+    if (
+      incumbent &&
+      toRaw(incumbent) === toRaw(state) &&
+      incumbent.graphId === graphScope.owningGraphId
+    )
+      return incumbent
     if (incumbent) return undefined
     const bucket = existingBucket ?? rootBucket(graphScope.rootGraphId)
     const registered: NodeState = reactive(

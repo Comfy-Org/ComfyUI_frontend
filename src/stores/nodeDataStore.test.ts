@@ -76,6 +76,19 @@ describe('useNodeDataStore', () => {
     expect(store.getGraphNodesFor(rootA, 'sub-1')).toEqual([])
   })
 
+  it('rejects the registered node identity from a sibling owner', () => {
+    const store = useNodeDataStore()
+    const registered = node(1)
+    store.registerNode(graphScope(rootA, rootA), registered)
+
+    expect(
+      store.registerNode(graphScope(rootA, 'sub-1'), registered)
+    ).toBeUndefined()
+    expect(registered.graphId).toBe(rootA)
+    expect(store.getGraphNodesFor(rootA, rootA)).toEqual([registered])
+    expect(store.getGraphNodesFor(rootA, 'sub-1')).toEqual([])
+  })
+
   it('only deletes the registered identity from its owning graph', () => {
     const store = useNodeDataStore()
     const registered = node(1)

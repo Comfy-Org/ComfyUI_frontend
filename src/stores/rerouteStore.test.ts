@@ -76,6 +76,17 @@ describe('useRerouteStore', () => {
     expect(store.deleteReroute(graphA, owner)).toBe(true)
   })
 
+  it('rejects the registered reroute identity from a sibling owner', () => {
+    const store = useRerouteStore()
+    const registered = store.registerReroute(graphA, chain(1))
+    assert(registered)
+
+    expect(store.registerReroute(graphASibling, registered)).toBeUndefined()
+    expect(registered.graphId).toBe(graphA.owningGraphId)
+    expect(store.getReroute(graphA, registered.id)).toBe(registered)
+    expect(store.getReroute(graphASibling, registered.id)).toBeUndefined()
+  })
+
   it('deletes a chain; only the registered state may vacate it', () => {
     const store = useRerouteStore()
     const registered = store.registerReroute(graphA, chain(1))
@@ -132,6 +143,19 @@ describe('useRerouteStore', () => {
     expect([...terminal.linkIds]).toEqual([10])
     expect([...upstream.linkIds]).toEqual([10, 11])
     expect(terminal.floatingLinkIds.size).toBe(0)
+  })
+
+  it('excludes missing and sibling-owned reroutes from membership', () => {
+    const store = useRerouteStore()
+    const linkStore = useLinkStore()
+    store.registerReroute(graphA, chain(1))
+    store.registerReroute(graphASibling, chain(2, 1))
+    linkStore.registerLink(graphA, link(10, 0, 3))
+    linkStore.registerLink(graphA, link(11, 1, 2))
+
+    expect(store.getMembership(graphA, toRerouteId(3))).toBe(EMPTY_MEMBERSHIP)
+    expect(store.getMembership(graphA, toRerouteId(2))).toBe(EMPTY_MEMBERSHIP)
+    expect(store.getMembership(graphA, toRerouteId(1))).toBe(EMPTY_MEMBERSHIP)
   })
 
   it('splits floating links into floatingLinkIds', () => {
@@ -277,6 +301,7 @@ describe('useRerouteStore', () => {
     store.clearOwner(graphA)
     expect(membership.value.linkIds.size).toBe(0)
 
+    store.registerReroute(graphA, chain(1))
     store.registerReroute(graphA, chain(2, 1))
 
     expect([...membership.value.linkIds]).toEqual([10])

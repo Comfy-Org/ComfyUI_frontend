@@ -72,6 +72,8 @@ export const useRerouteStore = defineStore('reroute', () => {
       const visited = new Set<RerouteId>()
       let rerouteId = topology.parentId
       while (rerouteId !== undefined && !visited.has(rerouteId)) {
+        const parent = chains?.get(rerouteId)
+        if (!parent || parent.graphId !== scope.owningGraphId) break
         visited.add(rerouteId)
         let entry = index.get(rerouteId)
         if (!entry) {
@@ -80,9 +82,7 @@ export const useRerouteStore = defineStore('reroute', () => {
         }
         const members = floating ? entry.floatingLinkIds : entry.linkIds
         members.add(topology.id)
-        const parent = chains?.get(rerouteId)
-        rerouteId =
-          parent?.graphId === scope.owningGraphId ? parent.parentId : undefined
+        rerouteId = parent.parentId
       }
     }
     return index
@@ -119,14 +119,21 @@ export const useRerouteStore = defineStore('reroute', () => {
     scope: GraphScope,
     chain: RerouteChain
   ): RerouteChain | undefined {
-    const bucket = rootBucket(scope.rootGraphId)
-    const existing = bucket.chains.get(chain.id)
-    if (existing && toRaw(existing) !== toRaw(chain)) {
+    const existingBucket = roots.get(scope.rootGraphId)
+    const existing = existingBucket?.chains.get(chain.id)
+    if (
+      existing &&
+      toRaw(existing) === toRaw(chain) &&
+      existing.graphId === scope.owningGraphId
+    )
+      return existing
+    if (existing) {
       console.error(
         `[rerouteStore] Reroute ${chain.id} belongs to graph ${existing.graphId}; graph ${scope.owningGraphId} cannot overwrite it.`
       )
       return undefined
     }
+    const bucket = existingBucket ?? rootBucket(scope.rootGraphId)
     const owned = Object.assign(chain, { graphId: scope.owningGraphId })
     bucket.chains.set(owned.id, owned)
     const ownerIds = bucket.idsByOwner.get(scope.owningGraphId)
