@@ -162,6 +162,10 @@ function useBillingContextInternal(): BillingContext {
         freeTierQuota.freeTierExecutionPermitted.value)
   )
 
+  const showsSubscribeToRunPrompt = computed(
+    () => isInitialized.value && !canRunWorkflows.value
+  )
+
   const isLegacyTeamPlan = computed(
     () =>
       type.value === 'workspace' &&
@@ -236,9 +240,7 @@ function useBillingContextInternal(): BillingContext {
     error.value = null
   }
 
-  // type flips when the team-workspaces or consolidated-billing flag resolves
-  // from authenticated config, swapping the active backend. Reset then reinit
-  // on every workspace-id or type change.
+  // Reset and reinitialize when the active workspace or billing backend changes.
   watch(
     [() => store.activeWorkspace?.id, () => type.value],
     async ([newWorkspaceId]) => {
@@ -310,8 +312,10 @@ function useBillingContextInternal(): BillingContext {
     return activeContext.value.cancelSubscription()
   }
 
-  async function resubscribe() {
-    return activeContext.value.resubscribe()
+  async function resubscribe(
+    options?: Parameters<BillingActions['resubscribe']>[0]
+  ) {
+    return activeContext.value.resubscribe(options)
   }
 
   async function topup(amountCents: number) {
@@ -354,6 +358,7 @@ function useBillingContextInternal(): BillingContext {
     error,
     isActiveSubscription,
     canRunWorkflows,
+    showsSubscribeToRunPrompt,
     canAccessSubscriptionFeatures,
     isFreeTier,
     isLegacyTeamPlan,

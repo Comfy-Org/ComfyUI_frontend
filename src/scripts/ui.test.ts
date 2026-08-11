@@ -54,7 +54,6 @@ describe('ComfyUI file input', () => {
 
   afterEach(() => {
     document.body.replaceChildren()
-    vi.unstubAllGlobals()
   })
 
   it('reports rejected imports and resets the selected file', async () => {

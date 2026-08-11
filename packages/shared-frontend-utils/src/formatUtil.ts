@@ -64,15 +64,18 @@ export function ensureWorkflowSuffix(
   return name + '.' + suffix
 }
 
+function escapeHtml(text: string): string {
+  return text.replace(/[&<>"']/g, (character) => {
+    return `&#${character.charCodeAt(0)};`
+  })
+}
+
 export function highlightQuery(
   text: string,
   query: string,
   sanitize: boolean = true
 ) {
-  if (!query) return text
-  if (sanitize) {
-    text = DOMPurify.sanitize(text)
-  }
+  if (!query) return sanitize ? escapeHtml(text) : text
 
   // Escape special regex characters, then join with an optional single
   // space so cross-word matches (e.g. "geto" → "imaGE TO") are
@@ -82,7 +85,23 @@ export function highlightQuery(
     .join('[ ]?')
 
   const regex = new RegExp(`(${pattern})`, 'gi')
-  return text.replace(regex, '<span class="highlight">$1</span>')
+  if (!sanitize) {
+    return text.replace(regex, '<span class="highlight">$1</span>')
+  }
+
+  const parts: string[] = []
+  let lastIndex = 0
+  for (const match of text.matchAll(regex)) {
+    parts.push(escapeHtml(text.slice(lastIndex, match.index)))
+    parts.push(`<span class="highlight">${escapeHtml(match[0])}</span>`)
+    lastIndex = match.index + match[0].length
+  }
+  parts.push(escapeHtml(text.slice(lastIndex)))
+
+  return DOMPurify.sanitize(parts.join(''), {
+    ALLOWED_TAGS: ['span'],
+    ALLOWED_ATTR: ['class']
+  })
 }
 
 export function formatNumberWithSuffix(

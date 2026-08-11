@@ -20,7 +20,8 @@ const state = vi.hoisted(() => ({
   canManageSubscriptionLifecycle: false,
   showCreateWorkspaceDialog: vi.fn(),
   showTopUpCreditsDialog: vi.fn(),
-  showPricingTable: vi.fn()
+  showPricingTable: vi.fn(),
+  showSettingsDialog: vi.fn()
 }))
 
 vi.mock('@/composables/auth/useCurrentUser', () => ({
@@ -65,8 +66,10 @@ vi.mock(
 )
 
 vi.mock('@/platform/settings/composables/useSettingsDialog', () => ({
-  useSettingsDialog: () => ({ show: vi.fn() })
+  useSettingsDialog: () => ({ show: state.showSettingsDialog })
 }))
+
+vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
 
 vi.mock('@/services/dialogService', () => ({
   useDialogService: () => ({
@@ -123,9 +126,11 @@ function createWorkspaceState(
 
 function renderComponent(
   type: 'personal' | 'team' = 'personal',
-  role: 'owner' | 'member' = 'member'
+  role: 'owner' | 'member' = 'member',
+  accountActionsOnly = false
 ) {
   return render(CurrentUserPopoverWorkspace, {
+    props: { accountActionsOnly },
     global: {
       plugins: [
         createTestingPinia({
@@ -164,7 +169,6 @@ describe('CurrentUserPopoverWorkspace', () => {
     state.canTopUp = false
     state.canManageSubscription = false
     state.canManageSubscriptionLifecycle = false
-    vi.clearAllMocks()
   })
 
   it('toggles the workspace switcher panel from the selector row', async () => {
@@ -181,6 +185,20 @@ describe('CurrentUserPopoverWorkspace', () => {
     await user.click(screen.getByTestId('workspace-switcher-trigger'))
     expect(
       screen.queryByTestId('workspace-switcher-panel')
+    ).not.toBeInTheDocument()
+  })
+
+  it('keeps account actions available without workspace context', () => {
+    renderComponent('personal', 'member', true)
+
+    expect(screen.getByTestId('user-settings-menu-item')).toBeInTheDocument()
+    expect(screen.getByTestId('logout-menu-item')).toBeInTheDocument()
+    expect(
+      screen.queryByTestId('workspace-switcher-trigger')
+    ).not.toBeInTheDocument()
+    expect(screen.queryByTestId('credits-info-button')).not.toBeInTheDocument()
+    expect(
+      screen.queryByTestId('workspace-settings-menu-item')
     ).not.toBeInTheDocument()
   })
 
@@ -221,8 +239,8 @@ describe('CurrentUserPopoverWorkspace', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('keeps a Personal workspace Team-plan member read-only', () => {
-    renderComponent('personal', 'member')
+  it('keeps a team workspace member read-only', () => {
+    renderComponent('team', 'member')
 
     expect(screen.getByText('211')).toBeInTheDocument()
     expect(screen.queryByTestId('add-credits-button')).not.toBeInTheDocument()
@@ -316,4 +334,20 @@ describe('CurrentUserPopoverWorkspace', () => {
 
     expect(state.showPricingTable).toHaveBeenCalledOnce()
   })
+
+  for (const workspaceType of ['personal', 'team'] as const) {
+    it(`opens workspace plan management for a ${workspaceType} owner`, async () => {
+      const user = userEvent.setup()
+      state.canManageSubscription = true
+      const { emitted } = renderComponent(workspaceType, 'owner')
+
+      const menuItem = screen.getByTestId('manage-plan-menu-item')
+      expect(menuItem).toHaveTextContent(enMessages.subscription.managePlan)
+
+      await user.click(menuItem)
+
+      expect(state.showSettingsDialog).toHaveBeenCalledWith('workspace')
+      expect(emitted('close')).toHaveLength(1)
+    })
+  }
 })
