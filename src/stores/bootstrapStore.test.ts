@@ -68,6 +68,11 @@ const mockDistributionTypes = vi.hoisted(() => ({
 }))
 vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
 
+const mockCaptureException = vi.hoisted(() => vi.fn())
+vi.mock('@sentry/vue', () => ({
+  captureException: mockCaptureException
+}))
+
 function requestFailure(status: number) {
   const error = new AxiosError(`Request failed with status code ${status}`)
   error.response = { status } as AxiosResponse
@@ -159,6 +164,54 @@ describe('bootstrapStore', () => {
         expect(store.isI18nReady).toBe(true)
         expect(settingStore.isReady).toBe(true)
       })
+    })
+
+    it('retries once and proceeds if auth resolves during the backoff', async () => {
+      vi.useFakeTimers()
+      try {
+        mockIsAuthInitialized.value = true
+        const store = useBootstrapStore()
+        const settingStore = useSettingStore()
+        const bootstrapPromise = store.startStoreBootstrap()
+
+        // First wait times out with the user still unauthenticated.
+        await vi.advanceTimersByTimeAsync(16_001)
+        expect(settingStore.isReady).toBe(false)
+
+        // Auth resolves during the retry backoff.
+        mockIsAuthAuthenticated.value = true
+        await vi.advanceTimersByTimeAsync(3_001)
+        await bootstrapPromise
+
+        expect(settingStore.isReady).toBe(true)
+        expect(mockCaptureException).not.toHaveBeenCalled()
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('gives up after a second timeout, reports it, and continues bootstrap unauthenticated', async () => {
+      vi.useFakeTimers()
+      try {
+        mockIsAuthInitialized.value = true
+        const store = useBootstrapStore()
+        const settingStore = useSettingStore()
+        const bootstrapPromise = store.startStoreBootstrap()
+
+        // Auth never resolves through the initial wait, the backoff, or the retry.
+        await vi.advanceTimersByTimeAsync(16_000 + 3_000 + 16_001)
+        await bootstrapPromise
+
+        expect(mockCaptureException).toHaveBeenCalledOnce()
+        expect(mockCaptureException).toHaveBeenCalledWith(expect.anything(), {
+          tags: { error_type: 'bootstrap_auth_wait_timeout' }
+        })
+        // Bootstrap does not stay stuck waiting on auth forever: authenticated
+        // stores still load rather than leaving the caller hanging silently.
+        expect(settingStore.isReady).toBe(true)
+      } finally {
+        vi.useRealTimers()
+      }
     })
   })
 })
