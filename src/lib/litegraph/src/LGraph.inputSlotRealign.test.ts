@@ -108,9 +108,9 @@ function shiftedNodesAndLinks(sourceId: number, targetId: number) {
 
 /**
  * As {@link shiftedNodesAndLinks}, but `in_a` carries a duplicate link: the
- * survivor registered first (id 3) is not the id the serialized input
- * references (id 4). Dedup keeps 3 and purges 4, so realignment must follow
- * the purged reference through to the survivor to correct its slot.
+ * link registered first (id 3) is not the id the serialized input references
+ * (id 4). Registration rejects 4, so realignment must follow
+ * the rejected alias through to the registered link to correct its slot.
  */
 function duplicateDriftedNodesAndLinks(sourceId: number, targetId: number) {
   const base = shiftedNodesAndLinks(sourceId, targetId)
@@ -335,7 +335,7 @@ describe('LGraph.configure input slot realignment (#3348)', () => {
     }
   )
 
-  it('realigns the survivor when a drifted input referenced a deduplicated link', () => {
+  it('realigns the registered link when a drifted input referenced a rejected alias', () => {
     const graph = new LGraph()
     graph.configure(savedWorkflow({ duplicate: true }))
 
@@ -386,8 +386,8 @@ describe('realignInputLinkSlots', () => {
 
   it.for([
     ['registered link id', false],
-    ['purged link alias', true]
-  ] as const)('rekeys a serialized %s', (_name, usePurgedAlias) => {
+    ['rejected link alias', true]
+  ] as const)('rekeys a serialized %s', (_name, useRejectedAlias) => {
     const graph = new LGraph()
     const source = new LGraphNode('Source')
     source.addOutput('out', 'number')
@@ -397,18 +397,18 @@ describe('realignInputLinkSlots', () => {
     graph.add(source)
     graph.add(target)
     const link = source.connect(0, target, 0)!
-    const purgedId = toLinkId(99)
-    const serializedId = usePurgedAlias ? purgedId : link.id
+    const rejectedId = toLinkId(99)
+    const serializedId = useRejectedAlias ? rejectedId : link.id
     const nodeData = target.serialize()
     nodeData.inputs = [
       { ...nodeData.inputs![0], link: null },
       { ...nodeData.inputs![1], link: serializedId }
     ]
-    const survivorByPurged = usePurgedAlias
-      ? new Map([[purgedId, link.id]])
+    const survivorByRejected = useRejectedAlias
+      ? new Map([[rejectedId, link.id]])
       : new Map()
 
-    realignInputLinkSlots(graph, [nodeData], survivorByPurged)
+    realignInputLinkSlots(graph, [nodeData], survivorByRejected)
 
     const store = useLinkStore()
     expect(link.target_slot).toBe(1)

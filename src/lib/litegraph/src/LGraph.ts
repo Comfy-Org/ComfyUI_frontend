@@ -47,12 +47,7 @@ import { UNASSIGNED_NODE_ID, parseNodeId, toNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import { forEachNode, visitGraphNodes } from '@/utils/graphTraversalUtil'
 
-import {
-  groupLinksByTuple,
-  purgeOrphanedLinks,
-  realignInputLinkSlots,
-  selectSurvivorLink
-} from './linkDeduplication'
+import { realignInputLinkSlots } from './linkDeduplication'
 
 import type { DragAndScaleState } from './DragAndScale'
 import { LGraphCanvas } from './LGraphCanvas'
@@ -280,7 +275,7 @@ function registerConfiguredLink(
   link: LLink,
   survivorByRejected: Map<LinkId, LinkId>
 ): void {
-  if (graph.links.has(link.id) || graph._addLink(link)) return
+  if (graph._addLink(link)) return
   const incumbent = useLinkStore().getInputSlotLink(
     graphScopeOf(graph),
     link.target_id,
@@ -578,7 +573,6 @@ export class LGraph
     // nodes that contain onExecute sorted in execution order
     this._nodes_executable = null
 
-    this.links.clear()
     this.reroutes.clear()
     this.floatingLinksInternal.clear()
 
@@ -1825,26 +1819,6 @@ export class LGraph
     link.disconnect(this)
   }
 
-  _removeDuplicateLinks(): Map<LinkId, LinkId> {
-    const groups = groupLinksByTuple(this.links)
-    const survivorByPurged = new Map<LinkId, LinkId>()
-
-    for (const ids of groups.values()) {
-      if (ids.length <= 1) continue
-
-      const sampleLink = this.links.get(ids[0])!
-      const node = this.getNodeById(sampleLink.target_id)
-      const keepId = selectSurvivorLink(ids, node)
-
-      purgeOrphanedLinks(ids, keepId, this)
-      for (const id of ids) {
-        if (id !== keepId) survivorByPurged.set(id, keepId)
-      }
-    }
-
-    return survivorByPurged
-  }
-
   /**
    * Creates a new subgraph definition, and adds it to the graph.
    * @param data Exported data (typically serialised) to configure the new subgraph with
@@ -2743,15 +2717,7 @@ export class LGraph
           )
           deduplicateSubgraphLinkIds(
             deduplicated.subgraphs,
-            collectReservedLinkIds(
-              this,
-              data.links?.map((link) =>
-                Array.isArray(link)
-                  ? LLink.createFromArray(link).asSerialisable()
-                  : link
-              ),
-              data.floatingLinks
-            ),
+            collectReservedLinkIds(this, data.floatingLinks),
             this.state
           )
           deduplicateSubgraphRerouteIds(
@@ -2826,12 +2792,7 @@ export class LGraph
             this.links.has(floatingLink.id) ||
             this.floatingLinksInternal.has(floatingLink.id)
           ) {
-            do {
-              floatingLink.id = toLinkId(++this._lastFloatingLinkId)
-            } while (
-              this.links.has(floatingLink.id) ||
-              this.floatingLinksInternal.has(floatingLink.id)
-            )
+            floatingLink.id = toLinkId(-1)
           }
           this.addFloatingLink(floatingLink)
 
@@ -2847,19 +2808,15 @@ export class LGraph
         }
       }
 
-      const survivorByPurged = this._removeDuplicateLinks()
-      for (const [rejected, survivor] of survivorByRejected) {
-        survivorByPurged.set(rejected, survivor)
-      }
-      remapConfiguredLinkAliases(data, survivorByPurged)
+      remapConfiguredLinkAliases(data, survivorByRejected)
 
       // Node configure() overrides may have reordered serialized inputs in
       // place to match current node definitions; re-key links to the slots
       // that reference them. Uses nodeDataMap: the effective (possibly
       // deduplicated-clone) data nodes were actually configured from.
-      // survivorByPurged lets an input that referenced a deduplicated link
-      // realign the survivor kept in its place.
-      realignInputLinkSlots(this, nodeDataMap.values(), survivorByPurged)
+      // survivorByRejected lets an input that referenced a rejected link alias
+      // realign the registered link kept in its place.
+      realignInputLinkSlots(this, nodeDataMap.values(), survivorByRejected)
 
       // groups
       this._groups.length = 0

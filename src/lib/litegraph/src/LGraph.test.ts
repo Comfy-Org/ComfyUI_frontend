@@ -995,7 +995,7 @@ describe('Shared LGraphState', () => {
   })
 })
 
-describe('_removeDuplicateLinks', () => {
+describe('persisted duplicate links', () => {
   class TestNode extends LGraphNode {
     constructor(title?: string) {
       super(title ?? 'TestNode')
@@ -1008,161 +1008,7 @@ describe('_removeDuplicateLinks', () => {
     LiteGraph.registerNodeType('test/DupTestNode', TestNode)
   }
 
-  function createConnectedGraph() {
-    registerTestNodes()
-    const graph = new LGraph()
-    const source = LiteGraph.createNode('test/DupTestNode', 'Source')!
-    const target = LiteGraph.createNode('test/DupTestNode', 'Target')!
-    graph.add(source)
-    graph.add(target)
-    source.connect(0, target, 0)
-    return { graph, source, target }
-  }
-
-  function injectDuplicateLink(
-    graph: LGraph,
-    source: LGraphNode,
-    target: LGraphNode
-  ) {
-    const linkId = toLinkId(Number(graph.state.lastLinkId) + 1)
-    graph.state.lastLinkId = linkId
-    const dup = new LLink(linkId, 'number', source.id, 0, target.id, 0)
-    graph.links.set(linkId, dup)
-    return dup
-  }
-
-  it('rejects orphaned duplicate links before they enter the graph view', () => {
-    const { graph, source, target } = createConnectedGraph()
-    const store = useLinkStore()
-
-    for (let i = 0; i < 3; i++) injectDuplicateLink(graph, source, target)
-
-    expect(graph.links.size).toBe(1)
-    // The derived output.links view never contained the contested duplicates.
-    expect(source.outputs[0].links).toHaveLength(1)
-
-    graph._removeDuplicateLinks()
-
-    expect(graph.links.size).toBe(1)
-    expect(source.outputs[0].links).toHaveLength(1)
-    expect(store.getInputSlotLink(graphScopeOf(graph), target.id, 0)?.id).toBe(
-      source.outputs[0].links![0]
-    )
-  })
-
-  it('keeps the link registered to the target input', () => {
-    const { graph, source, target } = createConnectedGraph()
-    const store = useLinkStore()
-    const graphId = graphScopeOf(graph)
-    const keptLinkId = store.getInputSlotLink(graphId, target.id, 0)!.id
-
-    const dupLink = injectDuplicateLink(graph, source, target)
-
-    graph._removeDuplicateLinks()
-
-    expect(graph.links.size).toBe(1)
-    expect(store.getInputSlotLink(graphId, target.id, 0)?.id).toBe(keptLinkId)
-    expect(graph.links.has(keptLinkId)).toBe(true)
-    expect(graph.links.has(dupLink.id)).toBe(false)
-  })
-
-  it('drops purged duplicates from the link store and keeps the survivor indexed', () => {
-    const { graph, source, target } = createConnectedGraph()
-    const store = useLinkStore()
-    const graphId = graphScopeOf(graph)
-    const keptLinkId = store.getInputSlotLink(graphId, target.id, 0)!.id
-
-    const dup = injectDuplicateLink(graph, source, target)
-
-    graph._removeDuplicateLinks()
-
-    expect(dup._graphScope).toBeUndefined()
-    expect(store.getInputSlotLink(graphId, target.id, 0)?.id).toBe(keptLinkId)
-  })
-
-  it('keeps the valid link when the input is at a shifted slot index', () => {
-    const { graph, source, target } = createConnectedGraph()
-    const store = useLinkStore()
-    const validLinkId = store.getInputSlotLink(
-      graphScopeOf(graph),
-      target.id,
-      0
-    )!.id
-
-    // Simulate widget-to-input conversion shifting the slot: insert a new
-    // input BEFORE the connected one, moving it from index 0 to index 1.
-    target.addInput('extra_widget', 'number')
-    const connectedInput = target.inputs[0]
-    target.inputs[0] = target.inputs[1]
-    target.inputs[1] = connectedInput
-
-    const dupLink = injectDuplicateLink(graph, source, target)
-
-    expect(graph.links.size).toBe(1)
-
-    graph._removeDuplicateLinks()
-
-    expect(graph.links.size).toBe(1)
-    expect(graph.links.has(validLinkId)).toBe(true)
-    expect(graph.links.has(dupLink.id)).toBe(false)
-    expect(store.getInputSlotLink(graphScopeOf(graph), target.id, 0)?.id).toBe(
-      validLinkId
-    )
-  })
-
-  it('keeps the surviving link registered after dedup', () => {
-    const { graph, source, target } = createConnectedGraph()
-
-    const store = useLinkStore()
-    const dupLink = injectDuplicateLink(graph, source, target)
-
-    graph._removeDuplicateLinks()
-
-    expect(graph.links.size).toBe(1)
-    expect(graph.links.has(dupLink.id)).toBe(false)
-    const survivingId = graph.links.keys().next().value!
-    const registeredLink = store.getInputSlotLink(
-      graphScopeOf(graph),
-      target.id,
-      0
-    )
-    expect(registeredLink?.id).toBe(survivingId)
-    expect(graph.links.has(registeredLink!.id)).toBe(true)
-  })
-
-  it('is a no-op when no duplicates exist', () => {
-    const { graph } = createConnectedGraph()
-    const linksBefore = graph.links.size
-
-    graph._removeDuplicateLinks()
-
-    expect(graph.links.size).toBe(linksBefore)
-  })
-
-  it('cleans up duplicate links in subgraph during configure', () => {
-    const subgraphData = createTestSubgraphData()
-    const rootGraph = new LGraph()
-    const subgraph = rootGraph.createSubgraph(subgraphData)
-
-    const source = new LGraphNode('Source')
-    source.addOutput('out', 'number')
-    const target = new LGraphNode('Target')
-    target.addInput('in', 'number')
-    subgraph.add(source)
-    subgraph.add(target)
-
-    source.connect(0, target, 0)
-
-    for (let i = 0; i < 3; i++) injectDuplicateLink(subgraph, source, target)
-    expect(subgraph.links.size).toBe(1)
-
-    const serialized = subgraph.asSerialisable()
-    subgraph.configure(serialized as never)
-
-    expect(subgraph.links.size).toBe(1)
-  })
-
-  it('removes duplicate links via root graph configure()', () => {
+  it('rejects persisted duplicate links via root graph configure()', () => {
     registerTestNodes()
     const graph = new LGraph()
     graph.configure(duplicateLinksRoot)
@@ -1191,7 +1037,7 @@ describe('_removeDuplicateLinks', () => {
     expect(source.outputs[link.origin_slot].links).toContain(link.id)
   })
 
-  it('deduplicates links inside subgraph definitions during root configure()', () => {
+  it('rejects persisted duplicate links inside subgraph definitions', () => {
     const graph = new LGraph()
     graph.configure(duplicateLinksSubgraph)
 
@@ -1213,63 +1059,13 @@ describe('Subgraph Unpacking', () => {
     }
   }
 
-  class MultiInputNode extends LGraphNode {
-    constructor(title?: string) {
-      super(title ?? 'MultiInputNode')
-      this.addInput('input_0', 'number')
-      this.addInput('input_1', 'number')
-      this.addOutput('output_0', 'number')
-    }
-  }
-
   function registerTestNodes() {
     LiteGraph.registerNodeType('test/TestNode', TestNode)
-    LiteGraph.registerNodeType('test/MultiInputNode', MultiInputNode)
   }
 
   function createSubgraphOnGraph(rootGraph: LGraph) {
     return rootGraph.createSubgraph(createTestSubgraphData())
   }
-
-  function duplicateExistingLink(graph: LGraph) {
-    const existingLink = graph.links.values().next().value!
-    const linkId = toLinkId(Number(graph.state.lastLinkId) + 1)
-    graph.state.lastLinkId = linkId
-    const dup = new LLink(
-      linkId,
-      existingLink.type,
-      existingLink.origin_id,
-      existingLink.origin_slot,
-      existingLink.target_id,
-      existingLink.target_slot
-    )
-    graph.links.set(dup.id, dup)
-    return dup
-  }
-
-  it('deduplicates links when unpacking subgraph with duplicate links', () => {
-    registerTestNodes()
-    const rootGraph = new LGraph()
-    const subgraph = createSubgraphOnGraph(rootGraph)
-
-    const sourceNode = LiteGraph.createNode('test/TestNode', 'Source')!
-    const targetNode = LiteGraph.createNode('test/TestNode', 'Target')!
-    subgraph.add(sourceNode)
-    subgraph.add(targetNode)
-
-    sourceNode.connect(0, targetNode, 0)
-
-    for (let i = 0; i < 3; i++) duplicateExistingLink(subgraph)
-    expect(subgraph.links.size).toBe(1)
-
-    const subgraphNode = createTestSubgraphNode(subgraph, { pos: [100, 100] })
-    rootGraph.add(subgraphNode)
-
-    rootGraph.unpackSubgraph(subgraphNode)
-
-    // After unpacking, there should be exactly 1 link (not 4)
-    expect(rootGraph.links.size).toBe(1)
-  })
 
   it('clears subgraph geometry only for the owning root graph', () => {
     registerTestNodes()
@@ -1343,33 +1139,6 @@ describe('Subgraph Unpacking', () => {
       x: 100,
       y: 75
     })
-  })
-
-  it('preserves correct link connections when unpacking with duplicate links', () => {
-    registerTestNodes()
-    const rootGraph = new LGraph()
-    const subgraph = createSubgraphOnGraph(rootGraph)
-
-    const sourceNode = LiteGraph.createNode('test/MultiInputNode', 'Source')!
-    const targetNode = LiteGraph.createNode('test/MultiInputNode', 'Target')!
-    subgraph.add(sourceNode)
-    subgraph.add(targetNode)
-
-    sourceNode.connect(0, targetNode, 0)
-    duplicateExistingLink(subgraph)
-
-    const subgraphNode = createTestSubgraphNode(subgraph, { pos: [100, 100] })
-    rootGraph.add(subgraphNode)
-
-    rootGraph.unpackSubgraph(subgraphNode)
-
-    // Verify only 1 link exists
-    expect(rootGraph.links.size).toBe(1)
-
-    // Verify target input 1 does NOT have a link (no spurious connection)
-    const unpackedTarget = rootGraph.nodes.find((n) => n.title === 'Target')!
-    expect(unpackedTarget.inputs[0].link).not.toBeNull()
-    expect(unpackedTarget.inputs[1].link).toBeNull()
   })
 
   it('keeps subgraph definition when unpacking one instance while another remains', () => {

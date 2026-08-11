@@ -190,11 +190,9 @@ export function collectReservedGroupIds(
 
 export function collectReservedLinkIds(
   graph: Pick<LGraph, 'links' | 'floatingLinks' | 'subgraphs'>,
-  serializedLinks: SerialisableLLink[] = [],
   serializedFloatingLinks: SerialisableLLink[] = []
 ): Set<number> {
   return new Set([
-    ...serializedLinks.map((link) => link.id),
     ...serializedFloatingLinks.map((link) => link.id),
     ...[graph, ...graph.subgraphs.values()].flatMap((owner) => [
       ...owner.links.keys(),

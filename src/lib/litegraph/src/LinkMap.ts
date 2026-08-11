@@ -18,7 +18,7 @@ export class LinkMap extends Map<LinkId, LLink> {
   }
 
   override get size(): number {
-    return [...this.values()].length
+    return this.snapshot().size
   }
 
   override clear(): void {
