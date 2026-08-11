@@ -69,7 +69,6 @@ const setNumberInput = (input: HTMLInputElement, value: string): void => {
 
 describe('BrushSettingsPanel', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockStore = initialMock()
   })
 

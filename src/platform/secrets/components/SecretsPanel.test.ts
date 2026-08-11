@@ -113,7 +113,6 @@ function renderPanel() {
 
 describe('SecretsPanel', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockShowConfirmDialog.mockReturnValue(
       DIALOG_HANDLE as ReturnType<typeof showConfirmDialog>
     )

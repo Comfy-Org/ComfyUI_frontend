@@ -1,7 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -177,7 +177,6 @@ function renderRow(
 
 describe('MissingModelRow', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     i18n.global.setLocaleMessage('en', enMessages)
     delete window.__comfyDesktop2
     mockIsCloud.value = true
@@ -190,10 +189,6 @@ describe('MissingModelRow', () => {
       fileSize: null,
       gatedRepoUrl: null
     })
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   it('does not prefetch metadata for non-allowlisted URLs outside cloud', () => {

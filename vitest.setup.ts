@@ -74,10 +74,12 @@ window.__CONFIG__ = {
 }
 
 // Mock Worker for extendable-media-recorder
-globalThis.Worker = vi.fn().mockImplementation(() => ({
-  postMessage: vi.fn(),
-  terminate: vi.fn(),
-  addEventListener: vi.fn(),
-  removeEventListener: vi.fn(),
-  dispatchEvent: vi.fn()
-}))
+globalThis.Worker = vi.fn(function () {
+  return {
+    postMessage: vi.fn(),
+    terminate: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn()
+  }
+})

@@ -41,7 +41,6 @@ describe.for(pages)('$name launch page config', ({ page }) => {
       page.hero.promptBar?.sampleKey,
       page.hero.promptBar?.cta.labelKey,
       ...(page.hero.badgeKeys ?? []),
-      page.hero.footnoteKey,
       page.gallery?.headingKey,
       page.pricing?.banner?.titleKey,
       page.pricing?.banner?.subtitleKey,
