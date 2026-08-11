@@ -294,6 +294,19 @@ function registerConfiguredLink(
   }
 }
 
+function remapConfiguredLinkAliases(
+  data: (ISerialisedGraph | SerialisableGraph) &
+    Partial<Pick<ExportedSubgraph, 'inputs' | 'outputs'>>,
+  survivorByRejected: ReadonlyMap<LinkId, LinkId>
+): void {
+  for (const slot of [...(data.inputs ?? []), ...(data.outputs ?? [])]) {
+    if (!slot.linkIds) continue
+    slot.linkIds = slot.linkIds.map(
+      (linkId) => survivorByRejected.get(toLinkId(linkId)) ?? toLinkId(linkId)
+    )
+  }
+}
+
 export class LGraph
   implements LinkNetwork, BaseLGraph, Serialisable<SerialisableGraph>
 {
@@ -2838,6 +2851,7 @@ export class LGraph
       for (const [rejected, survivor] of survivorByRejected) {
         survivorByPurged.set(rejected, survivor)
       }
+      remapConfiguredLinkAliases(data, survivorByPurged)
 
       // Node configure() overrides may have reordered serialized inputs in
       // place to match current node definitions; re-key links to the slots
@@ -3038,10 +3052,6 @@ export class Subgraph
       }
     }
 
-    // Repair IO slot linkIds that reference links removed by
-    // _removeDuplicateLinks during super.configure().
-    this._repairIOSlotLinkIds()
-
     if (widgets) {
       this.widgets.length = 0
       for (const widget of widgets) {
@@ -3064,50 +3074,6 @@ export class Subgraph
 
     this._configureSubgraph(data)
     return r
-  }
-
-  /**
-   * Repairs SubgraphInput/Output `linkIds` that reference links removed
-   * by `_removeDuplicateLinks` during `super.configure()`.
-   *
-   * For each stale link ID, finds the surviving link that connects to the
-   * same IO node and slot index, and substitutes it.
-   */
-  private _repairIOSlotLinkIds(): void {
-    for (const [slotIndex, slot] of this.inputs.entries()) {
-      this._repairSlotLinkIds(slot.linkIds, SUBGRAPH_INPUT_ID, slotIndex)
-    }
-    for (const [slotIndex, slot] of this.outputs.entries()) {
-      this._repairSlotLinkIds(slot.linkIds, SUBGRAPH_OUTPUT_ID, slotIndex)
-    }
-  }
-
-  private _repairSlotLinkIds(
-    linkIds: LinkId[],
-    ioNodeId: NodeId,
-    slotIndex: number
-  ): void {
-    const repaired = linkIds.map((id) =>
-      this.links.has(id)
-        ? id
-        : (this._findLinkBySlot(ioNodeId, slotIndex)?.id ?? id)
-    )
-    repaired.forEach((id, i) => {
-      linkIds[i] = id
-    })
-  }
-
-  private _findLinkBySlot(
-    nodeId: NodeId,
-    slotIndex: number
-  ): LLink | undefined {
-    for (const link of this.links.values()) {
-      if (
-        (link.origin_id === nodeId && link.origin_slot === slotIndex) ||
-        (link.target_id === nodeId && link.target_slot === slotIndex)
-      )
-        return link
-    }
   }
 
   override attachCanvas(canvas: LGraphCanvas): void {

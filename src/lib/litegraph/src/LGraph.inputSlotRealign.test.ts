@@ -176,6 +176,58 @@ function emptySubgraphDefinition(): ExportedSubgraph {
   }
 }
 
+function subgraphInputFanoutWithRejectedDuplicate(): ExportedSubgraph {
+  const subgraph = emptySubgraphDefinition()
+  subgraph.state.lastNodeId = 2
+  subgraph.state.lastLinkId = 3
+  subgraph.inputs = [
+    { id: 'input', name: 'input', type: 'number', linkIds: [3] }
+  ]
+  subgraph.nodes = [1, 2].map((id) => ({
+    id,
+    type: 'test/RealignTarget',
+    pos: [300, id * 100] as [number, number],
+    size: [140, 80] as [number, number],
+    flags: {},
+    order: id,
+    mode: 0,
+    inputs: [
+      { name: 'in_a', type: 'number', link: id === 1 ? 1 : 3 },
+      { name: 'in_b', type: 'number', link: null },
+      { name: 'in_c', type: 'number', link: null }
+    ],
+    outputs: [],
+    properties: {}
+  }))
+  subgraph.links = [
+    {
+      id: 1,
+      origin_id: SUBGRAPH_INPUT_ID,
+      origin_slot: 0,
+      target_id: 1,
+      target_slot: 0,
+      type: 'number'
+    },
+    {
+      id: 2,
+      origin_id: SUBGRAPH_INPUT_ID,
+      origin_slot: 0,
+      target_id: 2,
+      target_slot: 0,
+      type: 'number'
+    },
+    {
+      id: 3,
+      origin_id: SUBGRAPH_INPUT_ID,
+      origin_slot: 0,
+      target_id: 2,
+      target_slot: 0,
+      type: 'number'
+    }
+  ]
+  return subgraph
+}
+
 interface WorkflowOptions {
   duplicate?: boolean
   insideSubgraph?: boolean
@@ -289,6 +341,21 @@ describe('LGraph.configure input slot realignment (#3348)', () => {
 
     expect(graph.links.has(toLinkId(4))).toBe(false)
     assertLinksRealigned(graph, toNodeId(2))
+  })
+
+  it('maps a rejected subgraph input fanout branch to its exact survivor', () => {
+    const workflow = savedWorkflow()
+    workflow.nodes = []
+    workflow.links = []
+    workflow.definitions = {
+      subgraphs: [subgraphInputFanoutWithRejectedDuplicate()]
+    }
+
+    const graph = new LGraph()
+    graph.configure(workflow)
+
+    const subgraph = graph.subgraphs.get(SUBGRAPH_ID)!
+    expect(subgraph.inputs[0].linkIds).toEqual([toLinkId(2)])
   })
 
   it('uses the first slot when one link is referenced by multiple inputs', () => {
