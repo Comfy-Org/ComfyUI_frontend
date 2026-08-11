@@ -9,6 +9,7 @@ import type {
   ISerialisedNode
 } from '@/lib/litegraph/src/litegraph'
 import type { Rect } from '@/lib/litegraph/src/interfaces'
+import { resizeNodeLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
@@ -875,6 +876,39 @@ describe('layout geometry projection', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     layoutStore.resetForTests()
+  })
+
+  test('applies a resize and position change through one attached update', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    const batchUpdateNodeBounds = vi.spyOn(layoutStore, 'batchUpdateNodeBounds')
+
+    resizeNodeLayout(
+      node,
+      { width: 300, height: 120 },
+      {
+        position: { x: 40, y: 60 },
+        source: LayoutSource.Vue
+      }
+    )
+
+    expect(batchUpdateNodeBounds).toHaveBeenCalledWith(
+      graph.rootGraph.id,
+      [
+        {
+          nodeId: node.id,
+          bounds: { x: 40, y: 60, width: 300, height: 120 }
+        }
+      ],
+      { source: LayoutSource.Vue }
+    )
+    expect(
+      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value
+    ).toMatchObject({
+      position: { x: 40, y: 60 },
+      size: { width: 300, height: 120 }
+    })
   })
 
   test('moves from the latest stored position', () => {

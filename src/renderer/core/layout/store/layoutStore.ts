@@ -176,6 +176,7 @@ class LayoutStoreImpl {
   private linkLayouts = new Map<LinkId, LinkLayout>()
   private linkSegmentLayouts = new Map<string, LinkSegmentLayout>() // Internal string key: ${linkId}:${rerouteId ?? 'final'}
   private slotLayouts = new Map<SlotId, SlotLayout>()
+  private contentHeights = new Map<ScopedLayoutKey, number>()
   private rerouteLayouts = new Map<ScopedLayoutKey, RerouteLayout>()
 
   // Spatial index managers
@@ -388,6 +389,22 @@ class LayoutStoreImpl {
     out[2] = rect[2]
     out[3] = rect[3]
     return true
+  }
+
+  /** Height the DOM made of this node, or 0 if it has never been measured. */
+  contentHeightOf(rootGraphId: UUID, nodeId: NodeId): number {
+    return (
+      this.contentHeights.get(makeScopedLayoutKey(rootGraphId, nodeId)) ?? 0
+    )
+  }
+
+  /**
+   * Records what the DOM made of a node. Local and view-scoped: a measurement
+   * is not replayable on a peer whose fonts, locale or custom nodes differ, so
+   * it never enters the replicated document (ADR 0003, 2026-08-04).
+   */
+  reportContentHeight(rootGraphId: UUID, nodeId: NodeId, height: number): void {
+    this.contentHeights.set(makeScopedLayoutKey(rootGraphId, nodeId), height)
   }
 
   /**
@@ -997,6 +1014,7 @@ class LayoutStoreImpl {
       this.linkLayouts.clear()
       this.linkSegmentLayouts.clear()
       this.slotLayouts.clear()
+      this.contentHeights.clear()
       // Reroute layouts outlive active-graph switches.
       this.pendingGlobalChanges = []
       this.isGlobalDispatchQueued = false

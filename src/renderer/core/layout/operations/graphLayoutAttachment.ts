@@ -226,14 +226,35 @@ export function moveNodeLayout(node: LGraphNode, position: Point): void {
   })
 }
 
-export function resizeNodeLayout(node: LGraphNode, size: Size): void {
+export function resizeNodeLayout(
+  node: LGraphNode,
+  size: Size,
+  {
+    position,
+    source = LayoutSource.Canvas
+  }: { position?: Point; source?: LayoutSource } = {}
+): void {
   const attachment = nodeAttachments.get(node)
   if (!attachment) return
+  if (position) {
+    layoutStore.batchUpdateNodeBounds(
+      attachment.graphId,
+      [
+        {
+          nodeId: attachment.id,
+          bounds: { ...position, ...size }
+        }
+      ],
+      { source }
+    )
+    return
+  }
   layoutStore.applyOperation({
-    ...canvasOperationMeta(),
     graphId: attachment.graphId,
     nodeId: attachment.id,
     size,
+    source,
+    timestamp: Date.now(),
     type: 'resizeNode'
   })
 }
