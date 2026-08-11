@@ -1,210 +1,210 @@
-import { createTestingPinia } from "@pinia/testing";
-import type { AxiosResponse } from "axios";
-import { AxiosError } from "axios";
-import { setActivePinia } from "pinia";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ref } from "vue";
+import { createTestingPinia } from '@pinia/testing'
+import type { AxiosResponse } from 'axios'
+import { AxiosError } from 'axios'
+import { setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 
-import { mergeCustomNodesI18n } from "@/i18n";
-import { useSettingStore } from "@/platform/settings/settingStore";
-import { api } from "@/scripts/api";
+import { mergeCustomNodesI18n } from '@/i18n'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { api } from '@/scripts/api'
 
-import { useBootstrapStore } from "./bootstrapStore";
+import { useBootstrapStore } from './bootstrapStore'
 
-vi.mock("@/scripts/api", () => ({
+vi.mock('@/scripts/api', () => ({
   api: {
     init: vi.fn().mockResolvedValue(undefined),
-    getNodeDefs: vi.fn().mockResolvedValue({ TestNode: { name: "TestNode" } }),
+    getNodeDefs: vi.fn().mockResolvedValue({ TestNode: { name: 'TestNode' } }),
     getCustomNodesI18n: vi.fn().mockResolvedValue({}),
-    getUserConfig: vi.fn().mockResolvedValue({}),
-  },
-}));
+    getUserConfig: vi.fn().mockResolvedValue({})
+  }
+}))
 
-vi.mock("@/i18n", () => ({
-  mergeCustomNodesI18n: vi.fn(),
-}));
+vi.mock('@/i18n', () => ({
+  mergeCustomNodesI18n: vi.fn()
+}))
 
-const mockIsSettingsReady = ref(false);
+const mockIsSettingsReady = ref(false)
 
-vi.mock("@/platform/settings/settingStore", () => ({
+vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: vi.fn(() => ({
     load: vi.fn(() => {
-      mockIsSettingsReady.value = true;
+      mockIsSettingsReady.value = true
     }),
     get isReady() {
-      return mockIsSettingsReady.value;
+      return mockIsSettingsReady.value
     },
     isLoading: ref(false),
-    error: ref(undefined),
-  })),
-}));
+    error: ref(undefined)
+  }))
+}))
 
-vi.mock("@/platform/workflow/management/stores/workflowStore", () => ({
+vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   useWorkflowStore: vi.fn(() => ({
     loadWorkflows: vi.fn(),
-    syncWorkflows: vi.fn().mockResolvedValue(undefined),
-  })),
-}));
+    syncWorkflows: vi.fn().mockResolvedValue(undefined)
+  }))
+}))
 
-const mockNeedsLogin = ref(false);
-vi.mock("@/stores/userStore", () => ({
+const mockNeedsLogin = ref(false)
+vi.mock('@/stores/userStore', () => ({
   useUserStore: vi.fn(() => ({
     initialize: vi.fn().mockResolvedValue(undefined),
-    needsLogin: mockNeedsLogin,
-  })),
-}));
+    needsLogin: mockNeedsLogin
+  }))
+}))
 
-const mockIsAuthInitialized = ref(false);
-const mockIsAuthAuthenticated = ref(false);
-vi.mock("@/stores/authStore", () => ({
+const mockIsAuthInitialized = ref(false)
+const mockIsAuthAuthenticated = ref(false)
+vi.mock('@/stores/authStore', () => ({
   useAuthStore: vi.fn(() => ({
     isInitialized: mockIsAuthInitialized,
-    isAuthenticated: mockIsAuthAuthenticated,
-  })),
-}));
+    isAuthenticated: mockIsAuthAuthenticated
+  }))
+}))
 
 const mockDistributionTypes = vi.hoisted(() => ({
-  isCloud: false,
-}));
-vi.mock("@/platform/distribution/types", () => mockDistributionTypes);
+  isCloud: false
+}))
+vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
 
-const mockCaptureException = vi.hoisted(() => vi.fn());
-vi.mock("@sentry/vue", () => ({
-  captureException: mockCaptureException,
-}));
+const mockCaptureException = vi.hoisted(() => vi.fn())
+vi.mock('@sentry/vue', () => ({
+  captureException: mockCaptureException
+}))
 
 function requestFailure(status: number) {
-  const error = new AxiosError(`Request failed with status code ${status}`);
-  error.response = { status } as AxiosResponse;
-  return error;
+  const error = new AxiosError(`Request failed with status code ${status}`)
+  error.response = { status } as AxiosResponse
+  return error
 }
 
-describe("bootstrapStore", () => {
+describe('bootstrapStore', () => {
   beforeEach(() => {
-    mockIsSettingsReady.value = false;
-    mockIsAuthInitialized.value = false;
-    mockIsAuthAuthenticated.value = false;
-    mockNeedsLogin.value = false;
-    mockDistributionTypes.isCloud = false;
-    setActivePinia(createTestingPinia({ stubActions: false }));
-  });
+    mockIsSettingsReady.value = false
+    mockIsAuthInitialized.value = false
+    mockIsAuthAuthenticated.value = false
+    mockNeedsLogin.value = false
+    mockDistributionTypes.isCloud = false
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
 
-  it("initializes with all flags false", () => {
-    const store = useBootstrapStore();
-    const settingStore = useSettingStore();
-    expect(settingStore.isReady).toBe(false);
-    expect(store.isI18nReady).toBe(false);
-  });
+  it('initializes with all flags false', () => {
+    const store = useBootstrapStore()
+    const settingStore = useSettingStore()
+    expect(settingStore.isReady).toBe(false)
+    expect(store.isI18nReady).toBe(false)
+  })
 
-  it("starts store bootstrap (settings, i18n)", async () => {
-    const store = useBootstrapStore();
-    const settingStore = useSettingStore();
-    void store.startStoreBootstrap();
+  it('starts store bootstrap (settings, i18n)', async () => {
+    const store = useBootstrapStore()
+    const settingStore = useSettingStore()
+    void store.startStoreBootstrap()
 
     await vi.waitFor(() => {
-      expect(settingStore.isReady).toBe(true);
-      expect(store.isI18nReady).toBe(true);
-    });
-  });
+      expect(settingStore.isReady).toBe(true)
+      expect(store.isI18nReady).toBe(true)
+    })
+  })
 
-  describe("custom node translations", () => {
-    it("treats a missing /api/i18n endpoint as no translations", async () => {
+  describe('custom node translations', () => {
+    it('treats a missing /api/i18n endpoint as no translations', async () => {
       vi.mocked(api.getCustomNodesI18n).mockRejectedValueOnce(
-        requestFailure(404),
-      );
-      const store = useBootstrapStore();
-      void store.startStoreBootstrap();
+        requestFailure(404)
+      )
+      const store = useBootstrapStore()
+      void store.startStoreBootstrap()
 
       await vi.waitFor(() => {
-        expect(store.isI18nReady).toBe(true);
-      });
-      expect(store.i18nError).toBeUndefined();
-      expect(mergeCustomNodesI18n).not.toHaveBeenCalled();
-    });
+        expect(store.isI18nReady).toBe(true)
+      })
+      expect(store.i18nError).toBeUndefined()
+      expect(mergeCustomNodesI18n).not.toHaveBeenCalled()
+    })
 
-    it("surfaces failures other than a missing endpoint", async () => {
+    it('surfaces failures other than a missing endpoint', async () => {
       vi.mocked(api.getCustomNodesI18n).mockRejectedValueOnce(
-        requestFailure(500),
-      );
-      const store = useBootstrapStore();
-      void store.startStoreBootstrap();
+        requestFailure(500)
+      )
+      const store = useBootstrapStore()
+      void store.startStoreBootstrap()
 
       await vi.waitFor(() => {
-        expect(store.i18nError).toBeDefined();
-      });
-      expect(store.isI18nReady).toBe(false);
-    });
-  });
+        expect(store.i18nError).toBeDefined()
+      })
+      expect(store.isI18nReady).toBe(false)
+    })
+  })
 
-  describe("cloud mode", () => {
+  describe('cloud mode', () => {
     beforeEach(() => {
-      mockDistributionTypes.isCloud = true;
-      mockCaptureException.mockReset();
-    });
+      mockDistributionTypes.isCloud = true
+      mockCaptureException.mockReset()
+    })
 
-    it("waits for Firebase init before loading stores, then proceeds regardless of auth state", async () => {
-      const store = useBootstrapStore();
-      const settingStore = useSettingStore();
-      const bootstrapPromise = store.startStoreBootstrap();
+    it('waits for Firebase init before loading stores, then proceeds regardless of auth state', async () => {
+      const store = useBootstrapStore()
+      const settingStore = useSettingStore()
+      const bootstrapPromise = store.startStoreBootstrap()
 
-      expect(store.isI18nReady).toBe(false);
-      expect(settingStore.isReady).toBe(false);
+      expect(store.isI18nReady).toBe(false)
+      expect(settingStore.isReady).toBe(false)
 
       // Firebase resolves with no user (signed-out) — bootstrap must unblock.
       // Previously it also waited for isAuthenticated, which made every
       // signed-out load wait 35s and fire a false Sentry timeout.
-      mockIsAuthInitialized.value = true;
-      await bootstrapPromise;
+      mockIsAuthInitialized.value = true
+      await bootstrapPromise
 
       await vi.waitFor(() => {
-        expect(store.isI18nReady).toBe(true);
-        expect(settingStore.isReady).toBe(true);
-      });
-    });
+        expect(store.isI18nReady).toBe(true)
+        expect(settingStore.isReady).toBe(true)
+      })
+    })
 
-    it("retries once and proceeds if Firebase init resolves during the backoff", async () => {
-      vi.useFakeTimers();
+    it('retries once and proceeds if Firebase init resolves during the backoff', async () => {
+      vi.useFakeTimers()
       try {
-        const store = useBootstrapStore();
-        const settingStore = useSettingStore();
-        const bootstrapPromise = store.startStoreBootstrap();
+        const store = useBootstrapStore()
+        const settingStore = useSettingStore()
+        const bootstrapPromise = store.startStoreBootstrap()
 
         // First wait times out with Firebase still not initialized.
-        await vi.advanceTimersByTimeAsync(16_001);
-        expect(settingStore.isReady).toBe(false);
+        await vi.advanceTimersByTimeAsync(16_001)
+        expect(settingStore.isReady).toBe(false)
 
         // Firebase resolves during the retry backoff.
-        mockIsAuthInitialized.value = true;
-        await vi.advanceTimersByTimeAsync(3_001);
-        await bootstrapPromise;
+        mockIsAuthInitialized.value = true
+        await vi.advanceTimersByTimeAsync(3_001)
+        await bootstrapPromise
 
-        expect(settingStore.isReady).toBe(true);
-        expect(mockCaptureException).not.toHaveBeenCalled();
+        expect(settingStore.isReady).toBe(true)
+        expect(mockCaptureException).not.toHaveBeenCalled()
       } finally {
-        vi.useRealTimers();
+        vi.useRealTimers()
       }
-    });
+    })
 
-    it("gives up after a second timeout, reports it, and continues bootstrap unauthenticated", async () => {
-      vi.useFakeTimers();
+    it('gives up after a second timeout, reports it, and continues bootstrap unauthenticated', async () => {
+      vi.useFakeTimers()
       try {
-        const store = useBootstrapStore();
-        const settingStore = useSettingStore();
-        const bootstrapPromise = store.startStoreBootstrap();
+        const store = useBootstrapStore()
+        const settingStore = useSettingStore()
+        const bootstrapPromise = store.startStoreBootstrap()
 
         // Firebase never resolves through the initial wait, the backoff, or the retry.
-        await vi.advanceTimersByTimeAsync(16_000 + 3_000 + 16_001);
-        await bootstrapPromise;
+        await vi.advanceTimersByTimeAsync(16_000 + 3_000 + 16_001)
+        await bootstrapPromise
 
-        expect(mockCaptureException).toHaveBeenCalledOnce();
+        expect(mockCaptureException).toHaveBeenCalledOnce()
         expect(mockCaptureException).toHaveBeenCalledWith(expect.anything(), {
-          tags: { error_type: "bootstrap_auth_wait_timeout" },
-        });
+          tags: { error_type: 'bootstrap_auth_wait_timeout' }
+        })
         // Bootstrap must not stay stuck: stores load even when Firebase never fires.
-        expect(settingStore.isReady).toBe(true);
+        expect(settingStore.isReady).toBe(true)
       } finally {
-        vi.useRealTimers();
+        vi.useRealTimers()
       }
-    });
-  });
-});
+    })
+  })
+})
