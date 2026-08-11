@@ -1607,6 +1607,9 @@ export class ComfyApi extends EventTarget {
    * @returns true if the feature is supported, false otherwise
    */
   serverSupportsFeature(featureName: string): boolean {
+    const sessionOverride = getSessionOverride(featureName)
+    if (sessionOverride !== undefined) return sessionOverride === true
+
     const override = getDevOverride<boolean>(featureName)
     if (override !== undefined) return override
     return get(this.serverFeatureFlags.value, featureName) === true
