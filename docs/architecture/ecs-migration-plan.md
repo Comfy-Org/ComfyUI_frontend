@@ -886,6 +886,14 @@ one boundary for future atomic validation and rollback. Command-executor
 transactions should wrap these store mutation points rather than adding
 caller-specific compensation.
 
+**Rejected transitional options:**
+
+| Option                                   | Why it was rejected                                                                |
+| ---------------------------------------- | ---------------------------------------------------------------------------------- |
+| Preflight in each graph caller           | Duplicates store invariants and leaves a check-to-mutation race.                   |
+| Disconnect, register, then restore       | Callbacks and multi-store cleanup make the removed state unsafe to reconstruct.    |
+| Add caller-specific failure compensation | Spreads rollback policy across paths instead of establishing one transaction seam. |
+
 **Phase 4 baseline semantics:**
 
 - Mutating systems run inside a single command-executor transaction.
