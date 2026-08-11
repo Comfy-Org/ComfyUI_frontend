@@ -34,10 +34,16 @@
 name: 'CI: Tests Custom Nodes Cloud'
 
 on:
-  pull_request:
-    branches-ignore: [wip/*, draft/*, temp/*]
+  # No pull_request trigger. Every automatic run shares ONE serial Cloud
+  # resource (the smoke account's queue), and GitHub keeps a single pending
+  # slot per concurrency group - so per-PR pushes stampeded the group and
+  # evicted each other instead of queueing (16 of the 40 runs before this
+  # change were cancelled; none of the PR-triggered survivors produced a
+  # verdict PRs acted on). PR-time custom-node coverage stays with the core
+  # gate and the pure specs in the main shards; Cloud verdicts come from
+  # suite-branch/main pushes, the merge queue, and manual dispatch.
   push:
-    branches: [main, master]
+    branches: [main, master, nathaniel/custom-node-e2e-suite]
   merge_group:
   workflow_dispatch:
 
@@ -60,13 +66,14 @@ concurrency:
   # newer one queues into the group - under 3+ concurrent triggers the middle
   # run is cancelled, not queued. This is not safe for a required check. Do not
   # mark this check required while pending runs can be evicted from this group.
-  # workflow_dispatch runs get their own group: main-push runs share the
-  # instance group and each new pending run EVICTS the older pending one
-  # (GitHub keeps one pending slot per group) - calibration dispatches
-  # 30316897509/30317780440/30318407927 died queued or displaced under main
-  # churn. Keep dispatches isolated from automatic runs and preserve serial
-  # execution while whole-queue observation remains part of the proof.
-  group: ${{ github.event_name == 'workflow_dispatch' && 'custom-nodes-cloud-dispatch' || 'custom-nodes-cloud-instance' }}
+  # Dispatches share the SAME group: the separate dispatch group let a manual
+  # run execute CONCURRENTLY with an instance-group run (observed live
+  # 2026-08-11: dispatch 31541231667 co-tenant with pull_request run
+  # 31530265854, which then wedged past 125m in the suite step) - and
+  # co-tenancy corrupts whole-queue observation for BOTH runs. The eviction
+  # pressure that once justified the split is gone now that per-PR triggers
+  # are removed. One group, one run at a time, for every event.
+  group: custom-nodes-cloud-instance
   cancel-in-progress: false
 
 jobs:
@@ -98,6 +105,9 @@ jobs:
       (github.event_name != 'pull_request' ||
       github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
+    # Bounded: the longest healthy run observed is ~110m of suite; a wedged
+    # run otherwise occupies the serial group for GitHub's 360m default.
+    timeout-minutes: 150
     # This proof is intentionally one worker and unsharded. Cloud app boots are
     # network-bound, and waitForQueueQuiet observes the whole shared queue.
     # Preserve the serial execution contract for the S1-S12 gate.
