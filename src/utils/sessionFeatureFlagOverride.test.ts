@@ -13,8 +13,8 @@ type MockUser = { email: string | null; emailVerified: boolean }
 const mockCurrentUser = vi.hoisted(() => ({
   value: null as MockUser | null | undefined
 }))
-vi.mock('@/platform/auth/identity/currentUserIdentity', () => ({
-  getCurrentUserIdentity: vi.fn(() => mockCurrentUser.value)
+vi.mock('vuefire', () => ({
+  useCurrentUser: vi.fn(() => mockCurrentUser)
 }))
 
 const COMFY_EMPLOYEE = { email: 'dev@comfy.org', emailVerified: true }
