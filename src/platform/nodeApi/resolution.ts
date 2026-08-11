@@ -15,6 +15,7 @@
  * untouched, which is the property `applyToGraph` structurally cannot have.
  */
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { inputLink } from '@/lib/litegraph/src/node/slotLinks'
 import { toNodeId } from '@/types/nodeId'
 
@@ -185,4 +186,187 @@ export function resolveFrontendNodes(
     }
   }
   return resolved
+}
+
+/** An input in the graph that no link feeds. */
+export interface UnconnectedInput {
+  readonly nodeId: string
+  readonly nodeType: string
+  readonly input: number
+  readonly name: string
+  readonly type: string
+  /**
+   * What the user actually sees on the slot — `label`, else `localized_name`,
+   * else `name`. Broadcast packs match against this, not `name`, and the two
+   * differ in every non-English locale.
+   */
+  readonly label: string
+  /** The socket form of a widget rather than a plain input. */
+  readonly isWidgetInput: boolean
+  /** The owning node, for matching by title, mode, colour, or opt-in flags. */
+  readonly nodeTitle: string
+  readonly nodeMode: number
+  readonly nodeColor: string | undefined
+  /**
+   * The owning node's properties, frozen.
+   *
+   * Broadcast packs keep their per-node opt-in here — which inputs a user has
+   * allowed to be fed. Without it a supplier can only match by type and would
+   * feed every unconnected input of that type, which is the silent
+   * wrong-broadcast failure this view exists to prevent.
+   */
+  readonly nodeProperties: Readonly<Record<string, unknown>>
+}
+
+/**
+ * An edge a node supplies into somebody else's unconnected input.
+ *
+ * `from` is the supplier's own output index, or a literal. It is deliberately
+ * not an arbitrary node reference: a node may only offer what it itself has,
+ * so one pack cannot rewire two other nodes to each other.
+ *
+ * @knipIgnoreUnusedButUsedByCustomNodes
+ */
+export interface SuppliedEdge {
+  readonly to: InputRef
+  readonly from:
+    | { readonly output: number }
+    | { readonly literal: WidgetValue }
+    /**
+     * Whatever feeds this node's own input `k` — for a node that rebroadcasts
+     * its upstream rather than producing a value.
+     *
+     * The broadcast nodes this exists for have inputs and **no outputs**, so
+     * `{ output: n }` cannot describe them: it would name a slot the backend
+     * never declared and force it to execute a node that produces nothing.
+     * Resolved exactly as `Resolver`'s `forwardTo`, so it chains through
+     * reroutes for free.
+     */
+    | { readonly forwardInput: number }
+}
+
+/** @knipIgnoreUnusedButUsedByCustomNodes */
+export interface SupplyView {
+  readonly self: ResolvedNodeView
+  nodesOfType(type: string): readonly ResolvedNodeView[]
+  /**
+   * Every unfed input in the graph — what a broadcaster matches against by
+   * type, by name, or by its own regex.
+   */
+  unconnectedInputs(): readonly UnconnectedInput[]
+}
+
+/**
+ * Answers "what do I feed", the mirror of `Resolver`'s "what feeds me".
+ *
+ * `Resolver` is demand-side: it is asked about the resolver's own outputs, and
+ * is never called for a node with none. cg-use-everywhere broadcasts a value
+ * into every matching unconnected input in the graph, which that shape cannot
+ * express at all — the nodes being fed are not the resolver, and the edges are
+ * discovered rather than declared. Hence a second, supply-side pass.
+ *
+ */
+export type Supplier = (view: SupplyView) => readonly SuppliedEdge[]
+
+/**
+ * Resolves the inputs that suppliers feed, keyed `nodeId:inputIndex`.
+ *
+ * Runs after `resolveFrontendNodes` and takes its result, so a supplier whose
+ * own output is fed by a reroute chain still lands on the real source.
+ *
+ * Two suppliers claiming one input is a conflict with no correct answer, so
+ * the first in graph order wins and the rest are ignored. Deterministic beats
+ * clever: the alternative is a prompt that changes when nodes are reordered.
+ */
+/** What a supplier's `from` finally points at. */
+function sourceFor(
+  graph: LGraph,
+  supplierId: LGraphNode['id'],
+  from: SuppliedEdge['from'],
+  resolved: ReadonlyMap<string, ResolvedSource>
+): ResolvedSource {
+  if ('literal' in from) return { kind: 'literal', value: from.literal }
+
+  if ('forwardInput' in from) {
+    // Whatever feeds the supplier's own input, exactly as `forwardTo` does.
+    const link = inputLink(graph, supplierId, from.forwardInput)
+    if (!link) {
+      return {
+        kind: 'omitted',
+        reason: `nothing feeds ${String(supplierId)}:${from.forwardInput}`
+      }
+    }
+    const origin = String(link.origin_id)
+    return (
+      resolved.get(key(origin, link.origin_slot)) ?? {
+        kind: 'output',
+        nodeId: origin,
+        output: link.origin_slot
+      }
+    )
+  }
+
+  // The supplier may itself be a frontend node standing for something else,
+  // so prefer what the demand-side pass already worked out for that output.
+  return (
+    resolved.get(key(String(supplierId), from.output)) ?? {
+      kind: 'output',
+      nodeId: String(supplierId),
+      output: from.output
+    }
+  )
+}
+
+export function resolveSuppliedInputs(
+  graph: LGraph,
+  suppliers: ReadonlyMap<string, Supplier>,
+  resolved: ReadonlyMap<string, ResolvedSource>
+): ReadonlyMap<string, ResolvedSource> {
+  const supplied = new Map<string, ResolvedSource>()
+  if (!suppliers.size) return supplied
+
+  const unconnected: UnconnectedInput[] = []
+  for (const node of graph.nodes ?? []) {
+    for (const [index, input] of (node.inputs ?? []).entries()) {
+      if (input.link != null) continue
+      unconnected.push({
+        nodeId: String(node.id),
+        nodeType: node.type ?? '',
+        input: index,
+        name: input.name ?? '',
+        type: typeof input.type === 'string' ? input.type : String(input.type),
+        label: input.label ?? input.localized_name ?? input.name ?? '',
+        isWidgetInput: input.widget != null,
+        nodeTitle: node.title ?? '',
+        nodeMode: node.mode ?? 0,
+        nodeColor: node.color,
+        nodeProperties: Object.freeze({ ...(node.properties ?? {}) })
+      })
+    }
+  }
+
+  for (const node of graph.nodes ?? []) {
+    const supplier = suppliers.get(node.type ?? '')
+    const self = supplier ? viewOf(graph, String(node.id)) : undefined
+    if (!supplier || !self) continue
+
+    const edges = supplier({
+      self,
+      nodesOfType: (wanted) =>
+        (graph.nodes ?? [])
+          .filter((n) => n.type === wanted)
+          .map((n) => viewOf(graph, String(n.id)))
+          .filter((v): v is ResolvedNodeView => v !== undefined),
+      unconnectedInputs: () => unconnected
+    })
+
+    for (const edge of edges) {
+      const target = `${edge.to.nodeId}:${edge.to.input}`
+      if (supplied.has(target)) continue
+
+      supplied.set(target, sourceFor(graph, node.id, edge.from, resolved))
+    }
+  }
+
+  return supplied
 }

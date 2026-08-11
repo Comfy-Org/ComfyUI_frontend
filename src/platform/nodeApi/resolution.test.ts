@@ -12,7 +12,8 @@ import { createComfyApi } from './comfyApi'
 import type { Comfy } from './comfyApi'
 import { createDefRegistry, frontendResolverMap } from './defsRegistry'
 import type { DefRegistry } from './defsRegistry'
-import { resolveFrontendNodes } from './resolution'
+import { resolveFrontendNodes, resolveSuppliedInputs } from './resolution'
+import type { Supplier, UnconnectedInput } from './resolution'
 
 describe('frontend-node resolution', () => {
   let graph: LGraph
@@ -175,5 +176,262 @@ describe('frontend-node resolution', () => {
     const reroute = spawn('TestReroute')
     expect(reroute.isVirtualNode).toBe(true)
     expect((reroute as { applyToGraph?: unknown }).applyToGraph).toBeUndefined()
+  })
+})
+
+describe('supply-side resolution', () => {
+  let graph: LGraph
+  const cleanups: (() => void)[] = []
+
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    graph = new LGraph()
+
+    class Broadcaster extends LGraphNode {
+      constructor() {
+        super('Broadcaster')
+        this.addOutput('out', '*')
+      }
+    }
+    class Sink extends LGraphNode {
+      constructor() {
+        super('Sink')
+        this.addInput('model', 'MODEL')
+        this.addInput('clip', 'CLIP')
+      }
+    }
+    LiteGraph.registerNodeType('Broadcaster', Broadcaster)
+    LiteGraph.registerNodeType('Sink', Sink)
+    cleanups.push(() => LiteGraph.unregisterNodeType('Broadcaster'))
+    cleanups.push(() => LiteGraph.unregisterNodeType('Sink'))
+  })
+
+  afterEach(() => {
+    while (cleanups.length) cleanups.pop()!()
+  })
+
+  const spawn = (type: string) => {
+    const node = LiteGraph.createNode(type)!
+    graph.add(node)
+    return node
+  }
+
+  /** cg-use-everywhere in miniature: feed every unfed MODEL input. */
+  const broadcastModel: Supplier = (view) =>
+    view
+      .unconnectedInputs()
+      .filter((i) => i.type === 'MODEL')
+      .map((i) => ({
+        to: { nodeId: i.nodeId, input: i.input },
+        from: { output: 0 }
+      }))
+
+  const supply = (suppliers: Map<string, Supplier>) =>
+    resolveSuppliedInputs(graph, suppliers, new Map())
+
+  it('feeds an input nothing is connected to — what a resolver cannot do', () => {
+    const source = spawn('Broadcaster')
+    const sink = spawn('Sink')
+
+    const supplied = supply(new Map([['Broadcaster', broadcastModel]]))
+
+    expect(supplied.get(`${sink.id}:0`)).toEqual({
+      kind: 'output',
+      nodeId: String(source.id),
+      output: 0
+    })
+  })
+
+  it('leaves an input that already has a link alone', () => {
+    const source = spawn('Broadcaster')
+    const sink = spawn('Sink')
+    source.connect(0, sink, 0)
+
+    const supplied = supply(new Map([['Broadcaster', broadcastModel]]))
+
+    expect(supplied.has(`${sink.id}:0`)).toBe(false)
+  })
+
+  it('only claims the inputs the supplier matched', () => {
+    const sink = spawn('Sink')
+    spawn('Broadcaster')
+
+    const supplied = supply(new Map([['Broadcaster', broadcastModel]]))
+
+    // `clip` is CLIP, so the MODEL broadcaster must not touch it.
+    expect(supplied.has(`${sink.id}:1`)).toBe(false)
+  })
+
+  it('gives one input to the first supplier in graph order, not the last', () => {
+    // Two broadcasters both matching is a conflict with no correct answer.
+    // Deterministic beats clever: a prompt must not change when nodes move.
+    const first = spawn('Broadcaster')
+    spawn('Broadcaster')
+    const sink = spawn('Sink')
+
+    const supplied = supply(new Map([['Broadcaster', broadcastModel]]))
+
+    expect(supplied.get(`${sink.id}:0`)).toMatchObject({
+      nodeId: String(first.id)
+    })
+  })
+
+  it('can supply a literal instead of a connection', () => {
+    const sink = spawn('Sink')
+    spawn('Broadcaster')
+
+    const supplied = supply(
+      new Map<string, Supplier>([
+        [
+          'Broadcaster',
+          (view) =>
+            view
+              .unconnectedInputs()
+              .filter((i) => i.type === 'MODEL')
+              .map((i) => ({
+                to: { nodeId: i.nodeId, input: i.input },
+                from: { literal: 'baked' }
+              }))
+        ]
+      ])
+    )
+
+    expect(supplied.get(`${sink.id}:0`)).toEqual({
+      kind: 'literal',
+      value: 'baked'
+    })
+  })
+
+  it('follows what the demand-side pass already resolved for its output', () => {
+    // The broadcaster may itself be fed through a reroute chain.
+    const source = spawn('Broadcaster')
+    const sink = spawn('Sink')
+    const already = new Map([
+      [`${source.id}:0`, { kind: 'output' as const, nodeId: '99', output: 3 }]
+    ])
+
+    const supplied = resolveSuppliedInputs(
+      graph,
+      new Map([['Broadcaster', broadcastModel]]),
+      already
+    )
+
+    expect(supplied.get(`${sink.id}:0`)).toEqual({
+      kind: 'output',
+      nodeId: '99',
+      output: 3
+    })
+  })
+
+  it('forwards whatever feeds its own input, for a node with no outputs', () => {
+    // The shape the broadcast packs actually have: inputs, no outputs. They
+    // rebroadcast their upstream, so `{output: 0}` would name a slot the
+    // backend never declared and force it to execute a node producing nothing.
+    class Relay extends LGraphNode {
+      constructor() {
+        super('Relay')
+        this.addInput('in', '*')
+      }
+    }
+    LiteGraph.registerNodeType('Relay', Relay)
+    cleanups.push(() => LiteGraph.unregisterNodeType('Relay'))
+
+    const upstream = spawn('Broadcaster')
+    const relay = spawn('Relay')
+    const sink = spawn('Sink')
+    upstream.connect(0, relay, 0)
+
+    const supplied = resolveSuppliedInputs(
+      graph,
+      new Map<string, Supplier>([
+        [
+          'Relay',
+          (view) =>
+            view
+              .unconnectedInputs()
+              .filter((i) => i.type === 'MODEL')
+              .map((i) => ({
+                to: { nodeId: i.nodeId, input: i.input },
+                from: { forwardInput: 0 }
+              }))
+        ]
+      ]),
+      new Map()
+    )
+
+    expect(supplied.get(`${sink.id}:0`)).toEqual({
+      kind: 'output',
+      nodeId: String(upstream.id),
+      output: 0
+    })
+  })
+
+  it('omits when nothing feeds the input it would forward', () => {
+    class Relay2 extends LGraphNode {
+      constructor() {
+        super('Relay2')
+        this.addInput('in', '*')
+      }
+    }
+    LiteGraph.registerNodeType('Relay2', Relay2)
+    cleanups.push(() => LiteGraph.unregisterNodeType('Relay2'))
+    spawn('Relay2')
+    const sink = spawn('Sink')
+
+    const supplied = resolveSuppliedInputs(
+      graph,
+      new Map<string, Supplier>([
+        [
+          'Relay2',
+          (view) =>
+            view
+              .unconnectedInputs()
+              .filter((i) => i.type === 'MODEL')
+              .map((i) => ({
+                to: { nodeId: i.nodeId, input: i.input },
+                from: { forwardInput: 0 }
+              }))
+        ]
+      ]),
+      new Map()
+    )
+
+    expect(supplied.get(`${sink.id}:0`)).toMatchObject({ kind: 'omitted' })
+  })
+
+  it('exposes what a broadcaster needs to match on', () => {
+    // Matching by type alone would feed every unconnected input of that type.
+    // The packs gate on their own per-node opt-in, kept in properties.
+    const sink = spawn('Sink')
+    sink.title = 'My Sampler'
+    sink.properties.ue_connectable = true
+
+    let seen: readonly UnconnectedInput[] = []
+    spawn('Broadcaster')
+    resolveSuppliedInputs(
+      graph,
+      new Map<string, Supplier>([
+        [
+          'Broadcaster',
+          (view) => {
+            seen = view.unconnectedInputs()
+            return []
+          }
+        ]
+      ]),
+      new Map()
+    )
+
+    const model = seen.find((i) => i.nodeId === String(sink.id))
+    expect(model?.nodeTitle).toBe('My Sampler')
+    expect(model?.nodeProperties.ue_connectable).toBe(true)
+    expect(model?.label).toBe('model')
+    expect(model?.isWidgetInput).toBe(false)
+  })
+
+  it('does nothing at all when no pack registered a supplier', () => {
+    spawn('Broadcaster')
+    spawn('Sink')
+    expect(supply(new Map()).size).toBe(0)
   })
 })

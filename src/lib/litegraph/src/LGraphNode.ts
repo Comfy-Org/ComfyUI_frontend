@@ -1256,7 +1256,12 @@ export class LGraphNode
       o.widgets_values_named = {}
       for (const [i, widget] of widgets.entries()) {
         if (widget.serialize === false) continue
-        const val = widget.value
+        // `serializeWorkflowValue` is the saved-file counterpart of
+        // `serializeValue`, which only the prompt builder consults. A widget
+        // that sets neither serialises its own value, as it always has.
+        const val = widget.serializeWorkflowValue
+          ? widget.serializeWorkflowValue()
+          : widget?.value
         // Ensure object values are plain (not reactive proxies) for structuredClone compatibility.
         const serialisedVal =
           val != null && typeof val === 'object'

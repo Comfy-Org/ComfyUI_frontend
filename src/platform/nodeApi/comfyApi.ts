@@ -27,9 +27,11 @@ import { createGraphApi } from './graphHandle'
 import type { GraphHandle } from './graphHandle'
 import { createSettingsApi } from './settingsHandle'
 import { createStorageApi } from './storageHandle'
+import { createUiHandle } from './uiHandle'
 import { createViewportObserver } from './viewport'
 import type { SettingsHandle } from './settingsHandle'
 import type { StorageHandle } from './storageHandle'
+import type { UiHandle } from './uiHandle'
 import type { NodeHandle } from './nodeHandle'
 
 /**
@@ -104,6 +106,7 @@ const CAPABILITIES: ReadonlyMap<string, string> = new Map([
   ['commands', '1.0'],
   ['backend', '1.0'],
   ['storage', '1.0'],
+  ['ui.sidebarTab', '1.0'],
   ['viewport.changed', '1.0'],
   ['interaction.state', '1.0'],
   ['interaction.nodeMoved', '1.0'],
@@ -171,6 +174,8 @@ export interface Comfy {
    * between machines.
    */
   readonly storage: StorageHandle
+  /** The sanctioned slice of app chrome — sidebar tabs. */
+  readonly ui: UiHandle
   /** Commands, their keybindings, and notifications. */
   readonly commands: CommandsHandle
   /** Backend URLs and messages, including a pack's own events. */
@@ -216,6 +221,7 @@ function buildMajor(
   const graph = createGraphApi(getGraph, `v${major}`)
   const settings = createSettingsApi()
   const storage = createStorageApi()
+  const ui = createUiHandle()
   const commands = createCommandsApi()
   const backend = createBackendApi()
 
@@ -244,6 +250,7 @@ function buildMajor(
     graph,
     settings,
     storage,
+    ui,
     commands,
     backend,
     isInteracting,
