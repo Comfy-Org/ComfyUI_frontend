@@ -10,6 +10,10 @@ export default defineConfig({
     }
   },
   test: {
+    mockReset: true,
+    restoreMocks: true,
+    unstubEnvs: true,
+    unstubGlobals: true,
     environment: 'node',
     include: ['src/**/*.{test,spec}.ts'],
     globals: false

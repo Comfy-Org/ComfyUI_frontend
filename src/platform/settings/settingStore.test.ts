@@ -47,7 +47,6 @@ describe('useSettingStore', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useSettingStore()
-    vi.clearAllMocks()
   })
 
   it('should initialize with empty settings', () => {

@@ -123,7 +123,6 @@ function findItem(items: MenuItems, label: string): WorkflowMenuAction {
 describe('useWorkflowActionsMenu', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    vi.clearAllMocks()
     mockOpenExportWorkflowApiDialog.mockResolvedValue(undefined)
     mockBookmarkStore.isBookmarked.mockReturnValue(false)
     mockSubgraphStore.isSubgraphBlueprint.mockReturnValue(false)

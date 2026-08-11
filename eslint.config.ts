@@ -101,6 +101,7 @@ export default defineConfig([
         ...commonParserOptions,
         projectService: {
           allowDefaultProject: [
+            'packages/object-info-parser/vitest.config.ts',
             'vite.electron.config.mts',
             'vite.types.config.mts'
           ]
@@ -334,6 +335,15 @@ export default defineConfig([
       'testing-library/prefer-presence-queries': 'error',
       'testing-library/prefer-user-event': 'error',
       'testing-library/no-debugging-utils': 'error'
+    }
+  },
+  {
+    // Devtools extension scripts are loaded by ComfyUI in the browser.
+    files: ['tools/devtools/web/**/*.js'],
+    languageOptions: {
+      globals: {
+        ...globals.browser
+      }
     }
   },
   {

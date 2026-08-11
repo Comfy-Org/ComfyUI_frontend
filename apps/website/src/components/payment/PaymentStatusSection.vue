@@ -104,7 +104,7 @@ const iconRingClass =
         {{ t('payment.failed.statusPrompt.prefix', locale) }}
         <a
           :href="externalLinks.cloudStatus"
-          class="text-primary-comfy-yellow underline underline-offset-4"
+          class="text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 rounded-sm underline underline-offset-4 transition-opacity hover:opacity-70 focus-visible:ring-2 focus-visible:outline-none"
         >
           {{ t('payment.failed.statusPrompt.statusLink', locale) }}
         </a>

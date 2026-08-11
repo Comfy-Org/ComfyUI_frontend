@@ -23,11 +23,6 @@ const mockForgetRevokedActiveWorkspace = vi.fn()
 const mockPrepareWorkflowWorkspaceTransition = vi.hoisted(() => vi.fn())
 const mockReload = vi.fn()
 
-vi.stubGlobal('location', {
-  reload: mockReload,
-  origin: 'http://localhost'
-})
-
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: () => ({
     getIdToken: mockGetIdToken,
@@ -107,8 +102,11 @@ function expectedExpiresAtMs(expiresAt: string): string {
 
 describe('useWorkspaceAuthStore', () => {
   beforeEach(() => {
+    vi.stubGlobal('location', {
+      reload: mockReload,
+      origin: 'http://localhost'
+    })
     setActivePinia(createPinia())
-    vi.resetAllMocks()
     vi.useFakeTimers()
     sessionStorage.clear()
     mockUnifiedCloudAuthEnabled.value = false
@@ -528,7 +526,8 @@ describe('useWorkspaceAuthStore', () => {
           ok: false,
           status: 403,
           statusText: 'Forbidden',
-          json: () => Promise.resolve({ message: 'Access denied' })
+          text: () =>
+            Promise.resolve(JSON.stringify({ message: 'Access denied' }))
         })
       )
 
@@ -551,7 +550,8 @@ describe('useWorkspaceAuthStore', () => {
           ok: false,
           status: 404,
           statusText: 'Not Found',
-          json: () => Promise.resolve({ message: 'Workspace not found' })
+          text: () =>
+            Promise.resolve(JSON.stringify({ message: 'Workspace not found' }))
         })
       )
 
@@ -576,7 +576,8 @@ describe('useWorkspaceAuthStore', () => {
           ok: false,
           status: 401,
           statusText: 'Unauthorized',
-          json: () => Promise.resolve({ message: 'Invalid token' })
+          text: () =>
+            Promise.resolve(JSON.stringify({ message: 'Invalid token' }))
         })
       )
 
@@ -601,7 +602,8 @@ describe('useWorkspaceAuthStore', () => {
           ok: false,
           status: 500,
           statusText: 'Internal Server Error',
-          json: () => Promise.resolve({ message: 'Server error' })
+          text: () =>
+            Promise.resolve(JSON.stringify({ message: 'Server error' }))
         })
       )
 
@@ -965,7 +967,8 @@ describe('useWorkspaceAuthStore', () => {
           ok: false,
           status: 403,
           statusText: 'Forbidden',
-          json: () => Promise.resolve({ message: 'Access denied' })
+          text: () =>
+            Promise.resolve(JSON.stringify({ message: 'Access denied' }))
         })
       vi.stubGlobal('fetch', mockFetch)
 
@@ -1008,7 +1011,8 @@ describe('useWorkspaceAuthStore', () => {
           ok: false,
           status: 403,
           statusText: 'Forbidden',
-          json: () => Promise.resolve({ message: 'Access denied' })
+          text: () =>
+            Promise.resolve(JSON.stringify({ message: 'Access denied' }))
         })
       )
 
@@ -1175,7 +1179,8 @@ describe('useWorkspaceAuthStore', () => {
           ok: false,
           status: 403,
           statusText: 'Forbidden',
-          json: () => Promise.resolve({ message: 'Access denied' })
+          text: () =>
+            Promise.resolve(JSON.stringify({ message: 'Access denied' }))
         })
       vi.stubGlobal('fetch', mockFetch)
 
@@ -1355,7 +1360,7 @@ describe('useWorkspaceAuthStore', () => {
         ok: false,
         status: 500,
         statusText: 'Internal Server Error',
-        json: () => Promise.resolve({ message: 'Server error' })
+        text: () => Promise.resolve(JSON.stringify({ message: 'Server error' }))
       })
 
       const consoleErrorSpy = vi
@@ -1447,7 +1452,8 @@ describe('useWorkspaceAuthStore', () => {
         ok: false,
         status: 401,
         statusText: 'Unauthorized',
-        json: () => Promise.resolve({ message: 'Invalid token' })
+        text: () =>
+          Promise.resolve(JSON.stringify({ message: 'Invalid token' }))
       })
 
       const consoleErrorSpy = vi
@@ -1489,7 +1495,8 @@ describe('useWorkspaceAuthStore', () => {
         ok: false,
         status: 403,
         statusText: 'Forbidden',
-        json: () => Promise.resolve({ message: 'Access denied' })
+        text: () =>
+          Promise.resolve(JSON.stringify({ message: 'Access denied' }))
       })
       await expect(store.switchWorkspace('workspace-other')).rejects.toThrow(
         WorkspaceAuthError
@@ -1761,7 +1768,7 @@ describe('useWorkspaceAuthStore', () => {
         ok: false,
         status: 500,
         statusText: 'Internal Server Error',
-        json: () => Promise.resolve({ message: 'Server error' })
+        text: () => Promise.resolve(JSON.stringify({ message: 'Server error' }))
       })
       await refreshPromise
 
@@ -2218,7 +2225,8 @@ describe('useWorkspaceAuthStore', () => {
           ok: false,
           status: 401,
           statusText: 'Unauthorized',
-          json: () => Promise.resolve({ message: 'Invalid token' })
+          text: () =>
+            Promise.resolve(JSON.stringify({ message: 'Invalid token' }))
         })
       vi.stubGlobal('fetch', mockFetch)
 
@@ -2263,7 +2271,7 @@ describe('useWorkspaceAuthStore', () => {
           ok: false,
           status: 500,
           statusText: 'Internal Server Error',
-          json: () => Promise.resolve({ message: 'try again' })
+          text: () => Promise.resolve(JSON.stringify({ message: 'try again' }))
         })
       vi.stubGlobal('fetch', mockFetch)
 
@@ -2538,7 +2546,7 @@ describe('useWorkspaceAuthStore', () => {
             ok: false,
             status,
             statusText,
-            json: () => Promise.resolve({ message: statusText })
+            text: () => Promise.resolve(JSON.stringify({ message: statusText }))
           })
         vi.stubGlobal('fetch', mockFetch)
 
@@ -2633,7 +2641,7 @@ describe('useWorkspaceAuthStore', () => {
           ok: false,
           status: 500,
           statusText: 'Internal Server Error',
-          json: () => Promise.resolve({ message: 'try again' })
+          text: () => Promise.resolve(JSON.stringify({ message: 'try again' }))
         })
       vi.stubGlobal('fetch', mockFetch)
 
@@ -2656,7 +2664,8 @@ describe('useWorkspaceAuthStore', () => {
         ok: false,
         status: 401,
         statusText: 'Unauthorized',
-        json: () => Promise.resolve({ message: 'Invalid token' })
+        text: () =>
+          Promise.resolve(JSON.stringify({ message: 'Invalid token' }))
       })
       vi.stubGlobal('fetch', mockFetch)
 

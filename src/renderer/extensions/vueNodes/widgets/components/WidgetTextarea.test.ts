@@ -11,9 +11,9 @@ const mockCopyToClipboard = vi.hoisted(() => vi.fn())
 const mockIsNodeOptionsOpen = vi.hoisted(() => vi.fn(() => false))
 
 vi.mock('@/composables/useCopyToClipboard', () => ({
-  useCopyToClipboard: vi.fn().mockReturnValue({
+  useCopyToClipboard: vi.fn(() => ({
     copyToClipboard: mockCopyToClipboard
-  })
+  }))
 }))
 
 vi.mock('@/composables/graph/useMoreOptionsMenu', () => ({

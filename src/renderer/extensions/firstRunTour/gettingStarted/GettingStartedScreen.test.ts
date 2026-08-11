@@ -80,7 +80,6 @@ async function renderScreen() {
 describe('GettingStartedScreen', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
     mocks.isLoaded = true
     mocks.catalog = CURATED_TEMPLATE_IDS.map((name) => ({ name }))
     mocks.loadTemplate.mockResolvedValue(true)
