@@ -119,6 +119,59 @@ describe('useLinkStore', () => {
     expect(current.value).toBe(registered)
   })
 
+  it('atomically replaces the expected target occupant', () => {
+    const store = useLinkStore()
+    const incumbent = link(1, 5, 0, 9, 2)
+    const registeredIncumbent = store.registerLink(graphA, incumbent)
+    const replacement = link(2, 7, 0, 9, 2)
+
+    const registered = store.replaceLink(
+      graphA,
+      registeredIncumbent,
+      replacement
+    )
+
+    expect(registered?.id).toBe(toLinkId(2))
+    expect(store.getTopology(graphA.rootGraphId, toLinkId(1))).toBeUndefined()
+    expect(store.getInputSlotLink(graphA, toNodeId(9), 2)).toBe(registered)
+    expect([...store.getOutputSlotLinks(graphA, toNodeId(5), 0)]).toEqual([])
+    expect([...store.getOutputSlotLinks(graphA, toNodeId(7), 0)]).toEqual([
+      replacement
+    ])
+  })
+
+  it('does not replace a target through a stale incumbent', () => {
+    const store = useLinkStore()
+    const incumbent = link(1, 5, 0, 9, 2)
+    const registeredIncumbent = store.registerLink(graphA, incumbent)
+    const stale = link(1, 5, 0, 9, 2)
+    const replacement = link(2, 7, 0, 9, 2)
+
+    expect(store.replaceLink(graphA, stale, replacement)).toBeUndefined()
+    expect(store.getInputSlotLink(graphA, toNodeId(9), 2)).toBe(
+      registeredIncumbent
+    )
+    expect(store.getTopology(graphA.rootGraphId, toLinkId(2))).toBeUndefined()
+  })
+
+  it('does not displace a target when the replacement id is taken', () => {
+    const store = useLinkStore()
+    const incumbent = link(1, 5, 0, 9, 2)
+    const registeredIncumbent = store.registerLink(graphA, incumbent)
+    const idIncumbent = link(2, 7, 0, 8, 1)
+    store.registerLink(graphA, idIncumbent)
+    const replacement = link(2, 7, 1, 9, 2)
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    expect(
+      store.replaceLink(graphA, registeredIncumbent, replacement)
+    ).toBeUndefined()
+    expect(store.getInputSlotLink(graphA, toNodeId(9), 2)).toBe(
+      registeredIncumbent
+    )
+    expect(store.getInputSlotLink(graphA, toNodeId(8), 1)?.id).toBe(toLinkId(2))
+  })
+
   it('never answers target queries from floating links', () => {
     const store = useLinkStore()
     const inputFloating: LinkTopology = {

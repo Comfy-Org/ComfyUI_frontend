@@ -185,29 +185,46 @@ export const useLinkStore = defineStore('link', () => {
     scope: GraphScope,
     topology: LinkTopology
   ): LinkTopology | undefined {
-    const bucket = rootBucket(scope.rootGraphId)
-    const incumbent = bucket.byId.get(topology.id)
+    const incumbent = roots.get(scope.rootGraphId)?.byId.get(topology.id)
     if (toRaw(incumbent) === toRaw(topology)) return incumbent
+    return replaceLink(scope, undefined, topology)
+  }
+
+  /** Atomically replaces an expected target occupant with a new link. */
+  function replaceLink(
+    scope: GraphScope,
+    expected: LinkTopology | undefined,
+    replacement: LinkTopology
+  ): LinkTopology | undefined {
+    const bucket = roots.get(scope.rootGraphId)
+    if (expected && (!bucket || !ownsPlacement(scope, bucket, expected))) {
+      return undefined
+    }
+
+    const incumbent = bucket?.byId.get(replacement.id)
     if (incumbent) {
       console.error(
-        `Link ${topology.id} belongs to graph ${incumbent.graphId}; graph ${scope.owningGraphId} cannot overwrite it.`
+        `Link ${replacement.id} belongs to graph ${incumbent.graphId}; graph ${scope.owningGraphId} cannot overwrite it.`
       )
       return undefined
     }
-    if (hasUniqueTarget(topology)) {
+    if (hasUniqueTarget(replacement)) {
       const key = targetKey(
         scope.owningGraphId,
-        topology.targetNodeId,
-        topology.targetSlot
+        replacement.targetNodeId,
+        replacement.targetSlot
       )
-      const existing = bucket.targetIndex.get(key)
-      if (existing && toRaw(existing) !== toRaw(topology)) {
+      const existing = bucket?.targetIndex.get(key)
+      if (toRaw(existing) !== toRaw(expected)) {
         console.error(`Link target slot ${key} is already occupied`)
         return undefined
       }
     }
-    const owned = Object.assign(topology, { graphId: scope.owningGraphId })
-    return placeValidated(bucket, owned)
+
+    const targetBucket = bucket ?? rootBucket(scope.rootGraphId)
+    if (expected) displace(targetBucket, expected)
+    const owned = Object.assign(replacement, { graphId: scope.owningGraphId })
+    return placeValidated(targetBucket, owned)
   }
 
   /** Removes a link placement that has already been validated. */
@@ -415,6 +432,7 @@ export const useLinkStore = defineStore('link', () => {
 
   return {
     registerLink,
+    replaceLink,
     updateEndpoint,
     updateEndpoints,
     deleteLink,
