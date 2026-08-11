@@ -4,6 +4,7 @@
     v-model:search-query="modelSearchText"
     size="md"
     :class="triggerClass"
+    :content-style="contentStyle"
     :label="modelFilterLabel"
     :options="modelOptions"
     :show-search-box="true"
@@ -16,6 +17,7 @@
     v-model="selectedUseCases"
     size="md"
     :class="triggerClass"
+    :content-style="contentStyle"
     :label="useCaseFilterLabel"
     :options="useCaseOptions"
     :show-search-box="true"
@@ -28,6 +30,7 @@
     v-model="selectedRunsOn"
     size="md"
     :class="triggerClass"
+    :content-style="contentStyle"
     :label="runsOnFilterLabel"
     :options="runsOnOptions"
     :show-search-box="true"
@@ -37,9 +40,11 @@
   />
 
   <SingleSelect
+    v-if="showSort"
     v-model="sortSelection"
     size="md"
     :class="triggerClass"
+    :content-style="contentStyle"
     :label="$t('templateWorkflows.sorting')"
     :options="sortOptions"
   >
@@ -50,6 +55,8 @@
 </template>
 
 <script setup lang="ts">
+import type { StyleValue } from 'vue'
+
 import MultiSelect from '@/components/ui/multi-select/MultiSelect.vue'
 import type { SelectOption } from '@/components/ui/select/types'
 import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
@@ -63,7 +70,9 @@ const {
   modelFilterLabel,
   useCaseFilterLabel,
   runsOnFilterLabel,
-  triggerClass = ''
+  triggerClass = '',
+  showSort = true,
+  contentStyle
 } = defineProps<{
   modelOptions: SelectOption[]
   useCaseOptions: SelectOption[]
@@ -73,6 +82,9 @@ const {
   useCaseFilterLabel: string
   runsOnFilterLabel: string
   triggerClass?: string
+  showSort?: boolean
+  /** Style forwarded to the dropdown panels (e.g. to match trigger width) */
+  contentStyle?: StyleValue
 }>()
 
 const selectedModels = defineModel<SelectOption[]>('selectedModels', {
