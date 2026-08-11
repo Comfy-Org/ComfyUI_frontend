@@ -5,6 +5,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
 import type { ResultItem, ResultItemType } from '@/schemas/apiSchema'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWidgetConstructor } from '@/scripts/widgets'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { isImageUploadInput } from '@/types/nodeDefAugmentation'
@@ -97,6 +98,9 @@ export const useImageUploadWidget = () => {
           oldValue,
           fileComboWidget
         )
+        if (oldValue !== newValue) {
+          useWorkflowStore().activeWorkflow?.changeTracker?.captureCanvasState()
+        }
       }
     })
 

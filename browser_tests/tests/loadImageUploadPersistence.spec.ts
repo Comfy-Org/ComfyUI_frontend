@@ -1,0 +1,48 @@
+/**
+ * FE-1425: dropping an image on a Load Image node must survive a browser
+ * reload without an explicit save. `Comfy.Workflow.Persist` defaults to true
+ * and writes a localStorage draft on every `graphChanged`, but the upload
+ * commit never nudged the change tracker — and HTML5 drag-and-drop emits no
+ * mouseup for its global hook to catch — so the draft kept the previous image.
+ */
+import { expect } from '@playwright/test'
+
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+
+const DROPPED_FILE = 'image64x64.webp'
+
+test.describe('Load Image upload persistence', () => {
+  test('keeps a dropped image across a reload without saving', async ({
+    comfyPage
+  }) => {
+    await comfyPage.nodeOps.clearGraph()
+    await comfyPage.searchBoxV2.addNode('Load Image')
+
+    const [loadImageNode] =
+      await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
+    const { x, y } = await loadImageNode.getPosition()
+
+    const readImageWidgetValue = () =>
+      comfyPage.page.evaluate(
+        () =>
+          window.app?.graph?.nodes
+            .find((node) => node.type === 'LoadImage')
+            ?.widgets?.find((widget) => widget.name === 'image')?.value
+      )
+
+    const valueBeforeDrop = await readImageWidgetValue()
+
+    const draftSaveStartedAt = Date.now()
+    await comfyPage.dragDrop.dragAndDropFile(DROPPED_FILE, {
+      dropPosition: { x, y }
+    })
+
+    await expect.poll(readImageWidgetValue).not.toBe(valueBeforeDrop)
+    const valueAfterDrop = await readImageWidgetValue()
+
+    await comfyPage.workflow.waitForDraftIndexUpdatedSince(draftSaveStartedAt)
+    await comfyPage.workflow.reloadAndWaitForApp()
+
+    await expect.poll(readImageWidgetValue).toBe(valueAfterDrop)
+  })
+})
