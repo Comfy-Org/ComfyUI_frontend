@@ -40,7 +40,6 @@ describe('ColorWidget', () => {
   let LGraphNode: typeof LGraphNodeType
 
   beforeEach(async () => {
-    vi.clearAllMocks()
     vi.useFakeTimers()
     // Reset modules to get fresh globalColorInput state
     vi.resetModules()

@@ -15719,6 +15719,96 @@
       }
     }
   },
+  "QwenImageEditApi": {
+    "description": "Modifica o combina fino a 3 immagini di riferimento guidate da un prompt testuale utilizzando i modelli Qwen-Image 3.0.",
+    "display_name": "Qwen Image 3 Modifica",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "model": {
+        "name": "modello",
+        "tooltip": "Modello da utilizzare."
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "Numero di immagini da generare, restituite come batch."
+      },
+      "prompt_extend": {
+        "name": "prompt_extend",
+        "tooltip": "Se migliorare il prompt con l'assistenza dell'IA."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed da utilizzare per la generazione."
+      },
+      "size": {
+        "name": "dimensione",
+        "tooltip": "Risoluzione di output. 'match input' riutilizza la dimensione della prima immagine di riferimento, 'auto' lascia scegliere al modello una dimensione con lo stesso rapporto d'aspetto, 'custom' imposta una larghezza e un'altezza esplicite."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Se aggiungere una filigrana generata dall'IA al risultato."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QwenImageTextToImageApi": {
+    "description": "Genera immagini da un prompt testuale utilizzando i modelli Qwen-Image 3.0.",
+    "display_name": "Qwen Image 3 Da Testo a Immagine",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "model": {
+        "name": "modello",
+        "tooltip": "Modello da utilizzare."
+      },
+      "model_height": {
+        "name": "altezza"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_width": {
+        "name": "larghezza"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "Numero di immagini da generare, restituite come batch."
+      },
+      "prompt_extend": {
+        "name": "prompt_extend",
+        "tooltip": "Se migliorare il prompt con l'assistenza dell'IA."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed da utilizzare per la generazione."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Se aggiungere una filigrana generata dall'IA al risultato."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "RTDETR_detect": {
     "display_name": "Esegui Rilevamento in Tempo Reale (RT-DETR)",
     "inputs": {

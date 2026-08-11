@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
 import { fetchVideoMetadata } from '@/utils/videoMetadataUtil'
@@ -27,10 +27,6 @@ function mockResponse(ok: boolean, body?: unknown) {
 }
 
 describe('fetchVideoMetadata', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('queries the backend with the view resource params', async () => {
     mockResponse(true, metadata)
 

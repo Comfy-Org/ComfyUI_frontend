@@ -102,7 +102,6 @@ function createGLSLNode(nodeId: number): LGraphNode {
 describe('GLSL live preview reads the shader written by the customtext widget', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    vi.clearAllMocks()
     for (const key of Object.keys(nodeOutputs)) delete nodeOutputs[key]
     vi.useFakeTimers()
   })
