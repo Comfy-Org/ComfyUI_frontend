@@ -4,6 +4,7 @@ import type { Ref } from 'vue'
 import { isCloud, isNightly } from '@/platform/distribution/types'
 import {
   cachedBillingControlEnabled,
+  cachedLegacyBillingMigrationEnabled,
   cachedV1PaymentRecovery,
   isAuthenticatedConfigLoaded,
   remoteConfig
@@ -206,10 +207,10 @@ export function useFeatureFlags() {
       )
     },
     get legacyBillingMigrationEnabled() {
-      return resolveFlag(
+      return resolveAuthGatedFlag(
         ServerFeatureFlag.LEGACY_BILLING_MIGRATION_ENABLED,
         remoteConfig.value.legacy_billing_migration_enabled,
-        false
+        cachedLegacyBillingMigrationEnabled
       )
     },
     get v1PaymentRecovery() {

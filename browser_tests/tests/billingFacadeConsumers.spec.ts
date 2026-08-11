@@ -220,7 +220,10 @@ test.describe('Billing facade consumers (FE-933)', { tag: '@cloud' }, () => {
     )
     await bootApp(page)
 
-    await expect.poll(() => billingRequests.workspaceBalance).toBeGreaterThan(0)
+    await expect
+      .poll(() => billingRequests.workspaceBalance, { timeout: 30_000 })
+      .toBeGreaterThan(0)
+    expect(billingRequests.legacyStatus).toBe(0)
     expect(billingRequests.legacyBalance).toBe(0)
   })
 

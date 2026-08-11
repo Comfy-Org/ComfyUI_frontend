@@ -8,6 +8,7 @@ import {
 import * as distributionTypes from '@/platform/distribution/types'
 import {
   cachedBillingControlEnabled,
+  cachedLegacyBillingMigrationEnabled,
   cachedV1PaymentRecovery,
   remoteConfig,
   remoteConfigState
@@ -208,8 +209,16 @@ describe('useFeatureFlags', () => {
   })
 
   describe('legacyBillingMigrationEnabled', () => {
+    beforeEach(() => {
+      vi.mocked(distributionTypes).isCloud = true
+      remoteConfigState.value = 'authenticated'
+    })
+
     afterEach(() => {
+      vi.mocked(distributionTypes).isCloud = false
+      remoteConfigState.value = 'unloaded'
       remoteConfig.value = {}
+      cachedLegacyBillingMigrationEnabled.value = undefined
     })
 
     it('migrates legacy billing when enabled by remote config', () => {
@@ -227,6 +236,23 @@ describe('useFeatureFlags', () => {
       const { flags } = useFeatureFlags()
 
       expect(flags.legacyBillingMigrationEnabled).toBe(false)
+    })
+
+    it('uses the server feature when authenticated config leaves it unset', () => {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (path, defaultValue) =>
+          path === ServerFeatureFlag.LEGACY_BILLING_MIGRATION_ENABLED
+            ? true
+            : defaultValue
+      )
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.legacyBillingMigrationEnabled).toBe(true)
+      expect(api.getServerFeature).toHaveBeenCalledWith(
+        ServerFeatureFlag.LEGACY_BILLING_MIGRATION_ENABLED,
+        false
+      )
     })
 
     it('keeps legacy billing when the rollout flag is unset', () => {
@@ -333,6 +359,7 @@ describe('useFeatureFlags', () => {
       remoteConfigState.value = 'unloaded'
       remoteConfig.value = {}
       cachedBillingControlEnabled.value = undefined
+      cachedLegacyBillingMigrationEnabled.value = undefined
       cachedV1PaymentRecovery.value = undefined
       localStorage.clear()
     })
@@ -342,22 +369,26 @@ describe('useFeatureFlags', () => {
       remoteConfigState.value = 'unloaded'
       remoteConfig.value = {}
       cachedBillingControlEnabled.value = undefined
+      cachedLegacyBillingMigrationEnabled.value = undefined
       cachedV1PaymentRecovery.value = undefined
       localStorage.clear()
     })
 
     it('returns the cached session value during the auth window', () => {
       cachedBillingControlEnabled.value = true
+      cachedLegacyBillingMigrationEnabled.value = true
       cachedV1PaymentRecovery.value = true
 
       const { flags } = useFeatureFlags()
       expect(flags.billingControlEnabled).toBe(true)
+      expect(flags.legacyBillingMigrationEnabled).toBe(true)
       expect(flags.v1PaymentRecovery).toBe(true)
     })
 
     it('defaults to false during the auth window when nothing is cached', () => {
       const { flags } = useFeatureFlags()
       expect(flags.billingControlEnabled).toBe(false)
+      expect(flags.legacyBillingMigrationEnabled).toBe(false)
       expect(flags.v1PaymentRecovery).toBe(false)
     })
 

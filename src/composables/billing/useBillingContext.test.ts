@@ -8,7 +8,10 @@ import type {
   BillingStatusResponse,
   Plan
 } from '@/platform/workspace/api/workspaceApi'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import {
+  remoteConfig,
+  remoteConfigState
+} from '@/platform/remoteConfig/remoteConfig'
 
 import { useBillingContext } from './useBillingContext'
 
@@ -177,6 +180,7 @@ describe('useBillingContext', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     remoteConfig.value = {}
+    remoteConfigState.value = 'unloaded'
     mockIsPersonal.value = true
     mockBillingRail.value = undefined
     mockSetWorkspaceBillingRail.mockImplementation(
@@ -347,9 +351,11 @@ describe('useBillingContext', () => {
 
   it('routes migrated legacy Stripe topups through workspace billing', async () => {
     remoteConfig.value = { legacy_billing_migration_enabled: true }
+    remoteConfigState.value = 'authenticated'
     mockBillingRail.value = 'legacy_stripe'
 
     const context = useBillingContext()
+    await nextTick()
     vi.clearAllMocks()
 
     expect(context.type.value).toBe('workspace')

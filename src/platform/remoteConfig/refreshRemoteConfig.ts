@@ -1,5 +1,6 @@
 import {
   cachedBillingControlEnabled,
+  cachedLegacyBillingMigrationEnabled,
   cachedV1PaymentRecovery,
   remoteConfig,
   remoteConfigErrorStatus,
@@ -73,6 +74,9 @@ export async function refreshRemoteConfig(
       if (useAuth) {
         cachedBillingControlEnabled.value = Boolean(
           config.billing_control_enabled
+        )
+        cachedLegacyBillingMigrationEnabled.value = Boolean(
+          config.legacy_billing_migration_enabled
         )
         cachedV1PaymentRecovery.value = Boolean(config.v1_payment_recovery)
       }
