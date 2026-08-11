@@ -36,6 +36,12 @@ export type QueueNotificationBanner =
   | QueueCompletedNotification
   | QueueFailedNotification
 
+const isRunAcknowledgement = (notification: QueueNotificationBanner) =>
+  notification.type === 'queuedPending' || notification.type === 'queued'
+
+const isOutcome = (notification: QueueNotificationBanner) =>
+  notification.type === 'completed' || notification.type === 'failed'
+
 const sanitizeCount = (value: number | undefined) => {
   if (!(typeof value === 'number' && value > 0)) {
     return 1
@@ -102,6 +108,22 @@ export const useQueueNotificationBanners = () => {
   }
 
   const queueNotification = (notification: QueueNotificationBanner) => {
+    // An outcome banner reports history; a run acknowledgement reports the
+    // action the user just took and is the only one that can still inform them.
+    if (isRunAcknowledgement(notification)) {
+      const active = activeNotification.value
+      if (active === null || isOutcome(active)) {
+        clearDismissTimer()
+        activeNotification.value = null
+        pendingNotifications.value = [
+          notification,
+          ...pendingNotifications.value
+        ]
+        showNextNotification()
+        return
+      }
+    }
+
     pendingNotifications.value = [...pendingNotifications.value, notification]
     showNextNotification()
   }
