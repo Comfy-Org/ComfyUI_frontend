@@ -22,6 +22,13 @@ on:
     branches: [main, master]
   merge_group:
   workflow_dispatch:
+    inputs:
+      shared_boot_proof_row:
+        description: 'Detection Proof row to break against one shared app boot'
+        required: false
+        type: choice
+        options: ['0', '1', '3', '7', '9']
+        default: '0'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -54,15 +61,35 @@ jobs:
     # Fork PRs still get the environment-agnostic coverage via the main e2e
     # shards. A skipped job counts as passing, so this stays required-safe.
     if: >-
-      needs.changes.outputs.should-run == 'true' &&
+      (github.event_name == 'workflow_dispatch' && inputs.shared_boot_proof_row != '0') ||
+      (needs.changes.outputs.should-run == 'true' &&
       (github.event_name != 'pull_request' ||
-      github.event.pull_request.head.repo.full_name == github.repository)
+      github.event.pull_request.head.repo.full_name == github.repository))
     runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
+
+      - name: Apply shared-boot source break
+        if: >-
+          github.event_name == 'workflow_dispatch' &&
+          inputs.shared_boot_proof_row != '0' &&
+          inputs.shared_boot_proof_row != '9'
+        shell: bash
+        env:
+          ROW: ${{ inputs.shared_boot_proof_row }}
+        run: |
+          set -euo pipefail
+          d=browser_tests/tests/customNodes/detection-proof
+          p=$(printf '%s/row-%02d-'"*.patch" "$d" "$ROW")
+          # shellcheck disable=SC2086
+          p=$(ls $p 2>/dev/null | head -1 || true)
+          [ -n "$p" ] || { echo "::error::no patch file for S$ROW"; exit 1; }
+          git apply --check "$p"
+          git apply "$p"
+          grep -rq "DETECTION PROOF (row $ROW" src/
 
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
@@ -136,6 +163,17 @@ jobs:
             echo "::endgroup::"
           done
 
+      - name: Apply shared-boot execution break
+        if: >-
+          github.event_name == 'workflow_dispatch' &&
+          inputs.shared_boot_proof_row == '9'
+        shell: bash
+        run: |
+          set -euo pipefail
+          f=ComfyUI/custom_nodes/was-node-suite-comfyui/WAS_Node_Suite.py
+          perl -pi -e 's/(def return_constant_number\(self, number_type, number, number_as_text=None\):)/$1\n        raise ValueError("DETECTION PROOF (row 9): pack node runtime failure")/' "$f"
+          grep -q 'DETECTION PROOF (row 9)' "$f"
+
       # The VHS run-tier workflow reads input/plain_video.mp4.
       - name: Stage run-tier assets
         shell: bash
@@ -152,10 +190,15 @@ jobs:
 
       - name: Run custom-node suite
         id: suite
+        continue-on-error: >-
+          ${{ github.event_name == 'workflow_dispatch' && inputs.shared_boot_proof_row != '0' }}
         env:
           CN_ENABLE_S14: '1'
           CN_ENABLE_S15: '1'
+          CUSTOM_NODE_SHARED_SESSION: >-
+            ${{ github.event_name == 'workflow_dispatch' && inputs.shared_boot_proof_row != '0' && '1' || '0' }}
           PLAYWRIGHT_JSON_OUTPUT_NAME: custom-nodes-results.json
+          PROOF_ROW: ${{ inputs.shared_boot_proof_row || '0' }}
         run: |
           set -o pipefail
           # workers=1: the auto-run tier needs exclusive backend-queue access;
@@ -167,14 +210,29 @@ jobs:
           # traces. List keeps live diagnostics visible.
           # Core keeps its already-proven S13-S15 coverage active. The
           # later-tier defer applies only to Cloud while Cloud S1-S12 is red.
+          grep_args=()
+          case "$PROOF_ROW" in
+            0) ;;
+            1|3)
+              grep_args=(--grep 'all nodes: ComfyUI-Impact-Pack @custom-nodes.*every registered node mounts, survives save/reload, and executes$|shared session continuity after broken tier @custom-nodes$')
+              ;;
+            7)
+              grep_args=(--grep 'smoke: core workflow @custom-nodes.*loads without console errors in both renderers$|shared session continuity after broken tier @custom-nodes$')
+              ;;
+            9)
+              grep_args=(--grep 'custom node: was-node-suite-comfyui @custom-nodes.*Curated workflow execution: completes without error$|shared session continuity after broken tier @custom-nodes$')
+              ;;
+          esac
           pnpm exec playwright test browser_tests/tests/customNodes/ \
             --project=custom-nodes --reporter=list,json,html --workers=1 --retries=0 \
-            2>&1 | tee custom-nodes.log
+            "${grep_args[@]}" 2>&1 | tee custom-nodes.log
 
       # A skip here means a pack or devtools did not load: on this backend every
       # tier is meant to run, so a skip is a gate failure, not an honest pass.
       - name: Forbid failed, skipped, or flaky tests
-        if: always()
+        if: >-
+          always() &&
+          !(github.event_name == 'workflow_dispatch' && inputs.shared_boot_proof_row != '0')
         shell: bash
         env:
           SUITE_OUTCOME: ${{ steps.suite.outcome }}
@@ -207,8 +265,6 @@ jobs:
           echo "skipped tests: $skipped"
           if [ "$skipped" != "0" ]; then
             echo "::error::$skipped test(s) skipped - a manifest pack or devtools failed to load; skips are not acceptable in the gating job"
-            # Recurse so specs nested under describe() blocks are found, and
-            # print only the specs that actually skipped.
             jq -r '.. | objects
                      | select(has("title") and has("tests"))
                      | select(any(.tests[]?; .status == "skipped"))
@@ -226,11 +282,53 @@ jobs:
             exit 1
           fi
 
+      - name: Assert shared-boot failure independence
+        if: >-
+          always() &&
+          github.event_name == 'workflow_dispatch' &&
+          inputs.shared_boot_proof_row != '0'
+        shell: bash
+        env:
+          PROOF_ROW: ${{ inputs.shared_boot_proof_row }}
+          SUITE_OUTCOME: ${{ steps.suite.outcome }}
+        run: |
+          set -euo pipefail
+          [ -f custom-nodes-results.json ] || { echo "::error::proof wrote no JSON"; exit 1; }
+          collected=$(jq -er '[.stats.expected, .stats.unexpected, .stats.flaky, .stats.skipped] | add' custom-nodes-results.json)
+          expected=$(jq -er '.stats.expected' custom-nodes-results.json)
+          unexpected=$(jq -er '.stats.unexpected' custom-nodes-results.json)
+          skipped=$(jq -er '.stats.skipped' custom-nodes-results.json)
+          flaky=$(jq -er '.stats.flaky' custom-nodes-results.json)
+          [ "$collected" = 2 ] || { echo "::error::S$PROOF_ROW collected $collected tests, expected 2"; exit 1; }
+          [ "$expected" = 1 ] || { echo "::error::S$PROOF_ROW expected-pass count is $expected, expected 1"; exit 1; }
+          [ "$unexpected" = 1 ] || { echo "::error::S$PROOF_ROW failure count is $unexpected, expected 1"; exit 1; }
+          [ "$skipped" = 0 ] && [ "$flaky" = 0 ] || { echo "::error::S$PROOF_ROW has skipped=$skipped flaky=$flaky"; exit 1; }
+          [ "$SUITE_OUTCOME" = failure ] || { echo "::error::S$PROOF_ROW did not break its witness"; exit 1; }
+
+          jq -e '.. | objects | select(.title? == "shared session continuity after broken tier @custom-nodes") | .tests[] | select(.status == "expected")' custom-nodes-results.json >/dev/null
+          case "$PROOF_ROW" in
+            1) pat='instance is missing declared input' ;;
+            3) pat='on (pristine|set-values) reload' ;;
+            7) pat="Error calling extension 'Comfy\\.NodeBadge' method 'afterConfigureGraph'.*DETECTION PROOF: afterConfigureGraph crash" ;;
+            9) pat='DETECTION PROOF \(row 9\): pack node runtime failure' ;;
+          esac
+          grep -Eq -- "$pat" custom-nodes.log || { echo "::error::S$PROOF_ROW failure was not attributable to its Detection Proof break"; exit 1; }
+
+          mapfile -t sessions < <(grep -oE '\[shared-session\] pid=[0-9]+ id=[^ ]+ bootCount=[0-9]+' custom-nodes.log)
+          [ "${#sessions[@]}" -eq 2 ] || { echo "::error::S$PROOF_ROW recorded ${#sessions[@]} session identities, expected 2"; exit 1; }
+          ids=$(printf '%s\n' "${sessions[@]}" | sed -E 's/.* id=([^ ]+).*/\1/' | sort -u | wc -l | tr -d ' ')
+          pids=$(printf '%s\n' "${sessions[@]}" | sed -E 's/.* pid=([0-9]+).*/\1/' | sort -u | wc -l | tr -d ' ')
+          boots=$(printf '%s\n' "${sessions[@]}" | sed -E 's/.* bootCount=([0-9]+).*/\1/' | sort -u)
+          [ "$ids" = 1 ] || { echo "::error::S$PROOF_ROW used more than one page identity"; exit 1; }
+          [ "$pids" = 2 ] || { echo "::error::S$PROOF_ROW did not replace the failed Playwright worker"; exit 1; }
+          [ "$boots" = 1 ] || { echo "::error::S$PROOF_ROW boot counts were: $boots"; exit 1; }
+          echo "S$PROOF_ROW: real break failed, replacement worker reconnected, continuity passed, boot count stayed 1"
+
       - name: Upload Playwright report and raw diagnostics
         if: always()
         uses: actions/upload-artifact@v6
         with:
-          name: playwright-report-custom-nodes
+          name: ${{ github.event_name == 'workflow_dispatch' && inputs.shared_boot_proof_row != '0' && format('playwright-report-custom-nodes-row{0}', inputs.shared_boot_proof_row) || 'playwright-report-custom-nodes' }}
           path: |
             playwright-report/
             custom-nodes-results.json
