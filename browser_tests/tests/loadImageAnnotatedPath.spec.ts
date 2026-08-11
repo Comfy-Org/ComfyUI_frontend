@@ -29,11 +29,16 @@ test.describe('Load Image annotated widget value', () => {
       'widgets/load_image_widget_output_annotated'
     )
 
-    await expect(() => expect(viewRequests.length).toBeGreaterThan(0)).toPass({
+    const generatedRequests = () =>
+      viewRequests.filter((url) =>
+        url.searchParams.get('filename')?.includes('generated')
+      )
+
+    await expect(() => expect(generatedRequests()).not.toHaveLength(0)).toPass({
       timeout: 15_000
     })
 
-    const params = viewRequests[0].searchParams
+    const params = generatedRequests()[0].searchParams
     expect(params.get('type')).toBe('output')
     expect(params.get('filename')).toBe('generated.png')
     expect(params.get('subfolder')).toBe('runs/2026')
