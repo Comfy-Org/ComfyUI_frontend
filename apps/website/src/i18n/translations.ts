@@ -5591,7 +5591,7 @@ const translations = {
   'fdct.tags.fashion': { en: 'Fashion', 'zh-CN': '时尚' },
   'fdct.tags.imageEdit': { en: 'Image Edit', 'zh-CN': '图像编辑' },
   'fdct.tags.inpainting': { en: 'Inpainting', 'zh-CN': '局部重绘' },
-  'fdct.projects.title': { en: 'Past projects', 'zh-CN': '过往项目' },
+  'fdct.projects.title': { en: 'Featured projects', 'zh-CN': '精选项目' },
   'fdct.projects.category.advertisement': {
     en: 'Advertisement',
     'zh-CN': '广告'
