@@ -3784,6 +3784,11 @@
     "failedToDeleteAsset": "Failed to delete asset",
     "fileLocationOpened": "Opened the file location",
     "failedToOpenFileLocation": "Failed to open the file location. Use ComfyUI from this computer and try again.",
+    "errors": {
+      "invalidLocalInputAssetPath": "Invalid local input asset path: {path}",
+      "failedToOpenAssetLocation": "Unable to open asset location {id}: Server returned {status}",
+      "failedToResolveLocalInputAsset": "Unable to resolve local input asset {path}: found {count} matching records"
+    },
     "actions": {
       "inspect": "Inspect asset",
       "more": "More options",

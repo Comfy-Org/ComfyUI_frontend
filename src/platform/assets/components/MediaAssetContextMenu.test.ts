@@ -9,7 +9,6 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { api } from '@/scripts/api'
 import type * as FormatUtil from '@/utils/formatUtil'
 
-const mockGetServerFeature = vi.spyOn(api, 'getServerFeature')
 const mockIsLoopbackHost = vi.hoisted(() => vi.fn(() => true))
 const mockShouldSkipDeleteConfirmation = vi.hoisted(() => vi.fn(() => true))
 
@@ -104,6 +103,12 @@ const asset: AssetItem = {
   user_metadata: {}
 }
 
+const persistentOutput: AssetItem = {
+  ...asset,
+  tags: ['output'],
+  loader_path: 'video/render.mp4'
+}
+
 const buttonStub = {
   template: '<div class="button-stub"><slot /></div>'
 }
@@ -160,12 +165,13 @@ async function showMenu(container: Element): Promise<HTMLElement> {
 }
 
 beforeEach(() => {
-  mockGetServerFeature.mockReturnValue(true)
+  api.serverFeatureFlags.value = { assets: true }
   mockIsLoopbackHost.mockReturnValue(true)
   mockShouldSkipDeleteConfirmation.mockReturnValue(true)
 })
 
 afterEach(() => {
+  api.serverFeatureFlags.value = {}
   capturedRef = null
   capturedMenu.model = []
   document.body.innerHTML = ''
@@ -304,11 +310,26 @@ describe('MediaAssetContextMenu', () => {
   })
 
   it('hides local input deletion when the asset API is disabled', async () => {
-    mockGetServerFeature.mockReturnValue(false)
+    api.serverFeatureFlags.value = {}
     const { container, unmount } = mountComponent(asset, 'input')
     await showMenu(container)
 
     expect(findMenuItem('mediaAsset.actions.delete')).toBeUndefined()
+
+    unmount()
+  })
+
+  it('shows local input deletion when the asset API flag arrives', async () => {
+    api.serverFeatureFlags.value = {}
+    const { container, unmount } = mountComponent(asset, 'input')
+    await showMenu(container)
+
+    expect(findMenuItem('mediaAsset.actions.delete')).toBeUndefined()
+
+    api.serverFeatureFlags.value = { assets: true }
+    await nextTick()
+
+    expect(findMenuItem('mediaAsset.actions.delete')).toBeDefined()
 
     unmount()
   })
@@ -324,12 +345,6 @@ describe('MediaAssetContextMenu', () => {
   })
 
   it('orders local generated file actions after download', async () => {
-    mockIsLoopbackHost.mockReturnValue(true)
-    const persistentOutput = {
-      ...asset,
-      tags: ['output'],
-      loader_path: 'video/render.mp4'
-    }
     const { container, unmount } = mountComponent(persistentOutput)
     await showMenu(container)
 
@@ -341,6 +356,13 @@ describe('MediaAssetContextMenu', () => {
       'mediaAsset.actions.delete',
       'mediaAsset.actions.deleteSourceFile'
     ])
+
+    unmount()
+  })
+
+  it('opens the location of a local generated file', async () => {
+    const { container, unmount } = mountComponent(persistentOutput)
+    await showMenu(container)
 
     const openLocationItem = findMenuItem('mediaAsset.actions.openFileLocation')
     if (!openLocationItem?.command) {
@@ -354,6 +376,13 @@ describe('MediaAssetContextMenu', () => {
       persistentOutput
     )
 
+    unmount()
+  })
+
+  it('removes a local generated asset without deleting its source', async () => {
+    const { container, unmount } = mountComponent(persistentOutput)
+    await showMenu(container)
+
     mediaAssetActions.deleteAssets.mockResolvedValueOnce(true)
     const deleteItem = findMenuItem('mediaAsset.actions.delete')
     if (!deleteItem?.command) throw new Error('Delete command is missing')
@@ -365,6 +394,13 @@ describe('MediaAssetContextMenu', () => {
       persistentOutput,
       { skipConfirmation: true }
     )
+
+    unmount()
+  })
+
+  it('deletes the source file of a local generated asset', async () => {
+    const { container, unmount } = mountComponent(persistentOutput)
+    await showMenu(container)
 
     mediaAssetActions.deleteAssets.mockResolvedValueOnce(true)
     const deleteSourceItem = findMenuItem('mediaAsset.actions.deleteSourceFile')
@@ -385,11 +421,6 @@ describe('MediaAssetContextMenu', () => {
 
   it('hides open file location on non-loopback hosts', async () => {
     mockIsLoopbackHost.mockReturnValue(false)
-    const persistentOutput = {
-      ...asset,
-      tags: ['output'],
-      loader_path: 'video/render.mp4'
-    }
     const { container, unmount } = mountComponent(persistentOutput)
     await showMenu(container)
 

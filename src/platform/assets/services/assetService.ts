@@ -2,7 +2,7 @@ import { fromZodError } from 'zod-validation-error'
 import { z } from 'zod'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { st } from '@/i18n'
+import { st, t } from '@/i18n'
 import { ASSETS_SEED_FAST_COMPLETE_EVENT } from '@/platform/assets/constants/assetEvents'
 
 import {
@@ -232,7 +232,9 @@ function normalizeLoaderPath(loaderPath: string): string {
     /^[a-z]:/i.test(normalized) ||
     parts.includes('..')
   ) {
-    throw new Error(`Invalid local input asset path: ${loaderPath}`)
+    throw new Error(
+      t('mediaAsset.errors.invalidLocalInputAssetPath', { path: loaderPath })
+    )
   }
   return normalized
 }
@@ -895,7 +897,10 @@ function createAssetService() {
 
     if (!res.ok) {
       throw new Error(
-        `Unable to open asset location ${id}: Server returned ${res.status}`
+        t('mediaAsset.errors.failedToOpenAssetLocation', {
+          id,
+          status: res.status
+        })
       )
     }
   }
@@ -914,7 +919,10 @@ function createAssetService() {
 
     if (matches.length !== 1) {
       throw new Error(
-        `Unable to resolve local input asset ${loaderPath}: found ${matches.length} matching records`
+        t('mediaAsset.errors.failedToResolveLocalInputAsset', {
+          path: loaderPath,
+          count: matches.length
+        })
       )
     }
 

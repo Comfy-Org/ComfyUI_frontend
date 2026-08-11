@@ -64,7 +64,21 @@ vi.mock('@/scripts/api', () => ({
 }))
 
 vi.mock('@/i18n', () => ({
-  st: vi.fn((_key: string, fallback: string) => fallback)
+  st: (_key: string, fallback: string) => fallback,
+  t: (key: string, params: Record<string, unknown>) => {
+    const messages: Record<string, string> = {
+      'mediaAsset.errors.invalidLocalInputAssetPath':
+        'Invalid local input asset path: {path}',
+      'mediaAsset.errors.failedToOpenAssetLocation':
+        'Unable to open asset location {id}: Server returned {status}',
+      'mediaAsset.errors.failedToResolveLocalInputAsset':
+        'Unable to resolve local input asset {path}: found {count} matching records'
+    }
+    return (messages[key] ?? key).replace(
+      /\{(\w+)\}/g,
+      (_match, name: string) => String(params[name])
+    )
+  }
 }))
 
 const fetchApiMock = vi.mocked(api.fetchApi)
@@ -434,10 +448,6 @@ describe(assetService.deleteAsset, () => {
 })
 
 describe(assetService.deleteLocalInputAsset, () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('resolves a local input path to its asset id', async () => {
     fetchApiMock
       .mockResolvedValueOnce(
@@ -1491,10 +1501,6 @@ describe(assetService.getInputAssetsIncludingPublic, () => {
 })
 
 describe(assetService.openAssetLocation, () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('posts the asset id to the open-location endpoint', async () => {
     fetchApiMock.mockResolvedValueOnce(buildResponse(null))
 

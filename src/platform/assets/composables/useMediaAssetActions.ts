@@ -48,6 +48,55 @@ interface DeleteAssetsOptions {
   deleteContent?: boolean
 }
 
+const DELETE_CONFIRMATION_COPY = {
+  deleteGeneratedSourceFile: {
+    title: [
+      'mediaAsset.deleteGeneratedSourceFileTitle',
+      'mediaAsset.deleteSelectedGeneratedSourceFilesTitle'
+    ],
+    description: [
+      'mediaAsset.deleteGeneratedSourceFileDescription',
+      'mediaAsset.deleteSelectedGeneratedSourceFilesDescription'
+    ]
+  },
+  removeGeneratedAsset: {
+    title: [
+      'mediaAsset.removeGeneratedAssetTitle',
+      'mediaAsset.removeSelectedGeneratedAssetsTitle'
+    ],
+    description: [
+      'mediaAsset.removeGeneratedAssetDescription',
+      'mediaAsset.removeSelectedGeneratedAssetsDescription'
+    ]
+  },
+  deleteAsset: {
+    title: ['mediaAsset.deleteAssetTitle', 'mediaAsset.deleteSelectedTitle'],
+    description: [
+      'mediaAsset.deleteAssetDescription',
+      'mediaAsset.deleteSelectedDescription'
+    ]
+  }
+} as const
+
+function getDeleteConfirmationCopy(
+  deletingGeneratedSourceFiles: boolean,
+  allPersistentLocalOutputs: boolean,
+  isSingle: boolean
+) {
+  const variant = deletingGeneratedSourceFiles
+    ? 'deleteGeneratedSourceFile'
+    : allPersistentLocalOutputs
+      ? 'removeGeneratedAsset'
+      : 'deleteAsset'
+  const index = isSingle ? 0 : 1
+  const copy = DELETE_CONFIRMATION_COPY[variant]
+
+  return {
+    titleKey: copy.title[index],
+    descriptionKey: copy.description[index]
+  }
+}
+
 function isPersistentLocalOutputAsset(asset: AssetItem): boolean {
   return (
     !isCloud && getAssetType(asset) === 'output' && Boolean(asset.loader_path)
@@ -865,46 +914,25 @@ export function useMediaAssetActions() {
     )
     const deletingGeneratedSourceFiles =
       deleteContent && allPersistentLocalOutputs
+    const { titleKey, descriptionKey } = getDeleteConfirmationCopy(
+      deletingGeneratedSourceFiles,
+      allPersistentLocalOutputs,
+      isSingle
+    )
 
     return new Promise((resolve) => {
       dialogStore.showDialog({
         key: 'delete-assets-confirmation',
-        title: deletingGeneratedSourceFiles
-          ? isSingle
-            ? t('mediaAsset.deleteGeneratedSourceFileTitle')
-            : t('mediaAsset.deleteSelectedGeneratedSourceFilesTitle')
-          : allPersistentLocalOutputs
-            ? isSingle
-              ? t('mediaAsset.removeGeneratedAssetTitle')
-              : t('mediaAsset.removeSelectedGeneratedAssetsTitle')
-            : isSingle
-              ? t('mediaAsset.deleteAssetTitle')
-              : t('mediaAsset.deleteSelectedTitle'),
+        title: t(titleKey),
         component: ConfirmationDialogContent,
         props: {
-          message: deletingGeneratedSourceFiles
-            ? isSingle
-              ? t('mediaAsset.deleteGeneratedSourceFileDescription')
-              : t(
-                  'mediaAsset.deleteSelectedGeneratedSourceFilesDescription',
-                  { count: assetArray.length },
-                  assetArray.length
-                )
-            : allPersistentLocalOutputs
-              ? isSingle
-                ? t('mediaAsset.removeGeneratedAssetDescription')
-                : t(
-                    'mediaAsset.removeSelectedGeneratedAssetsDescription',
-                    { count: assetArray.length },
-                    assetArray.length
-                  )
-              : isSingle
-                ? t('mediaAsset.deleteAssetDescription')
-                : t(
-                    'mediaAsset.deleteSelectedDescription',
-                    { count: assetArray.length },
-                    assetArray.length
-                  ),
+          message: isSingle
+            ? t(descriptionKey)
+            : t(
+                descriptionKey,
+                { count: assetArray.length },
+                assetArray.length
+              ),
           type: 'delete',
           itemList: assetArray.map((asset) => getAssetDisplayName(asset)),
           onConfirm: async () => {

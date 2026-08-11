@@ -122,12 +122,14 @@ const showCopyJobId = computed(() => {
   return true
 })
 
-const hasLocalAssetApi = isCloud || api.getServerFeature('assets', false)
+const hasLocalAssetApi = computed(
+  () => isCloud || api.getServerFeature('assets', false)
+)
 
 const shouldShowDeleteButton = computed(() => {
   const propAllows = showDeleteButton ?? true
   const typeAllows =
-    assetType === 'output' || (assetType === 'input' && hasLocalAssetApi)
+    assetType === 'output' || (assetType === 'input' && hasLocalAssetApi.value)
 
   return propAllows && typeAllows
 })
@@ -137,7 +139,7 @@ const shouldShowDeleteSourceFileButton = computed(
     shouldShowDeleteButton.value &&
     assetType === 'output' &&
     !isCloud &&
-    hasLocalAssetApi &&
+    hasLocalAssetApi.value &&
     Boolean(asset?.loader_path)
 )
 
@@ -145,7 +147,7 @@ const shouldShowOpenLocationButton = computed(
   () =>
     assetType === 'output' &&
     !isCloud &&
-    hasLocalAssetApi &&
+    hasLocalAssetApi.value &&
     Boolean(asset?.loader_path) &&
     typeof window !== 'undefined' &&
     isLoopbackHost(window.location.hostname)
