@@ -28,6 +28,15 @@ function createMockWidgetConfig(
   }
 }
 
+function createNumericComboWidgetConfig(
+  value: number,
+  values: number[]
+): MockWidgetConfig {
+  const config = createMockWidgetConfig({ value })
+  Object.assign(config.options, { values })
+  return config
+}
+
 function setupIncrementDecrementTest() {
   const mockCanvas = {
     ds: { scale: 1 },
@@ -195,6 +204,48 @@ describe('ComboWidget', () => {
   })
 
   describe('incrementValue / decrementValue', () => {
+    it('incrementing a numeric combo steps to the next option', () => {
+      widget = new ComboWidget(
+        createNumericComboWidgetConfig(8, [6, 8, 10]),
+        node
+      )
+
+      const { mockCanvas, mockEvent } = setupIncrementDecrementTest()
+
+      widget.incrementValue({ e: mockEvent, node, canvas: mockCanvas })
+
+      expect(widget.value).toBe(10)
+      expect(typeof widget.value).toBe('number')
+    })
+
+    it('decrementing a numeric combo steps to the previous option', () => {
+      widget = new ComboWidget(
+        createNumericComboWidgetConfig(10, [6, 8, 10]),
+        node
+      )
+
+      const { mockCanvas, mockEvent } = setupIncrementDecrementTest()
+
+      widget.decrementValue({ e: mockEvent, node, canvas: mockCanvas })
+
+      expect(widget.value).toBe(8)
+      expect(typeof widget.value).toBe('number')
+    })
+
+    it('incrementing from the first numeric option is not a no-op', () => {
+      widget = new ComboWidget(
+        createNumericComboWidgetConfig(6, [6, 8, 10]),
+        node
+      )
+
+      const { mockCanvas, mockEvent } = setupIncrementDecrementTest()
+
+      widget.incrementValue({ e: mockEvent, node, canvas: mockCanvas })
+
+      expect(widget.value).toBe(8)
+      expect(typeof widget.value).toBe('number')
+    })
+
     it('should increment value to next in list', () => {
       widget = new ComboWidget(
         createMockWidgetConfig({
