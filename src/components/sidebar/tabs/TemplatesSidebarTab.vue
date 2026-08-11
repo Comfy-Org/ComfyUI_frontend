@@ -950,7 +950,9 @@ const runsOnOptions = computed(() =>
 const filterMenuFacets = computed<FilterMenuFacet[]>(() => [
   {
     key: 'category',
-    label: t('templateWorkflows.category', 'Category'),
+    // Not `templateWorkflows.category`: that key is the map of category
+    // names, so asking for it as a string falls back to English everywhere.
+    label: t('templateWorkflows.categories'),
     options: categoryOptions.value,
     selectedValues: selectedCategories.value,
     mode: 'multiple'

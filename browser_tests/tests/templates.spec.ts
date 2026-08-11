@@ -158,15 +158,22 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     const panel = comfyPage.templatesDialog.filterByHeading('Modèles')
     await expect(panel).toBeVisible()
 
-    // Validate that French-localized category names from the templates index
-    // reach the filter sheet
+    // The filter sheet is localized too — facet labels and the category
+    // names the index carries. ("All" is not among them: the panel treats
+    // no selection as all, so it never renders as an option.)
     await comfyPage.templatesDialog.openFilters()
+    await expect(
+      comfyPage.templatesDialog.filterSheet.getByTestId(
+        'template-filter-facet-category'
+      )
+    ).toContainText('Catégories')
+
     await comfyPage.templatesDialog.filterSheet
       .getByRole('textbox')
       .first()
-      .fill('Tous les modèles')
+      .fill('Commencer')
     await expect(
-      comfyPage.templatesDialog.filterOption('Tous les modèles')
+      comfyPage.templatesDialog.filterOption('Commencer')
     ).toBeVisible()
 
     // Ensure the English fallback copy is not shown anywhere
