@@ -24,7 +24,6 @@ describe('workflowDraftStoreV2', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     localStorage.clear()
     sessionStorage.clear()
-    vi.clearAllMocks()
   })
 
   afterEach(() => {

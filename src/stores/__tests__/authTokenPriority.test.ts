@@ -127,8 +127,6 @@ describe('auth token priority chain', () => {
   } as Partial<User> as MockUser
 
   beforeEach(() => {
-    vi.resetAllMocks()
-
     mockDistributionTypes.isCloud = true
     mockFeatureFlags.unifiedCloudAuthEnabled = false
     mockUnifiedToken = null

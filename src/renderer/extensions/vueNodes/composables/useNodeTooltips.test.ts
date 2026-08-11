@@ -87,7 +87,6 @@ describe('useNodeTooltips', () => {
 
   afterEach(() => {
     mergeOutputTooltipMessage(null)
-    vi.restoreAllMocks()
   })
 
   it('reads JSON examples in node metadata without i18n placeholder errors', () => {

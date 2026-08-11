@@ -109,7 +109,6 @@ async function initComposable() {
 
 describe('usePanAndZoom', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     setActivePinia(createTestingPinia({ stubActions: false }))
 
     mockStore.canvasContainer = null
@@ -355,18 +354,14 @@ describe('usePanAndZoom', () => {
     it('triggers undo on two-finger double-tap', () => {
       vi.useFakeTimers()
 
-      try {
-        const pz = usePanAndZoom()
-        const touches = createTouchList({ x: 100, y: 200 }, { x: 300, y: 200 })
+      const pz = usePanAndZoom()
+      const touches = createTouchList({ x: 100, y: 200 }, { x: 300, y: 200 })
 
-        pz.handleTouchStart(createTouchEvent(touches))
-        vi.advanceTimersByTime(100)
-        pz.handleTouchStart(createTouchEvent(touches))
+      pz.handleTouchStart(createTouchEvent(touches))
+      vi.advanceTimersByTime(100)
+      pz.handleTouchStart(createTouchEvent(touches))
 
-        expect(mockStore.canvasHistory.undo).toHaveBeenCalled()
-      } finally {
-        vi.useRealTimers()
-      }
+      expect(mockStore.canvasHistory.undo).toHaveBeenCalled()
     })
 
     it('single-touch move pans the canvas', async () => {

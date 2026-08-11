@@ -196,7 +196,6 @@ function createComfyActionbarStub(actionbarTarget: HTMLElement) {
 
 describe('TopMenuSection', () => {
   beforeEach(() => {
-    vi.resetAllMocks()
     localStorage.clear()
     mockData.isLoggedIn = false
     mockData.setShowConflictRedDot(false)
