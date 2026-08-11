@@ -75,7 +75,7 @@ function flatAssetToResultItem(asset: AssetItem): ResultItemImpl {
     type: 'output',
     nodeId: metadata?.nodeId ?? '',
     mediaType: getMediaTypeFromFilename(asset.name),
-    display_name: asset.display_name,
+    display_name: asset.display_name ?? undefined,
     format: metadata?.format
   })
 }
