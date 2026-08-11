@@ -3,10 +3,12 @@
  * rather than a decoration.
  */
 import { createTestingPinia } from '@pinia/testing'
+import { render as renderComponent } from '@testing-library/vue'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h } from 'vue'
+import { nextTick, defineComponent, h } from 'vue'
 
+import { useDialogStore } from '@/stores/dialogStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 import { createUiHandle } from './uiHandle'
@@ -114,5 +116,60 @@ describe('comfy.ui.addSidebarTab', () => {
       (t) => t.id === 'p.plain'
     )
     expect(registered && 'icon' in registered).toBe(false)
+  })
+})
+
+describe('comfy.ui.showDialog', () => {
+  let ui: ReturnType<typeof createUiHandle>
+
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    ui = createUiHandle()
+  })
+
+  const stack = () => useDialogStore().dialogStack
+
+  it('opens a dialog under a key namespaced away from core dialogs', () => {
+    ui.showDialog({ key: 'mtb.notePlus', title: 'Note', render: () => {} })
+
+    // The host reserves the unprefixed keyspace for its own dialogs.
+    expect(stack().some((d) => d.key === 'extension-mtb.notePlus')).toBe(true)
+  })
+
+  it('mounts a pack render function and tears it down', async () => {
+    const render = vi.fn()
+    const destroy = vi.fn()
+    ui.showDialog({ key: 'p.d', render, destroy })
+
+    const dialog = stack().find((d) => d.key === 'extension-p.d')!
+    const { unmount } = renderComponent(dialog.component as never)
+    await nextTick()
+    expect(render).toHaveBeenCalledWith(expect.any(HTMLElement))
+
+    unmount()
+    expect(destroy).toHaveBeenCalled()
+  })
+
+  it('passes a Vue component straight through', () => {
+    const component = defineComponent({ setup: () => () => h('div') })
+    ui.showDialog({ key: 'p.vued', component })
+
+    expect(stack().find((d) => d.key === 'extension-p.vued')?.component).toBe(
+      component
+    )
+  })
+
+  it('closes via the returned handle', () => {
+    const handle = ui.showDialog({ key: 'p.close', render: () => {} })
+    expect(stack().some((d) => d.key === 'extension-p.close')).toBe(true)
+
+    handle.close()
+
+    const dialog = stack().find((d) => d.key === 'extension-p.close')
+    expect(dialog === undefined || dialog.visible === false).toBe(true)
+  })
+
+  it('refuses an empty key', () => {
+    expect(() => ui.showDialog({ key: '  ', render: () => {} })).toThrow()
   })
 })
