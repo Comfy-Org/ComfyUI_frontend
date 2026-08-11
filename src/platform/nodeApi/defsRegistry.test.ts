@@ -11,7 +11,8 @@ import type { Comfy } from './comfyApi'
 import {
   createDefRegistry,
   deliverPreview,
-  frontendResolverMap
+  frontendResolverMap,
+  frontendSupplierMap
 } from './defsRegistry'
 import type { DefSelector, NodeDefBuilder } from './defsRegistry'
 
@@ -394,6 +395,46 @@ describe('a defined node type', () => {
     } finally {
       stop()
     }
+  })
+})
+
+describe('setSupply', () => {
+  let graph: LGraph
+  let comfy: Comfy
+
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    graph = new LGraph()
+    comfy = createComfyApi(() => graph)
+  })
+
+  it('reaches a type the backend already registered', () => {
+    // The whole point: broadcast packs declare their types in Python, and
+    // `defs.define` refuses a type that already exists — which left `supply`
+    // unreachable for every pack that needed it.
+    const registry = createDefRegistry()
+    const supply = vi.fn(() => [])
+    registry
+      .forMajor((id) => comfy.graph.node(id)!)
+      .extend('KSampler', (b) => b.setSupply(supply))
+    registry.applyTo(nodeClass('KSampler'), RAW_DEF)
+
+    expect(frontendSupplierMap().get('KSampler')).toBe(supply)
+  })
+
+  it('does not require the node to be frontend-only', () => {
+    // Feeding somebody else and being skipped by the prompt builder are
+    // separate questions; a node may both execute and broadcast.
+    const registry = createDefRegistry()
+    const supply = vi.fn(() => [])
+    const Generated = nodeClass('KSampler')
+    registry
+      .forMajor((id) => comfy.graph.node(id)!)
+      .extend('KSampler', (b) => b.setSupply(supply))
+    registry.applyTo(Generated, RAW_DEF)
+
+    expect(frontendSupplierMap().has('KSampler')).toBe(true)
+    expect(Generated.prototype.isVirtualNode).toBeUndefined()
   })
 })
 

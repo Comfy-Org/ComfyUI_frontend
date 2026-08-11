@@ -37,9 +37,9 @@ widget instance, not a Pinia store, not a Vue reactive proxy, not a constructor.
 > `node.geometry`, `node.menu`, `node.onPreview`, `node.onSerialize`,
 > `node.resolve`, `node.sizeConstraints`, `serialization.control`,
 > `settings`, `slots.connect`, `slots.dynamic`, `slots.identity`,
-> `slots.moveLinks`, `slots.retype`, `storage`, `viewport.changed`,
-> `widgets.canvas`, `widgets.create`, `widgets.hidden`, `widgets.mount`,
-> `widgets.reorder`.
+> `slots.moveLinks`, `slots.retype`, `storage`, `ui.sidebarTab`,
+> `viewport.changed`, `widgets.canvas`, `widgets.create`, `widgets.hidden`,
+> `widgets.mount`, `widgets.reorder`.
 >
 > **Specified only:** §4a declarative decorations (badges/anchors — note
 > `setSizeConstraints` and `widgets.canvas` DID ship), §4b chrome, §4c
@@ -1650,6 +1650,71 @@ partial conversions, and why the fixes could not wait for a design round.
 
 If any of these are overturned, the packs concerned should be **re-refused**,
 not converted with a warning.
+
+### Later additions — each reverses a position this document previously took
+
+These arrived after the six above, from re-reading Christian's `ext-api/i-*`
+branches. Each one contradicts something stated earlier here, so they need
+arguing with on their own terms.
+
+**`widget.on('beforeSerialize')` — reverses "nothing can supply a value".**
+§4f and the gap list both said a static `serialize` flag can only _suppress_.
+That was wrong: `executionUtil` has been calling `widget.serializeValue` the
+whole time, so the prompt-side mechanism already existed and was simply
+unpublished. The event shape is taken from their `NodeBeforeSerializeEvent`,
+which is better than what we would have invented — it carries a `context`, and
+the packs genuinely want to write different values to different destinations.
+Ours is wired where theirs is not, and we added a third context they lack:
+
+| context      | destination                                                      | why it is separate                                                                                                                                                              |
+| ------------ | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `'workflow'` | the file a user saves                                            |                                                                                                                                                                                 |
+| `'prompt'`   | the queued API payload                                           | already reachable via `serializeValue`                                                                                                                                          |
+| `'embedded'` | the workflow copy inside the prompt, written into the output PNG | built by the _same_ `graph.serialize()` as a save, so without this a pack must choose between corrupting the saved file and shipping an image that cannot reproduce its own run |
+
+The workflow half needed a new litegraph hook (`serializeWorkflowValue`), since
+`serializeValue` is consulted only by the prompt builder. **Note this collides
+head-on with their axiom A16**, which collapses the transports and says
+extensions "cannot branch on the transport". If A16 stands, this is re-decided
+and every mounted-widget conversion is revisited.
+
+**Supply-side resolution — reverses "demand-side only".** §4 stated resolution
+answers only "what feeds me". Broadcast packs are the mirror image, and no
+amount of cleverness expresses them demand-side: `resolveFrontendNodes` never
+even iterates a node with no outputs. `Supplier` returns an edge list, following
+their `resolveConnections` shape, which is the one place their design beats ours
+outright. Three constraints, all deliberate and all arguable:
+
+- `from` is the supplier's own output, its own input (`forwardInput`), or a
+  literal — never an arbitrary node. A node may only offer what it has, so a
+  buggy pack cannot rewire two bystanders to each other.
+- First supplier in graph order wins a contested input. cg-use-everywhere
+  instead sorts by `priority` and on a tie connects _nothing_ and reports an
+  ambiguity; first-wins turns a reported clash into a silent arbitrary choice.
+  **Known shortfall, not a decision I am confident in.**
+- The pass walks top-level nodes only; subgraph inner nodes are keyed by
+  execution id and are out of scope.
+
+`UnconnectedInput` carries `label`, `isWidgetInput`, `nodeTitle`, `nodeMode`,
+`nodeColor` and frozen `nodeProperties` because matching on `type` alone would
+feed _every_ unconnected input of that type — the packs gate on a per-node
+opt-in kept in properties, and omitting it produces a silent wrong broadcast
+rather than a visible failure.
+
+**`comfy.ui.addSidebarTab` — narrows §7's "no app chrome".** Sidebar tabs are
+not decoration for Crystools' monitor or mtb's browser; they are the entire
+node. Lifted almost directly from their `defineSidebarTab`. A tab is a Vue
+component _or_ a container the pack draws into: this frontend is a Vue
+application and the API is built on that rather than around it. The component
+arm is currently only safe for code compiled against the host's Vue — packs
+bundle their own per ADR 0005, and handing a component across two runtimes
+breaks lifecycle hooks and reactivity. **Open question: export the host's Vue**,
+which would make the component arm real for packs and answers Q1.
+
+**`widget.setHeight(px)`** — named by two agents independently. `MountDef.height`
+only sets CSS _inside_ an allocation the renderer already chose, so fixed strips
+still drifted; presence of `computeSize` is what makes the node treat a widget
+as fixed.
 
 ## 5. Why the hooks are rewritten too
 

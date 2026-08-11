@@ -21,7 +21,7 @@ import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 
 import { ComfyApiError } from './errors'
 import type { NodeHandle } from './nodeHandle'
-import type { Resolver } from './resolution'
+import type { Resolver, Supplier } from './resolution'
 import type { Unsubscribe, WidgetDef } from './widgetHandle'
 import { createWidgetTypeRegistrar } from './widgetTypes'
 import type { WidgetTypeDef } from './widgetTypes'
@@ -113,6 +113,24 @@ export interface NodeDefBuilder {
    * pure over a read-only view and must not mutate the graph.
    */
   setExecution(execution: 'backend' | 'frontend', resolve?: Resolver): void
+  /**
+   * Declares what this node feeds into *other* nodes' unconnected inputs.
+   *
+   * The counterpart of `setExecution`'s `resolve`, which answers only "what
+   * feeds my own outputs" and is never called for a node with none. Broadcast
+   * packs are the reverse: they name inputs on nodes that are not themselves,
+   * and discover those edges rather than declaring them.
+   *
+   * Available here and not only on `defs.define` because the types that
+   * broadcast are registered by the pack's Python, and `defs.define` refuses a
+   * type that already exists — which left `supply` unreachable for every pack
+   * that actually needed it.
+   *
+   * Not gated on `setExecution('frontend')`: feeding somebody else and being
+   * skipped by the prompt builder are separate questions, and a node may
+   * legitimately both execute and broadcast.
+   */
+  setSupply(supply: Supplier): void
   addWidget(def: WidgetDef): void
   hideWidget(name: string): void
 
@@ -233,6 +251,14 @@ export interface NodeDefinition {
    * live graph mid-serialize.
    */
   readonly resolve?: Resolver
+  /**
+   * What this node feeds into *other* nodes' unconnected inputs.
+   *
+   * The broadcast direction: `resolve` cannot express it, because the nodes
+   * being fed are not this one and the edges are discovered rather than
+   * declared.
+   */
+  readonly supply?: Supplier
 
   onCreated?(node: NodeHandle): void
   onExecuted?(node: NodeHandle, result: ExecutionResult): void
@@ -417,6 +443,18 @@ export function frontendResolverMap(): ReadonlyMap<string, Resolver> {
 }
 
 /**
+ * Type name -> its supplier. Separate from the resolvers because the two
+ * answer opposite questions: a resolver is asked what feeds its own outputs,
+ * a supplier is asked what it feeds in everybody else.
+ */
+const frontendSuppliers = new Map<string, Supplier>()
+
+/** The suppliers currently registered, for `resolveSuppliedInputs`. */
+export function frontendSupplierMap(): ReadonlyMap<string, Supplier> {
+  return frontendSuppliers
+}
+
+/**
  * Type name -> its preview listeners.
  *
  * Module level because delivery comes from the app's socket, which knows a node
@@ -531,6 +569,7 @@ export function createDefRegistry(): {
     }
     registrations.add(registration)
     if (definition.resolve) frontendResolvers.set(type, definition.resolve)
+    if (definition.supply) frontendSuppliers.set(type, definition.supply)
 
     registry.applyTo(Defined, raw)
     LiteGraph.registerNodeType(type, Defined)
@@ -538,6 +577,7 @@ export function createDefRegistry(): {
     return () => {
       registrations.delete(registration)
       frontendResolvers.delete(type)
+      frontendSuppliers.delete(type)
       LiteGraph.unregisterNodeType(type)
       known.delete(type)
     }
@@ -580,6 +620,7 @@ export function createDefRegistry(): {
       }[] = []
       let frontendOnly = false
       let declaredResolver: Resolver | undefined
+      let declaredSupplier: Supplier | undefined
       const menuItems: {
         item: NodeMenuItem
         handleFor: (nodeId: string) => NodeHandle
@@ -614,6 +655,9 @@ export function createDefRegistry(): {
           setExecution: (execution, resolve) => {
             frontendOnly = execution === 'frontend'
             if (resolve) declaredResolver = resolve
+          },
+          setSupply: (supply) => {
+            declaredSupplier = supply
           },
           addWidget: (def) => widgets.push({ def, handleFor }),
           hideWidget: (name) => hidden.push({ name, handleFor }),
@@ -655,6 +699,10 @@ export function createDefRegistry(): {
         ;(nodeType.prototype as Partial<LGraphNode>).isVirtualNode = true
         if (declaredResolver) frontendResolvers.set(def.type, declaredResolver)
       }
+
+      // Outside the `frontendOnly` branch deliberately: broadcasting is about
+      // what this node gives others, not about whether it executes.
+      if (declaredSupplier) frontendSuppliers.set(def.type, declaredSupplier)
 
       const rawDef = raw as RawNodeDef
       if (def.title !== original.title) rawDef.display_name = def.title

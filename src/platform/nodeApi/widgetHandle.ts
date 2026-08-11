@@ -19,6 +19,7 @@ import { toNodeId } from '@/types/nodeId'
 import { createHandleFactory } from './closedProxy'
 import type { HandleCommon } from './closedProxy'
 import { ComfyApiError } from './errors'
+import { isEmbeddingWorkflow } from './serializeContext'
 
 // `null` is included because core's own `WidgetValue` has it and
 // `addWidget('button', name, null, cb)` produced exactly that. Omitting it made
@@ -51,6 +52,21 @@ export interface WidgetHandle extends HandleCommon {
   isDisabled(): boolean
   setDisabled(disabled: boolean): void
   isSerialized(): boolean
+  /**
+   * Pins the widget's height in graph units, instead of letting it share
+   * whatever space the node has spare.
+   *
+   * The node divides free height between every widget that does not state one,
+   * so a node carrying two mounted strips gave each half the node however
+   * small they were meant to be. `MountDef.height` does not do this — it sets
+   * the container's CSS height *inside* an allocation the renderer already
+   * chose, which is why a fixed strip still drifted.
+   *
+   * Replaces re-assigning `node.computeSize`, which is what packs did and
+   * which is not published. Omit it for a panel meant to fill the node: the
+   * growable path is the one that fills.
+   */
+  setHeight(px: number): void
 
   /**
    * Replaces capture-and-chain on `widget.callback`, which 1,000+ sites do and
@@ -70,6 +86,46 @@ export interface WidgetHandle extends HandleCommon {
    * care about the value; use this when you care that the user acted.
    */
   on(event: 'activate', listener: (value: WidgetValue) => void): Unsubscribe
+  /**
+   * The value is about to be written out, and may be replaced for this
+   * destination only.
+   *
+   * This is what `widget.serializeValue` did, and the reason it is back: a
+   * static `serialize` flag can only *suppress* a value, and a whole class of
+   * packs needs to *supply* a different one. rgthree's Seed keeps the sentinel
+   * `-1` in the saved workflow and sends the rolled seed; pysssss' PresetText
+   * expands `@name` into the queued prompt while the user keeps seeing the
+   * reference; Impact Pack embeds image data the canvas never shows.
+   *
+   * `context` says which destination is being built, because those packs want
+   * to change one and not the other:
+   *
+   * - `'workflow'` — the file the user saves.
+   * - `'prompt'` — the queued API payload the backend executes.
+   * - `'embedded'` — the copy of the workflow that travels with that prompt
+   *   and is written into the output image. Distinct from `'workflow'`
+   *   because a pack may want the image to reproduce the run while the saved
+   *   file keeps its sentinel: rgthree's Seed saves `-1` but embeds the seed
+   *   it actually rolled, so dragging the PNG back in reproduces it.
+   *
+   * A handler that ignores `context` changes all three.
+   *
+   * Calling `setSerializedValue` replaces the value for this write only; the
+   * widget itself is untouched, so the user still sees what they typed. Last
+   * handler to call it wins.
+   */
+  on(
+    event: 'beforeSerialize',
+    listener: (event: WidgetSerializeEvent) => void
+  ): Unsubscribe
+}
+
+/** Where a value is being written, and the chance to change it. */
+export interface WidgetSerializeEvent {
+  readonly context: 'workflow' | 'prompt' | 'embedded'
+  /** What would be written if no handler intervened. */
+  readonly value: WidgetValue
+  setSerializedValue(value: WidgetValue): void
 }
 
 export type Unsubscribe = () => void
@@ -122,18 +178,33 @@ export function createWidgetHandles(
           w.label = args[0] === undefined ? undefined : String(args[0])
         },
         isSerialized: (w) => w.serialize ?? true,
+        setHeight: (w, ...args) => {
+          const px = Number(args[0])
+          if (!Number.isFinite(px) || px < 0) {
+            throw new ComfyApiError(
+              `A widget height must be a non-negative number of graph units, got '${String(args[0])}'.`
+            )
+          }
+          // Presence of `computeSize` is itself the signal: the node treats a
+          // widget that has one as fixed and every other widget as growable
+          // (`LGraphNode._arrangeWidgets`).
+          w.computeSize = (width?: number) => [width ?? 0, px]
+        },
         on: (w, ...args) => {
           const [event, listener] = args as unknown as [
-            'change' | 'removed' | 'activate',
+            'change' | 'removed' | 'activate' | 'beforeSerialize',
             (...a: unknown[]) => void
           ]
-          if (event !== 'removed') ensureCallbackBridge(w)
+          if (event === 'beforeSerialize') ensureSerializeBridge(w)
+          else if (event !== 'removed') ensureCallbackBridge(w)
           const set =
             event === 'change'
               ? slots(w).change
               : event === 'activate'
                 ? slots(w).activate
-                : slots(w).removed
+                : event === 'beforeSerialize'
+                  ? slots(w).beforeSerialize
+                  : slots(w).removed
           ;(set as Set<unknown>).add(listener)
           return () => (set as Set<unknown>).delete(listener)
         },
@@ -181,16 +252,47 @@ export function createWidgetHandles(
       change: Set<(v: WidgetValue, o: WidgetValue) => void>
       removed: Set<() => void>
       activate: Set<(v: WidgetValue) => void>
+      beforeSerialize: Set<(e: WidgetSerializeEvent) => void>
     }
   >()
 
   const slots = (w: object) => {
     let found = listeners.get(w)
     if (!found) {
-      found = { change: new Set(), removed: new Set(), activate: new Set() }
+      found = {
+        change: new Set(),
+        removed: new Set(),
+        activate: new Set(),
+        beforeSerialize: new Set()
+      }
       listeners.set(w, found)
     }
     return found
+  }
+
+  /**
+   * Runs the handlers for one destination and returns what should be written.
+   *
+   * Returns the widget's own value untouched when nothing intervened, so a
+   * widget with no handler serialises exactly as before.
+   */
+  function serializedValue(
+    w: object,
+    context: 'workflow' | 'prompt' | 'embedded',
+    value: WidgetValue
+  ): WidgetValue {
+    const handlers = listeners.get(w)?.beforeSerialize
+    if (!handlers?.size) return value
+    let result = value
+    const event: WidgetSerializeEvent = {
+      context,
+      value,
+      setSerializedValue: (next) => {
+        result = next
+      }
+    }
+    for (const handler of handlers) handler(event)
+    return result
   }
 
   const lastNotified = new WeakMap<object, WidgetValue>()
@@ -233,6 +335,44 @@ export function createWidgetHandles(
     } as IBaseWidget['callback']
   }
 
+  /**
+   * Installs the two serialization hooks, once per widget.
+   *
+   * They are separate properties read by separate code paths, which is the
+   * same split documented in `WIDGET_SERIALIZATION.md`: `serializeValue` is
+   * consulted by `graphToPrompt` when building the API payload, and
+   * `serializeWorkflowValue` by `LGraphNode.serialize` when writing the saved
+   * file. Installing both is what lets one handler distinguish them by
+   * `context` instead of guessing.
+   *
+   * An earlier `serializeValue` is preserved and treated as the incoming
+   * value, so a pack that already substitutes keeps working and this composes
+   * on top rather than replacing it.
+   */
+  function ensureSerializeBridge(w: IBaseWidget) {
+    const bridged = w as IBaseWidget & { [SERIALIZE_BRIDGED]?: boolean }
+    if (bridged[SERIALIZE_BRIDGED]) return
+    bridged[SERIALIZE_BRIDGED] = true
+
+    const original = w.serializeValue
+    w.serializeValue = async function (this: unknown, node, index) {
+      const base = original
+        ? ((await original.apply(this as never, [node, index] as never)) as
+            | WidgetValue
+            | undefined)
+        : (w.value as WidgetValue)
+      return serializedValue(w, 'prompt', base as WidgetValue)
+    } as IBaseWidget['serializeValue']
+    ;(
+      w as IBaseWidget & { serializeWorkflowValue?: () => unknown }
+    ).serializeWorkflowValue = () =>
+      serializedValue(
+        w,
+        isEmbeddingWorkflow() ? 'embedded' : 'workflow',
+        w.value as WidgetValue
+      )
+  }
+
   /** Removes a widget and keeps the store's render order in step. */
   function removeWidget(nodeId: string, name: string): boolean {
     const node = resolveNode(nodeId)
@@ -261,6 +401,7 @@ export function createWidgetHandles(
 
 /** Marks a widget whose callback has already been bridged to listeners. */
 const BRIDGED = Symbol('comfy.widget.bridged')
+const SERIALIZE_BRIDGED = Symbol('comfy.widget.serializeBridged')
 
 /**
  * A widget whose body the pack renders itself.
@@ -523,7 +664,13 @@ export function createWidgetCollection(
         // must stay null, or its `widgets_values` entry changes and the saved
         // workflow differs.
         ('value' in def ? def.value : '') as never,
-        null,
+        // A no-op rather than `null`. Listeners attach afterwards through
+        // `on('activate')` / `on('change')`, which is the published way, but
+        // `addWidget` warns when it sees neither a callback nor a `property` —
+        // so every converted button logged three warnings it could do nothing
+        // about. The bridge in `ensureCallbackBridge` wraps this and fans out
+        // to the real listeners.
+        () => {},
         (def.options ?? {}) as never
       )
       if (def.disabled !== undefined) widget.disabled = def.disabled

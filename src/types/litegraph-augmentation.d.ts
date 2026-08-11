@@ -59,6 +59,15 @@ declare module '@/lib/litegraph/src/types/widgets' {
     beforeQueued?(options?: WidgetCallbackOptions): unknown
     afterQueued?(options?: WidgetCallbackOptions): unknown
     serializeValue?(node: LGraphNode, index: number): Promise<unknown> | unknown
+    /**
+     * The saved-workflow counterpart of `serializeValue`.
+     *
+     * `serializeValue` is consulted only by the prompt builder, so a widget
+     * that wants to write something different to the saved file had nowhere to
+     * say so. Read by `LGraphNode.serialize`; a widget that leaves it unset
+     * serialises its own value.
+     */
+    serializeWorkflowValue?(): unknown
 
     /**
      * Refreshes the widget's value or options from its remote source.

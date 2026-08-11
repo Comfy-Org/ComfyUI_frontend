@@ -9,6 +9,7 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { parseWidgetId } from '@/types/widgetId'
 
 import { ComfyApiError, ComfyReadonlyError } from './errors'
+import { whileEmbeddingWorkflow } from './serializeContext'
 import { createWidgetCollection, createWidgetHandles } from './widgetHandle'
 import type { WidgetCollection } from './widgetHandle'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
@@ -551,5 +552,140 @@ describe('mounted and canvas widgets', () => {
       const element = mounted.element
       expect(element?.querySelector('canvas')).toBeTruthy()
     })
+  })
+})
+
+describe('beforeSerialize', () => {
+  let node: LGraphNode
+  let widgets: WidgetCollection
+
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    const graph = new LGraph()
+    node = new LGraphNode('t')
+    node.addWidget('number', 'seed', -1, null, {})
+    node.serialize_widgets = true
+    graph.add(node)
+    const handles = createWidgetHandles(() => graph)
+    widgets = createWidgetCollection(
+      () => graph.getNodeById(node.id) ?? undefined,
+      handles,
+      String(node.id)
+    )
+  })
+
+  const raw = () => node.widgets![0]
+  // Mirrors executionUtil: the hook is consulted only when it exists.
+  const queued = async () => {
+    const w = raw()
+    return w.serializeValue ? await w.serializeValue(node, 0) : w.value
+  }
+  const saved = () => node.serialize().widgets_values?.[0]
+
+  it('leaves both destinations alone when nothing is listening', async () => {
+    // Nothing is installed on the widget at all, so a node no pack touched
+    // serialises down exactly the path it always did.
+    expect(raw().serializeValue).toBeUndefined()
+    expect(raw().serializeWorkflowValue).toBeUndefined()
+    expect(await queued()).toBe(-1)
+    expect(saved()).toBe(-1)
+  })
+
+  it('supplies a different value to the prompt without touching the widget', async () => {
+    widgets.get('seed')!.on('beforeSerialize', (e) => {
+      if (e.context === 'prompt') e.setSerializedValue(12345)
+    })
+
+    expect(await queued()).toBe(12345)
+    // What the user still sees, and what the workflow still records.
+    expect(widgets.get('seed')!.getValue()).toBe(-1)
+    expect(saved()).toBe(-1)
+  })
+
+  it('supplies a different value to the saved workflow', async () => {
+    widgets.get('seed')!.on('beforeSerialize', (e) => {
+      if (e.context === 'workflow') e.setSerializedValue(7)
+    })
+
+    expect(saved()).toBe(7)
+    expect(await queued()).toBe(-1)
+  })
+
+  it('hands the handler the value that would have been written', async () => {
+    const seen: unknown[] = []
+    widgets
+      .get('seed')!
+      .on('beforeSerialize', (e) => seen.push([e.context, e.value]))
+
+    await queued()
+    node.serialize()
+
+    expect(seen).toEqual([
+      ['prompt', -1],
+      ['workflow', -1]
+    ])
+  })
+
+  it('tells the embedded copy apart from the saved file', () => {
+    // graphToPrompt builds the workflow that travels with the prompt using the
+    // very same serialize() a Ctrl+S uses. rgthree's Seed saves -1 but embeds
+    // the seed it rolled, so the output PNG reproduces the run.
+    const seen: string[] = []
+    widgets.get('seed')!.on('beforeSerialize', (e) => {
+      seen.push(e.context)
+      if (e.context === 'embedded') e.setSerializedValue(4242)
+    })
+
+    const saved = node.serialize().widgets_values?.[0]
+    const embedded = whileEmbeddingWorkflow(
+      () => node.serialize().widgets_values?.[0]
+    )
+
+    expect(seen).toEqual(['workflow', 'embedded'])
+    expect(saved).toBe(-1)
+    expect(embedded).toBe(4242)
+  })
+
+  it('stops substituting once the listener is removed', async () => {
+    const stop = widgets
+      .get('seed')!
+      .on('beforeSerialize', (e) => e.setSerializedValue(99))
+
+    expect(await queued()).toBe(99)
+    stop()
+    expect(await queued()).toBe(-1)
+  })
+})
+
+describe('setHeight', () => {
+  let node: LGraphNode
+  let widgets: WidgetCollection
+
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    const graph = new LGraph()
+    node = new LGraphNode('t')
+    node.addWidget('number', 'seed', 1, null, {})
+    graph.add(node)
+    const handles = createWidgetHandles(() => graph)
+    widgets = createWidgetCollection(
+      () => graph.getNodeById(node.id) ?? undefined,
+      handles,
+      String(node.id)
+    )
+  })
+
+  it('makes the node treat the widget as fixed rather than growable', () => {
+    // The node divides spare height between widgets with no computeSize.
+    expect(node.widgets![0].computeSize).toBeUndefined()
+
+    widgets.get('seed')!.setHeight(48)
+
+    expect(node.widgets![0].computeSize!(200)).toEqual([200, 48])
+  })
+
+  it('refuses a height that is not a usable number', () => {
+    expect(() => widgets.get('seed')!.setHeight(Number.NaN)).toThrow()
+    expect(() => widgets.get('seed')!.setHeight(-1)).toThrow()
   })
 })
