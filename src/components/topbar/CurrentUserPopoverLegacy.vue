@@ -61,7 +61,7 @@
 
     <!-- Credits Section -->
     <div
-      v-if="canAccessSubscriptionFeatures"
+      v-if="canAccessSubscriptionFeatures || showWorkspaceSwitcher"
       class="flex items-center gap-2 px-4 py-2"
     >
       <i class="icon-[lucide--component] text-sm text-credit" />
@@ -89,7 +89,7 @@
         {{ $t('subscription.upgradeToAddCredits') }}
       </Button>
       <Button
-        v-else
+        v-else-if="canAccessSubscriptionFeatures"
         variant="secondary"
         size="sm"
         class="text-base-foreground"
@@ -143,7 +143,7 @@
     </div>
 
     <div
-      v-if="canAccessSubscriptionFeatures"
+      v-if="canAccessSubscriptionFeatures || showWorkspaceSwitcher"
       class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
       data-testid="manage-plan-menu-item"
       @click="handleOpenPlanAndCreditsSettings"
