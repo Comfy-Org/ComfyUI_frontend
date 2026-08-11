@@ -20,26 +20,42 @@ const MEDIA_SRC_REGEX =
 // Rooted paths, fragments, queries, and anything carrying a scheme (http,
 // javascript, data, ...) must keep their original form for sanitizing.
 const NON_REBASEABLE_HREF = /^(?:[/#?]|[a-z][a-z0-9+.-]*:)/i
+const COMFY_ORG_HOST = /(?:^|\.)comfy\.org$/
+
+function resolveMarkdownUrl(href: string, baseUrl: string): string {
+  if (!baseUrl) return href
+  if (!NON_REBASEABLE_HREF.test(href)) return `${baseUrl}/${href}`
+
+  try {
+    const url = new URL(href)
+    if (COMFY_ORG_HOST.test(url.hostname) && url.pathname.startsWith('/api/')) {
+      return `${baseUrl}${url.pathname.slice(4)}${url.search}${url.hash}`
+    }
+  } catch {
+    return href
+  }
+
+  return href
+}
 
 // Create a marked Renderer that prefixes relative URLs with base
 function createMarkdownRenderer(baseUrl?: string): Renderer {
   const normalizedBase = baseUrl ? baseUrl.replace(/\/+$/, '') : ''
   const renderer = new Renderer()
   renderer.image = ({ href, title, text }) => {
-    let src = href
-    if (normalizedBase && !NON_REBASEABLE_HREF.test(href)) {
-      src = `${normalizedBase}/${href}`
-    }
+    const src = resolveMarkdownUrl(href, normalizedBase)
     const titleAttr = title ? ` title="${title}"` : ''
     return `<img src="${src}" alt="${text}"${titleAttr} />`
   }
   renderer.link = ({ href, title, tokens, text }) => {
     // For autolinks (bare URLs), tokens may be undefined, so fall back to text
-    const linkText = tokens ? renderer.parser.parseInline(tokens) : text
-    let target = href
-    if (normalizedBase && !NON_REBASEABLE_HREF.test(href)) {
-      target = `${normalizedBase}/${href}`
-    }
+    const target = resolveMarkdownUrl(href, normalizedBase)
+    const linkText =
+      text === href
+        ? target
+        : tokens
+          ? renderer.parser.parseInline(tokens)
+          : text
     const titleAttr = title ? ` title="${title}"` : ''
     return `<a href="${target}" ${titleAttr} target="_blank" rel="noopener noreferrer">${linkText}</a>`
   }

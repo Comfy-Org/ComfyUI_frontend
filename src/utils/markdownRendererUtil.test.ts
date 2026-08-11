@@ -45,6 +45,36 @@ describe('markdownRendererUtil', () => {
       expect(html).toContain('href="/api/view?f=1"')
     })
 
+    it('routes first-party Comfy API URLs through the active API base', () => {
+      const url =
+        'https://cloud.comfy.org/api/view?filename=gen.png&type=output'
+      const html = renderMarkdownToHtml(
+        `[${url}](${url}) ![result](${url})`,
+        'http://localhost:5228/api'
+      )
+
+      expect(html).toContain(
+        'href="http://localhost:5228/api/view?filename=gen.png&amp;type=output"'
+      )
+      expect(html).toContain(
+        '>http://localhost:5228/api/view?filename=gen.png&amp;type=output</a>'
+      )
+      expect(html).toContain(
+        'src="http://localhost:5228/api/view?filename=gen.png&amp;type=output"'
+      )
+    })
+
+    it('does not rebase API URLs on unrelated hosts', () => {
+      const html = renderMarkdownToHtml(
+        '[asset](https://example.com/api/view?filename=gen.png)',
+        'http://localhost:5228/api'
+      )
+
+      expect(html).toContain(
+        'href="https://example.com/api/view?filename=gen.png"'
+      )
+    })
+
     it('should render basic markdown to HTML', () => {
       const markdown = '# Hello\n\nThis is a test.'
       const html = renderMarkdownToHtml(markdown)
