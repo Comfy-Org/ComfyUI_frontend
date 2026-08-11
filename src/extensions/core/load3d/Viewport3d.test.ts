@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { Viewport3dDeps } from '@/extensions/core/load3d/Viewport3d'
 import { Viewport3d } from '@/extensions/core/load3d/Viewport3d'
@@ -539,10 +539,6 @@ describe('Viewport3d', () => {
       })
     })
 
-    afterEach(() => {
-      vi.useRealTimers()
-    })
-
     it('start schedules a deferred forceRender and remove clears it before the timer fires', () => {
       ctx.viewport.start()
       ctx.forceRender.mockClear()
@@ -619,10 +615,6 @@ describe('Viewport3d', () => {
 
     beforeEach(() => {
       vi.useFakeTimers({ toFake: ['performance'] })
-    })
-
-    afterEach(() => {
-      vi.useRealTimers()
     })
 
     it('forceRender feeds elapsed time between frames to per-frame updates and renders the view', () => {

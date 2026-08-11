@@ -76,7 +76,6 @@ describe('FirstRunTourNudge', () => {
 
   afterEach(() => {
     cleanup()
-    vi.useRealTimers()
   })
 
   it('shows a nudge that came due before it mounted', async () => {

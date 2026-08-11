@@ -47,7 +47,6 @@ describe('LGraphCanvas link drag auto-pan', () => {
 
   afterEach(() => {
     canvas.pointer.finally?.()
-    vi.useRealTimers()
   })
 
   function startLinkDrag() {

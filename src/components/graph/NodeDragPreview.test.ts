@@ -32,7 +32,6 @@ describe('NodeDragPreview', () => {
 
   afterEach(() => {
     useNodeDragToCanvas().cancelDrag()
-    vi.useRealTimers()
   })
 
   it('shows no ghost when nothing is being dragged', async () => {

@@ -61,7 +61,6 @@ describe('TourSpotlight interactive and masked steps', () => {
     cleanup()
     clearCoachmarks()
     document.body.replaceChildren()
-    vi.useRealTimers()
   })
 
   it('keeps the blocking scrim and no hit region on a plain step', () => {

@@ -180,7 +180,6 @@ describe('NodeTooltip', () => {
   afterEach(() => {
     mergeOutputTooltipMessage(null)
     cleanup()
-    vi.useRealTimers()
   })
 
   it('shows input slot JSON tooltips without i18n placeholder errors', async () => {

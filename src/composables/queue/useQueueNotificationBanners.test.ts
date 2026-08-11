@@ -126,7 +126,6 @@ describe(useQueueNotificationBanners, () => {
 
   afterEach(() => {
     vi.runOnlyPendingTimers()
-    vi.useRealTimers()
     resetState()
   })
 

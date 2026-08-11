@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { TurnstileApi } from '@/composables/auth/turnstileScript'
 
@@ -75,10 +75,6 @@ describe('loadTurnstile', () => {
       inserted.push(node as unknown as FakeScript)
       return node
     })
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
   })
 
   it('resolves immediately with the existing global and appends no script', async () => {

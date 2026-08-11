@@ -182,7 +182,6 @@ global.fetch = vi.fn()
 
 describe('useSubscription', () => {
   afterEach(() => {
-    vi.useRealTimers()
     scope?.stop()
     scope = undefined
     setDistribution('localhost')

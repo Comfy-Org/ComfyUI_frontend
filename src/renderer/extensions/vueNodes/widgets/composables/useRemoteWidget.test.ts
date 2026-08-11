@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { IWidget } from '@/lib/litegraph/src/litegraph'
 import { api } from '@/scripts/api'
@@ -211,10 +211,6 @@ describe('useRemoteWidget', () => {
       vi.useFakeTimers()
     })
 
-    afterEach(() => {
-      vi.useRealTimers()
-    })
-
     describe('permanent widgets (no refresh)', () => {
       it('permanent widgets should not attempt fetch after initialization', async () => {
         const mockData = ['data that is permanent after initialization']
@@ -331,10 +327,6 @@ describe('useRemoteWidget', () => {
   describe('error handling and backoff', () => {
     beforeEach(() => {
       vi.useFakeTimers()
-    })
-
-    afterEach(() => {
-      vi.useRealTimers()
     })
 
     it('should implement exponential backoff on errors', async () => {

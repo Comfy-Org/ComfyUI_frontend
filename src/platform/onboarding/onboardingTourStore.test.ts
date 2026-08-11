@@ -121,7 +121,6 @@ describe('onboardingTourStore', () => {
     if (appModeMock.mode) appModeMock.mode.value = 'graph'
     if (appModeMock.hasOutputs) appModeMock.hasOutputs.value = false
     telemetry.track.mockClear()
-    vi.useRealTimers()
   })
 
   /** Register one laid-out element for a coach id, so its step resolves at once. */

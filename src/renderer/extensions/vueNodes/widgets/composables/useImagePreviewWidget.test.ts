@@ -1,5 +1,5 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointer, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -137,13 +137,6 @@ describe('useImagePreviewWidget', () => {
     mockCanvas.graph_mouse = [0, 0]
     mockCanvas.pointer_is_down = false
     mockCanvas.canvas.style.cursor = ''
-  })
-
-  // Restore real timers unconditionally so a thrown assertion in any
-  // useFakeTimers() test does not leak fake timers into later tests.
-  // Idempotent when timers are already real.
-  afterEach(() => {
-    vi.useRealTimers()
   })
 
   describe('widget construction', () => {

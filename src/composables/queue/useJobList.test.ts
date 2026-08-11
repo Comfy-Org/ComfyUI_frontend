@@ -243,7 +243,6 @@ describe('useJobList', () => {
     unmount?.()
     unmount = null
     api = null
-    vi.useRealTimers()
   })
 
   const initComposable = () => {

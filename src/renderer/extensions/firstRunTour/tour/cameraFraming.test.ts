@@ -119,7 +119,6 @@ describe('frameNode', () => {
 
   afterEach(() => {
     endRunningSteps()
-    vi.useRealTimers()
     camera.animateToBounds.mockClear()
     camera.ds.fitToBounds.mockClear()
     camera.ds.offset = [0, 0]

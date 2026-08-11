@@ -241,27 +241,23 @@ describe('useTrimPlayback', () => {
 
   it('releases the seek lock when no seeked event ever arrives', async () => {
     vi.useFakeTimers()
-    try {
-      const { video, playheadFrame, isPlaying, handleTimeUpdate } =
-        createPlayback()
-      video.emitSeeked = false
-      playheadFrame.value = 30
+    const { video, playheadFrame, isPlaying, handleTimeUpdate } =
+      createPlayback()
+    video.emitSeeked = false
+    playheadFrame.value = 30
 
-      isPlaying.value = true
-      await nextTick()
+    isPlaying.value = true
+    await nextTick()
 
-      video.currentTime = 4
-      handleTimeUpdate()
-      expect(playheadFrame.value).toBe(30)
+    video.currentTime = 4
+    handleTimeUpdate()
+    expect(playheadFrame.value).toBe(30)
 
-      await vi.advanceTimersByTimeAsync(5000)
+    await vi.advanceTimersByTimeAsync(5000)
 
-      video.currentTime = 4.5
-      handleTimeUpdate()
-      expect(playheadFrame.value).toBe(45)
-    } finally {
-      vi.useRealTimers()
-    }
+    video.currentTime = 4.5
+    handleTimeUpdate()
+    expect(playheadFrame.value).toBe(45)
   })
 
   it('clamps the playhead when the trim handles move past it', async () => {

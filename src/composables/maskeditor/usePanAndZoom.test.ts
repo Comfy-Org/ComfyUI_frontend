@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { usePanAndZoom } from '@/composables/maskeditor/usePanAndZoom'
 
@@ -118,10 +118,6 @@ describe('usePanAndZoom', () => {
     mockStore.brushVisible = true
     mockStore.displayZoomRatio = 1
     mockStore.resetZoomTrigger = 0
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
   })
 
   describe('initializeCanvasPanZoom', () => {

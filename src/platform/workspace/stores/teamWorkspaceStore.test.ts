@@ -299,8 +299,6 @@ describe('useTeamWorkspaceStore', () => {
       expect(store.error).toBeInstanceOf(Error)
       // Should have been called 4 times (initial + 3 retries)
       expect(mockWorkspaceApi.list).toHaveBeenCalledTimes(4)
-
-      vi.useRealTimers()
     })
 
     it('does not reinitialize if already initialized', async () => {
@@ -411,7 +409,6 @@ describe('useTeamWorkspaceStore', () => {
       expect(store.initState).toBe('error')
       expect(store.activeWorkspaceId).toBeNull()
       expect(store.error).toEqual(new Error('Token exchange failed'))
-      vi.useRealTimers()
     })
   })
 

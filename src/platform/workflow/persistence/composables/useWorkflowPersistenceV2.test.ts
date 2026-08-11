@@ -219,7 +219,6 @@ describe('useWorkflowPersistenceV2', () => {
       app.unmount()
       container.remove()
     }
-    vi.useRealTimers()
   })
 
   function mountWorkflowPersistence(): WorkflowPersistence {

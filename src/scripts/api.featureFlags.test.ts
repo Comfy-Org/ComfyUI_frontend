@@ -49,10 +49,6 @@ describe('API Feature Flags', () => {
     })
   })
 
-  afterEach(() => {
-    vi.useRealTimers()
-  })
-
   describe('Feature flags negotiation', () => {
     it('should send client feature flags as first message on connection', async () => {
       // Initialize API connection
