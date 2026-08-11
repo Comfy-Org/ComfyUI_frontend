@@ -9,6 +9,7 @@ import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { LayoutSource } from '@/renderer/core/layout/types'
 import {
   LGraph,
   LGraphGroup,
@@ -1730,12 +1731,16 @@ describe('node layout registration', () => {
     node.id = toNodeId(42)
     node.pos = [10, 20]
     node.size = [100, 80]
-    useLayoutMutations().createNode(graph.rootGraph.id, node.id, {
-      position: { x: 300, y: 400 },
-      size: { width: 220, height: 160 },
-      zIndex: 1,
-      visible: true
-    })
+    useLayoutMutations(LayoutSource.Canvas).createNode(
+      graph.rootGraph.id,
+      node.id,
+      {
+        position: { x: 300, y: 400 },
+        size: { width: 220, height: 160 },
+        zIndex: 1,
+        visible: true
+      }
+    )
 
     graph.add(node)
 

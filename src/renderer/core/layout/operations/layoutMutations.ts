@@ -56,28 +56,12 @@ interface LayoutMutations {
   deleteGroup(rootGraphId: UUID, groupId: GroupId): void
 
   bringNodeToFront(rootGraphId: UUID, nodeId: NodeId): void
-  setSource(source: LayoutSource): void
-  setActor(actor: string): void
 }
 
 /**
  * Composable for accessing layout mutations with clean destructuring API
  */
-export function useLayoutMutations(): LayoutMutations {
-  /**
-   * Set the current mutation source
-   */
-  const setSource = (source: LayoutSource): void => {
-    layoutStore.setSource(source)
-  }
-
-  /**
-   * Set the current actor (for CRDT)
-   */
-  const setActor = (actor: string): void => {
-    layoutStore.setActor(actor)
-  }
-
+export function useLayoutMutations(source: LayoutSource): LayoutMutations {
   /**
    * Move a node to a new position
    */
@@ -96,8 +80,7 @@ export function useLayoutMutations(): LayoutMutations {
       nodeId,
       position,
       timestamp: Date.now(),
-      source: layoutStore.getCurrentSource(),
-      actor: layoutStore.getCurrentActor()
+      source
     })
   }
 
@@ -125,7 +108,9 @@ export function useLayoutMutations(): LayoutMutations {
     })
 
     if (nodeBoundsUpdates.length === 0) return
-    layoutStore.batchUpdateNodeBounds(rootGraphId, nodeBoundsUpdates)
+    layoutStore.batchUpdateNodeBounds(rootGraphId, nodeBoundsUpdates, {
+      source
+    })
   }
 
   /**
@@ -142,8 +127,7 @@ export function useLayoutMutations(): LayoutMutations {
       nodeId,
       size,
       timestamp: Date.now(),
-      source: layoutStore.getCurrentSource(),
-      actor: layoutStore.getCurrentActor()
+      source
     })
   }
 
@@ -165,8 +149,7 @@ export function useLayoutMutations(): LayoutMutations {
       nodeId,
       zIndex,
       timestamp: Date.now(),
-      source: layoutStore.getCurrentSource(),
-      actor: layoutStore.getCurrentActor()
+      source
     })
   }
 
@@ -199,8 +182,7 @@ export function useLayoutMutations(): LayoutMutations {
       nodeId,
       layout: fullLayout,
       timestamp: Date.now(),
-      source: layoutStore.getCurrentSource(),
-      actor: layoutStore.getCurrentActor()
+      source
     })
   }
 
@@ -217,8 +199,7 @@ export function useLayoutMutations(): LayoutMutations {
       graphId: rootGraphId,
       nodeId,
       timestamp: Date.now(),
-      source: layoutStore.getCurrentSource(),
-      actor: layoutStore.getCurrentActor()
+      source
     })
   }
 
@@ -245,8 +226,7 @@ export function useLayoutMutations(): LayoutMutations {
       rerouteId,
       position,
       timestamp: Date.now(),
-      source: layoutStore.getCurrentSource(),
-      actor: layoutStore.getCurrentActor()
+      source
     })
   }
 
@@ -262,8 +242,7 @@ export function useLayoutMutations(): LayoutMutations {
       groupId,
       layout: { id: groupId, ...layout },
       timestamp: Date.now(),
-      source: layoutStore.getCurrentSource(),
-      actor: layoutStore.getCurrentActor()
+      source
     })
   }
 
@@ -284,8 +263,7 @@ export function useLayoutMutations(): LayoutMutations {
       position,
       size,
       timestamp: Date.now(),
-      source: layoutStore.getCurrentSource(),
-      actor: layoutStore.getCurrentActor()
+      source
     })
   }
 
@@ -298,8 +276,7 @@ export function useLayoutMutations(): LayoutMutations {
       graphId: rootGraphId,
       groupId,
       timestamp: Date.now(),
-      source: layoutStore.getCurrentSource(),
-      actor: layoutStore.getCurrentActor()
+      source
     })
   }
 
@@ -316,8 +293,7 @@ export function useLayoutMutations(): LayoutMutations {
       graphId: rootGraphId,
       rerouteId,
       timestamp: Date.now(),
-      source: layoutStore.getCurrentSource(),
-      actor: layoutStore.getCurrentActor()
+      source
     })
   }
 
@@ -336,14 +312,11 @@ export function useLayoutMutations(): LayoutMutations {
       rerouteId,
       position,
       timestamp: Date.now(),
-      source: layoutStore.getCurrentSource(),
-      actor: layoutStore.getCurrentActor()
+      source
     })
   }
 
   return {
-    setSource,
-    setActor,
     moveNode,
     batchMoveNodes,
     resizeNode,

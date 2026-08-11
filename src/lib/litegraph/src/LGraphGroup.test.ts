@@ -6,6 +6,7 @@ import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { LayoutSource } from '@/renderer/core/layout/types'
 import type { GroupId } from '@/types/groupId'
 import { toGroupId } from '@/types/groupId'
 import * as colorUtil from '@/utils/colorUtil'
@@ -285,7 +286,10 @@ describe('group layout in layoutStore', () => {
   test('keeps geometry locally when the store entry is gone', () => {
     const graph = new LGraph()
     const group = addedGroup(graph, toGroupId(809))
-    useLayoutMutations().deleteGroup(graph.rootGraph.id, group.id)
+    useLayoutMutations(LayoutSource.Canvas).deleteGroup(
+      graph.rootGraph.id,
+      group.id
+    )
 
     group.pos = [11, 22]
 
@@ -379,7 +383,7 @@ describe('group layout in layoutStore', () => {
       type: 'setGroupBounds',
       actor: 'test',
       timestamp: 1,
-      source: layoutStore.getCurrentSource(),
+      source: LayoutSource.Canvas,
       entity: 'group',
       graphId: graph.rootGraph.id,
       groupId: group.id,

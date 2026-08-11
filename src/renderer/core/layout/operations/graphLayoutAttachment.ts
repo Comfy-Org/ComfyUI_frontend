@@ -38,18 +38,12 @@ const rerouteAttachments = new WeakMap<
 >()
 
 /** Layout mutations attributed to the canvas, for direct delete calls. */
-export function canvasLayoutMutations() {
-  const mutations = useLayoutMutations()
-  mutations.setSource(LayoutSource.Canvas)
-  return mutations
-}
+export const canvasLayoutMutations = useLayoutMutations(LayoutSource.Canvas)
 
-/** Stamps the canvas as the operation source and returns the shared meta. */
+/** Shared operation meta attributing the operation to the canvas. */
 function canvasOperationMeta() {
-  layoutStore.setSource(LayoutSource.Canvas)
   return {
-    actor: layoutStore.getCurrentActor(),
-    source: layoutStore.getCurrentSource(),
+    source: LayoutSource.Canvas,
     timestamp: Date.now()
   }
 }

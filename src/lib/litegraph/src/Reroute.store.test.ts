@@ -21,6 +21,7 @@ import { enableSubgraphNodeCreation } from '@/lib/litegraph/src/subgraph/__fixtu
 import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { LayoutSource } from '@/renderer/core/layout/types'
 import { useRerouteStore } from '@/stores/rerouteStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toRerouteId } from '@/types/rerouteId'
@@ -62,10 +63,14 @@ describe('Reroute ↔ rerouteStore integration', () => {
     const incumbent = new Reroute(toRerouteId(1), graph, [0, 0])
     vi.spyOn(console, 'error').mockImplementation(() => {})
     useRerouteStore().registerReroute(graphScopeOf(graph), incumbent._chain)
-    useLayoutMutations().createReroute(graph.rootGraph.id, incumbent.id, {
-      x: 0,
-      y: 0
-    })
+    useLayoutMutations(LayoutSource.Canvas).createReroute(
+      graph.rootGraph.id,
+      incumbent.id,
+      {
+        x: 0,
+        y: 0
+      }
+    )
 
     const collision = new Reroute(incumbent.id, graph, [10, 10])
 
@@ -421,10 +426,14 @@ describe('Reroute position lives only in layoutStore', () => {
 
     // Move it in the store only. A mirrored copy on the class could not see
     // this without a synchronisation step.
-    useLayoutMutations().moveReroute(graph.rootGraph.id, reroute.id, {
-      x: 300,
-      y: 400
-    })
+    useLayoutMutations(LayoutSource.Canvas).moveReroute(
+      graph.rootGraph.id,
+      reroute.id,
+      {
+        x: 300,
+        y: 400
+      }
+    )
 
     expect([...reroute.pos]).toEqual([300, 400])
     expect(reroute.pos).toBe(pos)
