@@ -158,6 +158,7 @@ vi.mock('../utils/outputAssetUtil', async (importOriginal) => {
 
 const mockDeleteAsset = vi.hoisted(() => vi.fn())
 const mockDeleteLocalInputAsset = vi.hoisted(() => vi.fn())
+const mockGetAllAssetsByTag = vi.hoisted(() => vi.fn())
 const mockOpenAssetLocation = vi.hoisted(() => vi.fn())
 const mockCreateAssetExport = vi.hoisted(() =>
   vi.fn<
@@ -167,9 +168,11 @@ const mockCreateAssetExport = vi.hoisted(() =>
   >(async () => ({ task_id: 'test-task-id', status: 'pending' }))
 )
 vi.mock('../services/assetService', () => ({
+  INPUT_TAG: 'input',
   assetService: {
     deleteAsset: mockDeleteAsset,
     deleteLocalInputAsset: mockDeleteLocalInputAsset,
+    getAllAssetsByTag: mockGetAllAssetsByTag,
     openAssetLocation: mockOpenAssetLocation,
     createAssetExport: mockCreateAssetExport
   }
@@ -1213,6 +1216,93 @@ describe('useMediaAssetActions', () => {
       expect(mockUpdateInputs).toHaveBeenCalled()
     })
 
+    it('shares one input listing across a local batch deletion', async () => {
+      mockGetAssetType.mockReturnValue('input')
+      const knownInputAssets = [
+        createMockAsset({
+          id: 'input-record-1',
+          name: 'folder/one.png',
+          loader_path: 'folder/one.png',
+          tags: ['input']
+        }),
+        createMockAsset({
+          id: 'input-record-2',
+          name: 'folder/two.png',
+          loader_path: 'folder/two.png',
+          tags: ['input']
+        })
+      ]
+      mockGetAllAssetsByTag.mockResolvedValueOnce(knownInputAssets)
+      const actions = useMediaAssetActions()
+
+      const deleted = await actions.deleteAssets(
+        [
+          createMockAsset({ name: 'folder/one.png', tags: ['input'] }),
+          createMockAsset({ name: 'folder/two.png', tags: ['input'] })
+        ],
+        { skipConfirmation: true }
+      )
+
+      expect(deleted).toBe(true)
+      expect(mockGetAllAssetsByTag).toHaveBeenCalledOnce()
+      expect(mockGetAllAssetsByTag).toHaveBeenCalledWith('input', false)
+      expect(mockDeleteLocalInputAsset).toHaveBeenNthCalledWith(
+        1,
+        'folder/one.png',
+        knownInputAssets
+      )
+      expect(mockDeleteLocalInputAsset).toHaveBeenNthCalledWith(
+        2,
+        'folder/two.png',
+        knownInputAssets
+      )
+    })
+
+    it('counts each local item as failed when a shared listing fails', async () => {
+      mockGetAssetType.mockImplementation(
+        (asset: AssetItem) => asset.tags?.[0] ?? 'input'
+      )
+      mockGetAllAssetsByTag.mockRejectedValueOnce(new Error('listing failed'))
+      mockDeleteAsset.mockResolvedValueOnce(undefined)
+      const consoleWarn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined)
+      const actions = useMediaAssetActions()
+      const persistentOutput = createMockAsset({
+        id: 'persisted-output',
+        name: 'render.png',
+        loader_path: 'images/render.png',
+        tags: ['output']
+      })
+
+      const deleted = await actions.deleteAssets(
+        [
+          createMockAsset({ name: 'folder/one.png', tags: ['input'] }),
+          createMockAsset({ name: 'folder/two.png', tags: ['input'] }),
+          persistentOutput
+        ],
+        { skipConfirmation: true }
+      )
+
+      expect(deleted).toBe(false)
+      expect(mockGetAllAssetsByTag).toHaveBeenCalledOnce()
+      expect(mockDeleteLocalInputAsset).not.toHaveBeenCalled()
+      expect(mockDeleteAsset).toHaveBeenCalledWith('persisted-output', {
+        deleteContent: false
+      })
+      expect(
+        consoleWarn.mock.calls.filter(([message]) =>
+          String(message).startsWith('Failed to delete asset')
+        )
+      ).toHaveLength(2)
+      expect(useToast().add).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: 'warn',
+          detail: 'mediaAsset.selection.partialDeleteSuccess'
+        })
+      )
+    })
+
     it('returns false when an unconfirmed deletion fails', async () => {
       mockGetAssetType.mockReturnValue('input')
       mockDeleteLocalInputAsset.mockRejectedValueOnce(
@@ -1350,6 +1440,22 @@ describe('useMediaAssetActions', () => {
       )
 
       expect(mockCopyToClipboard).toHaveBeenCalledWith('prompt-123')
+    })
+
+    it('falls back to the prompt id when no job id exists', async () => {
+      mockGetAssetType.mockReturnValue('output')
+      const actions = useMediaAssetActions()
+
+      await actions.copyJobId(
+        createMockAsset({
+          id: 'asset-uuid',
+          loader_path: 'images/render.png',
+          prompt_id: 'prompt-456',
+          tags: ['output']
+        })
+      )
+
+      expect(mockCopyToClipboard).toHaveBeenCalledWith('prompt-456')
     })
 
     it('warns instead of copying the asset id when provenance is missing', async () => {

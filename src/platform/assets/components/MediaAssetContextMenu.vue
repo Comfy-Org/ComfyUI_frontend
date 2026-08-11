@@ -252,6 +252,10 @@ const contextMenuItems = computed<MenuItem[]>(() => {
     })
   }
 
+  if (shouldShowDeleteButton.value || shouldShowDeleteSourceFileButton.value) {
+    items.push({ separator: true })
+  }
+
   if (shouldShowDeleteButton.value) {
     items.push({
       label: t('mediaAsset.actions.delete'),

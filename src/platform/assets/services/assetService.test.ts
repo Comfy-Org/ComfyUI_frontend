@@ -65,20 +65,8 @@ vi.mock('@/scripts/api', () => ({
 
 vi.mock('@/i18n', () => ({
   st: (_key: string, fallback: string) => fallback,
-  t: (key: string, params: Record<string, unknown>) => {
-    const messages: Record<string, string> = {
-      'mediaAsset.errors.invalidLocalInputAssetPath':
-        'Invalid local input asset path: {path}',
-      'mediaAsset.errors.failedToOpenAssetLocation':
-        'Unable to open asset location {id}: Server returned {status}',
-      'mediaAsset.errors.failedToResolveLocalInputAsset':
-        'Unable to resolve local input asset {path}: found {count} matching records'
-    }
-    return (messages[key] ?? key).replace(
-      /\{(\w+)\}/g,
-      (_match, name: string) => String(params[name])
-    )
-  }
+  t: (key: string, params: Record<string, unknown>) =>
+    `${key} ${JSON.stringify(params)}`
 }))
 
 const fetchApiMock = vi.mocked(api.fetchApi)
@@ -470,12 +458,37 @@ describe(assetService.deleteLocalInputAsset, () => {
     )
   })
 
+  it('reuses a provided input listing without loading it again', async () => {
+    const knownInputAssets = [
+      validAsset({
+        id: 'known-asset-uuid',
+        name: 'image.png',
+        loader_path: 'folder/image.png',
+        tags: ['input']
+      })
+    ]
+    fetchApiMock.mockResolvedValueOnce(buildResponse(null))
+
+    await assetService.deleteLocalInputAsset(
+      'folder/image.png',
+      knownInputAssets
+    )
+
+    expect(fetchApiMock).toHaveBeenCalledOnce()
+    expect(fetchApiMock).toHaveBeenCalledWith(
+      '/assets/known-asset-uuid?delete_content=true',
+      expect.objectContaining({ method: 'DELETE' })
+    )
+  })
+
   it('rejects a missing input path', async () => {
     fetchApiMock.mockResolvedValueOnce(buildAssetListResponse([]))
 
     await expect(
       assetService.deleteLocalInputAsset('missing.png')
-    ).rejects.toThrow(/found 0 matching records/)
+    ).rejects.toThrow(
+      'mediaAsset.errors.failedToResolveLocalInputAsset {"path":"missing.png","count":0}'
+    )
     expect(fetchApiMock).toHaveBeenCalledTimes(1)
   })
 
@@ -489,16 +502,20 @@ describe(assetService.deleteLocalInputAsset, () => {
 
     await expect(
       assetService.deleteLocalInputAsset('folder/image.png')
-    ).rejects.toThrow(/found 2 matching records/)
+    ).rejects.toThrow(
+      'mediaAsset.errors.failedToResolveLocalInputAsset {"path":"folder/image.png","count":2}'
+    )
     expect(fetchApiMock).toHaveBeenCalledTimes(1)
   })
 
-  it.for(['', 'C:', 'C:file.png', 'C:/file.png'])(
-    'rejects invalid drive-qualified or empty path %j before loading assets',
+  it.for(['', 'C:', 'C:file.png', 'C:/file.png', '../escape.png', '/abs.png'])(
+    'rejects invalid path %j before loading assets',
     async (loaderPath) => {
       await expect(
         assetService.deleteLocalInputAsset(loaderPath)
-      ).rejects.toThrow(/Invalid local input asset path/)
+      ).rejects.toThrow(
+        `mediaAsset.errors.invalidLocalInputAssetPath ${JSON.stringify({ path: loaderPath })}`
+      )
       expect(fetchApiMock).not.toHaveBeenCalled()
     }
   )
@@ -1519,6 +1536,8 @@ describe(assetService.openAssetLocation, () => {
 
     await expect(
       assetService.openAssetLocation('generated-asset-id')
-    ).rejects.toThrow('Server returned 403')
+    ).rejects.toThrow(
+      'mediaAsset.errors.failedToOpenAssetLocation {"id":"generated-asset-id","status":403}'
+    )
   })
 })

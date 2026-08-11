@@ -125,6 +125,7 @@ function mountComponent(
   showDeleteButton = true
 ) {
   const onHide = vi.fn()
+  const onAssetDeleted = vi.fn()
   const { container, unmount } = render(
     defineComponent({
       components: { MediaAssetContextMenu },
@@ -138,11 +139,12 @@ function mountComponent(
           asset: targetAsset,
           assetType,
           showDeleteButton,
-          onHide
+          onHide,
+          onAssetDeleted
         }
       },
       template:
-        '<MediaAssetContextMenu ref="menuRef" :asset="asset" :asset-type="assetType" :show-delete-button="showDeleteButton" file-kind="image" @hide="onHide" />'
+        '<MediaAssetContextMenu ref="menuRef" :asset="asset" :asset-type="assetType" :show-delete-button="showDeleteButton" file-kind="image" @hide="onHide" @asset-deleted="onAssetDeleted" />'
     }),
     {
       global: {
@@ -153,7 +155,7 @@ function mountComponent(
       }
     }
   )
-  return { container, unmount, onHide }
+  return { container, unmount, onHide, onAssetDeleted }
 }
 
 async function showMenu(container: Element): Promise<HTMLElement> {
@@ -283,7 +285,7 @@ describe('MediaAssetContextMenu', () => {
     unmount()
   })
 
-  it('puts local input deletion directly after download', async () => {
+  it('separates local input deletion from download', async () => {
     const { container, unmount } = mountComponent(asset, 'input')
     await showMenu(container)
 
@@ -293,7 +295,8 @@ describe('MediaAssetContextMenu', () => {
     const deleteIndex = capturedMenu.model.findIndex(
       (item) => item.label === 'mediaAsset.actions.delete'
     )
-    expect(deleteIndex).toBe(downloadIndex + 1)
+    expect(capturedMenu.model[downloadIndex + 1]?.separator).toBe(true)
+    expect(deleteIndex).toBe(downloadIndex + 2)
 
     const deleteItem = findMenuItem('mediaAsset.actions.delete')
     if (!deleteItem?.command) throw new Error('Delete command is missing')
@@ -348,11 +351,14 @@ describe('MediaAssetContextMenu', () => {
     const { container, unmount } = mountComponent(persistentOutput)
     await showMenu(container)
 
-    const labels = capturedMenu.model.map((item) => item.label)
+    const labels = capturedMenu.model.map((item) =>
+      item.separator ? 'separator' : item.label
+    )
     const downloadIndex = labels.indexOf('mediaAsset.actions.download')
-    expect(labels.slice(downloadIndex, downloadIndex + 4)).toEqual([
+    expect(labels.slice(downloadIndex, downloadIndex + 5)).toEqual([
       'mediaAsset.actions.download',
       'mediaAsset.actions.openFileLocation',
+      'separator',
       'mediaAsset.actions.delete',
       'mediaAsset.actions.deleteSourceFile'
     ])
@@ -380,7 +386,8 @@ describe('MediaAssetContextMenu', () => {
   })
 
   it('removes a local generated asset without deleting its source', async () => {
-    const { container, unmount } = mountComponent(persistentOutput)
+    const { container, unmount, onAssetDeleted } =
+      mountComponent(persistentOutput)
     await showMenu(container)
 
     mediaAssetActions.deleteAssets.mockResolvedValueOnce(true)
@@ -394,12 +401,14 @@ describe('MediaAssetContextMenu', () => {
       persistentOutput,
       { skipConfirmation: true }
     )
+    expect(onAssetDeleted).toHaveBeenCalledOnce()
 
     unmount()
   })
 
   it('deletes the source file of a local generated asset', async () => {
-    const { container, unmount } = mountComponent(persistentOutput)
+    const { container, unmount, onAssetDeleted } =
+      mountComponent(persistentOutput)
     await showMenu(container)
 
     mediaAssetActions.deleteAssets.mockResolvedValueOnce(true)
@@ -415,6 +424,7 @@ describe('MediaAssetContextMenu', () => {
       persistentOutput,
       { deleteContent: true }
     )
+    expect(onAssetDeleted).toHaveBeenCalledOnce()
 
     unmount()
   })

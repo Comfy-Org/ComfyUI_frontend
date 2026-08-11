@@ -905,9 +905,13 @@ function createAssetService() {
     }
   }
 
-  async function deleteLocalInputAsset(loaderPath: string): Promise<void> {
+  async function deleteLocalInputAsset(
+    loaderPath: string,
+    knownInputAssets?: readonly AssetItem[]
+  ): Promise<void> {
     const normalizedPath = normalizeLoaderPath(loaderPath)
-    const inputAssets = await getAllAssetsByTag(INPUT_TAG, false)
+    const inputAssets =
+      knownInputAssets ?? (await getAllAssetsByTag(INPUT_TAG, false))
     const matches = inputAssets.filter((asset) => {
       if (!asset.loader_path) return false
       try {

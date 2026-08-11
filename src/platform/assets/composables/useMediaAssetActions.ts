@@ -39,7 +39,7 @@ import { useAssetExportStore } from '@/stores/assetExportStore'
 
 import type { AssetItem } from '../schemas/assetSchema'
 import { MediaAssetKey } from '../schemas/mediaAssetSchema'
-import { assetService } from '../services/assetService'
+import { INPUT_TAG, assetService } from '../services/assetService'
 
 const EXCLUDED_TAGS = new Set(['models', 'input', 'output'])
 
@@ -109,6 +109,10 @@ export function shouldSkipDeleteConfirmation(asset: AssetItem): boolean {
   return assetType === 'input' || isPersistentLocalOutputAsset(asset)
 }
 
+function usesLocalInputDeletion(assetType: string): boolean {
+  return !isCloud && assetType !== 'output' && assetType !== 'temp'
+}
+
 function createAssetWidgetPath(asset: AssetItem): string {
   const metadata = getOutputAssetMetadata(asset.user_metadata)
   const assetType = getAssetType(asset, 'input')
@@ -170,7 +174,8 @@ export function useMediaAssetActions() {
   const deleteAssetApi = async (
     asset: AssetItem,
     assetType: string,
-    deleteContent = false
+    deleteContent = false,
+    localInputAssets?: readonly AssetItem[]
   ): Promise<void> => {
     if (assetType === 'output' && isPersistentLocalOutputAsset(asset)) {
       await assetService.deleteAsset(asset.id, { deleteContent })
@@ -184,7 +189,12 @@ export function useMediaAssetActions() {
       }
       await api.deleteItem('history', jobId)
     } else if (!isCloud) {
-      await assetService.deleteLocalInputAsset(getAssetStoredFilename(asset))
+      const loaderPath = getAssetStoredFilename(asset)
+      if (localInputAssets) {
+        await assetService.deleteLocalInputAsset(loaderPath, localInputAssets)
+      } else {
+        await assetService.deleteLocalInputAsset(loaderPath)
+      }
     } else {
       await assetService.deleteAsset(asset.id)
     }
@@ -761,10 +771,29 @@ export function useMediaAssetActions() {
     assetArray.forEach((asset) => assetsStore.setAssetDeleting(asset.id, true))
 
     try {
+      const localInputCount = isCloud
+        ? 0
+        : assetArray.filter((asset) =>
+            usesLocalInputDeletion(getAssetType(asset))
+          ).length
+      const sharedLocalInputAssets =
+        localInputCount > 1
+          ? assetService.getAllAssetsByTag(INPUT_TAG, false)
+          : undefined
       const results = await Promise.allSettled(
-        assetArray.map((asset) =>
-          deleteAssetApi(asset, getAssetType(asset), deleteContent)
-        )
+        assetArray.map(async (asset) => {
+          const assetType = getAssetType(asset)
+          const localInputAssets =
+            usesLocalInputDeletion(assetType) && sharedLocalInputAssets
+              ? await sharedLocalInputAssets
+              : undefined
+          return await deleteAssetApi(
+            asset,
+            assetType,
+            deleteContent,
+            localInputAssets
+          )
+        })
       )
       const succeeded = results.filter(
         (result) => result.status === 'fulfilled'
