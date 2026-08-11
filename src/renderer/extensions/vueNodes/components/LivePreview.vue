@@ -12,8 +12,6 @@
       :src="imageUrl"
       :alt="$t('g.liveSamplingPreview')"
       class="pointer-events-none min-h-55 w-full flex-1 object-contain contain-size"
-      @load="handleImageLoad"
-      @error="handleImageError"
     />
     <div class="text-node-component-header-text mt-1 text-center text-xs">
       {{
@@ -26,7 +24,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { useImage } from '@vueuse/core'
+import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 interface LivePreviewProps {
   imageUrl: string
@@ -34,29 +34,36 @@ interface LivePreviewProps {
 
 const props = defineProps<LivePreviewProps>()
 
-const actualDimensions = ref<string | null>(null)
-const imageError = ref(false)
+const { t } = useI18n()
 
-watch(
-  () => props.imageUrl,
-  () => {
-    // Reset error state when URL changes, but keep previous dimensions
-    // to avoid flickering "Calculating dimensions" text during live preview
-    imageError.value = false
-  }
+const {
+  state: imageState,
+  isReady,
+  error
+} = useImage(
+  computed(() => ({ src: props.imageUrl, alt: t('g.liveSamplingPreview') }))
 )
 
-const handleImageLoad = (event: Event) => {
-  if (!event.target || !(event.target instanceof HTMLImageElement)) return
-  const img = event.target
-  imageError.value = false
-  if (img.naturalWidth && img.naturalHeight) {
-    actualDimensions.value = `${img.naturalWidth} x ${img.naturalHeight}`
-  }
-}
+// Cache last successfully loaded dimensions so the placeholder text does not
+// flicker back to "Calculating dimensions" each time `imageUrl` changes during
+// live preview streaming. Update only when a new image is ready, never on
+// URL change alone.
+const cachedWidth = ref<number | null>(null)
+const cachedHeight = ref<number | null>(null)
 
-const handleImageError = () => {
-  imageError.value = true
-  actualDimensions.value = null
-}
+watch([isReady, imageState], ([ready, img]) => {
+  if (!ready || !img) return
+  if (img.naturalWidth && img.naturalHeight) {
+    cachedWidth.value = img.naturalWidth
+    cachedHeight.value = img.naturalHeight
+  }
+})
+
+const imageError = computed(() => !!error.value)
+
+const actualDimensions = computed(() =>
+  cachedWidth.value && cachedHeight.value
+    ? `${cachedWidth.value} x ${cachedHeight.value}`
+    : null
+)
 </script>
