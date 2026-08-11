@@ -15,6 +15,12 @@ import WidgetSelectDropdown from '@/renderer/extensions/vueNodes/widgets/compone
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { createMockWidget } from './widgetTestUtils'
 
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({
+    flags: { modelUploadButtonEnabled: false }
+  })
+}))
+
 const mockCheckState = vi.hoisted(() => vi.fn())
 const mockAssetsData = vi.hoisted(() => ({ items: [] as AssetItem[] }))
 

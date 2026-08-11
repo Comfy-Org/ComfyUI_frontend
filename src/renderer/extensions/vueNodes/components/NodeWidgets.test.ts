@@ -1,7 +1,7 @@
 /* eslint-disable testing-library/no-container */
 /* eslint-disable testing-library/no-node-access */
 import { createTestingPinia } from '@pinia/testing'
-import { render, screen } from '@testing-library/vue'
+import { fireEvent, render, screen } from '@testing-library/vue'
 import { setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
@@ -19,6 +19,11 @@ import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { widgetId } from '@/types/widgetId'
 
 const GRAPH_ID = 'graph-test'
+const mockShowNodeOptions = vi.hoisted(() => vi.fn())
+
+vi.mock('@/composables/graph/useMoreOptionsMenu', () => ({
+  showNodeOptions: mockShowNodeOptions
+}))
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({
@@ -381,5 +386,40 @@ describe('NodeWidgets', () => {
     expect(control).toBeDisabled()
     expect(control).toHaveAttribute('data-linked-display', 'control')
     expect(screen.queryByTestId('linked-widget-placeholder')).toBeNull()
+  })
+
+  it('dispatches context menu actions from a mounted linked widget', async () => {
+    const linkedWidgetId = widgetId(GRAPH_ID, toNodeId('test_node'), 'prompt')
+    const nodeData = createMockNodeData('TestNode', [
+      createMockWidget({
+        widgetId: linkedWidgetId,
+        name: 'prompt',
+        nodeId: toNodeId('test_node'),
+        type: 'text',
+        slotMetadata: {
+          index: 0,
+          linked: true,
+          type: 'STRING'
+        }
+      })
+    ])
+
+    const { container } = renderComponent(nodeData, () => {
+      useWidgetValueStore().registerWidget(linkedWidgetId, {
+        type: 'text',
+        value: 'stale local prompt',
+        options: {}
+      })
+    })
+
+    const control = container.querySelector('.widget-stub')
+    expect(control).not.toBeNull()
+    await fireEvent.contextMenu(control!)
+
+    expect(mockShowNodeOptions).toHaveBeenCalledWith(
+      expect.any(MouseEvent),
+      'prompt',
+      toNodeId('test_node')
+    )
   })
 })

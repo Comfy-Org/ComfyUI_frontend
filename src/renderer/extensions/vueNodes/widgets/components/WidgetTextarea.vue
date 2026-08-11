@@ -32,7 +32,7 @@
       "
       :placeholder
       :readonly="isReadOnly"
-      :disabled="Boolean(widget.options?.disabled)"
+      :disabled="isLinked || undefined"
       :aria-hidden="isLinked ? 'true' : undefined"
       :inert="isLinked ? true : undefined"
       :tabindex="isLinked ? -1 : undefined"

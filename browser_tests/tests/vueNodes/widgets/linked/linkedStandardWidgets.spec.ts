@@ -166,6 +166,7 @@ test.describe(
       await comfyPage.page.keyboard.type('ignored input')
       await expect(focusedLinkedContent).toHaveCount(0)
 
+      await comfyPage.nextFrame()
       await expect
         .poll(() => Promise.all(widgetRefs.map((widget) => widget.getValue())))
         .toStrictEqual(valuesBefore)

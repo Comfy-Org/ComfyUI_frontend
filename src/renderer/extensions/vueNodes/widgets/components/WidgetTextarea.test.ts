@@ -174,6 +174,17 @@ describe('WidgetTextarea Value Binding', () => {
       expect(textarea.value).toBe('initial content')
     })
 
+    it('keeps an unlinked disabled textarea readonly without disabling it', () => {
+      const widget = createTextareaWidget('readable content', {
+        disabled: true
+      })
+      renderComponent(widget, 'readable content')
+
+      const textarea = screen.getByRole('textbox')
+      expect(textarea).toHaveAttribute('readonly')
+      expect(textarea).toBeEnabled()
+    })
+
     it('restores the textarea after a link is removed', async () => {
       const widget = createTextareaWidget('stale multiline', {
         disabled: true
