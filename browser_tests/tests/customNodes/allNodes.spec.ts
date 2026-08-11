@@ -111,10 +111,6 @@ if (
   throw new Error(
     `unrecognized CUSTOM_NODE_SPLIT_TIERS value "${process.env.CUSTOM_NODE_SPLIT_TIERS}" - expected "0" or "1"`
   )
-if (splitAllNodesTiers && process.env.CUSTOM_NODE_SHARED_SESSION !== '1')
-  throw new Error(
-    'CUSTOM_NODE_SPLIT_TIERS=1 requires CUSTOM_NODE_SHARED_SESSION=1 so independent tier tests reuse the externally owned app boot'
-  )
 
 // Nodes unsafe to execute on a bare backend; every entry names the mechanism.
 const AUTO_RUN_EXCLUDE: Record<string, Record<string, string>> = {
@@ -691,8 +687,15 @@ if (unjoinedYamlPacks.length > 0) {
   })
 }
 
+type AllNodesTierRunner = {
+  entry: ReturnType<typeof loadManifest>[number]
+  run: (comfyPage: ComfyPage, tier?: SplitAllNodesTier) => Promise<void>
+}
+
+const allNodesTierRunners: AllNodesTierRunner[] = []
+
 for (const entry of loadManifest()) {
-  test.describe(`all nodes: ${entry.pack} @custom-nodes`, () => {
+  const registerAllNodesTests = () => {
     const expectAllNodesTier = async (
       comfyPage: ComfyPage,
       selectedTier?: SplitAllNodesTier
@@ -703,10 +706,9 @@ for (const entry of loadManifest()) {
         keys.length === 0,
         `${entry.pack} not installed on this backend`
       )
-      // One app boot serves all three tiers: measured on cloud, per-test
-      // boots were 113 of 148 suite-minutes. A tier's failure is collected,
-      // never allowed to skip the tiers after it; the graph is cleared and
-      // the backend drained at every tier boundary.
+      // Combined mode preserves the established one-boot-per-pack behavior.
+      // Split mode calls this runner from one test per tier and clears graph
+      // and backend state between packs so every pack is still evaluated.
       const tierFailures: string[] = []
       async function runTier(
         selectedBy: SplitAllNodesTier[],
@@ -729,15 +731,7 @@ for (const entry of loadManifest()) {
         }
         await comfyPage.nodeOps.clearGraph()
         await drainBackendToIdle(comfyPage.page, 10_000)
-        if (selectedTier !== undefined && failed) {
-          await attachPageDiagnosticEvidence(
-            comfyPage.page,
-            test.info(),
-            `${selectedTier.toLowerCase()}-failures.json`,
-            [tierError instanceof Error ? tierError.message : String(tierError)]
-          )
-          throw tierError
-        }
+        if (selectedTier !== undefined && failed) throw tierError
       }
 
       await runTier(['S1', 'S2', 'S14'], 'mount', async () => {
@@ -1845,31 +1839,74 @@ for (const entry of loadManifest()) {
         ).toBe(true)
     }
 
-    if (splitAllNodesTiers) {
-      test('S1: every registered node mounts on the canvas renderer', async ({
-        comfyPage
-      }) => expectAllNodesTier(comfyPage, 'S1'))
-
-      if (rendererPassesFor(entry).includes(true))
-        test('S2: every registered node mounts on the DOM renderer', async ({
-          comfyPage
-        }) => expectAllNodesTier(comfyPage, 'S2'))
-
-      test('S3: every registered node survives save and reload', async ({
-        comfyPage
-      }) => expectAllNodesTier(comfyPage, 'S3'))
-
-      test('S9: every self-sufficient node executes', async ({ comfyPage }) =>
-        expectAllNodesTier(comfyPage, 'S9'))
-
-      if (process.env.CN_ENABLE_S14 === '1')
-        test('S14: every registered node matches its geometry baseline', async ({
-          comfyPage
-        }) => expectAllNodesTier(comfyPage, 'S14'))
-    } else
+    if (splitAllNodesTiers)
+      allNodesTierRunners.push({ entry, run: expectAllNodesTier })
+    else
       test('every registered node mounts, survives save/reload, and executes', async ({
         comfyPage
       }) => expectAllNodesTier(comfyPage))
+  }
+
+  if (splitAllNodesTiers) registerAllNodesTests()
+  else
+    test.describe(
+      `all nodes: ${entry.pack} @custom-nodes`,
+      registerAllNodesTests
+    )
+}
+
+if (splitAllNodesTiers) {
+  const tiers: Array<[SplitAllNodesTier, string]> = [
+    ['S1', 'every registered node mounts on the canvas renderer'],
+    ['S2', 'every registered node mounts on the DOM renderer'],
+    ['S3', 'every registered node survives save and reload'],
+    ['S9', 'every self-sufficient node executes']
+  ]
+  if (process.env.CN_ENABLE_S14 === '1')
+    tiers.push(['S14', 'every registered node matches its geometry baseline'])
+
+  test.describe('all nodes by tier @custom-nodes', () => {
+    for (const [tier, title] of tiers) {
+      test(`${tier}: ${title}`, async ({ comfyPage }) => {
+        if (customNodesEnv() !== 'cloud') test.setTimeout(1_620_000)
+        const pageId = await comfyPage.page.evaluate(() => {
+          const key = '__customNodeTierPageId'
+          const existing = sessionStorage.getItem(key)
+          if (existing) return existing
+          const created = crypto.randomUUID()
+          sessionStorage.setItem(key, created)
+          return created
+        })
+        console.warn(
+          `[tier-session] pid=${process.pid} tier=${tier} pageId=${pageId}`
+        )
+
+        const failures: string[] = []
+        for (const runner of allNodesTierRunners) {
+          if (tier === 'S2' && !rendererPassesFor(runner.entry).includes(true))
+            continue
+          try {
+            await runner.run(comfyPage, tier)
+          } catch (error) {
+            failures.push(
+              `[${runner.entry.pack}] ${error instanceof Error ? error.message : String(error)}`
+            )
+          }
+        }
+        const attachment = `${tier.toLowerCase()}-failures.json`
+        if (failures.length > 0)
+          await attachPageDiagnosticEvidence(
+            comfyPage.page,
+            test.info(),
+            attachment,
+            failures
+          )
+        expect(
+          failures.length === 0,
+          failureSummary(`${tier} pack failures`, failures, attachment)
+        ).toBe(true)
+      })
+    }
   })
 }
 

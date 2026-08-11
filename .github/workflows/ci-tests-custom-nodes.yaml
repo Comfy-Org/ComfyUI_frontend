@@ -24,7 +24,7 @@ on:
   workflow_dispatch:
     inputs:
       shared_boot_proof_row:
-        description: 'Detection Proof row to break against one shared app boot'
+        description: 'Isolation proof mode: clean split or deliberate row break'
         required: false
         type: choice
         options: ['0', 'split', '1', '3', '7', '9']
@@ -72,7 +72,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
 
-      - name: Apply shared-boot source break
+      - name: Apply Detection Proof source break
         if: >-
           github.event_name == 'workflow_dispatch' &&
           inputs.shared_boot_proof_row != '0' &&
@@ -197,7 +197,7 @@ jobs:
           CN_ENABLE_S14: '1'
           CN_ENABLE_S15: '1'
           CUSTOM_NODE_SHARED_SESSION: >-
-            ${{ github.event_name == 'workflow_dispatch' && inputs.shared_boot_proof_row != '0' && '1' || '0' }}
+            ${{ github.event_name == 'workflow_dispatch' && inputs.shared_boot_proof_row != '0' && inputs.shared_boot_proof_row != 'split' && inputs.shared_boot_proof_row != '3' && '1' || '0' }}
           PLAYWRIGHT_JSON_OUTPUT_NAME: custom-nodes-results.json
           PROOF_ROW: ${{ inputs.shared_boot_proof_row || '0' }}
         run: |
@@ -216,13 +216,14 @@ jobs:
             0) ;;
             split)
               export CUSTOM_NODE_SPLIT_TIERS=1
+              grep_args=(--grep 'all nodes by tier @custom-nodes.*S(1|2|3|9|14):')
               ;;
             1)
               grep_args=(--grep 'all nodes: ComfyUI-Impact-Pack @custom-nodes.*every registered node mounts, survives save/reload, and executes$|shared session continuity after broken tier @custom-nodes$')
               ;;
             3)
               export CUSTOM_NODE_SPLIT_TIERS=1
-              grep_args=(--grep 'all nodes: ComfyUI-Impact-Pack @custom-nodes.*S(1|2|3|9|14):|shared session continuity after broken tier @custom-nodes$')
+              grep_args=(--grep 'all nodes by tier @custom-nodes.*S(1|2|3|9|14):')
               ;;
             7)
               grep_args=(--grep 'smoke: core workflow @custom-nodes.*loads without console errors in both renderers$|shared session continuity after broken tier @custom-nodes$')
@@ -244,7 +245,7 @@ jobs:
         shell: bash
         env:
           SUITE_OUTCOME: ${{ steps.suite.outcome }}
-          EXPECTED_TESTS: ${{ inputs.shared_boot_proof_row == 'split' && '59' || '34' }}
+          EXPECTED_TESTS: ${{ inputs.shared_boot_proof_row == 'split' && '5' || '34' }}
         run: |
           set -euo pipefail
           # The JSON result is mandatory even when the suite step failed: the
@@ -290,7 +291,7 @@ jobs:
             exit 1
           fi
 
-      - name: Assert shared-boot failure independence
+      - name: Assert deliberate failure independence
         if: >-
           always() &&
           github.event_name == 'workflow_dispatch' &&
@@ -312,8 +313,8 @@ jobs:
           expected_passed=1
           expected_failed=1
           if [ "$PROOF_ROW" = 3 ]; then
-            expected_collected=6
-            expected_passed=5
+            expected_collected=5
+            expected_passed=4
           fi
           [ "$collected" = "$expected_collected" ] || { echo "::error::S$PROOF_ROW collected $collected tests, expected $expected_collected"; exit 1; }
           [ "$expected" = "$expected_passed" ] || { echo "::error::S$PROOF_ROW expected-pass count is $expected, expected $expected_passed"; exit 1; }
@@ -321,7 +322,6 @@ jobs:
           [ "$skipped" = 0 ] && [ "$flaky" = 0 ] || { echo "::error::S$PROOF_ROW has skipped=$skipped flaky=$flaky"; exit 1; }
           [ "$SUITE_OUTCOME" = failure ] || { echo "::error::S$PROOF_ROW did not break its witness"; exit 1; }
 
-          jq -e '.. | objects | select(.title? == "shared session continuity after broken tier @custom-nodes") | .tests[] | select(.status == "expected")' custom-nodes-results.json >/dev/null
           {
             jq -r '.. | objects | select(.status? == "unexpected") | .results[]? | .error?.message? // empty' custom-nodes-results.json
             jq -r '.. | objects | select(.status? == "unexpected") | .results[]?.attachments[]? | select(.contentType? == "application/json" and has("body")) | (.body | @base64d | fromjson) | if type == "array" then .[] else . end' custom-nodes-results.json
@@ -333,6 +333,35 @@ jobs:
             9) pat='DETECTION PROOF \(row 9\): pack node runtime failure' ;;
           esac
           grep -Eq -- "$pat" shared-boot-proof-evidence.txt || { echo "::error::S$PROOF_ROW failure was not attributable to its Detection Proof break"; exit 1; }
+
+          if [ "$PROOF_ROW" = 3 ]; then
+            jq -e '.. | objects | select(.title? == "S3: every registered node survives save and reload") | .tests[] | select(.status == "unexpected")' custom-nodes-results.json >/dev/null
+            for title in \
+              "S1: every registered node mounts on the canvas renderer" \
+              "S2: every registered node mounts on the DOM renderer" \
+              "S9: every self-sufficient node executes" \
+              "S14: every registered node matches its geometry baseline"; do
+              jq -e --arg title "$title" '.. | objects | select(.title? == $title) | .tests[] | select(.status == "expected")' custom-nodes-results.json >/dev/null || {
+                echo "::error::$title did not pass independently of the deliberate S3 failure"
+                exit 1
+              }
+            done
+            mapfile -t tier_sessions < <(grep -oE '\[tier-session\] pid=[0-9]+ tier=S(1|2|3|9|14) pageId=[^ ]+' custom-nodes.log)
+            [ "${#tier_sessions[@]}" -eq 5 ] || { echo "::error::S3 proof recorded ${#tier_sessions[@]} tier sessions, expected 5"; exit 1; }
+            page_ids=$(printf '%s\n' "${tier_sessions[@]}" | sed -E 's/.* pageId=([^ ]+).*/\1/' | sort -u | wc -l | tr -d ' ')
+            [ "$page_ids" = 5 ] || { echo "::error::S3 proof reused an application page between tiers"; exit 1; }
+            pids=$(printf '%s\n' "${tier_sessions[@]}" | sed -E 's/.* pid=([0-9]+).*/\1/' | sort -u | wc -l | tr -d ' ')
+            [ "$pids" = 2 ] || { echo "::error::S3 proof used $pids Playwright workers, expected the failed worker plus one replacement"; exit 1; }
+            s3_pid=$(printf '%s\n' "${tier_sessions[@]}" | sed -nE 's/.*pid=([0-9]+) tier=S3 .*/\1/p')
+            s9_pid=$(printf '%s\n' "${tier_sessions[@]}" | sed -nE 's/.*pid=([0-9]+) tier=S9 .*/\1/p')
+            s14_pid=$(printf '%s\n' "${tier_sessions[@]}" | sed -nE 's/.*pid=([0-9]+) tier=S14 .*/\1/p')
+            [ -n "$s3_pid" ] && [ -n "$s9_pid" ] && [ -n "$s14_pid" ] || { echo "::error::S3 proof could not bind tier worker identities"; exit 1; }
+            [ "$s3_pid" != "$s9_pid" ] && [ "$s9_pid" = "$s14_pid" ] || { echo "::error::S9/S14 did not run together in the replacement worker after S3 failed"; exit 1; }
+            echo "S3: real break failed; S1, S2, S9, and S14 passed in four separate fresh-page tests"
+            exit 0
+          fi
+
+          jq -e '.. | objects | select(.title? == "shared session continuity after broken tier @custom-nodes") | .tests[] | select(.status == "expected")' custom-nodes-results.json >/dev/null
 
           mapfile -t sessions < <(grep -oE '\[shared-session\] pid=[0-9]+ id=[^ ]+ bootCount=[0-9]+' custom-nodes.log)
           [ "${#sessions[@]}" -eq "$expected_collected" ] || { echo "::error::S$PROOF_ROW recorded ${#sessions[@]} session identities, expected $expected_collected"; exit 1; }
