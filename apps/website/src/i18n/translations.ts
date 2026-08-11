@@ -1335,6 +1335,15 @@ const translations = {
   },
   'pricing.plan.period': { en: '/month', 'zh-CN': '/月' },
   'pricing.creditsLabel': { en: 'monthly credits', 'zh-CN': '每月积分' },
+  'pricing.banner.title': {
+    en: "Start free. Upgrade when you're ready.",
+    'zh-CN': '免费开始，准备好了再升级。'
+  },
+  'pricing.banner.subtitle': {
+    en: '5 free runs on real GPUs — no credit card required.',
+    'zh-CN': '在真实 GPU 上免费运行 5 次 — 无需信用卡。'
+  },
+  'pricing.banner.cta': { en: 'TRY FREE', 'zh-CN': '免费试用' },
 
   'pricing.feature.educationalSavings': {
     en: 'Educational savings – 10% off',
