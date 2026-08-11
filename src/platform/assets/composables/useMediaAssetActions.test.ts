@@ -1,4 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
+import type { CreateAssetExportData } from '@comfyorg/ingest-types'
 import { fromAny } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { useToast } from 'primevue/usetoast'
@@ -152,13 +153,9 @@ vi.mock('../utils/outputAssetUtil', async (importOriginal) => {
 const mockDeleteAsset = vi.hoisted(() => vi.fn())
 const mockCreateAssetExport = vi.hoisted(() =>
   vi.fn<
-    (params: {
-      job_ids?: string[]
-      asset_ids?: string[]
-      naming_strategy?: string
-      job_asset_name_filters?: Record<string, string[]>
-      include_previews?: boolean
-    }) => Promise<{ task_id: string; status: string; message?: string }>
+    (
+      params: CreateAssetExportData['body']
+    ) => Promise<{ task_id: string; status: string; message?: string }>
   >(async () => ({ task_id: 'test-task-id', status: 'pending' }))
 )
 vi.mock('../services/assetService', () => ({

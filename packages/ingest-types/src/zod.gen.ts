@@ -2536,6 +2536,9 @@ export const zListAssetsData = z.object({
     .object({
       include_tags: z.array(z.string()).optional(),
       exclude_tags: z.array(z.string()).optional(),
+      tags_all: z.array(z.string()).optional(),
+      tags_any: z.array(z.string()).optional(),
+      tags_none: z.array(z.string()).optional(),
       name_contains: z.string().optional(),
       metadata_filter: z.string().optional(),
       limit: z.number().int().gte(1).lte(500).optional().default(20),
@@ -2844,6 +2847,9 @@ export const zGetAssetTagHistogramData = z.object({
     .object({
       include_tags: z.array(z.string()).optional(),
       exclude_tags: z.array(z.string()).optional(),
+      tags_all: z.array(z.string()).optional(),
+      tags_any: z.array(z.string()).optional(),
+      tags_none: z.array(z.string()).optional(),
       name_contains: z.string().optional(),
       metadata_filter: z.string().optional(),
       limit: z.number().int().gte(1).lte(1000).optional().default(100),
