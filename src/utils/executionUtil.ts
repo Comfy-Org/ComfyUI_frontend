@@ -1,5 +1,12 @@
-import { frontendResolverMap } from '@/platform/nodeApi/defsRegistry'
-import { resolveFrontendNodes } from '@/platform/nodeApi/resolution'
+import {
+  frontendResolverMap,
+  frontendSupplierMap
+} from '@/platform/nodeApi/defsRegistry'
+import { whileEmbeddingWorkflow } from '@/platform/nodeApi/serializeContext'
+import {
+  resolveFrontendNodes,
+  resolveSuppliedInputs
+} from '@/platform/nodeApi/resolution'
 
 import type {
   ExecutableLGraphNode,
@@ -74,7 +81,10 @@ export const graphToPrompt = async (
     }
   }
 
-  const workflow = graph.serialize({ sortNodes })
+  // This copy travels with the prompt as `extra_pnginfo` and is what lands in
+  // the output image — a different destination from a saved file, though the
+  // same call builds it.
+  const workflow = whileEmbeddingWorkflow(() => graph.serialize({ sortNodes }))
 
   // Remove localized_name from the workflow
   for (const node of workflow.nodes) {
@@ -116,6 +126,14 @@ export const graphToPrompt = async (
   // `applyToGraph`, which mutated the live graph mid-serialize; resolution is
   // pure and leaves the graph untouched. Computed once for the whole prompt.
   const resolutions = resolveFrontendNodes(graph, frontendResolverMap())
+  // The broadcast direction: nodes that feed somebody else's *unconnected*
+  // input. Runs after the demand-side pass and takes its result, so a
+  // broadcaster fed through a reroute still lands on the real source.
+  const supplied = resolveSuppliedInputs(
+    graph,
+    frontendSupplierMap(),
+    resolutions
+  )
 
   const output: ComfyApiWorkflow = {}
   // Process nodes in order of execution
@@ -159,7 +177,20 @@ export const graphToPrompt = async (
     // Store all node links
     for (const [i, input] of node.inputs.entries()) {
       const resolvedInput = node.resolveInput(i)
-      if (!resolvedInput) continue
+      if (!resolvedInput) {
+        // Nothing is linked here, but a pack may broadcast into it.
+        const offered = supplied.get(`${node.id}:${i}`)
+        if (offered?.kind === 'output') {
+          inputs[input.name] = [offered.nodeId, offered.output]
+        } else if (offered?.kind === 'literal') {
+          inputs[input.name] = (
+            Array.isArray(offered.value)
+              ? { __value__: offered.value }
+              : offered.value
+          ) as ComfyApiWorkflow[string]['inputs'][string]
+        }
+        continue
+      }
 
       // Resolved to an actual widget value rather than a node connection
       if (resolvedInput.widgetInfo) {

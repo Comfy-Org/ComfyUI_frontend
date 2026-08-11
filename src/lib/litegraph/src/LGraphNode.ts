@@ -169,7 +169,12 @@ function serialiseWidgetValues(widgets: IBaseWidget[]) {
   const named: Record<string, TWidgetValue> = {}
   for (const widget of widgets) {
     if (widget.serialize === false) continue
-    const value = widget.value
+    // `serializeWorkflowValue` is the saved-file counterpart of
+    // `serializeValue`, which only the prompt builder consults. A widget that
+    // sets neither serialises its own value, as it always has.
+    const value = widget.serializeWorkflowValue
+      ? widget.serializeWorkflowValue()
+      : widget.value
     const serialisedValue =
       value != null && typeof value === 'object'
         ? JSON.parse(JSON.stringify(value))
