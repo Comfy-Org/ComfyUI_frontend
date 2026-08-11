@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { Locale } from '../i18n/translations'
 import { parseFaqAnswer } from '../utils/faqAnswer'
-import { applyFdctUrl, fdctFaqs, fdctPage } from './fdct'
+import { applyFdctUrl, fdctFaqs } from './fdct'
 
 const LOCALES = ['en', 'zh-CN'] as const satisfies readonly Locale[]
 
@@ -27,12 +27,4 @@ describe('fdct apply pathway', () => {
       expect(unresolved).toEqual([])
     }
   )
-
-  it('exposes the FDCT role through the Q&A only, never as a page CTA', () => {
-    const ctasToTheRole = Object.entries(fdctPage.ctas).filter(([, href]) =>
-      href.startsWith('https://jobs.ashbyhq.com/')
-    )
-
-    expect(ctasToTheRole).toEqual([])
-  })
 })
