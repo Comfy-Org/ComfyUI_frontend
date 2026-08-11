@@ -16,7 +16,7 @@ vi.mock(
 const mockRouteQuery = vi.hoisted(() => ({
   value: {} as Record<string, string>
 }))
-const mockRouterReplace = vi.hoisted(() => vi.fn().mockResolvedValue(undefined))
+const mockRouterReplace = vi.hoisted(() => vi.fn(async () => undefined))
 
 vi.mock('vue-router', () => ({
   useRoute: () => ({
