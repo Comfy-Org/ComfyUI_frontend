@@ -85,21 +85,36 @@ export const GEOMETRY_UNSTABLE_PATHS: Record<
   Record<string, Record<string, string>>
 > = {
   'ComfyUI-VideoHelperSuite': {
+    // Observed live in run 31513986272 (rerun of the identical SHA passed):
+    // the preview widget one index BELOW the ledgered one collapsed to 0
+    // (LoadImages widgets[4], LoadVideo widgets[8], FFmpeg widgets[7]) and
+    // VHS_LoadAudioUpload.vue.h read 24px short - the async default-media
+    // mechanism at the adjacent widget slot, plus the audio variant.
+    VHS_LoadAudioUpload: {
+      'vue.h':
+        'upload preview row follows the asynchronous default-media mechanism (observed 250 -> 226 in run 31513986272)'
+    },
     VHS_LoadImages: {
       'vue.h':
         'preview height follows asynchronously loaded default-media aspect ratio',
+      'vue.widgets[4].h':
+        'preview widget collapses to 0 when the async default-media resolves empty (observed in run 31513986272)',
       'vue.widgets[5].h':
         'preview widget height follows the same asynchronous default-media aspect-ratio mechanism'
     },
     VHS_LoadVideo: {
       'vue.h':
         'preview height follows asynchronously loaded default-media aspect ratio',
+      'vue.widgets[8].h':
+        'preview widget collapses to 0 when the async default-media resolves empty (observed in run 31513986272)',
       'vue.widgets[9].h':
         'preview widget height follows the same asynchronous default-media aspect-ratio mechanism'
     },
     VHS_LoadVideoFFmpeg: {
       'vue.h':
         'preview height follows the same asynchronous default-media aspect-ratio mechanism',
+      'vue.widgets[7].h':
+        'preview widget collapses to 0 when the async default-media resolves empty (observed in run 31513986272)',
       'vue.widgets[8].h':
         'preview widget height follows the same asynchronous default-media aspect-ratio mechanism'
     },
@@ -114,6 +129,49 @@ export const GEOMETRY_UNSTABLE_PATHS: Record<
         'preview height follows asynchronously loaded default-media aspect ratio',
       'vue.widgets[8].h':
         'preview widget height follows the same asynchronous default-media aspect-ratio mechanism'
+    }
+  },
+  // Observed live: run 31537261792 measured every one of these nine nodes
+  // 8-48px shorter in vue.h than run 31518805275 recorded at identical suite
+  // code, while EVERY widget height on the same nodes matched the baseline
+  // exactly - the flip sits in slot/section layout, not in any widget. Only
+  // vue.h is relaxed; widget geometry stays strict.
+  'was-node-suite-comfyui': {
+    'BLIP Analyze Image': {
+      'vue.h':
+        'vue node height flips between identical runs with all widget heights stable (observed 320 -> 282)'
+    },
+    'BLIP Model Loader': {
+      'vue.h':
+        'vue node height flips between identical runs with all widget heights stable (observed 164 -> 148)'
+    },
+    CLIPSEG2: {
+      'vue.h':
+        'vue node height flips between identical runs with all widget heights stable (observed 148 -> 140)'
+    },
+    'CLIPSeg Batch Masking': {
+      'vue.h':
+        'vue node height flips between identical runs with all widget heights stable (observed 380 -> 332)'
+    },
+    'CLIPSeg Masking': {
+      'vue.h':
+        'vue node height flips between identical runs with all widget heights stable (observed 120 -> 112)'
+    },
+    'CLIPSeg Model Loader': {
+      'vue.h':
+        'vue node height flips between identical runs with all widget heights stable (observed 100 -> 92)'
+    },
+    'CLIPTextEncode (NSP)': {
+      'vue.h':
+        'vue node height flips between identical runs with all widget heights stable (observed 264 -> 254)'
+    },
+    'Cache Node': {
+      'vue.h':
+        'vue node height flips between identical runs with all widget heights stable (observed 248 -> 216)'
+    },
+    'Create Grid Image': {
+      'vue.h':
+        'vue node height flips between identical runs with all widget heights stable (observed 332 -> 316)'
     }
   }
 }

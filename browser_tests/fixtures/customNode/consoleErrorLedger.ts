@@ -311,6 +311,19 @@ const ENV_CONNECTIVITY_ERROR_ALLOWLIST: Record<
           /Failed to load resource.*status of 404\b.*http:\/\/localhost:8188\/api\/pysssss\/examples\/loras%2FNone(?:[\s\]]|$)/,
         reason:
           'betterCombos conditionally requests examples for its literal None default and the pack route returns 404 when no matching lora exists'
+      },
+      // mathExpression.js:31 draws `app.nodeOutputs[this.id].value[0]` inside
+      // onDrawForeground; the sweep repeatedly clears the graph and node ids
+      // recycle, so a stale nodeOutputs entry from an earlier sweep prompt can
+      // sit under a reused id WITHOUT a `value` field. Frame-timing dependent
+      // (only fires when a MathExpression node draws while such an entry
+      // exists), so no requiredConnectivityId - it must not become a
+      // must-fire staleness obligation. Pack-owned; upstream-report candidate.
+      {
+        pattern:
+          /Cannot read properties of undefined \(reading '0'\)[\s\S]*\/extensions\/ComfyUI-Custom-Scripts\/js\/mathExpression\.js/,
+        reason:
+          'MathExpression onDrawForeground indexes a stale value-less nodeOutputs entry under a reused node id while the sweep clears graphs'
       }
     ],
     'ComfyUI-VideoHelperSuite': [

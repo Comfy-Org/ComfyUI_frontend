@@ -14,38 +14,58 @@ import { loadManifest } from '@e2e/fixtures/customNode/manifest'
 
 test('ledgers only the source-driven VHS preview height paths', () => {
   expect(GEOMETRY_UNSTABLE_NODES['ComfyUI-VideoHelperSuite']).toBeUndefined()
-  expect(GEOMETRY_UNSTABLE_PATHS['ComfyUI-VideoHelperSuite']).toEqual({
-    VHS_LoadImages: {
-      'vue.h':
-        'preview height follows asynchronously loaded default-media aspect ratio',
-      'vue.widgets[5].h':
-        'preview widget height follows the same asynchronous default-media aspect-ratio mechanism'
-    },
-    VHS_LoadVideo: {
-      'vue.h':
-        'preview height follows asynchronously loaded default-media aspect ratio',
-      'vue.widgets[9].h':
-        'preview widget height follows the same asynchronous default-media aspect-ratio mechanism'
-    },
-    VHS_LoadVideoFFmpeg: {
-      'vue.h':
-        'preview height follows the same asynchronous default-media aspect-ratio mechanism',
-      'vue.widgets[8].h':
-        'preview widget height follows the same asynchronous default-media aspect-ratio mechanism'
-    },
-    VHS_LoadVideoFFmpegPath: {
-      'vue.h':
-        'preview height follows asynchronously loaded default-media aspect ratio',
-      'vue.widgets[7].h':
-        'preview widget height follows the same asynchronous default-media aspect-ratio mechanism'
-    },
-    VHS_LoadVideoPath: {
-      'vue.h':
-        'preview height follows asynchronously loaded default-media aspect ratio',
-      'vue.widgets[8].h':
-        'preview widget height follows the same asynchronous default-media aspect-ratio mechanism'
-    }
-  })
+  const vhs = GEOMETRY_UNSTABLE_PATHS['ComfyUI-VideoHelperSuite']
+  expect(Object.keys(vhs).sort()).toEqual([
+    'VHS_LoadAudioUpload',
+    'VHS_LoadImages',
+    'VHS_LoadVideo',
+    'VHS_LoadVideoFFmpeg',
+    'VHS_LoadVideoFFmpegPath',
+    'VHS_LoadVideoPath'
+  ])
+  expect(Object.keys(vhs.VHS_LoadAudioUpload)).toEqual(['vue.h'])
+  expect(Object.keys(vhs.VHS_LoadImages).sort()).toEqual([
+    'vue.h',
+    'vue.widgets[4].h',
+    'vue.widgets[5].h'
+  ])
+  expect(Object.keys(vhs.VHS_LoadVideo).sort()).toEqual([
+    'vue.h',
+    'vue.widgets[8].h',
+    'vue.widgets[9].h'
+  ])
+  expect(Object.keys(vhs.VHS_LoadVideoFFmpeg).sort()).toEqual([
+    'vue.h',
+    'vue.widgets[7].h',
+    'vue.widgets[8].h'
+  ])
+  expect(Object.keys(vhs.VHS_LoadVideoFFmpegPath).sort()).toEqual([
+    'vue.h',
+    'vue.widgets[7].h'
+  ])
+  expect(Object.keys(vhs.VHS_LoadVideoPath).sort()).toEqual([
+    'vue.h',
+    'vue.widgets[8].h'
+  ])
+})
+
+test('the WAS ledger relaxes only whole-node vue height', () => {
+  expect(GEOMETRY_UNSTABLE_NODES['was-node-suite-comfyui']).toBeUndefined()
+  const was = GEOMETRY_UNSTABLE_PATHS['was-node-suite-comfyui']
+  expect(Object.keys(was).sort()).toEqual([
+    'BLIP Analyze Image',
+    'BLIP Model Loader',
+    'CLIPSEG2',
+    'CLIPSeg Batch Masking',
+    'CLIPSeg Masking',
+    'CLIPSeg Model Loader',
+    'CLIPTextEncode (NSP)',
+    'Cache Node',
+    'Create Grid Image'
+  ])
+  // Widget geometry stays strict: only the whole-node vue height is relaxed.
+  for (const paths of Object.values(was))
+    expect(Object.keys(paths)).toEqual(['vue.h'])
 })
 
 test('VHS preview ledger ignores only the asynchronous height fields', () => {
