@@ -22,9 +22,38 @@ on:
     branches: [main, master]
   merge_group:
   workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Frontend branch/ref to test (empty = the ref this workflow runs from)'
+        required: false
+        type: string
+        default: ''
+      grep:
+        description: "Playwright -g filter, e.g. 'VideoHelperSuite' or 'Pack startup' (empty = full suite; the exact-count gate is skipped when set)"
+        required: false
+        type: string
+        default: ''
+      comfyui_ref:
+        description: 'ComfyUI core ref to run against (empty = the verified pin)'
+        required: false
+        type: string
+        default: ''
+      enable_s14:
+        description: 'Enable the S14 tier'
+        required: false
+        type: boolean
+        default: true
+      enable_s15:
+        description: 'Enable the S15 tier'
+        required: false
+        type: boolean
+        default: true
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # Dispatches get a per-run group: two manual runs (e.g. comparing branches)
+  # must not cancel each other, while PR pushes keep the usual per-ref
+  # supersede behavior.
+  group: ${{ github.event_name == 'workflow_dispatch' && format('{0}-dispatch-{1}', github.workflow, github.run_id) || format('{0}-{1}', github.workflow, github.ref) }}
   cancel-in-progress: true
 
 jobs:
@@ -63,6 +92,10 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
+        with:
+          # workflow_dispatch may aim the suite at any frontend branch; every
+          # other event tests its own ref exactly as before.
+          ref: ${{ inputs.branch || github.ref }}
 
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
@@ -86,7 +119,10 @@ jobs:
         uses: ./.github/actions/setup-comfyui-server
         with:
           launch_server: 'false'
-          comfyui_ref: 'b08e6cf35fac50d3ca8470dffb3f9a1fbb7187d2'
+          # workflow_dispatch may override the pin (e.g. probing a core
+          # candidate before a deliberate bump); every gating event stays
+          # pinned.
+          comfyui_ref: ${{ inputs.comfyui_ref || 'b08e6cf35fac50d3ca8470dffb3f9a1fbb7187d2' }}
 
       # Install every pack the manifest declares (DRY: a new pack row installs
       # itself here, no workflow change). A clone or dependency failure fails the
@@ -153,9 +189,12 @@ jobs:
       - name: Run custom-node suite
         id: suite
         env:
-          CN_ENABLE_S14: '1'
-          CN_ENABLE_S15: '1'
+          CN_ENABLE_S14: ${{ (github.event_name != 'workflow_dispatch' || inputs.enable_s14) && '1' || '0' }}
+          CN_ENABLE_S15: ${{ (github.event_name != 'workflow_dispatch' || inputs.enable_s15) && '1' || '0' }}
           PLAYWRIGHT_JSON_OUTPUT_NAME: custom-nodes-results.json
+          # Through env, not inline interpolation: dispatch input must never
+          # be shell-parsed.
+          GREP_FILTER: ${{ inputs.grep }}
         run: |
           set -o pipefail
           # workers=1: the auto-run tier needs exclusive backend-queue access;
@@ -169,6 +208,7 @@ jobs:
           # later-tier defer applies only to Cloud while Cloud S1-S12 is red.
           pnpm exec playwright test browser_tests/tests/customNodes/ \
             --project=custom-nodes --reporter=list,json,html --workers=1 --retries=0 \
+            ${GREP_FILTER:+--grep "$GREP_FILTER"} \
             2>&1 | tee custom-nodes.log
 
       # A skip here means a pack or devtools did not load: on this backend every
@@ -179,6 +219,7 @@ jobs:
         env:
           SUITE_OUTCOME: ${{ steps.suite.outcome }}
           EXPECTED_TESTS: 34
+          GREP_FILTER: ${{ inputs.grep }}
         run: |
           set -euo pipefail
           # The JSON result is mandatory even when the suite step failed: the
@@ -189,7 +230,11 @@ jobs:
           fi
           collected=$(jq -er '[.stats.expected, .stats.unexpected, .stats.flaky, .stats.skipped] | add' custom-nodes-results.json)
           echo "collected tests: $collected"
-          if [ "$collected" != "$EXPECTED_TESTS" ]; then
+          # A dispatch grep runs a deliberate subset; the exact-count gate
+          # applies only to full runs (every gating event runs unfiltered).
+          if [ -n "${GREP_FILTER:-}" ]; then
+            echo "grep filter active ('$GREP_FILTER') - exact-count gate skipped for this manual subset run"
+          elif [ "$collected" != "$EXPECTED_TESTS" ]; then
             echo "::error::collected $collected tests; expected exactly $EXPECTED_TESTS active Core custom-node tests"
             exit 1
           fi
@@ -225,6 +270,126 @@ jobs:
                      | .title' custom-nodes-results.json | sort -u | head -40
             exit 1
           fi
+
+      # Renders what ran and what it found - to the job log as an aligned
+      # table and to the run's Summary panel as markdown - so a dispatch
+      # answers "which branch, against what, with what verdict" without
+      # opening the artifact.
+      - name: Publish results table
+        if: always()
+        shell: bash
+        env:
+          BRANCH_TESTED: ${{ inputs.branch || github.ref_name }}
+          COMFYUI_REF_USED: ${{ inputs.comfyui_ref || 'b08e6cf35fac50d3ca8470dffb3f9a1fbb7187d2' }}
+          GREP_FILTER: ${{ inputs.grep }}
+          S14_ENABLED: ${{ (github.event_name != 'workflow_dispatch' || inputs.enable_s14) && '1' || '0' }}
+          S15_ENABLED: ${{ (github.event_name != 'workflow_dispatch' || inputs.enable_s15) && '1' || '0' }}
+        run: |
+          python3 - <<'PY'
+          import json, os, re, subprocess
+
+          def out(md, log=None):
+              with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as f:
+                  f.write(md + '\n')
+              print(log if log is not None else md)
+
+          head = subprocess.run(['git', 'rev-parse', 'HEAD'],
+                                capture_output=True, text=True).stdout.strip()
+          ctx = [
+              ('Branch tested', os.environ.get('BRANCH_TESTED', '?')),
+              ('Head SHA', head[:12]),
+              ('ComfyUI ref', os.environ.get('COMFYUI_REF_USED', '?')[:12]),
+              ('Event / actor', f"{os.environ.get('GITHUB_EVENT_NAME','?')} / {os.environ.get('GITHUB_ACTOR','?')}"),
+              ('Grep filter', os.environ.get('GREP_FILTER') or '(full suite)'),
+              ('S14 / S15', f"{os.environ.get('S14_ENABLED')} / {os.environ.get('S15_ENABLED')}"),
+          ]
+          if not os.path.exists('custom-nodes-results.json'):
+              out('## Custom-node core suite\n\n**No results json was written** - the suite step died before Playwright could report.')
+              for k, v in ctx:
+                  out(f'- **{k}**: {v}', f'{k}: {v}')
+              raise SystemExit(0)
+
+          data = json.load(open('custom-nodes-results.json'))
+          stats = data.get('stats', {})
+
+          TIERS = ['startup/load', 'all nodes', 'curated run', 'dynamic inputs', 'interaction']
+          packs, wide = {}, {}
+
+          def bucket(file, path):
+              title = ' > '.join(path)
+              pack = None
+              m = re.search(r'(?:custom node|all nodes|dynamic inputs|interaction profiles): ([^@>]+?)(?:\s*@|\s*>|$)', title)
+              if m: pack = m.group(1).strip()
+              if 'allNodes' in file:
+                  return (pack, 'all nodes') if pack else (None, 'manifest coverage')
+              if 'customNode.regression' in file:
+                  if pack is None: return (None, 'harness self-checks')
+                  tier = 'startup/load' if 'startup/load' in title else 'curated run'
+                  return (pack, tier)
+              if 'dynamicInputs' in file: return (pack, 'dynamic inputs')
+              if 'interactionProfiles' in file: return (pack, 'interaction')
+              if 'connectivity' in file: return (None, 'connectivity')
+              if 'coreSmoke' in file: return (None, 'core smoke')
+              return (None, 'pure specs')
+
+          RANK = {'skipped': 1, 'flaky': 2, 'unexpected': 3}
+          SYM = {0: 'PASS', 1: 'SKIP', 2: 'FLAKY', 3: 'FAIL'}
+          failed = []
+
+          def visit(suite, file, path):
+              file = suite.get('file') or file
+              path = path + ([suite['title']] if suite.get('title') else [])
+              for spec in suite.get('specs', []):
+                  worst = max((RANK.get(t.get('status'), 0) for t in spec.get('tests', [])), default=0)
+                  pack, tier = bucket(file or '', path + [spec.get('title', '')])
+                  cell = packs.setdefault(pack, {}) if pack else wide
+                  key = tier
+                  prev = cell.get(key, (0, 0, 0))
+                  cell[key] = (max(prev[0], worst), prev[1] + 1, prev[2] + (1 if worst == 3 else 0))
+                  if worst == 3:
+                      err = ''
+                      for t in spec.get('tests', []):
+                          for r in t.get('results', []):
+                              msg = (r.get('error') or {}).get('message') or ''
+                              if msg:
+                                  err = re.sub(r'\x1b\[[0-9;]*m', '', msg).split('\n')[0][:140]
+                                  break
+                          if err: break
+                      failed.append((f"{' > '.join(p for p in path[1:] if p)} > {spec.get('title','')}"[:120], err))
+              for child in suite.get('suites', []):
+                  visit(child, file, path)
+
+          for s in data.get('suites', []):
+              visit(s, s.get('file'), [])
+
+          def cell(v):
+              if v is None: return '-'
+              worst, total, fails = v
+              return SYM[worst] if fails == 0 else f'FAIL {fails}/{total}'
+
+          out('## Custom-node core suite')
+          out('')
+          out('| | |\n|---|---|')
+          for k, v in ctx:
+              out(f'| **{k}** | {v} |', f'{k:16} {v}')
+          mins = stats.get('duration', 0) / 60000
+          totals = f"{stats.get('expected',0)} passed / {stats.get('unexpected',0)} failed / {stats.get('flaky',0)} flaky / {stats.get('skipped',0)} skipped in {mins:.1f}m"
+          out(f'| **Result** | {totals} |', f'{"Result":16} {totals}')
+          out('')
+          out('| Pack | ' + ' | '.join(TIERS) + ' |',
+              f'{"Pack":34}' + ''.join(f'{t:>16}' for t in TIERS))
+          out('|---|' + '---|' * len(TIERS), '-' * 100)
+          for pack in sorted(packs):
+              row = [cell(packs[pack].get(t)) for t in TIERS]
+              out(f'| {pack} | ' + ' | '.join(row) + ' |', f'{pack:34}' + ''.join(f'{c:>16}' for c in row))
+          out('')
+          for name in sorted(wide):
+              out(f'- **{name}**: {cell(wide[name])}', f'{name:34}{cell(wide[name])}')
+          if failed:
+              out('\n### Failed tests')
+              for title, err in failed[:20]:
+                  out(f'- `{title}`\n  - {err}', f'FAILED: {title}\n        {err}')
+          PY
 
       - name: Upload Playwright report and raw diagnostics
         if: always()
