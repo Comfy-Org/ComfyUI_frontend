@@ -15,6 +15,10 @@
 set -e
 cd "$(dirname "$0")/../../.."
 
+# Always clear the scratch, including on failure: it holds unconverted sources
+# whose old-API imports trip other repo-wide checks if they outlive the run.
+trap 'rm -rf scripts/magic-patch/verify/.undef*' EXIT
+
 rm -rf scripts/magic-patch/verify/.undefchk scripts/magic-patch/verify/.undeforig
 mkdir -p scripts/magic-patch/verify/.undefchk scripts/magic-patch/verify/.undeforig
 : > scripts/magic-patch/verify/.undefmap.txt
