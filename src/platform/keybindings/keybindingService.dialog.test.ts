@@ -61,12 +61,14 @@ describe('keybindingService - dialog gate', () => {
 
   function createKeyboardEvent(
     key: string,
-    target: HTMLElement = document.body
+    target: HTMLElement = document.body,
+    modifiers: { ctrlKey?: boolean } = {}
   ): KeyboardEvent {
     const event = new KeyboardEvent('keydown', {
       key,
       bubbles: true,
-      cancelable: true
+      cancelable: true,
+      ...modifiers
     })
     event.preventDefault = vi.fn()
     event.composedPath = vi.fn(() => [target])
@@ -145,6 +147,17 @@ describe('keybindingService - dialog gate', () => {
     } finally {
       document.body.removeChild(dialog)
     }
+  })
+
+  it('still suppresses the browser default for Ctrl+S while a dialog is open', async () => {
+    const dialogStore = useDialogStore()
+    dialogStore.dialogStack.push(createTestDialogInstance('templates-dialog'))
+
+    const event = createKeyboardEvent('s', document.body, { ctrlKey: true })
+    await keybindingService.keybindHandler(event)
+
+    expect(mockCommandExecute).not.toHaveBeenCalled()
+    expect(event.preventDefault).toHaveBeenCalled()
   })
 
   it('executes a global keybinding while a reka popover is open', async () => {
