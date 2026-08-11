@@ -199,6 +199,12 @@ describe('isYesterday', () => {
     const ts = new Date(2024, 5, 13, 10, 0, 0).getTime()
     expect(isYesterday(ts)).toBe(false)
   })
+
+  it('handles the previous year boundary', () => {
+    vi.setSystemTime(new Date(2025, 0, 1, 14, 0, 0))
+    const ts = new Date(2024, 11, 31, 10, 0, 0).getTime()
+    expect(isYesterday(ts)).toBe(true)
+  })
 })
 
 describe('formatShortMonthDay', () => {
