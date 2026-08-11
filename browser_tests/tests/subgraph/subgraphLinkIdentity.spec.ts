@@ -19,7 +19,7 @@ test.describe('Subgraph link topology identity', { tag: ['@subgraph'] }, () => {
         .filter((node) => node.isSubgraphNode())
         .map((node) => ({
           definitionId: node.subgraph.id,
-          parentId: node.subgraph._links.get(linkId)?.parentId,
+          parentId: node.subgraph.links.get(linkId)?.parentId,
           rerouteIds: [...node.subgraph.reroutes.keys()]
         }))
         .sort((a, b) => a.definitionId.localeCompare(b.definitionId))
