@@ -7,3 +7,6 @@ Bottom of the stack. Targets `main`.
 
 ## Slice 2 — how it stacks
 Targets slice 1's branch. Diff shows only this section.
+
+## Slice 3 — the merge
+Top. Bottom-up merge lands 1→2→3 with auto-retargeting.
