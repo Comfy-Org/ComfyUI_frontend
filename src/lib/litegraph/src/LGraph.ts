@@ -1826,13 +1826,22 @@ export class LGraph
    * @returns The newly created subgraph definition.
    */
   createSubgraph(data: ExportedSubgraph): Subgraph {
-    const { id } = data
+    const normalized = structuredClone(data)
+    deduplicateSubgraphLinkIds(
+      [normalized],
+      collectReservedLinkIds(this.rootGraph),
+      this.state
+    )
+    const { id } = normalized
 
-    const subgraph = new Subgraph(this.rootGraph, data)
+    const subgraph = new Subgraph(this.rootGraph, normalized)
     this.subgraphs.set(id, subgraph)
 
     // FE: Create node defs
-    this.rootGraph.events.dispatch('subgraph-created', { subgraph, data })
+    this.rootGraph.events.dispatch('subgraph-created', {
+      subgraph,
+      data: normalized
+    })
     return subgraph
   }
 
