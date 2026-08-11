@@ -102,6 +102,7 @@ function createMockGraph(
   for (const l of links) {
     useLinkStore().registerLink(GRAPH_SCOPE, {
       id: toLinkId(l.id),
+      graphId: GRAPH_SCOPE.owningGraphId,
       originNodeId: toNodeId(l.origin_id),
       originSlot: l.origin_slot,
       targetNodeId: toNodeId(l.target_id),

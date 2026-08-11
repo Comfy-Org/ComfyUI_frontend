@@ -184,6 +184,7 @@ describe('widget visibility', () => {
       },
       {
         id: toLinkId(1),
+        graphId: toOwningGraphId(GRAPH_ID),
         originNodeId: toNodeId(2),
         originSlot: 0,
         targetNodeId: nodeId,

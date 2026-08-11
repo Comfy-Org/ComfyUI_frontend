@@ -41,6 +41,7 @@ function makeFakeInputSlot(
 function connectInputSlot(slot: number, linkId = slot + 1) {
   useLinkStore().registerLink(GRAPH_SCOPE, {
     id: toLinkId(linkId),
+    graphId: GRAPH_SCOPE.owningGraphId,
     originNodeId: toNodeId(99),
     originSlot: 0,
     targetNodeId: NODE_ID,

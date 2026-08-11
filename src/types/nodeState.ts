@@ -34,5 +34,3 @@ export interface NodeState {
   showAdvanced?: boolean
   titleMode?: TitleMode
 }
-
-export type UnownedNodeState = Omit<NodeState, 'graphId'>

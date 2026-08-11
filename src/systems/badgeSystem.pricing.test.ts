@@ -73,8 +73,10 @@ describe('badge derivation pricing input connectivity', () => {
   }
 
   function connect(slot: number, linkId: number, targetGraphId = graphId) {
-    useLinkStore().registerLink(scopeOf(targetGraphId), {
+    const scope = scopeOf(targetGraphId)
+    useLinkStore().registerLink(scope, {
       id: toLinkId(linkId),
+      graphId: scope.owningGraphId,
       originNodeId: toNodeId(99),
       originSlot: 0,
       targetNodeId: toNodeId(5),

@@ -30,7 +30,6 @@ import { app } from '@/scripts/app'
 import { nodeTypeValidForApp } from '@/stores/appModeStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
-import type { GraphScope } from '@/types/graphScopeId'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import {
@@ -127,10 +126,10 @@ function normalizeWidgetValue(value: unknown): WidgetValue {
 function buildSlotMetadata(
   inputs: INodeInputSlot[] | undefined,
   graphRef: LGraph | null | undefined,
-  scope: GraphScope | undefined,
   nodeId: NodeId
 ): Map<string, WidgetSlotMetadata> {
   const linkStore = useLinkStore()
+  const scope = graphRef ? graphScopeOf(graphRef) : undefined
   const metadata = new Map<string, WidgetSlotMetadata>()
   inputs?.forEach((input, index) => {
     const link = scope
@@ -489,7 +488,6 @@ export function computeProcessedWidgets({
   const slotMetadata = buildSlotMetadata(
     hostNode?.inputs,
     graphRef,
-    graphRef ? graphScopeOf(graphRef) : undefined,
     nodeData.id
   )
   const ctx: WidgetProcessingContext = {

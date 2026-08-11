@@ -18,5 +18,3 @@ export interface RerouteChain {
   parentId?: RerouteId
   floating?: FloatingRerouteSlot
 }
-
-export type UnownedRerouteChain = Omit<RerouteChain, 'graphId'>

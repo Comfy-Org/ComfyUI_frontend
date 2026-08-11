@@ -7,7 +7,7 @@ import type {
   RootGraphId
 } from '@/types/graphScopeId'
 import type { LinkId } from '@/types/linkId'
-import type { LinkTopology, UnownedLinkTopology } from '@/types/linkTopology'
+import type { LinkTopology } from '@/types/linkTopology'
 import { isFloatingTopology } from '@/types/linkTopology'
 import type { NodeId } from '@/types/nodeId'
 import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
@@ -183,7 +183,7 @@ export const useLinkStore = defineStore('link', () => {
    */
   function registerLink(
     scope: GraphScope,
-    topology: LinkTopology | UnownedLinkTopology
+    topology: LinkTopology
   ): LinkTopology | undefined {
     const bucket = rootBucket(scope.rootGraphId)
     const incumbent = bucket.byId.get(topology.id)

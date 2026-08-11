@@ -10,7 +10,7 @@ import type {
 } from '@/types/graphScopeId'
 import type { LinkId } from '@/types/linkId'
 import { isFloatingTopology } from '@/types/linkTopology'
-import type { RerouteChain, UnownedRerouteChain } from '@/types/rerouteChain'
+import type { RerouteChain } from '@/types/rerouteChain'
 import type { RerouteId } from '@/types/rerouteId'
 
 /** The links whose chains pass through a reroute, split by link liveness. */
@@ -117,7 +117,7 @@ export const useRerouteStore = defineStore('reroute', () => {
    */
   function registerReroute(
     scope: GraphScope,
-    chain: RerouteChain | UnownedRerouteChain
+    chain: RerouteChain
   ): RerouteChain | undefined {
     const bucket = rootBucket(scope.rootGraphId)
     const existing = bucket.chains.get(chain.id)

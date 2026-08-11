@@ -24,6 +24,7 @@ describe('PrimitiveNode', () => {
     graph.add(node)
     useLinkStore().registerLink(graphScopeOf(graph), {
       id: toLinkId(999),
+      graphId: graphScopeOf(graph).owningGraphId,
       originNodeId: node.id,
       originSlot: 0,
       targetNodeId: toNodeId(42),

@@ -47,6 +47,7 @@ const GRAPH_SCOPE = {
 function registerMockLink(id: number, targetNodeId: string) {
   useLinkStore().registerLink(GRAPH_SCOPE, {
     id: toLinkId(id),
+    graphId: GRAPH_SCOPE.owningGraphId,
     originNodeId: toNodeId('node1'),
     originSlot: 0,
     targetNodeId: toNodeId(targetNodeId),

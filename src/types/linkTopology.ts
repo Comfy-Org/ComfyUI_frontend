@@ -19,8 +19,6 @@ export interface LinkTopology {
   parentId?: RerouteId
 }
 
-export type UnownedLinkTopology = Omit<LinkTopology, 'graphId'>
-
 /**
  * A floating link is not yet a link: it is reroute-chain state kept alive so
  * the chain survives disconnection, with exactly one assigned endpoint. Link

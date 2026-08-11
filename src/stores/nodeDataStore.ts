@@ -7,7 +7,7 @@ import type {
   OwningGraphId,
   RootGraphId
 } from '@/types/graphScopeId'
-import type { NodeState, UnownedNodeState } from '@/types/nodeState'
+import type { NodeState } from '@/types/nodeState'
 import type { NodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
 
@@ -43,7 +43,7 @@ export const useNodeDataStore = defineStore('nodeData', () => {
 
   function registerNode(
     graphScope: GraphScope,
-    state: NodeState | UnownedNodeState
+    state: NodeState
   ): NodeState | undefined {
     const existingBucket = roots.get(graphScope.rootGraphId)
     const incumbent = existingBucket?.byId.get(state.id)

@@ -210,24 +210,13 @@ export function deduplicateSubgraphLinkIds(
   for (const id of reservedLinkIds) observeLinkId(state, toLinkId(id))
 
   for (const subgraph of subgraphs) {
-    const remapped = new Map<number, number>()
-    for (const link of [
-      ...(subgraph.links ?? []),
-      ...(subgraph.floatingLinks ?? [])
-    ]) {
-      const oldId = link.id
-      if (usedLinkIds.has(oldId)) {
-        const newId = findNextAvailableId(usedLinkIds, () =>
-          Number(mintLinkId(state))
-        )
-        link.id = newId
-        remapped.set(oldId, newId)
-        usedLinkIds.add(newId)
-      } else {
-        usedLinkIds.add(oldId)
-        observeLinkId(state, toLinkId(oldId))
-      }
-    }
+    const remapped = remapNumericIds(
+      [...(subgraph.links ?? []), ...(subgraph.floatingLinks ?? [])],
+      usedLinkIds,
+      () => mintLinkId(state),
+      (id) => observeLinkId(state, toLinkId(id)),
+      'link'
+    )
     if (remapped.size > 0) patchLinkReferences(subgraph, remapped)
   }
 }
@@ -342,7 +331,7 @@ function remapNumericIds<T extends { id: number }>(
   usedIds: Set<number>,
   nextId: () => number,
   reserveId: (id: number) => void,
-  entity: 'group' | 'reroute'
+  entity: 'group' | 'link' | 'reroute'
 ): Map<number, number> {
   const remapped = new Map<number, number>()
 

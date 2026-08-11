@@ -131,16 +131,14 @@ function touchPricingSources(graphId: UUID, node: LGraphNode): void {
   const linkStore = useLinkStore()
   const inputNames = pricing.getInputNames(node.type)
   const groupPrefixes = pricing.getInputGroupPrefixes(node.type)
+  const graph = node.graph
+  const graphScope = graph ? graphScopeOf(graph) : undefined
   node.inputs?.forEach((input, index) => {
     const relevant =
       (input.name && inputNames.includes(input.name)) ||
       groupPrefixes.some((prefix) => input.name?.startsWith(prefix + '.'))
-    if (relevant && node.graph) {
-      void linkStore.isInputSlotConnected(
-        graphScopeOf(node.graph),
-        nodeId,
-        index
-      )
+    if (relevant && graphScope) {
+      void linkStore.isInputSlotConnected(graphScope, nodeId, index)
     }
   })
 }

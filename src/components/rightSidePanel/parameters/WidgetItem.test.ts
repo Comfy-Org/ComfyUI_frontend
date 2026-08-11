@@ -11,9 +11,9 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useLinkStore } from '@/stores/linkStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 import { widgetId } from '@/types/widgetId'
 import WidgetItem from './WidgetItem.vue'
-import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 
@@ -239,20 +239,16 @@ describe('WidgetItem', () => {
       const { container } = renderWidgetItem(widget, node)
       expect(getStubWidget(container).options.disabled).toBeUndefined()
 
-      useLinkStore().registerLink(
-        {
-          rootGraphId: toRootGraphId('test-graph-id'),
-          owningGraphId: toOwningGraphId('test-graph-id')
-        },
-        {
-          id: toLinkId(1),
-          originNodeId: toNodeId(2),
-          originSlot: 0,
-          targetNodeId: node.id,
-          targetSlot: 0,
-          type: 'INT'
-        }
-      )
+      const graphScope = graphScopeOf(node.graph!)
+      useLinkStore().registerLink(graphScope, {
+        id: toLinkId(1),
+        graphId: graphScope.owningGraphId,
+        originNodeId: toNodeId(2),
+        originSlot: 0,
+        targetNodeId: node.id,
+        targetSlot: 0,
+        type: 'INT'
+      })
       await nextTick()
 
       expect(getStubWidget(container).options.disabled).toBe(true)

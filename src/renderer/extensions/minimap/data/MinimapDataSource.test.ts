@@ -260,6 +260,7 @@ describe('MinimapDataSource', () => {
     it('derives links between visible nodes from the link store', () => {
       useLinkStore().registerLink(GRAPH_SCOPE, {
         id: toLinkId(1),
+        graphId: GRAPH_SCOPE.owningGraphId,
         originNodeId: toNodeId('node1'),
         originSlot: 0,
         targetNodeId: toNodeId('node2'),
@@ -284,6 +285,7 @@ describe('MinimapDataSource', () => {
     it('omits links whose target is not in the viewed nodes', () => {
       useLinkStore().registerLink(GRAPH_SCOPE, {
         id: toLinkId(1),
+        graphId: GRAPH_SCOPE.owningGraphId,
         originNodeId: toNodeId('node1'),
         originSlot: 0,
         targetNodeId: toNodeId('elsewhere'),

@@ -274,6 +274,7 @@ describe('minimapCanvasRenderer', () => {
 
     useLinkStore().registerLink(GRAPH_SCOPE, {
       id: toLinkId(1),
+      graphId: GRAPH_SCOPE.owningGraphId,
       originNodeId: mockGraph._nodes[0].id,
       originSlot: 0,
       targetNodeId: toNodeId('2'),

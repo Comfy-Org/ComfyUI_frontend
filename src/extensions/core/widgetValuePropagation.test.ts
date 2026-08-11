@@ -62,6 +62,7 @@ function createSourceNode(options: {
 }): SourceNode {
   useLinkStore().registerLink(GRAPH_SCOPE, {
     id: toLinkId(1),
+    graphId: GRAPH_SCOPE.owningGraphId,
     originNodeId: SOURCE_NODE_ID,
     originSlot: 0,
     targetNodeId: options.targetNode.id,
