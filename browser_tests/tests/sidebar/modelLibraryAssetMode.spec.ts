@@ -54,8 +54,8 @@ test.use({
 test.describe('Model library sidebar - asset mode', () => {
   test.use({
     modelLibraryOptions: {
-      operators: [withModels(WALK_ASSETS)],
-      folders: REGISTERED_FOLDERS
+      folders: REGISTERED_FOLDERS,
+      operators: [withModels(WALK_ASSETS)]
     }
   })
 
@@ -298,8 +298,8 @@ test.describe('Model library sidebar - asset mode when the walk fails', () => {
 test.describe('Model library sidebar - asset mode before the loader_path cutover', () => {
   test.use({
     modelLibraryOptions: {
-      operators: [withModels([MODEL_TYPE_CHECKPOINT_PRE_CUTOVER])],
-      folders: REGISTERED_FOLDERS
+      folders: REGISTERED_FOLDERS,
+      operators: [withModels([MODEL_TYPE_CHECKPOINT_PRE_CUTOVER])]
     }
   })
 
@@ -347,18 +347,18 @@ test.describe('Model library sidebar - asset mode before the loader_path cutover
 test.describe('Model library sidebar - asset mode with a legacy bare tag', () => {
   test.use({
     modelLibraryOptions: {
-      operators: [
-        withModels([
-          MODEL_TYPE_CHECKPOINT_ROOT,
-          MODEL_TYPE_CHECKPOINT_LEGACY_TAG
-        ])
-      ],
       folders: [
         {
           name: 'checkpoints',
           folders: ['/models/checkpoints'],
           extensions: ['.safetensors']
         }
+      ],
+      operators: [
+        withModels([
+          MODEL_TYPE_CHECKPOINT_ROOT,
+          MODEL_TYPE_CHECKPOINT_LEGACY_TAG
+        ])
       ]
     }
   })
@@ -384,13 +384,6 @@ test.describe('Model library sidebar - asset mode with a legacy bare tag', () =>
 test.describe('Model library sidebar - asset mode with a mid-retag twin tag', () => {
   test.use({
     modelLibraryOptions: {
-      operators: [
-        withModels([
-          MODEL_TYPE_CHECKPOINT_ROOT,
-          MODEL_TYPE_CHECKPOINT_MID_RETAG,
-          MODEL_TYPE_LORA
-        ])
-      ],
       folders: [
         {
           name: 'checkpoints',
@@ -402,6 +395,13 @@ test.describe('Model library sidebar - asset mode with a mid-retag twin tag', ()
           folders: ['/models/loras'],
           extensions: ['.safetensors']
         }
+      ],
+      operators: [
+        withModels([
+          MODEL_TYPE_CHECKPOINT_ROOT,
+          MODEL_TYPE_CHECKPOINT_MID_RETAG,
+          MODEL_TYPE_LORA
+        ])
       ]
     }
   })
@@ -447,14 +447,14 @@ test.describe('Model library sidebar - asset mode with a mid-retag twin tag', ()
 test.describe('Model library sidebar - asset mode on bare-tag backends', () => {
   test.use({
     modelLibraryOptions: {
-      operators: [withModels([STABLE_CHECKPOINT])],
       folders: [
         {
           name: 'checkpoints',
           folders: ['/models/checkpoints'],
           extensions: ['.safetensors']
         }
-      ]
+      ],
+      operators: [withModels([STABLE_CHECKPOINT])]
     }
   })
 
