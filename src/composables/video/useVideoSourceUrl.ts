@@ -101,20 +101,40 @@ export function useVideoSourceUrl(
 
   const connectionVersion = ref(0)
   let scopeDisposed = false
-  onScopeDispose(() => {
-    scopeDisposed = true
-  })
+  let listeningNode: LGraphNode | undefined
+  let installedCallback: LGraphNode['onConnectionsChange']
+  let previousCallback: LGraphNode['onConnectionsChange']
+
+  function detachConnectionListener() {
+    if (
+      listeningNode &&
+      listeningNode.onConnectionsChange === installedCallback
+    ) {
+      listeningNode.onConnectionsChange = previousCallback
+    }
+    listeningNode = undefined
+    installedCallback = undefined
+    previousCallback = undefined
+  }
 
   function attachConnectionListener() {
     const current = node.value
-    if (!current) return
-    current.onConnectionsChange = useChainCallback(
-      current.onConnectionsChange,
-      () => {
-        if (!scopeDisposed) connectionVersion.value++
-      }
-    )
+    if (!current || current === listeningNode) return
+    detachConnectionListener()
+    previousCallback = current.onConnectionsChange
+    installedCallback = useChainCallback(previousCallback, () => {
+      if (!scopeDisposed) connectionVersion.value++
+    })
+    current.onConnectionsChange = installedCallback
+    listeningNode = current
   }
+
+  onScopeDispose(() => {
+    scopeDisposed = true
+    detachConnectionListener()
+  })
+
+  watch(node, attachConnectionListener)
 
   watch(() => {
     void connectionVersion.value

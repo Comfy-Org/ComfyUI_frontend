@@ -63,7 +63,7 @@ function fakeNode(overrides: Record<string, unknown> = {}): LGraphNode {
 
 function mountSource(node: LGraphNode) {
   let videoUrl!: ReturnType<typeof useVideoSourceUrl>['videoUrl']
-  render(
+  const view = render(
     defineComponent({
       setup() {
         videoUrl = useVideoSourceUrl(computed(() => node)).videoUrl
@@ -71,7 +71,7 @@ function mountSource(node: LGraphNode) {
       }
     })
   )
-  return { videoUrl }
+  return { videoUrl, unmount: view.unmount }
 }
 
 describe('useVideoSourceUrl', () => {
@@ -82,6 +82,22 @@ describe('useVideoSourceUrl', () => {
     for (const key of Object.keys(mocks.nodePreviewImages)) {
       delete mocks.nodePreviewImages[key]
     }
+  })
+
+  it('restores the previous onConnectionsChange on unmount', () => {
+    const original = vi.fn()
+    const node = fakeNode({
+      inputs: [{ name: 'video' }],
+      getInputNode: () => null,
+      onConnectionsChange: original
+    })
+
+    const { unmount } = mountSource(node)
+    expect(node.onConnectionsChange).not.toBe(original)
+
+    unmount()
+
+    expect(node.onConnectionsChange).toBe(original)
   })
 
   it('recovers when the input link appears after mount', async () => {
