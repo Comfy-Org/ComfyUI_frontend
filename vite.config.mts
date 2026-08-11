@@ -30,6 +30,7 @@ const DISABLE_TEMPLATES_PROXY = process.env.DISABLE_TEMPLATES_PROXY === 'true'
 const GENERATE_SOURCEMAP = process.env.GENERATE_SOURCEMAP !== 'false'
 const COLLECT_COVERAGE = process.env.COLLECT_COVERAGE === 'true'
 const IS_STORYBOOK = process.env.npm_lifecycle_event === 'storybook'
+const TEST_SYSTEM_TIME = Date.parse('2024-06-15T12:00:00Z')
 
 const CRITICAL_COVERAGE_DIRS = [
   'src/base',
@@ -745,7 +746,7 @@ export default defineConfig({
     restoreMocks: true,
     unstubEnvs: true,
     unstubGlobals: true,
-    fakeTimers: { shouldAdvanceTime: true },
+    fakeTimers: { now: TEST_SYSTEM_TIME, shouldAdvanceTime: true },
     globals: true,
     environment: 'happy-dom',
     // Pin the timezone so date-formatting assertions are deterministic

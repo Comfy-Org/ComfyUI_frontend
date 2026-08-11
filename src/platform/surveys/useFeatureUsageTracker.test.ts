@@ -32,14 +32,13 @@ describe('useFeatureUsageTracker', () => {
   })
 
   it('sets firstUsed only on first use', () => {
-    const firstTs = 1000000
-    vi.setSystemTime(firstTs)
+    const firstTs = Date.now()
     const { usage, trackUsage } = useFeatureUsageTracker('test-feature-3')
 
     trackUsage()
     expect(usage.value?.firstUsed).toBe(firstTs)
 
-    vi.setSystemTime(firstTs + 5000)
+    vi.advanceTimersByTime(5_000)
     trackUsage()
     expect(usage.value?.firstUsed).toBe(firstTs)
   })

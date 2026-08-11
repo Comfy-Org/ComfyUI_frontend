@@ -186,7 +186,6 @@ describe('useWorkflowPersistenceV2', () => {
   }> = []
 
   beforeEach(() => {
-    vi.setSystemTime(new Date('2025-01-01T00:00:00Z'))
     setActivePinia(createTestingPinia({ stubActions: false }))
     localStorage.clear()
     sessionStorage.clear()

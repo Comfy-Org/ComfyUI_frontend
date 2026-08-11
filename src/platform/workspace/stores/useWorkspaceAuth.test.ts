@@ -90,7 +90,7 @@ const mockWorkspaceWithRole = {
 
 const mockTokenResponse = {
   token: 'workspace-token-abc',
-  expires_at: new Date(Date.now() + 3600 * 1000).toISOString(),
+  expires_at: new Date('2024-06-15T13:00:00Z').toISOString(),
   workspace: mockWorkspace,
   role: 'owner' as const,
   permissions: ['owner:*']

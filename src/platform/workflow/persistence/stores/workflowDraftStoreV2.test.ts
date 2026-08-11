@@ -82,21 +82,20 @@ describe('workflowDraftStoreV2', () => {
     it('keeps payload updatedAt stable when only recency is refreshed', () => {
       const store = useWorkflowDraftStoreV2()
 
-      vi.setSystemTime(new Date('2026-03-21T10:00:00Z'))
       store.saveDraft('workflows/a.json', '{"id":"a"}', {
         name: 'a',
         isTemporary: true
       })
       const initialUpdatedAt = store.getDraft('workflows/a.json')!.updatedAt
 
-      vi.setSystemTime(new Date('2026-03-21T10:01:00Z'))
+      vi.advanceTimersByTime(60_000)
       store.saveDraft('workflows/b.json', '{"id":"b"}', {
         name: 'b',
         isTemporary: true
       })
       expect(store.getMostRecentPath()).toBe('workflows/b.json')
 
-      vi.setSystemTime(new Date('2026-03-21T10:02:00Z'))
+      vi.advanceTimersByTime(60_000)
       store.markDraftUsed('workflows/a.json')
 
       expect(store.getDraft('workflows/a.json')!.updatedAt).toBe(
@@ -212,14 +211,13 @@ describe('workflowDraftStoreV2', () => {
     it('preserves payload updatedAt when moving a draft', () => {
       const store = useWorkflowDraftStoreV2()
 
-      vi.setSystemTime(new Date('2026-05-13T00:00:00Z'))
       store.saveDraft('workflows/old.json', '{"data":"test"}', {
         name: 'old',
         isTemporary: true
       })
       const originalUpdatedAt = store.getDraft('workflows/old.json')!.updatedAt
 
-      vi.setSystemTime(new Date('2026-05-13T00:05:00Z'))
+      vi.advanceTimersByTime(5 * 60_000)
       store.moveDraft('workflows/old.json', 'workflows/new.json', 'new')
 
       expect(store.getDraft('workflows/new.json')!.updatedAt).toBe(
