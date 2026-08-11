@@ -110,6 +110,8 @@ const AUTO_RUN_EXCLUDE: Record<string, Record<string, string>> = {
       'executing signal flip-flops between PASS and PARTIAL run-to-run (same class as essentials TransitionMask+)',
     ImpactQueueTriggerCountdown:
       'pack JS hooks the queue at submit time; client-side queuePrompt transiently refuses even through the retry, flip-flopping between PASS and VALIDATION_FAIL',
+    ImpactSelectNthItemOfAnyList:
+      'pack JS hooks the queue at submit time; client-side queuePrompt transiently refuses even through the retry, flip-flopping between PASS and VALIDATION_FAIL (same class as ImpactQueueTriggerCountdown; failed run 31545300324 and passed run 31537458068 on the same commit)',
     ImageReceiver:
       'environment-variable execution: av.error.InvalidDataError decoding its default image on macOS, clean on Linux CI'
   },
