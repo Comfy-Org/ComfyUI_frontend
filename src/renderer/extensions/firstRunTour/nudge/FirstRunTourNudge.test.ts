@@ -68,7 +68,6 @@ function nudge() {
 describe('FirstRunTourNudge', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.useFakeTimers()
     mocks.nudgeArmed.value = false
     mocks.tourWasCompleted.value = true
     mocks.openDialogs.value = []
@@ -76,7 +75,6 @@ describe('FirstRunTourNudge', () => {
 
   afterEach(() => {
     cleanup()
-    vi.useRealTimers()
   })
 
   it('shows a nudge that came due before it mounted', async () => {

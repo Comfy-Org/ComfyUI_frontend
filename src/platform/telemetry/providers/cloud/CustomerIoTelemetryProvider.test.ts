@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const hoisted = vi.hoisted(() => {
   const analytics = {
@@ -93,10 +93,6 @@ describe('CustomerIoTelemetryProvider', () => {
     hoisted.userEmail.value = null
     i18n.global.locale.value = 'en'
     window.__CONFIG__ = {} as typeof window.__CONFIG__
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
   })
 
   it('loads the client and registers the in-app plugin with the site id', async () => {
@@ -683,7 +679,6 @@ describe('CustomerIoTelemetryProvider', () => {
   })
 
   it('does not stall later events when identification never settles', async () => {
-    vi.useFakeTimers()
     vi.spyOn(console, 'error').mockImplementation(() => {})
     hoisted.analytics.identify.mockReturnValueOnce(new Promise(() => {}))
     const provider = createProvider()

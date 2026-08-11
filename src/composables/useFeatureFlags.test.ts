@@ -13,12 +13,17 @@ import {
   remoteConfigState
 } from '@/platform/remoteConfig/remoteConfig'
 import { api } from '@/scripts/api'
+import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 
 // Mock the API module
 vi.mock('@/scripts/api', () => ({
   api: {
     getServerFeature: vi.fn()
   }
+}))
+
+vi.mock('@/utils/sessionFeatureFlagOverride', () => ({
+  getSessionOverride: vi.fn()
 }))
 
 // Mock the distribution types module
@@ -483,6 +488,56 @@ describe('useFeatureFlags', () => {
 
       const { flags } = useFeatureFlags()
       expect(flags.unifiedCloudAuthEnabled).toBe(true)
+    })
+  })
+
+  describe('session override precedence', () => {
+    afterEach(() => {
+      vi.mocked(getSessionOverride).mockReset()
+      vi.mocked(distributionTypes).isCloud = false
+      remoteConfigState.value = 'unloaded'
+      cachedBillingControlEnabled.value = undefined
+      localStorage.clear()
+      remoteConfig.value = {}
+    })
+
+    it('beats the dev override, remote config and the server value', () => {
+      vi.mocked(getSessionOverride).mockImplementation((flagKey) =>
+        flagKey === ServerFeatureFlag.SIGNUP_TURNSTILE ? 'enforce' : undefined
+      )
+      localStorage.setItem(
+        `ff:${ServerFeatureFlag.SIGNUP_TURNSTILE}`,
+        '"shadow"'
+      )
+      remoteConfig.value = { signup_turnstile: 'off' }
+      vi.mocked(api.getServerFeature).mockReturnValue('off')
+
+      const { flags } = useFeatureFlags()
+      expect(flags.signupTurnstileMode).toBe('enforce')
+    })
+
+    it('applies a false override instead of falling through to an enabled server value', () => {
+      vi.mocked(getSessionOverride).mockImplementation((flagKey) =>
+        flagKey === ServerFeatureFlag.WORKFLOW_SHARING_ENABLED
+          ? false
+          : undefined
+      )
+      vi.mocked(api.getServerFeature).mockReturnValue(true)
+
+      const { flags } = useFeatureFlags()
+      expect(flags.workflowSharingEnabled).toBe(false)
+    })
+
+    it('beats the auth-window fallback on auth-gated flags', () => {
+      vi.mocked(distributionTypes).isCloud = true
+      remoteConfigState.value = 'unloaded'
+      cachedBillingControlEnabled.value = false
+      vi.mocked(getSessionOverride).mockImplementation((flagKey) =>
+        flagKey === ServerFeatureFlag.BILLING_CONTROL_ENABLED ? true : undefined
+      )
+
+      const { flags } = useFeatureFlags()
+      expect(flags.billingControlEnabled).toBe(true)
     })
   })
 })

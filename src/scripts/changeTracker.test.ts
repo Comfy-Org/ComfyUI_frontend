@@ -219,7 +219,6 @@ function omitOptionalSubgraphCollections(state: ComfyWorkflowJSON) {
 describe('ChangeTracker', () => {
   beforeEach(() => {
     vi.mocked(api.dispatchCustomEvent).mockReset()
-    vi.useFakeTimers()
     setActivePinia(createTestingPinia({ stubActions: false }))
     resetSubgraphFixtureState()
     nodeIdCounter = 0
@@ -237,7 +236,6 @@ describe('ChangeTracker', () => {
   afterEach(() => {
     vi.restoreAllMocks()
     vi.clearAllTimers()
-    vi.useRealTimers()
   })
 
   describe('captureCanvasState', () => {

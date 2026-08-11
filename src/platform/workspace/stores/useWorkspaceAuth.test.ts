@@ -1,5 +1,5 @@
 import { createPinia, setActivePinia, storeToRefs } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   useWorkspaceAuthStore,
@@ -107,15 +107,11 @@ describe('useWorkspaceAuthStore', () => {
       origin: 'http://localhost'
     })
     setActivePinia(createPinia())
-    vi.useFakeTimers()
+    vi.useFakeTimers({ shouldAdvanceTime: false })
     sessionStorage.clear()
     mockUnifiedCloudAuthEnabled.value = false
     mockCurrentUser.value = { uid: 'user-a' }
     mockEnsureSessionCookie.mockResolvedValue(undefined)
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
   })
 
   describe('initial state', () => {

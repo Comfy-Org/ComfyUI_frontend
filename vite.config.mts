@@ -745,12 +745,13 @@ export default defineConfig({
     restoreMocks: true,
     unstubEnvs: true,
     unstubGlobals: true,
+    fakeTimers: { shouldAdvanceTime: true },
     globals: true,
     environment: 'happy-dom',
     // Pin the timezone so date-formatting assertions are deterministic
     // regardless of the contributor's local timezone (CI runs in UTC).
     env: { TZ: 'UTC' },
-    setupFiles: ['./vitest.setup.ts'],
+    setupFiles: ['./vitest.timer.setup.ts', './vitest.setup.ts'],
     retry: process.env.CI ? 2 : 0,
     include: [
       'src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',

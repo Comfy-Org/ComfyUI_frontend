@@ -46,7 +46,6 @@ describe('NightlySurveyPopover', () => {
   beforeEach(() => {
     localStorage.clear()
     vi.resetModules()
-    vi.useFakeTimers()
     vi.setSystemTime(new Date('2024-06-15T12:00:00Z'))
 
     mockIsNightly.value = true
@@ -56,7 +55,6 @@ describe('NightlySurveyPopover', () => {
 
   afterEach(() => {
     localStorage.clear()
-    vi.useRealTimers()
   })
 
   async function renderComponent(

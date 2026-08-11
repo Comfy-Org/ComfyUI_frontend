@@ -119,14 +119,12 @@ describe(useQueueNotificationBanners, () => {
   }
 
   beforeEach(() => {
-    vi.useFakeTimers()
     vi.setSystemTime(0)
     resetState()
   })
 
   afterEach(() => {
     vi.runOnlyPendingTimers()
-    vi.useRealTimers()
     resetState()
   })
 

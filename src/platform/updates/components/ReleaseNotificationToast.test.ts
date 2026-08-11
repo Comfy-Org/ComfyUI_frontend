@@ -313,46 +313,36 @@ describe('ReleaseNotificationToast', () => {
   })
 
   it('auto-hides after timeout', async () => {
-    vi.useFakeTimers()
-    try {
-      mockReleaseStore.recentRelease = {
-        version: '1.2.3',
-        content: '# Test Release'
-      } as ReleaseNote
+    mockReleaseStore.recentRelease = {
+      version: '1.2.3',
+      content: '# Test Release'
+    } as ReleaseNote
 
-      renderComponent()
+    renderComponent()
 
-      expect(screen.getByText('New update is out!')).toBeInTheDocument()
+    expect(screen.getByText('New update is out!')).toBeInTheDocument()
 
-      vi.advanceTimersByTime(8000)
-      await nextTick()
+    vi.advanceTimersByTime(8000)
+    await nextTick()
 
-      expect(vi.getTimerCount()).toBe(0)
-    } finally {
-      vi.useRealTimers()
-    }
+    expect(vi.getTimerCount()).toBe(0)
   })
 
   it('clears auto-hide timer when manually dismissed', async () => {
-    vi.useFakeTimers()
-    try {
-      mockReleaseStore.recentRelease = {
-        version: '1.2.3',
-        content: '# Test Release'
-      } as ReleaseNote
+    mockReleaseStore.recentRelease = {
+      version: '1.2.3',
+      content: '# Test Release'
+    } as ReleaseNote
 
-      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
 
-      renderComponent()
+    renderComponent()
 
-      vi.advanceTimersByTime(1000)
+    vi.advanceTimersByTime(1000)
 
-      await user.click(screen.getByRole('button', { name: /skip/i }))
+    await user.click(screen.getByRole('button', { name: /skip/i }))
 
-      expect(vi.getTimerCount()).toBe(0)
-      expect(mockReleaseStore.handleSkipRelease).toHaveBeenCalled()
-    } finally {
-      vi.useRealTimers()
-    }
+    expect(vi.getTimerCount()).toBe(0)
+    expect(mockReleaseStore.handleSkipRelease).toHaveBeenCalled()
   })
 })

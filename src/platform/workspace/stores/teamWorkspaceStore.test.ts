@@ -275,7 +275,6 @@ describe('useTeamWorkspaceStore', () => {
     })
 
     it('sets error state when workspaces fetch fails after retries', async () => {
-      vi.useFakeTimers()
       mockWorkspaceApi.list.mockRejectedValue(new Error('Network error'))
 
       const store = useTeamWorkspaceStore()
@@ -299,8 +298,6 @@ describe('useTeamWorkspaceStore', () => {
       expect(store.error).toBeInstanceOf(Error)
       // Should have been called 4 times (initial + 3 retries)
       expect(mockWorkspaceApi.list).toHaveBeenCalledTimes(4)
-
-      vi.useRealTimers()
     })
 
     it('does not reinitialize if already initialized', async () => {
@@ -395,7 +392,6 @@ describe('useTeamWorkspaceStore', () => {
     })
 
     it('does not activate a workspace when token exchange fails', async () => {
-      vi.useFakeTimers()
       mockWorkspaceAuthStore.switchWorkspace.mockRejectedValue(
         new Error('Token exchange failed')
       )
@@ -411,7 +407,6 @@ describe('useTeamWorkspaceStore', () => {
       expect(store.initState).toBe('error')
       expect(store.activeWorkspaceId).toBeNull()
       expect(store.error).toEqual(new Error('Token exchange failed'))
-      vi.useRealTimers()
     })
   })
 

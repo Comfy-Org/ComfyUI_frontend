@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   captureCheckoutAttributionFromSearch,
@@ -17,10 +17,6 @@ describe('getCheckoutAttribution', () => {
     window.rewardful = undefined
     window.Rewardful = undefined
     window.history.pushState({}, '', '/')
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
   })
 
   it('reads GA identity and URL attribution, and prefers generated click id', async () => {
@@ -272,7 +268,6 @@ describe('getCheckoutAttribution', () => {
   })
 
   it('continues checkout attribution when Rewardful ready never runs', async () => {
-    vi.useFakeTimers()
     window.rewardful = vi.fn() as Window['rewardful']
 
     const attributionPromise = getCheckoutAttribution()

@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 import { CONFIG, GET_CONFIG } from '@/services/litegraphService'
@@ -157,10 +157,6 @@ function setupGraphWithLink(node: PrimitiveNode, targetNode: LGraphNode) {
 }
 
 describe('PrimitiveNode', () => {
-  afterEach(() => {
-    vi.useRealTimers()
-  })
-
   describe('constructor', () => {
     it('initializes with wildcard output and virtual node properties', () => {
       const node = createPrimitiveNode()
@@ -454,8 +450,6 @@ describe('PrimitiveNode', () => {
     })
 
     it('temporarily stores controlValues and lastType for recreation', () => {
-      vi.useFakeTimers()
-
       const node = createPrimitiveNode()
       node.widgets = [
         makeWidget({ value: 42 }),
@@ -470,8 +464,6 @@ describe('PrimitiveNode', () => {
       vi.advanceTimersByTime(15)
       expect(node.lastType).toBeUndefined()
       expect(node.controlValues).toBeUndefined()
-
-      vi.useRealTimers()
     })
   })
 
