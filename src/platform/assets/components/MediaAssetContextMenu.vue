@@ -39,11 +39,16 @@ import Button from '@/components/ui/button/Button.vue'
 import { useDismissableOverlay } from '@/composables/useDismissableOverlay'
 import { isCloud } from '@/platform/distribution/types'
 import { supportsWorkflowMetadata } from '@/platform/workflow/utils/workflowExtractionUtil'
+import { api } from '@/scripts/api'
 import { isPreviewableMediaType } from '@/utils/formatUtil'
+import { isLoopbackHost } from '@/utils/hostWhitelist'
 import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { useMediaAssetActions } from '../composables/useMediaAssetActions'
+import {
+  shouldSkipDeleteConfirmation,
+  useMediaAssetActions
+} from '../composables/useMediaAssetActions'
 import type { AssetItem } from '../schemas/assetSchema'
 import type { AssetContext, MediaKind } from '../schemas/mediaAssetSchema'
 
@@ -112,16 +117,41 @@ const showWorkflowActions = computed(() => {
 })
 
 const showCopyJobId = computed(() => {
-  return assetType !== 'input'
+  if (assetType === 'input') return false
+  if (asset?.loader_path) return Boolean(asset.job_id || asset.prompt_id)
+  return true
 })
+
+const hasLocalAssetApi = computed(
+  () => isCloud || api.getServerFeature('assets', false)
+)
 
 const shouldShowDeleteButton = computed(() => {
   const propAllows = showDeleteButton ?? true
   const typeAllows =
-    assetType === 'output' || (assetType === 'input' && isCloud)
+    assetType === 'output' || (assetType === 'input' && hasLocalAssetApi.value)
 
   return propAllows && typeAllows
 })
+
+const shouldShowDeleteSourceFileButton = computed(
+  () =>
+    shouldShowDeleteButton.value &&
+    assetType === 'output' &&
+    !isCloud &&
+    hasLocalAssetApi.value &&
+    Boolean(asset?.loader_path)
+)
+
+const shouldShowOpenLocationButton = computed(
+  () =>
+    assetType === 'output' &&
+    !isCloud &&
+    hasLocalAssetApi.value &&
+    Boolean(asset?.loader_path) &&
+    typeof window !== 'undefined' &&
+    isLoopbackHost(window.location.hostname)
+)
 
 // Context menu items
 const contextMenuItems = computed<MenuItem[]>(() => {
@@ -214,6 +244,44 @@ const contextMenuItems = computed<MenuItem[]>(() => {
     command: () => actions.downloadAssets([asset])
   })
 
+  if (shouldShowOpenLocationButton.value) {
+    items.push({
+      label: t('mediaAsset.actions.openFileLocation'),
+      icon: 'icon-[lucide--folder-open]',
+      command: () => actions.openAssetLocation(asset)
+    })
+  }
+
+  if (shouldShowDeleteButton.value || shouldShowDeleteSourceFileButton.value) {
+    items.push({ separator: true })
+  }
+
+  if (shouldShowDeleteButton.value) {
+    items.push({
+      label: t('mediaAsset.actions.delete'),
+      icon: 'icon-[lucide--trash-2]',
+      command: async () => {
+        const deleted = await actions.deleteAssets(asset, {
+          skipConfirmation: shouldSkipDeleteConfirmation(asset)
+        })
+        if (deleted) emit('asset-deleted')
+      }
+    })
+  }
+
+  if (shouldShowDeleteSourceFileButton.value) {
+    items.push({
+      label: t('mediaAsset.actions.deleteSourceFile'),
+      icon: 'icon-[lucide--file-x-2]',
+      command: async () => {
+        const deleted = await actions.deleteAssets(asset, {
+          deleteContent: true
+        })
+        if (deleted) emit('asset-deleted')
+      }
+    })
+  }
+
   // Separator before workflow actions (only if there are workflow actions)
   if (showWorkflowActions.value) {
     items.push({ separator: true })
@@ -237,23 +305,6 @@ const contextMenuItems = computed<MenuItem[]>(() => {
       icon: 'icon-[lucide--copy]',
       command: async () => {
         await actions.copyJobId(asset)
-      }
-    })
-  }
-
-  // Delete
-  if (shouldShowDeleteButton.value) {
-    items.push({ separator: true })
-    items.push({
-      label: t('mediaAsset.actions.delete'),
-      icon: 'icon-[lucide--trash-2]',
-      command: async () => {
-        if (asset) {
-          const confirmed = await actions.deleteAssets(asset)
-          if (confirmed) {
-            emit('asset-deleted')
-          }
-        }
       }
     })
   }

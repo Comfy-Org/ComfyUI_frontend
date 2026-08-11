@@ -444,7 +444,8 @@ export function getAssetFilename(asset: AssetItem): string {
  * TODO(BE-933/934): collapse to `asset.file_path ?? asset.name`.
  */
 export function getAssetStoredFilename(asset: AssetItem): string {
-  return isCloud && asset.hash ? asset.hash : asset.name
+  if (isCloud && asset.hash) return asset.hash
+  return asset.loader_path ?? asset.name
 }
 
 /**

@@ -139,7 +139,7 @@
       <MediaAssetSelectionBar
         v-if="hasSelection"
         :count="totalOutputCount"
-        :show-delete="shouldShowDeleteButton"
+        :show-delete="shouldShowSelectionDeleteButton"
         @deselect="handleDeselectAll"
         @download="handleDownloadSelected"
         @delete="handleDeleteSelected"
@@ -163,7 +163,6 @@
     :asset="contextMenuAsset"
     :asset-type="contextMenuAssetType"
     :file-kind="contextMenuFileKind"
-    :show-delete-button="shouldShowDeleteButton"
     :selected-assets="selectedAssets"
     :is-bulk-mode="isBulkMode"
     @zoom="handleZoomClick(contextMenuAsset)"
@@ -268,7 +267,7 @@ const contextMenuAsset = ref<AssetItem | null>(null)
 
 // Determine if delete button should be shown
 // Hide delete button when in input tab and not in cloud (OSS mode - files are from local folders)
-const shouldShowDeleteButton = computed(() => {
+const shouldShowSelectionDeleteButton = computed(() => {
   if (activeTab.value === 'input' && !isCloud) return false
   return true
 })

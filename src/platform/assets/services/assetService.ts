@@ -2,7 +2,7 @@ import { fromZodError } from 'zod-validation-error'
 import { z } from 'zod'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { st } from '@/i18n'
+import { st, t } from '@/i18n'
 import { ASSETS_SEED_FAST_COMPLETE_EVENT } from '@/platform/assets/constants/assetEvents'
 
 import {
@@ -221,6 +221,22 @@ function throwIfAborted(signal?: AbortSignal): void {
 
 function normalizeAssetTags(tags: string[]): string[] {
   return tags.map((tag) => tag.trim()).filter(Boolean)
+}
+
+function normalizeLoaderPath(loaderPath: string): string {
+  const normalized = loaderPath.replaceAll('\\', '/').replace(/^\.\/+/, '')
+  const parts = normalized.split('/')
+  if (
+    !normalized ||
+    normalized.startsWith('/') ||
+    /^[a-z]:/i.test(normalized) ||
+    parts.includes('..')
+  ) {
+    throw new Error(
+      t('mediaAsset.errors.invalidLocalInputAssetPath', { path: loaderPath })
+    )
+  }
+  return normalized
 }
 
 /**
@@ -850,14 +866,18 @@ function createAssetService() {
 
   /**
    * Deletes an asset by ID
-   * Only available in cloud environment
    *
    * @param id - The asset ID (UUID)
+   * @param options.deleteContent - Also remove the managed local source file
    * @returns Promise<void>
    * @throws Error if deletion fails
    */
-  async function deleteAsset(id: AssetId): Promise<void> {
-    const res = await api.fetchApi(`${ASSETS_ENDPOINT}/${id}`, {
+  async function deleteAsset(
+    id: AssetId,
+    { deleteContent = false }: { deleteContent?: boolean } = {}
+  ): Promise<void> {
+    const suffix = deleteContent ? '?delete_content=true' : ''
+    const res = await api.fetchApi(`${ASSETS_ENDPOINT}/${id}${suffix}`, {
       method: 'DELETE'
     })
 
@@ -868,6 +888,49 @@ function createAssetService() {
     }
 
     invalidateInputAssetsIncludingPublic()
+  }
+
+  async function openAssetLocation(id: AssetId): Promise<void> {
+    const res = await api.fetchApi(`${ASSETS_ENDPOINT}/${id}/open-location`, {
+      method: 'POST'
+    })
+
+    if (!res.ok) {
+      throw new Error(
+        t('mediaAsset.errors.failedToOpenAssetLocation', {
+          id,
+          status: res.status
+        })
+      )
+    }
+  }
+
+  async function deleteLocalInputAsset(
+    loaderPath: string,
+    knownInputAssets?: readonly AssetItem[]
+  ): Promise<void> {
+    const normalizedPath = normalizeLoaderPath(loaderPath)
+    const inputAssets =
+      knownInputAssets ?? (await getAllAssetsByTag(INPUT_TAG, false))
+    const matches = inputAssets.filter((asset) => {
+      if (!asset.loader_path) return false
+      try {
+        return normalizeLoaderPath(asset.loader_path) === normalizedPath
+      } catch {
+        return false
+      }
+    })
+
+    if (matches.length !== 1) {
+      throw new Error(
+        t('mediaAsset.errors.failedToResolveLocalInputAsset', {
+          path: loaderPath,
+          count: matches.length
+        })
+      )
+    }
+
+    await deleteAsset(matches[0].id, { deleteContent: true })
   }
 
   /**
@@ -1214,6 +1277,8 @@ function createAssetService() {
     getInputAssetsIncludingPublic,
     invalidateInputAssetsIncludingPublic,
     deleteAsset,
+    openAssetLocation,
+    deleteLocalInputAsset,
     updateAsset,
     addAssetTags,
     removeAssetTags,

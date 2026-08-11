@@ -1,12 +1,16 @@
 import { render } from '@testing-library/vue'
 import type { MenuItem } from 'primevue/menuitem'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { PropType } from 'vue'
 import { defineComponent, nextTick, onMounted, ref } from 'vue'
 
 import MediaAssetContextMenu from '@/platform/assets/components/MediaAssetContextMenu.vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { api } from '@/scripts/api'
 import type * as FormatUtil from '@/utils/formatUtil'
+
+const mockIsLoopbackHost = vi.hoisted(() => vi.fn(() => true))
+const mockShouldSkipDeleteConfirmation = vi.hoisted(() => vi.fn(() => true))
 
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
@@ -27,9 +31,14 @@ vi.mock('@/utils/formatUtil', async (importOriginal) => ({
   isPreviewableMediaType: () => true
 }))
 
+vi.mock('@/utils/hostWhitelist', () => ({
+  isLoopbackHost: mockIsLoopbackHost
+}))
+
 const mediaAssetActions = {
   addWorkflow: vi.fn(),
   downloadAssets: vi.fn(),
+  openAssetLocation: vi.fn(),
   openWorkflow: vi.fn(),
   exportWorkflow: vi.fn(),
   copyJobId: vi.fn(),
@@ -37,6 +46,7 @@ const mediaAssetActions = {
 }
 
 vi.mock('../composables/useMediaAssetActions', () => ({
+  shouldSkipDeleteConfirmation: mockShouldSkipDeleteConfirmation,
   useMediaAssetActions: () => mediaAssetActions
 }))
 
@@ -93,6 +103,12 @@ const asset: AssetItem = {
   user_metadata: {}
 }
 
+const persistentOutput: AssetItem = {
+  ...asset,
+  tags: ['output'],
+  loader_path: 'video/render.mp4'
+}
+
 const buttonStub = {
   template: '<div class="button-stub"><slot /></div>'
 }
@@ -103,8 +119,13 @@ interface MediaAssetContextMenuExposed {
 
 let capturedRef: MediaAssetContextMenuExposed | null = null
 
-function mountComponent(targetAsset: AssetItem = asset) {
+function mountComponent(
+  targetAsset: AssetItem = asset,
+  assetType: 'input' | 'output' = 'output',
+  showDeleteButton = true
+) {
   const onHide = vi.fn()
+  const onAssetDeleted = vi.fn()
   const { container, unmount } = render(
     defineComponent({
       components: { MediaAssetContextMenu },
@@ -113,10 +134,17 @@ function mountComponent(targetAsset: AssetItem = asset) {
         onMounted(() => {
           capturedRef = menuRef.value
         })
-        return { menuRef, asset: targetAsset, onHide }
+        return {
+          menuRef,
+          asset: targetAsset,
+          assetType,
+          showDeleteButton,
+          onHide,
+          onAssetDeleted
+        }
       },
       template:
-        '<MediaAssetContextMenu ref="menuRef" :asset="asset" asset-type="output" file-kind="image" @hide="onHide" />'
+        '<MediaAssetContextMenu ref="menuRef" :asset="asset" :asset-type="assetType" :show-delete-button="showDeleteButton" file-kind="image" @hide="onHide" @asset-deleted="onAssetDeleted" />'
     }),
     {
       global: {
@@ -127,7 +155,7 @@ function mountComponent(targetAsset: AssetItem = asset) {
       }
     }
   )
-  return { container, unmount, onHide }
+  return { container, unmount, onHide, onAssetDeleted }
 }
 
 async function showMenu(container: Element): Promise<HTMLElement> {
@@ -138,7 +166,14 @@ async function showMenu(container: Element): Promise<HTMLElement> {
   return container.querySelector('.context-menu-stub') as HTMLElement
 }
 
+beforeEach(() => {
+  api.serverFeatureFlags.value = { assets: true }
+  mockIsLoopbackHost.mockReturnValue(true)
+  mockShouldSkipDeleteConfirmation.mockReturnValue(true)
+})
+
 afterEach(() => {
+  api.serverFeatureFlags.value = {}
   capturedRef = null
   capturedMenu.model = []
   document.body.innerHTML = ''
@@ -219,6 +254,187 @@ describe('MediaAssetContextMenu', () => {
     })
 
     expect(mediaAssetActions.downloadAssets).toHaveBeenCalledWith([asset])
+
+    unmount()
+  })
+
+  it('hides Copy Job ID for persistent outputs without provenance', async () => {
+    const { container, unmount } = mountComponent({
+      ...asset,
+      tags: ['output'],
+      loader_path: 'video/old-output.mp4'
+    })
+    await showMenu(container)
+
+    expect(findMenuItem('mediaAsset.actions.copyJobId')).toBeUndefined()
+
+    unmount()
+  })
+
+  it('shows Copy Job ID for persistent outputs with provenance', async () => {
+    const { container, unmount } = mountComponent({
+      ...asset,
+      tags: ['output'],
+      loader_path: 'video/new-output.mp4',
+      job_id: 'prompt-123'
+    })
+    await showMenu(container)
+
+    expect(findMenuItem('mediaAsset.actions.copyJobId')).toBeDefined()
+
+    unmount()
+  })
+
+  it('separates local input deletion from download', async () => {
+    const { container, unmount } = mountComponent(asset, 'input')
+    await showMenu(container)
+
+    const downloadIndex = capturedMenu.model.findIndex(
+      (item) => item.label === 'mediaAsset.actions.download'
+    )
+    const deleteIndex = capturedMenu.model.findIndex(
+      (item) => item.label === 'mediaAsset.actions.delete'
+    )
+    expect(capturedMenu.model[downloadIndex + 1]?.separator).toBe(true)
+    expect(deleteIndex).toBe(downloadIndex + 2)
+
+    const deleteItem = findMenuItem('mediaAsset.actions.delete')
+    if (!deleteItem?.command) throw new Error('Delete command is missing')
+    await deleteItem.command({
+      originalEvent: new MouseEvent('click'),
+      item: deleteItem
+    })
+    expect(mediaAssetActions.deleteAssets).toHaveBeenCalledWith(asset, {
+      skipConfirmation: true
+    })
+    expect(mockShouldSkipDeleteConfirmation).toHaveBeenCalledWith(asset)
+
+    unmount()
+  })
+
+  it('hides local input deletion when the asset API is disabled', async () => {
+    api.serverFeatureFlags.value = {}
+    const { container, unmount } = mountComponent(asset, 'input')
+    await showMenu(container)
+
+    expect(findMenuItem('mediaAsset.actions.delete')).toBeUndefined()
+
+    unmount()
+  })
+
+  it('shows local input deletion when the asset API flag arrives', async () => {
+    api.serverFeatureFlags.value = {}
+    const { container, unmount } = mountComponent(asset, 'input')
+    await showMenu(container)
+
+    expect(findMenuItem('mediaAsset.actions.delete')).toBeUndefined()
+
+    api.serverFeatureFlags.value = { assets: true }
+    await nextTick()
+
+    expect(findMenuItem('mediaAsset.actions.delete')).toBeDefined()
+
+    unmount()
+  })
+
+  it('hides delete actions when deletion is disabled by the caller', async () => {
+    const { container, unmount } = mountComponent(asset, 'output', false)
+    await showMenu(container)
+
+    expect(findMenuItem('mediaAsset.actions.delete')).toBeUndefined()
+    expect(findMenuItem('mediaAsset.actions.deleteSourceFile')).toBeUndefined()
+
+    unmount()
+  })
+
+  it('orders local generated file actions after download', async () => {
+    const { container, unmount } = mountComponent(persistentOutput)
+    await showMenu(container)
+
+    const labels = capturedMenu.model.map((item) =>
+      item.separator ? 'separator' : item.label
+    )
+    const downloadIndex = labels.indexOf('mediaAsset.actions.download')
+    expect(labels.slice(downloadIndex, downloadIndex + 5)).toEqual([
+      'mediaAsset.actions.download',
+      'mediaAsset.actions.openFileLocation',
+      'separator',
+      'mediaAsset.actions.delete',
+      'mediaAsset.actions.deleteSourceFile'
+    ])
+
+    unmount()
+  })
+
+  it('opens the location of a local generated file', async () => {
+    const { container, unmount } = mountComponent(persistentOutput)
+    await showMenu(container)
+
+    const openLocationItem = findMenuItem('mediaAsset.actions.openFileLocation')
+    if (!openLocationItem?.command) {
+      throw new Error('Open-location command is missing')
+    }
+    openLocationItem.command({
+      originalEvent: new MouseEvent('click'),
+      item: openLocationItem
+    })
+    expect(mediaAssetActions.openAssetLocation).toHaveBeenCalledWith(
+      persistentOutput
+    )
+
+    unmount()
+  })
+
+  it('removes a local generated asset without deleting its source', async () => {
+    const { container, unmount, onAssetDeleted } =
+      mountComponent(persistentOutput)
+    await showMenu(container)
+
+    mediaAssetActions.deleteAssets.mockResolvedValueOnce(true)
+    const deleteItem = findMenuItem('mediaAsset.actions.delete')
+    if (!deleteItem?.command) throw new Error('Delete command is missing')
+    await deleteItem.command({
+      originalEvent: new MouseEvent('click'),
+      item: deleteItem
+    })
+    expect(mediaAssetActions.deleteAssets).toHaveBeenLastCalledWith(
+      persistentOutput,
+      { skipConfirmation: true }
+    )
+    expect(onAssetDeleted).toHaveBeenCalledOnce()
+
+    unmount()
+  })
+
+  it('deletes the source file of a local generated asset', async () => {
+    const { container, unmount, onAssetDeleted } =
+      mountComponent(persistentOutput)
+    await showMenu(container)
+
+    mediaAssetActions.deleteAssets.mockResolvedValueOnce(true)
+    const deleteSourceItem = findMenuItem('mediaAsset.actions.deleteSourceFile')
+    if (!deleteSourceItem?.command) {
+      throw new Error('Delete-source command is missing')
+    }
+    await deleteSourceItem.command({
+      originalEvent: new MouseEvent('click'),
+      item: deleteSourceItem
+    })
+    expect(mediaAssetActions.deleteAssets).toHaveBeenLastCalledWith(
+      persistentOutput,
+      { deleteContent: true }
+    )
+    expect(onAssetDeleted).toHaveBeenCalledOnce()
+
+    unmount()
+  })
+
+  it('hides open file location on non-loopback hosts', async () => {
+    mockIsLoopbackHost.mockReturnValue(false)
+    const { container, unmount } = mountComponent(persistentOutput)
+    await showMenu(container)
+
+    expect(findMenuItem('mediaAsset.actions.openFileLocation')).toBeUndefined()
 
     unmount()
   })

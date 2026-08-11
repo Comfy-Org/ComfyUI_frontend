@@ -64,7 +64,9 @@ vi.mock('@/scripts/api', () => ({
 }))
 
 vi.mock('@/i18n', () => ({
-  st: vi.fn((_key: string, fallback: string) => fallback)
+  st: (_key: string, fallback: string) => fallback,
+  t: (key: string, params: Record<string, unknown>) =>
+    `${key} ${JSON.stringify(params)}`
 }))
 
 const fetchApiMock = vi.mocked(api.fetchApi)
@@ -417,6 +419,121 @@ describe(assetService.deleteAsset, () => {
 
     expect(fetchApiMock).toHaveBeenCalledWith(
       '/assets/asset-1',
+      expect.objectContaining({ method: 'DELETE' })
+    )
+  })
+
+  it('requests deletion of the managed source file', async () => {
+    fetchApiMock.mockResolvedValueOnce(buildResponse(null))
+
+    await assetService.deleteAsset('asset-1', { deleteContent: true })
+
+    expect(fetchApiMock).toHaveBeenCalledWith(
+      '/assets/asset-1?delete_content=true',
+      expect.objectContaining({ method: 'DELETE' })
+    )
+  })
+})
+
+describe(assetService.deleteLocalInputAsset, () => {
+  it('resolves a local input path to its asset id', async () => {
+    fetchApiMock
+      .mockResolvedValueOnce(
+        buildAssetListResponse([
+          validAsset({
+            id: 'real-asset-uuid',
+            name: 'image.png',
+            loader_path: 'folder\\image.png',
+            tags: ['input']
+          })
+        ])
+      )
+      .mockResolvedValueOnce(buildResponse(null))
+
+    await assetService.deleteLocalInputAsset('folder/image.png')
+
+    expect(fetchApiMock).toHaveBeenLastCalledWith(
+      '/assets/real-asset-uuid?delete_content=true',
+      expect.objectContaining({ method: 'DELETE' })
+    )
+  })
+
+  it('reuses a provided input listing without loading it again', async () => {
+    const knownInputAssets = [
+      validAsset({
+        id: 'known-asset-uuid',
+        name: 'image.png',
+        loader_path: 'folder/image.png',
+        tags: ['input']
+      })
+    ]
+    fetchApiMock.mockResolvedValueOnce(buildResponse(null))
+
+    await assetService.deleteLocalInputAsset(
+      'folder/image.png',
+      knownInputAssets
+    )
+
+    expect(fetchApiMock).toHaveBeenCalledOnce()
+    expect(fetchApiMock).toHaveBeenCalledWith(
+      '/assets/known-asset-uuid?delete_content=true',
+      expect.objectContaining({ method: 'DELETE' })
+    )
+  })
+
+  it('rejects a missing input path', async () => {
+    fetchApiMock.mockResolvedValueOnce(buildAssetListResponse([]))
+
+    await expect(
+      assetService.deleteLocalInputAsset('missing.png')
+    ).rejects.toThrow(
+      'mediaAsset.errors.failedToResolveLocalInputAsset {"path":"missing.png","count":0}'
+    )
+    expect(fetchApiMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('rejects an ambiguous input path without deleting either record', async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([
+        validAsset({ id: 'first', loader_path: 'folder/image.png' }),
+        validAsset({ id: 'second', loader_path: 'folder\\image.png' })
+      ])
+    )
+
+    await expect(
+      assetService.deleteLocalInputAsset('folder/image.png')
+    ).rejects.toThrow(
+      'mediaAsset.errors.failedToResolveLocalInputAsset {"path":"folder/image.png","count":2}'
+    )
+    expect(fetchApiMock).toHaveBeenCalledTimes(1)
+  })
+
+  it.for(['', 'C:', 'C:file.png', 'C:/file.png', '../escape.png', '/abs.png'])(
+    'rejects invalid path %j before loading assets',
+    async (loaderPath) => {
+      await expect(
+        assetService.deleteLocalInputAsset(loaderPath)
+      ).rejects.toThrow(
+        `mediaAsset.errors.invalidLocalInputAssetPath ${JSON.stringify({ path: loaderPath })}`
+      )
+      expect(fetchApiMock).not.toHaveBeenCalled()
+    }
+  )
+
+  it('skips malformed candidate paths while resolving a valid record', async () => {
+    fetchApiMock
+      .mockResolvedValueOnce(
+        buildAssetListResponse([
+          validAsset({ id: 'stale', loader_path: '../stale.png' }),
+          validAsset({ id: 'valid', loader_path: 'folder/image.png' })
+        ])
+      )
+      .mockResolvedValueOnce(buildResponse(null))
+
+    await assetService.deleteLocalInputAsset('folder/image.png')
+
+    expect(fetchApiMock).toHaveBeenLastCalledWith(
+      '/assets/valid?delete_content=true',
       expect.objectContaining({ method: 'DELETE' })
     )
   })
@@ -1397,5 +1514,30 @@ describe(assetService.getInputAssetsIncludingPublic, () => {
 
     expect(cached).toEqual(staleAssets)
     expect(fetchApiMock).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe(assetService.openAssetLocation, () => {
+  it('posts the asset id to the open-location endpoint', async () => {
+    fetchApiMock.mockResolvedValueOnce(buildResponse(null))
+
+    await assetService.openAssetLocation('generated-asset-id')
+
+    expect(fetchApiMock).toHaveBeenCalledWith(
+      '/assets/generated-asset-id/open-location',
+      { method: 'POST' }
+    )
+  })
+
+  it('rejects non-success responses', async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      buildResponse(null, { ok: false, status: 403 })
+    )
+
+    await expect(
+      assetService.openAssetLocation('generated-asset-id')
+    ).rejects.toThrow(
+      'mediaAsset.errors.failedToOpenAssetLocation {"id":"generated-asset-id","status":403}'
+    )
   })
 })

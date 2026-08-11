@@ -39,9 +39,79 @@ import { useAssetExportStore } from '@/stores/assetExportStore'
 
 import type { AssetItem } from '../schemas/assetSchema'
 import { MediaAssetKey } from '../schemas/mediaAssetSchema'
-import { assetService } from '../services/assetService'
+import { INPUT_TAG, assetService } from '../services/assetService'
 
 const EXCLUDED_TAGS = new Set(['models', 'input', 'output'])
+
+interface DeleteAssetsOptions {
+  skipConfirmation?: boolean
+  deleteContent?: boolean
+}
+
+const DELETE_CONFIRMATION_COPY = {
+  deleteGeneratedSourceFile: {
+    title: [
+      'mediaAsset.deleteGeneratedSourceFileTitle',
+      'mediaAsset.deleteSelectedGeneratedSourceFilesTitle'
+    ],
+    description: [
+      'mediaAsset.deleteGeneratedSourceFileDescription',
+      'mediaAsset.deleteSelectedGeneratedSourceFilesDescription'
+    ]
+  },
+  removeGeneratedAsset: {
+    title: [
+      'mediaAsset.removeGeneratedAssetTitle',
+      'mediaAsset.removeSelectedGeneratedAssetsTitle'
+    ],
+    description: [
+      'mediaAsset.removeGeneratedAssetDescription',
+      'mediaAsset.removeSelectedGeneratedAssetsDescription'
+    ]
+  },
+  deleteAsset: {
+    title: ['mediaAsset.deleteAssetTitle', 'mediaAsset.deleteSelectedTitle'],
+    description: [
+      'mediaAsset.deleteAssetDescription',
+      'mediaAsset.deleteSelectedDescription'
+    ]
+  }
+} as const
+
+function getDeleteConfirmationCopy(
+  deletingGeneratedSourceFiles: boolean,
+  allPersistentLocalOutputs: boolean,
+  isSingle: boolean
+) {
+  const variant = deletingGeneratedSourceFiles
+    ? 'deleteGeneratedSourceFile'
+    : allPersistentLocalOutputs
+      ? 'removeGeneratedAsset'
+      : 'deleteAsset'
+  const index = isSingle ? 0 : 1
+  const copy = DELETE_CONFIRMATION_COPY[variant]
+
+  return {
+    titleKey: copy.title[index],
+    descriptionKey: copy.description[index]
+  }
+}
+
+function isPersistentLocalOutputAsset(asset: AssetItem): boolean {
+  return (
+    !isCloud && getAssetType(asset) === 'output' && Boolean(asset.loader_path)
+  )
+}
+
+export function shouldSkipDeleteConfirmation(asset: AssetItem): boolean {
+  if (isCloud) return false
+  const assetType = getAssetType(asset)
+  return assetType === 'input' || isPersistentLocalOutputAsset(asset)
+}
+
+function usesLocalInputDeletion(assetType: string): boolean {
+  return !isCloud && assetType !== 'output' && assetType !== 'temp'
+}
 
 function createAssetWidgetPath(asset: AssetItem): string {
   const metadata = getOutputAssetMetadata(asset.user_metadata)
@@ -70,7 +140,9 @@ function widgetValueVariantsForAsset(asset: AssetItem): string[] {
   if (name) {
     if (type === 'output') {
       const subfolder = getOutputAssetMetadata(asset.user_metadata)?.subfolder
-      const path = subfolder ? `${subfolder}/${name}` : name
+      const path =
+        asset.loader_path?.replaceAll('\\', '/') ??
+        (subfolder ? `${subfolder}/${name}` : name)
       variants.push(`${path} [output]`)
     } else if (type === 'temp') {
       variants.push(`${name} [temp]`)
@@ -101,10 +173,14 @@ export function useMediaAssetActions() {
    */
   const deleteAssetApi = async (
     asset: AssetItem,
-    assetType: string
+    assetType: string,
+    deleteContent = false,
+    localInputAssets?: readonly AssetItem[]
   ): Promise<void> => {
-    // Temp files (e.g. preview-node outputs) are history-backed outputs that
-    // happen to live in the temp dir, so they delete via the history API too.
+    if (assetType === 'output' && isPersistentLocalOutputAsset(asset)) {
+      await assetService.deleteAsset(asset.id, { deleteContent })
+      return
+    }
     if (assetType === 'output' || assetType === 'temp') {
       const jobId =
         getOutputAssetMetadata(asset.user_metadata)?.jobId || asset.id
@@ -112,11 +188,14 @@ export function useMediaAssetActions() {
         throw new Error('Unable to extract job ID from asset')
       }
       await api.deleteItem('history', jobId)
-    } else {
-      // Input assets can only be deleted in cloud environment
-      if (!isCloud) {
-        throw new Error(t('mediaAsset.deletingImportedFilesCloudOnly'))
+    } else if (!isCloud) {
+      const loaderPath = getAssetStoredFilename(asset)
+      if (localInputAssets) {
+        await assetService.deleteLocalInputAsset(loaderPath, localInputAssets)
+      } else {
+        await assetService.deleteLocalInputAsset(loaderPath)
       }
+    } else {
       await assetService.deleteAsset(asset.id)
     }
   }
@@ -315,7 +394,11 @@ export function useMediaAssetActions() {
     const metadata = getOutputAssetMetadata(targetAsset.user_metadata)
     const jobId =
       metadata?.jobId ||
-      (getAssetType(targetAsset) === 'output' ? targetAsset.id : undefined)
+      targetAsset.job_id ||
+      targetAsset.prompt_id ||
+      (getAssetType(targetAsset) === 'output' && !targetAsset.loader_path
+        ? targetAsset.id
+        : undefined)
 
     if (!jobId) {
       toast.add({
@@ -328,6 +411,25 @@ export function useMediaAssetActions() {
     }
 
     await copyToClipboard(jobId)
+  }
+
+  const openAssetLocation = async (asset: AssetItem) => {
+    try {
+      await assetService.openAssetLocation(asset.id)
+      toast.add({
+        severity: 'success',
+        summary: t('g.success'),
+        detail: t('mediaAsset.fileLocationOpened'),
+        life: 2000
+      })
+    } catch (error) {
+      console.error('Failed to open asset location:', error)
+      toast.add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: t('mediaAsset.failedToOpenFileLocation')
+      })
+    }
   }
 
   /**
@@ -657,170 +759,213 @@ export function useMediaAssetActions() {
     }
   }
 
-  /**
-   * Show confirmation dialog and delete asset(s) if confirmed
-   * @param assets Single asset or array of assets to delete
-   * @returns true if user confirmed and deletion was attempted, false if cancelled
-   */
+  const performDeleteAssets = async (
+    assetArray: AssetItem[],
+    { deleteContent = false }: Pick<DeleteAssetsOptions, 'deleteContent'> = {}
+  ): Promise<boolean> => {
+    const assetsStore = useAssetsStore()
+    const isSingle = assetArray.length === 1
+    const allPersistentLocalOutputs = assetArray.every(
+      isPersistentLocalOutputAsset
+    )
+    assetArray.forEach((asset) => assetsStore.setAssetDeleting(asset.id, true))
+
+    try {
+      const localInputCount = isCloud
+        ? 0
+        : assetArray.filter((asset) =>
+            usesLocalInputDeletion(getAssetType(asset))
+          ).length
+      const sharedLocalInputAssets =
+        localInputCount > 1
+          ? assetService.getAllAssetsByTag(INPUT_TAG, false)
+          : undefined
+      const results = await Promise.allSettled(
+        assetArray.map(async (asset) => {
+          const assetType = getAssetType(asset)
+          const localInputAssets =
+            usesLocalInputDeletion(assetType) && sharedLocalInputAssets
+              ? await sharedLocalInputAssets
+              : undefined
+          return await deleteAssetApi(
+            asset,
+            assetType,
+            deleteContent,
+            localInputAssets
+          )
+        })
+      )
+      const succeeded = results.filter(
+        (result) => result.status === 'fulfilled'
+      ).length
+      const failed = results.filter((result) => result.status === 'rejected')
+
+      results.forEach((result, index) => {
+        if (result.status === 'rejected') {
+          console.warn(
+            `Failed to delete asset ${assetArray[index].name}:`,
+            result.reason
+          )
+        }
+      })
+
+      const hasPersistentOutputAssets = assetArray.some(
+        (asset) =>
+          getAssetType(asset) === 'output' &&
+          isPersistentLocalOutputAsset(asset)
+      )
+      const hasHistoryOutputAssets = assetArray.some((asset) => {
+        const type = getAssetType(asset)
+        return (
+          type === 'temp' ||
+          (type === 'output' && !isPersistentLocalOutputAsset(asset))
+        )
+      })
+      const hasInputAssets = assetArray.some(
+        (asset) => getAssetType(asset) === 'input'
+      )
+
+      try {
+        if (hasPersistentOutputAssets) await assetsStore.updateFlatOutputs()
+        if (hasHistoryOutputAssets) await assetsStore.updateHistory()
+        if (hasInputAssets) await assetsStore.updateInputs()
+      } catch (error) {
+        console.error('Failed to refresh asset stores after deletion:', error)
+      }
+
+      const rootGraph = app.rootGraph
+      if (rootGraph) {
+        const deletedValues = new Set<string>()
+        assetArray.forEach((asset, index) => {
+          if (results[index].status !== 'fulfilled') return
+          if (!deleteContent && isPersistentLocalOutputAsset(asset)) return
+          for (const value of widgetValueVariantsForAsset(asset)) {
+            deletedValues.add(value)
+          }
+        })
+        if (deletedValues.size > 0) {
+          const nodeOutputStore = useNodeOutputStore()
+          markDeletedAssetsAsMissingMedia(rootGraph, deletedValues)
+          clearNodePreviewCacheForValues(rootGraph, deletedValues, (node) =>
+            nodeOutputStore.removeNodeOutputsForNode(node)
+          )
+          clearDeletedAssetWidgetValues(rootGraph, deletedValues)
+          useWorkflowStore().activeWorkflow?.changeTracker?.captureCanvasState()
+        }
+      }
+
+      const modelCategories = new Set<string>()
+      for (const asset of assetArray) {
+        for (const tag of asset.tags ?? []) {
+          if (EXCLUDED_TAGS.has(tag)) continue
+          if (assetsStore.hasCategory(tag)) modelCategories.add(tag)
+        }
+      }
+      for (const category of modelCategories) {
+        assetsStore.invalidateModelsForCategory(category)
+      }
+
+      if (failed.length === 0) {
+        toast.add({
+          severity: 'success',
+          summary: t('g.success'),
+          detail:
+            allPersistentLocalOutputs && !deleteContent
+              ? isSingle
+                ? t('mediaAsset.generatedAssetRemovedSuccessfully')
+                : t(
+                    'mediaAsset.selectedGeneratedAssetsRemovedSuccessfully',
+                    { count: succeeded },
+                    succeeded
+                  )
+              : isSingle
+                ? t('mediaAsset.assetDeletedSuccessfully')
+                : t(
+                    'mediaAsset.selection.assetsDeletedSuccessfully',
+                    succeeded
+                  ),
+          life: 2000
+        })
+      } else if (succeeded === 0) {
+        toast.add({
+          severity: 'error',
+          summary: t('g.error'),
+          detail: isSingle
+            ? t('mediaAsset.failedToDeleteAsset')
+            : t('mediaAsset.selection.failedToDeleteAssets')
+        })
+      } else {
+        toast.add({
+          severity: 'warn',
+          summary: t('g.warning'),
+          detail: t('mediaAsset.selection.partialDeleteSuccess', {
+            succeeded,
+            failed: failed.length
+          }),
+          life: 3000
+        })
+      }
+      return failed.length === 0
+    } catch (error) {
+      console.error('Failed to delete assets:', error)
+      toast.add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: isSingle
+          ? t('mediaAsset.failedToDeleteAsset')
+          : t('mediaAsset.selection.failedToDeleteAssets')
+      })
+      return false
+    } finally {
+      assetArray.forEach((asset) =>
+        assetsStore.setAssetDeleting(asset.id, false)
+      )
+    }
+  }
+
   const deleteAssets = async (
-    assets: AssetItem | AssetItem[]
+    assets: AssetItem | AssetItem[],
+    {
+      skipConfirmation = false,
+      deleteContent = false
+    }: DeleteAssetsOptions = {}
   ): Promise<boolean> => {
     const assetArray = Array.isArray(assets) ? assets : [assets]
     if (assetArray.length === 0) return false
 
-    const assetsStore = useAssetsStore()
+    if (skipConfirmation) {
+      return await performDeleteAssets(assetArray, { deleteContent })
+    }
+
     const isSingle = assetArray.length === 1
+    const allPersistentLocalOutputs = assetArray.every(
+      isPersistentLocalOutputAsset
+    )
+    const deletingGeneratedSourceFiles =
+      deleteContent && allPersistentLocalOutputs
+    const { titleKey, descriptionKey } = getDeleteConfirmationCopy(
+      deletingGeneratedSourceFiles,
+      allPersistentLocalOutputs,
+      isSingle
+    )
 
     return new Promise((resolve) => {
       dialogStore.showDialog({
         key: 'delete-assets-confirmation',
-        title: isSingle
-          ? t('mediaAsset.deleteAssetTitle')
-          : t('mediaAsset.deleteSelectedTitle'),
+        title: t(titleKey),
         component: ConfirmationDialogContent,
         props: {
           message: isSingle
-            ? t('mediaAsset.deleteAssetDescription')
-            : t('mediaAsset.deleteSelectedDescription', {
-                count: assetArray.length
-              }),
+            ? t(descriptionKey)
+            : t(
+                descriptionKey,
+                { count: assetArray.length },
+                assetArray.length
+              ),
           type: 'delete',
           itemList: assetArray.map((asset) => getAssetDisplayName(asset)),
           onConfirm: async () => {
-            // Show loading overlay for all assets being deleted
-            assetArray.forEach((asset) =>
-              assetsStore.setAssetDeleting(asset.id, true)
-            )
-
-            try {
-              // Delete all assets using Promise.allSettled to track individual results
-              const results = await Promise.allSettled(
-                assetArray.map((asset) =>
-                  deleteAssetApi(asset, getAssetType(asset))
-                )
-              )
-
-              // Count successes and failures
-              const succeeded = results.filter(
-                (r) => r.status === 'fulfilled'
-              ).length
-              const failed = results.filter((r) => r.status === 'rejected')
-
-              // Log failed deletions for debugging
-              failed.forEach((result, index) => {
-                console.warn(
-                  `Failed to delete asset ${assetArray[index].name}:`,
-                  result.reason
-                )
-              })
-
-              // Update stores after deletions
-              const hasOutputAssets = assetArray.some((a) => {
-                const type = getAssetType(a)
-                return type === 'output' || type === 'temp'
-              })
-              const hasInputAssets = assetArray.some(
-                (a) => getAssetType(a) === 'input'
-              )
-
-              if (hasOutputAssets) {
-                await assetsStore.updateHistory()
-              }
-              if (hasInputAssets) {
-                await assetsStore.updateInputs()
-              }
-
-              const rootGraph = app.rootGraph
-              if (rootGraph) {
-                const deletedValues = new Set<string>()
-                assetArray.forEach((asset, index) => {
-                  if (results[index].status !== 'fulfilled') return
-                  for (const value of widgetValueVariantsForAsset(asset)) {
-                    deletedValues.add(value)
-                  }
-                })
-                if (deletedValues.size > 0) {
-                  const nodeOutputStore = useNodeOutputStore()
-                  // Order matters: mark + cache-clear both look up nodes by
-                  // current widget.value, so they must run before
-                  // clearDeletedAssetWidgetValues blanks those values.
-                  markDeletedAssetsAsMissingMedia(rootGraph, deletedValues)
-                  clearNodePreviewCacheForValues(
-                    rootGraph,
-                    deletedValues,
-                    (node) => nodeOutputStore.removeNodeOutputsForNode(node)
-                  )
-                  clearDeletedAssetWidgetValues(rootGraph, deletedValues)
-                  useWorkflowStore().activeWorkflow?.changeTracker?.captureCanvasState()
-                }
-              }
-
-              // Invalidate model caches for affected categories
-              const modelCategories = new Set<string>()
-
-              for (const asset of assetArray) {
-                for (const tag of asset.tags ?? []) {
-                  if (EXCLUDED_TAGS.has(tag)) continue
-                  if (assetsStore.hasCategory(tag)) {
-                    modelCategories.add(tag)
-                  }
-                }
-              }
-
-              for (const category of modelCategories) {
-                assetsStore.invalidateModelsForCategory(category)
-              }
-
-              // Show appropriate feedback based on results
-              if (failed.length === 0) {
-                toast.add({
-                  severity: 'success',
-                  summary: t('g.success'),
-                  detail: isSingle
-                    ? t('mediaAsset.assetDeletedSuccessfully')
-                    : t(
-                        'mediaAsset.selection.assetsDeletedSuccessfully',
-                        succeeded
-                      ),
-                  life: 2000
-                })
-              } else if (succeeded === 0) {
-                toast.add({
-                  severity: 'error',
-                  summary: t('g.error'),
-                  detail: isSingle
-                    ? t('mediaAsset.failedToDeleteAsset')
-                    : t('mediaAsset.selection.failedToDeleteAssets')
-                })
-              } else {
-                // Partial success (only possible with multiple assets)
-                toast.add({
-                  severity: 'warn',
-                  summary: t('g.warning'),
-                  detail: t('mediaAsset.selection.partialDeleteSuccess', {
-                    succeeded,
-                    failed: failed.length
-                  }),
-                  life: 3000
-                })
-              }
-            } catch (error) {
-              console.error('Failed to delete assets:', error)
-              toast.add({
-                severity: 'error',
-                summary: t('g.error'),
-                detail: isSingle
-                  ? t('mediaAsset.failedToDeleteAsset')
-                  : t('mediaAsset.selection.failedToDeleteAssets')
-              })
-            } finally {
-              // Hide loading overlay for all assets
-              assetArray.forEach((asset) =>
-                assetsStore.setAssetDeleting(asset.id, false)
-              )
-            }
-
-            resolve(true)
+            resolve(await performDeleteAssets(assetArray, { deleteContent }))
           },
           onCancel: () => {
             resolve(false)
@@ -836,6 +981,7 @@ export function useMediaAssetActions() {
 
   return {
     downloadAssets,
+    openAssetLocation,
     deleteAssets,
     copyJobId,
     addWorkflow,
