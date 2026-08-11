@@ -331,6 +331,38 @@ describe('useMinimapGraph', () => {
     expect(graphManager.updateFlags.value.connections).toBe(true)
   })
 
+  it('should detect a fractional-only position change', () => {
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
+    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
+
+    graphManager.checkForChanges()
+    expect(graphManager.checkForChanges()).toBe(false)
+
+    mockGraph._nodes[0].pos = [100.5, 100]
+
+    expect(graphManager.checkForChanges()).toBe(true)
+  })
+
+  it('should detect a rewire that only changes the slot', () => {
+    mockGraph.links = createMockLinks([
+      createMockLLink({ id: toLinkId(1), origin_slot: 0, target_slot: 0 })
+    ])
+
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
+    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
+
+    graphManager.checkForChanges()
+    expect(graphManager.checkForChanges()).toBe(false)
+
+    // Same nodes on both ends, different slot.
+    mockGraph.links = createMockLinks([
+      createMockLLink({ id: toLinkId(1), origin_slot: 0, target_slot: 1 })
+    ])
+
+    expect(graphManager.checkForChanges()).toBe(true)
+    expect(graphManager.updateFlags.value.connections).toBe(true)
+  })
+
   it('should handle node removal in callbacks', () => {
     const originalOnNodeRemoved = vi.fn()
     mockGraph.onNodeRemoved = originalOnNodeRemoved

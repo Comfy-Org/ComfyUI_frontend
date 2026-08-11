@@ -16,6 +16,15 @@ interface GraphCallbacks {
 }
 
 /**
+ * Fixed-point quantisation for digest input, at eighth-pixel precision.
+ * Mixing raw values would truncate at each `| 0`, so a drag or resize that
+ * only changes the fractional part would leave the digest unchanged.
+ */
+function quantise(value: number): number {
+  return Math.round(value * 8)
+}
+
+/**
  * Rolling digest of every node's position, size and rendered state.
  *
  * Reads `graph._nodes` directly and allocates nothing, so it stays cheap on
@@ -26,10 +35,10 @@ interface GraphCallbacks {
 function computeLayoutDigest(graph: LGraph): number {
   let digest = graph._nodes.length
   for (const node of graph._nodes) {
-    digest = (Math.imul(digest, 31) + node.pos[0]) | 0
-    digest = (Math.imul(digest, 31) + node.pos[1]) | 0
-    digest = (Math.imul(digest, 31) + node.size[0]) | 0
-    digest = (Math.imul(digest, 31) + node.size[1]) | 0
+    digest = (Math.imul(digest, 31) + quantise(node.pos[0])) | 0
+    digest = (Math.imul(digest, 31) + quantise(node.pos[1])) | 0
+    digest = (Math.imul(digest, 31) + quantise(node.size[0])) | 0
+    digest = (Math.imul(digest, 31) + quantise(node.size[1])) | 0
     digest = (Math.imul(digest, 31) + (node.mode ?? 0)) | 0
     digest = (Math.imul(digest, 31) + (node.has_errors ? 1 : 0)) | 0
   }
@@ -37,8 +46,9 @@ function computeLayoutDigest(graph: LGraph): number {
 }
 
 /**
- * Rolling digest of link endpoints. Counting links alone would miss a rewire
- * that keeps the total unchanged.
+ * Rolling digest of link endpoints and slots. Counting links alone would miss
+ * a rewire that keeps the total unchanged, and endpoints alone would miss a
+ * link moved to a different slot on the same pair of nodes.
  */
 function computeLinkDigest(graph: LGraph): number {
   // Declared as a Map, but plain objects reach this at runtime too.
@@ -48,14 +58,23 @@ function computeLinkDigest(graph: LGraph): number {
   let digest = 0
   const mix = (link: unknown) => {
     if (!link || typeof link !== 'object') return
-    const { origin_id: origin, target_id: target } = link as {
+    const {
+      origin_id: origin,
+      target_id: target,
+      origin_slot: originSlot,
+      target_slot: targetSlot
+    } = link as {
       origin_id?: unknown
       target_id?: unknown
+      origin_slot?: unknown
+      target_slot?: unknown
     }
     // Non-numeric ids coerce to 0 via `| 0`; those rewires are still caught by
     // the onConnectionChange hook.
     digest = (Math.imul(digest, 31) + Number(origin)) | 0
     digest = (Math.imul(digest, 31) + Number(target)) | 0
+    digest = (Math.imul(digest, 31) + Number(originSlot)) | 0
+    digest = (Math.imul(digest, 31) + Number(targetSlot)) | 0
   }
 
   if (links instanceof Map) {

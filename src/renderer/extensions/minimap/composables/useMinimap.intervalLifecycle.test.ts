@@ -1,0 +1,183 @@
+/**
+ * Lifecycle tests for the minimap's change-detection interval, run against the
+ * real `useIntervalFn` with fake timers. The main useMinimap test file mocks
+ * the vueuse timing primitives wholesale, which cannot catch a polling loop
+ * that fails to stop on hide/destroy or resumes eagerly on show.
+ */
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick, shallowRef } from 'vue'
+
+import {
+  createMockCanvas2DContext,
+  createMockMinimapCanvas
+} from '@/utils/__tests__/litegraphTestUtils'
+
+const mockNodes = [
+  { id: 'node1', pos: [0, 0], size: [100, 50], outputs: [] },
+  { id: 'node2', pos: [200, 100], size: [150, 75], outputs: [] }
+]
+
+const mockGraph = {
+  _nodes: mockNodes,
+  links: {},
+  getNodeById: vi.fn((id: string) => mockNodes.find((n) => n.id === id)),
+  setDirtyCanvas: vi.fn(),
+  onNodeAdded: null,
+  onNodeRemoved: null,
+  onConnectionChange: null,
+  events: {
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn()
+  }
+}
+
+const mockCanvas = {
+  graph: mockGraph,
+  canvas: { width: 1000, height: 800, clientWidth: 1000, clientHeight: 800 },
+  ds: { scale: 1, offset: [0, 0] },
+  setDirty: vi.fn()
+}
+
+// Only the RAF loop is mocked (happy-dom provides no real frame source); the
+// interval under test and the throttle are the real implementations.
+vi.mock('@vueuse/core', async (importOriginal) => ({
+  ...((await importOriginal()) as Record<string, unknown>),
+  useRafFn: vi.fn(() => ({ pause: vi.fn(), resume: vi.fn() }))
+}))
+
+vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+  useCanvasStore: vi.fn(() => ({ canvas: mockCanvas }))
+}))
+
+vi.mock('@/platform/settings/settingStore', () => ({
+  useSettingStore: vi.fn(() => ({
+    get: vi.fn().mockReturnValue(true),
+    set: vi.fn().mockResolvedValue(undefined)
+  }))
+}))
+
+vi.mock('@/stores/workspace/colorPaletteStore', () => ({
+  useColorPaletteStore: vi.fn(() => ({
+    completedActivePalette: { light_theme: false }
+  }))
+}))
+
+vi.mock('@/scripts/api', () => ({
+  api: {
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    apiURL: vi.fn().mockReturnValue('http://localhost:8188')
+  }
+}))
+
+vi.mock('@/scripts/app', () => ({
+  app: { canvas: { graph: mockGraph } }
+}))
+
+vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
+  useWorkflowStore: vi.fn(() => ({ activeSubgraph: null }))
+}))
+
+vi.mock('@/stores/executionStore', () => ({
+  useExecutionStore: vi.fn(() => ({ nodeProgressStates: {} }))
+}))
+
+import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
+
+const POLL_MS = 100
+
+describe('useMinimap change-detection interval', () => {
+  let context: CanvasRenderingContext2D
+
+  async function initMinimap() {
+    const canvasElement = createMockMinimapCanvas({
+      getContext: vi
+        .fn()
+        .mockImplementation((id) =>
+          id === '2d' ? context : null
+        ) as HTMLCanvasElement['getContext']
+    })
+    const container = {
+      getBoundingClientRect: vi.fn(() => new DOMRect(0, 0, 250, 200) as DOMRect)
+    }
+
+    const minimap = useMinimap({
+      containerRefMaybe: shallowRef(
+        container as Partial<HTMLDivElement> as HTMLDivElement
+      ),
+      canvasRefMaybe: shallowRef(canvasElement)
+    })
+    await minimap.init()
+    await nextTick()
+    await vi.runOnlyPendingTimersAsync()
+    return minimap
+  }
+
+  function drawCalls(): number {
+    return (
+      vi.mocked(context.clearRect).mock.calls.length +
+      vi.mocked(context.fillRect).mock.calls.length
+    )
+  }
+
+  const moveNode = () => {
+    mockNodes[0].pos = [mockNodes[0].pos[0] + 50, mockNodes[0].pos[1]]
+  }
+
+  beforeEach(() => {
+    vi.useFakeTimers()
+    context = createMockCanvas2DContext()
+    mockNodes[0].pos = [0, 0]
+  })
+
+  it('polls on the interval and redraws when the graph changed', async () => {
+    await initMinimap()
+    const before = drawCalls()
+
+    moveNode()
+    await vi.advanceTimersByTimeAsync(POLL_MS + 10)
+
+    expect(drawCalls()).toBeGreaterThan(before)
+  })
+
+  it('does not redraw while the graph is unchanged', async () => {
+    await initMinimap()
+    await vi.advanceTimersByTimeAsync(POLL_MS + 10)
+    const settled = drawCalls()
+
+    await vi.advanceTimersByTimeAsync(POLL_MS * 5)
+
+    expect(drawCalls()).toBe(settled)
+  })
+
+  it('stops polling when hidden and resumes only after the next interval', async () => {
+    const minimap = await initMinimap()
+
+    // Hide: subsequent graph changes must not be picked up.
+    await minimap.toggle()
+    await nextTick()
+    const hidden = drawCalls()
+
+    moveNode()
+    await vi.advanceTimersByTimeAsync(POLL_MS * 5)
+    expect(drawCalls()).toBe(hidden)
+
+    // Show again: the pending change is only observed on an interval tick,
+    // plus the explicit refresh the visibility watcher performs.
+    await minimap.toggle()
+    await nextTick()
+    await vi.advanceTimersByTimeAsync(POLL_MS + 10)
+    expect(drawCalls()).toBeGreaterThan(hidden)
+  })
+
+  it('stops polling after destroy', async () => {
+    const minimap = await initMinimap()
+    minimap.destroy()
+    const atDestroy = drawCalls()
+
+    moveNode()
+    await vi.advanceTimersByTimeAsync(POLL_MS * 5)
+
+    expect(drawCalls()).toBe(atDestroy)
+  })
+})
