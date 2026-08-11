@@ -91,6 +91,18 @@ describe('useLinkStore', () => {
     expect(store.isInputSlotConnected(graphA, toNodeId(9), 2)).toBe(false)
   })
 
+  it('does not delete a link through a sibling owner scope', () => {
+    const store = useLinkStore()
+    const topology = link(1, 5, 0, 9, 2)
+    const registered = store.registerLink(graphA, topology)
+
+    expect(store.deleteLink(graphASibling, topology)).toBe(false)
+    expect(store.getInputSlotLink(graphA, toNodeId(9), 2)).toBe(registered)
+    expect([...store.getOutputSlotLinks(graphA, toNodeId(5), 0)]).toEqual([
+      topology
+    ])
+  })
+
   it('re-registers a link after deleting its owner bucket', () => {
     const store = useLinkStore()
     const topology = link(1, 5, 0, 9, 2)
@@ -349,6 +361,25 @@ describe('useLinkStore', () => {
     expect(store.getInputSlotLink(graphA, toNodeId(9), 2)?.id).toBe(toLinkId(1))
     expect(store.getInputSlotLink(graphA, toNodeId(9), 3)?.id).toBe(toLinkId(2))
     expect(mover.targetSlot).toBe(3)
+  })
+
+  it('rejects an endpoint update through a sibling owner scope', () => {
+    const store = useLinkStore()
+    const topology = link(1, 5, 0, 9, 2)
+    const registered = store.registerLink(graphA, topology)
+
+    expect(
+      store.updateEndpoint(graphASibling, topology, { targetSlot: 3 })
+    ).toEqual({
+      ok: false,
+      error: {
+        code: 'unowned-topology',
+        message: 'Link 1 does not own its current placement'
+      }
+    })
+    expect(topology.targetSlot).toBe(2)
+    expect(store.getInputSlotLink(graphA, toNodeId(9), 2)).toBe(registered)
+    expect(store.getInputSlotLink(graphA, toNodeId(9), 3)).toBeUndefined()
   })
 
   it.for([

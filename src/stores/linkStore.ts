@@ -210,9 +210,8 @@ export const useLinkStore = defineStore('link', () => {
     return placeValidated(bucket, owned)
   }
 
-  /** Removes a link's placement; only the registered topology may vacate it. */
-  function displace(bucket: RootTopologyBucket, topology: LinkTopology) {
-    if (toRaw(bucket.byId.get(topology.id)) !== toRaw(topology)) return false
+  /** Removes a link placement that has already been validated. */
+  function displace(bucket: RootTopologyBucket, topology: LinkTopology): void {
     if (hasUniqueTarget(topology)) {
       const key = targetKey(
         topology.graphId,
@@ -228,21 +227,25 @@ export const useLinkStore = defineStore('link', () => {
     ownerIds?.delete(topology.id)
     if (ownerIds?.size === 0) bucket.idsByOwner.delete(topology.graphId)
     unindexOrigin(bucket, topology)
-    return true
   }
 
   function deleteLink(scope: GraphScope, topology: LinkTopology): boolean {
     const bucket = roots.get(scope.rootGraphId)
-    if (!bucket || !displace(bucket, topology)) return false
+    if (!bucket || !ownsPlacement(scope, bucket, topology)) return false
+    displace(bucket, topology)
     if (bucket.byId.size === 0) roots.delete(scope.rootGraphId)
     return true
   }
 
   function ownsPlacement(
+    scope: GraphScope,
     bucket: RootTopologyBucket,
     topology: LinkTopology
   ): boolean {
-    return toRaw(bucket.byId.get(topology.id)) === toRaw(topology)
+    return (
+      topology.graphId === scope.owningGraphId &&
+      toRaw(bucket.byId.get(topology.id)) === toRaw(topology)
+    )
   }
 
   function validateEndpointUpdates(
@@ -263,7 +266,7 @@ export const useLinkStore = defineStore('link', () => {
     }
 
     for (const topology of participants) {
-      if (!bucket || !ownsPlacement(bucket, topology)) {
+      if (!bucket || !ownsPlacement(scope, bucket, topology)) {
         return {
           code: 'unowned-topology',
           message: `Link ${topology.id} does not own its current placement`
