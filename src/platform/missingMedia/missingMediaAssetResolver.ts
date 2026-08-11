@@ -23,6 +23,7 @@ export interface ResolveMissingMediaAssetSourcesOptions {
   isCloud: boolean
   includeGeneratedAssets: boolean
   generatedMatchNames: ReadonlySet<string>
+  generatedHashRequiredNames?: ReadonlySet<string>
   allowCompactSuffix: boolean
 }
 
@@ -35,6 +36,7 @@ export async function resolveMissingMediaAssetSources({
   isCloud,
   includeGeneratedAssets,
   generatedMatchNames,
+  generatedHashRequiredNames = new Set<string>(),
   allowCompactSuffix
 }: ResolveMissingMediaAssetSourcesOptions): Promise<MissingMediaAssetSources> {
   const pathOptions = { allowCompactSuffix }
@@ -60,6 +62,7 @@ export async function resolveMissingMediaAssetSources({
           ? fetchGeneratedAssets(controller.signal, {
               isCloud,
               generatedMatchNames,
+              generatedHashRequiredNames,
               pathOptions
             })
           : Promise.resolve<AssetItem[]>([]),
@@ -76,6 +79,7 @@ export async function resolveMissingMediaAssetSources({
 interface FetchGeneratedAssetsOptions {
   isCloud: boolean
   generatedMatchNames: ReadonlySet<string>
+  generatedHashRequiredNames: ReadonlySet<string>
   pathOptions: MediaPathDetectionOptions
 }
 
@@ -98,12 +102,18 @@ export function getAssetDetectionNames(
 
 async function fetchGeneratedAssets(
   signal: AbortSignal | undefined,
-  { isCloud, generatedMatchNames, pathOptions }: FetchGeneratedAssetsOptions
+  {
+    isCloud,
+    generatedMatchNames,
+    generatedHashRequiredNames,
+    pathOptions
+  }: FetchGeneratedAssetsOptions
 ): Promise<AssetItem[]> {
   if (isCloud) {
     return await fetchCloudGeneratedAssets(
       signal,
       generatedMatchNames,
+      generatedHashRequiredNames,
       pathOptions
     )
   }
@@ -118,6 +128,7 @@ async function fetchGeneratedAssets(
 async function fetchCloudGeneratedAssets(
   signal: AbortSignal | undefined,
   targetNames: ReadonlySet<string>,
+  hashRequiredNames: ReadonlySet<string>,
   pathOptions: MediaPathDetectionOptions
 ): Promise<AssetItem[]> {
   const assets: AssetItem[] = []
@@ -140,9 +151,10 @@ async function fetchCloudGeneratedAssets(
 
     for (const asset of batch) {
       assets.push(asset)
-      rememberResolvedTargetNames(
+      rememberResolvedCloudTargetNames(
         asset,
         targetNames,
+        hashRequiredNames,
         foundTargetNames,
         pathOptions
       )
@@ -259,6 +271,28 @@ function rememberResolvedTargetNames(
 
   for (const name of getAssetDetectionNames(asset, options)) {
     if (targetNames.has(name)) foundTargetNames.add(name)
+  }
+}
+
+function rememberResolvedCloudTargetNames(
+  asset: AssetItem,
+  targetNames: ReadonlySet<string>,
+  hashRequiredNames: ReadonlySet<string>,
+  foundTargetNames: Set<string>,
+  options: MediaPathDetectionOptions
+) {
+  if (targetNames.size === 0) return
+
+  if (asset.hash) {
+    for (const name of getMediaPathDetectionNames(asset.hash, options)) {
+      if (targetNames.has(name)) foundTargetNames.add(name)
+    }
+  }
+
+  for (const name of getAssetDetectionNames(asset, options)) {
+    if (!hashRequiredNames.has(name) && targetNames.has(name)) {
+      foundTargetNames.add(name)
+    }
   }
 }
 

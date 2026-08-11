@@ -67,11 +67,28 @@ test.describe('Pricing', { tag: '@visual' }, () => {
       await assertNoOverflow(page)
 
       const section = page.locator('section', {
-        has: page.getByRole('heading', { name: /Pricing/i })
+        has: page.getByRole('heading', { name: /Choose a plan/i })
       })
       await expect(section).toBeVisible()
       await section.scrollIntoViewIfNeeded()
       await expect(page).toHaveScreenshot(`pricing-tiers-${vp.name}.png`)
+    })
+  }
+})
+
+test.describe('Pricing FAQ', { tag: '@visual' }, () => {
+  for (const vp of VIEWPORTS) {
+    test(`pricing-faq-${vp.name}`, async ({ page }) => {
+      await page.setViewportSize({ width: vp.width, height: vp.height })
+      await navigateAndSettle(page, '/cloud/pricing')
+
+      const faq = page.locator('#faq')
+      await faq.scrollIntoViewIfNeeded()
+      const summaries = faq.locator('details > summary')
+      await summaries.nth(0).click()
+      await summaries.nth(1).click()
+
+      await expect(faq).toHaveScreenshot(`pricing-faq-${vp.name}.png`)
     })
   }
 })

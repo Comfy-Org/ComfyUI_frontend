@@ -2,17 +2,12 @@ import { SparkRenderer } from '@sparkjsdev/spark'
 import * as THREE from 'three'
 import { describe, expect, it, vi } from 'vitest'
 
+import { createRendererViewState } from '@/renderer/three/sharedWebGLRenderer'
+
 import { DEFAULT_MODEL_CAPABILITIES } from './ModelAdapter'
 import type { ModelAdapterCapabilities } from './ModelAdapter'
 import { SceneModelManager } from './SceneModelManager'
 import type { EventManagerInterface } from './interfaces'
-
-function createMockRenderer(): THREE.WebGLRenderer {
-  return {
-    outputColorSpace: THREE.SRGBColorSpace,
-    dispose: vi.fn()
-  } as unknown as THREE.WebGLRenderer
-}
 
 function createMockEventManager(): EventManagerInterface {
   return {
@@ -30,7 +25,7 @@ function createManager(
   } = {}
 ) {
   const scene = overrides.scene ?? new THREE.Scene()
-  const renderer = createMockRenderer()
+  const viewState = createRendererViewState()
   const eventManager = overrides.eventManager ?? createMockEventManager()
   const camera = new THREE.PerspectiveCamera()
   const getActiveCamera = () => camera
@@ -43,7 +38,7 @@ function createManager(
 
   const manager = new SceneModelManager(
     scene,
-    renderer,
+    viewState,
     eventManager,
     getActiveCamera,
     setupCamera,
@@ -54,7 +49,7 @@ function createManager(
   return {
     manager,
     scene,
-    renderer,
+    viewState,
     eventManager,
     camera,
     setupCamera,
@@ -67,7 +62,6 @@ function createManagerWithPose(opts: {
   pose: { size: THREE.Vector3; center: THREE.Vector3 } | null
 }) {
   const scene = new THREE.Scene()
-  const renderer = createMockRenderer()
   const eventManager = createMockEventManager()
   const camera = new THREE.PerspectiveCamera()
   const setupCamera = vi.fn()
@@ -79,7 +73,7 @@ function createManagerWithPose(opts: {
 
   const manager = new SceneModelManager(
     scene,
-    renderer,
+    createRendererViewState(),
     eventManager,
     () => camera,
     setupCamera,
@@ -474,7 +468,7 @@ describe('SceneModelManager', () => {
     })
 
     it('switches to depth material', async () => {
-      const { manager, renderer } = createManager()
+      const { manager, viewState } = createManager()
       const model = createMeshModel()
       await manager.setupModel(model)
 
@@ -482,7 +476,7 @@ describe('SceneModelManager', () => {
 
       const mesh = model.children[0] as THREE.Mesh
       expect(mesh.material).toBeInstanceOf(THREE.MeshDepthMaterial)
-      expect(renderer.outputColorSpace).toBe(THREE.LinearSRGBColorSpace)
+      expect(viewState.outputColorSpace).toBe(THREE.LinearSRGBColorSpace)
     })
 
     it('restores original material when switching back', async () => {
@@ -513,16 +507,16 @@ describe('SceneModelManager', () => {
       expect((mesh.material as THREE.MeshStandardMaterial).map).toBe(texture)
     })
 
-    it('sets renderer color space to SRGB for non-depth modes', async () => {
-      const { manager, renderer } = createManager()
+    it('sets view color space to SRGB for non-depth modes', async () => {
+      const { manager, viewState } = createManager()
       const model = createMeshModel()
       await manager.setupModel(model)
 
       manager.setMaterialMode('depth')
-      expect(renderer.outputColorSpace).toBe(THREE.LinearSRGBColorSpace)
+      expect(viewState.outputColorSpace).toBe(THREE.LinearSRGBColorSpace)
 
       manager.setMaterialMode('normal')
-      expect(renderer.outputColorSpace).toBe(THREE.SRGBColorSpace)
+      expect(viewState.outputColorSpace).toBe(THREE.SRGBColorSpace)
     })
 
     it('delegates to handlePLYModeSwitch for BufferGeometry original model', async () => {

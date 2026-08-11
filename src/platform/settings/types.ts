@@ -87,3 +87,5 @@ export type SettingPanelType =
   | 'subscription'
   | 'user'
   | 'workspace'
+  | 'workspace-allowlist'
+  | 'workspace-members'

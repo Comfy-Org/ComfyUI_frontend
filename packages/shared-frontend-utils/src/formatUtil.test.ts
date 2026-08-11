@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   appendWorkflowJsonExt,
+  downloadUrlToHfRepoUrl,
   ensureWorkflowSuffix,
   formatLocalizedMediumDate,
   formatLocalizedNumber,
@@ -10,6 +11,7 @@ import {
   getMediaTypeFromFilename,
   getPathDetails,
   highlightQuery,
+  escapeI18nMessage,
   isCivitaiModelUrl,
   isCivitaiUrl,
   isPreviewableMediaType,
@@ -18,6 +20,22 @@ import {
 } from './formatUtil'
 
 describe('formatUtil', () => {
+  describe('downloadUrlToHfRepoUrl', () => {
+    it('converts a download URL to its Hugging Face repository URL', () => {
+      expect(
+        downloadUrlToHfRepoUrl(
+          'https://huggingface.co/bfl/FLUX.1/resolve/main/model.safetensors'
+        )
+      ).toBe('https://huggingface.co/bfl/FLUX.1')
+    })
+
+    it('returns the Hugging Face root for malformed input', () => {
+      expect(downloadUrlToHfRepoUrl('not a url')).toBe(
+        'https://huggingface.co/'
+      )
+    })
+  })
+
   describe('truncateFilename', () => {
     it('should not truncate short filenames', () => {
       expect(truncateFilename('test.png')).toBe('test.png')
@@ -116,6 +134,12 @@ describe('formatUtil', () => {
         expect(getMediaTypeFromFilename('apple.usdz')).toBe('3D')
         expect(getMediaTypeFromFilename('scan.ply')).toBe('3D')
       })
+
+      it('should identify Gaussian splat extensions that Load3D accepts', () => {
+        expect(getMediaTypeFromFilename('scene.spz')).toBe('3D')
+        expect(getMediaTypeFromFilename('scene.splat')).toBe('3D')
+        expect(getMediaTypeFromFilename('scene.ksplat')).toBe('3D')
+      })
     })
 
     describe('text files', () => {
@@ -177,8 +201,10 @@ describe('formatUtil', () => {
   })
 
   describe('highlightQuery', () => {
-    it('should return text unchanged when query is empty', () => {
-      expect(highlightQuery('Hello World', '')).toBe('Hello World')
+    it('should sanitize text when query is empty', () => {
+      expect(highlightQuery('<img src=x onerror=alert(1)>Hello', '')).toBe(
+        '&#60;img src=x onerror=alert(1)&#62;Hello'
+      )
     })
 
     it('should wrap matching text in highlight span', () => {
@@ -194,6 +220,17 @@ describe('formatUtil', () => {
     it('should sanitize text by default', () => {
       const result = highlightQuery('<script>alert("xss")</script>', 'alert')
       expect(result).not.toContain('<script>')
+    })
+
+    it('should escape markup while preserving highlights', () => {
+      const result = highlightQuery(
+        '<img src=x onerror=alert(1)>Script <b>name</b>',
+        'script'
+      )
+      expect(result).toContain('<span class="highlight">Script</span>')
+      expect(result).not.toContain('<img')
+      expect(result).not.toContain('<b>')
+      expect(result).toContain('img src=x onerror=alert(1)')
     })
 
     it('should skip sanitization when sanitize is false', () => {
@@ -414,15 +451,15 @@ describe('formatUtil', () => {
   })
 
   describe('isPreviewableMediaType', () => {
-    it('returns true for image/video/audio/3D', () => {
+    it('returns true for image/video/audio/3D/text', () => {
       expect(isPreviewableMediaType('image')).toBe(true)
       expect(isPreviewableMediaType('video')).toBe(true)
       expect(isPreviewableMediaType('audio')).toBe(true)
       expect(isPreviewableMediaType('3D')).toBe(true)
+      expect(isPreviewableMediaType('text')).toBe(true)
     })
 
-    it('returns false for text/other', () => {
-      expect(isPreviewableMediaType('text')).toBe(false)
+    it('returns false for other', () => {
       expect(isPreviewableMediaType('other')).toBe(false)
     })
   })
@@ -475,6 +512,36 @@ describe('formatUtil', () => {
     it('returns an em-dash for undefined or unparseable input', () => {
       expect(formatLocalizedMediumDate(undefined, 'en')).toBe('—')
       expect(formatLocalizedMediumDate('not a date', 'en')).toBe('—')
+    })
+  })
+
+  describe('escapeI18nMessage', () => {
+    it('wraps message-syntax characters in literal interpolations', () => {
+      expect(escapeI18nMessage('a@b')).toBe("a{'@'}b")
+      expect(escapeI18nMessage('{x}')).toBe("{'{'}x{'}'}")
+      expect(escapeI18nMessage('a|b')).toBe("a{'|'}b")
+      expect(escapeI18nMessage('50%')).toBe("50{'%'}")
+      expect(escapeI18nMessage('$5')).toBe("{'$'}5")
+    })
+
+    it('doubles backslashes rather than interpolating them', () => {
+      expect(escapeI18nMessage('\\')).toBe('\\\\')
+      expect(escapeI18nMessage('C:\\@home')).toBe("C:\\\\{'@'}home")
+    })
+
+    it('leaves text without message syntax untouched', () => {
+      expect(escapeI18nMessage('plain name')).toBe('plain name')
+      expect(escapeI18nMessage('')).toBe('')
+    })
+
+    it('is not idempotent, so it must be applied exactly once', () => {
+      const once = escapeI18nMessage('a@b')
+      expect(escapeI18nMessage(once)).not.toBe(once)
+    })
+
+    it('returns an empty string for non-string input', () => {
+      expect(escapeI18nMessage(42 as unknown as string)).toBe('')
+      expect(escapeI18nMessage(null as unknown as string)).toBe('')
     })
   })
 })

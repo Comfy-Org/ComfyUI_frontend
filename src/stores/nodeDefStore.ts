@@ -1,5 +1,5 @@
 import axios from 'axios'
-import _ from 'es-toolkit/compat'
+import { cloneDeep, uniq } from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
 import { computed, ref, watchEffect } from 'vue'
 
@@ -106,7 +106,7 @@ export class ComfyNodeDefImpl
    * Migrate default input options to forceInput.
    */
   private static _migrateDefaultInput(nodeDef: ComfyNodeDefV1): ComfyNodeDefV1 {
-    const def = _.cloneDeep(nodeDef)
+    const def = cloneDeep(nodeDef)
     def.input ??= {}
     // For required inputs, now we have the input socket always present. Specifying
     // it now has no effect.
@@ -178,9 +178,7 @@ export class ComfyNodeDefImpl
 
     // Initialize node source
     this.nodeSource = getNodeSource(obj.python_module, this.essentials_category)
-    this.inputTypes = _.uniq(
-      Object.values(this.inputs).flatMap(resolveInputType)
-    )
+    this.inputTypes = uniq(Object.values(this.inputs).flatMap(resolveInputType))
   }
 
   get nodePath(): string {

@@ -18,8 +18,8 @@
         </div>
       </div>
     </template>
-    <template v-if="showUI && !isBuilderMode" #side-toolbar>
-      <SideToolbar />
+    <template #side-toolbar>
+      <SideToolbar v-if="showUI && !isBuilderMode && !linearMode" />
     </template>
     <template v-if="showUI" #side-bar-panel>
       <div
@@ -39,6 +39,10 @@
       <NodePropertiesPanel v-else />
     </template>
     <template #graph-canvas-panel>
+      <div
+        ref="canvasPanelBoundsRef"
+        class="pointer-events-none absolute inset-0"
+      />
       <GraphCanvasMenu
         v-if="canvasMenuEnabled && !isBuilderMode"
         class="pointer-events-auto"
@@ -89,7 +93,10 @@
   />
 
   <!-- Selection rectangle overlay - rendered in DOM layer to appear above DOM widgets -->
-  <SelectionRectangle v-if="comfyAppReady" />
+  <SelectionRectangle
+    v-if="comfyAppReady"
+    :panel-el="canvasPanelBoundsRef ?? undefined"
+  />
 
   <NodeTooltip v-if="tooltipEnabled" />
   <NodeSearchboxPopover ref="nodeSearchboxPopoverRef" />
@@ -116,6 +123,7 @@ import {
   onUnmounted,
   ref,
   shallowRef,
+  useTemplateRef,
   watch,
   watchEffect
 } from 'vue'
@@ -171,6 +179,8 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
+import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
+import { useFirstRunEntry } from '@/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry'
 import MiniMap from '@/renderer/extensions/minimap/MiniMap.vue'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import { requestSlotLayoutSyncForAllNodes } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
@@ -202,6 +212,7 @@ const emit = defineEmits<{
   ready: []
 }>()
 const canvasRef = ref<HTMLCanvasElement | null>(null)
+const canvasPanelBoundsRef = useTemplateRef('canvasPanelBoundsRef')
 const nodeSearchboxPopoverRef = shallowRef<InstanceType<
   typeof NodeSearchboxPopover
 > | null>(null)
@@ -495,6 +506,8 @@ useEventListener(
 onMounted(async () => {
   comfyApp.vueAppReady = true
   workspaceStore.spinner = true
+  let startupOutcome: StartupOutcome | undefined
+  let urlTemplateId: string | undefined
   try {
     // ChangeTracker needs to be initialized before setup, as it will overwrite
     // some listeners of litegraph canvas.
@@ -550,20 +563,22 @@ onMounted(async () => {
     )
 
     // Restore saved workflow and workflow tabs state
-    await workflowPersistence.initializeWorkflow()
+    startupOutcome = await workflowPersistence.initializeWorkflow()
     await workflowPersistence.restoreWorkflowTabsState()
-    await workflowPersistence.loadTemplateFromUrlIfPresent()
+    urlTemplateId = await workflowPersistence.loadTemplateFromUrlIfPresent()
+    await useFirstRunEntry().handleStartupOutcome(startupOutcome)
   } finally {
     workspaceStore.spinner = false
   }
-  await workflowPersistence.loadSharedWorkflowFromUrlIfPresent()
+  const sharedStatus =
+    await workflowPersistence.loadSharedWorkflowFromUrlIfPresent()
 
   comfyApp.canvas.onSelectionChange = useChainCallback(
     comfyApp.canvas.onSelectionChange,
     () => canvasStore.updateSelectedItems()
   )
 
-  // Run query-param deep-link loaders (?invite, ?create_workspace, ?pricing)
+  // Run query-param deep-link loaders (?invite, ?create_workspace, ?pricing, ?topup)
   await runUrlActionLoaders()
 
   // Initialize release store to fetch releases from comfy-api (fire-and-forget)
@@ -573,6 +588,18 @@ onMounted(async () => {
   void releaseStore.initialize()
 
   emit('ready')
+
+  // The tour draws into an overlay that only mounts once `ready` has flushed.
+  await nextTick()
+  try {
+    await useFirstRunEntry().handleUrlWorkflow(
+      startupOutcome,
+      urlTemplateId,
+      sharedStatus
+    )
+  } catch (error) {
+    console.error('[GraphCanvas] Failed to offer the first-run tour:', error)
+  }
 })
 
 onUnmounted(() => {

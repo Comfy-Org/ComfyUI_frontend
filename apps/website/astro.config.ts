@@ -10,11 +10,13 @@ const PAYMENT_STATUSES = ['success', 'failed'] as const
 const LOCALE_PREFIXES = LOCALES.map((locale) =>
   locale === DEFAULT_LOCALE ? '' : `/${locale}`
 )
-const SITEMAP_EXCLUDED_PATHNAMES = new Set(
-  LOCALE_PREFIXES.flatMap((prefix) =>
+const SITEMAP_EXCLUDED_PATHNAMES = new Set([
+  ...LOCALE_PREFIXES.flatMap((prefix) =>
     PAYMENT_STATUSES.map((status) => `${prefix}/payment/${status}`)
-  )
-)
+  ),
+  ...LOCALE_PREFIXES.map((prefix) => `${prefix}/individual-submission`),
+  ...LOCALE_PREFIXES.map((prefix) => `${prefix}/booking-confirmation`)
+])
 
 function isExcludedFromSitemap(page: string): boolean {
   const pathname = new URL(page).pathname.replace(/\/$/, '')
@@ -33,7 +35,9 @@ export default defineConfig({
       '/customers/moment-factory/',
     '/cloud/enterprise-case-studies/how-series-entertainment-rebuilt-game-and-video-production-with-comfyui':
       '/customers/series-entertainment/',
-    '/zh-CN/terms-of-service': '/terms-of-service'
+    '/zh-CN/terms-of-service': '/terms-of-service',
+    '/minimax': { status: 307, destination: '/minimax-h3/' },
+    '/zh-CN/minimax': { status: 307, destination: '/zh-CN/minimax-h3/' }
   },
   build: {
     assets: '_website'

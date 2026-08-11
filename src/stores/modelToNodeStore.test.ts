@@ -31,11 +31,7 @@ const EXPECTED_DEFAULT_TYPES = [
   'latent_upscale_models',
   'sam2',
   'sams',
-  'depthanything',
   'ipadapter',
-  'segformer_b2_clothes',
-  'segformer_b3_clothes',
-  'segformer_b3_fashion',
   'nlf',
   'FlashVSR',
   'FlashVSR-v1.1'
@@ -83,9 +79,7 @@ const MOCK_NODE_NAMES = [
   'LatentUpscaleModelLoader',
   'DownloadAndLoadSAM2Model',
   'SAMLoader',
-  'DownloadAndLoadDepthAnythingV2Model',
   'IPAdapterModelLoader',
-  'LS_LoadSegformerModel',
   'LoadNLFModel',
   'FlashVSRNode',
   'LTXICLoRALoaderModelOnly'
@@ -109,7 +103,6 @@ vi.mock('@/stores/nodeDefStore', async (importOriginal) => {
 describe('useModelToNodeStore', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
   })
 
   describe('modelToNodeMap', () => {
@@ -258,11 +251,8 @@ describe('useModelToNodeStore', () => {
       ['sam2', 'DownloadAndLoadSAM2Model', 'model'],
       ['sams', 'SAMLoader', 'model_name'],
       ['ipadapter', 'IPAdapterModelLoader', 'ipadapter_file'],
-      ['depthanything', 'DownloadAndLoadDepthAnythingV2Model', 'model'],
       ['FlashVSR', 'FlashVSRNode', ''],
-      ['FlashVSR-v1.1', 'FlashVSRNode', ''],
-      ['segformer_b2_clothes', 'LS_LoadSegformerModel', 'model_name'],
-      ['segformer_b3_fashion', 'LS_LoadSegformerModel', 'model_name']
+      ['FlashVSR-v1.1', 'FlashVSRNode', '']
     ])(
       'should return correct provider for %s',
       ([modelType, expectedNodeName, expectedKey]) => {

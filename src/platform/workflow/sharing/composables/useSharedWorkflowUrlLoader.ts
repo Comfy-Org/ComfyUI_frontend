@@ -16,7 +16,7 @@ import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 
-type SharedWorkflowUrlLoadStatus =
+export type SharedWorkflowUrlLoadStatus =
   | 'not-present'
   | 'loaded'
   | 'loaded-without-assets'
