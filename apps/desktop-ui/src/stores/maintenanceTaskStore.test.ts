@@ -64,7 +64,6 @@ describe('useMaintenanceTaskStore', () => {
   const [basicTask, terminalTask] = testTasks as MaintenanceTask[]
 
   beforeEach(() => {
-    vi.resetAllMocks()
     store = createStore()
   })
 

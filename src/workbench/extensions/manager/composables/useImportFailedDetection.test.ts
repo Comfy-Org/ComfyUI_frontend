@@ -40,7 +40,6 @@ vi.mock('vue-i18n', async () => {
 describe('useImportFailedDetection', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
   })
 
   it('should return false for importFailed when package is not installed', () => {

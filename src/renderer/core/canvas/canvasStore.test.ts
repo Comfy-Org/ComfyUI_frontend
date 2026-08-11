@@ -59,7 +59,6 @@ describe('useCanvasStore', () => {
     appModeState.isAppMode = ref(false)
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useCanvasStore()
-    vi.clearAllMocks()
   })
 
   describe('appScalePercentage', () => {

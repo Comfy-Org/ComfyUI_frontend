@@ -15719,6 +15719,96 @@
       }
     }
   },
+  "QwenImageEditApi": {
+    "description": "Qwen-Image 3.0 modellerini kullanarak bir metin istemiyle yönlendirilen en fazla 3 referans görseli düzenler veya birleştirir.",
+    "display_name": "Qwen Image 3 Düzenle",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Kullanılacak model."
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "Oluşturulacak görsel sayısı, toplu olarak döndürülür."
+      },
+      "prompt_extend": {
+        "name": "prompt_extend",
+        "tooltip": "İstemin yapay zeka yardımıyla geliştirilip geliştirilmeyeceği."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Oluşturma için kullanılacak tohum."
+      },
+      "size": {
+        "name": "size",
+        "tooltip": "Çıktı çözünürlüğü. 'match input' ilk referans görselinin boyutunu kullanır, 'auto' modelin aynı en-boy oranında bir boyut seçmesine izin verir, 'custom' ise açıkça bir genişlik ve yükseklik ayarlar."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Sonuca yapay zeka tarafından oluşturulan bir filigran eklenip eklenmeyeceği."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QwenImageTextToImageApi": {
+    "description": "Qwen-Image 3.0 modellerini kullanarak bir metin isteminden görseller üretir.",
+    "display_name": "Qwen Image 3 Metinden Görsele",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Kullanılacak model."
+      },
+      "model_height": {
+        "name": "height"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_width": {
+        "name": "width"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "Oluşturulacak görsel sayısı, toplu olarak döndürülür."
+      },
+      "prompt_extend": {
+        "name": "prompt_extend",
+        "tooltip": "İstemin yapay zeka yardımıyla geliştirilip geliştirilmediği."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Oluşturma için kullanılacak tohum."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Sonuca yapay zeka tarafından oluşturulan bir filigran eklenip eklenmeyeceği."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "RTDETR_detect": {
     "display_name": "RT-DETR Tespit",
     "inputs": {

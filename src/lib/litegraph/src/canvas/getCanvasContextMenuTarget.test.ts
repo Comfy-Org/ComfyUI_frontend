@@ -29,7 +29,6 @@ describe('getCanvasContextMenuTarget', () => {
   let canvas: StubCanvas
 
   beforeEach(() => {
-    vi.clearAllMocks()
     mockQueryRerouteAtPoint.mockReturnValue(null)
     graph = {
       getReroute: vi.fn(() => ({ id: 9 })),

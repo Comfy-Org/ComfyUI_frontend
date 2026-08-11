@@ -52,7 +52,6 @@ const mockNodePack = {
 
 describe('PackCardFooter', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockIsPackInstalled.mockReset()
     mockCheckNodeCompatibility.mockReset()
   })

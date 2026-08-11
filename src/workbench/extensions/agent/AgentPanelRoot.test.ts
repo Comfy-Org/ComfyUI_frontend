@@ -162,10 +162,6 @@ const executionErrors = vi.hoisted(() => ({
   showErrorOverlay: vi.fn()
 }))
 
-executionErrors.recordPromptError.mockImplementation((error) => {
-  executionErrors.lastPromptError = error
-})
-
 vi.mock('@/stores/executionErrorStore', () => ({
   useExecutionErrorStore: () => executionErrors
 }))
@@ -215,6 +211,9 @@ import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTab
 import AgentPanelRoot from './AgentPanelRoot.vue'
 
 beforeEach(() => {
+  executionErrors.recordPromptError.mockImplementation((error) => {
+    executionErrors.lastPromptError = error
+  })
   localStorage.clear()
   hostStores.workflow.tabs.clear()
   hostStores.workflow.activeWorkflow = null
