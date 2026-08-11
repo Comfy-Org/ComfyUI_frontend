@@ -1120,8 +1120,6 @@ describe('linearOutputStore', () => {
       expect(store.inProgressItems.some((i) => i.jobId === 'job-1')).toBe(false)
       // Job 2 is now pending resolve
       expect(store.pendingResolve.has('job-2')).toBe(true)
-
-      vi.useRealTimers()
     })
 
     it('cleans up finished tracked job on exit when job ended while in app mode', async () => {
@@ -1168,8 +1166,6 @@ describe('linearOutputStore', () => {
       expect(store.pendingResolve.size).toBe(1)
       expect(store.pendingResolve.has('job-5')).toBe(true)
       expect(store.inProgressItems.every((i) => i.jobId === 'job-5')).toBe(true)
-
-      vi.useRealTimers()
     })
 
     it('does not adopt another workflow job when switching back', async () => {

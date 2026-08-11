@@ -470,8 +470,6 @@ describe('PrimitiveNode', () => {
       vi.advanceTimersByTime(15)
       expect(node.lastType).toBeUndefined()
       expect(node.controlValues).toBeUndefined()
-
-      vi.useRealTimers()
     })
   })
 
