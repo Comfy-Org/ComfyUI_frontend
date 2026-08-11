@@ -464,7 +464,6 @@ describe('useExecutionStore - nodeProgressStatesByJob eviction', () => {
   }
 
   beforeEach(() => {
-    vi.useFakeTimers()
     apiEventHandlers.clear()
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionStore()
@@ -1482,7 +1481,6 @@ describe('useExecutionStore - RAF batching', () => {
   }
 
   beforeEach(() => {
-    vi.useFakeTimers()
     vi.clearAllMocks()
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionStore()
@@ -2147,7 +2145,6 @@ describe('useExecutionStore - WebSocket event handlers', () => {
     })
 
     it('discards a progress update still queued when the next node starts', () => {
-      vi.useFakeTimers()
       fire('progress', { value: 3, max: 10, prompt_id: 'job-1', node: 'n1' })
 
       fire('executing', 'n2')
@@ -2159,7 +2156,6 @@ describe('useExecutionStore - WebSocket event handlers', () => {
 
   describe('progress', () => {
     it('sets _executingNodeProgress from the event payload (RAF-batched)', () => {
-      vi.useFakeTimers()
       const payload = { value: 3, max: 10, prompt_id: 'job-1', node: 'n1' }
 
       fire('progress', payload)

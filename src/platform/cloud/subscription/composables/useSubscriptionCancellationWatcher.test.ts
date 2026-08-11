@@ -47,7 +47,6 @@ describe('useSubscriptionCancellationWatcher', () => {
   }
 
   beforeEach(() => {
-    vi.useFakeTimers()
     trackMonthlySubscriptionCancelled.mockReset()
     subscriptionStatus.value = { ...baseStatus }
     isActive.value = true

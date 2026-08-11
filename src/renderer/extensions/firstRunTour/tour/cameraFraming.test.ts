@@ -112,7 +112,6 @@ describe('frameNode', () => {
   }
 
   beforeEach(() => {
-    vi.useFakeTimers()
     setReducedMotion(false)
     canvasRect = new DOMRect(0, 0, VIEWPORT.width, VIEWPORT.height)
   })

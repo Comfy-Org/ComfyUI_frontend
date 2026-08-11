@@ -39,7 +39,6 @@ describe('useQueuePolling', () => {
   }
 
   beforeEach(() => {
-    vi.useFakeTimers()
     store.activeJobsCount = 0
     store.isLoading = false
     store.update.mockReset()

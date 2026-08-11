@@ -679,7 +679,6 @@ describe('CustomerIoTelemetryProvider', () => {
   })
 
   it('does not stall later events when identification never settles', async () => {
-    vi.useFakeTimers()
     vi.spyOn(console, 'error').mockImplementation(() => {})
     hoisted.analytics.identify.mockReturnValueOnce(new Promise(() => {}))
     const provider = createProvider()

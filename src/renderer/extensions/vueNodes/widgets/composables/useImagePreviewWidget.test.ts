@@ -197,7 +197,6 @@ describe('useImagePreviewWidget', () => {
 
   describe('drawWidget — upload spinner', () => {
     it('renders spinner when node.isUploading is true', () => {
-      vi.useFakeTimers()
       vi.setSystemTime(500)
 
       const constructor = useImagePreviewWidget()
@@ -218,7 +217,6 @@ describe('useImagePreviewWidget', () => {
     })
 
     it('uses LiteGraph.NODE_TEXT_COLOR for spinner stroke', () => {
-      vi.useFakeTimers()
       vi.setSystemTime(0)
 
       const constructor = useImagePreviewWidget()

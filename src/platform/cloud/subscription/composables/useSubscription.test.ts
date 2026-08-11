@@ -921,7 +921,6 @@ describe('useSubscription', () => {
     })
 
     it('does not start cancellation watching when the billing portal does not open', async () => {
-      vi.useFakeTimers()
       mockIsLoggedIn.value = true
       mockAccessBillingPortal.mockResolvedValueOnce(false)
 
@@ -946,7 +945,6 @@ describe('useSubscription', () => {
     })
 
     it('tracks cancellation after manage subscription when status flips', async () => {
-      vi.useFakeTimers()
       mockIsLoggedIn.value = true
 
       const activeStatus = {
@@ -979,7 +977,6 @@ describe('useSubscription', () => {
     })
 
     it('handles rapid focus events during cancellation polling', async () => {
-      vi.useFakeTimers()
       mockIsLoggedIn.value = true
 
       const activeStatus = {

@@ -31,7 +31,6 @@ describe('useSurveyEligibility', () => {
 
   beforeEach(() => {
     localStorage.clear()
-    vi.useFakeTimers()
     vi.setSystemTime(new Date('2024-06-15T12:00:00Z'))
 
     mockDistribution.isNightly = true

@@ -1,14 +1,10 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
 
 import { withSetup } from '@/test/withSetup'
 import { useMinLoadingDurationRef } from '@/utils/refUtil'
 
 describe('useMinLoadingDurationRef', () => {
-  beforeEach(() => {
-    vi.useFakeTimers()
-  })
-
   it('reflects false when source is initially false', () => {
     const source = ref(false)
     const result = withSetup(() => useMinLoadingDurationRef(source))

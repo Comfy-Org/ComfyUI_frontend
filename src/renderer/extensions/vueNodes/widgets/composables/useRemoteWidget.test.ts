@@ -207,10 +207,6 @@ describe('useRemoteWidget', () => {
   })
 
   describe('refresh behavior', () => {
-    beforeEach(() => {
-      vi.useFakeTimers()
-    })
-
     describe('permanent widgets (no refresh)', () => {
       it('permanent widgets should not attempt fetch after initialization', async () => {
         const mockData = ['data that is permanent after initialization']
@@ -325,10 +321,6 @@ describe('useRemoteWidget', () => {
   })
 
   describe('error handling and backoff', () => {
-    beforeEach(() => {
-      vi.useFakeTimers()
-    })
-
     it('should implement exponential backoff on errors', async () => {
       mockAxiosError('Network error')
 

@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import {
@@ -62,10 +62,6 @@ describe('targetMounted', () => {
 })
 
 describe('waitForTarget', () => {
-  beforeEach(() => {
-    vi.useFakeTimers()
-  })
-
   afterEach(() => {
     clearCoachmarks()
     document.body.replaceChildren()

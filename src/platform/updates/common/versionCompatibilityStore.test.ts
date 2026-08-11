@@ -275,7 +275,6 @@ describe('useVersionCompatibilityStore', () => {
   describe('dismissal persistence', () => {
     it('should save dismissal to reactive storage with expiration', async () => {
       const mockNow = 1000000
-      vi.useFakeTimers()
       vi.setSystemTime(mockNow)
 
       mockSystemStatsStore.systemStats = {
@@ -483,7 +482,6 @@ describe('useVersionCompatibilityStore', () => {
 
     it('should include outdated packages in dismissal key', async () => {
       const mockNow = 1000000
-      vi.useFakeTimers()
       vi.setSystemTime(mockNow)
 
       mockSystemStatsStore.systemStats = {
@@ -512,7 +510,6 @@ describe('useVersionCompatibilityStore', () => {
 
     it('should produce the same dismissal key regardless of package order', async () => {
       const mockNow = 1000000
-      vi.useFakeTimers()
       vi.setSystemTime(mockNow)
 
       const packageA = {
@@ -555,7 +552,6 @@ describe('useVersionCompatibilityStore', () => {
 
     it('should prune expired dismissals when writing a new one', async () => {
       const mockNow = 10_000_000
-      vi.useFakeTimers()
       vi.setSystemTime(mockNow)
 
       mockDismissalStorage.value = {
@@ -580,7 +576,6 @@ describe('useVersionCompatibilityStore', () => {
 
     it('should allow dismissal when only package warnings are present', async () => {
       const mockNow = 1000000
-      vi.useFakeTimers()
       vi.setSystemTime(mockNow)
 
       mockSystemStatsStore.systemStats = {

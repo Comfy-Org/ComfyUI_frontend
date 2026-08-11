@@ -136,7 +136,6 @@ describe('ManagerSurveyDialog', () => {
   })
 
   it('removes the iframe and shows the error state when loading times out', async () => {
-    vi.useFakeTimers()
     mocks.remoteConfig.value = { manager_survey_url: SURVEY_URL }
 
     renderDialog()

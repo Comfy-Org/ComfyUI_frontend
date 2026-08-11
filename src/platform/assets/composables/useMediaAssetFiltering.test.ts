@@ -115,7 +115,6 @@ describe('useMediaAssetFiltering', () => {
     const now = new Date(2026, 6, 27, 12).getTime()
 
     beforeEach(() => {
-      vi.useFakeTimers()
       vi.setSystemTime(now)
     })
 
@@ -379,7 +378,6 @@ describe('useMediaAssetFiltering', () => {
     })
 
     it('combines media type and date before sorting', () => {
-      vi.useFakeTimers()
       const now = new Date(2026, 6, 27, 12).getTime()
       vi.setSystemTime(now)
 

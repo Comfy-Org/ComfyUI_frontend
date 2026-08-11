@@ -240,7 +240,6 @@ describe('useTrimPlayback', () => {
   })
 
   it('releases the seek lock when no seeked event ever arrives', async () => {
-    vi.useFakeTimers()
     const { video, playheadFrame, isPlaying, handleTimeUpdate } =
       createPlayback()
     video.emitSeeked = false

@@ -480,7 +480,6 @@ describe('ImagePreview', () => {
 
   describe('batch cycling with identical URLs', () => {
     it('should not enter persistent loading state when cycling through identical images', async () => {
-      vi.useFakeTimers()
       const user = userEvent.setup({
         advanceTimers: vi.advanceTimersByTime
       })
@@ -515,7 +514,6 @@ describe('ImagePreview', () => {
 
   describe('URL change detection', () => {
     it('should NOT reset loading state when imageUrls prop is reassigned with identical URLs', async () => {
-      vi.useFakeTimers()
       const user = userEvent.setup({
         advanceTimers: vi.advanceTimersByTime
       })
@@ -549,7 +547,6 @@ describe('ImagePreview', () => {
     })
 
     it('should reset loading state when imageUrls prop changes to different URLs', async () => {
-      vi.useFakeTimers()
       const user = userEvent.setup({
         advanceTimers: vi.advanceTimersByTime
       })

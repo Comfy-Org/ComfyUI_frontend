@@ -524,7 +524,6 @@ describe('Viewport3d', () => {
 
   describe('start / remove lifecycle', () => {
     beforeEach(() => {
-      vi.useFakeTimers()
       Object.assign(ctx.viewport, {
         hasStarted: false,
         initialRenderTimer: null,

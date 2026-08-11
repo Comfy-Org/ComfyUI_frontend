@@ -34,7 +34,6 @@ describe('TreeExplorerTreeNode', () => {
   beforeAll(() => {
     const app = createApp({})
     app.use(PrimeVue)
-    vi.useFakeTimers()
   })
 
   it('renders correctly', () => {

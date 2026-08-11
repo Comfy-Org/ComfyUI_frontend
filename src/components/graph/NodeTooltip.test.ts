@@ -151,7 +151,6 @@ async function renderAndHoverCanvas() {
 
 describe('NodeTooltip', () => {
   beforeEach(() => {
-    vi.useFakeTimers()
     setActivePinia(createTestingPinia({ stubActions: false }))
 
     vi.spyOn(useSettingStore(), 'get').mockImplementation(

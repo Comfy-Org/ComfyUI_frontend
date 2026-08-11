@@ -490,10 +490,6 @@ describe('useModelStore', () => {
   })
 
   describe('scan fast-phase completion', () => {
-    beforeEach(() => {
-      vi.useFakeTimers()
-    })
-
     function getScanCallback() {
       return vi.mocked(assetService.onModelsScanned).mock.calls[0]?.[0]
     }

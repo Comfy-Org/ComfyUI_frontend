@@ -72,8 +72,6 @@ describe('AutoPanController', () => {
   let controller: AutoPanController
 
   beforeEach(() => {
-    vi.useFakeTimers()
-
     mockCanvas = fromPartial<HTMLCanvasElement>({
       getBoundingClientRect: () => ({
         left: 0,

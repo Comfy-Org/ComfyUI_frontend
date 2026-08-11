@@ -318,7 +318,6 @@ describe('downloadUtil', () => {
     let windowOpenSpy: ReturnType<typeof vi.spyOn>
 
     beforeEach(() => {
-      vi.useFakeTimers()
       windowOpenSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
     })
 

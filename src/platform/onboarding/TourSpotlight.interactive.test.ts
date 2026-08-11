@@ -171,7 +171,6 @@ describe('TourSpotlight interactive and masked steps', () => {
   })
 
   it('glides to the next step’s target, then rides it', async () => {
-    vi.useFakeTimers()
     registerCoachmark(FIRST_RUN_COACH_IDS.prompt, canvasNode())
     const { rerender } = renderSpotlight({
       step: spotlightStep({ coachId: FIRST_RUN_COACH_IDS.prompt })
@@ -199,7 +198,6 @@ describe('TourSpotlight interactive and masked steps', () => {
   })
 
   it('rides a canvas target that arrives after its step opened', async () => {
-    vi.useFakeTimers()
     renderSpotlight({
       step: spotlightStep({ coachId: FIRST_RUN_COACH_IDS.prompt })
     })

@@ -444,7 +444,6 @@ describe('JobAssetsList', () => {
   })
 
   it('anchors the popover to the active row through Reka', async () => {
-    vi.useFakeTimers()
     const job = buildJob()
     const { container } = renderJobAssetsList({ jobs: [job] })
 
@@ -464,7 +463,6 @@ describe('JobAssetsList', () => {
   })
 
   it('clears the previous popover when hovering a new row briefly and leaving the list', async () => {
-    vi.useFakeTimers()
     const firstJob = buildJob({ id: 'job-1' })
     const secondJob = buildJob({ id: 'job-2', title: 'Job 2' })
     const { container } = renderJobAssetsList({
@@ -494,7 +492,6 @@ describe('JobAssetsList', () => {
   })
 
   it('updates the visible popover without closing when hovering another row', async () => {
-    vi.useFakeTimers()
     const firstJob = buildJob({ id: 'job-1' })
     const secondJob = buildJob({ id: 'job-2', title: 'Job 2' })
     const { container } = renderJobAssetsList({
@@ -532,7 +529,6 @@ describe('JobAssetsList', () => {
   })
 
   it('does not show details if the hovered row disappears before the show delay ends', async () => {
-    vi.useFakeTimers()
     const job = buildJob()
     const { container, rerender } = renderJobAssetsList({ jobs: [job] })
 

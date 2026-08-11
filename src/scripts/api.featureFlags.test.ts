@@ -17,9 +17,6 @@ describe('API Feature Flags', () => {
   const wsEventHandlers: { [key: string]: (event: unknown) => void } = {}
 
   beforeEach(() => {
-    // Use fake timers
-    vi.useFakeTimers()
-
     // Mock WebSocket
     mockWebSocket = {
       readyState: 1, // WebSocket.OPEN

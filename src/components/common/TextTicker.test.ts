@@ -18,7 +18,6 @@ describe(TextTicker, () => {
   let cleanup: (() => void) | undefined
 
   beforeEach(() => {
-    vi.useFakeTimers()
     rafCallbacks = []
     vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => {
       rafCallbacks.push(cb)
