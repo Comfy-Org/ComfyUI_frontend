@@ -212,15 +212,19 @@ function focusTrigger() {
 const closeDropdown = ({ restoreFocus = false } = {}) => {
   if (popoverRef.value) {
     popoverRef.value.hide?.()
-    isOpen.value = false
   }
+  isOpen.value = false
 
   if (restoreFocus) focusTrigger()
 }
 
-watch([() => disabled, () => closeOnDisable], ([isDisabled, shouldClose]) => {
-  if (isDisabled && shouldClose) closeDropdown()
-})
+watch(
+  [() => disabled, () => closeOnDisable],
+  ([isDisabled, shouldClose]) => {
+    if (isDisabled && shouldClose) closeDropdown()
+  },
+  { immediate: true }
+)
 
 /**
  * Dismiss on `pointerdown` rather than PrimeVue's default `click` (mouseup) so

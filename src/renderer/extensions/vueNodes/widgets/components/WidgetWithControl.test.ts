@@ -1,5 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
-import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
 import { describe, expect, it, vi } from 'vitest'
@@ -171,9 +171,9 @@ describe('WidgetWithControl', () => {
     const update = vi.fn<(value: WidgetValue) => void>()
     const widget = makeControlWidget(update, 'randomize')
     const { rerender } = mountWithPortal(widget)
+    const user = userEvent.setup()
 
-    // eslint-disable-next-line testing-library/prefer-user-event
-    await fireEvent.click(await screen.findByTestId('value-control'))
+    await user.click(await screen.findByTestId('value-control'))
     expect(await screen.findAllByRole('radio')).toHaveLength(4)
 
     const linkedWidget: SimplifiedControlWidget = {
@@ -193,7 +193,6 @@ describe('WidgetWithControl', () => {
     expect(linkedButton).toBeDisabled()
     linkedButton.focus()
     expect(linkedButton).not.toHaveFocus()
-    const user = userEvent.setup()
     await user.click(linkedButton)
     await user.keyboard('{Enter}')
     expect(update).not.toHaveBeenCalled()
