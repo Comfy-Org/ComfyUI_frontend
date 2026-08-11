@@ -9,6 +9,7 @@ import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 import CodeBlock from './CodeBlock.vue'
 
 const { text } = defineProps<{ text: string }>()
+const apiBaseUrl = new URL(api.apiURL(''), window.location.origin).href
 
 interface ProseSegment {
   type: 'prose'
@@ -28,7 +29,7 @@ const segments = computed<Segment[]>(() => {
     if (!prose) return
     out.push({
       type: 'prose',
-      html: renderMarkdownToHtml(prose, api.apiURL(''))
+      html: renderMarkdownToHtml(prose, apiBaseUrl)
     })
     prose = ''
   }
@@ -65,7 +66,10 @@ const proseClass = cn(
 </script>
 
 <template>
-  <div>
+  <div
+    data-testid="markdown-stream"
+    class="max-w-full min-w-0 [&_img]:mt-2 [&_img]:block [&_img]:h-auto [&_img]:max-w-full [&_img]:object-contain"
+  >
     <template v-for="(segment, index) in segments" :key="index">
       <CodeBlock
         v-if="segment.type === 'code'"
