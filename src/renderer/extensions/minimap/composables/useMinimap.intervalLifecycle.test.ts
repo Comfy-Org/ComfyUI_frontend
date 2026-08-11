@@ -4,7 +4,7 @@
  * the vueuse timing primitives wholesale, which cannot catch a polling loop
  * that fails to stop on hide/destroy or resumes eagerly on show.
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, shallowRef } from 'vue'
 
 import {
@@ -128,6 +128,10 @@ describe('useMinimap change-detection interval', () => {
     vi.useFakeTimers()
     context = createMockCanvas2DContext()
     mockNodes[0].pos = [0, 0]
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
   it('polls on the interval and redraws when the graph changed', async () => {
