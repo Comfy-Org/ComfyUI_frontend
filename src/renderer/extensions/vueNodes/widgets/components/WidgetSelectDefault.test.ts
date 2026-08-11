@@ -361,43 +361,21 @@ describe('WidgetSelectDefault', () => {
 
       const trigger = screen.getByTestId('widget-select-default-trigger')
       expect(trigger).not.toHaveAttribute('aria-invalid')
-      expect(trigger).not.toHaveTextContent('null')
-    })
-
-    it('does not render "null" while the option list is still empty', () => {
-      renderComponent(createWidget([]), null)
-
-      const trigger = screen.getByTestId('widget-select-default-trigger')
-      expect(trigger).not.toHaveTextContent('null')
-      expect(trigger).not.toHaveAttribute('aria-invalid')
-    })
-
-    it('renders an empty trigger for a null value with no placeholder', () => {
-      renderComponent(createWidget(['a', 'b']), null)
-
-      const trigger = screen.getByTestId('widget-select-default-trigger')
       expect(trigger.textContent?.trim()).toBe('')
     })
 
-    it('selects the first option for undefined but leaves null empty', () => {
-      const { unmount } = renderComponent(createWidget(['a', 'b']))
+    it('selects the first option when the value is undefined', () => {
+      renderComponent(createWidget(['a', 'b']))
 
       expect(
         screen.getByTestId('widget-select-default-trigger')
       ).toHaveTextContent('a')
-      unmount()
-
-      renderComponent(createWidget(['a', 'b']), null)
-
-      expect(
-        screen.getByTestId('widget-select-default-trigger').textContent?.trim()
-      ).toBe('')
     })
 
-    it('shows all options as unselected for a null value', async () => {
-      const { user } = renderComponent(createWidget(['a', 'b']), null)
+    it('marks only a matching value as selected in the dropdown', async () => {
+      const first = renderComponent(createWidget(['a', 'b']), null)
 
-      await openDropdown(user)
+      await openDropdown(first.user)
 
       const options = screen.getAllByRole('option')
       expect(options).toHaveLength(2)
@@ -407,6 +385,20 @@ describe('WidgetSelectDefault', () => {
       for (const option of options) {
         expect(option).not.toHaveAttribute('aria-selected', 'true')
       }
+      first.unmount()
+
+      const second = renderComponent(createWidget(['a', 'b']), 'a')
+
+      await openDropdown(second.user)
+
+      expect(screen.getByRole('option', { name: 'a' })).toHaveAttribute(
+        'aria-selected',
+        'true'
+      )
+      expect(screen.getByRole('option', { name: 'b' })).not.toHaveAttribute(
+        'aria-selected',
+        'true'
+      )
     })
 
     it('shows invalid current values as the trigger label', () => {
