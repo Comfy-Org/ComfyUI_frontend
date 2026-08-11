@@ -94,7 +94,10 @@ function cancelInitialization(): void {
 }
 
 async function initialize(): Promise<void> {
-  if (!isCloud) return
+  if (!isCloud) {
+    void initializeWorkspacesInBackground()
+    return
+  }
 
   cancelInitialization()
   const generation = initializationGeneration
@@ -227,6 +230,28 @@ async function initializeWorkspaceMode(): Promise<void> {
     !workspaceStore.activeWorkspaceId
   ) {
     throw new Error('Failed to initialize workspace context')
+  }
+}
+
+// On non-cloud distributions the gate never blocks rendering; workspace
+// context (credit-wallet selection) is hydrated in the background so the
+// switcher can appear once ready, and the app works untouched if it fails.
+async function initializeWorkspacesInBackground(): Promise<void> {
+  const { isInitialized, currentUser } = storeToRefs(useAuthStore())
+  try {
+    if (!isInitialized.value) {
+      await until(isInitialized).toBe(true, {
+        timeout: FIREBASE_INIT_TIMEOUT_MS,
+        throwOnTimeout: true
+      })
+    }
+    if (!currentUser.value) return
+    await initializeWorkspaceMode()
+  } catch (error) {
+    console.warn(
+      '[WorkspaceAuthGate] Background workspace initialization failed:',
+      error
+    )
   }
 }
 

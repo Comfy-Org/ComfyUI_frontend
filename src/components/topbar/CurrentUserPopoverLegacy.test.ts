@@ -1,3 +1,4 @@
+import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -175,7 +176,7 @@ describe('CurrentUserPopoverLegacy', () => {
 
     render(CurrentUserPopoverLegacy, {
       global: {
-        plugins: [i18n],
+        plugins: [i18n, createTestingPinia({ createSpy: vi.fn })],
         stubs: {
           Divider: true
         }
