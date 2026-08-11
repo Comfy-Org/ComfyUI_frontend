@@ -46,4 +46,14 @@ test.describe('Cloud distribution UI', { tag: '@cloud' }, () => {
     // Verify cloud-specific login UI is rendered
     await expect(page.getByRole('button', { name: /google/i })).toBeVisible()
   })
+
+  test('unknown paths redirect to cloud login instead of hanging on splash screen', async ({
+    page
+  }) => {
+    await page.goto(new URL('/woiadawd', APP_URL).toString())
+    // Catch-all redirects unknown paths to /, auth guard sends unauthenticated
+    // users to /cloud/login. Regression: before the fix the SPA had no route
+    // match and startStoreBootstrap hung indefinitely on the splash screen.
+    await expect(page).toHaveURL(/\/cloud\/login/, { timeout: 10_000 })
+  })
 })
