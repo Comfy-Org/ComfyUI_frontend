@@ -874,7 +874,9 @@ stores.
 
 **Current state:** `beforeChange()` / `afterChange()` provide undo/redo
 checkpoints but not true transactions. The graph can be in an inconsistent
-state between these calls.
+state between these calls. `linkStore.updateEndpoints()` already validates a
+batch before changing link topology, but it does not provide rollback across
+stores, callbacks, layout, or version changes.
 
 **Phase 4 baseline semantics:**
 
@@ -944,18 +946,17 @@ current implementation:
 - Keep the browser hydration test as the workflow-level composition check.
 - Investigate separately whether link geometry in `layoutStore`, still keyed by
   bare `LinkId`, can collide across simultaneously live root graphs.
-- Clarify API guidance for root-only identity lookups versus owner-qualified
-  graph queries. In the current contract, callers normally use the root graph
-  for the bucket and the node's direct owner for the query key; these IDs are
-  the same for root-owned nodes.
+- Document that root-wide identity lookup uses `rootGraphId`, while owner-local
+  iteration and slot queries use `graphScopeOf()` with the directly owning
+  graph. Callers should not construct root/owner pairs manually.
 - Defer a persistent root-wide group ID index until profiling shows it is
   warranted. `LGraph.add()` currently scans root and subgraph groups for each
   group insertion, which can make loading G groups take quadratic time. A
   `Set` per insertion has the same asymptotic cost, while a persistent index
   duplicates lifecycle state. Measure representative large workflow load,
   deserialization, paste, and unpack paths first. If the scan has material
-  impact, evaluate a root-scoped identity index or a high-water allocator whose
-  import boundaries account for every existing group ID.
+  impact, optimize the insertion path while preserving the existing root-shared
+  high-water allocator and import-time collision repair.
 
 ---
 
