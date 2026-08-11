@@ -202,7 +202,6 @@ const { default: GraphView } = await import('./GraphView.vue')
 
 describe('GraphView - reconnect wiring', () => {
   beforeEach(() => {
-    vi.restoreAllMocks()
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
 

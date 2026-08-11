@@ -30,7 +30,6 @@ describe('useSystemStatsStore', () => {
     vi.mocked(api.getSystemStats).mockResolvedValue(null!)
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useSystemStatsStore()
-    vi.clearAllMocks()
   })
 
   it('should initialize and start fetching immediately', async () => {

@@ -115,29 +115,6 @@ Each language has 4 translation files:
 - `settings.json` - Settings panel (~400+ entries)
 - `nodeDefs.json` - Node definitions (~varies based on installed nodes)
 
-### What `en/nodeDefs.json` is (and is not)
-
-It is **not** the source of English node text. The backend is: `/object_info`
-ships each node's `display_name` and `description`, and those are the English
-strings users see.
-
-`en/nodeDefs.json` is a point-in-time snapshot of that backend text, serving two
-purposes:
-
-1. **An extraction basis** for the lobe-i18n pipeline, which translates it into
-   the other locales.
-2. **An offline fallback** for nodes the connected backend does not describe.
-
-Treating it as authoritative is what produced the bug where a renamed or
-custom-built node showed a stale name: the snapshot outranked the live backend.
-So `resolveNodeDefText` in `src/i18n.ts` prefers, in order, a custom node's
-`/api/i18n` translation, then the live backend value, then this snapshot — and
-in English it returns the backend value uncompiled, because English is source
-text rather than a translation.
-
-Because the snapshot lags whatever nodes are actually installed, a missing entry
-here is normal and is not a bug to fix by hand-editing the file.
-
 ## Translation Quality
 
 - **Auto-translations are high quality** but may need refinement

@@ -57,7 +57,7 @@ export interface PullRequestSummary {
   labels: { name: string }[]
 }
 
-export const BACKPORT_LABEL = 'backport'
+const BACKPORT_LABEL = 'backport'
 
 /**
  * Returns the numbers of the PRs that are backports by branch convention but
