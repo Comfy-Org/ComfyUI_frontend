@@ -207,6 +207,30 @@ describe('useFeatureFlags', () => {
     })
   })
 
+  describe('legacyBillingMigrationEnabled', () => {
+    afterEach(() => {
+      remoteConfig.value = {}
+    })
+
+    it('migrates legacy billing when enabled by remote config', () => {
+      remoteConfig.value = { legacy_billing_migration_enabled: true }
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.legacyBillingMigrationEnabled).toBe(true)
+    })
+
+    it('keeps legacy billing when the rollout flag is unset', () => {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (_path, defaultValue) => defaultValue
+      )
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.legacyBillingMigrationEnabled).toBe(false)
+    })
+  })
+
   describe('onboardingTourEnabled', () => {
     afterEach(() => {
       remoteConfig.value = {}
