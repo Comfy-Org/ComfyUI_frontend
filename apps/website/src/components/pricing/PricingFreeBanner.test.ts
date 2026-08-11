@@ -1,50 +1,71 @@
-import { describe, expect, it } from 'vitest'
-import { createSSRApp } from 'vue'
-import { renderToString } from 'vue/server-renderer'
+// @vitest-environment happy-dom
+import { cleanup, render, screen } from '@testing-library/vue'
+import { afterEach, describe, expect, it } from 'vitest'
+import type { ComponentProps } from 'vue-component-type-helpers'
 
 import PricingFreeBanner from './PricingFreeBanner.vue'
 
-// The apostrophe in the English title renders HTML-escaped, so assertions
-// stop just before it.
-const EN_TITLE_FRAGMENT = 'Start free. Upgrade when you'
-const ZH_TITLE = '免费开始，准备好了再升级。'
+afterEach(() => {
+  cleanup()
+})
 
-function renderBanner(props: Record<string, unknown> = {}) {
-  return renderToString(
-    createSSRApp(PricingFreeBanner, {
-      titleKey: 'pricing.banner.title',
-      subtitleKey: 'pricing.banner.subtitle',
-      cta: {
-        labelKey: 'pricing.banner.cta',
-        href: 'https://cloud.comfy.org',
-        target: '_blank'
-      },
-      ...props
-    })
-  )
+type BannerProps = ComponentProps<typeof PricingFreeBanner>
+
+const defaultProps = {
+  titleKey: 'pricing.banner.title',
+  subtitleKey: 'pricing.banner.subtitle',
+  cta: {
+    labelKey: 'pricing.banner.cta',
+    href: 'https://cloud.comfy.org',
+    target: '_blank'
+  }
+} satisfies BannerProps
+
+function renderBanner(props: Partial<BannerProps> = {}) {
+  return render(PricingFreeBanner, { props: { ...defaultProps, ...props } })
 }
 
 describe('PricingFreeBanner', () => {
-  it('renders the English title, subtitle and CTA by default', async () => {
-    const html = await renderBanner()
+  it('renders the English title, subtitle and CTA by default', () => {
+    renderBanner()
 
-    expect(html).toContain(EN_TITLE_FRAGMENT)
-    expect(html).toContain('no credit card required')
-    expect(html).toContain('TRY FREE')
+    expect(
+      screen.getByText("Start free. Upgrade when you're ready.")
+    ).toBeTruthy()
+    expect(screen.getByText(/no credit card required/)).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'TRY FREE' })).toBeTruthy()
   })
 
-  it('links the CTA to the given href in a new tab', async () => {
-    const html = await renderBanner()
+  it('points the CTA at Comfy Cloud in a new tab', () => {
+    renderBanner()
 
-    expect(html).toContain('href="https://cloud.comfy.org"')
-    expect(html).toContain('target="_blank"')
+    const cta = screen.getByRole('link', { name: 'TRY FREE' })
+    expect(cta.getAttribute('href')).toBe('https://cloud.comfy.org')
+    expect(cta.getAttribute('target')).toBe('_blank')
   })
 
-  it('localizes every string when given the zh-CN locale', async () => {
-    const html = await renderBanner({ locale: 'zh-CN' })
+  it('forwards whatever CTA href and target it is given', () => {
+    renderBanner({
+      cta: {
+        labelKey: 'pricing.banner.cta',
+        href: 'https://example.com/signup',
+        target: '_self'
+      }
+    })
 
-    expect(html).toContain(ZH_TITLE)
-    expect(html).toContain('免费试用')
-    expect(html).not.toContain(EN_TITLE_FRAGMENT)
+    const cta = screen.getByRole('link', { name: 'TRY FREE' })
+    expect(cta.getAttribute('href')).toBe('https://example.com/signup')
+    expect(cta.getAttribute('target')).toBe('_self')
+  })
+
+  it('localizes every string when given the zh-CN locale', () => {
+    renderBanner({ locale: 'zh-CN' })
+
+    expect(screen.getByText('免费开始，准备好了再升级。')).toBeTruthy()
+    expect(screen.getByText(/在真实 GPU 上免费运行 5 次/)).toBeTruthy()
+    expect(screen.getByRole('link', { name: '免费试用' })).toBeTruthy()
+    expect(screen.queryByText(/Start free/)).toBeNull()
+    expect(screen.queryByText(/no credit card required/)).toBeNull()
+    expect(screen.queryByRole('link', { name: 'TRY FREE' })).toBeNull()
   })
 })

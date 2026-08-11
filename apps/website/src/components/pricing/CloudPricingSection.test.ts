@@ -1,26 +1,44 @@
-import { describe, expect, it } from 'vitest'
-import { createSSRApp } from 'vue'
-import { renderToString } from 'vue/server-renderer'
+// @vitest-environment happy-dom
+import { cleanup, render, screen } from '@testing-library/vue'
+import { afterEach, describe, expect, it } from 'vitest'
 
 import CloudPricingSection from './CloudPricingSection.vue'
 
-describe('CloudPricingSection', () => {
-  it('renders the free-tier banner inside the pricing section', async () => {
-    const html = await renderToString(createSSRApp(CloudPricingSection))
+afterEach(() => {
+  cleanup()
+})
 
-    expect(html).toContain('Start free. Upgrade when you')
-    expect(html).toContain('href="https://cloud.comfy.org"')
-    expect(html).toContain('target="_blank"')
-    // The banner sits alongside the plan cards, not instead of them.
-    expect(html).toContain('Choose a plan')
+function isBefore(first: Element, second: Element) {
+  return Boolean(
+    first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING
+  )
+}
+
+describe('CloudPricingSection', () => {
+  it('renders the free-tier banner between the billing toggle and the plan cards', () => {
+    render(CloudPricingSection)
+
+    const billingToggle = screen.getByText('Monthly')
+    const banner = screen.getByText("Start free. Upgrade when you're ready.")
+    const planCards = screen.getByText('MOST POPULAR')
+
+    expect(isBefore(billingToggle, banner)).toBe(true)
+    expect(isBefore(banner, planCards)).toBe(true)
   })
 
-  it('localizes the banner for the zh-CN page', async () => {
-    const html = await renderToString(
-      createSSRApp(CloudPricingSection, { locale: 'zh-CN' })
-    )
+  it('points the banner CTA at Comfy Cloud in a new tab', () => {
+    render(CloudPricingSection)
 
-    expect(html).toContain('免费开始，准备好了再升级。')
-    expect(html).not.toContain('Start free. Upgrade when you')
+    const cta = screen.getByRole('link', { name: 'TRY FREE' })
+    expect(cta.getAttribute('href')).toBe('https://cloud.comfy.org')
+    expect(cta.getAttribute('target')).toBe('_blank')
+  })
+
+  it('localizes the banner for the zh-CN page', () => {
+    render(CloudPricingSection, { props: { locale: 'zh-CN' } })
+
+    expect(screen.getByText('免费开始，准备好了再升级。')).toBeTruthy()
+    expect(screen.getByRole('link', { name: '免费试用' })).toBeTruthy()
+    expect(screen.queryByText(/Start free/)).toBeNull()
   })
 })
