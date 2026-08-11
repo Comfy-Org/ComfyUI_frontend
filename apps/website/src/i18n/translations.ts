@@ -5454,8 +5454,8 @@ const translations = {
       'Comfy 专家驻场加入你的团队，为你构建 ComfyUI 工作流，并教会你的团队扩展规模。'
   },
   'fdct.hero.eyebrow': {
-    en: 'Forward Deployed Creative Services',
-    'zh-CN': '前沿驻场创意服务'
+    en: 'creative services',
+    'zh-CN': '创意服务'
   },
   'fdct.hero.contactCta': { en: 'Contact us', 'zh-CN': '联系我们' },
   'fdct.hero.applyCta': { en: 'Apply as an FDCT', 'zh-CN': '申请成为 FDCT' },
