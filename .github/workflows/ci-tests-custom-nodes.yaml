@@ -213,8 +213,12 @@ jobs:
           grep_args=()
           case "$PROOF_ROW" in
             0) ;;
-            1|3)
+            1)
               grep_args=(--grep 'all nodes: ComfyUI-Impact-Pack @custom-nodes.*every registered node mounts, survives save/reload, and executes$|shared session continuity after broken tier @custom-nodes$')
+              ;;
+            3)
+              export CUSTOM_NODE_SPLIT_TIERS=1
+              grep_args=(--grep 'all nodes: ComfyUI-Impact-Pack @custom-nodes.*S(1|2|3|9|14):|shared session continuity after broken tier @custom-nodes$')
               ;;
             7)
               grep_args=(--grep 'smoke: core workflow @custom-nodes.*loads without console errors in both renderers$|shared session continuity after broken tier @custom-nodes$')
@@ -299,9 +303,16 @@ jobs:
           unexpected=$(jq -er '.stats.unexpected' custom-nodes-results.json)
           skipped=$(jq -er '.stats.skipped' custom-nodes-results.json)
           flaky=$(jq -er '.stats.flaky' custom-nodes-results.json)
-          [ "$collected" = 2 ] || { echo "::error::S$PROOF_ROW collected $collected tests, expected 2"; exit 1; }
-          [ "$expected" = 1 ] || { echo "::error::S$PROOF_ROW expected-pass count is $expected, expected 1"; exit 1; }
-          [ "$unexpected" = 1 ] || { echo "::error::S$PROOF_ROW failure count is $unexpected, expected 1"; exit 1; }
+          expected_collected=2
+          expected_passed=1
+          expected_failed=1
+          if [ "$PROOF_ROW" = 3 ]; then
+            expected_collected=6
+            expected_passed=5
+          fi
+          [ "$collected" = "$expected_collected" ] || { echo "::error::S$PROOF_ROW collected $collected tests, expected $expected_collected"; exit 1; }
+          [ "$expected" = "$expected_passed" ] || { echo "::error::S$PROOF_ROW expected-pass count is $expected, expected $expected_passed"; exit 1; }
+          [ "$unexpected" = "$expected_failed" ] || { echo "::error::S$PROOF_ROW failure count is $unexpected, expected $expected_failed"; exit 1; }
           [ "$skipped" = 0 ] && [ "$flaky" = 0 ] || { echo "::error::S$PROOF_ROW has skipped=$skipped flaky=$flaky"; exit 1; }
           [ "$SUITE_OUTCOME" = failure ] || { echo "::error::S$PROOF_ROW did not break its witness"; exit 1; }
 
@@ -319,7 +330,7 @@ jobs:
           grep -Eq -- "$pat" shared-boot-proof-evidence.txt || { echo "::error::S$PROOF_ROW failure was not attributable to its Detection Proof break"; exit 1; }
 
           mapfile -t sessions < <(grep -oE '\[shared-session\] pid=[0-9]+ id=[^ ]+ bootCount=[0-9]+' custom-nodes.log)
-          [ "${#sessions[@]}" -eq 2 ] || { echo "::error::S$PROOF_ROW recorded ${#sessions[@]} session identities, expected 2"; exit 1; }
+          [ "${#sessions[@]}" -eq "$expected_collected" ] || { echo "::error::S$PROOF_ROW recorded ${#sessions[@]} session identities, expected $expected_collected"; exit 1; }
           ids=$(printf '%s\n' "${sessions[@]}" | sed -E 's/.* id=([^ ]+).*/\1/' | sort -u | wc -l | tr -d ' ')
           pids=$(printf '%s\n' "${sessions[@]}" | sed -E 's/.* pid=([0-9]+).*/\1/' | sort -u | wc -l | tr -d ' ')
           boots=$(printf '%s\n' "${sessions[@]}" | sed -E 's/.* bootCount=([0-9]+).*/\1/' | sort -u)

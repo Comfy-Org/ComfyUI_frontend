@@ -5,6 +5,7 @@
 // from the live backend, so a pack update is covered the moment it installs.
 import type { Page } from '@playwright/test'
 
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import {
   comfyExpect as expect,
   comfyPageFixture as test
@@ -98,6 +99,22 @@ const AUTO_RUN_BATCH = 10
 // slow CPU run as a regression.
 const SINGLE_RERUN_TIMEOUT = 60_000
 const GRID_SPACING = { x: 420, y: 360 }
+
+type SplitAllNodesTier = 'S1' | 'S2' | 'S3' | 'S9' | 'S14'
+
+const splitAllNodesTiers = process.env.CUSTOM_NODE_SPLIT_TIERS === '1'
+if (
+  process.env.CUSTOM_NODE_SPLIT_TIERS !== undefined &&
+  process.env.CUSTOM_NODE_SPLIT_TIERS !== '0' &&
+  process.env.CUSTOM_NODE_SPLIT_TIERS !== '1'
+)
+  throw new Error(
+    `unrecognized CUSTOM_NODE_SPLIT_TIERS value "${process.env.CUSTOM_NODE_SPLIT_TIERS}" - expected "0" or "1"`
+  )
+if (splitAllNodesTiers && process.env.CUSTOM_NODE_SHARED_SESSION !== '1')
+  throw new Error(
+    'CUSTOM_NODE_SPLIT_TIERS=1 requires CUSTOM_NODE_SHARED_SESSION=1 so independent tier tests reuse the externally owned app boot'
+  )
 
 // Nodes unsafe to execute on a bare backend; every entry names the mechanism.
 const AUTO_RUN_EXCLUDE: Record<string, Record<string, string>> = {
@@ -676,9 +693,10 @@ if (unjoinedYamlPacks.length > 0) {
 
 for (const entry of loadManifest()) {
   test.describe(`all nodes: ${entry.pack} @custom-nodes`, () => {
-    test('every registered node mounts, survives save/reload, and executes', async ({
-      comfyPage
-    }) => {
+    const expectAllNodesTier = async (
+      comfyPage: ComfyPage,
+      selectedTier?: SplitAllNodesTier
+    ) => {
       if (customNodesEnv() !== 'cloud') test.setTimeout(1_620_000)
       const { keys, defs } = await packNodeKeys(comfyPage.page, entry.pack)
       test.skip(
@@ -690,19 +708,40 @@ for (const entry of loadManifest()) {
       // never allowed to skip the tiers after it; the graph is cleared and
       // the backend drained at every tier boundary.
       const tierFailures: string[] = []
-      async function runTier(tierName: string, tier: () => Promise<void>) {
+      async function runTier(
+        selectedBy: SplitAllNodesTier[],
+        tierName: string,
+        tier: () => Promise<void>
+      ) {
+        if (selectedTier !== undefined && !selectedBy.includes(selectedTier))
+          return
+        let failed = false
+        let tierError: unknown
         try {
           await tier()
         } catch (error) {
-          tierFailures.push(
-            `[${tierName}] ${error instanceof Error ? error.message : String(error)}`
-          )
+          failed = true
+          tierError = error
+          if (selectedTier === undefined)
+            tierFailures.push(
+              `[${tierName}] ${error instanceof Error ? error.message : String(error)}`
+            )
         }
         await comfyPage.nodeOps.clearGraph()
         await drainBackendToIdle(comfyPage.page, 10_000)
+        if (selectedTier !== undefined && failed) {
+          await attachPageDiagnosticEvidence(
+            comfyPage.page,
+            test.info(),
+            `${selectedTier.toLowerCase()}-failures.json`,
+            [tierError instanceof Error ? tierError.message : String(tierError)]
+          )
+          throw tierError
+        }
       }
 
-      await runTier('mount', async () => {
+      await runTier(['S1', 'S2', 'S14'], 'mount', async () => {
+        const validatesMount = selectedTier !== 'S14'
         // Exact-count guard: the corpus below comes from the live backend, so
         // a pack silently registering fewer nodes (broken sub-import, a core
         // change breaking registration) would shrink coverage while every
@@ -710,10 +749,11 @@ for (const entry of loadManifest()) {
         // deterministic; a delta in either direction fails until the manifest
         // is deliberately recalibrated with the pin/core change that moved it.
         console.log(`custom-nodes count: ${entry.pack} = ${keys.length}`)
-        expect(
-          keys,
-          `${entry.pack} registers ${keys.length} nodes but the manifest expects ${entry.expectedNodeCount} - a pack node failed to register (or the pack changed); recalibrate expectedNodeCount only with the change that moved it`
-        ).toHaveLength(entry.expectedNodeCount)
+        if (validatesMount)
+          expect(
+            keys,
+            `${entry.pack} registers ${keys.length} nodes but the manifest expects ${entry.expectedNodeCount} - a pack node failed to register (or the pack changed); recalibrate expectedNodeCount only with the change that moved it`
+          ).toHaveLength(entry.expectedNodeCount)
         const declaredByKey = new Map(
           keys.map((key) => [key, declaredShape(defs[key])])
         )
@@ -737,7 +777,8 @@ for (const entry of loadManifest()) {
             `unrecognized CN_ENABLE_S14 value "${geometryCompareMode}" - expected "0" or "1"`
           )
         const geometryEnabled =
-          geometryRecordMode || geometryCompareMode === '1'
+          (selectedTier === undefined || selectedTier === 'S14') &&
+          (geometryRecordMode || geometryCompareMode === '1')
         const measuredGeometry: Record<string, NodeGeometry> = {}
         const geometryUnstable = geometryEnabled
           ? packLedgerFor(GEOMETRY_UNSTABLE_NODES, entry.pack)
@@ -758,21 +799,29 @@ for (const entry of loadManifest()) {
             keys,
             `stale GEOMETRY_UNSTABLE_PATHS entry: ${ledgered} is not registered by ${entry.pack}`
           ).toContain(ledgered)
-        for (const ledgered of stalenessCheckedKeys(entry, ledger))
-          expect(
-            keys,
-            `stale ledger entry: ${ledgered} is not registered by ${entry.pack}`
-          ).toContain(ledgered)
-        for (const ledgered of stalenessCheckedKeys(
-          entry,
-          packLedgerFor(MOUNT_WIDGET_ALLOWLIST, entry.pack)
-        ))
-          expect(
-            keys,
-            `stale MOUNT_WIDGET_ALLOWLIST entry: ${ledgered} is not registered by ${entry.pack}`
-          ).toContain(ledgered)
+        if (validatesMount) {
+          for (const ledgered of stalenessCheckedKeys(entry, ledger))
+            expect(
+              keys,
+              `stale ledger entry: ${ledgered} is not registered by ${entry.pack}`
+            ).toContain(ledgered)
+          for (const ledgered of stalenessCheckedKeys(
+            entry,
+            packLedgerFor(MOUNT_WIDGET_ALLOWLIST, entry.pack)
+          ))
+            expect(
+              keys,
+              `stale MOUNT_WIDGET_ALLOWLIST entry: ${ledgered} is not registered by ${entry.pack}`
+            ).toContain(ledgered)
+        }
 
-        for (const vueNodesEnabled of rendererPassesFor(entry)) {
+        const rendererPasses =
+          selectedTier === 'S1'
+            ? [false]
+            : selectedTier === 'S2'
+              ? [true]
+              : rendererPassesFor(entry)
+        for (const vueNodesEnabled of rendererPasses) {
           const rawOutputTopologyExpectations = packLedgerFor(
             rendererLedgerFor(
               vueNodesEnabled,
@@ -781,11 +830,13 @@ for (const entry of loadManifest()) {
             ),
             entry.pack
           )
-          const outputTopologyExpectations = Object.fromEntries(
-            stalenessCheckedKeys(entry, rawOutputTopologyExpectations).map(
-              (node) => [node, rawOutputTopologyExpectations[node]]
-            )
-          )
+          const outputTopologyExpectations = validatesMount
+            ? Object.fromEntries(
+                stalenessCheckedKeys(entry, rawOutputTopologyExpectations).map(
+                  (node) => [node, rawOutputTopologyExpectations[node]]
+                )
+              )
+            : {}
           const observedOutputTopologies = new Set<string>()
           for (const ledgered of Object.keys(outputTopologyExpectations))
             expect(
@@ -804,7 +855,7 @@ for (const entry of loadManifest()) {
             const shapes = await addChunk(comfyPage.page, chunk)
             await comfyPage.nextFrame()
             const count = await comfyPage.nodeOps.getGraphNodesCount()
-            if (count !== chunk.length)
+            if (validatesMount && count !== chunk.length)
               failures.push(
                 `chunk@${offset}: graph has ${count} of ${chunk.length} nodes`
               )
@@ -831,9 +882,11 @@ for (const entry of loadManifest()) {
             for (const [index, shape] of shapes.entries()) {
               const key = chunk[index]
               if (shape === null) {
-                failures.push(`${key}: createNode returned null`)
+                if (validatesMount)
+                  failures.push(`${key}: createNode returned null`)
                 continue
               }
+              if (!validatesMount) continue
               // Renderer-independent fidelity: the instance must materialize
               // everything the def declares. Pack JS converting a widget to a
               // socket (or back) is legal; dropping the input entirely is not.
@@ -879,7 +932,7 @@ for (const entry of loadManifest()) {
             }
             // A mount with missing widgets or slots is a broken node, not a
             // pass. Extra DOM elements are tolerated; missing ones fail.
-            if (vueNodesEnabled)
+            if (validatesMount && vueNodesEnabled)
               failures.push(
                 ...(await comfyPage.page.evaluate(
                   ([chunkIds, ledgered, customWidgetNodes]) => {
@@ -950,11 +1003,16 @@ for (const entry of loadManifest()) {
                 ))
               )
           }
-          if (vueNodesEnabled && Object.keys(ledger).length > 0)
+          if (
+            validatesMount &&
+            vueNodesEnabled &&
+            Object.keys(ledger).length > 0
+          )
             console.log(
               `${entry.pack}: ${Object.keys(ledger).length} node(s) ledgered Vue-incompatible; Vue mount not asserted for them`
             )
           consoleErrors.stop()
+          if (!validatesMount) continue
           expect(
             failures,
             `VueNodes=${vueNodesEnabled}: ${JSON.stringify(failures, null, 1)}`
@@ -1028,7 +1086,7 @@ for (const entry of loadManifest()) {
         }
       })
 
-      await runTier('save/reload', async () => {
+      await runTier(['S3'], 'save/reload', async () => {
         const roundtripConsoleErrors: string[] = []
         const allowedWidgets = packLedgerFor(WIDGET_SET_ALLOWLIST, entry.pack)
         for (const ledgered of stalenessCheckedKeys(entry, allowedWidgets))
@@ -1583,7 +1641,7 @@ for (const entry of loadManifest()) {
         await expectNoVisibleErrors(comfyPage.page, 'after save/reload sweep')
       })
 
-      await runTier('auto-run', async () => {
+      await runTier(['S9'], 'auto-run', async () => {
         await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
 
         // A prior pack's slow CPU execution can still be draining when this tier
@@ -1769,22 +1827,49 @@ for (const entry of loadManifest()) {
       // into ~17k log lines, unreadable enough that it was twice misdiagnosed
       // as an infrastructure outage. The full list still ships, as an
       // attachment.
-      if (tierFailures.length > 0)
+      if (selectedTier === undefined && tierFailures.length > 0)
         await attachPageDiagnosticEvidence(
           comfyPage.page,
           test.info(),
           'tier-failures.json',
           tierFailures
         )
-      expect(
-        tierFailures.length === 0,
-        failureSummary(
-          `${entry.pack} tier failures`,
-          tierFailures,
-          'tier-failures.json'
-        )
-      ).toBe(true)
-    })
+      if (selectedTier === undefined)
+        expect(
+          tierFailures.length === 0,
+          failureSummary(
+            `${entry.pack} tier failures`,
+            tierFailures,
+            'tier-failures.json'
+          )
+        ).toBe(true)
+    }
+
+    if (splitAllNodesTiers) {
+      test('S1: every registered node mounts on the canvas renderer', async ({
+        comfyPage
+      }) => expectAllNodesTier(comfyPage, 'S1'))
+
+      if (rendererPassesFor(entry).includes(true))
+        test('S2: every registered node mounts on the DOM renderer', async ({
+          comfyPage
+        }) => expectAllNodesTier(comfyPage, 'S2'))
+
+      test('S3: every registered node survives save and reload', async ({
+        comfyPage
+      }) => expectAllNodesTier(comfyPage, 'S3'))
+
+      test('S9: every self-sufficient node executes', async ({ comfyPage }) =>
+        expectAllNodesTier(comfyPage, 'S9'))
+
+      if (process.env.CN_ENABLE_S14 === '1')
+        test('S14: every registered node matches its geometry baseline', async ({
+          comfyPage
+        }) => expectAllNodesTier(comfyPage, 'S14'))
+    } else
+      test('every registered node mounts, survives save/reload, and executes', async ({
+        comfyPage
+      }) => expectAllNodesTier(comfyPage))
   })
 }
 
