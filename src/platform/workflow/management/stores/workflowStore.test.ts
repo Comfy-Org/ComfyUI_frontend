@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { nextTick } from 'vue'
 
@@ -97,7 +97,6 @@ describe('useWorkflowStore', () => {
   }
 
   beforeEach(() => {
-    sessionStorage.clear()
     store = useWorkflowStore()
     bookmarkStore = useWorkflowBookmarkStore()
 
@@ -109,10 +108,6 @@ describe('useWorkflowStore', () => {
     vi.mocked(api.storeUserData).mockResolvedValue({
       status: 200
     } as Response)
-  })
-
-  afterEach(() => {
-    sessionStorage.clear()
   })
 
   describe('syncWorkflows', () => {

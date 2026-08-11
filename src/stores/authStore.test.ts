@@ -174,7 +174,6 @@ describe('useAuthStore', () => {
 
   beforeEach(() => {
     vi.stubGlobal('fetch', mockFetch)
-    sessionStorage.clear()
     clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.SHARE_AUTH)
 
     mockFeatureFlags.unifiedCloudAuthEnabled = false

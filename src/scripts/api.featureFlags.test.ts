@@ -427,12 +427,10 @@ describe('API Feature Flags', () => {
    */
   describe('characterization: resolution with no override present', () => {
     beforeEach(() => {
-      sessionStorage.clear()
       window.history.replaceState({}, '', '/')
     })
 
     afterEach(() => {
-      sessionStorage.clear()
       window.history.replaceState({}, '', '/')
     })
 

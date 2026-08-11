@@ -28,7 +28,6 @@ describe('getSessionOverride', () => {
   beforeEach(() => {
     mockDistribution.isCloud = true
     mockCurrentUser.value = COMFY_EMPLOYEE
-    sessionStorage.clear()
   })
 
   afterEach(() => {

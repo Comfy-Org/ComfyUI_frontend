@@ -108,7 +108,6 @@ describe('useWorkspaceAuthStore', () => {
     })
     setActivePinia(createPinia())
     vi.useFakeTimers({ shouldAdvanceTime: false })
-    sessionStorage.clear()
     mockUnifiedCloudAuthEnabled.value = false
     mockCurrentUser.value = { uid: 'user-a' }
     mockEnsureSessionCookie.mockResolvedValue(undefined)

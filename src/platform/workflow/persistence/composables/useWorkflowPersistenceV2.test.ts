@@ -184,7 +184,6 @@ describe('useWorkflowPersistenceV2', () => {
   }> = []
 
   beforeEach(() => {
-    sessionStorage.clear()
     settingMocks.persistRef!.value = true
     settingMocks.values = {}
     mocks.state.graphChangedHandler = null

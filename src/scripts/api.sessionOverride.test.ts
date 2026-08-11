@@ -30,13 +30,11 @@ describe('api.getServerFeature session override outside component setup', () => 
     mockDistribution.isCloud = true
     mockCurrentUser.value = { email: 'dev@comfy.org', emailVerified: true }
     api.serverFeatureFlags.value = {}
-    sessionStorage.clear()
   })
 
   afterEach(() => {
     window.history.replaceState({}, '', '/')
     api.serverFeatureFlags.value = {}
-    sessionStorage.clear()
     vi.restoreAllMocks()
   })
 
