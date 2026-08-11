@@ -5434,10 +5434,10 @@ const translations = {
     'zh-CN': '在真实 GPU 上免费运行 5 次 — 无需信用卡。'
   },
   'minimax.pricing.banner.cta': { en: 'TRY FREE', 'zh-CN': '免费试用' },
-  // FDCT page (/fdct) — Forward Deployed Creative Technologists
+  // FDCT page (/fdct) — Forward Deployed Creatives
   'fdct.meta.title': {
-    en: 'Forward Deployed Creative Technologists | Comfy',
-    'zh-CN': '前沿驻场创意技术专家 | Comfy'
+    en: 'Forward Deployed Creatives | Comfy',
+    'zh-CN': '前沿驻场创意人才 | Comfy'
   },
   'fdct.meta.description': {
     en: 'Comfy experts who embed with your team, build your ComfyUI workflows, and teach your team to scale them.',
@@ -5445,8 +5445,8 @@ const translations = {
       'Comfy 专家驻场加入你的团队，为你构建 ComfyUI 工作流，并教会你的团队扩展规模。'
   },
   'fdct.hero.title': {
-    en: 'Comfy Forward Deployed Creative Technologists',
-    'zh-CN': 'Comfy 前沿驻场创意技术专家'
+    en: 'Forward Deployed Creatives',
+    'zh-CN': '前沿驻场创意人才'
   },
   'fdct.hero.subtitle': {
     en: 'Comfy experts who embed with your team, build your ComfyUI workflows, and teach your team to scale them.',
@@ -5458,17 +5458,23 @@ const translations = {
     'zh-CN': '创意服务'
   },
   'fdct.hero.contactCta': { en: 'Contact us', 'zh-CN': '联系我们' },
-  'fdct.hero.applyCta': { en: 'Apply as an FDCT', 'zh-CN': '申请成为 FDCT' },
+  'fdct.hero.applyCta': {
+    en: 'Apply as a Forward Deployed Creative',
+    'zh-CN': '申请成为前沿驻场创意人才'
+  },
   'fdct.builders.title': {
     en: 'Builders, not advisors',
     'zh-CN': '实干者，而非顾问'
   },
   'fdct.builders.lead': {
-    en: 'From “is this possible?” to a workflow your team owns. An FDCT is the person who builds it.',
+    en: 'From “is this possible?” to a workflow your team owns. A Forward Deployed Creative is the person who builds it.',
     'zh-CN':
-      '从“这可能吗？”到你的团队自己拥有的工作流。FDCT 就是把它构建出来的人。'
+      '从“这可能吗？”到你的团队自己拥有的工作流。前沿驻场创意人才就是把它构建出来的人。'
   },
-  'fdct.builders.nodeLabel': { en: 'An FDCT', 'zh-CN': '一位 FDCT' },
+  'fdct.builders.nodeLabel': {
+    en: 'A Forward Deployed Creative',
+    'zh-CN': '一位前沿驻场创意人才'
+  },
   'fdct.builders.reason1': {
     en: 'validates the use case. We build the workflow and install it in your environment.',
     'zh-CN': '验证用例。我们构建工作流，并将其部署到你的环境中。'
@@ -5478,7 +5484,7 @@ const translations = {
     'zh-CN': '教你的团队运行它。培训与赋能是流程的一部分。'
   },
   'fdct.builders.reason3': {
-    en: 'comes from real production. Feature film, commercial, and experiential, on work that shipped.',
+    en: 'comes from real production. Feature film, commercial, experiential work that shipped.',
     'zh-CN': '来自真实制作。电影长片、商业广告与体验项目，都是实际交付的作品。'
   },
   'fdct.builders.reason4': {
@@ -5533,13 +5539,13 @@ const translations = {
     'zh-CN': '可复用的创意资产，归你的团队所有'
   },
   'fdct.technologists.title': {
-    en: 'Featured technologists',
-    'zh-CN': '精选技术专家'
+    en: 'Featured creatives',
+    'zh-CN': '精选创意人才'
   },
   'fdct.technologists.lead': {
-    en: 'FDCTs come from real production: feature film, commercial, and experiential backgrounds, with ComfyUI on the back end of shipped work. We match technologists to each engagement based on the work, your stack, and the timeline.',
+    en: 'Forward Deployed Creatives come from real production: feature film, commercial, and experiential backgrounds, with ComfyUI on the back end of shipped work. We match creatives to each engagement based on the work, your stack, and the timeline.',
     'zh-CN':
-      'FDCT 来自真实制作一线：拥有电影长片、商业广告与体验项目背景，ComfyUI 支撑着已交付的作品。我们会根据项目内容、你的技术栈和时间表，为每次合作匹配合适的技术专家。'
+      '前沿驻场创意人才来自真实制作一线：拥有电影长片、商业广告与体验项目背景，ComfyUI 支撑着已交付的作品。我们会根据项目内容、你的技术栈和时间表，为每次合作匹配合适的创意人才。'
   },
   'fdct.technologists.seeWork': {
     en: 'See {name}’s work',
@@ -5583,7 +5589,8 @@ const translations = {
   'fdct.tags.video': { en: 'Video', 'zh-CN': '视频' },
   'fdct.tags.virtualTryOn': { en: 'Virtual Try On', 'zh-CN': '虚拟试穿' },
   'fdct.tags.fashion': { en: 'Fashion', 'zh-CN': '时尚' },
-  'fdct.tags.ugcAds': { en: 'UGC Ads', 'zh-CN': 'UGC 广告' },
+  'fdct.tags.imageEdit': { en: 'Image Edit', 'zh-CN': '图像编辑' },
+  'fdct.tags.inpainting': { en: 'Inpainting', 'zh-CN': '局部重绘' },
   'fdct.projects.title': { en: 'Past projects', 'zh-CN': '过往项目' },
   'fdct.projects.category.advertisement': {
     en: 'Advertisement',
@@ -5639,18 +5646,21 @@ const translations = {
     'zh-CN':
       '通过 Gemini 图生图与 Kling 图生视频，将头像照片转化为品牌风格静帧与快速动态测试，用于选角预览。'
   },
-  // Robert Paige's highlights — placeholder copy until final descriptions land.
-  'fdct.projects.removeObjectFromVideo.description': {
-    en: 'Cleanly remove unwanted objects from a video clip while keeping the background and motion intact.',
-    'zh-CN': '干净地移除视频片段中的多余物体，同时保留背景与运动的完整性。'
+  // Robert Paige's highlights — en copy from the workflows hub pages.
+  'fdct.projects.seedanceLlmPromptHelper.description': {
+    en: 'Feed two reference images and a short text description; an LLM writes a detailed Seedance 2.0 prompt and generates the video.',
+    'zh-CN':
+      '输入两张参考图和一句简单描述，LLM 会自动生成详细的 Seedance 2.0 提示词并产出视频。'
   },
-  'fdct.projects.minimaxH3ImageToVideo.description': {
-    en: 'Animate a still image into a short video with MiniMax H3, ready for social and ad placements.',
-    'zh-CN': '使用 MiniMax H3 将静态图像转化为短视频，适配社交与广告投放。'
+  'fdct.projects.nanoBanana2LiteImageEdit.description': {
+    en: "Edit an image with Nano Banana 2 Lite, Google Gemini's fastest image model, with a side-by-side of the original and result.",
+    'zh-CN':
+      '使用 Google Gemini 系列中最快的图像模型 Nano Banana 2 Lite 编辑图像，并生成原图与结果的并排对比。'
   },
-  'fdct.projects.swapProductUgcStyle.description': {
-    en: "Swap a product into a character's hand for authentic, UGC-style ad creative.",
-    'zh-CN': '将产品替换到角色手中，打造真实的 UGC 风格广告创意。'
+  'fdct.projects.changeAnyObjects.description': {
+    en: 'Replace objects in a video from a text prompt or reference image, using SAM3 masking and Wan2.1 VACE.',
+    'zh-CN':
+      '通过文本提示或参考图替换视频中的物体，由 SAM3 遮罩与 Wan2.1 VACE 模型驱动。'
   },
   'fdct.faq.title': { en: 'Q&A', 'zh-CN': '问答' },
   'fdct.faq.q1': {
@@ -5676,9 +5686,9 @@ const translations = {
     'zh-CN': '会有人全职驻场加入我们的团队吗？'
   },
   'fdct.faq.a3': {
-    en: 'FDCTs work with you on defined milestones and deliverables, with optional in-person time as well. We will customize this based on what your team needs.',
+    en: 'Forward Deployed Creatives work with you on defined milestones and deliverables, with optional in-person time as well. We will customize this based on what your team needs.',
     'zh-CN':
-      'FDCT 按明确的里程碑和交付物与你协作，也可选择安排现场时间。我们会根据你团队的需求定制协作方式。'
+      '前沿驻场创意人才按明确的里程碑和交付物与你协作，也可选择安排现场时间。我们会根据你团队的需求定制协作方式。'
   },
   'fdct.faq.q4': {
     en: 'What happens after the initial build?',
@@ -5703,8 +5713,9 @@ const translations = {
     'zh-CN': '面向企业'
   },
   'fdct.bands.enterprise.text': {
-    en: "Tell us what you're trying to make. An FDCT validates it after the first call and builds from there.",
-    'zh-CN': '告诉我们你想做什么。首次沟通后，FDCT 会验证它并从此开始构建。'
+    en: "Tell us what you're trying to make. A Forward Deployed Creative can validate it and help you build from there.",
+    'zh-CN':
+      '告诉我们你想做什么。前沿驻场创意人才可以验证它，并帮助你从此开始构建。'
   },
   'fdct.bands.enterprise.cta': { en: 'Contact us', 'zh-CN': '联系我们' },
   'fdct.bands.creators.label': {
@@ -5717,8 +5728,8 @@ const translations = {
   },
   'fdct.bands.creators.cta': { en: 'Apply now', 'zh-CN': '立即申请' },
   'fdct.closing.title': {
-    en: 'Build with the people that build Comfy.',
-    'zh-CN': '与打造 Comfy 的人一起构建。'
+    en: 'Build your custom workflows with Comfy experts.',
+    'zh-CN': '与 Comfy 专家一起构建你的定制工作流。'
   }
 } as const satisfies Record<string, Record<Locale, string>>
 

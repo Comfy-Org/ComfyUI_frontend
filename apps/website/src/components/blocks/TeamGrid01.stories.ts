@@ -71,8 +71,8 @@ const meta: Meta<typeof TeamGrid01> = {
   component: TeamGrid01,
   tags: ['autodocs'],
   args: {
-    heading: 'Featured technologists',
-    lead: 'FDCTs come from real production: feature film, commercial, and experiential backgrounds, with ComfyUI on the back end of shipped work. We match technologists to each engagement based on the work, your stack, and the timeline.',
+    heading: 'Featured creatives',
+    lead: 'Forward Deployed Creatives come from real production: feature film, commercial, and experiential backgrounds, with ComfyUI on the back end of shipped work. We match creatives to each engagement based on the work, your stack, and the timeline.',
     people,
     closeLabel: 'Close'
   }

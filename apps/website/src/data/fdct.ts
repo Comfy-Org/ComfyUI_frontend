@@ -263,52 +263,62 @@ export function projects(locale: Locale = 'en'): readonly FdctProject[] {
       ],
       dialogOnly: true
     },
-    // Robert Paige's highlighted workflows (design 10769:8658). Placeholder
-    // cover media and hub links until Robert's real workflow URLs land; only
-    // titles and tags are final. Replace `media`/`href` when the links arrive.
+    // Robert Paige's highlighted workflows from the Comfy workflows hub. The
+    // hub lists other creators on these workflows; author here only routes
+    // them into his dialog, which no longer displays a creator. Cover media
+    // are each workflow's own hub thumbnail.
     {
-      id: 'remove-object-from-video',
-      title: 'Remove Object from Video',
+      id: 'seedance-llm-prompt-helper',
+      title: 'Seedance 2.0 + LLM Prompt Helper',
       category: 'advertisement',
       media: {
-        type: 'image',
-        src: 'https://media.comfy.org/website/fdct/headphones.png'
+        type: 'video',
+        src: 'https://comfy-hub-assets.comfy.org/uploads/2d8e756e-adbf-4114-bae8-0e84154a84ad.mp4'
       },
       author: technologistIdentities['robert-paige'],
-      href: '#',
-      description: t('fdct.projects.removeObjectFromVideo.description', locale),
-      tags: [t('fdct.tags.advertising', locale)],
+      href: 'https://comfy.org/workflows/49a2f3a0811f-49a2f3a0811f/',
+      description: t(
+        'fdct.projects.seedanceLlmPromptHelper.description',
+        locale
+      ),
+      tags: [t('fdct.tags.imageToVideo', locale), t('fdct.tags.video', locale)],
       dialogOnly: true
     },
     {
-      id: 'minimax-h3-image-to-video',
-      title: 'MiniMax H3: Image to Video',
+      id: 'nano-banana-2-lite-image-edit',
+      title: 'Nano Banana 2 Lite: Image Edit',
       category: 'advertisement',
       media: {
         type: 'image',
-        src: 'https://media.comfy.org/website/fdct/headphones.png'
+        src: 'https://comfy-hub-assets.comfy.org/uploads/872caa07-74d9-4d3a-b937-e001b06a02ed.png'
       },
       author: technologistIdentities['robert-paige'],
-      href: '#',
-      description: t('fdct.projects.minimaxH3ImageToVideo.description', locale),
+      href: 'https://comfy.org/workflows/62cb2b168265-62cb2b168265/',
+      description: t(
+        'fdct.projects.nanoBanana2LiteImageEdit.description',
+        locale
+      ),
       tags: [
-        t('fdct.tags.marketing', locale),
-        t('fdct.tags.advertising', locale)
+        t('fdct.tags.imageGeneration', locale),
+        t('fdct.tags.imageEdit', locale)
       ],
       dialogOnly: true
     },
     {
-      id: 'swap-product-ugc-style',
-      title: "Swap Product in Character's Hand, UGC Style",
+      id: 'change-any-objects',
+      title: 'Change Any Objects',
       category: 'advertisement',
       media: {
-        type: 'image',
-        src: 'https://media.comfy.org/website/fdct/headphones.png'
+        type: 'video',
+        src: 'https://comfy-hub-assets.comfy.org/templates/69636d20-6aff-4b1a-a8ad-71f456fc8738.mp4'
       },
       author: technologistIdentities['robert-paige'],
-      href: '#',
-      description: t('fdct.projects.swapProductUgcStyle.description', locale),
-      tags: [t('fdct.tags.ugcAds', locale)],
+      href: 'https://comfy.org/workflows/templates_shane_change_any_objects-cf84f066d9dd/',
+      description: t('fdct.projects.changeAnyObjects.description', locale),
+      tags: [
+        t('fdct.tags.imageGeneration', locale),
+        t('fdct.tags.inpainting', locale)
+      ],
       dialogOnly: true
     }
   ]
