@@ -2,7 +2,7 @@
   "map_version": "v0-frontend",
   "_comment": [
     "ComfyUI_frontend override for the reusable pr-risk.yml grader (Comfy-Org/github-workflows).",
-    "REPLACES the generic map wholesale, so the generic R3 classes are re-stated here.",
+    "REPLACES the generic map wholesale with frontend-specific risk classes.",
     "grade = worst(path_floor, provenance, reversibility); an axis can only raise a tier.",
     "",
     "Lane mapping to the Comfy CD risk-assessment fork:",
@@ -62,30 +62,44 @@
       "class": "secrets",
       "tier": "R3",
       "why": "secrets handling",
-      "paths": [
-        "**/secrets/**",
-        "**/*secret*.ts",
-        "secrets.env*",
-        "**/*credential*",
-        ".env*"
-      ]
+      "paths": ["src/platform/secrets/**"]
     },
     {
       "class": "auth",
       "tier": "R3",
       "why": "authentication / trust boundary",
       "paths": [
-        "**/auth/**",
+        "src/platform/auth/**",
+        "src/composables/auth/**",
         "src/platform/cloud/oauth/**",
-        "**/middleware/auth*",
-        "**/*token_validator*"
+        "src/platform/cloud/onboarding/auth*",
+        "src/platform/cloud/churnkey/churnkeyAuthSchema.ts",
+        "src/platform/workspace/auth/**",
+        "src/platform/workspace/stores/workspaceAuthStore*",
+        "src/stores/apiKeyAuthStore*",
+        "src/stores/authStore*"
       ]
     },
     {
       "class": "billing",
       "tier": "R3",
       "why": "billing / credits — money moves",
-      "paths": ["**/billing/**", "**/pricing/**", "**/credits/**"]
+      "paths": [
+        "**/billing/**",
+        "**/pricing/**",
+        "**/credits/**",
+        "**/subscription/**",
+        "**/*billing*",
+        "**/*Billing*",
+        "**/*subscription*",
+        "**/*Subscription*",
+        "**/*credit*",
+        "**/*Credit*",
+        "**/*price*",
+        "**/*Price*",
+        "**/*pricing*",
+        "**/*Pricing*"
+      ]
     },
     {
       "class": "workflow-serialization",
@@ -93,10 +107,17 @@
       "why": "saved user workflows are persistent state — a bad schema or serialize change corrupts files on save and does not cleanly revert",
       "paths": [
         "src/lib/litegraph/src/serialization*",
-        "src/schemas/**",
+        "src/lib/litegraph/src/LGraph.ts",
+        "src/lib/litegraph/src/LGraphNode.ts",
+        "src/lib/litegraph/src/LLink.ts",
+        "src/lib/litegraph/src/subgraph/**",
+        "src/core/graph/subgraph/migration/**",
         "src/core/schemas/**",
+        "src/extensions/core/load3d/load3dSerialize*",
+        "src/platform/workflow/core/services/workflowService.ts",
+        "src/platform/workflow/persistence/**",
         "src/platform/workflow/validation/schemas/**",
-        "**/workflowSchema*"
+        "src/utils/migration/**"
       ]
     },
     {
@@ -104,9 +125,24 @@
       "tier": "R3",
       "why": "entity callbacks, node.widgets, serialize and the app/api surface are consumed by 40+ custom-node repos — consumers break out of band (ADR 0003/0008)",
       "paths": [
+        "packages/comfyui-desktop-bridge-types/**",
+        "packages/*/src/schemas/**",
+        "src/core/schemas/**",
+        "src/schemas/**",
         "src/scripts/app.ts",
         "src/scripts/api.ts",
-        "src/types/comfy*.ts",
+        "src/scripts/domWidget.ts",
+        "src/services/extensionService.ts",
+        "src/stores/workspaceStore.ts",
+        "src/types/index.ts",
+        "src/types/comfy.ts",
+        "src/types/extensionTypes.ts",
+        "src/types/linkId.ts",
+        "src/types/nodeId.ts",
+        "src/types/nodeIdentification.ts",
+        "src/types/rerouteId.ts",
+        "src/types/slotId.ts",
+        "src/lib/litegraph/src/interfaces.ts",
         "src/lib/litegraph/src/LGraph.ts",
         "src/lib/litegraph/src/LGraphNode.ts",
         "src/lib/litegraph/src/LGraphCanvas.ts",
@@ -118,36 +154,10 @@
       "tier": "R3",
       "why": "cross-repo API contract",
       "paths": [
-        "openapi.yaml",
-        "openapi.yml",
-        "**/openapi.yaml",
-        "**/openapi.yml",
-        "**/*.proto"
+        "packages/object-info-parser/src/schemas/**",
+        "src/schemas/apiSchema.ts",
+        "src/schemas/nodeDefSchema.ts"
       ]
-    },
-    {
-      "class": "migrations",
-      "tier": "R3",
-      "why": "kept from the generic map — schema migrations do not cleanly revert",
-      "paths": ["**/migrations/**", "**/migrate/**"]
-    },
-    {
-      "class": "iac",
-      "tier": "R3",
-      "why": "kept from the generic map",
-      "paths": [
-        "infrastructure/**",
-        "terraform/**",
-        "**/*.tf",
-        "charts/**",
-        "helm/**"
-      ]
-    },
-    {
-      "class": "data-deletion",
-      "tier": "R3",
-      "why": "kept from the generic map — irreversible by construction",
-      "paths": ["**/deletion/**", "**/gdpr/**"]
     },
 
     {
@@ -215,6 +225,7 @@
         "**/*.test.ts",
         "**/*.test.tsx",
         "**/*.spec.ts",
+        "**/*.spec.tsx",
         "browser_tests/**",
         "**/test/**",
         "**/tests/**",
@@ -232,21 +243,13 @@
   },
 
   "reversibility": {
-    "irreversible_classes": [
-      "workflow-serialization",
-      "migrations",
-      "data-deletion",
-      "secrets"
-    ],
+    "irreversible_classes": ["workflow-serialization", "secrets"],
     "delete_sensitive_classes": [
       "workflow-serialization",
       "extension-contract",
       "auth",
       "billing",
-      "api-contract",
-      "migrations",
-      "data-deletion",
-      "iac"
+      "api-contract"
     ],
     "no_green_checks_tier": "R2",
     "no_test_touched_tier": "R1",
