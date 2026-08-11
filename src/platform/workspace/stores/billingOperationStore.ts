@@ -705,13 +705,12 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       ])
     }
 
-    if (operation.type === 'cancel') {
-      useTeamWorkspaceStore().updateActiveWorkspace({ isSubscribed: false })
-      resolveTerminal(opId)
-      return
-    }
-
     try {
+      if (operation.type === 'cancel') {
+        useTeamWorkspaceStore().updateActiveWorkspace({ isSubscribed: false })
+        return
+      }
+
       // A subscription checkout shows its own success step in the pricing dialog,
       // so leave it open. Top-ups have no such step: close and surface settings.
       if (operation.type === 'topup') {
