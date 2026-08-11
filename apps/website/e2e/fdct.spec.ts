@@ -9,10 +9,10 @@ import {
 import { t } from '../src/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
 
-// The spec only asserts locale-independent fields (names, titles, counts,
-// category slugs), so one locale's snapshot serves both language suites.
-// The Featured projects grid is its own curated list, independent of the
-// technologist dialogs.
+// Locale-independent fields (names, counts, category slugs) are asserted from
+// one snapshot; localized fields (titles, descriptions, tags) are asserted per
+// locale. The Featured projects grid is its own curated list, independent of
+// the technologist dialogs.
 const projects = featuredProjectsOf()
 const technologists = technologistsOf('en')
 
@@ -382,15 +382,15 @@ test.describe('FDCT page (zh-CN) @smoke', () => {
         name: t('fdct.projects.title', 'zh-CN')
       })
     })
-    for (const project of projects) {
+    // Titles are localized, so assert the zh-CN copy renders (not the en list).
+    const localizedProjects = featuredProjectsOf('zh-CN')
+    for (const project of localizedProjects) {
       await expect(
         section.getByText(project.title, { exact: true })
       ).toHaveCount(1)
     }
     await expect(
-      section
-        .getByText(featuredProjectsOf('zh-CN')[0].tags[0], { exact: true })
-        .first()
+      section.getByText(localizedProjects[0].tags[0], { exact: true }).first()
     ).toBeVisible()
   })
 

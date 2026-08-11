@@ -5594,6 +5594,74 @@ const translations = {
   'fdct.tags.film': { en: 'Film', 'zh-CN': '电影' },
   'fdct.tags.architecture': { en: 'Architecture', 'zh-CN': '建筑' },
   'fdct.projects.title': { en: 'Featured projects', 'zh-CN': '精选项目' },
+  // Workflow-card titles (also used as the card image alt text). Proper nouns
+  // and model names (Seedance, LTX, LoRA, Nano Banana, LLM, OOH, VFX) stay in
+  // Latin; the zh-CN copy localizes only the descriptive parts and still needs
+  // a native review pass, like the descriptions below.
+  'fdct.projects.productAdvertisementVideo.title': {
+    en: 'Product Advertisement Video',
+    'zh-CN': '产品广告视频'
+  },
+  'fdct.projects.ltxCleanplateForVfx.title': {
+    en: 'LTX Cleanplate for VFX',
+    'zh-CN': 'LTX 视觉特效空景板'
+  },
+  'fdct.projects.lipdubLoraVoiceClone.title': {
+    en: 'LTX 2.3 - Lipdub LoRA + Voice Clone',
+    'zh-CN': 'LTX 2.3 - 对口型 LoRA + 语音克隆'
+  },
+  'fdct.projects.vfxUtilities.title': {
+    en: 'VFX Utilities',
+    'zh-CN': '视觉特效工具集'
+  },
+  'fdct.projects.viralVideosCharacterSwap.title': {
+    en: 'Seedance 2.0 - Viral Videos Character Swap',
+    'zh-CN': 'Seedance 2.0 - 热门视频角色替换'
+  },
+  'fdct.projects.faceSwapWorkflow.title': {
+    en: 'Face Swap Workflow',
+    'zh-CN': '换脸工作流'
+  },
+  'fdct.projects.virtualTryOn4In1.title': {
+    en: 'Virtual Try On with Character - 4 in 1',
+    'zh-CN': '角色虚拟试穿 - 4 合 1'
+  },
+  'fdct.projects.characterOutfitFashionVideo.title': {
+    en: 'Character & Outfit to Fashion Video',
+    'zh-CN': '角色与服装转时尚视频'
+  },
+  'fdct.projects.talentCasting.title': {
+    en: 'Talent Casting',
+    'zh-CN': '试镜选角'
+  },
+  'fdct.projects.seedanceLlmPromptHelper.title': {
+    en: 'Seedance 2.0 + LLM Prompt Helper',
+    'zh-CN': 'Seedance 2.0 + LLM 提示词助手'
+  },
+  'fdct.projects.nanoBanana2LiteImageEdit.title': {
+    en: 'Nano Banana 2 Lite: Image Edit',
+    'zh-CN': 'Nano Banana 2 Lite：图像编辑'
+  },
+  'fdct.projects.changeAnyObjects.title': {
+    en: 'Change Any Objects',
+    'zh-CN': '替换任意物体'
+  },
+  'fdct.projects.storyboardToVideoSeedance.title': {
+    en: 'Storyboard To Video - Seedance 2.0',
+    'zh-CN': '分镜转视频 - Seedance 2.0'
+  },
+  'fdct.projects.oohVisualization.title': {
+    en: 'Comfy for Advertising - OOH Visualization',
+    'zh-CN': 'Comfy 广告应用 - OOH 户外可视化'
+  },
+  'fdct.projects.photoToBlueprintToModel.title': {
+    en: 'Photo to Blueprint to Model',
+    'zh-CN': '照片转蓝图转模型'
+  },
+  'fdct.projects.generateRealisticVariations.title': {
+    en: 'Generate Realistic Variations',
+    'zh-CN': '生成逼真变体'
+  },
   // Workflow-card descriptions in the technologist dialog; en copy is
   // placeholder until final descriptions land (the design mock is lorem).
   'fdct.projects.productAdvertisementVideo.description': {

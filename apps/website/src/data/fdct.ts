@@ -109,7 +109,7 @@ export function projects(locale: Locale = 'en'): readonly FdctProject[] {
   return [
     {
       id: 'product-advertisement-video',
-      title: 'Product Advertisement Video',
+      title: t('fdct.projects.productAdvertisementVideo.title', locale),
       category: 'advertisement',
       media: {
         type: 'video',
@@ -128,7 +128,7 @@ export function projects(locale: Locale = 'en'): readonly FdctProject[] {
     },
     {
       id: 'ltx-cleanplate-for-vfx',
-      title: 'LTX Cleanplate for VFX',
+      title: t('fdct.projects.ltxCleanplateForVfx.title', locale),
       category: 'entertainment',
       media: {
         type: 'video',
@@ -141,7 +141,7 @@ export function projects(locale: Locale = 'en'): readonly FdctProject[] {
     },
     {
       id: 'lipdub-lora-voice-clone',
-      title: 'LTX 2.3 - Lipdub LoRA + Voice Clone',
+      title: t('fdct.projects.lipdubLoraVoiceClone.title', locale),
       category: 'entertainment',
       media: {
         type: 'video',
@@ -157,7 +157,7 @@ export function projects(locale: Locale = 'en'): readonly FdctProject[] {
     },
     {
       id: 'vfx-utilities',
-      title: 'VFX Utilities',
+      title: t('fdct.projects.vfxUtilities.title', locale),
       category: 'entertainment',
       media: {
         type: 'video',
@@ -173,7 +173,7 @@ export function projects(locale: Locale = 'en'): readonly FdctProject[] {
     },
     {
       id: 'viral-videos-character-swap',
-      title: 'Seedance 2.0 - Viral Videos Character Swap',
+      title: t('fdct.projects.viralVideosCharacterSwap.title', locale),
       category: 'entertainment',
       media: {
         type: 'video',
@@ -192,7 +192,7 @@ export function projects(locale: Locale = 'en'): readonly FdctProject[] {
     },
     {
       id: 'face-swap-workflow',
-      title: 'Face Swap Workflow',
+      title: t('fdct.projects.faceSwapWorkflow.title', locale),
       category: 'entertainment',
       media: {
         type: 'video',
@@ -208,7 +208,7 @@ export function projects(locale: Locale = 'en'): readonly FdctProject[] {
     // dialog, which no longer displays a creator.
     {
       id: 'virtual-try-on-4-in-1',
-      title: 'Virtual Try On with Character - 4 in 1',
+      title: t('fdct.projects.virtualTryOn4In1.title', locale),
       category: 'ecommerce',
       media: {
         type: 'image',
@@ -224,7 +224,7 @@ export function projects(locale: Locale = 'en'): readonly FdctProject[] {
     },
     {
       id: 'character-outfit-fashion-video',
-      title: 'Character & Outfit to Fashion Video',
+      title: t('fdct.projects.characterOutfitFashionVideo.title', locale),
       category: 'ecommerce',
       media: {
         type: 'video',
@@ -243,7 +243,7 @@ export function projects(locale: Locale = 'en'): readonly FdctProject[] {
     },
     {
       id: 'talent-casting',
-      title: 'Talent Casting',
+      title: t('fdct.projects.talentCasting.title', locale),
       category: 'advertisement',
       media: {
         type: 'video',
@@ -263,7 +263,7 @@ export function projects(locale: Locale = 'en'): readonly FdctProject[] {
     // are each workflow's own hub thumbnail.
     {
       id: 'seedance-llm-prompt-helper',
-      title: 'Seedance 2.0 + LLM Prompt Helper',
+      title: t('fdct.projects.seedanceLlmPromptHelper.title', locale),
       category: 'advertisement',
       media: {
         type: 'video',
@@ -279,7 +279,7 @@ export function projects(locale: Locale = 'en'): readonly FdctProject[] {
     },
     {
       id: 'nano-banana-2-lite-image-edit',
-      title: 'Nano Banana 2 Lite: Image Edit',
+      title: t('fdct.projects.nanoBanana2LiteImageEdit.title', locale),
       category: 'advertisement',
       media: {
         type: 'image',
@@ -298,7 +298,7 @@ export function projects(locale: Locale = 'en'): readonly FdctProject[] {
     },
     {
       id: 'change-any-objects',
-      title: 'Change Any Objects',
+      title: t('fdct.projects.changeAnyObjects.title', locale),
       category: 'advertisement',
       media: {
         type: 'video',
@@ -332,7 +332,7 @@ export function featuredProjects(
   return [
     {
       id: 'product-advertisement-video',
-      title: 'Product Advertisement Video',
+      title: t('fdct.projects.productAdvertisementVideo.title', locale),
       media: {
         type: 'video',
         src: 'https://comfy-hub-assets.comfy.org/uploads/a8c26beb-d463-40a0-8547-fa942e53ad70.mp4'
@@ -341,7 +341,7 @@ export function featuredProjects(
     },
     {
       id: 'storyboard-to-video-seedance',
-      title: 'Storyboard To Video - Seedance 2.0',
+      title: t('fdct.projects.storyboardToVideoSeedance.title', locale),
       media: {
         type: 'video',
         src: 'https://comfy-hub-assets.comfy.org/uploads/34ea9f1a-1aac-4c6f-af48-b88cf154ec9b.mp4'
@@ -350,7 +350,7 @@ export function featuredProjects(
     },
     {
       id: 'ooh-visualization',
-      title: 'Comfy for Advertising - OOH Visualization',
+      title: t('fdct.projects.oohVisualization.title', locale),
       media: {
         type: 'image',
         src: 'https://comfy-hub-assets.comfy.org/uploads/dbb9b751-2f86-49b6-a2e5-81c9afb1322e.png'
@@ -359,7 +359,7 @@ export function featuredProjects(
     },
     {
       id: 'face-swap-workflow',
-      title: 'Face Swap Workflow',
+      title: t('fdct.projects.faceSwapWorkflow.title', locale),
       media: {
         type: 'video',
         src: 'https://comfy-hub-assets.comfy.org/uploads/d0bc92f7-c5dc-4861-9588-5ae94b609c6d.mp4'
@@ -368,7 +368,7 @@ export function featuredProjects(
     },
     {
       id: 'photo-to-blueprint-to-model',
-      title: 'Photo to Blueprint to Model',
+      title: t('fdct.projects.photoToBlueprintToModel.title', locale),
       media: {
         type: 'image',
         src: 'https://comfy-hub-assets.comfy.org/templates/a4700cc0-72ea-409e-9693-34a6d26a8c96.webp'
@@ -377,7 +377,7 @@ export function featuredProjects(
     },
     {
       id: 'generate-realistic-variations',
-      title: 'Generate Realistic Variations',
+      title: t('fdct.projects.generateRealisticVariations.title', locale),
       media: {
         type: 'video',
         src: 'https://comfy-hub-assets.comfy.org/templates/e0802269-6a96-4309-83b9-3dff1dc59a10.mp4'
