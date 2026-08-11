@@ -89,7 +89,6 @@ describe('useUploadModelWizard', () => {
   }
 
   beforeEach(() => {
-    vi.clearAllMocks()
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
 

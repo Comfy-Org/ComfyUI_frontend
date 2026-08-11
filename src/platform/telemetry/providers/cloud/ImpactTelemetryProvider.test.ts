@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 type MockApiKeyUser = {
   id: string
@@ -68,8 +68,6 @@ describe('ImpactTelemetryProvider', () => {
     mockApiKeyAuthStore.isAuthenticated = false
     mockApiKeyAuthStore.currentUser = null
     mockAuthStore.currentUser = null
-    vi.restoreAllMocks()
-    vi.unstubAllGlobals()
     mockUseApiKeyAuthStore.mockReturnValue(mockApiKeyAuthStore)
     mockUseAuthStore.mockReturnValue(mockAuthStore)
 
@@ -86,10 +84,6 @@ describe('ImpactTelemetryProvider', () => {
 
       return null
     })
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
   })
 
   it('captures attribution and invokes identify with hashed email', async () => {

@@ -31,7 +31,6 @@ vi.mock('@/scripts/api', () => ({
 describe('useReconnectQueueRefresh', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.restoreAllMocks()
     vi.mocked(api.getQueue).mockResolvedValue({ Running: [], Pending: [] })
     vi.mocked(api.getHistory).mockResolvedValue([])
   })

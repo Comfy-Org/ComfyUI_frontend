@@ -2,50 +2,14 @@ import { expect } from '@playwright/test'
 
 import type { ComfyApp } from '@/scripts/app'
 import { NodeBadgeMode } from '@/types/nodeSource'
-import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
-import {
-  routeObjectInfoFromSetupApi,
-  setNodeDisplayName
-} from '@e2e/fixtures/utils/objectInfo'
-
-const DEPRECATED_NODE_TYPE = 'ImageBatch'
-const API_NODE_TYPE = 'FluxProUltraImageNode'
-
-// English node titles come from the backend, so any golden containing a node
-// header would otherwise track whatever ComfyUI build the CI container ships.
-// Pinning the name before the app boots keeps those baselines stable.
-// `nodes/execution_error` also renders `DevToolsErrorRaiseNode`, which is not
-// pinned: it ships from this repo's `tools/devtools/`, so a rename there is a
-// deliberate in-repo change that its goldens should keep tracking.
-const PINNED_DISPLAY_NAMES: Record<string, string> = {
-  [DEPRECATED_NODE_TYPE]: 'Batch Images',
-  [API_NODE_TYPE]: 'Flux 1.1 [pro] Ultra Image',
-  PreviewImage: 'Preview Image'
-}
-
-const test = comfyPageFixture.extend({
-  page: async ({ page }, use) => {
-    const unrouteObjectInfo = await routeObjectInfoFromSetupApi(
-      page,
-      (objectInfo) => {
-        for (const [nodeType, displayName] of Object.entries(
-          PINNED_DISPLAY_NAMES
-        )) {
-          setNodeDisplayName(objectInfo, nodeType, displayName)
-        }
-      }
-    )
-    try {
-      await use(page)
-    } finally {
-      await unrouteObjectInfo()
-    }
-  }
-})
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
+
+const DEPRECATED_NODE_TYPE = 'ImageBatch'
+const API_NODE_TYPE = 'FluxProUltraImageNode'
 
 test.describe('Node Badge', { tag: ['@screenshot', '@smoke', '@node'] }, () => {
   test('Can add badge', async ({ comfyPage }) => {

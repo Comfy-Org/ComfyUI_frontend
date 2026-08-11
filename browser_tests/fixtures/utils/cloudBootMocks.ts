@@ -5,6 +5,7 @@ import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { mockWorkspace, workspace } from '@e2e/fixtures/utils/workspaceMocks'
 
 interface CloudBootOptions {
   /** Remote-config payload for `/api/features` (enables the flags under test). */
@@ -47,6 +48,7 @@ export async function mockCloudBoot(
   await page.route('**/api/auth/session', (r) =>
     r.fulfill(jsonRoute({ token: 'mock-workspace-token' }))
   )
+  await mockWorkspace(page, workspace('personal', 'owner'), [])
   await page.route('**/releases**', (r) => r.fulfill(jsonRoute([])))
 }
 

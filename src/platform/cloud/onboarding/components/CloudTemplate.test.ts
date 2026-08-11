@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/vue'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
@@ -53,10 +53,6 @@ const renderWithMeta = async (meta: Record<string, unknown>) => {
     }
   })
 }
-
-afterEach(() => {
-  vi.unstubAllGlobals()
-})
 
 describe('CloudTemplate', () => {
   it('shows the hero carousel on a wide viewport', async () => {

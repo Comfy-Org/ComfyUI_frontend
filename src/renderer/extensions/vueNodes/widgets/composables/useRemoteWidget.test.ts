@@ -107,17 +107,12 @@ async function getResolvedValue(hook: ReturnType<typeof useRemoteWidget>) {
 
 describe('useRemoteWidget', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     // Reset mocks
     vi.mocked(axios.get).mockReset()
     // Reset cache between tests
     vi.spyOn(Map.prototype, 'get').mockClear()
     vi.spyOn(Map.prototype, 'set').mockClear()
     vi.spyOn(Map.prototype, 'delete').mockClear()
-  })
-
-  afterEach(() => {
-    vi.clearAllMocks()
   })
 
   describe('initialization', () => {
@@ -218,7 +213,6 @@ describe('useRemoteWidget', () => {
 
     afterEach(() => {
       vi.useRealTimers()
-      vi.clearAllMocks()
     })
 
     describe('permanent widgets (no refresh)', () => {

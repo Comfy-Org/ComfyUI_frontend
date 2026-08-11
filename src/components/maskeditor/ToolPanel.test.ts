@@ -66,7 +66,6 @@ const getToolButton = (tool: Tools): HTMLElement => {
 
 describe('ToolPanel', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockStore = initialMock()
   })
 

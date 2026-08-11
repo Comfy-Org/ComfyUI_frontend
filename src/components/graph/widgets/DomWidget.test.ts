@@ -91,7 +91,6 @@ describe('DomWidget disabled style', () => {
 
   afterEach(() => {
     useDomWidgetStore().clear()
-    vi.clearAllMocks()
   })
 
   it('uses disabled style when widget is computedDisabled', async () => {

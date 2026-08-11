@@ -68,7 +68,6 @@ import { getExecutionContext } from './getExecutionContext'
 
 describe('getExecutionContext', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     hoisted.mockNodes.length = 0
     for (const key of Object.keys(hoisted.mockNodeDefsByName)) {
       delete hoisted.mockNodeDefsByName[key]

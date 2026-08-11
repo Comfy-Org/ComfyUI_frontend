@@ -1,5 +1,5 @@
 import { fromAny } from '@total-typescript/shoehorn'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useTopUpUrlLoader } from './useTopUpUrlLoader'
 
@@ -17,7 +17,7 @@ vi.mock(
 const mockRouteQuery = vi.hoisted(() => ({
   value: {} as Record<string, string>
 }))
-const mockRouterReplace = vi.hoisted(() => vi.fn().mockResolvedValue(undefined))
+const mockRouterReplace = vi.hoisted(() => vi.fn(async () => undefined))
 
 vi.mock('vue-router', () => ({
   useRoute: () => ({
@@ -29,7 +29,7 @@ vi.mock('vue-router', () => ({
 }))
 
 const mockShowTopUpCreditsDialog = vi.hoisted(() =>
-  vi.fn().mockResolvedValue(undefined)
+  vi.fn(async () => undefined)
 )
 
 vi.mock('@/services/dialogService', () => ({
@@ -67,20 +67,14 @@ vi.mock('@/platform/telemetry', () => ({
 
 describe('useTopUpUrlLoader', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockRouteQuery.value = {}
     mockPermissions.value = { canTopUp: true }
-    // clearAllMocks resets calls, not implementations, so restore the defaults.
     mockBilling.fetchStatus.mockResolvedValue(undefined)
     mockBilling.subscription.value = { isActive: true }
     mockBilling.isActiveSubscription.value = true
     mockBilling.isFreeTier.value = false
     mockShowTopUpCreditsDialog.mockResolvedValue(undefined)
     preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue(null)
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   it('does nothing when no topup param present', async () => {

@@ -51,7 +51,6 @@ describe('API Feature Flags', () => {
 
   afterEach(() => {
     vi.useRealTimers()
-    vi.restoreAllMocks()
   })
 
   describe('Feature flags negotiation', () => {

@@ -22,13 +22,29 @@ describe('localizeHref', () => {
   })
 })
 
+describe('getRoutes models', () => {
+  it('serves the models catalog at its canonical path for zh-CN', () => {
+    expect(getRoutes('zh-CN').models).toBe('/p/supported-models')
+  })
+})
+
+describe('getRoutes seedance', () => {
+  it('serves the seedance page at its canonical path for en', () => {
+    expect(getRoutes('en').seedance).toBe('/seedance-2.5')
+  })
+
+  it('serves a localized seedance path for zh-CN', () => {
+    expect(getRoutes('zh-CN').seedance).toBe('/zh-CN/seedance-2.5')
+  })
+})
+
 describe('getRoutes minimax', () => {
   it('serves the minimax page at its canonical path for en', () => {
-    expect(getRoutes('en').minimax).toBe('/minimax')
+    expect(getRoutes('en').minimax).toBe('/minimax-h3')
   })
 
   it('serves a localized minimax path for zh-CN', () => {
-    expect(getRoutes('zh-CN').minimax).toBe('/zh-CN/minimax')
+    expect(getRoutes('zh-CN').minimax).toBe('/zh-CN/minimax-h3')
   })
 })
 

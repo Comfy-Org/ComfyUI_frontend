@@ -7,7 +7,7 @@ import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import ProgressSpinner from 'primevue/progressspinner'
 import ToastService from 'primevue/toastservice'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -64,10 +64,6 @@ describe('SignInForm', () => {
     mockSendPasswordReset.mockReset()
     mockToastAdd.mockReset()
     mockLoadingRef.value = false
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   function renderComponent(props: Record<string, unknown> = {}) {

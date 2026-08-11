@@ -85,8 +85,6 @@ describe('LGraphCanvas group selection', () => {
   let nodeB: TestNode
 
   beforeEach(() => {
-    vi.clearAllMocks()
-
     graph = new LGraph()
     canvas = createCanvas(graph)
 

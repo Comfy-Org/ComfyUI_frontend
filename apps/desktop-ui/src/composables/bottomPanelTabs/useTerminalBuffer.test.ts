@@ -24,7 +24,6 @@ import { useTerminalBuffer } from '@/composables/bottomPanelTabs/useTerminalBuff
 
 describe('useTerminalBuffer', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockSerialize.mockReturnValue('')
   })
 

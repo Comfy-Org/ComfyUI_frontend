@@ -176,6 +176,9 @@
   "Comfy_Interrupt": {
     "label": "Interrumpir"
   },
+  "Comfy_LayerEditor_OpenLayerEditor": {
+    "label": "Abrir el editor de capas para el nodo seleccionado"
+  },
   "Comfy_LoadDefaultWorkflow": {
     "label": "Cargar flujo de trabajo predeterminado"
   },

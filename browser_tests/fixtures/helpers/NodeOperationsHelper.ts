@@ -254,6 +254,14 @@ export class NodeOperationsHelper {
     await this.comfyPage.nextFrame()
   }
 
+  async fillLegacyWidgetDialog(value: string): Promise<void> {
+    const dialogInput = this.page.locator('.graphdialog input[type="text"]')
+    await dialogInput.click()
+    await dialogInput.fill(value)
+    await dialogInput.press('Enter')
+    await this.comfyPage.nextFrame()
+  }
+
   async panToNode(nodeRef: NodeReference): Promise<void> {
     const nodePos = await nodeRef.getPosition()
     await this.page.evaluate((pos) => {
@@ -284,11 +292,7 @@ export class NodeOperationsHelper {
     await this.page.locator('#graph-canvas').click({
       position: DefaultGraphPositions.emptyLatentWidgetClick
     })
-    const dialogInput = this.page.locator('.graphdialog input[type="text"]')
-    await dialogInput.click()
-    await dialogInput.fill('128')
-    await dialogInput.press('Enter')
-    await this.comfyPage.nextFrame()
+    await this.fillLegacyWidgetDialog('128')
   }
 }
 

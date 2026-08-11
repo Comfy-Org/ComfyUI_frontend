@@ -1,7 +1,9 @@
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { getTeamPlanSlug } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import { isCloud } from '@/platform/distribution/types'
+import { useTelemetry } from '@/platform/telemetry'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { trackWorkspaceCheckoutStarted } from '@/platform/workspace/utils/workspaceCheckoutTelemetry'
 
@@ -33,6 +35,32 @@ export async function performTeamSubscriptionCheckout(
 ): Promise<void> {
   if (!isCloud) return
 
+  try {
+    await initiateTeamSubscriptionCheckout(
+      teamCreditStopId,
+      billingCycle,
+      options
+    )
+  } catch (error) {
+    useTelemetry()?.trackBillingEvent({
+      operation: 'subscription_checkout',
+      stage: 'failed',
+      outcome: 'failure',
+      tier: 'team',
+      cycle: billingCycle,
+      checkout_type: 'new',
+      payment_intent_source: options.paymentIntentSource,
+      failure_category: categorizeBillingApiError(error)
+    })
+    throw error
+  }
+}
+
+async function initiateTeamSubscriptionCheckout(
+  teamCreditStopId: string,
+  billingCycle: BillingCycle,
+  options: PerformTeamSubscriptionCheckoutOptions
+): Promise<void> {
   const planSlug = getTeamPlanSlug(billingCycle)
   const response = await workspaceApi.subscribe(planSlug, {
     returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,

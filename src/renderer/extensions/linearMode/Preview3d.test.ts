@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { render, screen } from '@testing-library/vue'
@@ -65,12 +65,7 @@ vi.mock('@/components/load3d/controls/AnimationControls.vue', () => ({
 
 describe('Preview3d', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     for (const k of Object.keys(viewerOverrides)) delete viewerOverrides[k]
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   async function renderPreview3d(

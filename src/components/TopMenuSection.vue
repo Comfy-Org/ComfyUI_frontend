@@ -35,10 +35,11 @@
           </div>
 
           <div
-            class="pointer-events-auto z-1 flex flex-col rounded-lg bg-comfy-menu-bg px-2 py-1 shadow-interface"
+            ref="actionbarCardRef"
+            data-testid="action-bar-card"
+            class="pointer-events-auto relative z-1 flex flex-col rounded-lg bg-comfy-menu-bg px-2 py-1 shadow-interface"
           >
             <div
-              ref="actionbarContainerRef"
               :class="
                 cn(
                   'actionbar-container relative flex items-center gap-2',
@@ -56,7 +57,7 @@
               ></div>
 
               <ComfyActionbar
-                :top-menu-container="actionbarContainerRef"
+                :docked-progress-container="actionbarCardRef"
                 :queue-overlay-expanded="isQueueOverlayExpanded"
                 @update:progress-target="updateProgressTarget"
               />
@@ -196,7 +197,7 @@ const { isOverlayExpanded: isQueueOverlayExpanded } = storeToRefs(queueUIStore)
 const { shouldShowRedDot: shouldShowConflictRedDot } =
   useConflictAcknowledgment()
 const isTopMenuHovered = ref(false)
-const actionbarContainerRef = ref<HTMLElement>()
+const actionbarCardRef = ref<HTMLElement>()
 const isActionbarDocked = useLocalStorage('Comfy.MenuPosition.Docked', true)
 const actionbarPosition = computed(() => settingStore.get('Comfy.UseNewMenu'))
 const isActionbarEnabled = computed(

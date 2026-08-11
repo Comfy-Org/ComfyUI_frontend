@@ -58,13 +58,11 @@ vi.mock('@comfyorg/fbx-exporter-three', () => ({
 
 describe('ModelExporter', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     vi.useFakeTimers()
   })
 
   afterEach(() => {
     vi.useRealTimers()
-    vi.restoreAllMocks()
   })
 
   describe('detectFormatFromURL', () => {

@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 import { CONFIG, GET_CONFIG } from '@/services/litegraphService'
@@ -157,13 +157,8 @@ function setupGraphWithLink(node: PrimitiveNode, targetNode: LGraphNode) {
 }
 
 describe('PrimitiveNode', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   afterEach(() => {
     vi.useRealTimers()
-    vi.restoreAllMocks()
   })
 
   describe('constructor', () => {

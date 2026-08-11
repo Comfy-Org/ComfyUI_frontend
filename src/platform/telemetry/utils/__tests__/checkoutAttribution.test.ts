@@ -7,7 +7,6 @@ import {
 
 describe('getCheckoutAttribution', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     window.localStorage.clear()
     window.__CONFIG__ = {
       ...window.__CONFIG__,

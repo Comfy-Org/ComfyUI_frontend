@@ -46,7 +46,6 @@ describe('keybindingService - dialog gate', () => {
   let mockCommandExecute: ReturnType<typeof useCommandStore>['execute']
 
   beforeEach(() => {
-    vi.clearAllMocks()
     setActivePinia(createPinia())
 
     const commandStore = useCommandStore()

@@ -107,7 +107,6 @@ function buildDuplicateNamePromotion() {
 describe('isPreviewPseudoWidget', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.restoreAllMocks()
   })
 
   it('returns true for $$-prefixed widget names', () => {
@@ -179,7 +178,6 @@ describe('isPreviewPseudoWidget', () => {
 describe('pruneDisconnected', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.restoreAllMocks()
   })
 
   it('removes disconnected linked inputs and emits a dev warning', () => {
@@ -793,7 +791,6 @@ describe('reorderSubgraphInputsByName', () => {
 describe('reorderSubgraphInputsByWidgetOrder', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.restoreAllMocks()
   })
 
   it('reorders duplicate-named promoted inputs by widget identity', () => {
@@ -837,7 +834,6 @@ describe('reorderSubgraphInputsByWidgetOrder', () => {
 describe('demoteWidget — axiomatic projection retraction', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.restoreAllMocks()
   })
 
   function setupPromotedWidget() {
@@ -942,7 +938,6 @@ describe('demoteWidget — axiomatic projection retraction', () => {
 describe('size preservation across promotion (FE-853)', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.restoreAllMocks()
   })
 
   function setupInteriorWidget(

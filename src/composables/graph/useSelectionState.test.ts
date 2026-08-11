@@ -77,8 +77,6 @@ function mockSettingValues(overrides: Record<string, unknown> = {}) {
 
 describe('useSelectionState', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-
     // Create testing Pinia instance
     setActivePinia(
       createTestingPinia({

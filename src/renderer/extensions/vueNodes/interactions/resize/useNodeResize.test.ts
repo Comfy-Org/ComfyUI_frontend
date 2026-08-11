@@ -155,7 +155,6 @@ describe('useNodeResize', () => {
   let handle: HTMLElement
 
   beforeEach(async () => {
-    vi.clearAllMocks()
     eventHandlers.pointermove = null
     eventHandlers.pointerup = null
     snapState.shouldSnap = false

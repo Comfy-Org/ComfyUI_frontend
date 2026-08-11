@@ -78,7 +78,6 @@ describe('loadTurnstile', () => {
   })
 
   afterEach(() => {
-    vi.restoreAllMocks()
     vi.useRealTimers()
   })
 

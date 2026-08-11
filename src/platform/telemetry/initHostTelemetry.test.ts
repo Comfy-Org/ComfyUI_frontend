@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { setTelemetryRegistry, useTelemetry } from '@/platform/telemetry'
@@ -6,11 +6,13 @@ import { initHostTelemetry } from '@/platform/telemetry/initHostTelemetry'
 import { TelemetryEvents } from '@/platform/telemetry/types'
 
 const fetchMock = vi.fn()
-vi.stubGlobal('fetch', fetchMock)
 
 describe('initHostTelemetry', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', fetchMock)
+  })
+
   afterEach(() => {
-    vi.clearAllMocks()
     remoteConfig.value = {}
     setTelemetryRegistry(null)
     localStorage.clear()

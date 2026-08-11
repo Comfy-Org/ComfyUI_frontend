@@ -106,7 +106,6 @@ function renderPreview(
 
 describe('LinearPreview', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     appModeState.isBuilderMode = false
     appModeState.isArrangeMode = false
     outputHistoryState.isWorkflowActive = false

@@ -115,7 +115,6 @@ describe('useReleaseStore', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
 
-    vi.resetAllMocks()
     mockSystemStatsState.reset()
     mockData.isCloud = false
   })

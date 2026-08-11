@@ -117,7 +117,6 @@ async function flushHashWatcher() {
 describe('useSubgraphNavigationStore - navigateToHash validation', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
     app.rootGraph.id = ids.root
     app.rootGraph.subgraphs.clear()
     app.canvas.subgraph = undefined

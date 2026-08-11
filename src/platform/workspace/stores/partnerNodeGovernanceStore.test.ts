@@ -80,7 +80,6 @@ describe('partnerNodeGovernanceStore', () => {
 
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
     mockUpdatePartnerNodePolicy.mockReset()
     mockFlags.partnerNodeGovernanceEnabled = true
     mockGetPartnerProviders.mockResolvedValue(providers)

@@ -22,7 +22,6 @@ vi.mock(
 describe('useNodeCanvasImagePreview', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
   })
 
   it('does not add preview widget when node has no images', () => {

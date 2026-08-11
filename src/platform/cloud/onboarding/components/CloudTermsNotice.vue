@@ -1,6 +1,6 @@
 <template>
   <div
-    class="mt-10 mb-8 shrink-0 text-center text-sm/relaxed text-primary-warm-gray"
+    class="mt-10 shrink-0 text-center text-sm/relaxed text-primary-warm-gray"
   >
     <p class="my-0">
       {{ t('auth.login.termsText') }}
@@ -23,7 +23,7 @@
         {{ t('auth.login.privacyLink') }} </a
       >.
     </p>
-    <p class="mt-4 mb-0 text-xs/relaxed">
+    <p class="my-4 text-xs/relaxed">
       {{ t('cloudWaitlist_questionsText') }}
       <a
         href="https://support.comfy.org"

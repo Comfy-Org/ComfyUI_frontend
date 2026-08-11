@@ -167,22 +167,25 @@ export function setBackendNodeText(
   }
 }
 
-function customNodesProvide(nodeName: string, path: string): boolean {
+function customNodesProvide(
+  nodeName: string,
+  field: NodeDefTextField
+): boolean {
   const data = customNodesI18nData[i18n.global.locale.value]
   if (typeof data !== 'object' || data === null) return false
   const nodeDefs = (data as Record<string, unknown>)['nodeDefs']
   if (typeof nodeDefs !== 'object' || nodeDefs === null) return false
 
-  for (const candidate of nodeDefKeyCandidates(nodeName)) {
+  for (const path of nodeDefKeyCandidates(nodeName)) {
     let cursor: unknown = nodeDefs
-    for (const segment of `${candidate}.${path}`.split('.')) {
-      if (typeof cursor !== 'object' || cursor === null) {
-        cursor = undefined
-        break
-      }
+    for (const segment of path.split('.')) {
+      if (typeof cursor !== 'object' || cursor === null) break
       cursor = (cursor as Record<string, unknown>)[segment]
     }
-    if (typeof cursor === 'string') return true
+    if (typeof cursor === 'object' && cursor !== null) {
+      if (typeof (cursor as Record<string, unknown>)[field] === 'string')
+        return true
+    }
   }
   return false
 }
@@ -197,20 +200,14 @@ function nodeDefKeyCandidates(nodeName: string): string[] {
   return normalized === nodeName ? [normalized] : [normalized, nodeName]
 }
 
-/**
- * Reads a resolved locale message. `st` compiles it; `stRaw` does not.
- */
-type MessageReader = (key: string, fallbackMessage: string) => string
-
 function translateNodeDefText(
   nodeName: string,
-  path: string,
-  fallback: string,
-  read: MessageReader
+  field: NodeDefTextField,
+  fallback: string
 ): string {
-  for (const candidate of nodeDefKeyCandidates(nodeName)) {
-    const key = `nodeDefs.${candidate}.${path}`
-    if (te(key)) return read(key, fallback)
+  for (const path of nodeDefKeyCandidates(nodeName)) {
+    const key = `nodeDefs.${path}.${field}`
+    if (te(key)) return st(key, fallback)
   }
   return fallback
 }
@@ -225,21 +222,6 @@ function translateNodeDefText(
  * Other locales: translations stay authoritative, falling back to the live
  * backend value rather than the stale English snapshot.
  */
-function resolveNodeDefPath(
-  nodeName: string,
-  path: string,
-  backend: string | undefined,
-  fallback: string,
-  read: MessageReader
-): string {
-  if (customNodesProvide(nodeName, path)) {
-    return translateNodeDefText(nodeName, path, fallback, read)
-  }
-  if (i18n.global.locale.value === 'en' && backend !== undefined) return backend
-
-  return translateNodeDefText(nodeName, path, fallback, read)
-}
-
 export function resolveNodeDefText(
   field: NodeDefTextField,
   nodeName: string,
@@ -248,69 +230,12 @@ export function resolveNodeDefText(
   const backend = backendValue ?? backendNodeText.get(nodeName)?.[field]
   const fallback = backend ?? (field === 'display_name' ? nodeName : '')
 
-  return resolveNodeDefPath(nodeName, field, backend, fallback, st)
-}
+  if (customNodesProvide(nodeName, field)) {
+    return translateNodeDefText(nodeName, field, fallback)
+  }
+  if (i18n.global.locale.value === 'en' && backend !== undefined) return backend
 
-/** Slot fields the generated locales carry text for. */
-export type NodeDefSlotTextField = 'name' | 'tooltip'
-
-/**
- * `name` is escaped by `scripts/nodeDefLocaleSerializer.ts` and has to be
- * compiled back; `tooltip` is stored verbatim and must never reach the message
- * compiler, or a literal `{'@'}` would render to the user.
- */
-function slotMessageReader(field: NodeDefSlotTextField): MessageReader {
-  return field === 'tooltip' ? stRaw : st
-}
-
-function resolveNodeDefSlotText(
-  field: NodeDefSlotTextField,
-  nodeName: string,
-  slotPath: string,
-  backendValue: string | undefined,
-  fallbackValue: string
-): string {
-  return resolveNodeDefPath(
-    nodeName,
-    `${slotPath}.${field}`,
-    backendValue,
-    backendValue ?? fallbackValue,
-    slotMessageReader(field)
-  )
-}
-
-/** Resolves an input slot's label or tooltip, same precedence as node text. */
-export function resolveNodeDefInputText(
-  field: NodeDefSlotTextField,
-  nodeName: string,
-  inputName: string,
-  backendValue?: string,
-  fallbackValue = ''
-): string {
-  return resolveNodeDefSlotText(
-    field,
-    nodeName,
-    `inputs.${normalizeI18nKey(inputName)}`,
-    backendValue,
-    fallbackValue
-  )
-}
-
-/** Resolves an output slot's label or tooltip, same precedence as node text. */
-export function resolveNodeDefOutputText(
-  field: NodeDefSlotTextField,
-  nodeName: string,
-  outputIndex: number,
-  backendValue?: string,
-  fallbackValue = ''
-): string {
-  return resolveNodeDefSlotText(
-    field,
-    nodeName,
-    `outputs.${outputIndex}`,
-    backendValue,
-    fallbackValue
-  )
+  return translateNodeDefText(nodeName, field, fallback)
 }
 
 // Only include English in the initial bundle; other locales lazy-load.

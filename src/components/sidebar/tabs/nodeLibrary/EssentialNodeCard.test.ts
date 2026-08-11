@@ -74,7 +74,6 @@ const UNRESOLVED_TILE: EssentialTile = {
 
 describe('EssentialNodeCard', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     setActivePinia(createPinia())
     useNodeDefStore().updateNodeDefs([createNodeDef('LoadImage')])
   })

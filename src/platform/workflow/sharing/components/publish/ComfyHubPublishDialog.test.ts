@@ -150,7 +150,6 @@ describe('ComfyHubPublishDialog', () => {
   const onClose = vi.fn()
 
   beforeEach(() => {
-    vi.clearAllMocks()
     setActiveWorkflow({
       path: 'workflows/test.json',
       filename: 'test.json',

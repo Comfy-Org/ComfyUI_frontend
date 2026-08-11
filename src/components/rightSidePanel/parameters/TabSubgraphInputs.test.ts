@@ -80,7 +80,6 @@ describe('TabSubgraphInputs', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     captured.rows = []
-    vi.clearAllMocks()
   })
 
   it('lists a subgraph node promoted widget as a store-backed parameter row', () => {

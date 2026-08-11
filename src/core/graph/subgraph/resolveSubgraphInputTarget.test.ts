@@ -66,7 +66,6 @@ function addLinkedNestedSubgraphNode(
 
 beforeEach(() => {
   setActivePinia(createTestingPinia({ stubActions: false }))
-  vi.clearAllMocks()
 })
 
 describe('resolveSubgraphInputTarget', () => {

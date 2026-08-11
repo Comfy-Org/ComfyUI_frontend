@@ -131,7 +131,6 @@ const defaultInputSpec = fromPartial<InputSpec>({
 
 describe('useImagePreviewWidget', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     // clearAllMocks does not reset mockReturnValue — restore defaults explicitly
     mockSettingStore.get.mockReturnValue(false)
     vi.mocked(is_all_same_aspect_ratio).mockReturnValue(true)

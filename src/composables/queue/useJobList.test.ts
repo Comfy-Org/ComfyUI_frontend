@@ -233,7 +233,6 @@ describe('useJobList', () => {
   let api: ReturnType<typeof useJobList> | null = null
 
   beforeEach(() => {
-    vi.resetAllMocks()
     resetStores()
     unmount?.()
     unmount = null

@@ -62,7 +62,10 @@
                   @toggle="toggleMaximize(item)"
                 />
                 <DialogClose
-                  v-if="item.dialogComponentProps.closable !== false"
+                  v-if="
+                    item.dialogComponentProps.closable !== false &&
+                    item.dialogComponentProps.showCloseButton !== false
+                  "
                 />
               </div>
             </DialogHeader>

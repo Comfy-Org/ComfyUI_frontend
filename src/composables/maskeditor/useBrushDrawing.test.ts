@@ -128,8 +128,6 @@ function setup() {
 }
 
 beforeEach(() => {
-  vi.clearAllMocks()
-
   const mockCtx = makeMockCtx()
   const mockCanvas = {
     width: 200,

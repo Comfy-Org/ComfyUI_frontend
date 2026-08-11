@@ -26,10 +26,10 @@ vi.mock('@/platform/updates/common/toastStore', () => ({
 }))
 
 // Global stubs
-const createObjectURLSpy = vi
+let createObjectURLSpy = vi
   .spyOn(URL, 'createObjectURL')
   .mockReturnValue('blob:mock-url')
-const revokeObjectURLSpy = vi
+let revokeObjectURLSpy = vi
   .spyOn(URL, 'revokeObjectURL')
   .mockImplementation(() => {})
 
@@ -38,6 +38,12 @@ describe('downloadUtil', () => {
   let fetchMock: ReturnType<typeof vi.fn>
 
   beforeEach(() => {
+    createObjectURLSpy = vi
+      .spyOn(URL, 'createObjectURL')
+      .mockReturnValue('blob:mock-url')
+    revokeObjectURLSpy = vi
+      .spyOn(URL, 'revokeObjectURL')
+      .mockImplementation(() => {})
     mockIsCloud.value = false
     fetchMock = vi.fn()
     vi.stubGlobal('fetch', fetchMock)
@@ -55,10 +61,6 @@ describe('downloadUtil', () => {
     vi.spyOn(document, 'createElement').mockReturnValue(mockLink)
     vi.spyOn(document.body, 'appendChild').mockImplementation(() => mockLink)
     vi.spyOn(document.body, 'removeChild').mockImplementation(() => mockLink)
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
   })
 
   describe('downloadFile', () => {
@@ -353,6 +355,47 @@ describe('downloadUtil', () => {
       expect(fetchMock).toHaveBeenCalledWith(testUrl)
       expect(createObjectURLSpy).toHaveBeenCalledWith(blob)
       expect(mockTab.location.href).toBe('blob:mock-url')
+    })
+
+    it('neutralizes non-media content types before creating the blob URL', async () => {
+      mockIsCloud.value = true
+      const htmlBlob = new Blob(
+        ['<script>globalThis.__pwned = true</script>'],
+        {
+          type: 'text/html'
+        }
+      )
+      const mockTab = { location: { href: '' }, closed: false, close: vi.fn() }
+      windowOpenSpy.mockReturnValue(fromAny<Window, unknown>(mockTab))
+      fetchMock.mockResolvedValue(
+        fromPartial<Response>({
+          ok: true,
+          blob: vi.fn().mockResolvedValue(htmlBlob)
+        })
+      )
+
+      await openFileInNewTab('https://storage.googleapis.com/bucket/evil.png')
+
+      expect(createObjectURLSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'application/octet-stream' })
+      )
+    })
+
+    it('preserves a media type carrying codec parameters', async () => {
+      mockIsCloud.value = true
+      const audioBlob = new Blob(['test'], { type: 'audio/ogg; codecs=opus' })
+      const mockTab = { location: { href: '' }, closed: false, close: vi.fn() }
+      windowOpenSpy.mockReturnValue(fromAny<Window, unknown>(mockTab))
+      fetchMock.mockResolvedValue(
+        fromPartial<Response>({
+          ok: true,
+          blob: vi.fn().mockResolvedValue(audioBlob)
+        })
+      )
+
+      await openFileInNewTab('https://storage.googleapis.com/bucket/clip.ogg')
+
+      expect(createObjectURLSpy).toHaveBeenCalledWith(audioBlob)
     })
 
     it('revokes blob URL after timeout in cloud mode', async () => {

@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 
@@ -160,7 +160,6 @@ function expectCleanupBeforeContextAndReload(): void {
 describe('useTeamWorkspaceStore', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
     vi.stubGlobal('localStorage', mockLocalStorage)
     sessionStorage.clear()
     mockCurrentUser.userEmail.value = null
@@ -180,10 +179,6 @@ describe('useTeamWorkspaceStore', () => {
       workspaces: [mockPersonalWorkspace, mockTeamWorkspace]
     })
     mockLocalStorage.getItem.mockReturnValue(null)
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
   })
 
   describe('initial state', () => {
@@ -315,6 +310,20 @@ describe('useTeamWorkspaceStore', () => {
       await store.initialize()
 
       expect(mockWorkspaceApi.list).toHaveBeenCalledTimes(1)
+    })
+
+    it('can retry after initialization fails', async () => {
+      mockWorkspaceApi.list.mockResolvedValueOnce({ workspaces: [] })
+      const store = useTeamWorkspaceStore()
+
+      await expect(store.initialize()).rejects.toThrow(
+        'No workspaces available'
+      )
+      await store.initialize()
+
+      expect(store.initState).toBe('ready')
+      expect(store.activeWorkspaceId).toBe(mockPersonalWorkspace.id)
+      expect(mockWorkspaceApi.list).toHaveBeenCalledTimes(2)
     })
 
     it('can initialize the next user after identity state is reset', async () => {

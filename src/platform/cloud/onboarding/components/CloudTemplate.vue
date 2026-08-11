@@ -1,8 +1,8 @@
 <template>
   <div
-    class="dark-theme h-svh w-screen bg-primary-comfy-ink font-formula text-primary-comfy-canvas"
+    class="dark-theme flex h-svh w-screen items-center bg-primary-comfy-ink font-formula text-primary-comfy-canvas"
   >
-    <div class="mx-auto flex size-full max-w-[100rem]">
+    <div class="mx-auto flex size-full max-h-248 max-w-[100rem]">
       <div v-if="showHero" class="relative min-h-0 flex-1 overflow-hidden">
         <CloudHeroCarousel />
       </div>
@@ -11,7 +11,7 @@
           class="mx-auto flex min-h-full w-full max-w-md flex-col px-6 py-8 lg:max-w-lg xl:py-10 2xl:max-w-xl"
         >
           <img
-            src="/icons/logo.svg"
+            src="/assets/images/comfy-logo-wordmark.svg"
             :alt="t('g.comfyOrgLogoAlt')"
             class="h-9 w-auto shrink-0 object-contain object-left lg:h-10 2xl:h-11"
           />

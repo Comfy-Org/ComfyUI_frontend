@@ -66,7 +66,6 @@ vi.mock('@/services/dialogService', () => ({
 
 describe('useWorkspaceMenuItems', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     state.canLeaveWorkspace = false
     state.canManageSubscription = false
     state.canManageSubscriptionLifecycle = false

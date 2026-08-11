@@ -124,10 +124,6 @@ describe('Viewport3d', () => {
     ctx = makeViewportInstance()
   })
 
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
   describe('camera delegation (model-independent)', () => {
     it('toggleCamera updates controls and recreates view helper without touching model state', () => {
       ctx.viewport.toggleCamera('orthographic')

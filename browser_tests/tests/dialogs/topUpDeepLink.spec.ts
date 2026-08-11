@@ -13,8 +13,7 @@ import { member, workspace } from '@e2e/fixtures/utils/workspaceMocks'
  * `page` so the cloud app boots against fully mocked endpoints, like the
  * pricing-table deep-link spec.
  */
-const topUpHeading = (page: Page) =>
-  page.getByRole('heading', { name: 'Add more credits' })
+const topUpDialog = (page: Page) => page.getByTestId('top-up-pay-amount')
 
 test.describe('Top-up deep link', { tag: '@cloud' }, () => {
   test('opens the top-up dialog for a personal owner', async ({ page }) => {
@@ -23,7 +22,7 @@ test.describe('Top-up deep link', { tag: '@cloud' }, () => {
 
     await page.goto(`${APP_URL}/?topup=1`)
 
-    await expect(topUpHeading(page)).toBeVisible({ timeout: 45_000 })
+    await expect(topUpDialog(page)).toBeVisible({ timeout: 45_000 })
     await expect(page).not.toHaveURL(/[?&]topup=/)
   })
 
@@ -42,7 +41,7 @@ test.describe('Top-up deep link', { tag: '@cloud' }, () => {
 
     await page.goto(`${APP_URL}/?topup=1`)
 
-    await expect(topUpHeading(page)).toBeVisible({ timeout: 45_000 })
+    await expect(topUpDialog(page)).toBeVisible({ timeout: 45_000 })
     await expect(page).not.toHaveURL(/[?&]topup=/)
   })
 
@@ -74,7 +73,7 @@ test.describe('Top-up deep link', { tag: '@cloud' }, () => {
     await expect(
       page.getByRole('heading', { name: 'Choose a Plan' })
     ).toBeVisible({ timeout: 45_000 })
-    await expect(topUpHeading(page)).toBeHidden()
+    await expect(topUpDialog(page)).toBeHidden()
     await expect(page).not.toHaveURL(/[?&]topup=/)
   })
 
@@ -101,6 +100,6 @@ test.describe('Top-up deep link', { tag: '@cloud' }, () => {
     await page.waitForURL((url) => !url.searchParams.has('topup'), {
       timeout: 45_000
     })
-    await expect(topUpHeading(page)).toBeHidden()
+    await expect(topUpDialog(page)).toBeHidden()
   })
 })

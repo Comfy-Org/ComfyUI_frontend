@@ -27,7 +27,6 @@ vi.mock('@/utils/imageUtil', () => ({
 describe('useNodeVideo', () => {
   afterEach(() => {
     vi.useRealTimers()
-    vi.restoreAllMocks()
   })
 
   async function setup() {

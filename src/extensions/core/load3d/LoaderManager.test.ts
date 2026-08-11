@@ -143,7 +143,6 @@ function makeLoaderManager() {
 
 describe('LoaderManager', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     meshLoad.mockResolvedValue(null)
     splatLoad.mockResolvedValue(null)
     pointCloudLoad.mockResolvedValue(null)

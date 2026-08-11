@@ -109,7 +109,6 @@ const mountView = async (query: Record<string, unknown>) => {
 
 describe('CloudSubscriptionRedirectView', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockQuery = {}
     subscriptionMocks.canAccessSubscriptionFeatures.value = false
     subscriptionMocks.isInitialized.value = true

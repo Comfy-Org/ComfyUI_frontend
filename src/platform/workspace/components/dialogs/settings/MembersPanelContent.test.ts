@@ -226,7 +226,6 @@ function createInvite(overrides: Partial<PendingInvite> = {}): PendingInvite {
 
 describe('MembersPanelContent', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockMemberMenuItems.mockReturnValue([])
     mockMembers.value = []
     mockPendingInvites.value = []

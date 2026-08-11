@@ -116,7 +116,6 @@ describe('ReleaseNotificationToast', () => {
   }
 
   beforeEach(() => {
-    vi.clearAllMocks()
     mockData.isDesktop = false
     mockReleaseStore.recentRelease = null
     mockReleaseStore.shouldShowToast = true

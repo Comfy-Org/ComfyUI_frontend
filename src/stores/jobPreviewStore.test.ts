@@ -23,7 +23,6 @@ vi.mock('@/utils/objectUrlUtil', () => ({
 
 describe('jobPreviewStore', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     setActivePinia(createPinia())
     previewMethodRef.value = 'latent2rgb'
   })

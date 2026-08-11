@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const hoisted = vi.hoisted(() => ({
   addAction: vi.fn(),
@@ -19,13 +19,8 @@ function mockNavigationType(type: string): void {
 
 describe('trackUserManualRefresh', () => {
   beforeEach(() => {
-    vi.resetAllMocks()
     hoisted.getInternalContext.mockReturnValue({ session_id: 'session-1' })
     localStorage.clear()
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   it('counts reloads within the same session', () => {

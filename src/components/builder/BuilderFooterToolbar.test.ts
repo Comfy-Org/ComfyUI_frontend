@@ -100,7 +100,6 @@ const i18n = createI18n({
 describe('BuilderFooterToolbar', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    vi.clearAllMocks()
     mockState.mode = 'builder:inputs'
     mockHasOutputs.value = true
     mockActiveWorkflow.value = { isTemporary: true, initialMode: 'app' }

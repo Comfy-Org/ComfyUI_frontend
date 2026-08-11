@@ -44,7 +44,6 @@ function createMockLGraphCanvas() {
 describe('TransformPane', () => {
   beforeEach(() => {
     vi.useFakeTimers()
-    vi.resetAllMocks()
   })
 
   describe('component mounting', () => {

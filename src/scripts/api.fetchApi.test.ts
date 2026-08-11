@@ -2,13 +2,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
 
-// Mock global fetch
-vi.stubGlobal('fetch', vi.fn())
-
 describe('api.fetchApi', () => {
   beforeEach(() => {
-    vi.resetAllMocks()
-
+    vi.stubGlobal('fetch', vi.fn())
     // Reset api state
     api.user = 'test-user'
   })

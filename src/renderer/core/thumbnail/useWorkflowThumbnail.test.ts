@@ -34,7 +34,6 @@ describe('useWorkflowThumbnail', () => {
     clearAllThumbnails()
 
     // Now set up mocks
-    vi.clearAllMocks()
 
     global.URL.createObjectURL = vi.fn(() => 'data:image/png;base64,test')
     global.URL.revokeObjectURL = vi.fn()

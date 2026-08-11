@@ -21,7 +21,6 @@ vi.mock('@/stores/workspaceStore', () => ({
 }))
 
 beforeEach(() => {
-  vi.restoreAllMocks()
   setActivePinia(createTestingPinia({ stubActions: false }))
 })
 

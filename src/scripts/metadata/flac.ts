@@ -1,3 +1,5 @@
+import { readFileAsArrayBuffer } from './readFile'
+
 export function getFromFlacBuffer(buffer: ArrayBuffer): Record<string, string> {
   const dataView = new DataView(buffer)
 
@@ -5,8 +7,7 @@ export function getFromFlacBuffer(buffer: ArrayBuffer): Record<string, string> {
   const signature = String.fromCharCode(...new Uint8Array(buffer, 0, 4))
   if (signature !== 'fLaC') {
     console.error('Not a valid FLAC file')
-    // @ts-expect-error fixme ts strict error
-    return
+    return {}
   }
 
   // Parse metadata blocks
@@ -29,22 +30,21 @@ export function getFromFlacBuffer(buffer: ArrayBuffer): Record<string, string> {
     if (isLastBlock) break
   }
 
-  // @ts-expect-error fixme ts strict error
-  return vorbisComment
+  return vorbisComment ?? {}
 }
 
-export function getFromFlacFile(file: File): Promise<Record<string, string>> {
-  return new Promise((r) => {
-    const reader = new FileReader()
-    reader.onload = function (event) {
-      // @ts-expect-error fixme ts strict error
-      const arrayBuffer = event.target.result as ArrayBuffer
-      r(getFromFlacBuffer(arrayBuffer))
-    }
-    reader.onerror = () => r({})
-    reader.onabort = () => r({})
-    reader.readAsArrayBuffer(file)
-  })
+export async function getFromFlacFile(
+  file: File
+): Promise<Record<string, string>> {
+  const buffer = await readFileAsArrayBuffer(file)
+  if (!buffer) return {}
+
+  try {
+    return getFromFlacBuffer(buffer)
+  } catch (e) {
+    console.error('Parser: Error parsing FLAC metadata:', e)
+    return {}
+  }
 }
 
 // Function to parse the Vorbis Comment block

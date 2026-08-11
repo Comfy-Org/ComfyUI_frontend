@@ -64,7 +64,6 @@ describe('LGraphNode', () => {
     node.size = [150, 100] // Example size
 
     // Reset mocks if needed
-    vi.clearAllMocks()
   })
 
   afterEach(() => {

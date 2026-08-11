@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
@@ -13,10 +13,6 @@ vi.mock('@/renderer/core/layout/operations/layoutMutations', () => ({
 const mockedUseLayoutMutations = vi.mocked(useLayoutMutations)
 
 describe('useNodeZIndex', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   describe('bringNodeToFront', () => {
     it('should bring node to front with default source', () => {
       const mockSetSource = vi.fn()

@@ -11,7 +11,6 @@ interface UseTrimPlaybackOptions {
   startFrame: Ref<number>
   endFrame: Ref<number>
   playheadFrame: Ref<number>
-  hasTrimTimeline: Ref<boolean>
   frameToTime: (frame: number) => number
   timeToFrame: (time: number) => number
 }
@@ -23,7 +22,6 @@ export function useTrimPlayback(options: UseTrimPlaybackOptions) {
     startFrame,
     endFrame,
     playheadFrame,
-    hasTrimTimeline,
     frameToTime,
     timeToFrame
   } = options
@@ -55,12 +53,14 @@ export function useTrimPlayback(options: UseTrimPlaybackOptions) {
 
   async function seekPreviewToFrame(frame: number) {
     const video = videoRef.value
-    if (!video) return
+    if (!video || !Number.isFinite(frame)) return
 
     const clamped = clamp(frame, 0, frameMax.value)
-    playheadFrame.value = clamped
+    const mappedTime = frameToTime(clamped)
+    if (!Number.isFinite(mappedTime)) return
 
-    const targetTime = clampSeekTime(video, frameToTime(clamped))
+    playheadFrame.value = clamped
+    const targetTime = clampSeekTime(video, mappedTime)
     if (Math.abs(video.currentTime - targetTime) <= 0.0001) return
 
     const seekId = ++activeSeekId
@@ -114,13 +114,12 @@ export function useTrimPlayback(options: UseTrimPlaybackOptions) {
 
   function handleTimeUpdate() {
     const video = videoRef.value
-    if (!video || !hasTrimTimeline.value || !isPlaying.value || isSeeking.value)
-      return
+    if (!video || !isPlaying.value || isSeeking.value) return
 
     const frame = timeToFrame(video.currentTime)
     playheadFrame.value = clamp(frame, startFrame.value, endFrame.value)
 
-    if (frame >= endFrame.value) {
+    if (frameMax.value > 0 && frame >= endFrame.value) {
       isPlaying.value = false
       void seekPreviewToFrame(endFrame.value)
     }

@@ -18,7 +18,11 @@ const maybeLocalOptions: PlaywrightTestConfig = process.env.PLAYWRIGHT_LOCAL
       retries: process.env.CI ? 3 : 0,
       workers: process.env.CI ? 2 : undefined,
       use: {
-        trace: 'on-first-retry'
+        trace: 'on-first-retry',
+        video: process.env.RECORD_VIDEO === 'true' ? 'on' : undefined,
+        launchOptions: {
+          slowMo: Number(process.env.SLOW_MO) || 0
+        }
       }
     }
 

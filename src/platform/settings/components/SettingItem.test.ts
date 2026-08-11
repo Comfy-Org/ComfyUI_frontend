@@ -35,7 +35,6 @@ const FormItemUpdateStub = defineComponent({
 
 describe('SettingItem', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     emitFormValue = null
   })
 

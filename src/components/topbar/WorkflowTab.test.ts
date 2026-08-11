@@ -20,14 +20,6 @@ const { mockWorkflowStatus, mockCloseWorkflow } = await vi.hoisted(async () => {
   }
 })
 
-vi.mock('@/stores/firebaseAuthStore', () => ({
-  useFirebaseAuthStore: () => ({
-    currentUser: null,
-    isAuthenticated: false,
-    isLoading: false
-  })
-}))
-
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: () => ({
     currentUser: null,

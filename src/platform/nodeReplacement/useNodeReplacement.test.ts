@@ -170,7 +170,6 @@ function makeMissingNodeType(
 
 describe('useNodeReplacement', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     setActivePinia(createPinia())
   })
 

@@ -123,7 +123,6 @@ function arrangePromotedPreview(options: ArrangeOptions = {}) {
 describe(usePromotedPreviews, () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.resetAllMocks()
     clearMockNodeOutputStore()
   })
 

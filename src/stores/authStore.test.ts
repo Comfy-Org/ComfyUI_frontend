@@ -29,7 +29,6 @@ const { mockDistributionTypes } = vi.hoisted(() => ({
 
 const { mockFeatureFlags } = vi.hoisted(() => ({
   mockFeatureFlags: {
-    teamWorkspacesEnabled: false,
     unifiedCloudAuthEnabled: false
   }
 }))
@@ -47,7 +46,6 @@ type MockAuth = Record<string, unknown>
 
 // Mock fetch
 const mockFetch = vi.fn()
-vi.stubGlobal('fetch', mockFetch)
 
 const customerRequestBody = (): Record<string, unknown> | undefined => {
   const customerCall = mockFetch.mock.calls.find(([url]) =>
@@ -129,13 +127,6 @@ vi.mock('@/platform/telemetry', () => ({
   })
 }))
 
-// Mock useToastStore
-vi.mock('@/stores/toastStore', () => ({
-  useToastStore: () => ({
-    add: vi.fn()
-  })
-}))
-
 // Keep the real API singleton (other modules rely on its full surface) but
 // override resetSocket so we can assert socket lifecycle calls without opening
 // a real WebSocket.
@@ -182,11 +173,10 @@ describe('useAuthStore', () => {
   } as Partial<User> as MockUser
 
   beforeEach(() => {
-    vi.resetAllMocks()
+    vi.stubGlobal('fetch', mockFetch)
     sessionStorage.clear()
     clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.SHARE_AUTH)
 
-    mockFeatureFlags.teamWorkspacesEnabled = false
     mockFeatureFlags.unifiedCloudAuthEnabled = false
 
     // Setup dialog service mock
@@ -699,10 +689,6 @@ describe('useAuthStore', () => {
   })
 
   describe('getAuthHeader workspace recovery', () => {
-    beforeEach(() => {
-      mockFeatureFlags.teamWorkspacesEnabled = true
-    })
-
     it('uses the workspace header when a valid workspace token exists', async () => {
       const workspaceAuth = useWorkspaceAuthStore()
       vi.spyOn(workspaceAuth, 'getWorkspaceAuthHeader').mockReturnValue({
@@ -761,10 +747,6 @@ describe('useAuthStore', () => {
   })
 
   describe('getAuthToken workspace recovery', () => {
-    beforeEach(() => {
-      mockFeatureFlags.teamWorkspacesEnabled = true
-    })
-
     it('recovers the workspace token instead of downgrading to personal auth', async () => {
       const workspaceAuth = useWorkspaceAuthStore()
       const teamStore = useTeamWorkspaceStore()

@@ -115,7 +115,6 @@ function renderComponent() {
 
 describe('PartnerNodeAccessPanel', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockGovernedWorkspaceId.value = 'workspace-one'
     mockStatus.value = 'configured'
     mockWorkspaceRole.value = 'owner'

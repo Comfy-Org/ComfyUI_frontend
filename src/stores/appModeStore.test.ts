@@ -2,7 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { toNodeId } from '@/types/nodeId'
@@ -165,11 +165,6 @@ describe('appModeStore', () => {
     vi.mocked(app.rootGraph).nodes = [{ id: toNodeId(1) } as LGraphNode]
     workflowStore = useWorkflowStore()
     store = useAppModeStore()
-    vi.clearAllMocks()
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   describe('enterBuilder', () => {
@@ -1009,10 +1004,6 @@ describe('appModeStore', () => {
       vi.stubGlobal('cancelAnimationFrame', (handle: number) => {
         rafQueue.delete(handle)
       })
-    })
-
-    afterEach(() => {
-      vi.unstubAllGlobals()
     })
 
     it('lags the view mode by two frames so the toggle can animate the switch', async () => {

@@ -40,8 +40,6 @@ describe('useLoad3dDrag', () => {
   let mockOnModelDrop: (file: File) => void | Promise<void>
 
   beforeEach(() => {
-    vi.clearAllMocks()
-
     mockToastStore = {
       addAlert: vi.fn()
     } as Partial<ReturnType<typeof useToastStore>> as ReturnType<

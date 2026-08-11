@@ -1,12 +1,4 @@
-import {
-  afterAll,
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi
-} from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { GLSLRendererConfig } from '@/renderer/glsl/useGLSLRenderer'
 
@@ -154,51 +146,44 @@ function createMockGLContext(): MockGL {
 
 let mockGL: MockGL
 
-vi.stubGlobal(
-  'ImageData',
-  class {
-    data: Uint8ClampedArray
-    width: number
-    height: number
-    constructor(data: Uint8ClampedArray, w: number, h: number) {
-      this.data = data
-      this.width = w
-      this.height = h
-    }
-  }
-)
-
-vi.stubGlobal(
-  'OffscreenCanvas',
-  class {
-    width: number
-    height: number
-    constructor(w: number, h: number) {
-      this.width = w
-      this.height = h
-    }
-    getContext(contextId: string) {
-      return contextId === 'webgl2'
-        ? (mockGL as unknown as WebGL2RenderingContext)
-        : null
-    }
-    convertToBlob() {
-      return Promise.resolve(new Blob(['fake'], { type: 'image/webp' }))
-    }
-  }
-)
-
-afterAll(() => {
-  vi.unstubAllGlobals()
-})
-
 describe('useGLSLRenderer', () => {
   let renderer: ReturnType<typeof useGLSLRenderer>
   const validSource = 'void main() { fragColor0 = vec4(1.0); }'
 
   beforeEach(() => {
+    vi.stubGlobal(
+      'ImageData',
+      class {
+        data: Uint8ClampedArray
+        width: number
+        height: number
+        constructor(data: Uint8ClampedArray, w: number, h: number) {
+          this.data = data
+          this.width = w
+          this.height = h
+        }
+      }
+    )
+    vi.stubGlobal(
+      'OffscreenCanvas',
+      class {
+        width: number
+        height: number
+        constructor(w: number, h: number) {
+          this.width = w
+          this.height = h
+        }
+        getContext(contextId: string) {
+          return contextId === 'webgl2'
+            ? (mockGL as unknown as WebGL2RenderingContext)
+            : null
+        }
+        convertToBlob() {
+          return Promise.resolve(new Blob(['fake'], { type: 'image/webp' }))
+        }
+      }
+    )
     mockGL = createMockGLContext()
-    vi.clearAllMocks()
     vi.mocked(detectPassCount).mockReturnValue(1)
   })
 

@@ -43,7 +43,6 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
   })
 
   afterEach(() => {
-    vi.restoreAllMocks()
     vi.clearAllTimers()
   })
 
@@ -467,7 +466,6 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
       pointer.detectedDevice = 'trackpad'
       pointer.lastWheelEventTime = 0
       pointer.hasReceivedWheelEvent = true
-      vi.clearAllMocks()
     })
 
     it('should buffer possible Linux wheel event and create single timeout', () => {

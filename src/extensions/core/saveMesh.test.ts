@@ -94,7 +94,6 @@ function makeNode(
 
 describe('saveMesh', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     const fakeLoad3d = () => ({
       whenLoadIdle: () => Promise.resolve(),
       captureThumbnail: vi.fn()
@@ -250,7 +249,6 @@ describe('saveMesh', () => {
 
 describe('Comfy.SaveGLB.onNodeOutputsUpdated', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     waitForLoad3dMock.mockImplementation((cb: (load3d: unknown) => void) => {
       cb({
         whenLoadIdle: () => Promise.resolve(),

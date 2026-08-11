@@ -98,6 +98,7 @@ import { computed } from 'vue'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import LGraphNodePreview from '@/renderer/extensions/vueNodes/components/LGraphNodePreview.vue'
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { flattenInputSpecs } from '@/schemas/nodeDef/inputSpecUtil'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
@@ -122,7 +123,7 @@ const renderedDescription = computed(() => {
   return renderMarkdownToHtml(description)
 })
 
-const allInputDefs = Object.values(nodeDef.inputs)
+const allInputDefs = flattenInputSpecs(nodeDef.inputs)
 const allOutputDefs = nodeDef.outputs
 const slotInputDefs = allInputDefs.filter(
   (input) => !widgetStore.inputIsWidget(input)

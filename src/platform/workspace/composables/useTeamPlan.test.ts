@@ -41,7 +41,6 @@ async function setup() {
 
 describe('useTeamPlan', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockIsActiveSubscription.value = true
     mockIsInitialized.value = true
     mockIsTeamPlan.value = true

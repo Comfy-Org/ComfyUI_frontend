@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { PullRequestSummary } from './release-sheriff'
 import {
@@ -6,10 +6,13 @@ import {
   fetchGithubLogins,
   fetchOnCallEmails,
   isSheriffPr,
+  nextInRotation,
   parseGithubLogins,
   parseOnCallEmails,
+  parseRotationKeys,
   planActions,
-  resolveSheriff
+  resolveSheriff,
+  singleLine
 } from './release-sheriff'
 
 const config = {
@@ -90,6 +93,64 @@ describe('parseGithubLogins', () => {
   })
 })
 
+describe('nextInRotation', () => {
+  const rotation = ['a', 'b', 'c']
+
+  it('wraps around and ignores case', () => {
+    expect(nextInRotation(rotation, 'B')).toBe('c')
+    expect(nextInRotation(rotation, 'c')).toBe('a')
+  })
+
+  it('has no answer when the sheriff is alone or absent', () => {
+    expect(nextInRotation(['solo'], 'solo')).toBeNull()
+    expect(nextInRotation(rotation, 'stranger')).toBeNull()
+    expect(nextInRotation([], 'a')).toBeNull()
+  })
+})
+
+describe('parseRotationKeys', () => {
+  const payload = {
+    included: [
+      {
+        type: 'layers',
+        id: 'l1',
+        relationships: { members: { data: [{ id: 'm2' }, { id: 'm1' }] } }
+      },
+      {
+        type: 'members',
+        id: 'm1',
+        relationships: { user: { data: { id: 'u1' } } }
+      },
+      {
+        type: 'members',
+        id: 'm2',
+        relationships: { user: { data: { id: 'u2' } } }
+      },
+      { type: 'users', id: 'u1', attributes: { email: 'ann@comfy.org' } },
+      { type: 'users', id: 'u2', attributes: { email: 'bo@comfy.org' } }
+    ]
+  }
+
+  it('preserves member order, which is what makes "next" meaningful', () => {
+    expect(parseRotationKeys(payload)).toEqual(['bo', 'ann'])
+  })
+
+  it('reads nothing from a payload without a member graph', () => {
+    expect(parseRotationKeys(null)).toEqual([])
+    expect(parseRotationKeys({ included: 'nope' })).toEqual([])
+  })
+})
+
+describe('singleLine', () => {
+  it('cannot emit a line that closes a GITHUB_OUTPUT heredoc early', () => {
+    expect(singleLine('before\n__EOF__\nafter')).toBe('before __EOF__ after')
+  })
+
+  it('collapses incidental whitespace', () => {
+    expect(singleLine('  a\t\tb \n c  ')).toBe('a b c')
+  })
+})
+
 describe('CONFIG', () => {
   // The shipped config sat on placeholder values for weeks: every run warned
   // "No Datadog On-Call schedule configured", assigned the fallback, and still
@@ -104,10 +165,6 @@ describe('CONFIG', () => {
 describe('fetchOnCallEmails', () => {
   const datadog = { datadogSite: 'datadoghq.com', scheduleId: 'sched-1' }
   const creds = { apiKey: 'api', appKey: 'app' }
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
-  })
 
   it('warns and skips the request when no schedule is configured', async () => {
     const fetchSpy = vi.fn()
@@ -200,11 +257,57 @@ describe('fetchOnCallEmails', () => {
 
     expect(result).toEqual({
       githubLoginByUser: { sheriff: 'sheriff-dev' },
+      rotation: [],
+      unmappedMembers: [],
       warning: null
     })
     expect(String(fetchSpy.mock.calls[0][0])).toBe(
-      'https://api.datadoghq.com/api/v2/on-call/schedules/sched-1'
+      'https://api.datadoghq.com/api/v2/on-call/schedules/sched-1' +
+        '?include=layers.members.user'
     )
+  })
+
+  it('separates tagged members from those still missing a login', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            data: { attributes: { tags: ['github:ann:ann-gh'] } },
+            included: [
+              {
+                type: 'layers',
+                id: 'l1',
+                relationships: {
+                  members: { data: [{ id: 'm1' }, { id: 'm2' }] }
+                }
+              },
+              {
+                type: 'members',
+                id: 'm1',
+                relationships: { user: { data: { id: 'u1' } } }
+              },
+              {
+                type: 'members',
+                id: 'm2',
+                relationships: { user: { data: { id: 'u2' } } }
+              },
+              {
+                type: 'users',
+                id: 'u1',
+                attributes: { email: 'ann@comfy.org' }
+              },
+              { type: 'users', id: 'u2', attributes: { email: 'bo@comfy.org' } }
+            ]
+          })
+      })
+    )
+
+    const result = await fetchGithubLogins(datadog, creds)
+
+    expect(result.rotation).toEqual(['ann-gh'])
+    expect(result.unmappedMembers).toEqual(['bo'])
   })
 
   it('degrades the directory to empty when Datadog is unreachable', async () => {
@@ -213,6 +316,7 @@ describe('fetchOnCallEmails', () => {
     const result = await fetchGithubLogins(datadog, creds)
 
     expect(result.githubLoginByUser).toEqual({})
+    expect(result.unmappedMembers).toEqual([])
     expect(result.warning).toMatch(/lookup failed/)
   })
 })
@@ -262,6 +366,20 @@ describe('isSheriffPr', () => {
     )
   })
 
+  it('matches anything opened by automation, whatever it is about', () => {
+    for (const login of [
+      'app/dependabot',
+      'app/cloud-code-bot',
+      'comfy-pr-bot'
+    ])
+      expect(isSheriffPr(pr({ author: { login } }))).toBe(true)
+  })
+
+  it('ignores humans whose login merely resembles a bot', () => {
+    expect(isSheriffPr(pr({ author: { login: 'dependabot-fan' } }))).toBe(false)
+    expect(isSheriffPr(pr({ author: null }))).toBe(false)
+  })
+
   it('ignores feature branches that merely start with version-bump-', () => {
     expect(isSheriffPr(pr())).toBe(false)
     expect(isSheriffPr(pr({ headRefName: 'feat/version-bump-ui' }))).toBe(false)
@@ -287,7 +405,9 @@ describe('planActions', () => {
         [pr({ number: 7, labels: [{ name: 'backport' }] })],
         'sheriff'
       )
-    ).toEqual([{ number: 7, assign: true, requestReview: true }])
+    ).toEqual([
+      { number: 7, assign: true, requestReview: true, reviewer: 'sheriff' }
+    ])
   })
 
   it('never overwrites an existing assignee or review request', () => {
@@ -305,12 +425,12 @@ describe('planActions', () => {
     ]
 
     expect(planActions(prs, 'sheriff')).toEqual([
-      { number: 1, assign: false, requestReview: true },
-      { number: 2, assign: true, requestReview: false }
+      { number: 1, assign: false, requestReview: true, reviewer: 'sheriff' },
+      { number: 2, assign: true, requestReview: false, reviewer: 'sheriff' }
     ])
   })
 
-  it('does not request review on approved PRs or the sheriff’s own PRs', () => {
+  it('does not request review on approved PRs, nor from the sheriff on their own', () => {
     const prs = [
       pr({
         number: 1,
@@ -325,8 +445,20 @@ describe('planActions', () => {
     ]
 
     expect(planActions(prs, 'sheriff')).toEqual([
-      { number: 1, assign: true, requestReview: false },
-      { number: 2, assign: true, requestReview: false }
+      { number: 1, assign: true, requestReview: false, reviewer: 'sheriff' },
+      { number: 2, assign: true, requestReview: false, reviewer: null }
+    ])
+  })
+
+  it('asks the next person in the rotation to review the sheriff’s own PR', () => {
+    const own = pr({
+      number: 3,
+      labels: [{ name: 'backport' }],
+      author: { login: 'Sheriff' }
+    })
+
+    expect(planActions([own], 'sheriff', ['a', 'sheriff', 'b'])).toEqual([
+      { number: 3, assign: true, requestReview: true, reviewer: 'b' }
     ])
   })
 
@@ -347,7 +479,7 @@ describe('planActions', () => {
     ]
 
     expect(planActions(prs, 'sheriff')).toEqual([
-      { number: 2, assign: true, requestReview: true }
+      { number: 2, assign: true, requestReview: true, reviewer: 'sheriff' }
     ])
   })
 

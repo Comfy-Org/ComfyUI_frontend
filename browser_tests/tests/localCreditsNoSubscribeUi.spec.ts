@@ -42,7 +42,7 @@ test.describe('Local credits surfaces hide subscribe UI (non-cloud)', () => {
     await topUpDialog.close()
 
     // 2. Settings > Credits, reached the same way the reported bug did: the
-    //    popover's "Manage Plan" entry, not a generic keyboard shortcut. This
+    //    popover's plan & credits entry, not a generic keyboard shortcut. This
     //    must also hide the subscribe CTA and keep its own "Add credits"
     //    button working, not just render a dead replacement for it.
     await page.getByTestId(TestIds.user.currentUserButton).click()
@@ -55,6 +55,20 @@ test.describe('Local credits surfaces hide subscribe UI (non-cloud)', () => {
     await expect(
       creditsContent.getByText('Upgrade to add credits')
     ).toHaveCount(0)
+    await expect(
+      creditsContent.getByRole('button', { name: 'Manage subscription' })
+    ).toHaveCount(0)
+    await expect(
+      creditsContent.getByRole('button', { name: 'Billing & invoices' })
+    ).toHaveCount(0)
+    await expect(
+      creditsContent.getByRole('button', { name: 'Invoice history' })
+    ).toBeVisible()
+    const invoiceRequest = page.waitForRequest('**/customers/billing')
+    await creditsContent
+      .getByRole('button', { name: 'Invoice history' })
+      .click()
+    expect((await invoiceRequest).method()).toBe('POST')
 
     const settingsAddCredits = creditsContent.getByRole('button', {
       name: 'Add credits'

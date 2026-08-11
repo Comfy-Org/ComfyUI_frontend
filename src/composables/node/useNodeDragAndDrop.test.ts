@@ -1,5 +1,5 @@
 import { fromAny } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useNodeDragAndDrop } from './useNodeDragAndDrop'
@@ -34,10 +34,6 @@ function createDragEvent(options: {
 }
 
 describe('useNodeDragAndDrop', () => {
-  beforeEach(() => {
-    vi.restoreAllMocks()
-  })
-
   it('onDragOver detects file items by default', () => {
     const node = createNode()
     useNodeDragAndDrop(node, { onDrop: vi.fn().mockResolvedValue([]) })

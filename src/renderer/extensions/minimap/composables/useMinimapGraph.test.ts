@@ -21,9 +21,9 @@ vi.mock('@vueuse/core', () => ({
 }))
 
 vi.mock('@/stores/executionStore', () => ({
-  useExecutionStore: vi.fn().mockReturnValue({
+  useExecutionStore: vi.fn(() => ({
     nodeProgressStates: {}
-  })
+  }))
 }))
 
 vi.mock('@/scripts/api', () => ({
@@ -38,8 +38,6 @@ describe('useMinimapGraph', () => {
   let onGraphChangedMock: () => void
 
   beforeEach(() => {
-    vi.clearAllMocks()
-
     mockGraph = createMockLGraph({
       id: 'test-graph-123',
       _nodes: [

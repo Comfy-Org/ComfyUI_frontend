@@ -1,4 +1,5 @@
 import { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphError'
+import { hexToRgb, luminance, readableTextColor } from '@/utils/colorUtil'
 
 import type { LGraph } from './LGraph'
 import { LGraphCanvas } from './LGraphCanvas'
@@ -37,6 +38,13 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   static resizeLength = 10
   static padding = 4
   static defaultColour = '#335'
+  /**
+   * Background luminance (0-255) below which the title text is lightened for
+   * readability. Most colours keep title text in the same family as the
+   * background even at low contrast; only very dark/black-ish backgrounds
+   * are adjusted.
+   */
+  static darkBgLuminanceThreshold = 80
 
   id: GroupId
   color?: string
@@ -53,6 +61,11 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   graph?: LGraph
   flags: IGraphGroupFlags = {}
   selected?: boolean
+
+  /** Background colour last used to compute {@link _titleTextColor} */
+  _lastTitleBgColor?: string
+  /** Title text colour, cached until the background colour changes */
+  _titleTextColor: string = LGraphGroup.defaultColour
 
   constructor(title?: string, id?: GroupId) {
     // TODO: Object instantiation pattern requires too much boilerplate and null checking.  ID should be passed in via constructor.
@@ -169,12 +182,21 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
    * @param ctx
    */
   draw(graphCanvas: LGraphCanvas, ctx: CanvasRenderingContext2D): void {
-    const { padding, resizeLength, defaultColour } = LGraphGroup
+    const { padding, resizeLength, defaultColour, darkBgLuminanceThreshold } =
+      LGraphGroup
     const font_size = LiteGraph.GROUP_TEXT_SIZE
 
     const [x, y] = this._pos
     const [width, height] = this._size
     const color = this.color || defaultColour
+
+    if (this._lastTitleBgColor !== color) {
+      this._lastTitleBgColor = color
+      this._titleTextColor =
+        luminance(hexToRgb(color)) < darkBgLuminanceThreshold
+          ? readableTextColor(color)
+          : color
+    }
 
     // Titlebar
     ctx.globalAlpha = 0.25 * graphCanvas.editor_alpha
@@ -204,6 +226,8 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     ctx.font = `${font_size}px ${LiteGraph.GROUP_FONT}`
     ctx.textAlign = 'left'
     ctx.textBaseline = 'middle'
+    if (ctx.fillStyle !== this._titleTextColor)
+      ctx.fillStyle = this._titleTextColor
     ctx.fillText(
       this.title + (this.pinned ? '📌' : ''),
       x + font_size / 2,

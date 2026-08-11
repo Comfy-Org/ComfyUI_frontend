@@ -237,7 +237,6 @@ function renderJobAssetsList({
 
 afterEach(() => {
   vi.useRealTimers()
-  vi.restoreAllMocks()
 })
 
 describe('JobAssetsList', () => {

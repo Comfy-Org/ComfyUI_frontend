@@ -91,7 +91,6 @@ const waitForPromises = async () => {
 
 describe('PackVersionSelectorPopover', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockGetPackVersions.mockReset()
     mockInstallPack.mockReset().mockResolvedValue(undefined)
     mockCheckNodeCompatibility

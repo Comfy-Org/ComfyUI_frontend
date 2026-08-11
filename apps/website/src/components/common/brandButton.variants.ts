@@ -12,7 +12,9 @@ export const brandButtonVariants = cva({
       'outline-dark':
         'hover:text-primary-comfy-yellow border-2 border-primary-comfy-ink text-primary-comfy-ink uppercase hover:bg-primary-comfy-ink',
       inverse:
-        'text-primary-comfy-yellow bg-primary-comfy-ink transition-opacity hover:opacity-90'
+        'text-primary-comfy-yellow bg-primary-comfy-ink transition-opacity hover:opacity-90',
+      'outline-light':
+        'border-2 border-primary-warm-white text-primary-warm-white hover:bg-primary-warm-white hover:text-primary-comfy-ink'
     },
     size: {
       xs: 'rounded-2xl px-6 py-3 text-xs font-bold',

@@ -1,12 +1,27 @@
 import { until, useAsyncState } from '@vueuse/core'
+import axios from 'axios'
 import { defineStore, storeToRefs } from 'pinia'
 
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { CustomNodesI18n } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import { useUserStore } from '@/stores/userStore'
+
+/**
+ * Backends that vendor no custom-node locale files do not implement
+ * `/api/i18n`, so a 404 means "no custom-node translations", not a failure.
+ */
+async function fetchCustomNodesI18n(): Promise<CustomNodesI18n | undefined> {
+  try {
+    return await api.getCustomNodesI18n()
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 404) return
+    throw error
+  }
+}
 
 export const useBootstrapStore = defineStore('bootstrap', () => {
   const settingStore = useSettingStore()
@@ -19,8 +34,8 @@ export const useBootstrapStore = defineStore('bootstrap', () => {
   } = useAsyncState(
     async () => {
       const { mergeCustomNodesI18n } = await import('@/i18n')
-      const i18nData = await api.getCustomNodesI18n()
-      mergeCustomNodesI18n(i18nData)
+      const i18nData = await fetchCustomNodesI18n()
+      if (i18nData) mergeCustomNodesI18n(i18nData)
     },
     undefined,
     { immediate: false }

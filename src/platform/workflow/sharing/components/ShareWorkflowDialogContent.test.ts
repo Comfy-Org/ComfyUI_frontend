@@ -151,7 +151,6 @@ describe('ShareWorkflowDialogContent', () => {
   const onClose = vi.fn()
 
   beforeEach(() => {
-    vi.clearAllMocks()
     mockPublishWorkflow.mockReset()
     mockGetShareableAssets.mockReset()
     mockWorkflowStore.activeWorkflow = {

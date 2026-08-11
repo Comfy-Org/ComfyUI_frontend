@@ -126,7 +126,6 @@ function getStubWidget(container: Element) {
 describe('WidgetItem', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
   })
 
   describe('widget state rendering', () => {

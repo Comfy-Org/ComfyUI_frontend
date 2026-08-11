@@ -39,7 +39,6 @@ describe('InfoButton', () => {
   })
 
   beforeEach(() => {
-    vi.clearAllMocks()
     openNodeInfoMock.mockReturnValue(true)
   })
 

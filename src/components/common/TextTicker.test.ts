@@ -31,7 +31,6 @@ describe(TextTicker, () => {
   afterEach(() => {
     cleanup?.()
     vi.useRealTimers()
-    vi.restoreAllMocks()
   })
 
   it('renders slot content', () => {

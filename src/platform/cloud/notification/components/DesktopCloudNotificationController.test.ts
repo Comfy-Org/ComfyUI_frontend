@@ -56,7 +56,6 @@ function createDeferred() {
 describe('DesktopCloudNotificationController', () => {
   beforeEach(() => {
     vi.useFakeTimers()
-    vi.clearAllMocks()
 
     settingState.shown = false
     electron.getPlatform.mockReturnValue('darwin')

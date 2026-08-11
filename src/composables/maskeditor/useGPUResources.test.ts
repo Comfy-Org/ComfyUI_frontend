@@ -69,7 +69,6 @@ function setup() {
 }
 
 beforeEach(() => {
-  vi.clearAllMocks()
   mockStore.tgpuRoot = null
   mockStore.maskCanvas = null
   mockStore.rgbCanvas = null

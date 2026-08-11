@@ -5,7 +5,7 @@ import Button from '@/components/ui/button/Button.vue'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import PrimeVue from 'primevue/config'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, h, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -111,10 +111,6 @@ describe('SignUpForm', () => {
     mockReset.mockClear()
     emitTurnstileToken = undefined
     emitTurnstileUnavailable = undefined
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   function renderComponent(props: Record<string, unknown> = {}) {

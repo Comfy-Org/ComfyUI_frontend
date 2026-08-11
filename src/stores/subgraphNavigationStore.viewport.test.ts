@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
@@ -97,10 +97,6 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
     mockSetDirty.mockClear()
     mockFitView.mockClear()
     mockRequestSlotSyncAll.mockClear()
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
   })
 
   describe('cache key isolation', () => {

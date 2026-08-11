@@ -18,8 +18,6 @@ const { fetchMock, mockIsDesktop, mockSidebarTabStore, mockStartDownload } =
     mockStartDownload: vi.fn()
   }))
 
-vi.stubGlobal('fetch', fetchMock)
-
 vi.mock('@/platform/distribution/types', () => ({
   get isDesktop() {
     return mockIsDesktop.value
@@ -37,9 +35,8 @@ vi.mock('@/stores/workspace/sidebarTabStore', () => ({
 }))
 
 beforeEach(() => {
+  vi.stubGlobal('fetch', fetchMock)
   clearMetadataCache()
-  vi.restoreAllMocks()
-  vi.resetAllMocks()
   delete window.__comfyDesktop2
 })
 

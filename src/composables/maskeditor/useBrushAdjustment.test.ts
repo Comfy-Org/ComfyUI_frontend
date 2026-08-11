@@ -25,7 +25,6 @@ function makePointerEvent(offsetX: number, offsetY: number): PointerEvent {
 
 beforeEach(() => {
   setActivePinia(createTestingPinia({ stubActions: false }))
-  vi.resetAllMocks()
 })
 
 describe('startBrushAdjustment', () => {
