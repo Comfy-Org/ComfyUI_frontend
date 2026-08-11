@@ -38,7 +38,7 @@ describe('useNodeDataStore', () => {
     expect(ids.value).toEqual(['2'])
   })
 
-  it('filters a root bucket by owning graph id', () => {
+  it('isolates nodes by owning graph id', () => {
     const store = useNodeDataStore()
     const sub: UUID = 'sub-1'
     store.registerNode(rootA, node(1, rootA))
@@ -50,6 +50,20 @@ describe('useNodeDataStore', () => {
       '3'
     ])
     expect(store.getGraphNodesFor(rootA, sub).map((n) => n.id)).toEqual(['2'])
+  })
+
+  it('prunes an owner bucket after its last node is deleted', () => {
+    const store = useNodeDataStore()
+    const sub: UUID = 'sub-1'
+    const rootNode = node(1, rootA)
+    const subNode = node(2, sub)
+    store.registerNode(rootA, rootNode)
+    store.registerNode(rootA, subNode)
+
+    store.deleteNode(rootA, subNode)
+
+    expect(store.getGraphNodesFor(rootA, sub)).toEqual([])
+    expect(store.getGraphNodesFor(rootA, rootA)).toEqual([rootNode])
   })
 })
 

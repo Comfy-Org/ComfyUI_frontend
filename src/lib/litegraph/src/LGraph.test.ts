@@ -179,6 +179,72 @@ describe('LGraph', () => {
 })
 
 describe('Floating Links / Reroutes', () => {
+  test('re-adding the same floating link is idempotent', () => {
+    const graph = new LGraph()
+    const link = new LLink(
+      toLinkId(7),
+      '*',
+      UNASSIGNED_NODE_ID,
+      -1,
+      UNASSIGNED_NODE_ID,
+      -1
+    )
+
+    const firstResult = graph.addFloatingLink(link)
+    const secondResult = graph.addFloatingLink(link)
+
+    expect(firstResult).toBe(link)
+    expect(secondResult).toBe(link)
+    expect(link.id).toBe(toLinkId(7))
+    expect(graph.floatingLinks).toEqual(new Map([[toLinkId(7), link]]))
+  })
+
+  test('rejects a runtime floating link id collision without mutation', () => {
+    const graph = new LGraph()
+    const incumbent = new LLink(
+      toLinkId(7),
+      '*',
+      UNASSIGNED_NODE_ID,
+      -1,
+      UNASSIGNED_NODE_ID,
+      -1
+    )
+    const collision = LLink.create(incumbent)
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    graph.addFloatingLink(incumbent)
+
+    const result = graph.addFloatingLink(collision)
+
+    expect(result).toBeUndefined()
+    expect(collision.id).toBe(toLinkId(7))
+    expect(graph.floatingLinks).toEqual(new Map([[toLinkId(7), incumbent]]))
+    expect(consoleError).toHaveBeenCalledOnce()
+  })
+
+  test('remints persisted floating link id collisions during configure', ({
+    linkedNodesGraph
+  }) => {
+    const data = structuredClone(linkedNodesGraph)
+    data.floatingLinks = [
+      {
+        id: 2,
+        origin_id: 2,
+        origin_slot: 0,
+        target_id: -1,
+        target_slot: -1,
+        type: 'IMAGE'
+      }
+    ]
+
+    const graph = new LGraph(data)
+
+    const floatingLink = [...graph.floatingLinks.values()][0]
+    expect(graph.links.get(toLinkId(2))?.id).toBe(toLinkId(2))
+    expect(floatingLink?.id).not.toBe(toLinkId(2))
+    expect(floatingLink?.origin_id).toBe(toNodeId(2))
+    expect(graph.floatingLinks.size).toBe(1)
+  })
+
   test('Floating reroute should be removed when node and link are removed', ({
     expect,
     floatingLinkGraph

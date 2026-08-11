@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
@@ -65,6 +65,7 @@ describe('useRerouteStore', () => {
   it('returns tracked state whose writes are observable', () => {
     const store = useRerouteStore()
     const registered = store.registerReroute(graphA, chain(2))
+    assert(registered)
 
     const parentId = computed(
       () => store.getReroute(graphA, toRerouteId(2))?.parentId
@@ -78,14 +79,15 @@ describe('useRerouteStore', () => {
 
   it('refuses to overwrite a registration held by a different chain', () => {
     const store = useRerouteStore()
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     const owner = store.registerReroute(graphA, chain(1))
+    assert(owner)
 
     expect(store.registerReroute(graphA, owner)).toBe(owner)
 
     const usurper = chain(1, 7)
-    expect(store.registerReroute(graphA, usurper)).toBe(owner)
-    expect(warn).toHaveBeenCalledOnce()
+    expect(store.registerReroute(graphA, usurper)).toBeUndefined()
+    expect(error).toHaveBeenCalledOnce()
 
     expect(store.deleteReroute(graphA, usurper)).toBe(false)
     expect(store.getReroute(graphA, toRerouteId(1))).toBe(owner)
@@ -98,6 +100,7 @@ describe('useRerouteStore', () => {
   it('deletes a chain; only the registered state may vacate it', () => {
     const store = useRerouteStore()
     const registered = store.registerReroute(graphA, chain(1))
+    assert(registered)
 
     expect(store.deleteReroute(graphA, chain(1))).toBe(false)
     expect(store.getReroute(graphA, toRerouteId(1))).toBeDefined()
@@ -110,6 +113,7 @@ describe('useRerouteStore', () => {
   it('re-registers a chain after deleting its owner bucket', () => {
     const store = useRerouteStore()
     const registered = store.registerReroute(graphA, chain(1))
+    assert(registered)
     const current = computed(() => store.getReroute(graphA, registered.id))
     expect(current.value).toBe(registered)
 
@@ -171,7 +175,8 @@ describe('useRerouteStore', () => {
     const store = useRerouteStore()
     const linkStore = useLinkStore()
     store.registerReroute(graphA, chain(1))
-    const registered = linkStore.registerLink(graphA, link(10, 0))!
+    const registered = linkStore.registerLink(graphA, link(10, 0))
+    assert(registered)
 
     expect(store.getMembership(graphA, toRerouteId(1)).linkIds.size).toBe(0)
 
@@ -187,6 +192,7 @@ describe('useRerouteStore', () => {
     const linkStore = useLinkStore()
     store.registerReroute(graphA, chain(1))
     const terminal = store.registerReroute(graphA, chain(2))
+    assert(terminal)
     linkStore.registerLink(graphA, link(10, 0, 2))
 
     expect(store.getMembership(graphA, toRerouteId(1)).linkIds.size).toBe(0)

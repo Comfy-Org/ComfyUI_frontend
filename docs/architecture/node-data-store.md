@@ -18,10 +18,18 @@ registered by reference with proxy-returning registration (the
 ADR 0008's Node component rows (`NodeVisual`, `Execution`, ...) become
 field groupings inside `NodeState`, not separate records or stores.
 
-Buckets are root-graph-scoped (`rootGraph.id`), keyed by `NodeId`.
-Node-id uniqueness across sibling subgraph definitions is already
-guaranteed by the load-time dedup pass
-(`src/lib/litegraph/src/subgraph/subgraphDeduplication.ts`).
+Buckets use the same root-and-owner-scoped lifecycle as the link and reroute
+stores:
+
+```
+RootGraphId -> OwningGraphId -> Set<NodeState>
+```
+
+The root key groups one loaded workflow, while the owner key gives the root
+graph and each subgraph definition direct membership lookup and teardown.
+The three stores share bucket lookup, creation, pruning, owner-clear, and
+root-clear mechanics. Node membership remains by state identity, so
+renumbering a registered node cannot strand its entry.
 
 ## Decision 2: Field set — what is NodeState, what is elsewhere
 

@@ -1,45 +1,51 @@
 import { defineStore } from 'pinia'
-import { reactive, ref } from 'vue'
+import { reactive } from 'vue'
 
+import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import type { NodeState } from '@/types/nodeState'
 import type { UUID } from '@/utils/uuid'
 
+import { createGraphScopedBuckets } from './graphScopedBuckets'
+
 /**
- * One {@link NodeState} per node in root-graph-scoped buckets. Membership is by
- * state identity, so renumbering a registered node cannot strand its entry.
+ * One {@link NodeState} per node in root-and-owner-scoped buckets. Membership
+ * is by state identity, so renumbering a registered node cannot strand it.
  * See docs/architecture/node-data-store.md.
  */
 export const useNodeDataStore = defineStore('nodeData', () => {
-  const graphNodeStates = ref(new Map<UUID, Set<NodeState>>())
+  const buckets = createGraphScopedBuckets({
+    createBucket: () => reactive(new Set<NodeState>()),
+    isEmpty: (bucket) => bucket.size === 0
+  })
 
-  function getGraphNodes(rootGraphId: UUID): Set<NodeState> {
-    const existing = graphNodeStates.value.get(rootGraphId)
-    if (existing) return existing
-
-    const created = reactive(new Set<NodeState>())
-    graphNodeStates.value.set(rootGraphId, created)
-    return created
+  function scope(rootGraphId: UUID, owningGraphId: UUID) {
+    return {
+      rootGraphId: toRootGraphId(rootGraphId),
+      owningGraphId: toOwningGraphId(owningGraphId)
+    }
   }
 
   function registerNode(rootGraphId: UUID, state: NodeState): void {
-    getGraphNodes(rootGraphId).add(state)
+    buckets.getOrCreate(scope(rootGraphId, state.graphId)).add(state)
   }
 
   function getGraphNodesFor(
     rootGraphId: UUID,
     owningGraphId: UUID
   ): NodeState[] {
-    const bucket = graphNodeStates.value.get(rootGraphId)
-    if (!bucket) return []
-    return [...bucket].filter((state) => state.graphId === owningGraphId)
+    return [...(buckets.get(scope(rootGraphId, owningGraphId)) ?? [])]
   }
 
   function deleteNode(rootGraphId: UUID, state: NodeState): boolean {
-    return graphNodeStates.value.get(rootGraphId)?.delete(state) ?? false
+    const graphScope = scope(rootGraphId, state.graphId)
+    const bucket = buckets.get(graphScope)
+    if (!bucket?.delete(state)) return false
+    buckets.prune(graphScope, bucket)
+    return true
   }
 
   function clearGraph(rootGraphId: UUID): void {
-    graphNodeStates.value.delete(rootGraphId)
+    buckets.clearRoot(toRootGraphId(rootGraphId))
   }
 
   return {

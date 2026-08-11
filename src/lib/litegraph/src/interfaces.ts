@@ -185,7 +185,7 @@ export interface ReadonlyLinkNetwork {
 export interface LinkNetwork extends ReadonlyLinkNetwork {
   readonly links: Map<LinkId, LLink>
   readonly reroutes: Map<RerouteId, Reroute>
-  addFloatingLink(link: LLink): LLink
+  addFloatingLink(link: LLink): LLink | undefined
   removeReroute(id: RerouteId): unknown
   /** Removes a reroute from the map and its stores, without chain splicing. */
   _removeReroute(id: RerouteId): void

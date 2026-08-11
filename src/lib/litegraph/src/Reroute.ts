@@ -12,8 +12,6 @@ import type { UUID } from '@/utils/uuid'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { Point as LayoutPoint } from '@/renderer/core/layout/types'
 
-import { toRaw } from 'vue'
-
 import { LGraphBadge } from './LGraphBadge'
 import type { LGraph } from './LGraph'
 import type { LGraphNode } from './LGraphNode'
@@ -856,7 +854,7 @@ export function registerRerouteChain(
 ): void {
   const scope = graphScopeOf(graph)
   const registered = useRerouteStore().registerReroute(scope, reroute._chain)
-  if (toRaw(registered) !== toRaw(reroute._chain)) return
+  if (!registered) return
   reroute._chain = registered
   reroute._graphScope = scope
 }

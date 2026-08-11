@@ -33,53 +33,47 @@ The store is runtime state only; `LLink.asSerialisable` reads the same
 fields it always did, and serialization goldens (key order plus
 byte-identical round-trips) pin the wire format.
 
-## Decision 2: Keyed by target input slot, not link id
+## Decision 2: One ownership registry, query-specific indexes
 
-The primary index is keyed by `` `${targetNodeId}:${targetSlot}` ``.
-Two facts make this the right key:
+Each owning graph has one `byId` map keyed by `LinkId`. It is the sole
+authority for whether a topology is registered. The other maps are derived
+query indexes, not alternative ownership registries:
 
-- **The domain invariant**: at most one live link targets a given input
-  slot. The key is unique by construction for live links.
-- **The dominant query**: consumers ask "is this input slot connected,
-  and by what?" (`isInputSlotConnected`, `getInputSlotLink`). The key
-  answers it in one lookup with no scan.
+- `targetIndex`, keyed by `` `${targetNodeId}:${targetSlot}` ``, answers
+  input-connectivity queries in one lookup. It contains only links whose
+  target slot is unique.
+- `originIndex`, keyed by `` `${originNodeId}:${originSlot}` ``, answers
+  output-connectivity queries without scanning the graph.
 
-Link _ids_ are only unique per owning graph, not per root graph, so an
-id-keyed root bucket needed a load-time link-id dedup pass and a
-first-wins registration protocol to survive collisions across sibling
-subgraph definitions. Re-keying by target slot deleted both: colliding
-link ids never touch the index, so workflows load without link-id
-rewrites.
+Floating links and links targeting `SUBGRAPH_OUTPUT_ID` do not have a unique
+target key, but still belong in `byId`. They need no separate ownership set.
+This keeps registration, identity checks, and deletion anchored to one map.
 
-Rejected: keeping the id key plus dedup/first-wins. That machinery
-existed only to compensate for a key the queries never used.
+Link ids are unique per owning graph, not per root graph. Owner partitioning
+therefore isolates sibling subgraph definitions without rewriting otherwise
+valid ids.
 
-## Decision 3: Root-graph-scoped buckets, unkeyed side set
+## Decision 3: Root-and-owner-scoped bucket lifecycle
 
-Buckets are scoped by `rootGraph.id` — subgraphs share their root's
-bucket — matching `widgetValueStore` and the later `rerouteStore`.
-Re-keying entries to their owning graph was evaluated and rejected: it
-reintroduces per-graph lifecycle bookkeeping the root scope avoids, and
-no query wants owning-graph granularity that `graphTopologies` filtering
-doesn't already provide.
+Buckets use the shared graph-scoped lifecycle:
 
-Links without a unique live target go in a per-graph side `Set` instead
-of the primary index:
+```
+RootGraphId -> OwningGraphId -> GraphTopologyBucket
+```
 
-- **Floating links** — exactly one assigned endpoint; the other is
-  `UNASSIGNED_NODE_ID`. A floating link attached to an input slot does
-  not answer `isInputSlotConnected`, preserving `input.link` semantics.
-- **Links targeting `SUBGRAPH_OUTPUT_ID`** — the id is a shared
-  constant, so `targetNodeId:targetSlot` is not unique across the
-  subgraphs sharing a root bucket.
+The root key groups one loaded workflow. The owner key isolates the root graph
+and each subgraph definition within it. Link, reroute, and node-data stores
+share the same lookup, creation, pruning, owner-clear, and root-clear
+lifecycle so their graph ownership cannot drift independently.
 
 ## Decision 4: Registration protocol
 
-- `registerLink` is **first-wins**: if a different topology already
-  holds the target key, the call returns `undefined` and the loser
-  stays detached. `link._graphId` records a won registration; it is the
-  ownership marker that lets `unregisterLink` and re-registration no-op
-  safely for losers.
+- `registerLink` returns the store-held reactive `LinkTopology` when
+  registration succeeds or the same topology is already registered. It
+  returns `undefined` when another topology owns either the link id or target
+  slot. The loser stays detached.
+- `byId` is the ownership check for deletion, re-registration, and endpoint
+  updates. Query indexes never establish ownership.
 - `deleteLink` is **identity-checked** (`toRaw` comparison): only the
   registered topology can vacate its slot.
 - updateEndpoints validates a complete endpoint batch before mutation.
@@ -104,6 +98,15 @@ it only holds a `LinkNetwork`, and unregisters before reroute pruning so
 derived reroute counts exclude the dying link. `clear()` and
 subgraph-definition GC unregister whole graphs
 (`unregisterAllLinkTopologies` / `clearGraph`).
+
+`addFloatingLink` is the defensive runtime and extension boundary. It mints
+an id for a new link, treats re-adding the same registered link as a no-op,
+and returns `undefined` after logging an error when a different link already
+owns a supplied id. It does not remint an unexpected runtime collision.
+Import and deserialization repair persisted id collisions before calling this
+runtime API. See
+[Link registration migration](../extensions/link-registration-migration.md)
+for extension-facing return-value guidance.
 
 ## Scope
 

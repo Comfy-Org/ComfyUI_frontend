@@ -1505,20 +1505,27 @@ export class LGraph
     this.canvasAction((c) => c.setDirty(fg, bg))
   }
 
-  addFloatingLink(link: LLink): LLink {
-    const needsId =
-      link.id === -1 ||
-      this._links.has(link.id) ||
-      this.floatingLinksInternal.has(link.id)
-
-    if (needsId) {
+  addFloatingLink(link: LLink): LLink | undefined {
+    if (link.id === -1) {
       do {
         link.id = toLinkId(++this._lastFloatingLinkId)
       } while (
         this._links.has(link.id) ||
         this.floatingLinksInternal.has(link.id)
       )
+    } else {
+      const incumbent = this.floatingLinksInternal.get(link.id)
+      if (incumbent === link) return link
+
+      if (incumbent || this._links.has(link.id)) {
+        console.error(
+          'LiteGraph: refusing to add floating link with duplicate id',
+          link.id
+        )
+        return
+      }
     }
+
     observeLinkId(this.state, link.id)
     this.floatingLinksInternal.set(link.id, link)
     registerLinkTopology(this, link)
@@ -2717,6 +2724,17 @@ export class LGraph
       if (Array.isArray(data.floatingLinks)) {
         for (const linkData of data.floatingLinks) {
           const floatingLink = LLink.create(linkData)
+          if (
+            this._links.has(floatingLink.id) ||
+            this.floatingLinksInternal.has(floatingLink.id)
+          ) {
+            do {
+              floatingLink.id = toLinkId(++this._lastFloatingLinkId)
+            } while (
+              this._links.has(floatingLink.id) ||
+              this.floatingLinksInternal.has(floatingLink.id)
+            )
+          }
           this.addFloatingLink(floatingLink)
 
           if (floatingLink.id > this._lastFloatingLinkId)

@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
 import { SUBGRAPH_OUTPUT_ID } from '@/lib/litegraph/src/constants'
@@ -46,6 +46,10 @@ describe('useLinkStore', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   it('answers input-slot connectedness with one lookup', () => {
     const store = useLinkStore()
     expect(store.registerLink(graphA, link(1, 5, 0, 9, 2))).toBeDefined()
@@ -56,11 +60,28 @@ describe('useLinkStore', () => {
 
   it('keeps the first registration for a contested target slot', () => {
     const store = useLinkStore()
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     store.registerLink(graphA, link(1, 5, 0, 9, 2))
 
     expect(store.registerLink(graphA, link(2, 5, 0, 9, 2))).toBeUndefined()
 
     expect(store.getInputSlotLink(graphA, toNodeId(9), 2)?.id).toBe(toLinkId(1))
+    expect(consoleError).toHaveBeenCalledOnce()
+  })
+
+  it('keeps the first registration for a contested link id', () => {
+    const store = useLinkStore()
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const incumbent = link(1, 5, 0, 9, 2)
+    store.registerLink(graphA, incumbent)
+
+    expect(store.registerLink(graphA, link(1, 7, 1, 8, 3))).toBeUndefined()
+
+    expect(store.getLink(graphA, toLinkId(1))).toMatchObject({
+      originNodeId: toNodeId(5),
+      targetNodeId: toNodeId(9)
+    })
+    expect(consoleError).toHaveBeenCalledOnce()
   })
 
   it('only the registered link can vacate its slot', () => {
