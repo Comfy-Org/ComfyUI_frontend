@@ -813,6 +813,8 @@ export const comfyPageFixture = base.extend<{
 
     await page.coverage.startJSCoverage({ resetOnNavigation: false })
     await use(page)
+    // A closed page has no coverage to collect
+    if (page.isClosed()) return
     const coverage = await page.coverage.stopJSCoverage()
 
     const mcr = MCR({
