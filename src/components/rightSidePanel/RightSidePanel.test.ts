@@ -2,16 +2,21 @@ import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { markRaw, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import RightSidePanel from '@/components/rightSidePanel/RightSidePanel.vue'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
-import { createNodeExecutionId } from '@/types/nodeIdentification'
+import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
 import { toNodeId } from '@/types/nodeId'
 
 const mockApp = vi.hoisted(() => ({
@@ -40,26 +45,37 @@ vi.mock('@/platform/settings/settingStore', () => ({
   })
 }))
 
-function renderPanel(activeTab: 'errors' | 'parameters' = 'errors') {
+function renderPanel(
+  activeTab: 'errors' | 'parameters' = 'errors',
+  graphContext?: {
+    rootGraph: LGraph
+    currentGraph: LGraph
+    node: LGraphNode
+  }
+) {
   const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false })
   setActivePinia(pinia)
 
-  const graph = new LGraph()
-  const node = new LGraphNode('CheckpointLoaderSimple')
-  node.id = toNodeId(1)
-  graph.add(node)
-  mockApp.rootGraph = graph
+  const rootGraph = graphContext?.rootGraph ?? new LGraph()
+  const currentGraph = graphContext?.currentGraph ?? rootGraph
+  const node = graphContext?.node ?? new LGraphNode('CheckpointLoaderSimple')
+  if (!graphContext) {
+    node.id = toNodeId(1)
+    rootGraph.add(node)
+  }
+  mockApp.rootGraph = rootGraph
 
   const canvasStore = useCanvasStore()
-  canvasStore.currentGraph = graph
-  canvasStore.selectedItems = [node]
+  canvasStore.currentGraph = currentGraph
+  canvasStore.selectedItems = [markRaw(node)]
 
   const rightSidePanelStore = useRightSidePanelStore()
   rightSidePanelStore.activeTab = activeTab
   const executionErrorStore = useExecutionErrorStore()
-  const executionId = createNodeExecutionId([node.id])
+  const executionId = getExecutionIdByNode(rootGraph, node)
+  if (!executionId) throw new Error('Expected selected node execution ID')
   const finishScan = executionErrorStore.beginAddedNodeErrorScan(
-    graph,
+    rootGraph,
     executionId
   )
   const openPanel = vi.spyOn(rightSidePanelStore, 'openPanel')
@@ -67,18 +83,7 @@ function renderPanel(activeTab: 'errors' | 'parameters' = 'errors') {
   const i18n = createI18n({
     legacy: false,
     locale: 'en',
-    messages: {
-      en: {
-        g: { settings: 'Settings' },
-        rightSidePanel: {
-          errors: 'Errors',
-          parameters: 'Parameters',
-          info: 'Info',
-          togglePanel: 'Toggle panel',
-          fallbackNodeTitle: 'Node'
-        }
-      }
-    }
+    messages: { en: enMessages }
   })
 
   const rendered = render(RightSidePanel, {
@@ -102,7 +107,7 @@ function renderPanel(activeTab: 'errors' | 'parameters' = 'errors') {
     executionId,
     executionErrorStore,
     finishScan,
-    graph,
+    graph: rootGraph,
     node,
     openPanel,
     rightSidePanelStore
@@ -122,8 +127,9 @@ describe('RightSidePanel active tab fallback', () => {
     expect(rightSidePanelStore.activeTab).toBe('errors')
     expect(openPanel).not.toHaveBeenCalled()
 
+    vi.spyOn(globalThis, 'queueMicrotask').mockImplementation(() => undefined)
     finishScan()
-    await Promise.resolve()
+    await nextTick()
 
     expect(rightSidePanelStore.activeTab).toBe('parameters')
     expect(openPanel).toHaveBeenCalledWith('parameters')
@@ -158,14 +164,33 @@ describe('RightSidePanel active tab fallback', () => {
     expect(openPanel).not.toHaveBeenCalled()
   })
 
-  it('does not update the panel after unmount', async () => {
+  it('does not update the panel when a pending scan finishes after unmount', async () => {
     const { finishScan, openPanel, unmount } = renderPanel()
-    finishScan()
-    await Promise.resolve()
-    openPanel.mockClear()
     unmount()
-    await Promise.resolve()
+    finishScan()
+    await nextTick()
 
+    expect(openPanel).not.toHaveBeenCalled()
+  })
+
+  it('keeps errors active for a pending subgraph interior node scan', () => {
+    setActivePinia(createTestingPinia({ createSpy: vi.fn, stubActions: false }))
+    const subgraph = createTestSubgraph()
+    const node = new LGraphNode('CheckpointLoaderSimple')
+    node.id = toNodeId(7)
+    subgraph.add(node)
+    const host = createTestSubgraphNode(subgraph, { id: 65 })
+    const rootGraph = host.graph as LGraph
+    rootGraph.add(host)
+
+    const { executionErrorStore, executionId, openPanel, rightSidePanelStore } =
+      renderPanel('errors', { rootGraph, currentGraph: subgraph, node })
+
+    expect(
+      executionErrorStore.hasPendingAddedNodeErrorScan(rootGraph, executionId)
+    ).toBe(true)
+    expect(screen.getByTestId('panel-tab-errors')).toBeInTheDocument()
+    expect(rightSidePanelStore.activeTab).toBe('errors')
     expect(openPanel).not.toHaveBeenCalled()
   })
 })

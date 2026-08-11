@@ -177,15 +177,14 @@ const hasRelevantErrors = computed(() => {
 })
 
 const hasPendingErrorScanSelected = computed(() => {
-  if (!app.rootGraph) return false
-  return selectedNodes.value.some((node) => {
-    const executionId = getExecutionIdByNode(app.rootGraph, node)
+  const nodes = selectedNodes.value
+  if (!app.isGraphReady) return false
+  const rootGraph = app.rootGraph
+  return nodes.some((node) => {
+    const executionId = getExecutionIdByNode(rootGraph, node)
     return (
       executionId !== null &&
-      executionErrorStore.hasPendingAddedNodeErrorScan(
-        app.rootGraph,
-        executionId
-      )
+      executionErrorStore.hasPendingAddedNodeErrorScan(rootGraph, executionId)
     )
   })
 })

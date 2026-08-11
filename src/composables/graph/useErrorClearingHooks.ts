@@ -290,7 +290,22 @@ function scanSingleNodeMedia(
 function isModelCandidateStillActive(
   candidate: MissingModelCandidate
 ): boolean {
-  return isMissingCandidateActive(app.rootGraph, candidate)
+  const rootGraph = app.rootGraph
+  if (!isMissingCandidateActive(rootGraph, candidate)) return false
+  if (!rootGraph || candidate.nodeId == null) return true
+
+  const node = getNodeByExecutionId(rootGraph, String(candidate.nodeId))
+  const widget = node?.widgets?.find(
+    (candidateWidget) => candidateWidget.name === candidate.widgetName
+  )
+  if (!node || !widget || widget.value !== candidate.name) return false
+  if (node.getSlotFromWidget(widget)?.link != null) return false
+  if (!node.isSubgraphNode?.()) return true
+
+  return (
+    resolvePromotedWidgetSource(rootGraph, node, widget)?.sourceExecutionId ===
+    candidate.sourceExecutionId
+  )
 }
 
 async function verifyAndAddPendingModels(
@@ -301,11 +316,24 @@ async function verifyAndAddPendingModels(
   // A cannot leak into workflow B after a switch — execution IDs (esp.
   // root-level like "1") collide across workflows.
   const rootGraphAtScan = app.rootGraph
+  const ownersAtScan = new Map(
+    pending.map((candidate) => [
+      candidate,
+      candidate.nodeId == null || !rootGraphAtScan
+        ? null
+        : getNodeByExecutionId(rootGraphAtScan, String(candidate.nodeId))
+    ])
+  )
   try {
     await verifyAssetSupportedCandidates(pending, signal)
     if (signal?.aborted || app.rootGraph !== rootGraphAtScan) return
     const verified = pending.filter(
-      (c) => c.isMissing === true && isModelCandidateStillActive(c)
+      (candidate) =>
+        (candidate.nodeId == null ||
+          ownersAtScan.get(candidate) ===
+            getNodeByExecutionId(rootGraphAtScan, String(candidate.nodeId))) &&
+        candidate.isMissing === true &&
+        isModelCandidateStillActive(candidate)
     )
     if (verified.length) useMissingModelStore().addMissingModels(verified)
   } catch (error: unknown) {
@@ -318,11 +346,22 @@ async function verifyAndAddPendingMedia(
   signal?: AbortSignal
 ): Promise<void> {
   const rootGraphAtScan = app.rootGraph
+  const ownersAtScan = new Map(
+    pending.map((candidate) => [
+      candidate,
+      rootGraphAtScan
+        ? getNodeByExecutionId(rootGraphAtScan, String(candidate.nodeId))
+        : null
+    ])
+  )
   try {
     await verifyMediaCandidates(pending, { isCloud, signal })
     if (signal?.aborted || app.rootGraph !== rootGraphAtScan) return
-    const verified = pending.filter((candidate) =>
-      isMissingMediaCandidateActive(rootGraphAtScan, candidate)
+    const verified = pending.filter(
+      (candidate) =>
+        ownersAtScan.get(candidate) ===
+          getNodeByExecutionId(rootGraphAtScan, String(candidate.nodeId)) &&
+        isMissingMediaCandidateActive(rootGraphAtScan, candidate)
     )
     if (verified.length) useMissingMediaStore().addMissingMedia(verified)
   } catch (error: unknown) {
@@ -331,38 +370,49 @@ async function verifyAndAddPendingMedia(
 }
 
 function scanAddedNode(
+  rootGraph: LGraph,
   node: LGraphNode,
   scanNode: (node: LGraphNode) => void
 ): void {
-  if (!app.rootGraph || ChangeTracker.isLoadingGraph) return
+  if (app.rootGraph !== rootGraph || ChangeTracker.isLoadingGraph) return
   if (isNodeInactive(node.mode)) return
   scanNodeErrorTargets(node, scanNode)
 }
 
 async function runAddedNodeScan(
+  rootGraph: LGraph,
   node: LGraphNode,
   signal: AbortSignal
 ): Promise<void> {
   const pendingVerifications: Promise<void>[] = []
 
-  await Promise.resolve()
-  if (signal.aborted) return
-  scanAddedNode(node, (target) =>
-    scanSingleNodeModelsAndTypes(target, pendingVerifications, signal)
-  )
+  try {
+    await Promise.resolve()
+    if (signal.aborted || app.rootGraph !== rootGraph) return
+    scanAddedNode(rootGraph, node, (target) =>
+      scanSingleNodeModelsAndTypes(target, pendingVerifications, signal)
+    )
 
-  await Promise.resolve()
-  if (signal.aborted) return
-  scanAddedNode(node, (target) =>
-    scanSingleNodeMedia(target, pendingVerifications, signal)
-  )
+    // Paste/drop handlers need another microtask to mark upload state before
+    // media detection reads the widget value.
+    await Promise.resolve()
+    if (signal.aborted || app.rootGraph !== rootGraph) return
+    scanAddedNode(rootGraph, node, (target) =>
+      scanSingleNodeMedia(target, pendingVerifications, signal)
+    )
+  } finally {
+    await Promise.allSettled(pendingVerifications)
+  }
+}
 
-  await Promise.allSettled(pendingVerifications)
+interface PendingScanControl {
+  cancel: () => void
+  finish: () => void
 }
 
 function scheduleAddedNodeScan(
   node: LGraphNode,
-  pendingScanCancellations: Map<LGraphNode, Set<() => void>>
+  pendingScans: Map<LGraphNode, Set<PendingScanControl>>
 ): void {
   if (!app.rootGraph || ChangeTracker.isLoadingGraph) return
   if (isNodeInactive(node.mode)) return
@@ -376,16 +426,16 @@ function scheduleAddedNodeScan(
     executionId
   )
   const abortController = new AbortController()
-  const existingCancellations = pendingScanCancellations.get(node)
-  const cancellationsForNode = existingCancellations ?? new Set<() => void>()
-  if (!existingCancellations) {
-    pendingScanCancellations.set(node, cancellationsForNode)
+  const existingScans = pendingScans.get(node)
+  const scansForNode = existingScans ?? new Set<PendingScanControl>()
+  if (!existingScans) {
+    pendingScans.set(node, scansForNode)
   }
 
   function finish() {
     finishPendingScan()
-    cancellationsForNode.delete(cancel)
-    if (cancellationsForNode.size === 0) pendingScanCancellations.delete(node)
+    scansForNode.delete(control)
+    if (scansForNode.size === 0) pendingScans.delete(node)
   }
 
   function cancel() {
@@ -393,8 +443,13 @@ function scheduleAddedNodeScan(
     finish()
   }
 
-  cancellationsForNode.add(cancel)
-  void runAddedNodeScan(node, abortController.signal).finally(finish)
+  const control = { cancel, finish }
+  scansForNode.add(control)
+  void runAddedNodeScan(rootGraph, node, abortController.signal)
+    .catch((error: unknown) => {
+      console.warn('[useErrorClearingHooks] added-node scan failed:', error)
+    })
+    .finally(finish)
 }
 
 function handleNodeModeChange(
@@ -483,7 +538,7 @@ function dropOutOfScopeMissingMedia(): void {
 }
 
 export function installErrorClearingHooks(graph: LGraph): () => void {
-  const pendingScanCancellations = new Map<LGraphNode, Set<() => void>>()
+  const pendingScans = new Map<LGraphNode, Set<PendingScanControl>>()
   let disposed = false
   const promotionErrors = createPromotionErrorReconciler({
     pruneOutOfScope: dropOutOfScopeMissingMedia,
@@ -512,16 +567,7 @@ export function installErrorClearingHooks(graph: LGraph): () => void {
     installNodeHooksRecursive(node)
     promotionErrors.attachNode(node)
 
-    // Scan pasted/duplicated nodes for missing models/media.
-    // Skip during loadGraphData (undo/redo/tab switch) — those are
-    // handled by the full pipeline or cache restore.
-    // Model and node scans use the original one-microtask deferral so pasted
-    // missing-model errors appear before selection-scoped tabs recalculate.
-    // Media gets one extra microtask so drag/drop upload handlers can mark
-    // transient upload state before media detection reads the widget value.
-    if (!ChangeTracker.isLoadingGraph) {
-      scheduleAddedNodeScan(node, pendingScanCancellations)
-    }
+    scheduleAddedNodeScan(node, pendingScans)
 
     originalOnNodeAdded?.call(this, node)
   }
@@ -532,7 +578,7 @@ export function installErrorClearingHooks(graph: LGraph): () => void {
       originalOnNodeRemoved?.call(this, node)
       return
     }
-    for (const cancel of pendingScanCancellations.get(node) ?? []) cancel()
+    for (const scan of pendingScans.get(node) ?? []) scan.cancel()
     // node.graph is already null by the time onNodeRemoved fires, so
     // derive the execution ID from the graph the hook is installed on
     // plus node.id. For subgraph interior nodes this yields the full
@@ -566,8 +612,8 @@ export function installErrorClearingHooks(graph: LGraph): () => void {
   return () => {
     if (disposed) return
     disposed = true
-    for (const cancellations of pendingScanCancellations.values()) {
-      for (const cancel of cancellations) cancel()
+    for (const scans of pendingScans.values()) {
+      for (const scan of scans) scan.finish()
     }
     for (const node of graph._nodes ?? []) {
       restoreNodeHooksRecursive(node)

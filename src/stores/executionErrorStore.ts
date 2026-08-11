@@ -91,6 +91,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     rootGraph: LGraph,
     executionId: NodeExecutionId
   ): boolean {
+    // Subscribe callers to changes in the non-reactive WeakMap.
     void pendingAddedNodeScanRevision.value
     return (pendingAddedNodeScans.get(rootGraph)?.get(executionId) ?? 0) > 0
   }
