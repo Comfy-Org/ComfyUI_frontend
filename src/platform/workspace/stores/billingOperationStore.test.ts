@@ -736,6 +736,24 @@ describe('billingOperationStore', () => {
 
       await expect(terminal).resolves.toMatchObject({ status: 'succeeded' })
     })
+
+    it('resolves the terminal promise even if reconciliation throws synchronously', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'succeeded',
+        started_at: new Date().toISOString()
+      })
+      mockReconcileSubscriptionSuccess.mockImplementationOnce(() => {
+        throw new Error('reconcile failed')
+      })
+
+      const store = useBillingOperationStore()
+      const terminal = store.startOperation('op-1', 'subscription')
+
+      await vi.advanceTimersByTimeAsync(0)
+
+      await expect(terminal).resolves.toMatchObject({ status: 'succeeded' })
+    })
   })
 
   describe('polling failure', () => {

@@ -616,96 +616,97 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     if (!operation) return
 
     updateOperationStatus(opId, 'succeeded', null)
-    cleanup(opId)
 
-    const telemetry = useTelemetry()
-    const now = Date.now()
-    const operationDurationMs = now - operation.operationStartedAt
-    telemetry?.trackBillingEvent({
-      operation: 'operation',
-      stage: 'succeeded',
-      outcome: 'success',
-      billing_op_id: opId,
-      operation_type: operation.type,
-      tier: operation.tier,
-      cycle: operation.cycle,
-      checkout_type: operation.checkoutType,
-      payment_intent_source: operation.paymentIntentSource,
-      duration_ms: operationDurationMs
-    })
+    try {
+      cleanup(opId)
 
-    if (
-      operation.type === 'subscription' &&
-      operation.businessAttemptStartedAt !== undefined
-    ) {
-      const durationMs = now - operation.businessAttemptStartedAt
+      const telemetry = useTelemetry()
+      const now = Date.now()
+      const operationDurationMs = now - operation.operationStartedAt
       telemetry?.trackBillingEvent({
-        operation: 'subscription_checkout',
+        operation: 'operation',
         stage: 'succeeded',
         outcome: 'success',
+        billing_op_id: opId,
+        operation_type: operation.type,
         tier: operation.tier,
         cycle: operation.cycle,
         checkout_type: operation.checkoutType,
         payment_intent_source: operation.paymentIntentSource,
-        billing_op_id: opId,
-        duration_ms: durationMs
+        duration_ms: operationDurationMs
       })
-      // Also fires the legacy event for providers (Mixpanel, GTM) that don't
-      // implement trackBillingEvent. Gated to actual new/upgraded
-      // subscriptions — a downgrade-to-personal is churn, not a conversion,
-      // and this event drives a GA4 "subscription succeeded" conversion goal.
-      if (!operation.downgradeToPersonal) {
-        telemetry?.trackMonthlySubscriptionSucceeded({
+
+      if (
+        operation.type === 'subscription' &&
+        operation.businessAttemptStartedAt !== undefined
+      ) {
+        const durationMs = now - operation.businessAttemptStartedAt
+        telemetry?.trackBillingEvent({
+          operation: 'subscription_checkout',
+          stage: 'succeeded',
+          outcome: 'success',
           tier: operation.tier,
           cycle: operation.cycle,
           checkout_type: operation.checkoutType,
           payment_intent_source: operation.paymentIntentSource,
-          billing_op_id: opId
+          billing_op_id: opId,
+          duration_ms: durationMs
+        })
+        // Also fires the legacy event for providers (Mixpanel, GTM) that don't
+        // implement trackBillingEvent. Gated to actual new/upgraded
+        // subscriptions — a downgrade-to-personal is churn, not a conversion,
+        // and this event drives a GA4 "subscription succeeded" conversion goal.
+        if (!operation.downgradeToPersonal) {
+          telemetry?.trackMonthlySubscriptionSucceeded({
+            tier: operation.tier,
+            cycle: operation.cycle,
+            checkout_type: operation.checkoutType,
+            payment_intent_source: operation.paymentIntentSource,
+            billing_op_id: opId
+          })
+        }
+      } else if (
+        operation.type === 'topup' &&
+        operation.businessAttemptStartedAt !== undefined
+      ) {
+        telemetry?.trackBillingEvent({
+          operation: 'topup',
+          stage: 'succeeded',
+          outcome: 'success',
+          billing_op_id: opId,
+          duration_ms: now - operation.businessAttemptStartedAt
         })
       }
-    } else if (
-      operation.type === 'topup' &&
-      operation.businessAttemptStartedAt !== undefined
-    ) {
-      telemetry?.trackBillingEvent({
-        operation: 'topup',
-        stage: 'succeeded',
-        outcome: 'success',
-        billing_op_id: opId,
-        duration_ms: now - operation.businessAttemptStartedAt
-      })
-    }
-    // Mirrors handleFailure's structure: not gated on businessAttemptStartedAt,
-    // since a downgrade always has its own startedAt for duration_ms below.
-    if (operation.downgradeToPersonal) {
-      telemetry?.trackBillingEvent({
-        operation: 'downgrade_to_personal',
-        stage: 'succeeded',
-        outcome: 'success',
-        member_removal_count: operation.downgradeToPersonal.memberRemovalCount,
-        member_removal_failures:
-          operation.downgradeToPersonal.memberRemovalFailures,
-        target_tier: operation.downgradeToPersonal.targetTier,
-        duration_ms: now - operation.downgradeToPersonal.startedAt
-      })
-    }
+      // Mirrors handleFailure's structure: not gated on businessAttemptStartedAt,
+      // since a downgrade always has its own startedAt for duration_ms below.
+      if (operation.downgradeToPersonal) {
+        telemetry?.trackBillingEvent({
+          operation: 'downgrade_to_personal',
+          stage: 'succeeded',
+          outcome: 'success',
+          member_removal_count: operation.downgradeToPersonal.memberRemovalCount,
+          member_removal_failures:
+            operation.downgradeToPersonal.memberRemovalFailures,
+          target_tier: operation.downgradeToPersonal.targetTier,
+          duration_ms: now - operation.downgradeToPersonal.startedAt
+        })
+      }
 
-    const billingContext = useBillingContext()
-    const capabilities = useBillingCapabilities()
-    if (operation.type === 'subscription') {
-      await Promise.allSettled([
-        billingContext.reconcileSubscriptionSuccess(),
-        capabilities.refresh()
-      ])
-    } else {
-      await Promise.allSettled([
-        billingContext.fetchStatus(),
-        billingContext.fetchBalance(),
-        capabilities.refresh()
-      ])
-    }
+      const billingContext = useBillingContext()
+      const capabilities = useBillingCapabilities()
+      if (operation.type === 'subscription') {
+        await Promise.allSettled([
+          billingContext.reconcileSubscriptionSuccess(),
+          capabilities.refresh()
+        ])
+      } else {
+        await Promise.allSettled([
+          billingContext.fetchStatus(),
+          billingContext.fetchBalance(),
+          capabilities.refresh()
+        ])
+      }
 
-    try {
       if (operation.type === 'cancel') {
         useTeamWorkspaceStore().updateActiveWorkspace({ isSubscribed: false })
         return
