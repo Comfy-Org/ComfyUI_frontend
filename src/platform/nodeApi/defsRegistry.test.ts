@@ -637,6 +637,66 @@ describe('connection veto and menu items', () => {
     expect(options.map((o) => o.content)).toContain(`Act on ${node.id}`)
   })
 
+  it('computes submenu children per open, from the node as it is now', () => {
+    // efficiency-nodes' LoRA Stacker declares 50 lora_name_N widgets and lists
+    // only the ones a user filled. A fixed array would be a different menu.
+    const node = build((b) =>
+      b.addMenuItem({
+        label: 'Loaded',
+        items: (n) =>
+          n.widgets
+            .all()
+            .filter((w) => w.getValue() !== 'None')
+            .map((w) => ({ label: w.name, run: () => {} }))
+      })
+    )
+    const handle = comfy.graph.node(String(node.id))!
+    const values = ['None', 'sharp.safetensors']
+    handle.widgets.add({
+      type: 'combo',
+      name: 'lora_1',
+      value: 'None',
+      options: { values }
+    })
+    handle.widgets.add({
+      type: 'combo',
+      name: 'lora_2',
+      value: 'None',
+      options: { values }
+    })
+
+    // Nothing filled yet: an entry opening an empty submenu is a dead end,
+    // so it is omitted rather than shown as a no-op.
+    const first: { content: string }[] = []
+    node.getExtraMenuOptions?.(undefined as never, first as never)
+    expect(first.map((o) => o.content)).not.toContain('Loaded')
+
+    handle.widgets.get('lora_2')!.setValue('sharp.safetensors')
+
+    const second: {
+      content: string
+      submenu?: { options: { content: string }[] }
+    }[] = []
+    node.getExtraMenuOptions?.(undefined as never, second as never)
+    expect(
+      second
+        .find((o) => o.content === 'Loaded')
+        ?.submenu?.options.map((o) => o.content)
+    ).toEqual(['lora_2'])
+  })
+
+  it('orders entries by `order`, not by module load sequence', () => {
+    const node = build((b) => {
+      b.addMenuItem({ label: 'Third', order: 30, run: () => {} })
+      b.addMenuItem({ label: 'First', order: 10, run: () => {} })
+      b.addMenuItem({ label: 'Second', order: 20, run: () => {} })
+    })
+    const options: { content: string }[] = []
+    node.getExtraMenuOptions?.(undefined as never, options as never)
+
+    expect(options.map((o) => o.content)).toEqual(['First', 'Second', 'Third'])
+  })
+
   it('builds a submenu whose children reach the node', () => {
     const seen: string[] = []
     const node = build((b) =>

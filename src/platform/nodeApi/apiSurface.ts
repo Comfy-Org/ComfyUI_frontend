@@ -152,6 +152,7 @@ export const API_MEMBERS: ReadonlySet<string> = new Set([
   'onSerialize',
   'onViewportChanged',
   'options',
+  'order',
   'outputs',
   'peerNodeId',
   'peerType',
