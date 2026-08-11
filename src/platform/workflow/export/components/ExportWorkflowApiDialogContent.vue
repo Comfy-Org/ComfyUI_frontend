@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import DialogDescription from '@/components/ui/dialog/DialogDescription.vue'
 import Input from '@/components/ui/input/Input.vue'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useExternalLink } from '@/composables/useExternalLink'
@@ -49,9 +50,9 @@ function downloadWorkflow() {
 
 <template>
   <div class="flex flex-col gap-6 pb-4">
-    <p class="m-0 max-w-prose text-sm text-pretty text-muted-foreground">
+    <DialogDescription class="m-0 max-w-prose text-pretty">
       {{ t('apiExport.description') }}
-    </p>
+    </DialogDescription>
 
     <div class="flex flex-col gap-1 text-sm">
       <label for="api-export-filename" class="font-semibold">

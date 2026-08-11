@@ -38,7 +38,10 @@ function renderDialog(
   onClose = vi.fn()
 ) {
   return render(ExportWorkflowApiDialogContent, {
-    props: { initialWorkflowBaseName, onClose }
+    props: { initialWorkflowBaseName, onClose },
+    global: {
+      stubs: { DialogDescription: { template: '<p><slot /></p>' } }
+    }
   })
 }
 
