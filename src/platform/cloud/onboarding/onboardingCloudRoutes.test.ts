@@ -17,10 +17,13 @@ import {
 const VALID_REQUEST_ID = '550e8400-e29b-41d4-a716-446655440000'
 
 const createSessionOrThrow = vi.fn().mockResolvedValue(undefined)
+const useCurrentUser = vi.fn(() => ({ isLoggedIn: { value: false } }))
 
 vi.mock('@/platform/auth/session/useSessionCookie', () => ({
   useSessionCookie: () => ({ createSessionOrThrow })
 }))
+
+vi.mock('@/composables/auth/useCurrentUser', () => ({ useCurrentUser }))
 
 const oauthLayout = cloudOnboardingRoutes.find((r) => r.path === '/oauth')
 const consentRoute = oauthLayout?.children?.find(
@@ -84,8 +87,7 @@ describe('cloudOnboardingRoutes', () => {
           children: [
             {
               ...cloudLoginRoute,
-              component: { template: '<div />' },
-              beforeEnter: undefined
+              component: { template: '<div />' }
             }
           ]
         }
@@ -98,6 +100,7 @@ describe('cloudOnboardingRoutes', () => {
 
     expect(guardedRouteNames).toHaveBeenCalledOnce()
     expect(guardedRouteNames).toHaveBeenCalledWith('cloud-login')
+    expect(useCurrentUser).toHaveBeenCalledOnce()
     expect(router.currentRoute.value.name).toBe('cloud-login')
     expect(router.currentRoute.value.path).toBe('/cloud/login')
     expect(router.currentRoute.value.query).toEqual({
