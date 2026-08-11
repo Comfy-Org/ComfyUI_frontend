@@ -43,7 +43,7 @@
     "lint:unstaged": "git diff --name-only HEAD | grep -E '\\.(js|ts|vue|mts)$' | xargs -r eslint --cache",
     "lint": "pnpm stylelint && oxlint src browser_tests --type-aware && eslint src --cache",
     "lint:desktop": "pnpm --filter @comfyorg/desktop-ui run lint",
-    "locale": "lobe-i18n locale",
+    "locale": "tsx scripts/i18n/update-locales.ts",
     "oxlint": "oxlint src browser_tests --type-aware",
     "prepare": "pnpm exec husky || true && git config blame.ignoreRevsFile .git-blame-ignore-revs || true",
     "preview": "vite preview --config vite.config.mts",

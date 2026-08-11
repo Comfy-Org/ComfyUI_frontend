@@ -5956,15 +5956,15 @@
       },
       "image": {
         "name": "image",
-        "tooltip": "grok-imagine-video 的可选起始图像。grok-imagine-video-1.5 必须提供。"
+        "tooltip": "可选的起始图像。省略时，仅根据文本提示词生成视频。"
       },
       "model": {
         "name": "model",
-        "tooltip": "grok-imagine-video-1.5 当前始终需要输入图像。"
+        "tooltip": "用于视频生成的模型。"
       },
       "prompt": {
         "name": "prompt",
-        "tooltip": "所需视频的文本描述。"
+        "tooltip": "所需视频的文本描述。提供输入图像时，grok-imagine-video-1.5 可不填。"
       },
       "resolution": {
         "name": "resolution",
@@ -5982,7 +5982,7 @@
     }
   },
   "GrokVideoReferenceNode": {
-    "description": "根据参考图像的风格和内容生成视频。",
+    "description": "根据参考图像生成视频，可选择使用预设语音参考。",
     "display_name": "Grok 参考生成视频",
     "inputs": {
       "control_after_generate": {
@@ -8809,7 +8809,7 @@
   },
   "LTXVConcatAVLatent": {
     "description": "将视频潜空间和音频潜空间合并为联合 AV 潜空间（适用于任意 AV 模型，如 LTXV 或 MiniMax H3）。",
-    "display_name": "LTXVConcatAVLatent",
+    "display_name": "拼接 AV 潜空间",
     "inputs": {
       "audio_latent": {
         "name": "audio_latent"
@@ -9144,8 +9144,8 @@
     }
   },
   "LTXVSeparateAVLatent": {
-    "description": "LTXV分离音视频潜空间",
-    "display_name": "LTXV分离音视频潜空间",
+    "description": "将联合 AV 潜空间拆分为视频和音频潜空间（适用于任意 AV 模型，如 LTXV 或 MiniMax H3）。",
+    "display_name": "分离 AV 潜空间",
     "inputs": {
       "av_latent": {
         "name": "音视频潜空间"
@@ -11577,7 +11577,7 @@
     }
   },
   "MiniMaxH3ReferenceToVideo": {
-    "description": "<图片 i> / <视频 k> / <音频 j> 参考条件输入，适用于 MiniMax H3。提示时请使用相同标签。",
+    "description": "<Picture i> / <Video k> / <Audio j> 参考条件输入，适用于 MiniMax H3。提示时请使用相同标签。",
     "display_name": "MiniMax H3 参考转视频",
     "inputs": {
       "audio_vae": {

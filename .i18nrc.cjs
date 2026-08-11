@@ -28,6 +28,7 @@ module.exports = defineConfig({
   reference: `Special names to keep untranslated: flux, photomaker, clip, vae, cfg, stable audio, stable cascade, stable zero, controlnet, lora, HiDream, Civitai, Hugging Face.
   'latent' is the short form of 'latent space'.
   'mask' is in the context of image processing.
+  Preserve every interpolation placeholder exactly, including its braces. Preserve opaque syntax such as <Picture N>, <Video N>, <Audio N>, algebraic expressions such as 17k+5, and literal option values such as 'match' and 'max' byte-for-byte.
   
   IMPORTANT Chinese Translation Guidelines:
   - For 'zh' locale: Use ONLY Simplified Chinese characters (简体中文). Common examples: 节点 (not 節點), 画布 (not 畫布), 图像 (not 圖像), 选择 (not 選擇), 减小 (not 減小).

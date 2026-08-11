@@ -5956,15 +5956,15 @@
       },
       "image": {
         "name": "image",
-        "tooltip": "grok-imagine-video のオプションの開始画像。grok-imagine-video-1.5 では必須です。"
+        "tooltip": "省略可能な開始画像。省略すると、テキストプロンプトのみから動画が生成されます。"
       },
       "model": {
         "name": "model",
-        "tooltip": "grok-imagine-video-1.5 では必ず入力画像が必要です。"
+        "tooltip": "動画生成に使用するモデル。"
       },
       "prompt": {
         "name": "プロンプト",
-        "tooltip": "希望する動画のテキスト説明。"
+        "tooltip": "目的の動画のテキスト説明。入力画像が指定されている場合、grok-imagine-video-1.5 では省略可能です。"
       },
       "resolution": {
         "name": "解像度",
@@ -5982,7 +5982,7 @@
     }
   },
   "GrokVideoReferenceNode": {
-    "description": "リファレンス画像をスタイルや内容の参考として、ビデオを生成します。",
+    "description": "参照画像に基づいて動画を生成します。プリセット音声の参照も任意で指定できます。",
     "display_name": "Grokリファレンス→ビデオ",
     "inputs": {
       "control_after_generate": {
@@ -8809,7 +8809,7 @@
   },
   "LTXVConcatAVLatent": {
     "description": "ビデオラテントとオーディオラテントを結合し、ジョイントAVラテントを作成します（任意のAVモデル、例：LTXVまたはMiniMax H3）。",
-    "display_name": "LTXVConcatAVLatent",
+    "display_name": "AV Latentを結合",
     "inputs": {
       "audio_latent": {
         "name": "audio_latent"
@@ -9144,8 +9144,8 @@
     }
   },
   "LTXVSeparateAVLatent": {
-    "description": "LTXV Separate AV Latent",
-    "display_name": "LTXVSeparateAVLatent",
+    "description": "結合された AV latent を動画と音声の latent に分離します（任意の AV モデル、例：LTXV または MiniMax H3）。",
+    "display_name": "AV Latentを分離",
     "inputs": {
       "av_latent": {
         "name": "av_latent"
