@@ -27,7 +27,6 @@ function createItems(...ids: string[]): WorkflowMenuItem[] {
 describe('useNewMenuItemIndicator', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    vi.clearAllMocks()
     mockSettingStore.get.mockReturnValue([])
   })
 

@@ -23,11 +23,6 @@ const mockForgetRevokedActiveWorkspace = vi.fn()
 const mockPrepareWorkflowWorkspaceTransition = vi.hoisted(() => vi.fn())
 const mockReload = vi.fn()
 
-vi.stubGlobal('location', {
-  reload: mockReload,
-  origin: 'http://localhost'
-})
-
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: () => ({
     getIdToken: mockGetIdToken,
@@ -107,8 +102,11 @@ function expectedExpiresAtMs(expiresAt: string): string {
 
 describe('useWorkspaceAuthStore', () => {
   beforeEach(() => {
+    vi.stubGlobal('location', {
+      reload: mockReload,
+      origin: 'http://localhost'
+    })
     setActivePinia(createPinia())
-    vi.resetAllMocks()
     vi.useFakeTimers()
     sessionStorage.clear()
     mockUnifiedCloudAuthEnabled.value = false

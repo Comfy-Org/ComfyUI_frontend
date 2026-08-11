@@ -166,7 +166,6 @@ function useGatedHintSentinels() {
 
 describe('MissingModelCard', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     i18n.global.setLocaleMessage('en', enMessages)
     mockIsCloud.value = true
   })
@@ -308,7 +307,6 @@ describe('MissingModelCard', () => {
 
 describe('MissingModelCard (OSS)', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     i18n.global.setLocaleMessage('en', enMessages)
     mockIsCloud.value = false
   })

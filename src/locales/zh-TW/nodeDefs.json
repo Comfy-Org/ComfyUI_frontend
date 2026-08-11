@@ -15719,6 +15719,96 @@
       }
     }
   },
+  "QwenImageEditApi": {
+    "description": "使用 Qwen-Image 3.0 模型，根據文字提示編輯或合成最多 3 張參考圖像。",
+    "display_name": "Qwen Image 3 編輯",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "使用的模型。"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "要產生的圖像數量，將以批次返回。"
+      },
+      "prompt_extend": {
+        "name": "prompt_extend",
+        "tooltip": "是否使用 AI 協助增強提示詞。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用於生成的種子值。"
+      },
+      "size": {
+        "name": "size",
+        "tooltip": "輸出解析度。「符合輸入」會沿用第一張參考圖像的尺寸，「自動」讓模型選擇相同比例的尺寸，「自訂」可明確設定寬度與高度。"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "是否在結果中加入 AI 產生的浮水印。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QwenImageTextToImageApi": {
+    "description": "使用 Qwen-Image 3.0 模型，根據文字提示生成圖像。",
+    "display_name": "Qwen Image 3 文生圖",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "使用的模型。"
+      },
+      "model_height": {
+        "name": "height"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_width": {
+        "name": "width"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "要產生的圖像數量，將以批次返回。"
+      },
+      "prompt_extend": {
+        "name": "prompt_extend",
+        "tooltip": "是否使用 AI 協助增強提示詞。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用於生成的種子值。"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "是否在結果中加入 AI 產生的浮水印。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "RTDETR_detect": {
     "display_name": "RT-DETR 偵測",
     "inputs": {

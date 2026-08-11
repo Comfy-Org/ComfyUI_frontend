@@ -188,7 +188,6 @@ describe('useExecutionStore - NodeLocatorId conversions', () => {
   let store: ReturnType<typeof useExecutionStore>
 
   beforeEach(() => {
-    vi.clearAllMocks()
     // Reset mock implementations
     mockNodeIdToNodeLocatorId.mockReset()
     mockNodeLocatorIdToNodeExecutionId.mockReset()
@@ -276,7 +275,6 @@ describe('useExecutionStore - nodeLocationProgressStates caching', () => {
   let store: ReturnType<typeof useExecutionStore>
 
   beforeEach(() => {
-    vi.clearAllMocks()
     mockNodeIdToNodeLocatorId.mockReset()
     mockNodeLocatorIdToNodeExecutionId.mockReset()
     mockExecutionIdToCurrentId.mockReset()
@@ -467,7 +465,6 @@ describe('useExecutionStore - nodeProgressStatesByJob eviction', () => {
 
   beforeEach(() => {
     vi.useFakeTimers()
-    vi.clearAllMocks()
     apiEventHandlers.clear()
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionStore()
@@ -530,7 +527,6 @@ describe('useExecutionStore - reconcileInitializingJobs', () => {
   let store: ReturnType<typeof useExecutionStore>
 
   beforeEach(() => {
-    vi.clearAllMocks()
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionStore()
   })
@@ -636,7 +632,6 @@ describe('useExecutionStore - workflowStatus', () => {
   }
 
   beforeEach(() => {
-    vi.clearAllMocks()
     apiEventHandlers.clear()
     mockOpenWorkflows.value = [workflowA, workflowB]
     setActivePinia(createTestingPinia({ stubActions: false }))
@@ -993,7 +988,6 @@ describe('useExecutionStore - clearActiveJobIfStale', () => {
   let store: ReturnType<typeof useExecutionStore>
 
   beforeEach(() => {
-    vi.clearAllMocks()
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionStore()
   })
@@ -1054,7 +1048,6 @@ describe('useExecutionStore - progress_text startup guard', () => {
   }
 
   beforeEach(() => {
-    vi.clearAllMocks()
     apiEventHandlers.clear()
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionStore()
@@ -1109,7 +1102,6 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
   let store: ReturnType<typeof useExecutionErrorStore>
 
   beforeEach(() => {
-    vi.clearAllMocks()
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionErrorStore()
   })
@@ -1296,7 +1288,6 @@ describe('useExecutionStore - executingNode with subgraphs', () => {
   let store: ReturnType<typeof useExecutionStore>
 
   beforeEach(() => {
-    vi.clearAllMocks()
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionStore()
   })
@@ -1393,7 +1384,6 @@ describe('useMissingNodesErrorStore - setMissingNodeTypes', () => {
   let store: ReturnType<typeof useMissingNodesErrorStore>
 
   beforeEach(() => {
-    vi.clearAllMocks()
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useMissingNodesErrorStore()
   })
@@ -1881,7 +1871,6 @@ describe('useExecutionStore - WebSocket event handlers', () => {
   }
 
   beforeEach(() => {
-    vi.clearAllMocks()
     apiEventHandlers.clear()
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionStore()
@@ -2376,7 +2365,6 @@ describe('useExecutionStore - storeJob and workflow path tracking', () => {
   let store: ReturnType<typeof useExecutionStore>
 
   beforeEach(() => {
-    vi.clearAllMocks()
     apiEventHandlers.clear()
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionStore()

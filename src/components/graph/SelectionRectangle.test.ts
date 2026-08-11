@@ -51,7 +51,6 @@ describe('SelectionRectangle', () => {
     rafCallbacks.length = 0
     mockCanvas.value = null
     document.body.replaceChildren()
-    vi.restoreAllMocks()
   })
 
   it('clips the rectangle to the canvas panel when dragged over the sidebar', async () => {

@@ -82,7 +82,7 @@
     },
     {
       "source": "/login",
-      "destination": "https://cloud.comfy.org/login",
+      "destination": "https://cloud.comfy.org/cloud/login",
       "permanent": false
     }
   ]
