@@ -25,6 +25,7 @@ const mockGetNodeById = vi.fn()
 vi.mock('@/scripts/app', () => ({
   app: {
     getPreviewFormatParam: vi.fn(() => '&format=test_webp'),
+    getRandParam: vi.fn(() => ''),
     rootGraph: {
       getNodeById: (...args: unknown[]) => mockGetNodeById(...args)
     },
@@ -779,6 +780,68 @@ describe('nodeOutputStore setNodeOutputs (widget path)', () => {
 
     expect(store.nodeOutputs['5']).toBeUndefined()
     expect(app.nodeOutputs['5']).toBeUndefined()
+  })
+
+  it('routes an [output]-annotated widget value to the output directory', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 5 })
+
+    store.setNodeOutputs(node, 'generated.png [output]')
+
+    expect(store.nodeOutputs['5']?.images?.[0]).toMatchObject({
+      filename: 'generated.png',
+      subfolder: '',
+      type: 'output'
+    })
+  })
+
+  it('keeps the subfolder of an annotated widget value', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 5 })
+
+    store.setNodeOutputs(node, 'runs/2026/generated.png [output]')
+
+    expect(store.nodeOutputs['5']?.images?.[0]).toMatchObject({
+      filename: 'generated.png',
+      subfolder: 'runs/2026',
+      type: 'output'
+    })
+  })
+
+  it('routes a [temp]-annotated widget value to the temp directory', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 5 })
+
+    store.setNodeOutputs(node, 'preview.png [temp]')
+
+    expect(store.nodeOutputs['5']?.images?.[0]).toMatchObject({
+      filename: 'preview.png',
+      type: 'temp'
+    })
+  })
+
+  it('builds a view URL free of the annotation for an output asset', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 5 })
+
+    store.setNodeOutputs(node, 'runs/2026/generated.png [output]')
+    const [url] = store.getNodeImageUrls(node) ?? []
+
+    expect(url).toContain('type=output')
+    expect(url).toContain('filename=generated.png')
+    expect(url).not.toContain('%5Boutput%5D')
+  })
+
+  it('leaves an unannotated value in the caller-supplied folder', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 5 })
+
+    store.setNodeOutputs(node, 'photo.png')
+
+    expect(store.nodeOutputs['5']?.images?.[0]).toMatchObject({
+      filename: 'photo.png',
+      type: 'input'
+    })
   })
 })
 
