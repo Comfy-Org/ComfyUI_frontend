@@ -133,25 +133,15 @@ collageImages.forEach((image, index) => {
       :subtitle="t('fdct.hero.subtitle', locale)"
     >
       <div
-        class="mt-10 flex w-full flex-col items-stretch gap-5 md:w-auto md:flex-row md:items-center md:justify-center md:gap-4"
+        class="mt-10 flex w-full flex-col items-stretch gap-5 sm:w-auto sm:flex-row sm:items-center sm:justify-center sm:gap-4"
       >
         <Button
           :href="localizeHref(fdctPage.ctas.contact, locale)"
           variant="default"
           size="lg"
-          class="h-12 text-sm md:h-14 md:text-base"
+          class="h-12 text-sm sm:h-14 sm:text-base"
         >
           {{ t('fdct.hero.contactCta', locale) }}
-        </Button>
-        <Button
-          :href="fdctPage.ctas.applyFdct"
-          target="_blank"
-          rel="noopener noreferrer"
-          variant="outline"
-          size="lg"
-          class="h-auto min-h-12 px-6 py-3 text-sm whitespace-normal md:h-14 md:px-8 md:py-4 md:text-base md:whitespace-nowrap"
-        >
-          {{ t('fdct.hero.applyCta', locale) }}
         </Button>
       </div>
     </HeroCentered01>

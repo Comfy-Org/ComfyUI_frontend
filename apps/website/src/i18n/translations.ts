@@ -5458,10 +5458,6 @@ const translations = {
     'zh-CN': '前沿驻场创意服务'
   },
   'fdct.hero.contactCta': { en: 'Contact us', 'zh-CN': '联系我们' },
-  'fdct.hero.applyCta': {
-    en: 'Apply as a forward deployed creative',
-    'zh-CN': '申请成为前沿驻场创意人'
-  },
   'fdct.builders.title': {
     en: 'Builders, not advisors',
     'zh-CN': '实干者，而非顾问'
@@ -5640,6 +5636,10 @@ const translations = {
       '通过 Gemini 图生图与 Kling 图生视频，将头像照片转化为品牌风格静帧与快速动态测试，用于选角预览。'
   },
   'fdct.faq.title': { en: 'Q&A', 'zh-CN': '问答' },
+  'fdct.faq.applyCta': {
+    en: 'Apply as a forward deployed creative',
+    'zh-CN': '申请成为前沿驻场创意人'
+  },
   'fdct.faq.q1': {
     en: 'Can this be a consulting or professional-services contract standalone?',
     'zh-CN': '可以单独签订咨询或专业服务合同吗？'
