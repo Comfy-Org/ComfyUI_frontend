@@ -982,6 +982,40 @@ describe('billingOperationStore', () => {
       })
     })
 
+    it('does not expose a stale invoice link after in-page verification completes', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus)
+        .mockResolvedValueOnce({
+          id: 'op-3ds',
+          status: 'pending',
+          authentication_state: 'requires_action',
+          payment_intent_client_secret: 'pi_secret_current',
+          started_at: new Date().toISOString()
+        })
+        .mockResolvedValue({
+          id: 'op-3ds',
+          status: 'pending',
+          authentication_state: 'succeeded',
+          action_url: 'https://invoice.stripe.com/i/already-paid',
+          started_at: new Date().toISOString()
+        })
+      mockHandleNextAction.mockResolvedValue({})
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-3ds', 'topup', {
+        autoHandleRequiresAction: true,
+        suppressProcessingToast: true
+      })
+      await vi.advanceTimersByTimeAsync(0)
+      await vi.advanceTimersByTimeAsync(31_000)
+
+      expect(mockHandleNextAction).toHaveBeenCalledOnce()
+      expect(store.getOperation('op-3ds')).toMatchObject({
+        authenticationState: 'succeeded',
+        actionUrl: null
+      })
+      expect(store.topupActionOperation).toBeUndefined()
+    })
+
     it('accepts a new challenge arriving after the first one completed', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus)
         .mockResolvedValueOnce({

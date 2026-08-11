@@ -1010,7 +1010,7 @@ describe('useSubscriptionCheckout', () => {
       expect(checkout.previewData.value).toStrictEqual(transition)
     })
 
-    it('blocks confirmation until the Team change preview resolves', async () => {
+    it('does not expose Team confirmation until its preview resolves', async () => {
       let resolvePreview!: (preview: Partial<PreviewSubscribeResponse>) => void
       mockPreviewSubscribe.mockImplementationOnce(
         () =>
@@ -1031,7 +1031,7 @@ describe('useSubscriptionCheckout', () => {
         isChange: true
       })
 
-      expect(checkout.checkoutStep.value).toBe('preview')
+      expect(checkout.checkoutStep.value).toBe('pricing')
       expect(checkout.isLoadingPreview.value).toBe(true)
       await checkout.handleTeamSubscribe()
       expect(mockSubscribe).not.toHaveBeenCalled()
@@ -1045,7 +1045,23 @@ describe('useSubscriptionCheckout', () => {
       await selectionPromise
 
       expect(checkout.isLoadingPreview.value).toBe(false)
+      expect(checkout.checkoutStep.value).toBe('preview')
       expect(checkout.previewVariant.value).toBe('team-change')
+    })
+
+    it('does not expose payment collection while a new Team preview loads', async () => {
+      mockPreviewSubscribe.mockImplementationOnce(() => new Promise(() => {}))
+      const checkout = await setup()
+
+      void checkout.handleSubscribeTeamClick({
+        stop: teamStop,
+        billingCycle: 'monthly',
+        isChange: false
+      })
+
+      expect(checkout.previewVariant.value).toBe('team-new')
+      expect(checkout.checkoutStep.value).toBe('pricing')
+      expect(checkout.isLoadingPreview.value).toBe(true)
     })
 
     it('discards a Team preview for a superseded stop and cycle', async () => {

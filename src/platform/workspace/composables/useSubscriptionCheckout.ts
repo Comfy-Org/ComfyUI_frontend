@@ -684,7 +684,6 @@ export function useSubscriptionCheckout(
     selectedTierKey.value = null
     previewData.value = null
     quoteIsCurrent.value = false
-    checkoutStep.value = 'preview'
 
     if (!payload.stop.id) return
     isLoadingPreview.value = true
@@ -724,6 +723,7 @@ export function useSubscriptionCheckout(
       (!isSubscriptionCancelled() || isReactivationCapablePreview(response))
     ) {
       installPreview(response)
+      checkoutStep.value = 'preview'
       return
     }
     toast.add({

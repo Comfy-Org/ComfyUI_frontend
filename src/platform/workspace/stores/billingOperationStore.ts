@@ -525,8 +525,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     // customer to redo a step they just finished.
     if (
       actionUrl !== null &&
-      operation.authenticationState === 'processing' &&
-      autoHandledPaymentActions.has(opId)
+      autoHandledPaymentActions.has(opId) &&
+      operation.authenticationState !== 'requires_action'
     ) {
       return
     }
