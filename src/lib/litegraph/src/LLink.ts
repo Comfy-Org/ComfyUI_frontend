@@ -139,11 +139,13 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   }
 
   set id(value: LinkId) {
-    if (this._graphScope && value !== this._state.id) {
-      console.error('LiteGraph: refusing to change a registered link id')
+    if (this._graphScope) {
+      if (value !== this._state.id) {
+        console.error('LiteGraph: refusing to change a registered link id')
+      }
       return
     }
-    this._state = { ...this._state, id: value }
+    Object.assign(this._state, { id: value })
   }
 
   get type() {

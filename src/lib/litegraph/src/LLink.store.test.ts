@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
 import { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
@@ -18,8 +18,9 @@ import {
 
 describe('LLink ↔ linkStore integration', () => {
   beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
+  afterEach(() => vi.restoreAllMocks())
 
-  it('preserves the id of a registered link', () => {
+  it('preserves the id and reactive state of a registered link', () => {
     const graph = new LGraph()
     const link = new LLink(
       toLinkId(1),
@@ -31,11 +32,34 @@ describe('LLink ↔ linkStore integration', () => {
     )
     vi.spyOn(console, 'error').mockImplementation(() => {})
     graph.addFloatingLink(link)
+    const registeredState = link._state
 
+    link.id = link.id
     link.id = toLinkId(2)
 
     expect(link.id).toBe(toLinkId(1))
+    expect(link._state).toBe(registeredState)
     expect(graph.floatingLinks.get(toLinkId(1))).toBe(link)
+  })
+
+  it('reports a LinkMap key that does not match the link id', () => {
+    const graph = new LGraph()
+    const link = new LLink(
+      toLinkId(1),
+      '*',
+      UNASSIGNED_NODE_ID,
+      -1,
+      UNASSIGNED_NODE_ID,
+      -1
+    )
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    graph.links.set(toLinkId(2), link)
+
+    expect(error).toHaveBeenCalledWith(
+      'LiteGraph: refusing to register link 1 under mismatched id 2'
+    )
+    expect(graph.links.size).toBe(0)
   })
 
   it('does not add a link when topology registration is rejected', () => {
@@ -327,12 +351,14 @@ describe('LLink ↔ linkStore integration', () => {
     const link = a.connect(0, b, 0)!
     const store = useLinkStore()
     const nodeId = b.id
+    const topology = link._state
     expect(store.isInputSlotConnected(graphScopeOf(graph), nodeId, 0)).toBe(
       true
     )
 
     link.target_slot = 1
 
+    expect(link._state).toBe(topology)
     expect(store.isInputSlotConnected(graphScopeOf(graph), nodeId, 0)).toBe(
       false
     )

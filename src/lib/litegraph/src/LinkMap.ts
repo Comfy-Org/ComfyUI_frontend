@@ -54,7 +54,12 @@ export class LinkMap extends Map<LinkId, LLink> {
   }
 
   override set(id: LinkId, link: LLink): this {
-    if (id !== link.id) return this
+    if (id !== link.id) {
+      console.error(
+        `LiteGraph: refusing to register link ${link.id} under mismatched id ${id}`
+      )
+      return this
+    }
     this.add(link)
     return this
   }
