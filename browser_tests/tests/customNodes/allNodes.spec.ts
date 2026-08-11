@@ -22,7 +22,10 @@ import {
   disabledHarnessNodes,
   stalenessCheckedKeys
 } from '@e2e/fixtures/customNode/cloudExclusions'
-import { LocalDesktopTarget } from '@e2e/fixtures/customNode/ComfyTarget'
+import {
+  LocalDesktopTarget,
+  isServerSideFault
+} from '@e2e/fixtures/customNode/ComfyTarget'
 import {
   allowlistRulesFor,
   isForeignExecutionNoise,
@@ -1631,8 +1634,20 @@ for (const entry of loadManifest()) {
         const hardFailures: string[] = []
         const cannotRun = new Map<string, string>()
         const ranClean = new Set<string>()
-        for (const batch of batches) {
-          const outcome = await runBatch(comfyPage.page, batch)
+        // A server-side 5xx means the backend is failing, not this batch's
+        // nodes: stop submitting, but keep every verdict already collected -
+        // real failures found before the fault take precedence over it and
+        // must still be reported (the abort is appended after them below).
+        let environmentAbort: string | undefined
+        batchLoop: for (const batch of batches) {
+          let outcome: string
+          try {
+            outcome = await runBatch(comfyPage.page, batch)
+          } catch (error) {
+            if (!isServerSideFault(error)) throw error
+            environmentAbort = `[${batch.map((verdict) => verdict.key).join(', ')}]: ${error.message} - remaining auto-runs skipped`
+            break
+          }
           if (outcome === 'PASS') {
             for (const verdict of batch) ranClean.add(verdict.key)
             continue
@@ -1647,11 +1662,18 @@ for (const entry of loadManifest()) {
           // Rerun singles so the bad node names itself, with a longer timeout
           // so a slow-under-load node is not misread as a regression.
           for (const verdict of batch) {
-            const single = await runBatch(
-              comfyPage.page,
-              [verdict],
-              SINGLE_RERUN_TIMEOUT
-            )
+            let single: string
+            try {
+              single = await runBatch(
+                comfyPage.page,
+                [verdict],
+                SINGLE_RERUN_TIMEOUT
+              )
+            } catch (error) {
+              if (!isServerSideFault(error)) throw error
+              environmentAbort = `${verdict.key}: ${error.message} - remaining auto-runs skipped`
+              break batchLoop
+            }
             if (single === 'PASS') ranClean.add(verdict.key)
             else if (single.startsWith('HUNG_BACKEND')) {
               hardFailures.push(
@@ -1722,6 +1744,8 @@ for (const entry of loadManifest()) {
         console.log(
           `${entry.pack} auto-ran ${ranClean.size} node(s) clean; ${cannotRun.size} cannot run alone (baseline ${baseline.size})`
         )
+        // Appended last: per-node failures keep precedence over the 5xx.
+        if (environmentAbort !== undefined) hardFailures.push(environmentAbort)
         const autoRunFailureSummary = failureSummary(
           `${entry.pack} auto-run failures`,
           hardFailures,

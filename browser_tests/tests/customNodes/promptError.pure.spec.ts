@@ -4,6 +4,7 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import {
   LocalDesktopTarget,
+  isServerSideFault,
   summarizePromptError,
   toPromptEvent
 } from '@e2e/fixtures/customNode/ComfyTarget'
@@ -83,7 +84,7 @@ test('returns a captured prompt rejection without waiting for execution events',
   const response = {
     request: () => ({ method: () => 'POST' }),
     url: () => 'http://backend/api/prompt',
-    status: () => 500,
+    status: () => 400,
     json: () =>
       Promise.resolve({
         error: { message: 'prompt rejected' },
@@ -124,7 +125,7 @@ test('returns a captured prompt rejection without waiting for execution events',
   expect(listeners.size).toBe(0)
 })
 
-test('returns a non-JSON prompt rejection without waiting for execution events', async () => {
+test('a 5xx rejection without a JSON body is an environment fault, not a pack verdict', async () => {
   const listeners = new Set<(response: Response) => void>()
   let evaluateCalls = 0
   let waitedForExecution = false
@@ -153,17 +154,81 @@ test('returns a non-JSON prompt rejection without waiting for execution events',
     }
   } as unknown as Page
 
-  const result = await new LocalDesktopTarget().runWorkflow(page, {
-    expectedNodeIds: ['1'],
-    timeoutMs: 60_000
-  })
+  await expect(
+    new LocalDesktopTarget().runWorkflow(page, {
+      expectedNodeIds: ['1'],
+      timeoutMs: 60_000
+    })
+  ).rejects.toThrow(
+    'prompt submission failed server-side (HTTP 502 POST /prompt) - backend/environment fault, not a pack validation reject'
+  )
+  expect(waitedForExecution).toBe(false)
+  expect(listeners.size).toBe(0)
+})
 
-  expect(result).toEqual({
-    outcome: 'VALIDATION_FAIL',
-    executedNodes: [],
-    outputsByNode: {},
-    clientError: 'HTTP 502 prompt submission failed'
-  })
+// The 2026-08-09 testcloud incident shape: an out-of-order migration left
+// ingest unable to INSERT jobs, every POST /prompt answered 500
+// DATABASE_ERROR, and the suite reported 1,563 per-node VALIDATION_FAIL
+// "regressions" across 68 packs. A 5xx during submission must fail the tier
+// once, naming the backend - it can never become a per-node verdict.
+test('a backend 5xx during submission cannot be pinned on the node under test', async () => {
+  const listeners = new Set<(response: Response) => void>()
+  let evaluateCalls = 0
+  let waitedForExecution = false
+  const response = {
+    request: () => ({ method: () => 'POST' }),
+    url: () => 'http://backend/api/prompt',
+    status: () => 500,
+    json: () =>
+      Promise.resolve({
+        error: {
+          message: 'Failed to create job record',
+          type: 'DATABASE_ERROR',
+          details: ''
+        }
+      })
+  } as unknown as Response
+  const page = {
+    on: (_event: string, listener: (value: Response) => void) => {
+      listeners.add(listener)
+    },
+    off: (_event: string, listener: (value: Response) => void) => {
+      listeners.delete(listener)
+    },
+    // The incident path: app.queuePrompt swallows the 500 and returns false
+    // on BOTH attempts, so the environment verdict must come from the
+    // captured /prompt response, after the client-flap retry is spent.
+    evaluate: async () => {
+      evaluateCalls += 1
+      if (evaluateCalls === 1) return []
+      for (const listener of listeners) listener(response)
+      return false
+    },
+    waitForFunction: async () => {
+      waitedForExecution = true
+      throw new Error('a rejected submission cannot emit execution events')
+    }
+  } as unknown as Page
+
+  const failure = await new LocalDesktopTarget()
+    .runWorkflow(page, {
+      expectedNodeIds: ['1'],
+      timeoutMs: 60_000
+    })
+    .then(
+      () => undefined,
+      (error: unknown) => error
+    )
+  // The batch driver catches THIS shape to stop submitting while still
+  // reporting every verdict collected before the fault - the predicate is
+  // part of the contract, not just the message text.
+  expect(isServerSideFault(failure)).toBe(true)
+  expect((failure as Error).message).toBe(
+    'prompt submission failed server-side (HTTP 500 POST /prompt) - Failed to create job record [type: DATABASE_ERROR] - backend/environment fault, not a pack validation reject'
+  )
+  expect(
+    isServerSideFault(new Error('VALIDATION_FAIL (client threw: boom)'))
+  ).toBe(false)
   expect(waitedForExecution).toBe(false)
   expect(listeners.size).toBe(0)
 })
