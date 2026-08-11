@@ -69,6 +69,7 @@ dist.zip
 
 /temp/
 /tmp/
+.superpowers/
 
 # Generated JSON Schemas
 /schemas/
