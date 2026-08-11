@@ -832,6 +832,33 @@ describe('nodeOutputStore setNodeOutputs (widget path)', () => {
     expect(url).not.toContain('%5Boutput%5D')
   })
 
+  it('preserves an [output]-sourced widget preview when execution sends no images', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 5 })
+
+    store.setNodeOutputs(node, 'runs/2026/generated.png [output]')
+    store.setNodeOutputsByExecutionId(
+      createNodeExecutionId([toNodeId(5)]),
+      createMockOutputs()
+    )
+
+    expect(store.nodeOutputs['5']?.images).toHaveLength(1)
+    expect(store.nodeOutputs['5']?.images?.[0]?.filename).toBe('generated.png')
+  })
+
+  it('lets a real execution result replace a widget preview', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 5 })
+
+    store.setNodeOutputs(node, 'runs/2026/generated.png [output]')
+    store.setNodeOutputsByExecutionId(
+      createNodeExecutionId([toNodeId(5)]),
+      createMockOutputs([{ filename: 'executed.png', type: 'output' }])
+    )
+
+    expect(store.nodeOutputs['5']?.images?.[0]?.filename).toBe('executed.png')
+  })
+
   it('leaves an unannotated value in the caller-supplied folder', () => {
     const store = useNodeOutputStore()
     const node = createMockNode({ id: 5 })

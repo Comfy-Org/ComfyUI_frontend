@@ -51,6 +51,8 @@ const createOutputs = (
 
 interface SetOutputOptions {
   merge?: boolean
+  /** Outputs came from a widget value, not an execution result. */
+  widgetSourced?: boolean
 }
 
 export const useNodeOutputStore = defineStore('nodeOutput', () => {
@@ -158,6 +160,14 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     return buildImageUrls(node, getNodeOutputByExecutionId(executionId))
   }
 
+  /**
+   * Locators whose current outputs were set from a widget value rather than an
+   * execution result. An empty execution result must not wipe these. Directory
+   * alone cannot identify them: a widget can point at an `output` or `temp`
+   * asset just as readily as an `input` one.
+   */
+  const widgetSourcedPreviews = new Set<NodeLocatorId>()
+
   function isInputPreviewOutput(
     output: ExecutedWsMessage['output'] | ResultItem | undefined
   ): boolean {
@@ -179,9 +189,17 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     const incomingImages = (outputs as ExecutedWsMessage['output']).images
     const hasIncomingImages =
       Array.isArray(incomingImages) && incomingImages.length > 0
+
+    if (options.widgetSourced) {
+      widgetSourcedPreviews.add(nodeLocatorId)
+    } else if (hasIncomingImages) {
+      widgetSourcedPreviews.delete(nodeLocatorId)
+    }
+
     if (
       !hasIncomingImages &&
-      isInputPreviewOutput(app.nodeOutputs[nodeLocatorId])
+      (widgetSourcedPreviews.has(nodeLocatorId) ||
+        isInputPreviewOutput(app.nodeOutputs[nodeLocatorId]))
     ) {
       outputs = {
         ...outputs,
@@ -223,17 +241,19 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
 
     const locatorId = nodeToNodeLocatorId(node)
     if (!locatorId) return
+    const widgetSourced = { widgetSourced: true }
     if (typeof filenames === 'string') {
       setOutputsByLocatorId(
         locatorId,
-        createOutputs([filenames], folder, isAnimated)
+        createOutputs([filenames], folder, isAnimated),
+        widgetSourced
       )
     } else if (!Array.isArray(filenames)) {
-      setOutputsByLocatorId(locatorId, filenames)
+      setOutputsByLocatorId(locatorId, filenames, widgetSourced)
     } else {
       const resultItems = createOutputs(filenames, folder, isAnimated)
       if (!resultItems?.images?.length) return
-      setOutputsByLocatorId(locatorId, resultItems)
+      setOutputsByLocatorId(locatorId, resultItems, widgetSourced)
     }
   }
 
@@ -406,6 +426,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   function resetAllOutputsAndPreviews() {
     app.nodeOutputs = {}
     nodeOutputs.value = {}
+    widgetSourcedPreviews.clear()
     revokeAllPreviews()
   }
 
