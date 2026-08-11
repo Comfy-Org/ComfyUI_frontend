@@ -32,15 +32,31 @@ test.describe('Load Image upload persistence', () => {
 
     const valueBeforeDrop = await readImageWidgetValue()
 
-    const draftSaveStartedAt = Date.now()
     await comfyPage.dragDrop.dragAndDropFile(DROPPED_FILE, {
       dropPosition: { x, y }
     })
 
     await expect.poll(readImageWidgetValue).not.toBe(valueBeforeDrop)
-    const valueAfterDrop = await readImageWidgetValue()
+    const valueAfterDrop = String(await readImageWidgetValue())
 
-    await comfyPage.workflow.waitForDraftIndexUpdatedSince(draftSaveStartedAt)
+    // The draft carrying the new value is what survives the reload, so waiting
+    // on it also covers the 512ms persist debounce.
+    await expect
+      .poll(
+        () =>
+          comfyPage.page.evaluate((expected) => {
+            for (let i = 0; i < window.localStorage.length; i++) {
+              const key = window.localStorage.key(i)
+              if (!key?.startsWith('Comfy.Workflow.Draft.v2:')) continue
+              if (window.localStorage.getItem(key)?.includes(expected))
+                return true
+            }
+            return false
+          }, valueAfterDrop),
+        { timeout: 15_000 }
+      )
+      .toBe(true)
+
     await comfyPage.workflow.reloadAndWaitForApp()
 
     await expect.poll(readImageWidgetValue).toBe(valueAfterDrop)
