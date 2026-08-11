@@ -31,9 +31,34 @@ export interface SettingDef {
   readonly tooltip?: string
   /** Panel grouping. Defaults to the id split on dots. */
   readonly category?: readonly string[]
-  /** Choices for `combo`. */
-  readonly options?: readonly string[]
+  /**
+   * Choices for `combo`.
+   *
+   * A bare string is both the stored value and the label. Use the pair form
+   * when they differ — several packs store a semantic number and show words
+   * for it (`0` = off, `1` = selected, `2` = all), and comparing those
+   * numerically is the whole point. Flattening them to strings silently
+   * re-types every user's saved choice.
+   */
+  readonly options?: readonly SettingOption[]
+  /**
+   * Bounds for `number` and `slider`. Without these a slider has no range to
+   * draw and packs fall back to a plain text box.
+   */
+  readonly attrs?: SettingAttrs
   readonly onChange?: (value: SettingValue, previous?: SettingValue) => void
+}
+
+/** @knipIgnoreUnusedButUsedByCustomNodes */
+export type SettingOption =
+  | string
+  | { readonly value: string | number; readonly label: string }
+
+/** @knipIgnoreUnusedButUsedByCustomNodes */
+export interface SettingAttrs {
+  readonly min?: number
+  readonly max?: number
+  readonly step?: number
 }
 
 export interface SettingsHandle {
@@ -68,7 +93,15 @@ export function createSettingsApi(): SettingsHandle {
         defaultValue: def.defaultValue,
         tooltip: def.tooltip,
         category: def.category ? [...def.category] : undefined,
-        options: def.options ? [...def.options] : undefined,
+        // The store's own option shape is `{ text, value }`; ours is
+        // `{ label, value }` so a pack is not reading core's internal naming
+        // out of our type.
+        options: def.options?.map((option) =>
+          typeof option === 'string'
+            ? option
+            : { text: option.label, value: option.value }
+        ),
+        attrs: def.attrs ? { ...def.attrs } : undefined,
         onChange: def.onChange as SettingDef['onChange']
       })
     },
