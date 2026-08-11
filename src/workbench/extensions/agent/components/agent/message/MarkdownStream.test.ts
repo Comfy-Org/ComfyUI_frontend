@@ -30,6 +30,26 @@ describe('MarkdownStream', () => {
     )
   })
 
+  it('renders multiple asset links as separate list items', () => {
+    render(MarkdownStream, {
+      props: {
+        text: [
+          '- [/api/view?filename=contact.png](view?filename=contact.png)',
+          '- [/api/view?filename=flux.png](view?filename=flux.png)'
+        ].join('\n')
+      }
+    })
+
+    const items = screen.getAllByRole('listitem')
+    expect(items).toHaveLength(2)
+    expect(
+      screen.getByRole('link', { name: '/api/view?filename=contact.png' })
+    ).toHaveAttribute('href', '/api/view?filename=contact.png')
+    expect(
+      screen.getByRole('link', { name: '/api/view?filename=flux.png' })
+    ).toHaveAttribute('href', '/api/view?filename=flux.png')
+  })
+
   it('preserves the asset preview when the response uses markdown image syntax', () => {
     const assetPath =
       'view?filename=ComfyUI_00001_32f6b8c7.png&subfolder=agent%2Foutputs&type=output'
