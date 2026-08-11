@@ -16,10 +16,5 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
       label: t('fdct.hero.contactCta', locale),
       href: localizeHref(fdctPage.ctas.contact, locale)
     }"
-    :secondary-cta="{
-      label: t('fdct.hero.applyCta', locale),
-      href: fdctPage.ctas.applyFdct,
-      target: '_blank'
-    }"
   />
 </template>

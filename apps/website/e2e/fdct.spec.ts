@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import {
+  applyFdctUrl,
   fdctFaqs,
   projects as projectsOf,
   technologists as technologistsOf
@@ -43,9 +44,7 @@ test.describe('FDCT page @smoke', () => {
     await expect(page).toHaveTitle(t('fdct.meta.title', 'en'))
   })
 
-  test('hero renders the h1 and CTA pair with decided hrefs', async ({
-    page
-  }) => {
+  test('hero renders the h1 and contact as its only CTA', async ({ page }) => {
     await page.goto('/fdct')
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
       t('fdct.hero.title', 'en')
@@ -53,12 +52,10 @@ test.describe('FDCT page @smoke', () => {
     const hero = page.locator('section', {
       has: page.getByRole('heading', { level: 1 })
     })
+    await expect(hero.getByRole('link')).toHaveCount(1)
     await expect(
       hero.getByRole('link', { name: t('fdct.hero.contactCta', 'en') })
     ).toHaveAttribute('href', '/contact')
-    await expect(
-      hero.getByRole('link', { name: t('fdct.hero.applyCta', 'en') })
-    ).toHaveAttribute('href', '#')
     await expect(page.getByText(t('fdct.hero.eyebrow', 'en'))).toBeHidden()
   })
 
@@ -153,7 +150,7 @@ test.describe('FDCT page @smoke', () => {
     ).toBeVisible()
   })
 
-  test('Q&A renders five questions and expands one to reveal its answer', async ({
+  test('Q&A renders every question and expands one to reveal its answer', async ({
     page
   }) => {
     await page.goto('/fdct')
@@ -171,7 +168,17 @@ test.describe('FDCT page @smoke', () => {
     await expect(page.getByText(fourth.answer)).toBeVisible()
   })
 
-  test('emits FAQPage structured data with the five Q&A pairs', async ({
+  test('Q&A is the only place the FDCT role is linked', async ({ page }) => {
+    await page.goto('/fdct')
+    await page.getByRole('button', { name: t('fdct.faq.q6', 'en') }).click()
+
+    const roleLinks = page.locator(`a[href="${applyFdctUrl}"]`)
+    await expect(roleLinks).toHaveCount(1)
+    await expect(roleLinks).toBeVisible()
+    await expect(roleLinks).toHaveAttribute('target', '_blank')
+  })
+
+  test('emits FAQPage structured data with every Q&A pair', async ({
     page
   }) => {
     await page.goto('/fdct')
@@ -237,15 +244,10 @@ test.describe('FDCT hero @mobile', () => {
     const hero = page.locator('section', {
       has: page.getByRole('heading', { level: 1 })
     })
-    const contactCta = hero.getByRole('link', {
-      name: t('fdct.hero.contactCta', 'en')
-    })
-    const applyCta = hero.getByRole('link', {
-      name: t('fdct.hero.applyCta', 'en')
-    })
-    const contactBox = await contactCta.boundingBox()
-    const applyBox = await applyCta.boundingBox()
-    expect(contactBox!.y).toBeLessThan(applyBox!.y)
+    await expect(
+      hero.getByRole('link', { name: t('fdct.hero.contactCta', 'en') })
+    ).toBeVisible()
+    await expect(hero.getByRole('link')).toHaveCount(1)
   })
 })
 
@@ -266,12 +268,10 @@ test.describe('FDCT page (zh-CN) @smoke', () => {
     const hero = page.locator('section', {
       has: page.getByRole('heading', { level: 1 })
     })
+    await expect(hero.getByRole('link')).toHaveCount(1)
     await expect(
       hero.getByRole('link', { name: t('fdct.hero.contactCta', 'zh-CN') })
     ).toHaveAttribute('href', '/zh-CN/contact')
-    await expect(
-      hero.getByRole('link', { name: t('fdct.hero.applyCta', 'zh-CN') })
-    ).toHaveAttribute('href', '#')
   })
 
   test('builders section renders the localized node label and reasons', async ({
@@ -357,7 +357,7 @@ test.describe('FDCT page (zh-CN) @smoke', () => {
     ).toBeVisible()
   })
 
-  test('Q&A renders the five localized questions and expands one', async ({
+  test('Q&A renders the localized questions and expands one', async ({
     page
   }) => {
     await page.goto('/zh-CN/fdct')
@@ -373,6 +373,15 @@ test.describe('FDCT page (zh-CN) @smoke', () => {
     const fourth = faqs[3]
     await page.getByRole('button', { name: fourth.question }).click()
     await expect(page.getByText(fourth.answer)).toBeVisible()
+  })
+
+  test('links the FDCT role from the localized Q&A', async ({ page }) => {
+    await page.goto('/zh-CN/fdct')
+    await page.getByRole('button', { name: t('fdct.faq.q6', 'zh-CN') }).click()
+
+    const roleLinks = page.locator(`a[href="${applyFdctUrl}"]`)
+    await expect(roleLinks).toHaveCount(1)
+    await expect(roleLinks).toBeVisible()
   })
 
   test('CTA bands render localized labels with locale-prefixed hrefs', async ({
