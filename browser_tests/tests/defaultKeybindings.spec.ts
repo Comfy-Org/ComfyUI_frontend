@@ -236,6 +236,28 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
       await comfyPage.keyboard.press('Escape')
     })
 
+    test("'Ctrl+s' does not fall through to the browser while a dialog is open", async ({
+      comfyPage
+    }) => {
+      await comfyPage.keyboard.press('Control+s')
+      await expect(comfyPage.page.getByRole('dialog')).toBeVisible()
+
+      await comfyPage.page.evaluate(() => {
+        window.TestCommand = false
+        window.addEventListener('keydown', (event: KeyboardEvent) => {
+          if (event.key === 's') window.TestCommand = event.defaultPrevented
+        })
+      })
+
+      await comfyPage.keyboard.press('Control+s')
+
+      await expect
+        .poll(() => comfyPage.page.evaluate(() => window.TestCommand))
+        .toBe(true)
+
+      await comfyPage.keyboard.press('Escape')
+    })
+
     test("'Ctrl+o' triggers open workflow", async ({ comfyPage }) => {
       // Ctrl+o calls app.ui.loadFile() which clicks a hidden file input.
       // Detect the file input click via an event listener.

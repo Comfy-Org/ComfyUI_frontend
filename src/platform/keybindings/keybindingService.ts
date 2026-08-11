@@ -51,6 +51,12 @@ export function useKeybindingService() {
         }
       }
       if (isModalOpen(dialogStore.dialogStack.length)) {
+        // A combo the app owns must not fall through to the browser just
+        // because a dialog is open. Only Ctrl/Cmd combos are suppressed —
+        // bare keys still have to reach inputs inside the dialog.
+        if (keyCombo.ctrl) {
+          event.preventDefault()
+        }
         return
       }
 
