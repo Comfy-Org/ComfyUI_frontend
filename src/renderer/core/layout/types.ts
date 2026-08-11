@@ -14,9 +14,7 @@ import type { UUID } from '@/utils/uuid'
 // Enum for layout source types
 export enum LayoutSource {
   Canvas = 'canvas',
-  Vue = 'vue',
-  DOM = 'dom',
-  External = 'external'
+  Vue = 'vue'
 }
 
 // Basic geometric types
@@ -113,7 +111,7 @@ interface OperationMeta {
   /** Timestamp for ordering operations */
   timestamp: number
   /** Actor who performed the operation (for CRDT) */
-  actor: string
+  actor?: string
   /** Source system that initiated the operation */
   source: LayoutSource
   graphId: UUID

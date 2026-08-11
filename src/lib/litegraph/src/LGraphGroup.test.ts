@@ -7,6 +7,7 @@ import { beforeEach, describe, expect } from 'vitest'
 import { LGraph, LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { LayoutSource } from '@/renderer/core/layout/types'
 import { createUuidv4 } from '@/utils/uuid'
 
 import { test } from './__fixtures__/testExtensions'
@@ -200,7 +201,10 @@ describe('group layout in layoutStore', () => {
   test('keeps geometry locally when the store entry is gone', () => {
     const graph = new LGraph()
     const group = addedGroup(graph, toGroupId(809))
-    useLayoutMutations().deleteGroup(graph.rootGraph.id, group.id)
+    useLayoutMutations(LayoutSource.Canvas).deleteGroup(
+      graph.rootGraph.id,
+      group.id
+    )
 
     group.pos = [11, 22]
 
@@ -294,7 +298,7 @@ describe('group layout in layoutStore', () => {
       type: 'setGroupBounds',
       actor: 'test',
       timestamp: 1,
-      source: layoutStore.getCurrentSource(),
+      source: LayoutSource.Canvas,
       entity: 'group',
       graphId: graph.rootGraph.id,
       groupId: group.id,
