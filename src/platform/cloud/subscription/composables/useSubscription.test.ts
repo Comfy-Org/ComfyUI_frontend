@@ -932,22 +932,18 @@ describe('useSubscription', () => {
         renewal_date: '2025-11-16'
       })
 
-      try {
-        const { fetchStatus, manageSubscription } = useSubscriptionWithScope()
+      const { fetchStatus, manageSubscription } = useSubscriptionWithScope()
 
-        await fetchStatus()
-        mockGetBillingStatus.mockClear()
+      await fetchStatus()
+      mockGetBillingStatus.mockClear()
 
-        await manageSubscription()
-        await vi.advanceTimersByTimeAsync(5000)
+      await manageSubscription()
+      await vi.advanceTimersByTimeAsync(5000)
 
-        expect(mockGetBillingStatus).not.toHaveBeenCalled()
-        expect(
-          mockTelemetry.trackMonthlySubscriptionCancelled
-        ).not.toHaveBeenCalled()
-      } finally {
-        vi.useRealTimers()
-      }
+      expect(mockGetBillingStatus).not.toHaveBeenCalled()
+      expect(
+        mockTelemetry.trackMonthlySubscriptionCancelled
+      ).not.toHaveBeenCalled()
     })
 
     it('tracks cancellation after manage subscription when status flips', async () => {
@@ -971,20 +967,16 @@ describe('useSubscription', () => {
         .mockResolvedValueOnce(activeStatus)
         .mockResolvedValueOnce(cancelledStatus)
 
-      try {
-        const { fetchStatus, manageSubscription } = useSubscriptionWithScope()
+      const { fetchStatus, manageSubscription } = useSubscriptionWithScope()
 
-        await fetchStatus()
-        await manageSubscription()
+      await fetchStatus()
+      await manageSubscription()
 
-        await vi.advanceTimersByTimeAsync(5000)
+      await vi.advanceTimersByTimeAsync(5000)
 
-        expect(
-          mockTelemetry.trackMonthlySubscriptionCancelled
-        ).toHaveBeenCalledTimes(1)
-      } finally {
-        vi.useRealTimers()
-      }
+      expect(
+        mockTelemetry.trackMonthlySubscriptionCancelled
+      ).toHaveBeenCalledTimes(1)
     })
 
     it('handles rapid focus events during cancellation polling', async () => {
@@ -1008,21 +1000,17 @@ describe('useSubscription', () => {
         .mockResolvedValueOnce(activeStatus)
         .mockResolvedValueOnce(cancelledStatus)
 
-      try {
-        const { fetchStatus, manageSubscription } = useSubscriptionWithScope()
+      const { fetchStatus, manageSubscription } = useSubscriptionWithScope()
 
-        await fetchStatus()
-        await manageSubscription()
+      await fetchStatus()
+      await manageSubscription()
 
-        window.dispatchEvent(new Event('focus'))
-        await vi.waitFor(() => {
-          expect(
-            mockTelemetry.trackMonthlySubscriptionCancelled
-          ).toHaveBeenCalledTimes(1)
-        })
-      } finally {
-        vi.useRealTimers()
-      }
+      window.dispatchEvent(new Event('focus'))
+      await vi.waitFor(() => {
+        expect(
+          mockTelemetry.trackMonthlySubscriptionCancelled
+        ).toHaveBeenCalledTimes(1)
+      })
     })
   })
 })

@@ -54,7 +54,6 @@ describe('TourSpotlight', () => {
     cleanup()
     clearCoachmarks()
     document.body.replaceChildren()
-    vi.useRealTimers()
   })
 
   it('renders the spotlight and card for a step', () => {

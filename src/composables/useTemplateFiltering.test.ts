@@ -619,24 +619,20 @@ describe('useTemplateFiltering', () => {
 
     it('reports the visible sort to telemetry, not the persisted browse sort', async () => {
       vi.useFakeTimers()
-      try {
-        const composable = useTemplateFiltering(
-          ref([buildTemplate({ name: 'only', title: 'Only' })])
-        )
-        composable.sortBy.value = 'newest'
-        composable.searchQuery.value = 'only'
-        await nextTick()
-        await vi.runOnlyPendingTimersAsync()
+      const composable = useTemplateFiltering(
+        ref([buildTemplate({ name: 'only', title: 'Only' })])
+      )
+      composable.sortBy.value = 'newest'
+      composable.searchQuery.value = 'only'
+      await nextTick()
+      await vi.runOnlyPendingTimersAsync()
 
-        expect(
-          trackTemplateFilterChanged,
-          'telemetry must report the search default, not the persisted browse sort'
-        ).toHaveBeenLastCalledWith(
-          expect.objectContaining({ sort_by: 'popular' })
-        )
-      } finally {
-        vi.useRealTimers()
-      }
+      expect(
+        trackTemplateFilterChanged,
+        'telemetry must report the search default, not the persisted browse sort'
+      ).toHaveBeenLastCalledWith(
+        expect.objectContaining({ sort_by: 'popular' })
+      )
     })
 
     it('preserves relevance order after a model filter narrows the results', async () => {
