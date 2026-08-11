@@ -381,7 +381,7 @@ describe('JobAssetsList', () => {
   })
 
   it('shows and hides the job details popover with hover delays', async () => {
-    vi.useFakeTimers()
+    vi.useFakeTimers({ shouldAdvanceTime: false })
     const job = buildJob()
     const { container } = renderJobAssetsList({ jobs: [job] })
 
@@ -411,7 +411,7 @@ describe('JobAssetsList', () => {
   })
 
   it('keeps the job details popover open while hovering the popover', async () => {
-    vi.useFakeTimers()
+    vi.useFakeTimers({ shouldAdvanceTime: false })
     const job = buildJob()
     const { container } = renderJobAssetsList({ jobs: [job] })
 
