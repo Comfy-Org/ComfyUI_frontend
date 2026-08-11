@@ -21,7 +21,7 @@ field groupings inside `NodeState`, not separate records or stores.
 The store uses the same flat root-scoped identity model as link and reroute
 components:
 
-```
+```text
 RootGraphId -> { byId, idsByOwner }
 ```
 
@@ -32,7 +32,7 @@ immutable; deletion also verifies component identity and owner.
 
 ## Decision 2: Field set — what is NodeState, what is elsewhere
 
-```
+```text
 NodeState {
   id: NodeId
   graphId: UUID            // owning (sub)graph association + locator ids

@@ -21,7 +21,7 @@ store per [ADR 0008](../adr/0008-entity-component-system.md). Amends the
 
 The chain is primary. Membership becomes a derived reverse index:
 
-```
+```text
 linksThrough(R) = { L : R ∈ chain(L.parentId) }
 ```
 
@@ -40,13 +40,13 @@ disagree, and every dual write site survives.
 `rerouteStore` holds per-reroute chain state objects, registered by
 reference (the class reads through them, mirroring `LLink._state`):
 
-```
+```text
 RerouteChain { id, graphId, parentId?, floating? }
 ```
 
 Buckets use the shared graph-scoped lifecycle:
 
-```
+```text
 RootGraphId -> { chains, idsByOwner, membershipByOwner }
 ```
 

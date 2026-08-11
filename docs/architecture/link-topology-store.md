@@ -15,7 +15,7 @@ store; shared vocabulary lives in the
 `LLink` no longer owns copies of its topology fields. A single plain
 object,
 
-```
+```text
 LinkTopology { id, graphId, originNodeId, originSlot, targetNodeId,
                targetSlot, type, parentId? }
 ```
@@ -60,7 +60,7 @@ imports. `graphId` is association data, not part of entity identity.
 
 Buckets use the shared graph-scoped lifecycle:
 
-```
+```text
 RootGraphId -> { byId, idsByOwner, targetIndex, originIndex }
 ```
 
