@@ -5459,8 +5459,8 @@ const translations = {
   },
   'fdct.hero.contactCta': { en: 'Contact us', 'zh-CN': '联系我们' },
   'fdct.hero.applyCta': {
-    en: 'Apply as a Forward Deployed Creative',
-    'zh-CN': '申请成为前沿驻场创意人才'
+    en: 'Apply as an FDC',
+    'zh-CN': '申请成为 FDC'
   },
   'fdct.builders.title': {
     en: 'Builders, not advisors',
