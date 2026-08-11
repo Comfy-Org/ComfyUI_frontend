@@ -93,7 +93,13 @@ jobs:
     # and this job would have nothing to run, so skip it (a skip counts as
     # passing, keeping this required-safe). Non-PR events (push, merge_group,
     # workflow_dispatch) are same-repo by construction and fall through the OR.
+    # DETECTION-PROOF BRANCH ONLY: the plain cloud gate is disabled here. This
+    # never-merge branch's pushes were burning full real runs on the ONE shared
+    # Cloud test instance for nothing (its tree is clean; breaks live only in
+    # the core matrix legs). Phase C replaces this with cloud-mode proof legs.
     if: >-
+      github.head_ref != 'nathaniel/detection-proof' &&
+      github.ref_name != 'nathaniel/detection-proof' &&
       needs.changes.outputs.should-run == 'true' &&
       (github.event_name != 'pull_request' ||
       github.event.pull_request.head.repo.full_name == github.repository)
@@ -282,5 +288,207 @@ jobs:
             playwright-report/
             custom-nodes-cloud-results.json
             custom-nodes-cloud.log
+          retention-days: 7
+          if-no-files-found: warn
+
+  # Detection-only Cloud witnesses. Core proof remains in
+  # ci-tests-custom-nodes.yaml and is intentionally untouched.
+  custom-nodes-detection-proof-cloud:
+    needs: changes
+    if: >-
+      (github.head_ref == 'nathaniel/detection-proof' ||
+      github.ref_name == 'nathaniel/detection-proof') &&
+      needs.changes.outputs.should-run == 'true' &&
+      (github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        row: [1, 2, 3, 4, 5, 7, 11]
+    steps:
+      - name: Checkout exact proof head
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
+      - name: Gate on Cloud proof prerequisites
+        id: gate
+        env:
+          SMOKE_ACCOUNT_EMAIL: ${{ secrets.SMOKE_ACCOUNT_EMAIL }}
+          SMOKE_ACCOUNT_PASSWORD: ${{ secrets.SMOKE_ACCOUNT_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [ -n "${SMOKE_ACCOUNT_EMAIL:-}" ] || { echo "::error::SMOKE_ACCOUNT_EMAIL is missing"; exit 1; }
+          [ -n "${SMOKE_ACCOUNT_PASSWORD:-}" ] || { echo "::error::SMOKE_ACCOUNT_PASSWORD is missing"; exit 1; }
+          [ -f browser_tests/fixtures/data/customNodeManifest.cloud.json ] || { echo "::error::Cloud manifest is missing"; exit 1; }
+
+      - name: Apply isolated Cloud break
+        id: mutation
+        env:
+          ROW: ${{ matrix.row }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          d=browser_tests/tests/customNodes/detection-proof
+          if [ "$ROW" = 1 ]; then
+            p="$d/cloud-row-01-mount-v1-input-dropped.patch"
+          else
+            p=$(printf '%s/row-%02d-'"*.patch" "$d" "$ROW")
+            # shellcheck disable=SC2086
+            p=$(ls $p 2>/dev/null | head -1 || true)
+          fi
+          [ -n "$p" ] && [ -f "$p" ] || { echo "::error::no Cloud proof patch for S$ROW"; exit 1; }
+          git apply --check "$p" || { echo "::error::$p does not apply"; exit 1; }
+          digest=$(sha256sum "$p" | awk '{print $1}')
+          git apply "$p"
+          echo "path=$p" >> "$GITHUB_OUTPUT"
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+
+      - name: Bind proof identity
+        env:
+          E2E_PARENT: 96c6809291a4447fd8b61978509aec78a809f804
+          MUTATION_DIGEST: ${{ steps.mutation.outputs.digest }}
+          MUTATION_PATH: ${{ steps.mutation.outputs.path }}
+          PROOF_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          ROW: ${{ matrix.row }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [ "$(git rev-parse HEAD)" = "$PROOF_SHA" ] || { echo "::error::checkout is not proof SHA $PROOF_SHA"; exit 1; }
+          git merge-base --is-ancestor "$E2E_PARENT" HEAD || { echo "::error::E2E parent $E2E_PARENT is not an ancestor"; exit 1; }
+          {
+            echo "proof_sha=$PROOF_SHA"
+            echo "e2e_parent_sha=$E2E_PARENT"
+            echo "tier=S$ROW"
+            echo "mutation_path=$MUTATION_PATH"
+            echo "mutation_sha256=$MUTATION_DIGEST"
+            echo "workers=1"
+            echo "retries=0"
+          } | tee cloud-detection-proof-identity.txt
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+        with:
+          include_build_step: false
+
+      - name: Build Cloud dist with isolated break
+        run: pnpm build:cloud-e2e
+
+      - name: Setup Playwright
+        uses: ./.github/actions/setup-playwright
+
+      - name: Start Cloud preview server
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm preview:cloud-e2e --port 4173 &
+          for _ in $(seq 1 60); do
+            if curl -sf -o /dev/null http://localhost:4173/; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::Cloud preview server did not become ready on :4173"
+          exit 1
+
+      - name: Run one Cloud witness for S${{ matrix.row }}
+        id: suite
+        continue-on-error: true
+        env:
+          CN_ENABLE_S14: '0'
+          CN_ENABLE_S15: '0'
+          CUSTOM_NODES_ENV: cloud
+          PLAYWRIGHT_JSON_OUTPUT_NAME: custom-nodes-cloud-proof-results.json
+          PLAYWRIGHT_TEST_URL: http://localhost:4173
+          ROW: ${{ matrix.row }}
+          SMOKE_ACCOUNT_EMAIL: ${{ secrets.SMOKE_ACCOUNT_EMAIL }}
+          SMOKE_ACCOUNT_PASSWORD: ${{ secrets.SMOKE_ACCOUNT_PASSWORD }}
+        shell: bash
+        run: |
+          set -o pipefail
+          case "$ROW" in
+            1)
+              test_name='all nodes: ComfyUI-DepthAnythingV2 @custom-nodes.*every registered node mounts, survives save/reload, and executes$'
+              ;;
+            2|3)
+              test_name='all nodes: sd-dynamic-thresholding @custom-nodes.*every registered node mounts, survives save/reload, and executes$'
+              ;;
+            4)
+              test_name='connectivity: every type-paired link survives model, serialize, and prompt round-trips @custom-nodes$'
+              ;;
+            5)
+              test_name='connectivity drags: curated slot-to-slot wires connect under both renderers @custom-nodes$'
+              ;;
+            7)
+              test_name='smoke: core workflow @custom-nodes.*loads without console errors in both renderers$'
+              ;;
+            11)
+              test_name='custom node: ComfyUI-KJNodes @custom-nodes.*Pack startup/load: expected nodes register, render in both renderers, and frontend extensions load$'
+              ;;
+            *) echo "::error::no Cloud witness for S$ROW"; exit 1 ;;
+          esac
+          echo "test_identity=$test_name" | tee -a cloud-detection-proof-identity.txt
+          pnpm exec playwright test browser_tests/tests/customNodes/ \
+            --project=custom-nodes --reporter=list,json,html --workers=1 --retries=0 \
+            --grep "$test_name" 2>&1 | tee custom-nodes-cloud-proof.log
+
+      - name: Assert Cloud break was caught by S${{ matrix.row }}
+        if: always()
+        env:
+          ROW: ${{ matrix.row }}
+          SUITE_OUTCOME: ${{ steps.suite.outcome }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          f=custom-nodes-cloud-proof-results.json
+          [ -f "$f" ] || { echo "::error::no results json; the witness never ran"; exit 1; }
+          collected=$(jq -er '[.stats.expected, .stats.unexpected, .stats.flaky, .stats.skipped] | add' "$f")
+          unexpected=$(jq -er '.stats.unexpected | numbers' "$f")
+          skipped=$(jq -er '.stats.skipped | numbers' "$f")
+          flaky=$(jq -er '.stats.flaky | numbers' "$f")
+          [ "$collected" = 1 ] || { echo "::error::S$ROW collected $collected tests; expected 1"; exit 1; }
+          [ "$unexpected" = 1 ] || { echo "::error::S$ROW had $unexpected failures; expected 1"; exit 1; }
+          [ "$skipped" = 0 ] || { echo "::error::S$ROW had $skipped skipped tests"; exit 1; }
+          [ "$flaky" = 0 ] || { echo "::error::S$ROW had $flaky flaky tests"; exit 1; }
+          [ "$SUITE_OUTCOME" = failure ] || { echo "::error::S$ROW suite outcome was $SUITE_OUTCOME"; exit 1; }
+          jq -r '[.. | objects | select(has("message")) | .message | strings] | .[]' "$f" > /tmp/cloud-failure-evidence.txt
+          jq -r '.. | objects | .attachments? // empty | .[]? | select(.body? != null) | .body | @base64d' "$f" >> /tmp/cloud-failure-evidence.txt
+          case "$ROW" in
+            1) pat='DepthAnything_V2: instance is missing declared input' ;;
+            2) pat=': Vue mounts ' ;;
+            3) pat='on (pristine|set-values) reload' ;;
+            4) pat='CONNECT_REJECTED' ;;
+            5) pat=' -> .* with VueNodes=' ;;
+            7) pat="Error calling extension 'Comfy\\.NodeBadge' method 'afterConfigureGraph'.*DETECTION PROOF: afterConfigureGraph crash" ;;
+            11) pat='ComfyUI-KJNodes: frontend extension "KJNodes\\.GetNode" not registered - pack JS did not load' ;;
+            *) echo "::error::no expected diagnostic for S$ROW"; exit 1 ;;
+          esac
+          echo "expected_failure_regex=$pat" >> cloud-detection-proof-identity.txt
+          ambient_pat='Failed to create job record|HTTP (500|502)|status( code)?( of)? (500|502)|Failed to fetch jobs: (500|502)'
+          if grep -Eiq -- "$ambient_pat" /tmp/cloud-failure-evidence.txt; then
+            echo "::error::S$ROW failure evidence also contains an unrelated Cloud 500/502 or job-persistence failure"
+            grep -Ei -- "$ambient_pat" /tmp/cloud-failure-evidence.txt | head -20
+            exit 1
+          fi
+          grep -Eq -- "$pat" /tmp/cloud-failure-evidence.txt || { echo "::error::S$ROW red was not attributable to /$pat/"; exit 1; }
+          echo "Cloud S$ROW caught its isolated break: /$pat/"
+
+      - name: Upload Cloud Detection Proof evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: playwright-report-custom-nodes-cloud-s${{ matrix.row }}
+          path: |
+            playwright-report/
+            custom-nodes-cloud-proof-results.json
+            custom-nodes-cloud-proof.log
+            cloud-detection-proof-identity.txt
           retention-days: 7
           if-no-files-found: warn
