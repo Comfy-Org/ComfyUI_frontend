@@ -1,5 +1,4 @@
-import { createPinia, setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import { DragAndScale } from '@/lib/litegraph/src/DragAndScale'
@@ -101,10 +100,6 @@ function loadTemplate(templateId: keyof typeof TOUR_ROLE_PINS): LGraph {
 }
 
 describe('firstRunTourSteps', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-  })
-
   afterEach(() => {
     releaseFirstRunTargets()
     clearCoachmarks()

@@ -1,4 +1,3 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
@@ -306,9 +305,6 @@ describe('useCoreCommands', () => {
     vi.mocked(app.refreshComboInNodes).mockResolvedValue(undefined)
     mockModelStoreRefresh.mockResolvedValue(undefined)
     mockMissingModelStoreRefresh.mockResolvedValue(undefined)
-
-    // Set up Pinia
-    setActivePinia(createPinia())
 
     // Reset app state
     app.canvas.subgraph = undefined
