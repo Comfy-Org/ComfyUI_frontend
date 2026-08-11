@@ -2,6 +2,7 @@ import { expect } from '@playwright/test'
 
 import {
   fdctFaqs,
+  fdctPage,
   projects as projectsOf,
   technologists as technologistsOf
 } from '../src/data/fdct'
@@ -43,7 +44,7 @@ test.describe('FDCT page @smoke', () => {
     await expect(page).toHaveTitle(t('fdct.meta.title', 'en'))
   })
 
-  test('hero renders the h1 and CTA pair with decided hrefs', async ({
+  test('hero renders the h1 and the contact CTA as its only action', async ({
     page
   }) => {
     await page.goto('/fdct')
@@ -56,10 +57,7 @@ test.describe('FDCT page @smoke', () => {
     await expect(
       hero.getByRole('link', { name: t('fdct.hero.contactCta', 'en') })
     ).toHaveAttribute('href', '/contact')
-    await expect(
-      hero.getByRole('link', { name: t('fdct.hero.applyCta', 'en') })
-    ).toHaveAttribute('href', '#')
-    await expect(page.getByText(t('fdct.hero.eyebrow', 'en'))).toBeHidden()
+    await expect(page.getByText(t('fdct.hero.eyebrow', 'en'))).toBeVisible()
   })
 
   test('builders section renders the node label, reasons, and marquee', async ({
@@ -171,6 +169,24 @@ test.describe('FDCT page @smoke', () => {
     await expect(page.getByText(fourth.answer)).toBeVisible()
   })
 
+  test('the apply link sits in the Q&A section and nowhere else', async ({
+    page
+  }) => {
+    await page.goto('/fdct')
+    const applyLink = page.getByRole('link', {
+      name: t('fdct.faq.applyCta', 'en')
+    })
+    await expect(applyLink).toHaveCount(1)
+    await expect(applyLink).toHaveAttribute('href', fdctPage.ctas.applyFdct)
+
+    const faqSection = page.locator('section', {
+      has: page.getByRole('heading', { name: t('fdct.faq.title', 'en') })
+    })
+    await expect(
+      faqSection.getByRole('link', { name: t('fdct.faq.applyCta', 'en') })
+    ).toHaveCount(1)
+  })
+
   test('emits FAQPage structured data with the five Q&A pairs', async ({
     page
   }) => {
@@ -237,15 +253,25 @@ test.describe('FDCT hero @mobile', () => {
     const hero = page.locator('section', {
       has: page.getByRole('heading', { level: 1 })
     })
-    const contactCta = hero.getByRole('link', {
-      name: t('fdct.hero.contactCta', 'en')
+    await expect(
+      hero.getByRole('link', { name: t('fdct.hero.contactCta', 'en') })
+    ).toBeVisible()
+  })
+
+  test('the Q&A apply link stays within the viewport width', async ({
+    page
+  }) => {
+    await page.goto('/fdct')
+    const applyLink = page.getByRole('link', {
+      name: t('fdct.faq.applyCta', 'en')
     })
-    const applyCta = hero.getByRole('link', {
-      name: t('fdct.hero.applyCta', 'en')
-    })
-    const contactBox = await contactCta.boundingBox()
-    const applyBox = await applyCta.boundingBox()
-    expect(contactBox!.y).toBeLessThan(applyBox!.y)
+    await applyLink.scrollIntoViewIfNeeded()
+
+    const box = await applyLink.boundingBox()
+    expect(box, 'apply link bounding box').not.toBeNull()
+    expect(box!.x + box!.width).toBeLessThanOrEqual(
+      page.viewportSize()!.width + 1
+    )
   })
 })
 
@@ -269,9 +295,6 @@ test.describe('FDCT page (zh-CN) @smoke', () => {
     await expect(
       hero.getByRole('link', { name: t('fdct.hero.contactCta', 'zh-CN') })
     ).toHaveAttribute('href', '/zh-CN/contact')
-    await expect(
-      hero.getByRole('link', { name: t('fdct.hero.applyCta', 'zh-CN') })
-    ).toHaveAttribute('href', '#')
   })
 
   test('builders section renders the localized node label and reasons', async ({

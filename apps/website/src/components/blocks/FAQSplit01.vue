@@ -32,40 +32,46 @@ const parsedFaqs = computed(() =>
         </h2>
       </div>
 
-      <Accordion type="multiple" class="flex-1">
-        <AccordionItem
-          v-for="(faq, index) in parsedFaqs"
-          :key="faq.id"
-          :value="faq.id"
-        >
-          <AccordionTrigger
-            :id="`faq-trigger-${faq.id}`"
-            :class="cn(index === 0 && 'pt-0')"
+      <div class="flex flex-1 flex-col">
+        <Accordion type="multiple">
+          <AccordionItem
+            v-for="(faq, index) in parsedFaqs"
+            :key="faq.id"
+            :value="faq.id"
           >
-            {{ faq.question }}
-          </AccordionTrigger>
-          <AccordionContent>
-            <p
-              class="text-sm wrap-break-word whitespace-pre-line text-primary-comfy-canvas/70"
+            <AccordionTrigger
+              :id="`faq-trigger-${faq.id}`"
+              :class="cn(index === 0 && 'pt-0')"
             >
-              <template
-                v-for="(part, partIndex) in faq.answerParts"
-                :key="partIndex"
+              {{ faq.question }}
+            </AccordionTrigger>
+            <AccordionContent>
+              <p
+                class="text-sm wrap-break-word whitespace-pre-line text-primary-comfy-canvas/70"
               >
-                <a
-                  v-if="part.type === 'link'"
-                  :href="part.value"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 rounded-sm underline underline-offset-2 transition-opacity hover:opacity-70 focus-visible:ring-2 focus-visible:outline-none"
-                  >{{ part.label ?? part.value }}</a
+                <template
+                  v-for="(part, partIndex) in faq.answerParts"
+                  :key="partIndex"
                 >
-                <template v-else>{{ part.value }}</template>
-              </template>
-            </p>
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
+                  <a
+                    v-if="part.type === 'link'"
+                    :href="part.value"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 rounded-sm underline underline-offset-2 transition-opacity hover:opacity-70 focus-visible:ring-2 focus-visible:outline-none"
+                    >{{ part.label ?? part.value }}</a
+                  >
+                  <template v-else>{{ part.value }}</template>
+                </template>
+              </p>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+
+        <div v-if="$slots.footer" class="mt-8">
+          <slot name="footer" />
+        </div>
+      </div>
     </div>
   </section>
 </template>
