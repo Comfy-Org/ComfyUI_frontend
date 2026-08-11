@@ -874,9 +874,17 @@ stores.
 
 **Current state:** `beforeChange()` / `afterChange()` provide undo/redo
 checkpoints but not true transactions. The graph can be in an inconsistent
-state between these calls. `linkStore.updateEndpoints()` already validates a
-batch before changing link topology, but it does not provide rollback across
-stores, callbacks, layout, or version changes.
+state between these calls. Link topology mutations are centralized in
+`linkStore`: endpoint updates validate their batch before mutation, and link
+replacement validates ownership, identity, the expected incumbent, ID, and
+target availability before changing its indexes. These operations are atomic
+only within `linkStore`; they do not provide rollback across callbacks, layout,
+reroutes, graph maps, versioning, or other stores.
+
+Centralizing each mutation point removes duplicated caller checks and provides
+one boundary for future atomic validation and rollback. Command-executor
+transactions should wrap these store mutation points rather than adding
+caller-specific compensation.
 
 **Phase 4 baseline semantics:**
 
@@ -957,6 +965,10 @@ current implementation:
   deserialization, paste, and unpack paths first. If the scan has material
   impact, optimize the insertion path while preserving the existing root-shared
   high-water allocator and import-time collision repair.
+- Defer floating reroute/link multi-store rollback. Normal root-shared link ID
+  allocation makes registration rejection unreachable without externally
+  corrupted state; future transaction work should wrap the centralized store
+  mutation rather than add compensation to this path now.
 
 ---
 
