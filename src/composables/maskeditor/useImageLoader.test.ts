@@ -60,8 +60,6 @@ describe('useImageLoader', () => {
   let mockPaintImage: HTMLImageElement
 
   beforeEach(() => {
-    vi.clearAllMocks()
-
     mockBaseImage = {
       width: 512,
       height: 512

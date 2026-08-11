@@ -68,7 +68,6 @@ function nudge() {
 describe('FirstRunTourNudge', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
     vi.useFakeTimers()
     mocks.nudgeArmed.value = false
     mocks.tourWasCompleted.value = true

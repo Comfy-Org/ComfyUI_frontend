@@ -302,7 +302,6 @@ describe('useCoreCommands', () => {
   }
 
   beforeEach(() => {
-    vi.clearAllMocks()
     mockDistributionState.isCloud = false
     vi.mocked(app.refreshComboInNodes).mockResolvedValue(undefined)
     mockModelStoreRefresh.mockResolvedValue(undefined)
@@ -428,7 +427,6 @@ describe('useCoreCommands', () => {
   describe('Subgraph metadata commands', () => {
     beforeEach(() => {
       mockSubgraph.extra = {}
-      vi.clearAllMocks()
     })
 
     describe('SetDescription command', () => {

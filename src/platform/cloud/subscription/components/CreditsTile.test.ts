@@ -16,6 +16,7 @@ type Subscription = Pick<SubscriptionInfo, 'duration' | 'renewalDate'> & {
   tier: SubscriptionInfo['tier'] | 'TEAM'
 }
 type TeamStop = TeamCreditStopSummary
+type CustomerEventsResult = { events: { event_type: string }[] } | null
 
 const state = vi.hoisted(() => ({
   balance: null as Balance | null,
@@ -34,7 +35,9 @@ const state = vi.hoisted(() => ({
   showTopUpCreditsDialog: vi.fn(),
   trackAddApiCreditButtonClicked: vi.fn(),
   checkForCompletedTopup: vi.fn(),
-  getMyEvents: vi.fn().mockResolvedValue({ events: [] }),
+  getMyEvents: vi.fn(
+    async (): Promise<CustomerEventsResult> => ({ events: [] })
+  ),
   customerEventsError: null as string | null,
   toastErrorHandler: vi.fn()
 }))
@@ -206,8 +209,6 @@ describe('CreditsTile', () => {
     state.type = 'workspace'
     state.customerEventsError = null
     mockIsCloud.value = true
-    vi.clearAllMocks()
-    vi.unstubAllEnvs()
     localStorage.clear()
   })
 
