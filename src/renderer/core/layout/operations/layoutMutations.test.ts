@@ -39,6 +39,7 @@ function seedNode(
 
 beforeEach(() => {
   setActivePinia(createTestingPinia({ stubActions: false }))
+  layoutStore.resetForTests()
   seedNode(NODE_1, [10, 20], [200, 100], 0)
   seedNode(NODE_2, [300, 400], [150, 80], 1)
 })
@@ -63,6 +64,20 @@ describe('moveNode', () => {
         y: 200
       }
     )
+  })
+})
+
+describe('resizeNode', () => {
+  it('updates node size', () => {
+    useLayoutMutations(LayoutSource.Vue).resizeNode(GRAPH, NODE_1, {
+      width: 400,
+      height: 200
+    })
+
+    expect(layoutStore.getNodeLayoutRef(GRAPH, NODE_1).value?.size).toEqual({
+      width: 400,
+      height: 200
+    })
   })
 })
 

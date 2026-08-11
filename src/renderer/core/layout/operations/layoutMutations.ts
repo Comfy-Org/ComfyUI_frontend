@@ -1,7 +1,7 @@
 import type { NodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import type { LayoutSource, Point } from '@/renderer/core/layout/types'
+import type { LayoutSource, Point, Size } from '@/renderer/core/layout/types'
 
 export function useLayoutMutations(source: LayoutSource) {
   const moveNode = (
@@ -51,6 +51,19 @@ export function useLayoutMutations(source: LayoutSource) {
     })
   }
 
+  function resizeNode(rootGraphId: UUID, nodeId: NodeId, size: Size): void {
+    if (!layoutStore.getNodeLayoutRef(rootGraphId, nodeId).value) return
+
+    layoutStore.applyOperation({
+      type: 'resizeNode',
+      graphId: rootGraphId,
+      nodeId,
+      size,
+      timestamp: Date.now(),
+      source
+    })
+  }
+
   const setNodeZIndex = (
     rootGraphId: UUID,
     nodeId: NodeId,
@@ -76,6 +89,7 @@ export function useLayoutMutations(source: LayoutSource) {
   return {
     moveNode,
     batchMoveNodes,
+    resizeNode,
     setNodeZIndex,
     bringNodeToFront
   }
