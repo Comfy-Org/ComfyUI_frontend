@@ -43,12 +43,21 @@ jobs:
         uses: peter-evans/create-pull-request@c0f553fe549906ede9cf27b5156039d195d2ece0 # v8.1.0
         with:
           token: ${{ secrets.PR_GH_TOKEN }}
-          commit-message: 'Update locales for node definitions'
-          title: 'Update locales for node definitions'
+          commit-message: 'test: demonstrate automated R0 grading'
+          title: 'test: demonstrate automated R0 grading'
           body: |
-            Automated PR to update locales for node definitions
+            ## Summary
 
-            This PR was created automatically by the frontend update workflow.
-          branch: update-locales-node-defs-${{ github.event.inputs.trigger_type }}-${{ github.run_id }}
-          base: main
-          labels: dependencies
+            Bot-authored, runbook-shaped test change stacked on #14889 to demonstrate all three R0 axes.
+
+            - Path floor: R0 (`*.test.ts` and optional `src/locales/**` only)
+            - Provenance: R0 (`comfy-pr-bot` plus the registered `r0-locale-demo` shape)
+            - Reversibility: R0 (test touched, clean revert, green checks required)
+
+            Test-only screenshot: N/A, test-only.
+
+            Created by Codex
+          branch: demo/risk-r0-locale-${{ github.run_id }}
+          base: ci/pr-risk-grading
+          labels: automated
+          draft: true
