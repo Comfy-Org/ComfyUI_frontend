@@ -203,7 +203,7 @@ export interface IStringComboWidget extends IBaseWidget<
 }
 
 type ComboWidgetValues =
-  | string[]
+  | (string | number)[]
   | Record<string, string>
   | ((widget?: IComboWidget, node?: LGraphNode) => string[])
 
