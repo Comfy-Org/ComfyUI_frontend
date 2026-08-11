@@ -247,6 +247,22 @@ test.describe('FDCT hero @mobile', () => {
     const applyBox = await applyCta.boundingBox()
     expect(contactBox!.y).toBeLessThan(applyBox!.y)
   })
+
+  test('apply CTAs stay within the viewport width', async ({ page }) => {
+    await page.goto('/fdct')
+    const viewportWidth = page.viewportSize()!.width
+    const applyCtas = await page
+      .getByRole('link', { name: t('fdct.hero.applyCta', 'en') })
+      .all()
+    expect(applyCtas.length).toBeGreaterThan(0)
+
+    for (const cta of applyCtas) {
+      await cta.scrollIntoViewIfNeeded()
+      const box = await cta.boundingBox()
+      expect(box, 'apply CTA bounding box').not.toBeNull()
+      expect(box!.x + box!.width).toBeLessThanOrEqual(viewportWidth + 1)
+    }
+  })
 })
 
 test.describe('FDCT page (zh-CN) @smoke', () => {

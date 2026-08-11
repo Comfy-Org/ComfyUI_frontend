@@ -50,6 +50,7 @@ const { heading, subtitle, primaryCta, secondaryCta, termsLink } = defineProps<{
         :rel="resolveRel(primaryCta)"
         variant="default"
         size="lg"
+        class="h-auto min-h-14 whitespace-normal"
       >
         {{ primaryCta.label }}
       </Button>
@@ -61,6 +62,7 @@ const { heading, subtitle, primaryCta, secondaryCta, termsLink } = defineProps<{
         :rel="resolveRel(secondaryCta)"
         variant="outline"
         size="lg"
+        class="h-auto min-h-14 shrink whitespace-normal"
       >
         {{ secondaryCta.label }}
       </Button>
