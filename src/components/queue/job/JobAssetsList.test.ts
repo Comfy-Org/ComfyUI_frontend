@@ -2,7 +2,7 @@
 /* eslint-disable testing-library/prefer-user-event -- fireEvent needed: fake timers require fireEvent for mouseEnter/mouseLeave */
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick } from 'vue'
 import type * as RekaUi from 'reka-ui'
 
@@ -234,10 +234,6 @@ function renderJobAssetsList({
 
   return { ...result, user }
 }
-
-afterEach(() => {
-  vi.useRealTimers()
-})
 
 describe('JobAssetsList', () => {
   it('renders grouped headers alongside job rows', () => {

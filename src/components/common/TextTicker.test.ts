@@ -30,7 +30,6 @@ describe(TextTicker, () => {
 
   afterEach(() => {
     cleanup?.()
-    vi.useRealTimers()
   })
 
   it('renders slot content', () => {

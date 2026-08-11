@@ -1,5 +1,5 @@
 import { render } from '@testing-library/vue'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowAutoSave } from '@/platform/workflow/persistence/composables/useWorkflowAutoSave'
@@ -42,10 +42,6 @@ let mockActiveWorkflow: { isModified: boolean; isPersisted?: boolean } | null =
 describe('useWorkflowAutoSave', () => {
   beforeEach(() => {
     vi.useFakeTimers()
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
   })
 
   it('should auto-save workflow after delay when modified and autosave enabled', async () => {

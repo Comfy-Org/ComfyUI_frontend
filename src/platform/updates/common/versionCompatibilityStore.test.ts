@@ -1,7 +1,7 @@
 import { until } from '@vueuse/core'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
@@ -60,10 +60,6 @@ describe('useVersionCompatibilityStore', () => {
     mockUseSettingStore.mockReturnValue(mockSettingStore)
 
     store = useVersionCompatibilityStore()
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
   })
 
   describe('version compatibility detection', () => {

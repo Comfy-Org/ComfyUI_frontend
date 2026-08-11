@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { TaskResponse } from '@/platform/tasks/services/taskService'
 import { taskService } from '@/platform/tasks/services/taskService'
@@ -58,10 +58,6 @@ describe('useAssetDownloadStore', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.useFakeTimers({ shouldAdvanceTime: false })
     eventHandler.current = null
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
   })
 
   describe('handleAssetDownload', () => {

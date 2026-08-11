@@ -56,7 +56,6 @@ describe('NightlySurveyPopover', () => {
 
   afterEach(() => {
     localStorage.clear()
-    vi.useRealTimers()
   })
 
   async function renderComponent(

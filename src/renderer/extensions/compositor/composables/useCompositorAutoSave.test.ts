@@ -58,7 +58,6 @@ beforeEach(() => {
 })
 
 afterEach(() => {
-  vi.useRealTimers()
   clearCompositorLayers(cacheNode)
 })
 

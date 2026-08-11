@@ -700,8 +700,6 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
       vi.runOnlyPendingTimers()
       expect(pointer.bufferedLinuxEvent).toBeUndefined()
       expect(pointer.linuxBufferTimeoutId).toBeUndefined()
-
-      vi.useRealTimers() // Restore for other tests
     })
 
     it('should handle negative Linux wheel values', () => {

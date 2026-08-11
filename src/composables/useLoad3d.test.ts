@@ -469,8 +469,6 @@ describe('useLoad3d', () => {
 
       vi.advanceTimersByTime(150)
       expect(mockLoad3d.handleResize).toHaveBeenCalledOnce()
-
-      vi.useRealTimers()
     })
 
     it('debounces rapid zoom changes into a single handleResize call', async () => {
@@ -497,8 +495,6 @@ describe('useLoad3d', () => {
 
       vi.advanceTimersByTime(150)
       expect(mockLoad3d.handleResize).toHaveBeenCalledOnce()
-
-      vi.useRealTimers()
     })
   })
 

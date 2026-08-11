@@ -237,7 +237,6 @@ describe('ChangeTracker', () => {
   afterEach(() => {
     vi.restoreAllMocks()
     vi.clearAllTimers()
-    vi.useRealTimers()
   })
 
   describe('captureCanvasState', () => {

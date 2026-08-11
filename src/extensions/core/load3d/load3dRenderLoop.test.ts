@@ -1,14 +1,10 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { startRenderLoop } from './load3dRenderLoop'
 
 describe('startRenderLoop', () => {
   beforeEach(() => {
     vi.useFakeTimers()
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
   })
 
   it('runs tick on each frame while isActive returns true', () => {

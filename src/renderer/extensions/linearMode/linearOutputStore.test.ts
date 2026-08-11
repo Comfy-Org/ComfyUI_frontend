@@ -143,7 +143,6 @@ describe('linearOutputStore', () => {
     expect(store.inProgressItems[0].state).toBe('latent')
     expect(store.inProgressItems[0].latentPreviewUrl).toBe('blob:preview')
     expect(store.selectedId).toBe(`slot:${itemId}`)
-    vi.useRealTimers()
   })
 
   it('ignores latent preview for other jobs', () => {
@@ -318,7 +317,6 @@ describe('linearOutputStore', () => {
     expect(store.inProgressItems[0].state).toBe('latent')
     expect(store.inProgressItems[0].latentPreviewUrl).toBe('blob:next')
     expect(store.inProgressItems).toHaveLength(2)
-    vi.useRealTimers()
   })
 
   it('handles execute without prior skeleton (no latent preview)', () => {
@@ -381,7 +379,6 @@ describe('linearOutputStore', () => {
 
     expect(store.inProgressItems[0].state).toBe('latent')
     expect(store.inProgressItems[0].latentPreviewUrl).toBe('blob:preview-1')
-    vi.useRealTimers()
   })
 
   it('completes previous job on direct job transition', async () => {
@@ -543,7 +540,6 @@ describe('linearOutputStore', () => {
     expect(
       store.inProgressItems.filter((i) => i.state === 'latent')
     ).toHaveLength(0)
-    vi.useRealTimers()
   })
 
   it('accepts latent previews for new nodes after prior node executed', () => {
@@ -562,7 +558,6 @@ describe('linearOutputStore', () => {
       store.inProgressItems.filter((i) => i.state === 'latent')
     ).toHaveLength(1)
     expect(store.inProgressItems[0].latentPreviewUrl).toBe('blob:node2-latent')
-    vi.useRealTimers()
   })
 
   it('cancels pending RAF when a node executes', () => {
@@ -583,7 +578,6 @@ describe('linearOutputStore', () => {
     expect(
       store.inProgressItems.filter((i) => i.state === 'image')
     ).toHaveLength(1)
-    vi.useRealTimers()
   })
 
   it('discards latent previews arriving after job completion', () => {
@@ -603,7 +597,6 @@ describe('linearOutputStore', () => {
     expect(
       store.inProgressItems.filter((i) => i.state === 'latent')
     ).toHaveLength(0)
-    vi.useRealTimers()
   })
 
   it('discards latent previews for completed job after RAF', () => {
@@ -620,7 +613,6 @@ describe('linearOutputStore', () => {
     expect(
       store.inProgressItems.filter((i) => i.state === 'latent')
     ).toHaveLength(0)
-    vi.useRealTimers()
   })
 
   it('ignores executed events for other jobs', () => {
@@ -704,7 +696,6 @@ describe('linearOutputStore', () => {
     )
     expect(latentItems).toHaveLength(1)
     expect(latentItems[0].latentPreviewUrl).toBe('blob:preview-while-away')
-    vi.useRealTimers()
   })
 
   it('does not show in-progress items from another workflow', () => {
@@ -772,7 +763,6 @@ describe('linearOutputStore', () => {
     expect(items).toHaveLength(1)
     expect(items[0].jobId).toBe('job-2')
     expect(items[0].latentPreviewUrl).toBe('blob:landscape')
-    vi.useRealTimers()
   })
 
   it('skips output items for nodes not in selectedOutputs', () => {
@@ -852,10 +842,6 @@ describe('linearOutputStore', () => {
       const store = useLinearOutputStore()
       return { store, nextTick }
     }
-
-    afterEach(() => {
-      vi.useRealTimers()
-    })
 
     it('preserves images and latent previews across tab switch', async () => {
       const { store, nextTick } = await setup()

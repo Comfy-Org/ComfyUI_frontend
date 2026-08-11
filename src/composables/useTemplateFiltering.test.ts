@@ -1,5 +1,5 @@
 import { createPinia, setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
@@ -67,10 +67,6 @@ describe('useTemplateFiltering', () => {
     setActivePinia(createPinia())
     vi.stubGlobal('__DISTRIBUTION__', 'localhost')
     mockSystemStatsStore.systemStats.system.os = 'linux'
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
   })
 
   it('filters by search text, models, tags, and license with debounce handling', async () => {
