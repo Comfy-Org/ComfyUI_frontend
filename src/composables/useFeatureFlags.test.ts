@@ -220,6 +220,15 @@ describe('useFeatureFlags', () => {
       expect(flags.legacyBillingMigrationEnabled).toBe(true)
     })
 
+    it('keeps migration off when remote config explicitly disables it', () => {
+      remoteConfig.value = { legacy_billing_migration_enabled: false }
+      vi.mocked(api.getServerFeature).mockReturnValue(true)
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.legacyBillingMigrationEnabled).toBe(false)
+    })
+
     it('keeps legacy billing when the rollout flag is unset', () => {
       vi.mocked(api.getServerFeature).mockImplementation(
         (_path, defaultValue) => defaultValue

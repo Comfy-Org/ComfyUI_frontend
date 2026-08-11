@@ -60,6 +60,7 @@ describe('useBillingRouting', () => {
 
   it('uses legacy billing off Cloud', () => {
     mockIsCloud.value = false
+    mockLegacyBillingMigrationEnabled.value = true
     mockActiveWorkspace.value = team
 
     const { type, shouldUseWorkspaceBilling } = useBillingRouting()
@@ -118,6 +119,7 @@ describe('useBillingRouting', () => {
   })
 
   it('defaults to legacy while the workspace has not loaded', () => {
+    mockLegacyBillingMigrationEnabled.value = true
     mockActiveWorkspace.value = null
 
     const { type } = useBillingRouting()
