@@ -58,7 +58,10 @@ test.describe('FDCT page @smoke', () => {
     ).toHaveAttribute('href', '/contact')
     await expect(
       hero.getByRole('link', { name: t('fdct.hero.applyCta', 'en') })
-    ).toHaveAttribute('href', '#')
+    ).toHaveAttribute(
+      'href',
+      'https://jobs.ashbyhq.com/comfy-org/b8faf3c0-a21c-4bed-8651-93daa6bfe81c'
+    )
     await expect(page.getByText(t('fdct.hero.eyebrow', 'en'))).toBeHidden()
   })
 
@@ -271,7 +274,10 @@ test.describe('FDCT page (zh-CN) @smoke', () => {
     ).toHaveAttribute('href', '/zh-CN/contact')
     await expect(
       hero.getByRole('link', { name: t('fdct.hero.applyCta', 'zh-CN') })
-    ).toHaveAttribute('href', '#')
+    ).toHaveAttribute(
+      'href',
+      'https://jobs.ashbyhq.com/comfy-org/b8faf3c0-a21c-4bed-8651-93daa6bfe81c'
+    )
   })
 
   test('builders section renders the localized node label and reasons', async ({
