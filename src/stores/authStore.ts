@@ -253,12 +253,13 @@ export const useAuthStore = defineStore('auth', () => {
       return token ? { Authorization: `Bearer ${token}` } : null
     }
 
-    if (isCloud) {
+    {
       const workspaceAuth = useWorkspaceAuthStore()
       const activeWorkspaceId = useTeamWorkspaceStore().activeWorkspaceId
 
       // Recover the workspace token rather than downgrade to the personal
-      // identity, which is what makes cloud requests oscillate.
+      // identity, which is what makes cloud requests oscillate. Non-cloud
+      // only has an active workspace once the switcher hydration succeeds.
       if (activeWorkspaceId) {
         return workspaceAuth.ensureWorkspaceAuthHeader(activeWorkspaceId)
       }
@@ -297,7 +298,7 @@ export const useAuthStore = defineStore('auth', () => {
       return useWorkspaceAuthStore().getUnifiedToken()
     }
 
-    if (isCloud) {
+    {
       const workspaceAuth = useWorkspaceAuthStore()
       const activeWorkspaceId = useTeamWorkspaceStore().activeWorkspaceId
 

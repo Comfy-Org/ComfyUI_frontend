@@ -171,6 +171,7 @@ const workspaceDevProxyConfig = WORKSPACE_DEV_PROXY
       [
         '/api/workspaces',
         '/api/workspace',
+        '/api/billing',
         '/api/auth/token',
         '/api/auth/session'
       ].map((route) => [

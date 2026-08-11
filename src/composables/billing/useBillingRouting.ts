@@ -20,10 +20,10 @@ export function useBillingRouting() {
   })
 
   const type = computed<BillingType>(() => {
-    if (!isCloud) return 'legacy'
-
     // An unloaded workspace has no type yet; stay legacy so bootstrap never
-    // eagerly routes to workspace billing.
+    // eagerly routes to workspace billing. On non-cloud this also keeps OSS
+    // on legacy billing until the switcher's background hydration lands a
+    // workspace context.
     const workspaceType = workspaceStore.activeWorkspace?.type
     if (!workspaceType) return 'legacy'
 
