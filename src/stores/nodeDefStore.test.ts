@@ -1,6 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
+import axios from 'axios'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -9,9 +10,26 @@ import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import type { PartnerProvider } from '@/platform/workspace/api/partnerNodePolicyApi'
+import { usePartnerNodeGovernanceStore } from '@/platform/workspace/stores/partnerNodeGovernanceStore'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
 import type { NodeDefFilter } from '@/stores/nodeDefStore'
+
+const partnerProvider: PartnerProvider = {
+  id: 'openai',
+  displayName: 'OpenAI',
+  nodeCategories: ['OpenAI']
+}
+
+function setPartnerProviderEnabled(enabled: boolean) {
+  const governanceStore = usePartnerNodeGovernanceStore()
+  governanceStore.providers = [partnerProvider]
+  governanceStore.policy = {
+    enforcementEnabled: true,
+    providers: [{ providerId: partnerProvider.id, enabled }]
+  }
+}
 
 describe('useNodeDefStore', () => {
   let store: ReturnType<typeof useNodeDefStore>
@@ -246,6 +264,28 @@ describe('useNodeDefStore', () => {
       expect(store.visibleNodeDefs).toHaveLength(2)
     })
 
+    it('should reactively hide nodes disabled by provider policy', () => {
+      setPartnerProviderEnabled(false)
+      store.updateNodeDefs([
+        createMockNodeDef({ name: 'enabled' }),
+        createMockNodeDef({
+          name: 'disabled',
+          api_node: true,
+          category: 'api/image/OpenAI'
+        })
+      ])
+
+      expect(store.visibleNodeDefs.map((node) => node.name)).toEqual([
+        'enabled'
+      ])
+
+      setPartnerProviderEnabled(true)
+      expect(store.visibleNodeDefs.map((node) => node.name)).toEqual([
+        'enabled',
+        'disabled'
+      ])
+    })
+
     it('should hide subgraph nodes by default', () => {
       const normalNode = createMockNodeDef({
         name: 'normal',
@@ -418,5 +458,27 @@ describe('useNodeDefStore', () => {
       // Each node (10) should be checked by each filter (5 test + 2 core = 7 total)
       expect(filterCallCount).toBe(10 * 5)
     })
+  })
+
+  it('excludes disabled nodes from frequent suggestions', async () => {
+    setPartnerProviderEnabled(false)
+    store.updateNodeDefs([
+      createMockNodeDef({ name: 'enabled' }),
+      createMockNodeDef({
+        name: 'disabled',
+        api_node: true,
+        category: 'api/image/OpenAI'
+      })
+    ])
+    vi.spyOn(axios, 'get').mockResolvedValue({
+      data: { disabled: 2, enabled: 1 }
+    })
+
+    const frequencyStore = useNodeFrequencyStore()
+    await frequencyStore.loadNodeFrequencies()
+
+    expect(frequencyStore.topNodeDefs.map((node) => node.name)).toEqual([
+      'enabled'
+    ])
   })
 })

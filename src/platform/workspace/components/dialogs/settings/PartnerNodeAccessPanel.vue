@@ -328,11 +328,12 @@ import Button from '@/components/ui/button/Button.vue'
 import { buttonVariants } from '@/components/ui/button/button.variants'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
+import { isNodeFromPartnerProvider } from '@/platform/nodeDisabled/nodeDisabledState'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { usePartnerNodeGovernanceStore } from '@/platform/workspace/stores/partnerNodeGovernanceStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { getProviderIcon, getProviderName } from '@/utils/categoryUtil'
+import { getProviderIcon } from '@/utils/categoryUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const governanceStore = usePartnerNodeGovernanceStore()
@@ -372,11 +373,7 @@ const providerRows = computed(() =>
     .filter(({ nodeCategories }) => nodeCategories.length > 0)
     .map((provider) => {
       const nodes = Object.values(nodeDefsByName.value)
-        .filter(
-          (nodeDef) =>
-            nodeDef.api_node &&
-            provider.nodeCategories.includes(getProviderName(nodeDef.category))
-        )
+        .filter((nodeDef) => isNodeFromPartnerProvider(nodeDef, provider))
         .map((nodeDef) => ({
           id: nodeDef.name,
           name: nodeDef.display_name || nodeDef.name
