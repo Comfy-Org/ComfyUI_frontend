@@ -216,8 +216,22 @@ export interface NodeMenuItem {
    * Turns the entry into a submenu. One level deep, deliberately: every
    * measured pack uses exactly one, and nesting further is a menu design
    * problem rather than an API one.
+   *
+   * A function when the children depend on the node's current state, which is
+   * the common case rather than the exotic one: efficiency-nodes' LoRA Stacker
+   * declares fifty `lora_name_N` widgets and lists only the two or three a
+   * user has filled. A fixed array would put fifty rows in that menu, which is
+   * a different menu, so the alternative to this was omitting the feature.
    */
-  readonly items?: readonly NodeSubMenuItem[]
+  readonly items?:
+    | readonly NodeSubMenuItem[]
+    | ((node: NodeHandle) => readonly NodeSubMenuItem[])
+  /**
+   * Sort position among this node's pack-added entries. Lower first; entries
+   * without one keep registration order, which is module-load order and so
+   * depends on import sequence rather than intent.
+   */
+  readonly order?: number
 }
 
 /**
@@ -866,7 +880,10 @@ export function createDefRegistry(): {
               previous as ((c: unknown, o: unknown[]) => void) | undefined
             )?.call(this, canvas, options)
             const id = String(this.id)
-            for (const { item, handleFor } of menuItems) {
+            const ordered = [...menuItems].sort(
+              (a, b) => (a.item.order ?? 0) - (b.item.order ?? 0)
+            )
+            for (const { item, handleFor } of ordered) {
               const handle = handleFor(id)
               if (item.when && !item.when(handle)) continue
               const content =
@@ -874,7 +891,21 @@ export function createDefRegistry(): {
                   ? item.label(handle)
                   : item.label
 
-              if (item.items?.length) {
+              // Resolved per open, so a submenu can reflect the node as it is
+              // now rather than as it was when the pack registered.
+              const children =
+                typeof item.items === 'function'
+                  ? item.items(handle)
+                  : item.items
+
+              // An entry that opens an empty submenu is a dead end, so it is
+              // dropped unless it also has its own action. This is what the
+              // packs do by hand: `if (submenuItems.length)` before adding.
+              if (item.items !== undefined && !children?.length && !item.run) {
+                continue
+              }
+
+              if (children?.length) {
                 // Static options rather than a callback-built submenu: the
                 // Nodes 2.0 converter reads `submenu.options` directly, so
                 // this is the one shape both renderers understand.
@@ -882,7 +913,7 @@ export function createDefRegistry(): {
                   content,
                   has_submenu: true,
                   submenu: {
-                    options: item.items.map((child) => ({
+                    options: children.map((child) => ({
                       content: child.label,
                       callback: () => child.run(handleFor(id))
                     }))
