@@ -18,9 +18,12 @@ vi.mock('vuefire', () => ({
 /**
  * Every call here happens at plain module scope — no component, no `setup()`,
  * no active Vue instance — which is how `api.getServerFeature` is reached from
- * stores and utilities. VueFire's `useFirebaseApp` falls back to the default
- * Firebase app when `getCurrentInstance()` is null, so identity resolution does
- * not need an injectable context; these tests keep that guarantee honest.
+ * stores and utilities. Identity is stubbed at the `vuefire` boundary, so what
+ * these cases pin is the precedence and gating logic, not VueFire itself.
+ *
+ * That VueFire resolves the default Firebase app outside a component is a
+ * property of the real SDK and needs a real initialised app, so it is verified
+ * against a live Firebase app in the browser rather than here.
  */
 describe('api.getServerFeature session override outside component setup', () => {
   beforeEach(() => {
@@ -80,5 +83,13 @@ describe('api.getServerFeature session override outside component setup', () => 
     window.history.replaceState({}, '', '/?ff=some_flag')
 
     expect(api.serverSupportsFeature('some_flag')).toBe(true)
+  })
+
+  it('turns a supported feature off through an explicit false override', () => {
+    api.serverFeatureFlags.value = { some_flag: true }
+    window.history.replaceState({}, '', '/?ff=some_flag:false')
+
+    expect(api.serverSupportsFeature('some_flag')).toBe(false)
+    expect(api.getServerFeature('some_flag')).toBe(false)
   })
 })
