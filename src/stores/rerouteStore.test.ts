@@ -212,7 +212,7 @@ describe('useRerouteStore', () => {
     expect(store.getReroute(graphB, toRerouteId(1))).toBeUndefined()
   })
 
-  it('rejects a duplicate id without changing either registration', () => {
+  it('rejects a duplicate id before assigning it to the requesting graph', () => {
     const store = useRerouteStore()
     const first = chain(1)
     const duplicate = chain(1, 7)

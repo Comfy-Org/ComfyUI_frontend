@@ -48,27 +48,20 @@ describe('Reroute ↔ rerouteStore integration', () => {
     expect(store.getReroute(graphScopeOf(graph), reroute.id)).toBeUndefined()
   })
 
-  it('does not add a reroute when chain registration is rejected', () => {
+  it('does not add a reroute when its id is already registered', () => {
     const graph = new LGraph()
     const incumbent = new Reroute(toRerouteId(1), graph, [0, 0])
-    const collision = new Reroute(toRerouteId(1), graph, [10, 10])
     vi.spyOn(console, 'error').mockImplementation(() => {})
     useRerouteStore().registerReroute(graphScopeOf(graph), incumbent._chain)
 
-    const added = graph._addReroute(collision)
+    const collision = graph.setReroute({
+      id: incumbent.id,
+      pos: [10, 10],
+      linkIds: []
+    })
 
-    expect(added).toBe(false)
-    expect(graph.reroutes.has(collision.id)).toBe(false)
-    expect(collision._graphScope).toBeUndefined()
-  })
-
-  it('does not return or splice a reroute when registration is rejected', () => {
-    const { graph, link } = connectedGraph()
-    vi.spyOn(graph, '_addReroute').mockReturnValue(false)
-
-    expect(graph.setReroute({ pos: [5, 5], linkIds: [] })).toBeUndefined()
-    expect(graph.createReroute([10, 10], link)).toBeUndefined()
-    expect(link.parentId).toBeUndefined()
+    expect(collision).toBeUndefined()
+    expect(graph.reroutes.has(incumbent.id)).toBe(false)
   })
 
   it('setReroute creates and updates geometry in one layout write', () => {

@@ -1687,12 +1687,6 @@ export class LGraph
     observeRerouteId(this.state, rerouteId)
 
     const existingReroute = this.reroutes.get(rerouteId)
-    if (
-      !existingReroute &&
-      useRerouteStore().hasReroute(toRootGraphId(this.rootGraph.id), rerouteId)
-    ) {
-      return
-    }
     const reroute = existingReroute ?? new Reroute(rerouteId, this, pos)
     reroute.parentId =
       parentId === undefined ? undefined : toRerouteId(parentId)
@@ -1713,7 +1707,6 @@ export class LGraph
     if (!(before instanceof LLink) && !(before instanceof Reroute)) {
       return
     }
-    const rerouteId = mintRerouteId(this.state)
     const chainLinks =
       before instanceof Reroute
         ? [
@@ -1724,7 +1717,6 @@ export class LGraph
           ]
         : [before]
     const reroute = this.setReroute({
-      id: rerouteId,
       parentId: before.parentId,
       pos,
       linkIds: []
@@ -1734,11 +1726,11 @@ export class LGraph
     // Splice the new reroute into every chain that contained `before`
     for (const link of chainLinks) {
       if (!link) continue
-      if (link.parentId === before.parentId) link.parentId = rerouteId
+      if (link.parentId === before.parentId) link.parentId = reroute.id
 
       const reroutes = LLink.getReroutes(this, link)
       for (const x of reroutes.filter((x) => x.parentId === before.parentId)) {
-        x.parentId = rerouteId
+        x.parentId = reroute.id
       }
     }
 

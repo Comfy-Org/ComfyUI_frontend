@@ -123,7 +123,7 @@ export const useRerouteStore = defineStore('reroute', () => {
     const existing = bucket.chains.get(chain.id)
     if (existing && toRaw(existing) !== toRaw(chain)) {
       console.error(
-        `[rerouteStore] Reroute ${chain.id} is already registered in graph ${scope.owningGraphId}; refusing to overwrite the live registration.`
+        `[rerouteStore] Reroute ${chain.id} belongs to graph ${existing.graphId}; graph ${scope.owningGraphId} cannot overwrite it.`
       )
       return undefined
     }
@@ -142,10 +142,6 @@ export const useRerouteStore = defineStore('reroute', () => {
   ): RerouteChain | undefined {
     const chain = roots.get(scope.rootGraphId)?.chains.get(rerouteId)
     return chain?.graphId === scope.owningGraphId ? chain : undefined
-  }
-
-  function hasReroute(rootGraphId: RootGraphId, rerouteId: RerouteId): boolean {
-    return roots.get(rootGraphId)?.chains.has(rerouteId) ?? false
   }
 
   /** Removes a chain's registration; only the registered state may vacate it. */
@@ -182,7 +178,6 @@ export const useRerouteStore = defineStore('reroute', () => {
   return {
     registerReroute,
     getReroute,
-    hasReroute,
     deleteReroute,
     getMembership,
     clearOwner,
