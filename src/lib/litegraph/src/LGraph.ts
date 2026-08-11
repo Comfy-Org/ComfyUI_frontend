@@ -2558,7 +2558,7 @@ export class LGraph
         if (Array.isArray(data.links)) {
           for (const linkData of data.links) {
             const link = LLink.createFromArray(linkData)
-            this._addLink(link)
+            if (!this._links.has(link.id)) this._links.set(link.id, link)
           }
         }
         // #region `extra` embeds for v0.4
@@ -2599,7 +2599,7 @@ export class LGraph
         if (Array.isArray(data.links)) {
           for (const linkData of data.links) {
             const link = LLink.create(linkData)
-            this._addLink(link)
+            if (!this._links.has(link.id)) this._links.set(link.id, link)
           }
         }
 
@@ -2722,6 +2722,8 @@ export class LGraph
           }
         }
       }
+
+      for (const link of this._links.values()) registerLinkTopology(this, link)
 
       // Floating links
       if (Array.isArray(data.floatingLinks)) {
