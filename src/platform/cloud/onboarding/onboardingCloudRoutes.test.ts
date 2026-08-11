@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createMemoryHistory, createRouter } from 'vue-router'
 
 import {
   cloudOnboardingRoutes,
@@ -46,6 +47,39 @@ const resolvedComponents = await Promise.all(
 )
 
 describe('cloudOnboardingRoutes', () => {
+  it('redirects the legacy login path to Cloud login with its query', async () => {
+    const legacyLoginRoute = cloudOnboardingRoutes.find(
+      (route) => route.path === '/login'
+    )
+    expect(legacyLoginRoute).toBeDefined()
+    if (!legacyLoginRoute) return
+
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        legacyLoginRoute,
+        {
+          path: '/cloud/login',
+          name: 'cloud-login',
+          component: { template: '<div />' }
+        }
+      ]
+    })
+    const guardedRouteNames = vi.fn()
+    router.beforeEach((to) => guardedRouteNames(to.name))
+
+    await router.push('/login?source=legacy&campaign=one&campaign=two')
+
+    expect(guardedRouteNames).toHaveBeenCalledOnce()
+    expect(guardedRouteNames).toHaveBeenCalledWith('cloud-login')
+    expect(router.currentRoute.value.name).toBe('cloud-login')
+    expect(router.currentRoute.value.path).toBe('/cloud/login')
+    expect(router.currentRoute.value.query).toEqual({
+      source: 'legacy',
+      campaign: ['one', 'two']
+    })
+  })
+
   it('consent route is not a child of the /cloud layout', () => {
     const cloudLayout = cloudOnboardingRoutes.find((r) => r.path === '/cloud')
     const childPaths = (cloudLayout?.children ?? []).map((c) => c.path)

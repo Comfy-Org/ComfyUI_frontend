@@ -42,6 +42,10 @@ export async function oauthConsentRedirect() {
 
 export const cloudOnboardingRoutes: RouteRecordRaw[] = [
   {
+    path: '/login',
+    redirect: (to) => ({ name: 'cloud-login', query: to.query })
+  },
+  {
     path: '/cloud',
     component: () =>
       import('@/platform/cloud/onboarding/components/CloudLayoutView.vue'),
