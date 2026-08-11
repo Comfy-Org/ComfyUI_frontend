@@ -1,5 +1,5 @@
 import { nextTick, ref } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type {
   SecretMetadata,
@@ -75,10 +75,6 @@ const vertexProviders: SecretProviderInfo[] = [
 ]
 
 describe('useSecretForm', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   describe('validation via handleSubmit', () => {
     it('requires name in create mode', async () => {
       const visible = ref(true)

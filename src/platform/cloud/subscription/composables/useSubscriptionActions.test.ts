@@ -68,7 +68,6 @@ Object.defineProperty(window, 'open', {
 
 describe('useSubscriptionActions', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockIsCloud.value = true
   })
 

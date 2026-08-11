@@ -95,7 +95,6 @@ function inviteButton() {
 
 describe('InviteMemberDialogContent', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockFetchStatus.mockResolvedValue(undefined)
     mockMaxSeats.value = 73
     mockOccupiedSeats.value = 0

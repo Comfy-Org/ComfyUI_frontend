@@ -425,7 +425,6 @@ vi.mock('@/composables/useFeatureFlags', () => ({
 
 describe('useMembersPanel', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockBillingControlEnabled.value = true
     mockActiveWorkspace.value = { type: 'personal' }
     mockMembers.value = []

@@ -27,7 +27,6 @@ describe('contextMenuCompat', () => {
   afterEach(() => {
     // Restore original method
     LGraphCanvas.prototype.getCanvasMenuOptions = originalGetCanvasMenuOptions
-    vi.restoreAllMocks()
   })
 
   describe('install', () => {

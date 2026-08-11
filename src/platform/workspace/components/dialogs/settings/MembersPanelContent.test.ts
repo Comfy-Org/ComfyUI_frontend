@@ -228,7 +228,6 @@ function createInvite(
 
 describe('MembersPanelContent', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockMemberMenuItems.mockReturnValue([])
     mockMembers.value = []
     mockPendingInvites.value = []

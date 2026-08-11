@@ -40,7 +40,6 @@ function makeAsset(index: number): AssetItem {
 describe('useAssetBrowser - filter tab switching perf (FE-229)', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    vi.restoreAllMocks()
   })
 
   it('does not re-transform every asset on each filter tab switch', async () => {
