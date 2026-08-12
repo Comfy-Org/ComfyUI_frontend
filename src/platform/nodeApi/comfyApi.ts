@@ -23,6 +23,8 @@ import {
 } from './interaction'
 import type { NodeMoveEvent } from './interaction'
 import { onAppReady } from './appReady'
+import { createQueueApi } from './queueHandle'
+import type { QueueHandle } from './queueHandle'
 import type { Unsubscribe } from './widgetHandle'
 import { createGraphApi } from './graphHandle'
 import type { GraphHandle } from './graphHandle'
@@ -225,6 +227,8 @@ export interface Comfy {
    * is a leak that only shows up on someone else's machine.
    */
   onReady(listener: () => void): Unsubscribe
+  /** Starting a run, and knowing when one starts. */
+  queue: QueueHandle
 }
 
 /** Per-major instances, memoised per graph provider. */
@@ -274,6 +278,7 @@ function buildMajor(
     onNodeDragEnd: createNodeDragEndObserver((id) => graph.node(id)),
     onViewportChanged: createViewportObserver(),
     onReady: onAppReady,
+    queue: createQueueApi(getGraph),
     defs: defs.forMajor((nodeId) => graph.node(nodeId)!)
   })
 }
