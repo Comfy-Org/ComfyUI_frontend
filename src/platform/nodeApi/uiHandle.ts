@@ -29,6 +29,15 @@ import type { Component } from 'vue'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
+import {
+  addBadgeContribution,
+  addButtonContribution
+} from './chromeContributions'
+import type {
+  BadgeContribution,
+  ButtonContribution,
+  ChromeItemHandle
+} from './chromeContributions'
 import { ComfyApiError } from './errors'
 import type { Unsubscribe } from './widgetHandle'
 
@@ -146,6 +155,31 @@ export interface UiHandle {
    */
   addSidebarTab(def: SidebarTabDef): Unsubscribe
   /**
+   * Shows a small readout in the top bar — a status, a count, a live metric.
+   *
+   * Replaces `app.menu.settingsGroup` and inserting an element next to
+   * `.comfy-settings-btn`. Declarative on purpose: the pack says what to show
+   * and the host renders it, in house style and at whatever size the viewport
+   * allows. Nothing here takes an element, a class or a style, which is what
+   * keeps the chrome ours to restyle.
+   *
+   * Returns a handle rather than an unsubscribe: for a value that changes,
+   * call `update({ text })`. A closure would not work — the host renders when
+   * reactive state changes and cannot see a plain function, so the readout
+   * would show its first value forever.
+   */
+  addTopBarBadge(badge: BadgeContribution): ChromeItemHandle<BadgeContribution>
+  /**
+   * Adds a button to the action bar. `run` is called on click.
+   *
+   * For a pack that also wants a keyboard shortcut or a palette entry,
+   * register a command and call it from `run`, rather than duplicating the
+   * behaviour in both places.
+   */
+  addActionBarButton(
+    button: ButtonContribution
+  ): ChromeItemHandle<ButtonContribution>
+  /**
    * Opens a modal dialog. Returns a handle that closes it again.
    *
    * Replaces `app.ui.dialog` and the `new app.ui.dialog.constructor()` idiom.
@@ -158,6 +192,9 @@ export interface UiHandle {
 
 export function createUiHandle(): UiHandle {
   return {
+    addTopBarBadge: addBadgeContribution,
+    addActionBarButton: addButtonContribution,
+
     addSidebarTab(def) {
       if (!def.id.trim()) {
         throw new ComfyApiError('A sidebar tab needs an id.')
