@@ -93,8 +93,7 @@ test.describe('Preview as Text node', () => {
         ['JSON array', '[{"a": 1}, {"b": 2}]'],
         ['markdown-fenced JSON', '```json\n{"name":"Comfy"}\n```'],
         ['non-ASCII text', '你好，世界。'],
-        ['prompt with a trailing space', '"A red car" is a great prompt. '],
-        ['numeric output from Get Video Components', '23.976']
+        ['prompt with a trailing space', '"A red car" is a great prompt. ']
       ] as const
 
       for (const [label, text] of payloads) {
@@ -103,6 +102,11 @@ test.describe('Preview as Text node', () => {
           await expect(preview).toHaveValue(text)
         })
       }
+
+      await test.step('numeric output from Get Video Components', async () => {
+        execution.executed('', id, { text: 23.976 })
+        await expect(preview).toHaveValue('23.976')
+      })
 
       await test.step('null text does not wedge the widget', async () => {
         // The shape the Cloud backend produced when it misclassified the text
