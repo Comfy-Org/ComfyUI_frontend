@@ -40,6 +40,11 @@ Share a module mock only when it reduces reader effort and preserves behavior.
 Keep assertion handles explicit. Test module re-evaluation because it can replace
 shared mock state while a test still holds the old identity.
 
+Keep test-specific `vi.mock` calls in the test module. A call inside an imported
+helper is not hoisted ahead of that test module's static imports. For shared
+implementations, use `__mocks__` with a local `vi.mock`. For runtime selection,
+call `vi.doMock` before a subsequent dynamic import.
+
 Skip the extraction if typed shared code is no simpler than the local mocks or
 needs global mutable indirection.
 

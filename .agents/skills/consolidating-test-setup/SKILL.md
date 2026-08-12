@@ -38,9 +38,10 @@ must not weaken isolation elsewhere.
 
 ### Subtract before abstracting
 
-Remove suspected cargo-cult setup and run the affected tests. If nothing breaks,
-delete it. If a test fails, use the failure to identify the contract before
-designing shared setup.
+Remove suspected cargo-cult setup and run the affected tests. A targeted pass
+only marks it provisionally unnecessary. Delete it after the complete relevant
+suite and runner-specific lifecycle checks pass. If a test fails, use the
+failure to identify the contract before designing shared setup.
 
 A helper must own a policy or lifecycle, or remove meaningful reader effort.
 Moving the same lines behind a new name is not an improvement.
@@ -90,13 +91,16 @@ reports from each. Keep the design and integration decision in the parent task.
 
 ### 4. Place
 
-Choose the first boundary that can enforce the contract cleanly:
+Choose the required lifetime and scope first. Then use the simplest owner at
+that exact boundary:
 
-1. native runner behavior
-2. shared setup matching the resource lifetime
-3. a test-scoped fixture or hook
-4. a focused helper or test double
-5. the individual suite
+- native runner behavior that supports the required scope
+- existing shared setup, fixture, or hook
+- a focused helper or test double
+- the individual suite
+
+Do not move state to a broader owner because its mechanism appears earlier in
+the list.
 
 ### 5. Migrate
 
