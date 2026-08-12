@@ -479,3 +479,44 @@ describe('subgraphs', () => {
     expect(nested.node(String(top.id))).toBeUndefined()
   })
 })
+
+describe('batching mutations into one undo step', () => {
+  function trackedGraph() {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    const graph = new LGraph()
+    const canvas = testCanvas(graph)
+    LGraphCanvas.active_canvas = canvas
+    const calls: string[] = []
+    canvas.onBeforeChange = () => calls.push('before')
+    canvas.onAfterChange = () => calls.push('after')
+    return { graph, calls, api: createGraphApi(() => graph) }
+  }
+
+  it('opens and closes one scope around the mutations', () => {
+    const { graph, calls, api } = trackedGraph()
+
+    const added = api.batch(() => {
+      graph.add(new LGraphNode('One'))
+      graph.add(new LGraphNode('Two'))
+      return 'done'
+    })
+
+    expect(added).toBe('done')
+    expect(api.nodes()).toHaveLength(2)
+    expect(calls).toEqual(['before', 'after'])
+  })
+
+  it('closes the scope when the mutations throw', () => {
+    // The counter only captures on returning to zero, so an unbalanced scope
+    // stops undo recording anything for the rest of the session.
+    const { calls, api } = trackedGraph()
+
+    expect(() =>
+      api.batch(() => {
+        throw new Error('pack blew up')
+      })
+    ).toThrow('pack blew up')
+
+    expect(calls).toEqual(['before', 'after'])
+  })
+})
