@@ -22,34 +22,29 @@ test.describe(
           comfyPage.page.evaluate(() => {
             const graph = window.app!.graph!
             const host = graph.nodes.find((node) => node.isSubgraphNode())
-            if (!host) return { error: 'no subgraph node' }
+            if (!host) return ['no subgraph node']
 
-            const links = [...graph.links.values()]
-            return {
-              rootLinkCount: links.length,
-              inputCount: host.inputs.length,
-              outputCount: host.outputs.length,
-              unconnectedInputs: host.inputs.filter(
-                (input) => input.link == null
-              ).length,
-              sources: links
-                .filter((link) => link.target_id === host.id)
-                .map((link) => `${link.origin_id}:${link.origin_slot}`)
-                .sort(),
-              saveImageFedByHost:
-                links.find((link) => String(link.target_id) === '9')
-                  ?.origin_id === host.id
-            }
+            const label = (id: string | number) =>
+              id === host.id ? 'HOST' : String(id)
+
+            return [...graph.links.values()]
+              .map(
+                (link) =>
+                  `${label(link.origin_id)}:${link.origin_slot}->${label(link.target_id)}:${link.target_slot}`
+              )
+              .sort()
           })
         )
-        .toEqual({
-          rootLinkCount: 6,
-          inputCount: 5,
-          outputCount: 1,
-          unconnectedInputs: 0,
-          sources: ['4:0', '4:2', '5:0', '6:0', '7:0'],
-          saveImageFedByHost: true
-        })
+        .toEqual([
+          '4:0->HOST:0',
+          '4:1->6:0',
+          '4:1->7:0',
+          '4:2->HOST:4',
+          '5:0->HOST:3',
+          '6:0->HOST:1',
+          '7:0->HOST:2',
+          'HOST:0->9:0'
+        ])
     })
 
     test('lands each boundary link on a type-compatible slot', async ({
