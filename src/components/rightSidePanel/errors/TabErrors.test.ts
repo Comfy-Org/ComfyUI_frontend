@@ -666,12 +666,12 @@ describe('TabErrors.vue', () => {
       })
     })
 
+    const hero = screen.getByTestId('errors-summary-hero')
+    expect(within(hero).getByText('2')).toBeInTheDocument()
+    expect(within(hero).getByText('Setup required')).toBeInTheDocument()
     expect(
-      screen.queryByTestId('errors-summary-hero-error')
+      screen.queryByTestId('errors-summary-filters')
     ).not.toBeInTheDocument()
-    const setupHero = screen.getByTestId('errors-summary-hero-missing')
-    expect(within(setupHero).getByText('2')).toBeInTheDocument()
-    expect(within(setupHero).getByText('Setup pending')).toBeInTheDocument()
     expect(screen.queryByText('Missing node type')).not.toBeInTheDocument()
 
     for (const section of [
@@ -1372,6 +1372,6 @@ describe('TabErrors.vue', () => {
     })
 
     const icon = screen.getByTestId('panel-tab-icon')
-    expect(icon).toHaveAccessibleName('Setup pending')
+    expect(icon).toHaveAccessibleName('Setup required')
   })
 })
