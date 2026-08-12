@@ -99,3 +99,5 @@ vitest.config.*.timestamp*
 /output.txt
 
 .amp
+# Registry census working tree (scripts/registry-census) - corpus, lockfile, results
+.census/

@@ -1,0 +1,95 @@
+# Weekly full-registry custom-node census - breadth radar, never a gate.
+#
+# Sweeps the frontend JS of EVERY registry pack (~5,000 packs, ~1GB corpus)
+# for the empirically-confirmed compatibility-breaking idioms and reports
+# population counts weighted by downloads. Static analysis with an unmeasured
+# false-positive rate: treat the numbers as radar for ecosystem blast radius,
+# not as a pass/fail verdict on any change. The job fails only on mechanical
+# errors (registry unreachable, scan crash) - never on census numbers.
+#
+# The corpus is cached whole and self-updates exactly when packs move:
+# fetch --revalidate HEAD-checks every cached pack's tarball ETag against
+# corpus.lock.json (HEAD-ref tarball ETags are commit-derived, so a changed
+# ETag means the pack's default branch moved) and refetches only drifted
+# packs. The cache saves under a key derived from the lockfile hash, so an
+# unchanged corpus skips the save and a drifted one writes a new entry.
+# Cold start (no cache) is the one expensive run: a full ~1GB fetch.
+#
+# Scanner provenance: scripts/registry-census/ is vendored from
+# Comfy-Org/ComfyUI_ECS_Compat_Check (private, migration-phase instrument
+# slated for archival) - see scripts/registry-census/README.md.
+name: 'CI: Registry Census'
+
+on:
+  schedule:
+    # Weekly, Monday 06:17 UTC - off the top-of-hour scheduler stampede.
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: registry-census
+  cancel-in-progress: false
+
+jobs:
+  registry-census:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      # Restore the newest corpus regardless of key: the primary key never
+      # hits (run-scoped), so restore-keys always serves the latest save.
+      - name: Restore corpus cache
+        uses: actions/cache/restore@v5
+        with:
+          path: .census
+          key: registry-corpus-${{ github.run_id }}
+          restore-keys: registry-corpus-
+
+      # Re-pin the registry snapshot every run: it is the target list and
+      # the denominator for every percentage, and new packs only enter the
+      # corpus through it.
+      - name: Refresh registry snapshot
+        run: python3 scripts/registry-census/refresh_registry.py
+
+      - name: Fetch corpus and revalidate drifted packs
+        run: python3 scripts/registry-census/fetch_corpus.py --revalidate
+
+      - name: Census scan
+        run: |
+          set -o pipefail
+          python3 scripts/registry-census/scan_registry.py 2>&1 | tee census.log
+          {
+            echo '## Full-registry custom-node census'
+            echo
+            echo '```'
+            grep -B1 -A8 'FULL REGISTRY CENSUS' census.log
+            echo '```'
+            echo
+            echo 'Static radar over every registry pack - see scripts/registry-census/README.md for caveats.'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: registry-census
+          path: |
+            .census/results/
+            .census/corpus.lock.json
+            census.log
+          retention-days: 30
+          if-no-files-found: warn
+
+      # Key derived from the lockfile: unchanged corpus -> key already
+      # exists -> save skipped; any pack drift -> new lock hash -> new entry.
+      - name: Save corpus cache
+        if: always()
+        uses: actions/cache/save@v5
+        with:
+          path: .census
+          key: registry-corpus-${{ hashFiles('.census/corpus.lock.json') }}
