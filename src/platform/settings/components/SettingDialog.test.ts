@@ -88,7 +88,6 @@ beforeEach(() => {
   searchMocks.matchedNavItemKeys = ref(new Set<string>())
   searchMocks.searchQuery = ref('')
   searchMocks.searchResultsCategories = ref(new Set<string>())
-  mockFetchBalance.mockReset()
 })
 
 it('falls back when the active navigation item becomes unavailable', async () => {

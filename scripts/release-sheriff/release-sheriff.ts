@@ -1,5 +1,6 @@
-// Assigns the on-call release sheriff to backport and release version-bump
-// PRs. Run by pr-assign-release-sheriff.yaml; details in docs/release-process.md.
+// Assigns the on-call release sheriff to backport, release version-bump and
+// automation-authored PRs. Run by pr-assign-release-sheriff.yaml; details in
+// docs/release-process.md.
 import { execFileSync } from 'node:child_process'
 import { appendFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
@@ -78,8 +79,43 @@ export interface OnCallLookup {
   warning: string | null
 }
 
+// Layer members carry the rotation order, which is what makes "next" well
+// defined. The graph is members -> user -> email, all in `included`.
+export function parseRotationKeys(payload: unknown): string[] {
+  if (!isRecord(payload) || !Array.isArray(payload.included)) return []
+
+  const resources = payload.included.filter(isRecord)
+  const find = (type: string, id: unknown) =>
+    resources.find((r) => r.type === type && r.id === id)
+
+  const memberIds = resources.flatMap((resource) => {
+    if (resource.type !== 'layers' || !isRecord(resource.relationships))
+      return []
+    const { members } = resource.relationships
+    if (!isRecord(members) || !Array.isArray(members.data)) return []
+    return members.data.filter(isRecord).map((member) => member.id)
+  })
+
+  const keys = memberIds.flatMap((id) => {
+    const member = find('members', id)
+    if (!member || !isRecord(member.relationships)) return []
+    const { user } = member.relationships
+    if (!isRecord(user) || !isRecord(user.data)) return []
+    const record = find('users', user.data.id)
+    if (!record || !isRecord(record.attributes)) return []
+    const { email } = record.attributes
+    return typeof email === 'string' && email.trim() ? [emailKey(email)] : []
+  })
+
+  return [...new Set(keys)]
+}
+
 export interface DirectoryLookup {
   githubLoginByUser: Record<string, string>
+  rotation: string[]
+  // Rotation members with no github: tag. They break silently when their own
+  // shift starts, weeks after the tag was forgotten, so surface them now.
+  unmappedMembers: string[]
   warning: string | null
 }
 
@@ -161,8 +197,20 @@ export async function fetchGithubLogins(
   config: Pick<typeof CONFIG, 'datadogSite' | 'scheduleId'>,
   credentials: { apiKey?: string; appKey?: string }
 ): Promise<DirectoryLookup> {
-  const { payload, warning } = await datadogGet(config, credentials, '')
-  return { githubLoginByUser: parseGithubLogins(payload), warning }
+  const { payload, warning } = await datadogGet(config, credentials, '', {
+    include: 'layers.members.user'
+  })
+  const githubLoginByUser = parseGithubLogins(payload)
+  const keys = parseRotationKeys(payload)
+  return {
+    githubLoginByUser,
+    rotation: keys.flatMap((key) => {
+      const login = githubLoginByUser[key]
+      return login ? [login] : []
+    }),
+    unmappedMembers: keys.filter((key) => !githubLoginByUser[key]),
+    warning
+  }
 }
 
 export interface SheriffResolution {
@@ -197,13 +245,23 @@ const VERSION_BUMP_BRANCH = /^version-bump-\d+\.\d+\.\d+/
 // matching would also catch PRs that are merely about backports.
 const BACKPORT_TITLE = '[backport'
 
+// Nobody owns what a robot opens: these sat unassigned for weeks, the oldest
+// weeks old, because no human felt addressed by them. The sheriff owns them.
+// gh reports GitHub Apps as "app/<slug>" and plain accounts by login.
+const AUTOMATION_AUTHORS = [
+  'app/dependabot',
+  'app/cloud-code-bot',
+  'comfy-pr-bot'
+]
+
 export function isSheriffPr(pr: PullRequestSummary): boolean {
   const labels = pr.labels.map((label) => label.name.toLowerCase())
   return (
     labels.includes('backport') ||
     pr.title.toLowerCase().startsWith(BACKPORT_TITLE) ||
     labels.includes('release') ||
-    VERSION_BUMP_BRANCH.test(pr.headRefName)
+    VERSION_BUMP_BRANCH.test(pr.headRefName) ||
+    AUTOMATION_AUTHORS.includes(pr.author?.login ?? '')
   )
 }
 
@@ -211,31 +269,57 @@ export interface SheriffAction {
   number: number
   assign: boolean
   requestReview: boolean
+  reviewer: string | null
+}
+
+// Who reviews the sheriff's own PRs. GitHub rejects a self-review request, so
+// without a standby the sheriff's backports were assigned to themselves with
+// nobody asked to review — and backport merges are gated on an approval, so
+// they waited on a review that had not been requested.
+export function nextInRotation(
+  rotation: string[],
+  current: string
+): string | null {
+  const isCurrent = (login: string) =>
+    login.toLowerCase() === current.toLowerCase()
+  const start = rotation.findIndex(isCurrent)
+  if (start === -1) return null
+
+  for (let step = 1; step < rotation.length; step++) {
+    const candidate = rotation[(start + step) % rotation.length]
+    if (!isCurrent(candidate)) return candidate
+  }
+  return null
 }
 
 // Existing assignees and review requests are never overwritten, so a rotation
 // handover does not churn open PRs and a human who picked one up keeps it.
 export function planActions(
   prs: PullRequestSummary[],
-  sheriffLogin: string
+  sheriffLogin: string,
+  rotation: string[] = []
 ): SheriffAction[] {
-  const normalizedSheriffLogin = sheriffLogin.toLowerCase()
+  const normalized = sheriffLogin.toLowerCase()
+  const standby = nextInRotation(rotation, sheriffLogin)
 
   return prs.flatMap((pr) => {
     if (pr.isDraft || !isSheriffPr(pr)) return []
 
     const assign = pr.assignees.length === 0
+    const reviewer =
+      pr.author?.login.toLowerCase() === normalized ? standby : sheriffLogin
+    const normalizedReviewer = reviewer?.toLowerCase()
     const requestReview =
+      reviewer !== null &&
       pr.reviewRequests.length === 0 &&
       pr.reviewDecision !== 'APPROVED' &&
-      pr.author?.login.toLowerCase() !== normalizedSheriffLogin &&
+      pr.author?.login.toLowerCase() !== normalizedReviewer &&
       !pr.latestReviews.some(
-        (review) =>
-          review.author?.login.toLowerCase() === normalizedSheriffLogin
+        (review) => review.author?.login.toLowerCase() === normalizedReviewer
       )
 
     return assign || requestReview
-      ? [{ number: pr.number, assign, requestReview }]
+      ? [{ number: pr.number, assign, requestReview, reviewer }]
       : []
   })
 }
@@ -277,7 +361,10 @@ function collectCandidatePrs(): PullRequestSummary[] {
     ...ghPrList(['--label', 'backport']),
     ...ghPrList(['--label', 'Release']),
     ...ghPrList(['--search', 'backport in:title']),
-    ...ghPrList(['--search', 'head:version-bump-'])
+    ...ghPrList(['--search', 'head:version-bump-']),
+    ...AUTOMATION_AUTHORS.flatMap((author) =>
+      ghPrList(['--search', `author:${author}`])
+    )
   ]
   const byNumber = new Map(found.map((pr) => [pr.number, pr]))
   return [...byNumber.values()]
@@ -344,6 +431,15 @@ async function main() {
         `the tag "github:${emailKey(email)}:<github-login>" to the schedule.`
     )
   }
+  // Checked for the whole rotation, not just whoever is on call: a member
+  // added without a tag works fine until their own shift begins, then falls
+  // back silently. Fail now, while it is still someone else's week.
+  for (const key of directory.unmappedMembers) {
+    problems.push(
+      `Rotation member "${key}" has no GitHub login and will fall back when ` +
+        `their shift starts. Add "github:${key}:<github-login>" to the schedule.`
+    )
+  }
   for (const problem of problems) warn(problem)
   if (!login) {
     const message = 'No release sheriff could be resolved — nothing assigned.'
@@ -351,6 +447,11 @@ async function main() {
     output('degraded', [message, ...problems].join(' '))
     process.exitCode = 1
     return
+  }
+
+  if (directory.unmappedMembers.length > 0) {
+    output('degraded', problems.join(' '))
+    process.exitCode = 1
   }
 
   // Falling back still assigns, so PRs stay owned, but the run must not go
@@ -365,14 +466,20 @@ async function main() {
     process.exitCode = 1
   }
 
-  const actions = planActions(collectCandidatePrs(), login)
+  const actions = planActions(collectCandidatePrs(), login, directory.rotation)
   summary(`### Release sheriff: \`${login}\` (via ${source})`)
   if (actions.length === 0) {
     summary('Nothing to do — every candidate PR already has an owner.')
     return
   }
+  if (actions.some((action) => action.reviewer === null)) {
+    warn(
+      `${login} authored some of these PRs and the rotation offered no ` +
+        'standby, so those still need a reviewer picked by hand.'
+    )
+  }
 
-  for (const { number, assign, requestReview } of actions) {
+  for (const { number, assign, requestReview, reviewer } of actions) {
     if (assign) {
       const path = `repos/${repo}/issues/${number}/assignees`
       if (ghPost(path, `assignees[]=${login}`)) summary(`- Assigned #${number}`)
@@ -380,12 +487,12 @@ async function main() {
     }
 
     // A failed review request (e.g. fork PRs) must not undo the assignment.
-    if (requestReview) {
+    if (requestReview && reviewer) {
       const path = `repos/${repo}/pulls/${number}/requested_reviewers`
-      if (ghPost(path, `reviewers[]=${login}`)) {
-        summary(`- Requested review on #${number}`)
+      if (ghPost(path, `reviewers[]=${reviewer}`)) {
+        summary(`- Requested review from \`${reviewer}\` on #${number}`)
       } else {
-        warn(`Could not request review from ${login} on #${number}`)
+        warn(`Could not request review from ${reviewer} on #${number}`)
       }
     }
   }

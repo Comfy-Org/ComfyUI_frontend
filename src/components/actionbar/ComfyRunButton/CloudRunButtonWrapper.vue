@@ -1,6 +1,6 @@
 <template>
   <ComfyQueueButton
-    v-if="canRunWorkflows || paymentRecoveryLock"
+    v-if="!showsSubscribeToRunPrompt || paymentRecoveryLock"
     :payment-recovery-lock="paymentRecoveryLock"
     @payment-recovery-click="showPaymentRecoveryDialog"
   />
@@ -22,7 +22,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 
 const DIALOG_KEY = 'subscription-paused'
 const {
-  canRunWorkflows,
+  showsSubscribeToRunPrompt,
   billingStatus,
   manageSubscription,
   fetchStatus,

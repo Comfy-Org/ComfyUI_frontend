@@ -1,6 +1,6 @@
 {
   "name": "@comfyorg/comfyui-frontend",
-  "version": "1.50.5",
+  "version": "1.51.2",
   "private": true,
   "description": "Official front-end implementation of ComfyUI",
   "homepage": "https://comfy.org",
@@ -16,6 +16,7 @@
     "build": "pnpm typecheck && vite build --config vite.config.mts",
     "clean": "pnpm dlx rimraf dist dist-ssr coverage playwright-report blob-report test-results node_modules/.vite apps/desktop-ui/dist apps/website/dist",
     "clean:all": "pnpm clean && pnpm dlx rimraf node_modules",
+    "container:start": "scripts/start-comfyui-e2e.sh",
     "size:collect": "node scripts/size-collect.js",
     "size:report": "node scripts/size-report.js",
     "collect-i18n": "pnpm exec playwright test --config=playwright.i18n.config.ts",
