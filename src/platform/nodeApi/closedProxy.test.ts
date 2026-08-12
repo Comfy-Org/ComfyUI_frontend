@@ -310,6 +310,9 @@ describe('reading a member that does not exist', () => {
 
     void handle['then']
     void handle['toJSON']
+    // Vue probes these on anything it makes reactive.
+    void handle['__v_isRef']
+    void handle['__v_raw']
 
     expect(warn).not.toHaveBeenCalled()
   })
