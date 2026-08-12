@@ -189,8 +189,8 @@ export const CORE_SETTINGS: SettingParams[] = [
       '1.25.0': 'legacy'
     },
     onChange: async (val: unknown, old?: unknown) => {
-      if (!old) return
-      const preset = CANVAS_NAVIGATION_PRESETS[val as string]
+      if (!old || typeof val !== 'string') return
+      const preset = CANVAS_NAVIGATION_PRESETS[val]
       if (!preset) return
 
       await useSettingStore().setMany(preset)
