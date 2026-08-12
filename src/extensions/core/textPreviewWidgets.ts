@@ -67,13 +67,8 @@ export function addTextPreviewWidgets(node: LGraphNode) {
 }
 
 function toPreviewText(text: unknown): string {
-  if (typeof text === 'string') return text
   if (text == null) return ''
-  if (Array.isArray(text))
-    return text
-      .filter((part) => part != null)
-      .map((part) => (typeof part === 'string' ? part : String(part)))
-      .join('\n\n')
+  if (Array.isArray(text)) return text.filter((part) => part != null).join('\n\n')
   return String(text)
 }
 
