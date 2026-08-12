@@ -28,7 +28,7 @@ import type {
   TWidgetValue
 } from '@/lib/litegraph/src/types/widgets'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
-import { markAppReady } from '@/platform/nodeApi/appReady'
+import { markAppReady, notifyWorkflowLoaded } from '@/platform/nodeApi/appReady'
 import { notifyDefsRefreshed } from '@/platform/nodeApi/defsRegistry'
 import { installComfyApi } from '@/platform/nodeApi/comfyApi'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -1522,6 +1522,7 @@ export class ComfyApp {
         'afterConfigureGraph',
         missingNodeTypes
       )
+      notifyWorkflowLoaded()
 
       const effectiveShareId =
         shareId ??

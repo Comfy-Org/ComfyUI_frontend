@@ -25,7 +25,7 @@ function run(listener: () => void): void {
     listener()
   } catch (error) {
     // One pack's failed startup must not abort the packs queued behind it.
-    console.error('[nodeApi] onReady listener threw', error)
+    console.error('[nodeApi] lifecycle listener threw', error)
   }
 }
 
@@ -40,8 +40,21 @@ export function onAppReady(listener: () => void): Unsubscribe {
   return () => waiting.delete(listener)
 }
 
+const workflowLoaded = new Set<() => void>()
+
+/** Called by the host each time a workflow finishes being configured. */
+export function notifyWorkflowLoaded(): void {
+  for (const listener of [...workflowLoaded]) run(listener)
+}
+
+export function onWorkflowLoaded(listener: () => void): Unsubscribe {
+  workflowLoaded.add(listener)
+  return () => workflowLoaded.delete(listener)
+}
+
 /** Test seam. The host marks readiness exactly once per page load. */
 export function resetAppReadyForTest(): void {
   ready = false
   waiting.clear()
+  workflowLoaded.clear()
 }
