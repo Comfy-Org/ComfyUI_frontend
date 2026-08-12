@@ -726,6 +726,39 @@ describe('node:before-removed event', () => {
     expect(graph.floatingLinks.size).toBe(0)
   })
 
+  it('keeps clear lifecycle stable when callbacks recursively remove nodes', () => {
+    const graph = new LGraph()
+    const source = new LGraphNode('source')
+    const target = new LGraphNode('target')
+    source.addOutput('out', '*')
+    target.addInput('in', '*')
+    graph.add(source)
+    graph.add(target)
+    const link = source.connect(0, target, 0)!
+    const callbacks = [vi.fn(), vi.fn()]
+
+    source.onRemoved = () => {
+      callbacks[0]()
+      expect(graph.links.get(link.id)).toBe(link)
+      expect(source.graph).toBe(graph)
+      expect(target.graph).toBe(graph)
+      graph.remove(target)
+    }
+    target.onRemoved = () => {
+      callbacks[1]()
+      expect(graph.links.get(link.id)).toBe(link)
+      expect(source.graph).toBe(graph)
+      expect(target.graph).toBe(graph)
+      graph.remove(target)
+    }
+
+    graph.clear()
+
+    callbacks.forEach((callback) => expect(callback).toHaveBeenCalledOnce())
+    expect(source.graph).toBeNull()
+    expect(target.graph).toBeNull()
+  })
+
   it('runs nested node removal lifecycle exactly once', () => {
     const { rootGraph, subgraphs } = createNestedSubgraphs({
       depth: 2,
@@ -1400,6 +1433,26 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
     expect(created.reroutes.get(toRerouteId(reroute.id))?.linkIds).toContain(
       toLinkId(link.id)
     )
+  })
+
+  it('keeps the first duplicate subgraph definition during creation', () => {
+    const graph = new LGraph()
+    const id = createUuidv4()
+    const definitions = [
+      createTestSubgraphData({ id, name: 'first' }),
+      createTestSubgraphData({ id, name: 'second' })
+    ]
+    const original = structuredClone(definitions)
+    const createdEvents = vi.fn()
+    graph.events.addEventListener('subgraph-created', createdEvents)
+
+    const created = graph.createSubgraphs(definitions)
+
+    expect(created).toHaveLength(1)
+    expect(created[0].name).toBe('first')
+    expect(graph.subgraphs.get(id)).toBe(created[0])
+    expect(createdEvents).toHaveBeenCalledOnce()
+    expect(definitions).toEqual(original)
   })
 
   it('remaps duplicate link IDs across subgraph definitions', () => {

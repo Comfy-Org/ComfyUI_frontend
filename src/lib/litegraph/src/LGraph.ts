@@ -201,6 +201,8 @@ export interface BaseLGraph {
   readonly rootGraph: LGraph
 }
 
+const nodesBeingRemoved = new WeakSet<LGraphNode>()
+
 function fireNodeRemovalLifecycle(node: LGraphNode): void {
   const graph: LGraph | null = node.graph
   graph?.events.dispatch('node:before-removed', { node })
@@ -208,19 +210,36 @@ function fireNodeRemovalLifecycle(node: LGraphNode): void {
   graph?.onNodeRemoved?.(node)
 }
 
+function fireNodeRemovalLifecycles(nodes: LGraphNode[]): void {
+  const pending = nodes.filter((node) => !nodesBeingRemoved.has(node))
+  for (const node of pending) nodesBeingRemoved.add(node)
+  try {
+    for (const node of pending) fireNodeRemovalLifecycle(node)
+  } finally {
+    for (const node of pending) nodesBeingRemoved.delete(node)
+  }
+}
+
 function teardownOwnedGraphs(owner: LGraph): void {
   const ownedGraphs = owner.isRootGraph
     ? [owner, ...owner._subgraphs.values()]
     : [owner]
+  const nodesByGraph = ownedGraphs.map(
+    (graph) => [graph, [...graph._nodes]] as const
+  )
+  const nodes = nodesByGraph.flatMap(([, nodes]) => nodes)
 
-  for (const graph of ownedGraphs) {
-    for (const node of graph._nodes) fireNodeRemovalLifecycle(node)
-  }
+  fireNodeRemovalLifecycles(nodes)
   for (const graph of ownedGraphs) {
     unregisterAllLinkTopologies(graph)
     unregisterAllRerouteChains(graph)
   }
-  unregisterAllNodeStates(owner)
+  for (const [, graphNodes] of nodesByGraph) {
+    for (const node of graphNodes) {
+      unregisterNodeState(node)
+      node.graph = null
+    }
+  }
   unregisterAllGraphLayout(owner)
 }
 
@@ -1250,6 +1269,8 @@ export class LGraph
       return
     }
 
+    if (nodesBeingRemoved.has(node)) return
+
     // not found
     if (this._nodes_by_id[node.id] == null) {
       console.warn('LiteGraph: node not found', node)
@@ -1261,6 +1282,15 @@ export class LGraph
       return
     }
 
+    nodesBeingRemoved.add(node)
+    try {
+      this.removeNode(node)
+    } finally {
+      nodesBeingRemoved.delete(node)
+    }
+  }
+
+  private removeNode(node: LGraphNode): void {
     // sure? - almost sure is wrong
     this.beforeChange()
 
@@ -1292,7 +1322,9 @@ export class LGraph
     if (node.isSubgraphNode()) {
       const releasedSubgraphs = findReleasableSubgraphs(this.rootGraph, node)
       for (const subgraph of releasedSubgraphs) {
-        visitGraphNodes(subgraph, fireNodeRemovalLifecycle)
+        const nodes: LGraphNode[] = []
+        visitGraphNodes(subgraph, (node) => nodes.push(node))
+        fireNodeRemovalLifecycles(nodes)
       }
       for (const subgraph of releasedSubgraphs) {
         unregisterAllLinkTopologies(subgraph)

@@ -43,7 +43,12 @@ export function normalizeSubgraphDefinitions(
   state: LGraphState,
   rootNodes?: ISerialisedNode[]
 ): DeduplicationResult {
-  const clonedSubgraphs = structuredClone(subgraphs)
+  const clonedSubgraphs =
+    firstById(
+      structuredClone(subgraphs),
+      (subgraph) => subgraph.id,
+      'subgraph'
+    ) ?? []
   const clonedRootNodes = rootNodes ? structuredClone(rootNodes) : undefined
 
   for (const subgraph of clonedSubgraphs) dropSameOwnerDuplicates(subgraph)
@@ -92,7 +97,7 @@ function dropSameOwnerDuplicates(subgraph: ExportedSubgraph): void {
 function firstById<T, Id>(
   items: T[] | undefined,
   idOf: (item: T) => Id,
-  entity: 'node' | 'group' | 'link' | 'reroute',
+  entity: 'subgraph' | 'node' | 'group' | 'link' | 'reroute',
   seen = new Set<Id>()
 ): T[] | undefined {
   if (!items) return undefined
