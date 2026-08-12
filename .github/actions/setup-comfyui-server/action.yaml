@@ -41,11 +41,6 @@ runs:
       uses: actions/setup-python@v6
       with:
         python-version: '3.10'
-        # Caches pip's wheel cache (~/.cache/pip) keyed on the requirements
-        # hash - the CPU torch stack is the dominant download. A miss changes
-        # nothing: every install below still runs; hits just skip downloads.
-        cache: 'pip'
-        cache-dependency-path: ComfyUI/requirements.txt
 
     - name: Install Python requirements
       shell: bash
