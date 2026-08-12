@@ -13,12 +13,17 @@ import {
   remoteConfigState
 } from '@/platform/remoteConfig/remoteConfig'
 import { api } from '@/scripts/api'
+import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 
 // Mock the API module
 vi.mock('@/scripts/api', () => ({
   api: {
     getServerFeature: vi.fn()
   }
+}))
+
+vi.mock('@/utils/sessionFeatureFlagOverride', () => ({
+  getSessionOverride: vi.fn()
 }))
 
 // Mock the distribution types module
@@ -230,10 +235,6 @@ describe('useFeatureFlags', () => {
   })
 
   describe('dev override via localStorage', () => {
-    afterEach(() => {
-      localStorage.clear()
-    })
-
     it('resolveFlag returns localStorage override over remoteConfig and server value', () => {
       vi.mocked(api.getServerFeature).mockReturnValue(false)
       localStorage.setItem('ff:model_upload_button_enabled', 'true')
@@ -296,7 +297,6 @@ describe('useFeatureFlags', () => {
       remoteConfig.value = {}
       cachedBillingControlEnabled.value = undefined
       cachedV1PaymentRecovery.value = undefined
-      localStorage.clear()
     })
 
     afterEach(() => {
@@ -305,7 +305,6 @@ describe('useFeatureFlags', () => {
       remoteConfig.value = {}
       cachedBillingControlEnabled.value = undefined
       cachedV1PaymentRecovery.value = undefined
-      localStorage.clear()
     })
 
     it('returns the cached session value during the auth window', () => {
@@ -354,10 +353,6 @@ describe('useFeatureFlags', () => {
   })
 
   describe('signupTurnstileMode', () => {
-    afterEach(() => {
-      localStorage.clear()
-    })
-
     it('falls back to the server feature flag with default off', () => {
       vi.mocked(api.getServerFeature).mockImplementation(
         (path, defaultValue) => {
@@ -431,7 +426,6 @@ describe('useFeatureFlags', () => {
     afterEach(() => {
       vi.mocked(distributionTypes).isCloud = false
       remoteConfig.value = {}
-      localStorage.clear()
     })
 
     it('is disabled outside the cloud distribution', () => {
@@ -461,10 +455,6 @@ describe('useFeatureFlags', () => {
   })
 
   describe('unifiedCloudAuthEnabled', () => {
-    afterEach(() => {
-      localStorage.clear()
-    })
-
     it('reads the unified_cloud_auth server feature when set', () => {
       vi.mocked(api.getServerFeature).mockImplementation(
         (path, defaultValue) => {
@@ -483,6 +473,55 @@ describe('useFeatureFlags', () => {
 
       const { flags } = useFeatureFlags()
       expect(flags.unifiedCloudAuthEnabled).toBe(true)
+    })
+  })
+
+  describe('session override precedence', () => {
+    afterEach(() => {
+      vi.mocked(getSessionOverride).mockReset()
+      vi.mocked(distributionTypes).isCloud = false
+      remoteConfigState.value = 'unloaded'
+      cachedBillingControlEnabled.value = undefined
+      remoteConfig.value = {}
+    })
+
+    it('beats the dev override, remote config and the server value', () => {
+      vi.mocked(getSessionOverride).mockImplementation((flagKey) =>
+        flagKey === ServerFeatureFlag.SIGNUP_TURNSTILE ? 'enforce' : undefined
+      )
+      localStorage.setItem(
+        `ff:${ServerFeatureFlag.SIGNUP_TURNSTILE}`,
+        '"shadow"'
+      )
+      remoteConfig.value = { signup_turnstile: 'off' }
+      vi.mocked(api.getServerFeature).mockReturnValue('off')
+
+      const { flags } = useFeatureFlags()
+      expect(flags.signupTurnstileMode).toBe('enforce')
+    })
+
+    it('applies a false override instead of falling through to an enabled server value', () => {
+      vi.mocked(getSessionOverride).mockImplementation((flagKey) =>
+        flagKey === ServerFeatureFlag.WORKFLOW_SHARING_ENABLED
+          ? false
+          : undefined
+      )
+      vi.mocked(api.getServerFeature).mockReturnValue(true)
+
+      const { flags } = useFeatureFlags()
+      expect(flags.workflowSharingEnabled).toBe(false)
+    })
+
+    it('beats the auth-window fallback on auth-gated flags', () => {
+      vi.mocked(distributionTypes).isCloud = true
+      remoteConfigState.value = 'unloaded'
+      cachedBillingControlEnabled.value = false
+      vi.mocked(getSessionOverride).mockImplementation((flagKey) =>
+        flagKey === ServerFeatureFlag.BILLING_CONTROL_ENABLED ? true : undefined
+      )
+
+      const { flags } = useFeatureFlags()
+      expect(flags.billingControlEnabled).toBe(true)
     })
   })
 })

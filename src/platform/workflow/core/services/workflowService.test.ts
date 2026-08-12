@@ -177,7 +177,6 @@ function enableWarningSettings() {
 
 describe('useWorkflowService', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     draftStoreMocks.saveDraft.mockReturnValue(true)
   })
 
@@ -983,7 +982,6 @@ describe('useWorkflowService', () => {
       service = useWorkflowService()
       vi.spyOn(workflowStore, 'saveWorkflow').mockResolvedValue()
       vi.spyOn(workflowStore, 'renameWorkflow').mockResolvedValue()
-      mockTrackWorkflowSaved.mockClear()
       app.rootGraph.extra = {}
     })
 

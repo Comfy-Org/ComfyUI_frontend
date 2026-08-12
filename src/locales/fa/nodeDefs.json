@@ -5824,6 +5824,9 @@
       "model_number_of_images": {
         "name": "number_of_images"
       },
+      "model_quality": {
+        "name": "کیفیت"
+      },
       "model_resolution": {
         "name": "resolution"
       },
@@ -5862,6 +5865,10 @@
       "prompt": {
         "name": "راهنما",
         "tooltip": "متن راهنما برای تولید تصویر استفاده می‌شود"
+      },
+      "quality": {
+        "name": "کیفیت",
+        "tooltip": "سطح کیفیت، فقط توسط مدل grok-imagine-image-2.0 پشتیبانی می‌شود."
       },
       "resolution": {
         "name": "وضوح"
@@ -8928,6 +8935,67 @@
       }
     }
   },
+  "LTXVDualCFGGuider": {
+    "description": "مقیاس‌های جداگانه CFG برای حالت‌های ویدیو و صوتی یک latent LTXV-AV بسته‌بندی‌شده.",
+    "display_name": "راهنمای دوگانه CFG LTXV",
+    "inputs": {
+      "audio_cfg": {
+        "name": "صوت CFG"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "negative": {
+        "name": "منفی"
+      },
+      "positive": {
+        "name": "مثبت"
+      },
+      "video_cfg": {
+        "name": "ویدیو CFG"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVDurationPredictor": {
+    "description": "مدت زمان طبیعی شات را برای یک پرامپت با استفاده از duration head نسخه LTX ۲.۴ (بارگذاری‌شده با ModelPatchLoader) پیش‌بینی می‌کند و آن را به شبکه فریم ۸k+۱ VAE تطبیق می‌دهد.",
+    "display_name": "پیش‌بینی‌کننده مدت زمان LTXV",
+    "inputs": {
+      "duration_head": {
+        "name": "duration head",
+        "tooltip": "duration head نسخه LTX ۲.۴ بارگذاری‌شده با ModelPatchLoader."
+      },
+      "frame_rate": {
+        "name": "نرخ فریم"
+      },
+      "max_seconds": {
+        "name": "حداکثر ثانیه"
+      },
+      "min_seconds": {
+        "name": "حداقل ثانیه"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "positive": {
+        "name": "مثبت"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "تعداد فریم‌ها",
+        "tooltip": null
+      },
+      "1": {
+        "name": "ثانیه",
+        "tooltip": "مدت زمان پیش‌بینی‌شده خام (بدون محدودیت)."
+      }
+    }
+  },
   "LTXVEmptyLatentAudio": {
     "display_name": "LTXV Empty Latent Audio",
     "inputs": {
@@ -9047,6 +9115,29 @@
       }
     }
   },
+  "LTXVModalityGuidance": {
+    "description": "راهنمای بین‌حالتی (صوت-ویدیو) برای LTXV-AV. در هر گام یک بار عبور اضافی با قطع cross-attention a2v/v2a اجرا می‌شود، سپس نتیجه به سمت پیش‌بینی متصل‌شده هدایت می‌شود - تقویت هم‌زمانی صوت و تصویر (مثلاً لب‌خوانی). مقدار پیش‌فرض modality_scale برابر ۳.۰ است. با راهنمای دوگانه CFG و STG قابل ترکیب است. برای غیرفعال‌سازی (بدون عبور اضافی) مقدار را ۱.۰ قرار دهید.",
+    "display_name": "راهنمای حالت LTXV (اتصال صوت/تصویر)",
+    "inputs": {
+      "end_percent": {
+        "name": "درصد پایان"
+      },
+      "modality_scale": {
+        "name": "مقیاس حالت"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "start_percent": {
+        "name": "درصد شروع"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LTXVPreprocess": {
     "display_name": "LTXVPreprocess",
     "inputs": {
@@ -9158,6 +9249,33 @@
       },
       "1": {
         "name": "audio_latent",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVSpatioTemporalGuidance": {
+    "description": "در هر گام یک بار عبور اضافی با کاهش self-attention بلوک‌های انتخاب‌شده به مقدار value-passthrough اجرا می‌شود، سپس از آن دوری می‌کند - بهبود جزئیات فضایی و انسجام حرکتی.",
+    "display_name": "راهنمای فضایی-زمانی LTXV (STG)",
+    "inputs": {
+      "blocks": {
+        "name": "بلوک‌ها",
+        "tooltip": "ایندکس‌های بلوک ترنسفورمر جداشده با ویرگول برای ایجاد اختلال."
+      },
+      "end_percent": {
+        "name": "درصد پایان"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "scale": {
+        "name": "مقیاس"
+      },
+      "start_percent": {
+        "name": "درصد شروع"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -10148,6 +10266,121 @@
     "outputs": {
       "0": {
         "name": "شرط‌گذاری",
+        "tooltip": null
+      }
+    }
+  },
+  "LtxApi25AudioToVideo": {
+    "description": "تولید ویدیو بر اساس یک ترک صوتی، با امکان افزودن تصویر فریم اول به صورت اختیاری.",
+    "display_name": "LTX ۲.۵ تبدیل صوت به ویدیو",
+    "inputs": {
+      "audio": {
+        "name": "صوت",
+        "tooltip": "ترک صوتی که ویدیو را هدایت می‌کند. طول آن (۲ تا ۲۰ ثانیه) مدت زمان ویدیو را تعیین می‌کند."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "image": {
+        "name": "تصویر",
+        "tooltip": "فریم اول اختیاری برای استفاده در ویدیو."
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "model_resolution": {
+        "name": "رزولوشن"
+      },
+      "prompt": {
+        "name": "پرامپت"
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "بذر برای تعیین اینکه آیا node باید دوباره اجرا شود؛ نتایج واقعی صرف‌نظر از بذر غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LtxApi25ImageToVideo": {
+    "description": "ویدیوهای حرفه‌ای با مدت زمان و رزولوشن قابل تنظیم بر اساس تصویر شروع.",
+    "display_name": "LTX ۲.۵ تبدیل تصویر به ویدیو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "image": {
+        "name": "تصویر",
+        "tooltip": "فریم اول برای استفاده در ویدیو."
+      },
+      "last_frame": {
+        "name": "فریم آخر",
+        "tooltip": "فریم آخر برای استفاده در ویدیو."
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "model_duration": {
+        "name": "مدت زمان"
+      },
+      "model_fps": {
+        "name": "فریم بر ثانیه"
+      },
+      "model_generate_audio": {
+        "name": "تولید صوت"
+      },
+      "model_resolution": {
+        "name": "رزولوشن"
+      },
+      "prompt": {
+        "name": "پرامپت"
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "بذر برای تعیین اینکه آیا node باید دوباره اجرا شود؛ نتایج واقعی صرف‌نظر از بذر غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LtxApi25TextToVideo": {
+    "description": "ویدیوهای حرفه‌ای با مدت زمان و رزولوشن قابل تنظیم.",
+    "display_name": "LTX ۲.۵ تبدیل متن به ویدیو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "model_duration": {
+        "name": "مدت زمان"
+      },
+      "model_fps": {
+        "name": "فریم بر ثانیه"
+      },
+      "model_generate_audio": {
+        "name": "تولید صوت"
+      },
+      "model_resolution": {
+        "name": "رزولوشن"
+      },
+      "prompt": {
+        "name": "پرامپت"
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "بذر برای تعیین اینکه آیا node باید دوباره اجرا شود؛ نتایج واقعی صرف‌نظر از بذر غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -11979,6 +12212,17 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "ModelAttentionBackend": {
+    "display_name": "ModelAttentionBackend",
+    "inputs": {
+      "attention": {
+        "name": "attention"
+      },
+      "model": {
+        "name": "مدل"
       }
     }
   },

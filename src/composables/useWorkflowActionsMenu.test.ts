@@ -1,4 +1,3 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -122,7 +121,6 @@ function findItem(items: MenuItems, label: string): WorkflowMenuAction {
 
 describe('useWorkflowActionsMenu', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     mockOpenExportWorkflowApiDialog.mockResolvedValue(undefined)
     mockBookmarkStore.isBookmarked.mockReturnValue(false)
     mockSubgraphStore.isSubgraphBlueprint.mockReturnValue(false)

@@ -74,8 +74,6 @@ describe('useBillingBanner', () => {
     b.subscription.value = { hasFunds: true }
     mocks.billingControlEnabled!.value = true
     mocks.v1PaymentRecovery!.value = true
-    b.fetchStatus.mockClear()
-    b.fetchBalance.mockClear()
   })
 
   it('suppresses the banner entirely when billing control is rolled back', async () => {

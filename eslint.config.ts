@@ -103,7 +103,8 @@ export default defineConfig([
           allowDefaultProject: [
             'packages/object-info-parser/vitest.config.ts',
             'vite.electron.config.mts',
-            'vite.types.config.mts'
+            'vite.types.config.mts',
+            'vitest.timer.setup.ts'
           ]
         }
       }
@@ -515,6 +516,12 @@ export default defineConfig([
           ]
         }
       ]
+    }
+  },
+  {
+    files: ['src/components/searchbox/**/*.vue'],
+    rules: {
+      'vue/no-v-html': 'error'
     }
   },
   // Browser tests must use comfyPageFixture, not raw @playwright/test test
