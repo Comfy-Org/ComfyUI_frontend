@@ -56,6 +56,8 @@ def main() -> int:
         ok = sum(1 for r in rows if r.get(stage) == 'OK')
         measured = sum(1 for r in rows if stage in r)
         lines.append(f'{stage:22s} {ok:5d} of {measured} OK')
+    hook_packs = sum(1 for r in rows if r.get('hookErrors'))
+    lines.append(f'{"contained hook errors":22s} {hook_packs:5d} pack(s)')
 
     op_total: Counter = Counter()
     op_err: Counter = Counter()

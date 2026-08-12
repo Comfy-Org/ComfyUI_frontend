@@ -190,3 +190,43 @@ jobs:
           path: matrix-rows/
           retention-days: 30
           if-no-files-found: warn
+
+  # Counter-evidence: the matrix runs over a synthetic corpus where every
+  # pack breaks exactly one measurement channel (detection-proof/corpus/),
+  # then this job requires BOTH that every channel fired with its poison
+  # message (verify_detection.py) AND that the combined verdict is FAIL.
+  # A green weekly verdict is only meaningful while this stays green: a
+  # runner or frontend change that blinds a channel reds THIS job instead
+  # of silently hollowing out the weekly one. No corpus/cache dependency -
+  # the poison fixture is checked in.
+  matrix-detection-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+        with:
+          include_build_step: false
+
+      - name: Build poison fixture
+        run: CENSUS_ROOT=scripts/registry-census/detection-proof python3 scripts/registry-census/build_matrix.py
+
+      - name: Run the matrix over the poison corpus
+        run: |
+          MATRIX_OUT="$PWD/matrix-proof" pnpm exec vitest run             --config vitest.matrix.config.mts 2>&1 | tail -15             || echo "vitest exited nonzero - tolerated, poison packs leak by design"
+
+      - name: Every channel must fire
+        run: MATRIX_OUT="$PWD/matrix-proof" python3 scripts/registry-census/verify_detection.py
+
+      - name: Verdict must FAIL on poison
+        run: |
+          if MATRIX_OUT="$PWD/matrix-proof" python3 scripts/registry-census/summarize_matrix.py > proof-verdict.txt 2>&1; then
+            cat proof-verdict.txt
+            echo "::error::verdict PASSED on an all-poison corpus - the floors are not gating"
+            exit 1
+          fi
+          tail -6 proof-verdict.txt
+          echo "verdict correctly FAILED on the poison corpus"

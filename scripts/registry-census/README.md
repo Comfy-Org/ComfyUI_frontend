@@ -57,6 +57,33 @@ breaks pack integration craters all three at once. Shard jobs check harness
 integrity only (every built spec wrote its row; vitest's own exit code is
 ignored because pack code leaks unhandled rejections).
 
+## Detection proof (counter-evidence)
+
+`detection-proof/corpus/` is a synthetic corpus of seven packs, each broken
+in exactly one measured way, plus a clean control. The
+`matrix-detection-proof` job runs the real matrix over it and passes only if
+`verify_detection.py` sees every channel fire with its exact poison message
+AND `summarize_matrix.py` exits FAIL. Channels proven:
+
+| poison pack              | breaks                         | detected as                      |
+| ------------------------ | ------------------------------ | -------------------------------- |
+| poison-load-throw        | throws at import               | `loadedOk` 0 + message (gated)   |
+| poison-regdef-throw      | `beforeRegisterNodeDef` throws | `hookErrors` (app containment)   |
+| poison-customnodes-throw | `registerCustomNodes` throws   | `hookErrors` (app containment)   |
+| poison-op-break          | `onNodeCreated` throws         | `load`/`addNode` op errs (gated) |
+| poison-serialize-throw   | `onSerialize` throws           | `serialize` op err (gated)       |
+| poison-desync            | pushes an unregistered widget  | signature drift (`wn`, counts)   |
+| clean-control            | nothing                        | fully clean row (specificity)    |
+
+Two insensitivities the proof itself surfaced, kept honest here: throwing
+extension hooks are CONTAINED by the app (`extensionService` catches and
+logs), so they can never fail registration — the runner records the
+containment signature as `hookErrors` row data instead; and the
+store-vs-live widget desync comparator needs the Vue widget-store wiring,
+which this happy-dom harness does not populate (`r`/`st` read `n/a`), so
+mutations surface through the serialized signature rather than that
+comparator.
+
 ## Read before citing any number
 
 - **The corpus tracks pack HEADs.** Two runs weeks apart are not the same

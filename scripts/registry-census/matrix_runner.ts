@@ -16,6 +16,15 @@ const errMsg = (e: unknown) =>
   (e instanceof Error ? `${e.name}: ${e.message}` : String(e))
     .replace(/\s+/g, ' ')
     .slice(0, 120)
+const argText = (a: unknown): string => {
+  if (a instanceof Error) return `${a.name}: ${a.message}`
+  if (a && typeof a === 'object') {
+    const e = (a as { error?: unknown }).error
+    if (e instanceof Error) return `${e.name}: ${e.message}`
+    return S(a)
+  }
+  return String(a)
+}
 
 let DEPR: string[] = []
 
@@ -240,14 +249,25 @@ export async function runPack(
   loaders: Record<string, () => Promise<unknown>>,
   entries: string[]
 ) {
-  vi.spyOn(console, 'error').mockImplementation(() => {})
+  // The app CONTAINS throwing extension hooks (extensionService catches and
+  // console.errors them), so a pack whose hook throws would otherwise read
+  // clean. Capture the containment signature as row data.
+  const hookErrors: string[] = []
+  vi.spyOn(console, 'error').mockImplementation((...args: unknown[]) => {
+    const text = args.map(argText).join(' ').replace(/\s+/g, ' ')
+    if (text.includes('Error calling extension'))
+      hookErrors.push(text.slice(0, 200))
+  })
   vi.spyOn(console, 'warn').mockImplementation(() => {})
   vi.spyOn(console, 'log').mockImplementation(() => {})
   vi.spyOn(console, 'info').mockImplementation(() => {})
   setActivePinia(createTestingPinia({ stubActions: false }))
 
   const row: Record<string, unknown> = { pack }
-  const ops: Record<string, { err: string; sig: string; depr: string }> = {}
+  const ops: Record<
+    string,
+    { err: string; sig: string; depr: string; desync: string }
+  > = {}
   const lg = await installGlobals()
   const { LGraph, LGraphNode, LiteGraph } = lg
 
@@ -533,6 +553,7 @@ export async function runPack(
   })
 
   row.ops = ops
+  row.hookErrors = [...new Set(hookErrors)].slice(0, 20)
 
   const dir = process.env.MATRIX_OUT ?? '/tmp/matrix'
   fs.mkdirSync(dir, { recursive: true })
