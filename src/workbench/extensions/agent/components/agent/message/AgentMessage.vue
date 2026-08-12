@@ -26,17 +26,14 @@ type Group =
 
 const groups = computed<Group[]>(() => {
   const out: Group[] = []
-  let activity: Extract<Group, { kind: 'activity' }> | undefined
   const hasTools = message.parts.some((part) => part.type === 'tool')
   for (const part of message.parts) {
     const prev = out.at(-1)
     if (part.type === 'tool' || part.type === 'thinking') {
       if (!hasTools) continue
-      if (!activity) {
-        activity = { kind: 'activity', parts: [] }
-        out.push(activity)
-      }
-      activity.parts.push(part)
+      if (prev?.kind === 'activity' && prev.parts[0]?.type === part.type)
+        prev.parts.push(part)
+      else out.push({ kind: 'activity', parts: [part] })
     } else if (part.type === 'text') {
       out.push({ kind: 'text', part })
     } else if (part.type === 'tabLink') {
@@ -72,7 +69,7 @@ const hasTools = computed(() =>
       <ToolCallGroup
         v-else-if="group.kind === 'activity'"
         :parts="group.parts"
-        :streaming="message.streaming"
+        :active="message.streaming && index === groups.length - 1"
       />
       <div v-else-if="group.kind === 'tabLinks'" class="flex flex-col gap-1">
         <TabLinkCard

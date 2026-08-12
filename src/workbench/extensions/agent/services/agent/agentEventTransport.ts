@@ -31,6 +31,7 @@ export function createAgentEventTransport(
 ): AgentEventTransport {
   let openText: TextPart | null = null
   let openThinking: ThinkingPart | null = null
+  let openThinkingStartedAt = 0
   let toolCount = 0
   let settled = false
   let lastTabWorkflowId: string | undefined
@@ -52,6 +53,8 @@ export function createAgentEventTransport(
   function closeOpenThinking(): void {
     if (openThinking) {
       openThinking.state = 'done'
+      const durationMs = Date.now() - openThinkingStartedAt
+      if (durationMs > 0) openThinking.durationMs = durationMs
       openThinking = null
     }
   }
@@ -64,6 +67,7 @@ export function createAgentEventTransport(
     }
     message.parts.push(part)
     openThinking = part
+    openThinkingStartedAt = Date.now()
     return part
   }
 

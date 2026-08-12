@@ -54,8 +54,7 @@ describe('ToolCallGroup', () => {
       global: { plugins: [i18n] }
     })
 
-    expect(screen.getByText('Thinking...')).toHaveClass('agent-shimmer-text')
-    expect(screen.queryByText('Ran 1 tool call')).not.toBeInTheDocument()
+    expect(screen.getByText('Ran 1 tool call')).toBeInTheDocument()
     expect(screen.getByText('Add node')).toBeInTheDocument()
   })
 
@@ -70,8 +69,7 @@ describe('ToolCallGroup', () => {
       global: { plugins: [i18n] }
     })
 
-    expect(screen.getByText('Thinking...')).toHaveClass('agent-shimmer-text')
-    expect(screen.queryByText('Ran 2 tool calls')).not.toBeInTheDocument()
+    expect(screen.getByText('Ran 2 tool calls')).toBeInTheDocument()
     expect(screen.getAllByText('Add node')).toHaveLength(1)
     expect(screen.getByText('×2')).toBeInTheDocument()
   })
@@ -113,18 +111,18 @@ describe('ToolCallGroup', () => {
     const { rerender } = render(ToolCallGroup, {
       props: {
         parts: [tool('c1', 'add_node', 'done', true)],
-        streaming: true
+        active: true
       },
       global: { plugins: [i18n] }
     })
 
-    const trigger = screen.getByRole('button', { name: /thinking/i })
+    const trigger = screen.getByRole('button', { name: /ran 1 tool call/i })
     expect(trigger).toHaveAttribute('aria-expanded', 'true')
     expect(screen.getByText('Add node')).toBeInTheDocument()
 
     await rerender({
       parts: [tool('c1', 'add_node', 'done', true)],
-      streaming: false
+      active: false
     })
 
     expect(
@@ -151,7 +149,45 @@ describe('ToolCallGroup', () => {
     expect(screen.getByText('×2')).toBeInTheDocument()
   })
 
-  it('keeps reasoning and tool rows together in event order', () => {
+  it('shows an active thought expanded and its timed result collapsed', async () => {
+    const { rerender } = render(ToolCallGroup, {
+      props: {
+        parts: [
+          {
+            type: 'thinking',
+            text: 'Inspecting the graph',
+            state: 'streaming'
+          }
+        ],
+        active: true
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByRole('button', { name: /thinking/i })).toHaveAttribute(
+      'aria-expanded',
+      'true'
+    )
+    expect(screen.getByText('Inspecting the graph')).toBeInTheDocument()
+
+    await rerender({
+      parts: [
+        {
+          type: 'thinking',
+          text: 'Inspecting the graph',
+          state: 'done',
+          durationMs: 1300
+        }
+      ],
+      active: false
+    })
+
+    expect(
+      screen.getByRole('button', { name: /thought for 1.3 seconds/i })
+    ).toHaveAttribute('aria-expanded', 'false')
+  })
+
+  it('renders mixed rows in event order when supplied', () => {
     render(ToolCallGroup, {
       props: {
         parts: [
@@ -160,7 +196,7 @@ describe('ToolCallGroup', () => {
           { type: 'thinking', text: 'Applying the edit', state: 'done' },
           tool('c2', 'set_widget', 'done', true)
         ],
-        streaming: true
+        active: true
       },
       global: { plugins: [i18n] }
     })
@@ -176,7 +212,7 @@ describe('ToolCallGroup', () => {
 })
 
 describe('AgentMessage tool grouping', () => {
-  it('keeps one shimmering activity row expanded while streaming', () => {
+  it('keeps the current tool phase expanded while streaming', () => {
     const message: AssistantMessage = {
       id: 'msg-0' as TurnId,
       role: 'assistant',
@@ -186,8 +222,9 @@ describe('AgentMessage tool grouping', () => {
     }
     render(AgentMessage, { props: { message }, global: { plugins: [i18n] } })
 
-    expect(screen.getByText('Thinking...')).toHaveClass('agent-shimmer-text')
-    expect(screen.queryByText('Ran 1 tool call')).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /ran 1 tool call/i })
+    ).toHaveAttribute('aria-expanded', 'true')
     expect(screen.getByText('Add node')).toBeInTheDocument()
   })
 

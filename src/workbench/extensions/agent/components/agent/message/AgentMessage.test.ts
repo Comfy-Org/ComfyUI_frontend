@@ -41,7 +41,7 @@ describe('AgentMessage thinking narration', () => {
     expect(screen.getByText('Thinking...')).toBeInTheDocument()
   })
 
-  it('folds retained thinking into the active tool summary, then settles it', async () => {
+  it('retains separate thought and tool phases as they settle', async () => {
     let message = createAssistantMessage('msg-0' as TurnId)
     const transport = createAgentEventTransport(message, (next) => {
       message = next
@@ -74,16 +74,13 @@ describe('AgentMessage thinking narration', () => {
     })
     await rerender({ message })
 
-    expect(
-      screen
-        .getAllByText('Thinking...')
-        .some((el) => el.classList.contains('agent-shimmer-text'))
-    ).toBe(true)
-    expect(screen.queryByText('Ran 1 tool call')).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /thinking/i })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: /thought/i })).toHaveAttribute(
       'aria-expanded',
-      'true'
+      'false'
     )
+    expect(
+      screen.getByRole('button', { name: /ran 1 tool call/i })
+    ).toHaveAttribute('aria-expanded', 'true')
 
     transport.ingest({
       type: 'agent_message_done',
@@ -95,16 +92,20 @@ describe('AgentMessage thinking narration', () => {
     expect(
       screen.getByRole('button', { name: /ran 1 tool call/i })
     ).toHaveAttribute('aria-expanded', 'false')
-    expect(screen.getAllByText('Thinking...')).toHaveLength(1)
+    expect(screen.getByRole('button', { name: /thought/i })).toHaveAttribute(
+      'aria-expanded',
+      'false'
+    )
 
+    await userEvent.click(screen.getByRole('button', { name: /thought/i }))
+    expect(screen.getByText('Thinking...')).toBeInTheDocument()
     await userEvent.click(
       screen.getByRole('button', { name: /ran 1 tool call/i })
     )
-    expect(screen.getByText('Thinking...')).toBeInTheDocument()
     expect(screen.getByText('Set widget')).toBeInTheDocument()
   })
 
-  it('shows resumed thinking inside the active tool group', () => {
+  it('shows resumed thinking after the completed tool group', async () => {
     const message = thinkingMessage('Planning the next step')
     message.parts = [
       { type: 'tool', callId: 'tool_0', name: 'set_widget', state: 'done' },
@@ -120,22 +121,25 @@ describe('AgentMessage thinking narration', () => {
       global: { plugins: [i18n] }
     })
 
-    const summary = screen.getByText('Thinking...')
+    const summary = screen.getByRole('button', { name: /thinking/i })
     const thinking = screen.getByText('Planning the next step')
 
     expect(summary).toBeInTheDocument()
     expect(screen.getByText('The first edit is complete.')).toBeInTheDocument()
     expect(thinking).not.toHaveClass('agent-shimmer-text')
-    expect(summary).toHaveClass('agent-shimmer-text')
-    expect(screen.queryByText('Ran 1 tool call')).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /thinking/i })).toHaveAttribute(
-      'aria-expanded',
-      'true'
+    expect(screen.getByText('Thinking...')).toHaveClass('agent-shimmer-text')
+    expect(
+      screen.getByRole('button', { name: /ran 1 tool call/i })
+    ).toHaveAttribute('aria-expanded', 'false')
+    expect(summary).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.queryByText('Set widget')).not.toBeInTheDocument()
+    await userEvent.click(
+      screen.getByRole('button', { name: /ran 1 tool call/i })
     )
     expect(screen.getByText('Set widget')).toBeInTheDocument()
   })
 
-  it('folds text-separated tool runs into one turn summary', async () => {
+  it('keeps text-separated tool runs as separate completed phases', () => {
     const message = thinkingMessage()
     message.thinking = false
     message.streaming = false
@@ -149,18 +153,79 @@ describe('AgentMessage thinking narration', () => {
       global: { plugins: [i18n] }
     })
 
-    const summary = screen.getByRole('button', {
-      name: /ran 2 tool calls/i
+    const summaries = screen.getAllByRole('button', {
+      name: /ran 1 tool call/i
     })
     const narration = screen.getByText('Between calls')
 
-    expect(summary).toBeInTheDocument()
-    await userEvent.click(summary)
-    expect(screen.getByText('Set widget')).toBeInTheDocument()
-    expect(screen.getByText('Add node')).toBeInTheDocument()
+    expect(summaries).toHaveLength(2)
     expect(
-      summary.compareDocumentPosition(narration) &
+      summaries[0].compareDocumentPosition(narration) &
         Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy()
+    expect(
+      narration.compareDocumentPosition(summaries[1]) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
+  })
+
+  it('matches the completed Figma sequence of separate expandable phases', async () => {
+    const message = thinkingMessage()
+    message.thinking = false
+    message.streaming = false
+    message.parts = [
+      {
+        type: 'thinking',
+        text: 'Inspecting the graph',
+        state: 'done',
+        durationMs: 1300
+      },
+      {
+        type: 'tool',
+        callId: 'tool_0',
+        name: 'list_slots',
+        state: 'done',
+        durationMs: 500
+      },
+      {
+        type: 'tool',
+        callId: 'tool_1',
+        name: 'set_widget',
+        state: 'done',
+        durationMs: 800
+      },
+      {
+        type: 'thinking',
+        text: 'Checking the result',
+        state: 'done',
+        durationMs: 700
+      },
+      { type: 'text', text: 'The workflow is ready.', state: 'done' }
+    ]
+    render(AgentMessage, {
+      props: { message },
+      global: { plugins: [i18n] }
+    })
+
+    const phases = screen.getAllByRole('button', {
+      name: /^(thought|ran)/i
+    })
+    expect(phases.map((phase) => phase.textContent)).toEqual([
+      'Thought for 1.3 seconds',
+      'Ran 2 tool calls for 1.3 seconds',
+      'Thought for 0.7 seconds'
+    ])
+    expect(
+      phases.every((phase) => phase.getAttribute('aria-expanded') === 'false')
+    ).toBe(true)
+    expect(screen.getByText('The workflow is ready.')).toBeInTheDocument()
+
+    await userEvent.click(phases[0])
+    await userEvent.click(phases[1])
+    await userEvent.click(phases[2])
+    expect(screen.getByText('Inspecting the graph')).toBeInTheDocument()
+    expect(screen.getByText('List slots')).toBeInTheDocument()
+    expect(screen.getByText('Set widget')).toBeInTheDocument()
+    expect(screen.getByText('Checking the result')).toBeInTheDocument()
   })
 })

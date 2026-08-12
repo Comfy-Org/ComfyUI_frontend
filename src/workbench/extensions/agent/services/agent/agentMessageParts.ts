@@ -21,6 +21,7 @@ export interface ThinkingPart {
   type: 'thinking'
   text: string
   state: PartState
+  durationMs?: number
 }
 
 export interface NoticePart {

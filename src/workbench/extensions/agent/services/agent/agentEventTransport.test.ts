@@ -188,13 +188,23 @@ describe('agentEventTransport thinking narration', () => {
   })
 
   it('a tool call clears the live narration but retains the completed step', () => {
+    const now = vi
+      .spyOn(Date, 'now')
+      .mockReturnValueOnce(1000)
+      .mockReturnValueOnce(2300)
     const message = drive([
       thinking('Adding a node'),
       toolCall('add_node', 'ok')
     ])
+    now.mockRestore()
     expect(message.thinkingText).toBeUndefined()
     expect(thinkingParts(message)).toEqual([
-      { type: 'thinking', text: 'Adding a node', state: 'done' }
+      {
+        type: 'thinking',
+        text: 'Adding a node',
+        state: 'done',
+        durationMs: 1300
+      }
     ])
   })
 

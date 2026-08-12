@@ -16,9 +16,9 @@ import type {
 
 import ToolCallCard from './ToolCallCard.vue'
 
-const { parts, streaming = false } = defineProps<{
+const { parts, active = false } = defineProps<{
   parts: ActivityPart[]
-  streaming?: boolean
+  active?: boolean
 }>()
 
 const { t } = useI18n()
@@ -36,6 +36,7 @@ type Row = ToolRow | { kind: 'thinking'; text: string }
 const tools = computed(() =>
   parts.filter((part): part is ToolPart => part.type === 'tool')
 )
+const thinking = computed(() => parts.find((part) => part.type === 'thinking'))
 const rows = computed<Row[]>(() => {
   const out: Row[] = []
   for (const part of parts) {
@@ -76,9 +77,16 @@ const running = computed(() =>
 const failed = computed(() =>
   tools.value.some((tool) => tool.state === 'done' && tool.ok === false)
 )
-const active = computed(() => streaming || running.value)
+const isActive = computed(() => active || running.value)
 const statusLabel = computed(() => {
-  if (active.value) return t('agent.thinking')
+  if (thinking.value) {
+    if (isActive.value) return t('agent.thinking')
+    return thinking.value.durationMs
+      ? t('agent.thoughtTimed', {
+          seconds: (thinking.value.durationMs / 1000).toFixed(1)
+        })
+      : t('agent.thought')
+  }
 
   return totalSeconds.value === null
     ? t('agent.ranToolCalls', tools.value.length)
@@ -91,7 +99,7 @@ const statusLabel = computed(() => {
 
 const open = ref(true)
 watch(
-  () => active.value || failed.value,
+  () => isActive.value || failed.value,
   (stayOpen) => {
     open.value = stayOpen
   },
@@ -112,11 +120,12 @@ watch(
         v-else-if="failed"
         class="text-agent-fg-subtle icon-[lucide--circle-x] size-4 shrink-0"
       />
-      <span v-else-if="active" class="icon-[lucide--brain] size-4 shrink-0" />
+      <span v-else-if="thinking" class="icon-[lucide--brain] size-4 shrink-0" />
       <span v-else class="icon-[lucide--wrench] size-4 shrink-0" />
-      <span :class="cn('text-left', active && 'agent-shimmer-text')">{{
-        statusLabel
-      }}</span>
+      <span
+        :class="cn('text-left', thinking && isActive && 'agent-shimmer-text')"
+        >{{ statusLabel }}</span
+      >
       <span
         class="icon-[lucide--chevron-down] size-4 shrink-0 transition-transform group-data-[state=open]:rotate-180"
       />
@@ -129,9 +138,8 @@ watch(
           <div
             v-if="row.kind === 'thinking'"
             role="listitem"
-            class="text-agent-fg-muted ml-2 flex min-h-8 items-center gap-2 px-2 py-1 text-sm/5"
+            class="text-agent-fg-muted ml-2 min-h-8 px-2 py-1 text-sm/5"
           >
-            <span class="icon-[lucide--brain] size-4 shrink-0" />
             <span>{{ row.text }}</span>
           </div>
           <ToolCallCard
