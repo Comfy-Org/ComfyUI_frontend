@@ -9,6 +9,7 @@ import {
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
+import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 
@@ -430,5 +431,51 @@ describe('pointer position', () => {
     } finally {
       LGraphCanvas.active_canvas = previous
     }
+  })
+})
+
+describe('subgraphs', () => {
+  function documentWithSubgraph() {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    const root = new LGraph()
+    const top = new LGraphNode('Top', 'TestNode')
+    root.add(top)
+
+    const subgraph = createTestSubgraph({ rootGraph: root, name: 'Upscale' })
+    root.subgraphs.set(subgraph.id, subgraph)
+
+    const inner = new LGraphNode('Inner', 'TestNode')
+    subgraph.add(inner)
+    return { root, top, subgraph, inner }
+  }
+
+  it('reaches nodes the active graph cannot see', () => {
+    const { root, subgraph, inner } = documentWithSubgraph()
+    const api = createGraphApi(() => root)
+
+    expect(api.nodes().map((n) => n.type)).toEqual(['TestNode'])
+
+    const [nested] = api.subgraphs()
+    expect(nested.id).toBe(String(subgraph.id))
+    expect(nested.name).toBe('Upscale')
+    expect(nested.node(String(inner.id))?.id).toBe(String(inner.id))
+  })
+
+  it('resolves each id inside its own graph, not across them', () => {
+    // Ids come from the root graph's counter, so they do not collide in one
+    // session — but a subgraph loaded from a file brings its authored ids and
+    // configure raises the counter without renumbering, so two independently
+    // authored subgraphs can carry the same id. Scoping is what makes lookup
+    // correct without relying on that.
+    const { root, top, inner } = documentWithSubgraph()
+    const api = createGraphApi(() => root)
+    const nested = api.subgraphs()[0]
+
+    expect(api.node(String(top.id))?.getTitle()).toBe('Top')
+    expect(nested.node(String(inner.id))?.getTitle()).toBe('Inner')
+
+    // Neither graph answers for the other's node.
+    expect(api.node(String(inner.id))).toBeUndefined()
+    expect(nested.node(String(top.id))).toBeUndefined()
   })
 })
