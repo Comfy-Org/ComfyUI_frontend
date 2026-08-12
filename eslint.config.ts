@@ -103,10 +103,11 @@ export default defineConfig([
         ...commonParserOptions,
         projectService: {
           allowDefaultProject: [
+            'packages/object-info-parser/vitest.config.ts',
             'vite.electron.config.mts',
             'vite.types.config.mts',
             'packages/ingest-types/openapi-ts.config.ts',
-            'packages/object-info-parser/vitest.config.ts'
+            'vitest.timer.setup.ts'
           ]
         }
       }
@@ -529,6 +530,12 @@ export default defineConfig([
           ]
         }
       ]
+    }
+  },
+  {
+    files: ['src/components/searchbox/**/*.vue'],
+    rules: {
+      'vue/no-v-html': 'error'
     }
   },
   // Browser tests must use comfyPageFixture, not raw @playwright/test test

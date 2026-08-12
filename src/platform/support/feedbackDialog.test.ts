@@ -33,7 +33,6 @@ vi.mock('@/platform/distribution/types', () => ({
 
 describe('openFeedbackDialog', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     userEmail.value = undefined
   })
 

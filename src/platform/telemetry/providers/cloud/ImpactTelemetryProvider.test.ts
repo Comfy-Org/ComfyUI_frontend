@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 type MockApiKeyUser = {
   id: string
@@ -62,14 +62,9 @@ function toUint8Array(data: BufferSource): Uint8Array {
 
 describe('ImpactTelemetryProvider', () => {
   beforeEach(() => {
-    mockCaptureCheckoutAttributionFromSearch.mockReset()
-    mockUseApiKeyAuthStore.mockReset()
-    mockUseAuthStore.mockReset()
     mockApiKeyAuthStore.isAuthenticated = false
     mockApiKeyAuthStore.currentUser = null
     mockAuthStore.currentUser = null
-    vi.restoreAllMocks()
-    vi.unstubAllGlobals()
     mockUseApiKeyAuthStore.mockReturnValue(mockApiKeyAuthStore)
     mockUseAuthStore.mockReturnValue(mockAuthStore)
 
@@ -86,10 +81,6 @@ describe('ImpactTelemetryProvider', () => {
 
       return null
     })
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
   })
 
   it('captures attribution and invokes identify with hashed email', async () => {
