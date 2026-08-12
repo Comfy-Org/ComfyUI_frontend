@@ -2460,6 +2460,10 @@ export type HubWorkflowTemplateEntry = {
     }>
   }
   /**
+   * Whether App Mode is this workflow's default view.
+   */
+  isApp: boolean
+  /**
    * Whether the template belongs to a module marked as essential.
    */
   isEssential?: boolean
@@ -2546,6 +2550,10 @@ export type HubProfileSummary = {
 export type HubWorkflowSummary = {
   custom_nodes?: Array<LabelRef>
   description?: string
+  /**
+   * Whether App Mode is this workflow's default view.
+   */
+  is_app: boolean
   metadata?: {
     [key: string]: unknown
   }
@@ -2587,6 +2595,10 @@ export type HubWorkflowDetail = {
   assets: Array<AssetInfo>
   custom_nodes?: Array<LabelRef>
   description?: string
+  /**
+   * Whether App Mode is this workflow's default view.
+   */
+  is_app: boolean
   metadata?: {
     [key: string]: unknown
   }
@@ -8072,7 +8084,7 @@ export type GetProvidersErrors = {
    */
   401: ErrorResponse
   /**
-   * Governance not available (personal workspace or ineligible team)
+   * Governance not available (workspace outside the rollout cohort with no configured policy - personal or team)
    */
   403: ErrorResponse
   /**
@@ -10603,7 +10615,7 @@ export type GetProviderPolicyErrors = {
    */
   401: ErrorResponse
   /**
-   * Governance not available (personal workspace or ineligible team)
+   * Governance not available (workspace outside the rollout cohort with no configured policy - personal or team)
    */
   403: ErrorResponse
   /**
@@ -10646,7 +10658,7 @@ export type PutProviderPolicyErrors = {
    */
   401: ErrorResponse
   /**
-   * Not a workspace owner, or governance not available (personal workspace or ineligible team creating a new document)
+   * Not a workspace owner, or governance not available (workspace outside the rollout cohort with no configured policy, creating a new document)
    */
   403: ErrorResponse
   /**

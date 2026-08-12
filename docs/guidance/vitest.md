@@ -30,6 +30,27 @@ which is always loaded. In addition:
 - Module-scope `vi.fn()` declarations may provide reset-persistent defaults by
   passing the implementation directly to `vi.fn(implementation)`.
 
+## No Real Network
+
+`vitest.setup.ts` blocks every `http(s)` `fetch`, and happy-dom is configured not
+to load iframes, stylesheets or scripts from remote hosts. A blocked request
+rejects with `Blocked a real network request to <url>`.
+
+This is deliberate, not an inconvenience to route around. happy-dom serves the
+page from `http://localhost:3000`, so an un-mocked relative `fetch('/api/...')`
+becomes a real connection whose failure arrives _after_ the test that started it
+has finished. Vitest then reports the late `console.error` as an unhandled
+error - `Closing rpc while "onUserConsoleLog" was pending` - against whichever
+file happened to be running, and fails the run with every test passing.
+
+If you hit the guard, mock the module that issues the request. Stubbing `fetch`
+also works and replaces the guard for that test, but do it in a `beforeEach` or
+inside the test body. A `vi.stubGlobal` at module scope does stay in place by
+default, but nothing owns restoring it: any `vi.unstubAllGlobals()` - a cleanup
+hook, another test tidying up after itself, or enabling the `unstubGlobals`
+config option - drops it and puts the real `fetch` back without failing
+anything.
+
 ## Component Testing
 
 - Use `@testing-library/vue` with `@testing-library/user-event` for component tests (an ESLint rule bans `@vue/test-utils` in new tests)

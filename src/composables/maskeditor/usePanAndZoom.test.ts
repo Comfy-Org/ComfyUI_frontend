@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { usePanAndZoom } from '@/composables/maskeditor/usePanAndZoom'
 
@@ -109,8 +107,6 @@ async function initComposable() {
 
 describe('usePanAndZoom', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-
     mockStore.canvasContainer = null
     mockStore.maskCanvas = null
     mockStore.rgbCanvas = null
@@ -118,10 +114,6 @@ describe('usePanAndZoom', () => {
     mockStore.brushVisible = true
     mockStore.displayZoomRatio = 1
     mockStore.resetZoomTrigger = 0
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
   })
 
   describe('initializeCanvasPanZoom', () => {
@@ -352,8 +344,6 @@ describe('usePanAndZoom', () => {
     })
 
     it('triggers undo on two-finger double-tap', () => {
-      vi.useFakeTimers()
-
       const pz = usePanAndZoom()
       const touches = createTouchList({ x: 100, y: 200 }, { x: 300, y: 200 })
 

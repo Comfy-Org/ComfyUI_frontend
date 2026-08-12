@@ -1,5 +1,5 @@
-import { createPinia, setActivePinia, storeToRefs } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { storeToRefs } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   useWorkspaceAuthStore,
@@ -90,7 +90,7 @@ const mockWorkspaceWithRole = {
 
 const mockTokenResponse = {
   token: 'workspace-token-abc',
-  expires_at: new Date(Date.now() + 3600 * 1000).toISOString(),
+  expires_at: new Date('2024-06-15T13:00:00Z').toISOString(),
   workspace: mockWorkspace,
   role: 'owner' as const,
   permissions: ['owner:*']
@@ -106,16 +106,10 @@ describe('useWorkspaceAuthStore', () => {
       reload: mockReload,
       origin: 'http://localhost'
     })
-    setActivePinia(createPinia())
-    vi.useFakeTimers()
-    sessionStorage.clear()
+    vi.useFakeTimers({ shouldAdvanceTime: false })
     mockUnifiedCloudAuthEnabled.value = false
     mockCurrentUser.value = { uid: 'user-a' }
     mockEnsureSessionCookie.mockResolvedValue(undefined)
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
   })
 
   describe('initial state', () => {

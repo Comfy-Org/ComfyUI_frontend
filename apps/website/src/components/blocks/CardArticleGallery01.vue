@@ -31,7 +31,7 @@ const {
   title?: string
   titleAlign?: 'start' | 'center'
   items: CardArticleGalleryItem[]
-  layout?: 'mixed' | 'two-column'
+  layout?: 'mixed' | 'two-column' | 'three-column'
   titleClamp?: boolean
   tabs?: CardArticleGalleryTab[]
   allLabel?: string
@@ -98,7 +98,13 @@ const { visibleItems, hasMore, showMore } = useFilteredGallery({
 
     <div
       class="mt-10 grid grid-cols-1 gap-6 lg:mt-12"
-      :class="layout === 'mixed' ? 'md:grid-cols-6' : 'md:grid-cols-2'"
+      :class="
+        layout === 'mixed'
+          ? 'md:grid-cols-6'
+          : layout === 'three-column'
+            ? 'md:grid-cols-3'
+            : 'md:grid-cols-2'
+      "
     >
       <div
         v-for="(item, index) in visibleItems"
