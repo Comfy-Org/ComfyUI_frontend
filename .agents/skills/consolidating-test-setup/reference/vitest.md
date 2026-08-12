@@ -1,89 +1,66 @@
-# Vitest Setup Consolidation
+# Vitest setup consolidation
 
-Read this reference only for Vitest or comparable in-process unit-test runners.
+Use this reference for Vitest and similar in-process unit-test runners.
 
-## Sources of Truth
+## Read first
 
-Read the active Vitest configuration, every setup file in its `setupFiles`
-chain, package-specific configurations, and the repository's unit-test guidance.
-In this repository, start with:
+Read the active Vitest configuration, its full `setupFiles` chain, package-level
+overrides, and the repository's unit-test guidance. In this repository, inspect:
 
 - `vite.config.mts`
 - `vitest.setup.ts` and `vitest.timer.setup.ts`
-- package-local Vitest configuration and setup
+- package-level Vitest configuration and setup
 - `docs/guidance/vitest.md`
 - `docs/testing/vitest-patterns.md`
 
-Confirm behavior against the installed Vitest version. Do not infer current
-defaults from memory or older documentation.
+Check behavior against the installed Vitest version. Defaults change, and setup
+files compose.
 
-## Ownership Model
+## Place the responsibility
 
-Prefer native configuration for lifecycle behavior the runner already supports.
-Use global setup hooks only for invariants that configuration cannot express.
-Keep package-specific behavior in the narrowest package setup instead of the
-repository-wide environment.
+Use native configuration for lifecycle behavior Vitest already supports. Use a
+setup file only for invariants configuration cannot express. Keep package-only
+behavior out of repository-wide setup.
 
-For each candidate, distinguish:
+Separate runner-managed resets, fresh mutable state, process-wide modes that
+need restoration, and scenario state that must remain local. Add hooks only for
+the part of the contract Vitest does not already own.
 
-- runner-managed reset behavior
-- mutable environment state requiring fresh setup
-- process-wide modes requiring restoration
-- scenario-specific state that must remain local
+A global default must fit every test in scope. Find the common behavior from the
+tests, then preserve deliberate opt-outs. When choosing a deterministic
+baseline, keep absolute values local when the value itself is under test.
 
-Configuration and setup hooks compose. Read the complete chain before deciding
-that a local call is redundant.
+## Handle mocks carefully
 
-## Defaults and Exceptions
+Runner-level reset and restoration can change module-scope test doubles. Check
+whether their default implementations survive and whether tests reprogram them
+during a scenario.
 
-A global default must be valid for every test in its scope. Determine the common
-behavior empirically and identify suites that intentionally opt out or establish
-a different state.
+Share a module mock only when it reduces reader effort and preserves behavior.
+Keep assertion handles explicit. Test module re-evaluation because it can replace
+shared mock state while a test still holds the old identity.
 
-Setup belongs before each test when state must be fresh. Restoration belongs
-after each test when a process-wide mode can leak. Avoid adding both when the
-runner already guarantees one side of the contract.
+Skip the extraction if typed shared code is no simpler than the local mocks or
+needs global mutable indirection.
 
-When standardizing time or another deterministic baseline, preserve tests where
-the absolute value is part of the behavior. Prefer relative expectations only
-when they improve intent.
+## Migrate
 
-## Mocks and Modules
-
-Runner-level mock reset and restoration can change module-scope test doubles.
-Verify whether defaults survive reset and whether suites intentionally reprogram
-mocks during a test.
-
-Share substantial equivalent module mocks only when the extraction reduces
-reader load and preserves observable behavior. Keep assertion handles explicit.
-Check module re-evaluation and reset behavior: a shared mock that recreates
-state can break identity held by an importing test.
-
-Do not extract a mock when the typed shared implementation is no simpler than
-the local versions or requires new global mutable indirection.
-
-## Migration Method
-
-For one lifecycle responsibility at a time:
+Work on one lifecycle responsibility at a time:
 
 1. Count and classify local occurrences.
-2. Remove them experimentally without adding a replacement.
-3. Use failures to determine the actual contract and exceptions.
-4. Prefer native configuration, then the narrowest setup file.
-5. Remove only calls made redundant by the new owner.
-6. Preserve mid-test resets and state that defines the scenario.
+2. Remove them without adding a replacement.
+3. Use failures to find the contract and exceptions.
+4. Prefer configuration, then the narrowest setup file.
+5. Remove only calls the new owner makes redundant.
+6. Keep mid-test resets and scenario state local.
 
-Independent suites can be evaluated in parallel by subagents. Require each to
-report observed necessity and exceptions rather than merely editing the file.
+Subagents may check independent suites, but each must report observed necessity
+and exceptions.
 
-## Proof
+## Prove
 
-Run directly affected files first, then setup-contract tests and the complete
-unit suite. Run the repository's static checks.
+Run affected files, setup-contract tests, static checks, and the complete unit
+suite. Shared process state can fail only when unrelated suites run together.
 
-Profile before and after when new logic executes for every test. Use comparable
-multi-sample runs and report variance; do not interpret normal run-to-run noise
-as a performance change.
-
-The full-suite result is required because shared process state can fail only
-under concurrency or interaction with unrelated suites.
+Profile changes that execute for every test. Compare several equivalent runs and
+report variance instead of treating normal noise as a result.

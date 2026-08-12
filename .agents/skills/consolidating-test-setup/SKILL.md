@@ -3,162 +3,125 @@ name: consolidating-test-setup
 description: Consolidates repeated test setup and teardown into the narrowest shared lifecycle owner. Use when test files repeat initialization, cleanup, environment management, fixtures, or equivalent test doubles.
 ---
 
-# Consolidating Test Setup
+# Consolidating test setup
 
 Move repeated test plumbing to the narrowest shared owner that can provide it
-reliably, leaving individual test files focused on behavior.
+reliably. Keep test files focused on behavior.
 
-## Core Principles
+## Principles
 
-### Repetition is evidence, not proof
+### Prove the code is equivalent
 
-Repeated code may encode distinct requirements. Group candidates by behavior,
-lifecycle, and defaults before treating them as duplicates.
+Repetition is evidence, not proof. Similar code may use different defaults,
+ordering, or lifetimes. Group candidates by behavior before treating them as
+duplicates.
 
 ### Centralize invariants, not scenarios
 
-Shared setup should establish conditions that are true for every test in its
-scope. Data or state that explains a particular scenario belongs near that
-scenario.
+Shared setup should establish conditions that hold for every test in its scope.
+State that explains one scenario belongs with that scenario.
 
-### Put responsibility at its natural boundary
+### Use the narrowest owner
 
-Prefer the mechanism that already owns the lifecycle. Use test-runner
-configuration before global hooks, scoped fixtures before broad globals, and
-local setup when the requirement is local. Wider reuse is not automatically
-better reuse.
+Prefer the mechanism that already owns the lifecycle. Use runner configuration
+before hooks, scoped fixtures before global setup, and local setup for local
+requirements. Wider reuse is not better reuse.
 
-### Defaults need boundaries and escape hatches
+### Treat setup and teardown as one contract
 
-A shared default should be deterministic, isolated, and easy to override when a
-test intentionally needs different behavior. An exception should remain local
-without weakening isolation elsewhere.
+Define who creates state, how long it lives, and who releases it. Cleanup must
+finish even when a test fails. Tests must not depend on execution order or on
+another test's cleanup.
 
-### Setup and teardown form one contract
-
-Define when state is created, how long it lives, and who releases it. Teardown
-must be complete, idempotent where practical, and awaited when asynchronous.
-No test should depend on execution order or cleanup performed by another test.
+A shared default should be deterministic and easy to override. Local exceptions
+must not weaken isolation elsewhere.
 
 ### Subtract before abstracting
 
-First remove suspected cargo-cult setup and run the affected tests. If nothing
-breaks, delete it. If behavior depends on it, use the failure to identify the
-actual contract before choosing a shared design.
+Remove suspected cargo-cult setup and run the affected tests. If nothing breaks,
+delete it. If a test fails, use the failure to identify the contract before
+designing shared setup.
 
-### An abstraction must own something
+A helper must own a policy or lifecycle, or remove meaningful reader effort.
+Moving the same lines behind a new name is not an improvement.
 
-A helper that only relocates or renames several lines is not a useful boundary.
-Centralization should encode a stable policy, own a coherent lifecycle, or
-materially reduce duplication and reader effort.
+### Preserve test intent
 
-### Preserve behavioral visibility
+Do not hide state that matters to the behavior under test. Check history before
+removing synchronization or cleanup because it may guard a past regression.
+Preserve that guarantee even if the implementation changes.
 
-Tests should still reveal the conditions relevant to the behavior under test.
-Do not hide meaningful scenario setup behind a universal fixture merely to make
-files shorter.
+## Runner-specific guidance
 
-### Change one lifecycle responsibility at a time
+Load only the reference for the runner in use:
 
-Separating concerns makes regressions attributable and alternatives comparable.
-Prove each centralization independently before combining broader changes.
+- [`reference/vitest.md`](reference/vitest.md) for Vitest and similar
+  in-process unit-test runners
+- [`reference/playwright.md`](reference/playwright.md) for Playwright and
+  similar browser-test runners
 
-### Existing setup may encode a regression fix
-
-Before removing synchronization or cleanup from an existing test, inspect its
-history. Preserve the guarantee when the code was introduced to prevent a race,
-leak, or order dependency, even if the implementation can be improved.
-
-## Load Runner-Specific Guidance
-
-After identifying the test runner, read only the relevant reference:
-
-- For Vitest or similar in-process unit tests, read
-  [`reference/vitest.md`](reference/vitest.md).
-- For Playwright or similar browser tests, read
-  [`reference/playwright.md`](reference/playwright.md).
-
-Do not load both unless the task spans both runners. The references supplement
-the repository's canonical guidance; they do not replace it.
+These references supplement the repository's testing guide. They do not replace
+it. Load both only when the task spans both runners.
 
 ## Workflow
 
 ### 1. Discover
 
-Inspect test-runner configuration, setup files, fixtures, helpers, and test
-guidance. Inventory repeated lifecycle behavior and count its affected suites.
+Read the runner configuration, setup files, fixtures, helpers, and test guidance.
+Count repeated lifecycle behavior and note the suites that use it.
 
 ### 2. Classify
 
-For each candidate, determine:
+For each candidate, record:
 
 - the state it owns
-- its required lifetime and scope
+- its lifetime and scope
 - whether it is an invariant or scenario detail
-- whether differences between suites are intentional
-- whether the framework already provides the behavior
+- intentional differences between suites
+- behavior already supplied by the runner
 
 ### 3. Challenge
 
-Remove the candidate setup and run all affected tests. Classify the result as
-unnecessary, universally required, commonly required with exceptions, or
-suite-specific.
+Remove the candidate and run every affected suite. Classify it as unnecessary,
+universal, common with exceptions, or suite-specific.
 
-When many suites are independent, subagents may evaluate disjoint groups. Each
-must report observed behavior and exceptions; the parent agent retains the
-design and integration decision.
+Subagents may evaluate disjoint groups of suites. Require evidence and exception
+reports from each. Keep the design and integration decision in the parent task.
 
 ### 4. Place
 
-Choose the narrowest owner capable of enforcing the contract consistently:
+Choose the first boundary that can enforce the contract cleanly:
 
-1. native test-runner behavior
-2. shared setup matching the resource's lifetime
-3. a test-scoped fixture or lifecycle hook
-4. a focused harness, factory, or test double
+1. native runner behavior
+2. shared setup matching the resource lifetime
+3. a test-scoped fixture or hook
+4. a focused helper or test double
 5. the individual suite
-
-Move down the list only when the preceding boundary cannot express the required
-behavior cleanly.
 
 ### 5. Migrate
 
-Introduce the shared behavior, then remove only the local code it supersedes.
-Retain intentional exceptions and behavior-establishing setup. Avoid unrelated
-test rewrites while changing lifecycle ownership.
+Move one responsibility at a time. Add the shared owner, then remove only the
+local code it replaces. Keep intentional exceptions and scenario setup visible.
+Avoid unrelated test rewrites.
 
 ### 6. Prove
 
-Validate from narrowest to broadest:
-
-- affected tests
-- tests of the shared lifecycle itself
-- static checks required by the repository
-- the complete relevant test suite
-
-Measure before and after when the new behavior runs for every test or may affect
-suite performance. Use multiple comparable samples and distinguish signal from
+Run affected tests, tests of the shared lifecycle, repository static checks, and
+the complete relevant suite. Measure before and after when the new behavior runs
+for every test. Use enough comparable samples to separate a real change from
 normal variance.
 
-## Reporting
+## Report
 
-Report:
-
-- the repeated contract and its scope
-- why the selected owner is the narrowest correct boundary
-- alternatives rejected
-- intentional exceptions retained
-- duplication removed
-- targeted and complete validation
-- performance evidence when applicable
+State the repeated contract, its new owner, retained exceptions, rejected
+alternatives, duplication removed, and validation results. Include performance
+evidence when shared setup could affect suite runtime.
 
 ## Guardrails
 
-- Do not equate repetition with redundancy; prove it.
-- Do not replace native test-runner behavior with a custom abstraction.
-- Do not centralize scenario-specific behavior as an environment invariant.
-- Do not widen setup from a package to the entire repository without evidence.
-- Do not add fixtures, helpers, or mocks merely to move the same amount of code.
+- Do not replace native runner behavior with a custom abstraction.
+- Do not widen setup scope without evidence.
+- Do not add a helper merely to move code.
 - Do not hide global mutable state behind helper indirection.
 - Do not trade visible test intent for shorter files.
-- Do not claim success from targeted tests alone when the lifecycle is shared.
+- Do not trust targeted tests alone after changing shared lifecycle behavior.

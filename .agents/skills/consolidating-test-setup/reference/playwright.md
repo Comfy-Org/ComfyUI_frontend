@@ -1,101 +1,86 @@
-# Playwright Setup Consolidation
+# Playwright setup consolidation
 
-Read this reference only for Playwright or comparable browser-test runners.
+Use this reference for Playwright and similar browser-test runners.
 
-## Sources of Truth
+## Read first
 
-Read the Playwright configuration, global setup and teardown, fixture graph, and
-canonical browser-test guidance. In this repository, start with:
+Read the Playwright configuration, global setup and teardown, affected fixtures,
+and canonical browser-test guidance. In this repository, inspect:
 
 - `playwright.config.ts`
 - `browser_tests/globalSetup.ts` and `browser_tests/globalTeardown.ts`
-- `browser_tests/fixtures/`, especially the fixtures used by affected specs
+- the fixtures used by the affected specs
 - `browser_tests/README.md`
 
-Read fixture implementations directly instead of guessing their setup order or
-cleanup guarantees.
+Read fixture code directly. Do not guess its setup order or cleanup guarantees.
 
-## Lifecycle Model
+## Map the lifetime
 
-Browser tests span several boundaries: run, worker, browser context, page,
-application session, and external services. Place state at the narrowest
-boundary matching its actual lifetime.
+Browser tests span the run, worker, browser context, page, application session,
+and external services. Put state at the narrowest boundary that matches its real
+lifetime.
 
-Run-wide hooks are only for genuinely run-wide resources. Worker fixtures must
-own worker-isolated resources. Mutable test state should normally be test
-scoped. A serial pass does not prove that a broader scope is safe.
+Reserve run-wide hooks for run-wide resources. Worker fixtures must own isolated
+worker resources. Keep mutable test state test-scoped unless broader ownership
+is proven safe under parallel execution.
 
-## Fixture Ownership
+## Give fixtures full ownership
 
-Prefer composable Playwright fixtures for resources requiring setup and
-teardown. The fixture that creates or mutates a resource must release or restore
-it after the fixture handoff, including when the test fails.
+Use composable fixtures for resources that need setup and teardown. The fixture
+that creates or mutates a resource must restore or release it after the handoff,
+including when the test fails.
 
-Compose independent fixtures rather than expanding a central page object or
-accumulating unrelated global hooks. Follow the repository's fixture-extension
-and composition conventions.
-
-Keep responsibilities distinct:
+Keep roles separate:
 
 - fixtures own lifecycle and resources
-- page objects own locators and interaction with one UI surface
+- page objects own locators and interactions for one UI area
 - helpers coordinate domain actions
-- data fixtures remain independent of Playwright behavior
+- data fixtures contain data, not runner behavior
 
-## Ordering and First Navigation
+Compose fixtures instead of growing a central page object or adding unrelated
+global hooks.
 
-Centralization must preserve dependency order. Configuration, request
-interception, identity, and state needed by the first application load must be
-installed before navigation begins.
+## Preserve ordering
 
-Resolving a high-level fixture may trigger navigation before a hook body runs.
-Inspect fixture dependencies and use fixture options or lower-level dependencies
-for pre-navigation setup. Do not boot the application and then repair state that
-should have existed at startup.
+Install configuration, request interception, identity, and initial state before
+the navigation that consumes them. Resolving a high-level fixture may navigate
+before a hook body runs. Read the dependency graph and use fixture options or a
+lower-level dependency for pre-navigation setup.
 
-## Parallelism, Retries, and External State
+Do not boot the application and then repair state that should have existed at
+startup.
 
-Assume tests execute concurrently and can retry in a fresh worker or context.
-Resource identities must not collide, and cleanup must target only resources
-owned by the current test or worker.
+## Account for external state
 
-Page or context reset does not clean backend state, files, routes, sockets, or
-other external resources. Define the complete state boundary. Prefer opt-in
-fixtures when cleanup would erase persistence that some tests intentionally
-verify.
+Assume parallel execution and fresh workers on retry. Resource identities must
+not collide. Cleanup must affect only resources owned by that test or worker.
 
-Retries are diagnostic evidence, not isolation. Do not allow retries to conceal
-pollution, ordering, or readiness failures.
+Resetting a page or context does not clean backend state or other external
+resources. Define the complete boundary. Use opt-in cleanup when a universal
+reset would erase persistence that a test needs to verify.
 
-## Readiness and Historical Guarantees
+Retries expose pollution and readiness problems; they do not solve them.
 
-A fixture should hand control to the test only after reaching a real observable
-readiness boundary. Never centralize arbitrary delays or suite-specific timing
-assumptions.
+## Preserve readiness guarantees
 
-Inspect history before removing waits, resets, or teardown from an existing
-spec. Preserve any race or regression guarantee, even when replacing its
-implementation.
+A fixture should hand control to the test only after observable readiness. Do
+not centralize arbitrary delays or timing assumptions that belong to one suite.
 
-## Migration Method
+Check history before removing waits, resets, or teardown. Preserve any race or
+regression guarantee.
+
+## Migrate and prove
 
 For one lifecycle responsibility at a time:
 
-1. Map its fixture dependencies and external resources.
-2. Determine what must happen before navigation.
+1. Map fixture dependencies and external resources.
+2. Identify setup required before navigation.
 3. Test whether repeated local setup is necessary.
 4. Choose test, worker, or run scope from the resource lifetime.
-5. Implement guaranteed teardown in the owning fixture.
-6. Preserve opt-outs for tests whose behavior depends on retained state.
+5. Put guaranteed cleanup in the owning fixture.
+6. Keep opt-outs for tests that depend on retained state.
 
-Do not move lifecycle code into an interaction helper merely because the helper
-is widely used.
-
-## Proof
-
-Run affected specs first. Where pollution or timing is plausible, repeat the
-targeted tests and exercise parallel execution. Verify failure cleanup when the
-fixture owns external resources.
-
-Then run the complete relevant browser suite and required static checks. Inspect
-retry and flaky outcomes rather than relying only on the final green status.
+Run affected specs first. Repeat them and exercise parallel execution when
+pollution or timing is plausible. Verify failure cleanup for external resources.
+Then run the complete relevant browser suite and static checks. Inspect flaky or
+retried outcomes instead of relying on the final green status.
