@@ -135,6 +135,31 @@ describe('widget surface', () => {
       expect(node.widgets![0].hidden).toBe(true)
     })
 
+    it('hides the control widget core attached to it, and unhides both', () => {
+      // The legacy hideWidget helper recursed through linkedWidgets. Without
+      // the cascade a seed's control_after_generate is left floating where its
+      // owner used to be.
+      const control = node.widgets![1]
+      node.widgets![0].linkedWidgets = [control]
+      const seed = widgets.get('seed')!
+
+      seed.setHidden(true)
+      expect(control.hidden).toBe(true)
+
+      seed.setHidden(false)
+      expect(node.widgets![0].hidden).toBe(false)
+      expect(control.hidden).toBe(false)
+    })
+
+    it('survives a cycle in the links', () => {
+      const control = node.widgets![1]
+      node.widgets![0].linkedWidgets = [control]
+      control.linkedWidgets = [node.widgets![0]]
+
+      expect(() => widgets.get('seed')!.setHidden(true)).not.toThrow()
+      expect(control.hidden).toBe(true)
+    })
+
     it('retains the value while hidden', () => {
       const seed = widgets.get('seed')!
       seed.setValue(7)

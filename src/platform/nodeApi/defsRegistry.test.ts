@@ -7,11 +7,13 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 
 import { createComfyApi } from './comfyApi'
-import { notifyDefsRefreshed,
+import {
+  notifyDefsRefreshed,
   createDefRegistry,
   deliverPreview,
   frontendResolverMap,
-  frontendSupplierMap } from './defsRegistry'
+  frontendSupplierMap
+} from './defsRegistry'
 import type { Comfy } from './comfyApi'
 import type { DefSelector, NodeDefBuilder } from './defsRegistry'
 
