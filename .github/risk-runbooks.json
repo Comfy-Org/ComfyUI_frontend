@@ -8,7 +8,7 @@
         "logins": ["comfy-pr-bot"],
         "head_ref_patterns": ["demo/risk-r0-locale-*"]
       },
-      "permitted_paths": ["src/locales/**", "src/utils/dateTimeUtil.test.ts"],
+      "permitted_paths": ["src/locales/**"],
       "shape": {
         "max_changed_files": 20,
         "max_additions": 10000,
