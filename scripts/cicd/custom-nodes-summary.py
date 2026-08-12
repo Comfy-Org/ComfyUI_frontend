@@ -93,6 +93,20 @@ def visit(suite, file, path):
 for s in data.get('suites', []):
     visit(s, s.get('file'), [])
 
+if os.path.exists('custom-nodes.log'):
+    for line in open('custom-nodes.log'):
+        m = re.fullmatch(r'\[tier-pack\] tier=S(?:1|2|3|9|14) pack=(.+) result=(pass|fail)\n?', line)
+        if not m:
+            continue
+        pack, result = m.groups()
+        prev = packs.setdefault(pack, {}).get('all nodes', (0, 0, 0))
+        failed_pack = result == 'fail'
+        packs[pack]['all nodes'] = (
+            max(prev[0], 3 if failed_pack else 0),
+            prev[1] + 1,
+            prev[2] + failed_pack,
+        )
+
 def cell(v):
     if v is None:
         return '-'

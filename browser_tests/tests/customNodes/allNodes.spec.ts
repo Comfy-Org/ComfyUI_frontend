@@ -1833,14 +1833,18 @@ test.describe('all nodes by tier @custom-nodes', () => {
       for (const runner of allNodesTierRunners) {
         if (tier === 'S2' && !rendererPassesFor(runner.entry).includes(true))
           continue
-        console.log(`[tier-pack] tier=${tier} pack=${runner.entry.pack}`)
+        let result = 'pass'
         try {
           await runner.run(comfyPage, tier)
         } catch (error) {
+          result = 'fail'
           failures.push(
             `[${runner.entry.pack}] ${error instanceof Error ? error.message : String(error)}`
           )
         }
+        console.log(
+          `[tier-pack] tier=${tier} pack=${runner.entry.pack} result=${result}`
+        )
       }
       const attachment = `${tier.toLowerCase()}-failures.json`
       if (failures.length > 0)
