@@ -5,6 +5,7 @@ import { creatorReviews } from '../src/data/creatorReviews'
 import { ltxPage } from '../src/data/ltx'
 import { t } from '../src/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
+import { waitForIsland } from './fixtures/islands'
 
 const PATH = '/ltx-2.5'
 const ZH_PATH = '/zh-CN/ltx-2.5'
@@ -24,6 +25,13 @@ const REQUIRED_BADGES = 4
 const REQUIRED_CARDS = 6
 
 const BADGE_KEYS = ltxPage.hero.badgeKeys ?? []
+
+// `faq` is optional on the template, but this page must have it, so fail loudly
+// rather than silently testing nothing.
+const FAQ_SECTION = ltxPage.faq
+if (!FAQ_SECTION) throw new Error('ltxPage must configure a FAQ section')
+const FAQS = FAQ_SECTION.items
+const FIRST_FAQ = FAQS[0]
 
 const GALLERY = ltxPage.gallery
 if (!GALLERY) throw new Error('ltxPage must configure a gallery')
@@ -158,6 +166,70 @@ test.describe('LTX 2.5 gallery', () => {
         gallery.locator(`video[poster="${card.media.posterSrc}"]`)
       ).toHaveCount(1)
     }
+  })
+})
+
+test.describe('LTX 2.5 Q&A', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto(PATH)
+  })
+
+  test('emits FAQPage structured data with one entry per FAQ', async ({
+    page
+  }) => {
+    const faqJsonLd = await page.evaluate(() => {
+      const scripts = Array.from(
+        document.querySelectorAll<HTMLScriptElement>(
+          'script[type="application/ld+json"]'
+        )
+      )
+      return (
+        scripts.find((s) => (s.textContent ?? '').includes('FAQPage'))
+          ?.textContent ?? null
+      )
+    })
+    expect(faqJsonLd, 'FAQ JSON-LD script').not.toBeNull()
+    const graph = JSON.parse(faqJsonLd!)['@graph'] as {
+      '@type': string
+      mainEntity?: unknown[]
+    }[]
+    const faqPage = graph.find((node) => node['@type'] === 'FAQPage')
+    expect(faqPage, 'FAQPage node in @graph').toBeDefined()
+    expect(faqPage!.mainEntity!.length).toBe(FAQS.length)
+  })
+
+  test('FAQ items toggle open and closed on click', async ({ page }) => {
+    const firstQuestion = page.getByRole('button', {
+      name: FIRST_FAQ.question.en
+    })
+    await waitForIsland(page, firstQuestion)
+    await expect(firstQuestion).toHaveAttribute('aria-expanded', 'false')
+
+    await firstQuestion.click()
+    await expect(firstQuestion).toHaveAttribute('aria-expanded', 'true')
+    await expect(page.getByText(FIRST_FAQ.answer.en)).toBeVisible()
+
+    await firstQuestion.click()
+    await expect(firstQuestion).toHaveAttribute('aria-expanded', 'false')
+  })
+
+  // The weights link is the only markup the answer parser supports, so it is
+  // worth proving it renders as an anchor rather than literal markdown.
+  test('renders the weights link inside an answer as a real link', async ({
+    page
+  }) => {
+    const faq = FAQS.find((item) => item.id === 'run-in-comfyui')
+    if (!faq) throw new Error('the run-in-comfyui FAQ carries the link')
+
+    const question = page.getByRole('button', { name: faq.question.en })
+    await waitForIsland(page, question)
+    await question.click()
+
+    const link = page.getByRole('link', { name: 'LTX 2.5 weights' })
+    await expect(link).toHaveAttribute(
+      'href',
+      'https://huggingface.co/Lightricks/LTX-2.5'
+    )
   })
 })
 

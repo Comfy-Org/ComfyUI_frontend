@@ -4855,6 +4855,10 @@ const translations = {
     en: 'Made with LTX 2.5',
     'zh-CN': '用 LTX 2.5 制作'
   },
+  'ltx.faq.heading': {
+    en: 'Q&A',
+    'zh-CN': '问答'
+  },
   'ltx.hero.primaryCta': {
     en: 'RUN LTX 2.5',
     'zh-CN': '运行 LTX 2.5'
