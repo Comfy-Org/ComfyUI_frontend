@@ -65,6 +65,28 @@ describe('slot handles', () => {
       expect(saved.find((i) => i.name === 'plain')?.shape).toBeUndefined()
     })
 
+    it('marks a slot as the socket form of a widget, as the saved file records it', () => {
+      // A slot carrying `widget` serialises as { widget: { name } }; a plain
+      // socket serialises as { pos }. A dynamic input added without it changes
+      // the saved file, which is why there is no partial version of this.
+      target.addWidget('number', 'seed', 0, () => {})
+
+      inputs.add('seed', 'INT', { widget: 'seed' })
+
+      const saved = target.serialize().inputs!.find((i) => i.name === 'seed')!
+      expect(saved.widget).toEqual({ name: 'seed' })
+      expect(saved.pos).toBeUndefined()
+    })
+
+    it('refuses to name a widget the node does not have', () => {
+      // A misspelling would serialise as a widget input for a widget that is
+      // not there — a saved file the loader cannot reconcile.
+      expect(() => inputs.add('seed', 'INT', { widget: 'sed' })).toThrow(
+        /No widget named 'sed'/
+      )
+      expect(inputs.byName('seed')).toBeUndefined()
+    })
+
     it('takes a union type and connects from a member of it', () => {
       // rgthree ships `addInput('input', ['IMAGE','LATENT','MASK'])`. litegraph
       // compares types with `String(type).split(',')`, so the array and the

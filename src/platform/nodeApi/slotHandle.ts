@@ -443,12 +443,24 @@ function createOutputHandle(
  */
 interface SlotOptions {
   shape?: 'default' | 'optional'
+  /**
+   * Names the widget this slot is the socket form of — the "convert widget to
+   * input" shape.
+   *
+   * Not decoration either: a slot carrying it serialises as
+   * `{ widget: { name } }` where a plain socket serialises as `{ pos }`, and
+   * the widget keeps its place in `widgets_values`. A dynamic input added
+   * without it changes the saved file.
+   */
+  widget?: string
 }
 
 function slotProperties(options?: SlotOptions) {
-  return options?.shape === 'optional'
-    ? { shape: RenderShape.HollowCircle }
-    : undefined
+  if (!options) return undefined
+  const properties: Partial<INodeInputSlot> = {}
+  if (options.shape === 'optional') properties.shape = RenderShape.HollowCircle
+  if (options.widget) properties.widget = { name: options.widget }
+  return Object.keys(properties).length ? properties : undefined
 }
 
 function createCollection<THandle>(
@@ -517,8 +529,21 @@ export function createInputCollection(
     () => getNode()?.inputs ?? [],
     (slotId) => createInputHandle(getGraph, getNode, slotId),
     {
-      add: (name, type, options) =>
-        getNode()?.addInput(name, normaliseType(type), slotProperties(options)),
+      add: (name, type, options) => {
+        const node = getNode()
+        if (
+          options?.widget &&
+          !node?.widgets?.some((w) => w.name === options.widget)
+        ) {
+          // A misspelled name would produce a slot that serialises as a widget
+          // input for a widget that is not there — a saved file the loader
+          // cannot reconcile. Loud now beats corrupt later.
+          throw new ComfyApiError(
+            `No widget named '${options.widget}' on this node, so the slot cannot be its socket form.`
+          )
+        }
+        node?.addInput(name, normaliseType(type), slotProperties(options))
+      },
       remove: (index) => getNode()?.removeInput(index)
     }
   )
