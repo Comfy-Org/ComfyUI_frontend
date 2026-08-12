@@ -44,7 +44,7 @@ jobs:
       # Restore the newest corpus regardless of key: the primary key never
       # hits (run-scoped), so restore-keys always serves the latest save.
       - name: Restore corpus cache
-        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           path: .census
           key: registry-corpus-${{ github.run_id }}
@@ -94,7 +94,7 @@ jobs:
       # become the best match for every later run.
       - name: Save corpus cache
         if: always() && steps.fetch.outcome == 'success' && hashFiles('.census/corpus.lock.json') != ''
-        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           path: .census
           key: registry-corpus-${{ hashFiles('.census/corpus.lock.json') }}
