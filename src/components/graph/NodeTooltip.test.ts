@@ -231,6 +231,7 @@ describe('NodeTooltip', () => {
 
     afterEach(() => {
       mergeInputTooltipMessage(jsonTooltip)
+      mergeOutputTooltipMessage(null)
     })
 
     it('shows the live backend input slot tooltip', async () => {
