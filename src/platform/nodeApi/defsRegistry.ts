@@ -330,6 +330,19 @@ export interface DefRegistry {
     selector: DefSelector,
     apply: (builder: NodeDefBuilder) => void
   ): Unsubscribe
+  /**
+   * Asks the host to reload node definitions from the backend.
+   *
+   * Combo inputs whose values the backend supplies — model lists, LoRA names,
+   * sampler names — are captured when definitions load, so a pack that adds a
+   * file server-side leaves every open picker showing the old list. This is
+   * `app.refreshComboInNodes()`, which packs called after saving a model
+   * preview or writing a new file.
+   *
+   * Refreshing is not free: it refetches every definition. Call it after a
+   * change the user made, not on a timer.
+   */
+  refresh(): Promise<void>
 }
 
 interface Registration {
@@ -476,6 +489,18 @@ const RESERVED_SERIAL_KEYS: ReadonlySet<string> = new Set([
  * builder knows node types, not registry instances.
  */
 const frontendResolvers = new Map<string, Resolver>()
+
+/**
+ * Reloads node definitions.
+ *
+ * Imported lazily: `app` pulls in most of the application, and this module is
+ * loaded by the published API entry point, so a static import would drag the
+ * whole graph into any pack's first import.
+ */
+async function refreshDefs(): Promise<void> {
+  const { app } = await import('@/scripts/app')
+  await app.refreshComboInNodes()
+}
 
 /** The resolvers currently registered, for `resolveFrontendNodes`. */
 export function frontendResolverMap(): ReadonlyMap<string, Resolver> {
@@ -630,6 +655,8 @@ export function createDefRegistry(): {
       get: (type) => known.get(type),
       all: () => Object.freeze([...known.values()]),
       has: (type) => known.has(type),
+
+      refresh: () => refreshDefs(),
 
       extend(selector, apply) {
         assertSelector(selector)

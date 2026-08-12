@@ -163,6 +163,7 @@ export const API_MEMBERS: ReadonlySet<string> = new Set([
   'raw',
   'readonlyHint',
   'redraw',
+  'refresh',
   'register',
   'remove',
   'render',
