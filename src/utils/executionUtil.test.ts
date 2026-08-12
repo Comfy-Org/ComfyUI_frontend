@@ -14,6 +14,16 @@ function addNode(graph: LGraph, comfyClass: string) {
   return node
 }
 
+function curveData(): CurveData {
+  return {
+    points: [
+      [0, 0],
+      [1, 1]
+    ],
+    interpolation: 'monotone_cubic'
+  }
+}
+
 async function promptInputs(graph: LGraph, node: LGraphNode) {
   const { output } = await graphToPrompt(graph)
   return output[String(node.id)].inputs
@@ -27,18 +37,28 @@ describe('graphToPrompt widget serialization', () => {
   it('tags curve widget values with the CURVE type marker', async () => {
     const graph = new LGraph()
     const node = addNode(graph, 'CurveEditor')
-    const curve: CurveData = {
-      points: [
-        [0, 0],
-        [1, 1]
-      ],
-      interpolation: 'monotone_cubic'
-    }
+    const curve = curveData()
     node.addWidget('curve', 'curve', curve, () => undefined, {})
 
     expect(await promptInputs(graph, node)).toEqual({
       curve: { __type__: 'CURVE', __value__: curve }
     })
+  })
+
+  it('omits a curve widget that serializes to no value', async () => {
+    const graph = new LGraph()
+    const node = addNode(graph, 'CurveEditor')
+    const widget = node.addWidget(
+      'curve',
+      'curve',
+      curveData(),
+      () => undefined,
+      {}
+    )
+    widget.serializeValue = () => undefined
+
+    const inputs = await promptInputs(graph, node)
+    expect(JSON.parse(JSON.stringify(inputs))).toEqual({})
   })
 
   it('wraps array values of other widgets without a type marker', async () => {
