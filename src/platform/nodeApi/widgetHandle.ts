@@ -42,6 +42,16 @@ export interface WidgetHandle extends HandleCommon {
   getValue<T = WidgetValue>(): T
   setValue(value: WidgetValue): void
 
+  /**
+   * The widgets core attached to this one — a seed's `control_after_generate`,
+   * a bounding box's components.
+   *
+   * `setHidden` already cascades through these, so hiding needs no call here.
+   * What does is reading one: a pack asks a seed's control widget whether it
+   * says `fixed` or `randomize` to know what the node will do next.
+   */
+  linked(): readonly WidgetHandle[]
+
   isHidden(): boolean
   /**
    * Replaces the `type = 'converted-widget'` hack. Value is retained.
@@ -165,6 +175,19 @@ export function createWidgetHandles(
           get: (w) => w.type,
           readonlyHint:
             'Widget type is identity. To hide a widget, call setHidden(true).'
+        }
+      },
+      idMethods: {
+        linked: (w, id): readonly WidgetHandle[] => {
+          const [nodeId] = id.split(SEP)
+          return Object.freeze(
+            (w.linkedWidgets ?? []).map(
+              (linked) =>
+                factory.handleFor(
+                  compositeKey(nodeId, linked.name)
+                ) as WidgetHandle
+            )
+          )
         }
       },
       methods: {

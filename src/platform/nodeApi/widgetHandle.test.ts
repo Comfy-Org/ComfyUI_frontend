@@ -160,6 +160,23 @@ describe('widget surface', () => {
       expect(control.hidden).toBe(true)
     })
 
+    it('reads the control widget core attached to the seed', () => {
+      // A pack asks a seed's control_after_generate whether it says fixed or
+      // randomize to know what the node will do next.
+      const control = node.widgets![1]
+      control.value = 'randomize'
+      node.widgets![0].linkedWidgets = [control]
+
+      const linked = widgets.get('seed')!.linked()
+
+      expect(linked.map((w) => w.name)).toEqual([control.name])
+      expect(linked[0].getValue()).toBe('randomize')
+    })
+
+    it('reports no linked widgets when core attached none', () => {
+      expect(widgets.get('seed')!.linked()).toEqual([])
+    })
+
     it('retains the value while hidden', () => {
       const seed = widgets.get('seed')!
       seed.setValue(7)
