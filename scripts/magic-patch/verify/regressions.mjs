@@ -74,6 +74,23 @@ function isConverted(text) {
 const authDropped = []
 const routePrefixed = []
 const unauthedApiUrl = []
+const controlBytes = []
+
+/**
+ * Control characters make a file *binary* to grep, so every grep-based gate
+ * silently skips it — the conversion looks clean because nothing read it.
+ *
+ * One conversion wrote a raw NUL as a cache-key separator instead of the
+ * escape, and the file went unscanned until `grep` mentioned it in passing.
+ */
+const controlCount = (text) => {
+  let n = 0
+  for (let i = 0; i < text.length; i++) {
+    const code = text.charCodeAt(i)
+    if (code < 9 || (code > 13 && code < 32)) n++
+  }
+  return n
+}
 
 for (const dest of jsFiles(root)) {
   if (!dest.includes('/v2/')) continue
@@ -103,6 +120,9 @@ for (const dest of jsFiles(root)) {
     count(original, ORIGINAL_UNAUTHED_API_URL)
   if (unauthed > 0) unauthedApiUrl.push({ dest, unauthed })
 
+  const added = controlCount(converted) - controlCount(original)
+  if (added > 0) controlBytes.push({ dest, added })
+
   // Route-aware: the same route the original sent bare must now be going
   // through backend, not merely that the file uses backend somewhere else.
   const nowRouted = new Set([
@@ -131,6 +151,11 @@ report(
   (r) => `${relative(root, r.dest)}  [${r.unauthed} call(s)]`
 )
 report(
+  'Control characters the original did not have (file is invisible to grep)',
+  controlBytes,
+  (r) => `${relative(root, r.dest)}  [+${r.added}]`
+)
+report(
   'Root-relative route may have gained an /api prefix it never had',
   routePrefixed,
   (r) => `${relative(root, r.dest)}  ${r.routes.join(' ')}`
@@ -138,4 +163,6 @@ report(
 
 // The first two classes are definite regressions. The third depends on whether
 // ComfyUI dual-mounts custom node routes, which cannot be settled from here.
-process.exit(authDropped.length || unauthedApiUrl.length ? 1 : 0)
+process.exit(
+  authDropped.length || unauthedApiUrl.length || controlBytes.length ? 1 : 0
+)
