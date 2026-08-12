@@ -4,7 +4,7 @@
   >
     <div class="flex gap-2">
       <Button
-        v-if="isWorkspaceOwner"
+        v-if="showUsageActivity"
         variant="muted-textonly"
         class="text-xs text-text-secondary"
         @click="handleFullUsageActivity"
@@ -52,26 +52,19 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { useSubscriptionActions } from '@/platform/cloud/subscription/composables/useSubscriptionActions'
 import { isCloud } from '@/platform/distribution/types'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
-const { showInvoiceHistory = true } = defineProps<{
+const { showInvoiceHistory = true, showUsageActivity = true } = defineProps<{
   showInvoiceHistory?: boolean
+  showUsageActivity?: boolean
 }>()
 
 const { buildDocsUrl, docsPaths } = useExternalLink()
-
-const { workspaceRole } = useWorkspaceUI()
-
-// Personal workspaces resolve to 'owner', so this covers both plan types.
-const isWorkspaceOwner = computed(() => workspaceRole.value === 'owner')
 
 const { manageSubscription } = useBillingContext()
 

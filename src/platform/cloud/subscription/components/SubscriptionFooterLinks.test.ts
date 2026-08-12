@@ -1,14 +1,13 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import SubscriptionFooterLinks from './SubscriptionFooterLinks.vue'
 
 const state = vi.hoisted(() => ({
   isCloud: true,
-  workspaceRole: 'owner' as 'owner' | 'member',
   manageSubscription: vi.fn(),
   handleLearnMoreClick: vi.fn(),
   handleMessageSupport: vi.fn()
@@ -16,12 +15,6 @@ const state = vi.hoisted(() => ({
 
 vi.mock('@/config/comfyApi', () => ({
   getComfyPlatformBaseUrl: () => 'https://platform.comfy.org'
-}))
-
-vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
-  useWorkspaceUI: () => ({
-    workspaceRole: computed(() => state.workspaceRole)
-  })
 }))
 
 vi.mock('@/platform/distribution/types', () => ({
@@ -70,9 +63,9 @@ const i18n = createI18n({
   }
 })
 
-function renderComponent(showInvoiceHistory?: boolean) {
+function renderComponent(props: Record<string, boolean> = {}) {
   return render(SubscriptionFooterLinks, {
-    props: showInvoiceHistory === undefined ? {} : { showInvoiceHistory },
+    props,
     global: {
       plugins: [i18n],
       stubs: {
@@ -89,7 +82,6 @@ function renderComponent(showInvoiceHistory?: boolean) {
 describe('SubscriptionFooterLinks', () => {
   beforeEach(() => {
     state.isCloud = true
-    state.workspaceRole = 'owner'
   })
 
   it('renders working support links without a duplicate invoice action', async () => {
@@ -137,7 +129,7 @@ describe('SubscriptionFooterLinks', () => {
 
   it('hides Invoice history from local users without billing permission', () => {
     state.isCloud = false
-    renderComponent(false)
+    renderComponent({ showInvoiceHistory: false })
 
     expect(
       screen.queryByRole('button', { name: 'Invoice history' })
@@ -145,7 +137,7 @@ describe('SubscriptionFooterLinks', () => {
     expect(state.manageSubscription).not.toHaveBeenCalled()
   })
 
-  it('opens the platform usage page for workspace owners', async () => {
+  it('opens the platform usage page', async () => {
     const user = userEvent.setup()
     const openSpy = vi.spyOn(window, 'open').mockReturnValue(null)
     renderComponent()
@@ -160,9 +152,8 @@ describe('SubscriptionFooterLinks', () => {
     )
   })
 
-  it('hides Full usage activity from workspace members', () => {
-    state.workspaceRole = 'member'
-    renderComponent()
+  it('hides Full usage activity when the caller opts out', () => {
+    renderComponent({ showUsageActivity: false })
 
     expect(
       screen.queryByRole('button', { name: 'Full usage activity' })
