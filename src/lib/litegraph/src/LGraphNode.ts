@@ -271,6 +271,7 @@ export class LGraphNode
     experimental?: boolean
     output_node?: boolean
     api_node?: boolean
+    category?: string
     name?: string
   }
 

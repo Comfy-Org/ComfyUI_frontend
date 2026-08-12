@@ -36,7 +36,10 @@ import type {
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { useNodeDisabledState } from '@/platform/nodeDisabled/nodeDisabledState'
+import {
+  startListDisabledSync,
+  useNodeDisabledState
+} from '@/platform/nodeDisabled/nodeDisabledState'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -179,6 +182,7 @@ function getMinSize(node: LGraphNode) {
 export const useLitegraphService = () => {
   const extensionService = useExtensionService()
   const { isNodeDisabled } = useNodeDisabledState()
+  startListDisabledSync()
   const toastStore = useToastStore()
   const widgetStore = useWidgetStore()
   const canvasStore = useCanvasStore()

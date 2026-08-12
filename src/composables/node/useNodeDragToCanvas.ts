@@ -2,6 +2,7 @@ import { ref, shallowRef } from 'vue'
 
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useNodeDisabledState } from '@/platform/nodeDisabled/nodeDisabledState'
 import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
 import type { NodeAddSource } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -157,6 +158,19 @@ export function useNodeDragToCanvas() {
       source = 'sidebar_drag'
     }: StartDragOptions = {}
   ) {
+    if (useNodeDisabledState().isNodeDisabled(nodeDef)) {
+      useToastStore().add({
+        severity: 'warn',
+        summary: t(
+          'errorCatalog.validationErrors.PARTNER_NODE_DISABLED.toastTitle'
+        ),
+        detail: t(
+          'errorCatalog.validationErrors.PARTNER_NODE_DISABLED.toastMessage'
+        ),
+        life: 3000
+      })
+      return
+    }
     isDragging.value = true
     draggedNode.value = nodeDef
     dragMode.value = mode

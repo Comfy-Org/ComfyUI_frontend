@@ -16,6 +16,15 @@
 
     <!-- Content Section -->
     <div class="flex flex-col gap-2 p-3 pt-1">
+      <div
+        v-if="isDisabled"
+        data-testid="node-preview-disabled-note"
+        class="rounded-sm bg-amber-500/20 px-2 py-1 text-2xs/normal text-amber-400"
+      >
+        {{
+          $t('errorCatalog.validationErrors.PARTNER_NODE_DISABLED.toastMessage')
+        }}
+      </div>
       <!-- Title -->
       <h3 class="text-foreground m-0 text-xs font-semibold">
         {{ nodeDef.display_name }}
@@ -102,6 +111,7 @@ import { computed, ref } from 'vue'
 
 import NodePricingBadge from '@/components/node/NodePricingBadge.vue'
 import NodeProviderBadge from '@/components/node/NodeProviderBadge.vue'
+import { useNodeDisabledState } from '@/platform/nodeDisabled/nodeDisabledState'
 import LGraphNodePreview from '@/renderer/extensions/vueNodes/components/LGraphNodePreview.vue'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
@@ -131,6 +141,9 @@ useResizeObserver(previewWrapperRef, (entries) => {
     previewContainerRef.value.style.height = `${scaledHeight + PREVIEW_CONTAINER_PADDING_PX}px`
   }
 })
+
+const { isNodeDisabled } = useNodeDisabledState()
+const isDisabled = computed(() => isNodeDisabled(nodeDef))
 
 const categoryPath = computed(() => nodeDef.category?.replaceAll('/', ' / '))
 
