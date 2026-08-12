@@ -154,6 +154,18 @@ export interface NodeDefBuilder {
     callback: (node: NodeHandle, event: ConnectionChangeEvent) => void
   ): void // 223 packs
   onRemoved(callback: (node: NodeHandle) => void): void // 158 packs
+  /**
+   * A property the user edited in the node's properties panel.
+   *
+   * Packs used `onPropertyChanged` to keep a hand-entered value sane — rgthree
+   * clamps a seed's `randomMax` as it is typed. litegraph's own callback can
+   * only veto, reverting to the previous value, which throws the user's input
+   * away rather than correcting it. `setValue` replaces it instead, and writes
+   * without going back through `setProperty`, so a clamp cannot recurse.
+   */
+  onPropertyChanged(
+    callback: (node: NodeHandle, event: PropertyChangeEvent) => void
+  ): void
   /** Preview frames for this node, already correlated. */
   onPreview(callback: (node: NodeHandle, frame: PreviewFrame) => void): void
   /**
@@ -304,6 +316,7 @@ export interface NodeDefinition {
   onExecuted?(node: NodeHandle, result: ExecutionResult): void
   onConfigured?(node: NodeHandle, data: Record<string, unknown>): void
   onConnectionsChanged?(node: NodeHandle, event: ConnectionChangeEvent): void
+  onPropertyChanged?(node: NodeHandle, event: PropertyChangeEvent): void
   onRemoved?(node: NodeHandle): void
   onSerialize?(node: NodeHandle): Record<string, unknown>
 }
@@ -353,6 +366,16 @@ export interface DefRegistry {
    * usually not this one.
    */
   onRefreshed(listener: () => void): Unsubscribe
+}
+
+interface PropertyChangeEvent {
+  readonly name: string
+  readonly value: unknown
+  readonly previous: unknown
+  /** Replaces what is stored. Last writer wins if several packs respond. */
+  setValue(value: unknown): void
+  /** Discards the edit, restoring `previous`. */
+  reject(): void
 }
 
 interface Registration {
@@ -657,6 +680,9 @@ export function createDefRegistry(): {
         if (definition.onConnectionsChanged) {
           builder.onConnectionsChanged(definition.onConnectionsChanged)
         }
+        if (definition.onPropertyChanged) {
+          builder.onPropertyChanged(definition.onPropertyChanged)
+        }
         if (definition.onRemoved) builder.onRemoved(definition.onRemoved)
         if (definition.onSerialize) builder.onSerialize(definition.onSerialize)
       }
@@ -708,6 +734,7 @@ export function createDefRegistry(): {
       const created: Bound<[]>[] = []
       const executed: Bound<[ExecutionResult]>[] = []
       const configured: Bound<[Record<string, unknown>]>[] = []
+      const propertyChanges: Bound<[PropertyChangeEvent]>[] = []
       const connections: Bound<[ConnectionChangeEvent]>[] = []
       const removed: Bound<[]>[] = []
       const previewed: Bound<[PreviewFrame]>[] = []
@@ -761,6 +788,7 @@ export function createDefRegistry(): {
           onCreated: (run) => created.push({ run, handleFor }),
           onExecuted: (run) => executed.push({ run, handleFor }),
           onConfigured: (run) => configured.push({ run, handleFor }),
+          onPropertyChanged: (run) => propertyChanges.push({ run, handleFor }),
           onConnectionsChanged: (run) => connections.push({ run, handleFor }),
           onRemoved: (run) => removed.push({ run, handleFor }),
           onPreview: (run) => previewed.push({ run, handleFor }),
@@ -813,6 +841,7 @@ export function createDefRegistry(): {
           | 'onExecuted'
           | 'onConfigure'
           | 'onConnectionsChange'
+          | 'onPropertyChanged'
           | 'onRemoved',
         run: (node: LGraphNode, ...args: TArgs) => void
       ) => {
@@ -858,6 +887,35 @@ export function createDefRegistry(): {
           const id = String(node.id)
           for (const { run, handleFor } of configured) run(handleFor(id), data)
         })
+      }
+
+      if (propertyChanges.length) {
+        install<[string, unknown, unknown]>(
+          'onPropertyChanged',
+          (node, name, value, previous) => {
+            let replacement = value
+            const event: PropertyChangeEvent = Object.freeze({
+              name,
+              value,
+              previous,
+              setValue: (next: unknown) => {
+                replacement = next
+              },
+              reject: () => {
+                replacement = previous
+              }
+            })
+            const id = String(node.id)
+            for (const { run, handleFor } of propertyChanges) {
+              run(handleFor(id), event)
+            }
+            if (replacement !== value) {
+              // Written straight to the record: setProperty would re-enter
+              // this hook, and a clamp would then never settle.
+              node.properties[name] = replacement as never
+            }
+          }
+        )
       }
 
       if (connections.length) {
