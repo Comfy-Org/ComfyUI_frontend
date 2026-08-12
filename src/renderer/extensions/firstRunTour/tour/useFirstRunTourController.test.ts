@@ -47,10 +47,13 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   })
 }))
 
+// Each factory runs on the first dynamic import, which lands mid-test for
+// whichever test runs first. Seed the new ref from the holder so that test's
+// setup survives instead of being discarded.
 vi.mock('@/stores/executionStore', async () => {
   const { shallowRef } = await import('vue')
-  mocks.workflowStatus = shallowRef(new Map<unknown, string>())
-  mocks.queuedJobs = shallowRef({} as Record<string, { workflow?: unknown }>)
+  mocks.workflowStatus = shallowRef(new Map(mocks.workflowStatus.value))
+  mocks.queuedJobs = shallowRef(mocks.queuedJobs.value)
   return {
     useExecutionStore: () => ({
       getWorkflowStatus: (workflow: unknown) =>
@@ -64,16 +67,13 @@ vi.mock('@/stores/executionStore', async () => {
 
 vi.mock('@/stores/executionErrorStore', async () => {
   const { reactive } = await import('vue')
-  mocks.executionErrors = reactive({
-    hasNodeError: false,
-    hasPromptError: false
-  })
+  mocks.executionErrors = reactive({ ...mocks.executionErrors })
   return { useExecutionErrorStore: () => mocks.executionErrors }
 })
 
 vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
   const { shallowRef } = await import('vue')
-  mocks.activeWorkflow = shallowRef(null as unknown)
+  mocks.activeWorkflow = shallowRef(mocks.activeWorkflow.value)
   return {
     useWorkflowStore: () => ({
       get activeWorkflow() {
@@ -85,7 +85,7 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
 
 vi.mock('@/renderer/core/canvas/canvasStore', async () => {
   const { shallowRef } = await import('vue')
-  mocks.linearMode = shallowRef(false)
+  mocks.linearMode = shallowRef(mocks.linearMode.value)
   return {
     useCanvasStore: () => ({
       get linearMode() {
@@ -242,6 +242,7 @@ describe('useFirstRunTourController', () => {
   beforeEach(() => {
     mocks.canRunWorkflows = ref(true)
     mocks.workflowStatus.value = new Map()
+    mocks.queuedJobs.value = {}
     mocks.executionErrors.hasNodeError = false
     mocks.executionErrors.hasPromptError = false
     mocks.activeWorkflow.value = null
