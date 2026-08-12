@@ -1,6 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 
 import {
   SUBGRAPH_INPUT_ID,
@@ -24,7 +22,6 @@ import {
 import { toNodeId } from '@/types/nodeId'
 
 beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
   resetSubgraphFixtureState()
 })
 

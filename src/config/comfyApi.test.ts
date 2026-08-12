@@ -12,8 +12,6 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-vi.stubGlobal('fetch', vi.fn())
-
 describe('getComfyApiBaseUrl', () => {
   const originalConfig = remoteConfig.value
 
@@ -74,7 +72,7 @@ describe('compatibility with comfyui servers that predate the override keys', ()
   const originalConfig = remoteConfig.value
 
   beforeEach(() => {
-    vi.clearAllMocks()
+    vi.stubGlobal('fetch', vi.fn())
     remoteConfig.value = {}
   })
 
