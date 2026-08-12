@@ -9,6 +9,7 @@ const ltxLinks = {
   cloudRun: 'https://cloud.comfy.org/?template=video_ltx2_5_i2v',
   cloudRunPremium: 'https://cloud.comfy.org/?template=api_ltx2_5_flf2v',
   hubModel: `${externalLinks.workflows}/model/ltx`,
+  hfModel: 'https://huggingface.co/Lightricks/LTX-2.5',
   blogPost: 'https://blog.comfy.org/p/ltx-25-day-0-support-in-comfyui',
   docs: 'https://docs.comfy.org/tutorials/video/ltx/ltx-2-5',
   partnerNodes:
@@ -183,8 +184,8 @@ export const ltxPage: ModelLaunchPage = {
           'zh-CN': 'LTX-2.5 是什么？'
         },
         answer: {
-          en: `LTX-2.5 is the newest version of LTX's open video model, with day 0 support in ComfyUI. Weights are downloadable, the raw model can be fine-tuned on your own data, and it runs fast on local GPUs. Native 4K, synchronized audio and video, and frame rates up to 50 FPS. Read the full announcement on [the Comfy blog](${ltxLinks.blogPost}).`,
-          'zh-CN': `LTX-2.5 是 LTX 开放视频模型的最新版本，在 ComfyUI 中实现了 day 0 支持。权重可下载，原始模型可以在你自己的数据上微调，并能在本地 GPU 上快速运行。支持原生 4K、同步音视频，以及最高 50 FPS 的帧率。完整公告见[Comfy 博客](${ltxLinks.blogPost})。`
+          en: `LTX-2.5 is the newest version of LTX's open video model, with day 0 support in ComfyUI. Weights are downloadable and it runs fast on local GPUs. Native 4K, synchronized audio and video, and frame rates up to 50 FPS. Read the full announcement on [the Comfy blog](${ltxLinks.blogPost}).`,
+          'zh-CN': `LTX-2.5 是 LTX 开放视频模型的最新版本，在 ComfyUI 中实现了 day 0 支持。权重可下载，并能在本地 GPU 上快速运行。支持原生 4K、同步音视频，以及最高 50 FPS 的帧率。完整公告见[Comfy 博客](${ltxLinks.blogPost})。`
         }
       },
       {
@@ -228,8 +229,8 @@ export const ltxPage: ModelLaunchPage = {
           'zh-CN': '如何在 ComfyUI 中运行 LTX-2.5？'
         },
         answer: {
-          en: `Update ComfyUI to 0.32.0, or open Comfy Cloud. Download the LTX-2.5 weights and place them in your models directory. Load the LTX-2.5 template from the Templates panel: Text to Video, Image to Video, or FLF2V. Add your prompt and input images, then run. Full setup steps are in [the docs](${ltxLinks.docs}).`,
-          'zh-CN': `将 ComfyUI 更新到 0.32.0，或直接打开 Comfy Cloud。下载 LTX-2.5 权重并放入你的 models 目录。从 Templates 面板中加载 LTX-2.5 模板：Text to Video、Image to Video 或 FLF2V。填入提示词与输入图像后运行即可。完整设置步骤见[文档](${ltxLinks.docs})。`
+          en: `Update ComfyUI to 0.32.0, or open Comfy Cloud. Download [the LTX-2.5 weights](${ltxLinks.hfModel}) and place them in your models directory. Load the LTX-2.5 template from the Templates panel: Text to Video, Image to Video, or FLF2V. Add your prompt and input images, then run. Full setup steps are in [the docs](${ltxLinks.docs}).`,
+          'zh-CN': `将 ComfyUI 更新到 0.32.0，或直接打开 Comfy Cloud。下载[LTX-2.5 权重](${ltxLinks.hfModel})并放入你的 models 目录。从 Templates 面板中加载 LTX-2.5 模板：Text to Video、Image to Video 或 FLF2V。填入提示词与输入图像后运行即可。完整设置步骤见[文档](${ltxLinks.docs})。`
         }
       },
       {
