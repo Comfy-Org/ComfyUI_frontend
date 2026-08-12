@@ -74,6 +74,7 @@ function useFirstRunTourControllerInternal() {
       executionErrorStore.hasNodeError || executionErrorStore.hasPromptError
     ],
     ([status, refused], previous) => {
+      if (status !== undefined) stopAcceptDeadline()
       if (status === 'running') runState.value = 'generating'
       else if (status === 'completed') runState.value = 'succeeded'
       else if (status === 'failed') runState.value = 'failed'
@@ -113,6 +114,10 @@ function useFirstRunTourControllerInternal() {
    * queuePrompt response rather than the socket, so this cannot pre-empt the
    * longer offline grace: a run accepted at all disarms this immediately and
    * leaves the connection question to `OFFLINE_GRACE_MS`.
+   *
+   * Acceptance is not the only disarm. `resetExecutionState` drops a job from
+   * `queuedJobs` without clearing its status, so a run can report a status
+   * while this reads false. A refusal produces neither signal.
    */
   watch(tourRunAccepted, (accepted) => {
     if (accepted) stopAcceptDeadline()
