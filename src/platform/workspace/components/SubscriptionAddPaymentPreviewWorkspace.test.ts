@@ -277,6 +277,12 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
       },
       global: globalOptions
     })
+
+    expect(
+      screen.queryByPlaceholderText('subscription.preview.promoCodePlaceholder')
+    ).toBeNull()
+
+    await userEvent.click(screen.getByText('subscription.preview.addPromoCode'))
     const input = screen.getByPlaceholderText(
       'subscription.preview.promoCodePlaceholder'
     )
@@ -289,6 +295,25 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
       screen.getByText('subscription.preview.applyPromoCode')
     )
     expect(emitted().applyPromotionCode?.at(-1)).toEqual(['SAVE20'])
+  })
+
+  it('opens the promo field pre-filled when the quote already carries a code', () => {
+    render(SubscriptionAddPaymentPreviewWorkspace, {
+      props: {
+        tierKey: 'creator',
+        previewData: {
+          ...previewFixture('MONTHLY', 3500),
+          promotion_code: 'SAVE20'
+        },
+        quoteIsCurrent: true
+      },
+      global: globalOptions
+    })
+
+    expect(
+      screen.getByPlaceholderText('subscription.preview.promoCodePlaceholder')
+    ).toHaveValue('SAVE20')
+    expect(screen.queryByText('subscription.preview.addPromoCode')).toBeNull()
   })
 
   it('offers Add new payment method from the saved-method picker', async () => {
