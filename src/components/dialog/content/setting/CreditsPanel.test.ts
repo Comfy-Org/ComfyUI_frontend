@@ -103,13 +103,15 @@ describe('CreditsPanel', () => {
     expect(billingMocks.manageSubscription).toHaveBeenCalledOnce()
   })
 
-  it('refreshes activity when the rendered balance changes', async () => {
+  it('refreshes activity on a balance change but not on first hydration', async () => {
     renderComponent()
-    expect(refreshActivity).not.toHaveBeenCalled()
 
     billingMocks.balance.value = makeBalance(5000)
     await nextTick()
+    expect(refreshActivity).not.toHaveBeenCalled()
 
+    billingMocks.balance.value = makeBalance(9000)
+    await nextTick()
     expect(refreshActivity).toHaveBeenCalledOnce()
   })
 })

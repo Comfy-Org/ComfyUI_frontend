@@ -55,7 +55,8 @@ const telemetry = useTelemetry()
 
 const usageLogsTableRef = ref<InstanceType<typeof UsageLogsTable> | null>(null)
 
-watch(balance, () => {
+watch(balance, (next, previous) => {
+  if (!next || !previous) return
   void usageLogsTableRef.value?.refresh()
 })
 
