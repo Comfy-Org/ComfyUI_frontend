@@ -82,8 +82,18 @@
           {{ $t('credits.topUp.verifyTitle') }}
         </h2>
         <p class="m-0 text-sm text-balance text-muted-foreground">
-          {{ $t('credits.topUp.verifyBody') }}
+          {{
+            topupReconciliationOperationId
+              ? $t('billingOperation.reconciliationDetail')
+              : topupAuthenticationError || $t('credits.topUp.verifyBody')
+          }}
         </p>
+        <span
+          v-if="topupReconciliationOperationId"
+          class="font-mono text-sm text-base-foreground"
+        >
+          {{ topupReconciliationOperationId }}
+        </span>
       </div>
     </template>
 
@@ -188,6 +198,18 @@
     <div class="mt-auto flex flex-col gap-8 p-8">
       <div v-if="step === 'verifying'">
         <Button
+          v-if="topupCanRetryAuthentication"
+          variant="primary"
+          size="lg"
+          class="h-10 w-full justify-center"
+          :loading="topupIsAuthenticating"
+          :disabled="!permissions.canTopUp"
+          @click="retryTopupAuthentication"
+        >
+          {{ $t('billingOperation.retryVerification') }}
+        </Button>
+        <Button
+          v-else-if="!topupReconciliationOperationId"
           variant="primary"
           size="lg"
           class="h-10 w-full justify-center"
@@ -284,8 +306,23 @@ const { permissions } = useWorkspaceUI()
 
 const billingOperationStore = useBillingOperationStore()
 const isPolling = computed(() => billingOperationStore.isAddingCredits)
-const topupActionUrl = computed(
-  () => billingOperationStore.topupActionOperation?.actionUrl ?? null
+const topupOperation = computed(
+  () => billingOperationStore.topupActionOperation
+)
+const topupActionUrl = computed(() => topupOperation.value?.actionUrl ?? null)
+const topupAuthenticationError = computed(
+  () => topupOperation.value?.errorMessage ?? null
+)
+const topupCanRetryAuthentication = computed(
+  () => topupOperation.value?.canRetryAuthentication ?? false
+)
+const topupIsAuthenticating = computed(
+  () => topupOperation.value?.isAuthenticating ?? false
+)
+const topupReconciliationOperationId = computed(() =>
+  topupOperation.value?.status === 'reconciliation_needed'
+    ? topupOperation.value.opId
+    : null
 )
 
 // Constants
@@ -300,10 +337,7 @@ const showCeilingWarning = ref(false)
 const loading = ref(false)
 const paymentSubmitted = ref(false)
 const step = ref<'amount' | 'confirm' | 'verifying'>(
-  (billingOperationStore.topupActionOperation?.actionUrl || isPolling.value) &&
-    permissions.value.canTopUp
-    ? 'verifying'
-    : 'amount'
+  topupOperation.value && permissions.value.canTopUp ? 'verifying' : 'amount'
 )
 
 // Computed
@@ -339,12 +373,22 @@ const paymentLocked = computed(
     loading.value ||
     paymentSubmitted.value ||
     isPolling.value ||
-    !!topupActionUrl.value
+    !!topupOperation.value
 )
 
-watch([isPolling, topupActionUrl], ([polling, actionUrl]) => {
-  if (step.value === 'verifying' && !polling && !actionUrl) {
+watch([isPolling, topupOperation], ([polling, operation]) => {
+  if (step.value === 'verifying' && !polling && !operation) {
     step.value = 'amount'
+    return
+  }
+  if (
+    operation &&
+    permissions.value.canTopUp &&
+    (operation.actionUrl ||
+      operation.canRetryAuthentication ||
+      operation.status === 'reconciliation_needed')
+  ) {
+    step.value = 'verifying'
   }
 })
 
@@ -389,6 +433,12 @@ function handlePrimaryAction() {
 function openTopupVerification() {
   if (!topupActionUrl.value) return
   window.open(topupActionUrl.value, '_blank', 'noopener,noreferrer')
+}
+
+function retryTopupAuthentication() {
+  const operation = topupOperation.value
+  if (!operation || !permissions.value.canTopUp) return
+  void billingOperationStore.retryPaymentAuthentication(operation.opId)
 }
 
 function handleClose(clearTracking = true) {
@@ -472,7 +522,10 @@ async function handleBuy() {
       settingsDialog.show(isCloud ? 'workspace' : 'credits')
     } else if (response.status === 'pending') {
       void billingOperationStore
-        .startOperation(response.billing_op_id, 'topup', { attemptStartedAt })
+        .startOperation(response.billing_op_id, 'topup', {
+          attemptStartedAt,
+          autoHandleRequiresAction: true
+        })
         .then(() => {
           paymentSubmitted.value = false
         })

@@ -1,3 +1,4 @@
+import { usePaymentReturnUrlLoader } from '@/platform/cloud/subscription/composables/usePaymentReturnUrlLoader'
 import { usePricingTableUrlLoader } from '@/platform/cloud/subscription/composables/usePricingTableUrlLoader'
 import { useTopUpUrlLoader } from '@/platform/cloud/subscription/composables/useTopUpUrlLoader'
 import { isCloud } from '@/platform/distribution/types'
@@ -17,6 +18,7 @@ export function useUrlActionLoaders() {
     : null
   const pricingTableUrlLoader = isCloud ? usePricingTableUrlLoader() : null
   const topUpUrlLoader = isCloud ? useTopUpUrlLoader() : null
+  const paymentReturnUrlLoader = isCloud ? usePaymentReturnUrlLoader() : null
 
   async function runUrlActionLoaders() {
     // Accept workspace invite from URL if present (e.g., ?invite=TOKEN).
@@ -56,6 +58,20 @@ export function useUrlActionLoaders() {
       } catch (error) {
         console.error(
           '[UrlActionLoaders] Failed to load top-up dialog from URL:',
+          error
+        )
+      }
+    }
+
+    // Handle the return leg of a redirect payment (Stripe appends
+    // payment_intent/redirect_status params): strip the params and refresh
+    // billing status so the pending checkout resumes polling immediately.
+    if (paymentReturnUrlLoader) {
+      try {
+        await paymentReturnUrlLoader.loadPaymentReturnFromUrl()
+      } catch (error) {
+        console.error(
+          '[UrlActionLoaders] Failed to handle payment return from URL:',
           error
         )
       }

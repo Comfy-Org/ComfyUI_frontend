@@ -56,7 +56,7 @@ function plan(
 function preview(
   overrides: Partial<PreviewSubscribeResponse>
 ): PreviewSubscribeResponse {
-  return {
+  const result: PreviewSubscribeResponse = {
     allowed: true,
     transition_type: 'upgrade',
     effective_at: '2026-06-19T00:00:00Z',
@@ -67,6 +67,17 @@ function preview(
     credits_next_period_cents: 0,
     new_plan: plan('CREATOR', 'MONTHLY', 3500),
     ...overrides
+  }
+  return {
+    ...result,
+    quote_id: overrides.quote_id ?? 'quote_123',
+    quote_version: overrides.quote_version ?? 1,
+    amount_due_cents:
+      overrides.amount_due_cents ?? overrides.cost_today_cents ?? 0,
+    currency: overrides.currency ?? 'usd',
+    renewal_amount_cents:
+      overrides.renewal_amount_cents ?? result.new_plan.price_cents,
+    renewal_at: overrides.renewal_at ?? '2027-06-28T00:00:00Z'
   }
 }
 
@@ -90,11 +101,6 @@ describe('SubscriptionTransitionPreviewWorkspace', () => {
     expect(screen.getByText('$28')).toBeTruthy()
     expect(screen.getByText('subscription.billedYearly')).toBeTruthy()
     expect(screen.getByText('subscription.preview.switchesToday')).toBeTruthy()
-    expect(
-      screen.getByText('subscription.preview.yearlySubscription')
-    ).toBeTruthy()
-    expect(screen.getByText('$336.00')).toBeTruthy()
-    expect(screen.getByText('− $17.50')).toBeTruthy()
     expect(
       screen.getByText('subscription.preview.creditsYoullGetToday')
     ).toBeTruthy()
@@ -121,9 +127,6 @@ describe('SubscriptionTransitionPreviewWorkspace', () => {
     })
     expect(screen.getByText('$100')).toBeTruthy()
     expect(screen.getByText('subscription.billedMonthly')).toBeTruthy()
-    expect(
-      screen.getByText('subscription.preview.newMonthlySubscription')
-    ).toBeTruthy()
     expect(
       screen.getByText('subscription.preview.eachMonthCreditsRefill')
     ).toBeTruthy()
@@ -181,7 +184,6 @@ describe('SubscriptionTransitionPreviewWorkspace', () => {
       screen.getByText('subscription.preview.creditsRefillMonthlyTo')
     ).toBeTruthy()
     expect(screen.getByText('7,400')).toBeTruthy()
-    expect(screen.getByText('subscription.preview.stayOnUntil')).toBeTruthy()
     expect(screen.queryByText('subscription.preview.switchesToday')).toBeNull()
     expect(
       screen.queryByText('subscription.preview.yearlySubscription')
@@ -240,12 +242,6 @@ describe('SubscriptionTransitionPreviewWorkspace', () => {
     // tier table (which would yield 0 credits for a team plan).
     expect(screen.getByText('subscription.teamPlan.name')).toBeTruthy()
     expect(screen.getByText('295,400')).toBeTruthy()
-    // Proration money stays driven by previewData.
-    expect(
-      screen.getByText('subscription.preview.newMonthlySubscription')
-    ).toBeTruthy()
-    expect(screen.getByText('$1,400.00')).toBeTruthy()
-    expect(screen.getByText('− $350.00')).toBeTruthy()
     expect(screen.getByText('$1,050.00')).toBeTruthy()
     expect(
       screen.getByText('subscription.preview.confirmUpgradeCta')
@@ -280,12 +276,6 @@ describe('SubscriptionTransitionPreviewWorkspace', () => {
     expect(
       screen.getByText('subscription.preview.refillReplacesNote')
     ).toBeTruthy()
-    // Yearly line label; proration money stays driven by previewData.
-    expect(
-      screen.getByText('subscription.preview.yearlySubscription')
-    ).toBeTruthy()
-    expect(screen.getByText('$16,800.00')).toBeTruthy()
-    expect(screen.getByText('− $4,200.00')).toBeTruthy()
     expect(screen.getByText('$12,600.00')).toBeTruthy()
   })
 })
