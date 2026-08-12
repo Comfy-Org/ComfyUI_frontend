@@ -287,7 +287,7 @@ function scanSingleNodeMedia(
  * have been bypassed, deleted, or belong to a workflow that is no
  * longer current — any of which would reintroduce stale errors.
  */
-function isModelCandidateStillActive(
+function isModelCandidateStillMissingAndActive(
   candidate: MissingModelCandidate
 ): boolean {
   const rootGraph = app.rootGraph
@@ -305,6 +305,17 @@ function isModelCandidateStillActive(
   return (
     resolvePromotedWidgetSource(rootGraph, node, widget)?.sourceExecutionId ===
     candidate.sourceExecutionId
+  )
+}
+
+function hasSameNodeOwner(
+  rootGraph: LGraph,
+  candidate: { nodeId?: string | number | null },
+  ownerAtScan: LGraphNode | null | undefined
+): boolean {
+  return (
+    candidate.nodeId == null ||
+    ownerAtScan === getNodeByExecutionId(rootGraph, String(candidate.nodeId))
   )
 }
 
@@ -329,11 +340,11 @@ async function verifyAndAddPendingModels(
     if (signal?.aborted || app.rootGraph !== rootGraphAtScan) return
     const verified = pending.filter(
       (candidate) =>
-        (candidate.nodeId == null ||
-          ownersAtScan.get(candidate) ===
-            getNodeByExecutionId(rootGraphAtScan, String(candidate.nodeId))) &&
-        candidate.isMissing === true &&
-        isModelCandidateStillActive(candidate)
+        hasSameNodeOwner(
+          rootGraphAtScan,
+          candidate,
+          ownersAtScan.get(candidate)
+        ) && isModelCandidateStillMissingAndActive(candidate)
     )
     if (verified.length) useMissingModelStore().addMissingModels(verified)
   } catch (error: unknown) {
@@ -359,9 +370,11 @@ async function verifyAndAddPendingMedia(
     if (signal?.aborted || app.rootGraph !== rootGraphAtScan) return
     const verified = pending.filter(
       (candidate) =>
-        ownersAtScan.get(candidate) ===
-          getNodeByExecutionId(rootGraphAtScan, String(candidate.nodeId)) &&
-        isMissingMediaCandidateActive(rootGraphAtScan, candidate)
+        hasSameNodeOwner(
+          rootGraphAtScan,
+          candidate,
+          ownersAtScan.get(candidate)
+        ) && isMissingMediaCandidateActive(rootGraphAtScan, candidate)
     )
     if (verified.length) useMissingMediaStore().addMissingMedia(verified)
   } catch (error: unknown) {
@@ -478,12 +491,9 @@ function handleNodeModeChange(
   } else {
     scanAndAddNodeErrors(node)
     scanAncestorSubgraphHosts(execId)
-    if (
-      useMissingModelStore().hasMissingModels ||
-      useMissingMediaStore().hasMissingMedia ||
-      useMissingNodesErrorStore().hasMissingNodes
-    ) {
-      useExecutionErrorStore().showErrorOverlay()
+    const executionErrorStore = useExecutionErrorStore()
+    if (executionErrorStore.hasMissingError) {
+      executionErrorStore.showErrorOverlay()
     }
   }
 }
