@@ -100,11 +100,9 @@ describe('useWorkflowStore', () => {
 
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    localStorage.clear()
     sessionStorage.clear()
     store = useWorkflowStore()
     bookmarkStore = useWorkflowBookmarkStore()
-    vi.clearAllMocks()
 
     // Add default mock implementations
     vi.mocked(api.getUserData).mockResolvedValue({
@@ -117,7 +115,6 @@ describe('useWorkflowStore', () => {
   })
 
   afterEach(() => {
-    localStorage.clear()
     sessionStorage.clear()
   })
 

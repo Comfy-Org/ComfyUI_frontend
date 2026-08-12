@@ -55,7 +55,6 @@ const i18n = createI18n({
 describe('SubgraphEditor', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
   })
 
   it('renders preview exposures after promoted inputs without drag handles', () => {

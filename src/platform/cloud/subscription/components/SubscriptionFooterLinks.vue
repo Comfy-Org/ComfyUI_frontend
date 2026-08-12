@@ -31,7 +31,7 @@
     </div>
 
     <Button
-      v-if="showInvoiceHistory"
+      v-if="!isCloud && showInvoiceHistory"
       variant="muted-textonly"
       class="text-xs text-text-secondary"
       @click="handleInvoiceHistory"
@@ -47,6 +47,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useSubscriptionActions } from '@/platform/cloud/subscription/composables/useSubscriptionActions'
+import { isCloud } from '@/platform/distribution/types'
 
 const { showInvoiceHistory = true } = defineProps<{
   showInvoiceHistory?: boolean

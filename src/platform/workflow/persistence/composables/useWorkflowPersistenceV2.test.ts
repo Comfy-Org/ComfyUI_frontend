@@ -186,12 +186,8 @@ describe('useWorkflowPersistenceV2', () => {
   }> = []
 
   beforeEach(() => {
-    vi.useFakeTimers()
-    vi.setSystemTime(new Date('2025-01-01T00:00:00Z'))
     setActivePinia(createTestingPinia({ stubActions: false }))
-    localStorage.clear()
     sessionStorage.clear()
-    vi.clearAllMocks()
     settingMocks.persistRef!.value = true
     settingMocks.values = {}
     mocks.state.graphChangedHandler = null
@@ -220,7 +216,6 @@ describe('useWorkflowPersistenceV2', () => {
       app.unmount()
       container.remove()
     }
-    vi.useRealTimers()
   })
 
   function mountWorkflowPersistence(): WorkflowPersistence {

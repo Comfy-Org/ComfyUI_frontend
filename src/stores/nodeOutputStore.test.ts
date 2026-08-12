@@ -62,7 +62,6 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
 describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
     app.nodeOutputs = {}
     app.nodePreviewImages = {}
   })
@@ -197,7 +196,6 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
 describe('nodeOutputStore restoreOutputs', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
     app.nodeOutputs = {}
     app.nodePreviewImages = {}
   })
@@ -241,7 +239,6 @@ describe('nodeOutputStore restoreOutputs', () => {
 describe('nodeOutputStore input preview preservation', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
     app.nodeOutputs = {}
     app.nodePreviewImages = {}
   })
@@ -345,7 +342,6 @@ describe('nodeOutputStore input preview preservation', () => {
 describe('nodeOutputStore getPreviewParam', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
     vi.mocked(litegraphUtil.isAnimatedOutput).mockReturnValue(false)
     vi.mocked(litegraphUtil.isVideoNode).mockReturnValue(false)
   })
@@ -423,7 +419,6 @@ describe('nodeOutputStore getPreviewParam', () => {
 describe('nodeOutputStore snapshotOutputs / restoreOutputs', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
     app.nodeOutputs = {}
     app.nodePreviewImages = {}
   })
@@ -579,7 +574,6 @@ describe('nodeOutputStore snapshotOutputs / restoreOutputs', () => {
 describe('nodeOutputStore resetAllOutputsAndPreviews', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
     app.nodeOutputs = {}
     app.nodePreviewImages = {}
   })
@@ -614,7 +608,6 @@ describe('nodeOutputStore resetAllOutputsAndPreviews', () => {
 describe('nodeOutputStore restoreOutputs + execution interaction', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
     app.nodeOutputs = {}
     app.nodePreviewImages = {}
   })
@@ -676,7 +669,6 @@ describe('nodeOutputStore restoreOutputs + execution interaction', () => {
 describe('nodeOutputStore merge mode interactions', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
     app.nodeOutputs = {}
     app.nodePreviewImages = {}
   })
@@ -745,7 +737,6 @@ describe('nodeOutputStore merge mode interactions', () => {
 describe('nodeOutputStore setNodeOutputs (widget path)', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
     app.nodeOutputs = {}
     app.nodePreviewImages = {}
   })
@@ -794,7 +785,6 @@ describe('nodeOutputStore setNodeOutputs (widget path)', () => {
 describe('nodeOutputStore syncLegacyNodeImgs', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
     LiteGraph.vueNodesMode = false
   })
 

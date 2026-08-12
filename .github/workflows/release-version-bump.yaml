@@ -89,7 +89,7 @@ jobs:
 
       - name: Close stale nightly version bump PRs
         if: github.event_name == 'schedule'
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           github-token: ${{ github.token }}
           script: |
@@ -149,7 +149,7 @@ jobs:
             core.info(`Closed ${closed.length} stale PR(s).`)
 
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ steps.prepared-inputs.outputs.branch }}
           fetch-depth: 0

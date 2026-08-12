@@ -2,6 +2,7 @@ import { expect } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { SidebarTab } from '@e2e/fixtures/components/SidebarTab'
 
 async function pressKeyAndExpectRequest(
   comfyPage: ComfyPage,
@@ -33,17 +34,15 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
 
     for (const { key, tabId, label } of sidebarTabs) {
       test(`'${key}' toggles ${label} sidebar`, async ({ comfyPage }) => {
-        const selectedButton = comfyPage.page.locator(
-          `.${tabId}-tab-button.side-bar-button-selected`
-        )
+        const { selectedTabButton } = new SidebarTab(comfyPage.page, tabId)
 
-        await expect(selectedButton).toBeHidden()
+        await expect(selectedTabButton).toBeHidden()
 
         await comfyPage.canvas.press(key)
-        await expect(selectedButton).toBeVisible()
+        await expect(selectedTabButton).toBeVisible()
 
         await comfyPage.canvas.press(key)
-        await expect(selectedButton).toBeHidden()
+        await expect(selectedTabButton).toBeHidden()
       })
     }
   })

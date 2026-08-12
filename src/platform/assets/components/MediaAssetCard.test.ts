@@ -1,8 +1,10 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+
 import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
@@ -34,12 +36,12 @@ vi.mock('@/platform/assets/schemas/assetMetadataSchema', () => ({
   })
 }))
 
-const asset: AssetItem = {
+const asset: AssetItem = fromPartial({
   id: 'a',
   name: 'a.png',
   tags: [],
   preview_url: '/preview.png'
-}
+})
 
 function renderCard(
   props: Partial<ComponentProps<typeof MediaAssetCard>> = {}
@@ -84,10 +86,6 @@ function dispatchDragStart(
 }
 
 describe('MediaAssetCard', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   describe('dragStart', () => {
     it('cancels the native drag when Ctrl is held so a marquee can start over the card', () => {
       const { container } = renderCard()
