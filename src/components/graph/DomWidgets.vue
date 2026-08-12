@@ -24,26 +24,19 @@ const domWidgetStore = useDomWidgetStore()
 
 const widgetStates = computed(() => [...domWidgetStore.widgetStates.values()])
 
-// Track canvas viewport between frames. Screen-space position depends on
-// lgCanvas.ds.offset and ds.scale, which are non-reactive. When the user
-// pans or zooms, canvas-space `pos` is unchanged but the rendered style
-// must update — force pos reassignment whenever the viewport changes so
-// the downstream watcher in DomWidget recomputes style with current ds.
-let lastViewportOffsetX = Number.NaN
-let lastViewportOffsetY = Number.NaN
-let lastViewportScale = Number.NaN
-
-// Track the selected node's identity and bounds between frames. DOM widget
-// clipping is computed against the selected node's renderArea (non-reactive).
-// When the user drags or resizes the selected node, widgets owned by other
-// nodes must re-evaluate their clip-path even though their own pos hasn't
-// changed — force pos reassignment on those widgets so the downstream
-// watcher in DomWidget re-runs updateDomClipping().
-let lastSelectedNodeId: string | number | undefined
-let lastSelectedPosX = 0
-let lastSelectedPosY = 0
-let lastSelectedWidth = 0
-let lastSelectedHeight = 0
+// Track canvas viewport and selected-node bounds between frames.
+// lgCanvas.ds.offset, ds.scale, and node.pos/size are non-reactive plain
+// props — Vue watchers in DomWidget won't fire unless widgetState.pos gets
+// a new array identity. We force reassignment whenever these change so the
+// downstream watcher re-runs updatePosition / updateDomClipping.
+const lastViewport = { offsetX: Number.NaN, offsetY: Number.NaN, scale: Number.NaN }
+const lastSelected = {
+  id: undefined as string | number | undefined,
+  posX: 0,
+  posY: 0,
+  width: 0,
+  height: 0
+}
 
 const updateWidgets = () => {
   const lgCanvas = canvasStore.canvas
@@ -56,12 +49,12 @@ const updateWidgets = () => {
   const viewportOffsetY = lgCanvas.ds.offset[1]
   const viewportScale = lgCanvas.ds.scale
   const viewportChanged =
-    lastViewportOffsetX !== viewportOffsetX ||
-    lastViewportOffsetY !== viewportOffsetY ||
-    lastViewportScale !== viewportScale
-  lastViewportOffsetX = viewportOffsetX
-  lastViewportOffsetY = viewportOffsetY
-  lastViewportScale = viewportScale
+    lastViewport.offsetX !== viewportOffsetX ||
+    lastViewport.offsetY !== viewportOffsetY ||
+    lastViewport.scale !== viewportScale
+  lastViewport.offsetX = viewportOffsetX
+  lastViewport.offsetY = viewportOffsetY
+  lastViewport.scale = viewportScale
 
   const selectedNode = Object.values(lgCanvas.selected_nodes ?? {})[0]
   const selectedNodeId = selectedNode?.id
@@ -70,17 +63,17 @@ const updateWidgets = () => {
   const selectedWidth = selectedNode ? selectedNode.size[0] : 0
   const selectedHeight = selectedNode ? selectedNode.size[1] : 0
   const selectionChanged =
-    lastSelectedNodeId !== selectedNodeId ||
+    lastSelected.id !== selectedNodeId ||
     (!!selectedNode &&
-      (lastSelectedPosX !== selectedPosX ||
-        lastSelectedPosY !== selectedPosY ||
-        lastSelectedWidth !== selectedWidth ||
-        lastSelectedHeight !== selectedHeight))
-  lastSelectedNodeId = selectedNodeId
-  lastSelectedPosX = selectedPosX
-  lastSelectedPosY = selectedPosY
-  lastSelectedWidth = selectedWidth
-  lastSelectedHeight = selectedHeight
+      (lastSelected.posX !== selectedPosX ||
+        lastSelected.posY !== selectedPosY ||
+        lastSelected.width !== selectedWidth ||
+        lastSelected.height !== selectedHeight))
+  lastSelected.id = selectedNodeId
+  lastSelected.posX = selectedPosX
+  lastSelected.posY = selectedPosY
+  lastSelected.width = selectedWidth
+  lastSelected.height = selectedHeight
 
   for (const widgetState of widgetStates.value) {
     const widget = widgetState.widget

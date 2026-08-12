@@ -261,3 +261,51 @@ describe('DomWidgets positioning', () => {
     expect(widgetState.pos).not.toBe(posAfterFirstFrame)
   })
 })
+
+describe('DomWidgets reactive-write budget', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  it('produces zero reactive pos writes across N idle frames (perf invariant)', () => {
+    const canvasStore = useCanvasStore()
+    const domWidgetStore = useDomWidgetStore()
+
+    const graph = new LGraph()
+    const node = createNode(graph, 1, 'node', [100, 200])
+    const widget = createWidget('perf-widget', node, 12)
+    domWidgetStore.registerWidget(widget)
+
+    const canvas = createCanvas(graph)
+    canvasStore.canvas = canvas
+
+    render(DomWidgets, { global: { stubs: { DomWidget: true } } })
+
+    // Warm-up: first frame always writes to establish initial state.
+    drawFrame(canvas)
+
+    const widgetState = domWidgetStore.widgetStates.get(widget.id)
+    if (!widgetState) throw new Error('Widget state not registered')
+
+    // Count reactive writes via a setter proxy on pos.
+    let writeCount = 0
+    const originalDescriptor = Object.getOwnPropertyDescriptor(widgetState, 'pos')
+    let _pos = widgetState.pos
+    Object.defineProperty(widgetState, 'pos', {
+      get: () => _pos,
+      set: (v) => {
+        writeCount++
+        _pos = v
+      },
+      configurable: true
+    })
+
+    // 20 idle frames: canvas stationary, no node movement, no pan.
+    for (let i = 0; i < 20; i++) drawFrame(canvas)
+
+    // Restore original descriptor to avoid polluting other tests.
+    if (originalDescriptor) Object.defineProperty(widgetState, 'pos', originalDescriptor)
+
+    expect(writeCount).toBe(0)
+  })
+})
