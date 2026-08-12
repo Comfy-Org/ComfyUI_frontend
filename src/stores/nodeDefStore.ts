@@ -326,7 +326,6 @@ export interface NodeDefFilter {
 
 export const useNodeDefStore = defineStore('nodeDef', () => {
   const settingStore = useSettingStore()
-  const { isNodeDisabled } = useNodeDisabledState()
 
   const nodeDefsByName = ref<Record<string, ComfyNodeDefImpl>>({})
   const nodeDefsByDisplayName = ref<Record<string, ComfyNodeDefImpl>>({})
@@ -341,9 +340,7 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     for (const nodeType of Object.values(LiteGraph.registered_node_types)) {
       const nodeData =
         registeredNodeDefs[nodeType.nodeData?.name ?? ''] ?? nodeType.nodeData
-      if (nodeData && isNodeDisabled(nodeData)) {
-        nodeType.skip_list = true
-      } else if (nodeData?.dev_only) {
+      if (nodeData?.dev_only) {
         nodeType.skip_list = !devModeEnabled
       } else if (nodeData?.api_node) {
         nodeType.skip_list = false
