@@ -1,18 +1,50 @@
+import type {
+  CredentialOption,
+  SecretProvider as SecretProviderSchema,
+  SecretResponse
+} from '@comfyorg/ingest-types'
+
+/**
+ * Secret metadata as returned by the ingest API, sourced from the generated
+ * OpenAPI types (`SecretResponse`). The secret value itself is never returned
+ * after creation. `provider` is a free-form identifier (huggingface, civitai,
+ * and BYOK providers); the `SecretProvider` union below is only the subset the
+ * UI renders first-class.
+ */
+export type SecretMetadata = SecretResponse
+
+/**
+ * Base providers the UI renders with a dedicated first-class label/logo. This
+ * union documents the historically-known providers only — the full set of
+ * configurable providers is data-driven via `GET /secrets/providers`, so the
+ * selected provider is stored/sent as a free-form string.
+ */
 export type SecretProvider = 'huggingface' | 'civitai'
 
-export interface SecretMetadata {
-  id: string
-  name: string
-  provider?: SecretProvider
-  last_used_at?: string
-  created_at: string
-  updated_at: string
-}
+/**
+ * A configurable provider as returned by `GET /secrets/providers`: its id plus
+ * optional presentation (`label`) and credential-entry (`credential_options`)
+ * metadata.
+ */
+export type SecretProviderInfo = SecretProviderSchema
+
+/**
+ * How a provider's credential is entered. `text` is a single-line secret (an API
+ * key); `json_file` is an uploaded/pasted JSON document (e.g. a Vertex
+ * service-account key). Providers advertising no options are treated as `text`.
+ */
+export type SecretInputType = CredentialOption['input_type']
+
+export type SecretCredentialType = CredentialOption['credential_type']
+
+export type SecretCredentialOption = CredentialOption
 
 export interface SecretCreateRequest {
   name: string
   secret_value: string
-  provider?: SecretProvider
+  /** Provider identifier as returned by `GET /secrets/providers`. */
+  provider?: string
+  credential_type?: SecretCredentialType
 }
 
 export interface SecretUpdateRequest {

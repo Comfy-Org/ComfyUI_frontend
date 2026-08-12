@@ -7,16 +7,21 @@ import { t } from '../../i18n/translations'
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 type ToolMedia =
-  | { type: 'image'; src: string }
+  | { type: 'image'; src: string; fit?: 'cover' | 'contain' }
   | {
       type: 'video'
       src: string
       autoplay?: boolean
       loop?: boolean
       hideControls?: boolean
+      fit?: 'cover' | 'contain'
     }
 
-const tools: { n: 1 | 2 | 3; media: ToolMedia; altKey?: TranslationKey }[] = [
+const tools: {
+  n: 1 | 2 | 3 | 4 | 5 | 6
+  media: ToolMedia
+  altKey?: TranslationKey
+}[] = [
   {
     n: 1,
     media: {
@@ -40,9 +45,38 @@ const tools: { n: 1 | 2 | 3; media: ToolMedia; altKey?: TranslationKey }[] = [
       src: 'https://media.comfy.org/website/mcp/run-real-workflows.mp4',
       autoplay: true,
       loop: true,
-      hideControls: true
+      hideControls: true,
+      fit: 'contain'
     },
     altKey: 'mcp.tools.3.alt'
+  },
+  {
+    n: 4,
+    media: {
+      type: 'image',
+      src: 'https://media.comfy.org/website/mcp/direct-any-model.png'
+    },
+    altKey: 'mcp.tools.4.alt'
+  },
+  {
+    n: 5,
+    media: {
+      type: 'image',
+      src: 'https://media.comfy.org/website/mcp/generate-in-batches.png'
+    },
+    altKey: 'mcp.tools.5.alt'
+  },
+  {
+    n: 6,
+    media: {
+      type: 'video',
+      src: 'https://media.comfy.org/website/homepage/showcase/ui-overview.webm',
+      autoplay: true,
+      loop: true,
+      hideControls: true,
+      fit: 'contain'
+    },
+    altKey: 'mcp.tools.6.alt'
   }
 ]
 

@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
 const FEATURE_USAGE_KEY = 'Comfy.FeatureUsage'
@@ -82,7 +82,6 @@ describe('ErrorPanelSurveyCta', () => {
   }
 
   beforeEach(() => {
-    localStorage.clear()
     vi.resetModules()
     mockOpen.mockReset()
 
@@ -95,10 +94,6 @@ describe('ErrorPanelSurveyCta', () => {
       triggerThreshold: 3,
       presentation: PRESENTATION_INLINE_CTA
     }
-  })
-
-  afterEach(() => {
-    localStorage.clear()
   })
 
   async function renderComponent() {

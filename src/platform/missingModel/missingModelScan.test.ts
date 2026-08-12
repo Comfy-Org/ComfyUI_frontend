@@ -1712,7 +1712,6 @@ function makeAssetCandidate(
 
 describe('verifyAssetSupportedCandidates', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockUpdateModelsForNodeType.mockResolvedValue(undefined)
     mockGetAssets.mockReturnValue([])
   })

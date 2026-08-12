@@ -37,7 +37,6 @@ describe('useSearchQueryTracking', () => {
   afterEach(() => {
     scopes.forEach((s) => s.stop())
     scopes.length = 0
-    vi.useRealTimers()
   })
 
   it('fires with surface, trimmed query, length, and result_count', async () => {

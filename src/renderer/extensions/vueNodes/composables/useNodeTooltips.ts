@@ -169,7 +169,7 @@ export function useNodeTooltips(nodeType: MaybeRef<string>) {
       pt: {
         text: {
           class:
-            'border-node-component-tooltip-border bg-node-component-tooltip-surface border rounded-md px-4 py-2 text-node-component-tooltip text-sm font-normal leading-tight max-w-75 shadow-none'
+            'border-node-component-tooltip-border bg-node-component-tooltip-surface border rounded-md px-4 py-2 text-node-component-tooltip text-sm font-normal leading-tight max-w-96 whitespace-pre-line shadow-none'
         },
         arrow: ({ context }: TooltipPassThroughMethodOptions) => ({
           class: cn(

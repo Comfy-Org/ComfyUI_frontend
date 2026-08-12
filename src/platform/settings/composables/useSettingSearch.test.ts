@@ -36,7 +36,6 @@ describe('useSettingSearch', () => {
 
   beforeEach(() => {
     setActivePinia(createPinia())
-    vi.clearAllMocks()
 
     // Mock settings data
     mockSettings = {

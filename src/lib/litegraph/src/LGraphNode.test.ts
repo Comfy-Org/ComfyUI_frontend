@@ -64,7 +64,6 @@ describe('LGraphNode', () => {
     node.size = [150, 100] // Example size
 
     // Reset mocks if needed
-    vi.clearAllMocks()
   })
 
   afterEach(() => {
@@ -101,7 +100,7 @@ describe('LGraphNode', () => {
     }
     node.configure(configureData)
     expect(node.pos).toEqual(new Float64Array([50, 60]))
-    expect(node.size).toEqual(new Float64Array([70, 80]))
+    expect(Array.from(node.size)).toEqual([70, 80])
   })
 
   test('should configure inputs correctly', () => {

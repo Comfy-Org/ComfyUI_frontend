@@ -64,15 +64,18 @@ export function ensureWorkflowSuffix(
   return name + '.' + suffix
 }
 
+function escapeHtml(text: string): string {
+  return text.replace(/[&<>"']/g, (character) => {
+    return `&#${character.charCodeAt(0)};`
+  })
+}
+
 export function highlightQuery(
   text: string,
   query: string,
   sanitize: boolean = true
 ) {
-  if (!query) return text
-  if (sanitize) {
-    text = DOMPurify.sanitize(text)
-  }
+  if (!query) return sanitize ? escapeHtml(text) : text
 
   // Escape special regex characters, then join with an optional single
   // space so cross-word matches (e.g. "geto" → "imaGE TO") are
@@ -82,7 +85,23 @@ export function highlightQuery(
     .join('[ ]?')
 
   const regex = new RegExp(`(${pattern})`, 'gi')
-  return text.replace(regex, '<span class="highlight">$1</span>')
+  if (!sanitize) {
+    return text.replace(regex, '<span class="highlight">$1</span>')
+  }
+
+  const parts: string[] = []
+  let lastIndex = 0
+  for (const match of text.matchAll(regex)) {
+    parts.push(escapeHtml(text.slice(lastIndex, match.index)))
+    parts.push(`<span class="highlight">${escapeHtml(match[0])}</span>`)
+    lastIndex = match.index + match[0].length
+  }
+  parts.push(escapeHtml(text.slice(lastIndex)))
+
+  return DOMPurify.sanitize(parts.join(''), {
+    ALLOWED_TAGS: ['span'],
+    ALLOWED_ATTR: ['class']
+  })
 }
 
 export function formatNumberWithSuffix(
@@ -176,6 +195,33 @@ export function getPathDetails(path: string) {
  */
 export function normalizeI18nKey(key: string) {
   return typeof key === 'string' ? key.replace(/\./g, '_') : ''
+}
+
+const VUE_I18N_BACKSLASH = /\\/g
+const VUE_I18N_SYNTAX_CHARS = /[@${}|%]/g
+
+/**
+ * Escapes vue-i18n message syntax so arbitrary text can be stored as a locale
+ * message and rendered verbatim by `t()`.
+ *
+ * Backslash is doubled rather than wrapped in a literal interpolation: since
+ * vue-i18n 11 the message compiler reads `\` as an escape introducer, so a
+ * backslash before an escaped character would swallow the `{` this emits, and
+ * `{'\'}` would escape its own closing quote. Doubling must therefore run
+ * first; the literal interpolations it emits contain no backslashes.
+ *
+ * Apply exactly once. This is NOT idempotent, because the escape output itself
+ * contains `{`/`}`.
+ *
+ * Apply only to values read back through `t()`/`st()`. Values read through
+ * `tm()`/`stRaw()` are never compiled, so escaping them renders the escape
+ * syntax literally.
+ */
+export function escapeI18nMessage(text: string): string {
+  if (typeof text !== 'string') return ''
+  return text
+    .replace(VUE_I18N_BACKSLASH, '\\\\')
+    .replace(VUE_I18N_SYNTAX_CHARS, (char) => `{'${char}'}`)
 }
 
 /**
@@ -420,7 +466,7 @@ export const isCivitaiModelUrl = (url: string): boolean => {
 /**
  * Converts a Hugging Face download URL to a repository page URL
  * @param url The download URL to convert
- * @returns The repository page URL or the original URL if conversion fails
+ * @returns The repository page URL or the Hugging Face root if conversion fails
  * @example
  * downloadUrlToHfRepoUrl(
  *  'https://huggingface.co/bfl/FLUX.1/resolve/main/flux1-canny-dev.safetensors?download=true'
@@ -439,8 +485,8 @@ export const downloadUrlToHfRepoUrl = (url: string): string => {
     const repoPath = repoPathMatch?.[1]?.replace(/^\//, '') || ''
 
     return `https://huggingface.co/${repoPath}`
-  } catch (error) {
-    return url
+  } catch {
+    return 'https://huggingface.co/'
   }
 }
 
@@ -598,7 +644,10 @@ const THREE_D_EXTENSIONS = [
   'glb',
   'stl',
   'usdz',
-  'ply'
+  'ply',
+  'spz',
+  'splat',
+  'ksplat'
 ] as const
 const TEXT_EXTENSIONS = [
   'txt',
@@ -677,12 +726,7 @@ export function getMediaTypeFromFilename(
 }
 
 export function isPreviewableMediaType(mediaType: MediaType): boolean {
-  return (
-    mediaType === 'image' ||
-    mediaType === 'video' ||
-    mediaType === 'audio' ||
-    mediaType === '3D'
-  )
+  return mediaType !== 'other'
 }
 
 export function formatTime(seconds: number): string {

@@ -5,7 +5,7 @@
  * These functions provide consistent ways to create test subgraphs, nodes, and
  * verify their behavior.
  */
-import { expect } from 'vitest'
+import { expect, onTestFinished } from 'vitest'
 
 import type {
   ExportedSubgraph,
@@ -18,6 +18,7 @@ import {
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
 import type { SerializedNodeId } from '@/types/nodeId'
+import { toNodeId } from '@/types/nodeId'
 import {
   LGraph,
   LGraphNode,
@@ -84,6 +85,23 @@ interface TestSubgraphNodeOptions {
   id?: SerializedNodeId
   pos?: [number, number]
   size?: [number, number]
+}
+
+interface BoundaryLinkedSubgraphOptions {
+  rootGraph?: LGraph
+  hostId?: SerializedNodeId
+  interiorId?: SerializedNodeId
+  boundaryName?: string
+  inputName?: string
+  hostTitle?: string
+  interiorType?: string
+}
+
+export interface BoundaryLinkedSubgraphFixture {
+  rootGraph: LGraph
+  subgraph: Subgraph
+  host: SubgraphNode
+  interior: LGraphNode
 }
 
 interface NestedSubgraphOptions {
@@ -267,6 +285,61 @@ export function createTestSubgraphNode(
   }
 
   return new SubgraphNode(parentGraph, subgraph, instanceData)
+}
+
+export function registerTestSubgraphNodeTypes(rootGraph: LGraph): void {
+  const registeredTypes: string[] = []
+
+  rootGraph.events.addEventListener('subgraph-created', (event) => {
+    const subgraph = event.detail.subgraph
+    class TestSubgraphNode extends SubgraphNode {
+      constructor() {
+        super(rootGraph, subgraph, {
+          id: -1,
+          type: subgraph.id,
+          pos: [0, 0],
+          size: [100, 100],
+          inputs: [],
+          outputs: [],
+          flags: {},
+          order: 0,
+          mode: 0
+        })
+      }
+    }
+    LiteGraph.registerNodeType(subgraph.id, TestSubgraphNode)
+    registeredTypes.push(subgraph.id)
+  })
+
+  onTestFinished(() => {
+    for (const type of registeredTypes) LiteGraph.unregisterNodeType(type)
+  })
+}
+
+export function createBoundaryLinkedSubgraph({
+  rootGraph = createTestRootGraph(),
+  hostId = 12,
+  interiorId = 5,
+  boundaryName = 'seed',
+  inputName = 'seed_input',
+  hostTitle = 'Host Subgraph',
+  interiorType = 'InteriorNode'
+}: BoundaryLinkedSubgraphOptions = {}): BoundaryLinkedSubgraphFixture {
+  const subgraph = createTestSubgraph({
+    rootGraph,
+    inputs: [{ name: boundaryName, type: '*' }]
+  })
+  const host = createTestSubgraphNode(subgraph, { id: hostId })
+  host.title = hostTitle
+  rootGraph.add(host)
+
+  const interior = new LGraphNode(interiorType)
+  interior.id = toNodeId(interiorId)
+  const input = interior.addInput(inputName, '*')
+  subgraph.add(interior)
+  subgraph.inputNode.slots[0].connect(input, interior)
+
+  return { rootGraph, subgraph, host, interior }
 }
 
 export function setupComplexPromotionFixture(): {

@@ -123,7 +123,7 @@
               </span>
               <div class="flex flex-row items-center gap-1">
                 <i
-                  class="icon-[comfy--credits] size-4 shrink-0 bg-amber-400"
+                  class="icon-[comfy--credits] size-4 shrink-0 bg-credit"
                   aria-hidden="true"
                 />
                 <span
@@ -372,7 +372,7 @@ const tiers: PricingTierConfig[] = [
   }
 ]
 const {
-  isActiveSubscription,
+  canAccessSubscriptionFeatures,
   isFreeTier,
   tier: subscriptionTier,
   subscription
@@ -392,7 +392,7 @@ const popover = ref()
 const currentBillingCycle = ref<BillingCycle>('yearly')
 
 const hasPaidSubscription = computed(
-  () => isActiveSubscription.value && !isFreeTier.value
+  () => canAccessSubscriptionFeatures.value && !isFreeTier.value
 )
 
 const currentTierKey = computed<TierKey | null>(() =>
@@ -528,6 +528,7 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
           }
         }
       } else {
+        // Failure telemetry now lives in performSubscriptionCheckout itself.
         await performSubscriptionCheckout(tierKey, currentBillingCycle.value, {
           paymentIntentSource: reason
         })

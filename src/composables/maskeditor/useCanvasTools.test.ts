@@ -56,8 +56,6 @@ describe('useCanvasTools', () => {
   let mockImgImageData: ImageData
 
   beforeEach(() => {
-    vi.clearAllMocks()
-
     mockMaskImageData = {
       data: new Uint8ClampedArray(100 * 100 * 4),
       width: 100,

@@ -1,4 +1,4 @@
-import { externalLinks, getRoutes } from '../../config/routes'
+import { externalLinks } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
@@ -9,19 +9,23 @@ export interface McpCta {
 }
 
 /**
- * The two calls-to-action shared by the MCP hero and "how it works" sections:
- * view the docs, or run a workflow in the cloud.
+ * Calls-to-action for the MCP page: view the docs or jump to the on-page
+ * setup options. Both the hero and the "how it works" section pair install
+ * with docs.
  */
-export function mcpCtas(locale: Locale): { docs: McpCta; runWorkflow: McpCta } {
+export function mcpCtas(locale: Locale): {
+  docs: McpCta
+  installMcp: McpCta
+} {
   return {
     docs: {
       label: t('mcp.hero.viewDocs', locale),
       href: externalLinks.docsMcp,
       target: '_blank'
     },
-    runWorkflow: {
-      label: t('mcp.hero.runWorkflow', locale),
-      href: getRoutes(locale).cloud
+    installMcp: {
+      label: t('mcp.hero.installMcp', locale),
+      href: '#setup'
     }
   }
 }

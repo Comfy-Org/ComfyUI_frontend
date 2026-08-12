@@ -1,4 +1,5 @@
 import type { Bounds } from '@/renderer/core/layout/types'
+import type { CompositorWidgetValue } from '@/renderer/extensions/compositor/components/types'
 import type { CurveData } from '@/components/curve/types'
 import type { BoundingBox } from '@/types/boundingBoxes'
 import type { NodeId } from '@/types/nodeId'
@@ -145,7 +146,9 @@ export type IWidget =
   | IBoundingBoxWidget
   | ICurveWidget
   | IPainterWidget
+  | ICompositorWidget
   | IRangeWidget
+  | IVideoEditWidget
   | IBoundingBoxesWidget
   | IColorsWidget
 
@@ -350,6 +353,14 @@ export interface IPainterWidget extends IBaseWidget<string, 'painter'> {
   value: string
 }
 
+export interface ICompositorWidget extends IBaseWidget<
+  CompositorWidgetValue,
+  'compositor'
+> {
+  type: 'compositor'
+  value: CompositorWidgetValue
+}
+
 export interface IBoundingBoxesWidget extends IBaseWidget<
   BoundingBox[],
   'boundingboxes'
@@ -385,6 +396,31 @@ export interface IRangeWidget extends IBaseWidget<
 > {
   type: 'range'
   value: RangeValue
+}
+
+export interface VideoEditTrim {
+  start_time: number
+  duration: number
+}
+
+export interface VideoEditValue {
+  trim?: VideoEditTrim
+  crop?: Bounds
+}
+
+export type VideoEditFeature = 'trim' | 'crop'
+
+export interface IWidgetVideoEditOptions extends IWidgetOptions {
+  features?: VideoEditFeature[]
+}
+
+export interface IVideoEditWidget extends IBaseWidget<
+  VideoEditValue,
+  'videoedit',
+  IWidgetVideoEditOptions
+> {
+  type: 'videoedit'
+  value: VideoEditValue
 }
 
 /**

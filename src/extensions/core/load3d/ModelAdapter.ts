@@ -60,7 +60,7 @@ export const DEFAULT_MODEL_CAPABILITIES: ModelAdapterCapabilities = {
   gizmoTransform: true,
   lighting: true,
   exportable: true,
-  materialModes: ['original', 'normal', 'wireframe'],
+  materialModes: ['original', 'clay', 'normal', 'wireframe'],
   fitTargetSize: 5
 }
 
