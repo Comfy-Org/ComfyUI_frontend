@@ -2579,12 +2579,12 @@ const translations = {
     'zh-CN': 'LTX 2.5 精选图片'
   },
   'nav.featuredProductsCta': {
-    en: 'TRY WORKFLOW',
-    'zh-CN': '试用工作流'
+    en: 'EXPLORE NOW',
+    'zh-CN': '立即探索'
   },
   'nav.featuredProductsCtaAria': {
-    en: 'Try the LTX 2.5 workflow',
-    'zh-CN': '试用 LTX 2.5 工作流'
+    en: 'Explore the LTX 2.5 release',
+    'zh-CN': '探索 LTX 2.5 版本'
   },
   'nav.featuredCommunityTitle': {
     en: 'Sky Replacement',
