@@ -1,7 +1,4 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { computed, nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -73,10 +70,6 @@ function createDefaultOptions(
 }
 
 describe('display label behavior', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('uses values as labels when no label function provided', () => {
     const { dropdownItems } = useWidgetSelectItems(createDefaultOptions())
     expect(dropdownItems.value[0]).toMatchObject({
@@ -136,9 +129,7 @@ describe('display label behavior', () => {
 
 describe('useWidgetSelectItems', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     mockMediaAssets = createMockMediaAssets()
-    mockResolveOutputAssetItems.mockReset()
     mockAssetsData.items = []
   })
 
@@ -1028,10 +1019,6 @@ describe('useWidgetSelectItems', () => {
   })
 
   describe('selectedSet', () => {
-    beforeEach(() => {
-      setActivePinia(createTestingPinia({ stubActions: false }))
-    })
-
     it('returns empty set when modelValue is undefined', () => {
       const { selectedSet } = useWidgetSelectItems(
         createDefaultOptions({

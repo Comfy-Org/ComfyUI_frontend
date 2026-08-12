@@ -1,7 +1,6 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import { render, screen } from '@testing-library/vue'
-import { createPinia, setActivePinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -67,7 +66,6 @@ function createDisplayAsset(
 }
 
 function renderCard(asset: AssetDisplayItem) {
-  setActivePinia(createPinia())
   const i18n = createI18n({
     legacy: false,
     locale: 'en',

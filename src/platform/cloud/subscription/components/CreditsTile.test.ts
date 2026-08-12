@@ -209,7 +209,6 @@ describe('CreditsTile', () => {
     state.type = 'workspace'
     state.customerEventsError = null
     mockIsCloud.value = true
-    localStorage.clear()
   })
 
   it('renders the total balance (cents converted to credits) with the remaining suffix', () => {

@@ -58,10 +58,6 @@ const waitForMixpanelInit = () =>
 
 type ConfigWindow = { __CONFIG__?: { mixpanel_token?: string } }
 
-beforeEach(() => {
-  localStorage.clear()
-})
-
 describe('MixpanelTelemetryProvider — without configured token', () => {
   beforeEach(() => {
     delete (window as unknown as ConfigWindow).__CONFIG__

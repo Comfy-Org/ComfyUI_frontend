@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp, defineComponent, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -186,15 +184,11 @@ describe('useWorkflowPersistenceV2', () => {
   }> = []
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    localStorage.clear()
-    sessionStorage.clear()
     settingMocks.persistRef!.value = true
     settingMocks.values = {}
     mocks.state.graphChangedHandler = null
     mocks.state.currentGraph = { initial: true }
     mocks.serializeMock.mockImplementation(() => mocks.state.currentGraph)
-    mocks.loadGraphDataMock.mockReset()
     mocks.apiMock.clientId = 'test-client'
     mocks.apiMock.initialClientId = 'test-client'
     mocks.apiMock.addEventListener.mockImplementation(
@@ -205,9 +199,6 @@ describe('useWorkflowPersistenceV2', () => {
       }
     )
     mocks.apiMock.removeEventListener.mockImplementation(() => {})
-    openWorkflowMock.mockReset()
-    loadBlankWorkflowMock.mockReset()
-    commandStoreMocks.execute.mockReset()
     routeMocks.query = {}
     preservedQueryMocks.payloads = {}
   })

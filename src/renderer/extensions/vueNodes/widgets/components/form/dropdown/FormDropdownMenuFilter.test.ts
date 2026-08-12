@@ -76,7 +76,6 @@ describe('FormDropdownMenuFilter', () => {
   beforeEach(() => {
     const upload = getUploadMock()
     upload.isUploadButtonEnabled.value = false
-    upload.showUploadDialog.mockReset()
   })
 
   describe('Filter options', () => {

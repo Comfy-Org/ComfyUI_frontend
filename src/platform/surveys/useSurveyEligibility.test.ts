@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useSurveyEligibility } from './useSurveyEligibility'
 
@@ -30,15 +30,9 @@ describe('useSurveyEligibility', () => {
   }
 
   beforeEach(() => {
-    localStorage.clear()
-
     mockDistribution.isNightly = true
     mockDistribution.isCloud = false
     mockDistribution.isDesktop = false
-  })
-
-  afterEach(() => {
-    localStorage.clear()
   })
 
   function setFeatureUsage(featureId: string, useCount: number) {

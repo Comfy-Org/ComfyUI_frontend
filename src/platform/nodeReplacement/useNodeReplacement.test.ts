@@ -1,6 +1,5 @@
 import { fromAny } from '@total-typescript/shoehorn'
-import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -169,10 +168,6 @@ function makeMissingNodeType(
 }
 
 describe('useNodeReplacement', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-  })
-
   describe('replaceNodesInPlace', () => {
     it('should return empty array when no placeholders exist', () => {
       const graph = createMockGraph([])
