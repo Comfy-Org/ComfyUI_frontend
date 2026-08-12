@@ -106,6 +106,48 @@ function adoptNodeAttachment(graphId: UUID, node: LGraphNode): boolean {
   return true
 }
 
+/**
+ * Moves a node's layout attachment to its replacement without touching the
+ * store: the replacement must carry the same id and must not already be
+ * attached.
+ */
+export function transferLayoutAttachment(
+  node: LGraphNode,
+  replacement: LGraphNode
+): LayoutOperationResult {
+  if (!canTransferLayoutAttachment(node, replacement)) return 'no-op'
+  const attachment = nodeAttachments.get(node)
+  if (!attachment) return 'no-op'
+  if (
+    !layoutStore.readNodeRect(
+      attachment.graphId,
+      attachment.id,
+      replacement._posSize
+    )
+  )
+    return 'no-op'
+
+  nodeAttachments.delete(node)
+  node._layoutRegistered = false
+  nodeAttachments.set(replacement, attachment)
+  replacement._layoutRegistered = true
+  replacement._geometryVersion = layoutStore.geometryVersion
+  return 'applied'
+}
+
+export function canTransferLayoutAttachment(
+  node: LGraphNode,
+  replacement: LGraphNode
+): boolean {
+  const attachment = nodeAttachments.get(node)
+  return (
+    !!attachment &&
+    !nodeAttachments.has(replacement) &&
+    attachment.id === replacement.id &&
+    !!layoutStore.getNodeLayout(attachment.graphId, attachment.id)
+  )
+}
+
 export function detachNodeLayout(node: LGraphNode): LayoutOperationResult {
   const attachment = nodeAttachments.get(node)
   if (!attachment) return 'no-op'
