@@ -398,6 +398,13 @@ interface SubgraphHandle {
   readonly name: string
   nodes(): readonly NodeHandle[]
   node(nodeId: string): NodeHandle | undefined
+  /**
+   * The groups drawn inside this subgraph.
+   *
+   * A group muter or runner that skipped these reported nothing for a
+   * subgraph's contents while appearing to work.
+   */
+  groups(): readonly GroupHandle[]
 }
 
 /**
@@ -420,7 +427,8 @@ function createSubgraphHandles() {
         return subgraph.name
       },
       nodes: () => scoped.nodes(),
-      node: (nodeId: string) => scoped.node(nodeId)
+      node: (nodeId: string) => scoped.node(nodeId),
+      groups: () => scoped.groups()
     })
     byId.set(id, handle)
     return handle
