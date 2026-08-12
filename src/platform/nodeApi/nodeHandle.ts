@@ -161,6 +161,16 @@ export interface NodeHandle extends HandleCommon {
    */
   getOutputImages(): readonly string[]
   /**
+   * Which of {@link getOutputImages} the user is looking at, or `undefined`
+   * when they have neither selected nor hovered one.
+   *
+   * A pack copying "the image" or saving one as a model's preview meant the
+   * one under the cursor, not the first of the batch. `undefined` is why this
+   * is not simply `0`: an entry that acts on a guess writes the wrong file to
+   * the server, silently.
+   */
+  getDisplayedImageIndex(): number | undefined
+  /**
    * Declares how the node may be sized, instead of re-asserting it per frame.
    *
    * 39 packs recompute size inside a draw or resize callback, which is both a
@@ -366,6 +376,9 @@ export function createNodeHandles(
         getSize: (n) => freezeSize(n.size[0], n.size[1]),
         getOutputImages: (n) =>
           Object.freeze(useNodeOutputStore().getNodeImageUrls(n) ?? []),
+        // `overIndex` is what the renderer sets while the pointer is over an
+        // image; `imageIndex` survives the pointer leaving.
+        getDisplayedImageIndex: (n) => n.imageIndex ?? n.overIndex ?? undefined,
         getScreenRect: (n) => {
           const canvas = LGraphCanvas.active_canvas
           const element = canvas?.canvas

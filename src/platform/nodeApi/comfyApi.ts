@@ -22,7 +22,11 @@ import {
   createNodeMoveObserver
 } from './interaction'
 import type { NodeMoveEvent } from './interaction'
-import { onAppReady } from './appReady'
+import { watch } from 'vue'
+
+import { useExecutionStore } from '@/stores/executionStore'
+
+import { onAppReady, onWorkflowLoaded } from './appReady'
 import { createQueueApi } from './queueHandle'
 import type { QueueHandle } from './queueHandle'
 import type { Unsubscribe } from './widgetHandle'
@@ -229,6 +233,25 @@ export interface Comfy {
   onReady(listener: () => void): Unsubscribe
   /** Starting a run, and knowing when one starts. */
   queue: QueueHandle
+  /**
+   * The node the backend is executing, or `undefined` between runs.
+   *
+   * Packs tracked this from the raw `executing` message to badge the running
+   * node or follow it with the view.
+   */
+  executingNode(): NodeHandle | undefined
+  /** Fires when {@link executingNode} changes, including to nothing. */
+  onExecutingNodeChanged(
+    listener: (node: NodeHandle | undefined) => void
+  ): Unsubscribe
+  /**
+   * A workflow finished loading, and the graph is the new one.
+   *
+   * This is `afterConfigureGraph`. Unlike {@link onReady} it fires again for
+   * every workflow the user opens, which is what a pack re-attaching itself to
+   * the document needs — `onReady` fires once and misses every later open.
+   */
+  onWorkflowLoaded(listener: () => void): Unsubscribe
 }
 
 /** Per-major instances, memoised per graph provider. */
@@ -279,6 +302,20 @@ function buildMajor(
     onViewportChanged: createViewportObserver(),
     onReady: onAppReady,
     queue: createQueueApi(getGraph),
+    executingNode: () => {
+      const id = useExecutionStore().executingNodeId
+      return id ? graph.node(id) : undefined
+    },
+    onExecutingNodeChanged: (
+      listener: (node: NodeHandle | undefined) => void
+    ) => {
+      const store = useExecutionStore()
+      return watch(
+        () => store.executingNodeId,
+        (id) => listener(id ? graph.node(id) : undefined)
+      )
+    },
+    onWorkflowLoaded,
     defs: defs.forMajor((nodeId) => graph.node(nodeId)!)
   })
 }

@@ -1,6 +1,37 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { markAppReady, onAppReady, resetAppReadyForTest } from './appReady'
+import {
+  markAppReady,
+  notifyWorkflowLoaded,
+  onAppReady,
+  onWorkflowLoaded,
+  resetAppReadyForTest
+} from './appReady'
+
+describe('onWorkflowLoaded', () => {
+  beforeEach(resetAppReadyForTest)
+
+  it('fires for every workflow opened, not just the first', () => {
+    // This is the difference from onReady, which fires once and misses every
+    // later open — a pack re-attaching itself to the document needs each one.
+    const listener = vi.fn()
+    onWorkflowLoaded(listener)
+
+    notifyWorkflowLoaded()
+    notifyWorkflowLoaded()
+
+    expect(listener).toHaveBeenCalledTimes(2)
+  })
+
+  it('stops after unsubscribing', () => {
+    const listener = vi.fn()
+    onWorkflowLoaded(listener)()
+
+    notifyWorkflowLoaded()
+
+    expect(listener).not.toHaveBeenCalled()
+  })
+})
 
 describe('onReady', () => {
   beforeEach(resetAppReadyForTest)
