@@ -556,6 +556,12 @@ const translations = {
       'Comfy 企业版计划附带引擎开发团队的支持：直接访问我们的工程团队和白手套式入职服务。'
   },
 
+  // Enterprise – FAQ
+  'enterprise.faq.heading': {
+    en: 'FAQs',
+    'zh-CN': '常见问题'
+  },
+
   // API – StepsSection
   'api.steps.heading': {
     en: 'Three steps to production',
@@ -2512,6 +2518,10 @@ const translations = {
     'zh-CN': 'Comfy 企业版'
   },
   'nav.comfyHub': { en: 'Comfy Workflows', 'zh-CN': 'Comfy Workflows' },
+  'nav.fdct': {
+    en: 'Forward Deployed Creatives',
+    'zh-CN': '前沿驻场创意人才'
+  },
   'nav.gallery': { en: 'Gallery', 'zh-CN': '画廊' },
   'nav.learning': { en: 'Learning', 'zh-CN': '学习' },
   'nav.blogs': { en: 'Blog', 'zh-CN': '博客' },
@@ -2536,6 +2546,10 @@ const translations = {
   'breadcrumb.download': { en: 'Download', 'zh-CN': '下载' },
   'breadcrumb.careers': { en: 'Careers', 'zh-CN': '招聘' },
   'breadcrumb.pricing': { en: 'Pricing', 'zh-CN': '定价' },
+  'breadcrumb.fdct': {
+    en: 'Forward Deployed Creative Technologists',
+    'zh-CN': '前沿驻场创意技术专家'
+  },
   'breadcrumb.supportedNodes': { en: 'Supported Nodes', 'zh-CN': '支持的节点' },
   'breadcrumb.events': { en: 'Events', 'zh-CN': '活动' },
   'nav.menu': { en: 'Menu', 'zh-CN': '菜单' },
@@ -2563,20 +2577,20 @@ const translations = {
   // Featured dropdown cards — keys are keyed by parent nav item, not card content,
   // so the copy can be swapped without renaming the key.
   'nav.featuredProductsTitle': {
-    en: 'NEW RELEASE: MINIMAX H3',
-    'zh-CN': '全新发布：MiniMax H3'
+    en: 'NEW RELEASE: LTX 2.5',
+    'zh-CN': '全新发布：LTX 2.5'
   },
   'nav.featuredProductsAlt': {
-    en: 'MiniMax H3 feature image',
-    'zh-CN': 'MiniMax H3 精选图片'
+    en: 'LTX 2.5 feature image',
+    'zh-CN': 'LTX 2.5 精选图片'
   },
   'nav.featuredProductsCta': {
-    en: 'TRY WORKFLOW',
-    'zh-CN': '试用工作流'
+    en: 'EXPLORE NOW',
+    'zh-CN': '立即探索'
   },
   'nav.featuredProductsCtaAria': {
-    en: 'Try the MiniMax H3 workflow',
-    'zh-CN': '试用 MiniMax H3 工作流'
+    en: 'Explore the LTX 2.5 release',
+    'zh-CN': '探索 LTX 2.5 版本'
   },
   'nav.featuredCommunityTitle': {
     en: 'Sky Replacement',
@@ -5402,6 +5416,7 @@ const translations = {
     'zh-CN': '开始使用'
   },
   'footer.wanAnimate2': { en: 'Wan Animate 2', 'zh-CN': 'Wan Animate 2' },
+  'footer.ltx': { en: 'LTX 2.5', 'zh-CN': 'LTX 2.5' },
   'modelLaunch.copyPrompt': { en: 'Copy prompt', 'zh-CN': '复制提示词' },
   'minimax.meta.title': {
     en: 'MiniMax H3 on Comfy — Open-Weight Video Model',
@@ -5498,7 +5513,351 @@ const translations = {
     en: '5 free runs on real GPUs — no credit card required.',
     'zh-CN': '在真实 GPU 上免费运行 5 次 — 无需信用卡。'
   },
-  'minimax.pricing.banner.cta': { en: 'TRY FREE', 'zh-CN': '免费试用' }
+  'minimax.pricing.banner.cta': { en: 'TRY FREE', 'zh-CN': '免费试用' },
+  // FDCT page (/forward-deployed-creatives) — Forward Deployed Creatives
+  'fdct.meta.title': {
+    en: 'Forward Deployed Creatives | Comfy',
+    'zh-CN': '前沿驻场创意人才 | Comfy'
+  },
+  'fdct.meta.description': {
+    en: 'Comfy experts who embed with your team, build your ComfyUI workflows, and teach your team to scale them.',
+    'zh-CN':
+      'Comfy 专家驻场加入你的团队，为你构建 ComfyUI 工作流，并教会你的团队扩展规模。'
+  },
+  'fdct.hero.title': {
+    en: 'Forward Deployed Creatives',
+    'zh-CN': '前沿驻场创意人才'
+  },
+  'fdct.hero.subtitle': {
+    en: 'Comfy experts who embed with your team, build your ComfyUI workflows, and teach your team to scale them.',
+    'zh-CN':
+      'Comfy 专家驻场加入你的团队，为你构建 ComfyUI 工作流，并教会你的团队扩展规模。'
+  },
+  'fdct.hero.eyebrow': {
+    en: 'creative services',
+    'zh-CN': '创意服务'
+  },
+  'fdct.hero.contactCta': { en: 'Contact us', 'zh-CN': '联系我们' },
+  'fdct.builders.title': {
+    en: 'Builders, not advisors',
+    'zh-CN': '实干者，而非顾问'
+  },
+  'fdct.builders.lead': {
+    en: 'From “is this possible?” to a workflow your team owns. A Forward Deployed Creative is the person who builds it.',
+    'zh-CN':
+      '从“这可能吗？”到你的团队自己拥有的工作流。前沿驻场创意人才就是把它构建出来的人。'
+  },
+  'fdct.builders.nodeLabel': {
+    en: 'A Forward Deployed Creative',
+    'zh-CN': '一位前沿驻场创意人才'
+  },
+  'fdct.builders.reason1': {
+    en: 'validates the use case. We build the workflow and install it in your environment.',
+    'zh-CN': '验证用例。我们构建工作流，并将其部署到你的环境中。'
+  },
+  'fdct.builders.reason2': {
+    en: 'teaches your team to run it. Training and enablement are a part of the process.',
+    'zh-CN': '教你的团队运行它。培训与赋能是流程的一部分。'
+  },
+  'fdct.builders.reason3': {
+    en: 'comes from real production. Feature film, commercial, experiential work that shipped.',
+    'zh-CN': '来自真实制作。电影长片、商业广告与体验项目，都是实际交付的作品。'
+  },
+  'fdct.builders.reason4': {
+    en: 'leaves you something you own. You keep the workflow and your team is trained to change it.',
+    'zh-CN':
+      '留下真正属于你的成果。工作流归你所有，你的团队经过培训后可自行修改。'
+  },
+  'fdct.howItWorks.title': { en: 'How it works', 'zh-CN': '如何运作' },
+  'fdct.howItWorks.step1.title': { en: 'Validate', 'zh-CN': '验证' },
+  'fdct.howItWorks.step1.description': {
+    en: 'We prove the outcome is achievable on your own material.',
+    'zh-CN': '我们用你自己的素材证明目标成果切实可行。'
+  },
+  'fdct.howItWorks.step2.title': { en: 'Build', 'zh-CN': '构建' },
+  'fdct.howItWorks.step2.description': {
+    en: 'Inside your Comfy Enterprise environment.',
+    'zh-CN': '在你的 Comfy Enterprise 环境中。'
+  },
+  'fdct.howItWorks.step3.title': { en: 'Enable', 'zh-CN': '赋能' },
+  'fdct.howItWorks.step3.description': {
+    en: 'We train your team to run, modify, and extend it themselves.',
+    'zh-CN': '我们培训你的团队独立运行、修改和扩展它。'
+  },
+  'fdct.howItWorks.step4.title': { en: 'Own', 'zh-CN': '拥有' },
+  'fdct.howItWorks.step4.description': {
+    en: 'What we build is yours, and you can change it without us.',
+    'zh-CN': '我们构建的成果归你所有，你无需我们也能修改它。'
+  },
+  'fdct.howItWorks.footnote': {
+    en: "The direct line stays open. We're here when your team needs us.",
+    'zh-CN': '直达通道始终敞开。你的团队需要时，我们随时都在。'
+  },
+  'fdct.whatYouGet.title': { en: 'What you will get', 'zh-CN': '你将获得什么' },
+  'fdct.whatYouGet.item1': {
+    en: 'Use-case validation and a proof-of-concept build',
+    'zh-CN': '用例验证与概念验证构建'
+  },
+  'fdct.whatYouGet.item2': {
+    en: 'A production-grade workflow, built and installed',
+    'zh-CN': '生产级工作流，构建并完成部署'
+  },
+  'fdct.whatYouGet.item3': {
+    en: 'Enablement until your team is self-sufficient',
+    'zh-CN': '持续赋能，直到你的团队能够独立运作'
+  },
+  'fdct.whatYouGet.item4': {
+    en: 'White-glove access under your enterprise agreement',
+    'zh-CN': '企业协议下的白手套贴心服务'
+  },
+  'fdct.whatYouGet.item5': {
+    en: 'Reusable creative assets your team keeps',
+    'zh-CN': '可复用的创意资产，归你的团队所有'
+  },
+  'fdct.technologists.title': {
+    en: 'Featured creatives',
+    'zh-CN': '精选创意人才'
+  },
+  'fdct.technologists.lead': {
+    en: 'Forward Deployed Creatives come from real production: feature film, commercial, and experiential backgrounds, with ComfyUI on the back end of shipped work. We match creatives to each engagement based on the work, your stack, and the timeline.',
+    'zh-CN':
+      '前沿驻场创意人才来自真实制作一线：拥有电影长片、商业广告与体验项目背景，ComfyUI 支撑着已交付的作品。我们会根据项目内容、你的技术栈和时间表，为每次合作匹配合适的创意人才。'
+  },
+  'fdct.technologists.seeWork': {
+    en: 'See {name}’s work',
+    'zh-CN': '查看 {name} 的作品'
+  },
+  'fdct.technologists.close': { en: 'Close', 'zh-CN': '关闭' },
+  'fdct.technologists.dougHogan.description': {
+    en: "Doug's work spans Netflix, Universal Studios, Warner Bros., and Samsung, with deep expertise in VFX and studio production. As a Nuke compositor and Python tool builder, he teaches VFX, Nuke, and generative AI.",
+    'zh-CN':
+      'Doug 的作品遍及 Netflix、环球影业、华纳兄弟和三星，在视觉特效与影棚制作方面拥有深厚经验。作为 Nuke 合成师和 Python 工具开发者，他教授 VFX、Nuke 和生成式 AI。'
+  },
+  'fdct.technologists.chrisV.description': {
+    en: "Chris's work spans global brands, artists, Fortune 500 keynote stages, and Art Basel Miami, with deep expertise in generative AI and production infrastructure. Sitting between artist and engineer, he architects custom VFX and AI pipelines.",
+    'zh-CN':
+      'Chris 的作品覆盖全球品牌、艺术家、财富 500 强主题演讲舞台以及迈阿密巴塞尔艺术展，在生成式 AI 与制作基础设施方面拥有深厚经验。他游走于艺术家与工程师之间，构建定制的 VFX 与 AI 流水线。'
+  },
+  'fdct.technologists.robLosch.description': {
+    en: "Rob has been in ComfyUI since day one. He has numerous workflows covering marketing and advertising, and he can pinpoint the exact workflow you're looking for.",
+    'zh-CN':
+      'Rob 从第一天起就活跃在 ComfyUI。他拥有大量覆盖营销与广告场景的工作流，并能精准找到你正在寻找的那一个。'
+  },
+  'fdct.technologists.robertPaige.description': {
+    en: "Robert's work spans rapid-growth companies like Instacart and Lyft, with deep expertise in creative ecosystems and AI integration. At the intersection of craft and system, he architects production infrastructure that helps organizations tell their story.",
+    'zh-CN':
+      'Robert 曾服务于 Instacart、Lyft 等高速成长的公司，在创意生态与 AI 集成方面拥有深厚经验。他游走于工艺与系统之间，构建帮助组织讲好品牌故事的制作基础设施。'
+  },
+  'fdct.tags.entertainment': { en: 'Entertainment', 'zh-CN': '娱乐' },
+  'fdct.tags.nuke': { en: 'Nuke', 'zh-CN': 'Nuke' },
+  'fdct.tags.vfx': { en: 'VFX', 'zh-CN': 'VFX' },
+  'fdct.tags.generativeAi': { en: 'Generative AI', 'zh-CN': '生成式 AI' },
+  'fdct.tags.production': { en: 'Production', 'zh-CN': '制作' },
+  'fdct.tags.marketing': { en: 'Marketing', 'zh-CN': '营销' },
+  'fdct.tags.advertising': { en: 'Advertising', 'zh-CN': '广告' },
+  'fdct.tags.imageGeneration': { en: 'Image Generation', 'zh-CN': '图像生成' },
+  'fdct.tags.imageToVideo': { en: 'Image to Video', 'zh-CN': '图生视频' },
+  'fdct.tags.audioEditing': { en: 'Audio Editing', 'zh-CN': '音频编辑' },
+  'fdct.tags.characterReference': {
+    en: 'Character Reference',
+    'zh-CN': '角色参考'
+  },
+  'fdct.tags.video': { en: 'Video', 'zh-CN': '视频' },
+  'fdct.tags.virtualTryOn': { en: 'Virtual Try On', 'zh-CN': '虚拟试穿' },
+  'fdct.tags.fashion': { en: 'Fashion', 'zh-CN': '时尚' },
+  'fdct.tags.imageEdit': { en: 'Image Edit', 'zh-CN': '图像编辑' },
+  'fdct.tags.inpainting': { en: 'Inpainting', 'zh-CN': '局部重绘' },
+  'fdct.tags.film': { en: 'Film', 'zh-CN': '电影' },
+  'fdct.tags.architecture': { en: 'Architecture', 'zh-CN': '建筑' },
+  'fdct.projects.title': { en: 'Featured projects', 'zh-CN': '精选项目' },
+  // Workflow-card titles (also used as the card image alt text). Proper nouns
+  // and model names (Seedance, LTX, LoRA, Nano Banana, LLM, OOH, VFX) stay in
+  // Latin; the zh-CN copy localizes only the descriptive parts and still needs
+  // a native review pass, like the descriptions below.
+  'fdct.projects.productAdvertisementVideo.title': {
+    en: 'Product Advertisement Video',
+    'zh-CN': '产品广告视频'
+  },
+  'fdct.projects.ltxCleanplateForVfx.title': {
+    en: 'LTX Cleanplate for VFX',
+    'zh-CN': 'LTX 视觉特效空景板'
+  },
+  'fdct.projects.lipdubLoraVoiceClone.title': {
+    en: 'LTX 2.3 - Lipdub LoRA + Voice Clone',
+    'zh-CN': 'LTX 2.3 - 对口型 LoRA + 语音克隆'
+  },
+  'fdct.projects.vfxUtilities.title': {
+    en: 'VFX Utilities',
+    'zh-CN': '视觉特效工具集'
+  },
+  'fdct.projects.viralVideosCharacterSwap.title': {
+    en: 'Seedance 2.0 - Viral Videos Character Swap',
+    'zh-CN': 'Seedance 2.0 - 热门视频角色替换'
+  },
+  'fdct.projects.faceSwapWorkflow.title': {
+    en: 'Face Swap Workflow',
+    'zh-CN': '换脸工作流'
+  },
+  'fdct.projects.virtualTryOn4In1.title': {
+    en: 'Virtual Try On with Character - 4 in 1',
+    'zh-CN': '角色虚拟试穿 - 4 合 1'
+  },
+  'fdct.projects.characterOutfitFashionVideo.title': {
+    en: 'Character & Outfit to Fashion Video',
+    'zh-CN': '角色与服装转时尚视频'
+  },
+  'fdct.projects.talentCasting.title': {
+    en: 'Talent Casting',
+    'zh-CN': '试镜选角'
+  },
+  'fdct.projects.seedanceLlmPromptHelper.title': {
+    en: 'Seedance 2.0 + LLM Prompt Helper',
+    'zh-CN': 'Seedance 2.0 + LLM 提示词助手'
+  },
+  'fdct.projects.nanoBanana2LiteImageEdit.title': {
+    en: 'Nano Banana 2 Lite: Image Edit',
+    'zh-CN': 'Nano Banana 2 Lite：图像编辑'
+  },
+  'fdct.projects.changeAnyObjects.title': {
+    en: 'Change Any Objects',
+    'zh-CN': '替换任意物体'
+  },
+  'fdct.projects.storyboardToVideoSeedance.title': {
+    en: 'Storyboard To Video - Seedance 2.0',
+    'zh-CN': '分镜转视频 - Seedance 2.0'
+  },
+  'fdct.projects.oohVisualization.title': {
+    en: 'Comfy for Advertising - OOH Visualization',
+    'zh-CN': 'Comfy 广告应用 - OOH 户外可视化'
+  },
+  'fdct.projects.photoToBlueprintToModel.title': {
+    en: 'Photo to Blueprint to Model',
+    'zh-CN': '照片转蓝图转模型'
+  },
+  'fdct.projects.generateRealisticVariations.title': {
+    en: 'Generate Realistic Variations',
+    'zh-CN': '生成逼真变体'
+  },
+  // Workflow-card descriptions in the technologist dialog; en copy is
+  // placeholder until final descriptions land (the design mock is lorem).
+  'fdct.projects.productAdvertisementVideo.description': {
+    en: 'Turn product stills into a polished advertisement spot, from generated shots to final cut.',
+    'zh-CN': '将产品静态图转化为精良的广告片，从生成镜头到最终成片一气呵成。'
+  },
+  'fdct.projects.ltxCleanplateForVfx.description': {
+    en: 'Generate clean plates for VFX compositing with LTX, removing subjects while keeping the shot intact.',
+    'zh-CN':
+      '使用 LTX 为视觉特效合成生成空景板，在保留镜头原貌的同时移除拍摄主体。'
+  },
+  'fdct.projects.lipdubLoraVoiceClone.description': {
+    en: 'Lipdub a performance with LTX 2.3, pairing a LoRA-trained look with a cloned voice track.',
+    'zh-CN': '使用 LTX 2.3 为表演对口型，将 LoRA 训练的形象与克隆音轨相结合。'
+  },
+  'fdct.projects.vfxUtilities.description': {
+    en: 'A utility kit for VFX shots: passes, mattes, and helpers for image and video work.',
+    'zh-CN':
+      '面向视觉特效镜头的实用工具集：分层通道、遮罩以及图像和视频处理辅助工具。'
+  },
+  'fdct.projects.viralVideosCharacterSwap.description': {
+    en: 'Swap characters into trending video formats with Seedance 2.0 while keeping motion intact.',
+    'zh-CN':
+      '使用 Seedance 2.0 将角色替换进热门视频模板，同时完整保留原有动作。'
+  },
+  'fdct.projects.faceSwapWorkflow.description': {
+    en: 'Swap a face across a full video while preserving the original performance and lighting.',
+    'zh-CN': '在整段视频中替换人脸，同时保留原有表演与光影效果。'
+  },
+  // en copy for Chris's highlights comes from the workflows hub pages.
+  'fdct.projects.virtualTryOn4In1.description': {
+    en: "Create virtual try-ons with your character and outfit images using ComfyUI's Nano Banana Pro model. Generate 4 variations in one prompt.",
+    'zh-CN':
+      '使用 ComfyUI 的 Nano Banana Pro 模型，用你的角色与服装图像生成虚拟试穿效果，一条提示词即可生成 4 个变体。'
+  },
+  'fdct.projects.characterOutfitFashionVideo.description': {
+    en: 'Transform character and outfit images into dynamic fashion videos.',
+    'zh-CN': '将角色与服装图像转化为动感的时尚视频。'
+  },
+  'fdct.projects.talentCasting.description': {
+    en: 'Turn a headshot into a branded still and a quick motion test for casting previs, using Gemini image-to-image and Kling image-to-video.',
+    'zh-CN':
+      '通过 Gemini 图生图与 Kling 图生视频，将头像照片转化为品牌风格静帧与快速动态测试，用于选角预览。'
+  },
+  // Robert Paige's highlights — en copy from the workflows hub pages.
+  'fdct.projects.seedanceLlmPromptHelper.description': {
+    en: 'Feed two reference images and a short text description; an LLM writes a detailed Seedance 2.0 prompt and generates the video.',
+    'zh-CN':
+      '输入两张参考图和一句简单描述，LLM 会自动生成详细的 Seedance 2.0 提示词并产出视频。'
+  },
+  'fdct.projects.nanoBanana2LiteImageEdit.description': {
+    en: "Edit an image with Nano Banana 2 Lite, Google Gemini's fastest image model, with a side-by-side of the original and result.",
+    'zh-CN':
+      '使用 Google Gemini 系列中最快的图像模型 Nano Banana 2 Lite 编辑图像，并生成原图与结果的并排对比。'
+  },
+  'fdct.projects.changeAnyObjects.description': {
+    en: 'Replace objects in a video from a text prompt or reference image, using SAM3 masking and Wan2.1 VACE.',
+    'zh-CN':
+      '通过文本提示或参考图替换视频中的物体，由 SAM3 遮罩与 Wan2.1 VACE 模型驱动。'
+  },
+  'fdct.faq.title': { en: 'Q&A', 'zh-CN': '问答' },
+  'fdct.faq.q1': {
+    en: 'Can this be a consulting or professional-services contract standalone?',
+    'zh-CN': '可以单独签订咨询或专业服务合同吗？'
+  },
+  'fdct.faq.a1': {
+    en: 'No. It is an add-on to your Comfy enterprise agreement. We bring deep Comfy expertise to your use case, as an optional add on to your enterprise contract.',
+    'zh-CN':
+      '不可以。它是你 Comfy 企业协议的附加服务。我们将深厚的 Comfy 专业能力带到你的用例中，作为企业合同的可选附加项。'
+  },
+  'fdct.faq.q2': {
+    en: 'Is it included in every enterprise contract?',
+    'zh-CN': '每份企业合同都包含这项服务吗？'
+  },
+  'fdct.faq.a2': {
+    en: 'No. It is available to any enterprise customer as an add-on, not bundled automatically into every contract.',
+    'zh-CN':
+      '不包含。它作为附加服务向所有企业客户开放，不会自动捆绑进每份合同。'
+  },
+  'fdct.faq.q3': {
+    en: 'Will someone be embedded full-time with our team?',
+    'zh-CN': '会有人全职驻场加入我们的团队吗？'
+  },
+  'fdct.faq.a3': {
+    en: 'Forward Deployed Creatives work with you on defined milestones and deliverables, with optional in-person time as well. We will customize this based on what your team needs.',
+    'zh-CN':
+      '前沿驻场创意人才按明确的里程碑和交付物与你协作，也可选择安排现场时间。我们会根据你团队的需求定制协作方式。'
+  },
+  'fdct.faq.q4': {
+    en: 'What happens after the initial build?',
+    'zh-CN': '初始构建完成之后会怎样？'
+  },
+  'fdct.faq.a4': {
+    en: 'You own the workflow and your team is trained to change it. We provide ongoing support and stay available under the enterprise agreement for the next thing, plus optional workshops and one-on-one training.',
+    'zh-CN':
+      '工作流归你所有，你的团队经过培训后可以自行修改。我们在企业协议下提供持续支持、随时待命迎接下一个项目，还可选择工作坊和一对一培训。'
+  },
+  'fdct.faq.q5': {
+    en: 'Who are the people we would actually work with?',
+    'zh-CN': '我们实际会和哪些人合作？'
+  },
+  'fdct.faq.a5': {
+    en: 'Production-credible creatives from feature film, commercial, and experiential backgrounds. Short intro bios/videos on the solution page let you see who you are getting before you sign.',
+    'zh-CN':
+      '来自电影长片、商业广告和体验项目背景、具备真实制作履历的创意人才。解决方案页面上的简短介绍和视频，让你在签约前就能了解将与谁合作。'
+  },
+  'fdct.bands.enterprise.label': {
+    en: 'FOR ENTERPRISE',
+    'zh-CN': '面向企业'
+  },
+  'fdct.bands.enterprise.text': {
+    en: "Tell us what you're trying to make. A Forward Deployed Creative can validate it and help you build from there.",
+    'zh-CN':
+      '告诉我们你想做什么。前沿驻场创意人才可以验证它，并帮助你从此开始构建。'
+  },
+  'fdct.bands.enterprise.cta': { en: 'Contact us', 'zh-CN': '联系我们' },
+  'fdct.closing.title': {
+    en: 'Build your custom workflows with Comfy experts.',
+    'zh-CN': '与 Comfy 专家一起构建你的定制工作流。'
+  }
 } as const satisfies Record<string, Record<Locale, string>>
 
 type TranslationKey = keyof typeof translations

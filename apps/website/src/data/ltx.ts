@@ -7,37 +7,45 @@ import { externalLinks } from '../config/routes'
 
 const ltxLinks = {
   cloudRun: 'https://cloud.comfy.org/?template=video_ltx2_5_i2v',
-  cloudRunPremium: 'https://cloud.comfy.org/?template=api_ltx2_5_flf2v'
+  cloudRunPremium: 'https://cloud.comfy.org/?template=api_ltx2_5_flf2v',
+  hubModel: `${externalLinks.workflows}/model/ltx`
 } as const
 
 const media = {
   hero: {
     kind: 'video',
-    src: 'https://media.comfy.org/website/ltx-2.5/hero.mp4'
+    src: 'https://media.comfy.org/website/ltx-2.5/hero.mp4',
+    posterSrc: 'https://media.comfy.org/website/ltx-2.5/hero-poster.webp'
   },
   blackbird: {
     kind: 'video',
-    src: 'https://media.comfy.org/website/ltx-2.5/card-1.webm'
+    src: 'https://media.comfy.org/website/ltx-2.5/card-1.webm',
+    posterSrc: 'https://media.comfy.org/website/ltx-2.5/card-1.webp'
   },
   circuitry: {
     kind: 'video',
-    src: 'https://media.comfy.org/website/ltx-2.5/card-2.webm'
+    src: 'https://media.comfy.org/website/ltx-2.5/card-2.webm',
+    posterSrc: 'https://media.comfy.org/website/ltx-2.5/card-2.webp'
   },
   portrait: {
     kind: 'video',
-    src: 'https://media.comfy.org/website/ltx-2.5/card-3.webm'
+    src: 'https://media.comfy.org/website/ltx-2.5/card-3.webm',
+    posterSrc: 'https://media.comfy.org/website/ltx-2.5/card-3.webp'
   },
   drones: {
     kind: 'video',
-    src: 'https://media.comfy.org/website/ltx-2.5/card-4.webm'
+    src: 'https://media.comfy.org/website/ltx-2.5/card-4.webm',
+    posterSrc: 'https://media.comfy.org/website/ltx-2.5/card-4.webp'
   },
   astronaut: {
     kind: 'video',
-    src: 'https://media.comfy.org/website/ltx-2.5/card-5.webm'
+    src: 'https://media.comfy.org/website/ltx-2.5/card-5.webm',
+    posterSrc: 'https://media.comfy.org/website/ltx-2.5/card-5.webp'
   },
   horseman: {
     kind: 'video',
-    src: 'https://media.comfy.org/website/ltx-2.5/card-6.webm'
+    src: 'https://media.comfy.org/website/ltx-2.5/card-6.webm',
+    posterSrc: 'https://media.comfy.org/website/ltx-2.5/card-6.webp'
   }
 } as const satisfies Record<string, ModelLaunchMedia>
 
@@ -52,6 +60,7 @@ export const ltxPage: ModelLaunchPage = {
   breadcrumbUpdatedKey: 'ltx.breadcrumb.updated',
   hero: {
     videoSrc: media.hero.src,
+    posterSrc: media.hero.posterSrc,
     titleKey: 'ltx.hero.title',
     descriptionKey: 'ltx.hero.description',
     primaryCta: {
@@ -61,7 +70,7 @@ export const ltxPage: ModelLaunchPage = {
     },
     secondaryCta: {
       labelKey: 'ltx.hero.secondaryCta',
-      href: externalLinks.workflows,
+      href: ltxLinks.hubModel,
       target: '_blank'
     },
     badgeKeys: [
