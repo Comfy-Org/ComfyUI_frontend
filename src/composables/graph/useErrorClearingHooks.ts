@@ -35,8 +35,17 @@ import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
 import { getCnrIdFromNode } from '@/platform/nodeReplacement/cnrIdUtil'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import {
+  appendPendingMissingNodeTypes,
+  removePendingMissingNodeTypesByExecutionIdPrefix,
+  removePendingMissingNodeTypesByNodeId,
+  updatePendingWarnings
+} from '@/platform/workflow/core/utils/pendingWarnings'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import type { MissingNodeType } from '@/types/comfy'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
@@ -237,19 +246,35 @@ function scanSingleNodeModelsAndTypes(node: LGraphNode): void {
   if (!(originalType in LiteGraph.registered_node_types)) {
     const nodeReplacementStore = useNodeReplacementStore()
     const replacement = nodeReplacementStore.getReplacementFor(originalType)
-    const store = useMissingNodesErrorStore()
-    const existing = store.missingNodesError?.nodeTypes ?? []
-    store.surfaceMissingNodes([
-      ...existing,
-      {
-        type: originalType,
-        nodeId: execId,
-        cnrId: getCnrIdFromNode(node),
-        isReplaceable: replacement !== null,
-        replacement: replacement ?? undefined
-      }
-    ])
+    updateActiveMissingNodeTypes((currentTypes) =>
+      appendPendingMissingNodeTypes(currentTypes, [
+        {
+          type: originalType,
+          nodeId: execId,
+          cnrId: getCnrIdFromNode(node),
+          isReplaceable: replacement !== null,
+          replacement: replacement ?? undefined
+        }
+      ])
+    )
   }
+}
+
+function updateActiveMissingNodeTypes(
+  update: (
+    currentTypes: readonly MissingNodeType[] | undefined
+  ) => MissingNodeType[]
+): void {
+  const activeWorkflow = useWorkflowStore().activeWorkflow
+  if (!activeWorkflow) return
+
+  updatePendingWarnings(activeWorkflow, {
+    missingNodeTypes: update(activeWorkflow.pendingWarnings?.missingNodeTypes)
+  })
+  useWorkflowService().showPendingWarnings(activeWorkflow, {
+    silent: true,
+    missingNodesOnly: true
+  })
 }
 
 function scanSingleNodeMedia(node: LGraphNode): void {
@@ -385,22 +410,30 @@ function scanAncestorSubgraphHosts(execId: string): void {
 function removeNodeErrors(node: LGraphNode, execId: string): void {
   const modelStore = useMissingModelStore()
   const mediaStore = useMissingMediaStore()
-  const nodesStore = useMissingNodesErrorStore()
+  const prefix =
+    node.isSubgraphNode?.() && node.subgraph ? `${execId}:` : undefined
 
   modelStore.removeMissingModelsByNodeId(execId)
   modelStore.removeMissingModelsBySourceScope(execId)
   mediaStore.removeMissingMediaByNodeId(execId)
-  nodesStore.removeMissingNodesByNodeId(execId)
 
   // For subgraph containers, also remove errors from interior nodes.
   // The trailing colon in the prefix is load-bearing: it prevents sibling
   // IDs sharing a numeric prefix (e.g. "705" vs "70") from being matched.
-  if (node.isSubgraphNode?.() && node.subgraph) {
-    const prefix = `${execId}:`
+  if (prefix) {
     modelStore.removeMissingModelsByPrefix(prefix)
     mediaStore.removeMissingMediaByPrefix(prefix)
-    nodesStore.removeMissingNodesByPrefix(prefix)
   }
+
+  updateActiveMissingNodeTypes((currentTypes) => {
+    const remaining = removePendingMissingNodeTypesByNodeId(
+      currentTypes,
+      execId
+    )
+    return prefix
+      ? removePendingMissingNodeTypesByExecutionIdPrefix(remaining, prefix)
+      : remaining
+  })
 
   dropOutOfScopeMissingMedia()
 }

@@ -2,9 +2,74 @@ import type {
   ComfyWorkflow,
   PendingWarnings
 } from '@/platform/workflow/management/stores/comfyWorkflow'
+import type { MissingNodeType } from '@/types/comfy'
 
 const emptyToUndefined = <T>(arr: T[] | undefined): T[] | undefined =>
   arr?.length ? arr : undefined
+
+function getMissingNodeKey(node: MissingNodeType): string {
+  if (typeof node === 'string') return node
+  if (node.nodeId != null) return String(node.nodeId)
+  return node.type
+}
+
+export function replacePendingMissingNodeTypes(
+  types: readonly MissingNodeType[]
+): MissingNodeType[] {
+  const seen = new Set<string>()
+  return types.filter((node) => {
+    const key = getMissingNodeKey(node)
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+}
+
+export function appendPendingMissingNodeTypes(
+  currentTypes: readonly MissingNodeType[] | undefined,
+  typesToAppend: readonly MissingNodeType[]
+): MissingNodeType[] {
+  return replacePendingMissingNodeTypes([
+    ...(currentTypes ?? []),
+    ...typesToAppend
+  ])
+}
+
+export function removePendingMissingNodeTypesByType(
+  currentTypes: readonly MissingNodeType[] | undefined,
+  typesToRemove: readonly string[]
+): MissingNodeType[] {
+  const removeSet = new Set(typesToRemove)
+  return replacePendingMissingNodeTypes(
+    (currentTypes ?? []).filter((node) => {
+      const nodeType = typeof node === 'string' ? node : node.type
+      return !removeSet.has(nodeType)
+    })
+  )
+}
+
+export function removePendingMissingNodeTypesByNodeId(
+  currentTypes: readonly MissingNodeType[] | undefined,
+  nodeId: string
+): MissingNodeType[] {
+  return replacePendingMissingNodeTypes(
+    (currentTypes ?? []).filter(
+      (node) => typeof node === 'string' || node.nodeId !== nodeId
+    )
+  )
+}
+
+export function removePendingMissingNodeTypesByExecutionIdPrefix(
+  currentTypes: readonly MissingNodeType[] | undefined,
+  prefix: string
+): MissingNodeType[] {
+  return replacePendingMissingNodeTypes(
+    (currentTypes ?? []).filter((node) => {
+      if (typeof node === 'string' || node.nodeId == null) return true
+      return !String(node.nodeId).startsWith(prefix)
+    })
+  )
+}
 
 export function normalizePendingWarnings(
   warnings: PendingWarnings | null | undefined

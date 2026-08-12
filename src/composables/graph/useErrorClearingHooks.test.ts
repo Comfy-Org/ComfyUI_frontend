@@ -23,6 +23,8 @@ import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import * as missingModelScan from '@/platform/missingModel/missingModelScan'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
@@ -75,6 +77,15 @@ function setNodeMode(
     newValue: newMode
   })
 }
+
+let activeWorkflow: LoadedComfyWorkflow
+
+beforeEach(() => {
+  activeWorkflow = fromAny<LoadedComfyWorkflow, unknown>({
+    pendingWarnings: null
+  })
+  useWorkflowStore().activeWorkflow = activeWorkflow
+})
 
 async function startPendingPromotedMediaVerification() {
   const {
@@ -464,6 +475,31 @@ describe('installErrorClearingHooks lifecycle', () => {
     ])
   })
 
+  it('caches and projects missing node errors for added nodes', async () => {
+    const graph = new LGraph()
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([])
+    vi.spyOn(missingMediaScan, 'scanNodeMediaCandidates').mockReturnValue([])
+    installErrorClearingHooks(graph)
+
+    const node = new LGraphNode('P2MissingRealtimeNode')
+    node.type = 'P2MissingRealtimeNode'
+    graph.add(node)
+
+    await Promise.resolve()
+
+    const cachedTypes = activeWorkflow.pendingWarnings?.missingNodeTypes
+    const renderedTypes =
+      useMissingNodesErrorStore().missingNodesError?.nodeTypes
+    expect(cachedTypes).toEqual([
+      expect.objectContaining({
+        type: 'P2MissingRealtimeNode',
+        nodeId: String(node.id)
+      })
+    ])
+    expect(renderedTypes).toStrictEqual(cachedTypes)
+  })
+
   it('scans added-node missing models before the deferred media scan', async () => {
     const graph = new LGraph()
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
@@ -630,8 +666,7 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
       })
     ])
 
-    const nodesStore = useMissingNodesErrorStore()
-    nodesStore.surfaceMissingNodes([
+    const missingNodeTypes = [
       {
         type: 'LoadImage',
         nodeId: interiorExecId,
@@ -639,12 +674,61 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
         isReplaceable: false,
         replacement: undefined
       }
-    ])
+    ]
+    activeWorkflow.pendingWarnings = { missingNodeTypes }
+    const nodesStore = useMissingNodesErrorStore()
+    nodesStore.setMissingNodeTypes(missingNodeTypes)
 
     subgraph.remove(interiorNode)
 
     expect(mediaStore.missingMediaCandidates).toBeNull()
+    expect(activeWorkflow.pendingWarnings).toBeNull()
     expect(nodesStore.missingNodesError).toBeNull()
+  })
+
+  it('removes cached missing node errors inside a removed subgraph', () => {
+    const subgraph = createTestSubgraph()
+    const interiorNode = new LGraphNode('MissingInteriorNode')
+    subgraph.add(interiorNode)
+
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: 65 })
+    const rootGraph = subgraphNode.graph as LGraph
+    rootGraph.add(subgraphNode)
+
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
+    installErrorClearingHooks(rootGraph)
+
+    const interiorExecId = `${subgraphNode.id}:${interiorNode.id}`
+    const remainingType = {
+      type: 'OtherMissingNode',
+      nodeId: '66:1',
+      isReplaceable: false
+    }
+    const missingNodeTypes = [
+      {
+        type: 'MissingInteriorNode',
+        nodeId: interiorExecId,
+        isReplaceable: false
+      },
+      {
+        type: 'NestedMissingNode',
+        nodeId: `${interiorExecId}:99`,
+        isReplaceable: false
+      },
+      remainingType
+    ]
+    activeWorkflow.pendingWarnings = { missingNodeTypes }
+    const nodesStore = useMissingNodesErrorStore()
+    nodesStore.setMissingNodeTypes(missingNodeTypes)
+
+    rootGraph.remove(subgraphNode)
+
+    expect(activeWorkflow.pendingWarnings?.missingNodeTypes).toStrictEqual([
+      remainingType
+    ])
+    expect(nodesStore.missingNodesError?.nodeTypes).toStrictEqual([
+      remainingType
+    ])
   })
 
   it('removes host-keyed missing media when its sole promoted consumer is deleted', () => {

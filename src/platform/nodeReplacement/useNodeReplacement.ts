@@ -6,9 +6,13 @@ import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
 import { t } from '@/i18n'
 import type { NodeReplacement } from '@/platform/nodeReplacement/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import {
+  removePendingMissingNodeTypesByType,
+  updatePendingWarnings
+} from '@/platform/workflow/core/utils/pendingWarnings'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app, sanitizeNodeName } from '@/scripts/app'
-import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import type { MissingNodeType } from '@/types/comfy'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
 
@@ -226,6 +230,22 @@ function replaceWithMapping(
   newNode.has_errors = false
 }
 
+function removeReplacedMissingNodeTypes(types: string[]): void {
+  const activeWorkflow = useWorkflowStore().activeWorkflow
+  if (!activeWorkflow) return
+
+  updatePendingWarnings(activeWorkflow, {
+    missingNodeTypes: removePendingMissingNodeTypesByType(
+      activeWorkflow.pendingWarnings?.missingNodeTypes,
+      types
+    )
+  })
+  useWorkflowService().showPendingWarnings(activeWorkflow, {
+    silent: true,
+    missingNodesOnly: true
+  })
+}
+
 export function useNodeReplacement() {
   const toastStore = useToastStore()
 
@@ -339,7 +359,7 @@ export function useNodeReplacement() {
   function replaceGroup(group: ReplacementGroup): void {
     const replaced = replaceNodesInPlace(group.nodeTypes)
     if (replaced.length > 0) {
-      useMissingNodesErrorStore().removeMissingNodesByType(replaced)
+      removeReplacedMissingNodeTypes(replaced)
     }
   }
 
@@ -351,7 +371,7 @@ export function useNodeReplacement() {
     const allNodeTypes = groups.flatMap((g) => g.nodeTypes)
     const replaced = replaceNodesInPlace(allNodeTypes)
     if (replaced.length > 0) {
-      useMissingNodesErrorStore().removeMissingNodesByType(replaced)
+      removeReplacedMissingNodeTypes(replaced)
     }
   }
 

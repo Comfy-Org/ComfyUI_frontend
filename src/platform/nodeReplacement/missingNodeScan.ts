@@ -2,8 +2,12 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
-import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import {
+  replacePendingMissingNodeTypes,
+  updatePendingWarnings
+} from '@/platform/workflow/core/utils/pendingWarnings'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { MissingNodeType } from '@/types/comfy'
 import {
   collectAllNodes,
@@ -45,10 +49,14 @@ function scanMissingNodes(rootGraph: LGraph): MissingNodeType[] {
   return missingNodeTypes
 }
 
-/** Re-scan the graph for missing nodes and update the error store. */
+/** Re-scan the graph and project its missing nodes from pending warnings. */
 export function rescanAndSurfaceMissingNodes(rootGraph: LGraph): void {
   const types = scanMissingNodes(rootGraph)
-  if (useMissingNodesErrorStore().surfaceMissingNodes(types)) {
-    useExecutionErrorStore().showErrorOverlay()
-  }
+  const activeWorkflow = useWorkflowStore().activeWorkflow
+  updatePendingWarnings(activeWorkflow, {
+    missingNodeTypes: replacePendingMissingNodeTypes(types)
+  })
+  useWorkflowService().showPendingWarnings(activeWorkflow, {
+    missingNodesOnly: true
+  })
 }
