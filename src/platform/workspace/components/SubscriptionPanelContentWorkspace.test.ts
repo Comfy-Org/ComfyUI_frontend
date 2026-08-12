@@ -1,7 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -307,12 +307,7 @@ function renderComponent({ stubFooter = true } = {}) {
 }
 
 describe('SubscriptionPanelContentWorkspace', () => {
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
   beforeEach(() => {
-    vi.clearAllMocks()
     mockDistributionState.isCloud = true
     mockSubscriptionStatus.value = 'active'
     mockBillingStatus.value = 'paid'

@@ -67,7 +67,6 @@ vi.mock('vue-i18n', () => ({
 
 describe('useResubscribe', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     state.shouldUseWorkspaceBilling = true
     state.canManageSubscriptionLifecycle = true
     state.resubscribe.mockResolvedValue(undefined)

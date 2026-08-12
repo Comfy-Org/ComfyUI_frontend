@@ -1,5 +1,4 @@
-import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
@@ -44,8 +43,6 @@ function addHostedSubgraph(root: LGraph, parent: LGraph | Subgraph = root) {
 }
 
 describe('resolveTourRoles', () => {
-  beforeEach(() => setActivePinia(createPinia()))
-
   it('spotlights a prompt pinned inside a subgraph through its root-graph host', () => {
     const root = createTestRootGraph()
     const { subgraph, host } = addHostedSubgraph(root)

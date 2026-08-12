@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { ComfyExtension } from '@/types/comfy'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -11,6 +11,10 @@ const { addTextPreviewWidgets, updateTextPreviewWidgets } = vi.hoisted(() => ({
 vi.mock('@/extensions/core/textPreviewWidgets', () => ({
   addTextPreviewWidgets,
   updateTextPreviewWidgets
+}))
+
+vi.mock('@/scripts/app', () => ({
+  app: { rootGraph: {} }
 }))
 
 const capturedExtensions: ComfyExtension[] = []
@@ -54,11 +58,6 @@ async function setupNode() {
 await import('./previewAny')
 
 describe('PreviewAny extension', () => {
-  beforeEach(() => {
-    addTextPreviewWidgets.mockClear()
-    updateTextPreviewWidgets.mockClear()
-  })
-
   it('adds the shared text preview widgets on node creation', async () => {
     const { node, proto } = await setupNode()
 

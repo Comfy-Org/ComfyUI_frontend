@@ -63,7 +63,6 @@ const renderActionbar = (showRunProgressBar: boolean) => {
 describe('ComfyActionbar', () => {
   beforeEach(() => {
     i18n.global.locale.value = 'en'
-    localStorage.clear()
   })
 
   it('teleports inline progress when run progress bar is enabled', async () => {
