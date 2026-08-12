@@ -41,6 +41,17 @@ export interface HandleSpec<TTarget> {
     Record<string, (target: TTarget, ...args: never[]) => unknown>
   >
   /**
+   * Methods that also need the handle's own id.
+   *
+   * A widget target is just the widget: it holds no reference back to its
+   * node, by design, so a method that has to name a sibling cannot find one
+   * from the target alone. Separate from `methods` so the common signature
+   * stays two arguments.
+   */
+  readonly idMethods?: Readonly<
+    Record<string, (target: TTarget, id: string, ...args: never[]) => unknown>
+  >
+  /**
    * Props that remain readable after deletion. Identity only — an id or type is
    * still useful for logging and cleanup once the entity is gone.
    */
@@ -118,8 +129,22 @@ export function createHandleFactory<TTarget>(
     Object.create(null),
     spec.props
   )
+  const idMethods: Record<
+    string,
+    (t: TTarget, id: string, ...a: never[]) => unknown
+  > = Object.assign(Object.create(null), spec.idMethods ?? {})
   const methods: Record<string, (t: TTarget, ...a: never[]) => unknown> =
-    Object.assign(Object.create(null), spec.methods ?? {})
+    Object.assign(
+      Object.create(null),
+      spec.methods ?? {},
+      Object.fromEntries(
+        Object.keys(idMethods).map((key) => [
+          key,
+          // Bound below, where the id is in scope.
+          () => undefined
+        ])
+      )
+    )
 
   const propKeys = Object.keys(props)
   const methodKeys = Object.keys(methods)
@@ -185,7 +210,9 @@ export function createHandleFactory<TTarget>(
                 }
                 return undefined
               }
-              return methods[key](target, ...args)
+              return Object.hasOwn(idMethods, key)
+                ? idMethods[key](target, id, ...args)
+                : methods[key](target, ...args)
             })
           }
           return bound.get(key)
