@@ -12,7 +12,10 @@
  * inspect or edit the built prompt: that is the surface that made the old API
  * impossible to retire, and rebuilding it would forfeit the migration.
  */
+import { watch } from 'vue'
+
 import { api } from '@/scripts/api'
+import { useQueuePendingTaskCountStore } from '@/stores/queueStore'
 import { toNodeId } from '@/types/nodeId'
 import { getExecutionIdsForSelectedNodes } from '@/utils/graphTraversalUtil'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
@@ -54,9 +57,31 @@ export interface QueueHandle {
    * should differ on the next run.
    */
   onAfterRun(listener: () => void): Unsubscribe
+  /**
+   * How many runs are waiting, including the one executing.
+   *
+   * Packs tracked this from the backend's own `status` message to re-implement
+   * `app.ui.lastQueueSize` — deciding whether a button says Run or Cancel,
+   * whether an auto-runner should submit again.
+   */
+  pending(): number
+  /** Fires whenever {@link pending} changes, with the new count. */
+  onPendingChanged(listener: (pending: number) => void): Unsubscribe
+  /**
+   * Cancels the run in progress. The rest of the queue is untouched.
+   *
+   * Packs wrapped `api.interrupt` both to call it and to notice one — a node
+   * waiting on the user needs to stop waiting when the run is cancelled.
+   * {@link onInterrupted} is that second half.
+   */
+  interrupt(): Promise<void>
+  /** Execution was interrupted, by this pack, another, or the user. */
+  onInterrupted(listener: () => void): Unsubscribe
 }
 
-function subscribe(event: 'promptQueueing' | 'promptQueued') {
+function subscribe(
+  event: 'promptQueueing' | 'promptQueued' | 'execution_interrupted'
+) {
   return (listener: () => void): Unsubscribe => {
     const wrapped = () => listener()
     api.addEventListener(event, wrapped)
@@ -103,6 +128,24 @@ export function createQueueApi(
     },
 
     onBeforeRun: subscribe('promptQueueing'),
-    onAfterRun: subscribe('promptQueued')
+    onAfterRun: subscribe('promptQueued'),
+
+    pending: () => useQueuePendingTaskCountStore().count,
+
+    onPendingChanged(listener: (pending: number) => void) {
+      const store = useQueuePendingTaskCountStore()
+      return watch(
+        () => store.count,
+        (pending) => listener(pending)
+      )
+    },
+
+    async interrupt() {
+      // null: cancel whatever is running, rather than a job the pack names.
+      // A pack cannot know a job id it was never told.
+      await api.interrupt(null)
+    },
+
+    onInterrupted: subscribe('execution_interrupted')
   })
 }
