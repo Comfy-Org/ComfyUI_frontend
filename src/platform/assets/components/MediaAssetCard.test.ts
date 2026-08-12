@@ -1,3 +1,5 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+
 import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
@@ -22,12 +24,12 @@ vi.mock('../composables/useMediaAssetActions', () => ({
   useMediaAssetActions: () => ({ downloadAssets })
 }))
 
-const asset: AssetItem = {
+const asset: AssetItem = fromPartial({
   id: 'a',
   name: 'a.png',
   tags: ['input'],
   preview_url: '/preview.png'
-}
+})
 
 function renderCard(
   props: Partial<ComponentProps<typeof MediaAssetCard>> = {}
@@ -97,13 +99,13 @@ describe('MediaAssetCard', () => {
       'includes trusted metadata for an imported $mime card',
       ({ name, display_name }) => {
         const { container } = renderCard({
-          asset: {
+          asset: fromPartial({
             id: name,
             name,
             display_name,
             tags: ['input'],
             preview_url: `/api/view?filename=${name}`
-          }
+          })
         })
 
         const { event, add } = dispatchDragStart(container)
@@ -122,7 +124,7 @@ describe('MediaAssetCard', () => {
 
     it('preserves generated-output metadata instead of replacing it with card fallbacks', () => {
       const { container } = renderCard({
-        asset: {
+        asset: fromPartial({
           id: 'job-1',
           name: 'card-name.png',
           display_name: 'Card name',
@@ -141,7 +143,7 @@ describe('MediaAssetCard', () => {
               }
             ]
           }
-        }
+        })
       })
 
       const { add } = dispatchDragStart(container)
@@ -159,11 +161,11 @@ describe('MediaAssetCard', () => {
 
     it('uses the asset content URL when an imported card has no preview URL', () => {
       const { container } = renderCard({
-        asset: {
+        asset: fromPartial({
           id: 'plain-video',
           name: 'plain_video.mp4',
           tags: ['input']
-        }
+        })
       })
 
       const { add } = dispatchDragStart(container)

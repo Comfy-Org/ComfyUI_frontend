@@ -303,12 +303,10 @@ class StoreResetCommand implements Command<PersistenceModel, PersistenceReal> {
 describe('workflowDraftStoreV2 FSM', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    localStorage.clear()
     sessionStorage.clear()
   })
 
   afterEach(() => {
-    localStorage.clear()
     sessionStorage.clear()
   })
 

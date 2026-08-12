@@ -1,3 +1,5 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { createPinia, setActivePinia } from 'pinia'
@@ -3511,14 +3513,14 @@ describe('AgentPanelRoot workflow binding', () => {
     makeTab('wf-42')
     const bodies = mockMessagesEndpoint('wf-42')
     vi.spyOn(assetService, 'getInputAssetsIncludingPublic').mockResolvedValue([
-      {
+      fromPartial({
         id: 'asset-1',
         name: 'sunset-original.png',
         hash: 'sunset-hash.png',
         tags: ['input'],
         display_name: 'Sunset.png',
         preview_url: '/api/assets/asset-1/content'
-      }
+      })
     ])
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })

@@ -1,3 +1,5 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { createPinia, setActivePinia } from 'pinia'
@@ -8,6 +10,7 @@ import { defineComponent, h, nextTick, ref } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { i18n } from '@/i18n'
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
 import { useAgentRunModeStore } from '../../stores/agent/agentRunModeStore'
 import Composer from './Composer.vue'
@@ -277,21 +280,21 @@ describe('Composer', () => {
       { id: '7', title: 'KSampler' },
       { id: '9', title: 'VAE Decode' }
     ]
-    const ASSETS = [
-      {
+    const ASSETS: AssetItem[] = [
+      fromPartial({
         id: 'asset-1',
         name: 'sunset-original.png',
         hash: 'sunset-hash.png',
         tags: ['input'],
         display_name: 'Sunset.png',
         thumbnail_url: '/api/assets/asset-1/thumbnail'
-      },
-      {
+      }),
+      fromPartial({
         id: 'asset-2',
         name: 'forest.png',
         tags: ['input'],
         user_metadata: { name: 'Forest reference' }
-      }
+      })
     ]
 
     it('lists matching nodes alphabetically', async () => {

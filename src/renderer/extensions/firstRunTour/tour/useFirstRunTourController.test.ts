@@ -231,7 +231,6 @@ function mountRunButton(
 describe('useFirstRunTourController', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.useFakeTimers()
     mocks.canRunWorkflows = ref(true)
     mocks.workflowStatus.value = new Map()
     mocks.executionErrors.hasNodeError = false
@@ -251,7 +250,6 @@ describe('useFirstRunTourController', () => {
     controllerScope = undefined
     document.body.innerHTML = ''
     setViewportWidth(1280)
-    vi.useRealTimers()
   })
 
   describe('starting', () => {

@@ -21,13 +21,11 @@ import {
 
 describe('storageIO', () => {
   beforeEach(() => {
-    localStorage.clear()
     sessionStorage.clear()
     vi.resetModules()
   })
 
   afterEach(() => {
-    localStorage.clear()
     sessionStorage.clear()
   })
 

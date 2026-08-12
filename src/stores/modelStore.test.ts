@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { assetService } from '@/platform/assets/services/assetService'
@@ -490,14 +490,6 @@ describe('useModelStore', () => {
   })
 
   describe('scan fast-phase completion', () => {
-    beforeEach(() => {
-      vi.useFakeTimers()
-    })
-
-    afterEach(() => {
-      vi.useRealTimers()
-    })
-
     function getScanCallback() {
       return vi.mocked(assetService.onModelsScanned).mock.calls[0]?.[0]
     }

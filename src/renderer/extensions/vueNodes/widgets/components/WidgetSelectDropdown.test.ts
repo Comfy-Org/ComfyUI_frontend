@@ -1,3 +1,5 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+
 import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
 import PrimeVue from 'primevue/config'
@@ -186,12 +188,12 @@ describe('WidgetSelectDropdown', () => {
 
   it('renders in cloud asset mode', () => {
     mockAssetsData.items = [
-      {
+      fromPartial({
         id: 'asset-1',
         name: 'model_a.safetensors',
         preview_url: 'https://example.com/a.jpg',
         tags: []
-      }
+      })
     ]
     mockItemsRef.value = [{ id: 'asset-1', name: 'model_a.safetensors' }]
     mockSelectedSetRef.value = new Set(['asset-1'])

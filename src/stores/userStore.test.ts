@@ -15,7 +15,6 @@ describe('userStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     getUserConfig.mockReset()
-    localStorage.clear()
   })
 
   describe('initialize', () => {

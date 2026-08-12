@@ -28,7 +28,6 @@ const STORAGE_KEY = 'maskeditor_brush_settings'
 
 beforeEach(() => {
   setActivePinia(createTestingPinia({ stubActions: false }))
-  localStorage.clear()
 })
 
 describe('loadAndApply', () => {
