@@ -550,6 +550,15 @@ describe('Virtual node resolveVirtualOutput', () => {
     virtualNode.isVirtualNode = true
     const primaryWidget = virtualNode.addWidget('text', 'value', '', null)
     Reflect.set(primaryWidget, 'value', undefined)
+    virtualNode.addWidget(
+      'combo',
+      'control_after_generate',
+      'increment',
+      null,
+      {
+        values: ['fixed', 'increment']
+      }
+    )
     graph.add(virtualNode)
 
     const nodeDtoMap = new Map<ExecutionId, ExecutableLGraphNode>()
