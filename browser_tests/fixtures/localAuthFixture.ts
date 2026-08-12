@@ -14,10 +14,9 @@ const LOCAL_AUTH_BOOT_TIMEOUT = 45_000
  * Firebase auth must be seeded via `ComfyPage.cloudAuth` *before* the app's
  * first navigation: seeding it against an already-booted page races the
  * app's own Firebase listener and can hang indefinitely. `comfyPageFixture`
- * only seeds pre-boot for `@cloud`-tagged tests (which also run against the
- * Cloud-distribution build), so specs that need an authenticated local user
- * construct `ComfyPage` directly here and drive its setup themselves,
- * mirroring `ComfyPage.setup()` but with auth mocked first.
+ * seeds pre-boot for `@cloud`- and `@auth`-tagged tests. Prefer tagging a
+ * spec `@auth` over using this fixture; it exists for specs that also need
+ * the Free-tier subscription mocks and the bespoke boot below.
  */
 export const localAuthFixture = base.extend<{ comfyPage: ComfyPage }>({
   comfyPage: async ({ page, request }, use, testInfo) => {

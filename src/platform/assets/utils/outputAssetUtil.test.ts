@@ -50,7 +50,6 @@ function createOutput(overrides: OutputOverrides = {}): ResultItemImpl {
 
 describe('resolveOutputAssetItems', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mocks.isCloud = false
   })
 
