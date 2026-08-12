@@ -31,7 +31,6 @@ describe('getSessionOverride', () => {
   })
 
   afterEach(() => {
-    window.history.replaceState({}, '', '/')
     vi.restoreAllMocks()
   })
 

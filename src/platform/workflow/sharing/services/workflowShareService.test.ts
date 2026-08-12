@@ -66,7 +66,6 @@ describe(useWorkflowShareService, () => {
 
   beforeEach(() => {
     mockApp.rootGraph = {}
-    window.history.replaceState({}, '', '/')
   })
 
   it('returns unpublished status for unknown workflow', async () => {

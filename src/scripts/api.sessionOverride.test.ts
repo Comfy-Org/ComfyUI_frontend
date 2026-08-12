@@ -33,7 +33,6 @@ describe('api.getServerFeature session override outside component setup', () => 
   })
 
   afterEach(() => {
-    window.history.replaceState({}, '', '/')
     api.serverFeatureFlags.value = {}
     vi.restoreAllMocks()
   })
