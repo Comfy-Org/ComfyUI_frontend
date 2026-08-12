@@ -107,6 +107,16 @@ export const useQueueNotificationBanners = () => {
     )
   }
 
+  const queuePositionFor = (notification: QueueNotificationBanner) => {
+    if (!isRunAcknowledgement(notification)) {
+      return pendingNotifications.value.length
+    }
+    const firstOutcome = pendingNotifications.value.findIndex(isOutcome)
+    return firstOutcome === -1
+      ? pendingNotifications.value.length
+      : firstOutcome
+  }
+
   const queueNotification = (notification: QueueNotificationBanner) => {
     if (isRunAcknowledgement(notification)) {
       const active = activeNotification.value
@@ -122,7 +132,11 @@ export const useQueueNotificationBanners = () => {
       }
     }
 
-    pendingNotifications.value = [...pendingNotifications.value, notification]
+    pendingNotifications.value = pendingNotifications.value.toSpliced(
+      queuePositionFor(notification),
+      0,
+      notification
+    )
     showNextNotification()
   }
 
