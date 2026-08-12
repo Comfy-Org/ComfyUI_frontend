@@ -44,11 +44,8 @@ import {
 } from '@/utils/graphTraversalUtil'
 import { getCnrIdFromNode } from '@/platform/nodeReplacement/cnrIdUtil'
 import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
-import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { rescanAndSurfaceMissingNodes } from './missingNodeScan'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
-import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 
@@ -78,14 +75,8 @@ function getMissingNodesError(
 }
 
 describe('scanMissingNodes (via rescanAndSurfaceMissingNodes)', () => {
-  let activeWorkflow: LoadedComfyWorkflow
-
   beforeEach(() => {
-    activeWorkflow = fromAny<LoadedComfyWorkflow, unknown>({
-      pendingWarnings: null
-    })
-    useWorkflowStore().activeWorkflow = activeWorkflow
-
+    // Reset registered_node_types
     const reg = LiteGraph.registered_node_types as Record<string, unknown>
     for (const key of Object.keys(reg)) {
       delete reg[key]
@@ -117,10 +108,6 @@ describe('scanMissingNodes (via rescanAndSurfaceMissingNodes)', () => {
     const store = useMissingNodesErrorStore()
     const error = getMissingNodesError(store)
     expect(error.nodeTypes).toHaveLength(2)
-    expect(activeWorkflow.pendingWarnings?.missingNodeTypes).toStrictEqual(
-      error.nodeTypes
-    )
-    expect(useExecutionErrorStore().isErrorOverlayOpen).toBe(true)
   })
 
   it('skips registered nodes and lists only unregistered', () => {

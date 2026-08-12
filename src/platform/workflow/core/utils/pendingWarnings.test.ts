@@ -2,12 +2,11 @@ import { describe, expect, it } from 'vitest'
 
 import type { PendingWarnings } from '@/platform/workflow/management/stores/comfyWorkflow'
 import {
-  appendPendingMissingNodeTypes,
+  dedupeMissingNodeTypes,
   normalizePendingWarnings,
   removePendingMissingNodeTypesByExecutionIdPrefix,
   removePendingMissingNodeTypesByNodeId,
   removePendingMissingNodeTypesByType,
-  replacePendingMissingNodeTypes,
   updatePendingWarnings
 } from '@/platform/workflow/core/utils/pendingWarnings'
 
@@ -101,30 +100,11 @@ describe('pendingWarnings utils', () => {
         { type: 'NodeB', isReplaceable: true }
       ]
 
-      expect(replacePendingMissingNodeTypes(types)).toStrictEqual([
+      expect(dedupeMissingNodeTypes(types)).toStrictEqual([
         'GroupNode',
         { type: 'NodeA', nodeId: '1', isReplaceable: false },
         { type: 'NodeA', nodeId: '2', isReplaceable: false },
         { type: 'NodeB', isReplaceable: false }
-      ])
-    })
-
-    it('append-merges node types using the same identity rules', () => {
-      const current = [
-        'GroupNode',
-        { type: 'NodeA', nodeId: '1', isReplaceable: false }
-      ]
-
-      expect(
-        appendPendingMissingNodeTypes(current, [
-          'GroupNode',
-          { type: 'NodeA', nodeId: '1', isReplaceable: true },
-          { type: 'NodeA', nodeId: '2', isReplaceable: false }
-        ])
-      ).toStrictEqual([
-        'GroupNode',
-        { type: 'NodeA', nodeId: '1', isReplaceable: false },
-        { type: 'NodeA', nodeId: '2', isReplaceable: false }
       ])
     })
 
@@ -188,6 +168,18 @@ describe('pendingWarnings utils', () => {
             '1'
           )
         ).toStrictEqual([{ type: 'NodeB', nodeId: '2', isReplaceable: false }])
+      })
+
+      it('matches numeric node IDs against string execution IDs', () => {
+        expect(
+          removePendingMissingNodeTypesByNodeId(
+            [
+              { type: 'NodeA', nodeId: 1, isReplaceable: false },
+              { type: 'NodeB', nodeId: 2, isReplaceable: false }
+            ],
+            '1'
+          )
+        ).toStrictEqual([{ type: 'NodeB', nodeId: 2, isReplaceable: false }])
       })
 
       it('preserves string entries', () => {

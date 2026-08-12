@@ -52,7 +52,13 @@ const workflowMocks = vi.hoisted(() => ({
       beforeChange: vi.fn(),
       afterChange: vi.fn()
     }
-  }
+  } as {
+    pendingWarnings: PendingWarnings | null
+    changeTracker: {
+      beforeChange: () => void
+      afterChange: () => void
+    }
+  } | null
 }))
 
 import { app } from '@/scripts/app'
@@ -61,7 +67,13 @@ import { collectAllNodes } from '@/utils/graphTraversalUtil'
 import { useNodeReplacement } from './useNodeReplacement'
 
 beforeEach(() => {
-  workflowMocks.activeWorkflow.pendingWarnings = null
+  workflowMocks.activeWorkflow = {
+    pendingWarnings: null,
+    changeTracker: {
+      beforeChange: vi.fn(),
+      afterChange: vi.fn()
+    }
+  }
 })
 
 function createMockLink(
@@ -174,8 +186,14 @@ function makeMissingNodeType(
   }
 }
 
+function getActiveWorkflowMock() {
+  const activeWorkflow = workflowMocks.activeWorkflow
+  if (!activeWorkflow) throw new Error('Expected an active workflow')
+  return activeWorkflow
+}
+
 function seedMissingNodeTypes(types: MissingNodeType[]): void {
-  workflowMocks.activeWorkflow.pendingWarnings = { missingNodeTypes: types }
+  getActiveWorkflowMock().pendingWarnings = { missingNodeTypes: types }
   useMissingNodesErrorStore().setMissingNodeTypes(types)
 }
 
@@ -881,7 +899,7 @@ describe('useNodeReplacement', () => {
       })
 
       expect(
-        workflowMocks.activeWorkflow.pendingWarnings?.missingNodeTypes
+        getActiveWorkflowMock().pendingWarnings?.missingNodeTypes
       ).toStrictEqual(['OtherNode'])
       expect(
         useMissingNodesErrorStore().missingNodesError?.nodeTypes
@@ -909,11 +927,45 @@ describe('useNodeReplacement', () => {
       })
 
       expect(
-        workflowMocks.activeWorkflow.pendingWarnings?.missingNodeTypes
+        getActiveWorkflowMock().pendingWarnings?.missingNodeTypes
       ).toStrictEqual([oldNodeType])
       expect(
         useMissingNodesErrorStore().missingNodesError?.nodeTypes
       ).toStrictEqual([oldNodeType])
+    })
+
+    it('removes replaced types from rendered state without an active workflow', () => {
+      const placeholder = createPlaceholderNode(1, 'OldNode')
+      const graph = createMockGraph([placeholder])
+      placeholder.graph = graph
+      Object.assign(app, { rootGraph: graph })
+
+      const newNode = createNewNode()
+      vi.mocked(collectAllNodes).mockReturnValue([placeholder])
+      vi.mocked(LiteGraph.createNode).mockReturnValue(newNode)
+
+      const oldNodeType = makeMissingNodeType('OldNode', {
+        new_node_id: 'NewNode',
+        old_node_id: 'OldNode',
+        old_widget_ids: null,
+        input_mapping: null,
+        output_mapping: null
+      })
+      useMissingNodesErrorStore().setMissingNodeTypes([
+        oldNodeType,
+        'OtherNode'
+      ])
+      workflowMocks.activeWorkflow = null
+
+      const { replaceGroup } = useNodeReplacement()
+      replaceGroup({
+        type: 'OldNode',
+        nodeTypes: [oldNodeType]
+      })
+
+      expect(
+        useMissingNodesErrorStore().missingNodesError?.nodeTypes
+      ).toStrictEqual(['OtherNode'])
     })
   })
 
@@ -960,7 +1012,7 @@ describe('useNodeReplacement', () => {
       ])
 
       expect(
-        workflowMocks.activeWorkflow.pendingWarnings?.missingNodeTypes
+        getActiveWorkflowMock().pendingWarnings?.missingNodeTypes
       ).toStrictEqual(['OtherNode'])
       expect(
         useMissingNodesErrorStore().missingNodesError?.nodeTypes
@@ -1005,7 +1057,7 @@ describe('useNodeReplacement', () => {
       ])
 
       expect(
-        workflowMocks.activeWorkflow.pendingWarnings?.missingNodeTypes
+        getActiveWorkflowMock().pendingWarnings?.missingNodeTypes
       ).toStrictEqual([typeB])
       expect(
         useMissingNodesErrorStore().missingNodesError?.nodeTypes

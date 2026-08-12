@@ -264,42 +264,6 @@ describe('useWorkflowService', () => {
       ).toHaveBeenCalledWith(['CustomNode1'])
       expect(useExecutionErrorStore().showErrorOverlay).toHaveBeenCalled()
     })
-
-    it('should leave model and media display state untouched for a missing-node projection', () => {
-      const workflow = createWorkflow({
-        missingNodeTypes: ['CustomNode1'],
-        missingModelCandidates: [
-          {
-            nodeId: '1',
-            nodeType: 'CheckpointLoaderSimple',
-            widgetName: 'ckpt_name',
-            isAssetSupported: false,
-            name: 'missing.safetensors',
-            isMissing: true
-          }
-        ],
-        missingMediaCandidates: [
-          {
-            nodeId: '2',
-            nodeType: 'LoadImage',
-            widgetName: 'image',
-            mediaType: 'image',
-            name: 'missing.png',
-            isMissing: true
-          }
-        ]
-      })
-
-      useWorkflowService().showPendingWarnings(workflow, {
-        missingNodesOnly: true
-      })
-
-      expect(
-        useMissingNodesErrorStore().surfaceMissingNodes
-      ).toHaveBeenCalledWith(['CustomNode1'])
-      expect(useMissingModelStore().setMissingModels).not.toHaveBeenCalled()
-      expect(useMissingMediaStore().setMissingMedia).not.toHaveBeenCalled()
-    })
   })
 
   describe('beforeLoadNewGraph', () => {
@@ -468,7 +432,7 @@ describe('useWorkflowService', () => {
       expect(workflow.pendingWarnings).not.toBeNull()
     })
 
-    it('should isolate rendered missing nodes while switching tabs', async () => {
+    it('should show each workflow warnings only when that tab is focused', async () => {
       const workflow1 = createWorkflow(
         { missingNodeTypes: ['MissingNodeA'] },
         { loadable: true, path: 'workflows/first.json' }
@@ -487,9 +451,6 @@ describe('useWorkflowService', () => {
       expect(
         useMissingNodesErrorStore().surfaceMissingNodes
       ).toHaveBeenCalledWith(['MissingNodeA'])
-      expect(
-        useMissingNodesErrorStore().missingNodesError?.nodeTypes
-      ).toStrictEqual(['MissingNodeA'])
       expect(workflow1.pendingWarnings).not.toBeNull()
       expect(workflow2.pendingWarnings).not.toBeNull()
 
@@ -500,20 +461,7 @@ describe('useWorkflowService', () => {
       expect(
         useMissingNodesErrorStore().surfaceMissingNodes
       ).toHaveBeenLastCalledWith(['MissingNodeB'])
-      expect(
-        useMissingNodesErrorStore().missingNodesError?.nodeTypes
-      ).toStrictEqual(['MissingNodeB'])
       expect(workflow2.pendingWarnings).not.toBeNull()
-
-      await service.openWorkflow(workflow1, { force: true })
-      expect(
-        useMissingNodesErrorStore().missingNodesError?.nodeTypes
-      ).toStrictEqual(['MissingNodeA'])
-
-      await service.openWorkflow(workflow2, { force: true })
-      expect(
-        useMissingNodesErrorStore().missingNodesError?.nodeTypes
-      ).toStrictEqual(['MissingNodeB'])
     })
 
     it('should restore cached warnings silently when refocusing a tab', async () => {

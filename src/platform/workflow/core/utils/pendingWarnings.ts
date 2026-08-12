@@ -13,7 +13,7 @@ function getMissingNodeKey(node: MissingNodeType): string {
   return node.type
 }
 
-export function replacePendingMissingNodeTypes(
+export function dedupeMissingNodeTypes(
   types: readonly MissingNodeType[]
 ): MissingNodeType[] {
   const seen = new Set<string>()
@@ -25,22 +25,12 @@ export function replacePendingMissingNodeTypes(
   })
 }
 
-export function appendPendingMissingNodeTypes(
-  currentTypes: readonly MissingNodeType[] | undefined,
-  typesToAppend: readonly MissingNodeType[]
-): MissingNodeType[] {
-  return replacePendingMissingNodeTypes([
-    ...(currentTypes ?? []),
-    ...typesToAppend
-  ])
-}
-
 export function removePendingMissingNodeTypesByType(
   currentTypes: readonly MissingNodeType[] | undefined,
   typesToRemove: readonly string[]
 ): MissingNodeType[] {
   const removeSet = new Set(typesToRemove)
-  return replacePendingMissingNodeTypes(
+  return dedupeMissingNodeTypes(
     (currentTypes ?? []).filter((node) => {
       const nodeType = typeof node === 'string' ? node : node.type
       return !removeSet.has(nodeType)
@@ -52,9 +42,10 @@ export function removePendingMissingNodeTypesByNodeId(
   currentTypes: readonly MissingNodeType[] | undefined,
   nodeId: string
 ): MissingNodeType[] {
-  return replacePendingMissingNodeTypes(
+  return dedupeMissingNodeTypes(
     (currentTypes ?? []).filter(
-      (node) => typeof node === 'string' || node.nodeId !== nodeId
+      (node) =>
+        typeof node === 'string' || String(node.nodeId) !== String(nodeId)
     )
   )
 }
@@ -63,7 +54,7 @@ export function removePendingMissingNodeTypesByExecutionIdPrefix(
   currentTypes: readonly MissingNodeType[] | undefined,
   prefix: string
 ): MissingNodeType[] {
-  return replacePendingMissingNodeTypes(
+  return dedupeMissingNodeTypes(
     (currentTypes ?? []).filter((node) => {
       if (typeof node === 'string' || node.nodeId == null) return true
       return !String(node.nodeId).startsWith(prefix)

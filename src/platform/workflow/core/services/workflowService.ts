@@ -596,7 +596,7 @@ export const useWorkflowService = () => {
    */
   function showPendingWarnings(
     workflow?: ComfyWorkflow | null,
-    options?: { silent?: boolean; missingNodesOnly?: boolean }
+    options?: { silent?: boolean }
   ) {
     const wf = workflow ?? workflowStore.activeWorkflow
     if (!wf) return
@@ -611,13 +611,11 @@ export const useWorkflowService = () => {
     ) {
       useExecutionErrorStore().showErrorOverlay()
     }
-    if (!options?.missingNodesOnly) {
-      if (missingModelCandidates?.length) {
-        useMissingModelStore().setMissingModels(missingModelCandidates)
-      }
-      if (missingMediaCandidates?.length) {
-        useMissingMediaStore().setMissingMedia(missingMediaCandidates)
-      }
+    if (missingModelCandidates?.length) {
+      useMissingModelStore().setMissingModels(missingModelCandidates)
+    }
+    if (missingMediaCandidates?.length) {
+      useMissingMediaStore().setMissingMedia(missingMediaCandidates)
     }
 
     // Keep cache for future tab switches

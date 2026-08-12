@@ -4,6 +4,7 @@ import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
 import { t } from '@/i18n'
+import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import type { NodeReplacement } from '@/platform/nodeReplacement/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -232,7 +233,10 @@ function replaceWithMapping(
 
 function removeReplacedMissingNodeTypes(types: string[]): void {
   const activeWorkflow = useWorkflowStore().activeWorkflow
-  if (!activeWorkflow) return
+  if (!activeWorkflow) {
+    useMissingNodesErrorStore().removeMissingNodesByType(types)
+    return
+  }
 
   updatePendingWarnings(activeWorkflow, {
     missingNodeTypes: removePendingMissingNodeTypesByType(
@@ -240,10 +244,7 @@ function removeReplacedMissingNodeTypes(types: string[]): void {
       types
     )
   })
-  useWorkflowService().showPendingWarnings(activeWorkflow, {
-    silent: true,
-    missingNodesOnly: true
-  })
+  useWorkflowService().showPendingWarnings(activeWorkflow, { silent: true })
 }
 
 export function useNodeReplacement() {
@@ -354,7 +355,7 @@ export function useNodeReplacement() {
 
   /**
    * Replaces all nodes in a single swap group and removes successfully
-   * replaced types from the missing nodes error store.
+   * replaced types from pending warnings and rendered state.
    */
   function replaceGroup(group: ReplacementGroup): void {
     const replaced = replaceNodesInPlace(group.nodeTypes)
@@ -365,7 +366,7 @@ export function useNodeReplacement() {
 
   /**
    * Replaces every available node across all swap groups and removes
-   * the succeeded types from the missing nodes error store.
+   * the succeeded types from pending warnings and rendered state.
    */
   function replaceAllGroups(groups: ReplacementGroup[]): void {
     const allNodeTypes = groups.flatMap((g) => g.nodeTypes)
