@@ -1,6 +1,12 @@
 import '@testing-library/jest-dom/vitest'
-import { vi } from 'vitest'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
+import { beforeEach, vi } from 'vitest'
 import 'vue'
+
+beforeEach(() => {
+  setActivePinia(createTestingPinia({ stubActions: false }))
+})
 
 /**
  * Unit tests must never perform real network I/O.

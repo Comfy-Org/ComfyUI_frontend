@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -82,7 +80,6 @@ let rafCallbacks: FrameRequestCallback[] = []
 
 describe('useSubgraphNavigationStore - Viewport Persistence', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     rafCallbacks = []
     vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
       rafCallbacks.push(cb)

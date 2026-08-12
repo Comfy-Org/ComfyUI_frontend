@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp, defineComponent, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -186,7 +184,6 @@ describe('useWorkflowPersistenceV2', () => {
   }> = []
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     sessionStorage.clear()
     settingMocks.persistRef!.value = true
     settingMocks.values = {}

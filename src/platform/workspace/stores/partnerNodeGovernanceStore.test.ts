@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -79,7 +77,6 @@ describe('partnerNodeGovernanceStore', () => {
   let store: ReturnType<typeof usePartnerNodeGovernanceStore> | undefined
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     mockUpdatePartnerNodePolicy.mockReset()
     mockFlags.partnerNodeGovernanceEnabled = true
     mockGetPartnerProviders.mockResolvedValue(providers)
