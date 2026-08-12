@@ -55,7 +55,7 @@ test.describe('Preview as Text node', () => {
       await comfyPage.menu.topbar.newWorkflowButton.click()
       await comfyPage.searchBoxV2.addNode('Preview as Text')
       const node = await comfyPage.vueNodes.getFixtureByTitle('Preview as Text')
-      const preview = node.root.locator('textarea')
+      const preview = comfyPage.vueNodes.getWidgetByName('Preview as Text', 'preview_text')
 
       await test.step('node previews execution result', async () => {
         const id = await comfyPage.vueNodes.getNodeIdByTitle('Preview as Text')
@@ -84,8 +84,7 @@ test.describe('Preview as Text node', () => {
 
       await comfyPage.menu.topbar.newWorkflowButton.click()
       await comfyPage.searchBoxV2.addNode('Preview as Text')
-      const node = await comfyPage.vueNodes.getFixtureByTitle('Preview as Text')
-      const preview = node.root.locator('textarea')
+      const preview = comfyPage.vueNodes.getWidgetByName('Preview as Text', 'preview_text')
       const id = await comfyPage.vueNodes.getNodeIdByTitle('Preview as Text')
 
       const payloads = [
