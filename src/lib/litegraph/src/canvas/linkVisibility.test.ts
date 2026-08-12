@@ -90,9 +90,10 @@ describe('link visibility mutations', () => {
     const hidden = graph.serialize()
 
     expect(hidden).not.toEqual(before)
-    expect(hidden.extra?.linkExtensions).toEqual([
-      { id: link.id, hidden: true }
-    ])
+    expect(hidden.extra).not.toHaveProperty('linkExtensions')
+    expect(hidden.extra?.linkVisibility).toEqual({
+      [String(link.id)]: { hidden: true }
+    })
 
     showLink(host, link)
 

@@ -72,7 +72,18 @@ describe('LLink visibility serialization', () => {
     expect(target.label).toBe('Latent')
   })
 
-  it('round-trips 0.4 link extensions without reroutes', () => {
+  it('clears stale visibility fields when configured from a 0.4 array', () => {
+    const link = makeLink()
+    link.hidden = true
+    link.label = 'Latent'
+
+    link.configure(makeLink(2).serialize())
+
+    expect(link.hidden).toBeUndefined()
+    expect(link.label).toBeUndefined()
+  })
+
+  it('round-trips 0.4 link visibility without reroutes', () => {
     const graph = new LGraph()
     const link = makeLink()
     link.hidden = true
@@ -82,9 +93,10 @@ describe('LLink visibility serialization', () => {
     const serialized = graph.serialize()
 
     expect(serialized.extra?.reroutes).toBeUndefined()
-    expect(serialized.extra?.linkExtensions).toEqual([
-      { id: link.id, hidden: true, label: 'Backbone' }
-    ])
+    expect(serialized.extra).not.toHaveProperty('linkExtensions')
+    expect(serialized.extra?.linkVisibility).toEqual({
+      [String(link.id)]: { hidden: true, label: 'Backbone' }
+    })
 
     const restored = new LGraph()
     restored.configure(structuredClone(serialized))

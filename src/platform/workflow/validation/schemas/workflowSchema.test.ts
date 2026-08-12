@@ -219,18 +219,30 @@ describe('parseComfyWorkflow', () => {
     await expect(validateComfyWorkflow(workflow)).resolves.not.toBeNull()
   })
 
-  it('validates 0.4 link visibility extensions without a reroute', async () => {
+  it('validates 0.4 link visibility without a reroute', async () => {
     const workflow = JSON.parse(JSON.stringify(defaultGraph))
     workflow.extra = {
       ...workflow.extra,
-      linkExtensions: [{ id: 1, hidden: true, label: 'Preview' }]
+      linkVisibility: {
+        '1': { hidden: true, label: 'Preview' }
+      }
     }
 
     const validated = await validateComfyWorkflow(workflow)
 
-    expect(validated?.extra?.linkExtensions).toEqual([
-      { id: 1, hidden: true, label: 'Preview' }
-    ])
+    expect(validated?.extra?.linkVisibility).toEqual({
+      '1': { hidden: true, label: 'Preview' }
+    })
+  })
+
+  it('requires reroute parent IDs in 0.4 link extensions', async () => {
+    const workflow = JSON.parse(JSON.stringify(defaultGraph))
+    workflow.extra = {
+      ...workflow.extra,
+      linkExtensions: [{ id: 1, hidden: true }]
+    }
+
+    await expect(validateComfyWorkflow(workflow)).resolves.toBeNull()
   })
 
   it('validates visibility fields on schema 1 link objects', async () => {

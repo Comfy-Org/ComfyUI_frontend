@@ -374,6 +374,8 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
       this.target_id = toNodeId(o[3])
       this.target_slot = o[4]
       this.type = o[5]
+      this.hidden = undefined
+      this.label = undefined
     } else {
       const link = o instanceof LLink ? o : LLink.create(o)
       this.id = link.id

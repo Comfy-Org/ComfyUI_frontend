@@ -168,12 +168,8 @@ export interface GraphAddOptions {
 
 export interface LGraphExtra extends Dictionary<unknown> {
   reroutes?: SerialisableReroute[]
-  linkExtensions?: {
-    id: LinkId
-    parentId?: RerouteId
-    hidden?: boolean
-    label?: string
-  }[]
+  linkExtensions?: { id: LinkId; parentId: RerouteId | undefined }[]
+  linkVisibility?: Record<string, { hidden?: boolean; label?: string }>
   ds?: DragAndScaleState
   workflowRendererVersion?: RendererType
 }
@@ -2351,18 +2347,26 @@ export class LGraph
     const linkArray = [...this._links.values()]
     const links = linkArray.map((x) => x.serialize())
 
-    const linkExtensions = linkArray
-      .filter(
-        (link) =>
-          link.parentId !== undefined || link.hidden || link.label !== undefined
-      )
-      .map((link) => ({
-        id: link.id,
-        ...(link.parentId !== undefined && { parentId: link.parentId }),
-        ...(link.hidden && { hidden: true }),
-        ...(link.label !== undefined && { label: link.label })
-      }))
-    extra.linkExtensions = linkExtensions.length ? linkExtensions : undefined
+    if (reroutes?.length) {
+      extra.linkExtensions = linkArray
+        .filter((link) => link.parentId !== undefined)
+        .map((link) => ({ id: link.id, parentId: link.parentId }))
+    }
+
+    const linkVisibility = Object.fromEntries(
+      linkArray
+        .filter((link) => link.hidden || link.label !== undefined)
+        .map((link) => [
+          String(link.id),
+          {
+            ...(link.hidden && { hidden: true }),
+            ...(link.label !== undefined && { label: link.label })
+          }
+        ])
+    )
+    if (Object.keys(linkVisibility).length) {
+      extra.linkVisibility = linkVisibility
+    }
 
     extra.reroutes = reroutes?.length ? reroutes : undefined
     return {
@@ -2474,6 +2478,7 @@ export class LGraph
 
     // Ensure auto-generated serialisation data is removed from extra
     delete this.extra.linkExtensions
+    delete this.extra.linkVisibility
   }
 
   /**
@@ -2520,11 +2525,15 @@ export class LGraph
         if (Array.isArray(extra?.linkExtensions)) {
           for (const linkEx of extra.linkExtensions) {
             const link = this._links.get(linkEx.id)
-            if (!link) continue
-            link.parentId = linkEx.parentId
-            link.hidden = linkEx.hidden
-            link.label = linkEx.label
+            if (link) link.parentId = linkEx.parentId
           }
+        }
+
+        for (const link of this._links.values()) {
+          const visibility = extra?.linkVisibility?.[String(link.id)]
+          if (!visibility) continue
+          link.hidden = visibility.hidden
+          link.label = visibility.label
         }
 
         // Reroutes

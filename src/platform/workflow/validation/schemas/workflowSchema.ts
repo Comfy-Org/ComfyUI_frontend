@@ -73,10 +73,16 @@ const zComfyLink = z.tuple([
   zDataType // Data type
 ])
 
+/** Extension to 0.4 schema (links as arrays): parent reroute ID */
 const zComfyLinkExtension = z
   .object({
     id: z.number(),
-    parentId: z.number().optional(),
+    parentId: z.number()
+  })
+  .passthrough()
+
+const zComfyLinkVisibility = z
+  .object({
     hidden: z.boolean().optional(),
     label: z.string().optional()
   })
@@ -289,6 +295,7 @@ const zExtra = z
     ds: zDS.optional(),
     frontendVersion: z.string().optional(),
     linkExtensions: z.array(zComfyLinkExtension).optional(),
+    linkVisibility: z.record(z.string(), zComfyLinkVisibility).optional(),
     reroutes: z.array(zReroute).optional(),
     workflowRendererVersion: zRendererType.optional(),
     BlueprintDescription: z.string().optional(),
