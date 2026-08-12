@@ -121,7 +121,7 @@ export function useCanvasInteractions() {
    * Forwards an event to the LiteGraph canvas
    */
   const forwardEventToCanvas = (
-    event: WheelEvent | PointerEvent | MouseEvent
+    event: WheelEvent | PointerEvent | MouseEvent | KeyboardEvent
   ) => {
     // Honor wheel capture only when the element is focused
     if (event instanceof WheelEvent && !shouldForwardWheelEvent(event)) return
@@ -152,6 +152,7 @@ export function useCanvasInteractions() {
     const EventConstructor = event.constructor as
       | typeof MouseEvent
       | typeof PointerEvent
+      | typeof KeyboardEvent
     const newEvent = new EventConstructor(event.type, event)
     canvasEl.dispatchEvent(newEvent)
   }
