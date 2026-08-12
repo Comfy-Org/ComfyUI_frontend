@@ -38,6 +38,18 @@ jobs:
       - name: Run Vitest tests with coverage
         run: pnpm test:coverage
 
+      - name: Generate critical unit coverage artifact
+        run: pnpm coverage:critical:extract
+
+      - name: Upload critical unit coverage artifact
+        if: github.event_name != 'merge_group'
+        uses: actions/upload-artifact@v6
+        with:
+          name: critical-unit-coverage-${{ github.sha }}
+          path: coverage/critical-unit-coverage.json
+          retention-days: 30
+          if-no-files-found: error
+
       - name: Upload unit coverage artifact
         if: always() && github.event_name == 'push'
         uses: actions/upload-artifact@v6
@@ -55,3 +67,79 @@ jobs:
           flags: unit
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
+
+  critical-unit-regression:
+    needs: test
+    if: ${{ github.event_name == 'pull_request' && needs.test.result == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Download head critical unit coverage
+        uses: actions/download-artifact@v7
+        with:
+          name: critical-unit-coverage-${{ github.sha }}
+          path: temp/head-critical-coverage
+
+      - name: Find base unit coverage run
+        id: find-base-unit
+        uses: ./.github/actions/find-workflow-run
+        with:
+          workflow-id: ci-tests-unit.yaml
+          head-sha: ${{ github.event.pull_request.base.sha }}
+          event: push
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Require base unit coverage run
+        if: steps.find-base-unit.outputs.status != 'ready'
+        run: |
+          echo "Critical unit baseline artifact unavailable for base ${{ github.event.pull_request.base.sha }}." >> "$GITHUB_STEP_SUMMARY"
+          echo "Status: ${{ steps.find-base-unit.outputs.status }}" >> "$GITHUB_STEP_SUMMARY"
+          exit 1
+
+      - name: Download base critical unit coverage
+        continue-on-error: true
+        uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12
+        with:
+          name: critical-unit-coverage-${{ github.event.pull_request.base.sha }}
+          run_id: ${{ steps.find-base-unit.outputs.run-id }}
+          path: temp/base-critical-coverage
+          if_no_artifact_found: warn
+
+      - name: Download base unit LCOV fallback
+        continue-on-error: true
+        uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12
+        with:
+          name: unit-coverage
+          run_id: ${{ steps.find-base-unit.outputs.run-id }}
+          path: temp/base-unit-coverage
+          if_no_artifact_found: warn
+
+      - name: Prepare base critical unit coverage fallback
+        run: |
+          if [ -f temp/base-critical-coverage/critical-unit-coverage.json ]; then
+            exit 0
+          fi
+
+          if [ ! -f temp/base-unit-coverage/lcov.info ]; then
+            echo "Critical unit baseline artifact missing for base ${{ github.event.pull_request.base.sha }}." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+          pnpm coverage:critical:extract \
+            --input temp/base-unit-coverage/lcov.info \
+            --output temp/base-critical-coverage/critical-unit-coverage.json \
+            --sha=${{ github.event.pull_request.base.sha }}
+
+      - name: Compare critical unit coverage
+        run: >
+          pnpm coverage:critical:compare
+          --base temp/base-critical-coverage/critical-unit-coverage.json
+          --head temp/head-critical-coverage/critical-unit-coverage.json
