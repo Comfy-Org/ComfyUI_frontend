@@ -1,3 +1,5 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
@@ -460,7 +462,6 @@ describe('assetMetadataUtils', () => {
       ...mockAsset,
       id: 'oss-asset-id',
       name: 'sunset.png',
-      hash: null,
       display_name: undefined
     }
 
@@ -605,11 +606,12 @@ describe('assetMetadataUtils', () => {
 })
 
 describe('getAssetCategories', () => {
-  const asset = (tags: string[]): AssetItem => ({
-    id: 'a',
-    name: 'model.safetensors',
-    tags
-  })
+  const asset = (tags: string[]): AssetItem =>
+    fromPartial({
+      id: 'a',
+      name: 'model.safetensors',
+      tags
+    })
 
   it('uses model_type:* values as the group and disregards other tags in model_type mode', () => {
     expect(
@@ -649,11 +651,12 @@ describe('getAssetCategories', () => {
 })
 
 describe('getPrimaryCategoryTag', () => {
-  const asset = (tags: string[]): AssetItem => ({
-    id: 'a',
-    name: 'model.safetensors',
-    tags
-  })
+  const asset = (tags: string[]): AssetItem =>
+    fromPartial({
+      id: 'a',
+      name: 'model.safetensors',
+      tags
+    })
 
   it('uses the model_type value a covered asset groups under', () => {
     expect(
@@ -681,11 +684,12 @@ describe('getPrimaryCategoryTag', () => {
 })
 
 describe('getAssetNodeCategoryCandidates', () => {
-  const asset = (tags: string[]): AssetItem => ({
-    id: 'a',
-    name: 'model.safetensors',
-    tags
-  })
+  const asset = (tags: string[]): AssetItem =>
+    fromPartial({
+      id: 'a',
+      name: 'model.safetensors',
+      tags
+    })
 
   it('orders the most specific (deepest) tag ahead of a flat model_type value', () => {
     expect(
@@ -764,11 +768,12 @@ describe('getAssetNodeCategoryCandidates', () => {
 })
 
 describe('getAssetTypeBadges', () => {
-  const asset = (tags: string[]): AssetItem => ({
-    id: 'a',
-    name: 'model.safetensors',
-    tags
-  })
+  const asset = (tags: string[]): AssetItem =>
+    fromPartial({
+      id: 'a',
+      name: 'model.safetensors',
+      tags
+    })
 
   it('strips the model_type: prefix in model_type mode (no raw leak)', () => {
     expect(
@@ -839,11 +844,12 @@ describe('stripModelTypePrefix', () => {
 })
 
 describe('reserved tag mirrors', () => {
-  const asset = (tags: string[]): AssetItem => ({
-    id: 'a',
-    name: 'model.safetensors',
-    tags
-  })
+  const asset = (tags: string[]): AssetItem =>
+    fromPartial({
+      id: 'a',
+      name: 'model.safetensors',
+      tags
+    })
 
   it("treats assetService's canonical reserved tags as reserved (locals must not drift)", () => {
     expect(getAssetCategories(asset([MODELS_TAG, 'x']), false)).toEqual(['x'])
@@ -874,11 +880,12 @@ describe('toModelTypeTag', () => {
 })
 
 describe('getEditableModelType', () => {
-  const asset = (tags: string[]): AssetItem => ({
-    id: 'a',
-    name: 'model.safetensors',
-    tags
-  })
+  const asset = (tags: string[]): AssetItem =>
+    fromPartial({
+      id: 'a',
+      name: 'model.safetensors',
+      tags
+    })
 
   it('prefers the model_type value over a distinct bare tag in model_type mode', () => {
     expect(
@@ -931,11 +938,12 @@ describe('getEditableModelType', () => {
 })
 
 describe('buildModelTypeTagUpdate', () => {
-  const asset = (tags: string[]): AssetItem => ({
-    id: 'a',
-    name: 'model.safetensors',
-    tags
-  })
+  const asset = (tags: string[]): AssetItem =>
+    fromPartial({
+      id: 'a',
+      name: 'model.safetensors',
+      tags
+    })
 
   it('swaps the bare subtype tag when mode is off', () => {
     expect(
@@ -1020,11 +1028,12 @@ describe('buildModelTypeTagUpdate', () => {
 })
 
 describe('resolveModelTypeTagUpdate', () => {
-  const asset = (tags: string[]): AssetItem => ({
-    id: 'a',
-    name: 'model.safetensors',
-    tags
-  })
+  const asset = (tags: string[]): AssetItem =>
+    fromPartial({
+      id: 'a',
+      name: 'model.safetensors',
+      tags
+    })
 
   it('returns null when the model type is not editable', () => {
     expect(

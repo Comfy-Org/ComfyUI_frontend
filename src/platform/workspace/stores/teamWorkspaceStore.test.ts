@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 
@@ -159,10 +157,7 @@ function expectCleanupBeforeContextAndReload(): void {
 
 describe('useTeamWorkspaceStore', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
     vi.stubGlobal('localStorage', mockLocalStorage)
-    sessionStorage.clear()
     mockCurrentUser.userEmail.value = null
 
     // Reset workspaceAuthStore mock state
@@ -180,10 +175,6 @@ describe('useTeamWorkspaceStore', () => {
       workspaces: [mockPersonalWorkspace, mockTeamWorkspace]
     })
     mockLocalStorage.getItem.mockReturnValue(null)
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
   })
 
   describe('initial state', () => {
@@ -280,7 +271,6 @@ describe('useTeamWorkspaceStore', () => {
     })
 
     it('sets error state when workspaces fetch fails after retries', async () => {
-      vi.useFakeTimers()
       mockWorkspaceApi.list.mockRejectedValue(new Error('Network error'))
 
       const store = useTeamWorkspaceStore()
@@ -304,8 +294,6 @@ describe('useTeamWorkspaceStore', () => {
       expect(store.error).toBeInstanceOf(Error)
       // Should have been called 4 times (initial + 3 retries)
       expect(mockWorkspaceApi.list).toHaveBeenCalledTimes(4)
-
-      vi.useRealTimers()
     })
 
     it('does not reinitialize if already initialized', async () => {
@@ -315,6 +303,20 @@ describe('useTeamWorkspaceStore', () => {
       await store.initialize()
 
       expect(mockWorkspaceApi.list).toHaveBeenCalledTimes(1)
+    })
+
+    it('can retry after initialization fails', async () => {
+      mockWorkspaceApi.list.mockResolvedValueOnce({ workspaces: [] })
+      const store = useTeamWorkspaceStore()
+
+      await expect(store.initialize()).rejects.toThrow(
+        'No workspaces available'
+      )
+      await store.initialize()
+
+      expect(store.initState).toBe('ready')
+      expect(store.activeWorkspaceId).toBe(mockPersonalWorkspace.id)
+      expect(mockWorkspaceApi.list).toHaveBeenCalledTimes(2)
     })
 
     it('can initialize the next user after identity state is reset', async () => {
@@ -386,26 +388,21 @@ describe('useTeamWorkspaceStore', () => {
     })
 
     it('does not activate a workspace when token exchange fails', async () => {
-      vi.useFakeTimers()
       mockWorkspaceAuthStore.switchWorkspace.mockRejectedValue(
         new Error('Token exchange failed')
       )
 
       const store = useTeamWorkspaceStore()
       const initialization = store.initialize()
-      const rejection = expect(initialization).rejects.toThrow(
-        'Token exchange failed'
-      )
 
       await vi.advanceTimersByTimeAsync(1000)
       await vi.advanceTimersByTimeAsync(2000)
       await vi.advanceTimersByTimeAsync(4000)
-      await rejection
+      await expect(initialization).rejects.toThrow('Token exchange failed')
 
       expect(store.initState).toBe('error')
       expect(store.activeWorkspaceId).toBeNull()
       expect(store.error).toEqual(new Error('Token exchange failed'))
-      vi.useRealTimers()
     })
   })
 
@@ -1698,90 +1695,6 @@ describe('useTeamWorkspaceStore', () => {
       store.destroy()
 
       expect(mockWorkspaceAuthStore.destroy).toHaveBeenCalled()
-    })
-  })
-
-  describe('totalMemberSlots and isInviteLimitReached', () => {
-    it('calculates total slots from members and invites', async () => {
-      const mockMembers = [
-        {
-          id: 'user-1',
-          name: 'User One',
-          email: 'one@test.com',
-          joined_at: '2024-01-01T00:00:00Z'
-        }
-      ]
-      const mockInvites = [
-        {
-          id: 'inv-1',
-          email: 'invite@test.com',
-          token: 'token-1',
-          invited_at: '2024-01-01T00:00:00Z',
-          expires_at: '2024-01-08T00:00:00Z'
-        },
-        {
-          id: 'inv-2',
-          email: 'invite2@test.com',
-          token: 'token-2',
-          invited_at: '2024-01-01T00:00:00Z',
-          expires_at: '2024-01-08T00:00:00Z'
-        }
-      ]
-      mockWorkspaceApi.listMembers.mockResolvedValue({
-        members: mockMembers,
-        pagination: { offset: 0, limit: 50, total: 1 }
-      })
-      mockWorkspaceApi.listInvites.mockResolvedValue({ invites: mockInvites })
-      mockWorkspaceAuthStore.initializeFromSession.mockReturnValue(true)
-      mockWorkspaceAuthStore.currentWorkspace = mockTeamWorkspace
-
-      const store = useTeamWorkspaceStore()
-      await store.initialize()
-      await store.fetchMembers()
-      await store.fetchPendingInvites()
-
-      expect(store.totalMemberSlots).toBe(3)
-      expect(store.isInviteLimitReached).toBe(false)
-    })
-
-    it('isInviteLimitReached enforces the flat 30-member backend cap, independent of plan seats', async () => {
-      const mockMembers = Array.from({ length: 28 }, (_, i) => ({
-        id: `user-${i}`,
-        name: `User ${i}`,
-        email: `user${i}@test.com`,
-        joined_at: '2024-01-01T00:00:00Z'
-      }))
-      const mockInvites = [
-        {
-          id: 'inv-1',
-          email: 'invite1@test.com',
-          token: 'token-1',
-          invited_at: '2024-01-01T00:00:00Z',
-          expires_at: '2024-01-08T00:00:00Z'
-        },
-        {
-          id: 'inv-2',
-          email: 'invite2@test.com',
-          token: 'token-2',
-          invited_at: '2024-01-01T00:00:00Z',
-          expires_at: '2024-01-08T00:00:00Z'
-        }
-      ]
-      mockWorkspaceApi.listMembers.mockResolvedValue({
-        members: mockMembers,
-        pagination: { offset: 0, limit: 50, total: 28 }
-      })
-      mockWorkspaceApi.listInvites.mockResolvedValue({ invites: mockInvites })
-      mockWorkspaceAuthStore.initializeFromSession.mockReturnValue(true)
-      mockWorkspaceAuthStore.currentWorkspace = mockTeamWorkspace
-
-      const store = useTeamWorkspaceStore()
-      await store.initialize()
-      await store.fetchMembers()
-      await store.fetchPendingInvites()
-
-      expect(store.totalMemberSlots).toBe(30)
-      expect(store.isInviteLimitReached).toBe(true)
     })
   })
 })

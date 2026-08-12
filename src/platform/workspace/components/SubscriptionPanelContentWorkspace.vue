@@ -108,7 +108,10 @@
               </div>
               <div class="flex flex-wrap gap-2 md:ml-auto">
                 <Button
-                  v-if="showInactiveTeamSubscription"
+                  v-if="
+                    permissions.canManageSubscription &&
+                    (isCloud || showInactiveTeamSubscription)
+                  "
                   size="lg"
                   variant="secondary"
                   class="rounded-lg bg-interface-menu-component-surface-selected px-4 text-sm font-normal text-text-primary"
@@ -174,6 +177,22 @@
               </div>
               <div class="flex flex-wrap gap-2 md:ml-auto">
                 <Button
+                  v-if="
+                    isCloud &&
+                    permissions.canManageSubscription &&
+                    (billingType === 'workspace' ||
+                      (isSubscriptionEnded &&
+                        !isFreeTierPlan &&
+                        subscription !== null))
+                  "
+                  size="lg"
+                  variant="secondary"
+                  class="rounded-lg bg-interface-menu-component-surface-selected px-4 text-sm font-normal text-text-primary"
+                  @click="manageSubscription"
+                >
+                  {{ $t('subscription.billingAndInvoices') }}
+                </Button>
+                <Button
                   variant="primary"
                   size="lg"
                   class="rounded-lg px-4 text-sm font-normal"
@@ -223,17 +242,26 @@
               </div>
 
               <div
-                v-if="isActiveSubscription"
+                v-if="canAccessSubscriptionFeatures"
                 class="flex flex-wrap gap-2 md:ml-auto"
               >
                 <Button
-                  v-if="!isFreeTierPlan && permissions.canManageSubscription"
+                  v-if="
+                    permissions.canManageSubscription &&
+                    (isCloud || !isFreeTierPlan)
+                  "
                   size="lg"
                   variant="secondary"
                   class="rounded-lg bg-interface-menu-component-surface-selected px-4 text-sm font-normal text-text-primary"
                   @click="manageSubscription"
                 >
-                  {{ $t('subscription.manageBilling') }}
+                  {{
+                    $t(
+                      isCloud
+                        ? 'subscription.billingAndInvoices'
+                        : 'subscription.manageBilling'
+                    )
+                  }}
                 </Button>
                 <Button
                   v-if="
@@ -295,7 +323,7 @@
 
           <div
             v-if="
-              isActiveSubscription ||
+              canAccessSubscriptionFeatures ||
               isPersonalFree ||
               showInactiveTeamSubscription
             "
@@ -392,6 +420,7 @@ import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables
 import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
 import type { TierBenefit } from '@/platform/cloud/subscription/utils/tierBenefits'
 import { getCommonTierBenefits } from '@/platform/cloud/subscription/utils/tierBenefits'
+import { isCloud } from '@/platform/distribution/types'
 import { useResubscribe } from '@/platform/workspace/composables/useResubscribe'
 import { useWorkspaceMenuItems } from '@/platform/workspace/composables/useWorkspaceMenuItems'
 import { useWorkspacePlanPricing } from '@/platform/workspace/composables/useWorkspacePlanPricing'
@@ -423,7 +452,8 @@ function openSubscriptionVerification() {
 }
 
 const {
-  isActiveSubscription,
+  type: billingType,
+  canAccessSubscriptionFeatures,
   isFreeTier: isFreeTierPlan,
   isTeamPlan,
   subscription,
@@ -446,14 +476,14 @@ const { menuEntries } = useWorkspaceMenuItems()
 const isTerminalPersonalSubscription = computed(
   () =>
     isInPersonalWorkspace.value &&
-    !isActiveSubscription.value &&
+    !canAccessSubscriptionFeatures.value &&
     billingStatus.value === 'inactive'
 )
 
 const isSubscriptionEnded = computed(
   () =>
     subscriptionStatus.value === 'ended' ||
-    (isSubscriptionCancelled.value && !isActiveSubscription.value) ||
+    (isSubscriptionCancelled.value && !canAccessSubscriptionFeatures.value) ||
     isTerminalPersonalSubscription.value
 )
 
@@ -469,7 +499,7 @@ const showSubscribePrompt = computed(() => {
     (subscription.value.planSlug || subscription.value.tier)
   )
     return false
-  if (isInPersonalWorkspace.value) return !isActiveSubscription.value
+  if (isInPersonalWorkspace.value) return !canAccessSubscriptionFeatures.value
   return !isWorkspaceSubscribed.value
 })
 
@@ -491,13 +521,13 @@ const isPersonalFree = computed(
 )
 
 const isTeamActive = computed(
-  () => isTeamPlan.value && isActiveSubscription.value
+  () => isTeamPlan.value && canAccessSubscriptionFeatures.value
 )
 
 const isMemberView = computed(
   () =>
     !permissions.value.canManageSubscription &&
-    !isActiveSubscription.value &&
+    !canAccessSubscriptionFeatures.value &&
     !isWorkspaceSubscribed.value
 )
 
@@ -575,7 +605,8 @@ const subscriptionStateCardDescription = computed(() => {
 })
 
 const planDateDisplay = computed(() => {
-  if (!isActiveSubscription.value || isSubscriptionEnded.value) return ''
+  if (!canAccessSubscriptionFeatures.value || isSubscriptionEnded.value)
+    return ''
   if (isSubscriptionCancelled.value) {
     return formattedEndDate.value
       ? t('subscription.endsOnDate', { date: formattedEndDate.value })

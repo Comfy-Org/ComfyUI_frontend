@@ -17,7 +17,7 @@
         pt:root:id="comfy-org-sign-up-email"
         pt:root:name="email"
         pt:root:autocomplete="email"
-        class="h-10"
+        :class="fieldClass"
         type="email"
         :placeholder="t('auth.signup.emailPlaceholder')"
         :invalid="$field.invalid"
@@ -27,7 +27,7 @@
       }}</small>
     </FormField>
 
-    <PasswordFields />
+    <PasswordFields :field-class="fieldClass" />
 
     <TurnstileWidget
       v-if="turnstileEnabled"
@@ -46,12 +46,12 @@
       {{ t('auth.turnstile.submitBlockedHint') }}
     </small>
 
-    <!-- Submit Button -->
-    <ProgressSpinner v-if="loading" class="mx-auto size-8" />
     <Button
-      v-else
       type="submit"
-      class="mt-4 h-10 font-medium"
+      :variant="submitVariant"
+      :size="submitSize"
+      :class="cn('mt-4', submitClass)"
+      :loading="loading"
       :disabled="!$form.valid || waitingForTurnstile"
       :aria-describedby="
         waitingForTurnstile ? 'comfy-org-sign-up-turnstile-hint' : undefined
@@ -68,11 +68,14 @@ import { Form, FormField } from '@primevue/forms'
 import { zodResolver } from '@primevue/forms/resolvers/zod'
 import { useThrottleFn } from '@vueuse/core'
 import InputText from 'primevue/inputtext'
-import ProgressSpinner from 'primevue/progressspinner'
 import { computed, useTemplateRef } from 'vue'
+import type { HTMLAttributes } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
 import Button from '@/components/ui/button/Button.vue'
+import type { ButtonVariants } from '@/components/ui/button/button.variants'
 import { useTurnstile, useTurnstileGate } from '@/composables/auth/useTurnstile'
 import { signUpSchema } from '@/schemas/signInSchema'
 import type { SignUpData } from '@/schemas/signInSchema'
@@ -80,6 +83,18 @@ import { useAuthStore } from '@/stores/authStore'
 
 import PasswordFields from './PasswordFields.vue'
 import TurnstileWidget from './TurnstileWidget.vue'
+
+const {
+  fieldClass = 'h-10',
+  submitClass,
+  submitVariant = 'secondary',
+  submitSize = 'lg'
+} = defineProps<{
+  fieldClass?: HTMLAttributes['class']
+  submitClass?: HTMLAttributes['class']
+  submitVariant?: ButtonVariants['variant']
+  submitSize?: ButtonVariants['size']
+}>()
 
 const { t } = useI18n()
 const authStore = useAuthStore()
