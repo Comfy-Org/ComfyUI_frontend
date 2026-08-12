@@ -45,6 +45,15 @@ export type OutputResolution =
 export interface ResolvedNodeView {
   readonly id: string
   readonly type: string
+  /**
+   * The node's own properties, frozen.
+   *
+   * A broadcaster keeps its per-node opt-in here — cg-use-everywhere reads
+   * `properties.ue_properties` to decide what it may feed. Candidate inputs
+   * already carry `nodeProperties`, so without this a supplier could read
+   * every node's configuration except its own.
+   */
+  readonly properties: Readonly<Record<string, unknown>>
   widgetValue(name: string): WidgetValue | undefined
   input(ref: string | number): InputRef | undefined
 }
@@ -75,6 +84,7 @@ function viewOf(graph: LGraph, nodeId: string): ResolvedNodeView | undefined {
   return {
     id: String(node.id),
     type: node.type ?? '',
+    properties: Object.freeze({ ...(node.properties ?? {}) }),
     widgetValue: (name) =>
       node.widgets?.find((w) => w.name === name)?.value as
         | WidgetValue
@@ -245,7 +255,6 @@ export interface SuppliedEdge {
     | { readonly forwardInput: number }
 }
 
-/** @knipIgnoreUnusedButUsedByCustomNodes */
 export interface SupplyView {
   readonly self: ResolvedNodeView
   nodesOfType(type: string): readonly ResolvedNodeView[]

@@ -13,7 +13,7 @@ import type { Comfy } from './comfyApi'
 import { createDefRegistry, frontendResolverMap } from './defsRegistry'
 import type { DefRegistry } from './defsRegistry'
 import { resolveFrontendNodes, resolveSuppliedInputs } from './resolution'
-import type { Supplier, UnconnectedInput } from './resolution'
+import type { SupplyView,Supplier,UnconnectedInput } from './resolution'
 
 describe('frontend-node resolution', () => {
   let graph: LGraph
@@ -433,5 +433,69 @@ describe('supply-side resolution', () => {
     spawn('Broadcaster')
     spawn('Sink')
     expect(supply(new Map()).size).toBe(0)
+  })
+})
+
+describe('a supplier reading its own configuration', () => {
+  class Everywhere extends LGraphNode {
+    constructor() {
+      super('Anything Everywhere')
+    }
+  }
+
+  beforeEach(() => {
+    LiteGraph.registerNodeType('Anything Everywhere', Everywhere)
+  })
+  afterEach(() => LiteGraph.unregisterNodeType('Anything Everywhere'))
+
+  /** Runs a supplier over a graph holding one configured broadcaster. */
+  function supplierSees(
+    read: (view: SupplyView) => void,
+    properties: Record<string, unknown>
+  ) {
+    const graph = new LGraph()
+    const node = LiteGraph.createNode('Anything Everywhere')!
+    Object.assign(node.properties, properties)
+    graph.add(node)
+    resolveSuppliedInputs(
+      graph,
+      new Map([
+        [
+          'Anything Everywhere',
+          (view: SupplyView) => {
+            read(view)
+            return []
+          }
+        ]
+      ]),
+      new Map()
+    )
+  }
+
+  it('sees its own properties, not just other nodes', () => {
+    // A broadcaster keeps its per-node opt-in on itself. Candidate inputs
+    // already carry nodeProperties, so without this a supplier could read
+    // every node's configuration except its own.
+    let seen: unknown
+    supplierSees(
+      (view) => {
+        seen = view.self.properties['ue_properties']
+      },
+      { ue_properties: { group_restricted: true } }
+    )
+
+    expect(seen).toEqual({ group_restricted: true })
+  })
+
+  it('hands over a frozen copy, so a supplier cannot rewrite the node', () => {
+    let frozen: boolean | undefined
+    supplierSees(
+      (view) => {
+        frozen = Object.isFrozen(view.self.properties)
+      },
+      { ue_properties: { on: true } }
+    )
+
+    expect(frozen).toBe(true)
   })
 })
