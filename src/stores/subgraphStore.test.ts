@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -95,7 +93,6 @@ describe('useSubgraphStore', () => {
   beforeEach(() => {
     mockDistributionTypes.isCloud = false
     mockDistributionTypes.isDesktop = false
-    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useSubgraphStore()
   })
 

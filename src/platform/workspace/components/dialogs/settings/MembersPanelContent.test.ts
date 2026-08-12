@@ -1,6 +1,6 @@
-import { cleanup, render, screen, within } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Slots } from 'vue'
 import { computed, h, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -18,8 +18,6 @@ const mockMemberMenuItems = vi.fn(() => [])
 const mockShowTeamPlans = vi.fn()
 const mockToggleSort = vi.fn()
 const mockHandleInviteMember = vi.fn()
-
-afterEach(cleanup)
 
 const {
   mockMembers,

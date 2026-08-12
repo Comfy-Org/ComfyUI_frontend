@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { usePanAndZoom } from '@/composables/maskeditor/usePanAndZoom'
@@ -109,8 +107,6 @@ async function initComposable() {
 
 describe('usePanAndZoom', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-
     mockStore.canvasContainer = null
     mockStore.maskCanvas = null
     mockStore.rgbCanvas = null

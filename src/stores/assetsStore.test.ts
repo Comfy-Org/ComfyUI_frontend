@@ -205,7 +205,6 @@ describe('assetsStore - Refactored (Option A)', () => {
   })
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useAssetsStore()
   })
 
@@ -778,7 +777,6 @@ describe('assetsStore - Refactored (Option A)', () => {
 
 describe('assetsStore - Model Assets Cache (Cloud)', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     mockIsCloud.value = true
   })
 
@@ -1927,7 +1925,6 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
 
 describe('assetsStore - Model Assets Cache (non-cloud)', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     mockIsCloud.value = false
   })
 
@@ -1962,10 +1959,6 @@ describe('assetsStore - Model Assets Cache (non-cloud)', () => {
 })
 
 describe('assetsStore - Deletion State and Input Mapping', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   describe('setAssetDeleting / isAssetDeleting', () => {
     it('tracks per-asset deletion state and clears it on flip', () => {
       const store = useAssetsStore()
@@ -2052,10 +2045,6 @@ describe('assetsStore - Flat Output Assets (cloud-only)', () => {
     total: assets.length,
     has_more: hasMore,
     ...(nextCursor === undefined ? {} : { next_cursor: nextCursor })
-  })
-
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
   it('fetches the first page via getAssetsPageByTag with the output tag and page size', async () => {

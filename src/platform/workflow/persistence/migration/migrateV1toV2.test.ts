@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { hashPath } from '../base/hashUtil'
 import { readOpenPaths } from '../base/storageIO'
@@ -14,11 +14,6 @@ describe('migrateV1toV2', () => {
 
   beforeEach(() => {
     vi.resetModules()
-    sessionStorage.clear()
-  })
-
-  afterEach(() => {
-    sessionStorage.clear()
   })
 
   function setV1Data(
