@@ -522,6 +522,5 @@ test.describe('autoRun classifier', () => {
         )
       ).toBe(false)
     }
-
   })
 })
