@@ -13,7 +13,7 @@
 import type { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 
-import type { Bounds,NodeHandle } from './nodeHandle'
+import type { Bounds, NodeHandle } from './nodeHandle'
 
 export interface GroupHandle {
   readonly id: string
