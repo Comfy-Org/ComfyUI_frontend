@@ -5,10 +5,12 @@ import type {
 
 import { externalLinks } from '../config/routes'
 
-// Image-to-video is the LTX workflow people reach for first, so every "run LTX"
-// CTA opens that template on Cloud.
+// Image-to-video is the LTX workflow people reach for first, so the hero and the
+// free cards open that template on Cloud. The premium (pay-as-you-go) cards open
+// the partner-API first-last-frame template instead.
 const ltxLinks = {
-  cloudRun: 'https://cloud.comfy.org/?template=video_ltx2_5_i2v'
+  cloudRun: 'https://cloud.comfy.org/?template=video_ltx2_5_i2v',
+  cloudRunPremium: 'https://cloud.comfy.org/?template=api_ltx2_5_flf2v'
 } as const
 
 // LTX 2.5 clips, encoded to the site's web video profile (VP9 webm, 1200px wide,
@@ -136,7 +138,7 @@ export const ltxPage: ModelLaunchPage = {
           'zh-CN': '覆霜的宇航员仰望极光。'
         },
         media: media.astronaut,
-        href: ltxLinks.cloudRun
+        href: ltxLinks.cloudRunPremium
       },
       {
         id: 'horseman',
@@ -148,7 +150,7 @@ export const ltxPage: ModelLaunchPage = {
           'zh-CN': '身披长衣的骑手与马伫立云端，俯瞰地球。'
         },
         media: media.horseman,
-        href: ltxLinks.cloudRun
+        href: ltxLinks.cloudRunPremium
       }
     ]
   },
