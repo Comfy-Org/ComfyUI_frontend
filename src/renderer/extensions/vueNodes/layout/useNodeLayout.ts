@@ -17,6 +17,11 @@ export function useNodeLayout(nodeIdMaybe: MaybeRefOrGetter<NodeId>) {
   const mutations = useLayoutMutations(LayoutSource.Vue)
   const canvasStore = useCanvasStore()
 
+  const rootGraphIdAtMount = canvasStore.rootGraphId
+  const retained = rootGraphIdAtMount
+    ? layoutStore.retainNodeLayoutRef(rootGraphIdAtMount, nodeId)
+    : null
+
   const layout = computed(() => {
     const { rootGraphId } = canvasStore
     return rootGraphId
@@ -24,13 +29,7 @@ export function useNodeLayout(nodeIdMaybe: MaybeRefOrGetter<NodeId>) {
       : null
   })
 
-  const rootGraphIdAtMount = canvasStore.rootGraphId
-
-  onUnmounted(() => {
-    if (rootGraphIdAtMount) {
-      layoutStore.cleanupNodeRef(rootGraphIdAtMount, nodeId)
-    }
-  })
+  onUnmounted(() => retained?.release())
 
   // Computed properties for easy access
   const position = computed(() => layout.value?.position ?? { x: 0, y: 0 })

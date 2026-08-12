@@ -35,11 +35,13 @@ describe('useNodeLayout', () => {
 
   it('releases the original graph ref when workflow changes before unmount', () => {
     const { unmount } = render(NodeLayoutHost)
-    const cleanupNodeRef = vi.spyOn(layoutStore, 'cleanupNodeRef')
+    const retained = layoutStore.getNodeLayoutRef(FIRST_WORKFLOW, NODE)
 
     canvasStore.rootGraphId = SECOND_WORKFLOW
     unmount()
 
-    expect(cleanupNodeRef).toHaveBeenCalledWith(FIRST_WORKFLOW, NODE)
+    expect(layoutStore.getNodeLayoutRef(FIRST_WORKFLOW, NODE)).not.toBe(
+      retained
+    )
   })
 })

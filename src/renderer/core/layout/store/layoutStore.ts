@@ -168,6 +168,8 @@ class LayoutStoreImpl {
   // Node layout ref cache and trigger functions
   private nodeRefs = new Map<ScopedLayoutKey, ComputedRef<NodeLayout | null>>()
   private nodeTriggers = new Map<ScopedLayoutKey, () => void>()
+  // Live holders per node ref; the ref is shared, so only the last release drops it
+  private nodeRefHolders = new Map<ScopedLayoutKey, number>()
   private pendingGeometryGraphIds = new Set<UUID>()
   private geometryListeners = new Set<(graphIds: ReadonlySet<UUID>) => void>()
   private pendingGeometryChanges: ReadonlySet<UUID>[] = []
@@ -958,13 +960,38 @@ class LayoutStoreImpl {
   }
 
   /**
-   * Clean up refs and triggers for a node when its Vue component unmounts.
-   * This should be called from the component's onUnmounted hook.
+   * Retain the layout ref for a node beyond the current tick. The ref is
+   * shared by every holder of the same node, so anything that keeps it -- a
+   * node component, a coachmark, slot tracking -- must retain it and call the
+   * returned release when it is done. Transient
+   * `getNodeLayoutRef(graph, id).value` reads do not retain.
    */
-  cleanupNodeRef(rootGraphId: UUID, nodeId: NodeId): void {
+  retainNodeLayoutRef(
+    rootGraphId: UUID,
+    nodeId: NodeId
+  ): { layout: ComputedRef<NodeLayout | null>; release: () => void } {
     const nodeKey = makeScopedLayoutKey(rootGraphId, nodeId)
-    this.nodeRefs.delete(nodeKey)
-    this.nodeTriggers.delete(nodeKey)
+    const layout = this.getNodeLayoutRef(rootGraphId, nodeId)
+    this.nodeRefHolders.set(
+      nodeKey,
+      (this.nodeRefHolders.get(nodeKey) ?? 0) + 1
+    )
+
+    let released = false
+    const release = () => {
+      if (released) return
+      released = true
+      const remaining = (this.nodeRefHolders.get(nodeKey) ?? 1) - 1
+      if (remaining > 0) {
+        this.nodeRefHolders.set(nodeKey, remaining)
+        return
+      }
+      this.nodeRefHolders.delete(nodeKey)
+      this.nodeRefs.delete(nodeKey)
+      this.nodeTriggers.delete(nodeKey)
+    }
+
+    return { layout, release }
   }
 
   /** Drops entity layout owned by a root graph and its subgraph definitions. */
