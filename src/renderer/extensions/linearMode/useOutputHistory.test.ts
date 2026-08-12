@@ -2,7 +2,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, ref } from 'vue'
+import { nextTick, toValue, ref } from 'vue'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { InProgressItem } from '@/renderer/extensions/linearMode/linearModeTypes'
@@ -177,8 +177,8 @@ describe(useOutputHistory, () => {
 
       const { outputs } = useOutputHistory()
 
-      expect(outputs.items.value).toHaveLength(1)
-      expect(outputs.items.value[0].id).toBe('a1')
+      expect(toValue(outputs.items)).toHaveLength(1)
+      expect(toValue(outputs.items)[0].id).toBe('a1')
     })
 
     it('returns empty when no workflow is active', () => {
@@ -188,7 +188,7 @@ describe(useOutputHistory, () => {
 
       const { outputs } = useOutputHistory()
 
-      expect(outputs.items.value).toHaveLength(0)
+      expect(toValue(outputs.items)).toHaveLength(0)
     })
 
     it('updates when active workflow changes', async () => {
@@ -201,14 +201,14 @@ describe(useOutputHistory, () => {
       activeWorkflowPathRef.value = 'workflows/a.json'
       const { outputs } = useOutputHistory()
 
-      expect(outputs.items.value).toHaveLength(1)
-      expect(outputs.items.value[0].id).toBe('a1')
+      expect(toValue(outputs.items)).toHaveLength(1)
+      expect(toValue(outputs.items)[0].id).toBe('a1')
 
       activeWorkflowPathRef.value = 'workflows/b.json'
       await nextTick()
 
-      expect(outputs.items.value).toHaveLength(1)
-      expect(outputs.items.value[0].id).toBe('a2')
+      expect(toValue(outputs.items)).toHaveLength(1)
+      expect(toValue(outputs.items)[0].id).toBe('a2')
     })
   })
 

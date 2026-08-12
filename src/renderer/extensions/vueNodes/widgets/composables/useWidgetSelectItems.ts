@@ -113,7 +113,7 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
   const resolvedByJobId = shallowRef(new Map<string, AssetItem[]>())
 
   watch(
-    () => outputMediaAssets.items.value,
+    () => toValue(outputMediaAssets.items),
     (assets, _, onCleanup) => {
       let cancelled = false
       onCleanup(() => {
@@ -206,7 +206,7 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
     const items: FormDropdownItem[] = []
     const labelFn = toValue(options.getOptionLabel)
 
-    const assets = outputMediaAssets.items.value.flatMap((asset) => {
+    const assets = toValue(outputMediaAssets.items).flatMap((asset) => {
       const meta = getOutputAssetMetadata(asset.user_metadata)
       const resolved = meta ? resolvedByJobId.value.get(meta.jobId) : undefined
       return resolved ?? [asset]

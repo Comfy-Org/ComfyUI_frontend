@@ -1,6 +1,6 @@
 import { useAsyncState } from '@vueuse/core'
 import type { ComputedRef } from 'vue'
-import { computed, ref, watchEffect } from 'vue'
+import { computed, ref, toValue, watchEffect } from 'vue'
 
 import { useAssetsApi } from '@/platform/assets/composables/media/useAssetsApi'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
@@ -74,7 +74,7 @@ export function useOutputHistory(): {
 
     const pathMap = executionStore.jobIdToSessionWorkflowPath
 
-    return backingOutputs.items.value.filter((asset) => {
+    return toValue(backingOutputs.items).filter((asset) => {
       const m = getOutputAssetMetadata(asset?.user_metadata)
       return m ? pathMap.get(m.jobId) === path : false
     })
@@ -151,7 +151,7 @@ export function useOutputHistory(): {
   }
 
   function selectFirstHistory() {
-    const first = outputs.items.value[0]
+    const first = toValue(outputs.items)[0]
     if (first) {
       linearStore.selectAsLatest(`history:${first.id}:0`)
     } else {
@@ -163,7 +163,7 @@ export function useOutputHistory(): {
   watchEffect(() => {
     if (linearStore.pendingResolve.size === 0) return
     for (const jobId of linearStore.pendingResolve) {
-      const asset = outputs.items.value.find((a) => {
+      const asset = toValue(outputs.items).find((a) => {
         const m = getOutputAssetMetadata(a?.user_metadata)
         return m?.jobId === jobId
       })

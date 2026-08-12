@@ -1,7 +1,7 @@
 import { useAsyncState, whenever } from '@vueuse/core'
 import { delay, difference } from 'es-toolkit'
 import { defineStore } from 'pinia'
-import { computed, reactive, ref, shallowReactive } from 'vue'
+import { computed, reactive, ref, shallowReactive, toValue } from 'vue'
 import {
   mapInputFileToAssetItem,
   mapTaskOutputToAssetItem
@@ -297,7 +297,7 @@ export const useAssetsStore = defineStore('assets', () => {
         preview_url: previewUrl
       }
     }
-    patch(historyAssets.items.value)
+    patch(toValue(historyAssets.items))
     patch(inputAssets.value)
   }
 

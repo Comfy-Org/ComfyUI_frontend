@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useDebounceFn } from '@vueuse/core'
-import { computed, provide, ref, toRef } from 'vue'
+import { computed, provide, ref, toRef, toValue } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { SUPPORTED_EXTENSIONS_ACCEPT } from '@/extensions/core/load3d/constants'
@@ -153,13 +153,16 @@ const acceptTypes = computed(() => {
 const layoutMode = ref<LayoutMode>(props.defaultLayoutMode ?? 'grid')
 
 function handleIsOpenUpdate(isOpen: boolean) {
-  if (isOpen && !outputMediaAssets.isLoading.value) {
+  if (isOpen && !toValue(outputMediaAssets.isLoading)) {
     void outputMediaAssets.loadMore()
   }
 }
 
 const handleApproachEnd = useDebounceFn(async () => {
-  if (outputMediaAssets.hasMore.value && !outputMediaAssets.isLoading.value) {
+  if (
+    toValue(outputMediaAssets.hasMore) &&
+    !toValue(outputMediaAssets.isLoading)
+  ) {
     await outputMediaAssets.loadMore()
   }
 }, 300)
@@ -193,7 +196,7 @@ async function updateFiles(files: File[]) {
       :base-model-options
       :is-uploading
       v-bind="combinedProps"
-      :loading-more="outputMediaAssets.isLoading.value"
+      :loading-more="toValue(outputMediaAssets.isLoading)"
       class="w-full"
       @update:selected="updateSelectedItems"
       @update:files="updateFiles"

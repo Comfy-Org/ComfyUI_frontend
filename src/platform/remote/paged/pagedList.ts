@@ -1,17 +1,17 @@
-import type { Ref } from 'vue'
+import type { MaybeRef } from 'vue'
 
 export type PagedList<T> = {
-  hasMore: Readonly<Ref<boolean>>
+  hasMore: MaybeRef<boolean>
   invalidate: () => Promise<void>
-  isLoading: Readonly<Ref<boolean>>
-  items: Readonly<Ref<T[]>>
+  isLoading: MaybeRef<boolean>
+  items: MaybeRef<T[]>
   loadMore: () => Promise<void>
   loadNew: () => Promise<void>
 }
 
 export function wrapPagedList<T>(
   list: PagedList<T>,
-  filter: (items: Readonly<Ref<T[]>>) => Readonly<Ref<T[]>>
+  filter: (items: MaybeRef<T[]>) => MaybeRef<T[]>
 ): PagedList<T> {
   return { ...list, items: filter(list.items) }
 }

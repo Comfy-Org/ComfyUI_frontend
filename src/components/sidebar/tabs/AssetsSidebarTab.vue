@@ -193,6 +193,7 @@ import {
   onMounted,
   onUnmounted,
   ref,
+  toValue,
   useTemplateRef,
   watch
 } from 'vue'
@@ -333,8 +334,8 @@ const {
 const currentAssets = computed(() =>
   activeTab.value === 'input' ? inputAssets : outputAssets
 )
-const loading = computed(() => currentAssets.value.isLoading.value)
-const mediaAssets = computed(() => currentAssets.value.items.value)
+const loading = computed(() => toValue(currentAssets.value.isLoading))
+const mediaAssets = computed(() => toValue(currentAssets.value.items))
 
 const galleryActiveIndex = ref(-1)
 const currentGalleryAssetId = ref<string | null>(null)
@@ -668,8 +669,8 @@ const handleApproachEnd = useDebounceFn(async () => {
   if (
     activeTab.value === 'output' &&
     !isInFolderView.value &&
-    outputAssets.hasMore.value &&
-    !outputAssets.isLoading.value
+    toValue(outputAssets.hasMore) &&
+    !toValue(outputAssets.isLoading)
   ) {
     await outputAssets.loadMore()
   }
