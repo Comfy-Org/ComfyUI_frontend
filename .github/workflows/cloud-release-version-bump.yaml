@@ -55,7 +55,7 @@ jobs:
       GH_TOKEN: ${{ secrets.PR_GH_TOKEN }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -71,6 +71,10 @@ jobs:
           set -euo pipefail
           if [[ -n "${INPUT_BRANCH:-}" ]]; then
             # Explicit override from workflow_dispatch.
+            if ! [[ "$INPUT_BRANCH" =~ ^cloud/[0-9]+\.[0-9]+$ ]]; then
+              echo "::error::Branch must match cloud/<major>.<minor>"
+              exit 1
+            fi
             if ! git show-ref --verify --quiet "refs/remotes/origin/${INPUT_BRANCH}"; then
               echo "::error::Branch '${INPUT_BRANCH}' not found on origin"
               exit 1
