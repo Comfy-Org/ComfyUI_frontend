@@ -45,6 +45,12 @@ helper is not hoisted ahead of that test module's static imports. For shared
 implementations, use `__mocks__` with a local `vi.mock`. For runtime selection,
 call `vi.doMock` before a subsequent dynamic import.
 
+Check whether a setup file imports the mock target, directly or transitively.
+Vitest cannot replace that cached module. Prefer removing the setup import. If it
+is unavoidable, call `vi.resetModules()` inside `vi.hoisted` before the test
+imports the target, and account for setup and test code holding different module
+instances.
+
 Skip the extraction if typed shared code is no simpler than the local mocks or
 needs global mutable indirection.
 
