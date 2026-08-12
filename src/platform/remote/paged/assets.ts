@@ -4,6 +4,10 @@ import type { ListAssetsData } from '@comfyorg/ingest-types'
 
 import { assetResponseSchema } from '@/platform/assets/schemas/assetSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import {
+  createSharedPagedList,
+  stableKey
+} from '@/platform/remote/paged/pagedList'
 import type { PagedList } from '@/platform/remote/paged/pagedList'
 import { api } from '@/scripts/api'
 import { encodeParams } from '@/utils/urlUtil'
@@ -87,3 +91,8 @@ export function useAssetsQuery(
 
   return { hasMore, invalidate, isLoading, items, loadMore, loadNew }
 }
+
+export const useSharedAssetsQuery = createSharedPagedList(
+  useAssetsQuery,
+  stableKey
+)
