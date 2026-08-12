@@ -137,7 +137,18 @@ const PROPERTY_WRITE =
  * A mutating call reached through `?.`, so a failed lookup silently skips it.
  * Reads are fine — `?.getValue()` yielding undefined is visible to the caller.
  */
-const SILENT_WRITE = /\?\.([A-Za-z_]\w*)\s*\(/g
+/**
+ * The receiver matters as much as the method.
+ *
+ * What this rule is for is a *lookup* that quietly returned nothing, so the
+ * receiver is either the result of one — `?.` straight after a `)` — or a bare
+ * identifier holding a handle. A dotted receiver is the pack's own state:
+ * tts_audio_suite keeps an audio player at `state.editor`, whose own
+ * `setTitle` has nothing to do with `NodeHandle.setTitle`, and flagging it
+ * failed a correct conversion.
+ */
+const SILENT_WRITE =
+  /(?:\)|(?<![.\w$])[A-Za-z_$]\w*)\s*\?\.([A-Za-z_]\w*)\s*\(/g
 
 /**
  * Whether an optional-chained call is a *published API* mutation.

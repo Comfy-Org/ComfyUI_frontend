@@ -298,11 +298,36 @@ describe('general conversion conformance', () => {
       expect(find(report, 'no-silently-dropped-writes').status).toBe('passed')
     })
 
+    it("does not flag a method of the same name on the pack's own state", () => {
+      // tts_audio_suite keeps an audio player at `state.editor`, whose own
+      // setTitle has nothing to do with NodeHandle.setTitle. A dotted receiver
+      // is pack state; a lookup result is what this rule is actually for.
+      const report = runConformance(
+        context({
+          original: 'const a = 1',
+          converted: 'state.editor?.setTitle("x")',
+          edits: []
+        })
+      )
+      expect(find(report, 'no-silently-dropped-writes').status).toBe('passed')
+    })
+
     it('still catches an optional-chained handle write', () => {
       const report = runConformance(
         context({
           original: 'const a = 1',
           converted: 'node.widgets.get("seed")?.setValue(1)',
+          edits: []
+        })
+      )
+      expect(find(report, 'no-silently-dropped-writes').status).toBe('failed')
+    })
+
+    it('still catches a write on a bare identifier handle', () => {
+      const report = runConformance(
+        context({
+          original: 'const a = 1',
+          converted: 'widget?.setValue(1)',
           edits: []
         })
       )

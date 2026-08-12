@@ -20,7 +20,7 @@ import {
 import { tmpdir } from 'node:os'
 import { join, relative } from 'node:path'
 
-import { runConformance } from '../../../src/workbench/extensions/magicPatch/verify/conformance'
+import { runConformance } from '../../../src/workbench/extensions/magicPatch/verify/conformance.ts'
 
 const DB = join(process.cwd(), 'db')
 const SCRATCH = join(mkdtempSync(join(tmpdir(), 'sweep-')), 'chk.mjs')
