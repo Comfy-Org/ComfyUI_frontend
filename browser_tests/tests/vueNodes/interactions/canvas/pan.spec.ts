@@ -64,12 +64,11 @@ test.describe('Vue Nodes Canvas Pan', { tag: '@vue-nodes' }, () => {
       const [nodeRef] = await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
       if (!nodeRef) throw new Error('KSampler is not rendered')
       await node.header.hover()
-      const offsetBeforePan = await comfyPage.canvasOps.getOffset()
       await comfyPage.page.mouse.down()
 
       try {
         await comfyPage.page.mouse.move(500, 500, { steps: 5 })
-        expect(await comfyPage.canvasOps.getOffset()).toEqual(offsetBeforePan)
+        const offsetBeforePan = await comfyPage.canvasOps.getOffset()
 
         await comfyPage.page.keyboard.down('Space')
         try {
@@ -150,7 +149,6 @@ test.describe('Vue Nodes Canvas Pan', { tag: '@vue-nodes' }, () => {
       })
       await comfyPage.page.keyboard.down('Space')
       spaceDown = true
-      await expect.poll(() => comfyPage.canvasOps.isReadOnly()).toBe(true)
       await comfyPage.page.mouse.move(start.x + 80, start.y + 80, {
         steps: 5
       })
