@@ -3,7 +3,7 @@ import { onScopeDispose } from 'vue'
 
 export type PagedList<T> = {
   hasMore: MaybeRef<boolean>
-  invalidate: () => Promise<void>
+  invalidate: (items?: T[]) => Promise<void>
   isLoading: MaybeRef<boolean>
   items: MaybeRef<T[]>
   loadMore: () => Promise<void>
@@ -42,21 +42,22 @@ export function createSharedPagedList<TParams, TItem>(
 
   return (params: TParams): PagedList<TItem> => {
     const key = keyFn(params)
-
-    let entry = cache.get(key)
-    if (!entry) {
-      entry = { list: factory(params), refCount: 0 }
-      cache.set(key, entry)
-    }
+    const entry = cache.get(key) ?? { list: factory(params), refCount: 0 }
+    cache.set(key, entry)
     entry.refCount++
 
     onScopeDispose(() => {
-      entry!.refCount--
-      if (entry!.refCount === 0) {
-        cache.delete(key)
-      }
+      entry.refCount--
+      if (entry.refCount === 0) cache.delete(key)
     })
 
-    return entry.list
+    async function invalidate(stale?: TItem[]) {
+      if (!stale) return await entry.list.invalidate()
+
+      await Promise.all(
+        [...cache.values()].map((e) => e.list.invalidate(stale))
+      )
+    }
+    return { ...entry.list, invalidate }
   }
 }

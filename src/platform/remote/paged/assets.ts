@@ -65,7 +65,12 @@ export function useAssetsQuery(
     items.value.push(...assetResponse.assets)
   }
 
-  async function invalidate() {
+  async function invalidate(stale?: AssetItem[]) {
+    if (stale) {
+      const ids = new Set(stale.map((item) => item.id))
+      items.value = items.value.filter((item) => !ids.has(item.id))
+      return
+    }
     pendingFetchController.abort()
     pendingFetchController = new AbortController()
     hasMore.value = true
