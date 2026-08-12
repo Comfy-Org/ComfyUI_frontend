@@ -149,6 +149,19 @@ function resultJson(expected: number, unexpected = 0, flaky = 0, skipped = 0) {
   return { stats: { expected, unexpected, flaky, skipped } }
 }
 
+const coreS14Enabled =
+  "matrix.proof_row != '0' || github.event_name != 'workflow_dispatch' || inputs.enable_s14"
+
+function coreExpectedTests(
+  proofRow: string,
+  eventName: string,
+  enableS14: boolean
+) {
+  return proofRow !== '0' || eventName !== 'workflow_dispatch' || enableS14
+    ? 33
+    : 32
+}
+
 describe('custom-node S1-S12 workflow gates', () => {
   it('accepts the Cloud gate with its required account secrets and manifest', () => {
     expect(runCloudActivationGate().status).toBe(0)
@@ -196,11 +209,14 @@ describe('custom-node S1-S12 workflow gates', () => {
           CN_ENABLE_S15: '0'
         })
       else {
-        expect(String(suite?.env?.CN_ENABLE_S14)).toContain(
-          "matrix.proof_row != '0'"
-        )
-        expect(String(suite?.env?.CN_ENABLE_S14)).toContain('inputs.enable_s14')
+        expect(String(suite?.env?.CN_ENABLE_S14)).toContain(coreS14Enabled)
         expect(String(suite?.env?.CN_ENABLE_S15)).toContain('inputs.enable_s15')
+        expect(String(resultGate?.env?.EXPECTED_TESTS)).toContain(
+          coreS14Enabled
+        )
+        expect(String(resultGate?.env?.EXPECTED_TESTS)).toContain(
+          "'33' || '32'"
+        )
       }
       expect(suiteCommand?.match(/--workers(?:=|\s+)\S+/g)).toEqual([
         '--workers=1'
@@ -209,7 +225,7 @@ describe('custom-node S1-S12 workflow gates', () => {
         '--retries=0'
       ])
       expect(suiteCommand).not.toMatch(/--shard(?:=|\s)/)
-      expect(resultGate?.env?.EXPECTED_TESTS).toBe(total)
+      if (deferS13ToS15) expect(resultGate?.env?.EXPECTED_TESTS).toBe(total)
       expect(resultGate?.run).toContain(
         '[.stats.expected, .stats.unexpected, .stats.flaky, .stats.skipped] | add'
       )
@@ -218,6 +234,24 @@ describe('custom-node S1-S12 workflow gates', () => {
       )
     }
   )
+
+  it('keeps Core S14 execution, count, and summary aligned for every dispatch state', () => {
+    const steps = workflowSteps('.github/workflows/ci-tests-custom-nodes.yaml')
+    const suite = steps.find((step) => step.name?.startsWith('Run custom-node'))
+    const resultGate = steps.find(
+      (step) => step.name === 'Forbid failed, skipped, or flaky tests'
+    )
+    const summary = steps.find((step) => step.name === 'Publish results table')
+
+    expect(String(suite?.env?.CN_ENABLE_S14)).toContain(coreS14Enabled)
+    expect(String(resultGate?.env?.EXPECTED_TESTS)).toContain(coreS14Enabled)
+    expect(String(summary?.env?.S14_ENABLED)).toContain(coreS14Enabled)
+
+    expect(coreExpectedTests('0', 'workflow_dispatch', true)).toBe(33)
+    expect(coreExpectedTests('0', 'workflow_dispatch', false)).toBe(32)
+    expect(coreExpectedTests('14', 'workflow_dispatch', false)).toBe(33)
+    expect(coreExpectedTests('0', 'pull_request', false)).toBe(33)
+  })
 
   it.for(workflowGates)(
     '$path accepts only the exact all-green result',

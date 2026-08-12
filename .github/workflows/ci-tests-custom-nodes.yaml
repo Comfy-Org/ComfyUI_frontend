@@ -376,7 +376,7 @@ jobs:
         shell: bash
         env:
           SUITE_OUTCOME: ${{ steps.suite.outcome }}
-          EXPECTED_TESTS: 33
+          EXPECTED_TESTS: ${{ (matrix.proof_row != '0' || github.event_name != 'workflow_dispatch' || inputs.enable_s14) && '33' || '32' }}
           GREP_FILTER: ${{ inputs.grep }}
         run: |
           set -euo pipefail
@@ -512,7 +512,7 @@ jobs:
           BRANCH_TESTED: ${{ inputs.branch || github.ref_name }}
           COMFYUI_REF_USED: ${{ inputs.comfyui_ref || 'b08e6cf35fac50d3ca8470dffb3f9a1fbb7187d2' }}
           GREP_FILTER: ${{ inputs.grep }}
-          S14_ENABLED: ${{ (github.event_name != 'workflow_dispatch' || inputs.enable_s14) && '1' || '0' }}
+          S14_ENABLED: ${{ (matrix.proof_row != '0' || github.event_name != 'workflow_dispatch' || inputs.enable_s14) && '1' || '0' }}
           S15_ENABLED: ${{ (github.event_name != 'workflow_dispatch' || inputs.enable_s15) && '1' || '0' }}
         run: python3 scripts/cicd/custom-nodes-summary.py
 
