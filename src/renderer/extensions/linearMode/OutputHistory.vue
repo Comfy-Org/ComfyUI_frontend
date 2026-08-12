@@ -56,7 +56,7 @@ const hasActiveContent = computed(
 )
 
 const visibleHistory = computed(() =>
-  outputs.media.value.filter((a) => allOutputs(a).length > 0)
+  outputs.items.value.filter((a) => allOutputs(a).length > 0)
 )
 
 const selectableItems = computed(() => {
@@ -71,7 +71,7 @@ const selectableItems = computed(() => {
       itemId: item.id
     })
   }
-  for (const asset of outputs.media.value) {
+  for (const asset of outputs.items.value) {
     const outs = allOutputs(asset)
     for (let k = 0; k < outs.length; k++) {
       items.push({
@@ -137,9 +137,9 @@ function doEmit() {
     }
     return
   }
-  const asset = outputs.media.value.find((a) => a.id === sel.assetId)
+  const asset = outputs.items.value.find((a) => a.id === sel.assetId)
   const output = asset ? allOutputs(asset)[sel.key] : undefined
-  const isFirst = outputs.media.value[0]?.id === sel.assetId
+  const isFirst = outputs.items.value[0]?.id === sel.assetId
   emit('updateSelection', {
     asset,
     output,
@@ -170,7 +170,7 @@ watch(
 
 // Keep history selection stable on media changes
 watch(
-  () => outputs.media.value,
+  () => outputs.items.value,
   (newAssets, oldAssets) => {
     if (
       newAssets.length === oldAssets.length ||

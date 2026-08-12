@@ -28,14 +28,12 @@ const resolvedOutputsCacheRef = new Map<string, ResultItemImpl[]>()
 
 vi.mock('@/platform/assets/composables/media/useAssetsApi', () => ({
   useAssetsApi: () => ({
-    media: mediaRef,
-    loading: ref(false),
-    error: ref(null),
-    fetchMediaList: vi.fn().mockResolvedValue([]),
-    refresh: vi.fn().mockResolvedValue([]),
-    loadMore: vi.fn(),
     hasMore: ref(false),
-    isLoadingMore: ref(false)
+    invalidate: vi.fn(),
+    isLoading: ref(false),
+    items: mediaRef,
+    loadMore: vi.fn(),
+    loadNew: vi.fn()
   })
 }))
 
@@ -179,8 +177,8 @@ describe(useOutputHistory, () => {
 
       const { outputs } = useOutputHistory()
 
-      expect(outputs.media.value).toHaveLength(1)
-      expect(outputs.media.value[0].id).toBe('a1')
+      expect(outputs.items.value).toHaveLength(1)
+      expect(outputs.items.value[0].id).toBe('a1')
     })
 
     it('returns empty when no workflow is active', () => {
@@ -190,7 +188,7 @@ describe(useOutputHistory, () => {
 
       const { outputs } = useOutputHistory()
 
-      expect(outputs.media.value).toHaveLength(0)
+      expect(outputs.items.value).toHaveLength(0)
     })
 
     it('updates when active workflow changes', async () => {
@@ -203,14 +201,14 @@ describe(useOutputHistory, () => {
       activeWorkflowPathRef.value = 'workflows/a.json'
       const { outputs } = useOutputHistory()
 
-      expect(outputs.media.value).toHaveLength(1)
-      expect(outputs.media.value[0].id).toBe('a1')
+      expect(outputs.items.value).toHaveLength(1)
+      expect(outputs.items.value[0].id).toBe('a1')
 
       activeWorkflowPathRef.value = 'workflows/b.json'
       await nextTick()
 
-      expect(outputs.media.value).toHaveLength(1)
-      expect(outputs.media.value[0].id).toBe('a2')
+      expect(outputs.items.value).toHaveLength(1)
+      expect(outputs.items.value[0].id).toBe('a2')
     })
   })
 

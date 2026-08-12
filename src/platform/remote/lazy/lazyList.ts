@@ -5,8 +5,8 @@ export type LazyList<T> = {
   invalidate: () => Promise<void>
   isLoading: Readonly<Ref<boolean>>
   items: Readonly<Ref<T[]>>
-  loadNew: () => Promise<void>
   loadMore: () => Promise<void>
+  loadNew: () => Promise<void>
 }
 
 export function wrapLazyList<T>(

@@ -333,9 +333,8 @@ const {
 const currentAssets = computed(() =>
   activeTab.value === 'input' ? inputAssets : outputAssets
 )
-const loading = computed(() => currentAssets.value.loading.value)
-const error = computed(() => currentAssets.value.error.value)
-const mediaAssets = computed(() => currentAssets.value.media.value)
+const loading = computed(() => currentAssets.value.isLoading.value)
+const mediaAssets = computed(() => currentAssets.value.items.value)
 
 const galleryActiveIndex = ref(-1)
 const currentGalleryAssetId = ref<string | null>(null)
@@ -470,10 +469,7 @@ const galleryItems = computed(() => {
 })
 
 const refreshAssets = async () => {
-  await currentAssets.value.fetchMediaList()
-  if (error.value) {
-    console.error('Failed to refresh assets:', error.value)
-  }
+  await currentAssets.value.invalidate()
 }
 
 watch(
@@ -673,7 +669,7 @@ const handleApproachEnd = useDebounceFn(async () => {
     activeTab.value === 'output' &&
     !isInFolderView.value &&
     outputAssets.hasMore.value &&
-    !outputAssets.isLoadingMore.value
+    !outputAssets.isLoading.value
   ) {
     await outputAssets.loadMore()
   }

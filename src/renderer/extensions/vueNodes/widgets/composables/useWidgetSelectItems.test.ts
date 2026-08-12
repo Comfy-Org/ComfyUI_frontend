@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useWidgetSelectItems } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'
+import type { UseWidgetSelectItemsOptions } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'
 
 const mockAssetsData = vi.hoisted(() => ({ items: [] as AssetItem[] }))
 
@@ -26,14 +27,12 @@ const mockResolveOutputAssetItems = vi.fn()
 
 function createMockMediaAssets() {
   return {
-    media: ref<AssetItem[]>([]),
-    loading: ref(false),
-    error: ref(null),
-    fetchMediaList: vi.fn().mockResolvedValue([]),
-    refresh: vi.fn().mockResolvedValue([]),
-    loadMore: vi.fn(),
     hasMore: ref(false),
-    isLoadingMore: ref(false)
+    invalidate: vi.fn(),
+    isLoading: ref(false),
+    items: ref<AssetItem[]>([]),
+    loadNew: vi.fn(),
+    loadMore: vi.fn()
   }
 }
 
@@ -57,8 +56,8 @@ vi.mock('@/platform/assets/utils/outputAssetUtil', () => ({
 }))
 
 function createDefaultOptions(
-  overrides: Partial<Parameters<typeof useWidgetSelectItems>[0]> = {}
-) {
+  overrides: Partial<UseWidgetSelectItemsOptions> = {}
+): UseWidgetSelectItemsOptions {
   return {
     values: () => ['img_001.png', 'photo_abc.jpg', 'hash789.png'],
     getOptionLabel: () =>
@@ -258,7 +257,7 @@ describe('useWidgetSelectItems', () => {
     })
 
     it('leaves output preview_url empty for mesh kind even when asset has one', async () => {
-      mockMediaAssets.media.value = [
+      mockMediaAssets.items.value = [
         fromPartial({
           id: 'asset-mesh-1',
           name: 'scene.glb',
@@ -460,7 +459,7 @@ describe('useWidgetSelectItems', () => {
     }
 
     it('shows all outputs after resolving multi-output jobs', async () => {
-      mockMediaAssets.media.value = [
+      mockMediaAssets.items.value = [
         makeMultiOutputAsset('job-1', 'preview.png', '5', 3)
       ]
 
@@ -505,7 +504,7 @@ describe('useWidgetSelectItems', () => {
     })
 
     it('shows preview when job has only one output', async () => {
-      mockMediaAssets.media.value = [
+      mockMediaAssets.items.value = [
         makeMultiOutputAsset('job-2', 'single.png', '3', 1)
       ]
 
@@ -524,7 +523,7 @@ describe('useWidgetSelectItems', () => {
     })
 
     it('resolves two multi-output jobs independently', async () => {
-      mockMediaAssets.media.value = [
+      mockMediaAssets.items.value = [
         makeMultiOutputAsset('job-A', 'previewA.png', '1', 2),
         makeMultiOutputAsset('job-B', 'previewB.png', '2', 2)
       ]
@@ -584,7 +583,7 @@ describe('useWidgetSelectItems', () => {
     })
 
     it('resolves outputs when allOutputs already contains all items', async () => {
-      mockMediaAssets.media.value = [
+      mockMediaAssets.items.value = [
         fromPartial({
           id: 'job-complete',
           name: 'preview.png',
@@ -655,7 +654,7 @@ describe('useWidgetSelectItems', () => {
         .spyOn(console, 'warn')
         .mockImplementation(() => {})
 
-      mockMediaAssets.media.value = [
+      mockMediaAssets.items.value = [
         makeMultiOutputAsset('job-fail', 'preview.png', '1', 3)
       ]
       mockResolveOutputAssetItems.mockRejectedValue(new Error('network error'))
@@ -686,7 +685,7 @@ describe('useWidgetSelectItems', () => {
       // ever ships with both hash AND multi-output user_metadata, the
       // watcher must NOT replace it with synthesized AssetItems lacking the
       // hash, or select+load reverts to the FE-227 broken state.
-      mockMediaAssets.media.value = [
+      mockMediaAssets.items.value = [
         fromPartial({
           id: 'asset-flat-1',
           name: 'z-image-turbo_00093_.png',
@@ -728,7 +727,7 @@ describe('useWidgetSelectItems', () => {
     })
 
     it('uses hash (not human filename) as the dropdown value when present, so cloud /view can resolve by hash', async () => {
-      mockMediaAssets.media.value = [
+      mockMediaAssets.items.value = [
         fromPartial({
           id: 'asset-out-1',
           name: 'z-image-turbo_00093_.png',
@@ -759,7 +758,7 @@ describe('useWidgetSelectItems', () => {
     })
 
     it('falls back to asset.name when hash is absent (local/history path)', async () => {
-      mockMediaAssets.media.value = [
+      mockMediaAssets.items.value = [
         fromPartial({
           id: 'local-1',
           name: 'ComfyUI_00001_.png',
@@ -781,7 +780,7 @@ describe('useWidgetSelectItems', () => {
     })
 
     it('does not partially expand the list while some multi-output jobs are still resolving (FE-227)', async () => {
-      mockMediaAssets.media.value = [
+      mockMediaAssets.items.value = [
         makeMultiOutputAsset('job-FIRST', 'previewFirst.png', '1', 3),
         makeMultiOutputAsset('job-SECOND', 'previewSecond.png', '2', 2)
       ]
@@ -877,7 +876,7 @@ describe('useWidgetSelectItems', () => {
 
   describe('output asset subfolder', () => {
     it('prefixes the subfolder onto the annotated path so the load URL targets the right folder', async () => {
-      mockMediaAssets.media.value = [
+      mockMediaAssets.items.value = [
         fromPartial({
           id: 'asset-mesh-1',
           name: 'ComfyUI_00105_.glb',
@@ -906,7 +905,7 @@ describe('useWidgetSelectItems', () => {
     })
 
     it('omits the subfolder prefix when the asset has none', async () => {
-      mockMediaAssets.media.value = [
+      mockMediaAssets.items.value = [
         fromPartial({
           id: 'asset-mesh-2',
           name: 'plain.glb',
@@ -935,7 +934,7 @@ describe('useWidgetSelectItems', () => {
     })
 
     it('does not prefix the subfolder for non-mesh kinds even when present', async () => {
-      mockMediaAssets.media.value = [
+      mockMediaAssets.items.value = [
         fromPartial({
           id: 'asset-image-1',
           name: 'photo.png',
@@ -966,7 +965,7 @@ describe('useWidgetSelectItems', () => {
 
   describe('FE-228: output dropdown label uses human-readable filename', () => {
     it('renders metadata.filename in label when asset.name is a hash', async () => {
-      mockMediaAssets.media.value = [
+      mockMediaAssets.items.value = [
         fromPartial({
           id: 'asset-hash-1',
           name: 'a1ef7d292026e89ce9bbbd8093e2d0ed6a8850361a0c22e49522ac7baa5494e5.png',
@@ -993,7 +992,7 @@ describe('useWidgetSelectItems', () => {
     })
 
     it('renders asset.display_name in label when queue-mapped asset lacks metadata.filename', async () => {
-      mockMediaAssets.media.value = [
+      mockMediaAssets.items.value = [
         fromPartial({
           id: 'job-1',
           name: 'a1ef7d292026e89ce9bbbd8093e2d0ed6a8850361a0c22e49522ac7baa5494e5.png',
@@ -1087,7 +1086,7 @@ describe('useWidgetSelectItems', () => {
 
     it('drops output items whose annotated path is in the missing-media store', async () => {
       mockMediaAssets = createMockMediaAssets()
-      mockMediaAssets.media.value = [
+      mockMediaAssets.items.value = [
         fromPartial<AssetItem>({
           id: 'a1',
           name: 'gone.png',
@@ -1133,7 +1132,7 @@ describe('useWidgetSelectItems', () => {
 
     it('does not cross-match basenames across input and output sources', async () => {
       mockMediaAssets = createMockMediaAssets()
-      mockMediaAssets.media.value = [
+      mockMediaAssets.items.value = [
         fromPartial<AssetItem>({
           id: 'a1',
           name: 'photo_abc.jpg',

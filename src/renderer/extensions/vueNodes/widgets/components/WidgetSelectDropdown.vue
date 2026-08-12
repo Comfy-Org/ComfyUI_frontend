@@ -5,8 +5,6 @@ import { useI18n } from 'vue-i18n'
 
 import { SUPPORTED_EXTENSIONS_ACCEPT } from '@/extensions/core/load3d/constants'
 import { useAssetsApi } from '@/platform/assets/composables/media/useAssetsApi'
-import { useFlatOutputAssets } from '@/platform/assets/composables/media/useFlatOutputAssets'
-import { isCloud } from '@/platform/distribution/types'
 import FormDropdown from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdown.vue'
 import { AssetKindKey } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import type { LayoutMode } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
@@ -59,9 +57,7 @@ const stringModelValue = computed({
 
 const { t } = useI18n()
 
-const outputMediaAssets = isCloud
-  ? useFlatOutputAssets()
-  : useAssetsApi('output')
+const outputMediaAssets = useAssetsApi('output')
 
 const combinedProps = computed(() =>
   filterWidgetProps(props.widget.options, PANEL_EXCLUDED_PROPS)
@@ -157,17 +153,13 @@ const acceptTypes = computed(() => {
 const layoutMode = ref<LayoutMode>(props.defaultLayoutMode ?? 'grid')
 
 function handleIsOpenUpdate(isOpen: boolean) {
-  if (isOpen && !outputMediaAssets.loading.value) {
-    void outputMediaAssets.refresh()
+  if (isOpen && !outputMediaAssets.isLoading.value) {
+    void outputMediaAssets.loadMore()
   }
 }
 
 const handleApproachEnd = useDebounceFn(async () => {
-  if (
-    outputMediaAssets.hasMore.value &&
-    !outputMediaAssets.loading.value &&
-    !outputMediaAssets.isLoadingMore.value
-  ) {
+  if (outputMediaAssets.hasMore.value && !outputMediaAssets.isLoading.value) {
     await outputMediaAssets.loadMore()
   }
 }, 300)
@@ -201,7 +193,7 @@ async function updateFiles(files: File[]) {
       :base-model-options
       :is-uploading
       v-bind="combinedProps"
-      :loading-more="outputMediaAssets.isLoadingMore.value"
+      :loading-more="outputMediaAssets.isLoading.value"
       class="w-full"
       @update:selected="updateSelectedItems"
       @update:files="updateFiles"
