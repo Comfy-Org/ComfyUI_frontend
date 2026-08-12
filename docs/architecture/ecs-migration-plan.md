@@ -133,12 +133,18 @@ cheaper to derive on read than to store, so `src/systems/badgeSystem.ts`
 computes them from the stores that already own the inputs. No badge store
 exists. See [Node Badge Store](node-badge-store.md) for the reversal.
 
-`linkStore` holds `LinkTopology` records (`src/types/linkTopology.ts`) keyed by
-target input slot (`` `${targetNodeId}:${targetSlot}` ``) in root-graph-scoped
-buckets — subgraphs share their root's bucket; floating links and links
-targeting subgraph outputs live in a per-graph unkeyed side set. `rerouteStore`
-holds `RerouteChain` records keyed by `RerouteId` in root-graph-scoped buckets;
-link membership is not stored but derived from the links' `parentId` chains.
+`linkStore` holds `LinkTopology` records (`src/types/linkTopology.ts`) in
+root-graph-scoped buckets. Link identity is root-wide; input and output query
+indexes use owner-qualified slot keys
+(`` `${owningGraphId}:${nodeId}:${slot}` ``). Subgraphs share their root's
+identity bucket while retaining owner-local queries and teardown. Floating
+links remain in the root-wide identity map but are omitted from slot indexes.
+Entity store registration is idempotent only when the existing entity has the
+same owner and raw object identity. The stores perform every collision check at
+the registration mutation boundary.
+`rerouteStore` holds `RerouteChain` records keyed by `RerouteId` in
+root-graph-scoped buckets; link membership is not stored but derived from the
+links' `parentId` chains.
 Design records: [Link Topology Store](link-topology-store.md),
 [Reroute Chain Store](reroute-chain-store.md).
 
@@ -871,7 +877,28 @@ stores.
 
 **Current state:** `beforeChange()` / `afterChange()` provide undo/redo
 checkpoints but not true transactions. The graph can be in an inconsistent
-state between these calls.
+state between these calls. Link topology mutations are centralized in
+`linkStore`: endpoint updates validate their batch before mutation, and link
+replacement validates ownership, identity, the expected incumbent, ID, and
+target availability before changing its indexes. These operations are atomic
+only within `linkStore`; they do not provide rollback across callbacks, layout,
+reroutes, graph maps, versioning, or other stores.
+
+Centralizing each mutation point removes duplicated caller checks, reduces the
+number of paths that can violate store invariants, and provides one place for
+atomic validation and rollback as the migration continues. Command-executor
+transactions should wrap these store mutation points rather than adding
+caller-specific compensation.
+
+**Rejected transitional options:**
+
+| Option                                   | Why it was rejected                                                                |
+| ---------------------------------------- | ---------------------------------------------------------------------------------- |
+| Preflight in each graph caller           | Duplicates store invariants and leaves a check-to-mutation race.                   |
+| Disconnect, register, then restore       | Callbacks and multi-store cleanup make the removed state unsafe to reconstruct.    |
+| Add caller-specific failure compensation | Spreads rollback policy across paths instead of establishing one transaction seam. |
+| Normalize only in `createSubgraph`       | Misses workflow load, paste, and conversion paths and can mutate caller input.     |
+| Add pseudo-live `LinkMap` iterators      | Does not preserve native iterator semantics; cached snapshots preserve it instead. |
 
 **Phase 4 baseline semantics:**
 
@@ -896,16 +923,16 @@ state between these calls.
 
 The dedicated stores use per-concern keying strategies:
 
-| Store                     | Key Format                                                                           |
-| ------------------------- | ------------------------------------------------------------------------------------ |
-| `widgetValueStore`        | `WidgetId` (`graphId:nodeId:name`)                                                   |
-| `domWidgetStore`          | Widget UUID                                                                          |
-| `layoutStore`             | Raw node/link IDs; `${rootGraphId}:${localId}` for group/reroute geometry            |
-| `nodeOutputStore`         | `"${subgraphId}:${nodeId}"`                                                          |
-| `subgraphNavigationStore` | subgraphId or `'root'`                                                               |
-| `linkStore`               | `` `${targetNodeId}:${targetSlot}` `` (target input slot), root-graph-scoped buckets |
-| `rerouteStore`            | `RerouteId`, root-graph-scoped buckets                                               |
-| `nodeDataStore`           | `NodeState` identity (`Set`), root-graph-scoped buckets                              |
+| Store                     | Key Format                                                                      |
+| ------------------------- | ------------------------------------------------------------------------------- |
+| `widgetValueStore`        | `WidgetId` (`graphId:nodeId:name`)                                              |
+| `domWidgetStore`          | Widget UUID                                                                     |
+| `layoutStore`             | Raw node/link IDs; `${rootGraphId}:${localId}` for group/reroute geometry       |
+| `nodeOutputStore`         | `"${subgraphId}:${nodeId}"`                                                     |
+| `subgraphNavigationStore` | subgraphId or `'root'`                                                          |
+| `linkStore`               | `` `${owningGraphId}:${nodeId}:${slot}` `` query indexes in root-scoped buckets |
+| `rerouteStore`            | `RerouteId`, root-graph-scoped buckets                                          |
+| `nodeDataStore`           | `NodeState` identity (`Set`), root-graph-scoped buckets                         |
 
 ADR 0009 refines the promoted-widget target: promoted value widgets should use
 host boundary identity (`host node locator + SubgraphInput.name`), not interior
@@ -920,6 +947,80 @@ recovers the parts on demand.
 **Resolution:** Self-documenting composite keys, parsed at boundaries. Each store
 keeps the key format that matches its concern; there is no forced unification
 under a single ID space.
+
+### Deferred topology follow-ups
+
+The scoped-topology migration now has the following boundaries and leaves the
+remaining decisions for later work.
+
+**Implemented boundaries:**
+
+- `createSubgraphs` and `createSubgraph` share one immutable normalization
+  boundary used by workflow loading, direct creation, clipboard/paste, and
+  conversion. It creates shells first and fills leaves first without changing
+  caller input. Malformed same-owner duplicate IDs are deterministic:
+  first-wins and later duplicates are dropped because references cannot
+  disambiguate them.
+- Graph clear uses one exact-entity teardown traversal. Lifecycle callbacks run
+  first while topology remains observable, followed by link, reroute, node, and
+  layout detachment. Only the root clear defensively clears whole store buckets.
+- Root and subgraph serialization consume one owner-local topology partition.
+  It preserves the regular and floating wire categories in workflow output.
+
+**Still deferred:**
+
+- Keep entity identity flat and root-wide. Replacing it with owner-nested
+  identity would reverse the current architecture rather than simplify it.
+- Keep `idsByOwner` for owner-local iteration and teardown; removing it would
+  replace indexed access with root-bucket scans.
+- Keep cached reroute membership; recomputing it would add graph walks to read
+  paths.
+- Do not restore the legacy `_links` mirror or broaden that compatibility
+  surface.
+- Keep registration failure as an explicit return value rather than adding
+  thrown errors.
+- `LinkMap` preserves snapshot iterator compatibility with a cached owner-local
+  view. The link store invalidates that view only when registration, deletion,
+  clearing, or a regular/floating transition changes membership; endpoint-only
+  updates do not rebuild it. Do not replace this with pseudo-live iterators or
+  an independently authoritative `_links` mirror.
+- Graph teardown now finishes exact detachment, defensive root-bucket clearing,
+  graph reset, and canvas clearing after a lifecycle callback fails, then
+  propagates that same failure. Lifecycle callbacks remain fail-fast, so later
+  callbacks do not run. This is the current chosen policy: it preserves callback
+  ordering and topology observation while preventing partially cleared graphs.
+
+  | Future direction                                              | Failure handling                            | Tradeoff                                                                                    |
+  | ------------------------------------------------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------- |
+  | **1. Current: finish teardown, then propagate first failure** | Fail fast; later callbacks do not run       | Preserves current lifecycle semantics, but skips later notifications                        |
+  | 2. Run all callbacks, then report                             | Propagate the first failure or an aggregate | Completes notifications, but changes fail-fast behavior                                     |
+  | 3. Finish and report without propagating                      | Swallow and report callback failures        | Keeps clear callers running, but hides extension failures from them                         |
+  | 4. Detach first, then notify from a queue                     | Run callbacks after teardown                | Simplifies teardown isolation, but breaks compatibility for callbacks that observe topology |
+
+- Keep the browser hydration test as the workflow-level composition check.
+- Investigate separately whether link geometry in `layoutStore`, still keyed by
+  bare `LinkId`, can collide across simultaneously live root graphs.
+- Document that root-wide identity lookup uses `rootGraphId`, while owner-local
+  iteration and slot queries use `graphScopeOf()` with the directly owning
+  graph. Callers should not construct root/owner pairs manually.
+- Defer a persistent root-wide group ID index until profiling shows it is
+  warranted. `LGraph.add()` currently scans root and subgraph groups for each
+  group insertion, which can make loading G groups take quadratic time. A
+  `Set` per insertion has the same asymptotic cost, while a persistent index
+  duplicates lifecycle state. Defer evaluation of its real workflow load-speed
+  impact. Measure representative large workflow load, deserialization, paste,
+  and unpack paths first. If the scan has material impact, optimize the
+  insertion path while preserving the existing root-shared high-water allocator
+  and import-time collision repair.
+- Defer floating reroute/link multi-store rollback. Normal root-shared link ID
+  allocation makes registration rejection unreachable without externally
+  corrupted state; future transaction work should wrap the centralized store
+  mutation rather than add compensation to this path now.
+- Treat floating as one-ended link state, not a separate entity category. The
+  runtime topology collection is unified; `graph.links` and
+  `graph.floatingLinks` remain filtered compatibility views. Keep the separate
+  serialized `floatingLinks` field until a versioned workflow migration has
+  enough value to justify its extension and fixture impact.
 
 ---
 

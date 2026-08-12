@@ -1,4 +1,5 @@
 import type { RerouteId } from '@/types/rerouteId'
+import type { OwningGraphId } from '@/types/graphScopeId'
 
 /** The input or output slot that an incomplete reroute link is connected to. */
 export interface FloatingRerouteSlot {
@@ -13,6 +14,7 @@ export interface FloatingRerouteSlot {
  */
 export interface RerouteChain {
   readonly id: RerouteId
+  graphId: OwningGraphId
   parentId?: RerouteId
   floating?: FloatingRerouteSlot
 }

@@ -1,8 +1,8 @@
 import type { INodeInputSlot, INodeSlot } from '@/lib/litegraph/src/interfaces'
 import { useLinkStore } from '@/stores/linkStore'
+import type { GraphScope } from '@/types/graphScopeId'
 import type { NodeId } from '@/types/nodeId'
 import { isSlotObject } from '@/utils/typeGuardUtil'
-import type { UUID } from '@/utils/uuid'
 
 function coerceINodeSlot(input: INodeInputSlot): INodeSlot {
   return isSlotObject(input)
@@ -29,7 +29,7 @@ export function nonWidgetedInputs(
 export function linkedWidgetedInputs(
   nodeId: NodeId,
   inputs: INodeInputSlot[] | undefined,
-  graphId: UUID
+  scope: GraphScope
 ): INodeSlot[] {
   if (!inputs) return []
 
@@ -38,7 +38,7 @@ export function linkedWidgetedInputs(
     .filter(
       (input, index) =>
         inputHasWidget(input) &&
-        linkStore.isInputSlotConnected(graphId, nodeId, index)
+        linkStore.isInputSlotConnected(scope, nodeId, index)
     )
     .map(coerceINodeSlot)
 }

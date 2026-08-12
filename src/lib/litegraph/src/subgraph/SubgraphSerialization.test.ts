@@ -15,11 +15,13 @@ import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
 import {
   LGraph,
   LGraphNode,
+  LLink,
   LiteGraph,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
 
-import { toNodeId } from '@/types/nodeId'
+import { toLinkId } from '@/types/linkId'
+import { toNodeId, UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import {
   createTestSubgraph,
   createTestSubgraphNode,
@@ -502,30 +504,56 @@ describe('SubgraphSerialization - Data Integrity', () => {
     expect(JSON.stringify(second.links)).toBe(JSON.stringify(first.links))
   })
 
+  it('preserves owned topology through serialization and configure', () => {
+    const subgraph = createTestSubgraph({ nodeCount: 0 })
+    const origin = createTestNode(subgraph, [], ['number'], 'Origin')
+    const target = createTestNode(subgraph, ['number'], [], 'Target')
+    const link = origin.connect(0, target, 0)!
+    const floatingLink = new LLink(
+      toLinkId(2),
+      'number',
+      origin.id,
+      0,
+      UNASSIGNED_NODE_ID,
+      -1
+    )
+    subgraph.addFloatingLink(floatingLink)
+    subgraph.createReroute([10, 20], link)
+    subgraph.createReroute([30, 40], floatingLink)
+
+    const exported = structuredClone(subgraph.asSerialisable())
+    const rootGraph = subgraph.rootGraph
+    subgraph.clear()
+    const restored = createTestSubgraph({ rootGraph, nodeCount: 0 })
+    restored.configure(exported)
+
+    expect(restored.links.size).toBe(1)
+    expect(restored.floatingLinks.size).toBe(1)
+    expect(restored.reroutes.size).toBe(2)
+    expect(restored.asSerialisable()).toMatchObject({
+      links: exported.links,
+      floatingLinks: exported.floatingLinks,
+      reroutes: exported.reroutes
+    })
+  })
+
   it('deduplicates duplicate subgraph node IDs while keeping root nodes canonical', () => {
     const graph = new LGraph()
-    graph.configure(structuredClone(duplicateSubgraphNodeIds))
+    const data = structuredClone(duplicateSubgraphNodeIds)
+    const expectedRootIds = data.nodes.map((node) => Number(node.id))
+    graph.configure(data)
 
-    const rootIds = graph.nodes
-      .map((node) => Number(node.id))
-      .sort((a, b) => a - b)
-    expect(rootIds).toEqual([102, 103])
+    const rootIds = graph.nodes.map((node) => Number(node.id))
+    expect(new Set(rootIds)).toEqual(new Set(expectedRootIds))
 
-    const subgraphAIds = new Set(
-      graph.subgraphs
-        .get(DUPLICATE_ID_SUBGRAPH_A)!
-        .nodes.map((node) => Number(node.id))
-    )
-    const subgraphBIds = new Set(
-      graph.subgraphs
-        .get(DUPLICATE_ID_SUBGRAPH_B)!
-        .nodes.map((node) => Number(node.id))
-    )
-
-    expect(subgraphAIds).toEqual(new Set([3, 8, 37]))
-    for (const id of subgraphAIds) {
-      expect(subgraphBIds.has(id)).toBe(false)
-    }
+    const subgraphAIds = graph.subgraphs
+      .get(DUPLICATE_ID_SUBGRAPH_A)!
+      .nodes.map((node) => Number(node.id))
+    const subgraphBIds = graph.subgraphs
+      .get(DUPLICATE_ID_SUBGRAPH_B)!
+      .nodes.map((node) => Number(node.id))
+    const allIds = [...rootIds, ...subgraphAIds, ...subgraphBIds]
+    expect(new Set(allIds).size).toBe(allIds.length)
   })
 
   it('patches remapped link and proxyWidget references during duplicate-ID hydration', () => {

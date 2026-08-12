@@ -17,13 +17,17 @@ import {
 } from '@/renderer/core/layout/operations/graphLayoutRegistration'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { toLinkId } from '@/types/linkId'
+import { isFloatingTopology } from '@/types/linkTopology'
 import { toRerouteId } from '@/types/rerouteId'
+import { graphScopeOf, toRootGraphId } from '@/types/graphScopeId'
 import {
   createLGraphState,
   mintGroupId,
+  mintLinkId,
   mintNodeId,
   mintRerouteId,
   observeGroupId,
+  observeLinkId,
   observeNodeId,
   observeRerouteId
 } from './idAllocation'
@@ -43,12 +47,7 @@ import { UNASSIGNED_NODE_ID, parseNodeId, toNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import { forEachNode, visitGraphNodes } from '@/utils/graphTraversalUtil'
 
-import {
-  groupLinksByTuple,
-  purgeOrphanedLinks,
-  realignInputLinkSlots,
-  selectSurvivorLink
-} from './linkDeduplication'
+import { realignInputLinkSlots } from './linkDeduplication'
 import {
   beginNamedValuesShadowDiffLoad,
   endNamedValuesShadowDiffLoad
@@ -67,9 +66,11 @@ import {
 import {
   LLink,
   registerLinkTopology,
+  resolveLinkTopology,
   unregisterAllLinkTopologies,
   unregisterLinkTopology
 } from './LLink'
+import { LinkMap } from './LinkMap'
 import type { LinkId } from './LLink'
 import { MapProxyHandler } from './MapProxyHandler'
 import {
@@ -139,10 +140,9 @@ import type {
 import { getAllNestedItems } from './utils/collections'
 import {
   collectReservedGroupIds,
+  collectReservedLinkIds,
   collectReservedRerouteIds,
-  deduplicateSubgraphGroupIds,
-  deduplicateSubgraphNodeIds,
-  deduplicateSubgraphRerouteIds,
+  normalizeSubgraphDefinitions,
   topologicalSortSubgraphs
 } from './subgraph/subgraphDeduplication'
 
@@ -155,11 +155,6 @@ const validTriggerActions = new Set<LGraphTriggerAction>(LGraphTriggerActions)
 
 function isLGraphTriggerAction(action: string): action is LGraphTriggerAction {
   return validTriggerActions.has(action as LGraphTriggerAction)
-}
-
-function numericNodeId(id: NodeId): number | null {
-  const numericId = Number(id)
-  return Number.isInteger(numericId) ? numericId : null
 }
 
 export type RendererType = 'LG' | 'Vue' | 'Vue-corrected'
@@ -209,11 +204,54 @@ export interface BaseLGraph {
   readonly rootGraph: LGraph
 }
 
+const nodesBeingRemoved = new WeakSet<LGraphNode>()
+
 function fireNodeRemovalLifecycle(node: LGraphNode): void {
   const graph: LGraph | null = node.graph
   graph?.events.dispatch('node:before-removed', { node })
   node.onRemoved?.()
   graph?.onNodeRemoved?.(node)
+}
+
+function fireNodeRemovalLifecycles(nodes: LGraphNode[]): void {
+  const pending = nodes.filter((node) => !nodesBeingRemoved.has(node))
+  for (const node of pending) nodesBeingRemoved.add(node)
+  try {
+    for (const node of pending) fireNodeRemovalLifecycle(node)
+  } finally {
+    for (const node of pending) nodesBeingRemoved.delete(node)
+  }
+}
+
+function teardownOwnedGraphs(owner: LGraph): void {
+  const initialOwnedGraphs = owner.isRootGraph
+    ? [owner, ...owner._subgraphs.values()]
+    : [owner]
+  const lifecycleNodes = initialOwnedGraphs.flatMap((graph) => [
+    ...graph._nodes
+  ])
+
+  try {
+    fireNodeRemovalLifecycles(lifecycleNodes)
+  } finally {
+    const ownedGraphs = new Set(initialOwnedGraphs)
+    if (owner.isRootGraph) {
+      for (const graph of owner._subgraphs.values()) ownedGraphs.add(graph)
+    }
+    for (const graph of ownedGraphs) {
+      unregisterAllLinkTopologies(graph)
+      unregisterAllRerouteChains(graph)
+    }
+    const nodes = new Set(lifecycleNodes)
+    for (const graph of ownedGraphs) {
+      for (const node of graph._nodes) nodes.add(node)
+    }
+    for (const node of nodes) {
+      unregisterNodeState(node)
+      node.graph = null
+    }
+    unregisterAllGraphLayout(owner)
+  }
 }
 
 /** A reroute chain segment, terminal-first. */
@@ -271,6 +309,52 @@ function walkSegment(
  * + onNodeAdded: when a new node is added to the graph
  * + onNodeRemoved: when a node inside this graph is removed
  */
+function registerConfiguredLink(
+  graph: LGraph,
+  link: LLink,
+  survivorByRejected: Map<LinkId, LinkId>
+): void {
+  if (graph._addLink(link)) return
+  const incumbent = useLinkStore().getInputSlotLink(
+    graphScopeOf(graph),
+    link.target_id,
+    link.target_slot
+  )
+  if (
+    incumbent?.originNodeId === link.origin_id &&
+    incumbent.originSlot === link.origin_slot
+  ) {
+    survivorByRejected.set(link.id, incumbent.id)
+  }
+}
+
+function serialiseOwnedTopology(owner: LGraph) {
+  return {
+    links: owner.links.size
+      ? [...owner.links.values()].map((link) => link.asSerialisable())
+      : undefined,
+    floatingLinks: owner.floatingLinks.size
+      ? [...owner.floatingLinks.values()].map((link) => link.asSerialisable())
+      : undefined,
+    reroutes: owner.reroutes.size
+      ? [...owner.reroutes.values()].map((reroute) => reroute.asSerialisable())
+      : undefined
+  }
+}
+
+function remapConfiguredLinkAliases(
+  data: (ISerialisedGraph | SerialisableGraph) &
+    Partial<Pick<ExportedSubgraph, 'inputs' | 'outputs'>>,
+  survivorByRejected: ReadonlyMap<LinkId, LinkId>
+): void {
+  for (const slot of [...(data.inputs ?? []), ...(data.outputs ?? [])]) {
+    if (!slot.linkIds) continue
+    slot.linkIds = slot.linkIds.map(
+      (linkId) => survivorByRejected.get(toLinkId(linkId)) ?? toLinkId(linkId)
+    )
+  }
+}
+
 export class LGraph
   implements LinkNetwork, BaseLGraph, Serialisable<SerialisableGraph>
 {
@@ -328,8 +412,6 @@ export class LGraph
   set _version(value: number) {
     toRaw(this)._versionRef.value = value
   }
-  /** The backing store for links.  Keys are wrapped in String() */
-  _links: Map<LinkId, LLink> = new Map()
   /**
    * Indexed property access is deprecated.
    * Backwards compatibility with a Proxy has been added, but will eventually be removed.
@@ -342,6 +424,7 @@ export class LGraph
    * ```
    */
   links: Map<LinkId, LLink> & Record<LinkId, LLink>
+  readonly floatingLinks: ReadonlyMap<LinkId, LLink>
   list_of_graphcanvas: LGraphCanvas[] | null
   status: number = LGraph.STATUS_STOPPED
 
@@ -403,14 +486,6 @@ export class LGraph
     return
   }
 
-  /** Internal only.  Not required for serialisation; calculated on deserialise. */
-  private _lastFloatingLinkId: number = 0
-
-  private readonly floatingLinksInternal: Map<LinkId, LLink> = new Map()
-  get floatingLinks(): ReadonlyMap<LinkId, LLink> {
-    return this.floatingLinksInternal
-  }
-
   private readonly reroutesInternal = new Map<RerouteId, Reroute>()
   /** All reroutes in this graph. */
   public get reroutes(): Map<RerouteId, Reroute> {
@@ -465,14 +540,42 @@ export class LGraph
    * @param o data from previous serialization [optional]
    */
   constructor(o?: ISerialisedGraph | SerialisableGraph) {
+    const linkStore = useLinkStore()
     /** @see MapProxyHandler */
-    const links = this._links
+    const links = new LinkMap(
+      () => (this.rootGraph ? graphScopeOf(this) : undefined),
+      (scope) =>
+        [...linkStore.graphTopologies(scope)]
+          .filter((topology) => !isFloatingTopology(topology))
+          .map(resolveLinkTopology)
+          .filter((link): link is LLink => link !== undefined),
+      linkStore.getRevision,
+      (link) => this._addLink(link),
+      (id) => this._removeLink(id)
+    )
     MapProxyHandler.bindAllMethods(links)
     const handler = new MapProxyHandler<LinkId, LLink>((value) =>
       toLinkId(Number(value))
     )
     this.links = new Proxy(links, handler) as Map<LinkId, LLink> &
       Record<LinkId, LLink>
+
+    this.floatingLinks = new LinkMap(
+      () => (this.rootGraph ? graphScopeOf(this) : undefined),
+      (scope) =>
+        [...linkStore.graphTopologies(scope)]
+          .filter(isFloatingTopology)
+          .map(resolveLinkTopology)
+          .filter((link): link is LLink => link !== undefined),
+      linkStore.getRevision,
+      (link) => this.addFloatingLink(link),
+      (id) => {
+        const link = this.floatingLinks.get(id)
+        if (!link) return false
+        this.removeFloatingLink(link)
+        return true
+      }
+    )
 
     this.list_of_graphcanvas = null
     this.clear()
@@ -487,24 +590,25 @@ export class LGraph
     this.stop()
     this.status = LGraph.STATUS_STOPPED
 
+    try {
+      teardownOwnedGraphs(this)
+    } finally {
+      this.resetAfterClear()
+    }
+  }
+
+  private resetAfterClear(): void {
     const graphId = this.id
     if (this.isRootGraph && graphId !== zeroUuid) {
       usePreviewExposureStore().clearGraph(graphId)
       useWidgetValueStore().clearGraph(graphId)
-      useLinkStore().clearGraph(graphId)
-      useRerouteStore().clearGraph(graphId)
+      useLinkStore().clearGraph(toRootGraphId(graphId))
+      useRerouteStore().clearGraph(toRootGraphId(graphId))
       useNodeDataStore().clearGraph(graphId)
       layoutStore.clearGraph(graphId)
-    } else {
-      // Subgraphs and unconfigured (zero-uuid) graphs share their store
-      // bucket with other graphs, so unregister each entity individually.
-      unregisterAllLinkTopologies(this)
-      unregisterAllRerouteChains(this)
-      unregisterAllNodeStates(this)
-      unregisterAllGraphLayout(this)
     }
 
-    this.id = zeroUuid
+    this.id = this.isRootGraph ? createUuidv4() : zeroUuid
     this.revision = 0
 
     this.state = createLGraphState()
@@ -512,13 +616,6 @@ export class LGraph
     // used to detect changes
     this._version = -1
     this._subgraphs.clear()
-
-    // safe clear
-    if (this._nodes) {
-      for (const _node of this._nodes) {
-        fireNodeRemovalLifecycle(_node)
-      }
-    }
 
     // nodes
     this._nodes = []
@@ -528,11 +625,7 @@ export class LGraph
     // nodes that contain onExecute sorted in execution order
     this._nodes_executable = null
 
-    this._links.clear()
     this.reroutes.clear()
-    this.floatingLinksInternal.clear()
-
-    this._lastFloatingLinkId = 0
 
     // other scene stuff
     this._groups = []
@@ -1063,8 +1156,20 @@ export class LGraph
     // LEGACY: This was changed from constructor === LGraphGroup
     // groups
     if (node instanceof LGraphGroup) {
-      // Assign group ID
-      if (node.id == null || node.id === -1) node.id = mintGroupId(state)
+      const rootGroups = [
+        ...this.rootGraph.groups,
+        ...[...this.rootGraph.subgraphs.values()].flatMap(
+          (subgraph) => subgraph.groups
+        )
+      ]
+      if (
+        node.id == null ||
+        node.id === -1 ||
+        rootGroups.some((group) => group.id === node.id)
+      ) {
+        do node.id = mintGroupId(state)
+        while (rootGroups.some((group) => group.id === node.id))
+      }
       observeGroupId(state, node.id)
 
       this._groups.push(node)
@@ -1077,13 +1182,6 @@ export class LGraph
     }
 
     node.id = parseNodeId(node.id) ?? UNASSIGNED_NODE_ID
-
-    if (node.id !== UNASSIGNED_NODE_ID && this._nodes_by_id[node.id] != null) {
-      console.warn(
-        'LiteGraph: there is already a node with this ID, changing it'
-      )
-      node.id = mintNodeId(state)
-    }
 
     if (this._nodes.length >= LiteGraph.MAX_NUMBER_OF_NODES) {
       throw 'LiteGraph: max number of nodes in a graph reached'
@@ -1103,8 +1201,7 @@ export class LGraph
 
     node.graph = this
 
-    // Adopt the node-data store proxy now that the node has a valid id and graph.
-    registerNodeState(this, node)
+    while (!registerNodeState(this, node)) node.id = mintNodeId(state)
 
     // Register all widgets with the WidgetValueStore now that node has a
     // valid ID and graph reference.
@@ -1176,6 +1273,8 @@ export class LGraph
       return
     }
 
+    if (nodesBeingRemoved.has(node)) return
+
     // not found
     if (this._nodes_by_id[node.id] == null) {
       console.warn('LiteGraph: node not found', node)
@@ -1187,6 +1286,15 @@ export class LGraph
       return
     }
 
+    nodesBeingRemoved.add(node)
+    try {
+      this.removeNode(node)
+    } finally {
+      nodesBeingRemoved.delete(node)
+    }
+  }
+
+  private removeNode(node: LGraphNode): void {
     // sure? - almost sure is wrong
     this.beforeChange()
 
@@ -1218,7 +1326,9 @@ export class LGraph
     if (node.isSubgraphNode()) {
       const releasedSubgraphs = findReleasableSubgraphs(this.rootGraph, node)
       for (const subgraph of releasedSubgraphs) {
-        visitGraphNodes(subgraph, fireNodeRemovalLifecycle)
+        const nodes: LGraphNode[] = []
+        visitGraphNodes(subgraph, (node) => nodes.push(node))
+        fireNodeRemovalLifecycles(nodes)
       }
       for (const subgraph of releasedSubgraphs) {
         unregisterAllLinkTopologies(subgraph)
@@ -1490,7 +1600,7 @@ export class LGraph
    * clears the triggered slot animation in all links (stop visual animation)
    */
   clearTriggeredSlots(): void {
-    for (const link_info of this._links.values()) {
+    for (const link_info of this.links.values()) {
       if (!link_info) continue
 
       if (link_info._last_time) link_info._last_time = 0
@@ -1507,17 +1617,18 @@ export class LGraph
     this.canvasAction((c) => c.setDirty(fg, bg))
   }
 
-  addFloatingLink(link: LLink): LLink {
+  addFloatingLink(link: LLink): LLink | undefined {
     if (link.id === -1) {
-      link.id = toLinkId(++this._lastFloatingLinkId)
+      link.id = mintLinkId(this.state)
     }
-    this.floatingLinksInternal.set(link.id, link)
-    registerLinkTopology(this, link)
+
+    if (!registerLinkTopology(this, link)) return
+    observeLinkId(this.state, link.id)
     return link
   }
 
   removeFloatingLink(link: LLink): void {
-    this.floatingLinksInternal.delete(link.id)
+    if (this.floatingLinks.get(link.id) !== link) return
     unregisterLinkTopology(link)
 
     const reroutes = LLink.getReroutes(this, link)
@@ -1531,27 +1642,23 @@ export class LGraph
   }
 
   /**
-   * Adds a link to this graph's {@link _links} map and registers its topology
-   * with the link store. The single entry point for populating {@link _links};
-   * routing every add through here keeps the store from silently desyncing.
+   * Registers a link in the root-wide identity store.
    */
-  _addLink(link: LLink): void {
-    this._links.set(link.id, link)
-    registerLinkTopology(this, link)
+  _addLink(link: LLink): boolean {
+    if (!registerLinkTopology(this, link)) return false
+    observeLinkId(this.state, link.id)
+    return true
   }
 
   /**
-   * Removes a link from this graph's {@link _links} map and unregisters it
-   * from the link and layout stores. The delete-side counterpart to
-   * {@link _addLink}; routing every removal through here keeps the stores
-   * from silently desyncing.
+   * Removes a link from the root-wide identity store and its layout store.
    */
-  _removeLink(linkId: LinkId): void {
-    const link = this._links.get(linkId)
-    if (!link) return
-    this._links.delete(linkId)
+  _removeLink(linkId: LinkId): boolean {
+    const link = this.links.get(linkId)
+    if (!link) return false
     unregisterLinkTopology(link)
     layoutStore.deleteLinkLayout(linkId)
+    return true
   }
 
   /**
@@ -1562,7 +1669,7 @@ export class LGraph
   getLink(id: null | undefined): undefined
   getLink(id: LinkId | null | undefined): LLink | undefined
   getLink(id: LinkId | null | undefined): LLink | undefined {
-    return id == null ? undefined : this._links.get(id)
+    return id == null ? undefined : this.links.get(id)
   }
 
   /**
@@ -1582,9 +1689,12 @@ export class LGraph
    * populating {@link reroutes}; routing every add through here keeps the
    * store from silently desyncing.
    */
-  _addReroute(reroute: Reroute): void {
+  _addReroute(reroute: Reroute): boolean {
+    const existing = this.reroutesInternal.get(reroute.id)
+    if (existing) return existing === reroute
+    if (!registerRerouteChain(this, reroute)) return false
     this.reroutesInternal.set(reroute.id, reroute)
-    registerRerouteChain(this, reroute)
+    return true
   }
 
   /**
@@ -1610,7 +1720,7 @@ export class LGraph
     parentId,
     pos,
     floating
-  }: OptionalProps<SerialisableReroute, 'id'>): Reroute {
+  }: OptionalProps<SerialisableReroute, 'id'>): Reroute | undefined {
     const rerouteId =
       id === undefined ? mintRerouteId(this.state) : toRerouteId(id)
     observeRerouteId(this.state, rerouteId)
@@ -1621,7 +1731,7 @@ export class LGraph
       parentId === undefined ? undefined : toRerouteId(parentId)
     if (pos && existingReroute) reroute.pos = pos
     reroute.floating = floating
-    this._addReroute(reroute)
+    if (!this._addReroute(reroute)) return
     return reroute
   }
 
@@ -1636,27 +1746,30 @@ export class LGraph
     if (!(before instanceof LLink) && !(before instanceof Reroute)) {
       return
     }
-    const rerouteId = mintRerouteId(this.state)
     const chainLinks =
       before instanceof Reroute
         ? [
-            ...[...before.linkIds].map((id) => this._links.get(id)),
+            ...[...before.linkIds].map((id) => this.links.get(id)),
             ...[...before.floatingLinkIds].map((id) =>
               this.floatingLinks.get(id)
             )
           ]
         : [before]
-    const reroute = new Reroute(rerouteId, this, pos, before.parentId)
-    this._addReroute(reroute)
+    const reroute = this.setReroute({
+      parentId: before.parentId,
+      pos,
+      linkIds: []
+    })
+    if (!reroute) return
 
     // Splice the new reroute into every chain that contained `before`
     for (const link of chainLinks) {
       if (!link) continue
-      if (link.parentId === before.parentId) link.parentId = rerouteId
+      if (link.parentId === before.parentId) link.parentId = reroute.id
 
       const reroutes = LLink.getReroutes(this, link)
       for (const x of reroutes.filter((x) => x.parentId === before.parentId)) {
-        x.parentId = rerouteId
+        x.parentId = reroute.id
       }
     }
 
@@ -1681,7 +1794,7 @@ export class LGraph
     }
 
     for (const linkId of linkIds) {
-      const link = this._links.get(linkId)
+      const link = this.links.get(linkId)
       if (link && link.parentId === id) link.parentId = parentId
     }
 
@@ -1721,7 +1834,7 @@ export class LGraph
    * Destroys a link
    */
   removeLink(link_id: LinkId): void {
-    const link = this._links.get(link_id)
+    const link = this.links.get(link_id)
     if (!link) return
 
     const node = this.getNodeById(link.target_id)
@@ -1730,39 +1843,63 @@ export class LGraph
     link.disconnect(this)
   }
 
-  _removeDuplicateLinks(): Map<LinkId, LinkId> {
-    const groups = groupLinksByTuple(this._links)
-    const survivorByPurged = new Map<LinkId, LinkId>()
-
-    for (const ids of groups.values()) {
-      if (ids.length <= 1) continue
-
-      const sampleLink = this._links.get(ids[0])!
-      const node = this.getNodeById(sampleLink.target_id)
-      const keepId = selectSurvivorLink(ids, node)
-
-      purgeOrphanedLinks(ids, keepId, this)
-      for (const id of ids) {
-        if (id !== keepId) survivorByPurged.set(id, keepId)
-      }
-    }
-
-    return survivorByPurged
-  }
-
   /**
    * Creates a new subgraph definition, and adds it to the graph.
    * @param data Exported data (typically serialised) to configure the new subgraph with
    * @returns The newly created subgraph definition.
    */
   createSubgraph(data: ExportedSubgraph): Subgraph {
-    const { id } = data
+    return this.createSubgraphs([data])[0]
+  }
 
-    const subgraph = new Subgraph(this.rootGraph, data)
+  createSubgraphs(data: ExportedSubgraph[]): Subgraph[] {
+    const normalized = normalizeSubgraphDefinitions(
+      data,
+      {
+        nodeIds: this.collectReservedNodeIds(),
+        groupIds: collectReservedGroupIds(this.rootGraph),
+        linkIds: collectReservedLinkIds(this.rootGraph),
+        rerouteIds: collectReservedRerouteIds(this.rootGraph)
+      },
+      this.state
+    ).subgraphs
+    return this.createNormalizedSubgraphs(normalized)
+  }
+
+  private collectReservedNodeIds(
+    rootNodes: ISerialisedNode[] = []
+  ): Set<NodeId> {
+    const reserved = new Set<NodeId>()
+    for (const owner of [
+      this.rootGraph,
+      ...this.rootGraph.subgraphs.values()
+    ]) {
+      for (const node of owner.nodes) reserved.add(node.id)
+    }
+    for (const node of rootNodes) reserved.add(toNodeId(node.id))
+    return reserved
+  }
+
+  private createNormalizedSubgraphs(data: ExportedSubgraph[]): Subgraph[] {
+    const subgraphs = data.map((definition) =>
+      this.createNormalizedSubgraph(definition)
+    )
+    for (const definition of topologicalSortSubgraphs(data))
+      this.subgraphs.get(definition.id)?.configure(definition)
+    return subgraphs
+  }
+
+  private createNormalizedSubgraph(normalized: ExportedSubgraph): Subgraph {
+    const { id } = normalized
+
+    const subgraph = new Subgraph(this.rootGraph, normalized)
     this.subgraphs.set(id, subgraph)
 
     // FE: Create node defs
-    this.rootGraph.events.dispatch('subgraph-created', { subgraph, data })
+    this.rootGraph.events.dispatch('subgraph-created', {
+      subgraph,
+      data: normalized
+    })
     return subgraph
   }
 
@@ -1881,7 +2018,6 @@ export class LGraph
     for (const group of groups) this.remove(group)
 
     const subgraph = this.createSubgraph(data)
-    subgraph.configure(data)
     for (const node of subgraph.nodes) node.onGraphConfigured?.()
     for (const node of subgraph.nodes) node.onAfterGraphConfigured?.()
 
@@ -1990,9 +2126,6 @@ export class LGraph
         const { input, inputNode, link, subgraphOutput } = connection
         // Special handling: Subgraph output node
         if (link.target_id === SUBGRAPH_OUTPUT_ID) {
-          link.origin_id = subgraphNode.id
-          link.origin_slot = i - 1
-          this._addLink(link)
           if (subgraphOutput instanceof SubgraphOutput) {
             subgraphOutput.connect(
               subgraphNode.findOutputSlotByType(link.type, true, true),
@@ -2130,7 +2263,7 @@ export class LGraph
       eparent?: RerouteId
       externalFirst: boolean
     }[] = []
-    for (const [, link] of subgraphNode.subgraph._links) {
+    for (const [, link] of subgraphNode.subgraph.links) {
       let externalParentId: RerouteId | undefined
       if (link.origin_id === SUBGRAPH_INPUT_ID) {
         const outerLinkId = inputLinkId(this, subgraphNode.id, link.origin_slot)
@@ -2273,12 +2406,13 @@ export class LGraph
     const oldReroutes = subgraphNode.subgraph.reroutes
     for (const reroute of oldReroutes.values()) {
       const migratedId = mintRerouteId(this.state)
-      const migratedReroute = new Reroute(migratedId, this, [
-        reroute.pos[0] + offsetX,
-        reroute.pos[1] + offsetY
-      ])
+      const migratedReroute = this.setReroute({
+        id: migratedId,
+        pos: [reroute.pos[0] + offsetX, reroute.pos[1] + offsetY],
+        linkIds: []
+      })
+      if (!migratedReroute) continue
       rerouteIdMap.set(reroute.id, migratedId)
-      this._addReroute(migratedReroute)
       toSelect.push(migratedReroute)
     }
 
@@ -2369,7 +2503,7 @@ export class LGraph
       floatingLinks,
       definitions
     } = this.asSerialisable(option)
-    const linkArray = [...this._links.values()]
+    const linkArray = [...this.links.values()]
     const links = linkArray.map((x) => x.serialize())
 
     if (reroutes?.length) {
@@ -2430,16 +2564,7 @@ export class LGraph
 
     const nodes = nodeList.map((node) => node.serialize())
     const groups = this._groups.map((x) => x.serialize())
-
-    const links = this._links.size
-      ? [...this._links.values()].map((x) => x.asSerialisable())
-      : undefined
-    const floatingLinks = this.floatingLinks.size
-      ? [...this.floatingLinks.values()].map((x) => x.asSerialisable())
-      : undefined
-    const reroutes = this.reroutes.size
-      ? [...this.reroutes.values()].map((x) => x.asSerialisable())
-      : undefined
+    const topology = serialiseOwnedTopology(this)
 
     // Save scale and offset
     const extra = { ...this.extra }
@@ -2454,9 +2579,7 @@ export class LGraph
       state,
       groups,
       nodes,
-      links,
-      floatingLinks,
-      reroutes,
+      ...topology,
       extra
     }
 
@@ -2517,7 +2640,21 @@ export class LGraph
 
       this._configureBase(data)
 
+      if (options.clearGraph) {
+        const topologyScope = graphScopeOf(this)
+        if (this.isRootGraph) {
+          useLinkStore().clearGraph(topologyScope.rootGraphId)
+          useRerouteStore().clearGraph(topologyScope.rootGraphId)
+          useNodeDataStore().clearGraph(this.id)
+        } else {
+          useLinkStore().clearOwner(topologyScope)
+          useRerouteStore().clearOwner(topologyScope)
+          useNodeDataStore().clearOwner(topologyScope)
+        }
+      }
+
       let reroutes: SerialisableReroute[] | undefined
+      const survivorByRejected = new Map<LinkId, LinkId>()
 
       // TODO: Determine whether this should this fall back to 0.4.
       if (data.version === 0.4) {
@@ -2526,7 +2663,7 @@ export class LGraph
         if (Array.isArray(data.links)) {
           for (const linkData of data.links) {
             const link = LLink.createFromArray(linkData)
-            this._addLink(link)
+            registerConfiguredLink(this, link, survivorByRejected)
           }
         }
         // #region `extra` embeds for v0.4
@@ -2534,7 +2671,7 @@ export class LGraph
         // LLink parentIds
         if (Array.isArray(extra?.linkExtensions)) {
           for (const linkEx of extra.linkExtensions) {
-            const link = this._links.get(linkEx.id)
+            const link = this.links.get(linkEx.id)
             if (link) link.parentId = linkEx.parentId
           }
         }
@@ -2567,7 +2704,7 @@ export class LGraph
         if (Array.isArray(data.links)) {
           for (const linkData of data.links) {
             const link = LLink.create(linkData)
-            this._addLink(link)
+            registerConfiguredLink(this, link, survivorByRejected)
           }
         }
 
@@ -2591,60 +2728,28 @@ export class LGraph
         this[i] = data[i]
       }
 
-      // Subgraph definitions — deduplicate node IDs before configuring.
-      // deduplicateSubgraphNodeIds clones internally to avoid mutating
-      // the caller's data (e.g. reactive Pinia state).
+      // Normalize cloned subgraph definitions before configuring them.
       const subgraphs = data.definitions?.subgraphs
       let effectiveNodesData = nodesData
       if (subgraphs) {
-        const reservedNodeIds = new Set<number>()
-        for (const node of this._nodes) {
-          const id = numericNodeId(node.id)
-          if (id !== null) reservedNodeIds.add(id)
-        }
-        for (const sg of this.subgraphs.values()) {
-          for (const node of sg.nodes) {
-            const id = numericNodeId(node.id)
-            if (id !== null) reservedNodeIds.add(id)
-          }
-        }
-        for (const n of nodesData ?? []) {
-          if (typeof n.id === 'number') reservedNodeIds.add(n.id)
-        }
-
-        const deduplicated = this.isRootGraph
-          ? deduplicateSubgraphNodeIds(
+        const normalized = this.isRootGraph
+          ? normalizeSubgraphDefinitions(
               subgraphs,
-              reservedNodeIds,
+              {
+                nodeIds: this.collectReservedNodeIds(nodesData),
+                groupIds: collectReservedGroupIds(this, data.groups),
+                linkIds: collectReservedLinkIds(this, data.floatingLinks),
+                rerouteIds: collectReservedRerouteIds(this)
+              },
               this.state,
               nodesData
             )
           : undefined
 
-        if (deduplicated) {
-          deduplicateSubgraphGroupIds(
-            deduplicated.subgraphs,
-            collectReservedGroupIds(this, data.groups),
-            this.state
-          )
-          deduplicateSubgraphRerouteIds(
-            deduplicated.subgraphs,
-            collectReservedRerouteIds(this),
-            this.state
-          )
-        }
+        const finalSubgraphs = normalized?.subgraphs ?? subgraphs
+        effectiveNodesData = normalized?.rootNodes ?? nodesData
 
-        const finalSubgraphs = deduplicated?.subgraphs ?? subgraphs
-        effectiveNodesData = deduplicated?.rootNodes ?? nodesData
-
-        for (const subgraph of finalSubgraphs) this.createSubgraph(subgraph)
-
-        // Configure in leaf-first order so that when a SubgraphNode is
-        // configured, its referenced subgraph definition already has its
-        // nodes/links/inputs populated.
-        const configureOrder = topologicalSortSubgraphs(finalSubgraphs)
-        for (const subgraph of configureOrder)
-          this.subgraphs.get(subgraph.id)?.configure(subgraph)
+        this.createNormalizedSubgraphs(finalSubgraphs)
       }
 
       let error = false
@@ -2695,10 +2800,13 @@ export class LGraph
       if (Array.isArray(data.floatingLinks)) {
         for (const linkData of data.floatingLinks) {
           const floatingLink = LLink.create(linkData)
+          if (
+            this.links.has(floatingLink.id) ||
+            this.floatingLinks.has(floatingLink.id)
+          ) {
+            floatingLink.id = toLinkId(-1)
+          }
           this.addFloatingLink(floatingLink)
-
-          if (floatingLink.id > this._lastFloatingLinkId)
-            this._lastFloatingLinkId = floatingLink.id
         }
       }
 
@@ -2709,15 +2817,15 @@ export class LGraph
         }
       }
 
-      const survivorByPurged = this._removeDuplicateLinks()
+      remapConfiguredLinkAliases(data, survivorByRejected)
 
       // Node configure() overrides may have reordered serialized inputs in
       // place to match current node definitions; re-key links to the slots
       // that reference them. Uses nodeDataMap: the effective (possibly
       // deduplicated-clone) data nodes were actually configured from.
-      // survivorByPurged lets an input that referenced a deduplicated link
-      // realign the survivor kept in its place.
-      realignInputLinkSlots(this, nodeDataMap.values(), survivorByPurged)
+      // survivorByRejected lets an input that referenced a rejected link alias
+      // realign the registered link kept in its place.
+      realignInputLinkSlots(this, nodeDataMap.values(), survivorByRejected)
 
       // groups
       this._groups.length = 0
@@ -2911,10 +3019,6 @@ export class Subgraph
       }
     }
 
-    // Repair IO slot linkIds that reference links removed by
-    // _removeDuplicateLinks during super.configure().
-    this._repairIOSlotLinkIds()
-
     if (widgets) {
       this.widgets.length = 0
       for (const widget of widgets) {
@@ -2937,50 +3041,6 @@ export class Subgraph
 
     this._configureSubgraph(data)
     return r
-  }
-
-  /**
-   * Repairs SubgraphInput/Output `linkIds` that reference links removed
-   * by `_removeDuplicateLinks` during `super.configure()`.
-   *
-   * For each stale link ID, finds the surviving link that connects to the
-   * same IO node and slot index, and substitutes it.
-   */
-  private _repairIOSlotLinkIds(): void {
-    for (const [slotIndex, slot] of this.inputs.entries()) {
-      this._repairSlotLinkIds(slot.linkIds, SUBGRAPH_INPUT_ID, slotIndex)
-    }
-    for (const [slotIndex, slot] of this.outputs.entries()) {
-      this._repairSlotLinkIds(slot.linkIds, SUBGRAPH_OUTPUT_ID, slotIndex)
-    }
-  }
-
-  private _repairSlotLinkIds(
-    linkIds: LinkId[],
-    ioNodeId: NodeId,
-    slotIndex: number
-  ): void {
-    const repaired = linkIds.map((id) =>
-      this._links.has(id)
-        ? id
-        : (this._findLinkBySlot(ioNodeId, slotIndex)?.id ?? id)
-    )
-    repaired.forEach((id, i) => {
-      linkIds[i] = id
-    })
-  }
-
-  private _findLinkBySlot(
-    nodeId: NodeId,
-    slotIndex: number
-  ): LLink | undefined {
-    for (const link of this._links.values()) {
-      if (
-        (link.origin_id === nodeId && link.origin_slot === slotIndex) ||
-        (link.target_id === nodeId && link.target_slot === slotIndex)
-      )
-        return link
-    }
   }
 
   override attachCanvas(canvas: LGraphCanvas): void {
@@ -3146,6 +3206,7 @@ export class Subgraph
 
   override asSerialisable(): ExportedSubgraph &
     Required<Pick<SerialisableGraph, 'nodes' | 'groups' | 'extra'>> {
+    const topology = serialiseOwnedTopology(this)
     return {
       id: this.id,
       version: LGraph.serialisedSchemaVersion,
@@ -3161,10 +3222,8 @@ export class Subgraph
       widgets: [...this.widgets],
       nodes: this.nodes.map((node) => node.serialize()),
       groups: this.groups.map((group) => group.serialize()),
-      links: [...this.links.values()].map((x) => x.asSerialisable()),
-      reroutes: this.reroutes.size
-        ? [...this.reroutes.values()].map((x) => x.asSerialisable())
-        : undefined,
+      ...topology,
+      links: topology.links ?? [],
       extra: this.extra
     }
   }

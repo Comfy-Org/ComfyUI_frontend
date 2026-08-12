@@ -13,6 +13,7 @@ import {
   createMockLGraphNode,
   createMockNodeOutputSlot
 } from '@/utils/__tests__/litegraphTestUtils'
+import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
@@ -33,6 +34,10 @@ vi.mock('@/stores/executionStore', () => ({
 }))
 
 const GRAPH_ID: UUID = 'renderer-graph'
+const GRAPH_SCOPE = {
+  rootGraphId: toRootGraphId(GRAPH_ID),
+  owningGraphId: toOwningGraphId(GRAPH_ID)
+}
 
 describe('minimapCanvasRenderer', () => {
   let mockCanvas: HTMLCanvasElement
@@ -86,6 +91,7 @@ describe('minimapCanvasRenderer', () => {
         })
       ],
       _groups: [],
+      id: GRAPH_ID,
       rootGraph: { id: GRAPH_ID } as LGraph,
       getNodeById: vi.fn()
     })
@@ -266,8 +272,9 @@ describe('minimapCanvasRenderer', () => {
       })
     ]
 
-    useLinkStore().registerLink(GRAPH_ID, {
+    useLinkStore().registerLink(GRAPH_SCOPE, {
       id: toLinkId(1),
+      graphId: GRAPH_SCOPE.owningGraphId,
       originNodeId: mockGraph._nodes[0].id,
       originSlot: 0,
       targetNodeId: toNodeId('2'),

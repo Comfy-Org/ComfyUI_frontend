@@ -2,15 +2,18 @@ import type { LGraph } from '../LGraph'
 import { toGroupId } from '@/types/groupId'
 import {
   mintGroupId,
+  mintLinkId,
   mintNodeId,
   mintRerouteId,
   observeGroupId,
+  observeLinkId,
   observeNodeId,
   observeRerouteId
 } from '../idAllocation'
 import type { LGraphState } from '../idAllocation'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
+import { toLinkId } from '@/types/linkId'
 import { toRerouteId } from '@/types/rerouteId'
 import type {
   ExportedSubgraph,
@@ -25,6 +28,90 @@ const MAX_ID = 100_000_000
 interface DeduplicationResult {
   subgraphs: ExportedSubgraph[]
   rootNodes: ISerialisedNode[] | undefined
+}
+
+interface SubgraphNormalizationReservations {
+  nodeIds: Set<NodeId>
+  groupIds: Set<number>
+  linkIds: Set<number>
+  rerouteIds: Set<number>
+}
+
+export function normalizeSubgraphDefinitions(
+  subgraphs: ExportedSubgraph[],
+  reservations: SubgraphNormalizationReservations,
+  state: LGraphState,
+  rootNodes?: ISerialisedNode[]
+): DeduplicationResult {
+  const clonedSubgraphs =
+    firstById(
+      structuredClone(subgraphs),
+      (subgraph) => subgraph.id,
+      'subgraph'
+    ) ?? []
+  const clonedRootNodes = rootNodes ? structuredClone(rootNodes) : undefined
+
+  for (const subgraph of clonedSubgraphs) dropSameOwnerDuplicates(subgraph)
+
+  deduplicateClonedSubgraphNodeIds(
+    clonedSubgraphs,
+    reservations.nodeIds,
+    state,
+    clonedRootNodes
+  )
+  deduplicateSubgraphGroupIds(clonedSubgraphs, reservations.groupIds, state)
+  deduplicateSubgraphLinkIds(clonedSubgraphs, reservations.linkIds, state)
+  deduplicateSubgraphRerouteIds(clonedSubgraphs, reservations.rerouteIds, state)
+
+  return { subgraphs: clonedSubgraphs, rootNodes: clonedRootNodes }
+}
+
+function dropSameOwnerDuplicates(subgraph: ExportedSubgraph): void {
+  subgraph.nodes = firstById(
+    subgraph.nodes,
+    (node) => toNodeId(node.id),
+    'node'
+  )
+  subgraph.groups = firstById(subgraph.groups, (group) => group.id, 'group')
+
+  const seenLinkIds = new Set<number>()
+  subgraph.links = firstById(
+    subgraph.links,
+    (link) => link.id,
+    'link',
+    seenLinkIds
+  )
+  subgraph.floatingLinks = firstById(
+    subgraph.floatingLinks,
+    (link) => link.id,
+    'link',
+    seenLinkIds
+  )
+  subgraph.reroutes = firstById(
+    subgraph.reroutes,
+    (reroute) => reroute.id,
+    'reroute'
+  )
+}
+
+function firstById<T, Id>(
+  items: T[] | undefined,
+  idOf: (item: T) => Id,
+  entity: 'subgraph' | 'node' | 'group' | 'link' | 'reroute',
+  seen = new Set<Id>()
+): T[] | undefined {
+  if (!items) return undefined
+  return items.filter((item) => {
+    const id = idOf(item)
+    if (!seen.has(id)) {
+      seen.add(id)
+      return true
+    }
+    console.warn(
+      `LiteGraph: duplicate ${entity} ID ${String(id)} in one subgraph; keeping first`
+    )
+    return false
+  })
 }
 
 /**
@@ -46,8 +133,28 @@ export function deduplicateSubgraphNodeIds(
   const clonedSubgraphs = structuredClone(subgraphs)
   const clonedRootNodes = rootNodes ? structuredClone(rootNodes) : undefined
 
-  const usedNodeIds = new Set(reservedNodeIds)
-  const usedNodeIdKeys = new Set<NodeId>([...reservedNodeIds].map(toNodeId))
+  deduplicateClonedSubgraphNodeIds(
+    clonedSubgraphs,
+    new Set([...reservedNodeIds].map(toNodeId)),
+    state,
+    clonedRootNodes
+  )
+
+  return { subgraphs: clonedSubgraphs, rootNodes: clonedRootNodes }
+}
+
+function deduplicateClonedSubgraphNodeIds(
+  clonedSubgraphs: ExportedSubgraph[],
+  reservedNodeIdKeys: Set<NodeId>,
+  state: LGraphState,
+  clonedRootNodes?: ISerialisedNode[]
+): void {
+  const usedNodeIdKeys = new Set(reservedNodeIdKeys)
+  const usedNodeIds = new Set<number>()
+  for (const id of reservedNodeIdKeys) {
+    const numericId = numericSerializedNodeId(id)
+    if (numericId !== null) usedNodeIds.add(numericId)
+  }
   const subgraphIdSet = new Set(clonedSubgraphs.map((sg) => sg.id))
   const remapBySubgraph = new Map<string, Map<NodeId, SerializedNodeId>>()
 
@@ -62,7 +169,10 @@ export function deduplicateSubgraphNodeIds(
     if (remappedIds.size === 0) continue
     remapBySubgraph.set(subgraph.id, remappedIds)
 
-    patchSerialisedLinks(subgraph.links ?? [], remappedIds)
+    patchSerialisedLinks(
+      [...(subgraph.links ?? []), ...(subgraph.floatingLinks ?? [])],
+      remappedIds
+    )
     patchPromotedWidgets(subgraph.widgets ?? [], remappedIds)
   }
 
@@ -73,8 +183,6 @@ export function deduplicateSubgraphNodeIds(
   if (clonedRootNodes) {
     patchProxyWidgets(clonedRootNodes, subgraphIdSet, remapBySubgraph)
   }
-
-  return { subgraphs: clonedSubgraphs, rootNodes: clonedRootNodes }
 }
 
 /**
@@ -182,6 +290,68 @@ export function collectReservedGroupIds(
   ])
 }
 
+export function collectReservedLinkIds(
+  graph: Pick<LGraph, 'links' | 'floatingLinks' | 'subgraphs'>,
+  serializedFloatingLinks: SerialisableLLink[] = []
+): Set<number> {
+  return new Set([
+    ...serializedFloatingLinks.map((link) => link.id),
+    ...[graph, ...graph.subgraphs.values()].flatMap((owner) => [
+      ...owner.links.keys(),
+      ...owner.floatingLinks.keys()
+    ])
+  ])
+}
+
+export function deduplicateSubgraphLinkIds(
+  subgraphs: ExportedSubgraph[],
+  reservedLinkIds: Set<number>,
+  state: LGraphState
+): void {
+  const usedLinkIds = new Set(reservedLinkIds)
+  for (const id of reservedLinkIds) observeLinkId(state, toLinkId(id))
+
+  for (const subgraph of subgraphs) {
+    const remapped = remapNumericIds(
+      [...(subgraph.links ?? []), ...(subgraph.floatingLinks ?? [])],
+      usedLinkIds,
+      () => mintLinkId(state),
+      (id) => observeLinkId(state, toLinkId(id)),
+      'link'
+    )
+    if (remapped.size > 0) patchLinkReferences(subgraph, remapped)
+  }
+}
+
+function patchLinkReferences(
+  subgraph: ExportedSubgraph,
+  remapped: Map<number, number>
+): void {
+  for (const node of subgraph.nodes ?? []) {
+    for (const input of node.inputs ?? []) {
+      if (input.link == null) continue
+      input.link = remapped.get(input.link) ?? input.link
+    }
+    for (const output of node.outputs ?? []) {
+      if (!output.links) continue
+      output.links = output.links.map((id) => remapped.get(id) ?? id)
+    }
+  }
+  for (const slot of [
+    ...(subgraph.inputs ?? []),
+    ...(subgraph.outputs ?? [])
+  ]) {
+    if (!slot.linkIds) continue
+    slot.linkIds = slot.linkIds.map((id) => remapped.get(id) ?? id)
+  }
+  for (const reroute of subgraph.reroutes ?? []) {
+    reroute.linkIds = reroute.linkIds.map((id) => remapped.get(id) ?? id)
+  }
+  for (const extension of subgraph.extra?.linkExtensions ?? []) {
+    extension.id = toLinkId(remapped.get(extension.id) ?? extension.id)
+  }
+}
+
 /**
  * Dedupes group IDs across serialized subgraph definitions. Groups have no
  * ID-based references to patch, but their layout-store keys share the root
@@ -263,7 +433,7 @@ function remapNumericIds<T extends { id: number }>(
   usedIds: Set<number>,
   nextId: () => number,
   reserveId: (id: number) => void,
-  entity: 'group' | 'reroute'
+  entity: 'group' | 'link' | 'reroute'
 ): Map<number, number> {
   const remapped = new Map<number, number>()
 

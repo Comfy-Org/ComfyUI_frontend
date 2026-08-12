@@ -62,7 +62,8 @@ vi.mock('@/i18n', () => ({
 }))
 
 describe('Vue Node - Subgraph Functionality', () => {
-  const rootGraph = new LGraph()
+  let rootGraph: LGraph
+  let pinia: ReturnType<typeof createTestingPinia>
 
   // Helper to setup common mocks
   const setupMocks = async (isSubgraph = true, hasGraph = true) => {
@@ -75,6 +76,9 @@ describe('Vue Node - Subgraph Functionality', () => {
   }
 
   beforeEach(() => {
+    pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false })
+    setActivePinia(pinia)
+    rootGraph = new LGraph()
     vi.clearAllMocks()
   })
 
@@ -90,8 +94,6 @@ describe('Vue Node - Subgraph Functionality', () => {
   })
 
   const renderComponent = (props: { nodeData: NodeState }) => {
-    const pinia = createTestingPinia({ createSpy: vi.fn })
-    setActivePinia(pinia)
     useCanvasStore().currentGraph = rootGraph
     return render(LGraphNode, {
       props,

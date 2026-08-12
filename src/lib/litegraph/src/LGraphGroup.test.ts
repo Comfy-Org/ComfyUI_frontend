@@ -38,6 +38,8 @@ function createMockContext() {
 
 const graphCanvas = { editor_alpha: 1 } as Partial<LGraphCanvas> as LGraphCanvas
 
+beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
+
 describe('LGraphGroup', () => {
   test('serializes to the existing format', () => {
     const link = new LGraphGroup('title', toGroupId(929))
@@ -174,9 +176,6 @@ describe('LGraphGroup', () => {
 })
 
 describe('group layout in layoutStore', () => {
-  // graph.add(node) registers node state, which needs a store.
-  beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
-
   function addedGroup(graph: LGraph, id: GroupId) {
     const group = new LGraphGroup('group', id)
     group.pos = [100, 100]
@@ -205,13 +204,12 @@ describe('group layout in layoutStore', () => {
 
   test('drops entries when the graph is cleared', () => {
     const graph = new LGraph()
+    const rootGraphId = graph.rootGraph.id
     addedGroup(graph, toGroupId(802))
 
     graph.clear()
 
-    expect(
-      layoutStore.getGroupLayout(graph.rootGraph.id, toGroupId(802))
-    ).toBeNull()
+    expect(layoutStore.getGroupLayout(rootGraphId, toGroupId(802))).toBeNull()
   })
 
   test('isolates colliding group IDs across live root graphs', () => {

@@ -1,6 +1,8 @@
 import { useLinkStore } from '@/stores/linkStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 import type { LinkId } from '@/types/linkId'
 import type { NodeId } from '@/types/nodeId'
+import type { RerouteId } from '@/types/rerouteId'
 
 import type { LGraph } from '../LGraph'
 import type { LGraphNode } from '../LGraphNode'
@@ -16,20 +18,20 @@ import { NodeSlotType } from '../types/globalEnums'
 
 /** True when a link targets the input slot. */
 export function inputHasLink(
-  graph: Pick<LGraph, 'rootGraph'>,
+  graph: Pick<LGraph, 'rootGraph' | 'id'>,
   nodeId: NodeId,
   slot: number
 ): boolean {
-  return useLinkStore().isInputSlotConnected(graph.rootGraph.id, nodeId, slot)
+  return useLinkStore().isInputSlotConnected(graphScopeOf(graph), nodeId, slot)
 }
 
 /** Id of the link targeting an input slot, if any. */
 export function inputLinkId(
-  graph: Pick<LGraph, 'rootGraph'>,
+  graph: Pick<LGraph, 'rootGraph' | 'id'>,
   nodeId: NodeId,
   slot: number
 ): LinkId | undefined {
-  return useLinkStore().getInputSlotLink(graph.rootGraph.id, nodeId, slot)?.id
+  return useLinkStore().getInputSlotLink(graphScopeOf(graph), nodeId, slot)?.id
 }
 
 /** The link targeting an input slot, resolved in the owning graph. */
@@ -44,21 +46,21 @@ export function inputLink(
 
 /** True when at least one link leaves the output slot. */
 export function outputHasLinks(
-  graph: Pick<LGraph, 'rootGraph'>,
+  graph: Pick<LGraph, 'rootGraph' | 'id'>,
   nodeId: NodeId,
   slot: number
 ): boolean {
-  return useLinkStore().isOutputSlotConnected(graph.rootGraph.id, nodeId, slot)
+  return useLinkStore().isOutputSlotConnected(graphScopeOf(graph), nodeId, slot)
 }
 
 /** Ids of the links leaving an output slot, in ascending id order. */
 export function outputLinkIds(
-  graph: Pick<LGraph, 'rootGraph'>,
+  graph: Pick<LGraph, 'rootGraph' | 'id'>,
   nodeId: NodeId,
   slot: number
 ): LinkId[] {
   const ids = [
-    ...useLinkStore().getOutputSlotLinks(graph.rootGraph.id, nodeId, slot)
+    ...useLinkStore().getOutputSlotLinks(graphScopeOf(graph), nodeId, slot)
   ].map((topology) => topology.id)
   return ids.sort((a, b) => a - b)
 }
@@ -91,17 +93,19 @@ interface InputReplacement {
   slot: number
 }
 
-function finalizeInputLinkRemoval(
+export function finalizeInputLinkRemoval(
   node: LGraphNode,
   input: INodeInputSlot,
   slot: number,
   link: LLink,
-  keepReroutes: boolean
+  keepReroutes: boolean,
+  keepFloatingReroute?: RerouteId
 ): void {
   const graph = node.graph
   if (!graph) return
   const connection = link.resolve(graph)
   for (const floatingLink of slotFloatingLinks(graph, 'input', node.id, slot)) {
+    if (floatingLink.parentId === keepFloatingReroute) continue
     graph.removeFloatingLink(floatingLink)
   }
   if (connection.subgraphInput && 'inputNode' in graph) {
@@ -181,7 +185,7 @@ export function replaceNodeInputs(
       patch: { targetNodeId: node.id, targetSlot: slot }
     }))
     const result = store.updateEndpoints(
-      node.graph.rootGraph.id,
+      graphScopeOf(node.graph),
       updates,
       removals.map(({ link }) => link._state)
     )

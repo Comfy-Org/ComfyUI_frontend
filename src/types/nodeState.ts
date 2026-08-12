@@ -19,7 +19,7 @@ export interface NodeState {
   flags: INodeFlags
   /** Owning (sub)graph id — partitioning + locator ids. */
   graphId: UUID
-  id: NodeId
+  readonly id: NodeId
   /** The node's own `shallowReactive` array; slots are still class instances. */
   inputs: INodeInputSlot[]
   mode: LGraphEventMode

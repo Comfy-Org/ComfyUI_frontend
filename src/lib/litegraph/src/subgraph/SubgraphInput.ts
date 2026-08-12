@@ -1,6 +1,6 @@
 import { inputLink } from '@/lib/litegraph/src/node/slotLinks'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { LLink } from '@/lib/litegraph/src/LLink'
+import { LLink, replaceLinkTopology } from '@/lib/litegraph/src/LLink'
 import { mintLinkId } from '../idAllocation'
 import { anchorRerouteChain } from '@/lib/litegraph/src/Reroute'
 import type { RerouteId } from '@/lib/litegraph/src/Reroute'
@@ -76,30 +76,16 @@ export class SubgraphInput extends SubgraphSlot {
     //   )
     // }
 
+    const inputWidget = node.getWidgetFromSlot(slot)
+    if (inputWidget && !this.matchesWidget(inputWidget)) {
+      console.warn('Target input has invalid widget.', slot, node)
+      return
+    }
+
     // Disconnect target input, if it is already connected.
     const existingLink = inputLink(subgraph, node.id, node.inputs.indexOf(slot))
     if (existingLink) {
       subgraph.beforeChange()
-      this.parent._disconnectNodeInput(node, slot, existingLink)
-    }
-
-    const inputWidget = node.getWidgetFromSlot(slot)
-    if (inputWidget) {
-      if (!this.matchesWidget(inputWidget)) {
-        console.warn('Target input has invalid widget.', slot, node)
-        return
-      }
-
-      // Keep the widget reference in sync with the active upstream widget.
-      // Stale references can appear across nested promotion rebinds.
-      this._widget = inputWidget
-      this.events.dispatch('input-connected', {
-        input: slot,
-        widget: inputWidget,
-        node
-      })
-    } else {
-      this.events.dispatch('input-connected', { input: slot })
     }
 
     const linkId = mintLinkId(subgraph.state)
@@ -114,16 +100,45 @@ export class SubgraphInput extends SubgraphSlot {
       afterRerouteId
     )
 
-    // Add to graph links list
-    subgraph._addLink(link)
+    if (!replaceLinkTopology(subgraph, existingLink, link)) {
+      if (existingLink) subgraph.afterChange()
+      return
+    }
 
-    // Set link ID in each slot
+    if (existingLink) {
+      this.parent._disconnectNodeInput(node, slot, existingLink)
+      if (subgraph.getLink(link.id) !== link) {
+        subgraph.afterChange()
+        return
+      }
+    }
+
     this.linkIds.push(link.id)
-
     anchorRerouteChain(subgraph, link)
     subgraph.incrementVersion()
 
+    if (inputWidget) {
+      // Keep the widget reference in sync with the active upstream widget.
+      // Stale references can appear across nested promotion rebinds.
+      this._widget = inputWidget
+      this.events.dispatch('input-connected', {
+        input: slot,
+        widget: inputWidget,
+        node
+      })
+    } else {
+      this.events.dispatch('input-connected', { input: slot })
+    }
+    if (subgraph.getLink(link.id) !== link) {
+      subgraph.afterChange()
+      return
+    }
+
     node.onConnectionsChange?.(NodeSlotType.INPUT, inputIndex, true, link, slot)
+    if (subgraph.getLink(link.id) !== link) {
+      subgraph.afterChange()
+      return
+    }
 
     subgraph.afterChange()
 

@@ -28,6 +28,7 @@ import type {
 } from '@/lib/litegraph/src/types/widgets'
 import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { useLinkStore } from '@/stores/linkStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { LinkTopology } from '@/types/linkTopology'
@@ -267,13 +268,11 @@ function pickHostValue(
   return { value: raw, isHole: false }
 }
 
-function primitiveOutputTopologies(
-  hostNode: SubgraphNode,
-  primitiveNode: LGraphNode
-): LinkTopology[] {
+function primitiveOutputTopologies(primitiveNode: LGraphNode): LinkTopology[] {
+  if (!primitiveNode.graph) return []
   return [
     ...useLinkStore().getOutputSlotLinks(
-      hostNode.subgraph.rootGraph.id,
+      graphScopeOf(primitiveNode.graph),
       primitiveNode.id,
       0
     )
@@ -286,7 +285,7 @@ function collectTargetsStrict(
 ): PrimitiveBypassTargetRef[] | undefined {
   const subgraph = hostNode.subgraph
   const targets: PrimitiveBypassTargetRef[] = []
-  for (const topology of primitiveOutputTopologies(hostNode, primitiveNode)) {
+  for (const topology of primitiveOutputTopologies(primitiveNode)) {
     if (!subgraph.links.get(topology.id)) return undefined
     targets.push({
       targetNodeId: topology.targetNodeId,
@@ -301,7 +300,7 @@ function collectTargetsSkippingDangling(
   primitiveNode: LGraphNode
 ): PrimitiveBypassTargetRef[] {
   const subgraph = hostNode.subgraph
-  return primitiveOutputTopologies(hostNode, primitiveNode)
+  return primitiveOutputTopologies(primitiveNode)
     .filter((topology) => subgraph.links.get(topology.id))
     .map((topology) => ({
       targetNodeId: topology.targetNodeId,
@@ -624,14 +623,13 @@ function repairPrimitive(
   }
 
   const baseName = userRenamedTitle(primitiveNode) ?? validated.sourceWidgetName
-  const snapshot: SnapshotLink[] = primitiveOutputTopologies(
-    hostNode,
-    primitiveNode
-  ).map((topology) => ({
-    primitiveSlot: topology.originSlot,
-    targetNodeId: topology.targetNodeId,
-    targetSlot: topology.targetSlot
-  }))
+  const snapshot: SnapshotLink[] = primitiveOutputTopologies(primitiveNode).map(
+    (topology) => ({
+      primitiveSlot: topology.originSlot,
+      targetNodeId: topology.targetNodeId,
+      targetSlot: topology.targetSlot
+    })
+  )
 
   let newSubgraphInput: SubgraphInput | undefined
   try {

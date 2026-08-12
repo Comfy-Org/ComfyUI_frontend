@@ -101,13 +101,6 @@ import {
 } from './measure'
 import { NodeInputSlot } from './node/NodeInputSlot'
 import type { Subgraph } from './subgraph/Subgraph'
-import {
-  collectReservedGroupIds,
-  collectReservedRerouteIds,
-  deduplicateSubgraphGroupIds,
-  deduplicateSubgraphRerouteIds,
-  topologicalSortSubgraphs
-} from './subgraph/subgraphDeduplication'
 import { SubgraphIONodeBase } from './subgraph/SubgraphIONodeBase'
 import type { SubgraphInputNode } from './subgraph/SubgraphInputNode'
 import { SubgraphNode } from './subgraph/SubgraphNode'
@@ -4070,7 +4063,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           for (const { link: linkId } of item.inputs) {
             if (linkId == null) continue
 
-            const link = this.graph?._links.get(linkId)?.asSerialisable()
+            const link = this.graph?.links.get(linkId)?.asSerialisable()
             if (link) serialisable.links.push(link)
           }
         }
@@ -4215,25 +4208,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       if (nodeInfo.type in subgraphIdMap)
         nodeInfo.type = subgraphIdMap[nodeInfo.type]
     remapClipboardSubgraphNodeIds(parsed, graph.rootGraph)
-    deduplicateSubgraphGroupIds(
-      parsed.subgraphs,
-      collectReservedGroupIds(graph.rootGraph),
-      graph.rootGraph.state
-    )
-    deduplicateSubgraphRerouteIds(
-      parsed.subgraphs,
-      collectReservedRerouteIds(graph.rootGraph),
-      graph.rootGraph.state
-    )
-
     // Subgraphs
-    for (const info of parsed.subgraphs) {
-      const subgraph = graph.createSubgraph(info)
-      results.subgraphs.set(info.id, subgraph)
-    }
-    const configureOrder = topologicalSortSubgraphs(parsed.subgraphs)
-    for (const info of configureOrder)
-      results.subgraphs.get(info.id)?.configure(info)
+    const subgraphs = graph.createSubgraphs(parsed.subgraphs)
+    for (const subgraph of subgraphs)
+      results.subgraphs.set(subgraph.id, subgraph)
 
     // Groups
     for (const info of parsed.groups) {
@@ -4287,6 +4265,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       const { id, ...rerouteInfo } = info
 
       const reroute = graph.setReroute(rerouteInfo)
+      if (!reroute) continue
       created.push(reroute)
       reroutes.set(toRerouteId(id), reroute)
     }
@@ -7130,7 +7109,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
               slot,
               afterRerouteId
             )
-            if (!reroute) throw new Error('Failed to create reroute')
+            if (!reroute) break
           }
 
           dirty()

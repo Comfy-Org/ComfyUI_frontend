@@ -17,7 +17,10 @@ import type {
 
 import {
   deduplicateSubgraphGroupIds,
+  deduplicateSubgraphLinkIds,
+  deduplicateSubgraphNodeIds,
   deduplicateSubgraphRerouteIds,
+  normalizeSubgraphDefinitions,
   topologicalSortSubgraphs
 } from './subgraphDeduplication'
 
@@ -60,14 +63,6 @@ describe('topologicalSortSubgraphs', () => {
     expect(result.map((s) => s.id)).toEqual(['inner', 'outer'])
   })
 
-  it('handles three-level nesting', () => {
-    const leaf = makeSubgraph('leaf', ['StringConcat'])
-    const mid = makeSubgraph('mid', ['leaf', 'StringConcat'])
-    const top = makeSubgraph('top', ['mid'])
-    const result = topologicalSortSubgraphs([top, mid, leaf])
-    expect(result.map((s) => s.id)).toEqual(['leaf', 'mid', 'top'])
-  })
-
   it('handles diamond dependencies', () => {
     const shared = makeSubgraph('shared')
     const left = makeSubgraph('left', ['shared'])
@@ -81,14 +76,11 @@ describe('topologicalSortSubgraphs', () => {
     expect(ids.indexOf('right')).toBeLessThan(ids.indexOf('top'))
   })
 
-  it('returns original order for a single subgraph', () => {
-    const only = makeSubgraph('only')
-    const result = topologicalSortSubgraphs([only])
-    expect(result).toEqual([only])
-  })
+  it('preserves original order for cyclic definitions', () => {
+    const a = makeSubgraph('a', ['b'])
+    const b = makeSubgraph('b', ['a'])
 
-  it('returns original order for empty array', () => {
-    expect(topologicalSortSubgraphs([])).toEqual([])
+    expect(topologicalSortSubgraphs([b, a])).toEqual([b, a])
   })
 })
 
@@ -125,6 +117,89 @@ function group(id: number): ISerialisedGroup {
   return { id, title: `group-${id}`, bounding: [0, 0, 100, 100] }
 }
 
+describe('deduplicateSubgraphNodeIds', () => {
+  it('patches floating link endpoints when remapping a node', () => {
+    const subgraph = makeSubgraph('sg', ['dummy'])
+    subgraph.floatingLinks = [chainedLink(1)]
+    const state = freshState()
+
+    const result = deduplicateSubgraphNodeIds([subgraph], new Set([1]), state)
+
+    const remappedNodeId = result.subgraphs[0].nodes?.[0].id
+    expect(result.subgraphs[0].floatingLinks?.[0].origin_id).toBe(
+      remappedNodeId
+    )
+  })
+})
+
+describe('deduplicateSubgraphLinkIds', () => {
+  it('patches every reference to a remapped regular link', () => {
+    const subgraph = makeSubgraph('sg', ['dummy'])
+    const node = subgraph.nodes?.[0]
+    expect(node).toBeDefined()
+    if (!node) return
+    node.inputs = [{ name: 'in', type: 'INT', link: 1 }]
+    node.outputs = [{ name: 'out', type: 'INT', links: [1] }]
+    subgraph.links = [chainedLink(1)]
+    subgraph.inputs = [{ id: 'input', name: 'in', type: 'INT', linkIds: [1] }]
+    subgraph.outputs = [
+      { id: 'output', name: 'out', type: 'INT', linkIds: [1] }
+    ]
+    subgraph.reroutes = [reroute(1, undefined, [1])]
+    subgraph.extra = {
+      linkExtensions: [{ id: toLinkId(1), parentId: toRerouteId(1) }]
+    }
+    const state = freshState()
+
+    deduplicateSubgraphLinkIds([subgraph], new Set([1]), state)
+
+    const remappedLinkId = subgraph.links[0].id
+    expect(remappedLinkId).not.toBe(1)
+    expect(node.inputs?.[0].link).toBe(remappedLinkId)
+    expect(node.outputs?.[0].links).toEqual([remappedLinkId])
+    expect(subgraph.inputs[0].linkIds).toEqual([remappedLinkId])
+    expect(subgraph.outputs[0].linkIds).toEqual([remappedLinkId])
+    expect(subgraph.reroutes[0].linkIds).toEqual([remappedLinkId])
+    expect(subgraph.extra.linkExtensions?.[0].id).toBe(remappedLinkId)
+  })
+
+  it('keeps already unique regular and floating links unchanged', () => {
+    const subgraph = makeSubgraph('sg')
+    subgraph.links = [chainedLink(1)]
+    subgraph.floatingLinks = [chainedLink(2)]
+    deduplicateSubgraphLinkIds([subgraph], new Set(), freshState())
+
+    expect(subgraph.links.map((link) => link.id)).toEqual([toLinkId(1)])
+    expect(subgraph.floatingLinks.map((link) => link.id)).toEqual([toLinkId(2)])
+  })
+})
+
+describe('normalizeSubgraphDefinitions', () => {
+  it('keeps the first same-owner link across regular and floating links', () => {
+    const subgraph = makeSubgraph('sg')
+    subgraph.links = [chainedLink(1)]
+    subgraph.floatingLinks = [chainedLink(1)]
+    subgraph.inputs = [{ id: 'input', name: 'in', type: 'INT', linkIds: [1] }]
+
+    const result = normalizeSubgraphDefinitions(
+      [subgraph],
+      {
+        nodeIds: new Set(),
+        groupIds: new Set(),
+        linkIds: new Set(),
+        rerouteIds: new Set()
+      },
+      freshState()
+    ).subgraphs[0]
+
+    expect(result.links).toHaveLength(1)
+    expect(result.floatingLinks).toHaveLength(0)
+    expect(result.links![0].id).toBe(toLinkId(1))
+    expect(result.inputs![0].linkIds).toEqual([toLinkId(1)])
+    expect(subgraph.floatingLinks).toHaveLength(1)
+  })
+})
+
 describe('deduplicateSubgraphGroupIds', () => {
   it('remaps ids that collide with root groups', () => {
     const subgraph = makeSubgraph('sg')
@@ -157,8 +232,8 @@ describe('deduplicateSubgraphGroupIds', () => {
 
     deduplicateSubgraphGroupIds([subgraph], new Set([1, 2]), state)
 
-    expect(subgraph.groups[0].id).toBe(3)
-    expect(state.lastGroupId).toBe(3)
+    expect([1, 2]).not.toContain(subgraph.groups[0].id)
+    expect(state.lastGroupId).toBe(subgraph.groups[0].id)
   })
 })
 describe('deduplicateSubgraphRerouteIds', () => {

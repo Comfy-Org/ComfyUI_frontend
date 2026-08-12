@@ -23,6 +23,7 @@ import {
   createNodeExecutionId,
   createNodeLocatorId
 } from '@/types/nodeIdentification'
+import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
@@ -176,14 +177,21 @@ describe('widget visibility', () => {
         boundingRect: [0, 0, 0, 0]
       }
     ]
-    useLinkStore().registerLink(GRAPH_ID, {
-      id: toLinkId(1),
-      originNodeId: toNodeId(2),
-      originSlot: 0,
-      targetNodeId: nodeId,
-      targetSlot: 0,
-      type: 'STRING'
-    })
+    useLinkStore().registerLink(
+      {
+        rootGraphId: toRootGraphId(GRAPH_ID),
+        owningGraphId: toOwningGraphId(GRAPH_ID)
+      },
+      {
+        id: toLinkId(1),
+        graphId: toOwningGraphId(GRAPH_ID),
+        originNodeId: toNodeId(2),
+        originSlot: 0,
+        targetNodeId: nodeId,
+        targetSlot: 0,
+        type: 'STRING'
+      }
+    )
     return processWidgets({
       widgetIds: [id],
       showAdvanced,

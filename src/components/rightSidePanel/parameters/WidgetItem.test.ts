@@ -9,6 +9,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useLinkStore } from '@/stores/linkStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 import { widgetId } from '@/types/widgetId'
 import WidgetItem from './WidgetItem.vue'
 import { toLinkId } from '@/types/linkId'
@@ -75,7 +76,7 @@ function createMockNode(overrides: Partial<LGraphNode> = {}): LGraphNode {
     id: 1,
     type: 'TestNode',
     isSubgraphNode: () => false,
-    graph: { rootGraph: { id: 'test-graph-id' } },
+    graph: { id: 'test-graph-id', rootGraph: { id: 'test-graph-id' } },
     ...overrides
   })
 }
@@ -231,8 +232,10 @@ describe('WidgetItem', () => {
       const { container } = renderWidgetItem(widget, node)
       expect(getStubWidget(container).options.disabled).toBeUndefined()
 
-      useLinkStore().registerLink('test-graph-id', {
+      const graphScope = graphScopeOf(node.graph!)
+      useLinkStore().registerLink(graphScope, {
         id: toLinkId(1),
+        graphId: graphScope.owningGraphId,
         originNodeId: toNodeId(2),
         originSlot: 0,
         targetNodeId: node.id,
