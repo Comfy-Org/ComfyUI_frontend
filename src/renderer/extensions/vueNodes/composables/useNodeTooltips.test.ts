@@ -1,3 +1,4 @@
+import { cloneDeep } from 'es-toolkit'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
@@ -9,6 +10,7 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 import { useNodeTooltips } from './useNodeTooltips'
 
+const enMessages = cloneDeep(i18n.global.getLocaleMessage('en'))
 const jsonTooltip =
   'Positive point prompts as JSON [{"x": int, "y": int}, ...] (pixel coords)'
 
@@ -83,7 +85,7 @@ describe('useNodeTooltips', () => {
 
   afterEach(() => {
     mergeCustomNodesI18n({})
-    mergeOutputTooltipMessage(null)
+    i18n.global.setLocaleMessage('en', cloneDeep(enMessages))
   })
 
   it('reads JSON examples in node metadata without i18n placeholder errors', () => {

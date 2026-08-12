@@ -1,9 +1,10 @@
 import { cleanup, render, screen } from '@testing-library/vue'
+import { cloneDeep } from 'es-toolkit'
 import userEvent from '@testing-library/user-event'
 import { nextTick } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { i18n, te } from '@/i18n'
+import { i18n, mergeCustomNodesI18n, te } from '@/i18n'
 import type * as LiteGraphModule from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { Settings } from '@/schemas/apiSchema'
@@ -12,6 +13,7 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 import NodeTooltip from './NodeTooltip.vue'
 
+const enMessages = cloneDeep(i18n.global.getLocaleMessage('en'))
 type HitTest = (
   node: MockNode,
   x: number,
@@ -90,7 +92,7 @@ const sam3DetectNodeDef: ComfyNodeDef = {
   display_name: 'SAM3 Detect',
   category: 'detection/',
   python_module: 'comfy_extras.nodes_sam3',
-  description: '',
+  description: 'Frontend description',
   input: {
     required: {},
     optional: {
@@ -181,8 +183,24 @@ describe('NodeTooltip', () => {
   })
 
   afterEach(() => {
-    mergeOutputTooltipMessage(null)
+    mergeCustomNodesI18n({})
+    i18n.global.setLocaleMessage('en', cloneDeep(enMessages))
     cleanup()
+  })
+
+  it('resolves the node description shown over the title', async () => {
+    mergeCustomNodesI18n({
+      en: {
+        nodeDefs: {
+          SAM3_Detect: { description: 'Localized description' }
+        }
+      }
+    })
+    mockCanvas.graph_mouse[1] = -1
+
+    await renderAndHoverCanvas()
+
+    expect(screen.getByText('Localized description')).toBeInTheDocument()
   })
 
   it('shows input slot JSON tooltips without i18n placeholder errors', async () => {

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import { render, screen } from '@testing-library/vue'
 
@@ -7,7 +8,10 @@ import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 
 import InputSlot from './InputSlot.vue'
 
-const getInputSlotTooltip = vi.hoisted(() => vi.fn(() => 'Seed tooltip'))
+const getInputSlotTooltip = vi.hoisted(() => vi.fn(() => ''))
+const createTooltipConfig = vi.hoisted(() =>
+  vi.fn((text: string) => ({ value: text }))
+)
 
 vi.mock('@/composables/useErrorHandling', () => ({
   useErrorHandling: () => ({ toastErrorHandler: vi.fn() })
@@ -22,7 +26,7 @@ vi.mock('@/renderer/core/canvas/links/slotLinkDragUIState', () => ({
 vi.mock('@/renderer/extensions/vueNodes/composables/useNodeTooltips', () => ({
   useNodeTooltips: () => ({
     getInputSlotTooltip,
-    createTooltipConfig: (text: string) => ({ value: text })
+    createTooltipConfig
   })
 }))
 
@@ -50,6 +54,11 @@ const SlotConnectionDotStub = defineComponent({
   name: 'SlotConnectionDot',
   template: '<div />'
 })
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: { g: { inputTooltip: 'Translated input: {name}' } } }
+})
 
 describe('InputSlot', () => {
   it('uses the raw input name to resolve the tooltip', () => {
@@ -64,6 +73,7 @@ describe('InputSlot', () => {
         nodeType: 'KSampler'
       },
       global: {
+        plugins: [i18n],
         directives: { tooltip: {} },
         stubs: { SlotConnectionDot: SlotConnectionDotStub }
       }
@@ -71,5 +81,8 @@ describe('InputSlot', () => {
 
     expect(screen.getByText('Localized Seed')).toBeInTheDocument()
     expect(getInputSlotTooltip).toHaveBeenCalledWith('seed')
+    expect(createTooltipConfig).toHaveBeenCalledWith(
+      'Translated input: Localized Seed'
+    )
   })
 })

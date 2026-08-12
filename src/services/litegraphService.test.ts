@@ -1,4 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
+import { cloneDeep } from 'es-toolkit'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -12,6 +13,8 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
+
+const enMessages = cloneDeep(i18n.global.getLocaleMessage('en'))
 
 describe('useLitegraphService().getCanvasCenter', () => {
   it('returns origin when canvas is not yet initialised', () => {
@@ -89,7 +92,7 @@ describe('useLitegraphService().registerNodeDef slot text', () => {
 
   afterEach(() => {
     mergeCustomNodesI18n({})
-    mergeBundledSlotText(null)
+    i18n.global.setLocaleMessage('en', cloneDeep(enMessages))
   })
 
   it('labels widgets, sockets and outputs from the live backend', () => {
