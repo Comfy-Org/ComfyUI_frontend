@@ -15,6 +15,7 @@
 import { watch } from 'vue'
 
 import { api } from '@/scripts/api'
+import type { PromptQueuedEventPayload } from '@/scripts/api'
 import { useQueuePendingTaskCountStore } from '@/stores/queueStore'
 import { toNodeId } from '@/types/nodeId'
 import { getExecutionIdsForSelectedNodes } from '@/utils/graphTraversalUtil'
@@ -33,6 +34,13 @@ interface RunOptions {
   nodes?: readonly NodeHandle[]
   /** How many times to run. Defaults to 1. */
   batch?: number
+}
+
+interface RunSubmittedEvent {
+  /** Ids the backend accepted, in submission order. */
+  readonly promptIds: readonly string[]
+  /** How many submissions the backend refused. */
+  readonly rejected: number
 }
 
 export interface QueueHandle {
@@ -55,8 +63,14 @@ export interface QueueHandle {
   /**
    * A run was submitted. This is `afterQueued` — for advancing state that
    * should differ on the next run.
+   *
+   * The event names what the backend accepted, so a pack can tie its own
+   * progress tracking to the run it started rather than guessing that the next
+   * execution message belongs to it. `rejected` is how many submissions the
+   * backend refused: `onBeforeRun` fires either way, so without this a pack
+   * cannot tell a run that started from one that never did.
    */
-  onAfterRun(listener: () => void): Unsubscribe
+  onAfterRun(listener: (event: RunSubmittedEvent) => void): Unsubscribe
   /**
    * How many runs are waiting, including the one executing.
    *
@@ -130,9 +144,7 @@ export async function mayRun(): Promise<boolean> {
   return verdicts.every((allowed) => allowed !== false)
 }
 
-function subscribe(
-  event: 'promptQueueing' | 'promptQueued' | 'execution_interrupted'
-) {
+function subscribe(event: 'promptQueueing' | 'execution_interrupted') {
   return (listener: () => void): Unsubscribe => {
     const wrapped = () => listener()
     api.addEventListener(event, wrapped)
@@ -179,7 +191,19 @@ export function createQueueApi(
     },
 
     onBeforeRun: subscribe('promptQueueing'),
-    onAfterRun: subscribe('promptQueued'),
+    onAfterRun(listener: (event: RunSubmittedEvent) => void) {
+      const wrapped = (e: Event) => {
+        const detail = (e as CustomEvent<PromptQueuedEventPayload>).detail
+        listener(
+          Object.freeze({
+            promptIds: Object.freeze([...(detail?.promptIds ?? [])]),
+            rejected: detail?.rejectedCount ?? 0
+          })
+        )
+      }
+      api.addEventListener('promptQueued', wrapped)
+      return () => api.removeEventListener('promptQueued', wrapped)
+    },
 
     pending: () => useQueuePendingTaskCountStore().count,
 
