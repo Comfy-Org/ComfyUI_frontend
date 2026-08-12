@@ -154,6 +154,7 @@ export const API_MEMBERS: ReadonlySet<string> = new Set([
   'onNodeMoved',
   'onPreview',
   'onReady',
+  'onRefreshed',
   'onRemoved',
   'onSerialize',
   'onViewportChanged',

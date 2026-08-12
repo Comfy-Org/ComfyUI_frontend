@@ -29,6 +29,7 @@ import type {
 } from '@/lib/litegraph/src/types/widgets'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { markAppReady } from '@/platform/nodeApi/appReady'
+import { notifyDefsRefreshed } from '@/platform/nodeApi/defsRegistry'
 import { installComfyApi } from '@/platform/nodeApi/comfyApi'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
@@ -2510,6 +2511,7 @@ export class ComfyApp {
           life: 1000
         })
       }
+      notifyDefsRefreshed()
     } catch (error) {
       if (this.vueAppReady) {
         useToastStore().add({
