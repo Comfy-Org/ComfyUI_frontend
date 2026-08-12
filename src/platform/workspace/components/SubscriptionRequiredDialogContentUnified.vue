@@ -237,42 +237,6 @@ const stripePaymentElementEnabled = Boolean(
 // dimensions so stepping between them reads as one dialog changing content,
 // not two dialogs. Transition previews (no payment form) stay narrow.
 const collectingNewPaymentMethod = ref(false)
-const savedMethodsForConfirm = computed(() =>
-  collectingNewPaymentMethod.value ? [] : savedPaymentMethods.value
-)
-
-const isEmbeddedPaymentStep = computed(
-  () =>
-    checkoutStep.value === 'preview' &&
-    stripePaymentElementEnabled &&
-    !savedMethodsForConfirm.value.length &&
-    (previewVariant.value === 'team-new' ||
-      previewVariant.value === 'personal-new')
-)
-
-// Narrow confirms share the success step's width and dark surface: a fresh
-// subscribe once a saved method exists, and every plan-change preview (those
-// always charge the saved method).
-const isEmbeddedConfirmStep = computed(
-  () =>
-    checkoutStep.value === 'preview' &&
-    stripePaymentElementEnabled &&
-    (previewVariant.value === 'team-change' ||
-      previewVariant.value === 'personal-change' ||
-      (savedMethodsForConfirm.value.length > 0 &&
-        (previewVariant.value === 'team-new' ||
-          previewVariant.value === 'personal-new')))
-)
-
-// Success after an embedded checkout: same pinned height, narrow width, and
-// the darker surface — the dialog collapses around the receipt.
-const isEmbeddedSuccessStep = computed(
-  () =>
-    checkoutStep.value === 'success' &&
-    stripePaymentElementEnabled &&
-    (previewVariant.value === 'team-new' ||
-      previewVariant.value === 'personal-new')
-)
 
 const {
   checkoutStep,
@@ -313,6 +277,39 @@ const {
   handleResubscribe
 } = useSubscriptionCheckout(emit, reason)
 
+const savedMethodsForConfirm = computed(() =>
+  collectingNewPaymentMethod.value ? [] : savedPaymentMethods.value
+)
+const isEmbeddedPaymentStep = computed(
+  () =>
+    checkoutStep.value === 'preview' &&
+    stripePaymentElementEnabled &&
+    !savedMethodsForConfirm.value.length &&
+    (previewVariant.value === 'team-new' ||
+      previewVariant.value === 'personal-new')
+)
+const isEmbeddedConfirmStep = computed(
+  () =>
+    checkoutStep.value === 'preview' &&
+    stripePaymentElementEnabled &&
+    (previewVariant.value === 'team-change' ||
+      previewVariant.value === 'personal-change' ||
+      (savedMethodsForConfirm.value.length > 0 &&
+        (previewVariant.value === 'team-new' ||
+          previewVariant.value === 'personal-new')))
+)
+const isEmbeddedSuccessStep = computed(
+  () =>
+    checkoutStep.value === 'success' &&
+    stripePaymentElementEnabled &&
+    (previewVariant.value === 'team-new' ||
+      previewVariant.value === 'personal-new')
+)
+
+watch(checkoutStep, (step) => {
+  if (step !== 'preview') collectingNewPaymentMethod.value = false
+})
+
 function selectSavedPaymentMethod(id: string | null) {
   if (id === null) {
     collectingNewPaymentMethod.value = true
@@ -348,11 +345,16 @@ watch(
     const savedFlip =
       next === 'preview' && prev === 'preview' && nextSaved !== prevSaved
     if (!between('preview', 'success') && !savedFlip) return
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    if (
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    )
+      return
     const from = el.getBoundingClientRect().height
     await nextTick()
     const to = el.getBoundingClientRect().height
     if (Math.abs(from - to) < 2) return
+    if (typeof el.animate !== 'function') return
     el.animate([{ height: `${from}px` }, { height: `${to}px` }], {
       duration: 300,
       easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
@@ -366,7 +368,9 @@ useEventListener(window, 'keydown', (event: KeyboardEvent) => {
   if (
     event.key !== 'Backspace' ||
     checkoutStep.value !== 'preview' ||
-    isPolling.value
+    isPolling.value ||
+    isEmbeddedPaymentStep.value ||
+    isEmbeddedConfirmStep.value
   )
     return
   const target = event.target

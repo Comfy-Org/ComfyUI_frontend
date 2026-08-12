@@ -56,7 +56,8 @@ function plan(
 function preview(
   overrides: Partial<PreviewSubscribeResponse>
 ): PreviewSubscribeResponse {
-  const result: PreviewSubscribeResponse = {
+  const newPlan = overrides.new_plan ?? plan('CREATOR', 'MONTHLY', 3500)
+  return {
     allowed: true,
     transition_type: 'upgrade',
     effective_at: '2026-06-19T00:00:00Z',
@@ -65,19 +66,14 @@ function preview(
     cost_next_period_cents: 0,
     credits_today_cents: 0,
     credits_next_period_cents: 0,
-    new_plan: plan('CREATOR', 'MONTHLY', 3500),
+    new_plan: newPlan,
+    quote_id: 'quote_123',
+    quote_version: 1,
+    amount_due_cents: overrides.cost_today_cents ?? 0,
+    currency: 'usd',
+    renewal_amount_cents: newPlan.price_cents,
+    renewal_at: '2027-06-28T00:00:00Z',
     ...overrides
-  }
-  return {
-    ...result,
-    quote_id: overrides.quote_id ?? 'quote_123',
-    quote_version: overrides.quote_version ?? 1,
-    amount_due_cents:
-      overrides.amount_due_cents ?? overrides.cost_today_cents ?? 0,
-    currency: overrides.currency ?? 'usd',
-    renewal_amount_cents:
-      overrides.renewal_amount_cents ?? result.new_plan.price_cents,
-    renewal_at: overrides.renewal_at ?? '2027-06-28T00:00:00Z'
   }
 }
 

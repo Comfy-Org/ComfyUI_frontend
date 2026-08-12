@@ -143,10 +143,11 @@
       <div class="flex gap-2 pt-6">
         <input
           v-model="promotionCode"
+          :aria-label="$t('subscription.preview.promoCodePlaceholder')"
           :disabled="interactionLocked"
           class="h-10 min-w-0 flex-1 rounded-lg border border-interface-stroke bg-secondary-background px-3 text-base-foreground"
           :placeholder="$t('subscription.preview.promoCodePlaceholder')"
-          @input="$emit('invalidateQuote')"
+          @input="invalidateEditedPromotion"
         />
         <Button
           variant="secondary"
@@ -261,7 +262,14 @@
       </Button>
 
       <Button
-        v-if="actionUrl"
+        v-if="
+          actionUrl &&
+          !(
+            (authenticationState === 'failed_retryable' ||
+              authenticationState === 'requires_action') &&
+            canRetryAuthentication
+          )
+        "
         variant="inverted"
         size="lg"
         class="w-full rounded-lg"
@@ -378,7 +386,6 @@ interface Props {
    *  method. Cards carry brand + last4; Alipay is a linked account with
    *  neither. */
   savedMethods?: SavedPaymentMethod[] | null
-  selectedSavedMethodId?: string | null
   quoteIsCurrent?: boolean
   isApplyingPromotionCode?: boolean
 }
@@ -397,7 +404,6 @@ const {
   reconciliationOperationId = null,
   usePaymentElement = false,
   savedMethods = null,
-  selectedSavedMethodId = null,
   quoteIsCurrent = false,
   isApplyingPromotionCode = false
 } = defineProps<Props>()
@@ -407,17 +413,21 @@ const emit = defineEmits<{
   confirmPayment: [confirmationToken: string]
   back: []
   changePaymentMethod: []
-  'update:selectedSavedMethodId': [id: string | null]
   applyPromotionCode: [code: string]
   invalidateQuote: []
   retryAuthentication: []
 }>()
 
 const { t, n } = useI18n()
+const selectedSavedMethodId = defineModel<string | null>(
+  'selectedSavedMethodId',
+  { default: null }
+)
 
 // The wide capture split only applies while a payment method is being
 // collected; with a saved method the confirm is a single narrow column.
 const captureMode = computed(() => usePaymentElement && !savedMethods?.length)
+const amountDueCents = computed(() => previewData?.amount_due_cents ?? 0)
 // Stripe Elements are configured once, in onMounted, from the amount and
 // currency. Mounting before the quote arrives — the team checkout shows its
 // preview step while the quote is still in flight — permanently latches the
@@ -453,14 +463,14 @@ const savedMethodOptions = computed(() => [
   }
 ])
 const selectedMethod = computed({
-  get: () => selectedSavedMethodId ?? '',
+  get: () => selectedSavedMethodId.value ?? '',
   set: (value: string) => {
     if (value === 'add-new') {
-      emit('update:selectedSavedMethodId', null)
+      selectedSavedMethodId.value = null
       emit('changePaymentMethod')
       return
     }
-    emit('update:selectedSavedMethodId', value)
+    selectedSavedMethodId.value = value
   }
 })
 
@@ -475,6 +485,12 @@ watch(
     promotionCode.value = code ?? ''
   }
 )
+
+function invalidateEditedPromotion() {
+  if (promotionCode.value !== (previewData?.promotion_code ?? '')) {
+    emit('invalidateQuote')
+  }
+}
 
 function openVerification() {
   if (!actionUrl) return
@@ -526,10 +542,6 @@ const creditsRefillLabelKey = computed(() =>
     : 'subscription.preview.eachMonthCreditsRefill'
 )
 
-const totalDueTodayUsd = computed(() => {
-  return (previewData?.amount_due_cents ?? 0) / 100
-})
-
 function formatQuoteMoney(cents: number): string {
   if (!previewData?.currency) return ''
   return new Intl.NumberFormat(undefined, {
@@ -544,8 +556,6 @@ const totalDueToday = computed(() =>
     : formatQuoteMoney(previewData.amount_due_cents)
 )
 
-const amountDueCents = computed(() => Math.round(totalDueTodayUsd.value * 100))
-
 const renewalTerms = computed(() => {
   if (
     previewData?.renewal_amount_cents === undefined ||
@@ -556,7 +566,8 @@ const renewalTerms = computed(() => {
   const date = new Date(previewData.renewal_at).toLocaleDateString(undefined, {
     month: 'short',
     day: 'numeric',
-    year: 'numeric'
+    year: 'numeric',
+    timeZone: 'UTC'
   })
   return t('subscription.preview.renewsAt', {
     amount: formatQuoteMoney(previewData.renewal_amount_cents),

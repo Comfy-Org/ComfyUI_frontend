@@ -21,6 +21,15 @@ describe('paymentReturnUrl', () => {
     expect(paymentReturnUrl()).toBe('https://cloud.comfy.org/workspace/abc')
   })
 
+  it('accepts an HTTP origin', () => {
+    vi.stubGlobal('location', {
+      origin: 'http://localhost:5173',
+      pathname: '/workspace/abc'
+    })
+
+    expect(paymentReturnUrl()).toBe('http://localhost:5173/workspace/abc')
+  })
+
   it('falls back to the platform success page on a non-HTTP origin, which the backend would reject', () => {
     vi.stubGlobal('location', {
       origin: 'file://',

@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { BillingOpStatusResponse } from './workspaceApi'
+import type {
+  BillingOpStatusResponse,
+  SavedPaymentMethod
+} from './workspaceApi'
 
 const {
   mockAxiosInstance,
@@ -442,7 +445,7 @@ describe('workspaceApi', () => {
 
   describe('subscription', () => {
     it('listSavedPaymentMethods() returns masked methods from GET', async () => {
-      const data = [
+      const data: SavedPaymentMethod[] = [
         {
           type: 'card',
           id: 'pm_saved',
@@ -498,6 +501,33 @@ describe('workspaceApi', () => {
         }),
         { headers: AUTH_HEADER }
       )
+    })
+
+    it('subscribe() omits a promotion code when none is applied', async () => {
+      mockAxiosInstance.post.mockResolvedValue({
+        data: { billing_op_id: 'op-no-promo', status: 'subscribed' }
+      })
+
+      await workspaceApi.subscribe('pro-monthly')
+
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        '/api/billing/subscribe',
+        expect.objectContaining({ promotion_code: undefined }),
+        { headers: AUTH_HEADER }
+      )
+    })
+
+    it('subscribe() rejects mutually exclusive payment credentials', async () => {
+      await expect(
+        workspaceApi.subscribe('pro-monthly', {
+          confirmationToken: 'ctoken_1',
+          savedPaymentMethodId: 'pm_saved'
+        })
+      ).rejects.toThrow(
+        'confirmationToken and savedPaymentMethodId are mutually exclusive'
+      )
+
+      expect(mockAxiosInstance.post).not.toHaveBeenCalled()
     })
 
     it('previewSubscribe() sends fields defined by the ingest contract', async () => {

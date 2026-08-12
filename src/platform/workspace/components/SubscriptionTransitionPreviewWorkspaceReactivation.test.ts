@@ -545,10 +545,9 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
   })
 
   describe('confirm gating on load state', () => {
-    it('does not confirm without a current exact quote', async () => {
-      const user = userEvent.setup()
+    it('shows unavailable exact quote fields', () => {
       mockSubscription.value = { isCancelled: false, endDate: null }
-      const { emitted } = renderComponent(
+      renderComponent(
         makePreview({
           quote_id: undefined,
           quote_version: undefined,
@@ -556,10 +555,18 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
           currency: undefined,
           renewal_amount_cents: undefined,
           renewal_at: undefined
-        }),
-        false,
-        false
+        })
       )
+
+      expect(
+        screen.getAllByText('subscription.preview.quoteUnavailable')
+      ).toHaveLength(2)
+    })
+
+    it('does not confirm without a current quote', async () => {
+      const user = userEvent.setup()
+      mockSubscription.value = { isCancelled: false, endDate: null }
+      const { emitted } = renderComponent(makePreview({}), false, false)
       const confirmButton = screen.getByRole('button', {
         name: 'Confirm upgrade'
       })

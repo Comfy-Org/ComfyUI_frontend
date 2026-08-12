@@ -152,7 +152,9 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       (op) =>
         op.type === 'topup' &&
         op.workspaceId === workspaceStore.activeWorkspaceId &&
-        (op.status === 'pending' || op.status === 'reconciliation_needed')
+        ((op.status === 'pending' &&
+          (op.actionUrl !== null || op.canRetryAuthentication)) ||
+          op.status === 'reconciliation_needed')
     )
   )
 
@@ -819,6 +821,51 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       actionUrl: null
     })
     cleanup(opId)
+
+    const telemetry = useTelemetry()
+    const now = Date.now()
+    telemetry?.trackBillingEvent({
+      operation: 'operation',
+      stage: 'failed',
+      outcome: 'failure',
+      billing_op_id: opId,
+      operation_type: operation.type,
+      tier: operation.tier,
+      cycle: operation.cycle,
+      checkout_type: operation.checkoutType,
+      payment_intent_source: operation.paymentIntentSource,
+      failure_category: 'reconciliation_needed',
+      duration_ms: now - operation.operationStartedAt
+    })
+    if (
+      operation.type === 'subscription' &&
+      operation.businessAttemptStartedAt !== undefined
+    ) {
+      telemetry?.trackBillingEvent({
+        operation: 'subscription_checkout',
+        stage: 'failed',
+        outcome: 'failure',
+        tier: operation.tier,
+        cycle: operation.cycle,
+        checkout_type: operation.checkoutType,
+        payment_intent_source: operation.paymentIntentSource,
+        billing_op_id: opId,
+        failure_category: 'reconciliation_needed',
+        duration_ms: now - operation.businessAttemptStartedAt
+      })
+    } else if (
+      operation.type === 'topup' &&
+      operation.businessAttemptStartedAt !== undefined
+    ) {
+      telemetry?.trackBillingEvent({
+        operation: 'topup',
+        stage: 'failed',
+        outcome: 'failure',
+        billing_op_id: opId,
+        failure_category: 'reconciliation_needed',
+        duration_ms: now - operation.businessAttemptStartedAt
+      })
+    }
     resolveTerminal(opId)
   }
 
