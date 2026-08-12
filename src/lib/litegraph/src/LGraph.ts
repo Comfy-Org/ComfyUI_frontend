@@ -228,24 +228,27 @@ function teardownOwnedGraphs(owner: LGraph): void {
     ...graph._nodes
   ])
 
-  fireNodeRemovalLifecycles(lifecycleNodes)
-  const ownedGraphs = new Set(initialOwnedGraphs)
-  if (owner.isRootGraph) {
-    for (const graph of owner._subgraphs.values()) ownedGraphs.add(graph)
+  try {
+    fireNodeRemovalLifecycles(lifecycleNodes)
+  } finally {
+    const ownedGraphs = new Set(initialOwnedGraphs)
+    if (owner.isRootGraph) {
+      for (const graph of owner._subgraphs.values()) ownedGraphs.add(graph)
+    }
+    for (const graph of ownedGraphs) {
+      unregisterAllLinkTopologies(graph)
+      unregisterAllRerouteChains(graph)
+    }
+    const nodes = new Set(lifecycleNodes)
+    for (const graph of ownedGraphs) {
+      for (const node of graph._nodes) nodes.add(node)
+    }
+    for (const node of nodes) {
+      unregisterNodeState(node)
+      node.graph = null
+    }
+    unregisterAllGraphLayout(owner)
   }
-  for (const graph of ownedGraphs) {
-    unregisterAllLinkTopologies(graph)
-    unregisterAllRerouteChains(graph)
-  }
-  const nodes = new Set(lifecycleNodes)
-  for (const graph of ownedGraphs) {
-    for (const node of graph._nodes) nodes.add(node)
-  }
-  for (const node of nodes) {
-    unregisterNodeState(node)
-    node.graph = null
-  }
-  unregisterAllGraphLayout(owner)
 }
 
 /** A reroute chain segment, terminal-first. */
@@ -597,8 +600,14 @@ export class LGraph
     this.stop()
     this.status = LGraph.STATUS_STOPPED
 
-    teardownOwnedGraphs(this)
+    try {
+      teardownOwnedGraphs(this)
+    } finally {
+      this.resetAfterClear()
+    }
+  }
 
+  private resetAfterClear(): void {
     const graphId = this.id
     if (this.isRootGraph && graphId !== zeroUuid) {
       usePreviewExposureStore().clearGraph(graphId)

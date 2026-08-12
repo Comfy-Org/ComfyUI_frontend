@@ -5,6 +5,7 @@ import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { NodeLifecycleEvent } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
+import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import {
@@ -813,6 +814,52 @@ describe('node:before-removed event', () => {
     expect(link._graphScope).toBeUndefined()
     expect(reroute._graphScope).toBeUndefined()
     expect(removed).toHaveBeenCalledOnce()
+  })
+
+  it('finishes clear before propagating a lifecycle callback failure', () => {
+    const graph = new LGraph()
+    const source = new LGraphNode('source')
+    const target = new LGraphNode('target')
+    source.addOutput('out', '*')
+    target.addInput('in', '*')
+    graph.add(source)
+    graph.add(target)
+    const link = source.connect(0, target, 0)!
+    const reroute = graph.createReroute([10, 10], link)!
+    const subgraph = createTestSubgraph({ rootGraph: graph, nodeCount: 1 })
+    graph.subgraphs.set(subgraph.id, subgraph)
+    const subgraphNode = subgraph.nodes[0]
+    const failure = Symbol('lifecycle failure')
+    const laterCallback = vi.fn()
+    const canvasClear = vi.fn()
+    graph.list_of_graphcanvas = [
+      { clear: canvasClear, setDirty: vi.fn() } as unknown as LGraphCanvas
+    ]
+    source.onRemoved = () => {
+      throw failure
+    }
+    target.onRemoved = laterCallback
+    subgraphNode.onRemoved = laterCallback
+
+    expect(() => graph.clear()).toThrow(failure)
+
+    expect(laterCallback).not.toHaveBeenCalled()
+    expect(canvasClear).toHaveBeenCalledOnce()
+    expect([source.graph, subgraphNode.graph]).toEqual([null, null])
+    expect([
+      source._graphScope,
+      subgraphNode._graphScope,
+      link._graphScope,
+      reroute._graphScope
+    ]).toEqual([undefined, undefined, undefined, undefined])
+    expect(graph.nodes).toEqual([])
+    expect(graph.links.size).toBe(0)
+    expect(graph.reroutes.size).toBe(0)
+    expect(graph.subgraphs.size).toBe(0)
+
+    const reusableNode = new LGraphNode('reusable')
+    graph.add(reusableNode)
+    expect(reusableNode.graph).toBe(graph)
   })
 
   it('clears only the selected subgraph owner', () => {
