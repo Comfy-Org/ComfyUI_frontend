@@ -668,6 +668,30 @@ describe('beforeSerialize', () => {
     ])
   })
 
+  it('omits a value from the prompt when a handler supplies undefined', () => {
+    // One pack wrote undefined unless an input was linked. The legacy
+    // serializeValue returning undefined left the key set to undefined, which
+    // JSON.stringify drops — so "replace with undefined" IS omission, and the
+    // wire is identical to what the unconverted pack sent.
+    widgets.get('seed')!.on('beforeSerialize', (e) => {
+      if (e.context === 'prompt') e.setSerializedValue(undefined)
+    })
+
+    return (async () => {
+      const widget = node.widgets![0]
+      // Exactly what executionUtil does to build one input.
+      const value = widget.serializeValue
+        ? await widget.serializeValue(node, 0)
+        : widget.value
+      const inputs: Record<string, unknown> = { seed: value }
+
+      expect(value).toBeUndefined()
+      // The key exists but JSON drops it, which is how the legacy path omitted.
+      expect('seed' in inputs).toBe(true)
+      expect(JSON.parse(JSON.stringify(inputs))).toEqual({})
+    })()
+  })
+
   it('tells the embedded copy apart from the saved file', () => {
     // graphToPrompt builds the workflow that travels with the prompt using the
     // very same serialize() a Ctrl+S uses. rgthree's Seed saves -1 but embeds
