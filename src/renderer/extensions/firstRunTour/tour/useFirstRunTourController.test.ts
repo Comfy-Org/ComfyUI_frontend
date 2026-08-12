@@ -24,6 +24,7 @@ const mocks = vi.hoisted(() => ({
   workflowStatus: { value: new Map<unknown, string>() },
   executionErrors: { hasNodeError: false, hasPromptError: false },
   activeWorkflow: { value: null as unknown },
+  queuedJobs: { value: {} as Record<string, { workflow?: unknown }> },
   linearMode: { value: false },
   vueNodesEnabled: true,
   steps: [] as CoachStep[],
@@ -51,10 +52,14 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
 vi.mock('@/stores/executionStore', async () => {
   const { shallowRef } = await import('vue')
   mocks.workflowStatus = shallowRef(new Map<unknown, string>())
+  mocks.queuedJobs = shallowRef({} as Record<string, { workflow?: unknown }>)
   return {
     useExecutionStore: () => ({
       getWorkflowStatus: (workflow: unknown) =>
-        mocks.workflowStatus.value.get(workflow)
+        mocks.workflowStatus.value.get(workflow),
+      get queuedJobs() {
+        return mocks.queuedJobs.value
+      }
     })
   }
 })
@@ -192,6 +197,12 @@ const EVERY_ENDING: { named: string; ending: TourEnding }[] = [
   { named: 'the user walked to the end', ending: COMPLETED },
   ...UNFINISHED_ENDINGS
 ]
+
+/** The queue storing a job, which is what acceptance actually looks like. */
+function acceptRun(workflow: unknown) {
+  mocks.queuedJobs.value = { 'job-1': { workflow } }
+  return nextTick()
+}
 
 function finishRun(workflow: unknown, status: string) {
   mocks.workflowStatus.value = new Map(mocks.workflowStatus.value).set(
@@ -381,6 +392,43 @@ describe('useFirstRunTourController', () => {
         mocks.runState.value,
         'a paid user out of credits is refused silently; the card must not promise a result forever'
       ).toBe('failed')
+    })
+
+    it('leaves a run accepted but still waiting for a machine alone', async () => {
+      // Cloud accepts the job and reports "Waiting for a machine" — it is in
+      // `initializingJobIds` with NO workflow status until a worker picks it
+      // up, which routinely outlasts the deadline. Keying on status instead of
+      // acceptance would fail this healthy run and tell the user to run again,
+      // prompting a duplicate paid submission.
+      await tourOnRunStep()
+      mountRunButton('queue-button', () => {}).click()
+      await acceptRun(TOUR_WORKFLOW)
+
+      await vi.advanceTimersByTimeAsync(ACCEPT_DEADLINE_MS * 4)
+
+      expect(
+        mocks.runState.value,
+        'an accepted job with no status yet is queued, not refused'
+      ).toBe('generating')
+    })
+
+    it('lets the offline grace outlive the acceptance deadline', async () => {
+      // The grace is 20s and the acceptance deadline 15s. A drop before the
+      // first status must still get the full grace: acceptance arrives on the
+      // queuePrompt response, not the socket, so it disarms this deadline even
+      // while the connection is down.
+      const { api } = await import('@/scripts/api')
+      await tourOnRunStep()
+      mountRunButton('queue-button', () => {}).click()
+      await acceptRun(TOUR_WORKFLOW)
+
+      api.dispatchCustomEvent('reconnecting')
+      await vi.advanceTimersByTimeAsync(OFFLINE_GRACE_MS - 1)
+
+      expect(
+        mocks.runState.value,
+        'the 15s acceptance deadline must not cut the 20s grace short'
+      ).toBe('generating')
     })
 
     it('leaves an accepted run past the acceptance deadline alone', async () => {
