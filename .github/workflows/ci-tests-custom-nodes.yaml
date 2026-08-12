@@ -124,12 +124,26 @@ jobs:
           # pinned.
           comfyui_ref: ${{ inputs.comfyui_ref || 'b08e6cf35fac50d3ca8470dffb3f9a1fbb7187d2' }}
 
+      # Pack sources are SHA-pinned, so their content is fully determined by
+      # the manifest: cache the checked-out trees (sans .git) and restore by
+      # manifest hash, with a prefix fallback so a single-pack pin bump still
+      # reuses every other pack. The per-pack .pin marker is the integrity
+      # check - a stale or partial entry re-clones.
+      - name: Restore manifest pack cache
+        id: pack-cache
+        uses: actions/cache/restore@v5
+        with:
+          path: ~/.cache/cn-packs
+          key: cn-packs-v2-${{ hashFiles('browser_tests/fixtures/data/customNodeManifest.core.json') }}
+          restore-keys: cn-packs-v2-
+
       # Install every pack the manifest declares (DRY: a new pack row installs
       # itself here, no workflow change). A clone or dependency failure fails the
       # job - if a pack can't be installed, its coverage can't run, and that is a
       # gate failure, not something to paper over. The `jq | while` pipe hides
       # failures in a subshell, so read into an array and loop with `set -e`.
       - name: Install manifest custom nodes
+        id: install
         shell: bash
         run: |
           set -euo pipefail
@@ -162,15 +176,57 @@ jobs:
               echo "::error::$pack: pin must be a full commit SHA (got '$pin')"; exit 1
             fi
             dir="ComfyUI/custom_nodes/$pack"
-            echo "::group::install $pack"
-            git clone --depth 1 "$repo" "$dir"
-            git -C "$dir" fetch --depth 1 origin "$pin"
-            git -C "$dir" checkout "$pin"
+            cache_dir="$HOME/.cache/cn-packs/$pack"
+            # The pin marker is a SIBLING of the tree, never inside it - a
+            # pack legitimately shipping a top-level .pin must install
+            # identically on cached and fresh runs.
+            if [ -f "$cache_dir.pin" ] && [ "$(cat "$cache_dir.pin")" = "$pin" ]; then
+              echo "::group::restore $pack from cache ($pin)"
+              cp -R "$cache_dir" "$dir"
+            else
+              echo "::group::install $pack"
+              git clone --depth 1 "$repo" "$dir"
+              git -C "$dir" fetch --depth 1 origin "$pin"
+              git -C "$dir" checkout "$pin"
+              # Repopulate the cache entry: tree without .git (nothing after
+              # this point reads pack git state), pin written LAST so a
+              # truncated copy fails the integrity check above.
+              rm -rf "$cache_dir" "$cache_dir.pin"
+              mkdir -p "$(dirname "$cache_dir")"
+              cp -R "$dir" "$cache_dir"
+              rm -rf "$cache_dir/.git"
+              printf '%s' "$pin" > "$cache_dir.pin"
+            fi
             if [ -f "$dir/requirements.txt" ]; then
               pip install -r "$dir/requirements.txt" -c /tmp/torch-constraints.txt
             fi
             echo "::endgroup::"
           done
+          # Prune entries for packs no longer in the manifest: the prefix
+          # fallback restores old entries and the save re-tars the whole
+          # directory, so without this the entry grows monotonically and
+          # eats the repo's shared cache budget.
+          if [ -d "$HOME/.cache/cn-packs" ]; then
+            current=$(jq -r '.[].pack' "$manifest")
+            for entry in "$HOME/.cache/cn-packs"/*; do
+              name=$(basename "$entry" .pin)
+              grep -qxF "$name" <<<"$current" || rm -rf "$entry"
+            done
+          fi
+
+      # Save only when this run rebuilt entries. An exact-key restore means
+      # the stored tree is already current - actions/cache/save re-tars and
+      # uploads unconditionally and only then hits the duplicate-key
+      # rejection, so skipping here is what actually avoids the cost. Gating
+      # on the INSTALL step (not the job) still saves when the suite fails,
+      # while a failed or cancelled install can never freeze a partial tree
+      # under the immutable key.
+      - name: Save manifest pack cache
+        if: always() && steps.install.outcome == 'success' && steps.pack-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v5
+        with:
+          path: ~/.cache/cn-packs
+          key: cn-packs-v2-${{ hashFiles('browser_tests/fixtures/data/customNodeManifest.core.json') }}
 
       # The VHS run-tier workflow reads input/plain_video.mp4.
       - name: Stage run-tier assets
