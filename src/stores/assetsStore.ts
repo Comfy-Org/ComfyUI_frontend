@@ -4,8 +4,7 @@ import { defineStore } from 'pinia'
 import { computed, reactive, ref, shallowReactive } from 'vue'
 import {
   mapInputFileToAssetItem,
-  mapTaskOutputToAssetItem,
-  unflattenOutputAssets
+  mapTaskOutputToAssetItem
 } from '@/platform/assets/composables/media/assetMappers'
 import type {
   AssetItem,
@@ -18,8 +17,9 @@ import {
 } from '@/platform/assets/services/assetService'
 import type { AssetPaginationOptions } from '@/platform/assets/services/assetService'
 import { isCloud } from '@/platform/distribution/types'
-import { useAssetsQuery } from '@/platform/remote/lazy/assets'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+import { useAssetsQuery } from '@/platform/remote/lazy/assets'
+import type { LazyList } from '@/platform/remote/lazy/lazyList'
 import { api } from '@/scripts/api'
 
 import { TaskItemImpl } from './queueStore'
@@ -115,11 +115,6 @@ export const useAssetsStore = defineStore('assets', () => {
     return deletingAssetIds.has(assetId)
   }
 
-  // Pagination state
-  const historyOffset = ref(0)
-  const legacyHasMoreHistory = ref(true)
-  const legacyIsLoadingMore = ref(false)
-
   const allHistoryItems = ref<AssetItem[]>([])
 
   const loadedIds = shallowReactive(new Set<string>())
@@ -147,133 +142,141 @@ export const useAssetsStore = defineStore('assets', () => {
     return result
   }
 
-  /**
-   * Fetch history assets with pagination support
-   * @param loadMore - true for pagination (append), false for initial load (replace)
-   */
-  const fetchHistoryAssets = async (loadMore = false): Promise<AssetItem[]> => {
-    // Reset state for initial load
-    if (!loadMore) {
-      historyOffset.value = 0
-      legacyHasMoreHistory.value = true
-      allHistoryItems.value = []
-      loadedIds.clear()
-    }
+  function useHistoryAssets(): LazyList<AssetItem> {
+    // Pagination state
+    const historyOffset = ref(0)
+    const hasMoreHistory = ref(true)
+    const isLoadingMore = ref(false)
 
-    // Fetch from server with offset
-    const history = await api.getHistory(BATCH_SIZE, {
-      offset: historyOffset.value
-    })
+    /**
+     * Fetch history assets with pagination support
+     * @param loadMore - true for pagination (append), false for initial load (replace)
+     */
+    const fetchHistoryAssets = async (
+      loadMore = false
+    ): Promise<AssetItem[]> => {
+      // Reset state for initial load
+      if (!loadMore) {
+        historyOffset.value = 0
+        hasMoreHistory.value = true
+        allHistoryItems.value = []
+        loadedIds.clear()
+      }
 
-    // Convert JobListItems to AssetItems
-    const newAssets = mapHistoryToAssets(history)
+      // Fetch from server with offset
+      const history = await api.getHistory(BATCH_SIZE, {
+        offset: historyOffset.value
+      })
 
-    if (loadMore) {
-      // Filter out duplicates and insert in sorted order
-      for (const asset of newAssets) {
-        if (loadedIds.has(asset.id)) {
-          continue // Skip duplicates
+      // Convert JobListItems to AssetItems
+      const newAssets = mapHistoryToAssets(history)
+
+      if (loadMore) {
+        // Filter out duplicates and insert in sorted order
+        for (const asset of newAssets) {
+          if (loadedIds.has(asset.id)) {
+            continue // Skip duplicates
+          }
+          loadedIds.add(asset.id)
+
+          // Find insertion index to maintain sorted order (newest first)
+          const assetTime = new Date(asset.created_at ?? 0).getTime()
+          const insertIndex = allHistoryItems.value.findIndex(
+            (item) => new Date(item.created_at ?? 0).getTime() < assetTime
+          )
+
+          if (insertIndex === -1) {
+            // Asset is oldest, append to end
+            allHistoryItems.value.push(asset)
+          } else {
+            // Insert at the correct position
+            allHistoryItems.value.splice(insertIndex, 0, asset)
+          }
         }
-        loadedIds.add(asset.id)
+      } else {
+        // Initial load: replace all
+        allHistoryItems.value = newAssets
+        newAssets.forEach((asset) => loadedIds.add(asset.id))
+      }
 
-        // Find insertion index to maintain sorted order (newest first)
-        const assetTime = new Date(asset.created_at ?? 0).getTime()
-        const insertIndex = allHistoryItems.value.findIndex(
-          (item) => new Date(item.created_at ?? 0).getTime() < assetTime
+      // Update pagination state
+      historyOffset.value += BATCH_SIZE
+      hasMoreHistory.value = history.length === BATCH_SIZE
+
+      if (allHistoryItems.value.length > MAX_HISTORY_ITEMS) {
+        const removed = allHistoryItems.value.slice(MAX_HISTORY_ITEMS)
+        allHistoryItems.value = allHistoryItems.value.slice(
+          0,
+          MAX_HISTORY_ITEMS
         )
 
-        if (insertIndex === -1) {
-          // Asset is oldest, append to end
-          allHistoryItems.value.push(asset)
-        } else {
-          // Insert at the correct position
-          allHistoryItems.value.splice(insertIndex, 0, asset)
+        // Clean up Set
+        removed.forEach((item) => loadedIds.delete(item.id))
+      }
+
+      return allHistoryItems.value
+    }
+
+    const historyAssets = ref<AssetItem[]>([])
+    const historyLoading = ref(false)
+    const historyError = ref<unknown>(null)
+
+    /**
+     * Initial load of history assets
+     */
+    const updateHistory = async () => {
+      historyLoading.value = true
+      historyError.value = null
+      try {
+        await fetchHistoryAssets(false)
+        historyAssets.value = allHistoryItems.value
+      } catch (err) {
+        console.error('Error fetching history assets:', err)
+        historyError.value = err
+        // Keep existing data when error occurs
+        if (!historyAssets.value.length) {
+          historyAssets.value = []
         }
+      } finally {
+        historyLoading.value = false
       }
-    } else {
-      // Initial load: replace all
-      allHistoryItems.value = newAssets
-      newAssets.forEach((asset) => loadedIds.add(asset.id))
     }
 
-    // Update pagination state
-    historyOffset.value += BATCH_SIZE
-    legacyHasMoreHistory.value = history.length === BATCH_SIZE
+    /**
+     * Load more history items (infinite scroll)
+     */
+    const loadMoreHistory = async () => {
+      // Guard: prevent concurrent loads and check if more items available
+      if (!hasMoreHistory.value || isLoadingMore.value) return
 
-    if (allHistoryItems.value.length > MAX_HISTORY_ITEMS) {
-      const removed = allHistoryItems.value.slice(MAX_HISTORY_ITEMS)
-      allHistoryItems.value = allHistoryItems.value.slice(0, MAX_HISTORY_ITEMS)
+      isLoadingMore.value = true
+      historyError.value = null
 
-      // Clean up Set
-      removed.forEach((item) => loadedIds.delete(item.id))
+      try {
+        await fetchHistoryAssets(true)
+        historyAssets.value = allHistoryItems.value
+      } catch (err) {
+        console.error('Error loading more history:', err)
+        historyError.value = err
+        // Keep existing data when error occurs (consistent with updateHistory)
+        if (!historyAssets.value.length) {
+          historyAssets.value = []
+        }
+      } finally {
+        isLoadingMore.value = false
+      }
     }
 
-    return allHistoryItems.value
-  }
-
-  const legacyHistoryAssets = ref<AssetItem[]>([])
-  const legacyHistoryLoading = ref(false)
-  const legacyHistoryError = ref<unknown>(null)
-
-  /**
-   * Initial load of history assets
-   */
-  const legacyUpdateHistory = async () => {
-    legacyHistoryLoading.value = true
-    legacyHistoryError.value = null
-    try {
-      await fetchHistoryAssets(false)
-      legacyHistoryAssets.value = allHistoryItems.value
-    } catch (err) {
-      console.error('Error fetching history assets:', err)
-      legacyHistoryError.value = err
-      // Keep existing data when error occurs
-      if (!legacyHistoryAssets.value.length) {
-        legacyHistoryAssets.value = []
-      }
-    } finally {
-      legacyHistoryLoading.value = false
+    return {
+      hasMore: hasMoreHistory,
+      invalidate: updateHistory,
+      isLoading: historyLoading,
+      items: historyAssets,
+      loadMore: loadMoreHistory,
+      loadNew: updateHistory
     }
   }
-
-  /**
-   * Load more history items (infinite scroll)
-   */
-  const legacyLoadMoreHistory = async () => {
-    // Guard: prevent concurrent loads and check if more items available
-    if (!legacyHasMoreHistory.value || legacyIsLoadingMore.value) return
-
-    legacyIsLoadingMore.value = true
-    legacyHistoryError.value = null
-
-    try {
-      await fetchHistoryAssets(true)
-      legacyHistoryAssets.value = allHistoryItems.value
-    } catch (err) {
-      console.error('Error loading more history:', err)
-      legacyHistoryError.value = err
-      // Keep existing data when error occurs (consistent with updateHistory)
-      if (!legacyHistoryAssets.value.length) {
-        legacyHistoryAssets.value = []
-      }
-    } finally {
-      legacyIsLoadingMore.value = false
-    }
-  }
-
-  const flatOutputs = useAssetsQuery()
-
-  // On cloud, grouped history is derived from the flat output assets rather
-  // than fetched from the history API.
-  const historyAssets = isCloud
-    ? computed(() => unflattenOutputAssets(flatOutputs.items.value))
-    : legacyHistoryAssets
-  const historyLoading = isCloud ? flatOutputs.isLoading : legacyHistoryLoading
-  const historyError = isCloud ? ref(null) : legacyHistoryError
-  const updateHistory = isCloud ? flatOutputs.invalidate : legacyUpdateHistory
-  const loadMoreHistory = isCloud ? flatOutputs.loadMore : legacyLoadMoreHistory
-  const hasMoreHistory = isCloud ? flatOutputs.hasMore : legacyHasMoreHistory
-  const isLoadingMore = isCloud ? flatOutputs.isLoading : legacyIsLoadingMore
+  const historyAssets = isCloud ? useHistoryAssets() : useAssetsQuery()
 
   /**
    * Patch preview_id/preview_url for a single asset already in memory,
@@ -296,12 +299,8 @@ export const useAssetsStore = defineStore('assets', () => {
         preview_url: previewUrl
       }
     }
-    if (isCloud) {
-      patch(flatOutputs.items.value)
-    } else {
-      patch(legacyHistoryAssets.value)
-      patch(allHistoryItems.value)
-    }
+    patch(historyAssets.items.value)
+    patch(allHistoryItems.value)
     patch(inputAssets.value)
   }
 
@@ -910,13 +909,14 @@ export const useAssetsStore = defineStore('assets', () => {
   return {
     // States
     inputAssets,
-    historyAssets,
     inputLoading,
-    historyLoading,
     inputError,
-    historyError,
-    hasMoreHistory,
-    isLoadingMore,
+
+    historyAssets: historyAssets.items,
+    historyLoading: historyAssets.isLoading,
+    historyError: ref(null),
+    hasMoreHistory: historyAssets.hasMore,
+    isLoadingMore: historyAssets.isLoading,
 
     // Deletion tracking
     deletingAssetIds,
@@ -925,8 +925,8 @@ export const useAssetsStore = defineStore('assets', () => {
 
     // Actions
     updateInputs,
-    updateHistory,
-    loadMoreHistory,
+    updateHistory: historyAssets.loadNew,
+    loadMoreHistory: historyAssets.loadMore,
     setAssetPreview,
 
     // Input mapping helpers
