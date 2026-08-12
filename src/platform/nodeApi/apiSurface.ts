@@ -84,6 +84,7 @@ export const API_MEMBERS: ReadonlySet<string> = new Set([
   'getValue',
   'graph',
   'groups',
+  'guard',
   'has',
   'height',
   'hidden',
