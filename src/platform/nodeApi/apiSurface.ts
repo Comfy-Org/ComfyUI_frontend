@@ -179,6 +179,7 @@ export const API_MEMBERS: ReadonlySet<string> = new Set([
   'peerType',
   'pending',
   'pinned',
+  'pointerPosition',
   'position',
   'props',
   'queue',
