@@ -97,6 +97,7 @@ const agentPanelStore = useAgentPanelStore()
 const { dismissedSelectionSignature } = storeToRefs(agentPanelStore)
 const agentNodeSelectionStore = useAgentNodeSelectionStore()
 const tabActivity = useWorkflowTabActivityStore()
+const CREATING_TAB_MIN_DURATION_MS = 500
 
 const canvasStore = useCanvasStore()
 const selectedNodes = computed<SelectedNode[]>(() =>
@@ -528,6 +529,7 @@ async function onAgentActiveTab(
       })
       return
     }
+    const creatingStartedAt = Date.now()
     tabActivity.setCreating(true)
     const snapshot = await fetchDraftSnapshot(data.workflow_id)
     if (stale()) return
@@ -544,6 +546,11 @@ async function onAgentActiveTab(
       draftStore.bind(data.workflow_id)
       return
     }
+    const remainingCreatingTime =
+      CREATING_TAB_MIN_DURATION_MS - (Date.now() - creatingStartedAt)
+    if (remainingCreatingTime > 0)
+      await new Promise((resolve) => setTimeout(resolve, remainingCreatingTime))
+    if (stale()) return
     const tab = workflowStore.createTemporary(
       agentTabFilename(data.name),
       workflow ?? undefined
