@@ -5,6 +5,11 @@ export interface BillingRailPolicy {
   supportsChurnkeyCancellation: boolean
 }
 
+const FAIL_OPEN_POLICY: BillingRailPolicy = {
+  usesLegacyAccountOperations: false,
+  supportsChurnkeyCancellation: false
+}
+
 /**
  * Single decision site for `billing_rail` (ADR-0016). Every consumer must
  * classify the rail through this policy so one value cannot be read two
@@ -32,11 +37,9 @@ export function getBillingRailPolicy(
       }
     case null:
     case undefined:
-      return {
-        usesLegacyAccountOperations: false,
-        supportsChurnkeyCancellation: false
-      }
+      return FAIL_OPEN_POLICY
     default:
-      return rail satisfies never
+      rail satisfies never
+      return FAIL_OPEN_POLICY
   }
 }

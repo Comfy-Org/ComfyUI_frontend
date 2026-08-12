@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
+import type { BillingRail } from '@/platform/workspace/api/workspaceApi'
+
 import { getBillingRailPolicy } from './billingRailPolicy'
 
 describe('getBillingRailPolicy', () => {
@@ -33,4 +35,11 @@ describe('getBillingRailPolicy', () => {
       })
     }
   )
+
+  it('fails open for a rail value this build does not recognize', () => {
+    expect(getBillingRailPolicy('adyen' as BillingRail)).toEqual({
+      usesLegacyAccountOperations: false,
+      supportsChurnkeyCancellation: false
+    })
+  })
 })

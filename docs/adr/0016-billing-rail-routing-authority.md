@@ -46,27 +46,32 @@ Two problems motivated this record (raised in
 The post-retirement routing matrix, confirmed as the intended final behavior in
 the #14615 review, is:
 
-| Condition                                            | Billing type | Cancellation UI |
-| ---------------------------------------------------- | ------------ | --------------- |
-| OSS distribution                                     | `legacy`     | fallback dialog |
-| Cloud, workspace not yet loaded (no `type`)          | `legacy`     | fallback dialog |
-| Cloud team workspace (any rail)                      | `workspace`  | rail-dependent  |
-| Cloud personal, rail `legacy_stripe`                 | `legacy`     | fallback dialog |
-| Cloud personal, rail `stripe`                        | `workspace`  | Churnkey        |
-| Cloud personal, rail `metronome`                     | `workspace`  | fallback dialog |
-| Cloud personal, rail omitted / fetch failed / `null` | `workspace`  | fallback dialog |
+| Condition                                   | Billing type | Cancellation UI |
+| ------------------------------------------- | ------------ | --------------- |
+| OSS distribution                            | `legacy`     | fallback dialog |
+| Cloud, workspace not yet loaded (no `type`) | `legacy`     | fallback dialog |
+| Cloud team workspace (any rail)             | `workspace`  | rail-dependent  |
+| Cloud personal, rail `legacy_stripe`        | `legacy`     | fallback dialog |
+| Cloud personal, rail `stripe`               | `workspace`  | Churnkey        |
+| Cloud personal, rail `metronome`            | `workspace`  | fallback dialog |
+| Cloud personal, no cached rail              | `workspace`  | fallback dialog |
 
 Churnkey is available only when the rail is known to be `stripe`; every other
-rail (including unknown) uses the fallback cancellation dialog.
+rail (including unknown) uses the fallback cancellation dialog. "No cached
+rail" means the session never received one: an omitted rail or a failed
+refresh does not clear an already-cached value, so a session that once saw
+`legacy_stripe` keeps routing to legacy until a response delivers a different
+rail.
 
 All consumers must obtain rail classification from a single shared decision
 site (`getBillingRailPolicy` in `src/composables/billing/billingRailPolicy.ts`)
 rather than comparing `billing_rail` inline. That site handles the
 `BillingRail` union exhaustively (`satisfies never` on the default branch), so
 a widened union from the backend fails `pnpm typecheck` instead of silently
-routing to workspace billing. Runtime absence (`null` — rail not yet fetched, omitted, or fetch
-failed) is handled outside the exhaustive switch, because it is an expected
-state, not a type error.
+routing to workspace billing. The generated union is compile-time only, so the
+same site also handles the runtime states explicitly: an absent rail (`null` —
+not yet fetched, omitted, or fetch failed) and a rail value this build does
+not recognize both return the fail-open policy.
 
 ### 2. Unknown rail fails open to workspace billing, deliberately
 
