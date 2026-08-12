@@ -5824,6 +5824,9 @@
       "model_number_of_images": {
         "name": "number_of_images"
       },
+      "model_quality": {
+        "name": "איכות"
+      },
       "model_resolution": {
         "name": "resolution"
       },
@@ -5862,6 +5865,10 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "הפרומפט הטקסטואלי המשמש ליצירת התמונה"
+      },
+      "quality": {
+        "name": "איכות",
+        "tooltip": "רמת איכות, נתמך רק על ידי המודל grok-imagine-image-2.0."
       },
       "resolution": {
         "name": "resolution"
@@ -8928,6 +8935,67 @@
       }
     }
   },
+  "LTXVDualCFGGuider": {
+    "description": "סולמות CFG נפרדים עבור המודאליות של וידאו ואודיו ב-latent LTXV-AV ארוז.",
+    "display_name": "LTXV Dual CFG Guider",
+    "inputs": {
+      "audio_cfg": {
+        "name": "audio_cfg"
+      },
+      "model": {
+        "name": "model"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "video_cfg": {
+        "name": "video_cfg"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVDurationPredictor": {
+    "description": "חוזה את משך השוט הטבעי עבור פרומפט באמצעות הראש duration של LTX 2.4 (נטען עם ModelPatchLoader), ומיישר אותו לרשת הפריימים של VAE (8k+1).",
+    "display_name": "LTXV Duration Predictor",
+    "inputs": {
+      "duration_head": {
+        "name": "duration_head",
+        "tooltip": "ראש duration של LTX 2.4 שנטען עם ModelPatchLoader."
+      },
+      "frame_rate": {
+        "name": "frame_rate"
+      },
+      "max_seconds": {
+        "name": "max_seconds"
+      },
+      "min_seconds": {
+        "name": "min_seconds"
+      },
+      "model": {
+        "name": "model"
+      },
+      "positive": {
+        "name": "positive"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "num_frames",
+        "tooltip": null
+      },
+      "1": {
+        "name": "seconds",
+        "tooltip": "משך חזוי גולמי (לא מוגבל)."
+      }
+    }
+  },
   "LTXVEmptyLatentAudio": {
     "display_name": "LTXV Empty Latent Audio",
     "inputs": {
@@ -9047,6 +9115,29 @@
       }
     }
   },
+  "LTXVModalityGuidance": {
+    "description": "הנחיה קרוס-מודאלית (אודיו-וידאו) עבור LTXV-AV. מריץ מעבר קדימה נוסף בכל שלב עם ניתוק cross-attention של a2v/v2a, ואז דוחף את התוצאה לכיוון התחזית המשולבת – מחזק סנכרון אודיו-ויזואלי (למשל, סנכרון שפתיים). ערך ברירת מחדל modality_scale הוא 3.0. ניתן לשלב עם dual-CFG guider ו-STG. הגדרה ל-1.0 מבטלת (ללא מעבר נוסף).",
+    "display_name": "LTXV Modality Guidance (A/V coupling)",
+    "inputs": {
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "modality_scale": {
+        "name": "modality_scale"
+      },
+      "model": {
+        "name": "model"
+      },
+      "start_percent": {
+        "name": "start_percent"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LTXVPreprocess": {
     "display_name": "LTXV Preprocess",
     "inputs": {
@@ -9158,6 +9249,33 @@
       },
       "1": {
         "name": "audio_latent",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVSpatioTemporalGuidance": {
+    "description": "מריץ מעבר נוסף בכל שלב כאשר ה-self-attention של הבלוקים הנבחרים מדורג ל-value-passthrough, ואז מנחה להתרחק ממנו – משפר פירוט מרחבי וקוהרנטיות של תנועה.",
+    "display_name": "LTXV Spatio-Temporal Guidance (STG)",
+    "inputs": {
+      "blocks": {
+        "name": "blocks",
+        "tooltip": "אינדקסים של בלוקי טרנספורמר מופרדים בפסיקים להפרעה."
+      },
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "model": {
+        "name": "model"
+      },
+      "scale": {
+        "name": "scale"
+      },
+      "start_percent": {
+        "name": "start_percent"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -10148,6 +10266,121 @@
     "outputs": {
       "0": {
         "name": "conditioning",
+        "tooltip": null
+      }
+    }
+  },
+  "LtxApi25AudioToVideo": {
+    "description": "יצירת וידאו מונע על ידי רצועת אודיו, עם אפשרות להגדיר תמונת פריים ראשונה.",
+    "display_name": "LTX 2.5 המרת אודיו לוידאו",
+    "inputs": {
+      "audio": {
+        "name": "אודיו",
+        "tooltip": "רצועת האודיו שמניעה את הוידאו. האורך שלה (2-20 שניות) קובע את משך הוידאו."
+      },
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "image": {
+        "name": "תמונה",
+        "tooltip": "פריים ראשון אופציונלי שישמש לוידאו."
+      },
+      "model": {
+        "name": "מודל"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "prompt": {
+        "name": "פרומפט"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed לקביעת האם הצומת ירוץ מחדש; התוצאות בפועל אינן דטרמיניסטיות ללא קשר ל-seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LtxApi25ImageToVideo": {
+    "description": "וידאו באיכות מקצועית עם משך ורזולוציה מותאמים אישית על בסיס תמונת התחלה.",
+    "display_name": "LTX 2.5 המרת תמונה לוידאו",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "image": {
+        "name": "תמונה",
+        "tooltip": "פריים ראשון שישמש לוידאו."
+      },
+      "last_frame": {
+        "name": "פריים אחרון",
+        "tooltip": "פריים אחרון שישמש לוידאו."
+      },
+      "model": {
+        "name": "מודל"
+      },
+      "model_duration": {
+        "name": "משך"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "יצירת אודיו"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "prompt": {
+        "name": "פרומפט"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed לקביעת האם הצומת ירוץ מחדש; התוצאות בפועל אינן דטרמיניסטיות ללא קשר ל-seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LtxApi25TextToVideo": {
+    "description": "וידאו באיכות מקצועית עם משך ורזולוציה מותאמים אישית.",
+    "display_name": "LTX 2.5 המרת טקסט לוידאו",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל"
+      },
+      "model_duration": {
+        "name": "משך"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "יצירת אודיו"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "prompt": {
+        "name": "פרומפט"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed לקביעת האם הצומת ירוץ מחדש; התוצאות בפועל אינן דטרמיניסטיות ללא קשר ל-seed."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -11979,6 +12212,17 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "ModelAttentionBackend": {
+    "display_name": "ModelAttentionBackend",
+    "inputs": {
+      "attention": {
+        "name": "attention"
+      },
+      "model": {
+        "name": "model"
       }
     }
   },

@@ -5824,6 +5824,9 @@
       "model_number_of_images": {
         "name": "número_de_imágenes"
       },
+      "model_quality": {
+        "name": "calidad"
+      },
       "model_resolution": {
         "name": "resolución"
       },
@@ -5862,6 +5865,10 @@
       "prompt": {
         "name": "indicación",
         "tooltip": "La indicación de texto utilizada para generar la imagen"
+      },
+      "quality": {
+        "name": "calidad",
+        "tooltip": "Nivel de calidad, solo compatible con el modelo grok-imagine-image-2.0."
       },
       "resolution": {
         "name": "resolución"
@@ -8928,6 +8935,67 @@
       }
     }
   },
+  "LTXVDualCFGGuider": {
+    "description": "Escalas CFG separadas para las modalidades de video y audio de un espacio latente LTXV-AV empaquetado.",
+    "display_name": "LTXV Dual CFG Guider",
+    "inputs": {
+      "audio_cfg": {
+        "name": "audio_cfg"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "negative": {
+        "name": "negativo"
+      },
+      "positive": {
+        "name": "positivo"
+      },
+      "video_cfg": {
+        "name": "video_cfg"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVDurationPredictor": {
+    "description": "Predice la duración natural de la toma para un prompt usando la cabeza de duración LTX 2.4 (cargada con ModelPatchLoader), y la ajusta a la cuadrícula de fotogramas 8k+1 del VAE.",
+    "display_name": "LTXV Duration Predictor",
+    "inputs": {
+      "duration_head": {
+        "name": "duration_head",
+        "tooltip": "Cabeza de duración LTX 2.4 cargada con ModelPatchLoader."
+      },
+      "frame_rate": {
+        "name": "frecuencia_de_fotogramas"
+      },
+      "max_seconds": {
+        "name": "segundos_máximos"
+      },
+      "min_seconds": {
+        "name": "segundos_mínimos"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "positive": {
+        "name": "positivo"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "num_frames",
+        "tooltip": null
+      },
+      "1": {
+        "name": "segundos",
+        "tooltip": "Duración predicha sin recortar (raw)."
+      }
+    }
+  },
   "LTXVEmptyLatentAudio": {
     "display_name": "LTXV Audio Latente Vacío",
     "inputs": {
@@ -9047,6 +9115,29 @@
       }
     }
   },
+  "LTXVModalityGuidance": {
+    "description": "Guía cruzada modal (audio-video) para LTXV-AV. Ejecuta un pase adicional por paso con la atención cruzada a2v/v2a cortada, luego empuja el resultado hacia la predicción acoplada - fortaleciendo la sincronización audiovisual (por ejemplo, sincronización labial). El valor por defecto de modality_scale es 3.0. Se acumula con el dual-CFG guider y STG. Establecer en 1.0 para desactivar (sin pase extra).",
+    "display_name": "LTXV Modality Guidance (A/V coupling)",
+    "inputs": {
+      "end_percent": {
+        "name": "porcentaje_fin"
+      },
+      "modality_scale": {
+        "name": "modality_scale"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "start_percent": {
+        "name": "porcentaje_inicio"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LTXVPreprocess": {
     "display_name": "LTXVPreprocesar",
     "inputs": {
@@ -9158,6 +9249,33 @@
       },
       "1": {
         "name": "latente_audio",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVSpatioTemporalGuidance": {
+    "description": "Ejecuta un pase adicional por paso con la auto-atención de los bloques seleccionados degradada a un paso de valores, luego guía alejándose de ello - mejorando el detalle espacial y la coherencia del movimiento.",
+    "display_name": "LTXV Spatio-Temporal Guidance (STG)",
+    "inputs": {
+      "blocks": {
+        "name": "bloques",
+        "tooltip": "Índices de bloques transformer separados por comas para perturbar."
+      },
+      "end_percent": {
+        "name": "porcentaje_fin"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "scale": {
+        "name": "escala"
+      },
+      "start_percent": {
+        "name": "porcentaje_inicio"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -10148,6 +10266,121 @@
     "outputs": {
       "0": {
         "name": "condicionamiento",
+        "tooltip": null
+      }
+    }
+  },
+  "LtxApi25AudioToVideo": {
+    "description": "Genera un video impulsado por una pista de audio, con una imagen opcional para el primer fotograma.",
+    "display_name": "LTX 2.5 Audio a Video",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Pista de audio que impulsa el video. Su duración (2-20 segundos) determina la duración del video."
+      },
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "image": {
+        "name": "imagen",
+        "tooltip": "Primer fotograma opcional que se usará para el video."
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "model_resolution": {
+        "name": "resolución"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "Semilla para determinar si el nodo debe ejecutarse de nuevo; los resultados reales son no deterministas independientemente de la semilla."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LtxApi25ImageToVideo": {
+    "description": "Videos de calidad profesional con duración y resolución personalizables a partir de una imagen inicial.",
+    "display_name": "LTX 2.5 Imagen a Video",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "image": {
+        "name": "imagen",
+        "tooltip": "Primer fotograma que se usará para el video."
+      },
+      "last_frame": {
+        "name": "último_fotograma",
+        "tooltip": "Último fotograma que se usará para el video."
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "model_duration": {
+        "name": "duración"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "generar_audio"
+      },
+      "model_resolution": {
+        "name": "resolución"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "Semilla para determinar si el nodo debe ejecutarse de nuevo; los resultados reales son no deterministas independientemente de la semilla."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LtxApi25TextToVideo": {
+    "description": "Videos de calidad profesional con duración y resolución personalizables.",
+    "display_name": "LTX 2.5 Texto a Video",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "model_duration": {
+        "name": "duración"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "generar_audio"
+      },
+      "model_resolution": {
+        "name": "resolución"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "Semilla para determinar si el nodo debe ejecutarse de nuevo; los resultados reales son no deterministas independientemente de la semilla."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -11979,6 +12212,17 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "ModelAttentionBackend": {
+    "display_name": "ModelAttentionBackend",
+    "inputs": {
+      "attention": {
+        "name": "atención"
+      },
+      "model": {
+        "name": "modelo"
       }
     }
   },

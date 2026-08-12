@@ -1,4 +1,3 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
@@ -104,7 +103,6 @@ function makeExecutedDetail(
 
 describe('linearOutputStore', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     activeJobIdRef.value = null
     previewsRef.value = {}
     isAppModeRef.value = true

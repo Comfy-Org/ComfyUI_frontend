@@ -41,7 +41,6 @@ function arbAssets(minLength = 1, maxLength = 20): fc.Arbitrary<AssetItem[]> {
 
 describe('useAssetSelection properties', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     mockShiftKey.value = false
     mockCtrlKey.value = false
     mockMetaKey.value = false

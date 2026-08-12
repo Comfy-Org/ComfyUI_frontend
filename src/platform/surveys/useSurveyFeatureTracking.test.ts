@@ -11,7 +11,6 @@ vi.mock('./surveyRegistry', () => ({
 describe('useSurveyFeatureTracking', () => {
   beforeEach(() => {
     vi.resetModules()
-    getSurveyConfig.mockReset()
   })
 
   it('tracks usage when config is enabled', async () => {

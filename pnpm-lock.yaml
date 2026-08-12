@@ -322,8 +322,8 @@ catalogs:
       specifier: 4.2.5
       version: 4.2.5
     reka-ui:
-      specifier: 2.5.0
-      version: 2.5.0
+      specifier: 2.6.2
+      version: 2.6.2
     rollup-plugin-visualizer:
       specifier: ^6.0.4
       version: 6.0.11
@@ -613,7 +613,7 @@ importers:
         version: 4.2.5(vue@3.5.41(typescript@6.0.3))
       reka-ui:
         specifier: 'catalog:'
-        version: 2.5.0(typescript@6.0.3)(vue@3.5.41(typescript@6.0.3))
+        version: 2.6.2(typescript@6.0.3)(vue@3.5.41(typescript@6.0.3))
       semver:
         specifier: ^7.7.2
         version: 7.8.5
@@ -1002,7 +1002,7 @@ importers:
         version: 1.402.3
       reka-ui:
         specifier: 'catalog:'
-        version: 2.5.0(typescript@6.0.3)(vue@3.5.41(typescript@6.0.3))
+        version: 2.6.2(typescript@6.0.3)(vue@3.5.41(typescript@6.0.3))
       three:
         specifier: 'catalog:'
         version: 0.184.0
@@ -1125,9 +1125,6 @@ importers:
       axios:
         specifier: 'catalog:'
         version: 1.18.1
-      dompurify:
-        specifier: 'catalog:'
-        version: 3.4.7
     devDependencies:
       typescript:
         specifier: 'catalog:'
@@ -8175,8 +8172,8 @@ packages:
   rehype@13.0.2:
     resolution: {integrity: sha512-j31mdaRFrwFRUIlxGeuPXXKWQxet52RBQRvCmzl5eCefn/KGbomK5GMHNMsOJf55fgo3qw5tST5neDuarDYR2A==}
 
-  reka-ui@2.5.0:
-    resolution: {integrity: sha512-81aMAmJeVCy2k0E6x7n1kypDY6aM1ldLis5+zcdV1/JtoAlSDck5OBsyLRJU9CfgbrQp1ImnRnBSmC4fZ2fkZQ==}
+  reka-ui@2.6.2:
+    resolution: {integrity: sha512-aHyL22Eeb29WRt0MQwDmWSXLTnH7qIxrFexye8Ge/mKW0kymwaJrYDLMEEhlQ7G2PT/jJZtuldHCXjbVQIn0sA==}
     peerDependencies:
       vue: '>= 3.2.0'
 
@@ -17643,7 +17640,7 @@ snapshots:
       rehype-stringify: 10.0.1
       unified: 11.0.5
 
-  reka-ui@2.5.0(typescript@6.0.3)(vue@3.5.41(typescript@6.0.3)):
+  reka-ui@2.6.2(typescript@6.0.3)(vue@3.5.41(typescript@6.0.3)):
     dependencies:
       '@floating-ui/dom': 1.8.0
       '@floating-ui/vue': 1.1.11(vue@3.5.41(typescript@6.0.3))

@@ -352,10 +352,6 @@ describe('WorkflowTab - agent activity indicators', () => {
 })
 
 describe('WorkflowTab - close button', () => {
-  beforeEach(() => {
-    mockCloseWorkflow.mockClear()
-  })
-
   it('hides the close control until hover for an active idle tab', () => {
     renderTab({ activeWorkflowKey: 'test-key' })
     expect(screen.getByTestId('close-workflow-button')).toHaveClass(

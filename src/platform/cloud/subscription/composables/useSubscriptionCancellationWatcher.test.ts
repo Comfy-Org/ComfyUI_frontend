@@ -47,7 +47,6 @@ describe('useSubscriptionCancellationWatcher', () => {
   }
 
   beforeEach(() => {
-    trackMonthlySubscriptionCancelled.mockReset()
     subscriptionStatus.value = { ...baseStatus }
     isActive.value = true
     shouldWatch = true
