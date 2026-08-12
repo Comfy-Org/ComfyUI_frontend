@@ -13,6 +13,7 @@ const {
   mockGetCheckoutAttribution,
   mockTelemetry,
   mockUserId,
+  mockCurrentUserUid,
   mockIsCloud,
   mockAuthStoreInitialized,
   mockGetBillingStatus,
@@ -40,9 +41,11 @@ const {
     trackSubscription: vi.fn(),
     trackMonthlySubscriptionSucceeded: vi.fn(),
     trackMonthlySubscriptionCancelled: vi.fn(),
-    trackBillingEvent: vi.fn()
+    trackBillingEvent: vi.fn(),
+    trackSubscriptionAuthRace: vi.fn()
   },
   mockUserId: { value: 'user-123' },
+  mockCurrentUserUid: { value: 'uid-user-123' as string | null },
   mockLocalStorage: (() => {
     const store = new Map<string, string>()
 
@@ -172,6 +175,9 @@ vi.mock('@/stores/authStore', () => ({
     },
     get userId() {
       return mockUserId.value
+    },
+    get currentUser() {
+      return mockCurrentUserUid.value ? { uid: mockCurrentUserUid.value } : null
     }
   })),
   AuthStoreError: class extends Error {}
@@ -199,6 +205,8 @@ describe('useSubscription', () => {
     mockTelemetry.trackMonthlySubscriptionSucceeded.mockReset()
     mockTelemetry.trackMonthlySubscriptionCancelled.mockReset()
     mockTelemetry.trackBillingEvent.mockReset()
+    mockTelemetry.trackSubscriptionAuthRace.mockReset()
+    mockCurrentUserUid.value = 'uid-user-123'
     mockAccessBillingPortal.mockReset()
     mockAccessBillingPortal.mockResolvedValue(true)
     mockUserId.value = 'user-123'
@@ -426,6 +434,53 @@ describe('useSubscription', () => {
       await fetchStatus().catch(() => {})
 
       expect(canAccessSubscriptionFeatures.value).toBe(true)
+    })
+
+    it('does not reuse in-flight fetch for a different user', async () => {
+      let resolveFirst: (value: {
+        is_active: boolean
+        has_funds: boolean
+      }) => void = () => {}
+      mockGetBillingStatus.mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveFirst = resolve
+        })
+      )
+      mockGetBillingStatus.mockResolvedValueOnce({
+        is_active: true,
+        has_funds: true
+      })
+
+      const { fetchStatus } = useSubscriptionWithScope()
+
+      const firstFetch = fetchStatus()
+
+      // Switch user identity while first fetch is in-flight
+      mockCurrentUserUid.value = 'uid-user-456'
+      const secondFetch = fetchStatus()
+
+      resolveFirst({ is_active: false, has_funds: false })
+      await Promise.allSettled([firstFetch, secondFetch])
+
+      // Two separate fetches must have been made — one per identity
+      expect(mockGetBillingStatus).toHaveBeenCalledTimes(2)
+    })
+
+    it('emits trackSubscriptionAuthRace when identity changes mid-flight', async () => {
+      const { fetchStatus } = useSubscriptionWithScope()
+
+      // Start a fetch for uid-user-123
+      const firstFetch = fetchStatus()
+
+      // Switch identity before the second call
+      mockCurrentUserUid.value = 'uid-user-456'
+      const secondFetch = fetchStatus()
+
+      await Promise.allSettled([firstFetch, secondFetch])
+
+      expect(mockTelemetry.trackSubscriptionAuthRace).toHaveBeenCalledWith(
+        expect.objectContaining({ uid_changed: true })
+      )
     })
   })
 
