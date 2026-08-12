@@ -1,7 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
 import { fromAny } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { describe, expect, test } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
@@ -53,10 +53,6 @@ function createSourceNode(graph: LGraph, type: string) {
 }
 
 describe('MatchType during configure', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   test('skips type recalculation when configuringGraph is true', () => {
     const graph = new LGraph()
     const switchNode = createMatchTypeNode(graph)

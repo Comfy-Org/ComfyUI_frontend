@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromAny } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
@@ -32,10 +30,6 @@ import { toNodeId } from '@/types/nodeId'
 import { seedRequiredInputMissingNodeError } from '@/utils/__tests__/executionErrorTestUtils'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
-
-beforeEach(() => {
-  vi.restoreAllMocks()
-})
 
 function createNestedSubgraphRuntime() {
   const rootGraph = new LGraph()
@@ -87,13 +81,12 @@ async function startPendingPromotedMediaVerification() {
     rootGraph,
     hosts: [outerHost],
     sourceNodes: [leafNode]
-  } = createPromotedMediaRuntime({ depth: 2 })
+  } = createPromotedMediaRuntime({ depth: 2, hostValue: 'pending.png' })
   outerHost.mode = LGraphEventMode.BYPASS
   vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
 
   const pendingCandidate = {
     ...createPromotedMissingMediaCandidate(outerHost),
-    name: 'pending.png',
     isMissing: undefined
   }
   vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([])
@@ -117,7 +110,6 @@ async function startPendingPromotedMediaVerification() {
 
 describe('Connection error clearing via onConnectionsChange', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(false)
   })
 
@@ -215,7 +207,6 @@ describe('Connection error clearing via onConnectionsChange', () => {
 
 describe('Widget change error clearing via onWidgetChanged', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(false)
   })
 
@@ -362,7 +353,6 @@ describe('Widget change error clearing via onWidgetChanged', () => {
 
 describe('installErrorClearingHooks lifecycle', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(false)
   })
 
@@ -540,7 +530,6 @@ describe('installErrorClearingHooks lifecycle', () => {
 
 describe('onNodeRemoved clears missing asset errors by execution ID', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(false)
   })
 
@@ -708,7 +697,6 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
 
 describe('realtime scan verifies pending cloud candidates', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(false)
   })
 
@@ -850,7 +838,6 @@ describe('realtime scan verifies pending cloud candidates', () => {
 
 describe('realtime verification staleness guards', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(false)
   })
 
@@ -963,6 +950,19 @@ describe('realtime verification staleness guards', () => {
     })
   })
 
+  it('skips verified media whose host widget value changed while verification was pending', async () => {
+    const { outerHost, resolveVerification } =
+      await startPendingPromotedMediaVerification()
+    const hostWidget = outerHost.widgets?.[0]
+    if (!hostWidget) throw new Error('Expected promoted image host widget')
+
+    hostWidget.value = 'corrected.png'
+    resolveVerification()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(useMissingMediaStore().missingMediaCandidates).toBeNull()
+  })
+
   it('skips verified media when its sole promoted consumer becomes bypassed', async () => {
     const { leafNode, resolveVerification } =
       await startPendingPromotedMediaVerification()
@@ -1032,7 +1032,6 @@ describe('realtime verification staleness guards', () => {
 
 describe('scan skips interior of bypassed subgraph containers', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(false)
   })
 
@@ -1279,7 +1278,6 @@ describe('scan skips interior of bypassed subgraph containers', () => {
 
 describe('clearWidgetRelatedErrors parameter routing', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(false)
   })
 

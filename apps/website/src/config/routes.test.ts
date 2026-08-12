@@ -38,13 +38,23 @@ describe('getRoutes seedance', () => {
   })
 })
 
+describe('getRoutes ltx', () => {
+  it('serves the ltx page at its canonical path for en', () => {
+    expect(getRoutes('en').ltx).toBe('/ltx-2.5')
+  })
+
+  it('serves a localized ltx path for zh-CN', () => {
+    expect(getRoutes('zh-CN').ltx).toBe('/zh-CN/ltx-2.5')
+  })
+})
+
 describe('getRoutes minimax', () => {
   it('serves the minimax page at its canonical path for en', () => {
-    expect(getRoutes('en').minimax).toBe('/minimax')
+    expect(getRoutes('en').minimax).toBe('/minimax-h3')
   })
 
   it('serves a localized minimax path for zh-CN', () => {
-    expect(getRoutes('zh-CN').minimax).toBe('/zh-CN/minimax')
+    expect(getRoutes('zh-CN').minimax).toBe('/zh-CN/minimax-h3')
   })
 })
 

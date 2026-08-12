@@ -23,9 +23,10 @@ const baseRoutes = {
   contact: '/contact',
   models: '/p/supported-models',
   mcp: '/mcp',
-  minimax: '/minimax',
+  minimax: '/minimax-h3',
   flux3: '/flux-3',
   seedance: '/seedance-2.5',
+  ltx: '/ltx-2.5',
   wanAnimate2: '/wan-animate-2',
   wan3: '/wan-3.0',
   brand: '/brand'

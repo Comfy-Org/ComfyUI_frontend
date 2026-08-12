@@ -1,7 +1,11 @@
 import type { ModelLaunchPage } from '../templates/model-launch/types'
 
 import { externalLinks } from '../config/routes'
-import { COMING_SOON_HERO } from './comingSoonHero'
+
+// The frosted backdrop is byte identical across the Figma announcement frames,
+// so every announcement page points at this one asset instead of uploading a
+// copy per model.
+const COMING_SOON_HERO = 'https://media.comfy.org/website/coming-soon/hero.webp'
 
 // Wan 3.0 has not shipped yet, so this page announces it and holds the URL.
 // On launch day, replace this config with the full one the way /flux-3 did; the
