@@ -166,10 +166,13 @@ describe('missing resource validation error absorption', () => {
     ).toBe('missing_model')
   })
 
-  it('matches normalized model values by full-value equality', () => {
-    const error = validationError('value_not_in_list', 'other_widget', {
-      received_value: 'SDXL\\model.safetensors'
-    })
+  it('matches normalized model values when the error names no input', () => {
+    const error: NodeValidationError = {
+      type: 'value_not_in_list',
+      message: 'value_not_in_list message',
+      details: 'value_not_in_list details',
+      extra_info: { received_value: 'SDXL\\model.safetensors' }
+    }
 
     expect(
       getMissingResourceValidationErrorAbsorption(
@@ -181,7 +184,42 @@ describe('missing resource validation error absorption', () => {
     ).toBe('missing_model')
   })
 
-  it('matches image-not-loaded media errors by normalized value', () => {
+  it('keeps a same-valued sibling widget error blocking', () => {
+    // The candidate tracks ckpt_name; the error names a different input whose
+    // received value happens to collide. Value equality alone must not absorb.
+    const error = validationError('value_not_in_list', 'other_widget', {
+      received_value: 'SDXL\\model.safetensors'
+    })
+
+    expect(
+      getMissingResourceValidationErrorAbsorption(
+        [missingModel({ name: 'SDXL/model.safetensors' })],
+        [],
+        error,
+        nodeId
+      )
+    ).toBeNull()
+  })
+
+  it('matches image-not-loaded media errors by normalized value when the error names no input', () => {
+    const error: NodeValidationError = {
+      type: 'custom_validation_failed',
+      message: 'Invalid image file',
+      details: 'custom_validation_failed details',
+      extra_info: { received_value: 'inputs\\portrait.png' }
+    }
+
+    expect(
+      getMissingResourceValidationErrorAbsorption(
+        [],
+        [missingMedia({ name: 'inputs/portrait.png' })],
+        error,
+        nodeId
+      )
+    ).toBe('missing_media')
+  })
+
+  it('keeps a same-valued sibling media widget error blocking', () => {
     const error = validationError(
       'custom_validation_failed',
       'other_widget',
@@ -196,13 +234,66 @@ describe('missing resource validation error absorption', () => {
         error,
         nodeId
       )
-    ).toBe('missing_media')
+    ).toBeNull()
+  })
+
+  it('does not absorb an input-name collision on a different node', () => {
+    const otherNode = createNodeExecutionId([99])
+    const error = validationError('value_not_in_list', 'ckpt_name', {
+      received_value: 'model.safetensors'
+    })
+
+    expect(
+      getMissingResourceValidationErrorAbsorption(
+        [missingModel({ nodeId: otherNode, sourceExecutionId: undefined })],
+        [],
+        error,
+        nodeId
+      )
+    ).toBeNull()
+  })
+
+  it('does not absorb a media widget-name collision on a different node', () => {
+    const otherNode = createNodeExecutionId([99])
+    const error = validationError(
+      'custom_validation_failed',
+      'image',
+      { received_value: 'portrait.png' },
+      'Invalid image file'
+    )
+
+    expect(
+      getMissingResourceValidationErrorAbsorption(
+        [],
+        [missingMedia({ nodeId: otherNode })],
+        error,
+        nodeId
+      )
+    ).toBeNull()
+  })
+
+  it('does not absorb while a candidate is still pending verification', () => {
+    const error = validationError('value_not_in_list', 'ckpt_name', {
+      received_value: 'model.safetensors'
+    })
+
+    expect(
+      getMissingResourceValidationErrorAbsorption(
+        [missingModel({ isMissing: undefined })],
+        [],
+        error,
+        nodeId
+      )
+    ).toBeNull()
   })
 
   it('does not absorb a differently-cased missing candidate', () => {
-    const error = validationError('value_not_in_list', 'other_widget', {
-      received_value: 'SDXL/Model.safetensors'
-    })
+    const error: NodeValidationError = {
+      type: 'value_not_in_list',
+      message: 'value_not_in_list message',
+      details: 'value_not_in_list details',
+      extra_info: { received_value: 'SDXL/Model.safetensors' }
+    }
 
     expect(
       getMissingResourceValidationErrorAbsorption(

@@ -632,7 +632,7 @@ describe('TabErrors.vue', () => {
     expect(marker).toHaveTextContent('Blocked last run')
     expect(
       within(missingSection).getByTestId('error-section-count-badge')
-    ).toHaveClass('bg-warning-background')
+    ).toHaveAttribute('data-severity', 'missing')
     expect(
       screen.queryByTestId('error-group-execution')
     ).not.toBeInTheDocument()
@@ -684,6 +684,9 @@ describe('TabErrors.vue', () => {
       await user.click(
         within(section).getByRole('button', { name: 'Collapse' })
       )
+      expect(
+        within(section).getByRole('button', { name: 'Expand' })
+      ).toHaveAttribute('aria-expanded', 'false')
       expect(
         within(section).getByTestId('blocked-last-run-indicator')
       ).toHaveTextContent('Blocked last run')

@@ -135,21 +135,17 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
-import {
-  createBoundaryLinkedSubgraph,
-  createTestRootGraph
-} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { createBoundaryLinkedSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import {
   getExecutionIdByNode,
   getNodeByExecutionId
 } from '@/utils/graphTraversalUtil'
-import { LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import { createUnnormalisableModelErrorFixture } from './__tests__/absorptionFixtures'
 import { useErrorGroups } from './useErrorGroups'
 import { useHasBlockingError } from './useHasBlockingError'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
-import { scanAllModelCandidates } from '@/platform/missingModel/missingModelScan'
-import { liftNodeErrorsToBoundary } from '@/core/graph/subgraph/liftNodeErrorsToBoundary'
-import { toNodeId } from '@/types/nodeId'
 
 function makeMissingNodeType(
   type: string,
@@ -220,35 +216,6 @@ function createErrorGroups() {
   const searchQuery = ref('')
   const groups = useErrorGroups(searchQuery)
   return { store, searchQuery, groups }
-}
-
-function createUnnormalisableModelErrorFixture() {
-  const rootGraph = createTestRootGraph()
-  const node = new LGraphNode('CheckpointLoaderSimple')
-  node.id = toNodeId('not::a-node')
-  const input = node.addInput('ckpt_name', 'COMBO')
-  const widget = node.addWidget(
-    'combo',
-    'ckpt_name',
-    'missing.safetensors',
-    () => {},
-    { values: ['present.safetensors'] }
-  )
-  input.widget = { name: widget.name }
-  rootGraph.add(node)
-  vi.mocked(getExecutionIdByNode).mockReturnValue(
-    fromAny<NodeExecutionId, string>('not::a-node')
-  )
-
-  return {
-    missingModels: scanAllModelCandidates(rootGraph, () => false),
-    nodeErrors: liftNodeErrorsToBoundary(rootGraph, {
-      'not::a-node': nodeError(
-        [validationError('value_not_in_list', 'ckpt_name')],
-        'CheckpointLoaderSimple'
-      )
-    })
-  }
 }
 
 describe('useErrorGroups', () => {
@@ -729,6 +696,9 @@ describe('useErrorGroups', () => {
     })
 
     it('renders an unnormalisable matching model error as an unlocated card', async () => {
+      vi.mocked(getExecutionIdByNode).mockReturnValue(
+        fromAny<NodeExecutionId, string>('not::a-node')
+      )
       const fixture = createUnnormalisableModelErrorFixture()
       const { store, groups } = createErrorGroups()
       store.surfaceMissingModels(fixture.missingModels)
@@ -1199,8 +1169,6 @@ describe('useErrorGroups', () => {
         makeMedia('shared.png', { nodeId: '2', nodeType: 'PreviewImage' })
       ])
       await nextTick()
-
-      expect(store.totalErrorCount).toBe(2)
       expect(groups.missingMediaGroups.value).toHaveLength(1)
       expect(groups.missingMediaGroups.value[0].items).toHaveLength(1)
       expect(

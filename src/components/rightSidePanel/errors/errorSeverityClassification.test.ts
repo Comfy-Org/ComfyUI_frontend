@@ -1,20 +1,17 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { liftNodeErrorsToBoundary } from '@/core/graph/subgraph/liftNodeErrorsToBoundary'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { createTestRootGraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { scanAllModelCandidates } from '@/platform/missingModel/missingModelScan'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type { ExecutionErrorWsMessage } from '@/schemas/apiSchema'
-import { toNodeId } from '@/types/nodeId'
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 
+import { createUnnormalisableModelErrorFixture } from './__tests__/absorptionFixtures'
 import { classifyPanelErrors } from './errorSeverityClassification'
 import type { ErrorSeverityInput } from './errorSeverityClassification'
 
 beforeEach(() => {
-  setActivePinia(createPinia())
+  setActivePinia(createTestingPinia({ stubActions: false }))
 })
 
 function classify(overrides: Partial<ErrorSeverityInput> = {}) {
@@ -39,32 +36,6 @@ function runtimeError(nodeId: string): ExecutionErrorWsMessage {
     exception_type: 'RuntimeError',
     exception_message: 'Execution failed',
     traceback: []
-  }
-}
-
-function createUnnormalisableModelErrorFixture() {
-  const rootGraph = createTestRootGraph()
-  const node = new LGraphNode('CheckpointLoaderSimple')
-  node.id = toNodeId('not::a-node')
-  const input = node.addInput('ckpt_name', 'COMBO')
-  const widget = node.addWidget(
-    'combo',
-    'ckpt_name',
-    'missing.safetensors',
-    () => {},
-    { values: ['present.safetensors'] }
-  )
-  input.widget = { name: widget.name }
-  rootGraph.add(node)
-
-  return {
-    missingModels: scanAllModelCandidates(rootGraph, () => false),
-    nodeErrors: liftNodeErrorsToBoundary(rootGraph, {
-      'not::a-node': nodeError(
-        [validationError('value_not_in_list', 'ckpt_name')],
-        'CheckpointLoaderSimple'
-      )
-    })
   }
 }
 
