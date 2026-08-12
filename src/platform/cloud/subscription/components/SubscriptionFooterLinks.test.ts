@@ -1,16 +1,27 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import SubscriptionFooterLinks from './SubscriptionFooterLinks.vue'
 
 const state = vi.hoisted(() => ({
   isCloud: true,
+  workspaceRole: 'owner' as 'owner' | 'member',
   manageSubscription: vi.fn(),
   handleLearnMoreClick: vi.fn(),
   handleMessageSupport: vi.fn()
+}))
+
+vi.mock('@/config/comfyApi', () => ({
+  getComfyPlatformBaseUrl: () => 'https://platform.comfy.org'
+}))
+
+vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
+  useWorkspaceUI: () => ({
+    workspaceRole: computed(() => state.workspaceRole)
+  })
 }))
 
 vi.mock('@/platform/distribution/types', () => ({
@@ -52,7 +63,8 @@ const i18n = createI18n({
         learnMore: 'Learn more',
         partnerNodesPricingTable: 'Partner Nodes pricing',
         messageSupport: 'Message support',
-        invoiceHistory: 'Invoice history'
+        invoiceHistory: 'Invoice history',
+        fullUsageActivity: 'Full usage activity'
       }
     }
   }
@@ -77,6 +89,7 @@ function renderComponent(showInvoiceHistory?: boolean) {
 describe('SubscriptionFooterLinks', () => {
   beforeEach(() => {
     state.isCloud = true
+    state.workspaceRole = 'owner'
   })
 
   it('renders working support links without a duplicate invoice action', async () => {
@@ -130,5 +143,29 @@ describe('SubscriptionFooterLinks', () => {
       screen.queryByRole('button', { name: 'Invoice history' })
     ).not.toBeInTheDocument()
     expect(state.manageSubscription).not.toHaveBeenCalled()
+  })
+
+  it('opens the platform usage page for workspace owners', async () => {
+    const user = userEvent.setup()
+    const openSpy = vi.spyOn(window, 'open').mockReturnValue(null)
+    renderComponent()
+
+    await user.click(
+      screen.getByRole('button', { name: 'Full usage activity' })
+    )
+
+    expect(openSpy).toHaveBeenCalledWith(
+      'https://platform.comfy.org/profile/usage',
+      '_blank'
+    )
+  })
+
+  it('hides Full usage activity from workspace members', () => {
+    state.workspaceRole = 'member'
+    renderComponent()
+
+    expect(
+      screen.queryByRole('button', { name: 'Full usage activity' })
+    ).not.toBeInTheDocument()
   })
 })
