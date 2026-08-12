@@ -23,20 +23,28 @@ test('ledgers only the source-driven VHS preview height paths', () => {
     'VHS_LoadVideoFFmpegPath',
     'VHS_LoadVideoPath'
   ])
-  expect(Object.keys(vhs.VHS_LoadAudioUpload)).toEqual(['vue.h'])
+  expect(Object.keys(vhs.VHS_LoadAudioUpload).sort()).toEqual([
+    'vue.h',
+    'vue.widgets[3].h',
+    'vue.widgets[4].dy',
+    'vue.widgets[4].h'
+  ])
   expect(Object.keys(vhs.VHS_LoadImages).sort()).toEqual([
     'vue.h',
     'vue.widgets[4].h',
+    'vue.widgets[5].dy',
     'vue.widgets[5].h'
   ])
   expect(Object.keys(vhs.VHS_LoadVideo).sort()).toEqual([
     'vue.h',
     'vue.widgets[8].h',
+    'vue.widgets[9].dy',
     'vue.widgets[9].h'
   ])
   expect(Object.keys(vhs.VHS_LoadVideoFFmpeg).sort()).toEqual([
     'vue.h',
     'vue.widgets[7].h',
+    'vue.widgets[8].dy',
     'vue.widgets[8].h'
   ])
   expect(Object.keys(vhs.VHS_LoadVideoFFmpegPath).sort()).toEqual([
@@ -49,7 +57,7 @@ test('ledgers only the source-driven VHS preview height paths', () => {
   ])
 })
 
-test('the WAS ledger relaxes only whole-node vue height', () => {
+test('the WAS ledger relaxes the vue subtree and keeps litegraph strict', () => {
   expect(GEOMETRY_UNSTABLE_NODES['was-node-suite-comfyui']).toBeUndefined()
   const was = GEOMETRY_UNSTABLE_PATHS['was-node-suite-comfyui']
   expect(Object.keys(was).sort()).toEqual([
@@ -63,9 +71,37 @@ test('the WAS ledger relaxes only whole-node vue height', () => {
     'Cache Node',
     'Create Grid Image'
   ])
-  // Widget geometry stays strict: only the whole-node vue height is relaxed.
+  // The whole vue subtree follows async row content on these nodes (vue.h
+  // is compared before vue.widgets, so the observed vue.h flips prove
+  // nothing about widget stability); litegraph geometry stays strict.
   for (const paths of Object.values(was))
-    expect(Object.keys(paths)).toEqual(['vue.h'])
+    expect(Object.keys(paths)).toEqual(['vue'])
+})
+
+test('a WAS vue subtree entry suppresses widget deltas but not litegraph', () => {
+  const prior = process.env.CUSTOM_NODES_ENV
+  try {
+    delete process.env.CUSTOM_NODES_ENV
+    const baseline = loadPackGeometry('was-node-suite-comfyui')!
+    const ledger = GEOMETRY_UNSTABLE_PATHS['was-node-suite-comfyui']
+    const measured = structuredClone(baseline.nodes)
+    // The run-31537261792 shape: a widget row renders shorter, every row
+    // below shifts with it, the node height absorbs the sum.
+    const blip = measured['BLIP Analyze Image'].vue!
+    blip.widgets[1].h -= 38
+    for (const widget of blip.widgets.slice(2)) widget.dy -= 38
+    blip.h -= 38
+    expect(diffGeometry(baseline.nodes, measured, ledger)).toEqual([])
+
+    // litegraph stays strict on the same node.
+    measured['BLIP Analyze Image'].litegraph.h += 38
+    expect(diffGeometry(baseline.nodes, measured, ledger)).toEqual([
+      `BLIP Analyze Image.litegraph.h: expected ${baseline.nodes['BLIP Analyze Image'].litegraph.h}, got ${measured['BLIP Analyze Image'].litegraph.h}`
+    ])
+  } finally {
+    if (prior === undefined) delete process.env.CUSTOM_NODES_ENV
+    else process.env.CUSTOM_NODES_ENV = prior
+  }
 })
 
 test('VHS preview ledger ignores only the asynchronous height fields', () => {
@@ -83,6 +119,20 @@ test('VHS preview ledger ignores only the asynchronous height fields', () => {
     ] as const) {
       measured[nodeName].vue!.h += 154
       measured[nodeName].vue!.widgets[widgetIndex].h += 154
+    }
+    // The run-31513986272 shape on the upload variants: the 24px control
+    // row above the preview measures 0, the preview row shifts up with it,
+    // and vue.h absorbs the sum alongside the preview growth.
+    for (const [nodeName, controlIndex] of [
+      ['VHS_LoadImages', 4],
+      ['VHS_LoadVideo', 8],
+      ['VHS_LoadVideoFFmpeg', 7],
+      ['VHS_LoadAudioUpload', 3]
+    ] as const) {
+      const vue = measured[nodeName].vue!
+      vue.widgets[controlIndex].h = 0
+      vue.widgets[controlIndex + 1].dy -= 24
+      vue.h -= 24
     }
     const ledger = GEOMETRY_UNSTABLE_PATHS['ComfyUI-VideoHelperSuite']
     expect(diffGeometry(baseline.nodes, measured, ledger)).toEqual([])
