@@ -316,6 +316,51 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
     expect(screen.queryByText('subscription.preview.addPromoCode')).toBeNull()
   })
 
+  it('offers Remove for the client-applied code and clears through an empty apply', async () => {
+    const { emitted } = render(SubscriptionAddPaymentPreviewWorkspace, {
+      props: {
+        tierKey: 'creator',
+        previewData: {
+          ...previewFixture('MONTHLY', 3500),
+          promotion_code: 'SAVE20'
+        },
+        quoteIsCurrent: true
+      },
+      global: globalOptions
+    })
+
+    expect(screen.queryByText('subscription.preview.applyPromoCode')).toBeNull()
+
+    await userEvent.click(
+      screen.getByText('subscription.preview.removePromoCode')
+    )
+    expect(emitted().applyPromotionCode?.at(-1)).toEqual([''])
+  })
+
+  it('flips Remove back to Apply once the applied code is edited', async () => {
+    render(SubscriptionAddPaymentPreviewWorkspace, {
+      props: {
+        tierKey: 'creator',
+        previewData: {
+          ...previewFixture('MONTHLY', 3500),
+          promotion_code: 'SAVE20'
+        },
+        quoteIsCurrent: true
+      },
+      global: globalOptions
+    })
+
+    await userEvent.type(
+      screen.getByPlaceholderText('subscription.preview.promoCodePlaceholder'),
+      'X'
+    )
+
+    expect(screen.getByText('subscription.preview.applyPromoCode')).toBeTruthy()
+    expect(
+      screen.queryByText('subscription.preview.removePromoCode')
+    ).toBeNull()
+  })
+
   it('offers Add new payment method from the saved-method picker', async () => {
     const { emitted } = render(SubscriptionAddPaymentPreviewWorkspace, {
       props: {

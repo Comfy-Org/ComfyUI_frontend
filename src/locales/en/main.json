@@ -3076,6 +3076,7 @@
       "addPromoCode": "Add promo code",
       "promoCodePlaceholder": "Promo code",
       "applyPromoCode": "Apply",
+      "removePromoCode": "Remove",
       "applyQuoteBeforeContinuing": "Apply the promo code to refresh your quote before continuing.",
       "quoteStale": "Your quote changed. Review the updated amount and try again.",
       "quoteRefreshFailed": "Your quote expired and couldn't be refreshed. Choose your plan again.",

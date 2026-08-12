@@ -167,6 +167,16 @@
             @input="invalidateEditedPromotion"
           />
           <Button
+            v-if="isAppliedCode"
+            variant="secondary"
+            size="lg"
+            :disabled="interactionLocked"
+            @click="clearPromotionCode"
+          >
+            {{ $t('subscription.preview.removePromoCode') }}
+          </Button>
+          <Button
+            v-else
             variant="secondary"
             size="lg"
             :disabled="interactionLocked"
@@ -509,9 +519,20 @@ watch(
 const isPromoFieldOpen = ref(Boolean(previewData?.promotion_code))
 const promoInputRef = ref<HTMLInputElement>()
 
+const isAppliedCode = computed(
+  () =>
+    Boolean(previewData?.promotion_code) &&
+    promotionCode.value === previewData?.promotion_code
+)
+
 function openPromoField() {
   isPromoFieldOpen.value = true
   void nextTick(() => promoInputRef.value?.focus())
+}
+
+function clearPromotionCode() {
+  isPromoFieldOpen.value = false
+  emit('applyPromotionCode', '')
 }
 
 function invalidateEditedPromotion() {
