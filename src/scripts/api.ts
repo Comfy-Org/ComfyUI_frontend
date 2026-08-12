@@ -19,7 +19,10 @@ import type {
 import { isCloud } from '@/platform/distribution/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ShareableAssetsResponse } from '@/schemas/apiSchema'
-import { zShareableAssetsResponse } from '@/schemas/apiSchema'
+import {
+  zEmbeddingsResponse,
+  zShareableAssetsResponse
+} from '@/schemas/apiSchema'
 import type {
   TemplateIncludeOnDistributionEnum,
   WorkflowTemplates
@@ -209,13 +212,6 @@ interface ApiMessage<T extends keyof ApiCalls> {
 }
 
 export class UnauthorizedError extends Error {}
-
-export class EmbeddingsApiError extends Error {
-  constructor(readonly status: number) {
-    super(`Failed to load embeddings: ${status}`)
-    this.name = 'EmbeddingsApiError'
-  }
-}
 
 /** Ensures workers get a fair shake. */
 type Unionize<T> = T[keyof T]
@@ -1013,9 +1009,9 @@ export class ComfyApi extends EventTarget {
   async getEmbeddings(): Promise<EmbeddingsResponse> {
     const resp = await this.fetchApi('/embeddings', { cache: 'no-store' })
     if (!resp.ok) {
-      throw new EmbeddingsApiError(resp.status)
+      throw new Error(`Failed to fetch /embeddings: ${resp.status}`)
     }
-    return await resp.json()
+    return zEmbeddingsResponse.parse(await resp.json())
   }
 
   /**

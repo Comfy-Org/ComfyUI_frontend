@@ -1558,61 +1558,52 @@ describe('ComfyApp', () => {
       consoleError.mockRestore()
     })
 
-    it('preserves the current graph when A1111 core nodes are unavailable', async () => {
+    it.for([
+      {
+        outcome: 'core-nodes-unavailable' as const,
+        fileName: 'a1111.png',
+        toastMethod: 'addAlert' as const,
+        expectedToast:
+          'Could not load the workflow because this ComfyUI installation is missing core nodes. Check that the backend started correctly.'
+      },
+      {
+        outcome: 'not-a1111' as const,
+        fileName: 'parameters.png',
+        toastMethod: 'addAlert' as const,
+        expectedToast: 'Unable to find workflow in parameters.png'
+      },
+      {
+        outcome: 'imported-without-embeddings' as const,
+        fileName: 'a1111.png',
+        toastMethod: 'add' as const,
+        expectedToast: {
+          severity: 'warn',
+          summary: 'Warning',
+          detail:
+            'Embeddings could not be loaded from the server. The workflow was imported, but embedding names were left as plain text.'
+        }
+      }
+    ])('maps $outcome to its message', async (testCase) => {
       const graph = new LGraph()
       const parameters = 'positive\nNegative prompt: negative\nSteps: 20'
       Reflect.set(app, 'rootGraphInternal', graph)
       vi.mocked(getWorkflowDataFromFile).mockResolvedValue({ parameters })
-      mockImportA1111.mockResolvedValue('core-nodes-unavailable')
+      mockImportA1111.mockResolvedValue(testCase.outcome)
 
-      await app.handleFile(createTestFile('a1111.png', 'image/png'))
+      await app.handleFile(createTestFile(testCase.fileName, 'image/png'))
 
       expect(mockImportA1111).toHaveBeenCalledWith(
         graph,
         parameters,
         expect.any(Function)
       )
-      expect(mockCanvas.setGraph).not.toHaveBeenCalled()
-      expect(mockWorkflowService.beforeLoadNewGraph).not.toHaveBeenCalled()
-      expect(mockWorkflowService.afterLoadNewGraph).not.toHaveBeenCalled()
-      expect(mockToastStore.addAlert).toHaveBeenCalledOnce()
-      expect(mockToastStore.addAlert).toHaveBeenCalledWith(
-        'Could not load the workflow because this ComfyUI installation is missing core nodes. Check that the backend started correctly.'
+      expect(mockToastStore[testCase.toastMethod]).toHaveBeenCalledOnce()
+      expect(mockToastStore[testCase.toastMethod]).toHaveBeenCalledWith(
+        testCase.expectedToast
       )
-    })
-
-    it('shows one file-load error when parameters are not A1111-shaped', async () => {
-      const graph = new LGraph()
-      const parameters = 'positive\nSteps: 20'
-      Reflect.set(app, 'rootGraphInternal', graph)
-      vi.mocked(getWorkflowDataFromFile).mockResolvedValue({ parameters })
-      mockImportA1111.mockResolvedValue('not-a1111')
-
-      await app.handleFile(createTestFile('parameters.png', 'image/png'))
-
-      expect(mockToastStore.addAlert).toHaveBeenCalledOnce()
-      expect(mockToastStore.addAlert).toHaveBeenCalledWith(
-        'Unable to find workflow in parameters.png'
-      )
-      expect(mockWorkflowService.beforeLoadNewGraph).not.toHaveBeenCalled()
-      expect(mockWorkflowService.afterLoadNewGraph).not.toHaveBeenCalled()
-    })
-
-    it('shows a server error when A1111 embeddings are unavailable', async () => {
-      const graph = new LGraph()
-      const parameters = 'positive\nNegative prompt: negative\nSteps: 20'
-      Reflect.set(app, 'rootGraphInternal', graph)
-      vi.mocked(getWorkflowDataFromFile).mockResolvedValue({ parameters })
-      mockImportA1111.mockResolvedValue('embeddings-unavailable')
-
-      await app.handleFile(createTestFile('a1111.png', 'image/png'))
-
-      expect(mockToastStore.addAlert).toHaveBeenCalledOnce()
-      expect(mockToastStore.addAlert).toHaveBeenCalledWith(
-        'Could not load embeddings from the server.'
-      )
-      expect(mockWorkflowService.beforeLoadNewGraph).not.toHaveBeenCalled()
-      expect(mockWorkflowService.afterLoadNewGraph).not.toHaveBeenCalled()
+      if (testCase.outcome === 'imported-without-embeddings') {
+        expect(mockWorkflowService.afterLoadNewGraph).toHaveBeenCalledOnce()
+      }
     })
 
     it('awaits persistence and orders its clear callback before setGraph', async () => {

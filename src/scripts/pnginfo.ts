@@ -1,8 +1,7 @@
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import type { EmbeddingsResponse } from '@/schemas/apiSchema'
 
-import { EmbeddingsApiError, api } from './api'
+import { api } from './api'
 import { getFromAvifFile } from './metadata/avif'
 import { getFromFlacFile } from './metadata/flac'
 import { getFromPngFile } from './metadata/png'
@@ -197,9 +196,9 @@ function normalizeA1111Parameters(parameters: string): string {
 
 export type A1111ImportOutcome =
   | 'imported'
+  | 'imported-without-embeddings'
   | 'not-a1111'
   | 'core-nodes-unavailable'
-  | 'embeddings-unavailable'
 
 export async function importA1111(
   graph: LGraph,
@@ -209,15 +208,6 @@ export async function importA1111(
   const normalizedParameters = normalizeA1111Parameters(parameters)
   const p = normalizedParameters.lastIndexOf('\nSteps:')
   if (p > -1) {
-    let embeddings: EmbeddingsResponse
-    try {
-      embeddings = await api.getEmbeddings()
-    } catch (error) {
-      if (error instanceof EmbeddingsApiError) {
-        return 'embeddings-unavailable'
-      }
-      throw error
-    }
     const matchResult = normalizedParameters
       .substr(p)
       .split('\n')[1]
@@ -363,6 +353,14 @@ export async function importA1111(
         delete opts[name]
         return v
       }
+
+      const { embeddings, embeddingsLoaded } = await api
+        .getEmbeddings()
+        .then((embeddings) => ({ embeddings, embeddingsLoaded: true }))
+        .catch((error: unknown) => {
+          console.error('Failed to load embeddings for A1111 import:', error)
+          return { embeddings: [], embeddingsLoaded: false }
+        })
 
       beforeGraphClear?.()
       graph.clear()
@@ -587,7 +585,7 @@ export async function importA1111(
       if (Object.keys(opts).length) {
         console.warn('Unhandled parameters:', opts)
       }
-      return 'imported'
+      return embeddingsLoaded ? 'imported' : 'imported-without-embeddings'
     }
   }
   return 'not-a1111'
