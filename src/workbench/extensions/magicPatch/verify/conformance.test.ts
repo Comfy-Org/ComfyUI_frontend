@@ -312,6 +312,21 @@ describe('general conversion conformance', () => {
       expect(find(report, 'no-silently-dropped-writes').status).toBe('passed')
     })
 
+    it('does not flag DOM methods on a pack element named like a handle', () => {
+      // `input` is in the handle-receiver list, and a pack that writes
+      // `const input = document.createElement('input')` then calls focus() was
+      // rejected for inventing it.
+      const report = runConformance(
+        context({
+          original: 'const a = 1',
+          converted:
+            "const input = document.createElement('input')\ninput.focus()\ninput.addEventListener('keydown', fn)",
+          edits: []
+        })
+      )
+      expect(find(report, 'no-unknown-api-members').status).toBe('passed')
+    })
+
     it('still catches an optional-chained handle write', () => {
       const report = runConformance(
         context({
