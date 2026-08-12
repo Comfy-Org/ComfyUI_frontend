@@ -41,6 +41,33 @@ describe('pack commands', () => {
     expect(ran).toHaveBeenCalled()
   })
 
+  it('runs a command the host registered, by id', async () => {
+    // Opening the mask editor was ComfyApp.copyToClipspace plus
+    // clipspace_return_node plus invoking the command by hand. Asking for the
+    // behaviour means the host need not publish the machinery behind it.
+    const ran = vi.fn()
+    useCommandStore().registerCommand({
+      id: 'Comfy.MaskEditor.OpenMaskEditor',
+      function: ran
+    })
+
+    await commands.run('Comfy.MaskEditor.OpenMaskEditor')
+
+    expect(ran).toHaveBeenCalledTimes(1)
+  })
+
+  it('rejects a command id nothing registered', async () => {
+    // A pack naming a command that has since been renamed should hear about
+    // it rather than silently do nothing.
+    await expect(commands.run('Comfy.Gone')).rejects.toThrow(/Comfy.Gone/)
+  })
+
+  it('reports whether a command exists, for a conditional entry', () => {
+    expect(commands.has('Comfy.Nope')).toBe(false)
+    commands.register({ id: 'KJNodes.x', label: 'X', run: () => {} })
+    expect(commands.has('KJNodes.x')).toBe(true)
+  })
+
   it('binds a key to the command when one is given', () => {
     commands.register({
       id: 'KJNodes.doIt',
