@@ -48,6 +48,7 @@ const i18n = createI18n({
     en: {
       menu: {
         run: 'Run',
+        runOptions: 'Run options',
         disabledTooltip: 'Disabled tooltip',
         onChange: 'On Change',
         onChangeTooltip: 'On change tooltip',

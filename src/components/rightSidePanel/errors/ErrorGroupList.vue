@@ -28,9 +28,10 @@
         v-else
         class="overflow-hidden rounded-lg border border-secondary-background"
       >
-        <!-- Errors summary hero -->
+        <!-- Errors summary hero. The status role sits on the summary row so
+             count changes announce without re-reading the chip labels. -->
         <div data-testid="errors-summary-hero" class="bg-base-foreground/5">
-          <div class="flex items-center gap-2 p-2">
+          <div role="status" class="flex items-center gap-2 p-2">
             <span
               :class="
                 cn(
