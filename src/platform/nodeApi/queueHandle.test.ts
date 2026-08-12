@@ -8,6 +8,7 @@ import { api } from '@/scripts/api'
 import { useQueuePendingTaskCountStore } from '@/stores/queueStore'
 
 import { createComfyApi } from './comfyApi'
+import { mayRun } from './queueHandle'
 
 const { queuePrompt } = vi.hoisted(() => ({
   queuePrompt: vi.fn(async (..._args: unknown[]) => true)
@@ -110,6 +111,55 @@ describe('comfy.queue', () => {
       executed: []
     })
     expect(interrupted).toHaveBeenCalledTimes(1)
+  })
+
+  it('lets a guard cancel a run, and every guard is asked', async () => {
+    // onBeforeRun only observes. Packs that needed to STOP a run — confirm a
+    // prompt, validate a field — wrapped app.queuePrompt to do it.
+    const comfy = createComfyApi(() => graphWith('A'))
+    const second = vi.fn(() => true)
+    const stopFirst = comfy.queue.guard(() => false)
+    const stopSecond = comfy.queue.guard(second)
+
+    expect(await mayRun()).toBe(false)
+    expect(second).toHaveBeenCalledTimes(1)
+
+    stopFirst()
+    stopSecond()
+  })
+
+  it('runs when a guard allows it, and after one is removed', async () => {
+    const comfy = createComfyApi(() => graphWith('A'))
+    const stop = comfy.queue.guard(async () => false)
+    expect(await mayRun()).toBe(false)
+
+    stop()
+    expect(await mayRun()).toBe(true)
+  })
+
+  it('does not let a throwing guard cancel the run', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const comfy = createComfyApi(() => graphWith('A'))
+    const stop = comfy.queue.guard(() => {
+      throw new Error('pack is broken')
+    })
+
+    expect(await mayRun()).toBe(true)
+    stop()
+  })
+
+  it('abandons a guard that never settles rather than stranding the user', async () => {
+    vi.useFakeTimers()
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const comfy = createComfyApi(() => graphWith('A'))
+    const stop = comfy.queue.guard(() => new Promise<boolean>(() => {}))
+
+    const verdict = mayRun()
+    await vi.advanceTimersByTimeAsync(6000)
+
+    expect(await verdict).toBe(true)
+    stop()
+    vi.useRealTimers()
   })
 
   it('reports runs starting and finishing being submitted', () => {

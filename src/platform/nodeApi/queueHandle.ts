@@ -77,6 +77,57 @@ export interface QueueHandle {
   interrupt(): Promise<void>
   /** Execution was interrupted, by this pack, another, or the user. */
   onInterrupted(listener: () => void): Unsubscribe
+  /**
+   * Holds a run until a check finishes, and can cancel it.
+   *
+   * {@link onBeforeRun} only observes: it is a notification, and the prompt
+   * build does not wait. Packs that needed to *stop* a run — confirm an
+   * incoming prompt, validate a field, warn about a cost — wrapped
+   * `app.queuePrompt` to do it, which is the surface being retired.
+   *
+   * Return `false` to cancel. Every guard runs, and any one `false` cancels;
+   * the user is not asked twice.
+   *
+   * A guard that never settles would make the application unrunnable, so one
+   * that takes longer than a few seconds is abandoned and the run proceeds. Do
+   * not put a dialog with no timeout behind this.
+   */
+  guard(check: () => boolean | Promise<boolean>): Unsubscribe
+}
+
+/** Registered guards, module-level so the host can consult them. */
+const guards = new Set<() => boolean | Promise<boolean>>()
+
+/** How long every guard together may take before the run proceeds regardless. */
+const GUARD_TIMEOUT_MS = 5_000
+
+/**
+ * Asks every guard whether this run may proceed. Called by the host once per
+ * queued item, before the prompt is built.
+ */
+export async function mayRun(): Promise<boolean> {
+  if (!guards.size) return true
+  const asked = [...guards].map(async (check) => {
+    try {
+      return await check()
+    } catch (error) {
+      // A guard that throws must not cancel the user's run.
+      console.error('[nodeApi] queue guard threw', error)
+      return true
+    }
+  })
+  const verdicts = await Promise.race([
+    Promise.all(asked),
+    new Promise<true[]>((resolve) =>
+      setTimeout(() => {
+        console.error(
+          `[nodeApi] a queue guard did not settle within ${GUARD_TIMEOUT_MS}ms; running anyway`
+        )
+        resolve([true])
+      }, GUARD_TIMEOUT_MS)
+    )
+  ])
+  return verdicts.every((allowed) => allowed !== false)
 }
 
 function subscribe(
@@ -146,6 +197,11 @@ export function createQueueApi(
       await api.interrupt(null)
     },
 
-    onInterrupted: subscribe('execution_interrupted')
+    onInterrupted: subscribe('execution_interrupted'),
+
+    guard(check: () => boolean | Promise<boolean>) {
+      guards.add(check)
+      return () => guards.delete(check)
+    }
   })
 }
