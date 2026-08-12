@@ -981,9 +981,19 @@ remaining decisions for later work.
   thrown errors.
 - Keep `LinkMap` snapshot iterator compatibility deferred. Do not add
   pseudo-live iterators as part of this work.
-- Define lifecycle callback failure semantics before making graph teardown
-  transactional. Callback exceptions still interrupt `clear()`; this migration
-  does not silently swallow or replay extension callbacks.
+- Graph teardown now finishes exact detachment, defensive root-bucket clearing,
+  graph reset, and canvas clearing after a lifecycle callback fails, then
+  propagates that same failure. Lifecycle callbacks remain fail-fast, so later
+  callbacks do not run. This is the current chosen policy: it preserves callback
+  ordering and topology observation while preventing partially cleared graphs.
+
+  | Future direction                                              | Failure handling                            | Tradeoff                                                                                    |
+  | ------------------------------------------------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------- |
+  | **1. Current: finish teardown, then propagate first failure** | Fail fast; later callbacks do not run       | Preserves current lifecycle semantics, but skips later notifications                        |
+  | 2. Run all callbacks, then report                             | Propagate the first failure or an aggregate | Completes notifications, but changes fail-fast behavior                                     |
+  | 3. Finish and report without propagating                      | Swallow and report callback failures        | Keeps clear callers running, but hides extension failures from them                         |
+  | 4. Detach first, then notify from a queue                     | Run callbacks after teardown                | Simplifies teardown isolation, but breaks compatibility for callbacks that observe topology |
+
 - Keep the browser hydration test as the workflow-level composition check.
 - Investigate separately whether link geometry in `layoutStore`, still keyed by
   bare `LinkId`, can collide across simultaneously live root graphs.
