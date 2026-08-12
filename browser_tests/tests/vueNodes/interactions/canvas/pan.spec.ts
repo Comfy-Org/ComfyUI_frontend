@@ -27,75 +27,73 @@ test.describe('Vue Nodes Canvas Pan', { tag: '@vue-nodes' }, () => {
     }
   )
 
-  test.describe('spacebar panning', () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting(
-        'Comfy.Canvas.NavigationMode',
-        'standard'
-      )
-      await comfyPage.workflow.loadWorkflow('vueNodes/simple-triple')
+  test('spacebar panning', async ({ comfyPage, comfyMouse }) => {
+    await comfyPage.settings.setSetting(
+      'Comfy.Canvas.NavigationMode',
+      'standard'
+    )
+    await comfyPage.workflow.loadWorkflow('vueNodes/simple-triple')
+    const node = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+    const [nodeRef] = await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
+    if (!nodeRef) throw new Error('KSampler is not rendered')
+    const softExpect = expect.configure({ soft: true })
+    let mouseDown = false
+    let spaceDown = false
+    await using cleanup = new AsyncDisposableStack()
+    cleanup.defer(async () => {
+      if (mouseDown) await comfyPage.page.mouse.up()
+      if (spaceDown) await comfyPage.page.keyboard.up('Space')
     })
 
-    test('Space + click on a node starts a pan', async ({
-      comfyPage,
-      comfyMouse
-    }) => {
-      const node = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+    await test.step('Space + click on a node starts a pan', async () => {
       const offsetBefore = await comfyPage.canvasOps.getOffset()
 
       await comfyPage.canvas.focus()
       await comfyPage.page.keyboard.down('Space')
-      await expect.poll(() => comfyPage.canvasOps.isReadOnly()).toBe(true)
-      try {
-        await comfyMouse.dragElementBy(node.root, { x: -300, y: 0 })
-      } finally {
-        await comfyPage.page.keyboard.up('Space')
-      }
+      spaceDown = true
+      await softExpect.poll(() => comfyPage.canvasOps.isReadOnly()).toBe(true)
+      await comfyMouse.dragElementBy(node.root, { x: -300, y: 0 })
+      await comfyPage.page.keyboard.up('Space')
+      spaceDown = false
 
-      await expect
+      await softExpect
         .poll(() => comfyPage.canvasOps.getOffset())
         .not.toEqual(offsetBefore)
     })
 
-    test('Space pans while dragging a node, then node dragging resumes', async ({
-      comfyPage
-    }) => {
-      const node = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
-      const [nodeRef] = await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
-      if (!nodeRef) throw new Error('KSampler is not rendered')
+    await test.step('Space switches node dragging to canvas panning', async () => {
       await node.header.hover()
       await comfyPage.page.mouse.down()
+      mouseDown = true
+      await comfyPage.page.mouse.move(500, 500, { steps: 5 })
+      const offsetBeforePan = await comfyPage.canvasOps.getOffset()
 
-      try {
-        await comfyPage.page.mouse.move(500, 500, { steps: 5 })
-        const offsetBeforePan = await comfyPage.canvasOps.getOffset()
+      await comfyPage.page.keyboard.down('Space')
+      spaceDown = true
+      await comfyPage.page.mouse.move(400, 400, { steps: 5 })
+      await softExpect
+        .poll(() => comfyPage.canvasOps.getOffset())
+        .not.toEqual(offsetBeforePan)
+    })
 
-        await comfyPage.page.keyboard.down('Space')
-        try {
-          await comfyPage.page.mouse.move(400, 400, { steps: 5 })
-          await expect
-            .poll(() => comfyPage.canvasOps.getOffset())
-            .not.toEqual(offsetBeforePan)
-        } finally {
-          await comfyPage.page.keyboard.up('Space')
-        }
+    await test.step('Releasing Space resumes node dragging', async () => {
+      await comfyPage.page.keyboard.up('Space')
+      spaceDown = false
+      const offsetAfterPan = await comfyPage.canvasOps.getOffset()
+      const positionBeforeResume = [
+        ...(await nodeRef.getProperty<[number, number]>('pos'))
+      ]
+      await comfyPage.page.mouse.move(500, 500, { steps: 5 })
+      await comfyPage.nextFrame()
 
-        const offsetAfterPan = await comfyPage.canvasOps.getOffset()
-        const positionBeforeResume = [
+      softExpect(await comfyPage.canvasOps.getOffset()).toEqual(offsetAfterPan)
+      await softExpect
+        .poll(async () => [
           ...(await nodeRef.getProperty<[number, number]>('pos'))
-        ]
-        await comfyPage.page.mouse.move(500, 500, { steps: 5 })
-        await comfyPage.nextFrame()
-
-        expect(await comfyPage.canvasOps.getOffset()).toEqual(offsetAfterPan)
-        await expect
-          .poll(async () => [
-            ...(await nodeRef.getProperty<[number, number]>('pos'))
-          ])
-          .not.toEqual(positionBeforeResume)
-      } finally {
-        await comfyPage.page.mouse.up()
-      }
+        ])
+        .not.toEqual(positionBeforeResume)
+      await comfyPage.page.mouse.up()
+      mouseDown = false
     })
   })
 
