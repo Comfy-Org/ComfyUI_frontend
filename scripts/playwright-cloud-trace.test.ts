@@ -113,7 +113,8 @@ const workflowGates: WorkflowGate[] = [
 
 function runResultGate(
   workflow: WorkflowGate,
-  json: object | string | undefined
+  json: object | string | undefined,
+  grepFilter = ''
 ) {
   const resultGate = workflowSteps(workflow.path).find(
     (step) => step.name === 'Forbid failed, skipped, or flaky tests'
@@ -134,6 +135,7 @@ function runResultGate(
       env: {
         ...process.env,
         EXPECTED_TESTS: String(workflow.total),
+        GREP_FILTER: grepFilter,
         SUITE_OUTCOME: 'success'
       }
     })
@@ -188,10 +190,18 @@ describe('custom-node S1-S12 workflow gates', () => {
         '--reporter=list,json,html'
       ])
       expect(suiteCommand).not.toMatch(/(?:^|\s)--quiet(?:\s|$)/)
-      expect(suite?.env).toMatchObject({
-        CN_ENABLE_S14: deferS13ToS15 ? '0' : '1',
-        CN_ENABLE_S15: deferS13ToS15 ? '0' : '1'
-      })
+      if (deferS13ToS15)
+        expect(suite?.env).toMatchObject({
+          CN_ENABLE_S14: '0',
+          CN_ENABLE_S15: '0'
+        })
+      else {
+        expect(String(suite?.env?.CN_ENABLE_S14)).toContain(
+          "matrix.proof_row != '0'"
+        )
+        expect(String(suite?.env?.CN_ENABLE_S14)).toContain('inputs.enable_s14')
+        expect(String(suite?.env?.CN_ENABLE_S15)).toContain('inputs.enable_s15')
+      }
       expect(suiteCommand?.match(/--workers(?:=|\s+)\S+/g)).toEqual([
         '--workers=1'
       ])
@@ -214,6 +224,16 @@ describe('custom-node S1-S12 workflow gates', () => {
     (workflow) => {
       const result = runResultGate(workflow, resultJson(workflow.total))
       expect(result.status).toBe(0)
+    }
+  )
+
+  it.for(workflowGates)(
+    '$path accepts an all-green filtered subset without hiding a failure',
+    (workflow) => {
+      expect(runResultGate(workflow, resultJson(4), 'S1:').status).toBe(0)
+      expect(runResultGate(workflow, resultJson(3, 1), 'S1:').status).not.toBe(
+        0
+      )
     }
   )
 

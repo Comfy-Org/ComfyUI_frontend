@@ -29,9 +29,37 @@ on:
         type: choice
         options: ['0', 'all', '1', '2', '3', '9', '14']
         default: '0'
+      branch:
+        description: 'Frontend branch/ref to test (empty = the ref this workflow runs from)'
+        required: false
+        type: string
+        default: ''
+      grep:
+        description: "Playwright -g filter, e.g. 'VideoHelperSuite' or 'Pack startup' (empty = full suite; the exact-count gate is skipped when set)"
+        required: false
+        type: string
+        default: ''
+      comfyui_ref:
+        description: 'ComfyUI core ref to run against (empty = the verified pin)'
+        required: false
+        type: string
+        default: ''
+      enable_s14:
+        description: 'Enable the S14 tier'
+        required: false
+        type: boolean
+        default: true
+      enable_s15:
+        description: 'Enable the S15 tier'
+        required: false
+        type: boolean
+        default: true
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # Dispatches get a per-run group: two manual runs (e.g. comparing branches)
+  # must not cancel each other, while PR pushes keep the usual per-ref
+  # supersede behavior.
+  group: ${{ github.event_name == 'workflow_dispatch' && format('{0}-dispatch-{1}', github.workflow, github.run_id) || format('{0}-{1}', github.workflow, github.ref) }}
   cancel-in-progress: true
 
 jobs:
@@ -76,6 +104,10 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
+        with:
+          # workflow_dispatch may aim the suite at any frontend branch; every
+          # other event tests its own ref exactly as before.
+          ref: ${{ inputs.branch || github.ref }}
 
       - name: Fetch Detection Proof ancestry
         if: >-
@@ -128,7 +160,23 @@ jobs:
         uses: ./.github/actions/setup-comfyui-server
         with:
           launch_server: 'false'
-          comfyui_ref: 'b08e6cf35fac50d3ca8470dffb3f9a1fbb7187d2'
+          # workflow_dispatch may override the pin (e.g. probing a core
+          # candidate before a deliberate bump); every gating event stays
+          # pinned.
+          comfyui_ref: ${{ inputs.comfyui_ref || 'b08e6cf35fac50d3ca8470dffb3f9a1fbb7187d2' }}
+
+      # Pack sources are SHA-pinned, so their content is fully determined by
+      # the manifest: cache the checked-out trees (sans .git) and restore by
+      # manifest hash, with a prefix fallback so a single-pack pin bump still
+      # reuses every other pack. The per-pack .pin marker is the integrity
+      # check - a stale or partial entry re-clones.
+      - name: Restore manifest pack cache
+        id: pack-cache
+        uses: actions/cache/restore@v5
+        with:
+          path: ~/.cache/cn-packs
+          key: cn-packs-v2-${{ hashFiles('browser_tests/fixtures/data/customNodeManifest.core.json') }}
+          restore-keys: cn-packs-v2-
 
       # Install every pack the manifest declares (DRY: a new pack row installs
       # itself here, no workflow change). A clone or dependency failure fails the
@@ -136,6 +184,7 @@ jobs:
       # gate failure, not something to paper over. The `jq | while` pipe hides
       # failures in a subshell, so read into an array and loop with `set -e`.
       - name: Install manifest custom nodes
+        id: install
         shell: bash
         run: |
           set -euo pipefail
@@ -168,15 +217,57 @@ jobs:
               echo "::error::$pack: pin must be a full commit SHA (got '$pin')"; exit 1
             fi
             dir="ComfyUI/custom_nodes/$pack"
-            echo "::group::install $pack"
-            git clone --depth 1 "$repo" "$dir"
-            git -C "$dir" fetch --depth 1 origin "$pin"
-            git -C "$dir" checkout "$pin"
+            cache_dir="$HOME/.cache/cn-packs/$pack"
+            # The pin marker is a SIBLING of the tree, never inside it - a
+            # pack legitimately shipping a top-level .pin must install
+            # identically on cached and fresh runs.
+            if [ -f "$cache_dir.pin" ] && [ "$(cat "$cache_dir.pin")" = "$pin" ]; then
+              echo "::group::restore $pack from cache ($pin)"
+              cp -R "$cache_dir" "$dir"
+            else
+              echo "::group::install $pack"
+              git clone --depth 1 "$repo" "$dir"
+              git -C "$dir" fetch --depth 1 origin "$pin"
+              git -C "$dir" checkout "$pin"
+              # Repopulate the cache entry: tree without .git (nothing after
+              # this point reads pack git state), pin written LAST so a
+              # truncated copy fails the integrity check above.
+              rm -rf "$cache_dir" "$cache_dir.pin"
+              mkdir -p "$(dirname "$cache_dir")"
+              cp -R "$dir" "$cache_dir"
+              rm -rf "$cache_dir/.git"
+              printf '%s' "$pin" > "$cache_dir.pin"
+            fi
             if [ -f "$dir/requirements.txt" ]; then
               pip install -r "$dir/requirements.txt" -c /tmp/torch-constraints.txt
             fi
             echo "::endgroup::"
           done
+          # Prune entries for packs no longer in the manifest: the prefix
+          # fallback restores old entries and the save re-tars the whole
+          # directory, so without this the entry grows monotonically and
+          # eats the repo's shared cache budget.
+          if [ -d "$HOME/.cache/cn-packs" ]; then
+            current=$(jq -r '.[].pack' "$manifest")
+            for entry in "$HOME/.cache/cn-packs"/*; do
+              name=$(basename "$entry" .pin)
+              grep -qxF "$name" <<<"$current" || rm -rf "$entry"
+            done
+          fi
+
+      # Save only when this run rebuilt entries. An exact-key restore means
+      # the stored tree is already current - actions/cache/save re-tars and
+      # uploads unconditionally and only then hits the duplicate-key
+      # rejection, so skipping here is what actually avoids the cost. Gating
+      # on the INSTALL step (not the job) still saves when the suite fails,
+      # while a failed or cancelled install can never freeze a partial tree
+      # under the immutable key.
+      - name: Save manifest pack cache
+        if: always() && steps.install.outcome == 'success' && steps.pack-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v5
+        with:
+          path: ~/.cache/cn-packs
+          key: cn-packs-v2-${{ hashFiles('browser_tests/fixtures/data/customNodeManifest.core.json') }}
 
       - name: Apply Detection Proof execution break
         id: execution-mutation
@@ -199,7 +290,7 @@ jobs:
           matrix.proof_row != '0'
         shell: bash
         env:
-          E2E_PARENT: db21287091fe1881ed706bfa58049e9fee8163be
+          E2E_PARENT: d02f676c9e0d371248274bbfc93dfc9c49a606b8
           MUTATION_DIGEST: ${{ steps.source-mutation.outputs.digest || steps.execution-mutation.outputs.digest }}
           MUTATION_PATH: ${{ steps.source-mutation.outputs.path || steps.execution-mutation.outputs.path }}
           PROOF_ROW: ${{ matrix.proof_row }}
@@ -247,10 +338,13 @@ jobs:
         continue-on-error: >-
           ${{ github.event_name == 'workflow_dispatch' && matrix.proof_row != '0' }}
         env:
-          CN_ENABLE_S14: '1'
-          CN_ENABLE_S15: '1'
+          CN_ENABLE_S14: ${{ (matrix.proof_row != '0' || github.event_name != 'workflow_dispatch' || inputs.enable_s14) && '1' || '0' }}
+          CN_ENABLE_S15: ${{ (github.event_name != 'workflow_dispatch' || inputs.enable_s15) && '1' || '0' }}
           PLAYWRIGHT_JSON_OUTPUT_NAME: custom-nodes-results.json
           PROOF_ROW: ${{ matrix.proof_row }}
+          # Through env, not inline interpolation: dispatch input must never
+          # be shell-parsed.
+          GREP_FILTER: ${{ inputs.grep }}
         run: |
           set -o pipefail
           # workers=1: the auto-run tier needs exclusive backend-queue access;
@@ -264,7 +358,7 @@ jobs:
           # later-tier defer applies only to Cloud while Cloud S1-S12 is red.
           grep_args=()
           case "$PROOF_ROW" in
-            0) ;;
+            0) [ -n "${GREP_FILTER:-}" ] && grep_args=(--grep "$GREP_FILTER") ;;
             1|2|3|9|14)
               grep_args=(--grep 'all nodes by tier @custom-nodes.*S(1|2|3|9|14):')
               ;;
@@ -283,6 +377,7 @@ jobs:
         env:
           SUITE_OUTCOME: ${{ steps.suite.outcome }}
           EXPECTED_TESTS: 33
+          GREP_FILTER: ${{ inputs.grep }}
         run: |
           set -euo pipefail
           # The JSON result is mandatory even when the suite step failed: the
@@ -293,7 +388,11 @@ jobs:
           fi
           collected=$(jq -er '[.stats.expected, .stats.unexpected, .stats.flaky, .stats.skipped] | add' custom-nodes-results.json)
           echo "collected tests: $collected"
-          if [ "$collected" != "$EXPECTED_TESTS" ]; then
+          # A dispatch grep runs a deliberate subset; the exact-count gate
+          # applies only to full runs (every gating event runs unfiltered).
+          if [ -n "${GREP_FILTER:-}" ]; then
+            echo "grep filter active ('$GREP_FILTER') - exact-count gate skipped for this manual subset run"
+          elif [ "$collected" != "$EXPECTED_TESTS" ]; then
             echo "::error::collected $collected tests; expected exactly $EXPECTED_TESTS active Core custom-node tests"
             exit 1
           fi
@@ -401,6 +500,21 @@ jobs:
             [ "$pids" = 1 ] || { echo "::error::$target_tier is last but proof used $pids Playwright workers"; exit 1; }
           fi
           echo "$target_tier: real break failed; every other tier passed in its own fresh-page test"
+
+      # Renders what ran and what it found - to the job log as an aligned
+      # table and to the run's Summary panel as markdown - so a dispatch
+      # answers "which branch, against what, with what verdict" without
+      # opening the artifact.
+      - name: Publish results table
+        if: always()
+        shell: bash
+        env:
+          BRANCH_TESTED: ${{ inputs.branch || github.ref_name }}
+          COMFYUI_REF_USED: ${{ inputs.comfyui_ref || 'b08e6cf35fac50d3ca8470dffb3f9a1fbb7187d2' }}
+          GREP_FILTER: ${{ inputs.grep }}
+          S14_ENABLED: ${{ (github.event_name != 'workflow_dispatch' || inputs.enable_s14) && '1' || '0' }}
+          S15_ENABLED: ${{ (github.event_name != 'workflow_dispatch' || inputs.enable_s15) && '1' || '0' }}
+        run: python3 scripts/cicd/custom-nodes-summary.py
 
       - name: Upload Playwright report and raw diagnostics
         if: always()

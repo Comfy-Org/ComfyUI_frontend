@@ -85,23 +85,55 @@ export const GEOMETRY_UNSTABLE_PATHS: Record<
   Record<string, Record<string, string>>
 > = {
   'ComfyUI-VideoHelperSuite': {
+    // Observed live in run 31513986272 (rerun of the identical SHA passed):
+    // the 24px control row ABOVE each preview measured 0 (LoadImages
+    // widgets[4], LoadVideo widgets[8], FFmpeg widgets[7], AudioUpload
+    // widgets[3]) - firstDelta compares h before widgets, so each node's
+    // report showed only its first unledgered field. A collapsed row moves
+    // every row below it by the same 24px (their dy) and the node's vue.h
+    // by the sum, so the complete unstable set per node is: the control
+    // row's h, the preview row's dy AND h (the preview itself sizes to the
+    // async media's aspect), and vue.h. Anything short of that set reds on
+    // the next recurrence at the first omitted field.
+    VHS_LoadAudioUpload: {
+      'vue.h':
+        'sum of the async row instabilities below (observed 250 -> 226 in run 31513986272)',
+      'vue.widgets[3].h':
+        '24px control row measures 0 when the async default-media state lands mid-measure (the run-31513986272 shrink originated here)',
+      'vue.widgets[4].dy':
+        'audio preview row sits below the collapsing control row and shifts with it',
+      'vue.widgets[4].h':
+        'audio preview row height follows the asynchronous default-media state'
+    },
     VHS_LoadImages: {
       'vue.h':
-        'preview height follows asynchronously loaded default-media aspect ratio',
+        'sum of the async row instabilities below (preview aspect + control-row collapse)',
+      'vue.widgets[4].h':
+        '24px control row measures 0 when the async default-media state lands mid-measure (observed in run 31513986272)',
+      'vue.widgets[5].dy':
+        'preview row sits below the collapsing control row and shifts with it',
       'vue.widgets[5].h':
-        'preview widget height follows the same asynchronous default-media aspect-ratio mechanism'
+        'preview row height follows the asynchronously loaded default-media aspect ratio'
     },
     VHS_LoadVideo: {
       'vue.h':
-        'preview height follows asynchronously loaded default-media aspect ratio',
+        'sum of the async row instabilities below (preview aspect + control-row collapse)',
+      'vue.widgets[8].h':
+        '24px control row measures 0 when the async default-media state lands mid-measure (observed in run 31513986272)',
+      'vue.widgets[9].dy':
+        'preview row sits below the collapsing control row and shifts with it',
       'vue.widgets[9].h':
-        'preview widget height follows the same asynchronous default-media aspect-ratio mechanism'
+        'preview row height follows the asynchronously loaded default-media aspect ratio'
     },
     VHS_LoadVideoFFmpeg: {
       'vue.h':
-        'preview height follows the same asynchronous default-media aspect-ratio mechanism',
+        'sum of the async row instabilities below (preview aspect + control-row collapse)',
+      'vue.widgets[7].h':
+        '24px control row measures 0 when the async default-media state lands mid-measure (observed in run 31513986272)',
+      'vue.widgets[8].dy':
+        'preview row sits below the collapsing control row and shifts with it',
       'vue.widgets[8].h':
-        'preview widget height follows the same asynchronous default-media aspect-ratio mechanism'
+        'preview row height follows the asynchronously loaded default-media aspect ratio'
     },
     VHS_LoadVideoFFmpegPath: {
       'vue.h':
@@ -114,6 +146,44 @@ export const GEOMETRY_UNSTABLE_PATHS: Record<
         'preview height follows asynchronously loaded default-media aspect ratio',
       'vue.widgets[8].h':
         'preview widget height follows the same asynchronous default-media aspect-ratio mechanism'
+    }
+  },
+  // Observed live: run 31537261792 measured every one of these nine nodes
+  // 8-48px shorter in vue.h than run 31518805275 recorded at identical
+  // suite code. firstDelta compares vue.h BEFORE vue.widgets, so widget
+  // fields were never examined in that report - and the deltas match
+  // widget-row arithmetic, not slot/section layout (BLIP Analyze Image's
+  // -38 equals its 64px textarea row rendering 26). The whole vue subtree
+  // follows async row content on these nodes, so it is relaxed at the
+  // subtree; litegraph geometry stays strict, so a genuine model-side
+  // layout regression on any of them still reds.
+  'was-node-suite-comfyui': {
+    'BLIP Analyze Image': {
+      vue: 'vue row heights follow async content; vue.h flipped 320 -> 282 (= its 64px textarea row rendering 26) across identical runs'
+    },
+    'BLIP Model Loader': {
+      vue: 'vue row heights follow async content; vue.h flipped 164 -> 148 across identical runs'
+    },
+    CLIPSEG2: {
+      vue: 'vue row heights follow async content; vue.h flipped 148 -> 140 across identical runs'
+    },
+    'CLIPSeg Batch Masking': {
+      vue: 'vue row heights follow async content; vue.h flipped 380 -> 332 across identical runs'
+    },
+    'CLIPSeg Masking': {
+      vue: 'vue row heights follow async content; vue.h flipped 120 -> 112 across identical runs'
+    },
+    'CLIPSeg Model Loader': {
+      vue: 'vue row heights follow async content; vue.h flipped 100 -> 92 across identical runs'
+    },
+    'CLIPTextEncode (NSP)': {
+      vue: 'vue row heights follow async content; vue.h flipped 264 -> 254 across identical runs'
+    },
+    'Cache Node': {
+      vue: 'vue row heights follow async content; vue.h flipped 248 -> 216 across identical runs'
+    },
+    'Create Grid Image': {
+      vue: 'vue row heights follow async content; vue.h flipped 332 -> 316 across identical runs'
     }
   }
 }

@@ -179,6 +179,13 @@ export const AUTO_RUN_ALLOWED_FAILURES: Record<
   string,
   Record<string, { outcomes: Array<string | RegExp>; reason: string }>
 > = {
+  'ComfyUI-Impact-Pack': {
+    ImpactSelectNthItemOfAnyList: {
+      outcomes: ['VALIDATION_FAIL'],
+      reason:
+        'victim, not cause: a background impact-add-queue app.queuePrompt from a queue-control node holds app.processingQueue and the harness submission returns bare false (failed run 31545300324, passed run 31537458068 on the identical commit); tolerated while the emitters sit in AUTO_RUN_EXCLUDE'
+    }
+  },
   'ComfyUI-Upscaler-Tensorrt': {
     LoadUpscalerTensorrtModel: {
       outcomes: ['TIMEOUT'],

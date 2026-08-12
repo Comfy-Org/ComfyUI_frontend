@@ -195,14 +195,15 @@ test('a backend 5xx during submission cannot be pinned on the node under test', 
     off: (_event: string, listener: (value: Response) => void) => {
       listeners.delete(listener)
     },
-    // The incident path: app.queuePrompt swallows the 500 and returns false
-    // on BOTH attempts, so the environment verdict must come from the
-    // captured /prompt response, after the client-flap retry is spent.
+    // The incident path: the 500 body carries NO node_errors, so
+    // app.queuePrompt's `queueResultOverride = !nodeErrors` resolves the
+    // submission TRUE and the environment verdict comes from the
+    // resolved-with-rejection classifier, not the double-refusal retry.
     evaluate: async () => {
       evaluateCalls += 1
       if (evaluateCalls === 1) return []
       for (const listener of listeners) listener(response)
-      return false
+      return true
     },
     waitForFunction: async () => {
       waitedForExecution = true
@@ -229,6 +230,73 @@ test('a backend 5xx during submission cannot be pinned on the node under test', 
   expect(
     isServerSideFault(new Error('VALIDATION_FAIL (client threw: boom)'))
   ).toBe(false)
+  expect(evaluateCalls).toBe(2)
+  expect(waitedForExecution).toBe(false)
+  expect(listeners.size).toBe(0)
+})
+
+// The double-refusal side of the same fault: app.queuePrompt returns false
+// only when the rejection body CARRIES node_errors (queueResultOverride =
+// !nodeErrors), so this shape spends the client-flap retry before the
+// environment verdict.
+test('a 5xx whose body carries node_errors is refused twice and still faults to the environment', async () => {
+  const listeners = new Set<(response: Response) => void>()
+  let evaluateCalls = 0
+  let waitedForExecution = false
+  const response = {
+    request: () => ({ method: () => 'POST' }),
+    url: () => 'http://backend/api/prompt',
+    status: () => 500,
+    json: () =>
+      Promise.resolve({
+        error: {
+          message: 'Failed to create job record',
+          type: 'DATABASE_ERROR',
+          details: ''
+        },
+        node_errors: {
+          '3': {
+            class_type: 'KSampler',
+            errors: [{ type: 'x', message: 'boom', details: 'exploded' }],
+            dependent_outputs: []
+          }
+        }
+      })
+  } as unknown as Response
+  const page = {
+    on: (_event: string, listener: (value: Response) => void) => {
+      listeners.add(listener)
+    },
+    off: (_event: string, listener: (value: Response) => void) => {
+      listeners.delete(listener)
+    },
+    evaluate: async () => {
+      evaluateCalls += 1
+      if (evaluateCalls === 1) return []
+      for (const listener of listeners) listener(response)
+      return false
+    },
+    waitForFunction: async () => {
+      waitedForExecution = true
+      throw new Error('a rejected submission cannot emit execution events')
+    }
+  } as unknown as Page
+
+  const failure = await new LocalDesktopTarget()
+    .runWorkflow(page, {
+      expectedNodeIds: ['1'],
+      timeoutMs: 60_000
+    })
+    .then(
+      () => undefined,
+      (error: unknown) => error
+    )
+  expect(isServerSideFault(failure)).toBe(true)
+  expect((failure as Error).message).toBe(
+    'prompt submission failed server-side (HTTP 500 POST /prompt) - Failed to create job record; KSampler: exploded [type: DATABASE_ERROR] - backend/environment fault, not a pack validation reject'
+  )
+  // Seen-set install + two refused queue attempts: the retry was spent.
+  expect(evaluateCalls).toBe(3)
   expect(waitedForExecution).toBe(false)
   expect(listeners.size).toBe(0)
 })
