@@ -54,6 +54,8 @@ export interface ResolvedNodeView {
    * every node's configuration except its own.
    */
   readonly properties: Readonly<Record<string, unknown>>
+  /** The groups this node sits inside — the other half of "my group". */
+  readonly groups: readonly GroupMembership[]
   widgetValue(name: string): WidgetValue | undefined
   input(ref: string | number): InputRef | undefined
 }
@@ -78,13 +80,44 @@ export type ResolvedSource =
 
 const key = (nodeId: string, output: number) => `${nodeId}:${output}`
 
-function viewOf(graph: LGraph, nodeId: string): ResolvedNodeView | undefined {
+/**
+ * The groups a node sits inside.
+ *
+ * Membership is geometric — a group holds whatever its rectangle overlaps —
+ * so it is recomputed rather than read from anything stored. Computed once per
+ * resolution pass and shared, because recomputing per node is quadratic on a
+ * graph with many groups.
+ */
+function groupsByNodeId(graph: LGraph): ReadonlyMap<string, GroupMembership[]> {
+  const byNode = new Map<string, GroupMembership[]>()
+  for (const group of graph._groups ?? []) {
+    group.recomputeInsideNodes()
+    const membership: GroupMembership = Object.freeze({
+      id: String(group.id),
+      title: group.title
+    })
+    for (const node of group._nodes) {
+      const key = String(node.id)
+      const list = byNode.get(key)
+      if (list) list.push(membership)
+      else byNode.set(key, [membership])
+    }
+  }
+  return byNode
+}
+
+function viewOf(
+  graph: LGraph,
+  nodeId: string,
+  groups: ReadonlyMap<string, GroupMembership[]> = new Map()
+): ResolvedNodeView | undefined {
   const node = graph.getNodeById(toNodeId(nodeId))
   if (!node) return undefined
   return {
     id: String(node.id),
     type: node.type ?? '',
     properties: Object.freeze({ ...(node.properties ?? {}) }),
+    groups: Object.freeze(groups.get(String(node.id)) ?? []),
     widgetValue: (name) =>
       node.widgets?.find((w) => w.name === name)?.value as
         | WidgetValue
@@ -199,6 +232,12 @@ export function resolveFrontendNodes(
 }
 
 /** An input in the graph that no link feeds. */
+/** A group a node sits inside. */
+interface GroupMembership {
+  readonly id: string
+  readonly title: string
+}
+
 export interface UnconnectedInput {
   readonly nodeId: string
   readonly nodeType: string
@@ -217,6 +256,15 @@ export interface UnconnectedInput {
   readonly nodeTitle: string
   readonly nodeMode: number
   readonly nodeColor: string | undefined
+  /**
+   * The groups the owning node sits inside, innermost first.
+   *
+   * Broadcast packs restrict by group — "only nodes in my group", "only nodes
+   * outside it", "only groups whose title matches this regex". Membership is
+   * geometric and recomputed here, so it matches what the user sees rather
+   * than anything stored.
+   */
+  readonly nodeGroups: readonly GroupMembership[]
   /**
    * The owning node's properties, frozen.
    *
@@ -239,6 +287,17 @@ export interface UnconnectedInput {
  */
 export interface SuppliedEdge {
   readonly to: InputRef
+  /**
+   * Which claim wins when several suppliers name the same input. Higher wins;
+   * defaults to 0.
+   *
+   * **Equal claims feed nothing.** Two suppliers that both say "highest
+   * priority" for one input have no correct answer, and picking either makes
+   * the prompt depend on node order — so the input is left unfed and the
+   * conflict logged. That is what the broadcast pack this exists for does, and
+   * it is the only choice that cannot silently produce a different image.
+   */
+  readonly priority?: number
   readonly from:
     | { readonly output: number }
     | { readonly literal: WidgetValue }
@@ -334,6 +393,12 @@ export function resolveSuppliedInputs(
   const supplied = new Map<string, ResolvedSource>()
   if (!suppliers.size) return supplied
 
+  const groups = groupsByNodeId(graph)
+  /** Every claim on an input, so a conflict can be seen rather than raced. */
+  const claims = new Map<
+    string,
+    { edge: SuppliedEdge; from: LGraphNode['id']; priority: number }[]
+  >()
   const unconnected: UnconnectedInput[] = []
   for (const node of graph.nodes ?? []) {
     for (const [index, input] of (node.inputs ?? []).entries()) {
@@ -349,14 +414,15 @@ export function resolveSuppliedInputs(
         nodeTitle: node.title ?? '',
         nodeMode: node.mode ?? 0,
         nodeColor: node.color,
-        nodeProperties: Object.freeze({ ...(node.properties ?? {}) })
+        nodeProperties: Object.freeze({ ...(node.properties ?? {}) }),
+        nodeGroups: Object.freeze(groups.get(String(node.id)) ?? [])
       })
     }
   }
 
   for (const node of graph.nodes ?? []) {
     const supplier = suppliers.get(node.type ?? '')
-    const self = supplier ? viewOf(graph, String(node.id)) : undefined
+    const self = supplier ? viewOf(graph, String(node.id), groups) : undefined
     if (!supplier || !self) continue
 
     const edges = supplier({
@@ -364,17 +430,35 @@ export function resolveSuppliedInputs(
       nodesOfType: (wanted) =>
         (graph.nodes ?? [])
           .filter((n) => n.type === wanted)
-          .map((n) => viewOf(graph, String(n.id)))
+          .map((n) => viewOf(graph, String(n.id), groups))
           .filter((v): v is ResolvedNodeView => v !== undefined),
       unconnectedInputs: () => unconnected
     })
 
     for (const edge of edges) {
       const target = `${edge.to.nodeId}:${edge.to.input}`
-      if (supplied.has(target)) continue
-
-      supplied.set(target, sourceFor(graph, node.id, edge.from, resolved))
+      const claim = { edge, from: node.id, priority: edge.priority ?? 0 }
+      const existing = claims.get(target)
+      if (existing) existing.push(claim)
+      else claims.set(target, [claim])
     }
+  }
+
+  for (const [target, contenders] of claims) {
+    // Highest priority wins; an exact tie feeds nothing. Picking either would
+    // make the prompt depend on node order, so the same workflow could queue
+    // differently after an unrelated edit.
+    const [best, runnerUp] = [...contenders].sort(
+      (a, b) => b.priority - a.priority
+    )
+    if (runnerUp && runnerUp.priority === best.priority) {
+      console.warn(
+        `[nodeApi] ${contenders.length} suppliers claim ${target} at priority ` +
+          `${best.priority}; leaving it unfed. Give one a higher priority.`
+      )
+      continue
+    }
+    supplied.set(target, sourceFor(graph, best.from, best.edge.from, resolved))
   }
 
   return supplied
