@@ -651,7 +651,7 @@ const severityChips = computed(() => [
   {
     severity: 'missing' as const,
     active: activeSeverityFilter.value === 'missing',
-    label: t('rightSidePanel.setupFilter', { count: missingCount.value })
+    label: t('rightSidePanel.setupFilter', missingCount.value)
   }
 ])
 
