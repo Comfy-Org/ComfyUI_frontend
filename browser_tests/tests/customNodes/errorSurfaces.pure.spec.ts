@@ -34,6 +34,19 @@ test('a persistent error toast fails carrying its visible text', async ({
   expect(message).toContain('Settings seed rejected')
 })
 
+test('a closed page fails immediately with the real reason, not the sentinel', async ({
+  page
+}) => {
+  await page.setContent('<main></main>')
+  await page.close()
+  const failure = await expectNoVisibleErrors(page, 'after close').then(
+    () => undefined,
+    (error: unknown) => error
+  )
+  expect(String(failure)).toMatch(/has been closed/)
+  expect(String(failure)).not.toContain('unreadable mid-poll')
+})
+
 test('a transient toast that clears within the window still passes', async ({
   page
 }) => {

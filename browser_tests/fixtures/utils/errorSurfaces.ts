@@ -20,8 +20,12 @@ export function errorSurfaces(page: Page): Record<string, Locator> {
 // of reporting a bare element count (the cloud gate's dominant failure class
 // was 12x "at startup: errorToasts" with no text - run 31541231667). A read
 // that races a boot navigation returns a sentinel rather than throwing, so
-// the poll below keeps retrying exactly like toHaveCount(0) did.
+// the poll below keeps retrying exactly like toHaveCount(0) did - but a
+// CLOSED target is not a race: rethrow immediately so the real reason
+// surfaces in milliseconds instead of a full poll window ending in a
+// sentinel that claims a surface is present on a page that is gone.
 async function surfaceTexts(
+  page: Page,
   surface: string,
   locator: Locator
 ): Promise<string[]> {
@@ -30,6 +34,7 @@ async function surfaceTexts(
       text.replace(/\s+/g, ' ').trim().slice(0, 300)
     )
   } catch (error) {
+    if (page.isClosed() || /has been closed/.test(String(error))) throw error
     return [`${surface} present but unreadable mid-poll: ${String(error)}`]
   }
 }
@@ -46,7 +51,7 @@ export async function expectNoVisibleErrors(
 ): Promise<void> {
   for (const [surface, locator] of Object.entries(errorSurfaces(page)))
     await expect
-      .poll(() => surfaceTexts(surface, locator), {
+      .poll(() => surfaceTexts(page, surface, locator), {
         message: `${context}: ${surface}`
       })
       .toEqual([])
