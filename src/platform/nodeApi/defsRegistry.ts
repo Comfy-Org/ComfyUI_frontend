@@ -175,6 +175,22 @@ export interface NodeDefBuilder {
    */
   onResized(callback: (node: NodeHandle, size: Size) => void): void
   /**
+   * The pointer entered or left the node.
+   *
+   * Packs read `canvas.node_over` or set `node.mouseOver` to rebuild a list
+   * the moment the pointer arrives, or to decide which node a tooltip belongs
+   * to. Both are canvas internals, and the canvas is what Nodes 2.0 replaces.
+   */
+  onHover(callback: (node: NodeHandle, hovering: boolean) => void): void
+  /**
+   * The node was double-clicked.
+   *
+   * Deliberately carries no coordinates. Hit-testing a pointer against
+   * node-local geometry is a pack drawing its own front end; the published
+   * answer is `widgets.mount` and ordinary DOM events on the element you own.
+   */
+  onDoubleClick(callback: (node: NodeHandle) => void): void
+  /**
    * A property the user edited in the node's properties panel.
    *
    * Packs used `onPropertyChanged` to keep a hand-entered value sane — rgthree
@@ -772,6 +788,8 @@ export function createDefRegistry(): {
       const configured: Bound<[Record<string, unknown>]>[] = []
       const propertyChanges: Bound<[PropertyChangeEvent]>[] = []
       const resized: Bound<[Size]>[] = []
+      const hovered: Bound<[boolean]>[] = []
+      const doubleClicked: Bound<[]>[] = []
       const connections: Bound<[ConnectionChangeEvent]>[] = []
       const removed: Bound<[]>[] = []
       const previewed: Bound<[PreviewFrame]>[] = []
@@ -827,6 +845,8 @@ export function createDefRegistry(): {
           onConfigured: (run) => configured.push({ run, handleFor }),
           onPropertyChanged: (run) => propertyChanges.push({ run, handleFor }),
           onResized: (run) => resized.push({ run, handleFor }),
+          onHover: (run) => hovered.push({ run, handleFor }),
+          onDoubleClick: (run) => doubleClicked.push({ run, handleFor }),
           onConnectionsChanged: (run) => connections.push({ run, handleFor }),
           onRemoved: (run) => removed.push({ run, handleFor }),
           onPreview: (run) => previewed.push({ run, handleFor }),
@@ -881,6 +901,9 @@ export function createDefRegistry(): {
           | 'onConnectionsChange'
           | 'onPropertyChanged'
           | 'onResize'
+          | 'onMouseEnter'
+          | 'onMouseLeave'
+          | 'onDblClick'
           | 'onRemoved',
         run: (node: LGraphNode, ...args: TArgs) => void
       ) => {
@@ -1001,6 +1024,22 @@ export function createDefRegistry(): {
         install<[Size]>('onResize', (node, size) => {
           const id = String(node.id)
           for (const { run, handleFor } of resized) run(handleFor(id), size)
+        })
+      }
+
+      if (hovered.length) {
+        const dispatchHover = (node: LGraphNode, hovering: boolean) => {
+          const id = String(node.id)
+          for (const { run, handleFor } of hovered) run(handleFor(id), hovering)
+        }
+        install('onMouseEnter', (node) => dispatchHover(node, true))
+        install('onMouseLeave', (node) => dispatchHover(node, false))
+      }
+
+      if (doubleClicked.length) {
+        install('onDblClick', (node) => {
+          const id = String(node.id)
+          for (const { run, handleFor } of doubleClicked) run(handleFor(id))
         })
       }
 

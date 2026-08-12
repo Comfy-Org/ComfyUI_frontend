@@ -308,6 +308,37 @@ describe('defs.extend', () => {
       expect(sizes.at(-1)).toEqual([320, 180])
     })
 
+    it('reports the pointer entering and leaving', () => {
+      // Packs read canvas.node_over or set node.mouseOver — canvas internals,
+      // and the canvas is what Nodes 2.0 replaces.
+      const seen: boolean[] = []
+      const node = addNode((registry) =>
+        registry
+          .forMajor((id) => comfy.graph.node(id)!)
+          .extend('KSampler', (b) =>
+            b.onHover((_n, hovering) => seen.push(hovering))
+          )
+      )
+
+      node.onMouseEnter?.(undefined as never)
+      node.onMouseLeave?.(undefined as never)
+
+      expect(seen).toEqual([true, false])
+    })
+
+    it('reports a double click, without coordinates', () => {
+      const seen: string[] = []
+      const node = addNode((registry) =>
+        registry
+          .forMajor((id) => comfy.graph.node(id)!)
+          .extend('KSampler', (b) => b.onDoubleClick((n) => seen.push(n.id)))
+      )
+
+      node.onDblClick?.(undefined as never, [0, 0], undefined as never)
+
+      expect(seen).toEqual([String(node.id)])
+    })
+
     it('fires onCreated once the node is addressable', () => {
       const seen: (string | undefined)[] = []
       const node = addNode((registry) =>
