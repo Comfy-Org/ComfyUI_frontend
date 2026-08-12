@@ -27,6 +27,8 @@ import { api } from '../../scripts/api'
 import { app } from '../../scripts/app'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
+const UPLOAD_TIMEOUT_MS = 120_000
+
 function updateUIWidget(
   audioUIWidget: DOMWidget<HTMLAudioElement, string>,
   url: string = ''
@@ -53,7 +55,8 @@ async function uploadFile(
     if (pasted) body.append('subfolder', 'pasted')
     const resp = await api.fetchApi('/upload/image', {
       method: 'POST',
-      body
+      body,
+      signal: AbortSignal.timeout(UPLOAD_TIMEOUT_MS)
     })
 
     if (resp.status === 200) {
@@ -86,8 +89,12 @@ async function uploadFile(
       return false
     }
   } catch (error) {
-    // @ts-expect-error fixme ts strict error
-    useToastStore().addAlert(error)
+    if (error instanceof DOMException && error.name === 'TimeoutError') {
+      useToastStore().addAlert(t('g.uploadTimedOut'))
+    } else {
+      // @ts-expect-error fixme ts strict error
+      useToastStore().addAlert(error)
+    }
     return false
   }
 }
