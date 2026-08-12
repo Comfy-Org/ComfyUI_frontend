@@ -239,13 +239,15 @@ describe('Comfy.UploadAudio AUDIOUPLOAD widget', () => {
     AUDIOUPLOAD(node, 'upload')
 
     const expireDeadlines: (() => void)[] = []
-    vi.spyOn(AbortSignal, 'timeout').mockImplementation(() => {
-      const controller = new AbortController()
-      expireDeadlines.push(() =>
-        controller.abort(new DOMException('signal timed out', 'TimeoutError'))
-      )
-      return controller.signal
-    })
+    const timeoutSpy = vi
+      .spyOn(AbortSignal, 'timeout')
+      .mockImplementation(() => {
+        const controller = new AbortController()
+        expireDeadlines.push(() =>
+          controller.abort(new DOMException('signal timed out', 'TimeoutError'))
+        )
+        return controller.signal
+      })
 
     mockFetchApi.mockImplementationOnce(
       (_route: string, options: RequestInit) =>
@@ -260,6 +262,7 @@ describe('Comfy.UploadAudio AUDIOUPLOAD widget', () => {
 
     expect(node.isUploading).toBe(true)
     expect(expireDeadlines).toHaveLength(1)
+    expect(timeoutSpy).toHaveBeenCalledWith(120_000)
 
     expireDeadlines[0]()
     await upload

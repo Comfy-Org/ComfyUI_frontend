@@ -222,13 +222,17 @@ describe('useWidgetSelectActions', () => {
     it('bounds a stalled upload instead of waiting forever', async () => {
       const { api } = await import('@/scripts/api')
       const expireDeadlines: (() => void)[] = []
-      vi.spyOn(AbortSignal, 'timeout').mockImplementation(() => {
-        const controller = new AbortController()
-        expireDeadlines.push(() =>
-          controller.abort(new DOMException('signal timed out', 'TimeoutError'))
-        )
-        return controller.signal
-      })
+      const timeoutSpy = vi
+        .spyOn(AbortSignal, 'timeout')
+        .mockImplementation(() => {
+          const controller = new AbortController()
+          expireDeadlines.push(() =>
+            controller.abort(
+              new DOMException('signal timed out', 'TimeoutError')
+            )
+          )
+          return controller.signal
+        })
       vi.mocked(api.fetchApi).mockImplementation(
         (_route: string, options?: RequestInit) =>
           new Promise<Response>((_resolve, reject) => {
@@ -255,6 +259,7 @@ describe('useWidgetSelectActions', () => {
       const update = handleFilesUpdate([new File(['test'], 'stalled.png')])
 
       expect(expireDeadlines).toHaveLength(1)
+      expect(timeoutSpy).toHaveBeenCalledWith(120_000)
 
       expireDeadlines[0]()
       await update
