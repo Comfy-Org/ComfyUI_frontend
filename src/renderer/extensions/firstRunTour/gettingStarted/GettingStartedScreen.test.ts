@@ -1,6 +1,6 @@
 import userEvent from '@testing-library/user-event'
-import { cleanup, render, screen, waitFor } from '@testing-library/vue'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { render, screen, waitFor } from '@testing-library/vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -83,10 +83,6 @@ describe('GettingStartedScreen', () => {
     mocks.loadCatalog.mockResolvedValue(undefined)
     mocks.beginTour.mockResolvedValue(true)
     mocks.loadingTemplateId.value = null
-  })
-
-  afterEach(() => {
-    cleanup()
   })
 
   async function pickFirstTemplate() {

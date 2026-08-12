@@ -1,7 +1,7 @@
-import { cleanup, render, screen, waitFor } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -103,10 +103,6 @@ function mountDialog() {
 }
 
 describe('GlobalDialog renderer branching', () => {
-  afterEach(() => {
-    cleanup()
-  })
-
   it('renders the Reka branch when renderer is omitted (default)', async () => {
     mountDialog()
     const store = useDialogStore()
@@ -171,10 +167,6 @@ describe('GlobalDialog renderer branching', () => {
 })
 
 describe('GlobalDialog Reka parity with PrimeVue', () => {
-  afterEach(() => {
-    cleanup()
-  })
-
   it('omits the close button when closable is false', async () => {
     mountDialog()
     const store = useDialogStore()
@@ -358,10 +350,6 @@ describe('GlobalDialog Reka parity with PrimeVue', () => {
 })
 
 describe('GlobalDialog Reka overlay scrim', () => {
-  afterEach(() => {
-    cleanup()
-  })
-
   it('renders a backdrop scrim for modal Reka dialogs', async () => {
     mountDialog()
     const store = useDialogStore()
@@ -476,10 +464,6 @@ describe('GlobalDialog Reka overlay scrim', () => {
 })
 
 describe('GlobalDialog Reka focus-outside binding', () => {
-  afterEach(() => {
-    cleanup()
-  })
-
   // Reka's DismissableLayer fires focus-outside off a real focus transition
   // (blur inside the layer, then focusin on the new target), so drive the
   // mounted binding by moving focus to a fresh element outside the dialog

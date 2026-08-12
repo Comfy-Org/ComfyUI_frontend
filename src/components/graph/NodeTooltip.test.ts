@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { nextTick } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -174,7 +174,6 @@ describe('NodeTooltip', () => {
 
   afterEach(() => {
     mergeOutputTooltipMessage(null)
-    cleanup()
   })
 
   it('shows input slot JSON tooltips without i18n placeholder errors', async () => {

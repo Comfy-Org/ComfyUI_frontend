@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
@@ -51,7 +51,6 @@ function renderSpotlight(
 
 describe('TourSpotlight', () => {
   afterEach(() => {
-    cleanup()
     clearCoachmarks()
   })
 
