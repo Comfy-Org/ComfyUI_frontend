@@ -36,10 +36,7 @@ import type {
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import {
-  startListDisabledSync,
-  useNodeDisabledState
-} from '@/platform/nodeDisabled/nodeDisabledState'
+import { useNodeDisabledState } from '@/platform/nodeDisabled/nodeDisabledState'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -182,7 +179,16 @@ function getMinSize(node: LGraphNode) {
 export const useLitegraphService = () => {
   const extensionService = useExtensionService()
   const { isNodeDisabled } = useNodeDisabledState()
-  startListDisabledSync()
+  LGraphCanvas.isNodeTypeDisabled = (nodeType) => {
+    const nodeData = nodeType.nodeData
+    return (
+      nodeData?.api_node === true &&
+      isNodeDisabled({
+        api_node: nodeData.api_node,
+        category: nodeData.category ?? ''
+      })
+    )
+  }
   const toastStore = useToastStore()
   const widgetStore = useWidgetStore()
   const canvasStore = useCanvasStore()
@@ -607,9 +613,7 @@ export const useLitegraphService = () => {
     node.category = nodeDef.category
     node.title = nodeDef.display_name || nodeDef.name
 
-    if (isNodeDisabled(nodeDef)) {
-      node.list_disabled = true
-    } else if (nodeDef.dev_only) {
+    if (nodeDef.dev_only) {
       const settingStore = useSettingStore()
       node.skip_list = !settingStore.get('Comfy.DevMode')
     }

@@ -296,6 +296,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   static gradients: Record<string, CanvasGradient> = {}
 
   static search_limit = -1
+  static isNodeTypeDisabled?: (nodeType: typeof LGraphNode) => boolean
   static node_colors: Record<string, ColorOption> = {
     red: { color: '#322', bgcolor: '#533', groupcolor: '#A88' },
     brown: { color: '#332922', bgcolor: '#593930', groupcolor: '#b06634' },
@@ -1254,7 +1255,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           value: node.type,
           content: node.title,
           has_submenu: false,
-          disabled: node.list_disabled === true,
+          disabled: LGraphCanvas.isNodeTypeDisabled?.(node) === true,
           callback: function (value, _event, _mouseEvent, contextMenu) {
             if (!canvas.graph) throw new NullGraphError()
 
