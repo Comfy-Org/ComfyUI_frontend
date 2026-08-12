@@ -111,8 +111,12 @@
 }
 
 .litegraph .litemenu-entry.disabled {
-  opacity: 0.5;
+  opacity: 0.35;
   cursor: default;
+}
+
+.litegraph .litemenu-entry.dimmed {
+  opacity: 0.35;
 }
 
 .litegraph .litemenu-entry.separator {
