@@ -7,13 +7,12 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 
 import { createComfyApi } from './comfyApi'
-import type { Comfy } from './comfyApi'
-import {
+import { notifyDefsRefreshed,
   createDefRegistry,
   deliverPreview,
   frontendResolverMap,
-  frontendSupplierMap
-} from './defsRegistry'
+  frontendSupplierMap } from './defsRegistry'
+import type { Comfy } from './comfyApi'
 import type { DefSelector, NodeDefBuilder } from './defsRegistry'
 
 const RAW_DEF = {
@@ -454,6 +453,40 @@ describe('defs.refresh', () => {
     await api.defs.refresh()
 
     expect(refreshComboInNodes).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('defs.onRefreshed', () => {
+  it('tells packs when definitions were reloaded, until unsubscribed', () => {
+    // The pack that caused a refresh is usually not the pack holding a stale
+    // cached copy of a combo's values, so refresh() alone is not enough.
+    setActivePinia(createPinia())
+    const api = createComfyApi(() => new LGraph())
+    const listener = vi.fn()
+    const stop = api.defs.onRefreshed(listener)
+
+    notifyDefsRefreshed()
+    expect(listener).toHaveBeenCalledTimes(1)
+
+    stop()
+    notifyDefsRefreshed()
+    expect(listener).toHaveBeenCalledTimes(1)
+  })
+
+  it('runs later listeners after an earlier one throws', () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    setActivePinia(createPinia())
+    const api = createComfyApi(() => new LGraph())
+    const after = vi.fn()
+    const stopFirst = api.defs.onRefreshed(() => {
+      throw new Error('pack is broken')
+    })
+    const stopAfter = api.defs.onRefreshed(after)
+
+    expect(() => notifyDefsRefreshed()).not.toThrow()
+    expect(after).toHaveBeenCalledTimes(1)
+    stopFirst()
+    stopAfter()
   })
 })
 
