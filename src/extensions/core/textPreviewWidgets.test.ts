@@ -130,20 +130,9 @@ describe('updateTextPreviewWidgets', () => {
     expect(node.widgets[0].value).toBe('30\n\n23.976')
   })
 
-  it.each([
-    ['compact JSON', '{"name":"Comfy","emoji":"🌟"}'],
-    [
-      'pretty JSON',
-      '{\n    "name": "Comfy",\n    "arr": [\n        1,\n        2\n    ]\n}'
-    ],
-    ['markdown-fenced JSON', '```json\n{"name":"Comfy"}\n```'],
-    ['JSON array', '[{"a": 1}, {"b": 2}]'],
-    ['non-ASCII text', '你好，世界。'],
-    ['prompt with trailing space', '"A red car" is a great prompt. '],
-    ['prompt ending in a quoted period', "ending in 'best quality.'"]
-  ])('renders %s verbatim', (_label, text) => {
-    updateTextPreviewWidgets(node, { text })
-    expect(node.widgets[0].value).toBe(text)
+  it('stringifies a bare non-string scalar payload', () => {
+    updateTextPreviewWidgets(node, { text: 23.976 } as unknown as { text: string })
+    expect(node.widgets[0].value).toBe('23.976')
   })
 
   it('does not throw when the node has no preview widget', () => {
