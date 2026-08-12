@@ -1,4 +1,4 @@
-import { createPinia, defineStore, setActivePinia } from 'pinia'
+import { defineStore } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick, ref } from 'vue'
 
@@ -32,8 +32,6 @@ describe('useErrorSurveyTracking', () => {
   }
 
   beforeEach(() => {
-    trackFeatureUsed.mockReset()
-    setActivePinia(createPinia())
     store = useFakeExecutionErrorStore()
   })
 

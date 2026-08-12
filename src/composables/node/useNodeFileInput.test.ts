@@ -1,5 +1,5 @@
 import { fromAny } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useNodeFileInput } from './useNodeFileInput'
@@ -30,10 +30,6 @@ function setInputValue(input: HTMLInputElement, value: string) {
 }
 
 describe('useNodeFileInput', () => {
-  beforeEach(() => {
-    vi.restoreAllMocks()
-  })
-
   it('creates a file input with configured attributes and defaults', () => {
     const fileInput = document.createElement('input')
     const createElementSpy = vi

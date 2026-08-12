@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { useLegacyBilling } from './useLegacyBilling'
 
@@ -31,10 +31,6 @@ vi.mock('@/stores/authStore', () => ({
 }))
 
 describe('useLegacyBilling', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   describe('resubscribe', () => {
     it('performs the checkout via the unwrapped subscribeDirect', async () => {
       mockSubscribeDirect.mockResolvedValue(undefined)

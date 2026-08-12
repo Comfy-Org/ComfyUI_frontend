@@ -1,6 +1,4 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { addDynamicCombo } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
@@ -13,7 +11,6 @@ describe('LGraphNode widget ordering', () => {
   let node: LGraphNode
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     node = new LGraphNode('TestNode')
   })
 

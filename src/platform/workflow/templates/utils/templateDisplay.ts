@@ -4,8 +4,21 @@ import type {
   TemplateTypeFilter
 } from '@/platform/workflow/templates/types/template'
 
+/**
+ * Whether a template opens in App Mode rather than as a node graph.
+ *
+ * Reads `isApp`, which `templates/index.json` derives from the workflow's own
+ * `extra.linearMode`. That is the author's choice, recorded in the workflow.
+ *
+ * This previously read `name.endsWith('.app')`, which is wrong in both
+ * directions: `templates_all_in_one_image_edit_models.app` carries the suffix but
+ * is a node graph, while `template_qwen_image_illustration_lora` and
+ * `template_sugar_coated_gummy_style_qwen` are Apps without it. The suffix
+ * records how a workflow was saved, not what it is, so no amount of renaming
+ * would have fixed the Apps filter.
+ */
 export function isAppTemplate(template: TemplateInfo): boolean {
-  return template.name.endsWith('.app')
+  return template.isApp === true
 }
 
 export function filterTemplatesByType<T extends TemplateInfo>(

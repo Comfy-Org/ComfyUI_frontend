@@ -1,12 +1,8 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { isEmbeddedWebView } from '@/base/webviewDetection'
 
 describe('isEmbeddedWebView', () => {
-  afterEach(() => {
-    vi.unstubAllGlobals()
-  })
-
   describe('Android WebView', () => {
     it('detects Android WebView with wv token', () => {
       const ua =

@@ -1,6 +1,6 @@
-import { cleanup, render, screen } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { afterEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -27,8 +27,6 @@ function renderLanding() {
 }
 
 describe('CoachmarkLanding', () => {
-  afterEach(cleanup)
-
   it('renders a modal backdrop behind the landing card', async () => {
     renderLanding()
     expect(await screen.findByTestId('coach-landing-overlay')).toBeTruthy()

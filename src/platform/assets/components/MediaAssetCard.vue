@@ -277,6 +277,7 @@ const adaptedAsset = computed(() => {
     size: asset.size,
     tags: asset.tags || [],
     created_at: asset.created_at,
+    updated_at: asset.updated_at,
     duration: asset.user_metadata?.duration
       ? Number(asset.user_metadata.duration)
       : undefined,

@@ -54,7 +54,6 @@ describe('LGraphCanvas ghost placement auto-pan', () => {
   let node: LGraphNode
 
   beforeEach(() => {
-    vi.useFakeTimers()
     ;({ canvas, canvasElement, node } = createGhostTestHarness())
     // Near left edge so autopan fires by default
     canvas.mouse[0] = 5
@@ -64,7 +63,6 @@ describe('LGraphCanvas ghost placement auto-pan', () => {
   afterEach(() => {
     if (canvas.state.ghostNodeId != null) canvas.finalizeGhostPlacement(false)
     canvasElement.remove()
-    vi.useRealTimers()
   })
 
   it('moves the ghost node when pointer is near edge', () => {

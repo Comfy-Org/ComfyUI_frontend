@@ -11728,16 +11728,16 @@ export interface components {
         };
         LTXImage2VideoRequest: {
             /**
-             * @description Video duration in seconds
+             * @description Video duration in seconds (maximum depends on resolution and frame rate)
              * @enum {integer}
              */
-            duration: 6 | 8 | 10;
+            duration: 2 | 3 | 4 | 5 | 6 | 8 | 10 | 12 | 14 | 16 | 18 | 20;
             /**
              * @description Frame rate in frames per second
              * @default 25
              * @enum {integer}
              */
-            fps: 25 | 50;
+            fps: 24 | 25 | 48 | 50;
             /**
              * @description Generate audio for the video
              * @default true
@@ -11745,31 +11745,33 @@ export interface components {
             generate_audio: boolean;
             /** @description Image to be used as the first frame of the video (HTTPS URL or base64 data URI) */
             image_uri: string;
+            /** @description Image to be used as the last frame of the video (HTTPS URL or base64 data URI) */
+            last_frame_uri?: string;
             /**
              * @description Model to use for generation
              * @enum {string}
              */
-            model: "ltx-2-fast" | "ltx-2-pro";
+            model: "ltx-2-fast" | "ltx-2-pro" | "ltx-2-5-fast";
             /** @description Text description of how the image should be animated */
             prompt: string;
             /**
              * @description Output video resolution
              * @enum {string}
              */
-            resolution: "1920x1080" | "2560x1440" | "3840x2160";
+            resolution: "1280x720" | "720x1280" | "1920x1080" | "1080x1920" | "2560x1440" | "1440x2560" | "3840x2160" | "2160x3840";
         };
         LTXText2VideoRequest: {
             /**
-             * @description Video duration in seconds
+             * @description Video duration in seconds (maximum depends on resolution and frame rate)
              * @enum {integer}
              */
-            duration: 6 | 8 | 10;
+            duration: 2 | 3 | 4 | 5 | 6 | 8 | 10 | 12 | 14 | 16 | 18 | 20;
             /**
              * @description Frame rate in frames per second
              * @default 25
              * @enum {integer}
              */
-            fps: 25 | 50;
+            fps: 24 | 25 | 48 | 50;
             /**
              * @description Generate audio for the video
              * @default true
@@ -11779,14 +11781,14 @@ export interface components {
              * @description Model to use for generation
              * @enum {string}
              */
-            model: "ltx-2-fast" | "ltx-2-pro";
+            model: "ltx-2-fast" | "ltx-2-pro" | "ltx-2-5-fast";
             /** @description Text prompt describing the desired video content */
             prompt: string;
             /**
              * @description Output video resolution
              * @enum {string}
              */
-            resolution: "1920x1080" | "2560x1440" | "3840x2160";
+            resolution: "1280x720" | "720x1280" | "1920x1080" | "1080x1920" | "2560x1440" | "1440x2560" | "3840x2160" | "2160x3840";
         };
         /**
          * @description Output aspect ratio. The ray-3.2 video models support the subset 9:16, 3:4, 1:1, 4:3, 16:9, 21:9.

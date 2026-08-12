@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { SubscriptionInfo } from '@/composables/billing/types'
 import type {
@@ -62,12 +62,7 @@ function session(
 }
 
 describe('launchCancellationFlow', () => {
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
   beforeEach(() => {
-    vi.resetAllMocks()
     mocks.billingType.value = 'workspace'
     mocks.subscription.value = {
       duration: 'ANNUAL',

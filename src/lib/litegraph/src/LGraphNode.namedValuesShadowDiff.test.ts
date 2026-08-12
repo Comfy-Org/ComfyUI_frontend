@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ISerialisedNode } from '@/lib/litegraph/src/litegraph'
@@ -51,9 +49,6 @@ describe('LGraphNode configure named values shadow diff', () => {
   let node: LGraphNode
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    trackNamedValuesShadowDiffMismatch.mockClear()
-    trackNamedValuesShadowDiffSummary.mockClear()
     node = new LGraphNode('TestNode')
     node.addWidget('number', 'steps', 0, null, {})
     node.addWidget('number', 'seed', 0, null, {})

@@ -241,14 +241,11 @@ const onChooseTeamWorkspace = vi.fn()
 
 describe('PricingTable', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockCanAccessSubscriptionFeatures.value = false
     mockSubscriptionTier.value = null
     mockSubscriptionDuration.value = 'MONTHLY'
     mockUserId.value = 'user-123'
-    mockAccessBillingPortal.mockReset()
     mockAccessBillingPortal.mockResolvedValue(true)
-    mockTrackBeginCheckout.mockReset()
     mockLocalStorage.__reset()
     vi.mocked(global.fetch).mockResolvedValue({
       ok: true,

@@ -137,7 +137,6 @@ const setup = (): ReturnType<typeof useToolManager> => {
 
 describe('useToolManager', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockStore.currentTool = Tools.MaskPen
     mockStore.activeLayer = 'mask'
     mockStore.pointerZone = document.createElement('div')

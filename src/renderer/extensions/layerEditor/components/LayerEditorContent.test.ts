@@ -135,7 +135,6 @@ async function waitForAutoSaveStart() {
 
 describe('LayerEditorContent', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     session.canUndo.value = false
     session.loadImages.mockResolvedValue(0)
     loadCompositorSession.mockResolvedValue(0)

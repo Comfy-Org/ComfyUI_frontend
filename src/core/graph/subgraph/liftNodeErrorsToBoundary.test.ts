@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
@@ -14,10 +12,6 @@ import {
 import { toNodeId } from '@/types/nodeId'
 
 import { liftNodeErrorsToBoundary } from './liftNodeErrorsToBoundary'
-
-beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
-})
 
 describe('liftNodeErrorsToBoundary', () => {
   it('lifts a boundary-linked slot error to the host', () => {

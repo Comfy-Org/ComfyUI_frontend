@@ -41,8 +41,7 @@ export const wanAnimate2Page: ModelLaunchPage = {
       labelKey: 'wanAnimate2.hero.primaryCta',
       href: WAN_ANIMATE_2_WORKFLOW,
       target: '_blank'
-    },
-    footnoteKey: 'wanAnimate2.hero.footnote'
+    }
   },
   pricing: {
     defaultBillingCycle: 'monthly',

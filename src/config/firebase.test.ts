@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 async function loadFirebase(useProdConfig: boolean) {
   vi.resetModules()
@@ -9,10 +9,6 @@ async function loadFirebase(useProdConfig: boolean) {
 }
 
 describe('getFirebaseConfig', () => {
-  afterEach(() => {
-    vi.unstubAllGlobals()
-  })
-
   it('honors a full server-provided firebase_config (cloud builds)', async () => {
     const cloud = {
       apiKey: 'cloud-key',

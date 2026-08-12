@@ -1,21 +1,22 @@
 import { expect } from '@playwright/test'
 import type { Page, Route } from '@playwright/test'
 
-import { PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
+import {
+  PENDING_SUBSCRIPTION_CHECKOUT_EVENT,
+  PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY
+} from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
+import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
 import {
   createBalance,
   createSubscriptionStatus,
   UNSUBSCRIBED,
   ZERO_BALANCE
 } from '@e2e/fixtures/data/subscriptionFixtures'
-import type {
-  BalanceResponse,
-  SubscriptionStatusResponse
-} from '@e2e/fixtures/data/subscriptionFixtures'
+import type { BalanceResponse } from '@e2e/fixtures/data/subscriptionFixtures'
 import { TestIds } from '@e2e/fixtures/selectors'
 
 export interface SubscriptionConfig {
-  status: SubscriptionStatusResponse
+  status: BillingStatusResponse
   balance: BalanceResponse
 }
 
@@ -31,7 +32,7 @@ export type SubscriptionOperator = (
 ) => SubscriptionConfig
 
 function withSubscriptionStatus(
-  overrides: Partial<SubscriptionStatusResponse>
+  overrides: Partial<BillingStatusResponse>
 ): SubscriptionOperator {
   return (config) => ({
     ...config,
@@ -40,35 +41,31 @@ function withSubscriptionStatus(
 }
 
 export function withActiveSubscription(
-  tier: NonNullable<SubscriptionStatusResponse['subscription_tier']> = 'CREATOR'
+  tier: NonNullable<BillingStatusResponse['subscription_tier']> = 'CREATOR'
 ): SubscriptionOperator {
   return withSubscriptionStatus({
     is_active: true,
     subscription_tier: tier,
-    renewal_date: '2099-12-31T00:00:00.000Z',
-    end_date: null
+    renewal_date: '2099-12-31T00:00:00.000Z'
   })
 }
 
 export function withFreeTier(): SubscriptionOperator {
   return withSubscriptionStatus({
     is_active: true,
-    subscription_tier: 'FREE',
-    end_date: null
+    subscription_tier: 'FREE'
   })
 }
 
 export function withUnsubscribed(): SubscriptionOperator {
   return withSubscriptionStatus({
     is_active: false,
-    subscription_tier: 'FREE',
-    end_date: null,
-    renewal_date: null
+    subscription_tier: 'FREE'
   })
 }
 
 export class SubscriptionHelper {
-  private statusResponse: SubscriptionStatusResponse
+  private statusResponse: BillingStatusResponse
   private balanceResponse: BalanceResponse
   private routeHandlers: Array<{
     pattern: string
@@ -104,7 +101,7 @@ export class SubscriptionHelper {
     })
     await this.page.route(featuresPattern, featuresHandler)
 
-    const statusPattern = '**/customers/cloud-subscription-status'
+    const statusPattern = '**/api/billing/status'
     const statusHandler = async (route: Route) => {
       await route.fulfill({ json: this.statusResponse })
     }
@@ -155,7 +152,7 @@ export class SubscriptionHelper {
     this.balanceResponse = { ...config.balance }
   }
 
-  setStatus(overrides: Partial<SubscriptionStatusResponse>): void {
+  setStatus(overrides: Partial<BillingStatusResponse>): void {
     this.statusResponse = { ...this.statusResponse, ...overrides }
   }
 
@@ -191,14 +188,14 @@ export class SubscriptionHelper {
   }
 
   /**
-   * Dispatch `visibilitychange` to simulate returning from Stripe checkout.
-   * The app re-fetches subscription status when a pending checkout attempt
-   * exists in localStorage (seeded via `seedPendingCheckout`).
+   * Notify the app that a pending checkout attempt needs to be recovered.
    */
   async triggerSubscriptionRefetch(): Promise<void> {
-    await this.page.evaluate(() => {
-      document.dispatchEvent(new Event('visibilitychange'))
-    })
+    const eventName = PENDING_SUBSCRIPTION_CHECKOUT_EVENT
+    await this.page.evaluate(
+      (name) => window.dispatchEvent(new Event(name)),
+      eventName
+    )
   }
 
   /**

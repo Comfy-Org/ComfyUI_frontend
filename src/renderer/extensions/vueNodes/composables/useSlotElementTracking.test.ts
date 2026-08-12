@@ -1,6 +1,4 @@
 import { render } from '@testing-library/vue'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { toNodeId } from '@/types/nodeId'
@@ -112,8 +110,6 @@ async function mountAndRegisterSlot(type: 'input' | 'output') {
 
 describe('useSlotElementTracking', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    document.body.innerHTML = ''
     layoutStore.initializeFromLiteGraph([])
     layoutStore.applyOperation({
       type: 'createNode',
@@ -133,7 +129,6 @@ describe('useSlotElementTracking', () => {
     })
     mockGraph._nodes = [{ id: 1 }]
     mockCanvasState.canvas = {}
-    mockClientPosToCanvasPos.mockClear()
   })
 
   it.for([

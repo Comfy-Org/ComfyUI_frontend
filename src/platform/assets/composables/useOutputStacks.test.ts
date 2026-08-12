@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
@@ -34,7 +35,7 @@ function createDeferred<T>(): Deferred<T> {
 }
 
 function createAsset(overrides: Partial<AssetItem> = {}): AssetItem {
-  return {
+  return fromPartial({
     id: 'asset-1',
     name: 'parent.png',
     tags: [],
@@ -45,14 +46,10 @@ function createAsset(overrides: Partial<AssetItem> = {}): AssetItem {
       subfolder: 'outputs'
     },
     ...overrides
-  }
+  })
 }
 
 describe('useOutputStacks', () => {
-  beforeEach(() => {
-    vi.resetAllMocks()
-  })
-
   it('expands stacks and exposes children as selectable assets', async () => {
     const parent = createAsset({ id: 'parent', name: 'parent.png' })
     const childA = createAsset({

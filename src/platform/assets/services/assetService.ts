@@ -23,7 +23,7 @@ import type {
   TagsOperationResult
 } from '@/platform/assets/schemas/assetSchema'
 import {
-  MODEL_TYPE_TAG_PREFIX,
+  getAssetCategories,
   getAssetFilename
 } from '@/platform/assets/utils/assetMetadataUtils'
 import { isCloud } from '@/platform/distribution/types'
@@ -224,26 +224,6 @@ function normalizeAssetTags(tags: string[]): string[] {
 }
 
 /**
- * Resolves the model folder a tag represents, or undefined when the tag is not
- * a folder category. `supports_model_type_tags` backends carry the category as
- * a namespaced `model_type:<folder>` tag; older backends mint bare tags, which
- * may carry subfolder paths (e.g. `Chatterbox/sub/model`) and group by their
- * top-level segment, matching the asset browser's legacy grouping.
- */
-function modelFolderFromTag(
-  tag: string,
-  modelTypeMode: boolean
-): string | undefined {
-  if (modelTypeMode) {
-    return tag.startsWith(MODEL_TYPE_TAG_PREFIX)
-      ? tag.slice(MODEL_TYPE_TAG_PREFIX.length)
-      : undefined
-  }
-  if (tag === MODELS_TAG || tag.length === 0) return undefined
-  return tag.split('/')[0]
-}
-
-/**
  * Orders loader paths as subdirectories before files at every level,
  * alphabetical within each group. The asset API returns models in storage
  * order, which would otherwise interleave root-level files with folder
@@ -412,11 +392,13 @@ function createAssetService() {
   }
   /**
    * Walks every `models`-tagged asset once and buckets each into the folder
-   * categories carried by its `model_type:` tags. A single asset lands in every
-   * category it is tagged with (e.g. a shared-root model in both `checkpoints`
-   * and `diffusion_models`). Which folders are actually shown is decided by
-   * `/experiment/models`; models with no category tag are dropped with a warning
-   * rather than hidden silently.
+   * categories `getAssetCategories` resolves for it. A single asset lands in
+   * every category it is tagged with (e.g. a shared-root model in both
+   * `checkpoints` and `diffusion_models`); an asset covered by `model_type:`
+   * tags is grouped by those alone, so a legacy bare-tag twin left over from a
+   * partial re-tagging cannot also cross-list it into another folder. Which
+   * folders are actually shown is decided by `/experiment/models`; models with
+   * no category tag are dropped with a warning rather than hidden silently.
    */
   async function buildModelBuckets(
     modelTypeMode: boolean
@@ -427,9 +409,7 @@ function createAssetService() {
     const buckets = new Map<string, AssetItem[]>()
 
     for (const asset of assets) {
-      const folders = asset.tags
-        .map((tag) => modelFolderFromTag(tag, modelTypeMode))
-        .filter((folder): folder is string => folder !== undefined)
+      const folders = [...new Set(getAssetCategories(asset, modelTypeMode))]
 
       if (folders.length === 0) {
         console.warn(

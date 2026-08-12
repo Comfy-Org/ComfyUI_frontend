@@ -99,11 +99,18 @@ webSocketTest.describe(
         const START = 32
         const END = 64
         const initialPromptRequests =
-          await comfyPage.actionbar.collectPromptRequestsDuring(async () => {
-            for (let i = START; i <= END; i += 8) {
-              await triggerChange(i)
+          await comfyPage.actionbar.collectPromptRequestsDuring(
+            async () => {
+              for (let i = START; i <= END; i += 8) {
+                await triggerChange(i)
+              }
+            },
+            {
+              minRequests: 1,
+              maxRequests: 2,
+              timeout: 2000
             }
-          }, 2000)
+          )
 
         expect(
           initialPromptRequests,
@@ -119,10 +126,17 @@ webSocketTest.describe(
 
         // Trigger a status update so auto-queue re-runs
         const deferredPromptRequests =
-          await comfyPage.actionbar.collectPromptRequestsDuring(async () => {
-            triggerStatus(1)
-            triggerStatus(0)
-          }, 2000)
+          await comfyPage.actionbar.collectPromptRequestsDuring(
+            async () => {
+              triggerStatus(1)
+              triggerStatus(0)
+            },
+            {
+              minRequests: 1,
+              maxRequests: 2,
+              timeout: 2000
+            }
+          )
 
         // Ensure the queued width is the last queued value
         expect(
@@ -164,10 +178,27 @@ test.describe('Actionbar', { tag: '@ui' }, () => {
     })
 
     test('Auto-queues after changing a widget', async ({ comfyPage }) => {
+      const latentNodes =
+        await comfyPage.nodeOps.getNodeRefsByType('EmptyLatentImage')
+      expect(
+        latentNodes,
+        'the default workflow should contain an EmptyLatentImage node'
+      ).toHaveLength(1)
+      const widthWidget = await latentNodes[0].getWidgetByName('width')
+      const { x, y } = await widthWidget.getPosition()
+
       const promptRequests =
-        await comfyPage.actionbar.collectPromptRequestsDuring(async () => {
-          await comfyPage.nodeOps.adjustEmptyLatentWidth()
-        })
+        await comfyPage.actionbar.collectPromptRequestsDuring(
+          async () => {
+            await comfyPage.page.mouse.click(x, y)
+            await comfyPage.nodeOps.fillLegacyWidgetDialog('128')
+          },
+          {
+            minRequests: 1,
+            maxRequests: 1,
+            timeout: 3000
+          }
+        )
 
       expect(
         promptRequests,
@@ -198,7 +229,14 @@ test.describe('Actionbar', { tag: '@ui' }, () => {
         )
       }
       const promptRequests =
-        await comfyPage.actionbar.collectPromptRequestsDuring(resizeLatentNode)
+        await comfyPage.actionbar.collectPromptRequestsDuring(
+          resizeLatentNode,
+          {
+            minRequests: 0,
+            maxRequests: 1,
+            timeout: 3000
+          }
+        )
 
       expect(
         await latentNode.getSize(),

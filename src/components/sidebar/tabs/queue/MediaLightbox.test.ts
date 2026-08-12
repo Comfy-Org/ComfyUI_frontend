@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -96,10 +96,6 @@ describe('MediaLightbox', () => {
       id: '3'
     }
   ]
-
-  beforeEach(() => {
-    document.body.innerHTML = ''
-  })
 
   const renderGallery = (props = {}) => {
     const onUpdateActiveIndex = vi.fn()

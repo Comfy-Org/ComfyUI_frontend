@@ -19,7 +19,6 @@ type SidebarProps = Partial<{
 
 describe('NodeSearchCategorySidebar', () => {
   beforeEach(() => {
-    vi.restoreAllMocks()
     setupTestPinia()
   })
 

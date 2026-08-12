@@ -137,6 +137,40 @@ export function evaluatePin({
   }
 }
 
+/**
+ * Whether a version bump already landed on the branch without being tagged.
+ *
+ * The release is then already in flight and needs recovering, not restarting:
+ * dispatching again resolves the *next* patch and burns a version per run. On
+ * 2026-08-10 core/1.48 sat at 1.48.8 with v1.48.7 as its newest tag, because
+ * draft_release 403'd, and the check cut a pointless 1.48.9.
+ */
+export function hasPendingBump({
+  branchVersion,
+  latestTag
+}: {
+  branchVersion: string
+  latestTag: string
+}): boolean {
+  return branchVersion !== latestTag.replace(/^v/, '')
+}
+
+/**
+ * Whether to ask CI to cut a patch. Fails closed: if either the tag or the
+ * branch version is unreadable we cannot prove a bump is not already pending,
+ * and dispatching on that unproven assumption is what burned 1.48.8 and 1.48.9.
+ */
+export function shouldRequestDispatch({
+  latestTag,
+  branchVersion
+}: {
+  latestTag: string | null
+  branchVersion: string | null
+}): boolean {
+  if (!latestTag || !branchVersion) return false
+  return !hasPendingBump({ branchVersion, latestTag })
+}
+
 function git(...args: string[]): string {
   return execFileSync('git', args, { encoding: 'utf-8' }).trim()
 }
@@ -169,6 +203,21 @@ export function newestStableVersion(versions: string[]): string | null {
 function latestTagOn(branch: string): string | null {
   try {
     return git('describe', '--tags', '--abbrev=0', `origin/${branch}`)
+  } catch {
+    return null
+  }
+}
+
+function branchPackageVersion(branch: string): string | null {
+  try {
+    const pkg: unknown = JSON.parse(
+      git('show', `origin/${branch}:package.json`)
+    )
+    if (typeof pkg === 'object' && pkg !== null && 'version' in pkg) {
+      const { version } = pkg as { version: unknown }
+      return typeof version === 'string' ? version : null
+    }
+    return null
   } catch {
     return null
   }
@@ -261,10 +310,28 @@ async function main(): Promise<void> {
     (f) => f.kind === 'stranded-commits' && f.severity === 'failure'
   )
   if (process.env.GITHUB_OUTPUT && strandedPinnedLine) {
-    appendFileSync(
-      process.env.GITHUB_OUTPUT,
-      `needs_patch_branch=${strandedPinnedLine.branch}\n`
-    )
+    const { branch } = strandedPinnedLine
+    const latestTag = latestTagOn(branch)
+    const branchVersion = branchPackageVersion(branch)
+
+    if (shouldRequestDispatch({ latestTag, branchVersion })) {
+      appendFileSync(
+        process.env.GITHUB_OUTPUT,
+        `needs_patch_branch=${branch}\n`
+      )
+    } else if (!latestTag || !branchVersion) {
+      console.error(
+        `Could not read ${!latestTag ? 'the newest tag' : 'package.json'} for ` +
+          `${branch}; cannot prove a bump is not already pending, so not ` +
+          `requesting a dispatch.`
+      )
+    } else {
+      console.error(
+        `${branch} is at ${branchVersion} but its newest tag is ${latestTag}: a ` +
+          `bump already landed and was never released. Recover that release ` +
+          `rather than cutting another patch; not requesting a dispatch.`
+      )
+    }
   }
 
   if (allFindings.some((f) => f.severity === 'failure')) {

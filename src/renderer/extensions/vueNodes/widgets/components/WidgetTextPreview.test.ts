@@ -2,7 +2,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { NodeOutputWith, ResultItem } from '@/schemas/apiSchema'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -93,11 +93,6 @@ function renderPreview(
 }
 
 describe('WidgetTextPreview', () => {
-  beforeEach(() => {
-    downloadFileMock.mockClear()
-    copyMock.mockClear()
-  })
-
   it('renders plaintext in a textarea by default', () => {
     renderPreview('# not rendered')
 

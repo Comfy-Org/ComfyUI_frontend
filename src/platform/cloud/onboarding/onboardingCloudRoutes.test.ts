@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createMemoryHistory, createRouter } from 'vue-router'
+import type { RouteLocationNormalized } from 'vue-router'
 
 import {
   cloudOnboardingRoutes,
@@ -45,7 +47,55 @@ const resolvedComponents = await Promise.all(
   )
 )
 
+/**
+ * Aborts in a global guard so the assertions see the fully resolved target
+ * without loading the real onboarding views. Record-level redirects are applied
+ * before guards run, so the guard observes the final destination and its
+ * `redirectedFrom` says where the navigation started.
+ */
+async function attemptNavigation(target: string) {
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: cloudOnboardingRoutes
+  })
+  const attempts: RouteLocationNormalized[] = []
+  router.beforeEach((to) => {
+    attempts.push(to)
+    return false
+  })
+
+  await router.push(target)
+  return attempts[0]
+}
+
 describe('cloudOnboardingRoutes', () => {
+  it('redirects the legacy /login path to the cloud login route', async () => {
+    const to = await attemptNavigation('/login')
+
+    expect(to.name).toBe('cloud-login')
+    expect(to.path).toBe('/cloud/login')
+    expect(to.redirectedFrom?.path).toBe('/login')
+  })
+
+  it('preserves the query and hash through the legacy /login redirect', async () => {
+    const to = await attemptNavigation(
+      '/login?previousFullPath=%2Ffoo&campaign=one&campaign=two#section'
+    )
+
+    expect(to.name).toBe('cloud-login')
+    expect(to.query.previousFullPath).toBe('/foo')
+    expect(to.query.campaign).toEqual(['one', 'two'])
+    expect(to.hash).toBe('#section')
+  })
+
+  it('resolves /cloud/login without redirecting', async () => {
+    const to = await attemptNavigation('/cloud/login')
+
+    expect(to.name).toBe('cloud-login')
+    expect(to.fullPath).toBe('/cloud/login')
+    expect(to.redirectedFrom).toBeUndefined()
+  })
+
   it('consent route is not a child of the /cloud layout', () => {
     const cloudLayout = cloudOnboardingRoutes.find((r) => r.path === '/cloud')
     const childPaths = (cloudLayout?.children ?? []).map((c) => c.path)

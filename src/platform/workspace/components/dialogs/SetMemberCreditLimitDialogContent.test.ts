@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import SetMemberCreditLimitDialogContent from './SetMemberCreditLimitDialogContent.vue'
@@ -65,8 +65,6 @@ function renderDialog(options: RenderDialogOptions = {}) {
 }
 
 describe('SetMemberCreditLimitDialogContent', () => {
-  beforeEach(() => vi.clearAllMocks())
-
   it('updates an existing limit', async () => {
     const { user } = renderDialog()
     const input = screen.getByRole('textbox')

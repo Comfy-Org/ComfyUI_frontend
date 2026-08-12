@@ -30,8 +30,6 @@ describe('useCanvasManager', () => {
   let mockImageData: ImageData
 
   beforeEach(() => {
-    vi.clearAllMocks()
-
     mockImageData = {
       data: new Uint8ClampedArray(100 * 100 * 4),
       width: 100,

@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import { toNodeId } from '@/types/nodeId'
@@ -245,13 +245,7 @@ describe('useSlotLinkInteraction auto-pan', () => {
     }
     mockDs.offset = [0, 0]
     mockDs.scale = 1
-    mockSetDirty.mockClear()
-    mockAdapter.beginFromOutput.mockClear()
     mockLinkConnector.state.snapLinksPos = null
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   it('starts auto-pan when link drag begins', () => {

@@ -151,7 +151,6 @@ vi.mock('@/platform/cloud/subscription/components/SubscribeButton.vue', () => ({
 
 describe('CurrentUserPopoverLegacy', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockIsCloud.value = true
     mockCanAccessSubscriptionFeatures.value = true
     mockIsFreeTier.value = false

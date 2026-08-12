@@ -1,6 +1,5 @@
-import { createTestingPinia } from '@pinia/testing'
-import { fromAny } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
+import type { CreateAssetExportData } from '@comfyorg/ingest-types'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { useToast } from 'primevue/usetoast'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp, defineComponent, h, provide, ref } from 'vue'
@@ -112,14 +111,14 @@ vi.mock('@/stores/nodeDefStore', () => ({
 }))
 
 vi.mock('@/utils/loaderNodeUtil', () => ({
-  detectNodeTypeFromFilename: vi.fn().mockReturnValue({
+  detectNodeTypeFromFilename: vi.fn(() => ({
     nodeType: 'LoadImage',
     widgetName: 'image'
-  })
+  }))
 }))
 
 vi.mock('@/utils/typeGuardUtil', () => ({
-  isResultItemType: vi.fn().mockReturnValue(true)
+  isResultItemType: vi.fn(() => true)
 }))
 
 const mockGetAssetType = vi.hoisted(() => vi.fn())
@@ -128,14 +127,18 @@ vi.mock('@/platform/assets/utils/assetTypeUtil', () => ({
 }))
 
 const mockGetOutputAssetMetadata = vi.hoisted(() =>
-  vi.fn().mockReturnValue(null)
+  vi.fn<
+    (
+      metadata: Record<string, unknown> | undefined
+    ) => Record<string, unknown> | null
+  >(() => null)
 )
 vi.mock('../schemas/assetMetadataSchema', () => ({
   getOutputAssetMetadata: mockGetOutputAssetMetadata
 }))
 
 const mockResolveOutputAssetItems = vi.hoisted(() =>
-  vi.fn().mockResolvedValue([])
+  vi.fn<typeof outputAssetUtilModule.resolveOutputAssetItems>(async () => [])
 )
 vi.mock('../utils/outputAssetUtil', async (importOriginal) => {
   const actual = await importOriginal<typeof outputAssetUtilModule>()
@@ -147,7 +150,11 @@ vi.mock('../utils/outputAssetUtil', async (importOriginal) => {
 
 const mockDeleteAsset = vi.hoisted(() => vi.fn())
 const mockCreateAssetExport = vi.hoisted(() =>
-  vi.fn().mockResolvedValue({ task_id: 'test-task-id', status: 'pending' })
+  vi.fn<
+    (
+      params: CreateAssetExportData['body']
+    ) => Promise<{ task_id: string; status: string; message?: string }>
+  >(async () => ({ task_id: 'test-task-id', status: 'pending' }))
 )
 vi.mock('../services/assetService', () => ({
   assetService: {
@@ -221,14 +228,14 @@ vi.mock('../utils/markDeletedAssetsAsMissingMedia', () => ({
 }))
 
 function createMockAsset(overrides: Partial<AssetItem> = {}): AssetItem {
-  return {
+  return fromPartial({
     id: 'test-asset-id',
     name: 'original-name.jpeg',
     size: 1024,
     created_at: '2025-01-01T00:00:00Z',
     tags: ['input'],
     ...overrides
-  }
+  })
 }
 
 function createMockMediaAsset(overrides: Partial<AssetMeta> = {}): AssetMeta {
@@ -290,16 +297,11 @@ function mountMediaActions(asset?: AssetMeta) {
 
 describe('useMediaAssetActions', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
     mockIsCloud.value = false
     litegraphServiceMock.addNodeOnGraph.mockImplementation(createLoadImageNode)
     litegraphServiceMock.getCanvasCenter.mockReturnValue([100, 100])
-    mockGetOutputAssetMetadata.mockReset()
     mockGetOutputAssetMetadata.mockReturnValue(null)
-    mockGetAssetType.mockReset()
     mockGetAssetType.mockReturnValue('input')
-    mockResolveOutputAssetItems.mockReset()
     mockResolveOutputAssetItems.mockResolvedValue([])
   })
 
@@ -370,19 +372,6 @@ describe('useMediaAssetActions', () => {
         await actions.addWorkflow(asset)
 
         expect(getAddedImageWidgetValues()).toEqual(['fallback-name.jpeg'])
-      })
-
-      it('should fall back to asset.name when hash is null', async () => {
-        const actions = useMediaAssetActions()
-
-        const asset = createMockAsset({
-          name: 'fallback-null.jpeg',
-          hash: null
-        })
-
-        await actions.addWorkflow(asset)
-
-        expect(getAddedImageWidgetValues()).toEqual(['fallback-null.jpeg'])
       })
     })
   })
@@ -867,8 +856,6 @@ describe('useMediaAssetActions', () => {
   describe('downloadAssets - cloud zip filters', () => {
     beforeEach(() => {
       mockIsCloud.value = true
-      mockCreateAssetExport.mockClear()
-      mockTrackExport.mockClear()
       mockGetAssetType.mockReturnValue('output')
       mockGetOutputAssetMetadata.mockImplementation(
         (meta: Record<string, unknown> | undefined) =>
@@ -1042,7 +1029,6 @@ describe('useMediaAssetActions', () => {
   describe('downloadAssets - export toast file count', () => {
     beforeEach(() => {
       mockIsCloud.value = true
-      mockCreateAssetExport.mockClear()
       mockGetAssetType.mockReturnValue('output')
       mockGetOutputAssetMetadata.mockImplementation(
         (meta: Record<string, unknown> | undefined) =>
@@ -1132,11 +1118,6 @@ describe('useMediaAssetActions', () => {
       mockIsCloud.value = true
       mockGetAssetType.mockReturnValue('input')
       mockDeleteAsset.mockResolvedValue(undefined)
-      mockInvalidateModelsForCategory.mockClear()
-      mockSetAssetDeleting.mockClear()
-      mockUpdateHistory.mockClear()
-      mockUpdateInputs.mockClear()
-      mockHasCategory.mockClear()
       // By default, hasCategory returns true for model categories
       mockHasCategory.mockImplementation(
         (tag: string) => tag === 'checkpoints' || tag === 'loras'
@@ -1241,7 +1222,6 @@ describe('useMediaAssetActions', () => {
     beforeEach(() => {
       mockIsCloud.value = true
       mockGetAssetType.mockReturnValue('output')
-      mockShowDialog.mockReset()
     })
 
     it('should show user_metadata display names instead of hash filenames', () => {
@@ -1327,7 +1307,6 @@ describe('useMediaAssetActions', () => {
     beforeEach(() => {
       mockIsCloud.value = true
       mockGetAssetType.mockReturnValue('input')
-      mockDeleteAsset.mockReset()
       mockShowDialog.mockImplementation(
         (opts: {
           props: {

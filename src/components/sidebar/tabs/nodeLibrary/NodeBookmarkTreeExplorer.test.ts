@@ -147,7 +147,6 @@ const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
 
 describe('NodeBookmarkTreeExplorer', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockIsBookmarked.mockReturnValue(false)
     resetRoot()
   })

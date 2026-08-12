@@ -82,10 +82,6 @@ const renderLogsTerminal = () =>
     }
   })
 
-// Silence the production console.error calls in error-path tests. Vitest
-// isolates this file's module graph so the spy does not affect other files.
-vi.spyOn(console, 'error').mockImplementation(() => {})
-
 // Resolve a getRawLogs call manually to drive deterministic timing in tests
 // that need to observe behavior mid-fetch.
 const deferredRawLogs = () => {
@@ -100,7 +96,7 @@ const deferredRawLogs = () => {
 
 describe('LogsTerminal', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    vi.spyOn(console, 'error').mockImplementation(() => {})
     apiMock.clientId = 'test-client'
   })
 

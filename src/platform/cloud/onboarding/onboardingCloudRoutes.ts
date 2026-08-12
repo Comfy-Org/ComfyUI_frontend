@@ -149,5 +149,11 @@ export const cloudOnboardingRoutes: RouteRecordRaw[] = [
     // Remove once BE-4146 lands the backend path change.
     path: '/cloud/oauth/consent',
     redirect: (to) => ({ path: '/oauth/consent', query: to.query })
+  },
+  {
+    // Legacy sign-in URL still reached by bookmarks and external links. It was
+    // unregistered, so the SPA matched nothing and sat on the splash screen.
+    path: '/login',
+    redirect: (to) => ({ name: 'cloud-login', query: to.query, hash: to.hash })
   }
 ]

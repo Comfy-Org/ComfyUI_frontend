@@ -21,14 +21,6 @@ function isPromptRequest(request: Request): boolean {
   )
 }
 
-async function waitForPromptRequest(page: Page, timeout: number) {
-  await page
-    .waitForRequest(isPromptRequest, { timeout })
-    .catch((error: unknown) => {
-      if (!(error instanceof errors.TimeoutError)) throw error
-    })
-}
-
 export class ComfyActionbar {
   public readonly root: Locator
   public readonly card: Locator
@@ -98,9 +90,18 @@ export class ComfyActionbar {
     return className?.includes('static') ?? false
   }
 
+  /** After the action completes, keeps observing until maxRequests or timeout. */
   async collectPromptRequestsDuring(
     action: () => Promise<void>,
-    timeout = 3000
+    {
+      minRequests,
+      maxRequests,
+      timeout
+    }: {
+      minRequests: number
+      maxRequests: number
+      timeout: number
+    }
   ): Promise<Request[]> {
     const requests: Request[] = []
     function onRequest(request: Request) {
@@ -110,12 +111,28 @@ export class ComfyActionbar {
     this.page.on('request', onRequest)
     try {
       await action()
-      if (requests.length === 0) {
-        await waitForPromptRequest(this.page, timeout)
+
+      const deadline = Date.now() + timeout
+      while (requests.length < maxRequests) {
+        const remaining = deadline - Date.now()
+        if (remaining <= 0) break
+
+        try {
+          await this.page.waitForRequest(isPromptRequest, {
+            timeout: remaining
+          })
+        } catch (error: unknown) {
+          if (!(error instanceof errors.TimeoutError)) throw error
+          break
+        }
       }
-      if (requests.length === 1) {
-        await waitForPromptRequest(this.page, timeout)
+
+      if (requests.length < minRequests) {
+        throw new errors.TimeoutError(
+          `Timed out after ${timeout}ms waiting for at least ${minRequests} prompt requests; received ${requests.length}`
+        )
       }
+
       return requests
     } finally {
       this.page.off('request', onRequest)

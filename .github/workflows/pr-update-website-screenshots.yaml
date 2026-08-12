@@ -49,7 +49,7 @@ jobs:
         if: >
           github.event_name == 'issue_comment' &&
           contains(github.event.comment.body, '<!-- WEBSITE_E2E_STATUS -->')
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const { data } = await github.rest.repos.getCollaboratorPermissionLevel({
@@ -62,7 +62,7 @@ jobs:
 
       - name: Get PR info
         id: pr-info
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         env:
           PR_NUMBER: ${{ github.event.number || github.event.issue.number }}
         with:
@@ -131,7 +131,7 @@ jobs:
         # Label cleanup is best-effort; the restricted pull_request token may
         # lack permission to remove labels and must not fail the run.
         continue-on-error: true
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         env:
           PR_NUMBER: ${{ steps.pr-info.outputs.pr-number }}
         with:
@@ -205,7 +205,7 @@ jobs:
 
       - name: Build screenshot-update section content
         id: content
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         env:
           UPDATE_OUTCOME: ${{ needs.update-screenshots.outputs.update-outcome }}
           HAS_CHANGES: ${{ needs.update-screenshots.outputs.has-changes }}

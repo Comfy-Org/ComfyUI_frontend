@@ -31,7 +31,6 @@ import { electronAPI } from '@/utils/envUtil'
 
 describe('useExternalLink', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     // Reset to default state
     i18n.global.locale.value = 'en'
     mockData.isDesktop = false

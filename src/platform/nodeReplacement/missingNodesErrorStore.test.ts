@@ -1,5 +1,4 @@
-import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { MissingNodeType } from '@/types/comfy'
 
@@ -22,10 +21,6 @@ vi.mock('@/platform/settings/settingStore', () => ({
 import { useMissingNodesErrorStore } from './missingNodesErrorStore'
 
 describe('missingNodesErrorStore', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-  })
-
   describe('setMissingNodeTypes', () => {
     it('sets missingNodesError with provided types', () => {
       const store = useMissingNodesErrorStore()

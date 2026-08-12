@@ -34,7 +34,7 @@ function emptyConfig(): AssetConfig {
   return { assets: new Map(), pagination: null, uploadResponse: null }
 }
 
-type AssetOperator = (config: AssetConfig) => AssetConfig
+export type AssetOperator = (config: AssetConfig) => AssetConfig
 
 /**
  * Scoped to the API path so the built frontend's own `/assets/*.js` chunks

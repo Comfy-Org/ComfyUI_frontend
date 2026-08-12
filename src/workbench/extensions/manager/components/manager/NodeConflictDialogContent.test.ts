@@ -48,7 +48,6 @@ describe('NodeConflictDialogContent', () => {
   let pinia: ReturnType<typeof createTestingPinia>
 
   beforeEach(() => {
-    vi.clearAllMocks()
     pinia = createTestingPinia({ stubActions: false })
     setActivePinia(pinia)
     mockConflictData.value = []

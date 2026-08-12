@@ -21,7 +21,6 @@ describe('setWorkflowDefaultView', () => {
   let app: { rootGraph: { extra: Record<string, unknown> } }
 
   beforeEach(async () => {
-    vi.clearAllMocks()
     const mod = await import('./builderViewOptions')
     setWorkflowDefaultView = mod.setWorkflowDefaultView
     app = (await import('@/scripts/app')).app as typeof app

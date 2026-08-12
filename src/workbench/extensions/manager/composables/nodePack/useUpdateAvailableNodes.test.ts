@@ -95,8 +95,6 @@ describe('useUpdateAvailableNodes', () => {
   const mockIsPackEnabled = vi.fn()
 
   beforeEach(() => {
-    vi.clearAllMocks()
-
     // Default setup
     mockIsPackInstalled.mockReturnValue(true)
     mockIsPackEnabled.mockReturnValue(true) // Default: all packs are enabled

@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, watch } from 'vue'
 
 import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
@@ -18,10 +16,6 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 describe('Node Reactivity', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   function createTestGraph() {
     const graph = new LGraph()
     const node = new LGraphNode('test')
@@ -88,10 +82,6 @@ describe('Node Reactivity', () => {
 })
 
 describe('Widget slotMetadata reactivity on link disconnect', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   function createWidgetInputGraph() {
     const graph = new LGraph()
     const node = new LGraphNode('test')
@@ -266,10 +256,6 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
 })
 
 describe('Subgraph output slot label reactivity', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('updates output slot labels when node:slot-label:changed is triggered', async () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')
@@ -338,10 +324,6 @@ describe('Subgraph output slot label reactivity', () => {
 })
 
 describe('Nested promoted widget mapping', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('maps store identity to deepest concrete widget for two-layer promotions', () => {
     const subgraphA = createTestSubgraph({
       inputs: [{ name: 'a_input', type: '*' }]
@@ -421,10 +403,6 @@ describe('Nested promoted widget mapping', () => {
 })
 
 describe('Promoted widget sourceExecutionId', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('sets sourceExecutionId to the interior node execution ID for promoted widgets', () => {
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'ckpt_input', type: '*' }]
@@ -484,10 +462,6 @@ describe('Promoted widget sourceExecutionId', () => {
 })
 
 describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   function setupGraphWithStore() {
     const graph = new LGraph()
     const nodeA = new LGraphNode('KSampler')
@@ -755,10 +729,6 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
 })
 
 describe('Pre-remove vueNodeData drain', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('drops vueNodeData entry before node.onRemoved fires', () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')

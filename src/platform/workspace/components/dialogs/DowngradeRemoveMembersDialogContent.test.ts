@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import DowngradeRemoveMembersDialogContent from './DowngradeRemoveMembersDialogContent.vue'
@@ -69,10 +69,6 @@ const getChangePlanButton = () =>
 const getCancelButton = () => screen.getByRole('button', { name: 'Cancel' })
 
 describe('DowngradeRemoveMembersDialogContent', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('disables Change plan until the exact phrase is typed', async () => {
     const { user } = mountComponent()
     expect(getChangePlanButton()).toBeDisabled()

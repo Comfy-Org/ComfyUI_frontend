@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import type { UUID } from '@/utils/uuid'
 import { toNodeId } from '@/types/nodeId'
@@ -23,10 +21,6 @@ describe('useWidgetValueStore', () => {
   const graphB = 'graph-b' as UUID
   const seedA = widgetId(graphA, toNodeId('node-1'), 'seed')
   const seedB = widgetId(graphB, toNodeId('node-1'), 'seed')
-
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
 
   describe('widgetState.value access', () => {
     it('getWidget returns undefined for unregistered widget', () => {

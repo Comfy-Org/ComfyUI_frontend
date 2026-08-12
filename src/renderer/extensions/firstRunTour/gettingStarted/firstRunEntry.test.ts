@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type * as VueUseCoreModule from '@vueuse/core'
@@ -81,8 +79,6 @@ async function freshEntry() {
 
 describe('useFirstRunEntry', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
     mocks.isCloud = true
     mocks.isDesktopWidth = true
     mocks.subscriptionEnabled = true

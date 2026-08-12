@@ -69,7 +69,6 @@ const shellLayout: ShellLayoutMetadata = {
 
 describe('SentryTelemetryProvider', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mocks.resolvedUserId = 'existing-user'
     mocks.workflowIsModified = true
   })

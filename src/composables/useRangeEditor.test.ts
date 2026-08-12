@@ -115,8 +115,6 @@ describe('useRangeEditor', () => {
 
   afterEach(() => {
     harness?.unmount()
-    document.body.innerHTML = ''
-    vi.restoreAllMocks()
   })
 
   it('does nothing when trackRef is null', () => {

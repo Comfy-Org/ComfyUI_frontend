@@ -1,4 +1,3 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp } from 'vue'
 import type { App } from 'vue'
@@ -121,8 +120,6 @@ describe('useMissingModelInteractions', () => {
   }
 
   beforeEach(() => {
-    setActivePinia(createPinia())
-    vi.resetAllMocks()
     mockDownloadList.mockImplementation(
       (): Array<{ taskId: string; status: string }> => []
     )

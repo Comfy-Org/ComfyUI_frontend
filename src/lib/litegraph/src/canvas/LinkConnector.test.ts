@@ -47,7 +47,6 @@ describe('LinkConnector', () => {
     connector = new LinkConnector(mockSetConnectingLinks)
     // Clear the array directly before each test
     connector.renderLinks.length = 0
-    vi.clearAllMocks()
   })
 
   describe('isInputValidDrop', () => {

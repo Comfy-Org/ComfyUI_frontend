@@ -1,11 +1,18 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import type { components } from '@/types/comfyRegistryTypes'
 import { usePacksSelection } from '@/workbench/extensions/manager/composables/nodePack/usePacksSelection'
-import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
+
+const { mockIsPackInstalled } = vi.hoisted(() => ({
+  mockIsPackInstalled: vi.fn<(packName: string | undefined) => boolean>()
+}))
+
+vi.mock('@/workbench/extensions/manager/stores/comfyManagerStore', () => ({
+  useComfyManagerStore: () => ({
+    isPackInstalled: mockIsPackInstalled
+  })
+}))
 
 vi.mock('vue-i18n', async () => {
   const actual = await vi.importActual('vue-i18n')
@@ -20,9 +27,6 @@ vi.mock('vue-i18n', async () => {
 type NodePack = components['schemas']['Node']
 
 describe('usePacksSelection', () => {
-  let managerStore: ReturnType<typeof useComfyManagerStore>
-  let mockIsPackInstalled: (packName: string | undefined) => boolean
-
   const createMockPack = (id: string): NodePack => ({
     id,
     name: `Pack ${id}`,
@@ -33,22 +37,6 @@ describe('usePacksSelection', () => {
     repository: 'https://github.com/test/pack',
     tags: [],
     status: 'NodeStatusActive'
-  })
-
-  beforeEach(() => {
-    vi.clearAllMocks()
-    const pinia = createTestingPinia({ stubActions: false })
-    setActivePinia(pinia)
-
-    managerStore = useComfyManagerStore()
-
-    // Mock the isPackInstalled method
-    mockIsPackInstalled = vi.fn()
-    managerStore.isPackInstalled = mockIsPackInstalled
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   describe('installedPacks', () => {

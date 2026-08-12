@@ -1,4 +1,3 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
@@ -26,7 +25,6 @@ describe('useWorkflowThumbnail', () => {
   let workflowStore: ReturnType<typeof useWorkflowStore>
 
   beforeEach(() => {
-    setActivePinia(createPinia())
     workflowStore = useWorkflowStore()
 
     // Clear any existing thumbnails from previous tests BEFORE mocking
@@ -34,7 +32,6 @@ describe('useWorkflowThumbnail', () => {
     clearAllThumbnails()
 
     // Now set up mocks
-    vi.clearAllMocks()
 
     global.URL.createObjectURL = vi.fn(() => 'data:image/png;base64,test')
     global.URL.revokeObjectURL = vi.fn()

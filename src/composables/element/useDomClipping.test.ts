@@ -1,5 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
+import { describe, expect, it, vi, beforeEach } from 'vitest'
 
 import { useDomClipping } from './useDomClipping'
 
@@ -68,10 +68,6 @@ describe('useDomClipping', () => {
         rafCallbacks.delete(id)
       })
     )
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   function flushRaf() {

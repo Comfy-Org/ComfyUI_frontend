@@ -1,6 +1,5 @@
 import { fromAny } from '@total-typescript/shoehorn'
-import { createPinia, setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, reactive, shallowRef } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -101,14 +100,7 @@ function createGLSLNode(nodeId: number): LGraphNode {
 
 describe('GLSL live preview reads the shader written by the customtext widget', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
-    vi.clearAllMocks()
     for (const key of Object.keys(nodeOutputs)) delete nodeOutputs[key]
-    vi.useFakeTimers()
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
   })
 
   it('compiles the shader value written through the widget store path', async () => {

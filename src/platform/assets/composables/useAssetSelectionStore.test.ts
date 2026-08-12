@@ -1,13 +1,8 @@
-import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { useAssetSelectionStore } from './useAssetSelectionStore'
 
 describe('useAssetSelectionStore', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-  })
-
   describe('addToSelection', () => {
     it('adds an asset ID to the selection', () => {
       const store = useAssetSelectionStore()

@@ -34,9 +34,6 @@ import { createMockWidget } from './widgetTestUtils'
 
 describe('WidgetDOM', () => {
   beforeEach(() => {
-    canvasMocks.canvas.graph.getNodeById.mockReset()
-    resolveMock.mockReset()
-    isDOMWidgetMock.mockReset()
     isDOMWidgetMock.mockReturnValue(true)
   })
 

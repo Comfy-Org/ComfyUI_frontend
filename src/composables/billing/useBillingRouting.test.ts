@@ -4,31 +4,16 @@ import type { BillingRail } from '@/platform/workspace/api/workspaceApi'
 
 import { useBillingRouting } from './useBillingRouting'
 
-const {
-  mockIsCloud,
-  mockConsolidatedBillingEnabled,
-  mockActiveWorkspace,
-  mockActiveWorkspaceBillingRail
-} = vi.hoisted(() => ({
-  mockIsCloud: { value: true },
-  mockConsolidatedBillingEnabled: { value: false },
-  mockActiveWorkspace: {
-    value: null as { id: string; type: 'personal' | 'team' } | null
-  },
-  mockActiveWorkspaceBillingRail: {
-    value: null as BillingRail | null
-  }
-}))
-
-vi.mock('@/composables/useFeatureFlags', () => ({
-  useFeatureFlags: () => ({
-    flags: {
-      get consolidatedBillingEnabled() {
-        return mockConsolidatedBillingEnabled.value
-      }
+const { mockIsCloud, mockActiveWorkspace, mockActiveWorkspaceBillingRail } =
+  vi.hoisted(() => ({
+    mockIsCloud: { value: true },
+    mockActiveWorkspace: {
+      value: null as { id: string; type: 'personal' | 'team' } | null
+    },
+    mockActiveWorkspaceBillingRail: {
+      value: null as BillingRail | null
     }
-  })
-}))
+  }))
 
 vi.mock('@/platform/distribution/types', () => ({
   get isCloud() {
@@ -53,7 +38,6 @@ const team = { id: 'w-team', type: 'team' as const }
 describe('useBillingRouting', () => {
   beforeEach(() => {
     mockIsCloud.value = true
-    mockConsolidatedBillingEnabled.value = false
     mockActiveWorkspace.value = personal
     mockActiveWorkspaceBillingRail.value = null
   })
@@ -68,18 +52,7 @@ describe('useBillingRouting', () => {
     expect(shouldUseWorkspaceBilling.value).toBe(false)
   })
 
-  it('keeps a Cloud personal workspace on legacy while consolidation is off', () => {
-    mockActiveWorkspace.value = personal
-
-    const { type, shouldUseWorkspaceBilling } = useBillingRouting()
-
-    expect(type.value).toBe('legacy')
-    expect(shouldUseWorkspaceBilling.value).toBe(false)
-  })
-
-  it('uses workspace billing for a Cloud personal workspace when consolidation is on', () => {
-    mockConsolidatedBillingEnabled.value = true
-
+  it('uses workspace billing for a Cloud personal workspace', () => {
     const { type, shouldUseWorkspaceBilling } = useBillingRouting()
 
     expect(type.value).toBe('workspace')
@@ -87,7 +60,6 @@ describe('useBillingRouting', () => {
   })
 
   it('uses unified pricing while keeping legacy Stripe top-ups on Checkout', () => {
-    mockConsolidatedBillingEnabled.value = true
     mockActiveWorkspace.value = personal
     mockActiveWorkspaceBillingRail.value = 'legacy_stripe'
 
@@ -100,7 +72,6 @@ describe('useBillingRouting', () => {
   })
 
   it('uses workspace billing for migrated Stripe personal workspaces', () => {
-    mockConsolidatedBillingEnabled.value = true
     mockActiveWorkspace.value = personal
     mockActiveWorkspaceBillingRail.value = 'stripe'
 

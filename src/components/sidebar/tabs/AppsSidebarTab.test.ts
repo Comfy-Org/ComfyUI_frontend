@@ -143,7 +143,6 @@ function renderTabWithRealBase() {
 
 describe('AppsSidebarTab', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     workflowStoreState.persistedWorkflows = []
   })
 

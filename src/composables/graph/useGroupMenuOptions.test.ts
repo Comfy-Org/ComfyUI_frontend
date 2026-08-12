@@ -1,8 +1,7 @@
 import { render } from '@testing-library/vue'
-import { createPinia, setActivePinia } from 'pinia'
 import { defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { useGroupMenuOptions } from '@/composables/graph/useGroupMenuOptions'
 import { LGraphCanvas, LGraphGroup } from '@/lib/litegraph/src/litegraph'
@@ -23,10 +22,6 @@ const i18n = createI18n({
 })
 
 describe('useGroupMenuOptions.getGroupColorOptions', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-  })
-
   it('applies the same colour as the circle-swatch picker (LGraphCanvas.node_colors groupcolor)', () => {
     const group = new LGraphGroup('Test Group')
     const canvasStore = useCanvasStore()

@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { afterEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -77,10 +77,6 @@ function renderComponent(opts: RenderOpts = {}) {
 }
 
 describe('ModelControls', () => {
-  afterEach(() => {
-    document.body.innerHTML = ''
-  })
-
   describe('up direction', () => {
     it('renders the up-direction trigger and opens the popup with all 7 directions', async () => {
       const { user } = renderComponent()

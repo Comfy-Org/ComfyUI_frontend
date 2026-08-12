@@ -77,8 +77,6 @@ const PackVersionSelectorPopoverStub = {
 
 describe('PackVersionBadge', () => {
   beforeEach(() => {
-    mockToggle.mockReset()
-    mockHide.mockReset()
     mockIsPackEnabled.mockReturnValue(true)
   })
 

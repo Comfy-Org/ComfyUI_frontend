@@ -1,12 +1,12 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import ZoomControlsModal from '@/components/graph/modals/ZoomControlsModal.vue'
 
 const mockExecute = vi.fn()
-const mockGetCommand = vi.fn().mockImplementation((commandId: string) => ({
+const mockGetCommand = vi.fn((commandId: string) => ({
   keybinding: {
     combo: {
       getKeySequences: () => [
@@ -20,20 +20,16 @@ const mockGetCommand = vi.fn().mockImplementation((commandId: string) => ({
     }
   }
 }))
-const mockFormatKeySequence = vi
-  .fn()
-  .mockImplementation(
-    (command: {
-      keybinding: { combo: { getKeySequences: () => string[] } }
-    }) => {
-      const seq = command.keybinding.combo.getKeySequences()
-      if (seq.includes('+')) return 'Ctrl+'
-      if (seq.includes('-')) return 'Ctrl-'
-      return 'Ctrl+0'
-    }
-  )
+const mockFormatKeySequence = vi.fn(
+  (command: { keybinding: { combo: { getKeySequences: () => string[] } } }) => {
+    const seq = command.keybinding.combo.getKeySequences()
+    if (seq.includes('+')) return 'Ctrl+'
+    if (seq.includes('-')) return 'Ctrl-'
+    return 'Ctrl+0'
+  }
+)
 const mockSetAppZoom = vi.fn()
-const mockSettingGet = vi.fn().mockReturnValue(true)
+const mockSettingGet = vi.fn(() => true)
 
 const i18n = createI18n({
   legacy: false,
@@ -87,10 +83,6 @@ function renderComponent(props = {}) {
 }
 
 describe('ZoomControlsModal', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('should execute zoom in command when zoom in button is clicked', async () => {
     const user = userEvent.setup()
     renderComponent()

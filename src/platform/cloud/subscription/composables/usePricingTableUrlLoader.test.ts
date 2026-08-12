@@ -1,5 +1,5 @@
 import { fromAny } from '@total-typescript/shoehorn'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { TeamCreditStops } from '@/platform/workspace/api/workspaceApi'
 
@@ -19,7 +19,7 @@ vi.mock(
 const mockRouteQuery = vi.hoisted(() => ({
   value: {} as Record<string, string>
 }))
-const mockRouterReplace = vi.hoisted(() => vi.fn().mockResolvedValue(undefined))
+const mockRouterReplace = vi.hoisted(() => vi.fn(async () => undefined))
 
 vi.mock('vue-router', () => ({
   useRoute: () => ({
@@ -78,16 +78,12 @@ const TEAM_CREDIT_STOPS = {
 
 describe('usePricingTableUrlLoader', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockRouteQuery.value = {}
     mockPermissions.value = { canManageSubscription: true }
     mockTeamCreditStops.value = TEAM_CREDIT_STOPS
     mockFetchPlans.mockResolvedValue(undefined)
+    mockShowPricingTable.mockResolvedValue(undefined)
     preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue(null)
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   it('does nothing when no pricing param present', async () => {

@@ -1,6 +1,5 @@
 import { render } from '@testing-library/vue'
-import { createPinia, setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Ref, ShallowRef } from 'vue'
 import { defineComponent, h, nextTick, ref, shallowRef } from 'vue'
 
@@ -175,7 +174,6 @@ function makeConnectedNode(): MockNode {
 }
 
 beforeEach(() => {
-  setActivePinia(createPinia())
   appState.node = makeNode()
   outputState.outputs = undefined
   if (outputState.nodeOutputs) outputState.nodeOutputs.value = {}
@@ -184,10 +182,6 @@ beforeEach(() => {
     return 1
   })
   vi.stubGlobal('cancelAnimationFrame', () => {})
-})
-
-afterEach(() => {
-  vi.unstubAllGlobals()
 })
 
 describe('useBoundingBoxes initialization', () => {

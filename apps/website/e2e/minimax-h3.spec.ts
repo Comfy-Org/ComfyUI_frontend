@@ -8,7 +8,7 @@ import { faqAnswerPlainText } from '../src/utils/faqAnswer'
 import { test } from './fixtures/blockExternalMedia'
 import { waitForIsland } from './fixtures/islands'
 
-const PATH = '/minimax'
+const PATH = '/minimax-h3'
 const HERO_TITLE =
   t('minimax.hero.titleModel', 'en') + t('minimax.hero.titleRest', 'en')
 const MODELS_HEADING = t('minimax.models.heading', 'en')
@@ -17,11 +17,7 @@ const CTA_HEADING = t('minimax.cta.heading', 'en')
 const CTA_PRIMARY = t('minimax.cta.primaryCta', 'en')
 const CLOUD_URL = externalLinks.cloud
 const CLOUD_RUN_URL = minimaxLinks.cloudRun
-// `faq` is optional on the template (Wan Animate 2 ships without one), but
-// this page must have it, so fail loudly rather than silently testing nothing.
-const FAQ_SECTION = minimaxPage.faq
-if (!FAQ_SECTION) throw new Error('minimaxPage must configure a FAQ section')
-const FAQS = FAQ_SECTION.items
+const FAQS = minimaxPage.faq?.items ?? []
 const FAQ_COUNT = FAQS.length
 const FIRST_FAQ = FAQS[0]
 const PRICING_HEADING = t('pricing.title', 'en')

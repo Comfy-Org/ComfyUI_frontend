@@ -56,7 +56,6 @@ const fallbackName = (i: number) => `Layer ${i + 1}`
 
 describe('loadCompositorSession', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     getCompositorLayers.mockReturnValue([])
     resolveInitialLayerState.mockReturnValue(null)
   })

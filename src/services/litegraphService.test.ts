@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('@/scripts/app', () => ({
   app: { canvas: undefined },
@@ -11,10 +9,6 @@ import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
 
 describe('useLitegraphService().getCanvasCenter', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('returns origin when canvas is not yet initialised', () => {
     Reflect.set(app, 'canvas', undefined)
 

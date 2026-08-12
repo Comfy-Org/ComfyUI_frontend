@@ -123,7 +123,6 @@ function renderComponent() {
 
 describe('WorkspacePanelContent billing banner', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockMembers.value = []
     mockWorkspaceType.value = 'team'
   })
@@ -158,7 +157,6 @@ describe('WorkspacePanelContent billing banner', () => {
 
 describe('WorkspacePanelContent members tab label', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockMaxSeats.value = 20
     mockIsPlanLoading.value = false
     mockMembers.value = []

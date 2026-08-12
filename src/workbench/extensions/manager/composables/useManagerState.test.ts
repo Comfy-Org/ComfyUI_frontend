@@ -117,7 +117,6 @@ describe('useManagerState', () => {
     systemStatsStore = useSystemStatsStore()
 
     // Reset all mocks
-    vi.clearAllMocks()
     __resetIncompatibleToastGuard()
 
     // Set default mock returns

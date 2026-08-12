@@ -16,8 +16,6 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-vi.stubGlobal('fetch', vi.fn())
-
 describe('refreshRemoteConfig', () => {
   const mockConfig = { feature1: true, feature2: 'value' }
 
@@ -37,8 +35,10 @@ describe('refreshRemoteConfig', () => {
   }
 
   beforeEach(() => {
-    vi.mocked(api.fetchApi).mockReset()
-    vi.mocked(global.fetch).mockReset()
+    vi.mocked(api.apiURL).mockImplementation(
+      (route: string) => `/ComfyUI/api${route}`
+    )
+    vi.stubGlobal('fetch', vi.fn())
     remoteConfig.value = {}
     remoteConfigErrorStatus.value = null
     remoteConfigState.value = 'unloaded'

@@ -643,6 +643,8 @@ watch(searchQuery, (value) => {
  * @param source The origin of the change ('nav' or 'sort').
  */
 const coordinateNavAndSort = (source: 'nav' | 'sort') => {
+  if (hasActiveQuery.value) return
+
   const isPopularNav = selectedNavItem.value === 'popular'
   const isPopularSort = sortSelection.value === 'popular'
 

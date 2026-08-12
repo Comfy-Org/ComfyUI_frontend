@@ -109,7 +109,6 @@ function renderComponent() {
 
 describe('SubscriptionPanelContentLegacy', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockAccessBillingPortal.mockResolvedValue(undefined)
     mockIsActiveSubscription.value = true
     mockIsCancelled.value = false

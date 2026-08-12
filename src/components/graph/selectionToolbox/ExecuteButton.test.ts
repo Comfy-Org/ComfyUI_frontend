@@ -72,8 +72,6 @@ describe('ExecuteButton', () => {
         value: mockSelectedNodes
       }
     } as ReturnType<typeof useSelectionState>)
-
-    vi.clearAllMocks()
   })
 
   const renderComponent = () => {

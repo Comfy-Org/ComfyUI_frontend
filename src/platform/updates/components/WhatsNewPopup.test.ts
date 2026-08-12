@@ -82,7 +82,6 @@ describe('WhatsNewPopup', () => {
   }
 
   beforeEach(() => {
-    vi.clearAllMocks()
     mockReleaseStore.recentRelease = null
     mockReleaseStore.shouldShowPopup = false
     mockReleaseStore.releases = []

@@ -1,6 +1,6 @@
 import fs from 'fs'
 import path from 'path'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import {
   EXPECTED_PROMPT,
@@ -11,8 +11,6 @@ import {
 import { getFromFlacBuffer, getFromFlacFile } from './flac'
 
 const fixturePath = path.resolve(__dirname, '__fixtures__/with_metadata.flac')
-
-afterEach(() => vi.restoreAllMocks())
 
 describe('FLAC metadata', () => {
   it('extracts workflow and prompt from Vorbis comments', () => {

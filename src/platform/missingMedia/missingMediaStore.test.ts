@@ -1,5 +1,4 @@
-import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { createNodeExecutionId } from '@/types/nodeIdentification'
 
@@ -39,10 +38,6 @@ function makeCandidate(
 }
 
 describe('useMissingMediaStore', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-  })
-
   it('starts with no missing media', () => {
     const store = useMissingMediaStore()
     expect(store.missingMediaCandidates).toBeNull()

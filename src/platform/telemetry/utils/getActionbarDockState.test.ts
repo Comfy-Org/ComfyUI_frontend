@@ -1,12 +1,8 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { getActionbarDockState } from './getActionbarDockState'
 
 describe('getActionbarDockState', () => {
-  beforeEach(() => {
-    localStorage.clear()
-  })
-
   it('returns docked when no preference is stored', () => {
     expect(getActionbarDockState()).toBe('docked')
   })

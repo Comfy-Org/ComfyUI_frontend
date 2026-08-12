@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
@@ -143,9 +143,5 @@ describe('computeNextControlledValue (combo)', () => {
     expect(
       computeNextControlledValue(widget, 'increment', { comboFilter: 'zzz' })
     ).toBeUndefined()
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 })

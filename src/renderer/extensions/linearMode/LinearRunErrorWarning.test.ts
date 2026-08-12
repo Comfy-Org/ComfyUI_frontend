@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { createI18n } from 'vue-i18n'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import LinearRunErrorWarning from '@/renderer/extensions/linearMode/LinearRunErrorWarning.vue'
 import { LINEAR_RUN_ERROR_WARNING_DESCRIPTION_ID } from '@/renderer/extensions/linearMode/linearRunErrorWarningIds'
@@ -49,10 +49,6 @@ function renderWarning() {
 }
 
 describe('LinearRunErrorWarning', () => {
-  beforeEach(() => {
-    mocks.viewErrorsInGraph.mockReset()
-  })
-
   it('shows the current error overlay title and message without a close action', () => {
     renderWarning()
 

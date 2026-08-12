@@ -175,7 +175,6 @@ async function mountGraphCanvas() {
 
 describe('GraphCanvas first-run tour wiring', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     // Startup writes to the workspace store, and clearAllMocks does not undo
     // writes to a plain object.
     Object.assign(mocks.workspaceStore, {

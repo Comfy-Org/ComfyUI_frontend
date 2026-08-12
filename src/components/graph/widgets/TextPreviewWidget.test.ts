@@ -58,7 +58,6 @@ describe('TextPreviewWidget', () => {
   beforeEach(() => {
     execState().executingNodeIds = []
     execState().isIdle = true
-    vi.clearAllMocks()
   })
 
   describe('Text formatting', () => {

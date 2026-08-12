@@ -1,6 +1,4 @@
 import type { TooltipOptions } from 'primevue'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -180,7 +178,6 @@ describe('hasWidgetError', () => {
   let missingMediaStore: ReturnType<typeof useMissingMediaStore>
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     executionErrorStore = useExecutionErrorStore()
     missingModelStore = useMissingModelStore()
     missingMediaStore = useMissingMediaStore()
@@ -346,7 +343,6 @@ describe('computeProcessedWidgets missing media', () => {
   let missingMediaStore: ReturnType<typeof useMissingMediaStore>
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     missingMediaStore = useMissingMediaStore()
   })
 
@@ -409,10 +405,6 @@ describe('computeProcessedWidgets missing media', () => {
 })
 
 describe('computeProcessedWidgets borderStyle', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('does not apply border styling to promoted widgets', () => {
     const id = widgetId(GRAPH_ID, toNodeId('inner-subgraph:1'), 'text')
     useWidgetValueStore().registerWidget(id, {
@@ -746,10 +738,6 @@ describe('computeProcessedWidgets borderStyle', () => {
 })
 
 describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('calls widget.callback with the new value when widgetState exists', () => {
     const callback = vi.fn()
     const widget = createMockWidget({

@@ -26,7 +26,7 @@ inputs:
 runs:
   using: composite
   steps:
-    - uses: actions/github-script@v8
+    - uses: actions/github-script@v9
       env:
         INPUT_PR_NUMBER: ${{ inputs.pr-number }}
         INPUT_SECTION_NAME: ${{ inputs.section-name }}

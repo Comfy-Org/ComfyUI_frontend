@@ -62,9 +62,17 @@ jobs:
       # muted, which is the failure this alert exists to prevent. Alert on the
       # transition into failure: skip if the previous decisive run already did.
       # Skipped runs (the pull_request_target gate) are not decisive.
+      #
+      # Only scheduled runs alert, because only scheduled runs are read back.
+      # A run can recognise a duplicate only within the history it looks at,
+      # so alerting from a wider set than that history covers is how five
+      # pull_request_target failures posted in nine minutes, each blind to
+      # the last.
       - name: Check whether this failure is already known
         id: known
-        if: failure() && steps.sheriff.outcome == 'failure'
+        if: >-
+          failure() && github.event_name == 'schedule' &&
+          steps.sheriff.outcome == 'failure'
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
@@ -98,7 +106,8 @@ jobs:
       # how an alert channel gets muted.
       - name: Report a degraded run to Slack
         if: >-
-          failure() && steps.sheriff.outcome == 'failure' &&
+          failure() && github.event_name == 'schedule' &&
+          steps.sheriff.outcome == 'failure' &&
           steps.known.outputs.previous != 'failure'
         continue-on-error: true
         env:

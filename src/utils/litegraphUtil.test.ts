@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
@@ -91,10 +91,6 @@ describe('createNode', () => {
       graph_mouse: [100, 200]
     })
   }
-
-  beforeEach(() => {
-    mockBringNodeToFront.mockClear()
-  })
 
   it('returns null when name is empty', async () => {
     const result = await createNode(makeCanvas(new LGraph()), '')

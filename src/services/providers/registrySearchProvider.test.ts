@@ -35,8 +35,6 @@ describe('useComfyRegistrySearchProvider', () => {
   }
 
   beforeEach(() => {
-    vi.clearAllMocks()
-
     // Setup store mock
     vi.mocked(useComfyRegistryStore).mockReturnValue(createMockStore())
   })

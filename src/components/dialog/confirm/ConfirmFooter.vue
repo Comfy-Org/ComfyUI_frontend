@@ -1,11 +1,18 @@
 <template>
-  <section class="flex w-full flex-wrap justify-end gap-2 px-2 pb-2">
-    <Button :disabled variant="textonly" autofocus @click="$emit('cancel')">
+  <section class="flex w-full flex-wrap items-center justify-end gap-4 p-4">
+    <Button
+      :disabled
+      variant="muted-textonly"
+      size="lg"
+      autofocus
+      @click="$emit('cancel')"
+    >
       {{ cancelTextX }}
     </Button>
     <Button
       :disabled
       :variant="confirmVariant ?? 'textonly'"
+      size="lg"
       :class="confirmClass"
       @click="$emit('confirm')"
     >

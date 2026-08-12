@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useWorkspaceSwitch } from '@/platform/workspace/composables/useWorkspaceSwitch'
 import type { WorkspaceWithRole } from '@/platform/workspace/api/workspaceApi'
@@ -22,7 +22,6 @@ vi.mock('pinia', () => ({
 
 describe('useWorkspaceSwitch', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockActiveWorkspace.value = {
       id: 'workspace-1',
       name: 'Test Workspace',
@@ -31,10 +30,6 @@ describe('useWorkspaceSwitch', () => {
       created_at: '2026-01-01T00:00:00Z',
       joined_at: '2026-01-01T00:00:00Z'
     }
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
   })
 
   describe('switchWorkspace', () => {

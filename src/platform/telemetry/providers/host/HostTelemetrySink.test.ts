@@ -10,7 +10,6 @@ const state = vi.hoisted(() => ({
 
 describe('HostTelemetrySink', () => {
   beforeEach(() => {
-    state.capture.mockClear()
     window.__comfyDesktop2 = {
       isRemote: () => false,
       Telemetry: {

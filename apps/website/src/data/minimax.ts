@@ -80,8 +80,7 @@ export const minimaxPage: ModelLaunchPage = {
       href: minimaxLinks.imageToVideo,
       target: '_blank'
     },
-    badgeKeys: ['minimax.hero.tagOpenWeights', 'minimax.hero.tagPartnerNodes'],
-    footnoteKey: 'minimax.hero.footnote'
+    badgeKeys: ['minimax.hero.tagOpenWeights', 'minimax.hero.tagPartnerNodes']
   },
   gallery: {
     headingKey: 'minimax.models.heading',

@@ -30,9 +30,6 @@ vi.mock('@/scripts/api', () => ({
 describe('useSessionCookie', () => {
   beforeEach(() => {
     vi.resetModules()
-    vi.restoreAllMocks()
-    mockGetIdToken.mockReset()
-    mockGetAuthHeader.mockReset()
     mockAuthState.currentUser = { uid: 'user-a' }
     globalThis.fetch = vi.fn()
   })

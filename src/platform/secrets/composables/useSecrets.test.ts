@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { SecretMetadata } from '../types'
 import { useSecrets } from './useSecrets'
@@ -47,10 +47,6 @@ function createMockSecret(
 }
 
 describe('useSecrets', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   describe('fetchSecrets', () => {
     it('fetches and populates secrets list', async () => {
       const mockSecrets = [

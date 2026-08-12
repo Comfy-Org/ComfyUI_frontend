@@ -45,13 +45,14 @@ function viewQueryFromUrl(videoUrl: string): string | undefined {
 }
 
 export async function fetchVideoMetadata(
-  videoUrl: string
+  videoUrl: string,
+  signal?: AbortSignal
 ): Promise<VideoMetadata | undefined> {
   const query = viewQueryFromUrl(videoUrl)
   if (!query) return undefined
 
   try {
-    const response = await api.fetchApi(`/video_metadata?${query}`)
+    const response = await api.fetchApi(`/video_metadata?${query}`, { signal })
     if (!response.ok) return undefined
     return zVideoMetadata.parse(await response.json())
   } catch {

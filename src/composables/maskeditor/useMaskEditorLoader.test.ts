@@ -1,5 +1,5 @@
 import { fromAny } from '@total-typescript/shoehorn'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { api } from '@/scripts/api'
@@ -89,17 +89,12 @@ function requestedLayerUrls(layerFilename: string): string[] {
 
 describe('useMaskEditorLoader', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     requestedUrls.length = 0
     failUrlPattern = null
     distribution.isCloud = false
     mockDataStore.inputData = null
     mockDataStore.sourceNode = null
     vi.stubGlobal('Image', MockImage)
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
   })
 
   it('loads layer files from the input root for saves without a subfolder prefix', async () => {

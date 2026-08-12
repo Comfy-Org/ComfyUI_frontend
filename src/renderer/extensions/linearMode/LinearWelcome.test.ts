@@ -53,7 +53,6 @@ describe('LinearWelcome', () => {
   beforeEach(() => {
     hasNodes.value = false
     hasOutputs.value = false
-    vi.clearAllMocks()
   })
 
   it('shows empty workflow text when there are no nodes', () => {

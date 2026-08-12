@@ -1,8 +1,6 @@
 import fs from 'fs'
 import path from 'path'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
@@ -34,8 +32,6 @@ vi.mock('./metadata/flac', () => ({
 vi.mock('./metadata/avif', () => ({
   getFromAvifFile: vi.fn()
 }))
-
-afterEach(() => vi.restoreAllMocks())
 
 const fixturesDir = path.resolve(__dirname, 'metadata/__fixtures__')
 
@@ -252,10 +248,6 @@ describe('importA1111', () => {
     'positive\nNegative prompt: negative\nSteps: 20, Sampler: Euler, CFG scale: 7, Seed: 1, Size: 512x512, Model: model.safetensors'
   const parametersWithoutNegativePrompt =
     'positive\nSteps: 20, Sampler: Euler, CFG scale: 7, Seed: 1, Size: 512x512, Model: model.safetensors'
-
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
 
   it.each([
     ['has no steps', 'positive'],

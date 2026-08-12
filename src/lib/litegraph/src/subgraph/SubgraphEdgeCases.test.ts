@@ -5,8 +5,6 @@
  * This covers unusual scenarios, invalid states, and stress testing.
  */
 import { beforeEach, describe, expect, it } from 'vitest'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 
 import { LGraph, LGraphNode, Subgraph } from '@/lib/litegraph/src/litegraph'
 
@@ -18,7 +16,6 @@ import {
 } from './__fixtures__/subgraphHelpers'
 
 beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
   resetSubgraphFixtureState()
 })
 

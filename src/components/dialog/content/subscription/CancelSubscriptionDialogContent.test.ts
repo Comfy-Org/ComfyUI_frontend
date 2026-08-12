@@ -128,7 +128,6 @@ function renderComponent(
 
 describe('CancelSubscriptionDialogContent', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockTier.value = 'STANDARD'
     mockShouldUseWorkspaceBilling.value = false
     mockCanManageSubscriptionLifecycle.value = true

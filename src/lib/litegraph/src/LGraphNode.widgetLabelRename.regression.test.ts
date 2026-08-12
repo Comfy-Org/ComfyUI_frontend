@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 import {
@@ -43,7 +41,6 @@ LiteGraph.registerNodeType('test/CLIPTextEncodeLike', ClipTextEncodeLikeNode)
  */
 describe('renameWidget label persistence via input lookup (regression #13861)', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     Object.assign(LiteGraph, {
       NODE_TITLE_HEIGHT: 20,
       NODE_SLOT_HEIGHT: 15,

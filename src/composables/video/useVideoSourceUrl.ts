@@ -1,6 +1,7 @@
-import { onMounted, ref, watch } from 'vue'
+import { onMounted, onScopeDispose, ref, watch } from 'vue'
 import type { ComputedRef } from 'vue'
 
+import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -98,9 +99,47 @@ export function useVideoSourceUrl(
     videoUrl.value = resolveVideoUrl()
   }
 
+  const connectionVersion = ref(0)
+  let scopeDisposed = false
+  let listeningNode: LGraphNode | undefined
+  let installedCallback: LGraphNode['onConnectionsChange']
+  let previousCallback: LGraphNode['onConnectionsChange']
+
+  function detachConnectionListener() {
+    if (
+      listeningNode &&
+      listeningNode.onConnectionsChange === installedCallback
+    ) {
+      listeningNode.onConnectionsChange = previousCallback
+    }
+    listeningNode = undefined
+    installedCallback = undefined
+    previousCallback = undefined
+  }
+
+  function attachConnectionListener() {
+    const current = node.value
+    if (!current || current === listeningNode) return
+    detachConnectionListener()
+    previousCallback = current.onConnectionsChange
+    installedCallback = useChainCallback(previousCallback, () => {
+      if (!scopeDisposed) connectionVersion.value++
+    })
+    current.onConnectionsChange = installedCallback
+    listeningNode = current
+  }
+
+  onScopeDispose(() => {
+    scopeDisposed = true
+    detachConnectionListener()
+  })
+
+  watch(node, attachConnectionListener)
+
   watch(() => {
+    void connectionVersion.value
     const source = resolveSourceNode()
-    if (!source) return undefined
+    if (!source) return []
     const locatorId = nodeToNodeLocatorId(source)
     return [
       nodeOutputStore.nodeOutputs[locatorId],
@@ -109,7 +148,10 @@ export function useVideoSourceUrl(
     ]
   }, updateVideoUrl)
 
-  onMounted(updateVideoUrl)
+  onMounted(() => {
+    attachConnectionListener()
+    updateVideoUrl()
+  })
 
   return { videoUrl }
 }

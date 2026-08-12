@@ -1,12 +1,8 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { resolvePointerTarget } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
 
 describe('resolvePointerTarget', () => {
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
   it('returns element from elementFromPoint when available', () => {
     const targetElement = document.createElement('div')
     targetElement.className = 'lg-slot'

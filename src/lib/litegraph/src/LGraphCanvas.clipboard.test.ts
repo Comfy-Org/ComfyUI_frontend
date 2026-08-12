@@ -2,8 +2,6 @@ import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { flushProxyWidgetMigration } from '@/core/graph/subgraph/migration/proxyWidgetMigration'
@@ -195,7 +193,6 @@ describe('_deserializeItems paste-time migration & auto-expose', () => {
   const registeredTypesToCleanup: string[] = []
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     originalFlush = LGraph.proxyWidgetMigrationFlush
     originalAutoExpose = LGraph.autoExposePreviewNodes
   })

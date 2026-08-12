@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
 
 import { useAudioRecorder } from '@/renderer/extensions/vueNodes/widgets/composables/audio/useAudioRecorder'
@@ -38,9 +38,6 @@ function createMockStream(tracks = [createMockTrack()]) {
 }
 
 const mockGetUserMedia = vi.fn()
-vi.stubGlobal('navigator', {
-  mediaDevices: { getUserMedia: mockGetUserMedia }
-})
 
 function recorderInstance() {
   return MockMediaRecorder.mock.instances[0]
@@ -48,12 +45,10 @@ function recorderInstance() {
 
 describe('useAudioRecorder', () => {
   beforeEach(() => {
-    MockMediaRecorder.mockClear()
+    vi.stubGlobal('navigator', {
+      mediaDevices: { getUserMedia: mockGetUserMedia }
+    })
     mockGetUserMedia.mockResolvedValue(createMockStream())
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   it('starts recording and sets isRecording to true', async () => {

@@ -31,15 +31,12 @@ function renderItem(
 describe('NodeSearchListItem', () => {
   beforeEach(() => {
     setupTestPinia()
-    vi.restoreAllMocks()
   })
 
-  it('does not render HTML from node names', () => {
+  it('renders node names as text rather than HTML', () => {
     const displayName = '<img src=x onerror=alert(1)>Node'
     renderItem({
-      nodeDef: createMockNodeDef({
-        display_name: displayName
-      })
+      nodeDef: createMockNodeDef({ display_name: displayName })
     })
 
     expect(screen.queryByRole('img')).not.toBeInTheDocument()

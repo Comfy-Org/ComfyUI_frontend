@@ -1,29 +1,11 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h } from 'vue'
 
+import { popoverCloseSpy } from '@/components/ui/__mocks__/popoverMockState'
 import { i18n } from '@/i18n'
 
-const popoverCloseSpy = vi.fn()
-
-vi.mock('@/components/ui/Popover.vue', () => {
-  const PopoverStub = defineComponent({
-    name: 'Popover',
-    setup(_, { slots }) {
-      return () =>
-        h('div', [
-          slots.button?.(),
-          slots.default?.({
-            close: () => {
-              popoverCloseSpy()
-            }
-          })
-        ])
-    }
-  })
-  return { default: PopoverStub }
-})
+vi.mock('@/components/ui/Popover.vue')
 
 vi.mock('@/platform/distribution/types', () => ({
   isCloud: false
@@ -65,9 +47,6 @@ const renderMenu = () =>
 describe('JobHistoryActionsMenu', () => {
   beforeEach(() => {
     i18n.global.locale.value = 'en'
-    popoverCloseSpy.mockClear()
-    mockSetSetting.mockClear()
-    mockSetMany.mockClear()
     mockSidebarTabStore.activeSidebarTabId = null
     mockGetSetting.mockImplementation((key: string) =>
       key === 'Comfy.Queue.QPOV2' || key === 'Comfy.Queue.ShowRunProgressBar'

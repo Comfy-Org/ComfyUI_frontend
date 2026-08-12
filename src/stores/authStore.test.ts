@@ -46,7 +46,6 @@ type MockAuth = Record<string, unknown>
 
 // Mock fetch
 const mockFetch = vi.fn()
-vi.stubGlobal('fetch', mockFetch)
 
 const customerRequestBody = (): Record<string, unknown> | undefined => {
   const customerCall = mockFetch.mock.calls.find(([url]) =>
@@ -174,8 +173,7 @@ describe('useAuthStore', () => {
   } as Partial<User> as MockUser
 
   beforeEach(() => {
-    vi.resetAllMocks()
-    sessionStorage.clear()
+    vi.stubGlobal('fetch', mockFetch)
     clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.SHARE_AUTH)
 
     mockFeatureFlags.unifiedCloudAuthEnabled = false
@@ -220,12 +218,9 @@ describe('useAuthStore', () => {
       return Promise.reject(new Error('Unexpected API call'))
     })
 
-    // Initialize Pinia
-    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useAuthStore()
 
     // Reset and set up getIdToken mock
-    mockUser.getIdToken.mockReset()
     mockUser.getIdToken.mockResolvedValue('mock-id-token')
 
     // Default: no API key auth

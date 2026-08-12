@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { EffectScope, Ref } from 'vue'
 import { effectScope, ref } from 'vue'
 
@@ -30,14 +30,9 @@ describe('useSearchQueryTracking', () => {
     return scope
   }
 
-  beforeEach(() => {
-    hoisted.trackSearchQuery.mockClear()
-  })
-
   afterEach(() => {
     scopes.forEach((s) => s.stop())
     scopes.length = 0
-    vi.useRealTimers()
   })
 
   it('fires with surface, trimmed query, length, and result_count', async () => {
