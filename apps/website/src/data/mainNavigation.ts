@@ -119,6 +119,11 @@ export function getMainNavigation(locale: Locale): NavItem[] {
           header: t('nav.colPrograms', locale),
           items: [
             { label: t('nav.comfyHub', locale), href: externalLinks.workflows },
+            {
+              label: t('nav.fdct', locale),
+              href: routes.fdct,
+              badge: 'new'
+            },
             { label: t('nav.gallery', locale), href: routes.gallery },
             {
               label: t('nav.events', locale),

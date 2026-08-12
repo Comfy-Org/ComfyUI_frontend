@@ -26,6 +26,7 @@ const baseRoutes = {
   minimax: '/minimax-h3',
   flux3: '/flux-3',
   seedance: '/seedance-2.5',
+  fdct: '/forward-deployed-creatives',
   ltx: '/ltx-2.5',
   wanAnimate2: '/wan-animate-2',
   brand: '/brand'

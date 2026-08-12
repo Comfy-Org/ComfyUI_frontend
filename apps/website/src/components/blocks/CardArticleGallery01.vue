@@ -31,7 +31,7 @@ const {
   title?: string
   titleAlign?: 'start' | 'center'
   items: CardArticleGalleryItem[]
-  layout?: 'mixed' | 'two-column'
+  layout?: 'mixed' | 'two-column' | 'three-column'
   titleClamp?: boolean
   tabs?: CardArticleGalleryTab[]
   allLabel?: string
@@ -52,7 +52,7 @@ const { visibleItems, hasMore, showMore } = useFilteredGallery({
   <section class="max-w-9xl mx-auto px-6 py-16 lg:py-24">
     <h2
       v-if="title && !tabs"
-      class="text-primary-warm-white text-3xl font-light tracking-tight lg:text-5xl"
+      class="text-3xl font-light tracking-tight text-primary-warm-white lg:text-5xl"
       :class="titleAlign === 'center' ? 'text-center' : undefined"
     >
       {{ title }}
@@ -67,7 +67,7 @@ const { visibleItems, hasMore, showMore } = useFilteredGallery({
     >
       <h2
         v-if="title"
-        class="text-primary-warm-white text-3xl font-light tracking-tight lg:text-5xl"
+        class="text-3xl font-light tracking-tight text-primary-warm-white lg:text-5xl"
       >
         {{ title }}
       </h2>
@@ -98,7 +98,13 @@ const { visibleItems, hasMore, showMore } = useFilteredGallery({
 
     <div
       class="mt-10 grid grid-cols-1 gap-6 lg:mt-12"
-      :class="layout === 'mixed' ? 'md:grid-cols-6' : 'md:grid-cols-2'"
+      :class="
+        layout === 'mixed'
+          ? 'md:grid-cols-6'
+          : layout === 'three-column'
+            ? 'md:grid-cols-3'
+            : 'md:grid-cols-2'
+      "
     >
       <div
         v-for="(item, index) in visibleItems"
