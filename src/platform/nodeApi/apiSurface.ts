@@ -209,6 +209,7 @@ export const API_MEMBERS: ReadonlySet<string> = new Set([
   'resolve',
   'run',
   'sameEntity',
+  'scope',
   'select',
   'selection',
   'selector',

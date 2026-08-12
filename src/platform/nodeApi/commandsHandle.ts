@@ -31,6 +31,16 @@ export interface CommandDef {
   readonly run: () => void | Promise<void>
   /** Bound as a default, so a user's own binding still wins. */
   readonly keybinding?: KeyCombo
+  /**
+   * Where the keybinding applies. Defaults to anywhere in the application.
+   *
+   * `'canvas'` limits it to the graph, so it will not fire while the user is
+   * typing in a node's text widget or any other field. The host already
+   * withholds combos a text input owns — every bare arrow, Ctrl+Left/Right,
+   * Ctrl+A/C/V/X/Z — but a pack binding something it does not, say Ctrl+Up,
+   * would otherwise fire mid-sentence.
+   */
+  readonly scope?: 'canvas'
 }
 
 /** @knipIgnoreUnusedButUsedByCustomNodes */
@@ -88,7 +98,11 @@ export function createCommandsApi(): CommandsHandle {
       // A default rather than a user binding: the user's own choice must
       // survive the pack re-registering on every load.
       useKeybindingStore().addDefaultKeybinding(
-        new KeybindingImpl({ commandId: def.id, combo: def.keybinding })
+        new KeybindingImpl({
+          commandId: def.id,
+          combo: def.keybinding,
+          ...(def.scope === 'canvas' ? { targetElementId: 'graph-canvas' } : {})
+        })
       )
     },
 
