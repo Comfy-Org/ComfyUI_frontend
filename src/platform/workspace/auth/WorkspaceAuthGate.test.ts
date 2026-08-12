@@ -180,19 +180,14 @@ describe('WorkspaceAuthGate', () => {
     })
 
     it('shows the recovery panel when Firebase initialization times out', async () => {
-      vi.useFakeTimers()
-      try {
-        mountComponent()
+      mountComponent()
 
-        await vi.advanceTimersByTimeAsync(16_001)
+      await vi.advanceTimersByTimeAsync(16_001)
 
-        expect(
-          screen.getByText("Couldn't load your workspace")
-        ).toBeInTheDocument()
-        expect(mockCaptureException).toHaveBeenCalledOnce()
-      } finally {
-        vi.useRealTimers()
-      }
+      expect(
+        screen.getByText("Couldn't load your workspace")
+      ).toBeInTheDocument()
+      expect(mockCaptureException).toHaveBeenCalledOnce()
     })
   })
 
@@ -308,29 +303,24 @@ describe('WorkspaceAuthGate', () => {
     })
 
     it('shows a recoverable error when remote config refresh times out', async () => {
-      vi.useFakeTimers()
-      try {
-        // Never-resolving promise simulates a hanging request
-        mockRefreshRemoteConfig.mockReturnValue(new Promise(() => {}))
+      // Never-resolving promise simulates a hanging request
+      mockRefreshRemoteConfig.mockReturnValue(new Promise(() => {}))
 
-        mountComponent()
-        await vi.advanceTimersByTimeAsync(0)
+      mountComponent()
+      await vi.advanceTimersByTimeAsync(0)
 
-        // Slot not yet rendered before timeout
-        expect(screen.queryByTestId('slot-content')).not.toBeInTheDocument()
-        expect(
-          screen.queryByText("Couldn't load your workspace")
-        ).not.toBeInTheDocument()
+      // Slot not yet rendered before timeout
+      expect(screen.queryByTestId('slot-content')).not.toBeInTheDocument()
+      expect(
+        screen.queryByText("Couldn't load your workspace")
+      ).not.toBeInTheDocument()
 
-        // Advance past the 10 second timeout
-        await vi.advanceTimersByTimeAsync(10_001)
+      // Advance past the 10 second timeout
+      await vi.advanceTimersByTimeAsync(10_001)
 
-        expect(
-          screen.getByText("Couldn't load your workspace")
-        ).toBeInTheDocument()
-      } finally {
-        vi.useRealTimers()
-      }
+      expect(
+        screen.getByText("Couldn't load your workspace")
+      ).toBeInTheDocument()
     })
 
     it('shows a recoverable error when authenticated config is unavailable', async () => {

@@ -1,4 +1,3 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -173,7 +172,6 @@ vi.mock('@/platform/workspace/api/workspaceApi', () => ({
 
 describe('useBillingContext', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     mockIsPersonal.value = true
     mockBillingRail.value = undefined
     mockSetWorkspaceBillingRail.mockImplementation(

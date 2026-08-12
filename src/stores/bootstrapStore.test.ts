@@ -1,7 +1,5 @@
-import { createTestingPinia } from '@pinia/testing'
 import type { AxiosResponse } from 'axios'
 import { AxiosError } from 'axios'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
@@ -81,7 +79,6 @@ describe('bootstrapStore', () => {
     mockIsAuthAuthenticated.value = false
     mockNeedsLogin.value = false
     mockDistributionTypes.isCloud = false
-    setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
   it('initializes with all flags false', () => {

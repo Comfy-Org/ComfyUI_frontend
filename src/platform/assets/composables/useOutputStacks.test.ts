@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
@@ -34,7 +35,7 @@ function createDeferred<T>(): Deferred<T> {
 }
 
 function createAsset(overrides: Partial<AssetItem> = {}): AssetItem {
-  return {
+  return fromPartial({
     id: 'asset-1',
     name: 'parent.png',
     tags: [],
@@ -45,7 +46,7 @@ function createAsset(overrides: Partial<AssetItem> = {}): AssetItem {
       subfolder: 'outputs'
     },
     ...overrides
-  }
+  })
 }
 
 describe('useOutputStacks', () => {

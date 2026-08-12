@@ -160,8 +160,6 @@ describe('WorkflowTabs feedback button', () => {
     distribution.isDesktop = false
     distribution.isNightly = false
     tabBarLayout.value = 'Default'
-    openFeedbackDialog.mockReset()
-    openWorkflow.mockReset()
     workflowStore.openWorkflows = []
     workflowStore.activeWorkflow = null
   })

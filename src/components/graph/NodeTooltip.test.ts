@@ -1,7 +1,5 @@
-import { cleanup, render, screen } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -151,9 +149,6 @@ async function renderAndHoverCanvas() {
 
 describe('NodeTooltip', () => {
   beforeEach(() => {
-    vi.useFakeTimers()
-    setActivePinia(createTestingPinia({ stubActions: false }))
-
     vi.spyOn(useSettingStore(), 'get').mockImplementation(
       <K extends keyof Settings>(key: K): Settings[K] => {
         switch (key) {
@@ -179,8 +174,6 @@ describe('NodeTooltip', () => {
 
   afterEach(() => {
     mergeOutputTooltipMessage(null)
-    cleanup()
-    vi.useRealTimers()
   })
 
   it('shows input slot JSON tooltips without i18n placeholder errors', async () => {

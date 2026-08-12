@@ -1,5 +1,4 @@
 import { FirebaseError } from 'firebase/app'
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useAuthActions } from '@/composables/auth/useAuthActions'
@@ -137,7 +136,6 @@ beforeEach(() => {
 
 describe('useAuthActions.purchaseCreditsDirect', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     mockBillingState.canAccessSubscriptionFeatures = true
   })
 
@@ -181,7 +179,6 @@ describe('useAuthActions.purchaseCreditsDirect', () => {
 
 describe('useAuthActions.logout', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     mockDistributionState.isCloud = true
     mockWorkflowStore.modifiedWorkflows = []
   })
@@ -339,7 +336,6 @@ describe('useAuthActions.logout', () => {
 
 describe('useAuthActions auth flow error telemetry', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     mockWorkflowStore.modifiedWorkflows = []
   })
 
@@ -416,10 +412,6 @@ describe('useAuthActions auth flow error telemetry', () => {
 })
 
 describe('useAuthActions.reportError', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-  })
-
   it('shows the friendly message for a known Firebase auth code', () => {
     const { reportError } = useAuthActions()
 

@@ -311,24 +311,19 @@ describe('useVideoFilmstrip', () => {
   })
 
   it('still completes when the first-frame seek times out', async () => {
-    vi.useFakeTimers()
-    try {
-      installVideoMocks({
-        onVideoCreated: (video) => {
-          video.shouldEmitSeeked = () => false
-        }
-      })
+    installVideoMocks({
+      onVideoCreated: (video) => {
+        video.shouldEmitSeeked = () => false
+      }
+    })
 
-      const videoUrl = ref('https://example.com/video.mp4')
-      const { error, loading } = runWithScope(() => useVideoFilmstrip(videoUrl))
+    const videoUrl = ref('https://example.com/video.mp4')
+    const { error, loading } = runWithScope(() => useVideoFilmstrip(videoUrl))
 
-      await vi.advanceTimersByTimeAsync(6000)
-      await vi.waitFor(() => expect(loading.value).toBe(false))
+    await vi.advanceTimersByTimeAsync(6000)
+    await vi.waitFor(() => expect(loading.value).toBe(false))
 
-      expect(error.value).toBeNull()
-    } finally {
-      vi.useRealTimers()
-    }
+    expect(error.value).toBeNull()
   })
 
   it('captures the thumbnail via createImageBitmap when available', async () => {

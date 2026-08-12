@@ -1,4 +1,3 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
@@ -30,9 +29,7 @@ function makeGraph(nodes: unknown[]): LGraph {
 
 describe('FE-230 markDeletedAssetsAsMissingMedia', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     seedMediaNodeDefs()
-    mockScanNodeMediaCandidates.mockReset()
     mockScanNodeMediaCandidates.mockReturnValue([])
   })
 

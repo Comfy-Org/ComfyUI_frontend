@@ -69,7 +69,6 @@ function widgetValue(widget: IBaseWidget): CompositorLayerState {
 const cacheNode = { id: toNodeId(7) } as unknown as LGraphNode
 
 beforeEach(() => {
-  vi.clearAllMocks()
   clearCompositorLayers(cacheNode)
 })
 
