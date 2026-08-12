@@ -13,24 +13,7 @@ vi.mock('@/components/ui/select/SelectItem.vue')
 vi.mock('@/components/ui/select/SelectTrigger.vue')
 vi.mock('@/components/ui/select/SelectValue.vue')
 
-vi.mock('@/components/ui/slider/Slider.vue', () => ({
-  default: {
-    name: 'UiSlider',
-    props: ['modelValue', 'min', 'max', 'step'],
-    emits: ['update:modelValue'],
-    template: `
-      <input
-        type="range"
-        role="slider"
-        :value="Array.isArray(modelValue) ? modelValue[0] : modelValue"
-        :min="min"
-        :max="max"
-        :step="step"
-        @input="$emit('update:modelValue', [Number($event.target.value)])"
-      />
-    `
-  }
-}))
+vi.mock('@/components/ui/slider/Slider.vue')
 
 const i18n = createI18n({
   legacy: false,

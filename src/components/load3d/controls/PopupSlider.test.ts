@@ -5,24 +5,7 @@ import { ref } from 'vue'
 
 import PopupSlider from '@/components/load3d/controls/PopupSlider.vue'
 
-vi.mock('@/components/ui/slider/Slider.vue', () => ({
-  default: {
-    name: 'UiSlider',
-    props: ['modelValue', 'min', 'max', 'step'],
-    emits: ['update:modelValue'],
-    template: `
-      <input
-        type="range"
-        role="slider"
-        :value="Array.isArray(modelValue) ? modelValue[0] : modelValue"
-        :min="min"
-        :max="max"
-        :step="step"
-        @input="$emit('update:modelValue', [Number($event.target.value)])"
-      />
-    `
-  }
-}))
+vi.mock('@/components/ui/slider/Slider.vue')
 
 function renderComponent(
   props: {
