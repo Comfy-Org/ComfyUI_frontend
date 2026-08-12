@@ -5462,10 +5462,6 @@ const translations = {
     'zh-CN': '创意服务'
   },
   'fdct.hero.contactCta': { en: 'Contact us', 'zh-CN': '联系我们' },
-  'fdct.hero.applyCta': {
-    en: 'Apply as an FDC',
-    'zh-CN': '申请成为 FDC'
-  },
   'fdct.builders.title': {
     en: 'Builders, not advisors',
     'zh-CN': '实干者，而非顾问'

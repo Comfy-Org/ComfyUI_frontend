@@ -143,16 +143,6 @@ collageImages.forEach((image, index) => {
         >
           {{ t('fdct.hero.contactCta', locale) }}
         </Button>
-        <Button
-          :href="fdctPage.ctas.applyFdct"
-          target="_blank"
-          rel="noopener noreferrer"
-          variant="outline"
-          size="lg"
-          class="h-12 text-sm sm:h-14 sm:text-base"
-        >
-          {{ t('fdct.hero.applyCta', locale) }}
-        </Button>
       </div>
     </HeroCentered01>
 

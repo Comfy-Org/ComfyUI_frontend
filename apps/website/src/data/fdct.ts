@@ -4,7 +4,6 @@ import { t } from '../i18n/translations'
 export interface FdctPageData {
   ctas: {
     contact: string
-    applyFdct: string
     enterpriseBand: string
   }
 }
@@ -402,8 +401,6 @@ export function fdctFaqs(locale: Locale) {
 export const fdctPage: FdctPageData = {
   ctas: {
     contact: '/contact',
-    applyFdct:
-      'https://jobs.ashbyhq.com/comfy-org/b8faf3c0-a21c-4bed-8651-93daa6bfe81c',
     enterpriseBand: '/contact'
   }
 }

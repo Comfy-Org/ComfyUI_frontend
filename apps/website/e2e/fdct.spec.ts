@@ -58,12 +58,6 @@ test.describe('FDCT page @smoke', () => {
     await expect(
       hero.getByRole('link', { name: t('fdct.hero.contactCta', 'en') })
     ).toHaveAttribute('href', '/contact')
-    await expect(
-      hero.getByRole('link', { name: t('fdct.hero.applyCta', 'en') })
-    ).toHaveAttribute(
-      'href',
-      'https://jobs.ashbyhq.com/comfy-org/b8faf3c0-a21c-4bed-8651-93daa6bfe81c'
-    )
     await expect(page.getByText(t('fdct.hero.eyebrow', 'en'))).toBeVisible()
   })
 
@@ -272,15 +266,9 @@ test.describe('FDCT hero @mobile', () => {
     const hero = page.locator('section', {
       has: page.getByRole('heading', { level: 1 })
     })
-    const contactCta = hero.getByRole('link', {
-      name: t('fdct.hero.contactCta', 'en')
-    })
-    const applyCta = hero.getByRole('link', {
-      name: t('fdct.hero.applyCta', 'en')
-    })
-    const contactBox = await contactCta.boundingBox()
-    const applyBox = await applyCta.boundingBox()
-    expect(contactBox!.y).toBeLessThan(applyBox!.y)
+    await expect(
+      hero.getByRole('link', { name: t('fdct.hero.contactCta', 'en') })
+    ).toBeVisible()
   })
 })
 
@@ -304,12 +292,6 @@ test.describe('FDCT page (zh-CN) @smoke', () => {
     await expect(
       hero.getByRole('link', { name: t('fdct.hero.contactCta', 'zh-CN') })
     ).toHaveAttribute('href', '/zh-CN/contact')
-    await expect(
-      hero.getByRole('link', { name: t('fdct.hero.applyCta', 'zh-CN') })
-    ).toHaveAttribute(
-      'href',
-      'https://jobs.ashbyhq.com/comfy-org/b8faf3c0-a21c-4bed-8651-93daa6bfe81c'
-    )
   })
 
   test('builders section renders the localized node label and reasons', async ({
