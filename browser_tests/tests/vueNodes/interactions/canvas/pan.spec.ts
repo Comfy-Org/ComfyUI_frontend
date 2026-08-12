@@ -116,6 +116,7 @@ test.describe('Vue Nodes Canvas Pan', { tag: '@vue-nodes' }, () => {
         })
         await comfyPage.page.keyboard.down('Space')
         spaceDown = true
+        await expect.poll(() => comfyPage.canvasOps.isReadOnly()).toBe(true)
         await comfyPage.page.mouse.move(start.x + 80, start.y + 80, {
           steps: 5
         })

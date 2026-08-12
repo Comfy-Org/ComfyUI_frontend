@@ -624,7 +624,7 @@ function forwardSpaceKeyEvent(e: KeyboardEvent) {
   if (shouldIgnoreCopyPaste(e.target) && document.activeElement === e.target)
     return
 
-  canvasInteractions.forwardEventToCanvas(e)
+  comfyApp.canvas?.processKey(e)
 }
 
 function forwardPanEvent(
