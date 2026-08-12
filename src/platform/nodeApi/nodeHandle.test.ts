@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
@@ -349,6 +349,38 @@ describe('badges', () => {
 
     remove()
     expect(node.badges).toHaveLength(0)
+  })
+
+  it('makes a badge clickable when the pack gives it an action', () => {
+    // Two conversions declined to turn a button into a badge because a badge
+    // that looks pressable and does nothing is worse than what it replaced.
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    const graph = new LGraph()
+    const node = new LGraphNode('T')
+    graph.add(node)
+    const run = vi.fn()
+
+    createGraphApi(() => graph)
+      .nodes()[0]
+      .addBadge({ text: '?', onClick: run })
+
+    const badge = node.badges[0]
+    const drawn = typeof badge === 'function' ? badge() : badge
+    drawn.onClick?.(new MouseEvent('click'))
+    expect(run).toHaveBeenCalledTimes(1)
+  })
+
+  it('reports which graph holds the node', () => {
+    // Node ids are unique per graph, so a pack keying its own records by id
+    // alone collides once subgraphs are involved.
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    const graph = new LGraph()
+    const node = new LGraphNode('T')
+    graph.add(node)
+
+    expect(createGraphApi(() => graph).nodes()[0].graphId).toBe(
+      String(graph.id)
+    )
   })
 
   it('re-reads a function badge on every draw', () => {

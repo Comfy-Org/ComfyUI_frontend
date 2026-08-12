@@ -48,7 +48,12 @@ export interface ButtonContribution {
   readonly icon: string
   readonly label?: string
   readonly tooltip?: string
-  run(): void
+  /**
+   * The click. The event is passed because packs branch on modifiers — one
+   * opens its panel in a sized window on shift-click — and without it that
+   * behaviour has nothing to read.
+   */
+  run(event: MouseEvent): void
 }
 
 const badges = new Map<string, BadgeContribution>()
@@ -135,7 +140,7 @@ export const contributedButtons = computed<ActionBarButton[]>(() => {
     icon,
     label,
     tooltip,
-    onClick: run
+    onClick: (event: MouseEvent) => run(event)
   }))
 })
 

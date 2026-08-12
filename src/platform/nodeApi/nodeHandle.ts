@@ -37,6 +37,13 @@ export interface BadgeDef {
   readonly color?: string
   /** Background colour. Defaults to core's badge background. */
   readonly bgColor?: string
+  /**
+   * Makes the badge clickable.
+   *
+   * Two conversions declined to turn a button into a badge because a badge
+   * that looks pressable and does nothing is worse than the thing it replaced.
+   */
+  onClick?(): void
 }
 
 export interface Point {
@@ -179,6 +186,15 @@ export interface NodeHandle extends HandleCommon {
    * the server, silently.
    */
   getDisplayedImageIndex(): number | undefined
+  /**
+   * The id of the graph holding this node — the root graph's id, or a
+   * subgraph's.
+   *
+   * A pack keeping its own records against nodes needs it: node ids are unique
+   * per graph, so a key built from the id alone collides once subgraphs are
+   * involved. Pair it with `comfy.graph.subgraphs()` to get back to the node.
+   */
+  readonly graphId: string | undefined
   /**
    * Puts a small label on the node's title bar. Returns a handle that removes
    * it again.
@@ -329,6 +345,7 @@ export function createNodeHandles(
       identityProps: ['id'],
       props: {
         id: { get: (n) => String(n.id) },
+        graphId: { get: (n) => (n.graph ? String(n.graph.id) : undefined) },
         type: {
           get: (n) => n.type,
           readonlyHint:
@@ -404,11 +421,12 @@ export function createNodeHandles(
         getDisplayedImageIndex: (n) => n.imageIndex ?? n.overIndex ?? undefined,
         addBadge: (n, ...args) => {
           const def = args[0] as BadgeDef | (() => BadgeDef)
-          const toBadge = ({ text, color, bgColor }: BadgeDef) =>
+          const toBadge = ({ text, color, bgColor, onClick }: BadgeDef) =>
             new LGraphBadge({
               text,
               ...(color ? { fgColor: color } : {}),
-              ...(bgColor ? { bgColor } : {})
+              ...(bgColor ? { bgColor } : {}),
+              ...(onClick ? { onClick: () => onClick() } : {})
             })
           // The object form is read once: a pack that wants a label to change
           // passes a function, and one that passes an object should not find

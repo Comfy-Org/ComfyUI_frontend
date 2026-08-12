@@ -82,9 +82,12 @@ export interface ActionBarButton {
    */
   class?: string
   /**
-   * Click handler for the button
+   * Click handler for the button.
+   *
+   * Bound as `@click="button.onClick"`, so Vue hands it the native event —
+   * packs branch on modifiers, e.g. shift-click to open in a sized window.
    */
-  onClick: () => void
+  onClick: (event: MouseEvent) => void
 }
 
 export type MissingNodeType =
