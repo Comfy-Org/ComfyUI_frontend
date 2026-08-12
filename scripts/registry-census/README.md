@@ -31,6 +31,29 @@ packs revalidated by ETag, scan output in the run's Summary panel, results
 uploaded as an artifact, cache re-saved under a lockfile-hash key (so the
 cache updates exactly when a pack moves).
 
+## The ecosystem matrix (execution rung)
+
+`build_matrix.py` + `matrix_runner.ts` generate one vitest spec per
+JS-shipping pack and execute its real extension code against the real
+frontend runtime (registration lifecycle, a user-operation battery,
+serialize/reload), one JSON row per pack. Packs with no extension JS are
+skipped and reported only as a count.
+
+**PASS criteria** — applied once by the `matrix-verdict` job over all four
+shards combined (`summarize_matrix.py`, whose exit code is the verdict):
+
+| criterion             | floor           | measured baseline |
+| --------------------- | --------------- | ----------------- |
+| entry JS loads clean  | >= 95%          | 97.9%             |
+| registerNodeDef OK    | >= 99%          | 100%              |
+| every operation clean | >= 99% of packs | ~100%             |
+
+All three must hold. Each floor sits under the baseline so a handful of
+broken pack HEADs cannot flip the verdict, while a frontend regression that
+breaks pack integration craters all three at once. Shard jobs check harness
+integrity only (every built spec wrote its row; vitest's own exit code is
+ignored because pack code leaks unhandled rejections).
+
 ## Read before citing any number
 
 - **Static analysis.** It labels code, not outcomes, and carries the regex

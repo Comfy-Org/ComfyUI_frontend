@@ -108,14 +108,17 @@ jobs:
           path: .census
           key: registry-corpus-${{ hashFiles('.census/corpus.lock.json') }}
 
-  # The execution rung between the census (reads all packs) and the E2E
+  # The execution rung between the corpus (every pack fetched) and the E2E
   # gates (browser + backend): every JS-shipping pack's real extension code
   # is imported and driven against the real frontend runtime under vitest -
   # registration lifecycle, a user-operation battery, serialize/reload.
-  # Radar, never a gate: pack failures live in the per-pack rows and the
-  # summary; the job fails only mechanically (a spec that produced no row).
-  # Sharded 4 ways; vitest additionally parallelizes per core within a shard
-  # (~4.7s of test time per pack, measured).
+  # Sharded 4 ways; vitest additionally parallelizes per core within a
+  # shard (~4.7s of test time per pack, measured).
+  #
+  # A shard checks harness integrity only: every built spec must write its
+  # per-pack row. vitest's own exit code is ignored here because pack code
+  # leaks unhandled rejections. The ecosystem PASS/FAIL verdict is applied
+  # once, over all shards combined, by matrix-verdict below.
   ecosystem-matrix:
     needs: registry-census
     runs-on: ubuntu-latest
@@ -160,16 +163,50 @@ jobs:
             echo "::error::matrix wrote $rows rows for $built specs - harness failure, not pack noise"
             exit 1
           fi
-
-      - name: Summarize
-        if: always()
-        run: MATRIX_OUT="$PWD/matrix-rows" python3 scripts/registry-census/summarize_matrix.py
+          cp src/__ecs_matrix__/manifest.json "matrix-rows/_manifest-shard-${{ matrix.shard }}.json"
 
       - name: Upload rows
         if: always()
         uses: actions/upload-artifact@v6
         with:
           name: ecosystem-matrix-shard-${{ matrix.shard }}
+          path: matrix-rows/
+          retention-days: 30
+          if-no-files-found: warn
+
+  # The single combined result: all four shards' rows merge into one table
+  # and one gating verdict - this job's exit code IS the ecosystem verdict.
+  #
+  # PASS criteria (summarize_matrix.py, all must hold over the combined
+  # rows; each floor sits under the measured baseline so a handful of
+  # broken pack HEADs cannot flip the verdict, while a frontend regression
+  # that breaks pack integration craters all three at once):
+  #   entry JS loads clean   >= 95%           (baseline 97.9%)
+  #   registerNodeDef OK     >= 99%           (baseline 100%)
+  #   every operation clean  >= 99% of packs  (baseline ~100%)
+  matrix-verdict:
+    needs: ecosystem-matrix
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Merge shard rows
+        uses: actions/download-artifact@v8
+        with:
+          pattern: ecosystem-matrix-shard-*
+          path: matrix-rows
+          merge-multiple: true
+
+      - name: Verdict
+        run: MATRIX_OUT="$PWD/matrix-rows" python3 scripts/registry-census/summarize_matrix.py
+
+      - name: Upload combined result
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: ecosystem-matrix-combined
           path: matrix-rows/
           retention-days: 30
           if-no-files-found: warn
