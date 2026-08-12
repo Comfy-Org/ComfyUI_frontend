@@ -6,7 +6,8 @@ import type { layoutStore as RealLayoutStore } from '../layoutStore'
 /** Inert layout store for tests that exercise canvas behavior. */
 export const layoutStore = fromPartial<typeof RealLayoutStore>({
   allocateZIndex: vi.fn(() => 1),
-  applyOperation: vi.fn(),
+  applyOperation: vi.fn(() => 'applied'),
+  applyOperations: vi.fn(() => 'applied'),
   batchUpdateNodeBounds: vi.fn(),
   clearGraph: vi.fn(),
   clearViewGeometry: vi.fn(),
@@ -22,6 +23,7 @@ export const layoutStore = fromPartial<typeof RealLayoutStore>({
   getVersion: vi.fn(() => ({ value: 0 })),
   hasSlotLayouts: false,
   onChange: vi.fn(() => () => {}),
+  onGeometryChange: vi.fn(() => () => {}),
   onNodeChange: vi.fn(() => () => {}),
   pendingSlotSync: false,
   queryLinkAtPoint: vi.fn(() => null),

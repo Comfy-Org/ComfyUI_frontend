@@ -62,15 +62,19 @@ describe('Reroute ↔ rerouteStore integration', () => {
     const incumbent = new Reroute(toRerouteId(1), graph, [0, 0])
     vi.spyOn(console, 'error').mockImplementation(() => {})
     useRerouteStore().registerReroute(graphScopeOf(graph), incumbent._chain)
-
-    const collision = graph.setReroute({
-      id: incumbent.id,
-      pos: [10, 10],
-      linkIds: []
+    useLayoutMutations().createReroute(graph.rootGraph.id, incumbent.id, {
+      x: 0,
+      y: 0
     })
 
-    expect(collision).toBeUndefined()
+    const collision = new Reroute(incumbent.id, graph, [10, 10])
+
+    expect(graph._addReroute(collision)).toBe(false)
     expect(graph.reroutes.has(incumbent.id)).toBe(false)
+    collision.pos = [20, 30]
+    expect(
+      layoutStore.getRerouteLayout(graph.rootGraph.id, incumbent.id)?.position
+    ).toEqual({ x: 0, y: 0 })
   })
 
   it('setReroute creates and updates geometry in one layout write', () => {
@@ -358,7 +362,7 @@ describe('Reroute ↔ rerouteStore integration', () => {
 describe('Reroute position lives only in layoutStore', () => {
   beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
 
-  it('registers geometry on construction, before any graph wiring', () => {
+  it('registers geometry after graph ownership', () => {
     const { graph, link } = connectedGraph()
 
     const reroute = graph.createReroute([37, 41], link)

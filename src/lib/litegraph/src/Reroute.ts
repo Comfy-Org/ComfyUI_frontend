@@ -1,4 +1,4 @@
-import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
+import { moveRerouteLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { EMPTY_MEMBERSHIP, useRerouteStore } from '@/stores/rerouteStore'
 import type { RerouteMembership } from '@/stores/rerouteStore'
@@ -10,7 +10,6 @@ import { zeroUuid } from '@/utils/uuid'
 import type { FloatingRerouteSlot, RerouteChain } from '@/types/rerouteChain'
 import type { RerouteId } from '@/types/rerouteId'
 import type { UUID } from '@/utils/uuid'
-import { LayoutSource } from '@/renderer/core/layout/types'
 import type { Point as LayoutPoint } from '@/renderer/core/layout/types'
 
 import { LGraphBadge } from './LGraphBadge'
@@ -33,11 +32,6 @@ import type {
 import { LiteGraph } from './litegraph'
 import { distance, isPointInRect } from './measure'
 import type { Serialisable, SerialisableReroute } from './types/serialisation'
-
-const layoutMutations = useLayoutMutations()
-
-/** Fallback for a reroute whose store entry has already been deleted. */
-const ORIGIN = { x: 0, y: 0 } as const
 
 export type { FloatingRerouteSlot } from '@/types/rerouteChain'
 export type { RerouteId } from '@/types/rerouteId'
@@ -135,8 +129,9 @@ export class Reroute
         'Reroute.pos is an x,y point, and expects an indexable with at least two values.'
       )
 
-    layoutMutations.setSource(LayoutSource.Canvas)
-    layoutMutations.moveReroute(this.rootGraphId, this.id, {
+    this.position[0] = value[0]
+    this.position[1] = value[1]
+    moveRerouteLayout(this, {
       x: value[0],
       y: value[1]
     })
@@ -159,8 +154,10 @@ export class Reroute
 
   private get storedPosition(): Readonly<LayoutPoint> {
     return (
-      layoutStore.getRerouteLayout(this.rootGraphId, this.id)?.position ??
-      ORIGIN
+      layoutStore.getRerouteLayout(this.rootGraphId, this.id)?.position ?? {
+        x: this.position[0],
+        y: this.position[1]
+      }
     )
   }
 
@@ -298,11 +295,8 @@ export class Reroute
     this._chain = { id, graphId: toOwningGraphId(zeroUuid) }
     this.parentId = parentId
 
-    layoutMutations.setSource(LayoutSource.Canvas)
-    layoutMutations.createReroute(this.rootGraphId, id, {
-      x: pos?.[0] ?? 0,
-      y: pos?.[1] ?? 0
-    })
+    this.position[0] = pos?.[0] ?? 0
+    this.position[1] = pos?.[1] ?? 0
   }
 
   /**
