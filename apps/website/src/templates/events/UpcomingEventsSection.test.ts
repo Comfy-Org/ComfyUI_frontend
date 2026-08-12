@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { render, screen } from '@testing-library/vue'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type * as EventsData from '../../data/events'
 
@@ -10,8 +10,8 @@ import UpcomingEventsSection from './UpcomingEventsSection.vue'
 // newest configured event has ended and the e2e coverage of these rows goes
 // quiet with it. Stubbing the list keeps the row markup, localization, and
 // link targets covered whatever the date and whatever happens to be scheduled.
-const { streamedEvent, externalEvent } = vi.hoisted(() => ({
-  streamedEvent: {
+const { streamedEvent, externalEvent, stub } = vi.hoisted(() => {
+  const streamedEvent = {
     id: 'streamed-event',
     category: 'livestream',
     title: { en: 'Streamed Event', 'zh-CN': '直播活动' },
@@ -23,8 +23,8 @@ const { streamedEvent, externalEvent } = vi.hoisted(() => ({
     },
     startDateTime: '2026-09-01T10:00:00-07:00',
     liveVideoId: 'live123'
-  } satisfies EventsData.ComfyEvent,
-  externalEvent: {
+  } satisfies EventsData.ComfyEvent
+  const externalEvent = {
     id: 'external-event',
     category: 'community',
     title: { en: 'External Event', 'zh-CN': '外部活动' },
@@ -37,12 +37,26 @@ const { streamedEvent, externalEvent } = vi.hoisted(() => ({
       newTab: true
     }
   } satisfies EventsData.ComfyEvent
-}))
+  const upcomingEvents: readonly EventsData.ComfyEvent[] = [
+    streamedEvent,
+    externalEvent
+  ]
+  return { streamedEvent, externalEvent, stub: { upcomingEvents } }
+})
 
-vi.mock('../../data/events', async (importOriginal) => ({
-  ...(await importOriginal<typeof EventsData>()),
-  upcomingEvents: [streamedEvent, externalEvent]
-}))
+vi.mock('../../data/events', async (importOriginal) => {
+  const actual = await importOriginal<typeof EventsData>()
+  return {
+    ...actual,
+    get upcomingEvents() {
+      return stub.upcomingEvents
+    }
+  }
+})
+
+beforeEach(() => {
+  stub.upcomingEvents = [streamedEvent, externalEvent]
+})
 
 describe('UpcomingEventsSection', () => {
   it('renders a row per upcoming event with its title, blurb, location and date', () => {
@@ -75,6 +89,17 @@ describe('UpcomingEventsSection', () => {
     expect(externalLink.getAttribute('href')).toBe(externalEvent.link.href.en)
     expect(externalLink.getAttribute('target')).toBe('_blank')
     expect(externalLink.getAttribute('rel')).toBe('noopener noreferrer')
+  })
+
+  // The live page sits in this state whenever the schedule runs dry, so the
+  // list has to survive an empty derivation rather than disappear with it.
+  it('keeps the list in place when nothing is upcoming', () => {
+    stub.upcomingEvents = []
+
+    render(UpcomingEventsSection)
+
+    expect(screen.getByRole('list')).toBeTruthy()
+    expect(screen.queryAllByRole('listitem')).toHaveLength(0)
   })
 
   it('localizes rows and event-page links for the zh-CN page', () => {
