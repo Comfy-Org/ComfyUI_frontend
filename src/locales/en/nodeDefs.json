@@ -800,12 +800,12 @@
     }
   },
   "ByteDance2FirstLastFrameNode": {
-    "display_name": "ByteDance Seedance 2.0 First-Last-Frame to Video",
-    "description": "Generate video using Seedance 2.0 from a first frame image and optional last frame image.",
+    "display_name": "ByteDance Seedance 2.5 First-Last-Frame to Video",
+    "description": "Generate video using Seedance 2.5 from a first frame image and optional last frame image.",
     "inputs": {
       "model": {
         "name": "model",
-        "tooltip": "Seedance 2.0 for maximum quality; Fast for speed optimization; Mini for the fastest, lowest-cost generation."
+        "tooltip": "Seedance 2.5 for maximum quality; Fast for speed optimization; Mini for the fastest, lowest-cost generation."
       },
       "seed": {
         "name": "seed",
@@ -857,12 +857,12 @@
     }
   },
   "ByteDance2ReferenceNode": {
-    "display_name": "ByteDance Seedance 2.0 Reference to Video",
-    "description": "Generate, edit, or extend video using Seedance 2.0 with reference images, videos, and audio. Supports multimodal reference, video editing, and video extension.",
+    "display_name": "ByteDance Seedance 2.5 Reference to Video",
+    "description": "Generate, edit, or extend video using Seedance 2.5 with reference images, videos, and audio. Supports multimodal reference, video editing, and video extension.",
     "inputs": {
       "model": {
         "name": "model",
-        "tooltip": "Seedance 2.0 for maximum quality; Fast for speed optimization; Mini for the fastest, lowest-cost generation."
+        "tooltip": "Seedance 2.5 for maximum quality; Fast for speed optimization; Mini for the fastest, lowest-cost generation."
       },
       "seed": {
         "name": "seed",
@@ -904,12 +904,12 @@
     }
   },
   "ByteDance2TextToVideoNode": {
-    "display_name": "ByteDance Seedance 2.0 Text to Video",
-    "description": "Generate video using Seedance 2.0 models based on a text prompt.",
+    "display_name": "ByteDance Seedance 2.5 Text to Video",
+    "description": "Generate video using Seedance 2.5 models based on a text prompt.",
     "inputs": {
       "model": {
         "name": "model",
-        "tooltip": "Seedance 2.0 for maximum quality; Fast for speed optimization; Mini for the fastest, lowest-cost generation."
+        "tooltip": "Seedance 2.5 for maximum quality; Fast for speed optimization; Mini for the fastest, lowest-cost generation."
       },
       "seed": {
         "name": "seed",
