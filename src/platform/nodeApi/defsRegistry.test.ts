@@ -226,6 +226,30 @@ describe('defs.extend', () => {
       expect(node.properties['x']).toBe(10)
     })
 
+    it('keeps a widget bound to the property in step with the clamp', () => {
+      // setProperty syncs bound widgets AFTER the callback, from the value the
+      // caller passed — so a replacement that only writes `properties` leaves
+      // the widget showing what the user typed and the property holding the
+      // clamp.
+      const node = addNode((registry) =>
+        registry
+          .forMajor((id) => comfy.graph.node(id)!)
+          .extend('KSampler', (b) =>
+            b.onPropertyChanged((_n, e) => {
+              if (Number(e.value) > 100) e.setValue(100)
+            })
+          )
+      )
+      const widget = node.addWidget('number', 'bound', 0, () => {}, {
+        property: 'randomMax'
+      })
+
+      node.setProperty('randomMax', 5000)
+
+      expect(node.properties['randomMax']).toBe(100)
+      expect(widget.value).toBe(100)
+    })
+
     it('restores the previous value when a handler rejects', () => {
       const node = addNode((registry) =>
         registry
@@ -564,6 +588,35 @@ describe('defs.onRefreshed', () => {
     expect(after).toHaveBeenCalledTimes(1)
     stopFirst()
     stopAfter()
+  })
+})
+
+describe('extend after define', () => {
+  it('says so loudly instead of dropping the registration', () => {
+    // define installs prototype behaviour before returning, so a later extend
+    // is never applied. A hook that silently never fires costs an afternoon.
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    setActivePinia(createPinia())
+    const api = createComfyApi(() => new LGraph())
+    api.defs.define({ type: 'LateExtended' })
+
+    api.defs.extend('LateExtended', (b) => b.onCreated(() => {}))
+
+    expect(error).toHaveBeenCalledWith(
+      expect.stringContaining("extend('LateExtended') was called after")
+    )
+  })
+
+  it('stays quiet when the extension is registered first', () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    error.mockClear()
+    setActivePinia(createPinia())
+    const api = createComfyApi(() => new LGraph())
+
+    api.defs.extend('EarlyExtended', (b) => b.onCreated(() => {}))
+    api.defs.define({ type: 'EarlyExtended' })
+
+    expect(error).not.toHaveBeenCalled()
   })
 })
 
