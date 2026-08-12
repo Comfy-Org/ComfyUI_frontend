@@ -6,11 +6,7 @@ import { computed, ref, unref } from 'vue'
 import type { MaybeRef } from 'vue'
 
 import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
-import {
-  resolveNodeDefInputText,
-  resolveNodeDefOutputText,
-  resolveNodeDefText
-} from '@/i18n'
+import { resolveNodeDefSlotText, resolveNodeDefText } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -123,7 +119,7 @@ export function useNodeTooltips(nodeType: MaybeRef<string>) {
   const getInputSlotTooltip = (slotName: string) => {
     if (!tooltipsEnabled.value || !nodeDef.value) return ''
 
-    return resolveNodeDefInputText(
+    return resolveNodeDefSlotText(
       'tooltip',
       unref(nodeType),
       slotName,
@@ -137,7 +133,7 @@ export function useNodeTooltips(nodeType: MaybeRef<string>) {
   const getOutputSlotTooltip = (slotIndex: number) => {
     if (!tooltipsEnabled.value || !nodeDef.value) return ''
 
-    return resolveNodeDefOutputText(
+    return resolveNodeDefSlotText(
       'tooltip',
       unref(nodeType),
       slotIndex,
@@ -156,7 +152,7 @@ export function useNodeTooltips(nodeType: MaybeRef<string>) {
     if (widgetTooltip) return widgetTooltip
 
     // Then try input-based tooltip lookup
-    return resolveNodeDefInputText(
+    return resolveNodeDefSlotText(
       'tooltip',
       unref(nodeType),
       widget.name,

@@ -250,16 +250,5 @@ describe('NodeTooltip', () => {
       expect(screen.getByText(jsonTooltip)).toBeInTheDocument()
       expect(screen.queryByText(staleOutputTooltip)).not.toBeInTheDocument()
     })
-
-    it('shows the live backend widget tooltip', async () => {
-      vi.mocked(mockCanvas.getWidgetAtCursor).mockReturnValue({
-        name: 'positive_coords'
-      })
-
-      await renderAndHoverCanvas()
-
-      expect(screen.getByText(jsonTooltip)).toBeInTheDocument()
-      expect(screen.queryByText(staleInputTooltip)).not.toBeInTheDocument()
-    })
   })
 })

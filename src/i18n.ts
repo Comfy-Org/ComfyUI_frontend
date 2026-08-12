@@ -263,53 +263,24 @@ function slotMessageReader(field: NodeDefSlotTextField): MessageReader {
   return field === 'tooltip' ? stRaw : st
 }
 
-function resolveNodeDefSlotText(
+export function resolveNodeDefSlotText(
   field: NodeDefSlotTextField,
   nodeName: string,
-  slotPath: string,
-  backendValue: string | undefined,
-  fallbackValue: string
+  slot: string | number,
+  backendValue?: string,
+  fallbackValue = ''
 ): string {
+  const slotPath =
+    typeof slot === 'string'
+      ? `inputs.${normalizeI18nKey(slot)}`
+      : `outputs.${slot}`
+
   return resolveNodeDefPath(
     nodeName,
     `${slotPath}.${field}`,
     backendValue,
     backendValue ?? fallbackValue,
     slotMessageReader(field)
-  )
-}
-
-/** Resolves an input slot's label or tooltip, same precedence as node text. */
-export function resolveNodeDefInputText(
-  field: NodeDefSlotTextField,
-  nodeName: string,
-  inputName: string,
-  backendValue?: string,
-  fallbackValue = ''
-): string {
-  return resolveNodeDefSlotText(
-    field,
-    nodeName,
-    `inputs.${normalizeI18nKey(inputName)}`,
-    backendValue,
-    fallbackValue
-  )
-}
-
-/** Resolves an output slot's label or tooltip, same precedence as node text. */
-export function resolveNodeDefOutputText(
-  field: NodeDefSlotTextField,
-  nodeName: string,
-  outputIndex: number,
-  backendValue?: string,
-  fallbackValue = ''
-): string {
-  return resolveNodeDefSlotText(
-    field,
-    nodeName,
-    `outputs.${outputIndex}`,
-    backendValue,
-    fallbackValue
   )
 }
 

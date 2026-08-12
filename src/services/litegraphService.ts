@@ -11,12 +11,7 @@ import {
   isPreviewPseudoWidget
 } from '@/core/graph/subgraph/promotionUtils'
 import { applyDynamicInputs } from '@/core/graph/widgets/dynamicWidgets'
-import {
-  resolveNodeDefInputText,
-  resolveNodeDefOutputText,
-  st,
-  t
-} from '@/i18n'
+import { resolveNodeDefSlotText, st, t } from '@/i18n'
 import {
   LGraphCanvas,
   LGraphEventMode,
@@ -233,7 +228,7 @@ export const useLitegraphService = () => {
 
     node.addInput(inputName, inputSpec.type, {
       shape: inputSpec.isOptional ? RenderShape.HollowCircle : undefined,
-      localized_name: resolveNodeDefInputText(
+      localized_name: resolveNodeDefSlotText(
         'name',
         nodeDefName(node),
         inputName,
@@ -289,7 +284,7 @@ export const useLitegraphService = () => {
     }
     const inputName = inputSpec.name
     const resolveLabel = (fallback: string) =>
-      resolveNodeDefInputText(
+      resolveNodeDefSlotText(
         'name',
         nodeDefName(node),
         inputName,
@@ -368,7 +363,7 @@ export const useLitegraphService = () => {
         // - type ("FLOAT"); name ("FLOAT") => translate type
         localized_name:
           type !== name
-            ? resolveNodeDefOutputText(
+            ? resolveNodeDefSlotText(
                 'name',
                 nodeDefName(node),
                 output.index,
