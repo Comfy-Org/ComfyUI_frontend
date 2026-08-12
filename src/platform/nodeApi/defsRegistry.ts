@@ -343,6 +343,16 @@ export interface DefRegistry {
    * change the user made, not on a timer.
    */
   refresh(): Promise<void>
+  /**
+   * Node definitions were reloaded — by this pack, another pack, or the user.
+   *
+   * The listening half of `refresh()`, and what the `refreshComboInNodes`
+   * extension hook gave packs. A pack holding its own cached copy of a combo's
+   * values — a model list it filters, a picker it built — needs to rebuild it
+   * when the list changes underneath, and the pack that caused the change is
+   * usually not this one.
+   */
+  onRefreshed(listener: () => void): Unsubscribe
 }
 
 interface Registration {
@@ -489,6 +499,25 @@ const RESERVED_SERIAL_KEYS: ReadonlySet<string> = new Set([
  * builder knows node types, not registry instances.
  */
 const frontendResolvers = new Map<string, Resolver>()
+
+const refreshListeners = new Set<() => void>()
+
+/** Called by the host once node definitions have finished reloading. */
+export function notifyDefsRefreshed(): void {
+  for (const listener of [...refreshListeners]) {
+    try {
+      listener()
+    } catch (error) {
+      // One pack's failed rebuild must not stop the packs behind it.
+      console.error('[nodeApi] onRefreshed listener threw', error)
+    }
+  }
+}
+
+function onDefsRefreshed(listener: () => void): Unsubscribe {
+  refreshListeners.add(listener)
+  return () => refreshListeners.delete(listener)
+}
 
 /**
  * Reloads node definitions.
@@ -657,6 +686,7 @@ export function createDefRegistry(): {
       has: (type) => known.has(type),
 
       refresh: () => refreshDefs(),
+      onRefreshed: onDefsRefreshed,
 
       extend(selector, apply) {
         assertSelector(selector)
