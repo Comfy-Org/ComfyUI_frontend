@@ -219,8 +219,6 @@ describe('useAuthStore', () => {
       return Promise.reject(new Error('Unexpected API call'))
     })
 
-    // Initialize Pinia
-    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useAuthStore()
 
     // Reset and set up getIdToken mock

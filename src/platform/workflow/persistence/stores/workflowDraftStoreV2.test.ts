@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { MAX_DRAFTS } from '../base/draftTypes'
@@ -21,7 +19,6 @@ vi.mock('@/scripts/app', () => ({
 
 describe('workflowDraftStoreV2', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     sessionStorage.clear()
   })
 

@@ -1,7 +1,5 @@
-import { createTestingPinia } from '@pinia/testing'
 import userEvent from '@testing-library/user-event'
 import { cleanup, render, screen } from '@testing-library/vue'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -67,7 +65,6 @@ function nudge() {
 
 describe('FirstRunTourNudge', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     mocks.nudgeArmed.value = false
     mocks.tourWasCompleted.value = true
     mocks.openDialogs.value = []
