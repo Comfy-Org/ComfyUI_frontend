@@ -39,6 +39,11 @@ function nodeClass(type: string) {
   return Generated
 }
 
+const { refreshComboInNodes } = vi.hoisted(() => ({
+  refreshComboInNodes: vi.fn(async () => {})
+}))
+vi.mock('@/scripts/app', () => ({ app: { refreshComboInNodes } }))
+
 describe('defs.extend', () => {
   let graph: LGraph
   let comfy: Comfy
@@ -435,6 +440,20 @@ describe('setSupply', () => {
 
     expect(frontendSupplierMap().has('KSampler')).toBe(true)
     expect(Generated.prototype.isVirtualNode).toBeUndefined()
+  })
+})
+
+describe('defs.refresh', () => {
+  it('asks the host to reload definitions', async () => {
+    // Backend-supplied combo values (model lists, LoRA names) are captured
+    // when definitions load, so a pack that writes a file server-side leaves
+    // every open picker showing the old list.
+    setActivePinia(createPinia())
+    const graph = new LGraph()
+    const api = createComfyApi(() => graph)
+    await api.defs.refresh()
+
+    expect(refreshComboInNodes).toHaveBeenCalledTimes(1)
   })
 })
 
