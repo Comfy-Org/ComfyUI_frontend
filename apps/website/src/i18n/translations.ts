@@ -556,6 +556,12 @@ const translations = {
       'Comfy 企业版计划附带引擎开发团队的支持：直接访问我们的工程团队和白手套式入职服务。'
   },
 
+  // Enterprise – FAQ
+  'enterprise.faq.heading': {
+    en: 'FAQs',
+    'zh-CN': '常见问题'
+  },
+
   // API – StepsSection
   'api.steps.heading': {
     en: 'Three steps to production',
