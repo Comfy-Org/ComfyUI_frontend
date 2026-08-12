@@ -43,17 +43,23 @@ def bucket(file, path):
     title = ' > '.join(path)
     pack = None
     m = re.search(r'(?:custom node|all nodes|dynamic inputs|interaction profiles): ([^@>]+?)(?:\s*@|\s*>|$)', title)
-    if m: pack = m.group(1).strip()
+    if m:
+        pack = m.group(1).strip()
     if 'allNodes' in file:
         return (pack, 'all nodes') if pack else (None, 'manifest coverage')
     if 'customNode.regression' in file:
-        if pack is None: return (None, 'harness self-checks')
+        if pack is None:
+            return (None, 'harness self-checks')
         tier = 'startup/load' if 'startup/load' in title else 'curated run'
         return (pack, tier)
-    if 'dynamicInputs' in file: return (pack, 'dynamic inputs')
-    if 'interactionProfiles' in file: return (pack, 'interaction')
-    if 'connectivity' in file: return (None, 'connectivity')
-    if 'coreSmoke' in file: return (None, 'core smoke')
+    if 'dynamicInputs' in file:
+        return (pack, 'dynamic inputs')
+    if 'interactionProfiles' in file:
+        return (pack, 'interaction')
+    if 'connectivity' in file:
+        return (None, 'connectivity')
+    if 'coreSmoke' in file:
+        return (None, 'core smoke')
     return (None, 'pure specs')
 
 RANK = {'skipped': 1, 'flaky': 2, 'unexpected': 3}
@@ -78,7 +84,8 @@ def visit(suite, file, path):
                     if msg:
                         err = re.sub(r'\x1b\[[0-9;]*m', '', msg).split('\n')[0][:140]
                         break
-                if err: break
+                if err:
+                    break
             failed.append((f"{' > '.join(p for p in path[1:] if p)} > {spec.get('title','')}"[:120], err))
     for child in suite.get('suites', []):
         visit(child, file, path)
@@ -87,7 +94,8 @@ for s in data.get('suites', []):
     visit(s, s.get('file'), [])
 
 def cell(v):
-    if v is None: return '-'
+    if v is None:
+        return '-'
     worst, total, fails = v
     return SYM[worst] if fails == 0 else f'FAIL {fails}/{total}'
 
