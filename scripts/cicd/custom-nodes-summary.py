@@ -36,7 +36,7 @@ if not os.path.exists('custom-nodes-results.json'):
 data = json.load(open('custom-nodes-results.json'))
 stats = data.get('stats', {})
 
-TIERS = ['startup/load', 'all nodes', 'curated run', 'dynamic inputs', 'interaction']
+TIERS = ['startup/load', 'S1', 'S2', 'S3', 'S9', 'S14', 'curated run', 'dynamic inputs', 'interaction']
 packs, wide = {}, {}
 
 def bucket(file, path):
@@ -95,13 +95,13 @@ for s in data.get('suites', []):
 
 if os.path.exists('custom-nodes.log'):
     for line in open('custom-nodes.log'):
-        m = re.fullmatch(r'\[tier-pack\] tier=S(?:1|2|3|9|14) pack=(.+) result=(pass|fail)\n?', line)
+        m = re.fullmatch(r'\[tier-pack\] tier=(S(?:1|2|3|9|14)) pack=(.+) result=(pass|fail)\n?', line)
         if not m:
             continue
-        pack, result = m.groups()
-        prev = packs.setdefault(pack, {}).get('all nodes', (0, 0, 0))
+        tier, pack, result = m.groups()
+        prev = packs.setdefault(pack, {}).get(tier, (0, 0, 0))
         failed_pack = result == 'fail'
-        packs[pack]['all nodes'] = (
+        packs[pack][tier] = (
             max(prev[0], 3 if failed_pack else 0),
             prev[1] + 1,
             prev[2] + failed_pack,

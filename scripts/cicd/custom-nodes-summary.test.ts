@@ -6,7 +6,7 @@ import { expect, it } from 'vitest'
 
 const SCRIPT = path.join(import.meta.dirname, 'custom-nodes-summary.py')
 
-it('reports aggregate all-node tier results for each pack', () => {
+it('reports each all-node tier result separately for each pack', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'custom-nodes-summary-'))
   try {
     fs.writeFileSync(
@@ -33,8 +33,11 @@ it('reports aggregate all-node tier results for each pack', () => {
     })
 
     expect(result.status).toBe(0)
-    expect(result.stdout).toMatch(/^Pack-A\s+-\s+FAIL 1\/2\s+-/m)
-    expect(result.stdout).toMatch(/^Pack-B\s+-\s+PASS\s+-/m)
+    expect(fs.readFileSync(path.join(dir, 'summary.md'), 'utf8')).toContain(
+      '| Pack | startup/load | S1 | S2 | S3 | S9 | S14 |'
+    )
+    expect(result.stdout).toMatch(/^Pack-A\s+-\s+PASS\s+FAIL 1\/1\s+-/m)
+    expect(result.stdout).toMatch(/^Pack-B\s+-\s+PASS\s+PASS\s+-/m)
   } finally {
     fs.rmSync(dir, { recursive: true, force: true })
   }
