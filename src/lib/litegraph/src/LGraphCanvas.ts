@@ -45,6 +45,11 @@ import {
   queryLinkBadgeAtPoint
 } from './canvas/linkBadges'
 import type { LinkBadgeFrameState } from './canvas/linkBadges'
+import {
+  hideLink,
+  promptRenameLinkBadge,
+  showLink
+} from './canvas/linkVisibility'
 import { isOverNodeInput, isOverNodeOutput } from './canvas/measureSlots'
 import { strokeShape } from './draw'
 import {
@@ -2514,6 +2519,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (node && (this.allow_interaction || node.flags.allow_interaction)) {
       this._processNodeClick(e, ctrlOrMeta, node)
     } else {
+      const badgeLinkId = queryLinkBadgeAtPoint(this.linkBadgeFrameState, x, y)
+      const badgeLink =
+        badgeLinkId === undefined ? undefined : graph.getLink(badgeLinkId)
+      if (badgeLink?.hidden) {
+        pointer.onDoubleClick = () => promptRenameLinkBadge(this, badgeLink, e)
+        return
+      }
+
       // Subgraph IO nodes
       if (subgraph) {
         const { inputNode, outputNode } = subgraph
@@ -6712,7 +6725,21 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const node_left = graph.getNodeById(origin_id)
     const fromType = node_left?.outputs?.[origin_slot]?.type
 
-    const options = ['Add Node', 'Add Reroute', null, 'Delete', null]
+    const link = segment instanceof LLink ? segment : undefined
+    const visibilityOptions: (string | null)[] = !link
+      ? []
+      : link.hidden
+        ? ['Rename', 'Show Link', null]
+        : ['Hide Link', null]
+    const options: (string | null)[] = [
+      ...visibilityOptions,
+      'Add Node',
+      ...(link?.hidden ? [] : ['Add Reroute']),
+      null,
+      'Delete',
+      null
+    ]
+    const promptEvent = e
 
     const menu = new LiteGraph.ContextMenu<string>(options, {
       event: e,
@@ -6784,6 +6811,15 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           }
           break
         }
+        case 'Hide Link':
+          if (link) hideLink(this, link)
+          break
+        case 'Show Link':
+          if (link) showLink(this, link)
+          break
+        case 'Rename':
+          if (link) promptRenameLinkBadge(this, link, promptEvent)
+          break
         default:
       }
     }
@@ -8804,7 +8840,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       menu_info = this.getCanvasMenuOptions()
       if (!this.graph) throw new NullGraphError()
 
-      const { reroute, group } = getCanvasContextMenuTarget(
+      const { reroute, link, group } = getCanvasContextMenuTarget(
         this,
         event.canvasX,
         event.canvasY
@@ -8821,6 +8857,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           },
           null
         )
+      }
+      if (link) {
+        this.showLinkMenu(link, event)
+        return
       }
       if (group) {
         menu_info.push(null, {

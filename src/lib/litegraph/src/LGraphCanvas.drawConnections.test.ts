@@ -8,6 +8,7 @@ import {
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
+import type { CanvasPointerEvent } from '@/lib/litegraph/src/litegraph'
 import { LLink } from '@/lib/litegraph/src/LLink'
 import {
   isLinkRevealed,
@@ -285,6 +286,33 @@ describe('drawConnections hidden links', () => {
     canvas.processMouseOut(new PointerEvent('pointerout'))
 
     expect(isLinkRevealed(link.id)).toBe(false)
+  })
+
+  it('opens rename from a badge double-click', () => {
+    const link = createHiddenLink()
+    canvas.drawConnections(createMockCtx())
+    const badge = canvas.linkBadgeFrameState.hitAreas[0]
+    const event = new PointerEvent('pointerdown', {
+      button: 0,
+      clientX: badge.x + badge.width / 2,
+      clientY: badge.y + badge.height / 2,
+      isPrimary: false
+    })
+    const prompt = vi
+      .spyOn(canvas, 'prompt')
+      .mockReturnValue(document.createElement('div'))
+
+    canvas.processMouseDown(event)
+    canvas.pointer.onDoubleClick?.(event as CanvasPointerEvent)
+
+    expect(prompt).toHaveBeenCalledWith(
+      'Rename',
+      'STRING',
+      expect.any(Function),
+      event
+    )
+    prompt.mock.calls[0][2]('  Checkpoint  ')
+    expect(link.label).toBe('Checkpoint')
   })
 
   it('suppresses reroutes until the full routed link is revealed', () => {
