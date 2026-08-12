@@ -2,6 +2,10 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type {
+  ExecutableLGraphNode,
+  ExecutionId
+} from '@/lib/litegraph/src/litegraph'
 import {
   ExecutableNodeDTO,
   LGraph,
@@ -478,7 +482,7 @@ describe('Virtual node resolveVirtualOutput', () => {
     )
     graph.add(primitiveNode)
 
-    const nodeDtoMap = new Map()
+    const nodeDtoMap = new Map<ExecutionId, ExecutableLGraphNode>()
     const primitiveDto = new ExecutableNodeDTO(
       primitiveNode,
       [],
@@ -503,7 +507,7 @@ describe('Virtual node resolveVirtualOutput', () => {
     primitiveNode.addWidget('text', 'value', 'hello world', null)
     graph.add(primitiveNode)
 
-    const nodeDtoMap = new Map()
+    const nodeDtoMap = new Map<ExecutionId, ExecutableLGraphNode>()
     const primitiveDto = new ExecutableNodeDTO(
       primitiveNode,
       [],
@@ -525,7 +529,7 @@ describe('Virtual node resolveVirtualOutput', () => {
     virtualNode.isVirtualNode = true
     graph.add(virtualNode)
 
-    const nodeDtoMap = new Map()
+    const nodeDtoMap = new Map<ExecutionId, ExecutableLGraphNode>()
     const virtualDto = new ExecutableNodeDTO(
       virtualNode,
       [],
@@ -535,6 +539,30 @@ describe('Virtual node resolveVirtualOutput', () => {
     nodeDtoMap.set(virtualDto.id, virtualDto)
 
     const resolved = virtualDto.resolveOutput(0, 'IMAGE', new Set())
+    expect(resolved).toBeUndefined()
+  })
+
+  it('should return undefined for virtual nodes with an undefined primary widget value', () => {
+    const graph = new LGraph()
+
+    const virtualNode = new LGraphNode('Virtual Empty Value')
+    virtualNode.addOutput('out', 'IMAGE')
+    virtualNode.isVirtualNode = true
+    const primaryWidget = virtualNode.addWidget('text', 'value', '', null)
+    Reflect.set(primaryWidget, 'value', undefined)
+    graph.add(virtualNode)
+
+    const nodeDtoMap = new Map<ExecutionId, ExecutableLGraphNode>()
+    const virtualDto = new ExecutableNodeDTO(
+      virtualNode,
+      [],
+      nodeDtoMap,
+      undefined
+    )
+    nodeDtoMap.set(virtualDto.id, virtualDto)
+
+    const resolved = virtualDto.resolveOutput(0, 'IMAGE', new Set())
+
     expect(resolved).toBeUndefined()
   })
 
