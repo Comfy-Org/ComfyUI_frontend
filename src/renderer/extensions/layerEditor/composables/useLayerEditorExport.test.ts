@@ -54,7 +54,6 @@ function stubContext(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
 const origGetContext = HTMLCanvasElement.prototype.getContext
 
 beforeEach(() => {
-  vi.clearAllMocks()
   registerBuiltinKinds()
   HTMLCanvasElement.prototype.getContext = function (
     this: HTMLCanvasElement,
