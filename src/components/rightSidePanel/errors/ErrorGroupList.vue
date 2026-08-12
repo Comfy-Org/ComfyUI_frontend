@@ -30,15 +30,16 @@
       >
         <!-- Errors summary hero -->
         <div data-testid="errors-summary-hero" class="bg-base-foreground/5">
-          <div
-            v-if="errorCount > 0"
-            data-testid="errors-summary-hero-error"
-            class="flex items-center gap-2 p-2"
-          >
+          <div class="flex items-center gap-2 p-2">
             <span
-              class="flex h-12 min-w-9 shrink-0 items-center justify-center px-1 text-[2rem]/none font-extrabold text-destructive-background-hover tabular-nums"
+              :class="
+                cn(
+                  'flex h-12 min-w-9 shrink-0 items-center justify-center px-1 text-[2rem]/none font-extrabold tabular-nums',
+                  hero.countClass
+                )
+              "
             >
-              {{ errorCount }}
+              {{ hero.count }}
             </span>
             <span
               aria-hidden="true"
@@ -46,40 +47,42 @@
             />
             <div class="flex min-w-0 flex-1 flex-col gap-1 px-2">
               <span class="text-xs/tight font-semibold text-base-foreground">
-                {{ t('rightSidePanel.errorsDetected', errorCount) }}
+                {{ hero.title }}
               </span>
               <span class="text-xs/tight text-muted-foreground">
-                {{ t('rightSidePanel.resolveBeforeRun') }}
+                {{ hero.description }}
               </span>
             </div>
           </div>
           <div
-            v-if="missingCount > 0"
-            data-testid="errors-summary-hero-missing"
-            :class="
-              cn(
-                'flex items-center gap-2 p-2',
-                errorCount > 0 && 'border-t border-secondary-background'
-              )
-            "
+            v-if="hasMixedSeverity"
+            data-testid="errors-summary-filters"
+            class="flex flex-wrap items-center gap-2 px-2 pb-2"
           >
-            <span
-              class="flex h-12 min-w-9 shrink-0 items-center justify-center px-1 text-[2rem]/none font-extrabold text-warning-background tabular-nums"
+            <button
+              v-for="chip in severityChips"
+              :key="chip.severity"
+              type="button"
+              :data-testid="'errors-summary-filter-' + chip.severity"
+              :aria-pressed="chip.active"
+              :class="
+                cn(
+                  'focus-visible:ring-ring flex h-7 shrink-0 cursor-pointer appearance-none items-center gap-1 rounded-lg border border-solid bg-transparent px-3 text-xs font-semibold transition-colors outline-none focus-visible:ring-1',
+                  chip.active && 'gap-2 pr-2',
+                  SEVERITY_CHIP_CLASS[chip.severity][
+                    chip.active ? 'active' : 'idle'
+                  ]
+                )
+              "
+              @click="toggleSeverityFilter(chip.severity)"
             >
-              {{ missingCount }}
-            </span>
-            <span
-              aria-hidden="true"
-              class="h-9 w-px shrink-0 bg-interface-stroke"
-            />
-            <div class="flex min-w-0 flex-1 flex-col gap-1 px-2">
-              <span class="text-xs/tight font-semibold text-base-foreground">
-                {{ t('rightSidePanel.setupPending') }}
-              </span>
-              <span class="text-xs/tight text-muted-foreground">
-                {{ t('rightSidePanel.setupPendingDesc') }}
-              </span>
-            </div>
+              {{ chip.label }}
+              <i
+                v-if="chip.active"
+                aria-hidden="true"
+                class="icon-[lucide--x] size-3.5"
+              />
+            </button>
           </div>
         </div>
 
@@ -111,7 +114,7 @@
         <!-- Group by Class Type -->
         <TransitionGroup tag="div" name="list-scale" class="relative">
           <ErrorCardSection
-            v-for="group in filteredGroups"
+            v-for="group in visibleGroups"
             :key="group.groupKey"
             :data-testid="'error-group-' + group.type.replaceAll('_', '-')"
             :title="group.displayTitle"
@@ -381,7 +384,7 @@ import { usePackInstall } from '@/workbench/extensions/manager/composables/nodeP
 import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
 import { useErrorGroups } from './useErrorGroups'
 import type { SwapNodeGroup } from './useErrorGroups'
-import type { ErrorGroup } from './types'
+import type { ErrorGroup, ErrorGroupSeverity } from './types'
 import { isExecutionItemListGroup } from './executionItemList'
 import { selectionEmphasisClass } from './selectionEmphasis'
 import { useNodeReplacement } from '@/platform/nodeReplacement/useNodeReplacement'
@@ -411,6 +414,20 @@ const SUMMARY_KEYPATHS = {
     none: 'rightSidePanel.setupSummary',
     single: 'rightSidePanel.setupNodeSummary',
     multiple: 'rightSidePanel.setupNodesSummary'
+  }
+} as const
+
+const HIDDEN_BY_FILTER = { error: 'missing', missing: 'error' } as const
+
+const SEVERITY_CHIP_CLASS = {
+  error: {
+    idle: 'border-interface-stroke text-destructive-background-hover',
+    active:
+      'border-destructive-background-hover/50 text-destructive-background-hover'
+  },
+  missing: {
+    idle: 'border-interface-stroke text-warning-background',
+    active: 'border-warning-background/50 text-warning-background'
   }
 } as const
 
@@ -514,6 +531,94 @@ const missingCount = computed(() =>
     .filter((group) => group.severity === 'missing')
     .reduce((sum, group) => sum + group.count, 0)
 )
+const hasMixedSeverity = computed(
+  () => errorCount.value > 0 && missingCount.value > 0
+)
+
+const severityFilter = ref<ErrorGroupSeverity | null>(null)
+// Filtering is only offered — and only meaningful — while both severities are
+// present, so a stale selection stays inert instead of emptying the list.
+const activeSeverityFilter = computed(() =>
+  hasMixedSeverity.value ? severityFilter.value : null
+)
+const visibleGroups = computed(() => {
+  const severity = activeSeverityFilter.value
+  if (!severity) return filteredGroups.value
+  return filteredGroups.value.filter((group) => group.severity === severity)
+})
+
+function toggleSeverityFilter(severity: ErrorGroupSeverity) {
+  severityFilter.value = severityFilter.value === severity ? null : severity
+}
+
+const severityTotals = computed(() => {
+  const totals: Record<ErrorGroupSeverity, number> = { error: 0, missing: 0 }
+  for (const group of allErrorGroups.value) {
+    totals[group.severity] += group.count
+  }
+  return totals
+})
+
+// The filter must never hide what the user is being pointed at: release it
+// (never auto-select) when the hidden severity grows or enters the selection.
+watch(severityTotals, (next, prev) => {
+  const active = severityFilter.value
+  if (!active) return
+  const hidden = HIDDEN_BY_FILTER[active]
+  if (next[hidden] > prev[hidden]) severityFilter.value = null
+})
+
+watch(selectionMatchedGroupKeys, (matchedKeys) => {
+  const active = severityFilter.value
+  if (!active || matchedKeys.size === 0) return
+  const hidden = HIDDEN_BY_FILTER[active]
+  const selectionHasHiddenSeverity = allErrorGroups.value.some(
+    (group) => matchedKeys.has(group.groupKey) && group.severity === hidden
+  )
+  if (selectionHasHiddenSeverity) severityFilter.value = null
+})
+
+const hero = computed(() => {
+  if (hasMixedSeverity.value) {
+    const total = errorCount.value + missingCount.value
+    return {
+      count: total,
+      countClass: 'text-base-foreground',
+      title: t('rightSidePanel.issuesDetected', total),
+      description: t('rightSidePanel.resolveBeforeRun')
+    }
+  }
+  if (missingCount.value > 0) {
+    return {
+      count: missingCount.value,
+      countClass: 'text-warning-background',
+      title: t('rightSidePanel.setupRequired'),
+      description: t('rightSidePanel.finishSetupBeforeRun')
+    }
+  }
+  return {
+    count: errorCount.value,
+    countClass: 'text-destructive-background-hover',
+    title: t('rightSidePanel.errorsDetected', errorCount.value),
+    description: t('rightSidePanel.resolveErrorsBeforeRun')
+  }
+})
+
+const severityChips = computed(() => [
+  {
+    severity: 'error' as const,
+    active: activeSeverityFilter.value === 'error',
+    label:
+      activeSeverityFilter.value === 'error'
+        ? t('rightSidePanel.errorsFilterActive', errorCount.value)
+        : t('rightSidePanel.errorsFilter', errorCount.value)
+  },
+  {
+    severity: 'missing' as const,
+    active: activeSeverityFilter.value === 'missing',
+    label: t('rightSidePanel.setupFilter', { count: missingCount.value })
+  }
+])
 
 const hasSelectionEmphasis = computed(
   () => hasSelection.value && selectionErrorCount.value > 0

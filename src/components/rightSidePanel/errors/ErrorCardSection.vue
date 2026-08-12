@@ -12,10 +12,10 @@
           data-testid="error-section-count-badge"
           :class="
             cn(
-              'flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full px-1 text-2xs/none font-semibold tabular-nums',
+              'flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full px-1 text-2xs/none font-semibold text-white tabular-nums',
               severity === 'error'
-                ? 'bg-destructive-background-hover text-white'
-                : 'bg-warning-background text-charcoal-800'
+                ? 'bg-destructive-background-hover'
+                : 'bg-warning-background'
             )
           "
         >
