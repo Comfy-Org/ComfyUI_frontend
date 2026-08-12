@@ -316,6 +316,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import { getTierCredits } from '@/platform/cloud/subscription/constants/tierPricing'
 import { isAnnualDuration } from '@/platform/cloud/subscription/utils/planDuration'
+import { formatQuoteMoney } from '@/platform/cloud/subscription/utils/subscriptionQuoteFormatting'
 import type {
   BillingAuthenticationState,
   PreviewSubscribeResponse
@@ -367,7 +368,7 @@ const emit = defineEmits<{
   retryAuthentication: []
 }>()
 
-const { t, n } = useI18n()
+const { locale, n, t } = useI18n()
 const verificationRecoveryActive = computed(
   () =>
     authenticationState === 'requires_action' ||
@@ -626,18 +627,14 @@ const confirmCta = computed(() => {
     amount: chargeDisplay.value
   })
 })
-function formatQuoteMoney(cents: number): string {
-  if (!previewData.currency) return ''
-  return new Intl.NumberFormat(undefined, {
-    style: 'currency',
-    currency: previewData.currency.toUpperCase()
-  }).format(cents / 100)
-}
-
 const exactAmountDue = computed(() =>
   previewData.amount_due_cents === undefined
     ? t('subscription.preview.quoteUnavailable')
-    : formatQuoteMoney(previewData.amount_due_cents)
+    : formatQuoteMoney(
+        previewData.amount_due_cents,
+        previewData.currency,
+        locale.value
+      )
 )
 const renewalTerms = computed(() => {
   if (
@@ -647,7 +644,11 @@ const renewalTerms = computed(() => {
     return t('subscription.preview.quoteUnavailable')
   }
   return t('subscription.preview.renewsAt', {
-    amount: formatQuoteMoney(previewData.renewal_amount_cents),
+    amount: formatQuoteMoney(
+      previewData.renewal_amount_cents,
+      previewData.currency,
+      locale.value
+    ),
     date: formatDate(previewData.renewal_at)
   })
 })
