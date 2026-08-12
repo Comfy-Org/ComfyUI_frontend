@@ -604,7 +604,7 @@ export const useLitegraphService = () => {
     node.title = nodeDef.display_name || nodeDef.name
 
     if (isNodeDisabled(nodeDef)) {
-      node.skip_list = true
+      node.list_disabled = true
     } else if (nodeDef.dev_only) {
       const settingStore = useSettingStore()
       node.skip_list = !settingStore.get('Comfy.DevMode')

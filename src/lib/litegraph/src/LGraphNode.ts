@@ -264,6 +264,7 @@ export class LGraphNode
   static description?: string
   static filter?: string
   static skip_list?: boolean
+  static list_disabled?: boolean
   static nodeData?: {
     dev_only?: boolean
     deprecated?: boolean

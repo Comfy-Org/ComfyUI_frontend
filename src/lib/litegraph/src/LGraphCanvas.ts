@@ -1254,6 +1254,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           value: node.type,
           content: node.title,
           has_submenu: false,
+          disabled: node.list_disabled === true,
           callback: function (value, _event, _mouseEvent, contextMenu) {
             if (!canvas.graph) throw new NullGraphError()
 
