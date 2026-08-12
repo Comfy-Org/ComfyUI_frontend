@@ -9,6 +9,10 @@ import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
 import { LitegraphLinkAdapter } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
 import type { LinkRenderContext } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
 import { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculations'
+import {
+  isLinkRevealed,
+  setRevealedLinks
+} from '@/renderer/core/canvas/links/linkVisibilityState'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
@@ -33,6 +37,14 @@ import { Reroute } from './Reroute'
 import type { RerouteId } from './Reroute'
 import { LinkConnector } from './canvas/LinkConnector'
 import { getCanvasContextMenuTarget } from './canvas/getCanvasContextMenuTarget'
+import {
+  clearLinkBadgeFrameState,
+  createLinkBadgeFrameState,
+  drawPendingLinkBadges,
+  enqueueHiddenLinkBadges,
+  queryLinkBadgeAtPoint
+} from './canvas/linkBadges'
+import type { LinkBadgeFrameState } from './canvas/linkBadges'
 import { isOverNodeInput, isOverNodeOutput } from './canvas/measureSlots'
 import { strokeShape } from './draw'
 import {
@@ -660,6 +672,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   visible_area: Rectangle
   /** Contains all links and reroutes that were rendered.  Repopulated every render cycle. */
   renderedPaths: Set<LinkSegment> = new Set()
+  readonly linkBadgeFrameState: LinkBadgeFrameState
   /** @deprecated Replaced by {@link renderedPaths}, but length is set to 0 by some extensions. */
   visible_links: LLink[] = []
   /** @deprecated This array is populated and cleared to support legacy extensions. The contents are ignored by Litegraph. */
@@ -841,6 +854,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     this.ds = new DragAndScale(canvas)
     this.pointer = new CanvasPointer(canvas)
+    this.linkBadgeFrameState = createLinkBadgeFrameState()
 
     // Set up zoom change handler for efficient LOD updates
     this.ds.onChanged = (scale: number, _offset: Point) => {
@@ -3303,6 +3317,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.graph_mouse[0] = x
     this.graph_mouse[1] = y
 
+    const hoveredBadge = queryLinkBadgeAtPoint(this.linkBadgeFrameState, x, y)
+    if (setRevealedLinks(hoveredBadge === undefined ? [] : [hoveredBadge])) {
+      this.dirty_bgcanvas = true
+    }
+
     if (e.isPrimary) pointer.move(e)
 
     /** See {@link state}.{@link LGraphCanvasState.hoveringOver hoveringOver} */
@@ -3931,6 +3950,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // TODO: Check if document.contains(e.relatedTarget) - handle mouseover node textarea etc.
     this.adjustMouseEvent(e)
     this.updateMouseOverNodes(null, e)
+    if (setRevealedLinks([])) this.dirty_bgcanvas = true
   }
 
   processMouseCancel(): void {
@@ -6032,6 +6052,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
   drawConnections(ctx: CanvasRenderingContext2D): void {
     this.renderedPaths.clear()
+    clearLinkBadgeFrameState(this.linkBadgeFrameState)
     if (this.links_render_mode === LinkRenderType.HIDDEN_LINK) return
 
     // Skip link rendering while waiting for slot positions to sync after reconfigure
@@ -6073,6 +6094,47 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       node.arrange()
     }
 
+    const renderConnection = (
+      link: LLink,
+      startPos: Point,
+      endPos: Point,
+      startDirection?: LinkDirection,
+      endDirection?: LinkDirection
+    ): void => {
+      let renderedStart = startPos
+      let renderedEnd = endPos
+      if (link.hidden) {
+        const badgeColor =
+          (typeof link.color === 'string' && link.color) ||
+          LGraphCanvas.link_type_colors[link.type] ||
+          this.default_link_color
+        const tips = enqueueHiddenLinkBadges(
+          this.linkBadgeFrameState,
+          ctx,
+          link,
+          startPos,
+          endPos,
+          badgeColor
+        )
+        if (!isLinkRevealed(link.id)) return
+        if (tips) {
+          renderedStart = tips.outputTip
+          renderedEnd = tips.inputTip
+        }
+      }
+
+      this._renderAllLinkSegments(
+        ctx,
+        link,
+        renderedStart,
+        renderedEnd,
+        visibleReroutes,
+        now,
+        startDirection,
+        endDirection
+      )
+    }
+
     for (const node of nodes) {
       // for every input (we render just inputs because it is easier as every slot can only have one input)
       const { inputs } = node
@@ -6104,16 +6166,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         const output = start_node.outputs[outputId]
         if (!output) continue
 
-        this._renderAllLinkSegments(
-          ctx,
-          link,
-          startPos,
-          endPos,
-          visibleReroutes,
-          now,
-          output.dir,
-          input.dir
-        )
+        renderConnection(link, startPos, endPos, output.dir, input.dir)
       }
     }
 
@@ -6133,16 +6186,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
             ? getSlotPosition(inputNode, link.target_slot, true)
             : inputNode.getInputPos(link.target_slot)
 
-          this._renderAllLinkSegments(
-            ctx,
-            link,
-            output.pos,
-            endPos,
-            visibleReroutes,
-            now,
-            input.dir,
-            input.dir
-          )
+          renderConnection(link, output.pos, endPos, input.dir, input.dir)
         }
       }
 
@@ -6160,16 +6204,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           ? getSlotPosition(outputNode, link.origin_slot, false)
           : outputNode.getOutputPos(link.origin_slot)
 
-        this._renderAllLinkSegments(
-          ctx,
-          link,
-          startPos,
-          input.pos,
-          visibleReroutes,
-          now,
-          output.dir,
-          input.dir
-        )
+        renderConnection(link, startPos, input.pos, output.dir, input.dir)
       }
     }
 
@@ -6219,6 +6254,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
       link.disconnectOnDrop = distSquared < radius ** 2
     })
+
+    drawPendingLinkBadges(this.linkBadgeFrameState, ctx)
 
     ctx.globalAlpha = 1
   }
