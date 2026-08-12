@@ -104,6 +104,7 @@ export default defineConfig([
             'packages/object-info-parser/vitest.config.ts',
             'vite.electron.config.mts',
             'vite.types.config.mts',
+            'vitest.matrix.config.mts',
             'vitest.timer.setup.ts'
           ]
         }
