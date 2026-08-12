@@ -37,24 +37,19 @@ test.describe('Vue Nodes Canvas Pan', { tag: '@vue-nodes' }, () => {
     const [nodeRef] = await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
     if (!nodeRef) throw new Error('KSampler is not rendered')
     const softExpect = expect.configure({ soft: true })
-    let mouseDown = false
-    let spaceDown = false
-    await using cleanup = new AsyncDisposableStack()
-    cleanup.defer(async () => {
-      if (mouseDown) await comfyPage.page.mouse.up()
-      if (spaceDown) await comfyPage.page.keyboard.up('Space')
-    })
+    await using spaceRelease = new AsyncDisposableStack()
+    await using mouseRelease = new AsyncDisposableStack()
 
     await test.step('Space + click on a node starts a pan', async () => {
       const offsetBefore = await comfyPage.canvasOps.getOffset()
+      await using releaseSpace = new AsyncDisposableStack()
 
       await comfyPage.canvas.focus()
       await comfyPage.page.keyboard.down('Space')
-      spaceDown = true
+      releaseSpace.defer(() => comfyPage.page.keyboard.up('Space'))
       await softExpect.poll(() => comfyPage.canvasOps.isReadOnly()).toBe(true)
       await comfyMouse.dragElementBy(node.root, { x: -300, y: 0 })
-      await comfyPage.page.keyboard.up('Space')
-      spaceDown = false
+      await releaseSpace.disposeAsync()
 
       await softExpect
         .poll(() => comfyPage.canvasOps.getOffset())
@@ -64,12 +59,12 @@ test.describe('Vue Nodes Canvas Pan', { tag: '@vue-nodes' }, () => {
     await test.step('Space switches node dragging to canvas panning', async () => {
       await node.header.hover()
       await comfyPage.page.mouse.down()
-      mouseDown = true
+      mouseRelease.defer(() => comfyPage.page.mouse.up())
       await comfyPage.page.mouse.move(500, 500, { steps: 5 })
       const offsetBeforePan = await comfyPage.canvasOps.getOffset()
 
       await comfyPage.page.keyboard.down('Space')
-      spaceDown = true
+      spaceRelease.defer(() => comfyPage.page.keyboard.up('Space'))
       await comfyPage.page.mouse.move(400, 400, { steps: 5 })
       await softExpect
         .poll(() => comfyPage.canvasOps.getOffset())
@@ -77,8 +72,7 @@ test.describe('Vue Nodes Canvas Pan', { tag: '@vue-nodes' }, () => {
     })
 
     await test.step('Releasing Space resumes node dragging', async () => {
-      await comfyPage.page.keyboard.up('Space')
-      spaceDown = false
+      await spaceRelease.disposeAsync()
       const offsetAfterPan = await comfyPage.canvasOps.getOffset()
       const positionBeforeResume = [
         ...(await nodeRef.getProperty<[number, number]>('pos'))
@@ -92,8 +86,7 @@ test.describe('Vue Nodes Canvas Pan', { tag: '@vue-nodes' }, () => {
           ...(await nodeRef.getProperty<[number, number]>('pos'))
         ])
         .not.toEqual(positionBeforeResume)
-      await comfyPage.page.mouse.up()
-      mouseDown = false
+      await mouseRelease.disposeAsync()
     })
   })
 
@@ -131,18 +124,13 @@ test.describe('Vue Nodes Canvas Pan', { tag: '@vue-nodes' }, () => {
         x: headerBox.x + headerBox.width / 2,
         y: headerBox.y + headerBox.height / 2
       }
-      let mouseDown = false
-      let spaceDown = false
-      await using cleanup = new AsyncDisposableStack()
-      cleanup.defer(async () => {
-        if (mouseDown) await comfyPage.page.mouse.up()
-        if (spaceDown) await comfyPage.page.keyboard.up('Space')
-      })
+      await using spaceRelease = new AsyncDisposableStack()
+      await using mouseRelease = new AsyncDisposableStack()
 
       await test.step('Start dragging the node', async () => {
         await comfyPage.page.mouse.move(start.x, start.y)
         await comfyPage.page.mouse.down()
-        mouseDown = true
+        mouseRelease.defer(() => comfyPage.page.mouse.up())
         await comfyPage.page.mouse.move(start.x + 40, start.y + 40, {
           steps: 5
         })
@@ -151,14 +139,12 @@ test.describe('Vue Nodes Canvas Pan', { tag: '@vue-nodes' }, () => {
       const positionAfterRelease =
         await test.step('Release the pointer while Space-panning', async () => {
           await comfyPage.page.keyboard.down('Space')
-          spaceDown = true
+          spaceRelease.defer(() => comfyPage.page.keyboard.up('Space'))
           await comfyPage.page.mouse.move(start.x + 80, start.y + 80, {
             steps: 5
           })
-          await comfyPage.page.mouse.up()
-          mouseDown = false
-          await comfyPage.page.keyboard.up('Space')
-          spaceDown = false
+          await mouseRelease.disposeAsync()
+          await spaceRelease.disposeAsync()
 
           return [...(await nodeRef.getProperty<[number, number]>('pos'))]
         })
