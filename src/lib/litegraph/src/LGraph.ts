@@ -1,5 +1,4 @@
 import { toString } from 'es-toolkit/compat'
-import { getActivePinia } from 'pinia'
 import { shallowRef, toRaw } from 'vue'
 
 import {
@@ -539,8 +538,7 @@ export class LGraph
   constructor(o?: ISerialisedGraph | SerialisableGraph) {
     /** @see MapProxyHandler */
     const links = new LinkMap(
-      () =>
-        getActivePinia() && this.rootGraph ? graphScopeOf(this) : undefined,
+      () => (this.rootGraph ? graphScopeOf(this) : undefined),
       (scope) =>
         [...useLinkStore().graphTopologies(scope)]
           .filter((topology) => !isFloatingTopology(topology))
@@ -558,8 +556,7 @@ export class LGraph
       Record<LinkId, LLink>
 
     this.floatingLinks = new LinkMap(
-      () =>
-        getActivePinia() && this.rootGraph ? graphScopeOf(this) : undefined,
+      () => (this.rootGraph ? graphScopeOf(this) : undefined),
       (scope) =>
         [...useLinkStore().graphTopologies(scope)]
           .filter(isFloatingTopology)

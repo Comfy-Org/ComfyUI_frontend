@@ -63,6 +63,12 @@ describe('LLink ↔ linkStore integration', () => {
     expect(graph.links.size).toBe(0)
   })
 
+  it('requires Pinia when constructing a root graph', () => {
+    setActivePinia(undefined)
+
+    expect(() => new LGraph()).toThrow()
+  })
+
   it('does not add a link when topology registration is rejected', () => {
     const graph = new LGraph()
     const incumbent = new LLink(

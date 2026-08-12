@@ -16,6 +16,21 @@ id, registration logs an error, leaves the incoming link detached, and returns
 link another identity. `graph.floatingLinks` remains the filtered compatibility
 view for one-ended links.
 
+`graph.links` and `graph.floatingLinks` are owner-filtered, store-backed
+compatibility views rather than independent native `Map` storage. Their normal
+`Map` read methods use a cached membership snapshot; acquire a new iterator
+after topology membership changes instead of retaining an existing iterator.
+Both views require an active Pinia and no longer represent a missing store as
+an empty graph.
+
+Like native `Map.set()`, `view.set(id, link)` returns the view, not a registration
+result. Registration can reject an ID or target collision while preserving the
+incumbent, so extensions that insert through a view should confirm success with
+`get()` or `has()`. Prefer graph connection and floating-link APIs when they
+cover the operation because those APIs coordinate the surrounding lifecycle.
+Do not invoke `Map.prototype` methods directly against either view or depend on
+native `Map` internal storage.
+
 Extensions that previously ignored the return value should handle
 `undefined` before retaining, rendering, or mutating the incoming link. Do not
 preselect a positive link id for a new runtime link; allow the graph to mint
@@ -25,6 +40,5 @@ Persisted-id collision repair belongs to workflow import and
 deserialization. Extensions importing serialized topology should normalize
 conflicting ids at that boundary before using the runtime registration API.
 
-Constructing or configuring an `LGraph` from serialized data requires an
-active Pinia because graph entities register with their topology stores during
-deserialization.
+Constructing a root `LGraph`, or configuring one from serialized data, requires
+an active Pinia because graph topology is store-backed throughout its lifecycle.
