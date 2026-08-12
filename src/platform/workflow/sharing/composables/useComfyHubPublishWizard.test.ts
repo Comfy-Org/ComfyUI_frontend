@@ -17,7 +17,6 @@ const { cachePublishPrefill, getCachedPrefill, useComfyHubPublishWizard } =
 
 describe('useComfyHubPublishWizard', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockActiveWorkflow.value = { filename: 'my-workflow.json' }
   })
 
