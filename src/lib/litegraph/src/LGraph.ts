@@ -32,7 +32,7 @@ import {
   observeRerouteId
 } from './idAllocation'
 import type { LGraphState } from './idAllocation'
-import { getLinkStoreRevision, useLinkStore } from '@/stores/linkStore'
+import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
 import {
@@ -536,15 +536,16 @@ export class LGraph
    * @param o data from previous serialization [optional]
    */
   constructor(o?: ISerialisedGraph | SerialisableGraph) {
+    const linkStore = useLinkStore()
     /** @see MapProxyHandler */
     const links = new LinkMap(
       () => (this.rootGraph ? graphScopeOf(this) : undefined),
       (scope) =>
-        [...useLinkStore().graphTopologies(scope)]
+        [...linkStore.graphTopologies(scope)]
           .filter((topology) => !isFloatingTopology(topology))
           .map(resolveLinkTopology)
           .filter((link): link is LLink => link !== undefined),
-      getLinkStoreRevision,
+      linkStore.getRevision,
       (link) => this._addLink(link),
       (id) => this._removeLink(id)
     )
@@ -558,11 +559,11 @@ export class LGraph
     this.floatingLinks = new LinkMap(
       () => (this.rootGraph ? graphScopeOf(this) : undefined),
       (scope) =>
-        [...useLinkStore().graphTopologies(scope)]
+        [...linkStore.graphTopologies(scope)]
           .filter(isFloatingTopology)
           .map(resolveLinkTopology)
           .filter((link): link is LLink => link !== undefined),
-      getLinkStoreRevision,
+      linkStore.getRevision,
       (link) => this.addFloatingLink(link),
       (id) => {
         const link = this.floatingLinks.get(id)

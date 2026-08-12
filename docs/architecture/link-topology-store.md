@@ -106,9 +106,7 @@ All `graph.links` mutation funnels through its store-backed `LinkMap` and
 registration/unregistration (and link-layout cleanup on removal).
 `LinkMap` caches its owner-local regular or floating view so rendering can use
 native `Map` reads and snapshot iterators without rebuilding topology on each
-access. Store mutations centrally invalidate the view when its membership
-changes; endpoint-only updates keep the same link objects and do not invalidate
-it.
+access. Store mutations centrally invalidate the reactive view.
 `addFloatingLink` / `removeFloatingLink` apply floating-specific lifecycle
 policy through the same topology collection. `LLink.disconnect` performs the
 equivalent effects inline because it only holds a `LinkNetwork`, and

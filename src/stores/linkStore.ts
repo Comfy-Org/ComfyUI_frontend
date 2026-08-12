@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { reactive, toRaw } from 'vue'
+import { reactive, shallowRef, toRaw } from 'vue'
 
 import type {
   GraphScope,
@@ -82,11 +82,6 @@ interface RootTopologyBucket {
 }
 
 const EMPTY_LINKS: ReadonlySet<LinkTopology> = new Set()
-let revision = 0
-
-export function getLinkStoreRevision(): number {
-  return revision
-}
 
 /**
  * A link is keyed by its target input slot only when that slot uniquely
@@ -110,6 +105,11 @@ function hasUniqueTarget(topology: LinkTopology): boolean {
  */
 export const useLinkStore = defineStore('link', () => {
   const roots = reactive(new Map<RootGraphId, RootTopologyBucket>())
+  const revision = shallowRef(0)
+
+  function getRevision(): number {
+    return revision.value
+  }
 
   function rootBucket(rootGraphId: RootGraphId): RootTopologyBucket {
     const existing = roots.get(rootGraphId)
@@ -234,7 +234,7 @@ export const useLinkStore = defineStore('link', () => {
     if (expected) displace(targetBucket, expected)
     const owned = Object.assign(replacement, { graphId: scope.owningGraphId })
     const placed = placeValidated(targetBucket, owned)
-    revision++
+    revision.value++
     return placed
   }
 
@@ -262,7 +262,7 @@ export const useLinkStore = defineStore('link', () => {
     if (!bucket || !ownsPlacement(scope, bucket, topology)) return false
     displace(bucket, topology)
     if (bucket.byId.size === 0) roots.delete(scope.rootGraphId)
-    revision++
+    revision.value++
     return true
   }
 
@@ -339,15 +339,6 @@ export const useLinkStore = defineStore('link', () => {
   ): EndpointUpdateResult<LinkTopology[]> {
     const error = validateEndpointUpdates(scope, updates, removals)
     if (error) return { ok: false, error }
-    const changesLinkView =
-      removals.length > 0 ||
-      updates.some(
-        ({ topology, patch }) =>
-          isFloatingTopology({
-            ...toRaw(topology),
-            ...patchedEndpoints(topology, patch)
-          }) !== isFloatingTopology(topology)
-      )
 
     const bucket = rootBucket(scope.rootGraphId)
     for (const { topology } of updates) displace(bucket, topology)
@@ -358,7 +349,7 @@ export const useLinkStore = defineStore('link', () => {
       return placeValidated(bucket, topology)
     })
     if (bucket.byId.size === 0) roots.delete(scope.rootGraphId)
-    if (changesLinkView) revision++
+    revision.value++
     return { ok: true, value }
   }
 
@@ -438,7 +429,7 @@ export const useLinkStore = defineStore('link', () => {
   }
 
   function clearGraph(graphId: RootGraphId): void {
-    if (roots.delete(graphId)) revision++
+    if (roots.delete(graphId)) revision.value++
   }
 
   function clearOwner(scope: GraphScope): void {
@@ -450,7 +441,7 @@ export const useLinkStore = defineStore('link', () => {
       if (topology) displace(bucket, topology)
     }
     if (bucket.byId.size === 0) roots.delete(scope.rootGraphId)
-    revision++
+    revision.value++
   }
 
   return {
@@ -465,6 +456,7 @@ export const useLinkStore = defineStore('link', () => {
     getOutputSlotLinks,
     getTopology,
     graphTopologies,
+    getRevision,
     clearOwner,
     clearGraph
   }
