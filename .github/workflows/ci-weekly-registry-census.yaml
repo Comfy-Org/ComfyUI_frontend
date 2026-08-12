@@ -1,35 +1,33 @@
-# Weekly full-registry custom-node census - breadth radar, never a gate.
+# Weekly ecosystem matrix over a self-updating full-registry corpus.
 #
-# Sweeps the frontend JS of EVERY registry pack (~5,000 packs, ~1GB corpus)
-# for the empirically-confirmed compatibility-breaking idioms and reports
-# population counts weighted by downloads. Static analysis with an unmeasured
-# false-positive rate: treat the numbers as radar for ecosystem blast radius,
-# not as a pass/fail verdict on any change. The job fails only on mechanical
-# errors (registry unreachable, scan crash) - never on census numbers.
-#
-# The corpus is cached whole and self-updates exactly when packs move:
-# fetch --revalidate HEAD-checks every cached pack's tarball ETag against
+# Maintains a cached mirror of the frontend JS of EVERY registry pack
+# (~5,000 packs, ~1GB) that self-updates exactly when packs move: fetch
+# --revalidate HEAD-checks every cached pack's tarball ETag against
 # corpus.lock.json (HEAD-ref tarball ETags are commit-derived, so a changed
 # ETag means the pack's default branch moved) and refetches only drifted
 # packs. The cache saves under a key derived from the lockfile hash, so an
 # unchanged corpus skips the save and a drifted one writes a new entry.
 # Cold start (no cache) is the one expensive run: a full ~1GB fetch.
 #
-# Scanner provenance: scripts/registry-census/ is vendored from
+# The upstream static idiom scan (L1) is deliberately absent: its
+# false-positive/negative rate was judged too high to act on. Packs are
+# measured by executing their code - the ecosystem matrix - instead.
+#
+# Provenance: scripts/registry-census/ is vendored from
 # Comfy-Org/ComfyUI_ECS_Compat_Check (private, migration-phase instrument
 # slated for archival) - see scripts/registry-census/README.md.
-name: 'CI: Registry Census'
+name: 'CI: Ecosystem Matrix'
 
 on:
   schedule:
     # Weekly, Monday 06:17 UTC - off the top-of-hour scheduler stampede.
     - cron: '17 6 * * 1'
   workflow_dispatch:
-  # Self-testing: a PR that changes the census runs the census. Also what
-  # registers the workflow so workflow_dispatch resolves before the file
-  # ever lands on the default branch. PR-branch cache saves are scoped to
-  # the PR and invisible to the weekly main run, which cold-starts once
-  # post-merge.
+  # Self-testing: a PR that changes the corpus tooling runs the refresh.
+  # Also what registers the workflow so workflow_dispatch resolves before
+  # the file ever lands on the default branch. PR-branch cache saves are
+  # scoped to the PR and invisible to the weekly main run, which
+  # cold-starts once post-merge.
   pull_request:
     paths:
       - 'scripts/registry-census/**'
@@ -39,11 +37,11 @@ permissions:
   contents: read
 
 concurrency:
-  group: registry-census
+  group: registry-corpus
   cancel-in-progress: false
 
 jobs:
-  registry-census:
+  corpus:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -59,9 +57,8 @@ jobs:
           key: registry-corpus-${{ github.run_id }}
           restore-keys: registry-corpus-
 
-      # Re-pin the registry snapshot every run: it is the target list and
-      # the denominator for every percentage, and new packs only enter the
-      # corpus through it.
+      # Re-pin the registry snapshot every run: it is the corpus's target
+      # list, and new packs only enter the corpus through it.
       - name: Refresh registry snapshot
         run: python3 scripts/registry-census/refresh_registry.py
 
@@ -69,29 +66,12 @@ jobs:
         id: fetch
         run: python3 scripts/registry-census/fetch_corpus.py --revalidate
 
-      - name: Census scan
-        run: |
-          set -o pipefail
-          python3 scripts/registry-census/scan_registry.py 2>&1 | tee census.log
-          {
-            echo '## Full-registry custom-node census'
-            echo
-            echo '```'
-            grep -B1 -A8 'FULL REGISTRY CENSUS' census.log
-            echo '```'
-            echo
-            echo 'Static radar over every registry pack - see scripts/registry-census/README.md for caveats.'
-          } >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Upload results
+      - name: Upload corpus lockfile
         if: always()
         uses: actions/upload-artifact@v6
         with:
-          name: registry-census
-          path: |
-            .census/results/
-            .census/corpus.lock.json
-            census.log
+          name: corpus-lock
+          path: .census/corpus.lock.json
           retention-days: 30
           if-no-files-found: warn
 
@@ -120,7 +100,7 @@ jobs:
   # leaks unhandled rejections. The ecosystem PASS/FAIL verdict is applied
   # once, over all shards combined, by matrix-verdict below.
   ecosystem-matrix:
-    needs: registry-census
+    needs: corpus
     runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
@@ -131,7 +111,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
 
-      # The census job above saved the corpus this run; same-run caches are
+      # The corpus job above saved the cache this run; same-run caches are
       # visible to later jobs. Restore-only - the matrix never writes it.
       - name: Restore corpus cache
         uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
