@@ -2563,20 +2563,20 @@ const translations = {
   // Featured dropdown cards — keys are keyed by parent nav item, not card content,
   // so the copy can be swapped without renaming the key.
   'nav.featuredProductsTitle': {
-    en: 'NEW RELEASE: MINIMAX H3',
-    'zh-CN': '全新发布：MiniMax H3'
+    en: 'NEW RELEASE: LTX 2.5',
+    'zh-CN': '全新发布：LTX 2.5'
   },
   'nav.featuredProductsAlt': {
-    en: 'MiniMax H3 feature image',
-    'zh-CN': 'MiniMax H3 精选图片'
+    en: 'LTX 2.5 feature image',
+    'zh-CN': 'LTX 2.5 精选图片'
   },
   'nav.featuredProductsCta': {
     en: 'TRY WORKFLOW',
     'zh-CN': '试用工作流'
   },
   'nav.featuredProductsCtaAria': {
-    en: 'Try the MiniMax H3 workflow',
-    'zh-CN': '试用 MiniMax H3 工作流'
+    en: 'Try the LTX 2.5 workflow',
+    'zh-CN': '试用 LTX 2.5 工作流'
   },
   'nav.featuredCommunityTitle': {
     en: 'Sky Replacement',
@@ -5402,6 +5402,7 @@ const translations = {
     'zh-CN': '开始使用'
   },
   'footer.wanAnimate2': { en: 'Wan Animate 2', 'zh-CN': 'Wan Animate 2' },
+  'footer.ltx': { en: 'LTX 2.5', 'zh-CN': 'LTX 2.5' },
   'modelLaunch.copyPrompt': { en: 'Copy prompt', 'zh-CN': '复制提示词' },
   'minimax.meta.title': {
     en: 'MiniMax H3 on Comfy — Open-Weight Video Model',
