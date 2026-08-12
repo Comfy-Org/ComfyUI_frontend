@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import { getRoutes } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import CardSplitContent01 from '../blocks/CardSplitContent01.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const routes = getRoutes(locale)
 </script>
 
 <template>
@@ -14,7 +16,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
     :body="t('modelRelease.body', locale)"
     :primary-cta="{
       label: t('modelRelease.viewFeatures', locale),
-      href: '/minimax'
+      href: routes.minimax
     }"
     :secondary-cta="{
       label: t('modelRelease.tryWorkflows', locale),

@@ -58,6 +58,72 @@
       }
     }
   },
+  "AddLayer": {
+    "display_name": "新增圖層",
+    "inputs": {
+      "blend_mode": {
+        "name": "blend_mode",
+        "tooltip": "初始混合模式。"
+      },
+      "flip_h": {
+        "name": "flip_h",
+        "tooltip": "將圖層水平翻轉。"
+      },
+      "flip_v": {
+        "name": "flip_v",
+        "tooltip": "將圖層垂直翻轉。"
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "初始顯示高度。設為 0 則保持圖像原始高度。"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "以原始尺寸顯示的圖層內容。批次處理會展開為連續的圖層。"
+      },
+      "layers": {
+        "name": "layers",
+        "tooltip": "要附加的圖層堆疊。若未連接則會開始新的堆疊。"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "此圖層的透明遮罩。遮罩區域（值為 1）會變為透明，並與圖像本身的 alpha 通道相乘。"
+      },
+      "name": {
+        "name": "name",
+        "tooltip": "在合成器編輯器中顯示的圖層名稱。"
+      },
+      "opacity": {
+        "name": "opacity",
+        "tooltip": "初始圖層不透明度。"
+      },
+      "rotation": {
+        "name": "rotation",
+        "tooltip": "初始旋轉角度（順時針，單位為度）。"
+      },
+      "width": {
+        "name": "width",
+        "tooltip": "初始顯示寬度。設為 0 則保持圖像原始寬度。"
+      },
+      "x": {
+        "name": "x",
+        "tooltip": "在畫布上的初始水平位置。"
+      },
+      "y": {
+        "name": "y",
+        "tooltip": "在畫布上的初始垂直位置。"
+      },
+      "z_index": {
+        "name": "z_index",
+        "tooltip": "堆疊順序覆寫。圖層會依 z_index 穩定排序；相同值則依列表順序排列。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "已附加此圖層的圖層堆疊。"
+      }
+    }
+  },
   "AddNoise": {
     "display_name": "新增雜訊",
     "inputs": {
@@ -832,11 +898,11 @@
       "model_generate_audio": {
         "name": "產生音訊"
       },
+      "model_output_format": {
+        "name": "output_format"
+      },
       "model_prompt": {
         "name": "提示詞"
-      },
-      "model_ratio": {
-        "name": "比例"
       },
       "model_resolution": {
         "name": "解析度"
@@ -879,6 +945,9 @@
       "model_generate_audio": {
         "name": "產生音訊"
       },
+      "model_output_format": {
+        "name": "output_format"
+      },
       "model_prompt": {
         "name": "提示詞"
       },
@@ -887,6 +956,9 @@
       },
       "model_resolution": {
         "name": "解析度"
+      },
+      "model_video_editing": {
+        "name": "video_editing"
       },
       "seed": {
         "name": "種子",
@@ -919,6 +991,9 @@
       },
       "model_generate_audio": {
         "name": "產生音訊"
+      },
+      "model_output_format": {
+        "name": "output_format"
       },
       "model_prompt": {
         "name": "提示詞"
@@ -1268,6 +1343,69 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "ByteDanceSeedreamLayerSeparationNode": {
+    "description": "將一張圖片分解為背景底圖以及最多 16 個可重新定位的透明圖層，每個圖層具有堆疊順序、邊界框、名稱與描述。",
+    "display_name": "ByteDance Seedream 5.0 Pro 圖層分離",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "crop_layers": {
+        "name": "裁切圖層",
+        "tooltip": "圖層／遮罩批次輸出的幾何方式（layer_stack 不受影響且始終為緊密裁切）。全畫布：每個圖層放在基底尺寸畫布上，依其邊界框位置擺放－可直接用 ImageCompositeMasked 重組。最小尺寸：每個圖層裁切至其邊界框（為批次處理會補齊到最大圖層尺寸）－張量更小；用 Layers From Bounding Boxes 與 bboxes 輸出重建位置。"
+      },
+      "image": {
+        "name": "圖片",
+        "tooltip": "要分離的圖片。僅限一張圖片，至少 512x512 像素，長寬比介於 1:16 與 16:1 之間。大於約 4MP 的輸入會在上傳前自動縮小。"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "如何分離圖片。留空則自動偵測並分離所有主要元素。可用自然語言描述元素以控制分離，或用 <bbox>left top right bottom</bbox> 標籤（0-1000 千分比座標）精確指定區域。"
+      },
+      "prompt_optimization": {
+        "name": "提示詞優化",
+        "tooltip": "提示詞優化模式：'standard' 提供較高品質，'fast' 則縮短生成時間。"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "用於生成的種子值。"
+      },
+      "size": {
+        "name": "尺寸",
+        "tooltip": "輸出解析度等級。'auto' 會依照輸入圖片尺寸（限制在 1K-2K 範圍內）。"
+      },
+      "watermark": {
+        "name": "浮水印",
+        "tooltip": "是否在圖片上添加「AI 生成」浮水印。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "基底圖片",
+        "tooltip": "圖層堆疊的基底圖片（背景底圖）。"
+      },
+      "1": {
+        "name": "基底遮罩",
+        "tooltip": "基底圖片的透明度（1 = 透明，LoadImage 慣例）；目前總是完全不透明。"
+      },
+      "2": {
+        "name": "圖層",
+        "tooltip": "自下而上排序的透明圖層。全畫布模式：放在黑色基底尺寸畫布上，依其邊界框位置擺放。最小尺寸模式：裁切至其邊界框，左上角對齊，補齊到最大圖層尺寸。"
+      },
+      "3": {
+        "name": "遮罩",
+        "tooltip": "每個圖層的透明度，與圖層批次索引對齊（1 = 透明，LoadImage 慣例）。如需 ImageCompositeMasked 風格合成，請先加上 InvertMask。"
+      },
+      "4": {
+        "name": "邊界框",
+        "tooltip": "每個圖層一個定位框，與圖層批次索引對齊（將此、遮罩一同輸入 Layers From Bounding Boxes 以重建每層位置）：{x, y, width, height, metadata: {name, desc, z_index, native_size, content_rect, flags}}。content_rect = [left, top, width, height] 表示圖層內容在其自身框架內的位置；最終會以定位框位置加上此偏移量放置於畫布上。"
+      },
+      "5": {
+        "name": "圖層堆疊",
+        "tooltip": "可編輯的圖層文件（供 Create Layered Image 使用）：基底底圖加上每個元素作為獨立命名、緊密裁切的圖層，保留其實際位置與堆疊順序。可直接連接，或用 Add Layer 擴充。"
       }
     }
   },
@@ -5686,6 +5824,9 @@
       "model_number_of_images": {
         "name": "圖像數量"
       },
+      "model_quality": {
+        "name": "品質"
+      },
       "model_resolution": {
         "name": "解析度"
       },
@@ -5724,6 +5865,10 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "用於生成圖像的文字提示"
+      },
+      "quality": {
+        "name": "品質",
+        "tooltip": "品質等級，僅支援 grok-imagine-image-2.0 模型。"
       },
       "resolution": {
         "name": "解析度"
@@ -6925,6 +7070,27 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "ImageCompositor": {
+    "display_name": "建立分層影像",
+    "inputs": {
+      "compositor": {
+        "name": "compositor",
+        "tooltip": "由合成器編輯器儲存的分層合成。"
+      },
+      "layers": {
+        "name": "layers",
+        "tooltip": "要合成的圖層堆疊；請使用新增圖層來建立。項目會依 z_index 疊加，批次中的每個影格會展開為連續圖層，並由項目的位置、不透明度與混合模式決定初始合成效果。若未明確指定文件畫布，則尺寸會盡量以已放置圖層的最大範圍為準。若有已儲存且符合目前輸入的合成，將優先使用。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "已合成的影像。若合成中有透明區域（如隱藏背景），則包含 alpha 通道，否則為純 RGB。"
+      },
+      "1": {
+        "tooltip": "合成影像的透明度（1 = 完全透明）。若合成為不透明則全為零。"
       }
     }
   },
@@ -8769,6 +8935,67 @@
       }
     }
   },
+  "LTXVDualCFGGuider": {
+    "description": "為封裝的 LTXV-AV latent 的影片與音訊模態分別設置 CFG 比例。",
+    "display_name": "LTXV 雙重 CFG 引導器",
+    "inputs": {
+      "audio_cfg": {
+        "name": "audio_cfg"
+      },
+      "model": {
+        "name": "model"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "video_cfg": {
+        "name": "video_cfg"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVDurationPredictor": {
+    "description": "使用 LTX 2.4 duration head（由 ModelPatchLoader 載入）預測提示的自然鏡頭時長，並將其對齊至 VAE 的 8k+1 幀格。",
+    "display_name": "LTXV 時長預測器",
+    "inputs": {
+      "duration_head": {
+        "name": "duration_head",
+        "tooltip": "由 ModelPatchLoader 載入的 LTX 2.4 duration head。"
+      },
+      "frame_rate": {
+        "name": "frame_rate"
+      },
+      "max_seconds": {
+        "name": "max_seconds"
+      },
+      "min_seconds": {
+        "name": "min_seconds"
+      },
+      "model": {
+        "name": "model"
+      },
+      "positive": {
+        "name": "positive"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "num_frames",
+        "tooltip": null
+      },
+      "1": {
+        "name": "seconds",
+        "tooltip": "原始（未限制）預測時長。"
+      }
+    }
+  },
   "LTXVEmptyLatentAudio": {
     "display_name": "LTXV 空 latent 音訊",
     "inputs": {
@@ -8888,6 +9115,29 @@
       }
     }
   },
+  "LTXVModalityGuidance": {
+    "description": "LTXV-AV 的跨模態（音訊-影片）引導。每步額外執行一次前向傳遞，並切斷 a2v/v2a 跨注意力，然後將結果推向耦合預測——加強音訊與影像同步（如唇形同步）。參考預設 modality_scale 為 3.0。可與雙重 CFG 引導器及 STG 疊加。設為 1.0 可停用（無額外傳遞）。",
+    "display_name": "LTXV 模態引導（A/V 耦合）",
+    "inputs": {
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "modality_scale": {
+        "name": "modality_scale"
+      },
+      "model": {
+        "name": "model"
+      },
+      "start_percent": {
+        "name": "start_percent"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LTXVPreprocess": {
     "display_name": "LTXV 預處理",
     "inputs": {
@@ -8999,6 +9249,33 @@
       },
       "1": {
         "name": "audio_latent",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVSpatioTemporalGuidance": {
+    "description": "每步額外執行一次傳遞，將選定區塊的自注意力降級為 value-passthrough，然後引導遠離該狀態——提升空間細節與動作連貫性。",
+    "display_name": "LTXV 時空引導（STG）",
+    "inputs": {
+      "blocks": {
+        "name": "blocks",
+        "tooltip": "以逗號分隔的 transformer 區塊索引。"
+      },
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "model": {
+        "name": "model"
+      },
+      "scale": {
+        "name": "scale"
+      },
+      "start_percent": {
+        "name": "start_percent"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -9413,6 +9690,45 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "LayersFromBoundingBoxes": {
+    "description": "將影像批次及其邊界框轉換為圖層堆疊，每個影格一個圖層，各自依其框位置放置。當節點以批次形式輸出圖層時使用——批次僅為每個影格帶有單一位置，否則個別位置會遺失。",
+    "display_name": "由邊界框產生圖層",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "放置框，與影像批次索引對齊。可接受邊界框（x, y, width, height）、標準化元素（帶有 'bbox'——這些需 canvas_width/canvas_height 轉換為像素），或其 JSON 字串。沒有對應框的影格會放在原點。框的寬高會縮放圖層以適應。metadata.name（或 desc）及 metadata.z_index 若有則會使用，metadata.content_rect（影格相對）會將影格裁切至實際內容。"
+      },
+      "canvas_height": {
+        "name": "canvas_height",
+        "tooltip": "文件畫布高度。0 代表自動從已放置圖層推算。"
+      },
+      "canvas_width": {
+        "name": "canvas_width",
+        "tooltip": "文件畫布寬度。0 代表自動從已放置圖層推算。"
+      },
+      "crop_to_content": {
+        "name": "crop_to_content",
+        "tooltip": "若有 metadata.content_rect，則將每個影格裁切至該區域，並將內容放置於框位置加上該區域偏移。若批次影格有填充建議開啟——僅保留真實內容於正確位置。"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "影像批次；每個影格成為一個圖層。"
+      },
+      "layers": {
+        "name": "layers",
+        "tooltip": "要附加的圖層堆疊。若要開始新堆疊請保持未連接。"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "每影格透明度，與影像批次索引對齊（1 = 透明，LoadImage 慣例）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "圖層堆疊，可直接用於建立分層影像。"
       }
     }
   },
@@ -9950,6 +10266,121 @@
     "outputs": {
       "0": {
         "name": "條件",
+        "tooltip": null
+      }
+    }
+  },
+  "LtxApi25AudioToVideo": {
+    "description": "根據音訊軌生成影片，可選擇首幀影像。",
+    "display_name": "LTX 2.5 音訊轉影片",
+    "inputs": {
+      "audio": {
+        "name": "音訊",
+        "tooltip": "驅動影片的音訊軌。長度（2-20 秒）決定影片時長。"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "image": {
+        "name": "影像",
+        "tooltip": "可選的影片首幀。"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "prompt": {
+        "name": "提示詞"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "決定此節點是否重新執行的種子；實際結果無論種子如何皆為非確定性。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LtxApi25ImageToVideo": {
+    "description": "以起始影像製作專業品質影片，可自訂時長與解析度。",
+    "display_name": "LTX 2.5 圖像轉影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "image": {
+        "name": "影像",
+        "tooltip": "作為影片首幀的影像。"
+      },
+      "last_frame": {
+        "name": "最後幀",
+        "tooltip": "作為影片最後一幀的影像。"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_duration": {
+        "name": "時長"
+      },
+      "model_fps": {
+        "name": "幀率"
+      },
+      "model_generate_audio": {
+        "name": "生成音訊"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "prompt": {
+        "name": "提示詞"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "決定此節點是否重新執行的種子；實際結果無論種子如何皆為非確定性。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LtxApi25TextToVideo": {
+    "description": "製作專業品質影片，可自訂時長與解析度。",
+    "display_name": "LTX 2.5 文字轉影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_duration": {
+        "name": "時長"
+      },
+      "model_fps": {
+        "name": "幀率"
+      },
+      "model_generate_audio": {
+        "name": "生成音訊"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "prompt": {
+        "name": "提示詞"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "決定此節點是否重新執行的種子；實際結果無論種子如何皆為非確定性。"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -11781,6 +12212,17 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "ModelAttentionBackend": {
+    "display_name": "ModelAttentionBackend",
+    "inputs": {
+      "attention": {
+        "name": "attention"
+      },
+      "model": {
+        "name": "model"
       }
     }
   },
@@ -15518,6 +15960,96 @@
       },
       "vae": {
         "name": "vae"
+      }
+    }
+  },
+  "QwenImageEditApi": {
+    "description": "使用 Qwen-Image 3.0 模型，根據文字提示編輯或合成最多 3 張參考圖像。",
+    "display_name": "Qwen Image 3 編輯",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "使用的模型。"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "要產生的圖像數量，將以批次返回。"
+      },
+      "prompt_extend": {
+        "name": "prompt_extend",
+        "tooltip": "是否使用 AI 協助增強提示詞。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用於生成的種子值。"
+      },
+      "size": {
+        "name": "size",
+        "tooltip": "輸出解析度。「符合輸入」會沿用第一張參考圖像的尺寸，「自動」讓模型選擇相同比例的尺寸，「自訂」可明確設定寬度與高度。"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "是否在結果中加入 AI 產生的浮水印。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QwenImageTextToImageApi": {
+    "description": "使用 Qwen-Image 3.0 模型，根據文字提示生成圖像。",
+    "display_name": "Qwen Image 3 文生圖",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "使用的模型。"
+      },
+      "model_height": {
+        "name": "height"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_width": {
+        "name": "width"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "要產生的圖像數量，將以批次返回。"
+      },
+      "prompt_extend": {
+        "name": "prompt_extend",
+        "tooltip": "是否使用 AI 協助增強提示詞。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用於生成的種子值。"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "是否在結果中加入 AI 產生的浮水印。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
