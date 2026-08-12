@@ -94,6 +94,15 @@ def main() -> int:
     )
 
     check(
+        'self-check: op-break degraded graph trips the runner self-check',
+        rows.get('poison-op-break', {}).get('selfCheck', 'OK') != 'OK',
+    )
+    check(
+        'self-check: clean control passes the runner self-check',
+        rows.get('clean-control', {}).get('selfCheck') == 'OK',
+    )
+
+    check(
         'signature: ghost widget recorded in the load signature',
         'poison_ghost=GHOST'
         in (ops('poison-desync').get('load') or {}).get('sig', ''),

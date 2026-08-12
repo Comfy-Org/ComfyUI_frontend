@@ -20,7 +20,7 @@ from paths import CORPUS  # noqa: E402
 DEST = os.path.abspath(os.path.join(HERE, os.pardir, os.pardir, 'src', '__ecs_matrix__'))
 REPOS = CORPUS
 
-PREFIX = r'(["\'])(?:/|\.\./|\./)*'
+PREFIX = r'(["\'])(?:/|(?:\.\./)+|\./)'
 REWRITES = [
     (re.compile(PREFIX + r'scripts/app\.js\1'), '"@/scripts/app"'),
     (re.compile(PREFIX + r'scripts/api\.js\1'), '"@/scripts/api"'),
@@ -58,6 +58,8 @@ describe('matrix {pack}', () => {{
 
 
 def build(limit: int = 0, shard: str = ''):
+    if not os.path.isdir(REPOS):
+        sys.exit(f'corpus missing: {REPOS} - run fetch_corpus.py (or restore the cache) first')
     if os.path.isdir(DEST):
         shutil.rmtree(DEST)
     os.makedirs(os.path.join(DEST, 'packs'))
@@ -132,7 +134,8 @@ def build(limit: int = 0, shard: str = ''):
                 if ENTRY_RX.search(t):
                     entries.append('./packs/' + safe + '/' + rel.replace(os.sep, '/'))
         entries.sort()
-        entries = entries[:60]  # generous cap; truncation noted in manifest
+        truncated = len(entries) > 60
+        entries = entries[:60]
         if not entries:
             shutil.rmtree(dst, ignore_errors=True)
             manifest[pack] = {'skipped': 'no extension-shaped JS'}
@@ -140,6 +143,8 @@ def build(limit: int = 0, shard: str = ''):
         spec = SPEC.format(pack=pack, safe=safe, entries=json.dumps(entries))
         open(os.path.join(DEST, f'{safe}.matrix.test.ts'), 'w').write(spec)
         manifest[pack] = {'files': n_files, 'entries': len(entries)}
+        if truncated:
+            manifest[pack]['truncated'] = True
     json.dump(manifest, open(os.path.join(DEST, 'manifest.json'), 'w'), indent=1)
     built = sum(1 for v in manifest.values() if 'entries' in v)
     print(f'{built} pack specs built, {len(manifest)-built} skipped -> {DEST}', file=sys.stderr)

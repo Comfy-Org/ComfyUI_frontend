@@ -43,19 +43,31 @@ serialize/reload), one JSON row per pack. Packs with no extension JS are
 skipped and reported only as a count.
 
 **PASS criteria** — applied once by the `matrix-verdict` job over all four
-shards combined (`summarize_matrix.py`, whose exit code is the verdict):
+shards combined (`summarize_matrix.py`; exit 0 PASS, 1 FAIL, 2 harness):
 
-| criterion             | floor           | measured baseline |
-| --------------------- | --------------- | ----------------- |
-| entry JS loads clean  | >= 95%          | 97.9%             |
-| registerNodeDef OK    | >= 99%          | 100%              |
-| every operation clean | >= 99% of packs | ~100%             |
+| criterion                           | floor     | measured baseline |
+| ----------------------------------- | --------- | ----------------- |
+| entry JS loads (any entry per pack) | >= 95%    | 97.4%             |
+| entry files load clean              | >= 91%    | 94.1%             |
+| registerNodeDef OK                  | >= 99%    | 100%              |
+| every operation clean               | >= 99%    | ~100%             |
+| entry-clean delta vs previous run   | >= -1.5pp | carried by cache  |
 
-All three must hold. Each floor sits under the baseline so a handful of
-broken pack HEADs cannot flip the verdict, while a frontend regression that
-breaks pack integration craters all three at once. Shard jobs check harness
+All must hold. Each floor sits under the baseline (measured over the full
+1,879-pack registry, run 31563501583) so a handful of broken pack HEADs
+cannot flip the verdict, while a frontend regression that breaks pack
+integration craters them all at once; the delta gate catches gradual
+erosion the absolute floors ignore. Before any criterion is evaluated, a
+**harness gate** requires >= 50% of packs to pass the runner's self-check
+(the default workflow actually materialized: >= 7 nodes, KSampler with its
+widgets) — below that the verdict is _withheld_ as a harness failure (exit 2) instead of emitting a false ecosystem FAIL. Shard jobs check harness
 integrity only (every built spec wrote its row; vitest's own exit code is
 ignored because pack code leaks unhandled rejections).
+
+Packs execute under real timers: the matrix config assigns `setupFiles`
+explicitly, keeping `vitest.setup.ts` (environment globals) and dropping
+the unit suite's `vitest.timer.setup.ts` fake timers that `mergeConfig`
+array-concatenation would otherwise smuggle in.
 
 ## Detection proof (counter-evidence)
 

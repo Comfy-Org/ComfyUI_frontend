@@ -28,8 +28,6 @@ const argText = (a: unknown): string => {
 
 let DEPR: string[] = []
 
-type Rec = Record<string, unknown>
-
 interface WidgetLike {
   name: string
   type?: string
@@ -202,7 +200,7 @@ function signature(graph: GraphLike, store?: WidgetStoreLike) {
         if (store?.getNodeWidgetIds) {
           const ids: string[] = store.getNodeWidgetIds(graph.rootGraph.id, n.id)
           const liveNames = new Set((n.widgets ?? []).map((w) => w.name))
-          const names = ids.map((i) => String(i).split(':').pop())
+          const names = ids.map((i) => String(i).split(':').pop() ?? '')
           r = names.filter((nm) => liveNames.has(nm)).length
           st = names
             .map((nm) => {
@@ -404,6 +402,15 @@ export async function runPack(
   await op('load', () =>
     graph.configure(structuredClone(defaultWorkflow) as never)
   )
+  // Harness self-check: if the default workflow did not materialize, the
+  // if-guarded ops below would all no-op and report a vacuously clean pack.
+  // The summarizer withholds the verdict when this fails broadly.
+  const kAfterLoad = byType('KSampler')
+  row.selfCheck =
+    graph._nodes.length >= 7 && (kAfterLoad?.widgets?.length ?? 0) >= 7
+      ? 'OK'
+      : `default workflow degraded: nodes=${graph._nodes.length}` +
+        ` kSamplerWidgets=${kAfterLoad?.widgets?.length ?? 0}`
   await op('editWidget', () => {
     const k = byType('KSampler')
     const w = k?.widgets?.find((x) => x.name === 'seed')
@@ -451,9 +458,8 @@ export async function runPack(
     if (k?.widgets?.length) k.widgets.splice(0, 1)
   })
   await op('wReorder', () => {
-    const k = byType('KSampler')
-    if ((k?.widgets?.length ?? 0) > 1)
-      k.widgets.splice(0, 0, k.widgets.splice(k.widgets.length - 1, 1)[0])
+    const w = byType('KSampler')?.widgets
+    if (w && w.length > 1) w.splice(0, 0, w.splice(w.length - 1, 1)[0])
   })
   await op('wConvert', () => {
     const k = byType('KSampler')
@@ -503,7 +509,7 @@ export async function runPack(
         continue
       }
       n.pos = [1200, 100]
-      graph.add(n)
+      graph.add(n as unknown as InstanceType<typeof LGraphNode>)
       const parts = [
         `in=${n.inputs?.length ?? 0}`,
         `out=${n.outputs?.length ?? 0}`,
@@ -522,7 +528,7 @@ export async function runPack(
         }
       }
       n.serialize()
-      graph.remove(n)
+      graph.remove(n as unknown as InstanceType<typeof LGraphNode>)
       if (DEPR.length)
         parts.push(`depr=${[...new Set(DEPR)].join(';').slice(0, 60)}`)
       driven[t] = parts.join(' ')
