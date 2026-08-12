@@ -71,6 +71,84 @@ test.describe('Vue Nodes Canvas Pan', { tag: '@vue-nodes' }, () => {
   })
 
   test(
+    'Space in a focused text widget does not start canvas panning',
+    { tag: ['@canvas', '@widget'] },
+    async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow('inputs/string_input')
+      const input = comfyPage.vueNodes
+        .getWidgetByName('Node With String Input', 'string_input')
+        .first()
+
+      await input.focus()
+      await input.press('Space')
+
+      await expect
+        .poll(async () => [
+          await input.inputValue(),
+          await comfyPage.canvasOps.isReadOnly()
+        ])
+        .toEqual([' ', false])
+    }
+  )
+
+  test(
+    'releasing the pointer during Space-pan ends the node drag',
+    { tag: ['@canvas', '@node'] },
+    async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow('vueNodes/simple-triple')
+      const node = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+      const [nodeRef] = await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
+      const headerBox = await node.header.boundingBox()
+      if (!nodeRef || !headerBox) throw new Error('KSampler is not rendered')
+      const start = {
+        x: headerBox.x + headerBox.width / 2,
+        y: headerBox.y + headerBox.height / 2
+      }
+      let mouseDown = false
+      let spaceDown = false
+
+      try {
+        await comfyPage.page.mouse.move(start.x, start.y)
+        await comfyPage.page.mouse.down()
+        mouseDown = true
+        await comfyPage.page.mouse.move(start.x + 40, start.y + 40, {
+          steps: 5
+        })
+        await comfyPage.page.keyboard.down('Space')
+        spaceDown = true
+        await expect.poll(() => comfyPage.canvasOps.isReadOnly()).toBe(true)
+        await comfyPage.page.mouse.move(start.x + 80, start.y + 80, {
+          steps: 5
+        })
+        await comfyPage.page.mouse.up()
+        mouseDown = false
+        await comfyPage.page.keyboard.up('Space')
+        spaceDown = false
+
+        const positionAfterRelease = [
+          ...(await nodeRef.getProperty<[number, number]>('pos'))
+        ]
+        const headerAfterRelease = await node.header.boundingBox()
+        if (!headerAfterRelease) throw new Error('KSampler is not rendered')
+        await comfyPage.page.mouse.move(
+          headerAfterRelease.x + 5,
+          headerAfterRelease.y + 5
+        )
+        await comfyPage.nextFrame()
+
+        await expect
+          .poll(async () => [
+            ...(await nodeRef.getProperty<[number, number]>('pos'))
+          ])
+          .toEqual(positionAfterRelease)
+      } finally {
+        if (mouseDown) await comfyPage.page.mouse.up()
+        if (spaceDown) await comfyPage.page.keyboard.up('Space')
+      }
+    }
+  )
+
+  test(
     '@mobile Can pan with touch',
     { tag: '@screenshot' },
     async ({ comfyPage }) => {

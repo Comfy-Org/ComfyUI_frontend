@@ -70,7 +70,7 @@
     @pointerdown.capture="forwardPointerDownPanEvent"
     @pointerup.capture="forwardPointerUpPanEvent"
     @pointermove.capture="forwardPointerMovePanEvent"
-    @keydown.space="canvasInteractions.forwardEventToCanvas"
+    @keydown.space="forwardSpaceKeyEvent"
   >
     <!-- Vue nodes rendered based on graph nodes -->
     <LGraphNode
@@ -618,6 +618,13 @@ function forwardPointerMovePanEvent(e: PointerEvent) {
 
 function forwardPointerUpPanEvent(e: PointerEvent) {
   forwardPanEvent(e, isMiddleButtonEvent)
+}
+
+function forwardSpaceKeyEvent(e: KeyboardEvent) {
+  if (shouldIgnoreCopyPaste(e.target) && document.activeElement === e.target)
+    return
+
+  comfyApp.canvas?.processKey(e)
 }
 
 function forwardPanEvent(
