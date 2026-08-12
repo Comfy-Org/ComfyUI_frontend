@@ -175,6 +175,7 @@ import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
 import { SUPPORTED_MESH_EXTENSIONS } from '@/extensions/core/load3d/constants'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { deliverPreview } from '@/platform/nodeApi/defsRegistry'
+import { installNodeChangeBridge } from '@/renderer/core/canvas/nodeChangeBridge'
 import { installNodeMoveBridge } from '@/renderer/core/layout/nodeMoveBridge'
 import {
   pasteAudioNode,
@@ -980,6 +981,7 @@ export class ComfyApp {
     // bridge used to be installed in addApiUpdateHandlers() below, four lines
     // too late, so every pack subscribing to onNodeMoved at module scope threw.
     installNodeMoveBridge()
+    installNodeChangeBridge()
     installComfyApi(() => useCanvasStore().currentGraph)
     await useExtensionService().loadExtensions()
 

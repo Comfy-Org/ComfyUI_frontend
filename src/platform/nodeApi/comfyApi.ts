@@ -27,6 +27,8 @@ import { watch } from 'vue'
 import { useExecutionStore } from '@/stores/executionStore'
 
 import { onAppReady, onWorkflowLoaded } from './appReady'
+import { createNodeChangeObserver } from './nodeChanges'
+import type { NodeChangeEvent } from './nodeChanges'
 import { createQueueApi } from './queueHandle'
 import type { QueueHandle } from './queueHandle'
 import type { Unsubscribe } from './widgetHandle'
@@ -217,6 +219,22 @@ export interface Comfy {
    */
   onViewportChanged(listener: () => void): Unsubscribe
   /**
+   * A node changed — its mode, title, colour or shape.
+   *
+   * For observing nodes the pack does not own. rgthree's relay polls every
+   * 500ms and installs a `defineProperty` trap on `mode` because nothing
+   * reports it; this is that signal.
+   *
+   * One stream rather than a subscription per node, deliberately: node
+   * identity does not survive undo, reload or re-entering a subgraph, so
+   * anything keyed by the object stops firing silently, and keying by id
+   * instead never gets collected. Filter by `event.node.id`.
+   *
+   * Only fields the host tracks are reported. Position is not among them — it
+   * changes per frame during a drag and is served by {@link onNodeMoved}.
+   */
+  onNodeChanged(listener: (event: NodeChangeEvent) => void): Unsubscribe
+  /**
    * The application has finished starting: canvas, settings and graph all
    * exist, and node definitions are registered.
    *
@@ -300,6 +318,7 @@ function buildMajor(
     onNodeMoved: createNodeMoveObserver((id) => graph.node(id)),
     onNodeDragEnd: createNodeDragEndObserver((id) => graph.node(id)),
     onViewportChanged: createViewportObserver(),
+    onNodeChanged: createNodeChangeObserver((id) => graph.node(id)),
     onReady: onAppReady,
     queue: createQueueApi(getGraph),
     executingNode: () => {
