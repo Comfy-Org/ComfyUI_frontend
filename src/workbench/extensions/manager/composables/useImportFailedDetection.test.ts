@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 
 import { useImportFailedDetection } from '@/workbench/extensions/manager/composables/useImportFailedDetection'
@@ -38,11 +36,6 @@ vi.mock('vue-i18n', async () => {
 })
 
 describe('useImportFailedDetection', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
-  })
-
   it('should return false for importFailed when package is not installed', () => {
     mockIsPackInstalled.mockReturnValue(false)
 

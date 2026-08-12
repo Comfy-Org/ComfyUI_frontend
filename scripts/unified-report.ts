@@ -15,7 +15,9 @@ const coverageStatus = getArg('coverage-status') ?? 'skip'
 
 const lines: string[] = []
 
-if (sizeStatus === 'ready') {
+const hasSizeData = existsSync('temp/size')
+
+if (sizeStatus === 'ready' && hasSizeData) {
   try {
     const sizeReport = execFileSync('node', ['scripts/size-report.js'], {
       encoding: 'utf-8'
@@ -32,13 +34,13 @@ if (sizeStatus === 'ready') {
   lines.push('## 📦 Bundle Size')
   lines.push('')
   lines.push('> ⚠️ Size data collection failed. Check the CI workflow logs.')
-} else {
+} else if (sizeStatus !== 'ready') {
   lines.push('## 📦 Bundle Size')
   lines.push('')
   lines.push('> ⏳ Size data collection in progress…')
 }
 
-lines.push('')
+if (lines.length > 0) lines.push('')
 
 if (perfStatus === 'ready' && existsSync('test-results/perf-metrics.json')) {
   try {

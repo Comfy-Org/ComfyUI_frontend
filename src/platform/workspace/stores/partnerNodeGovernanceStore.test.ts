@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -79,9 +77,6 @@ describe('partnerNodeGovernanceStore', () => {
   let store: ReturnType<typeof usePartnerNodeGovernanceStore> | undefined
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
-    mockUpdatePartnerNodePolicy.mockReset()
     mockFlags.partnerNodeGovernanceEnabled = true
     mockGetPartnerProviders.mockResolvedValue(providers)
     mockGetPartnerNodePolicy.mockResolvedValue(null)
@@ -124,6 +119,18 @@ describe('partnerNodeGovernanceStore', () => {
 
     expect(store.status).toBe('ineligible')
     expect(store.providers).toEqual([])
+  })
+
+  it('keeps the catalog when only policy access is forbidden', async () => {
+    mockGetPartnerNodePolicy.mockRejectedValue(
+      new PartnerNodePolicyApiError(403, 'Forbidden')
+    )
+
+    store = await createLoadedStore()
+
+    expect(store.status).toBe('ineligible')
+    expect(store.providers.length).toBeGreaterThan(0)
+    expect(store.policy).toBeNull()
   })
 
   it('keeps the server-normalized policy after a domain update', async () => {
@@ -360,6 +367,27 @@ describe('partnerNodeGovernanceStore', () => {
     })
   })
 
+  it('keeps a provider missing from an existing restricted policy disabled during a search-scoped bulk disable', async () => {
+    mockGetPartnerNodePolicy.mockResolvedValue({
+      enforcementEnabled: true,
+      providers: [{ providerId: 'openai', enabled: true }]
+    } satisfies PartnerNodePolicy)
+    mockUpdatePartnerNodePolicy.mockImplementation(
+      async (nextPolicy: PartnerNodePolicy) => nextPolicy
+    )
+    store = await createLoadedStore()
+
+    await store.setProvidersEnabled(['openai'], false)
+
+    expect(mockUpdatePartnerNodePolicy).toHaveBeenCalledWith({
+      enforcementEnabled: true,
+      providers: [
+        { providerId: 'openai', enabled: false },
+        { providerId: 'route-only', enabled: false }
+      ]
+    })
+  })
+
   it('applies bulk changes to every catalog provider', async () => {
     mockUpdatePartnerNodePolicy.mockImplementation(
       async (nextPolicy: PartnerNodePolicy) => nextPolicy
@@ -401,7 +429,7 @@ describe('partnerNodeGovernanceStore', () => {
     })
   })
 
-  it('enables every provider when enforcement is disabled', async () => {
+  it('remembers provider states when enforcement is disabled', async () => {
     mockGetPartnerNodePolicy.mockResolvedValue({
       enforcementEnabled: true,
       providers: [
@@ -419,7 +447,7 @@ describe('partnerNodeGovernanceStore', () => {
     expect(mockUpdatePartnerNodePolicy).toHaveBeenCalledWith({
       enforcementEnabled: false,
       providers: [
-        { providerId: 'openai', enabled: true },
+        { providerId: 'openai', enabled: false },
         { providerId: 'route-only', enabled: true }
       ]
     })

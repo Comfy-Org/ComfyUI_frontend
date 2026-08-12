@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { useNodeVideo } from '@/composables/node/useNodeImage'
 import { createMockMediaNode } from '@/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils'
@@ -25,14 +25,8 @@ vi.mock('@/utils/imageUtil', () => ({
 }))
 
 describe('useNodeVideo', () => {
-  afterEach(() => {
-    vi.useRealTimers()
-    vi.restoreAllMocks()
-  })
-
   async function setup() {
     vi.clearAllMocks()
-    vi.useFakeTimers()
 
     nodeOutputStoreMock.getNodeImageUrls.mockReturnValue(['http://video/1.mp4'])
     const node = createMockMediaNode({

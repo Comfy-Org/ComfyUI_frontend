@@ -110,7 +110,6 @@ function renderComponent(
 
 describe('SubscriptionRequiredDialogContentWorkspace', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockUseSubscriptionCheckout.mockReturnValue({
       checkoutStep: mockCheckoutStep,
       isLoadingPreview: ref(false),

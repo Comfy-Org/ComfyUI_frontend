@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { useTextFileContent } from '@/composables/useTextFileContent'
 
@@ -12,10 +12,6 @@ function stubFetch(response: Partial<Response> | Error) {
 }
 
 describe(useTextFileContent, () => {
-  afterEach(() => {
-    vi.unstubAllGlobals()
-  })
-
   it('returns inline content without fetching', async () => {
     const fetchMock = stubFetch(new Error('should not be called'))
     const { textContent } = useTextFileContent(() => ({

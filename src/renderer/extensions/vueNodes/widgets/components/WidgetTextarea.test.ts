@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
@@ -11,9 +11,9 @@ const mockCopyToClipboard = vi.hoisted(() => vi.fn())
 const mockIsNodeOptionsOpen = vi.hoisted(() => vi.fn(() => false))
 
 vi.mock('@/composables/useCopyToClipboard', () => ({
-  useCopyToClipboard: vi.fn().mockReturnValue({
+  useCopyToClipboard: vi.fn(() => ({
     copyToClipboard: mockCopyToClipboard
-  })
+  }))
 }))
 
 vi.mock('@/composables/graph/useMoreOptionsMenu', () => ({
@@ -192,10 +192,6 @@ describe('WidgetTextarea Value Binding', () => {
     })
   })
   describe('Copy Button Behavior', () => {
-    beforeEach(() => {
-      mockCopyToClipboard.mockClear()
-    })
-
     it('hides copy button when not read-only', async () => {
       const widget = createTextareaWidget('test')
       renderComponent(widget, 'test')

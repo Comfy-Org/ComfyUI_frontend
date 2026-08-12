@@ -49,12 +49,23 @@ vi.mock('@/composables/canvas/useFocusNode', () => ({
   }))
 }))
 
+// Its pack lookup resolves after the test file ends, and the console.warn on a
+// rejection lands while the worker's rpc is closing - an unhandled error that
+// fails the whole run with every test green. Mocked as the sibling suites do.
+vi.mock('@/stores/comfyRegistryStore', () => ({
+  useComfyRegistryStore: () => ({
+    inferPackFromNodeName: vi.fn(),
+    // TabErrors mounts the node-pack tree, which cancels this on unmount.
+    getPacksByIds: { call: vi.fn().mockResolvedValue([]), cancel: vi.fn() }
+  })
+}))
+
 vi.mock('@/platform/missingModel/missingModelDownload', () => ({
   downloadModel: vi.fn(),
-  fetchModelMetadata: vi.fn().mockResolvedValue({
+  fetchModelMetadata: vi.fn(async () => ({
     fileSize: null,
     gatedRepoUrl: null
-  }),
+  })),
   isModelDownloadable: vi.fn(() => true),
   toBrowsableUrl: vi.fn((url: string) => url)
 }))
@@ -63,7 +74,6 @@ describe('TabErrors.vue', () => {
   let i18n: ReturnType<typeof createI18n>
 
   beforeEach(() => {
-    vi.clearAllMocks()
     i18n = createI18n({
       legacy: false,
       locale: 'en',

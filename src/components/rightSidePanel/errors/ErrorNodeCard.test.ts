@@ -63,7 +63,6 @@ describe('ErrorNodeCard.vue', () => {
   let i18n: ReturnType<typeof createI18n>
 
   beforeEach(() => {
-    vi.clearAllMocks()
     cardIdCounter = 0
     mockGetLogs.mockResolvedValue('mock server logs')
     mockGenerateErrorReport.mockReturnValue('# ComfyUI Error Report\n...')

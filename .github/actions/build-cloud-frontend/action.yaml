@@ -1,0 +1,17 @@
+name: Build Cloud Frontend
+description: 'Build the cloud distribution and upload it as the frontend-dist-cloud artifact'
+runs:
+  using: 'composite'
+  steps:
+    - name: Build cloud frontend
+      shell: bash
+      run: pnpm build:cloud
+      env:
+        VITE_USE_LEGACY_DEFAULT_GRAPH: 'true'
+
+    - name: Upload cloud frontend
+      uses: actions/upload-artifact@v6
+      with:
+        name: frontend-dist-cloud
+        path: dist/
+        retention-days: 1

@@ -30,6 +30,7 @@ import {
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import {
   createNodeExecutionId,
@@ -128,7 +129,8 @@ export function hasWidgetError(
   nodeExecId: NodeExecutionId,
   nodeErrors: Pick<NodeError, 'errors'> | undefined,
   executionErrorStore: ReturnType<typeof useExecutionErrorStore>,
-  missingModelStore: ReturnType<typeof useMissingModelStore>
+  missingModelStore: ReturnType<typeof useMissingModelStore>,
+  missingMediaStore: ReturnType<typeof useMissingMediaStore>
 ): boolean {
   const errors = widget.sourceExecutionId
     ? executionErrorStore.lastNodeErrors?.[widget.sourceExecutionId]?.errors
@@ -139,7 +141,8 @@ export function hasWidgetError(
     : widget.name
   return (
     (!!errors && hasErrorForSlot(errors, errorInputName)) ||
-    missingModelStore.isWidgetMissingModel(nodeExecId, widget.name)
+    missingModelStore.isWidgetMissingModel(nodeExecId, widget.name) ||
+    missingMediaStore.isWidgetMissingMedia(nodeExecId, widget.name)
   )
 }
 
@@ -229,6 +232,7 @@ export function computeProcessedWidgets({
 
   const executionErrorStore = useExecutionErrorStore()
   const missingModelStore = useMissingModelStore()
+  const missingMediaStore = useMissingMediaStore()
   const widgetValueStore = useWidgetValueStore()
 
   const nodeExecId = getProcessedNodeExecutionId(
@@ -399,7 +403,8 @@ export function computeProcessedWidgets({
         nodeExecId,
         nodeErrors,
         executionErrorStore,
-        missingModelStore
+        missingModelStore,
+        missingMediaStore
       ),
       hidden: mergedOptions.hidden ?? false,
       widgetId: widget.widgetId,

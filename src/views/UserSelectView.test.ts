@@ -43,7 +43,6 @@ const mountView = () =>
 
 describe('UserSelectView', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     userStoreMock.users = []
   })
 

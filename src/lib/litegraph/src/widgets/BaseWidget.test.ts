@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromAny } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -33,7 +31,6 @@ describe('BaseWidget store integration', () => {
   let store: ReturnType<typeof useWidgetValueStore>
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useWidgetValueStore()
     graph = new LGraph()
     node = new LGraphNode('TestNode')

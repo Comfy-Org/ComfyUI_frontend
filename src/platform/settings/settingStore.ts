@@ -1,5 +1,5 @@
 import { retry } from 'es-toolkit'
-import _ from 'es-toolkit/compat'
+import { cloneDeep } from 'es-toolkit/compat'
 import { until, useAsyncState } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { compare, valid } from 'semver'
@@ -129,7 +129,7 @@ export const useSettingStore = defineStore('setting', () => {
     key: K,
     value: Settings[K]
   ): AppliedSetting<Settings[K]> | undefined {
-    const clonedValue = _.cloneDeep(value)
+    const clonedValue = cloneDeep(value)
     const newValue = tryMigrateDeprecatedValue(
       settingsById.value[key],
       clonedValue
@@ -196,7 +196,7 @@ export const useSettingStore = defineStore('setting', () => {
    */
   function get<K extends keyof Settings>(key: K): Settings[K] {
     // Clone the value when returning to prevent external mutations
-    return _.cloneDeep(settingValues.value[key] ?? getDefaultValue(key)!)
+    return cloneDeep(settingValues.value[key] ?? getDefaultValue(key)!)
   }
 
   /**

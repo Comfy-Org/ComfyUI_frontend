@@ -55,7 +55,6 @@ describe('useNodeDragToCanvas', () => {
 
   beforeEach(async () => {
     vi.resetModules()
-    vi.resetAllMocks()
 
     const module = await import('./useNodeDragToCanvas')
     useNodeDragToCanvas = module.useNodeDragToCanvas
@@ -64,7 +63,6 @@ describe('useNodeDragToCanvas', () => {
   afterEach(() => {
     const { cancelDrag } = useNodeDragToCanvas()
     cancelDrag()
-    vi.restoreAllMocks()
   })
 
   describe('startDrag', () => {

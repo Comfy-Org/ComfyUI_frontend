@@ -1,15 +1,11 @@
 import axios from 'axios'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
 
 vi.mock('axios')
 
 describe('getFolderPaths', () => {
-  beforeEach(() => {
-    vi.resetAllMocks()
-  })
-
   it('returns legacy API response when available', async () => {
     const mockResponse = { checkpoints: ['/test/checkpoints'] }
     vi.mocked(axios.get).mockResolvedValueOnce({ data: mockResponse })

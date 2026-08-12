@@ -1,3 +1,5 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+
 import { describe, expect, it, vi } from 'vitest'
 
 import { fireEvent, render } from '@testing-library/vue'
@@ -10,15 +12,14 @@ function createVideoAsset(
   src: string,
   mimeType: AssetMeta['mime_type'] = 'video/mp4'
 ): AssetMeta {
-  return {
+  return fromPartial({
     id: 'video-1',
     name: 'clip.mp4',
-    hash: null,
     mime_type: mimeType,
     tags: [],
     kind: 'video',
     src
-  }
+  })
 }
 
 describe('MediaVideoTop', () => {

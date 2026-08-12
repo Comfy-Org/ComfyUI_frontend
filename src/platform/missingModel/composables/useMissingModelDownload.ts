@@ -1,25 +1,27 @@
 import {
   downloadModel,
-  fetchModelMetadata,
   isTrustedHuggingFaceUrl,
   openGatedRepoPage
 } from '@/platform/missingModel/missingModelDownload'
 import type { ModelWithUrl } from '@/platform/missingModel/missingModelDownload'
+import { fetchAndStoreModelMetadata } from '@/platform/missingModel/missingModelMetadata'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 
 export function useMissingModelDownload() {
   const store = useMissingModelStore()
 
-  async function prefetchModelMetadata(url: string): Promise<void> {
-    if (store.fileSizes[url] !== undefined || store.gatedRepoUrls[url]) return
+  function fileSizeFor(url: string): number | undefined {
+    return store.fileSizes[url]
+  }
 
-    const metadata = await fetchModelMetadata(url)
-    if (metadata.fileSize !== null) {
-      store.setFileSize(url, metadata.fileSize)
-    }
-    if (metadata.gatedRepoUrl) {
-      store.setGatedRepoUrl(url, metadata.gatedRepoUrl)
-    }
+  function gatedRepoUrlFor(url: string): string | undefined {
+    return store.gatedRepoUrls[url]
+  }
+
+  async function prefetchModelMetadata(url: string): Promise<void> {
+    if (fileSizeFor(url) !== undefined || gatedRepoUrlFor(url)) return
+
+    await fetchAndStoreModelMetadata(url, store)
   }
 
   function downloadMissingModel(model: ModelWithUrl): void {
@@ -49,6 +51,8 @@ export function useMissingModelDownload() {
   }
 
   return {
+    fileSizeFor,
+    gatedRepoUrlFor,
     prefetchModelMetadata,
     downloadMissingModel,
     openModelAccessPage

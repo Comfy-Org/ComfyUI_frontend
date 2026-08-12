@@ -23,7 +23,6 @@ const MOBILE_VIEWPORT = { width: 360, height: 800 }
 describe('NodeSearchContent', () => {
   beforeEach(() => {
     setupTestPinia()
-    vi.restoreAllMocks()
     setViewport(DESKTOP_VIEWPORT)
     const settings = useSettingStore()
     settings.settingValues['Comfy.NodeLibrary.Bookmarks.V2'] = []

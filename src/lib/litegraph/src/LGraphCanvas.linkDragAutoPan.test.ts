@@ -17,8 +17,6 @@ describe('LGraphCanvas link drag auto-pan', () => {
   let canvasElement: HTMLCanvasElement
 
   beforeEach(() => {
-    vi.useFakeTimers()
-
     canvasElement = document.createElement('canvas')
     canvasElement.width = 800
     canvasElement.height = 600
@@ -47,7 +45,6 @@ describe('LGraphCanvas link drag auto-pan', () => {
 
   afterEach(() => {
     canvas.pointer.finally?.()
-    vi.useRealTimers()
   })
 
   function startLinkDrag() {

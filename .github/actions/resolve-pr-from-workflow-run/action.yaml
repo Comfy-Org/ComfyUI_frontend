@@ -23,13 +23,16 @@ outputs:
   head-sha:
     description: The PR head SHA (empty when skip is true)
     value: ${{ steps.resolve.outputs.head-sha }}
+  author:
+    description: The PR author's login (empty when skip is true)
+    value: ${{ steps.resolve.outputs.author }}
 
 runs:
   using: composite
   steps:
     - name: Resolve PR
       id: resolve
-      uses: actions/github-script@v8
+      uses: actions/github-script@v9
       with:
         github-token: ${{ inputs.token }}
         script: |
@@ -84,5 +87,6 @@ runs:
 
           core.setOutput('base', livePr.base.ref);
           core.setOutput('head-sha', livePr.head.sha);
+          core.setOutput('author', livePr.user?.login ?? '');
           core.setOutput('skip', 'false');
           core.setOutput('number', String(pr.number));

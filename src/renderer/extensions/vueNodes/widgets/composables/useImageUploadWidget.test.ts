@@ -1,5 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useImageUploadWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useImageUploadWidget'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -95,13 +95,8 @@ const outputFolderCases: {
 
 describe('useImageUploadWidget', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mocks.capturedUploadOptions = undefined
     vi.stubGlobal('requestAnimationFrame', vi.fn())
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
   })
 
   it('emits onWidgetChanged after upload changes the combo widget value', () => {

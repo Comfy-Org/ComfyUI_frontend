@@ -35,7 +35,7 @@
  *
  * @example
  * ```typescript
- * const { camera, transformStyle, canvasToScreen } = useTransformState()
+ * const { camera, transformStyle, screenToCanvas } = useTransformState()
  *
  * // In template
  * <div :style="transformStyle">
@@ -46,7 +46,7 @@
  * </div>
  *
  * // Convert coordinates
- * const screenPos = canvasToScreen({ x: nodeX, y: nodeY })
+ * const canvasPos = screenToCanvas({ x: clientX, y: clientY })
  * ```
  */
 import { computed, reactive, readonly } from 'vue'
@@ -107,8 +107,8 @@ function useTransformStateIndividual() {
   /**
    * Converts screen coordinates to canvas coordinates
    *
-   * Inverse of canvasToScreen. Useful for hit testing and converting
-   * mouse events back to canvas space.
+   * Inverse of the pane's own `transformStyle`. Useful for hit testing and
+   * converting mouse events back to canvas space.
    *
    * Formula: canvas = screen / scale - offset
    *

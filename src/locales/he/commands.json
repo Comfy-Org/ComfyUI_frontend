@@ -92,9 +92,6 @@
   "Comfy_Canvas_ToggleMinimap": {
     "label": "הצגה/הסתרה של מפת המיני בקנבס"
   },
-  "Comfy_Canvas_ToggleSelected_Pin": {
-    "label": "הצמדה/ביטול הצמדה של הפריטים הנבחרים"
-  },
   "Comfy_Canvas_ToggleSelectedNodes_Bypass": {
     "label": "עקיפה/ביטול עקיפה של הצמתים הנבחרים"
   },
@@ -106,6 +103,9 @@
   },
   "Comfy_Canvas_ToggleSelectedNodes_Pin": {
     "label": "הצמדה/ביטול הצמדה של הצמתים הנבחרים"
+  },
+  "Comfy_Canvas_ToggleSelected_Pin": {
+    "label": "הצמדה/ביטול הצמדה של הפריטים הנבחרים"
   },
   "Comfy_Canvas_Unlock": {
     "label": "שחרור נעילת הקנבס"
@@ -158,12 +158,6 @@
   "Comfy_Graph_UnpackSubgraph": {
     "label": "פריסת תת-הגרף הנבחר"
   },
-  "Comfy_GroupNode_ManageGroupNodes": {
-    "label": "ניהול צמתי הקבוצה"
-  },
-  "Comfy_GroupNode_UngroupSelectedGroupNodes": {
-    "label": "ביטול קיבוץ צמתי הקבוצה הנבחרים"
-  },
   "Comfy_Help_AboutComfyUI": {
     "label": "פתיחת 'אודות ComfyUI'"
   },
@@ -181,6 +175,9 @@
   },
   "Comfy_Interrupt": {
     "label": "הפסקה"
+  },
+  "Comfy_LayerEditor_OpenLayerEditor": {
+    "label": "פתח עורך שכבות עבור הצומת שנבחר"
   },
   "Comfy_LoadDefaultWorkflow": {
     "label": "טעינת תהליך העבודה ברירת המחדל"
@@ -245,9 +242,6 @@
   "Comfy_PublishSubgraph": {
     "label": "פרסום תת-גרף"
   },
-  "Comfy_Queue_ToggleOverlay": {
-    "label": "הצגה/הסתרה של היסטוריית המשימות"
-  },
   "Comfy_QueuePrompt": {
     "label": "הוספה לתור"
   },
@@ -256,6 +250,9 @@
   },
   "Comfy_QueueSelectedOutputNodes": {
     "label": "הוספת צמתי הפלט הנבחרים לתור"
+  },
+  "Comfy_Queue_ToggleOverlay": {
+    "label": "הצגה/הסתרה של היסטוריית המשימות"
   },
   "Comfy_Redo": {
     "label": "ביצוע חוזר"
@@ -326,9 +323,6 @@
   "Workspace_ToggleBottomPanel": {
     "label": "הצגה/הסתרה של הפאנל התחתון"
   },
-  "Workspace_ToggleBottomPanel_Shortcuts": {
-    "label": "הצגת חלון מקשי הקיצור"
-  },
   "Workspace_ToggleBottomPanelTab_command-terminal": {
     "label": "הצגה/הסתרה של פאנל הטרמינל התחתון"
   },
@@ -340,6 +334,9 @@
   },
   "Workspace_ToggleBottomPanelTab_shortcuts-view-controls": {
     "label": "הצגה/הסתרה של הפאנל התחתון 'בקרות תצוגה'"
+  },
+  "Workspace_ToggleBottomPanel_Shortcuts": {
+    "label": "הצגת חלון מקשי הקיצור"
   },
   "Workspace_ToggleFocusMode": {
     "label": "החלפת מצב מיקוד"

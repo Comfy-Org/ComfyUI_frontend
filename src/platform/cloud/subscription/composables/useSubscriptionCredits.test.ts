@@ -39,7 +39,6 @@ describe('useSubscriptionCredits', () => {
   beforeEach(() => {
     mockBillingBalance = null
     mockBillingIsLoading = false
-    vi.clearAllMocks()
   })
 
   describe('totalCredits', () => {

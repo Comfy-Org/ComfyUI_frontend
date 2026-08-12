@@ -117,6 +117,17 @@
           <i-comfy:mask class="size-4" />
         </button>
 
+        <!-- Layer Editor Button -->
+        <button
+          v-if="hasMultipleImages && !imageError"
+          :class="actionButtonClass"
+          :title="$t('g.openLayerEditor')"
+          :aria-label="$t('g.openLayerEditor')"
+          @click="handleOpenLayerEditor"
+        >
+          <i class="icon-[lucide--layers] size-4" />
+        </button>
+
         <!-- Download Button -->
         <button
           v-if="!imageError"
@@ -332,6 +343,15 @@ function handleEditMask() {
   const node = resolveNode(nodeId)
   if (!node) return
   maskEditor.openMaskEditor(node)
+}
+
+async function handleOpenLayerEditor() {
+  if (!nodeId) return
+  const node = resolveNode(nodeId)
+  if (!node) return
+  const { useLayerEditor } =
+    await import('@/renderer/extensions/layerEditor/composables/useLayerEditor')
+  useLayerEditor().openLayerEditor(node)
 }
 
 function handleDownload() {

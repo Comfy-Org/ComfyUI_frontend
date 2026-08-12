@@ -180,20 +180,41 @@ interface LoraEntry {
   weight: number
 }
 
+const A1111_NEGATIVE_PROMPT_PREFIX = '\nNegative prompt:'
+
+function normalizeA1111Parameters(parameters: string): string {
+  const stepsIndex = parameters.lastIndexOf('\nSteps:')
+  if (
+    stepsIndex === -1 ||
+    parameters.lastIndexOf(A1111_NEGATIVE_PROMPT_PREFIX, stepsIndex) > -1
+  ) {
+    return parameters
+  }
+
+  return `${parameters.slice(0, stepsIndex)}${A1111_NEGATIVE_PROMPT_PREFIX}${parameters.slice(stepsIndex)}`
+}
+
+export type A1111ImportOutcome =
+  | 'imported'
+  | 'not-a1111'
+  | 'core-nodes-unavailable'
+
 export async function importA1111(
   graph: LGraph,
-  parameters: string
-): Promise<void> {
-  const p = parameters.lastIndexOf('\nSteps:')
+  parameters: string,
+  beforeGraphClear?: () => void
+): Promise<A1111ImportOutcome> {
+  const normalizedParameters = normalizeA1111Parameters(parameters)
+  const p = normalizedParameters.lastIndexOf('\nSteps:')
   if (p > -1) {
     const embeddings = await api.getEmbeddings()
-    const matchResult = parameters
+    const matchResult = normalizedParameters
       .substr(p)
       .split('\n')[1]
       .match(
         new RegExp('\\s*([^:]+:\\s*([^"\\{].*?|".*?"|\\{.*?\\}))\\s*(,|$)', 'g')
       )
-    if (!matchResult) return
+    if (!matchResult) return 'not-a1111'
 
     const opts: Record<string, string> = matchResult.reduce(
       (acc: Record<string, string>, n: string) => {
@@ -206,10 +227,12 @@ export async function importA1111(
       },
       {}
     )
-    const p2 = parameters.lastIndexOf('\nNegative prompt:', p)
+    const p2 = normalizedParameters.lastIndexOf(A1111_NEGATIVE_PROMPT_PREFIX, p)
     if (p2 > -1) {
-      let positive = parameters.substr(0, p2).trim()
-      let negative = parameters.substring(p2 + 18, p).trim()
+      let positive = normalizedParameters.substr(0, p2).trim()
+      let negative = normalizedParameters
+        .substring(p2 + A1111_NEGATIVE_PROMPT_PREFIX.length, p)
+        .trim()
 
       const ckptNode = LiteGraph.createNode('CheckpointLoaderSimple')
       const clipSkipNode = LiteGraph.createNode('CLIPSetLastLayer')
@@ -231,7 +254,7 @@ export async function importA1111(
         !saveNode
       ) {
         console.error('Failed to create required nodes for A1111 import')
-        return
+        return 'core-nodes-unavailable'
       }
 
       let hrSamplerNode: LGraphNode | null = null
@@ -331,6 +354,7 @@ export async function importA1111(
         return v
       }
 
+      beforeGraphClear?.()
       graph.clear()
       graph.add(ckptNode)
       graph.add(clipSkipNode)
@@ -550,7 +574,11 @@ export async function importA1111(
         delete opts[opt]
       }
 
-      console.warn('Unhandled parameters:', opts)
+      if (Object.keys(opts).length) {
+        console.warn('Unhandled parameters:', opts)
+      }
+      return 'imported'
     }
   }
+  return 'not-a1111'
 }

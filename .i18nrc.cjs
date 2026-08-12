@@ -22,7 +22,8 @@ module.exports = defineConfig({
     'tr',
     'pt-BR',
     'fa',
-    'he'
+    'he',
+    'it'
   ],
   reference: `Special names to keep untranslated: flux, photomaker, clip, vae, cfg, stable audio, stable cascade, stable zero, controlnet, lora, HiDream, Civitai, Hugging Face.
   'latent' is the short form of 'latent space'.

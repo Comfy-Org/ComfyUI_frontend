@@ -156,7 +156,7 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { useElementHover } from '@vueuse/core'
+import { useElementHover, useFocusWithin } from '@vueuse/core'
 import { computed, defineAsyncComponent, provide, ref, toRef } from 'vue'
 
 import IconGroup from '@/components/button/IconGroup.vue'
@@ -235,6 +235,7 @@ const showVideoControls = ref(false)
 const imageDimensions = ref<{ width: number; height: number } | undefined>()
 
 const isHovered = useElementHover(cardContainerRef)
+const { focused: isFocusedWithin } = useFocusWithin(cardContainerRef)
 
 const actions = useMediaAssetActions()
 
@@ -276,6 +277,7 @@ const adaptedAsset = computed(() => {
     size: asset.size,
     tags: asset.tags || [],
     created_at: asset.created_at,
+    updated_at: asset.updated_at,
     duration: asset.user_metadata?.duration
       ? Number(asset.user_metadata.duration)
       : undefined,
@@ -330,7 +332,9 @@ const metaInfo = computed(() => {
 
 const showActionsOverlay = computed(() => {
   if (loading || !asset || isDeleting.value) return false
-  return isHovered.value || selected || isVideoPlaying.value
+  return (
+    isHovered.value || isFocusedWithin.value || selected || isVideoPlaying.value
+  )
 })
 
 const handleZoomClick = () => {

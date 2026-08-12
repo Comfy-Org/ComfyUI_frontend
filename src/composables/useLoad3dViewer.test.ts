@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { useLoad3dViewer } from '@/composables/useLoad3dViewer'
@@ -74,8 +74,6 @@ describe('useLoad3dViewer', () => {
   let mockNode: LGraphNode
 
   beforeEach(() => {
-    vi.clearAllMocks()
-
     mockNode = createMockLGraphNode({
       properties: {
         'Scene Config': {
@@ -194,10 +192,6 @@ describe('useLoad3dViewer', () => {
       typeof useToastStore
     >
     vi.mocked(useToastStore).mockReturnValue(mockToastStore)
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   describe('initialization', () => {

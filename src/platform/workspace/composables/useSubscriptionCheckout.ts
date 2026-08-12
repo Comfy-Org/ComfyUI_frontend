@@ -15,6 +15,7 @@ import type {
   PaymentIntentSource,
   SubscriptionCheckoutType
 } from '@/platform/telemetry/types'
+import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import type {
   Plan,
   PreviewSubscribeOptions,
@@ -127,6 +128,7 @@ export function useSubscriptionCheckout(
   const selectedTeamCheckout = ref<SelectedTeamCheckout | null>(null)
   let teamPreviewRequestId = 0
   let refreshStatusOnFocus = false
+  let activeCheckoutAttemptStartedAt: number | undefined
   useEventListener(window, 'focus', () => {
     if (!refreshStatusOnFocus) return
     refreshStatusOnFocus = false
@@ -456,7 +458,7 @@ export function useSubscriptionCheckout(
         cycle: selectedBillingCycle.value,
         checkoutType: 'change'
       },
-      result.preview.is_immediate
+      false
     )
     return true
   }
@@ -639,6 +641,7 @@ export function useSubscriptionCheckout(
     previewData.value = null
     selectedTeamCheckout.value = null
     activeCheckoutOperationId.value = null
+    activeCheckoutAttemptStartedAt = undefined
   }
 
   function handleBackToPricing() {
@@ -676,6 +679,11 @@ export function useSubscriptionCheckout(
         await refreshPreviewOnReactivationBlock(planSlug)
         return
       }
+      const attemptStartedAt = trackSubscriptionStarted({
+        tier: tierKey,
+        cycle: billingCycle,
+        checkoutType
+      })
       if (
         confirmReactivation &&
         (isCancelled.value || reactivationRequired.value)
@@ -703,19 +711,26 @@ export function useSubscriptionCheckout(
       await handleSubscribeResponse(response, {
         tier: tierKey,
         cycle: billingCycle,
-        checkoutType
+        checkoutType,
+        attemptStartedAt
       })
+      activeCheckoutAttemptStartedAt = undefined
     } catch (error) {
-      trackSubscriptionFailure({
-        tier: tierKey,
-        cycle: billingCycle,
-        checkoutType
-      })
-      if (await recoverOutstandingPayment(error)) return
       if (hasErrorCode(error, 'REACTIVATION_CONFIRMATION_REQUIRED')) {
         await refreshPreviewOnReactivationBlock(planSlug)
         return
       }
+      trackSubscriptionFailure(
+        {
+          tier: tierKey,
+          cycle: billingCycle,
+          checkoutType,
+          attemptStartedAt: activeCheckoutAttemptStartedAt
+        },
+        error
+      )
+      activeCheckoutAttemptStartedAt = undefined
+      if (await recoverOutstandingPayment(error)) return
       if (await refreshExpiredProrationQuote(error, planSlug)) return
       showSubscribeError(error)
     } finally {
@@ -738,13 +753,58 @@ export function useSubscriptionCheckout(
     tier: CheckoutTierKey | 'team'
     cycle: BillingCycle
     checkoutType: SubscriptionCheckoutType
+    /**
+     * Timestamp captured alongside the canonical `subscription_checkout`
+     * `started` event, threaded through to the billing-op poller so its
+     * `duration_ms` spans the full attempt (including the initiating
+     * subscribe call), not just the poll-observation window.
+     */
+    attemptStartedAt?: number
+  }
+
+  function trackSubscriptionStarted(
+    context: SubscriptionOutcomeContext
+  ): number | undefined {
+    if (activeCheckoutAttemptStartedAt !== undefined) {
+      return activeCheckoutAttemptStartedAt
+    }
+    if (!shouldUseWorkspaceBilling.value) return undefined
+
+    activeCheckoutAttemptStartedAt = Date.now()
+
+    telemetry?.trackBillingEvent({
+      operation: 'subscription_checkout',
+      stage: 'started',
+      outcome: 'pending',
+      tier: context.tier,
+      cycle: context.cycle,
+      checkout_type: context.checkoutType,
+      payment_intent_source: paymentIntentSource
+    })
+    telemetry?.trackBillingEvent({
+      operation: 'operation',
+      stage: 'started',
+      outcome: 'pending',
+      operation_type: 'subscription',
+      tier: context.tier,
+      cycle: context.cycle,
+      checkout_type: context.checkoutType,
+      payment_intent_source: paymentIntentSource
+    })
+    return activeCheckoutAttemptStartedAt
   }
 
   function trackSubscriptionFailure(
     context: SubscriptionOutcomeContext,
+    error?: unknown,
     errorCode?: 'missing_checkout_response'
   ) {
-    if (!shouldUseWorkspaceBilling.value) return
+    if (context.attemptStartedAt === undefined) return
+
+    // No checkout_url is a malformed response, not a caught error — 'unknown' is honest here.
+    const failureCategory = errorCode
+      ? 'unknown'
+      : categorizeBillingApiError(error)
 
     telemetry?.trackBillingEvent({
       operation: 'subscription_checkout',
@@ -754,8 +814,22 @@ export function useSubscriptionCheckout(
       cycle: context.cycle,
       checkout_type: context.checkoutType,
       payment_intent_source: paymentIntentSource,
-      failure_category: 'unknown',
-      ...(errorCode && { error_code: errorCode })
+      failure_category: failureCategory,
+      ...(errorCode && { error_code: errorCode }),
+      duration_ms: Date.now() - context.attemptStartedAt
+    })
+    telemetry?.trackBillingEvent({
+      operation: 'operation',
+      stage: 'failed',
+      outcome: 'failure',
+      operation_type: 'subscription',
+      tier: context.tier,
+      cycle: context.cycle,
+      checkout_type: context.checkoutType,
+      payment_intent_source: paymentIntentSource,
+      failure_category: failureCategory,
+      ...(errorCode && { error_code: errorCode }),
+      duration_ms: Date.now() - context.attemptStartedAt
     })
   }
 
@@ -765,12 +839,23 @@ export function useSubscriptionCheckout(
     shouldTrackSubscriptionSuccess = true
   ): Promise<void> {
     if (!response) {
-      trackSubscriptionFailure(context, 'missing_checkout_response')
+      trackSubscriptionFailure(context, undefined, 'missing_checkout_response')
       return
     }
 
     if (response.status === 'subscribed') {
-      if (shouldTrackSubscriptionSuccess) {
+      if (
+        shouldTrackSubscriptionSuccess &&
+        context.attemptStartedAt !== undefined
+      ) {
+        const durationMs = Date.now() - context.attemptStartedAt
+        // PostHog implements both trackBillingEvent and
+        // trackMonthlySubscriptionSucceeded (PostHogTelemetryProvider.ts:405,
+        // :444), so also calling the legacy event here would double-count this
+        // success for it. billingOperationStore.ts's own success handler
+        // already restores trackMonthlySubscriptionSucceeded for the
+        // providers that need it (Mixpanel, GTM); this call site doesn't need
+        // a second one.
         telemetry?.trackBillingEvent({
           operation: 'subscription_checkout',
           stage: 'succeeded',
@@ -779,7 +864,20 @@ export function useSubscriptionCheckout(
           cycle: context.cycle,
           checkout_type: context.checkoutType,
           payment_intent_source: paymentIntentSource,
-          billing_op_id: response.billing_op_id
+          billing_op_id: response.billing_op_id,
+          duration_ms: durationMs
+        })
+        telemetry?.trackBillingEvent({
+          operation: 'operation',
+          stage: 'succeeded',
+          outcome: 'success',
+          operation_type: 'subscription',
+          tier: context.tier,
+          cycle: context.cycle,
+          checkout_type: context.checkoutType,
+          payment_intent_source: paymentIntentSource,
+          billing_op_id: response.billing_op_id,
+          duration_ms: durationMs
         })
       }
       checkoutStep.value = 'success'
@@ -823,7 +921,8 @@ export function useSubscriptionCheckout(
         tier: context.tier,
         cycle: context.cycle,
         checkoutType: context.checkoutType,
-        paymentIntentSource
+        paymentIntentSource,
+        attemptStartedAt: context.attemptStartedAt
       }
     )
     if (
@@ -871,6 +970,11 @@ export function useSubscriptionCheckout(
         })
         return
       }
+      const attemptStartedAt = trackSubscriptionStarted({
+        tier: 'team',
+        cycle: billingCycle,
+        checkoutType
+      })
       if (
         confirmReactivation &&
         (isCancelled.value || reactivationRequired.value)
@@ -903,15 +1007,11 @@ export function useSubscriptionCheckout(
       await handleSubscribeResponse(response, {
         tier: 'team',
         cycle: billingCycle,
-        checkoutType
+        checkoutType,
+        attemptStartedAt
       })
+      activeCheckoutAttemptStartedAt = undefined
     } catch (error) {
-      trackSubscriptionFailure({
-        tier: 'team',
-        cycle: billingCycle,
-        checkoutType
-      })
-      if (await recoverOutstandingPayment(error)) return
       if (hasErrorCode(error, 'REACTIVATION_CONFIRMATION_REQUIRED')) {
         await refreshPreviewOnReactivationBlock(planSlug, {
           teamCreditStopId: stop.id,
@@ -919,6 +1019,17 @@ export function useSubscriptionCheckout(
         })
         return
       }
+      trackSubscriptionFailure(
+        {
+          tier: 'team',
+          cycle: billingCycle,
+          checkoutType,
+          attemptStartedAt: activeCheckoutAttemptStartedAt
+        },
+        error
+      )
+      activeCheckoutAttemptStartedAt = undefined
+      if (await recoverOutstandingPayment(error)) return
       if (
         await refreshExpiredProrationQuote(error, planSlug, {
           teamCreditStopId: stop.id,
@@ -935,19 +1046,36 @@ export function useSubscriptionCheckout(
   async function handleResubscribe() {
     if (!permissions.value.canManageSubscriptionLifecycle) return
 
+    const source = 'pricing_dialog' as const
+
     telemetry?.trackResubscribeClicked({
-      source: 'pricing_dialog',
+      source,
+      payment_intent_source: paymentIntentSource
+    })
+    // Emitted before the awaited call so a failure always has a preceding
+    // `started` — emitting it only after the call meant a failure produced a
+    // `failed` with no matching `started`, pushing failed/started over 100%.
+    telemetry?.trackBillingEvent({
+      operation: 'resubscribe',
+      stage: 'started',
+      outcome: 'pending',
+      source,
       payment_intent_source: paymentIntentSource
     })
     isResubscribing.value = true
     try {
-      await resubscribe()
+      await resubscribe({ source })
+      // Workspace's resubscribe() call is itself the terminal reactivation, so it
+      // gets an immediate `succeeded` here. Legacy only opens a Stripe checkout
+      // tab, which isn't terminal — its `succeeded` is emitted later, from
+      // useSubscription.ts's pending-checkout recovery, once a status poll
+      // confirms the payment actually went through.
       if (shouldUseWorkspaceBilling.value) {
         telemetry?.trackBillingEvent({
           operation: 'resubscribe',
           stage: 'succeeded',
           outcome: 'success',
-          source: 'pricing_dialog',
+          source,
           payment_intent_source: paymentIntentSource
         })
       }
@@ -960,16 +1088,14 @@ export function useSubscriptionCheckout(
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Failed to resubscribe'
-      if (shouldUseWorkspaceBilling.value) {
-        telemetry?.trackBillingEvent({
-          operation: 'resubscribe',
-          stage: 'failed',
-          outcome: 'failure',
-          source: 'pricing_dialog',
-          payment_intent_source: paymentIntentSource,
-          failure_category: 'unknown'
-        })
-      }
+      telemetry?.trackBillingEvent({
+        operation: 'resubscribe',
+        stage: 'failed',
+        outcome: 'failure',
+        source,
+        payment_intent_source: paymentIntentSource,
+        failure_category: categorizeBillingApiError(error)
+      })
       toast.add({
         severity: 'error',
         summary: 'Error',

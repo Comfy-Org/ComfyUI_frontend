@@ -17,7 +17,6 @@ import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 
 describe('useCopyToClipboard', () => {
   beforeEach(() => {
-    vi.resetAllMocks()
     Object.defineProperty(navigator, 'clipboard', {
       configurable: true,
       value: { writeText: mockWriteText }

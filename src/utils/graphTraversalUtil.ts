@@ -469,8 +469,9 @@ export function isCandidateScopeActive(
  * candidate is surfaceable when it is confirmed missing and its
  * enclosing subgraph is still active. Null `nodeId` (workflow-level
  * models) bypasses the ancestor check since it has no scope to
- * validate. Unified helper so the initial pipeline post-filter and the
- * three async-resolution call sites cannot drift.
+ * validate. Shared by the missing-model pipeline post-filter and its
+ * async-resolution call site; missing media resolves scope through the
+ * promoted-widget-aware `isMissingMediaCandidateActive` instead.
  */
 export function isMissingCandidateActive(
   rootGraph: LGraph | null | undefined,

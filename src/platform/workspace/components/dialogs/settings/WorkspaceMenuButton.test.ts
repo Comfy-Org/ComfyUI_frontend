@@ -82,7 +82,6 @@ function renderComponent() {
 
 describe('WorkspaceMenuButton', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockUiConfig.value = ownerConfig
     mockCanLeaveWorkspace.value = false
     mockCanManageSubscription.value = true

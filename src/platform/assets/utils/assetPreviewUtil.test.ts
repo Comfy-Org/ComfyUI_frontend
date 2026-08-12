@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import {
   findOutputAsset,
@@ -82,8 +82,6 @@ const localAssetWithPreview = {
 }
 
 describe('isAssetPreviewSupported', () => {
-  beforeEach(() => vi.clearAllMocks())
-
   it('returns true when asset API is enabled (cloud)', () => {
     mockIsAssetAPIEnabled.mockReturnValue(true)
     expect(isAssetPreviewSupported()).toBe(true)
@@ -102,8 +100,6 @@ describe('isAssetPreviewSupported', () => {
 })
 
 describe('findOutputAsset', () => {
-  beforeEach(() => vi.clearAllMocks())
-
   it('finds asset by hash (cloud)', async () => {
     mockFetchResponse([cloudAsset])
 
@@ -155,8 +151,6 @@ describe('findOutputAsset', () => {
 })
 
 describe('findServerPreviewUrl', () => {
-  beforeEach(() => vi.clearAllMocks())
-
   it('returns null when asset has no preview_id', async () => {
     mockFetchResponse([cloudAsset])
 
@@ -200,8 +194,6 @@ describe('findServerPreviewUrl', () => {
 })
 
 describe('persistThumbnail', () => {
-  beforeEach(() => vi.clearAllMocks())
-
   it('uploads thumbnail and links preview_id', async () => {
     mockFetchEmpty()
     mockFetchResponse([localAsset])

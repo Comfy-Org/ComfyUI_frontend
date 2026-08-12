@@ -69,7 +69,6 @@ describe('WidgetSelect Value Binding', () => {
   beforeEach(() => {
     mockShouldUseAssetBrowser.mockReturnValue(false)
     mockIsAssetAPIEnabled.mockReturnValue(false)
-    vi.clearAllMocks()
   })
 
   type SelectWidgetOptions = {

@@ -126,24 +126,36 @@
       </template>
 
       <template v-else>
-        <Button
+        <AccessibleTooltip
           v-if="showGatedRepoAction"
-          data-testid="missing-model-gated-access"
-          variant="muted-textonly"
-          size="icon"
-          class="size-8 shrink-0 text-warning-background hover:text-warning-background focus-visible:ring-inset"
-          :aria-label="
-            t(
-              'rightSidePanel.missingModels.openHuggingFaceRepo',
-              { model: model.name },
-              { escapeParameter: false }
-            )
-          "
-          :title="gatedModelTooltip"
-          @click="handleOpenGatedRepo"
+          :label="t('rightSidePanel.missingModels.gatedModelTooltip')"
         >
-          <i aria-hidden="true" class="icon-[lucide--lock] size-4" />
-        </Button>
+          <template #trigger>
+            <Button
+              :as="usesNativeModelAccess ? 'button' : 'a'"
+              :type="usesNativeModelAccess ? 'button' : undefined"
+              :href="usesNativeModelAccess ? undefined : gatedRepoUrl"
+              :target="usesNativeModelAccess ? undefined : '_blank'"
+              :rel="usesNativeModelAccess ? undefined : 'noopener noreferrer'"
+              data-testid="missing-model-gated-access"
+              variant="muted-textonly"
+              size="icon"
+              class="size-8 shrink-0 text-warning-background hover:text-warning-background focus-visible:ring-inset"
+              :aria-label="
+                t(
+                  usesNativeModelAccess
+                    ? 'rightSidePanel.missingModels.openHuggingFaceRepoDesktop'
+                    : 'rightSidePanel.missingModels.openHuggingFaceRepoNewTab',
+                  { model: model.name },
+                  { escapeParameter: false }
+                )
+              "
+              @click="handleOpenGatedRepo"
+            >
+              <i aria-hidden="true" class="icon-[lucide--lock] size-4" />
+            </Button>
+          </template>
+        </AccessibleTooltip>
         <Button
           v-if="showDownloadAction"
           data-testid="missing-model-download"
@@ -160,7 +172,6 @@
           :aria-describedby="
             showGatedRepoAction ? gatedDownloadDescriptionId : undefined
           "
-          :title="gatedModelDownloadTooltip"
           @click="handleDownload"
         >
           {{ t('g.download') }}
@@ -170,7 +181,7 @@
           :id="gatedDownloadDescriptionId"
           hidden
         >
-          {{ gatedModelDownloadTooltip }}
+          {{ t('rightSidePanel.missingModels.gatedModelDownloadTooltip') }}
         </span>
       </template>
 
@@ -244,6 +255,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import { selectionEmphasisClass } from '@/components/rightSidePanel/errors/selectionEmphasis'
 import Button from '@/components/ui/button/Button.vue'
+import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 import TransitionCollapse from '@/components/rightSidePanel/layout/TransitionCollapse.vue'
 import type { MissingModelViewModel } from '@/platform/missingModel/types'
 import type { UploadModelDialogContext } from '@/platform/assets/composables/useUploadModelWizard'
@@ -260,6 +272,7 @@ import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { isCloud } from '@/platform/distribution/types'
 import {
   isModelDownloadable,
+  isTrustedHuggingFaceUrl,
   toBrowsableUrl
 } from '@/platform/missingModel/missingModelDownload'
 import { formatSize } from '@/utils/formatUtil'
@@ -320,8 +333,13 @@ const store = useMissingModelStore()
 const { selectedLibraryModel } = storeToRefs(store)
 const cloudProgress = useTemplateRef<HTMLElement>('cloudProgress')
 const modelLabelControl = useTemplateRef<HTMLButtonElement>('modelLabelControl')
-const { prefetchModelMetadata, downloadMissingModel, openModelAccessPage } =
-  useMissingModelDownload()
+const {
+  fileSizeFor,
+  gatedRepoUrlFor,
+  prefetchModelMetadata,
+  downloadMissingModel,
+  openModelAccessPage
+} = useMissingModelDownload()
 
 const expanded = computed(
   () =>
@@ -360,28 +378,20 @@ const downloadable = computed(() => {
 const showDownloadAction = computed(() => !isCloud && downloadable.value)
 const gatedRepoUrl = computed(() => {
   const url = model.representative.url
-  return url ? store.gatedRepoUrls[url] : undefined
+  const repoUrl = url ? gatedRepoUrlFor(url) : undefined
+  return repoUrl && isTrustedHuggingFaceUrl(repoUrl) ? repoUrl : undefined
 })
 const showGatedRepoAction = computed(
   () => showDownloadAction.value && !!gatedRepoUrl.value
 )
-const gatedModelTooltip = computed(() =>
-  showGatedRepoAction.value
-    ? t('rightSidePanel.missingModels.gatedModelTooltip')
-    : undefined
-)
-const gatedModelDownloadTooltip = computed(() =>
-  showGatedRepoAction.value
-    ? t('rightSidePanel.missingModels.gatedModelDownloadTooltip')
-    : undefined
-)
+const usesNativeModelAccess = !!window.__comfyDesktop2?.openModelAccessPage
 const gatedDownloadDescriptionId = useId()
 
 const downloadSizeLabel = computed(() => {
   if (!showDownloadAction.value) return undefined
 
   const url = model.representative.url
-  const size = url ? store.fileSizes[url] : undefined
+  const size = url ? fileSizeFor(url) : undefined
   return size ? formatSize(size) : undefined
 })
 const modelTypeLabel = computed(
@@ -442,6 +452,8 @@ function handleDownload() {
 }
 
 function handleOpenGatedRepo() {
+  if (!usesNativeModelAccess) return
+
   const repoUrl = gatedRepoUrl.value
   if (repoUrl) void openModelAccessPage(repoUrl)
 }

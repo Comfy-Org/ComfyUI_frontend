@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
 import type { InstallValidation } from '@comfyorg/comfyui-electron-types'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const { mockElectron, testTasks } = vi.hoisted(() => {
@@ -55,7 +53,6 @@ function makeUpdate(
 }
 
 function createStore() {
-  setActivePinia(createTestingPinia({ stubActions: false }))
   return useMaintenanceTaskStore()
 }
 
@@ -64,7 +61,6 @@ describe('useMaintenanceTaskStore', () => {
   const [basicTask, terminalTask] = testTasks as MaintenanceTask[]
 
   beforeEach(() => {
-    vi.resetAllMocks()
     store = createStore()
   })
 

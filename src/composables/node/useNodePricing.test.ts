@@ -657,6 +657,64 @@ describe('useNodePricing', () => {
     })
   })
 
+  describe('failed evaluation caching', () => {
+    it('recovers the price badge when a failed string value is corrected to its numeric equivalent', async () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const rule = priceBadge('{"type":"usd","usd": widgets.steps * 0.01}', [
+        { name: 'steps', type: 'COMBO' }
+      ])
+      const numericNode = createMockNodeWithPriceBadge(
+        'TestNumericPriceBadgeNode',
+        rule,
+        [{ name: 'steps', value: 10 }]
+      )
+      const correctedNode = createMockNodeWithPriceBadge(
+        'TestCorrectedPriceBadgeNode',
+        rule,
+        [{ name: 'steps', value: '10' }]
+      )
+
+      getNodeDisplayPrice(numericNode)
+      await new Promise((r) => setTimeout(r, 50))
+      expect(getNodeDisplayPrice(numericNode)).toBe(creditsLabel(0.1))
+
+      expect(getNodeDisplayPrice(correctedNode)).toBe('')
+      await new Promise((r) => setTimeout(r, 50))
+      expect(getNodeDisplayPrice(correctedNode)).toBe('')
+
+      const stepsWidget = correctedNode.widgets?.find(
+        (widget) => widget.name === 'steps'
+      )
+      if (!stepsWidget) throw new Error('Expected a steps widget')
+      stepsWidget.value = 10
+
+      expect(getNodeDisplayPrice(correctedNode)).toBe('')
+      await new Promise((r) => setTimeout(r, 50))
+      expect(getNodeDisplayPrice(correctedNode)).toBe(creditsLabel(0.1))
+    })
+
+    it('does not retry a failed price badge evaluation for an unchanged value', async () => {
+      const { getNodeDisplayPrice, pricingRevision } = useNodePricing()
+      const node = createMockNodeWithPriceBadge(
+        'TestFailedPriceBadgeCacheNode',
+        priceBadge('{"type":"usd","usd": widgets.steps * 0.01}', [
+          { name: 'steps', type: 'COMBO' }
+        ]),
+        [{ name: 'steps', value: '10' }]
+      )
+
+      const revisionBeforeFailure = pricingRevision.value
+      expect(getNodeDisplayPrice(node)).toBe('')
+      await new Promise((r) => setTimeout(r, 50))
+      const revisionAfterFailure = pricingRevision.value
+      expect(revisionAfterFailure).toBeGreaterThan(revisionBeforeFailure)
+
+      expect(getNodeDisplayPrice(node)).toBe('')
+      await new Promise((r) => setTimeout(r, 20))
+      expect(pricingRevision.value).toBe(revisionAfterFailure)
+    })
+  })
+
   describe('getNodeRevisionRef', () => {
     it('should return a ref for a node ID', () => {
       const { getNodeRevisionRef } = useNodePricing()

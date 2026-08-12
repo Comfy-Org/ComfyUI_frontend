@@ -1,5 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
@@ -45,10 +45,6 @@ function createImageNode(
 }
 
 describe('useImageMenuOptions', () => {
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
   describe('getImageMenuOptions', () => {
     it('includes Paste Image option when node supports paste', () => {
       const node = createImageNode()

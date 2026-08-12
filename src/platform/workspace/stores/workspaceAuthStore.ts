@@ -14,6 +14,7 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import type { AuthHeader } from '@/types/authTypes'
+import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 import type { WorkspaceWithRole } from '@/platform/workspace/workspaceTypes'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 
@@ -93,8 +94,7 @@ function permanentAuthErrorMessageKey(code: string | undefined): string {
   }
 }
 
-// Flag-ON has no Firebase fallback, so surface permanent failures instead of
-// stranding every cloud request on a silently cleared token.
+// Workspace auth has no Firebase fallback, so surface permanent failures.
 function surfacePermanentAuthError(err: WorkspaceAuthError): void {
   console.error('Unified workspace auth revoked or invalid:', err)
   useToastStore().add({
@@ -282,10 +282,6 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   }
 
   function initializeFromSession(): boolean {
-    if (!flags.teamWorkspacesEnabled) {
-      return false
-    }
-
     try {
       const workspaceJson = sessionStorage.getItem(
         WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE
@@ -371,8 +367,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     })
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      const message = errorData.message || response.statusText
+      const { message } = await parseErrorResponse(response)
 
       if (response.status === 401) {
         throw new WorkspaceAuthError(
@@ -432,10 +427,6 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   }
 
   async function performSwitchWorkspace(workspaceId: string): Promise<void> {
-    if (!flags.teamWorkspacesEnabled) {
-      return
-    }
-
     const capturedRequestId = refreshRequestId
     const capturedOwnerUid = currentUserUid()
 
@@ -566,10 +557,6 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   async function ensureWorkspaceToken(
     preferredWorkspaceId?: string
   ): Promise<string | null> {
-    if (!flags.teamWorkspacesEnabled) {
-      return null
-    }
-
     const ownerUid = currentUserUid()
     if (!ownerUid) return null
     const targetWorkspaceId = preferredWorkspaceId ?? currentWorkspace.value?.id

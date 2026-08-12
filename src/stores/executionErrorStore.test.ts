@@ -1,6 +1,6 @@
 import { fromAny } from '@total-typescript/shoehorn'
 import { createPinia, setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 import type { MissingNodeType } from '@/types/comfy'
@@ -28,12 +28,6 @@ vi.mock('@/platform/distribution/types', () => ({
 
 const mockShowErrorsTab = vi.hoisted(() => ({ value: false }))
 
-vi.mock('@/stores/settingStore', () => ({
-  useSettingStore: vi.fn(() => ({
-    get: vi.fn(() => mockShowErrorsTab.value)
-  }))
-}))
-
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: vi.fn(() => ({
     get: vi.fn(() => mockShowErrorsTab.value)
@@ -59,14 +53,6 @@ function mockGraphReady(rootGraph: typeof app.rootGraph) {
 }
 
 describe('executionErrorStore — node error operations', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
   describe('clearSimpleNodeErrors', () => {
     it('does nothing if lastNodeErrors is null', () => {
       const store = useExecutionErrorStore()
@@ -638,7 +624,6 @@ describe('executionErrorStore — node error operations', () => {
 
 describe('surfaceMissingModels — silent option', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     mockShowErrorsTab.value = true
   })
 
@@ -706,7 +691,6 @@ describe('surfaceMissingModels — silent option', () => {
 
 describe('surfaceMissingMedia — silent option', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     mockShowErrorsTab.value = true
   })
 
@@ -773,10 +757,6 @@ describe('surfaceMissingMedia — silent option', () => {
 })
 
 describe('recordNodeErrors', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-  })
-
   it('normalizes an empty error record to null', () => {
     const store = useExecutionErrorStore()
 
@@ -795,10 +775,6 @@ describe('recordNodeErrors', () => {
 })
 
 describe('hasMissingError', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-  })
-
   it.for([
     {
       type: 'nodes',

@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { effectScope } from 'vue'
 import type { EffectScope } from 'vue'
 
@@ -22,14 +22,9 @@ describe('usePrimeVueOverlayChildStyle', () => {
     return composable
   }
 
-  beforeEach(() => {
-    document.body.innerHTML = ''
-  })
-
   afterEach(() => {
     scope?.stop()
     scope = undefined
-    document.body.innerHTML = ''
   })
 
   it('preserves existing stacking when there is no PrimeVue parent overlay', () => {

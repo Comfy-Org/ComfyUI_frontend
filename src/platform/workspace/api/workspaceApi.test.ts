@@ -53,7 +53,6 @@ const AUTH_HEADER = { Authorization: 'Bearer test-token' }
 
 describe('workspaceApi', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockGetAuthHeaderOrThrow.mockResolvedValue(AUTH_HEADER)
     mockGetFirebaseAuthHeaderOrThrow.mockResolvedValue(AUTH_HEADER)
   })
@@ -356,7 +355,11 @@ describe('workspaceApi', () => {
           headers: AUTH_HEADER
         }
       )
-      expect(result).toEqual(data)
+      expect(result).toEqual({
+        ...data,
+        max_seats: null,
+        occupied_seats: null
+      })
     })
 
     it('getBillingBalance() sends GET /billing/balance', async () => {

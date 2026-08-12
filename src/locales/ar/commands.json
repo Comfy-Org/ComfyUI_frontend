@@ -176,6 +176,9 @@
   "Comfy_Interrupt": {
     "label": "إيقاف مؤقت"
   },
+  "Comfy_LayerEditor_OpenLayerEditor": {
+    "label": "افتح محرر الطبقات للعقدة المحددة"
+  },
   "Comfy_LoadDefaultWorkflow": {
     "label": "تحميل سير العمل الافتراضي"
   },

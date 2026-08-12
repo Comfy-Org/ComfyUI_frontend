@@ -11,6 +11,7 @@ import {
   shouldRemintCloudRequest
 } from '@/platform/auth/unified/remintRetry'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
+import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 import type {
   ModelFile,
   ModelFolderInfo
@@ -58,6 +59,7 @@ import type {
   UserDataFullInfo
 } from '@/schemas/apiSchema'
 import type {
+  JobAssetsResult,
   JobDetail,
   JobListItem
 } from '@/platform/remote/comfyui/jobs/jobTypes'
@@ -67,6 +69,7 @@ import type { AuthHeader } from '@/types/authTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import {
   fetchHistory,
+  fetchJobAssets,
   fetchJobDetail,
   fetchQueue
 } from '@/platform/remote/comfyui/jobs/fetchJobs'
@@ -1219,6 +1222,17 @@ export class ComfyApi extends EventTarget {
   }
 
   /**
+   * Gets a job's output assets, each resolved to a real asset entity with
+   * per-output node context. Returns an empty list when the endpoint is
+   * unavailable (e.g. non-cloud distributions).
+   * @param jobId The job ID
+   * @returns The job's output assets and whether the list is exhaustive
+   */
+  async getJobAssets(jobId: string): Promise<JobAssetsResult> {
+    return fetchJobAssets(this.fetchApi.bind(this), jobId)
+  }
+
+  /**
    * Gets system & device stats
    * @returns System stats such as python version, OS, per device info
    */
@@ -1593,6 +1607,9 @@ export class ComfyApi extends EventTarget {
    * @returns true if the feature is supported, false otherwise
    */
   serverSupportsFeature(featureName: string): boolean {
+    const sessionOverride = getSessionOverride(featureName)
+    if (sessionOverride !== undefined) return sessionOverride === true
+
     const override = getDevOverride<boolean>(featureName)
     if (override !== undefined) return override
     return get(this.serverFeatureFlags.value, featureName) === true
@@ -1605,6 +1622,9 @@ export class ComfyApi extends EventTarget {
    * @returns The feature value or default
    */
   getServerFeature<T = unknown>(featureName: string, defaultValue?: T): T {
+    const sessionOverride = getSessionOverride<T>(featureName)
+    if (sessionOverride !== undefined) return sessionOverride
+
     const override = getDevOverride<T>(featureName)
     if (override !== undefined) return override
     return get(this.serverFeatureFlags.value, featureName, defaultValue) as T

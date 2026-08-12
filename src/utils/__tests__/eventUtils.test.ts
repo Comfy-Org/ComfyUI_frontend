@@ -1,5 +1,5 @@
 import { extractFilesFromDragEvent } from '@/utils/eventUtils'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 describe('eventUtils', () => {
   describe('extractFilesFromDragEvent', () => {
@@ -10,9 +10,6 @@ describe('eventUtils', () => {
       vi.stubGlobal('fetch', fetchSpy)
     })
 
-    afterEach(() => {
-      vi.unstubAllGlobals()
-    })
     it('should return empty array when no dataTransfer', async () => {
       const actual = await extractFilesFromDragEvent(new FakeDragEvent('drop'))
       expect(actual).toEqual([])

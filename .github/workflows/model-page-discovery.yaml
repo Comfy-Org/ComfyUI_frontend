@@ -22,7 +22,7 @@ jobs:
           echo "Fetched $(jq '.labels | length' hub-labels.json) model labels from hub"
 
       - name: Checkout ComfyUI_frontend
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           sparse-checkout: apps/website/src/config/generated-models.json
 

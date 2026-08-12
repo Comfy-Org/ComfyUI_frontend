@@ -70,7 +70,6 @@ describe('useTemplateWorkflows', () => {
 
   beforeEach(() => {
     mockIsCloud.value = true
-    mockTrackTemplate.mockClear()
 
     mockWorkflowTemplatesStore = {
       isLoaded: false,

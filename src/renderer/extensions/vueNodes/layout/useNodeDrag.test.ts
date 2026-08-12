@@ -135,17 +135,10 @@ describe('useNodeDrag', () => {
     testState.selectedNodeIds = ref(new Set<NodeId>())
     testState.selectedItems = ref<unknown[]>([])
     testState.nodeLayouts.clear()
-    testState.mutationFns.setSource.mockReset()
-    testState.mutationFns.moveNode.mockReset()
-    testState.mutationFns.batchMoveNodes.mockReset()
-    testState.batchUpdateNodeBounds.mockReset()
-    testState.nodeSnap.shouldSnap.mockReset()
     testState.nodeSnap.shouldSnap.mockReturnValue(false)
-    testState.nodeSnap.applySnapToPosition.mockReset()
     testState.nodeSnap.applySnapToPosition.mockImplementation(
       (pos: { x: number; y: number }) => pos
     )
-    testState.cancelAnimationFrame.mockReset()
     testState.requestAnimationFrameCallback = null
     testState.capturedOnPan.current = null
     testState.capturedAutoPanInstance.current = null
@@ -252,17 +245,10 @@ describe('useNodeDrag auto-pan', () => {
       position: { x: 300, y: 400 },
       size: { width: 200, height: 100 }
     })
-    testState.mutationFns.setSource.mockReset()
-    testState.mutationFns.moveNode.mockReset()
-    testState.mutationFns.batchMoveNodes.mockReset()
-    testState.batchUpdateNodeBounds.mockReset()
-    testState.nodeSnap.shouldSnap.mockReset()
     testState.nodeSnap.shouldSnap.mockReturnValue(false)
-    testState.nodeSnap.applySnapToPosition.mockReset()
     testState.nodeSnap.applySnapToPosition.mockImplementation(
       (pos: { x: number; y: number }) => pos
     )
-    testState.cancelAnimationFrame.mockReset()
     testState.requestAnimationFrameCallback = null
     testState.capturedOnPan.current = null
     testState.capturedAutoPanInstance.current = null

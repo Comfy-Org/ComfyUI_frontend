@@ -18,9 +18,9 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
 }))
 
 vi.mock('@/stores/executionStore', () => ({
-  useExecutionStore: vi.fn().mockReturnValue({
+  useExecutionStore: vi.fn(() => ({
     nodeProgressStates: {}
-  })
+  }))
 }))
 vi.mock('@/renderer/core/spatial/boundsCalculator', () => ({
   calculateNodeBounds: vi.fn(),
@@ -33,8 +33,6 @@ describe('useMinimapViewport', () => {
   let mockGraph: LGraph
 
   beforeEach(() => {
-    vi.clearAllMocks()
-
     mockCanvas = {
       canvas: {
         clientWidth: 800,

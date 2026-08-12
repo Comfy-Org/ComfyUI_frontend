@@ -98,7 +98,6 @@ const renderHeader = () => render(TopBarHeader, { global: { plugins: [i18n] } })
 
 describe('TopBarHeader', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockStore = initialMock()
   })
 

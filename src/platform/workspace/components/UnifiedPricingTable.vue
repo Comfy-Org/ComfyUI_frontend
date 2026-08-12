@@ -1,9 +1,8 @@
 <template>
   <div class="flex flex-col xl:h-full">
     <!-- Plan-scope toggle (personal vs team PLAN on one workspace): sits directly
-         on top of the content area — outside it, attached with no gap (DES QA).
-         Only shown when team plans are available (teamWorkspacesEnabled). -->
-    <div v-if="showTeam" class="flex justify-center">
+         on top of the content area — outside it, attached with no gap (DES QA). -->
+    <div class="flex justify-center">
       <SelectButton
         v-model="planMode"
         :options="planScopeOptions"
@@ -416,7 +415,6 @@ import { I18nT, useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import CreditSlider from '@/components/ui/credit-slider/CreditSlider.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   TIER_PRICING,
   TIER_TO_KEY
@@ -443,8 +441,7 @@ type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 interface Props {
   isLoading?: boolean
   loadingTier?: CheckoutTierKey | null
-  /** Initial plan scope. The toggle to switch is only shown when team plans
-   *  are available (`teamWorkspacesEnabled`). */
+  /** Initial plan scope. */
   initialPlanMode?: 'personal' | 'team'
 }
 
@@ -468,11 +465,7 @@ const emit = defineEmits<{
 }>()
 
 const { t, n } = useI18n()
-const { flags } = useFeatureFlags()
 const { permissions } = useWorkspaceUI()
-
-/** Team plans only exist behind the flag (mirrors useBillingContext type). */
-const showTeam = computed(() => flags.teamWorkspacesEnabled)
 
 const planMode = ref<'personal' | 'team'>(initialPlanMode)
 
@@ -615,6 +608,7 @@ const {
   fetchPlans,
   isTeamPlan,
   subscription,
+  subscriptionStatus,
   currentTeamCreditStop
 } = useBillingContext()
 
@@ -639,6 +633,10 @@ watch(
 const { teamCreditStops } = useBillingPlans()
 
 const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
+
+// An ended subscription still reports its plan slug and tier, so the plan it
+// held must not read as current — it is buyable again.
+const isEnded = computed(() => subscriptionStatus.value === 'ended')
 
 const currentBillingCycle = ref<BillingCycle>('yearly')
 
@@ -676,7 +674,9 @@ const teamVideoEstimate = computed(() =>
 
 // The team's currently-subscribed stop (null when on no team plan). Matched to
 // the slider stops by list price so the current stop can be disabled.
-const isTeamSubscribed = computed(() => currentTeamCreditStop.value !== null)
+const isTeamSubscribed = computed(
+  () => currentTeamCreditStop.value !== null && !isEnded.value
+)
 
 // `teamUsd` is seeded at mount from the fallback default; when the API stops
 // resolve afterwards with different breakpoints that seed can match no stop,
@@ -780,7 +780,9 @@ function getPriceFromApi(tier: PricingTierConfig): number | null {
 }
 
 const currentTierKey = computed<TierKey | null>(() =>
-  subscription.value?.tier ? TIER_TO_KEY[subscription.value.tier] : null
+  subscription.value?.tier && !isEnded.value
+    ? TIER_TO_KEY[subscription.value.tier]
+    : null
 )
 
 const isYearlySubscription = computed(
@@ -788,6 +790,7 @@ const isYearlySubscription = computed(
 )
 
 const isCurrentPlan = (tierKey: CheckoutTierKey): boolean => {
+  if (isEnded.value) return false
   if (currentPlanSlug.value) {
     const plan = getApiPlanForTier(tierKey, currentBillingCycle.value)
     return plan?.slug === currentPlanSlug.value
@@ -881,8 +884,13 @@ function handleSubscribe(tierKey: CheckoutTierKey) {
 function handleSubscribeTeam() {
   if (isTeamButtonDisabled.value) return
   // Re-subscribe only when keeping the exact current plan; any other stop or
-  // cycle is a change.
-  if (isCancelled.value && isTeamCurrentPlanSelected.value) {
+  // cycle is a change. An ended subscription still reports its credit stop, so
+  // the stop alone is no proof there is a subscription left to resume.
+  if (
+    isTeamSubscribed.value &&
+    isCancelled.value &&
+    isTeamCurrentPlanSelected.value
+  ) {
     emit('resubscribe')
     return
   }

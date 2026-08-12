@@ -52,7 +52,6 @@ function renderDialog(targetRole: WorkspaceRole) {
 
 describe('ChangeMemberRoleDialogContent', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockChangeMemberRole.mockResolvedValue(undefined)
   })
 

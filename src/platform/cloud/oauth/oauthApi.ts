@@ -51,10 +51,6 @@ export type OAuthConsentDecisionParams = {
   expectedRedirectUri?: string
 }
 
-export type OAuthConsentDecision = (
-  params: OAuthConsentDecisionParams
-) => Promise<void>
-
 // Schemes that execute in our origin if navigated. Never navigable,
 // regardless of what the backend returns. Everything else is governed
 // by binding to the challenge's registered redirect_uri — no per-client
