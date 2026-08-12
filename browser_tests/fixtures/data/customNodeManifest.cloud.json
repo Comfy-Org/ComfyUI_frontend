@@ -550,6 +550,7 @@
       "timeoutMs": 30000,
       "cannotRunAlone": [
         "AudioBPMDetector",
+        "AudioConcatenate",
         "AudioReverb",
         "AudioVocalCompressor"
       ]

@@ -336,6 +336,13 @@ test.describe('autoRun classifier', () => {
         'different.pt'
       ],
       [
+        'ComfyUI_LayerStyle_Advance',
+        'LayerMask: ObjectDetectorYOLO8',
+        'EXECUTION_ERROR (ServiceError - Failed to send prompt request: request returned error status 400: {"error":{"details":"","extra_info":{},"message":"Prompt outputs failed validation","type":"prompt_outputs_failed_validation"},"node_errors":{"2364":{"class_type":"LayerMask: ObjectDetectorYOLO8","dependent_outputs":["2366"],"errors":[{"details":"yolo_model: \'Select model\' is not a valid value","extra_info":{"input_config":null,"input_name":"yolo_model","received_value":"Select model"},"message":"Value not in list","type":"value_not_in_list"}]}}})',
+        'Select model',
+        'different.pt'
+      ],
+      [
         'audio-separation-nodes-comfyui',
         'AudioSeparation',
         'EXECUTION_ERROR (AudioSeparation: RuntimeError - Input type (float) and bias type (double) should be the same)',

@@ -296,6 +296,7 @@ test.describe('customNode manifest', () => {
       expect(cannotRunAlone('ComfyUI-Upscaler-Tensorrt')).not.toContain(
         'LoadUpscalerTensorrtModel'
       )
+      expect(cannotRunAlone('ComfyUI_AudioTools')).toContain('AudioConcatenate')
       expect(cannotRunAlone('ComfyUI-LTXVideo')).not.toContain(
         'LTXVPromptEnhancerLoader'
       )

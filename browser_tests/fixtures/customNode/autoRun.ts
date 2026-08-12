@@ -205,10 +205,11 @@ export const AUTO_RUN_ALLOWED_FAILURES: Record<
   ComfyUI_LayerStyle_Advance: {
     'LayerMask: ObjectDetectorYOLO8': {
       outcomes: [
-        /^EXECUTION_ERROR \(ServiceError - Failed to send prompt request: request returned error status 400: \{"error":\{"details":"","extra_info":\{\},"message":"Prompt outputs failed validation","type":"prompt_outputs_failed_validation"\},"node_errors":\{"\d+":\{"class_type":"LayerMask: ObjectDetectorYOLO8","dependent_outputs":\["\d+"\],"errors":\[\{"details":"yolo_model: 'yolov8s\.pt' is not a valid value","extra_info":\{"input_config":null,"input_name":"yolo_model","received_value":"yolov8s\.pt"\},"message":"Value not in list","type":"value_not_in_list"\}\]\}\}\}\)$/
+        /^EXECUTION_ERROR \(ServiceError - Failed to send prompt request: request returned error status 400: \{"error":\{"details":"","extra_info":\{\},"message":"Prompt outputs failed validation","type":"prompt_outputs_failed_validation"\},"node_errors":\{"\d+":\{"class_type":"LayerMask: ObjectDetectorYOLO8","dependent_outputs":\["\d+"\],"errors":\[\{"details":"yolo_model: 'yolov8s\.pt' is not a valid value","extra_info":\{"input_config":null,"input_name":"yolo_model","received_value":"yolov8s\.pt"\},"message":"Value not in list","type":"value_not_in_list"\}\]\}\}\}\)$/,
+        /^EXECUTION_ERROR \(ServiceError - Failed to send prompt request: request returned error status 400: \{"error":\{"details":"","extra_info":\{\},"message":"Prompt outputs failed validation","type":"prompt_outputs_failed_validation"\},"node_errors":\{"\d+":\{"class_type":"LayerMask: ObjectDetectorYOLO8","dependent_outputs":\["\d+"\],"errors":\[\{"details":"yolo_model: 'Select model' is not a valid value","extra_info":\{"input_config":null,"input_name":"yolo_model","received_value":"Select model"\},"message":"Value not in list","type":"value_not_in_list"\}\]\}\}\}\)$/
       ],
       reason:
-        'Cloud model state varies: yolov8s.pt was rejected in one exact run'
+        'Cloud model state varies: exact runs rejected yolov8s.pt and the Select model placeholder'
     },
     'LayerMask: YoloV8Detect': {
       outcomes: [
