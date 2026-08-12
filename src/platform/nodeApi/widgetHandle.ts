@@ -27,11 +27,9 @@ import { isEmbeddingWorkflow } from './serializeContext'
 // `widgets_values` entry changed and the saved workflow differed.
 export type WidgetValue = string | number | boolean | object | undefined | null
 
-/** @knipIgnoreUnusedButUsedByCustomNodes */
 /**
  * Shapes follow `src/types/extensionV2.ts`, the agreed extension contract.
  *
- * @knipIgnoreUnusedButUsedByCustomNodes
  * Accessor methods rather than properties, so a read can be a store query and
  * a write can dispatch a command.
  */
