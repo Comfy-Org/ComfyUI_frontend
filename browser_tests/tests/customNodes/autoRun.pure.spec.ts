@@ -522,5 +522,29 @@ test.describe('autoRun classifier', () => {
         )
       ).toBe(false)
     }
+
+    const partialCases = Object.entries(AUTO_RUN_ALLOWED_FAILURES).flatMap(
+      ([pack, nodes]) =>
+        Object.entries(nodes).flatMap(([node, allowed]) =>
+          allowed.outcomes.includes('PARTIAL')
+            ? [{ key: `${pack}/${node}`, allowed }]
+            : []
+        )
+    )
+    expect(partialCases.map(({ key }) => key)).toEqual([
+      'ComfyUI_AudioTools/AudioSpeechToTextWhisper'
+    ])
+    for (const { allowed } of partialCases) {
+      expect(allowed.requireFailure).toBeUndefined()
+      expect(matchesAllowedAutoRunOutcome('PARTIAL', allowed.outcomes)).toBe(
+        true
+      )
+      expect(
+        matchesAllowedAutoRunOutcome('PARTIAL extra', allowed.outcomes)
+      ).toBe(false)
+      expect(matchesAllowedAutoRunOutcome('TIMEOUT', allowed.outcomes)).toBe(
+        false
+      )
+    }
   })
 })

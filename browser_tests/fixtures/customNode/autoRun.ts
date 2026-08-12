@@ -258,6 +258,13 @@ export const AUTO_RUN_ALLOWED_FAILURES: Record<
       'checkpoint'
     )
   },
+  ComfyUI_AudioTools: {
+    AudioSpeechToTextWhisper: {
+      outcomes: ['PARTIAL'],
+      reason:
+        'Cloud model-cache state varies: a cold Whisper fetch read PARTIAL on run 31581284699 while runs 31553987373 and 31601564531 ran the identical node clean, so a strict cannotRunAlone entry reds in one direction or the other on every cache flip'
+    }
+  },
   ComfyUI_LayerStyle_Advance: {
     'LayerMask: ObjectDetectorYOLO8': {
       outcomes: [
