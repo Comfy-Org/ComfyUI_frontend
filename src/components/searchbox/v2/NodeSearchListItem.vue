@@ -27,17 +27,18 @@
           class="shrink-0 rounded-sm bg-secondary-background px-1.5 py-0.5 text-xs text-muted-foreground"
           v-html="highlightQuery(nodeDef.name, currentQuery)"
         />
-        <span
-          v-if="isDisabled"
-          data-testid="node-disabled-badge"
-          class="shrink-0 rounded-sm bg-amber-500/20 px-1.5 py-0.5 text-xs text-amber-400"
-        >
-          {{ $t('workspacePanel.partnerNodes.disabledBadge') }}
-        </span>
-
         <template v-if="showDescription">
           <div class="flex-1" />
           <div class="flex shrink-0 items-center gap-1">
+            <span
+              v-if="isDisabled"
+              data-testid="node-disabled-badge"
+              :class="badgePillClass"
+            >
+              <span class="truncate text-2xs text-amber-400">
+                {{ $t('workspacePanel.partnerNodes.disabledBadge') }}
+              </span>
+            </span>
             <span v-if="showSourceBadge && isCore" :class="badgePillClass">
               <span class="truncate text-2xs">{{ $t('g.comfy') }}</span>
             </span>
@@ -95,6 +96,13 @@
       </div>
     </div>
     <div v-if="!showDescription" class="flex items-center gap-1">
+      <span
+        v-if="isDisabled"
+        data-testid="node-disabled-badge"
+        class="rounded-sm bg-amber-500/20 px-1.5 py-0.5 text-xs text-amber-400"
+      >
+        {{ $t('workspacePanel.partnerNodes.disabledBadge') }}
+      </span>
       <span
         v-if="nodeDef.deprecated"
         class="rounded-sm bg-red-500/20 px-1.5 py-0.5 text-xs text-red-400"

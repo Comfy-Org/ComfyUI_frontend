@@ -881,6 +881,20 @@ export const useLitegraphService = () => {
     options: CreateNodeOptions = {},
     addOptions?: GraphAddOptions
   ): LGraphNode | null {
+    if (isNodeDisabled(nodeDef)) {
+      toastStore.add({
+        severity: 'warn',
+        summary: t(
+          'errorCatalog.validationErrors.PARTNER_NODE_DISABLED.toastTitle'
+        ),
+        detail: t(
+          'errorCatalog.validationErrors.PARTNER_NODE_DISABLED.toastMessage'
+        ),
+        life: 3000
+      })
+      return null
+    }
+
     options.pos ??= getCanvasCenter()
 
     if (isBlueprintType(nodeDef.name)) {
