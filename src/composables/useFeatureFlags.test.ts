@@ -512,6 +512,19 @@ describe('useFeatureFlags', () => {
       expect(flags.workflowSharingEnabled).toBe(false)
     })
 
+    it('turns the node library essentials tab off against an enabled remote config', () => {
+      vi.mocked(getSessionOverride).mockImplementation((flagKey) =>
+        flagKey === ServerFeatureFlag.NODE_LIBRARY_ESSENTIALS_ENABLED
+          ? false
+          : undefined
+      )
+      remoteConfig.value = { node_library_essentials_enabled: true }
+      vi.mocked(api.getServerFeature).mockReturnValue(true)
+
+      const { flags } = useFeatureFlags()
+      expect(flags.nodeLibraryEssentialsEnabled).toBe(false)
+    })
+
     it('beats the auth-window fallback on auth-gated flags', () => {
       vi.mocked(distributionTypes).isCloud = true
       remoteConfigState.value = 'unloaded'
