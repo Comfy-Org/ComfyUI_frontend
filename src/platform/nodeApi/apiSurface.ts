@@ -191,6 +191,7 @@ export const API_MEMBERS: ReadonlySet<string> = new Set([
   'pinned',
   'pointerPosition',
   'position',
+  'properties',
   'property',
   'props',
   'queue',
