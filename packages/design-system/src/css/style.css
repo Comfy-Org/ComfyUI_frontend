@@ -735,6 +735,15 @@ body {
 .comfy-markdown-content h5,
 .comfy-markdown-content h6 {
   margin-block: 0.67em;
+}
+
+/* Tiptap headings already resolve to `normal`; only the parsed-HTML renderer needs its 1.6 body leading overridden. */
+.comfy-markdown-content h1,
+.comfy-markdown-content h2,
+.comfy-markdown-content h3,
+.comfy-markdown-content h4,
+.comfy-markdown-content h5,
+.comfy-markdown-content h6 {
   line-height: 1.2;
 }
 
