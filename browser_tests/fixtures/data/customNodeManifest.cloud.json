@@ -550,7 +550,6 @@
         "AudioBPMDetector",
         "AudioConcatenate",
         "AudioReverb",
-        "AudioSpeechToTextWhisper",
         "AudioVocalCompressor"
       ]
     },
