@@ -25,6 +25,7 @@ import type {
   PreviewSubscribeResponse,
   ResubscribeRequest,
   ResubscribeResponse,
+  SavedPaymentMethod,
   SubscribeRequest,
   SubscribeResponse,
   SubscriptionDuration,
@@ -105,6 +106,11 @@ interface PreviewSubscribeRequest extends GeneratedPreviewSubscribeRequest {
 }
 
 export interface SubscribeOptions {
+  confirmationToken?: string
+  promotionCode?: string
+  quoteId?: string
+  quoteVersion?: number
+  savedPaymentMethodId?: string
   returnUrl?: string
   cancelUrl?: string
   teamCreditStopId?: string
@@ -116,6 +122,7 @@ export interface SubscribeOptions {
 export interface PreviewSubscribeOptions {
   teamCreditStopId?: string
   billingCycle?: SubscribeBillingCycle
+  promotionCode?: string
 }
 
 export type { SubscribeResponse }
@@ -150,6 +157,13 @@ export type BillingStatusResponse = Omit<
 export type { BillingBalanceResponse }
 export type { CreateTopupResponse }
 export type { BillingOpStatusResponse }
+export type { SavedPaymentMethod }
+export type BillingAuthenticationState = NonNullable<
+  BillingOpStatusResponse['authentication_state']
+>
+export type BillingDeclineReason = NonNullable<
+  BillingOpStatusResponse['decline_reason']
+>
 
 interface GetBillingEventsParams {
   page?: number
@@ -478,6 +492,19 @@ export const workspaceApi = {
     }
   },
 
+  async listSavedPaymentMethods(): Promise<SavedPaymentMethod[]> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response = await workspaceApiClient.get<SavedPaymentMethod[]>(
+        api.apiURL('/billing/payment-methods'),
+        { headers }
+      )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
   /**
    * Preview subscription change
    * POST /api/billing/preview-subscribe
@@ -493,7 +520,8 @@ export const workspaceApi = {
         {
           plan_slug: planSlug,
           team_credit_stop_id: options.teamCreditStopId,
-          billing_cycle: options.billingCycle
+          billing_cycle: options.billingCycle,
+          promotion_code: options.promotionCode
         } satisfies PreviewSubscribeRequest,
         { headers }
       )
@@ -517,6 +545,11 @@ export const workspaceApi = {
         api.apiURL('/billing/subscribe'),
         {
           plan_slug: planSlug,
+          confirmation_token: options.confirmationToken,
+          promotion_code: options.promotionCode,
+          quote_id: options.quoteId,
+          quote_version: options.quoteVersion,
+          saved_payment_method_id: options.savedPaymentMethodId,
           return_url: options.returnUrl,
           cancel_url: options.cancelUrl,
           team_credit_stop_id: options.teamCreditStopId,
