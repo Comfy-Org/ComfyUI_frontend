@@ -75,9 +75,12 @@ describe('chrome contributions', () => {
     const run = vi.fn()
 
     addButtonContribution({ id: 'AGL.locale', icon: 'pi-globe', run })
-    store.buttons.at(-1)!.onClick()
+    const click = new MouseEvent('click', { shiftKey: true })
+    store.buttons.at(-1)!.onClick(click)
 
-    expect(run).toHaveBeenCalledTimes(1)
+    // The event is passed because packs branch on modifiers — one opens its
+    // panel in a sized window on shift-click.
+    expect(run).toHaveBeenCalledWith(click)
   })
 
   it('requires a namespaced id', () => {
