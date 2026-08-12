@@ -10,6 +10,8 @@ import {
 } from '@/utils/executionErrorUtil'
 import type { NodeValidationError } from '@/utils/executionErrorUtil'
 
+export type MissingResourceAbsorption = 'missing_model' | 'missing_media'
+
 function normalizePath(value: string): string {
   return value.replace(/[\\/]+/g, '/').replace(/\/+$/, '')
 }
@@ -61,25 +63,48 @@ function matchesErrorInputName(
   )
 }
 
-function matchesMissingModel(
-  candidate: MissingModelCandidate,
+function matchesCandidate(
+  candidateNodeIds: readonly (string | number | null | undefined)[],
+  candidateInputName: string,
+  candidateName: string,
+  isMissing: boolean | undefined,
   error: NodeValidationError,
   nodeId: NodeExecutionId
 ): boolean {
-  if (candidate.isMissing === false) return false
-  const candidateNodeIds = [candidate.sourceExecutionId, candidate.nodeId]
+  if (isMissing !== true) return false
   const liftedSource = getLiftedErrorSource(error)
   if (!matchesErrorNodeId(candidateNodeIds, liftedSource, nodeId)) {
     return false
   }
 
-  return (
+  if (
     matchesErrorInputName(
       candidateNodeIds,
-      candidate.widgetName,
+      candidateInputName,
       error.extra_info?.input_name,
       liftedSource
-    ) || matchesReceivedValue(error.extra_info?.received_value, candidate.name)
+    )
+  ) {
+    return true
+  }
+  // Value equality alone is too weak a signal when the error names an input:
+  // a same-valued sibling widget's genuinely blocking error must stay red.
+  if (error.extra_info?.input_name != null) return false
+  return matchesReceivedValue(error.extra_info?.received_value, candidateName)
+}
+
+function matchesMissingModel(
+  candidate: MissingModelCandidate,
+  error: NodeValidationError,
+  nodeId: NodeExecutionId
+): boolean {
+  return matchesCandidate(
+    [candidate.sourceExecutionId, candidate.nodeId],
+    candidate.widgetName,
+    candidate.name,
+    candidate.isMissing,
+    error,
+    nodeId
   )
 }
 
@@ -88,29 +113,22 @@ function matchesMissingMedia(
   error: NodeValidationError,
   nodeId: NodeExecutionId
 ): boolean {
-  if (candidate.isMissing === false) return false
-  const candidateNodeIds = [candidate.nodeId]
-  const liftedSource = getLiftedErrorSource(error)
-  if (!matchesErrorNodeId(candidateNodeIds, liftedSource, nodeId)) {
-    return false
-  }
-
-  return (
-    matchesErrorInputName(
-      candidateNodeIds,
-      candidate.widgetName,
-      error.extra_info?.input_name,
-      liftedSource
-    ) || matchesReceivedValue(error.extra_info?.received_value, candidate.name)
+  return matchesCandidate(
+    [candidate.nodeId],
+    candidate.widgetName,
+    candidate.name,
+    candidate.isMissing,
+    error,
+    nodeId
   )
 }
 
 export function getMissingResourceValidationErrorAbsorption(
-  missingModels: readonly MissingModelCandidate[] | null | undefined,
-  missingMedia: readonly MissingMediaCandidate[] | null | undefined,
+  missingModels: readonly MissingModelCandidate[] | null,
+  missingMedia: readonly MissingMediaCandidate[] | null,
   error: NodeValidationError,
   nodeId: NodeExecutionId
-): 'missing_model' | 'missing_media' | null {
+): MissingResourceAbsorption | null {
   if (!isEligibleValidationError(error)) return null
 
   if (
@@ -131,7 +149,7 @@ export function getMissingResourceValidationErrorAbsorption(
 }
 
 export function isMissingNodePromptErrorAbsorbed(
-  promptError: PromptError | null | undefined,
+  promptError: PromptError | null,
   hasMissingNodes: boolean
 ): boolean {
   return isMissingNodePromptError(promptError) && hasMissingNodes

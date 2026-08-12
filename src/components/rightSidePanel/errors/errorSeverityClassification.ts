@@ -13,13 +13,14 @@ import {
   getMissingResourceValidationErrorAbsorption,
   isMissingNodePromptErrorAbsorbed
 } from './missingResourceAbsorption'
+import type { MissingResourceAbsorption } from './missingResourceAbsorption'
 
 export interface ErrorSeverityInput {
-  promptError: PromptError | null | undefined
+  promptError: PromptError | null
   executionError: ExecutionErrorWsMessage | null
   nodeErrors: Record<string, NodeError> | null
-  missingModels: readonly MissingModelCandidate[] | null | undefined
-  missingMedia: readonly MissingMediaCandidate[] | null | undefined
+  missingModels: readonly MissingModelCandidate[] | null
+  missingMedia: readonly MissingMediaCandidate[] | null
   hasMissingNodes: boolean
 }
 
@@ -38,7 +39,7 @@ export interface ErrorClassification {
     nodeError: NodeError
     errors: {
       error: NodeValidationError
-      absorption: 'missing_model' | 'missing_media' | null
+      absorption: MissingResourceAbsorption | null
     }[]
   }[]
   hasBlockingError: boolean

@@ -43,6 +43,7 @@ import {
   tryNormalizeNodeExecutionId
 } from '@/types/nodeIdentification'
 
+import type { MissingResourceAbsorption } from './missingResourceAbsorption'
 import { useErrorClassification } from './useErrorClassification'
 
 const PROMPT_CARD_ID = '__prompt__'
@@ -411,8 +412,8 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
   function processNodeErrors(
     groupsMap: Map<string, GroupEntry>,
     filterBySelection = false
-  ): Set<'missing_model' | 'missing_media'> {
-    const blockedMissingGroups = new Set<'missing_model' | 'missing_media'>()
+  ): Set<MissingResourceAbsorption> {
+    const blockedMissingGroups = new Set<MissingResourceAbsorption>()
 
     for (const classifiedNodeError of errorClassification.value.nodeErrors) {
       const { rawNodeId, nodeId, nodeError } = classifiedNodeError
@@ -867,13 +868,13 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
   const allErrorGroups = computed<ErrorGroup[]>(() => {
     const groupsMap = new Map<string, GroupEntry>()
 
-    const blockedMissingNodes = processPromptError(groupsMap)
+    const promptErrorAbsorbed = processPromptError(groupsMap)
     const blockedMissingGroups = processNodeErrors(groupsMap)
     processExecutionError(groupsMap)
 
     return [
       ...toSortedGroups(groupsMap),
-      ...buildMissingNodeGroups(blockedMissingNodes),
+      ...buildMissingNodeGroups(promptErrorAbsorbed),
       ...buildMissingModelGroups(blockedMissingGroups.has('missing_model')),
       ...buildMissingMediaGroups(blockedMissingGroups.has('missing_media'))
     ]
@@ -890,20 +891,19 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
 
     const groupsMap = new Map<string, GroupEntry>()
     void processPromptError(groupsMap, true)
-    const blockedMissingGroups = processNodeErrors(groupsMap, true)
+    void processNodeErrors(groupsMap, true)
     processExecutionError(groupsMap, true)
 
+    // Selection groups drive emphasis only; blockedLastRun cannot be computed
+    // selection-accurately here (absorption is a graph-wide fact), so it is
+    // uniformly false rather than a graph-wide flag masquerading as scoped.
     return [
       ...toSortedGroups(groupsMap),
       ...buildMissingNodeGroups(false, (nodeTypes) =>
         someNodeTypeInSelection(nodeTypes, selectionMatchedAssetNodeIds.value)
       ),
-      ...buildMissingModelGroupsForSelection(
-        blockedMissingGroups.has('missing_model')
-      ),
-      ...buildMissingMediaGroupsForSelection(
-        blockedMissingGroups.has('missing_media')
-      )
+      ...buildMissingModelGroupsForSelection(false),
+      ...buildMissingMediaGroupsForSelection(false)
     ]
   })
 
