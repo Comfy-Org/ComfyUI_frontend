@@ -39,6 +39,10 @@ describe('linkBadgeText', () => {
   it('falls back to the link type', () => {
     expect(linkBadgeText(createLink(1))).toBe('MODEL')
   })
+
+  it('falls back to an asterisk for a typeless link', () => {
+    expect(linkBadgeText(createLink(1, ''))).toBe('*')
+  })
 })
 
 describe('link badge frame layout', () => {
@@ -96,7 +100,7 @@ describe('link badge frame layout', () => {
     expect(queryLinkBadgeAtPoint(secondState, 120, 100)).toBeUndefined()
   })
 
-  it('does not create badges for empty text', () => {
+  it('creates fallback badges for a typeless link', () => {
     const state = createLinkBadgeFrameState()
 
     const tips = enqueueHiddenLinkBadges(
@@ -108,9 +112,10 @@ describe('link badge frame layout', () => {
       '#cab8ff'
     )
 
-    expect(tips).toBeUndefined()
-    expect(state.hitAreas).toHaveLength(0)
-    expect(state.pendingBadges).toHaveLength(0)
+    expect(tips.outputTip[0]).toBeGreaterThan(100)
+    expect(tips.inputTip[0]).toBeLessThan(400)
+    expect(state.hitAreas).toHaveLength(2)
+    expect(state.pendingBadges).toHaveLength(1)
   })
 
   it('stacks overlapping endpoint badges into disjoint bands', () => {

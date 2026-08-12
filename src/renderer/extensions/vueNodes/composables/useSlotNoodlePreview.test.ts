@@ -1,3 +1,4 @@
+import { effectScope } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LLink } from '@/lib/litegraph/src/LLink'
@@ -45,6 +46,13 @@ function addLink(
   mocks.links.set(link.id, link)
 }
 
+function createPreview(options: Parameters<typeof useSlotNoodlePreview>[0]) {
+  const scope = effectScope()
+  const preview = scope.run(() => useSlotNoodlePreview(options))
+  if (!preview) throw new Error('Failed to create slot noodle preview')
+  return { preview, scope }
+}
+
 beforeEach(() => {
   mocks.links.clear()
   setRevealedLinks([])
@@ -57,17 +65,19 @@ describe('useSlotNoodlePreview', () => {
     addLink(3, 0, 1, 10, 0, true)
     addLink(4, 6, 0, 11, 0, true)
 
-    useSlotNoodlePreview({
+    const { preview, scope } = createPreview({
       nodeId: toNodeId(0),
       index: 0,
       type: 'output'
-    }).revealNoodles()
+    })
+    preview.revealNoodles()
 
     expect(isLinkRevealed(toLinkId(1))).toBe(true)
     expect(isLinkRevealed(toLinkId(2))).toBe(false)
     expect(isLinkRevealed(toLinkId(3))).toBe(false)
     expect(isLinkRevealed(toLinkId(4))).toBe(false)
     expect(mocks.setDirty).toHaveBeenCalledWith(false, true)
+    scope.stop()
   })
 
   it('reveals only hidden links on the hovered input slot', () => {
@@ -75,27 +85,47 @@ describe('useSlotNoodlePreview', () => {
     addLink(8, 2, 0, 5, 1, true)
     addLink(9, 3, 0, 6, 2, true)
 
-    useSlotNoodlePreview({
+    const { preview, scope } = createPreview({
       nodeId: toNodeId(5),
       index: 2,
       type: 'input'
-    }).revealNoodles()
+    })
+    preview.revealNoodles()
 
     expect(isLinkRevealed(toLinkId(7))).toBe(true)
     expect(isLinkRevealed(toLinkId(8))).toBe(false)
     expect(isLinkRevealed(toLinkId(9))).toBe(false)
+    scope.stop()
   })
 
   it('clears revealed links when the pointer leaves', () => {
     setRevealedLinks([toLinkId(9)])
 
-    useSlotNoodlePreview({
+    const { preview, scope } = createPreview({
       nodeId: toNodeId(5),
       index: 0,
       type: 'input'
-    }).hideNoodles()
+    })
+    preview.hideNoodles()
 
     expect(isLinkRevealed(toLinkId(9))).toBe(false)
     expect(mocks.setDirty).toHaveBeenCalledWith(false, true)
+    scope.stop()
+  })
+
+  it('clears revealed links when the slot scope is disposed', () => {
+    addLink(10, 1, 0, 5, 2, true)
+    const { preview, scope } = createPreview({
+      nodeId: toNodeId(5),
+      index: 2,
+      type: 'input'
+    })
+    preview.revealNoodles()
+    expect(isLinkRevealed(toLinkId(10))).toBe(true)
+
+    scope.stop()
+
+    expect(isLinkRevealed(toLinkId(10))).toBe(false)
+    expect(mocks.setDirty).toHaveBeenLastCalledWith(false, true)
   })
 })

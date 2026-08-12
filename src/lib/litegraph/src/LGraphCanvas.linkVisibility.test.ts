@@ -70,14 +70,17 @@ describe('LGraphCanvas link visibility interactions', () => {
     canvas = createCanvas(graph)
     link = createLink(graph)
     originalContextMenu = LiteGraph.ContextMenu
-    const MockContextMenu = vi.fn(function (
-      this: unknown,
-      values: readonly MenuValue[],
-      options: IContextMenuOptions<string>
-    ) {
-      menuValues = values
-      menuOptions = options
-    }) as unknown as typeof LiteGraph.ContextMenu
+    const MockContextMenu = fromPartial<typeof LiteGraph.ContextMenu>(
+      class {
+        constructor(
+          values: readonly MenuValue[],
+          options: IContextMenuOptions<string>
+        ) {
+          menuValues = values
+          menuOptions = options
+        }
+      }
+    )
     LiteGraph.ContextMenu = MockContextMenu
   })
 

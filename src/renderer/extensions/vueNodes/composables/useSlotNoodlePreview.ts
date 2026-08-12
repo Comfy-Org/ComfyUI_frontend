@@ -1,3 +1,5 @@
+import { onScopeDispose } from 'vue'
+
 import { setRevealedLinks } from '@/renderer/core/canvas/links/linkVisibilityState'
 import { app } from '@/scripts/app'
 import type { NodeId } from '@/types/nodeId'
@@ -32,6 +34,8 @@ export function useSlotNoodlePreview(options: SlotNoodlePreviewOptions) {
   function hideNoodles(): void {
     if (setRevealedLinks([])) app.canvas?.setDirty(false, true)
   }
+
+  onScopeDispose(hideNoodles)
 
   return { revealNoodles, hideNoodles }
 }

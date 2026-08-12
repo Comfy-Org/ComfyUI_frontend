@@ -67,7 +67,7 @@ export function queryLinkBadgeAtPoint(
 export function linkBadgeText(link: Pick<LLink, 'label' | 'type'>): string {
   const label = link.label?.trim()
   if (label) return label
-  return link.type == null ? '' : String(link.type)
+  return String(link.type ?? '') || '*'
 }
 
 function makeBadge(text: string, color: string): LGraphBadge {
@@ -142,9 +142,8 @@ function layoutHiddenLinkBadges(
   startPos: Point,
   endPos: Point,
   color: string
-): BadgeLayout | undefined {
+): BadgeLayout {
   const text = linkBadgeText(link)
-  if (!text) return
 
   const badge = makeBadge(text, color)
   const width = badge.getWidth(ctx)
@@ -231,7 +230,7 @@ export function enqueueHiddenLinkBadges(
   startPos: Point,
   endPos: Point,
   color: string
-): LinkBadgeTips | undefined {
+): LinkBadgeTips {
   const layout = layoutHiddenLinkBadges(
     state,
     ctx,
@@ -240,7 +239,6 @@ export function enqueueHiddenLinkBadges(
     endPos,
     color
   )
-  if (!layout) return
   state.pendingBadges.push(layout)
   return {
     outputTip: [layout.outputBadgeX + layout.width, layout.outputBadgeY],

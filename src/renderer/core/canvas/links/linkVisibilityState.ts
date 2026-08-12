@@ -1,4 +1,4 @@
-import { reactive, readonly } from 'vue'
+import { reactive } from 'vue'
 
 import type { LinkId } from '@/lib/litegraph/src/LLink'
 
@@ -9,8 +9,6 @@ interface LinkVisibilityState {
 const state = reactive<LinkVisibilityState>({
   revealedLinkIds: new Set()
 })
-
-export const linkVisibilityState = readonly(state)
 
 export function setRevealedLinks(linkIds: Iterable<LinkId>): boolean {
   const next = new Set(linkIds)
