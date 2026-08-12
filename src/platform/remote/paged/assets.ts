@@ -4,7 +4,7 @@ import type { ListAssetsData } from '@comfyorg/ingest-types'
 
 import { assetResponseSchema } from '@/platform/assets/schemas/assetSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import type { LazyList } from '@/platform/remote/lazy/lazyList'
+import type { PagedList } from '@/platform/remote/paged/pagedList'
 import { api } from '@/scripts/api'
 import { encodeParams } from '@/utils/urlUtil'
 
@@ -20,7 +20,7 @@ const BASE_PARAMS: ListAssetsData['query'] = {}
 export function useAssetsQuery(
   params: ListAssetsData['query'] = {},
   options: QueryOptions = {}
-): LazyList<AssetItem> {
+): PagedList<AssetItem> {
   const onError = options.onError ?? console.error
   let pendingFetchController = new AbortController()
 

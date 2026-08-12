@@ -18,8 +18,8 @@ import {
 import type { AssetPaginationOptions } from '@/platform/assets/services/assetService'
 import { isCloud } from '@/platform/distribution/types'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
-import { useAssetsQuery } from '@/platform/remote/lazy/assets'
-import type { LazyList } from '@/platform/remote/lazy/lazyList'
+import { useAssetsQuery } from '@/platform/remote/paged/assets'
+import type { PagedList } from '@/platform/remote/paged/pagedList'
 import { api } from '@/scripts/api'
 
 import { TaskItemImpl } from './queueStore'
@@ -138,7 +138,7 @@ export const useAssetsStore = defineStore('assets', () => {
     return result
   }
 
-  function useHistoryAssets(): LazyList<AssetItem> {
+  function useHistoryAssets(): PagedList<AssetItem> {
     // Pagination state
     const historyOffset = ref(0)
     const hasMoreHistory = ref(true)

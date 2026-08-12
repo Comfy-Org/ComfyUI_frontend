@@ -1,4 +1,4 @@
-import { useAssetsQuery } from '@/platform/remote/lazy/assets'
+import { useAssetsQuery } from '@/platform/remote/paged/assets'
 /**
  * Composable for fetching media assets from cloud environment
  * Uses AssetsStore for centralized state management

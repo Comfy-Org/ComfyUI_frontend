@@ -8,7 +8,7 @@ import type { ComputedRef } from 'vue'
 import { computed, nextTick, ref } from 'vue'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import type { LazyList } from '@/platform/remote/lazy/lazyList'
+import type { PagedList } from '@/platform/remote/paged/pagedList'
 import type {
   InProgressItem,
   OutputSelection
@@ -62,7 +62,7 @@ vi.mock('@/renderer/extensions/linearMode/useOutputHistory', () => ({
       items: mediaRef,
       loadMore: loadMoreFn,
       loadNew: vi.fn()
-    } satisfies LazyList<AssetItem>,
+    } satisfies PagedList<AssetItem>,
     allOutputs: allOutputsFn,
     selectFirstHistory: selectFirstHistoryFn,
     mayBeActiveWorkflowPending:

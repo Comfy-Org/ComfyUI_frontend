@@ -1,6 +1,6 @@
 import type { Ref } from 'vue'
 
-export type LazyList<T> = {
+export type PagedList<T> = {
   hasMore: Readonly<Ref<boolean>>
   invalidate: () => Promise<void>
   isLoading: Readonly<Ref<boolean>>
@@ -9,9 +9,9 @@ export type LazyList<T> = {
   loadNew: () => Promise<void>
 }
 
-export function wrapLazyList<T>(
-  list: LazyList<T>,
+export function wrapPagedList<T>(
+  list: PagedList<T>,
   filter: (items: Readonly<Ref<T[]>>) => Readonly<Ref<T[]>>
-): LazyList<T> {
+): PagedList<T> {
   return { ...list, items: filter(list.items) }
 }

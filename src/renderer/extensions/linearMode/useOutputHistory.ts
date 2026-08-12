@@ -5,7 +5,7 @@ import { computed, ref, watchEffect } from 'vue'
 import { useAssetsApi } from '@/platform/assets/composables/media/useAssetsApi'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import type { LazyList } from '@/platform/remote/lazy/lazyList'
+import type { PagedList } from '@/platform/remote/paged/pagedList'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { flattenNodeOutput } from '@/renderer/extensions/linearMode/flattenNodeOutput'
 import { useLinearOutputStore } from '@/renderer/extensions/linearMode/linearOutputStore'
@@ -18,7 +18,7 @@ import { useQueueStore } from '@/stores/queueStore'
 import type { ResultItemImpl } from '@/stores/queueStore'
 
 export function useOutputHistory(): {
-  outputs: LazyList<AssetItem>
+  outputs: PagedList<AssetItem>
   allOutputs: (item?: AssetItem) => ResultItemImpl[]
   selectFirstHistory: () => void
   mayBeActiveWorkflowPending: ComputedRef<boolean>
@@ -80,7 +80,7 @@ export function useOutputHistory(): {
     })
   })
 
-  const outputs: LazyList<AssetItem> = {
+  const outputs: PagedList<AssetItem> = {
     ...backingOutputs,
     items: sessionMedia,
     hasMore: ref(false),
