@@ -4821,9 +4821,9 @@ const translations = {
     'zh-CN': 'Comfy 上的 LTX 2.5 — 开源 AI 视频模型'
   },
   'ltx.meta.description': {
-    en: 'Run LTX 2.5 on Comfy. Open weights, directed on the canvas alongside every other model, on Comfy Cloud or your own GPU.',
+    en: 'Run LTX 2.5 on Comfy. Open weights, free to run on your own GPU, or directed on the canvas alongside every other model on Comfy Cloud.',
     'zh-CN':
-      '在 Comfy 上运行 LTX 2.5。开放权重，可在画布上与其他所有模型一同执导，支持 Comfy Cloud 或你自己的 GPU。'
+      '在 Comfy 上运行 LTX 2.5。开放权重，可在你自己的 GPU 上免费运行，也可以在画布上与其他所有模型一同执导，支持 Comfy Cloud。'
   },
   'ltx.breadcrumb.model': { en: 'LTX 2.5', 'zh-CN': 'LTX 2.5' },
   'ltx.breadcrumb.updated': {
@@ -4887,6 +4887,10 @@ const translations = {
       '你的 AI 助手可以接入整个生态、构建工作流，并生成图像、视频、音频或 3D 内容。'
   },
   'ltx.reviews.highlightCta': { en: 'GET STARTED', 'zh-CN': '开始使用' },
+  'ltx.faq.heading': {
+    en: 'Q&A',
+    'zh-CN': '问答'
+  },
 
   // Seedance 2.5 SEO page (/seedance-2.5). zh-CN hand-translated; some body
   // copy carries placeholder intent from Figma and may change (June, CRE-145).
