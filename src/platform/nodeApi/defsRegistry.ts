@@ -523,6 +523,9 @@ const RESERVED_SERIAL_KEYS: ReadonlySet<string> = new Set([
  */
 const frontendResolvers = new Map<string, Resolver>()
 
+/** Types a pack declared itself, whose prototype behaviour is already installed. */
+const definedTypes = new Set<string>()
+
 const refreshListeners = new Set<() => void>()
 
 /** Called by the host once node definitions have finished reloading. */
@@ -692,6 +695,7 @@ export function createDefRegistry(): {
     if (definition.supply) frontendSuppliers.set(type, definition.supply)
 
     registry.applyTo(Defined, raw)
+    definedTypes.add(type)
     LiteGraph.registerNodeType(type, Defined)
 
     return () => {
@@ -716,6 +720,18 @@ export function createDefRegistry(): {
 
       extend(selector, apply) {
         assertSelector(selector)
+        if (typeof selector === 'string' && definedTypes.has(selector)) {
+          // `define` installs prototype behaviour before it returns, and the
+          // install chains onto whatever was there — so re-applying would run
+          // every earlier hook twice. Rather than drop this registration in
+          // silence, say so: a hook that never fires is a bug the pack cannot
+          // see, and it costs an afternoon to find.
+          console.error(
+            `[nodeApi] comfy.defs.extend('${selector}') was called after ` +
+              `comfy.defs.define('${selector}'), so it will not be applied. ` +
+              `Register the extension before defining the type.`
+          )
+        }
         const registration: Registration = { selector, apply, handleFor }
         registrations.add(registration)
         return () => registrations.delete(registration)
@@ -890,28 +906,68 @@ export function createDefRegistry(): {
       }
 
       if (propertyChanges.length) {
+        /** Runs every handler and reports the value they settled on. */
+        const settle = (
+          node: LGraphNode,
+          name: string,
+          value: unknown,
+          previous: unknown
+        ) => {
+          let replacement = value
+          const event: PropertyChangeEvent = Object.freeze({
+            name,
+            value,
+            previous,
+            setValue: (next: unknown) => {
+              replacement = next
+            },
+            reject: () => {
+              replacement = previous
+            }
+          })
+          const id = String(node.id)
+          for (const { run, handleFor } of propertyChanges) {
+            run(handleFor(id), event)
+          }
+          return replacement
+        }
+
+        // Wrapping setProperty rather than only hooking onPropertyChanged:
+        // setProperty writes `properties`, calls the callback, and *then*
+        // syncs any widget bound to the property — from the value it was
+        // passed, not the one the callback settled on. Nothing a callback does
+        // can win against a write that happens after it returns, so the
+        // replacement has to be in place before litegraph starts.
+        let settling = false
+        const previousSetProperty = nodeType.prototype.setProperty as (
+          this: LGraphNode,
+          name: string,
+          value: unknown
+        ) => void
+        nodeType.prototype.setProperty = function (
+          this: LGraphNode,
+          name: string,
+          value: unknown
+        ) {
+          if (settling) return previousSetProperty.call(this, name, value)
+          const replacement = settle(this, name, value, this.properties?.[name])
+          settling = true
+          try {
+            previousSetProperty.call(this, name, replacement)
+          } finally {
+            settling = false
+          }
+        } as LGraphNode['setProperty']
+
+        // The properties panel writes the record and calls the callback
+        // directly, without going through setProperty. No widget sync follows
+        // it, so writing the record here is enough.
         install<[string, unknown, unknown]>(
           'onPropertyChanged',
           (node, name, value, previous) => {
-            let replacement = value
-            const event: PropertyChangeEvent = Object.freeze({
-              name,
-              value,
-              previous,
-              setValue: (next: unknown) => {
-                replacement = next
-              },
-              reject: () => {
-                replacement = previous
-              }
-            })
-            const id = String(node.id)
-            for (const { run, handleFor } of propertyChanges) {
-              run(handleFor(id), event)
-            }
+            if (settling) return
+            const replacement = settle(node, name, value, previous)
             if (replacement !== value) {
-              // Written straight to the record: setProperty would re-enter
-              // this hook, and a clamp would then never settle.
               node.properties[name] = replacement as never
             }
           }
