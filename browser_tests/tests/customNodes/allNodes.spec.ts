@@ -100,17 +100,7 @@ const AUTO_RUN_BATCH = 10
 const SINGLE_RERUN_TIMEOUT = 60_000
 const GRID_SPACING = { x: 420, y: 360 }
 
-type SplitAllNodesTier = 'S1' | 'S2' | 'S3' | 'S9' | 'S14'
-
-const splitAllNodesTiers = process.env.CUSTOM_NODE_SPLIT_TIERS === '1'
-if (
-  process.env.CUSTOM_NODE_SPLIT_TIERS !== undefined &&
-  process.env.CUSTOM_NODE_SPLIT_TIERS !== '0' &&
-  process.env.CUSTOM_NODE_SPLIT_TIERS !== '1'
-)
-  throw new Error(
-    `unrecognized CUSTOM_NODE_SPLIT_TIERS value "${process.env.CUSTOM_NODE_SPLIT_TIERS}" - expected "0" or "1"`
-  )
+type AllNodesTier = 'S1' | 'S2' | 'S3' | 'S9' | 'S14'
 
 // Nodes unsafe to execute on a bare backend; every entry names the mechanism.
 const AUTO_RUN_EXCLUDE: Record<string, Record<string, string>> = {
@@ -689,7 +679,7 @@ if (unjoinedYamlPacks.length > 0) {
 
 type AllNodesTierRunner = {
   entry: ReturnType<typeof loadManifest>[number]
-  run: (comfyPage: ComfyPage, tier?: SplitAllNodesTier) => Promise<void>
+  run: (comfyPage: ComfyPage, tier: AllNodesTier) => Promise<void>
 }
 
 const allNodesTierRunners: AllNodesTierRunner[] = []
@@ -698,43 +688,28 @@ for (const entry of loadManifest()) {
   const registerAllNodesTests = () => {
     const expectAllNodesTier = async (
       comfyPage: ComfyPage,
-      selectedTier?: SplitAllNodesTier
+      selectedTier: AllNodesTier
     ) => {
       if (customNodesEnv() !== 'cloud') test.setTimeout(1_620_000)
       const { keys, defs } = await packNodeKeys(comfyPage.page, entry.pack)
-      test.skip(
-        keys.length === 0,
+      expect(
+        keys.length,
         `${entry.pack} not installed on this backend`
-      )
-      // Combined mode preserves the established one-boot-per-pack behavior.
-      // Split mode calls this runner from one test per tier and clears graph
-      // and backend state between packs so every pack is still evaluated.
-      const tierFailures: string[] = []
+      ).toBeGreaterThan(0)
       async function runTier(
-        selectedBy: SplitAllNodesTier[],
-        tierName: string,
+        selectedBy: AllNodesTier[],
         tier: () => Promise<void>
       ) {
-        if (selectedTier !== undefined && !selectedBy.includes(selectedTier))
-          return
-        let failed = false
-        let tierError: unknown
+        if (!selectedBy.includes(selectedTier)) return
         try {
           await tier()
-        } catch (error) {
-          failed = true
-          tierError = error
-          if (selectedTier === undefined)
-            tierFailures.push(
-              `[${tierName}] ${error instanceof Error ? error.message : String(error)}`
-            )
+        } finally {
+          await comfyPage.nodeOps.clearGraph()
+          await drainBackendToIdle(comfyPage.page, 10_000)
         }
-        await comfyPage.nodeOps.clearGraph()
-        await drainBackendToIdle(comfyPage.page, 10_000)
-        if (selectedTier !== undefined && failed) throw tierError
       }
 
-      await runTier(['S1', 'S2', 'S14'], 'mount', async () => {
+      await runTier(['S1', 'S2', 'S14'], async () => {
         const validatesMount = selectedTier !== 'S14'
         // Exact-count guard: the corpus below comes from the live backend, so
         // a pack silently registering fewer nodes (broken sub-import, a core
@@ -771,7 +746,7 @@ for (const entry of loadManifest()) {
             `unrecognized CN_ENABLE_S14 value "${geometryCompareMode}" - expected "0" or "1"`
           )
         const geometryEnabled =
-          (selectedTier === undefined || selectedTier === 'S14') &&
+          selectedTier === 'S14' &&
           (geometryRecordMode || geometryCompareMode === '1')
         const measuredGeometry: Record<string, NodeGeometry> = {}
         const geometryUnstable = geometryEnabled
@@ -1080,7 +1055,7 @@ for (const entry of loadManifest()) {
         }
       })
 
-      await runTier(['S3'], 'save/reload', async () => {
+      await runTier(['S3'], async () => {
         const roundtripConsoleErrors: string[] = []
         const allowedWidgets = packLedgerFor(WIDGET_SET_ALLOWLIST, entry.pack)
         for (const ledgered of stalenessCheckedKeys(entry, allowedWidgets))
@@ -1635,7 +1610,7 @@ for (const entry of loadManifest()) {
         await expectNoVisibleErrors(comfyPage.page, 'after save/reload sweep')
       })
 
-      await runTier(['S9'], 'auto-run', async () => {
+      await runTier(['S9'], async () => {
         await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
 
         // A prior pack's slow CPU execution can still be draining when this tier
@@ -1814,106 +1789,72 @@ for (const entry of loadManifest()) {
         }
         expect(hardFailures.length === 0, autoRunFailureSummary).toBe(true)
       })
+    }
 
-      // Assert on the COUNT, not the array. `toEqual([])` renders every
-      // collected failure as a deep-equality diff, and each entry is itself a
-      // nested assertion dump - gate run 30973706693 turned 38 failed tests
-      // into ~17k log lines, unreadable enough that it was twice misdiagnosed
-      // as an infrastructure outage. The full list still ships, as an
-      // attachment.
-      if (selectedTier === undefined && tierFailures.length > 0)
+    allNodesTierRunners.push({ entry, run: expectAllNodesTier })
+  }
+
+  registerAllNodesTests()
+}
+
+const tiers: Array<[AllNodesTier, string]> = [
+  ['S1', 'every registered node mounts on the canvas renderer'],
+  ['S2', 'every registered node mounts on the DOM renderer'],
+  ['S3', 'every registered node survives save and reload'],
+  ['S9', 'every self-sufficient node executes']
+]
+if (process.env.CN_ENABLE_S14 === '1')
+  tiers.push(['S14', 'every registered node matches its geometry baseline'])
+
+test.describe('all nodes by tier @custom-nodes', () => {
+  for (const [tier, title] of tiers) {
+    test(`${tier}: ${title}`, async ({ comfyPage }) => {
+      if (customNodesEnv() !== 'cloud') test.setTimeout(1_620_000)
+      await comfyPage.page.evaluate((activeTier) => {
+        Object.assign(globalThis, {
+          __COMFY_CUSTOM_NODE_DETECTION_PROOF_TIER__: activeTier
+        })
+      }, tier)
+      const pageId = await comfyPage.page.evaluate(() => {
+        const key = '__customNodeTierPageId'
+        const existing = sessionStorage.getItem(key)
+        if (existing) return existing
+        const created = crypto.randomUUID()
+        sessionStorage.setItem(key, created)
+        return created
+      })
+      console.warn(
+        `[tier-session] pid=${process.pid} tier=${tier} pageId=${pageId}`
+      )
+
+      const failures: string[] = []
+      for (const runner of allNodesTierRunners) {
+        if (tier === 'S2' && !rendererPassesFor(runner.entry).includes(true))
+          continue
+        console.log(`[tier-pack] tier=${tier} pack=${runner.entry.pack}`)
+        try {
+          await runner.run(comfyPage, tier)
+        } catch (error) {
+          failures.push(
+            `[${runner.entry.pack}] ${error instanceof Error ? error.message : String(error)}`
+          )
+        }
+      }
+      const attachment = `${tier.toLowerCase()}-failures.json`
+      if (failures.length > 0)
         await attachPageDiagnosticEvidence(
           comfyPage.page,
           test.info(),
-          'tier-failures.json',
-          tierFailures
+          attachment,
+          failures
         )
-      if (selectedTier === undefined)
-        expect(
-          tierFailures.length === 0,
-          failureSummary(
-            `${entry.pack} tier failures`,
-            tierFailures,
-            'tier-failures.json'
-          )
-        ).toBe(true)
-    }
-
-    if (splitAllNodesTiers)
-      allNodesTierRunners.push({ entry, run: expectAllNodesTier })
-    else
-      test('every registered node mounts, survives save/reload, and executes', async ({
-        comfyPage
-      }) => expectAllNodesTier(comfyPage))
+      expect(
+        failures.length === 0,
+        failureSummary(`${tier} pack failures`, failures, attachment)
+      ).toBe(true)
+    })
   }
-
-  if (splitAllNodesTiers) registerAllNodesTests()
-  else
-    test.describe(
-      `all nodes: ${entry.pack} @custom-nodes`,
-      registerAllNodesTests
-    )
-}
-
-if (splitAllNodesTiers) {
-  const tiers: Array<[SplitAllNodesTier, string]> = [
-    ['S1', 'every registered node mounts on the canvas renderer'],
-    ['S2', 'every registered node mounts on the DOM renderer'],
-    ['S3', 'every registered node survives save and reload'],
-    ['S9', 'every self-sufficient node executes']
-  ]
-  if (process.env.CN_ENABLE_S14 === '1')
-    tiers.push(['S14', 'every registered node matches its geometry baseline'])
-
-  test.describe('all nodes by tier @custom-nodes', () => {
-    for (const [tier, title] of tiers) {
-      test(`${tier}: ${title}`, async ({ comfyPage }) => {
-        if (customNodesEnv() !== 'cloud') test.setTimeout(1_620_000)
-        await comfyPage.page.evaluate((activeTier) => {
-          Object.assign(globalThis, {
-            __COMFY_CUSTOM_NODE_DETECTION_PROOF_TIER__: activeTier
-          })
-        }, tier)
-        const pageId = await comfyPage.page.evaluate(() => {
-          const key = '__customNodeTierPageId'
-          const existing = sessionStorage.getItem(key)
-          if (existing) return existing
-          const created = crypto.randomUUID()
-          sessionStorage.setItem(key, created)
-          return created
-        })
-        console.warn(
-          `[tier-session] pid=${process.pid} tier=${tier} pageId=${pageId}`
-        )
-
-        const failures: string[] = []
-        for (const runner of allNodesTierRunners) {
-          if (tier === 'S2' && !rendererPassesFor(runner.entry).includes(true))
-            continue
-          try {
-            await runner.run(comfyPage, tier)
-          } catch (error) {
-            failures.push(
-              `[${runner.entry.pack}] ${error instanceof Error ? error.message : String(error)}`
-            )
-          }
-        }
-        const attachment = `${tier.toLowerCase()}-failures.json`
-        if (failures.length > 0)
-          await attachPageDiagnosticEvidence(
-            comfyPage.page,
-            test.info(),
-            attachment,
-            failures
-          )
-        expect(
-          failures.length === 0,
-          failureSummary(`${tier} pack failures`, failures, attachment)
-        ).toBe(true)
-      })
-    }
-  })
-}
+})
 
 async function runBatch(
   page: Page,

@@ -97,14 +97,14 @@ interface WorkflowGate {
 const workflowGates: WorkflowGate[] = [
   {
     path: '.github/workflows/ci-tests-custom-nodes.yaml',
-    total: 34,
+    total: 33,
     resultFile: 'custom-nodes-results.json',
     deferS13ToS15: false,
     collectionLabel: 'active Core custom-node tests'
   },
   {
     path: '.github/workflows/ci-tests-custom-nodes-cloud.yaml',
-    total: 185,
+    total: 102,
     resultFile: 'custom-nodes-cloud-results.json',
     deferS13ToS15: true,
     collectionLabel: 'S1-S12 tests'

@@ -1,6 +1,5 @@
 import type {
   APIRequestContext,
-  Browser,
   ConsoleMessage,
   Frame,
   Locator,
@@ -8,7 +7,7 @@ import type {
   Request,
   Response
 } from '@playwright/test'
-import { chromium, test as base } from '@playwright/test'
+import { test as base } from '@playwright/test'
 import { config as dotenvConfig } from 'dotenv'
 import MCR from 'monocart-coverage-reports'
 
@@ -40,15 +39,6 @@ import {
   readCloudCustomNodeBootGuard,
   runWithCollectedCleanup
 } from '@e2e/fixtures/utils/customNodeSuite'
-import {
-  assertSharedCustomNodeSession,
-  installSharedCustomNodeBootProbe,
-  markSharedCustomNodeSessionBooted,
-  readSharedCustomNodeSession,
-  sharedCustomNodeEndpoint,
-  sharedCustomNodePage,
-  sharedCustomNodeSessionEnabled
-} from '@e2e/fixtures/utils/sharedCustomNodeSession'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { nextFrame, sleep } from '@e2e/fixtures/utils/timing'
 import { mockWorkspace, workspace } from '@e2e/fixtures/utils/workspaceMocks'
@@ -801,36 +791,13 @@ export const testComfySnapToGridGridSize = 50
 
 const COLLECT_COVERAGE = process.env.COLLECT_COVERAGE === 'true'
 
-interface ComfyPageFixtures {
+export const comfyPageFixture = base.extend<{
   initialFeatureFlags: Record<string, unknown>
   initialSettings: Record<string, unknown>
   comfyPage: ComfyPage
   comfyMouse: ComfyMouse
   comfyFiles: ComfyFiles
-}
-
-interface ComfyPageWorkerFixtures {
-  sharedCustomNodeBrowser: Browser | undefined
-}
-
-export const comfyPageFixture = base.extend<
-  ComfyPageFixtures,
-  ComfyPageWorkerFixtures
->({
-  sharedCustomNodeBrowser: [
-    async ({ browserName }, use) => {
-      const endpoint = sharedCustomNodeEndpoint()
-      if (!endpoint) {
-        await use(undefined)
-        return
-      }
-      if (browserName !== 'chromium')
-        throw new Error('shared custom-node session requires Chromium')
-      const browser = await chromium.connectOverCDP(endpoint)
-      await use(browser)
-    },
-    { scope: 'worker' }
-  ],
+}>({
   // Allows configuring feature flags for tests with before initial setup:
   // `test.use({ initialFeatureFlags: { my_flag: true } })`.
   initialFeatureFlags: [{}, { option: true }],
@@ -839,17 +806,14 @@ export const comfyPageFixture = base.extend<
   // the fixture's defaults so per-test values win.
   initialSettings: [{}, { option: true }],
 
-  page: async ({ page, browserName, sharedCustomNodeBrowser }, use) => {
-    const activePage = sharedCustomNodeBrowser
-      ? await sharedCustomNodePage(sharedCustomNodeBrowser)
-      : page
+  page: async ({ page, browserName }, use) => {
     if (browserName !== 'chromium' || !COLLECT_COVERAGE) {
-      return use(activePage)
+      return use(page)
     }
 
-    await activePage.coverage.startJSCoverage({ resetOnNavigation: false })
-    await use(activePage)
-    const coverage = await activePage.coverage.stopJSCoverage()
+    await page.coverage.startJSCoverage({ resetOnNavigation: false })
+    await use(page)
+    const coverage = await page.coverage.stopJSCoverage()
 
     const mcr = MCR({
       outputDir: COVERAGE_OUTPUT_DIR,
@@ -873,8 +837,6 @@ export const comfyPageFixture = base.extend<
     const isCloudEnv = customNodesEnv() === 'cloud'
     const isCustomNodes = testInfo.project.name === 'custom-nodes'
     const isCloudCustomNodes = isCloudEnv && isCustomNodes
-    const isSharedCustomNodes =
-      isCustomNodes && sharedCustomNodeSessionEnabled()
     const cloudPageTrace = isCloudEnv ? traceCloudPage(page) : undefined
     const needsPerf =
       testInfo.tags.includes('@perf') || testInfo.tags.includes('@audit')
@@ -903,39 +865,10 @@ export const comfyPageFixture = base.extend<
     ]
 
     const run = async () => {
-      const isVueNodes = testInfo.tags.includes('@vue-nodes')
-      if (isSharedCustomNodes) {
-        const state = await readSharedCustomNodeSession(page)
-        if (state?.booted) {
-          assertSharedCustomNodeSession(state)
-          const userId = state.userId ?? username
-          comfyPage.userIds[parallelIndex] = userId
-          comfyPage.isVueNodes = isVueNodes
-          await comfyPage.nodeOps.clearGraph()
-          await comfyPage.toast.closeToasts()
-          const errorOverlay = page.getByTestId(TestIds.dialogs.errorOverlay)
-          if (await errorOverlay.isVisible()) {
-            await errorOverlay
-              .getByTestId(TestIds.dialogs.errorOverlayDismiss)
-              .click()
-            await comfyExpect(errorOverlay).toBeHidden()
-          }
-          await comfyPage.settings.setSetting(
-            'Comfy.VueNodes.Enabled',
-            isVueNodes
-          )
-          console.warn(
-            `[shared-session] pid=${process.pid} id=${state.id} bootCount=${state.bootCount} reused=true test=${JSON.stringify(testInfo.title)}`
-          )
-          await use(comfyPage)
-          return
-        }
-        await installSharedCustomNodeBootProbe(page)
-      }
-
       const userId = isCloudEnv ? username : await comfyPage.setupUser(username)
       comfyPage.userIds[parallelIndex] = userId
 
+      const isVueNodes = testInfo.tags.includes('@vue-nodes')
       comfyPage.isVueNodes = isVueNodes
 
       const startupSettings: Record<string, unknown> = {
@@ -1026,14 +959,6 @@ export const comfyPageFixture = base.extend<
       await comfyPage.setup()
       if (isCloudEnv)
         console.warn(`[cloud] app boot took ${Date.now() - setupStartedAt}ms`)
-
-      if (isSharedCustomNodes) {
-        const state = await markSharedCustomNodeSessionBooted(page, userId)
-        assertSharedCustomNodeSession(state)
-        console.warn(
-          `[shared-session] pid=${process.pid} id=${state.id} bootCount=${state.bootCount} reused=false test=${JSON.stringify(testInfo.title)}`
-        )
-      }
 
       if (isCloudCustomNodes) {
         assertCloudCustomNodeBootGuard(await readCloudCustomNodeBootGuard(page))
