@@ -3,6 +3,7 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
 
 import { ComfyApiError } from './errors'
 import { createInputCollection, createOutputCollection } from './slotHandle'
@@ -48,6 +49,20 @@ describe('slot handles', () => {
       expect(outputs.length).toBe(2)
       expect(inputs.names()).toEqual(['image', 'mask'])
       expect(new Set(inputs.ids()).size).toBe(2)
+    })
+
+    it('writes the optional-slot shape into the saved workflow', () => {
+      // Not decoration: shape is part of ISerialisableNodeInput, so an added
+      // slot missing the one its pack used to set serialises differently from
+      // one the pack itself wrote.
+      inputs.add('trigger_words', 'STRING', { shape: 'optional' })
+      inputs.add('plain', 'STRING')
+
+      const saved = target.serialize().inputs!
+      expect(saved.find((i) => i.name === 'trigger_words')?.shape).toBe(
+        RenderShape.HollowCircle
+      )
+      expect(saved.find((i) => i.name === 'plain')?.shape).toBeUndefined()
     })
 
     it('takes a union type and connects from a member of it', () => {
