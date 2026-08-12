@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
+import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
 import SubscriptionFooterLinks from './SubscriptionFooterLinks.vue'
@@ -63,7 +64,9 @@ const i18n = createI18n({
   }
 })
 
-function renderComponent(props: Record<string, boolean> = {}) {
+function renderComponent(
+  props: Partial<ComponentProps<typeof SubscriptionFooterLinks>> = {}
+) {
   return render(SubscriptionFooterLinks, {
     props,
     global: {
@@ -148,7 +151,8 @@ describe('SubscriptionFooterLinks', () => {
 
     expect(openSpy).toHaveBeenCalledWith(
       'https://platform.comfy.org/profile/usage',
-      '_blank'
+      '_blank',
+      'noopener'
     )
   })
 

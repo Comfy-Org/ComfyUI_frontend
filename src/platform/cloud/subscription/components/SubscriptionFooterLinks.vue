@@ -77,7 +77,11 @@ async function handleInvoiceHistory() {
 }
 
 function handleFullUsageActivity() {
-  window.open(`${getComfyPlatformBaseUrl()}/profile/usage`, '_blank')
+  window.open(
+    `${getComfyPlatformBaseUrl()}/profile/usage`,
+    '_blank',
+    'noopener'
+  )
 }
 
 function handleOpenPartnerNodesInfo() {
