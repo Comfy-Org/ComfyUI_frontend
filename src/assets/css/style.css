@@ -6,6 +6,10 @@
    payment dialog's X, closing the checkout mid-payment). Keep toasts
    interactive regardless of modal state. */
 .p-toast {
+  pointer-events: none;
+}
+
+.p-toast-message {
   pointer-events: auto;
 }
 

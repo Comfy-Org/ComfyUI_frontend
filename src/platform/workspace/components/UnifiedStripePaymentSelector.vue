@@ -27,7 +27,7 @@
         class="flex items-start gap-3 rounded-xl bg-base-background/60 px-4 py-3 text-xs text-muted-foreground"
       >
         <i
-          class="text-success-foreground mt-0.5 icon-[lucide--shield-check] size-4 shrink-0"
+          class="mt-0.5 icon-[lucide--shield-check] size-4 shrink-0 text-(--success-foreground)"
         />
         <p class="m-0">
           {{ $t('subscription.preview.alipayRenewalNote') }}
@@ -54,7 +54,7 @@ import type {
   StripePaymentElement
 } from '@stripe/stripe-js'
 import { loadStripe } from '@stripe/stripe-js/pure'
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -107,7 +107,12 @@ onMounted(async () => {
   // customer as "payment is broken" when the amount is merely still loading.
   if (amountCents <= 0) return
 
-  stripe = await loadStripe(publishableKey)
+  try {
+    stripe = await loadStripe(publishableKey)
+  } catch {
+    configurationError.value = t('subscription.preview.stripeUnavailable')
+    return
+  }
   if (!stripe || !paymentElementTarget.value || isUnmounted) {
     configurationError.value = t('subscription.preview.stripeUnavailable')
     return
@@ -187,6 +192,16 @@ onMounted(async () => {
   paymentElement.on('change', (event) => {
     selectedMethodType.value = event.value?.type ?? ''
   })
+})
+
+watch([() => amountCents, () => currency], ([amount, nextCurrency]) => {
+  if (!stripeElements.value || amount <= 0) return
+
+  stripeElements.value
+    .update({ amount, currency: nextCurrency.toLowerCase() })
+    .catch(() => {
+      if (!isUnmounted) configurationError.value = t('g.error')
+    })
 })
 
 onBeforeUnmount(() => {

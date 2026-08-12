@@ -10,8 +10,9 @@ const stripeMocks = vi.hoisted(() => {
   const destroy = vi.fn()
   const on = vi.fn()
   const submit = vi.fn()
+  const update = vi.fn()
   const create = vi.fn(() => ({ mount, destroy, on }))
-  const elements = { submit, create }
+  const elements = { submit, create, update }
   const createConfirmationToken = vi.fn()
   const stripe = {
     elements: vi.fn(() => elements),
@@ -22,6 +23,7 @@ const stripeMocks = vi.hoisted(() => {
     destroy,
     on,
     submit,
+    update,
     create,
     elements,
     createConfirmationToken,
@@ -55,10 +57,16 @@ const i18n = createI18n({
 
 function renderSelector(
   amountCents = 66500,
-  paymentMethodConfigurationId = ''
+  paymentMethodConfigurationId = '',
+  props: { canSubmit?: boolean; verificationPending?: boolean } = {}
 ) {
   return render(UnifiedStripePaymentSelector, {
-    props: { amountCents, currency: 'usd', paymentMethodConfigurationId },
+    props: {
+      amountCents,
+      currency: 'usd',
+      paymentMethodConfigurationId,
+      ...props
+    },
     global: { plugins: [i18n] }
   })
 }
@@ -75,6 +83,7 @@ describe('UnifiedStripePaymentSelector', () => {
       on: stripeMocks.on
     })
     stripeMocks.submit.mockResolvedValue({})
+    stripeMocks.update.mockResolvedValue(undefined)
     stripeMocks.createConfirmationToken.mockResolvedValue({
       confirmationToken: { id: 'ctoken_1' }
     })
@@ -160,21 +169,57 @@ describe('UnifiedStripePaymentSelector', () => {
     expect(emitted().confirm).toBeUndefined()
   })
 
-  it('blocks paying while a verification is pending', async () => {
-    render(UnifiedStripePaymentSelector, {
-      props: {
-        amountCents: 66500,
-        currency: 'usd',
-        verificationPending: true
-      },
-      global: { plugins: [i18n] }
-    })
+  it.for([
+    {
+      description: 'the quote cannot be submitted',
+      props: { canSubmit: false }
+    },
+    {
+      description: 'verification is pending',
+      props: { verificationPending: true }
+    }
+  ])('blocks paying when $description', async ({ props }) => {
+    renderSelector(66500, '', props)
     await waitFor(() => expect(stripeMocks.mount).toHaveBeenCalledTimes(1))
 
-    const payButton = screen.getByRole('button', {
-      name: 'Pay and subscribe'
+    expect(
+      screen.getByRole('button', { name: 'Pay and subscribe' })
+    ).toBeDisabled()
+  })
+
+  it('shows unavailable state when Stripe configuration is missing', async () => {
+    vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', '')
+
+    renderSelector()
+
+    expect(await screen.findByText('Stripe is unavailable')).toBeTruthy()
+    expect(stripeMocks.loadStripe).not.toHaveBeenCalled()
+    expect(
+      screen.getByRole('button', { name: 'Pay and subscribe' })
+    ).toBeDisabled()
+  })
+
+  it('shows unavailable state when Stripe fails to load', async () => {
+    stripeMocks.loadStripe.mockRejectedValue(new Error('load failed'))
+
+    renderSelector()
+
+    expect(await screen.findByText('Stripe is unavailable')).toBeTruthy()
+    expect(
+      screen.getByRole('button', { name: 'Pay and subscribe' })
+    ).toBeDisabled()
+  })
+
+  it('updates Stripe Elements when the quote changes', async () => {
+    const { rerender } = renderSelector()
+    await waitFor(() => expect(stripeMocks.mount).toHaveBeenCalledTimes(1))
+
+    await rerender({ amountCents: 72000, currency: 'EUR' })
+
+    expect(stripeMocks.update).toHaveBeenCalledWith({
+      amount: 72000,
+      currency: 'eur'
     })
-    expect((payButton as HTMLButtonElement).disabled).toBe(true)
   })
 
   it('destroys the Stripe element when the preview unmounts', async () => {

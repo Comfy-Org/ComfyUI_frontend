@@ -22,6 +22,7 @@ import type {
   PreviewSubscribeOptions,
   PreviewSubscribeResponse,
   SavedPaymentMethod,
+  SubscribeOptions,
   SubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
@@ -53,6 +54,15 @@ interface SelectedTeamCheckout {
 interface SubscriptionCheckoutOptions {
   tierPlanType?: 'personal' | 'team'
 }
+
+type SubscriptionPaymentOptions = Pick<
+  SubscribeOptions,
+  | 'confirmationToken'
+  | 'promotionCode'
+  | 'quoteId'
+  | 'quoteVersion'
+  | 'savedPaymentMethodId'
+>
 
 /**
  * Which screen the `preview` step shows. Only a change prorates: a team change
@@ -240,6 +250,27 @@ export function useSubscriptionCheckout(
     )
   }
 
+  function buildPaymentOptions(
+    quote: PreviewSubscribeResponse | null,
+    confirmationToken?: string,
+    promotionCode?: string
+  ): SubscriptionPaymentOptions {
+    return {
+      ...(confirmationToken && { confirmationToken }),
+      ...(!confirmationToken &&
+        subscribeAcceptsSavedMethod() &&
+        selectedSavedPaymentMethodId.value && {
+          savedPaymentMethodId: selectedSavedPaymentMethodId.value
+        }),
+      promotionCode: quote?.promotion_code ?? promotionCode,
+      ...(quote &&
+        hasQuoteIdentity(quote) && {
+          quoteId: quote.quote_id,
+          quoteVersion: quote.quote_version
+        })
+    }
+  }
+
   async function loadSavedPaymentMethods(): Promise<void> {
     if (!shouldUseWorkspaceBilling.value) return
     try {
@@ -360,7 +391,7 @@ export function useSubscriptionCheckout(
         reactivationMaterialSnapshot(freshPreview, isImmediateTransition) !==
         reactivationMaterialSnapshot(confirmedPreview, isImmediateTransition)
       if (amountChanged || materialChanged) {
-        previewData.value = freshPreview
+        installPreview(freshPreview)
         throw new ReactivationAmountChangedError(
           t(
             amountChanged
@@ -482,7 +513,7 @@ export function useSubscriptionCheckout(
 
     const amountChanged =
       freshPreview.cost_today_cents !== previewData.value?.cost_today_cents
-    previewData.value = freshPreview
+    installPreview(freshPreview)
     toast.add({
       severity: 'error',
       summary: t('g.error'),
@@ -823,18 +854,7 @@ export function useSubscriptionCheckout(
         throw new Error(t('subscription.preview.applyQuoteBeforeContinuing'))
       }
       const response = await subscribe(planSlug, {
-        ...(confirmationToken && { confirmationToken }),
-        ...(!confirmationToken &&
-          subscribeAcceptsSavedMethod() &&
-          selectedSavedPaymentMethodId.value && {
-            savedPaymentMethodId: selectedSavedPaymentMethodId.value
-          }),
-        promotionCode: quote?.promotion_code ?? promotionCode,
-        ...(quote &&
-          hasQuoteIdentity(quote) && {
-            quoteId: quote.quote_id,
-            quoteVersion: quote.quote_version
-          }),
+        ...buildPaymentOptions(quote, confirmationToken, promotionCode),
         returnUrl: paymentReturnUrl(),
         cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`,
         confirmReactivation,
@@ -896,34 +916,27 @@ export function useSubscriptionCheckout(
   }
 
   async function recoverStaleQuote(error: unknown): Promise<boolean> {
-    if (
-      !(error instanceof Error) ||
-      !('code' in error) ||
-      error.code !== 'SUBSCRIPTION_QUOTE_STALE'
-    ) {
-      return false
-    }
+    if (!hasErrorCode(error, 'SUBSCRIPTION_QUOTE_STALE')) return false
     quoteIsCurrent.value = false
-    try {
-      const refreshed = await applyPromotionCode(
-        previewData.value?.promotion_code ?? '',
-        false,
-        false
-      )
-      if (!refreshed) throw new Error('quote refresh failed')
-      toast.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('subscription.preview.quoteStale')
-      })
-    } catch {
-      handleBackToPricing()
+    const refreshed = await applyPromotionCode(
+      previewData.value?.promotion_code ?? '',
+      false,
+      false
+    )
+    if (!refreshed) {
+      resetToPricing()
       toast.add({
         severity: 'error',
         summary: t('g.error'),
         detail: t('subscription.preview.quoteRefreshFailed')
       })
+      return true
     }
+    toast.add({
+      severity: 'error',
+      summary: t('g.error'),
+      detail: t('subscription.preview.quoteStale')
+    })
     return true
   }
 
@@ -1245,18 +1258,7 @@ export function useSubscriptionCheckout(
         throw new Error(t('subscription.preview.applyQuoteBeforeContinuing'))
       }
       const response = await subscribe(planSlug, {
-        ...(confirmationToken && { confirmationToken }),
-        ...(!confirmationToken &&
-          subscribeAcceptsSavedMethod() &&
-          selectedSavedPaymentMethodId.value && {
-            savedPaymentMethodId: selectedSavedPaymentMethodId.value
-          }),
-        promotionCode: quote?.promotion_code ?? promotionCode,
-        ...(quote &&
-          hasQuoteIdentity(quote) && {
-            quoteId: quote.quote_id,
-            quoteVersion: quote.quote_version
-          }),
+        ...buildPaymentOptions(quote, confirmationToken, promotionCode),
         teamCreditStopId: stop.id,
         billingCycle,
         returnUrl: paymentReturnUrl(),

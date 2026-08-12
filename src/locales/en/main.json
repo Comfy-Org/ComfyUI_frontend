@@ -3037,6 +3037,7 @@
       "alipayRenewalNote": "Alipay authorization will also be used for automatic renewals and future purchases.",
       "payAndSubscribe": "Pay and subscribe",
       "stripeUnavailable": "Payment options are unavailable. Please refresh and try again.",
+      "quoteUnavailable": "Unavailable",
       "switchesToday": "Switches today",
       "startsOn": "Starts {date}",
       "yearlySubscription": "Yearly subscription",

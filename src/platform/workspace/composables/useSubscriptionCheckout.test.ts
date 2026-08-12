@@ -9,8 +9,15 @@ import type {
   Plan,
   PreviewSubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
+import type { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 
 import { findPlanSlug } from './useSubscriptionCheckout'
+
+type SubscriptionActionOperation = NonNullable<
+  ReturnType<typeof useBillingOperationStore>['subscriptionActionOperation']
+>
+type MockSubscriptionActionOperation = Partial<SubscriptionActionOperation> &
+  Pick<SubscriptionActionOperation, 'status' | 'workspaceId'>
 
 function makeStandardYearly(): Plan {
   return {
@@ -183,18 +190,7 @@ const {
   mockRetryPaymentAuthentication: vi.fn(),
   mockGetOperation: vi.fn(),
   mockSubscriptionActionOperation: {
-    value: undefined as
-      | {
-          opId?: string
-          status: 'pending'
-          workspaceId: string
-          actionUrl?: string
-          authenticationState?: 'failed_retryable'
-          errorMessage?: string | null
-          canRetryAuthentication?: boolean
-          isAuthenticating?: boolean
-        }
-      | undefined
+    value: undefined as MockSubscriptionActionOperation | undefined
   },
   mockListSavedPaymentMethods: vi.fn(),
   mockTrackBeginCheckout: vi.fn(),
@@ -515,6 +511,32 @@ describe('useSubscriptionCheckout', () => {
       )
     })
 
+    it('does not submit an invalidated quote', async () => {
+      const checkout = await setup()
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'new_subscription',
+        quote_id: 'quote_123',
+        quote_version: 1,
+        amount_due_cents: 1600,
+        currency: 'usd'
+      })
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+
+      checkout.invalidateQuote()
+      await checkout.handleConfirmTransition()
+
+      expect(mockSubscribe).not.toHaveBeenCalled()
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          detail: 'subscription.preview.applyQuoteBeforeContinuing'
+        })
+      )
+    })
+
     it('submits a zero-dollar quote once with its quote identity and no payment token', async () => {
       const checkout = await setup()
       mockPreviewSubscribe.mockResolvedValueOnce({
@@ -627,6 +649,37 @@ describe('useSubscriptionCheckout', () => {
       expect(checkout.previewData.value?.quote_id).toBe('quote_new')
       expect(mockToastAdd).toHaveBeenCalledWith(
         expect.objectContaining({ detail: 'subscription.preview.quoteStale' })
+      )
+    })
+
+    it('returns to pricing when a stale quote cannot be refreshed', async () => {
+      const checkout = await setup()
+      mockPreviewSubscribe
+        .mockResolvedValueOnce({
+          allowed: true,
+          transition_type: 'new_subscription',
+          quote_id: 'quote_old',
+          quote_version: 1,
+          amount_due_cents: 1600,
+          currency: 'usd'
+        })
+        .mockRejectedValueOnce(new Error('Preview unavailable'))
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+      mockSubscribe.mockRejectedValueOnce(
+        errorWithCode('SUBSCRIPTION_QUOTE_STALE')
+      )
+
+      await checkout.handleConfirmTransition()
+
+      expect(checkout.checkoutStep.value).toBe('pricing')
+      expect(checkout.previewData.value).toBeNull()
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          detail: 'subscription.preview.quoteRefreshFailed'
+        })
       )
     })
 
@@ -2309,6 +2362,18 @@ describe('useSubscriptionCheckout', () => {
       expect(mockRetryPaymentAuthentication).toHaveBeenCalledWith(
         'op-recovered-3ds'
       )
+    })
+
+    it('surfaces an operation that needs reconciliation', async () => {
+      mockSubscriptionActionOperation.value = {
+        opId: 'op-reconciliation',
+        status: 'reconciliation_needed',
+        workspaceId: 'workspace-1'
+      }
+
+      const checkout = await setup()
+
+      expect(checkout.reconciliationOperationId.value).toBe('op-reconciliation')
     })
 
     it('resets to pricing step and clears preview data', async () => {

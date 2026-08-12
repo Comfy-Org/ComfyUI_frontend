@@ -204,10 +204,11 @@
       <div class="flex gap-2 pt-6">
         <input
           v-model="promotionCode"
+          :aria-label="$t('subscription.preview.promoCodePlaceholder')"
           :disabled="interactionLocked"
           class="h-10 min-w-0 flex-1 rounded-lg border border-interface-stroke bg-secondary-background px-3 text-base-foreground"
           :placeholder="$t('subscription.preview.promoCodePlaceholder')"
-          @input="$emit('invalidateQuote')"
+          @input="invalidateEditedPromotion"
         />
         <Button
           variant="secondary"
@@ -270,7 +271,14 @@
       </Button>
 
       <Button
-        v-if="actionUrl"
+        v-if="
+          actionUrl &&
+          !(
+            (authenticationState === 'failed_retryable' ||
+              authenticationState === 'requires_action') &&
+            canRetryAuthentication
+          )
+        "
         variant="inverted"
         size="lg"
         class="w-full rounded-lg"
@@ -349,7 +357,7 @@ const {
   isApplyingPromotionCode?: boolean
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   /** True only once the reactivation banner was shown and confirmed (checkbox
    *  ticked above the charge threshold, since confirmDisabled gates the button). */
   confirm: [confirmReactivation: boolean]
@@ -376,6 +384,12 @@ watch(
     promotionCode.value = code ?? ''
   }
 )
+
+function invalidateEditedPromotion() {
+  if (promotionCode.value !== (previewData.promotion_code ?? '')) {
+    emit('invalidateQuote')
+  }
+}
 
 function openVerification() {
   if (!actionUrl) return
@@ -622,7 +636,7 @@ function formatQuoteMoney(cents: number): string {
 
 const exactAmountDue = computed(() =>
   previewData.amount_due_cents === undefined
-    ? ''
+    ? t('subscription.preview.quoteUnavailable')
     : formatQuoteMoney(previewData.amount_due_cents)
 )
 const renewalTerms = computed(() => {
@@ -630,7 +644,7 @@ const renewalTerms = computed(() => {
     previewData.renewal_amount_cents === undefined ||
     !previewData.renewal_at
   ) {
-    return ''
+    return t('subscription.preview.quoteUnavailable')
   }
   return t('subscription.preview.renewsAt', {
     amount: formatQuoteMoney(previewData.renewal_amount_cents),

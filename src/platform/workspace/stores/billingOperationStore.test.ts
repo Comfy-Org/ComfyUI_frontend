@@ -1436,11 +1436,7 @@ describe('billingOperationStore', () => {
         authenticationState: 'succeeded',
         actionUrl: null
       })
-      expect(store.topupActionOperation).toMatchObject({
-        opId: 'op-3ds',
-        authenticationState: 'succeeded',
-        actionUrl: null
-      })
+      expect(store.topupActionOperation).toBeUndefined()
     })
 
     it('accepts a new challenge arriving after the first one completed', async () => {
@@ -1512,7 +1508,11 @@ describe('billingOperationStore', () => {
 
       const store = useBillingOperationStore()
       const terminal = store.startOperation('op-reconcile', 'subscription', {
-        suppressProcessingToast: true
+        suppressProcessingToast: true,
+        tier: 'creator',
+        cycle: 'monthly',
+        checkoutType: 'new',
+        attemptStartedAt: Date.now()
       })
       await vi.advanceTimersByTimeAsync(0)
 
@@ -1523,6 +1523,31 @@ describe('billingOperationStore', () => {
       })
       await vi.advanceTimersByTimeAsync(60_000)
       expect(workspaceApi.getBillingOpStatus).toHaveBeenCalledOnce()
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        operation: 'operation',
+        stage: 'failed',
+        outcome: 'failure',
+        billing_op_id: 'op-reconcile',
+        operation_type: 'subscription',
+        tier: 'creator',
+        cycle: 'monthly',
+        checkout_type: 'new',
+        payment_intent_source: undefined,
+        failure_category: 'reconciliation_needed',
+        duration_ms: 0
+      })
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        operation: 'subscription_checkout',
+        stage: 'failed',
+        outcome: 'failure',
+        tier: 'creator',
+        cycle: 'monthly',
+        checkout_type: 'new',
+        payment_intent_source: undefined,
+        billing_op_id: 'op-reconcile',
+        failure_category: 'reconciliation_needed',
+        duration_ms: 0
+      })
     })
 
     it('handles a redacted retryable status without a capability', async () => {
