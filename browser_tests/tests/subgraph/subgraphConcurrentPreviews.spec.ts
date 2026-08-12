@@ -10,6 +10,7 @@ import { webSocketFixture } from '@e2e/fixtures/ws'
 const test = mergeTests(comfyPageFixture, webSocketFixture)
 
 const SUBGRAPH_NODE_ID = '1'
+const SUBGRAPH_NODE_TITLE = 'Two Sampler Subgraph'
 // Node 3 has no `properties.previewExposures` entry, simulating a KSampler
 // added to the subgraph after the one-shot auto-expose already ran.
 const FIRST_SAMPLER_ID = '2'
@@ -34,7 +35,8 @@ test.describe(
     }) => {
       const ws = await getWebSocket()
       const exec = new ExecutionHelper(comfyPage, ws)
-      const subgraphNode = comfyPage.vueNodes.getNodeLocator(SUBGRAPH_NODE_ID)
+      const subgraphNode =
+        comfyPage.vueNodes.getNodeByTitle(SUBGRAPH_NODE_TITLE)
       const previewImages = subgraphNode.locator('img[src^="blob:"]')
 
       await test.step('no preview is present before execution', async () => {
