@@ -231,7 +231,7 @@ export const useLitegraphService = () => {
     )
       return
 
-    const input = node.addInput(inputName, inputSpec.type, {
+    node.addInput(inputName, inputSpec.type, {
       shape: inputSpec.isOptional ? RenderShape.HollowCircle : undefined,
       localized_name: resolveNodeDefInputText(
         'name',
@@ -241,7 +241,6 @@ export const useLitegraphService = () => {
         inputName
       )
     })
-    input.label ??= inputSpec.display_name
   }
   /**
    * @internal Setup stroke styles for the node under various conditions.

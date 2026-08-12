@@ -100,9 +100,10 @@ const { getInputSlotTooltip, createTooltipConfig } = useNodeTooltips(
 )
 
 const tooltipConfig = computed(() => {
-  const slotName = props.slotData.localized_name || props.slotData.name || ''
-  const tooltipText = getInputSlotTooltip(slotName)
-  const fallbackText = tooltipText || `Input: ${slotName}`
+  const inputName = props.slotData.name || ''
+  const displayName = props.slotData.localized_name || inputName
+  const tooltipText = getInputSlotTooltip(inputName)
+  const fallbackText = tooltipText || `Input: ${displayName}`
   return createTooltipConfig(fallbackText)
 })
 

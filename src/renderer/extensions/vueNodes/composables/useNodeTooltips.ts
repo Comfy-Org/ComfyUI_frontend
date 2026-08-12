@@ -6,7 +6,11 @@ import { computed, ref, unref } from 'vue'
 import type { MaybeRef } from 'vue'
 
 import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
-import { resolveNodeDefInputText, resolveNodeDefOutputText } from '@/i18n'
+import {
+  resolveNodeDefInputText,
+  resolveNodeDefOutputText,
+  resolveNodeDefText
+} from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -106,8 +110,11 @@ export function useNodeTooltips(nodeType: MaybeRef<string>) {
   const getNodeDescription = computed(() => {
     if (!tooltipsEnabled.value || !nodeDef.value) return ''
 
-    // Already resolved against the backend and the locale by `getNodeDefs()`.
-    return nodeDef.value.description || ''
+    return resolveNodeDefText(
+      'description',
+      unref(nodeType),
+      nodeDef.value.description || undefined
+    )
   })
 
   /**
