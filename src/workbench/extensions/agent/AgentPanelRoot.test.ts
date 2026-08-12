@@ -518,6 +518,7 @@ describe('AgentPanelRoot attach flow', () => {
   })
 
   afterEach(() => {
+    vi.useRealTimers()
     vi.restoreAllMocks()
     vi.unstubAllGlobals()
   })
@@ -1696,6 +1697,7 @@ describe('AgentPanelRoot workflow binding', () => {
   })
 
   afterEach(() => {
+    vi.useRealTimers()
     vi.restoreAllMocks()
     vi.unstubAllGlobals()
   })
@@ -1876,7 +1878,7 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(activity.creatingTab).toBe(false)
   })
 
-  it('raises the creating flag only while an unbound agent tab materializes', async () => {
+  it('holds the creating flag for 500 ms before an unbound agent tab materializes', async () => {
     makeTab('wf-42')
     let resolveDraft: ((response: Response) => void) | undefined
     vi.stubGlobal(
@@ -1899,16 +1901,25 @@ describe('AgentPanelRoot workflow binding', () => {
     const activity = useWorkflowTabActivityStore()
     expect(activity.creatingTab).toBe(false)
 
+    vi.useFakeTimers()
     ws.emit('agent_active_tab', {
       workflow_id: 'wf-new',
       name: 'Fresh',
       thread_id: 'th-1'
     })
-    await vi.waitFor(() => expect(activity.creatingTab).toBe(true))
+    await vi.advanceTimersByTimeAsync(0)
+    expect(activity.creatingTab).toBe(true)
 
     resolveDraft?.(json(404, { error: 'none' }))
-    await vi.waitFor(() => expect(activity.creatingTab).toBe(false))
+    await vi.advanceTimersByTimeAsync(0)
+    await vi.advanceTimersByTimeAsync(499)
+    expect(activity.creatingTab).toBe(true)
+    expect(hostStores.workflow.tabs.get('workflows/Fresh.json')).toBeUndefined()
+
+    await vi.advanceTimersByTimeAsync(1)
+    expect(activity.creatingTab).toBe(false)
     expect(hostStores.workflow.tabs.get('workflows/Fresh.json')).toBeDefined()
+    vi.useRealTimers()
   })
 
   it('lowers the creating flag when the draft fetch for a fresh tab fails', async () => {
