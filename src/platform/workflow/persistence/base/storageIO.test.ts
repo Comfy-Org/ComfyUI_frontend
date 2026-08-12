@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { DraftIndexV2, DraftPayloadV2 } from './draftTypes'
 import {
@@ -21,12 +21,7 @@ import {
 
 describe('storageIO', () => {
   beforeEach(() => {
-    sessionStorage.clear()
     vi.resetModules()
-  })
-
-  afterEach(() => {
-    sessionStorage.clear()
   })
 
   describe('index operations', () => {

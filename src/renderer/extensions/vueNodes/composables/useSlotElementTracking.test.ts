@@ -110,7 +110,6 @@ async function mountAndRegisterSlot(type: 'input' | 'output') {
 
 describe('useSlotElementTracking', () => {
   beforeEach(() => {
-    document.body.innerHTML = ''
     layoutStore.initializeFromLiteGraph([])
     layoutStore.applyOperation({
       type: 'createNode',
@@ -130,7 +129,6 @@ describe('useSlotElementTracking', () => {
     })
     mockGraph._nodes = [{ id: 1 }]
     mockCanvasState.canvas = {}
-    mockClientPosToCanvasPos.mockClear()
   })
 
   it.for([

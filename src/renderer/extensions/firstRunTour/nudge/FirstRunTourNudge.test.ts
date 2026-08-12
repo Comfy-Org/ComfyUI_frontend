@@ -1,6 +1,6 @@
 import userEvent from '@testing-library/user-event'
-import { cleanup, render, screen } from '@testing-library/vue'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { render, screen } from '@testing-library/vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -68,10 +68,6 @@ describe('FirstRunTourNudge', () => {
     mocks.nudgeArmed.value = false
     mocks.tourWasCompleted.value = true
     mocks.openDialogs.value = []
-  })
-
-  afterEach(() => {
-    cleanup()
   })
 
   it('shows a nudge that came due before it mounted', async () => {

@@ -1,6 +1,6 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { computed, ref } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import { useWidgetSelectActions } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions'
@@ -44,10 +44,6 @@ function createItems(...names: string[]): FormDropdownItem[] {
 }
 
 describe('useWidgetSelectActions', () => {
-  beforeEach(() => {
-    mockCaptureCanvasState.mockClear()
-  })
-
   describe('updateSelectedItems', () => {
     it('sets modelValue to the selected item name', () => {
       const modelValue = ref<string | undefined>('img_001.png')

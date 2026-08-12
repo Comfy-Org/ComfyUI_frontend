@@ -187,7 +187,6 @@ describe('MissingModelRow', () => {
     mockIsDesktop.value = false
     mockRootGraph.value = null
     mockApiListeners.clear()
-    mockGetNodeByExecutionId.mockReset()
     mockUploadContext.resolver = undefined
     mockUploadCallbacks.onUploadSuccess = undefined
     mockFetchModelMetadata.mockResolvedValue({

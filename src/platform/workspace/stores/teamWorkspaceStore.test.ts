@@ -158,7 +158,6 @@ function expectCleanupBeforeContextAndReload(): void {
 describe('useTeamWorkspaceStore', () => {
   beforeEach(() => {
     vi.stubGlobal('localStorage', mockLocalStorage)
-    sessionStorage.clear()
     mockCurrentUser.userEmail.value = null
 
     // Reset workspaceAuthStore mock state
