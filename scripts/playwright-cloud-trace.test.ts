@@ -253,6 +253,29 @@ describe('custom-node S1-S12 workflow gates', () => {
     expect(coreExpectedTests('0', 'pull_request', false)).toBe(33)
   })
 
+  it.for([
+    {
+      path: '.github/workflows/record-custom-nodes-geometry.yaml',
+      name: 'Core'
+    },
+    {
+      path: '.github/workflows/record-custom-nodes-geometry-cloud.yaml',
+      name: 'Cloud'
+    }
+  ])('$name geometry recording selects the active S14 tier', ({ path }) => {
+    const record = workflowSteps(path).find((step) =>
+      step.name?.includes('geometry baselines')
+    )
+
+    expect(record?.env).toMatchObject({
+      CN_GEOMETRY: 'record',
+      CN_ENABLE_S14: '1'
+    })
+    expect(record?.run).toContain(
+      '--grep "all nodes by tier @custom-nodes.*S14:"'
+    )
+  })
+
   it.for(workflowGates)(
     '$path accepts only the exact all-green result',
     (workflow) => {
