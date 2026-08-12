@@ -374,6 +374,10 @@ describe('useFirstRunTourController', () => {
       const controller = await freshController()
 
       const starting = controller.beginTour('image_z_image_turbo')
+      // Flush the renderer switch first, so the canvas is lost inside the
+      // preview delay rather than while beginTour is still setting up. Only
+      // the post-delay re-check can catch it from there.
+      await vi.advanceTimersByTimeAsync(0)
       mocks.linearMode.value = true
       await vi.advanceTimersByTimeAsync(INTRO_PREVIEW_MS)
 
