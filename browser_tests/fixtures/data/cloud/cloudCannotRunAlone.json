@@ -10,8 +10,6 @@
     "DynamiCrafterCNLoader",
     "DynamiCrafterModelLoader"
   ],
-  "ComfyUI-FlashVSR_Ultra_Fast": ["FlashVSRInitPipe", "FlashVSRNode"],
-  "ComfyUI-GIMM-VFI": ["DownloadAndLoadGIMMVFIModel"],
   "ComfyUI-Image-Filters": [
     "AlphaMatte",
     "BatchAverageUnJittered",
@@ -119,6 +117,7 @@
     "AudioBPMDetector",
     "AudioConcatenate",
     "AudioReverb",
+    "AudioSpeechToTextWhisper",
     "AudioVocalCompressor"
   ],
   "ComfyUI_Fill-ChatterBox": ["FL_ChatterboxDialogTTS"],
@@ -252,8 +251,8 @@
     "SAMLoader"
   ],
   "comfyui-inpaint-nodes": ["INPAINT_ColorMatch", "INPAINT_LoadFooocusInpaint"],
+  "comfyui-itools": ["iToolsLoadImagePlus"],
   "comfyui-rmbg": ["AILab_CropObject", "AILab_SDMatte"],
-  "comfyui-sharp": ["LoadSharpModel"],
   "comfyui-string-converter": ["StringToFloat", "StringToInt"],
   "comfyui-supir": ["SUPIR_Upscale", "SUPIR_model_loader"],
   "comfyui-various": [

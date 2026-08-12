@@ -1760,6 +1760,15 @@ for (const entry of loadManifest()) {
               `${entry.pack}: ${key} produced allowed ${detail} (${allowedFailure.reason})`
             )
         }
+        for (const ledgered of allowedFailureKeys) {
+          if (
+            allowedFailures[ledgered].requireFailure &&
+            ranClean.has(ledgered)
+          )
+            hardFailures.push(
+              `${ledgered}: ran clean but its exact failure is required - re-derive or remove the contract`
+            )
+        }
         for (const key of baseline) {
           if (ranClean.has(key))
             hardFailures.push(

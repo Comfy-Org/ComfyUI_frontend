@@ -384,6 +384,86 @@ test.describe('autoRun classifier', () => {
       ).toBe(false)
     }
 
+    const listValidationCases = [
+      [
+        'ComfyUI-DepthAnythingV3',
+        'DownloadAndLoadDepthAnythingV3Model',
+        'model'
+      ],
+      [
+        'ComfyUI-MimicMotionWrapper',
+        'DownloadAndLoadMimicMotionModel',
+        'model'
+      ],
+      ['ComfyUI-SeedVR2_VideoUpscaler', 'SeedVR2LoadDiTModel', 'model'],
+      ['ComfyUI-UltraShape1', 'UltraShapeLoadModel', 'checkpoint'],
+      ['ComfyUI-WanVideoWrapper', 'LoadNLFModel', 'nlf_model'],
+      ['ComfyUI-WanVideoWrapper', 'WanVideoLoraSelect', 'lora'],
+      ['comfyui-animatediff-evolved', 'ADE_AnimateDiffLoRALoader', 'name'],
+      ['comfyui-animatediff-evolved', 'ADE_LoadAnimateDiffModel', 'model_name'],
+      ['comfyui-frame-interpolation', 'FILM VFI', 'ckpt_name'],
+      ['comfyui-frame-interpolation', 'RIFE VFI', 'ckpt_name'],
+      ['comfyui-inpaint-nodes', 'INPAINT_LoadInpaintModel', 'model_name'],
+      ['comfyui-segment-anything-2', 'DownloadAndLoadSAM2Model', 'model'],
+      ['comfyui_ipadapter_plus', 'IPAdapterModelLoader', 'ipadapter_file']
+    ] as const
+    for (const [pack, node, input] of listValidationCases) {
+      const allowedFailure = AUTO_RUN_ALLOWED_FAILURES[pack]?.[node]
+      if (!allowedFailure)
+        throw new Error(`missing allowed outcomes for ${pack}/${node}`)
+      const response = JSON.stringify({
+        error: {
+          details: '',
+          extra_info: {},
+          message: 'Prompt outputs failed validation',
+          type: 'prompt_outputs_failed_validation'
+        },
+        node_errors: {
+          '421': {
+            class_type: node,
+            dependent_outputs: ['423'],
+            errors: [
+              {
+                details: `${input}: 'Select model' is not a valid value`,
+                extra_info: {
+                  input_config: null,
+                  input_name: input,
+                  received_value: 'Select model'
+                },
+                message: 'Value not in list',
+                type: 'value_not_in_list'
+              }
+            ]
+          }
+        }
+      })
+      const detail = `EXECUTION_ERROR (ServiceError - Failed to send prompt request: request returned error status 400: ${response})`
+      const { outcomes } = allowedFailure
+      expect(allowedFailure.requireFailure).toBe(true)
+      expect(matchesAllowedAutoRunOutcome(detail, outcomes)).toBe(true)
+      expect(
+        matchesAllowedAutoRunOutcome(
+          detail.replace('"421"', '"987"').replace('["423"]', '["989"]'),
+          outcomes
+        )
+      ).toBe(true)
+      expect(matchesAllowedAutoRunOutcome(`${detail} extra`, outcomes)).toBe(
+        false
+      )
+      expect(
+        matchesAllowedAutoRunOutcome(
+          detail.replace('Select model', 'different model'),
+          outcomes
+        )
+      ).toBe(false)
+      expect(
+        matchesAllowedAutoRunOutcome(
+          detail.replace(node, `${node} changed`),
+          outcomes
+        )
+      ).toBe(false)
+    }
+
     const objectDetectorOutcomes =
       AUTO_RUN_ALLOWED_FAILURES.ComfyUI_LayerStyle_Advance[
         'LayerMask: ObjectDetectorYOLO8'

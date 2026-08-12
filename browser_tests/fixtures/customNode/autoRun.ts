@@ -173,12 +173,50 @@ export function batchAutoRunnable(
   return chunk(runnable, batchSize)
 }
 
-// Exact non-pass outcomes proven to vary with Cloud environment state. These
-// nodes still execute on every run; every other outcome remains red.
+const escapeRegExp = (value: string) =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+const cloudListValidationOutcome = (
+  classType: string,
+  inputName: string,
+  receivedValue: string
+) => {
+  const node = escapeRegExp(classType)
+  const input = escapeRegExp(inputName)
+  const value = escapeRegExp(receivedValue)
+  return new RegExp(
+    String.raw`^EXECUTION_ERROR \(ServiceError - Failed to send prompt request: request returned error status 400: \{"error":\{"details":"","extra_info":\{\},"message":"Prompt outputs failed validation","type":"prompt_outputs_failed_validation"\},"node_errors":\{"\d+":\{"class_type":"${node}","dependent_outputs":\["\d+"\],"errors":\[\{"details":"${input}: '${value}' is not a valid value","extra_info":\{"input_config":null,"input_name":"${input}","received_value":"${value}"\},"message":"Value not in list","type":"value_not_in_list"\}\]\}\}\}\)$`
+  )
+}
+
+type AllowedAutoRunFailure = {
+  outcomes: Array<string | RegExp>
+  reason: string
+  requireFailure?: boolean
+}
+
+const requiredCloudListValidation = (
+  classType: string,
+  inputName: string
+): AllowedAutoRunFailure => ({
+  outcomes: [cloudListValidationOutcome(classType, inputName, 'Select model')],
+  reason:
+    'the live Cloud node requires a selected model and must return this exact 400 validation diagnostic for the placeholder',
+  requireFailure: true
+})
+
+// Exact accepted non-pass outcomes. Required failures are deterministic
+// cannot-run contracts; the rest are source-proven environment variants.
 export const AUTO_RUN_ALLOWED_FAILURES: Record<
   string,
-  Record<string, { outcomes: Array<string | RegExp>; reason: string }>
+  Record<string, AllowedAutoRunFailure>
 > = {
+  'ComfyUI-DepthAnythingV3': {
+    DownloadAndLoadDepthAnythingV3Model: requiredCloudListValidation(
+      'DownloadAndLoadDepthAnythingV3Model',
+      'model'
+    )
+  },
   'ComfyUI-Impact-Pack': {
     ImpactSelectNthItemOfAnyList: {
       outcomes: ['VALIDATION_FAIL'],
@@ -202,22 +240,59 @@ export const AUTO_RUN_ALLOWED_FAILURES: Record<
         'Cloud state varies: one exact run lacked landmark.onnx while another ran clean'
     }
   },
+  'ComfyUI-MimicMotionWrapper': {
+    DownloadAndLoadMimicMotionModel: requiredCloudListValidation(
+      'DownloadAndLoadMimicMotionModel',
+      'model'
+    )
+  },
+  'ComfyUI-SeedVR2_VideoUpscaler': {
+    SeedVR2LoadDiTModel: requiredCloudListValidation(
+      'SeedVR2LoadDiTModel',
+      'model'
+    )
+  },
+  'ComfyUI-UltraShape1': {
+    UltraShapeLoadModel: requiredCloudListValidation(
+      'UltraShapeLoadModel',
+      'checkpoint'
+    )
+  },
   ComfyUI_LayerStyle_Advance: {
     'LayerMask: ObjectDetectorYOLO8': {
       outcomes: [
-        /^EXECUTION_ERROR \(ServiceError - Failed to send prompt request: request returned error status 400: \{"error":\{"details":"","extra_info":\{\},"message":"Prompt outputs failed validation","type":"prompt_outputs_failed_validation"\},"node_errors":\{"\d+":\{"class_type":"LayerMask: ObjectDetectorYOLO8","dependent_outputs":\["\d+"\],"errors":\[\{"details":"yolo_model: 'yolov8s\.pt' is not a valid value","extra_info":\{"input_config":null,"input_name":"yolo_model","received_value":"yolov8s\.pt"\},"message":"Value not in list","type":"value_not_in_list"\}\]\}\}\}\)$/,
-        /^EXECUTION_ERROR \(ServiceError - Failed to send prompt request: request returned error status 400: \{"error":\{"details":"","extra_info":\{\},"message":"Prompt outputs failed validation","type":"prompt_outputs_failed_validation"\},"node_errors":\{"\d+":\{"class_type":"LayerMask: ObjectDetectorYOLO8","dependent_outputs":\["\d+"\],"errors":\[\{"details":"yolo_model: 'Select model' is not a valid value","extra_info":\{"input_config":null,"input_name":"yolo_model","received_value":"Select model"\},"message":"Value not in list","type":"value_not_in_list"\}\]\}\}\}\)$/
+        cloudListValidationOutcome(
+          'LayerMask: ObjectDetectorYOLO8',
+          'yolo_model',
+          'yolov8s.pt'
+        ),
+        cloudListValidationOutcome(
+          'LayerMask: ObjectDetectorYOLO8',
+          'yolo_model',
+          'Select model'
+        )
       ],
       reason:
         'Cloud model state varies: exact runs rejected yolov8s.pt and the Select model placeholder'
     },
     'LayerMask: YoloV8Detect': {
       outcomes: [
-        /^EXECUTION_ERROR \(ServiceError - Failed to send prompt request: request returned error status 400: \{"error":\{"details":"","extra_info":\{\},"message":"Prompt outputs failed validation","type":"prompt_outputs_failed_validation"\},"node_errors":\{"\d+":\{"class_type":"LayerMask: YoloV8Detect","dependent_outputs":\["\d+"\],"errors":\[\{"details":"yolo_model: 'yolov8n\.pt' is not a valid value","extra_info":\{"input_config":null,"input_name":"yolo_model","received_value":"yolov8n\.pt"\},"message":"Value not in list","type":"value_not_in_list"\}\]\}\}\}\)$/
+        cloudListValidationOutcome(
+          'LayerMask: YoloV8Detect',
+          'yolo_model',
+          'yolov8n.pt'
+        )
       ],
       reason:
         'Cloud model state varies: one exact run rejected yolov8n.pt while another ran clean'
     }
+  },
+  'ComfyUI-WanVideoWrapper': {
+    LoadNLFModel: requiredCloudListValidation('LoadNLFModel', 'nlf_model'),
+    WanVideoLoraSelect: requiredCloudListValidation(
+      'WanVideoLoraSelect',
+      'lora'
+    )
   },
   'audio-separation-nodes-comfyui': {
     AudioSeparation: {
@@ -241,6 +316,38 @@ export const AUTO_RUN_ALLOWED_FAILURES: Record<
       reason:
         'deployed 1.5.0 produced this exact phase-vocoder failure in one exact run while another ran clean'
     }
+  },
+  'comfyui-animatediff-evolved': {
+    ADE_AnimateDiffLoRALoader: requiredCloudListValidation(
+      'ADE_AnimateDiffLoRALoader',
+      'name'
+    ),
+    ADE_LoadAnimateDiffModel: requiredCloudListValidation(
+      'ADE_LoadAnimateDiffModel',
+      'model_name'
+    )
+  },
+  'comfyui-frame-interpolation': {
+    'FILM VFI': requiredCloudListValidation('FILM VFI', 'ckpt_name'),
+    'RIFE VFI': requiredCloudListValidation('RIFE VFI', 'ckpt_name')
+  },
+  'comfyui-inpaint-nodes': {
+    INPAINT_LoadInpaintModel: requiredCloudListValidation(
+      'INPAINT_LoadInpaintModel',
+      'model_name'
+    )
+  },
+  'comfyui-segment-anything-2': {
+    DownloadAndLoadSAM2Model: requiredCloudListValidation(
+      'DownloadAndLoadSAM2Model',
+      'model'
+    )
+  },
+  comfyui_ipadapter_plus: {
+    IPAdapterModelLoader: requiredCloudListValidation(
+      'IPAdapterModelLoader',
+      'ipadapter_file'
+    )
   },
   'comfyui-rmbg': {
     SAM3Segment: {
