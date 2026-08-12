@@ -52,13 +52,13 @@ beforeEach(() => {
 
 describe('useSlotNoodlePreview', () => {
   it('reveals only hidden links on the hovered output slot', () => {
-    addLink(1, 5, 0, 8, 0, true)
-    addLink(2, 5, 0, 9, 0, false)
-    addLink(3, 5, 1, 10, 0, true)
+    addLink(1, 0, 0, 8, 0, true)
+    addLink(2, 0, 0, 9, 0, false)
+    addLink(3, 0, 1, 10, 0, true)
     addLink(4, 6, 0, 11, 0, true)
 
     useSlotNoodlePreview({
-      nodeId: toNodeId(5),
+      nodeId: toNodeId(0),
       index: 0,
       type: 'output'
     }).revealNoodles()

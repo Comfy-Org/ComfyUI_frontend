@@ -147,6 +147,7 @@ describe('LGraphCanvas link visibility interactions', () => {
   })
 
   it('routes a visible curve right-click to the link menu', () => {
+    canvas.renderedPaths.add(link)
     vi.spyOn(layoutStore, 'queryRerouteAtPoint').mockReturnValue(null)
     vi.spyOn(layoutStore, 'queryLinkSegmentAtPoint').mockReturnValue({
       linkId: link.id,

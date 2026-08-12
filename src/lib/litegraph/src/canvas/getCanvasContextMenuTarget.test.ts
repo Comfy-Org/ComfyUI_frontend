@@ -2,6 +2,7 @@ import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { getCanvasContextMenuTarget } from '@/lib/litegraph/src/canvas/getCanvasContextMenuTarget'
+import { LLink } from '@/lib/litegraph/src/LLink'
 import { LinkRenderType } from '@/lib/litegraph/src/types/globalEnums'
 import { toLinkId } from '@/types/linkId'
 
@@ -39,13 +40,16 @@ interface StubCanvas {
     }>
     pendingBadges: []
   }
+  connections_width: number
   links_render_mode: number
+  renderedPaths: Set<unknown>
   _visibleReroutes: Set<unknown>
 }
 
 describe('getCanvasContextMenuTarget', () => {
   let graph: StubGraph
   let canvas: StubCanvas
+  let isPointInStroke: ReturnType<typeof vi.fn>
 
   beforeEach(() => {
     mockQueryLinkSegmentAtPoint.mockReturnValue(null)
@@ -56,11 +60,14 @@ describe('getCanvasContextMenuTarget', () => {
       getRerouteOnPos: vi.fn(() => undefined),
       getGroupOnPos: vi.fn(() => ({ id: 1 }))
     }
+    isPointInStroke = vi.fn(() => false)
     canvas = {
       graph,
-      ctx: {} as CanvasRenderingContext2D,
+      ctx: fromAny({ lineWidth: 3, isPointInStroke }),
       linkBadgeFrameState: { hitAreas: [], pendingBadges: [] },
+      connections_width: 3,
       links_render_mode: LinkRenderType.SPLINE_LINK,
+      renderedPaths: new Set(),
       _visibleReroutes: new Set()
     }
   })
@@ -107,6 +114,7 @@ describe('getCanvasContextMenuTarget', () => {
       rerouteId: null
     })
     graph.getLink.mockReturnValue(link)
+    canvas.renderedPaths.add(link)
 
     const target = resolve()
 
@@ -114,6 +122,18 @@ describe('getCanvasContextMenuTarget', () => {
       { x: 10, y: 20 },
       canvas.ctx
     )
+    expect(target.link).toBe(link)
+  })
+
+  it('falls back to current-frame paths when the layout store has no geometry', () => {
+    const link = new LLink(toLinkId(4), 'MODEL', 4, 0, 5, 0)
+    link.path = fromAny({})
+    canvas.renderedPaths.add(link)
+    isPointInStroke.mockReturnValue(true)
+
+    const target = resolve()
+
+    expect(isPointInStroke).toHaveBeenCalledWith(link.path, 10, 20)
     expect(target.link).toBe(link)
   })
 

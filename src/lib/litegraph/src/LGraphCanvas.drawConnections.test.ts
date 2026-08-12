@@ -268,6 +268,19 @@ describe('drawConnections hidden links', () => {
     expect(canvas.linkBadgeFrameState.hitAreas).toHaveLength(2)
   })
 
+  it('does not enqueue badges for an offscreen link', () => {
+    const link = createHiddenLink()
+    const source = graph.getNodeById(link.origin_id)
+    const target = graph.getNodeById(link.target_id)
+    if (!source || !target) throw new Error('Missing hidden link test nodes')
+    source.pos = [-1000, -1000]
+    target.pos = [-700, -1000]
+
+    canvas.drawConnections(createMockCtx())
+
+    expect(canvas.linkBadgeFrameState.hitAreas).toHaveLength(0)
+  })
+
   it('reveals on badge hover and clears the reveal on canvas leave', () => {
     const link = createHiddenLink()
     canvas.drawConnections(createMockCtx())

@@ -6114,6 +6114,19 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       startDirection?: LinkDirection,
       endDirection?: LinkDirection
     ): void => {
+      const connectionPoints = [
+        startPos,
+        ...LLink.getReroutes(graph, link).map((reroute) => reroute.pos),
+        endPos
+      ]
+      const pointsX = connectionPoints.map((point) => point[0])
+      const pointsY = connectionPoints.map((point) => point[1])
+      link_bounding[0] = Math.min(...pointsX)
+      link_bounding[1] = Math.min(...pointsY)
+      link_bounding[2] = Math.max(...pointsX) - link_bounding[0]
+      link_bounding[3] = Math.max(...pointsY) - link_bounding[1]
+      if (!overlapBounding(link_bounding, margin_area)) return
+
       let renderedStart = startPos
       let renderedEnd = endPos
       if (link.hidden) {

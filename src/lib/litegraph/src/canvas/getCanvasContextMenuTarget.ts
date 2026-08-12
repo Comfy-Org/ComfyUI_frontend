@@ -2,8 +2,8 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
 import type { LGraphCanvas } from '../LGraphCanvas'
 import type { LGraphGroup } from '../LGraphGroup'
-import type { LLink } from '../LLink'
-import type { Reroute } from '../Reroute'
+import { LLink } from '../LLink'
+import { Reroute } from '../Reroute'
 import { LinkRenderType } from '../types/globalEnums'
 import { queryLinkBadgeAtPoint } from './linkBadges'
 
@@ -11,6 +11,44 @@ interface CanvasContextMenuTarget {
   reroute?: Reroute
   link?: LLink
   group?: LGraphGroup
+}
+
+function queryVisibleLinkAtPoint(
+  canvas: LGraphCanvas,
+  x: number,
+  y: number
+): LLink | undefined {
+  const { ctx, graph, renderedPaths } = canvas
+  if (!graph) return
+
+  const lineWidth = ctx.lineWidth
+  ctx.lineWidth = canvas.connections_width + 7
+  try {
+    const segmentHit = layoutStore.queryLinkSegmentAtPoint({ x, y }, ctx)
+    const layoutLink = segmentHit ? graph.getLink(segmentHit.linkId) : undefined
+    if (layoutLink && !layoutLink.hidden && renderedPaths.has(layoutLink)) {
+      return layoutLink
+    }
+
+    const dpi = Math.max(window?.devicePixelRatio ?? 1, 1)
+    for (const segment of renderedPaths) {
+      if (
+        !segment.path ||
+        !ctx.isPointInStroke(segment.path, x * dpi, y * dpi)
+      ) {
+        continue
+      }
+      if (segment instanceof LLink) return segment.hidden ? undefined : segment
+      if (segment instanceof Reroute) {
+        for (const linkId of segment.linkIds) {
+          const link = graph.getLink(linkId)
+          if (link && !link.hidden) return link
+        }
+      }
+    }
+  } finally {
+    ctx.lineWidth = lineWidth
+  }
 }
 
 /** Resolves the canvas items under a canvas-space point for a right-click. */
@@ -46,14 +84,7 @@ export function getCanvasContextMenuTarget(
       if (badgeLink?.hidden) {
         link = badgeLink
       } else {
-        const segmentHit = layoutStore.queryLinkSegmentAtPoint(
-          { x, y },
-          canvas.ctx
-        )
-        const segmentLink = segmentHit
-          ? graph.getLink(segmentHit.linkId)
-          : undefined
-        if (segmentLink && !segmentLink.hidden) link = segmentLink
+        link = queryVisibleLinkAtPoint(canvas, x, y)
       }
     }
   }

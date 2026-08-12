@@ -11,7 +11,7 @@ interface SlotNoodlePreviewOptions {
 export function useSlotNoodlePreview(options: SlotNoodlePreviewOptions) {
   function hiddenLinkIds() {
     const graph = app.canvas?.graph
-    if (!graph || !options.nodeId) return []
+    if (!graph || options.nodeId === undefined) return []
 
     return [...graph.links.values()]
       .filter((link) => link.hidden)

@@ -11,7 +11,7 @@ const CONNECTOR_WIDTH = 3
 const BADGE_STACK_GAP = 4
 const BADGE_CONNECT_INSET = 2
 
-export interface BadgeHitArea {
+interface BadgeHitArea {
   linkId: LinkId
   x: number
   y: number
