@@ -4,6 +4,15 @@
     :style="{ width: `${BASE_WIDTH_PX * (scaleFactor / BASE_SCALE)}px` }"
     data-testid="node-preview-card"
   >
+    <div
+      v-if="isDisabled"
+      data-testid="node-preview-disabled-note"
+      class="mx-3 mt-3 rounded-sm bg-amber-500/20 px-2 py-1 text-2xs/normal text-amber-400"
+    >
+      {{
+        $t('errorCatalog.validationErrors.PARTNER_NODE_DISABLED.toastMessage')
+      }}
+    </div>
     <div ref="previewContainerRef" class="overflow-hidden p-3">
       <div
         ref="previewWrapperRef"
@@ -16,15 +25,6 @@
 
     <!-- Content Section -->
     <div class="flex flex-col gap-2 p-3 pt-1">
-      <div
-        v-if="isDisabled"
-        data-testid="node-preview-disabled-note"
-        class="rounded-sm bg-amber-500/20 px-2 py-1 text-2xs/normal text-amber-400"
-      >
-        {{
-          $t('errorCatalog.validationErrors.PARTNER_NODE_DISABLED.toastMessage')
-        }}
-      </div>
       <!-- Title -->
       <h3 class="text-foreground m-0 text-xs font-semibold">
         {{ nodeDef.display_name }}
