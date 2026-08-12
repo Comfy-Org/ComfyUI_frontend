@@ -6,8 +6,10 @@ import {
 } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import type { SlotPositionContext } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import {
+  canTransferLayoutAttachment,
   moveNodeLayout,
-  resizeNodeLayout
+  resizeNodeLayout,
+  transferLayoutAttachment
 } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { toLinkId } from '@/types/linkId'
@@ -4429,6 +4431,62 @@ export function unregisterNodeState(node: LGraphNode): void {
   if (!node._graphScope) return
   useNodeDataStore().deleteNode(node._graphScope, node._state)
   node._graphScope = undefined
+}
+
+function canTransferNodeState(
+  node: LGraphNode,
+  replacement: LGraphNode
+): boolean {
+  return (
+    node.id === replacement.id &&
+    replacement._graphScope === undefined &&
+    node._graphScope !== undefined &&
+    useNodeDataStore().ownsNode(node._graphScope, node._state)
+  )
+}
+
+function transferNodeState(node: LGraphNode, replacement: LGraphNode): void {
+  const registeredState = node._state
+  const detachedState = { ...registeredState }
+  const replacementState = replacement._state
+  Object.assign(registeredState, {
+    flags: replacementState.flags,
+    inputs: replacementState.inputs,
+    mode: replacementState.mode,
+    outputs: replacementState.outputs,
+    title: replacementState.title,
+    type: replacementState.type,
+    bgcolor: replacementState.bgcolor,
+    color: replacementState.color,
+    resizable: replacementState.resizable,
+    shape: replacementState.shape,
+    showAdvanced: replacementState.showAdvanced,
+    titleMode: replacementState.titleMode
+  })
+  replacement._state = registeredState
+  replacement._graphScope = node._graphScope
+  node._state = detachedState
+  node._graphScope = undefined
+}
+
+export function canTransferReplacementOwnership(
+  node: LGraphNode,
+  replacement: LGraphNode
+): boolean {
+  return (
+    canTransferNodeState(node, replacement) &&
+    canTransferLayoutAttachment(node, replacement)
+  )
+}
+
+export function transferReplacementOwnership(
+  node: LGraphNode,
+  replacement: LGraphNode
+): boolean {
+  if (!canTransferReplacementOwnership(node, replacement)) return false
+  if (transferLayoutAttachment(node, replacement) !== 'applied') return false
+  transferNodeState(node, replacement)
+  return true
 }
 
 /**

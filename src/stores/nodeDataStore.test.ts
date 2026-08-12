@@ -1,9 +1,10 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { assert, beforeEach, describe, expect, it } from 'vitest'
 import { computed } from 'vue'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { transferReplacementOwnership } from '@/lib/litegraph/src/LGraphNode'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import type { GraphScope } from '@/types/graphScopeId'
 import type { NodeState } from '@/types/nodeState'
@@ -151,6 +152,59 @@ describe('nodeDataStore registration via LGraph', () => {
     lgraphNode.removeInput(1)
     expect(state?.inputs.map((i) => i.name)).toEqual(['third', 'first'])
     expect(state?.inputs).toBe(lgraphNode.inputs)
+  })
+
+  it('moves registered state to a same-id replacement without changing store membership', () => {
+    const graph = new LGraph()
+    const original = new LGraphNode('original')
+    original.color = '#123456'
+    graph.add(original)
+    const replacement = new LGraphNode('replacement')
+    replacement.id = original.id
+    const registered = registeredState(graph, original)
+    assert(registered)
+
+    expect(transferReplacementOwnership(original, replacement)).toBe(true)
+    expect(replacement._state).toBe(registered)
+    expect(replacement.title).toBe('replacement')
+    expect(replacement.color).toBeUndefined()
+    expect(registeredState(graph, replacement)).toBe(registered)
+    expect(registered.graphId).toBe(graph.id)
+    expect(original._graphScope).toBeUndefined()
+    expect(original._state).not.toBe(registered)
+
+    original.title = 'detached'
+    expect(replacement.title).toBe('replacement')
+  })
+
+  it('transfers the latest store geometry to the replacement', () => {
+    const graph = new LGraph()
+    const original = new LGraphNode('original')
+    graph.add(original)
+    const replacement = new LGraphNode('replacement')
+    replacement.id = original.id
+    replacement.pos = [...original.pos]
+    replacement.size = [...original.size]
+
+    original.pos = [300, 400]
+    original.size = [220, 160]
+
+    expect(transferReplacementOwnership(original, replacement)).toBe(true)
+    expect([...replacement.pos]).toEqual([300, 400])
+    expect([...replacement.size]).toEqual([220, 160])
+  })
+
+  it('keeps ownership unchanged when replacement identity does not match', () => {
+    const graph = new LGraph()
+    const original = new LGraphNode('original')
+    graph.add(original)
+    const replacement = new LGraphNode('replacement')
+    const registered = registeredState(graph, original)
+
+    expect(transferReplacementOwnership(original, replacement)).toBe(false)
+    expect(registeredState(graph, original)).toBe(registered)
+    expect(original._graphScope).toBeDefined()
+    expect(replacement._graphScope).toBeUndefined()
   })
 
   it('drops the registration when the node is removed', () => {
