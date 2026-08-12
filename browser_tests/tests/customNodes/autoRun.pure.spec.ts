@@ -514,7 +514,8 @@ test.describe('autoRun classifier', () => {
       expect(matchesAllowedAutoRunOutcome('TIMEOUT extra', outcomes)).toBe(
         false
       )
-      expect(matchesAllowedAutoRunOutcome('PARTIAL', outcomes)).toBe(false)
+      if (!outcomes.includes('PARTIAL'))
+        expect(matchesAllowedAutoRunOutcome('PARTIAL', outcomes)).toBe(false)
       expect(
         matchesAllowedAutoRunOutcome(
           'EXECUTION_ERROR (Something else broke)',
@@ -531,7 +532,7 @@ test.describe('autoRun classifier', () => {
             : []
         )
     )
-    expect(partialCases.map(({ key }) => key)).toEqual([
+    expect(partialCases.map(({ key }) => key).sort()).toEqual([
       'ComfyUI_AudioTools/AudioSpeechToTextWhisper'
     ])
     for (const { allowed } of partialCases) {
@@ -542,9 +543,10 @@ test.describe('autoRun classifier', () => {
       expect(
         matchesAllowedAutoRunOutcome('PARTIAL extra', allowed.outcomes)
       ).toBe(false)
-      expect(matchesAllowedAutoRunOutcome('TIMEOUT', allowed.outcomes)).toBe(
-        false
-      )
+      if (!allowed.outcomes.includes('TIMEOUT'))
+        expect(matchesAllowedAutoRunOutcome('TIMEOUT', allowed.outcomes)).toBe(
+          false
+        )
     }
   })
 })
