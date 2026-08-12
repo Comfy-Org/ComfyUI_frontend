@@ -14,6 +14,7 @@ import type {
 } from '@/lib/litegraph/src/interfaces'
 import { inputLink, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 import { useLinkStore } from '@/stores/linkStore'
+import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
 import { toNodeId } from '@/types/nodeId'
 
 import { ComfyApiError } from './errors'
@@ -143,8 +144,13 @@ export interface SlotCollection<THandle> {
   /**
    * Adds a slot. 18 packs grow their inputs as the last one fills — the
    * "Multi" combiner pattern — which needed `node.addInput` until now.
+   *
+   * `shape` is not decoration: it is written into the saved workflow, so a
+   * slot added without the one its pack used to set serialises differently
+   * from one the pack itself wrote. `'optional'` is the hollow circle
+   * ComfyUI draws for an input that need not be connected.
    */
-  add(name: string, type: SlotType): THandle
+  add(name: string, type: SlotType, options?: SlotOptions): THandle
   /**
    * Removes a slot by reference. Any link into it is dropped, as it would be
    * on the legacy path.
@@ -429,11 +435,27 @@ function createOutputHandle(
   return Object.freeze(handle)
 }
 
+/**
+ * How a slot is drawn, which ComfyUI overloads to mean how it behaves.
+ *
+ * Named rather than numbered: packs wrote `{ shape: 7 }`, and 7 is meaningless
+ * without litegraph's RenderShape enum in front of you.
+ */
+interface SlotOptions {
+  shape?: 'default' | 'optional'
+}
+
+function slotProperties(options?: SlotOptions) {
+  return options?.shape === 'optional'
+    ? { shape: RenderShape.HollowCircle }
+    : undefined
+}
+
 function createCollection<THandle>(
   getSlots: () => readonly (INodeInputSlot | INodeOutputSlot)[],
   makeHandle: (slotId: SlotId) => THandle,
   mutate: {
-    add: (name: string, type: SlotType) => void
+    add: (name: string, type: SlotType, options?: SlotOptions) => void
     remove: (index: number) => void
   }
 ): SlotCollection<THandle> {
@@ -448,8 +470,8 @@ function createCollection<THandle>(
     },
     get: (ref) => handleAt(resolveSlotRef(getSlots(), ref)),
     byId: (id) => handleAt(resolveSlotRef(getSlots(), id)),
-    add(name, type) {
-      mutate.add(name, type)
+    add(name, type, options) {
+      mutate.add(name, type, options)
       const handle = handleAt(getSlots().length - 1)
       if (!handle) {
         throw new ComfyApiError(
@@ -495,7 +517,8 @@ export function createInputCollection(
     () => getNode()?.inputs ?? [],
     (slotId) => createInputHandle(getGraph, getNode, slotId),
     {
-      add: (name, type) => getNode()?.addInput(name, normaliseType(type)),
+      add: (name, type, options) =>
+        getNode()?.addInput(name, normaliseType(type), slotProperties(options)),
       remove: (index) => getNode()?.removeInput(index)
     }
   )
