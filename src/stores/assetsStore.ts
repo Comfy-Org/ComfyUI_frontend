@@ -929,15 +929,6 @@ export const useAssetsStore = defineStore('assets', () => {
     loadMoreHistory,
     setAssetPreview,
 
-    flatOutputs,
-    flatOutputAssets: flatOutputs.items,
-    flatOutputError: ref(null),
-    flatOutputLoading: flatOutputs.isLoading,
-    flatOutputIsLoadingMore: flatOutputs.isLoading,
-    flatOutputHasMore: flatOutputs.hasMore,
-    updateFlatOutputs: flatOutputs.loadNew,
-    loadMoreFlatOutputs: flatOutputs.loadMore,
-
     // Input mapping helpers
     inputAssetsByFilename,
     getInputName,
