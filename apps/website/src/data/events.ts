@@ -399,9 +399,10 @@ const events: readonly ComfyEvent[] = [
   }
 ]
 
-// Evaluated once per module load: at build time for the pre-rendered HTML, and
+// Sampled once per module load: at build time for the pre-rendered HTML, and
 // again in the browser when the events islands hydrate. An event therefore
-// leaves the upcoming section as soon as it ends, without waiting for a deploy.
+// leaves the upcoming section on the first page load after it ends, rather than
+// on the next deploy; a page left open keeps the list it hydrated with.
 const NOW = new Date()
 
 export const upcomingEvents = deriveUpcomingEvents(events, NOW)
