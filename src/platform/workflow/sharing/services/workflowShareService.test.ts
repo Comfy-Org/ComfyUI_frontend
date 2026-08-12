@@ -181,6 +181,7 @@ describe(useWorkflowShareService, () => {
           name: 'Published title',
           status: 'approved',
           description: 'A cool workflow',
+          is_app: false,
           tags: [
             { name: 'art', display_name: 'Art' },
             { name: 'upscale', display_name: 'Upscale' }

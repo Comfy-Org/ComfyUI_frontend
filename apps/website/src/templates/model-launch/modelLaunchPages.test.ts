@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { flux3Page } from '../../data/flux3'
+import { ltxPage } from '../../data/ltx'
 import { minimaxPage } from '../../data/minimax'
 import { seedancePage } from '../../data/seedance'
 import { wanAnimate2Page } from '../../data/wanAnimate2'
@@ -13,6 +14,7 @@ const pages: { name: string; page: ModelLaunchPage }[] = [
   { name: 'minimax', page: minimaxPage },
   { name: 'flux3', page: flux3Page },
   { name: 'seedance', page: seedancePage },
+  { name: 'ltx', page: ltxPage },
   { name: 'wanAnimate2', page: wanAnimate2Page }
 ]
 
