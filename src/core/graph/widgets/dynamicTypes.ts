@@ -1,6 +1,13 @@
-import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
-import { zAutogrowOptions, zMatchTypeOptions } from '@/schemas/nodeDefSchema'
-import type { InputSpec } from '@/schemas/nodeDefSchema'
+import {
+  transformInputSpecV1ToV2,
+  transformInputSpecV2ToV1
+} from '@/schemas/nodeDef/migration'
+import {
+  zAutogrowOptions,
+  zDynamicComboInputSpec,
+  zMatchTypeOptions
+} from '@/schemas/nodeDefSchema'
+import type { ComfyInputsSpec, InputSpec } from '@/schemas/nodeDefSchema'
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 
 const dynamicTypeResolvers: Record<
@@ -8,6 +15,7 @@ const dynamicTypeResolvers: Record<
   (inputSpec: InputSpecV2) => string[]
 > = {
   COMFY_AUTOGROW_V3: resolveAutogrowType,
+  COMFY_DYNAMICCOMBO_V3: resolveDynamicComboType,
   COMFY_MATCHTYPE_V3: (input) =>
     zMatchTypeOptions
       .safeParse(input)
@@ -22,14 +30,25 @@ export function resolveInputType(input: InputSpecV2): string[] {
 
 function resolveAutogrowType(rawSpec: InputSpecV2): string[] {
   const { input } = zAutogrowOptions.safeParse(rawSpec).data?.template ?? {}
+  return resolveInputsSpecTypes(input)
+}
 
-  const inputTypes: (Record<string, InputSpec> | undefined)[] = [
-    input?.required,
-    input?.optional
+function resolveDynamicComboType(rawSpec: InputSpecV2): string[] {
+  const options =
+    zDynamicComboInputSpec.safeParse(transformInputSpecV2ToV1(rawSpec))
+      .data?.[1].options ?? []
+
+  return options.flatMap(({ inputs }) => resolveInputsSpecTypes(inputs))
+}
+
+function resolveInputsSpecTypes(inputs: ComfyInputsSpec | undefined): string[] {
+  const inputGroups: (Record<string, InputSpec> | undefined)[] = [
+    inputs?.required,
+    inputs?.optional
   ]
-  return inputTypes.flatMap((inputType) =>
-    Object.entries(inputType ?? {}).flatMap(([name, v]) =>
-      resolveInputType(transformInputSpecV1ToV2(v, { name }))
+  return inputGroups.flatMap((group) =>
+    Object.entries(group ?? {}).flatMap(([name, spec]) =>
+      resolveInputType(transformInputSpecV1ToV2(spec, { name }))
     )
   )
 }
