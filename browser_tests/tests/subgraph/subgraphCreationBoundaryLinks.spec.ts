@@ -39,7 +39,7 @@ const readRootLinks = (comfyPage: ComfyPage) =>
 const selectedNodeIds = (comfyPage: ComfyPage) =>
   comfyPage.page.evaluate(() =>
     [...(window.app!.canvas.selectedItems ?? [])]
-      .map((item) => String((item as { id?: unknown }).id))
+      .map((item) => String(item.id))
       .sort()
   )
 
