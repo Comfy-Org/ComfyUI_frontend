@@ -402,3 +402,33 @@ describe('zoom', () => {
     expect(canvas.ds.scale).toBeCloseTo(0.5)
   })
 })
+
+describe('pointer position', () => {
+  it('reports the pointer in the coordinates nodeAt uses', () => {
+    // A pack adding a node from a menu put it under the cursor; without this
+    // the node lands at the graph origin, off screen on any panned view.
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    const graph = new LGraph()
+    const canvas = testCanvas(graph)
+    LGraphCanvas.active_canvas = canvas
+    canvas.graph_mouse[0] = 420
+    canvas.graph_mouse[1] = 240
+
+    expect(createGraphApi(() => graph).pointerPosition()).toEqual({
+      x: 420,
+      y: 240
+    })
+  })
+
+  it('reports nothing when there is no canvas to measure against', () => {
+    const previous = LGraphCanvas.active_canvas
+    LGraphCanvas.active_canvas = undefined as never
+    try {
+      expect(
+        createGraphApi(() => new LGraph()).pointerPosition()
+      ).toBeUndefined()
+    } finally {
+      LGraphCanvas.active_canvas = previous
+    }
+  })
+})
