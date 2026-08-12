@@ -11,6 +11,8 @@ import { outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 import { toNodeId } from '@/types/nodeId'
 
 import { ComfyApiError } from './errors'
+import { createGroupHandles } from './groupHandle'
+import type { GroupHandle } from './groupHandle'
 import { createNodeHandles } from './nodeHandle'
 import type { NodeHandle } from './nodeHandle'
 import {
@@ -66,6 +68,23 @@ export interface GraphHandle {
    * renderer's transform and the device pixel ratio. Does not change zoom.
    */
   centerOn(node: NodeHandle): void
+  /**
+   * The groups on the canvas, in draw order.
+   *
+   * Packs read `graph._groups` to build a group muter, a group runner, or a
+   * navigator. A group is a rectangle plus a title: which nodes it holds is
+   * derived from what it overlaps, which is why `nodes()` is a method and not
+   * a stored list.
+   */
+  groups(): readonly GroupHandle[]
+  /**
+   * Scales the view. 1 is unzoomed.
+   *
+   * Packs saved a zoom level alongside a node to restore a view; without this
+   * a bookmark could pan but the number it stored was inert. Clamped to what
+   * the canvas allows, so a stored extreme cannot strand the user.
+   */
+  setZoom(scale: number): void
   /**
    * The topmost node at a point in graph space, if any.
    *
@@ -151,6 +170,8 @@ export function createGraphApi(
   const handleFor = (nodeId: string) =>
     nodeHandles.handleFor(nodeId) as NodeHandle
 
+  const groupHandle = createGroupHandles(handleFor)
+
   const requireGraph = (action: string): LGraph => {
     const graph = getGraph()
     if (!graph) {
@@ -229,6 +250,20 @@ export function createGraphApi(
         .filter((node) => !!node)
       if (!add) canvas.deselectAll()
       if (resolved.length) canvas.selectNodes(resolved, add)
+    },
+
+    groups() {
+      const groups = getGraph()?._groups ?? []
+      return Object.freeze(groups.map(groupHandle))
+    },
+
+    setZoom(scale) {
+      const canvas = LGraphCanvas.active_canvas
+      if (!canvas) return
+      const element = canvas.canvas
+      // Around the middle of the viewport: zooming about the origin throws the
+      // graph off screen at anything but the default pan.
+      canvas.setZoom(scale, [element.width / 2, element.height / 2])
     },
 
     centerOn(node) {

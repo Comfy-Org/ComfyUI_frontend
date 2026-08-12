@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   LGraph,
   LGraphCanvas,
+  LGraphGroup,
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
@@ -328,5 +329,76 @@ describe('centering the view on a node', () => {
 
     expect(canvas.ds.offset).not.toEqual([0, 0])
     expect(canvas.ds.scale).toBe(scale)
+  })
+})
+
+describe('groups', () => {
+  it('reports the nodes a group currently contains, recomputed each call', () => {
+    // Membership is derived from overlap, not stored: a node dragged out
+    // leaves the group with nothing recorded anywhere.
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    const graph = new LGraph()
+    const inside = new LGraphNode('In', 'TestNode')
+    const outside = new LGraphNode('Out', 'TestNode')
+    graph.add(inside)
+    graph.add(outside)
+    inside.pos = [60, 60]
+    inside.size = [80, 40]
+    outside.pos = [900, 900]
+    outside.size = [80, 40]
+    const group = new LGraphGroup('Sampling')
+    graph.add(group)
+    group._bounding.set([20, 20, 400, 300])
+    inside.updateArea()
+    outside.updateArea()
+    const api = createGraphApi(() => graph)
+
+    const [handle] = api.groups()
+    expect(handle.getTitle()).toBe('Sampling')
+    expect(handle.nodes().map((n) => n.id)).toEqual([String(inside.id)])
+
+    outside.pos = [100, 150]
+    outside.updateArea()
+    expect(
+      handle
+        .nodes()
+        .map((n) => n.id)
+        .sort()
+    ).toEqual([String(inside.id), String(outside.id)].sort())
+  })
+
+  it('reports the group rectangle and renames it', () => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    const graph = new LGraph()
+    const group = new LGraphGroup('Old')
+    graph.add(group)
+    // After add: registerGroupLayout restores a stored rectangle by group id.
+    group._bounding.set([10, 20, 300, 200])
+    const [handle] = createGraphApi(() => graph).groups()
+
+    expect(handle.getBounds()).toEqual({
+      x: 10,
+      y: 20,
+      width: 300,
+      height: 200
+    })
+
+    handle.setTitle('New')
+    expect(group.title).toBe('New')
+  })
+})
+
+describe('zoom', () => {
+  it('scales the view', () => {
+    // A bookmark saved a zoom level; without a setter the number was inert.
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    const graph = new LGraph()
+    const canvas = testCanvas(graph)
+    LGraphCanvas.active_canvas = canvas
+    const api = createGraphApi(() => graph)
+
+    api.setZoom(0.5)
+
+    expect(canvas.ds.scale).toBeCloseTo(0.5)
   })
 })
