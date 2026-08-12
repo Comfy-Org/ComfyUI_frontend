@@ -2503,6 +2503,10 @@ const translations = {
     'zh-CN': 'Comfy 企业版'
   },
   'nav.comfyHub': { en: 'Comfy Workflows', 'zh-CN': 'Comfy Workflows' },
+  'nav.fdct': {
+    en: 'Forward Deployed Creatives',
+    'zh-CN': '前沿驻场创意人才'
+  },
   'nav.gallery': { en: 'Gallery', 'zh-CN': '画廊' },
   'nav.learning': { en: 'Learning', 'zh-CN': '学习' },
   'nav.blogs': { en: 'Blog', 'zh-CN': '博客' },
