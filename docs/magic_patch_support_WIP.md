@@ -185,3 +185,54 @@ Be appropriately sceptical of everything above.
   of the failures, 6 are an advisory line-growth heuristic, 2 are a verified
   false positive on lora-manager's own widget facade, 1 is three.js inside a
   build artifact, 1 is mixlab's `graph._nodes` (genuinely outstanding).
+
+## Backend routes: two verification items that need a real install
+
+Both were found by comparing each converted file against its original, and
+neither can be settled from the frontend repo alone. They need one run against
+a real ComfyUI with the pack installed.
+
+### 1. Does `/api`-prefixing a custom node's own route still reach it?
+
+`comfy.backend.url()` and `comfy.backend.fetch()` both go through
+`api.apiURL()`, which prepends `/api`. Core routes are served at both `/x` and
+`/api/x`, so this is invisible for them. Custom nodes register their routes on
+the same aiohttp app, and whether those are _also_ dual-mounted decides whether
+a converted call reaches the pack's own backend or 404s.
+
+Two independent signals say it may not:
+
+- rgthree serves `/rgthree/api/…` and the original **monkeypatched
+  `api.apiURL`** so its own routes bypass the prefix.
+- `Comfyui_LG_Tools/web/image_selector.js` originally sent a bare
+  `fetch('/image_selector/select')`; an early conversion round wrapped it in
+  `comfy.backend.url()`, adding a prefix the pack never sent.
+
+Routes to try, one request each — a 404 answers it:
+
+    /image_selector/select      /party/workflow_list      /ollama/get_models
+    /kaytool/clean_vram         /deno/local_llm/models    /alekpet/remove_node_settings
+
+If they 404 under `/api`, the fix is guidance, not API: a bare root-relative
+`fetch()` in the original stays a bare `fetch()`. Only an original
+`api.fetchApi` call becomes `comfy.backend.fetch`. If a pack genuinely needs an
+_authenticated_ call to a non-`/api` route, that is a real gap and needs a
+host-rooted authenticated fetch — the `fetch` counterpart to `assetUrl`.
+
+### 2. Fourteen converted files dropped authentication
+
+The original called `api.fetchApi`; the conversion calls bare `fetch`. On a
+local install this is invisible. On a hosted one every such call is a 401 —
+these do not fail loudly, they fail as an empty list or a silent no-op.
+
+    bjornulf_custom_nodes/web/js/ollama_talk.js
+    ComfyUI-Impact-Pack/js/{impact-image-util,impact-pack,impact-sam-editor,impact-segs-picker}.js
+    ComfyUI-Lora-Auto-Trigger-Words/web/js/betterCombos.js
+    ComfyUI-Lora-Manager/web/comfyui/{autocomplete,loras_widget_events,preview_tooltip,trigger_word_highlight,usage_stats}.js
+    ComfyUI_Fill-Nodes/web/FL_SystemCheck.js
+    ComfyUI_LayerStyle/js/dz_mtb_widgets.js
+    ComfyUI-Prompt-Assistant/js/node/captionFrame.js
+
+None carried an `API-GAP:` marker, so no report mentioned them — the marker
+tally does not see a regression nobody wrote down. Re-run the sweep in
+`scripts/magic-patch/verify/` after fixing.
