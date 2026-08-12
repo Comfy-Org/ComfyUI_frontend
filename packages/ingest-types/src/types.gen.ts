@@ -2103,6 +2103,10 @@ export type JobEntry = {
     [key: string]: unknown
   }
   /**
+   * Count of outputs classified as previewable media types (images, video, audio, 3D, text) — a subset of outputs_count (omitted for non-terminal states)
+   */
+  previewable_outputs_count?: number
+  /**
    * User-friendly job status
    */
   status: 'pending' | 'in_progress' | 'completed' | 'failed' | 'cancelled'
@@ -2277,6 +2281,10 @@ export type JobDetailResponse = {
   preview_output?: {
     [key: string]: unknown
   }
+  /**
+   * Count of outputs classified as previewable media types (images, video, audio, 3D, text) — a subset of outputs_count (omitted for non-terminal states)
+   */
+  previewable_outputs_count?: number
   /**
    * User-friendly job status
    */
@@ -3368,7 +3376,7 @@ export type CancelSubscriptionResponse = {
    */
   billing_op_id: string
   /**
-   * The date when the subscription will end (end of current billing period)
+   * The terminal cancellation time for a delinquent Stripe subscription, otherwise the end of the current billing period
    */
   cancel_at: string
 }
@@ -3401,8 +3409,8 @@ export type BulkRevokeApiKeysResponse = {
 export type BillingStatusResponse = {
   /**
    * Present when the pending operation cannot proceed without the
-   * customer. Today this is a Stripe-hosted payment page for a
-   * subscription whose first invoice needs authentication (SCA/3DS);
+   * customer. Today this is a Stripe-hosted payment page for an invoice
+   * needing authentication (SCA/3DS);
    * send the customer there to complete payment. Mirrors the field of
    * the same name on BillingOpStatusResponse.
    *
@@ -3438,10 +3446,21 @@ export type BillingStatusResponse = {
    * client recover a payment it has lost the local reference to — a
    * cleared browser, or simply a different device from the one that
    * started it — by polling /billing/ops/{id} without having stored the
-   * id. Absent when no operation is pending.
+   * id. Absent when no operation is pending, and for non-owners, who
+   * cannot act on one.
    *
    */
   pending_billing_op_id?: string
+  /**
+   * How the client should resume `pending_billing_op_id`, not the
+   * internal operation type: a plan change reports `subscription`,
+   * because it resumes exactly like one. A top-up resumes with a
+   * different timeout and completion path, so the two cannot be
+   * told apart by the client. Present whenever
+   * `pending_billing_op_id` is.
+   *
+   */
+  pending_billing_op_type?: 'subscription' | 'topup'
   /**
    * Plan identifier (e.g., standard-monthly, team-pro-annual)
    */
@@ -4581,13 +4600,55 @@ export type ListAssetsData = {
   path?: never
   query?: {
     /**
-     * Filter assets that have ALL of these tags
+     * Deprecated alias for `tags_all`, kept permanently for existing
+     * callers. Filter assets that have ALL of these tags. Combining it
+     * with `tags_all`, or exceeding 100 tags (counted after removing
+     * empty values and duplicates), returns 400 `INVALID_TAG_FILTER`.
+     *
+     *
+     * @deprecated
      */
     include_tags?: Array<string>
     /**
-     * Exclude assets that have ANY of these tags
+     * Deprecated alias for `tags_none`, kept permanently for existing
+     * callers. Exclude assets that have ANY of these tags. Combining it
+     * with `tags_none`, or exceeding 100 tags (counted after removing
+     * empty values and duplicates), returns 400 `INVALID_TAG_FILTER`.
+     *
+     *
+     * @deprecated
      */
     exclude_tags?: Array<string>
+    /**
+     * Filter assets that have ALL of these tags. Tag values are opaque
+     * byte-strings compared exactly and case-sensitively; unknown tags
+     * are not an error — they simply match nothing. Replaces the
+     * deprecated `include_tags`. Sending both spellings, listing the
+     * same tag here and in `tags_none`, or exceeding 100 tags per list
+     * (counted after removing empty values and duplicates) returns 400
+     * `INVALID_TAG_FILTER`.
+     *
+     */
+    tags_all?: Array<string>
+    /**
+     * Filter assets that have AT LEAST ONE of these tags. Combines with
+     * `tags_all`/`tags_none` by intersection (`tags_none` always wins;
+     * overlap with `tags_none` is allowed and leaves a dead term).
+     * Supplying a positive tag filter (`tags_any`, `tags_all`, or
+     * `include_tags`) replaces the default category filter that is
+     * otherwise applied. Lists over 100 tags (counted after removing
+     * empty values and duplicates) return 400 `INVALID_TAG_FILTER`.
+     *
+     */
+    tags_any?: Array<string>
+    /**
+     * Exclude assets that have ANY of these tags. Replaces the
+     * deprecated `exclude_tags`. Sending both spellings, or exceeding
+     * 100 tags per list (counted after removing empty values and
+     * duplicates), returns 400 `INVALID_TAG_FILTER`.
+     *
+     */
+    tags_none?: Array<string>
     /**
      * Filter assets where name contains this substring (case-insensitive)
      */
@@ -5545,13 +5606,47 @@ export type GetAssetTagHistogramData = {
   path?: never
   query?: {
     /**
-     * Filter assets that have ALL of these tags
+     * Deprecated alias for `tags_all`, kept permanently for existing
+     * callers. Filter assets that have ALL of these tags. The same
+     * combination and list-size rules as on `/api/assets` apply
+     * (400 `INVALID_TAG_FILTER`).
+     *
+     *
+     * @deprecated
      */
     include_tags?: Array<string>
     /**
-     * Exclude assets that have ANY of these tags
+     * Deprecated alias for `tags_none`, kept permanently for existing
+     * callers. Exclude assets that have ANY of these tags. The same
+     * combination and list-size rules as on `/api/assets` apply
+     * (400 `INVALID_TAG_FILTER`).
+     *
+     *
+     * @deprecated
      */
     exclude_tags?: Array<string>
+    /**
+     * Filter assets that have ALL of these tags. Replaces the deprecated
+     * `include_tags`. The same combination and list-size rules as on
+     * `/api/assets` apply (400 `INVALID_TAG_FILTER`).
+     *
+     */
+    tags_all?: Array<string>
+    /**
+     * Filter assets that have AT LEAST ONE of these tags. Combines with
+     * `tags_all`/`tags_none` by intersection (`tags_none` always wins).
+     * The same combination and list-size rules as on `/api/assets` apply
+     * (400 `INVALID_TAG_FILTER`).
+     *
+     */
+    tags_any?: Array<string>
+    /**
+     * Exclude assets that have ANY of these tags. Replaces the deprecated
+     * `exclude_tags`. The same combination and list-size rules as on
+     * `/api/assets` apply (400 `INVALID_TAG_FILTER`).
+     *
+     */
+    tags_none?: Array<string>
     /**
      * Filter assets where name contains this substring (case-insensitive)
      */
@@ -6163,7 +6258,7 @@ export type CancelSubscriptionData = {
 
 export type CancelSubscriptionErrors = {
   /**
-   * Invalid request (e.g., no active subscription)
+   * Invalid request (for example, no active subscription). Ambiguous legacy Stripe state uses code BILLING_RECONCILIATION_REQUIRED.
    */
   400: ErrorResponse
   /**
@@ -7915,7 +8010,7 @@ export type ExecutePromptErrors = {
    */
   402: PromptErrorResponse
   /**
-   * Workspace governance policy blocks one or more partner providers (error.type PARTNER_NODE_DISABLED; error.class_types lists the offending nodes, error.providers the disabled providers)
+   * Workspace governance policy blocks one or more partner providers (error.type PARTNER_NODE_DISABLED; node_errors identifies each denied prompt node, capped at 100 occurrences; error.class_types and error.providers summarize the denied node types and providers)
    */
   403: PromptErrorResponse
   /**
@@ -9966,7 +10061,12 @@ export type CreateWorkflowUploadUrlResponse =
 export type ListWorkspaceApiKeysData = {
   body?: never
   path?: never
-  query?: never
+  query?: {
+    /**
+     * Include revoked API keys in the response
+     */
+    include_revoked?: boolean
+  }
   url: '/api/workspace/api-keys'
 }
 
