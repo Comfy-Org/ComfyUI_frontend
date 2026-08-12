@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -41,17 +41,65 @@ describe('ConfirmationDialogContent', () => {
 
   function renderComponent(props: Partial<Props> = {}) {
     const user = userEvent.setup()
-    render(ConfirmationDialogContent, {
+    const { container } = render(ConfirmationDialogContent, {
       global: { plugins: [i18n] },
       props: {
+        title: 'Test title',
         message: 'Test message',
         type: 'default',
         onConfirm: vi.fn(),
         ...props
       } as Props
     })
-    return { user }
+    return { user, container }
   }
+
+  it('renders the title in the modal header', () => {
+    renderComponent({ title: 'Delete workflow?' })
+    expect(
+      screen.getByRole('heading', { name: 'Delete workflow?' })
+    ).toBeInTheDocument()
+  })
+
+  it('puts the title-id passed by GlobalDialog on the heading so the dialog keeps its accessible name', () => {
+    render(ConfirmationDialogContent, {
+      global: { plugins: [i18n] },
+      props: {
+        title: 'Export Workflow',
+        message: 'Enter the filename:',
+        type: 'default',
+        onConfirm: vi.fn()
+      },
+      attrs: { 'title-id': 'global-prompt' }
+    })
+
+    expect(
+      screen.getByRole('heading', { name: 'Export Workflow' })
+    ).toHaveAttribute('id', 'global-prompt')
+  })
+
+  it('puts the description-id on the message so the dialog can describe itself', () => {
+    renderComponent({
+      message: 'This action cannot be undone.',
+      descriptionId: 'global-prompt-description'
+    })
+
+    expect(screen.getByText('This action cannot be undone.')).toHaveAttribute(
+      'id',
+      'global-prompt-description'
+    )
+  })
+
+  it('closes the dialog when the header close button is clicked', async () => {
+    const { user, container } = renderComponent()
+    const closeSpy = vi.spyOn(useDialogStore(), 'closeDialog')
+
+    await user.click(
+      within(container as HTMLElement).getByRole('button', { name: 'Close' })
+    )
+
+    expect(closeSpy).toHaveBeenCalledOnce()
+  })
 
   it('renders long messages without breaking layout', () => {
     const longFilename =
