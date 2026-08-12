@@ -83,6 +83,48 @@ const BUILTIN_MEMBERS: ReadonlySet<string> = new Set(
 )
 
 /**
+ * DOM members, which can never be published API members.
+ *
+ * The handle-receiver list includes `input` and `output`, and a pack that
+ * writes `const input = document.createElement('input')` then calls
+ * `input.focus()` was rejected for inventing `focus`. Allowing these cannot
+ * mask a real invention: nothing here will ever be added to the node API.
+ */
+const DOM_MEMBERS: ReadonlySet<string> = new Set([
+  'addEventListener',
+  'removeEventListener',
+  'dispatchEvent',
+  'focus',
+  'blur',
+  'click',
+  'select',
+  'scrollIntoView',
+  'getBoundingClientRect',
+  'appendChild',
+  'removeChild',
+  'insertBefore',
+  'replaceChildren',
+  'querySelector',
+  'querySelectorAll',
+  'setAttribute',
+  'getAttribute',
+  'removeAttribute',
+  'closest',
+  'contains',
+  'classList',
+  'dataset',
+  'style',
+  'textContent',
+  'innerHTML',
+  'innerText',
+  'checked',
+  'placeholder',
+  'disabled',
+  'parentElement',
+  'files'
+])
+
+/**
  * A member read off a handle, rather than off any object at all.
  *
  * The receiver list is the names conversions actually bind handles to; a
@@ -542,7 +584,8 @@ const checks: readonly Check[] = [
         (name) =>
           !before.has(name) &&
           !API_MEMBERS.has(name) &&
-          !BUILTIN_MEMBERS.has(name)
+          !BUILTIN_MEMBERS.has(name) &&
+          !DOM_MEMBERS.has(name)
       )
       return unknown.length
         ? result(
