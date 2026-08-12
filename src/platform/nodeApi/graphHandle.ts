@@ -13,8 +13,8 @@ import { toNodeId } from '@/types/nodeId'
 import { ComfyApiError } from './errors'
 import { createGroupHandles } from './groupHandle'
 import type { GroupHandle } from './groupHandle'
+import type { Point,NodeHandle } from './nodeHandle'
 import { createNodeHandles } from './nodeHandle'
-import type { NodeHandle } from './nodeHandle'
 import {
   createInputCollection,
   createOutputCollection,
@@ -85,6 +85,16 @@ export interface GraphHandle {
    * the canvas allows, so a stored extreme cannot strand the user.
    */
   setZoom(scale: number): void
+  /**
+   * Where the pointer is, in graph space — the coordinates {@link nodeAt} and
+   * {@link NodeHandle.setPosition} use.
+   *
+   * A pack adding a node from a menu put it under the cursor. Without this the
+   * node lands at the graph origin, which on any panned view is off screen.
+   *
+   * `undefined` when there is no canvas to measure against.
+   */
+  pointerPosition(): Point | undefined
   /**
    * The topmost node at a point in graph space, if any.
    *
@@ -255,6 +265,13 @@ export function createGraphApi(
     groups() {
       const groups = getGraph()?._groups ?? []
       return Object.freeze(groups.map(groupHandle))
+    },
+
+    pointerPosition() {
+      const canvas = LGraphCanvas.active_canvas
+      if (!canvas) return undefined
+      const [x, y] = canvas.graph_mouse
+      return Object.freeze({ x, y })
     },
 
     setZoom(scale) {
