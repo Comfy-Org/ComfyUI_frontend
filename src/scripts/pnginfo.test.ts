@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
-import { api } from './api'
+import { EmbeddingsApiError, api } from './api'
 import { getFromAvifFile } from './metadata/avif'
 import { getFromFlacFile } from './metadata/flac'
 import { getFromPngFile } from './metadata/png'
@@ -18,6 +18,11 @@ import {
 } from './pnginfo'
 
 vi.mock('./api', () => ({
+  EmbeddingsApiError: class EmbeddingsApiError extends Error {
+    constructor(readonly status: number) {
+      super(`Failed to load embeddings: ${status}`)
+    }
+  },
   api: {
     getEmbeddings: vi.fn()
   }
@@ -275,6 +280,17 @@ describe('importA1111', () => {
     expect(imported).toBe('core-nodes-unavailable')
     expect(beforeGraphClear).not.toHaveBeenCalled()
     expect(clear).not.toHaveBeenCalled()
+  })
+
+  it('returns embeddings-unavailable when loading embeddings fails', async () => {
+    const graph = new LGraph()
+    const beforeGraphClear = vi.fn()
+    vi.mocked(api.getEmbeddings).mockRejectedValue(new EmbeddingsApiError(500))
+
+    const imported = await importA1111(graph, parameters, beforeGraphClear)
+
+    expect(imported).toBe('embeddings-unavailable')
+    expect(beforeGraphClear).not.toHaveBeenCalled()
   })
 
   it.each([

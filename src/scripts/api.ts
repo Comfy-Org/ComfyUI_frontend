@@ -210,6 +210,13 @@ interface ApiMessage<T extends keyof ApiCalls> {
 
 export class UnauthorizedError extends Error {}
 
+export class EmbeddingsApiError extends Error {
+  constructor(readonly status: number) {
+    super(`Failed to load embeddings: ${status}`)
+    this.name = 'EmbeddingsApiError'
+  }
+}
+
 /** Ensures workers get a fair shake. */
 type Unionize<T> = T[keyof T]
 
@@ -1005,6 +1012,9 @@ export class ComfyApi extends EventTarget {
    */
   async getEmbeddings(): Promise<EmbeddingsResponse> {
     const resp = await this.fetchApi('/embeddings', { cache: 'no-store' })
+    if (!resp.ok) {
+      throw new EmbeddingsApiError(resp.status)
+    }
     return await resp.json()
   }
 

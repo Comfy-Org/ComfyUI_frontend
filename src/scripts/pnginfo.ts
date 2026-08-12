@@ -1,7 +1,8 @@
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { EmbeddingsResponse } from '@/schemas/apiSchema'
 
-import { api } from './api'
+import { EmbeddingsApiError, api } from './api'
 import { getFromAvifFile } from './metadata/avif'
 import { getFromFlacFile } from './metadata/flac'
 import { getFromPngFile } from './metadata/png'
@@ -198,6 +199,7 @@ export type A1111ImportOutcome =
   | 'imported'
   | 'not-a1111'
   | 'core-nodes-unavailable'
+  | 'embeddings-unavailable'
 
 export async function importA1111(
   graph: LGraph,
@@ -207,7 +209,15 @@ export async function importA1111(
   const normalizedParameters = normalizeA1111Parameters(parameters)
   const p = normalizedParameters.lastIndexOf('\nSteps:')
   if (p > -1) {
-    const embeddings = await api.getEmbeddings()
+    let embeddings: EmbeddingsResponse
+    try {
+      embeddings = await api.getEmbeddings()
+    } catch (error) {
+      if (error instanceof EmbeddingsApiError) {
+        return 'embeddings-unavailable'
+      }
+      throw error
+    }
     const matchResult = normalizedParameters
       .substr(p)
       .split('\n')[1]

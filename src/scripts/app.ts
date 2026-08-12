@@ -2026,6 +2026,10 @@ export class ComfyApp {
         useToastStore().addAlert(t('toastMessages.a1111CoreNodesUnavailable'))
         return
       }
+      if (outcome === 'embeddings-unavailable') {
+        useToastStore().addAlert(t('toastMessages.a1111EmbeddingsUnavailable'))
+        return
+      }
       if (outcome === 'not-a1111') {
         this.showErrorOnFileLoad(file)
         return

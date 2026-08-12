@@ -1598,6 +1598,23 @@ describe('ComfyApp', () => {
       expect(mockWorkflowService.afterLoadNewGraph).not.toHaveBeenCalled()
     })
 
+    it('shows a server error when A1111 embeddings are unavailable', async () => {
+      const graph = new LGraph()
+      const parameters = 'positive\nNegative prompt: negative\nSteps: 20'
+      Reflect.set(app, 'rootGraphInternal', graph)
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue({ parameters })
+      mockImportA1111.mockResolvedValue('embeddings-unavailable')
+
+      await app.handleFile(createTestFile('a1111.png', 'image/png'))
+
+      expect(mockToastStore.addAlert).toHaveBeenCalledOnce()
+      expect(mockToastStore.addAlert).toHaveBeenCalledWith(
+        'Could not load embeddings from the server.'
+      )
+      expect(mockWorkflowService.beforeLoadNewGraph).not.toHaveBeenCalled()
+      expect(mockWorkflowService.afterLoadNewGraph).not.toHaveBeenCalled()
+    })
+
     it('awaits persistence and orders its clear callback before setGraph', async () => {
       const graph = new LGraph()
       const parameters = 'positive\nNegative prompt: negative\nSteps: 20'
