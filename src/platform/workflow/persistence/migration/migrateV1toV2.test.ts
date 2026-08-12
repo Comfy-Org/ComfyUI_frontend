@@ -14,12 +14,10 @@ describe('migrateV1toV2', () => {
 
   beforeEach(() => {
     vi.resetModules()
-    localStorage.clear()
     sessionStorage.clear()
   })
 
   afterEach(() => {
-    localStorage.clear()
     sessionStorage.clear()
   })
 

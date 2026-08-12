@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -76,12 +76,7 @@ function renderComponent(showInvoiceHistory?: boolean) {
 
 describe('SubscriptionFooterLinks', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     state.isCloud = true
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   it('renders working support links without a duplicate invoice action', async () => {

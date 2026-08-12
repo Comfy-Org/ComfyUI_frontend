@@ -101,7 +101,6 @@ describe('fetchCloudNodesForBuild', () => {
   })
 
   afterEach(() => {
-    vi.restoreAllMocks()
     process.env.WEBSITE_CLOUD_API_KEY = savedCloudApiKey
   })
 

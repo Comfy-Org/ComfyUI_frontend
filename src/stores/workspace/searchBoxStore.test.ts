@@ -36,8 +36,6 @@ function createMockSettingStore(): ReturnType<typeof useSettingStore> {
 describe('useSearchBoxStore', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-
-    vi.restoreAllMocks()
   })
 
   describe('when user has new search box enabled', () => {
