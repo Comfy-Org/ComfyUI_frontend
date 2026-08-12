@@ -514,13 +514,39 @@ test.describe('autoRun classifier', () => {
       expect(matchesAllowedAutoRunOutcome('TIMEOUT extra', outcomes)).toBe(
         false
       )
-      expect(matchesAllowedAutoRunOutcome('PARTIAL', outcomes)).toBe(false)
+      if (!outcomes.includes('PARTIAL'))
+        expect(matchesAllowedAutoRunOutcome('PARTIAL', outcomes)).toBe(false)
       expect(
         matchesAllowedAutoRunOutcome(
           'EXECUTION_ERROR (Something else broke)',
           outcomes
         )
       ).toBe(false)
+    }
+
+    const partialCases = Object.entries(AUTO_RUN_ALLOWED_FAILURES).flatMap(
+      ([pack, nodes]) =>
+        Object.entries(nodes).flatMap(([node, allowed]) =>
+          allowed.outcomes.includes('PARTIAL')
+            ? [{ key: `${pack}/${node}`, allowed }]
+            : []
+        )
+    )
+    expect(partialCases.map(({ key }) => key).sort()).toEqual([
+      'ComfyUI_AudioTools/AudioSpeechToTextWhisper'
+    ])
+    for (const { allowed } of partialCases) {
+      expect(allowed.requireFailure).toBeUndefined()
+      expect(matchesAllowedAutoRunOutcome('PARTIAL', allowed.outcomes)).toBe(
+        true
+      )
+      expect(
+        matchesAllowedAutoRunOutcome('PARTIAL extra', allowed.outcomes)
+      ).toBe(false)
+      if (!allowed.outcomes.includes('TIMEOUT'))
+        expect(matchesAllowedAutoRunOutcome('TIMEOUT', allowed.outcomes)).toBe(
+          false
+        )
     }
   })
 })
