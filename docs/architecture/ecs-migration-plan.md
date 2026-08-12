@@ -898,7 +898,7 @@ caller-specific compensation.
 | Disconnect, register, then restore       | Callbacks and multi-store cleanup make the removed state unsafe to reconstruct.    |
 | Add caller-specific failure compensation | Spreads rollback policy across paths instead of establishing one transaction seam. |
 | Normalize only in `createSubgraph`       | Misses workflow load, paste, and conversion paths and can mutate caller input.     |
-| Add pseudo-live `LinkMap` iterators      | Does not preserve native iterator semantics; snapshot compatibility needs design.  |
+| Add pseudo-live `LinkMap` iterators      | Does not preserve native iterator semantics; cached snapshots preserve it instead. |
 
 **Phase 4 baseline semantics:**
 
@@ -979,8 +979,11 @@ remaining decisions for later work.
   surface.
 - Keep registration failure as an explicit return value rather than adding
   thrown errors.
-- Keep `LinkMap` snapshot iterator compatibility deferred. Do not add
-  pseudo-live iterators as part of this work.
+- `LinkMap` preserves snapshot iterator compatibility with a cached owner-local
+  view. The link store invalidates that view only when registration, deletion,
+  clearing, or a regular/floating transition changes membership; endpoint-only
+  updates do not rebuild it. Do not replace this with pseudo-live iterators or
+  an independently authoritative `_links` mirror.
 - Graph teardown now finishes exact detachment, defensive root-bucket clearing,
   graph reset, and canvas clearing after a lifecycle callback fails, then
   propagates that same failure. Lifecycle callbacks remain fail-fast, so later

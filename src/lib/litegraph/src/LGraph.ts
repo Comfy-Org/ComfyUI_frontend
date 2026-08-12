@@ -33,7 +33,7 @@ import {
   observeRerouteId
 } from './idAllocation'
 import type { LGraphState } from './idAllocation'
-import { useLinkStore } from '@/stores/linkStore'
+import { getLinkStoreRevision, useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
 import {
@@ -541,18 +541,12 @@ export class LGraph
     const links = new LinkMap(
       () =>
         getActivePinia() && this.rootGraph ? graphScopeOf(this) : undefined,
-      (scope, id) => {
-        const topology = useLinkStore().getTopology(scope.rootGraphId, id)
-        return topology?.graphId === scope.owningGraphId &&
-          !isFloatingTopology(topology)
-          ? resolveLinkTopology(topology)
-          : undefined
-      },
       (scope) =>
         [...useLinkStore().graphTopologies(scope)]
           .filter((topology) => !isFloatingTopology(topology))
           .map(resolveLinkTopology)
           .filter((link): link is LLink => link !== undefined),
+      getLinkStoreRevision,
       (link) => this._addLink(link),
       (id) => this._removeLink(id)
     )
@@ -566,18 +560,12 @@ export class LGraph
     this.floatingLinks = new LinkMap(
       () =>
         getActivePinia() && this.rootGraph ? graphScopeOf(this) : undefined,
-      (scope, id) => {
-        const topology = useLinkStore().getTopology(scope.rootGraphId, id)
-        return topology?.graphId === scope.owningGraphId &&
-          isFloatingTopology(topology)
-          ? resolveLinkTopology(topology)
-          : undefined
-      },
       (scope) =>
         [...useLinkStore().graphTopologies(scope)]
           .filter(isFloatingTopology)
           .map(resolveLinkTopology)
           .filter((link): link is LLink => link !== undefined),
+      getLinkStoreRevision,
       (link) => this.addFloatingLink(link),
       (id) => {
         const link = this.floatingLinks.get(id)

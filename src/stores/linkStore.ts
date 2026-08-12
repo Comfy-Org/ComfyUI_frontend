@@ -82,6 +82,11 @@ interface RootTopologyBucket {
 }
 
 const EMPTY_LINKS: ReadonlySet<LinkTopology> = new Set()
+let revision = 0
+
+export function getLinkStoreRevision(): number {
+  return revision
+}
 
 /**
  * A link is keyed by its target input slot only when that slot uniquely
@@ -228,7 +233,9 @@ export const useLinkStore = defineStore('link', () => {
     const targetBucket = bucket ?? rootBucket(scope.rootGraphId)
     if (expected) displace(targetBucket, expected)
     const owned = Object.assign(replacement, { graphId: scope.owningGraphId })
-    return placeValidated(targetBucket, owned)
+    const placed = placeValidated(targetBucket, owned)
+    revision++
+    return placed
   }
 
   /** Removes a link placement that has already been validated. */
@@ -255,6 +262,7 @@ export const useLinkStore = defineStore('link', () => {
     if (!bucket || !ownsPlacement(scope, bucket, topology)) return false
     displace(bucket, topology)
     if (bucket.byId.size === 0) roots.delete(scope.rootGraphId)
+    revision++
     return true
   }
 
@@ -331,6 +339,15 @@ export const useLinkStore = defineStore('link', () => {
   ): EndpointUpdateResult<LinkTopology[]> {
     const error = validateEndpointUpdates(scope, updates, removals)
     if (error) return { ok: false, error }
+    const changesLinkView =
+      removals.length > 0 ||
+      updates.some(
+        ({ topology, patch }) =>
+          isFloatingTopology({
+            ...toRaw(topology),
+            ...patchedEndpoints(topology, patch)
+          }) !== isFloatingTopology(topology)
+      )
 
     const bucket = rootBucket(scope.rootGraphId)
     for (const { topology } of updates) displace(bucket, topology)
@@ -341,6 +358,7 @@ export const useLinkStore = defineStore('link', () => {
       return placeValidated(bucket, topology)
     })
     if (bucket.byId.size === 0) roots.delete(scope.rootGraphId)
+    if (changesLinkView) revision++
     return { ok: true, value }
   }
 
@@ -420,7 +438,7 @@ export const useLinkStore = defineStore('link', () => {
   }
 
   function clearGraph(graphId: RootGraphId): void {
-    roots.delete(graphId)
+    if (roots.delete(graphId)) revision++
   }
 
   function clearOwner(scope: GraphScope): void {
@@ -432,6 +450,7 @@ export const useLinkStore = defineStore('link', () => {
       if (topology) displace(bucket, topology)
     }
     if (bucket.byId.size === 0) roots.delete(scope.rootGraphId)
+    revision++
   }
 
   return {

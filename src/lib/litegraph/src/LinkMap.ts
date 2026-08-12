@@ -4,13 +4,13 @@ import type { LinkId } from '@/types/linkId'
 import type { LLink } from './LLink'
 
 export class LinkMap extends Map<LinkId, LLink> {
+  private cachedRevision = -1
+  private cachedLinks = new Map<LinkId, LLink>()
+
   constructor(
     private readonly scope: () => GraphScope | undefined,
-    private readonly getLink: (
-      scope: GraphScope,
-      id: LinkId
-    ) => LLink | undefined,
     private readonly links: (scope: GraphScope) => Iterable<LLink>,
+    private readonly revision: () => number,
     private readonly add: (link: LLink) => void,
     private readonly remove: (id: LinkId) => boolean
   ) {
@@ -18,7 +18,7 @@ export class LinkMap extends Map<LinkId, LLink> {
   }
 
   override get size(): number {
-    return this.snapshot().size
+    return this.current().size
   }
 
   override clear(): void {
@@ -30,7 +30,7 @@ export class LinkMap extends Map<LinkId, LLink> {
   }
 
   override entries(): MapIterator<[LinkId, LLink]> {
-    return this.snapshot().entries()
+    return this.current().entries()
   }
 
   override forEach(
@@ -41,8 +41,7 @@ export class LinkMap extends Map<LinkId, LLink> {
   }
 
   override get(id: LinkId): LLink | undefined {
-    const scope = this.scope()
-    return scope ? this.getLink(scope, id) : undefined
+    return this.current().get(id)
   }
 
   override has(id: LinkId): boolean {
@@ -50,7 +49,7 @@ export class LinkMap extends Map<LinkId, LLink> {
   }
 
   override keys(): MapIterator<LinkId> {
-    return this.snapshot().keys()
+    return this.current().keys()
   }
 
   override set(id: LinkId, link: LLink): this {
@@ -65,18 +64,22 @@ export class LinkMap extends Map<LinkId, LLink> {
   }
 
   override values(): MapIterator<LLink> {
-    return this.snapshot().values()
+    return this.current().values()
   }
 
   override [Symbol.iterator](): MapIterator<[LinkId, LLink]> {
     return this.entries()
   }
 
-  private snapshot(): Map<LinkId, LLink> {
+  private current(): Map<LinkId, LLink> {
+    const revision = this.revision()
+    if (revision === this.cachedRevision) return this.cachedLinks
+
     const scope = this.scope()
-    if (!scope) return new Map()
-    return new Map(
-      [...this.links(scope)].map((link) => [link.id, link] as const)
-    )
+    this.cachedRevision = revision
+    this.cachedLinks = scope
+      ? new Map([...this.links(scope)].map((link) => [link.id, link] as const))
+      : new Map()
+    return this.cachedLinks
   }
 }

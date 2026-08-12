@@ -466,4 +466,35 @@ describe('LLink ↔ linkStore integration', () => {
       true
     )
   })
+
+  it('reuses link views until membership changes', () => {
+    const graph = new LGraph()
+    const a = new LGraphNode('A')
+    const b = new LGraphNode('B')
+    a.addOutput('out', 'INT')
+    b.addInput('in0', 'INT')
+    b.addInput('in1', 'INT')
+    graph.add(a)
+    graph.add(b)
+    const link = a.connect(0, b, 0)!
+    const store = useLinkStore()
+    const graphTopologies = vi.spyOn(store, 'graphTopologies')
+
+    expect(graph.links.size).toBe(1)
+    const traversalCount = graphTopologies.mock.calls.length
+    expect([...graph.links.values()]).toEqual([link])
+    expect(graph.links.get(link.id)).toBe(link)
+    expect(graphTopologies).toHaveBeenCalledTimes(traversalCount)
+
+    link.target_slot = 1
+
+    expect(graph.links.get(link.id)).toBe(link)
+    expect(graphTopologies).toHaveBeenCalledTimes(traversalCount)
+
+    link.target_id = UNASSIGNED_NODE_ID
+
+    expect(graph.links.has(link.id)).toBe(false)
+    expect(graph.floatingLinks.get(link.id)).toBe(link)
+    expect(graphTopologies.mock.calls.length).toBeGreaterThan(traversalCount)
+  })
 })
