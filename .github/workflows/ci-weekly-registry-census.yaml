@@ -107,3 +107,69 @@ jobs:
         with:
           path: .census
           key: registry-corpus-${{ hashFiles('.census/corpus.lock.json') }}
+
+  # The execution rung between the census (reads all packs) and the E2E
+  # gates (browser + backend): every JS-shipping pack's real extension code
+  # is imported and driven against the real frontend runtime under vitest -
+  # registration lifecycle, a user-operation battery, serialize/reload.
+  # Radar, never a gate: pack failures live in the per-pack rows and the
+  # summary; the job fails only mechanically (a spec that produced no row).
+  # Sharded 4 ways; vitest additionally parallelizes per core within a shard
+  # (~4.7s of test time per pack, measured).
+  ecosystem-matrix:
+    needs: registry-census
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      # The census job above saved the corpus this run; same-run caches are
+      # visible to later jobs. Restore-only - the matrix never writes it.
+      - name: Restore corpus cache
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: .census
+          key: registry-corpus-${{ github.run_id }}-matrix
+          restore-keys: registry-corpus-
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+        with:
+          include_build_step: false
+
+      - name: Build shard fixture
+        run: python3 scripts/registry-census/build_matrix.py --shard ${{ matrix.shard }}/4
+
+      - name: Run the matrix
+        run: |
+          set -o pipefail
+          built=$(ls src/__ecs_matrix__/*.matrix.test.ts 2>/dev/null | wc -l)
+          if [ "$built" = 0 ]; then
+            echo "::error::no pack specs built - corpus missing or empty"
+            exit 1
+          fi
+          MATRIX_OUT="$PWD/matrix-rows" pnpm exec vitest run             --config vitest.matrix.config.mts 2>&1 | tail -25             || echo "vitest exited nonzero - tolerated, pack code may leak unhandled errors"
+          rows=$(ls matrix-rows/*.json 2>/dev/null | wc -l)
+          echo "specs=$built rows=$rows"
+          if [ "$rows" -ne "$built" ]; then
+            echo "::error::matrix wrote $rows rows for $built specs - harness failure, not pack noise"
+            exit 1
+          fi
+
+      - name: Summarize
+        if: always()
+        run: MATRIX_OUT="$PWD/matrix-rows" python3 scripts/registry-census/summarize_matrix.py
+
+      - name: Upload rows
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: ecosystem-matrix-shard-${{ matrix.shard }}
+          path: matrix-rows/
+          retention-days: 30
+          if-no-files-found: warn

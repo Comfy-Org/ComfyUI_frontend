@@ -777,6 +777,7 @@ export default defineConfig({
       }
     },
     exclude: [
+      'src/__ecs_matrix__/**',
       '**/node_modules/**',
       '**/dist/**',
       '**/cypress/**',

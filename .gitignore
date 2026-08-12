@@ -101,3 +101,5 @@ vitest.config.*.timestamp*
 .amp
 # Registry census working tree (scripts/registry-census) - corpus, lockfile, results
 .census/
+# Ecosystem matrix fixture (scripts/registry-census/build_matrix.py) - generated per-pack specs
+src/__ecs_matrix__/
