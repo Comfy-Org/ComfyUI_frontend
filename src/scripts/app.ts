@@ -30,6 +30,7 @@ import type {
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { markAppReady, notifyWorkflowLoaded } from '@/platform/nodeApi/appReady'
 import { notifyDefsRefreshed } from '@/platform/nodeApi/defsRegistry'
+import { mayRun } from '@/platform/nodeApi/queueHandle'
 import { installComfyApi } from '@/platform/nodeApi/comfyApi'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
@@ -1714,6 +1715,12 @@ export class ComfyApp {
         )
 
         const isPartialExecution = !!queueNodeIds?.length
+
+        // Packs may hold or cancel a run — a confirmation, a validation. Once
+        // per queued item rather than per batch iteration: the user pressed
+        // Run once and should be asked once.
+        if (!(await mayRun())) continue
+
         for (let i = 0; i < batchCount; i++) {
           let executionContext: ExecutionContext | undefined
           if (telemetry) {
