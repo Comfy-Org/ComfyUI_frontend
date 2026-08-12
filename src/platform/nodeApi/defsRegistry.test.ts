@@ -267,6 +267,47 @@ describe('defs.extend', () => {
       expect(node.properties['x']).toBe(7)
     })
 
+    it('names the node at the other end of a new connection', () => {
+      // Packs read link_info.origin_id to decide what the new neighbour means.
+      // Knowing only that something connected forced a re-walk of the graph.
+      const seen: unknown[] = []
+      const target = addNode((registry) =>
+        registry
+          .forMajor((id) => comfy.graph.node(id)!)
+          .extend('KSampler', (b) =>
+            b.onConnectionsChanged((_n, e) => seen.push(e))
+          )
+      )
+      target.addInput('in', 'IMAGE')
+      const source = new LGraphNode('Src')
+      source.addOutput('out', 'IMAGE')
+      graph.add(source)
+
+      source.connect(0, target, 0)
+
+      expect(seen.at(-1)).toMatchObject({
+        side: 'input',
+        connected: true,
+        peerNodeId: String(source.id),
+        peerIndex: 0
+      })
+    })
+
+    it('reports a resize', () => {
+      const sizes: unknown[] = []
+      const node = addNode((registry) =>
+        registry
+          .forMajor((id) => comfy.graph.node(id)!)
+          .extend('KSampler', (b) =>
+            b.onResized((_n, size) => sizes.push([...size]))
+          )
+      )
+
+      node.setSize([320, 180])
+
+      expect(sizes.at(-1)).toEqual([320, 180])
+    })
+
     it('fires onCreated once the node is addressable', () => {
       const seen: (string | undefined)[] = []
       const node = addNode((registry) =>
