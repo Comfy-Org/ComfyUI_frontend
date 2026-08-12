@@ -33,6 +33,44 @@ export interface PropSpec<TTarget> {
   readonlyHint?: string
 }
 
+/**
+ * Keys the language and common tooling probe on any object. Warning about
+ * these would fire on `await handle`, `JSON.stringify(handle)`, a spread, or a
+ * devtools inspection — none of which are a pack's mistake.
+ */
+const PROBED_KEYS = new Set([
+  'then',
+  'toJSON',
+  'constructor',
+  'inspect',
+  'nodeType',
+  '$$typeof'
+])
+
+/** Warned keys, so a read in a draw loop cannot flood the console. */
+const warnedUnknownKeys = new Set<string>()
+
+/**
+ * An unknown member reads as `undefined`, which is how dead code survives: a
+ * conversion kept `node.graph.isRootGraph` long after handles stopped having a
+ * `graph`, and the branch simply never ran. Writes have always thrown; reads
+ * stay silent so feature detection keeps working, but they say so once.
+ */
+function warnUnknownRead(kind: string, key: string): void {
+  const seen = `${kind}.${key}`
+  if (PROBED_KEYS.has(key) || warnedUnknownKeys.has(seen)) return
+  warnedUnknownKeys.add(seen)
+  console.warn(
+    `[nodeApi] '${key}' is not a member of a ${kind} handle; it reads as undefined. ` +
+      `If this is a check for a newer API, use \`typeof handle.${key} === 'function'\`.`
+  )
+}
+
+/** Test seam. */
+export function resetUnknownReadWarnings(): void {
+  warnedUnknownKeys.clear()
+}
+
 export interface HandleSpec<TTarget> {
   /** Used in errors and `Symbol.toStringTag`, e.g. 'node'. */
   readonly kind: string
@@ -224,6 +262,7 @@ export function createHandleFactory<TTarget>(
           if (target === undefined) return identityFallback(key, id)
           return props[key].get(target)
         }
+        warnUnknownRead(spec.kind, key)
         return undefined
       },
 

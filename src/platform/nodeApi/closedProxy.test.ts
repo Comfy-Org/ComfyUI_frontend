@@ -1,6 +1,6 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { createHandleFactory } from './closedProxy'
+import { createHandleFactory, resetUnknownReadWarnings } from './closedProxy'
 import { ComfyDeletedError, ComfyReadonlyError } from './errors'
 
 /** Stands in for an internal entity. Nothing here may escape a handle. */
@@ -275,5 +275,42 @@ describe('closed proxy handles', () => {
       // slots. Exact counts are not guaranteed by the spec.
       expect(factory.cacheSize).toBeLessThan(100)
     })
+  })
+})
+
+describe('reading a member that does not exist', () => {
+  function handleForTest() {
+    const store = new Map([['1', new SecretEntity('1')]])
+    return createHandleFactory<SecretEntity>(
+      { kind: 'node', props: { id: { get: (t) => t.id } } },
+      (id) => store.get(id)
+    ).handleFor('1')
+  }
+
+  beforeEach(resetUnknownReadWarnings)
+
+  it('reads as undefined and says so once', () => {
+    // A conversion kept `node.graph.isRootGraph` long after handles stopped
+    // having a `graph`, and the branch simply never ran.
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const handle = handleForTest()
+
+    expect((handle as Record<string, unknown>)['graph']).toBeUndefined()
+    expect((handle as Record<string, unknown>)['graph']).toBeUndefined()
+
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(warn.mock.calls[0][0]).toContain("'graph' is not a member")
+  })
+
+  it('stays quiet for keys the language probes', () => {
+    // Warning here would fire on `await handle`, JSON.stringify, or a spread.
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    warn.mockClear()
+    const handle = handleForTest() as Record<string, unknown>
+
+    void handle['then']
+    void handle['toJSON']
+
+    expect(warn).not.toHaveBeenCalled()
   })
 })
