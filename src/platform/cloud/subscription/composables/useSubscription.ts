@@ -348,16 +348,35 @@ function useSubscriptionInternal() {
     }
   }
 
-  // Coalesce concurrent callers so an auth/session-rotation burst mints one fetch.
-  let inFlightStatusFetch: Promise<BillingStatusResponse | null> | null = null
+  interface InFlightStatusFetch {
+    ownerUid: string | null
+    promise: Promise<BillingStatusResponse | null>
+  }
+
+  let inFlightStatusFetch: InFlightStatusFetch | null = null
   let latestStatusRequestId = 0
 
   async function fetchSubscriptionStatus(): Promise<BillingStatusResponse | null> {
-    if (inFlightStatusFetch) return inFlightStatusFetch
-    inFlightStatusFetch = performFetchSubscriptionStatus().finally(() => {
-      inFlightStatusFetch = null
-    })
-    return inFlightStatusFetch
+    const currentUid = authStore.currentUser?.uid ?? null
+
+    if (inFlightStatusFetch?.ownerUid === currentUid) {
+      return inFlightStatusFetch.promise
+    }
+
+    if (inFlightStatusFetch !== null) {
+      telemetry?.trackSubscriptionAuthRace?.({ uid_changed: true })
+    }
+
+    const request: InFlightStatusFetch = {
+      ownerUid: currentUid,
+      promise: performFetchSubscriptionStatus().finally(() => {
+        if (inFlightStatusFetch === request) {
+          inFlightStatusFetch = null
+        }
+      })
+    }
+    inFlightStatusFetch = request
+    return request.promise
   }
 
   async function performFetchSubscriptionStatus(): Promise<BillingStatusResponse | null> {

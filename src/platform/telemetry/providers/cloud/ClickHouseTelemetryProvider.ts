@@ -24,22 +24,30 @@ export class ClickHouseTelemetryProvider implements TelemetryProvider {
     this.reportMissingNodes(metadata)
   }
 
-  private reportMissingNodes(metadata: WorkflowImportMetadata): void {
-    if (metadata.missing_node_count <= 0) return
+  trackSubscriptionAuthRace(metadata: { uid_changed: boolean }): void {
+    this.sendEvent('subscription_auth_race', metadata)
+  }
 
+  private sendEvent(
+    eventName: string,
+    eventData: Record<string, unknown>
+  ): void {
     api
       .fetchApi('/internal/cloud_analytics', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          event_name: 'node_missing',
-          event_data: {
-            missing_class_types: metadata.missing_node_types,
-            missing_count: metadata.missing_node_count,
-            source: metadata.open_source ?? 'unknown'
-          }
-        })
+        body: JSON.stringify({ event_name: eventName, event_data: eventData })
       })
       .catch(() => {})
+  }
+
+  private reportMissingNodes(metadata: WorkflowImportMetadata): void {
+    if (metadata.missing_node_count <= 0) return
+
+    this.sendEvent('node_missing', {
+      missing_class_types: metadata.missing_node_types,
+      missing_count: metadata.missing_node_count,
+      source: metadata.open_source ?? 'unknown'
+    })
   }
 }

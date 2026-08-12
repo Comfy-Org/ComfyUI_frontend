@@ -165,6 +165,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackBillingEvent?.(event))
   }
 
+  trackSubscriptionAuthRace(metadata: { uid_changed: boolean }): void {
+    this.dispatch((provider) => provider.trackSubscriptionAuthRace?.(metadata))
+  }
+
   trackRunButton(properties: RunButtonProperties): void {
     this.dispatch((provider) => provider.trackRunButton?.(properties))
   }

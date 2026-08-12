@@ -924,6 +924,8 @@ export interface TelemetryProvider {
 
   trackBillingEvent?(event: BillingTelemetryEvent): void
 
+  trackSubscriptionAuthRace?(metadata: { uid_changed: boolean }): void
+
   // Credit top-up tracking (composition with internal utilities)
   startTopupTracking?(): void
   checkForCompletedTopup?(events: AuditLog[] | undefined | null): boolean
