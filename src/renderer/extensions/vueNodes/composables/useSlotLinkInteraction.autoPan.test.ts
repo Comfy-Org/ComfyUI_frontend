@@ -245,8 +245,6 @@ describe('useSlotLinkInteraction auto-pan', () => {
     }
     mockDs.offset = [0, 0]
     mockDs.scale = 1
-    mockSetDirty.mockClear()
-    mockAdapter.beginFromOutput.mockClear()
     mockLinkConnector.state.snapLinksPos = null
   })
 

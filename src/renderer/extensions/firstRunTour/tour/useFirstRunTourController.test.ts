@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
 import type { DetachedWindowAPI } from 'happy-dom'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick, ref } from 'vue'
 import type { EffectScope, Ref } from 'vue'
@@ -230,8 +228,6 @@ function mountRunButton(
 
 describe('useFirstRunTourController', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.useFakeTimers()
     mocks.canRunWorkflows = ref(true)
     mocks.workflowStatus.value = new Map()
     mocks.executionErrors.hasNodeError = false
@@ -249,9 +245,7 @@ describe('useFirstRunTourController', () => {
   afterEach(() => {
     controllerScope?.stop()
     controllerScope = undefined
-    document.body.innerHTML = ''
     setViewportWidth(1280)
-    vi.useRealTimers()
   })
 
   describe('starting', () => {

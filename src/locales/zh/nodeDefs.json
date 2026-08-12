@@ -5824,6 +5824,9 @@
       "model_number_of_images": {
         "name": "图像数量"
       },
+      "model_quality": {
+        "name": "质量"
+      },
       "model_resolution": {
         "name": "分辨率"
       },
@@ -5862,6 +5865,10 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "用于生成图像的文本提示"
+      },
+      "quality": {
+        "name": "质量",
+        "tooltip": "质量等级，仅 grok-imagine-image-2.0 模型支持。"
       },
       "resolution": {
         "name": "分辨率"
@@ -8928,6 +8935,67 @@
       }
     }
   },
+  "LTXVDualCFGGuider": {
+    "description": "为打包的LTXV-AV latent的视频和音频模态分别设置CFG比例。",
+    "display_name": "LTXV 双CFG引导器",
+    "inputs": {
+      "audio_cfg": {
+        "name": "audio_cfg"
+      },
+      "model": {
+        "name": "model"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "video_cfg": {
+        "name": "video_cfg"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVDurationPredictor": {
+    "description": "使用LTX 2.4时长头（通过ModelPatchLoader加载）预测提示词的自然镜头时长，并将其对齐到VAE的8k+1帧网格。",
+    "display_name": "LTXV 时长预测器",
+    "inputs": {
+      "duration_head": {
+        "name": "duration_head",
+        "tooltip": "通过ModelPatchLoader加载的LTX 2.4时长头。"
+      },
+      "frame_rate": {
+        "name": "frame_rate"
+      },
+      "max_seconds": {
+        "name": "max_seconds"
+      },
+      "min_seconds": {
+        "name": "min_seconds"
+      },
+      "model": {
+        "name": "model"
+      },
+      "positive": {
+        "name": "positive"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "num_frames",
+        "tooltip": null
+      },
+      "1": {
+        "name": "seconds",
+        "tooltip": "原始（未裁剪）预测时长。"
+      }
+    }
+  },
   "LTXVEmptyLatentAudio": {
     "display_name": "LTXV 空音频潜空间",
     "inputs": {
@@ -9047,6 +9115,29 @@
       }
     }
   },
+  "LTXVModalityGuidance": {
+    "description": "LTXV-AV的跨模态（音频-视频）引导。每步额外运行一次前向传播，并断开a2v/v2a跨注意力，然后将结果推向耦合预测——增强音视频同步（如唇形同步）。参考默认modality_scale为3.0。可与双CFG引导器和STG叠加。设置为1.0可禁用（无额外前向）。",
+    "display_name": "LTXV 模态引导（音视频耦合）",
+    "inputs": {
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "modality_scale": {
+        "name": "modality_scale"
+      },
+      "model": {
+        "name": "model"
+      },
+      "start_percent": {
+        "name": "start_percent"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LTXVPreprocess": {
     "display_name": "LTXV预处理",
     "inputs": {
@@ -9158,6 +9249,33 @@
       },
       "1": {
         "name": "audio_latent",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVSpatioTemporalGuidance": {
+    "description": "每步额外运行一次，将选定块的自注意力降级为值直通，然后引导远离该状态——提升空间细节和运动连贯性。",
+    "display_name": "LTXV 时空引导（STG）",
+    "inputs": {
+      "blocks": {
+        "name": "blocks",
+        "tooltip": "用逗号分隔的需扰动的transformer块索引。"
+      },
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "model": {
+        "name": "model"
+      },
+      "scale": {
+        "name": "scale"
+      },
+      "start_percent": {
+        "name": "start_percent"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -10148,6 +10266,121 @@
     "outputs": {
       "0": {
         "name": "条件",
+        "tooltip": null
+      }
+    }
+  },
+  "LtxApi25AudioToVideo": {
+    "description": "根据音频轨生成视频，可选首帧图像。",
+    "display_name": "LTX 2.5 音频转视频",
+    "inputs": {
+      "audio": {
+        "name": "音频",
+        "tooltip": "驱动视频的音频轨。其长度（2-20秒）决定视频时长。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "image": {
+        "name": "图像",
+        "tooltip": "可选，用作视频首帧的图像。"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "prompt": {
+        "name": "提示词"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "用于决定节点是否重新运行的种子；无论种子如何，实际结果都是非确定性的。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LtxApi25ImageToVideo": {
+    "description": "基于起始图像生成专业质量视频，可自定义时长和分辨率。",
+    "display_name": "LTX 2.5 图像转视频",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "image": {
+        "name": "图像",
+        "tooltip": "用作视频首帧的图像。"
+      },
+      "last_frame": {
+        "name": "末帧",
+        "tooltip": "用作视频末帧的图像。"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_duration": {
+        "name": "时长"
+      },
+      "model_fps": {
+        "name": "帧率"
+      },
+      "model_generate_audio": {
+        "name": "生成音频"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "prompt": {
+        "name": "提示词"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "用于决定节点是否重新运行的种子；无论种子如何，实际结果都是非确定性的。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LtxApi25TextToVideo": {
+    "description": "生成专业质量视频，可自定义时长和分辨率。",
+    "display_name": "LTX 2.5 文本转视频",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_duration": {
+        "name": "时长"
+      },
+      "model_fps": {
+        "name": "帧率"
+      },
+      "model_generate_audio": {
+        "name": "生成音频"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "prompt": {
+        "name": "提示词"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "用于决定节点是否重新运行的种子；无论种子如何，实际结果都是非确定性的。"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -11979,6 +12212,17 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "ModelAttentionBackend": {
+    "display_name": "ModelAttentionBackend",
+    "inputs": {
+      "attention": {
+        "name": "attention"
+      },
+      "model": {
+        "name": "model"
       }
     }
   },

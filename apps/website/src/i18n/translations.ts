@@ -1335,6 +1335,15 @@ const translations = {
   },
   'pricing.plan.period': { en: '/month', 'zh-CN': '/月' },
   'pricing.creditsLabel': { en: 'monthly credits', 'zh-CN': '每月积分' },
+  'pricing.banner.title': {
+    en: "Start free. Upgrade when you're ready.",
+    'zh-CN': '免费开始，准备好了再升级。'
+  },
+  'pricing.banner.subtitle': {
+    en: '5 free runs on real GPUs — no credit card required.',
+    'zh-CN': '在真实 GPU 上免费运行 5 次 — 无需信用卡。'
+  },
+  'pricing.banner.cta': { en: 'TRY FREE', 'zh-CN': '免费试用' },
 
   'pricing.feature.educationalSavings': {
     en: 'Educational savings – 10% off',
@@ -2554,20 +2563,20 @@ const translations = {
   // Featured dropdown cards — keys are keyed by parent nav item, not card content,
   // so the copy can be swapped without renaming the key.
   'nav.featuredProductsTitle': {
-    en: 'NEW RELEASE: MINIMAX H3',
-    'zh-CN': '全新发布：MiniMax H3'
+    en: 'NEW RELEASE: LTX 2.5',
+    'zh-CN': '全新发布：LTX 2.5'
   },
   'nav.featuredProductsAlt': {
-    en: 'MiniMax H3 feature image',
-    'zh-CN': 'MiniMax H3 精选图片'
+    en: 'LTX 2.5 feature image',
+    'zh-CN': 'LTX 2.5 精选图片'
   },
   'nav.featuredProductsCta': {
     en: 'TRY WORKFLOW',
     'zh-CN': '试用工作流'
   },
   'nav.featuredProductsCtaAria': {
-    en: 'Try the MiniMax H3 workflow',
-    'zh-CN': '试用 MiniMax H3 工作流'
+    en: 'Try the LTX 2.5 workflow',
+    'zh-CN': '试用 LTX 2.5 工作流'
   },
   'nav.featuredCommunityTitle': {
     en: 'Sky Replacement',
@@ -4807,6 +4816,78 @@ const translations = {
     'zh-CN': '最新发布'
   },
 
+  'ltx.meta.title': {
+    en: 'LTX 2.5 on Comfy — Open-Source AI Video Model',
+    'zh-CN': 'Comfy 上的 LTX 2.5 — 开源 AI 视频模型'
+  },
+  'ltx.meta.description': {
+    en: 'Run LTX 2.5 on Comfy. Open weights, directed on the canvas alongside every other model, on Comfy Cloud or your own GPU.',
+    'zh-CN':
+      '在 Comfy 上运行 LTX 2.5。开放权重，可在画布上与其他所有模型一同执导，支持 Comfy Cloud 或你自己的 GPU。'
+  },
+  'ltx.breadcrumb.model': { en: 'LTX 2.5', 'zh-CN': 'LTX 2.5' },
+  'ltx.breadcrumb.updated': {
+    en: 'Updated August 2026',
+    'zh-CN': '更新于 2026 年 8 月'
+  },
+  'ltx.hero.title': {
+    en: 'LTX 2.5 is here',
+    'zh-CN': 'LTX 2.5 已上线'
+  },
+  'ltx.hero.description': {
+    en: 'LTX is the fastest video generation model on the planet, and this version sharpens prompt adherence, visuals, and audio quality across the board. With a new Diffusion Fidelity Rendering capability, fine textures, faces, and complex shots hold up at cinematic-grade detail.',
+    'zh-CN':
+      'LTX 是全球最快的视频生成模型，这一版本全面提升了提示词遵循度、画面表现与音频质量。凭借全新的 Diffusion Fidelity Rendering 能力，细腻的纹理、人物面部与复杂镜头都能保持电影级的细节。'
+  },
+  'ltx.hero.tagOpenSource': { en: 'Open Source', 'zh-CN': '开源' },
+  'ltx.hero.tagPartnerNode': { en: 'Partner Node', 'zh-CN': '合作伙伴节点' },
+  'ltx.hero.tagImageToVideo': { en: 'Image to Video', 'zh-CN': '图像转视频' },
+  'ltx.hero.tagTextToVideo': { en: 'Text to Video', 'zh-CN': '文本转视频' },
+  'ltx.models.heading': {
+    en: 'Made with LTX 2.5',
+    'zh-CN': '用 LTX 2.5 制作'
+  },
+  'ltx.hero.primaryCta': {
+    en: 'RUN LTX 2.5',
+    'zh-CN': '运行 LTX 2.5'
+  },
+  'ltx.hero.secondaryCta': { en: 'TRY WORKFLOWS', 'zh-CN': '试用工作流' },
+  'ltx.pricing.banner.title': {
+    en: "Start Comfy Cloud for free. Upgrade when you're ready.",
+    'zh-CN': '免费开始使用 Comfy Cloud，准备好了再升级。'
+  },
+  'ltx.pricing.banner.subtitle': {
+    en: '5 free runs on real GPUs — no credit card required.',
+    'zh-CN': '在真实 GPU 上免费运行 5 次 — 无需信用卡。'
+  },
+  'ltx.pricing.banner.cta': { en: 'TRY FREE', 'zh-CN': '免费试用' },
+  'ltx.runOptions.heading': {
+    en: 'One engine, every way to run it',
+    'zh-CN': '同一引擎，多种运行方式'
+  },
+  'ltx.runOptions.subtitle': {
+    en: 'Run LTX 2.5 in the browser today. Batch campaigns with the API, or bring it in-house.',
+    'zh-CN': '今天就在浏览器中运行 LTX 2.5。用 API 批量制作，或部署到自有环境。'
+  },
+  'ltx.runOptions.cta': {
+    en: 'LEARN MORE',
+    'zh-CN': '了解更多'
+  },
+  'ltx.reviews.heading': {
+    en: '4+ million Comfy creators say',
+    'zh-CN': '400 万+ Comfy 创作者这样说'
+  },
+  'ltx.reviews.highlightTitle': {
+    en: 'Comfy MCP: now turn your agent into a creative technologist.',
+    'zh-CN': 'Comfy MCP：让你的智能体成为创意技术专家。'
+  },
+  'ltx.reviews.highlightDescription': {
+    en: 'Your AI assistant can access the ecosystem, build workflows, and generate images, video, audio, or 3D.',
+    'zh-CN':
+      '你的 AI 助手可以接入整个生态、构建工作流，并生成图像、视频、音频或 3D 内容。'
+  },
+  'ltx.reviews.highlightCta': { en: 'GET STARTED', 'zh-CN': '开始使用' },
+
   // Seedance 2.5 SEO page (/seedance-2.5). zh-CN hand-translated; some body
   // copy carries placeholder intent from Figma and may change (June, CRE-145).
   'seedance.meta.title': {
@@ -4837,10 +4918,6 @@ const translations = {
     'zh-CN': '运行 Seedance 2.5'
   },
   'seedance.hero.secondaryCta': { en: 'TRY WORKFLOWS', 'zh-CN': '试用工作流' },
-  'seedance.hero.footnote': {
-    en: 'Pay-as-you-go credits · No watermark · Commercial use included',
-    'zh-CN': '按量付费积分 · 无水印 · 包含商业使用授权'
-  },
   'seedance.models.heading': {
     en: 'Shot on Seedance',
     'zh-CN': '用 Seedance 拍摄'
@@ -5269,10 +5346,6 @@ const translations = {
     en: 'RUN WAN ANIMATE 2',
     'zh-CN': '运行 Wan Animate 2'
   },
-  'wanAnimate2.hero.footnote': {
-    en: 'Open source · Free to try on Comfy Cloud · Pay-as-you-go after that',
-    'zh-CN': '开源 · 可在 Comfy Cloud 免费试用 · 之后按量付费'
-  },
   'wanAnimate2.hero.tagOpenSource': {
     en: 'Open Source',
     'zh-CN': '开源'
@@ -5329,6 +5402,7 @@ const translations = {
     'zh-CN': '开始使用'
   },
   'footer.wanAnimate2': { en: 'Wan Animate 2', 'zh-CN': 'Wan Animate 2' },
+  'footer.ltx': { en: 'LTX 2.5', 'zh-CN': 'LTX 2.5' },
   'modelLaunch.copyPrompt': { en: 'Copy prompt', 'zh-CN': '复制提示词' },
   'minimax.meta.title': {
     en: 'MiniMax H3 on Comfy — Open-Weight Video Model',
@@ -5368,10 +5442,6 @@ const translations = {
   'minimax.hero.tagPartnerNodes': {
     en: 'Partner Nodes',
     'zh-CN': '合作伙伴节点'
-  },
-  'minimax.hero.footnote': {
-    en: 'Free to start · No watermark · Commercial use included',
-    'zh-CN': '免费开始 · 无水印 · 包含商业使用授权'
   },
   'minimax.models.heading': {
     en: 'Made with MiniMax H3',

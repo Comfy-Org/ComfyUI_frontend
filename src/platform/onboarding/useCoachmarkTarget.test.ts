@@ -20,7 +20,6 @@ function step(coachId: CoachId): SpotlightStep {
 describe('useCoachmarkTarget', () => {
   afterEach(() => {
     clearCoachmarks()
-    document.body.replaceChildren()
   })
 
   function setup(coachId: CoachId) {

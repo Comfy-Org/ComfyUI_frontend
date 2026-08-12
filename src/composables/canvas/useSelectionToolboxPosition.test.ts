@@ -1,5 +1,4 @@
 import { render } from '@testing-library/vue'
-import { createPinia, setActivePinia } from 'pinia'
 import { defineComponent, h, markRaw, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -30,7 +29,6 @@ describe('useSelectionToolboxPosition', () => {
   let canvasStore: ReturnType<typeof useCanvasStore>
 
   beforeEach(() => {
-    setActivePinia(createPinia())
     canvasStore = useCanvasStore()
   })
 

@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
 import { nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -57,7 +55,6 @@ describe('useCanvasStore', () => {
 
   beforeEach(() => {
     appModeState.isAppMode = ref(false)
-    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useCanvasStore()
   })
 

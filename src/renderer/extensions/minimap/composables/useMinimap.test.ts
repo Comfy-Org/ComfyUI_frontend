@@ -236,9 +236,6 @@ describe('useMinimap', () => {
   }
 
   beforeEach(() => {
-    mockPause.mockClear()
-    mockResume.mockClear()
-
     mockContext2D = createMockCanvas2DContext()
 
     moduleMockCanvasElement = createMockMinimapCanvas({

@@ -294,10 +294,6 @@ describe('useFeatureFlags', () => {
   })
 
   describe('dev override via localStorage', () => {
-    afterEach(() => {
-      localStorage.clear()
-    })
-
     it('resolveFlag returns localStorage override over remoteConfig and server value', () => {
       vi.mocked(api.getServerFeature).mockReturnValue(false)
       localStorage.setItem('ff:model_upload_button_enabled', 'true')
@@ -361,7 +357,6 @@ describe('useFeatureFlags', () => {
       cachedBillingControlEnabled.value = undefined
       cachedLegacyBillingMigrationEnabled.value = undefined
       cachedV1PaymentRecovery.value = undefined
-      localStorage.clear()
     })
 
     afterEach(() => {
@@ -371,7 +366,6 @@ describe('useFeatureFlags', () => {
       cachedBillingControlEnabled.value = undefined
       cachedLegacyBillingMigrationEnabled.value = undefined
       cachedV1PaymentRecovery.value = undefined
-      localStorage.clear()
     })
 
     it('returns the cached session value during the auth window', () => {
@@ -423,10 +417,6 @@ describe('useFeatureFlags', () => {
   })
 
   describe('signupTurnstileMode', () => {
-    afterEach(() => {
-      localStorage.clear()
-    })
-
     it('falls back to the server feature flag with default off', () => {
       vi.mocked(api.getServerFeature).mockImplementation(
         (path, defaultValue) => {
@@ -500,7 +490,6 @@ describe('useFeatureFlags', () => {
     afterEach(() => {
       vi.mocked(distributionTypes).isCloud = false
       remoteConfig.value = {}
-      localStorage.clear()
     })
 
     it('is disabled outside the cloud distribution', () => {
@@ -530,10 +519,6 @@ describe('useFeatureFlags', () => {
   })
 
   describe('unifiedCloudAuthEnabled', () => {
-    afterEach(() => {
-      localStorage.clear()
-    })
-
     it('reads the unified_cloud_auth server feature when set', () => {
       vi.mocked(api.getServerFeature).mockImplementation(
         (path, defaultValue) => {
@@ -561,7 +546,6 @@ describe('useFeatureFlags', () => {
       vi.mocked(distributionTypes).isCloud = false
       remoteConfigState.value = 'unloaded'
       cachedBillingControlEnabled.value = undefined
-      localStorage.clear()
       remoteConfig.value = {}
     })
 

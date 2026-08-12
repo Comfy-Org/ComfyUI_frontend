@@ -41,7 +41,6 @@ const getGradientEl = (): HTMLElement =>
 
 describe('BrushCursor', () => {
   beforeEach(() => {
-    document.body.innerHTML = ''
     mockStore = initialMock()
   })
 

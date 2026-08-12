@@ -17,9 +17,6 @@ describe('API Feature Flags', () => {
   const wsEventHandlers: { [key: string]: (event: unknown) => void } = {}
 
   beforeEach(() => {
-    // Use fake timers
-    vi.useFakeTimers()
-
     // Mock WebSocket
     mockWebSocket = {
       readyState: 1, // WebSocket.OPEN
@@ -47,10 +44,6 @@ describe('API Feature Flags', () => {
       api_version: '1.0.0',
       capabilities: ['bulk_operations', 'async_nodes']
     })
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
   })
 
   describe('Feature flags negotiation', () => {
@@ -433,18 +426,6 @@ describe('API Feature Flags', () => {
    * how server values, falsy values, nested paths or defaults resolve.
    */
   describe('characterization: resolution with no override present', () => {
-    beforeEach(() => {
-      localStorage.clear()
-      sessionStorage.clear()
-      window.history.replaceState({}, '', '/')
-    })
-
-    afterEach(() => {
-      localStorage.clear()
-      sessionStorage.clear()
-      window.history.replaceState({}, '', '/')
-    })
-
     it('returns the server value verbatim', () => {
       api.serverFeatureFlags.value = { some_flag: 'server_value' }
 
@@ -494,10 +475,6 @@ describe('API Feature Flags', () => {
   })
 
   describe('Dev override via localStorage', () => {
-    afterEach(() => {
-      localStorage.clear()
-    })
-
     it('getServerFeature returns localStorage override over server value', () => {
       api.serverFeatureFlags.value = { some_flag: false }
       localStorage.setItem('ff:some_flag', 'true')

@@ -108,7 +108,6 @@ describe('SignUpForm', () => {
     mockTurnstileEnabled.value = false
     mockTurnstileToken.value = ''
     mockTurnstileUnavailable.value = false
-    mockReset.mockClear()
     emitTurnstileToken = undefined
     emitTurnstileUnavailable = undefined
   })
