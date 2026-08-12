@@ -162,7 +162,15 @@ interface FrontendApiCalls {
    */
   autoQueueGraphChanged: never
   promptQueueing: { requestId: number; batchCount: number; number?: number }
-  promptQueued: { number: number; batchCount: number; requestId?: number }
+  promptQueued: {
+    number: number
+    batchCount: number
+    requestId?: number
+    /** Ids the backend accepted, in submission order. Empty if all were rejected. */
+    promptIds?: string[]
+    /** How many submissions the backend refused outright. */
+    rejectedCount?: number
+  }
   graphCleared: never
   reconnecting: never
   reconnected: never

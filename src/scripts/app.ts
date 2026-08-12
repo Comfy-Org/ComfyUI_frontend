@@ -1741,6 +1741,10 @@ export class ComfyApp {
           workflowQueueIntent
         } = this.queueItems.pop()!
         let queuedCount = 0
+        // Reported on promptQueued so a pack can correlate progress with the
+        // run it started, and notice a submission the backend refused.
+        const promptIds: string[] = []
+        let rejectedCount = 0
         const workflowExecutionIntent: WorkflowExecutionIntent = {
           trigger_source: normalizeExecutionTriggerSource(
             workflowQueueIntent?.trigger_source
@@ -1843,6 +1847,8 @@ export class ComfyApp {
                 ...(workflowContext && { workflowContext })
               })
             }
+            if (res.prompt_id) promptIds.push(res.prompt_id)
+            else rejectedCount++
             executionErrorStore.recordNodeErrors(res.node_errors ?? null)
             queueResultOverride = null
             try {
@@ -1995,7 +2001,9 @@ export class ComfyApp {
           api.dispatchCustomEvent('promptQueued', {
             number,
             batchCount: queuedCount,
-            requestId
+            requestId,
+            promptIds,
+            rejectedCount
           })
         }
       }

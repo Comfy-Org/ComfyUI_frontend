@@ -162,6 +162,23 @@ describe('comfy.queue', () => {
     vi.useRealTimers()
   })
 
+  it('names the prompts the backend accepted, and those it refused', () => {
+    // onBeforeRun fires either way, so without this a pack cannot tell a run
+    // that started from one that never did.
+    const comfy = createComfyApi(() => graphWith('A'))
+    const seen: unknown[] = []
+    comfy.queue.onAfterRun((e) => seen.push(e))
+
+    api.dispatchCustomEvent('promptQueued', {
+      number: 0,
+      batchCount: 2,
+      promptIds: ['abc'],
+      rejectedCount: 1
+    })
+
+    expect(seen).toEqual([{ promptIds: ['abc'], rejected: 1 }])
+  })
+
   it('reports runs starting and finishing being submitted', () => {
     const comfy = createComfyApi(() => graphWith('A'))
     const before = vi.fn()
