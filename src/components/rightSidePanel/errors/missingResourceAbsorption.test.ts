@@ -21,7 +21,7 @@ import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 import type { NodeValidationError } from '@/utils/executionErrorUtil'
 
 import { classifyPanelErrors } from './errorSeverityClassification'
-import { getMissingResourceValidationErrorAbsorption } from './missingResourceAbsorption'
+import { classifyValidationErrorAbsorption } from './missingResourceAbsorption'
 
 const nodeId = createNodeExecutionId([12, 4])
 const liftedHostNodeId = createNodeExecutionId([12])
@@ -125,12 +125,7 @@ describe('missing resource validation error absorption', () => {
     const error = validationError('value_not_in_list', 'ckpt_name')
 
     expect(
-      getMissingResourceValidationErrorAbsorption(
-        [missingModel()],
-        [],
-        error,
-        nodeId
-      )
+      classifyValidationErrorAbsorption([missingModel()], [], error, nodeId)
     ).toBe('missing_model')
   })
 
@@ -152,7 +147,7 @@ describe('missing resource validation error absorption', () => {
     if (!error) throw new Error('Expected validation error to remain interior')
 
     expect(
-      getMissingResourceValidationErrorAbsorption(
+      classifyValidationErrorAbsorption(
         [
           missingModel({
             nodeId: '5',
@@ -175,7 +170,7 @@ describe('missing resource validation error absorption', () => {
     }
 
     expect(
-      getMissingResourceValidationErrorAbsorption(
+      classifyValidationErrorAbsorption(
         [missingModel({ name: 'SDXL/model.safetensors' })],
         [],
         error,
@@ -192,7 +187,7 @@ describe('missing resource validation error absorption', () => {
     })
 
     expect(
-      getMissingResourceValidationErrorAbsorption(
+      classifyValidationErrorAbsorption(
         [missingModel({ name: 'SDXL/model.safetensors' })],
         [],
         error,
@@ -210,7 +205,7 @@ describe('missing resource validation error absorption', () => {
     }
 
     expect(
-      getMissingResourceValidationErrorAbsorption(
+      classifyValidationErrorAbsorption(
         [],
         [missingMedia({ name: 'inputs/portrait.png' })],
         error,
@@ -228,7 +223,7 @@ describe('missing resource validation error absorption', () => {
     )
 
     expect(
-      getMissingResourceValidationErrorAbsorption(
+      classifyValidationErrorAbsorption(
         [],
         [missingMedia({ name: 'inputs/portrait.png' })],
         error,
@@ -244,7 +239,7 @@ describe('missing resource validation error absorption', () => {
     })
 
     expect(
-      getMissingResourceValidationErrorAbsorption(
+      classifyValidationErrorAbsorption(
         [missingModel({ nodeId: otherNode, sourceExecutionId: undefined })],
         [],
         error,
@@ -263,7 +258,7 @@ describe('missing resource validation error absorption', () => {
     )
 
     expect(
-      getMissingResourceValidationErrorAbsorption(
+      classifyValidationErrorAbsorption(
         [],
         [missingMedia({ nodeId: otherNode })],
         error,
@@ -278,7 +273,7 @@ describe('missing resource validation error absorption', () => {
     })
 
     expect(
-      getMissingResourceValidationErrorAbsorption(
+      classifyValidationErrorAbsorption(
         [missingModel({ isMissing: undefined })],
         [],
         error,
@@ -296,7 +291,7 @@ describe('missing resource validation error absorption', () => {
     }
 
     expect(
-      getMissingResourceValidationErrorAbsorption(
+      classifyValidationErrorAbsorption(
         [
           missingModel({ name: 'sdxl/model.safetensors' }),
           missingModel({
@@ -319,7 +314,7 @@ describe('missing resource validation error absorption', () => {
     )
 
     expect(
-      getMissingResourceValidationErrorAbsorption(
+      classifyValidationErrorAbsorption(
         [],
         [missingMedia({ nodeId: liftedSourceNodeId })],
         error,
@@ -336,7 +331,7 @@ describe('missing resource validation error absorption', () => {
     )
 
     expect(
-      getMissingResourceValidationErrorAbsorption(
+      classifyValidationErrorAbsorption(
         [],
         [
           missingMedia({
@@ -360,7 +355,7 @@ describe('missing resource validation error absorption', () => {
     )
 
     expect(
-      getMissingResourceValidationErrorAbsorption(
+      classifyValidationErrorAbsorption(
         [],
         [
           missingMedia({
@@ -383,7 +378,7 @@ describe('missing resource validation error absorption', () => {
     )
 
     expect(
-      getMissingResourceValidationErrorAbsorption(
+      classifyValidationErrorAbsorption(
         [],
         [
           missingMedia({
@@ -458,7 +453,7 @@ describe('missing resource validation error absorption', () => {
     )
 
     expect(
-      getMissingResourceValidationErrorAbsorption(
+      classifyValidationErrorAbsorption(
         [],
         [missingMedia({ nodeId: liftedSourceNodeId })],
         error,
@@ -471,12 +466,7 @@ describe('missing resource validation error absorption', () => {
     const error = validationError('value_bigger_than_max', 'ckpt_name')
 
     expect(
-      getMissingResourceValidationErrorAbsorption(
-        [missingModel()],
-        [],
-        error,
-        nodeId
-      )
+      classifyValidationErrorAbsorption([missingModel()], [], error, nodeId)
     ).toBeNull()
   })
 
@@ -485,16 +475,14 @@ describe('missing resource validation error absorption', () => {
       received_value: 'loras/model.safetensors'
     })
 
-    expect(
-      getMissingResourceValidationErrorAbsorption([], [], error, nodeId)
-    ).toBeNull()
+    expect(classifyValidationErrorAbsorption([], [], error, nodeId)).toBeNull()
   })
 
   it('does not absorb a confirmed-installed model candidate', () => {
     const error = validationError('value_not_in_list', 'ckpt_name')
 
     expect(
-      getMissingResourceValidationErrorAbsorption(
+      classifyValidationErrorAbsorption(
         [missingModel({ isMissing: false })],
         [],
         error,
@@ -509,12 +497,7 @@ describe('missing resource validation error absorption', () => {
     })
 
     expect(
-      getMissingResourceValidationErrorAbsorption(
-        [missingModel()],
-        [],
-        error,
-        nodeId
-      )
+      classifyValidationErrorAbsorption([missingModel()], [], error, nodeId)
     ).toBeNull()
   })
 
@@ -527,7 +510,7 @@ describe('missing resource validation error absorption', () => {
     )
 
     expect(
-      getMissingResourceValidationErrorAbsorption(
+      classifyValidationErrorAbsorption(
         [],
         [missingMedia({ isMissing: false })],
         error,

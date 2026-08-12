@@ -10,7 +10,7 @@ import type { NodeExecutionId } from '@/types/nodeIdentification'
 import type { NodeValidationError } from '@/utils/executionErrorUtil'
 
 import {
-  getMissingResourceValidationErrorAbsorption,
+  classifyValidationErrorAbsorption,
   isMissingNodePromptErrorAbsorbed
 } from './missingResourceAbsorption'
 import type { MissingResourceAbsorption } from './missingResourceAbsorption'
@@ -75,7 +75,7 @@ export function classifyPanelErrors(
         errors: nodeError.errors.map((error) => ({
           error,
           absorption: nodeId
-            ? getMissingResourceValidationErrorAbsorption(
+            ? classifyValidationErrorAbsorption(
                 input.missingModels,
                 input.missingMedia,
                 error,

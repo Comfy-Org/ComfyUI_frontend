@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import { whenever } from '@vueuse/core'
 
-import { getMissingResourceValidationErrorAbsorption } from '@/components/rightSidePanel/errors/missingResourceAbsorption'
+import { classifyValidationErrorAbsorption } from '@/components/rightSidePanel/errors/missingResourceAbsorption'
 
 import { useNodeErrorFlagSync } from '@/composables/graph/useNodeErrorFlagSync'
 import {
@@ -143,14 +143,14 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
           continue
         }
         const remaining = nodeError.errors.filter((error) => {
-          const wasAbsorbed = getMissingResourceValidationErrorAbsorption(
+          const wasAbsorbed = classifyValidationErrorAbsorption(
             prevModels ?? null,
             prevMedia ?? null,
             error,
             executionId
           )
           if (!wasAbsorbed) return true
-          return !!getMissingResourceValidationErrorAbsorption(
+          return !!classifyValidationErrorAbsorption(
             nextModels ?? null,
             nextMedia ?? null,
             error,
