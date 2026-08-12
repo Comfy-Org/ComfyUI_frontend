@@ -71,7 +71,7 @@ const {
     getApiKey: vi.fn()
   },
   mockAuthStore: {
-    getAuthToken: vi.fn()
+    getWorkspaceAuthToken: vi.fn()
   },
   mockSettingStore: {
     get: vi.fn()
@@ -282,7 +282,7 @@ describe('ComfyApp', () => {
       return workflow
     })
     mockApiKeyAuthStore.getApiKey.mockReturnValue(undefined)
-    mockAuthStore.getAuthToken.mockResolvedValue(undefined)
+    mockAuthStore.getWorkspaceAuthToken.mockResolvedValue(undefined)
     mockExtensionService.invokeExtensions.mockReturnValue([])
     mockExtensionService.invokeExtensionsAsync.mockResolvedValue(undefined)
     vi.mocked(extractFilesFromDragEvent).mockResolvedValue([])

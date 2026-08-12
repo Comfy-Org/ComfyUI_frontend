@@ -59,7 +59,14 @@
 import { captureException } from '@sentry/vue'
 import { until } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { nextTick, onMounted, onUnmounted, ref, useTemplateRef } from 'vue'
+import {
+  nextTick,
+  onMounted,
+  onUnmounted,
+  ref,
+  useTemplateRef,
+  watch
+} from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
@@ -94,7 +101,10 @@ function cancelInitialization(): void {
 }
 
 async function initialize(): Promise<void> {
-  if (!isCloud) return
+  if (!isCloud) {
+    void initializeWorkspacesInBackground()
+    return
+  }
 
   cancelInitialization()
   const generation = initializationGeneration
@@ -230,11 +240,37 @@ async function initializeWorkspaceMode(): Promise<void> {
   }
 }
 
+async function initializeWorkspacesInBackground(): Promise<void> {
+  const { isInitialized, currentUser } = storeToRefs(useAuthStore())
+  try {
+    if (!isInitialized.value) {
+      await until(isInitialized).toBe(true, {
+        timeout: FIREBASE_INIT_TIMEOUT_MS,
+        throwOnTimeout: true
+      })
+    }
+    if (!currentUser.value) return
+    await initializeWorkspaceMode()
+  } catch (error) {
+    console.warn(
+      '[WorkspaceAuthGate] Background workspace initialization failed:',
+      error
+    )
+  }
+}
+
 // Initialize on mount. This gate should be placed on the authenticated layout
 // (LayoutDefault) so it mounts fresh after login and unmounts on logout.
 // The router guard ensures only authenticated users reach this layout.
 onMounted(() => {
   void initialize()
 })
+
+if (!isCloud) {
+  const { currentUser } = storeToRefs(useAuthStore())
+  watch(currentUser, (user) => {
+    if (user) void initializeWorkspacesInBackground()
+  })
+}
 onUnmounted(cancelInitialization)
 </script>

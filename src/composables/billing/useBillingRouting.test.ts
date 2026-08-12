@@ -1,19 +1,16 @@
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { BillingRail } from '@/platform/workspace/api/workspaceApi'
+import type {
+  BillingRail,
+  WorkspaceWithRole
+} from '@/platform/workspace/api/workspaceApi'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import { useBillingRouting } from './useBillingRouting'
 
-const { mockIsCloud, mockActiveWorkspace, mockActiveWorkspaceBillingRail } =
-  vi.hoisted(() => ({
-    mockIsCloud: { value: true },
-    mockActiveWorkspace: {
-      value: null as { id: string; type: 'personal' | 'team' } | null
-    },
-    mockActiveWorkspaceBillingRail: {
-      value: null as BillingRail | null
-    }
-  }))
+const mockIsCloud = vi.hoisted(() => ({ value: true }))
 
 vi.mock('@/platform/distribution/types', () => ({
   get isCloud() {
@@ -21,35 +18,71 @@ vi.mock('@/platform/distribution/types', () => ({
   }
 }))
 
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    get activeWorkspace() {
-      return mockActiveWorkspace.value
-    },
-    get activeWorkspaceBillingRail() {
-      return mockActiveWorkspaceBillingRail.value
-    }
-  })
-}))
+const personal: WorkspaceWithRole = {
+  id: 'w-personal',
+  name: 'Personal Workspace',
+  type: 'personal',
+  role: 'owner',
+  created_at: '2026-01-01T00:00:00Z',
+  joined_at: '2026-01-01T00:00:00Z'
+}
+const team: WorkspaceWithRole = {
+  ...personal,
+  id: 'w-team',
+  name: 'Team Workspace',
+  type: 'team'
+}
 
-const personal = { id: 'w-personal', type: 'personal' as const }
-const team = { id: 'w-team', type: 'team' as const }
+function setActiveWorkspace(
+  workspace: WorkspaceWithRole | null,
+  billingRail: BillingRail | null = null
+) {
+  const workspaceStore = useTeamWorkspaceStore()
+  workspaceStore.$patch({
+    activeWorkspaceId: workspace?.id ?? null,
+    workspaces: workspace
+      ? [
+          {
+            ...workspace,
+            isSubscribed: false,
+            subscriptionPlan: null,
+            subscriptionTier: null,
+            members: [],
+            pendingInvites: []
+          }
+        ]
+      : []
+  })
+  if (workspace && billingRail) {
+    workspaceStore.setWorkspaceBillingRail(workspace.id, billingRail)
+  }
+}
 
 describe('useBillingRouting', () => {
   beforeEach(() => {
+    setActivePinia(createTestingPinia({ createSpy: vi.fn, stubActions: false }))
     mockIsCloud.value = true
-    mockActiveWorkspace.value = personal
-    mockActiveWorkspaceBillingRail.value = null
+    setActiveWorkspace(personal)
   })
 
-  it('uses legacy billing off Cloud', () => {
+  it('uses legacy billing off Cloud until a workspace context loads', () => {
     mockIsCloud.value = false
-    mockActiveWorkspace.value = team
+    setActiveWorkspace(null)
 
     const { type, shouldUseWorkspaceBilling } = useBillingRouting()
 
     expect(type.value).toBe('legacy')
     expect(shouldUseWorkspaceBilling.value).toBe(false)
+  })
+
+  it('uses workspace billing off Cloud once a workspace context loads', () => {
+    mockIsCloud.value = false
+    setActiveWorkspace(team)
+
+    const { type, shouldUseWorkspaceBilling } = useBillingRouting()
+
+    expect(type.value).toBe('workspace')
+    expect(shouldUseWorkspaceBilling.value).toBe(true)
   })
 
   it('uses workspace billing for a Cloud personal workspace', () => {
@@ -60,8 +93,7 @@ describe('useBillingRouting', () => {
   })
 
   it('uses unified pricing while keeping legacy Stripe top-ups on Checkout', () => {
-    mockActiveWorkspace.value = personal
-    mockActiveWorkspaceBillingRail.value = 'legacy_stripe'
+    setActiveWorkspace(personal, 'legacy_stripe')
 
     const { type, shouldUseWorkspaceBilling, shouldUseUnifiedPricing } =
       useBillingRouting()
@@ -72,8 +104,7 @@ describe('useBillingRouting', () => {
   })
 
   it('uses workspace billing for migrated Stripe personal workspaces', () => {
-    mockActiveWorkspace.value = personal
-    mockActiveWorkspaceBillingRail.value = 'stripe'
+    setActiveWorkspace(personal, 'stripe')
 
     const { type, shouldUseWorkspaceBilling } = useBillingRouting()
 
@@ -82,8 +113,7 @@ describe('useBillingRouting', () => {
   })
 
   it('uses workspace billing for team workspaces', () => {
-    mockActiveWorkspace.value = team
-    mockActiveWorkspaceBillingRail.value = 'legacy_stripe'
+    setActiveWorkspace(team, 'legacy_stripe')
 
     const { type, shouldUseWorkspaceBilling } = useBillingRouting()
 
@@ -92,7 +122,7 @@ describe('useBillingRouting', () => {
   })
 
   it('defaults to legacy while the workspace has not loaded', () => {
-    mockActiveWorkspace.value = null
+    setActiveWorkspace(null)
 
     const { type } = useBillingRouting()
 

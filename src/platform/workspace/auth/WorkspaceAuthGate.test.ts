@@ -154,6 +154,33 @@ describe('WorkspaceAuthGate', () => {
       expect(screen.getByTestId('slot-content')).toBeInTheDocument()
       expect(mockRefreshRemoteConfig).not.toHaveBeenCalled()
     })
+
+    it('initializes workspace context in the background for a signed-in user', async () => {
+      mockIsCloud.value = false
+      mockIsInitialized.value = true
+      mockCurrentUser.value = { uid: 'user-123' }
+
+      mountComponent()
+      await flushPromises()
+
+      expect(screen.getByTestId('slot-content')).toBeInTheDocument()
+      expect(mockWorkspaceStoreInitialize).toHaveBeenCalledOnce()
+      expect(mockRefreshRemoteConfig).not.toHaveBeenCalled()
+    })
+
+    it('initializes workspace context after a mid-session sign-in', async () => {
+      mockIsCloud.value = false
+      mockIsInitialized.value = true
+
+      mountComponent()
+      await flushPromises()
+      expect(mockWorkspaceStoreInitialize).not.toHaveBeenCalled()
+
+      mockCurrentUser.value = { uid: 'user-123' }
+      await flushPromises()
+
+      expect(mockWorkspaceStoreInitialize).toHaveBeenCalledOnce()
+    })
   })
 
   describe('cloud builds - unauthenticated user', () => {

@@ -11,12 +11,13 @@ import {
 } from '@/platform/workspace/workspaceConstants'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import type { AuthHeader } from '@/types/authTypes'
 import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 import type { WorkspaceWithRole } from '@/platform/workspace/workspaceTypes'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { isCloud } from '@/platform/distribution/types'
+import { workspaceApiUrl } from '@/platform/workspace/api/workspaceApiUrl'
 
 const WorkspaceWithRoleSchema = z.object({
   id: z.string(),
@@ -357,7 +358,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       )
     }
 
-    const response = await fetch(api.apiURL('/auth/token'), {
+    const response = await fetch(workspaceApiUrl('/auth/token'), {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${firebaseToken}`,
@@ -534,9 +535,10 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     err: unknown,
     failedWorkspaceId?: string
   ): void {
+    let invalidSelectionHandled = false
     if (isPermanentRecoveryFailure(err)) {
       const hadContext = currentWorkspace.value !== null
-      endWorkspaceSession(
+      invalidSelectionHandled = endWorkspaceSession(
         failedWorkspaceId && isWorkspaceSelectionInvalid(err)
           ? failedWorkspaceId
           : undefined
@@ -545,7 +547,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
         surfacePermanentAuthError(err)
       }
     }
-    startRecoveryCooldown()
+    if (!invalidSelectionHandled) startRecoveryCooldown()
     console.warn('Workspace auth recovery failed:', err)
   }
 
@@ -571,10 +573,19 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       if (inFlightSwitchPromise) {
         await inFlightSwitchPromise.catch(() => {})
         if (!isCurrentUser(ownerUid)) return null
+        if (!isCloud && currentWorkspace.value?.id !== targetWorkspaceId) {
+          return null
+        }
         continue
       }
 
       if (!targetWorkspaceId || Date.now() < recoveryCooldownUntil) {
+        return null
+      }
+      if (
+        !isCloud &&
+        useTeamWorkspaceStore().activeWorkspaceId !== targetWorkspaceId
+      ) {
         return null
       }
 
@@ -966,9 +977,9 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     clearUnifiedContext()
   }
 
-  function endWorkspaceSession(revokedWorkspaceId?: string): void {
+  function endWorkspaceSession(revokedWorkspaceId?: string): boolean {
     const hadContext = currentWorkspace.value !== null
-    if (hadContext) prepareWorkflowWorkspaceTransition()
+    if (isCloud && hadContext) prepareWorkflowWorkspaceTransition()
     const revokedWorkspaceHandled = revokedWorkspaceId
       ? useTeamWorkspaceStore().forgetRevokedActiveWorkspace(revokedWorkspaceId)
       : false
@@ -976,9 +987,10 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     const shouldReload = revokedWorkspaceId
       ? !revokedWorkspaceHandled
       : hadContext
-    if (shouldReload) {
+    if (isCloud && shouldReload) {
       window.location.reload()
     }
+    return !isCloud && revokedWorkspaceHandled
   }
 
   return {

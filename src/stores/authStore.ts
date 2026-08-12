@@ -253,16 +253,14 @@ export const useAuthStore = defineStore('auth', () => {
       return token ? { Authorization: `Bearer ${token}` } : null
     }
 
+    const workspaceAuth = useWorkspaceAuthStore()
+    const activeWorkspaceId = useTeamWorkspaceStore().activeWorkspaceId
+
+    if (isCloud && activeWorkspaceId) {
+      return workspaceAuth.ensureWorkspaceAuthHeader(activeWorkspaceId)
+    }
+
     if (isCloud) {
-      const workspaceAuth = useWorkspaceAuthStore()
-      const activeWorkspaceId = useTeamWorkspaceStore().activeWorkspaceId
-
-      // Recover the workspace token rather than downgrade to the personal
-      // identity, which is what makes cloud requests oscillate.
-      if (activeWorkspaceId) {
-        return workspaceAuth.ensureWorkspaceAuthHeader(activeWorkspaceId)
-      }
-
       const wsHeader = workspaceAuth.getWorkspaceAuthHeader()
       if (wsHeader) return wsHeader
     }
@@ -286,10 +284,21 @@ export const useAuthStore = defineStore('auth', () => {
     return token ? { Authorization: `Bearer ${token}` } : null
   }
 
+  const getWorkspaceAuthHeader = async (): Promise<AuthHeader | null> => {
+    if (flags.unifiedCloudAuthEnabled) {
+      const token = useWorkspaceAuthStore().getUnifiedToken()
+      return token ? { Authorization: `Bearer ${token}` } : null
+    }
+
+    const activeWorkspaceId = useTeamWorkspaceStore().activeWorkspaceId
+    if (!activeWorkspaceId) return getFirebaseAuthHeader()
+    return useWorkspaceAuthStore().ensureWorkspaceAuthHeader(activeWorkspaceId)
+  }
+
   /**
    * Returns the raw auth token (not wrapped in a header object).
    * When unified_cloud_auth is enabled, returns the single Cloud JWT; otherwise
-   * priority is workspace token > Firebase token.
+   * Cloud priority is workspace token > Firebase token.
    * Use this for WebSocket connections and backend node auth.
    */
   const getAuthToken = async (): Promise<string | undefined> => {
@@ -297,23 +306,43 @@ export const useAuthStore = defineStore('auth', () => {
       return useWorkspaceAuthStore().getUnifiedToken()
     }
 
+    const workspaceAuth = useWorkspaceAuthStore()
+    const activeWorkspaceId = useTeamWorkspaceStore().activeWorkspaceId
+
+    if (isCloud && activeWorkspaceId) {
+      return (
+        (await workspaceAuth.ensureWorkspaceToken(activeWorkspaceId)) ??
+        undefined
+      )
+    }
+
     if (isCloud) {
-      const workspaceAuth = useWorkspaceAuthStore()
-      const activeWorkspaceId = useTeamWorkspaceStore().activeWorkspaceId
-
-      // Mirror getAuthHeader for WebSocket/queue auth.
-      if (activeWorkspaceId) {
-        return (
-          (await workspaceAuth.ensureWorkspaceToken(activeWorkspaceId)) ??
-          undefined
-        )
-      }
-
       const wsToken = workspaceAuth.getWorkspaceToken()
       if (wsToken) return wsToken
     }
 
     return await getIdToken()
+  }
+
+  const getWorkspaceAuthToken = async (): Promise<string | undefined> => {
+    if (flags.unifiedCloudAuthEnabled) {
+      return useWorkspaceAuthStore().getUnifiedToken()
+    }
+
+    const teamWorkspaceStore = useTeamWorkspaceStore()
+    const activeWorkspaceId = teamWorkspaceStore.activeWorkspaceId
+    if (
+      !isCloud &&
+      !activeWorkspaceId &&
+      teamWorkspaceStore.initState === 'loading'
+    ) {
+      return undefined
+    }
+    if (!activeWorkspaceId) return (await getIdToken()) ?? undefined
+    return (
+      (await useWorkspaceAuthStore().ensureWorkspaceToken(activeWorkspaceId)) ??
+      undefined
+    )
   }
 
   const getAuthHeaderOrThrow = async (): Promise<AuthHeader> => {
@@ -332,11 +361,19 @@ export const useAuthStore = defineStore('auth', () => {
     return authHeader
   }
 
+  const getWorkspaceAuthHeaderOrThrow = async (): Promise<AuthHeader> => {
+    const authHeader = await getWorkspaceAuthHeader()
+    if (!authHeader) {
+      throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
+    }
+    return authHeader
+  }
+
   const fetchBalance = async (): Promise<GetCustomerBalanceResponse | null> => {
     isFetchingBalance.value = true
     const requestOwnerUid = currentUser.value?.uid ?? null
     try {
-      const authHeader = await getAuthHeader()
+      const authHeader = await getFirebaseAuthHeader()
       if (!authHeader) {
         throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
       }
@@ -383,7 +420,7 @@ export const useAuthStore = defineStore('auth', () => {
     payload?: Omit<CreateCustomerPayload, 'signup_source'>
   ): Promise<CreateCustomerResponse> => {
     const sessionUserId = currentUser.value?.uid
-    const authHeader = await getAuthHeader()
+    const authHeader = await getFirebaseAuthHeader()
     if (!authHeader) {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
@@ -700,7 +737,7 @@ export const useAuthStore = defineStore('auth', () => {
   const addCredits = async (
     requestBodyContent: CreditPurchasePayload
   ): Promise<CreditPurchaseResponse> => {
-    const authHeader = await getAuthHeader()
+    const authHeader = await getFirebaseAuthHeader()
     if (!authHeader) {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
@@ -745,7 +782,7 @@ export const useAuthStore = defineStore('auth', () => {
   const accessBillingPortal = async (
     targetTier?: BillingPortalTargetTier
   ): Promise<AccessBillingPortalResponse> => {
-    const authHeader = await getAuthHeader()
+    const authHeader = await getFirebaseAuthHeader()
     if (!authHeader) {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
@@ -809,7 +846,10 @@ export const useAuthStore = defineStore('auth', () => {
     getAuthHeaderOrThrow,
     getFirebaseAuthHeader,
     getFirebaseAuthHeaderOrThrow,
+    getWorkspaceAuthHeader,
+    getWorkspaceAuthHeaderOrThrow,
     getAuthToken,
+    getWorkspaceAuthToken,
     notifyTokenRefreshed
   }
 })

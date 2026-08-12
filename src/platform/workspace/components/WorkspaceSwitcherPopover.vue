@@ -34,6 +34,7 @@
             >
               <button
                 class="flex min-w-0 flex-1 cursor-pointer items-center gap-2 border-none bg-transparent p-0"
+                :disabled="!isCloud && isSwitching"
                 @click="handleSelectWorkspace(workspace)"
               >
                 <WorkspaceProfilePic
@@ -71,7 +72,7 @@
     </div>
 
     <!-- Create workspace button -->
-    <div class="shrink-0 border-t border-border-default p-2">
+    <div v-if="isCloud" class="shrink-0 border-t border-border-default p-2">
       <div
         :class="
           cn(
@@ -113,6 +114,7 @@ import { useI18n } from 'vue-i18n'
 
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { isCloud } from '@/platform/distribution/types'
 import { useWorkspaceSwitch } from '@/platform/workspace/composables/useWorkspaceSwitch'
 import { useWorkspaceTierLabel } from '@/platform/workspace/composables/useWorkspaceTierLabel'
 import type {
@@ -151,8 +153,13 @@ const currentSubscriptionTierName = computed(() => {
 })
 
 const workspaceStore = useTeamWorkspaceStore()
-const { workspaceId, workspaces, canCreateWorkspace, isFetchingWorkspaces } =
-  storeToRefs(workspaceStore)
+const {
+  workspaceId,
+  workspaces,
+  canCreateWorkspace,
+  isFetchingWorkspaces,
+  isSwitching
+} = storeToRefs(workspaceStore)
 
 const availableWorkspaces = computed<AvailableWorkspace[]>(() =>
   workspaces.value.map((w) => ({

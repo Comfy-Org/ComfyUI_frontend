@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { isCloud } from '@/platform/distribution/types'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { clearPreservedQuery } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
@@ -307,7 +308,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
           }
 
           // Session workspace not found (deleted/access revoked) - fallback to default
-          clearWorkflowRestoreState()
+          if (isCloud) clearWorkflowRestoreState()
           workspaceAuthStore.clearWorkspaceContext()
 
           const personal = workspaces.value.find((w) => w.type === 'personal')
@@ -414,6 +415,18 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     const revoked = workspaces.value.find((w) => w.id === workspaceId)
     if (revoked?.type === 'personal') return true
 
+    if (!isCloud) {
+      const personal = workspaces.value.find((w) => w.type === 'personal')
+      workspaces.value = workspaces.value.filter((w) => w.id !== workspaceId)
+      activeWorkspaceId.value = personal?.id ?? null
+      if (personal) {
+        setLastWorkspaceId(personal.id)
+      } else {
+        clearLastWorkspaceId()
+      }
+      return true
+    }
+
     prepareWorkflowWorkspaceTransition()
     clearLastWorkspaceId()
     window.location.reload()
@@ -426,6 +439,8 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
    */
   async function switchWorkspace(workspaceId: string): Promise<void> {
     if (workspaceId === activeWorkspaceId.value) return
+    if (!isCloud && isSwitching.value)
+      throw new Error('Workspace switch already in progress')
 
     const generation = identityGeneration
     const workspaceAuthStore = useWorkspaceAuthStore()
@@ -449,7 +464,18 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
 
       if (isStaleIdentity(generation)) return
 
-      // Clear current workspace context and persist new workspace ID
+      if (!isCloud) {
+        await workspaceAuthStore.switchWorkspace(workspaceId)
+        if (isStaleIdentity(generation)) return
+        if (workspaceAuthStore.currentWorkspace?.id !== workspaceId) {
+          throw new Error('Workspace authentication did not switch')
+        }
+        activeWorkspaceId.value = workspaceId
+        setLastWorkspaceId(workspaceId)
+        isSwitching.value = false
+        return
+      }
+
       prepareWorkflowWorkspaceTransition()
       workspaceAuthStore.clearWorkspaceContext()
       setLastWorkspaceId(workspaceId)

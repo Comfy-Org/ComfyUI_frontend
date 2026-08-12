@@ -6,6 +6,10 @@ import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 
 import { sortWorkspaces, useTeamWorkspaceStore } from './teamWorkspaceStore'
 
+const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
+
+vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
+
 // Mock workspaceAuthStore
 const mockWorkspaceAuthStore = vi.hoisted(() => ({
   currentWorkspace: null as {
@@ -159,6 +163,7 @@ function expectCleanupBeforeContextAndReload(): void {
 
 describe('useTeamWorkspaceStore', () => {
   beforeEach(() => {
+    mockDistributionTypes.isCloud = true
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.stubGlobal('localStorage', mockLocalStorage)
     sessionStorage.clear()
@@ -440,6 +445,59 @@ describe('useTeamWorkspaceStore', () => {
       ).toBeLessThan(mockReload.mock.invocationCallOrder[0])
     })
 
+    it('switches local billing context without touching workflow state', async () => {
+      mockDistributionTypes.isCloud = false
+      mockWorkspaceAuthStore.switchWorkspace.mockImplementation(
+        async (workspaceId: string) => {
+          const workspace = [mockPersonalWorkspace, mockTeamWorkspace].find(
+            ({ id }) => id === workspaceId
+          )
+          mockWorkspaceAuthStore.currentWorkspace = workspace ?? null
+        }
+      )
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+
+      await store.switchWorkspace(mockTeamWorkspace.id)
+
+      expect(mockWorkspaceAuthStore.switchWorkspace).toHaveBeenLastCalledWith(
+        mockTeamWorkspace.id
+      )
+      expect(store.activeWorkspaceId).toBe(mockTeamWorkspace.id)
+      expect(mockPrepareWorkflowWorkspaceTransition).not.toHaveBeenCalled()
+      expect(
+        mockWorkspaceAuthStore.clearWorkspaceContext
+      ).not.toHaveBeenCalled()
+      expect(mockReload).not.toHaveBeenCalled()
+      expect(store.isSwitching).toBe(false)
+    })
+
+    it('rejects an overlapping local switch', async () => {
+      mockDistributionTypes.isCloud = false
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+
+      let finishSwitch: () => void = () => {}
+      mockWorkspaceAuthStore.switchWorkspace.mockImplementationOnce(
+        () =>
+          new Promise<void>((resolve) => {
+            finishSwitch = () => {
+              mockWorkspaceAuthStore.currentWorkspace = mockTeamWorkspace
+              resolve()
+            }
+          })
+      )
+
+      const firstSwitch = store.switchWorkspace(mockTeamWorkspace.id)
+      await expect(
+        store.switchWorkspace(mockMemberWorkspace.id)
+      ).rejects.toThrow('Workspace switch already in progress')
+      finishSwitch()
+      await firstSwitch
+
+      expect(store.activeWorkspaceId).toBe(mockTeamWorkspace.id)
+    })
+
     it('sets isSwitching flag during operation', async () => {
       const store = useTeamWorkspaceStore()
       await store.initialize()
@@ -560,6 +618,23 @@ describe('useTeamWorkspaceStore', () => {
       const handled = store.forgetRevokedActiveWorkspace('some-other-workspace')
 
       expect(handled).toBe(false)
+      expect(mockReload).not.toHaveBeenCalled()
+    })
+
+    it('falls back locally without clearing workflow state or reloading', async () => {
+      mockDistributionTypes.isCloud = false
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+      store.activeWorkspaceId = mockTeamWorkspace.id
+
+      expect(store.forgetRevokedActiveWorkspace(mockTeamWorkspace.id)).toBe(
+        true
+      )
+      expect(store.activeWorkspaceId).toBe(mockPersonalWorkspace.id)
+      expect(store.workspaces.map(({ id }) => id)).not.toContain(
+        mockTeamWorkspace.id
+      )
+      expect(mockPrepareWorkflowWorkspaceTransition).not.toHaveBeenCalled()
       expect(mockReload).not.toHaveBeenCalled()
     })
   })
