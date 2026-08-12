@@ -9,7 +9,7 @@ vi.mock('@/scripts/app', () => ({
 }))
 
 import { app } from '@/scripts/app'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { usePartnerNodeGovernanceStore } from '@/platform/workspace/stores/partnerNodeGovernanceStore'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -53,7 +53,7 @@ describe('useLitegraphService().registerNodeDef', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
-  it('reactively applies policy-disabled discovery state in developer mode', async () => {
+  it('keeps policy-disabled nodes discoverable and flags them for menus', async () => {
     const nodeDefStore = useNodeDefStore()
     const settingStore = useSettingStore()
     const governanceStore = usePartnerNodeGovernanceStore()
@@ -87,21 +87,24 @@ describe('useLitegraphService().registerNodeDef', () => {
     nodeDefStore.updateNodeDefs([nodeDef])
 
     try {
+      const nodeType = LiteGraph.registered_node_types[nodeDef.name]
       expect(LiteGraph.getNodeTypesCategories()).toContain(nodeDef.category)
+      expect(LGraphCanvas.isNodeTypeDisabled?.(nodeType)).toBe(false)
 
       governanceStore.policy = {
         enforcementEnabled: true,
         providers: [{ providerId: 'openai', enabled: false }]
       }
       await nextTick()
-      expect(LiteGraph.getNodeTypesCategories()).not.toContain(nodeDef.category)
+      expect(LiteGraph.getNodeTypesCategories()).toContain(nodeDef.category)
+      expect(LGraphCanvas.isNodeTypeDisabled?.(nodeType)).toBe(true)
 
       governanceStore.policy = {
         enforcementEnabled: true,
         providers: [{ providerId: 'openai', enabled: true }]
       }
       await nextTick()
-      expect(LiteGraph.getNodeTypesCategories()).toContain(nodeDef.category)
+      expect(LGraphCanvas.isNodeTypeDisabled?.(nodeType)).toBe(false)
     } finally {
       LiteGraph.unregisterNodeType(nodeDef.name)
     }
