@@ -43,7 +43,15 @@ export interface WidgetHandle extends HandleCommon {
   setValue(value: WidgetValue): void
 
   isHidden(): boolean
-  /** Replaces the `type = 'converted-widget'` hack. Value is retained. */
+  /**
+   * Replaces the `type = 'converted-widget'` hack. Value is retained.
+   *
+   * Cascades to the widgets core attached to this one — a seed's
+   * `control_after_generate`, a bounding box's components. The legacy
+   * `hideWidget` helper this replaces recursed through `linkedWidgets`, and
+   * packs that lost the cascade were left with an orphaned control widget
+   * floating where its owner used to be.
+   */
   setHidden(hidden: boolean): void
   getOptions(): Readonly<IWidgetOptions> | undefined
   setOption(key: string, value: unknown): void
@@ -168,7 +176,15 @@ export function createWidgetHandles(
         },
         isHidden: (w) => w.hidden ?? false,
         setHidden: (w, ...args) => {
-          w.hidden = Boolean(args[0])
+          const hidden = Boolean(args[0])
+          const seen = new Set<IBaseWidget>()
+          const apply = (widget: IBaseWidget) => {
+            if (seen.has(widget)) return
+            seen.add(widget)
+            widget.hidden = hidden
+            widget.linkedWidgets?.forEach(apply)
+          }
+          apply(w)
         },
         isDisabled: (w) => w.disabled ?? false,
         setDisabled: (w, ...args) => {
