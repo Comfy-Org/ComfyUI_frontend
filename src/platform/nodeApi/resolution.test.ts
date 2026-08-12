@@ -4,16 +4,21 @@
  * archetypes `applyToGraph` existed for.
  */
 import { createPinia, setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraph,
+  LGraphGroup,
+  LGraphNode,
+  LiteGraph
+} from '@/lib/litegraph/src/litegraph'
 
 import { createComfyApi } from './comfyApi'
 import type { Comfy } from './comfyApi'
 import { createDefRegistry, frontendResolverMap } from './defsRegistry'
 import type { DefRegistry } from './defsRegistry'
 import { resolveFrontendNodes, resolveSuppliedInputs } from './resolution'
-import type { SupplyView,Supplier,UnconnectedInput } from './resolution'
+import type { SupplyView, Supplier, UnconnectedInput } from './resolution'
 
 describe('frontend-node resolution', () => {
   let graph: LGraph
@@ -262,18 +267,81 @@ describe('supply-side resolution', () => {
     expect(supplied.has(`${sink.id}:1`)).toBe(false)
   })
 
-  it('gives one input to the first supplier in graph order, not the last', () => {
-    // Two broadcasters both matching is a conflict with no correct answer.
-    // Deterministic beats clever: a prompt must not change when nodes move.
-    const first = spawn('Broadcaster')
+  it('feeds nothing when two suppliers claim an input equally', () => {
+    // Two broadcasters both matching has no correct answer. Picking either
+    // makes the prompt depend on node order, so the same workflow could queue
+    // differently after an unrelated edit. The broadcast pack this exists for
+    // reports the ambiguity and leaves the input alone; so do we.
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    spawn('Broadcaster')
     spawn('Broadcaster')
     const sink = spawn('Sink')
 
     const supplied = supply(new Map([['Broadcaster', broadcastModel]]))
 
+    expect(supplied.get(`${sink.id}:0`)).toBeUndefined()
+    expect(warn.mock.calls[0][0]).toContain('leaving it unfed')
+  })
+
+  it('gives the input to the highest priority claim', () => {
+    const quiet = spawn('Broadcaster')
+    const loud = spawn('Broadcaster')
+    const sink = spawn('Sink')
+
+    const supplied = supply(
+      new Map<string, Supplier>([
+        [
+          'Broadcaster',
+          (view) =>
+            view
+              .unconnectedInputs()
+              .filter((i) => i.type === 'MODEL')
+              .map((i) => ({
+                to: { nodeId: i.nodeId, input: i.input },
+                from: { output: 0 },
+                priority: view.self.id === String(loud.id) ? 10 : 1
+              }))
+        ]
+      ])
+    )
+
     expect(supplied.get(`${sink.id}:0`)).toMatchObject({
-      nodeId: String(first.id)
+      nodeId: String(loud.id)
     })
+    expect(String(quiet.id)).not.toBe(String(loud.id))
+  })
+
+  it('reports which groups a candidate and the supplier are in', () => {
+    // Broadcast packs restrict by group — "only nodes in my group", "only
+    // nodes outside it", "only groups whose title matches". Membership is
+    // geometric, so it is recomputed rather than read from anything stored.
+    const broadcaster = spawn('Broadcaster')
+    const sink = spawn('Sink')
+    broadcaster.pos = [40, 40]
+    sink.pos = [60, 60]
+    broadcaster.updateArea()
+    sink.updateArea()
+    const group = new LGraphGroup('Sampling')
+    graph.add(group)
+    group._bounding.set([0, 0, 400, 400])
+
+    let selfGroups: readonly { title: string }[] = []
+    let candidateGroups: readonly { title: string }[] = []
+    supply(
+      new Map<string, Supplier>([
+        [
+          'Broadcaster',
+          (view) => {
+            selfGroups = view.self.groups
+            candidateGroups = view.unconnectedInputs()[0]?.nodeGroups ?? []
+            return []
+          }
+        ]
+      ])
+    )
+
+    expect(selfGroups.map((g) => g.title)).toEqual(['Sampling'])
+    expect(candidateGroups.map((g) => g.title)).toEqual(['Sampling'])
   })
 
   it('can supply a literal instead of a connection', () => {
