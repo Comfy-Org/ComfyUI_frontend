@@ -1,3 +1,4 @@
+import { mapValues } from 'es-toolkit'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import type { RouteLocationNormalized, RouteRecordRaw } from 'vue-router'
@@ -27,6 +28,10 @@ const { useCurrentUser, isLoggedIn } = vi.hoisted(() => {
 })
 
 vi.mock('@/composables/auth/useCurrentUser', () => ({ useCurrentUser }))
+
+beforeEach(() => {
+  isLoggedIn.value = false
+})
 
 const oauthLayout = cloudOnboardingRoutes.find((r) => r.path === '/oauth')
 const consentRoute = oauthLayout?.children?.find(
@@ -78,15 +83,18 @@ async function attemptNavigation(target: string) {
 }
 
 /**
- * Swaps every view component for a render-null stub while leaving names, paths,
- * meta, redirects and `beforeEnter` guards untouched. `render` rather than
- * `template` so the stubs need no runtime template compiler.
+ * Swaps every view component — single or named — for a render-null stub while
+ * leaving names, paths, meta, redirects and `beforeEnter` guards untouched.
+ * `render` rather than `template` so the stubs need no runtime template
+ * compiler.
  */
 function stubViews(routes: readonly RouteRecordRaw[]): RouteRecordRaw[] {
+  const stub = { render: () => null }
   return routes.map((route) => ({
     ...route,
-    ...('component' in route && route.component
-      ? { component: { render: () => null } }
+    ...('component' in route && route.component ? { component: stub } : {}),
+    ...('components' in route && route.components
+      ? { components: mapValues(route.components, () => stub) }
       : {}),
     ...('children' in route && route.children
       ? { children: stubViews(route.children) }
@@ -98,6 +106,10 @@ function stubViews(routes: readonly RouteRecordRaw[]): RouteRecordRaw[] {
  * Lets navigation run to completion, unlike `attemptNavigation`, which aborts in
  * a global guard and so never reaches a per-route `beforeEnter`. Use this when
  * the guard itself is the thing under test.
+ *
+ * A guard that aborts or redirects unexpectedly makes `push` resolve with a
+ * `NavigationFailure` rather than throw, so the failure is asserted here instead
+ * of surfacing as a puzzling `currentRoute` mismatch in the caller.
  */
 async function completeNavigation(target: string) {
   const router = createRouter({
@@ -105,8 +117,7 @@ async function completeNavigation(target: string) {
     routes: stubViews(cloudOnboardingRoutes)
   })
 
-  await router.push(target)
-  await router.isReady()
+  expect(await router.push(target)).toBeUndefined()
 
   return router.currentRoute.value
 }
@@ -200,7 +211,6 @@ describe('cloudOnboardingRoutes', () => {
 describe('legacy /login through the cloud-login guard', () => {
   beforeEach(() => {
     clearOAuthRequestId()
-    isLoggedIn.value = false
     useCurrentUser.mockClear()
   })
 
