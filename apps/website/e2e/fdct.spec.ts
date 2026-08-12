@@ -7,6 +7,7 @@ import {
   technologists as technologistsOf
 } from '../src/data/fdct'
 import { t } from '../src/i18n/translations'
+import { faqAnswerPlainText } from '../src/utils/faqAnswer'
 import { test } from './fixtures/blockExternalMedia'
 
 // Locale-independent fields (names, counts, category slugs) are asserted from
@@ -221,13 +222,17 @@ test.describe('FDCT page @smoke', () => {
     expect(faqJsonLd, 'FAQ JSON-LD script').not.toBeNull()
     const graph = JSON.parse(faqJsonLd!)['@graph'] as {
       '@type': string
-      mainEntity?: { name: string }[]
+      mainEntity?: { name: string; acceptedAnswer: { text: string } }[]
     }[]
     const faqPage = graph.find((node) => node['@type'] === 'FAQPage')
     expect(faqPage, 'FAQPage node in @graph').toBeDefined()
+    const faqs = fdctFaqs('en')
     expect(faqPage!.mainEntity!.map((entity) => entity.name)).toEqual(
-      fdctFaqs('en').map((faq) => faq.question)
+      faqs.map((faq) => faq.question)
     )
+    expect(
+      faqPage!.mainEntity!.map((entity) => entity.acceptedAnswer.text)
+    ).toEqual(faqs.map((faq) => faqAnswerPlainText(faq.answer)))
   })
 
   test('CTA band renders the enterprise label with the decided href', async ({

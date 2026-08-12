@@ -45,11 +45,22 @@ const faqPage = faqPageNode(
   <HeroSection client:load locale="zh-CN" />
   <BuildersSection client:load locale="zh-CN" />
   <SocialProofBarSection />
-  <HowItWorksSection client:load locale="zh-CN" />
-  <WhatYouGetSection client:load locale="zh-CN" />
+  <HowItWorksSection locale="zh-CN" />
+  <WhatYouGetSection locale="zh-CN" />
   <TechnologistsSection client:load locale="zh-CN" />
-  <PastProjectsSection client:load locale="zh-CN" />
-  <ClosingCtaSection client:load locale="zh-CN" />
+  <PastProjectsSection locale="zh-CN" />
+  <ClosingCtaSection locale="zh-CN" />
   <FAQSection client:load locale="zh-CN" />
-  <CtaBandsSection client:load locale="zh-CN" />
+  <CtaBandsSection locale="zh-CN" />
 </BaseLayout>
+
+<script>
+  // Respect reduced-motion: stop the page's decorative autoplaying videos.
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    document.querySelectorAll('video[autoplay]').forEach((el) => {
+      const video = el as HTMLVideoElement
+      video.removeAttribute('autoplay')
+      video.pause()
+    })
+  }
+</script>

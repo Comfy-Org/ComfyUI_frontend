@@ -20,9 +20,7 @@ export interface FdctTechnologist {
 }
 
 // Headshots live on the media CDN; bios, tag labels, and workflow
-// descriptions resolve from translations.ts per locale. Doug's dialog tags
-// come from the design; Chris's and Rob's are placeholders drawn from their
-// bios until final copy lands.
+// descriptions resolve from translations.ts per locale.
 const technologistIdentities = {
   'doug-hogan': {
     name: 'Doug Hogan',
@@ -95,8 +93,7 @@ export interface FdctProject {
   media: { type: 'image' | 'video'; src: string; poster?: string }
   author: { name: string; avatarSrc: string }
   href: string
-  // Shown on the technologist-dialog cards; placeholder copy until final
-  // descriptions land (the design mock uses lorem ipsum here).
+  // Shown on the technologist-dialog cards; resolves from translations.ts.
   description?: string
   tags: readonly string[]
 }
