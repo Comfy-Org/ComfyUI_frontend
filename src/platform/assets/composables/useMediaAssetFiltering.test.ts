@@ -1,5 +1,7 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+
 import { createPinia, setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, ref } from 'vue'
 
 import { useMediaAssetFiltering } from '@/platform/assets/composables/useMediaAssetFiltering'
@@ -23,7 +25,7 @@ function makeAsset(spec: AssetSpec): AssetItem {
   if (spec.executionSeconds !== undefined) {
     userMetadata.executionTimeInSeconds = spec.executionSeconds
   }
-  return {
+  return fromPartial({
     id: spec.id,
     name: spec.name,
     display_name: spec.displayName,
@@ -33,7 +35,7 @@ function makeAsset(spec: AssetSpec): AssetItem {
         ? new Date(spec.createTime).toISOString()
         : undefined,
     user_metadata: userMetadata
-  }
+  })
 }
 
 function ids(assets: AssetItem[]): string[] {
@@ -43,10 +45,6 @@ function ids(assets: AssetItem[]): string[] {
 describe('useMediaAssetFiltering', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
   })
 
   describe('media-type filter', () => {
@@ -119,7 +117,6 @@ describe('useMediaAssetFiltering', () => {
     const now = new Date(2026, 6, 27, 12).getTime()
 
     beforeEach(() => {
-      vi.useFakeTimers()
       vi.setSystemTime(now)
     })
 
@@ -383,9 +380,7 @@ describe('useMediaAssetFiltering', () => {
     })
 
     it('combines media type and date before sorting', () => {
-      vi.useFakeTimers()
-      const now = new Date(2026, 6, 27, 12).getTime()
-      vi.setSystemTime(now)
+      const now = Date.now()
 
       const assets = ref<AssetItem[]>([
         makeAsset({

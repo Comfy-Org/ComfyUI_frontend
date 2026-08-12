@@ -17,7 +17,6 @@ vi.mock('@/stores/workspace/colorPaletteStore', () => ({
 describe('useMinimapSettings', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
   })
 
   it('should return all minimap settings as computed refs', () => {

@@ -2103,6 +2103,10 @@ export type JobEntry = {
     [key: string]: unknown
   }
   /**
+   * Count of outputs classified as previewable media types (images, video, audio, 3D, text) — a subset of outputs_count (omitted for non-terminal states)
+   */
+  previewable_outputs_count?: number
+  /**
    * User-friendly job status
    */
   status: 'pending' | 'in_progress' | 'completed' | 'failed' | 'cancelled'
@@ -2277,6 +2281,10 @@ export type JobDetailResponse = {
   preview_output?: {
     [key: string]: unknown
   }
+  /**
+   * Count of outputs classified as previewable media types (images, video, audio, 3D, text) — a subset of outputs_count (omitted for non-terminal states)
+   */
+  previewable_outputs_count?: number
   /**
    * User-friendly job status
    */
@@ -4592,13 +4600,55 @@ export type ListAssetsData = {
   path?: never
   query?: {
     /**
-     * Filter assets that have ALL of these tags
+     * Deprecated alias for `tags_all`, kept permanently for existing
+     * callers. Filter assets that have ALL of these tags. Combining it
+     * with `tags_all`, or exceeding 100 tags (counted after removing
+     * empty values and duplicates), returns 400 `INVALID_TAG_FILTER`.
+     *
+     *
+     * @deprecated
      */
     include_tags?: Array<string>
     /**
-     * Exclude assets that have ANY of these tags
+     * Deprecated alias for `tags_none`, kept permanently for existing
+     * callers. Exclude assets that have ANY of these tags. Combining it
+     * with `tags_none`, or exceeding 100 tags (counted after removing
+     * empty values and duplicates), returns 400 `INVALID_TAG_FILTER`.
+     *
+     *
+     * @deprecated
      */
     exclude_tags?: Array<string>
+    /**
+     * Filter assets that have ALL of these tags. Tag values are opaque
+     * byte-strings compared exactly and case-sensitively; unknown tags
+     * are not an error — they simply match nothing. Replaces the
+     * deprecated `include_tags`. Sending both spellings, listing the
+     * same tag here and in `tags_none`, or exceeding 100 tags per list
+     * (counted after removing empty values and duplicates) returns 400
+     * `INVALID_TAG_FILTER`.
+     *
+     */
+    tags_all?: Array<string>
+    /**
+     * Filter assets that have AT LEAST ONE of these tags. Combines with
+     * `tags_all`/`tags_none` by intersection (`tags_none` always wins;
+     * overlap with `tags_none` is allowed and leaves a dead term).
+     * Supplying a positive tag filter (`tags_any`, `tags_all`, or
+     * `include_tags`) replaces the default category filter that is
+     * otherwise applied. Lists over 100 tags (counted after removing
+     * empty values and duplicates) return 400 `INVALID_TAG_FILTER`.
+     *
+     */
+    tags_any?: Array<string>
+    /**
+     * Exclude assets that have ANY of these tags. Replaces the
+     * deprecated `exclude_tags`. Sending both spellings, or exceeding
+     * 100 tags per list (counted after removing empty values and
+     * duplicates), returns 400 `INVALID_TAG_FILTER`.
+     *
+     */
+    tags_none?: Array<string>
     /**
      * Filter assets where name contains this substring (case-insensitive)
      */
@@ -5556,13 +5606,47 @@ export type GetAssetTagHistogramData = {
   path?: never
   query?: {
     /**
-     * Filter assets that have ALL of these tags
+     * Deprecated alias for `tags_all`, kept permanently for existing
+     * callers. Filter assets that have ALL of these tags. The same
+     * combination and list-size rules as on `/api/assets` apply
+     * (400 `INVALID_TAG_FILTER`).
+     *
+     *
+     * @deprecated
      */
     include_tags?: Array<string>
     /**
-     * Exclude assets that have ANY of these tags
+     * Deprecated alias for `tags_none`, kept permanently for existing
+     * callers. Exclude assets that have ANY of these tags. The same
+     * combination and list-size rules as on `/api/assets` apply
+     * (400 `INVALID_TAG_FILTER`).
+     *
+     *
+     * @deprecated
      */
     exclude_tags?: Array<string>
+    /**
+     * Filter assets that have ALL of these tags. Replaces the deprecated
+     * `include_tags`. The same combination and list-size rules as on
+     * `/api/assets` apply (400 `INVALID_TAG_FILTER`).
+     *
+     */
+    tags_all?: Array<string>
+    /**
+     * Filter assets that have AT LEAST ONE of these tags. Combines with
+     * `tags_all`/`tags_none` by intersection (`tags_none` always wins).
+     * The same combination and list-size rules as on `/api/assets` apply
+     * (400 `INVALID_TAG_FILTER`).
+     *
+     */
+    tags_any?: Array<string>
+    /**
+     * Exclude assets that have ANY of these tags. Replaces the deprecated
+     * `exclude_tags`. The same combination and list-size rules as on
+     * `/api/assets` apply (400 `INVALID_TAG_FILTER`).
+     *
+     */
+    tags_none?: Array<string>
     /**
      * Filter assets where name contains this substring (case-insensitive)
      */
@@ -9977,7 +10061,12 @@ export type CreateWorkflowUploadUrlResponse =
 export type ListWorkspaceApiKeysData = {
   body?: never
   path?: never
-  query?: never
+  query?: {
+    /**
+     * Include revoked API keys in the response
+     */
+    include_revoked?: boolean
+  }
   url: '/api/workspace/api-keys'
 }
 
