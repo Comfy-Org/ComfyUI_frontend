@@ -51,15 +51,6 @@ hook, another test tidying up after itself, or enabling the `unstubGlobals`
 config option - drops it and puts the real `fetch` back without failing
 anything.
 
-A test that inserts a `<script src>` (the GTM provider tests, for example)
-prints a stack trace on stderr: `DOMException [NotSupportedError]: Failed to
-load script "...". JavaScript file loading is disabled.` This is the guard
-working, not a failure - the element fires its `error` event synchronously and
-nothing reaches the network. The noise cannot be silenced from test code
-because happy-dom writes through the worker's original console, which sits
-underneath vitest's console interception. When a run is red, these traces are
-not what made it red; look for the `Unhandled Errors` section instead.
-
 ## Component Testing
 
 - Use `@testing-library/vue` with `@testing-library/user-event` for component tests (an ESLint rule bans `@vue/test-utils` in new tests)
