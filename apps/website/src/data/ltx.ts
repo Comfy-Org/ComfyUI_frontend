@@ -5,17 +5,11 @@ import type {
 
 import { externalLinks } from '../config/routes'
 
-// Image-to-video is the LTX workflow people reach for first, so the hero and the
-// free cards open that template on Cloud. The premium (pay-as-you-go) cards open
-// the partner-API first-last-frame template instead.
 const ltxLinks = {
   cloudRun: 'https://cloud.comfy.org/?template=video_ltx2_5_i2v',
   cloudRunPremium: 'https://cloud.comfy.org/?template=api_ltx2_5_flf2v'
 } as const
 
-// LTX 2.5 clips, encoded to the site's web video profile (VP9 webm, 1200px wide,
-// muted) and served from media.comfy.org. Posters are not published yet, so the
-// gallery opens on an empty frame until each clip loads, as /flux-3 does.
 const media = {
   hero: {
     kind: 'video',
@@ -155,7 +149,6 @@ export const ltxPage: ModelLaunchPage = {
     ]
   },
   pricing: {
-    // Opens on monthly, as /minimax and /flux-3 do.
     defaultBillingCycle: 'monthly',
     banner: {
       titleKey: 'ltx.pricing.banner.title',

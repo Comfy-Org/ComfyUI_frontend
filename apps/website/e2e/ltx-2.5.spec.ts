@@ -14,8 +14,6 @@ const REVIEWS_HEADING = t('ltx.reviews.heading', 'en')
 const HIGHLIGHT_CTA = t('ltx.reviews.highlightCta', 'en')
 const MCP_ROUTE = getRoutes('en').mcp
 const FIRST_REVIEW = creatorReviews[0]
-// The launch template the "RUN LTX 2.5" button must open. Pinned as a literal so
-// repointing the CTA back at the generic hub fails here, not just in review.
 const LTX_RUN_TEMPLATE = 'https://cloud.comfy.org/?template=video_ltx2_5_i2v'
 
 test.describe('LTX 2.5 page — desktop @smoke', () => {

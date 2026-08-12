@@ -4816,8 +4816,6 @@ const translations = {
     'zh-CN': '最新发布'
   },
 
-  // LTX 2.5 SEO page (/ltx-2.5). zh-CN hand-translated. Copy transcribed from the
-  // Figma launch frame; hero labels list four per review direction.
   'ltx.meta.title': {
     en: 'LTX 2.5 on Comfy — Open-Source AI Video Model',
     'zh-CN': 'Comfy 上的 LTX 2.5 — 开源 AI 视频模型'
