@@ -152,3 +152,33 @@ describe('onChange', () => {
     expect(seen).toEqual([])
   })
 })
+
+describe('setting control types', () => {
+  it('declares a colour setting as a colour, not a text field', () => {
+    // Packs fell back to a text box the user pasted six hex digits into,
+    // because the published union named only five of core's types.
+    setActivePinia(createPinia())
+    const settings = createSettingsApi()
+
+    settings.declare({
+      id: 'MyPack.accent',
+      name: 'Accent',
+      type: 'color',
+      defaultValue: '#336699'
+    })
+
+    expect(useSettingStore().settingsById['MyPack.accent']?.type).toBe('color')
+  })
+
+  it('declares an image setting, which core renders as a file picker', () => {
+    setActivePinia(createPinia())
+    createSettingsApi().declare({
+      id: 'MyPack.logo',
+      name: 'Logo',
+      type: 'image',
+      defaultValue: ''
+    })
+
+    expect(useSettingStore().settingsById['MyPack.logo']?.type).toBe('image')
+  })
+})

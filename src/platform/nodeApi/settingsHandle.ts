@@ -29,13 +29,34 @@ export interface SettingDef {
    */
   readonly id: string
   readonly name: string
-  readonly type: 'boolean' | 'number' | 'slider' | 'text' | 'combo'
+  /**
+   * Which control the panel shows. Every one of these is declarative — the
+   * host renders it.
+   *
+   * A pack-supplied renderer is deliberately absent. Core's own setting type
+   * accepts a function that is handed the value and a setter and returns an
+   * element; publishing that would put packs in charge of the settings
+   * panel's markup, which is the thing that cannot then be restyled. Packs
+   * that needed a colour or a file were falling back to a text field the user
+   * pasted into, so the gap was the missing *types*, not a missing slot.
+   */
+  readonly type:
+    | 'boolean'
+    | 'number'
+    | 'slider'
+    | 'knob'
+    | 'combo'
+    | 'radio'
+    | 'text'
+    | 'color'
+    | 'image'
+    | 'url'
   readonly defaultValue: SettingValue
   readonly tooltip?: string
   /** Panel grouping. Defaults to the id split on dots. */
   readonly category?: readonly string[]
   /**
-   * Choices for `combo`.
+   * Choices for `combo` and `radio`.
    *
    * A bare string is both the stored value and the label. Use the pair form
    * when they differ — several packs store a semantic number and show words
