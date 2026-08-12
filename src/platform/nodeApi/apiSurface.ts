@@ -13,6 +13,7 @@
 export const API_MEMBERS: ReadonlySet<string> = new Set([
   'Record',
   'add',
+  'addBadge',
   'addMenuItem',
   'addSidebarTab',
   'addWidget',
