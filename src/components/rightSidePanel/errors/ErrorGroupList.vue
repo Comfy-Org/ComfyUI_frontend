@@ -59,15 +59,17 @@
             data-testid="errors-summary-filters"
             class="flex flex-wrap items-center gap-2 px-2 pb-2"
           >
-            <button
+            <Button
               v-for="chip in severityChips"
               :key="chip.severity"
               type="button"
+              variant="outline"
+              size="sm"
               :data-testid="'errors-summary-filter-' + chip.severity"
               :aria-pressed="chip.active"
               :class="
                 cn(
-                  'focus-visible:ring-ring flex h-7 shrink-0 cursor-pointer appearance-none items-center gap-1 rounded-lg border border-solid bg-transparent px-3 text-xs font-semibold transition-colors outline-none focus-visible:ring-1',
+                  'h-7 shrink-0 gap-1 rounded-lg px-3 text-xs font-semibold hover:bg-transparent',
                   chip.active && 'gap-2 pr-2',
                   SEVERITY_CHIP_CLASS[chip.severity][
                     chip.active ? 'active' : 'idle'
@@ -82,7 +84,7 @@
                 aria-hidden="true"
                 class="icon-[lucide--x] size-3.5"
               />
-            </button>
+            </Button>
           </div>
         </div>
 
