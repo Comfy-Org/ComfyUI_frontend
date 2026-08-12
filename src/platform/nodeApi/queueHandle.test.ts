@@ -1,9 +1,11 @@
 import { createPinia, setActivePinia } from 'pinia'
+import { nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { toNodeId } from '@/types/nodeId'
 import { api } from '@/scripts/api'
+import { useQueuePendingTaskCountStore } from '@/stores/queueStore'
 
 import { createComfyApi } from './comfyApi'
 
@@ -74,6 +76,40 @@ describe('comfy.queue', () => {
       /not in the graph/
     )
     expect(queuePrompt).not.toHaveBeenCalled()
+  })
+
+  it('reports how many runs are waiting, and when that changes', async () => {
+    // Packs re-implemented app.ui.lastQueueSize from the backend's status
+    // message to decide whether a button says Run or Cancel.
+    const comfy = createComfyApi(() => graphWith('A'))
+    const seen: number[] = []
+    comfy.queue.onPendingChanged((n) => seen.push(n))
+
+    expect(comfy.queue.pending()).toBe(0)
+    useQueuePendingTaskCountStore().count = 3
+    await nextTick()
+
+    expect(comfy.queue.pending()).toBe(3)
+    expect(seen).toEqual([3])
+  })
+
+  it('cancels the running job and reports an interruption', async () => {
+    const interrupt = vi.spyOn(api, 'interrupt').mockResolvedValue(undefined)
+    const comfy = createComfyApi(() => graphWith('A'))
+    const interrupted = vi.fn()
+    comfy.queue.onInterrupted(interrupted)
+
+    await comfy.queue.interrupt()
+    expect(interrupt).toHaveBeenCalledWith(null)
+
+    api.dispatchCustomEvent('execution_interrupted', {
+      prompt_id: 'p',
+      timestamp: 0,
+      node_id: '1',
+      node_type: 'X',
+      executed: []
+    })
+    expect(interrupted).toHaveBeenCalledTimes(1)
   })
 
   it('reports runs starting and finishing being submitted', () => {
