@@ -1027,6 +1027,7 @@ describe('useWorkflowService', () => {
         }
       )
 
+      const addToastSpy = vi.spyOn(useToastStore(), 'add')
       const service = useWorkflowService()
       const firstClose = service.closeWorkflow(closing, {
         warnIfUnsaved: false
@@ -1035,7 +1036,10 @@ describe('useWorkflowService', () => {
         warnIfUnsaved: false
       })
 
-      await expect(firstClose).rejects.toThrow('replacement failed')
+      await expect(firstClose).resolves.toBe(true)
+      expect(addToastSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error' })
+      )
       await vi.waitFor(() => expect(app.loadGraphData).toHaveBeenCalledTimes(2))
       const staleOpen = service.openWorkflow(closing)
       resolveReplacement?.()
@@ -1044,6 +1048,30 @@ describe('useWorkflowService', () => {
       expect(app.loadGraphData).toHaveBeenCalledTimes(2)
       expect(workflowStore.openWorkflows).not.toContain(closing)
       expect(workflowStore.activeWorkflow?.path).toBe(replacement.path)
+    })
+
+    it('still closes the tab and surfaces a toast when the replacement load fails', async () => {
+      const workflowStore = useWorkflowStore()
+      const closing = createWorkflow(null, {
+        loadable: true,
+        path: 'workflows/closing.json'
+      })
+      Object.defineProperty(closing, 'unload', { value: vi.fn() })
+      workflowStore.attachWorkflow(closing, 0)
+      workflowStore.activeWorkflow = closing as LoadedComfyWorkflow
+      vi.mocked(app.loadGraphData).mockRejectedValue(
+        new Error('replacement failed')
+      )
+      const addToastSpy = vi.spyOn(useToastStore(), 'add')
+
+      await expect(
+        useWorkflowService().closeWorkflow(closing, { warnIfUnsaved: false })
+      ).resolves.toBe(true)
+
+      expect(workflowStore.openWorkflows).not.toContain(closing)
+      expect(addToastSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error' })
+      )
     })
   })
 

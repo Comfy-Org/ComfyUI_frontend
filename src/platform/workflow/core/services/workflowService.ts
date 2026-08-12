@@ -410,10 +410,24 @@ export const useWorkflowService = () => {
             replacementWorkflow = candidate
           }
         }
-        if (replacementWorkflow) {
-          await openWorkflow(replacementWorkflow)
-        } else {
-          await queueWorkflowLoad(loadDefaultWorkflow)
+        try {
+          if (replacementWorkflow) {
+            await openWorkflow(replacementWorkflow)
+          } else {
+            await queueWorkflowLoad(loadDefaultWorkflow)
+          }
+        } catch (error) {
+          // Still close the tab: the draft is already removed, so leaving the
+          // tab open would strand it in a half-closed state with no draft.
+          console.error(
+            '[workflowService] replacement load failed during close',
+            error
+          )
+          toastStore.add({
+            severity: 'error',
+            summary: t('g.error'),
+            detail: t('toastMessages.failedToLoadReplacementWorkflow')
+          })
         }
       }
 

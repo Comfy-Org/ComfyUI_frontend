@@ -1579,10 +1579,14 @@ export class ComfyApp {
         })
       }
 
-      void useSubgraphNavigationStore().updateHash(
-        'workflow-load',
-        workflowNavigationId
-      )
+      void useSubgraphNavigationStore()
+        .updateHash('workflow-load', workflowNavigationId)
+        .catch((err) => {
+          console.warn(
+            '[subgraphNavigation] hash sync rejected after workflow load',
+            err
+          )
+        })
       requestAnimationFrame(() => {
         this.canvas.setDirty(true, true)
       })

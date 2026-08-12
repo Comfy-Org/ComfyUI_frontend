@@ -90,7 +90,7 @@ const {
   },
   mockSubgraphNavigationStore: {
     saveCurrentViewport: vi.fn(),
-    updateHash: vi.fn()
+    updateHash: vi.fn(async () => {})
   },
   mockWorkspaceWorkflow: {
     activeWorkflow: null as ComfyWorkflow | null,
