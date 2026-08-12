@@ -16,13 +16,38 @@ export function errorSurfaces(page: Page): Record<string, Locator> {
   }
 }
 
+// What a non-empty surface actually says, so a red names the error instead
+// of reporting a bare element count (the cloud gate's dominant failure class
+// was 12x "at startup: errorToasts" with no text - run 31541231667). A read
+// that races a boot navigation returns a sentinel rather than throwing, so
+// the poll below keeps retrying exactly like toHaveCount(0) did.
+async function surfaceTexts(
+  surface: string,
+  locator: Locator
+): Promise<string[]> {
+  try {
+    return (await locator.allInnerTexts()).map((text) =>
+      text.replace(/\s+/g, ' ').trim().slice(0, 300)
+    )
+  } catch (error) {
+    return [`${surface} present but unreadable mid-poll: ${String(error)}`]
+  }
+}
+
 // The suite's central invariant: a regression run is green only if every
 // user-visible error surface is empty. Kept here (single source) so a new
-// surface added above is enforced everywhere at once.
+// surface added above is enforced everywhere at once. Polling toEqual([])
+// keeps toHaveCount(0)'s tolerance - a transient surface that clears within
+// the expect timeout still passes - while a persistent one fails with its
+// visible text as the last polled value.
 export async function expectNoVisibleErrors(
   page: Page,
   context: string
 ): Promise<void> {
   for (const [surface, locator] of Object.entries(errorSurfaces(page)))
-    await expect(locator, `${context}: ${surface}`).toHaveCount(0)
+    await expect
+      .poll(() => surfaceTexts(surface, locator), {
+        message: `${context}: ${surface}`
+      })
+      .toEqual([])
 }
