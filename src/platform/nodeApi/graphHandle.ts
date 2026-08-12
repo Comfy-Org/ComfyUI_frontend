@@ -6,7 +6,7 @@
  * below it is independently testable.
  */
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import type { LGraph, Subgraph } from '@/lib/litegraph/src/LGraph'
 import { outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 import { toNodeId } from '@/types/nodeId'
 
@@ -96,6 +96,26 @@ export interface GraphHandle {
    */
   pointerPosition(): Point | undefined
   /**
+   * The subgraph definitions in the document, each scoped to its own nodes.
+   *
+   * `nodes()` and `node()` address the graph on screen only, so a pack that
+   * must reach every node — refreshing its own nodes after a run, walking a
+   * chain — misses anything nested.
+   *
+   * Access is *through* the subgraph rather than a flattened list. Ids are
+   * allocated from the root graph's counter, so they do not collide among
+   * nodes created in one session — but a subgraph loaded from a file brings
+   * its authored ids, and `configure` raises that counter without renumbering
+   * anything. Two independently authored subgraphs can therefore carry the
+   * same id. Resolving inside the owning graph is correct either way, and does
+   * not rest on an invariant litegraph does not promise.
+   *
+   * These are definitions, not instances. A subgraph placed three times has
+   * one entry, and its nodes appear once — which is what a pack acting on
+   * "each of my nodes" wants.
+   */
+  subgraphs(): readonly SubgraphHandle[]
+  /**
    * The topmost node at a point in graph space, if any.
    *
    * Packs building a gesture were walking every node and re-deriving its
@@ -181,6 +201,7 @@ export function createGraphApi(
     nodeHandles.handleFor(nodeId) as NodeHandle
 
   const groupHandle = createGroupHandles(handleFor)
+  const subgraphHandle = createSubgraphHandles()
 
   const requireGraph = (action: string): LGraph => {
     const graph = getGraph()
@@ -267,6 +288,15 @@ export function createGraphApi(
       return Object.freeze(groups.map(groupHandle))
     },
 
+    subgraphs() {
+      const graph = getGraph()
+      const definitions = graph?.rootGraph?.subgraphs
+      if (!definitions) return Object.freeze([])
+      return Object.freeze(
+        [...definitions.values()].map((subgraph) => subgraphHandle(subgraph))
+      )
+    },
+
     pointerPosition() {
       const canvas = LGraphCanvas.active_canvas
       if (!canvas) return undefined
@@ -327,4 +357,46 @@ export function createGraphApi(
   }
 
   return Object.freeze(api)
+}
+
+/**
+ * A subgraph definition, scoped to its own contents.
+ *
+ * Deliberately narrower than {@link GraphHandle}: adding, selecting, centring
+ * and zooming all address what the user is looking at, and a subgraph
+ * definition is not that. This is for reading and reaching nodes.
+ */
+interface SubgraphHandle {
+  /** Stable across every instance of this subgraph. */
+  readonly id: string
+  readonly name: string
+  nodes(): readonly NodeHandle[]
+  node(nodeId: string): NodeHandle | undefined
+}
+
+/**
+ * Each subgraph gets its own handle namespace, so a node's id is only ever
+ * resolved against the graph it belongs to — and one cache cannot return a
+ * handle for the wrong graph's node of the same id.
+ */
+function createSubgraphHandles() {
+  const byId = new Map<string, SubgraphHandle>()
+
+  return function subgraphHandle(subgraph: Subgraph): SubgraphHandle {
+    const id = String(subgraph.id)
+    const existing = byId.get(id)
+    if (existing) return existing
+
+    const scoped = createGraphApi(() => subgraph, `subgraph:${id}`)
+    const handle: SubgraphHandle = Object.freeze({
+      id,
+      get name() {
+        return subgraph.name
+      },
+      nodes: () => scoped.nodes(),
+      node: (nodeId: string) => scoped.node(nodeId)
+    })
+    byId.set(id, handle)
+    return handle
+  }
 }

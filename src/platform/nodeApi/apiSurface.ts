@@ -243,6 +243,7 @@ export const API_MEMBERS: ReadonlySet<string> = new Set([
   'sourceSlotId',
   'step',
   'storage',
+  'subgraphs',
   'summary',
   'supply',
   'supports',
