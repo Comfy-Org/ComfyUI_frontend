@@ -1,4 +1,3 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
@@ -302,14 +301,10 @@ describe('useCoreCommands', () => {
   }
 
   beforeEach(() => {
-    vi.clearAllMocks()
     mockDistributionState.isCloud = false
     vi.mocked(app.refreshComboInNodes).mockResolvedValue(undefined)
     mockModelStoreRefresh.mockResolvedValue(undefined)
     mockMissingModelStoreRefresh.mockResolvedValue(undefined)
-
-    // Set up Pinia
-    setActivePinia(createPinia())
 
     // Reset app state
     app.canvas.subgraph = undefined
@@ -390,9 +385,6 @@ describe('useCoreCommands', () => {
 
     beforeEach(() => {
       app.canvas.selectedItems = new Set()
-      vi.mocked(app.canvas.copyToClipboard).mockClear()
-      vi.mocked(app.canvas.pasteFromClipboard).mockClear()
-      vi.mocked(app.canvas.selectItems).mockClear()
     })
 
     it('should copy selected items when selection exists', async () => {
@@ -428,7 +420,6 @@ describe('useCoreCommands', () => {
   describe('Subgraph metadata commands', () => {
     beforeEach(() => {
       mockSubgraph.extra = {}
-      vi.clearAllMocks()
     })
 
     describe('SetDescription command', () => {

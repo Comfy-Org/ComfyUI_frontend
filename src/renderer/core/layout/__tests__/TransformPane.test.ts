@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { computed, nextTick } from 'vue'
 
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
@@ -42,11 +42,6 @@ function createMockLGraphCanvas() {
 }
 
 describe('TransformPane', () => {
-  beforeEach(() => {
-    vi.useFakeTimers()
-    vi.resetAllMocks()
-  })
-
   describe('component mounting', () => {
     it('should mount successfully with minimal props', () => {
       const mockCanvas = createMockLGraphCanvas()

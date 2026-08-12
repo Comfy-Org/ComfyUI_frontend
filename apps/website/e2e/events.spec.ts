@@ -309,6 +309,7 @@ test.describe('Events page — mobile @mobile', () => {
   })
 
   test('upcoming event rows stay within viewport width', async ({ page }) => {
+    test.skip(upcomingEvents.length === 0, 'needs an upcoming event')
     await page.goto(PATH_EN)
     const section = upcomingSection(page, 'en')
     const firstRow = section.locator('li').first()
