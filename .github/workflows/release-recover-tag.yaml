@@ -1,12 +1,5 @@
 ---
 # Creates the release a merged version bump never got.
-#
-# release-draft-create.yaml only fires when a Release-labelled bump PR closes,
-# so when its release step fails the tag has no other path into existence: the
-# branch sits at a version nothing points at, PyPI publishing and the ComfyUI
-# pin bump both wait on a tag that will never appear, and every later run
-# resolves the *next* patch instead. core/1.48 stalled this way at 1.48.9 with
-# v1.48.7 as its newest tag.
 name: 'Release: Recover Tag'
 
 on:
