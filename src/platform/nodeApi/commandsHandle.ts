@@ -40,10 +40,31 @@ export interface NotifyDef {
 export interface CommandsHandle {
   register(def: CommandDef): void
   notify(def: NotifyDef): void
+  /**
+   * Runs a command the host or another pack registered, by id.
+   *
+   * Packs reached into internals to do what a command already does — opening
+   * the mask editor was `ComfyApp.copyToClipspace` plus `clipspace_return_node`
+   * plus invoking `Comfy.MaskEditor.OpenMaskEditor` by hand. Commands are the
+   * sanctioned action layer, so a pack can ask for the behaviour without the
+   * host having to publish the machinery behind it.
+   *
+   * Rejects if no such command is registered — a pack naming a command that
+   * has been renamed should hear about it rather than silently do nothing.
+   */
+  run(id: string): Promise<void>
+  /** Whether a command exists, for a pack that offers an entry conditionally. */
+  has(id: string): boolean
 }
 
 export function createCommandsApi(): CommandsHandle {
   const handle: CommandsHandle = {
+    async run(id: string) {
+      await useCommandStore().execute(id)
+    },
+
+    has: (id: string) => useCommandStore().isRegistered(id),
+
     register(def: CommandDef) {
       if (!def.id.includes('.')) {
         throw new ComfyApiError(
