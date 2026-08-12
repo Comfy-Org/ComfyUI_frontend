@@ -40,8 +40,15 @@ const parseTraceCountry = (body: string): string | undefined => {
 /**
  * The abort signal alone is not enough: a request the browser never resolves
  * nor rejects would hang forever, so the deadline rejects independently.
+ *
+ * `read` runs inside the deadline so a response that sends headers and then
+ * stalls its body is bounded too.
  */
-async function fetchWithin(url: string, init: RequestInit): Promise<Response> {
+async function fetchWithin<T>(
+  url: string,
+  init: RequestInit,
+  read: (response: Response) => Promise<T>
+): Promise<T> {
   const controller = new AbortController()
   let expire: ReturnType<typeof setTimeout> | undefined
 
@@ -54,7 +61,7 @@ async function fetchWithin(url: string, init: RequestInit): Promise<Response> {
 
   try {
     return await Promise.race([
-      fetch(url, { ...init, signal: controller.signal }),
+      fetch(url, { ...init, signal: controller.signal }).then(read),
       deadline
     ])
   } finally {
@@ -65,19 +72,19 @@ async function fetchWithin(url: string, init: RequestInit): Promise<Response> {
 /** ISO country from the CDN edge, or `undefined` when it cannot answer. */
 export async function getClientCountry(): Promise<string | undefined> {
   try {
-    const response = await fetchWithin(CLIENT_COUNTRY_URL, {
-      cache: 'no-store'
-    })
-    if (!response.ok) return undefined
-
-    return parseTraceCountry(await response.text())
+    const body = await fetchWithin(
+      CLIENT_COUNTRY_URL,
+      { cache: 'no-store' },
+      async (response) => (response.ok ? response.text() : undefined)
+    )
+    return body === undefined ? undefined : parseTraceCountry(body)
   } catch {
     return undefined
   }
 }
 
 const probe = (url: string) =>
-  fetchWithin(url, { mode: 'no-cors', cache: 'no-cache' })
+  fetchWithin(url, { mode: 'no-cors', cache: 'no-cache' }, async () => {})
 
 /**
  * Fallback for when the edge cannot answer. Unsound both ways: a VPN user in

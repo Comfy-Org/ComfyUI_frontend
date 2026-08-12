@@ -68,6 +68,21 @@ describe('getClientCountry', () => {
 
     expect(await settlementOf(country)).toBeUndefined()
   })
+
+  it('gives up when the edge sends headers and then stalls the body', async () => {
+    vi.useFakeTimers()
+    fetchMock.mockResolvedValue({
+      ok: true,
+      text: () => new Promise<string>(() => {})
+    } as Response)
+
+    const country = getClientCountry()
+    expect(await settlementOf(country)).toBe('PENDING')
+
+    await vi.advanceTimersByTimeAsync(2000)
+
+    expect(await settlementOf(country)).toBeUndefined()
+  })
 })
 
 describe('isInChina', () => {
