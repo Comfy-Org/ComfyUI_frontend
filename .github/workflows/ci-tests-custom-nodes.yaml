@@ -27,7 +27,7 @@ on:
         description: 'Isolation proof mode: clean split or deliberate row break'
         required: false
         type: choice
-        options: ['0', 'split', '1', '2', '3', '7', '9', '14']
+        options: ['0', 'split', 'all', '1', '2', '3', '7', '9', '14']
         default: '0'
 
 concurrency:
@@ -54,6 +54,11 @@ jobs:
   # cross-test state contracts require one worker for an accepted verdict.
   custom-nodes-e2e-core:
     needs: changes
+    strategy:
+      fail-fast: false
+      matrix:
+        proof_row: >-
+          ${{ fromJSON(github.event_name == 'workflow_dispatch' && inputs.shared_boot_proof_row == 'all' && '["1","2","3","9","14"]' || format('["{0}"]', inputs.shared_boot_proof_row || '0')) }}
     # Run only when non-docs code changed AND the PR is same-repo. Fork PRs can
     # edit the manifest's repo/pin URLs, and this job clones and pip-installs
     # whatever they point at (setup.py runs at install time), so an untrusted
@@ -75,12 +80,12 @@ jobs:
       - name: Apply Detection Proof source break
         if: >-
           github.event_name == 'workflow_dispatch' &&
-          inputs.shared_boot_proof_row != '0' &&
-          inputs.shared_boot_proof_row != 'split' &&
-          inputs.shared_boot_proof_row != '9'
+          matrix.proof_row != '0' &&
+          matrix.proof_row != 'split' &&
+          matrix.proof_row != '9'
         shell: bash
         env:
-          ROW: ${{ inputs.shared_boot_proof_row }}
+          ROW: ${{ matrix.proof_row }}
         run: |
           set -euo pipefail
           d=browser_tests/tests/customNodes/detection-proof
@@ -167,7 +172,7 @@ jobs:
       - name: Apply shared-boot execution break
         if: >-
           github.event_name == 'workflow_dispatch' &&
-          inputs.shared_boot_proof_row == '9'
+          matrix.proof_row == '9'
         shell: bash
         run: |
           set -euo pipefail
@@ -192,14 +197,14 @@ jobs:
       - name: Run custom-node suite
         id: suite
         continue-on-error: >-
-          ${{ github.event_name == 'workflow_dispatch' && inputs.shared_boot_proof_row != '0' && inputs.shared_boot_proof_row != 'split' }}
+          ${{ github.event_name == 'workflow_dispatch' && matrix.proof_row != '0' && matrix.proof_row != 'split' }}
         env:
           CN_ENABLE_S14: '1'
           CN_ENABLE_S15: '1'
           CUSTOM_NODE_SHARED_SESSION: >-
-            ${{ github.event_name == 'workflow_dispatch' && inputs.shared_boot_proof_row == '7' && '1' || '0' }}
+            ${{ github.event_name == 'workflow_dispatch' && matrix.proof_row == '7' && '1' || '0' }}
           PLAYWRIGHT_JSON_OUTPUT_NAME: custom-nodes-results.json
-          PROOF_ROW: ${{ inputs.shared_boot_proof_row || '0' }}
+          PROOF_ROW: ${{ matrix.proof_row }}
         run: |
           set -o pipefail
           # workers=1: the auto-run tier needs exclusive backend-queue access;
@@ -235,11 +240,11 @@ jobs:
       - name: Forbid failed, skipped, or flaky tests
         if: >-
           always() &&
-          !(github.event_name == 'workflow_dispatch' && inputs.shared_boot_proof_row != '0' && inputs.shared_boot_proof_row != 'split')
+          !(github.event_name == 'workflow_dispatch' && matrix.proof_row != '0' && matrix.proof_row != 'split')
         shell: bash
         env:
           SUITE_OUTCOME: ${{ steps.suite.outcome }}
-          EXPECTED_TESTS: ${{ inputs.shared_boot_proof_row == 'split' && '5' || '34' }}
+          EXPECTED_TESTS: ${{ matrix.proof_row == 'split' && '5' || '34' }}
         run: |
           set -euo pipefail
           # The JSON result is mandatory even when the suite step failed: the
@@ -289,11 +294,11 @@ jobs:
         if: >-
           always() &&
           github.event_name == 'workflow_dispatch' &&
-          inputs.shared_boot_proof_row != '0' &&
-          inputs.shared_boot_proof_row != 'split'
+          matrix.proof_row != '0' &&
+          matrix.proof_row != 'split'
         shell: bash
         env:
-          PROOF_ROW: ${{ inputs.shared_boot_proof_row }}
+          PROOF_ROW: ${{ matrix.proof_row }}
           SUITE_OUTCOME: ${{ steps.suite.outcome }}
         run: |
           set -euo pipefail
@@ -384,7 +389,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v6
         with:
-          name: ${{ github.event_name == 'workflow_dispatch' && inputs.shared_boot_proof_row != '0' && format('playwright-report-custom-nodes-row{0}', inputs.shared_boot_proof_row) || 'playwright-report-custom-nodes' }}
+          name: ${{ github.event_name == 'workflow_dispatch' && matrix.proof_row != '0' && format('playwright-report-custom-nodes-row{0}', matrix.proof_row) || 'playwright-report-custom-nodes' }}
           path: |
             playwright-report/
             custom-nodes-results.json
