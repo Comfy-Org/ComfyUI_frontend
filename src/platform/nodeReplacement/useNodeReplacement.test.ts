@@ -4,11 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import {
-  LiteGraph,
-  registerNodeState,
-  unregisterNodeState
-} from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useLinkStore } from '@/stores/linkStore'
 import type { MissingNodeType } from '@/types/comfy'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
@@ -21,9 +17,12 @@ vi.mock('@/lib/litegraph/src/litegraph', () => ({
   LiteGraph: {
     createNode: vi.fn(),
     registered_node_types: {}
-  },
-  registerNodeState: vi.fn(),
-  unregisterNodeState: vi.fn()
+  }
+}))
+
+vi.mock('@/lib/litegraph/src/LGraphNode', () => ({
+  canTransferReplacementOwnership: vi.fn(() => true),
+  transferReplacementOwnership: vi.fn(() => true)
 }))
 
 vi.mock('@/scripts/app', () => ({
@@ -487,6 +486,7 @@ describe('useNodeReplacement', () => {
       )
       placeholder.pos = [300, 400]
       placeholder.size = [250, 150]
+      placeholder.onRemoved = vi.fn()
 
       const graph = createMockGraph([placeholder], [link])
       placeholder.graph = graph
@@ -517,12 +517,7 @@ describe('useNodeReplacement', () => {
       expect(newNode.pos).toEqual([300, 400])
       expect(newNode.size).toEqual([250, 150])
       expect(graph._nodes[0]).toBe(newNode)
-
-      expect(unregisterNodeState).toHaveBeenCalledWith(placeholder)
-      expect(registerNodeState).toHaveBeenCalledWith(graph, newNode)
-      expect(
-        vi.mocked(unregisterNodeState).mock.invocationCallOrder[0]
-      ).toBeLessThan(vi.mocked(registerNodeState).mock.invocationCallOrder[0])
+      expect(placeholder.onRemoved).toHaveBeenCalledOnce()
     })
 
     it('should transfer all widget values for ImageScaleBy with real workflow data', () => {

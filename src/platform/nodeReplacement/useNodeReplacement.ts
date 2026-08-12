@@ -1,9 +1,9 @@
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import {
-  LiteGraph,
-  registerNodeState,
-  unregisterNodeState
-} from '@/lib/litegraph/src/litegraph'
+  canTransferReplacementOwnership,
+  transferReplacementOwnership
+} from '@/lib/litegraph/src/LGraphNode'
 import { inputLinkId, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
@@ -158,8 +158,7 @@ function replaceWithMapping(
   replacement: NodeReplacement,
   nodeGraph: LGraph,
   idx: number
-): void {
-  node.onRemoved?.()
+): boolean {
   newNode.id = node.id
   newNode.pos = [...node.pos]
   newNode.size = [...node.size]
@@ -167,13 +166,24 @@ function replaceWithMapping(
   newNode.mode = node.mode
   if (node.flags) newNode.flags = { ...node.flags }
 
+  if (
+    nodeGraph._nodes[idx] !== node ||
+    nodeGraph._nodes_by_id[node.id] !== node ||
+    !canTransferReplacementOwnership(node, newNode)
+  )
+    return false
+
+  node.onRemoved?.()
+  if (
+    nodeGraph._nodes[idx] !== node ||
+    nodeGraph._nodes_by_id[node.id] !== node ||
+    !transferReplacementOwnership(node, newNode)
+  )
+    return false
   nodeGraph._nodes[idx] = newNode
   newNode.graph = nodeGraph
+  node.graph = null
   nodeGraph._nodes_by_id[newNode.id] = newNode
-
-  // Bypasses graph.add(), so move the node-data registration by hand.
-  unregisterNodeState(node)
-  registerNodeState(nodeGraph, newNode)
 
   for (const widget of newNode.widgets ?? []) {
     if (isNodeBindable(widget)) widget.setNodeId(newNode.id)
@@ -232,6 +242,7 @@ function replaceWithMapping(
   // Announce the add that graph.add() would have.
   nodeGraph.onNodeAdded?.(newNode)
   nodeGraph.events.dispatch('node:added', { node: newNode })
+  return true
 }
 
 export function useNodeReplacement() {
@@ -297,7 +308,17 @@ export function useNodeReplacement() {
                 newNode
               )
             }
-        replaceWithMapping(node, newNode, effectiveReplacement, nodeGraph, idx)
+        if (
+          !replaceWithMapping(
+            node,
+            newNode,
+            effectiveReplacement,
+            nodeGraph,
+            idx
+          )
+        ) {
+          continue
+        }
 
         if (!replacedTypes.includes(match.type)) {
           replacedTypes.push(match.type)

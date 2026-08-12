@@ -81,6 +81,51 @@ function adoptNodeAttachment(graphId: UUID, node: LGraphNode): void {
   }
 }
 
+function transferableNodeAttachment(
+  node: LGraphNode,
+  replacement: LGraphNode
+): LayoutAttachment<LGraphNode['id']> | undefined {
+  const attachment = nodeAttachments.get(node)
+  if (
+    !attachment ||
+    nodeAttachments.has(replacement) ||
+    attachment.id !== replacement.id ||
+    !layoutStore.getNodeLayout(attachment.graphId, attachment.id)
+  )
+    return
+  return attachment
+}
+
+export function canTransferLayoutAttachment(
+  node: LGraphNode,
+  replacement: LGraphNode
+): boolean {
+  return transferableNodeAttachment(node, replacement) !== undefined
+}
+
+export function transferLayoutAttachment(
+  node: LGraphNode,
+  replacement: LGraphNode
+): boolean {
+  const attachment = transferableNodeAttachment(node, replacement)
+  if (!attachment) return false
+
+  const geometrySynchronized = layoutStore.readNodeRect(
+    attachment.graphId,
+    attachment.id,
+    replacement._posSize
+  )
+
+  nodeAttachments.delete(node)
+  node._layoutRegistered = false
+  nodeAttachments.set(replacement, attachment)
+  replacement._layoutRegistered = true
+  if (geometrySynchronized) {
+    replacement._geometryVersion = layoutStore.geometryVersion
+  }
+  return true
+}
+
 export function detachNodeLayout(node: LGraphNode): void {
   const attachment = nodeAttachments.get(node)
   if (!attachment) return
