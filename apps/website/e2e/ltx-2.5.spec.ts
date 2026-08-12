@@ -1,12 +1,13 @@
 import { expect } from '@playwright/test'
 
-import { externalLinks, getRoutes } from '../src/config/routes'
+import { getRoutes } from '../src/config/routes'
 import { creatorReviews } from '../src/data/creatorReviews'
 import { ltxPage } from '../src/data/ltx'
 import { t } from '../src/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
 
 const PATH = '/ltx-2.5'
+const ZH_PATH = '/zh-CN/ltx-2.5'
 const HERO_TITLE = t('ltx.hero.title', 'en')
 const MODELS_HEADING = t('ltx.models.heading', 'en')
 const MODELS_ROUTE = getRoutes('en').models
@@ -15,6 +16,12 @@ const HIGHLIGHT_CTA = t('ltx.reviews.highlightCta', 'en')
 const MCP_ROUTE = getRoutes('en').mcp
 const FIRST_REVIEW = creatorReviews[0]
 const LTX_RUN_TEMPLATE = 'https://cloud.comfy.org/?template=video_ltx2_5_i2v'
+const LTX_HUB_MODEL = 'https://comfy.org/workflows/model/ltx'
+
+const BADGE_KEYS = ltxPage.hero.badgeKeys ?? []
+
+const GALLERY = ltxPage.gallery
+if (!GALLERY) throw new Error('ltxPage must configure a gallery')
 
 test.describe('LTX 2.5 page — desktop @smoke', () => {
   test.beforeEach(async ({ page }) => {
@@ -36,6 +43,16 @@ test.describe('LTX 2.5 page — desktop @smoke', () => {
     })
     await heading.scrollIntoViewIfNeeded()
     await expect(heading).toBeVisible()
+  })
+
+  test('renders every configured hero badge', async ({ page }) => {
+    const hero = page.locator('section').filter({
+      has: page.getByRole('heading', { level: 1, name: HERO_TITLE })
+    })
+
+    for (const key of BADGE_KEYS) {
+      await expect(hero.getByText(t(key, 'en'), { exact: true })).toBeVisible()
+    }
   })
 
   test('renders the reviews section heading and first quote', async ({
@@ -76,9 +93,14 @@ test.describe('LTX 2.5 page — link targets', () => {
     await expect(runCta).toHaveAttribute('href', LTX_RUN_TEMPLATE)
     await expect(runCta).toHaveAttribute('target', '_blank')
 
-    await expect(
-      hero.getByRole('link', { name: t('ltx.hero.secondaryCta', 'en') })
-    ).toHaveAttribute('href', externalLinks.workflows)
+    const secondary = hero.getByRole('link', {
+      name: t('ltx.hero.secondaryCta', 'en')
+    })
+    await expect(secondary).toHaveAttribute(
+      'href',
+      ltxPage.hero.secondaryCta?.href ?? ''
+    )
+    await expect(secondary).toHaveAttribute('href', LTX_HUB_MODEL)
   })
 
   test('MCP highlight card CTA links to the MCP page', async ({ page }) => {
@@ -91,6 +113,65 @@ test.describe('LTX 2.5 page — link targets', () => {
   })
 })
 
+test.describe('LTX 2.5 gallery', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto(PATH)
+    await page
+      .getByRole('heading', { level: 2, name: MODELS_HEADING })
+      .scrollIntoViewIfNeeded()
+  })
+
+  test('ships every card, titled as the Figma titles it', async ({ page }) => {
+    // Scoped to the gallery: the testimonial carousel below also uses <article>.
+    const gallery = page.locator('section').filter({
+      has: page.getByRole('heading', { level: 2, name: MODELS_HEADING })
+    })
+    await expect(gallery.locator('article')).toHaveCount(GALLERY.cards.length)
+
+    for (const card of GALLERY.cards) {
+      await expect(
+        gallery.getByText(card.description.en, { exact: true })
+      ).toBeVisible()
+    }
+  })
+
+  test('every gallery clip carries a poster', async ({ page }) => {
+    const gallery = page.locator('section').filter({
+      has: page.getByRole('heading', { level: 2, name: MODELS_HEADING })
+    })
+    const videos = gallery.locator('video')
+    await expect(videos).toHaveCount(GALLERY.cards.length)
+
+    for (const card of GALLERY.cards) {
+      if (card.media.kind !== 'video') continue
+      expect(card.media.posterSrc, `${card.id} needs a poster`).toBeTruthy()
+      await expect(
+        gallery.locator(`video[poster="${card.media.posterSrc}"]`)
+      ).toHaveCount(1)
+    }
+  })
+})
+
+test.describe('LTX 2.5 page — zh-CN', () => {
+  test('renders the localized hero and reviews', async ({ page }) => {
+    await page.goto(ZH_PATH)
+
+    await expect(
+      page.getByRole('heading', {
+        level: 1,
+        name: t('ltx.hero.title', 'zh-CN')
+      })
+    ).toBeVisible()
+
+    const reviews = page.getByRole('heading', {
+      level: 2,
+      name: t('ltx.reviews.heading', 'zh-CN')
+    })
+    await reviews.scrollIntoViewIfNeeded()
+    await expect(reviews).toBeVisible()
+  })
+})
+
 test.describe('LTX 2.5 page — mobile @mobile', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto(PATH)
@@ -100,5 +181,25 @@ test.describe('LTX 2.5 page — mobile @mobile', () => {
     await expect(
       page.getByRole('heading', { level: 1, name: HERO_TITLE })
     ).toBeVisible()
+  })
+
+  test('hero CTA stays inside the viewport', async ({ page }) => {
+    const cta = page
+      .locator('section')
+      .filter({
+        has: page.getByRole('heading', { level: 1, name: HERO_TITLE })
+      })
+      .getByRole('link', { name: t('ltx.hero.primaryCta', 'en') })
+
+    await expect(cta).toBeVisible()
+
+    const box = await cta.boundingBox()
+    const viewport = page.viewportSize()
+    if (!box || !viewport) throw new Error('hero CTA has no layout box')
+
+    // Both edges, so a CTA overflowing left cannot pass. One pixel of tolerance
+    // for subpixel rounding.
+    expect(box.x).toBeGreaterThanOrEqual(-1)
+    expect(box.x + box.width).toBeLessThanOrEqual(viewport.width + 1)
   })
 })
