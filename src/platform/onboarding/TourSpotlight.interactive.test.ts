@@ -1,5 +1,5 @@
 import userEvent from '@testing-library/user-event'
-import { cleanup, render, screen } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
@@ -58,9 +58,7 @@ function renderSpotlight(
 
 describe('TourSpotlight interactive and masked steps', () => {
   afterEach(() => {
-    cleanup()
     clearCoachmarks()
-    document.body.replaceChildren()
   })
 
   it('keeps the blocking scrim and no hit region on a plain step', () => {

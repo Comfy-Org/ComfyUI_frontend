@@ -1,15 +1,11 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 
 import HoneyToast from './HoneyToast.vue'
 
 describe('HoneyToast', () => {
-  beforeEach(() => {
-    document.body.innerHTML = ''
-  })
-
   function renderComponent(
     props: { visible: boolean; expanded?: boolean } = { visible: true }
   ) {

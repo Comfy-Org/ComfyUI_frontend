@@ -5824,6 +5824,9 @@
       "model_number_of_images": {
         "name": "圖像數量"
       },
+      "model_quality": {
+        "name": "品質"
+      },
       "model_resolution": {
         "name": "解析度"
       },
@@ -5862,6 +5865,10 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "用於生成圖像的文字提示"
+      },
+      "quality": {
+        "name": "品質",
+        "tooltip": "品質等級，僅支援 grok-imagine-image-2.0 模型。"
       },
       "resolution": {
         "name": "解析度"
@@ -8928,6 +8935,67 @@
       }
     }
   },
+  "LTXVDualCFGGuider": {
+    "description": "為封裝的 LTXV-AV latent 的影片與音訊模態分別設置 CFG 比例。",
+    "display_name": "LTXV 雙重 CFG 引導器",
+    "inputs": {
+      "audio_cfg": {
+        "name": "audio_cfg"
+      },
+      "model": {
+        "name": "model"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "video_cfg": {
+        "name": "video_cfg"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVDurationPredictor": {
+    "description": "使用 LTX 2.4 duration head（由 ModelPatchLoader 載入）預測提示的自然鏡頭時長，並將其對齊至 VAE 的 8k+1 幀格。",
+    "display_name": "LTXV 時長預測器",
+    "inputs": {
+      "duration_head": {
+        "name": "duration_head",
+        "tooltip": "由 ModelPatchLoader 載入的 LTX 2.4 duration head。"
+      },
+      "frame_rate": {
+        "name": "frame_rate"
+      },
+      "max_seconds": {
+        "name": "max_seconds"
+      },
+      "min_seconds": {
+        "name": "min_seconds"
+      },
+      "model": {
+        "name": "model"
+      },
+      "positive": {
+        "name": "positive"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "num_frames",
+        "tooltip": null
+      },
+      "1": {
+        "name": "seconds",
+        "tooltip": "原始（未限制）預測時長。"
+      }
+    }
+  },
   "LTXVEmptyLatentAudio": {
     "display_name": "LTXV 空 latent 音訊",
     "inputs": {
@@ -9047,6 +9115,29 @@
       }
     }
   },
+  "LTXVModalityGuidance": {
+    "description": "LTXV-AV 的跨模態（音訊-影片）引導。每步額外執行一次前向傳遞，並切斷 a2v/v2a 跨注意力，然後將結果推向耦合預測——加強音訊與影像同步（如唇形同步）。參考預設 modality_scale 為 3.0。可與雙重 CFG 引導器及 STG 疊加。設為 1.0 可停用（無額外傳遞）。",
+    "display_name": "LTXV 模態引導（A/V 耦合）",
+    "inputs": {
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "modality_scale": {
+        "name": "modality_scale"
+      },
+      "model": {
+        "name": "model"
+      },
+      "start_percent": {
+        "name": "start_percent"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LTXVPreprocess": {
     "display_name": "LTXV 預處理",
     "inputs": {
@@ -9158,6 +9249,33 @@
       },
       "1": {
         "name": "audio_latent",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVSpatioTemporalGuidance": {
+    "description": "每步額外執行一次傳遞，將選定區塊的自注意力降級為 value-passthrough，然後引導遠離該狀態——提升空間細節與動作連貫性。",
+    "display_name": "LTXV 時空引導（STG）",
+    "inputs": {
+      "blocks": {
+        "name": "blocks",
+        "tooltip": "以逗號分隔的 transformer 區塊索引。"
+      },
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "model": {
+        "name": "model"
+      },
+      "scale": {
+        "name": "scale"
+      },
+      "start_percent": {
+        "name": "start_percent"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -10148,6 +10266,121 @@
     "outputs": {
       "0": {
         "name": "條件",
+        "tooltip": null
+      }
+    }
+  },
+  "LtxApi25AudioToVideo": {
+    "description": "根據音訊軌生成影片，可選擇首幀影像。",
+    "display_name": "LTX 2.5 音訊轉影片",
+    "inputs": {
+      "audio": {
+        "name": "音訊",
+        "tooltip": "驅動影片的音訊軌。長度（2-20 秒）決定影片時長。"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "image": {
+        "name": "影像",
+        "tooltip": "可選的影片首幀。"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "prompt": {
+        "name": "提示詞"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "決定此節點是否重新執行的種子；實際結果無論種子如何皆為非確定性。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LtxApi25ImageToVideo": {
+    "description": "以起始影像製作專業品質影片，可自訂時長與解析度。",
+    "display_name": "LTX 2.5 圖像轉影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "image": {
+        "name": "影像",
+        "tooltip": "作為影片首幀的影像。"
+      },
+      "last_frame": {
+        "name": "最後幀",
+        "tooltip": "作為影片最後一幀的影像。"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_duration": {
+        "name": "時長"
+      },
+      "model_fps": {
+        "name": "幀率"
+      },
+      "model_generate_audio": {
+        "name": "生成音訊"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "prompt": {
+        "name": "提示詞"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "決定此節點是否重新執行的種子；實際結果無論種子如何皆為非確定性。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LtxApi25TextToVideo": {
+    "description": "製作專業品質影片，可自訂時長與解析度。",
+    "display_name": "LTX 2.5 文字轉影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_duration": {
+        "name": "時長"
+      },
+      "model_fps": {
+        "name": "幀率"
+      },
+      "model_generate_audio": {
+        "name": "生成音訊"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "prompt": {
+        "name": "提示詞"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "決定此節點是否重新執行的種子；實際結果無論種子如何皆為非確定性。"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -11979,6 +12212,17 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "ModelAttentionBackend": {
+    "display_name": "ModelAttentionBackend",
+    "inputs": {
+      "attention": {
+        "name": "attention"
+      },
+      "model": {
+        "name": "model"
       }
     }
   },

@@ -1,8 +1,6 @@
-import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { fromAny } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
 import type { Slots } from 'vue'
 import { h } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -88,7 +86,6 @@ const i18n = createI18n({
 
 describe('WidgetActions', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     mockGetInputSpecForWidget.mockReturnValue({
       type: 'INT',
       default: 42
