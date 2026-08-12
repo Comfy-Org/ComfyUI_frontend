@@ -319,7 +319,7 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       await expect(
         strip,
         'Deselecting swaps the always-visible strip back to the summary'
-      ).toContainText('2 nodes — 1 error')
+      ).toContainText('2 nodes — 1 item')
       await expectReferenceBadge(missingModelGroup, 2)
     })
   })
@@ -426,7 +426,7 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
 
       await comfyPage.canvas.click({ position: { x: 400, y: 600 } })
       // Deselecting swaps the always-visible strip back to the summary
-      await expect(strip).toContainText('2 nodes — 2 errors')
+      await expect(strip).toContainText('2 nodes — 2 items')
       await expect(mediaRows).toHaveCount(2)
     })
   })
@@ -451,7 +451,7 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       )
       await expect(missingNodeCard).toBeVisible()
       await expect(mediaRow).toBeVisible()
-      await expect(strip).toContainText('2 nodes — 2 errors')
+      await expect(strip).toContainText('2 nodes — 2 items')
 
       const mediaNode = await comfyPage.nodeOps.getNodeRefById('10')
       // The node sits near the canvas top where overlays intercept clicks
@@ -470,7 +470,7 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       // returns to the workflow summary
       await expect(missingNodeCard).toBeVisible()
       await expect(mediaRow).not.toHaveAttribute('aria-current', 'true')
-      await expect(strip).toContainText('2 nodes — 2 errors')
+      await expect(strip).toContainText('2 nodes — 2 items')
     })
   })
 

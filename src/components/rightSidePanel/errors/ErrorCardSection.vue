@@ -10,6 +10,7 @@
       >
         <span
           data-testid="error-section-count-badge"
+          :data-severity="severity"
           :class="
             cn(
               'flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full px-1 text-2xs/none font-semibold text-white tabular-nums',

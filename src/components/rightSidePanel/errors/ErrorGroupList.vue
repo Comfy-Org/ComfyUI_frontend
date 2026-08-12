@@ -13,7 +13,7 @@
 
     <div class="min-w-0 flex-1 overflow-y-auto bg-interface-panel-surface p-3">
       <div
-        v-if="filteredGroups.length === 0"
+        v-if="visibleGroups.length === 0"
         role="status"
         class="px-1 pt-5 pb-15 text-center text-sm text-muted-foreground"
       >
@@ -535,11 +535,22 @@ const hasMixedSeverity = computed(
   () => errorCount.value > 0 && missingCount.value > 0
 )
 
+const severityTotals = computed(() => {
+  const totals: Record<ErrorGroupSeverity, number> = { error: 0, missing: 0 }
+  for (const group of allErrorGroups.value) {
+    totals[group.severity] += group.count
+  }
+  return totals
+})
+
 const severityFilter = ref<ErrorGroupSeverity | null>(null)
-// Filtering is only offered — and only meaningful — while both severities are
-// present, so a stale selection stays inert instead of emptying the list.
+// Gated on workflow-wide totals, not search-scoped counts: a search that
+// happens to empty one severity must not disable an engaged filter and show
+// exactly the severity the user excluded.
 const activeSeverityFilter = computed(() =>
-  hasMixedSeverity.value ? severityFilter.value : null
+  severityTotals.value.error > 0 && severityTotals.value.missing > 0
+    ? severityFilter.value
+    : null
 )
 const visibleGroups = computed(() => {
   const severity = activeSeverityFilter.value
@@ -551,26 +562,35 @@ function toggleSeverityFilter(severity: ErrorGroupSeverity) {
   severityFilter.value = severityFilter.value === severity ? null : severity
 }
 
-const severityTotals = computed(() => {
-  const totals: Record<ErrorGroupSeverity, number> = { error: 0, missing: 0 }
-  for (const group of allErrorGroups.value) {
-    totals[group.severity] += group.count
-  }
-  return totals
-})
+/**
+ * Dedupes the Set-valued computed (fresh reference per recompute) so the
+ * watchers below only fire when the matched membership changes.
+ */
+const selectionEmphasisSignature = computed(() =>
+  hasSelection.value
+    ? Array.from(selectionMatchedGroupKeys.value).sort().join('\n')
+    : ''
+)
 
-// The filter must never hide what the user is being pointed at: release it
-// (never auto-select) when the hidden severity grows or enters the selection.
+// Release-only, never auto-select. The filter lets go when the hidden
+// severity gains new entries, when the filtered severity empties (so it
+// cannot silently reassert later), or when the selection membership changes
+// to include the hidden severity. An unchanged selection does not release:
+// engaging the filter is the user's explicit call, even against it.
 watch(severityTotals, (next, prev) => {
   const active = severityFilter.value
   if (!active) return
   const hidden = HIDDEN_BY_FILTER[active]
-  if (next[hidden] > prev[hidden]) severityFilter.value = null
+  if (next[hidden] > prev[hidden] || next[active] === 0) {
+    severityFilter.value = null
+  }
 })
 
-watch(selectionMatchedGroupKeys, (matchedKeys) => {
+watch(selectionEmphasisSignature, () => {
   const active = severityFilter.value
-  if (!active || matchedKeys.size === 0) return
+  if (!active) return
+  const matchedKeys = selectionMatchedGroupKeys.value
+  if (matchedKeys.size === 0) return
   const hidden = HIDDEN_BY_FILTER[active]
   const selectionHasHiddenSeverity = allErrorGroups.value.some(
     (group) => matchedKeys.has(group.groupKey) && group.severity === hidden
@@ -629,20 +649,12 @@ const selectionStripNodeLabel = computed(
 
 // The strip is a status line, not a view of the current filter — summary
 // numbers are workflow-wide, never search-filtered.
-const workflowErrorCount = computed(() =>
-  allErrorGroups.value.reduce((sum, group) => sum + group.count, 0)
+const workflowErrorCount = computed(
+  () => severityTotals.value.error + severityTotals.value.missing
 )
-const workflowBlockingErrorCount = computed(() =>
-  allErrorGroups.value
-    .filter((group) => group.severity === 'error')
-    .reduce((sum, group) => sum + group.count, 0)
-)
-const hasErrorSeverity = computed(() =>
-  allErrorGroups.value.some((group) => group.severity === 'error')
-)
-const hasMissingSeverity = computed(() =>
-  allErrorGroups.value.some((group) => group.severity === 'missing')
-)
+const workflowBlockingErrorCount = computed(() => severityTotals.value.error)
+const hasErrorSeverity = computed(() => severityTotals.value.error > 0)
+const hasMissingSeverity = computed(() => severityTotals.value.missing > 0)
 
 const strip = computed<ContextStrip>(() => {
   if (hasSelectionEmphasis.value) {
@@ -688,16 +700,6 @@ const strip = computed<ContextStrip>(() => {
 function isCardInSelection(cardId: string): boolean {
   return selectionMatchedCardIds.value.has(cardId)
 }
-
-/**
- * Dedupes the Set-valued computed (fresh reference per recompute) so the
- * emphasis watcher below only fires when the matched membership changes.
- */
-const selectionEmphasisSignature = computed(() =>
-  hasSelection.value
-    ? Array.from(selectionMatchedGroupKeys.value).sort().join('\n')
-    : ''
-)
 
 /**
  * Selection acts as emphasis, not a filter: expand the groups containing

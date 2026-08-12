@@ -453,6 +453,8 @@ describe('useErrorGroups', () => {
         (group, index) => (group.severity === 'missing' ? [index] : [])
       )
 
+      expect(errorIndices.length).toBeGreaterThan(0)
+      expect(missingIndices.length).toBeGreaterThan(0)
       expect(Math.max(...errorIndices)).toBeLessThan(
         Math.min(...missingIndices)
       )
