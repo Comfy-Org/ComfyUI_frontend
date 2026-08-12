@@ -18,6 +18,11 @@ const FIRST_REVIEW = creatorReviews[0]
 const LTX_RUN_TEMPLATE = 'https://cloud.comfy.org/?template=video_ltx2_5_i2v'
 const LTX_HUB_MODEL = 'https://comfy.org/workflows/model/ltx'
 
+// Counts are fixed rather than read off the config: four labels and six cards are
+// the launch requirement, and deriving them would let a dropped one pass.
+const REQUIRED_BADGES = 4
+const REQUIRED_CARDS = 6
+
 const BADGE_KEYS = ltxPage.hero.badgeKeys ?? []
 
 const GALLERY = ltxPage.gallery
@@ -45,7 +50,9 @@ test.describe('LTX 2.5 page — desktop @smoke', () => {
     await expect(heading).toBeVisible()
   })
 
-  test('renders every configured hero badge', async ({ page }) => {
+  test('renders all four hero badges', async ({ page }) => {
+    expect(BADGE_KEYS).toHaveLength(REQUIRED_BADGES)
+
     const hero = page.locator('section').filter({
       has: page.getByRole('heading', { level: 1, name: HERO_TITLE })
     })
@@ -121,12 +128,14 @@ test.describe('LTX 2.5 gallery', () => {
       .scrollIntoViewIfNeeded()
   })
 
-  test('ships every card, titled as the Figma titles it', async ({ page }) => {
+  test('ships all six cards, titled as the Figma titles them', async ({
+    page
+  }) => {
     // Scoped to the gallery: the testimonial carousel below also uses <article>.
     const gallery = page.locator('section').filter({
       has: page.getByRole('heading', { level: 2, name: MODELS_HEADING })
     })
-    await expect(gallery.locator('article')).toHaveCount(GALLERY.cards.length)
+    await expect(gallery.locator('article')).toHaveCount(REQUIRED_CARDS)
 
     for (const card of GALLERY.cards) {
       await expect(
@@ -140,7 +149,7 @@ test.describe('LTX 2.5 gallery', () => {
       has: page.getByRole('heading', { level: 2, name: MODELS_HEADING })
     })
     const videos = gallery.locator('video')
-    await expect(videos).toHaveCount(GALLERY.cards.length)
+    await expect(videos).toHaveCount(REQUIRED_CARDS)
 
     for (const card of GALLERY.cards) {
       if (card.media.kind !== 'video') continue
@@ -156,12 +165,12 @@ test.describe('LTX 2.5 page — zh-CN', () => {
   test('renders the localized hero and reviews', async ({ page }) => {
     await page.goto(ZH_PATH)
 
-    await expect(
-      page.getByRole('heading', {
-        level: 1,
-        name: t('ltx.hero.title', 'zh-CN')
-      })
-    ).toBeVisible()
+    const heading = page.getByRole('heading', { level: 1 })
+    await expect(heading).toBeVisible()
+    // Chinese present and the English title absent, so serving the en copy under
+    // the zh route fails here rather than passing on a key lookup.
+    await expect(heading).toContainText(/[一-鿿]/)
+    await expect(heading).not.toHaveText(HERO_TITLE)
 
     const reviews = page.getByRole('heading', {
       level: 2,
@@ -183,7 +192,7 @@ test.describe('LTX 2.5 page — mobile @mobile', () => {
     ).toBeVisible()
   })
 
-  test('hero CTA stays inside the viewport', async ({ page }) => {
+  test('hero CTA stays within the viewport width', async ({ page }) => {
     const cta = page
       .locator('section')
       .filter({
@@ -198,7 +207,8 @@ test.describe('LTX 2.5 page — mobile @mobile', () => {
     if (!box || !viewport) throw new Error('hero CTA has no layout box')
 
     // Both edges, so a CTA overflowing left cannot pass. One pixel of tolerance
-    // for subpixel rounding.
+    // for subpixel rounding. Vertical position is not asserted: the hero leads
+    // with the video, so the CTA sits below the fold by design.
     expect(box.x).toBeGreaterThanOrEqual(-1)
     expect(box.x + box.width).toBeLessThanOrEqual(viewport.width + 1)
   })
