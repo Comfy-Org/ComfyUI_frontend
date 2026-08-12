@@ -57,6 +57,10 @@ const warnedUnknownKeys = new Set<string>()
  * stay silent so feature detection keeps working, but they say so once.
  */
 function warnUnknownRead(kind: string, key: string): void {
+  // Anything dunder-prefixed is a framework probe, not a pack: Vue checks
+  // __v_isRef, __v_raw and __v_skip on every object it makes reactive, and a
+  // handle stored in a ref would otherwise warn on each one.
+  if (key.startsWith('__')) return
   const seen = `${kind}.${key}`
   if (PROBED_KEYS.has(key) || warnedUnknownKeys.has(seen)) return
   warnedUnknownKeys.add(seen)
