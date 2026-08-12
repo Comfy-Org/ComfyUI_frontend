@@ -182,7 +182,6 @@ global.fetch = vi.fn()
 
 describe('useSubscription', () => {
   afterEach(() => {
-    vi.useRealTimers()
     scope?.stop()
     scope = undefined
     setDistribution('localhost')
@@ -196,11 +195,6 @@ describe('useSubscription', () => {
 
     mockLocalStorage.__reset()
     mockIsLoggedIn.value = false
-    mockTelemetry.trackSubscription.mockReset()
-    mockTelemetry.trackMonthlySubscriptionSucceeded.mockReset()
-    mockTelemetry.trackMonthlySubscriptionCancelled.mockReset()
-    mockTelemetry.trackBillingEvent.mockReset()
-    mockAccessBillingPortal.mockReset()
     mockAccessBillingPortal.mockResolvedValue(true)
     mockUserId.value = 'user-123'
     mockIsCloud.value = true
@@ -922,7 +916,6 @@ describe('useSubscription', () => {
     })
 
     it('does not start cancellation watching when the billing portal does not open', async () => {
-      vi.useFakeTimers()
       mockIsLoggedIn.value = true
       mockAccessBillingPortal.mockResolvedValueOnce(false)
 
@@ -947,7 +940,6 @@ describe('useSubscription', () => {
     })
 
     it('tracks cancellation after manage subscription when status flips', async () => {
-      vi.useFakeTimers()
       mockIsLoggedIn.value = true
 
       const activeStatus = {
@@ -980,7 +972,6 @@ describe('useSubscription', () => {
     })
 
     it('handles rapid focus events during cancellation polling', async () => {
-      vi.useFakeTimers()
       mockIsLoggedIn.value = true
 
       const activeStatus = {

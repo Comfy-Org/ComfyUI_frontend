@@ -357,10 +357,6 @@ describe('parseAnnotatedFilename', () => {
 })
 
 describe('Load3DConfiguration.loadSceneConfig', () => {
-  beforeEach(() => {
-    settingsGetMock.mockReset()
-  })
-
   it('returns the persisted Scene Config when present, ignoring settings', () => {
     const stored: SceneConfig = {
       showGrid: false,
@@ -394,10 +390,6 @@ describe('Load3DConfiguration.loadSceneConfig', () => {
 })
 
 describe('Load3DConfiguration.loadCameraConfig', () => {
-  beforeEach(() => {
-    settingsGetMock.mockReset()
-  })
-
   it('returns the persisted Camera Config when present', () => {
     const stored: CameraConfig = {
       cameraType: 'orthographic',
@@ -423,10 +415,6 @@ describe('Load3DConfiguration.loadCameraConfig', () => {
 })
 
 describe('Load3DConfiguration.loadLightConfig', () => {
-  beforeEach(() => {
-    settingsGetMock.mockReset()
-  })
-
   it('falls back to settings with default hdri when nothing is persisted', () => {
     stubSettings({ 'Comfy.Load3D.LightIntensity': 4 })
 
@@ -511,7 +499,6 @@ describe('Load3DConfiguration.configure forwards persisted + settings to load3d'
   }
 
   beforeEach(() => {
-    settingsGetMock.mockReset()
     load3d = makeLoad3dMock()
     vi.mocked(Load3dUtils.splitFilePath).mockReturnValue(['', 'model.glb'])
     vi.mocked(Load3dUtils.getResourceURL).mockReturnValue('/view')

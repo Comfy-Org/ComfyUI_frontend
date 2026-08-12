@@ -1,5 +1,4 @@
 import { fromAny } from '@total-typescript/shoehorn'
-import { createPinia, setActivePinia } from 'pinia'
 import { nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -217,10 +216,8 @@ function createErrorGroups() {
 
 describe('useErrorGroups', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     mockIsCloud.value = false
     vi.mocked(isLGraphNode).mockReturnValue(false)
-    vi.mocked(getNodeByExecutionId).mockReset()
   })
 
   describe('missingPackGroups', () => {
