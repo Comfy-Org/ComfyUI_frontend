@@ -44,7 +44,7 @@ jobs:
       # Restore the newest corpus regardless of key: the primary key never
       # hits (run-scoped), so restore-keys always serves the latest save.
       - name: Restore corpus cache
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5
         with:
           path: .census
           key: registry-corpus-${{ github.run_id }}
@@ -57,6 +57,7 @@ jobs:
         run: python3 scripts/registry-census/refresh_registry.py
 
       - name: Fetch corpus and revalidate drifted packs
+        id: fetch
         run: python3 scripts/registry-census/fetch_corpus.py --revalidate
 
       - name: Census scan
@@ -85,11 +86,15 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
 
-      # Key derived from the lockfile: unchanged corpus -> key already
-      # exists -> save skipped; any pack drift -> new lock hash -> new entry.
+      # Key derived from the lockfile: unchanged corpus finds its key taken
+      # and the server rejects the duplicate; any pack drift writes a new
+      # entry. Gated on the FETCH step and a present lockfile: an early
+      # failure must not save a partial .census - least of all under the
+      # empty-hash key, which equals the restore-keys prefix and would
+      # become the best match for every later run.
       - name: Save corpus cache
-        if: always()
-        uses: actions/cache/save@v5
+        if: always() && steps.fetch.outcome == 'success' && hashFiles('.census/corpus.lock.json') != ''
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5
         with:
           path: .census
           key: registry-corpus-${{ hashFiles('.census/corpus.lock.json') }}

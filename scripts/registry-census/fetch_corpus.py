@@ -78,17 +78,20 @@ def _head_etag(url: str) -> str | None:
     """The tarball's current ETag via a HEAD request, or None on any failure.
 
     codeload/gitlab archive ETags are commit-derived, so for a HEAD-ref
-    tarball a changed ETag means the pack's default branch moved.
+    tarball a changed ETag means the pack's default branch moved. Follows
+    redirects and keeps the LAST ETag seen, mirroring the GET path, so a
+    redirecting host compares the same value both ways.
     """
     r = subprocess.run(
-        ['curl', '-sfI', '--max-time', '30', url], capture_output=True, text=True
+        ['curl', '-sfIL', '--max-time', '30', url], capture_output=True, text=True
     )
     if r.returncode != 0:
         return None
+    etag = None
     for line in r.stdout.splitlines():
         if line.lower().startswith('etag:'):
-            return line.split(':', 1)[1].strip().strip('"')
-    return None
+            etag = line.split(':', 1)[1].strip().strip('"')
+    return etag
 
 
 def _has_payload(d: str) -> bool:
@@ -120,13 +123,14 @@ def fetch_one(
             return (pack_id, 'cached', prev.get('etag'))
         # Cheap drift check: one HEAD request against the lockfile ETag.
         # On any HEAD failure keep the cached copy - a network blip must
-        # not evict corpus.
+        # not evict corpus. A pack with no RECORDED etag but a live one
+        # refetches once to establish the record instead of pinning to its
+        # first fetch forever. The cached tree stays in place until the
+        # replacement is fully staged below.
         live = _head_etag(url)
-        if live is None or not prev.get('etag') or live == prev['etag']:
+        if live is None or (prev.get('etag') and live == prev['etag']):
             return (pack_id, 'cached', prev.get('etag'))
-        shutil.rmtree(dest, ignore_errors=True)
 
-    os.makedirs(dest, exist_ok=True)
     with tempfile.TemporaryDirectory() as tmp:
         tar_path = os.path.join(tmp, 'a.tar.gz')
         hdr_path = os.path.join(tmp, 'h.txt')
@@ -149,9 +153,32 @@ def fetch_one(
         if frozen and prev.get('etag') and etag and etag != prev['etag']:
             return (pack_id, 'drifted', etag)
 
-        args = ['tar', '-xz', '-f', tar_path, '-C', dest]
-        args += [f'--include=*{e}' for e in INCLUDES]
-        subprocess.run(args, capture_output=True)
+        # Extract WITHOUT tar filter flags: --include is bsdtar-only and GNU
+        # tar (ubuntu CI) errors on it, which - with the return code
+        # unchecked - silently produced an empty corpus that scanned 100%
+        # clean. Extract everything to a scratch dir, keep only the wanted
+        # extensions, and swap into dest only on success so a failed refetch
+        # never evicts the previous tree.
+        extracted = os.path.join(tmp, 'extracted')
+        os.makedirs(extracted)
+        rc = subprocess.run(
+            ['tar', '-xz', '-f', tar_path, '-C', extracted], capture_output=True
+        ).returncode
+        if rc != 0:
+            return (pack_id, 'failed', None)
+        staged = os.path.join(tmp, 'staged')
+        os.makedirs(staged)
+        for root, _dirs, files in os.walk(extracted):
+            for name in files:
+                if not name.lower().endswith(INCLUDES):
+                    continue
+                rel = os.path.relpath(os.path.join(root, name), extracted)
+                target = os.path.join(staged, rel)
+                os.makedirs(os.path.dirname(target), exist_ok=True)
+                shutil.move(os.path.join(root, name), target)
+        if os.path.isdir(dest):
+            shutil.rmtree(dest)
+        shutil.move(staged, dest)
 
     # Both outcomes below are *successful* fetches, so both are marked done and
     # skipped next run. Only 'failed' is retried. The distinction between them

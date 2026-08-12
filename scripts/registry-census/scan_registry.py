@@ -1,62 +1,44 @@
 """Full-registry ECS compatibility census.
 
-Fetches frontend JS for EVERY registry pack with a repo URL (not a sample),
-then scans for the empirically-confirmed ECS-breaking idioms.
+Scans the fetched corpus (fetch_corpus.py) of every registry pack's frontend
+JS for the empirically-confirmed ECS-breaking idioms.
 Output: per-pack verdicts + true population counts (no extrapolation).
+Packs the fetcher could not deliver (failed / bad-url / unsupported-host /
+never fetched) are EXCLUDED from the scanned population and reported as
+their own line - an unscannable pack is unknown, never clean.
 """
-import json, os, re, subprocess, sys, time
+import json, os, re, sys, time
 from collections import defaultdict
-from concurrent.futures import ThreadPoolExecutor
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from paths import CORPUS as OUT, RESULTS as BASE, registry_snapshot  # noqa: E402
 os.makedirs(BASE, exist_ok=True)
+if not os.path.exists(registry_snapshot()):
+    print(f'missing registry snapshot: {registry_snapshot()}', file=sys.stderr)
+    print('run refresh_registry.py first', file=sys.stderr)
+    raise SystemExit(2)
 allreg = json.load(open(registry_snapshot()))
 targets = [x for x in allreg if x.get('repo')]
 
-INC = " ".join(
-    f"--include='*{e}'" for e in ('.js', '.mjs', '.ts', '.jsx', '.tsx', '.vue')
-)
-
-
-def slug_of(url):
-    u = url.rstrip('/').replace('.git', '')
-    parts = u.split('/')
-    if len(parts) < 2:
-        return None
-    return '/'.join(parts[-2:])
-
-
-def fetch(x):
-    repo = x['repo']
-    d = os.path.join(OUT, x['id'].replace('/', '_'))
-    marker = os.path.join(d, '.done')
-    if os.path.exists(marker):
-        return (x['id'], 'cached')
-    slug = slug_of(repo)
-    if not slug:
-        return (x['id'], 'badurl')
-    os.makedirs(d, exist_ok=True)
-    if 'github.com' in repo:
-        hosts = [f'https://codeload.github.com/{slug}/tar.gz/HEAD']
-    elif 'gitlab.com' in repo:
-        hosts = [f'https://gitlab.com/{slug}/-/archive/HEAD/{slug.split("/")[-1]}-HEAD.tar.gz']
-    else:
-        return (x['id'], 'unsupported-host')
-    for url in hosts:
-        cmd = f"curl -sfL --max-time 120 {url} | tar -xz -C {d} {INC} 2>/dev/null"
-        subprocess.run(cmd, shell=True)
-        if any(True for _, _, fs in os.walk(d) for f in fs if f != '.done'):
-            break
-    open(marker, 'w').close()
-    return (x['id'], 'ok')
 
 
 if __name__ == '__main__':
     t0 = time.time()
     if not os.path.isdir(OUT):
-        print('corpus not fetched — run `./run fetch` first', file=sys.stderr)
+        print('corpus not fetched — run fetch_corpus.py first', file=sys.stderr)
         raise SystemExit(2)
+
+    # The .done marker is written only after a successful fetch+extract, so
+    # marker-on-disk is the fetch-status ground truth - failed, bad-url,
+    # unsupported-host and never-fetched packs have none and are excluded
+    # from the scanned population instead of reading as clean.
+    def fetched(x):
+        return os.path.exists(
+            os.path.join(OUT, x['id'].replace('/', '_'), '.done')
+        )
+
+    scannable = [x for x in targets if fetched(x)]
+    unfetched = [x for x in targets if not fetched(x)]
 
     # ---- the empirically-confirmed ECS-breaking idioms (see report Part II) ----
     UNCOND = {
@@ -87,7 +69,7 @@ if __name__ == '__main__':
             'litegraph.core', 'litegraph.js', '.min.js', 'fabric.min')
     dl = {x['id']: (x.get('downloads') or 0) for x in allreg}
     results = {}
-    for x in targets:
+    for x in scannable:
         d = os.path.join(OUT, x['id'].replace('/', '_'))
         counts = defaultdict(int)
         loc = 0
@@ -125,14 +107,23 @@ if __name__ == '__main__':
         }
     json.dump(results, open(os.path.join(BASE, 'registry_scan.json'), 'w'))
 
-    TOT = sum(v['downloads'] for v in results.values())
+    if not results:
+        print('no scannable packs: the lockfile records no successful fetch', file=sys.stderr)
+        raise SystemExit(2)
+    TOT = sum(v['downloads'] for v in results.values()) or 1
     shipsjs = [v for v in results.values() if v['js_loc'] > 0]
     api = [v for v in results.values() if v['counts'].get('uses_api')]
     unc = [v for v in results.values() if any(v['counts'].get(k) for k in UNCOND)]
     vue = [v for v in results.values() if any(v['counts'].get(k) for k in VUE)]
     both = [v for v in results.values() if any(v['counts'].get(k) for k in {**UNCOND, **VUE})]
     n = len(results)
-    print(f'\n=== FULL REGISTRY CENSUS (n={n} packs, {TOT:,} downloads) ===')
+    reg_dl = sum(dl.values()) or 1
+    print(f'\n=== FULL REGISTRY CENSUS (n={n} scanned packs, {TOT:,} downloads) ===')
+    print(
+        f'{"unscannable (excluded)":24s} {len(unfetched):5d} packs   '
+        f'{sum(dl.get(x["id"], 0) for x in unfetched) / reg_dl * 100:5.1f}% of registry downloads '
+        f'(failed/bad-url/unsupported/never fetched - unknown, not clean)'
+    )
     for lbl, s in (('ships frontend JS', shipsjs), ('uses Comfy JS API', api),
                    ('UNCONDITIONAL break', unc), ('VUE-MODE break', vue),
                    ('ANY confirmed break', both)):
