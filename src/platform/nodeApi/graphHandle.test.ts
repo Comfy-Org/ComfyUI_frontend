@@ -461,6 +461,18 @@ describe('subgraphs', () => {
     expect(nested.node(String(inner.id))?.id).toBe(String(inner.id))
   })
 
+  it('reports the groups drawn inside a subgraph', () => {
+    // A group muter that skipped these reported nothing for a subgraph's
+    // contents while appearing to work.
+    const { root, subgraph } = documentWithSubgraph()
+    const group = new LGraphGroup('Nested')
+    subgraph.add(group)
+
+    const [nested] = createGraphApi(() => root).subgraphs()
+
+    expect(nested.groups().map((g) => g.getTitle())).toEqual(['Nested'])
+  })
+
   it('resolves each id inside its own graph, not across them', () => {
     // Ids come from the root graph's counter, so they do not collide in one
     // session — but a subgraph loaded from a file brings its authored ids and
