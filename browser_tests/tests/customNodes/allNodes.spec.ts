@@ -108,10 +108,10 @@ const AUTO_RUN_EXCLUDE: Record<string, Record<string, string>> = {
       'remote-control widget node; its executing signal flip-flops between PASS and PARTIAL run-to-run (same class as ImpactRemoteBoolean)',
     ImpactSchedulerAdapter:
       'executing signal flip-flops between PASS and PARTIAL run-to-run (same class as essentials TransitionMask+)',
+    ImpactQueueTrigger:
+      'queue-control node: backend execution emits impact-add-queue whenever its mode widget is on (the default), and the pack JS answers with a background app.queuePrompt whose re-entrancy refusal (app.processingQueue) then pins a bare VALIDATION_FAIL on whichever node the harness submits next',
     ImpactQueueTriggerCountdown:
-      'pack JS hooks the queue at submit time; client-side queuePrompt transiently refuses even through the retry, flip-flopping between PASS and VALIDATION_FAIL',
-    ImpactSelectNthItemOfAnyList:
-      'pack JS hooks the queue at submit time; client-side queuePrompt transiently refuses even through the retry, flip-flopping between PASS and VALIDATION_FAIL (same class as ImpactQueueTriggerCountdown; failed run 31545300324 and passed run 31537458068 on the same commit)',
+      'queue-control node: backend execution emits impact-add-queue while counting, and the pack JS answers with a background app.queuePrompt whose re-entrancy refusal poisons the next harness submission (same emitter chain as ImpactQueueTrigger; the pack installs no submit-time queue hook)',
     ImageReceiver:
       'environment-variable execution: av.error.InvalidDataError decoding its default image on macOS, clean on Linux CI'
   },
