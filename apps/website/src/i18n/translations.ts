@@ -4817,8 +4817,8 @@ const translations = {
   },
 
   'ltx.meta.title': {
-    en: 'LTX 2.5 on Comfy — Open-Source AI Video Model',
-    'zh-CN': 'Comfy 上的 LTX 2.5 — 开源 AI 视频模型'
+    en: 'LTX 2.5 on Comfy: Open-Source AI Video Model',
+    'zh-CN': 'Comfy 上的 LTX 2.5：开源 AI 视频模型'
   },
   'ltx.meta.description': {
     en: 'Run LTX 2.5 on Comfy. Open weights, free to run on your own GPU, or directed on the canvas alongside every other model on Comfy Cloud.',
