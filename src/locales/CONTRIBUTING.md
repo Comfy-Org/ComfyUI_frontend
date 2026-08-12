@@ -19,20 +19,22 @@
 
 **Time required: ~10 minutes**
 
-#### 1.1 Update `.i18nrc.cjs`
+#### 1.1 Update `scripts/i18n/config.ts`
 
-Add your language code to the `outputLocales` array:
+Add your language to the `outputLocales` array. `name` is the English name of
+the language the translation model is asked to write, and the optional
+`guidance` string carries language-specific instructions (tone, script,
+glossary):
 
-```javascript
-module.exports = defineConfig({
-  // ... existing config
-  outputLocales: ['zh', 'zh-TW', 'ru', 'ja', 'ko', 'fr', 'es', 'tr'], // Add your language here
-  reference: `Special names to keep untranslated: flux, photomaker, clip, vae, cfg, stable audio, stable cascade, stable zero, controlnet, lora, HiDream.
-  'latent' is the short form of 'latent space'.
-  'mask' is in the context of image processing.
-  Note: For Traditional Chinese (Taiwan), use Taiwan-specific terminology and traditional characters.
-  `
-})
+```typescript
+outputLocales: [
+  // ... existing locales
+  {
+    code: 'zh-TW',
+    name: 'Traditional Chinese (Taiwan)',
+    guidance: chineseTraditionalGuidance
+  }
+]
 ```
 
 #### 1.2 Update `src/locales/localeConfig.ts`
@@ -51,6 +53,9 @@ settings dropdown, supported-locale resolution, and lazy locale loading:
 ```bash
 # Only if you have OpenAI API key configured
 pnpm locale
+
+# Report pending work without calling the API
+pnpm locale:check
 ```
 
 #### Option B: Let CI Handle It (Recommended)
@@ -98,6 +103,12 @@ Our automated translation workflow now runs on release PRs (version-bump-\* bran
 2. **Updates English files**: Ensures all strings are captured
 3. **Generates translations**: Uses OpenAI API to translate to all configured languages
 4. **Commits back**: Automatically updates the release PR with complete translations
+
+The pipeline (`scripts/i18n/update-locales.ts`) records the English sources it
+last translated in `src/locales/.source-manifest.json`. On each run it
+retranslates strings whose English text changed, backfills missing keys, prunes
+keys removed from English, and validates that interpolation placeholders and
+protected literals (e.g. `<Picture N>`, `17k+5`) survive translation exactly.
 
 ### Manual Translation Updates
 
