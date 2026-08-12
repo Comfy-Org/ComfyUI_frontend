@@ -1,11 +1,19 @@
 import { createPinia, setActivePinia } from 'pinia'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   markStoresPending,
   markStoresReady,
   whenStoresReady
 } from './storeReadiness'
+
+/**
+ * The gate exists for the window before `main.ts` installs Pinia, so these
+ * tests must opt out of the testing Pinia the global setup installs.
+ */
+beforeEach(() => {
+  setActivePinia(undefined)
+})
 
 afterEach(() => {
   markStoresReady()
