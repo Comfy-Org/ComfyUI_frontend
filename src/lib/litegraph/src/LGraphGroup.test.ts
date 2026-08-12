@@ -11,6 +11,8 @@ import { createUuidv4 } from '@/utils/uuid'
 
 import { test } from './__fixtures__/testExtensions'
 
+beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
+
 describe('LGraphGroup', () => {
   test('serializes to the existing format', () => {
     const link = new LGraphGroup('title', 929)
@@ -87,9 +89,6 @@ describe('LGraphGroup', () => {
 })
 
 describe('group layout in layoutStore', () => {
-  // graph.add(node) registers node state, which needs a store.
-  beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
-
   function addedGroup(graph: LGraph, id: GroupId) {
     const group = new LGraphGroup('group', id)
     group.pos = [100, 100]
