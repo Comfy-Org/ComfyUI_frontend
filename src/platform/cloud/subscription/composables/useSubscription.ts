@@ -349,15 +349,29 @@ function useSubscriptionInternal() {
   }
 
   // Coalesce concurrent callers so an auth/session-rotation burst mints one fetch.
+  // Keyed by workspace: performFetchSubscriptionStatus resolves null for a
+  // workspace that is no longer active, so sharing across workspaces strands one.
   let inFlightStatusFetch: Promise<BillingStatusResponse | null> | null = null
+  let inFlightStatusWorkspaceId: string | null = null
   let latestStatusRequestId = 0
 
   async function fetchSubscriptionStatus(): Promise<BillingStatusResponse | null> {
-    if (inFlightStatusFetch) return inFlightStatusFetch
-    inFlightStatusFetch = performFetchSubscriptionStatus().finally(() => {
-      inFlightStatusFetch = null
-    })
-    return inFlightStatusFetch
+    const workspaceId = workspaceStore.activeWorkspaceId
+    if (inFlightStatusFetch && inFlightStatusWorkspaceId === workspaceId) {
+      return inFlightStatusFetch
+    }
+    const fetchPromise = performFetchSubscriptionStatus()
+    inFlightStatusFetch = fetchPromise
+    inFlightStatusWorkspaceId = workspaceId
+    void fetchPromise
+      .catch(() => undefined)
+      .finally(() => {
+        if (inFlightStatusFetch === fetchPromise) {
+          inFlightStatusFetch = null
+          inFlightStatusWorkspaceId = null
+        }
+      })
+    return fetchPromise
   }
 
   async function performFetchSubscriptionStatus(): Promise<BillingStatusResponse | null> {
