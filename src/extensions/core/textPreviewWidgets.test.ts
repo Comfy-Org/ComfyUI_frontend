@@ -131,7 +131,9 @@ describe('updateTextPreviewWidgets', () => {
   })
 
   it('stringifies a bare non-string scalar payload', () => {
-    updateTextPreviewWidgets(node, { text: 23.976 } as unknown as { text: string })
+    updateTextPreviewWidgets(node, { text: 23.976 } as unknown as {
+      text: string
+    })
     expect(node.widgets[0].value).toBe('23.976')
   })
 
