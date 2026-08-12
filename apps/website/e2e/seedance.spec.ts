@@ -141,6 +141,15 @@ test.describe('Seedance 2.5 page — link targets', () => {
     await expect(buttons).toHaveCount(withPrompt.length)
   })
 
+  // Seedance 2.5 does not render 4K, and a prompt is copyable text that would
+  // re-publish the claim the rest of this page had it removed for.
+  test('no gallery prompt advertises 4K', () => {
+    const offenders = (seedancePage.gallery?.cards ?? []).filter((card) =>
+      Object.values(card.prompt ?? {}).some((text) => /\b4k\b/i.test(text))
+    )
+    expect(offenders.map((card) => card.id)).toEqual([])
+  })
+
   test('MCP highlight card CTA links to the MCP page', async ({ page }) => {
     const reviewsSection = page.locator('section').filter({
       has: page.getByRole('heading', { level: 2, name: REVIEWS_HEADING })

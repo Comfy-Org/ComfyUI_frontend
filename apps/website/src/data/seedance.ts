@@ -34,6 +34,12 @@ const media = {
     src: 'https://media.comfy.org/website/seedance-2.5/grass.webm',
     posterSrc: 'https://media.comfy.org/website/seedance-2.5/grass-poster.webp'
   },
+  worldcup: {
+    kind: 'video',
+    src: 'https://media.comfy.org/website/seedance-2.5/worldcup.webm',
+    posterSrc:
+      'https://media.comfy.org/website/seedance-2.5/worldcup-poster.webp'
+  },
   city: {
     kind: 'video',
     src: 'https://media.comfy.org/website/seedance-2.5/city.webm',
@@ -117,6 +123,14 @@ const clips = [
     description: {
       en: 'A meadow running down the middle of an empty office floor.',
       'zh-CN': '一片草地从空荡的办公楼中间蔓延开来。'
+    }
+  },
+  {
+    id: 'worldcup',
+    media: media.worldcup,
+    description: {
+      en: 'A packed stadium crowd, shot handheld from the stands.',
+      'zh-CN': '看台上人声鼎沸的球迷，手持镜头拍摄。'
     }
   },
   {
