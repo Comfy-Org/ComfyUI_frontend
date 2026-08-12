@@ -59,6 +59,7 @@ export const API_MEMBERS: ReadonlySet<string> = new Set([
   'event',
   'execution',
   'extend',
+  'fetch',
   'forMajor',
   'from',
   'get',

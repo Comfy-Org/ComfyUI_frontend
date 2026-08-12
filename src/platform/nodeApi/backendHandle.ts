@@ -44,6 +44,17 @@ export interface BackendHandle {
    * `detail` is its payload, unparsed.
    */
   on(event: string, listener: (detail: unknown) => void): Unsubscribe
+  /**
+   * Calls a backend route with the host's own credentials attached.
+   *
+   * `url()` only builds a string, so a pack calling `fetch()` on it sends an
+   * unauthenticated request — fine on a local install, a 401 on a hosted one.
+   * Packs ship their own Python routes and were reaching for `api.fetchApi`
+   * precisely to inherit the session; this is that, and nothing more.
+   *
+   * The route is API-relative and must start with `/`, as `url()` requires.
+   */
+  fetch(route: string, init?: RequestInit): Promise<Response>
 }
 
 export function createBackendApi(): BackendHandle {
@@ -64,6 +75,17 @@ export function createBackendApi(): BackendHandle {
         )
       }
       return api.fileURL(route)
+    },
+
+    fetch(route: string, init?: RequestInit) {
+      if (!route.startsWith('/')) {
+        throw new ComfyApiError(
+          `Route '${route}' must start with '/', e.g. '/my-pack/items'.`
+        )
+      }
+      // Delegates rather than rebuilding the header set: auth is the host's
+      // business and it changes (cloud added a Firebase JWT and a 401 retry).
+      return api.fetchApi(route, init)
     },
 
     on(event: string, listener: (detail: unknown) => void) {

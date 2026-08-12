@@ -8,6 +8,9 @@
  */
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
+
+import { useSettingStore } from '@/platform/settings/settingStore'
 
 import { ComfyApiError } from './errors'
 import { createSettingsApi } from './settingsHandle'
@@ -119,5 +122,33 @@ describe('pack settings', () => {
     })
 
     expect(settings.get('MyPack.size')).toBe(5)
+  })
+})
+
+describe('onChange', () => {
+  it('watches a core setting the pack never declared', async () => {
+    // `declare`'s own onChange only fires for settings the pack owns, so a
+    // pack reacting to a core preference had nothing to observe.
+    const settings = createSettingsApi()
+    const seen: unknown[] = []
+    const stop = settings.onChange('Comfy.UseNewMenu', (v) => seen.push(v))
+
+    await useSettingStore().set('Comfy.UseNewMenu' as never, 'Top' as never)
+    await nextTick()
+
+    expect(seen).toEqual(['Top'])
+    stop()
+  })
+
+  it('stops watching once unsubscribed', async () => {
+    const settings = createSettingsApi()
+    const seen: unknown[] = []
+    const stop = settings.onChange('Comfy.UseNewMenu', (v) => seen.push(v))
+
+    stop()
+    await useSettingStore().set('Comfy.UseNewMenu' as never, 'Bottom' as never)
+    await nextTick()
+
+    expect(seen).toEqual([])
   })
 })

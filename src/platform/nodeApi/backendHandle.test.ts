@@ -72,3 +72,23 @@ describe('asset urls', () => {
     )
   })
 })
+
+describe('fetch', () => {
+  it('goes through the host so the session travels with it', async () => {
+    // url() only builds a string; a pack calling window.fetch on it sends an
+    // unauthenticated request, which 401s on a hosted install.
+    const backend = createBackendApi()
+    const spy = vi
+      .spyOn(api, 'fetchApi')
+      .mockResolvedValue(new Response(null, { status: 200 }))
+
+    await backend.fetch('/my-pack/items', { method: 'POST' })
+
+    expect(spy).toHaveBeenCalledWith('/my-pack/items', { method: 'POST' })
+  })
+
+  it('rejects a route that is not API-relative', async () => {
+    const backend = createBackendApi()
+    expect(() => backend.fetch('my-pack/items')).toThrow(/must start with/)
+  })
+})

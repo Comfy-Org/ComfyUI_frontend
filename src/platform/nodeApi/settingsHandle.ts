@@ -11,9 +11,12 @@
  * host's business, and exposing them would make the settings UI a public
  * contract we then could not change.
  */
+import { watch } from 'vue'
+
 import { useSettingStore } from '@/platform/settings/settingStore'
 
 import { ComfyApiError } from './errors'
+import type { Unsubscribe } from './widgetHandle'
 
 /** @knipIgnoreUnusedButUsedByCustomNodes */
 export type SettingValue = string | number | boolean | readonly string[]
@@ -69,6 +72,20 @@ export interface SettingsHandle {
   declare(def: SettingDef): void
   get<T extends SettingValue = SettingValue>(id: string): T | undefined
   set(id: string, value: SettingValue): Promise<void>
+  /**
+   * Watches a setting, including one the pack did not declare.
+   *
+   * `declare`'s own `onChange` only fires for settings the pack owns, so a
+   * pack that needs to react to a *core* preference — colour palette, link
+   * render mode, locale — had nothing to observe and polled or ignored it.
+   *
+   * Fires on change only, not on registration. Returns a function that stops
+   * watching; call it from wherever the pack tears down.
+   */
+  onChange<T extends SettingValue = SettingValue>(
+    id: string,
+    listener: (value: T | undefined, previous: T | undefined) => void
+  ): Unsubscribe
 }
 
 /**
@@ -80,6 +97,17 @@ const asKey = (id: string) => id as never
 
 export function createSettingsApi(): SettingsHandle {
   const handle: SettingsHandle = {
+    onChange(id, listener) {
+      const store = useSettingStore()
+      // Watching a getter rather than the store's internal map: `get` applies
+      // the default when nothing is stored, so a pack sees the same value it
+      // would read, not `undefined` until someone writes.
+      return watch(
+        () => store.get(asKey(id)),
+        (value, previous) => listener(value as never, previous as never)
+      )
+    },
+
     declare(def: SettingDef) {
       if (!def.id.includes('.')) {
         throw new ComfyApiError(
