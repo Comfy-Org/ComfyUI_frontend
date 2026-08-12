@@ -25,6 +25,15 @@ on:
     # Weekly, Monday 06:17 UTC - off the top-of-hour scheduler stampede.
     - cron: '17 6 * * 1'
   workflow_dispatch:
+  # Self-testing: a PR that changes the census runs the census. Also what
+  # registers the workflow so workflow_dispatch resolves before the file
+  # ever lands on the default branch. PR-branch cache saves are scoped to
+  # the PR and invisible to the weekly main run, which cold-starts once
+  # post-merge.
+  pull_request:
+    paths:
+      - 'scripts/registry-census/**'
+      - '.github/workflows/ci-weekly-registry-census.yaml'
 
 permissions:
   contents: read
