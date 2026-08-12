@@ -22,7 +22,12 @@ import { ComfyApiError } from './errors'
 export interface CommandDef {
   /** Namespaced, e.g. `MyPack.doTheThing`. Shared with core and every pack. */
   readonly id: string
-  readonly label: string
+  /**
+   * A function when the label depends on state — a toggle that reads "Follow
+   * execution" and then "Stop following execution". It is read each time the
+   * label is shown, so it must return quickly.
+   */
+  readonly label: string | (() => string)
   readonly run: () => void | Promise<void>
   /** Bound as a default, so a user's own binding still wins. */
   readonly keybinding?: KeyCombo

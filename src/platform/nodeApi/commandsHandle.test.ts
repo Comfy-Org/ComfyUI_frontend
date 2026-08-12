@@ -41,6 +41,26 @@ describe('pack commands', () => {
     expect(ran).toHaveBeenCalled()
   })
 
+  it('takes a label that changes with state', async () => {
+    // A toggle reads 'Follow execution', then 'Stop following execution'. The
+    // command store already accepted a function; only our type was narrow.
+    let following = false
+    commands.register({
+      id: 'KJNodes.follow',
+      label: () =>
+        following ? 'Stop following execution' : 'Follow execution',
+      run: () => {
+        following = !following
+      }
+    })
+
+    const command = useCommandStore().getCommand('KJNodes.follow')!
+    expect(command.label).toBe('Follow execution')
+
+    await commands.run('KJNodes.follow')
+    expect(command.label).toBe('Stop following execution')
+  })
+
   it('runs a command the host registered, by id', async () => {
     // Opening the mask editor was ComfyApp.copyToClipspace plus
     // clipspace_return_node plus invoking the command by hand. Asking for the

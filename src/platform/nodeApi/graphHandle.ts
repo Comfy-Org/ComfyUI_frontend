@@ -116,6 +116,22 @@ export interface GraphHandle {
    */
   subgraphs(): readonly SubgraphHandle[]
   /**
+   * Runs several mutations as one undo step.
+   *
+   * Without it, a pack that adds three nodes and wires them leaves the user
+   * pressing undo four times to get back. `graph.beforeChange()` /
+   * `afterChange()` did this by counting nesting depth.
+   *
+   * A scope rather than a pair of calls: the counter only captures when it
+   * returns to zero, so one throw between a manual `before` and `after` stops
+   * undo capturing anything at all, for the rest of the session, with nothing
+   * to show why. The scope closes on the way out either way.
+   *
+   * Synchronous on purpose. Holding the group open across an `await` would
+   * fold whatever the user did while waiting into the pack's undo step.
+   */
+  batch<T>(mutations: () => T): T
+  /**
    * The topmost node at a point in graph space, if any.
    *
    * Packs building a gesture were walking every node and re-deriving its
@@ -286,6 +302,16 @@ export function createGraphApi(
     groups() {
       const groups = getGraph()?._groups ?? []
       return Object.freeze(groups.map(groupHandle))
+    },
+
+    batch(mutations) {
+      const graph = getGraph()
+      graph?.beforeChange()
+      try {
+        return mutations()
+      } finally {
+        graph?.afterChange()
+      }
     },
 
     subgraphs() {
