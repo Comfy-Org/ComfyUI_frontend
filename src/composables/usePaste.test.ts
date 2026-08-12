@@ -120,7 +120,6 @@ vi.mock('@/workbench/eventHelpers', () => ({
 
 describe('pasteImageNode', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     vi.mocked(mockCanvas.graph!.add).mockImplementation(
       (node: LGraphNode | LGraphGroup | null) => node as LGraphNode
     )
@@ -186,10 +185,6 @@ describe('pasteImageNode', () => {
 })
 
 describe('pasteImageNodes', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('should create multiple nodes for multiple files', async () => {
     const mockNode1 = createMockNode()
     const mockNode2 = createMockNode()
@@ -219,10 +214,6 @@ describe('pasteImageNodes', () => {
 })
 
 describe('pasteAudioNode', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('should create new LoadAudio node when no audio node provided', async () => {
     const mockNode = createMockNode()
     vi.mocked(createNode).mockResolvedValue(mockNode)
@@ -271,10 +262,6 @@ describe('pasteAudioNode', () => {
 })
 
 describe('pasteAudioNodes', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('should create multiple nodes for multiple audio files', async () => {
     const mockNode1 = createMockNode()
     const mockNode2 = createMockNode()
@@ -315,10 +302,6 @@ describe('pasteAudioNodes', () => {
 })
 
 describe('pasteVideoNode', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('should create new LoadVideo node when no video node provided', async () => {
     const mockNode = createMockNode()
     vi.mocked(createNode).mockResolvedValue(mockNode)
@@ -367,10 +350,6 @@ describe('pasteVideoNode', () => {
 })
 
 describe('pasteVideoNodes', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('should create multiple nodes for multiple video files', async () => {
     const mockNode1 = createMockNode()
     const mockNode2 = createMockNode()
@@ -412,7 +391,6 @@ describe('pasteVideoNodes', () => {
 
 describe('usePaste', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockCanvas.current_node = null
     mockWorkspaceStore.shiftDown = false
     vi.mocked(mockCanvas.graph!.add).mockImplementation(

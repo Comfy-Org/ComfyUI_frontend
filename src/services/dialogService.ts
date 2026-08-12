@@ -13,6 +13,7 @@ import { t } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
 import { isCloud } from '@/platform/distribution/types'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingPolicyCapabilities } from '@/platform/cloud/subscription/composables/useBillingPolicyCapabilities'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import type {
@@ -333,8 +334,11 @@ export const useDialogService = () => {
   async function showTopUpCreditsDialog(options?: {
     isInsufficientCredits?: boolean
   }) {
-    const { isActiveSubscription, isFreeTier, type } = useBillingContext()
-    if (!isActiveSubscription.value || isFreeTier.value) {
+    const { type } = useBillingContext()
+    const { billingPolicyCapabilities } = useBillingPolicyCapabilities()
+    if (
+      billingPolicyCapabilities.value.topUpAccess === 'subscription-required'
+    ) {
       await showSubscriptionRequiredDialog({
         reason: options?.isInsufficientCredits
           ? 'out_of_credits'
@@ -653,16 +657,29 @@ export const useDialogService = () => {
     })
   }
 
-  async function showCancelSubscriptionDialog(cancelAt?: string) {
+  async function showCancelSubscriptionDialog(
+    cancelAt?: string,
+    flowAlreadyOpened = false
+  ) {
     const { default: component } =
       await import('@/components/dialog/content/subscription/CancelSubscriptionDialogContent.vue')
     return dialogStore.showDialog({
       key: 'cancel-subscription',
       component,
-      props: { cancelAt },
+      props: { cancelAt, flowAlreadyOpened },
       dialogComponentProps: {
         ...workspaceDialogProps
       }
+    })
+  }
+
+  async function showCancelSubscriptionFlow(cancelAt?: string) {
+    const cancellationFlow =
+      await import('@/platform/cloud/subscription/launchCancellationFlow')
+    return cancellationFlow.launchCancellationFlow({
+      cancelAt,
+      showFallback: ({ flowAlreadyOpened = false } = {}) =>
+        showCancelSubscriptionDialog(cancelAt, flowAlreadyOpened)
     })
   }
 
@@ -837,6 +854,7 @@ export const useDialogService = () => {
     showInviteMemberUpsellDialog,
     showBillingComingSoonDialog,
     showCancelSubscriptionDialog,
+    showCancelSubscriptionFlow,
     showDowngradeToPersonalDialog
   }
 }

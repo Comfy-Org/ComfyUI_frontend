@@ -1,4 +1,4 @@
-import _ from 'es-toolkit/compat'
+import { union } from 'es-toolkit/compat'
 import { until, useAsyncState } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, markRaw, ref, shallowRef, watch } from 'vue'
@@ -183,7 +183,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     ): path is keyof typeof workflowLookup.value =>
       typeof path === 'string' && path in workflowLookup.value
 
-    openWorkflowPaths.value = _.union(
+    openWorkflowPaths.value = union(
       left,
       openWorkflowPaths.value,
       right
