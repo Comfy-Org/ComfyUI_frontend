@@ -38,6 +38,9 @@
     :inert="isGhostPlacing"
     v-bind="remainingPointerHandlers"
     @pointerdown="nodeOnPointerdown"
+    @pointerenter="dispatchHover($event, true)"
+    @pointerleave="dispatchHover($event, false)"
+    @dblclick="dispatchDoubleClick"
     @wheel="handleWheel"
     @contextmenu="handleContextMenu"
     @dragover.prevent="handleDragOver"
@@ -257,6 +260,7 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
@@ -626,6 +630,39 @@ function resolveLGraphNode() {
 }
 
 const lgraphNode = computed(resolveLGraphNode)
+
+// The legacy canvas dispatches these node callbacks; this renderer did not,
+// so an extension using them worked under one renderer and silently did
+// nothing under the other.
+//
+// The event is passed through with canvasX/canvasY attached, because that is
+// what the legacy canvas hands these callbacks. Passing a bare DOM event — or
+// nothing — would make an extension reading e.canvasX throw here while working
+// there, which is worse than the callback never firing.
+function withGraphCoords(event: PointerEvent | MouseEvent) {
+  const [x, y] = LGraphCanvas.active_canvas?.graph_mouse ?? [0, 0]
+  return Object.assign(event, { canvasX: x, canvasY: y }) as CanvasPointerEvent
+}
+
+function dispatchHover(event: PointerEvent, hovering: boolean) {
+  const node = lgraphNode.value
+  if (!node) return
+  const canvasEvent = withGraphCoords(event)
+  if (hovering) node.onMouseEnter?.(canvasEvent)
+  else node.onMouseLeave?.(canvasEvent)
+}
+
+function dispatchDoubleClick(event: MouseEvent) {
+  const node = lgraphNode.value
+  if (!node) return
+  const canvasEvent = withGraphCoords(event)
+  // Node-local, as the legacy canvas passes it.
+  node.onDblClick?.(
+    canvasEvent,
+    [canvasEvent.canvasX - node.pos[0], canvasEvent.canvasY - node.pos[1]],
+    LGraphCanvas.active_canvas as never
+  )
+}
 
 // TODO: Surface subgraph info more cleanly in NodeState instead of
 // reaching through lgraphNode for promoted preview resolution.

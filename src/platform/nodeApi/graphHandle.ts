@@ -13,7 +13,7 @@ import { toNodeId } from '@/types/nodeId'
 import { ComfyApiError } from './errors'
 import { createGroupHandles } from './groupHandle'
 import type { GroupHandle } from './groupHandle'
-import type { Point,NodeHandle } from './nodeHandle'
+import type { Point, NodeHandle } from './nodeHandle'
 import { createNodeHandles } from './nodeHandle'
 import {
   createInputCollection,

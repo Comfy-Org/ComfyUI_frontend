@@ -1,5 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
-import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
+import { fireEvent, render, screen } from '@testing-library/vue'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -520,6 +521,53 @@ describe('LGraphNode', () => {
         // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
         container.querySelector('[role="button"][aria-label]')
       ).not.toBeNull()
+    })
+  })
+
+  describe('node callbacks the legacy canvas dispatches', () => {
+    // These fired under the legacy renderer and silently did nothing here, so
+    // an extension using them worked under one renderer and not the other.
+    function nodeWithCallbacks() {
+      const node = {
+        isSubgraphNode: () => false,
+        pos: [100, 200],
+        onMouseEnter: vi.fn(),
+        onMouseLeave: vi.fn(),
+        onDblClick: vi.fn()
+      }
+      mockData.mockLgraphNode = node as never
+      return node
+    }
+
+    it('dispatches hover on pointer enter and leave', async () => {
+      const node = nodeWithCallbacks()
+      const { container } = renderLGraphNode({ nodeData: mockNodeData })
+      const root = getNodeRoot(container)
+
+      await userEvent.hover(root)
+      expect(node.onMouseEnter).toHaveBeenCalledTimes(1)
+
+      await userEvent.unhover(root)
+      expect(node.onMouseLeave).toHaveBeenCalledTimes(1)
+    })
+
+    it('dispatches a double click with node-local coordinates', async () => {
+      const node = nodeWithCallbacks()
+      const { container } = renderLGraphNode({ nodeData: mockNodeData })
+
+      // fireEvent, not userEvent: a realistic double click also fires
+      // pointerup, which runs the selection path and fails on this harness's
+      // stubbed stores. The assertion is about dispatch of the one event.
+      // eslint-disable-next-line testing-library/prefer-user-event
+      await fireEvent.dblClick(getNodeRoot(container))
+
+      expect(node.onDblClick).toHaveBeenCalledTimes(1)
+      const [event, pos] = node.onDblClick.mock.calls[0]
+      // Passed through with canvas coordinates attached, as the legacy canvas
+      // hands them over — a bare DOM event would throw for any reader of
+      // e.canvasX.
+      expect(event).toHaveProperty('canvasX')
+      expect(pos).toEqual([event.canvasX - 100, event.canvasY - 200])
     })
   })
 
