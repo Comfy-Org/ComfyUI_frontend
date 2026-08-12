@@ -153,6 +153,7 @@ export const API_MEMBERS: ReadonlySet<string> = new Set([
   'onNodeDragEnd',
   'onNodeMoved',
   'onPreview',
+  'onPropertyChanged',
   'onReady',
   'onRefreshed',
   'onRemoved',

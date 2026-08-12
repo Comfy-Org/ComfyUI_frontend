@@ -168,6 +168,81 @@ describe('defs.extend', () => {
       return node
     }
 
+    it('clamps a hand-entered property instead of discarding it', () => {
+      // litegraph's own callback can only veto, which throws the user's input
+      // away. rgthree clamps a seed's randomMax as it is typed.
+      const node = addNode((registry) =>
+        registry
+          .forMajor((id) => comfy.graph.node(id)!)
+          .extend('KSampler', (b) =>
+            b.onPropertyChanged((_n, e) => {
+              if (e.name === 'randomMax' && Number(e.value) > 100)
+                e.setValue(100)
+            })
+          )
+      )
+
+      node.setProperty('randomMax', 5000)
+      expect(node.properties['randomMax']).toBe(100)
+
+      node.setProperty('randomMax', 50)
+      expect(node.properties['randomMax']).toBe(50)
+    })
+
+    it('does not recurse when a handler replaces the value', () => {
+      const seen: unknown[] = []
+      const node = addNode((registry) =>
+        registry
+          .forMajor((id) => comfy.graph.node(id)!)
+          .extend('KSampler', (b) =>
+            b.onPropertyChanged((_n, e) => {
+              seen.push(e.value)
+              e.setValue(1)
+            })
+          )
+      )
+
+      node.setProperty('x', 99)
+
+      expect(seen).toEqual([99])
+      expect(node.properties['x']).toBe(1)
+    })
+
+    it('reaches a type the pack defines itself, not just an extended one', () => {
+      setActivePinia(createPinia())
+      const graph = new LGraph()
+      const api = createComfyApi(() => graph)
+      api.defs.define({
+        type: 'DefinedClamp',
+        onPropertyChanged: (_n, e) => {
+          if (Number(e.value) > 10) e.setValue(10)
+        }
+      })
+      const node = LiteGraph.createNode('DefinedClamp')!
+      graph.add(node)
+
+      node.setProperty('x', 99)
+
+      expect(node.properties['x']).toBe(10)
+    })
+
+    it('restores the previous value when a handler rejects', () => {
+      const node = addNode((registry) =>
+        registry
+          .forMajor((id) => comfy.graph.node(id)!)
+          .extend('KSampler', (b) =>
+            b.onPropertyChanged((_n, e) => {
+              if (Number(e.value) < 0) e.reject()
+            })
+          )
+      )
+      node.setProperty('x', 7)
+
+      node.setProperty('x', -1)
+
+      expect(node.properties['x']).toBe(7)
+    })
+
     it('fires onCreated once the node is addressable', () => {
       const seen: (string | undefined)[] = []
       const node = addNode((registry) =>
