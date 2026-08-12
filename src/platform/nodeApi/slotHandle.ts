@@ -72,6 +72,18 @@ export interface SlotPatch {
   name?: string
   label?: string | undefined
   type?: SlotType
+  /**
+   * The dot's colour when connected and when not.
+   *
+   * Not decoration, despite appearances: both sit on `INodeSlot` and
+   * `ISerialisableNodeInput` omits only `boundingRect`, `widget` and `link`,
+   * so they are written into the saved workflow. A pack that coloured its
+   * slots and then stopped saves different bytes than it used to.
+   *
+   * `null` clears one back to the renderer's default.
+   */
+  color?: string | null
+  colorWhenUnconnected?: string | null
 }
 
 /** @knipIgnoreUnusedButUsedByCustomNodes */
@@ -199,6 +211,10 @@ function applyPatch(
   if (patch.name !== undefined) slot.name = patch.name
   if ('label' in patch) slot.label = patch.label
   if (patch.type !== undefined) slot.type = normaliseType(patch.type)
+  if ('color' in patch) slot.color_on = patch.color ?? undefined
+  if ('colorWhenUnconnected' in patch) {
+    slot.color_off = patch.colorWhenUnconnected ?? undefined
+  }
 }
 
 function snapshotSlot(

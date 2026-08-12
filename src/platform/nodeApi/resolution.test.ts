@@ -344,6 +344,61 @@ describe('supply-side resolution', () => {
     expect(candidateGroups.map((g) => g.title)).toEqual(['Sampling'])
   })
 
+  it('lets a supplier read the type plugged into its own input', () => {
+    // The whole broadcast pattern is "send whatever is plugged into me to
+    // every unconnected input of the same type". Without this a supplier is
+    // type-blind and would feed a CLIP into a MODEL slot in silence.
+    const source = spawn('Sink')
+    source.addOutput('model', 'MODEL')
+    const broadcaster = spawn('Broadcaster')
+    // The real broadcast node takes a value in and rebroadcasts it.
+    broadcaster.addInput('anything', '*')
+    source.connect(0, broadcaster, 0)
+
+    let own: readonly {
+      name: string
+      connected: boolean
+      connectedType: string | undefined
+      sourceNodeId: string | undefined
+    }[] = []
+    supply(
+      new Map<string, Supplier>([
+        [
+          'Broadcaster',
+          (view) => {
+            own = view.self.inputs
+            return []
+          }
+        ]
+      ])
+    )
+
+    expect(own[0]).toMatchObject({
+      connected: true,
+      sourceNodeId: String(source.id)
+    })
+    expect(own[0].connectedType).toBeDefined()
+  })
+
+  it('reports an unconnected input of its own as unconnected', () => {
+    spawn('Broadcaster').addInput('anything', '*')
+    let own: readonly { connected: boolean; connectedType?: string }[] = []
+    supply(
+      new Map<string, Supplier>([
+        [
+          'Broadcaster',
+          (view) => {
+            own = view.self.inputs
+            return []
+          }
+        ]
+      ])
+    )
+
+    expect(own[0]?.connected).toBe(false)
+    expect(own[0]?.connectedType).toBeUndefined()
+  })
+
   it('can supply a literal instead of a connection', () => {
     const sink = spawn('Sink')
     spawn('Broadcaster')
