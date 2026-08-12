@@ -61,7 +61,7 @@
     <!-- Credits Section -->
 
     <div v-if="!accountActionsOnly" class="flex items-center gap-2 px-4 py-2">
-      <i class="icon-[lucide--component] text-sm text-credit" />
+      <i class="icon-[lucide--coins] text-sm text-credit" />
       <Skeleton
         v-if="isLoadingBalance"
         width="4rem"
