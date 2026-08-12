@@ -115,10 +115,6 @@ export const useAssetsStore = defineStore('assets', () => {
     return deletingAssetIds.has(assetId)
   }
 
-  const allHistoryItems = ref<AssetItem[]>([])
-
-  const loadedIds = shallowReactive(new Set<string>())
-
   const fetchInputFiles = isCloud
     ? fetchInputFilesFromCloud
     : fetchInputFilesFromAPI
@@ -147,6 +143,8 @@ export const useAssetsStore = defineStore('assets', () => {
     const historyOffset = ref(0)
     const hasMoreHistory = ref(true)
     const isLoadingMore = ref(false)
+    const allHistoryItems = ref<AssetItem[]>([])
+    const loadedIds = shallowReactive(new Set<string>())
 
     /**
      * Fetch history assets with pagination support
@@ -300,7 +298,6 @@ export const useAssetsStore = defineStore('assets', () => {
       }
     }
     patch(historyAssets.items.value)
-    patch(allHistoryItems.value)
     patch(inputAssets.value)
   }
 
