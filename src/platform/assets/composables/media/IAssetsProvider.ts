@@ -20,12 +20,12 @@ export interface IAssetsProvider {
    * Fetch list of media assets
    * @returns Promise resolving to array of AssetItem
    */
-  fetchMediaList: () => Promise<AssetItem[]>
+  fetchMediaList: () => Promise<void>
 
   /**
    * Refresh the media list (alias for fetchMediaList)
    */
-  refresh: () => Promise<AssetItem[]>
+  refresh: () => Promise<void>
 
   /**
    * Load more items (for pagination)

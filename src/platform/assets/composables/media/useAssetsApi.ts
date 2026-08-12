@@ -1,6 +1,5 @@
 import { computed } from 'vue'
 
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useAssetsStore } from '@/stores/assetsStore'
 
 /**
@@ -24,13 +23,11 @@ export function useAssetsApi(directory: 'input' | 'output') {
     directory === 'input' ? assetsStore.inputError : assetsStore.historyError
   )
 
-  const fetchMediaList = async (): Promise<AssetItem[]> => {
+  const fetchMediaList = async (): Promise<void> => {
     if (directory === 'input') {
       await assetsStore.updateInputs()
-      return assetsStore.inputAssets
     } else {
       await assetsStore.updateHistory()
-      return assetsStore.historyAssets
     }
   }
 

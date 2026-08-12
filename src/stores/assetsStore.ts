@@ -271,12 +271,8 @@ export const useAssetsStore = defineStore('assets', () => {
   const historyLoading = isCloud ? flatOutputs.isLoading : legacyHistoryLoading
   const historyError = isCloud ? ref(null) : legacyHistoryError
   const updateHistory = isCloud ? flatOutputs.invalidate : legacyUpdateHistory
-  const loadMoreHistory = isCloud
-    ? flatOutputs.onLoadMore
-    : legacyLoadMoreHistory
-  const hasMoreHistory = isCloud
-    ? flatOutputs.canLoadMore
-    : legacyHasMoreHistory
+  const loadMoreHistory = isCloud ? flatOutputs.loadMore : legacyLoadMoreHistory
+  const hasMoreHistory = isCloud ? flatOutputs.hasMore : legacyHasMoreHistory
   const isLoadingMore = isCloud ? flatOutputs.isLoading : legacyIsLoadingMore
 
   /**
@@ -937,9 +933,9 @@ export const useAssetsStore = defineStore('assets', () => {
     flatOutputError: ref(null),
     flatOutputLoading: flatOutputs.isLoading,
     flatOutputIsLoadingMore: flatOutputs.isLoading,
-    flatOutputHasMore: flatOutputs.canLoadMore,
+    flatOutputHasMore: flatOutputs.hasMore,
     updateFlatOutputs: flatOutputs.loadNew,
-    loadMoreFlatOutputs: flatOutputs.onLoadMore,
+    loadMoreFlatOutputs: flatOutputs.loadMore,
 
     // Input mapping helpers
     inputAssetsByFilename,

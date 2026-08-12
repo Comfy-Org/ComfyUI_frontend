@@ -25,7 +25,7 @@ export function useAssetsQuery(
   let pendingFetchController = new AbortController()
 
   let next_cursor: string | undefined
-  const canLoadMore = ref(true)
+  const hasMore = ref(true)
   const isLoading = ref(false)
   const items = ref<AssetItem[]>([])
 
@@ -53,21 +53,21 @@ export function useAssetsQuery(
     return parseResult.data
   }
 
-  async function onLoadMore() {
+  async function loadMore() {
     const assetResponse = await doQuery({ after: next_cursor ?? params.after })
     if (!assetResponse) return
     next_cursor = assetResponse.next_cursor
-    canLoadMore.value = assetResponse.has_more
+    hasMore.value = assetResponse.has_more
     items.value.push(...assetResponse.assets)
   }
 
   async function invalidate() {
     pendingFetchController.abort()
     pendingFetchController = new AbortController()
-    canLoadMore.value = true
+    hasMore.value = true
     next_cursor = undefined
     items.value = []
-    await onLoadMore()
+    await loadMore()
   }
 
   async function loadNew() {
@@ -85,5 +85,5 @@ export function useAssetsQuery(
     }
   }
 
-  return { canLoadMore, invalidate, isLoading, items, loadNew, onLoadMore }
+  return { hasMore, invalidate, isLoading, items, loadMore, loadNew }
 }

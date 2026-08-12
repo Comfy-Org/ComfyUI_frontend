@@ -1,12 +1,12 @@
 import type { Ref } from 'vue'
 
 export type LazyList<T> = {
-  canLoadMore: Readonly<Ref<boolean>>
+  hasMore: Readonly<Ref<boolean>>
   invalidate: () => Promise<void>
   isLoading: Readonly<Ref<boolean>>
   items: Readonly<Ref<T[]>>
   loadNew: () => Promise<void>
-  onLoadMore: () => Promise<void>
+  loadMore: () => Promise<void>
 }
 
 export function wrapLazyList<T>(

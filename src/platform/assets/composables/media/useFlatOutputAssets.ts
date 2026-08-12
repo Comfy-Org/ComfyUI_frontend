@@ -13,17 +13,13 @@ export function useFlatOutputAssets(): IAssetsProvider {
     flatOutputHasMore,
     flatOutputIsLoadingMore
   } = storeToRefs(store)
-  async function fetchMediaList() {
-    await store.updateFlatOutputs()
-    return flatOutputAssets.value
-  }
 
   return {
     media: flatOutputAssets,
     loading: flatOutputLoading,
     error: flatOutputError,
-    fetchMediaList,
-    refresh: fetchMediaList,
+    fetchMediaList: store.updateFlatOutputs,
+    refresh: store.updateFlatOutputs,
     loadMore: store.loadMoreFlatOutputs,
     hasMore: flatOutputHasMore,
     isLoadingMore: flatOutputIsLoadingMore
