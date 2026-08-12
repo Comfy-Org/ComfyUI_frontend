@@ -353,7 +353,11 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
   const settingStore = useSettingStore()
 
   const nodeDefsByName = ref<Record<string, ComfyNodeDefImpl>>({})
-  const nodeDefsByDisplayName = ref<Record<string, ComfyNodeDefImpl>>({})
+  const nodeDefsByDisplayName = computed(() =>
+    Object.fromEntries(
+      Object.values(nodeDefsByName.value).map((d) => [d.display_name, d])
+    )
+  )
   const showDeprecated = ref(false)
   const showExperimental = ref(false)
   const showDevOnly = computed(() => settingStore.get('Comfy.DevMode'))
@@ -414,7 +418,6 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
 
   function updateNodeDefs(nodeDefs: ComfyNodeDefV1[]) {
     const newNodeDefsByName: Record<string, ComfyNodeDefImpl> = {}
-    const newNodeDefsByDisplayName: Record<string, ComfyNodeDefImpl> = {}
 
     for (const nodeDef of nodeDefs) {
       const nodeDefImpl =
@@ -423,16 +426,13 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
           : new ComfyNodeDefImpl(nodeDef)
 
       newNodeDefsByName[nodeDef.name] = nodeDefImpl
-      newNodeDefsByDisplayName[nodeDefImpl.display_name] = nodeDefImpl
     }
 
     nodeDefsByName.value = newNodeDefsByName
-    nodeDefsByDisplayName.value = newNodeDefsByDisplayName
   }
   function addNodeDef(nodeDef: ComfyNodeDefV1) {
     const nodeDefImpl = new ComfyNodeDefImpl(nodeDef)
     nodeDefsByName.value[nodeDef.name] = nodeDefImpl
-    nodeDefsByDisplayName.value[nodeDefImpl.display_name] = nodeDefImpl
   }
   function fromLGraphNode(node: LGraphNode): ComfyNodeDefImpl | null {
     const nodeTypeName = node.constructor?.nodeData?.name ?? node.type

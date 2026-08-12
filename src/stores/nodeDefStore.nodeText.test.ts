@@ -157,6 +157,19 @@ describe('useNodeDefStore locale reactivity', () => {
     expect(Object.keys(store.nodeDefsByDisplayName)).toEqual([KSAMPLER_ZH])
   })
 
+  it('re-keys nodeDefsByDisplayName when the locale changes after updateNodeDefs', async () => {
+    const store = useNodeDefStore()
+    store.updateNodeDefs([def({ name: 'KSampler', display_name: KSAMPLER_EN })])
+
+    expect(store.nodeDefsByDisplayName[KSAMPLER_EN]?.name).toBe('KSampler')
+    expect(store.nodeDefsByDisplayName[KSAMPLER_ZH]).toBeUndefined()
+
+    await setActiveLocale('zh')
+
+    expect(store.nodeDefsByDisplayName[KSAMPLER_ZH]?.name).toBe('KSampler')
+    expect(store.nodeDefsByDisplayName[KSAMPLER_EN]).toBeUndefined()
+  })
+
   it('re-keys allNodeDefsByDisplayName when the locale changes', async () => {
     const store = useNodeDefStore()
     store.updateNodeDefs([def({ name: 'KSampler', display_name: KSAMPLER_EN })])
