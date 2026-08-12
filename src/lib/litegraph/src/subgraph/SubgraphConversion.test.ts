@@ -148,20 +148,44 @@ describe('SubgraphConversion', () => {
   })
 
   describe('Subgraph Unpacking Functionality', () => {
-    it('Should keep interior nodes and links', () => {
+    it('keeps a shared definition link registered while copying it to the parent', () => {
       const subgraph = createTestSubgraph()
       const subgraphNode = createTestSubgraphNode(subgraph)
       const graph = subgraphNode.graph!
       graph.add(subgraphNode)
+      graph.add(createTestSubgraphNode(subgraph))
 
       const node1 = createTestNode(subgraph, [], ['number'])
       const node2 = createTestNode(subgraph, ['number'])
-      node1.connect(0, node2, 0)
+      const innerLink = node1.connect(0, node2, 0)
+      assert(innerLink)
+      const topology = useLinkStore().getInputSlotLink(
+        graphScopeOf(subgraph),
+        node2.id,
+        0
+      )
 
       graph.unpackSubgraph(subgraphNode)
 
-      expect(graph.nodes.length).toBe(2)
+      expect(topology).toMatchObject({
+        originNodeId: node1.id,
+        originSlot: 0,
+        targetNodeId: node2.id,
+        targetSlot: 0
+      })
+      expect(
+        useLinkStore().getInputSlotLink(graphScopeOf(subgraph), node2.id, 0)
+      ).toBe(topology)
       expect(graph.links.size).toBe(1)
+      const [parentLink] = graph.links.values()
+      expect(parentLink).toMatchObject({
+        origin_slot: 0,
+        target_slot: 0
+      })
+      expect(parentLink.origin_id).not.toBe(node1.id)
+      expect(parentLink.target_id).not.toBe(node2.id)
+      expect(graph.getNodeById(parentLink.origin_id)).toBeDefined()
+      expect(graph.getNodeById(parentLink.target_id)).toBeDefined()
     })
     it('Should merge boundary links', () => {
       const subgraph = createTestSubgraph({
