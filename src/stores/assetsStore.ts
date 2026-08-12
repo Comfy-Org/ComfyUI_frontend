@@ -14,11 +14,11 @@ import type {
 } from '@/platform/assets/schemas/assetSchema'
 import {
   INPUT_TAG,
-  OUTPUT_TAG,
   assetService
 } from '@/platform/assets/services/assetService'
 import type { AssetPaginationOptions } from '@/platform/assets/services/assetService'
 import { isCloud } from '@/platform/distribution/types'
+import { useAssetsQuery } from '@/platform/remote/lazy/assets'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { api } from '@/scripts/api'
 
@@ -95,7 +95,6 @@ function mapHistoryToAssets(historyItems: JobListItem[]): AssetItem[] {
 
 const BATCH_SIZE = 200
 const MAX_HISTORY_ITEMS = 1000 // Maximum items to keep in memory
-const FLAT_OUTPUT_PAGE_SIZE = 200
 
 export const useAssetsStore = defineStore('assets', () => {
   const assetDownloadStore = useAssetDownloadStore()
@@ -262,87 +261,23 @@ export const useAssetsStore = defineStore('assets', () => {
     }
   }
 
-  const flatOutputAssets = ref<AssetItem[]>([])
-  const flatOutputLoading = ref(false)
-  const flatOutputError = ref<unknown>(null)
-  const flatOutputOffset = ref(0)
-  const flatOutputHasMore = ref(true)
-  const flatOutputIsLoadingMore = ref(false)
-  const flatOutputSeenIds = new Set<string>()
-  let flatOutputNextCursor: string | undefined
-  let flatOutputInFlight: Promise<AssetItem[]> | null = null
-
-  async function fetchFlatOutputs(loadMore: boolean): Promise<AssetItem[]> {
-    if (flatOutputInFlight) return flatOutputInFlight
-
-    if (loadMore) {
-      if (!flatOutputHasMore.value) return flatOutputAssets.value
-      flatOutputIsLoadingMore.value = true
-    } else {
-      flatOutputLoading.value = true
-      flatOutputOffset.value = 0
-      flatOutputNextCursor = undefined
-      flatOutputHasMore.value = true
-      flatOutputSeenIds.clear()
-    }
-    flatOutputError.value = null
-
-    flatOutputInFlight = (async () => {
-      const requestedAfter = loadMore ? flatOutputNextCursor : undefined
-      try {
-        const page = await assetService.getAssetsPageByTag(OUTPUT_TAG, true, {
-          limit: FLAT_OUTPUT_PAGE_SIZE,
-          ...(requestedAfter !== undefined
-            ? { after: requestedAfter }
-            : { offset: flatOutputOffset.value })
-        })
-        const batch = page.assets
-        const fresh = loadMore
-          ? batch.filter((asset) => !flatOutputSeenIds.has(asset.id))
-          : batch
-        for (const asset of fresh) flatOutputSeenIds.add(asset.id)
-        flatOutputAssets.value = loadMore
-          ? [...flatOutputAssets.value, ...fresh]
-          : batch
-        flatOutputOffset.value += batch.length
-        const nextCursor = page.next_cursor
-        const cursorStuck =
-          nextCursor !== undefined && nextCursor === requestedAfter
-        flatOutputNextCursor = cursorStuck ? undefined : nextCursor
-        flatOutputHasMore.value =
-          fresh.length > 0 && page.has_more && !cursorStuck
-        return flatOutputAssets.value
-      } catch (err) {
-        flatOutputError.value = err
-        console.error('Failed to fetch output assets:', err)
-        return loadMore ? flatOutputAssets.value : []
-      } finally {
-        if (loadMore) flatOutputIsLoadingMore.value = false
-        else flatOutputLoading.value = false
-        flatOutputInFlight = null
-      }
-    })()
-
-    return flatOutputInFlight
-  }
-
-  const updateFlatOutputs = () => fetchFlatOutputs(false)
-  const loadMoreFlatOutputs = async () => {
-    if (flatOutputIsLoadingMore.value) return
-    await fetchFlatOutputs(true)
-  }
+  const flatOutputs = useAssetsQuery()
 
   // On cloud, grouped history is derived from the flat output assets rather
   // than fetched from the history API.
   const historyAssets = isCloud
-    ? computed(() => unflattenOutputAssets(flatOutputAssets.value))
+    ? computed(() => unflattenOutputAssets(flatOutputs.items.value))
     : legacyHistoryAssets
-  const historyLoading = isCloud ? flatOutputLoading : legacyHistoryLoading
-  const historyError = isCloud ? flatOutputError : legacyHistoryError
-  const updateHistory = isCloud ? updateFlatOutputs : legacyUpdateHistory
-  const loadMoreHistory = isCloud ? loadMoreFlatOutputs : legacyLoadMoreHistory
-  const hasMoreHistory = isCloud ? flatOutputHasMore : legacyHasMoreHistory
-  const isLoadingMore = isCloud ? flatOutputIsLoadingMore : legacyIsLoadingMore
+  const historyLoading = isCloud ? flatOutputs.isLoading : legacyHistoryLoading
+  const historyError = isCloud ? ref(null) : legacyHistoryError
+  const updateHistory = isCloud ? flatOutputs.invalidate : legacyUpdateHistory
+  const loadMoreHistory = isCloud
+    ? flatOutputs.onLoadMore
+    : legacyLoadMoreHistory
+  const hasMoreHistory = isCloud
+    ? flatOutputs.canLoadMore
+    : legacyHasMoreHistory
+  const isLoadingMore = isCloud ? flatOutputs.isLoading : legacyIsLoadingMore
 
   /**
    * Patch preview_id/preview_url for a single asset already in memory,
@@ -366,7 +301,7 @@ export const useAssetsStore = defineStore('assets', () => {
       }
     }
     if (isCloud) {
-      patch(flatOutputAssets.value)
+      patch(flatOutputs.items.value)
     } else {
       patch(legacyHistoryAssets.value)
       patch(allHistoryItems.value)
@@ -998,14 +933,13 @@ export const useAssetsStore = defineStore('assets', () => {
     loadMoreHistory,
     setAssetPreview,
 
-    // Flat output assets (cloud-only, tag-based)
-    flatOutputAssets,
-    flatOutputLoading,
-    flatOutputError,
-    flatOutputHasMore,
-    flatOutputIsLoadingMore,
-    updateFlatOutputs,
-    loadMoreFlatOutputs,
+    flatOutputAssets: flatOutputs.items,
+    flatOutputError: ref(null),
+    flatOutputLoading: flatOutputs.isLoading,
+    flatOutputIsLoadingMore: flatOutputs.isLoading,
+    flatOutputHasMore: flatOutputs.canLoadMore,
+    updateFlatOutputs: flatOutputs.loadNew,
+    loadMoreFlatOutputs: flatOutputs.onLoadMore,
 
     // Input mapping helpers
     inputAssetsByFilename,
