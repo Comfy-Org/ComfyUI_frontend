@@ -5,7 +5,7 @@
  * This is the only module that knows how the pieces fit together; everything
  * below it is independently testable.
  */
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import { outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 import { toNodeId } from '@/types/nodeId'
@@ -49,6 +49,23 @@ export interface GraphHandle {
    * Selection is a property of the document, so it is asked of the graph.
    */
   selection(): readonly NodeHandle[]
+  /**
+   * Replaces the selection with these nodes. An empty list clears it.
+   *
+   * A node a pack just created is the usual case — `LGraphCanvas.add`'s
+   * `options.select` put it straight under the user's cursor, and without this
+   * the node appears but the user has to find and click it.
+   *
+   * `add: true` extends the selection instead of replacing it.
+   */
+  select(nodes: readonly NodeHandle[], options?: { add?: boolean }): void
+  /**
+   * Pans the view so a node sits in the middle of it.
+   *
+   * Packs wrote `canvas.ds.offset` themselves to do this, which bakes in the
+   * renderer's transform and the device pixel ratio. Does not change zoom.
+   */
+  centerOn(node: NodeHandle): void
   /**
    * The topmost node at a point in graph space, if any.
    *
@@ -201,6 +218,22 @@ export function createGraphApi(
       if (!graph || !node) return false
       graph.remove(node)
       return true
+    },
+
+    select(nodes, { add = false } = {}) {
+      const canvas = LGraphCanvas.active_canvas
+      if (!canvas) return
+      const graph = getGraph()
+      const resolved = nodes
+        .map((node) => graph?.getNodeById(toNodeId(node.id)))
+        .filter((node) => !!node)
+      if (!add) canvas.deselectAll()
+      if (resolved.length) canvas.selectNodes(resolved, add)
+    },
+
+    centerOn(node) {
+      const target = getGraph()?.getNodeById(toNodeId(node.id))
+      if (target) LGraphCanvas.active_canvas?.centerOnNode(target)
     },
 
     selection() {

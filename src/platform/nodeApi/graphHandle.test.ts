@@ -1,8 +1,15 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraph,
+  LGraphCanvas,
+  LGraphNode,
+  LiteGraph
+} from '@/lib/litegraph/src/litegraph'
+
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 
 import { ComfyApiError } from './errors'
 import { createGraphApi } from './graphHandle'
@@ -241,5 +248,85 @@ describe('duplicating a node', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     const graph = new LGraph()
     expect(createGraphApi(() => graph).duplicate('999')).toBeUndefined()
+  })
+})
+
+function testCanvas(graph: LGraph) {
+  const element = document.createElement('canvas')
+  element.width = 800
+  element.height = 600
+  element.getContext = vi
+    .fn()
+    .mockReturnValue(createMockCanvasRenderingContext2D())
+  return new LGraphCanvas(element, graph, {
+    skip_events: true,
+    skip_render: true
+  })
+}
+
+describe('selection', () => {
+  function twoNodeGraph() {
+    const graph = new LGraph()
+    const a = new LGraphNode('A', 'TestNode')
+    const b = new LGraphNode('B', 'TestNode')
+    graph.add(a)
+    graph.add(b)
+    // The API writes through the canvas, which is what both renderers read.
+    LGraphCanvas.active_canvas = testCanvas(graph)
+    return { graph, api: createGraphApi(() => graph) }
+  }
+
+  it('selects the given nodes and reports them back', () => {
+    const { api } = twoNodeGraph()
+    const [first] = api.nodes()
+
+    api.select([first])
+
+    expect(api.selection().map((n) => n.id)).toEqual([first.id])
+  })
+
+  it('replaces the selection by default and extends it with add', () => {
+    const { api } = twoNodeGraph()
+    const [first, second] = api.nodes()
+
+    api.select([first])
+    api.select([second])
+    expect(api.selection().map((n) => n.id)).toEqual([second.id])
+
+    api.select([first], { add: true })
+    expect(
+      api
+        .selection()
+        .map((n) => n.id)
+        .sort()
+    ).toEqual([first.id, second.id].sort())
+  })
+
+  it('clears the selection when given no nodes', () => {
+    const { api } = twoNodeGraph()
+    api.select(api.nodes())
+    expect(api.selection()).toHaveLength(2)
+
+    api.select([])
+
+    expect(api.selection()).toHaveLength(0)
+  })
+})
+
+describe('centering the view on a node', () => {
+  it('pans so the node is in the middle, without changing zoom', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('T', 'TestNode')
+    graph.add(node)
+    node.pos = [800, 600]
+    const canvas = testCanvas(graph)
+    LGraphCanvas.active_canvas = canvas
+    const scale = canvas.ds.scale
+    const api = createGraphApi(() => graph)
+
+    api.centerOn(api.nodes()[0])
+
+    expect(canvas.ds.offset).not.toEqual([0, 0])
+    expect(canvas.ds.scale).toBe(scale)
   })
 })
