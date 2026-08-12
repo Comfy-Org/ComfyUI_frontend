@@ -135,7 +135,13 @@
           <span class="text-base-foreground">
             {{ discount.name || discount.code
             }}<template v-if="discount.amount_off_cents">
-              · −{{ formatQuoteMoney(discount.amount_off_cents) }}</template
+              · −{{
+                formatQuoteMoney(
+                  discount.amount_off_cents,
+                  previewData?.currency,
+                  locale
+                )
+              }}</template
             >
           </span>
         </div>
@@ -354,6 +360,7 @@ import {
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import { isYearlyCheckout } from '@/platform/cloud/subscription/utils/planDuration'
+import { formatQuoteMoney } from '@/platform/cloud/subscription/utils/subscriptionQuoteFormatting'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type {
   BillingAuthenticationState,
@@ -418,7 +425,7 @@ const emit = defineEmits<{
   retryAuthentication: []
 }>()
 
-const { t, n } = useI18n()
+const { locale, n, t } = useI18n()
 const selectedSavedMethodId = defineModel<string | null>(
   'selectedSavedMethodId',
   { default: null }
@@ -542,18 +549,14 @@ const creditsRefillLabelKey = computed(() =>
     : 'subscription.preview.eachMonthCreditsRefill'
 )
 
-function formatQuoteMoney(cents: number): string {
-  if (!previewData?.currency) return ''
-  return new Intl.NumberFormat(undefined, {
-    style: 'currency',
-    currency: previewData.currency.toUpperCase()
-  }).format(cents / 100)
-}
-
 const totalDueToday = computed(() =>
   previewData?.amount_due_cents === undefined
     ? ''
-    : formatQuoteMoney(previewData.amount_due_cents)
+    : formatQuoteMoney(
+        previewData.amount_due_cents,
+        previewData.currency,
+        locale.value
+      )
 )
 
 const renewalTerms = computed(() => {
@@ -570,7 +573,11 @@ const renewalTerms = computed(() => {
     timeZone: 'UTC'
   })
   return t('subscription.preview.renewsAt', {
-    amount: formatQuoteMoney(previewData.renewal_amount_cents),
+    amount: formatQuoteMoney(
+      previewData.renewal_amount_cents,
+      previewData.currency,
+      locale.value
+    ),
     date
   })
 })

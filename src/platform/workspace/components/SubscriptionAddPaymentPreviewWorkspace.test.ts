@@ -47,7 +47,8 @@ function previewFixture(
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
     t: (key: string) => key,
-    n: (value: number) => value.toLocaleString('en-US')
+    n: (value: number) => value.toLocaleString('en-US'),
+    locale: { value: 'en' }
   })
 }))
 
