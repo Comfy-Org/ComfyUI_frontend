@@ -183,6 +183,48 @@ describe('useFeatureFlags', () => {
     })
   })
 
+  describe('nodeLibraryEssentialsEnabled', () => {
+    beforeEach(() => {
+      vi.mocked(distributionTypes).isNightly = true
+    })
+
+    afterEach(() => {
+      vi.mocked(distributionTypes).isNightly = false
+      remoteConfig.value = {}
+    })
+
+    it('defaults on when nightly serves no value for the flag', () => {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (_path, defaultValue) => defaultValue
+      )
+
+      const { flags } = useFeatureFlags()
+      expect(flags.nodeLibraryEssentialsEnabled).toBe(true)
+    })
+
+    it('lets a remote config false turn off the nightly default', () => {
+      remoteConfig.value = { node_library_essentials_enabled: false }
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (_path, defaultValue) => defaultValue
+      )
+
+      const { flags } = useFeatureFlags()
+      expect(flags.nodeLibraryEssentialsEnabled).toBe(false)
+    })
+
+    it('lets a served server false turn off the nightly default', () => {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (path, defaultValue) =>
+          path === ServerFeatureFlag.NODE_LIBRARY_ESSENTIALS_ENABLED
+            ? false
+            : defaultValue
+      )
+
+      const { flags } = useFeatureFlags()
+      expect(flags.nodeLibraryEssentialsEnabled).toBe(false)
+    })
+  })
+
   describe('partnerNodeGovernanceEnabled', () => {
     afterEach(() => {
       remoteConfig.value = {}
