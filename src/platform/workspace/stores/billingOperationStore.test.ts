@@ -788,6 +788,63 @@ describe('billingOperationStore', () => {
       )
     })
 
+    it('shows a safe declined-card detail while preserving authentication retry', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-declined',
+        status: 'pending',
+        authentication_state: 'failed_retryable',
+        decline_reason: 'card_declined',
+        payment_intent_client_secret: 'pi_secret_current',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-declined', 'subscription', {
+        suppressProcessingToast: true
+      })
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(store.subscriptionActionOperation).toMatchObject({
+        opId: 'op-declined',
+        status: 'pending',
+        authenticationState: 'failed_retryable',
+        canRetryAuthentication: true,
+        errorMessage: 'billingOperation.paymentDeclinedDetail'
+      })
+      expect(mockHandleNextAction).not.toHaveBeenCalled()
+
+      await expect(
+        store.retryPaymentAuthentication('op-declined')
+      ).resolves.toBe(true)
+      expect(mockHandleNextAction).toHaveBeenCalledWith({
+        clientSecret: 'pi_secret_current'
+      })
+    })
+
+    it('keeps authentication declines actionable without retrying automatically', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-authentication-failed',
+        status: 'pending',
+        authentication_state: 'failed_retryable',
+        decline_reason: 'authentication_failed',
+        payment_intent_client_secret: 'pi_secret_current',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-authentication-failed', 'subscription', {
+        suppressProcessingToast: true
+      })
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(store.subscriptionActionOperation).toMatchObject({
+        authenticationState: 'failed_retryable',
+        canRetryAuthentication: true,
+        errorMessage: 'billingOperation.authenticationFailedDetail'
+      })
+      expect(mockHandleNextAction).not.toHaveBeenCalled()
+    })
+
     it('remains retryable after retry failure and never relaunches Stripe automatically', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-3ds',

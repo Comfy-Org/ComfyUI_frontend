@@ -1,4 +1,5 @@
 import type {
+  BillingOpStatusResponse as GeneratedBillingOpStatusResponse,
   BillingStatusResponse as GeneratedBillingStatusResponse,
   ChurnkeyAuthResponse
 } from '@comfyorg/ingest-types'
@@ -361,29 +362,13 @@ export interface CreateTopupResponse {
   amount_cents: number
 }
 
-type BillingOpStatus =
-  | 'pending'
-  | 'succeeded'
-  | 'failed'
-  | 'reconciliation_needed'
-
-export type BillingAuthenticationState =
-  | 'requires_action'
-  | 'processing'
-  | 'failed_retryable'
-  | 'succeeded'
-  | 'reconciliation_needed'
-
-export interface BillingOpStatusResponse {
-  id: string
-  status: BillingOpStatus
-  error_message?: string
-  authentication_state?: BillingAuthenticationState
-  started_at: string
-  completed_at?: string
-  action_url?: string
-  payment_intent_client_secret?: string
-}
+export type BillingOpStatusResponse = GeneratedBillingOpStatusResponse
+export type BillingAuthenticationState = NonNullable<
+  BillingOpStatusResponse['authentication_state']
+>
+export type BillingDeclineReason = NonNullable<
+  BillingOpStatusResponse['decline_reason']
+>
 
 interface BillingEvent {
   event_type: string

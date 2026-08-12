@@ -17,7 +17,10 @@ import type {
 } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
-import type { BillingAuthenticationState } from '@/platform/workspace/api/workspaceApi'
+import type {
+  BillingAuthenticationState,
+  BillingDeclineReason
+} from '@/platform/workspace/api/workspaceApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
@@ -265,7 +268,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       const pollingPaused = await updateAuthenticationState(
         opId,
         response.authentication_state,
-        response.payment_intent_client_secret
+        response.payment_intent_client_secret,
+        response.decline_reason
       )
       updateOperationActionUrl(opId, validateActionUrl(response.action_url))
       if (pollingPaused) return
@@ -347,7 +351,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   async function updateAuthenticationState(
     opId: string,
     state?: BillingAuthenticationState,
-    clientSecret?: string
+    clientSecret?: string,
+    declineReason?: BillingDeclineReason
   ): Promise<boolean> {
     if (!state) return false
     const operation = operations.value.get(opId)
@@ -378,6 +383,10 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         isEchoOfHandledChallenge)
         ? operation.authenticationState
         : state
+    const declineDetail =
+      state === 'failed_retryable' && declineReason
+        ? billingFailureDetail(operation.type, declineReason)
+        : null
     updateOperation(opId, {
       authenticationState: displayState,
       canRetryAuthentication:
@@ -385,7 +394,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         (displayState === 'requires_action' ||
           displayState === 'failed_retryable'),
       authenticationRequiredSeen:
-        operation.authenticationRequiredSeen || state === 'requires_action'
+        operation.authenticationRequiredSeen || state === 'requires_action',
+      ...(declineDetail && { errorMessage: declineDetail })
     })
 
     // Neither authentication state is terminal for a pending operation: the
@@ -756,6 +766,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       case 'incorrect_cvc':
       case 'invalid_cvc':
         return t('billingOperation.incorrectCvcDetail')
+      case 'authentication_failed':
       case 'authentication_required':
       case 'payment_intent_authentication_failure':
         return t('billingOperation.authenticationFailedDetail')

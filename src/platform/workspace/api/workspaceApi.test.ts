@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { BillingOpStatusResponse } from './workspaceApi'
+
 const {
   mockAxiosInstance,
   mockGetAuthHeaderOrThrow,
@@ -672,9 +674,12 @@ describe('workspaceApi', () => {
     it('getBillingOpStatus() sends GET /billing/ops/:id', async () => {
       const data = {
         id: 'op-1',
-        status: 'succeeded',
-        started_at: '2026-01-01'
-      }
+        status: 'pending',
+        authentication_state: 'failed_retryable',
+        decline_reason: 'card_declined',
+        payment_intent_client_secret: 'pi_secret_current',
+        started_at: '2026-01-01T00:00:00Z'
+      } satisfies BillingOpStatusResponse
       mockAxiosInstance.get.mockResolvedValue({ data })
 
       const result = await workspaceApi.getBillingOpStatus('op-1')

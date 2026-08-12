@@ -956,6 +956,18 @@ export type BillingOpStatusResponse = {
    */
   error_message?: string
   /**
+   * Whether the customer can recover by starting a new billing operation after performing recovery_action.
+   */
+  retryable?: boolean
+  /**
+   * Typed next action for a failed operation. Absent for pending and succeeded operations.
+   */
+  recovery_action?:
+    | 'retry'
+    | 'replace_payment_method'
+    | 'authenticate_payment'
+    | 'contact_support'
+  /**
    * State derived from the PaymentIntent attached to this operation's
    * exact stored Stripe invoice. Absent when the operation has no
    * correlated PaymentIntent.
@@ -967,6 +979,25 @@ export type BillingOpStatusResponse = {
     | 'failed_retryable'
     | 'succeeded'
     | 'reconciliation_needed'
+  /**
+   * Coarse classification of why the correlated PaymentIntent's last
+   * payment attempt failed, derived at read time from the provider's
+   * machine-readable error and decline codes — never from provider
+   * message text or payment-method details. Present only when the
+   * intent has recorded a failed attempt and the operation is either
+   * still pending with authentication_state failed_retryable or has
+   * terminally failed. generic means the attempt failed for a reason
+   * outside this vocabulary.
+   *
+   */
+  decline_reason?:
+    | 'card_declined'
+    | 'insufficient_funds'
+    | 'expired_card'
+    | 'incorrect_cvc'
+    | 'authentication_failed'
+    | 'processing_error'
+    | 'generic'
   /**
    * Stripe PaymentIntent client secret for completing requires_action.
    * This bearer capability is returned only to workspace billing managers

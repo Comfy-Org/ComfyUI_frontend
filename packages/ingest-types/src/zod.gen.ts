@@ -546,6 +546,15 @@ export const zBillingOpStatusResponse = z.object({
   id: z.string(),
   status: z.enum(['pending', 'succeeded', 'failed', 'reconciliation_needed']),
   error_message: z.string().optional(),
+  retryable: z.boolean().optional(),
+  recovery_action: z
+    .enum([
+      'retry',
+      'replace_payment_method',
+      'authenticate_payment',
+      'contact_support'
+    ])
+    .optional(),
   authentication_state: z
     .enum([
       'requires_action',
@@ -553,6 +562,17 @@ export const zBillingOpStatusResponse = z.object({
       'failed_retryable',
       'succeeded',
       'reconciliation_needed'
+    ])
+    .optional(),
+  decline_reason: z
+    .enum([
+      'card_declined',
+      'insufficient_funds',
+      'expired_card',
+      'incorrect_cvc',
+      'authentication_failed',
+      'processing_error',
+      'generic'
     ])
     .optional(),
   payment_intent_client_secret: z.string().optional(),
