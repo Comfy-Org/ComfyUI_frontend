@@ -16,6 +16,8 @@
  *    Registered callbacks are invoked in registration order, always.
  */
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LLink } from '@/lib/litegraph/src/LLink'
+import type { Size } from '@/lib/litegraph/src/interfaces'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 
@@ -91,6 +93,16 @@ export interface ConnectionChangeEvent {
   readonly side: 'input' | 'output'
   readonly index: number
   readonly connected: boolean
+  /**
+   * The node at the other end, or `undefined` on a disconnect.
+   *
+   * Packs read `link_info.origin_id` to decide what the new neighbour means —
+   * retype a slot to match it, adopt its label. Knowing only that *something*
+   * connected forced a re-walk of the whole graph to find out what.
+   */
+  readonly peerNodeId?: string
+  /** The slot index at the other end, or `undefined` on a disconnect. */
+  readonly peerIndex?: number
 }
 
 export interface NodeDefBuilder {
@@ -154,6 +166,14 @@ export interface NodeDefBuilder {
     callback: (node: NodeHandle, event: ConnectionChangeEvent) => void
   ): void // 223 packs
   onRemoved(callback: (node: NodeHandle) => void): void // 158 packs
+  /**
+   * The node was resized, by the user or by a layout pass.
+   *
+   * Packs hung a `ResizeObserver` on their mounted element to notice this,
+   * which fires for the element rather than the node and misses a resize that
+   * does not change the element.
+   */
+  onResized(callback: (node: NodeHandle, size: Size) => void): void
   /**
    * A property the user edited in the node's properties panel.
    *
@@ -751,6 +771,7 @@ export function createDefRegistry(): {
       const executed: Bound<[ExecutionResult]>[] = []
       const configured: Bound<[Record<string, unknown>]>[] = []
       const propertyChanges: Bound<[PropertyChangeEvent]>[] = []
+      const resized: Bound<[Size]>[] = []
       const connections: Bound<[ConnectionChangeEvent]>[] = []
       const removed: Bound<[]>[] = []
       const previewed: Bound<[PreviewFrame]>[] = []
@@ -805,6 +826,7 @@ export function createDefRegistry(): {
           onExecuted: (run) => executed.push({ run, handleFor }),
           onConfigured: (run) => configured.push({ run, handleFor }),
           onPropertyChanged: (run) => propertyChanges.push({ run, handleFor }),
+          onResized: (run) => resized.push({ run, handleFor }),
           onConnectionsChanged: (run) => connections.push({ run, handleFor }),
           onRemoved: (run) => removed.push({ run, handleFor }),
           onPreview: (run) => previewed.push({ run, handleFor }),
@@ -858,6 +880,7 @@ export function createDefRegistry(): {
           | 'onConfigure'
           | 'onConnectionsChange'
           | 'onPropertyChanged'
+          | 'onResize'
           | 'onRemoved',
         run: (node: LGraphNode, ...args: TArgs) => void
       ) => {
@@ -974,15 +997,32 @@ export function createDefRegistry(): {
         )
       }
 
+      if (resized.length) {
+        install<[Size]>('onResize', (node, size) => {
+          const id = String(node.id)
+          for (const { run, handleFor } of resized) run(handleFor(id), size)
+        })
+      }
+
       if (connections.length) {
-        install<[number, number, boolean]>(
+        install<[number, number, boolean, LLink | null | undefined]>(
           'onConnectionsChange',
-          (node, side, index, connected) => {
+          (node, side, index, connected, link) => {
+            const input = side === 1
+            // The link names both ends; which one is the peer depends on
+            // which end this node is.
+            const peer = link
+              ? input
+                ? { id: link.origin_id, slot: link.origin_slot }
+                : { id: link.target_id, slot: link.target_slot }
+              : undefined
             const event: ConnectionChangeEvent = Object.freeze({
               // litegraph's slot-type enum: 1 = input, 2 = output.
-              side: side === 1 ? 'input' : 'output',
+              side: input ? 'input' : 'output',
               index,
-              connected: Boolean(connected)
+              connected: Boolean(connected),
+              peerNodeId: peer ? String(peer.id) : undefined,
+              peerIndex: peer?.slot
             })
             const id = String(node.id)
             for (const { run, handleFor } of connections) {
