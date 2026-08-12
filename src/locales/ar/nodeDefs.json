@@ -5824,6 +5824,9 @@
       "model_number_of_images": {
         "name": "عدد الصور"
       },
+      "model_quality": {
+        "name": "الجودة"
+      },
       "model_resolution": {
         "name": "الدقة"
       },
@@ -5862,6 +5865,10 @@
       "prompt": {
         "name": "المطالبة",
         "tooltip": "المطالبة النصية المستخدمة لتوليد الصورة"
+      },
+      "quality": {
+        "name": "الجودة",
+        "tooltip": "مستوى الجودة، مدعوم فقط من نموذج grok-imagine-image-2.0."
       },
       "resolution": {
         "name": "الدقة"
@@ -8928,6 +8935,67 @@
       }
     }
   },
+  "LTXVDualCFGGuider": {
+    "description": "مقاييس CFG منفصلة لأنماط الفيديو والصوت في latent LTXV-AV المعبأ.",
+    "display_name": "موجه LTXV Dual CFG",
+    "inputs": {
+      "audio_cfg": {
+        "name": "audio_cfg"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "negative": {
+        "name": "سلبي"
+      },
+      "positive": {
+        "name": "إيجابي"
+      },
+      "video_cfg": {
+        "name": "video_cfg"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVDurationPredictor": {
+    "description": "يتنبأ بالمدة الطبيعية للّقطة بناءً على البرومبت باستخدام رأس المدة LTX 2.4 (يتم تحميله عبر ModelPatchLoader)، ويضبطها على شبكة إطارات VAE ذات ٨٠٠٠+١ إطار.",
+    "display_name": "متنبئ مدة LTXV",
+    "inputs": {
+      "duration_head": {
+        "name": "duration_head",
+        "tooltip": "رأس المدة LTX 2.4 محمّل عبر ModelPatchLoader."
+      },
+      "frame_rate": {
+        "name": "معدل الإطارات"
+      },
+      "max_seconds": {
+        "name": "الحد الأقصى للثواني"
+      },
+      "min_seconds": {
+        "name": "الحد الأدنى للثواني"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "positive": {
+        "name": "إيجابي"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "عدد الإطارات",
+        "tooltip": null
+      },
+      "1": {
+        "name": "الثواني",
+        "tooltip": "المدة المتوقعة الخام (غير مقيدة)."
+      }
+    }
+  },
   "LTXVEmptyLatentAudio": {
     "display_name": "LTXV Empty Latent Audio",
     "inputs": {
@@ -9047,6 +9115,29 @@
       }
     }
   },
+  "LTXVModalityGuidance": {
+    "description": "توجيه عبر الأنماط (صوت-فيديو) لـ LTXV-AV. ينفذ تمريرة إضافية واحدة في كل خطوة مع قطع انتباه a2v/v2a، ثم يدفع النتيجة نحو التنبؤ المترابط - مما يعزز تزامن الصوت والصورة (مثل تزامن الشفاه). القيمة الافتراضية المرجعية لـ modality_scale هي ٣.٠. يتراكم مع dual-CFG guider وSTG. اضبط على ١.٠ لتعطيل (بدون تمريرة إضافية).",
+    "display_name": "توجيه النمط LTXV (الربط بين الصوت/الفيديو)",
+    "inputs": {
+      "end_percent": {
+        "name": "نسبة النهاية"
+      },
+      "modality_scale": {
+        "name": "modality_scale"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "start_percent": {
+        "name": "نسبة البداية"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LTXVPreprocess": {
     "display_name": "LTXV المعالجة المسبقة",
     "inputs": {
@@ -9158,6 +9249,33 @@
       },
       "1": {
         "name": "كامنة الصوت",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVSpatioTemporalGuidance": {
+    "description": "ينفذ تمريرة إضافية واحدة في كل خطوة مع تقليل انتباه الذات في الكتل المحددة إلى تمرير القيم فقط، ثم يوجه بعيدًا عنها - مما يحسن التفاصيل المكانية وتماسك الحركة.",
+    "display_name": "توجيه الزمان والمكان LTXV (STG)",
+    "inputs": {
+      "blocks": {
+        "name": "الكتل",
+        "tooltip": "فهرس كتل المحول مفصولة بفواصل."
+      },
+      "end_percent": {
+        "name": "نسبة النهاية"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "scale": {
+        "name": "المقياس"
+      },
+      "start_percent": {
+        "name": "نسبة البداية"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -10148,6 +10266,121 @@
     "outputs": {
       "0": {
         "name": "تهيئة",
+        "tooltip": null
+      }
+    }
+  },
+  "LtxApi25AudioToVideo": {
+    "description": "إنشاء فيديو مدفوع بمسار صوتي، مع إمكانية إضافة صورة للإطار الأول.",
+    "display_name": "LTX 2.5 تحويل الصوت إلى فيديو",
+    "inputs": {
+      "audio": {
+        "name": "الصوت",
+        "tooltip": "المسار الصوتي الذي يقود الفيديو. طوله (من ٢ إلى ٢٠ ثانية) يحدد مدة الفيديو."
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "image": {
+        "name": "الصورة",
+        "tooltip": "إطار أول اختياري ليتم استخدامه للفيديو."
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "prompt": {
+        "name": "المطالبة"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "بذرة لتحديد ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج الفعلية غير حتمية بغض النظر عن البذرة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LtxApi25ImageToVideo": {
+    "description": "فيديوهات بجودة احترافية مع إمكانية تخصيص المدة والدقة بناءً على صورة البداية.",
+    "display_name": "LTX 2.5 تحويل الصورة إلى فيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "image": {
+        "name": "الصورة",
+        "tooltip": "الإطار الأول ليتم استخدامه للفيديو."
+      },
+      "last_frame": {
+        "name": "الإطار الأخير",
+        "tooltip": "الإطار الأخير ليتم استخدامه للفيديو."
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_fps": {
+        "name": "معدل الإطارات"
+      },
+      "model_generate_audio": {
+        "name": "توليد الصوت"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "prompt": {
+        "name": "المطالبة"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "بذرة لتحديد ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج الفعلية غير حتمية بغض النظر عن البذرة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LtxApi25TextToVideo": {
+    "description": "فيديوهات بجودة احترافية مع إمكانية تخصيص المدة والدقة.",
+    "display_name": "LTX 2.5 تحويل النص إلى فيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_fps": {
+        "name": "معدل الإطارات"
+      },
+      "model_generate_audio": {
+        "name": "توليد الصوت"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "prompt": {
+        "name": "المطالبة"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "بذرة لتحديد ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج الفعلية غير حتمية بغض النظر عن البذرة."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -11979,6 +12212,17 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "ModelAttentionBackend": {
+    "display_name": "ModelAttentionBackend",
+    "inputs": {
+      "attention": {
+        "name": "الانتباه"
+      },
+      "model": {
+        "name": "النموذج"
       }
     }
   },

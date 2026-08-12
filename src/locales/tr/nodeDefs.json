@@ -5824,6 +5824,9 @@
       "model_number_of_images": {
         "name": "görüntü_sayısı"
       },
+      "model_quality": {
+        "name": "kalite"
+      },
       "model_resolution": {
         "name": "çözünürlük"
       },
@@ -5862,6 +5865,10 @@
       "prompt": {
         "name": "istem",
         "tooltip": "Görüntüyü oluşturmak için kullanılan metin istemi"
+      },
+      "quality": {
+        "name": "kalite",
+        "tooltip": "Kalite seviyesi, yalnızca grok-imagine-image-2.0 modeli tarafından desteklenir."
       },
       "resolution": {
         "name": "çözünürlük"
@@ -8928,6 +8935,67 @@
       }
     }
   },
+  "LTXVDualCFGGuider": {
+    "description": "Paketlenmiş bir LTXV-AV latent için video ve ses modları için ayrı CFG ölçekleri.",
+    "display_name": "LTXV Çift CFG Yönlendirici",
+    "inputs": {
+      "audio_cfg": {
+        "name": "audio_cfg"
+      },
+      "model": {
+        "name": "model"
+      },
+      "negative": {
+        "name": "negatif"
+      },
+      "positive": {
+        "name": "pozitif"
+      },
+      "video_cfg": {
+        "name": "video_cfg"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVDurationPredictor": {
+    "description": "Bir istem için doğal çekim süresini LTX 2.4 süre başlığı (ModelPatchLoader ile yüklenmiş) kullanarak tahmin eder ve bunu VAE'nin 8k+1 kare ızgarasına hizalar.",
+    "display_name": "LTXV Süre Tahmin Edici",
+    "inputs": {
+      "duration_head": {
+        "name": "duration_head",
+        "tooltip": "ModelPatchLoader ile yüklenmiş LTX 2.4 süre başlığı."
+      },
+      "frame_rate": {
+        "name": "kare_hızı"
+      },
+      "max_seconds": {
+        "name": "maks_saniye"
+      },
+      "min_seconds": {
+        "name": "min_saniye"
+      },
+      "model": {
+        "name": "model"
+      },
+      "positive": {
+        "name": "pozitif"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "kare_sayısı",
+        "tooltip": null
+      },
+      "1": {
+        "name": "saniye",
+        "tooltip": "Ham (kısıtlanmamış) tahmini süre."
+      }
+    }
+  },
   "LTXVEmptyLatentAudio": {
     "display_name": "LTXV Boş Latent Ses",
     "inputs": {
@@ -9047,6 +9115,29 @@
       }
     }
   },
+  "LTXVModalityGuidance": {
+    "description": "LTXV-AV için çapraz-mod (ses-video) yönlendirme. Her adımda bir ekstra ileri geçiş çalıştırır, a2v/v2a çapraz-dikkat kesilir, ardından sonucu eşleşmiş tahmine doğru iter - ses-görüntü senkronizasyonunu (ör. dudak senkronizasyonu) güçlendirir. Referans varsayılan modality_scale 3.0'dır. Çift-CFG yönlendirici ve STG ile birlikte çalışır. Devre dışı bırakmak için 1.0 olarak ayarlayın (ekstra geçiş yok).",
+    "display_name": "LTXV Mod Modu Yönlendirme (A/V eşleşmesi)",
+    "inputs": {
+      "end_percent": {
+        "name": "bitiş_yüzdesi"
+      },
+      "modality_scale": {
+        "name": "modality_scale"
+      },
+      "model": {
+        "name": "model"
+      },
+      "start_percent": {
+        "name": "başlangıç_yüzdesi"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LTXVPreprocess": {
     "display_name": "LTXVÖnİşleme",
     "inputs": {
@@ -9158,6 +9249,33 @@
       },
       "1": {
         "name": "audio_latent",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVSpatioTemporalGuidance": {
+    "description": "Seçilen blokların kendi kendine dikkatini bir değer-geçişine indirerek her adımda bir ekstra geçiş çalıştırır, ardından bundan uzaklaştırır - mekansal ayrıntı ve hareket tutarlılığını artırır.",
+    "display_name": "LTXV Uzamsal-Zamansal Yönlendirme (STG)",
+    "inputs": {
+      "blocks": {
+        "name": "bloklar",
+        "tooltip": "Virgülle ayrılmış bozulacak dönüştürücü blok indeksleri."
+      },
+      "end_percent": {
+        "name": "bitiş_yüzdesi"
+      },
+      "model": {
+        "name": "model"
+      },
+      "scale": {
+        "name": "ölçek"
+      },
+      "start_percent": {
+        "name": "başlangıç_yüzdesi"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -10148,6 +10266,121 @@
     "outputs": {
       "0": {
         "name": "koşullandırma",
+        "tooltip": null
+      }
+    }
+  },
+  "LtxApi25AudioToVideo": {
+    "description": "Bir ses parçası tarafından yönlendirilen, isteğe bağlı ilk kare görseliyle bir video oluşturun.",
+    "display_name": "LTX 2.5 Ses'ten Videoya",
+    "inputs": {
+      "audio": {
+        "name": "ses",
+        "tooltip": "Videoyu yönlendiren ses parçası. Uzunluğu (2-20 saniye) video süresini belirler."
+      },
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "image": {
+        "name": "görsel",
+        "tooltip": "Video için kullanılacak isteğe bağlı ilk kare."
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Düğümün yeniden çalıştırılıp çalıştırılmayacağını belirleyen tohum; gerçek sonuçlar tohumdan bağımsız olarak rastgeledir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LtxApi25ImageToVideo": {
+    "description": "Başlangıç görseline göre özelleştirilebilir süre ve çözünürlükte profesyonel kalitede videolar.",
+    "display_name": "LTX 2.5 Görselden Videoya",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "image": {
+        "name": "görsel",
+        "tooltip": "Video için kullanılacak ilk kare."
+      },
+      "last_frame": {
+        "name": "son_kare",
+        "tooltip": "Video için kullanılacak son kare."
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "süre"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "ses_oluştur"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Düğümün yeniden çalıştırılıp çalıştırılmayacağını belirleyen tohum; gerçek sonuçlar tohumdan bağımsız olarak rastgeledir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LtxApi25TextToVideo": {
+    "description": "Özelleştirilebilir süre ve çözünürlükte profesyonel kalitede videolar.",
+    "display_name": "LTX 2.5 Metinden Videoya",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "süre"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "ses_oluştur"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Düğümün yeniden çalıştırılıp çalıştırılmayacağını belirleyen tohum; gerçek sonuçlar tohumdan bağımsız olarak rastgeledir."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -11979,6 +12212,17 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "ModelAttentionBackend": {
+    "display_name": "ModelAttentionBackend",
+    "inputs": {
+      "attention": {
+        "name": "dikkat"
+      },
+      "model": {
+        "name": "model"
       }
     }
   },

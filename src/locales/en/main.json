@@ -1864,6 +1864,7 @@
     "ltxv": "ltxv",
     "minimax": "minimax",
     "preprocessors": "preprocessors",
+    "video_models": "video_models",
     "hooks": "hooks",
     "create": "create",
     "scheduling": "scheduling",
