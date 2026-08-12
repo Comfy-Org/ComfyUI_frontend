@@ -136,45 +136,45 @@ test.describe('Vue Nodes Canvas Pan', { tag: '@vue-nodes' }, () => {
       }
       let mouseDown = false
       let spaceDown = false
-
-      try {
-        await comfyPage.page.mouse.move(start.x, start.y)
-        await comfyPage.page.mouse.down()
-        mouseDown = true
-        await comfyPage.page.mouse.move(start.x + 40, start.y + 40, {
-          steps: 5
-        })
-        await comfyPage.page.keyboard.down('Space')
-        spaceDown = true
-        await expect.poll(() => comfyPage.canvasOps.isReadOnly()).toBe(true)
-        await comfyPage.page.mouse.move(start.x + 80, start.y + 80, {
-          steps: 5
-        })
-        await comfyPage.page.mouse.up()
-        mouseDown = false
-        await comfyPage.page.keyboard.up('Space')
-        spaceDown = false
-
-        const positionAfterRelease = [
-          ...(await nodeRef.getProperty<[number, number]>('pos'))
-        ]
-        const headerAfterRelease = await node.header.boundingBox()
-        if (!headerAfterRelease) throw new Error('KSampler is not rendered')
-        await comfyPage.page.mouse.move(
-          headerAfterRelease.x + 5,
-          headerAfterRelease.y + 5
-        )
-        await comfyPage.nextFrame()
-
-        await expect
-          .poll(async () => [
-            ...(await nodeRef.getProperty<[number, number]>('pos'))
-          ])
-          .toEqual(positionAfterRelease)
-      } finally {
+      await using cleanup = new AsyncDisposableStack()
+      cleanup.defer(async () => {
         if (mouseDown) await comfyPage.page.mouse.up()
         if (spaceDown) await comfyPage.page.keyboard.up('Space')
-      }
+      })
+
+      await comfyPage.page.mouse.move(start.x, start.y)
+      await comfyPage.page.mouse.down()
+      mouseDown = true
+      await comfyPage.page.mouse.move(start.x + 40, start.y + 40, {
+        steps: 5
+      })
+      await comfyPage.page.keyboard.down('Space')
+      spaceDown = true
+      await expect.poll(() => comfyPage.canvasOps.isReadOnly()).toBe(true)
+      await comfyPage.page.mouse.move(start.x + 80, start.y + 80, {
+        steps: 5
+      })
+      await comfyPage.page.mouse.up()
+      mouseDown = false
+      await comfyPage.page.keyboard.up('Space')
+      spaceDown = false
+
+      const positionAfterRelease = [
+        ...(await nodeRef.getProperty<[number, number]>('pos'))
+      ]
+      const headerAfterRelease = await node.header.boundingBox()
+      if (!headerAfterRelease) throw new Error('KSampler is not rendered')
+      await comfyPage.page.mouse.move(
+        headerAfterRelease.x + 5,
+        headerAfterRelease.y + 5
+      )
+      await comfyPage.nextFrame()
+
+      await expect
+        .poll(async () => [
+          ...(await nodeRef.getProperty<[number, number]>('pos'))
+        ])
+        .toEqual(positionAfterRelease)
     }
   )
 
