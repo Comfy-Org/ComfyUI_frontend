@@ -1517,7 +1517,10 @@
       "expectedExtensions": [],
       "disabledNodes": {},
       "timeoutMs": 30000,
-      "cannotRunAlone": ["Unimatch_OptFlowPreprocessor"]
+      "cannotRunAlone": [
+        "ExecuteAllControlNetPreprocessors",
+        "Unimatch_OptFlowPreprocessor"
+      ]
     },
     {
       "pack": "comfyui_essentials",

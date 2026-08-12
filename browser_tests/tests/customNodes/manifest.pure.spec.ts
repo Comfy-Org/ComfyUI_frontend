@@ -303,6 +303,10 @@ test.describe('customNode manifest', () => {
       expect(cannotRunAlone('ComfyUI-LTXVideo')).not.toContain(
         'LTXVPromptEnhancerLoader'
       )
+      expect(cannotRunAlone('comfyui_controlnet_aux')).toEqual([
+        'ExecuteAllControlNetPreprocessors',
+        'Unimatch_OptFlowPreprocessor'
+      ])
       expect(cannotRunAlone('ComfyUI-FlashVSR_Ultra_Fast')).toEqual([])
       expect(cannotRunAlone('ComfyUI-GIMM-VFI')).toEqual([])
       expect(cannotRunAlone('comfyui-itools')).toEqual(['iToolsLoadImagePlus'])
