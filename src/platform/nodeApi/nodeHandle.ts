@@ -14,6 +14,7 @@ import {
   RenderShape
 } from '@/lib/litegraph/src/types/globalEnums'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { LGraphBadge } from '@/lib/litegraph/src/LGraphBadge'
 import { toNodeId } from '@/types/nodeId'
 
 import { createHandleFactory } from './closedProxy'
@@ -23,12 +24,20 @@ import type {
   OutputSlotHandle,
   SlotCollection
 } from './slotHandle'
-import type { WidgetCollection } from './widgetHandle'
+import type { Unsubscribe, WidgetCollection } from './widgetHandle'
 
 /** @knipIgnoreUnusedButUsedByCustomNodes */
 export type NodeMode = 'always' | 'never' | 'bypass' | 'on-event' | 'on-trigger'
 /** @knipIgnoreUnusedButUsedByCustomNodes */
 export type NodeShape = 'default' | 'box' | 'round' | 'circle' | 'card'
+
+export interface BadgeDef {
+  readonly text: string
+  /** Text colour. Defaults to core's badge foreground. */
+  readonly color?: string
+  /** Background colour. Defaults to core's badge background. */
+  readonly bgColor?: string
+}
 
 export interface Point {
   readonly x: number
@@ -170,6 +179,20 @@ export interface NodeHandle extends HandleCommon {
    * the server, silently.
    */
   getDisplayedImageIndex(): number | undefined
+  /**
+   * Puts a small label on the node's title bar. Returns a handle that removes
+   * it again.
+   *
+   * Packs draw a status, a count, a cost, a model name. They did it by
+   * overriding `onDrawForeground` and painting into the canvas context, which
+   * only works under the legacy renderer and puts the pack in the business of
+   * laying out text. `badges` is core's own extension point and both renderers
+   * draw it.
+   *
+   * Pass a function for a label that changes: it is called each time the node
+   * is drawn, so return quickly and do not build strings you could cache.
+   */
+  addBadge(badge: BadgeDef | (() => BadgeDef)): Unsubscribe
   /**
    * Declares how the node may be sized, instead of re-asserting it per frame.
    *
@@ -379,6 +402,27 @@ export function createNodeHandles(
         // `overIndex` is what the renderer sets while the pointer is over an
         // image; `imageIndex` survives the pointer leaving.
         getDisplayedImageIndex: (n) => n.imageIndex ?? n.overIndex ?? undefined,
+        addBadge: (n, ...args) => {
+          const def = args[0] as BadgeDef | (() => BadgeDef)
+          const toBadge = ({ text, color, bgColor }: BadgeDef) =>
+            new LGraphBadge({
+              text,
+              ...(color ? { fgColor: color } : {}),
+              ...(bgColor ? { bgColor } : {})
+            })
+          // The object form is read once: a pack that wants a label to change
+          // passes a function, and one that passes an object should not find
+          // its badge changing later because it reused the variable.
+          const entry =
+            typeof def === 'function'
+              ? () => toBadge(def())
+              : toBadge({ ...def })
+          n.badges.push(entry)
+          return () => {
+            const at = n.badges.indexOf(entry)
+            if (at !== -1) n.badges.splice(at, 1)
+          }
+        },
         getScreenRect: (n) => {
           const canvas = LGraphCanvas.active_canvas
           const element = canvas?.canvas

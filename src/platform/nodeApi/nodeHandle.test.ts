@@ -330,3 +330,61 @@ describe('getOutputImages', () => {
     expect(urls[0]).toContain('out.png')
   })
 })
+
+describe('badges', () => {
+  it('adds a badge the renderers draw, and removes it again', () => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    const graph = new LGraph()
+    const node = new LGraphNode('T')
+    graph.add(node)
+    const handle = createGraphApi(() => graph).nodes()[0]
+
+    const remove = handle.addBadge({ text: '3 loras', bgColor: '#123' })
+
+    expect(node.badges).toHaveLength(1)
+    const badge = node.badges[0]
+    const drawn = typeof badge === 'function' ? badge() : badge
+    expect(drawn.text).toBe('3 loras')
+    expect(drawn.bgColor).toBe('#123')
+
+    remove()
+    expect(node.badges).toHaveLength(0)
+  })
+
+  it('re-reads a function badge on every draw', () => {
+    // The point of the function form: a count that changes must not need the
+    // pack to remove and re-add the badge.
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    const graph = new LGraph()
+    const node = new LGraphNode('T')
+    graph.add(node)
+    let count = 1
+    createGraphApi(() => graph)
+      .nodes()[0]
+      .addBadge(() => ({ text: `${count} item` }))
+
+    const read = () => {
+      const b = node.badges[0]
+      return (typeof b === 'function' ? b() : b).text
+    }
+    expect(read()).toBe('1 item')
+    count = 7
+    expect(read()).toBe('7 item')
+  })
+
+  it('reads the object form once, so a reused variable cannot change it', () => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    const graph = new LGraph()
+    const node = new LGraphNode('T')
+    graph.add(node)
+    const def = { text: 'before' }
+    createGraphApi(() => graph)
+      .nodes()[0]
+      .addBadge(def)
+
+    def.text = 'after'
+
+    const b = node.badges[0]
+    expect((typeof b === 'function' ? b() : b).text).toBe('before')
+  })
+})
