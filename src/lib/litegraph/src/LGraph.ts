@@ -168,7 +168,12 @@ export interface GraphAddOptions {
 
 export interface LGraphExtra extends Dictionary<unknown> {
   reroutes?: SerialisableReroute[]
-  linkExtensions?: { id: LinkId; parentId: RerouteId | undefined }[]
+  linkExtensions?: {
+    id: LinkId
+    parentId?: RerouteId
+    hidden?: boolean
+    label?: string
+  }[]
   ds?: DragAndScaleState
   workflowRendererVersion?: RendererType
 }
@@ -2346,12 +2351,18 @@ export class LGraph
     const linkArray = [...this._links.values()]
     const links = linkArray.map((x) => x.serialize())
 
-    if (reroutes?.length) {
-      // Link parent IDs cannot go in 0.4 schema arrays
-      extra.linkExtensions = linkArray
-        .filter((x) => x.parentId !== undefined)
-        .map((x) => ({ id: x.id, parentId: x.parentId }))
-    }
+    const linkExtensions = linkArray
+      .filter(
+        (link) =>
+          link.parentId !== undefined || link.hidden || link.label !== undefined
+      )
+      .map((link) => ({
+        id: link.id,
+        ...(link.parentId !== undefined && { parentId: link.parentId }),
+        ...(link.hidden && { hidden: true }),
+        ...(link.label !== undefined && { label: link.label })
+      }))
+    extra.linkExtensions = linkExtensions.length ? linkExtensions : undefined
 
     extra.reroutes = reroutes?.length ? reroutes : undefined
     return {
@@ -2509,7 +2520,10 @@ export class LGraph
         if (Array.isArray(extra?.linkExtensions)) {
           for (const linkEx of extra.linkExtensions) {
             const link = this._links.get(linkEx.id)
-            if (link) link.parentId = linkEx.parentId
+            if (!link) continue
+            link.parentId = linkEx.parentId
+            link.hidden = linkEx.hidden
+            link.label = linkEx.label
           }
         }
 

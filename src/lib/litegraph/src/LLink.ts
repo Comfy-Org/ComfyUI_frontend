@@ -124,6 +124,9 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   /** @inheritdoc */
   _dragging?: boolean
 
+  hidden?: boolean
+  label?: string
+
   private _color?: CanvasColour | null
   /** Custom colour for this link only */
   public get color(): CanvasColour | null | undefined {
@@ -196,7 +199,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
    * @returns A new LLink
    */
   static create(data: SerialisableLLink): LLink {
-    return new LLink(
+    const link = new LLink(
       toLinkId(data.id),
       data.type,
       data.origin_id,
@@ -205,6 +208,9 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
       data.target_slot,
       data.parentId === undefined ? undefined : toRerouteId(data.parentId)
     )
+    link.hidden = data.hidden
+    link.label = data.label
+    return link
   }
 
   /**
@@ -360,7 +366,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
     }
   }
 
-  configure(o: LLink | SerialisedLLinkArray) {
+  configure(o: LLink | SerialisableLLink | SerialisedLLinkArray): void {
     if (Array.isArray(o)) {
       this.id = toLinkId(o[0])
       this.origin_id = toNodeId(o[1])
@@ -369,13 +375,17 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
       this.target_slot = o[4]
       this.type = o[5]
     } else {
-      this.id = o.id
-      this.type = o.type
-      this.origin_id = o.origin_id
-      this.origin_slot = o.origin_slot
-      this.target_id = o.target_id
-      this.target_slot = o.target_slot
-      this.parentId = o.parentId
+      const link = o instanceof LLink ? o : LLink.create(o)
+      this.id = link.id
+      this.type = link.type
+      this.origin_id = link.origin_id
+      this.origin_slot = link.origin_slot
+      this.target_id = link.target_id
+      this.target_slot = link.target_slot
+      this.parentId =
+        link.parentId === undefined ? undefined : toRerouteId(link.parentId)
+      this.hidden = link.hidden
+      this.label = link.label
     }
   }
 
@@ -502,6 +512,8 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
       type: this.type
     }
     if (this.parentId !== undefined) copy.parentId = this.parentId
+    if (this.hidden) copy.hidden = true
+    if (this.label !== undefined) copy.label = this.label
     return copy
   }
 }

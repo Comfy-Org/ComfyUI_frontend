@@ -73,11 +73,12 @@ const zComfyLink = z.tuple([
   zDataType // Data type
 ])
 
-/** Extension to 0.4 schema (links as arrays): parent reroute ID */
 const zComfyLinkExtension = z
   .object({
     id: z.number(),
-    parentId: z.number()
+    parentId: z.number().optional(),
+    hidden: z.boolean().optional(),
+    label: z.string().optional()
   })
   .passthrough()
 
@@ -89,7 +90,9 @@ const zComfyLinkObject = z
     target_id: zNodeId,
     target_slot: zSlotIndex,
     type: zDataType,
-    parentId: z.number().optional()
+    parentId: z.number().optional(),
+    hidden: z.boolean().optional(),
+    label: z.string().optional()
   })
   .passthrough()
 
