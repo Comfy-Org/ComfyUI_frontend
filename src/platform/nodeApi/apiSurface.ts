@@ -27,6 +27,7 @@ export const API_MEMBERS: ReadonlySet<string> = new Set([
   'attrs',
   'autoHeight',
   'backend',
+  'batch',
   'bgColor',
   'blob',
   'button',
