@@ -1,5 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { promotedInputWidget } from '@/core/graph/subgraph/promotedInputWidget'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -294,10 +294,6 @@ describe('getPromotableWidgets', () => {
 })
 
 describe('promoteRecommendedWidgets', () => {
-  beforeEach(() => {
-    updatePreviewsMock.mockReset()
-  })
-
   it('promotes recommended value widgets through linked subgraph inputs', () => {
     const subgraph = createTestSubgraph()
     const subgraphNode = createTestSubgraphNode(subgraph)
@@ -406,10 +402,6 @@ describe('promoteRecommendedWidgets', () => {
 })
 
 describe('autoExposeKnownPreviewNodes', () => {
-  beforeEach(() => {
-    updatePreviewsMock.mockReset()
-  })
-
   it('auto-exposes previews when host has no persisted previewExposures property', () => {
     const subgraph = createTestSubgraph()
     const subgraphNode = createTestSubgraphNode(subgraph)

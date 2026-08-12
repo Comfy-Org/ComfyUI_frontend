@@ -49,8 +49,6 @@ describe('LGraphNode configure named values shadow diff', () => {
   let node: LGraphNode
 
   beforeEach(() => {
-    trackNamedValuesShadowDiffMismatch.mockClear()
-    trackNamedValuesShadowDiffSummary.mockClear()
     node = new LGraphNode('TestNode')
     node.addWidget('number', 'steps', 0, null, {})
     node.addWidget('number', 'seed', 0, null, {})

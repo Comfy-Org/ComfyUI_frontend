@@ -135,11 +135,6 @@ function createHostWithPromotedModel(): {
 
 describe('SectionWidgets', () => {
   beforeEach(() => {
-    setDirty.mockClear()
-    getNodeById.mockReset()
-    animateToBounds.mockClear()
-    mockGetInputSpecForWidget.mockReset()
-    mockTrackUiButtonClicked.mockClear()
     selectedItems.length = 0
   })
 

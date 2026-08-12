@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import { cloneDeep } from 'es-toolkit'
 import userEvent from '@testing-library/user-event'
 import { nextTick } from 'vue'
@@ -185,7 +185,6 @@ describe('NodeTooltip', () => {
   afterEach(() => {
     mergeCustomNodesI18n({})
     i18n.global.setLocaleMessage('en', cloneDeep(enMessages))
-    cleanup()
   })
 
   it('resolves the node description shown over the title', async () => {

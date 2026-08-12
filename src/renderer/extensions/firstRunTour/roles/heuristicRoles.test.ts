@@ -1,5 +1,4 @@
-import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
@@ -101,8 +100,6 @@ function addExposedPrompt(root: LGraph, portName: string) {
 }
 
 describe('heuristicRoles', () => {
-  beforeEach(() => setActivePinia(createPinia()))
-
   it('takes the prompt wired to positive when negative comes first', () => {
     const graph = createTestRootGraph()
     addWiredSink(graph)

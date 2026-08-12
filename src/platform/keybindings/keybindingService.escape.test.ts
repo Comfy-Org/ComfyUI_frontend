@@ -50,8 +50,6 @@ describe('keybindingService - Escape key handling', () => {
   let mockCommandExecute: ReturnType<typeof useCommandStore>['execute']
 
   beforeEach(() => {
-    setActivePinia(createPinia())
-
     const commandStore = useCommandStore()
     mockCommandExecute = vi.fn()
     commandStore.execute = mockCommandExecute
