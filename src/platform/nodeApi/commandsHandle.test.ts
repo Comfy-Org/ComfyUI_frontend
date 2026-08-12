@@ -61,6 +61,35 @@ describe('pack commands', () => {
     expect(command.label).toBe('Stop following execution')
   })
 
+  it('scopes a keybinding to the canvas when asked', () => {
+    // The host already withholds combos a text input owns, but a pack binding
+    // something it does not — Ctrl+Up, say — would fire mid-sentence.
+    commands.register({
+      id: 'KJNodes.nudgeUp',
+      label: 'Nudge up',
+      run: () => {},
+      keybinding: { key: 'ArrowUp', ctrl: true },
+      scope: 'canvas'
+    })
+
+    const bound =
+      useKeybindingStore().getKeybindingsByCommandId('KJNodes.nudgeUp')[0]
+    expect(bound.targetElementId).toBe('graph-canvas')
+  })
+
+  it('leaves a keybinding application-wide by default', () => {
+    commands.register({
+      id: 'KJNodes.anywhere',
+      label: 'Anywhere',
+      run: () => {},
+      keybinding: { key: 'k', alt: true }
+    })
+
+    const bound =
+      useKeybindingStore().getKeybindingsByCommandId('KJNodes.anywhere')[0]
+    expect(bound.targetElementId).toBeUndefined()
+  })
+
   it('runs a command the host registered, by id', async () => {
     // Opening the mask editor was ComfyApp.copyToClipspace plus
     // clipspace_return_node plus invoking the command by hand. Asking for the
