@@ -2579,8 +2579,8 @@ const translations = {
     'zh-CN': 'LTX 2.5 精选图片'
   },
   'nav.featuredProductsCta': {
-    en: 'TRY WORKFLOW',
-    'zh-CN': '试用工作流'
+    en: 'EXPLORE NOW',
+    'zh-CN': '立即探索'
   },
   'nav.featuredProductsCtaAria': {
     en: 'Try the LTX 2.5 workflow',
