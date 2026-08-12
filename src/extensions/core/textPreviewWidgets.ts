@@ -1,6 +1,7 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { resolveNodeRootGraphId } from '@/lib/litegraph/src/litegraph'
 import WidgetTextPreview from '@/renderer/extensions/vueNodes/widgets/components/WidgetTextPreview.vue'
+import type { NodeExecutionOutput } from '@/schemas/apiSchema'
 import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { app } from '@/scripts/app'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
@@ -74,7 +75,7 @@ function toPreviewText(text: unknown): string {
 
 export function updateTextPreviewWidgets(
   node: LGraphNode,
-  message: { text?: string | string[] } | null | undefined
+  message: NodeExecutionOutput | null | undefined
 ) {
   const preview = node.widgets?.find((w) => w.name === PREVIEW_WIDGET_NAME)
   if (!preview) return
