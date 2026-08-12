@@ -13,7 +13,7 @@
 
     <div class="min-w-0 flex-1 overflow-y-auto bg-interface-panel-surface p-3">
       <div
-        v-if="visibleGroups.length === 0"
+        v-if="filteredGroups.length === 0"
         role="status"
         class="px-1 pt-5 pb-15 text-center text-sm text-muted-foreground"
       >
@@ -55,7 +55,7 @@
             </div>
           </div>
           <div
-            v-if="hasMixedSeverity"
+            v-if="hasMixedSeverityTotals"
             data-testid="errors-summary-filters"
             class="flex flex-wrap items-center gap-2 px-2 pb-2"
           >
@@ -109,6 +109,16 @@
             <template #nodes>{{ strip.nodes }}</template>
             <template #count>{{ strip.count }}</template>
           </i18n-t>
+        </div>
+
+        <!-- The engaged filter can empty the searched view; the message lives
+             inside the block so the chips stay mounted as the release control -->
+        <div
+          v-if="visibleGroups.length === 0"
+          role="status"
+          class="border-t border-secondary-background px-1 pt-5 pb-15 text-center text-sm text-muted-foreground"
+        >
+          {{ t('rightSidePanel.noneSearchDesc') }}
         </div>
 
         <!-- Group by Class Type -->
@@ -546,11 +556,13 @@ const severityTotals = computed(() => {
 const severityFilter = ref<ErrorGroupSeverity | null>(null)
 // Gated on workflow-wide totals, not search-scoped counts: a search that
 // happens to empty one severity must not disable an engaged filter and show
-// exactly the severity the user excluded.
+// exactly the severity the user excluded. The chip row shares this gate so
+// the release control stays mounted while the filter applies.
+const hasMixedSeverityTotals = computed(
+  () => severityTotals.value.error > 0 && severityTotals.value.missing > 0
+)
 const activeSeverityFilter = computed(() =>
-  severityTotals.value.error > 0 && severityTotals.value.missing > 0
-    ? severityFilter.value
-    : null
+  hasMixedSeverityTotals.value ? severityFilter.value : null
 )
 const visibleGroups = computed(() => {
   const severity = activeSeverityFilter.value

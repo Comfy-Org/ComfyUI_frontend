@@ -84,7 +84,7 @@ export class PropertiesPanelHelper {
   }
 
   get errorsTabIcon(): Locator {
-    return this.root.getByTestId('panel-tab-icon')
+    return this.errorsTab.getByTestId('panel-tab-icon')
   }
 
   get viewAllSettingsButton(): Locator {

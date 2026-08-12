@@ -228,9 +228,12 @@ describe('TabErrors.vue', () => {
         '1': 'KSampler',
         '2': 'CLIP Text Encode'
       }
-      return {
+      return fromAny<
+        NonNullable<ReturnType<typeof getNodeByExecutionId>>,
+        unknown
+      >({
         title: titles[String(nodeId)] ?? ''
-      } as ReturnType<typeof getNodeByExecutionId>
+      })
     })
 
     const { user } = renderComponent((pinia) => {
@@ -339,9 +342,11 @@ describe('TabErrors.vue', () => {
 
   it('renders runtime execution errors from WebSocket', async () => {
     const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
-    vi.mocked(getNodeByExecutionId).mockReturnValue({
-      title: 'KSampler'
-    } as ReturnType<typeof getNodeByExecutionId>)
+    vi.mocked(getNodeByExecutionId).mockReturnValue(
+      fromAny<NonNullable<ReturnType<typeof getNodeByExecutionId>>, unknown>({
+        title: 'KSampler'
+      })
+    )
 
     const { user } = renderComponent((pinia) => {
       useExecutionErrorStore(pinia).recordExecutionError({
@@ -430,9 +435,11 @@ describe('TabErrors.vue', () => {
 
   it('renders a single runtime error in the normal execution group', async () => {
     const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
-    vi.mocked(getNodeByExecutionId).mockReturnValue({
-      title: 'KSampler'
-    } as ReturnType<typeof getNodeByExecutionId>)
+    vi.mocked(getNodeByExecutionId).mockReturnValue(
+      fromAny<NonNullable<ReturnType<typeof getNodeByExecutionId>>, unknown>({
+        title: 'KSampler'
+      })
+    )
 
     renderComponent((pinia) => {
       useExecutionErrorStore(pinia).recordExecutionError({
@@ -618,9 +625,12 @@ describe('TabErrors.vue', () => {
         '3': 'First Loader',
         '4': 'Second Loader'
       }
-      return {
+      return fromAny<
+        NonNullable<ReturnType<typeof getNodeByExecutionId>>,
+        unknown
+      >({
         title: titles[String(nodeId)] ?? ''
-      } as ReturnType<typeof getNodeByExecutionId>
+      })
     })
 
     const { user } = renderComponent((pinia) => {
@@ -796,9 +806,11 @@ describe('TabErrors.vue', () => {
 
   it('releases the filter when the hidden severity gains a new entry', async () => {
     const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
-    vi.mocked(getNodeByExecutionId).mockReturnValue({
-      title: 'Node'
-    } as ReturnType<typeof getNodeByExecutionId>)
+    vi.mocked(getNodeByExecutionId).mockReturnValue(
+      fromAny<NonNullable<ReturnType<typeof getNodeByExecutionId>>, unknown>({
+        title: 'Node'
+      })
+    )
 
     let mediaStore!: ReturnType<typeof useMissingMediaStore>
     renderComponent((pinia) => {
@@ -1123,12 +1135,17 @@ describe('TabErrors.vue', () => {
     await user.click(screen.getByTestId('errors-summary-filter-error'))
 
     // A query matching nothing in the filtered severity must show the
-    // no-results state, not fall back to the severity the user excluded.
+    // no-results state, not fall back to the severity the user excluded —
+    // and the pressed chip must stay mounted as the release control.
     await user.type(screen.getByRole('textbox'), 'zzz')
     expect(screen.getByText('No results found')).toBeInTheDocument()
     expect(
       screen.queryByTestId('error-group-missing-media')
     ).not.toBeInTheDocument()
+    expect(screen.getByTestId('errors-summary-filter-error')).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    )
 
     await user.clear(screen.getByRole('textbox'))
     expect(screen.getByTestId('error-group-execution')).toBeInTheDocument()
