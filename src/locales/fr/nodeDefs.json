@@ -890,7 +890,7 @@
       },
       "model": {
         "name": "modèle",
-        "tooltip": "Seedance 2.0 pour une qualité maximale ; Seedance 2.0 Fast pour une optimisation de la vitesse."
+        "tooltip": "Seedance 2.5 pour le modèle le plus récent, vidéos jusqu’à 30 secondes et sortie mp4/mov ; Seedance 2.0 pour une qualité maximale et le 1080p/4k ; Fast pour l’optimisation de la vitesse ; Mini pour la génération la plus rapide et la moins coûteuse."
       },
       "model_duration": {
         "name": "durée"
@@ -931,7 +931,7 @@
       },
       "model": {
         "name": "modèle",
-        "tooltip": "Seedance 2.0 pour une qualité maximale ; Seedance 2.0 Fast pour une optimisation de la vitesse."
+        "tooltip": "Seedance 2.5 pour le modèle le plus récent, vidéos jusqu’à 30 secondes et sortie mp4/mov ; Seedance 2.0 pour une qualité maximale et le 1080p/4k ; Fast pour l’optimisation de la vitesse ; Mini pour la génération la plus rapide et la moins coûteuse."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -984,7 +984,7 @@
       },
       "model": {
         "name": "modèle",
-        "tooltip": "Seedance 2.0 pour une qualité maximale ; Seedance 2.0 Fast pour une optimisation de la vitesse."
+        "tooltip": "Seedance 2.5 pour le modèle le plus récent, vidéos jusqu’à 30 secondes et sortie mp4/mov ; Seedance 2.0 pour une qualité maximale et le 1080p/4k ; Fast pour l’optimisation de la vitesse ; Mini pour la génération la plus rapide et la moins coûteuse."
       },
       "model_duration": {
         "name": "durée"
@@ -5963,19 +5963,19 @@
       },
       "image": {
         "name": "image",
-        "tooltip": "Image de départ optionnelle pour grok-imagine-video. Requise pour grok-imagine-video-1.5."
+        "tooltip": "Image de départ facultative. Si elle est omise, la vidéo est générée uniquement à partir du prompt textuel."
       },
       "model": {
         "name": "modèle",
-        "tooltip": "grok-imagine-video-1.5 nécessite actuellement toujours une image d'entrée."
+        "tooltip": "Le modèle à utiliser pour générer la vidéo."
       },
       "prompt": {
         "name": "invite",
-        "tooltip": "Description textuelle de la vidéo souhaitée."
+        "tooltip": "Description textuelle de la vidéo souhaitée. Facultative pour grok-imagine-video-1.5 lorsqu’une image d’entrée est fournie."
       },
       "resolution": {
         "name": "résolution",
-        "tooltip": "La résolution de la vidéo générée."
+        "tooltip": "La résolution de la vidéo de sortie. Le 1080p est uniquement disponible pour grok-imagine-video-1.5."
       },
       "seed": {
         "name": "graine",
@@ -5989,7 +5989,7 @@
     }
   },
   "GrokVideoReferenceNode": {
-    "description": "Générez une vidéo guidée par des images de référence comme références de style et de contenu.",
+    "description": "Générez une vidéo guidée par des images de référence, avec des références vocales prédéfinies facultatives.",
     "display_name": "Grok Référence-vers-Vidéo",
     "inputs": {
       "control_after_generate": {
@@ -8816,7 +8816,7 @@
   },
   "LTXVConcatAVLatent": {
     "description": "Fusionne un latent vidéo et un latent audio en un latent AV conjoint (tout modèle AV, ex. LTXV ou MiniMax H3).",
-    "display_name": "Concaténation AV Latent LTXV",
+    "display_name": "Concaténer le latent AV",
     "inputs": {
       "audio_latent": {
         "name": "audio_latent"
@@ -9235,8 +9235,8 @@
     }
   },
   "LTXVSeparateAVLatent": {
-    "description": "LTXV Séparer AV Latent",
-    "display_name": "LTXVSeparateAVLatent",
+    "description": "Sépare un latent AV conjoint en ses latents vidéo et audio (tout modèle AV, par ex. LTXV ou MiniMax H3).",
+    "display_name": "Séparer le latent AV",
     "inputs": {
       "av_latent": {
         "name": "av_latent"
@@ -11810,7 +11810,7 @@
     }
   },
   "MiniMaxH3ReferenceToVideo": {
-    "description": "Conditionnement de référence <Image i> / <Vidéo k> / <Audio j> pour MiniMax H3. Utilisez les mêmes tags lors de la génération.",
+    "description": "Conditionnement de référence <Picture i> / <Video k> / <Audio j> pour MiniMax H3. Utilisez les mêmes tags lors de la génération.",
     "display_name": "MiniMax H3 Référence vers Vidéo",
     "inputs": {
       "audio_vae": {
