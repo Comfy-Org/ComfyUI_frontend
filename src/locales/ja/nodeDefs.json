@@ -5824,6 +5824,9 @@
       "model_number_of_images": {
         "name": "画像数"
       },
+      "model_quality": {
+        "name": "品質"
+      },
       "model_resolution": {
         "name": "解像度"
       },
@@ -5862,6 +5865,10 @@
       "prompt": {
         "name": "プロンプト",
         "tooltip": "画像生成に使用するテキストプロンプト"
+      },
+      "quality": {
+        "name": "品質",
+        "tooltip": "品質レベル。grok-imagine-image-2.0モデルのみ対応しています。"
       },
       "resolution": {
         "name": "解像度"
@@ -8928,6 +8935,67 @@
       }
     }
   },
+  "LTXVDualCFGGuider": {
+    "description": "パックされたLTXV-AVのlatentに対して、ビデオとオーディオのモダリティごとに個別のCFGスケールを設定します。",
+    "display_name": "LTXVデュアルCFGガイダー",
+    "inputs": {
+      "audio_cfg": {
+        "name": "audio_cfg"
+      },
+      "model": {
+        "name": "model"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "video_cfg": {
+        "name": "video_cfg"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVDurationPredictor": {
+    "description": "LTX 2.4のduration head（ModelPatchLoaderでロード）を使用してプロンプトの自然なショット持続時間を予測し、それをVAEの8k+1フレームグリッドにスナップします。",
+    "display_name": "LTXV持続時間予測器",
+    "inputs": {
+      "duration_head": {
+        "name": "duration_head",
+        "tooltip": "ModelPatchLoaderでロードされたLTX 2.4のduration head。"
+      },
+      "frame_rate": {
+        "name": "frame_rate"
+      },
+      "max_seconds": {
+        "name": "max_seconds"
+      },
+      "min_seconds": {
+        "name": "min_seconds"
+      },
+      "model": {
+        "name": "model"
+      },
+      "positive": {
+        "name": "positive"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "num_frames",
+        "tooltip": null
+      },
+      "1": {
+        "name": "seconds",
+        "tooltip": "生（クランプされていない）予測持続時間。"
+      }
+    }
+  },
   "LTXVEmptyLatentAudio": {
     "display_name": "LTXV 空のラテントオーディオ",
     "inputs": {
@@ -9047,6 +9115,29 @@
       }
     }
   },
+  "LTXVModalityGuidance": {
+    "description": "LTXV-AVのクロスモーダル（オーディオ-ビデオ）ガイダンス。各ステップでa2v/v2aクロスアテンションを切断した追加のフォワードパスを1回実行し、その結果をカップルされた予測に近づけます。これによりオーディオとビジュアルの同期（例：リップシンク）が強化されます。デフォルトのmodality_scaleは3.0です。デュアルCFGガイダーやSTGと併用可能。1.0に設定すると無効化（追加パスなし）されます。",
+    "display_name": "LTXVモダリティガイダンス（A/Vカップリング）",
+    "inputs": {
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "modality_scale": {
+        "name": "modality_scale"
+      },
+      "model": {
+        "name": "model"
+      },
+      "start_percent": {
+        "name": "start_percent"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LTXVPreprocess": {
     "display_name": "LTXVPreprocess",
     "inputs": {
@@ -9158,6 +9249,33 @@
       },
       "1": {
         "name": "オーディオlatent",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVSpatioTemporalGuidance": {
+    "description": "選択したブロックのセルフアテンションをvalue-passthroughに劣化させた追加パスを各ステップで1回実行し、そこから離れるようにガイドします。これにより空間的なディテールと動きの一貫性が向上します。",
+    "display_name": "LTXV時空間ガイダンス（STG）",
+    "inputs": {
+      "blocks": {
+        "name": "blocks",
+        "tooltip": "カンマ区切りのトランスフォーマーブロックインデックス。"
+      },
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "model": {
+        "name": "model"
+      },
+      "scale": {
+        "name": "scale"
+      },
+      "start_percent": {
+        "name": "start_percent"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -10148,6 +10266,121 @@
     "outputs": {
       "0": {
         "name": "コンディショニング",
+        "tooltip": null
+      }
+    }
+  },
+  "LtxApi25AudioToVideo": {
+    "description": "オーディオトラックに合わせてビデオを生成します。最初のフレーム画像はオプションです。",
+    "display_name": "LTX 2.5 オーディオからビデオへ",
+    "inputs": {
+      "audio": {
+        "name": "オーディオ",
+        "tooltip": "ビデオを駆動するオーディオトラック。長さ（2～20秒）がビデオの長さになります。"
+      },
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "image": {
+        "name": "画像",
+        "tooltip": "ビデオの最初のフレームとして使用するオプション画像。"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "prompt": {
+        "name": "プロンプト"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "ノードを再実行するかどうかを決定するシード。実際の結果はシードに関係なく非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LtxApi25ImageToVideo": {
+    "description": "開始画像に基づき、カスタマイズ可能な長さと解像度でプロフェッショナル品質のビデオを生成します。",
+    "display_name": "LTX 2.5 画像からビデオへ",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "image": {
+        "name": "画像",
+        "tooltip": "ビデオの最初のフレームとして使用します。"
+      },
+      "last_frame": {
+        "name": "ラストフレーム",
+        "tooltip": "ビデオの最後のフレームとして使用します。"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "model_duration": {
+        "name": "長さ"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "オーディオ生成"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "prompt": {
+        "name": "プロンプト"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "ノードを再実行するかどうかを決定するシード。実際の結果はシードに関係なく非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LtxApi25TextToVideo": {
+    "description": "カスタマイズ可能な長さと解像度でプロフェッショナル品質のビデオを生成します。",
+    "display_name": "LTX 2.5 テキストからビデオへ",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "model_duration": {
+        "name": "長さ"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "オーディオ生成"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "prompt": {
+        "name": "プロンプト"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "ノードを再実行するかどうかを決定するシード。実際の結果はシードに関係なく非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -11979,6 +12212,17 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "ModelAttentionBackend": {
+    "display_name": "ModelAttentionBackend",
+    "inputs": {
+      "attention": {
+        "name": "attention"
+      },
+      "model": {
+        "name": "model"
       }
     }
   },

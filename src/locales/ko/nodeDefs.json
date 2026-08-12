@@ -5824,6 +5824,9 @@
       "model_number_of_images": {
         "name": "이미지 개수"
       },
+      "model_quality": {
+        "name": "품질"
+      },
       "model_resolution": {
         "name": "해상도"
       },
@@ -5862,6 +5865,10 @@
       "prompt": {
         "name": "프롬프트",
         "tooltip": "이미지 생성을 위해 사용되는 텍스트 프롬프트"
+      },
+      "quality": {
+        "name": "품질",
+        "tooltip": "품질 수준, grok-imagine-image-2.0 모델에서만 지원됩니다."
       },
       "resolution": {
         "name": "해상도"
@@ -8928,6 +8935,67 @@
       }
     }
   },
+  "LTXVDualCFGGuider": {
+    "description": "패킹된 LTXV-AV latent의 비디오와 오디오 모달리티에 대해 각각의 CFG 스케일을 분리하여 설정합니다.",
+    "display_name": "LTXV Dual CFG Guider",
+    "inputs": {
+      "audio_cfg": {
+        "name": "audio_cfg"
+      },
+      "model": {
+        "name": "model"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "video_cfg": {
+        "name": "video_cfg"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVDurationPredictor": {
+    "description": "LTX 2.4 duration head(ModelPatchLoader로 로드됨)을 사용하여 프롬프트의 자연스러운 샷 지속 시간을 예측하고, VAE의 8k+1 프레임 그리드에 맞춥니다.",
+    "display_name": "LTXV Duration Predictor",
+    "inputs": {
+      "duration_head": {
+        "name": "duration_head",
+        "tooltip": "ModelPatchLoader로 로드된 LTX 2.4 duration head."
+      },
+      "frame_rate": {
+        "name": "frame_rate"
+      },
+      "max_seconds": {
+        "name": "max_seconds"
+      },
+      "min_seconds": {
+        "name": "min_seconds"
+      },
+      "model": {
+        "name": "model"
+      },
+      "positive": {
+        "name": "positive"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "num_frames",
+        "tooltip": null
+      },
+      "1": {
+        "name": "seconds",
+        "tooltip": "원본(클램프되지 않은) 예측 지속 시간."
+      }
+    }
+  },
   "LTXVEmptyLatentAudio": {
     "display_name": "LTXV 빈 latent 오디오",
     "inputs": {
@@ -9047,6 +9115,29 @@
       }
     }
   },
+  "LTXVModalityGuidance": {
+    "description": "LTXV-AV를 위한 크로스 모달(오디오-비디오) 가이던스입니다. 각 스텝마다 a2v/v2a 크로스 어텐션을 끊고 한 번의 추가 포워드 패스를 실행한 후, 결과를 결합된 예측 쪽으로 유도하여 오디오-비주얼 싱크(예: 립싱크)를 강화합니다. 기본 modality_scale은 3.0입니다. dual-CFG guider 및 STG와 함께 사용할 수 있습니다. 1.0으로 설정하면 비활성화(추가 패스 없음)됩니다.",
+    "display_name": "LTXV 모달리티 가이던스 (A/V 결합)",
+    "inputs": {
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "modality_scale": {
+        "name": "modality_scale"
+      },
+      "model": {
+        "name": "model"
+      },
+      "start_percent": {
+        "name": "start_percent"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LTXVPreprocess": {
     "display_name": "LTXV 전처리",
     "inputs": {
@@ -9158,6 +9249,33 @@
       },
       "1": {
         "name": "audio_latent",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVSpatioTemporalGuidance": {
+    "description": "선택된 블록의 셀프 어텐션을 value-passthrough로 저하시킨 상태로 각 스텝마다 한 번의 추가 패스를 실행한 후, 그 상태에서 벗어나도록 유도하여 공간적 디테일과 모션 일관성을 향상시킵니다.",
+    "display_name": "LTXV 시공간 가이던스 (STG)",
+    "inputs": {
+      "blocks": {
+        "name": "blocks",
+        "tooltip": "콤마로 구분된 변형기 블록 인덱스 목록."
+      },
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "model": {
+        "name": "model"
+      },
+      "scale": {
+        "name": "scale"
+      },
+      "start_percent": {
+        "name": "start_percent"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -10148,6 +10266,121 @@
     "outputs": {
       "0": {
         "name": "조건",
+        "tooltip": null
+      }
+    }
+  },
+  "LtxApi25AudioToVideo": {
+    "description": "오디오 트랙을 기반으로 비디오를 생성하며, 첫 프레임 이미지를 선택적으로 사용할 수 있습니다.",
+    "display_name": "LTX 2.5 오디오 → 비디오",
+    "inputs": {
+      "audio": {
+        "name": "오디오",
+        "tooltip": "비디오를 구동하는 오디오 트랙입니다. 길이(2~20초)에 따라 비디오 길이가 결정됩니다."
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "image": {
+        "name": "이미지",
+        "tooltip": "비디오의 첫 프레임으로 사용할 선택적 이미지입니다."
+      },
+      "model": {
+        "name": "모델"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "prompt": {
+        "name": "프롬프트"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "노드가 다시 실행되어야 하는지 결정하는 시드입니다. 실제 결과는 시드와 관계없이 비결정적입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LtxApi25ImageToVideo": {
+    "description": "시작 이미지를 기반으로 지속 시간과 해상도를 맞춤 설정할 수 있는 전문가 수준의 비디오를 생성합니다.",
+    "display_name": "LTX 2.5 이미지 → 비디오",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "image": {
+        "name": "이미지",
+        "tooltip": "비디오의 첫 프레임으로 사용할 이미지입니다."
+      },
+      "last_frame": {
+        "name": "마지막 프레임",
+        "tooltip": "비디오의 마지막 프레임으로 사용할 이미지입니다."
+      },
+      "model": {
+        "name": "모델"
+      },
+      "model_duration": {
+        "name": "지속 시간"
+      },
+      "model_fps": {
+        "name": "FPS"
+      },
+      "model_generate_audio": {
+        "name": "오디오 생성"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "prompt": {
+        "name": "프롬프트"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "노드가 다시 실행되어야 하는지 결정하는 시드입니다. 실제 결과는 시드와 관계없이 비결정적입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LtxApi25TextToVideo": {
+    "description": "지속 시간과 해상도를 맞춤 설정할 수 있는 전문가 수준의 비디오를 생성합니다.",
+    "display_name": "LTX 2.5 텍스트 → 비디오",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "model_duration": {
+        "name": "지속 시간"
+      },
+      "model_fps": {
+        "name": "FPS"
+      },
+      "model_generate_audio": {
+        "name": "오디오 생성"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "prompt": {
+        "name": "프롬프트"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "노드가 다시 실행되어야 하는지 결정하는 시드입니다. 실제 결과는 시드와 관계없이 비결정적입니다."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -11979,6 +12212,17 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "ModelAttentionBackend": {
+    "display_name": "ModelAttentionBackend",
+    "inputs": {
+      "attention": {
+        "name": "attention"
+      },
+      "model": {
+        "name": "model"
       }
     }
   },
