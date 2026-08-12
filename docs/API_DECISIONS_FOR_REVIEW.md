@@ -696,3 +696,47 @@ any kind. Only about 55 packs genuinely need converting. Counting those, roughly
 
 Nothing is validated yet. `compile_db` ships only entries marked `validated`,
 which requires a human to confirm the pack works.
+
+## 9. What the API refuses, and why ✅ (decided — please challenge)
+
+23 of 35 gaps are closed. What is left open is small; what is _refused_ is the
+part worth reviewing, because each refusal is a place a pack can no longer do
+something it used to.
+
+The test applied throughout: **does this let a pack rebuild part of the front
+end?** If yes it is refused, because that is exactly what makes the old surface
+impossible to delete. Each refusal below has a published alternative that
+serves the actual use case.
+
+| Refused                                                                 | Because                                                                                                                                             | Published instead                                                                                   |
+| ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| Reading or editing the built prompt/workflow                            | The surface that makes the old API unretireable. Every "regenerate", "run this branch", "restart from here" feature rewrote `prompt.output` by hand | `queue.run({ nodes })` — native partial execution                                                   |
+| Clipspace data (`ComfyApp.clipspace`, `clipspace_return_node`)          | A mutable global packs poke at                                                                                                                      | `commands.run('Comfy.MaskEditor.OpenMaskEditor')` — ask for the behaviour, not the machinery        |
+| Painting over the canvas; renderer constants and colours                | A pack drawing its own front end                                                                                                                    | `widgets.mount` + DOM, `node.addBadge`                                                              |
+| Reading another node's DOM element; writing `node.imgs`                 | Breaches the node sandbox in both directions                                                                                                        | `node.getOutputImages()`, `getDisplayedImageIndex()`                                                |
+| A pack-rendered element or renderer in the settings panel or app chrome | Precisely what then cannot be restyled — and Nodes 2.0 restyles                                                                                     | `ui.addTopBarBadge`, `addActionBarButton`, `settings.declare({ type })` with the real control types |
+| Node-local pointer hit-testing                                          | Hand-rolled hit testing against geometry the renderer owns                                                                                          | `widgets.mount` + DOM events on the element the pack owns                                           |
+| Replacing core connection validation globally                           | One pack changing validity for every other pack                                                                                                     | —                                                                                                   |
+| A subscription per node instance                                        | Fails silently: keyed by object, identity dies on undo/reload/subgraph re-entry; keyed by id, the entry is never collected                          | `comfy.onNodeChanged` — one stream, filtered by the pack                                            |
+
+Two of these were reached _by_ publishing something smaller. Command invocation
+unlocked the mask editor without clipspace; declarative chrome contributions
+unlocked the resource monitor without a render slot. That pattern — publish the
+intent, keep the machinery — is worth agreeing on explicitly, because it is
+what the remaining refusals rest on.
+
+### Still open, and honest about it
+
+- **Localized slot names (21).** Probably smaller than recorded: `executionUtil`
+  deletes `localized_name` before queuing, so it is display-only and cannot
+  reach the prompt; and `NodeDef.inputs[].options` already passes the backend's
+  declared dict through, so reading it may need no API. One check against a
+  real backend decides.
+- **Keybindings are global**, so a pack's binding fires while the user types in
+  a node's text widget.
+- **Reading another node's widget config** — the combo value list and numeric
+  bounds the reroute node grew a matching widget from.
+- **Async prompt-time substitution** — `beforeSerialize` is synchronous, and two
+  conversions need to `await` before supplying a value.
+- **Opening/navigating into a subgraph.** Reaching its nodes is closed;
+  navigation is not.
