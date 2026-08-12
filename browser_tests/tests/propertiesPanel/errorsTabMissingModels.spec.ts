@@ -129,17 +129,17 @@ test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
           .getByTestId(TestIds.dialogs.missingModelsGroup)
           .getByTestId('blocked-last-run-indicator')
       ).toBeVisible()
+      const hero = comfyPage.page.getByTestId('errors-summary-hero')
+      await expect(hero).toContainText('Setup required')
+      // Fully absorbed: one severity only, so no filter chips render
       await expect(
-        comfyPage.page.getByTestId('errors-summary-hero-error')
+        comfyPage.page.getByTestId('errors-summary-filters')
       ).toBeHidden()
-      await expect(
-        comfyPage.page.getByTestId('errors-summary-hero-missing')
-      ).toBeVisible()
       await expect(
         comfyPage.page
           .getByTestId(TestIds.propertiesPanel.errorsTab)
           .getByTestId('panel-tab-icon')
-      ).toHaveAccessibleName('Setup pending')
+      ).toHaveAccessibleName('Setup required')
     })
   })
 

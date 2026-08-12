@@ -143,18 +143,16 @@
             class="border-t border-secondary-background first:border-t-0"
             @update:collapse="setSectionCollapsed(group.groupKey, $event)"
           >
-            <template #actions>
+            <template #title-badge>
               <span
                 v-if="group.blockedLastRun"
                 data-testid="blocked-last-run-indicator"
-                class="flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground"
+                class="flex shrink-0 items-center rounded-full bg-warning-background/10 px-2 py-0.5 text-2xs font-medium text-warning-background"
               >
-                <span
-                  aria-hidden="true"
-                  class="size-1.5 rounded-full bg-destructive-background"
-                />
                 {{ t('rightSidePanel.blockedLastRun') }}
               </span>
+            </template>
+            <template #actions>
               <Button
                 v-if="
                   group.type === 'missing_node' &&
