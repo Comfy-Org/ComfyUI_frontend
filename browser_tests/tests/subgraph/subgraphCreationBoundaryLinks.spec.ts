@@ -38,29 +38,7 @@ test.describe(
                 .sort(),
               saveImageFedByHost:
                 links.find((link) => String(link.target_id) === '9')
-                  ?.origin_id === host.id,
-              // Diagnostics: printed as context in the assertion diff.
-              diagnosticHostId: String(host.id),
-              diagnosticNodes: graph.nodes
-                .map((node) => `${node.id}:${node.type}`)
-                .sort(),
-              diagnosticLinks: links
-                .map(
-                  (link) =>
-                    `${link.origin_id}:${link.origin_slot}->${link.target_id}:${link.target_slot}(${link.type})`
-                )
-                .sort(),
-              diagnosticHostSlots: host.inputs
-                .map(
-                  (input, index) =>
-                    `${index} ${input.name}:${input.type}=${input.link ?? 'NULL'}`
-                )
-                .concat(
-                  host.outputs.map(
-                    (output, index) =>
-                      `out${index} ${output.name}:${output.type}=[${(output.links ?? []).join('|')}]`
-                  )
-                )
+                  ?.origin_id === host.id
             }
           })
         )
@@ -70,11 +48,7 @@ test.describe(
           outputCount: 1,
           unconnectedInputs: 0,
           sources: ['4:0', '4:2', '5:0', '6:0', '7:0'],
-          saveImageFedByHost: true,
-          diagnosticHostId: expect.anything(),
-          diagnosticNodes: expect.anything(),
-          diagnosticLinks: expect.anything(),
-          diagnosticHostSlots: expect.anything()
+          saveImageFedByHost: true
         })
     })
 
