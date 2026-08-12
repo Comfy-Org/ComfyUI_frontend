@@ -5044,6 +5044,8 @@
     "send": "Send",
     "stop": "Stop",
     "thinking": "Thinking...",
+    "thought": "Thought",
+    "thoughtTimed": "Thought for {seconds} seconds",
     "helpful": "Helpful",
     "notHelpful": "Not helpful",
     "ranToolCalls": "Ran {count} tool call | Ran {count} tool calls",
