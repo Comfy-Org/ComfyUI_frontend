@@ -178,7 +178,6 @@ const mockRerouteNodeData: VueNodeData = {
 
 describe('LGraphNode', () => {
   beforeEach(() => {
-    vi.resetAllMocks()
     mockData.mockExecuting = false
 
     setActivePinia(pinia)

@@ -10,8 +10,6 @@ describe('assert', () => {
   })
 
   afterEach(() => {
-    vi.restoreAllMocks()
-    vi.unstubAllEnvs()
     setAssertReporter(null)
   })
 
