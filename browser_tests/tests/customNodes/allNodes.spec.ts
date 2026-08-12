@@ -1814,7 +1814,7 @@ const tiers: Array<[AllNodesTier, string]> = [
   ['S3', 'every registered node survives save and reload'],
   ['S9', 'every self-sufficient node executes']
 ]
-if (process.env.CN_ENABLE_S14 === '1')
+if (process.env.CN_ENABLE_S14 === '1' || process.env.CN_GEOMETRY === 'record')
   tiers.push(['S14', 'every registered node matches its geometry baseline'])
 
 test.describe('all nodes by tier @custom-nodes', () => {

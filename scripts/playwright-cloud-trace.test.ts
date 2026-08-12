@@ -151,6 +151,7 @@ function resultJson(expected: number, unexpected = 0, flaky = 0, skipped = 0) {
 
 const coreS14Enabled =
   "matrix.proof_row != '0' || github.event_name != 'workflow_dispatch' || inputs.enable_s14"
+const geometryRecorderSelector = 'all nodes by tier @custom-nodes.*S14:'
 
 function coreExpectedTests(
   proofRow: string,
@@ -251,6 +252,28 @@ describe('custom-node S1-S12 workflow gates', () => {
     expect(coreExpectedTests('0', 'workflow_dispatch', false)).toBe(32)
     expect(coreExpectedTests('14', 'workflow_dispatch', false)).toBe(33)
     expect(coreExpectedTests('0', 'pull_request', false)).toBe(33)
+  })
+
+  it('records geometry through S14 without enabling deferred Cloud S14', () => {
+    const allNodes = readFileSync(
+      'browser_tests/tests/customNodes/allNodes.spec.ts',
+      'utf8'
+    )
+    expect(allNodes).toContain(
+      "process.env.CN_ENABLE_S14 === '1' || process.env.CN_GEOMETRY === 'record'"
+    )
+
+    for (const workflow of [
+      '.github/workflows/record-custom-nodes-geometry.yaml',
+      '.github/workflows/record-custom-nodes-geometry-cloud.yaml'
+    ]) {
+      const step = workflowSteps(workflow).find((candidate) =>
+        candidate.name?.startsWith('Record')
+      )
+      expect(step?.env).toMatchObject({ CN_GEOMETRY: 'record' })
+      expect(step?.env).not.toHaveProperty('CN_ENABLE_S14')
+      expect(step?.run).toContain(`--grep "${geometryRecorderSelector}"`)
+    }
   })
 
   it.for(workflowGates)(
