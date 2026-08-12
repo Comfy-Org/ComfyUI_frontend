@@ -35,8 +35,12 @@ test.describe('Load Image upload persistence', () => {
 
     const valueBeforeDrop = await readImageWidgetValue()
 
+    // Without waitForUpload the helper returns during the optimistic window,
+    // where the widget briefly holds the raw local filename rather than the
+    // value the upload actually commits.
     await comfyPage.dragDrop.dragAndDropFile(DROPPED_FILE, {
-      dropPosition: { x, y }
+      dropPosition: { x, y },
+      waitForUpload: true
     })
 
     await expect.poll(readImageWidgetValue).not.toBe(valueBeforeDrop)
