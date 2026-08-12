@@ -22,6 +22,7 @@ import {
   createNodeMoveObserver
 } from './interaction'
 import type { NodeMoveEvent } from './interaction'
+import { onAppReady } from './appReady'
 import type { Unsubscribe } from './widgetHandle'
 import { createGraphApi } from './graphHandle'
 import type { GraphHandle } from './graphHandle'
@@ -209,6 +210,21 @@ export interface Comfy {
    * node is belongs to the node, and the transform belongs to the renderer.
    */
   onViewportChanged(listener: () => void): Unsubscribe
+  /**
+   * The application has finished starting: canvas, settings and graph all
+   * exist, and node definitions are registered.
+   *
+   * This is `registerExtension({ setup })`. A pack's module body is the `init`
+   * half — it runs before definitions register — so anything that needs the
+   * running app belongs here. Registering after the app has already started is
+   * fine; the listener is called on the next microtask rather than dropped,
+   * which is what makes this safe for a pack loaded lazily.
+   *
+   * Do not poll for the DOM instead. Several packs shipped a `waitForElements`
+   * loop to paper over the missing hook, and a poll that outlives its target
+   * is a leak that only shows up on someone else's machine.
+   */
+  onReady(listener: () => void): Unsubscribe
 }
 
 /** Per-major instances, memoised per graph provider. */
@@ -257,6 +273,7 @@ function buildMajor(
     onNodeMoved: createNodeMoveObserver((id) => graph.node(id)),
     onNodeDragEnd: createNodeDragEndObserver((id) => graph.node(id)),
     onViewportChanged: createViewportObserver(),
+    onReady: onAppReady,
     defs: defs.forMajor((nodeId) => graph.node(nodeId)!)
   })
 }

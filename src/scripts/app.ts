@@ -29,6 +29,7 @@ import type {
   TWidgetValue
 } from '@/lib/litegraph/src/types/widgets'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
+import { markAppReady } from '@/platform/nodeApi/appReady'
 import { installComfyApi } from '@/platform/nodeApi/comfyApi'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
@@ -1079,6 +1080,7 @@ export class ComfyApp {
     this.addDropHandler()
 
     await useExtensionService().invokeExtensionsAsync('setup')
+    markAppReady()
 
     this.positionConversion = useCanvasPositionConversion(
       this.canvasContainer,
