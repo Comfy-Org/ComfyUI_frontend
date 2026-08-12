@@ -12,7 +12,7 @@
  * Usage: node scripts/magic-patch/verify/regressions.mjs [db-root]
  */
 import { readFileSync, readdirSync } from 'node:fs'
-import { join, relative } from 'node:path'
+import { dirname, join, relative, resolve } from 'node:path'
 
 const root = process.argv[2] ?? 'db'
 
@@ -75,6 +75,44 @@ const authDropped = []
 const routePrefixed = []
 const unauthedApiUrl = []
 const controlBytes = []
+const danglingImports = []
+
+/** `import { a, b } from './x.js'` — the names and the target. */
+const NAMED_IMPORT = /import\s*\{([^}]*)\}\s*from\s*['"](\.[^'"]+)['"]/g
+/** `export function a` / `export const a` / `export { a, b }` / `export class a`. */
+const EXPORTED =
+  /export\s+(?:async\s+)?(?:function|const|let|var|class)\s+([A-Za-z_$][\w$]*)|export\s*\{([^}]*)\}/g
+
+/**
+ * Names listed between braces, ignoring comments.
+ *
+ * Both real packs that tripped this check kept a commented-out entry inside
+ * the braces — `//` then a name on the next line — so parsing the raw text
+ * either lost the following name or invented one.
+ */
+function bracedNames(inside) {
+  return inside
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/\/\/[^\n]*/g, '')
+    .split(',')
+    .map(
+      (part) =>
+        part
+          .split(/\s+as\s+/)
+          .pop()
+          ?.trim() ?? ''
+    )
+    .filter((name) => /^[A-Za-z_$][\w$]*$/.test(name))
+}
+
+function exportedNames(text) {
+  const names = new Set()
+  for (const m of text.matchAll(EXPORTED)) {
+    if (m[1]) names.add(m[1])
+    for (const name of bracedNames(m[2] ?? '')) names.add(name)
+  }
+  return names
+}
 
 /**
  * Control characters make a file *binary* to grep, so every grep-based gate
@@ -102,26 +140,53 @@ for (const dest of jsFiles(root)) {
     continue
   }
   const converted = read(dest)
-  if (!isConverted(converted)) continue
+  // Checked before the converted filter, deliberately: the danger is a file
+  // left UNCONVERTED while a neighbour it imports from was punted to
+  // `export {}`. Filtering to converted files first hides exactly that.
+  // A file importing a name its target no longer exports is a *link* error:
+  // it parses, passes every syntax check, and throws when the browser loads
+  // it. Punting a module to `export {}` while its neighbours still import
+  // from it produces exactly this, and nothing else here can see it.
+  for (const [, names, spec] of converted.matchAll(NAMED_IMPORT)) {
+    const target = resolve(dirname(dest), spec)
+    let targetText
+    try {
+      targetText = read(target)
+    } catch {
+      continue
+    }
+    const available = exportedNames(targetText)
+    const missing = names
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/\/\/[^\n]*/g, '')
+      .split(',')
+      .map((n) => n.split(/\s+as\s+/)[0].trim())
+      .filter((n) => /^[A-Za-z_$][\w$]*$/.test(n) && !available.has(n))
+    if (missing.length) {
+      danglingImports.push({ dest, spec, missing: missing.slice(0, 4) })
+    }
 
-  const wasAuthed = routes(original, AUTHED_ROUTE)
-  const stillAuthed = routes(converted, BACKEND_FETCH_ROUTE)
-  const nowPlain = routes(converted, PLAIN_FETCH_ROUTE)
-  // Downgraded = authenticated before, still called, no longer authenticated.
-  const downgraded = [...wasAuthed].filter(
-    (r) => nowPlain.has(r) && !stillAuthed.has(r)
-  )
-  if (downgraded.length) authDropped.push({ dest, downgraded })
+    if (!isConverted(converted)) continue
 
-  // Only the calls the conversion added: a pack that already fetched an
-  // unauthenticated apiURL kept its own bug, which is not ours to report.
-  const unauthed =
-    count(converted, UNAUTHED_API_URL) -
-    count(original, ORIGINAL_UNAUTHED_API_URL)
-  if (unauthed > 0) unauthedApiUrl.push({ dest, unauthed })
+    const wasAuthed = routes(original, AUTHED_ROUTE)
+    const stillAuthed = routes(converted, BACKEND_FETCH_ROUTE)
+    const nowPlain = routes(converted, PLAIN_FETCH_ROUTE)
+    // Downgraded = authenticated before, still called, no longer authenticated.
+    const downgraded = [...wasAuthed].filter(
+      (r) => nowPlain.has(r) && !stillAuthed.has(r)
+    )
+    if (downgraded.length) authDropped.push({ dest, downgraded })
 
-  const added = controlCount(converted) - controlCount(original)
-  if (added > 0) controlBytes.push({ dest, added })
+    // Only the calls the conversion added: a pack that already fetched an
+    // unauthenticated apiURL kept its own bug, which is not ours to report.
+    const unauthed =
+      count(converted, UNAUTHED_API_URL) -
+      count(original, ORIGINAL_UNAUTHED_API_URL)
+    if (unauthed > 0) unauthedApiUrl.push({ dest, unauthed })
+
+    const added = controlCount(converted) - controlCount(original)
+    if (added > 0) controlBytes.push({ dest, added })
+  }
 
   // Route-aware: the same route the original sent bare must now be going
   // through backend, not merely that the file uses backend somewhere else.
@@ -151,6 +216,11 @@ report(
   (r) => `${relative(root, r.dest)}  [${r.unauthed} call(s)]`
 )
 report(
+  'Imports a name the target does not export (throws at load, parses fine)',
+  danglingImports,
+  (r) => `${relative(root, r.dest)} <- ${r.spec}  [${r.missing.join(', ')}]`
+)
+report(
   'Control characters the original did not have (file is invisible to grep)',
   controlBytes,
   (r) => `${relative(root, r.dest)}  [+${r.added}]`
@@ -164,5 +234,10 @@ report(
 // The first two classes are definite regressions. The third depends on whether
 // ComfyUI dual-mounts custom node routes, which cannot be settled from here.
 process.exit(
-  authDropped.length || unauthedApiUrl.length || controlBytes.length ? 1 : 0
+  authDropped.length ||
+    unauthedApiUrl.length ||
+    controlBytes.length ||
+    danglingImports.length
+    ? 1
+    : 0
 )
