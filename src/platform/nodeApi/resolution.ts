@@ -56,6 +56,23 @@ export interface ResolvedNodeView {
   readonly properties: Readonly<Record<string, unknown>>
   /** The groups this node sits inside — the other half of "my group". */
   readonly groups: readonly GroupMembership[]
+  /** Muted, bypassed or normal, as `LGraphEventMode`. */
+  readonly mode: number
+  readonly color: string | undefined
+  /**
+   * This node's own inputs.
+   *
+   * `unconnectedInputs()` already describes every *other* node's slots, and a
+   * supplier needs the same of its own: "send whatever is plugged into me to
+   * every unconnected input of the same type" cannot be written without
+   * knowing what type is plugged in. Without it a supplier is type-blind and
+   * would feed a CLIP into a MODEL slot in silence.
+   *
+   * `type` is the slot's declared type; `connectedType` is what actually
+   * arrives, resolved through reroutes, and is undefined when nothing is
+   * connected.
+   */
+  readonly inputs: readonly OwnInput[]
   widgetValue(name: string): WidgetValue | undefined
   input(ref: string | number): InputRef | undefined
 }
@@ -118,6 +135,23 @@ function viewOf(
     type: node.type ?? '',
     properties: Object.freeze({ ...(node.properties ?? {}) }),
     groups: Object.freeze(groups.get(String(node.id)) ?? []),
+    mode: node.mode ?? 0,
+    color: node.color,
+    inputs: Object.freeze(
+      (node.inputs ?? []).map((slot, index) => {
+        const link = slot.link != null ? graph.links?.get(slot.link) : undefined
+        return Object.freeze({
+          index,
+          name: slot.name ?? '',
+          label: slot.label ?? slot.localized_name ?? slot.name ?? '',
+          type:
+            typeof slot.type === 'string' ? slot.type : String(slot.type ?? ''),
+          connected: slot.link != null,
+          connectedType: link?.type != null ? String(link.type) : undefined,
+          sourceNodeId: link ? String(link.origin_id) : undefined
+        })
+      })
+    ),
     widgetValue: (name) =>
       node.widgets?.find((w) => w.name === name)?.value as
         | WidgetValue
@@ -232,6 +266,20 @@ export function resolveFrontendNodes(
 }
 
 /** An input in the graph that no link feeds. */
+/** One of a node's own inputs, as its supplier sees it. */
+interface OwnInput {
+  readonly index: number
+  readonly name: string
+  /** What the user sees — `label`, else `localized_name`, else `name`. */
+  readonly label: string
+  readonly type: string
+  readonly connected: boolean
+  /** The type actually arriving, or undefined when nothing is connected. */
+  readonly connectedType: string | undefined
+  /** The node feeding this input, if any. */
+  readonly sourceNodeId: string | undefined
+}
+
 /** A group a node sits inside. */
 interface GroupMembership {
   readonly id: string
