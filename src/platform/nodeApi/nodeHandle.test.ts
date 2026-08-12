@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 
 import { ComfyDeletedError, ComfyReadonlyError } from './errors'
 import { createGraphApi } from './graphHandle'
@@ -305,5 +306,27 @@ describe('NodeHandle', () => {
       graph.remove(node)
       expect(handles.liveHandleFor(String(node.id))).toBeUndefined()
     })
+  })
+})
+
+describe('getOutputImages', () => {
+  it('reports the images a node produced, by URL', () => {
+    // The point is reading ANOTHER node's outputs: onExecuted is per node type,
+    // so a pack never sees what a different pack's node produced.
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    const graph = new LGraph()
+    const producer = new LGraphNode('Producer')
+    graph.add(producer)
+    const handle = createGraphApi(() => graph).nodes()[0]
+
+    expect(handle.getOutputImages()).toEqual([])
+
+    useNodeOutputStore().setNodeOutputs(producer, ['out.png'], {
+      folder: 'output'
+    })
+
+    const urls = handle.getOutputImages()
+    expect(urls).toHaveLength(1)
+    expect(urls[0]).toContain('out.png')
   })
 })

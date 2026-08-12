@@ -13,6 +13,7 @@ import {
   LGraphEventMode,
   RenderShape
 } from '@/lib/litegraph/src/types/globalEnums'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { toNodeId } from '@/types/nodeId'
 
 import { createHandleFactory } from './closedProxy'
@@ -142,6 +143,23 @@ export interface NodeHandle extends HandleCommon {
    * `undefined` when nothing is on screen to measure against.
    */
   getScreenRect(): Bounds | undefined
+  /**
+   * URLs of the images this node produced when it last executed.
+   *
+   * Packs read `node.imgs` — the loaded `HTMLImageElement`s core hangs on the
+   * node — to walk upstream for the nearest ancestor holding a composite, or
+   * to scan the selection for something to feed an editor. `onExecuted` does
+   * not answer that: it is per node type, so it never sees another pack's
+   * outputs, and it only fires at the moment of execution.
+   *
+   * URLs rather than elements, deliberately. The loaded element is the
+   * renderer's, and its lifetime is the renderer's; a pack that wants pixels
+   * can load the URL itself and own the result. This also covers previews,
+   * which are what the node is showing when a run is still in flight.
+   *
+   * Empty when the node has not produced images.
+   */
+  getOutputImages(): readonly string[]
   /**
    * Declares how the node may be sized, instead of re-asserting it per frame.
    *
@@ -346,6 +364,8 @@ export function createNodeHandles(
           n.pos = [x, y]
         },
         getSize: (n) => freezeSize(n.size[0], n.size[1]),
+        getOutputImages: (n) =>
+          Object.freeze(useNodeOutputStore().getNodeImageUrls(n) ?? []),
         getScreenRect: (n) => {
           const canvas = LGraphCanvas.active_canvas
           const element = canvas?.canvas
