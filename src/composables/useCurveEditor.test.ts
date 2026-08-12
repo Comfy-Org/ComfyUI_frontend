@@ -107,7 +107,6 @@ describe('useCurveEditor', () => {
 
   afterEach(() => {
     harness?.unmount()
-    document.body.innerHTML = ''
   })
 
   describe('curvePath', () => {

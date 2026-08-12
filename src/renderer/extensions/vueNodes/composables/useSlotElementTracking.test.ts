@@ -110,7 +110,6 @@ async function mountAndRegisterSlot(type: 'input' | 'output') {
 
 describe('useSlotElementTracking', () => {
   beforeEach(() => {
-    document.body.innerHTML = ''
     layoutStore.initializeFromLiteGraph([])
     layoutStore.applyOperation({
       type: 'createNode',

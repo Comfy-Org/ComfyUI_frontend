@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -94,10 +94,6 @@ function renderComponent(opts: RenderOpts = {}) {
 }
 
 describe('LightControls', () => {
-  afterEach(() => {
-    document.body.innerHTML = ''
-  })
-
   describe('material mode gating', () => {
     it('renders the intensity control when materialMode is original', () => {
       renderComponent({ materialMode: 'original' })

@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import PopupSlider from '@/components/load3d/controls/PopupSlider.vue'
@@ -55,10 +55,6 @@ function renderComponent(
 }
 
 describe('PopupSlider', () => {
-  afterEach(() => {
-    document.body.innerHTML = ''
-  })
-
   it('keeps the slider hidden from the accessibility tree until the trigger is clicked', () => {
     renderComponent({ tooltipText: 'FOV' })
 

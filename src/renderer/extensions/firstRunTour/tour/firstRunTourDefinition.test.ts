@@ -103,7 +103,6 @@ describe('firstRunTourSteps', () => {
   afterEach(() => {
     releaseFirstRunTargets()
     clearCoachmarks()
-    document.body.replaceChildren()
     appState.graph = undefined
     runState.value = 'idle'
     framings.length = 0

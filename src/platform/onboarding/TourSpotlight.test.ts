@@ -53,7 +53,6 @@ describe('TourSpotlight', () => {
   afterEach(() => {
     cleanup()
     clearCoachmarks()
-    document.body.replaceChildren()
   })
 
   it('renders the spotlight and card for a step', () => {

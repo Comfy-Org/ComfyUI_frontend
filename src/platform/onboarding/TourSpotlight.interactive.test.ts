@@ -60,7 +60,6 @@ describe('TourSpotlight interactive and masked steps', () => {
   afterEach(() => {
     cleanup()
     clearCoachmarks()
-    document.body.replaceChildren()
   })
 
   it('keeps the blocking scrim and no hit region on a plain step', () => {

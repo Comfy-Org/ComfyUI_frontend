@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ComfyUI } from './ui'
 
@@ -48,10 +48,6 @@ describe('ComfyUI file input', () => {
         unobserve = vi.fn()
       }
     )
-  })
-
-  afterEach(() => {
-    document.body.replaceChildren()
   })
 
   it('reports rejected imports and resets the selected file', async () => {

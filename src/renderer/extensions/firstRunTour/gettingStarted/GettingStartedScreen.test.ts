@@ -87,7 +87,6 @@ describe('GettingStartedScreen', () => {
 
   afterEach(() => {
     cleanup()
-    document.body.replaceChildren()
   })
 
   async function pickFirstTemplate() {
