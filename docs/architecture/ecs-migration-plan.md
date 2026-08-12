@@ -981,6 +981,9 @@ remaining decisions for later work.
   thrown errors.
 - Keep `LinkMap` snapshot iterator compatibility deferred. Do not add
   pseudo-live iterators as part of this work.
+- Define lifecycle callback failure semantics before making graph teardown
+  transactional. Callback exceptions still interrupt `clear()`; this migration
+  does not silently swallow or replay extension callbacks.
 - Keep the browser hydration test as the workflow-level composition check.
 - Investigate separately whether link geometry in `layoutStore`, still keyed by
   bare `LinkId`, can collide across simultaneously live root graphs.
