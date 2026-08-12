@@ -57,6 +57,10 @@ test.describe('Autogrow slot drop', () => {
   test('sequential connections each land on their own autogrow slot', async ({
     comfyPage
   }) => {
+    // Three full drag gestures; the new-test CI job replays every action with
+    // SLOW_MO=1000, which overruns the default 15s budget.
+    test.setTimeout(60_000)
+
     const target = await comfyPage.nodeOps.addNode(
       'BatchImagesNode',
       undefined,
