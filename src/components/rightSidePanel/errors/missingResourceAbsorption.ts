@@ -123,7 +123,7 @@ function matchesMissingMedia(
   )
 }
 
-export function getMissingResourceValidationErrorAbsorption(
+export function classifyValidationErrorAbsorption(
   missingModels: readonly MissingModelCandidate[] | null,
   missingMedia: readonly MissingMediaCandidate[] | null,
   error: NodeValidationError,
