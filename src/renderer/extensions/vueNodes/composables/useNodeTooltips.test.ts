@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
-import { i18n, te } from '@/i18n'
+import { i18n, mergeCustomNodesI18n, te } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { Settings } from '@/schemas/apiSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
@@ -98,6 +98,7 @@ describe('useNodeTooltips', () => {
   })
 
   afterEach(() => {
+    mergeCustomNodesI18n({})
     mergeOutputTooltipMessage(null)
   })
 
@@ -140,6 +141,26 @@ describe('useNodeTooltips', () => {
     const textClass = pt?.text?.class ?? ''
     expect(textClass).toContain('whitespace-pre-line')
     expect(config.value).toContain('\n\n')
+  })
+
+  it('resolves descriptions for definitions added after the backend fetch', () => {
+    const nodeName = 'FrontendOnlyNode'
+    mergeCustomNodesI18n({
+      en: {
+        nodeDefs: {
+          [nodeName]: { description: 'Localized frontend description' }
+        }
+      }
+    })
+    useNodeDefStore().addNodeDef({
+      ...sam3DetectNodeDef,
+      name: nodeName,
+      description: 'Frontend description'
+    })
+
+    const { getNodeDescription } = useNodeTooltips(nodeName)
+
+    expect(getNodeDescription.value).toBe('Localized frontend description')
   })
 
   describe('when the bundled snapshot has gone stale', () => {

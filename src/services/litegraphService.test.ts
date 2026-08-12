@@ -7,7 +7,7 @@ vi.mock('@/scripts/app', () => ({
   ComfyApp: class {}
 }))
 
-import { i18n } from '@/i18n'
+import { i18n, mergeCustomNodesI18n } from '@/i18n'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
@@ -75,10 +75,20 @@ describe('useLitegraphService().registerNodeDef slot text', () => {
   beforeEach(async () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     mergeBundledSlotText('stale bundled label')
+    mergeCustomNodesI18n({
+      en: {
+        nodeDefs: {
+          [nodeName]: {
+            inputs: { mask: { name: 'Translated Mask Label' } }
+          }
+        }
+      }
+    })
     await useLitegraphService().registerNodeDef(nodeName, nodeDef)
   })
 
   afterEach(() => {
+    mergeCustomNodesI18n({})
     mergeBundledSlotText(null)
   })
 
@@ -86,10 +96,13 @@ describe('useLitegraphService().registerNodeDef slot text', () => {
     const node = LiteGraph.createNode(nodeName)
     const localizedName = (name: string) =>
       node?.inputs.find((input) => input.name === name)?.localized_name
+    const mask = node?.inputs.find((input) => input.name === 'mask')
 
     expect(node?.widgets?.[0]?.label).toBe('Live Seed Label')
     expect(localizedName('seed')).toBe('Live Seed Label')
-    expect(localizedName('mask')).toBe('Live Mask Label')
+    expect(mask?.label || mask?.localized_name || mask?.name).toBe(
+      'Translated Mask Label'
+    )
     expect(node?.outputs[0]?.localized_name).toBe('Live Latent Name')
   })
 })
