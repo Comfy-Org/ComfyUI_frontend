@@ -460,13 +460,22 @@ describe('Virtual node resolveVirtualOutput', () => {
     )
   })
 
-  it('should return widget value for virtual nodes with widgets (e.g. PrimitiveNode)', () => {
+  it('should return the primary widget value for virtual nodes', () => {
     const graph = new LGraph()
 
     const primitiveNode = new LGraphNode('PrimitiveNode')
     primitiveNode.addOutput('connect to widget input', '*')
     primitiveNode.isVirtualNode = true
     primitiveNode.addWidget('number', 'value', 42, null)
+    primitiveNode.addWidget(
+      'combo',
+      'control_after_generate',
+      'increment',
+      null,
+      {
+        values: ['fixed', 'increment']
+      }
+    )
     graph.add(primitiveNode)
 
     const nodeDtoMap = new Map()

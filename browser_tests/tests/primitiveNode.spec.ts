@@ -51,21 +51,19 @@ test.describe('Primitive Node', { tag: ['@screenshot', '@node'] }, () => {
     await primitiveNode.connectWidget(0, ksamplerNode, 0)
 
     const primitiveValue = 12345
-    await expect
-      .poll(async () =>
-        comfyPage.page.evaluate(
-          ({ nodeId, value }) => {
-            const node = window.app!.graph.getNodeById(nodeId)
-            const widget = node?.widgets?.[0]
-            if (!widget) return undefined
+    const primitiveWidget = await primitiveNode.getWidget(0)
+    await comfyPage.page.evaluate(
+      ({ nodeId, value }) => {
+        const widget = window.app!.graph.getNodeById(nodeId)?.widgets?.[0]
+        if (!widget) throw new Error(`Widget not found on node ${nodeId}`)
 
-            widget.value = value
-            return widget.value
-          },
-          { nodeId: primitiveNode.id, value: primitiveValue }
-        )
-      )
-      .toBe(primitiveValue)
+        widget.value = value
+      },
+      { nodeId: primitiveNode.id, value: primitiveValue }
+    )
+    await comfyPage.nextFrame()
+
+    await expect.poll(() => primitiveWidget.getValue()).toBe(primitiveValue)
 
     const apiWorkflow = await comfyPage.workflow.getExportedWorkflow({
       api: true
