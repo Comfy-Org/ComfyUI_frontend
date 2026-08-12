@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -218,13 +216,11 @@ function omitOptionalSubgraphCollections(state: ComfyWorkflowJSON) {
 
 describe('ChangeTracker', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     vi.mocked(api.dispatchCustomEvent).mockReset()
-    vi.useFakeTimers()
-    setActivePinia(createTestingPinia({ stubActions: false }))
     resetSubgraphFixtureState()
     nodeIdCounter = 0
     ChangeTracker.isLoadingGraph = false
+    ChangeTracker.resetCheckStateWarningForTest()
     mockWorkflowStore.activeWorkflow = null
     mockWorkflowStore.getWorkflowByPath.mockReturnValue(null)
     vi.mocked(app.rootGraph.serialize).mockReset()
@@ -235,8 +231,8 @@ describe('ChangeTracker', () => {
   })
 
   afterEach(() => {
+    vi.restoreAllMocks()
     vi.clearAllTimers()
-    vi.useRealTimers()
   })
 
   describe('captureCanvasState', () => {
@@ -1227,14 +1223,74 @@ describe('ChangeTracker', () => {
   })
 
   describe('checkState (deprecated)', () => {
-    it('delegates to captureCanvasState', () => {
+    it('captures each state and warns once across repeated calls', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
       const tracker = createTracker(createState(1))
-      const changed = createState(2)
-      mockCanvasState(changed)
+      const firstChanged = createState(2)
+      mockCanvasState(firstChanged)
 
       tracker.checkState()
 
-      expect(tracker.activeState).toEqual(changed)
+      expect(tracker.activeState).toEqual(firstChanged)
+
+      const secondChanged = createState(3)
+      mockCanvasState(secondChanged)
+      tracker.checkState()
+
+      expect(tracker.activeState).toEqual(secondChanged)
+      expect(warn).toHaveBeenCalledOnce()
+      expect(warn).toHaveBeenCalledWith(
+        'checkState() is deprecated — use captureCanvasState() instead.'
+      )
+    })
+  })
+
+  describe('keyboard shortcuts', () => {
+    function createRekaDialog() {
+      const dialog = document.createElement('div')
+      dialog.setAttribute('role', 'dialog')
+      dialog.setAttribute('data-state', 'open')
+      return dialog
+    }
+
+    function createNativeDialog() {
+      const dialog = document.createElement('dialog')
+      dialog.setAttribute('open', '')
+      return dialog
+    }
+
+    function createLegacyComfyModal() {
+      const modal = document.createElement('div')
+      modal.className = 'comfy-modal'
+      modal.style.display = 'flex'
+      return modal
+    }
+
+    it.each([
+      ['a reka dialog', createRekaDialog],
+      ['a native dialog', createNativeDialog],
+      ['a legacy comfy modal', createLegacyComfyModal]
+    ])('does not undo while %s is open', async (_kind, createModal) => {
+      const previousState = createState(1)
+      const currentState = createState(2)
+      const tracker = createTracker(currentState)
+      tracker.undoQueue.push(previousState)
+      const modal = createModal()
+      document.body.appendChild(modal)
+
+      try {
+        ChangeTracker.init()
+        window.dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'z', ctrlKey: true })
+        )
+        await vi.runAllTimersAsync()
+
+        expect(app.loadGraphData).not.toHaveBeenCalled()
+        expect(tracker.activeState).toEqual(currentState)
+        expect(tracker.undoQueue).toEqual([previousState])
+      } finally {
+        document.body.removeChild(modal)
+      }
     })
   })
 })

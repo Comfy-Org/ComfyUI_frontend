@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { promotedInputWidget } from '@/core/graph/subgraph/promotedInputWidget'
@@ -105,11 +103,6 @@ function buildDuplicateNamePromotion() {
 }
 
 describe('isPreviewPseudoWidget', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.restoreAllMocks()
-  })
-
   it('returns true for $$-prefixed widget names', () => {
     expect(
       isPreviewPseudoWidget(widget({ name: '$$canvas-image-preview' }))
@@ -177,11 +170,6 @@ describe('isPreviewPseudoWidget', () => {
 })
 
 describe('pruneDisconnected', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.restoreAllMocks()
-  })
-
   it('removes disconnected linked inputs and emits a dev warning', () => {
     const subgraph = createTestSubgraph()
     const subgraphNode = createTestSubgraphNode(subgraph)
@@ -307,7 +295,6 @@ describe('getPromotableWidgets', () => {
 
 describe('promoteRecommendedWidgets', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     updatePreviewsMock.mockReset()
   })
 
@@ -420,7 +407,6 @@ describe('promoteRecommendedWidgets', () => {
 
 describe('autoExposeKnownPreviewNodes', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     updatePreviewsMock.mockReset()
   })
 
@@ -487,10 +473,6 @@ describe('autoExposeKnownPreviewNodes', () => {
 })
 
 describe('hasUnpromotedWidgets', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('returns true when subgraph has at least one enabled unpromoted widget', () => {
     const subgraph = createTestSubgraph()
     const subgraphNode = createTestSubgraphNode(subgraph)
@@ -544,10 +526,6 @@ describe('hasUnpromotedWidgets', () => {
 })
 
 describe('isLinkedPromotion', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   function promoteSource(host: SubgraphNode, widgetName: string): LGraphNode {
     const node = new LGraphNode('Source')
     const input = node.addInput(widgetName, 'STRING')
@@ -591,10 +569,6 @@ describe('isLinkedPromotion', () => {
 })
 
 describe('createPromotedHostWidgetIdLookup', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   function promoteFreshSource(
     host: SubgraphNode,
     nodeTitle: string,
@@ -653,10 +627,6 @@ describe('createPromotedHostWidgetIdLookup', () => {
 })
 
 describe('reorderSubgraphInputsByName', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('reorders subgraph inputs and host inputs by subgraph input name', () => {
     const subgraph = createTestSubgraph({
       inputs: [
@@ -791,11 +761,6 @@ describe('reorderSubgraphInputsByName', () => {
 })
 
 describe('reorderSubgraphInputsByWidgetOrder', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.restoreAllMocks()
-  })
-
   it('reorders duplicate-named promoted inputs by widget identity', () => {
     const subgraph = createTestSubgraph()
     const host = createTestSubgraphNode(subgraph)
@@ -835,11 +800,6 @@ describe('reorderSubgraphInputsByWidgetOrder', () => {
 })
 
 describe('demoteWidget — axiomatic projection retraction', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.restoreAllMocks()
-  })
-
   function setupPromotedWidget() {
     const subgraph = createTestSubgraph()
     const host = createTestSubgraphNode(subgraph)
@@ -940,11 +900,6 @@ describe('demoteWidget — axiomatic projection retraction', () => {
 })
 
 describe('size preservation across promotion (FE-853)', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.restoreAllMocks()
-  })
-
   function setupInteriorWidget(
     subgraph: ReturnType<typeof createTestSubgraph>,
     name = 'value'
@@ -1062,10 +1017,6 @@ describe('size preservation across promotion (FE-853)', () => {
 })
 
 describe('disambiguated nested promotion identity', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('does not prune a promotion whose source is a nested SubgraphNode exposing a disambiguated widget', () => {
     const { host: innerHost } = buildDuplicateNamePromotion()
     const subgraph = createTestSubgraph()

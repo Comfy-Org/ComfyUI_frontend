@@ -26,6 +26,8 @@ import type {
   HelpCenterClosedMetadata,
   HelpCenterOpenedMetadata,
   HelpResourceClickedMetadata,
+  NamedValuesShadowDiffMismatchMetadata,
+  NamedValuesShadowDiffSummaryMetadata,
   NodeAddedMetadata,
   NodeSearchMetadata,
   NodeSearchResultMetadata,
@@ -631,6 +633,18 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackWidgetFavoriteToggled(metadata: WidgetFavoriteToggledMetadata): void {
     this.trackEvent(TelemetryEvents.WIDGET_FAVORITE_TOGGLED, metadata)
+  }
+
+  trackNamedValuesShadowDiffMismatch(
+    metadata: NamedValuesShadowDiffMismatchMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.NAMED_VALUES_SHADOW_DIFF_MISMATCH, metadata)
+  }
+
+  trackNamedValuesShadowDiffSummary(
+    metadata: NamedValuesShadowDiffSummaryMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.NAMED_VALUES_SHADOW_DIFF_SUMMARY, metadata)
   }
 
   trackPageView(pageName: string, properties?: PageViewMetadata): void {

@@ -98,7 +98,8 @@ function expectRekaPricingDialogProps(
 ) {
   expect(dialogComponentProps).toMatchObject({
     renderer: 'reka',
-    size: 'full'
+    size: 'full',
+    dismissableMask: false
   })
   expect(dialogComponentProps).not.toHaveProperty('style')
   expect(dialogComponentProps).not.toHaveProperty('pt')
@@ -106,7 +107,6 @@ function expectRekaPricingDialogProps(
 
 describe('useSubscriptionDialog', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockIsCloud.value = true
     mockIsInPersonalWorkspace.value = true
     mockIsFreeTier.value = false

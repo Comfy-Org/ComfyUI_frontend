@@ -166,7 +166,7 @@ import { computed, ref } from 'vue'
 import type { CSSProperties } from 'vue'
 
 import { useRestoreFocusOnViewportPointer } from '@/renderer/extensions/vueNodes/widgets/composables/useRestoreFocusOnViewportPointer'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 import { useWidgetHeight } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -181,6 +181,7 @@ interface SelectOption {
   comboboxValue: string
   key: string
   label: string
+  rawValue: NonNullable<WidgetValue>
   value: string
 }
 
@@ -217,13 +218,29 @@ function resolveRawValues(values: unknown): unknown[] {
   }
 }
 
-function resolveValues(values: unknown): string[] {
-  return resolveRawValues(values)
-    .filter((value) => value !== null && value !== undefined)
-    .map((value) => String(value))
+function toWidgetValue(value: unknown): NonNullable<WidgetValue> {
+  if (
+    typeof value === 'string' ||
+    typeof value === 'number' ||
+    typeof value === 'boolean' ||
+    (typeof value === 'object' && value !== null)
+  ) {
+    return value
+  }
+
+  return String(value)
 }
 
-const modelValue = defineModel<string | undefined>({
+function resolveValues(values: unknown) {
+  return resolveRawValues(values)
+    .filter((value) => value !== null && value !== undefined)
+    .map((rawValue) => ({
+      rawValue: toWidgetValue(rawValue),
+      value: String(rawValue)
+    }))
+}
+
+const modelValue = defineModel<WidgetValue>({
   default(modelProps: Record<string, unknown>) {
     try {
       const modelWidget = modelProps.widget as Props['widget'] | undefined
@@ -232,7 +249,7 @@ const modelValue = defineModel<string | undefined>({
       const firstValue = Array.isArray(resolved)
         ? resolved.find((value) => value !== null && value !== undefined)
         : undefined
-      return firstValue === undefined ? '' : String(firstValue)
+      return firstValue === undefined ? '' : firstValue
     } catch (error) {
       console.error('[WidgetSelectDefault] Failed to resolve options', error)
       return ''
@@ -276,17 +293,16 @@ function getOptionLabel(value: string) {
 const normalizedOptions = computed<SelectOption[]>(() => {
   void optionsRefreshKey.value
 
-  return resolveValues(widgetOptions.value?.values).map((value, index) => ({
-    comboboxValue: toComboboxValue(value),
-    key: `${value}-${index}`,
-    label: getOptionLabel(value),
-    value
-  }))
+  return resolveValues(widgetOptions.value?.values).map(
+    ({ rawValue, value }, index) => ({
+      comboboxValue: toComboboxValue(value),
+      key: `${value}-${index}`,
+      label: getOptionLabel(value),
+      rawValue,
+      value
+    })
+  )
 })
-
-const knownOptionValues = computed(
-  () => new Set(normalizedOptions.value.map((option) => option.value))
-)
 
 const isFilterable = computed(() => normalizedOptions.value.length > 4)
 
@@ -309,16 +325,17 @@ const viewportStyle = computed<CSSProperties>(() => ({
   scrollbarGutter: 'stable'
 }))
 
-const selectedOption = computed(() =>
-  normalizedOptions.value.find((option) => option.value === modelValue.value)
+const normalizedModelValue = computed(() =>
+  modelValue.value === undefined ? undefined : String(modelValue.value)
 )
 
-const comboboxValue = computed(() => {
-  const value = modelValue.value
-  if (value === undefined || !knownOptionValues.value.has(value)) return ''
+const selectedOption = computed(() =>
+  normalizedOptions.value.find(
+    (option) => option.value === normalizedModelValue.value
+  )
+)
 
-  return toComboboxValue(value)
-})
+const comboboxValue = computed(() => selectedOption.value?.comboboxValue ?? '')
 
 const isInvalid = computed(
   () =>
@@ -335,9 +352,12 @@ const selectedLabel = computed(() => {
 
 function selectOption(rekaValue: string | undefined) {
   const value = fromComboboxValue(rekaValue)
-  if (value === undefined || !knownOptionValues.value.has(value)) return
+  const option = normalizedOptions.value.find(
+    (option) => option.value === value
+  )
+  if (!option) return
 
-  modelValue.value = value
+  modelValue.value = option.rawValue
   searchQuery.value = ''
   isOpen.value = false
 }

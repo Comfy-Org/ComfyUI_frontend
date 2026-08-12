@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/vue'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 
 import { useRestoreFocusOnViewportPointer } from './useRestoreFocusOnViewportPointer'
@@ -44,10 +44,6 @@ function renderHost({ renderInput = true } = {}) {
 }
 
 describe('useRestoreFocusOnViewportPointer', () => {
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
   it('keeps focus inside the combobox after viewport pointerdown', () => {
     const { api } = renderHost()
 
