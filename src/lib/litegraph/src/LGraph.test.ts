@@ -759,6 +759,20 @@ describe('node:before-removed event', () => {
     expect(target.graph).toBeNull()
   })
 
+  it('detaches nodes added during clear lifecycle callbacks', () => {
+    const graph = new LGraph()
+    const existing = new LGraphNode('existing')
+    const added = new LGraphNode('added')
+    graph.add(existing)
+    existing.onRemoved = () => graph.add(added)
+
+    graph.clear()
+
+    expect(existing.graph).toBeNull()
+    expect(added.graph).toBeNull()
+    expect(added._graphScope).toBeUndefined()
+  })
+
   it('runs nested node removal lifecycle exactly once', () => {
     const { rootGraph, subgraphs } = createNestedSubgraphs({
       depth: 2,

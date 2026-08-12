@@ -221,24 +221,29 @@ function fireNodeRemovalLifecycles(nodes: LGraphNode[]): void {
 }
 
 function teardownOwnedGraphs(owner: LGraph): void {
-  const ownedGraphs = owner.isRootGraph
+  const initialOwnedGraphs = owner.isRootGraph
     ? [owner, ...owner._subgraphs.values()]
     : [owner]
-  const nodesByGraph = ownedGraphs.map(
-    (graph) => [graph, [...graph._nodes]] as const
-  )
-  const nodes = nodesByGraph.flatMap(([, nodes]) => nodes)
+  const lifecycleNodes = initialOwnedGraphs.flatMap((graph) => [
+    ...graph._nodes
+  ])
 
-  fireNodeRemovalLifecycles(nodes)
+  fireNodeRemovalLifecycles(lifecycleNodes)
+  const ownedGraphs = new Set(initialOwnedGraphs)
+  if (owner.isRootGraph) {
+    for (const graph of owner._subgraphs.values()) ownedGraphs.add(graph)
+  }
   for (const graph of ownedGraphs) {
     unregisterAllLinkTopologies(graph)
     unregisterAllRerouteChains(graph)
   }
-  for (const [, graphNodes] of nodesByGraph) {
-    for (const node of graphNodes) {
-      unregisterNodeState(node)
-      node.graph = null
-    }
+  const nodes = new Set(lifecycleNodes)
+  for (const graph of ownedGraphs) {
+    for (const node of graph._nodes) nodes.add(node)
+  }
+  for (const node of nodes) {
+    unregisterNodeState(node)
+    node.graph = null
   }
   unregisterAllGraphLayout(owner)
 }
