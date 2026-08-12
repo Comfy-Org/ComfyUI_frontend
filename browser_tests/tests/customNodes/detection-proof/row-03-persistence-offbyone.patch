@@ -2,14 +2,24 @@ diff --git a/src/lib/litegraph/src/LGraphNode.ts b/src/lib/litegraph/src/LGraphN
 index a928d93992..65563d0dd2 100644
 --- a/src/lib/litegraph/src/LGraphNode.ts
 +++ b/src/lib/litegraph/src/LGraphNode.ts
-@@ -987,7 +987,9 @@ export class LGraphNode
+@@ -987,7 +987,19 @@ export class LGraphNode
          let i = 0
          for (const widget of this.widgets ?? []) {
            if (widget.serialize === false) continue
 -          if (i >= info.widgets_values.length) break
 +          // DETECTION PROOF (row 3, persistence): off-by-one drops the last
 +          // widgets_values. Expected: persistence tier red '... on set-values reload'.
-+          if (i >= info.widgets_values.length - 1) break
++          const detectionProofTier = (
++            globalThis as {
++              __COMFY_CUSTOM_NODE_DETECTION_PROOF_TIER__?: string
++            }
++          ).__COMFY_CUSTOM_NODE_DETECTION_PROOF_TIER__
++          if (
++            detectionProofTier === 'S3' &&
++            i >= info.widgets_values.length - 1
++          )
++            break
++          if (i >= info.widgets_values.length) break
            widget.value = info.widgets_values[i++]
          }
        }

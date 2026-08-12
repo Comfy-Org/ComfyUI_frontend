@@ -1869,6 +1869,11 @@ if (splitAllNodesTiers) {
     for (const [tier, title] of tiers) {
       test(`${tier}: ${title}`, async ({ comfyPage }) => {
         if (customNodesEnv() !== 'cloud') test.setTimeout(1_620_000)
+        await comfyPage.page.evaluate((activeTier) => {
+          Object.assign(globalThis, {
+            __COMFY_CUSTOM_NODE_DETECTION_PROOF_TIER__: activeTier
+          })
+        }, tier)
         const pageId = await comfyPage.page.evaluate(() => {
           const key = '__customNodeTierPageId'
           const existing = sessionStorage.getItem(key)
