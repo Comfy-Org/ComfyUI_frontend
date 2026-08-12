@@ -297,6 +297,20 @@ jobs:
             exit 1
           fi
 
+      - name: Publish results table
+        if: always() && steps.gate.outputs.run-cloud == 'true'
+        shell: bash
+        env:
+          BRANCH_TESTED: ${{ github.ref_name }}
+          COMFYUI_REF_USED: Cloud
+          GREP_FILTER: ${{ inputs.grep }}
+          S14_ENABLED: '0'
+          S15_ENABLED: '0'
+          CUSTOM_NODES_RESULTS_FILE: custom-nodes-cloud-results.json
+          CUSTOM_NODES_LOG_FILE: custom-nodes-cloud.log
+          CUSTOM_NODES_SUMMARY_TITLE: Custom-node Cloud suite
+        run: python3 scripts/cicd/custom-nodes-summary.py
+
       # always() so a red suite or failed activation gate still publishes any
       # diagnostics that exist. if-no-files-found:warn preserves the gate's
       # original failure when no suite artifact could be created.
