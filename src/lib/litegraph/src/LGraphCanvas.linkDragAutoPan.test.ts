@@ -58,6 +58,32 @@ describe('LGraphCanvas link drag auto-pan', () => {
     expect(canvas['_autoPan']).not.toBeNull()
   })
 
+  it('resumes auto-pan after Space panning during a link drag', () => {
+    canvas.mouse[0] = 400
+    canvas.mouse[1] = 300
+    canvas.linkConnector.state.connectingTo = 'output'
+    canvas.pointer.isDown = true
+    startLinkDrag()
+    const autoPan = canvas['_autoPan']
+    if (!autoPan) throw new Error('Auto-pan controller was not created')
+    const stop = vi.spyOn(autoPan, 'stop')
+    const start = vi.spyOn(autoPan, 'start')
+    const updatePointer = vi.spyOn(autoPan, 'updatePointer')
+    const keydown = new KeyboardEvent('keydown', { key: ' ' })
+    const keyup = new KeyboardEvent('keyup', { key: ' ' })
+    Object.defineProperty(keydown, 'target', { value: canvasElement })
+    Object.defineProperty(keyup, 'target', { value: canvasElement })
+
+    canvas.processKey(keydown)
+    canvas.mouse[0] = 450
+    canvas.mouse[1] = 350
+    canvas.processKey(keyup)
+
+    expect(stop).toHaveBeenCalledOnce()
+    expect(updatePointer).toHaveBeenLastCalledWith(450, 350)
+    expect(start).toHaveBeenCalledOnce()
+  })
+
   it('keeps graph_mouse consistent with offset after auto-pan', () => {
     canvas.mouse[0] = 5
     canvas.mouse[1] = 300

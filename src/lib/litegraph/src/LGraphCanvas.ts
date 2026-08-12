@@ -4038,6 +4038,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         this.dragging_canvas =
           (this._previously_dragging_canvas ?? false) && this.pointer.isDown
         this._previously_dragging_canvas = null
+        if (
+          this.pointer.isDown &&
+          (this.isDragging || this.linkConnector.isConnecting)
+        ) {
+          this._autoPan?.updatePointer(this.mouse[0], this.mouse[1])
+          this._autoPan?.start()
+        }
       }
 
       for (const node of Object.values(this.selected_nodes)) {

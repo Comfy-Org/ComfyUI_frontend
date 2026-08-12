@@ -621,7 +621,14 @@ function forwardPointerUpPanEvent(e: PointerEvent) {
 }
 
 function forwardSpaceKeyEvent(e: KeyboardEvent) {
-  if (shouldIgnoreCopyPaste(e.target) && document.activeElement === e.target)
+  const target = e.target
+  if (
+    !layoutStore.isDraggingVueNodes.value ||
+    target instanceof HTMLInputElement ||
+    target instanceof HTMLTextAreaElement ||
+    target instanceof HTMLButtonElement ||
+    (target instanceof HTMLElement && target.isContentEditable)
+  )
     return
 
   comfyApp.canvas?.processKey(e)
