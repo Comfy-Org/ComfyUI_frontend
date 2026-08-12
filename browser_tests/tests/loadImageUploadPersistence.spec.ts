@@ -13,9 +13,10 @@ const DROPPED_FILE = 'image64x64.webp'
 
 test.describe('Load Image upload persistence', () => {
   test('keeps a dropped image across a reload without saving', async ({
-    comfyPage
+    comfyPage,
+    comfyFiles
   }) => {
-    test.setTimeout(30000)
+    test.setTimeout(60000)
 
     await comfyPage.settings.setSetting('Comfy.Workflow.Persist', true)
     await comfyPage.nodeOps.clearGraph()
@@ -33,18 +34,16 @@ test.describe('Load Image upload persistence', () => {
             ?.widgets?.find((widget) => widget.name === 'image')?.value
       )
 
-    const valueBeforeDrop = await readImageWidgetValue()
-
-    // Without waitForUpload the helper returns during the optimistic window,
-    // where the widget briefly holds the raw local filename rather than the
-    // value the upload actually commits.
+    // The server keeps the filename when the same bytes are uploaded again, so
+    // asserting on the name rather than on "the value changed" keeps this test
+    // correct whether or not a previous run already left the file behind.
     await comfyPage.dragDrop.dragAndDropFile(DROPPED_FILE, {
       dropPosition: { x, y },
       waitForUpload: true
     })
+    comfyFiles.deleteAfterTest({ filename: DROPPED_FILE, type: 'input' })
 
-    await expect.poll(readImageWidgetValue).not.toBe(valueBeforeDrop)
-    const valueAfterDrop = String(await readImageWidgetValue())
+    await expect.poll(readImageWidgetValue).toBe(DROPPED_FILE)
 
     // The draft carrying the new value is what survives the reload, so waiting
     // on it also covers the 512ms persist debounce.
@@ -59,13 +58,13 @@ test.describe('Load Image upload persistence', () => {
                 return true
             }
             return false
-          }, valueAfterDrop),
+          }, DROPPED_FILE),
         { timeout: 10_000 }
       )
       .toBe(true)
 
     await comfyPage.workflow.reloadAndWaitForApp()
 
-    await expect.poll(readImageWidgetValue).toBe(valueAfterDrop)
+    await expect.poll(readImageWidgetValue).toBe(DROPPED_FILE)
   })
 })

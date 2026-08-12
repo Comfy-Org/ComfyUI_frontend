@@ -98,9 +98,7 @@ export const useImageUploadWidget = () => {
           oldValue,
           fileComboWidget
         )
-        if (oldValue !== newValue) {
-          useWorkflowStore().activeWorkflow?.changeTracker?.captureCanvasState()
-        }
+        useWorkflowStore().activeWorkflow?.changeTracker?.captureCanvasState()
       }
     })
 

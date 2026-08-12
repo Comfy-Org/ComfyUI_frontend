@@ -180,7 +180,7 @@ describe('useImageUploadWidget', () => {
     expect(mocks.captureCanvasState).toHaveBeenCalled()
   })
 
-  it('does not capture canvas state when the value is unchanged', () => {
+  it('captures canvas state when the server keeps the optimistic filename', () => {
     const { fileComboWidget, node } = createUploadNode()
     const constructor = useImageUploadWidget()
 
@@ -194,9 +194,12 @@ describe('useImageUploadWidget', () => {
       fromPartial({})
     )
 
-    mocks.capturedUploadOptions?.onUploadComplete(['missing.png'])
+    mocks.capturedUploadOptions?.onUploadStart?.([
+      new File([], 'uploaded.png', { type: 'image/png' })
+    ])
+    mocks.capturedUploadOptions?.onUploadComplete(['uploaded.png'])
 
-    expect(fileComboWidget.value).toBe('missing.png')
-    expect(mocks.captureCanvasState).not.toHaveBeenCalled()
+    expect(fileComboWidget.value).toBe('uploaded.png')
+    expect(mocks.captureCanvasState).toHaveBeenCalled()
   })
 })
