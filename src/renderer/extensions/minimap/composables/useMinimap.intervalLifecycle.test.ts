@@ -82,6 +82,7 @@ const POLL_MS = 100
 
 describe('useMinimap change-detection interval', () => {
   let context: CanvasRenderingContext2D
+  let active: { destroy: () => void } | null = null
 
   async function initMinimap() {
     const canvasElement = createMockMinimapCanvas({
@@ -104,6 +105,7 @@ describe('useMinimap change-detection interval', () => {
     await minimap.init()
     await nextTick()
     await vi.runOnlyPendingTimersAsync()
+    active = minimap
     return minimap
   }
 
@@ -119,14 +121,16 @@ describe('useMinimap change-detection interval', () => {
   }
 
   beforeEach(() => {
-    // Fakes intervals and requestAnimationFrame alike, so the real vueuse
-    // timing primitives run under test control with nothing mocked.
     vi.useFakeTimers()
     context = createMockCanvas2DContext()
     mockNodes[0].pos = [0, 0]
   })
 
   afterEach(() => {
+    // The graph is module scope and each init() layers another set of wrappers
+    // onto its callbacks, so tear down before the next test builds its own.
+    active?.destroy()
+    active = null
     vi.useRealTimers()
   })
 

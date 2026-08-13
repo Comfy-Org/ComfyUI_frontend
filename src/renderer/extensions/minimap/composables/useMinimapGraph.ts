@@ -5,6 +5,7 @@ import type { Ref } from 'vue'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { api } from '@/scripts/api'
 
 import type { UpdateFlags } from '../types'
@@ -44,7 +45,11 @@ function mixIn(digest: number, value: number): number {
  * change re-syncs it.
  */
 function computeLayoutDigest(graph: LGraph): number {
-  let digest = graph._nodes.length
+  // The renderer reads geometry from layoutStore whenever it holds nodes, so
+  // detection has to move when the store does. A Vue-side write whose
+  // write-back to liteNode is dropped would otherwise leave this digest
+  // unchanged while the renderer paints the newer store geometry.
+  let digest = mixIn(layoutStore.layoutVersion, graph._nodes.length)
   for (const node of graph._nodes) {
     const [x, y] = node.pos
     const [width, height] = node.size
