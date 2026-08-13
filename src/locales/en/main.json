@@ -3950,6 +3950,10 @@
     "feedbackTooltip": "Feedback",
     "freeTierRuns": "{available} / {MAX_AVAILABLE} runs left",
     "freeTierPartner": "Partner nodes need a paid plan",
+    "partnerRunGate": {
+      "signInCaption": "Partner nodes require an account",
+      "signInToRun": "Sign in to run"
+    },
     "share": "Share",
     "shareTooltip": "Share workflow"
   },
