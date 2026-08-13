@@ -7,13 +7,21 @@ import type {
 import type { ResultItemType } from '@/schemas/apiSchema'
 
 /**
- * Check if an error is an AbortError triggered by `AbortController#abort`
- * when cancelling a request.
+ * Check if an error was triggered by `AbortController#abort` when cancelling a
+ * request. `fetch` rejects with a `DOMException`; axios rejects with its own
+ * `CanceledError`, which is an `AxiosError` carrying `code: 'ERR_CANCELED'`
+ * rather than a `DOMException`. Duck-typed rather than delegated to
+ * `axios.isCancel` so this leaf util stays usable under `vi.mock('axios')`.
  */
-export const isAbortError = (
-  err: unknown
-): err is DOMException & { name: 'AbortError' } =>
-  err instanceof DOMException && err.name === 'AbortError'
+export const isAbortError = (err: unknown): boolean => {
+  if (err instanceof DOMException) return err.name === 'AbortError'
+  return (
+    typeof err === 'object' &&
+    err !== null &&
+    'code' in err &&
+    err.code === 'ERR_CANCELED'
+  )
+}
 
 export const isSubgraph = (
   item: LGraph | Subgraph | undefined | null

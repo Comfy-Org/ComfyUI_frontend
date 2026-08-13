@@ -184,16 +184,22 @@ const conflictInfo = computed<ConflictDetail[]>(() => {
 
 const hasConflicts = computed(() => conflictInfo.value.length > 0)
 
+const nodeDefsParams = (pack: components['schemas']['Node']) =>
+  pack.latest_version?.version
+    ? {
+        packId: pack.id,
+        version: pack.latest_version.version,
+        // Fetch all nodes.
+        // TODO: Render all nodes previews and handle pagination.
+        // For determining length, use the `totalNumberOfPages` field of response
+        limit: 8192
+      }
+    : null
+
 const getPackNodes = async (pack: components['schemas']['Node']) => {
-  if (!pack.latest_version?.version) return []
-  const nodeDefs = await getNodeDefs.call({
-    packId: pack.id,
-    version: pack.latest_version?.version,
-    // Fetch all nodes.
-    // TODO: Render all nodes previews and handle pagination.
-    // For determining length, use the `totalNumberOfPages` field of response
-    limit: 8192
-  })
+  const params = nodeDefsParams(pack)
+  if (!params) return []
+  const nodeDefs = await getNodeDefs.call(params)
   return nodeDefs?.comfy_nodes ?? []
 }
 
@@ -213,6 +219,9 @@ const totalNodesCount = computed(() =>
 )
 
 onUnmounted(() => {
-  getNodeDefs.cancel()
+  for (const pack of nodePacks) {
+    const params = nodeDefsParams(pack)
+    if (params) getNodeDefs.cancel(params)
+  }
 })
 </script>

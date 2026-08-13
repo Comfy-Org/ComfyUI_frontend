@@ -29,9 +29,8 @@
 </template>
 
 <script setup lang="ts">
-import { whenever } from '@vueuse/core'
 import ProgressSpinner from 'primevue/progressspinner'
-import { computed, ref, shallowRef, useId } from 'vue'
+import { computed, ref, shallowRef, useId, watch } from 'vue'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import NodePreview from '@/components/node/NodePreview.vue'
@@ -52,29 +51,42 @@ const { getNodeDefs } = useComfyRegistryStore()
 const isLoading = ref(false)
 const registryNodeDefs = shallowRef<ListComfyNodesResponse | null>(null)
 
-const fetchNodeDefs = async () => {
-  getNodeDefs.cancel()
-  isLoading.value = true
-
+const nodeDefsParams = computed(() => {
   const { id: packId } = nodePack
   const version = nodePack.latest_version?.version
+  if (!packId || !version) return null
+  return { packId, version, page: 1, limit: 256 }
+})
 
-  if (!packId || !version) {
+const packIdentity = computed(() => {
+  const params = nodeDefsParams.value
+  return params && `${params.packId}@${params.version}`
+})
+
+let inFlightParams: NonNullable<typeof nodeDefsParams.value> | null = null
+
+const fetchNodeDefs = async () => {
+  if (inFlightParams) getNodeDefs.cancel(inFlightParams)
+
+  const params = nodeDefsParams.value
+  inFlightParams = params
+
+  if (!params) {
     registryNodeDefs.value = null
-  } else {
-    const response = await getNodeDefs.call({
-      packId,
-      version,
-      page: 1,
-      limit: 256
-    })
-    registryNodeDefs.value = response?.comfy_nodes ?? null
+    isLoading.value = false
+    return
   }
 
+  isLoading.value = true
+  const response = await getNodeDefs.call(params)
+  if (inFlightParams !== params) return
+
+  inFlightParams = null
+  registryNodeDefs.value = response?.comfy_nodes ?? null
   isLoading.value = false
 }
 
-whenever(() => nodePack, fetchNodeDefs, { immediate: true, deep: true })
+watch(packIdentity, fetchNodeDefs, { immediate: true })
 
 const toFrontendNodeDef = (nodeDef: components['schemas']['ComfyNode']) => {
   try {

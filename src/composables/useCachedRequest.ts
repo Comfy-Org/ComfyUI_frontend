@@ -36,24 +36,28 @@ export function useCachedRequest<TParams, TResult>(
     params: TParams,
     cacheKey: string
   ): Promise<TResult | null> => {
+    const controller = new AbortController()
+    abortControllers.set(cacheKey, controller)
+
+    const responsePromise = requestFunction(params, controller.signal)
+    pendingRequests.set(cacheKey, responsePromise)
+
     try {
-      const controller = new AbortController()
-      abortControllers.set(cacheKey, controller)
-
-      const responsePromise = requestFunction(params, controller.signal)
-      pendingRequests.set(cacheKey, responsePromise)
-
       const result = await responsePromise
-      cache.set(cacheKey, result)
+      // A cancellation is not a verdict about the resource, so caching it would
+      // make the cancellation permanent for the rest of the session.
+      if (!controller.signal.aborted) cache.set(cacheKey, result)
 
       return result
     } catch (err) {
       // Set cache on error to prevent retrying bad requests
-      cache.set(cacheKey, null)
+      if (!controller.signal.aborted) cache.set(cacheKey, null)
       return null
     } finally {
-      pendingRequests.delete(cacheKey)
-      abortControllers.delete(cacheKey)
+      if (pendingRequests.get(cacheKey) === responsePromise)
+        pendingRequests.delete(cacheKey)
+      if (abortControllers.get(cacheKey) === controller)
+        abortControllers.delete(cacheKey)
     }
   }
 
@@ -68,19 +72,26 @@ export function useCachedRequest<TParams, TResult>(
     }
   }
 
-  const abortAllRequests = () => {
-    for (const controller of abortControllers.values()) {
-      controller.abort()
-    }
+  const abortRequest = (cacheKey: string) => {
+    abortControllers.get(cacheKey)?.abort()
+    abortControllers.delete(cacheKey)
+    pendingRequests.delete(cacheKey)
   }
 
   /**
-   * Cancel and clear any pending requests
+   * Cancel pending requests: only the one matching `params` when given, every
+   * pending request otherwise. Callers sharing an instance should pass their own
+   * params so they don't abort requests another caller is waiting on.
    */
-  const cancel = () => {
-    abortAllRequests()
-    abortControllers.clear()
-    pendingRequests.clear()
+  const cancel = (...params: [] | [TParams]) => {
+    if (params.length === 0) {
+      for (const cacheKey of [...abortControllers.keys()])
+        abortRequest(cacheKey)
+      pendingRequests.clear()
+      return
+    }
+
+    abortRequest(cacheKeyFn(params[0]))
   }
 
   /**
