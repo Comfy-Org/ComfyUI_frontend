@@ -347,11 +347,22 @@ function remapConfiguredLinkAliases(
     Partial<Pick<ExportedSubgraph, 'inputs' | 'outputs'>>,
   survivorByRejected: ReadonlyMap<LinkId, LinkId>
 ): void {
+  const remap = (linkId: number) =>
+    survivorByRejected.get(toLinkId(linkId)) ?? toLinkId(linkId)
+  const remapAll = (linkIds: number[]) => [...new Set(linkIds.map(remap))]
+
   for (const slot of [...(data.inputs ?? []), ...(data.outputs ?? [])]) {
     if (!slot.linkIds) continue
-    slot.linkIds = slot.linkIds.map(
-      (linkId) => survivorByRejected.get(toLinkId(linkId)) ?? toLinkId(linkId)
-    )
+    slot.linkIds = remapAll(slot.linkIds)
+  }
+
+  for (const node of data.nodes ?? []) {
+    for (const input of node.inputs ?? []) {
+      if (input.link != null) input.link = remap(input.link)
+    }
+    for (const output of node.outputs ?? []) {
+      if (output.links) output.links = remapAll(output.links)
+    }
   }
 }
 
@@ -1853,6 +1864,8 @@ export class LGraph
   }
 
   createSubgraphs(data: ExportedSubgraph[]): Subgraph[] {
+    if (!data.length) return []
+
     const normalized = normalizeSubgraphDefinitions(
       data,
       {
@@ -2718,6 +2731,8 @@ export class LGraph
         }
       }
 
+      remapConfiguredLinkAliases(data, survivorByRejected)
+
       const nodesData = data.nodes
 
       // copy all stored fields
@@ -2816,8 +2831,6 @@ export class LGraph
           this._removeReroute(reroute.id)
         }
       }
-
-      remapConfiguredLinkAliases(data, survivorByRejected)
 
       // Node configure() overrides may have reordered serialized inputs in
       // place to match current node definitions; re-key links to the slots

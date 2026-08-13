@@ -1177,7 +1177,12 @@ describe('Shared LGraphState', () => {
 })
 
 describe('persisted duplicate links', () => {
+  const onConnectionsChange =
+    vi.fn<NonNullable<LGraphNode['onConnectionsChange']>>()
+
   class TestNode extends LGraphNode {
+    override onConnectionsChange = onConnectionsChange
+
     constructor(title?: string) {
       super(title ?? 'TestNode')
       this.addInput('input_0', 'number')
@@ -1200,6 +1205,23 @@ describe('persisted duplicate links', () => {
     expect(targetNode.inputs[0].link).toBe(survivingLink.id)
     const sourceNode = graph.getNodeById(survivingLink.origin_id)!
     expect(sourceNode.outputs[0].links).toEqual([survivingLink.id])
+  })
+
+  it('normalizes duplicate aliases before connection callbacks', () => {
+    registerTestNodes()
+    const graph = new LGraph()
+    const data = structuredClone(duplicateLinksRoot)
+    data.nodes![0].outputs![0].links = [2]
+    data.nodes![1].inputs![0].link = 2
+
+    graph.configure(data)
+
+    const survivingLink = graph.links.values().next().value!
+    const configuredLinks = onConnectionsChange.mock.calls
+      .map(([, , , link]) => link)
+      .filter((link) => link != null)
+
+    expect(configuredLinks).toEqual([survivingLink, survivingLink])
   })
 
   it('preserves link integrity after configure() with slot-shifted duplicates', () => {

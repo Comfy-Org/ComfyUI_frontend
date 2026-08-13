@@ -890,6 +890,9 @@ atomic validation and rollback as the migration continues. Command-executor
 transactions should wrap these store mutation points rather than adding
 caller-specific compensation.
 
+Input replacement commits new topology before old-link disconnect callbacks, so
+callback queries see the replacement rather than an intermediate empty slot.
+
 **Rejected transitional options:**
 
 | Option                                   | Why it was rejected                                                                |
@@ -979,11 +982,10 @@ remaining decisions for later work.
   surface.
 - Keep registration failure as an explicit return value rather than adding
   thrown errors.
-- `LinkMap` preserves snapshot iterator compatibility with a cached owner-local
-  view. The link store invalidates that view only when registration, deletion,
-  clearing, or a regular/floating transition changes membership; endpoint-only
-  updates do not rebuild it. Do not replace this with pseudo-live iterators or
-  an independently authoritative `_links` mirror.
+- `LinkMap` caches owner-local snapshots, but every topology mutation currently
+  invalidates all views, including endpoint-only updates. Profile Pinia revision
+  and cache-rebuild cost before considering owner-scoped revisions; do not
+  replace the cache with pseudo-live iterators or an `_links` mirror.
 - Graph teardown now finishes exact detachment, defensive root-bucket clearing,
   graph reset, and canvas clearing after a lifecycle callback fails, then
   propagates that same failure. Lifecycle callbacks remain fail-fast, so later

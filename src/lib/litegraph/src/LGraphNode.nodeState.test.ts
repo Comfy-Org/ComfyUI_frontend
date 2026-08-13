@@ -1,10 +1,11 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, toRaw } from 'vue'
 
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { graphScopeOf } from '@/types/graphScopeId'
+import { toNodeId } from '@/types/nodeId'
 
 import type { NodeState } from '@/types/nodeState'
 
@@ -75,5 +76,21 @@ describe('LGraphNode node-data adoption', () => {
 
     expect(node.id).toBe(assignedId)
     expect(statesIn(subgraph).map((s) => s.id)).toEqual([assignedId])
+  })
+
+  it('keeps registered identity assignments attached to store state', () => {
+    const { node } = addNodeToSubgraph()
+    const registeredState = node._state
+    const registeredId = node.id
+    const registeredType = node.type
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    node.id = node.id
+    node.id = toNodeId(9999)
+    node.type = 'replacement'
+
+    expect(node._state).toBe(registeredState)
+    expect([node.id, node.type]).toEqual([registeredId, registeredType])
+    expect(warn).toHaveBeenCalledTimes(2)
   })
 })

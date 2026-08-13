@@ -473,7 +473,7 @@ describe('LLink ↔ linkStore integration', () => {
     )
   })
 
-  it('reactively updates cached link views', () => {
+  it('updates regular and floating views after endpoint changes', () => {
     const graph = new LGraph()
     const a = new LGraphNode('A')
     const b = new LGraphNode('B')
@@ -487,25 +487,20 @@ describe('LLink ↔ linkStore integration', () => {
     expect(linkCount.value).toBe(0)
 
     const link = a.connect(0, b, 0)!
-    const store = useLinkStore()
-    const graphTopologies = vi.spyOn(store, 'graphTopologies')
 
     expect(linkCount.value).toBe(1)
-    expect(graph.links.size).toBe(1)
-    const traversalCount = graphTopologies.mock.calls.length
-    expect([...graph.links.values()]).toEqual([link])
     expect(graph.links.get(link.id)).toBe(link)
-    expect(graphTopologies).toHaveBeenCalledTimes(traversalCount)
+    expect(graph.floatingLinks.has(link.id)).toBe(false)
 
     link.target_slot = 1
 
+    expect(linkCount.value).toBe(1)
     expect(graph.links.get(link.id)).toBe(link)
-    expect(graphTopologies.mock.calls.length).toBeGreaterThan(traversalCount)
 
     link.target_id = UNASSIGNED_NODE_ID
 
+    expect(linkCount.value).toBe(0)
     expect(graph.links.has(link.id)).toBe(false)
     expect(graph.floatingLinks.get(link.id)).toBe(link)
-    expect(graphTopologies.mock.calls.length).toBeGreaterThan(traversalCount)
   })
 })

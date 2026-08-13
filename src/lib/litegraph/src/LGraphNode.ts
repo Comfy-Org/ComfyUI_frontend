@@ -346,8 +346,9 @@ export class LGraphNode
   }
 
   set id(value: NodeId) {
-    if (this._graphScope && value !== this._state.id) {
-      console.error('LiteGraph: refusing to change a registered node id')
+    if (this._graphScope) {
+      if (value !== this._state.id)
+        console.warn('LiteGraph: refusing to change a registered node id')
       return
     }
     this._state = { ...this._state, id: value }
@@ -355,6 +356,15 @@ export class LGraphNode
 
   get type(): string {
     return this._state.type
+  }
+
+  set type(value: string) {
+    if (this._graphScope) {
+      if (value !== this._state.type)
+        console.warn('LiteGraph: refusing to change a registered node type')
+      return
+    }
+    this._state = { ...this._state, type: value }
   }
 
   /** Assignment splices in place: the `shallowReactive` array identity is what the renderer tracks. */
@@ -1033,7 +1043,8 @@ export class LGraphNode
       }
 
       if (j === 'type') {
-        if (info.type != null) this._state.type = String(info.type)
+        if (!this._graphScope && info.type != null)
+          this.type = String(info.type)
         continue
       }
 

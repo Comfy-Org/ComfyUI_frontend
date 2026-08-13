@@ -31,6 +31,10 @@ cover the operation because those APIs coordinate the surrounding lifecycle.
 Do not invoke `Map.prototype` methods directly against either view or depend on
 native `Map` internal storage.
 
+Input replacement commits the new link before old-link disconnect callbacks,
+so callback queries see the replacement rather than an empty input. Normal
+connection callbacks follow.
+
 Extensions that previously ignored the return value should handle
 `undefined` before retaining, rendering, or mutating the incoming link. Do not
 preselect a positive link id for a new runtime link; allow the graph to mint
