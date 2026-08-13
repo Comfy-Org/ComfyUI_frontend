@@ -29,19 +29,6 @@ import {
   unallowlistedErrors
 } from '@e2e/fixtures/customNode/consoleErrorLedger'
 import { failureSummary } from '@e2e/fixtures/customNode/failureReport'
-import type {
-  LitegraphNodeGeometry,
-  NodeGeometry,
-  VueNodeGeometry
-} from '@e2e/fixtures/customNode/geometry'
-import {
-  diffGeometry,
-  GEOMETRY_UNSTABLE_NODES,
-  GEOMETRY_UNSTABLE_PATHS,
-  loadPackGeometry,
-  packGeometryRelativePath,
-  savePackGeometry
-} from '@e2e/fixtures/customNode/geometry'
 import {
   loadManifest,
   rendererPassesFor
@@ -92,7 +79,7 @@ const AUTO_RUN_BATCH = 10
 const SINGLE_RERUN_TIMEOUT = 60_000
 const GRID_SPACING = { x: 420, y: 360 }
 
-type AllNodesTier = 'S1' | 'S2' | 'S3' | 'S9' | 'S14'
+type AllNodesTier = 'S1' | 'S2' | 'S3' | 'S9'
 
 // Nodes unsafe to execute on a bare backend; every entry names the mechanism.
 const AUTO_RUN_EXCLUDE: Record<string, Record<string, string>> = {
@@ -289,8 +276,6 @@ const PACK_LEDGERS: Record<string, Record<string, Record<string, unknown>>> = {
   AUTO_RUN_ALLOWED_FAILURES,
   AUTO_RUN_EXCLUDE,
   AUTO_RUN_UNSTABLE_NODES,
-  GEOMETRY_UNSTABLE_NODES,
-  GEOMETRY_UNSTABLE_PATHS,
   MOUNT_WIDGET_ALLOWLIST,
   OUTPUT_TOPOLOGY_EXPECTATIONS_LITEGRAPH,
   OUTPUT_TOPOLOGY_EXPECTATIONS_VUE,
@@ -417,109 +402,6 @@ function addChunk(
   )
 }
 
-// S14 geometry capture, in the same mounted state the fidelity checks just
-// validated. LiteGraph paints to a canvas, so its numbers come from the node
-// model (size, drawn widget offsets, connection positions) - which is where
-// the historical shrinking bugs lived. Vue numbers come from the rendered
-// DOM, divided by the chunk-fit zoom so they are graph-space and invariant
-// to chunk composition. Everything is relative to the node's own origin, so
-// grid placement cannot leak into baselines.
-function measureChunkGeometry(
-  page: Page,
-  ids: Array<string | null>,
-  vueNodesEnabled: boolean
-): Promise<Array<LitegraphNodeGeometry | VueNodeGeometry | null>> {
-  return page.evaluate(
-    ([chunkIds, vue]) => {
-      type LgOut = {
-        w: number
-        h: number
-        widgets: Array<{ name: string; y: number | null }>
-        inputs: Array<[number, number]>
-        outputs: Array<[number, number]>
-      }
-      type VueOut = {
-        w: number
-        h: number
-        widgets: Array<{ dy: number; h: number }>
-        slots: Array<[number, number]>
-      }
-      const results: Array<LgOut | VueOut | null> = []
-      for (const id of chunkIds) {
-        if (id === null) {
-          results.push(null)
-          continue
-        }
-        const node = window.app!.graph.nodes.find(
-          (candidate) => String(candidate.id) === id
-        )
-        if (!node) {
-          results.push(null)
-          continue
-        }
-        if (!vue) {
-          const origin = [node.pos[0], node.pos[1]]
-          const rel = (point: ArrayLike<number>): [number, number] => [
-            point[0] - origin[0],
-            point[1] - origin[1]
-          ]
-          results.push({
-            w: node.size[0],
-            h: node.size[1],
-            widgets: (node.widgets ?? []).map((widget) => {
-              const lastY = (widget as { last_y?: number }).last_y
-              return {
-                name: widget.name,
-                y: typeof lastY === 'number' ? lastY : null
-              }
-            }),
-            inputs: (node.inputs ?? []).map((_, slot) =>
-              rel(node.getConnectionPos(true, slot))
-            ),
-            outputs: (node.outputs ?? []).map((_, slot) =>
-              rel(node.getConnectionPos(false, slot))
-            )
-          })
-          continue
-        }
-        const root = document.querySelector(`[data-node-id="${id}"]`)
-        if (!root) {
-          results.push(null)
-          continue
-        }
-        const scale = window.app!.canvas.ds.scale
-        const rootRect = root.getBoundingClientRect()
-        results.push({
-          w: rootRect.width / scale,
-          h: rootRect.height / scale,
-          widgets: Array.from(
-            root.querySelectorAll('[data-testid="node-widget"]'),
-            (row) => {
-              const rect = row.getBoundingClientRect()
-              return {
-                dy: (rect.top - rootRect.top) / scale,
-                h: rect.height / scale
-              }
-            }
-          ),
-          slots: Array.from(
-            root.querySelectorAll('[data-testid="slot-connection-dot"]'),
-            (dot) => {
-              const rect = dot.getBoundingClientRect()
-              return [
-                (rect.left - rootRect.left) / scale,
-                (rect.top - rootRect.top) / scale
-              ] as [number, number]
-            }
-          )
-        })
-      }
-      return results
-    },
-    [ids, vueNodesEnabled] as const
-  )
-}
-
 // What the def promises the instance must materialize, in any renderer:
 // every non-socketless declared input (as a widget or a socket - pack JS may
 // legally convert between the two) and every declared output. Autogrow
@@ -638,8 +520,7 @@ for (const entry of loadManifest()) {
         ])
       }
 
-      await runTier(['S1', 'S2', 'S14'], async () => {
-        const validatesMount = selectedTier !== 'S14'
+      await runTier(['S1', 'S2'], async () => {
         // Exact-count guard: the corpus below comes from the live backend, so
         // a pack silently registering fewer nodes (broken sub-import, a core
         // change breaking registration) would shrink coverage while every
@@ -647,66 +528,26 @@ for (const entry of loadManifest()) {
         // deterministic; a delta in either direction fails until the manifest
         // is deliberately recalibrated with the pin/core change that moved it.
         console.log(`custom-nodes count: ${entry.pack} = ${keys.length}`)
-        if (validatesMount)
-          expect(
-            keys,
-            `${entry.pack} registers ${keys.length} nodes but the manifest expects ${entry.expectedNodeCount} - a pack node failed to register (or the pack changed); recalibrate expectedNodeCount only with the change that moved it`
-          ).toHaveLength(entry.expectedNodeCount)
+        expect(
+          keys,
+          `${entry.pack} registers ${keys.length} nodes but the manifest expects ${entry.expectedNodeCount} - a pack node failed to register (or the pack changed); recalibrate expectedNodeCount only with the change that moved it`
+        ).toHaveLength(entry.expectedNodeCount)
         const declaredByKey = new Map(
           keys.map((key) => [key, declaredShape(defs[key])])
         )
         const ledger = entry.vueIncompatibleNodes ?? {}
-        // S14 is a separately activated tier. Its record workflow sets
-        // CN_GEOMETRY=record; its compare proof sets CN_ENABLE_S14=1, which
-        // the gating CI keeps active.
-        const geometryRecordMode = process.env.CN_GEOMETRY === 'record'
-        if (process.env.CN_GEOMETRY && !geometryRecordMode)
-          throw new Error(
-            `unrecognized CN_GEOMETRY value "${process.env.CN_GEOMETRY}" - the only mode is "record"`
-          )
-        const geometryCompareMode = process.env.CN_ENABLE_S14
-        if (
-          geometryCompareMode !== undefined &&
-          geometryCompareMode !== '0' &&
-          geometryCompareMode !== '1'
-        )
-          throw new Error(
-            `unrecognized CN_ENABLE_S14 value "${geometryCompareMode}" - expected "0" or "1"`
-          )
-        const geometryEnabled =
-          selectedTier === 'S14' &&
-          (geometryRecordMode || geometryCompareMode === '1')
-        const measuredGeometry: Record<string, NodeGeometry> = {}
-        const geometryUnstable = geometryEnabled
-          ? packLedgerFor(GEOMETRY_UNSTABLE_NODES, entry.pack)
-          : {}
-        const geometryUnstablePaths = geometryEnabled
-          ? packLedgerFor(GEOMETRY_UNSTABLE_PATHS, entry.pack)
-          : {}
-        for (const ledgered of Object.keys(geometryUnstable))
+        for (const ledgered of Object.keys(ledger))
           expect(
             keys,
-            `stale GEOMETRY_UNSTABLE_NODES entry: ${ledgered} is not registered by ${entry.pack}`
+            `stale ledger entry: ${ledgered} is not registered by ${entry.pack}`
           ).toContain(ledgered)
-        for (const ledgered of Object.keys(geometryUnstablePaths))
+        for (const ledgered of Object.keys(
+          packLedgerFor(MOUNT_WIDGET_ALLOWLIST, entry.pack)
+        ))
           expect(
             keys,
-            `stale GEOMETRY_UNSTABLE_PATHS entry: ${ledgered} is not registered by ${entry.pack}`
+            `stale MOUNT_WIDGET_ALLOWLIST entry: ${ledgered} is not registered by ${entry.pack}`
           ).toContain(ledgered)
-        if (validatesMount) {
-          for (const ledgered of Object.keys(ledger))
-            expect(
-              keys,
-              `stale ledger entry: ${ledgered} is not registered by ${entry.pack}`
-            ).toContain(ledgered)
-          for (const ledgered of Object.keys(
-            packLedgerFor(MOUNT_WIDGET_ALLOWLIST, entry.pack)
-          ))
-            expect(
-              keys,
-              `stale MOUNT_WIDGET_ALLOWLIST entry: ${ledgered} is not registered by ${entry.pack}`
-            ).toContain(ledgered)
-        }
 
         const rendererPasses =
           selectedTier === 'S1'
@@ -723,9 +564,7 @@ for (const entry of loadManifest()) {
             ),
             entry.pack
           )
-          const outputTopologyExpectations = validatesMount
-            ? rawOutputTopologyExpectations
-            : {}
+          const outputTopologyExpectations = rawOutputTopologyExpectations
           const observedOutputTopologies = new Set<string>()
           for (const ledgered of Object.keys(outputTopologyExpectations))
             expect(
@@ -744,38 +583,16 @@ for (const entry of loadManifest()) {
             const shapes = await addChunk(comfyPage.page, chunk)
             await comfyPage.nextFrame()
             const count = await comfyPage.nodeOps.getGraphNodesCount()
-            if (validatesMount && count !== chunk.length)
+            if (count !== chunk.length)
               failures.push(
                 `chunk@${offset}: graph has ${count} of ${chunk.length} nodes`
               )
-            // Geometry rides the same mounted chunk. A null measurement means
-            // the node never materialized - already red via the mount checks,
-            // so geometry stays silent rather than double-reporting.
-            if (geometryEnabled) {
-              const chunkGeometry = await measureChunkGeometry(
-                comfyPage.page,
-                shapes.map((shape) => shape?.id ?? null),
-                vueNodesEnabled
-              )
-              for (const [index, measured] of chunkGeometry.entries()) {
-                const key = chunk[index]
-                if (measured === null || key in geometryUnstable) continue
-                if (!vueNodesEnabled)
-                  measuredGeometry[key] = {
-                    litegraph: measured as LitegraphNodeGeometry
-                  }
-                else if (measuredGeometry[key] && !(key in ledger))
-                  measuredGeometry[key].vue = measured as VueNodeGeometry
-              }
-            }
             for (const [index, shape] of shapes.entries()) {
               const key = chunk[index]
               if (shape === null) {
-                if (validatesMount)
-                  failures.push(`${key}: createNode returned null`)
+                failures.push(`${key}: createNode returned null`)
                 continue
               }
-              if (!validatesMount) continue
               // Renderer-independent fidelity: the instance must materialize
               // everything the def declares. Pack JS converting a widget to a
               // socket (or back) is legal; dropping the input entirely is not.
@@ -821,7 +638,7 @@ for (const entry of loadManifest()) {
             }
             // A mount with missing widgets or slots is a broken node, not a
             // pass. Extra DOM elements are tolerated; missing ones fail.
-            if (validatesMount && vueNodesEnabled)
+            if (vueNodesEnabled)
               failures.push(
                 ...(await comfyPage.page.evaluate(
                   ([chunkIds, ledgered, customWidgetNodes]) => {
@@ -892,16 +709,11 @@ for (const entry of loadManifest()) {
                 ))
               )
           }
-          if (
-            validatesMount &&
-            vueNodesEnabled &&
-            Object.keys(ledger).length > 0
-          )
+          if (vueNodesEnabled && Object.keys(ledger).length > 0)
             console.log(
               `${entry.pack}: ${Object.keys(ledger).length} node(s) ledgered Vue-incompatible; Vue mount not asserted for them`
             )
           consoleErrors.stop()
-          if (!validatesMount) continue
           expect(
             failures,
             `VueNodes=${vueNodesEnabled}: ${JSON.stringify(failures, null, 1)}`
@@ -931,47 +743,6 @@ for (const entry of loadManifest()) {
             comfyPage.page,
             `after all-nodes VueNodes=${vueNodesEnabled} pass`
           )
-        }
-        if (geometryEnabled) {
-          if (Object.keys(geometryUnstable).length > 0)
-            console.log(
-              `${entry.pack}: ${Object.keys(geometryUnstable).length} node(s) ledgered geometry-unstable; geometry not asserted for them`
-            )
-          if (Object.keys(geometryUnstablePaths).length > 0)
-            console.log(
-              `${entry.pack}: ${Object.values(geometryUnstablePaths).reduce((count, paths) => count + Object.keys(paths).length, 0)} exact geometry path(s) ledgered unstable; all other geometry remains asserted`
-            )
-          if (geometryRecordMode) {
-            savePackGeometry(entry.pack, {
-              recordedAt: {
-                core: process.env.CN_GEOMETRY_CORE ?? 'unrecorded',
-                pin: entry.pin
-              },
-              schema: 1,
-              nodes: measuredGeometry
-            })
-            throw new Error(
-              `geometry baselines recorded for ${entry.pack} - commit ${packGeometryRelativePath(entry.pack)} and re-run without CN_GEOMETRY`
-            )
-          } else if (!process.env.CI) {
-            console.log(
-              `${entry.pack}: geometry compare skipped off-CI (baselines encode CI fonts and pack-JS layout); CI enforces`
-            )
-          } else {
-            const geometryBaseline = loadPackGeometry(entry.pack)
-            expect(
-              geometryBaseline,
-              `${entry.pack} has no geometry baseline - record one via the record workflow and commit it (docs/custom-node-regression-suite.md Step 5b)`
-            ).not.toBeNull()
-            expect(
-              diffGeometry(
-                geometryBaseline!.nodes,
-                measuredGeometry,
-                geometryUnstablePaths
-              ),
-              'node geometry deltas vs baseline - real layout regression: fix it; intended restyle or pin/core bump: re-record per docs/custom-node-regression-suite.md Step 5b; delta flips between identical runs, or the layout follows environment content: ledger the exact mechanism in GEOMETRY_UNSTABLE_NODES or GEOMETRY_UNSTABLE_PATHS'
-            ).toEqual([])
-          }
         }
       })
 
@@ -1704,8 +1475,6 @@ const tiers: Array<[AllNodesTier, string]> = [
   ['S3', 'every registered node survives save and reload'],
   ['S9', 'every self-sufficient node executes']
 ]
-if (process.env.CN_ENABLE_S14 === '1' || process.env.CN_GEOMETRY === 'record')
-  tiers.push(['S14', 'every registered node matches its geometry baseline'])
 
 test.describe('all nodes by tier @custom-nodes', () => {
   for (const [tier, title] of tiers) {

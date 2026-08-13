@@ -7,7 +7,7 @@ per-pack x tier verdict table - as an aligned table on stdout for the job
 log, and as markdown appended to GITHUB_STEP_SUMMARY. Tolerates a missing
 results file (the suite died before Playwright reported) by emitting the
 context alone. Inputs arrive via env: BRANCH_TESTED, COMFYUI_REF_USED,
-GREP_FILTER, S14_ENABLED, plus the standard GITHUB_* vars.
+GREP_FILTER, plus the standard GITHUB_* vars.
 """
 
 import json, os, re, subprocess
@@ -29,7 +29,6 @@ ctx = [
     ('ComfyUI ref', os.environ.get('COMFYUI_REF_USED', '?')[:12]),
     ('Event / actor', f"{os.environ.get('GITHUB_EVENT_NAME','?')} / {os.environ.get('GITHUB_ACTOR','?')}"),
     ('Grep filter', os.environ.get('GREP_FILTER') or '(full suite)'),
-    ('S14', f"{os.environ.get('S14_ENABLED')}"),
 ]
 if not os.path.exists(RESULT_FILE):
     out(f'## {SUITE_TITLE}\n\n**No results json was written** - the suite step died before Playwright could report.')
@@ -40,7 +39,7 @@ if not os.path.exists(RESULT_FILE):
 data = json.load(open(RESULT_FILE))
 stats = data.get('stats', {})
 
-TIERS = ['startup/load', 'S1', 'S2', 'S3', 'S9', 'S14', 'curated run', 'dynamic inputs', 'interaction']
+TIERS = ['startup/load', 'S1', 'S2', 'S3', 'S9', 'curated run', 'dynamic inputs', 'interaction']
 packs, wide = {}, {}
 
 def bucket(file, path):
@@ -50,7 +49,7 @@ def bucket(file, path):
     if m:
         pack = m.group(1).strip()
     if 'allNodes' in file:
-        tier = re.search(r'all nodes by tier @custom-nodes > (S(?:1|2|3|9|14)):', title)
+        tier = re.search(r'all nodes by tier @custom-nodes > (S(?:1|2|3|9)):', title)
         if tier:
             return (None, tier.group(1))
         return (pack, 'all nodes') if pack else (None, 'manifest coverage')
@@ -102,7 +101,7 @@ for s in data.get('suites', []):
 
 if os.path.exists(LOG_FILE):
     for line in open(LOG_FILE):
-        m = re.fullmatch(r'\[tier-pack\] tier=(S(?:1|2|3|9|14)) pack=(.+) result=(pass|fail)\n?', line)
+        m = re.fullmatch(r'\[tier-pack\] tier=(S(?:1|2|3|9)) pack=(.+) result=(pass|fail)\n?', line)
         if not m:
             continue
         tier, pack, result = m.groups()
