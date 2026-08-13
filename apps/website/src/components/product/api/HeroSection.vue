@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue'
+import { useMediaQuery } from '@vueuse/core'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
 
 import type { Locale } from '../../../i18n/translations'
 
@@ -12,6 +13,7 @@ import ProductHeroBadge from '../../common/ProductHeroBadge.vue'
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const canvasRef = ref<HTMLCanvasElement>()
+const isIllustrationVisible = useMediaQuery('(min-width: 64rem)')
 let animationId: number | null = null
 
 onMounted(() => {
@@ -173,12 +175,23 @@ onMounted(() => {
 
     ctx.restore()
 
-    if (!prefersReducedMotion()) {
+    if (!prefersReducedMotion() && isIllustrationVisible.value) {
       animationId = requestAnimationFrame(drawLoop)
     }
   }
 
-  drawLoop()
+  watch(
+    isIllustrationVisible,
+    (visible) => {
+      if (visible) {
+        drawLoop()
+      } else if (animationId !== null) {
+        cancelAnimationFrame(animationId)
+        animationId = null
+      }
+    },
+    { immediate: true }
+  )
 })
 
 onUnmounted(() => {
@@ -190,9 +203,9 @@ onUnmounted(() => {
   <section
     class="max-w-9xl relative mx-auto flex flex-col items-center overflow-hidden lg:flex-row-reverse lg:items-center lg:overflow-x-visible lg:pb-[min(8vw,10rem)]"
   >
-    <!-- Illustration (stacks above on mobile, right on lg) -->
+    <!-- Illustration (hidden below lg, right on lg) -->
     <div
-      class="w-4/5 max-w-md scale-150 self-center md:max-w-2xl lg:pointer-events-none lg:z-1 lg:-ml-12 lg:scale-[1.95] lg:self-center xl:size-[clamp(32rem,max(40vh,32vw),36rem)] xl:min-h-[min(32vw,24rem)] xl:min-w-[min(24vw,20rem)]"
+      class="hidden w-4/5 max-w-md self-center md:max-w-2xl lg:pointer-events-none lg:z-1 lg:-ml-12 lg:block lg:scale-[1.95] lg:self-center xl:size-[clamp(32rem,max(40vh,32vw),36rem)] xl:min-h-[min(32vw,24rem)] xl:min-w-[min(24vw,20rem)]"
     >
       <canvas
         ref="canvasRef"
@@ -210,7 +223,7 @@ onUnmounted(() => {
       <ProductHeroBadge text="API" />
 
       <h1
-        class="text-primary-comfy-canvas mt-6 text-3xl/tight font-light whitespace-pre-line md:text-4xl/tight lg:max-w-2xl lg:text-5xl/tight"
+        class="text-primary-comfy-canvas mt-6 text-3xl/tight font-light md:text-4xl/tight lg:max-w-2xl lg:text-5xl/tight xl:whitespace-pre-line"
       >
         {{ t('api.hero.heading', locale) }}
       </h1>
