@@ -13,4 +13,4 @@ not just a Notion edit.
 
 Spec files: `browser_tests/tests/customNodes/`. Fixtures:
 `browser_tests/fixtures/customNode/`. Quick start:
-`pnpm test:custom-nodes:local` / `pnpm test:custom-nodes:local:cloud`.
+`pnpm test:custom-nodes:local`.

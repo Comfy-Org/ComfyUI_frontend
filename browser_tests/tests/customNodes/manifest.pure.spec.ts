@@ -2,23 +2,13 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import type {
-  CloudManifestEntry,
-  CoreManifestEntry
-} from '@e2e/fixtures/customNode/manifest'
+import type { CoreManifestEntry } from '@e2e/fixtures/customNode/manifest'
 import {
-  assertCloudEntry,
-  assertCloudManifestShape,
   assertCoreEntry,
   loadApplicableAutogrowCases,
-  loadAllManifestPackNames,
-  loadCloudCoreDisabledNodes,
   loadManifest,
-  rendererPassesFor,
-  staleAutogrowApplicabilityIssues
+  rendererPassesFor
 } from '@e2e/fixtures/customNode/manifest'
-import cloudCannotRunAlone from '@e2e/fixtures/data/cloud/cloudCannotRunAlone.json' with { type: 'json' }
-import cloudExtensionSentinels from '@e2e/fixtures/data/cloud/cloudExtensionSentinels.json' with { type: 'json' }
 
 function validEntry(): CoreManifestEntry {
   return {
@@ -36,20 +26,6 @@ function validEntry(): CoreManifestEntry {
   }
 }
 
-function validCloudEntry(): CloudManifestEntry {
-  return {
-    pack: 'Example-Pack',
-    deployRef: 'example-pack@1.2.3',
-    tiers: ['load', 'connectivity'],
-    workflow: '',
-    expectedNodes: ['ExampleNode'],
-    expectedNodeCount: 1,
-    expectedExtensions: [],
-    disabledNodes: {},
-    timeoutMs: 30_000
-  }
-}
-
 test.describe('customNode manifest', () => {
   test('loads entries with the shape the regression spec depends on', () => {
     const entries = loadManifest()
@@ -59,12 +35,6 @@ test.describe('customNode manifest', () => {
       expect(entry.expectedNodes.length).toBeGreaterThan(0)
       expect(entry.tiers.length).toBeGreaterThan(0)
     }
-  })
-
-  test('loads pack names from both manifests for shared-ledger validation', () => {
-    const packs = loadAllManifestPackNames()
-    expect(packs).toContain('ComfyUI-VideoHelperSuite')
-    expect(packs).toContain('comfyui-videohelpersuite')
   })
 
   test('rendererPassesFor drops only the Vue pass, only on an explicit false', () => {
@@ -85,16 +55,6 @@ test.describe('customNode manifest', () => {
       expect(() => assertCoreEntry(validEntry(), 0)).not.toThrow()
       expect(() =>
         assertCoreEntry({ ...validEntry(), workflow: '' }, 0)
-      ).toThrow(/workflow/)
-      expect(() =>
-        assertCloudEntry(
-          {
-            ...validCloudEntry(),
-            tiers: ['load', 'connectivity', 'run'],
-            workflow: ''
-          },
-          0
-        )
       ).toThrow(/workflow/)
       expect(() => assertCoreEntry({ ...validEntry(), pin: '' }, 0)).toThrow(
         /pin/
@@ -163,261 +123,22 @@ test.describe('customNode manifest', () => {
       ).toThrow(/pack/)
   })
 
-  test('CUSTOM_NODES_ENV selects the manifest; unknown values fail loudly', () => {
-    const prior = process.env.CUSTOM_NODES_ENV
-    try {
-      delete process.env.CUSTOM_NODES_ENV
-      const defaulted = loadManifest()
-      expect(defaulted.length).toBeGreaterThan(0)
-      expect(loadCloudCoreDisabledNodes()).toEqual({})
-      process.env.CUSTOM_NODES_ENV = 'core'
-      expect(loadManifest()).toEqual(defaulted)
-      expect(loadCloudCoreDisabledNodes()).toEqual({})
-      process.env.CUSTOM_NODES_ENV = 'cloud'
-      const cloud = loadManifest()
-      expect(cloud.length).toBeGreaterThan(0)
-      expect(cloud).not.toEqual(defaulted)
-      // Cloud rows are generated, so they carry deployRef where core carries pin.
-      expect(cloud.every((entry) => 'deployRef' in entry)).toBe(true)
-      expect(Object.keys(loadCloudCoreDisabledNodes()).length).toBeGreaterThan(
-        0
-      )
-      process.env.CUSTOM_NODES_ENV = 'clod'
-      expect(() => loadManifest()).toThrow(/CUSTOM_NODES_ENV/)
-    } finally {
-      if (prior === undefined) delete process.env.CUSTOM_NODES_ENV
-      else process.env.CUSTOM_NODES_ENV = prior
-    }
-  })
-
-  test('matches Impact frontend applicability to what each target serves', () => {
-    const prior = process.env.CUSTOM_NODES_ENV
-    const impactExtensions = () =>
-      loadManifest().find(
-        (entry) => entry.pack.toLowerCase() === 'comfyui-impact-pack'
-      )?.expectedExtensions
-    try {
-      process.env.CUSTOM_NODES_ENV = 'core'
-      expect(impactExtensions()).toContain('Comfy.Impack')
-      expect(
-        loadApplicableAutogrowCases().map(({ autogrowCase }) => autogrowCase)
-      ).toEqual([
-        {
-          pack: 'ComfyUI-Impact-Pack',
-          extensionName: 'Comfy.Impack',
-          extensionPathPack: 'comfyui-impact-pack',
-          consumerType: 'ImpactMakeImageList',
-          producerType: 'EmptyImage',
-          producerSlot: 'IMAGE'
-        }
-      ])
-      process.env.CUSTOM_NODES_ENV = 'cloud'
-      expect(impactExtensions()).toEqual([])
-      expect(loadApplicableAutogrowCases()).toEqual([])
-      const cloudImpact = loadManifest().find(
-        (entry) => entry.pack.toLowerCase() === 'comfyui-impact-pack'
-      )!
-      expect(
-        staleAutogrowApplicabilityIssues(
-          cloudImpact,
-          [],
-          [
-            '/extensions/comfyui-impact-pack/js/impact-pack.js',
-            '/extensions/comfyui-impact-pack/%'
-          ]
-        )
-      ).toEqual([
-        'frontend assets for "Comfy.Impack" are now served - restore expectedExtensions and autogrow coverage'
-      ])
-      expect(
-        staleAutogrowApplicabilityIssues(
-          cloudImpact,
-          [],
-          ['/extensions%2Fcomfyui-impact-pack%2Fjs%2Fimpact-pack.js']
-        )
-      ).toEqual([
-        'frontend assets for "Comfy.Impack" are now served - restore expectedExtensions and autogrow coverage'
-      ])
-      expect(
-        staleAutogrowApplicabilityIssues(
-          cloudImpact,
-          [],
-          [
-            '/extensions/unrelated-pack/comfyui-impact-pack.js',
-            'comfyui-impact-pack'
-          ]
-        )
-      ).toEqual([])
-    } finally {
-      if (prior === undefined) delete process.env.CUSTOM_NODES_ENV
-      else process.env.CUSTOM_NODES_ENV = prior
-    }
-  })
-
-  test('keeps Cloud extension expectations byte-for-byte sourced from the served inventory sidecar', () => {
-    const prior = process.env.CUSTOM_NODES_ENV
-    try {
-      process.env.CUSTOM_NODES_ENV = 'cloud'
-      const manifestByPack = new Map(
-        loadManifest().map((entry) => [entry.pack, entry.expectedExtensions])
-      )
-      const manifestSentinels = Object.fromEntries(
-        [...manifestByPack].filter(([, extensions]) => extensions.length > 0)
-      )
-      const sidecarSentinels = Object.fromEntries(
-        Object.entries(cloudExtensionSentinels).filter(
-          ([, extensions]) => extensions.length > 0
-        )
-      )
-      const unknownSidecarPacks = Object.keys(cloudExtensionSentinels).filter(
-        (pack) => !manifestByPack.has(pack)
-      )
-
-      expect(cloudExtensionSentinels).toHaveProperty('comfyui-impact-pack', [])
-      expect(unknownSidecarPacks).toEqual([])
-      expect(manifestSentinels).toEqual(sidecarSentinels)
-    } finally {
-      if (prior === undefined) delete process.env.CUSTOM_NODES_ENV
-      else process.env.CUSTOM_NODES_ENV = prior
-    }
-  })
-
-  test('does not retain artifact-proven runnable nodes in cannotRunAlone', () => {
-    const prior = process.env.CUSTOM_NODES_ENV
-    try {
-      process.env.CUSTOM_NODES_ENV = 'cloud'
-      const manifest = loadManifest()
-      const cannotRunAlone = (pack: string) =>
-        manifest.find((entry) => entry.pack === pack)?.cannotRunAlone ?? []
-
-      expect(
-        manifest.find((entry) => entry.pack === 'ComfyUI-Upscaler-Tensorrt')
-      ).toBeDefined()
-      expect(cannotRunAlone('ComfyUI-Upscaler-Tensorrt')).not.toContain(
-        'LoadUpscalerTensorrtModel'
-      )
-      expect(cannotRunAlone('ComfyUI_AudioTools')).toContain('AudioConcatenate')
-      expect(cannotRunAlone('ComfyUI_AudioTools')).not.toContain(
-        'AudioSpeechToTextWhisper'
-      )
-      expect(cannotRunAlone('ComfyUI-LTXVideo')).not.toContain(
-        'LTXVPromptEnhancerLoader'
-      )
-      expect(cannotRunAlone('comfyui_controlnet_aux')).toEqual([
-        'ExecuteAllControlNetPreprocessors',
-        'Unimatch_OptFlowPreprocessor'
-      ])
-      expect(cannotRunAlone('ComfyUI-FlashVSR_Ultra_Fast')).toEqual([])
-      expect(cannotRunAlone('ComfyUI-GIMM-VFI')).toEqual([])
-      expect(cannotRunAlone('comfyui-itools')).toEqual(['iToolsLoadImagePlus'])
-      expect(cannotRunAlone('comfyui-sharp')).toEqual([])
-    } finally {
-      if (prior === undefined) delete process.env.CUSTOM_NODES_ENV
-      else process.env.CUSTOM_NODES_ENV = prior
-    }
-  })
-
-  test('keeps generated cannotRunAlone fields byte-for-byte sourced from the sidecar', () => {
-    const prior = process.env.CUSTOM_NODES_ENV
-    try {
-      process.env.CUSTOM_NODES_ENV = 'cloud'
-      const generatedCannotRunAlone = Object.fromEntries(
-        loadManifest()
-          .filter((entry) => entry.cannotRunAlone !== undefined)
-          .map((entry) => [entry.pack, entry.cannotRunAlone])
-      )
-
-      expect(generatedCannotRunAlone).toEqual(cloudCannotRunAlone)
-    } finally {
-      if (prior === undefined) delete process.env.CUSTOM_NODES_ENV
-      else process.env.CUSTOM_NODES_ENV = prior
-    }
-  })
-
-  test('deployRef admits both Cloud pin styles and nothing else', () => {
-    expect(() => assertCloudEntry(validCloudEntry(), 0)).not.toThrow()
-    const urlRef = `https://github.com/example/Example-Pack@${'a1'.repeat(20)}`
-    expect(() =>
-      assertCloudEntry({ ...validCloudEntry(), deployRef: urlRef }, 0)
-    ).not.toThrow()
-    for (const bad of [
-      '',
-      'example-pack',
-      'https://github.com/example/Example-Pack',
-      'https://github.com/example/Example-Pack@main',
-      `@${'a1'.repeat(20)}`
-    ])
-      expect(
-        () => assertCloudEntry({ ...validCloudEntry(), deployRef: bad }, 0),
-        `deployRef '${bad}' must be rejected`
-      ).toThrow(/deployRef/)
-  })
-
-  test('disabledNodes is required and every node carries its labels', () => {
-    const { disabledNodes: _omitted, ...withoutField } = validCloudEntry()
-    expect(() =>
-      assertCloudEntry(withoutField as CloudManifestEntry, 0)
-    ).toThrow(/disabledNodes/)
-    expect(() =>
-      assertCloudEntry(
-        {
-          ...validCloudEntry(),
-          disabledNodes: { NodeA: ['ReadsArbitraryFile', 'WritesToDisk'] }
-        },
-        0
-      )
-    ).not.toThrow()
-    for (const bad of [{ NodeA: [] }, { NodeA: [''] }, { NodeA: ['X', 'X'] }])
-      expect(
-        () => assertCloudEntry({ ...validCloudEntry(), disabledNodes: bad }, 0),
-        `disabledNodes ${JSON.stringify(bad)} must be rejected`
-      ).toThrow(/disabledNodes/)
-  })
-
-  test('assertCloudManifestShape names the source on malformed top-level shapes and returns valid ones', () => {
-    const valid = {
-      coreDisabledNodes: { VAESave: ['WritesToDisk'] },
-      packs: [validCloudEntry()],
-      unjoinedYamlPacks: []
-    }
-    expect(assertCloudManifestShape(valid, 'probe.json')).toBe(valid)
-    const base = { coreDisabledNodes: {}, packs: [validCloudEntry()] }
-    for (const bad of [
-      null,
-      42,
-      'packs',
-      [],
-      { coreDisabledNodes: {}, packs: [], unjoinedYamlPacks: [] },
+  test('matches Impact frontend applicability to what the target serves', () => {
+    const impactExtensions = loadManifest().find(
+      (entry) => entry.pack.toLowerCase() === 'comfyui-impact-pack'
+    )?.expectedExtensions
+    expect(impactExtensions).toContain('Comfy.Impack')
+    expect(
+      loadApplicableAutogrowCases().map(({ autogrowCase }) => autogrowCase)
+    ).toEqual([
       {
-        coreDisabledNodes: { NodeA: [] },
-        packs: [validCloudEntry()],
-        unjoinedYamlPacks: []
-      },
-      { packs: [validCloudEntry()], unjoinedYamlPacks: [] },
-      { coreDisabledNodes: {}, packs: {}, unjoinedYamlPacks: [] },
-      // the live assert reads unjoinedYamlPacks, so a missing or malformed
-      // list would silently assert nothing
-      base,
-      { ...base, unjoinedYamlPacks: {} },
-      { ...base, unjoinedYamlPacks: [''] },
-      { ...base, unjoinedYamlPacks: [42] },
-      { ...base, unjoinedYamlPacks: ['dup', 'dup'] }
+        pack: 'ComfyUI-Impact-Pack',
+        extensionName: 'Comfy.Impack',
+        extensionPathPack: 'comfyui-impact-pack',
+        consumerType: 'ImpactMakeImageList',
+        producerType: 'EmptyImage',
+        producerSlot: 'IMAGE'
+      }
     ])
-      expect(
-        () => assertCloudManifestShape(bad, 'probe.json'),
-        `${JSON.stringify(bad)} must be rejected`
-      ).toThrow(/probe\.json is malformed/)
-    // A well-formed top level still validates each row: the per-entry error
-    // must survive, not get masked by the shape check.
-    expect(() =>
-      assertCloudManifestShape(
-        {
-          coreDisabledNodes: {},
-          packs: [{ ...validCloudEntry(), deployRef: 'unpinned' }],
-          unjoinedYamlPacks: []
-        },
-        'probe.json'
-      )
-    ).toThrow(/deployRef/)
   })
 })

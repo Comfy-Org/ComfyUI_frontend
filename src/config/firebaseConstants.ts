@@ -1,2 +1,0 @@
-export const DEV_FIREBASE_WEB_API_KEY =
-  'AIzaSyDa_YMeyzV0SkVe92vBZ1tVikWBmOU5KVE'

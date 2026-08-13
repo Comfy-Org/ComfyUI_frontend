@@ -1,6 +1,5 @@
 import type { Page, Response } from '@playwright/test'
 
-import { customNodesEnv } from '@e2e/fixtures/customNode/manifest'
 import type {
   ActivePathPointer,
   DraftIndexV2,
@@ -10,14 +9,6 @@ import type {
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
-const CLOUD_CUSTOM_NODE_BOOT_COUNT = '__cloudCustomNodeBootCount'
-const CLOUD_CUSTOM_NODE_ONBOARDING = '__cloudCustomNodeOnboarding'
-const CLOUD_CUSTOM_NODE_OBSERVER = '__cloudCustomNodeObserver'
-const CLOUD_CUSTOM_NODE_BOOT_BINDING = '__cloudCustomNodeBootObserved'
-const ONBOARDING_SELECTOR =
-  '[data-testid="template-filter-bar"], [data-testid="getting-started-blank"]'
-const cloudCustomNodeBootGuards = new WeakMap<Page, { rootBootCount: number }>()
-let cloudCustomNodeBootGuardSequence = 0
 const CUSTOM_NODE_BLANK_WORKFLOW_PATH =
   'workflows/Custom Nodes E2E Blank Workflow.json'
 // Importing blankGraph evaluates import.meta.env in Playwright's Node process.
@@ -71,188 +62,6 @@ export async function installCustomNodeBlankStartup(page: Page): Promise<void> {
   }, entries)
 }
 
-export async function installCloudCustomNodeBootGuard(
-  page: Page
-): Promise<void> {
-  if (cloudCustomNodeBootGuards.has(page))
-    throw new Error('cloud custom-node boot guard already installed')
-  const state = { rootBootCount: 0 }
-  const bootBinding = `${CLOUD_CUSTOM_NODE_BOOT_BINDING}_${++cloudCustomNodeBootGuardSequence}`
-  cloudCustomNodeBootGuards.set(page, state)
-  try {
-    await page.exposeBinding(bootBinding, () => {
-      state.rootBootCount += 1
-      return state.rootBootCount
-    })
-    await page.addInitScript(
-      async ({
-        bootBinding,
-        bootCountKey,
-        onboardingKey,
-        observerKey,
-        onboardingSelector
-      }) => {
-        if (window !== window.top || location.pathname !== '/') return
-        const record = (node: Node | null) => {
-          if (!(node instanceof Element)) return
-          const surface = node.matches(onboardingSelector)
-            ? node
-            : node.querySelector(onboardingSelector)
-          const testId = surface?.getAttribute('data-testid')
-          if (testId !== null && testId !== undefined)
-            sessionStorage.setItem(onboardingKey, testId)
-        }
-        record(document.documentElement)
-        const observer = new MutationObserver((mutations) => {
-          for (const mutation of mutations) {
-            if (
-              mutation.type === 'attributes' &&
-              (mutation.oldValue === 'template-filter-bar' ||
-                mutation.oldValue === 'getting-started-blank')
-            )
-              sessionStorage.setItem(onboardingKey, mutation.oldValue)
-            record(mutation.target)
-            for (const node of mutation.addedNodes) record(node)
-          }
-        })
-        observer.observe(document, {
-          attributes: true,
-          attributeFilter: ['data-testid'],
-          attributeOldValue: true,
-          childList: true,
-          subtree: true
-        })
-        Reflect.set(window, observerKey, observer)
-
-        const rootBootCount = await (
-          Reflect.get(window, bootBinding) as () => Promise<number>
-        )()
-        sessionStorage.setItem(bootCountKey, String(rootBootCount))
-      },
-      {
-        bootBinding,
-        bootCountKey: CLOUD_CUSTOM_NODE_BOOT_COUNT,
-        onboardingKey: CLOUD_CUSTOM_NODE_ONBOARDING,
-        observerKey: CLOUD_CUSTOM_NODE_OBSERVER,
-        onboardingSelector: ONBOARDING_SELECTOR
-      }
-    )
-  } catch (error) {
-    cloudCustomNodeBootGuards.delete(page)
-    throw error
-  }
-}
-
-export function readCloudCustomNodeBootGuard(
-  page: Page
-): Promise<{ bootCount: number; onboarding: string | null }> {
-  return page.evaluate(
-    ({ bootCountKey, onboardingKey }) => ({
-      bootCount: Number(sessionStorage.getItem(bootCountKey) ?? '0'),
-      onboarding: sessionStorage.getItem(onboardingKey)
-    }),
-    {
-      bootCountKey: CLOUD_CUSTOM_NODE_BOOT_COUNT,
-      onboardingKey: CLOUD_CUSTOM_NODE_ONBOARDING
-    }
-  )
-}
-
-export function assertCloudCustomNodeBootGuard({
-  bootCount,
-  onboarding
-}: {
-  bootCount: number
-  onboarding: string | null
-}): void {
-  if (bootCount !== 1)
-    throw new Error(
-      `cloud custom-node setup booted the app ${bootCount} times; expected exactly one pre-seeded boot`
-    )
-  if (onboarding !== null)
-    throw new Error(
-      `cloud custom-node setup opened ${onboarding} despite pre-seeded startup settings`
-    )
-}
-
-async function stopCloudCustomNodeBootGuard(page: Page): Promise<void> {
-  cloudCustomNodeBootGuards.delete(page)
-  if (page.isClosed()) return
-  await page.evaluate((observerKey) => {
-    const observer = Reflect.get(window, observerKey)
-    if (observer instanceof MutationObserver) observer.disconnect()
-    Reflect.deleteProperty(window, observerKey)
-  }, CLOUD_CUSTOM_NODE_OBSERVER)
-}
-
-function readCloudCustomNodeRootBootCount(page: Page) {
-  const state = cloudCustomNodeBootGuards.get(page)
-  if (!state)
-    throw new Error('cloud custom-node boot guard unavailable: not installed')
-  return state.rootBootCount
-}
-
-export interface CloudCustomNodeBootGuardActions {
-  read: typeof readCloudCustomNodeBootGuard
-  assert: typeof assertCloudCustomNodeBootGuard
-  close: (page: Page) => Promise<void>
-  readRootBootCount: typeof readCloudCustomNodeRootBootCount
-  stop: typeof stopCloudCustomNodeBootGuard
-}
-
-const cloudCustomNodeBootGuardActions: CloudCustomNodeBootGuardActions = {
-  read: readCloudCustomNodeBootGuard,
-  assert: assertCloudCustomNodeBootGuard,
-  close: (page) => page.close(),
-  readRootBootCount: readCloudCustomNodeRootBootCount,
-  stop: stopCloudCustomNodeBootGuard
-}
-
-export async function finalizeCloudCustomNodeBootGuard(
-  page: Page,
-  actions: CloudCustomNodeBootGuardActions = cloudCustomNodeBootGuardActions
-): Promise<void> {
-  if (page.isClosed())
-    throw new Error('cloud custom-node boot guard unavailable: page closed')
-
-  const errors: unknown[] = []
-  try {
-    actions.assert(await actions.read(page))
-  } catch (error) {
-    errors.push(error)
-  }
-  try {
-    await actions.close(page)
-  } catch (error) {
-    errors.push(error)
-  }
-  try {
-    actions.assert({
-      bootCount: actions.readRootBootCount(page),
-      onboarding: null
-    })
-  } catch (error) {
-    errors.push(error)
-  }
-  try {
-    await actions.stop(page)
-  } catch (error) {
-    errors.push(error)
-  }
-  throwCollectedErrors(errors)
-}
-
-export async function finalizeCloudCustomNodeBootGuardAtTraceBoundary(
-  page: Page,
-  sanitize: (error: unknown, redactFreeform?: boolean) => unknown
-): Promise<void> {
-  try {
-    await finalizeCloudCustomNodeBootGuard(page)
-  } catch (error) {
-    throw sanitize(error, true)
-  }
-}
-
 function throwCollectedErrors(errors: readonly unknown[]): void {
   if (errors.length === 1) throw errors[0]
   if (errors.length > 1)
@@ -279,22 +88,17 @@ export async function runWithCollectedCleanup(
   throwCollectedErrors(errors)
 }
 
-// Both environments restore a pre-seeded blank draft instead of the bundled
-// default graph, whose model references error on the model-less Core backend.
+// The suite restores a pre-seeded blank draft instead of the bundled
+// default graph, whose model references error on the model-less backend.
 // The restored startup outcome also prevents onboarding without a reload.
 // The shared fixture disables the errors tab to hide missing-model
 // indicators in unrelated suites; this suite exists to SEE errors, so every
 // error surface stays live.
-export function customNodeSuiteSettingsFor(_env: 'core' | 'cloud') {
-  return {
-    'Comfy.TutorialCompleted': true,
-    'Comfy.Workflow.Persist': true,
-    'Comfy.RightSidePanel.ShowErrorsTab': true
-  }
+export const customNodeSuiteSettings = {
+  'Comfy.TutorialCompleted': true,
+  'Comfy.Workflow.Persist': true,
+  'Comfy.RightSidePanel.ShowErrorsTab': true
 }
-
-export const customNodeSuiteSettings =
-  customNodeSuiteSettingsFor(customNodesEnv())
 
 /**
  * Watches this page's `/prompt` POSTs, handing each response's `prompt_id`
@@ -349,10 +153,10 @@ interface PromptLedger {
   settled: () => Promise<void>
 }
 
-// Backends are shared - two workers, two CI runs, and today every cloud run
-// signs in as the same smoke account - so an unscoped interrupt(null) +
-// clearItems('queue') cancels another client's in-flight prompt. This ledger
-// is what lets the drain below touch only what this page submitted.
+// Backends are shared - two workers, two CI runs - so an unscoped
+// interrupt(null) + clearItems('queue') cancels another client's in-flight
+// prompt. This ledger is what lets the drain below touch only what this
+// page submitted.
 const promptLedgers = new WeakMap<Page, PromptLedger>()
 
 /**
