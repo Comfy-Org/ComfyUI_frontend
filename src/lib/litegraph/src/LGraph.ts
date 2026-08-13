@@ -47,7 +47,10 @@ import { UNASSIGNED_NODE_ID, parseNodeId, toNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import { forEachNode, visitGraphNodes } from '@/utils/graphTraversalUtil'
 
-import { realignInputLinkSlots } from './linkDeduplication'
+import {
+  normalizeConfiguredTopology,
+  realignInputLinkSlots
+} from './linkDeduplication'
 import {
   beginNamedValuesShadowDiffLoad,
   endNamedValuesShadowDiffLoad
@@ -309,25 +312,6 @@ function walkSegment(
  * + onNodeAdded: when a new node is added to the graph
  * + onNodeRemoved: when a node inside this graph is removed
  */
-function registerConfiguredLink(
-  graph: LGraph,
-  link: LLink,
-  survivorByRejected: Map<LinkId, LinkId>
-): void {
-  if (graph._addLink(link)) return
-  const incumbent = useLinkStore().getInputSlotLink(
-    graphScopeOf(graph),
-    link.target_id,
-    link.target_slot
-  )
-  if (
-    incumbent?.originNodeId === link.origin_id &&
-    incumbent.originSlot === link.origin_slot
-  ) {
-    survivorByRejected.set(link.id, incumbent.id)
-  }
-}
-
 function serialiseOwnedTopology(owner: LGraph) {
   return {
     links: owner.links.size
@@ -339,44 +323,6 @@ function serialiseOwnedTopology(owner: LGraph) {
     reroutes: owner.reroutes.size
       ? [...owner.reroutes.values()].map((reroute) => reroute.asSerialisable())
       : undefined
-  }
-}
-
-type ConfiguredGraph = (ISerialisedGraph | SerialisableGraph) &
-  Partial<Pick<ExportedSubgraph, 'inputs' | 'outputs'>>
-
-function copyConfiguredLinkAliases<T extends ConfiguredGraph>(data: T): T {
-  return Object.assign({}, data, {
-    inputs: data.inputs?.map((slot) => ({ ...slot })),
-    outputs: data.outputs?.map((slot) => ({ ...slot })),
-    nodes: data.nodes?.map((node) => ({
-      ...node,
-      inputs: node.inputs?.map((input) => ({ ...input })),
-      outputs: node.outputs?.map((output) => ({ ...output }))
-    }))
-  })
-}
-
-function remapConfiguredLinkAliases(
-  data: ConfiguredGraph,
-  survivorByRejected: ReadonlyMap<LinkId, LinkId>
-): void {
-  const remap = (linkId: number) =>
-    survivorByRejected.get(toLinkId(linkId)) ?? toLinkId(linkId)
-  const remapAll = (linkIds: number[]) => [...new Set(linkIds.map(remap))]
-
-  for (const slot of [...(data.inputs ?? []), ...(data.outputs ?? [])]) {
-    if (!slot.linkIds) continue
-    slot.linkIds = remapAll(slot.linkIds)
-  }
-
-  for (const node of data.nodes ?? []) {
-    for (const input of node.inputs ?? []) {
-      if (input.link != null) input.link = remap(input.link)
-    }
-    for (const output of node.outputs ?? []) {
-      if (output.links) output.links = remapAll(output.links)
-    }
   }
 }
 
@@ -2662,6 +2608,7 @@ export class LGraph
     try {
       // TODO: Finish typing configure()
       if (!data) return
+      data = normalizeConfiguredTopology(data)
       if (options.clearGraph) this.clear()
       else unregisterAllGraphLayout(this)
 
@@ -2681,8 +2628,6 @@ export class LGraph
       }
 
       let reroutes: SerialisableReroute[] | undefined
-      const survivorByRejected = new Map<LinkId, LinkId>()
-
       // TODO: Determine whether this should this fall back to 0.4.
       if (data.version === 0.4) {
         const { extra } = data
@@ -2690,7 +2635,7 @@ export class LGraph
         if (Array.isArray(data.links)) {
           for (const linkData of data.links) {
             const link = LLink.createFromArray(linkData)
-            registerConfiguredLink(this, link, survivorByRejected)
+            this._addLink(link)
           }
         }
         // #region `extra` embeds for v0.4
@@ -2731,7 +2676,7 @@ export class LGraph
         if (Array.isArray(data.links)) {
           for (const linkData of data.links) {
             const link = LLink.create(linkData)
-            registerConfiguredLink(this, link, survivorByRejected)
+            this._addLink(link)
           }
         }
 
@@ -2744,10 +2689,6 @@ export class LGraph
           this.setReroute(rerouteData)
         }
       }
-
-      if (survivorByRejected.size && this.isRootGraph)
-        data = copyConfiguredLinkAliases(data)
-      remapConfiguredLinkAliases(data, survivorByRejected)
 
       const nodesData = data.nodes
 
@@ -2850,11 +2791,9 @@ export class LGraph
 
       // Node configure() overrides may have reordered serialized inputs in
       // place to match current node definitions; re-key links to the slots
-      // that reference them. Uses nodeDataMap: the effective (possibly
-      // deduplicated-clone) data nodes were actually configured from.
-      // survivorByRejected lets an input that referenced a rejected link alias
-      // realign the registered link kept in its place.
-      realignInputLinkSlots(this, nodeDataMap.values(), survivorByRejected)
+      // that reference them. Uses nodeDataMap: the effective normalized data
+      // nodes were actually configured from.
+      realignInputLinkSlots(this, nodeDataMap.values())
 
       // groups
       this._groups.length = 0
@@ -3066,10 +3005,10 @@ export class Subgraph
       | (SerialisableGraph & ExportedSubgraph),
     keep_old?: boolean
   ): boolean | undefined {
-    const cloned = copyConfiguredLinkAliases(data)
-    const r = super.configure(cloned, keep_old)
+    const normalized = normalizeConfiguredTopology(data)
+    const r = super.configure(normalized, keep_old)
 
-    this._configureSubgraph(cloned)
+    this._configureSubgraph(normalized)
     return r
   }
 

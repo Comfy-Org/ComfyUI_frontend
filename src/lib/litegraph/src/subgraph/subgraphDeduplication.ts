@@ -11,6 +11,7 @@ import {
   observeRerouteId
 } from '../idAllocation'
 import type { LGraphState } from '../idAllocation'
+import { normalizeConfiguredTopology } from '../linkDeduplication'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import { toLinkId } from '@/types/linkId'
@@ -51,7 +52,10 @@ export function normalizeSubgraphDefinitions(
     ) ?? []
   const clonedRootNodes = rootNodes ? structuredClone(rootNodes) : undefined
 
-  for (const subgraph of clonedSubgraphs) dropSameOwnerDuplicates(subgraph)
+  for (const [index, subgraph] of clonedSubgraphs.entries()) {
+    dropSameOwnerDuplicates(subgraph)
+    clonedSubgraphs[index] = normalizeConfiguredTopology(subgraph)
+  }
 
   deduplicateClonedSubgraphNodeIds(
     clonedSubgraphs,

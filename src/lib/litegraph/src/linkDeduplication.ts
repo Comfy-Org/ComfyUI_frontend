@@ -4,8 +4,93 @@ import type { EndpointUpdate } from '@/stores/linkStore'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import type { LGraph } from './LGraph'
-import type { LLink, LinkId } from './LLink'
-import type { ISerialisedNode } from './types/serialisation'
+import type { LinkId, LLink, SerialisedLLinkArray } from './LLink'
+import type {
+  ExportedSubgraph,
+  ISerialisedGraph,
+  ISerialisedNode,
+  SerialisableGraph,
+  SerialisableLLink
+} from './types/serialisation'
+
+type ConfiguredGraph = (ISerialisedGraph | SerialisableGraph) &
+  Partial<Pick<ExportedSubgraph, 'inputs' | 'outputs'>>
+
+type ConfiguredLink = SerialisedLLinkArray | SerialisableLLink
+
+function linkFields(link: ConfiguredLink) {
+  return Array.isArray(link)
+    ? {
+        id: link[0],
+        originId: link[1],
+        originSlot: link[2],
+        targetId: link[3],
+        targetSlot: link[4]
+      }
+    : {
+        id: link.id,
+        originId: link.origin_id,
+        originSlot: link.origin_slot,
+        targetId: link.target_id,
+        targetSlot: link.target_slot
+      }
+}
+
+export function normalizeConfiguredTopology<T extends ConfiguredGraph>(
+  data: T
+): T {
+  if (!data.links?.length) return data
+
+  const byTarget = new Map<string, ReturnType<typeof linkFields>>()
+  const aliases = new Map<number, number>()
+  const links = data.links.filter((link) => {
+    const fields = linkFields(link)
+    const key = `${String(fields.targetId)}:${fields.targetSlot}`
+    const survivor = byTarget.get(key)
+    if (!survivor) {
+      byTarget.set(key, fields)
+      return true
+    }
+    if (
+      toNodeId(survivor.originId) === toNodeId(fields.originId) &&
+      survivor.originSlot === fields.originSlot
+    ) {
+      aliases.set(fields.id, survivor.id)
+    }
+    return false
+  })
+  if (links.length === data.links.length) return data
+  if (!aliases.size) return Object.assign({}, data, { links })
+
+  const normalized = Object.assign({}, data, {
+    links,
+    inputs: data.inputs?.map((slot) => ({ ...slot })),
+    outputs: data.outputs?.map((slot) => ({ ...slot })),
+    nodes: data.nodes?.map((node) => ({
+      ...node,
+      inputs: node.inputs?.map((input) => ({ ...input })),
+      outputs: node.outputs?.map((output) => ({ ...output }))
+    }))
+  })
+  const remap = (id: number) => aliases.get(id) ?? id
+  const remapAll = (ids: number[]) => [...new Set(ids.map(remap))]
+
+  for (const slot of [
+    ...(normalized.inputs ?? []),
+    ...(normalized.outputs ?? [])
+  ]) {
+    if (slot.linkIds) slot.linkIds = remapAll(slot.linkIds)
+  }
+  for (const node of normalized.nodes ?? []) {
+    for (const input of node.inputs ?? []) {
+      if (input.link != null) input.link = remap(input.link)
+    }
+    for (const output of node.outputs ?? []) {
+      if (output.links) output.links = remapAll(output.links)
+    }
+  }
+  return normalized
+}
 
 /**
  * Removes serialized link ids from a node's slots, returning the id each input
@@ -36,23 +121,17 @@ export function detachSerialisedLinks(
  * @param graph The graph whose links to realign
  * @param nodesData The serialized node data the graph's nodes were configured
  * from, after any in-place input reordering by node `configure()` overrides
- * @param survivorByRejected Maps a rejected duplicate link id to the existing
- * link kept in its place, so an input referencing a rejected alias realigns
- * the registered link
  */
 export function realignInputLinkSlots(
   graph: LGraph,
-  nodesData: Iterable<ISerialisedNode>,
-  survivorByRejected: ReadonlyMap<LinkId, LinkId> = new Map()
+  nodesData: Iterable<ISerialisedNode>
 ): void {
   const referencedSlots = new Map<LLink, number[]>()
 
   for (const nodeData of nodesData) {
     for (const [slot, input] of (nodeData.inputs ?? []).entries()) {
       if (input.link == null) continue
-      const serializedId = toLinkId(input.link)
-      const linkId = survivorByRejected.get(serializedId) ?? serializedId
-      const link = graph.links.get(linkId)
+      const link = graph.links.get(toLinkId(input.link))
       if (!link || link.target_id !== toNodeId(nodeData.id)) continue
       const slots = referencedSlots.get(link) ?? []
       slots.push(slot)

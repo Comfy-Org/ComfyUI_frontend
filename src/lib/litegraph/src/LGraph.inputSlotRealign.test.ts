@@ -384,10 +384,7 @@ describe('realignInputLinkSlots', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
-  it.for([
-    ['registered link id', false],
-    ['rejected link alias', true]
-  ] as const)('rekeys a serialized %s', (_name, useRejectedAlias) => {
+  it('rekeys a serialized link', () => {
     const graph = new LGraph()
     const source = new LGraphNode('Source')
     source.addOutput('out', 'number')
@@ -397,18 +394,13 @@ describe('realignInputLinkSlots', () => {
     graph.add(source)
     graph.add(target)
     const link = source.connect(0, target, 0)!
-    const rejectedId = toLinkId(99)
-    const serializedId = useRejectedAlias ? rejectedId : link.id
     const nodeData = target.serialize()
     nodeData.inputs = [
       { ...nodeData.inputs![0], link: null },
-      { ...nodeData.inputs![1], link: serializedId }
+      { ...nodeData.inputs![1], link: link.id }
     ]
-    const survivorByRejected = useRejectedAlias
-      ? new Map([[rejectedId, link.id]])
-      : new Map()
 
-    realignInputLinkSlots(graph, [nodeData], survivorByRejected)
+    realignInputLinkSlots(graph, [nodeData])
 
     const store = useLinkStore()
     expect(link.target_slot).toBe(1)
