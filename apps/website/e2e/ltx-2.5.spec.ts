@@ -4,6 +4,7 @@ import { getRoutes } from '../src/config/routes'
 import { creatorReviews } from '../src/data/creatorReviews'
 import { ltxPage } from '../src/data/ltx'
 import { t } from '../src/i18n/translations'
+import type { ModelLaunchCta } from '../src/templates/model-launch/types'
 import { test } from './fixtures/blockExternalMedia'
 
 const PATH = '/ltx-2.5'
@@ -28,7 +29,7 @@ const BADGE_KEYS = ltxPage.hero.badgeKeys ?? []
 const GALLERY = ltxPage.gallery
 if (!GALLERY) throw new Error('ltxPage must configure a gallery')
 
-const HERO_PRIMARY_CTA = ltxPage.hero.primaryCta
+const HERO_PRIMARY_CTA: ModelLaunchCta | undefined = ltxPage.hero.primaryCta
 if (!HERO_PRIMARY_CTA)
   throw new Error('ltxPage must configure a hero primary CTA')
 

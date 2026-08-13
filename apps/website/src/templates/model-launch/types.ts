@@ -15,7 +15,7 @@ import type { LocalizedText, TranslationKey } from '../../i18n/translations'
 // omit gallery/pricing/faq/closingCta, and swap in the full config on launch
 // day.
 
-interface ModelLaunchCta {
+export interface ModelLaunchCta {
   labelKey: TranslationKey
   href: string
   target?: AnchorHTMLAttributes['target']
