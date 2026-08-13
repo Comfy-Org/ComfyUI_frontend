@@ -286,14 +286,24 @@ describe('auth token priority chain', () => {
       expect(mockApiKeyGetAuthHeader).not.toHaveBeenCalled()
     })
 
-    it('getAuthHeader returns null when the unified token is empty and does not fall back', async () => {
+    it('getAuthHeader returns null when signed out even if the unified token is stale', async () => {
+      authStateCallback(null)
       mockUnifiedToken = null
       mockApiKeyGetAuthHeader.mockReturnValue({ 'X-API-KEY': 'test-key' })
 
       const header = await store.getAuthHeader()
 
       expect(header).toBeNull()
-      expect(mockUser.getIdToken).not.toHaveBeenCalled()
+      expect(mockApiKeyGetAuthHeader).not.toHaveBeenCalled()
+    })
+
+    it('getAuthHeader falls back to the Firebase token when the unified mint fails', async () => {
+      mockUnifiedToken = null
+      mockApiKeyGetAuthHeader.mockReturnValue({ 'X-API-KEY': 'test-key' })
+
+      const header = await store.getAuthHeader()
+
+      expect(header).toEqual({ Authorization: 'Bearer firebase-token' })
       expect(mockApiKeyGetAuthHeader).not.toHaveBeenCalled()
     })
 
@@ -316,25 +326,36 @@ describe('auth token priority chain', () => {
       expect(mockUser.getIdToken).not.toHaveBeenCalled()
     })
 
-    // Regression repro for the unified-auth login race: onAuthStateChanged
-    // fires workspaceAuthStore.mintAtLogin() without awaiting it
+    // Regression test for the unified-auth login race: onAuthStateChanged
+    // used to fire workspaceAuthStore.mintAtLogin() without awaiting it
     // (authStore.ts ~L167), in the same callback that flips `isInitialized`
     // to true. router.beforeEach (router.ts:177-189) waits only for
     // `isInitialized` and then reads getAuthHeader() to decide `isLoggedIn`,
-    // so it can observe a real, authenticated user with no unified token
-    // minted yet and redirect them to /cloud/login. Remove `.fails` once
-    // getAuthHeader stops going null for an authenticated user during that
-    // mint window.
-    it.fails('getAuthHeader is not falsy for an authenticated user while the unified token mint is still in flight', async () => {
-      // beforeEach already signed mockUser in via onAuthStateChanged; model
-      // the window where mintAtLogin() has fired but not resolved yet.
+    // so it could observe a real, authenticated user with no unified token
+    // minted yet and redirect them to /cloud/login.
+    it('getAuthHeader awaits an in-flight unified mint instead of racing it', async () => {
+      let resolveMint: (minted: boolean) => void = () => {}
+      mockMintAtLogin.mockReturnValue(
+        new Promise<boolean>((resolve) => {
+          resolveMint = resolve
+        })
+      )
+      authStateCallback({ ...mockUser })
       mockUnifiedToken = null
 
-      expect(store.isAuthenticated).toBe(true)
+      let settled = false
+      const headerPromise = store.getAuthHeader().then((header) => {
+        settled = true
+        return header
+      })
+      await Promise.resolve()
+      expect(settled).toBe(false)
 
-      const header = await store.getAuthHeader()
+      resolveMint(false)
+      const header = await headerPromise
 
-      expect(header).not.toBeNull()
+      expect(settled).toBe(true)
+      expect(header).toEqual({ Authorization: 'Bearer firebase-token' })
     })
   })
 })

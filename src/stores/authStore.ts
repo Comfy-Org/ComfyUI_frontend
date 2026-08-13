@@ -88,6 +88,11 @@ export const useAuthStore = defineStore('auth', () => {
   let customerRecovery: Promise<void> | null = null
   let customerRecoveryUid: string | undefined
   const isFetchingBalance = ref(false)
+  /**
+   * The in-flight `mintAtLogin()` call, if any, so `getAuthHeader` can await
+   * it instead of racing it (see onAuthStateChanged below).
+   */
+  let pendingUnifiedMint: Promise<boolean> | null = null
 
   // Balance state
   const balance = ref<GetCustomerBalanceResponse | null>(null)
@@ -161,10 +166,16 @@ export const useAuthStore = defineStore('auth', () => {
     isInitialized.value = true
     if (user === null) {
       lastTokenUserId.value = null
+      pendingUnifiedMint = null
     } else if (isCloud) {
       // Mint the single Cloud JWT at login (flag-guarded inside the store; a
-      // no-op when unified_cloud_auth is off).
-      void useWorkspaceAuthStore().mintAtLogin()
+      // no-op when unified_cloud_auth is off). Tracked so getAuthHeader can
+      // await it rather than observing a torn pre-mint state.
+      const mintPromise = useWorkspaceAuthStore().mintAtLogin()
+      pendingUnifiedMint = mintPromise
+      void mintPromise.finally(() => {
+        if (pendingUnifiedMint === mintPromise) pendingUnifiedMint = null
+      })
     }
 
     // Reset balance when auth state changes
@@ -235,8 +246,9 @@ export const useAuthStore = defineStore('auth', () => {
   /**
    * Retrieves the appropriate authentication header for API requests.
    *
-   * When unified_cloud_auth is enabled, returns the single Cloud JWT for every
-   * cloud request (no Firebase/API-key fallback) so one token is used end to end.
+   * When unified_cloud_auth is enabled, awaits any in-flight login mint and
+   * returns the single Cloud JWT; if minting failed, falls back to the
+   * Firebase token rather than reporting an authenticated user as logged out.
    * Otherwise checks for authentication in the following order:
    * 1. Workspace token on Cloud when the user has active workspace context
    * 2. Firebase authentication token (if user is logged in)
@@ -249,8 +261,14 @@ export const useAuthStore = defineStore('auth', () => {
    */
   const getAuthHeader = async (): Promise<AuthHeader | null> => {
     if (flags.unifiedCloudAuthEnabled) {
+      if (pendingUnifiedMint) {
+        await pendingUnifiedMint.catch(() => false)
+      }
       const token = useWorkspaceAuthStore().getUnifiedToken()
-      return token ? { Authorization: `Bearer ${token}` } : null
+      if (token) return { Authorization: `Bearer ${token}` }
+      // Mint failed to produce a token; fall back to Firebase rather than
+      // reporting a genuinely authenticated user as logged out.
+      return await getFirebaseAuthHeader()
     }
 
     if (isCloud) {
