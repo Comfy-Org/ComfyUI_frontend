@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import type { Point, ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 import { LLink } from '@/lib/litegraph/src/LLink'
 import { toLinkId } from '@/types/linkId'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
@@ -8,11 +9,13 @@ import {
   clearLinkBadgeFrameState,
   createLinkBadgeFrameState,
   drawPendingLinkBadges,
-  enqueueHiddenLinkBadges,
-  getHiddenLinkBadgeBounds,
+  enqueueHiddenLinkBadgesInView,
   linkBadgeText,
   queryLinkBadgeAtPoint
 } from './linkBadges'
+
+const BADGE_COLOR = '#cab8ff'
+const VISIBLE_AREA: ReadOnlyRect = [0, 0, 1000, 1000]
 
 function createContext(): CanvasRenderingContext2D {
   return createMockCanvasRenderingContext2D({
@@ -22,6 +25,24 @@ function createContext(): CanvasRenderingContext2D {
 
 function createLink(id: number, type: LLink['type'] = 'MODEL'): LLink {
   return new LLink(toLinkId(id), type, 4, 0, 5, 0)
+}
+
+function enqueueBadgesInView(
+  state: ReturnType<typeof createLinkBadgeFrameState>,
+  ctx: CanvasRenderingContext2D,
+  link: LLink,
+  startPos: Point,
+  endPos: Point,
+  visibleArea: ReadOnlyRect = VISIBLE_AREA
+) {
+  return enqueueHiddenLinkBadgesInView(
+    state,
+    ctx,
+    link,
+    [startPos, endPos],
+    BADGE_COLOR,
+    visibleArea
+  )
 }
 
 describe('linkBadgeText', () => {
@@ -48,15 +69,16 @@ describe('linkBadgeText', () => {
 describe('link badge frame layout', () => {
   it('registers two endpoint hit areas and returns their outer tips', () => {
     const state = createLinkBadgeFrameState()
-    const tips = enqueueHiddenLinkBadges(
+    const tips = enqueueBadgesInView(
       state,
       createContext(),
       createLink(7),
       [100, 100],
-      [400, 200],
-      '#cab8ff'
+      [400, 200]
     )
 
+    expect(tips).toBeDefined()
+    if (!tips) throw new Error('Expected badges to be visible')
     expect(state.hitAreas).toHaveLength(2)
     expect(queryLinkBadgeAtPoint(state, 120, 100)).toBe(toLinkId(7))
     expect(queryLinkBadgeAtPoint(state, 360, 200)).toBe(toLinkId(7))
@@ -69,13 +91,12 @@ describe('link badge frame layout', () => {
 
   it('clears hit areas and pending paint between frames', () => {
     const state = createLinkBadgeFrameState()
-    enqueueHiddenLinkBadges(
+    enqueueBadgesInView(
       state,
       createContext(),
       createLink(7),
       [100, 100],
-      [400, 200],
-      '#cab8ff'
+      [400, 200]
     )
 
     clearLinkBadgeFrameState(state)
@@ -87,13 +108,12 @@ describe('link badge frame layout', () => {
   it('keeps frame state isolated between canvases', () => {
     const firstState = createLinkBadgeFrameState()
     const secondState = createLinkBadgeFrameState()
-    enqueueHiddenLinkBadges(
+    enqueueBadgesInView(
       firstState,
       createContext(),
       createLink(7),
       [100, 100],
-      [400, 200],
-      '#cab8ff'
+      [400, 200]
     )
 
     expect(queryLinkBadgeAtPoint(firstState, 120, 100)).toBe(toLinkId(7))
@@ -103,15 +123,16 @@ describe('link badge frame layout', () => {
   it('creates fallback badges for a typeless link', () => {
     const state = createLinkBadgeFrameState()
 
-    const tips = enqueueHiddenLinkBadges(
+    const tips = enqueueBadgesInView(
       state,
       createContext(),
       createLink(7, ''),
       [100, 100],
-      [400, 200],
-      '#cab8ff'
+      [400, 200]
     )
 
+    expect(tips).toBeDefined()
+    if (!tips) throw new Error('Expected fallback badges to be visible')
     expect(tips.outputTip[0]).toBeGreaterThan(100)
     expect(tips.inputTip[0]).toBeLessThan(400)
     expect(state.hitAreas).toHaveLength(2)
@@ -121,29 +142,26 @@ describe('link badge frame layout', () => {
   it('stacks overlapping endpoint badges into disjoint bands', () => {
     const state = createLinkBadgeFrameState()
     const ctx = createContext()
-    enqueueHiddenLinkBadges(
+    enqueueBadgesInView(
       state,
       ctx,
       createLink(1, 'IMAGE'),
       [100, 100],
-      [400, 200],
-      '#cab8ff'
+      [400, 200]
     )
-    enqueueHiddenLinkBadges(
+    enqueueBadgesInView(
       state,
       ctx,
       createLink(2, 'IMAGE'),
       [100, 100],
-      [400, 300],
-      '#cab8ff'
+      [400, 300]
     )
-    enqueueHiddenLinkBadges(
+    enqueueBadgesInView(
       state,
       ctx,
       createLink(3, 'MASK'),
       [100, 118],
-      [400, 400],
-      '#cab8ff'
+      [400, 400]
     )
 
     const outputAreas = state.hitAreas.filter((area) => {
@@ -165,46 +183,28 @@ describe('link badge frame layout', () => {
     expect(overlaps(bands[1], bands[2])).toBe(false)
   })
 
-  it('includes reversed and stacked badge extents in hidden link bounds', () => {
+  it('culls using reversed and stacked badge extents', () => {
     const state = createLinkBadgeFrameState()
     const ctx = createContext()
-    enqueueHiddenLinkBadges(
-      state,
-      ctx,
-      createLink(1),
-      [400, 100],
-      [100, 100],
-      '#cab8ff'
-    )
+    enqueueBadgesInView(state, ctx, createLink(1), [400, 100], [100, 100])
 
-    const bounds = getHiddenLinkBadgeBounds(
+    const tips = enqueueBadgesInView(
       state,
       ctx,
       createLink(2),
-      [
-        [400, 100],
-        [100, 100]
-      ],
-      '#cab8ff'
+      [400, 100],
+      [100, 100],
+      [414, 113, 10, 18]
     )
 
-    expect(bounds[0]).toBeLessThan(100)
-    expect(bounds[0] + bounds[2]).toBeGreaterThan(400)
-    expect(bounds[1] + bounds[3]).toBeGreaterThan(100)
-    expect(state.hitAreas).toHaveLength(2)
+    expect(tips).toBeDefined()
+    expect(state.hitAreas).toHaveLength(4)
   })
 
   it('defers badge painting until the frame flush', () => {
     const state = createLinkBadgeFrameState()
     const ctx = createContext()
-    enqueueHiddenLinkBadges(
-      state,
-      ctx,
-      createLink(9),
-      [100, 100],
-      [400, 200],
-      '#cab8ff'
-    )
+    enqueueBadgesInView(state, ctx, createLink(9), [100, 100], [400, 200])
 
     expect(ctx.fillText).not.toHaveBeenCalled()
 

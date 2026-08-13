@@ -58,7 +58,7 @@ describe('link visibility mutations', () => {
     expect(link.label).toBeUndefined()
   })
 
-  it('seeds the rename prompt with the current badge text', () => {
+  it('seeds the rename prompt with the stored label', () => {
     const link = createLink()
     const host = createHost()
     const event = {} as CanvasPointerEvent
@@ -67,7 +67,7 @@ describe('link visibility mutations', () => {
 
     expect(host.prompt).toHaveBeenCalledWith(
       'Rename',
-      'MODEL',
+      '',
       expect.any(Function),
       event
     )
@@ -91,7 +91,7 @@ describe('link visibility mutations', () => {
 
     expect(hidden).not.toEqual(before)
     expect(hidden.extra).not.toHaveProperty('linkExtensions')
-    expect(hidden.extra?.linkVisibility).toEqual({
+    expect(hidden.extra?.linkPresentation).toEqual({
       [String(link.id)]: { hidden: true }
     })
 

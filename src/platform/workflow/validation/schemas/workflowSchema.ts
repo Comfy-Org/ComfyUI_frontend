@@ -81,7 +81,7 @@ const zComfyLinkExtension = z
   })
   .passthrough()
 
-const zComfyLinkVisibility = z
+const zComfyLinkPresentation = z
   .object({
     hidden: z.boolean().optional(),
     label: z.string().optional()
@@ -295,7 +295,7 @@ const zExtra = z
     ds: zDS.optional(),
     frontendVersion: z.string().optional(),
     linkExtensions: z.array(zComfyLinkExtension).optional(),
-    linkVisibility: z.record(z.string(), zComfyLinkVisibility).optional(),
+    linkPresentation: z.record(z.string(), zComfyLinkPresentation).optional(),
     reroutes: z.array(zReroute).optional(),
     workflowRendererVersion: zRendererType.optional(),
     BlueprintDescription: z.string().optional(),

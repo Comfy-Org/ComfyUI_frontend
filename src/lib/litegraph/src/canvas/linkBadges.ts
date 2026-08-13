@@ -204,24 +204,6 @@ function getBadgeHitAreas(layout: BadgeLayout): [BadgeHitArea, BadgeHitArea] {
   ]
 }
 
-export function getHiddenLinkBadgeBounds(
-  state: LinkBadgeFrameState,
-  ctx: CanvasRenderingContext2D,
-  link: LLink,
-  connectionPoints: readonly Point[],
-  color: string
-): Rect {
-  const layout = layoutHiddenLinkBadges(
-    state,
-    ctx,
-    link,
-    connectionPoints[0],
-    connectionPoints[connectionPoints.length - 1],
-    color
-  )
-  return getBadgeBounds(layout, connectionPoints)
-}
-
 function getBadgeBounds(
   layout: BadgeLayout,
   connectionPoints: readonly Point[]
@@ -288,25 +270,6 @@ function drawBadgeLayout(
     layout.inputBadgeX,
     layout.inputBadgeY - BADGE_HEIGHT / 2
   )
-}
-
-export function enqueueHiddenLinkBadges(
-  state: LinkBadgeFrameState,
-  ctx: CanvasRenderingContext2D,
-  link: LLink,
-  startPos: Point,
-  endPos: Point,
-  color: string
-): LinkBadgeTips {
-  const layout = layoutHiddenLinkBadges(
-    state,
-    ctx,
-    link,
-    startPos,
-    endPos,
-    color
-  )
-  return enqueueBadgeLayout(state, layout)
 }
 
 export function enqueueHiddenLinkBadgesInView(

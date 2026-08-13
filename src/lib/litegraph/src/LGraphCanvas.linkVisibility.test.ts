@@ -104,6 +104,22 @@ describe('LGraphCanvas link visibility interactions', () => {
     expect(link.hidden).toBe(false)
   })
 
+  it('does not add visibility actions for a floating link', () => {
+    graph.links.delete(link.id)
+    graph.addFloatingLink(link)
+    link.hidden = true
+
+    canvas.showLinkMenu(link, event)
+
+    expect(menuValues).toEqual([
+      'Add Node',
+      'Add Reroute',
+      null,
+      'Delete',
+      null
+    ])
+  })
+
   it('opens the seeded rename prompt from the hidden-link menu', () => {
     link.hidden = true
     link.label = 'Checkpoint'

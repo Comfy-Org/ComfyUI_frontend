@@ -118,7 +118,7 @@ test.describe('Hidden link badges', { tag: ['@canvas'] }, () => {
     const linkId = String(
       Array.isArray(serializedLink) ? serializedLink[0] : serializedLink.id
     )
-    expect(serialized.extra?.linkVisibility).toEqual({
+    expect(serialized.extra?.linkPresentation).toEqual({
       [linkId]: { hidden: true }
     })
 

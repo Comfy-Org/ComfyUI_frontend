@@ -94,7 +94,7 @@ describe('LLink visibility serialization', () => {
 
     expect(serialized.extra?.reroutes).toBeUndefined()
     expect(serialized.extra).not.toHaveProperty('linkExtensions')
-    expect(serialized.extra?.linkVisibility).toEqual({
+    expect(serialized.extra?.linkPresentation).toEqual({
       [String(link.id)]: { hidden: true, label: 'Backbone' }
     })
 
@@ -116,6 +116,23 @@ describe('LLink visibility serialization', () => {
     expect(() => restored.configure(structuredClone(serialized))).not.toThrow()
     expect(restored.getLink(link.id)?.hidden).toBeUndefined()
     expect(restored.getLink(link.id)?.label).toBeUndefined()
+  })
+
+  it('clears stale 0.4 presentation when keep_old omits a link', () => {
+    const graph = new LGraph()
+    const link = makeLink()
+    link.hidden = true
+    link.label = 'Stale'
+    graph.links.set(link.id, link)
+    const serialized = graph.serialize()
+    serialized.links = []
+    if (!serialized.extra) throw new Error('Expected serialized graph extra')
+    delete serialized.extra.linkPresentation
+
+    graph.configure(serialized, true)
+
+    expect(graph.getLink(link.id)?.hidden).toBeUndefined()
+    expect(graph.getLink(link.id)?.label).toBeUndefined()
   })
 
   it('round-trips an interior link through root graph definitions', () => {

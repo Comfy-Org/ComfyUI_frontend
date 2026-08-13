@@ -1,6 +1,5 @@
 import type { LLink } from '../LLink'
 import type { CanvasPointerEvent } from '../types/events'
-import { linkBadgeText } from './linkBadges'
 
 interface LinkMutationHost {
   emitBeforeChange(): void
@@ -50,7 +49,7 @@ export function promptRenameLinkBadge(
 ): void {
   host.prompt(
     'Rename',
-    linkBadgeText(link),
+    link.label ?? '',
     (value) => renameLink(host, link, value),
     event
   )

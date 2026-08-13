@@ -170,7 +170,7 @@ export interface GraphAddOptions {
 export interface LGraphExtra extends Dictionary<unknown> {
   reroutes?: SerialisableReroute[]
   linkExtensions?: { id: LinkId; parentId: RerouteId | undefined }[]
-  linkVisibility?: Record<string, Pick<SerialisableLLink, 'hidden' | 'label'>>
+  linkPresentation?: Record<string, Pick<SerialisableLLink, 'hidden' | 'label'>>
   ds?: DragAndScaleState
   workflowRendererVersion?: RendererType
 }
@@ -2354,7 +2354,7 @@ export class LGraph
         .map((link) => ({ id: link.id, parentId: link.parentId }))
     }
 
-    const linkVisibility = Object.fromEntries(
+    const linkPresentation = Object.fromEntries(
       linkArray
         .filter((link) => link.hidden || link.label !== undefined)
         .map((link) => [
@@ -2365,8 +2365,8 @@ export class LGraph
           }
         ])
     )
-    if (Object.keys(linkVisibility).length) {
-      extra.linkVisibility = linkVisibility
+    if (Object.keys(linkPresentation).length) {
+      extra.linkPresentation = linkPresentation
     }
 
     extra.reroutes = reroutes?.length ? reroutes : undefined
@@ -2479,7 +2479,7 @@ export class LGraph
 
     // Ensure auto-generated serialisation data is removed from extra
     delete this.extra.linkExtensions
-    delete this.extra.linkVisibility
+    delete this.extra.linkPresentation
   }
 
   /**
@@ -2531,10 +2531,9 @@ export class LGraph
         }
 
         for (const link of this._links.values()) {
-          const visibility = extra?.linkVisibility?.[String(link.id)]
-          if (!visibility) continue
-          link.hidden = visibility.hidden
-          link.label = visibility.label
+          const presentation = extra?.linkPresentation?.[String(link.id)]
+          link.hidden = presentation?.hidden
+          link.label = presentation?.label
         }
 
         // Reroutes

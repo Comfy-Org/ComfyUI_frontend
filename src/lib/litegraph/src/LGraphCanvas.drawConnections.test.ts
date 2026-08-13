@@ -246,6 +246,21 @@ describe('drawConnections hidden links', () => {
     expect(isLinkRevealed(link.id)).toBe(false)
   })
 
+  it('skips node occlusion lookup in Vue mode when there are no badges', () => {
+    LiteGraph.vueNodesMode = true
+    const getNodeOnPos = vi.spyOn(graph, 'getNodeOnPos')
+
+    canvas.processMouseMove(
+      new PointerEvent('pointermove', {
+        clientX: 100,
+        clientY: 100,
+        isPrimary: false
+      })
+    )
+
+    expect(getNodeOnPos).not.toHaveBeenCalled()
+  })
+
   it('opens rename from a badge double-click', () => {
     const link = createHiddenLink()
     canvas.drawConnections(createMockCtx())
@@ -265,7 +280,7 @@ describe('drawConnections hidden links', () => {
 
     expect(prompt).toHaveBeenCalledWith(
       'Rename',
-      'STRING',
+      '',
       expect.any(Function),
       event
     )
@@ -292,13 +307,16 @@ describe('drawConnections hidden links', () => {
     expect(canvas.dragging_canvas).toBe(false)
   })
 
-  it('clears revealed links when the graph changes', () => {
+  it('clears revealed links and badge hit areas when the graph changes', () => {
     const link = createHiddenLink()
+    canvas.drawConnections(createMockCtx())
     setRevealedLinks([link.id])
+    expect(canvas.linkBadgeFrameState.hitAreas).toHaveLength(2)
 
     canvas.setGraph(new LGraph())
 
     expect(isLinkRevealed(link.id)).toBe(false)
+    expect(canvas.linkBadgeFrameState.hitAreas).toHaveLength(0)
   })
 
   it('groups output badges by source slot regardless of target node order', () => {
