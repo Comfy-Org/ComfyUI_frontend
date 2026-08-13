@@ -2420,7 +2420,7 @@
     "allMissingNodesInstalled": "Tutti i nodi mancanti sono stati installati con successo",
     "applyChanges": "Applica Modifiche",
     "basicInfo": "Informazioni di Base",
-    "changingVersion": "Cambio versione da {from} a it",
+    "changingVersion": "Cambio versione da {from} a {to}",
     "clickToFinishSetup": "Clicca",
     "conflicts": {
       "conflictInfoTitle": "Perché succede?",

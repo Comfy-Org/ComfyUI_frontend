@@ -75,7 +75,6 @@ const useVirtualListRestriction = {
 export default defineConfig([
   {
     ignores: [
-      '.i18nrc.cjs',
       '**/vite.config.*.timestamp*',
       '**/vitest.config.*.timestamp*',
       'components.d.ts',

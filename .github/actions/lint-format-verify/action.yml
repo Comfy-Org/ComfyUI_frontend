@@ -17,6 +17,10 @@ runs:
         pnpm format:check
         pnpm knip
 
+    - name: Verify locale integrity
+      shell: bash
+      run: pnpm locale:check
+
     - name: Typecheck browser tests
       shell: bash
       run: pnpm typecheck:browser

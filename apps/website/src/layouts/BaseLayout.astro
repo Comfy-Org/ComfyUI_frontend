@@ -88,7 +88,12 @@ const structuredData = noindex
 ---
 
 <!doctype html>
-<html lang={locale} class="overflow-x-clip">
+{
+  /* <html> must stay overflow: visible — body's overflow (incl. reka-ui's
+     dialog scroll lock) only propagates to the viewport when the root is
+     visible. The horizontal clip lives on <body>. */
+}
+<html lang={locale}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -187,7 +192,12 @@ const structuredData = noindex
       />
     )}
     <HeaderMain locale={locale} github-stars={githubStars} client:load />
-    <main>
+    <!-- Horizontal clip lives here (not on <html>, which must stay overflow:
+         visible for reka-ui's dialog scroll lock). <body>'s clip does not
+         contain overflow once <html> is visible, because the root propagates
+         body overflow to the viewport; clipping <main> keeps the page from
+         exceeding the viewport width. -->
+    <main class="overflow-x-clip">
       <slot />
     </main>
     <SiteFooter locale={locale} client:load />
