@@ -643,6 +643,34 @@ describe('mounted and canvas widgets', () => {
       expect(canvas.style.height).not.toBe('9999px')
     })
 
+    it('lets a widget claim the right-click, and only if it asks', () => {
+      // Right-click is left alone by default so the node's own menu keeps
+      // working over a widget. A lora row that wants Move Up / Remove has to be
+      // able to take it — and taking it must stop both the browser menu and the
+      // node's, which are suppressed by different calls.
+      const onContextMenu = vi.fn()
+      const canvas = mountedCanvas({ onContextMenu })
+      const claimed = new MouseEvent('contextmenu', {
+        bubbles: true,
+        cancelable: true
+      })
+      canvas.dispatchEvent(claimed)
+
+      expect(onContextMenu).toHaveBeenCalledOnce()
+      expect(claimed.defaultPrevented).toBe(true)
+    })
+
+    it('leaves the right-click alone when the widget does not want it', () => {
+      const plain = mountedCanvas({})
+      const event = new MouseEvent('contextmenu', {
+        bubbles: true,
+        cancelable: true
+      })
+      plain.dispatchEvent(event)
+
+      expect(event.defaultPrevented).toBe(false)
+    })
+
     it('re-reads the theme on every draw, so a switch needs nothing', () => {
       // We told packs to draw; a widget that hardcodes its palette looks wrong
       // the moment the user switches theme, and the alternative they reach for

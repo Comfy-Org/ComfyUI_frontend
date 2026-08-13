@@ -620,6 +620,16 @@ export interface CanvasDef {
   /** Moves during a drag, and hover when no button is down. */
   onPointerMove?(event: CanvasPointerEvent): void
   onPointerUp?(event: CanvasPointerEvent): void
+  /**
+   * The secondary button went down on this widget.
+   *
+   * Right-click is left alone by {@link onPointerDown} so the node's own
+   * context menu keeps working over a widget, which is right by default and
+   * wrong for a widget that has its own menu — a lora row wants Move Up, Move
+   * Down, Remove. Declaring this claims the gesture: the browser menu is
+   * suppressed and the node's does not open.
+   */
+  onContextMenu?(event: CanvasPointerEvent): void
 }
 
 /** @knipIgnoreUnusedButUsedByCustomNodes */
@@ -960,6 +970,13 @@ export function createWidgetCollection(
       }
       const wantsPointer =
         !!def.onPointerDown || !!def.onPointerMove || !!def.onPointerUp
+      const onContextMenu = (event: MouseEvent) => {
+        // Both, and neither is redundant: preventDefault stops the browser
+        // menu, stopPropagation stops the canvas opening the node's.
+        event.preventDefault()
+        event.stopPropagation()
+        def.onContextMenu?.(at(event as unknown as PointerEvent))
+      }
       const onDown = (event: PointerEvent) => {
         // Only the primary button. Middle and right belong to panning and the
         // context menu, which still have to work over the widget.
@@ -987,6 +1004,9 @@ export function createWidgetCollection(
             element.addEventListener('pointermove', onMove)
             element.addEventListener('pointerup', onUp)
           }
+          if (def.onContextMenu) {
+            element.addEventListener('contextmenu', onContextMenu)
+          }
           // Redraw on resize rather than per frame: these drawings change when
           // the node changes, not sixty times a second.
           observer = new ResizeObserver(redraw)
@@ -998,6 +1018,7 @@ export function createWidgetCollection(
           element.removeEventListener('pointerdown', onDown)
           element.removeEventListener('pointermove', onMove)
           element.removeEventListener('pointerup', onUp)
+          element.removeEventListener('contextmenu', onContextMenu)
         }
       })
       return { widget, redraw }
