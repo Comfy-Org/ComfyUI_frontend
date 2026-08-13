@@ -1,17 +1,10 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
-import { customNodesEnv } from '@e2e/fixtures/customNode/manifest'
-
 const GEOMETRY_DIR = fileURLToPath(new URL('./geometry/', import.meta.url))
 
-function geometryDir(): string {
-  return customNodesEnv() === 'cloud' ? `${GEOMETRY_DIR}cloud/` : GEOMETRY_DIR
-}
-
 export function packGeometryRelativePath(pack: string): string {
-  const cloudSegment = customNodesEnv() === 'cloud' ? 'cloud/' : ''
-  return `browser_tests/fixtures/customNode/geometry/${cloudSegment}${pack}.json`
+  return `browser_tests/fixtures/customNode/geometry/${pack}.json`
 }
 
 // Every value is relative to the node's own origin, so baselines are
@@ -189,7 +182,7 @@ export const GEOMETRY_UNSTABLE_PATHS: Record<
 }
 
 function geometryPath(pack: string): string {
-  return `${geometryDir()}${pack}.json`
+  return `${GEOMETRY_DIR}${pack}.json`
 }
 
 export function loadPackGeometry(pack: string): PackGeometryFile | null {
@@ -199,7 +192,7 @@ export function loadPackGeometry(pack: string): PackGeometryFile | null {
 }
 
 export function savePackGeometry(pack: string, file: PackGeometryFile): void {
-  mkdirSync(geometryDir(), { recursive: true })
+  mkdirSync(GEOMETRY_DIR, { recursive: true })
   writeFileSync(geometryPath(pack), JSON.stringify(file, null, 1) + '\n')
 }
 

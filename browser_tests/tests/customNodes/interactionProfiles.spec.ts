@@ -222,7 +222,7 @@ for (const entry of loadManifest()) {
     if (recordMode === 'record') {
       recordPackProfiles(entry.pack, observed, {
         core: process.env.CN_INTERACTION_CORE ?? 'unpinned-local',
-        pin: 'pin' in entry ? entry.pin : entry.deployRef
+        pin: entry.pin
       })
       expect(
         null,

@@ -7,7 +7,7 @@ per-pack x tier verdict table - as an aligned table on stdout for the job
 log, and as markdown appended to GITHUB_STEP_SUMMARY. Tolerates a missing
 results file (the suite died before Playwright reported) by emitting the
 context alone. Inputs arrive via env: BRANCH_TESTED, COMFYUI_REF_USED,
-GREP_FILTER, S14_ENABLED, S15_ENABLED, plus the standard GITHUB_* vars.
+GREP_FILTER, S14_ENABLED, plus the standard GITHUB_* vars.
 """
 
 import json, os, re, subprocess
@@ -25,7 +25,7 @@ ctx = [
     ('ComfyUI ref', os.environ.get('COMFYUI_REF_USED', '?')[:12]),
     ('Event / actor', f"{os.environ.get('GITHUB_EVENT_NAME','?')} / {os.environ.get('GITHUB_ACTOR','?')}"),
     ('Grep filter', os.environ.get('GREP_FILTER') or '(full suite)'),
-    ('S14 / S15', f"{os.environ.get('S14_ENABLED')} / {os.environ.get('S15_ENABLED')}"),
+    ('S14', f"{os.environ.get('S14_ENABLED')}"),
 ]
 if not os.path.exists('custom-nodes-results.json'):
     out('## Custom-node core suite\n\n**No results json was written** - the suite step died before Playwright could report.')

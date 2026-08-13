@@ -9,10 +9,7 @@
 # pinned at verified commits, so no git surface moves underneath a PR. Python
 # deps (core's and packs' requirements.txt) still resolve fresh per run and
 # the runner image updates independently - a red that reproduces on a trivial
-# PR right after a dependency release is environment, not the PR. Git-level
-# drift (core master moving, pack authors shipping changes) is the nightly
-# canary's job (ci-nightly-custom-nodes-canary.yaml) - non-gating radar, not
-# a PR blocker.
+# PR right after a dependency release is environment, not the PR.
 name: 'CI: Tests Custom Nodes'
 
 on:
@@ -40,11 +37,6 @@ on:
         default: ''
       enable_s14:
         description: 'Enable the S14 tier'
-        required: false
-        type: boolean
-        default: true
-      enable_s15:
-        description: 'Enable the S15 tier'
         required: false
         type: boolean
         default: true
@@ -111,10 +103,7 @@ jobs:
       # exact master commit the suite (incl. the KJNodes ledger entries and
       # per-pack node counts) was last verified green against. Bump it
       # deliberately, in its own PR, recalibrating ledgers/counts if the run
-      # says so - and bump the canary Job B's copy of this SHA
-      # (ci-nightly-custom-nodes-canary.yaml) in the SAME PR, or its reds
-      # stop isolating pack drift. Core DRIFT is covered nightly by the
-      # canary, not here.
+      # says so.
       - name: Setup ComfyUI server
         uses: ./.github/actions/setup-comfyui-server
         with:
@@ -167,11 +156,7 @@ jobs:
               echo "::error::unsafe pack name: '$pack'"; exit 1
             fi
             # The gate tests exactly what was verified: a full SHA pin is
-            # mandatory here, before anything installs. The nightly canary's
-            # pack-drift job is the only intended unpinned INSTALL - it
-            # ignores the pin fields in its own install step
-            # (ci-nightly-custom-nodes-canary.yaml); the manifest itself
-            # stays pinned and validating everywhere.
+            # mandatory here, before anything installs.
             if ! [[ "$pin" =~ ^[0-9a-f]{40}$ ]]; then
               echo "::error::$pack: pin must be a full commit SHA (got '$pin')"; exit 1
             fi
@@ -246,7 +231,6 @@ jobs:
         id: suite
         env:
           CN_ENABLE_S14: ${{ (github.event_name != 'workflow_dispatch' || inputs.enable_s14) && '1' || '0' }}
-          CN_ENABLE_S15: ${{ (github.event_name != 'workflow_dispatch' || inputs.enable_s15) && '1' || '0' }}
           PLAYWRIGHT_JSON_OUTPUT_NAME: custom-nodes-results.json
           # Through env, not inline interpolation: dispatch input must never
           # be shell-parsed.
@@ -260,8 +244,6 @@ jobs:
           # Json feeds the skip gate below; html writes playwright-report/
           # (the upload step's target) and folds in the retain-on-failure
           # traces. List keeps live diagnostics visible.
-          # Core keeps its already-proven S13-S15 coverage active. The
-          # later-tier defer applies only to Cloud while Cloud S1-S12 is red.
           pnpm exec playwright test browser_tests/tests/customNodes/ \
             --project=custom-nodes --reporter=list,json,html --workers=1 --retries=0 \
             ${GREP_FILTER:+--grep "$GREP_FILTER"} \
@@ -339,7 +321,6 @@ jobs:
           COMFYUI_REF_USED: ${{ inputs.comfyui_ref || 'b08e6cf35fac50d3ca8470dffb3f9a1fbb7187d2' }}
           GREP_FILTER: ${{ inputs.grep }}
           S14_ENABLED: ${{ (github.event_name != 'workflow_dispatch' || inputs.enable_s14) && '1' || '0' }}
-          S15_ENABLED: ${{ (github.event_name != 'workflow_dispatch' || inputs.enable_s15) && '1' || '0' }}
         run: python3 scripts/cicd/custom-nodes-summary.py
 
       - name: Upload Playwright report and raw diagnostics

@@ -8,5 +8,4 @@ All documentation - architecture, scope and milestones, running locally,
 pack onboarding, and the detection proof - lives in the Technical Design
 Doc: [docs/custom-node-regression-suite.md](../../../docs/custom-node-regression-suite.md).
 
-Quick start: `pnpm test:custom-nodes:local` (core) or
-`pnpm test:custom-nodes:local:cloud` (cloud).
+Quick start: `pnpm test:custom-nodes:local`.

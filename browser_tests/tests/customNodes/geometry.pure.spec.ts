@@ -7,10 +7,8 @@ import {
   diffGeometry,
   GEOMETRY_UNSTABLE_NODES,
   GEOMETRY_UNSTABLE_PATHS,
-  loadPackGeometry,
-  packGeometryRelativePath
+  loadPackGeometry
 } from '@e2e/fixtures/customNode/geometry'
-import { loadManifest } from '@e2e/fixtures/customNode/manifest'
 
 test('ledgers only the source-driven VHS preview height paths', () => {
   expect(GEOMETRY_UNSTABLE_NODES['ComfyUI-VideoHelperSuite']).toBeUndefined()
@@ -79,72 +77,58 @@ test('the WAS ledger relaxes the vue subtree and keeps litegraph strict', () => 
 })
 
 test('a WAS vue subtree entry suppresses widget deltas but not litegraph', () => {
-  const prior = process.env.CUSTOM_NODES_ENV
-  try {
-    delete process.env.CUSTOM_NODES_ENV
-    const baseline = loadPackGeometry('was-node-suite-comfyui')!
-    const ledger = GEOMETRY_UNSTABLE_PATHS['was-node-suite-comfyui']
-    const measured = structuredClone(baseline.nodes)
-    // The run-31537261792 shape: a widget row renders shorter, every row
-    // below shifts with it, the node height absorbs the sum.
-    const blip = measured['BLIP Analyze Image'].vue!
-    blip.widgets[1].h -= 38
-    for (const widget of blip.widgets.slice(2)) widget.dy -= 38
-    blip.h -= 38
-    expect(diffGeometry(baseline.nodes, measured, ledger)).toEqual([])
+  const baseline = loadPackGeometry('was-node-suite-comfyui')!
+  const ledger = GEOMETRY_UNSTABLE_PATHS['was-node-suite-comfyui']
+  const measured = structuredClone(baseline.nodes)
+  // The run-31537261792 shape: a widget row renders shorter, every row
+  // below shifts with it, the node height absorbs the sum.
+  const blip = measured['BLIP Analyze Image'].vue!
+  blip.widgets[1].h -= 38
+  for (const widget of blip.widgets.slice(2)) widget.dy -= 38
+  blip.h -= 38
+  expect(diffGeometry(baseline.nodes, measured, ledger)).toEqual([])
 
-    // litegraph stays strict on the same node.
-    measured['BLIP Analyze Image'].litegraph.h += 38
-    expect(diffGeometry(baseline.nodes, measured, ledger)).toEqual([
-      `BLIP Analyze Image.litegraph.h: expected ${baseline.nodes['BLIP Analyze Image'].litegraph.h}, got ${measured['BLIP Analyze Image'].litegraph.h}`
-    ])
-  } finally {
-    if (prior === undefined) delete process.env.CUSTOM_NODES_ENV
-    else process.env.CUSTOM_NODES_ENV = prior
-  }
+  // litegraph stays strict on the same node.
+  measured['BLIP Analyze Image'].litegraph.h += 38
+  expect(diffGeometry(baseline.nodes, measured, ledger)).toEqual([
+    `BLIP Analyze Image.litegraph.h: expected ${baseline.nodes['BLIP Analyze Image'].litegraph.h}, got ${measured['BLIP Analyze Image'].litegraph.h}`
+  ])
 })
 
 test('VHS preview ledger ignores only the asynchronous height fields', () => {
-  const prior = process.env.CUSTOM_NODES_ENV
-  try {
-    delete process.env.CUSTOM_NODES_ENV
-    const baseline = loadPackGeometry('ComfyUI-VideoHelperSuite')!
-    const measured = structuredClone(baseline.nodes)
-    for (const [nodeName, widgetIndex] of [
-      ['VHS_LoadImages', 5],
-      ['VHS_LoadVideo', 9],
-      ['VHS_LoadVideoFFmpeg', 8],
-      ['VHS_LoadVideoFFmpegPath', 7],
-      ['VHS_LoadVideoPath', 8]
-    ] as const) {
-      measured[nodeName].vue!.h += 154
-      measured[nodeName].vue!.widgets[widgetIndex].h += 154
-    }
-    // The run-31513986272 shape on the upload variants: the 24px control
-    // row above the preview measures 0, the preview row shifts up with it,
-    // and vue.h absorbs the sum alongside the preview growth.
-    for (const [nodeName, controlIndex] of [
-      ['VHS_LoadImages', 4],
-      ['VHS_LoadVideo', 8],
-      ['VHS_LoadVideoFFmpeg', 7],
-      ['VHS_LoadAudioUpload', 3]
-    ] as const) {
-      const vue = measured[nodeName].vue!
-      vue.widgets[controlIndex].h = 0
-      vue.widgets[controlIndex + 1].dy -= 24
-      vue.h -= 24
-    }
-    const ledger = GEOMETRY_UNSTABLE_PATHS['ComfyUI-VideoHelperSuite']
-    expect(diffGeometry(baseline.nodes, measured, ledger)).toEqual([])
-
-    measured.VHS_LoadImages.vue!.w += 1
-    expect(diffGeometry(baseline.nodes, measured, ledger)).toEqual([
-      `VHS_LoadImages.vue.w: expected ${baseline.nodes.VHS_LoadImages.vue!.w}, got ${measured.VHS_LoadImages.vue!.w}`
-    ])
-  } finally {
-    if (prior === undefined) delete process.env.CUSTOM_NODES_ENV
-    else process.env.CUSTOM_NODES_ENV = prior
+  const baseline = loadPackGeometry('ComfyUI-VideoHelperSuite')!
+  const measured = structuredClone(baseline.nodes)
+  for (const [nodeName, widgetIndex] of [
+    ['VHS_LoadImages', 5],
+    ['VHS_LoadVideo', 9],
+    ['VHS_LoadVideoFFmpeg', 8],
+    ['VHS_LoadVideoFFmpegPath', 7],
+    ['VHS_LoadVideoPath', 8]
+  ] as const) {
+    measured[nodeName].vue!.h += 154
+    measured[nodeName].vue!.widgets[widgetIndex].h += 154
   }
+  // The run-31513986272 shape on the upload variants: the 24px control
+  // row above the preview measures 0, the preview row shifts up with it,
+  // and vue.h absorbs the sum alongside the preview growth.
+  for (const [nodeName, controlIndex] of [
+    ['VHS_LoadImages', 4],
+    ['VHS_LoadVideo', 8],
+    ['VHS_LoadVideoFFmpeg', 7],
+    ['VHS_LoadAudioUpload', 3]
+  ] as const) {
+    const vue = measured[nodeName].vue!
+    vue.widgets[controlIndex].h = 0
+    vue.widgets[controlIndex + 1].dy -= 24
+    vue.h -= 24
+  }
+  const ledger = GEOMETRY_UNSTABLE_PATHS['ComfyUI-VideoHelperSuite']
+  expect(diffGeometry(baseline.nodes, measured, ledger)).toEqual([])
+
+  measured.VHS_LoadImages.vue!.w += 1
+  expect(diffGeometry(baseline.nodes, measured, ledger)).toEqual([
+    `VHS_LoadImages.vue.w: expected ${baseline.nodes.VHS_LoadImages.vue!.w}, got ${measured.VHS_LoadImages.vue!.w}`
+  ])
 })
 
 // The differ is the geometry tier's entire failure-reporting contract:
@@ -305,30 +289,5 @@ test.describe('diffGeometry', () => {
     expect(
       diffGeometry({ A: node(), B: node() }, { A: measured, B: measured })
     ).toHaveLength(2)
-  })
-})
-
-test.describe('baseline path resolution', () => {
-  test('cloud resolves a separate baseline set; core paths are untouched', () => {
-    const prior = process.env.CUSTOM_NODES_ENV
-    try {
-      delete process.env.CUSTOM_NODES_ENV
-      const pack = loadManifest()[0].pack
-      const coreBaseline = loadPackGeometry(pack)
-      expect(coreBaseline).not.toBeNull()
-      expect(packGeometryRelativePath(pack)).toBe(
-        `browser_tests/fixtures/customNode/geometry/${pack}.json`
-      )
-      process.env.CUSTOM_NODES_ENV = 'cloud'
-      expect(packGeometryRelativePath(pack)).toBe(
-        `browser_tests/fixtures/customNode/geometry/cloud/${pack}.json`
-      )
-      expect(loadPackGeometry(pack)).toBeNull()
-      delete process.env.CUSTOM_NODES_ENV
-      expect(loadPackGeometry(pack)).toEqual(coreBaseline)
-    } finally {
-      if (prior === undefined) delete process.env.CUSTOM_NODES_ENV
-      else process.env.CUSTOM_NODES_ENV = prior
-    }
   })
 })

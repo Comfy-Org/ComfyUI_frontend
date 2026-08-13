@@ -18,11 +18,6 @@ import {
   SYNTH_PRODUCERS
 } from '@e2e/fixtures/customNode/autoRun'
 import {
-  cloudAutoRunExclusions,
-  disabledHarnessNodes,
-  stalenessCheckedKeys
-} from '@e2e/fixtures/customNode/cloudExclusions'
-import {
   LocalDesktopTarget,
   isServerSideFault
 } from '@e2e/fixtures/customNode/ComfyTarget'
@@ -47,10 +42,6 @@ import {
   savePackGeometry
 } from '@e2e/fixtures/customNode/geometry'
 import {
-  customNodesEnv,
-  loadAllManifestPackNames,
-  loadCloudCoreDisabledNodes,
-  loadCloudUnjoinedYamlPacks,
   loadManifest,
   rendererPassesFor
 } from '@e2e/fixtures/customNode/manifest'
@@ -204,23 +195,8 @@ const AUTO_RUN_EXCLUDE: Record<string, Record<string, string>> = {
 
 // Auto-run OUTCOME not asserted for these nodes; they still execute every
 // run, so crashes and console errors surface - only the PASS/PARTIAL verdict
-// is ledgered. Mechanism: list-expanded execution emits no per-node executing
-// event on some runs, so the executed-set signal flip-flops between PASS and
-// PARTIAL; pinning either outcome coin-flips the gate (the same nodes carry
-// this mechanism in AUTO_RUN_EXCLUDE under their core pack names). Un-ledger
-// when the executing signal covers list-expanded runs.
-const AUTO_RUN_UNSTABLE_NODES: Record<string, Record<string, string>> = {
-  'comfyui-videohelpersuite': {
-    VHS_AudioToVHSAudio:
-      'list-expanded execution; executed-set flip-flops PASS/PARTIAL (same class as essentials TransitionMask+)',
-    VHS_BatchManager:
-      'iteration coordinator; executing signal flip-flops PASS/PARTIAL run-to-run'
-  },
-  comfyui_essentials: {
-    'TransitionMask+':
-      'list-expanded execution; executed-set flip-flops PASS/PARTIAL'
-  }
-}
+// is ledgered. Un-ledger when the executing signal covers list-expanded runs.
+const AUTO_RUN_UNSTABLE_NODES: Record<string, Record<string, string>> = {}
 
 // Plain-typed widgets whose value is owned by pack JS: a programmatic write
 // is legitimately rewritten, so set-and-stick does not apply. Keyed
@@ -282,30 +258,6 @@ const ROUNDTRIP_VALUE_ALLOWLIST: Record<string, Record<string, string>> = {
   'ComfyUI-Custom-Scripts': {
     'LoadText|pysssss':
       'file combo re-resolves against backend contents on configure; state-dependent (same class as its auto-run exclusion)'
-  },
-  'ComfyUI_Fill-Nodes': {
-    FL_ColorPicker:
-      'pack JS canonicalizes invalid or near-red color values on configure',
-    FL_ReplaceColor:
-      'pack JS canonicalizes invalid or near-red color values on configure'
-  },
-  'ComfyUI-LTXVideo': {
-    LTXVSparseTrackEditor:
-      'pack JS serializes spline data and rounds interpolated coordinates on configure'
-  },
-  'comfyui-itools': {
-    iToolsRegexNode:
-      'pack JS maps the selected contains_hello preset to the canonical regex string hello'
-  },
-  'WhatDreamsCost-ComfyUI': {
-    LTXDirector:
-      'pack JS owns and canonicalizes the timeline widgets on configure',
-    LoadAudioUI:
-      'custom audio DOM widget serializes an empty placeholder before configure and null after pack JS rebuilds it'
-  },
-  radiance: {
-    RadianceSamplerPro:
-      'pack JS reapplies the selected preset to its controlled widgets on configure'
   }
 }
 
@@ -347,7 +299,7 @@ const PACK_LEDGERS: Record<string, Record<string, Record<string, unknown>>> = {
   WIDGET_SET_ALLOWLIST
 }
 
-const manifestPacks = loadAllManifestPackNames()
+const manifestPacks = loadManifest().map((entry) => entry.pack)
 for (const [name, ledger] of Object.entries(PACK_LEDGERS))
   assertPackLedgerKeys(name, ledger, manifestPacks)
 
@@ -614,15 +566,6 @@ async function packNodeKeys(
   return { keys, defs }
 }
 
-// Invariant across manifest entries: which harness nodes the target backend
-// label-disables is a property of the backend, not of any pack row.
-const disabledHarness = disabledHarnessNodes(loadCloudCoreDisabledNodes())
-
-// The generator records yaml packs it could not join to any snapshot node
-// instead of dropping them. That record is only honest if the live backend
-// still agrees, so assert it two-way like every other ledger: a pack listed
-// here that now registers nodes has coverage to gain, and the manifest must be
-// regenerated rather than left silently short.
 // Packs that live under custom_nodes/ but are not community packs under test,
 // keyed by the mechanism that puts them there. Same discipline as every other
 // ledger: an entry carries its reason, and anything NOT listed must have a row.
@@ -654,40 +597,23 @@ test.describe('manifest covers every registered pack @custom-nodes', () => {
     const uncovered = [...live].filter((pack) => !covered.has(pack)).sort()
     expect(
       uncovered,
-      `backend registers pack(s) with no manifest row: ${uncovered.join(', ')} - they have ZERO coverage; regenerate the manifest ('pnpm gen:cloud-manifest') or add the core row`
+      `backend registers pack(s) with no manifest row: ${uncovered.join(', ')} - they have ZERO coverage; add the manifest row`
     ).toEqual([])
   })
 })
-
-const unjoinedYamlPacks = loadCloudUnjoinedYamlPacks()
-if (unjoinedYamlPacks.length > 0) {
-  test.describe('cloud manifest: unjoined yaml packs @custom-nodes', () => {
-    test('still register no nodes on the live backend', async ({
-      comfyPage
-    }) => {
-      for (const pack of unjoinedYamlPacks) {
-        const { keys } = await packNodeKeys(comfyPage.page, pack)
-        expect(
-          keys,
-          `${pack} is recorded as registering no nodes, but the live backend registers ${keys.length} - it has cloud coverage to gain: regenerate the cloud manifest ('pnpm gen:cloud-manifest')`
-        ).toHaveLength(0)
-      }
-    })
-  })
-}
 
 for (const entry of loadManifest()) {
   test.describe(`all nodes: ${entry.pack} @custom-nodes`, () => {
     test('every registered node mounts, survives save/reload, and executes', async ({
       comfyPage
     }) => {
-      if (customNodesEnv() !== 'cloud') test.setTimeout(1_620_000)
+      test.setTimeout(1_620_000)
       const { keys, defs } = await packNodeKeys(comfyPage.page, entry.pack)
       test.skip(
         keys.length === 0,
         `${entry.pack} not installed on this backend`
       )
-      // One app boot serves all three tiers: measured on cloud, per-test
+      // One app boot serves all three tiers: measured live, per-test
       // boots were 113 of 148 suite-minutes. A tier's failure is collected,
       // never allowed to skip the tiers after it; the graph is cleared and
       // the backend drained at every tier boundary.
@@ -721,9 +647,8 @@ for (const entry of loadManifest()) {
         )
         const ledger = entry.vueIncompatibleNodes ?? {}
         // S14 is a separately activated tier. Its record workflow sets
-        // CN_GEOMETRY=record; its compare proof sets CN_ENABLE_S14=1. The
-        // Cloud S1-S12 sets CN_ENABLE_S14=0 while Core keeps its proven S14
-        // comparison active with CN_ENABLE_S14=1.
+        // CN_GEOMETRY=record; its compare proof sets CN_ENABLE_S14=1, which
+        // the gating CI keeps active.
         const geometryRecordMode = process.env.CN_GEOMETRY === 'record'
         if (process.env.CN_GEOMETRY && !geometryRecordMode)
           throw new Error(
@@ -747,26 +672,22 @@ for (const entry of loadManifest()) {
         const geometryUnstablePaths = geometryEnabled
           ? packLedgerFor(GEOMETRY_UNSTABLE_PATHS, entry.pack)
           : {}
-        for (const ledgered of stalenessCheckedKeys(entry, geometryUnstable))
+        for (const ledgered of Object.keys(geometryUnstable))
           expect(
             keys,
             `stale GEOMETRY_UNSTABLE_NODES entry: ${ledgered} is not registered by ${entry.pack}`
           ).toContain(ledgered)
-        for (const ledgered of stalenessCheckedKeys(
-          entry,
-          geometryUnstablePaths
-        ))
+        for (const ledgered of Object.keys(geometryUnstablePaths))
           expect(
             keys,
             `stale GEOMETRY_UNSTABLE_PATHS entry: ${ledgered} is not registered by ${entry.pack}`
           ).toContain(ledgered)
-        for (const ledgered of stalenessCheckedKeys(entry, ledger))
+        for (const ledgered of Object.keys(ledger))
           expect(
             keys,
             `stale ledger entry: ${ledgered} is not registered by ${entry.pack}`
           ).toContain(ledgered)
-        for (const ledgered of stalenessCheckedKeys(
-          entry,
+        for (const ledgered of Object.keys(
           packLedgerFor(MOUNT_WIDGET_ALLOWLIST, entry.pack)
         ))
           expect(
@@ -784,9 +705,10 @@ for (const entry of loadManifest()) {
             entry.pack
           )
           const outputTopologyExpectations = Object.fromEntries(
-            stalenessCheckedKeys(entry, rawOutputTopologyExpectations).map(
-              (node) => [node, rawOutputTopologyExpectations[node]]
-            )
+            Object.keys(rawOutputTopologyExpectations).map((node) => [
+              node,
+              rawOutputTopologyExpectations[node]
+            ])
           )
           const observedOutputTopologies = new Set<string>()
           for (const ledgered of Object.keys(outputTopologyExpectations))
@@ -1000,7 +922,7 @@ for (const entry of loadManifest()) {
             savePackGeometry(entry.pack, {
               recordedAt: {
                 core: process.env.CN_GEOMETRY_CORE ?? 'unrecorded',
-                pin: 'pin' in entry ? entry.pin : entry.deployRef
+                pin: entry.pin
               },
               schema: 1,
               nodes: measuredGeometry
@@ -1033,7 +955,7 @@ for (const entry of loadManifest()) {
       await runTier('save/reload', async () => {
         const roundtripConsoleErrors: string[] = []
         const allowedWidgets = packLedgerFor(WIDGET_SET_ALLOWLIST, entry.pack)
-        for (const ledgered of stalenessCheckedKeys(entry, allowedWidgets))
+        for (const ledgered of Object.keys(allowedWidgets))
           expect(
             keys,
             `stale WIDGET_SET_ALLOWLIST entry: ${ledgered} names a node not registered by ${entry.pack}`
@@ -1042,7 +964,7 @@ for (const entry of loadManifest()) {
           ROUNDTRIP_VALUE_ALLOWLIST,
           entry.pack
         )
-        for (const ledgered of stalenessCheckedKeys(entry, allowedValueDrift))
+        for (const ledgered of Object.keys(allowedValueDrift))
           expect(
             keys,
             `stale ROUNDTRIP_VALUE_ALLOWLIST entry: ${ledgered} is not registered by ${entry.pack}`
@@ -1076,7 +998,7 @@ for (const entry of loadManifest()) {
             entry.pack
           )
           const allowedValueIndices = Object.fromEntries(
-            stalenessCheckedKeys(entry, rawValueIndices).map((node) => [
+            Object.keys(rawValueIndices).map((node) => [
               node,
               rawValueIndices[node].split(',').map(Number)
             ])
@@ -1091,20 +1013,15 @@ for (const entry of loadManifest()) {
             entry.pack
           )
           const topologyExpectations = Object.fromEntries(
-            stalenessCheckedKeys(entry, rawTopologyExpectations).map((node) => [
+            Object.keys(rawTopologyExpectations).map((node) => [
               node,
               rawTopologyExpectations[node]
             ])
           )
           const observedTopologyDrift = new Set<string>()
-          const initializationSignals = Object.fromEntries(
-            stalenessCheckedKeys(
-              entry,
-              packLedgerFor(ROUNDTRIP_WIDGET_INITIALIZATION_SIGNALS, entry.pack)
-            ).map((node) => [
-              node,
-              ROUNDTRIP_WIDGET_INITIALIZATION_SIGNALS[entry.pack][node]
-            ])
+          const initializationSignals = packLedgerFor(
+            ROUNDTRIP_WIDGET_INITIALIZATION_SIGNALS,
+            entry.pack
           )
           for (const ledgered of Object.keys(topologyExpectations))
             expect(
@@ -1602,15 +1519,8 @@ for (const entry of loadManifest()) {
           'the backend still has a running prompt after a 150s wait - a genuinely wedged (non-interruptible) execution; restart the test backend'
         ).toBe(0)
 
-        expect(
-          disabledHarness,
-          'Cloud label-disables auto-run harness node(s); synthesized chains cannot run without them'
-        ).toEqual([])
-        const excluded = {
-          ...packLedgerFor(AUTO_RUN_EXCLUDE, entry.pack),
-          ...cloudAutoRunExclusions(entry)
-        }
-        for (const key of stalenessCheckedKeys(entry, excluded))
+        const excluded = packLedgerFor(AUTO_RUN_EXCLUDE, entry.pack)
+        for (const key of Object.keys(excluded))
           expect(
             keys,
             `stale AUTO_RUN_EXCLUDE entry: ${key} is not registered by ${entry.pack}`
@@ -1687,16 +1597,9 @@ for (const entry of loadManifest()) {
         }
         // Two-way reconciliation: unlisted failure = regression; listed node
         // that runs clean (or is not auto-runnable) = stale entry.
-        const baseline = new Set(
-          stalenessCheckedKeys(
-            entry,
-            Object.fromEntries(
-              (entry.cannotRunAlone ?? []).map((key) => [key, true])
-            )
-          )
-        )
+        const baseline = new Set(entry.cannotRunAlone ?? [])
         const unstable = packLedgerFor(AUTO_RUN_UNSTABLE_NODES, entry.pack)
-        for (const ledgered of stalenessCheckedKeys(entry, unstable))
+        for (const ledgered of Object.keys(unstable))
           expect(
             keys,
             `stale AUTO_RUN_UNSTABLE_NODES entry: ${ledgered} is not registered by ${entry.pack}`
@@ -1705,7 +1608,7 @@ for (const entry of loadManifest()) {
           AUTO_RUN_ALLOWED_FAILURES,
           entry.pack
         )
-        const allowedFailureKeys = stalenessCheckedKeys(entry, allowedFailures)
+        const allowedFailureKeys = Object.keys(allowedFailures)
         for (const ledgered of allowedFailureKeys)
           expect(
             keys,
