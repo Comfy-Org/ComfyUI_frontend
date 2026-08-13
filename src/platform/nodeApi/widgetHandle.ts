@@ -514,12 +514,47 @@ export interface MountedValue {
   onChange(listener: (value: MountedData) => void): Unsubscribe
 }
 
+/**
+ * A pointer event on the widget's own canvas, in the same units `draw` uses.
+ *
+ * @knipIgnoreUnusedButUsedByCustomNodes
+ */
+export interface CanvasPointerEvent {
+  /** Distance from the canvas's left edge, in CSS pixels. */
+  readonly x: number
+  /** Distance from its top edge, in CSS pixels. */
+  readonly y: number
+  /** The DOM event, for modifier keys, `button`, and `preventDefault()`. */
+  readonly event: PointerEvent
+}
+
 /** @knipIgnoreUnusedButUsedByCustomNodes */
 export interface CanvasDef {
   readonly name: string
   /** Reserved height in pixels. Omit to size to the node's width. */
   readonly height?: number
   draw(context: CanvasRenderingContext2D, size: readonly [number, number]): void
+  /**
+   * The pointer went down on this widget.
+   *
+   * Coordinates are relative to the canvas and in the same units `draw`
+   * receives, so a hit test written against the drawing works unchanged —
+   * which is the point. A pack that drew its own controls keeps both the
+   * drawing and the hit testing; only the surface changes, from the host's
+   * canvas to its own.
+   *
+   * The primary button is taken: it stops here rather than also reaching the
+   * node, or adjusting a slider would drag the node underneath it. Middle and
+   * right are left alone, so panning and the context menu still work over the
+   * widget.
+   *
+   * The pointer is captured for the gesture, so a drag that leaves the widget
+   * still reports moves and the release.
+   */
+  onPointerDown?(event: CanvasPointerEvent): void
+  /** Moves during a drag, and hover when no button is down. */
+  onPointerMove?(event: CanvasPointerEvent): void
+  onPointerUp?(event: CanvasPointerEvent): void
 }
 
 /** @knipIgnoreUnusedButUsedByCustomNodes */
@@ -835,12 +870,43 @@ export function createWidgetCollection(
         def.draw(context, Object.freeze([width, height] as const))
       }
 
+      const at = (event: PointerEvent): CanvasPointerEvent => {
+        const rect = element.getBoundingClientRect()
+        return Object.freeze({
+          x: event.clientX - rect.left,
+          y: event.clientY - rect.top,
+          event
+        })
+      }
+      const wantsPointer =
+        !!def.onPointerDown || !!def.onPointerMove || !!def.onPointerUp
+      const onDown = (event: PointerEvent) => {
+        // Only the primary button. Middle and right belong to panning and the
+        // context menu, which still have to work over the widget.
+        if (event.button !== 0) return
+        event.stopPropagation()
+        element.setPointerCapture(event.pointerId)
+        def.onPointerDown?.(at(event))
+      }
+      const onMove = (event: PointerEvent) => def.onPointerMove?.(at(event))
+      const onUp = (event: PointerEvent) => {
+        if (element.hasPointerCapture(event.pointerId)) {
+          element.releasePointerCapture(event.pointerId)
+        }
+        def.onPointerUp?.(at(event))
+      }
+
       const widget = this.mount({
         name: def.name,
         height: def.height,
         render: (container) => {
           container.append(element)
           redraw()
+          if (wantsPointer) {
+            element.addEventListener('pointerdown', onDown)
+            element.addEventListener('pointermove', onMove)
+            element.addEventListener('pointerup', onUp)
+          }
           // Redraw on resize rather than per frame: these drawings change when
           // the node changes, not sixty times a second.
           observer = new ResizeObserver(redraw)
@@ -849,6 +915,9 @@ export function createWidgetCollection(
         destroy: () => {
           observer?.disconnect()
           observer = undefined
+          element.removeEventListener('pointerdown', onDown)
+          element.removeEventListener('pointermove', onMove)
+          element.removeEventListener('pointerup', onUp)
         }
       })
       return { widget, redraw }

@@ -585,6 +585,74 @@ describe('mounted and canvas widgets', () => {
       expect(draw).toHaveBeenCalledTimes(3)
     })
 
+    /** The mounted <canvas>, with a stable rect so coordinates are checkable. */
+    function mountedCanvas(def: Record<string, unknown>) {
+      widgets.canvas({ name: 'plot', height: 40, draw: () => {}, ...def })
+      const mounted = node.widgets![0] as unknown as { element?: HTMLElement }
+      const canvas = mounted.element!.querySelector('canvas')!
+      canvas.getBoundingClientRect = () => ({ left: 100, top: 50 }) as DOMRect
+      canvas.setPointerCapture = vi.fn()
+      canvas.hasPointerCapture = vi.fn(() => true)
+      canvas.releasePointerCapture = vi.fn()
+      return canvas
+    }
+
+    it('reports pointer position in the units draw uses', () => {
+      // A hit test written against the drawing has to work unchanged — that is
+      // the whole point of keeping the drawing and moving only the surface.
+      const onPointerDown = vi.fn()
+      const canvas = mountedCanvas({ onPointerDown })
+
+      canvas.dispatchEvent(
+        new PointerEvent('pointerdown', {
+          clientX: 130,
+          clientY: 70,
+          button: 0,
+          bubbles: true
+        })
+      )
+
+      expect(onPointerDown).toHaveBeenCalledOnce()
+      expect(onPointerDown.mock.calls[0][0]).toMatchObject({ x: 30, y: 20 })
+    })
+
+    it('takes the primary button but leaves middle and right alone', () => {
+      // Middle-drag pans the graph and right opens the context menu; both have
+      // to keep working over the widget.
+      const onPointerDown = vi.fn()
+      const canvas = mountedCanvas({ onPointerDown })
+      const reachedNode: string[] = []
+      canvas.parentElement!.addEventListener('pointerdown', () =>
+        reachedNode.push('node')
+      )
+
+      canvas.dispatchEvent(
+        new PointerEvent('pointerdown', { button: 0, bubbles: true })
+      )
+      expect(onPointerDown).toHaveBeenCalledTimes(1)
+      expect(reachedNode).toEqual([])
+
+      canvas.dispatchEvent(
+        new PointerEvent('pointerdown', { button: 1, bubbles: true })
+      )
+      expect(onPointerDown).toHaveBeenCalledTimes(1)
+      expect(reachedNode).toEqual(['node'])
+    })
+
+    it('captures the pointer so a drag can leave the widget', () => {
+      const canvas = mountedCanvas({ onPointerDown: vi.fn() })
+
+      canvas.dispatchEvent(
+        new PointerEvent('pointerdown', {
+          button: 0,
+          pointerId: 7,
+          bubbles: true
+        })
+      )
+
+      expect(canvas.setPointerCapture).toHaveBeenCalledWith(7)
+    })
+
     it('mounts a real canvas element, so it renders under both renderers', () => {
       // The legacy renderer positions DOM widgets over the graph canvas and
       // Nodes 2.0 renders them directly; drawing into the shared graph context
