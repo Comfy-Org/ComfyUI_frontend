@@ -48,7 +48,8 @@ export interface ModelLaunchHero {
   // Rendered muted directly after `titleKey`, for the two-tone Figma heading.
   titleRestKey?: TranslationKey
   descriptionKey?: TranslationKey
-  primaryCta: ModelLaunchCta
+  // Optional so a hero can render as title + description + badges only.
+  primaryCta?: ModelLaunchCta
   secondaryCta?: ModelLaunchCta
   badgeKeys?: readonly TranslationKey[]
 }
@@ -84,6 +85,22 @@ export interface ModelLaunchGallery {
   // treatment /minimax ships, so opting in cannot restyle a live page.
   ctaVariant?: 'muted' | 'accent'
   cards: readonly ModelLaunchGalleryCard[]
+}
+
+// Audio launches (e.g. MiniMax Music 3) swap the video gallery for listening
+// cards: a still poster with an AudioPlayer over it, the track description, and
+// the prompt that produced it. Each track lists its sources MP3-first so the
+// page stays light; the browser plays the first it supports.
+export interface ModelLaunchAudioCard {
+  id: string
+  description: LocalizedText
+  prompt: LocalizedText
+  audioSources: readonly { src: string; type: string }[]
+  posterSrc: string
+}
+
+export interface ModelLaunchAudioGallery {
+  cards: readonly ModelLaunchAudioCard[]
 }
 
 interface ModelLaunchPricingBanner {
@@ -156,6 +173,7 @@ export interface ModelLaunchPage {
   // Absent on announcement pages, which render hero, run options and reviews
   // only until the model ships.
   gallery?: ModelLaunchGallery
+  audioGallery?: ModelLaunchAudioGallery
   pricing?: ModelLaunchPricing
   faq?: ModelLaunchFaqSection
   steps?: ModelLaunchSteps

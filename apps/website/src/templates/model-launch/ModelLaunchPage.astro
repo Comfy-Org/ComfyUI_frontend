@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import BreadcrumbBar from '../../components/common/BreadcrumbBar.vue'
+import ModelLaunchAudioGallerySection from './ModelLaunchAudioGallerySection.vue'
 import ModelLaunchCtaSection from './ModelLaunchCtaSection.vue'
 import ModelLaunchFaqSection from './ModelLaunchFaqSection.vue'
 import ModelLaunchGallerySection from './ModelLaunchGallerySection.vue'
@@ -76,6 +77,16 @@ const faqPage = page.faq
     )
   }
   {
+    page.audioGallery && (
+      <ModelLaunchAudioGallerySection
+        client:visible
+        audioGallery={page.audioGallery}
+        locale={locale}
+      />
+    )
+  }
+  {page.steps && <ModelLaunchStepsSection steps={page.steps} locale={locale} />}
+  {
     page.pricing && (
       <ModelLaunchPricingSection
         client:load
@@ -89,7 +100,6 @@ const faqPage = page.faq
       <ModelLaunchFaqSection client:visible faq={page.faq} locale={locale} />
     )
   }
-  {page.steps && <ModelLaunchStepsSection steps={page.steps} locale={locale} />}
   {page.closingCta && (
     <ModelLaunchCtaSection cta={page.closingCta} locale={locale} />
   )}

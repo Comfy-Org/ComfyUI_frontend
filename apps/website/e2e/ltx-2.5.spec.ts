@@ -96,7 +96,7 @@ test.describe('LTX 2.5 page — link targets', () => {
     const runCta = hero.getByRole('link', {
       name: t('ltx.hero.primaryCta', 'en')
     })
-    await expect(runCta).toHaveAttribute('href', ltxPage.hero.primaryCta.href)
+    await expect(runCta).toHaveAttribute('href', ltxPage.hero.primaryCta!.href)
     await expect(runCta).toHaveAttribute('href', LTX_RUN_TEMPLATE)
     await expect(runCta).toHaveAttribute('target', '_blank')
 
