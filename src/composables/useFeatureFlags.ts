@@ -250,6 +250,9 @@ export function useFeatureFlags() {
         remoteConfig.value.onboarding_tour_enabled,
         false
       )
+    },
+    get assetsEnabled() {
+      return isCloud || resolveFlag('assets', undefined, false)
     }
   })
 

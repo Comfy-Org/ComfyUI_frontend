@@ -2,6 +2,8 @@ import { useAsyncState, whenever } from '@vueuse/core'
 import { delay, difference } from 'es-toolkit'
 import { defineStore } from 'pinia'
 import { computed, reactive, ref, shallowReactive } from 'vue'
+
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   mapInputFileToAssetItem,
   mapTaskOutputToAssetItem
@@ -13,7 +15,6 @@ import type {
 } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import type { AssetPaginationOptions } from '@/platform/assets/services/assetService'
-import { isCloud } from '@/platform/distribution/types'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { useAssetsQuery } from '@/platform/remote/paged/assets'
 import type { PagedList } from '@/platform/remote/paged/pagedList'
@@ -85,6 +86,7 @@ const MAX_HISTORY_ITEMS = 1000 // Maximum items to keep in memory
 export const useAssetsStore = defineStore('assets', () => {
   const assetDownloadStore = useAssetDownloadStore()
   const modelToNodeStore = useModelToNodeStore()
+  const { flags } = useFeatureFlags()
 
   // Track assets currently being deleted (for loading overlay)
   const deletingAssetIds = shallowReactive(new Set<string>())
@@ -267,7 +269,9 @@ export const useAssetsStore = defineStore('assets', () => {
       loadNew: updateHistory
     }
   }
-  const historyAssets = isCloud ? useHistoryAssets() : useAssetsQuery()
+  const historyAssets = flags.assetsEnabled
+    ? useAssetsQuery()
+    : useHistoryAssets()
 
   /**
    * Map of asset hash filename to asset item for O(1) lookup
@@ -873,8 +877,8 @@ export const useAssetsStore = defineStore('assets', () => {
 
   return {
     // States
-    inputAssets,
-    inputLoading,
+    inputAssets: historyInputs.items,
+    inputLoading: historyInputs.isLoading,
 
     historyAssets,
     historyInputs,
