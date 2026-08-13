@@ -8,11 +8,6 @@
     "share": "Paylaş",
     "shareTooltip": "İş akışını paylaş"
   },
-  "apiNodesCostBreakdown": {
-    "costPerRun": "Çalıştırma başına maliyet",
-    "title": "API Düğüm(ler)i",
-    "totalCost": "Toplam Maliyet"
-  },
   "apiNodesSignInDialog": {
     "message": "Bu iş akışı, çalıştırmak için hesabınıza giriş yapmanızı gerektiren API Düğümleri içerir.",
     "title": "API Düğümlerini Kullanmak İçin Giriş Yapılması Gerekiyor"
