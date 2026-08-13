@@ -725,18 +725,26 @@ const checks: readonly Check[] = [
     description:
       'A conversion should not grow the file substantially; large growth suggests a shim.',
     run: (ctx) => {
-      const before = ctx.original.split('\n').length
-      const after = ctx.converted.split('\n').length
-      const growth = after - before
+      // Code lines, not text lines. A shim is code; the note explaining that a
+      // conversion changed its wire format, or why an API member was refused,
+      // is the most valuable thing in the file. Counting raw lines failed three
+      // conversions whose code had SHRUNK, purely for documenting themselves —
+      // exactly backwards from what this check is for.
+      const codeLines = (source: string) =>
+        withoutComments(source)
+          .split('\n')
+          .filter((line) => line.trim()).length
+      const before = codeLines(ctx.original)
+      const growth = codeLines(ctx.converted) - before
       // Rewriting a call site can add a line or two; a compatibility layer adds
       // many, and adding one is the thing this programme exists to prevent.
       return growth > Math.max(20, before * 0.1)
         ? result(
             'no-net-new-lines',
             'failed',
-            `File grew by ${growth} lines — check this is a rewrite, not a shim.`
+            `Code grew by ${growth} line(s) — check this is a rewrite, not a shim.`
           )
-        : result('no-net-new-lines', 'passed', `Net ${growth} line(s).`)
+        : result('no-net-new-lines', 'passed', `Net ${growth} code line(s).`)
     }
   },
   {
