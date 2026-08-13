@@ -171,3 +171,85 @@ describe('nodeSearchService', () => {
     })
   })
 })
+
+const DYNAMIC_COMBO_NODE_DEFS: ComfyNodeDefImpl[] = (
+  [
+    {
+      name: 'NodeWithDynamicCombo',
+      display_name: 'Node With Dynamic Combo',
+      category: 'api node/image',
+      python_module: 'comfy_api_nodes.nodes_dynamic',
+      description: '',
+      api_node: true,
+      input: {
+        required: {
+          combo: [
+            'COMFY_DYNAMICCOMBO_V3',
+            {
+              options: [
+                {
+                  key: 'option1',
+                  inputs: { required: { suboption: [['1x'], {}] } }
+                },
+                {
+                  key: 'option3',
+                  inputs: { required: { image: ['IMAGE', {}] } }
+                },
+                {
+                  key: 'option4',
+                  inputs: {
+                    required: {
+                      subcombo: [
+                        'COMFY_DYNAMICCOMBO_V3',
+                        {
+                          options: [
+                            {
+                              key: 'opt2',
+                              inputs: { optional: { mask1: ['MASK', {}] } }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      output: ['IMAGE'],
+      output_is_list: [false],
+      output_name: ['IMAGE'],
+      output_node: false
+    }
+  ] as ComfyNodeDef[]
+).map((nodeDef: ComfyNodeDef) => {
+  const def = new ComfyNodeDefImpl(nodeDef)
+  def['postProcessSearchScores'] = (s) => s
+  return def
+})
+
+describe('input filtering for nested dynamic inputs', () => {
+  const search = (value: string) => {
+    const service = new NodeSearchService(DYNAMIC_COMBO_NODE_DEFS)
+    return service.searchNode('Dynamic', [
+      { filterDef: service.inputTypeFilter, value }
+    ])
+  }
+
+  it('surfaces a node whose IMAGE input is nested in a DynamicCombo option', () => {
+    expect(search('IMAGE')).toHaveLength(1)
+  })
+
+  it('surfaces a node whose MASK input is three levels deep', () => {
+    expect(search('MASK')).toHaveLength(1)
+  })
+
+  it('never offers a dynamic control wrapper as a filter value', () => {
+    const [def] = DYNAMIC_COMBO_NODE_DEFS
+    expect(def.inputTypes).not.toEqual([])
+    expect(def.inputTypes.filter((t) => /^COMFY_.*_V3$/.test(t))).toEqual([])
+    expect(def.outputTypes.filter((t) => /^COMFY_.*_V3$/.test(t))).toEqual([])
+  })
+})

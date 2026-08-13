@@ -106,9 +106,7 @@ function dynamicControlFor(spec: InputSpecV2): DynamicControl | undefined {
  * The tree is finite: specs originate from parsed `/object_info` JSON, which
  * cannot contain cycles.
  */
-export function* walkNestedInputSpecs(
-  spec: InputSpecV2
-): Generator<InputSpecV2> {
+function* walkNestedInputSpecs(spec: InputSpecV2): Generator<InputSpecV2> {
   const control = dynamicControlFor(spec)
   if (!control) return
 

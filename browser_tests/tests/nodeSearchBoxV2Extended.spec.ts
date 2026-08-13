@@ -397,4 +397,32 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
       ).toHaveCount(0)
     })
   })
+
+  test.describe('Nested dynamic input types', () => {
+    test('Input filter surfaces a type nested in a DynamicCombo option', async ({
+      comfyPage
+    }) => {
+      const { searchBoxV2 } = comfyPage
+
+      await searchBoxV2.open()
+      await searchBoxV2.applyTypeFilter('input', 'IMAGE')
+
+      await expect(
+        searchBoxV2.results.filter({ hasText: 'Node With Dynamic Combo' })
+      ).toHaveCount(1)
+    })
+
+    test('Input filter surfaces a type nested three levels deep', async ({
+      comfyPage
+    }) => {
+      const { searchBoxV2 } = comfyPage
+
+      await searchBoxV2.open()
+      await searchBoxV2.applyTypeFilter('input', 'MASK')
+
+      await expect(
+        searchBoxV2.results.filter({ hasText: 'Node With Dynamic Combo' })
+      ).toHaveCount(1)
+    })
+  })
 })
