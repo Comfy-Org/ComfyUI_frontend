@@ -120,7 +120,7 @@
             <span>{{
               $t(`subscription.preview.discount.${discount.kind}`)
             }}</span>
-            <span class="text-base-foreground">
+            <span>
               {{ discount.name || discount.code
               }}<template v-if="discount.amount_off_cents">
                 · −{{
