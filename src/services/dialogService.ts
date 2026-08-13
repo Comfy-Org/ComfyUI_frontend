@@ -220,13 +220,12 @@ export const useDialogService = () => {
         component: ApiNodesSignInContent,
         props: {
           apiNodeNames,
-          onLogin: () => showSignInDialog().then((result) => resolve(result)),
-          onCancel: () => resolve(false)
+          onLogin: () => showSignInDialog().then((result) => resolve(result))
         },
         dialogComponentProps: {
           renderer: 'reka',
           headless: true,
-          contentClass: `${HUG_CONTENT_CLASS} p-0 overflow-hidden`,
+          contentClass: `${SELF_STYLED_PANEL_CONTENT_CLASS} p-0`,
           closable: true,
           onClose: () => resolve(false)
         }

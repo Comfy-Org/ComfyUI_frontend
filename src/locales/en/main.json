@@ -2156,6 +2156,7 @@
     "message": "Partner nodes run on third-party services and use credits from your account. That's why signing in is needed.",
     "partnerNodesInWorkflow": "Partner nodes in this workflow",
     "whatArePartnerNodes": "What are partner nodes?",
+    "tooltip": "Partner nodes run on third-party services. They use credits, the only paid part of Comfy.",
     "signIn": "Sign In"
   },
   "desktopUpdate": {
