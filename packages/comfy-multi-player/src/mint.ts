@@ -1,0 +1,131 @@
+/**
+ * mint(): import an existing workflow JSON into a fresh Y.Doc (schema §9 —
+ * the lazy-mint at cutover). The mint() output is THE bootstrap snapshot:
+ * every replica forks from it via `Y.applyUpdate(new Y.Doc(),
+ * Y.encodeStateAsUpdate(minted))` — a replica MUST NEVER independently
+ * re-seed the same base workflow (duplicate Yjs structs double on merge).
+ */
+
+import * as Y from "yjs";
+import {
+  appliedMap,
+  createNodeMap,
+  definitionsMap,
+  linksMap,
+  metaMap,
+  nodesMap,
+  stampsMap,
+} from "./doc.js";
+import { SCHEMA_VERSION, type WidgetCatalog, type WorkflowJSON, type WorkflowNode } from "./types.js";
+
+/** Top-level keys that are NOT meta passthrough: structural keys get their own root maps; comfy-cli bookkeeping is never imported. */
+const NON_META_KEYS = new Set(["nodes", "links", "definitions", "_applied_ops", "_widget_stamps"]);
+
+/** Meta keys owned by the doc itself — a workflow must not carry them. */
+const RESERVED_META_KEYS = new Set(["schema_version", "catalog_version"]);
+
+function widgetOrderFor(catalog: WidgetCatalog, nodeType: string): readonly string[] | undefined {
+  return catalog.types[nodeType]?.widget_order;
+}
+
+interface SubgraphDef {
+  id?: unknown;
+  nodes?: unknown[];
+  links?: unknown[];
+  [key: string]: unknown;
+}
+
+/**
+ * Import `workflow` into a fresh doc:
+ * - nodes/links into their root maps (widgets decomposed to the name-keyed
+ *   map through `catalog` — schema §1.2);
+ * - `definitions.subgraphs` into the first-class `definitions` root map
+ *   (schema §5.1), with interior node/link mint order preserved in plain
+ *   `node_order`/`link_order` registers (interior order is static in v1 —
+ *   only `set_widget` is subgraph-scoped); non-`subgraphs` keys of the
+ *   definitions container are kept in the internal `__definitions_extra`
+ *   meta key and merged back at projection;
+ * - every other top-level key into meta as opaque passthrough (schema §6);
+ * - `schema_version` + the pinned `catalogVersion` into meta.
+ *
+ * `project(mint(w, catalog), catalog)` deep-equals `w` modulo the schema §7
+ * canonicalization (sorted-by-id node/link order).
+ */
+export function mint(workflow: WorkflowJSON, catalog: WidgetCatalog, catalogVersion = ""): Y.Doc {
+  const doc = new Y.Doc();
+  doc.transact(() => {
+    const meta = metaMap(doc);
+    meta.set("schema_version", SCHEMA_VERSION);
+    meta.set("catalog_version", catalogVersion);
+    nodesMap(doc);
+    linksMap(doc);
+    definitionsMap(doc);
+    appliedMap(doc);
+    stampsMap(doc);
+
+    for (const [k, v] of Object.entries(workflow)) {
+      if (NON_META_KEYS.has(k)) continue;
+      if (RESERVED_META_KEYS.has(k) || k.startsWith("__")) {
+        throw new TypeError(`mint: workflow key '${k}' collides with a reserved doc-meta key`);
+      }
+      meta.set(k, structuredClone(v));
+    }
+
+    const nodes = nodesMap(doc);
+    for (const node of workflow.nodes ?? []) {
+      nodes.set(String(node.id), createNodeMap(node, widgetOrderFor(catalog, node.type)));
+    }
+
+    const links = linksMap(doc);
+    for (const ln of workflow.links ?? []) {
+      links.set(String((ln as unknown[])[0]), structuredClone(ln));
+    }
+
+    const defsIn = workflow["definitions"];
+    if (defsIn !== undefined && defsIn !== null) {
+      if (typeof defsIn !== "object" || Array.isArray(defsIn)) {
+        throw new TypeError("mint: workflow.definitions must be an object");
+      }
+      const { subgraphs, ...rest } = defsIn as { subgraphs?: unknown; [key: string]: unknown };
+      const extra: Record<string, unknown> = structuredClone(rest);
+      // Preserve an explicitly-empty subgraphs array through the round trip.
+      if (Array.isArray(subgraphs) && subgraphs.length === 0) extra["subgraphs"] = [];
+      meta.set("__definitions_extra", extra);
+      const defsRoot = definitionsMap(doc);
+      for (const sg of Array.isArray(subgraphs) ? (subgraphs as SubgraphDef[]) : []) {
+        defsRoot.set(String(sg.id), mintDefinition(sg, catalog));
+      }
+    }
+  });
+  return doc;
+}
+
+function mintDefinition(sg: SubgraphDef, catalog: WidgetCatalog): Y.Map<unknown> {
+  const dm = new Y.Map<unknown>();
+  for (const [k, v] of Object.entries(sg)) {
+    if (k === "nodes" && Array.isArray(v)) {
+      const nm = new Y.Map<Y.Map<unknown>>();
+      const order: string[] = [];
+      for (const n of v as WorkflowNode[]) {
+        const key = String(n.id);
+        order.push(key);
+        nm.set(key, createNodeMap(n, widgetOrderFor(catalog, n.type)));
+      }
+      dm.set("nodes", nm);
+      dm.set("node_order", order);
+    } else if (k === "links" && Array.isArray(v)) {
+      const lm = new Y.Map<unknown>();
+      const order: string[] = [];
+      for (const ln of v) {
+        const key = String((ln as unknown[])[0]);
+        order.push(key);
+        lm.set(key, structuredClone(ln));
+      }
+      dm.set("links", lm);
+      dm.set("link_order", order);
+    } else {
+      dm.set(k, structuredClone(v));
+    }
+  }
+  return dm;
+}

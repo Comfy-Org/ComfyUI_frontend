@@ -1,0 +1,19 @@
+[
+ {
+  "topic": "groups-extra-passthrough",
+  "detail": "workflow_ops has NO op that creates/moves/deletes groups; groups and extra injected into the base workflow pass through the whole op stream untouched (only `clear` empties groups). The op vocabulary cannot express group edits."
+ },
+ {
+  "topic": "clear-scope",
+  "detail": "`clear` empties nodes, links, and groups but NOT `extra` and NOT definitions.subgraphs; last_node_id/last_link_id are preserved by design (id-reuse guard). _widget_stamps also survive a clear."
+ },
+ {
+  "topic": "Q6-subgraph-op-scope",
+  "detail": "Only set_widget is subgraph-scoped in the frozen vocabulary. connect refuses interior endpoints (a link cannot cross the subgraph boundary) and promoted widgets (value, not link input); delete_node/add_node cannot address interior nodes at all. Interior set_widget ops carry the resolved `path` + `inner_widget`; flat (`57.text`), nested (`57/27.text`) and flattened (`57:27.text`) forms normalize to one write target.",
+  "probes": {
+   "connect-to-interior": "node 57/27 is inside subgraph 57 ('Text to Image') \u2014 a link cannot cross the subgraph boundary, so connect cannot reach it. Interior widgets ARE settable: `comfy workflow set-widget <file> 57/27.<widget> <value>`. To wire a live link, connect to one of the instance's own slots (see `comfy workflow slots`), or promote the input in the ComfyUI editor first.",
+   "connect-to-promoted-widget": "input 'text' on subgraph instance 57 is a promoted widget (a value), not a link input \u2014 set it with `comfy workflow set-widget <file> 57.text <value>`. Wiring a live link into the subgraph requires promoting a link input in the ComfyUI editor.",
+   "delete-interior-node": "node 57/27 not found in workflow. Nodes in this workflow: 57 (f2fdebf6-dfaf-43b6-9eb2-7f70613cfdc1), 9 (EmptyLatentImage), 2943932432288920 (LoadImage), 1991397258626261 (SaveImage). Use an id from `comfy workflow slots` / `ls-nodes` \u2014 never rebuild it."
+  }
+ }
+]

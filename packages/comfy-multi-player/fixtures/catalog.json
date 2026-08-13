@@ -1,0 +1,65 @@
+{
+ "comment": "widget-name\u2192index order per class_type, exported from the prod object_info via cql.engine.Graph \u2014 the Yjs applier needs this because set_widget ops carry widget NAMES and apply resolves name\u2192index against the schema at apply time (a deliberate op-model property).",
+ "types": {
+  "BatchImagesNode": {
+   "widget_order": [],
+   "autogrow_templates": {
+    "images": {
+     "prefix": "image"
+    }
+   }
+  },
+  "CLIPTextEncode": {
+   "widget_order": [
+    "text"
+   ]
+  },
+  "CheckpointLoaderSimple": {
+   "widget_order": [
+    "ckpt_name"
+   ]
+  },
+  "EmptyLatentImage": {
+   "widget_order": [
+    "width",
+    "height",
+    "batch_size"
+   ]
+  },
+  "ImageScale": {
+   "widget_order": [
+    "upscale_method",
+    "width",
+    "height",
+    "crop"
+   ]
+  },
+  "KSampler": {
+   "widget_order": [
+    "seed",
+    "control_after_generate",
+    "steps",
+    "cfg",
+    "sampler_name",
+    "scheduler",
+    "denoise"
+   ]
+  },
+  "LoadImage": {
+   "widget_order": [
+    "image"
+   ]
+  },
+  "PreviewImage": {
+   "widget_order": []
+  },
+  "SaveImage": {
+   "widget_order": [
+    "filename_prefix"
+   ]
+  },
+  "VAEDecode": {
+   "widget_order": []
+  }
+ }
+}

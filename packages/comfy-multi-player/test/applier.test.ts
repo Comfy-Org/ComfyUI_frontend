@@ -1,0 +1,374 @@
+/**
+ * Applier semantics pinned as PERMANENT tests (graduated from the spike's
+ * throwaway checks):
+ *  - idempotency: re-applying every op and the full stream twice leaves the
+ *    doc byte-identical (`encodeStateAsUpdate`);
+ *  - abort-remainder batches with the `failed:{index, op, code}` accounting
+ *    and the applied prefix retained;
+ *  - reset_doc rejected as deferred (vocabulary §1.6);
+ *  - delete-wins no-ops that still consume their op_id;
+ *  - clear semantics (§6): groups only if present, id marks + extra +
+ *    definitions + stamps preserved;
+ *  - inputcount two-register grow (§8.4): one op_id, slot + stamped count
+ *    write, LWW-coherent with explicit set_widget in both orders;
+ *  - autogrow collision renaming via the catalog template;
+ *  - §11 bounded writes: per-op Y-mutation counts stay under a small constant
+ *    for every non-clear op across the whole corpus.
+ */
+import * as Y from "yjs";
+import { describe, expect, it } from "vitest";
+import {
+  _getMutationCount,
+  _resetMutationCount,
+  applyOps,
+  appliedMap,
+  mint,
+  project,
+  stampsMap,
+  type ClearOp,
+  type ConnectOp,
+  type DeleteNodeOp,
+  type Op,
+  type ResetDocOp,
+  type SetWidgetOp,
+  type WidgetCatalog,
+  type WorkflowJSON,
+  type WorkflowNode,
+} from "../src/index.js";
+import { canonicalize, loadCatalog, loadLwwVectors, loadSession, sessionFiles } from "./helpers.js";
+
+const catalog = loadCatalog();
+const lww = loadLwwVectors();
+
+let opSeq = 0;
+/** Deterministic 32-lowercase-hex op_id for synthetic test ops (freeze §8.2 shape). */
+function testOpId(prefix = "a"): string {
+  return (prefix + String(opSeq++).padStart(4, "0")).padEnd(32, "0");
+}
+
+function envelope(actor: string, baseVersion: number) {
+  return { op_id: testOpId(), actor, base_version: baseVersion, stamp: [baseVersion, actor] as [number, string] };
+}
+
+describe("idempotency (byte-identical re-apply)", () => {
+  for (const file of sessionFiles()) {
+    it(`${file}: full stream twice + every op re-applied → byte-identical state`, () => {
+      const { header, ops } = loadSession(file);
+      const doc = mint(header.base_workflow, catalog);
+      expect(applyOps(doc, ops, catalog).failed).toBeNull();
+      const bytes = Buffer.from(Y.encodeStateAsUpdate(doc));
+
+      // Whole stream again: every op an idempotent duplicate.
+      const again = applyOps(doc, ops, catalog);
+      expect(again.failed).toBeNull();
+      expect(again.applied).toEqual([]);
+      expect(again.skipped.length).toBe(ops.length);
+      expect(Buffer.from(Y.encodeStateAsUpdate(doc)).equals(bytes)).toBe(true);
+
+      // Each op individually re-applied.
+      for (const op of ops) {
+        const res = applyOps(doc, [op], catalog);
+        expect(res.applied).toEqual([]);
+        expect(res.skipped).toEqual([op.op_id]);
+      }
+      expect(Buffer.from(Y.encodeStateAsUpdate(doc)).equals(bytes)).toBe(true);
+    });
+  }
+});
+
+describe("abort-remainder (vocabulary §4)", () => {
+  const base = lww.base_workflow;
+  const ksampler = 3308598398221244;
+
+  it("stops at the failing index, keeps the applied prefix, reports {index, op, code}", () => {
+    const doc = mint(base, catalog);
+    const good1: SetWidgetOp = { op: "set_widget", ...envelope("alice", 1), node_id: ksampler, widget: "steps", value: 25 };
+    const bad: SetWidgetOp = { op: "set_widget", ...envelope("alice", 2), node_id: ksampler, widget: "no_such_widget", value: 1 };
+    const good2: SetWidgetOp = { op: "set_widget", ...envelope("alice", 3), node_id: ksampler, widget: "cfg", value: 3.5 };
+
+    const res = applyOps(doc, [good1, bad, good2], catalog);
+    expect(res.applied).toEqual([good1.op_id]);
+    expect(res.applied_count).toBe(1);
+    expect(res.failed).toMatchObject({ index: 1, code: "unknown_widget" });
+    expect(res.failed!.op).toBe(bad);
+    // The prefix landed; the remainder did not.
+    const node = project(doc, catalog).nodes.find((n) => n.id === ksampler)!;
+    const order = catalog.types["KSampler"]!.widget_order;
+    expect((node.widgets_values as unknown[])[order.indexOf("steps")]).toBe(25);
+    expect((node.widgets_values as unknown[])[order.indexOf("cfg")]).toBe(8.0);
+    // A rejected op does not consume its op_id: the fixed batch can be retried.
+    expect(appliedMap(doc).has(bad.op_id)).toBe(false);
+    expect(appliedMap(doc).has(good2.op_id)).toBe(false);
+
+    // Retry with the failing op fixed: prefix dedupes, remainder applies.
+    const fixed: SetWidgetOp = { ...bad, widget: "sampler_name", value: "euler_ancestral" };
+    const retry = applyOps(doc, [good1, fixed, good2], catalog);
+    expect(retry.failed).toBeNull();
+    expect(retry.skipped).toEqual([good1.op_id]);
+    expect(retry.applied).toEqual([fixed.op_id, good2.op_id]);
+  });
+
+  it("rejects an unknown kind loudly", () => {
+    const doc = mint(base, catalog);
+    const res = applyOps(doc, [{ op: "move_node", ...envelope("alice", 1) } as unknown as Op], catalog);
+    expect(res.failed).toMatchObject({ index: 0, code: "unknown_op" });
+  });
+
+  it("a rejected op leaves the doc byte-identical (validation precedes mutation)", () => {
+    const doc = mint(base, catalog);
+    const bytes = Buffer.from(Y.encodeStateAsUpdate(doc));
+    const bad: SetWidgetOp = { op: "set_widget", ...envelope("alice", 1), node_id: ksampler, widget: "nope", value: 1 };
+    expect(applyOps(doc, [bad], catalog).failed).toMatchObject({ code: "unknown_widget" });
+    expect(Buffer.from(Y.encodeStateAsUpdate(doc)).equals(bytes)).toBe(true);
+  });
+});
+
+describe("reset_doc stays deferred (vocabulary §1.6)", () => {
+  it("rejects with a typed op_deferred failure and applies nothing", () => {
+    const doc = mint(lww.base_workflow, catalog);
+    const bytes = Buffer.from(Y.encodeStateAsUpdate(doc));
+    const reset: ResetDocOp = {
+      op: "reset_doc",
+      ...envelope("alice", 5),
+      workflow: { nodes: [], links: [] },
+    };
+    const res = applyOps(doc, [reset], catalog);
+    expect(res.failed).toMatchObject({ index: 0, code: "op_deferred" });
+    expect(res.failed!.message).toMatch(/reset_doc/);
+    expect(res.applied).toEqual([]);
+    expect(Buffer.from(Y.encodeStateAsUpdate(doc)).equals(bytes)).toBe(true);
+  });
+});
+
+describe("delete-wins (silent no-ops that consume the op_id)", () => {
+  const clipId = 2339450755010078;
+
+  it("set_widget on a deleted node is a no-op, op_id consumed", () => {
+    const doc = mint(lww.base_workflow, catalog);
+    const del: DeleteNodeOp = { op: "delete_node", ...envelope("alice", 1), node_id: clipId, removed_links: [] };
+    const write: SetWidgetOp = { op: "set_widget", ...envelope("bob", 2), node_id: clipId, widget: "text", value: "late" };
+    const res = applyOps(doc, [del, write], catalog);
+    expect(res.failed).toBeNull();
+    expect(res.applied).toEqual([del.op_id, write.op_id]);
+    expect(project(doc, catalog).nodes.some((n) => n.id === clipId)).toBe(false);
+    // Replaying the write stays a duplicate — never a late resurrection.
+    expect(applyOps(doc, [write], catalog).skipped).toEqual([write.op_id]);
+  });
+
+  it("connect with a deleted endpoint is a no-op, op_id consumed", () => {
+    const doc = mint(lww.base_workflow, catalog);
+    const del: DeleteNodeOp = { op: "delete_node", ...envelope("alice", 1), node_id: clipId, removed_links: [] };
+    const connect: ConnectOp = {
+      op: "connect",
+      ...envelope("bob", 2),
+      link_id: 999000111,
+      from_node: clipId,
+      from_slot: 0,
+      to_node: 3308598398221244,
+      to_slot: 1,
+      link_type: "CONDITIONING",
+    };
+    const res = applyOps(doc, [del, connect], catalog);
+    expect(res.failed).toBeNull();
+    expect(res.applied).toEqual([del.op_id, connect.op_id]);
+    expect(project(doc, catalog).links).toEqual([]);
+  });
+
+  it("deleting an already-absent node is a no-op", () => {
+    const doc = mint(lww.base_workflow, catalog);
+    const del: DeleteNodeOp = { op: "delete_node", ...envelope("alice", 1), node_id: 42, removed_links: [] };
+    expect(applyOps(doc, [del], catalog).failed).toBeNull();
+    expect(project(doc, catalog).nodes.length).toBe(2);
+  });
+});
+
+describe("clear semantics (schema §6)", () => {
+  it("empties nodes/links, resets groups only when present, preserves everything else", () => {
+    const base = lww.base_workflow; // has groups + extra + config
+    const doc = mint(base, catalog);
+    const stampsBefore = stampsMap(doc).size;
+    const clear: ClearOp = { op: "clear", ...envelope("alice", 9), removed_nodes: [] };
+    expect(applyOps(doc, [clear], catalog).failed).toBeNull();
+
+    const wf = project(doc, catalog);
+    expect(wf.nodes).toEqual([]);
+    expect(wf.links).toEqual([]);
+    expect(wf["groups"]).toEqual([]); // key existed → reset
+    expect(wf["extra"]).toEqual(base["extra"]); // untouched
+    expect(wf["config"]).toEqual(base["config"]);
+    expect(wf["last_node_id"]).toBe(base["last_node_id"]); // id-reuse guard
+    expect(wf["last_link_id"]).toBe(base["last_link_id"]);
+    expect(stampsMap(doc).size).toBe(stampsBefore); // __stamps preserved
+  });
+
+  it("does not invent a groups key on a workflow without one", () => {
+    const base: WorkflowJSON = { nodes: [], links: [], last_node_id: 0, last_link_id: 0 };
+    const doc = mint(base, catalog);
+    const clear: ClearOp = { op: "clear", ...envelope("alice", 1), removed_nodes: [] };
+    expect(applyOps(doc, [clear], catalog).failed).toBeNull();
+    expect("groups" in project(doc, catalog)).toBe(false);
+  });
+
+  it("does not touch definitions", () => {
+    const doc = mint(lww.subgraph_base_workflow, catalog);
+    const clear: ClearOp = { op: "clear", ...envelope("alice", 1), removed_nodes: [] };
+    expect(applyOps(doc, [clear], catalog).failed).toBeNull();
+    const wf = project(doc, catalog);
+    expect(wf.nodes).toEqual([]);
+    expect(wf["definitions"]).toEqual(lww.subgraph_base_workflow["definitions"]);
+  });
+});
+
+describe("inputcount two-register grow (freeze §8.4)", () => {
+  const multiCatalog: WidgetCatalog = {
+    types: {
+      ...catalog.types,
+      TestMulti: { widget_order: ["inputcount"] },
+    },
+  };
+  const multiNode: WorkflowNode = {
+    id: 1,
+    type: "TestMulti",
+    inputs: [
+      { name: "image_1", type: "IMAGE", link: null },
+      { name: "image_2", type: "IMAGE", link: null },
+    ],
+    outputs: [],
+    widgets_values: [2],
+  };
+  const srcNode: WorkflowNode = {
+    id: 2,
+    type: "LoadImage",
+    inputs: [],
+    outputs: [{ name: "IMAGE", type: "IMAGE", links: [] }],
+    widgets_values: ["a.png"],
+  };
+  const base: WorkflowJSON = { nodes: [multiNode, srcNode], links: [], last_node_id: 2, last_link_id: 0 };
+
+  function growConnect(actor: string, bv: number, linkId: number, plannedCount: number): ConnectOp {
+    return {
+      op: "connect",
+      ...envelope(actor, bv),
+      link_id: linkId,
+      from_node: 2,
+      from_slot: 0,
+      to_node: 1,
+      to_slot: null,
+      link_type: "IMAGE",
+      grow: { name: "image_3", type: "IMAGE", inputcount: { widget: "inputcount", value: plannedCount } },
+    };
+  }
+
+  it("one op grows the bare-named slot AND LWW-writes the count widget under one op_id", () => {
+    const doc = mint(base, multiCatalog);
+    const op = growConnect("alice", 3, 501, 3);
+    const res = applyOps(doc, [op], multiCatalog);
+    expect(res.failed).toBeNull();
+    expect(res.applied).toEqual([op.op_id]); // ONE __applied entry for both effects
+
+    const node = project(doc, multiCatalog).nodes.find((n) => n.id === 1)!;
+    const inputs = node.inputs as { name: string; link: unknown; grow_id?: unknown }[];
+    expect(inputs.map((i) => i.name)).toEqual(["image_1", "image_2", "image_3"]);
+    expect(inputs[2]!.grow_id).toBe(501);
+    expect(inputs[2]!.link).toBe(501);
+    expect(node.widgets_values).toEqual([3]); // the count register
+    // The count write shares the connect's stamp on the normal widget target.
+    // Node ids in a stamp key are String()-normalized (amendment v1.2), so
+    // node 1 keys as "1" — see test/stamp-target-identity.test.ts.
+    expect(stampsMap(doc).get(JSON.stringify(["widget", "1", "inputcount"]))).toEqual([3, "alice", op.op_id]);
+
+    // Idempotent replay: no second slot, no double bump.
+    const bytes = Buffer.from(Y.encodeStateAsUpdate(doc));
+    expect(applyOps(doc, [op], multiCatalog).skipped).toEqual([op.op_id]);
+    expect(Buffer.from(Y.encodeStateAsUpdate(doc)).equals(bytes)).toBe(true);
+  });
+
+  it("collision grows the next free BARE key, never the dotted autogrow shape", () => {
+    const doc = mint(base, multiCatalog);
+    const first = growConnect("alice", 3, 601, 3);
+    const second = growConnect("bob", 3, 602, 3); // same requested name image_3
+    expect(applyOps(doc, [first, second], multiCatalog).failed).toBeNull();
+    const node = project(doc, multiCatalog).nodes.find((n) => n.id === 1)!;
+    const names = (node.inputs as { name: string }[]).map((i) => i.name);
+    expect(names).toEqual(["image_1", "image_2", "image_3", "image_4"]);
+  });
+
+  it("the count register is LWW-coherent with an explicit set_widget in both orders", () => {
+    const connect = growConnect("bob", 5, 701, 3);
+    const explicit: SetWidgetOp = {
+      op: "set_widget",
+      ...envelope("zed", 5), // same bv; actor 'zed' > 'bob' → explicit wins
+      node_id: 1,
+      widget: "inputcount",
+      value: 7,
+    };
+    for (const order of [[connect, explicit] as Op[], [explicit, connect] as Op[]]) {
+      const doc = mint(base, multiCatalog);
+      expect(applyOps(doc, order, multiCatalog).failed).toBeNull();
+      const node = project(doc, multiCatalog).nodes.find((n) => n.id === 1)!;
+      expect(node.widgets_values, order.map((o) => o.op).join("→")).toEqual([7]);
+      // Both orders still grow the slot — only the count register is contested.
+      expect((node.inputs as unknown[]).length).toBe(3);
+    }
+  });
+});
+
+describe("autogrow collision rename (catalog template)", () => {
+  it("renames a colliding dotted autogrow slot via autogrow_templates", () => {
+    const batchNode: WorkflowNode = {
+      id: 10,
+      type: "BatchImagesNode",
+      inputs: [{ name: "images", type: "COMFY_AUTOGROW_V3", link: null }],
+      outputs: [],
+      widgets_values: [],
+    };
+    const src: WorkflowNode = {
+      id: 11,
+      type: "LoadImage",
+      inputs: [],
+      outputs: [{ name: "IMAGE", type: "IMAGE", links: [] }],
+      widgets_values: ["a.png"],
+    };
+    const base: WorkflowJSON = { nodes: [batchNode, src], links: [], last_node_id: 11, last_link_id: 0 };
+    const mk = (actor: string, linkId: number): ConnectOp => ({
+      op: "connect",
+      ...envelope(actor, 2),
+      link_id: linkId,
+      from_node: 11,
+      from_slot: 0,
+      to_node: 10,
+      to_slot: null,
+      link_type: "IMAGE",
+      grow: { name: "images.image0", type: "IMAGE" }, // both request image0
+    });
+    const doc = mint(base, catalog);
+    expect(applyOps(doc, [mk("alice", 801), mk("bob", 802)], catalog).failed).toBeNull();
+    const node = project(doc, catalog).nodes.find((n) => n.id === 10)!;
+    const names = (node.inputs as { name: string }[]).map((i) => i.name);
+    // Non-clobbering: both survive; the loser is renamed via the template prefix.
+    expect(names).toEqual(["images", "images.image0", "images.image1"]);
+  });
+});
+
+describe("bounded writes (schema §11)", () => {
+  // The spike measured max 7 Y-mutations for any non-clear op; the name-keyed
+  // widgets map only shrinks that. 12 is the loud-failure ceiling.
+  const LIMIT = 12;
+
+  for (const file of sessionFiles()) {
+    it(`${file}: every non-clear op stays ≤ ${LIMIT} Y-mutations`, () => {
+      const { header, ops } = loadSession(file);
+      const doc = mint(header.base_workflow, catalog);
+      let worst = 0;
+      for (const op of ops) {
+        _resetMutationCount();
+        const res = applyOps(doc, [op], catalog);
+        expect(res.failed).toBeNull();
+        if (op.op === "clear") continue; // O(doc) by design, standalone-only
+        worst = Math.max(worst, _getMutationCount());
+        expect(_getMutationCount(), `${op.op} ${op.op_id}`).toBeLessThanOrEqual(LIMIT);
+      }
+      expect(worst).toBeGreaterThan(0);
+    });
+  }
+});

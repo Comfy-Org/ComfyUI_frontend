@@ -1,0 +1,495 @@
+{
+ "comment": "converged_value recorded from workflow_ops.apply_op applied in BOTH orders",
+ "stamp_key": "[stamp[0]=base_version, stamp[1]=actor, op_id] \u2014 Python list comparison",
+ "base_workflow": {
+  "last_node_id": 3308598398221244,
+  "last_link_id": 0,
+  "nodes": [
+   {
+    "id": 2339450755010078,
+    "type": "CLIPTextEncode",
+    "pos": [
+     40.0,
+     60.0
+    ],
+    "size": [
+     240.0,
+     86.0
+    ],
+    "flags": {},
+    "order": 0,
+    "mode": 0,
+    "inputs": [
+     {
+      "name": "clip",
+      "type": "CLIP",
+      "link": null
+     }
+    ],
+    "outputs": [
+     {
+      "name": "CONDITIONING",
+      "type": "CONDITIONING",
+      "links": []
+     }
+    ],
+    "properties": {},
+    "widgets_values": [
+     null
+    ]
+   },
+   {
+    "id": 3308598398221244,
+    "type": "KSampler",
+    "pos": [
+     360.0,
+     60.0
+    ],
+    "size": [
+     240.0,
+     290.0
+    ],
+    "flags": {},
+    "order": 0,
+    "mode": 0,
+    "inputs": [
+     {
+      "name": "model",
+      "type": "MODEL",
+      "link": null
+     },
+     {
+      "name": "positive",
+      "type": "CONDITIONING",
+      "link": null
+     },
+     {
+      "name": "negative",
+      "type": "CONDITIONING",
+      "link": null
+     },
+     {
+      "name": "latent_image",
+      "type": "LATENT",
+      "link": null
+     }
+    ],
+    "outputs": [
+     {
+      "name": "LATENT",
+      "type": "LATENT",
+      "links": []
+     }
+    ],
+    "properties": {},
+    "widgets_values": [
+     0,
+     "fixed",
+     20,
+     8.0,
+     "euler",
+     "simple",
+     1.0
+    ]
+   }
+  ],
+  "links": [],
+  "groups": [
+   {
+    "id": 1,
+    "title": "team-authored group",
+    "bounding": [
+     0,
+     0,
+     2400,
+     1400
+    ],
+    "color": "#3f789e",
+    "font_size": 24,
+    "flags": {}
+   }
+  ],
+  "config": {},
+  "extra": {
+   "ds": {
+    "scale": 0.75,
+    "offset": [
+     100,
+     50
+    ]
+   },
+   "frontendVersion": "1.20.0",
+   "spike": "lww"
+  },
+  "version": 0.4
+ },
+ "subgraph_base_workflow": {
+  "last_node_id": 60,
+  "last_link_id": 0,
+  "nodes": [
+   {
+    "id": 57,
+    "type": "f2fdebf6-dfaf-43b6-9eb2-7f70613cfdc1",
+    "pos": [
+     0,
+     0
+    ],
+    "size": [
+     280,
+     120
+    ],
+    "flags": {},
+    "order": 0,
+    "mode": 0,
+    "inputs": [],
+    "outputs": [],
+    "properties": {
+     "proxyWidgets": [
+      [
+       "27",
+       "text"
+      ],
+      [
+       "3",
+       "seed"
+      ],
+      [
+       "3",
+       "steps"
+      ]
+     ]
+    }
+   },
+   {
+    "id": 9,
+    "type": "EmptyLatentImage",
+    "pos": [
+     10,
+     300
+    ],
+    "size": [
+     270,
+     106
+    ],
+    "flags": {},
+    "order": 1,
+    "mode": 0,
+    "inputs": [],
+    "outputs": [
+     {
+      "name": "LATENT",
+      "type": "LATENT",
+      "links": null
+     }
+    ],
+    "properties": {},
+    "widgets_values": [
+     512,
+     512,
+     1
+    ]
+   }
+  ],
+  "links": [],
+  "groups": [
+   {
+    "id": 1,
+    "title": "team-authored group",
+    "bounding": [
+     0,
+     0,
+     2400,
+     1400
+    ],
+    "color": "#3f789e",
+    "font_size": 24,
+    "flags": {}
+   }
+  ],
+  "config": {},
+  "extra": {
+   "ds": {
+    "scale": 0.75,
+    "offset": [
+     100,
+     50
+    ]
+   },
+   "frontendVersion": "1.20.0",
+   "spike": "subgraph"
+  },
+  "version": 0.4,
+  "definitions": {
+   "subgraphs": [
+    {
+     "id": "f2fdebf6-dfaf-43b6-9eb2-7f70613cfdc1",
+     "name": "Text to Image",
+     "inputs": [
+      {
+       "name": "text",
+       "type": "STRING"
+      },
+      {
+       "name": "seed",
+       "type": "INT"
+      },
+      {
+       "name": "steps",
+       "type": "INT"
+      }
+     ],
+     "nodes": [
+      {
+       "id": 27,
+       "type": "CLIPTextEncode",
+       "widgets_values": [
+        "old prompt"
+       ]
+      },
+      {
+       "id": 3,
+       "type": "KSampler",
+       "widgets_values": [
+        42,
+        "fixed",
+        20,
+        8.0,
+        "euler",
+        "normal",
+        1.0
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "vectors": [
+  {
+   "name": "bv-differs",
+   "note": "stamp[0] (base_version) dominates",
+   "ops": [
+    {
+     "op": "set_widget",
+     "op_id": "bfb61d0c34304226a131b97f4d6f9ea7",
+     "actor": "alice",
+     "base_version": 5,
+     "stamp": [
+      5,
+      "alice"
+     ],
+     "node_id": 2339450755010078,
+     "widget": "text",
+     "value": "higher base_version wins",
+     "old": null
+    },
+    {
+     "op": "set_widget",
+     "op_id": "d9b698ad51f7455a98a9c70301d3c835",
+     "actor": "bob",
+     "base_version": 3,
+     "stamp": [
+      3,
+      "bob"
+     ],
+     "node_id": 2339450755010078,
+     "widget": "text",
+     "value": "lower base_version loses",
+     "old": null
+    }
+   ],
+   "converged_value": "higher base_version wins",
+   "winner_op_id": "bfb61d0c34304226a131b97f4d6f9ea7"
+  },
+  {
+   "name": "actor-tiebreak",
+   "note": "equal base_version \u2192 higher actor string wins",
+   "ops": [
+    {
+     "op": "set_widget",
+     "op_id": "cd372e59220249b98ff89fdbe2a71b07",
+     "actor": "alice",
+     "base_version": 7,
+     "stamp": [
+      7,
+      "alice"
+     ],
+     "node_id": 2339450755010078,
+     "widget": "text",
+     "value": "alice at bv7",
+     "old": null
+    },
+    {
+     "op": "set_widget",
+     "op_id": "bd5382a9ed1f4d8aa6bbf6744face9d2",
+     "actor": "bob",
+     "base_version": 7,
+     "stamp": [
+      7,
+      "bob"
+     ],
+     "node_id": 2339450755010078,
+     "widget": "text",
+     "value": "bob at bv7",
+     "old": null
+    }
+   ],
+   "converged_value": "bob at bv7",
+   "winner_op_id": "bd5382a9ed1f4d8aa6bbf6744face9d2"
+  },
+  {
+   "name": "op-id-tiebreak",
+   "note": "identical stamp \u2192 lexicographically higher op_id wins",
+   "ops": [
+    {
+     "op": "set_widget",
+     "op_id": "73a5937de16442e298cc2f35c90a631b",
+     "actor": "alice",
+     "base_version": 7,
+     "stamp": [
+      7,
+      "alice"
+     ],
+     "node_id": 2339450755010078,
+     "widget": "text",
+     "value": "twin A",
+     "old": null
+    },
+    {
+     "op": "set_widget",
+     "op_id": "c3161dc2d45243c1932bd0a269040488",
+     "actor": "alice",
+     "base_version": 7,
+     "stamp": [
+      7,
+      "alice"
+     ],
+     "node_id": 2339450755010078,
+     "widget": "text",
+     "value": "twin B",
+     "old": null
+    }
+   ],
+   "converged_value": "twin B",
+   "winner_op_id": "c3161dc2d45243c1932bd0a269040488"
+  },
+  {
+   "name": "int-widget-actor-tiebreak",
+   "note": "same semantics on an INT widget",
+   "ops": [
+    {
+     "op": "set_widget",
+     "op_id": "54d689694ed64ec5bbd2f9ce2c8a72d5",
+     "actor": "alice",
+     "base_version": 4,
+     "stamp": [
+      4,
+      "alice"
+     ],
+     "node_id": 3308598398221244,
+     "widget": "seed",
+     "value": 111,
+     "old": 0
+    },
+    {
+     "op": "set_widget",
+     "op_id": "1af11d953e1045df8832ce7559eb2279",
+     "actor": "bob",
+     "base_version": 4,
+     "stamp": [
+      4,
+      "bob"
+     ],
+     "node_id": 3308598398221244,
+     "widget": "seed",
+     "value": 222,
+     "old": 0
+    }
+   ],
+   "converged_value": 222,
+   "winner_op_id": "1af11d953e1045df8832ce7559eb2279"
+  },
+  {
+   "name": "bv-beats-actor",
+   "note": "base_version compared before actor",
+   "ops": [
+    {
+     "op": "set_widget",
+     "op_id": "dba837d0d3b849efab74ddb43e488776",
+     "actor": "zed",
+     "base_version": 2,
+     "stamp": [
+      2,
+      "zed"
+     ],
+     "node_id": 3308598398221244,
+     "widget": "cfg",
+     "value": 6.5,
+     "old": 8.0
+    },
+    {
+     "op": "set_widget",
+     "op_id": "3338a319830740e59182f48d4bb243fd",
+     "actor": "amy",
+     "base_version": 8,
+     "stamp": [
+      8,
+      "amy"
+     ],
+     "node_id": 3308598398221244,
+     "widget": "cfg",
+     "value": 9.0,
+     "old": 8.0
+    }
+   ],
+   "converged_value": 9.0,
+   "winner_op_id": "3338a319830740e59182f48d4bb243fd"
+  },
+  {
+   "name": "subgraph-flat-vs-nested",
+   "note": "flat 57.text and nested 57/27.text share one interior write target; actor tiebreak decides",
+   "ops": [
+    {
+     "op": "set_widget",
+     "op_id": "3e32bbace875455ab961a89a27cf971a",
+     "actor": "alice",
+     "base_version": 6,
+     "stamp": [
+      6,
+      "alice"
+     ],
+     "node_id": 57,
+     "widget": "text",
+     "value": "flat-form write",
+     "old": "old prompt",
+     "path": [
+      "57",
+      "27"
+     ],
+     "inner_widget": "text"
+    },
+    {
+     "op": "set_widget",
+     "op_id": "98bf8acad5594649a76acfb6809b9e39",
+     "actor": "bob",
+     "base_version": 6,
+     "stamp": [
+      6,
+      "bob"
+     ],
+     "node_id": "57/27",
+     "widget": "text",
+     "value": "nested-form write",
+     "old": "old prompt",
+     "path": [
+      "57",
+      "27"
+     ],
+     "inner_widget": "text"
+    }
+   ],
+   "converged_value": "nested-form write",
+   "winner_op_id": "98bf8acad5594649a76acfb6809b9e39"
+  }
+ ]
+}
