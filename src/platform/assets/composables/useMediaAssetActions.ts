@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
 import { downloadFile } from '@/base/common/downloadUtil'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
+import { useAssetsApi } from '@/platform/assets/composables/media/useAssetsApi'
 import { isCloud } from '@/platform/distribution/types'
 import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
 import { useWorkflowActionsService } from '@/platform/workflow/core/services/workflowActionsService'
@@ -724,10 +725,10 @@ export function useMediaAssetActions() {
               )
 
               if (hasOutputAssets) {
-                await assetsStore.updateHistory()
+                await useAssetsApi('output').loadNew()
               }
               if (hasInputAssets) {
-                await assetsStore.updateInputs()
+                await useAssetsApi('input').loadNew()
               }
 
               const rootGraph = app.rootGraph

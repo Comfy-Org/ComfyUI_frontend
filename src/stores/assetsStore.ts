@@ -11,10 +11,7 @@ import type {
   AssetResponse,
   TagsOperationResult
 } from '@/platform/assets/schemas/assetSchema'
-import {
-  INPUT_TAG,
-  assetService
-} from '@/platform/assets/services/assetService'
+import { assetService } from '@/platform/assets/services/assetService'
 import type { AssetPaginationOptions } from '@/platform/assets/services/assetService'
 import { isCloud } from '@/platform/distribution/types'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
@@ -25,8 +22,6 @@ import { api } from '@/scripts/api'
 import { TaskItemImpl } from './queueStore'
 import { useAssetDownloadStore } from './assetDownloadStore'
 import { useModelToNodeStore } from './modelToNodeStore'
-
-const INPUT_LIMIT = 100
 
 /**
  * Fetch input files from the internal API (OSS version)
@@ -46,15 +41,6 @@ async function fetchInputFilesFromAPI(): Promise<AssetItem[]> {
   return filenames.map((name, index) =>
     mapInputFileToAssetItem(name, index, 'input')
   )
-}
-
-/**
- * Fetch input files from cloud service
- */
-async function fetchInputFilesFromCloud(): Promise<AssetItem[]> {
-  return await assetService.getAssetsByTag(INPUT_TAG, false, {
-    limit: INPUT_LIMIT
-  })
 }
 
 /**
@@ -115,9 +101,7 @@ export const useAssetsStore = defineStore('assets', () => {
     return deletingAssetIds.has(assetId)
   }
 
-  const fetchInputFiles = isCloud
-    ? fetchInputFilesFromCloud
-    : fetchInputFilesFromAPI
+  const fetchInputFiles = fetchInputFilesFromAPI
 
   const {
     state: inputAssets,
@@ -136,6 +120,16 @@ export const useAssetsStore = defineStore('assets', () => {
     const result = await executeUpdateInputs()
     assetService.invalidateInputAssetsIncludingPublic()
     return result
+  }
+  const historyInputs: PagedList<AssetItem> = {
+    hasMore: false,
+    invalidate: async () => {
+      await updateInputs()
+    },
+    isLoading: inputLoading,
+    items: inputAssets,
+    loadMore: async () => undefined,
+    loadNew: async () => undefined
   }
 
   function useHistoryAssets(): PagedList<AssetItem> {
@@ -884,7 +878,8 @@ export const useAssetsStore = defineStore('assets', () => {
     inputLoading,
     inputError,
 
-    pagedHistory: historyAssets,
+    historyAssets,
+    historyInputs,
 
     // Deletion tracking
     deletingAssetIds,
@@ -893,8 +888,6 @@ export const useAssetsStore = defineStore('assets', () => {
 
     // Actions
     updateInputs,
-    updateHistory: historyAssets.loadNew,
-    loadMoreHistory: historyAssets.loadMore,
 
     // Input mapping helpers
     inputAssetsByFilename,
