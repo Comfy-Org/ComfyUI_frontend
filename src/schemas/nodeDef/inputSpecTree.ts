@@ -42,7 +42,7 @@ function warnSpecDrift(
   )
 }
 
-function splitSlotTypes(type: string): string[] {
+export function splitSlotTypes(type: string): string[] {
   return type
     .split(',')
     .map((part) => part.trim())
@@ -140,4 +140,25 @@ export function inputSpecTree(spec: InputSpecV2): InputSpecV2[] {
 export function ownSlotTypes(spec: InputSpecV2): string[] {
   const control = dynamicControlFor(spec)
   return control ? control.ownTypes(spec) : splitSlotTypes(spec.type)
+}
+
+/**
+ * The MatchType template this spec participates in, if any.
+ *
+ * Outputs declared as COMFY_MATCHTYPE_V3 name their template via the node's
+ * `output_matchtypes`, and resolve at runtime to a type the group's inputs
+ * can produce. The allowed types are the upper bound of that resolution.
+ */
+export function matchTypeTemplate(
+  spec: InputSpecV2
+): { templateId: string; allowedTypes: string[] } | undefined {
+  if (spec.type !== 'COMFY_MATCHTYPE_V3') return undefined
+
+  const parsed = zMatchTypeOptions.safeParse(spec)
+  if (!parsed.success) return undefined
+
+  return {
+    templateId: parsed.data.template.template_id,
+    allowedTypes: splitSlotTypes(parsed.data.template.allowed_types)
+  }
 }

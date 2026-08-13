@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { collectSearchableInputTypes } from '@/schemas/nodeDef/searchableInputTypes'
+import { collectSearchableInputTypes } from '@/schemas/nodeDef/searchableSlotTypes'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type {
   ComfyInputsSpec,
