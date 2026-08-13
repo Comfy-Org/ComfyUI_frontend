@@ -1,7 +1,7 @@
 import { useAsyncState, whenever } from '@vueuse/core'
 import { delay, difference } from 'es-toolkit'
 import { defineStore } from 'pinia'
-import { computed, reactive, ref, shallowReactive } from 'vue'
+import { computed, reactive, ref, shallowReactive, toValue } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
@@ -106,7 +106,7 @@ export const useAssetsStore = defineStore('assets', () => {
   const fetchInputFiles = fetchInputFilesFromAPI
 
   const {
-    state: inputAssets,
+    state: rawInputAssets,
     isLoading: inputLoading,
     execute: executeUpdateInputs
   } = useAsyncState(fetchInputFiles, [], {
@@ -128,7 +128,7 @@ export const useAssetsStore = defineStore('assets', () => {
       await updateInputs()
     },
     isLoading: inputLoading,
-    items: inputAssets,
+    items: rawInputAssets,
     loadMore: async () => undefined,
     loadNew: async () => undefined
   }
@@ -269,9 +269,18 @@ export const useAssetsStore = defineStore('assets', () => {
       loadNew: updateHistory
     }
   }
-  const historyAssets = flags.assetsEnabled
-    ? useAssetsQuery()
-    : useHistoryAssets()
+
+  const inputAssets = computed(() =>
+    flags.assetsEnabled
+      ? useAssetsQuery({ include_tags: ['input'] })
+      : historyInputs
+  )
+  const outputDirs = ref(['output'])
+  const outputAssets = computed(() =>
+    flags.assetsEnabled
+      ? useAssetsQuery({ include_tags: outputDirs.value })
+      : useHistoryAssets()
+  )
 
   /**
    * Map of asset hash filename to asset item for O(1) lookup
@@ -279,7 +288,7 @@ export const useAssetsStore = defineStore('assets', () => {
    */
   const inputAssetsByFilename = computed(() => {
     const map = new Map<string, AssetItem>()
-    for (const asset of inputAssets.value) {
+    for (const asset of toValue(inputAssets.value.items)) {
       const hash = asset.hash
       if (hash) {
         map.set(hash, asset)
@@ -877,11 +886,8 @@ export const useAssetsStore = defineStore('assets', () => {
 
   return {
     // States
-    inputAssets: historyInputs.items,
-    inputLoading: historyInputs.isLoading,
-
-    historyAssets,
-    historyInputs,
+    inputAssets,
+    outputAssets,
 
     // Deletion tracking
     deletingAssetIds,

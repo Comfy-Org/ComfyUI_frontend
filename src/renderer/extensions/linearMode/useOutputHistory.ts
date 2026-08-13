@@ -2,7 +2,6 @@ import { useAsyncState } from '@vueuse/core'
 import type { ComputedRef } from 'vue'
 import { computed, ref, toValue, watchEffect } from 'vue'
 
-import { useAssetsApi } from '@/platform/assets/composables/media/useAssetsApi'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { PagedList } from '@/platform/remote/paged/pagedList'
@@ -11,6 +10,7 @@ import { flattenNodeOutput } from '@/renderer/extensions/linearMode/flattenNodeO
 import { useLinearOutputStore } from '@/renderer/extensions/linearMode/linearOutputStore'
 import { getJobDetail } from '@/services/jobOutputCache'
 import { api } from '@/scripts/api'
+import { useAssetsStore } from '@/stores/assetsStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -25,8 +25,8 @@ export function useOutputHistory(): {
   isWorkflowActive: ComputedRef<boolean>
   cancelActiveWorkflowJobs: () => Promise<void>
 } {
-  const backingOutputs = useAssetsApi('output')
-  void backingOutputs.loadMore()
+  const assetsStore = useAssetsStore()
+  void assetsStore.outputAssets.loadMore()
   const linearStore = useLinearOutputStore()
   const workflowStore = useWorkflowStore()
   const executionStore = useExecutionStore()
@@ -74,14 +74,14 @@ export function useOutputHistory(): {
 
     const pathMap = executionStore.jobIdToSessionWorkflowPath
 
-    return toValue(backingOutputs.items).filter((asset) => {
+    return toValue(assetsStore.outputAssets.items).filter((asset) => {
       const m = getOutputAssetMetadata(asset?.user_metadata)
       return m ? pathMap.get(m.jobId) === path : false
     })
   })
 
   const outputs: PagedList<AssetItem> = {
-    ...backingOutputs,
+    ...assetsStore.outputAssets,
     items: sessionMedia,
     hasMore: ref(false),
     isLoading: ref(false),

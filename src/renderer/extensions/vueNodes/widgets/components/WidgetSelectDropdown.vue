@@ -4,7 +4,6 @@ import { computed, provide, ref, toRef, toValue } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { SUPPORTED_EXTENSIONS_ACCEPT } from '@/extensions/core/load3d/constants'
-import { useAssetsApi } from '@/platform/assets/composables/media/useAssetsApi'
 import FormDropdown from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdown.vue'
 import { AssetKindKey } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import type { LayoutMode } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
@@ -13,6 +12,7 @@ import { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/compo
 import { useWidgetSelectActions } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions'
 import { useWidgetSelectItems } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'
 import type { ResultItemType } from '@/schemas/apiSchema'
+import { useAssetsStore } from '@/stores/assetsStore'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 import type { AssetKind } from '@/types/widgetTypes'
 import {
@@ -56,8 +56,7 @@ const stringModelValue = computed({
 })
 
 const { t } = useI18n()
-
-const outputMediaAssets = useAssetsApi('output')
+const assetsStore = useAssetsStore()
 
 const combinedProps = computed(() =>
   filterWidgetProps(props.widget.options, PANEL_EXCLUDED_PROPS)
@@ -90,7 +89,7 @@ const {
   getOptionLabel: () => props.widget.options?.getOptionLabel,
   modelValue: stringModelValue,
   assetKind: () => props.assetKind,
-  outputMediaAssets,
+  outputMediaAssets: () => assetsStore.outputAssets,
   assetData,
   isAssetMode: () => props.isAssetMode
 })
@@ -153,18 +152,12 @@ const acceptTypes = computed(() => {
 const layoutMode = ref<LayoutMode>(props.defaultLayoutMode ?? 'grid')
 
 function handleIsOpenUpdate(isOpen: boolean) {
-  if (isOpen && !toValue(outputMediaAssets.isLoading)) {
-    void outputMediaAssets.loadMore()
-  }
+  if (isOpen) void assetsStore.outputAssets.loadMore()
 }
 
 const handleApproachEnd = useDebounceFn(async () => {
-  if (
-    toValue(outputMediaAssets.hasMore) &&
-    !toValue(outputMediaAssets.isLoading)
-  ) {
-    await outputMediaAssets.loadMore()
-  }
+  if (assetsStore.outputAssets.hasMore)
+    await assetsStore.outputAssets.loadMore()
 }, 300)
 
 const isUploading = ref(false)
@@ -196,7 +189,7 @@ async function updateFiles(files: File[]) {
       :base-model-options
       :is-uploading
       v-bind="combinedProps"
-      :loading-more="toValue(outputMediaAssets.isLoading)"
+      :loading-more="toValue(assetsStore.outputAssets.isLoading)"
       class="w-full"
       @update:selected="updateSelectedItems"
       @update:files="updateFiles"

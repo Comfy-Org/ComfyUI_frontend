@@ -1,11 +1,10 @@
-import { ref } from 'vue'
+import { ref, toValue } from 'vue'
 
 import MultiSelectWidget from '@/components/graph/widgets/MultiSelectWidget.vue'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { isComboWidget } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { useAssetsApi } from '@/platform/assets/composables/media/useAssetsApi'
 import { assetService } from '@/platform/assets/services/assetService'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
@@ -130,7 +129,7 @@ function getCloudInputAssets(nodeType: string | undefined): AssetItem[] {
   const mediaType = NODE_MEDIA_TYPE_MAP[nodeType ?? '']
   if (!mediaType) return []
 
-  return useAssetsStore().inputAssets.filter(
+  return toValue(useAssetsStore().inputAssets.items).filter(
     (asset) =>
       getCloudInputAssetValue(asset) &&
       getMediaTypeFromFilename(asset.name) === mediaType
@@ -202,15 +201,13 @@ const createInputMappingWidget = (
     }
   )
 
-  if (assetsStore.inputAssets.length === 0 && !assetsStore.inputLoading) {
-    void useAssetsApi('input')
-      .invalidate()
-      .then(() => {
-        // edge for users using nodes with 0 prior inputs
-        // force canvas refresh the first time they add an asset
-        // so they see filenames instead of hashes.
-        node.setDirtyCanvas(true, false)
-      })
+  if (toValue(assetsStore.inputAssets.items).length === 0) {
+    void assetsStore.inputAssets.loadMore().then(() => {
+      // edge for users using nodes with 0 prior inputs
+      // force canvas refresh the first time they add an asset
+      // so they see filenames instead of hashes.
+      node.setDirtyCanvas(true, false)
+    })
   }
 
   bindDynamicValuesOption(widget, () =>

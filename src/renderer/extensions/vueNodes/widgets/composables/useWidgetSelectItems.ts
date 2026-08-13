@@ -66,7 +66,7 @@ export interface UseWidgetSelectItemsOptions {
   >
   modelValue: Ref<string | undefined>
   assetKind: MaybeRefOrGetter<AssetKind | undefined>
-  outputMediaAssets: PagedList<AssetItem>
+  outputMediaAssets: MaybeRefOrGetter<PagedList<AssetItem>>
   assetData: ReturnType<typeof useAssetWidgetData> | null
   isAssetMode: MaybeRefOrGetter<boolean | undefined>
 }
@@ -113,7 +113,7 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
   const resolvedByJobId = shallowRef(new Map<string, AssetItem[]>())
 
   watch(
-    () => toValue(outputMediaAssets.items),
+    () => toValue(toValue(outputMediaAssets).items),
     (assets, _, onCleanup) => {
       let cancelled = false
       onCleanup(() => {
@@ -206,11 +206,15 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
     const items: FormDropdownItem[] = []
     const labelFn = toValue(options.getOptionLabel)
 
-    const assets = toValue(outputMediaAssets.items).flatMap((asset) => {
-      const meta = getOutputAssetMetadata(asset.user_metadata)
-      const resolved = meta ? resolvedByJobId.value.get(meta.jobId) : undefined
-      return resolved ?? [asset]
-    })
+    const assets = toValue(toValue(outputMediaAssets).items).flatMap(
+      (asset) => {
+        const meta = getOutputAssetMetadata(asset.user_metadata)
+        const resolved = meta
+          ? resolvedByJobId.value.get(meta.jobId)
+          : undefined
+        return resolved ?? [asset]
+      }
+    )
 
     const missing = missingMediaValues.value
     for (const asset of assets) {
