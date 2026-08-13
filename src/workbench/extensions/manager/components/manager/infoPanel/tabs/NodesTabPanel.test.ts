@@ -198,6 +198,41 @@ describe('NodesTabPanel', () => {
     expect(screen.queryByText("Couldn't load nodes")).toBeNull()
   })
 
+  it('keeps the newest result when two retries for the same pack overlap', async () => {
+    let resolveCurrentRetry: (response: unknown) => void = () => {}
+    getNodeDefs.call
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null)
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveCurrentRetry = resolve
+          })
+      )
+
+    renderPanel({
+      id: 'pack-a',
+      latest_version: { version: '1.0.0' }
+    } as components['schemas']['Node'])
+    await flushPromises()
+
+    // Both clicks land before Vue swaps the button for the spinner, so the two
+    // retries share the params object identity the computed keeps handing out.
+    const retryButton = screen.getByText('Try again')
+    retryButton.click()
+    retryButton.click()
+    await flushPromises()
+
+    resolveCurrentRetry({
+      comfy_nodes: [{ comfy_node_name: 'SomeNode', category: 'utils' }]
+    })
+    await flushPromises()
+
+    expect(getNodeDefs.call).toHaveBeenCalledTimes(3)
+    expect(screen.queryByText("Couldn't load nodes")).toBeNull()
+    expect(screen.queryAllByTestId('node-preview')).toHaveLength(1)
+  })
+
   it('does not surface a superseded failure as the new pack failing', async () => {
     let resolveFirst: (response: unknown) => void = () => {}
     getNodeDefs.call.mockImplementationOnce(
