@@ -515,6 +515,14 @@ export interface MountedValue {
 }
 
 /**
+ * What an omitted `height` falls back to before the container has been laid
+ * out. Matches the intrinsic height of a bare `<canvas>`, so the first frame
+ * is not a surprise, and the ResizeObserver corrects it as soon as there is a
+ * real box to measure.
+ */
+const DEFAULT_CANVAS_HEIGHT = 150
+
+/**
  * A pointer event on the widget's own canvas, in the same units `draw` uses.
  *
  * @knipIgnoreUnusedButUsedByCustomNodes
@@ -862,7 +870,18 @@ export function createWidgetCollection(
         // blurry on a high-density display and misaligned after a resize.
         const ratio = globalThis.devicePixelRatio ?? 1
         const width = element.clientWidth || 1
-        const height = def.height ?? (element.clientHeight || 1)
+        // From the container, never from the element: a <canvas> with no CSS
+        // height lays out at its height ATTRIBUTE, which is the scaled backing
+        // store. Reading its own clientHeight back would multiply by the ratio
+        // again on every pass, and the ResizeObserver below would keep firing.
+        const height =
+          def.height ??
+          element.parentElement?.clientHeight ??
+          DEFAULT_CANVAS_HEIGHT
+        // The CSS size is the reserved height in CSS pixels; only the backing
+        // store is scaled. Setting one without the other is what made a widget
+        // render `ratio` times too tall.
+        element.style.height = `${height}px`
         element.width = Math.round(width * ratio)
         element.height = Math.round(height * ratio)
         context.setTransform(ratio, 0, 0, ratio, 0, 0)
