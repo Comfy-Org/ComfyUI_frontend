@@ -11,7 +11,10 @@ import {
   observeRerouteId
 } from '../idAllocation'
 import type { LGraphState } from '../idAllocation'
-import { normalizeConfiguredTopology } from '../linkDeduplication'
+import {
+  normalizeConfiguredTopology,
+  remapLinkReferences
+} from '../linkDeduplication'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import { toLinkId } from '@/types/linkId'
@@ -323,36 +326,7 @@ export function deduplicateSubgraphLinkIds(
       (id) => observeLinkId(state, toLinkId(id)),
       'link'
     )
-    if (remapped.size > 0) patchLinkReferences(subgraph, remapped)
-  }
-}
-
-function patchLinkReferences(
-  subgraph: ExportedSubgraph,
-  remapped: Map<number, number>
-): void {
-  for (const node of subgraph.nodes ?? []) {
-    for (const input of node.inputs ?? []) {
-      if (input.link == null) continue
-      input.link = remapped.get(input.link) ?? input.link
-    }
-    for (const output of node.outputs ?? []) {
-      if (!output.links) continue
-      output.links = output.links.map((id) => remapped.get(id) ?? id)
-    }
-  }
-  for (const slot of [
-    ...(subgraph.inputs ?? []),
-    ...(subgraph.outputs ?? [])
-  ]) {
-    if (!slot.linkIds) continue
-    slot.linkIds = slot.linkIds.map((id) => remapped.get(id) ?? id)
-  }
-  for (const reroute of subgraph.reroutes ?? []) {
-    reroute.linkIds = reroute.linkIds.map((id) => remapped.get(id) ?? id)
-  }
-  for (const extension of subgraph.extra?.linkExtensions ?? []) {
-    extension.id = toLinkId(remapped.get(extension.id) ?? extension.id)
+    if (remapped.size > 0) remapLinkReferences(subgraph, remapped)
   }
 }
 

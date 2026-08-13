@@ -3,6 +3,7 @@ import { graphScopeOf } from '@/types/graphScopeId'
 import type { EndpointUpdate } from '@/stores/linkStore'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
+import cloneDeep from 'es-toolkit/compat/cloneDeep'
 import type { LGraph } from './LGraph'
 import type { LinkId, LLink, SerialisedLLinkArray } from './LLink'
 import type {
@@ -14,26 +15,42 @@ import type {
 } from './types/serialisation'
 
 type ConfiguredGraph = (ISerialisedGraph | SerialisableGraph) &
-  Partial<Pick<ExportedSubgraph, 'inputs' | 'outputs'>>
+  Partial<Pick<ExportedSubgraph, 'inputs' | 'outputs' | 'reroutes'>>
 
 type ConfiguredLink = SerialisedLLinkArray | SerialisableLLink
 
 function linkFields(link: ConfiguredLink) {
-  return Array.isArray(link)
-    ? {
-        id: link[0],
-        originId: link[1],
-        originSlot: link[2],
-        targetId: link[3],
-        targetSlot: link[4]
-      }
-    : {
-        id: link.id,
-        originId: link.origin_id,
-        originSlot: link.origin_slot,
-        targetId: link.target_id,
-        targetSlot: link.target_slot
-      }
+  if (!Array.isArray(link)) return link
+  const [id, origin_id, origin_slot, target_id, target_slot] = link
+  return { id, origin_id, origin_slot, target_id, target_slot }
+}
+
+export function remapLinkReferences(
+  data: ConfiguredGraph,
+  remapped: ReadonlyMap<number, number>
+): void {
+  const remap = (id: number) => remapped.get(id) ?? id
+  const nodes = data.nodes ?? []
+
+  for (const input of nodes.flatMap((node) => node.inputs ?? [])) {
+    if (input.link != null) input.link = remap(input.link)
+  }
+
+  const linkIdLists = [
+    ...nodes.flatMap((node) =>
+      (node.outputs ?? []).map((output) => output.links)
+    ),
+    ...(data.inputs ?? []).map((slot) => slot.linkIds),
+    ...(data.outputs ?? []).map((slot) => slot.linkIds),
+    ...(data.reroutes ?? []).map((reroute) => reroute.linkIds)
+  ]
+  for (const ids of linkIdLists) {
+    if (ids) ids.splice(0, ids.length, ...new Set(ids.map(remap)))
+  }
+
+  for (const extension of data.extra?.linkExtensions ?? []) {
+    extension.id = toLinkId(remap(extension.id))
+  }
 }
 
 export function normalizeConfiguredTopology<T extends ConfiguredGraph>(
@@ -41,55 +58,32 @@ export function normalizeConfiguredTopology<T extends ConfiguredGraph>(
 ): T {
   if (!data.links?.length) return data
 
-  const byTarget = new Map<string, ReturnType<typeof linkFields>>()
-  const aliases = new Map<number, number>()
+  const survivorByTarget = new Map<string, ReturnType<typeof linkFields>>()
+  const survivorByDuplicateId = new Map<number, number>()
   const links = data.links.filter((link) => {
     const fields = linkFields(link)
-    const key = `${String(fields.targetId)}:${fields.targetSlot}`
-    const survivor = byTarget.get(key)
+    const key = `${toNodeId(fields.target_id)}:${fields.target_slot}`
+    const survivor = survivorByTarget.get(key)
     if (!survivor) {
-      byTarget.set(key, fields)
+      survivorByTarget.set(key, fields)
       return true
     }
     if (
-      toNodeId(survivor.originId) === toNodeId(fields.originId) &&
-      survivor.originSlot === fields.originSlot
+      toNodeId(survivor.origin_id) === toNodeId(fields.origin_id) &&
+      survivor.origin_slot === fields.origin_slot
     ) {
-      aliases.set(fields.id, survivor.id)
+      survivorByDuplicateId.set(fields.id, survivor.id)
     }
     return false
   })
   if (links.length === data.links.length) return data
-  if (!aliases.size) return Object.assign({}, data, { links })
 
-  const normalized = Object.assign({}, data, {
-    links,
-    inputs: data.inputs?.map((slot) => ({ ...slot })),
-    outputs: data.outputs?.map((slot) => ({ ...slot })),
-    nodes: data.nodes?.map((node) => ({
-      ...node,
-      inputs: node.inputs?.map((input) => ({ ...input })),
-      outputs: node.outputs?.map((output) => ({ ...output }))
-    }))
-  })
-  const remap = (id: number) => aliases.get(id) ?? id
-  const remapAll = (ids: number[]) => [...new Set(ids.map(remap))]
+  const normalized = Object.assign({}, data, { links })
+  if (!survivorByDuplicateId.size) return normalized
 
-  for (const slot of [
-    ...(normalized.inputs ?? []),
-    ...(normalized.outputs ?? [])
-  ]) {
-    if (slot.linkIds) slot.linkIds = remapAll(slot.linkIds)
-  }
-  for (const node of normalized.nodes ?? []) {
-    for (const input of node.inputs ?? []) {
-      if (input.link != null) input.link = remap(input.link)
-    }
-    for (const output of node.outputs ?? []) {
-      if (output.links) output.links = remapAll(output.links)
-    }
-  }
-  return normalized
+  const cloned = cloneDeep(normalized)
+  remapLinkReferences(cloned, survivorByDuplicateId)
+  return cloned
 }
 
 /**
