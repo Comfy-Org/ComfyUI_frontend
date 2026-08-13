@@ -92,12 +92,18 @@ describe('WorkflowSelectorChip', () => {
     ).toHaveTextContent('upscale')
   })
 
-  it('emits the selected tab path', async () => {
+  it('emits one selected tab path from the controlled radio group', async () => {
     const { user, emitted } = renderChip()
     await user.click(trigger())
     await user.click(await screen.findByText('upscale'))
 
     expect(emitted('selectTab')).toEqual([['workflows/upscale.json']])
+
+    await user.click(trigger())
+    expect(
+      await screen.findByRole('menuitemradio', { checked: true })
+    ).toHaveTextContent('portrait')
+    expect(emitted('selectTab')).toHaveLength(1)
   })
 
   it('shows the choose-a-workflow placeholder without an active tab', async () => {
