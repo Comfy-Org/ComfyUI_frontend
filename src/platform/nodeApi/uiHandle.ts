@@ -26,6 +26,8 @@
 import { defineComponent, h, markRaw, onMounted, onUnmounted, ref } from 'vue'
 import type { Component } from 'vue'
 
+import { ContextMenu } from '@/lib/litegraph/src/ContextMenu'
+import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
@@ -188,6 +190,56 @@ export interface UiHandle {
    * we rename freely, so both are worth retiring.
    */
   showDialog(def: DialogDef): DialogHandle
+  /**
+   * Shows a menu where the user clicked.
+   *
+   * `b.addMenuItem` is the node's own context menu — a different menu, on a
+   * different target, opened by the host. This is for a menu a pack raises
+   * itself: a lora row's Move Up / Remove, a chip that picks an output type.
+   * Four files hand-rolled it by constructing the renderer's menu class
+   * directly, which pins them to a renderer we intend to replace.
+   *
+   * Positioned from the event so the menu lands under the pointer, which is the
+   * only placement that reads as a context menu.
+   */
+  showMenu(def: MenuDef): void
+}
+
+/** @knipIgnoreUnusedButUsedByCustomNodes */
+export interface MenuItemDef {
+  readonly label: string
+  /** Shown but not selectable. */
+  readonly disabled?: boolean
+  /** A nested menu. Mutually exclusive with {@link run}. */
+  readonly submenu?: readonly MenuItemDef[]
+  run?(): void
+}
+
+/** @knipIgnoreUnusedButUsedByCustomNodes */
+export interface MenuDef {
+  readonly items: readonly MenuItemDef[]
+  /** Shown above the items. */
+  readonly title?: string
+  /** The event that asked for the menu; it decides where the menu appears. */
+  readonly event: MouseEvent
+}
+
+/**
+ * A nested menu is `submenu.options`, and an item with one must not also carry
+ * a callback: the renderer fires both, so a submenu parent that ran something
+ * would fire it on the way past.
+ */
+function toMenuValue(item: MenuItemDef): IContextMenuValue {
+  return {
+    content: item.label,
+    disabled: item.disabled,
+    ...(item.submenu
+      ? {
+          has_submenu: true,
+          submenu: { options: item.submenu.map(toMenuValue) }
+        }
+      : { callback: () => item.run?.() })
+  }
 }
 
 export function createUiHandle(): UiHandle {
@@ -230,6 +282,19 @@ export function createUiHandle(): UiHandle {
       )
 
       return () => useSidebarTabStore().unregisterSidebarTab(def.id)
+    },
+
+    showMenu(def) {
+      if (!def.items.length) {
+        throw new ComfyApiError('A menu needs at least one item.')
+      }
+      // Built against the renderer's own menu because the host still raises
+      // its menus that way — see useLoad3d and exportMenuHelper. Packs get the
+      // intent, so replacing it underneath costs them nothing.
+      new ContextMenu(def.items.map(toMenuValue), {
+        title: def.title,
+        event: def.event
+      })
     },
 
     showDialog(def) {
