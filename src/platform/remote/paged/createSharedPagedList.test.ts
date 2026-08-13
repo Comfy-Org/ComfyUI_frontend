@@ -88,7 +88,8 @@ describe('createSharedPagedList', () => {
         callCount++
         return callCount === 1 ? list1 : list2
       },
-      (p: string) => p
+      (p: string) => p,
+      (item) => item.id
     )
 
     const scope = effectScope()
@@ -103,24 +104,28 @@ describe('createSharedPagedList', () => {
     scope.stop()
   })
 
-  it.fails('invalidate on a superset query invalidates subset queries', async () => {
-    const list1 = mockPagedList<{ id: string }>()
-    const list2 = mockPagedList<{ id: string }>()
+  it('full invalidation propagates to overlapping siblings but not disjoint ones', async () => {
+    const list1 = mockPagedList<{ id: string }>([{ id: 'shared' }, { id: 'a' }])
+    const list2 = mockPagedList<{ id: string }>([{ id: 'shared' }, { id: 'b' }])
+    const list3 = mockPagedList<{ id: string }>([{ id: 'c' }])
     let callCount = 0
     const useShared = createSharedPagedList(
       () => {
         callCount++
-        return callCount === 1 ? list1 : list2
+        return [list1, list2, list3][callCount - 1]
       },
-      (p: string) => p
+      (p: string) => p,
+      (item) => item.id
     )
 
     const scope = effectScope()
     await scope.run(async () => {
       const outputs = useShared('outputs')
       useShared('outputs,temp')
+      useShared('inputs')
       await outputs.invalidate()
-      expect(list2.invalidate).toHaveBeenCalled()
+      expect(list2.invalidate).toHaveBeenCalledWith()
+      expect(list3.invalidate).not.toHaveBeenCalled()
     })
     scope.stop()
   })

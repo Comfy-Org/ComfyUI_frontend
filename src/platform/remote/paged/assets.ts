@@ -99,5 +99,6 @@ export function useAssetsQuery(
 
 export const useSharedAssetsQuery = createSharedPagedList(
   useAssetsQuery,
-  stableKey
+  stableKey,
+  (item) => item.id
 )

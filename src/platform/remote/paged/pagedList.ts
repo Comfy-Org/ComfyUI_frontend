@@ -1,5 +1,5 @@
 import type { MaybeRef } from 'vue'
-import { onScopeDispose } from 'vue'
+import { onScopeDispose, toValue } from 'vue'
 
 export type PagedList<T> = {
   hasMore: MaybeRef<boolean>
@@ -36,7 +36,8 @@ export function stableKey(params: Record<string, unknown> = {}): string {
 
 export function createSharedPagedList<TParams, TItem>(
   factory: (params: TParams) => PagedList<TItem>,
-  keyFn: (params: TParams) => string
+  keyFn: (params: TParams) => string,
+  itemKey: (item: TItem) => unknown = (item) => item
 ): (params: TParams) => PagedList<TItem> {
   const cache = new Map<string, CacheEntry<TItem>>()
 
@@ -52,10 +53,26 @@ export function createSharedPagedList<TParams, TItem>(
     })
 
     async function invalidate(stale?: TItem[]) {
-      if (!stale) return await entry.list.invalidate()
+      if (stale) {
+        await Promise.all(
+          [...cache.values()].map((e) => e.list.invalidate(stale))
+        )
+        return
+      }
 
+      const snapshot = toValue(entry.list.items)
+      await entry.list.invalidate()
+      if (snapshot.length === 0) return
+
+      const staleKeys = new Set(snapshot.map(itemKey))
       await Promise.all(
-        [...cache.values()].map((e) => e.list.invalidate(stale))
+        [...cache.values()]
+          .filter(
+            (e) =>
+              e !== entry &&
+              toValue(e.list.items).some((item) => staleKeys.has(itemKey(item)))
+          )
+          .map((e) => e.list.invalidate())
       )
     }
     return { ...entry.list, invalidate }
