@@ -25,11 +25,27 @@ const OLD_SURFACE =
   /\bapp\.(?:registerExtension|graph|canvas|ui|extensionManager|queuePrompt)\b|\bLiteGraph\b|\bLGraphNode\b|\bLGraphCanvas\b|\bapi\.(?:fetchApi|addEventListener|queuePrompt)\b|\/scripts\/(?:app|api|widgets|domWidget)\.js|\bComfyWidgets\b|\bnodeType\.prototype\b/
 
 /**
- * A refusal is a file whose whole body was replaced by a gap block, so what is
- * left is the explanation and nothing else. Two lines of slack covers a lone
- * `export {}` or an import the gap block still refers to.
+ * A gutted file is one whose whole body was replaced by a comment block. Two
+ * lines of slack covers a lone `export {}` or an import the block still refers
+ * to.
+ *
+ * Being gutted says nothing about WHY, and that distinction is the whole point:
+ * counting shape rather than decision reported 86 files as "refused" when 5 of
+ * them were decisions and 75 were work nobody had finished. A gap is not a
+ * refusal. A refusal is a refusal.
  */
-const REFUSAL_CODE_LINES = 2
+const GUTTED_CODE_LINES = 2
+
+/** A decision was taken: this will not be supported. */
+const REFUSAL = /^\s*\/\/\s*(?:REFUSED|UNSUPPORTED)\b/m
+
+/**
+ * Something wanted that nothing published serves yet.
+ *
+ * Outranks a refusal in the same file. A block that refuses one technique and
+ * still wants three others is unfinished, whatever else it says.
+ */
+const OUTSTANDING = /^\s*\/\/\s*(?:API-GAP|PUNTED IN FULL)\b/m
 
 const codeLines = (text) =>
   text
@@ -86,9 +102,13 @@ export function packStatus(dbDir) {
           refused: 0,
           outstanding: 0
         }
+        const gutted = codeLines(result) <= GUTTED_CODE_LINES
         if (original === result) stats.outstanding++
-        else if (codeLines(result) <= REFUSAL_CODE_LINES) stats.refused++
-        else stats.converted++
+        else if (!gutted) stats.converted++
+        else if (OUTSTANDING.test(result)) stats.outstanding++
+        else if (REFUSAL.test(result)) stats.refused++
+        // Gutted, and saying neither. Not a decision, so it is work.
+        else stats.outstanding++
         packs.set(pack, stats)
       }
     }
@@ -118,9 +138,9 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const { packs, totals, settled } = packStatus(dbDir)
   console.error(
     `${packs.size} packs. Of the files whose original touches the old surface: ` +
-      `${totals.converted} converted, ${totals.refused} refused with a ` +
-      `documented gap, ${totals.outstanding} still to do. ${settled} of ` +
-      `${packs.size} packs have no source left to convert.`
+      `${totals.converted} converted, ${totals.refused} refused by decision, ` +
+      `${totals.outstanding} outstanding. ${settled} of ${packs.size} packs ` +
+      `have nothing outstanding.`
   )
   if (!flags.includes('--table')) process.exit(0)
 
