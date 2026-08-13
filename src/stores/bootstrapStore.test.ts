@@ -1,9 +1,13 @@
 import { createTestingPinia } from '@pinia/testing'
+import type { AxiosResponse } from 'axios'
+import { AxiosError } from 'axios'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
+import { mergeCustomNodesI18n } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { api } from '@/scripts/api'
 
 import { useBootstrapStore } from './bootstrapStore'
 
@@ -64,6 +68,12 @@ const mockDistributionTypes = vi.hoisted(() => ({
 }))
 vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
 
+function requestFailure(status: number) {
+  const error = new AxiosError(`Request failed with status code ${status}`)
+  error.response = { status } as AxiosResponse
+  return error
+}
+
 describe('bootstrapStore', () => {
   beforeEach(() => {
     mockIsSettingsReady.value = false
@@ -90,6 +100,35 @@ describe('bootstrapStore', () => {
     await vi.waitFor(() => {
       expect(settingStore.isReady).toBe(true)
       expect(store.isI18nReady).toBe(true)
+    })
+  })
+
+  describe('custom node translations', () => {
+    it('treats a missing /api/i18n endpoint as no translations', async () => {
+      vi.mocked(api.getCustomNodesI18n).mockRejectedValueOnce(
+        requestFailure(404)
+      )
+      const store = useBootstrapStore()
+      void store.startStoreBootstrap()
+
+      await vi.waitFor(() => {
+        expect(store.isI18nReady).toBe(true)
+      })
+      expect(store.i18nError).toBeUndefined()
+      expect(mergeCustomNodesI18n).not.toHaveBeenCalled()
+    })
+
+    it('surfaces failures other than a missing endpoint', async () => {
+      vi.mocked(api.getCustomNodesI18n).mockRejectedValueOnce(
+        requestFailure(500)
+      )
+      const store = useBootstrapStore()
+      void store.startStoreBootstrap()
+
+      await vi.waitFor(() => {
+        expect(store.i18nError).toBeDefined()
+      })
+      expect(store.isI18nReady).toBe(false)
     })
   })
 
