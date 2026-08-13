@@ -17,6 +17,7 @@ export const layoutStore = fromPartial<typeof RealLayoutStore>({
   getCurrentSource: vi.fn(() => 'canvas'),
   getGroupLayout: vi.fn(() => null),
   getLinkLayout: vi.fn(() => null),
+  getNodeLayout: vi.fn(() => null),
   getNodeLayoutRef: vi.fn(() => ({ value: null })),
   getRerouteLayout: vi.fn(() => null),
   getSlotLayout: vi.fn(() => null),

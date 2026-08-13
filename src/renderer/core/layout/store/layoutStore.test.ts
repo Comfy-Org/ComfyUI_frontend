@@ -13,10 +13,10 @@ import { createUuidv4 } from '@/utils/uuid'
 import type { UUID } from '@/utils/uuid'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import { canvasLayoutMutations } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import type {
   LayoutChange,
   LayoutOperation,
@@ -345,7 +345,9 @@ describe('layoutStore CRDT operations', () => {
     layoutStore.onNodeChange(GRAPH, nodeId, staleListener)
 
     layoutStore.clearViewGeometry()
-    canvasLayoutMutations().createNode(GRAPH, nodeId, {
+    const mutations = useLayoutMutations()
+    mutations.setSource(LayoutSource.Canvas)
+    mutations.createNode(GRAPH, nodeId, {
       position: { x: 0, y: 0 },
       size: { width: 200, height: 100 },
       zIndex: 0,

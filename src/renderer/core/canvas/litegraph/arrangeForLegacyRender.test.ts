@@ -4,7 +4,8 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { arrangeForLegacyRender } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
-import { canvasLayoutMutations } from '@/renderer/core/layout/operations/graphLayoutAttachment'
+import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
+import { LayoutSource } from '@/renderer/core/layout/types'
 
 function addedNode(graph: LGraph) {
   const node = new LGraphNode('widgets')
@@ -51,7 +52,8 @@ describe('arrangeForLegacyRender', () => {
     const graph = new LGraph()
     const first = addedNode(graph)
     const second = addedNode(graph)
-    const mutations = canvasLayoutMutations()
+    const mutations = useLayoutMutations()
+    mutations.setSource(LayoutSource.Canvas)
     mutations.setNodeZIndex(graph.id, first.id, 2)
     mutations.setNodeZIndex(graph.id, second.id, 1)
 

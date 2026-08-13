@@ -2,7 +2,6 @@ import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { Reroute } from '@/lib/litegraph/src/Reroute'
-import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type {
@@ -37,13 +36,6 @@ const rerouteAttachments = new WeakMap<
   LayoutAttachment<Reroute['id']>
 >()
 
-/** Layout mutations attributed to the canvas, for direct delete calls. */
-export function canvasLayoutMutations() {
-  const mutations = useLayoutMutations()
-  mutations.setSource(LayoutSource.Canvas)
-  return mutations
-}
-
 /** Stamps the canvas as the operation source and returns the shared meta. */
 function canvasOperationMeta() {
   layoutStore.setSource(LayoutSource.Canvas)
@@ -55,15 +47,13 @@ function canvasOperationMeta() {
 }
 
 /** A newly attached node stacks above those already attached. */
-export function attachNodeLayout(
-  graph: LayoutGraph,
-  node: LGraphNode
-): LayoutOperationResult {
+export function attachNodeLayout(graph: LayoutGraph, node: LGraphNode): void {
   if (nodeAttachments.has(node)) detachNodeLayout(node)
 
   const graphId = graph.rootGraph.id
   if (layoutStore.getNodeLayout(graphId, node.id)) {
-    return adoptNodeAttachment(graphId, node) ? 'applied' : 'no-op'
+    adoptNodeAttachment(graphId, node)
+    return
   }
 
   const position = { x: node._pos[0], y: node._pos[1] }
@@ -83,29 +73,25 @@ export function attachNodeLayout(
     nodeId: node.id,
     type: 'createNode'
   })
-  if (result === 'applied') {
-    return adoptNodeAttachment(graphId, node) ? result : 'no-op'
-  }
-  return result
+  if (result === 'applied') adoptNodeAttachment(graphId, node)
 }
 
-function adoptNodeAttachment(graphId: UUID, node: LGraphNode): boolean {
-  if (!layoutStore.readNodeRect(graphId, node.id, node._posSize)) return false
+function adoptNodeAttachment(graphId: UUID, node: LGraphNode): void {
+  if (!layoutStore.readNodeRect(graphId, node.id, node._posSize)) return
   nodeAttachments.set(node, { graphId, id: node.id })
   node._layoutRegistered = true
   node._geometryVersion = layoutStore.geometryVersion
-  return true
 }
 
-export function detachNodeLayout(node: LGraphNode): LayoutOperationResult {
+export function detachNodeLayout(node: LGraphNode): void {
   const attachment = nodeAttachments.get(node)
-  if (!attachment) return 'no-op'
+  if (!attachment) return
   const { graphId, id: nodeId } = attachment
 
   layoutStore.readNodeRect(graphId, nodeId, node._posSize)
   nodeAttachments.delete(node)
   node._layoutRegistered = false
-  return layoutStore.applyOperation({
+  layoutStore.applyOperation({
     ...canvasOperationMeta(),
     entity: 'node',
     graphId,
@@ -117,12 +103,12 @@ export function detachNodeLayout(node: LGraphNode): LayoutOperationResult {
 export function attachGroupLayout(
   graph: LayoutGraph,
   group: LGraphGroup
-): LayoutOperationResult {
+): void {
   const graphId = graph.rootGraph.id
   if (layoutStore.getGroupLayout(graphId, group.id)) {
     syncGroupBoundsFromLayout(group)
     groupAttachments.set(group, { graphId, id: group.id })
-    return 'applied'
+    return
   }
 
   const result = layoutStore.applyOperation({
@@ -139,17 +125,15 @@ export function attachGroupLayout(
   })
   if (result === 'applied') {
     groupAttachments.set(group, { graphId, id: group.id })
-    return result
   }
-  return result
 }
 
-export function detachGroupLayout(group: LGraphGroup): LayoutOperationResult {
+export function detachGroupLayout(group: LGraphGroup): void {
   const attachment = groupAttachments.get(group)
-  if (!attachment) return 'no-op'
+  if (!attachment) return
   syncGroupBoundsFromLayout(group)
   groupAttachments.delete(group)
-  return layoutStore.applyOperation({
+  layoutStore.applyOperation({
     ...canvasOperationMeta(),
     entity: 'group',
     graphId: attachment.graphId,
@@ -158,17 +142,22 @@ export function detachGroupLayout(group: LGraphGroup): LayoutOperationResult {
   })
 }
 
-function attachRerouteLayout(
+/** Attaches a reroute, adopting an existing store entry when one exists. */
+export function materializeRerouteLayout(
   graph: LayoutGraph,
-  reroute: Reroute,
-  position: Point
+  reroute: Reroute
 ): LayoutOperationResult {
   const graphId = graph.rootGraph.id
+  if (layoutStore.getRerouteLayout(graphId, reroute.id)) {
+    rerouteAttachments.set(reroute, { graphId, id: reroute.id })
+    return 'applied'
+  }
+
   const result = layoutStore.applyOperation({
     ...canvasOperationMeta(),
     entity: 'reroute',
     graphId,
-    position,
+    position: { x: reroute.pos[0], y: reroute.pos[1] },
     rerouteId: reroute.id,
     type: 'createReroute'
   })
@@ -178,30 +167,12 @@ function attachRerouteLayout(
   return result
 }
 
-/** Attaches a reroute, adopting an existing store entry when one exists. */
-export function materializeRerouteLayout(
-  graph: LayoutGraph,
-  reroute: Reroute,
-  position?: Point
-): LayoutOperationResult {
-  const graphId = graph.rootGraph.id
-  if (layoutStore.getRerouteLayout(graphId, reroute.id)) {
-    rerouteAttachments.set(reroute, { graphId, id: reroute.id })
-    return 'applied'
-  }
-  return attachRerouteLayout(
-    graph,
-    reroute,
-    position ?? { x: reroute.pos[0], y: reroute.pos[1] }
-  )
-}
-
-export function detachRerouteLayout(reroute: Reroute): LayoutOperationResult {
+export function detachRerouteLayout(reroute: Reroute): void {
   const attachment = rerouteAttachments.get(reroute)
-  if (!attachment) return 'no-op'
+  if (!attachment) return
   syncReroutePositionFromLayout(reroute)
   rerouteAttachments.delete(reroute)
-  return layoutStore.applyOperation({
+  layoutStore.applyOperation({
     ...canvasOperationMeta(),
     entity: 'reroute',
     graphId: attachment.graphId,
@@ -287,11 +258,10 @@ function syncGroupBoundsFromLayout(group: LGraphGroup): void {
 export function detachGraphLayouts(
   graphs: readonly GraphLayoutOwner[],
   { removeLayouts = true }: { removeLayouts?: boolean } = {}
-): LayoutOperationResult {
+): void {
   const meta = removeLayouts ? canvasOperationMeta() : undefined
   const operations: LayoutOperation[] = []
   const visited = new Set<GraphLayoutOwner>()
-  let didDetach = false
 
   function collect(owner: GraphLayoutOwner): void {
     if (visited.has(owner)) return
@@ -302,7 +272,6 @@ export function detachGraphLayouts(
       layoutStore.readNodeRect(attachment.graphId, attachment.id, node._posSize)
       nodeAttachments.delete(node)
       node._layoutRegistered = false
-      didDetach = true
       if (meta) {
         operations.push({
           ...meta,
@@ -318,7 +287,6 @@ export function detachGraphLayouts(
       if (!attachment) continue
       syncGroupBoundsFromLayout(group)
       groupAttachments.delete(group)
-      didDetach = true
       if (meta) {
         operations.push({
           ...meta,
@@ -334,7 +302,6 @@ export function detachGraphLayouts(
       if (!attachment) continue
       syncReroutePositionFromLayout(reroute)
       rerouteAttachments.delete(reroute)
-      didDetach = true
       if (meta) {
         operations.push({
           ...meta,
@@ -349,6 +316,5 @@ export function detachGraphLayouts(
   }
 
   for (const graph of graphs) collect(graph)
-  if (!removeLayouts) return didDetach ? 'applied' : 'no-op'
-  return layoutStore.applyOperations(operations)
+  if (removeLayouts) layoutStore.applyOperations(operations)
 }

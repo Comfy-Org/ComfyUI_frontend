@@ -9,7 +9,6 @@ import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
 import { LitegraphLinkAdapter } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
 import type { LinkRenderContext } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
 import { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculations'
-import { canvasLayoutMutations } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
@@ -4987,7 +4986,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const i = graph._nodes.indexOf(node)
     if (i == -1) return
 
-    canvasLayoutMutations().bringNodeToFront(graph.rootGraph.id, node.id)
+    const mutations = useLayoutMutations()
+    mutations.setSource(LayoutSource.Canvas)
+    mutations.bringNodeToFront(graph.rootGraph.id, node.id)
 
     graph._nodes.splice(i, 1)
     graph._nodes.push(node)
