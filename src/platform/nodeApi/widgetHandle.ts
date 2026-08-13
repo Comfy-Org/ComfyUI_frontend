@@ -597,7 +597,8 @@ export interface CanvasDef {
   draw(
     context: CanvasRenderingContext2D,
     size: readonly [number, number],
-    theme: CanvasTheme
+    theme: CanvasTheme,
+    value: MountedValue | undefined
   ): void
   /**
    * The pointer went down on this widget.
@@ -630,6 +631,25 @@ export interface CanvasDef {
    * suppressed and the node's does not open.
    */
   onContextMenu?(event: CanvasPointerEvent): void
+  /**
+   * Makes the surface hold a value rather than only draw one.
+   *
+   * Without it a drawn control that stores something has to be two widgets — a
+   * hidden value widget and a surface — and two widgets cannot occupy the one
+   * position the original had. That is not a tidiness point: `serialize` writes
+   * at each widget's own index and leaves a hole where a non-serializing widget
+   * sits, so the pair has to be ordered value-first to keep the saved array
+   * intact, and a pack that gets that wrong writes a null into every workflow
+   * the node has ever appeared in. It moved rgthree's Power Puter chip row
+   * below its code box.
+   *
+   * `draw` receives the current value as its fourth argument.
+   */
+  readonly defaultValue?: MountedData
+  /** Whether the value reaches the saved workflow. See {@link MountDef.serialize}. */
+  readonly serialize?: boolean
+  /** Whether the value reaches the API prompt. See {@link MountDef.sendToPrompt}. */
+  readonly sendToPrompt?: boolean
 }
 
 /** @knipIgnoreUnusedButUsedByCustomNodes */
@@ -926,6 +946,10 @@ export function createWidgetCollection(
 
     canvas(def) {
       const element = document.createElement('canvas')
+      // Captured from `render` rather than read per draw: `mount` hands the
+      // accessor over once, and a draw that happens before mounting has nothing
+      // to read anyway.
+      let held: MountedValue | undefined
       element.style.width = '100%'
       element.style.display = 'block'
 
@@ -956,7 +980,8 @@ export function createWidgetCollection(
         def.draw(
           context,
           Object.freeze([width, height] as const),
-          themeOf(element)
+          themeOf(element),
+          held
         )
       }
 
@@ -996,8 +1021,15 @@ export function createWidgetCollection(
       const widget = this.mount({
         name: def.name,
         height: def.height,
-        render: (container) => {
+        defaultValue: def.defaultValue,
+        serialize: def.serialize,
+        sendToPrompt: def.sendToPrompt,
+        render: (container, value) => {
+          held = value
           container.append(element)
+          // A value changed elsewhere — a workflow load — has to reach the
+          // drawing, which has no other way to notice.
+          value?.onChange?.(() => redraw())
           redraw()
           if (wantsPointer) {
             element.addEventListener('pointerdown', onDown)
