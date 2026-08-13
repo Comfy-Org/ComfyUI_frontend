@@ -2781,7 +2781,7 @@ export class LGraph
               console.warn('Node not found or has errors:', n_info.type)
 
             // in case of error we create a replacement node to avoid losing info
-            node = new LGraphNode('')
+            node = new LGraphNode('', String(n_info.type))
             node.last_serialization = n_info
             node.has_errors = true
             error = true

@@ -68,21 +68,26 @@ describe('LGraphNode node-data adoption', () => {
     expect(node._graphScope).toBeUndefined()
   })
 
-  it('keeps the registration when configure carries a stale id', () => {
+  it('keeps registered identity when configure carries stale values', () => {
     const { subgraph, node } = addNodeToSubgraph()
     const assignedId = node.id
+    const assignedType = node.type
 
-    node.configure({ ...node.serialize(), id: 9999 })
+    node.configure({
+      ...node.serialize(),
+      id: 9999,
+      type: 'replacement'
+    })
 
     expect(node.id).toBe(assignedId)
+    expect(node.type).toBe(assignedType)
     expect(statesIn(subgraph).map((s) => s.id)).toEqual([assignedId])
   })
 
-  it('keeps registered identity assignments attached to store state', () => {
+  it('keeps registered identity assignments in store state', () => {
     const { node } = addNodeToSubgraph()
     const registeredState = node._state
     const registeredId = node.id
-    const registeredType = node.type
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
     node.id = node.id
@@ -90,7 +95,12 @@ describe('LGraphNode node-data adoption', () => {
     node.type = 'replacement'
 
     expect(node._state).toBe(registeredState)
-    expect([node.id, node.type]).toEqual([registeredId, registeredType])
+    expect(node.id).toBe(registeredId)
+    expect(node.type).toBe('replacement')
+    expect(registeredState.type).toBe('replacement')
+    expect(warn).toHaveBeenCalledWith(
+      'LiteGraph: changing a node type after construction is deprecated'
+    )
     expect(warn).toHaveBeenCalledTimes(2)
   })
 })
