@@ -126,6 +126,33 @@ describe('graph API (composed)', () => {
     })
   })
 
+  describe('version', () => {
+    it('advances when the graph changes and holds still when it does not', () => {
+      const before = api.version
+      expect(api.version).toBe(before)
+
+      const node = addNode('A', 'Alpha')
+      const afterAdd = api.version
+      expect(afterAdd).not.toBe(before)
+
+      node.collapse(true)
+      expect(api.version).not.toBe(afterAdd)
+    })
+
+    it('does not advance when only a widget value changes', () => {
+      const node = addNode('A', 'Alpha')
+      const widget = node.addWidget('number', 'seed', 1, () => undefined, {})
+
+      const before = api.version
+      widget.value = 42
+
+      // Documented on `version`, and load-bearing: packs are told this counter
+      // cannot be watched to catch every edit. If litegraph starts bumping on
+      // value changes the doc becomes a lie, and this is what says so.
+      expect(api.version).toBe(before)
+    })
+  })
+
   describe('end-to-end wiring', () => {
     it('connects two nodes and reports the link from the graph', () => {
       const source = addNode('S', 'Source')

@@ -186,6 +186,25 @@ export interface GraphHandle {
    * rather than forced. The whole swap is one undo step.
    */
   replace(id: string, type: string): NodeHandle | undefined
+  /**
+   * Changes when the graph does: nodes added, removed or reconfigured, links
+   * connected or disconnected, slots and subgraph inputs/outputs altered, and
+   * the node flags a reader can see — collapsed, pinned, advanced.
+   *
+   * Hold one and compare it later to learn whether anything moved since. That
+   * is the whole contract: an opaque token, not a count. Do not subtract two
+   * of them, do not expect it to start anywhere in particular, and do not
+   * expect consecutive changes to differ by one. Coalesced edits are free to
+   * advance it once, and `batch()` exists precisely so they can.
+   *
+   * NOT bumped by widget values. A pack watching this to catch every edit will
+   * miss someone typing in a field. Four packs in the corpus wrote
+   * `graph._version++` by hand immediately after setting a widget value, which
+   * is what reaching for this counter to mean "something changed" looks like.
+   * Setting a value through this API already redraws, and a canvas widget
+   * holding state the API cannot see has `redraw()`.
+   */
+  readonly version: number
   /** Diagnostics: live handle-cache slots across all kinds. */
   readonly cacheSize: number
 }
@@ -498,6 +517,10 @@ export function createGraphApi(
         )
       )
       return Object.freeze(infos)
+    },
+
+    get version() {
+      return getGraph()?._version ?? 0
     },
 
     get cacheSize() {
