@@ -84,7 +84,7 @@ interface GraphLike {
 
 interface WidgetStoreLike {
   getNodeWidgetIds?(graphId: unknown, nodeId: unknown): string[]
-  getWidget?(key: never): WidgetLike | undefined
+  getWidget?(key: string): WidgetLike | undefined
 }
 
 const COMBO = (o: string[]) => [o, {}]
@@ -204,9 +204,7 @@ function signature(graph: GraphLike, store?: WidgetStoreLike) {
           r = names.filter((nm) => liveNames.has(nm)).length
           st = names
             .map((nm) => {
-              const w = store.getWidget?.(
-                `${graph.rootGraph.id}:${n.id}:${nm}` as never
-              )
+              const w = store.getWidget?.(`${graph.rootGraph.id}:${n.id}:${nm}`)
               return w ? `${nm}=${w.type}` : `${nm}=?`
             })
             .join(',')
@@ -245,8 +243,16 @@ function signature(graph: GraphLike, store?: WidgetStoreLike) {
 export async function runPack(
   pack: string,
   loaders: Record<string, () => Promise<unknown>>,
-  entries: string[]
+  entries: string[],
+  safe: string
 ) {
+  // Write-ahead stub: a pack that hangs past the test timeout or kills the
+  // worker leaves this row behind, so the shard's rows==specs check reads
+  // it as pack noise (counted, reported) instead of a harness failure.
+  const dir = process.env.MATRIX_OUT ?? '/tmp/matrix'
+  fs.mkdirSync(dir, { recursive: true })
+  const rowPath = `${dir}/${safe}.json`
+  fs.writeFileSync(rowPath, JSON.stringify({ pack, incomplete: true }))
   // The app CONTAINS throwing extension hooks (extensionService catches and
   // console.errors them), so a pack whose hook throws would otherwise read
   // clean. Capture the containment signature as row data.
@@ -294,6 +300,9 @@ export async function runPack(
   const regErrs: string[] = []
   for (const [name, d] of Object.entries(DEFS)) {
     try {
+      // Bound to the service's real signature: a node-def contract change
+      // breaks this cast in the same PR instead of silently measuring a
+      // shape the app no longer accepts.
       await svc.registerNodeDef(name, {
         name,
         display_name: name,
@@ -303,7 +312,7 @@ export async function runPack(
         output_is_list: [],
         output_node: name === 'SaveImage',
         ...(d as object)
-      } as never)
+      } as Parameters<typeof svc.registerNodeDef>[1])
     } catch (e) {
       regErrs.push(`${name}:${errMsg(e)}`)
     }
@@ -400,17 +409,21 @@ export async function runPack(
 
   // ---- the user-operation battery ---------------------------------------
   await op('load', () =>
-    graph.configure(structuredClone(defaultWorkflow) as never)
+    graph.configure(
+      structuredClone(defaultWorkflow) as unknown as Parameters<
+        typeof graph.configure
+      >[0]
+    )
   )
   // Harness self-check: if the default workflow did not materialize, the
   // if-guarded ops below would all no-op and report a vacuously clean pack.
-  // The summarizer withholds the verdict when this fails broadly. Floors,
-  // not pins (workflow has 7 nodes / KSampler has 7 widgets today): the
-  // check must catch "nothing loaded", not fail on a legitimate upstream
-  // workflow edit.
+  // The summarizer withholds the verdict when this fails broadly. Floors of
+  // one below today's workflow (7 nodes / 7 KSampler widgets): tolerate a
+  // legitimate upstream edit removing one item, but a graph missing more
+  // than that would run the battery vacuously and must read as degraded.
   const kAfterLoad = byType('KSampler')
   row.selfCheck =
-    graph._nodes.length >= 4 && (kAfterLoad?.widgets?.length ?? 0) >= 4
+    graph._nodes.length >= 6 && (kAfterLoad?.widgets?.length ?? 0) >= 6
       ? 'OK'
       : `default workflow degraded: nodes=${graph._nodes.length}` +
         ` kSamplerWidgets=${kAfterLoad?.widgets?.length ?? 0}`
@@ -547,7 +560,9 @@ export async function runPack(
   await op('reload', () => {
     const g2 = new LGraph()
     g2.configure(
-      structuredClone(JSON.parse((row.serialized as string) ?? '{}')) as never
+      structuredClone(
+        JSON.parse((row.serialized as string) ?? '{}')
+      ) as Parameters<typeof g2.configure>[0]
     )
     ;(row as Record<string, unknown>).reloadedNodes = g2._nodes.length
   })
@@ -564,10 +579,5 @@ export async function runPack(
   row.ops = ops
   row.hookErrors = [...new Set(hookErrors)].slice(0, 20)
 
-  const dir = process.env.MATRIX_OUT ?? '/tmp/matrix'
-  fs.mkdirSync(dir, { recursive: true })
-  fs.writeFileSync(
-    `${dir}/${pack.replace(/[^A-Za-z0-9_-]/g, '_')}.json`,
-    JSON.stringify(row)
-  )
+  fs.writeFileSync(rowPath, JSON.stringify(row))
 }

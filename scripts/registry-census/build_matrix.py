@@ -47,11 +47,12 @@ SPEC = """import {{ describe, it }} from 'vitest'
 
 import {{ runPack }} from './runner'
 
-const loaders = import.meta.glob('./packs/{safe}/**/*.js')
+const PACK = {pack_json}
+const loaders = import.meta.glob('./packs/{safe}/**/*.{{js,mjs}}')
 
-describe('matrix {pack}', () => {{
+describe('matrix ' + PACK, () => {{
   it('runs the op battery', async () => {{
-    await runPack('{pack}', loaders, {entries})
+    await runPack(PACK, loaders, {entries}, '{safe}')
   }}, 300_000)
 }})
 """
@@ -116,10 +117,7 @@ def build(limit: int = 0, shard: str = ''):
                     anchor = dst
                     probe = os.path.dirname(out)
                     while probe.startswith(dst):
-                        if os.path.isdir(os.path.join(probe, 'web')) or any(
-                            q == 'web' for q in os.listdir(probe) if
-                            os.path.isdir(os.path.join(probe, q))
-                        ) if os.path.isdir(probe) else False:
+                        if os.path.isdir(os.path.join(probe, 'web')):
                             anchor = probe
                             break
                         parent = os.path.dirname(probe)
@@ -140,12 +138,20 @@ def build(limit: int = 0, shard: str = ''):
             shutil.rmtree(dst, ignore_errors=True)
             manifest[pack] = {'skipped': 'no extension-shaped JS'}
             continue
-        spec = SPEC.format(pack=pack, safe=safe, entries=json.dumps(entries))
-        open(os.path.join(DEST, f'{safe}.matrix.test.ts'), 'w').write(spec)
+        spec = SPEC.format(
+            pack_json=json.dumps(pack), safe=safe, entries=json.dumps(entries)
+        )
+        open(
+            os.path.join(DEST, f'{safe}.matrix.test.ts'), 'w', encoding='utf-8'
+        ).write(spec)
         manifest[pack] = {'files': n_files, 'entries': len(entries)}
         if truncated:
             manifest[pack]['truncated'] = True
-    json.dump(manifest, open(os.path.join(DEST, 'manifest.json'), 'w'), indent=1)
+    json.dump(
+        manifest,
+        open(os.path.join(DEST, 'manifest.json'), 'w', encoding='utf-8'),
+        indent=1,
+    )
     built = sum(1 for v in manifest.values() if 'entries' in v)
     print(f'{built} pack specs built, {len(manifest)-built} skipped -> {DEST}', file=sys.stderr)
 

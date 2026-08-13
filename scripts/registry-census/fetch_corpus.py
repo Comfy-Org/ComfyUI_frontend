@@ -40,10 +40,23 @@ from concurrent.futures import ThreadPoolExecutor
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from paths import CORPUS, LOCKFILE, registry_snapshot  # noqa: E402
 
-# Source-ish files only; the corpus is scanned for JS idioms, not built.
-INCLUDES = ('.js', '.mjs', '.ts', '.jsx', '.tsx', '.vue')
+# Source files the matrix executes plus the assets packs import from them
+# (a CSS/JSON import that is absent on disk scores the pack as broken).
+INCLUDES = (
+    '.js', '.mjs', '.ts', '.jsx', '.tsx', '.vue',
+    '.css', '.json', '.svg', '.woff2', '.png',
+)
+MAX_FILE_BYTES = 2_000_000
 
 _TREE_RE = re.compile(r'^(?P<owner>[^/]+)/(?P<repo>[^/]+)(?:/(?:tree|blob)/.*)?$')
+_PACK_ID_RE = re.compile(r'[A-Za-z0-9][A-Za-z0-9._-]{0,127}')
+
+
+def _host(url: str) -> str:
+    u = url.strip().lower()
+    u = re.sub(r'^[a-z+]+://', '', u)
+    u = re.sub(r'^git@([^:]+):.*$', r'\1', u)
+    return u.split('/', 1)[0].removeprefix('www.')
 
 
 def slug_of(url: str) -> str | None:
@@ -66,9 +79,10 @@ def slug_of(url: str) -> str | None:
 
 
 def tarball_url(repo: str, slug: str, ref: str) -> str | None:
-    if 'github.com' in repo:
+    host = _host(repo)
+    if host == 'github.com':
         return f'https://codeload.github.com/{slug}/tar.gz/{ref}'
-    if 'gitlab.com' in repo:
+    if host == 'gitlab.com':
         name = slug.split('/')[-1]
         return f'https://gitlab.com/{slug}/-/archive/{ref}/{name}-{ref}.tar.gz'
     return None
@@ -104,7 +118,11 @@ def fetch_one(
     """Returns (pack_id, status, etag)."""
     pack_id = entry['id']
     repo = entry.get('repo') or ''
-    dest = os.path.join(CORPUS, pack_id.replace('/', '_'))
+    # The id becomes a directory under CORPUS and a deletion target on
+    # refetch; an unvalidated '..' would resolve to the census root itself.
+    if not _PACK_ID_RE.fullmatch(pack_id):
+        return (pack_id, 'bad-id', None)
+    dest = os.path.join(CORPUS, pack_id)
     marker = os.path.join(dest, '.done')
     prev = lock.get(pack_id) or {}
 
@@ -175,6 +193,8 @@ def fetch_one(
         for root, _dirs, files in os.walk(extracted):
             for name in files:
                 if not name.lower().endswith(INCLUDES):
+                    continue
+                if os.path.getsize(os.path.join(root, name)) > MAX_FILE_BYTES:
                     continue
                 rel = os.path.relpath(os.path.join(root, name), extracted)
                 target = os.path.join(staged, rel)

@@ -13,7 +13,12 @@ const config: KnipConfig = {
         'src/types/index.ts',
         'src/storybook/mocks/**/*.ts'
       ],
-      project: ['**/*.{js,ts,vue}', '*.{js,ts,mts}', '!.claude/**'],
+      project: [
+        '**/*.{js,ts,vue}',
+        '*.{js,ts,mts}',
+        '!.claude/**',
+        '!src/__ecs_matrix__/**'
+      ],
       ignore: ['scripts/registry-census/detection-proof/**']
     },
     'apps/desktop-ui': {

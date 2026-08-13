@@ -84,6 +84,7 @@ export default defineConfig([
       'packages/registry-types/src/comfyRegistryTypes.ts',
       'playwright-report/*',
       'scripts/registry-census/detection-proof/*',
+      'src/__ecs_matrix__/*',
       'src/extensions/core/*',
       'src/scripts/*',
       'src/types/generatedManagerTypes.ts',

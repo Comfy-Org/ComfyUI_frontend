@@ -63,26 +63,37 @@ def keep_cached(reason: str) -> int:
 
 
 def main() -> int:
+    # Everything between fetch and a fully-built snapshot goes through the
+    # cached fallback: a malformed payload (string totalPages, non-mapping
+    # node rows) is the same operational event as an unreachable API.
     try:
         first = fetch_page(1)
-        total_pages = first.get('totalPages') or 1
+        total_pages = int(first.get('totalPages') or 1)
         nodes = list(first.get('nodes') or [])
 
         for page in range(2, total_pages + 1):
             nodes.extend(fetch_page(page).get('nodes') or [])
             print(f'  page {page}/{total_pages}', end='\r', file=sys.stderr)
+
+        seen: set[str] = set()
+        out = []
+        for n in nodes:
+            node_id = n.get('id')
+            if not node_id or node_id in seen:
+                continue
+            seen.add(node_id)
+            out.append(
+                {
+                    'id': node_id,
+                    'repo': n.get('repository') or '',
+                    'downloads': n.get('downloads') or 0,
+                }
+            )
     except RegistryUnavailable as exc:
         return keep_cached(str(exc))
+    except (TypeError, ValueError, KeyError, AttributeError) as exc:
+        return keep_cached(f'registry payload malformed: {exc!r}')
 
-    out = [
-        {
-            'id': n['id'],
-            'repo': n.get('repository') or '',
-            'downloads': n.get('downloads') or 0,
-        }
-        for n in nodes
-        if n.get('id')
-    ]
     out.sort(key=lambda x: x['id'])
 
     dest = registry_snapshot()

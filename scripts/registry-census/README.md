@@ -59,8 +59,12 @@ cannot flip the verdict, while a frontend regression that breaks pack
 integration craters them all at once; the delta gate catches gradual
 erosion the absolute floors ignore. Before any criterion is evaluated, a
 **harness gate** requires >= 50% of packs to pass the runner's self-check
-(the default workflow actually materialized: >= 7 nodes, KSampler with its
-widgets) — below that the verdict is _withheld_ as a harness failure (exit 2) instead of emitting a false ecosystem FAIL. Shard jobs check harness
+(the default workflow actually materialized: floors of 6 nodes / 6 KSampler
+widgets, one below today's 7/7 so a legitimate upstream workflow edit does
+not read as harness degradation). Packs that hang past the test timeout or
+crash the worker leave a write-ahead stub row - counted and reported,
+excluded from every metric, and a majority of stubs also withholds the
+verdict — below that the verdict is _withheld_ as a harness failure (exit 2) instead of emitting a false ecosystem FAIL. Shard jobs check harness
 integrity only (every built spec wrote its row; vitest's own exit code is
 ignored because pack code leaks unhandled rejections).
 

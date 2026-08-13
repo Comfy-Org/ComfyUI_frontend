@@ -41,7 +41,9 @@ permissions:
   contents: read
 
 concurrency:
-  group: registry-corpus
+  # Ref-scoped: PR self-tests must not queue behind (or delay) the weekly
+  # measurement on the default branch.
+  group: registry-corpus-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -61,8 +63,8 @@ jobs:
         uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           path: .census
-          key: registry-corpus-${{ github.run_id }}
-          restore-keys: registry-corpus-
+          key: registry-corpus-v2-${{ github.run_id }}
+          restore-keys: registry-corpus-v2-
 
       # Re-pin the registry snapshot every run: it is the corpus's target
       # list, and new packs only enter the corpus through it.
@@ -93,7 +95,7 @@ jobs:
         uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           path: .census
-          key: registry-corpus-${{ hashFiles('.census/corpus.lock.json') }}
+          key: registry-corpus-v2-${{ hashFiles('.census/corpus.lock.json') }}
 
       # Each drift writes a new ~1GB entry against the repo's shared 10GB
       # cache budget; without pruning the census would evict every other
@@ -105,7 +107,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh cache list --repo "$GITHUB_REPOSITORY" --key registry-corpus- --sort created_at --order desc --json id --jq '.[1:][].id' |
+          gh cache list --repo "$GITHUB_REPOSITORY" --key registry-corpus-v2- --sort created_at --order desc --json id --jq '.[1:][].id' |
             while read -r id; do gh cache delete "$id" --repo "$GITHUB_REPOSITORY" || true; done
 
   # The execution rung between the corpus (every pack fetched) and the E2E
@@ -141,8 +143,8 @@ jobs:
         uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           path: .census
-          key: registry-corpus-${{ github.run_id }}-matrix
-          restore-keys: registry-corpus-
+          key: registry-corpus-v2-${{ github.run_id }}-matrix
+          restore-keys: registry-corpus-v2-
 
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
@@ -206,7 +208,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
 
+      # continue-on-error: when the corpus job fails, no shard ran and no
+      # artifact exists - the verdict step must still run so the summarizer
+      # reports the documented no-rows exit (2) instead of an opaque
+      # download failure.
       - name: Merge shard rows
+        continue-on-error: true
         uses: actions/download-artifact@v8
         with:
           pattern: ecosystem-matrix-shard-*

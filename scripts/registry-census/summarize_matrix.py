@@ -52,6 +52,18 @@ def main() -> int:
         print(f'no matrix rows in {out_dir}', file=sys.stderr)
         return 2
 
+    # Write-ahead stubs left by packs that hung past the test timeout or
+    # crashed the worker: counted and reported, excluded from every metric.
+    incomplete = sum(1 for r in rows if r.get('incomplete'))
+    rows = [r for r in rows if not r.get('incomplete')]
+    if not rows:
+        print(
+            f'all {incomplete} rows are incomplete stubs - every pack hung'
+            ' or crashed before measuring',
+            file=sys.stderr,
+        )
+        return 2
+
     skipped = 0
     for name in os.listdir(out_dir):
         if name.startswith('_manifest') and name.endswith('.json'):
@@ -65,6 +77,7 @@ def main() -> int:
     lines = [
         f'packs with extension JS executed: {len(rows)}'
         + (f' (no-JS packs ignored: {skipped})' if skipped else '')
+        + (f' (hung or crashed: {incomplete})' if incomplete else '')
     ]
 
     self_ok = sum(1 for r in rows if r.get('selfCheck', 'OK') == 'OK')
@@ -131,6 +144,15 @@ def main() -> int:
                 fh.write('## Ecosystem matrix\n\n```\n' + report + '\n```\n')
         return code
 
+    if incomplete > len(rows):
+        lines.append('')
+        lines.append(
+            f'HARNESS FAILURE: {incomplete} of {incomplete + len(rows)} packs'
+            ' left incomplete stub rows (hung or crashed) - a majority-hang'
+            ' points at the harness, not the ecosystem. Verdict withheld.'
+        )
+        return flush(2)
+
     self_pct = self_ok / len(rows) * 100
     if self_pct < 50:
         lines.append('')
@@ -171,33 +193,42 @@ def main() -> int:
 
     run_id = os.environ.get('MATRIX_RUN_ID', '')
     prev_path = os.environ.get('MATRIX_PREV', '')
+    prev = None
     if prev_path and os.path.exists(prev_path):
-        prev = json.load(open(prev_path))
-        prev_entry = prev.get('entryPct')
-        if run_id and prev.get('runId') == run_id:
-            # A re-run restored this same run's earlier write; comparing a
-            # run against itself would blind the gate exactly when someone
-            # is re-running a red verdict.
-            lines.append(
-                f'  {"entry-clean delta vs previous run":42s}   n/a'
-                '  (previous metrics are from this run)'
-            )
-        elif isinstance(prev_entry, (int, float)):
-            delta = entry_pct - prev_entry
-            held = delta >= -DELTA_TOLERANCE
-            lines.append(
-                f'  {"entry-clean delta vs previous run":42s} {delta:+5.1f}pp'
-                f'  (floor -{DELTA_TOLERANCE}pp)  {"OK" if held else "BREACH"}'
-            )
-            if not held:
-                breaches.append(
-                    f'entry files clean dropped {-delta:.1f}pp'
-                    f' (from {prev_entry:.1f}% to {entry_pct:.1f}%)'
-                )
-    else:
+        try:
+            prev = json.load(open(prev_path))
+        except (OSError, ValueError):
+            print(f'unreadable previous metrics: {prev_path}', file=sys.stderr)
+    prev_entry = prev.get('entryPct') if isinstance(prev, dict) else None
+    if prev is None:
         lines.append(
             f'  {"entry-clean delta vs previous run":42s}   n/a'
             '  (no previous metrics)'
+        )
+    elif run_id and prev.get('runId') == run_id:
+        # A re-run restored this same run's earlier write; comparing a
+        # run against itself would blind the gate exactly when someone
+        # is re-running a red verdict.
+        lines.append(
+            f'  {"entry-clean delta vs previous run":42s}   n/a'
+            '  (previous metrics are from this run)'
+        )
+    elif isinstance(prev_entry, (int, float)):
+        delta = entry_pct - prev_entry
+        held = delta >= -DELTA_TOLERANCE
+        lines.append(
+            f'  {"entry-clean delta vs previous run":42s} {delta:+5.1f}pp'
+            f'  (floor -{DELTA_TOLERANCE}pp)  {"OK" if held else "BREACH"}'
+        )
+        if not held:
+            breaches.append(
+                f'entry files clean dropped {-delta:.1f}pp'
+                f' (from {prev_entry:.1f}% to {entry_pct:.1f}%)'
+            )
+    else:
+        lines.append(
+            f'  {"entry-clean delta vs previous run":42s}   n/a'
+            '  (previous metrics malformed)'
         )
 
     lines.append(
@@ -213,6 +244,7 @@ def main() -> int:
         json.dump(
             {
                 'packs': len(rows),
+                'incomplete': incomplete,
                 'anyPct': round(any_pct, 3),
                 'entryPct': round(entry_pct, 3),
                 'regPct': round(reg_pct, 3),

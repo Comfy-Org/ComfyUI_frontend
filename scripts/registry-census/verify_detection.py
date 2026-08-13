@@ -16,16 +16,35 @@ import json
 import os
 import sys
 
-EXPECTED_PACKS = 7
+FIXTURE_CORPUS = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
+    'detection-proof', 'corpus', 'registry_js',
+)
+
+
+def expected_packs() -> int:
+    if os.path.isdir(FIXTURE_CORPUS):
+        return sum(
+            1
+            for d in os.listdir(FIXTURE_CORPUS)
+            if os.path.isdir(os.path.join(FIXTURE_CORPUS, d))
+        )
+    return 9
 
 
 def main() -> int:
     out = os.environ.get('MATRIX_OUT', '/tmp/matrix')
     rows: dict[str, dict] = {}
     for name in os.listdir(out) if os.path.isdir(out) else []:
-        if name.endswith('.json') and not name.startswith('_'):
+        if not name.endswith('.json') or name.startswith('_'):
+            continue
+        try:
             r = json.load(open(os.path.join(out, name)))
             rows[r['pack']] = r
+        except (OSError, ValueError, KeyError, TypeError):
+            # The harness-integrity check below reports the shortfall; a
+            # malformed row must not kill the reporter that exists to name it.
+            print(f'  unreadable row: {name}', file=sys.stderr)
 
     failures: list[str] = []
 
@@ -40,11 +59,22 @@ def main() -> int:
     def hook_errors(pack: str) -> list[str]:
         return rows.get(pack, {}).get('hookErrors') or []
 
+    expected = expected_packs()
     print('detection proof over', out)
     check(
-        f'harness integrity: {len(rows)}/{EXPECTED_PACKS} rows written'
+        f'harness integrity: {len(rows)}/{expected} rows written'
         ' despite universal breakage',
-        len(rows) == EXPECTED_PACKS,
+        len(rows) == expected,
+    )
+
+    check(
+        'entry-load: an .mjs entry loads (glob covers both extensions)',
+        rows.get('clean-mjs-control', {}).get('loadedOk') == 1,
+    )
+    check(
+        'entry-load: an asset-importing entry loads (css/json ship in'
+        ' the corpus)',
+        rows.get('clean-asset-control', {}).get('loadedOk') == 1,
     )
 
     loader = rows.get('poison-load-throw', {})
@@ -129,7 +159,7 @@ def main() -> int:
         return 1
     print(
         f'DETECTION PROOF PASSED: every channel fired, control clean,'
-        f' {len(rows)}/{EXPECTED_PACKS} rows'
+        f' {len(rows)}/{expected} rows'
     )
     return 0
 
