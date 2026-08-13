@@ -8,13 +8,19 @@ import LocalRunButtonWrapper from './LocalRunButtonWrapper.vue'
 type PartnerNode = { nodeName: string; displayName: string }
 
 const gateState = vi.hoisted(() => ({
+<<<<<<< HEAD
   gate: undefined as unknown as { value: 'sign-in' | 'none' },
   partnerNodes: undefined as unknown as { value: PartnerNode[] }
+=======
+  gate: 'none' as 'sign-in' | 'add-credits' | 'none',
+  partnerNodes: [] as { nodeName: string; displayName: string }[]
+>>>>>>> bb518643d9 (feat: gate Run button on credits for partner nodes on local/desktop)
 }))
 
 const showApiNodesSignInDialog = vi.hoisted(() =>
   vi.fn(() => Promise.resolve(false))
 )
+const showTopUpCreditsDialog = vi.hoisted(() => vi.fn(() => Promise.resolve()))
 
 vi.mock('@/composables/billing/usePartnerNodesRunGate', async () => {
   const { ref } = await import('vue')
@@ -29,14 +35,7 @@ vi.mock('@/composables/billing/usePartnerNodesRunGate', async () => {
 })
 
 vi.mock('@/services/dialogService', () => ({
-  useDialogService: () => ({ showApiNodesSignInDialog })
-}))
-
-vi.mock('@/components/actionbar/ComfyRunButton/ComfyQueueButton.vue', () => ({
-  default: {
-    name: 'ComfyQueueButton',
-    template: '<button data-testid="queue-button" />'
-  }
+  useDialogService: () => ({ showApiNodesSignInDialog, showTopUpCreditsDialog })
 }))
 
 vi.mock('@/stores/queueSettingsStore', async () => {
@@ -59,6 +58,13 @@ const { __setQueueMode, __getQueueMode } =
     __getQueueMode: () => string
   }
 
+vi.mock('@/components/actionbar/ComfyRunButton/ComfyQueueButton.vue', () => ({
+  default: {
+    name: 'ComfyQueueButton',
+    template: '<button data-testid="queue-button" />'
+  }
+}))
+
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -67,7 +73,7 @@ const i18n = createI18n({
       actionbar: {
         partnerRunGate: {
           signInToRun: 'Sign in to run',
-          signInCaption: 'Partner nodes require an account'
+          addCredits: 'Add Credits'
         }
       }
     }
@@ -96,14 +102,31 @@ describe('LocalRunButtonWrapper', () => {
     expect(__getQueueMode()).toBe('instant')
   })
 
+<<<<<<< HEAD
   it('replaces the queue button and disables auto-queue when gated', () => {
     gateState.gate.value = 'sign-in'
+=======
+  it('replaces the queue button with sign-in when gated', () => {
+    gateState.gate = 'sign-in'
+>>>>>>> bb518643d9 (feat: gate Run button on credits for partner nodes on local/desktop)
     renderWrapper()
     expect(screen.queryByTestId('queue-button')).not.toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: 'Sign in to run' })
     ).toBeInTheDocument()
+  })
+
+  it('shows Add Credits, opens the top-up dialog, and disables auto-queue when gated', async () => {
+    gateState.gate = 'add-credits'
+    renderWrapper()
+
+    expect(screen.queryByTestId('queue-button')).not.toBeInTheDocument()
     expect(__getQueueMode()).toBe('disabled')
+    await userEvent.click(screen.getByRole('button', { name: 'Add Credits' }))
+
+    expect(showTopUpCreditsDialog).toHaveBeenCalledWith({
+      isInsufficientCredits: true
+    })
   })
 
   it('points the gated button at the caption explaining why it is gated', () => {

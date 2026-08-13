@@ -2,7 +2,7 @@
   <div ref="root" class="contents">
     <ComfyQueueButton v-if="gate === 'none'" />
     <Button
-      v-else
+      v-else-if="gate === 'sign-in'"
       v-tooltip.bottom="{
         value: t('actionbar.partnerRunGate.signInCaption'),
         showDelay: 600
@@ -16,6 +16,22 @@
     >
       <i class="icon-[lucide--log-in] size-4" aria-hidden="true" />
       {{ t('actionbar.partnerRunGate.signInToRun') }}
+    </Button>
+    <Button
+      v-else
+      v-tooltip.bottom="{
+        value: t('actionbar.partnerRunGate.creditsCaption'),
+        showDelay: 600
+      }"
+      variant="subscribe"
+      size="unset"
+      class="h-8 gap-1.5 rounded-lg px-4 whitespace-nowrap"
+      data-testid="partner-add-credits-button"
+      aria-describedby="partner-run-gate-caption"
+      @click="openTopUpCreditsDialog"
+    >
+      <i class="icon-[tabler--crown-filled] size-4" aria-hidden="true" />
+      {{ t('actionbar.partnerRunGate.addCredits') }}
     </Button>
   </div>
 </template>
@@ -60,5 +76,9 @@ function openPartnerSignInDialog() {
   void dialogService.showApiNodesSignInDialog(
     partnerNodes.value.map((node) => node.displayName)
   )
+}
+
+function openTopUpCreditsDialog() {
+  void dialogService.showTopUpCreditsDialog({ isInsufficientCredits: true })
 }
 </script>

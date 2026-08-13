@@ -3860,6 +3860,8 @@
     "freeTierRuns": "{available} / {MAX_AVAILABLE} runs left",
     "freeTierPartner": "Partner nodes need a paid plan",
     "partnerRunGate": {
+      "addCredits": "Add Credits",
+      "creditsCaption": "Partner nodes need credits",
       "signInCaption": "Partner nodes require an account",
       "signInToRun": "Sign in to run"
     },

@@ -1,6 +1,9 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { localAuthFixture } from '@e2e/fixtures/localAuthFixture'
 import { TestIds } from '@e2e/fixtures/selectors'
 
 /**
@@ -14,8 +17,8 @@ const PARTNER_NODE_DISPLAY_NAME = 'Flux 1.1 [pro] Ultra Image'
 /**
  * Local/desktop-only run gating: the Run button is replaced when the graph
  * contains partner (api_node) nodes the user cannot run yet. Cloud has its
- * own subscription-driven gating covered by @cloud specs, so this spec
- * intentionally carries no @cloud tag and runs in the default local project.
+ * own subscription-driven gating covered by @cloud specs, so these specs
+ * intentionally carry no @cloud tag and run in the default local project.
  */
 test.describe('Partner nodes run gate (local, signed out)', () => {
   test('replaces Run with "Sign in to run" and opens the partner sign-in dialog', async ({
@@ -49,4 +52,42 @@ test.describe('Partner nodes run gate (local, signed out)', () => {
     await expect(page.getByTestId(TestIds.topbar.queueButton)).toBeVisible()
     await expect(signInButton).toHaveCount(0)
   })
+})
+
+localAuthFixture.describe('Partner nodes run gate (local, signed in)', () => {
+  localAuthFixture(
+    'gates on "Add Credits" with zero balance and recovers after top-up',
+    async ({ comfyPage }) => {
+      const page = comfyPage.page
+
+      await comfyPage.workflow.loadWorkflow(PARTNER_WORKFLOW)
+
+      const addCreditsButton = page.getByTestId(
+        TestIds.partnerNodes.addCreditsButton
+      )
+      await expect(addCreditsButton).toBeVisible()
+      await expect(page.getByTestId(TestIds.topbar.queueButton)).toHaveCount(0)
+      await expect(
+        page.getByTestId(TestIds.partnerNodes.runGateCaption)
+      ).toContainText('Partner nodes need credits')
+
+      const topUpDialog = new TopUpCreditsDialog(page)
+      await addCreditsButton.click()
+      await expect(topUpDialog.heading).toBeVisible()
+      await topUpDialog.close()
+
+      // Simulate returning from an external Stripe top-up: the balance
+      // endpoint now reports funds and the gate refetches on window focus.
+      await page.route('**/customers/balance', (r) =>
+        r.fulfill(jsonRoute({ amount_micros: 5_000_000, currency: 'usd' }))
+      )
+      await page.evaluate(() => window.dispatchEvent(new Event('focus')))
+
+      await expect(page.getByTestId(TestIds.topbar.queueButton)).toBeVisible()
+      await expect(addCreditsButton).toHaveCount(0)
+      await expect(
+        page.getByTestId(TestIds.partnerNodes.runGateCaption)
+      ).toHaveCount(0)
+    }
+  )
 })

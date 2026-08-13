@@ -8,10 +8,21 @@
     >
       <div class="flex w-full items-center justify-center gap-2">
         <i
-          class="icon-[lucide--info] size-4 text-muted-foreground"
+          :class="
+            cn(
+              'size-4',
+              gate === 'add-credits'
+                ? 'icon-[comfy--credits] bg-credit'
+                : 'icon-[lucide--info] text-muted-foreground'
+            )
+          "
           aria-hidden="true"
         />
-        {{ t('actionbar.partnerRunGate.signInCaption') }}
+        {{
+          gate === 'add-credits'
+            ? t('actionbar.partnerRunGate.creditsCaption')
+            : t('actionbar.partnerRunGate.signInCaption')
+        }}
       </div>
     </div>
   </div>
@@ -20,6 +31,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
+import { cn } from '@comfyorg/tailwind-utils'
 import { usePartnerNodesRunGate } from '@/composables/billing/usePartnerNodesRunGate'
 
 const { t } = useI18n()

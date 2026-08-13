@@ -116,6 +116,7 @@ export const TestIds = {
   },
   partnerNodes: {
     signInToRunButton: 'partner-sign-in-to-run-button',
+    addCreditsButton: 'partner-add-credits-button',
     runGateCaption: 'partner-run-gate-caption',
     educationCard: 'partner-nodes-education-card',
     educationCardGotIt: 'partner-nodes-education-got-it',
