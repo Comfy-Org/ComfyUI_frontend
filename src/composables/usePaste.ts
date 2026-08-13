@@ -1,5 +1,7 @@
 import { useEventListener } from '@vueuse/core'
 
+import { LAST_COPY_EVENT_PAYLOAD_KEY } from '@/composables/useCopy'
+
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -40,21 +42,45 @@ export function cloneDataTransfer(original: DataTransfer): DataTransfer {
   return persistent
 }
 
-function pasteClipboardItems(data: DataTransfer): boolean {
-  const rawData = data.getData('text/html')
-  const match = rawData.match(/data-metadata="([A-Za-z0-9+/=]+)"/)?.[1]
-  if (!match) return false
+function decodeNodeMetadata(rawHtml: string): string | null {
+  const match = rawHtml.match(/data-metadata="([A-Za-z0-9+/=]+)"/)?.[1]
+  if (!match) return null
   try {
     // Decode UTF-8 safe base64
     const binaryString = atob(match)
     const bytes = Uint8Array.from(binaryString, (c) => c.charCodeAt(0))
-    const decodedData = new TextDecoder().decode(bytes)
+    return new TextDecoder().decode(bytes)
+  } catch {
+    return null
+  }
+}
+
+function pasteClipboardItems(data: DataTransfer): boolean {
+  const decodedData = decodeNodeMetadata(data.getData('text/html'))
+  if (decodedData === null) return false
+  try {
     useCanvasStore().getCanvas()._deserializeItems(JSON.parse(decodedData), {})
     return true
   } catch (err) {
     console.error(err)
   }
   return false
+}
+
+/**
+ * Node metadata on the clipboard is stale when it matches no in-app copy:
+ * neither litegraph's internal clipboard (updated by every copy path,
+ * including menu/command copies that never touch the OS clipboard) nor the
+ * last payload useCopy wrote to the OS clipboard. Metadata matching either
+ * is an in-app copy, and the internal clipboard holds the newest one.
+ */
+function hasStaleNodeMetadata(rawHtml: string): boolean {
+  const decodedData = decodeNodeMetadata(rawHtml)
+  if (decodedData === null) return false
+  return (
+    decodedData !== localStorage.getItem('litegrapheditor_clipboard') &&
+    decodedData !== localStorage.getItem(LAST_COPY_EVENT_PAYLOAD_KEY)
+  )
 }
 
 function pasteItemsOnNode(
@@ -233,6 +259,8 @@ export const usePaste = () => {
     const isMediaNodeSelected =
       isImageNodeSelected || isVideoNodeSelected || isAudioNodeSelected
     if (!isMediaNodeSelected && pasteClipboardItems(data)) return
+    const staleMetadataOnMediaNode =
+      isMediaNodeSelected && hasStaleNodeMetadata(data.getData('text/html'))
 
     // No image found. Look for node data
     data = data.getData('text/plain')
@@ -261,8 +289,11 @@ export const usePaste = () => {
         return
       }
 
-      // Litegraph default paste
-      canvas.pasteFromClipboard()
+      // Litegraph default paste. Skipped when a media node is selected and
+      // the clipboard carries stale node metadata: the user is targeting
+      // that node, and the leftover payload must not paste an old node
+      // (see the imagePastePriority e2e). A fresh in-app copy still pastes.
+      if (!staleMetadataOnMediaNode) canvas.pasteFromClipboard()
     }
   })
 }

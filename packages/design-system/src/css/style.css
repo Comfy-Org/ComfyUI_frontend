@@ -128,7 +128,7 @@
   --comfy-menu-bg: #353535;
   --comfy-menu-secondary-bg: #292929;
   --comfy-topbar-height: 2.5rem;
-  --workflow-tabs-height: 2.375rem;
+  --workflow-tabs-height: 2.125rem;
   --comfy-input-bg: #222;
   --comfy-textarea-font-size: 10px;
   --input-text: #ddd;
@@ -173,6 +173,21 @@
   --interface-menu-stroke: var(--color-smoke-600);
   --interface-panel-surface: var(--color-white);
   --interface-stroke: var(--color-smoke-300);
+  --region-stroke: color-mix(in srgb, var(--border-color) 25%, transparent);
+  --workflow-tab-divider: color-mix(
+    in srgb,
+    var(--border-color) 25%,
+    transparent
+  );
+  --sidebar-surface: oklch(from var(--comfy-menu-bg) calc(l - 0.0274) c h);
+  --workflow-tab-selected-surface: oklch(
+    from var(--comfy-menu-bg) calc(l - 0.0274) c h
+  );
+  --base-background-sunken: var(
+    --canvas-clear-background,
+    oklch(from var(--comfy-menu-bg) calc(l - 0.0648) c h)
+  );
+  --workflow-tab-hover-surface: var(--content-hover-bg);
 
   --interface-builder-mode-background: var(--color-ocean-300);
   --interface-builder-mode-button-background: var(--color-ocean-600);
@@ -296,6 +311,24 @@
   --modal-panel-background: var(--color-white);
 }
 
+:root[data-color-palette='dark'] {
+  --sidebar-surface: var(--color-charcoal-900);
+  --workflow-tab-selected-surface: var(--color-charcoal-900);
+  --workflow-tab-hover-surface: var(--color-charcoal-700);
+}
+
+:root[data-color-palette='light'] {
+  --sidebar-surface: var(--color-smoke-100);
+  --workflow-tab-selected-surface: var(--color-smoke-200);
+  --workflow-tab-hover-surface: var(--color-smoke-400);
+  --workflow-tab-divider: color-mix(
+    in srgb,
+    var(--color-smoke-400) 50%,
+    transparent
+  );
+  --region-stroke: color-mix(in srgb, var(--color-smoke-300) 50%, transparent);
+}
+
 .dark-theme {
   --fg-color: #fff;
   --bg-color: #202020;
@@ -417,6 +450,47 @@
   --modal-card-tag-background: var(--color-ash-800);
   --modal-card-tag-foreground: var(--base-foreground);
   --modal-panel-background: var(--color-charcoal-600);
+}
+
+:root.dark-theme[data-color-palette]:not([data-color-palette='dark']) {
+  --palette-surface-700: oklch(from var(--comfy-menu-bg) calc(l + 0.0417) c h);
+  --palette-surface-600: oklch(from var(--comfy-menu-bg) calc(l + 0.0675) c h);
+  --palette-surface-400: oklch(from var(--comfy-menu-bg) calc(l + 0.1123) c h);
+  --palette-surface-300: oklch(from var(--comfy-menu-bg) calc(l + 0.1559) c h);
+  --palette-surface-200: oklch(from var(--comfy-menu-bg) calc(l + 0.2054) c h);
+
+  --base-background: var(--comfy-menu-bg);
+  --nav-background: var(--comfy-menu-bg);
+  --interface-menu-surface: var(--comfy-menu-bg);
+  --node-component-tooltip-surface: var(--comfy-menu-bg);
+  --component-node-widget-background-disabled: var(--comfy-menu-bg);
+
+  --node-component-header-surface: var(--palette-surface-700);
+
+  --button-surface: var(--palette-surface-600);
+  --button-hover-surface: var(--palette-surface-600);
+  --button-active-surface: var(--palette-surface-600);
+  --secondary-background: var(--palette-surface-600);
+  --node-component-surface: var(--palette-surface-600);
+  --node-component-surface-hovered: var(--palette-surface-600);
+  --component-node-background: var(--palette-surface-600);
+  --modal-panel-background: var(--palette-surface-600);
+
+  --interface-menu-component-surface-hovered: var(--palette-surface-400);
+  --secondary-background-hover: var(--palette-surface-400);
+  --tertiary-background: var(--palette-surface-400);
+
+  --interface-menu-component-surface-selected: var(--palette-surface-300);
+  --tertiary-background-hover: var(--palette-surface-300);
+  --border-subtle: var(--palette-surface-300);
+  --modal-card-button-surface: var(--palette-surface-300);
+
+  --interface-menu-keybind-surface-default: var(--palette-surface-200);
+  --node-component-border-selected: var(--palette-surface-200);
+  --node-component-surface-selected: var(--palette-surface-200);
+  --node-component-tooltip-border: var(--palette-surface-200);
+  --secondary-background-selected: var(--palette-surface-200);
+  --border-default: var(--palette-surface-200);
 }
 
 @theme inline {
@@ -635,11 +709,16 @@ body {
   height: 100vh;
   margin: 0;
   overflow: hidden;
+  background-color: var(--bg-color);
   min-height: -webkit-fill-available;
   max-height: -webkit-fill-available;
   min-width: -webkit-fill-available;
   max-width: -webkit-fill-available;
   font-family: Inter, Arial, sans-serif;
+}
+
+:root[data-color-palette] body {
+  background-color: var(--base-background-sunken);
 }
 
 .comfy-multiline-input {

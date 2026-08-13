@@ -218,4 +218,15 @@ describe('WorkflowTab - close button', () => {
       expect.anything()
     )
   })
+
+  it('still closes the active tab now that its close button is hover-revealed', async () => {
+    renderTab({ activeWorkflowKey: 'test-key' })
+    const user = userEvent.setup()
+    await user.click(screen.getByTestId('close-workflow-button'))
+
+    expect(mockCloseWorkflow).toHaveBeenCalledWith(
+      expect.objectContaining({ key: 'test-key' }),
+      expect.anything()
+    )
+  })
 })
