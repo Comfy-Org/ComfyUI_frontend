@@ -482,6 +482,7 @@ function handleNodeModeChange(
 
   if (isNowInactive) {
     removeNodeErrors(node, execId)
+    dropOutOfScopeMissingMedia()
   } else {
     scanAndAddNodeErrors(node)
     scanAncestorSubgraphHosts(execId)
@@ -522,8 +523,6 @@ function removeNodeErrors(node: LGraphNode, execId: string): void {
     mediaStore.removeMissingMediaByPrefix(prefix)
     nodesStore.removeMissingNodesByPrefix(prefix)
   }
-
-  dropOutOfScopeMissingMedia()
 }
 
 /** Removes candidates whose widget is no longer the editable value owner. */
@@ -543,6 +542,22 @@ function dropOutOfScopeMissingMedia(): void {
 export function installErrorClearingHooks(graph: LGraph): () => void {
   const pendingScans = new Map<LGraphNode, Set<PendingScanControl>>()
   let disposed = false
+  let pendingOutOfScopeDrop = false
+
+  /**
+   * Coalesces `dropOutOfScopeMissingMedia` across a burst of removals, which
+   * would otherwise re-walk every candidate's topology once per removed node.
+   */
+  const scheduleDropOutOfScopeMissingMedia = (): void => {
+    if (pendingOutOfScopeDrop) return
+    pendingOutOfScopeDrop = true
+    queueMicrotask(() => {
+      pendingOutOfScopeDrop = false
+      if (disposed) return
+      dropOutOfScopeMissingMedia()
+    })
+  }
+
   const promotionErrors = createPromotionErrorReconciler({
     dropOutOfScope: dropOutOfScopeMissingMedia,
     rescanHost: (subgraphNode) =>
@@ -590,6 +605,7 @@ export function installErrorClearingHooks(graph: LGraph): () => void {
     // misses subgraph entries.
     const execId = getRemovedNodeExecutionId(graph, node.id)
     removeNodeErrors(node, execId)
+    scheduleDropOutOfScopeMissingMedia()
     restoreNodeHooksRecursive(node)
     promotionErrors.detachNode(node)
     originalOnNodeRemoved?.call(this, node)
