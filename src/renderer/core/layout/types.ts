@@ -269,6 +269,11 @@ export interface LayoutChange {
 
 // Store interfaces
 export interface LayoutStore {
+  /** Node count, without materialising layouts as `getAllNodes()` does. */
+  readonly nodeCount: number
+  /** Cache key for derived structures; see the implementation for its scope. */
+  readonly layoutVersion: number
+
   // CustomRef accessors for shared write access
   getNodeLayoutRef(nodeId: NodeId): Ref<NodeLayout | null>
   getNodesInBounds(bounds: Bounds): ComputedRef<NodeId[]>
