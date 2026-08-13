@@ -638,110 +638,6 @@
       }
     }
   },
-  "BriaEraser": {
-    "description": "إزالة العناصر أو المناطق المحددة بقناع من صورة باستخدام Bria.",
-    "display_name": "ممحاة Bria",
-    "inputs": {
-      "image": {
-        "name": "الصورة"
-      },
-      "mask": {
-        "name": "القناع",
-        "tooltip": "تُمحى المناطق البيضاء وتُحفظ المناطق السوداء. يُحوَّل القناع إلى صيغة ثنائية قبل الإرسال، لذا تُعامل المناطق المطلية جزئيًا على أنها بيضاء. يجب أن تكون له نسبة أبعاد الصورة نفسها."
-      },
-      "mask_type": {
-        "name": "نوع القناع",
-        "tooltip": "يدوي للأقنعة المرسومة يدويًا أو بالفرشاة، وتلقائي للأقنعة التي تنتجها نماذج التجزئة مثل SAM."
-      },
-      "moderation": {
-        "name": "الإشراف على المحتوى",
-        "tooltip": "إعدادات الإشراف على المحتوى"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "BriaExpandImage": {
-    "description": "توسيع صورة إلى ما وراء حدودها بمحتوى مولّد باستخدام Bria.",
-    "display_name": "توسيع الصورة باستخدام Bria",
-    "inputs": {
-      "control_after_generate": {
-        "name": "التحكم بعد التوليد"
-      },
-      "expand_mode": {
-        "name": "وضع التوسيع",
-        "tooltip": "الشكل المستهدف للصورة الموسعة: نسبة أبعاد محددة مسبقًا، أو نسبة مخصصة، أو وضع يدوي للصورة الأصلية على لوحة. الوضع اليدوي هو الوحيد الذي يتيح لوحة أطول من نسبة 1:2."
-      },
-      "image": {
-        "name": "الصورة"
-      },
-      "moderation": {
-        "name": "الإشراف على المحتوى",
-        "tooltip": "إعدادات الإشراف على المحتوى"
-      },
-      "negative_prompt": {
-        "name": "الموجّه السلبي"
-      },
-      "prompt": {
-        "name": "الموجّه النصي",
-        "tooltip": "وصف اختياري للمشهد الموسع؛ عندما يكون فارغًا، تنشئه Bria من الصورة."
-      },
-      "seed": {
-        "name": "البذرة"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "الموجّه النصي",
-        "tooltip": "الموجّه النصي المستخدم للتوسيع؛ تنشئه Bria تلقائيًا عندما يكون مُدخل الموجّه فارغًا."
-      }
-    }
-  },
-  "BriaGenFill": {
-    "description": "توليد عناصر أو مشاهد داخل منطقة مقنّعة من صورة باستخدام Bria.",
-    "display_name": "التعبئة التوليدية باستخدام Bria",
-    "inputs": {
-      "control_after_generate": {
-        "name": "التحكم بعد التوليد"
-      },
-      "image": {
-        "name": "الصورة"
-      },
-      "mask": {
-        "name": "القناع",
-        "tooltip": "تُملأ المناطق البيضاء بمحتوى مولّد وتُحفظ المناطق السوداء. يُحوَّل القناع إلى صيغة ثنائية قبل الإرسال، لذا تُعامل المناطق المطلية جزئيًا على أنها بيضاء. يجب أن تكون له نسبة أبعاد الصورة نفسها."
-      },
-      "moderation": {
-        "name": "الإشراف على المحتوى",
-        "tooltip": "إعدادات الإشراف على المحتوى"
-      },
-      "negative_prompt": {
-        "name": "الموجّه السلبي"
-      },
-      "prompt": {
-        "name": "الموجّه النصي",
-        "tooltip": "وصف ما سيُولَّد داخل المنطقة المقنّعة."
-      },
-      "refine_prompt": {
-        "name": "تحسين الموجّه النصي",
-        "tooltip": "ضبط الموجّه النصي تلقائيًا للحصول على نتائج أفضل؛ عطّل هذا الخيار لاستخدام الموجّه كما هو مكتوب تمامًا."
-      },
-      "seed": {
-        "name": "البذرة"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "BriaImageEditNode": {
     "description": "حرر الصور باستخدام أحدث نموذج من Bria",
     "display_name": "تحرير صورة Bria",
@@ -791,32 +687,6 @@
       },
       "1": {
         "name": "توجيه منظم",
-        "tooltip": null
-      }
-    }
-  },
-  "BriaIncreaseResolution": {
-    "description": "رفع دقة صورة بمقدار 2x أو 4x باستخدام Bria مع الحفاظ على المحتوى الأصلي.",
-    "display_name": "زيادة الدقة باستخدام Bria",
-    "inputs": {
-      "auto_downscale": {
-        "name": "التصغير التلقائي",
-        "tooltip": "خفض المضاعف تلقائيًا، وتصغير صورة الإدخال إذا لم يكن ذلك كافيًا، عندما يتجاوز الناتج الحد المسموح به."
-      },
-      "desired_increase": {
-        "name": "الزيادة المطلوبة",
-        "tooltip": "مضاعف الدقة. يجب ألا يتجاوز الناتج 8192 بكسل على كل جانب."
-      },
-      "image": {
-        "name": "الصورة"
-      },
-      "moderation": {
-        "name": "الإشراف على المحتوى",
-        "tooltip": "إعدادات الإشراف على المحتوى"
-      }
-    },
-    "outputs": {
-      "0": {
         "tooltip": null
       }
     }
@@ -1793,7 +1663,7 @@
     }
   },
   "CLIPLoader": {
-    "description": "الوصفات:\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl (حشو 226 رمزًا)\ncosmos: t5 xxl القديم\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1 (موصى به) أو t5\nomnigen2: qwen vl 2.5 3B\njoyimage: qwen3-vl 8B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm\nminimax: MiniMax H3 Qwen3-VL أو Music3 Qwen/RVQ",
+    "description": "[الوصفات]\n\nstable_diffusion: clip-l\nstable_cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable_audio: t5 base\nmochi: t5 xxl\ncosmos: old t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1 (موصى به) أو t5",
     "display_name": "تحميل CLIP",
     "inputs": {
       "clip_name": {
@@ -4379,23 +4249,6 @@
       },
       "width": {
         "name": "العرض"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "EmptyMiniMaxMusic3LatentAudio": {
-    "description": "ينشئ تمثيلًا صوتيًا كامنًا وفارغًا لـ MiniMax Music3 بالمدة المطلوبة.",
-    "display_name": "صوت كامن فارغ لـ MiniMax Music3",
-    "inputs": {
-      "batch_size": {
-        "name": "حجم الدفعة"
-      },
-      "seconds": {
-        "name": "الثواني"
       }
     },
     "outputs": {
@@ -11917,44 +11770,6 @@
       }
     }
   },
-  "MiniMaxH3AddGuide": {
-    "description": "ثبّت صورة أو مقطعًا قصيرًا أو صوتًا أو مقطعًا بمساره الصوتي عند أي إطار في فيديو MiniMax H3. صِل عدة عقد لتثبيت عدة إطارات.",
-    "display_name": "إضافة دليل إلى MiniMax H3",
-    "inputs": {
-      "audio": {
-        "name": "الصوت",
-        "tooltip": "المسار الصوتي المراد تثبيته بدءًا من فهرس الإطار نفسه، مع اقتصاصه وفق المدة المتبقية من الفيديو."
-      },
-      "audio_vae": {
-        "name": "vae الصوت",
-        "tooltip": "VAE الصوت، وهو مطلوب عند توصيل صوت."
-      },
-      "frame_idx": {
-        "name": "فهرس الإطار",
-        "tooltip": "فهرس الإطار الذي ستُثبّت عنده الصورة أو الإطار الأول للمقطع. تُحتسب القيم السالبة بدءًا من نهاية الفيديو."
-      },
-      "image": {
-        "name": "الصورة",
-        "tooltip": "صورة أو إطارات فيديو لتثبيتها. تُثبّت الدفعات متعددة الإطارات كمقطع وتُقتص إلى أطوال المقاطع الصالحة للنموذج: 5، 22، 39... أي (17k + 5) إطارات. تستخدم الدفعات الأقصر من 5 إطارات الصورة الأولى فقط."
-      },
-      "latent": {
-        "name": "الحيز الكامن"
-      },
-      "positive": {
-        "name": "إيجابي"
-      },
-      "vae": {
-        "name": "vae",
-        "tooltip": "VAE الفيديو، وهو مطلوب عند توصيل صورة."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "إيجابي",
-        "tooltip": null
-      }
-    }
-  },
   "MiniMaxH3ImageToVideo": {
     "display_name": "تحويل صورة MiniMax H3 إلى فيديو",
     "inputs": {
@@ -12067,78 +11882,6 @@
       }
     }
   },
-  "MiniMaxMusic3TextEncode": {
-    "description": "يستخدم نموذج MiniMax Music3 CLIP لتوليد تسلسل التكييف الصوتي.",
-    "display_name": "ترميز نص MiniMax Music3",
-    "inputs": {
-      "caption": {
-        "name": "الوصف"
-      },
-      "cfg_scale": {
-        "name": "مقياس cfg"
-      },
-      "clip": {
-        "name": "clip"
-      },
-      "control_after_generate": {
-        "name": "التحكم بعد التوليد"
-      },
-      "lyrics": {
-        "name": "كلمات الأغنية"
-      },
-      "max_duration": {
-        "name": "المدة القصوى",
-        "tooltip": "المدة القصوى بالثواني؛ يمكن للنموذج إنهاء الأغنية قبل ذلك."
-      },
-      "seed": {
-        "name": "البذرة"
-      },
-      "top_k": {
-        "name": "top_k"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "ثوانٍ",
-        "tooltip": null
-      }
-    }
-  },
-  "MinimaxHailuo03ContextIRNode": {
-    "description": "حلّل سياق النص والوسائط باستخدام MiniMax H3 Context IR وأنشئ موجّه فيديو محسنًا ومنظمًا. أدخل الناتج في موجّه عقدة فيديو MiniMax H3 وأرفق الوسائط نفسها هناك بالترتيب نفسه، لأن الموجّه المحسن يشير إلى الوسائط المرفقة حسب موضعها.",
-    "display_name": "MiniMax H3 Context IR (محسّن الموجّه)",
-    "inputs": {
-      "first_frame": {
-        "name": "الإطار الأول",
-        "tooltip": "الإطار الأول من الفيديو الذي تنوي توليده. لا يمكن دمجه مع وسائط مرجعية."
-      },
-      "last_frame": {
-        "name": "الإطار الأخير",
-        "tooltip": "الإطار الأخير من الفيديو الذي تنوي توليده. لا يمكن دمجه مع وسائط مرجعية."
-      },
-      "model": {
-        "name": "النموذج",
-        "tooltip": "النموذج المستخدم لتحسين الموجّه."
-      },
-      "model_duration": {
-        "name": "المدة"
-      },
-      "model_prompt": {
-        "name": "الموجّه"
-      },
-      "model_ratio": {
-        "name": "النسبة"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "MinimaxHailuo03FirstLastFrameNode": {
     "description": "توليد فيديو من صورة الإطار الأول وصورة إطار أخير اختيارية باستخدام نموذج MiniMax H3. نسبة العرض إلى الارتفاع للفيديو تتبع الصور المقدمة.",
     "display_name": "MiniMax H3 من إطار أول/أخير إلى فيديو",
@@ -12212,43 +11955,6 @@
       "watermark": {
         "name": "علامة مائية",
         "tooltip": "هل تريد إضافة علامة مائية AIGC إلى الفيديو."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "MinimaxHailuo03RegenerateNode": {
-    "description": "أعد تصيير مخرجات MiniMax H3 بدقة 768P إلى دقة 2K. وصّل فيديو 768P غير المعدّل والموجّه نفسه المستخدم لتوليده؛ وإذا استخدم التوليد الأصلي الإطار الأول أو الأخير أو وسائط مرجعية، فأرفق المدخلات نفسها.",
-    "display_name": "إعادة توليد MiniMax H3 بدقة 2K",
-    "inputs": {
-      "first_frame": {
-        "name": "الإطار الأول",
-        "tooltip": "صورة الإطار الأول من التوليد الأصلي، إذا استُخدمت."
-      },
-      "last_frame": {
-        "name": "الإطار الأخير",
-        "tooltip": "صورة الإطار الأخير من التوليد الأصلي، إذا استُخدمت."
-      },
-      "model": {
-        "name": "النموذج",
-        "tooltip": "النموذج المستخدم لإعادة توليد الفيديو."
-      },
-      "model_prompt": {
-        "name": "الموجّه"
-      },
-      "model_resolution": {
-        "name": "الدقة"
-      },
-      "video": {
-        "name": "الفيديو",
-        "tooltip": "فيديو MiniMax H3 الناتج بدقة 768P والمطلوب إعادة تصييره. وصّل المخرجات غير المعدّلة لعقدة فيديو MiniMax H3 ‏(24 FPS، من 4 إلى 15 ثانية). لا يمكن استخدام مخرجات 2K."
-      },
-      "watermark": {
-        "name": "العلامة المائية",
-        "tooltip": "ما إذا كانت ستُضاف علامة AIGC مائية إلى الفيديو."
       }
     },
     "outputs": {

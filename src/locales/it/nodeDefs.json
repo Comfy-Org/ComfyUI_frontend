@@ -638,110 +638,6 @@
       }
     }
   },
-  "BriaEraser": {
-    "description": "Rimuove da un'immagine oggetti o aree delimitati da una maschera usando Bria.",
-    "display_name": "Gomma Bria",
-    "inputs": {
-      "image": {
-        "name": "immagine"
-      },
-      "mask": {
-        "name": "maschera",
-        "tooltip": "Le aree bianche vengono cancellate, quelle nere vengono mantenute. La maschera viene binarizzata prima dell'invio, quindi le aree dipinte parzialmente vengono considerate bianche. Deve avere le stesse proporzioni dell'immagine."
-      },
-      "mask_type": {
-        "name": "tipo_maschera",
-        "tooltip": "manuale per maschere disegnate a mano o con il pennello, automatica per maschere prodotte da modelli di segmentazione come SAM."
-      },
-      "moderation": {
-        "name": "moderazione",
-        "tooltip": "Impostazioni di moderazione"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "BriaExpandImage": {
-    "description": "Espande un'immagine oltre i suoi bordi con contenuti generati usando Bria.",
-    "display_name": "Espansione immagine Bria",
-    "inputs": {
-      "control_after_generate": {
-        "name": "controllo dopo la generazione"
-      },
-      "expand_mode": {
-        "name": "modalità_espansione",
-        "tooltip": "Forma di destinazione dell'immagine espansa: proporzioni predefinite, proporzioni personalizzate o posizionamento manuale dell'immagine originale su una tela. La modalità manuale è l'unica che consente di ottenere una tela più alta di 1:2."
-      },
-      "image": {
-        "name": "immagine"
-      },
-      "moderation": {
-        "name": "moderazione",
-        "tooltip": "Impostazioni di moderazione"
-      },
-      "negative_prompt": {
-        "name": "prompt_negativo"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Descrizione facoltativa della scena espansa; se vuota, Bria ne genera una dall'immagine."
-      },
-      "seed": {
-        "name": "seed"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "prompt",
-        "tooltip": "Il prompt usato per l'espansione; viene generato automaticamente da Bria quando il prompt di input è vuoto."
-      }
-    }
-  },
-  "BriaGenFill": {
-    "description": "Genera oggetti o scenari all'interno di un'area mascherata di un'immagine usando Bria.",
-    "display_name": "Riempimento generativo Bria",
-    "inputs": {
-      "control_after_generate": {
-        "name": "controllo dopo la generazione"
-      },
-      "image": {
-        "name": "immagine"
-      },
-      "mask": {
-        "name": "maschera",
-        "tooltip": "Le aree bianche vengono riempite con contenuti generati, quelle nere vengono mantenute. La maschera viene binarizzata prima dell'invio, quindi le aree dipinte parzialmente vengono considerate bianche. Deve avere le stesse proporzioni dell'immagine."
-      },
-      "moderation": {
-        "name": "moderazione",
-        "tooltip": "Impostazioni di moderazione"
-      },
-      "negative_prompt": {
-        "name": "prompt_negativo"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Descrizione di cosa generare all'interno dell'area mascherata."
-      },
-      "refine_prompt": {
-        "name": "ottimizza_prompt",
-        "tooltip": "Adatta automaticamente il prompt per ottenere risultati migliori; disattiva l'opzione per usare il prompt esattamente come scritto."
-      },
-      "seed": {
-        "name": "seed"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "BriaImageEditNode": {
     "description": "Modifica immagini utilizzando il modello più recente di Bria",
     "display_name": "Bria FIBO Image Edit",
@@ -791,32 +687,6 @@
       },
       "1": {
         "name": "prompt_strutturato",
-        "tooltip": null
-      }
-    }
-  },
-  "BriaIncreaseResolution": {
-    "description": "Aumenta la risoluzione di un'immagine di 2x o 4x usando Bria, mantenendo il contenuto originale.",
-    "display_name": "Aumento risoluzione Bria",
-    "inputs": {
-      "auto_downscale": {
-        "name": "riduzione_automatica",
-        "tooltip": "Riduce automaticamente il moltiplicatore e, se non basta, riduce anche l'immagine di input quando l'output supererebbe il limite."
-      },
-      "desired_increase": {
-        "name": "aumento_desiderato",
-        "tooltip": "Moltiplicatore della risoluzione. L'output non deve superare 8192 pixel per lato."
-      },
-      "image": {
-        "name": "immagine"
-      },
-      "moderation": {
-        "name": "moderazione",
-        "tooltip": "Impostazioni di moderazione"
-      }
-    },
-    "outputs": {
-      "0": {
         "tooltip": null
       }
     }
@@ -1398,7 +1268,7 @@
     }
   },
   "ByteDanceSeedAudio": {
-    "description": "Genera parlato, musica, effetti sonori e dialoghi con più interlocutori da un singolo prompt con ByteDance Seed Audio 1.0. Descrivi nel prompt le voci, le emozioni, l'atmosfera, la musica di sottofondo e gli effetti sonori, includendo le battute da pronunciare. Puoi scegliere una voce preimpostata integrata, clonare voci da un massimo di 3 clip di riferimento (contrassegnati come {'@'}Audio1-3 nel prompt) oppure ricavare una voce dall'immagine di un personaggio. Genera fino a 2 minuti di audio per esecuzione. Il modello multilingue supporta 20 lingue e il controllo temporale basato sui timestamp.",
+    "description": "Genera discorsi, musica, effetti sonori e dialoghi multi-speaker da un singolo prompt con ByteDance Seed Audio 1.0. Descrivi la/le voce/i, emozione, atmosfera, musica di sottofondo ed effetti sonori nel prompt, e includi le battute da pronunciare. Puoi scegliere una voce preimpostata integrata, clonare voci da un massimo di 3 clip di riferimento (contrassegnate come {'@'}Audio1-3 nel prompt), oppure derivare una voce da un'immagine di un personaggio. Fino a 2 minuti di audio per esecuzione. Il modello multilingue supporta 20 lingue e il controllo del timing basato su timestamp.",
     "display_name": "ByteDance Seed Audio 1.0",
     "inputs": {
       "control_after_generate": {
@@ -1793,7 +1663,7 @@
     }
   },
   "CLIPLoader": {
-    "description": "Configurazioni:\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl (padding a 226 token)\ncosmos: vecchio t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1 (consigliato) o t5\nomnigen2: qwen vl 2.5 3B\njoyimage: qwen3-vl 8B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm\nminimax: MiniMax H3 Qwen3-VL o Music3 Qwen/RVQ",
+    "description": "Ricette:\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl (padding 226-token)\ncosmos: old t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1 (Consigliato) o t5\nomnigen2: qwen vl 2.5 3B\njoyimage: qwen3-vl 8B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm",
     "display_name": "Carica CLIP",
     "inputs": {
       "clip_name": {
@@ -4379,23 +4249,6 @@
       },
       "width": {
         "name": "larghezza"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "EmptyMiniMaxMusic3LatentAudio": {
-    "description": "Crea un latente audio MiniMax Music3 vuoto per la durata richiesta.",
-    "display_name": "Latente audio vuoto MiniMax Music3",
-    "inputs": {
-      "batch_size": {
-        "name": "dimensione_batch"
-      },
-      "seconds": {
-        "name": "secondi"
       }
     },
     "outputs": {
@@ -9109,7 +8962,7 @@
     }
   },
   "LTXVDurationPredictor": {
-    "description": "Prevede la durata naturale della scena per un prompt usando l'head di durata LTX 2.4 (caricato con ModelPatchLoader) e la allinea alla griglia di fotogrammi 8k+1 del VAE.",
+    "description": "Predice la durata naturale della ripresa per un prompt utilizzando la duration head LTX 2.4 (caricata con ModelPatchLoader) e la adatta alla griglia di frame 8k+1 della VAE.",
     "display_name": "LTXV Duration Predictor",
     "inputs": {
       "duration_head": {
@@ -11917,44 +11770,6 @@
       }
     }
   },
-  "MiniMaxH3AddGuide": {
-    "description": "Fissa un'immagine, un breve clip, un audio o un clip con la relativa colonna sonora a qualsiasi fotogramma di un video MiniMax H3. Collega più nodi in sequenza per fissare più fotogrammi.",
-    "display_name": "Aggiungi guida per MiniMax H3",
-    "inputs": {
-      "audio": {
-        "name": "audio",
-        "tooltip": "Colonna sonora da fissare a partire dallo stesso indice del fotogramma, ritagliata in base alla durata residua del video."
-      },
-      "audio_vae": {
-        "name": "vae_audio",
-        "tooltip": "VAE audio, necessario quando è collegato un audio."
-      },
-      "frame_idx": {
-        "name": "indice_fotogramma",
-        "tooltip": "Indice del fotogramma a cui fissare l'immagine o il primo fotogramma del clip. I valori negativi vengono conteggiati dalla fine del video."
-      },
-      "image": {
-        "name": "immagine",
-        "tooltip": "Immagine o fotogrammi video da fissare. I batch con più fotogrammi vengono fissati come clip e ritagliati alle lunghezze di clip valide per il modello: 5, 22, 39... (17k + 5) fotogrammi. Per i batch con meno di 5 fotogrammi viene usata solo la prima immagine."
-      },
-      "latent": {
-        "name": "latente"
-      },
-      "positive": {
-        "name": "positivo"
-      },
-      "vae": {
-        "name": "vae",
-        "tooltip": "VAE video, necessario quando è collegata un'immagine."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "positivo",
-        "tooltip": null
-      }
-    }
-  },
   "MiniMaxH3ImageToVideo": {
     "display_name": "MiniMax H3 Immagine in Video",
     "inputs": {
@@ -12067,78 +11882,6 @@
       }
     }
   },
-  "MiniMaxMusic3TextEncode": {
-    "description": "Utilizza un modello CLIP MiniMax Music3 per generare la sequenza di condizionamento acustico.",
-    "display_name": "Codifica testo MiniMax Music3",
-    "inputs": {
-      "caption": {
-        "name": "didascalia"
-      },
-      "cfg_scale": {
-        "name": "scala cfg"
-      },
-      "clip": {
-        "name": "clip"
-      },
-      "control_after_generate": {
-        "name": "controllo dopo la generazione"
-      },
-      "lyrics": {
-        "name": "testo"
-      },
-      "max_duration": {
-        "name": "durata massima",
-        "tooltip": "Durata massima in secondi; il modello può terminare il brano prima."
-      },
-      "seed": {
-        "name": "seed"
-      },
-      "top_k": {
-        "name": "top_k"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "secondi",
-        "tooltip": null
-      }
-    }
-  },
-  "MinimaxHailuo03ContextIRNode": {
-    "description": "Analizza il contesto testuale e multimediale con MiniMax H3 Context IR e genera un prompt video strutturato e ottimizzato. Inserisci l'output nel prompt di un nodo video MiniMax H3 e allega lì gli stessi contenuti multimediali nello stesso ordine, poiché il prompt ottimizzato fa riferimento ai contenuti allegati in base alla loro posizione.",
-    "display_name": "MiniMax H3 Context IR (ottimizzatore di prompt)",
-    "inputs": {
-      "first_frame": {
-        "name": "primo_fotogramma",
-        "tooltip": "Primo fotogramma del video che intendi generare. Non può essere combinato con contenuti multimediali di riferimento."
-      },
-      "last_frame": {
-        "name": "ultimo_fotogramma",
-        "tooltip": "Ultimo fotogramma del video che intendi generare. Non può essere combinato con contenuti multimediali di riferimento."
-      },
-      "model": {
-        "name": "modello",
-        "tooltip": "Modello da usare per ottimizzare il prompt."
-      },
-      "model_duration": {
-        "name": "durata"
-      },
-      "model_prompt": {
-        "name": "prompt"
-      },
-      "model_ratio": {
-        "name": "rapporto"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "MinimaxHailuo03FirstLastFrameNode": {
     "description": "Genera un video da un'immagine del primo frame e, opzionalmente, da un'immagine dell'ultimo frame utilizzando il modello MiniMax H3. Il rapporto d'aspetto del video segue quello delle immagini fornite.",
     "display_name": "MiniMax H3 Da Primo-Ultimo Frame a Video",
@@ -12212,43 +11955,6 @@
       "watermark": {
         "name": "watermark",
         "tooltip": "Se aggiungere o meno un watermark AIGC al video."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "MinimaxHailuo03RegenerateNode": {
-    "description": "Esegui nuovamente il rendering di un video MiniMax H3 768P con risoluzione 2K. Collega il video 768P non modificato e il prompt esatto usato per generarlo; se la generazione originale utilizzava il primo o l'ultimo fotogramma oppure contenuti multimediali di riferimento, collega gli stessi input.",
-    "display_name": "MiniMax H3: rigenera in 2K",
-    "inputs": {
-      "first_frame": {
-        "name": "primo fotogramma",
-        "tooltip": "Immagine del primo fotogramma della generazione originale, se utilizzata."
-      },
-      "last_frame": {
-        "name": "ultimo fotogramma",
-        "tooltip": "Immagine dell'ultimo fotogramma della generazione originale, se utilizzata."
-      },
-      "model": {
-        "name": "modello",
-        "tooltip": "Modello da utilizzare per la rigenerazione del video."
-      },
-      "model_prompt": {
-        "name": "prompt"
-      },
-      "model_resolution": {
-        "name": "risoluzione"
-      },
-      "video": {
-        "name": "video",
-        "tooltip": "Il video MiniMax H3 768P da sottoporre nuovamente a rendering. Collega l'output non modificato di un nodo video MiniMax H3 (24 FPS, 4-15 secondi). Non è possibile utilizzare output 2K."
-      },
-      "watermark": {
-        "name": "filigrana",
-        "tooltip": "Indica se aggiungere al video una filigrana AIGC."
       }
     },
     "outputs": {

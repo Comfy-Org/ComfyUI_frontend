@@ -638,110 +638,6 @@
       }
     }
   },
-  "BriaEraser": {
-    "description": "הסרת אובייקטים או אזורים המסומנים במסכה מתוך תמונה באמצעות Bria.",
-    "display_name": "המחק של Bria",
-    "inputs": {
-      "image": {
-        "name": "תמונה"
-      },
-      "mask": {
-        "name": "מסכה",
-        "tooltip": "אזורים לבנים נמחקים ואזורים שחורים נשמרים. המסכה עוברת המרה לבינארית לפני השליחה, ולכן אזורים הצבועים חלקית נחשבים ללבנים. יחס הגובה־רוחב שלה חייב להיות זהה לזה של התמונה."
-      },
-      "mask_type": {
-        "name": "סוג מסכה",
-        "tooltip": "ידני למסכות שצוירו ביד או במברשת, ואוטומטי למסכות שנוצרו באמצעות מודלים לפילוח כגון SAM."
-      },
-      "moderation": {
-        "name": "בקרת תוכן",
-        "tooltip": "הגדרות בקרת תוכן"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "BriaExpandImage": {
-    "description": "הרחבת תמונה מעבר לגבולותיה באמצעות תוכן שנוצר בעזרת Bria.",
-    "display_name": "הרחבת תמונה באמצעות Bria",
-    "inputs": {
-      "control_after_generate": {
-        "name": "בקרה לאחר יצירה"
-      },
-      "expand_mode": {
-        "name": "מצב הרחבה",
-        "tooltip": "צורת היעד של התמונה המורחבת: יחס גובה־רוחב מוגדר מראש, יחס מותאם אישית או מיקום ידני של התמונה המקורית על קנבס. המצב הידני הוא היחיד שמאפשר קנבס גבוה יותר מ־1:2."
-      },
-      "image": {
-        "name": "תמונה"
-      },
-      "moderation": {
-        "name": "בקרת תוכן",
-        "tooltip": "הגדרות בקרת תוכן"
-      },
-      "negative_prompt": {
-        "name": "פרומפט שלילי"
-      },
-      "prompt": {
-        "name": "פרומפט",
-        "tooltip": "תיאור אופציונלי של הסצנה המורחבת; כאשר השדה ריק, Bria יוצר תיאור מהתמונה."
-      },
-      "seed": {
-        "name": "זרע"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "פרומפט",
-        "tooltip": "הפרומפט ששימש להרחבה; כאשר קלט הפרומפט ריק, Bria יוצר אותו אוטומטית."
-      }
-    }
-  },
-  "BriaGenFill": {
-    "description": "יצירת אובייקטים או סביבה בתוך אזור בתמונה המוגדר באמצעות מסכה, בעזרת Bria.",
-    "display_name": "מילוי גנרטיבי של Bria",
-    "inputs": {
-      "control_after_generate": {
-        "name": "בקרה לאחר יצירה"
-      },
-      "image": {
-        "name": "תמונה"
-      },
-      "mask": {
-        "name": "מסכה",
-        "tooltip": "אזורים לבנים מתמלאים בתוכן שנוצר ואזורים שחורים נשמרים. המסכה עוברת המרה לבינארית לפני השליחה, ולכן אזורים הצבועים חלקית נחשבים ללבנים. יחס הגובה־רוחב שלה חייב להיות זהה לזה של התמונה."
-      },
-      "moderation": {
-        "name": "בקרת תוכן",
-        "tooltip": "הגדרות בקרת תוכן"
-      },
-      "negative_prompt": {
-        "name": "פרומפט שלילי"
-      },
-      "prompt": {
-        "name": "פרומפט",
-        "tooltip": "תיאור של מה שיש ליצור בתוך האזור המוגדר באמצעות המסכה."
-      },
-      "refine_prompt": {
-        "name": "שיפור הפרומפט",
-        "tooltip": "התאמה אוטומטית של הפרומפט לקבלת תוצאות טובות יותר; יש להשבית אפשרות זו כדי להשתמש בפרומפט בדיוק כפי שנכתב."
-      },
-      "seed": {
-        "name": "זרע"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "BriaImageEditNode": {
     "description": "עריכת תמונות באמצעות המודל העדכני של Bria",
     "display_name": "Bria FIBO עריכת תמונה",
@@ -791,32 +687,6 @@
       },
       "1": {
         "name": "הנחיה מובנית",
-        "tooltip": null
-      }
-    }
-  },
-  "BriaIncreaseResolution": {
-    "description": "הגדלת תמונה פי 2 או פי 4 באמצעות Bria, תוך שמירה על התוכן המקורי.",
-    "display_name": "הגדלת רזולוציה באמצעות Bria",
-    "inputs": {
-      "auto_downscale": {
-        "name": "הקטנה אוטומטית",
-        "tooltip": "מפחית אוטומטית את המכפיל, ואם עדיין אין בכך די, מקטין גם את תמונת הקלט כאשר הפלט צפוי לחרוג מהמגבלה."
-      },
-      "desired_increase": {
-        "name": "הגדלה רצויה",
-        "tooltip": "מכפיל הרזולוציה. הפלט חייב להיות בגודל של עד 8192 פיקסלים בכל צלע."
-      },
-      "image": {
-        "name": "תמונה"
-      },
-      "moderation": {
-        "name": "בקרת תוכן",
-        "tooltip": "הגדרות בקרת תוכן"
-      }
-    },
-    "outputs": {
-      "0": {
         "tooltip": null
       }
     }
@@ -1793,7 +1663,7 @@
     }
   },
   "CLIPLoader": {
-    "description": "מתכונים:\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl (ריפוד של 226 טוקנים)\ncosmos: t5 xxl ישן\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1 (מומלץ) או t5\nomnigen2: qwen vl 2.5 3B\njoyimage: qwen3-vl 8B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm\nminimax: MiniMax H3 Qwen3-VL או Music3 Qwen/RVQ",
+    "description": "מתכונים:\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl (226-token padding)\ncosmos: old t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1 (מומלץ) או t5\nomnigen2: qwen vl 2.5 3B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm",
     "display_name": "Load CLIP",
     "inputs": {
       "clip_name": {
@@ -4379,23 +4249,6 @@
       },
       "width": {
         "name": "width"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "EmptyMiniMaxMusic3LatentAudio": {
-    "description": "יוצר מרחב חבוי ריק לאודיו של MiniMax Music3 למשך המבוקש.",
-    "display_name": "מרחב חבוי ריק לאודיו של MiniMax Music3",
-    "inputs": {
-      "batch_size": {
-        "name": "גודל אצווה"
-      },
-      "seconds": {
-        "name": "שניות"
       }
     },
     "outputs": {
@@ -9109,7 +8962,7 @@
     }
   },
   "LTXVDurationPredictor": {
-    "description": "מנבא את משך השוט הטבעי עבור פרומפט באמצעות ראש משך הזמן של LTX 2.4 (שנטען באמצעות ModelPatchLoader), ומצמיד אותו לרשת הפריימים 8k+1 של ה-VAE.",
+    "description": "חוזה את משך השוט הטבעי עבור פרומפט באמצעות הראש duration של LTX 2.4 (נטען עם ModelPatchLoader), ומיישר אותו לרשת הפריימים של VAE (8k+1).",
     "display_name": "LTXV Duration Predictor",
     "inputs": {
       "duration_head": {
@@ -11917,44 +11770,6 @@
       }
     }
   },
-  "MiniMaxH3AddGuide": {
-    "description": "מעגן תמונה, clip קצר, אודיו או clip עם פס הקול שלו בכל פריים רצוי בסרטון MiniMax H3. שרשרו כמה צמתים כדי לעגן כמה פריימים.",
-    "display_name": "הוספת הנחיה ל-MiniMax H3",
-    "inputs": {
-      "audio": {
-        "name": "אודיו",
-        "tooltip": "פס קול לעיגון החל מאותו אינדקס פריים, שייחתך למשך הזמן הנותר של הסרטון."
-      },
-      "audio_vae": {
-        "name": "VAE לאודיו",
-        "tooltip": "VAE לאודיו, הנדרש כאשר מחובר אודיו."
-      },
-      "frame_idx": {
-        "name": "אינדקס פריים",
-        "tooltip": "אינדקס הפריים שבו יעוגנו התמונה או הפריים הראשון של ה-clip. ערכים שליליים נספרים מסוף הסרטון."
-      },
-      "image": {
-        "name": "תמונה",
-        "tooltip": "תמונה או פריימים של וידאו לעיגון. אצוות מרובות פריימים מעוגנות כ-clip ונחתכות לאורכי ה-clip התקינים של המודל: 5, 22, 39...‏ (17k + 5) פריימים. באצוות הקצרות מ-5 פריימים נעשה שימוש בתמונה הראשונה בלבד."
-      },
-      "latent": {
-        "name": "מרחב חבוי"
-      },
-      "positive": {
-        "name": "חיובי"
-      },
-      "vae": {
-        "name": "VAE",
-        "tooltip": "VAE לווידאו, הנדרש כאשר מחוברת תמונה."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "חיובי",
-        "tooltip": null
-      }
-    }
-  },
   "MiniMaxH3ImageToVideo": {
     "display_name": "MiniMax H3 Image to Video",
     "inputs": {
@@ -12067,78 +11882,6 @@
       }
     }
   },
-  "MiniMaxMusic3TextEncode": {
-    "description": "משתמש במודל MiniMax Music3 CLIP כדי ליצור את רצף ההתניה האקוסטית.",
-    "display_name": "קידוד טקסט של MiniMax Music3",
-    "inputs": {
-      "caption": {
-        "name": "תיאור"
-      },
-      "cfg_scale": {
-        "name": "cfg_scale"
-      },
-      "clip": {
-        "name": "clip"
-      },
-      "control_after_generate": {
-        "name": "בקרה לאחר היצירה"
-      },
-      "lyrics": {
-        "name": "מילות השיר"
-      },
-      "max_duration": {
-        "name": "משך מרבי",
-        "tooltip": "משך מרבי בשניות; המודל יכול לסיים את השיר מוקדם יותר."
-      },
-      "seed": {
-        "name": "זרע"
-      },
-      "top_k": {
-        "name": "top_k"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "שניות",
-        "tooltip": null
-      }
-    }
-  },
-  "MinimaxHailuo03ContextIRNode": {
-    "description": "מנתח טקסט והקשר של מדיה באמצעות MiniMax H3 Context IR ומפיק פרומפט וידאו משופר ומובנה. הזינו את הפלט לפרומפט של צומת וידאו MiniMax H3 וצרפו אליו שם את אותה המדיה ובאותו סדר, משום שהפרומפט המשופר מפנה למדיה המצורפת לפי מיקומה.",
-    "display_name": "MiniMax H3 Context IR (משפר פרומפט)",
-    "inputs": {
-      "first_frame": {
-        "name": "פריים ראשון",
-        "tooltip": "הפריים הראשון של הסרטון שבכוונתכם להפיק. לא ניתן לשלב אותו עם מדיית ייחוס."
-      },
-      "last_frame": {
-        "name": "פריים אחרון",
-        "tooltip": "הפריים האחרון של הסרטון שבכוונתכם להפיק. לא ניתן לשלב אותו עם מדיית ייחוס."
-      },
-      "model": {
-        "name": "מודל",
-        "tooltip": "המודל שישמש לשיפור הפרומפט."
-      },
-      "model_duration": {
-        "name": "משך"
-      },
-      "model_prompt": {
-        "name": "פרומפט"
-      },
-      "model_ratio": {
-        "name": "יחס"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "MinimaxHailuo03FirstLastFrameNode": {
     "description": "יוצר וידאו מתמונה של פריים ראשון ואופציונלית גם פריים אחרון באמצעות מודל MiniMax H3. יחס הגובה-רוחב של הווידאו תואם לתמונות שסופקו.",
     "display_name": "MiniMax H3 יצירת וידאו מפריים ראשון ואחרון",
@@ -12212,43 +11955,6 @@
       "watermark": {
         "name": "סימן מים",
         "tooltip": "האם להוסיף סימן מים של AIGC לווידאו."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "MinimaxHailuo03RegenerateNode": {
-    "description": "רנדרו מחדש פלט MiniMax H3 ב-768P ברזולוציית 2K. חברו את סרטון ה-768P ללא שינויים ואת הפרומפט המדויק ששימש ליצירתו; אם ביצירה המקורית נעשה שימוש בפריים ראשון או אחרון, או במדיית ייחוס, צרפו את אותם קלטים.",
-    "display_name": "יצירה מחדש של MiniMax H3 ב-2K",
-    "inputs": {
-      "first_frame": {
-        "name": "פריים ראשון",
-        "tooltip": "תמונת הפריים הראשון מהיצירה המקורית, אם נעשה שימוש בתמונה כזו."
-      },
-      "last_frame": {
-        "name": "פריים אחרון",
-        "tooltip": "תמונת הפריים האחרון מהיצירה המקורית, אם נעשה שימוש בתמונה כזו."
-      },
-      "model": {
-        "name": "מודל",
-        "tooltip": "המודל שישמש ליצירה מחדש של הווידאו."
-      },
-      "model_prompt": {
-        "name": "פרומפט"
-      },
-      "model_resolution": {
-        "name": "רזולוציה"
-      },
-      "video": {
-        "name": "וידאו",
-        "tooltip": "סרטון הפלט של MiniMax H3 ב-768P שיש לרנדר מחדש. חברו את הפלט ללא שינויים של צומת וידאו MiniMax H3 ‏(24 FPS,‏ 4–15 שניות). לא ניתן להשתמש בפלטי 2K."
-      },
-      "watermark": {
-        "name": "סימן מים",
-        "tooltip": "האם להוסיף לווידאו סימן מים מסוג AIGC."
       }
     },
     "outputs": {

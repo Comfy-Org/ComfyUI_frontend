@@ -638,110 +638,6 @@
       }
     }
   },
-  "BriaEraser": {
-    "description": "Remova objetos ou áreas delimitadas por uma máscara de uma imagem usando a Bria.",
-    "display_name": "Borracha Bria",
-    "inputs": {
-      "image": {
-        "name": "imagem"
-      },
-      "mask": {
-        "name": "máscara",
-        "tooltip": "As áreas brancas são apagadas e as áreas pretas são preservadas. A máscara é binarizada antes do envio, portanto, áreas parcialmente pintadas são consideradas brancas. Deve ter a mesma proporção da imagem."
-      },
-      "mask_type": {
-        "name": "tipo_de_máscara",
-        "tooltip": "Use manual para máscaras desenhadas à mão ou com pincel e automático para máscaras produzidas por modelos de segmentação, como o SAM."
-      },
-      "moderation": {
-        "name": "moderação",
-        "tooltip": "Configurações de moderação"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "BriaExpandImage": {
-    "description": "Expanda uma imagem além de suas bordas com conteúdo gerado usando a Bria.",
-    "display_name": "Bria: expandir imagem",
-    "inputs": {
-      "control_after_generate": {
-        "name": "controle após gerar"
-      },
-      "expand_mode": {
-        "name": "modo_de_expansão",
-        "tooltip": "Formato de destino da imagem expandida: uma proporção predefinida, uma proporção personalizada ou o posicionamento manual da imagem original em uma tela. O modo manual é o único que permite obter uma tela mais alta que 1:2."
-      },
-      "image": {
-        "name": "imagem"
-      },
-      "moderation": {
-        "name": "moderação",
-        "tooltip": "Configurações de moderação"
-      },
-      "negative_prompt": {
-        "name": "prompt_negativo"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Descrição opcional da cena expandida; quando está vazia, a Bria gera uma com base na imagem."
-      },
-      "seed": {
-        "name": "semente"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "prompt",
-        "tooltip": "O prompt usado na expansão; gerado automaticamente pela Bria quando a entrada de prompt está vazia."
-      }
-    }
-  },
-  "BriaGenFill": {
-    "description": "Gere objetos ou cenários dentro de uma região mascarada de uma imagem usando a Bria.",
-    "display_name": "Preenchimento generativo Bria",
-    "inputs": {
-      "control_after_generate": {
-        "name": "controle após gerar"
-      },
-      "image": {
-        "name": "imagem"
-      },
-      "mask": {
-        "name": "máscara",
-        "tooltip": "As áreas brancas são preenchidas com conteúdo gerado e as áreas pretas são preservadas. A máscara é binarizada antes do envio, portanto, áreas parcialmente pintadas são consideradas brancas. Deve ter a mesma proporção da imagem."
-      },
-      "moderation": {
-        "name": "moderação",
-        "tooltip": "Configurações de moderação"
-      },
-      "negative_prompt": {
-        "name": "prompt_negativo"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Descrição do que deve ser gerado dentro da região mascarada."
-      },
-      "refine_prompt": {
-        "name": "refinar_prompt",
-        "tooltip": "Ajuste automaticamente o prompt para obter melhores resultados; desative para usar o prompt exatamente como foi escrito."
-      },
-      "seed": {
-        "name": "semente"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "BriaImageEditNode": {
     "description": "Edite imagens usando o modelo mais recente da Bria",
     "display_name": "Bria Image Edit",
@@ -791,32 +687,6 @@
       },
       "1": {
         "name": "prompt_estruturado",
-        "tooltip": null
-      }
-    }
-  },
-  "BriaIncreaseResolution": {
-    "description": "Amplie uma imagem em 2x ou 4x usando a Bria, preservando o conteúdo original.",
-    "display_name": "Bria: aumentar resolução",
-    "inputs": {
-      "auto_downscale": {
-        "name": "redução_automática",
-        "tooltip": "Reduz automaticamente o multiplicador e, se isso ainda não for suficiente, reduz a resolução da imagem de entrada quando a saída excederia o limite."
-      },
-      "desired_increase": {
-        "name": "aumento_desejado",
-        "tooltip": "Multiplicador de resolução. A saída deve ter no máximo 8192 pixels em cada lado."
-      },
-      "image": {
-        "name": "imagem"
-      },
-      "moderation": {
-        "name": "moderação",
-        "tooltip": "Configurações de moderação"
-      }
-    },
-    "outputs": {
-      "0": {
         "tooltip": null
       }
     }
@@ -1793,7 +1663,7 @@
     }
   },
   "CLIPLoader": {
-    "description": "Receitas:\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl (preenchimento de 226 tokens)\ncosmos: t5 xxl antigo\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1 (Recomendado) ou t5\nomnigen2: qwen vl 2.5 3B\njoyimage: qwen3-vl 8B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm\nminimax: MiniMax H3 Qwen3-VL ou Music3 Qwen/RVQ",
+    "description": "[Receitas]\n\nstable_diffusion: clip-l\nstable_cascade: clip-g\nsd3: t5 xxl/ clip-g / clip-l\nstable_audio: t5 base\nmochi: t5 xxl\ncosmos: old t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\n hidream: llama-3.1 (Recomendado) ou t5\nomnigen2: qwen vl 2.5 3B",
     "display_name": "Carregar CLIP",
     "inputs": {
       "clip_name": {
@@ -4379,23 +4249,6 @@
       },
       "width": {
         "name": "largura"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "EmptyMiniMaxMusic3LatentAudio": {
-    "description": "Cria um latente de áudio vazio do MiniMax Music3 com a duração solicitada.",
-    "display_name": "Áudio latente vazio do MiniMax Music3",
-    "inputs": {
-      "batch_size": {
-        "name": "tamanho_do_lote"
-      },
-      "seconds": {
-        "name": "segundos"
       }
     },
     "outputs": {
@@ -9109,7 +8962,7 @@
     }
   },
   "LTXVDurationPredictor": {
-    "description": "Prevê a duração natural da tomada para um prompt usando o cabeçote de duração do LTX 2.4 (carregado com ModelPatchLoader) e a ajusta à grade de quadros 8k+1 do VAE.",
+    "description": "Prevê a duração natural da cena para um prompt usando o duration head do LTX 2.4 (carregado com ModelPatchLoader) e ajusta para a grade de quadros 8k+1 do VAE.",
     "display_name": "LTXV Duration Predictor",
     "inputs": {
       "duration_head": {
@@ -11917,44 +11770,6 @@
       }
     }
   },
-  "MiniMaxH3AddGuide": {
-    "description": "Ancore uma imagem, um clipe curto, um áudio ou um clipe com sua trilha sonora em qualquer quadro de um vídeo do MiniMax H3. Encadeie vários nós para ancorar vários quadros.",
-    "display_name": "Adicionar guia ao MiniMax H3",
-    "inputs": {
-      "audio": {
-        "name": "áudio",
-        "tooltip": "Trilha sonora a ser ancorada a partir do mesmo índice de quadro, recortada para a duração restante do vídeo."
-      },
-      "audio_vae": {
-        "name": "vae_de_áudio",
-        "tooltip": "VAE de áudio, necessário quando um áudio está conectado."
-      },
-      "frame_idx": {
-        "name": "índice_do_quadro",
-        "tooltip": "Índice do quadro no qual ancorar a imagem ou o primeiro quadro do clipe. Valores negativos são contados a partir do fim do vídeo."
-      },
-      "image": {
-        "name": "imagem",
-        "tooltip": "Imagem ou quadros de vídeo a serem ancorados. Lotes com vários quadros são ancorados como um clipe e recortados para os comprimentos de clipe válidos do modelo: 5, 22, 39... (17k + 5) quadros. Lotes com menos de 5 quadros usam somente a primeira imagem."
-      },
-      "latent": {
-        "name": "latente"
-      },
-      "positive": {
-        "name": "positivo"
-      },
-      "vae": {
-        "name": "vae",
-        "tooltip": "VAE de vídeo, necessário quando uma imagem está conectada."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "positivo",
-        "tooltip": null
-      }
-    }
-  },
   "MiniMaxH3ImageToVideo": {
     "display_name": "MiniMax H3 Imagem para Vídeo",
     "inputs": {
@@ -12067,78 +11882,6 @@
       }
     }
   },
-  "MiniMaxMusic3TextEncode": {
-    "description": "Usa um modelo CLIP MiniMax Music3 para gerar a sequência de condicionamento acústico.",
-    "display_name": "Codificação de texto MiniMax Music3",
-    "inputs": {
-      "caption": {
-        "name": "descrição"
-      },
-      "cfg_scale": {
-        "name": "cfg_scale"
-      },
-      "clip": {
-        "name": "clip"
-      },
-      "control_after_generate": {
-        "name": "controle após gerar"
-      },
-      "lyrics": {
-        "name": "letra"
-      },
-      "max_duration": {
-        "name": "duração máxima",
-        "tooltip": "Duração máxima em segundos; o modelo pode encerrar a música antes."
-      },
-      "seed": {
-        "name": "semente"
-      },
-      "top_k": {
-        "name": "top_k"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "segundos",
-        "tooltip": null
-      }
-    }
-  },
-  "MinimaxHailuo03ContextIRNode": {
-    "description": "Analise o contexto de texto e mídia com o MiniMax H3 Context IR e produza um prompt de vídeo estruturado e aprimorado. Insira a saída no prompt de um nó de vídeo do MiniMax H3 e anexe a mesma mídia nele, na mesma ordem, pois o prompt aprimorado se refere às mídias anexadas pela posição.",
-    "display_name": "MiniMax H3 Context IR (Aprimorador de prompt)",
-    "inputs": {
-      "first_frame": {
-        "name": "primeiro_quadro",
-        "tooltip": "Primeiro quadro do vídeo que você pretende gerar. Não pode ser combinado com mídia de referência."
-      },
-      "last_frame": {
-        "name": "último_quadro",
-        "tooltip": "Último quadro do vídeo que você pretende gerar. Não pode ser combinado com mídia de referência."
-      },
-      "model": {
-        "name": "modelo",
-        "tooltip": "Modelo usado para aprimorar o prompt."
-      },
-      "model_duration": {
-        "name": "duração"
-      },
-      "model_prompt": {
-        "name": "prompt"
-      },
-      "model_ratio": {
-        "name": "proporção"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "MinimaxHailuo03FirstLastFrameNode": {
     "description": "Gere vídeo a partir de uma imagem de primeiro frame e, opcionalmente, uma imagem de último frame usando o modelo MiniMax H3. A proporção do vídeo segue as imagens fornecidas.",
     "display_name": "MiniMax H3 Primeiro-Último-Frame para Vídeo",
@@ -12212,43 +11955,6 @@
       "watermark": {
         "name": "marca d'água",
         "tooltip": "Se deve adicionar uma marca d'água AIGC ao vídeo."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "MinimaxHailuo03RegenerateNode": {
-    "description": "Renderize novamente uma saída MiniMax H3 768P em resolução 2K. Conecte o vídeo 768P sem modificações e o prompt exato usado para gerá-lo; se a geração original usou quadros inicial/final ou mídia de referência, anexe as mesmas entradas.",
-    "display_name": "Regenerar MiniMax H3 para 2K",
-    "inputs": {
-      "first_frame": {
-        "name": "primeiro quadro",
-        "tooltip": "Imagem do primeiro quadro da geração original, caso tenha sido usada."
-      },
-      "last_frame": {
-        "name": "último quadro",
-        "tooltip": "Imagem do último quadro da geração original, caso tenha sido usada."
-      },
-      "model": {
-        "name": "modelo",
-        "tooltip": "Modelo a ser usado para a regeneração do vídeo."
-      },
-      "model_prompt": {
-        "name": "prompt"
-      },
-      "model_resolution": {
-        "name": "resolução"
-      },
-      "video": {
-        "name": "vídeo",
-        "tooltip": "O vídeo de saída MiniMax H3 768P a ser renderizado novamente. Conecte a saída sem modificações de um nó de vídeo MiniMax H3 (24 FPS, 4 a 15 segundos). Saídas 2K não podem ser usadas."
-      },
-      "watermark": {
-        "name": "marca-d'água",
-        "tooltip": "Define se uma marca-d'água AIGC será adicionada ao vídeo."
       }
     },
     "outputs": {

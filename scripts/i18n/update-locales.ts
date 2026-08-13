@@ -46,10 +46,6 @@ import {
 
 interface SourceManifest {
   files: Record<string, string>
-  // Transitional baseline: leaf path keys per entry file whose committed
-  // translations violated token validation when the manifest was recorded.
-  // The check exempts them; a successful locale run heals and drops them.
-  knownViolations?: Record<string, string[]>
   version: 1
 }
 
@@ -59,7 +55,6 @@ interface SourcePlan {
   changes: LocaleChanges
   invalidated: Set<string>
   previousLeafCount: number
-  knownViolationKeys: ReadonlySet<string>
 }
 
 interface LocaleFileState {
@@ -185,15 +180,7 @@ function loadManifest(filename: string): SourceManifest {
     Array.isArray(manifest.files) ||
     !Object.values(manifest.files).every(
       (hash) => typeof hash === 'string' && /^[0-9a-f]{40,64}$/.test(hash)
-    ) ||
-    ('knownViolations' in manifest &&
-      (!manifest.knownViolations ||
-        typeof manifest.knownViolations !== 'object' ||
-        Array.isArray(manifest.knownViolations) ||
-        !Object.values(manifest.knownViolations).every(
-          (keys) =>
-            Array.isArray(keys) && keys.every((key) => typeof key === 'string')
-        )))
+    )
   ) {
     throw new Error(`${filename} has an invalid source manifest`)
   }
@@ -246,8 +233,7 @@ function writeManifest(
   entryDir: string,
   manifestFile: string,
   advancedFilenames: readonly string[],
-  preservedFiles: Readonly<Record<string, string>>,
-  preservedViolations: Readonly<Record<string, string[]>>
+  preservedFiles: Readonly<Record<string, string>>
 ): void {
   const files = Object.fromEntries(
     [
@@ -261,13 +247,7 @@ function writeManifest(
       ])
     ].sort(([left], [right]) => left.localeCompare(right))
   )
-  const manifest: SourceManifest = {
-    files,
-    ...(Object.keys(preservedViolations).length > 0
-      ? { knownViolations: preservedViolations }
-      : {}),
-    version: 1
-  }
+  const manifest: SourceManifest = { files, version: 1 }
   const serialized = `${JSON.stringify(manifest, null, 2)}\n`
   if (
     !existsSync(manifestFile) ||
@@ -313,10 +293,6 @@ function loadLocaleFileStates(
       const strayPaths = [...collectLeaves(existing).values()]
         .filter((leaf) => !sourceLeafKeys.has(pathKey(leaf.path)))
         .map((leaf) => leaf.path)
-      const auditSkipKeys = new Set([
-        ...plan.invalidated,
-        ...plan.knownViolationKeys
-      ])
       return {
         locale,
         plan,
@@ -330,7 +306,7 @@ function loadLocaleFileStates(
         auditErrors: auditProtectedLiterals(
           plan.source,
           existing,
-          auditSkipKeys
+          plan.invalidated
         ),
         strayPaths
       }
@@ -403,19 +379,14 @@ async function run(argv: readonly string[]): Promise<void> {
     const recorded = hash ? readManifestSource(repoRoot, filename, hash) : {}
     const previous = recorded
     const changes = diffLocaleSources(previous, source)
-    const knownViolationKeys = new Set(
-      manifest.knownViolations?.[filename] ?? []
-    )
     return {
       filename,
       source,
       changes,
-      invalidated: new Set([
-        ...[...changes.added, ...changes.modified].map(pathKey),
-        ...knownViolationKeys
-      ]),
-      previousLeafCount: collectLeaves(previous).size,
-      knownViolationKeys
+      invalidated: new Set(
+        [...changes.added, ...changes.modified].map(pathKey)
+      ),
+      previousLeafCount: collectLeaves(previous).size
     }
   })
 
@@ -597,8 +568,7 @@ async function run(argv: readonly string[]): Promise<void> {
     for (const error of validateLocale(
       state.plan.source,
       output,
-      state.plan.changes,
-      state.plan.knownViolationKeys
+      state.plan.changes
     )) {
       addFailure(
         state.plan.filename,
@@ -638,20 +608,6 @@ async function run(argv: readonly string[]): Promise<void> {
         if (completedFilenames.has(filename)) return []
         const hash = manifest.files[filename]
         return hash ? [[filename, hash] as const] : []
-      })
-    ),
-    // Unchanged translations are never rewritten to heal baseline violations.
-    // Drop only invalidated keys that a completed file regenerated.
-    Object.fromEntries(
-      filenames.flatMap((filename) => {
-        const keys = manifest.knownViolations?.[filename]
-        const plan = plans.find((candidate) => candidate.filename === filename)
-        const preservedKeys = completedFilenames.has(filename)
-          ? keys?.filter((key) => !plan?.invalidated.has(key))
-          : keys
-        return preservedKeys && preservedKeys.length > 0
-          ? [[filename, preservedKeys] as const]
-          : []
       })
     )
   )

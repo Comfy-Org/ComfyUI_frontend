@@ -81,8 +81,7 @@ function leafTokenErrors(
 export function validateLocale(
   source: LocaleObject,
   locale: LocaleObject,
-  changes: LocaleChanges,
-  auditSkipKeys: ReadonlySet<string> = new Set()
+  changes: LocaleChanges
 ): string[] {
   const errors: string[] = []
   const sourceLeaves = collectLeaves(source)
@@ -114,13 +113,7 @@ export function validateLocale(
     }
   }
 
-  errors.push(
-    ...auditProtectedLiterals(
-      source,
-      locale,
-      new Set([...regeneratedKeys, ...auditSkipKeys])
-    )
-  )
+  errors.push(...auditProtectedLiterals(source, locale, regeneratedKeys))
 
   return errors
 }
