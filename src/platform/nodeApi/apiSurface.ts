@@ -170,6 +170,7 @@ export const API_MEMBERS: ReadonlySet<string> = new Set([
   'onClick',
   'onConfigured',
   'onConnectionsChanged',
+  'onContextMenu',
   'onCreated',
   'onDoubleClick',
   'onExecuted',
