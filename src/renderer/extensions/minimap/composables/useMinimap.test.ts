@@ -427,7 +427,10 @@ describe('useMinimap', () => {
       await minimap.init()
       minimap.destroy()
 
+      // Both loops: rAF drives viewport sync, the interval drives change
+      // detection. One spy each, or deleting either pause here goes unnoticed.
       expect(mockPause).toHaveBeenCalled()
+      expect(mockIntervalPause).toHaveBeenCalled()
       expect(api.removeEventListener).toHaveBeenCalledWith(
         'graphChanged',
         expect.any(Function)
