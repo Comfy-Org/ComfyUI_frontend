@@ -164,6 +164,29 @@ export interface ModelLaunchReviews {
   }
 }
 
+// The optional body sections, in the order they render between the hero and the
+// run-options footer. hero/runOptions/reviews are fixed and are not listed here.
+export type ModelLaunchSection =
+  | 'gallery'
+  | 'audioGallery'
+  | 'steps'
+  | 'pricing'
+  | 'faq'
+  | 'closingCta'
+
+// The order the video launch pages shipped with; audioGallery slots in beside
+// the video gallery so audio-first pages get a sensible default too. A page
+// reorders its sections with `sectionOrder` rather than editing the template,
+// so one page's layout never moves another's.
+export const DEFAULT_SECTION_ORDER: readonly ModelLaunchSection[] = [
+  'gallery',
+  'audioGallery',
+  'pricing',
+  'faq',
+  'steps',
+  'closingCta'
+]
+
 export interface ModelLaunchPage {
   metaTitleKey: TranslationKey
   metaDescriptionKey: TranslationKey
@@ -179,6 +202,11 @@ export interface ModelLaunchPage {
   steps?: ModelLaunchSteps
   // Pages that end on a steps CTA row do not need a separate closing CTA.
   closingCta?: ModelLaunchClosingCta
+  // Reorders the optional body sections for this page only. Defaults to
+  // DEFAULT_SECTION_ORDER. Only sections the page defines render, so listing an
+  // absent one is a harmless no-op; a defined section left off the list will
+  // not render, which the modelLaunchPages test guards against.
+  sectionOrder?: readonly ModelLaunchSection[]
   runOptions: ModelLaunchRunOptions
   reviews: ModelLaunchReviews
 }

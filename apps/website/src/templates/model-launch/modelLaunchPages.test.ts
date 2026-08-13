@@ -9,7 +9,8 @@ import { wanAnimate2Page } from '../../data/wanAnimate2'
 import { wan3Page } from '../../data/wan3'
 import type { TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
-import type { ModelLaunchPage } from './types'
+import { DEFAULT_SECTION_ORDER } from './types';
+import type { ModelLaunchPage } from './types';
 
 // Add every new launch-page config here so it inherits these checks.
 const pages: { name: string; page: ModelLaunchPage }[] = [
@@ -143,6 +144,16 @@ describe.for(pages)('$name launch page config', ({ page }) => {
     )
 
     expect(audioOffenders.map((card) => card.id)).toEqual([])
+  })
+
+  it('orders every optional section it defines', () => {
+    const order = page.sectionOrder ?? DEFAULT_SECTION_ORDER
+    // A defined section left out of the order would silently not render.
+    const dropped = DEFAULT_SECTION_ORDER.filter(
+      (section) => page[section] !== undefined && !order.includes(section)
+    )
+
+    expect(dropped).toEqual([])
   })
 
   it('lists a playable MP3 first in every audio source list', () => {

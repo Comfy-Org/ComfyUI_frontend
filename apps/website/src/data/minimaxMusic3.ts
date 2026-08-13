@@ -137,6 +137,9 @@ export const minimaxMusic3Page: ModelLaunchPage = {
       'minimaxMusic3.hero.tagTextToMusic'
     ]
   },
+  // Music leads with the tracks, then how-to, before pricing and Q&A. The video
+  // pages keep the DEFAULT_SECTION_ORDER (steps after the Q&A).
+  sectionOrder: ['audioGallery', 'steps', 'pricing', 'faq'],
   audioGallery: {
     cards: [
       {
