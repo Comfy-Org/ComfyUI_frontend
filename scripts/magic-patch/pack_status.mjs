@@ -101,6 +101,11 @@ const REFUSAL = /^\s*\/\/\s*(?:REFUSED|UNSUPPORTED)\b/m
  *
  * Outranks a refusal in the same file. A block that refuses one technique and
  * still wants three others is unfinished, whatever else it says.
+ *
+ * It outranks a conversion for the same reason. A file that got one export out
+ * of ten across the line and left nine of these behind is not finished either,
+ * and counting it beside the finished ones hid 459 open markers in 208 files
+ * that the headline was calling converted.
  */
 const OUTSTANDING = /^\s*\/\/\s*(?:API-GAP|PUNTED IN FULL)\b/m
 
@@ -164,8 +169,9 @@ export function packStatus(dbDir) {
         }
         const gutted = codeLines(result) <= GUTTED_CODE_LINES
         if (original === result) stats.todo.push({ file, why: 'untouched' })
+        else if (OUTSTANDING.test(result))
+          stats.todo.push({ file, why: gutted ? 'gap' : 'partial' })
         else if (!gutted) stats.converted++
-        else if (OUTSTANDING.test(result)) stats.todo.push({ file, why: 'gap' })
         else if (REFUSAL.test(result)) stats.refused++
         // Gutted, and saying neither. Not a decision, so it is work.
         else stats.todo.push({ file, why: 'silent' })
@@ -197,11 +203,17 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     process.exit(1)
   }
   const { packs, totals, settled } = packStatus(dbDir)
+  const partial = [...packs.values()].reduce(
+    (sum, stats) =>
+      sum + stats.todo.filter((entry) => entry.why === 'partial').length,
+    0
+  )
   console.error(
     `${packs.size} packs. Of the files whose original touches the old surface: ` +
-      `${totals.converted} converted, ${totals.refused} refused by decision, ` +
-      `${totals.outstanding} outstanding. ${settled} of ${packs.size} packs ` +
-      `have nothing outstanding.`
+      `${totals.converted} finished, ${totals.refused} refused by decision, ` +
+      `${totals.outstanding} outstanding — of which ${partial} converted ` +
+      `something and left an open marker behind. ${settled} of ${packs.size} ` +
+      `packs have nothing outstanding.`
   )
   const byOutstanding = [...packs].sort(
     (a, b) => b[1].outstanding - a[1].outstanding
