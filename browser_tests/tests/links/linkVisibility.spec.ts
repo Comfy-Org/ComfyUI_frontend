@@ -144,3 +144,88 @@ test.describe('Hidden link badges', { tag: ['@canvas'] }, () => {
       .toEqual({ hidden: true, curveRendered: false, badgeCount: 2 })
   })
 })
+
+test.describe(
+  'Hidden link Vue slot reveal',
+  { tag: ['@canvas', '@vue-nodes'] },
+  () => {
+    test('reveals the link while connected input and output slots are hovered', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow('reroute/native_reroute')
+
+      const sourceNode =
+        await comfyPage.vueNodes.getFixtureByTitle('Load Checkpoint')
+      const targetNode =
+        await comfyPage.vueNodes.getFixtureByTitle('VAE Decode')
+      const inputSlot = targetNode.getSlot('vae')
+      const outputSlot = sourceNode.getSlot('VAE')
+      await expect(inputSlot).toBeVisible()
+      await expect(outputSlot).toBeVisible()
+
+      await comfyPage.page.evaluate(() => {
+        const link = window.app!.graph!.links.values().next().value
+        if (!link) throw new Error('Workflow link was not found')
+        link.hidden = true
+        window.app!.canvas.setDirty(false, true)
+      })
+      await comfyPage.nextFrame()
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(() => {
+            const link = window.app!.graph!.links.values().next().value
+            return link
+              ? {
+                  hidden: link.hidden,
+                  curveRendered: window.app!.canvas.renderedPaths.has(link)
+                }
+              : null
+          })
+        )
+        .toEqual({ hidden: true, curveRendered: false })
+
+      const inputBounds = await inputSlot.boundingBox()
+      if (!inputBounds) throw new Error('Input slot has no bounding box')
+      await comfyPage.page.mouse.move(
+        inputBounds.x + inputBounds.width / 2,
+        inputBounds.y + inputBounds.height / 2
+      )
+      await comfyPage.nextFrame()
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(() => {
+            const link = window.app!.graph!.links.values().next().value
+            return link ? window.app!.canvas.renderedPaths.has(link) : null
+          })
+        )
+        .toBe(true)
+
+      await comfyPage.canvasOps.moveMouseToEmptyArea()
+      await comfyPage.nextFrame()
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(() => {
+            const link = window.app!.graph!.links.values().next().value
+            return link ? window.app!.canvas.renderedPaths.has(link) : null
+          })
+        )
+        .toBe(false)
+
+      const outputBounds = await outputSlot.boundingBox()
+      if (!outputBounds) throw new Error('Output slot has no bounding box')
+      await comfyPage.page.mouse.move(
+        outputBounds.x + outputBounds.width / 2,
+        outputBounds.y + outputBounds.height / 2
+      )
+      await comfyPage.nextFrame()
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(() => {
+            const link = window.app!.graph!.links.values().next().value
+            return link ? window.app!.canvas.renderedPaths.has(link) : null
+          })
+        )
+        .toBe(true)
+    })
+  }
+)
