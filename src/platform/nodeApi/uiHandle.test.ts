@@ -3,7 +3,8 @@
  * rather than a decoration.
  */
 import { createTestingPinia } from '@pinia/testing'
-import { render as renderComponent } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
+import { render as renderComponent, screen } from '@testing-library/vue'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, defineComponent, h } from 'vue'
@@ -171,5 +172,49 @@ describe('comfy.ui.showDialog', () => {
 
   it('refuses an empty key', () => {
     expect(() => ui.showDialog({ key: '  ', render: () => {} })).toThrow()
+  })
+})
+
+describe('comfy.ui.showMenu', () => {
+  let ui: ReturnType<typeof createUiHandle>
+
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    ui = createUiHandle()
+  })
+
+  function open(items: Parameters<typeof ui.showMenu>[0]['items']) {
+    ui.showMenu({
+      items,
+      event: new MouseEvent('contextmenu', { clientX: 40, clientY: 60 })
+    })
+  }
+
+  it('shows an item and runs it when clicked', async () => {
+    const run = vi.fn()
+    // The menu renders itself into the body; there is no component to render()
+    // here, so screen is the only handle on it.
+    open([{ label: 'Move Up', run }])
+
+    await userEvent.click(screen.getByText('Move Up'))
+
+    expect(run).toHaveBeenCalledOnce()
+  })
+
+  it('does not run a submenu parent on the way past', async () => {
+    // The renderer fires both the item callback and opens the submenu, so a
+    // parent carrying a callback would act as well as expand.
+    const run = vi.fn()
+    open([{ label: 'Strength', run, submenu: [{ label: 'Reset', run }] }])
+
+    await userEvent.click(screen.getByText('Strength'))
+
+    expect(run).not.toHaveBeenCalled()
+  })
+
+  it('refuses an empty menu', () => {
+    expect(() =>
+      ui.showMenu({ items: [], event: new MouseEvent('contextmenu') })
+    ).toThrow(/at least one item/)
   })
 })
