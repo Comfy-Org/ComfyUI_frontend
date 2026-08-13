@@ -27,7 +27,6 @@ catalog:
   '@iconify/tools': ^5.0.3
   '@iconify/utils': ^3.1.0
   '@intlify/eslint-plugin-vue-i18n': ^4.5.1
-  '@lobehub/i18n-cli': ^1.26.1
   '@lucide/vue': ^1.17.0
   '@pinia/testing': ^2.0.1
   '@playwright/test': ^1.61.1
@@ -107,6 +106,7 @@ catalog:
   minisearch: ^7.2.0
   mixpanel-browser: ^2.71.0
   monocart-coverage-reports: ^2.12.9
+  openai: ^7.4.0
   oxfmt: ^0.59.0
   oxlint: ^1.77.0
   oxlint-tsgolint: ^7.0.2001
