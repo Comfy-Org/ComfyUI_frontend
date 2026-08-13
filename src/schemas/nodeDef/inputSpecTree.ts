@@ -113,16 +113,21 @@ export function* walkNestedInputSpecs(
   if (!control) return
 
   for (const inputs of control.nestedInputs(spec)) {
-    const groups = [
-      { specs: inputs.required, isOptional: false },
-      { specs: inputs.optional, isOptional: true }
-    ]
-    for (const { specs, isOptional } of groups) {
-      for (const [name, specV1] of Object.entries(specs ?? {})) {
-        const child = transformInputSpecV1ToV2(specV1, { name, isOptional })
-        yield child
-        yield* walkNestedInputSpecs(child)
-      }
+    for (const child of toInputSpecsV2(inputs)) {
+      yield child
+      yield* walkNestedInputSpecs(child)
+    }
+  }
+}
+
+function* toInputSpecsV2(inputs: ComfyInputsSpec): Generator<InputSpecV2> {
+  const groups = [
+    { specs: inputs.required, isOptional: false },
+    { specs: inputs.optional, isOptional: true }
+  ]
+  for (const { specs, isOptional } of groups) {
+    for (const [name, specV1] of Object.entries(specs ?? {})) {
+      yield transformInputSpecV1ToV2(specV1, { name, isOptional })
     }
   }
 }
@@ -140,6 +145,32 @@ export function inputSpecTree(spec: InputSpecV2): InputSpecV2[] {
 export function ownSlotTypes(spec: InputSpecV2): string[] {
   const control = dynamicControlFor(spec)
   return control ? control.ownTypes(spec) : splitSlotTypes(spec.type)
+}
+
+/**
+ * The slot types each DynamicCombo option would expose if selected.
+ *
+ * Unlike {@link collectSearchableInputTypes}, which unions every option, this
+ * keeps options apart -- callers that need to know *which* selection produces
+ * a type cannot work from the union.
+ */
+export function dynamicComboOptionTypes(
+  spec: InputSpecV2
+): { key: string; types: string[] }[] {
+  if (spec.type !== 'COMFY_DYNAMICCOMBO_V3') return []
+
+  const parsed = zDynamicComboOptions.safeParse(spec)
+  if (!parsed.success) return []
+
+  return parsed.data.options.flatMap((option) => {
+    const parsedOption = zDynamicComboOption.safeParse(option)
+    if (!parsedOption.success) return []
+
+    const types = [...toInputSpecsV2(parsedOption.data.inputs)]
+      .flatMap(inputSpecTree)
+      .flatMap(ownSlotTypes)
+    return [{ key: parsedOption.data.key, types }]
+  })
 }
 
 /**

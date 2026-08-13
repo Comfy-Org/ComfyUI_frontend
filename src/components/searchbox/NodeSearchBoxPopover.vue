@@ -60,6 +60,7 @@ import { storeToRefs } from 'pinia'
 import Dialog from 'primevue/dialog'
 import { computed, ref, toRaw, watch, watchEffect } from 'vue'
 
+import { revealDynamicInputSlot } from '@/core/graph/widgets/revealDynamicInputSlot'
 import type { Point } from '@/lib/litegraph/src/interfaces'
 import type { LiteGraphCanvasEvent } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -141,6 +142,11 @@ function addNode(nodeDef: ComfyNodeDefImpl, dragEvent?: MouseEvent) {
   if (!node) return
 
   if (disconnectOnReset && triggerEvent) {
+    const droppedLink = getFirstLink()
+    const droppedType = droppedLink?.fromSlot.type?.toString()
+    if (droppedLink?.toType === 'input' && droppedType) {
+      revealDynamicInputSlot(node, droppedType)
+    }
     canvasStore.getCanvas().linkConnector.connectToNode(node, triggerEvent)
   } else if (!triggerEvent) {
     console.warn('The trigger event was undefined when addNode was called.')
