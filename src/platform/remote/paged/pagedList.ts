@@ -36,8 +36,8 @@ export function stableKey(params: Record<string, unknown> = {}): string {
 
 export function createSharedPagedList<TParams, TItem>(
   factory: (params: TParams) => PagedList<TItem>,
-  keyFn: (params: TParams) => string,
-  itemKey: (item: TItem) => unknown = (item) => item
+  paramKeyFn: (params: TParams) => string,
+  itemKeyFn: (item: TItem) => unknown = (item) => item
 ) {
   const cache = new Map<string, CacheEntry<TItem>>()
 
@@ -49,14 +49,14 @@ export function createSharedPagedList<TParams, TItem>(
     const snapshot = toValue(entry.list.items)
     if (snapshot.length === 0) return [entry]
 
-    const staleKeys = new Set(snapshot.map(itemKey))
+    const staleKeys = new Set(snapshot.map(itemKeyFn))
     return [...cache.values()].filter((e) =>
-      toValue(e.list.items).some((item) => staleKeys.has(itemKey(item)))
+      toValue(e.list.items).some((item) => staleKeys.has(itemKeyFn(item)))
     )
   }
 
   function constructor(params: TParams): PagedList<TItem> {
-    const key = keyFn(params)
+    const key = paramKeyFn(params)
     const entry = cache.get(key) ?? { list: factory(params), refCount: 0 }
     cache.set(key, entry)
     entry.refCount++
