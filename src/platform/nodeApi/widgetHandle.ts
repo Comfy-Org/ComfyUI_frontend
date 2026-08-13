@@ -536,12 +536,69 @@ export interface CanvasPointerEvent {
   readonly event: PointerEvent
 }
 
+/**
+ * The colours a pack should draw its own controls in.
+ *
+ * Published because we told packs to draw. A widget that hardcodes its palette
+ * looks wrong the moment the user switches theme, and the alternative — reading
+ * `LiteGraph.WIDGET_BGCOLOR` and friends — is a renderer constant we intend to
+ * delete. These are the design system's own tokens, resolved from the widget's
+ * computed style, so they follow the theme without the pack knowing which one
+ * is active.
+ *
+ * Named by intent rather than by token, because the token names will churn and
+ * a pack should not have to follow. Re-read on every draw, so a theme switch
+ * needs nothing from the pack.
+ *
+ * @knipIgnoreUnusedButUsedByCustomNodes
+ */
+export interface CanvasTheme {
+  /** A control's background. */
+  readonly surface: string
+  /** The same under the pointer. */
+  readonly surfaceHovered: string
+  /** A control's outline. */
+  readonly border: string
+  /** A label. */
+  readonly text: string
+  /** A value, a unit, anything the label outranks. */
+  readonly textSecondary: string
+}
+
+const THEME_TOKENS: Readonly<Record<keyof CanvasTheme, string>> = {
+  surface: '--color-node-component-widget-input-surface',
+  surfaceHovered: '--color-node-component-surface-hovered',
+  border: '--color-node-component-border',
+  text: '--color-text-primary',
+  textSecondary: '--color-text-secondary'
+}
+
+/**
+ * Falls back rather than throwing: a token the design system renames should
+ * make a widget slightly wrong, not blank.
+ */
+function themeOf(element: Element): CanvasTheme {
+  const style = getComputedStyle(element)
+  const read = (token: string) => style.getPropertyValue(token).trim()
+  return Object.freeze({
+    surface: read(THEME_TOKENS.surface) || 'transparent',
+    surfaceHovered: read(THEME_TOKENS.surfaceHovered) || 'transparent',
+    border: read(THEME_TOKENS.border) || 'currentColor',
+    text: read(THEME_TOKENS.text) || 'currentColor',
+    textSecondary: read(THEME_TOKENS.textSecondary) || 'currentColor'
+  })
+}
+
 /** @knipIgnoreUnusedButUsedByCustomNodes */
 export interface CanvasDef {
   readonly name: string
   /** Reserved height in pixels. Omit to size to the node's width. */
   readonly height?: number
-  draw(context: CanvasRenderingContext2D, size: readonly [number, number]): void
+  draw(
+    context: CanvasRenderingContext2D,
+    size: readonly [number, number],
+    theme: CanvasTheme
+  ): void
   /**
    * The pointer went down on this widget.
    *
@@ -886,7 +943,11 @@ export function createWidgetCollection(
         element.height = Math.round(height * ratio)
         context.setTransform(ratio, 0, 0, ratio, 0, 0)
         context.clearRect(0, 0, width, height)
-        def.draw(context, Object.freeze([width, height] as const))
+        def.draw(
+          context,
+          Object.freeze([width, height] as const),
+          themeOf(element)
+        )
       }
 
       const at = (event: PointerEvent): CanvasPointerEvent => {

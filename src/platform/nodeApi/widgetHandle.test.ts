@@ -643,6 +643,37 @@ describe('mounted and canvas widgets', () => {
       expect(canvas.style.height).not.toBe('9999px')
     })
 
+    it('re-reads the theme on every draw, so a switch needs nothing', () => {
+      // We told packs to draw; a widget that hardcodes its palette looks wrong
+      // the moment the user switches theme, and the alternative they reach for
+      // is LiteGraph.WIDGET_BGCOLOR — a renderer constant we intend to delete.
+      // Reading at draw time rather than at creation is what makes the switch
+      // free: the tokens are inherited, so the element sees the new value.
+      const draw = vi.fn()
+      const plot = widgets.canvas({ name: 'plot', height: 40, draw })
+      const mounted = node.widgets!.at(-1) as unknown as {
+        element?: HTMLElement
+      }
+      const canvas = mounted.element!.querySelector('canvas')!
+      // Attached, or there is no computed style to inherit through.
+      document.body.append(mounted.element!)
+
+      canvas.style.setProperty('--color-text-primary', 'rgb(1, 2, 3)')
+      plot.redraw()
+
+      expect(draw.mock.calls.at(-1)![2]).toMatchObject({ text: 'rgb(1, 2, 3)' })
+    })
+
+    it('falls back rather than blanking when a token is missing', () => {
+      // A token the design system renames should make a widget slightly wrong,
+      // not invisible.
+      const draw = vi.fn()
+      widgets.canvas({ name: 'plot', height: 40, draw })
+
+      const theme = draw.mock.calls[0][2]
+      expect(Object.values(theme).every((v) => !!v)).toBe(true)
+    })
+
     it('reports pointer position in the units draw uses', () => {
       // A hit test written against the drawing has to work unchanged — that is
       // the whole point of keeping the drawing and moving only the surface.
