@@ -692,6 +692,41 @@ describe('extend after define', () => {
   })
 })
 
+describe('type colours', () => {
+  it('reports the colour a type is drawn in, and a default for unknown ones', () => {
+    setActivePinia(createPinia())
+    const api = createComfyApi(() => new LGraph())
+
+    expect(api.defs.typeColor('number')).toBe('#AAA')
+    expect(api.defs.typeColor('NOTHING_KNOWS_THIS')).toBeTruthy()
+  })
+
+  it('lets a pack colour a type it introduces, and take it back', () => {
+    // Packs shipping their own types wrote straight into link_type_colors so
+    // their links were not all grey.
+    setActivePinia(createPinia())
+    const api = createComfyApi(() => new LGraph())
+
+    const undo = api.defs.setTypeColor('LORA_STACK', '#c9a')
+    expect(api.defs.typeColor('LORA_STACK')).toBe('#c9a')
+
+    undo()
+    expect(api.defs.typeColor('LORA_STACK')).not.toBe('#c9a')
+  })
+
+  it('refuses to recolour a type the host already owns', () => {
+    // That write is global: one pack recolouring a core type restyles every
+    // graph for every other pack, and the user cannot see who did it.
+    setActivePinia(createPinia())
+    const api = createComfyApi(() => new LGraph())
+
+    expect(() => api.defs.setTypeColor('number', '#f00')).toThrow(
+      /already colours/
+    )
+    expect(api.defs.typeColor('number')).toBe('#AAA')
+  })
+})
+
 describe('preview frames', () => {
   beforeEach(() => setActivePinia(createPinia()))
 
