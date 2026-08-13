@@ -17,7 +17,9 @@ type QueryOptions = {
   onError?: (reason: string, error?: unknown) => void
 }
 
-const BASE_PARAMS: ListAssetsData['query'] = {}
+const BASE_PARAMS: ListAssetsData['query'] = {
+  sort: 'created_at'
+}
 
 //TODO: gracefully handle invalidation. Scan from null cursor until repeat is found. Reconcile all new in case out-of-order responses are returned?
 
