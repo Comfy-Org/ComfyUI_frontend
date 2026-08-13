@@ -171,6 +171,21 @@ interface FrontendApiCalls {
     /** How many submissions the backend refused outright. */
     rejectedCount?: number
   }
+  /**
+   * The attempt to start a run is over, whether or not anything started.
+   *
+   * `promptQueued` is `afterQueued` and fires only for a submission that got
+   * through, which is what packs advancing a counter per run depend on. This is
+   * the partner `promptQueueing` never had: it fires unconditionally, so a
+   * listener that changed something to build the prompt can put it back.
+   */
+  promptQueueAttemptEnded: {
+    requestId: number
+    /** How many submissions got through. Zero means the run never started. */
+    queued: number
+    /** How many the backend refused outright. */
+    rejected: number
+  }
   graphCleared: never
   reconnecting: never
   reconnected: never
@@ -178,6 +193,8 @@ interface FrontendApiCalls {
 
 export type PromptQueueingEventPayload = FrontendApiCalls['promptQueueing']
 export type PromptQueuedEventPayload = FrontendApiCalls['promptQueued']
+export type PromptQueueAttemptEndedPayload =
+  FrontendApiCalls['promptQueueAttemptEnded']
 
 /** Dictionary of calls originating from ComfyUI core */
 interface BackendApiCalls {

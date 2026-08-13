@@ -200,10 +200,10 @@ describe(useQueueNotificationBanners, () => {
   })
 
   it('says nothing when the backend queued nothing', async () => {
-    // An explicit 0 is a fact, not a missing value. A run refused outright
-    // used to leave the "queuing" banner up forever because the resolving
-    // event was withheld; now it arrives, and reading 0 as "assume 1" would
-    // tell the user a run started while the error dialog says the opposite.
+    // A run refused outright leaves promptQueued unsent — correctly, since
+    // that event means afterQueued and nothing was queued. So the "queuing"
+    // banner had nothing to resolve it and stayed up for good. The attempt-
+    // ended event is what closes it, without claiming a run started.
     const { unmount, composable } = mountComposable()
 
     try {
@@ -216,8 +216,8 @@ describe(useQueueNotificationBanners, () => {
       expect(composable.currentNotification.value?.type).toBe('queuedPending')
 
       mockApi.dispatchEvent(
-        new CustomEvent('promptQueued', {
-          detail: { batchCount: 0, requestId: 7, rejectedCount: 1 }
+        new CustomEvent('promptQueueAttemptEnded', {
+          detail: { requestId: 7, queued: 0, rejected: 1 }
         })
       )
       await nextTick()
