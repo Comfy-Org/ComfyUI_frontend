@@ -1,3 +1,4 @@
+import { CanceledError } from 'axios'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCachedRequest } from '@/composables/useCachedRequest'
@@ -212,6 +213,40 @@ describe('useCachedRequest', () => {
       data: 'Result for {"id":1}'
     })
     expect(rejectingFn).toHaveBeenCalledTimes(2)
+  })
+
+  it('should resolve to null when the request function throws synchronously', async () => {
+    const throwingFn = vi.fn((): Promise<unknown | null> => {
+      throw new Error('sync boom')
+    })
+    const cachedRequest = useCachedRequest(throwingFn)
+
+    await expect(cachedRequest.call({ id: 1 })).resolves.toBeNull()
+
+    await expect(cachedRequest.call({ id: 1 })).resolves.toBeNull()
+    expect(throwingFn).toHaveBeenCalledTimes(1)
+  })
+
+  it('should not log a cancellation observed by a de-duplicated caller', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const rejectingFn = vi.fn(
+      async (_params: unknown, signal?: AbortSignal): Promise<unknown> => {
+        await new Promise((resolve) => setTimeout(resolve, 8))
+        if (signal?.aborted) throw new CanceledError()
+        return { data: 'ok' }
+      }
+    )
+    const cachedRequest = useCachedRequest(rejectingFn)
+
+    const initiator = cachedRequest.call({ id: 1 })
+    const deduplicated = cachedRequest.call({ id: 1 })
+    cachedRequest.cancel({ id: 1 })
+
+    await expect(Promise.all([initiator, deduplicated])).resolves.toEqual([
+      null,
+      null
+    ])
+    expect(consoleError).not.toHaveBeenCalled()
   })
 
   it('should clear the cache when clear is called', async () => {

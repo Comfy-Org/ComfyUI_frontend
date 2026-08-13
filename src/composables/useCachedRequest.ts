@@ -1,6 +1,7 @@
 import QuickLRU from '@alloc/quick-lru'
 
 import { paramsToCacheKey } from '@/utils/formatUtil'
+import { isAbortError } from '@/utils/typeGuardUtil'
 
 const DEFAULT_MAX_SIZE = 50
 
@@ -39,17 +40,19 @@ export function useCachedRequest<TParams, TResult>(
     const controller = new AbortController()
     abortControllers.set(cacheKey, controller)
 
-    const responsePromise = requestFunction(params, controller.signal)
-    pendingRequests.set(cacheKey, responsePromise)
+    let responsePromise: Promise<TResult | null> | undefined
 
     try {
+      responsePromise = requestFunction(params, controller.signal)
+      pendingRequests.set(cacheKey, responsePromise)
+
       const result = await responsePromise
       // A cancellation is not a verdict about the resource, so caching it would
       // make the cancellation permanent for the rest of the session.
       if (!controller.signal.aborted) cache.set(cacheKey, result)
 
       return result
-    } catch (err) {
+    } catch {
       // Set cache on error to prevent retrying bad requests
       if (!controller.signal.aborted) cache.set(cacheKey, null)
       return null
@@ -67,7 +70,7 @@ export function useCachedRequest<TParams, TResult>(
     try {
       return await pendingRequest
     } catch (err) {
-      console.error('Error in pending request:', err)
+      if (!isAbortError(err)) console.error('Error in pending request:', err)
       return null
     }
   }
@@ -80,8 +83,9 @@ export function useCachedRequest<TParams, TResult>(
 
   /**
    * Cancel pending requests: only the one matching `params` when given, every
-   * pending request otherwise. Callers sharing an instance should pass their own
-   * params so they don't abort requests another caller is waiting on.
+   * pending request otherwise. Requests are keyed by params, so cancelling a
+   * key that another caller de-duplicated onto resolves that caller to `null`
+   * as well.
    */
   const cancel = (...params: [] | [TParams]) => {
     if (params.length === 0) {

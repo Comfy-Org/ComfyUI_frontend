@@ -30,7 +30,7 @@
 
 <script setup lang="ts">
 import ProgressSpinner from 'primevue/progressspinner'
-import { computed, ref, shallowRef, useId, watch } from 'vue'
+import { computed, onUnmounted, ref, shallowRef, useId, watch } from 'vue'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import NodePreview from '@/components/node/NodePreview.vue'
@@ -87,6 +87,10 @@ const fetchNodeDefs = async () => {
 }
 
 watch(packIdentity, fetchNodeDefs, { immediate: true })
+
+onUnmounted(() => {
+  if (inFlightParams) getNodeDefs.cancel(inFlightParams)
+})
 
 const toFrontendNodeDef = (nodeDef: components['schemas']['ComfyNode']) => {
   try {

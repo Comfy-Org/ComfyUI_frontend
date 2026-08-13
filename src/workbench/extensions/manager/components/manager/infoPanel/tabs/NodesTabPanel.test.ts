@@ -93,4 +93,21 @@ describe('NodesTabPanel', () => {
 
     resolveFirst({ comfy_nodes: [] })
   })
+
+  it('cancels its in-flight request on unmount', async () => {
+    getNodeDefs.call.mockImplementationOnce(() => new Promise(() => {}))
+
+    const nodePack = reactive({
+      id: 'pack-a',
+      latest_version: { version: '1.0.0' }
+    }) as components['schemas']['Node']
+
+    const { unmount } = renderPanel(nodePack)
+    await flushPromises()
+    const params = getNodeDefs.call.mock.calls[0][0]
+
+    unmount()
+
+    expect(getNodeDefs.cancel).toHaveBeenCalledWith(params)
+  })
 })

@@ -196,11 +196,18 @@ const nodeDefsParams = (pack: components['schemas']['Node']) =>
       }
     : null
 
+const inFlightParams = new Set<NonNullable<ReturnType<typeof nodeDefsParams>>>()
+
 const getPackNodes = async (pack: components['schemas']['Node']) => {
   const params = nodeDefsParams(pack)
   if (!params) return []
-  const nodeDefs = await getNodeDefs.call(params)
-  return nodeDefs?.comfy_nodes ?? []
+  inFlightParams.add(params)
+  try {
+    const nodeDefs = await getNodeDefs.call(params)
+    return nodeDefs?.comfy_nodes ?? []
+  } finally {
+    inFlightParams.delete(params)
+  }
 }
 
 const { state: allNodeDefs } = useAsyncState(
@@ -219,9 +226,6 @@ const totalNodesCount = computed(() =>
 )
 
 onUnmounted(() => {
-  for (const pack of nodePacks) {
-    const params = nodeDefsParams(pack)
-    if (params) getNodeDefs.cancel(params)
-  }
+  for (const params of inFlightParams) getNodeDefs.cancel(params)
 })
 </script>
