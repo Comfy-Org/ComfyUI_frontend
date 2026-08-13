@@ -47,17 +47,41 @@ export default defineConfig({
     // The custom-node suite needs the manifest packs installed and a quiet
     // backend queue, so it runs in its own gating job
     // (ci-tests-custom-nodes.yaml) with --workers=1, not alongside the
-    // parallel main e2e shards: the auto-run tier waits on the WHOLE queue
-    // to go quiet before it measures, which a parallel shard cannot provide.
-    // retain-on-failure trace: ~40 serial tests, negligible overhead, and a
-    // red run needs 6 installed packs + a live backend to reproduce.
+    // parallel main e2e shards. Excluded from `chromium` above so the main
+    // job never collects it: per-test cleanup is prompt-scoped now, but the
+    // auto-run tier still waits on the WHOLE queue to go quiet before it
+    // measures (waitForQueueQuiet, customNodeSuite.ts), which a parallel
+    // shard cannot provide.
     {
       name: 'custom-nodes',
+      // retain-on-failure (not the repo's on-first-retry): this job is ~40
+      // serial tests, so recording overhead is negligible, and a red run
+      // needs 6 installed packs + a live backend to reproduce - the trace of
+      // the ACTUAL first failing attempt (not a retry) is the debug artifact.
+      // OFF under cloud: that env seeds a real Firebase session, and
+      // page.evaluate arguments are recorded verbatim in the trace, which CI
+      // uploads as a public artifact - a long-lived refresh token would ship
+      // with it (browser_tests/fixtures/helpers/smokeAuth.ts).
       use: {
         ...devices['Desktop Chrome'],
-        trace: 'retain-on-failure'
+        trace:
+          process.env.CUSTOM_NODES_ENV === 'cloud' ? 'off' : 'retain-on-failure'
       },
-      timeout: 15000,
+      // NO per-test cap on cloud. Cloud app boots are network-bound (multi-MB
+      // /object_info + auth seeding) and every cap picked so far has only
+      // moved the cliff: 15s lost all 87 tests of record run 30408428601 at
+      // 15.1s, and 60s lost 125 of 128 in gate run 30456554768 at 1.0m - a
+      // run whose 3 passes prove the app does boot, just not on a schedule a
+      // fixed number can predict. A cap converts slow-but-working into
+      // failed. The fixture logs sign-in and boot durations so slowness stays
+      // visible instead of fatal. Do not reintroduce a numeric cap here.
+      timeout: process.env.CUSTOM_NODES_ENV === 'cloud' ? 0 : 15000,
+      // No retries on cloud. Every cloud failure so far has been in the
+      // beforeEach hook - sign-in plus app boot - which fails identically
+      // every attempt, so retries only multiply the wall clock by four
+      // (run 30456554768: 272 tests x 4 attempts x 60s). A flake worth a
+      // retry is a per-test one; a hook that cannot complete is not.
+      retries: process.env.CUSTOM_NODES_ENV === 'cloud' ? 0 : undefined,
       grep: /@custom-nodes/,
       fullyParallel: false
     },

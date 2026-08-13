@@ -1,20 +1,21 @@
 #!/usr/bin/env python3
-"""Render the custom-node core gate's results table.
+"""Render a custom-node gate's results table.
 
-Reads custom-nodes-results.json from the working directory and renders the
+Reads the configured Playwright result from the working directory and renders the
 run's context (branch tested, head SHA, ComfyUI ref, filters) plus a
 per-pack x tier verdict table - as an aligned table on stdout for the job
 log, and as markdown appended to GITHUB_STEP_SUMMARY. Tolerates a missing
 results file (the suite died before Playwright reported) by emitting the
 context alone. Inputs arrive via env: BRANCH_TESTED, COMFYUI_REF_USED,
-GREP_FILTER, S14_ENABLED, plus the standard GITHUB_* vars.
+GREP_FILTER, S14_ENABLED, S15_ENABLED, CUSTOM_NODES_RESULTS_FILE,
+CUSTOM_NODES_LOG_FILE, CUSTOM_NODES_SUMMARY_TITLE, plus the standard GITHUB_* vars.
 """
 
 import json, os, re, subprocess
 
-RESULT_FILE = 'custom-nodes-results.json'
-LOG_FILE = 'custom-nodes.log'
-SUITE_TITLE = 'Custom-node core suite'
+RESULT_FILE = os.environ.get('CUSTOM_NODES_RESULTS_FILE', 'custom-nodes-results.json')
+LOG_FILE = os.environ.get('CUSTOM_NODES_LOG_FILE', 'custom-nodes.log')
+SUITE_TITLE = os.environ.get('CUSTOM_NODES_SUMMARY_TITLE', 'Custom-node core suite')
 
 def out(md, log=None):
     with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as f:
@@ -29,7 +30,7 @@ ctx = [
     ('ComfyUI ref', os.environ.get('COMFYUI_REF_USED', '?')[:12]),
     ('Event / actor', f"{os.environ.get('GITHUB_EVENT_NAME','?')} / {os.environ.get('GITHUB_ACTOR','?')}"),
     ('Grep filter', os.environ.get('GREP_FILTER') or '(full suite)'),
-    ('S14', f"{os.environ.get('S14_ENABLED')}"),
+    ('S14 / S15', f"{os.environ.get('S14_ENABLED')} / {os.environ.get('S15_ENABLED')}"),
 ]
 if not os.path.exists(RESULT_FILE):
     out(f'## {SUITE_TITLE}\n\n**No results json was written** - the suite step died before Playwright could report.')

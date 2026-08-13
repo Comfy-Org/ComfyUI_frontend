@@ -9,6 +9,7 @@
   "type": "module",
   "scripts": {
     "build:cloud": "cross-env DISTRIBUTION=cloud vite build --config vite.config.mts",
+    "build:cloud-e2e": "cross-env DISTRIBUTION=cloud VITE_USE_LEGACY_DEFAULT_GRAPH=true vite build --config vite.config.mts",
     "build:desktop": "pnpm --filter @comfyorg/desktop-ui run build",
     "build-storybook": "storybook build",
     "build:types": "vite build --config vite.types.config.mts && node scripts/prepare-types.js",
@@ -34,6 +35,7 @@
     "fallow:audit": "fallow audit",
     "format:check": "oxfmt --check",
     "format": "oxfmt --write",
+    "gen:cloud-manifest": "tsx scripts/gen-cloud-manifest.ts",
     "json-schema": "tsx scripts/generate-json-schema.ts",
     "knip:no-cache": "knip",
     "knip": "knip --cache",
@@ -48,6 +50,7 @@
     "oxlint": "oxlint src browser_tests --type-aware",
     "prepare": "pnpm exec husky || true && git config blame.ignoreRevsFile .git-blame-ignore-revs || true",
     "preview": "vite preview --config vite.config.mts",
+    "preview:cloud-e2e": "cross-env CLOUD_E2E_SERVE=1 DISTRIBUTION=cloud DEV_SERVER_COMFYUI_URL=https://testcloud.comfy.org/ vite preview --strictPort --config vite.config.mts",
     "storybook": "storybook dev -p 6006",
     "storybook:desktop": "pnpm --filter @comfyorg/desktop-ui run storybook",
     "stylelint:fix": "stylelint --cache --fix '{apps,packages,src}/**/*.{css,vue}'",
@@ -69,8 +72,10 @@
     "typecheck:website": "pnpm --filter @comfyorg/website run typecheck",
     "zipdist": "node scripts/zipdist.js",
     "test:custom-nodes:local": "start-server-and-test backend:custom-nodes http-get://127.0.0.1:8288/system_stats dev:custom-nodes http-get://localhost:5173 test:custom-nodes",
+    "test:custom-nodes:local:cloud": "pnpm build:cloud-e2e && start-server-and-test preview:cloud-e2e http-get://localhost:4173 test:custom-nodes:cloud-suite",
     "backend:custom-nodes": "sh -c 'cd \"${TEST_COMFYUI_DIR:?point at your ComfyUI checkout (README Prerequisites)}\"; cp \"$OLDPWD/browser_tests/assets/plain_video.mp4\" input/ 2>/dev/null; PY=python3; [ -x venv/bin/python ] && PY=venv/bin/python; [ -x .venv/bin/python ] && PY=.venv/bin/python; \"$PY\" main.py --port 8288 --multi-user --cache-none'",
-    "dev:custom-nodes": "cross-env DEV_SERVER_COMFYUI_URL=http://127.0.0.1:8288 vite --config vite.config.mts"
+    "dev:custom-nodes": "cross-env DEV_SERVER_COMFYUI_URL=http://127.0.0.1:8288 vite --config vite.config.mts",
+    "test:custom-nodes:cloud-suite": "cross-env CUSTOM_NODES_ENV=cloud PLAYWRIGHT_TEST_URL=http://localhost:4173 playwright test browser_tests/tests/customNodes/ --project=custom-nodes --workers=1"
   },
   "dependencies": {
     "@alloc/quick-lru": "catalog:",

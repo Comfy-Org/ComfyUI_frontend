@@ -1,6 +1,8 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
+import { customNodesEnv } from '@e2e/fixtures/customNode/manifest'
+
 // S13 differential interaction profiles: the def-driven tiers are
 // structurally blind to what pack JS does IN RESPONSE to an interaction,
 // and the curated tiers (S12 autogrow, S15 outputs) cover hand-picked
@@ -14,6 +16,10 @@ import { fileURLToPath } from 'node:url'
 const PROFILE_DIR = fileURLToPath(
   new URL('./interactionProfiles/', import.meta.url)
 )
+
+function profileDir(): string {
+  return customNodesEnv() === 'cloud' ? `${PROFILE_DIR}cloud/` : PROFILE_DIR
+}
 
 // One facet entry per slot/widget: `kind:name:type`, model order ignored
 // (entries are sorted) so reordering alone is not drift.
@@ -75,7 +81,7 @@ export function diffShapes(
 }
 
 function profilePath(pack: string): string {
-  return `${PROFILE_DIR}${pack}.json`
+  return `${profileDir()}${pack}.json`
 }
 
 // null = no baseline recorded yet; compare mode must red on that (an
@@ -98,7 +104,7 @@ export function recordPackProfiles(
   nodes: Record<string, NodeInteractionProfile>,
   recordedAt: { core: string; pin: string }
 ): void {
-  mkdirSync(PROFILE_DIR, { recursive: true })
+  mkdirSync(profileDir(), { recursive: true })
   const file: PackInteractionProfileFile = { recordedAt, schema: 1, nodes }
   writeFileSync(profilePath(pack), JSON.stringify(file, null, 2) + '\n')
 }

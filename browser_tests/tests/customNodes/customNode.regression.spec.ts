@@ -1,6 +1,13 @@
 /* oxlint-disable playwright/no-skipped-test -- tiers conditionally skip when the target backend lacks the required packs (installed custom nodes or devtools); this is the framework's designed environment gating, not a disabled test */
 import { existsSync, readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { basename, resolve } from 'node:path'
+
+import type { CuratedOutputHashes } from '@e2e/fixtures/customNode/outputHashes'
+import {
+  compareOutputHashes,
+  hashSinkPayloads,
+  recordObservedHashes
+} from '@e2e/fixtures/customNode/outputHashes'
 
 import type { Page } from '@playwright/test'
 
@@ -14,6 +21,7 @@ import {
   drainBackendToIdle,
   trackSubmittedPrompts
 } from '@e2e/fixtures/utils/customNodeSuite'
+import { uploadRunMedia } from '@e2e/fixtures/customNode/cloudMedia'
 import { LocalDesktopTarget } from '@e2e/fixtures/customNode/ComfyTarget'
 import {
   isForeignExecutionNoise,
@@ -21,6 +29,8 @@ import {
 } from '@e2e/fixtures/customNode/consoleErrorLedger'
 import {
   AUTOGROW_CASES,
+  customNodesEnv,
+  loadAllManifestPackNames,
   loadManifest,
   rendererPassesFor,
   staleAutogrowApplicabilityIssues
@@ -47,12 +57,21 @@ const OBJECT_INFO_SANITY_FLOOR = 50
 // only.
 const CURATED_SINK_TYPES = ['PreviewAny', 'DisplayAny', 'ShowText|pysssss']
 
-const KNOWN_BROKEN_EXTENSIONS: Record<string, Record<string, string>> = {}
+const KNOWN_BROKEN_EXTENSIONS: Record<string, Record<string, string>> = {
+  'ComfyUI-DepthAnythingV3': {
+    'DepthAnythingV3.ToMesh.Download':
+      'testcloud serves da3_tomesh_download.js truncated inside addDOMWidget, so the module throws Unexpected end of input'
+  },
+  'WhatDreamsCost-ComfyUI': {
+    'Comfy.LTXDirectorGuide':
+      'the pinned extension file has a trailing orphan `}, });` syntax error and cannot evaluate'
+  }
+}
 
 assertPackLedgerKeys(
   'KNOWN_BROKEN_EXTENSIONS',
   KNOWN_BROKEN_EXTENSIONS,
-  loadManifest().map((entry) => entry.pack)
+  loadAllManifestPackNames()
 )
 
 test.use({ initialSettings: customNodeSuiteSettings })
@@ -98,7 +117,7 @@ for (const entry of loadManifest()) {
     test('Pack startup/load: expected nodes register, render in both renderers, and frontend extensions load', async ({
       comfyPage
     }) => {
-      test.setTimeout(entry.timeoutMs)
+      if (customNodesEnv() !== 'cloud') test.setTimeout(entry.timeoutMs)
       const objectInfo = await target.getObjectInfo(comfyPage.page)
       expect(
         Object.keys(objectInfo).length,
@@ -209,16 +228,17 @@ for (const entry of loadManifest()) {
     })
 
     // Registration-gated, not runtime-skipped: a row not enrolled in the run
-    // tier generates no curated workflow test, so the gates' zero-skip check
-    // keeps meaning "every enrolled tier ran". The runtime skip below covers
-    // only conditions of the ENVIRONMENT an enrolled row meets (pack not
-    // installed on this backend, GPU/models the runner lacks, workflow file
-    // absent locally).
+    // tier generates no curated workflow test, so the gates' zero-skip check keeps
+    // meaning "every enrolled tier ran" even while generated cloud rows are
+    // load+connectivity only. The runtime skip below covers only conditions
+    // of the ENVIRONMENT an enrolled row meets (pack not installed on this
+    // backend, GPU/models the runner lacks, workflow file absent locally).
     if (entry.tiers.includes('run'))
       test('Curated workflow execution: completes without error', async ({
         comfyPage
       }) => {
-        test.setTimeout(entry.timeoutMs + 15_000)
+        if (customNodesEnv() !== 'cloud')
+          test.setTimeout(entry.timeoutMs + 15_000)
         const objectInfo = await target.getObjectInfo(comfyPage.page)
         const missing = missingExpectedNodes(objectInfo, entry.expectedNodes)
         test.skip(
@@ -235,6 +255,10 @@ for (const entry of loadManifest()) {
         // across the whole run, filtered through the shared pack ledger.
         const consoleErrors = collectConsoleErrors(comfyPage.page)
         const workflow = readWorkflow(workflowRelative)
+        if (customNodesEnv() === 'cloud')
+          console.log(
+            `run-tier media stored as: ${JSON.stringify(await uploadRunMedia(comfyPage.page, workflow))}`
+          )
         await comfyPage.workflow.loadGraphData(workflow)
         // A drifted fixture that dropped an expected node would silently
         // shrink the executed-set assertion (an empty id list PASSes on
@@ -272,6 +296,90 @@ for (const entry of loadManifest()) {
             `sink node ${sinkId} produced no ui payload`
           ).toBeTruthy()
 
+        // S15 is separately activated. Its recorder sets
+        // RECORD_OUTPUT_HASHES=1; its compare proof sets CN_ENABLE_S15=1.
+        // Cloud S1-S12 sets CN_ENABLE_S15=0 while Core keeps its proven S15
+        // comparison active with CN_ENABLE_S15=1.
+        const recordMode = process.env.RECORD_OUTPUT_HASHES
+        if (recordMode !== undefined && recordMode !== '1')
+          throw new Error(
+            `unrecognized RECORD_OUTPUT_HASHES value '${recordMode}' - the only mode is '1'`
+          )
+        const compareMode = process.env.CN_ENABLE_S15
+        if (
+          compareMode !== undefined &&
+          compareMode !== '0' &&
+          compareMode !== '1'
+        )
+          throw new Error(
+            `unrecognized CN_ENABLE_S15 value '${compareMode}' - expected '0' or '1'`
+          )
+        if (recordMode === '1' || compareMode === '1') {
+          const outputHashesPath = resolve(
+            `browser_tests/fixtures/data/curatedOutputHashes.${customNodesEnv() === 'cloud' ? 'cloud' : 'core'}.json`
+          )
+          const curatedOutputHashes: CuratedOutputHashes | null = existsSync(
+            outputHashesPath
+          )
+            ? (JSON.parse(
+                readFileSync(outputHashesPath, 'utf-8')
+              ) as CuratedOutputHashes)
+            : null
+          const observed = await hashSinkPayloads(
+            result.outputsByNode as Record<string, unknown>,
+            async (ref) => {
+              const encoded = await comfyPage.page.evaluate(async (file) => {
+                const query = new URLSearchParams({
+                  filename: file.filename,
+                  subfolder: file.subfolder,
+                  type: file.type
+                })
+                const res = await window.app!.api.fetchApi(`/view?${query}`)
+                if (!res.ok) return { status: res.status, body: '' }
+                const bytes = new Uint8Array(await res.arrayBuffer())
+                let binary = ''
+                for (const byte of bytes) binary += String.fromCharCode(byte)
+                return { status: res.status, body: btoa(binary) }
+              }, ref)
+              expect(encoded.status, `S15: /api/view ${ref.filename}`).toBe(200)
+              return Buffer.from(encoded.body, 'base64')
+            }
+          )
+          const workflowKey = `${entry.pack}/${basename(entry.workflow)}`
+          if (recordMode === '1') {
+            recordObservedHashes(
+              'test-results/curatedOutputHashes.recorded.json',
+              workflowKey,
+              observed
+            )
+            // A record run must never read as a green test run (the
+            // CN_GEOMETRY record convention): fail after writing.
+            expect(
+              null,
+              `RECORD_OUTPUT_HASHES: wrote ${Object.keys(observed).length} hash(es) for ${workflowKey} - the artifact is the product, this is not a pass`
+            ).not.toBeNull()
+          } else if (!process.env.CI) {
+            // Compare on CI only, like the geometry tier: hashes encode the
+            // recording environment (pinned core + packs), and a local
+            // unpinned backend would red with a misattributed message.
+            console.log(
+              `S15 compare skipped off-CI for ${workflowKey} - baselines encode the CI recording environment; CI enforces`
+            )
+          } else {
+            expect(
+              curatedOutputHashes,
+              `S15: no committed hashes for this environment (${outputHashesPath}) - record them with RECORD_OUTPUT_HASHES=1`
+            ).not.toBeNull()
+            expect(
+              compareOutputHashes({
+                workflowKey,
+                observed,
+                committed: curatedOutputHashes!
+              }),
+              'S15 output regression'
+            ).toEqual([])
+          }
+        }
         await expectNoVisibleErrors(comfyPage.page, 'after run')
         consoleErrors.stop()
         expect(
@@ -285,15 +393,15 @@ for (const entry of loadManifest()) {
 test('harness self-check: captures a real execution error @custom-nodes', async ({
   comfyPage
 }) => {
-  test.setTimeout(30_000)
+  if (customNodesEnv() !== 'cloud') test.setTimeout(30_000)
   const objectInfo = await target.getObjectInfo(comfyPage.page)
   expect(
     Object.keys(objectInfo).length,
     'object_info sanity floor'
   ).toBeGreaterThan(OBJECT_INFO_SANITY_FLOOR)
-  // Deferred, not skipped: the gating job forbids skips outright, and not
-  // every backend installs the harness pack. The backend that ships the node
-  // runs the real check, which is where this positive control has to hold.
+  // Deferred, not skipped: the gating job forbids skips outright, and Cloud
+  // does not install the harness pack. The backend that ships the node runs
+  // the real check, which is where this positive control has to hold.
   if (!('DevToolsErrorRaiseNode' in objectInfo)) {
     console.log(
       'harness self-check deferred: ComfyUI_devtools not installed on this backend'
@@ -349,7 +457,7 @@ test('collector self-check: captures uncaught page exceptions @custom-nodes', as
 test('attribution self-check: a foreign-prompt terminal event cannot fail this run @custom-nodes', async ({
   comfyPage
 }) => {
-  test.setTimeout(30_000)
+  if (customNodesEnv() !== 'cloud') test.setTimeout(30_000)
   const objectInfo = await target.getObjectInfo(comfyPage.page)
   test.skip(
     !('PrimitiveInt' in objectInfo) || !('PreviewAny' in objectInfo),

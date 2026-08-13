@@ -1,4 +1,5 @@
 import type { Page } from '@playwright/test'
+import { chunk } from 'es-toolkit'
 
 import {
   comfyExpect as expect,
@@ -15,9 +16,9 @@ import {
   unallowlistedConnectivityErrorsForPacks,
   unallowlistedErrorsForPacks
 } from '@e2e/fixtures/customNode/consoleErrorLedger'
-import { connectivityExpectations } from '@e2e/fixtures/customNode/connectivityExpectations'
+import { connectivityExpectationsFor } from '@e2e/fixtures/customNode/connectivityExpectations'
 import { failureSummary } from '@e2e/fixtures/customNode/failureReport'
-import { loadManifest } from '@e2e/fixtures/customNode/manifest'
+import { customNodesEnv, loadManifest } from '@e2e/fixtures/customNode/manifest'
 import type {
   ConnectivityOutcome,
   PlannedPair,
@@ -36,6 +37,12 @@ import { expectNoVisibleErrors } from '@e2e/fixtures/utils/errorSurfaces'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 
 const CORE_PROOF_NODE_COUNT = 16
+// Pairs per page.evaluate. The sweep's cost is one round of createNode,
+// connect, serialize/configure and graphToPrompt per pair, all on the page's
+// main thread; batching keeps any single evaluate short enough to stay
+// interruptible and to report progress rather than holding the renderer for
+// the whole corpus.
+const SWEEP_CHUNK = 1_000
 // Budget the sweep per pair instead of flat: the corpus grows with every pack
 // added, and a flat cap silently becomes a hang the day it stops fitting. Run
 // 30961895204 swept 16832 pairs and did not finish inside a flat 120s cap, so
@@ -49,7 +56,7 @@ const {
   deterministicSlotContractMismatch,
   roundtripLost,
   zeroPairDragExpectedNodeCounts
-} = connectivityExpectations
+} = connectivityExpectationsFor(customNodesEnv())
 
 test.use({ initialSettings: customNodeSuiteSettings })
 
@@ -82,7 +89,7 @@ const connectivityEntries = loadManifest().filter((entry) =>
 test('connectivity: every type-paired link survives model, serialize, and prompt round-trips @custom-nodes', async ({
   comfyPage
 }) => {
-  test.setTimeout(120_000)
+  if (customNodesEnv() !== 'cloud') test.setTimeout(120_000)
   const defs = (await comfyPage.page.evaluate(() =>
     window.app!.api.getNodeDefs()
   )) as unknown as Record<string, RawNodeDef>
@@ -136,7 +143,8 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
   // values and links flow through the same stores in both renderers). The
   // curated drag test below covers real pointer wiring under BOTH renderers.
   const consoleErrors = collectConsoleErrors(comfyPage.page)
-  test.setTimeout(SWEEP_SETUP_MS + plan.pairs.length * SWEEP_MS_PER_PAIR)
+  if (customNodesEnv() !== 'cloud')
+    test.setTimeout(SWEEP_SETUP_MS + plan.pairs.length * SWEEP_MS_PER_PAIR)
   const sweepStart = Date.now()
   const results = await runPairsInPage(comfyPage.page, plan.pairs)
   const sweepMs = Date.now() - sweepStart
@@ -304,7 +312,14 @@ async function runPairsInPage(
   page: Page,
   pairs: PlannedPair[]
 ): Promise<Array<{ key: string; outcome: string; detail?: string }>> {
-  return await evaluatePairs(page, pairs)
+  const report: Array<{ key: string; outcome: string; detail?: string }> = []
+  const batches =
+    process.env.CUSTOM_NODES_ENV === 'cloud'
+      ? chunk(pairs, SWEEP_CHUNK)
+      : [pairs]
+  for (const batch of batches)
+    report.push(...(await evaluatePairs(page, batch)))
+  return report
 }
 
 function evaluatePairs(

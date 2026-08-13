@@ -4,9 +4,16 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import {
   matchesTopologyExpectation,
+  OUTPUT_TOPOLOGY_EXPECTATIONS_LITEGRAPH,
+  OUTPUT_TOPOLOGY_EXPECTATIONS_VUE,
   partitionValueDriftNodes,
   pendingWidgetInitializations,
   rendererLedgerFor,
+  ROUNDTRIP_VALUE_ALLOWED_INDICES_LITEGRAPH,
+  ROUNDTRIP_VALUE_ALLOWED_INDICES_VUE,
+  ROUNDTRIP_WIDGET_INITIALIZATION_SIGNALS,
+  ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS_LITEGRAPH,
+  ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS_VUE,
   staleValueDriftIndices
 } from '@e2e/fixtures/customNode/valueDrift'
 
@@ -30,50 +37,106 @@ test.describe('rendererLedgerFor', () => {
       legacy: ['LegacyNode']
     })
   })
+
+  test('routes each artifact-proven mechanism to every observed renderer', () => {
+    const nodes = <T>(ledger: Record<string, Record<string, T>>) =>
+      Object.values(ledger)
+        .flatMap((entries) => Object.keys(entries))
+        .sort()
+
+    expect(nodes(ROUNDTRIP_VALUE_ALLOWED_INDICES_LITEGRAPH)).toEqual([
+      'FL_ColorPicker',
+      'FL_ReplaceColor',
+      'LTXDirector',
+      'LTXVSparseTrackEditor',
+      'LoadAudioUI'
+    ])
+    expect(nodes(ROUNDTRIP_VALUE_ALLOWED_INDICES_VUE)).toEqual([
+      'FL_ColorPicker',
+      'FL_ReplaceColor',
+      'LTXDirector',
+      'LTXVSparseTrackEditor',
+      'LoadAudioUI',
+      'RadianceSamplerPro',
+      'iToolsRegexNode'
+    ])
+    expect(
+      ROUNDTRIP_VALUE_ALLOWED_INDICES_LITEGRAPH['WhatDreamsCost-ComfyUI']
+        .LoadAudioUI
+    ).toBe('5')
+    expect(nodes(ROUNDTRIP_WIDGET_INITIALIZATION_SIGNALS)).toEqual([
+      'LTXKeyframer',
+      'LTXSequencer'
+    ])
+    expect(
+      ROUNDTRIP_WIDGET_INITIALIZATION_SIGNALS['WhatDreamsCost-ComfyUI']
+    ).toEqual({
+      LTXKeyframer: '_currentImageCount',
+      LTXSequencer: '_currentImageCount'
+    })
+    expect(nodes(ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS_LITEGRAPH)).toEqual([])
+    expect(nodes(ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS_VUE)).toEqual([])
+    expect(nodes(OUTPUT_TOPOLOGY_EXPECTATIONS_LITEGRAPH)).toEqual([
+      'FL_VideoBatchSplitter'
+    ])
+    expect(nodes(OUTPUT_TOPOLOGY_EXPECTATIONS_VUE)).toEqual([
+      'FL_VideoBatchSplitter'
+    ])
+  })
 })
 
 test.describe('widget topology', () => {
   test('waits for each pack-owned initialization signal', () => {
-    const signals = {
-      ExampleKeyframer: '_currentImageCount',
-      ExampleSequencer: '_currentImageCount'
-    }
+    const signals =
+      ROUNDTRIP_WIDGET_INITIALIZATION_SIGNALS['WhatDreamsCost-ComfyUI']
 
     expect(
       pendingWidgetInitializations(signals, {
-        ExampleKeyframer: -1,
-        ExampleSequencer: undefined
+        LTXKeyframer: -1,
+        LTXSequencer: undefined
       })
-    ).toEqual(['ExampleKeyframer', 'ExampleSequencer'])
+    ).toEqual(['LTXKeyframer', 'LTXSequencer'])
     expect(
       pendingWidgetInitializations(signals, {
-        ExampleKeyframer: 0,
-        ExampleSequencer: 1
+        LTXKeyframer: 0,
+        LTXSequencer: 1
       })
     ).toEqual([])
   })
 
-  test('accepts only the exact expected output transition', () => {
-    const expectation = {
-      before: 20,
-      after: 4,
-      reason: 'pack JS exposes only the default 4 of 20 declared outputs'
-    }
+  test('accepts only the exact artifact-proven output transition', () => {
+    const expectation =
+      OUTPUT_TOPOLOGY_EXPECTATIONS_LITEGRAPH['ComfyUI_Fill-Nodes']
+        .FL_VideoBatchSplitter
 
     expect(matchesTopologyExpectation(expectation, 20, 4)).toBe(true)
     expect(matchesTopologyExpectation(expectation, 20, 3)).toBe(false)
     expect(matchesTopologyExpectation(expectation, 19, 4)).toBe(false)
-    const rangeExpectation = {
-      before: 20,
-      after: [3, 4] as const,
-      reason: 'pack JS restores either default'
-    }
-    expect(matchesTopologyExpectation(rangeExpectation, 20, 3)).toBe(true)
-    expect(matchesTopologyExpectation(rangeExpectation, 20, 5)).toBe(false)
+    const vueExpectation =
+      OUTPUT_TOPOLOGY_EXPECTATIONS_VUE['ComfyUI_Fill-Nodes']
+        .FL_VideoBatchSplitter
+    expect(matchesTopologyExpectation(vueExpectation, 20, 4)).toBe(true)
+    expect(matchesTopologyExpectation(vueExpectation, 20, 3)).toBe(false)
   })
 
-  test('rejects an unledgered transition as a roundtrip exception', () => {
-    expect(matchesTopologyExpectation(undefined, 154, 8)).toBe(false)
+  test('rejects initialization transitions as roundtrip exceptions', () => {
+    expect(
+      matchesTopologyExpectation(
+        ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS_LITEGRAPH[
+          'WhatDreamsCost-ComfyUI'
+        ]?.LTXSequencer,
+        154,
+        8
+      )
+    ).toBe(false)
+    expect(
+      matchesTopologyExpectation(
+        ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS_VUE['WhatDreamsCost-ComfyUI']
+          ?.LTXKeyframer,
+        102,
+        5
+      )
+    ).toBe(false)
   })
 })
 
