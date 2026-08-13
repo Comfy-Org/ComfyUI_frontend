@@ -6,9 +6,14 @@
  * and fails on drift.
  *
  * Used by the conformance check that rejects a conversion referencing an API
- * member that does not exist. Two agent conversions invented one — a selector
- * field and a `setSizeConstraints` method — and both passed every other check,
- * because nothing executes an agent-authored rewrite.
+ * member that does not exist. Two agent conversions invented one and passed
+ * every other check, because nothing executes an agent-authored rewrite.
+ *
+ * The example this note used to give was `setSizeConstraints`, which has since
+ * been built and is now in the set below — so the warning against inventing API
+ * was itself teaching readers that a real member was fake. Name a wished-for
+ * member and the note rots the day someone grants the wish. The set is the
+ * example; it is generated, so it cannot say anything untrue.
  */
 export const API_MEMBERS: ReadonlySet<string> = new Set([
   'Record',
