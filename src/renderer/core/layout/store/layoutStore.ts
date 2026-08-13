@@ -35,6 +35,7 @@ import type {
   ResizeNodeOperation,
   SetGroupBoundsOperation,
   SetNodeZIndexOperation,
+  Size,
   SlotId,
   SlotLayout
 } from '@/renderer/core/layout/types'
@@ -176,7 +177,7 @@ class LayoutStoreImpl {
   private linkLayouts = new Map<LinkId, LinkLayout>()
   private linkSegmentLayouts = new Map<string, LinkSegmentLayout>() // Internal string key: ${linkId}:${rerouteId ?? 'final'}
   private slotLayouts = new Map<SlotId, SlotLayout>()
-  private contentHeights = new Map<ScopedLayoutKey, number>()
+  private contentSizes = new Map<ScopedLayoutKey, Size>()
   private rerouteLayouts = new Map<ScopedLayoutKey, RerouteLayout>()
 
   // Spatial index managers
@@ -391,11 +392,9 @@ class LayoutStoreImpl {
     return true
   }
 
-  /** Height the DOM made of this node, or 0 if it has never been measured. */
-  contentHeightOf(rootGraphId: UUID, nodeId: NodeId): number {
-    return (
-      this.contentHeights.get(makeScopedLayoutKey(rootGraphId, nodeId)) ?? 0
-    )
+  /** Size the DOM made of this node, if it has been measured. */
+  contentSizeOf(rootGraphId: UUID, nodeId: NodeId): Size | undefined {
+    return this.contentSizes.get(makeScopedLayoutKey(rootGraphId, nodeId))
   }
 
   /**
@@ -403,8 +402,8 @@ class LayoutStoreImpl {
    * is not replayable on a peer whose fonts, locale or custom nodes differ, so
    * it never enters the replicated document (ADR 0003, 2026-08-04).
    */
-  reportContentHeight(rootGraphId: UUID, nodeId: NodeId, height: number): void {
-    this.contentHeights.set(makeScopedLayoutKey(rootGraphId, nodeId), height)
+  reportContentSize(rootGraphId: UUID, nodeId: NodeId, size: Size): void {
+    this.contentSizes.set(makeScopedLayoutKey(rootGraphId, nodeId), size)
   }
 
   /**
@@ -1014,7 +1013,7 @@ class LayoutStoreImpl {
       this.linkLayouts.clear()
       this.linkSegmentLayouts.clear()
       this.slotLayouts.clear()
-      this.contentHeights.clear()
+      this.contentSizes.clear()
       // Reroute layouts outlive active-graph switches.
       this.pendingGlobalChanges = []
       this.isGlobalDispatchQueued = false

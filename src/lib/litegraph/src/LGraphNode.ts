@@ -644,15 +644,19 @@ export class LGraphNode
   }
 
   _posSize = new Rectangle()
-  private _contentHeight = 0
   _pos: Point = this._posSize.pos
   _size: Size = this._posSize.size
+  private readonly _renderedSize: Size = [0, 0]
   private readonly posView = createGeometryView(this._pos, {
     commit: () => this._positionUpdated(),
     synchronize: () => this.refreshGeometry()
   })
-  private readonly sizeView = createGeometryView(this._size, {
-    commit: () => this._sizeUpdated(),
+  private readonly sizeView = createGeometryView(this._renderedSize, {
+    commit: () => {
+      this._size[0] = this._renderedSize[0]
+      this._size[1] = this._renderedSize[1]
+      this._sizeUpdated()
+    },
     synchronize: () => this.refreshGeometry()
   })
 
@@ -661,24 +665,20 @@ export class LGraphNode
   _layoutRegistered = false
 
   private refreshGeometry(): void {
-    if (!this._layoutRegistered || !this.graph) return
+    const rootGraphId = this.graph?.rootGraph.id
+    if (this._layoutRegistered && rootGraphId) {
+      const { geometryVersion } = layoutStore
+      if (geometryVersion !== this._geometryVersion) {
+        this._geometryVersion = geometryVersion
+        layoutStore.readNodeRect(rootGraphId, this.id, this._posSize)
+      }
+    }
 
-    const { geometryVersion } = layoutStore
-    if (geometryVersion === this._geometryVersion) return
-
-    this._geometryVersion = geometryVersion
-    const rootGraphId = this.graph.rootGraph.id
-    layoutStore.readNodeRect(rootGraphId, this.id, this._posSize)
-    this._contentHeight = layoutStore.contentHeightOf(rootGraphId, this.id)
-  }
-
-  /**
-   * Height including any content the node has grown past its requested size.
-   * `size` stays the requested value, which is what {@link serialize} persists.
-   */
-  private get renderedHeight(): number {
-    this.refreshGeometry()
-    return Math.max(this.size[1], this._contentHeight)
+    const contentSize = rootGraphId
+      ? layoutStore.contentSizeOf(rootGraphId, this.id)
+      : undefined
+    this._renderedSize[0] = Math.max(this._size[0], contentSize?.width ?? 0)
+    this._renderedSize[1] = Math.max(this._size[1], contentSize?.height ?? 0)
   }
 
   public get pos() {
@@ -756,10 +756,17 @@ export class LGraphNode
    * The size of the node used for rendering.
    */
   get renderingSize(): Size {
-    if (this.flags.collapsed) return [this._collapsed_width ?? 0, 0]
-
     this.refreshGeometry()
-    return this._size
+    if (this.flags.collapsed) {
+      const contentWidth = this.graph
+        ? layoutStore.contentSizeOf(this.graph.rootGraph.id, this.id)?.width
+        : undefined
+      return [
+        contentWidth ?? this._collapsed_width ?? LiteGraph.NODE_COLLAPSED_WIDTH,
+        0
+      ]
+    }
+    return this.sizeView
   }
 
   get shape(): RenderShape | undefined {
@@ -1198,7 +1205,7 @@ export class LGraphNode
       id: serializeNodeId(this.id),
       type: this.type,
       pos: [this.pos[0], this.pos[1]],
-      size: [this.size[0], this.size[1]],
+      size: [this._size[0], this._size[1]],
       flags: LiteGraph.cloneObject(this.flags),
       order: this.order,
       mode: this.mode,
@@ -2336,8 +2343,9 @@ export class LGraphNode
     out[0] = this.pos[0]
     out[1] = this.pos[1] + -titleHeight
     if (!this.flags?.collapsed || LiteGraph.vueNodesMode) {
-      out[2] = this.size[0]
-      out[3] = this.renderedHeight + titleHeight
+      const size = this.renderingSize
+      out[2] = size[0]
+      out[3] = size[1] + titleHeight
     } else {
       if (ctx) ctx.font = this.innerFontStyle
       this._collapsed_width = Math.min(

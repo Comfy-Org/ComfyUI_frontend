@@ -66,11 +66,10 @@ const trackingConfigs = new Map<string, ElementTrackingConfig>([
         if (!rootGraphId) return
 
         for (const { id, bounds } of updates) {
-          layoutStore.reportContentHeight(
-            rootGraphId,
-            id,
-            removeNodeTitleHeight(bounds.height)
-          )
+          layoutStore.reportContentSize(rootGraphId, id, {
+            width: bounds.width,
+            height: removeNodeTitleHeight(bounds.height)
+          })
         }
       }
     }
