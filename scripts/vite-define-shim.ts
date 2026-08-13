@@ -31,8 +31,7 @@ globalWithDefines.__IS_NIGHTLY__ = false
 // Provide a minimal window shim for Node environment
 // This is needed for code that checks window existence during imports
 if (typeof window === 'undefined') {
-  // @ts-expect-error - a bare object stands in for Window in Node
-  globalWithDefines.window = {}
+  Object.assign(globalWithDefines, { window: {} })
 }
 
 export {}
