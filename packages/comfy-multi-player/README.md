@@ -35,7 +35,7 @@ the same JSON.
 
 **Status: real (V1-031).** The applier/projection/mint/migrate are the
 production implementation, ported from the spike-proven semantics
-(`reference/spike/applier.mjs`) onto the schema's name-keyed widget layout.
+(`docs/spike-report-v1-007.md`) onto the schema's name-keyed widget layout.
 `reset_doc` stays rejected (`op_deferred`) per the vocabulary's deferred
 status. The full replay corpus is green — see acceptance gates below.
 

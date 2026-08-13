@@ -32,7 +32,7 @@ Normative inputs, in precedence order:
    envelope, stamp shapes, conflict rules, batch protocol. This document never
    contradicts it; where it is silent (storage layout, transport, projection),
    this document decides.
-2. **The V1-007 spike** — `reference/spike/SPIKE-REPORT.md` (verdicts) and
+2. **The V1-007 spike** — `docs/spike-report-v1-007.md` (verdicts) and
    `fixtures/` (the evidence: three replayable sessions, six LWW vectors, the
    exported catalog, machine-captured findings). Every DECISION below cites
    the spike finding that forced it.
@@ -73,7 +73,7 @@ Keyed in `nodes` by `String(node.id)`. Fields:
 ### 1.2 DECISION: widgets are a name-keyed Y.Map, not a positional Y.Array
 
 The spike measured two writers editing a KSampler's 7-element positional
-`widgets_values` (`reference/spike/SPIKE-REPORT.md`, "danger zone"):
+`widgets_values` (`docs/spike-report-v1-007.md`, "danger zone"):
 concurrent writes to the **same index**, exchanged as Yjs structs, merge to a
 **length-8 array** — both inserts survive and every downstream widget shifts
 by one, so `cfg` reads the steps value, `sampler_name` reads `8`, … The

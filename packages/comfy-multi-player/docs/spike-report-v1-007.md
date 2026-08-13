@@ -1,3 +1,15 @@
+> **Archival note.** This is the V1-007 spike report, kept because
+> `multiplayer-schema.md` cites it as a normative input — every schema DECISION
+> names the finding that forced it. It is a **historical record of what was
+> measured** and is deliberately not edited to match today's code.
+>
+> The prototype applier it describes (`applier.mjs`) has been **removed**: the
+> production applier is `src/applier.ts` (V1-031). The prototype stored widgets
+> positionally, which is the exact layout §1.2 of the schema rejects, so keeping
+> a second, divergent applier in a production repo was a hazard rather than a
+> reference. References to `applier.mjs` below describe the code as it was
+> during the spike.
+
 # V1-007 SPIKE report — CRDT schema validation against real op streams
 
 Scope: validate the candidate Yjs schema by replaying team-authored op streams
