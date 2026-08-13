@@ -49,7 +49,7 @@
       @show="onPopoverShow"
     >
       <CurrentUserPopoverWorkspace
-        v-if="isCloud"
+        v-if="showWorkspacePopover"
         ref="workspacePopoverContent"
         :account-actions-only="initState !== 'ready'"
         @close="closePopover"
@@ -102,6 +102,9 @@ const showWorkspaceSkeleton = computed(
 )
 const showWorkspaceIcon = computed(
   () => initState.value === 'ready' && !isInPersonalWorkspace.value
+)
+const showWorkspacePopover = computed(
+  () => isCloud || initState.value === 'ready'
 )
 
 const workspaceName = computed(() => {
