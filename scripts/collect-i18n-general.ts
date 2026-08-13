@@ -98,9 +98,13 @@ test('collect-i18n-general', async ({ comfyPage }) => {
       .filter((setting) => setting.type !== 'hidden')
       .map((setting) => {
         const options: unknown = Reflect.get(setting, 'options')
+        const defaultValue =
+          typeof setting.defaultValue === 'function'
+            ? setting.defaultValue()
+            : setting.defaultValue
         const resolvedOptions: unknown =
           typeof options === 'function'
-            ? Reflect.apply(options, undefined, [setting.defaultValue ?? ''])
+            ? Reflect.apply(options, undefined, [defaultValue ?? ''])
             : options
 
         return {
