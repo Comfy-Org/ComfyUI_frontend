@@ -2,6 +2,7 @@ import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 
 import { api } from '@/scripts/api'
 import type {
+  PromptQueueAttemptEndedPayload,
   PromptQueuedEventPayload,
   PromptQueueingEventPayload
 } from '@/scripts/api'
@@ -253,12 +254,17 @@ export const useQueueNotificationBanners = () => {
     )
   }
 
+  const handleAttemptEnded = (
+    event: CustomEvent<PromptQueueAttemptEndedPayload>
+  ) => {
+    // Only the failed case. A successful attempt has already had its pending
+    // banner converted by handlePromptQueued, and dismissing here would take
+    // down the "Queued" banner the user is meant to see.
+    if (event.detail?.queued === 0) dismissQueuedPending(event.detail.requestId)
+  }
+
   const handlePromptQueued = (event: CustomEvent<PromptQueuedEventPayload>) => {
     const payload = event.detail
-    if (payload?.batchCount === 0) {
-      dismissQueuedPending(payload.requestId)
-      return
-    }
     const count = sanitizeCount(payload?.batchCount)
     const handled = convertQueuedPendingToQueued(payload?.requestId, count)
     if (!handled) {
@@ -270,6 +276,7 @@ export const useQueueNotificationBanners = () => {
 
   api.addEventListener('promptQueueing', handlePromptQueueing)
   api.addEventListener('promptQueued', handlePromptQueued)
+  api.addEventListener('promptQueueAttemptEnded', handleAttemptEnded)
 
   const queueCompletionBatchNotifications = () => {
     const startTs = lastActiveStartTs.value ?? 0
@@ -363,6 +370,7 @@ export const useQueueNotificationBanners = () => {
   onUnmounted(() => {
     api.removeEventListener('promptQueueing', handlePromptQueueing)
     api.removeEventListener('promptQueued', handlePromptQueued)
+    api.removeEventListener('promptQueueAttemptEnded', handleAttemptEnded)
     clearIdleCompletionHooks()
     clearDismissTimer()
     pendingNotifications.value = []

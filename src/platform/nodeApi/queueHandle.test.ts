@@ -179,6 +179,66 @@ describe('comfy.queue', () => {
     expect(seen).toEqual([{ promptIds: ['abc'], rejected: 1 }])
   })
 
+  it('runs the cleanup a listener returns when the attempt ends', () => {
+    // The motivating case: unmute a branch to build the prompt, put it back
+    // afterwards. It must fire on a refused attempt too, or the graph is left
+    // visibly altered until the next run.
+    const comfy = createComfyApi(() => graphWith('A'))
+    const order: string[] = []
+    comfy.queue.onBeforeRun(() => {
+      order.push('setup')
+      return () => order.push('cleanup')
+    })
+
+    api.dispatchCustomEvent('promptQueueing', { requestId: 1, batchCount: 1 })
+    api.dispatchCustomEvent('promptQueueAttemptEnded', {
+      requestId: 1,
+      queued: 0,
+      rejected: 1
+    })
+
+    expect(order).toEqual(['setup', 'cleanup'])
+  })
+
+  it('does not run a cleanup twice', () => {
+    // Re-running a stale cleanup would undo a mutation the next attempt had
+    // just made.
+    const comfy = createComfyApi(() => graphWith('A'))
+    const cleanup = vi.fn()
+    comfy.queue.onBeforeRun(() => cleanup)
+
+    api.dispatchCustomEvent('promptQueueing', { requestId: 1, batchCount: 1 })
+    api.dispatchCustomEvent('promptQueueAttemptEnded', {
+      requestId: 1,
+      queued: 1,
+      rejected: 0
+    })
+    api.dispatchCustomEvent('promptQueueAttemptEnded', {
+      requestId: 1,
+      queued: 1,
+      rejected: 0
+    })
+
+    expect(cleanup).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps onAfterRun meaning a run that actually started', () => {
+    // Four packs converted widget.afterQueued onto this. A batch counter that
+    // also counted refused submissions would advance the batch when nothing
+    // ran, so the attempt-ended signal must not reach here.
+    const comfy = createComfyApi(() => graphWith('A'))
+    const after = vi.fn()
+    comfy.queue.onAfterRun(after)
+
+    api.dispatchCustomEvent('promptQueueAttemptEnded', {
+      requestId: 1,
+      queued: 0,
+      rejected: 1
+    })
+
+    expect(after).not.toHaveBeenCalled()
+  })
+
   it('reports runs starting and finishing being submitted', () => {
     const comfy = createComfyApi(() => graphWith('A'))
     const before = vi.fn()

@@ -59,7 +59,18 @@ export interface QueueHandle {
    * syncing a value the pack keeps outside the widget. Keep it synchronous:
    * the prompt build does not wait, so work started here can lose the race.
    */
-  onBeforeRun(listener: () => void): Unsubscribe
+  /**
+   * Return a function to have it run when the attempt is over — whether the
+   * run started, was refused, or threw.
+   *
+   * For a pack that changes the graph to build the prompt and must put it back:
+   * unmute a branch, let the prompt be built, re-mute it. Pairing it with the
+   * setup rather than publishing a second top-level event is deliberate — you
+   * cannot receive the cleanup without having run the setup, and there is no
+   * second "after" member to confuse with {@link onAfterRun}, which means
+   * something different and narrower.
+   */
+  onBeforeRun(listener: () => (() => void) | void): Unsubscribe
   /**
    * A run was submitted. This is `afterQueued` — for advancing state that
    * should differ on the next run.
@@ -190,7 +201,25 @@ export function createQueueApi(
         : app.queuePrompt(0, batch)
     },
 
-    onBeforeRun: subscribe('promptQueueing'),
+    onBeforeRun(listener: () => (() => void) | void) {
+      let cleanUp: (() => void) | void
+      const started = () => {
+        cleanUp = listener()
+      }
+      // One-shot per attempt: the end always follows a start, and re-running a
+      // stale cleanup would undo a mutation the next attempt had just made.
+      const ended = () => {
+        const run = cleanUp
+        cleanUp = undefined
+        run?.()
+      }
+      api.addEventListener('promptQueueing', started)
+      api.addEventListener('promptQueueAttemptEnded', ended)
+      return () => {
+        api.removeEventListener('promptQueueing', started)
+        api.removeEventListener('promptQueueAttemptEnded', ended)
+      }
+    },
     onAfterRun(listener: (event: RunSubmittedEvent) => void) {
       const wrapped = (e: Event) => {
         const detail = (e as CustomEvent<PromptQueuedEventPayload>).detail
