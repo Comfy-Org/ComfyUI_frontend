@@ -1,6 +1,4 @@
 import { until } from '@vueuse/core'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
@@ -41,8 +39,6 @@ describe('useVersionCompatibilityStore', () => {
   let mockSettingStore: { get: ReturnType<typeof vi.fn> }
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-
     // Clear the mock dismissal storage
     mockDismissalStorage.value = {}
 

@@ -1,8 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createApp, nextTick, ref } from 'vue'
 import type { App } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -89,10 +86,6 @@ describe('useUploadModelWizard', () => {
   ): ReturnType<typeof useUploadModelWizard> {
     return setupWithI18n(() => useUploadModelWizard(...args))
   }
-
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
 
   afterEach(() => {
     vi.mocked(api.getServerFeature).mockReset()

@@ -1,9 +1,6 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-
-import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { setActivePinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 import type { ComponentProps } from 'vue-component-type-helpers'
@@ -34,7 +31,6 @@ const asset: AssetItem = fromPartial({
 function renderCard(
   props: Partial<ComponentProps<typeof MediaAssetCard>> = {}
 ) {
-  setActivePinia(createTestingPinia({ stubActions: false }))
   const i18n = createI18n({
     legacy: false,
     locale: 'en',
