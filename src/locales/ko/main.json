@@ -959,15 +959,6 @@
     "WAN_CAMERA_EMBEDDING": "WAN 카메라 임베딩",
     "WEBCAM": "웹캠"
   },
-  "desktopDialogs": {
-    "": {
-      "buttons": {
-        "Close": "닫기"
-      },
-      "message": "잘못된 대화상자 ID가 제공되었습니다.",
-      "title": "잘못된 대화상자"
-    }
-  },
   "desktopLogin": {
     "confirmMessage": "ComfyUI 데스크톱 앱이 귀하의 계정으로 로그인 대기 중입니다. ComfyUI 데스크톱 앱에서 로그인을 시작한 경우에만 계속 진행하세요.",
     "confirmSummary": "데스크톱 로그인 승인하시겠습니까?",

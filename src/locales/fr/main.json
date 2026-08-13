@@ -959,15 +959,6 @@
     "WAN_CAMERA_EMBEDDING": "INTÉGRATION_CAMÉRA_WAN",
     "WEBCAM": "WEBCAM"
   },
-  "desktopDialogs": {
-    "": {
-      "buttons": {
-        "Close": "Fermer"
-      },
-      "message": "Un ID de dialogue invalide a été fourni.",
-      "title": "Dialogue invalide"
-    }
-  },
   "desktopLogin": {
     "confirmMessage": "L’application de bureau ComfyUI attend de se connecter avec votre compte. Continuez uniquement si vous venez de lancer la connexion depuis l’application de bureau ComfyUI.",
     "confirmSummary": "Approuver la connexion sur le bureau ?",

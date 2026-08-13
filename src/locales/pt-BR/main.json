@@ -959,15 +959,6 @@
     "WAN_CAMERA_EMBEDDING": "EMBEDDING DE CÂMERA WAN",
     "WEBCAM": "WEBCAM"
   },
-  "desktopDialogs": {
-    "": {
-      "buttons": {
-        "Close": "Fechar"
-      },
-      "message": "ID de diálogo inválido fornecido.",
-      "title": "Diálogo inválido"
-    }
-  },
   "desktopLogin": {
     "confirmMessage": "O aplicativo desktop do ComfyUI está aguardando para entrar com sua conta. Continue apenas se você acabou de iniciar o login pelo aplicativo desktop do ComfyUI.",
     "confirmSummary": "Aprovar login no desktop?",

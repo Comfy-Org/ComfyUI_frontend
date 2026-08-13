@@ -959,15 +959,6 @@
     "WAN_CAMERA_EMBEDDING": "WAN_CAMERA_EMBEDDING",
     "WEBCAM": "WEBCAM"
   },
-  "desktopDialogs": {
-    "": {
-      "buttons": {
-        "Close": "סגירה"
-      },
-      "message": "סופק מזהה חלון לא תקין.",
-      "title": "חלון לא תקין"
-    }
-  },
   "desktopLogin": {
     "confirmMessage": "אפליקציית ComfyUI במחשב ממתינה לכניסה עם החשבון שלך. המשך רק אם התחלת כעת את תהליך הכניסה מאפליקציית ComfyUI במחשב.",
     "confirmSummary": "לאשר כניסה משולחן העבודה?",

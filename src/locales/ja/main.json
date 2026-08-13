@@ -959,15 +959,6 @@
     "WAN_CAMERA_EMBEDDING": "WANカメラ埋め込み",
     "WEBCAM": "ウェブカメラ"
   },
-  "desktopDialogs": {
-    "": {
-      "buttons": {
-        "Close": "閉じる"
-      },
-      "message": "無効なダイアログIDが指定されました。",
-      "title": "無効なダイアログ"
-    }
-  },
   "desktopLogin": {
     "confirmMessage": "ComfyUIデスクトップアプリがあなたのアカウントでサインインを待機しています。ComfyUIデスクトップアプリからサインインを開始した場合のみ続行してください。",
     "confirmSummary": "デスクトップサインインを承認しますか？",

@@ -959,15 +959,6 @@
     "WAN_CAMERA_EMBEDDING": "Wan相機嵌入",
     "WEBCAM": "網路攝影機"
   },
-  "desktopDialogs": {
-    "": {
-      "buttons": {
-        "Close": "關閉"
-      },
-      "message": "提供的對話框 ID 無效。",
-      "title": "無效對話框"
-    }
-  },
   "desktopLogin": {
     "confirmMessage": "ComfyUI 桌面應用程式正在等待使用您的帳戶登入。僅在您剛從 ComfyUI 桌面應用程式啟動登入時才繼續。",
     "confirmSummary": "批准桌面端登入？",

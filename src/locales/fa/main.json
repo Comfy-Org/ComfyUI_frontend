@@ -959,15 +959,6 @@
     "WAN_CAMERA_EMBEDDING": "جاسازی دوربین WAN",
     "WEBCAM": "وب‌کم"
   },
-  "desktopDialogs": {
-    "": {
-      "buttons": {
-        "Close": "بستن"
-      },
-      "message": "شناسه گفت‌وگوی نامعتبری ارائه شده است.",
-      "title": "گفت‌وگوی نامعتبر"
-    }
-  },
   "desktopLogin": {
     "confirmMessage": "برنامه دسکتاپ ComfyUI در انتظار ورود به حساب شما است. فقط در صورتی ادامه دهید که همین حالا ورود را از برنامه دسکتاپ ComfyUI آغاز کرده‌اید.",
     "confirmSummary": "تأیید ورود دسکتاپ",

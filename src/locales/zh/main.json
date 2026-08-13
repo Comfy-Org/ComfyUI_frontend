@@ -959,15 +959,6 @@
     "WAN_CAMERA_EMBEDDING": "WAN 摄像头嵌入",
     "WEBCAM": "摄像头"
   },
-  "desktopDialogs": {
-    "": {
-      "buttons": {
-        "Close": "关闭"
-      },
-      "message": "提供的对话 ID 无效。",
-      "title": "无效对话框"
-    }
-  },
   "desktopLogin": {
     "confirmMessage": "ComfyUI 桌面应用正在等待使用您的账户登录。仅当您刚刚在 ComfyUI 桌面应用中开始登录时才继续。",
     "confirmSummary": "批准桌面端登录？",

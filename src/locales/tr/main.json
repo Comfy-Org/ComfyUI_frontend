@@ -959,15 +959,6 @@
     "WAN_CAMERA_EMBEDDING": "WAN_KAMERA_GÖMÜLMESİ",
     "WEBCAM": "WEBCAM"
   },
-  "desktopDialogs": {
-    "": {
-      "buttons": {
-        "Close": "Kapat"
-      },
-      "message": "Geçersiz iletişim kutusu kimliği sağlandı.",
-      "title": "Geçersiz İletişim Kutusu"
-    }
-  },
   "desktopLogin": {
     "confirmMessage": "ComfyUI masaüstü uygulaması hesabınızla oturum açmayı bekliyor. Yalnızca ComfyUI masaüstü uygulamasından oturum açmayı yeni başlattıysanız devam edin.",
     "confirmSummary": "Masaüstü oturum açmayı onayla?",
