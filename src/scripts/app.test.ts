@@ -710,10 +710,11 @@ describe('ComfyApp', () => {
       expect(mockCanvas.draw).toHaveBeenCalledWith(true, true)
     })
 
-    it('reports a run the backend refused outright, not just an accepted one', async () => {
-      // promptQueueing fires whatever happens, but promptQueued was withheld
-      // when the submission errored out before anything was queued — the one
-      // case a listener most needs to hear about. A pack bracketing a temporary mutation around a run was left
+    it('reports that a refused attempt ended, without claiming it queued', async () => {
+      // promptQueueing fires whatever happens, and nothing reported the other
+      // end of it. promptQueued cannot: it means afterQueued, and four packs
+      // have converted onto it expecting a counter that only advances when a
+      // run actually started. A pack bracketing a temporary mutation around a run was left
       // holding the graph open after a failed submission, and the "queuing"
       // banner stayed up for good.
       prepareEmptyPromptQueue()
@@ -726,8 +727,13 @@ describe('ComfyApp', () => {
 
       expect(dispatch).toHaveBeenCalledWith('promptQueueing', expect.anything())
       expect(dispatch).toHaveBeenCalledWith(
+        'promptQueueAttemptEnded',
+        expect.objectContaining({ queued: 0 })
+      )
+      // And promptQueued stays unsent, because nothing was queued.
+      expect(dispatch).not.toHaveBeenCalledWith(
         'promptQueued',
-        expect.objectContaining({ batchCount: 0, promptIds: [] })
+        expect.anything()
       )
     })
 
