@@ -4,6 +4,7 @@ import { getRoutes } from '../src/config/routes'
 import { creatorReviews } from '../src/data/creatorReviews'
 import { ltxPage } from '../src/data/ltx'
 import { t } from '../src/i18n/translations'
+import type { ModelLaunchCta } from '../src/templates/model-launch/types'
 import { test } from './fixtures/blockExternalMedia'
 
 const PATH = '/ltx-2.5'
@@ -27,6 +28,10 @@ const BADGE_KEYS = ltxPage.hero.badgeKeys ?? []
 
 const GALLERY = ltxPage.gallery
 if (!GALLERY) throw new Error('ltxPage must configure a gallery')
+
+const HERO_PRIMARY_CTA: ModelLaunchCta | undefined = ltxPage.hero.primaryCta
+if (!HERO_PRIMARY_CTA)
+  throw new Error('ltxPage must configure a hero primary CTA')
 
 test.describe('LTX 2.5 page — desktop @smoke', () => {
   test.beforeEach(async ({ page }) => {
@@ -96,7 +101,7 @@ test.describe('LTX 2.5 page — link targets', () => {
     const runCta = hero.getByRole('link', {
       name: t('ltx.hero.primaryCta', 'en')
     })
-    await expect(runCta).toHaveAttribute('href', ltxPage.hero.primaryCta.href)
+    await expect(runCta).toHaveAttribute('href', HERO_PRIMARY_CTA.href)
     await expect(runCta).toHaveAttribute('href', LTX_RUN_TEMPLATE)
     await expect(runCta).toHaveAttribute('target', '_blank')
 
