@@ -221,7 +221,7 @@ onUnmounted(() => {
         {{ t('api.hero.subtitle', locale) }}
       </p>
 
-      <div class="mt-8 flex flex-col gap-4 lg:flex-row">
+      <div class="mt-8 grid gap-4 lg:w-fit lg:grid-cols-2">
         <BrandButton
           :href="externalLinks.apiKeys"
           size="lg"
@@ -236,6 +236,14 @@ onUnmounted(() => {
           class="text-center lg:min-w-60 lg:p-4"
         >
           {{ t('api.hero.viewDocs', locale) }}
+        </BrandButton>
+        <BrandButton
+          :href="externalLinks.docsSdk"
+          variant="outline"
+          size="lg"
+          class="text-center lg:col-span-2 lg:p-4"
+        >
+          {{ t('api.hero.trySdk', locale) }}
         </BrandButton>
       </div>
     </div>
