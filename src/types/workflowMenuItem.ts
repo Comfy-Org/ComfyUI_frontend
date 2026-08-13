@@ -1,4 +1,5 @@
 import type { OverlayIconProps } from '@/components/common/OverlayIcon.vue'
+import type { BadgeVariants } from '@/components/common/badge.variants'
 
 export type WorkflowMenuItem = WorkflowMenuSeparator | WorkflowMenuAction
 
@@ -15,6 +16,7 @@ export interface WorkflowMenuAction {
   command?: () => void
   disabled?: boolean
   badge?: string
+  badgeSeverity?: BadgeVariants['severity']
   isNew?: boolean
   overlayIcon?: OverlayIconProps
 }

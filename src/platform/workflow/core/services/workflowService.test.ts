@@ -61,8 +61,17 @@ function makeWorkflowData(
   }
 }
 
-const { mockConfirm, mockTrackWorkflowSaved } = vi.hoisted(() => ({
+const {
+  mockConfirm,
+  mockDownloadBlob,
+  mockGraphToPrompt,
+  mockPrompt,
+  mockTrackWorkflowSaved
+} = vi.hoisted(() => ({
   mockConfirm: vi.fn(),
+  mockDownloadBlob: vi.fn(),
+  mockGraphToPrompt: vi.fn(),
+  mockPrompt: vi.fn(),
   mockTrackWorkflowSaved: vi.fn()
 }))
 
@@ -75,15 +84,20 @@ const draftStoreMocks = vi.hoisted(() => ({
 
 vi.mock('@/services/dialogService', () => ({
   useDialogService: () => ({
-    prompt: vi.fn(),
+    prompt: mockPrompt,
     confirm: mockConfirm
   })
+}))
+
+vi.mock('@/base/common/downloadUtil', () => ({
+  downloadBlob: mockDownloadBlob
 }))
 
 vi.mock('@/scripts/app', () => ({
   app: {
     canvas: { ds: { offset: [0, 0], scale: 1 } },
     rootGraph: { serialize: vi.fn(() => ({})), extra: {} },
+    graphToPrompt: mockGraphToPrompt,
     loadGraphData: vi.fn()
   }
 }))
@@ -263,6 +277,35 @@ describe('useWorkflowService', () => {
         useMissingNodesErrorStore().surfaceMissingNodes
       ).toHaveBeenCalledWith(['CustomNode1'])
       expect(useExecutionErrorStore().showErrorOverlay).toHaveBeenCalled()
+    })
+  })
+
+  describe('exportWorkflow', () => {
+    beforeEach(() => {
+      mockGraphToPrompt.mockResolvedValue({
+        workflow: makeWorkflowData(),
+        output: { '1': { inputs: {}, class_type: 'TestNode' } }
+      })
+      vi.spyOn(useSettingStore(), 'get').mockImplementation(
+        (key: string) => key === 'Comfy.PromptFilename'
+      )
+    })
+
+    it('uses a supplied filename without prompting', async () => {
+      const workflowStore = useWorkflowStore()
+      workflowStore.activeWorkflow = createModeTestWorkflow({
+        path: 'workflows/current.json'
+      })
+
+      await useWorkflowService().exportWorkflow('workflow_api', 'output', {
+        filename: 'renamed'
+      })
+
+      expect(mockPrompt).not.toHaveBeenCalled()
+      expect(mockDownloadBlob).toHaveBeenCalledWith(
+        'renamed.json',
+        expect.any(Blob)
+      )
     })
   })
 

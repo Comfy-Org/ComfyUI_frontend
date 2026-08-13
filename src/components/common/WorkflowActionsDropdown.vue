@@ -16,6 +16,7 @@ import {
 import { computed, nextTick, onMounted, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Badge from '@/components/common/Badge.vue'
 import WorkflowActionsList from '@/components/common/WorkflowActionsList.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useNewMenuItemIndicator } from '@/composables/useNewMenuItemIndicator'
@@ -242,10 +243,12 @@ const tooltipPt = {
                 />
               </span>
             </span>
-            <span
+            <Badge
               v-if="seg.active && hasUnseenItems"
+              data-testid="new-menu-item-indicator"
               aria-hidden="true"
-              class="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-primary-background"
+              class="absolute -top-0.5 -right-0.5"
+              variant="dot"
             />
           </Button>
         </TransitionGroup>
