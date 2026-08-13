@@ -1,18 +1,14 @@
+import { protectedLiteralPatterns } from './config'
 import type { LocaleChanges, LocaleObject, LocaleValue } from './locale-tree'
 import { collectLeaves, getLeaf, pathKey } from './locale-tree'
 
-const quoteCharacters = `['"“”‘’«»‹›„‚「」『』]`
-const protectedLiteralPatterns = [
-  /<(?:Picture|Video|Audio) [A-Za-z0-9]+>/g,
-  /\b\d+k\+\d+\b/g,
-  new RegExp(`(?<=${quoteCharacters})(?:match|max)(?=${quoteCharacters})`, 'g')
-]
 // Named ({name}), positional list ({0}), and literal ({'@'}) interpolation
 const interpolationPattern = /\{(?:[A-Za-z][A-Za-z0-9_.-]*|\d+|'[^']*')\}/g
 // vue-i18n message syntax the model must not introduce: | separates plural
 // forms, @:key / @.modifier:key are linked messages
 const pluralSeparatorPattern = /\|/
-const linkedMessagePattern = /@[.:]/
+const linkedMessagePattern =
+  /@(?:\.[A-Za-z][A-Za-z0-9_-]*)?:(?:[^\s@|(){}]+|\{(?:[A-Za-z][A-Za-z0-9_.-]*|'[^']*')\})/g
 
 function uniqueMatches(value: string, pattern: RegExp): string[] {
   return [...new Set(value.match(pattern) ?? [])].sort()
@@ -28,6 +24,7 @@ export function protectedTokens(
   if (includeInterpolation) {
     tokens.push(...uniqueMatches(value, interpolationPattern))
   }
+  tokens.push(...uniqueMatches(value, linkedMessagePattern))
   return [...new Set(tokens)].sort()
 }
 
@@ -38,6 +35,7 @@ export function tokenErrors(
 ): string[] {
   const sourceTokens = protectedTokens(source, includeInterpolation)
   const targetTokens = protectedTokens(target, includeInterpolation)
+  const targetPluralForms = target.split('|')
   const missing = sourceTokens.filter((token) => !targetTokens.includes(token))
   const added = targetTokens.filter((token) => !sourceTokens.includes(token))
   return [
@@ -50,8 +48,9 @@ export function tokenErrors(
     !pluralSeparatorPattern.test(source)
       ? ['added plural separator |']
       : []),
-    ...(linkedMessagePattern.test(target) && !linkedMessagePattern.test(source)
-      ? ['added linked message @']
+    ...(targetPluralForms.length > 1 &&
+    targetPluralForms.some((form) => form.trim().length === 0)
+      ? ['empty plural form']
       : [])
   ]
 }
@@ -77,13 +76,6 @@ function leafTokenErrors(
   return JSON.stringify(source) === JSON.stringify(target)
     ? []
     : [`${label}: leaf value changed`]
-}
-
-export function leafTokensDiffer(
-  source: LocaleValue,
-  target: LocaleValue | undefined
-): boolean {
-  return leafTokenErrors(source, target, 'leaf').length > 0
 }
 
 export function validateLocale(

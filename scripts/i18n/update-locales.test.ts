@@ -15,7 +15,7 @@ import {
   pathKey,
   rebuildLocale
 } from './locale-tree'
-import { leafTokensDiffer, validateLocale } from './protected-tokens'
+import { auditProtectedLiterals, validateLocale } from './protected-tokens'
 import type { TranslateBatch, TranslationItem } from './translate'
 import {
   chunkItems,
@@ -26,7 +26,8 @@ import {
 import {
   assembleLeafTranslations,
   buildTranslationItems,
-  exceedsPruneThreshold
+  exceedsPruneThreshold,
+  readManifestSource
 } from './update-locales'
 
 const locale: OutputLocale = { code: 'xx', name: 'Test Language' }
@@ -55,12 +56,7 @@ async function updateLocaleFile(
   const invalidated = new Set(
     [...changes.added, ...changes.modified].map(pathKey)
   )
-  const pendingLeaves = collectPendingLeaves(
-    source,
-    existing,
-    invalidated,
-    leafTokensDiffer
-  )
+  const pendingLeaves = collectPendingLeaves(source, existing, invalidated)
   const plan = buildTranslationItems('main.json', pendingLeaves)
   const translations =
     plan.items.length > 0
@@ -119,6 +115,24 @@ describe('locale file update', () => {
     stray: 'no longer in source'
   }
 
+  it('reports why each leaf is queued for translation', () => {
+    const invalidated = new Set([pathKey(['changed'])])
+    expect(
+      collectPendingLeaves(
+        { changed: 'New source', missing: 'Missing translation' },
+        { changed: 'Existing translation' },
+        invalidated
+      )
+    ).toEqual([
+      { path: ['changed'], reason: 'invalidated', value: 'New source' },
+      {
+        path: ['missing'],
+        reason: 'shape',
+        value: 'Missing translation'
+      }
+    ])
+  })
+
   it('translates added, modified, and missing values; prunes deleted and stray keys; keeps valid translations', async () => {
     const { output, translatedCount } = await updateLocaleFile(
       source,
@@ -140,7 +154,7 @@ describe('locale file update', () => {
     expect(Object.keys(output)).toEqual([...Object.keys(output)].sort())
   })
 
-  it('retranslates existing translations that were corrupted or blanked', async () => {
+  it('reports unchanged corrupted translations without replacing them', () => {
     const parity = {
       blanked: 'Save',
       farewell: 'Goodbye',
@@ -153,19 +167,15 @@ describe('locale file update', () => {
       greeting: 'Bonjour nom',
       intact: 'translated {docs}'
     }
-    const { output, translatedCount } = await updateLocaleFile(
-      parity,
-      parity,
-      corrupted,
-      echoTranslator
+    expect(collectPendingLeaves(parity, corrupted, new Set())).toEqual([])
+    expect(auditProtectedLiterals(parity, corrupted, new Set())).toEqual([
+      'blanked: empty translation',
+      'farewell: added {count}',
+      'greeting: missing {name}'
+    ])
+    expect(rebuildLocale(parity, corrupted, new Set(), new Map())).toEqual(
+      corrupted
     )
-    expect(output).toEqual({
-      blanked: 'xx: Save',
-      farewell: 'xx: Goodbye',
-      greeting: 'xx: Hello {name}',
-      intact: 'translated {docs}'
-    })
-    expect(translatedCount).toBe(3)
   })
 
   it('preserves keys named __proto__', async () => {
@@ -468,7 +478,25 @@ describe('validateLocale', () => {
         { scale: source.scale, send: 'Enviar @:g.cancel' },
         changes
       )
-    ).toEqual(['send: added linked message @'])
+    ).toEqual(['send: added @:g.cancel'])
+  })
+
+  it('protects linked message keys and modifiers', () => {
+    const source = {
+      link: 'Open @:menu.save or @.lower:menu.cancel'
+    }
+    const changes = diffLocaleSources({}, source)
+    expect(validateLocale(source, source, changes)).toEqual([])
+    expect(
+      validateLocale(
+        source,
+        { link: 'Open @:menu.open or @.upper:menu.cancel' },
+        changes
+      )
+    ).toEqual([
+      'link: missing @.lower:menu.cancel, @:menu.save',
+      'link: added @.upper:menu.cancel, @:menu.open'
+    ])
   })
 
   it('compares placeholder names as a set across plural forms', () => {
@@ -485,15 +513,41 @@ describe('validateLocale', () => {
       validateLocale(source, { count: 'None | {total} many' }, changes)
     ).toEqual(['count: missing {count}', 'count: added {total}'])
   })
+
+  it('allows locale-specific plural counts and rejects empty forms', () => {
+    const source = { count: 'No items | {count} item | {count} items' }
+    const changes = diffLocaleSources({}, source)
+    expect(validateLocale(source, { count: '{count} items' }, changes)).toEqual(
+      []
+    )
+    expect(
+      validateLocale(source, { count: 'None | | {count} items' }, changes)
+    ).toEqual(['count: empty plural form'])
+  })
 })
 
 describe('exceedsPruneThreshold', () => {
   it('permits small cleanups and refuses large shrinks', () => {
     expect(exceedsPruneThreshold(0, 0)).toBe(false)
     expect(exceedsPruneThreshold(79, 13557)).toBe(false)
-    expect(exceedsPruneThreshold(25, 100)).toBe(false)
+    expect(exceedsPruneThreshold(5, 124)).toBe(false)
+    expect(exceedsPruneThreshold(6, 124)).toBe(true)
+    expect(exceedsPruneThreshold(5, 234)).toBe(false)
+    expect(exceedsPruneThreshold(6, 234)).toBe(true)
     expect(exceedsPruneThreshold(62, 124)).toBe(true)
     expect(exceedsPruneThreshold(500, 9082)).toBe(true)
+  })
+})
+
+describe('readManifestSource', () => {
+  it('fails when the recorded source blob is unavailable', () => {
+    expect(() =>
+      readManifestSource(
+        process.cwd(),
+        'main.json',
+        '0000000000000000000000000000000000000000'
+      )
+    ).toThrow('Cannot read the recorded English source for main.json')
   })
 })
 
