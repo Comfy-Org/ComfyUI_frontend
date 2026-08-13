@@ -870,3 +870,34 @@ describe('clearAllErrors', () => {
     expect(executionErrorStore.hasAnyError).toBe(false)
   })
 })
+
+describe('added-node error scan coordination', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('keeps overlapping scans isolated by graph until every scan finishes', () => {
+    const store = useExecutionErrorStore()
+    const graphA = createTestRootGraph()
+    const graphB = createTestRootGraph()
+    const executionId = createNodeExecutionId([toNodeId(1)])
+
+    const finishFirst = store.beginAddedNodeErrorScan(graphA, executionId)
+    const finishSecond = store.beginAddedNodeErrorScan(graphA, executionId)
+    const finishOtherGraph = store.beginAddedNodeErrorScan(graphB, executionId)
+
+    expect(store.hasPendingAddedNodeErrorScan(graphA, executionId)).toBe(true)
+    expect(store.hasPendingAddedNodeErrorScan(graphB, executionId)).toBe(true)
+
+    finishFirst()
+    finishFirst()
+    expect(store.hasPendingAddedNodeErrorScan(graphA, executionId)).toBe(true)
+
+    finishSecond()
+    expect(store.hasPendingAddedNodeErrorScan(graphA, executionId)).toBe(false)
+    expect(store.hasPendingAddedNodeErrorScan(graphB, executionId)).toBe(true)
+
+    finishOtherGraph()
+    expect(store.hasPendingAddedNodeErrorScan(graphB, executionId)).toBe(false)
+  })
+})
