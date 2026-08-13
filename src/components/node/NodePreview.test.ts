@@ -1,3 +1,7 @@
+// @vitest-environment jsdom
+// dompurify >= 3.4.8 (bumped for GHSA-55q2-fjhq-7xh7 et al.) mis-walks
+// happy-dom NodeIterators and strips sanitized elements; jsdom matches
+// real-browser output for the markdown rendering these tests assert on.
 import { createPinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
@@ -10,6 +14,16 @@ import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSc
 import * as markdownRendererUtil from '@/utils/markdownRendererUtil'
 
 import NodePreview from './NodePreview.vue'
+
+// jsdom does not implement ResizeObserver (happy-dom does); stub it before
+// component modules construct their module-level observer at import time.
+vi.hoisted(() => {
+  globalThis.ResizeObserver ??= class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  } as unknown as typeof ResizeObserver
+})
 
 describe('NodePreview', () => {
   let i18n: ReturnType<typeof createI18n>

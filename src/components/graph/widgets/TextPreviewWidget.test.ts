@@ -1,3 +1,7 @@
+// @vitest-environment jsdom
+// dompurify >= 3.4.8 (bumped for GHSA-55q2-fjhq-7xh7 et al.) mis-walks
+// happy-dom NodeIterators and strips sanitized elements; jsdom matches
+// real-browser output for the markdown rendering these tests assert on.
 import { render, screen } from '@testing-library/vue'
 import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'

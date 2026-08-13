@@ -1,3 +1,7 @@
+// @vitest-environment jsdom
+// dompurify >= 3.4.8 (bumped for GHSA-55q2-fjhq-7xh7 et al.) mis-walks
+// happy-dom NodeIterators and strips sanitized elements; jsdom matches
+// real-browser output for the markdown rendering these tests assert on.
 import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
@@ -21,6 +25,16 @@ import WidgetTextPreview from './WidgetTextPreview.vue'
 const GRAPH_ID = 'graph-1'
 const NODE_ID = toNodeId('7')
 const LOCATOR = 'loc-1'
+
+// jsdom does not implement ResizeObserver (happy-dom does); stub it before
+// component modules construct their module-level observer at import time.
+vi.hoisted(() => {
+  globalThis.ResizeObserver ??= class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  } as unknown as typeof ResizeObserver
+})
 
 const { downloadFileMock, copyMock } = vi.hoisted(() => ({
   downloadFileMock: vi.fn(),
