@@ -114,7 +114,7 @@ catalog:
   postcss-html: ^1.8.0
   posthog-js: ^1.358.1
   pretty-bytes: ^7.1.0
-  primeicons: ^7.0.0
+  primeicons: ^8.0.0
   primevue: 4.2.5
   reka-ui: 2.6.2
   rollup-plugin-visualizer: ^6.0.4

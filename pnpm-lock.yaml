@@ -316,8 +316,8 @@ catalogs:
       specifier: ^7.1.0
       version: 7.1.1
     primeicons:
-      specifier: ^7.0.0
-      version: 7.0.0
+      specifier: ^8.0.0
+      version: 8.0.0
     primevue:
       specifier: 4.2.5
       version: 4.2.5
@@ -604,7 +604,7 @@ importers:
         version: 1.402.3
       primeicons:
         specifier: 'catalog:'
-        version: 7.0.0
+        version: 8.0.0
       primevue:
         specifier: 'catalog:'
         version: 4.2.5(vue@3.5.41(typescript@6.0.3))
@@ -905,7 +905,7 @@ importers:
         version: 4.0.2(@vue/devtools-api@8.1.5)(typescript@6.0.3)(vue@3.5.41(typescript@6.0.3))
       primeicons:
         specifier: 'catalog:'
-        version: 7.0.0
+        version: 8.0.0
       primevue:
         specifier: 'catalog:'
         version: 4.2.5(vue@3.5.41(typescript@6.0.3))
@@ -7588,8 +7588,8 @@ packages:
     resolution: {integrity: sha512-Qb1gy5OrP5+zDf2Bvnzdl3jsTf1qXVMazbvCoKhtKqVs4/YK4ozX4gKQJJVyNe+cajNPn0KoC0MC3FUmaHWEmQ==}
     engines: {node: ^10.13.0 || ^12.13.0 || ^14.15.0 || >=15.0.0}
 
-  primeicons@7.0.0:
-    resolution: {integrity: sha512-jK3Et9UzwzTsd6tzl2RmwrVY/b8raJ3QZLzoDACj+oTJ0oX7L9Hy+XnVwgo4QVKlKpnP/Ur13SXV/pVh4LzaDw==}
+  primeicons@8.0.0:
+    resolution: {integrity: sha512-eZGk+Mgb4fE+LkJi9LvllbnB4RVUF9kzmnLVnT3ZMY6stqKVh7TUJ0mFoMNIEgTnJSvhaGcJotDiSvtVvkHd7g==}
 
   primevue@4.2.5:
     resolution: {integrity: sha512-7UMOIJvdFz4jQyhC76yhNdSlHtXvVpmE2JSo2ndUTBWjWJOkYyT562rQ4ayO+bMdJLtzBGqgY64I9ZfEvNd7vQ==}
@@ -16406,7 +16406,7 @@ snapshots:
       ansi-styles: 5.2.0
       react-is: 17.0.2
 
-  primeicons@7.0.0: {}
+  primeicons@8.0.0: {}
 
   primevue@4.2.5(vue@3.5.41(typescript@6.0.3)):
     dependencies:
