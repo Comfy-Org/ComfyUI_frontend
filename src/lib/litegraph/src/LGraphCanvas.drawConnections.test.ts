@@ -301,6 +301,82 @@ describe('drawConnections hidden links', () => {
     expect(isLinkRevealed(link.id)).toBe(false)
   })
 
+  it('groups output badges by source slot regardless of target node order', () => {
+    const sourceNode = new LGraphNode('Source')
+    sourceNode.pos = [0, 100]
+    sourceNode.size = [150, 80]
+    sourceNode.addOutput('image', 'IMAGE')
+    sourceNode.addOutput('mask', 'MASK')
+    graph.add(sourceNode)
+
+    const firstImageTarget = new LGraphNode('First image target')
+    firstImageTarget.pos = [500, 100]
+    firstImageTarget.addInput('image', 'IMAGE')
+    graph.add(firstImageTarget)
+    const firstImageLink = createTestLink(
+      graph,
+      sourceNode,
+      0,
+      firstImageTarget,
+      0
+    )
+    firstImageLink.hidden = true
+
+    const maskTarget = new LGraphNode('Mask target')
+    maskTarget.pos = [500, 200]
+    maskTarget.addInput('mask', 'MASK')
+    graph.add(maskTarget)
+    const maskLink = createTestLink(graph, sourceNode, 1, maskTarget, 0)
+    maskLink.hidden = true
+
+    const secondImageTarget = new LGraphNode('Second image target')
+    secondImageTarget.pos = [500, 300]
+    secondImageTarget.addInput('image', 'IMAGE')
+    graph.add(secondImageTarget)
+    const secondImageLink = createTestLink(
+      graph,
+      sourceNode,
+      0,
+      secondImageTarget,
+      0
+    )
+    secondImageLink.hidden = true
+
+    const thirdImageTarget = new LGraphNode('Third image target')
+    thirdImageTarget.pos = [500, 400]
+    thirdImageTarget.addInput('image', 'IMAGE')
+    graph.add(thirdImageTarget)
+    const thirdImageLink = createTestLink(
+      graph,
+      sourceNode,
+      0,
+      thirdImageTarget,
+      0
+    )
+    thirdImageLink.hidden = true
+
+    canvas.drawConnections(createMockCtx())
+
+    const outputSocketX = sourceNode.getOutputPos(0)[0]
+    const inputSocketX = firstImageTarget.getInputPos(0)[0]
+    const outputBadgeLinkIds = canvas.linkBadgeFrameState.hitAreas
+      .filter((area) => {
+        const centerX = area.x + area.width / 2
+        return (
+          Math.abs(centerX - outputSocketX) < Math.abs(centerX - inputSocketX)
+        )
+      })
+      .sort((first, second) => first.y - second.y)
+      .map((area) => area.linkId)
+
+    expect(outputBadgeLinkIds).toEqual([
+      firstImageLink.id,
+      secondImageLink.id,
+      thirdImageLink.id,
+      maskLink.id
+    ])
+  })
+
   it('suppresses reroutes until the full routed link is revealed', () => {
     const link = createHiddenLink()
     const reroute = graph.createReroute([225, 150], link)

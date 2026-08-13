@@ -41,11 +41,10 @@ import {
   clearLinkBadgeFrameState,
   createLinkBadgeFrameState,
   drawPendingLinkBadges,
-  enqueueHiddenLinkBadges,
-  getHiddenLinkBadgeBounds,
+  enqueueHiddenLinkBadgesInView,
   queryLinkBadgeAtPoint
 } from './canvas/linkBadges'
-import type { LinkBadgeFrameState } from './canvas/linkBadges'
+import type { LinkBadgeFrameState, LinkBadgeTips } from './canvas/linkBadges'
 import {
   hideLink,
   promptRenameLinkBadge,
@@ -295,6 +294,53 @@ const temp_vec2: Point = [0, 0]
 const tmp_area = new Rectangle()
 const margin_area = new Rectangle()
 const link_bounding = new Rectangle()
+
+function getLinkEndpointPositions(
+  graph: LGraph,
+  link: LLink
+): [Point, Point] | undefined {
+  const resolved = link.resolve(graph)
+  const { subgraphInput, inputNode, input } = resolved
+  if (subgraphInput) {
+    if (!inputNode || !input || !subgraphInput.linkIds.includes(link.id)) {
+      return
+    }
+
+    const endPos = LiteGraph.vueNodesMode
+      ? getSlotPosition(inputNode, link.target_slot, true)
+      : inputNode.getInputPos(link.target_slot)
+    return [subgraphInput.pos, endPos]
+  }
+
+  const { subgraphOutput, outputNode, output } = resolved
+  if (subgraphOutput) {
+    if (!outputNode || !output || subgraphOutput.linkIds[0] !== link.id) {
+      return
+    }
+
+    const startPos = LiteGraph.vueNodesMode
+      ? getSlotPosition(outputNode, link.origin_slot, false)
+      : outputNode.getOutputPos(link.origin_slot)
+    return [startPos, subgraphOutput.pos]
+  }
+
+  if (!inputNode || !input || input.link !== link.id || !outputNode) return
+
+  const endPos: Point = LiteGraph.vueNodesMode
+    ? getSlotPosition(inputNode, link.target_slot, true)
+    : inputNode.getInputPos(link.target_slot)
+  const outputId = link.origin_slot
+  const startPos: Point =
+    outputId === -1
+      ? [outputNode.pos[0] + 10, outputNode.pos[1] + 10]
+      : LiteGraph.vueNodesMode
+        ? getSlotPosition(outputNode, outputId, false)
+        : outputNode.getOutputPos(outputId)
+  if (!output) return
+
+  return [startPos, endPos]
+}
+
 /**
  * This class is in charge of rendering one graph inside a canvas. And provides all the interaction required.
  * Valid callbacks are: onNodeSelected, onNodeDeselected, onShowNodePanel, onNodeDblClicked
@@ -6112,6 +6158,39 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       node.arrange()
     }
 
+    const hiddenLinkTips = new Map<LinkId, LinkBadgeTips>()
+    const hiddenLinks = [...graph.links.values()]
+      .filter((link) => link.hidden)
+      .sort((first, second) => {
+        if (first.origin_id < second.origin_id) return -1
+        if (first.origin_id > second.origin_id) return 1
+        return first.origin_slot - second.origin_slot
+      })
+    for (const link of hiddenLinks) {
+      const endpoints = getLinkEndpointPositions(graph, link)
+      if (!endpoints) continue
+
+      const [startPos, endPos] = endpoints
+      const connectionPoints = [
+        startPos,
+        ...LLink.getReroutes(graph, link).map((reroute) => reroute.pos),
+        endPos
+      ]
+      const badgeColor =
+        (typeof link.color === 'string' && link.color) ||
+        LGraphCanvas.link_type_colors[link.type] ||
+        this.default_link_color
+      const tips = enqueueHiddenLinkBadgesInView(
+        this.linkBadgeFrameState,
+        ctx,
+        link,
+        connectionPoints,
+        badgeColor,
+        margin_area
+      )
+      if (tips) hiddenLinkTips.set(link.id, tips)
+    }
+
     const renderConnection = (
       link: LLink,
       startPos: Point,
@@ -6122,33 +6201,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       let renderedStart = startPos
       let renderedEnd = endPos
       if (link.hidden) {
-        const connectionPoints = [
-          startPos,
-          ...LLink.getReroutes(graph, link).map((reroute) => reroute.pos),
-          endPos
-        ]
-        const badgeColor =
-          (typeof link.color === 'string' && link.color) ||
-          LGraphCanvas.link_type_colors[link.type] ||
-          this.default_link_color
-        const badgeBounds = getHiddenLinkBadgeBounds(
-          this.linkBadgeFrameState,
-          ctx,
-          link,
-          connectionPoints,
-          badgeColor
-        )
-        if (!overlapBounding(badgeBounds, margin_area)) return
-
-        const tips = enqueueHiddenLinkBadges(
-          this.linkBadgeFrameState,
-          ctx,
-          link,
-          startPos,
-          endPos,
-          badgeColor
-        )
-        if (!isLinkRevealed(link.id)) return
+        const tips = hiddenLinkTips.get(link.id)
+        if (!tips || !isLinkRevealed(link.id)) return
         renderedStart = tips.outputTip
         renderedEnd = tips.inputTip
       }

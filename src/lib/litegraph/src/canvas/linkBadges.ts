@@ -1,8 +1,9 @@
 import { textOnColor } from '@/utils/colorUtil'
 
-import type { Point, Rect } from '../interfaces'
+import type { Point, ReadOnlyRect, Rect } from '../interfaces'
 import { LGraphBadge } from '../LGraphBadge'
 import type { LinkId, LLink } from '../LLink'
+import { overlapBounding } from '../measure'
 
 const BADGE_GAP = 14
 const BADGE_HEIGHT = 18
@@ -218,6 +219,13 @@ export function getHiddenLinkBadgeBounds(
     connectionPoints[connectionPoints.length - 1],
     color
   )
+  return getBadgeBounds(layout, connectionPoints)
+}
+
+function getBadgeBounds(
+  layout: BadgeLayout,
+  connectionPoints: readonly Point[]
+): Rect {
   const hitAreas = getBadgeHitAreas(layout)
   let left = Math.min(...connectionPoints.map(([x]) => x))
   let top = Math.min(...connectionPoints.map(([, y]) => y))
@@ -298,6 +306,35 @@ export function enqueueHiddenLinkBadges(
     endPos,
     color
   )
+  return enqueueBadgeLayout(state, layout)
+}
+
+export function enqueueHiddenLinkBadgesInView(
+  state: LinkBadgeFrameState,
+  ctx: CanvasRenderingContext2D,
+  link: LLink,
+  connectionPoints: readonly Point[],
+  color: string,
+  visibleArea: ReadOnlyRect
+): LinkBadgeTips | undefined {
+  const layout = layoutHiddenLinkBadges(
+    state,
+    ctx,
+    link,
+    connectionPoints[0],
+    connectionPoints[connectionPoints.length - 1],
+    color
+  )
+  if (!overlapBounding(getBadgeBounds(layout, connectionPoints), visibleArea)) {
+    return
+  }
+  return enqueueBadgeLayout(state, layout)
+}
+
+function enqueueBadgeLayout(
+  state: LinkBadgeFrameState,
+  layout: BadgeLayout
+): LinkBadgeTips {
   state.hitAreas.push(...getBadgeHitAreas(layout))
   state.pendingBadges.push(layout)
   return {
