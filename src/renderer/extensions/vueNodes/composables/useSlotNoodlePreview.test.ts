@@ -122,10 +122,11 @@ describe('useSlotNoodlePreview', () => {
     })
     preview.revealNoodles()
     expect(isLinkRevealed(toLinkId(10))).toBe(true)
+    mocks.setDirty.mockClear()
 
     scope.stop()
 
     expect(isLinkRevealed(toLinkId(10))).toBe(false)
-    expect(mocks.setDirty).toHaveBeenLastCalledWith(false, true)
+    expect(mocks.setDirty).toHaveBeenCalledWith(false, true)
   })
 })

@@ -38,7 +38,10 @@ function queryVisibleLinkAtPoint(
       ) {
         continue
       }
-      if (segment instanceof LLink) return segment.hidden ? undefined : segment
+      if (segment instanceof LLink) {
+        if (!segment.hidden) return segment
+        continue
+      }
       if (segment instanceof Reroute) {
         for (const linkId of segment.linkIds) {
           const link = graph.getLink(linkId)

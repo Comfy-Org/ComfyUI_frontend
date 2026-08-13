@@ -155,6 +155,21 @@ describe('getCanvasContextMenuTarget', () => {
     expect(mockQueryLinkSegmentAtPoint).not.toHaveBeenCalled()
   })
 
+  it('skips a revealed hidden curve and returns the visible link behind it', () => {
+    const hiddenLink = new LLink(toLinkId(5), 'MODEL', 4, 0, 5, 0)
+    hiddenLink.hidden = true
+    hiddenLink.path = fromAny({})
+    const visibleLink = new LLink(toLinkId(6), 'MODEL', 6, 0, 7, 0)
+    visibleLink.path = fromAny({})
+    canvas.renderedPaths.add(hiddenLink)
+    canvas.renderedPaths.add(visibleLink)
+    isPointInStroke.mockReturnValue(true)
+
+    const target = resolve()
+
+    expect(target.link).toBe(visibleLink)
+  })
+
   it('does not return a hidden link from a stale curve layout', () => {
     const link = { id: toLinkId(5), hidden: true }
     mockQueryLinkSegmentAtPoint.mockReturnValue({
