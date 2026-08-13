@@ -1,4 +1,9 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+/**
+ * The OpenAI client refuses to construct in browser-like environments
+ * (happy-dom defines window/navigator), and nothing here needs a DOM.
+ * @vitest-environment node
+ */
+import { describe, expect, it, vi } from 'vitest'
 
 import type { OutputLocale } from './config'
 import type { LocaleObject } from './locale-tree'
@@ -433,7 +438,7 @@ describe('createOpenAiTranslator', () => {
       JSON.stringify({
         choices: [{ finish_reason: finishReason, message: { content } }]
       }),
-      { status: 200 }
+      { status: 200, headers: { 'content-type': 'application/json' } }
     )
 
   function translatorFor(responses: Response[]) {
@@ -452,36 +457,14 @@ describe('createOpenAiTranslator', () => {
     return { translate, callCount: () => calls }
   }
 
-  afterEach(() => {
-    vi.useRealTimers()
-  })
-
   it('retries truncated responses instead of failing on the partial JSON', async () => {
-    vi.useFakeTimers()
     const { translate, callCount } = translatorFor([
       completion('{"1": "Bonj', 'length'),
       completion('{"1": "Bonjour {name}"}')
     ])
-    const pending = translate(locale, items)
-    await vi.advanceTimersByTimeAsync(1000)
-    await expect(pending).resolves.toEqual({ '1': 'Bonjour {name}' })
-    expect(callCount()).toBe(2)
-  })
-
-  it('waits out Retry-After on rate-limited responses', async () => {
-    vi.useFakeTimers()
-    const { translate, callCount } = translatorFor([
-      new Response('rate limited', {
-        status: 429,
-        headers: { 'retry-after': '3' }
-      }),
-      completion('{"1": "Bonjour {name}"}')
-    ])
-    const pending = translate(locale, items)
-    await vi.advanceTimersByTimeAsync(1000)
-    expect(callCount()).toBe(1)
-    await vi.advanceTimersByTimeAsync(2000)
-    await expect(pending).resolves.toEqual({ '1': 'Bonjour {name}' })
+    await expect(translate(locale, items)).resolves.toEqual({
+      '1': 'Bonjour {name}'
+    })
     expect(callCount()).toBe(2)
   })
 
@@ -489,7 +472,9 @@ describe('createOpenAiTranslator', () => {
     const { translate, callCount } = translatorFor([
       new Response('bad key', { status: 401 })
     ])
-    await expect(translate(locale, items)).rejects.toThrow(/status 401/)
+    await expect(translate(locale, items)).rejects.toMatchObject({
+      status: 401
+    })
     expect(callCount()).toBe(1)
   })
 })

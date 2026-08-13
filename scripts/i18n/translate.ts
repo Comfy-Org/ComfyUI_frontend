@@ -1,3 +1,5 @@
+import OpenAI from 'openai'
+
 import type {
   OutputLocale,
   ReasoningEffort,
@@ -18,21 +20,9 @@ export type TranslateBatch = (
   items: TranslationItem[]
 ) => Promise<Record<string, string>>
 
-const retryableStatuses = new Set([408, 429, 500, 502, 503, 504])
-const retryDelaysMs = [1000, 4000, 10000]
 const defaultRequestTimeoutMs = 120_000
-const maxRetryAfterMs = 60_000
-
-function retryAfterMs(response: Response): number {
-  const seconds = Number(response.headers.get('retry-after'))
-  return Number.isFinite(seconds) && seconds > 0
-    ? Math.min(seconds * 1000, maxRetryAfterMs)
-    : 0
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms))
-}
+const maxNetworkRetries = 3
+const maxMalformedResponseRetries = 3
 
 export async function mapWithConcurrency<T, R>(
   items: readonly T[],
@@ -122,84 +112,42 @@ interface OpenAiTranslatorOptions {
 export function createOpenAiTranslator(
   options: OpenAiTranslatorOptions
 ): TranslateBatch {
-  const fetchFn = options.fetchFn ?? fetch
-  const timeoutMs = options.requestTimeoutMs ?? defaultRequestTimeoutMs
+  const client = new OpenAI({
+    apiKey: options.apiKey,
+    fetch: options.fetchFn,
+    timeout: options.requestTimeoutMs ?? defaultRequestTimeoutMs,
+    maxRetries: maxNetworkRetries
+  })
   return async (locale, items) => {
-    const body = JSON.stringify({
-      model: options.model,
-      reasoning_effort: options.reasoningEffort,
-      response_format: { type: 'json_object' },
-      messages: [
-        {
-          role: 'system',
-          content: buildSystemPrompt(locale, options.glossary)
-        },
-        { role: 'user', content: JSON.stringify({ items }) }
-      ]
-    })
-
     let lastError = new Error('translation request was not attempted')
-    let serverRetryDelayMs = 0
-    for (let attempt = 0; attempt <= retryDelaysMs.length; attempt++) {
-      if (attempt > 0) {
-        await sleep(Math.max(retryDelaysMs[attempt - 1], serverRetryDelayMs))
-        serverRetryDelayMs = 0
+    for (let attempt = 0; attempt <= maxMalformedResponseRetries; attempt++) {
+      const completion = await client.chat.completions.create({
+        model: options.model,
+        reasoning_effort: options.reasoningEffort,
+        response_format: { type: 'json_object' },
+        messages: [
+          {
+            role: 'system',
+            content: buildSystemPrompt(locale, options.glossary)
+          },
+          { role: 'user', content: JSON.stringify({ items }) }
+        ]
+      })
+      const choice = completion.choices[0]
+      if (choice?.finish_reason === 'length') {
+        lastError = new Error(
+          'OpenAI response was truncated (finish_reason "length"); lower maxItemsPerRequest or maxSourceCharsPerRequest'
+        )
+        continue
+      }
+      const content = choice?.message.content
+      if (typeof content !== 'string') {
+        lastError = new Error('OpenAI response has no message content')
+        continue
       }
       try {
-        const response = await fetchFn(
-          'https://api.openai.com/v1/chat/completions',
-          {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${options.apiKey}`,
-              'Content-Type': 'application/json'
-            },
-            body,
-            signal: AbortSignal.timeout(timeoutMs)
-          }
-        )
-        if (!response.ok) {
-          const detail = await response.text()
-          lastError = new Error(
-            `OpenAI request failed with status ${response.status}: ${detail.slice(0, 500)}`
-          )
-          if (!retryableStatuses.has(response.status)) throw lastError
-          serverRetryDelayMs = retryAfterMs(response)
-          continue
-        }
-        const payload: unknown = await response.json()
-        const choice =
-          payload &&
-          typeof payload === 'object' &&
-          'choices' in payload &&
-          Array.isArray(payload.choices)
-            ? (payload.choices[0] as unknown)
-            : undefined
-        const finishReason =
-          choice && typeof choice === 'object' && 'finish_reason' in choice
-            ? choice.finish_reason
-            : undefined
-        if (finishReason === 'length') {
-          lastError = new Error(
-            'OpenAI response was truncated (finish_reason "length"); lower maxItemsPerRequest or maxSourceCharsPerRequest'
-          )
-          continue
-        }
-        const message =
-          choice && typeof choice === 'object' && 'message' in choice
-            ? (choice.message as unknown)
-            : undefined
-        const content =
-          message && typeof message === 'object' && 'content' in message
-            ? message.content
-            : undefined
-        if (typeof content !== 'string') {
-          lastError = new Error('OpenAI response has no message content')
-          continue
-        }
         return parseBatchResponse(content)
       } catch (error) {
-        if (error === lastError) throw error
         lastError = error instanceof Error ? error : new Error(String(error))
       }
     }

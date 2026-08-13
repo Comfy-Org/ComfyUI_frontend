@@ -187,6 +187,7 @@
     "markdown-table": "catalog:",
     "mixpanel-browser": "catalog:",
     "monocart-coverage-reports": "catalog:",
+    "openai": "catalog:",
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
     "oxlint-tsgolint": "catalog:",

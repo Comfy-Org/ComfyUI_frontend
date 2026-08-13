@@ -105,6 +105,7 @@ catalog:
   minisearch: ^7.2.0
   mixpanel-browser: ^2.71.0
   monocart-coverage-reports: ^2.12.9
+  openai: ^7.4.0
   oxfmt: ^0.59.0
   oxlint: ^1.77.0
   oxlint-tsgolint: ^7.0.2001
