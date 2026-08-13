@@ -330,14 +330,22 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     const teamWorkspaceStore = useTeamWorkspaceStore()
-    const activeWorkspaceId = teamWorkspaceStore.activeWorkspaceId
     if (
       !isCloud &&
-      !activeWorkspaceId &&
-      teamWorkspaceStore.initState === 'loading'
+      currentUser.value &&
+      !teamWorkspaceStore.activeWorkspaceId &&
+      (teamWorkspaceStore.initState === 'uninitialized' ||
+        teamWorkspaceStore.initState === 'loading')
     ) {
-      return undefined
+      try {
+        await teamWorkspaceStore.initialize()
+      } catch {
+        return undefined
+      }
     }
+
+    const activeWorkspaceId = teamWorkspaceStore.activeWorkspaceId
+    if (!isCloud && currentUser.value && !activeWorkspaceId) return undefined
     if (!activeWorkspaceId) return (await getIdToken()) ?? undefined
     return (
       (await useWorkspaceAuthStore().ensureWorkspaceToken(activeWorkspaceId)) ??

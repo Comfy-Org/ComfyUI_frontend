@@ -308,6 +308,32 @@ describe('ComfyApp', () => {
       vi.spyOn(api, 'dispatchCustomEvent').mockImplementation(() => true)
     }
 
+    it('waits for workspace authentication before submitting the prompt', async () => {
+      prepareEmptyPromptQueue()
+      let resolveToken: (token: string) => void = () => {}
+      mockAuthStore.getWorkspaceAuthToken.mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveToken = resolve
+        })
+      )
+      const queuePrompt = vi
+        .spyOn(api, 'queuePrompt')
+        .mockImplementation(() => {
+          expect(api.authToken).toBe('workspace-token')
+          return Promise.resolve({ prompt_id: 'job-1', error: '' })
+        })
+
+      const submission = app.queuePrompt(0)
+      await vi.waitFor(() =>
+        expect(mockAuthStore.getWorkspaceAuthToken).toHaveBeenCalledOnce()
+      )
+      expect(queuePrompt).not.toHaveBeenCalled()
+
+      resolveToken('workspace-token')
+      await expect(submission).resolves.toBe(true)
+      expect(queuePrompt).toHaveBeenCalledOnce()
+    })
+
     it('shows the error overlay for successful prompt responses with node errors', async () => {
       const graph = new LGraph()
       const workflow = new ComfyWorkflow({

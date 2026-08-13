@@ -137,6 +137,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
   const isSwitching = ref(false)
   const isFetchingWorkspaces = ref(false)
   let identityGeneration = 0
+  let initializationPromise: Promise<void> | null = null
 
   function isStaleIdentity(generation: number): boolean {
     return generation !== identityGeneration
@@ -261,10 +262,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
    * Retries on transient failures with exponential backoff.
    * Call once on app boot.
    */
-  async function initialize(): Promise<void> {
-    if (initState.value !== 'uninitialized' && initState.value !== 'error')
-      return
-
+  async function performInitialization(): Promise<void> {
     const generation = identityGeneration
     initState.value = 'loading'
     isFetchingWorkspaces.value = true
@@ -387,6 +385,25 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
 
     if (isStaleIdentity(generation)) return
     isFetchingWorkspaces.value = false
+  }
+
+  function initialize(): Promise<void> {
+    if (initializationPromise) return initializationPromise
+    if (initState.value !== 'uninitialized' && initState.value !== 'error') {
+      return Promise.resolve()
+    }
+
+    const promise = performInitialization()
+    initializationPromise = promise
+    void promise.then(
+      () => {
+        if (initializationPromise === promise) initializationPromise = null
+      },
+      () => {
+        if (initializationPromise === promise) initializationPromise = null
+      }
+    )
+    return promise
   }
 
   /**
@@ -876,6 +893,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
 
   function resetForIdentityChange(): void {
     identityGeneration++
+    initializationPromise = null
     initState.value = 'uninitialized'
     workspaces.value = []
     activeWorkspaceId.value = null

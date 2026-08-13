@@ -26,6 +26,7 @@ const mockClearWorkspaceContext = vi.fn()
 const mockMintAtLogin = vi.fn().mockResolvedValue(false)
 let mockUnifiedToken: string | null = null
 const mockResetForIdentityChange = vi.fn()
+const mockInitializeWorkspaces = vi.fn().mockResolvedValue(undefined)
 let mockActiveWorkspaceId: string | null = null
 let mockTeamWorkspaceInitState = 'ready'
 
@@ -52,6 +53,7 @@ vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
     get initState() {
       return mockTeamWorkspaceInitState
     },
+    initialize: mockInitializeWorkspaces,
     resetForIdentityChange: mockResetForIdentityChange
   })
 }))
@@ -142,6 +144,7 @@ describe('auth token priority chain', () => {
     mockEnsureWorkspaceAuthHeader.mockResolvedValue(null)
     mockEnsureWorkspaceToken.mockResolvedValue(null)
     mockMintAtLogin.mockResolvedValue(false)
+    mockInitializeWorkspaces.mockResolvedValue(undefined)
     mockApiKeyGetAuthHeader.mockReturnValue(null)
     mockUser.getIdToken.mockResolvedValue('firebase-token')
 
@@ -277,23 +280,47 @@ describe('auth token priority chain', () => {
       expect(mockEnsureWorkspaceToken).toHaveBeenCalledWith('workspace-123')
     })
 
-    it('uses Firebase before workspace initialization', async () => {
+    it('waits for workspace initialization before queue authentication', async () => {
       mockDistributionTypes.isCloud = false
+      mockTeamWorkspaceInitState = 'uninitialized'
+      mockInitializeWorkspaces.mockImplementation(async () => {
+        mockActiveWorkspaceId = 'workspace-123'
+        mockTeamWorkspaceInitState = 'ready'
+      })
+      mockEnsureWorkspaceToken.mockResolvedValue('workspace-raw-token')
 
       await expect(store.getWorkspaceAuthHeader()).resolves.toEqual({
         Authorization: 'Bearer firebase-token'
       })
       await expect(store.getWorkspaceAuthToken()).resolves.toBe(
-        'firebase-token'
+        'workspace-raw-token'
       )
+      expect(mockInitializeWorkspaces).toHaveBeenCalledOnce()
+      expect(mockEnsureWorkspaceToken).toHaveBeenCalledWith('workspace-123')
     })
 
-    it('fails queue authentication closed while workspace selection loads', async () => {
+    it('waits for an in-flight workspace selection before queue authentication', async () => {
       mockDistributionTypes.isCloud = false
       mockTeamWorkspaceInitState = 'loading'
+      mockInitializeWorkspaces.mockImplementation(async () => {
+        mockActiveWorkspaceId = 'workspace-123'
+        mockTeamWorkspaceInitState = 'ready'
+      })
+      mockEnsureWorkspaceToken.mockResolvedValue('workspace-raw-token')
+
+      await expect(store.getWorkspaceAuthToken()).resolves.toBe(
+        'workspace-raw-token'
+      )
+      expect(mockUser.getIdToken).not.toHaveBeenCalled()
+    })
+
+    it('fails queue authentication closed after workspace initialization errors', async () => {
+      mockDistributionTypes.isCloud = false
+      mockTeamWorkspaceInitState = 'error'
 
       await expect(store.getWorkspaceAuthToken()).resolves.toBeUndefined()
       expect(mockUser.getIdToken).not.toHaveBeenCalled()
+      expect(mockEnsureWorkspaceToken).not.toHaveBeenCalled()
     })
   })
 

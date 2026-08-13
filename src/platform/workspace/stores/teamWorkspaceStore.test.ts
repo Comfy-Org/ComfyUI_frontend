@@ -311,6 +311,24 @@ describe('useTeamWorkspaceStore', () => {
       expect(mockWorkspaceApi.list).toHaveBeenCalledTimes(1)
     })
 
+    it('shares an in-flight initialization with concurrent callers', async () => {
+      let resolveList: (value: unknown) => void = () => {}
+      mockWorkspaceApi.list.mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveList = resolve
+        })
+      )
+      const store = useTeamWorkspaceStore()
+
+      const firstInitialization = store.initialize()
+      const secondInitialization = store.initialize()
+      resolveList({ workspaces: [mockPersonalWorkspace] })
+
+      await Promise.all([firstInitialization, secondInitialization])
+      expect(mockWorkspaceApi.list).toHaveBeenCalledOnce()
+      expect(store.initState).toBe('ready')
+    })
+
     it('can retry after initialization fails', async () => {
       mockWorkspaceApi.list.mockResolvedValueOnce({ workspaces: [] })
       const store = useTeamWorkspaceStore()
