@@ -1,6 +1,6 @@
 import fs from 'fs'
 import path from 'path'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import {
   EXPECTED_PROMPT,
@@ -151,10 +151,8 @@ function createOggWithOpusTags(comments: {
   return combined.buffer
 }
 
-afterEach(() => vi.restoreAllMocks())
-
-describe('getOggMetadata', () => {
-  it('extracts workflow and prompt from a real Opus file fixture', async () => {
+describe('OGG/Opus metadata', () => {
+  it('extracts workflow and prompt from an Opus file', async () => {
     const bytes = fs.readFileSync(fixturePath)
     const file = new File([bytes], 'test.opus', { type: 'audio/ogg' })
 
@@ -174,24 +172,77 @@ describe('getOggMetadata', () => {
     expect(result.prompt).toEqual(EXPECTED_PROMPT_NAN_COERCED)
   })
 
-  it('resolves undefined fields when the file reading fails', async () => {
-    const file = new File([new Uint8Array(16)], 'test.ogg', {
+  it('returns undefined fields for non-OGG data', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const file = new File([new Uint8Array(16)], 'fake.ogg', {
       type: 'audio/ogg'
     })
-    vi.spyOn(file, 'slice').mockImplementation(() => {
-      return {
-        arrayBuffer: () => Promise.reject(new Error('File read aborted'))
-      } as unknown as Blob
-    })
 
-    const warnSpy = vi.spyOn(console, 'warn')
     const result = await getOggMetadata(file)
 
-    expect(result).toEqual({ prompt: undefined, workflow: undefined })
+    expect(result.workflow).toBeUndefined()
+    expect(result.prompt).toBeUndefined()
     expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Ogg metadata file read failed:'),
-      expect.any(Error)
+      'Ogg metadata parsing failed: No OpusTags found or invalid Ogg file'
     )
+  })
+
+  it('handles files larger than 4096 bytes without RangeError', async () => {
+    const size = 5000
+    const buf = new Uint8Array(size)
+    const oggs = new TextEncoder().encode('OggS\0')
+    buf.set(oggs, 0)
+    buf.set(oggs, 4500)
+    const file = new File([buf], 'large.ogg', { type: 'audio/ogg' })
+
+    const result = await getOggMetadata(file)
+
+    expect(result.workflow).toBeUndefined()
+    expect(result.prompt).toBeUndefined()
+  })
+
+  it('logs and skips when embedded JSON is malformed', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const buffer = createOggWithOpusTags({
+      prompt: '{not json}',
+      workflow: '{also bad}'
+    })
+    const file = new File([buffer], 'malformed.opus', { type: 'audio/ogg' })
+
+    const result = await getOggMetadata(file)
+
+    expect(result.prompt).toBeUndefined()
+    expect(result.workflow).toBeUndefined()
+    expect(errorSpy).toHaveBeenCalledWith(
+      'Failed to parse Ogg prompt metadata',
+      expect.any(SyntaxError)
+    )
+    expect(errorSpy).toHaveBeenCalledWith(
+      'Failed to parse Ogg workflow metadata',
+      expect.any(SyntaxError)
+    )
+  })
+
+  describe('File reading failure modes', () => {
+    it('resolves undefined fields when the file reading fails', async () => {
+      const file = new File([new Uint8Array(16)], 'test.ogg', {
+        type: 'audio/ogg'
+      })
+      vi.spyOn(file, 'slice').mockImplementation(() => {
+        return {
+          arrayBuffer: () => Promise.reject(new Error('File read aborted'))
+        } as unknown as Blob
+      })
+
+      const warnSpy = vi.spyOn(console, 'warn')
+      const result = await getOggMetadata(file)
+
+      expect(result).toEqual({ prompt: undefined, workflow: undefined })
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Ogg metadata file read failed:'),
+        expect.any(Error)
+      )
+    })
   })
 
   it('resolves undefined when a very large OpusTags packet is truncated at the 2 MB read cap', async () => {
@@ -259,28 +310,6 @@ describe('getOggMetadata', () => {
 
     expect(result.prompt).toEqual(prompt)
     expect(result.workflow).toEqual(workflow)
-  })
-
-  it('logs and skips when embedded JSON is malformed', async () => {
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-    const buffer = createOggWithOpusTags({
-      prompt: '{not json}',
-      workflow: '{also bad}'
-    })
-    const file = new File([buffer], 'malformed.opus', { type: 'audio/ogg' })
-
-    const result = await getOggMetadata(file)
-
-    expect(result.prompt).toBeUndefined()
-    expect(result.workflow).toBeUndefined()
-    expect(errorSpy).toHaveBeenCalledWith(
-      'Failed to parse Ogg prompt metadata',
-      expect.any(SyntaxError)
-    )
-    expect(errorSpy).toHaveBeenCalledWith(
-      'Failed to parse Ogg workflow metadata',
-      expect.any(SyntaxError)
-    )
   })
 
   it('should handle large metadata spanning multiple Ogg pages (over 64KB)', async () => {

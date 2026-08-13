@@ -1,5 +1,4 @@
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
-import { st } from '@/i18n'
 import type { UploadModelSuccess } from '@/platform/assets/composables/useUploadModelWizard'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useAssetsStore } from '@/stores/assetsStore'
@@ -27,8 +26,7 @@ export function getNodeDisplayLabel(
   const node = getNodeByExecutionId(graph, String(nodeId))
   return resolveNodeDisplayName(node, {
     emptyLabel: fallback,
-    untitledLabel: fallback,
-    st
+    untitledLabel: fallback
   })
 }
 

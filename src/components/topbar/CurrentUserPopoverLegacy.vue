@@ -31,7 +31,10 @@
     </div>
 
     <!-- Credits Section -->
-    <div v-if="isActiveSubscription" class="flex items-center gap-2 px-4 py-2">
+    <div
+      v-if="canAccessSubscriptionFeatures"
+      class="flex items-center gap-2 px-4 py-2"
+    >
       <i class="icon-[lucide--component] text-sm text-credit" />
       <Skeleton v-if="isLoading" width="4rem" height="1.25rem" class="w-full" />
       <span v-else class="text-base font-semibold text-base-foreground">{{
@@ -81,7 +84,7 @@
     <Divider class="mx-0 my-2" />
 
     <div
-      v-if="isActiveSubscription"
+      v-if="canAccessSubscriptionFeatures"
       class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
       data-testid="partner-nodes-menu-item"
       @click="handleOpenPartnerNodesInfo"
@@ -111,14 +114,21 @@
     </div>
 
     <div
-      v-if="isActiveSubscription"
+      v-if="canAccessSubscriptionFeatures"
       class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
       data-testid="manage-plan-menu-item"
       @click="handleOpenPlanAndCreditsSettings"
     >
-      <i class="icon-[lucide--file-text] text-sm text-muted-foreground" />
+      <i
+        :class="
+          cn(
+            'size-4 text-muted-foreground',
+            isCloud ? 'icon-[lucide--credit-card]' : 'icon-[lucide--coins]'
+          )
+        "
+      />
       <span class="flex-1 text-sm text-base-foreground">{{
-        $t('subscription.managePlan')
+        planAndCreditsLabel
       }}</span>
     </div>
 
@@ -149,6 +159,7 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import Divider from 'primevue/divider'
 import Skeleton from 'primevue/skeleton'
 import { computed, onMounted } from 'vue'
@@ -179,7 +190,7 @@ const { userDisplayName, userEmail, userPhotoUrl, handleSignOut } =
 const settingsDialog = useSettingsDialog()
 const dialogService = useDialogService()
 const {
-  isActiveSubscription,
+  canAccessSubscriptionFeatures,
   isFreeTier,
   tier,
   subscription,
@@ -190,7 +201,7 @@ const {
 } = useBillingContext()
 const { formatTierName } = useWorkspaceTierLabel()
 const subscriptionDialog = useSubscriptionDialog()
-const { locale } = useI18n()
+const { locale, t } = useI18n()
 
 const subscriptionTierName = computed(() =>
   formatTierName(tier.value, subscription.value?.duration === 'ANNUAL')
@@ -218,6 +229,10 @@ const canUpgrade = computed(() => {
     currentTier === 'CREATOR'
   )
 })
+
+const planAndCreditsLabel = computed(() =>
+  isCloud ? t('subscription.managePlan') : t('credits.credits')
+)
 
 const handleOpenUserSettings = () => {
   settingsDialog.show('user')

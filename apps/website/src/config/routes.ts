@@ -23,6 +23,13 @@ const baseRoutes = {
   contact: '/contact',
   models: '/p/supported-models',
   mcp: '/mcp',
+  minimax: '/minimax-h3',
+  flux3: '/flux-3',
+  seedance: '/seedance-2.5',
+  fdct: '/forward-deployed-creatives',
+  ltx: '/ltx-2.5',
+  wanAnimate2: '/wan-animate-2',
+  wan3: '/wan-3.0',
   brand: '/brand'
 } as const
 
@@ -42,11 +49,15 @@ type Routes = typeof baseRoutes
 // enterpriseMsa: legal-reviewed English-only document (Comfy Enterprise
 // Customer Agreement template), same reasoning. See the comment header
 // in src/pages/enterprise-msa.astro.
+//
+// models: the supported-models catalog only exists at /p/supported-models;
+// there is no /<locale>/p/supported-models page, so a prefixed link 404s.
 const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
   'affiliates',
   'affiliateTerms',
   'termsOfService',
-  'enterpriseMsa'
+  'enterpriseMsa',
+  'models'
 ])
 
 const LOCALE_INVARIANT_PATHS = new Set<string>(

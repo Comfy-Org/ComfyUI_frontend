@@ -1,7 +1,8 @@
 import { debounce } from 'es-toolkit'
 import { defineStore } from 'pinia'
-import { computed, onScopeDispose, ref } from 'vue'
+import { computed, onScopeDispose, ref, watch } from 'vue'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { ModelFile } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import { isCloud } from '@/platform/distribution/types'
@@ -531,6 +532,20 @@ export const useModelStore = defineStore('models', () => {
     reloadAfterScan.cancel()
     unsubscribeModelsScanned()
   })
+
+  const { flags } = useFeatureFlags()
+
+  watch(
+    () => flags.supportsModelTypeTags,
+    () =>
+      usesAssetApi() &&
+      reloadModels().catch((error) => {
+        console.error(
+          'Failed to reload the model library after a capability change',
+          error
+        )
+      })
+  )
 
   return {
     models,
