@@ -125,7 +125,7 @@
             <FreeTierQuota v-if="!isActionbarFloating" />
           </div>
         </div>
-        <ErrorOverlay />
+        <ErrorOverlay v-if="!isActionBarsHidden" />
         <QueueProgressOverlay
           v-if="isQueueProgressOverlayEnabled"
           v-model:expanded="isQueueOverlayExpanded"

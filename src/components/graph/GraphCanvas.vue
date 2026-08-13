@@ -57,7 +57,11 @@
       />
       <MiniMap
         v-if="
-          comfyAppReady && minimapEnabled && betaMenuEnabled && !isBuilderMode
+          comfyAppReady &&
+          minimapEnabled &&
+          betaMenuEnabled &&
+          !isBuilderMode &&
+          !agentNodeSelectionStore.isActive
         "
         class="pointer-events-auto"
       />

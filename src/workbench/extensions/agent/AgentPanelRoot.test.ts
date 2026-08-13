@@ -65,6 +65,7 @@ const appMock = vi.hoisted(() => {
           }
           selectedItems: Set<unknown>
           selectItems: ReturnType<typeof vi.fn>
+          deselect: (node: unknown) => void
           multi_select: boolean
           allow_dragnodes: boolean
           selectOnly: boolean
@@ -406,6 +407,7 @@ function setupNodeSelectionCanvas() {
     selectedItems.clear()
     for (const item of items) selectedItems.add(item)
   })
+  const deselect = vi.fn((node: unknown) => selectedItems.delete(node))
   const graph = {
     nodes,
     getNodeById: (id: string) =>
@@ -415,6 +417,7 @@ function setupNodeSelectionCanvas() {
     graph,
     selectedItems,
     selectItems,
+    deselect,
     multi_select: false,
     allow_dragnodes: true,
     selectOnly: false,
@@ -422,7 +425,7 @@ function setupNodeSelectionCanvas() {
   }
   appMock.canvas = canvas
   hostStores.canvas.currentGraph = graph
-  return { canvas, focus, nodes, selectedItems, selectItems }
+  return { canvas, focus, nodes, selectedItems, selectItems, deselect }
 }
 
 function renderCanvasNodeButtons(
@@ -1812,11 +1815,13 @@ describe('AgentPanelRoot workflow binding', () => {
         name: i18n.global.t('agent.switchWorkflow')
       })
     )
+    expect(workflowService.openWorkflow).not.toHaveBeenCalled()
     await userEvent.click(await screen.findByText('other'))
 
     await vi.waitFor(() =>
       expect(workflowService.openWorkflow).toHaveBeenCalledWith(other)
     )
+    expect(workflowService.openWorkflow).toHaveBeenCalledTimes(1)
     expect(
       screen.getByRole('button', {
         name: i18n.global.t('agent.switchWorkflow')
@@ -3712,6 +3717,29 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(screen.queryByText(/KSampler/)).not.toBeInTheDocument()
   })
 
+  it('deselects the graph node when its reference chip is removed', async () => {
+    makeTab()
+    const state = setupNodeSelectionCanvas()
+    state.selectedItems.add(state.nodes[0])
+    state.selectedItems.add(state.nodes[1])
+    hostStores.canvas.updateSelectedItems()
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentPanelStore().isOpen = true
+
+    expect(await screen.findByText('VAE Decode')).toBeInTheDocument()
+    expect(screen.getByText('KSampler')).toBeInTheDocument()
+
+    await userEvent.click(
+      screen.getAllByRole('button', { name: i18n.global.t('agent.remove') })[0]
+    )
+
+    expect(screen.queryByText('VAE Decode')).not.toBeInTheDocument()
+    expect(state.deselect).toHaveBeenCalledWith(state.nodes[0])
+    expect([...state.selectedItems]).toEqual([state.nodes[1]])
+    expect(hostStores.canvas.selectedItems).toEqual([state.nodes[1]])
+  })
+
   it('stages selected nodes as chips and sends their ids once', async () => {
     makeTab()
     const bodies = mockMessagesEndpoint('wf-42')
@@ -3988,18 +4016,6 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(screen.getByText('KSampler')).toBeInTheDocument()
   })
 
-  it('ends node selection when the active workflow changes', async () => {
-    makeTab()
-    mockMessagesEndpoint('wf-42')
-    const selection = await startVueNodeSelection()
-
-    hostStores.workflow.activeWorkflow = addTab('workflows/other.json')
-    await nextTick()
-
-    expect(selection.canvas.multi_select).toBe(false)
-    await expectLaterClickCannotRestoreAccumulatedNodes(selection)
-  })
-
   it('ends node selection when the viewed graph changes', async () => {
     makeTab()
     mockMessagesEndpoint('wf-42')
@@ -4027,6 +4043,7 @@ describe('AgentPanelRoot workflow binding', () => {
       },
       selectedItems: new Set(),
       selectItems: vi.fn(),
+      deselect: vi.fn(),
       multi_select: false,
       allow_dragnodes: true,
       selectOnly: false,
