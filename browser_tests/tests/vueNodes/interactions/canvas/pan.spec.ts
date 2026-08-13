@@ -128,22 +128,27 @@ test.describe('Vue Nodes Canvas Pan', { tag: '@vue-nodes' }, () => {
         name: 'Native select'
       })
 
-      await node.header.hover()
-      await using mouseRelease = await comfyMouse.hold()
-      await comfyPage.page.mouse.move(500, 500, { steps: 5 })
-      await expect
-        .poll(async () => [
-          ...(await nodeRef.getProperty<[number, number]>('pos'))
-        ])
-        .not.toEqual(positionBeforeDrag)
+      await test.step('Hold and drag the node', async () => {
+        await node.header.hover()
+        await using mouseRelease = await comfyMouse.hold()
+        await comfyPage.page.mouse.move(500, 500, { steps: 5 })
+        await expect
+          .poll(async () => [
+            ...(await nodeRef.getProperty<[number, number]>('pos'))
+          ])
+          .not.toEqual(positionBeforeDrag)
 
-      await select.focus()
-      await using spaceRelease = await comfyPage.keyboard.hold('Space')
+        await test.step('Press Space in the focused native select', async () => {
+          await select.focus()
+          await using spaceRelease = await comfyPage.keyboard.hold('Space')
 
-      await expect(select).toBeFocused()
-      await expect.poll(() => comfyPage.canvasOps.isReadOnly()).toBe(false)
-      await spaceRelease.disposeAsync()
-      await mouseRelease.disposeAsync()
+          await expect(select).toBeFocused()
+          await expect.poll(() => comfyPage.canvasOps.isReadOnly()).toBe(false)
+          await spaceRelease.disposeAsync()
+        })
+
+        await mouseRelease.disposeAsync()
+      })
     }
   )
 
