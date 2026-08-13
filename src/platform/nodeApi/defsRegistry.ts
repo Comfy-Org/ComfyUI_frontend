@@ -582,6 +582,28 @@ const RESERVED_SERIAL_KEYS: ReadonlySet<string> = new Set([
  */
 const frontendResolvers = new Map<string, Resolver>()
 
+/**
+ * Colours packs declared, kept apart from the renderer's own table.
+ *
+ * `colorPaletteService.loadLinkColorPalette` assigns over
+ * `LGraphCanvas.link_type_colors` with every known type mapped to `''`, so a
+ * pack's colour is wiped whenever the user changes theme. Holding the pack's
+ * choice here and re-applying makes it survive; reading from here first makes
+ * `typeColor` answer correctly even in the window before it is re-applied.
+ */
+const packTypeColors = new Map<string, string>()
+
+function applyPackTypeColors(): void {
+  for (const [type, color] of packTypeColors) {
+    LGraphCanvas.link_type_colors[type] = color
+  }
+}
+
+/** Called by the host after it loads a colour palette. */
+export function reapplyPackTypeColors(): void {
+  applyPackTypeColors()
+}
+
 /** Types a pack declared itself, whose prototype behaviour is already installed. */
 const definedTypes = new Set<string>()
 
@@ -774,17 +796,22 @@ export function createDefRegistry(): {
       all: () => Object.freeze([...known.values()]),
       has: (type) => known.has(type),
 
-      typeColor: (type) => getLinkTypeColor(type),
+      typeColor: (type) => packTypeColors.get(type) ?? getLinkTypeColor(type),
 
       setTypeColor(type, color) {
-        if (Object.hasOwn(LGraphCanvas.link_type_colors, type)) {
+        // Loading a palette seeds every backend-registered type to '' — so the
+        // key existing is not the host claiming the colour. Only a non-empty
+        // value is.
+        if (LGraphCanvas.link_type_colors[type]) {
           throw new ComfyApiError(
             `The host already colours '${type}'. A pack may colour a type it ` +
               `introduces, not one it did not.`
           )
         }
-        LGraphCanvas.link_type_colors[type] = color
+        packTypeColors.set(type, color)
+        applyPackTypeColors()
         return () => {
+          packTypeColors.delete(type)
           delete LGraphCanvas.link_type_colors[type]
         }
       },

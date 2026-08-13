@@ -2,6 +2,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph } from '@/lib/litegraph/src/LGraph'
+import { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
@@ -12,7 +13,8 @@ import {
   createDefRegistry,
   deliverPreview,
   frontendResolverMap,
-  frontendSupplierMap
+  frontendSupplierMap,
+  reapplyPackTypeColors
 } from './defsRegistry'
 import type { Comfy } from './comfyApi'
 import type { DefSelector, NodeDefBuilder } from './defsRegistry'
@@ -712,6 +714,34 @@ describe('type colours', () => {
 
     undo()
     expect(api.defs.typeColor('LORA_STACK')).not.toBe('#c9a')
+  })
+
+  it('survives a palette load wiping the table', () => {
+    // loadLinkColorPalette assigns over link_type_colors with every known type
+    // mapped to '', so a pack's colour was erased whenever the user changed
+    // theme. The pack's choice is held apart and re-applied.
+    setActivePinia(createPinia())
+    const api = createComfyApi(() => new LGraph())
+    api.defs.setTypeColor('PIPE_LINE', '#c9a')
+
+    // What the palette service does.
+    Object.assign(LGraphCanvas.link_type_colors, { PIPE_LINE: '' })
+    expect(LGraphCanvas.link_type_colors['PIPE_LINE']).toBe('')
+    reapplyPackTypeColors()
+
+    expect(LGraphCanvas.link_type_colors['PIPE_LINE']).toBe('#c9a')
+    expect(api.defs.typeColor('PIPE_LINE')).toBe('#c9a')
+  })
+
+  it('does not treat a palette-seeded placeholder as the host claiming a type', () => {
+    // The seeding writes '' for every known type, so key existence is not
+    // ownership — only a non-empty value is.
+    setActivePinia(createPinia())
+    const api = createComfyApi(() => new LGraph())
+    Object.assign(LGraphCanvas.link_type_colors, { XYPLOT: '' })
+
+    expect(() => api.defs.setTypeColor('XYPLOT', '#abc')).not.toThrow()
+    expect(api.defs.typeColor('XYPLOT')).toBe('#abc')
   })
 
   it('refuses to recolour a type the host already owns', () => {

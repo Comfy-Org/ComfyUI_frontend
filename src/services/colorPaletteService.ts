@@ -1,3 +1,4 @@
+import { reapplyPackTypeColors } from '@/platform/nodeApi/defsRegistry'
 import { toRaw } from 'vue'
 import { z } from 'zod'
 import { fromZodError } from 'zod-validation-error'
@@ -87,6 +88,10 @@ export const useColorPaletteService = () => {
       linkColorPalette
     )
     Object.assign(LGraphCanvas.link_type_colors, types, linkColorPalette)
+    // The seeding above maps every known type to '', which erases a colour a
+    // pack declared for a type it introduced. Re-apply after, so changing
+    // theme does not silently turn a pack's links grey.
+    reapplyPackTypeColors()
   }
 
   function validThemeProp(
