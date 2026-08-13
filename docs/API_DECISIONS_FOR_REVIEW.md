@@ -719,6 +719,38 @@ serves the actual use case.
 | Replacing core connection validation globally                                   | One pack changing validity for every other pack                                                                                                     | `b.onUnplacedLink` — the moment, not the prototype                                                  |
 | A subscription per node instance                                                | Fails silently: keyed by object, identity dies on undo/reload/subgraph re-entry; keyed by id, the entry is never collected                          | `comfy.onNodeChanged` — one stream, filtered by the pack                                            |
 
+### A refusal must name a mechanism, never a capability
+
+Most refusals in this table are phrased as things a pack **does** — paints the
+node body, hit-tests its own widget, replaces `connectByType`. That phrasing is
+load-bearing, and it is also a trap, because a conversion pass reads "paints the
+node body — REFUSED" and stops without ever asking what the painting was _for_.
+
+Two files were sitting as refusals on exactly that error when this was written:
+
+- **Resolution Master** was refused for painting the node body _and title bar_.
+  What it wants to do is show sliders and readouts on its node, plus a help
+  button and a collapse toggle in the header. The body is `widgets.canvas` —
+  drawing, hit testing, theme and right-click all published. The two header
+  buttons are 18px squares in a 1,218-line drawing file, and they are
+  `node.addBadge({ onClick })`. The pack had already written a
+  `syncVueCompatHeaderControls` path for them. Nothing it wants is unavailable.
+
+- **Visual Fold** was refused for having no way to take a node out of the draw
+  pass. What it wants to do is fold sixty nodes away so the graph is readable,
+  and `node.setCollapsed(true)` is the host's own answer to that.
+
+Neither refusal was wrong about the mechanism. Both were useless as a decision,
+because the thing the user loses is a capability and the thing we refused is a
+technique. So the rule, and the review question that goes with it:
+
+> Refuse the technique, and in the same breath name what the pack was trying to
+> achieve and where that now lives. A refusal with no destination is a bug
+> report against ourselves.
+
+Every row above has a "Published instead" column for this reason. Where that
+column is honestly empty, the row belongs under _Still open_, not here.
+
 **One of these stopped being a refusal, and how is the interesting part.**
 rgthree's headline feature is dropping a context link on a KSampler and having
 `model`, `positive`, `negative` and `latent` all wire at once. It got there by
