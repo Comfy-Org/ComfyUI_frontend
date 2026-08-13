@@ -4,6 +4,7 @@ import { externalLinks, getRoutes } from '../src/config/routes'
 import { creatorReviews } from '../src/data/creatorReviews'
 import { seedancePage } from '../src/data/seedance'
 import { t } from '../src/i18n/translations'
+import type { ModelLaunchCta } from '../src/templates/model-launch/types'
 import { test } from './fixtures/blockExternalMedia'
 import { waitForIsland } from './fixtures/islands'
 
@@ -14,7 +15,11 @@ const MODELS_ROUTE = getRoutes('en').models
 const STEPS_HEADING = t('seedance.steps.heading', 'en')
 const STEPS_SECONDARY = t('seedance.steps.secondaryCta', 'en')
 const STEPS_PRIMARY = t('seedance.steps.primaryCta', 'en')
-const SEEDANCE_RUN = seedancePage.hero.primaryCta.href
+const HERO_PRIMARY_CTA: ModelLaunchCta | undefined =
+  seedancePage.hero.primaryCta
+if (!HERO_PRIMARY_CTA)
+  throw new Error('seedancePage must configure a hero primary CTA')
+const SEEDANCE_RUN: string = HERO_PRIMARY_CTA.href
 const CLOUD_WORKFLOWS_HUB = externalLinks.workflows
 const PROMPT_CTA = t('seedance.hero.promptCta', 'en')
 const COPY_PROMPT = t('modelLaunch.copyPrompt', 'en')
