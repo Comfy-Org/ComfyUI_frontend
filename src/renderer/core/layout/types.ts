@@ -275,5 +275,3 @@ export interface LayoutChange {
   source: LayoutSource
   operation: LayoutOperation
 }
-
-export type LayoutOperationResult = 'applied' | 'no-op'

@@ -1659,11 +1659,7 @@ export class LGraph
     if (existing) return existing === reroute
     if (!registerRerouteChain(this, reroute)) return false
     this.reroutesInternal.set(reroute.id, reroute)
-    if (materializeRerouteLayout(this, reroute) !== 'applied') {
-      this.reroutesInternal.delete(reroute.id)
-      unregisterRerouteChain(reroute)
-      return false
-    }
+    materializeRerouteLayout(this, reroute)
     return true
   }
 

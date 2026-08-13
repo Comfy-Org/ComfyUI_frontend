@@ -21,7 +21,6 @@ import type {
   GroupLayout,
   LayoutChange,
   LayoutOperation,
-  LayoutOperationResult,
   LinkId,
   LinkLayout,
   LinkSegmentLayout,
@@ -779,23 +778,20 @@ class LayoutStore {
   /**
    * Apply a layout operation using Yjs transactions
    */
-  applyOperation(operation: LayoutOperation): LayoutOperationResult {
+  applyOperation(operation: LayoutOperation): void {
     const change = createLayoutChange(operation)
     let applied = false
     this.ydoc.transact(() => {
       applied = this.applyOperationInTransaction(operation, change)
     }, this.currentActor)
-    if (!applied) return 'no-op'
+    if (!applied) return
 
     this.finalizeOperation(change)
-    return 'applied'
   }
 
   /** Applies several operations in one Yjs transaction. */
-  applyOperations(
-    operations: readonly LayoutOperation[]
-  ): LayoutOperationResult {
-    if (operations.length === 0) return 'no-op'
+  applyOperations(operations: readonly LayoutOperation[]): void {
+    if (operations.length === 0) return
 
     const appliedChanges: LayoutChange[] = []
     this.ydoc.transact(() => {
@@ -806,10 +802,8 @@ class LayoutStore {
         }
       }
     }, this.currentActor)
-    if (appliedChanges.length === 0) return 'no-op'
 
     for (const change of appliedChanges) this.finalizeOperation(change)
-    return 'applied'
   }
 
   /**

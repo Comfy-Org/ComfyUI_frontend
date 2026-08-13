@@ -4,12 +4,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { Reroute } from '@/lib/litegraph/src/Reroute'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import type {
-  LayoutOperation,
-  LayoutOperationResult,
-  Point,
-  Size
-} from '@/renderer/core/layout/types'
+import type { LayoutOperation, Point, Size } from '@/renderer/core/layout/types'
 import type { UUID } from '@/utils/uuid'
 
 type GraphLayoutOwner = Pick<
@@ -58,7 +53,7 @@ export function attachNodeLayout(graph: LayoutGraph, node: LGraphNode): void {
 
   const position = { x: node._pos[0], y: node._pos[1] }
   const size = { width: node._size[0], height: node._size[1] }
-  const result = layoutStore.applyOperation({
+  layoutStore.applyOperation({
     ...canvasOperationMeta(),
     entity: 'node',
     graphId,
@@ -73,7 +68,7 @@ export function attachNodeLayout(graph: LayoutGraph, node: LGraphNode): void {
     nodeId: node.id,
     type: 'createNode'
   })
-  if (result === 'applied') adoptNodeAttachment(graphId, node)
+  adoptNodeAttachment(graphId, node)
 }
 
 function adoptNodeAttachment(graphId: UUID, node: LGraphNode): void {
@@ -111,7 +106,7 @@ export function attachGroupLayout(
     return
   }
 
-  const result = layoutStore.applyOperation({
+  layoutStore.applyOperation({
     ...canvasOperationMeta(),
     entity: 'group',
     graphId,
@@ -123,9 +118,7 @@ export function attachGroupLayout(
     },
     type: 'createGroup'
   })
-  if (result === 'applied') {
-    groupAttachments.set(group, { graphId, id: group.id })
-  }
+  groupAttachments.set(group, { graphId, id: group.id })
 }
 
 export function detachGroupLayout(group: LGraphGroup): void {
@@ -146,14 +139,14 @@ export function detachGroupLayout(group: LGraphGroup): void {
 export function materializeRerouteLayout(
   graph: LayoutGraph,
   reroute: Reroute
-): LayoutOperationResult {
+): void {
   const graphId = graph.rootGraph.id
   if (layoutStore.getRerouteLayout(graphId, reroute.id)) {
     rerouteAttachments.set(reroute, { graphId, id: reroute.id })
-    return 'applied'
+    return
   }
 
-  const result = layoutStore.applyOperation({
+  layoutStore.applyOperation({
     ...canvasOperationMeta(),
     entity: 'reroute',
     graphId,
@@ -161,10 +154,7 @@ export function materializeRerouteLayout(
     rerouteId: reroute.id,
     type: 'createReroute'
   })
-  if (result === 'applied') {
-    rerouteAttachments.set(reroute, { graphId, id: reroute.id })
-  }
-  return result
+  rerouteAttachments.set(reroute, { graphId, id: reroute.id })
 }
 
 export function detachRerouteLayout(reroute: Reroute): void {
