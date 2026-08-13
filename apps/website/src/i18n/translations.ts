@@ -593,6 +593,10 @@ const translations = {
     en: 'Track progress in real time over WebSocket. Download the finished output when the job completes.',
     'zh-CN': '通过 WebSocket 实时跟踪进度。作业完成后下载最终输出。'
   },
+  'api.sdk.cta': {
+    en: 'TRY THE COMFY SDK',
+    'zh-CN': '试用 Comfy SDK'
+  },
 
   // API – AutomationSection
   'api.automation.heading': {

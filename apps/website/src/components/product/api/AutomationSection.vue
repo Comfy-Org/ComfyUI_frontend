@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Locale } from '../../../i18n/translations'
 
+import { externalLinks } from '../../../config/routes'
 import { t } from '../../../i18n/translations'
 import FeatureShowcaseSection from '../shared/FeatureShowcaseSection.vue'
 
@@ -22,7 +23,9 @@ const features = [
   {
     title: t('api.automation.feature3.title', locale),
     description: t('api.automation.feature3.description', locale),
-    image: 'https://media.comfy.org/website/api/precision-tools.webp'
+    image: 'https://media.comfy.org/website/api/precision-tools.webp',
+    ctaText: t('api.sdk.cta', locale),
+    ctaHref: externalLinks.docsSdks
   }
 ]
 </script>
