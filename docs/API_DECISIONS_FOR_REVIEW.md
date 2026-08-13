@@ -744,6 +744,38 @@ This is a mechanism we decline, not a feature. Worth stating separately,
 because the two are easy to conflate and the distinction is what keeps the
 refusal list honest.
 
+**A node action another node can invoke.** rgthree nodes declare a static
+`exposedActions` array — "Randomize Each Time", "Reset Crop", "Toggle all" —
+and an async `handleAction(name)`. Its Fast Actions Button reads the array off
+whatever is wired into it, offers the names in a combo, and calls
+`handleAction` on click.
+
+We decline to publish a cross-pack node-action registry. rgthree owns **both
+ends**: every node that declares an action, and the only code that ever calls
+one. Given `node.type` on a handle, which is published, the pack keeps its own
+`Map<type, Record<action, fn>>` module-side and dispatches itself; nothing needs
+host mediation. Publishing an RPC between arbitrary packs' nodes would create a
+new coupling surface — one pack calling into another's node behaviour by string
+— for a feature no second pack in the corpus uses. That is the surface this
+migration exists to remove, not to re-introduce under a new name.
+
+**Property metadata (`Class["@prop"] = { type, values }`).** Refused, and the
+measurement is why rather than the principle. Of rgthree's 24 declarations, 17
+are already no-ops: the property is initialised in the constructor, so
+litegraph's own `info.type ||= typeof this.properties[p]` fallback yields the
+identical type. The remaining 7 carry a `values` list, whose only effect is to
+make the legacy properties dialog render a dropdown instead of a free-text box
+— and in Nodes 2.0 there is no consumer at all: `'Properties'` and
+`'Properties Panel'` are both in `HARD_BLACKLIST` in `contextMenuConverter.ts`,
+and no Vue property editor exists.
+
+So the honest reading is that this is a validation feature wearing a rendering
+feature's clothes, and the validation is already served better than it was:
+`onPropertyChanged`'s `event.setValue()` clamps an illegal value to a legal one,
+where litegraph only ever offered a veto. Revisit if a properties panel ships;
+until then, declaring metadata for a renderer that does not exist is the kind of
+speculative surface we are meant to refuse.
+
 ### Still open, and honest about it
 
 - **Localized slot names (21).** Probably smaller than recorded: `executionUtil`
