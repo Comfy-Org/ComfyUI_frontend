@@ -62,7 +62,7 @@ describe('useWorkflowTemplateSelectorDialog', () => {
       )
     })
 
-    it('defaults to "basics-getting-started" category for new users', () => {
+    it('defaults to "popular" category for new users', () => {
       mockNewUserService.isNewUser.mockReturnValue(true)
 
       const dialog = useWorkflowTemplateSelectorDialog()
@@ -70,9 +70,7 @@ describe('useWorkflowTemplateSelectorDialog', () => {
 
       expect(mockDialogService.showLayoutDialog).toHaveBeenCalledWith(
         expect.objectContaining({
-          props: expect.objectContaining({
-            initialCategory: 'basics-getting-started'
-          })
+          props: expect.objectContaining({ initialCategory: 'popular' })
         })
       )
     })
