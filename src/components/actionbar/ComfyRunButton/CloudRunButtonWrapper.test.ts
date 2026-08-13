@@ -131,6 +131,66 @@ describe('CloudRunButtonWrapper', () => {
     expect(screen.queryByTestId('queue-button')).not.toBeInTheDocument()
   })
 
+  it('refreshes stale billing state on focus and restores Run', async () => {
+    mockCanRunWorkflows.value = false
+    mockBillingStatus.value = 'inactive'
+    state.fetchStatus.mockImplementationOnce(async () => {
+      mockBillingStatus.value = 'paid'
+      mockCanRunWorkflows.value = true
+    })
+    renderWrapper()
+
+    window.dispatchEvent(new Event('focus'))
+
+    await waitFor(() => {
+      expect(state.fetchStatus).toHaveBeenCalledOnce()
+      expect(state.fetchBalance).toHaveBeenCalledOnce()
+      expect(screen.getByRole('button', { name: 'Run' })).toBeInTheDocument()
+    })
+  })
+
+  it('refreshes stale billing state when the app becomes visible', async () => {
+    const visibilityState = vi
+      .spyOn(document, 'visibilityState', 'get')
+      .mockReturnValue('visible')
+    mockCanRunWorkflows.value = false
+    mockBillingStatus.value = 'inactive'
+    renderWrapper()
+
+    document.dispatchEvent(new Event('visibilitychange'))
+
+    await waitFor(() => {
+      expect(state.fetchStatus).toHaveBeenCalledOnce()
+      expect(state.fetchBalance).toHaveBeenCalledOnce()
+    })
+    visibilityState.mockRestore()
+  })
+
+  it('deduplicates simultaneous focus and visibility refreshes', async () => {
+    let resolveRefresh!: () => void
+    const refresh = new Promise<void>((resolve) => {
+      resolveRefresh = resolve
+    })
+    const visibilityState = vi
+      .spyOn(document, 'visibilityState', 'get')
+      .mockReturnValue('visible')
+    mockCanRunWorkflows.value = false
+    mockBillingStatus.value = 'inactive'
+    state.fetchStatus.mockReturnValueOnce(refresh)
+    state.fetchBalance.mockReturnValueOnce(refresh)
+    renderWrapper()
+
+    window.dispatchEvent(new Event('focus'))
+    document.dispatchEvent(new Event('visibilitychange'))
+
+    expect(state.fetchStatus).toHaveBeenCalledOnce()
+    expect(state.fetchBalance).toHaveBeenCalledOnce()
+
+    resolveRefresh()
+    await refresh
+    visibilityState.mockRestore()
+  })
+
   it('unlocks the run button once the subscription becomes active again', async () => {
     mockCanRunWorkflows.value = false
     renderWrapper()

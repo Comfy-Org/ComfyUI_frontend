@@ -35,6 +35,7 @@ const dialogStore = useDialogStore()
 const { toastErrorHandler } = useErrorHandling()
 const isUpdatingPayment = ref(false)
 let paymentPortalRequest: Promise<void> | null = null
+let billingRefreshRequest: Promise<void> | null = null
 let isUnmounted = false
 let refreshBillingOnFocus = false
 
@@ -42,10 +43,27 @@ onUnmounted(() => {
   isUnmounted = true
 })
 
-useEventListener(window, 'focus', () => {
-  if (!refreshBillingOnFocus) return
+function refreshStaleBillingState() {
+  if (
+    billingRefreshRequest ||
+    (!refreshBillingOnFocus && !showsSubscribeToRunPrompt.value)
+  ) {
+    return
+  }
+
   refreshBillingOnFocus = false
-  void Promise.allSettled([fetchStatus(), fetchBalance()])
+  billingRefreshRequest = Promise.allSettled([
+    fetchStatus(),
+    fetchBalance()
+  ]).then(() => undefined)
+  void billingRefreshRequest.finally(() => {
+    billingRefreshRequest = null
+  })
+}
+
+useEventListener(window, 'focus', refreshStaleBillingState)
+useEventListener(document, 'visibilitychange', () => {
+  if (document.visibilityState === 'visible') refreshStaleBillingState()
 })
 
 const paymentRecoveryLock = computed<'owner' | 'member' | null>(() =>
