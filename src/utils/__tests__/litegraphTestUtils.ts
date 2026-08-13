@@ -23,6 +23,30 @@ import type { LinkId } from '@/types/linkId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 
+export class StubPath2D {
+  calls: Array<{ method: string; args: unknown[] }> = []
+
+  moveTo(...args: unknown[]): void {
+    this.calls.push({ method: 'moveTo', args })
+  }
+
+  lineTo(...args: unknown[]): void {
+    this.calls.push({ method: 'lineTo', args })
+  }
+
+  bezierCurveTo(...args: unknown[]): void {
+    this.calls.push({ method: 'bezierCurveTo', args })
+  }
+
+  quadraticCurveTo(...args: unknown[]): void {
+    this.calls.push({ method: 'quadraticCurveTo', args })
+  }
+
+  arc(...args: unknown[]): void {
+    this.calls.push({ method: 'arc', args })
+  }
+}
+
 /**
  * Creates a mock LGraphNode with minimal required properties
  */
@@ -379,17 +403,18 @@ export function createTestLink(
 ): LLink {
   const linkId = toLinkId(Number(graph.state.lastLinkId) + 1)
   graph.state.lastLinkId = linkId
+  const output = sourceNode.outputs[outputSlot]
   const link = new LLink(
     linkId,
-    sourceNode.outputs[outputSlot].type,
+    output.type,
     sourceNode.id,
     outputSlot,
     targetNode.id,
     inputSlot
   )
   graph._links.set(linkId, link)
-  sourceNode.outputs[outputSlot].links ??= []
-  sourceNode.outputs[outputSlot].links!.push(linkId)
+  output.links ??= []
+  output.links.push(linkId)
   targetNode.inputs[inputSlot].link = linkId
   return link
 }

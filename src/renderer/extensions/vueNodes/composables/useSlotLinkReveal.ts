@@ -1,16 +1,22 @@
 import { onScopeDispose } from 'vue'
 
-import { setRevealedLinks } from '@/renderer/core/canvas/links/linkVisibilityState'
+import {
+  addRevealedLinks,
+  removeRevealedLinks
+} from '@/renderer/core/canvas/links/linkRevealState'
 import { app } from '@/scripts/app'
+import type { LinkId } from '@/types/linkId'
 import type { NodeId } from '@/types/nodeId'
 
-interface SlotNoodlePreviewOptions {
+interface SlotLinkRevealOptions {
   nodeId?: NodeId
   index: number
   type: 'input' | 'output'
 }
 
-export function useSlotNoodlePreview(options: SlotNoodlePreviewOptions) {
+export function useSlotLinkReveal(options: SlotLinkRevealOptions) {
+  let ownedLinkIds: ReadonlySet<LinkId> = new Set()
+
   function hiddenLinkIds() {
     const graph = app.canvas?.graph
     if (!graph || options.nodeId === undefined) return []
@@ -27,15 +33,17 @@ export function useSlotNoodlePreview(options: SlotNoodlePreviewOptions) {
       .map((link) => link.id)
   }
 
-  function revealNoodles(): void {
-    if (setRevealedLinks(hiddenLinkIds())) app.canvas?.setDirty(false, true)
+  function revealLinks(): void {
+    ownedLinkIds = new Set(hiddenLinkIds())
+    if (addRevealedLinks(ownedLinkIds)) app.canvas?.setDirty(false, true)
   }
 
-  function hideNoodles(): void {
-    if (setRevealedLinks([])) app.canvas?.setDirty(false, true)
+  function unrevealLinks(): void {
+    if (removeRevealedLinks(ownedLinkIds)) app.canvas?.setDirty(false, true)
+    ownedLinkIds = new Set()
   }
 
-  onScopeDispose(hideNoodles)
+  onScopeDispose(unrevealLinks)
 
-  return { revealNoodles, hideNoodles }
+  return { revealLinks, unrevealLinks }
 }

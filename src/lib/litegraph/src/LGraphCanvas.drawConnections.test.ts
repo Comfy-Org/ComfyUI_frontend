@@ -11,11 +11,12 @@ import type { LLink } from '@/lib/litegraph/src/LLink'
 import {
   isLinkRevealed,
   setRevealedLinks
-} from '@/renderer/core/canvas/links/linkVisibilityState'
+} from '@/renderer/core/canvas/links/linkRevealState'
 import {
-  createMockCanvas2DContext,
+  createMockCanvasRenderingContext2D,
   createTestCanvas,
-  createTestLink
+  createTestLink,
+  StubPath2D
 } from '@/utils/__tests__/litegraphTestUtils'
 
 vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
@@ -34,33 +35,13 @@ vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
 }))
 
 function createMockCtx(): CanvasRenderingContext2D {
-  return createMockCanvas2DContext({
-    translate: vi.fn(),
-    scale: vi.fn(),
-    fillText: vi.fn(),
-    measureText: vi.fn().mockReturnValue({ width: 50 }),
-    closePath: vi.fn(),
-    rect: vi.fn(),
-    clip: vi.fn(),
-    setTransform: vi.fn(),
-    roundRect: vi.fn(),
-    getTransform: vi
-      .fn()
-      .mockReturnValue({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }),
+  return createMockCanvasRenderingContext2D({
     createLinearGradient: vi.fn().mockReturnValue({
       addColorStop: vi.fn()
     }),
     bezierCurveTo: vi.fn(),
     quadraticCurveTo: vi.fn(),
-    isPointInStroke: vi.fn().mockReturnValue(false),
-    globalAlpha: 1,
-    textAlign: 'left' as CanvasTextAlign,
-    textBaseline: 'alphabetic' as CanvasTextBaseline,
-    shadowColor: '',
-    shadowBlur: 0,
-    shadowOffsetX: 0,
-    shadowOffsetY: 0,
-    imageSmoothingEnabled: true
+    isPointInStroke: vi.fn().mockReturnValue(false)
   })
 }
 
@@ -246,6 +227,25 @@ describe('drawConnections hidden links', () => {
     expect(isLinkRevealed(link.id)).toBe(false)
   })
 
+  it('does not reveal an occluded badge', () => {
+    const link = createHiddenLink()
+    canvas.drawConnections(createMockCtx())
+    const badge = canvas.linkBadgeFrameState.hitAreas[0]
+    const source = graph.getNodeById(link.origin_id)
+    if (!source) throw new Error('Missing hidden link source node')
+    vi.spyOn(graph, 'getNodeOnPos').mockReturnValue(source)
+
+    canvas.processMouseMove(
+      new PointerEvent('pointermove', {
+        clientX: badge.x + badge.width / 2,
+        clientY: badge.y + badge.height / 2,
+        isPrimary: false
+      })
+    )
+
+    expect(isLinkRevealed(link.id)).toBe(false)
+  })
+
   it('opens rename from a badge double-click', () => {
     const link = createHiddenLink()
     canvas.drawConnections(createMockCtx())
@@ -273,6 +273,34 @@ describe('drawConnections hidden links', () => {
     expect(link.label).toBe('Checkpoint')
   })
 
+  it('pans when dragging from a badge', () => {
+    createHiddenLink()
+    canvas.drawConnections(createMockCtx())
+    const badge = canvas.linkBadgeFrameState.hitAreas[0]
+    const event = new PointerEvent('pointerdown', {
+      button: 0,
+      clientX: badge.x + badge.width / 2,
+      clientY: badge.y + badge.height / 2,
+      isPrimary: false
+    })
+
+    canvas.processMouseDown(event)
+    canvas.pointer.onDragStart?.(canvas.pointer)
+
+    expect(canvas.dragging_canvas).toBe(true)
+    canvas.pointer.finally?.()
+    expect(canvas.dragging_canvas).toBe(false)
+  })
+
+  it('clears revealed links when the graph changes', () => {
+    const link = createHiddenLink()
+    setRevealedLinks([link.id])
+
+    canvas.setGraph(new LGraph())
+
+    expect(isLinkRevealed(link.id)).toBe(false)
+  })
+
   it('suppresses reroutes until the full routed link is revealed', () => {
     const link = createHiddenLink()
     const reroute = graph.createReroute([225, 150], link)
@@ -287,15 +315,7 @@ describe('drawConnections hidden links', () => {
     expect(drawReroute).not.toHaveBeenCalled()
     expect(renderLink).not.toHaveBeenCalled()
 
-    vi.stubGlobal(
-      'Path2D',
-      class {
-        moveTo(): void {}
-        lineTo(): void {}
-        bezierCurveTo(): void {}
-        quadraticCurveTo(): void {}
-      }
-    )
+    vi.stubGlobal('Path2D', StubPath2D)
     setRevealedLinks([link.id])
     canvas.drawConnections(createMockCtx())
 

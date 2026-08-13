@@ -64,7 +64,10 @@ describe('getCanvasContextMenuTarget', () => {
     isPointInStroke = vi.fn(() => false)
     canvas = {
       graph,
-      ctx: fromAny({ lineWidth: 3, isPointInStroke }),
+      ctx: fromPartial<CanvasRenderingContext2D>({
+        lineWidth: 3,
+        isPointInStroke
+      }),
       linkBadgeFrameState: { hitAreas: [], pendingBadges: [] },
       connections_width: 3,
       links_render_mode: LinkRenderType.SPLINE_LINK,
@@ -86,7 +89,10 @@ describe('getCanvasContextMenuTarget', () => {
   })
 
   it('resolves a reroute from the layout store without the positional fallback', () => {
+    const reroute = { id: 9 }
     mockQueryRerouteAtPoint.mockReturnValue({ id: 9 })
+    graph.getReroute.mockReturnValue(reroute)
+    canvas.renderedPaths.add(reroute)
 
     const target = resolve()
 
@@ -184,7 +190,10 @@ describe('getCanvasContextMenuTarget', () => {
   })
 
   it('gives a reroute precedence over a link at the same point', () => {
+    const reroute = { id: 9 }
     mockQueryRerouteAtPoint.mockReturnValue({ id: 9 })
+    graph.getReroute.mockReturnValue(reroute)
+    canvas.renderedPaths.add(reroute)
     mockQueryLinkSegmentAtPoint.mockReturnValue({
       linkId: toLinkId(4),
       rerouteId: toRerouteId(9)
@@ -195,6 +204,31 @@ describe('getCanvasContextMenuTarget', () => {
     expect(target.reroute).toEqual({ id: 9 })
     expect(target.link).toBeUndefined()
     expect(mockQueryLinkSegmentAtPoint).not.toHaveBeenCalled()
+  })
+
+  it('ignores a non-rendered layout reroute and resolves the badge beneath it', () => {
+    const reroute = { id: 9 }
+    const link = { id: toLinkId(5), hidden: true }
+    mockQueryRerouteAtPoint.mockReturnValue({ id: 9 })
+    graph.getReroute.mockReturnValue(reroute)
+    graph.getLink.mockReturnValue(link)
+    canvas.linkBadgeFrameState.hitAreas.push({
+      linkId: link.id,
+      x: 5,
+      y: 15,
+      width: 20,
+      height: 10
+    })
+
+    const target = resolve()
+
+    expect(target.reroute).toBeUndefined()
+    expect(target.link).toBe(link)
+    expect(graph.getRerouteOnPos).toHaveBeenCalledWith(
+      10,
+      20,
+      canvas._visibleReroutes
+    )
   })
 
   it('skips reroute detection when links are hidden', () => {

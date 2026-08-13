@@ -1,6 +1,6 @@
 import { textOnColor } from '@/utils/colorUtil'
 
-import type { Point } from '../interfaces'
+import type { Point, Rect } from '../interfaces'
 import { LGraphBadge } from '../LGraphBadge'
 import type { LinkId, LLink } from '../LLink'
 
@@ -20,6 +20,7 @@ interface BadgeHitArea {
 }
 
 interface BadgeLayout {
+  linkId: LinkId
   badge: LGraphBadge
   color: string
   width: number
@@ -67,6 +68,7 @@ export function queryLinkBadgeAtPoint(
 export function linkBadgeText(link: Pick<LLink, 'label' | 'type'>): string {
   const label = link.label?.trim()
   if (label) return label
+  if (typeof link.type === 'number') return '*'
   return String(link.type ?? '') || '*'
 }
 
@@ -96,7 +98,7 @@ function overlapsBadge(
 }
 
 function freeBadgeCenterY(
-  state: LinkBadgeFrameState,
+  hitAreas: readonly BadgeHitArea[],
   left: number,
   desiredCenterY: number,
   width: number
@@ -105,7 +107,7 @@ function freeBadgeCenterY(
   let overlappingArea: BadgeHitArea | undefined
   do {
     const top = centerY - BADGE_HEIGHT / 2
-    overlappingArea = state.hitAreas.find((area) =>
+    overlappingArea = hitAreas.find((area) =>
       overlapsBadge(left, top, width, area)
     )
     if (overlappingArea) {
@@ -119,20 +121,19 @@ function freeBadgeCenterY(
   return centerY
 }
 
-function recordHitArea(
-  state: LinkBadgeFrameState,
+function createHitArea(
   linkId: LinkId,
   left: number,
   centerY: number,
   width: number
-): void {
-  state.hitAreas.push({
+): BadgeHitArea {
+  return {
     linkId,
     x: left,
     y: centerY - BADGE_HEIGHT / 2,
     width,
     height: BADGE_HEIGHT
-  })
+  }
 }
 
 function layoutHiddenLinkBadges(
@@ -150,19 +151,29 @@ function layoutHiddenLinkBadges(
   const [outputSocketX, outputSocketY] = startPos
   const outputBadgeX = outputSocketX + BADGE_GAP
   const outputBadgeY = freeBadgeCenterY(
-    state,
+    state.hitAreas,
     outputBadgeX,
     outputSocketY,
     width
   )
-  recordHitArea(state, link.id, outputBadgeX, outputBadgeY, width)
+  const outputHitArea = createHitArea(
+    link.id,
+    outputBadgeX,
+    outputBadgeY,
+    width
+  )
 
   const [inputSocketX, inputSocketY] = endPos
   const inputBadgeX = inputSocketX - BADGE_GAP - width
-  const inputBadgeY = freeBadgeCenterY(state, inputBadgeX, inputSocketY, width)
-  recordHitArea(state, link.id, inputBadgeX, inputBadgeY, width)
+  const inputBadgeY = freeBadgeCenterY(
+    [...state.hitAreas, outputHitArea],
+    inputBadgeX,
+    inputSocketY,
+    width
+  )
 
   return {
+    linkId: link.id,
     badge,
     color,
     width,
@@ -173,6 +184,54 @@ function layoutHiddenLinkBadges(
     inputBadgeX,
     inputBadgeY
   }
+}
+
+function getBadgeHitAreas(layout: BadgeLayout): [BadgeHitArea, BadgeHitArea] {
+  return [
+    createHitArea(
+      layout.linkId,
+      layout.outputBadgeX,
+      layout.outputBadgeY,
+      layout.width
+    ),
+    createHitArea(
+      layout.linkId,
+      layout.inputBadgeX,
+      layout.inputBadgeY,
+      layout.width
+    )
+  ]
+}
+
+export function getHiddenLinkBadgeBounds(
+  state: LinkBadgeFrameState,
+  ctx: CanvasRenderingContext2D,
+  link: LLink,
+  connectionPoints: readonly Point[],
+  color: string
+): Rect {
+  const layout = layoutHiddenLinkBadges(
+    state,
+    ctx,
+    link,
+    connectionPoints[0],
+    connectionPoints[connectionPoints.length - 1],
+    color
+  )
+  const hitAreas = getBadgeHitAreas(layout)
+  let left = Math.min(...connectionPoints.map(([x]) => x))
+  let top = Math.min(...connectionPoints.map(([, y]) => y))
+  let right = Math.max(...connectionPoints.map(([x]) => x))
+  let bottom = Math.max(...connectionPoints.map(([, y]) => y))
+
+  for (const area of hitAreas) {
+    left = Math.min(left, area.x)
+    top = Math.min(top, area.y)
+    right = Math.max(right, area.x + area.width)
+    bottom = Math.max(bottom, area.y + area.height)
+  }
+
+  return [left, top, right - left, bottom - top]
 }
 
 function drawConnector(
@@ -239,6 +298,7 @@ export function enqueueHiddenLinkBadges(
     endPos,
     color
   )
+  state.hitAreas.push(...getBadgeHitAreas(layout))
   state.pendingBadges.push(layout)
   return {
     outputTip: [layout.outputBadgeX + layout.width, layout.outputBadgeY],

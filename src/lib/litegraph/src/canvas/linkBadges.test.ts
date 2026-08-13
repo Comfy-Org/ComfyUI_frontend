@@ -2,29 +2,25 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { LLink } from '@/lib/litegraph/src/LLink'
 import { toLinkId } from '@/types/linkId'
-import { createMockCanvas2DContext } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 
 import {
   clearLinkBadgeFrameState,
   createLinkBadgeFrameState,
   drawPendingLinkBadges,
   enqueueHiddenLinkBadges,
+  getHiddenLinkBadgeBounds,
   linkBadgeText,
   queryLinkBadgeAtPoint
 } from './linkBadges'
 
 function createContext(): CanvasRenderingContext2D {
-  return createMockCanvas2DContext({
-    font: '',
-    textAlign: 'left' as CanvasTextAlign,
-    textBaseline: 'alphabetic' as CanvasTextBaseline,
-    measureText: vi.fn().mockReturnValue({ width: 50 } as TextMetrics),
-    roundRect: vi.fn(),
-    fillText: vi.fn()
+  return createMockCanvasRenderingContext2D({
+    measureText: vi.fn().mockReturnValue({ width: 50 } as TextMetrics)
   })
 }
 
-function createLink(id: number, type: string = 'MODEL'): LLink {
+function createLink(id: number, type: LLink['type'] = 'MODEL'): LLink {
   return new LLink(toLinkId(id), type, 4, 0, 5, 0)
 }
 
@@ -42,6 +38,10 @@ describe('linkBadgeText', () => {
 
   it('falls back to an asterisk for a typeless link', () => {
     expect(linkBadgeText(createLink(1, ''))).toBe('*')
+  })
+
+  it('falls back to an asterisk for a numeric link type', () => {
+    expect(linkBadgeText(createLink(1, -1))).toBe('*')
   })
 })
 
@@ -61,10 +61,10 @@ describe('link badge frame layout', () => {
     expect(queryLinkBadgeAtPoint(state, 120, 100)).toBe(toLinkId(7))
     expect(queryLinkBadgeAtPoint(state, 360, 200)).toBe(toLinkId(7))
     expect(queryLinkBadgeAtPoint(state, 250, 150)).toBeUndefined()
-    expect(tips?.outputTip[0]).toBeGreaterThan(100)
-    expect(tips?.outputTip[1]).toBe(100)
-    expect(tips?.inputTip[0]).toBeLessThan(400)
-    expect(tips?.inputTip[1]).toBe(200)
+    expect(tips.outputTip[0]).toBeGreaterThan(100)
+    expect(tips.outputTip[1]).toBe(100)
+    expect(tips.inputTip[0]).toBeLessThan(400)
+    expect(tips.inputTip[1]).toBe(200)
   })
 
   it('clears hit areas and pending paint between frames', () => {
@@ -146,7 +146,10 @@ describe('link badge frame layout', () => {
       '#cab8ff'
     )
 
-    const outputAreas = state.hitAreas.filter((area) => area.x > 100)
+    const outputAreas = state.hitAreas.filter((area) => {
+      const centerX = area.x + area.width / 2
+      return Math.abs(centerX - 100) < Math.abs(centerX - 400)
+    })
     const bands = [1, 2, 3].map((id) => {
       const area = outputAreas.find((area) => area.linkId === toLinkId(id))
       if (!area) throw new Error(`Missing output badge for link ${id}`)
@@ -160,6 +163,35 @@ describe('link badge frame layout', () => {
     expect(overlaps(bands[0], bands[1])).toBe(false)
     expect(overlaps(bands[0], bands[2])).toBe(false)
     expect(overlaps(bands[1], bands[2])).toBe(false)
+  })
+
+  it('includes reversed and stacked badge extents in hidden link bounds', () => {
+    const state = createLinkBadgeFrameState()
+    const ctx = createContext()
+    enqueueHiddenLinkBadges(
+      state,
+      ctx,
+      createLink(1),
+      [400, 100],
+      [100, 100],
+      '#cab8ff'
+    )
+
+    const bounds = getHiddenLinkBadgeBounds(
+      state,
+      ctx,
+      createLink(2),
+      [
+        [400, 100],
+        [100, 100]
+      ],
+      '#cab8ff'
+    )
+
+    expect(bounds[0]).toBeLessThan(100)
+    expect(bounds[0] + bounds[2]).toBeGreaterThan(400)
+    expect(bounds[1] + bounds[3]).toBeGreaterThan(100)
+    expect(state.hitAreas).toHaveLength(2)
   })
 
   it('defers badge painting until the frame flush', () => {

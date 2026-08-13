@@ -91,6 +91,7 @@ import type {
   ISerialisedNode,
   Serialisable,
   SerialisableGraph,
+  SerialisableLLink,
   SerialisableReroute
 } from './types/serialisation'
 import { getAllNestedItems } from './utils/collections'
@@ -169,7 +170,7 @@ export interface GraphAddOptions {
 export interface LGraphExtra extends Dictionary<unknown> {
   reroutes?: SerialisableReroute[]
   linkExtensions?: { id: LinkId; parentId: RerouteId | undefined }[]
-  linkVisibility?: Record<string, { hidden?: boolean; label?: string }>
+  linkVisibility?: Record<string, Pick<SerialisableLLink, 'hidden' | 'label'>>
   ds?: DragAndScaleState
   workflowRendererVersion?: RendererType
 }

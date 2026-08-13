@@ -30,7 +30,7 @@ function queryVisibleLinkAtPoint(
       return layoutLink
     }
 
-    const dpi = Math.max(window?.devicePixelRatio ?? 1, 1)
+    const dpi = Math.max(window.devicePixelRatio ?? 1, 1)
     for (const segment of renderedPaths) {
       if (
         !segment.path ||
@@ -67,14 +67,16 @@ export function getCanvasContextMenuTarget(
   let link: LLink | undefined
   if (canvas.links_render_mode !== LinkRenderType.HIDDEN_LINK) {
     const layoutHit = layoutStore.queryRerouteAtPoint({ x, y })
-    reroute = layoutHit
-      ? graph.getReroute(layoutHit.id)
-      : graph.getRerouteOnPos(
-          x,
-          y,
-          (canvas as unknown as { _visibleReroutes: Iterable<Reroute> })
-            ._visibleReroutes
-        )
+    const layoutReroute = layoutHit ? graph.getReroute(layoutHit.id) : undefined
+    reroute =
+      layoutReroute && canvas.renderedPaths.has(layoutReroute)
+        ? layoutReroute
+        : graph.getRerouteOnPos(
+            x,
+            y,
+            (canvas as unknown as { _visibleReroutes: Iterable<Reroute> })
+              ._visibleReroutes
+          )
 
     if (!reroute) {
       const badgeLinkId = queryLinkBadgeAtPoint(

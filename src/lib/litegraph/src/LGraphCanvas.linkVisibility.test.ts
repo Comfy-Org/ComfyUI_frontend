@@ -39,6 +39,8 @@ describe('LGraphCanvas link visibility interactions', () => {
   let menuOptions: IContextMenuOptions<string> = {}
 
   beforeEach(() => {
+    menuValues = []
+    menuOptions = {}
     setActivePinia(createTestingPinia())
     graph = new LGraph()
     canvas = createTestCanvas(

@@ -4,8 +4,8 @@
     v-else
     v-tooltip.right="tooltipConfig"
     :class="slotWrapperClass"
-    @pointerenter="revealNoodles"
-    @pointerleave="hideNoodles"
+    @pointerenter="revealLinks"
+    @pointerleave="unrevealLinks"
   >
     <div class="relative flex h-full min-w-0 items-center">
       <!-- Slot Name -->
@@ -43,7 +43,7 @@ import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { useSlotElementTracking } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
-import { useSlotNoodlePreview } from '@/renderer/extensions/vueNodes/composables/useSlotNoodlePreview'
+import { useSlotLinkReveal } from '@/renderer/extensions/vueNodes/composables/useSlotLinkReveal'
 import { cn } from '@comfyorg/tailwind-utils'
 import type { NodeId } from '@/types/nodeId'
 
@@ -141,7 +141,7 @@ const { onPointerDown } = useSlotLinkInteraction({
   type: 'output'
 })
 
-const { revealNoodles, hideNoodles } = useSlotNoodlePreview({
+const { revealLinks, unrevealLinks } = useSlotLinkReveal({
   nodeId: props.nodeId,
   index: props.index,
   type: 'output'

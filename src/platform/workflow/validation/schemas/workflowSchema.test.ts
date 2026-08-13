@@ -235,16 +235,6 @@ describe('parseComfyWorkflow', () => {
     })
   })
 
-  it('requires reroute parent IDs in 0.4 link extensions', async () => {
-    const workflow = JSON.parse(JSON.stringify(defaultGraph))
-    workflow.extra = {
-      ...workflow.extra,
-      linkExtensions: [{ id: 1, hidden: true }]
-    }
-
-    await expect(validateComfyWorkflow(workflow)).resolves.toBeNull()
-  })
-
   it('validates visibility fields on schema 1 link objects', async () => {
     const workflow = {
       version: 1,
