@@ -16,7 +16,10 @@ const REVIEWS_HEADING = t('wanAnimate2.reviews.heading', 'en')
 const HIGHLIGHT_CTA = t('wanAnimate2.reviews.highlightCta', 'en')
 const MCP_ROUTE = getRoutes('en').mcp
 const FIRST_REVIEW = creatorReviews[0]
-const WORKFLOW_URL = wanAnimate2Page.hero.primaryCta!.href
+const HERO_PRIMARY_CTA = wanAnimate2Page.hero.primaryCta
+if (!HERO_PRIMARY_CTA)
+  throw new Error('wanAnimate2Page must configure a hero primary CTA')
+const WORKFLOW_URL = HERO_PRIMARY_CTA.href
 
 test.describe('Wan Animate 2 page — desktop @smoke', () => {
   test.beforeEach(async ({ page }) => {

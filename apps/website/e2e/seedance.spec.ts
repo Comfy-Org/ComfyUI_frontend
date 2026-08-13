@@ -14,7 +14,10 @@ const MODELS_ROUTE = getRoutes('en').models
 const STEPS_HEADING = t('seedance.steps.heading', 'en')
 const STEPS_SECONDARY = t('seedance.steps.secondaryCta', 'en')
 const STEPS_PRIMARY = t('seedance.steps.primaryCta', 'en')
-const SEEDANCE_RUN = seedancePage.hero.primaryCta!.href
+const HERO_PRIMARY_CTA = seedancePage.hero.primaryCta
+if (!HERO_PRIMARY_CTA)
+  throw new Error('seedancePage must configure a hero primary CTA')
+const SEEDANCE_RUN = HERO_PRIMARY_CTA.href
 const CLOUD_WORKFLOWS_HUB = externalLinks.workflows
 const PROMPT_CTA = t('seedance.hero.promptCta', 'en')
 const COPY_PROMPT = t('modelLaunch.copyPrompt', 'en')

@@ -28,6 +28,10 @@ const BADGE_KEYS = ltxPage.hero.badgeKeys ?? []
 const GALLERY = ltxPage.gallery
 if (!GALLERY) throw new Error('ltxPage must configure a gallery')
 
+const HERO_PRIMARY_CTA = ltxPage.hero.primaryCta
+if (!HERO_PRIMARY_CTA)
+  throw new Error('ltxPage must configure a hero primary CTA')
+
 test.describe('LTX 2.5 page — desktop @smoke', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto(PATH)
@@ -96,7 +100,7 @@ test.describe('LTX 2.5 page — link targets', () => {
     const runCta = hero.getByRole('link', {
       name: t('ltx.hero.primaryCta', 'en')
     })
-    await expect(runCta).toHaveAttribute('href', ltxPage.hero.primaryCta!.href)
+    await expect(runCta).toHaveAttribute('href', HERO_PRIMARY_CTA.href)
     await expect(runCta).toHaveAttribute('href', LTX_RUN_TEMPLATE)
     await expect(runCta).toHaveAttribute('target', '_blank')
 
