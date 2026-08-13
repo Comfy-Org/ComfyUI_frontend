@@ -9,8 +9,8 @@ import { wanAnimate2Page } from '../../data/wanAnimate2'
 import { wan3Page } from '../../data/wan3'
 import type { TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
-import { DEFAULT_SECTION_ORDER } from './types';
-import type { ModelLaunchPage } from './types';
+import { DEFAULT_SECTION_ORDER } from './types'
+import type { ModelLaunchPage } from './types'
 
 // Add every new launch-page config here so it inherits these checks.
 const pages: { name: string; page: ModelLaunchPage }[] = [
