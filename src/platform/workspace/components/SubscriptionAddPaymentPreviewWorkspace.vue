@@ -108,6 +108,32 @@
           )
         "
       >
+        <div
+          v-if="previewData?.discounts?.length"
+          class="flex flex-col gap-2 pb-2 text-sm"
+        >
+          <div
+            v-for="discount in previewData.discounts"
+            :key="`${discount.kind}:${discount.code}`"
+            class="flex items-center justify-between text-muted-foreground"
+          >
+            <span>{{
+              $t(`subscription.preview.discount.${discount.kind}`)
+            }}</span>
+            <span>
+              {{ discount.name || discount.code
+              }}<template v-if="discount.amount_off_cents">
+                · −{{
+                  formatQuoteMoney(
+                    discount.amount_off_cents,
+                    previewData?.currency,
+                    locale
+                  )
+                }}</template
+              >
+            </span>
+          </div>
+        </div>
         <div class="flex items-center justify-between text-base">
           <span class="text-base-foreground">
             {{ $t('subscription.preview.totalDueToday') }}
@@ -120,49 +146,45 @@
           {{ renewalTerms }}
         </span>
       </div>
-      <div
-        v-if="previewData?.discounts?.length"
-        class="flex flex-col gap-2 pt-4 text-sm"
-      >
-        <div
-          v-for="discount in previewData.discounts"
-          :key="`${discount.kind}:${discount.code}`"
-          class="flex items-center justify-between text-muted-foreground"
-        >
-          <span>{{
-            $t(`subscription.preview.discount.${discount.kind}`)
-          }}</span>
-          <span class="text-base-foreground">
-            {{ discount.name || discount.code
-            }}<template v-if="discount.amount_off_cents">
-              · −{{
-                formatQuoteMoney(
-                  discount.amount_off_cents,
-                  previewData?.currency,
-                  locale
-                )
-              }}</template
-            >
-          </span>
-        </div>
-      </div>
-      <div class="flex gap-2 pt-6">
-        <input
-          v-model="promotionCode"
-          :aria-label="$t('subscription.preview.promoCodePlaceholder')"
-          :disabled="interactionLocked"
-          class="h-10 min-w-0 flex-1 rounded-lg border border-interface-stroke bg-secondary-background px-3 text-base-foreground"
-          :placeholder="$t('subscription.preview.promoCodePlaceholder')"
-          @input="invalidateEditedPromotion"
-        />
+      <div class="pt-6">
         <Button
+          v-if="!isPromoFieldOpen"
           variant="secondary"
           size="lg"
           :disabled="interactionLocked"
-          @click="$emit('applyPromotionCode', promotionCode)"
+          @click="openPromoField"
         >
-          {{ $t('subscription.preview.applyPromoCode') }}
+          {{ $t('subscription.preview.addPromoCode') }}
         </Button>
+        <div v-else class="flex gap-2">
+          <input
+            ref="promoInputRef"
+            v-model="promotionCode"
+            :aria-label="$t('subscription.preview.promoCodePlaceholder')"
+            :disabled="interactionLocked"
+            class="h-10 min-w-0 flex-1 rounded-lg border border-interface-stroke bg-secondary-background px-3 text-base-foreground"
+            :placeholder="$t('subscription.preview.promoCodePlaceholder')"
+            @input="invalidateEditedPromotion"
+          />
+          <Button
+            v-if="isAppliedCode"
+            variant="secondary"
+            size="lg"
+            :disabled="interactionLocked"
+            @click="clearPromotionCode"
+          >
+            {{ $t('subscription.preview.removePromoCode') }}
+          </Button>
+          <Button
+            v-else
+            variant="secondary"
+            size="lg"
+            :disabled="interactionLocked"
+            @click="$emit('applyPromotionCode', promotionCode)"
+          >
+            {{ $t('subscription.preview.applyPromoCode') }}
+          </Button>
+        </div>
       </div>
       <!-- Saved method: no capture column; a card row with a change
            affordance stands in for the form. -->
@@ -348,7 +370,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -490,8 +512,28 @@ watch(
   () => previewData?.promotion_code,
   (code) => {
     promotionCode.value = code ?? ''
+    if (code) isPromoFieldOpen.value = true
   }
 )
+
+const isPromoFieldOpen = ref(Boolean(previewData?.promotion_code))
+const promoInputRef = ref<HTMLInputElement>()
+
+const isAppliedCode = computed(
+  () =>
+    Boolean(previewData?.promotion_code) &&
+    promotionCode.value === previewData?.promotion_code
+)
+
+function openPromoField() {
+  isPromoFieldOpen.value = true
+  void nextTick(() => promoInputRef.value?.focus())
+}
+
+function clearPromotionCode() {
+  isPromoFieldOpen.value = false
+  emit('applyPromotionCode', '')
+}
 
 function invalidateEditedPromotion() {
   if (promotionCode.value !== (previewData?.promotion_code ?? '')) {
