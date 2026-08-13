@@ -768,13 +768,19 @@ describe('LGraphNode', () => {
       expect(out[3]).toBe(LiteGraph.NODE_TITLE_HEIGHT)
     })
 
-    test('Vue mode uses this.size directly for collapsed nodes', () => {
+    test('Vue mode measures collapsed content without replacing requested size', () => {
+      const graph = new LGraph()
+      graph.add(node)
+      layoutStore.reportContentSize(graph.rootGraph.id, node.id, {
+        width: 90,
+        height: 0
+      })
       LiteGraph.vueNodesMode = true
       node.measure(out)
 
-      // Vue mode collapsed takes the expanded-style branch
-      expect(out[2]).toBe(150)
-      expect(out[3]).toBe(10 + LiteGraph.NODE_TITLE_HEIGHT)
+      expect(out[2]).toBe(90)
+      expect(out[3]).toBe(LiteGraph.NODE_TITLE_HEIGHT)
+      expect(node.serialize().size).toEqual([150, 10])
     })
 
     test('Vue mode expanded behaves identically to legacy expanded', () => {
@@ -1051,6 +1057,33 @@ describe('layout geometry projection', () => {
       position: { x: 50, y: 60 },
       size: { width: 200, height: 120 }
     })
+  })
+
+  test('uses measured size for geometry without serializing it', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.size = [100, 50]
+    graph.add(node)
+    layoutStore.reportContentSize(graph.rootGraph.id, node.id, {
+      width: 225,
+      height: 80
+    })
+
+    expect([...node.size]).toEqual([225, 80])
+    expect(node.serialize().size).toEqual([100, 50])
+
+    node.setSize([node.size[0] + 90, node.size[1] + 100])
+
+    expect([...node.renderingSize]).toEqual([315, 180])
+    const bounds: Rect = [0, 0, 0, 0]
+    node.measure(bounds)
+    expect(bounds).toEqual([
+      node.pos[0],
+      node.pos[1] - LiteGraph.NODE_TITLE_HEIGHT,
+      315,
+      180 + LiteGraph.NODE_TITLE_HEIGHT
+    ])
+    expect(node.serialize().size).toEqual([315, 180])
   })
 })
 
