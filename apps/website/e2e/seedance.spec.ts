@@ -151,9 +151,8 @@ test.describe('Seedance 2.5 page — link targets', () => {
     })
     await gallery.scrollIntoViewIfNeeded()
 
-    // Five of the six cards carry a prompt. The world cup card is waiting on its
-    // re-render prompt, so this becomes six when that lands.
-    const EXPECTED_PROMPTS = 5
+    // All six cards carry a prompt.
+    const EXPECTED_PROMPTS = 6
 
     const prompts = gallery.getByTestId('gallery-card-prompt')
     await expect(prompts).toHaveCount(EXPECTED_PROMPTS)
