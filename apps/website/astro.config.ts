@@ -27,6 +27,9 @@ export default defineConfig({
   site: 'https://comfy.org',
   output: 'static',
   prefetch: { prefetchAll: true },
+  // Astro 7 changed the compressHTML default to JSX-style whitespace stripping.
+  // Keep the v6 HTML-aware behavior so inline spacing across the site is unchanged.
+  compressHTML: true,
   // Keep MDX punctuation verbatim; SmartyPants would turn the source's straight
   // quotes into curly ones and drift from the rest of the site's copy.
   markdown: { smartypants: false },
