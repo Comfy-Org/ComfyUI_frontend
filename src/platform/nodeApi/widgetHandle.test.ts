@@ -671,6 +671,43 @@ describe('mounted and canvas widgets', () => {
       expect(event.defaultPrevented).toBe(false)
     })
 
+    it('holds a value, so a drawn control need not be two widgets', () => {
+      // Without this a drawn control that stores something is a hidden value
+      // widget plus a surface, and two widgets cannot occupy the one position
+      // the original had — which moved rgthree's Power Puter chip row below its
+      // code box to keep the saved array intact.
+      const draw = vi.fn()
+      node.serialize_widgets = true
+      widgets.canvas({
+        name: 'chips',
+        height: 40,
+        defaultValue: ['LATENT'],
+        serialize: true,
+        draw
+      })
+
+      expect(draw.mock.calls[0][3]?.get()).toEqual(['LATENT'])
+      expect(node.serialize().widgets_values).toEqual([['LATENT']])
+    })
+
+    it('redraws when the value changes underneath it', () => {
+      // A workflow load writes the value with nothing else touching the
+      // drawing, which has no other way to notice.
+      const draw = vi.fn()
+      const plot = widgets.canvas({
+        name: 'chips',
+        height: 40,
+        defaultValue: ['LATENT'],
+        draw
+      })
+      const before = draw.mock.calls.length
+
+      plot.widget.setValue(['IMAGE'])
+
+      expect(draw.mock.calls.length).toBeGreaterThan(before)
+      expect(draw.mock.calls.at(-1)![3]?.get()).toEqual(['IMAGE'])
+    })
+
     it('re-reads the theme on every draw, so a switch needs nothing', () => {
       // We told packs to draw; a widget that hardcodes its palette looks wrong
       // the moment the user switches theme, and the alternative they reach for
