@@ -22,6 +22,18 @@ interface RefreshRemoteConfigOptions {
 }
 
 let refreshGeneration = 0
+const activeRefreshControllers = new Set<AbortController>()
+
+export function invalidateRemoteConfig(): void {
+  refreshGeneration++
+  for (const controller of activeRefreshControllers) controller.abort()
+  activeRefreshControllers.clear()
+  window.__CONFIG__ = {}
+  remoteConfig.value = {}
+  remoteConfigErrorStatus.value = null
+  remoteConfigState.value = 'unloaded'
+  cachedLegacyBillingMigrationEnabled.value = undefined
+}
 
 async function fetchRemoteConfig(
   useAuth: boolean,
@@ -49,6 +61,7 @@ export async function refreshRemoteConfig(
   const { useAuth = true, signal } = options
   const generation = ++refreshGeneration
   const controller = new AbortController()
+  activeRefreshControllers.add(controller)
   const abort = () => controller.abort()
   signal?.addEventListener('abort', abort, { once: true })
   if (signal?.aborted) abort()
@@ -105,5 +118,6 @@ export async function refreshRemoteConfig(
   } finally {
     clearTimeout(timeoutId)
     signal?.removeEventListener('abort', abort)
+    activeRefreshControllers.delete(controller)
   }
 }
