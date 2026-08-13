@@ -19,7 +19,12 @@ export function deriveApiMembers(dir = DIR) {
     if (!file.endsWith('.ts') || file.endsWith('.test.ts')) continue
     const source = readFileSync(join(dir, file), 'utf8')
     for (const [, body] of source.matchAll(
-      /export interface \w+[^{]*\{([\s\S]*?)\n\}/g
+      // Not just `export interface`: a type reachable through a published
+      // method's return value is part of the surface whether or not its NAME
+      // is exported. Several were un-exported to satisfy knip, which silently
+      // dropped their members and made the conformance check reject correct
+      // conversions using them.
+      /(?:export )?interface \w+[^{]*\{([\s\S]*?)\n\}/g
     )) {
       for (const line of body.split('\n')) {
         // `<` matters: a generic signature like `getProperty<T>(key)` was
