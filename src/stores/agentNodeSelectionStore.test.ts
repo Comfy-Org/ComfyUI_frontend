@@ -66,4 +66,24 @@ describe('agentNodeSelectionStore', () => {
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
     expect(store.isActive).toBe(false)
   })
+
+  it('keeps node selections scoped to their workflow while loading', () => {
+    const store = useAgentNodeSelectionStore()
+
+    store.saveNodeIds('workflows/first.json', ['9', '12'])
+    store.beginWorkflowLoad()
+    store.saveNodeIds('workflows/second.json', ['20'])
+
+    expect(store.isLoadingWorkflow).toBe(true)
+    expect(store.nodeIds('workflows/first.json')).toEqual(['9', '12'])
+    expect(store.nodeIds('workflows/second.json')).toEqual(['20'])
+
+    store.restoreNodeIds(['20'])
+    expect(store.restoredNodeIds).toEqual(['20'])
+
+    store.finishWorkflowLoad()
+
+    expect(store.isLoadingWorkflow).toBe(false)
+    expect(store.restoredNodeIds).toBeNull()
+  })
 })

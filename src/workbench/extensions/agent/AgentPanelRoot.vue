@@ -115,6 +115,7 @@ const {
 } = useCanvasSelection({
   selection: selectedNodes,
   isLive: () => agentPanelStore.isOpen,
+  isPaused: () => agentNodeSelectionStore.isLoadingWorkflow,
   scope: () => workflowStore.activeWorkflow?.path ?? null,
   dismissedSignature: dismissedSelectionSignature
 })
@@ -807,8 +808,21 @@ let restoreSelectOnly: boolean | undefined
 watch(
   () => canvasStore.selectedItems,
   (items) => {
-    if (!selectingNodes) return
     const nodes = items.filter(isLGraphNode)
+    if (agentNodeSelectionStore.restoredNodeIds !== null) {
+      selectedGraphNodes = new Map(
+        nodes.map((node) => [String(node.id), node] as const)
+      )
+      agentNodeSelectionStore.finishWorkflowLoad()
+      return
+    }
+    if (!agentNodeSelectionStore.isLoadingWorkflow) {
+      agentNodeSelectionStore.saveNodeIds(
+        workflowStore.activeWorkflow?.path,
+        nodes.map((node) => String(node.id))
+      )
+    }
+    if (!selectingNodes || agentNodeSelectionStore.isLoadingWorkflow) return
     const currentNodes = new Map(
       nodes.map((node) => [String(node.id), node] as const)
     )
@@ -856,8 +870,22 @@ watch(
 )
 
 watch(
+  () => agentNodeSelectionStore.restoredNodeIds,
+  (nodeIds) => {
+    if (nodeIds === null) return
+    selectedGraphNodes = new Map(
+      [...(app.canvas?.selectedItems ?? [])]
+        .filter(isLGraphNode)
+        .map((node) => [String(node.id), node] as const)
+    )
+  }
+)
+
+watch(
   [() => workflowStore.activeWorkflow?.path, () => canvasStore.currentGraph],
-  () => exitNodeSelectionMode()
+  () => {
+    if (!agentNodeSelectionStore.isLoadingWorkflow) exitNodeSelectionMode()
+  }
 )
 
 function onSelectNodes(): void {

@@ -17,6 +17,9 @@ export const useAgentNodeSelectionStore = defineStore(
     const isActive = ref(false)
     const isActionBarsHidden = ref(false)
     const isBannerVisible = ref(false)
+    const isLoadingWorkflow = ref(false)
+    const restoredNodeIds = ref<string[] | null>(null)
+    const nodeIdsByWorkflow = ref<Record<string, string[]>>({})
     let transitionTimeoutId: ReturnType<typeof setTimeout> | undefined
     let sidebarTimeoutId: ReturnType<typeof setTimeout> | undefined
     let restoreSidebarTabId: string | null = null
@@ -59,6 +62,34 @@ export const useAgentNodeSelectionStore = defineStore(
       isActive.value = false
     }
 
+    function saveNodeIds(
+      workflowPath: string | undefined,
+      ids: string[]
+    ): void {
+      if (!workflowPath) return
+      nodeIdsByWorkflow.value = {
+        ...nodeIdsByWorkflow.value,
+        [workflowPath]: ids
+      }
+    }
+
+    function nodeIds(workflowPath: string | undefined): string[] {
+      return workflowPath ? (nodeIdsByWorkflow.value[workflowPath] ?? []) : []
+    }
+
+    function beginWorkflowLoad(): void {
+      isLoadingWorkflow.value = true
+    }
+
+    function restoreNodeIds(ids: string[]): void {
+      restoredNodeIds.value = ids
+    }
+
+    function finishWorkflowLoad(): void {
+      restoredNodeIds.value = null
+      isLoadingWorkflow.value = false
+    }
+
     useEventListener(window, 'keydown', (event: KeyboardEvent) => {
       if (
         isActive.value &&
@@ -73,8 +104,15 @@ export const useAgentNodeSelectionStore = defineStore(
       isActive,
       isActionBarsHidden,
       isBannerVisible,
+      isLoadingWorkflow,
+      restoredNodeIds,
       enter,
-      exit
+      exit,
+      saveNodeIds,
+      nodeIds,
+      beginWorkflowLoad,
+      restoreNodeIds,
+      finishWorkflowLoad
     }
   }
 )
