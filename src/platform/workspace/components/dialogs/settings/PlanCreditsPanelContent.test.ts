@@ -8,16 +8,7 @@ import enMessages from '@/locales/en/main.json'
 
 import PlanCreditsPanelContent from './PlanCreditsPanelContent.vue'
 
-const mockWorkspaceState = vi.hoisted(() => ({ personal: true }))
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    get isInPersonalWorkspace() {
-      return mockWorkspaceState.personal
-    }
-  })
-}))
-
-const refreshSpy = vi.hoisted(() => vi.fn())
+const refreshSpy = vi.fn()
 
 const stubs = {
   SubscriptionPanelContentWorkspace: {
@@ -31,8 +22,7 @@ const stubs = {
   }
 }
 
-function renderPanel({ personal = true } = {}) {
-  mockWorkspaceState.personal = personal
+function renderPanel() {
   const i18n = createI18n({
     legacy: false,
     locale: 'en',
@@ -59,10 +49,13 @@ describe('PlanCreditsPanelContent', () => {
     await waitFor(() => expect(refreshSpy).toHaveBeenCalledTimes(1))
   })
 
-  it('hides the Activity tab for team workspaces', () => {
-    renderPanel({ personal: false })
-    expect(screen.getByRole('button', { name: 'Credits' })).toBeTruthy()
-    expect(screen.queryByRole('button', { name: 'Activity' })).toBeNull()
-    expect(screen.getByTestId('credits-body')).toBeTruthy()
+  it('reloads the table each time the Activity tab is reopened', async () => {
+    refreshSpy.mockClear()
+    renderPanel()
+    await userEvent.click(screen.getByRole('button', { name: 'Activity' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Credits' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Activity' }))
+    await waitFor(() => expect(refreshSpy).toHaveBeenCalledTimes(2))
+    expect(screen.getByTestId('usage-logs')).toBeTruthy()
   })
 })

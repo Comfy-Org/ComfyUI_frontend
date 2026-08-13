@@ -9,7 +9,7 @@
           :key="tab.key"
           :variant="activeView === tab.key ? 'secondary' : 'muted-textonly'"
           size="lg"
-          @click="requestedView = tab.key"
+          @click="activeView = tab.key"
         >
           {{ tab.label }}
         </Button>
@@ -28,36 +28,22 @@ import { useI18n } from 'vue-i18n'
 import UsageLogsTable from '@/components/dialog/content/setting/UsageLogsTable.vue'
 import Button from '@/components/ui/button/Button.vue'
 import SubscriptionPanelContentWorkspace from '@/platform/workspace/components/SubscriptionPanelContentWorkspace.vue'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 type View = 'overview' | 'activity'
 
 const { t } = useI18n()
 
-const workspaceStore = useTeamWorkspaceStore()
-
-// Stopgap until FE-1249 wires the per-workspace usage API: personal
-// workspaces reuse the usage-log table local users already have, and team
-// workspaces hide the tab instead of showing the designed ledger empty
-// (WorkspaceActivityContent returns with the real data).
+// Stopgap until FE-1249 wires the per-workspace usage API: the Activity tab
+// reuses the usage-log table local users already have (WorkspaceActivityContent
+// returns with the real ledger data).
 // The owner-only Invoices tab is added by FE-1245, which owns the
 // next-invoice banner + Stripe portal link that fill it.
 const tabs = computed<{ key: View; label: string }[]>(() => [
   { key: 'overview', label: t('workspacePanel.planCredits.tabs.overview') },
-  ...(workspaceStore.isInPersonalWorkspace
-    ? [
-        {
-          key: 'activity' as View,
-          label: t('workspacePanel.planCredits.tabs.activity')
-        }
-      ]
-    : [])
+  { key: 'activity', label: t('workspacePanel.planCredits.tabs.activity') }
 ])
 
-const requestedView = ref<View>('overview')
-const activeView = computed<View>(() =>
-  workspaceStore.isInPersonalWorkspace ? requestedView.value : 'overview'
-)
+const activeView = ref<View>('overview')
 
 const usageLogsTable = useTemplateRef('usageLogsTable')
 watch(usageLogsTable, (table) => {
