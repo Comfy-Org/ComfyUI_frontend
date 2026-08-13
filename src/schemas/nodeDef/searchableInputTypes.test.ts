@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { resolveInputType } from '@/core/graph/widgets/dynamicTypes'
+import { collectSearchableInputTypes } from '@/schemas/nodeDef/searchableInputTypes'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type {
   ComfyInputsSpec,
@@ -19,7 +19,7 @@ function toV2(spec: InputSpec) {
   return transformInputSpecV1ToV2(spec, { name: 'input' })
 }
 
-describe('resolveInputType', () => {
+describe('collectSearchableInputTypes', () => {
   describe('COMFY_DYNAMICCOMBO_V3', () => {
     it('resolves concrete types from option inputs', () => {
       const spec = dynamicCombo([
@@ -27,7 +27,10 @@ describe('resolveInputType', () => {
         { key: 'text', inputs: { required: { prompt: ['STRING', {}] } } }
       ])
 
-      expect(resolveInputType(toV2(spec))).toEqual(['IMAGE', 'STRING'])
+      expect(collectSearchableInputTypes(toV2(spec))).toEqual([
+        'IMAGE',
+        'STRING'
+      ])
     })
 
     it('preserves types when options reuse the same input name', () => {
@@ -36,7 +39,10 @@ describe('resolveInputType', () => {
         { key: 'b', inputs: { required: { value: ['STRING', {}] } } }
       ])
 
-      expect(resolveInputType(toV2(spec))).toEqual(['IMAGE', 'STRING'])
+      expect(collectSearchableInputTypes(toV2(spec))).toEqual([
+        'IMAGE',
+        'STRING'
+      ])
     })
 
     it('includes both required and optional inputs', () => {
@@ -50,7 +56,7 @@ describe('resolveInputType', () => {
         }
       ])
 
-      expect(resolveInputType(toV2(spec))).toEqual(['IMAGE', 'MASK'])
+      expect(collectSearchableInputTypes(toV2(spec))).toEqual(['IMAGE', 'MASK'])
     })
 
     it('resolves types through a nested Autogrow input', () => {
@@ -68,7 +74,7 @@ describe('resolveInputType', () => {
         }
       ])
 
-      expect(resolveInputType(toV2(spec))).toEqual(['IMAGE'])
+      expect(collectSearchableInputTypes(toV2(spec))).toEqual(['IMAGE'])
     })
 
     it('resolves types through a nested DynamicCombo', () => {
@@ -79,7 +85,7 @@ describe('resolveInputType', () => {
         { key: 'outer', inputs: { required: { mode: inner } } }
       ])
 
-      expect(resolveInputType(toV2(spec))).toEqual(['LATENT'])
+      expect(collectSearchableInputTypes(toV2(spec))).toEqual(['LATENT'])
     })
 
     it('resolves allowed types through a nested MatchType', () => {
@@ -97,7 +103,10 @@ describe('resolveInputType', () => {
         }
       ])
 
-      expect(resolveInputType(toV2(spec))).toEqual(['LATENT', 'MASK'])
+      expect(collectSearchableInputTypes(toV2(spec))).toEqual([
+        'LATENT',
+        'MASK'
+      ])
     })
 
     it('returns no types for a malformed spec', () => {
@@ -106,7 +115,7 @@ describe('resolveInputType', () => {
         { options: [{ key: 'missing-inputs' }] }
       ]
 
-      expect(resolveInputType(toV2(spec))).toEqual([])
+      expect(collectSearchableInputTypes(toV2(spec))).toEqual([])
     })
   })
 })

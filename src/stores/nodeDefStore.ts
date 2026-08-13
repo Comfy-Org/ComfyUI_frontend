@@ -6,7 +6,7 @@ import { computed, ref, watchEffect } from 'vue'
 import { t } from '@/i18n'
 import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
-import { resolveInputType } from '@/core/graph/widgets/dynamicTypes'
+import { collectSearchableInputTypes } from '@/schemas/nodeDef/searchableInputTypes'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { transformNodeDefV1ToV2 } from '@/schemas/nodeDef/migration'
@@ -178,7 +178,9 @@ export class ComfyNodeDefImpl
 
     // Initialize node source
     this.nodeSource = getNodeSource(obj.python_module, this.essentials_category)
-    this.inputTypes = uniq(Object.values(this.inputs).flatMap(resolveInputType))
+    this.inputTypes = uniq(
+      Object.values(this.inputs).flatMap(collectSearchableInputTypes)
+    )
   }
 
   get nodePath(): string {
