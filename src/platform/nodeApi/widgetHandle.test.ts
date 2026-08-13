@@ -597,6 +597,52 @@ describe('mounted and canvas widgets', () => {
       return canvas
     }
 
+    it('lays out at the height it reserved, whatever the pixel ratio', () => {
+      // The backing store is scaled by devicePixelRatio so the drawing is
+      // sharp. A <canvas> with no CSS height lays out at its height ATTRIBUTE,
+      // so scaling that alone makes the widget render `ratio` times too tall —
+      // 600px of chrome for a 300px comparer on any retina display. Worse, the
+      // omitted-height path then reads that back through clientHeight and the
+      // ResizeObserver drives it up again on every pass.
+      const original = globalThis.devicePixelRatio
+      Object.defineProperty(globalThis, 'devicePixelRatio', {
+        value: 2,
+        configurable: true
+      })
+      try {
+        const canvas = mountedCanvas({ height: 300 })
+
+        expect(canvas.style.height).toBe('300px')
+        expect(canvas.height).toBe(600)
+      } finally {
+        Object.defineProperty(globalThis, 'devicePixelRatio', {
+          value: original,
+          configurable: true
+        })
+      }
+    })
+
+    it('never takes its height from the element it just resized', () => {
+      // With no CSS height a <canvas> lays out at its height ATTRIBUTE — the
+      // backing store, already multiplied by the pixel ratio. Reading that back
+      // grows the widget by `ratio` on every redraw, and the ResizeObserver
+      // makes it a loop. The height has to come from the container instead.
+      const plot = widgets.canvas({ name: 'free', draw: () => {} })
+      const mounted = node.widgets!.at(-1) as unknown as {
+        element?: HTMLElement
+      }
+      const canvas = mounted.element!.querySelector('canvas')!
+      Object.defineProperty(canvas, 'clientHeight', {
+        get: () => 9999,
+        configurable: true
+      })
+
+      plot.redraw()
+
+      expect(canvas.height).not.toBe(9999)
+      expect(canvas.style.height).not.toBe('9999px')
+    })
+
     it('reports pointer position in the units draw uses', () => {
       // A hit test written against the drawing has to work unchanged — that is
       // the whole point of keeping the drawing and moving only the surface.
