@@ -18,7 +18,8 @@
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { Size } from '@/lib/litegraph/src/interfaces'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { getLinkTypeColor } from '@/utils/litegraphUtil'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 
 import { ComfyApiError } from './errors'
@@ -391,6 +392,28 @@ export interface DefRegistry {
    * Refreshing is not free: it refetches every definition. Call it after a
    * change the user made, not on a timer.
    */
+  /**
+   * The colour links and slots of a type are drawn in.
+   *
+   * A pack matching the theme in its own DOM — a legend, a chip, a preview —
+   * read `LGraphCanvas.link_type_colors` for this. Reading a design token to
+   * match is the opposite of drawing your own front end, so it is published;
+   * the table itself is not.
+   */
+  typeColor(type: string): string
+  /**
+   * Declares the colour for a data type this pack introduces.
+   *
+   * Packs shipping their own types — `PIPE_LINE`, `LORA_STACK`, `XYPLOT` —
+   * wrote straight into `LGraphCanvas.link_type_colors` so their links were
+   * not all grey.
+   *
+   * Refuses a type the host already colours. That write is global: one pack
+   * recolouring `IMAGE` restyles every graph for every other pack and the
+   * user has no way to see who did it. Colouring a type you brought is
+   * additive; colouring one you did not is not yours to decide.
+   */
+  setTypeColor(type: string, color: string): Unsubscribe
   refresh(): Promise<void>
   /**
    * Node definitions were reloaded — by this pack, another pack, or the user.
@@ -750,6 +773,21 @@ export function createDefRegistry(): {
       get: (type) => known.get(type),
       all: () => Object.freeze([...known.values()]),
       has: (type) => known.has(type),
+
+      typeColor: (type) => getLinkTypeColor(type),
+
+      setTypeColor(type, color) {
+        if (Object.hasOwn(LGraphCanvas.link_type_colors, type)) {
+          throw new ComfyApiError(
+            `The host already colours '${type}'. A pack may colour a type it ` +
+              `introduces, not one it did not.`
+          )
+        }
+        LGraphCanvas.link_type_colors[type] = color
+        return () => {
+          delete LGraphCanvas.link_type_colors[type]
+        }
+      },
 
       refresh: () => refreshDefs(),
       onRefreshed: onDefsRefreshed,
