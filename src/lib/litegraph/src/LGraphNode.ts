@@ -3142,8 +3142,12 @@ export class LGraphNode
         output.type === LiteGraph.EVENT &&
         !LiteGraph.allow_multi_output_for_events
       ) {
+        // Balanced here rather than left for connectSlots to close: that only
+        // worked while its afterChange was unconditional, which is the bug
+        // above. Nesting is fine — the tracker counts.
         graph.beforeChange()
         this.disconnectOutput(slot)
+        graph.afterChange()
       }
     }
 
@@ -3208,9 +3212,18 @@ export class LGraphNode
       return null
 
     const replacingLink = inputLink(graph, inputNode.id, inputIndex)
-    if (replacingLink) {
-      graph.beforeChange()
-    }
+
+    // Everything below mutates, and everything above returns without touching
+    // anything, so this is where the undo transaction starts. It must open
+    // unconditionally: `afterChange` at the end of this method always ran, so
+    // connecting to an EMPTY input closed a transaction that was never opened.
+    // ChangeTracker.afterChange is `if (!--this.changeCount)`, with no floor —
+    // one such connection drove the count to -1, and from then on no
+    // before/after pair could ever return it to zero. Undo stopped grouping for
+    // the rest of the session, and `graph.batch()` started producing more undo
+    // steps rather than one, because a count of 0 mid-batch no longer suppressed
+    // the per-mutation captures.
+    graph.beforeChange()
 
     const maybeCommonType =
       input.type && output.type && commonType(input.type, output.type)
@@ -3228,7 +3241,7 @@ export class LGraphNode
     )
 
     if (!replaceLinkTopology(graph, replacingLink, link)) {
-      if (replacingLink) graph.afterChange()
+      graph.afterChange()
       return
     }
 
