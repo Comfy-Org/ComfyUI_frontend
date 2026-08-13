@@ -8,11 +8,6 @@
     "share": "مشاركة",
     "shareTooltip": "مشاركة سير العمل"
   },
-  "apiNodesCostBreakdown": {
-    "costPerRun": "التكلفة لكل تشغيل",
-    "title": "عقد API",
-    "totalCost": "التكلفة الإجمالية"
-  },
   "apiNodesSignInDialog": {
     "message": "يحتوي سير العمل هذا على عقد API، والتي تتطلب تسجيل دخولك إلى حسابك لتشغيلها.",
     "title": "تسجيل الدخول مطلوب لاستخدام عقد API"

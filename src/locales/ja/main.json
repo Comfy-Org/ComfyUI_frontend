@@ -8,11 +8,6 @@
     "share": "共有",
     "shareTooltip": "ワークフローを共有"
   },
-  "apiNodesCostBreakdown": {
-    "costPerRun": "実行あたりのコスト",
-    "title": "APIノード",
-    "totalCost": "合計コスト"
-  },
   "apiNodesSignInDialog": {
     "message": "このワークフローにはAPIノードが含まれており、実行するためにはアカウントにサインインする必要があります。",
     "title": "APIノードを使用するためにはサインインが必要です"

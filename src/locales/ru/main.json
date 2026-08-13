@@ -8,11 +8,6 @@
     "share": "Поделиться",
     "shareTooltip": "Поделиться рабочим процессом"
   },
-  "apiNodesCostBreakdown": {
-    "costPerRun": "Стоимость за запуск",
-    "title": "API Node(s)",
-    "totalCost": "Общая стоимость"
-  },
   "apiNodesSignInDialog": {
     "message": "Этот рабочий процесс содержит API Nodes, которые требуют входа в вашу учетную запись для выполнения.",
     "title": "Требуется вход для использования API Nodes"

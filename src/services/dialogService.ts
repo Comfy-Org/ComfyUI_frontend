@@ -206,8 +206,7 @@ export const useDialogService = () => {
   async function showApiNodesSignInDialog(
     apiNodeNames: string[]
   ): Promise<boolean> {
-    const [{ default: ApiNodesSignInContent }, { default: ComfyOrgHeader }] =
-      await Promise.all([lazyApiNodesSignInContent(), lazyComfyOrgHeader()])
+    const { default: ApiNodesSignInContent } = await lazyApiNodesSignInContent()
 
     return new Promise<boolean>((resolve) => {
       dialogStore.showDialog({
@@ -218,11 +217,11 @@ export const useDialogService = () => {
           onLogin: () => showSignInDialog().then((result) => resolve(result)),
           onCancel: () => resolve(false)
         },
-        headerComponent: ComfyOrgHeader,
         dialogComponentProps: {
           renderer: 'reka',
-          contentClass: HUG_CONTENT_CLASS,
-          closable: false,
+          headless: true,
+          contentClass: `${HUG_CONTENT_CLASS} p-0 overflow-hidden`,
+          closable: true,
           onClose: () => resolve(false)
         }
       })

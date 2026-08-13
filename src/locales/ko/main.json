@@ -8,11 +8,6 @@
     "share": "공유",
     "shareTooltip": "워크플로우 공유"
   },
-  "apiNodesCostBreakdown": {
-    "costPerRun": "실행 당 비용",
-    "title": "API 노드(들)",
-    "totalCost": "총 비용"
-  },
   "apiNodesSignInDialog": {
     "message": "이 워크플로에는 API 노드가 포함되어 있으며, 실행하려면 계정에 로그인해야 합니다.",
     "title": "API 노드 사용에 필요한 로그인"

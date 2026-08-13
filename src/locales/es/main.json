@@ -8,11 +8,6 @@
     "share": "Compartir",
     "shareTooltip": "Compartir flujo de trabajo"
   },
-  "apiNodesCostBreakdown": {
-    "costPerRun": "Costo por ejecución",
-    "title": "Nodo(s) de API",
-    "totalCost": "Costo total"
-  },
   "apiNodesSignInDialog": {
     "message": "Este flujo de trabajo contiene nodos de API, que requieren que inicies sesión en tu cuenta para poder ejecutar.",
     "title": "Se requiere iniciar sesión para usar los nodos de API"

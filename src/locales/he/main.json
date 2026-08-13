@@ -8,11 +8,6 @@
     "share": "שיתוף",
     "shareTooltip": "שיתוף תהליך העבודה"
   },
-  "apiNodesCostBreakdown": {
-    "costPerRun": "עלות להרצה",
-    "title": "צומת/צמתי API",
-    "totalCost": "עלות כוללת"
-  },
   "apiNodesSignInDialog": {
     "message": "תהליך עבודה זה מכיל צמתי API, שדורשים שתהיה מחובר לחשבונך כדי להריץ אותם.",
     "title": "נדרשת התחברות לשימוש בצמתי API"
