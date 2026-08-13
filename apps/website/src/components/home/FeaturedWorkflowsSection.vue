@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { useElementVisibility } from '@vueuse/core'
-import { onScopeDispose, ref, useTemplateRef, watch } from 'vue'
+import { ref, useTemplateRef, watch } from 'vue'
 
+import { useAutoAdvance } from '../../composables/useAutoAdvance'
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
@@ -88,23 +89,44 @@ function go(step: number) {
   active.value = (active.value + step + slides.length) % slides.length
 }
 
-/** Self-advancing while on screen; arrows and hover hand control back. */
+/** Self-advancing while on screen. Hovering holds the cycle and hands back on
+ * a shorter fuse; an arrow press restarts the dwell clock so the carousel
+ * never auto-advances right after a manual click. */
 const DWELL_MS = 6000
-let timer: ReturnType<typeof setInterval> | undefined
+const RESUME_MS = 3000
 
-watch(
+const { restart, resume } = useAutoAdvance({
   onScreen,
-  (visible) => {
-    clearInterval(timer)
-    timer = undefined
-    if (!visible || prefersReducedMotion()) return
-    timer = setInterval(() => {
-      if (!hovering.value) go(1)
-    }, DWELL_MS)
-  },
-  { immediate: true }
-)
-onScopeDispose(() => clearInterval(timer))
+  held: hovering,
+  dwellMs: DWELL_MS,
+  resumeMs: RESUME_MS,
+  onAdvance: () => go(1)
+})
+
+function pick(step: number) {
+  go(step)
+  restart()
+}
+
+/** Keyed by slide index; image slides have no entry. */
+const videoEls: Record<number, HTMLVideoElement | undefined> = {}
+function setVideoEl(index: number, el: unknown) {
+  videoEls[index] = (el as HTMLVideoElement | null) ?? undefined
+}
+
+/** Only the displayed slide's video plays: advancing pauses the outgoing
+ * video and rewinds and starts the incoming one; scrolling away pauses. */
+watch([active, onScreen], ([current, visible], [previous]) => {
+  if (previous !== current) videoEls[previous]?.pause()
+  const video = videoEls[current]
+  if (!video) return
+  if (visible && !prefersReducedMotion()) {
+    if (previous !== current) video.currentTime = 0
+    video.play().catch(() => {})
+  } else {
+    video.pause()
+  }
+})
 </script>
 
 <template>
@@ -116,7 +138,7 @@ onScopeDispose(() => clearInterval(timer))
       aria-roledescription="carousel"
       :aria-label="t('featuredWorkflows.label', locale)"
       @pointerenter="hovering = true"
-      @pointerleave="hovering = false"
+      @pointerleave="((hovering = false), resume())"
     >
       <div
         class="absolute inset-[3px] overflow-hidden rounded-[calc(2.5rem-4px)]"
@@ -132,10 +154,10 @@ onScopeDispose(() => clearInterval(timer))
           >
             <video
               v-if="slide.mediaType === 'video'"
+              :ref="(el) => setVideoEl(i, el)"
               :src="slide.media"
               class="size-full object-cover"
               :preload="i === active ? 'auto' : 'none'"
-              :autoplay="i === 0"
               muted
               loop
               playsinline
@@ -208,7 +230,7 @@ onScopeDispose(() => clearInterval(timer))
           type="button"
           class="flex size-11 cursor-pointer items-center justify-center rounded-xl bg-white/10 text-white backdrop-blur-xs transition-colors hover:bg-white/20"
           :aria-label="t('featuredWorkflows.prev', locale)"
-          @click="go(-1)"
+          @click="pick(-1)"
         >
           <svg
             viewBox="0 0 24 24"
@@ -229,7 +251,7 @@ onScopeDispose(() => clearInterval(timer))
           type="button"
           class="flex size-11 cursor-pointer items-center justify-center rounded-xl bg-white/10 text-white backdrop-blur-xs transition-colors hover:bg-white/20"
           :aria-label="t('featuredWorkflows.next', locale)"
-          @click="go(1)"
+          @click="pick(1)"
         >
           <svg
             viewBox="0 0 24 24"

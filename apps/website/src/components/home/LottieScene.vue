@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useElementVisibility } from '@vueuse/core'
-import { onScopeDispose, ref, useTemplateRef, watch } from 'vue'
+import type { AnimationItem } from 'lottie-web'
+import { onScopeDispose, useTemplateRef, watch } from 'vue'
 
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
 
@@ -11,23 +12,31 @@ const { src, active = true } = defineProps<{
   active?: boolean
 }>()
 
-type LottieAnimation = {
-  destroy: () => void
-  play: () => void
-  pause: () => void
-  goToAndStop: (value: number, isFrame?: boolean) => void
-}
-
 const containerRef = useTemplateRef<HTMLElement>('containerRef')
 const onScreen = useElementVisibility(containerRef)
 
-let anim: LottieAnimation | undefined
-const loaded = ref(false)
+let anim: AnimationItem | undefined
+
+/** Flips before the dynamic import: the watch can fire again while the chunk
+ * downloads, and guarding on `anim` alone would stack a second animation
+ * into the same container. Reset on failure so a transient error can retry. */
+let loadStarted = false
+let disposed = false
 
 // lottie-web is ~150KB gzipped, so it only loads once the scene scrolls in.
 watch([containerRef, onScreen], async ([el, visible]) => {
-  if (!el || !visible || anim) return
-  const lottie = (await import('lottie-web')).default
+  if (!el || !visible || loadStarted) return
+  loadStarted = true
+  let lottie
+  try {
+    lottie = (await import('lottie-web')).default
+  } catch {
+    loadStarted = false
+    return
+  }
+  // The mobile accordion can unmount this scene while the chunk downloads;
+  // an animation created after disposal would never be destroyed.
+  if (disposed) return
   anim = lottie.loadAnimation({
     container: el,
     renderer: 'svg',
@@ -37,8 +46,7 @@ watch([containerRef, onScreen], async ([el, visible]) => {
     assetsPath: `${src.slice(0, src.lastIndexOf('/'))}/images/`,
     // Fill the frame like the object-cover videos this replaced.
     rendererSettings: { preserveAspectRatio: 'xMidYMid slice' }
-  }) as unknown as LottieAnimation
-  loaded.value = true
+  })
   syncPlayback()
 })
 
@@ -55,7 +63,10 @@ function syncPlayback() {
 
 watch(() => [active, onScreen.value], syncPlayback)
 
-onScopeDispose(() => anim?.destroy())
+onScopeDispose(() => {
+  disposed = true
+  anim?.destroy()
+})
 </script>
 
 <template>

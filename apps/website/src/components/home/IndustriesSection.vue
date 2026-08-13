@@ -1,16 +1,9 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { useElementVisibility } from '@vueuse/core'
-import {
-  computed,
-  onScopeDispose,
-  ref,
-  useId,
-  useTemplateRef,
-  watch
-} from 'vue'
+import { computed, ref, useId, useTemplateRef } from 'vue'
 
-import { prefersReducedMotion } from '../../composables/useReducedMotion'
+import { useAutoAdvance } from '../../composables/useAutoAdvance'
 
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
@@ -76,28 +69,22 @@ const sectionRef = useTemplateRef<HTMLElement>('sectionRef')
 const onScreen = useElementVisibility(sectionRef)
 const hovering = ref(false)
 
-let dwellTimer: ReturnType<typeof setTimeout> | undefined
-
-function schedule(delay: number) {
-  clearTimeout(dwellTimer)
-  dwellTimer = undefined
-  if (!onScreen.value || prefersReducedMotion()) return
-  dwellTimer = setTimeout(() => {
-    if (!hovering.value)
-      activeIndex.value = (activeIndex.value + 1) % industries.length
-    schedule(DWELL_MS)
-  }, delay)
-}
-
-watch(onScreen, () => schedule(DWELL_MS), { immediate: true })
-onScopeDispose(() => clearTimeout(dwellTimer))
+const { restart, resume } = useAutoAdvance({
+  onScreen,
+  held: hovering,
+  dwellMs: DWELL_MS,
+  resumeMs: RESUME_MS,
+  onAdvance: () => {
+    activeIndex.value = (activeIndex.value + 1) % industries.length
+  }
+})
 
 /** A rollover/click/focus selects the industry and restarts the dwell clock,
  * so the cycle always waits a full beat before moving on from the visitor's
  * choice. */
 function select(index: number) {
   activeIndex.value = index
-  schedule(DWELL_MS)
+  restart()
 }
 
 const uid = useId()
@@ -153,7 +140,7 @@ const ambientClipId = `industries-ambient-${uid}`
           class="flex flex-col items-start gap-7"
           :aria-label="t('industries.navLabel', locale)"
           @pointerenter="hovering = true"
-          @pointerleave="((hovering = false), schedule(RESUME_MS))"
+          @pointerleave="((hovering = false), resume())"
         >
           <button
             v-for="(industry, index) in industries"

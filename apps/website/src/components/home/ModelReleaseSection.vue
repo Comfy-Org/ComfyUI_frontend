@@ -4,9 +4,11 @@ import { ref, useTemplateRef, watch } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import { getRoutes } from '../../config/routes'
 import Button from '../ui/button/Button.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const routes = getRoutes(locale)
 
 const videoRef = useTemplateRef<HTMLVideoElement>('videoRef')
 const visible = useElementVisibility(videoRef)
@@ -144,8 +146,7 @@ function toggleMute() {
           {{ t('modelRelease.body', locale) }}
         </p>
         <div class="mt-4">
-          <!-- Absolute URL: this branch predates the /minimax page on main. -->
-          <Button as="a" href="https://www.comfy.org/minimax">
+          <Button as="a" :href="routes.minimax">
             {{ t('modelRelease.cta', locale) }}
           </Button>
         </div>

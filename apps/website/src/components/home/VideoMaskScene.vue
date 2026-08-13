@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import { useElementVisibility, useRafFn, useResizeObserver } from '@vueuse/core'
-import { onScopeDispose, ref, useTemplateRef, watch } from 'vue'
+import {
+  computed,
+  nextTick,
+  onScopeDispose,
+  ref,
+  useTemplateRef,
+  watch
+} from 'vue'
 
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
 
@@ -109,15 +116,23 @@ const stageRef = useTemplateRef<HTMLElement>('stageRef')
 const onScreen = useElementVisibility(rootRef)
 
 const data = ref<SceneData>()
+const scenes = computed(() => data.value?.scenes ?? [])
 const assetsBase = `${src.slice(0, src.lastIndexOf('/'))}/assets/`
 
-/** Live DOM handles, index-aligned with data.scenes. */
-interface SceneRuntime {
-  el: HTMLElement
-  videos: HTMLVideoElement[]
-  activeIdx: number
+/** Live DOM handles from the template `v-for`, index-aligned with
+ * data.scenes; the rAF loop below writes their styles directly. */
+const sceneEls: (HTMLElement | undefined)[] = []
+const videoEls: (HTMLVideoElement | undefined)[][] = []
+const activeIdxs: number[] = []
+
+function setSceneEl(index: number, el: unknown) {
+  sceneEls[index] = (el as HTMLElement | null) ?? undefined
 }
-const runtimes: SceneRuntime[] = []
+
+function setVideoEl(sceneIndex: number, videoIndex: number, el: unknown) {
+  const list = (videoEls[sceneIndex] ??= [])
+  list[videoIndex] = (el as HTMLVideoElement | null) ?? undefined
+}
 
 let masterFrame = 0
 
@@ -142,8 +157,9 @@ function render() {
   if (!d) return
   for (let si = 0; si < d.scenes.length; si++) {
     const scene = d.scenes[si]
-    const rt = runtimes[si]
-    if (!rt) continue
+    const el = sceneEls[si]
+    if (!el) continue
+    const videos = videoEls[si] ?? []
     const pt = masterFrame - scene.outerSt
 
     const outer = lerpKf(scene.outerPos, masterFrame, 2)
@@ -158,9 +174,9 @@ function render() {
     const left = mp[0] + grp[0] + dx - mw / 2
     const top = mp[1] + grp[1] + dy - mh / 2
 
-    rt.el.style.transform = `translate(${left}px, ${top}px)`
-    rt.el.style.width = `${mw}px`
-    rt.el.style.height = `${mh}px`
+    el.style.transform = `translate(${left}px, ${top}px)`
+    el.style.width = `${mw}px`
+    el.style.height = `${mh}px`
 
     // Topmost layer whose in/out window contains the playhead.
     let activeIdx = -1
@@ -172,14 +188,14 @@ function render() {
       }
     }
 
-    if (activeIdx !== rt.activeIdx) {
-      for (const ve of rt.videos) {
-        ve.classList.remove('is-active')
-        ve.pause()
+    if (activeIdx !== activeIdxs[si]) {
+      for (const ve of videos) {
+        ve?.classList.remove('is-active')
+        ve?.pause()
       }
-      if (activeIdx >= 0) {
+      const ve = activeIdx >= 0 ? videos[activeIdx] : undefined
+      if (activeIdx >= 0 && ve) {
         const v = scene.videos[activeIdx]
-        const ve = rt.videos[activeIdx]
         const sourceTime = (pt - v.st) / d.fps
         const safe = Math.max(
           0,
@@ -193,12 +209,13 @@ function render() {
         ve.classList.add('is-active')
         if (playing) void ve.play().catch(() => {})
       }
-      rt.activeIdx = activeIdx
+      activeIdxs[si] = activeIdx
     }
 
     if (activeIdx >= 0) {
       const v = scene.videos[activeIdx]
-      const ve = rt.videos[activeIdx]
+      const ve = videos[activeIdx]
+      if (!ve) continue
       const sc = lerpKf(v.scale, pt, 2)
       const vp = lerpKf(v.pos, pt, 2)
       const sxF = sc[0] / 100
@@ -236,46 +253,35 @@ function syncPlayback() {
   playing = shouldPlay
   if (shouldPlay) {
     resumeLoop()
-    for (const rt of runtimes) {
-      const ve = rt.videos[rt.activeIdx]
+    for (let si = 0; si < activeIdxs.length; si++) {
+      const ve = videoEls[si]?.[activeIdxs[si]]
       if (ve) void ve.play().catch(() => {})
     }
   } else {
     pauseLoop()
-    for (const rt of runtimes) for (const ve of rt.videos) ve.pause()
+    for (const list of videoEls) for (const ve of list) ve?.pause()
   }
 }
 
-/** 10MB of clips, so nothing is fetched until the slide is actually shown. */
+/** 10MB of clips, so nothing is fetched until the slide is actually shown.
+ * The flag flips before the fetch: the watch has three sources that can fire
+ * in quick succession, and guarding on `data` alone would let a second firing
+ * start a duplicate load while the first is still in flight. */
+let loadStarted = false
+
 watch(
   [rootRef, onScreen, () => active],
   async ([root, visible, isActive]) => {
-    if (!root || !visible || !isActive || data.value) return
-    const res = await fetch(src)
-    const d: SceneData = await res.json()
-    data.value = d
-
-    const stage = stageRef.value
-    if (!stage) return
-    d.scenes.forEach((scene, idx) => {
-      const el = document.createElement('div')
-      el.className = 'vms-scene'
-      // Earlier entries paint on top, matching the source compositing order.
-      el.style.zIndex = String(d.scenes.length - idx)
-      el.style.borderRadius = `${scene.maskRadius}px`
-      const videos = scene.videos.map((v) => {
-        const ve = document.createElement('video')
-        ve.src = assetsBase + v.src
-        ve.muted = true
-        ve.playsInline = true
-        ve.preload = 'auto'
-        ve.loop = false
-        el.appendChild(ve)
-        return ve
-      })
-      stage.appendChild(el)
-      runtimes.push({ el, videos, activeIdx: -1 })
-    })
+    if (!root || !visible || !isActive || loadStarted) return
+    loadStarted = true
+    try {
+      const res = await fetch(src)
+      data.value = await res.json()
+    } catch {
+      loadStarted = false
+      return
+    }
+    await nextTick()
     fitStage()
     render()
     syncPlayback()
@@ -287,8 +293,7 @@ watch([() => active, onScreen], syncPlayback)
 
 onScopeDispose(() => {
   pauseLoop()
-  for (const rt of runtimes)
-    for (const ve of rt.videos) ve.removeAttribute('src')
+  for (const list of videoEls) for (const ve of list) ve?.removeAttribute('src')
 })
 </script>
 
@@ -298,7 +303,31 @@ onScopeDispose(() => {
     class="relative size-full overflow-hidden"
     aria-hidden="true"
   >
-    <div ref="stageRef" class="vms-stage" />
+    <div ref="stageRef" class="vms-stage">
+      <!-- Earlier scenes paint on top, matching the source compositing order. -->
+      <div
+        v-for="(scene, si) in scenes"
+        :key="si"
+        :ref="(el) => setSceneEl(si, el)"
+        class="vms-scene"
+        :style="{
+          zIndex: scenes.length - si,
+          borderRadius: `${scene.maskRadius}px`
+        }"
+      >
+        <!-- Keyed by position: scenes reuse the same clip file for several
+        layers, so `video.src` is not unique among siblings. -->
+        <video
+          v-for="(video, vi) in scene.videos"
+          :key="vi"
+          :ref="(el) => setVideoEl(si, vi, el)"
+          :src="assetsBase + video.src"
+          muted
+          playsinline
+          preload="auto"
+        />
+      </div>
+    </div>
   </div>
 </template>
 
@@ -312,7 +341,7 @@ onScopeDispose(() => {
   transform-origin: center;
 }
 
-.vms-stage :deep(.vms-scene) {
+.vms-scene {
   position: absolute;
   top: 0;
   left: 0;
@@ -323,7 +352,7 @@ onScopeDispose(() => {
   will-change: transform, width, height;
 }
 
-.vms-stage :deep(.vms-scene video) {
+.vms-scene video {
   position: absolute;
   top: 0;
   left: 0;
@@ -338,7 +367,7 @@ onScopeDispose(() => {
   max-height: none;
 }
 
-.vms-stage :deep(.vms-scene video.is-active) {
+.vms-scene video.is-active {
   display: block;
 }
 </style>

@@ -139,12 +139,15 @@ function wrapperStyle(key: ElementKey) {
         </BrandButton>
       </div>
 
+      <!-- Nodes are static under prefers-reduced-motion: dragging them (and
+      the 3D scene / sliders inside) animates the composition, so the whole
+      interactive surface is disabled. Keyboard controls stay live. -->
       <div
         v-for="key in ELEMENT_KEYS"
         :key="key"
         :class="
           cn(
-            'absolute touch-none',
+            'absolute touch-none motion-reduce:pointer-events-none',
             drag?.key === key ? 'cursor-grabbing' : 'cursor-grab'
           )
         "

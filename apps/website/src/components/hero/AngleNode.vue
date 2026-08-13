@@ -129,7 +129,7 @@ onUnmounted(() => {
       <div
         ref="sceneContainer"
         data-camera-scene
-        class="relative size-full touch-none overflow-hidden rounded-[0.75em] bg-[#3a3a3e]"
+        class="relative size-full touch-none overflow-hidden rounded-[0.75em] bg-[#3a3a3e] motion-reduce:pointer-events-none"
         :class="sceneReady ? 'opacity-100' : 'opacity-0'"
         style="transition: opacity 300ms"
       />

@@ -12,7 +12,7 @@ const VIDEO_PLACEHOLDER = assetPath('../assets/placeholder.webm')
 
 const ANALYTICS_PATTERN = '**/va.vercel-scripts.com/**' as const
 const MEDIA_PATTERN =
-  /^https:\/\/media\.comfy\.org\/.*\.(webp|webm|mp4|png|jpg|jpeg|vtt)(\?.*)?$/i
+  /^https:\/\/(media|comfy-hub-assets)\.comfy\.org\/.*\.(webp|webm|mp4|png|jpg|jpeg|vtt)(\?.*)?$/i
 const VIDEO_PATTERN = /\.(webm|mp4)(\?|$)/i
 const SUBTITLE_PATTERN = /\.vtt(\?|$)/i
 

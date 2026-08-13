@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { useIntersectionObserver } from '@vueuse/core'
-import { ref, useTemplateRef, watch } from 'vue'
+import { ref, useTemplateRef } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
@@ -11,7 +11,14 @@ import VideoMaskScene from './VideoMaskScene.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
-const features = [
+interface Feature {
+  title: string
+  description: string
+  lottie?: string
+  maskScene?: string
+}
+
+const features: Feature[] = [
   {
     title: t('showcase.feature1.title', locale),
     description: t('showcase.feature1.description', locale),
@@ -43,26 +50,11 @@ const badgeSegments = [
 ]
 
 const activeIndex = ref(0)
-/** Keyed by feature index, not template order: the first slide is a Lottie
- * scene rather than a video, so a positional list would misalign. */
-const videoEls: Record<number, HTMLVideoElement | undefined> = {}
-function setVideoEl(index: number, el: unknown) {
-  videoEls[index] = (el as HTMLVideoElement | null) ?? undefined
-}
 const sectionRef = useTemplateRef<HTMLElement>('sectionRef')
 const isVisible = ref(false)
 
 useIntersectionObserver(sectionRef, ([entry]) => {
   isVisible.value = entry?.isIntersecting ?? false
-})
-
-watch(activeIndex, (current, previous) => {
-  videoEls[previous]?.pause()
-  const active = videoEls[current]
-  if (active) {
-    active.currentTime = 0
-    active.play().catch(() => {})
-  }
 })
 </script>
 
@@ -120,21 +112,6 @@ watch(activeIndex, (current, previous) => {
                   )
                 "
               />
-              <video
-                v-else
-                :ref="(el) => setVideoEl(i, el)"
-                :src="feature.video"
-                preload="none"
-                loop
-                muted
-                playsinline
-                :class="
-                  cn(
-                    'absolute inset-0 size-full object-cover transition-opacity duration-300 will-change-[opacity]',
-                    activeIndex === i ? 'opacity-100' : 'opacity-0'
-                  )
-                "
-              />
             </template>
           </div>
         </div>
@@ -159,14 +136,10 @@ watch(activeIndex, (current, previous) => {
                   :src="feature.lottie"
                   class="size-full"
                 />
-                <video
-                  v-else
-                  :src="feature.video"
-                  autoplay
-                  loop
-                  muted
-                  playsinline
-                  class="size-full object-cover"
+                <VideoMaskScene
+                  v-else-if="feature.maskScene"
+                  :src="feature.maskScene"
+                  class="size-full"
                 />
               </div>
             </div>

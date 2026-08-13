@@ -87,7 +87,7 @@ function onKeydown(event: KeyboardEvent) {
       :aria-valuemax="max"
       :aria-valuenow="model"
       :aria-valuetext="valueText"
-      class="group relative h-[0.55em] w-full cursor-pointer touch-none rounded-full outline-none before:absolute before:inset-x-[-0.5em] before:inset-y-[-0.95em] before:content-[''] focus-visible:ring-2 focus-visible:ring-white/50"
+      class="group relative h-[0.55em] w-full cursor-pointer touch-none rounded-full outline-none before:absolute before:inset-x-[-0.5em] before:inset-y-[-0.95em] before:content-[''] focus-visible:ring-2 focus-visible:ring-white/50 motion-reduce:pointer-events-none"
       :style="{ background: track }"
       @pointerdown="onPointerDown"
       @pointermove="onPointerMove"

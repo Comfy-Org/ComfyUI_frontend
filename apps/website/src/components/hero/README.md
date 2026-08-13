@@ -78,3 +78,7 @@ a shipped ring degrade to the nearest one.
   label, so the flow is keyboard operable.
 - Below `md` the WebGL scene is dropped for a static fallback image plus the
   live prompt words.
+- Under `prefers-reduced-motion: reduce` the idle demo never runs and pointer
+  interaction on the nodes is disabled (dragging nodes, orbiting the 3D scene,
+  scrubbing the sliders). The keyboard controls stay available, and output
+  swaps happen without the crossfade.
