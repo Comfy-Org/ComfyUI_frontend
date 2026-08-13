@@ -12,7 +12,15 @@ import base from './vite.config.mts'
 // timers. Keep vitest.setup.ts (environment globals the runtime needs);
 // packs execute under real timers.
 const merged = mergeConfig(base, {
-  test: { coverage: { enabled: false }, retry: 0 }
+  // Pack code leaks unhandled rejections by design tolerance; without the
+  // ignore, vitest attributes a stray rejection to whichever file is
+  // currently COLLECTING and fails an innocent spec before its
+  // write-ahead stub exists (run 31734434601: 470 specs, 469 rows).
+  test: {
+    coverage: { enabled: false },
+    retry: 0,
+    dangerouslyIgnoreUnhandledErrors: true
+  }
 })
 merged.test.include = ['src/__ecs_matrix__/*.matrix.test.ts']
 merged.test.exclude = [...configDefaults.exclude]

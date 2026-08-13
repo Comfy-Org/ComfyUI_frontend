@@ -163,13 +163,14 @@ jobs:
             exit 1
           fi
           MATRIX_OUT="$PWD/matrix-rows" pnpm exec vitest run             --config vitest.matrix.config.mts 2>&1 | tail -25             || echo "vitest exited nonzero - tolerated, pack code may leak unhandled errors"
-          rows=$(ls matrix-rows/*.json 2>/dev/null | wc -l)
+          cp src/__ecs_matrix__/manifest.json "matrix-rows/_manifest-shard-${{ matrix.shard }}.json"
+          rows=$(ls matrix-rows/*.json 2>/dev/null | grep -cv _manifest)
           echo "specs=$built rows=$rows"
           if [ "$rows" -ne "$built" ]; then
             echo "::error::matrix wrote $rows rows for $built specs - harness failure, not pack noise"
+            comm -23               <(ls src/__ecs_matrix__/*.matrix.test.ts | xargs -n1 basename | sed 's/\.matrix\.test\.ts$//' | sort)               <(ls matrix-rows/*.json | xargs -n1 basename | sed 's/\.json$//' | sort)               | sed 's/^/::error::missing row: /'
             exit 1
           fi
-          cp src/__ecs_matrix__/manifest.json "matrix-rows/_manifest-shard-${{ matrix.shard }}.json"
 
       - name: Upload rows
         if: always()
