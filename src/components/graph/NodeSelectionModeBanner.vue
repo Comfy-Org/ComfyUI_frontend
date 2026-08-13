@@ -12,7 +12,7 @@ const agentNodeSelectionStore = useAgentNodeSelectionStore()
 
 <template>
   <div
-    class="pointer-events-none absolute top-1 left-1/2 z-40 -translate-x-1/2"
+    class="pointer-events-none absolute top-4 left-1/2 z-40 -translate-x-1/2"
   >
     <Transition
       enter-active-class="transition-[transform,opacity] duration-150 ease-out"

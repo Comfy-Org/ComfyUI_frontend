@@ -61,7 +61,7 @@ const assetDragActive = inject<Readonly<Ref<boolean>>>(
 )
 
 const duplicateIdClass =
-  'shrink-0 rounded-[26px] bg-charcoal-400 px-2 py-0.5 font-mono text-xs/4 font-medium text-smoke-800'
+  'shrink-0 rounded-[26px] bg-charcoal-400 px-1 py-0.5 font-mono text-xs/4 font-medium text-smoke-800'
 
 const mentionNodes = ref<SelectedNode[]>([])
 const mentionAssets = ref<AssetItem[]>([])
@@ -389,12 +389,13 @@ defineExpose({
             >#{{ tag.id }}</span
           >
           <button
+            v-tooltip.top="buildAgentTooltipConfig(t('agent.remove'))"
             type="button"
             :aria-label="t('agent.remove')"
             class="text-agent-fg-muted hover:text-agent-fg flex size-3.5 cursor-pointer items-center justify-center transition-colors"
             @click="emit('removeTag', tag.id)"
           >
-            <span class="icon-[lucide--x] size-3.5" />
+            <span class="icon-[lucide--x] size-3.5 shrink-0" />
           </button>
         </span>
       </div>
@@ -439,7 +440,7 @@ defineExpose({
           <span>{{ placeholderHint.firstLine }}</span>
           <button
             type="button"
-            class="hover:text-agent-fg focus-visible:text-agent-fg focus-visible:outline-agent-fg pointer-events-auto mr-[4px] ml-[-5px] inline-flex h-[20px] shrink-0 cursor-pointer items-center gap-[4px] rounded-[8px] px-[4px] align-top text-[14px]/[20px] transition-colors focus-visible:outline-1"
+            class="text-agent-fg-muted hover:text-agent-fg focus-visible:text-agent-fg focus-visible:outline-agent-fg pointer-events-auto mr-[4px] ml-[-5px] inline-flex h-[20px] shrink-0 cursor-pointer items-center gap-[4px] rounded-[8px] px-[4px] align-top text-[14px]/[20px] transition-colors focus-visible:outline-1"
             @click="emit('selectNodes')"
           >
             <span
