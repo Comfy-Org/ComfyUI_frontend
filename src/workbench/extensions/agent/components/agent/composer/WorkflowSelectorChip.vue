@@ -151,13 +151,15 @@ function onSearchKeydown(event: KeyboardEvent): void {
             class="text-agent-fg placeholder:text-agent-fg-muted mb-1 h-8 w-full rounded-[10px] border border-white/15 bg-transparent px-2.5 py-1 text-[14px]/5 outline-none"
             @keydown="onSearchKeydown"
           />
-          <DropdownMenuRadioGroup :model-value="current?.path ?? ''">
+          <DropdownMenuRadioGroup
+            :model-value="current?.path ?? ''"
+            @update:model-value="emit('selectTab', $event)"
+          >
             <DropdownMenuRadioItem
               v-for="tab in filteredTabs"
               :key="tab.path"
               :value="tab.path"
               class="text-agent-fg box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal outline-none data-highlighted:bg-[#404040]"
-              @select="emit('selectTab', tab.path)"
             >
               <span
                 v-if="tabActivity.editingTabPath === tab.path"

@@ -520,6 +520,26 @@ describe('Composer', () => {
     expect(screen.queryByText('#5')).not.toBeInTheDocument()
   })
 
+  it('emits removeTag when a selection chip is removed', async () => {
+    const { emitted } = mount({
+      selectionTags: [{ id: '5', title: 'KSampler' }]
+    })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Remove' }))
+
+    expect(emitted().removeTag).toEqual([['5']])
+  })
+
+  it('shows the remove tooltip for a selection chip', async () => {
+    mount({ selectionTags: [{ id: '5', title: 'KSampler' }] })
+
+    await userEvent.hover(screen.getByRole('button', { name: 'Remove' }))
+
+    expect(
+      await screen.findByRole('tooltip', { hidden: true })
+    ).toHaveTextContent('Remove')
+  })
+
   it('shows the id on a lone selection chip with a graph title twin', () => {
     const selected = { id: '5', title: 'KSampler' }
     mount({

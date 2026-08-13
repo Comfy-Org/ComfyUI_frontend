@@ -34,7 +34,7 @@
         >
           <!-- First panel: sidebar when left, properties when right -->
           <SplitterPanel
-            v-if="firstPanelVisible"
+            v-if="firstPanelVisible && !agentNodeSelectionActive"
             :class="
               sidebarLocation === 'left'
                 ? cn(
@@ -73,7 +73,11 @@
               :pt:gutter="
                 cn(
                   'rounded-t-lg',
-                  !(bottomPanelVisible && !focusMode) && 'hidden'
+                  !(
+                    bottomPanelVisible &&
+                    !focusMode &&
+                    !agentNodeSelectionActive
+                  ) && 'hidden'
                 )
               "
               state-key="bottom-panel-splitter"
@@ -86,8 +90,10 @@
                 <slot name="graph-canvas-panel" />
               </SplitterPanel>
               <SplitterPanel
-                v-show="bottomPanelVisible && !focusMode"
-                class="bottom-panel pointer-events-auto max-w-full overflow-x-auto rounded-lg border border-(--p-panel-border-color) bg-comfy-menu-bg"
+                v-show="
+                  bottomPanelVisible && !focusMode && !agentNodeSelectionActive
+                "
+                class="bottom-panel pointer-events-auto max-w-full overflow-x-auto rounded-lg border border-(--p-panel-border-color) bg-comfy-menu-bg focus-visible:outline-hidden"
               >
                 <slot name="bottom-panel" />
               </SplitterPanel>
@@ -96,7 +102,7 @@
 
           <!-- Last panel: properties when left, sidebar when right -->
           <SplitterPanel
-            v-if="lastPanelVisible"
+            v-if="lastPanelVisible && !agentNodeSelectionActive"
             :class="
               sidebarLocation === 'right'
                 ? cn(
@@ -147,6 +153,7 @@ import {
   SIDE_PANEL_SIZE
 } from '@/constants/splitterConstants'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
@@ -166,6 +173,9 @@ const unifiedWidth = computed(() =>
 )
 
 const { focusMode } = storeToRefs(workspaceStore)
+const { isActive: agentNodeSelectionActive } = storeToRefs(
+  useAgentNodeSelectionStore()
+)
 
 const { isSelectMode, isBuilderMode } = useAppMode()
 const { activeSidebarTabId, activeSidebarTab } = storeToRefs(sidebarTabStore)

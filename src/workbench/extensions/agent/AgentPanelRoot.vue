@@ -919,6 +919,18 @@ function onMentionPick(node: SelectedNode): void {
     useTelemetry()?.trackAgentNodeTagged({ source: 'mention_picker' })
 }
 
+function onRemoveSelectionTag(id: string): void {
+  const canvas = app.canvas
+  const node = [...(canvas?.selectedItems ?? [])].find(
+    (item) => isLGraphNode(item) && String(item.id) === id
+  )
+  if (canvas && node) {
+    canvas.deselect(node)
+    canvasStore.updateSelectedItems()
+  }
+  removeSelectionTag(id)
+}
+
 function onClosePanel(): void {
   exitNodeSelectionMode()
   useTelemetry()?.trackAgentCloseButtonClicked()
@@ -1041,7 +1053,7 @@ function onPanelDrop(event: DragEvent): void {
       @attach="onAttach"
       @open-assets="onOpenAssets"
       @select-nodes="onSelectNodes"
-      @remove-tag="removeSelectionTag"
+      @remove-tag="onRemoveSelectionTag"
       @mention-pick="onMentionPick"
       @feedback="onFeedback"
       @new-chat="onNewChat"
