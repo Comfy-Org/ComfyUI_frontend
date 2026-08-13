@@ -1,12 +1,8 @@
 // @vitest-environment happy-dom
-import { cleanup, render, screen } from '@testing-library/vue'
-import { afterEach, describe, expect, it } from 'vitest'
+import { render, screen } from '@testing-library/vue'
+import { describe, expect, it } from 'vitest'
 
 import CloudPricingSection from './CloudPricingSection.vue'
-
-afterEach(() => {
-  cleanup()
-})
 
 function isBefore(first: Element, second: Element) {
   return Boolean(

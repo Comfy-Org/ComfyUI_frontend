@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
@@ -66,8 +64,6 @@ const sam3DetectNodeDef: ComfyNodeDef = {
 
 describe('useNodeTooltips', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-
     vi.spyOn(useSettingStore(), 'get').mockImplementation(
       <K extends keyof Settings>(key: K): Settings[K] => {
         switch (key) {

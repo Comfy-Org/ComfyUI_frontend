@@ -35,8 +35,8 @@ export function countAssetRequestsByTag(
 }
 
 type ModelLibraryOptions = {
-  operators?: AssetOperator[]
   folders?: ModelFolderInfo[]
+  operators?: AssetOperator[]
 }
 
 export const assetApiFixture = base.extend<{

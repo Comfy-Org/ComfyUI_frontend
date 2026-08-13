@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import {
   pendingTopupNeedsRefresh,
@@ -18,11 +18,6 @@ vi.mock('@/platform/telemetry', () => ({
 }))
 
 describe('topupTracker', () => {
-  beforeEach(() => {
-    vi.setSystemTime(new Date('2026-08-07T12:00:00Z'))
-    localStorage.clear()
-  })
-
   describe('startTopupTracking', () => {
     it('should save current timestamp to localStorage', () => {
       startTopupTracking()

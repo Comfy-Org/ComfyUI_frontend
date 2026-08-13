@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
@@ -19,10 +17,6 @@ import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 vi.mock('@/stores/workspaceStore', () => ({
   useWorkspaceStore: () => ({ workflow: { activeWorkflow: null } })
 }))
-
-beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
-})
 
 async function startPendingWorkflowLoadMediaVerification(
   rootGraph: LGraph,

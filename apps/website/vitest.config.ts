@@ -18,6 +18,6 @@ export default defineConfig({
     environment: 'node',
     include: ['src/**/*.{test,spec}.ts'],
     globals: false,
-    setupFiles: ['../../vitest.timer.setup.ts']
+    setupFiles: ['../../vitest.timer.setup.ts', './src/test/setup.ts']
   }
 })
