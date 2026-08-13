@@ -29,7 +29,7 @@ const BASE_PARAMS: ListAssetsData['query'] = {
   sort: 'created_at'
 }
 
-export function useAssetsQuery(
+function assetsQueryInternal(
   params: AssetParams = {},
   options: QueryOptions = {}
 ): PagedList<AssetItem> {
@@ -113,9 +113,9 @@ export function useAssetsQuery(
 }
 
 const sharedPagedList = createSharedPagedList(
-  useAssetsQuery,
+  assetsQueryInternal,
   stableKey,
   (item) => item.id
 )
-export const useSharedAssetsQuery = sharedPagedList.constructor
+export const useAssetsQuery = sharedPagedList.constructor
 export const invalidateItems = sharedPagedList.invalidateItems
