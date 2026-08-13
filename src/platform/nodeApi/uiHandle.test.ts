@@ -14,6 +14,11 @@ import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 import { createUiHandle } from './uiHandle'
 
+const hostPrompt = vi.hoisted(() => vi.fn())
+vi.mock('@/services/dialogService', () => ({
+  useDialogService: () => ({ prompt: hostPrompt })
+}))
+
 describe('comfy.ui.addSidebarTab', () => {
   let ui: ReturnType<typeof createUiHandle>
 
@@ -216,5 +221,36 @@ describe('comfy.ui.showMenu', () => {
     expect(() =>
       ui.showMenu({ items: [], event: new MouseEvent('contextmenu') })
     ).toThrow(/at least one item/)
+  })
+})
+
+describe('comfy.ui.prompt', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    hostPrompt.mockReset()
+  })
+
+  it('reports a cancel as undefined, not null', async () => {
+    // The host spells cancelled `null`; every other absent value in this API is
+    // `undefined`, and two spellings of absent is a bug waiting to happen.
+    hostPrompt.mockResolvedValue(null)
+
+    await expect(createUiHandle().prompt({ label: 'Strength' })).resolves.toBe(
+      undefined
+    )
+  })
+
+  it('passes the value back when the user answers', async () => {
+    hostPrompt.mockResolvedValue('1.25')
+
+    await expect(createUiHandle().prompt({ label: 'Strength' })).resolves.toBe(
+      '1.25'
+    )
+  })
+
+  it('refuses a prompt with no label', async () => {
+    await expect(createUiHandle().prompt({ label: ' ' })).rejects.toThrow(
+      /needs a label/
+    )
   })
 })
