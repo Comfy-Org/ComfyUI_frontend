@@ -106,7 +106,6 @@ export const useAssetsStore = defineStore('assets', () => {
   const {
     state: inputAssets,
     isLoading: inputLoading,
-    error: inputError,
     execute: executeUpdateInputs
   } = useAsyncState(fetchInputFiles, [], {
     immediate: false,
@@ -876,7 +875,6 @@ export const useAssetsStore = defineStore('assets', () => {
     // States
     inputAssets,
     inputLoading,
-    inputError,
 
     historyAssets,
     historyInputs,
@@ -885,9 +883,6 @@ export const useAssetsStore = defineStore('assets', () => {
     deletingAssetIds,
     setAssetDeleting,
     isAssetDeleting,
-
-    // Actions
-    updateInputs,
 
     // Input mapping helpers
     inputAssetsByFilename,

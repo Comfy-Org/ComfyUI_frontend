@@ -2,12 +2,12 @@ import { toValue } from 'vue'
 import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { useAssetsApi } from '@/platform/assets/composables/media/useAssetsApi'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import type { ResultItemType } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
-import { useAssetsStore } from '@/stores/assetsStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 interface UseWidgetSelectActionsOptions {
@@ -62,8 +62,7 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
     const data = await resp.json()
 
     if (formFields.type === 'input' || (!formFields.type && !isPasted)) {
-      const assetsStore = useAssetsStore()
-      await assetsStore.updateInputs()
+      await useAssetsApi('input').invalidate()
     }
 
     return data.subfolder ? `${data.subfolder}/${data.name}` : data.name

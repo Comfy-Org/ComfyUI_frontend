@@ -5,6 +5,7 @@ import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { isComboWidget } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { useAssetsApi } from '@/platform/assets/composables/media/useAssetsApi'
 import { assetService } from '@/platform/assets/services/assetService'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
@@ -202,12 +203,14 @@ const createInputMappingWidget = (
   )
 
   if (assetsStore.inputAssets.length === 0 && !assetsStore.inputLoading) {
-    void assetsStore.updateInputs().then(() => {
-      // edge for users using nodes with 0 prior inputs
-      // force canvas refresh the first time they add an asset
-      // so they see filenames instead of hashes.
-      node.setDirtyCanvas(true, false)
-    })
+    void useAssetsApi('input')
+      .invalidate()
+      .then(() => {
+        // edge for users using nodes with 0 prior inputs
+        // force canvas refresh the first time they add an asset
+        // so they see filenames instead of hashes.
+        node.setDirtyCanvas(true, false)
+      })
   }
 
   bindDynamicValuesOption(widget, () =>
