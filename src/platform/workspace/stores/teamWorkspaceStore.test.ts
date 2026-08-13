@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
@@ -164,7 +162,6 @@ function expectCleanupBeforeContextAndReload(): void {
 describe('useTeamWorkspaceStore', () => {
   beforeEach(() => {
     mockDistributionTypes.isCloud = true
-    setActivePinia(createTestingPinia({ stubActions: false }))
     vi.stubGlobal('localStorage', mockLocalStorage)
     sessionStorage.clear()
     mockCurrentUser.userEmail.value = null

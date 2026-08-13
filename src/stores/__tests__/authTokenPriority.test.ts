@@ -1,13 +1,10 @@
 import type { User } from 'firebase/auth'
 import * as firebaseAuth from 'firebase/auth'
-import { setActivePinia } from 'pinia'
 import type { Mock } from 'vitest'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as vuefire from 'vuefire'
 
 import { useAuthStore } from '@/stores/authStore'
-import { createTestingPinia } from '@pinia/testing'
-
 const { mockFeatureFlags } = vi.hoisted(() => ({
   mockFeatureFlags: {
     unifiedCloudAuthEnabled: false
@@ -160,7 +157,6 @@ describe('auth token priority chain', () => {
       }
     )
 
-    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useAuthStore()
   })
 

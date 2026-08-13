@@ -174,7 +174,6 @@ describe('useAuthStore', () => {
 
   beforeEach(() => {
     vi.stubGlobal('fetch', mockFetch)
-    sessionStorage.clear()
     clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.SHARE_AUTH)
 
     mockFeatureFlags.unifiedCloudAuthEnabled = false
@@ -219,12 +218,9 @@ describe('useAuthStore', () => {
       return Promise.reject(new Error('Unexpected API call'))
     })
 
-    // Initialize Pinia
-    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useAuthStore()
 
     // Reset and set up getIdToken mock
-    mockUser.getIdToken.mockReset()
     mockUser.getIdToken.mockResolvedValue('mock-id-token')
 
     // Default: no API key auth

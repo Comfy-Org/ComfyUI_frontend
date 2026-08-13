@@ -195,11 +195,6 @@ describe('useSubscription', () => {
 
     mockLocalStorage.__reset()
     mockIsLoggedIn.value = false
-    mockTelemetry.trackSubscription.mockReset()
-    mockTelemetry.trackMonthlySubscriptionSucceeded.mockReset()
-    mockTelemetry.trackMonthlySubscriptionCancelled.mockReset()
-    mockTelemetry.trackBillingEvent.mockReset()
-    mockAccessBillingPortal.mockReset()
     mockAccessBillingPortal.mockResolvedValue(true)
     mockUserId.value = 'user-123'
     mockIsCloud.value = true

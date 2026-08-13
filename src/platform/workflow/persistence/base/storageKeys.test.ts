@@ -8,7 +8,6 @@ describe('storageKeys', () => {
   beforeEach(() => {
     mockDistributionTypes.isCloud = true
     vi.resetModules()
-    sessionStorage.clear()
   })
 
   describe('getWorkspaceId', () => {
