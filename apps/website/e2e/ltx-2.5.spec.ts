@@ -19,10 +19,11 @@ const FIRST_REVIEW = creatorReviews[0]
 const LTX_RUN_TEMPLATE = 'https://cloud.comfy.org/?template=video_ltx2_5_i2v'
 const LTX_HUB_MODEL = 'https://comfy.org/workflows/model/ltx'
 
-// Counts are fixed rather than read off the config: four labels and six cards are
-// the launch requirement, and deriving them would let a dropped one pass.
+// Counts are the launch requirement, not a snapshot of the config: deriving them
+// would let a dropped badge, card or Q&A entry pass.
 const REQUIRED_BADGES = 4
 const REQUIRED_CARDS = 6
+const REQUIRED_FAQS = 9
 
 const BADGE_KEYS = ltxPage.hero.badgeKeys ?? []
 
@@ -195,7 +196,7 @@ test.describe('LTX 2.5 Q&A', () => {
     }[]
     const faqPage = graph.find((node) => node['@type'] === 'FAQPage')
     expect(faqPage, 'FAQPage node in @graph').toBeDefined()
-    expect(faqPage!.mainEntity!.length).toBe(FAQS.length)
+    expect(faqPage!.mainEntity!.length).toBe(REQUIRED_FAQS)
   })
 
   test('FAQ items toggle open and closed on click', async ({ page }) => {
