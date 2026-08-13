@@ -41,6 +41,7 @@ import { RenderShape } from '@/lib/litegraph/src/litegraph'
 import NodeHeader from '@/renderer/extensions/vueNodes/components/NodeHeader.vue'
 import NodeSlots from '@/renderer/extensions/vueNodes/components/NodeSlots.vue'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
+import { dynamicComboOptionTypes } from '@/schemas/nodeDef/inputSpecTree'
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { toNodeId } from '@/types/nodeId'
@@ -63,8 +64,10 @@ const nodeData = computed<VueNodeData>(() => {
   const widgets = Object.entries(nodeDef.inputs || {})
     .filter(([_, input]) => widgetStore.inputIsWidget(input))
     .map(([name, input]) => {
-      const comboValues =
-        input.type === 'COMBO' && Array.isArray(input.options)
+      const isDynamicCombo = input.type === 'COMFY_DYNAMICCOMBO_V3'
+      const comboValues = isDynamicCombo
+        ? dynamicComboOptionTypes(input).map(({ key }) => key)
+        : input.type === 'COMBO' && Array.isArray(input.options)
           ? input.options
           : undefined
       // Preview nodes have no widget-value store entry, so combo widgets
@@ -73,7 +76,7 @@ const nodeData = computed<VueNodeData>(() => {
       return {
         nodeId: toNodeId('-1'),
         name,
-        type: input.widgetType || input.type,
+        type: isDynamicCombo ? 'COMBO' : input.widgetType || input.type,
         value:
           input.default !== undefined
             ? input.default
