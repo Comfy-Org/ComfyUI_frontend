@@ -226,8 +226,44 @@ export interface NodeDefBuilder {
   onBeforeConnect(
     callback: (node: NodeHandle, event: BeforeConnectEvent) => boolean | void
   ): void
+  /**
+   * The user dropped a link on a node's body and the host found no single slot
+   * that fits. Wire it yourself and return `true`; return nothing to let the
+   * host report the drop unplaceable.
+   *
+   * For a node whose one slot carries a bundle of values — a context, a pipe —
+   * and which wants to unpack it into several of the peer's slots at once. Both
+   * ends of the drag are asked, the one the user aimed at first, because the
+   * node with the knowledge is the drop target in one direction and the drag's
+   * origin in the other.
+   *
+   * The published alternative to replacing `connectByType` on the prototype,
+   * which is how packs did this: that changes link routing for every node in
+   * the document, so one pack's convenience became every other pack's
+   * behaviour.
+   */
+  onUnplacedLink(
+    callback: (node: NodeHandle, event: UnplacedLinkEvent) => boolean | void
+  ): void
   /** Adds an entry to this node type's context menu. */
   addMenuItem(item: NodeMenuItem): void
+}
+
+export interface UnplacedLinkEvent {
+  /** Which of this node's slots the link would land on. */
+  readonly side: 'input' | 'output'
+  /** The node at the other end of the drag. */
+  readonly peerNodeId: string
+  /** The slot on the peer the drag started from. */
+  readonly peerIndex: number
+  readonly type: string
+  /**
+   * The user held the modifier that means "overwrite what is already wired".
+   *
+   * Published because packs read a global keyboard service of their own to get
+   * it, and which modifier means this is the host's to decide.
+   */
+  readonly replaceExisting: boolean
 }
 
 /** @knipIgnoreUnusedButUsedByCustomNodes */
@@ -673,6 +709,31 @@ const previewSubscribers = new Map<
 >()
 
 /**
+ * Type name -> its unplaced-link listeners.
+ *
+ * Module level for the same reason as previews: the offer comes from the
+ * canvas, which knows a node and its type but not which registry instance
+ * registered for it.
+ */
+const unplacedLinkSubscribers = new Map<
+  string,
+  (nodeId: string, event: UnplacedLinkEvent) => boolean
+>()
+
+/**
+ * Offers a link the host could not place to one end of the drag.
+ *
+ * `true` means a pack wired it and the host should stay quiet.
+ */
+export function offerUnplacedLink(
+  nodeId: string,
+  nodeType: string,
+  event: UnplacedLinkEvent
+): boolean {
+  return unplacedLinkSubscribers.get(nodeType)?.(nodeId, event) ?? false
+}
+
+/**
  * Hands a preview frame to whichever node type registered for it.
  *
  * Called by the app when the backend emits a preview. The node type is looked
@@ -868,6 +929,10 @@ export function createDefRegistry(): {
         run: (node: NodeHandle, event: BeforeConnectEvent) => boolean | void
         handleFor: (nodeId: string) => NodeHandle
       }[] = []
+      const unplacedLink: {
+        run: (node: NodeHandle, event: UnplacedLinkEvent) => boolean | void
+        handleFor: (nodeId: string) => NodeHandle
+      }[] = []
       let frontendOnly = false
       let declaredResolver: Resolver | undefined
       let declaredSupplier: Supplier | undefined
@@ -923,6 +988,7 @@ export function createDefRegistry(): {
           onPreview: (run) => previewed.push({ run, handleFor }),
           onSerialize: (run) => serialized.push({ run, handleFor }),
           onBeforeConnect: (run) => beforeConnect.push({ run, handleFor }),
+          onUnplacedLink: (run) => unplacedLink.push({ run, handleFor }),
           addMenuItem: (item) => menuItems.push({ item, handleFor })
         }
 
@@ -1282,6 +1348,17 @@ export function createDefRegistry(): {
         previewSubscribers.set(def.type, (nodeId, frame) => {
           for (const { run, handleFor } of previewed)
             run(handleFor(nodeId), frame)
+        })
+      }
+
+      if (unplacedLink.length) {
+        unplacedLinkSubscribers.set(def.type, (nodeId, event) => {
+          // Stops at the first listener that claims the drop, so two packs
+          // extending one type cannot both wire the same gesture.
+          for (const { run, handleFor } of unplacedLink) {
+            if (run(handleFor(nodeId), event) === true) return true
+          }
+          return false
         })
       }
 

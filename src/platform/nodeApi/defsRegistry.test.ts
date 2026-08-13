@@ -15,10 +15,16 @@ import {
   deliverPreview,
   frontendResolverMap,
   frontendSupplierMap,
+  offerUnplacedLink,
   reapplyPackTypeColors
 } from './defsRegistry'
 import type { Comfy } from './comfyApi'
-import type { DefSelector, NodeDefBuilder } from './defsRegistry'
+import type {
+  DefSelector,
+  NodeDefBuilder,
+  UnplacedLinkEvent
+} from './defsRegistry'
+import type { NodeHandle } from './nodeHandle'
 
 const RAW_DEF = {
   name: 'KSampler',
@@ -602,6 +608,91 @@ describe('a defined node type', () => {
     } finally {
       stop()
     }
+  })
+})
+
+describe('a link no single slot fits', () => {
+  let graph: LGraph
+  let comfy: Comfy
+
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    graph = new LGraph()
+    comfy = createComfyApi(() => graph)
+  })
+
+  function bundleNode(
+    run: (node: NodeHandle, event: UnplacedLinkEvent) => boolean | void
+  ) {
+    const registry = createDefRegistry()
+    registry
+      .forMajor((id) => comfy.graph.node(id)!)
+      .extend('KSampler', (b) => b.onUnplacedLink(run))
+    const Generated = nodeClass('KSampler')
+    registry.applyTo(Generated, RAW_DEF)
+    const node = new Generated()
+    graph.add(node)
+    return node
+  }
+
+  const drop = Object.freeze({
+    side: 'output' as const,
+    peerNodeId: '99',
+    peerIndex: 0,
+    type: 'CONTEXT',
+    replaceExisting: false
+  })
+
+  it('offers the drop to the type that registered for it', () => {
+    let seen: UnplacedLinkEvent | undefined
+    const node = bundleNode((_n, event) => {
+      seen = event
+      return true
+    })
+
+    const placed = offerUnplacedLink(String(node.id), 'KSampler', drop)
+
+    expect(placed).toBe(true)
+    expect(seen).toEqual(drop)
+  })
+
+  it('says the drop is unplaced when the listener declines', () => {
+    // Declining must not read as handled, or the host stops reporting a drop
+    // that really did go nowhere.
+    const node = bundleNode(() => undefined)
+
+    expect(offerUnplacedLink(String(node.id), 'KSampler', drop)).toBe(false)
+  })
+
+  it('stops at the first listener that claims it', () => {
+    // Two packs extending one type must not both wire the same gesture.
+    const calls: string[] = []
+    const registry = createDefRegistry()
+    const api = registry.forMajor((id) => comfy.graph.node(id)!)
+    api.extend('KSampler', (b) =>
+      b.onUnplacedLink(() => {
+        calls.push('first')
+        return true
+      })
+    )
+    api.extend('KSampler', (b) =>
+      b.onUnplacedLink(() => {
+        calls.push('second')
+        return true
+      })
+    )
+    const Generated = nodeClass('KSampler')
+    registry.applyTo(Generated, RAW_DEF)
+    const node = new Generated()
+    graph.add(node)
+
+    offerUnplacedLink(String(node.id), 'KSampler', drop)
+
+    expect(calls).toEqual(['first'])
+  })
+
+  it('has nothing to say about a type nobody registered for', () => {
+    expect(offerUnplacedLink('1', 'NeverSeen', drop)).toBe(false)
   })
 })
 
