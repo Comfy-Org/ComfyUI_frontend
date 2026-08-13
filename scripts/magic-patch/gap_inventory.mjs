@@ -105,12 +105,23 @@ const CONSTRUCTS = [
   // These three were one row reading "graph structure polling — NONE", which
   // put them at the top of the work list on 24 packs. They are not one thing.
   // Enumerating the graph is 78 of those 74-odd files and has been served since
-  // the first release; only the version poll has nothing to receive it, and
-  // that is four files. Ranking by a label rather than by a construct sent the
+  // the first release. Ranking by a label rather than by a construct sent the
   // programme after a capability almost nobody was asking for.
   ['graph node enumeration', /\bgraph\.(?:_nodes)\b/, 'graph.nodes()'],
   ['group enumeration', /\b_groups\b/, 'graph.groups()'],
-  ['graph version polling', /\bgraph\._version\b/, null],
+  // Nobody polls this. Every use in the corpus is `graph._version++`, and in
+  // all four it sits on the line directly above `setDirtyCanvas(true, true)`:
+  //
+  //     this.value = picker.value
+  //     node.graph._version++
+  //     node.setDirtyCanvas(true, true)
+  //
+  // It is a second redraw nudge next to the first, after a widget value
+  // changed. Setting the value is what the published API asks for, and that
+  // redraws on its own. Carrying this as the corpus's last destination-less
+  // construct advertised a missing capability that no pack was asking for and
+  // no conversion needed.
+  ['graph version bump', /\bgraph\._version\b/, 'widget value assignment'],
   [
     'ContextMenu / slot menu',
     /\bContextMenu\b|\bgetExtraMenuOptions\b|\bshowConnectionMenu\b/,
