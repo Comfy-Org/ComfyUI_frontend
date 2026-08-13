@@ -890,7 +890,7 @@
       },
       "model": {
         "name": "modello",
-        "tooltip": "Seedance 2.0 per la massima qualità; Fast per ottimizzare la velocità; Mini per la generazione più veloce e a basso costo."
+        "tooltip": "Seedance 2.5 per il modello più recente, video fino a 30 secondi e output mp4/mov; Seedance 2.0 per la massima qualità e 1080p/4k; Fast per l'ottimizzazione della velocità; Mini per la generazione più rapida e meno costosa."
       },
       "model_duration": {
         "name": "durata"
@@ -931,7 +931,7 @@
       },
       "model": {
         "name": "modello",
-        "tooltip": "Seedance 2.0 per la massima qualità; Fast per ottimizzare la velocità; Mini per la generazione più veloce e a basso costo."
+        "tooltip": "Seedance 2.5 per il modello più recente, video fino a 30 secondi e output mp4/mov; Seedance 2.0 per la massima qualità e 1080p/4k; Fast per l'ottimizzazione della velocità; Mini per la generazione più rapida e meno costosa."
       },
       "model_auto_downscale": {
         "name": "ridimensionamento automatico in basso"
@@ -984,7 +984,7 @@
       },
       "model": {
         "name": "modello",
-        "tooltip": "Seedance 2.0 per la massima qualità; Fast per ottimizzare la velocità; Mini per la generazione più veloce e a basso costo."
+        "tooltip": "Seedance 2.5 per il modello più recente, video fino a 30 secondi e output mp4/mov; Seedance 2.0 per la massima qualità e 1080p/4k; Fast per l'ottimizzazione della velocità; Mini per la generazione più rapida e meno costosa."
       },
       "model_duration": {
         "name": "durata"

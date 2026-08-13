@@ -5,6 +5,7 @@ import { ltxPage } from '../../data/ltx'
 import { minimaxPage } from '../../data/minimax'
 import { seedancePage } from '../../data/seedance'
 import { wanAnimate2Page } from '../../data/wanAnimate2'
+import { wan3Page } from '../../data/wan3'
 import type { TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import type { ModelLaunchPage } from './types'
@@ -15,7 +16,8 @@ const pages: { name: string; page: ModelLaunchPage }[] = [
   { name: 'flux3', page: flux3Page },
   { name: 'seedance', page: seedancePage },
   { name: 'ltx', page: ltxPage },
-  { name: 'wanAnimate2', page: wanAnimate2Page }
+  { name: 'wanAnimate2', page: wanAnimate2Page },
+  { name: 'wan3', page: wan3Page }
 ]
 
 const VIDEO_URL = /^https:\/\/media\.comfy\.org\/.+\.(webm|mp4)$/

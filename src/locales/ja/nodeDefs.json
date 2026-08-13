@@ -890,7 +890,7 @@
       },
       "model": {
         "name": "モデル",
-        "tooltip": "最高品質には Seedance 2.0、速度最適化には Seedance 2.0 Fast を使用します。"
+        "tooltip": "最新モデル、最長30秒の動画、mp4/mov出力にはSeedance 2.5。最高品質と1080p/4kにはSeedance 2.0。速度最適化にはFast。最速かつ最低コストの生成にはMini。"
       },
       "model_duration": {
         "name": "継続時間"
@@ -931,7 +931,7 @@
       },
       "model": {
         "name": "モデル",
-        "tooltip": "最高品質には Seedance 2.0、速度最適化には Seedance 2.0 Fast を使用します。"
+        "tooltip": "最新モデル、最長30秒の動画、mp4/mov出力にはSeedance 2.5。最高品質と1080p/4kにはSeedance 2.0。速度最適化にはFast。最速かつ最低コストの生成にはMini。"
       },
       "model_auto_downscale": {
         "name": "自動ダウンスケール"
@@ -984,7 +984,7 @@
       },
       "model": {
         "name": "モデル",
-        "tooltip": "最高品質には Seedance 2.0、速度最適化には Seedance 2.0 Fast を使用します。"
+        "tooltip": "最新モデル、最長30秒の動画、mp4/mov出力にはSeedance 2.5。最高品質と1080p/4kにはSeedance 2.0。速度最適化にはFast。最速かつ最低コストの生成にはMini。"
       },
       "model_duration": {
         "name": "継続時間"
@@ -5963,19 +5963,19 @@
       },
       "image": {
         "name": "image",
-        "tooltip": "grok-imagine-video のオプションの開始画像。grok-imagine-video-1.5 では必須です。"
+        "tooltip": "省略可能な開始画像。省略すると、テキストプロンプトのみから動画が生成されます。"
       },
       "model": {
         "name": "model",
-        "tooltip": "grok-imagine-video-1.5 では必ず入力画像が必要です。"
+        "tooltip": "動画生成に使用するモデル。"
       },
       "prompt": {
         "name": "プロンプト",
-        "tooltip": "希望する動画のテキスト説明。"
+        "tooltip": "目的の動画のテキスト説明。入力画像が指定されている場合、grok-imagine-video-1.5 では省略可能です。"
       },
       "resolution": {
         "name": "解像度",
-        "tooltip": "出力動画の解像度。"
+        "tooltip": "出力動画の解像度。1080pはgrok-imagine-video-1.5でのみ利用できます。"
       },
       "seed": {
         "name": "シード値",
@@ -5989,7 +5989,7 @@
     }
   },
   "GrokVideoReferenceNode": {
-    "description": "リファレンス画像をスタイルや内容の参考として、ビデオを生成します。",
+    "description": "参照画像に基づいて動画を生成します。プリセット音声の参照も任意で指定できます。",
     "display_name": "Grokリファレンス→ビデオ",
     "inputs": {
       "control_after_generate": {
@@ -8816,7 +8816,7 @@
   },
   "LTXVConcatAVLatent": {
     "description": "ビデオラテントとオーディオラテントを結合し、ジョイントAVラテントを作成します（任意のAVモデル、例：LTXVまたはMiniMax H3）。",
-    "display_name": "LTXVConcatAVLatent",
+    "display_name": "AV Latentを結合",
     "inputs": {
       "audio_latent": {
         "name": "audio_latent"
@@ -9235,8 +9235,8 @@
     }
   },
   "LTXVSeparateAVLatent": {
-    "description": "LTXV Separate AV Latent",
-    "display_name": "LTXVSeparateAVLatent",
+    "description": "結合された AV latent を動画と音声の latent に分離します（任意の AV モデル、例：LTXV または MiniMax H3）。",
+    "display_name": "AV Latentを分離",
     "inputs": {
       "av_latent": {
         "name": "av_latent"
@@ -9766,7 +9766,7 @@
   "Load3D": {
     "display_name": "3Dを読み込む",
     "inputs": {
-      "clear": "クリア",
+      "clear": {},
       "height": {
         "name": "高さ"
       },
@@ -9776,8 +9776,8 @@
       "model_file": {
         "name": "モデルファイル"
       },
-      "upload 3d model": "3Dモデルをアップロード",
-      "upload extra resources": "追加リソースをアップロード",
+      "upload 3d model": {},
+      "upload extra resources": {},
       "width": {
         "name": "幅"
       }
@@ -15609,7 +15609,7 @@
     "description": "任意の入力値をテキストとしてプレビューします。",
     "display_name": "プレビュー任意",
     "inputs": {
-      "preview_mode": "プレビューモード",
+      "preview_mode": {},
       "preview_text": {},
       "source": {
         "name": "ソース"
