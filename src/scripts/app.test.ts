@@ -336,6 +336,20 @@ describe('ComfyApp', () => {
         42
       )
     })
+
+    it('notifies extensions on both sides of a graph load', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+
+      await app.loadGraphData(createWorkflowGraphData(), false)
+
+      expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+        'beforeLoadGraph'
+      )
+      expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+        'afterLoadGraph'
+      )
+    })
   })
 
   describe('queuePrompt', () => {

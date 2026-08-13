@@ -4033,6 +4033,33 @@ describe('AgentPanelRoot workflow binding', () => {
     await expectLaterClickCannotRestoreAccumulatedNodes(selection)
   })
 
+  it('keeps each workflow node selection separate after a graph load', async () => {
+    makeTab()
+    const selection = await startVueNodeSelection()
+    const secondNode = {
+      isNodeFake: true as const,
+      id: 20,
+      title: 'Save Image'
+    }
+    const secondGraph = {
+      nodes: [secondNode],
+      getNodeById: (id: string) => (id === '20' ? secondNode : null)
+    }
+    const nodeSelectionStore = useAgentNodeSelectionStore()
+
+    nodeSelectionStore.beginWorkflowLoad()
+    nodeSelectionStore.restoreNodeIds(['20'])
+    selection.canvas.graph = secondGraph
+    selection.selectedItems.clear()
+    selection.selectedItems.add(secondNode)
+    hostStores.canvas.currentGraph = secondGraph
+    hostStores.canvas.updateSelectedItems()
+    await nextTick()
+
+    expect(nodeSelectionStore.isLoadingWorkflow).toBe(false)
+    expect([...selection.selectedItems]).toEqual([secondNode])
+  })
+
   it('resolves picker nodes from the viewed subgraph, not the root graph', async () => {
     makeTab()
     const bodies = mockMessagesEndpoint('wf-42')
