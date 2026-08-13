@@ -1,64 +1,82 @@
 <template>
   <div
     data-testid="api-signin-dialog"
-    class="relative flex w-[min(44rem,90vw)] overflow-hidden rounded-lg bg-base-background"
+    class="flex max-h-[85vh] min-h-100 w-[min(44rem,90vw)] items-stretch rounded-3xl border border-border-subtle bg-base-background p-2"
   >
-    <div
-      class="hidden w-64 shrink-0 bg-linear-to-br from-coral-500 via-coral-500 to-azure-600 sm:block"
-      aria-hidden="true"
+    <img
+      src="/assets/images/partner-nodes-signin.webp"
+      alt=""
+      class="hidden w-74.25 shrink-0 rounded-[20px] object-cover sm:block"
     />
 
-    <Button
-      variant="muted-textonly"
-      size="icon-sm"
-      class="absolute top-2 right-2 size-6 rounded-sm"
-      :aria-label="t('g.close')"
-      @click="onCancel?.()"
+    <div
+      class="flex min-w-0 flex-1 flex-col justify-between pt-5 pr-3 pb-2 pl-6"
     >
-      <i class="icon-[lucide--x] block size-4 leading-none" />
-    </Button>
-
-    <div class="flex min-h-96 flex-1 flex-col gap-4 p-6">
-      <div class="text-2xl font-medium">
-        {{ t('apiNodesSignInDialog.title') }}
-      </div>
-
-      <div class="text-sm text-muted-foreground">
-        {{ t('apiNodesSignInDialog.message') }}
-      </div>
-
-      <template v-if="apiNodeNames.length">
-        <div class="text-xs text-muted-foreground">
-          {{ t('apiNodesSignInDialog.partnerNodesInWorkflow') }}
+      <div class="flex flex-col gap-5">
+        <div class="flex flex-col gap-3">
+          <div class="text-[22px] font-semibold text-base-foreground">
+            {{ t('apiNodesSignInDialog.title') }}
+          </div>
+          <p class="m-0 text-sm/[1.45] text-muted-foreground">
+            {{ t('apiNodesSignInDialog.message') }}
+          </p>
         </div>
-        <ul
-          class="m-0 flex max-h-48 list-none flex-col gap-2 overflow-y-auto p-0"
-        >
-          <li
-            v-for="name in apiNodeNames"
-            :key="name"
-            class="flex items-center gap-2 rounded-lg bg-secondary-background px-3 py-2 text-sm"
-          >
-            <i
-              class="icon-[tabler--crown-filled] size-4 shrink-0 text-brand-yellow"
-              aria-hidden="true"
-            />
-            {{ displayNameFor(name) }}
-          </li>
-        </ul>
-      </template>
 
-      <div class="mt-auto flex items-center justify-between gap-4 pt-4">
-        <a
-          :href="partnerNodesDocsUrl"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="flex items-center gap-1.5 text-sm text-muted-foreground no-underline hover:text-base-foreground"
+        <div v-if="apiNodeNames.length" class="flex flex-col gap-2">
+          <div class="text-xs font-medium text-muted-foreground">
+            {{ t('apiNodesSignInDialog.partnerNodesInWorkflow') }}
+          </div>
+          <ul
+            class="m-0 flex max-h-48 list-none flex-col gap-2 overflow-y-auto p-0"
+          >
+            <li
+              v-for="name in apiNodeNames"
+              :key="name"
+              class="flex items-center gap-2 rounded-lg bg-secondary-background px-3.5 py-2.5 text-sm font-semibold text-base-foreground"
+            >
+              <i
+                class="icon-[tabler--crown-filled] size-4 shrink-0 text-brand-yellow"
+                aria-hidden="true"
+              />
+              <span
+                :title="displayNameFor(name)"
+                class="min-w-0 flex-1 truncate"
+              >
+                {{ displayNameFor(name) }}
+              </span>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div
+        class="flex flex-wrap items-center justify-between gap-x-2.5 gap-y-2 pt-4"
+      >
+        <AccessibleTooltip
+          :label="t('apiNodesSignInDialog.tooltip')"
+          side="top"
         >
-          <i class="icon-[lucide--info] size-4" aria-hidden="true" />
-          {{ t('apiNodesSignInDialog.whatArePartnerNodes') }}
-        </a>
-        <Button variant="inverted" @click="onLogin?.()">
+          <template #trigger>
+            <a
+              :href="partnerNodesDocsUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="flex items-center gap-1 text-xs leading-none text-muted-foreground no-underline transition-colors duration-150 hover:text-base-foreground"
+            >
+              <i
+                class="icon-[lucide--info] size-4 shrink-0"
+                aria-hidden="true"
+              />
+              {{ t('apiNodesSignInDialog.whatArePartnerNodes') }}
+            </a>
+          </template>
+        </AccessibleTooltip>
+        <Button
+          variant="inverted"
+          size="unset"
+          class="h-9 rounded-lg px-6 text-sm font-medium"
+          @click="onLogin?.()"
+        >
           {{ t('apiNodesSignInDialog.signIn') }}
         </Button>
       </div>
@@ -70,6 +88,7 @@
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 
@@ -77,10 +96,9 @@ const { t } = useI18n()
 const { buildDocsUrl } = useExternalLink()
 const nodeDefStore = useNodeDefStore()
 
-const { apiNodeNames, onLogin, onCancel } = defineProps<{
+const { apiNodeNames, onLogin } = defineProps<{
   apiNodeNames: string[]
   onLogin?: () => void
-  onCancel?: () => void
 }>()
 
 const partnerNodesDocsUrl = buildDocsUrl('/tutorials/api-nodes/faq', {
