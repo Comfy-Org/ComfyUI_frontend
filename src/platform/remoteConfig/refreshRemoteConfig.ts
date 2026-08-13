@@ -91,6 +91,7 @@ export async function refreshRemoteConfig(
     } else {
       remoteConfigErrorStatus.value = null
     }
+    if (useAuth) cachedLegacyBillingMigrationEnabled.value = undefined
     remoteConfigState.value = 'error'
   } catch (error) {
     if (generation !== refreshGeneration) return
@@ -99,6 +100,7 @@ export async function refreshRemoteConfig(
     window.__CONFIG__ = {}
     remoteConfig.value = {}
     remoteConfigErrorStatus.value = null
+    if (useAuth) cachedLegacyBillingMigrationEnabled.value = undefined
     remoteConfigState.value = 'error'
   } finally {
     clearTimeout(timeoutId)

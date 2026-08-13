@@ -11,6 +11,7 @@ import {
   clearPreservedQuery
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+import { cachedLegacyBillingMigrationEnabled } from '@/platform/remoteConfig/remoteConfig'
 import { useDialogService } from '@/services/dialogService'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
@@ -1623,6 +1624,14 @@ describe('useAuthStore', () => {
       authStateCallback(accountB)
 
       expect(mockResetSocket).toHaveBeenCalledTimes(1)
+    })
+
+    it('clears billing migration eligibility on an account switch', () => {
+      cachedLegacyBillingMigrationEnabled.value = true
+
+      authStateCallback(accountB)
+
+      expect(cachedLegacyBillingMigrationEnabled.value).toBeUndefined()
     })
 
     it('does not reconnect on a same-account token refresh', () => {

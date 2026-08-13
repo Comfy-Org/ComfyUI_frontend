@@ -191,6 +191,7 @@ describe('refreshRemoteConfig', () => {
 
   describe('error handling', () => {
     it('clears config on 401 response', async () => {
+      cachedLegacyBillingMigrationEnabled.value = true
       vi.mocked(api.fetchApi).mockResolvedValue(
         mockErrorResponse(401, 'Unauthorized')
       )
@@ -199,6 +200,7 @@ describe('refreshRemoteConfig', () => {
 
       expect(remoteConfig.value).toEqual({})
       expect(window.__CONFIG__).toEqual({})
+      expect(cachedLegacyBillingMigrationEnabled.value).toBeUndefined()
     })
 
     it('clears config on 403 response', async () => {
@@ -213,12 +215,14 @@ describe('refreshRemoteConfig', () => {
     })
 
     it('clears config on fetch error', async () => {
+      cachedLegacyBillingMigrationEnabled.value = true
       vi.mocked(api.fetchApi).mockRejectedValue(new Error('Network error'))
 
       await refreshRemoteConfig()
 
       expect(remoteConfig.value).toEqual({})
       expect(window.__CONFIG__).toEqual({})
+      expect(cachedLegacyBillingMigrationEnabled.value).toBeUndefined()
     })
 
     it('preserves config on 500 response', async () => {
