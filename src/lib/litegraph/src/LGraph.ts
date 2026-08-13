@@ -1128,19 +1128,12 @@ export class LGraph
     // LEGACY: This was changed from constructor === LGraphGroup
     // groups
     if (node instanceof LGraphGroup) {
-      const rootGroups = [
-        ...this.rootGraph.groups,
-        ...[...this.rootGraph.subgraphs.values()].flatMap(
-          (subgraph) => subgraph.groups
-        )
-      ]
       if (
         node.id == null ||
         node.id === -1 ||
-        rootGroups.some((group) => group.id === node.id)
+        layoutStore.getGroupLayout(this.rootGraph.id, node.id)
       ) {
-        do node.id = mintGroupId(state)
-        while (rootGroups.some((group) => group.id === node.id))
+        node.id = mintGroupId(state)
       }
       observeGroupId(state, node.id)
 
