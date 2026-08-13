@@ -885,11 +885,6 @@ export const useAssetsStore = defineStore('assets', () => {
     inputError,
 
     pagedHistory: historyAssets,
-    historyAssets: historyAssets.items,
-    historyLoading: historyAssets.isLoading,
-    historyError: ref(null),
-    hasMoreHistory: historyAssets.hasMore,
-    isLoadingMore: historyAssets.isLoading,
 
     // Deletion tracking
     deletingAssetIds,
