@@ -4,6 +4,8 @@ import { computed, ref, shallowRef, watch } from 'vue'
 import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBillingPlans'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import { useTelemetry } from '@/platform/telemetry'
+import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import type {
   BillingBalanceResponse,
   BillingStatusResponse,
@@ -107,6 +109,7 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
   const billingPlans = useBillingPlans()
   const billingOperationStore = useBillingOperationStore()
   const workspaceStore = useTeamWorkspaceStore()
+  const telemetry = useTelemetry()
 
   const isInitialized = ref(false)
   const isLoading = ref(false)
@@ -385,11 +388,22 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
   async function cancelSubscription(): Promise<void> {
     isLoading.value = true
     error.value = null
+    const attemptStartedAt = Date.now()
+    telemetry?.trackBillingEvent({
+      operation: 'operation',
+      stage: 'started',
+      outcome: 'pending',
+      operation_type: 'cancel'
+    })
+    // Once set, the poller (billingOperationStore) owns failure telemetry; until then, this must report it.
+    let billingOpId: string | undefined
     try {
       const response = await workspaceApi.cancelSubscription()
+      billingOpId = response.billing_op_id
       const operation = await billingOperationStore.startOperation(
-        response.billing_op_id,
-        'cancel'
+        billingOpId,
+        'cancel',
+        { attemptStartedAt }
       )
 
       if (operation.status !== 'succeeded') {
@@ -403,7 +417,24 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
         // fetchStatus records its own read failure; the cancellation still
         // holds, so the operation is not in error.
         error.value = null
+        telemetry?.trackBillingEvent({
+          operation: 'operation',
+          stage: 'succeeded',
+          outcome: 'success',
+          operation_type: 'cancel',
+          duration_ms: Date.now() - attemptStartedAt
+        })
         return
+      }
+      if (billingOpId === undefined) {
+        telemetry?.trackBillingEvent({
+          operation: 'operation',
+          stage: 'failed',
+          outcome: 'failure',
+          operation_type: 'cancel',
+          failure_category: categorizeBillingApiError(err),
+          duration_ms: Date.now() - attemptStartedAt
+        })
       }
       error.value =
         err instanceof Error ? err.message : 'Failed to cancel subscription'
@@ -413,7 +444,12 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     }
   }
 
-  async function resubscribe(): Promise<void> {
+  async function resubscribe(_options?: {
+    source?: 'pricing_dialog' | 'settings_billing_panel'
+  }): Promise<void> {
+    // Workspace's resubscribe() call is itself the terminal reactivation, so
+    // the click-time source isn't needed here the way the legacy adapter
+    // needs it for its pending-checkout-recovery terminal event.
     isLoading.value = true
     error.value = null
     try {

@@ -1254,6 +1254,7 @@ export const zJobEntry = z.object({
   id: z.string().uuid(),
   outputs_count: z.number().int().optional(),
   preview_output: z.record(z.unknown()).optional(),
+  previewable_outputs_count: z.number().int().optional(),
   status: z.enum([
     'pending',
     'in_progress',
@@ -1374,6 +1375,7 @@ export const zJobDetailResponse = z.object({
   outputs: z.record(z.unknown()).optional(),
   outputs_count: z.number().int().optional(),
   preview_output: z.record(z.unknown()).optional(),
+  previewable_outputs_count: z.number().int().optional(),
   status: z.enum([
     'pending',
     'in_progress',
@@ -1487,6 +1489,7 @@ export const zHubWorkflowTemplateEntry = z.object({
       outputs: z.array(z.record(z.unknown())).optional()
     })
     .optional(),
+  isApp: z.boolean(),
   isEssential: z.boolean().optional(),
   logos: z.array(z.record(z.unknown())).optional(),
   mediaSubtype: z.string().optional(),
@@ -1550,6 +1553,7 @@ export const zHubWorkflowTemplateEntry = z.object({
 export const zHubWorkflowSummary = z.object({
   custom_nodes: z.array(zLabelRef).optional(),
   description: z.string().optional(),
+  is_app: z.boolean(),
   metadata: z.record(z.unknown()).optional(),
   models: z.array(zLabelRef).optional(),
   name: z.string(),
@@ -1572,6 +1576,7 @@ export const zHubWorkflowDetail = z.object({
   assets: z.array(zAssetInfo),
   custom_nodes: z.array(zLabelRef).optional(),
   description: z.string().optional(),
+  is_app: z.boolean(),
   metadata: z.record(z.unknown()).optional(),
   models: z.array(zLabelRef).optional(),
   name: z.string(),
@@ -2534,6 +2539,9 @@ export const zListAssetsData = z.object({
     .object({
       include_tags: z.array(z.string()).optional(),
       exclude_tags: z.array(z.string()).optional(),
+      tags_all: z.array(z.string()).optional(),
+      tags_any: z.array(z.string()).optional(),
+      tags_none: z.array(z.string()).optional(),
       name_contains: z.string().optional(),
       metadata_filter: z.string().optional(),
       limit: z.number().int().gte(1).lte(500).optional().default(20),
@@ -2842,6 +2850,9 @@ export const zGetAssetTagHistogramData = z.object({
     .object({
       include_tags: z.array(z.string()).optional(),
       exclude_tags: z.array(z.string()).optional(),
+      tags_all: z.array(z.string()).optional(),
+      tags_any: z.array(z.string()).optional(),
+      tags_none: z.array(z.string()).optional(),
       name_contains: z.string().optional(),
       metadata_filter: z.string().optional(),
       limit: z.number().int().gte(1).lte(1000).optional().default(100),
@@ -4310,7 +4321,11 @@ export const zCreateWorkflowUploadUrlResponse = zUploadGrantResponse
 export const zListWorkspaceApiKeysData = z.object({
   body: z.never().optional(),
   path: z.never().optional(),
-  query: z.never().optional()
+  query: z
+    .object({
+      include_revoked: z.boolean().optional().default(false)
+    })
+    .optional()
 })
 
 /**

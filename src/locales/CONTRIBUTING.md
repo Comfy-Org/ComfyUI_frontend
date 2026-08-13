@@ -19,20 +19,22 @@
 
 **Time required: ~10 minutes**
 
-#### 1.1 Update `.i18nrc.cjs`
+#### 1.1 Update `scripts/i18n/config.ts`
 
-Add your language code to the `outputLocales` array:
+Add your language to the `outputLocales` array. `name` is the English name of
+the language the translation model is asked to write, and the optional
+`guidance` string carries language-specific instructions (tone, script,
+glossary):
 
-```javascript
-module.exports = defineConfig({
-  // ... existing config
-  outputLocales: ['zh', 'zh-TW', 'ru', 'ja', 'ko', 'fr', 'es', 'tr'], // Add your language here
-  reference: `Special names to keep untranslated: flux, photomaker, clip, vae, cfg, stable audio, stable cascade, stable zero, controlnet, lora, HiDream.
-  'latent' is the short form of 'latent space'.
-  'mask' is in the context of image processing.
-  Note: For Traditional Chinese (Taiwan), use Taiwan-specific terminology and traditional characters.
-  `
-})
+```typescript
+outputLocales: [
+  // ... existing locales
+  {
+    code: 'zh-TW',
+    name: 'Traditional Chinese (Taiwan)',
+    guidance: chineseTraditionalGuidance
+  }
+]
 ```
 
 #### 1.2 Update `src/locales/localeConfig.ts`
@@ -51,7 +53,14 @@ settings dropdown, supported-locale resolution, and lazy locale loading:
 ```bash
 # Only if you have OpenAI API key configured
 pnpm locale
+
+# Report pending work without calling the API
+pnpm locale:check
 ```
+
+Both commands need a clone with full history (a blobless partial clone works):
+the source manifest records git blob hashes of past English sources, and the
+pipeline reads them back with `git cat-file`.
 
 #### Option B: Let CI Handle It (Recommended)
 
@@ -98,6 +107,30 @@ Our automated translation workflow now runs on release PRs (version-bump-\* bran
 2. **Updates English files**: Ensures all strings are captured
 3. **Generates translations**: Uses OpenAI API to translate to all configured languages
 4. **Commits back**: Automatically updates the release PR with complete translations
+
+The pipeline (`scripts/i18n/update-locales.ts`) records the English sources it
+last translated in `src/locales/.source-manifest.json`. On each run it
+retranslates strings whose English text changed, backfills missing keys, prunes
+keys removed from English (deleting whole locale files whose English source
+file was removed), and validates that interpolation placeholders and protected
+literals (e.g. `<Picture N>`, `17k+5`) survive translation exactly. Existing
+translations whose placeholders no longer match the English source are
+re-queued for translation, so corrupted strings heal on the next run. Results
+persist per entry file: a failure translating one file does not discard the
+completed, validated work of the others — those are written and their manifest
+entries advance, and only the failed files retry on the next run. Runs that
+would delete an implausibly large share of a file's keys abort that file
+without writing — that usually means `collect-i18n` observed a partial app;
+rerun with `--allow-prune` (or the `allow_prune` input on the manual workflow
+dispatch) only after confirming the English sources are complete.
+`pnpm locale:check` runs offline in CI: it reports pending work and fails on
+protected-token violations that are not already queued for retranslation
+because the English source changed. The manifest's `knownViolations` field
+baselines violations that predate the pipeline; a successful locale run heals
+and drops them, and any corruption introduced beyond the baseline fails the
+check immediately. oxfmt ignores `src/locales/**/*.json` — the pipeline is the
+sole writer of those bytes, which keeps the manifest's recorded blob hashes
+valid.
 
 ### Manual Translation Updates
 
