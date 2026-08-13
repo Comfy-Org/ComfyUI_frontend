@@ -57,8 +57,10 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
             const [nodeName, displayName, inputNames] = args
             // @ts-expect-error - LiteGraph is dynamically added to window
             const node = window['LiteGraph'].createNode(nodeName, displayName)
+            // @ts-expect-error - createNode is null for unregistered types
             if (!node.widgets?.length) return {}
             return Object.fromEntries(
+              // @ts-expect-error - createNode is null for unregistered types
               node.widgets
                 .filter(
                   (w: WidgetInfo) => w?.name && !inputNames.includes(w.name)
@@ -76,6 +78,7 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
         )
 
         if (Object.keys(runtimeWidgets).length > 0) {
+          // @ts-expect-error - evaluate() erases the widget label types
           nodeLabels[nodeDef.name] = runtimeWidgets
         }
       } catch (error) {

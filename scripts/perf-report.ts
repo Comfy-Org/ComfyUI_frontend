@@ -91,6 +91,7 @@ const REPORTED_METRICS: MetricDef[] = [
 ]
 
 /** Target: P5 FPS ≥ 52 → P95 frame time ≤ 19.2ms */
+// @ts-expect-error - unused, kept to document the frame-time target
 const TARGET_P95_FRAME_MS = 19.2
 const TARGET_P5_FPS = 52
 

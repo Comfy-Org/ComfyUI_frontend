@@ -3,12 +3,13 @@ import * as fs from 'fs'
 // Import Vite define shim to make __DISTRIBUTION__ and other define variables available
 import './vite-define-shim'
 
+// eslint-disable-next-line import-x/no-relative-packages -- desktop-ui is not a dependency of the root package
 import { DESKTOP_DIALOGS } from '../apps/desktop-ui/src/constants/desktopDialogs'
 import { comfyPageFixture as test } from '../browser_tests/fixtures/ComfyPage'
 import {
   formatCamelCase,
   normalizeI18nKey
-} from '../packages/shared-frontend-utils/src/formatUtil'
+} from '@comfyorg/shared-frontend-utils/formatUtil'
 import { CORE_MENU_COMMANDS } from '../src/constants/coreMenuCommands'
 import { SERVER_CONFIG_ITEMS } from '../src/constants/serverConfig'
 import type { SettingParams } from '../src/platform/settings/types'
@@ -29,6 +30,7 @@ const extractMenuCommandLocaleStrings = (): Set<string> => {
 test('collect-i18n-general', async ({ comfyPage }) => {
   const commands = (
     await comfyPage.page.evaluate(() => {
+      // @ts-expect-error - app is dynamically added to window
       const workspace = window['app'].extensionManager
       const commands = workspace.command.commands as ComfyCommandImpl[]
       return commands.map((command) => ({
@@ -66,7 +68,9 @@ test('collect-i18n-general', async ({ comfyPage }) => {
 
   // Settings
   const settings = await comfyPage.page.evaluate(() => {
+    // @ts-expect-error - app is dynamically added to window
     const workspace = window['app'].extensionManager
+    // @ts-expect-error - settings is not on the public setting store type
     const settings = workspace.setting.settings as Record<string, SettingParams>
     return Object.values(settings)
       .sort((a, b) => a.id.localeCompare(b.id))
@@ -96,6 +100,7 @@ test('collect-i18n-general', async ({ comfyPage }) => {
         options:
           setting.options && setting.id !== 'Comfy.Locale'
             ? Object.fromEntries(
+                // @ts-expect-error - option is untyped in SettingParams
                 setting.options.map((option) => {
                   const optionLabel =
                     typeof option === 'string' ? option : option.text
@@ -141,6 +146,7 @@ test('collect-i18n-general', async ({ comfyPage }) => {
   // Desktop Dialogs
   const allDesktopDialogsLocale = Object.fromEntries(
     Object.values(DESKTOP_DIALOGS).map((dialog) => [
+      // @ts-expect-error - not every DESKTOP_DIALOGS entry declares an id
       normalizeI18nKey(dialog.id),
       {
         title: dialog.title,

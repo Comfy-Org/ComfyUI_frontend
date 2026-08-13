@@ -50,18 +50,25 @@ describe('serializeNodeDefLocales', () => {
       })
     const serializedNode = nodeDefinitions.Test_Node
     const serializedInput =
+      // @ts-expect-error - serialized inputs are optional in the node type
       serializedNode.inputs['Input @ $ {value} | 50%{done}']
+    // @ts-expect-error - serialized outputs are optional in the node type
     const serializedOutput = serializedNode.outputs['0']
 
     expect(render(serializedNode.display_name)).toBe(nodeDef.display_name)
+    // @ts-expect-error - description is string | undefined
     expect(render(serializedNode.description)).toBe(nodeDef.description)
+    // @ts-expect-error - name is string | undefined
     expect(render(serializedInput.name)).toBe(inputName)
+    // @ts-expect-error - name is string | undefined
     expect(render(serializedOutput.name)).toBe(outputName)
+    // @ts-expect-error - serialized inputs are optional in the node type
     expect(render(serializedNode.inputs.Runtime_Widget.name)).toBe(
       `Widget ${syntax}`
     )
     expect(render(dataTypes[dataType])).toBe(dataType)
     expect(render(nodeCategories[category])).toBe(category)
+    // @ts-expect-error - tooltip is absent on the widget-only input variant
     expect(serializedInput.tooltip).toBe(nodeDef.inputs.input.tooltip)
     expect(serializedOutput.tooltip).toBe(nodeDef.outputs[0].tooltip)
   })
