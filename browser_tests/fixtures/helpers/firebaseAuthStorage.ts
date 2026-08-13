@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test'
 
-import { DEV_FIREBASE_WEB_API_KEY } from '@/config/firebase'
+import { DEV_FIREBASE_WEB_API_KEY } from '@/config/firebaseConstants'
 
 // Mirrors firebase-js-sdk browserLocalPersistence internals; the SDK reads exactly these at boot.
 const FIREBASE_AUTH_DB = 'firebaseLocalStorageDb'

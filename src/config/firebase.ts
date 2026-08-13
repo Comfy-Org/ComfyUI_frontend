@@ -1,12 +1,7 @@
 import type { FirebaseOptions } from 'firebase/app'
 
+import { DEV_FIREBASE_WEB_API_KEY } from './firebaseConstants'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
-
-// Public web client identifier, not a secret (it ships in every bundle);
-// exported so test fixtures seed Firebase storage under the same key the
-// SDK derives its lookup keys from, instead of duplicating the literal.
-export const DEV_FIREBASE_WEB_API_KEY =
-  'AIzaSyDa_YMeyzV0SkVe92vBZ1tVikWBmOU5KVE'
 
 const DEV_CONFIG: FirebaseOptions = {
   apiKey: DEV_FIREBASE_WEB_API_KEY,
