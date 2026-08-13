@@ -68,6 +68,9 @@ type YEventChange = {
 
 const logger = log.getLogger('LayoutStore')
 
+/** Fields whose value changes move a node on screen. */
+const NODE_GEOMETRY_KEYS = new Set(['position', 'size', 'bounds'])
+
 // Utility functions
 function asRerouteId(id: string | number): RerouteId {
   return toRerouteId(Number(id))
@@ -115,6 +118,7 @@ class LayoutStoreImpl implements LayoutStore {
 
   // Vue reactivity layer
   private version = 0
+  private _nodeGeometryVersion = 0
   private currentSource: LayoutSource =
     ACTOR_CONFIG.DEFAULT_SOURCE as LayoutSource
   private currentActor = `${ACTOR_CONFIG.USER_PREFIX}${Math.random()
@@ -192,6 +196,24 @@ class LayoutStoreImpl implements LayoutStore {
     return this.version
   }
 
+  /**
+   * Counter bumped only when node geometry changes: a node is added or
+   * removed, or an existing node's position, size or bounds is written.
+   *
+   * `layoutVersion` counts operations, so it also moves for changes nothing
+   * renders from geometry - `setNodeZIndex` alone fires on every widget
+   * pointerdown. Consumers that rebuild geometry-derived state should key on
+   * this instead, or they repaint for edits that cannot move a pixel.
+   *
+   * Backed by `observeDeep`, so it covers writes that never touch a top-level
+   * key - a move mutates fields inside a node's own map - and therefore also
+   * covers remote changes arriving through `applyUpdate`, which run no local
+   * operation handler.
+   */
+  get nodeGeometryVersion(): number {
+    return this._nodeGeometryVersion
+  }
+
   setPendingSlotSync(value: boolean): void {
     this._pendingSlotSync = value
   }
@@ -208,6 +230,24 @@ class LayoutStoreImpl implements LayoutStore {
     this.linkSegmentSpatialIndex = new SpatialIndexManager<string>() // Single index for all link geometry
     this.slotSpatialIndex = new SpatialIndexManager<SlotId>()
     this.rerouteSpatialIndex = new SpatialIndexManager<string>()
+
+    // Geometry-only counter. observeDeep because a move writes fields inside a
+    // node's own map rather than a top-level key, so `observe` never sees it,
+    // and because remote updates run no local operation handler.
+    this.ynodes.observeDeep((events) => {
+      for (const event of events) {
+        const changedKeys =
+          event.target === this.ynodes
+            ? // Whole nodes added or removed.
+              ['position']
+            : [...event.changes.keys.keys()]
+
+        if (changedKeys.some((key) => NODE_GEOMETRY_KEYS.has(key))) {
+          this._nodeGeometryVersion++
+          return
+        }
+      }
+    })
 
     // Listen for Yjs changes and trigger Vue reactivity
     this.ynodes.observe((event: Y.YMapEvent<NodeLayoutMap>) => {

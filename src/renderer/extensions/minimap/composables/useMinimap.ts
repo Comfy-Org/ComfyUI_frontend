@@ -78,8 +78,14 @@ export function useMinimap({
     canvas
   )
 
+  // Two of the three useMinimap() call sites have no canvas. updateBounds()
+  // runs before renderMinimap discovers there is nothing to draw, and it costs
+  // a full layout-map rebuild, so every path that redraws checks this first.
+  const canDraw = computed(() => visible.value && !!canvasRef.value)
+
   // Graph event management
   const graphManager = useMinimapGraph(graph, () => {
+    if (!canDraw.value) return
     renderer.forceFullRedraw()
     renderer.updateMinimap(viewport.updateBounds, viewport.updateViewport)
   })
@@ -107,11 +113,7 @@ export function useMinimap({
   const { pause: pauseChangeDetection, resume: resumeChangeDetection } =
     useIntervalFn(
       () => {
-        // Two of the three useMinimap() call sites have no canvas, and a
-        // detected change would otherwise still pay a full data-source build
-        // in updateBounds before renderMinimap discovers there is nothing to
-        // draw.
-        if (!visible.value || !canvasRef.value) return
+        if (!canDraw.value) return
         if (graphManager.checkForChanges()) {
           renderer.updateMinimap(viewport.updateBounds, viewport.updateViewport)
         }
@@ -122,11 +124,24 @@ export function useMinimap({
 
   // rAF was suspended entirely on a hidden tab; setInterval is only clamped to
   // roughly 1s, so without this a parked tab keeps digesting the whole graph.
+  //
+  // `immediate` matters: a tab opened in the background (middle-click, session
+  // restore) is already hidden at mount, so no visibilitychange ever fires and
+  // a transition-only watcher would never pause the loop it just started.
   const documentVisibility = useDocumentVisibility()
-  watch(documentVisibility, (state) => {
-    if (state === 'hidden') pauseChangeDetection()
-    else if (visible.value) resumeChangeDetection()
-  })
+  const documentHidden = computed(() => documentVisibility.value === 'hidden')
+
+  /** Both start paths consult this, so a hidden tab never starts polling. */
+  const shouldPoll = () => canDraw.value && !documentHidden.value
+
+  watch(
+    documentHidden,
+    (hidden) => {
+      if (hidden) pauseChangeDetection()
+      else if (canDraw.value) resumeChangeDetection()
+    },
+    { immediate: true }
+  )
 
   const init = async () => {
     if (initialized.value) return
@@ -149,10 +164,8 @@ export function useMinimap({
       renderer.updateMinimap(viewport.updateBounds, viewport.updateViewport)
       viewport.updateViewport()
 
-      if (visible.value) {
-        resumeChangeDetection()
-        viewport.startViewportSync()
-      }
+      if (shouldPoll()) resumeChangeDetection()
+      if (visible.value) viewport.startViewportSync()
       initialized.value = true
     }
   }
@@ -193,6 +206,7 @@ export function useMinimap({
     if (newGraph && newGraph !== oldGraph) {
       graphManager.cleanupEventListeners(oldGraph || undefined)
       graphManager.setupEventListeners()
+      if (!canDraw.value) return
       renderer.forceFullRedraw()
       renderer.updateMinimap(viewport.updateBounds, viewport.updateViewport)
     }
@@ -212,7 +226,7 @@ export function useMinimap({
 
       renderer.updateMinimap(viewport.updateBounds, viewport.updateViewport)
       viewport.updateViewport()
-      resumeChangeDetection()
+      if (shouldPoll()) resumeChangeDetection()
       viewport.startViewportSync()
     } else {
       pauseChangeDetection()
@@ -224,7 +238,9 @@ export function useMinimap({
   watch(
     () => executionStore.nodeProgressStates,
     () => {
-      if (visible.value) {
+      // Fires per progress message during a run, so the canvas check matters
+      // here more than anywhere else.
+      if (canDraw.value) {
         renderer.forceFullRedraw()
         renderer.updateMinimap(viewport.updateBounds, viewport.updateViewport)
       }

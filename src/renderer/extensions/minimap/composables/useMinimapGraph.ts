@@ -46,10 +46,14 @@ function mixIn(digest: number, value: number): number {
  */
 function computeLayoutDigest(graph: LGraph): number {
   // The renderer reads geometry from layoutStore whenever it holds nodes, so
-  // detection has to move when the store does. A Vue-side write whose
+  // detection has to move when the store does: a Vue-side write whose
   // write-back to liteNode is dropped would otherwise leave this digest
   // unchanged while the renderer paints the newer store geometry.
-  let digest = mixIn(layoutStore.layoutVersion, graph._nodes.length)
+  //
+  // Geometry version rather than layoutVersion - the latter counts operations,
+  // so zIndex writes (one per widget pointerdown) and reroute drags would each
+  // force a full rebuild and redraw of a picture that did not change.
+  let digest = mixIn(layoutStore.nodeGeometryVersion, graph._nodes.length)
   for (const node of graph._nodes) {
     const [x, y] = node.pos
     const [width, height] = node.size

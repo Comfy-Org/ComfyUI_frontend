@@ -273,6 +273,8 @@ export interface LayoutStore {
   readonly nodeCount: number
   /** Cache key for derived structures; see the implementation for its scope. */
   readonly layoutVersion: number
+  /** Cache key for geometry-derived state; moves only when nodes move. */
+  readonly nodeGeometryVersion: number
 
   // CustomRef accessors for shared write access
   getNodeLayoutRef(nodeId: NodeId): Ref<NodeLayout | null>

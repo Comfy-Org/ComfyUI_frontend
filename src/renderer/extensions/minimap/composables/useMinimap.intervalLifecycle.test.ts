@@ -183,6 +183,27 @@ describe('useMinimap change-detection interval', () => {
     expect(drawCalls()).toBeGreaterThan(afterShow)
   })
 
+  it('never starts polling in a document that was already hidden', async () => {
+    // A background tab (middle-click, session restore) is hidden before mount,
+    // so no visibilitychange ever fires and a transition-only guard would leave
+    // the loop running for as long as the tab stays parked.
+    const visibility = vi
+      .spyOn(document, 'visibilityState', 'get')
+      .mockReturnValue('hidden')
+
+    try {
+      await initMinimap()
+      const atInit = drawCalls()
+
+      moveNode()
+      await vi.advanceTimersByTimeAsync(POLL_MS * 5)
+
+      expect(drawCalls()).toBe(atInit)
+    } finally {
+      visibility.mockRestore()
+    }
+  })
+
   it('stops polling after destroy', async () => {
     const minimap = await initMinimap()
     minimap.destroy()
