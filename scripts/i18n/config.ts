@@ -1,25 +1,21 @@
+import type { OpenAI } from 'openai'
+
 export interface OutputLocale {
   code: string
   name: string
   guidance?: string
 }
 
-export type ReasoningEffort =
-  | 'none'
-  | 'low'
-  | 'medium'
-  | 'high'
-  | 'xhigh'
-  | 'max'
-
 export interface TranslationPipelineConfig {
   entry: string
   output: string
   model: string
-  reasoningEffort: ReasoningEffort
+  reasoningEffort: NonNullable<
+    OpenAI.ChatCompletionCreateParams['reasoning_effort']
+  >
   maxItemsPerRequest: number
   maxSourceCharsPerRequest: number
-  localeConcurrency: number
+  stateConcurrency: number
   requestConcurrency: number
   maxTranslationRounds: number
   pruneCountFloor: number
@@ -52,7 +48,7 @@ export const translationPipelineConfig: TranslationPipelineConfig = {
   reasoningEffort: 'high',
   maxItemsPerRequest: 40,
   maxSourceCharsPerRequest: 6000,
-  localeConcurrency: 3,
+  stateConcurrency: 3,
   requestConcurrency: 2,
   maxTranslationRounds: 3,
   pruneCountFloor: 25,
