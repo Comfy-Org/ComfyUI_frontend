@@ -5,6 +5,7 @@ import { getCanvasContextMenuTarget } from '@/lib/litegraph/src/canvas/getCanvas
 import { LLink } from '@/lib/litegraph/src/LLink'
 import { LinkRenderType } from '@/lib/litegraph/src/types/globalEnums'
 import { toLinkId } from '@/types/linkId'
+import { toRerouteId } from '@/types/rerouteId'
 
 const { mockQueryLinkSegmentAtPoint, mockQueryRerouteAtPoint } = vi.hoisted(
   () => ({
@@ -171,7 +172,7 @@ describe('getCanvasContextMenuTarget', () => {
     mockQueryRerouteAtPoint.mockReturnValue({ id: 9 })
     mockQueryLinkSegmentAtPoint.mockReturnValue({
       linkId: toLinkId(4),
-      rerouteId: toLinkId(9)
+      rerouteId: toRerouteId(9)
     })
 
     const target = resolve()

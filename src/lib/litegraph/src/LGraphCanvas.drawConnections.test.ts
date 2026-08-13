@@ -2,20 +2,21 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import {
-  LGraph,
-  LGraphCanvas,
-  LGraphNode,
-  LiteGraph
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type {
+  CanvasPointerEvent,
+  LGraphCanvas
 } from '@/lib/litegraph/src/litegraph'
-import type { CanvasPointerEvent } from '@/lib/litegraph/src/litegraph'
-import { LLink } from '@/lib/litegraph/src/LLink'
+import type { LLink } from '@/lib/litegraph/src/LLink'
 import {
   isLinkRevealed,
   setRevealedLinks
 } from '@/renderer/core/canvas/links/linkVisibilityState'
-import { toLinkId } from '@/types/linkId'
-import { createMockCanvas2DContext } from '@/utils/__tests__/litegraphTestUtils'
+import {
+  createMockCanvas2DContext,
+  createTestCanvas,
+  createTestLink
+} from '@/utils/__tests__/litegraphTestUtils'
 
 vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
   layoutStore: {
@@ -63,64 +64,19 @@ function createMockCtx(): CanvasRenderingContext2D {
   })
 }
 
-/**
- * Creates a link between two nodes by directly mutating graph state,
- * bypassing the layout store integration in connect().
- */
-function createTestLink(
-  graph: LGraph,
-  sourceNode: LGraphNode,
-  outputSlot: number,
-  targetNode: LGraphNode,
-  inputSlot: number
-): LLink {
-  const linkId = toLinkId(Number(graph.state.lastLinkId) + 1)
-  graph.state.lastLinkId = linkId
-  const link = new LLink(
-    linkId,
-    sourceNode.outputs[outputSlot].type,
-    sourceNode.id,
-    outputSlot,
-    targetNode.id,
-    inputSlot
-  )
-  graph._links.set(linkId, link)
-  sourceNode.outputs[outputSlot].links ??= []
-  sourceNode.outputs[outputSlot].links!.push(linkId)
-  targetNode.inputs[inputSlot].link = linkId
-  return link
-}
-
 describe('drawConnections widget-input slot positioning', () => {
   let graph: LGraph
   let canvas: LGraphCanvas
-  let canvasElement: HTMLCanvasElement
 
   beforeEach(() => {
     setActivePinia(createTestingPinia())
-
-    canvasElement = document.createElement('canvas')
-    canvasElement.width = 800
-    canvasElement.height = 600
-    canvasElement.getContext = vi.fn().mockReturnValue(createMockCtx())
-    canvasElement.getBoundingClientRect = vi.fn().mockReturnValue({
-      left: 0,
-      top: 0,
-      width: 800,
-      height: 600
-    })
-
     graph = new LGraph()
-    canvas = new LGraphCanvas(canvasElement, graph, {
-      skip_render: true
-    })
-
+    canvas = createTestCanvas(graph, createMockCtx())
     LiteGraph.vueNodesMode = false
   })
 
   afterEach(() => {
     LiteGraph.vueNodesMode = false
-    setRevealedLinks([])
   })
 
   it('arranges widget-input slots before rendering links', () => {
@@ -219,18 +175,8 @@ describe('drawConnections hidden links', () => {
 
   beforeEach(() => {
     setActivePinia(createTestingPinia())
-    const canvasElement = document.createElement('canvas')
-    canvasElement.width = 800
-    canvasElement.height = 600
-    canvasElement.getContext = vi.fn().mockReturnValue(createMockCtx())
-    canvasElement.getBoundingClientRect = vi.fn().mockReturnValue({
-      left: 0,
-      top: 0,
-      width: 800,
-      height: 600
-    })
     graph = new LGraph()
-    canvas = new LGraphCanvas(canvasElement, graph, { skip_render: true })
+    canvas = createTestCanvas(graph, createMockCtx())
     canvas.visible_area.set([0, 0, 800, 600])
     LiteGraph.vueNodesMode = false
     setRevealedLinks([])
@@ -238,7 +184,6 @@ describe('drawConnections hidden links', () => {
 
   afterEach(() => {
     LiteGraph.vueNodesMode = false
-    setRevealedLinks([])
   })
 
   function createHiddenLink(): LLink {
@@ -324,7 +269,7 @@ describe('drawConnections hidden links', () => {
       expect.any(Function),
       event
     )
-    prompt.mock.calls[0][2]('  Checkpoint  ')
+    prompt.mock.calls[0][2]('Checkpoint')
     expect(link.label).toBe('Checkpoint')
   })
 

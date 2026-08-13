@@ -7,12 +7,15 @@ import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type {
   CanvasPointerEvent,
   LGraph,
-  LGraphCanvas,
   LGraphGroup,
-  LinkNetwork,
+  LinkNetwork
+} from '@/lib/litegraph/src/litegraph'
+import {
+  LGraphCanvas,
+  LGraphEventMode,
+  LGraphNode,
   LLink
 } from '@/lib/litegraph/src/litegraph'
-import { LGraphEventMode, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { vi } from 'vitest'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { ChangeTracker } from '@/scripts/changeTracker'
@@ -361,4 +364,49 @@ export function createMockLinks(links: LLink[]): LGraph['links'] {
     record[link.id] = link
   }
   return Object.assign(map, record) as LGraph['links']
+}
+
+/**
+ * Creates a link between two nodes by directly mutating graph state,
+ * bypassing the layout store integration in connect().
+ */
+export function createTestLink(
+  graph: LGraph,
+  sourceNode: LGraphNode,
+  outputSlot: number,
+  targetNode: LGraphNode,
+  inputSlot: number
+): LLink {
+  const linkId = toLinkId(Number(graph.state.lastLinkId) + 1)
+  graph.state.lastLinkId = linkId
+  const link = new LLink(
+    linkId,
+    sourceNode.outputs[outputSlot].type,
+    sourceNode.id,
+    outputSlot,
+    targetNode.id,
+    inputSlot
+  )
+  graph._links.set(linkId, link)
+  sourceNode.outputs[outputSlot].links ??= []
+  sourceNode.outputs[outputSlot].links!.push(linkId)
+  targetNode.inputs[inputSlot].link = linkId
+  return link
+}
+
+export function createTestCanvas(
+  graph: LGraph,
+  ctx: CanvasRenderingContext2D
+): LGraphCanvas {
+  const element = document.createElement('canvas')
+  element.width = 800
+  element.height = 600
+  element.getContext = vi.fn().mockReturnValue(ctx)
+  element.getBoundingClientRect = vi.fn().mockReturnValue({
+    left: 0,
+    top: 0,
+    width: 800,
+    height: 600
+  })
+  return new LGraphCanvas(element, graph, { skip_render: true })
 }

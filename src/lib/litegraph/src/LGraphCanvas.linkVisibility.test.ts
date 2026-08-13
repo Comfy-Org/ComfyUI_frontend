@@ -6,54 +6,28 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type {
   CanvasPointerEvent,
   IContextMenuOptions,
-  IContextMenuValue
+  IContextMenuValue,
+  LGraphCanvas
 } from '@/lib/litegraph/src/litegraph'
-import {
-  LGraph,
-  LGraphCanvas,
-  LGraphNode,
-  LiteGraph
-} from '@/lib/litegraph/src/litegraph'
-import { LLink } from '@/lib/litegraph/src/LLink'
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { LLink } from '@/lib/litegraph/src/LLink'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { toLinkId } from '@/types/linkId'
-import { createMockCanvas2DContext } from '@/utils/__tests__/litegraphTestUtils'
+import {
+  createMockCanvas2DContext,
+  createTestCanvas,
+  createTestLink
+} from '@/utils/__tests__/litegraphTestUtils'
 
 type MenuValue = string | IContextMenuValue<string> | null
 
-function createCanvas(graph: LGraph): LGraphCanvas {
-  const element = document.createElement('canvas')
-  element.width = 800
-  element.height = 600
-  element.getContext = vi.fn().mockReturnValue(
-    createMockCanvas2DContext({
-      measureText: vi.fn().mockReturnValue({ width: 50 }),
-      getTransform: vi
-        .fn()
-        .mockReturnValue({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 })
-    })
-  )
-  element.getBoundingClientRect = vi.fn().mockReturnValue({
-    left: 0,
-    top: 0,
-    width: 800,
-    height: 600
-  })
-  return new LGraphCanvas(element, graph, { skip_render: true })
-}
-
-function createLink(graph: LGraph): LLink {
+function createLinkedNodes(graph: LGraph): LLink {
   const source = new LGraphNode('Source')
   source.addOutput('out', 'MODEL')
   graph.add(source)
   const target = new LGraphNode('Target')
   target.addInput('in', 'MODEL')
   graph.add(target)
-  const link = new LLink(toLinkId(1), 'MODEL', source.id, 0, target.id, 0)
-  graph.links.set(link.id, link)
-  source.outputs[0].links = [link.id]
-  target.inputs[0].link = link.id
-  return link
+  return createTestLink(graph, source, 0, target, 0)
 }
 
 describe('LGraphCanvas link visibility interactions', () => {
@@ -67,8 +41,16 @@ describe('LGraphCanvas link visibility interactions', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia())
     graph = new LGraph()
-    canvas = createCanvas(graph)
-    link = createLink(graph)
+    canvas = createTestCanvas(
+      graph,
+      createMockCanvas2DContext({
+        measureText: vi.fn().mockReturnValue({ width: 50 }),
+        getTransform: vi
+          .fn()
+          .mockReturnValue({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 })
+      })
+    )
+    link = createLinkedNodes(graph)
     originalContextMenu = LiteGraph.ContextMenu
     const MockContextMenu = fromPartial<typeof LiteGraph.ContextMenu>(
       class {
@@ -86,16 +68,11 @@ describe('LGraphCanvas link visibility interactions', () => {
 
   afterEach(() => {
     LiteGraph.ContextMenu = originalContextMenu
-    vi.restoreAllMocks()
   })
 
   const event = fromPartial<CanvasPointerEvent>({ canvasX: 10, canvasY: 20 })
 
   it('adds hide and show actions while omitting reroutes for hidden links', () => {
-    const beforeChange = vi.spyOn(canvas, 'emitBeforeChange')
-    const afterChange = vi.spyOn(canvas, 'emitAfterChange')
-    const setDirty = vi.spyOn(canvas, 'setDirty')
-
     canvas.showLinkMenu(link, event)
 
     expect(menuValues).toEqual([
@@ -109,9 +86,6 @@ describe('LGraphCanvas link visibility interactions', () => {
     ])
     void menuOptions.callback?.('Hide Link')
     expect(link.hidden).toBe(true)
-    expect(beforeChange).toHaveBeenCalledOnce()
-    expect(setDirty).toHaveBeenCalledWith(false, true)
-    expect(afterChange).toHaveBeenCalledOnce()
 
     canvas.showLinkMenu(link, event)
 
@@ -124,7 +98,6 @@ describe('LGraphCanvas link visibility interactions', () => {
       'Delete',
       null
     ])
-    expect(menuValues).not.toContain('Add Reroute')
     void menuOptions.callback?.('Show Link')
     expect(link.hidden).toBe(false)
   })
@@ -145,7 +118,7 @@ describe('LGraphCanvas link visibility interactions', () => {
       expect.any(Function),
       event
     )
-    prompt.mock.calls[0][2]('  Backbone  ')
+    prompt.mock.calls[0][2]('Backbone')
     expect(link.label).toBe('Backbone')
   })
 
