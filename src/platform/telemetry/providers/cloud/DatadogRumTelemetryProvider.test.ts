@@ -4,14 +4,16 @@ import type { BillingTelemetryEvent } from '../../types'
 import { TelemetryEvents } from '../../types'
 import { DatadogRumTelemetryProvider } from './DatadogRumTelemetryProvider'
 
-const { addAction, addDurationVital, getInternalContext } = vi.hoisted(() => ({
-  addAction: vi.fn(),
-  addDurationVital: vi.fn(),
-  getInternalContext: vi.fn()
-}))
+const { addAction, addDurationVital, addError, getInternalContext } =
+  vi.hoisted(() => ({
+    addAction: vi.fn(),
+    addDurationVital: vi.fn(),
+    addError: vi.fn(),
+    getInternalContext: vi.fn()
+  }))
 
 vi.mock('@datadog/browser-rum', () => ({
-  datadogRum: { addAction, addDurationVital, getInternalContext }
+  datadogRum: { addAction, addDurationVital, addError, getInternalContext }
 }))
 
 const workflowExecutionIntent = {
@@ -19,6 +21,35 @@ const workflowExecutionIntent = {
 } as const
 
 describe('DatadogRumTelemetryProvider', () => {
+  it('reports warnings as RUM errors so spikes stay alertable', () => {
+    const error = new Error('Unmatched route')
+
+    new DatadogRumTelemetryProvider().reportError(error, {
+      error_type: 'unmatched_route',
+      level: 'warning',
+      context: { path: '/woiadawd' }
+    })
+
+    expect(addError).toHaveBeenCalledExactlyOnceWith(error, {
+      error_type: 'unmatched_route',
+      level: 'warning',
+      path: '/woiadawd'
+    })
+  })
+
+  it('defaults an unspecified level to error', () => {
+    const error = new Error('boom')
+
+    new DatadogRumTelemetryProvider().reportError(error, {
+      error_type: 'bootstrap_auth_wait_timeout'
+    })
+
+    expect(addError).toHaveBeenCalledExactlyOnceWith(error, {
+      error_type: 'bootstrap_auth_wait_timeout',
+      level: 'error'
+    })
+  })
+
   it('records terminal unified auth retry outcomes without request data', () => {
     new DatadogRumTelemetryProvider().trackUnifiedAuthRetry({
       transport: 'axios',
