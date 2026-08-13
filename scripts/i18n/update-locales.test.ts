@@ -6,7 +6,9 @@
 import type { OpenAI } from 'openai'
 import { describe, expect, it, vi } from 'vitest'
 
+import { auditChineseScript } from './chinese-script'
 import type { OutputLocale } from './config'
+import { translationPipelineConfig } from './config'
 import type { LocaleObject } from './locale-tree'
 import {
   collectPendingLeaves,
@@ -19,6 +21,7 @@ import { auditProtectedLiterals, validateLocale } from './protected-tokens'
 import type { TranslateBatch, TranslationItem } from './translate'
 import {
   chunkItems,
+  buildSystemPrompt,
   createOpenAiTranslator,
   mapWithConcurrency,
   translateLocaleItems
@@ -379,6 +382,43 @@ describe('chunkItems', () => {
       ['3'],
       ['4']
     ])
+  })
+})
+
+describe('Chinese translation targets', () => {
+  it('identifies Simplified and Traditional Chinese by script-aware tags', () => {
+    const simplified = translationPipelineConfig.outputLocales.find(
+      ({ code }) => code === 'zh'
+    )
+    const traditional = translationPipelineConfig.outputLocales.find(
+      ({ code }) => code === 'zh-TW'
+    )
+    expect(simplified).toBeDefined()
+    expect(traditional).toBeDefined()
+    if (!simplified || !traditional) {
+      throw new Error('Chinese translation targets are not configured')
+    }
+    expect(buildSystemPrompt(simplified, '')).toContain(
+      'Simplified Chinese (BCP 47 language tag: zh-Hans)'
+    )
+    expect(buildSystemPrompt(traditional, '')).toContain(
+      'Traditional Chinese (Taiwan) (BCP 47 language tag: zh-Hant-TW)'
+    )
+  })
+
+  it('rejects known cross-script translation regressions', () => {
+    expect(
+      auditChineseScript('zh', {
+        valid: '关闭画布',
+        invalid: ['關閉畫布', '刪除節點']
+      })
+    ).toEqual(['invalid: contains cross-script terms 節點, 畫布, 關閉, 刪除'])
+    expect(
+      auditChineseScript('zh-TW', {
+        valid: '關閉畫布',
+        invalid: ['关闭画布', '删除节点']
+      })
+    ).toEqual(['invalid: contains cross-script terms 节点, 画布, 关闭, 删除'])
   })
 })
 

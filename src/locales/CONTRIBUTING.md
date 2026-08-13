@@ -113,24 +113,30 @@ last translated in `src/locales/.source-manifest.json`. On each run it
 retranslates strings whose English text changed, backfills missing keys, prunes
 keys removed from English (deleting whole locale files whose English source
 file was removed), and validates that interpolation placeholders and protected
-literals (e.g. `<Picture N>`, `17k+5`) survive translation exactly. Existing
-translations whose placeholders no longer match the English source are
-re-queued for translation, so corrupted strings heal on the next run. Results
-persist per entry file: a failure translating one file does not discard the
-completed, validated work of the others — those are written and their manifest
-entries advance, and only the failed files retry on the next run. Runs that
-would delete an implausibly large share of a file's keys abort that file
+literals (e.g. `<Picture N>`, `17k+5`) survive translation exactly. A
+hand-authored translation is preserved verbatim while its English source and
+value shape remain unchanged. If its placeholders or protected literals drift,
+checks and generation fail with the affected path instead of overwriting the
+manual translation; correct that translation before rerunning the pipeline.
+Results persist per entry file: a failure translating one file does not discard
+the completed, validated work of the others — those are written and their
+manifest entries advance, and only the failed files retry on the next run. Runs
+that would delete an implausibly large share of a file's keys abort that file
 without writing — that usually means `collect-i18n` observed a partial app;
 rerun with `--allow-prune` (or the `allow_prune` input on the manual workflow
 dispatch) only after confirming the English sources are complete.
 `pnpm locale:check` runs offline in CI: it reports pending work and fails on
 protected-token violations that are not already queued for retranslation
 because the English source changed. The manifest's `knownViolations` field
-baselines violations that predate the pipeline; a successful locale run heals
-and drops them, and any corruption introduced beyond the baseline fails the
-check immediately. oxfmt ignores `src/locales/**/*.json` — the pipeline is the
-sole writer of those bytes, which keeps the manifest's recorded blob hashes
-valid.
+baselines violations that predate the pipeline; regenerating an invalidated key
+heals and drops its baseline, and any corruption introduced beyond the baseline
+fails the check immediately.
+
+Manual translation edits are supported. Locale JSON uses the pipeline's
+canonical format: recursively sorted object keys, two-space indentation, and a
+trailing newline. oxfmt ignores `src/locales/**/*.json`, so avoid editor-driven
+reformatting; the next successful `pnpm locale` run will restore the canonical
+format while preserving unchanged translation values.
 
 ### Manual Translation Updates
 
