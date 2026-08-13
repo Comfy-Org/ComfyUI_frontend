@@ -38,7 +38,11 @@ const KINDS = {
   'WIRE FORMAT': 'The saved workflow or queued prompt changed.',
   'SANCTIONED-HOLDOUT': 'Old surface retained on purpose, with an owner.',
   LIMITATION: 'Converted, but narrower than the original.',
-  'SCRIPT-VISIBLE': "Behaviour a pack's own scripting surface can see."
+  'SCRIPT-VISIBLE': "Behaviour a pack's own scripting surface can see.",
+  'PUNTED IN FULL':
+    'Whole file abandoned. NOT terminal — every node it served ' +
+    'still needs supporting or declaring unsupported.',
+  'REFUSED IN FULL': 'Whole file abandoned by decision rather than by blocker.'
 }
 
 /** Bookkeeping about other markers, not markers about behaviour. */
@@ -66,7 +70,15 @@ const THEIR_WORDS = new Set([
   'HANDLE'
 ])
 
-const MARKER = /^\s*\/\/\s*([A-Z][A-Z0-9 _-]{2,28}?)\s*(?:\(|:|,)/
+/**
+ * An em-dash counts as a separator, not just a colon.
+ *
+ * The first version required `:`, `(` or `,` and so could not see a single
+ * `PUNTED IN FULL —` line. That is the most severe marker there is — a whole
+ * file abandoned — and 24 of them were invisible to a report whose entire
+ * purpose is that nothing is invisible.
+ */
+const MARKER = /^\s*\/\/\s*([A-Z][A-Z0-9 _-]{2,28}?)\s*(?:\(|:|,|—|--\s)/
 
 /**
  * What counts as lost functionality, as opposed to lost code.
