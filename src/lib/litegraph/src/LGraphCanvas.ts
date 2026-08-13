@@ -4008,6 +4008,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       if (e.key === ' ') {
         // space
         this.read_only = true
+        this._autoPan?.stop()
         if (this._previously_dragging_canvas === null) {
           this._previously_dragging_canvas = this.dragging_canvas
         }
@@ -4037,6 +4038,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         this.dragging_canvas =
           (this._previously_dragging_canvas ?? false) && this.pointer.isDown
         this._previously_dragging_canvas = null
+        if (
+          this.pointer.isDown &&
+          (this.isDragging || this.linkConnector.isConnecting)
+        ) {
+          this._autoPan?.updatePointer(this.mouse[0], this.mouse[1])
+          this._autoPan?.start()
+        }
       }
 
       for (const node of Object.values(this.selected_nodes)) {
