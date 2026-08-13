@@ -60,7 +60,7 @@ const compareAssetNames = (a: AssetItem, b: AssetItem): number =>
  * Media Asset Filtering composable
  * Manages search, filter, and sort for media assets
  */
-export function useMediaAssetFiltering(assets: MaybeRef<AssetItem[]>) {
+export function useMediaAssetFiltering(assets: MaybeRef<readonly AssetItem[]>) {
   const searchQuery = ref('')
   const debouncedSearchQuery = refDebounced(searchQuery, 50)
   const sortBy = ref<SortOption>('newest')

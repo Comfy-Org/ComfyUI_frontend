@@ -65,7 +65,7 @@ export function useAssetsQuery(
     items.value.push(...assetResponse.assets)
   }
 
-  async function invalidate(stale?: AssetItem[]) {
+  async function invalidate(stale?: Readonly<AssetItem[]>) {
     if (stale) {
       const ids = new Set(stale.map((item) => item.id))
       items.value = items.value.filter((item) => !ids.has(item.id))

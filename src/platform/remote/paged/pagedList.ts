@@ -2,17 +2,17 @@ import type { MaybeRef } from 'vue'
 import { onScopeDispose, toValue } from 'vue'
 
 export type PagedList<T> = {
-  hasMore: MaybeRef<boolean>
-  invalidate: (items?: T[]) => Promise<void>
-  isLoading: MaybeRef<boolean>
-  items: MaybeRef<T[]>
+  hasMore: Readonly<MaybeRef<boolean>>
+  invalidate: (items?: Readonly<T[]>) => Promise<void>
+  isLoading: Readonly<MaybeRef<boolean>>
+  items: Readonly<MaybeRef<T[]>>
   loadMore: () => Promise<void>
   loadNew: () => Promise<void>
 }
 
 export function wrapPagedList<T>(
   list: PagedList<T>,
-  filter: (items: MaybeRef<T[]>) => MaybeRef<T[]>
+  filter: (items: MaybeRef<readonly T[]>) => MaybeRef<T[]>
 ): PagedList<T> {
   return { ...list, items: filter(list.items) }
 }
@@ -52,7 +52,7 @@ export function createSharedPagedList<TParams, TItem>(
       if (entry.refCount === 0) cache.delete(key)
     })
 
-    async function invalidate(stale?: TItem[]) {
+    async function invalidate(stale?: Readonly<TItem[]>) {
       if (stale) {
         await Promise.all(
           [...cache.values()].map((e) => e.list.invalidate(stale))

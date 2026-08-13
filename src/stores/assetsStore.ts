@@ -1,7 +1,7 @@
 import { useAsyncState, whenever } from '@vueuse/core'
 import { delay, difference } from 'es-toolkit'
 import { defineStore } from 'pinia'
-import { computed, reactive, ref, shallowReactive, toValue } from 'vue'
+import { computed, reactive, ref, shallowReactive } from 'vue'
 import {
   mapInputFileToAssetItem,
   mapTaskOutputToAssetItem
@@ -275,31 +275,6 @@ export const useAssetsStore = defineStore('assets', () => {
     }
   }
   const historyAssets = isCloud ? useHistoryAssets() : useAssetsQuery()
-
-  /**
-   * Patch preview_id/preview_url for a single asset already in memory,
-   * matched by name. Used after persistThumbnail succeeds so an open Asset
-   * panel reflects the new thumbnail without refetching the whole history.
-   * Match by name because the cloud assets API and the history API use
-   * different id spaces; name is the stable cross-API identifier.
-   */
-  const setAssetPreview = (
-    name: string,
-    previewId: string,
-    previewUrl: string
-  ) => {
-    const patch = (list: AssetItem[]) => {
-      const idx = list.findIndex((a) => a.name === name)
-      if (idx < 0) return
-      list[idx] = {
-        ...list[idx],
-        preview_id: previewId,
-        preview_url: previewUrl
-      }
-    }
-    patch(toValue(historyAssets.items))
-    patch(inputAssets.value)
-  }
 
   /**
    * Map of asset hash filename to asset item for O(1) lookup
@@ -924,7 +899,6 @@ export const useAssetsStore = defineStore('assets', () => {
     updateInputs,
     updateHistory: historyAssets.loadNew,
     loadMoreHistory: historyAssets.loadMore,
-    setAssetPreview,
 
     // Input mapping helpers
     inputAssetsByFilename,
