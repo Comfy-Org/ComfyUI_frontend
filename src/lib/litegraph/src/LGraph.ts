@@ -2731,6 +2731,7 @@ export class LGraph
         }
       }
 
+      if (survivorByRejected.size) data = structuredClone(data)
       remapConfiguredLinkAliases(data, survivorByRejected)
 
       const nodesData = data.nodes

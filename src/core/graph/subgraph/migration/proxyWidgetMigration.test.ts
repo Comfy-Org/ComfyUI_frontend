@@ -392,9 +392,10 @@ describe('flushProxyWidgetMigration', () => {
 
       const danglingLinkId = toLinkId(999_999)
       expect(host.subgraph.links.has(danglingLinkId)).toBe(false)
-      useLinkStore().registerLink(graphScopeOf(host.subgraph), {
+      const hostScope = graphScopeOf(host.subgraph)
+      useLinkStore().registerLink(hostScope, {
         id: danglingLinkId,
-        graphId: graphScopeOf(host.subgraph).owningGraphId,
+        graphId: hostScope.owningGraphId,
         originNodeId: primitive.id,
         originSlot: 0,
         targetNodeId: toNodeId(999_999),

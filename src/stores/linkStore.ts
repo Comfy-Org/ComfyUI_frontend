@@ -10,7 +10,6 @@ import type { LinkId } from '@/types/linkId'
 import type { LinkTopology } from '@/types/linkTopology'
 import { isFloatingTopology } from '@/types/linkTopology'
 import type { NodeId } from '@/types/nodeId'
-import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 
 export type EndpointPatch = Partial<
   Pick<
@@ -89,19 +88,15 @@ const EMPTY_LINKS: ReadonlySet<LinkTopology> = new Set()
  * input slot with a real link and are not queried by target.
  */
 function hasUniqueTarget(topology: LinkTopology): boolean {
-  return (
-    topology.originNodeId !== UNASSIGNED_NODE_ID &&
-    topology.targetNodeId !== UNASSIGNED_NODE_ID
-  )
+  return !isFloatingTopology(topology)
 }
 
 /**
  * Link topology store, partitioned by root and owning graph. At most one live
- * link can target a given input slot — litegraph disconnects the previous
- * link before connecting a new one — so the target is the natural primary key
- * and the dominant query ("is this input connected, and by what?") is one
- * lookup. The topology set tracks registration ownership; slot maps are
- * derived query indexes. The root bucket is the sole link-id authority.
+ * link can target a given input slot, so the target index answers the dominant
+ * query ("is this input connected, and by what?") in one lookup. The root
+ * bucket's link-id map is the identity authority; owner and slot maps are
+ * derived indexes.
  */
 export const useLinkStore = defineStore('link', () => {
   const roots = reactive(new Map<RootGraphId, RootTopologyBucket>())

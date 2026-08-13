@@ -116,10 +116,16 @@ describe('SubgraphConversion', () => {
       const output = subgraph.outputNode.slots[0]
       output.connect(origin.outputs[0], origin)
 
-      subgraph.convertToSubgraph(new Set<Positionable>([origin]))
+      const { node: subgraphNode } = subgraph.convertToSubgraph(
+        new Set<Positionable>([origin])
+      )
 
-      expect(output.getLinks()).toHaveLength(1)
-      expect(output.getLinks()[0].target_id).toBe(output.parent.id)
+      const links = output.getLinks()
+      expect(links).toHaveLength(1)
+      expect(links[0]).toMatchObject({
+        origin_id: subgraphNode.id,
+        target_id: output.parent.id
+      })
     })
 
     it('preserves widget values on interior nodes through conversion', () => {

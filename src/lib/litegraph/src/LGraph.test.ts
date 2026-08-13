@@ -1207,12 +1207,13 @@ describe('persisted duplicate links', () => {
     expect(sourceNode.outputs[0].links).toEqual([survivingLink.id])
   })
 
-  it('normalizes duplicate aliases before connection callbacks', () => {
+  it('normalizes duplicate aliases before callbacks without mutating input', () => {
     registerTestNodes()
     const graph = new LGraph()
     const data = structuredClone(duplicateLinksRoot)
     data.nodes![0].outputs![0].links = [2]
     data.nodes![1].inputs![0].link = 2
+    const original = structuredClone(data)
 
     graph.configure(data)
 
@@ -1222,6 +1223,7 @@ describe('persisted duplicate links', () => {
       .filter((link) => link != null)
 
     expect(configuredLinks).toEqual([survivingLink, survivingLink])
+    expect(data).toEqual(original)
   })
 
   it('preserves link integrity after configure() with slot-shifted duplicates', () => {

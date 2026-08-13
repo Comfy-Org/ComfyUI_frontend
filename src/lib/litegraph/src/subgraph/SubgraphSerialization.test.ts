@@ -8,7 +8,7 @@ import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, assert, beforeEach, describe, expect, it } from 'vitest'
 
 import { duplicateSubgraphNodeIds } from '@/lib/litegraph/src/__fixtures__/duplicateSubgraphNodeIds'
 import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
@@ -510,16 +510,17 @@ describe('SubgraphSerialization - Data Integrity', () => {
     const target = createTestNode(subgraph, ['number'], [], 'Target')
     const link = origin.connect(0, target, 0)!
     const floatingLink = new LLink(
-      toLinkId(2),
+      toLinkId(-1),
       'number',
       origin.id,
       0,
       UNASSIGNED_NODE_ID,
       -1
     )
-    subgraph.addFloatingLink(floatingLink)
+    const storedFloatingLink = subgraph.addFloatingLink(floatingLink)
+    assert(storedFloatingLink)
     subgraph.createReroute([10, 20], link)
-    subgraph.createReroute([30, 40], floatingLink)
+    subgraph.createReroute([30, 40], storedFloatingLink)
 
     const exported = structuredClone(subgraph.asSerialisable())
     const rootGraph = subgraph.rootGraph

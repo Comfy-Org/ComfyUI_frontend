@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   SUBGRAPH_INPUT_ID,
@@ -100,12 +100,13 @@ describe('Subgraph slot connections', () => {
       subgraph.add(node)
       const [first, second] = subgraph.inputs
       const initial = first.connect(node.inputs[0], node)
+      assert(initial)
 
       const replacement = second.connect(node.inputs[0], node)
 
       expect(first.linkIds).toEqual([])
       expect(second.linkIds).toEqual([replacement?.id])
-      expect(subgraph.getLink(initial?.id)).toBeUndefined()
+      expect(subgraph.getLink(initial.id)).toBeUndefined()
       expect(replacement?.origin_slot).toBe(1)
     })
   })
@@ -151,11 +152,12 @@ describe('Subgraph slot connections', () => {
       subgraph.add(second)
       const output = subgraph.addOutput('result', 'number')
       const initial = output.connect(first.outputs[0], first)
+      assert(initial)
 
       const replacement = output.connect(second.outputs[0], second)
 
       expect(output.linkIds).toEqual([replacement?.id])
-      expect(subgraph.getLink(initial?.id)).toBeUndefined()
+      expect(subgraph.getLink(initial.id)).toBeUndefined()
       expect(replacement?.origin_id).toBe(second.id)
     })
   })

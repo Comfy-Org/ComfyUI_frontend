@@ -20,7 +20,7 @@ state, and promoted value data lives in `WidgetValueStore` keyed by the input's
 | NodeOutputStore         | Execution results                   | `nodeLocatorId`                | `"${subgraphId}:${nodeId}"`                                        | Output data, preview URLs     |
 | SubgraphNavigationStore | Canvas viewport                     | `subgraphId`                   | `subgraphId` or `'root'`                                           | LRU viewport cache            |
 | PreviewExposureStore    | Subgraph host node                  | host node locator              | host locator + exposure name                                       | Display-only preview state    |
-| LinkStore               | `LLink`                             | Root graph                     | `` `${targetNodeId}:${targetSlot}` `` (target input slot)          | Plain `LinkTopology` object   |
+| LinkStore               | `LLink`                             | Root and owning graph          | `LinkId` primary; owner-qualified target/origin indexes            | Plain `LinkTopology` object   |
 | RerouteStore            | `Reroute`                           | Root graph                     | `RerouteId`                                                        | Plain `RerouteChain` object   |
 | NodeDataStore           | `LGraphNode` shell state            | Root graph                     | `NodeId`                                                           | Plain `NodeState` object      |
 

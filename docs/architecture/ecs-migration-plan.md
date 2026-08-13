@@ -1015,9 +1015,9 @@ remaining decisions for later work.
   insertion path while preserving the existing root-shared high-water allocator
   and import-time collision repair.
 - Defer floating reroute/link multi-store rollback. Normal root-shared link ID
-  allocation makes registration rejection unreachable without externally
-  corrupted state; future transaction work should wrap the centralized store
-  mutation rather than add compensation to this path now.
+  allocation avoids collisions for minted IDs, while registration can reject
+  externally supplied runtime IDs that collide. Future transaction work should
+  wrap the centralized store mutation rather than add compensation here.
 - Treat floating as one-ended link state, not a separate entity category. The
   runtime topology collection is unified; `graph.links` and
   `graph.floatingLinks` remain filtered compatibility views. Keep the separate

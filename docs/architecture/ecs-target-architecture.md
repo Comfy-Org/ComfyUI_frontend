@@ -21,8 +21,8 @@ Map&lt;WidgetId, DomWidgetState&gt;"]
 raw nodeId/linkId; rootGraphId:localId
 for group/reroute geometry"]
         LinkStore["linkStore
-rootGraphId → targetNodeId:targetSlot
-→ LinkTopology"]
+rootGraphId → linkId → LinkTopology
+owner-qualified endpoint indexes"]
         RerouteStore["rerouteStore
 rootGraphId → RerouteId → RerouteChain"]
         NodeOutputStore["nodeOutputStore
@@ -68,18 +68,19 @@ graphId:nodeId:name
         NLID["nodeLocatorId
 subgraphId:nodeId"]
         NID["nodeId (raw)"]
-        LID["linkId (raw)"]
+        LID["linkId (raw;
+root-scoped in linkStore)"]
         RID["rootGraphId:rerouteId"]
-        TIS["targetNodeId:targetSlot
-(root-graph-scoped bucket)"]
+        EPI["owningGraphId:nodeId:slot
+(target/origin index)"]
     end
 
     WID -->|widgetValueStore, domWidgetStore| W["keyed lookups"]
     NLID -->|nodeOutputStore| W
     NID -->|layoutStore| W
-    LID -->|layoutStore| W
+    LID -->|layoutStore, linkStore identity| W
     RID -->|layoutStore, rerouteStore| W
-    TIS -->|linkStore| W
+    EPI -->|linkStore indexes| W
 ```
 
 `WidgetId = graphId:nodeId:name` is itself a branded string (see
@@ -193,12 +194,12 @@ target_id, target_slot, type"]
         B5["resolve()"]
     end
 
-    subgraph After["target-slot-keyed topology (linkStore) + unextracted state"]
+    subgraph After["link-id-keyed topology (linkStore) + unextracted state"]
         direction TB
         A1["LinkTopology — SHIPPED
 { id, originNodeId, originSlot,
 targetNodeId, targetSlot, type, parentId? }
-keyed by targetNodeId:targetSlot"]
+primary linkId; owner-qualified endpoint indexes"]
         A2["LinkVisual — not yet extracted
 { color, path, centerPos }"]
         A3["LinkState — not yet extracted
