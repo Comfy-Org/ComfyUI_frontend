@@ -217,8 +217,14 @@ test.describe('Workflow tabs', () => {
       const initialScrollLeft = await scrollContent.evaluate(
         (element) => element.scrollLeft
       )
+      await comfyPage.page.clock.install()
       await rightArrow.tap()
 
+      await expect
+        .poll(() => scrollContent.evaluate((element) => element.scrollLeft))
+        .toBe(initialScrollLeft + 20)
+
+      await comfyPage.page.clock.fastForward(350)
       await expect
         .poll(() => scrollContent.evaluate((element) => element.scrollLeft))
         .toBe(initialScrollLeft + 20)

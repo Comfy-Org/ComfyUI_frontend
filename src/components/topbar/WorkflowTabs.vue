@@ -11,7 +11,7 @@
       class="overflow-arrow overflow-arrow-left aspect-square h-full w-auto"
       :aria-label="$t('g.scrollLeft')"
       :disabled="!leftArrowEnabled"
-      @mousedown="startScrolling($event, -1)"
+      @pointerdown="startScrolling($event, -1)"
       @click="scrollOnKeyboardActivation($event, -1)"
     >
       <i class="icon-[lucide--chevron-left] size-full" />
@@ -58,7 +58,7 @@
       class="overflow-arrow overflow-arrow-right aspect-square h-full w-auto"
       :aria-label="$t('g.scrollRight')"
       :disabled="!rightArrowEnabled"
-      @mousedown="startScrolling($event, 1)"
+      @pointerdown="startScrolling($event, 1)"
       @click="scrollOnKeyboardActivation($event, 1)"
     >
       <i class="icon-[lucide--chevron-right] size-full" />
@@ -231,7 +231,7 @@ const scroll = (direction: number) => {
 const SCROLL_REPEAT_INTERVAL = 30
 const SCROLL_HOLD_DELAY = 300
 
-const startScrolling = (event: MouseEvent, direction: number) => {
+const startScrolling = (event: PointerEvent, direction: number) => {
   scroll(direction)
   whileMouseDown(
     event,

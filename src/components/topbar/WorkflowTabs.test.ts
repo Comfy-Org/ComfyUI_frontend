@@ -236,7 +236,7 @@ describe('WorkflowTabs overflow arrows', () => {
     expect(scrollBy).toHaveBeenCalledWith({ left: 20 })
     expect(whileMouseDown).toHaveBeenCalledOnce()
     expect(whileMouseDown).toHaveBeenCalledWith(
-      expect.any(MouseEvent),
+      expect.any(PointerEvent),
       expect.any(Function),
       30,
       300
