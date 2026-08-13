@@ -7,6 +7,7 @@ import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEv
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { api } from '@/scripts/api'
+import { useExecutionStore } from '@/stores/executionStore'
 
 import type { UpdateFlags } from '../types'
 
@@ -37,34 +38,73 @@ function mixIn(digest: number, value: number): number {
 }
 
 /**
- * Rolling digest of every node's position, size and rendered state.
- *
- * Reads `graph._nodes` directly and allocates nothing, so it stays cheap on
- * large graphs. Digests can in principle collide, which would drop a single
- * minimap refresh — acceptable for an approximate overview, and the next
- * change re-syncs it.
+ * Cheap string hash for digest input (colors, execution states).
  */
-function computeLayoutDigest(graph: LGraph): number {
-  // The renderer reads geometry from layoutStore whenever it holds nodes, so
-  // detection has to move when the store does: a Vue-side write whose
-  // write-back to liteNode is dropped would otherwise leave this digest
-  // unchanged while the renderer paints the newer store geometry.
-  //
-  // Geometry version rather than layoutVersion - the latter counts operations,
-  // so zIndex writes (one per widget pointerdown) and reroute drags would each
-  // force a full rebuild and redraw of a picture that did not change.
-  let digest = mixIn(layoutStore.nodeGeometryVersion, graph._nodes.length)
+function hashString(value: string): number {
+  let hash = value.length
+  for (let i = 0; i < value.length; i++) {
+    hash = (Math.imul(hash, 31) + value.charCodeAt(i)) | 0
+  }
+  return hash
+}
+
+interface GraphDigests {
+  /** Node placement: drives bounds recomputation as well as repaint. */
+  geometry: number
+  /** Everything else the renderer draws: repaint only, bounds untouched. */
+  visual: number
+}
+
+/**
+ * Rolling digests over everything the minimap renders, in one allocation-free
+ * pass. The digests are the single authority on "did the picture change":
+ * event hooks and the poll are only signals to compare them, so any input the
+ * renderer reads has to be mixed in here or changes to it stop repainting.
+ *
+ * Digests can in principle collide, which would drop a single refresh -
+ * acceptable for an approximate overview, and the next change re-syncs it.
+ */
+function computeGraphDigests(graph: LGraph): GraphDigests {
+  // Store-side geometry: the renderer reads layoutStore whenever it holds
+  // nodes, so a write whose write-back to the litegraph node has not landed
+  // must still count. Geometry version, not layoutVersion - that counts
+  // operations, and zIndex alone fires one per widget pointerdown.
+  let geometry = mixIn(layoutStore.nodeGeometryVersion, graph._nodes.length)
+  let visual = 0
+
   for (const node of graph._nodes) {
     const [x, y] = node.pos
     const [width, height] = node.size
-    digest = mixIn(digest, quantise(x))
-    digest = mixIn(digest, quantise(y))
-    digest = mixIn(digest, quantise(width))
-    digest = mixIn(digest, quantise(height))
-    digest = mixIn(digest, node.mode ?? 0)
-    digest = mixIn(digest, node.has_errors ? 1 : 0)
+    geometry = mixIn(geometry, quantise(x))
+    geometry = mixIn(geometry, quantise(y))
+    geometry = mixIn(geometry, quantise(width))
+    geometry = mixIn(geometry, quantise(height))
+    visual = mixIn(visual, node.mode ?? 0)
+    visual = mixIn(visual, node.has_errors ? 1 : 0)
+    visual = mixIn(visual, node.bgcolor ? hashString(node.bgcolor) : 0)
   }
-  return digest
+
+  for (const group of graph._groups ?? []) {
+    visual = mixIn(visual, quantise(group.pos[0]))
+    visual = mixIn(visual, quantise(group.pos[1]))
+    visual = mixIn(visual, quantise(group.size[0]))
+    visual = mixIn(visual, quantise(group.size[1]))
+    visual = mixIn(visual, group.color ? hashString(group.color) : 0)
+  }
+
+  // Execution state is drawn as discrete outline colors, so mixing the state
+  // strings repaints exactly on transitions. Progress percentages are not
+  // rendered, which is what lets the per-progress-message watcher go: the
+  // poll picks up each transition within one tick at no per-message cost.
+  const progressStates = useExecutionStore().nodeProgressStates
+  for (const nodeId in progressStates) {
+    const state = progressStates[nodeId]?.state
+    if (!state) continue
+    visual = mixIn(visual, hashString(nodeId))
+    visual = mixIn(visual, hashString(state))
+  }
+
+  return { geometry, visual }
 }
 
 /**
@@ -94,10 +134,11 @@ export function useMinimapGraph(
   graph: Ref<LGraph | null>,
   onGraphChanged: () => void
 ) {
-  // Null rather than a numeric sentinel: 0 is a digest both functions produce
+  // Null rather than a numeric sentinel: 0 is a digest these functions produce
   // for an empty graph, so a numeric "no baseline" would be indistinguishable
   // from a real first reading.
-  let layoutDigest: number | null = null
+  let geometryDigest: number | null = null
+  let visualDigest: number | null = null
   let linkDigest: number | null = null
   const updateFlags = ref<UpdateFlags>({
     bounds: false,
@@ -207,25 +248,30 @@ export function useMinimapGraph(
     const g = graph.value
     if (!g) return false
 
-    const layout = computeLayoutDigest(g)
+    const { geometry, visual } = computeGraphDigests(g)
     const links = computeLinkDigest(g)
 
-    const layoutChanged = layout !== layoutDigest
+    const geometryChanged = geometry !== geometryDigest
+    const visualChanged = visual !== visualDigest
     const connectionChanged = links !== linkDigest
 
-    layoutDigest = layout
+    geometryDigest = geometry
+    visualDigest = visual
     linkDigest = links
 
-    if (layoutChanged) {
+    // Only geometry moves the graph's extent; a recolour, group drag or
+    // execution transition repaints without recomputing bounds.
+    if (geometryChanged) {
       updateFlags.value.bounds = true
+    }
+    if (geometryChanged || visualChanged) {
       updateFlags.value.nodes = true
     }
-
     if (connectionChanged) {
       updateFlags.value.connections = true
     }
 
-    return layoutChanged || connectionChanged
+    return geometryChanged || visualChanged || connectionChanged
   }
 
   const init = () => {
@@ -240,7 +286,8 @@ export function useMinimapGraph(
   }
 
   const clearCache = () => {
-    layoutDigest = null
+    geometryDigest = null
+    visualDigest = null
     linkDigest = null
   }
 

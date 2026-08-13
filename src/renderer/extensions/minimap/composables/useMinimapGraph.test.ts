@@ -22,9 +22,13 @@ vi.mock('@vueuse/core', () => ({
   useThrottleFn: vi.fn((fn) => fn)
 }))
 
+const { mockProgressStates } = vi.hoisted(() => ({
+  mockProgressStates: {} as Record<string, { state: string }>
+}))
+
 vi.mock('@/stores/executionStore', () => ({
   useExecutionStore: vi.fn(() => ({
-    nodeProgressStates: {}
+    nodeProgressStates: mockProgressStates
   }))
 }))
 
@@ -54,6 +58,9 @@ describe('useMinimapGraph', () => {
     })
 
     onGraphChangedMock = vi.fn()
+    for (const key of Object.keys(mockProgressStates)) {
+      delete mockProgressStates[key]
+    }
   })
 
   it('should initialize with empty state', () => {
@@ -397,6 +404,64 @@ describe('useMinimapGraph', () => {
     useLayoutMutations().setNodeZIndex(toNodeId('2'), 42)
 
     expect(graphManager.checkForChanges()).toBe(false)
+  })
+
+  it('should detect a background colour change', () => {
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
+    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
+
+    graphManager.checkForChanges()
+    expect(graphManager.checkForChanges()).toBe(false)
+
+    mockGraph._nodes[0].bgcolor = '#ff0000'
+
+    expect(graphManager.checkForChanges()).toBe(true)
+  })
+
+  it('should detect a group move', () => {
+    mockGraph._groups = [
+      { pos: [0, 0], size: [400, 300], color: '#111111' }
+    ] as LGraph['_groups']
+
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
+    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
+
+    graphManager.checkForChanges()
+    expect(graphManager.checkForChanges()).toBe(false)
+
+    mockGraph._groups[0].pos[0] = 250
+
+    expect(graphManager.checkForChanges()).toBe(true)
+  })
+
+  it('should detect an execution-state transition', () => {
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
+    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
+
+    graphManager.checkForChanges()
+    expect(graphManager.checkForChanges()).toBe(false)
+
+    mockProgressStates['1'] = { state: 'running' }
+    expect(graphManager.checkForChanges()).toBe(true)
+    expect(graphManager.checkForChanges()).toBe(false)
+
+    mockProgressStates['1'] = { state: 'finished' }
+    expect(graphManager.checkForChanges()).toBe(true)
+  })
+
+  it('a visual-only change repaints without recomputing bounds', () => {
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
+    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
+
+    graphManager.checkForChanges()
+    graphManager.updateFlags.value.bounds = false
+    graphManager.updateFlags.value.nodes = false
+
+    mockGraph._nodes[0].bgcolor = '#00ff00'
+    graphManager.checkForChanges()
+
+    expect(graphManager.updateFlags.value.nodes).toBe(true)
+    expect(graphManager.updateFlags.value.bounds).toBe(false)
   })
 
   it('should detect an error-state change', () => {

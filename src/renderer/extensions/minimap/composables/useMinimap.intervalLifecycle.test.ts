@@ -204,6 +204,66 @@ describe('useMinimap change-detection interval', () => {
     }
   })
 
+  it('a graphChanged event with nothing drawn changed does not repaint', async () => {
+    // graphChanged fires for zIndex (every widget pointerdown), widget values
+    // and title edits. The event is a hint to compare digests, not a command
+    // to repaint.
+    const { api } = await import('@/scripts/api')
+    await initMinimap()
+    await vi.advanceTimersByTimeAsync(POLL_MS + 10)
+    const settled = drawCalls()
+
+    const graphChangedHandler = vi
+      .mocked(api.addEventListener)
+      .mock.calls.find(([name]) => name === 'graphChanged')?.[1] as () => void
+    expect(graphChangedHandler).toBeTypeOf('function')
+
+    graphChangedHandler()
+    await vi.advanceTimersByTimeAsync(POLL_MS * 6)
+    expect(drawCalls()).toBe(settled)
+
+    // The same path must still repaint when the picture did change.
+    moveNode()
+    graphChangedHandler()
+    await vi.advanceTimersByTimeAsync(POLL_MS + 10)
+    expect(drawCalls()).toBeGreaterThan(settled)
+  })
+
+  it('starts polling when the canvas mounts after init', async () => {
+    // In the real component init() runs synchronously from the immediate
+    // canvas watcher, before the template ref has mounted, so a start decision
+    // taken inside init() sees a null canvasRef and never starts the loop.
+    const canvasRef = shallowRef<HTMLCanvasElement | null>(null)
+    const container = {
+      getBoundingClientRect: vi.fn(() => new DOMRect(0, 0, 250, 200) as DOMRect)
+    }
+    const minimap = useMinimap({
+      containerRefMaybe: shallowRef(
+        container as Partial<HTMLDivElement> as HTMLDivElement
+      ),
+      canvasRefMaybe: canvasRef
+    })
+    active = minimap
+    await minimap.init()
+    await nextTick()
+
+    // Template ref mounts after init.
+    canvasRef.value = createMockMinimapCanvas({
+      getContext: vi
+        .fn()
+        .mockImplementation((id) =>
+          id === '2d' ? context : null
+        ) as HTMLCanvasElement['getContext']
+    })
+    await nextTick()
+    await vi.runOnlyPendingTimersAsync()
+
+    moveNode()
+    await vi.advanceTimersByTimeAsync(POLL_MS + 10)
+
+    expect(drawCalls()).toBeGreaterThan(0)
+  })
+
   it('stops polling after destroy', async () => {
     const minimap = await initMinimap()
     minimap.destroy()

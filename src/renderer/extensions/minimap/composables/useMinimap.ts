@@ -5,7 +5,6 @@ import type { ShallowRef } from 'vue'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useExecutionStore } from '@/stores/executionStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import type { MinimapCanvas, MinimapSettingsKey } from '../types'
@@ -15,7 +14,7 @@ import { useMinimapRenderer } from './useMinimapRenderer'
 import { useMinimapSettings } from './useMinimapSettings'
 import { useMinimapViewport } from './useMinimapViewport'
 
-/** How often to poll for node drags/resizes, which emit no graph event. */
+/** How often to compare digests for state that emits no event; see the poll. */
 const CHANGE_DETECTION_INTERVAL_MS = 100
 
 export function useMinimap({
@@ -83,12 +82,18 @@ export function useMinimap({
   // a full layout-map rebuild, so every path that redraws checks this first.
   const canDraw = computed(() => visible.value && !!canvasRef.value)
 
-  // Graph event management
-  const graphManager = useMinimapGraph(graph, () => {
+  // Graph events are hints to compare the digests, not commands to repaint:
+  // graphChanged fires for plenty the minimap does not draw (zIndex from every
+  // widget pointerdown, widget values, title edits), and the digest is the one
+  // place that knows whether the picture moved.
+  const checkAndRepaint = () => {
     if (!canDraw.value) return
-    renderer.forceFullRedraw()
-    renderer.updateMinimap(viewport.updateBounds, viewport.updateViewport)
-  })
+    if (graphManager.checkForChanges()) {
+      renderer.updateMinimap(viewport.updateBounds, viewport.updateViewport)
+    }
+  }
+
+  const graphManager = useMinimapGraph(graph, () => checkAndRepaint())
 
   // Rendering
   const renderer = useMinimapRenderer(
@@ -102,43 +107,41 @@ export function useMinimap({
     height
   )
 
-  // Most edits already force a redraw through useMinimapGraph's event hooks,
-  // which cover node add/remove, connection changes and visual properties;
-  // moves and resizes reach layoutStore and could be observed the same way.
-  // This loop is the backstop for the writes that reach neither: snapPoint
-  // mutating `_pos` elements in place, extensions assigning `node.pos[0]`
-  // directly (only `size` is Proxy-wrapped against that), and `has_errors`,
-  // which has no event at all. Subscribing to layoutStore changes and letting
-  // the poll cover only that residue would allow a much longer period.
+  // Most edits reach the digest comparison through useMinimapGraph's event
+  // hooks. This loop is the backstop for state that emits no event at all:
+  // snapPoint mutating `_pos` elements in place, extensions assigning
+  // `node.pos[0]` directly (only `size` is Proxy-wrapped against that),
+  // `has_errors`, group drags, and execution-state transitions, which arrive
+  // in executionStore rather than as graph events. Repaints happen only when
+  // the digests move, so idle ticks cost one O(n) comparison and nothing else.
   const { pause: pauseChangeDetection, resume: resumeChangeDetection } =
-    useIntervalFn(
-      () => {
-        if (!canDraw.value) return
-        if (graphManager.checkForChanges()) {
-          renderer.updateMinimap(viewport.updateBounds, viewport.updateViewport)
-        }
-      },
-      CHANGE_DETECTION_INTERVAL_MS,
-      { immediate: false }
-    )
+    useIntervalFn(checkAndRepaint, CHANGE_DETECTION_INTERVAL_MS, {
+      immediate: false
+    })
 
-  // rAF was suspended entirely on a hidden tab; setInterval is only clamped to
-  // roughly 1s, so without this a parked tab keeps digesting the whole graph.
+  // Polling is derived state, not something init() decides once. init() runs
+  // synchronously from the immediate canvas watcher - before the template ref
+  // has mounted - so any start decision taken there sees canvasRef as null and
+  // the poll never starts. Deriving from the refs means the loop starts the
+  // moment the canvas mounts and stops the moment any condition lapses.
   //
-  // `immediate` matters: a tab opened in the background (middle-click, session
-  // restore) is already hidden at mount, so no visibilitychange ever fires and
-  // a transition-only watcher would never pause the loop it just started.
+  // Document visibility is part of the condition because rAF was suspended
+  // entirely on a hidden tab while setInterval is only clamped, and a tab that
+  // is hidden at mount (middle-click, session restore) never fires a
+  // visibilitychange to a transition-only watcher.
   const documentVisibility = useDocumentVisibility()
-  const documentHidden = computed(() => documentVisibility.value === 'hidden')
-
-  /** Both start paths consult this, so a hidden tab never starts polling. */
-  const shouldPoll = () => canDraw.value && !documentHidden.value
+  const shouldPoll = computed(
+    () =>
+      initialized.value &&
+      canDraw.value &&
+      documentVisibility.value !== 'hidden'
+  )
 
   watch(
-    documentHidden,
-    (hidden) => {
-      if (hidden) pauseChangeDetection()
-      else if (canDraw.value) resumeChangeDetection()
+    shouldPoll,
+    (active) => {
+      if (active) resumeChangeDetection()
+      else pauseChangeDetection()
     },
     { immediate: true }
   )
@@ -164,7 +167,6 @@ export function useMinimap({
       renderer.updateMinimap(viewport.updateBounds, viewport.updateViewport)
       viewport.updateViewport()
 
-      if (shouldPoll()) resumeChangeDetection()
       if (visible.value) viewport.startViewportSync()
       initialized.value = true
     }
@@ -226,27 +228,11 @@ export function useMinimap({
 
       renderer.updateMinimap(viewport.updateBounds, viewport.updateViewport)
       viewport.updateViewport()
-      if (shouldPoll()) resumeChangeDetection()
       viewport.startViewportSync()
     } else {
-      pauseChangeDetection()
       viewport.stopViewportSync()
     }
   })
-
-  const executionStore = useExecutionStore()
-  watch(
-    () => executionStore.nodeProgressStates,
-    () => {
-      // Fires per progress message during a run, so the canvas check matters
-      // here more than anywhere else.
-      if (canDraw.value) {
-        renderer.forceFullRedraw()
-        renderer.updateMinimap(viewport.updateBounds, viewport.updateViewport)
-      }
-    },
-    { deep: true }
-  )
 
   const toggle = async () => {
     visible.value = !visible.value
