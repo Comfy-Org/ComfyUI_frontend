@@ -43,7 +43,7 @@ jobs:
 
       # Same pinned core as the gate: baselines must describe the exact
       # world the gate tests. Bump this SHA together with the gate's
-      # comfyui_ref (ci-tests-custom-nodes.yaml).
+      # comfyui_ref (ci-tests-custom-nodes.yaml) and the canary Job B copy.
       - name: Setup ComfyUI server
         uses: ./.github/actions/setup-comfyui-server
         with:
@@ -115,11 +115,33 @@ jobs:
             --project=custom-nodes --reporter=list --workers=1 --retries=0 \
             --grep "all nodes by tier @custom-nodes.*S14:"
 
+      # S15 output hashes ride the same backend boot: curated workflows in
+      # record mode write test-results/curatedOutputHashes.recorded.json and
+      # deliberately fail each recording test (a record is not a pass).
+      - name: Record output hashes (S15)
+        continue-on-error: true
+        env:
+          RECORD_OUTPUT_HASHES: '1'
+          # Stamped into the fixture's recordedAt.core; must match comfyui_ref.
+          CN_OUTPUT_HASHES_CORE: b08e6cf35fac50d3ca8470dffb3f9a1fbb7187d2
+        run: |
+          pnpm exec playwright test browser_tests/tests/customNodes/customNode.regression.spec.ts \
+            --project=custom-nodes --reporter=list --workers=1 --retries=0 \
+            --grep "Curated workflow execution: completes without error"
+
       - name: Upload recorded baselines
         uses: actions/upload-artifact@v6
         with:
           name: custom-nodes-geometry-baselines
           path: browser_tests/fixtures/customNode/geometry/
+          retention-days: 7
+          if-no-files-found: error
+
+      - name: Upload recorded output hashes
+        uses: actions/upload-artifact@v6
+        with:
+          name: custom-nodes-output-hashes
+          path: test-results/curatedOutputHashes.recorded.json
           retention-days: 7
           if-no-files-found: error
       # S13 interaction profiles ride the same boot: record mode writes the
