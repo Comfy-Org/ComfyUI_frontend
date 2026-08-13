@@ -38,6 +38,11 @@ const KINDS = {
   'WIRE FORMAT': 'The saved workflow or queued prompt changed.',
   'SANCTIONED-HOLDOUT': 'Old surface retained on purpose, with an owner.',
   LIMITATION: 'Converted, but narrower than the original.',
+  // node_status.mjs has graded on this since packs started being graded
+  // "full support for non-cosmetic functionality", but this report did not
+  // know the word, so a cosmetic drop counted towards a pack's grade while
+  // never appearing in the list of what was dropped.
+  COSMETIC: 'Lost, and only appearance: an icon, a colour, a glyph.',
   'SCRIPT-VISIBLE': "Behaviour a pack's own scripting surface can see.",
   'PUNTED IN FULL':
     'Whole file abandoned. NOT terminal — every node it served ' +
