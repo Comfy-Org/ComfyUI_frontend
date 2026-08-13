@@ -23,7 +23,10 @@ export default function lintStaged(stagedFiles: string[]) {
   )
 
   return [
-    ...commandsWithFiles(formattableFiles, 'pnpm exec oxfmt --write'),
+    ...commandsWithFiles(
+      formattableFiles,
+      'pnpm exec oxfmt --write --no-error-on-unmatched-pattern'
+    ),
     ...lintCommands(codeFiles, styleFiles),
     ...typecheckCommands(typecheckFiles)
   ]
