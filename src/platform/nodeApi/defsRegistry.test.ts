@@ -1,5 +1,5 @@
 import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph } from '@/lib/litegraph/src/LGraph'
 import { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
@@ -16,11 +16,13 @@ import {
   frontendResolverMap,
   frontendSupplierMap,
   offerUnplacedLink,
+  provideGraphLoadingState,
   reapplyPackTypeColors
 } from './defsRegistry'
 import type { Comfy } from './comfyApi'
 import type {
   DefSelector,
+  NodeCreatedEvent,
   NodeDefBuilder,
   UnplacedLinkEvent
 } from './defsRegistry'
@@ -608,6 +610,72 @@ describe('a defined node type', () => {
     } finally {
       stop()
     }
+  })
+})
+
+describe('how a node arrived', () => {
+  let graph: LGraph
+  let comfy: Comfy
+
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    graph = new LGraph()
+    comfy = createComfyApi(() => graph)
+    provideGraphLoadingState(() => false)
+  })
+
+  function watched() {
+    const seen: NodeCreatedEvent[] = []
+    const registry = createDefRegistry()
+    registry
+      .forMajor((id) => comfy.graph.node(id)!)
+      .extend('KSampler', (b) => b.onCreated((_n, event) => seen.push(event)))
+    const Generated = nodeClass('KSampler')
+    registry.applyTo(Generated, RAW_DEF)
+    // Registered so clone() can build one: it goes through the registry, and
+    // an unregistered type clones to null.
+    LiteGraph.registerNodeType('KSampler', Generated)
+    return { seen, make: () => LiteGraph.createNode('KSampler')! }
+  }
+
+  afterEach(() => LiteGraph.unregisterNodeType('KSampler'))
+
+  it('says a fresh node carries no saved state', () => {
+    const { seen, make } = watched()
+
+    graph.add(make())
+
+    expect(seen).toEqual([{ restored: false, loading: false }])
+  })
+
+  it('says a duplicated node does', () => {
+    // Packs overrode clone() to reset what a copy must not inherit — dynamic
+    // slots the original's upstream fed, a reroute born hard-typed. clone()
+    // runs before the node has an id, so there is nothing to hand a pack
+    // there; by onCreated there is.
+    const { seen, make } = watched()
+    const original = make()
+    graph.add(original)
+    seen.length = 0
+
+    graph.add(original.clone()!)
+
+    expect(seen).toEqual([{ restored: true, loading: false }])
+  })
+
+  it('separates a workflow load from a paste', () => {
+    // The whole point of the second field: a pasted node should drop slots it
+    // can no longer be fed through, and a loaded one must keep every one of
+    // them or the workflow opens wrong.
+    provideGraphLoadingState(() => true)
+    const { seen, make } = watched()
+    const original = make()
+    graph.add(original)
+    seen.length = 0
+
+    graph.add(original.clone()!)
+
+    expect(seen).toEqual([{ restored: true, loading: true }])
   })
 })
 

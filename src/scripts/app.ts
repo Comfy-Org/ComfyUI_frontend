@@ -177,6 +177,7 @@ import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { deliverPreview } from '@/platform/nodeApi/defsRegistry'
 import { installNodeChangeBridge } from '@/renderer/core/canvas/nodeChangeBridge'
 import { installUnplacedLinkBridge } from '@/renderer/core/canvas/unplacedLinkBridge'
+import { provideGraphLoadingState } from '@/platform/nodeApi/defsRegistry'
 import { installNodeMoveBridge } from '@/renderer/core/layout/nodeMoveBridge'
 import {
   pasteAudioNode,
@@ -983,6 +984,8 @@ export class ComfyApp {
     // too late, so every pack subscribing to onNodeMoved at module scope threw.
     installNodeMoveBridge()
     installNodeChangeBridge()
+    // Which the API cannot see for itself: ChangeTracker lives up here.
+    provideGraphLoadingState(() => ChangeTracker.isLoadingGraph)
     installComfyApi(() => useCanvasStore().currentGraph)
     await useExtensionService().loadExtensions()
 

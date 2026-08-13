@@ -158,7 +158,7 @@ export interface NodeDefBuilder {
    * A handle is id-backed, so at that moment there is nothing to hand back, and
    * widget writes would land on an unregistered node and be lost on insert.
    */
-  onCreated(callback: (node: NodeHandle) => void): void // 943 packs
+  onCreated(callback: (node: NodeHandle, event: NodeCreatedEvent) => void): void // 943 packs
   onExecuted(
     callback: (node: NodeHandle, result: ExecutionResult) => void
   ): void // 497 packs
@@ -247,6 +247,30 @@ export interface NodeDefBuilder {
   ): void
   /** Adds an entry to this node type's context menu. */
   addMenuItem(item: NodeMenuItem): void
+}
+
+export interface NodeCreatedEvent {
+  /**
+   * The node arrived carrying saved state — pasted, duplicated, or loaded from
+   * a workflow — rather than being made fresh.
+   *
+   * Read as "was `configure` called on it before it joined the graph", which is
+   * what actually distinguishes the cases. Packs overrode `clone()` to reset
+   * state a copy should not inherit — a duplicated node keeping the dynamic
+   * slots that were fed by the original's upstream, a duplicated reroute born
+   * hard-typed and refusing every other type — and `clone()` runs before the
+   * node has an id, so there is nothing to hand a pack there.
+   */
+  readonly restored: boolean
+  /**
+   * The whole graph was being loaded, so {@link restored} means "came from the
+   * saved file" rather than "came from the clipboard".
+   *
+   * The distinction is the point: a pasted node should drop slots it cannot
+   * still be fed through, and a loaded one must keep every one of them or the
+   * workflow opens wrong.
+   */
+  readonly loading: boolean
 }
 
 export interface UnplacedLinkEvent {
@@ -391,7 +415,7 @@ export interface NodeDefinition {
    */
   readonly supply?: Supplier
 
-  onCreated?(node: NodeHandle): void
+  onCreated?(node: NodeHandle, event: NodeCreatedEvent): void
   onExecuted?(node: NodeHandle, result: ExecutionResult): void
   onConfigured?(node: NodeHandle, data: Record<string, unknown>): void
   onConnectionsChanged?(node: NodeHandle, event: ConnectionChangeEvent): void
@@ -709,6 +733,28 @@ const previewSubscribers = new Map<
 >()
 
 /**
+ * Nodes that were configured before they joined a graph.
+ *
+ * Weak, so it holds nothing open: an entry lives exactly as long as the node.
+ * Module level because it spans the configure and add of one node, and both
+ * arrive through prototype patches rather than through any one registry.
+ */
+const restoredNodes = new WeakSet<object>()
+
+/**
+ * Whether a workflow load is in progress.
+ *
+ * Pushed down from the app layer, which owns that state, rather than reached
+ * up for — the same seam the move and change bridges use. Defaults to "no", so
+ * a host that never installs it reports paste and load alike as `restored`.
+ */
+let isLoadingGraph: () => boolean = () => false
+
+export function provideGraphLoadingState(source: () => boolean): void {
+  isLoadingGraph = source
+}
+
+/**
  * Type name -> its unplaced-link listeners.
  *
  * Module level for the same reason as previews: the offer comes from the
@@ -915,7 +961,7 @@ export function createDefRegistry(): {
         run: (node: NodeHandle, ...args: TArgs) => void
         handleFor: (nodeId: string) => NodeHandle
       }
-      const created: Bound<[]>[] = []
+      const created: Bound<[NodeCreatedEvent]>[] = []
       const executed: Bound<[ExecutionResult]>[] = []
       const configured: Bound<[Record<string, unknown>]>[] = []
       const propertyChanges: Bound<[PropertyChangeEvent]>[] = []
@@ -1068,6 +1114,13 @@ export function createDefRegistry(): {
         }
       }
 
+      // Unconditional: `restored` is answered from whether configure ran, so
+      // it must be recorded for every node of a type any pack extends, not
+      // only those with an onConfigured listener.
+      install<[ISerialisedNode]>('onConfigure', (node) => {
+        restoredNodes.add(node)
+      })
+
       if (created.length || widgets.length || hidden.length) {
         install('onAdded', (node) => {
           const id = String(node.id)
@@ -1078,7 +1131,11 @@ export function createDefRegistry(): {
             const widget = handleFor(id).widgets.get(name)
             if (widget) widget.setHidden(true)
           }
-          for (const { run, handleFor } of created) run(handleFor(id))
+          const event: NodeCreatedEvent = Object.freeze({
+            restored: restoredNodes.has(node),
+            loading: isLoadingGraph()
+          })
+          for (const { run, handleFor } of created) run(handleFor(id), event)
         })
       }
 
