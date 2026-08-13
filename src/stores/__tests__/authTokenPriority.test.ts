@@ -315,5 +315,26 @@ describe('auth token priority chain', () => {
       expect(token).toBeUndefined()
       expect(mockUser.getIdToken).not.toHaveBeenCalled()
     })
+
+    // Regression repro for the unified-auth login race: onAuthStateChanged
+    // fires workspaceAuthStore.mintAtLogin() without awaiting it
+    // (authStore.ts ~L167), in the same callback that flips `isInitialized`
+    // to true. router.beforeEach (router.ts:177-189) waits only for
+    // `isInitialized` and then reads getAuthHeader() to decide `isLoggedIn`,
+    // so it can observe a real, authenticated user with no unified token
+    // minted yet and redirect them to /cloud/login. Remove `.fails` once
+    // getAuthHeader stops going null for an authenticated user during that
+    // mint window.
+    it.fails('getAuthHeader is not falsy for an authenticated user while the unified token mint is still in flight', async () => {
+      // beforeEach already signed mockUser in via onAuthStateChanged; model
+      // the window where mintAtLogin() has fired but not resolved yet.
+      mockUnifiedToken = null
+
+      expect(store.isAuthenticated).toBe(true)
+
+      const header = await store.getAuthHeader()
+
+      expect(header).not.toBeNull()
+    })
   })
 })
