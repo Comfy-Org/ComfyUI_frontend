@@ -1,14 +1,18 @@
 import type { LocaleChanges, LocaleObject, LocaleValue } from './locale-tree'
 import { collectLeaves, getLeaf, pathKey } from './locale-tree'
 
+const quoteCharacters = `['"“”‘’«»‹›„‚「」『』]`
 const protectedLiteralPatterns = [
   /<(?:Picture|Video|Audio) [A-Za-z0-9]+>/g,
   /\b\d+k\+\d+\b/g,
-  /(?<=['"“”「」])(?:match|max)(?=['"“”「」])/g
+  new RegExp(`(?<=${quoteCharacters})(?:match|max)(?=${quoteCharacters})`, 'g')
 ]
 // Named ({name}), positional list ({0}), and literal ({'@'}) interpolation
-const interpolationPattern =
-  /(?<!\\)\{(?:[A-Za-z][A-Za-z0-9_.-]*|\d+|'[^']*')\}/g
+const interpolationPattern = /\{(?:[A-Za-z][A-Za-z0-9_.-]*|\d+|'[^']*')\}/g
+// vue-i18n message syntax the model must not introduce: | separates plural
+// forms, @:key / @.modifier:key are linked messages
+const pluralSeparatorPattern = /\|/
+const linkedMessagePattern = /@[.:]/
 
 function uniqueMatches(value: string, pattern: RegExp): string[] {
   return [...new Set(value.match(pattern) ?? [])].sort()
@@ -38,7 +42,17 @@ export function tokenErrors(
   const added = targetTokens.filter((token) => !sourceTokens.includes(token))
   return [
     ...(missing.length ? [`missing ${missing.join(', ')}`] : []),
-    ...(added.length ? [`added ${added.join(', ')}`] : [])
+    ...(added.length ? [`added ${added.join(', ')}`] : []),
+    ...(source.trim().length > 0 && target.trim().length === 0
+      ? ['empty translation']
+      : []),
+    ...(pluralSeparatorPattern.test(target) &&
+    !pluralSeparatorPattern.test(source)
+      ? ['added plural separator |']
+      : []),
+    ...(linkedMessagePattern.test(target) && !linkedMessagePattern.test(source)
+      ? ['added linked message @']
+      : [])
   ]
 }
 
@@ -117,16 +131,11 @@ export function auditProtectedLiterals(
   target: LocaleObject,
   skipKeys: ReadonlySet<string>
 ): string[] {
-  const errors: string[] = []
   const targetLeaves = collectLeaves(target)
-  for (const [key, leaf] of collectLeaves(source)) {
-    if (typeof leaf.value !== 'string') continue
-    if (skipKeys.has(key)) continue
-    const targetValue = targetLeaves.get(key)?.value
-    if (typeof targetValue !== 'string') continue
-    for (const error of tokenErrors(leaf.value, targetValue, true)) {
-      errors.push(`${leaf.path.join('.')}: ${error}`)
-    }
-  }
-  return errors
+  return [...collectLeaves(source)].flatMap(([key, leaf]) => {
+    if (skipKeys.has(key)) return []
+    const targetLeaf = targetLeaves.get(key)
+    if (targetLeaf === undefined) return []
+    return leafTokenErrors(leaf.value, targetLeaf.value, leaf.path.join('.'))
+  })
 }

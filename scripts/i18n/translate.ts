@@ -24,6 +24,9 @@ const defaultRequestTimeoutMs = 120_000
 const maxNetworkRetries = 3
 const maxMalformedResponseRetries = 3
 
+// Unlike es-toolkit's mapAsync, which dispatches every item up front, this
+// pool stops dispatching once any task fails so a fatal error does not keep
+// spending API requests whose results nobody will consume
 export async function mapWithConcurrency<T, R>(
   items: readonly T[],
   concurrency: number,
@@ -31,12 +34,18 @@ export async function mapWithConcurrency<T, R>(
 ): Promise<R[]> {
   const results: R[] = new Array(items.length)
   let next = 0
+  let failed = false
   const workers = Array.from(
     { length: Math.min(concurrency, items.length) },
     async () => {
-      while (next < items.length) {
+      while (!failed && next < items.length) {
         const index = next++
-        results[index] = await task(items[index])
+        try {
+          results[index] = await task(items[index])
+        } catch (error) {
+          failed = true
+          throw error
+        }
       }
     }
   )

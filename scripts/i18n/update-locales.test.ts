@@ -10,6 +10,7 @@ import type { LocaleObject } from './locale-tree'
 import {
   collectPendingLeaves,
   diffLocaleSources,
+  getLeaf,
   pathKey,
   rebuildLocale
 } from './locale-tree'
@@ -18,6 +19,7 @@ import type { TranslateBatch, TranslationItem } from './translate'
 import {
   chunkItems,
   createOpenAiTranslator,
+  mapWithConcurrency,
   translateLocaleItems
 } from './translate'
 import {
@@ -137,13 +139,15 @@ describe('locale file update', () => {
     expect(Object.keys(output)).toEqual([...Object.keys(output)].sort())
   })
 
-  it('retranslates existing translations whose placeholders were corrupted', async () => {
+  it('retranslates existing translations that were corrupted or blanked', async () => {
     const parity = {
+      blanked: 'Save',
       farewell: 'Goodbye',
       greeting: 'Hello {name}',
       intact: 'See {docs}'
     }
     const corrupted = {
+      blanked: '',
       farewell: 'translated ({count})',
       greeting: 'Bonjour nom',
       intact: 'translated {docs}'
@@ -155,11 +159,27 @@ describe('locale file update', () => {
       echoTranslator
     )
     expect(output).toEqual({
+      blanked: 'xx: Save',
       farewell: 'xx: Goodbye',
       greeting: 'xx: Hello {name}',
       intact: 'translated {docs}'
     })
-    expect(translatedCount).toBe(2)
+    expect(translatedCount).toBe(3)
+  })
+
+  it('preserves keys named __proto__', async () => {
+    const protoSource = JSON.parse(
+      '{"__proto__": {"label": "Hello"}, "normal": "World"}'
+    ) as LocaleObject
+    const { output } = await updateLocaleFile(
+      protoSource,
+      {},
+      {},
+      echoTranslator
+    )
+    expect(Object.keys(output)).toEqual(['__proto__', 'normal'])
+    expect(getLeaf(output, ['__proto__', 'label'])).toBe('xx: Hello')
+    expect(getLeaf(output, ['normal'])).toBe('xx: World')
   })
 
   it('is idempotent: a rerun translates nothing and leaves the output unchanged', async () => {
@@ -315,6 +335,21 @@ describe('translateLocaleItems', () => {
   })
 })
 
+describe('mapWithConcurrency', () => {
+  it('stops dispatching new tasks after a failure', async () => {
+    const started: number[] = []
+    await expect(
+      mapWithConcurrency([1, 2, 3, 4], 2, async (item) => {
+        started.push(item)
+        if (item === 1) throw new Error('boom')
+        await new Promise((resolve) => setTimeout(resolve, 5))
+        return item
+      })
+    ).rejects.toThrow('boom')
+    expect(started).toEqual([1, 2])
+  })
+})
+
 describe('chunkItems', () => {
   it('splits by item count and source size while keeping oversized items whole', () => {
     const item = (id: string, size: number): TranslationItem => ({
@@ -373,16 +408,28 @@ describe('validateLocale', () => {
     ).toEqual(["help: missing {'@'}, {0}, {username}"])
   })
 
-  it('flags placeholder corruption on unchanged keys', () => {
-    const source = { status: 'Failed', title: 'Hi {name}' }
+  it('flags corruption on unchanged keys, including array leaves', () => {
+    const source = {
+      list: ['Use {name}', 'Second'],
+      status: 'Failed',
+      title: 'Hi {name}'
+    }
     const changes = diffLocaleSources(source, source)
     expect(
       validateLocale(
         source,
-        { status: '失败 ({count})', title: 'Hola nombre' },
+        {
+          list: ['Use nom', 'Deuxième'],
+          status: '失败 ({count})',
+          title: 'Hola nombre'
+        },
         changes
       )
-    ).toEqual(['status: added {count}', 'title: missing {name}'])
+    ).toEqual([
+      'list.0: missing {name}',
+      'status: added {count}',
+      'title: missing {name}'
+    ])
   })
 
   it('flags keys that no longer exist in the source', () => {
@@ -395,6 +442,32 @@ describe('validateLocale', () => {
         changes
       )
     ).toEqual(['stray: key does not exist in the source'])
+  })
+
+  it('accepts locale quote styles and rejects introduced message syntax', () => {
+    const source = { scale: "Set 'match' or 'max' to scale", send: 'Send' }
+    const changes = diffLocaleSources({}, source)
+    expect(
+      validateLocale(
+        source,
+        { scale: 'Réglez «match» ou „max“ pour l’échelle', send: 'Envoyer' },
+        changes
+      )
+    ).toEqual([])
+    expect(
+      validateLocale(
+        source,
+        { scale: source.scale, send: 'Enviar | Cancelar' },
+        changes
+      )
+    ).toEqual(['send: added plural separator |'])
+    expect(
+      validateLocale(
+        source,
+        { scale: source.scale, send: 'Enviar @:g.cancel' },
+        changes
+      )
+    ).toEqual(['send: added linked message @'])
   })
 
   it('compares placeholder names as a set across plural forms', () => {

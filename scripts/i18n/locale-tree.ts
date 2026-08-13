@@ -190,17 +190,22 @@ export function rebuildLocale(
   translations: ReadonlyMap<string, LocaleTrackedLeaf>
 ): LocaleObject {
   function rebuildObject(node: LocaleObject, parent: string[]): LocaleObject {
-    const result: LocaleObject = {}
-    for (const key of Object.keys(node).sort()) {
-      const child = node[key]
-      const path = [...parent, key]
-      if (child && typeof child === 'object' && !Array.isArray(child)) {
-        result[key] = rebuildObject(child, path)
-        continue
-      }
-      result[key] = rebuildLeaf(child, path)
-    }
-    return result
+    // Object.fromEntries defines own data properties, so keys like __proto__
+    // survive instead of invoking the prototype setter
+    return Object.fromEntries(
+      Object.keys(node)
+        .sort()
+        .map((key) => {
+          const child = node[key]
+          const path = [...parent, key]
+          return [
+            key,
+            child && typeof child === 'object' && !Array.isArray(child)
+              ? rebuildObject(child, path)
+              : rebuildLeaf(child, path)
+          ]
+        })
+    )
   }
 
   function rebuildLeaf(leaf: LocaleTrackedLeaf, path: string[]): LocaleValue {

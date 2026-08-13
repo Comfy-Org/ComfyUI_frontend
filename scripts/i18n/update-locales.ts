@@ -4,6 +4,7 @@ import {
   mkdirSync,
   readFileSync,
   readdirSync,
+  rmSync,
   statSync,
   writeFileSync
 } from 'node:fs'
@@ -44,6 +45,10 @@ import {
 
 interface SourceManifest {
   files: Record<string, string>
+  // Transitional baseline: leaf path keys per entry file whose committed
+  // translations violated token validation when the manifest was recorded.
+  // The check exempts them; a successful locale run heals and drops them.
+  knownViolations?: Record<string, string[]>
   version: 1
 }
 
@@ -53,6 +58,8 @@ interface SourcePlan {
   changes: LocaleChanges
   invalidated: Set<string>
   previousLeafCount: number
+  degraded: boolean
+  knownViolationKeys: ReadonlySet<string>
 }
 
 interface LocaleFileState {
@@ -177,7 +184,15 @@ function loadManifest(filename: string): SourceManifest {
     Array.isArray(manifest.files) ||
     !Object.values(manifest.files).every(
       (hash) => typeof hash === 'string' && /^[0-9a-f]{40,64}$/.test(hash)
-    )
+    ) ||
+    ('knownViolations' in manifest &&
+      (!manifest.knownViolations ||
+        typeof manifest.knownViolations !== 'object' ||
+        Array.isArray(manifest.knownViolations) ||
+        !Object.values(manifest.knownViolations).every(
+          (keys) =>
+            Array.isArray(keys) && keys.every((key) => typeof key === 'string')
+        )))
   ) {
     throw new Error(`${filename} has an invalid source manifest`)
   }
@@ -210,12 +225,10 @@ function readManifestSource(
   }
 }
 
-const pruneCountFloor = 25
-const pruneRatioLimit = 0.02
-
 export function exceedsPruneThreshold(
   deletedCount: number,
-  previousLeafCount: number
+  previousLeafCount: number,
+  { pruneCountFloor, pruneRatioLimit } = translationPipelineConfig
 ): boolean {
   return (
     deletedCount >
@@ -227,18 +240,30 @@ function writeManifest(
   repoRoot: string,
   entryDir: string,
   manifestFile: string,
-  filenames: readonly string[]
+  advancedFilenames: readonly string[],
+  preservedFiles: Readonly<Record<string, string>>,
+  preservedViolations: Readonly<Record<string, string[]>>
 ): void {
   const files = Object.fromEntries(
-    filenames.map((filename) => [
-      filename,
-      execFileSync('git', ['hash-object', '-w', join(entryDir, filename)], {
-        cwd: repoRoot,
-        encoding: 'utf8'
-      }).trim()
-    ])
+    [
+      ...Object.entries(preservedFiles),
+      ...advancedFilenames.map((filename) => [
+        filename,
+        execFileSync('git', ['hash-object', '-w', join(entryDir, filename)], {
+          cwd: repoRoot,
+          encoding: 'utf8'
+        }).trim()
+      ])
+    ].sort(([left], [right]) => left.localeCompare(right))
   )
-  const serialized = `${JSON.stringify({ files, version: 1 }, null, 2)}\n`
+  const manifest: SourceManifest = {
+    files,
+    ...(Object.keys(preservedViolations).length > 0
+      ? { knownViolations: preservedViolations }
+      : {}),
+    version: 1
+  }
+  const serialized = `${JSON.stringify(manifest, null, 2)}\n`
   if (
     !existsSync(manifestFile) ||
     readFileSync(manifestFile, 'utf8') !== serialized
@@ -252,6 +277,22 @@ function sourceFiles(entryDir: string): string[] {
     .filter((filename) => filename.endsWith('.json'))
     .filter((filename) => statSync(join(entryDir, filename)).isFile())
     .sort()
+}
+
+function orphanedOutputFiles(
+  outputDir: string,
+  config: TranslationPipelineConfig,
+  entryFilenames: readonly string[]
+): string[] {
+  const entrySet = new Set(entryFilenames)
+  return config.outputLocales.flatMap((locale) => {
+    const localeDir = join(outputDir, locale.code)
+    if (!existsSync(localeDir)) return []
+    return readdirSync(localeDir)
+      .filter((filename) => filename.endsWith('.json'))
+      .filter((filename) => !entrySet.has(filename))
+      .map((filename) => join(localeDir, filename))
+  })
 }
 
 function loadLocaleFileStates(
@@ -311,13 +352,16 @@ function reportCheck(states: readonly LocaleFileState[]): number {
         `${label}: ${state.strayPaths.length} keys no longer exist in the English source and will be pruned`
       )
     }
-    const pendingKeys = new Set(
-      state.pendingLeaves.map((leaf) => pathKey(leaf.path))
-    )
+    // Skip keys queued because the English source changed (comparing an old
+    // translation against new English is meaningless) and baseline violations
+    // recorded in the manifest; a key newly corrupted beyond those must fail
+    // the check. Degraded plans (recorded source unavailable) cannot tell
+    // staleness from corruption, so they skip the audit.
+    if (state.plan.degraded) continue
     for (const error of auditProtectedLiterals(
       state.plan.source,
       state.existing,
-      pendingKeys
+      new Set([...state.plan.invalidated, ...state.plan.knownViolationKeys])
     )) {
       auditErrors.push(`${label}: ${error}`)
     }
@@ -375,7 +419,9 @@ async function run(argv: readonly string[]): Promise<void> {
       invalidated: new Set(
         [...changes.added, ...changes.modified].map(pathKey)
       ),
-      previousLeafCount: collectLeaves(previous).size
+      previousLeafCount: collectLeaves(previous).size,
+      degraded: recorded === undefined,
+      knownViolationKeys: new Set(manifest.knownViolations?.[filename] ?? [])
     }
   })
 
@@ -400,8 +446,14 @@ async function run(argv: readonly string[]): Promise<void> {
   }
 
   const states = loadLocaleFileStates(config, outputDir, plans)
+  const orphans = orphanedOutputFiles(outputDir, config, filenames)
 
   if (check) {
+    for (const orphan of orphans) {
+      print(
+        `${relative(repoRoot, orphan)}: the English source file was removed; this locale file will be deleted`
+      )
+    }
     process.exitCode = reportCheck(states)
     return
   }
@@ -476,33 +528,46 @@ async function run(argv: readonly string[]): Promise<void> {
     }
   )
 
-  const failures = outcomes.flatMap((outcome) =>
-    'failure' in outcome
-      ? [
-          `${outcome.state.locale.code}/${outcome.state.plan.filename}: ${outcome.failure}`
-        ]
-      : []
-  )
-  if (failures.length > 0) {
-    throw new Error(
-      `Translation failed for ${failures.length} locale files:\n${failures.join('\n')}`
-    )
+  const failuresByFile = new Map<string, string[]>()
+  function addFailure(filename: string, message: string): void {
+    failuresByFile.set(filename, [
+      ...(failuresByFile.get(filename) ?? []),
+      message
+    ])
+  }
+  for (const outcome of outcomes) {
+    if ('failure' in outcome) {
+      addFailure(
+        outcome.state.plan.filename,
+        `${outcome.state.locale.code}/${outcome.state.plan.filename}: ${outcome.failure}`
+      )
+    }
   }
   const rebuilt = outcomes.flatMap((outcome) =>
     'output' in outcome ? [outcome] : []
   )
-
-  const errors = rebuilt.flatMap(({ state, output }) =>
-    validateLocale(state.plan.source, output, state.plan.changes).map(
-      (error) => `${state.locale.code}/${state.plan.filename}: ${error}`
-    )
-  )
-  if (errors.length > 0) {
-    throw new Error(`Locale validation failed:\n${errors.join('\n')}`)
+  for (const { state, output } of rebuilt) {
+    for (const error of validateLocale(
+      state.plan.source,
+      output,
+      state.plan.changes
+    )) {
+      addFailure(
+        state.plan.filename,
+        `${state.locale.code}/${state.plan.filename}: ${error}`
+      )
+    }
   }
 
+  // Persist per entry file: locale outputs and the manifest entry advance only
+  // for entry files whose every locale translated and validated, so one
+  // failure does not discard the completed work of the other files
+  const completedFilenames = new Set(
+    filenames.filter((filename) => !failuresByFile.has(filename))
+  )
   let written = 0
   for (const { state, output } of rebuilt) {
+    if (!completedFilenames.has(state.plan.filename)) continue
     const serialized = serializeLocale(output)
     const current = existsSync(state.outputFile)
       ? readFileSync(state.outputFile, 'utf8')
@@ -513,11 +578,49 @@ async function run(argv: readonly string[]): Promise<void> {
       written++
     }
   }
-  writeManifest(repoRoot, entryDir, manifestFile, filenames)
+  for (const orphan of orphans) rmSync(orphan)
+  writeManifest(
+    repoRoot,
+    entryDir,
+    manifestFile,
+    [...completedFilenames],
+    Object.fromEntries(
+      filenames.flatMap((filename) => {
+        if (completedFilenames.has(filename)) return []
+        const hash = manifest.files[filename]
+        return hash ? [[filename, hash] as const] : []
+      })
+    ),
+    // A completed file's translations were fully revalidated, so its baseline
+    // violations are healed and dropped; failed files keep theirs
+    Object.fromEntries(
+      filenames.flatMap((filename) => {
+        if (completedFilenames.has(filename)) return []
+        const keys = manifest.knownViolations?.[filename]
+        return keys && keys.length > 0 ? [[filename, keys] as const] : []
+      })
+    )
+  )
+
+  if (failuresByFile.size > 0) {
+    const details = [...failuresByFile.values()].flat()
+    const persisted =
+      completedFilenames.size > 0
+        ? `\nCompleted entry files were written and recorded in the manifest: ${[...completedFilenames].join(', ')}.`
+        : ''
+    throw new Error(
+      `Translation failed for ${details.length} locale files:\n${details.join('\n')}${persisted}`
+    )
+  }
 
   print(
     `Translated ${pendingTotal} strings; updated ${written} locale files across ${config.outputLocales.length} locales.`
   )
+  if (orphans.length > 0) {
+    print(
+      `Deleted ${orphans.length} locale files whose English source was removed.`
+    )
+  }
   print(`Source provenance: ${relative(repoRoot, manifestFile)}`)
 }
 
