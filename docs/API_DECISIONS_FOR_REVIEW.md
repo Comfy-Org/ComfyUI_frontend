@@ -740,3 +740,56 @@ what the remaining refusals rest on.
   conversions need to `await` before supplying a value.
 - **Opening/navigating into a subgraph.** Reaching its nodes is closed;
   navigation is not.
+
+## 10. Why packs draw on the canvas, and what makes `widgets.mount` a real answer ✅
+
+The largest block of unconverted code in the corpus is hand-drawn canvas
+widgets — rgthree's Power Lora Loader, Power Puter and Image Comparer, and the
+shared `utils_widgets`/`utils_canvas` beneath them, about 2,000 lines. The
+conversion answer has been "use `widgets.mount` and ordinary DOM", and every
+pass has refused node-local pointer hit-testing on that basis.
+
+That answer is only honest if mounted DOM can look native. Otherwise a pack
+faces a choice between a widget that works and one that fits, and it will keep
+choosing the canvas.
+
+**Why the canvas in the first place.** Not hit-testing for its own sake.
+litegraph offered one control per widget row, so a repeating multi-control row
+— a LoRA with an on/off toggle, a name that opens a picker, and one or two
+drag-adjustable strengths — had no declarative form. Drawing it was the only
+way to get both the layout and the native look. The hit areas are a
+consequence of having drawn it, not the goal.
+
+**What makes mount sufficient.** The design system defines 32 `--node-*` custom
+properties on `:root`, with a `.dark-theme` override. They are inherited, so a
+mounted `<div>` can use them today and follows the user's theme without the
+pack knowing which one is active:
+
+```js
+node.widgets.mount({
+  name: 'loras',
+  render(container) {
+    const row = document.createElement('div')
+    row.style.background = 'var(--node-component-widget-input-surface)'
+    row.style.color = 'var(--node-component-slot-text)'
+    row.style.border = '1px solid var(--node-component-border)'
+    container.append(row)
+  }
+})
+```
+
+The surface tokens a widget needs are `--node-component-surface`,
+`-surface-hovered`, `-surface-selected`, `-surface-highlight`,
+`--node-component-widget-input`, `-widget-input-surface`,
+`--node-component-slot-text`, `--node-component-border`, `-border-selected`,
+`-border-error`, `--node-component-disabled` and `--node-icon-disabled`.
+
+**So no new API is needed here — a contract is.** The tokens exist and work;
+what packs lack is a statement of which names they may rely on. Treating this
+list as supported is the decision to make, because it is what lets us say
+"rebuild it in DOM" and mean it. Without that, refusing canvas drawing is
+refusing the feature.
+
+This is also the answer to re-theming Nodes 2.0: a pack that styles from tokens
+restyles for free when we change them, and one that hardcodes `#353535` does
+not.
