@@ -92,6 +92,10 @@ describe('revealDynamicInputSlot', () => {
     })
 
     expect(revealDynamicInputSlot(node, 'IMAGE')).toBe(false)
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('Unparseable COMFY_DYNAMICCOMBO_V3 spec'),
+      expect.anything()
+    )
     warn.mockRestore()
   })
 })
