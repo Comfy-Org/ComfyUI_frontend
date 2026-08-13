@@ -1,19 +1,30 @@
 #!/usr/bin/env python3
-"""Combine all ecosystem-matrix shard rows into one table and one verdict.
+"""Combine ecosystem-matrix rows into one population table and one verdict.
 
-Reads every $MATRIX_OUT/<pack>.json row (the verdict job merges all shards
-into one directory), prints the population table, then applies the PASS
-criteria and exits with the verdict:
+Reads every $MATRIX_OUT/<pack>.json row the runner wrote (all shards merged
+into one directory by the verdict job) and applies, in order:
 
-    PASS requires  entry JS loads clean   >= 95%
-                   registerNodeDef OK     >= 99%
-                   every operation clean  >= 99% of packs
+  harness gate   >= 50% of packs must pass the runner's self-check (the
+                 default workflow materialized). Below that the graph was
+                 broadly degraded by the HARNESS, not the ecosystem - the
+                 verdict is withheld and the exit code is 2, never a FAIL
+                 that reads as an ecosystem regression.
 
-Each floor sits under the measured baseline (97.9% / 100% / ~100%) so a
-handful of broken pack HEADs cannot flip the verdict, while a frontend
-regression that breaks pack integration craters all three at once.
-Shard manifests (_manifest-*.json alongside the rows) are merged by pack
-name to count no-JS packs, which are reported only as that count.
+  PASS criteria  entry JS loads (any entry per pack)  >= 95%  (baseline 97.4%)
+                 entry files load clean               >= 91%  (baseline 94.1%)
+                 registerNodeDef OK                   >= 99%  (baseline 100%)
+                 every operation clean                >= 99%  (baseline ~100%)
+
+  delta gate     entry-files-clean must not drop more than 1.5 points below
+                 the previous run's value ($MATRIX_PREV, written each run to
+                 $MATRIX_METRICS_OUT and carried between runs by the actions
+                 cache). Catches gradual erosion the absolute floors ignore.
+
+Floors sit under the measured baselines so a handful of broken pack HEADs
+cannot flip the verdict, while a frontend regression that breaks pack
+integration craters them all at once. Exit codes: 0 PASS, 1 FAIL, 2 harness
+failure / no rows. Shard manifests (_manifest-*.json) carry the no-JS skip
+counts, reported once as a count and otherwise ignored.
 """
 
 from __future__ import annotations
@@ -24,40 +35,66 @@ import sys
 from collections import Counter
 
 STATUS_STAGES = ('registerNodeDef', 'registerCustomNodes')
+DELTA_TOLERANCE = 1.5
 
 
 def main() -> int:
     out_dir = os.environ.get('MATRIX_OUT', '/tmp/matrix')
     rows = []
-    manifest = {}
     for name in sorted(os.listdir(out_dir) if os.path.isdir(out_dir) else []):
-        if not name.endswith('.json'):
+        if not name.endswith('.json') or name.startswith('_'):
             continue
-        path = os.path.join(out_dir, name)
         try:
-            if name.startswith('_manifest'):
-                manifest.update(json.load(open(path)))
-            else:
-                rows.append(json.load(open(path)))
+            rows.append(json.load(open(os.path.join(out_dir, name))))
         except (OSError, ValueError):
             print(f'unreadable row: {name}', file=sys.stderr)
     if not rows:
         print(f'no matrix rows in {out_dir}', file=sys.stderr)
         return 2
 
-    skipped = sum(1 for v in manifest.values() if 'skipped' in v)
+    skipped = 0
+    for name in os.listdir(out_dir):
+        if name.startswith('_manifest') and name.endswith('.json'):
+            try:
+                manifest = json.load(open(os.path.join(out_dir, name)))
+            except (OSError, ValueError):
+                print(f'unreadable shard manifest: {name}', file=sys.stderr)
+                continue
+            skipped += sum(1 for v in manifest.values() if 'skipped' in v)
+
     lines = [
         f'packs with extension JS executed: {len(rows)}'
         + (f' (no-JS packs ignored: {skipped})' if skipped else '')
     ]
-    loaded = sum(1 for r in rows if r.get('loadedOk'))
-    lines.append(f'{"entry JS loaded":22s} {loaded:5d} ({loaded / len(rows) * 100:5.1f}%)')
+
+    self_ok = sum(1 for r in rows if r.get('selfCheck', 'OK') == 'OK')
+    any_loaded = sum(1 for r in rows if r.get('loadedOk'))
+    total_entries = sum(len(r.get('load') or {}) for r in rows)
+    ok_entries = sum(
+        1
+        for r in rows
+        for v in (r.get('load') or {}).values()
+        if v == 'OK'
+    )
+    any_pct = any_loaded / len(rows) * 100
+    entry_pct = ok_entries / total_entries * 100 if total_entries else 0.0
+
+    lines.append(
+        f'{"packs with >=1 entry loaded":28s} {any_loaded:5d} ({any_pct:5.1f}%)'
+    )
+    lines.append(
+        f'{"entry files loaded clean":28s} {ok_entries:5d} of {total_entries}'
+        f' ({entry_pct:5.1f}%)'
+    )
     for stage in STATUS_STAGES:
         ok = sum(1 for r in rows if r.get(stage) == 'OK')
         measured = sum(1 for r in rows if stage in r)
-        lines.append(f'{stage:22s} {ok:5d} of {measured} OK')
+        lines.append(f'{stage:28s} {ok:5d} of {measured} OK')
     hook_packs = sum(1 for r in rows if r.get('hookErrors'))
-    lines.append(f'{"contained hook errors":22s} {hook_packs:5d} pack(s)')
+    lines.append(f'{"contained hook errors":28s} {hook_packs:5d} pack(s)')
+    lines.append(
+        f'{"harness self-check OK":28s} {self_ok:5d} of {len(rows)}'
+    )
 
     op_total: Counter = Counter()
     op_err: Counter = Counter()
@@ -85,17 +122,38 @@ def main() -> int:
         for msg, n in err_msgs.most_common(8):
             lines.append(f'  {n:4d}x {msg}')
 
-    load_pct = loaded / len(rows) * 100
-    reg_measured = sum(1 for r in rows if 'registerNodeDef' in r)
+    def flush(code: int) -> int:
+        report = '\n'.join(lines)
+        print(report)
+        summary = os.environ.get('GITHUB_STEP_SUMMARY')
+        if summary:
+            with open(summary, 'a', encoding='utf-8') as fh:
+                fh.write('## Ecosystem matrix\n\n```\n' + report + '\n```\n')
+        return code
+
+    self_pct = self_ok / len(rows) * 100
+    if self_pct < 50:
+        lines.append('')
+        lines.append(
+            f'HARNESS FAILURE: only {self_pct:.1f}% of packs passed the'
+            ' runner self-check (default workflow materialized). The graph'
+            ' was broadly degraded by the harness, not the ecosystem -'
+            ' verdict withheld.'
+        )
+        return flush(2)
+
     reg_ok = sum(1 for r in rows if r.get('registerNodeDef') == 'OK')
+    reg_measured = sum(1 for r in rows if 'registerNodeDef' in r)
     reg_pct = reg_ok / reg_measured * 100 if reg_measured else 0.0
-    worst_op, worst_pct = 'n/a', 100.0
+    worst_op, worst_pct = '-', 100.0
     for op in op_total:
         pct = (op_total[op] - op_err[op]) / op_total[op] * 100
         if pct < worst_pct:
             worst_op, worst_pct = op, pct
+
     criteria = [
-        ('entry JS loads clean', load_pct, 95.0),
+        ('entry JS loads (any entry per pack)', any_pct, 95.0),
+        ('entry files load clean', entry_pct, 91.0),
         ('registerNodeDef OK', reg_pct, 99.0),
         (f'every operation clean (worst: {worst_op})', worst_pct, 99.0),
     ]
@@ -105,20 +163,69 @@ def main() -> int:
     for label, measured_pct, floor in criteria:
         held = measured_pct >= floor
         lines.append(
-            f'  {label:42s} {measured_pct:5.1f}%  (floor {floor:.0f}%)  '
-            + ('OK' if held else 'BREACH')
+            f'  {label:42s} {measured_pct:5.1f}%  (floor {floor:.0f}%)'
+            f'  {"OK" if held else "BREACH"}'
         )
         if not held:
             breaches.append(f'{label} {measured_pct:.1f}% < {floor:.0f}%')
-    lines.append(f'VERDICT: {"FAIL - " + "; ".join(breaches) if breaches else "PASS"}')
 
-    report = '\n'.join(lines)
-    print(report)
-    summary = os.environ.get('GITHUB_STEP_SUMMARY')
-    if summary:
-        with open(summary, 'a', encoding='utf-8') as fh:
-            fh.write('## Ecosystem matrix\n\n```\n' + report + '\n```\n')
-    return 1 if breaches else 0
+    run_id = os.environ.get('MATRIX_RUN_ID', '')
+    prev_path = os.environ.get('MATRIX_PREV', '')
+    if prev_path and os.path.exists(prev_path):
+        prev = json.load(open(prev_path))
+        prev_entry = prev.get('entryPct')
+        if run_id and prev.get('runId') == run_id:
+            # A re-run restored this same run's earlier write; comparing a
+            # run against itself would blind the gate exactly when someone
+            # is re-running a red verdict.
+            lines.append(
+                f'  {"entry-clean delta vs previous run":42s}   n/a'
+                '  (previous metrics are from this run)'
+            )
+        elif isinstance(prev_entry, (int, float)):
+            delta = entry_pct - prev_entry
+            held = delta >= -DELTA_TOLERANCE
+            lines.append(
+                f'  {"entry-clean delta vs previous run":42s} {delta:+5.1f}pp'
+                f'  (floor -{DELTA_TOLERANCE}pp)  {"OK" if held else "BREACH"}'
+            )
+            if not held:
+                breaches.append(
+                    f'entry files clean dropped {-delta:.1f}pp'
+                    f' (from {prev_entry:.1f}% to {entry_pct:.1f}%)'
+                )
+    else:
+        lines.append(
+            f'  {"entry-clean delta vs previous run":42s}   n/a'
+            '  (no previous metrics)'
+        )
+
+    lines.append(
+        'VERDICT: ' + ('FAIL - ' + '; '.join(breaches) if breaches else 'PASS')
+    )
+
+    # Baseline-from-health: a FAILing run must not ratchet the baseline down
+    # to its own eroded numbers, or next week's delta forgives the
+    # regression exactly once it has become permanent.
+    metrics_out = os.environ.get('MATRIX_METRICS_OUT', '')
+    if metrics_out and not breaches:
+        os.makedirs(os.path.dirname(metrics_out) or '.', exist_ok=True)
+        json.dump(
+            {
+                'packs': len(rows),
+                'anyPct': round(any_pct, 3),
+                'entryPct': round(entry_pct, 3),
+                'regPct': round(reg_pct, 3),
+                'worstOp': worst_op,
+                'worstOpPct': round(worst_pct, 3),
+                'runId': run_id,
+                'verdict': 'PASS',
+            },
+            open(metrics_out, 'w'),
+            indent=1,
+        )
+
+    return flush(1 if breaches else 0)
 
 
 if __name__ == '__main__':

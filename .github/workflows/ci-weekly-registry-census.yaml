@@ -20,8 +20,12 @@ name: 'CI: Ecosystem Matrix'
 
 on:
   schedule:
-    # Weekly, Monday 06:17 UTC - off the top-of-hour scheduler stampede.
+    # Monday is the measurement; Thursday exists to keep the corpus cache
+    # inside GitHub's 7-day eviction window (a weekly-only cadence races it,
+    # and losing the cache means a full ~1GB cold fetch). Off the
+    # top-of-hour scheduler stampede.
     - cron: '17 6 * * 1'
+    - cron: '17 6 * * 4'
   workflow_dispatch:
   # Self-testing: a PR that changes the corpus tooling runs the refresh.
   # Also what registers the workflow so workflow_dispatch resolves before
@@ -44,6 +48,9 @@ jobs:
   corpus:
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    permissions:
+      contents: read
+      actions: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -87,6 +94,19 @@ jobs:
         with:
           path: .census
           key: registry-corpus-${{ hashFiles('.census/corpus.lock.json') }}
+
+      # Each drift writes a new ~1GB entry against the repo's shared 10GB
+      # cache budget; without pruning the census would evict every other
+      # workflow's caches within weeks. Keep the newest entry only. Branch
+      # runs only - PR-scoped entries expire with the PR and a fork PR's
+      # token cannot delete caches anyway.
+      - name: Prune superseded corpus caches
+        if: always() && steps.fetch.outcome == 'success' && github.event_name != 'pull_request' && github.ref_name == github.event.repository.default_branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh cache list --repo "$GITHUB_REPOSITORY" --key registry-corpus- --sort created_at --order desc --json id --jq '.[1:][].id' |
+            while read -r id; do gh cache delete "$id" --repo "$GITHUB_REPOSITORY" || true; done
 
   # The execution rung between the corpus (every pack fetched) and the E2E
   # gates (browser + backend): every JS-shipping pack's real extension code
@@ -155,17 +175,27 @@ jobs:
           if-no-files-found: warn
 
   # The single combined result: all four shards' rows merge into one table
-  # and one gating verdict - this job's exit code IS the ecosystem verdict.
+  # and one gating verdict - this job's exit code IS the ecosystem verdict
+  # (0 PASS, 1 FAIL, 2 harness failure / no rows).
+  #
+  # Before any criterion: >= 50% of packs must pass the runner self-check
+  # (default workflow materialized), or the verdict is WITHHELD as a
+  # harness failure rather than reported as an ecosystem FAIL.
   #
   # PASS criteria (summarize_matrix.py, all must hold over the combined
-  # rows; each floor sits under the measured baseline so a handful of
-  # broken pack HEADs cannot flip the verdict, while a frontend regression
-  # that breaks pack integration craters all three at once):
-  #   entry JS loads clean   >= 95%           (baseline 97.9%)
-  #   registerNodeDef OK     >= 99%           (baseline 100%)
-  #   every operation clean  >= 99% of packs  (baseline ~100%)
+  # rows; floors sit under the real-timer baselines measured on run
+  # 31624366070 so a handful of broken pack HEADs cannot flip the verdict,
+  # while a frontend regression craters them all at once):
+  #   entry JS loads (any entry per pack)  >= 95%     (baseline 97.3%)
+  #   entry files load clean               >= 91%     (baseline 94.0%)
+  #   registerNodeDef OK                   >= 99%     (baseline 100%)
+  #   every operation clean                >= 99%     (baseline 99.8%)
+  #   entry-clean delta vs previous run    >= -1.5pp  (metrics via cache)
   matrix-verdict:
     needs: ecosystem-matrix
+    # A single failed shard must degrade to a partial verdict over the rows
+    # that exist, not to a skipped check that reads as nothing happened.
+    if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -179,8 +209,38 @@ jobs:
           path: matrix-rows
           merge-multiple: true
 
+      # Previous run's metrics for the week-over-week delta gate: the
+      # primary key never hits (saves carry a run_attempt suffix), so
+      # restore-keys serves the newest save. A re-run can restore this same
+      # run's earlier attempt - metrics carry runId and the summarizer
+      # skips the delta rather than compare a run against itself.
+      - name: Restore previous metrics
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: matrix-metrics
+          key: matrix-metrics-${{ github.run_id }}
+          restore-keys: matrix-metrics-
+
       - name: Verdict
-        run: MATRIX_OUT="$PWD/matrix-rows" python3 scripts/registry-census/summarize_matrix.py
+        id: verdict
+        env:
+          MATRIX_RUN_ID: ${{ github.run_id }}
+        run: |
+          MATRIX_OUT="$PWD/matrix-rows" \
+          MATRIX_PREV="$PWD/matrix-metrics/metrics.json" \
+          MATRIX_METRICS_OUT="$PWD/matrix-metrics/metrics.json" \
+            python3 scripts/registry-census/summarize_matrix.py
+
+      # Baseline-from-health: gated on the verdict PASSING, because on a
+      # FAIL the restored previous metrics still sit in the directory and a
+      # file-presence guard would re-save the old baseline under a newer
+      # key for nothing.
+      - name: Save metrics
+        if: steps.verdict.outcome == 'success' && hashFiles('matrix-metrics/metrics.json') != ''
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: matrix-metrics
+          key: matrix-metrics-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Upload combined result
         if: always()
@@ -221,12 +281,18 @@ jobs:
       - name: Every channel must fire
         run: MATRIX_OUT="$PWD/matrix-proof" python3 scripts/registry-census/verify_detection.py
 
+      # Exit code must be exactly 1 (criteria FAIL): exit 2 would mean the
+      # harness gate withheld the verdict, which on this corpus is itself a
+      # detection failure.
       - name: Verdict must FAIL on poison
         run: |
-          if MATRIX_OUT="$PWD/matrix-proof" python3 scripts/registry-census/summarize_matrix.py > proof-verdict.txt 2>&1; then
-            cat proof-verdict.txt
-            echo "::error::verdict PASSED on an all-poison corpus - the floors are not gating"
+          set +e
+          MATRIX_OUT="$PWD/matrix-proof" python3 scripts/registry-census/summarize_matrix.py > proof-verdict.txt 2>&1
+          rc=$?
+          set -e
+          tail -8 proof-verdict.txt
+          if [ "$rc" -ne 1 ]; then
+            echo "::error::expected verdict FAIL (exit 1) on the poison corpus, got exit $rc"
             exit 1
           fi
-          tail -6 proof-verdict.txt
           echo "verdict correctly FAILED on the poison corpus"
