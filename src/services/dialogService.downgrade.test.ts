@@ -389,7 +389,7 @@ describe('showDowngradeToPersonalDialog', () => {
     expect(downgradeToPersonal).not.toHaveBeenCalled()
   })
 
-  it('toasts and aborts when the preview fails', async () => {
+  it('toasts and aborts when the preview fails with no other members', async () => {
     previewDowngrade.mockRejectedValue(new Error('Outstanding balance'))
 
     await useDialogService().showDowngradeToPersonalDialog(options)
@@ -402,5 +402,23 @@ describe('showDowngradeToPersonalDialog', () => {
     )
     expect(showDialog).not.toHaveBeenCalled()
     expect(downgradeToPersonal).not.toHaveBeenCalled()
+  })
+
+  it('still offers member removal when the preview is rejected because members exist', async () => {
+    hasOtherMembers.value = true
+    previewDowngrade.mockRejectedValue(
+      new Error('Requested seats exceed maximum allowed for this plan')
+    )
+
+    const resultPromise =
+      useDialogService().showDowngradeToPersonalDialog(options)
+    await vi.waitFor(() => expect(showDialog).toHaveBeenCalledOnce())
+
+    expect(toastAdd).not.toHaveBeenCalled()
+    const [args] = showDialog.mock.calls[0]
+    expect(args.props.requiresRemoval).toBe(true)
+
+    args.dialogComponentProps.onClose()
+    await expect(resultPromise).resolves.toBeNull()
   })
 })
