@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { fromZodError } from 'zod-validation-error'
 import type { ListAssetsData } from '@comfyorg/ingest-types'
 
@@ -10,7 +10,7 @@ import {
 } from '@/platform/remote/paged/pagedList'
 import type { PagedList } from '@/platform/remote/paged/pagedList'
 import { api } from '@/scripts/api'
-import { encodeParams } from '@/utils/urlUtil'
+import { encodeParams, singletonInvocation } from '@/utils/requestUtil'
 
 type QueryOptions = {
   requestOptions?: RequestInit
@@ -30,8 +30,14 @@ export function useAssetsQuery(
 
   let next_cursor: string | undefined
   const hasMore = ref(true)
-  const isLoading = ref(false)
   const items = ref<AssetItem[]>([])
+  const { loading: loadingMorePromise, fn: loadMore } =
+    singletonInvocation(doLoadMore)
+  const { loading: loadingNewPromise, fn: loadNew } =
+    singletonInvocation(doLoadNew)
+  const isLoading = computed(
+    () => !!loadingMorePromise.value && !!loadingNewPromise.value
+  )
 
   async function doQuery(overrideParams: Record<string, unknown>) {
     const signal = options.requestOptions?.signal
@@ -49,7 +55,8 @@ export function useAssetsQuery(
       return
     }
 
-    const parseResult = assetResponseSchema.safeParse(await resp.json())
+    const jsonresp = await resp.json()
+    const parseResult = assetResponseSchema.safeParse(jsonresp)
     if (!parseResult.success) {
       onError('Failed to parse asset response', fromZodError(parseResult.error))
       return
@@ -57,7 +64,7 @@ export function useAssetsQuery(
     return parseResult.data
   }
 
-  async function loadMore() {
+  async function doLoadMore() {
     const assetResponse = await doQuery({ after: next_cursor ?? params.after })
     if (!assetResponse) return
     next_cursor = assetResponse.next_cursor
@@ -79,7 +86,7 @@ export function useAssetsQuery(
     await loadMore()
   }
 
-  async function loadNew() {
+  async function doLoadNew() {
     const knownIds = new Set(items.value.map((item) => item.id))
     let headCursor: string | undefined
     while (true) {
