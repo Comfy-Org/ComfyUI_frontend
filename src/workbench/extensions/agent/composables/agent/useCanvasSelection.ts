@@ -10,6 +10,7 @@ export interface SelectedNode {
 export interface UseCanvasSelectionOptions {
   selection: MaybeRefOrGetter<SelectedNode[]>
   isLive: MaybeRefOrGetter<boolean>
+  isPaused?: MaybeRefOrGetter<boolean>
   scope?: MaybeRefOrGetter<string | null>
   dismissedSignature?: Ref<string | null>
 }
@@ -29,10 +30,12 @@ export function useCanvasSelection(options: UseCanvasSelectionOptions) {
     () =>
       [
         toValue(options.isLive),
+        toValue(options.isPaused ?? false),
         toValue(options.scope ?? null),
         toValue(options.selection)
       ] as const,
-    ([isLive, scope, nodes]) => {
+    ([isLive, isPaused, scope, nodes]) => {
+      if (isPaused) return
       if (!isLive) {
         staged.value = []
         consumedSig.value = null
