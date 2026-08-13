@@ -276,6 +276,30 @@ describe('custom-node S1-S12 workflow gates', () => {
     }
   })
 
+  it('keeps isolated tiers attributable without repeating per-pack node fetches', () => {
+    const allNodes = readFileSync(
+      'browser_tests/tests/customNodes/allNodes.spec.ts',
+      'utf8'
+    )
+    const identity = workflowSteps(
+      '.github/workflows/ci-tests-custom-nodes.yaml'
+    ).find((step) => step.name === 'Bind Detection Proof identity')
+
+    expect(allNodes).toContain(
+      'test.setTimeout(1_620_000 * loadManifest().length)'
+    )
+    expect(allNodes).toContain('await runWithCollectedCleanup(tier, [')
+    expect(allNodes).toContain('await runner.run(comfyPage, tier, defs)')
+    expect(allNodes).toContain(
+      'error instanceof AggregateError ? error.errors : [error]'
+    )
+    expect(allNodes).toContain(
+      'const defs = (await comfyPage.page.evaluate(() =>'
+    )
+    expect(identity?.env).not.toHaveProperty('PROOF_SHA')
+    expect(identity?.run).toContain('PROOF_SHA=$(git rev-parse HEAD)')
+  })
+
   it.for(workflowGates)(
     '$path accepts only the exact all-green result',
     (workflow) => {

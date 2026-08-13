@@ -67,3 +67,44 @@ it.for([
     }
   }
 )
+
+it('labels an isolated all-node failure with its S-tier', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'custom-nodes-summary-'))
+  try {
+    fs.writeFileSync(
+      path.join(dir, 'custom-nodes-results.json'),
+      JSON.stringify({
+        stats: { expected: 0, unexpected: 1 },
+        suites: [
+          {
+            file: 'browser_tests/tests/customNodes/allNodes.spec.ts',
+            title: 'all nodes by tier @custom-nodes',
+            specs: [
+              {
+                title: 'S3: every registered node survives save and reload',
+                tests: [{ status: 'unexpected', results: [] }]
+              }
+            ]
+          }
+        ]
+      })
+    )
+    fs.writeFileSync(path.join(dir, 'custom-nodes.log'), '')
+
+    const result = spawnSync('python3', [SCRIPT], {
+      cwd: dir,
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        GITHUB_STEP_SUMMARY: path.join(dir, 'summary.md')
+      }
+    })
+
+    expect(result.status).toBe(0)
+    const summary = fs.readFileSync(path.join(dir, 'summary.md'), 'utf8')
+    expect(summary).toContain('- **S3**: FAIL 1/1')
+    expect(summary).not.toContain('- **manifest coverage**: FAIL 1/1')
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true })
+  }
+})

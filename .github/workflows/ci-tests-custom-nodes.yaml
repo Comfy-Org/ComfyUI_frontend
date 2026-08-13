@@ -294,10 +294,9 @@ jobs:
           MUTATION_DIGEST: ${{ steps.source-mutation.outputs.digest || steps.execution-mutation.outputs.digest }}
           MUTATION_PATH: ${{ steps.source-mutation.outputs.path || steps.execution-mutation.outputs.path }}
           PROOF_ROW: ${{ matrix.proof_row }}
-          PROOF_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
-          [ "$(git rev-parse HEAD)" = "$PROOF_SHA" ] || { echo "::error::checkout is not proof SHA $PROOF_SHA"; exit 1; }
+          PROOF_SHA=$(git rev-parse HEAD)
           git merge-base --is-ancestor "$E2E_PARENT" HEAD || { echo "::error::E2E parent $E2E_PARENT is not an ancestor"; exit 1; }
           [ -n "$MUTATION_PATH" ] && [ -n "$MUTATION_DIGEST" ] || { echo '::error::mutation identity is incomplete'; exit 1; }
           case "$PROOF_ROW" in

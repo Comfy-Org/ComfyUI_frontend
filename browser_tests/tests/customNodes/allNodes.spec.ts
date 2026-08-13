@@ -83,6 +83,7 @@ import {
 import {
   customNodeSuiteSettings,
   drainBackendToIdle,
+  runWithCollectedCleanup,
   trackSubmittedPrompts,
   waitForQueueQuiet
 } from '@e2e/fixtures/utils/customNodeSuite'
@@ -610,11 +611,17 @@ async function packNodeKeys(
   const defs = (await page.evaluate(() =>
     window.app!.api.getNodeDefs()
   )) as unknown as Record<string, RawNodeDef>
-  const keys = normalizeNodeDefs(defs)
+  return { keys: packNodeKeysFromDefs(defs, pack), defs }
+}
+
+function packNodeKeysFromDefs(
+  defs: Record<string, RawNodeDef>,
+  pack: string
+): string[] {
+  return normalizeNodeDefs(defs)
     .filter((node) => node.pack === pack)
     .map((node) => node.type)
     .sort()
-  return { keys, defs }
 }
 
 // Invariant across manifest entries: which harness nodes the target backend
@@ -681,7 +688,11 @@ if (unjoinedYamlPacks.length > 0) {
 
 type AllNodesTierRunner = {
   entry: ReturnType<typeof loadManifest>[number]
-  run: (comfyPage: ComfyPage, tier: AllNodesTier) => Promise<void>
+  run: (
+    comfyPage: ComfyPage,
+    tier: AllNodesTier,
+    defs: Record<string, RawNodeDef>
+  ) => Promise<void>
 }
 
 const allNodesTierRunners: AllNodesTierRunner[] = []
@@ -690,10 +701,10 @@ for (const entry of loadManifest()) {
   const registerAllNodesTests = () => {
     const expectAllNodesTier = async (
       comfyPage: ComfyPage,
-      selectedTier: AllNodesTier
+      selectedTier: AllNodesTier,
+      defs: Record<string, RawNodeDef>
     ) => {
-      if (customNodesEnv() !== 'cloud') test.setTimeout(1_620_000)
-      const { keys, defs } = await packNodeKeys(comfyPage.page, entry.pack)
+      const keys = packNodeKeysFromDefs(defs, entry.pack)
       expect(
         keys.length,
         `${entry.pack} not installed on this backend`
@@ -703,12 +714,12 @@ for (const entry of loadManifest()) {
         tier: () => Promise<void>
       ) {
         if (!selectedBy.includes(selectedTier)) return
-        try {
-          await tier()
-        } finally {
-          await comfyPage.nodeOps.clearGraph()
-          await drainBackendToIdle(comfyPage.page, 10_000)
-        }
+        await runWithCollectedCleanup(tier, [
+          () => comfyPage.nodeOps.clearGraph(),
+          async () => {
+            await drainBackendToIdle(comfyPage.page, 10_000)
+          }
+        ])
       }
 
       await runTier(['S1', 'S2', 'S14'], async () => {
@@ -1820,7 +1831,8 @@ if (process.env.CN_ENABLE_S14 === '1' || process.env.CN_GEOMETRY === 'record')
 test.describe('all nodes by tier @custom-nodes', () => {
   for (const [tier, title] of tiers) {
     test(`${tier}: ${title}`, async ({ comfyPage }) => {
-      if (customNodesEnv() !== 'cloud') test.setTimeout(1_620_000)
+      if (customNodesEnv() !== 'cloud')
+        test.setTimeout(1_620_000 * loadManifest().length)
       await comfyPage.page.evaluate((activeTier) => {
         Object.assign(globalThis, {
           __COMFY_CUSTOM_NODE_DETECTION_PROOF_TIER__: activeTier
@@ -1838,17 +1850,26 @@ test.describe('all nodes by tier @custom-nodes', () => {
         `[tier-session] pid=${process.pid} tier=${tier} pageId=${pageId}`
       )
 
+      const defs = (await comfyPage.page.evaluate(() =>
+        window.app!.api.getNodeDefs()
+      )) as unknown as Record<string, RawNodeDef>
       const failures: string[] = []
       for (const runner of allNodesTierRunners) {
         if (tier === 'S2' && !rendererPassesFor(runner.entry).includes(true))
           continue
         let result = 'pass'
         try {
-          await runner.run(comfyPage, tier)
+          await runner.run(comfyPage, tier, defs)
         } catch (error) {
           result = 'fail'
+          const errors =
+            error instanceof AggregateError ? error.errors : [error]
           failures.push(
-            `[${runner.entry.pack}] ${error instanceof Error ? error.message : String(error)}`
+            `[${runner.entry.pack}] ${errors
+              .map((entry) =>
+                entry instanceof Error ? entry.message : String(entry)
+              )
+              .join('\n')}`
           )
         }
         console.log(

@@ -51,6 +51,9 @@ def bucket(file, path):
     if m:
         pack = m.group(1).strip()
     if 'allNodes' in file:
+        tier = re.search(r'all nodes by tier @custom-nodes > (S(?:1|2|3|9|14)):', title)
+        if tier:
+            return (None, tier.group(1))
         return (pack, 'all nodes') if pack else (None, 'manifest coverage')
     if 'customNode.regression' in file:
         if pack is None:
