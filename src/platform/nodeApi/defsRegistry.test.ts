@@ -6,6 +6,7 @@ import { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
+import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
 
 import { createComfyApi } from './comfyApi'
 import {
@@ -571,6 +572,33 @@ describe('a defined node type', () => {
       graph.add(node)
 
       expect(node.serialize().widgets_values).toEqual(['kept'])
+    } finally {
+      stop()
+    }
+  })
+
+  it('shapes a declared output, because the shape is saved with it', () => {
+    // rgthree's relay draws an arrow on the one output that may only reach a
+    // repeater. Declaring the output without it saved one field fewer than the
+    // same node saved before the migration.
+    const defs = createDefRegistry().forMajor((id) => comfy.graph.node(id)!)
+    const stop = defs.define({
+      type: 'DefinedRelay',
+      outputs: [
+        { name: 'REPEATER', type: '_NODE_REPEATER_', shape: 'directional' },
+        { name: 'plain', type: 'IMAGE' }
+      ]
+    })
+
+    try {
+      const node = LiteGraph.createNode('DefinedRelay')!
+      graph.add(node)
+      const saved = node.serialize().outputs!
+
+      expect(saved.find((o) => o.name === 'REPEATER')?.shape).toBe(
+        RenderShape.ARROW
+      )
+      expect(saved.find((o) => o.name === 'plain')?.shape).toBeUndefined()
     } finally {
       stop()
     }
