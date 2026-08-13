@@ -104,6 +104,9 @@
               </div>
             </div>
             <FreeTierQuota v-if="!isActionbarFloating" />
+            <!-- Complement of ComfyActionbar's `!isDocked` mount (same storage
+                 key), so exactly one caption renders in every menu state. -->
+            <PartnerNodesRunCaption v-if="isActionbarDocked" />
           </div>
         </div>
         <ErrorOverlay />
@@ -148,6 +151,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ComfyActionbar from '@/components/actionbar/ComfyActionbar.vue'
+import PartnerNodesRunCaption from '@/components/actionbar/PartnerNodesRunCaption.vue'
 import SubgraphBreadcrumb from '@/components/breadcrumb/SubgraphBreadcrumb.vue'
 import QueueInlineProgressSummary from '@/components/queue/QueueInlineProgressSummary.vue'
 import QueueNotificationBannerHost from '@/components/queue/QueueNotificationBannerHost.vue'
