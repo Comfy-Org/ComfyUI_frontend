@@ -3,7 +3,6 @@ import type { OpenAI } from 'openai'
 export interface OutputLocale {
   code: string
   name: string
-  translationTag?: string
   guidance?: string
 }
 
@@ -66,13 +65,11 @@ export const translationPipelineConfig: TranslationPipelineConfig = {
     {
       code: 'zh',
       name: 'Simplified Chinese',
-      translationTag: 'zh-Hans',
       guidance: chineseSimplifiedGuidance
     },
     {
       code: 'zh-TW',
       name: 'Traditional Chinese (Taiwan)',
-      translationTag: 'zh-Hant-TW',
       guidance: chineseTraditionalGuidance
     },
     { code: 'ru', name: 'Russian' },

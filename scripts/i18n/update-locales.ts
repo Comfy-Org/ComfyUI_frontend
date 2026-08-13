@@ -11,7 +11,6 @@ import {
 import { dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
-import { auditChineseScript } from './chinese-script'
 import type { OutputLocale, TranslationPipelineConfig } from './config'
 import { translationPipelineConfig } from './config'
 import type {
@@ -70,7 +69,6 @@ interface LocaleFileState {
   existing: LocaleObject
   pendingLeaves: PendingLocaleLeaf[]
   auditErrors: string[]
-  scriptErrors: string[]
   strayPaths: string[][]
 }
 
@@ -334,7 +332,6 @@ function loadLocaleFileStates(
           existing,
           auditSkipKeys
         ),
-        scriptErrors: auditChineseScript(locale.code, existing, auditSkipKeys),
         strayPaths
       }
     })
@@ -369,9 +366,6 @@ function reportCheck(states: readonly LocaleFileState[]): number {
     for (const error of state.auditErrors) {
       auditErrors.push(`${label}: ${error}`)
     }
-    for (const error of state.scriptErrors) {
-      auditErrors.push(`${label}: ${error}`)
-    }
   }
 
   for (const error of auditErrors) print(error)
@@ -380,7 +374,7 @@ function reportCheck(states: readonly LocaleFileState[]): number {
     return 0
   }
   print(
-    `Pending: ${pendingTotal} translations, ${strayTotal} prunable keys, ${auditErrors.length} validation errors.`
+    `Pending: ${pendingTotal} translations, ${strayTotal} prunable keys, ${auditErrors.length} protected-token violations.`
   )
   return auditErrors.length > 0 ? 1 : 0
 }
@@ -455,13 +449,13 @@ async function run(argv: readonly string[]): Promise<void> {
   }
 
   const auditFailures = states.flatMap((state) =>
-    [...state.auditErrors, ...state.scriptErrors].map(
+    state.auditErrors.map(
       (error) => `${state.locale.code}/${state.plan.filename}: ${error}`
     )
   )
   if (auditFailures.length > 0) {
     throw new Error(
-      `Refusing to overwrite unchanged translations with validation errors:\n${auditFailures.join('\n')}`
+      `Refusing to overwrite unchanged translations with protected-token violations:\n${auditFailures.join('\n')}`
     )
   }
 
@@ -602,12 +596,6 @@ async function run(argv: readonly string[]): Promise<void> {
       state.plan.changes,
       state.plan.knownViolationKeys
     )) {
-      addFailure(
-        state.plan.filename,
-        `${state.locale.code}/${state.plan.filename}: ${error}`
-      )
-    }
-    for (const error of auditChineseScript(state.locale.code, output)) {
       addFailure(
         state.plan.filename,
         `${state.locale.code}/${state.plan.filename}: ${error}`

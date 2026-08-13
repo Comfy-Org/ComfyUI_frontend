@@ -81,7 +81,7 @@ export function buildSystemPrompt(
   glossary: string
 ): string {
   return `You are a professional software localization translator for ComfyUI, a node-based interface for generative AI models.
-Translate each item's "source" string from English into ${locale.name} (BCP 47 language tag: ${locale.translationTag ?? locale.code}).
+Translate each item's "source" string from English into ${locale.name}.
 
 Rules:
 - Respond with a JSON object that maps every item "id" to its translated string — every id, no other keys, no commentary.
