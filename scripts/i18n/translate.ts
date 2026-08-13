@@ -124,6 +124,7 @@ interface OpenAiTranslatorOptions {
   reasoningEffort: TranslationPipelineConfig['reasoningEffort']
   glossary: string
   fetchFn?: typeof fetch
+  onCompletion?: (completion: OpenAI.ChatCompletion) => void
   requestTimeoutMs?: number
 }
 
@@ -155,6 +156,7 @@ export function createOpenAiTranslator(
           { role: 'user', content: JSON.stringify({ items }) }
         ]
       })
+      options.onCompletion?.(completion)
       const choice = completion.choices[0]
       if (choice?.finish_reason === 'length') {
         if (items.length === 1) {

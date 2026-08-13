@@ -3,6 +3,7 @@
  * (happy-dom defines window/navigator), and nothing here needs a DOM.
  * @vitest-environment node
  */
+import type { OpenAI } from 'openai'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { OutputLocale } from './config'
@@ -529,7 +530,10 @@ describe('exceedsPruneThreshold', () => {
   it('permits small cleanups and refuses large shrinks', () => {
     expect(exceedsPruneThreshold(0, 0)).toBe(false)
     expect(exceedsPruneThreshold(79, 13557)).toBe(false)
-    expect(exceedsPruneThreshold(25, 100)).toBe(false)
+    expect(exceedsPruneThreshold(5, 124)).toBe(false)
+    expect(exceedsPruneThreshold(6, 124)).toBe(true)
+    expect(exceedsPruneThreshold(5, 234)).toBe(false)
+    expect(exceedsPruneThreshold(6, 234)).toBe(true)
     expect(exceedsPruneThreshold(62, 124)).toBe(true)
     expect(exceedsPruneThreshold(500, 9082)).toBe(true)
   })
@@ -563,15 +567,23 @@ describe('createOpenAiTranslator', () => {
     }
   ]
 
-  const completion = (content: string, finishReason = 'stop') =>
+  const completion = (
+    content: string,
+    finishReason = 'stop',
+    usage?: OpenAI.CompletionUsage
+  ) =>
     new Response(
       JSON.stringify({
-        choices: [{ finish_reason: finishReason, message: { content } }]
+        choices: [{ finish_reason: finishReason, message: { content } }],
+        usage
       }),
       { status: 200, headers: { 'content-type': 'application/json' } }
     )
 
-  function translatorFor(responses: Response[]) {
+  function translatorFor(
+    responses: Response[],
+    onCompletion?: (completion: OpenAI.ChatCompletion) => void
+  ) {
     let calls = 0
     const requestBodies: string[] = []
     const fetchFn: typeof fetch = async (_input, init) => {
@@ -587,7 +599,8 @@ describe('createOpenAiTranslator', () => {
       model: 'test-model',
       reasoningEffort: 'low',
       glossary: '',
-      fetchFn
+      fetchFn,
+      onCompletion
     })
     return { translate, callCount: () => calls, requestBodies }
   }
@@ -633,6 +646,36 @@ describe('createOpenAiTranslator', () => {
       'translation response has non-string values for ids: 1, 2'
     )
     expect(callCount()).toBe(4)
+  })
+
+  it('reports usage for every completed API request', async () => {
+    const totalTokens: number[] = []
+    const onCompletion = vi.fn((response: OpenAI.ChatCompletion) => {
+      if (response.usage) totalTokens.push(response.usage.total_tokens)
+    })
+    const { translate } = translatorFor(
+      [
+        completion('{"1": "Bonj', 'length', {
+          completion_tokens: 4,
+          prompt_tokens: 10,
+          total_tokens: 14
+        }),
+        completion('{"1": "Bonjour {name}"}', 'stop', {
+          completion_tokens: 5,
+          prompt_tokens: 7,
+          total_tokens: 12
+        }),
+        completion('{"2": "Au revoir {name}"}', 'stop', {
+          completion_tokens: 6,
+          prompt_tokens: 8,
+          total_tokens: 14
+        })
+      ],
+      onCompletion
+    )
+    await translate(locale, items)
+    expect(onCompletion).toHaveBeenCalledTimes(3)
+    expect(totalTokens).toEqual([14, 12, 14])
   })
 
   it('fails immediately on non-retryable statuses', async () => {

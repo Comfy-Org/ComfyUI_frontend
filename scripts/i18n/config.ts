@@ -15,7 +15,7 @@ export interface TranslationPipelineConfig {
   >
   maxItemsPerRequest: number
   maxSourceCharsPerRequest: number
-  localeConcurrency: number
+  stateConcurrency: number
   requestConcurrency: number
   maxTranslationRounds: number
   pruneCountFloor: number
@@ -55,10 +55,10 @@ export const translationPipelineConfig: TranslationPipelineConfig = {
   reasoningEffort: 'high',
   maxItemsPerRequest: 40,
   maxSourceCharsPerRequest: 6000,
-  localeConcurrency: 3,
+  stateConcurrency: 3,
   requestConcurrency: 2,
   maxTranslationRounds: 3,
-  pruneCountFloor: 25,
+  pruneCountFloor: 5,
   pruneRatioLimit: 0.02,
   glossary,
   outputLocales: [
