@@ -8,11 +8,22 @@ import enMessages from '@/locales/en/main.json'
 
 import PlanCreditsPanelContent from './PlanCreditsPanelContent.vue'
 
+const mockDistribution = vi.hoisted(() => ({ cloud: true }))
+vi.mock('@/platform/distribution/types', () => ({
+  get isCloud() {
+    return mockDistribution.cloud
+  }
+}))
+
 const refreshSpy = vi.fn()
 
 const stubs = {
   SubscriptionPanelContentWorkspace: {
-    template: '<div data-testid="credits-body" />'
+    template: '<div data-testid="workspace-credits-body" />'
+  },
+  CreditsPanel: {
+    props: ['embedded'],
+    template: '<div data-testid="legacy-credits-body" />'
   },
   UsageLogsTable: {
     template: '<div data-testid="usage-logs" />',
@@ -22,7 +33,8 @@ const stubs = {
   }
 }
 
-function renderPanel() {
+function renderPanel({ cloud = true } = {}) {
+  mockDistribution.cloud = cloud
   const i18n = createI18n({
     legacy: false,
     locale: 'en',
@@ -32,12 +44,18 @@ function renderPanel() {
 }
 
 describe('PlanCreditsPanelContent', () => {
-  it('shows Credits and Activity tabs with Credits active by default', () => {
+  it('shows Credits and Activity tabs with the workspace overview by default on cloud', () => {
     renderPanel()
     expect(screen.getByRole('button', { name: 'Credits' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Activity' })).toBeTruthy()
-    expect(screen.getByTestId('credits-body')).toBeTruthy()
+    expect(screen.getByTestId('workspace-credits-body')).toBeTruthy()
     expect(screen.queryByTestId('usage-logs')).toBeNull()
+  })
+
+  it('shows the embedded legacy credits body on local', () => {
+    renderPanel({ cloud: false })
+    expect(screen.getByTestId('legacy-credits-body')).toBeTruthy()
+    expect(screen.queryByTestId('workspace-credits-body')).toBeNull()
   })
 
   it('shows the usage-log table on the Activity tab and loads it', async () => {
@@ -45,7 +63,7 @@ describe('PlanCreditsPanelContent', () => {
     renderPanel()
     await userEvent.click(screen.getByRole('button', { name: 'Activity' }))
     expect(screen.getByTestId('usage-logs')).toBeTruthy()
-    expect(screen.queryByTestId('credits-body')).toBeNull()
+    expect(screen.queryByTestId('workspace-credits-body')).toBeNull()
     await waitFor(() => expect(refreshSpy).toHaveBeenCalledTimes(1))
   })
 

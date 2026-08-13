@@ -16,7 +16,10 @@
       </div>
     </div>
 
-    <SubscriptionPanelContentWorkspace v-if="activeView === 'overview'" />
+    <template v-if="activeView === 'overview'">
+      <SubscriptionPanelContentWorkspace v-if="isCloud" />
+      <CreditsPanel v-else embedded />
+    </template>
     <UsageLogsTable v-else ref="usageLogsTable" />
   </div>
 </template>
@@ -25,8 +28,10 @@
 import { computed, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import CreditsPanel from '@/components/dialog/content/setting/CreditsPanel.vue'
 import UsageLogsTable from '@/components/dialog/content/setting/UsageLogsTable.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { isCloud } from '@/platform/distribution/types'
 import SubscriptionPanelContentWorkspace from '@/platform/workspace/components/SubscriptionPanelContentWorkspace.vue'
 
 type View = 'overview' | 'activity'

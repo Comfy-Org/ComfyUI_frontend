@@ -1,6 +1,6 @@
 <template>
   <div class="credits-container flex h-full flex-col gap-4">
-    <div>
+    <div v-if="!embedded">
       <h2 class="mb-2 text-2xl font-bold">
         {{ $t('credits.credits') }}
       </h2>
@@ -9,7 +9,7 @@
 
     <CreditsTile />
 
-    <div class="flex items-center justify-between">
+    <div v-if="!embedded" class="flex items-center justify-between">
       <h3 class="m-0">{{ $t('credits.activity') }}</h3>
       <Button variant="muted-textonly" @click="handleCreditsHistoryClick">
         <i class="pi pi-arrow-up-right" />
@@ -17,9 +17,17 @@
       </Button>
     </div>
 
-    <UsageLogsTable ref="usageLogsTableRef" />
+    <UsageLogsTable v-if="!embedded" ref="usageLogsTableRef" />
 
     <div class="flex flex-row gap-2">
+      <Button
+        v-if="embedded"
+        variant="muted-textonly"
+        @click="handleCreditsHistoryClick"
+      >
+        <i class="pi pi-arrow-up-right" />
+        {{ $t('credits.invoiceHistory') }}
+      </Button>
       <Button variant="muted-textonly" @click="handleFaqClick">
         <i class="pi pi-question-circle" />
         {{ $t('credits.faqs') }}
@@ -48,6 +56,8 @@ import CreditsTile from '@/platform/cloud/subscription/components/CreditsTile.vu
 import { useTelemetry } from '@/platform/telemetry'
 import { useAuthStore } from '@/stores/authStore'
 import { useCommandStore } from '@/stores/commandStore'
+
+const { embedded = false } = defineProps<{ embedded?: boolean }>()
 
 const { buildDocsUrl, docsPaths } = useExternalLink()
 const authStore = useAuthStore()

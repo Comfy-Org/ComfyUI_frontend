@@ -177,6 +177,20 @@ export function useSettingUI(
     props: { section: 'planCredits' }
   }
 
+  // Local has no workspace context, so it mounts the Plan & Credits tab shell
+  // directly instead of the workspace-header wrapper the cloud entry uses.
+  const localPlanCreditsPanel: SettingPanelItem = {
+    node: {
+      key: 'plan-credits',
+      label: 'PlanCredits',
+      children: []
+    },
+    component: defineAsyncComponent(
+      () =>
+        import('@/platform/workspace/components/dialogs/settings/PlanCreditsPanelContent.vue')
+    )
+  }
+
   const membersPanel: SettingPanelItem = {
     node: {
       key: 'workspace-members',
@@ -273,6 +287,7 @@ export function useSettingUI(
       creditsPanel,
       userPanel,
       ...visibleWorkspacePanels.value,
+      ...(!isCloud && isLoggedIn.value ? [localPlanCreditsPanel] : []),
       keybindingPanel,
       extensionPanel,
       ...(isDesktop ? [serverConfigPanel] : []),
@@ -367,10 +382,7 @@ export function useSettingUI(
       children: [
         userPanel.node,
         ...(shouldShowSecretsPanel.value ? [secretsPanel.node] : []),
-        ...(isLoggedIn.value &&
-        !(isCloud && window.__CONFIG__?.subscription_required)
-          ? [creditsPanel.node]
-          : [])
+        ...(isLoggedIn.value ? [localPlanCreditsPanel.node] : [])
       ].map(translateCategory)
     },
     // Normal settings stored in the settingStore
