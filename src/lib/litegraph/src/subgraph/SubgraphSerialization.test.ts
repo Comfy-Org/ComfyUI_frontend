@@ -538,6 +538,30 @@ describe('SubgraphSerialization - Data Integrity', () => {
     })
   })
 
+  it('remaps rejected link aliases without mutating subgraph input', () => {
+    const subgraph = createTestSubgraph({
+      nodeCount: 0,
+      outputs: [{ name: 'value', type: 'number' }]
+    })
+    const origin = createTestNode(subgraph, [], ['number'], 'Origin')
+    const link = subgraph.outputs[0].connect(origin.outputs[0], origin)
+    assert(link)
+    const data = structuredClone(subgraph.asSerialisable())
+    const rejectedId = toLinkId(link.id + 1)
+    data.links!.push({ ...data.links![0], id: rejectedId })
+    data.outputs![0].linkIds = [rejectedId]
+    const original = structuredClone(data)
+
+    const restored = createTestSubgraph({
+      rootGraph: subgraph.rootGraph,
+      nodeCount: 0
+    })
+    restored.configure(data)
+
+    expect(restored.outputs[0].linkIds).toEqual([link.id])
+    expect(data).toEqual(original)
+  })
+
   it('deduplicates duplicate subgraph node IDs while keeping root nodes canonical', () => {
     const graph = new LGraph()
     const data = structuredClone(duplicateSubgraphNodeIds)

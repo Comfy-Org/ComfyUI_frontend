@@ -342,9 +342,23 @@ function serialiseOwnedTopology(owner: LGraph) {
   }
 }
 
+type ConfiguredGraph = (ISerialisedGraph | SerialisableGraph) &
+  Partial<Pick<ExportedSubgraph, 'inputs' | 'outputs'>>
+
+function copyConfiguredLinkAliases<T extends ConfiguredGraph>(data: T): T {
+  return Object.assign({}, data, {
+    inputs: data.inputs?.map((slot) => ({ ...slot })),
+    outputs: data.outputs?.map((slot) => ({ ...slot })),
+    nodes: data.nodes?.map((node) => ({
+      ...node,
+      inputs: node.inputs?.map((input) => ({ ...input })),
+      outputs: node.outputs?.map((output) => ({ ...output }))
+    }))
+  })
+}
+
 function remapConfiguredLinkAliases(
-  data: (ISerialisedGraph | SerialisableGraph) &
-    Partial<Pick<ExportedSubgraph, 'inputs' | 'outputs'>>,
+  data: ConfiguredGraph,
   survivorByRejected: ReadonlyMap<LinkId, LinkId>
 ): void {
   const remap = (linkId: number) =>
@@ -2731,7 +2745,8 @@ export class LGraph
         }
       }
 
-      if (survivorByRejected.size) data = structuredClone(data)
+      if (survivorByRejected.size && this.isRootGraph)
+        data = copyConfiguredLinkAliases(data)
       remapConfiguredLinkAliases(data, survivorByRejected)
 
       const nodesData = data.nodes
@@ -3051,9 +3066,10 @@ export class Subgraph
       | (SerialisableGraph & ExportedSubgraph),
     keep_old?: boolean
   ): boolean | undefined {
-    const r = super.configure(data, keep_old)
+    const cloned = copyConfiguredLinkAliases(data)
+    const r = super.configure(cloned, keep_old)
 
-    this._configureSubgraph(data)
+    this._configureSubgraph(cloned)
     return r
   }
 
