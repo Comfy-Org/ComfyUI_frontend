@@ -19,6 +19,7 @@ import {
   LinkDirection
 } from '@/lib/litegraph/src/litegraph'
 import type { ConnectingLink } from '@/lib/litegraph/src/interfaces'
+import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type { LinkId } from '@/types/linkId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
@@ -238,6 +239,68 @@ describe('LinkConnector', () => {
       expect(connector.state.connectingTo).toBe('output')
       expect(connector.renderLinks.length).toBe(1)
       expect(connector.state.draggingExistingLinks).toBe(false)
+    })
+  })
+
+  describe('A link no single slot fits', () => {
+    function dropOnMismatchedNode(
+      network: TestContext['network'],
+      connector: LinkConnector,
+      createTestNode: TestContext['createTestNode']
+    ) {
+      const source = createTestNode(1)
+      source.addOutput('bundle', 'CONTEXT')
+      const target = createTestNode(2)
+      target.addInput('model', 'MODEL')
+      connector.dragNewFromOutput(network, source, source.outputs[0])
+      connector.dropOnNode(target, {
+        canvasX: 0,
+        canvasY: 0
+      } as CanvasPointerEvent)
+      return { source, target }
+    }
+
+    test('offers the drop before reporting it unplaceable', ({
+      network,
+      connector,
+      createTestNode
+    }) => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const seen: unknown[] = []
+      connector.events.addEventListener('link-unplaced', (e) =>
+        seen.push(e.detail)
+      )
+
+      const { source, target } = dropOnMismatchedNode(
+        network,
+        connector,
+        createTestNode
+      )
+
+      expect(seen).toHaveLength(1)
+      expect(seen[0]).toMatchObject({ node: target, side: 'input' })
+      expect((seen[0] as { link: { node: unknown } }).link.node).toBe(source)
+      // Nothing claimed it, so the warning still stands.
+      expect(warn).toHaveBeenCalled()
+      warn.mockRestore()
+    })
+
+    test('stays quiet when something claims the drop', ({
+      network,
+      connector,
+      createTestNode
+    }) => {
+      // A node whose one slot carries a bundle wires several of the peer's
+      // slots itself; the host must not then report the drop as unplaceable.
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      connector.events.addEventListener('link-unplaced', (e) =>
+        e.preventDefault()
+      )
+
+      dropOnMismatchedNode(network, connector, createTestNode)
+
+      expect(warn).not.toHaveBeenCalled()
+      warn.mockRestore()
     })
   })
 

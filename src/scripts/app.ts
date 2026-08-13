@@ -176,6 +176,7 @@ import { SUPPORTED_MESH_EXTENSIONS } from '@/extensions/core/load3d/constants'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { deliverPreview } from '@/platform/nodeApi/defsRegistry'
 import { installNodeChangeBridge } from '@/renderer/core/canvas/nodeChangeBridge'
+import { installUnplacedLinkBridge } from '@/renderer/core/canvas/unplacedLinkBridge'
 import { installNodeMoveBridge } from '@/renderer/core/layout/nodeMoveBridge'
 import {
   pasteAudioNode,
@@ -1011,6 +1012,8 @@ export class ComfyApp {
     this.rootGraphInternal = graph
     installNodeAddedTelemetry(graph)
     this.canvas = new LGraphCanvas(canvasEl, graph)
+    // Per canvas, not per app: the offer comes off this connector's event bus.
+    installUnplacedLinkBridge(this.canvas)
     // Make canvas states reactive so we can observe changes on them.
     this.canvas.state = reactive(this.canvas.state)
 
