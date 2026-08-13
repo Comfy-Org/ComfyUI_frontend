@@ -327,24 +327,9 @@ export function useSettingUI(
     )
   })
 
-  // Cloud workspace sidebar structure
-  const workspaceMenuTreeNodes = computed<SettingTreeNode[]>(() => [
-    // Workspace settings
-    translateCategory({
-      key: 'workspace',
-      label: 'Workspace',
-      children: [
-        ...visibleWorkspacePanels.value.map((panel) => panel.node),
-        // The legacy per-account Credits panel is redundant once the workspace
-        // Plan & Credits panel is present, which now owns the credit balance.
-        ...(!billingControlsEnabled.value &&
-        isLoggedIn.value &&
-        !(isCloud && window.__CONFIG__?.subscription_required)
-          ? [creditsPanel.node]
-          : [])
-      ].map(translateCategory)
-    }),
-    // General settings - Profile + all core settings + special panels
+  // Shared groups — both distributions render the same grammar:
+  // Workspace / General / Other. Only the Workspace entries differ.
+  const generalMenuGroup = computed<SettingTreeNode>(() =>
     translateCategory({
       key: 'general',
       label: 'General',
@@ -360,9 +345,11 @@ export function useSettingUI(
         translateCategory(aboutPanel.node),
         ...(isDesktop ? [translateCategory(serverConfigPanel.node)] : [])
       ]
-    }),
-    // Custom node settings (only shown if custom nodes have registered settings)
-    ...(customNodeSettingCategories.value.length > 0
+    })
+  )
+
+  const otherMenuGroups = computed<SettingTreeNode[]>(() =>
+    customNodeSettingCategories.value.length > 0
       ? [
           translateCategory({
             key: 'other',
@@ -370,38 +357,40 @@ export function useSettingUI(
             children: customNodeSettingCategories.value.map(translateCategory)
           })
         ]
-      : [])
+      : []
+  )
+
+  const workspaceMenuTreeNodes = computed<SettingTreeNode[]>(() => [
+    translateCategory({
+      key: 'workspace',
+      label: 'Workspace',
+      children: [
+        ...visibleWorkspacePanels.value.map((panel) => panel.node),
+        // The legacy per-account Credits panel is redundant once the workspace
+        // Plan & Credits panel is present, which now owns the credit balance.
+        ...(!billingControlsEnabled.value &&
+        isLoggedIn.value &&
+        !(isCloud && window.__CONFIG__?.subscription_required)
+          ? [creditsPanel.node]
+          : [])
+      ].map(translateCategory)
+    }),
+    generalMenuGroup.value,
+    ...otherMenuGroups.value
   ])
 
-  // OSS legacy sidebar structure
   const legacyMenuTreeNodes = computed<SettingTreeNode[]>(() => [
-    // Account settings - show different panels based on distribution and auth state
-    {
-      key: 'account',
-      label: 'Account',
-      children: [
-        userPanel.node,
-        ...(shouldShowSecretsPanel.value ? [secretsPanel.node] : []),
-        ...(isLoggedIn.value ? [localPlanCreditsPanel.node] : [])
-      ].map(translateCategory)
-    },
-    // Normal settings stored in the settingStore
-    {
-      key: 'settings',
-      label: 'Application Settings',
-      children: settingCategories.value.map(translateCategory)
-    },
-    // Special settings such as about, keybinding, extension, server-config
-    {
-      key: 'specialSettings',
-      label: 'Special Settings',
-      children: [
-        keybindingPanel.node,
-        extensionPanel.node,
-        aboutPanel.node,
-        ...(isDesktop ? [serverConfigPanel.node] : [])
-      ].map(translateCategory)
-    }
+    ...(isLoggedIn.value
+      ? [
+          translateCategory({
+            key: 'workspace',
+            label: 'Workspace',
+            children: [localPlanCreditsPanel.node].map(translateCategory)
+          })
+        ]
+      : []),
+    generalMenuGroup.value,
+    ...otherMenuGroups.value
   ])
 
   const groupedMenuTreeNodes = computed<SettingTreeNode[]>(() =>
