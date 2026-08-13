@@ -118,9 +118,17 @@ function useFirstRunTourControllerInternal() {
    * Acceptance is not the only disarm. `resetExecutionState` drops a job from
    * `queuedJobs` without clearing its status, so a run can report a status
    * while this reads false. A refusal produces neither signal.
+   *
+   * Losing acceptance is its own signal, not a re-armed deadline: that same
+   * `resetExecutionState` drops the job without writing an outcome on the
+   * mid-run credits path, leaving nothing left to report the run. A finished
+   * run drops from the queue too, but writes its terminal status in the same
+   * tick, and the status watcher above is registered first, so it has already
+   * left `generating` by the time this fires.
    */
   watch(tourRunAccepted, (accepted) => {
     if (accepted) stopAcceptDeadline()
+    else if (runState.value === 'generating') runState.value = 'failed'
   })
 
   let acceptTimer: ReturnType<typeof setTimeout> | undefined

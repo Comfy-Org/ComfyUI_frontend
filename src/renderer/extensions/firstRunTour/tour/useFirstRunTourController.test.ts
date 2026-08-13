@@ -202,6 +202,12 @@ function acceptRun(workflow: unknown) {
   return nextTick()
 }
 
+/** The queue letting a job go, which `resetExecutionState` does silently. */
+function removeRun() {
+  mocks.queuedJobs.value = {}
+  return nextTick()
+}
+
 function finishRun(workflow: unknown, status: string) {
   mocks.workflowStatus.value = new Map(mocks.workflowStatus.value).set(
     workflow,
@@ -505,6 +511,66 @@ describe('useFirstRunTourController', () => {
         mocks.runState.value,
         'the grace timer must not clobber an outcome that arrived before it fired'
       ).toBe('succeeded')
+    })
+
+    it('stops promising a result once the queue lets go of its job', async () => {
+      await tourOnRunStep()
+      mountRunButton('queue-button', () => {}).click()
+      await acceptRun(TOUR_WORKFLOW)
+
+      await removeRun()
+
+      expect(
+        mocks.runState.value,
+        'an accepted job that leaves without an outcome leaves the card waiting on a result nobody will send'
+      ).toBe('failed')
+    })
+
+    it('stops promising a result when a running job is dropped mid-run', async () => {
+      // An API node that charges credits mid-run lands in
+      // `handleAccountPreconditionError`, which drops the job but leaves the
+      // stale `running` status behind, so no status change reports the end.
+      await tourOnRunStep()
+      mountRunButton('queue-button', () => {}).click()
+      await acceptRun(TOUR_WORKFLOW)
+      await finishRun(TOUR_WORKFLOW, 'running')
+
+      await removeRun()
+
+      expect(
+        mocks.runState.value,
+        'a run cut short for credits keeps its running status, so losing the job is the only signal left'
+      ).toBe('failed')
+    })
+
+    it('keeps a completed run that drops out of the queue as it finishes', async () => {
+      await tourOnRunStep()
+      mountRunButton('queue-button', () => {}).click()
+      await acceptRun(TOUR_WORKFLOW)
+
+      // `handleExecutionSuccess` reports the outcome and drops the job in one
+      // tick, so both land before either watcher runs.
+      void finishRun(TOUR_WORKFLOW, 'completed')
+      await removeRun()
+
+      expect(
+        mocks.runState.value,
+        'every healthy run leaves the queue when it finishes; failing those would fail every run'
+      ).toBe('succeeded')
+    })
+
+    it('keeps a failed run that leaves the queue after reporting', async () => {
+      await tourOnRunStep()
+      mountRunButton('queue-button', () => {}).click()
+      await acceptRun(TOUR_WORKFLOW)
+      await finishRun(TOUR_WORKFLOW, 'failed')
+
+      await removeRun()
+
+      expect(
+        mocks.runState.value,
+        'a reported outcome is the last word; losing the job afterwards says nothing new'
+      ).toBe('failed')
     })
   })
 
