@@ -1,11 +1,10 @@
-import { datadogRum } from '@datadog/browser-rum'
-import { captureException } from '@sentry/vue'
 import { until, useAsyncState } from '@vueuse/core'
 import axios from 'axios'
 import { defineStore, storeToRefs } from 'pinia'
 
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { CustomNodesI18n } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
@@ -71,11 +70,8 @@ async function waitForCloudAuth(): Promise<void> {
       )
       const err =
         retryError instanceof Error ? retryError : new Error(String(retryError))
-      // Report to both Datadog RUM and Sentry so the error surfaces in
-      // whichever observability platform is being monitored.
-      datadogRum.addError(err, { error_type: 'bootstrap_auth_wait_timeout' })
-      captureException(err, {
-        tags: { error_type: 'bootstrap_auth_wait_timeout' }
+      useTelemetry()?.reportError(err, {
+        error_type: 'bootstrap_auth_wait_timeout'
       })
     }
   }
