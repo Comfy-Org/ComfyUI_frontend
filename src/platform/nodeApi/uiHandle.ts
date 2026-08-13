@@ -203,6 +203,23 @@ export interface UiHandle {
    * only placement that reads as a context menu.
    */
   showMenu(def: MenuDef): void
+  /**
+   * Asks the user for a value. Resolves `undefined` if they cancel.
+   *
+   * Packs called `canvas.prompt(...)`, which draws a small field at the cursor
+   * — clicking a lora's strength to type a new one. That field belongs to the
+   * legacy canvas and the host itself no longer uses it; this is the prompt the
+   * host does use, so a pack keeps the capability and loses only the placement.
+   */
+  prompt(def: PromptDef): Promise<string | undefined>
+}
+
+/** @knipIgnoreUnusedButUsedByCustomNodes */
+export interface PromptDef {
+  /** What is being asked for — "Strength", "Label". */
+  readonly label: string
+  readonly value?: string
+  readonly placeholder?: string
 }
 
 /** @knipIgnoreUnusedButUsedByCustomNodes */
@@ -282,6 +299,22 @@ export function createUiHandle(): UiHandle {
       )
 
       return () => useSidebarTabStore().unregisterSidebarTab(def.id)
+    },
+
+    async prompt(def) {
+      if (!def.label.trim()) {
+        throw new ComfyApiError('A prompt needs a label.')
+      }
+      const { useDialogService } = await import('@/services/dialogService')
+      const answer = await useDialogService().prompt({
+        title: def.label,
+        message: def.label,
+        defaultValue: def.value ?? '',
+        placeholder: def.placeholder
+      })
+      // `null` is the host's "cancelled"; packs read `undefined` everywhere
+      // else in this API, and two spellings of absent is a bug waiting.
+      return answer ?? undefined
     },
 
     showMenu(def) {
