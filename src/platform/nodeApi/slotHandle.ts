@@ -14,6 +14,7 @@ import type {
 } from '@/lib/litegraph/src/interfaces'
 import { inputLink, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 import { useLinkStore } from '@/stores/linkStore'
+import type { EndpointUpdate } from '@/stores/linkStore'
 import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
 import { toNodeId } from '@/types/nodeId'
 
@@ -168,6 +169,22 @@ export interface SlotCollection<THandle> {
    * on the legacy path.
    */
   remove(ref: SlotRef): boolean
+  /**
+   * Puts the slots in the given order. `names` must be a permutation of the
+   * current ones.
+   *
+   * Every link into or out of this node is re-pointed as part of the move, in
+   * one batch, so link ids — and therefore the saved workflow's `links` array
+   * — are unchanged. That is the whole reason this exists rather than being
+   * left to packs: a link stores its endpoint as a slot *index*, so a pack
+   * permuting the array itself silently re-points every connection, and the
+   * damage only shows when the workflow is next run.
+   *
+   * The slot *order* is serialized, so this changes the saved file by design —
+   * it is how a pack keeps its dynamic inputs matching what the backend
+   * declares.
+   */
+  reorder(names: readonly string[]): void
   [Symbol.iterator](): Iterator<THandle>
 }
 
@@ -479,12 +496,69 @@ function slotProperties(options?: SlotOptions) {
   return Object.keys(properties).length ? properties : undefined
 }
 
+/**
+ * Puts a node's slots in a new order and re-points every affected link.
+ *
+ * A link stores its endpoint as a slot *index*, so permuting the array alone
+ * silently re-points every connection, and the damage only surfaces the next
+ * time the workflow runs. The store patches endpoints in one batch — it
+ * displaces all of them before re-placing — so a swap cannot collide with
+ * itself mid-permutation, and link ids survive, which keeps the saved
+ * `links` array unchanged.
+ */
+function reorderSlots(
+  graph: LGraph | null | undefined,
+  node: LGraphNode | undefined,
+  side: 'input' | 'output',
+  names: readonly string[]
+): void {
+  const slots = (side === 'input' ? node?.inputs : node?.outputs) as
+    | (INodeInputSlot | INodeOutputSlot)[]
+    | undefined
+  if (!graph || !node || !slots) return
+
+  const from = new Map(slots.map((slot, index) => [slot.name, index]))
+  const moved = names.map((name) => slots[from.get(name)!])
+
+  const store = useLinkStore()
+  const graphId = graph.rootGraph.id
+  const patches: EndpointUpdate[] = []
+  for (const [to, name] of names.entries()) {
+    const wasAt = from.get(name)!
+    if (wasAt === to) continue
+    if (side === 'input') {
+      const topology = store.getInputSlotLink(graphId, node.id, wasAt)
+      if (topology) patches.push({ topology, patch: { targetSlot: to } })
+    } else {
+      for (const topology of store.getOutputSlotLinks(
+        graphId,
+        node.id,
+        wasAt
+      )) {
+        patches.push({ topology, patch: { originSlot: to } })
+      }
+    }
+  }
+
+  slots.length = 0
+  slots.push(...moved)
+
+  if (!patches.length) return
+  const result = store.updateEndpoints(graphId, patches)
+  if (!result.ok) {
+    throw new ComfyApiError(
+      `Could not re-point links while reordering slots: ${String(result.error)}`
+    )
+  }
+}
+
 function createCollection<THandle>(
   getSlots: () => readonly (INodeInputSlot | INodeOutputSlot)[],
   makeHandle: (slotId: SlotId) => THandle,
   mutate: {
     add: (name: string, type: SlotType, options?: SlotOptions) => void
     remove: (index: number) => void
+    reorder: (names: readonly string[]) => void
   }
 ): SlotCollection<THandle> {
   const handleAt = (index: number) => {
@@ -498,6 +572,20 @@ function createCollection<THandle>(
     },
     get: (ref) => handleAt(resolveSlotRef(getSlots(), ref)),
     byId: (id) => handleAt(resolveSlotRef(getSlots(), id)),
+    reorder(names) {
+      const current = getSlots().map((slot) => slot.name)
+      if (
+        names.length !== current.length ||
+        [...names].sort().join('\u0000') !== [...current].sort().join('\u0000')
+      ) {
+        throw new ComfyApiError(
+          `reorder() needs a permutation of the current slots ` +
+            `[${current.join(', ')}], got [${[...names].join(', ')}].`
+        )
+      }
+      mutate.reorder([...names])
+    },
+
     add(name, type, options) {
       mutate.add(name, type, options)
       const handle = handleAt(getSlots().length - 1)
@@ -560,7 +648,8 @@ export function createInputCollection(
         }
         node?.addInput(name, normaliseType(type), slotProperties(options))
       },
-      remove: (index) => getNode()?.removeInput(index)
+      remove: (index) => getNode()?.removeInput(index),
+      reorder: (names) => reorderSlots(getGraph(), getNode(), 'input', names)
     }
   )
 }
@@ -574,7 +663,8 @@ export function createOutputCollection(
     (slotId) => createOutputHandle(getGraph, getNode, slotId),
     {
       add: (name, type) => getNode()?.addOutput(name, normaliseType(type)),
-      remove: (index) => getNode()?.removeOutput(index)
+      remove: (index) => getNode()?.removeOutput(index),
+      reorder: (names) => reorderSlots(getGraph(), getNode(), 'output', names)
     }
   )
 }

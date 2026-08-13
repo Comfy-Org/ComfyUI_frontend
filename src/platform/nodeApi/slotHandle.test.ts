@@ -87,6 +87,37 @@ describe('slot handles', () => {
       expect(inputs.byName('seed')).toBeUndefined()
     })
 
+    it('reorders slots and takes every link with them', () => {
+      // A link stores its endpoint as a slot INDEX. Permuting the array alone
+      // silently re-points every connection, and the damage only shows the
+      // next time the workflow runs.
+      const a = new LGraphNode('A', 'TestNode')
+      const b = new LGraphNode('B', 'TestNode')
+      graph.add(a)
+      graph.add(b)
+      a.addOutput('out', 'IMAGE')
+      b.addOutput('out', 'MASK')
+      a.connect(0, target, 0) // -> 'image'
+      b.connect(0, target, 1) // -> 'mask'
+
+      expect(inputs.byName('image')?.isConnected).toBe(true)
+      expect(inputs.byName('mask')?.isConnected).toBe(true)
+
+      inputs.reorder(['mask', 'image'])
+
+      expect(inputs.names()).toEqual(['mask', 'image'])
+      // Each link still reaches the slot it was attached to, now at its new
+      // index — not whatever slot happens to sit at the old one.
+      expect(inputs.byName('image')?.source()?.nodeId).toBe(String(a.id))
+      expect(inputs.byName('mask')?.source()?.nodeId).toBe(String(b.id))
+    })
+
+    it('refuses anything that is not a permutation', () => {
+      expect(() => inputs.reorder(['image'])).toThrow(/permutation/)
+      expect(() => inputs.reorder(['image', 'nope'])).toThrow(/permutation/)
+      expect(inputs.names()).toEqual(['image', 'mask'])
+    })
+
     it('takes a union type and connects from a member of it', () => {
       // rgthree ships `addInput('input', ['IMAGE','LATENT','MASK'])`. litegraph
       // compares types with `String(type).split(',')`, so the array and the
