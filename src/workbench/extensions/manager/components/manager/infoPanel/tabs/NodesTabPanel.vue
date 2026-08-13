@@ -19,6 +19,15 @@
         {{ node }}
       </div>
     </template>
+    <template v-else-if="fetchFailed">
+      <NoResultsPlaceholder
+        icon="pi pi-exclamation-circle"
+        :title="$t('manager.nodesFetchFailed')"
+        :message="$t('manager.nodesFetchFailedDescription')"
+        :button-label="$t('manager.retry')"
+        @action="retryFetch"
+      />
+    </template>
     <template v-else>
       <NoResultsPlaceholder
         :title="$t('manager.noNodesFound')"
@@ -49,6 +58,7 @@ const { nodePack, nodeNames } = defineProps<{
 const { getNodeDefs } = useComfyRegistryStore()
 
 const isLoading = ref(false)
+const fetchFailed = ref(false)
 const registryNodeDefs = shallowRef<ListComfyNodesResponse | null>(null)
 
 const nodeDefsParams = computed(() => {
@@ -70,6 +80,7 @@ const fetchNodeDefs = async () => {
 
   const params = nodeDefsParams.value
   inFlightParams = params
+  fetchFailed.value = false
 
   if (!params) {
     registryNodeDefs.value = null
@@ -82,8 +93,16 @@ const fetchNodeDefs = async () => {
   if (inFlightParams !== params) return
 
   inFlightParams = null
-  registryNodeDefs.value = response?.comfy_nodes ?? null
+  fetchFailed.value = response === null
+  registryNodeDefs.value =
+    response === null ? null : (response.comfy_nodes ?? [])
   isLoading.value = false
+}
+
+const retryFetch = async () => {
+  const params = nodeDefsParams.value
+  if (params) getNodeDefs.clear(params)
+  await fetchNodeDefs()
 }
 
 watch(packIdentity, fetchNodeDefs, { immediate: true })
