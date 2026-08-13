@@ -19,6 +19,10 @@ export interface LocaleLeafEntry {
   value: LocaleTrackedLeaf
 }
 
+export interface PendingLocaleLeaf extends LocaleLeafEntry {
+  reason: 'invalidated' | 'shape'
+}
+
 function isLocaleValue(value: unknown): value is LocaleValue {
   if (
     typeof value === 'boolean' ||
@@ -160,25 +164,18 @@ export function isTranslatableLeaf(value: LocaleTrackedLeaf): boolean {
 export function collectPendingLeaves(
   source: LocaleObject,
   existing: LocaleObject,
-  invalidated: ReadonlySet<string>,
-  leafCorrupted?: (
-    source: LocaleTrackedLeaf,
-    target: LocaleTrackedLeaf
-  ) => boolean
-): LocaleLeafEntry[] {
-  const pending: LocaleLeafEntry[] = []
+  invalidated: ReadonlySet<string>
+): PendingLocaleLeaf[] {
+  const pending: PendingLocaleLeaf[] = []
   for (const [key, leaf] of collectLeaves(source)) {
     if (!isTranslatableLeaf(leaf.value)) continue
     const existingLeaf = getLeaf(existing, leaf.path)
-    if (
-      invalidated.has(key) ||
-      !leafShapeMatches(leaf.value, existingLeaf) ||
-      (existingLeaf !== undefined &&
-        leafCorrupted !== undefined &&
-        leafCorrupted(leaf.value, existingLeaf))
-    ) {
-      pending.push(leaf)
-    }
+    const reason = invalidated.has(key)
+      ? 'invalidated'
+      : !leafShapeMatches(leaf.value, existingLeaf)
+        ? 'shape'
+        : undefined
+    if (reason) pending.push({ ...leaf, reason })
   }
   return pending
 }
