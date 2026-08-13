@@ -1,5 +1,8 @@
 import type { ComfyExtension } from '@/types/comfy'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { inputSpecTree, ownSlotTypes } from '@/schemas/nodeDef/inputSpecTree'
+import { transformNodeDefV1ToV2 } from '@/schemas/nodeDef/migration'
+import { collectSearchableOutputTypes } from '@/schemas/nodeDef/searchableSlotTypes'
 
 import { app } from '../../scripts/app'
 import { ComfyWidgets } from '../../scripts/widgets'
@@ -39,17 +42,23 @@ app.registerExtension({
   slot_types_default_in: {},
   async beforeRegisterNodeDef(this: SlotDefaultsExtension, nodeType, nodeData) {
     var nodeId = nodeData.name
-    const inputs = nodeData['input']?.['required'] //only show required inputs to reduce the mess also not logical to create node with optional inputs
-    for (const inputKey in inputs) {
-      var input = inputs[inputKey]
-      if (typeof input[0] !== 'string') continue
+    const defV2 = transformNodeDefV1ToV2(nodeData)
 
-      var type = input[0]
-      if (type in ComfyWidgets) {
-        var customProperties = input[1]
-        if (!customProperties?.forceInput) continue //ignore widgets that don't force input
+    //only show required inputs to reduce the mess also not logical to create node with optional inputs
+    const requiredInputTypes = new Set<string>()
+    for (const rootSpec of Object.values(defV2.inputs)) {
+      if (rootSpec.isOptional) continue
+      for (const spec of inputSpecTree(rootSpec)) {
+        if (spec.isOptional) continue
+        for (const type of ownSlotTypes(spec)) {
+          //ignore widgets that don't force input
+          if (type in ComfyWidgets && !spec.forceInput) continue
+          requiredInputTypes.add(type)
+        }
       }
+    }
 
+    for (const type of requiredInputTypes) {
       if (!(type in this.slot_types_default_out)) {
         this.slot_types_default_out[type] = ['Reroute']
       }
@@ -68,9 +77,12 @@ app.registerExtension({
       )
     }
 
-    var outputs = nodeData['output'] ?? []
-    for (const el of outputs) {
-      const type = el as string
+    const outputs = collectSearchableOutputTypes(
+      defV2.outputs,
+      defV2.inputs,
+      nodeData.output_matchtypes
+    )
+    for (const type of outputs) {
       if (!(type in this.slot_types_default_in)) {
         this.slot_types_default_in[type] = ['Reroute']
       }
