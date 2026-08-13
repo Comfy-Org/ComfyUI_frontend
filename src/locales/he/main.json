@@ -3428,7 +3428,7 @@
       "expandNodes": "הצגת הצמתים המפנים",
       "gatedModelDownloadTooltip": "ההורדה עשויה לדרוש התחברות ל-Hugging Face תחילה.",
       "gatedModelTooltip": "מודל זה מוגבל ודורש התחברות ל-Hugging Face ואישור הסכם הרישיון.",
-      "gatedModelsHint": "חלק מהמודלים מוגבלים. כדי להוריד אותם, התחברו ל-Hugging Face ואשרו את הסכם הרישיון של המודל.",
+      "gatedModelsHint": "{count} מודל מוגבל בגישה. כדי להוריד אותו, יש להיכנס אל Hugging Face ולאשר את הסכם הרישיון שלו. | {count} מודלים מוגבלים בגישה. כדי להוריד אותם, יש להיכנס אל Hugging Face ולאשר את הסכמי הרישיון שלהם.",
       "gatedModelsHintLabel": "הערה:",
       "import": "ייבוא",
       "importNotSupported": "ייבוא אינו נתמך",

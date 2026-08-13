@@ -3428,7 +3428,7 @@
       "expandNodes": "Mostra nodi di riferimento",
       "gatedModelDownloadTooltip": "Il download potrebbe richiedere l'accesso a Hugging Face.",
       "gatedModelTooltip": "Questo modello è protetto e richiede l'accesso a Hugging Face e l'accettazione della licenza.",
-      "gatedModelsHint": "Alcuni modelli sono protetti. Per scaricarli, accedi a Hugging Face e accetta il contratto di licenza del modello.",
+      "gatedModelsHint": "{count} modello ha un accesso limitato. Per scaricarlo, accedi a Hugging Face e accetta il relativo contratto di licenza. | {count} modelli hanno un accesso limitato. Per scaricarli, accedi a Hugging Face e accetta i relativi contratti di licenza.",
       "gatedModelsHintLabel": "Nota:",
       "import": "Importa",
       "importNotSupported": "Importazione non supportata",
