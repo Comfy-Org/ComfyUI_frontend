@@ -142,18 +142,25 @@ test.describe('Seedance 2.5 page — link targets', () => {
   })
 
   // Seedance 2.5 does not render 4K, and a prompt is copyable text that would
-  // re-publish the claim the rest of this page had it removed for. Asserted on
-  // what the page actually serves, so a prompt reaching the DOM by any route
-  // fails here.
+  // re-publish the claim the rest of this page had it removed for. Scoped to the
+  // prompt boxes rather than every paragraph, so a card description can neither
+  // satisfy nor trip this.
   test('no rendered gallery prompt advertises 4K', async ({ page }) => {
     const gallery = page.locator('section').filter({
       has: page.getByRole('heading', { level: 2, name: MODELS_HEADING })
     })
     await gallery.scrollIntoViewIfNeeded()
 
-    const prompts = await gallery.locator('article p').allInnerTexts()
-    expect(prompts.length).toBeGreaterThan(0)
-    expect(prompts.filter((text) => /\b4k\b/i.test(text))).toEqual([])
+    const withPrompt = (seedancePage.gallery?.cards ?? []).filter(
+      (card) => card.prompt
+    )
+    const prompts = gallery.getByTestId('gallery-card-prompt')
+    await expect(prompts).toHaveCount(withPrompt.length)
+    expect(withPrompt.length).toBeGreaterThan(0)
+
+    for (const text of await prompts.allInnerTexts()) {
+      expect(text).not.toMatch(/\b4k\b/i)
+    }
   })
 
   test('MCP highlight card CTA links to the MCP page', async ({ page }) => {
