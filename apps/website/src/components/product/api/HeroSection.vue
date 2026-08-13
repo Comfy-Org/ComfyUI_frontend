@@ -181,13 +181,14 @@ onMounted(() => {
   }
 
   watch(
-    isIllustrationVisible,
-    (visible) => {
-      if (visible) {
-        drawLoop()
-      } else if (animationId !== null) {
+    [isIllustrationVisible, prefersReducedMotion],
+    ([visible]) => {
+      if (animationId !== null) {
         cancelAnimationFrame(animationId)
         animationId = null
+      }
+      if (visible) {
+        drawLoop()
       }
     },
     { immediate: true }
