@@ -708,16 +708,16 @@ end?** If yes it is refused, because that is exactly what makes the old surface
 impossible to delete. Each refusal below has a published alternative that
 serves the actual use case.
 
-| Refused                                                                 | Because                                                                                                                                             | Published instead                                                                                   |
-| ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| Reading or editing the built prompt/workflow                            | The surface that makes the old API unretireable. Every "regenerate", "run this branch", "restart from here" feature rewrote `prompt.output` by hand | `queue.run({ nodes })` — native partial execution                                                   |
-| Clipspace data (`ComfyApp.clipspace`, `clipspace_return_node`)          | A mutable global packs poke at                                                                                                                      | `commands.run('Comfy.MaskEditor.OpenMaskEditor')` — ask for the behaviour, not the machinery        |
-| Painting over the canvas; renderer constants and colours                | A pack drawing its own front end                                                                                                                    | `widgets.mount` + DOM, `node.addBadge`                                                              |
-| Reading another node's DOM element; writing `node.imgs`                 | Breaches the node sandbox in both directions                                                                                                        | `node.getOutputImages()`, `getDisplayedImageIndex()`                                                |
-| A pack-rendered element or renderer in the settings panel or app chrome | Precisely what then cannot be restyled — and Nodes 2.0 restyles                                                                                     | `ui.addTopBarBadge`, `addActionBarButton`, `settings.declare({ type })` with the real control types |
-| Node-local pointer hit-testing                                          | Hand-rolled hit testing against geometry the renderer owns                                                                                          | `widgets.mount` + DOM events on the element the pack owns                                           |
-| Replacing core connection validation globally                           | One pack changing validity for every other pack                                                                                                     | `b.onUnplacedLink` — the moment, not the prototype                                                  |
-| A subscription per node instance                                        | Fails silently: keyed by object, identity dies on undo/reload/subgraph re-entry; keyed by id, the entry is never collected                          | `comfy.onNodeChanged` — one stream, filtered by the pack                                            |
+| Refused                                                                         | Because                                                                                                                                             | Published instead                                                                                   |
+| ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| Reading or editing the built prompt/workflow                                    | The surface that makes the old API unretireable. Every "regenerate", "run this branch", "restart from here" feature rewrote `prompt.output` by hand | `queue.run({ nodes })` — native partial execution                                                   |
+| Clipspace data (`ComfyApp.clipspace`, `clipspace_return_node`)                  | A mutable global packs poke at                                                                                                                      | `commands.run('Comfy.MaskEditor.OpenMaskEditor')` — ask for the behaviour, not the machinery        |
+| Painting over the _host's_ canvas — the node body, the background, another node | A pack drawing the front end it does not own                                                                                                        | `widgets.canvas` for its own surface, `widgets.mount` for DOM, `node.addBadge`                      |
+| Reading another node's DOM element; writing `node.imgs`                         | Breaches the node sandbox in both directions                                                                                                        | `node.getOutputImages()`, `getDisplayedImageIndex()`                                                |
+| A pack-rendered element or renderer in the settings panel or app chrome         | Precisely what then cannot be restyled — and Nodes 2.0 restyles                                                                                     | `ui.addTopBarBadge`, `addActionBarButton`, `settings.declare({ type })` with the real control types |
+| ~~Node-local pointer hit-testing~~ **no longer refused**                        | Refused while the only answer was mounted DOM. `widgets.canvas` now carries `onPointerDown/Move/Up` in the same units `draw` receives               | `widgets.canvas` pointer callbacks, scoped to the pack's own element                                |
+| Replacing core connection validation globally                                   | One pack changing validity for every other pack                                                                                                     | `b.onUnplacedLink` — the moment, not the prototype                                                  |
+| A subscription per node instance                                                | Fails silently: keyed by object, identity dies on undo/reload/subgraph re-entry; keyed by id, the entry is never collected                          | `comfy.onNodeChanged` — one stream, filtered by the pack                                            |
 
 **One of these stopped being a refusal, and how is the interesting part.**
 rgthree's headline feature is dropping a context link on a KSampler and having
@@ -815,6 +815,26 @@ speculative surface we are meant to refuse.
   navigation is not.
 
 ## 10. Why packs draw on the canvas, and what makes `widgets.mount` a real answer ✅
+
+> **Superseded in part — read this first.** The conclusion below ("use
+> `widgets.mount` and ordinary DOM") was reached when that was the only answer,
+> and node-local pointer hit-testing was refused on its authority. Since then
+> `widgets.canvas` gained `onPointerDown/Move/Up`, with coordinates in the same
+> units `draw` receives, so a hit test written against the drawing works
+> unchanged. **Hit-testing your own widget is supported. It is not a refusal.**
+>
+> Both answers are now honest and they serve different cases. `widgets.mount` is
+> right when the control has a DOM equivalent — a text field, a combo, a link —
+> because it gets focus, selection, accessibility and IME for free. Drawing is
+> right when the widget _is_ a drawing: a comparison slider, a lora row, a
+> waveform. The 19 files across 9 packs already using `widgets.canvas` are all
+> draw-only display surfaces; the interactive ones are the work this unblocks,
+> and **none has been converted onto the pointer callbacks yet**, which is why
+> rgthree's still read as refusals.
+>
+> What stays refused is unchanged and is the line that matters: painting over
+> the _host's_ canvas — the node body, the background, another node. Your own
+> widget's surface is yours. The rest is not.
 
 The largest block of unconverted code in the corpus is hand-drawn canvas
 widgets — rgthree's Power Lora Loader, Power Puter and Image Comparer, and the
