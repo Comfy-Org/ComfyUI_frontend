@@ -708,23 +708,41 @@ end?** If yes it is refused, because that is exactly what makes the old surface
 impossible to delete. Each refusal below has a published alternative that
 serves the actual use case.
 
-| Refused                                                                 | Because                                                                                                                                                                                                                  | Published instead                                                                                                                                                                    |
-| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Reading or editing the built prompt/workflow                            | The surface that makes the old API unretireable. Every "regenerate", "run this branch", "restart from here" feature rewrote `prompt.output` by hand                                                                      | `queue.run({ nodes })` — native partial execution                                                                                                                                    |
-| Clipspace data (`ComfyApp.clipspace`, `clipspace_return_node`)          | A mutable global packs poke at                                                                                                                                                                                           | `commands.run('Comfy.MaskEditor.OpenMaskEditor')` — ask for the behaviour, not the machinery                                                                                         |
-| Painting over the canvas; renderer constants and colours                | A pack drawing its own front end                                                                                                                                                                                         | `widgets.mount` + DOM, `node.addBadge`                                                                                                                                               |
-| Reading another node's DOM element; writing `node.imgs`                 | Breaches the node sandbox in both directions                                                                                                                                                                             | `node.getOutputImages()`, `getDisplayedImageIndex()`                                                                                                                                 |
-| A pack-rendered element or renderer in the settings panel or app chrome | Precisely what then cannot be restyled — and Nodes 2.0 restyles                                                                                                                                                          | `ui.addTopBarBadge`, `addActionBarButton`, `settings.declare({ type })` with the real control types                                                                                  |
-| Node-local pointer hit-testing                                          | Hand-rolled hit testing against geometry the renderer owns                                                                                                                                                               | `widgets.mount` + DOM events on the element the pack owns                                                                                                                            |
-| Replacing core connection validation globally                           | One pack changing validity for every other pack                                                                                                                                                                          | —                                                                                                                                                                                    |
-| Node-level key events (`node.onKeyDown`)                                | Dispatched only by the legacy canvas, only to selected nodes, at a call site marked `// TODO`. Nodes 2.0 does not dispatch it at all, so publishing it would add a hook already dead in the renderer we are migrating to | A command with `scope: 'canvas'` reading `graph.selection()`, which works under both renderers. Tracking global modifier state is `document.addEventListener` in the pack's own code |
-| A subscription per node instance                                        | Fails silently: keyed by object, identity dies on undo/reload/subgraph re-entry; keyed by id, the entry is never collected                                                                                               | `comfy.onNodeChanged` — one stream, filtered by the pack                                                                                                                             |
+| Refused                                                                 | Because                                                                                                                                             | Published instead                                                                                   |
+| ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| Reading or editing the built prompt/workflow                            | The surface that makes the old API unretireable. Every "regenerate", "run this branch", "restart from here" feature rewrote `prompt.output` by hand | `queue.run({ nodes })` — native partial execution                                                   |
+| Clipspace data (`ComfyApp.clipspace`, `clipspace_return_node`)          | A mutable global packs poke at                                                                                                                      | `commands.run('Comfy.MaskEditor.OpenMaskEditor')` — ask for the behaviour, not the machinery        |
+| Painting over the canvas; renderer constants and colours                | A pack drawing its own front end                                                                                                                    | `widgets.mount` + DOM, `node.addBadge`                                                              |
+| Reading another node's DOM element; writing `node.imgs`                 | Breaches the node sandbox in both directions                                                                                                        | `node.getOutputImages()`, `getDisplayedImageIndex()`                                                |
+| A pack-rendered element or renderer in the settings panel or app chrome | Precisely what then cannot be restyled — and Nodes 2.0 restyles                                                                                     | `ui.addTopBarBadge`, `addActionBarButton`, `settings.declare({ type })` with the real control types |
+| Node-local pointer hit-testing                                          | Hand-rolled hit testing against geometry the renderer owns                                                                                          | `widgets.mount` + DOM events on the element the pack owns                                           |
+| Replacing core connection validation globally                           | One pack changing validity for every other pack                                                                                                     | —                                                                                                   |
+| A subscription per node instance                                        | Fails silently: keyed by object, identity dies on undo/reload/subgraph re-entry; keyed by id, the entry is never collected                          | `comfy.onNodeChanged` — one stream, filtered by the pack                                            |
 
 Two of these were reached _by_ publishing something smaller. Command invocation
 unlocked the mask editor without clipspace; declarative chrome contributions
 unlocked the resource monitor without a render slot. That pattern — publish the
 intent, keep the machinery — is worth agreeing on explicitly, because it is
 what the remaining refusals rest on.
+
+### Served, though not the way the pack wrote it
+
+**A key that acts on the node under the cursor or in the selection.** rgthree
+binds `?` to open a node's help, via `node.onKeyDown`. We do not publish that
+callback and should not: the legacy canvas dispatches it only to selected
+nodes, at a call site marked `// TODO`, and Nodes 2.0 does not dispatch it at
+all — so it is already dead in the renderer we are migrating to.
+
+The capability is supported. A pack registers a command with a keybinding and
+`scope: 'canvas'`, reads `comfy.graph.selection()`, and opens
+`comfy.ui.showDialog`. That works under both renderers, appears in the command
+palette, and the user can rebind it — none of which was true of the original.
+Feeding a global modifier-state service, rgthree's other use, is plain
+`document.addEventListener` in the pack's own code and needs no API.
+
+This is a mechanism we decline, not a feature. Worth stating separately,
+because the two are easy to conflate and the distinction is what keeps the
+refusal list honest.
 
 ### Still open, and honest about it
 
