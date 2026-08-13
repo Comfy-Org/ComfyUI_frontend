@@ -7,6 +7,7 @@ vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
   layoutStore: {
     querySlotAtPoint: vi.fn(),
     queryRerouteAtPoint: vi.fn(),
+    queryLinkSegmentAtPoint: vi.fn(),
     getNodeLayoutRef: vi.fn(() => ({ value: null })),
     getSlotLayout: vi.fn()
   }
@@ -59,29 +60,39 @@ describe('LGraphCanvas link drag auto-pan', () => {
   })
 
   it('resumes auto-pan after Space panning during a link drag', () => {
-    canvas.mouse[0] = 400
-    canvas.mouse[1] = 300
+    canvas.processMouseDown(
+      new MouseEvent('pointerdown', {
+        button: 0,
+        buttons: 1,
+        clientX: 400,
+        clientY: 300
+      })
+    )
     canvas.linkConnector.state.connectingTo = 'output'
-    canvas.pointer.isDown = true
     startLinkDrag()
-    const autoPan = canvas['_autoPan']
-    if (!autoPan) throw new Error('Auto-pan controller was not created')
-    const stop = vi.spyOn(autoPan, 'stop')
-    const start = vi.spyOn(autoPan, 'start')
-    const updatePointer = vi.spyOn(autoPan, 'updatePointer')
+    canvas.processMouseMove(
+      new PointerEvent('pointermove', {
+        buttons: 1,
+        clientX: 5,
+        clientY: 300
+      })
+    )
     const keydown = new KeyboardEvent('keydown', { key: ' ' })
     const keyup = new KeyboardEvent('keyup', { key: ' ' })
     Object.defineProperty(keydown, 'target', { value: canvasElement })
     Object.defineProperty(keyup, 'target', { value: canvasElement })
 
     canvas.processKey(keydown)
-    canvas.mouse[0] = 450
-    canvas.mouse[1] = 350
-    canvas.processKey(keyup)
+    const offsetWhileSpacePanning = [...canvas.ds.offset]
 
-    expect(stop).toHaveBeenCalledOnce()
-    expect(updatePointer).toHaveBeenLastCalledWith(450, 350)
-    expect(start).toHaveBeenCalledOnce()
+    vi.advanceTimersByTime(16)
+
+    expect([...canvas.ds.offset]).toEqual(offsetWhileSpacePanning)
+
+    canvas.processKey(keyup)
+    vi.advanceTimersByTime(16)
+
+    expect([...canvas.ds.offset]).not.toEqual(offsetWhileSpacePanning)
   })
 
   it('keeps graph_mouse consistent with offset after auto-pan', () => {
