@@ -206,6 +206,15 @@ flowchart TD
     E -- No, coordinates actions<br/>across the app --> H[fixtures/helpers/]
 ```
 
+### Custom-node regression suite
+
+`tests/customNodes/` holds the manifest-driven suite that proves community
+custom-node packs load, render in both renderers (LiteGraph canvas and Vue
+Nodes 2.0), and execute real workflows. It has its own prerequisites, pnpm
+scripts (`pnpm test:custom-nodes` and variants), and a one-JSON-row process
+for adding packs - see
+[docs/custom-node-regression-suite.md](../docs/custom-node-regression-suite.md).
+
 ## Writing Tests
 
 ### Golden rules

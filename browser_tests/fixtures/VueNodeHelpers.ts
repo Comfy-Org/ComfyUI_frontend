@@ -55,6 +55,22 @@ export class VueNodeHelpers {
     )
   }
 
+  getOutputSlotRow(nodeId: string, slotIndex: number): Locator {
+    return this.getNodeLocator(nodeId)
+      .locator('.lg-slot--output')
+      .filter({
+        has: this.page.locator(
+          `[data-slot-key="${getSlotKey(toNodeId(nodeId), slotIndex, false)}"]`
+        )
+      })
+  }
+
+  getOutputSlotConnectionDot(nodeId: string, slotIndex: number): Locator {
+    return this.getOutputSlotRow(nodeId, slotIndex).getByTestId(
+      TestIds.node.slotConnectionDot
+    )
+  }
+
   /**
    * Get locator for Vue nodes by the node's title (displayed name in the header).
    * Matches against the actual title element, not the full node body.

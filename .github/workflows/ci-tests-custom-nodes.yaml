@@ -1,0 +1,355 @@
+# Runs the custom-node regression suite against a backend that has the manifest
+# packs actually installed, so the load/run tiers execute for real. This is a
+# GATING check: if a pack fails to install or any tier is skipped, the job goes
+# red - a regression gate that let a broken pack through as a "skip" would be
+# pointless. Mark `custom-nodes-e2e-core` as a required status check in branch
+# protection to block merges on failure.
+#
+# The gate is deterministic at the GIT level: ComfyUI core and every pack are
+# pinned at verified commits, so no git surface moves underneath a PR. Python
+# deps (core's and packs' requirements.txt) still resolve fresh per run and
+# the runner image updates independently - a red that reproduces on a trivial
+# PR right after a dependency release is environment, not the PR. Git-level
+# drift (core master moving, pack authors shipping changes) is the nightly
+# canary's job (ci-nightly-custom-nodes-canary.yaml) - non-gating radar, not
+# a PR blocker.
+name: 'CI: Tests Custom Nodes'
+
+on:
+  pull_request:
+    branches-ignore: [wip/*, draft/*, temp/*]
+  push:
+    branches: [main, master]
+  merge_group:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Frontend branch/ref to test (empty = the ref this workflow runs from)'
+        required: false
+        type: string
+        default: ''
+      grep:
+        description: "Playwright -g filter, e.g. 'VideoHelperSuite' or 'Pack startup' (empty = full suite; the exact-count gate is skipped when set)"
+        required: false
+        type: string
+        default: ''
+      comfyui_ref:
+        description: 'ComfyUI core ref to run against (empty = the verified pin)'
+        required: false
+        type: string
+        default: ''
+      enable_s14:
+        description: 'Enable the S14 tier'
+        required: false
+        type: boolean
+        default: true
+      enable_s15:
+        description: 'Enable the S15 tier'
+        required: false
+        type: boolean
+        default: true
+
+concurrency:
+  # Dispatches get a per-run group: two manual runs (e.g. comparing branches)
+  # must not cancel each other, while PR pushes keep the usual per-ref
+  # supersede behavior.
+  group: ${{ github.event_name == 'workflow_dispatch' && format('{0}-dispatch-{1}', github.workflow, github.run_id) || format('{0}-{1}', github.workflow, github.ref) }}
+  cancel-in-progress: true
+
+jobs:
+  # Path gating lives here, not in a trigger-level `paths:` filter: a required
+  # check gated by trigger paths never creates a check run on an unrelated PR
+  # and leaves branch protection stuck Pending. A job-level `if:` still creates
+  # the check and marks it Skipped (= passing). Mirrors ci-tests-unit.yaml.
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      should-run: ${{ steps.changes.outputs.should-run }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: changes
+        uses: ./.github/actions/changes-filter
+
+  # This proof is intentionally serial and unsharded: its backend queue and
+  # cross-test state contracts require one worker for an accepted verdict.
+  custom-nodes-e2e-core:
+    needs: changes
+    # Run only when non-docs code changed AND the PR is same-repo. Fork PRs can
+    # edit the manifest's repo/pin URLs, and this job clones and pip-installs
+    # whatever they point at (setup.py runs at install time), so an untrusted
+    # fork must not be able to aim the clone at an attacker-controlled repo.
+    # Fork PRs still get the environment-agnostic coverage via the main e2e
+    # shards. A skipped job counts as passing, so this stays required-safe.
+    if: >-
+      needs.changes.outputs.should-run == 'true' &&
+      (github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          # workflow_dispatch may aim the suite at any frontend branch; every
+          # other event tests its own ref exactly as before.
+          ref: ${{ inputs.branch || github.ref }}
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+        with:
+          include_build_step: true
+
+      - name: Setup Playwright
+        uses: ./.github/actions/setup-playwright
+
+      # Checks out ComfyUI, installs Python/torch/requirements and ComfyUI_devtools.
+      # launch_server:false so we can add the manifest packs before booting.
+      # comfyui_ref pins core so the gate is reproducible: this SHA is the
+      # exact master commit the suite (incl. the KJNodes ledger entries and
+      # per-pack node counts) was last verified green against. Bump it
+      # deliberately, in its own PR, recalibrating ledgers/counts if the run
+      # says so - and bump the canary Job B's copy of this SHA
+      # (ci-nightly-custom-nodes-canary.yaml) in the SAME PR, or its reds
+      # stop isolating pack drift. Core DRIFT is covered nightly by the
+      # canary, not here.
+      - name: Setup ComfyUI server
+        uses: ./.github/actions/setup-comfyui-server
+        with:
+          launch_server: 'false'
+          # workflow_dispatch may override the pin (e.g. probing a core
+          # candidate before a deliberate bump); every gating event stays
+          # pinned.
+          comfyui_ref: ${{ inputs.comfyui_ref || 'b08e6cf35fac50d3ca8470dffb3f9a1fbb7187d2' }}
+
+      # Pack sources are SHA-pinned, so their content is fully determined by
+      # the manifest: cache the checked-out trees (sans .git) and restore by
+      # manifest hash, with a prefix fallback so a single-pack pin bump still
+      # reuses every other pack. The per-pack .pin marker is the integrity
+      # check - a stale or partial entry re-clones.
+      - name: Restore manifest pack cache
+        id: pack-cache
+        uses: actions/cache/restore@v5
+        with:
+          path: ~/.cache/cn-packs
+          key: cn-packs-v2-${{ hashFiles('browser_tests/fixtures/data/customNodeManifest.core.json') }}
+          restore-keys: cn-packs-v2-
+
+      # Install every pack the manifest declares (DRY: a new pack row installs
+      # itself here, no workflow change). A clone or dependency failure fails the
+      # job - if a pack can't be installed, its coverage can't run, and that is a
+      # gate failure, not something to paper over. The `jq | while` pipe hides
+      # failures in a subshell, so read into an array and loop with `set -e`.
+      - name: Install manifest custom nodes
+        id: install
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Pin the CPU torch stack that setup-comfyui-server installed so no
+          # pack's requirements.txt can pull a GPU/incompatible torch onto this
+          # --cpu runner. A pack that genuinely needs a different torch fails
+          # the constrained install loudly rather than silently swapping it.
+          pip freeze | grep -iE '^(torch|torchvision|torchaudio)==' \
+            > /tmp/torch-constraints.txt || true
+          manifest=browser_tests/fixtures/data/customNodeManifest.core.json
+          mapfile -t entries < <(jq -c '.[]' "$manifest")
+          for entry in "${entries[@]}"; do
+            repo=$(jq -r '.repo' <<<"$entry")
+            pin=$(jq -r '.pin' <<<"$entry")
+            # Install under the manifest `pack` key, not basename(repo): node
+            # attribution keys on the install dirname via python_module, and
+            # the two only coincide by luck. Same charset the manifest loader
+            # enforces - belt for anything that bypasses it.
+            pack=$(jq -r '.pack' <<<"$entry")
+            if ! [[ "$pack" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]; then
+              echo "::error::unsafe pack name: '$pack'"; exit 1
+            fi
+            # The gate tests exactly what was verified: a full SHA pin is
+            # mandatory here, before anything installs. The nightly canary's
+            # pack-drift job is the only intended unpinned INSTALL - it
+            # ignores the pin fields in its own install step
+            # (ci-nightly-custom-nodes-canary.yaml); the manifest itself
+            # stays pinned and validating everywhere.
+            if ! [[ "$pin" =~ ^[0-9a-f]{40}$ ]]; then
+              echo "::error::$pack: pin must be a full commit SHA (got '$pin')"; exit 1
+            fi
+            dir="ComfyUI/custom_nodes/$pack"
+            cache_dir="$HOME/.cache/cn-packs/$pack"
+            # The pin marker is a SIBLING of the tree, never inside it - a
+            # pack legitimately shipping a top-level .pin must install
+            # identically on cached and fresh runs.
+            if [ -f "$cache_dir.pin" ] && [ "$(cat "$cache_dir.pin")" = "$pin" ]; then
+              echo "::group::restore $pack from cache ($pin)"
+              cp -R "$cache_dir" "$dir"
+            else
+              echo "::group::install $pack"
+              git clone --depth 1 "$repo" "$dir"
+              git -C "$dir" fetch --depth 1 origin "$pin"
+              git -C "$dir" checkout "$pin"
+              # Repopulate the cache entry: tree without .git (nothing after
+              # this point reads pack git state), pin written LAST so a
+              # truncated copy fails the integrity check above.
+              rm -rf "$cache_dir" "$cache_dir.pin"
+              mkdir -p "$(dirname "$cache_dir")"
+              cp -R "$dir" "$cache_dir"
+              rm -rf "$cache_dir/.git"
+              printf '%s' "$pin" > "$cache_dir.pin"
+            fi
+            if [ -f "$dir/requirements.txt" ]; then
+              pip install -r "$dir/requirements.txt" -c /tmp/torch-constraints.txt
+            fi
+            echo "::endgroup::"
+          done
+          # Prune entries for packs no longer in the manifest: the prefix
+          # fallback restores old entries and the save re-tars the whole
+          # directory, so without this the entry grows monotonically and
+          # eats the repo's shared cache budget.
+          if [ -d "$HOME/.cache/cn-packs" ]; then
+            current=$(jq -r '.[].pack' "$manifest")
+            for entry in "$HOME/.cache/cn-packs"/*; do
+              name=$(basename "$entry" .pin)
+              grep -qxF "$name" <<<"$current" || rm -rf "$entry"
+            done
+          fi
+
+      # Save only when this run rebuilt entries. An exact-key restore means
+      # the stored tree is already current - actions/cache/save re-tars and
+      # uploads unconditionally and only then hits the duplicate-key
+      # rejection, so skipping here is what actually avoids the cost. Gating
+      # on the INSTALL step (not the job) still saves when the suite fails,
+      # while a failed or cancelled install can never freeze a partial tree
+      # under the immutable key.
+      - name: Save manifest pack cache
+        if: always() && steps.install.outcome == 'success' && steps.pack-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v5
+        with:
+          path: ~/.cache/cn-packs
+          key: cn-packs-v2-${{ hashFiles('browser_tests/fixtures/data/customNodeManifest.core.json') }}
+
+      # The VHS run-tier workflow reads input/plain_video.mp4.
+      - name: Stage run-tier assets
+        shell: bash
+        run: cp browser_tests/assets/plain_video.mp4 ComfyUI/input/plain_video.mp4
+
+      # --cache-none so retried run-tier tests re-execute every node (a cached
+      # node emits no `executing` event and would false-fail PARTIAL).
+      - name: Start ComfyUI server
+        shell: bash
+        working-directory: ComfyUI
+        run: |
+          python main.py --cpu --multi-user --cache-none --front-end-root ../dist &
+          wait-for-it --service 127.0.0.1:8188 -t 600
+
+      - name: Run custom-node suite
+        id: suite
+        env:
+          CN_ENABLE_S14: ${{ (github.event_name != 'workflow_dispatch' || inputs.enable_s14) && '1' || '0' }}
+          CN_ENABLE_S15: ${{ (github.event_name != 'workflow_dispatch' || inputs.enable_s15) && '1' || '0' }}
+          PLAYWRIGHT_JSON_OUTPUT_NAME: custom-nodes-results.json
+          # Through env, not inline interpolation: dispatch input must never
+          # be shell-parsed.
+          GREP_FILTER: ${{ inputs.grep }}
+        run: |
+          set -o pipefail
+          # workers=1: the auto-run tier needs exclusive backend-queue access;
+          # parallel workers interrupt each other's executions.
+          # --project=custom-nodes: the `@custom-nodes`-tagged specs, which the
+          # main e2e job's `chromium` project excludes (see playwright.config).
+          # Json feeds the skip gate below; html writes playwright-report/
+          # (the upload step's target) and folds in the retain-on-failure
+          # traces. List keeps live diagnostics visible.
+          # Core keeps its already-proven S13-S15 coverage active. The
+          # later-tier defer applies only to Cloud while Cloud S1-S12 is red.
+          pnpm exec playwright test browser_tests/tests/customNodes/ \
+            --project=custom-nodes --reporter=list,json,html --workers=1 --retries=0 \
+            ${GREP_FILTER:+--grep "$GREP_FILTER"} \
+            2>&1 | tee custom-nodes.log
+
+      # A skip here means a pack or devtools did not load: on this backend every
+      # tier is meant to run, so a skip is a gate failure, not an honest pass.
+      - name: Forbid failed, skipped, or flaky tests
+        if: always()
+        shell: bash
+        env:
+          SUITE_OUTCOME: ${{ steps.suite.outcome }}
+          EXPECTED_TESTS: 34
+          GREP_FILTER: ${{ inputs.grep }}
+        run: |
+          set -euo pipefail
+          # The JSON result is mandatory even when the suite step failed: the
+          # gate must independently prove the failed, skipped, and flaky totals.
+          if [ ! -f custom-nodes-results.json ]; then
+            echo "::error::suite wrote no results json (${SUITE_OUTCOME:-unknown}) - the result gate could not run"
+            exit 1
+          fi
+          collected=$(jq -er '[.stats.expected, .stats.unexpected, .stats.flaky, .stats.skipped] | add' custom-nodes-results.json)
+          echo "collected tests: $collected"
+          # A dispatch grep runs a deliberate subset; the exact-count gate
+          # applies only to full runs (every gating event runs unfiltered).
+          if [ -n "${GREP_FILTER:-}" ]; then
+            echo "grep filter active ('$GREP_FILTER') - exact-count gate skipped for this manual subset run"
+          elif [ "$collected" != "$EXPECTED_TESTS" ]; then
+            echo "::error::collected $collected tests; expected exactly $EXPECTED_TESTS active Core custom-node tests"
+            exit 1
+          fi
+          unexpected=$(jq -er '.stats.unexpected | numbers' custom-nodes-results.json)
+          echo "failed tests: $unexpected"
+          if [ "$unexpected" != "0" ]; then
+            echo "::error::$unexpected test(s) failed - failed results are not acceptable in the gating job"
+            jq -r '.. | objects
+                     | select(has("title") and has("tests"))
+                     | select(any(.tests[]?; .status == "unexpected"))
+                     | .title' custom-nodes-results.json | sort -u | head -40
+            exit 1
+          fi
+          skipped=$(jq -er '.stats.skipped | numbers' custom-nodes-results.json)
+          echo "skipped tests: $skipped"
+          if [ "$skipped" != "0" ]; then
+            echo "::error::$skipped test(s) skipped - a manifest pack or devtools failed to load; skips are not acceptable in the gating job"
+            # Recurse so specs nested under describe() blocks are found, and
+            # print only the specs that actually skipped.
+            jq -r '.. | objects
+                     | select(has("title") and has("tests"))
+                     | select(any(.tests[]?; .status == "skipped"))
+                     | .title' custom-nodes-results.json | sort -u | head -40
+            exit 1
+          fi
+          flaky=$(jq -er '.stats.flaky | numbers' custom-nodes-results.json)
+          echo "flaky tests: $flaky"
+          if [ "$flaky" != "0" ]; then
+            echo "::error::$flaky test(s) passed only after retry - flaky results are not acceptable in the gating job"
+            jq -r '.. | objects
+                     | select(has("title") and has("tests"))
+                     | select(any(.tests[]?; .status == "flaky"))
+                     | .title' custom-nodes-results.json | sort -u | head -40
+            exit 1
+          fi
+
+      # Renders what ran and what it found - to the job log as an aligned
+      # table and to the run's Summary panel as markdown - so a dispatch
+      # answers "which branch, against what, with what verdict" without
+      # opening the artifact.
+      - name: Publish results table
+        if: always()
+        shell: bash
+        env:
+          BRANCH_TESTED: ${{ inputs.branch || github.ref_name }}
+          COMFYUI_REF_USED: ${{ inputs.comfyui_ref || 'b08e6cf35fac50d3ca8470dffb3f9a1fbb7187d2' }}
+          GREP_FILTER: ${{ inputs.grep }}
+          S14_ENABLED: ${{ (github.event_name != 'workflow_dispatch' || inputs.enable_s14) && '1' || '0' }}
+          S15_ENABLED: ${{ (github.event_name != 'workflow_dispatch' || inputs.enable_s15) && '1' || '0' }}
+        run: python3 scripts/cicd/custom-nodes-summary.py
+
+      - name: Upload Playwright report and raw diagnostics
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: playwright-report-custom-nodes
+          path: |
+            playwright-report/
+            custom-nodes-results.json
+            custom-nodes.log
+          retention-days: 7
+          if-no-files-found: warn

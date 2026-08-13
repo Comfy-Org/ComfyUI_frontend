@@ -117,23 +117,11 @@ class NodeSlotReference {
         if (!node) throw new Error(`Node ${id} not found.`)
 
         const rawPos = node.getConnectionPos(type === 'input', index)
-        const convertedPos =
-          window.app!.canvas.ds!.convertOffsetToCanvas(rawPos)
-
-        // Debug logging - convert Float64Arrays to regular arrays for visibility
-        console.warn(
-          `NodeSlotReference debug for ${type} slot ${index} on node ${id}:`,
-          {
-            nodePos: [node.pos[0], node.pos[1]],
-            nodeSize: [node.size[0], node.size[1]],
-            rawConnectionPos: [rawPos[0], rawPos[1]],
-            convertedPos: [convertedPos[0], convertedPos[1]],
-            currentGraphType:
-              'inputNode' in window.app!.canvas.graph! ? 'Subgraph' : 'LGraph'
-          }
-        )
-
-        return convertedPos
+        // page.mouse needs page coords. canvasPosToClientPos applies the
+        // canvas transform AND the canvas element's client offset, so it
+        // survives pack JS injecting chrome above the canvas (e.g. rgthree's
+        // progress bar shifting it off (0,0)).
+        return window.app!.canvasPosToClientPos([rawPos[0], rawPos[1]])
       },
       [this.type, this.node.id, this.index] as const
     )
