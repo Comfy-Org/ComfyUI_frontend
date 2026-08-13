@@ -23,7 +23,13 @@ import { pathToFileURL } from 'node:url'
  *
  * `destination` names the published member; `null` means nothing receives it
  * yet. Kept beside the patterns so a capability landing updates one line.
+ *
+ * `REFUSED(reason)` is a third state, and the distinction earns its keep: a
+ * refusal is a decision that has already been taken, so it is not work. Ranking
+ * refusals beside unbuilt capabilities put patching the canvas renderer at the
+ * top of the list on 23 packs, where it read as the most urgent thing to build.
  */
+const REFUSED = (reason) => `REFUSED — ${reason}`
 const CONSTRUCTS = [
   // ── Registration and lifecycle ─────────────────────────────────────
   ['beforeRegisterNodeDef', /\bbeforeRegisterNodeDef\b/, 'defs.extend'],
@@ -89,20 +95,22 @@ const CONSTRUCTS = [
   [
     'LGraphCanvas internals',
     /\bLGraphCanvas\.prototype\b|\bcanvas\.draw\s*=|\bonDrawBackground\b/,
-    null
+    REFUSED('the renderer is ours to replace')
   ],
   [
     'canvas selection',
     /\bselected_nodes\b|\bselectedItems\b/,
     'graph.selection'
   ],
-  // Polling a draw callback for structural change. Nothing receives it: there
-  // is no graph-level change event, only per-widget and per-connection ones.
-  [
-    'graph structure polling',
-    /\b_groups\b|\bgraph\.(?:_nodes|_version)\b/,
-    null
-  ],
+  // These three were one row reading "graph structure polling — NONE", which
+  // put them at the top of the work list on 24 packs. They are not one thing.
+  // Enumerating the graph is 78 of those 74-odd files and has been served since
+  // the first release; only the version poll has nothing to receive it, and
+  // that is four files. Ranking by a label rather than by a construct sent the
+  // programme after a capability almost nobody was asking for.
+  ['graph node enumeration', /\bgraph\.(?:_nodes)\b/, 'graph.nodes()'],
+  ['group enumeration', /\b_groups\b/, 'graph.groups()'],
+  ['graph version polling', /\bgraph\._version\b/, null],
   [
     'ContextMenu / slot menu',
     /\bContextMenu\b|\bgetExtraMenuOptions\b|\bshowConnectionMenu\b/,
@@ -111,20 +119,20 @@ const CONSTRUCTS = [
   [
     'pointer gestures on canvas',
     /\bonMouseDown\b|\bonMouseMove\b|\bonMouseUp\b/,
-    null
+    'widgets.canvas onDown/onMove/onUp'
   ],
 
   // ── App and wire format ────────────────────────────────────────────
-  ['graphToPrompt', /\bgraphToPrompt\b/, null],
-  ['queuePrompt', /\bqueuePrompt\b/, null],
+  ['graphToPrompt', /\bgraphToPrompt\b/, REFUSED('reading or editing the built prompt')],
+  ['queuePrompt', /\bqueuePrompt\b/, 'comfy.queue'],
   [
     'api.addEventListener',
     /\bapi\.addEventListener\s*\(/,
     'b.onPreview (previews only)'
   ],
-  ['api.fetchApi', /\bapi\.fetchApi\s*\(/, null],
-  ['app.extensionManager', /\bextensionManager\b/, null],
-  ['settings get/set', /\bsetting\s*\.\s*(?:get|set)\b|\baddSetting\b/, null],
+  ['api.fetchApi', /\bapi\.fetchApi\s*\(/, 'comfy.backend'],
+  ['app.extensionManager', /\bextensionManager\b/, 'comfy.commands + comfy.ui'],
+  ['settings get/set', /\bsetting\s*\.\s*(?:get|set)\b|\baddSetting\b/, 'comfy.settings'],
   ['node type replacement', /\brecreateNode\b|\breplaceNode\b/, null]
 ]
 
@@ -211,6 +219,8 @@ if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
   }
 
   console.error(`Scanned ${files} JS file(s) across ${packs} pack(s).`)
+  const refused = (s) => s.destination?.startsWith('REFUSED')
   show('NO DESTINATION — these are the real gaps', (s) => !s.destination)
-  show('Has a destination', (s) => s.destination)
+  show('Refused by design — not work', refused)
+  show('Has a destination', (s) => s.destination && !refused(s))
 }
