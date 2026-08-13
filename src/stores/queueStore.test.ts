@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
@@ -190,6 +188,29 @@ describe('TaskItemImpl', () => {
     })
   })
 
+  it('should recognize text files saved under the files output key', () => {
+    const job = createHistoryJob(0, 'job-id')
+    const taskItem = new TaskItemImpl(job, {
+      'node-1': {
+        files: [
+          {
+            filename: 'result.txt',
+            type: 'output',
+            subfolder: ''
+          }
+        ]
+      }
+    })
+
+    const output = taskItem.flatOutputs[0]
+
+    expect(output.isText).toBe(true)
+    expect(output.isImage).toBe(false)
+    expect(output.isVideo).toBe(false)
+    expect(output.isAudio).toBe(false)
+    expect(output.supportsPreview).toBe(true)
+  })
+
   it.skip('should parse text outputs', () => {
     const job: JobListItem = {
       ...createHistoryJob(0, 'text-job'),
@@ -265,9 +286,7 @@ describe('useQueueStore', () => {
   let store: ReturnType<typeof useQueueStore>
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useQueueStore()
-    vi.clearAllMocks()
   })
 
   const mockGetQueue = vi.mocked(api.getQueue)

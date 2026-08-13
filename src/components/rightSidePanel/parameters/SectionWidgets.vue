@@ -18,6 +18,7 @@ import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromot
 import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { DraggableList } from '@/scripts/ui/draggableList'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -31,7 +32,7 @@ import { getWidgetDefaultValue } from '@/utils/widgetUtil'
 import type { WidgetValue } from '@/utils/widgetUtil'
 
 import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
-import { HideLayoutFieldKey } from '@/types/widgetTypes'
+import { HideLayoutFieldKey, WidgetHeightKey } from '@/types/widgetTypes'
 
 import { GetNodeParentGroupKey } from '../shared'
 import WidgetItem from './WidgetItem.vue'
@@ -135,6 +136,7 @@ watchDebounced(
 onBeforeUnmount(() => draggableList.value?.dispose())
 
 provide(HideLayoutFieldKey, true)
+provide(WidgetHeightKey, 'h-7')
 
 const canvasStore = useCanvasStore()
 const executionErrorStore = useExecutionErrorStore()
@@ -223,6 +225,11 @@ const canShowLocateButton = computed(
 function handleLocateNode() {
   if (!targetNode.value || !canvasStore.canvas) return
 
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'right_side_panel_locate_node_clicked',
+    element_group: 'right_side_panel_nodes'
+  })
+
   const graphNode = canvasStore.canvas.graph?.getNodeById(targetNode.value.id)
   if (graphNode) {
     canvasStore.canvas.animateToBounds(graphNode.boundingRect)
@@ -283,6 +290,11 @@ function setWidgetValue(
 }
 
 function handleResetAllWidgets() {
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'right_side_panel_reset_all_parameters_clicked',
+    element_group: 'right_side_panel_nodes'
+  })
+
   for (const { widget, node: widgetNode } of widgetsProp) {
     const spec = nodeDefStore.getInputSpecForWidget(widgetNode, widget.name)
     const defaultValue = getWidgetDefaultValue(spec)
@@ -389,23 +401,22 @@ defineExpose({
 
       <div
         ref="widgetsContainer"
+        data-testid="section-widgets-list"
         class="relative space-y-2 rounded-lg px-4 pt-1"
       >
-        <TransitionGroup name="list-scale">
-          <WidgetItem
-            v-for="{ widget, node } in widgets"
-            :key="getStableWidgetRenderKey(widget)"
-            :widget="widget"
-            :node="node"
-            :is-draggable="isDraggable"
-            :hidden-favorite-indicator="hiddenFavoriteIndicator"
-            :show-node-name="showNodeName"
-            :parents="parents"
-            :is-shown-on-parents="isWidgetShownOnParents(node, widget)"
-            @update:widget-value="handleWidgetValueUpdate(node, widget, $event)"
-            @reset-to-default="handleWidgetReset(node, widget, $event)"
-          />
-        </TransitionGroup>
+        <WidgetItem
+          v-for="{ widget, node } in widgets"
+          :key="getStableWidgetRenderKey(widget)"
+          :widget="widget"
+          :node="node"
+          :is-draggable="isDraggable"
+          :hidden-favorite-indicator="hiddenFavoriteIndicator"
+          :show-node-name="showNodeName"
+          :parents="parents"
+          :is-shown-on-parents="isWidgetShownOnParents(node, widget)"
+          @update:widget-value="handleWidgetValueUpdate(node, widget, $event)"
+          @reset-to-default="handleWidgetReset(node, widget, $event)"
+        />
       </div>
     </PropertiesAccordionItem>
   </div>

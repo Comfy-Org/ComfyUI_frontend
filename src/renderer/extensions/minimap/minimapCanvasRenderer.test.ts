@@ -12,6 +12,7 @@ import {
   createMockLLink,
   createMockNodeOutputSlot
 } from '@/utils/__tests__/litegraphTestUtils'
+import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 
 const mockUseColorPaletteStore = vi.hoisted(() => vi.fn())
@@ -24,9 +25,9 @@ vi.mock('@/utils/colorUtil', () => ({
 }))
 
 vi.mock('@/stores/executionStore', () => ({
-  useExecutionStore: vi.fn().mockReturnValue({
+  useExecutionStore: vi.fn(() => ({
     nodeProgressStates: {}
-  })
+  }))
 }))
 
 describe('minimapCanvasRenderer', () => {
@@ -35,8 +36,6 @@ describe('minimapCanvasRenderer', () => {
   let mockGraph: LGraph
 
   beforeEach(() => {
-    vi.clearAllMocks()
-
     mockContext = {
       clearRect: vi.fn(),
       fillRect: vi.fn(),
@@ -262,14 +261,14 @@ describe('minimapCanvasRenderer', () => {
       createMockNodeOutputSlot({
         name: 'output',
         type: 'number',
-        links: [1],
+        links: [toLinkId(1)],
         boundingRect: new Float64Array([0, 0, 10, 10])
       })
     ]
 
     mockGraph.links = createMockLinks([
       createMockLLink({
-        id: 1,
+        id: toLinkId(1),
         target_id: toNodeId(2),
         origin_slot: 0,
         target_slot: 0

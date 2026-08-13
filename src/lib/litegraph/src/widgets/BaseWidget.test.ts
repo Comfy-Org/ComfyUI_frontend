@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromAny } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -33,7 +31,6 @@ describe('BaseWidget store integration', () => {
   let store: ReturnType<typeof useWidgetValueStore>
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useWidgetValueStore()
     graph = new LGraph()
     node = new LGraphNode('TestNode')
@@ -235,6 +232,21 @@ describe('BaseWidget store integration', () => {
         widgetId(graph.id, toNodeId(1), 'testWidget')
       )
       expect(state?.disabled).toBe(false)
+    })
+  })
+
+  describe('un-keyable widget id (empty name)', () => {
+    it('keeps local state usable when registration is declined', () => {
+      const widget = createTestWidget(node, { name: '', value: 55 })
+
+      expect(() => widget.setNodeId(toNodeId(1))).not.toThrow()
+      expect(
+        store.getWidget(widgetId(graph.id, toNodeId(1), ''))
+      ).toBeUndefined()
+
+      expect(widget.value).toBe(55)
+      widget.value = 88
+      expect(widget.value).toBe(88)
     })
   })
 })

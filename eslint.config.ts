@@ -101,8 +101,10 @@ export default defineConfig([
         ...commonParserOptions,
         projectService: {
           allowDefaultProject: [
+            'packages/object-info-parser/vitest.config.ts',
             'vite.electron.config.mts',
-            'vite.types.config.mts'
+            'vite.types.config.mts',
+            'vitest.timer.setup.ts'
           ]
         }
       }
@@ -337,6 +339,15 @@ export default defineConfig([
     }
   },
   {
+    // Devtools extension scripts are loaded by ComfyUI in the browser.
+    files: ['tools/devtools/web/**/*.js'],
+    languageOptions: {
+      globals: {
+        ...globals.browser
+      }
+    }
+  },
+  {
     files: ['scripts/**/*.js'],
     languageOptions: {
       globals: {
@@ -346,6 +357,14 @@ export default defineConfig([
     rules: {
       '@typescript-eslint/no-floating-promises': 'off',
       'no-console': 'off'
+    }
+  },
+  {
+    files: ['tools/devtools/web/**/*.js'],
+    languageOptions: {
+      globals: {
+        ...globals.browser
+      }
     }
   },
 
@@ -420,6 +439,14 @@ export default defineConfig([
       '@intlify/vue-i18n/no-raw-text': 'off'
     }
   },
+  // Astro exposes virtual modules (astro:content, astro:assets, ...) that the
+  // TypeScript resolver cannot see but are valid at build time.
+  {
+    files: ['apps/website/**/*.{ts,mts,vue}'],
+    rules: {
+      'import-x/no-unresolved': ['error', { ignore: ['^astro:'] }]
+    }
+  },
   // i18n import enforcement
   // Vue components must use the useI18n() composable, not the global t/d/st/te
   {
@@ -489,6 +516,12 @@ export default defineConfig([
           ]
         }
       ]
+    }
+  },
+  {
+    files: ['src/components/searchbox/**/*.vue'],
+    rules: {
+      'vue/no-v-html': 'error'
     }
   },
   // Browser tests must use comfyPageFixture, not raw @playwright/test test

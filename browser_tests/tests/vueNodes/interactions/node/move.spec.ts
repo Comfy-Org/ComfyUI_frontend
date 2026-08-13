@@ -12,14 +12,14 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
   const getHeaderPos = async (
     comfyPage: ComfyPage,
     title: string
-  ): Promise<{ x: number; y: number; width: number; height: number }> => {
+  ): Promise<{ x: number; y: number }> => {
     const box = await comfyPage.vueNodes
       .getNodeByTitle(title)
       .getByTestId('node-title')
       .first()
       .boundingBox()
     if (!box) throw new Error(`${title} header not found`)
-    return box
+    return { x: box.x + box.width / 2, y: box.y + box.height / 2 }
   }
 
   const getLoadCheckpointHeaderPos = async (comfyPage: ComfyPage) =>
@@ -84,29 +84,27 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
     await comfyPage.idleFrames(2)
   }
 
-  test('should allow moving nodes by dragging', async ({ comfyPage }) => {
-    const loadCheckpointHeaderPos = await getLoadCheckpointHeaderPos(comfyPage)
-    await comfyPage.canvasOps.dragAndDrop(loadCheckpointHeaderPos, {
-      x: 256,
-      y: 256
-    })
+  test('should allow moving nodes by dragging', async ({
+    comfyPage,
+    comfyMouse
+  }) => {
+    const initialHeaderPos = await getLoadCheckpointHeaderPos(comfyPage)
+    const node = await comfyPage.vueNodes.getFixtureByTitle('Load Checkpoint')
+    await comfyMouse.dragElementBy(node.header, { x: 100, y: 100 })
 
     const newHeaderPos = await getLoadCheckpointHeaderPos(comfyPage)
-    await expectPosChanged(loadCheckpointHeaderPos, newHeaderPos)
+    await expectPosChanged(initialHeaderPos, newHeaderPos)
   })
 
   test('should not move node when pointer moves less than drag threshold', async ({
-    comfyPage
+    comfyPage,
+    comfyMouse
   }) => {
     const headerPos = await getLoadCheckpointHeaderPos(comfyPage)
 
     // Move only 2px — below the 3px drag threshold in useNodePointerInteractions
-    await comfyPage.page.mouse.move(headerPos.x, headerPos.y)
-    await comfyPage.page.mouse.down()
-    await comfyPage.page.mouse.move(headerPos.x + 2, headerPos.y + 1, {
-      steps: 5
-    })
-    await comfyPage.page.mouse.up()
+    const node = await comfyPage.vueNodes.getFixtureByTitle('Load Checkpoint')
+    await comfyMouse.dragElementBy(node.header, { x: 2, y: 1 })
     await comfyPage.nextFrame()
 
     const afterPos = await getLoadCheckpointHeaderPos(comfyPage)
@@ -295,14 +293,12 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
       await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(3)
 
       // Re-fetch drag source after clicks in case the header reflowed.
-      const dragSrc = await getHeaderPos(comfyPage, 'Load Checkpoint')
-      const centerX = dragSrc.x + dragSrc.width / 2
-      const centerY = dragSrc.y + dragSrc.height / 2
+      const headerPos = await getHeaderPos(comfyPage, 'Load Checkpoint')
 
-      await comfyPage.page.mouse.move(centerX, centerY)
+      await comfyPage.page.mouse.move(headerPos.x, headerPos.y)
       await comfyPage.page.mouse.down()
       await comfyPage.nextFrame()
-      await comfyPage.page.mouse.move(centerX + dx, centerY + dy, {
+      await comfyPage.page.mouse.move(headerPos.x + dx, headerPos.y + dy, {
         steps: 20
       })
       await comfyPage.page.mouse.up()

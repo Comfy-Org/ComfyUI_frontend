@@ -1,10 +1,16 @@
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { Positionable } from '@/lib/litegraph/src/interfaces'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type {
+  IBaseWidget,
+  IWidgetOptions
+} from '@/lib/litegraph/src/types/widgets'
 import { toNodeId } from '@/types/nodeId'
 import { describe, expect, it, beforeEach } from 'vitest'
 import {
+  computedSectionDataList,
   flatAndCategorizeSelectedItems,
   searchWidgets,
   searchWidgetsAndNodes
@@ -126,6 +132,51 @@ describe('searchWidgetsAndNodes', () => {
         widgets: [matchingWidget.widgets[1]]
       }
     ])
+  })
+})
+
+describe('computedSectionDataList', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia())
+  })
+
+  function createWidget(
+    name: string,
+    options: IWidgetOptions = {}
+  ): IBaseWidget {
+    return { name, type: 'number', options, y: 0 } as IBaseWidget
+  }
+
+  it('omits hideInPanel widgets while keeping the rest on the node', () => {
+    const node = new LGraphNode('Load3D')
+    node.widgets = [
+      createWidget('seed'),
+      createWidget('viewport', { hideInPanel: true })
+    ]
+
+    const { widgetsSectionDataList } = computedSectionDataList([node])
+    const shownNames = widgetsSectionDataList.value[0].widgets.map(
+      ({ widget }) => widget.name
+    )
+
+    expect(shownNames).toEqual(['seed'])
+  })
+
+  it('hides canvasOnly, hidden, and hideInPanel widgets from the panel', () => {
+    const node = new LGraphNode('Load3D')
+    node.widgets = [
+      createWidget('seed'),
+      createWidget('preview', { canvasOnly: true }),
+      createWidget('internal', { hidden: true }),
+      createWidget('viewport', { hideInPanel: true })
+    ]
+
+    const { widgetsSectionDataList } = computedSectionDataList([node])
+    const shownNames = widgetsSectionDataList.value[0].widgets.map(
+      ({ widget }) => widget.name
+    )
+
+    expect(shownNames).toEqual(['seed'])
   })
 })
 

@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -8,6 +6,7 @@ import {
   LGraphEventMode,
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
+import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 
 import {
@@ -18,7 +17,6 @@ import {
 } from './__fixtures__/subgraphHelpers'
 
 beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
   resetSubgraphFixtureState()
 })
 
@@ -57,7 +55,7 @@ describe('ExecutableNodeDTO Creation', () => {
     const node = new LGraphNode('Test Node')
     node.addInput('input1', 'number')
     node.addInput('input2', 'string')
-    node.inputs[0].link = 123 // Simulate connected input
+    node.inputs[0].link = toLinkId(123) // Simulate connected input
     graph.add(node)
 
     const dto = new ExecutableNodeDTO(node, [], new Map(), undefined)
@@ -259,10 +257,6 @@ describe('ExecutableNodeDTO Output Resolution', () => {
 })
 
 describe('Muted node output resolution', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('should return undefined for NEVER mode nodes', () => {
     const graph = new LGraph()
     const node = new LGraphNode('Muted Node')
@@ -389,10 +383,6 @@ describe('ALWAYS mode node output resolution', () => {
 })
 
 describe('Virtual node resolveVirtualOutput', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('should resolve through resolveVirtualOutput when implemented', () => {
     const graph = new LGraph()
 
@@ -506,7 +496,7 @@ describe('ExecutableNodeDTO Properties', () => {
     const graph = new LGraph()
     const node = new LGraphNode('Test Node')
     node.addInput('testInput', 'number')
-    node.inputs[0].link = 999 // Simulate connection
+    node.inputs[0].link = toLinkId(999) // Simulate connection
     graph.add(node)
 
     const dto = new ExecutableNodeDTO(node, [], new Map(), undefined)

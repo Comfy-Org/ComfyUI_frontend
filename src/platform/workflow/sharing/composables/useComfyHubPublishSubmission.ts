@@ -74,14 +74,21 @@ export function useComfyHubPublishSubmission() {
       await workflowShareService.getShareableAssets()
     )
 
+    const keepsExistingThumbnail =
+      formData.existingThumbnailType === formData.thumbnailType
     const thumbnailFile = resolveThumbnailFile(formData)
     const thumbnailTokenOrUrl = thumbnailFile
       ? await uploadFileAndGetToken(thumbnailFile)
-      : undefined
+      : keepsExistingThumbnail
+        ? (formData.thumbnailUrl ?? undefined)
+        : undefined
     const thumbnailComparisonTokenOrUrl =
-      formData.thumbnailType === 'imageComparison' &&
-      formData.comparisonAfterFile
-        ? await uploadFileAndGetToken(formData.comparisonAfterFile)
+      formData.thumbnailType === 'imageComparison'
+        ? formData.comparisonAfterFile
+          ? await uploadFileAndGetToken(formData.comparisonAfterFile)
+          : keepsExistingThumbnail
+            ? (formData.comparisonAfterUrl ?? undefined)
+            : undefined
         : undefined
 
     const sampleImageTokensOrUrls =

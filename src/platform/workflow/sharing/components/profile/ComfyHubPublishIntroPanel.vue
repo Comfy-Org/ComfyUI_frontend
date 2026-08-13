@@ -15,10 +15,18 @@
     <!-- Content -->
     <section class="flex flex-col items-center gap-4 px-4 pt-4 pb-6">
       <h2 class="m-0 text-base font-semibold text-base-foreground">
-        {{ $t('comfyHubProfile.introTitle') }}
+        {{
+          isUpdate
+            ? $t('comfyHubProfile.updateIntroTitle')
+            : $t('comfyHubProfile.introTitle')
+        }}
       </h2>
       <p class="m-0 text-center text-sm text-muted-foreground">
-        {{ $t('comfyHubProfile.introDescription') }}
+        {{
+          isUpdate
+            ? $t('comfyHubProfile.updateIntroDescription')
+            : $t('comfyHubProfile.introDescription')
+        }}
       </p>
       <Button
         variant="primary"
@@ -26,7 +34,11 @@
         class="mt-2 w-full"
         @click="onCreateProfile"
       >
-        {{ $t('comfyHubProfile.startPublishingButton') }}
+        {{
+          isUpdate
+            ? $t('comfyHubProfile.startUpdatingButton')
+            : $t('comfyHubProfile.startPublishingButton')
+        }}
       </Button>
     </section>
   </div>
@@ -38,10 +50,12 @@ import Button from '@/components/ui/button/Button.vue'
 const {
   onCreateProfile,
   onClose,
-  showCloseButton = true
+  showCloseButton = true,
+  isUpdate = false
 } = defineProps<{
   onCreateProfile: () => void
   onClose: () => void
   showCloseButton?: boolean
+  isUpdate?: boolean
 }>()
 </script>

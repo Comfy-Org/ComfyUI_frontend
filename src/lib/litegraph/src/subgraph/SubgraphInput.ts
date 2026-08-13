@@ -1,5 +1,6 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LLink } from '@/lib/litegraph/src/LLink'
+import { toLinkId } from '@/types/linkId'
 import type { RerouteId } from '@/lib/litegraph/src/Reroute'
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { SubgraphInputEventMap } from '@/lib/litegraph/src/infrastructure/SubgraphInputEventMap'
@@ -99,8 +100,11 @@ export class SubgraphInput extends SubgraphSlot {
       this.events.dispatch('input-connected', { input: slot })
     }
 
+    const linkId = toLinkId(Number(subgraph.state.lastLinkId) + 1)
+    subgraph.state.lastLinkId = linkId
+
     const link = new LLink(
-      ++subgraph.state.lastLinkId,
+      linkId,
       slot.type,
       this.parent.id,
       this.parent.slots.indexOf(this),

@@ -35,13 +35,13 @@ const inputNodeIds = computed(() => {
 })
 
 const accessibleNodeErrors = computed(() =>
-  Object.keys(executionErrorStore.lastNodeErrors ?? {}).filter((k) =>
+  Object.keys(executionErrorStore.surfacedNodeErrors ?? {}).filter((k) =>
     inputNodeIds.value.has(k)
   )
 )
 const accessibleErrors = computed(() =>
   accessibleNodeErrors.value.flatMap((k) => {
-    const nodeError = executionErrorStore.lastNodeErrors?.[k]
+    const nodeError = executionErrorStore.surfacedNodeErrors?.[k]
     if (!nodeError) return []
 
     return nodeError.errors.flatMap((error) => {

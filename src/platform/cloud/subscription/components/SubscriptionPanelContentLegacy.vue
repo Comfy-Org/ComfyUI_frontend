@@ -12,7 +12,7 @@
               <span class="text-base">{{ $t('subscription.perMonth') }}</span>
             </div>
             <div
-              v-if="isActiveSubscription"
+              v-if="canAccessSubscriptionFeatures"
               class="text-sm text-text-secondary"
             >
               <template v-if="isCancelled">
@@ -33,28 +33,26 @@
           </div>
 
           <Button
-            v-if="isActiveSubscription && !isFreeTier"
+            v-if="canAccessSubscriptionFeatures && !isFreeTier"
             variant="secondary"
             class="ml-auto rounded-lg bg-interface-menu-component-surface-selected px-4 py-2 text-sm font-normal text-text-primary"
-            @click="
-              async () => {
-                await authActions.accessBillingPortal()
-              }
-            "
+            @click="handleManageSubscription"
           >
             {{ $t('subscription.manageSubscription') }}
           </Button>
           <Button
-            v-if="isActiveSubscription"
+            v-if="canAccessSubscriptionFeatures"
             variant="primary"
             class="rounded-lg px-4 py-2 text-sm font-normal text-text-primary"
-            @click="showSubscriptionDialog"
+            @click="
+              showSubscriptionDialog({ reason: 'settings_billing_panel' })
+            "
           >
             {{ $t('subscription.upgradePlan') }}
           </Button>
 
           <SubscribeButton
-            v-if="!isActiveSubscription"
+            v-if="!canAccessSubscriptionFeatures"
             :label="$t('subscription.subscribeNow')"
             size="sm"
             :fluid="false"
@@ -123,6 +121,7 @@ import { useAuthActions } from '@/composables/auth/useAuthActions'
 import CreditsTile from '@/platform/cloud/subscription/components/CreditsTile.vue'
 import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
+import { useTelemetry } from '@/platform/telemetry'
 import { useSubscriptionActions } from '@/platform/cloud/subscription/composables/useSubscriptionActions'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import {
@@ -137,7 +136,7 @@ const authActions = useAuthActions()
 const { t, n } = useI18n()
 
 const {
-  isActiveSubscription,
+  canAccessSubscriptionFeatures,
   isCancelled,
   isFreeTier,
   formattedRenewalDate,
@@ -157,6 +156,18 @@ const tierKey = computed(() => {
 const tierPrice = computed(() =>
   getTierPrice(tierKey.value, isYearlySubscription.value)
 )
+
+// The portal is the only place a legacy user can cancel (in-app UI already
+// covers plan changes), so this click is the closest observable cancel-intent
+// signal on the mainline path.
+async function handleManageSubscription() {
+  useTelemetry()?.trackSubscriptionCancellation('flow_opened', {
+    source: 'manage_subscription_button',
+    current_tier: subscriptionTier.value?.toLowerCase(),
+    cycle: isYearlySubscription.value ? 'yearly' : 'monthly'
+  })
+  await authActions.accessBillingPortal()
+}
 
 const tierBenefits = computed((): TierBenefit[] =>
   getCommonTierBenefits(tierKey.value, t, n)

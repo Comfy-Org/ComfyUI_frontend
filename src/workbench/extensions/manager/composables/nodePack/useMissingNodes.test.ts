@@ -81,8 +81,6 @@ describe('useMissingNodes', () => {
   const mockIsPackInstalled = vi.fn()
 
   beforeEach(() => {
-    vi.clearAllMocks()
-
     // Default setup: pack-3 is installed, others are not
     mockIsPackInstalled.mockImplementation((id: string) => id === 'pack-3')
 

@@ -47,10 +47,12 @@ test.describe('Load3D', () => {
       await load3d.openMenu()
 
       await expect(load3d.getMenuCategory('Scene')).toBeVisible()
-      await expect(load3d.getMenuCategory('Model')).toBeVisible()
+      await expect(load3d.getMenuCategory('3D Model')).toBeVisible()
       await expect(load3d.getMenuCategory('Camera')).toBeVisible()
       await expect(load3d.getMenuCategory('Light')).toBeVisible()
-      await expect(load3d.getMenuCategory('Export')).toBeVisible()
+      await expect(load3d.getMenuCategory('HDRI')).toBeVisible()
+      await expect(load3d.getMenuCategory('Gizmo')).toBeVisible()
+      await expect(load3d.exportButton).toBeVisible()
 
       await expect(load3d.node).toHaveScreenshot(
         'load3d-controls-menu-open.png',
@@ -253,7 +255,7 @@ test.describe('Load3D', () => {
     }
   )
 
-  test('Recording controls show stop/export/clear buttons after a recording', async ({
+  test('Recording controls collapse into a duration chip with a menu after a recording', async ({
     comfyPage,
     load3d
   }) => {
@@ -265,20 +267,25 @@ test.describe('Load3D', () => {
       await expect(load3d.stopRecordingButton).toBeVisible()
     })
 
-    await test.step('Stop recording surfaces export/clear controls and a 1s duration', async () => {
+    await test.step('Stop recording surfaces the duration chip with a 1s duration', async () => {
       // Record for 1s wall-clock so the duration display settles on 00:01.
       await comfyPage.delay(1000)
       await load3d.stopRecordingButton.click()
-      await expect(load3d.recordingButton).toBeVisible()
-      await expect(load3d.exportRecordingButton).toBeVisible()
-      await expect(load3d.clearRecordingButton).toBeVisible()
-      await expect(load3d.recordingDuration).toHaveText('00:01')
+      await expect(load3d.recordingMenuButton).toBeVisible()
+      await expect(load3d.recordingMenuButton).toHaveText('00:01')
     })
 
-    await test.step('Clear recording removes export and clear controls', async () => {
-      await load3d.clearRecordingButton.click()
-      await expect(load3d.exportRecordingButton).toHaveCount(0)
-      await expect(load3d.clearRecordingButton).toHaveCount(0)
+    await test.step('Chip menu offers download, re-record and delete actions', async () => {
+      await load3d.openRecordingMenu()
+      await expect(load3d.downloadRecordingMenuItem).toBeVisible()
+      await expect(load3d.startNewRecordingMenuItem).toBeVisible()
+      await expect(load3d.deleteRecordingMenuItem).toBeVisible()
+    })
+
+    await test.step('Deleting the recording restores the record button', async () => {
+      await load3d.deleteRecordingMenuItem.click()
+      await expect(load3d.recordingMenuButton).toHaveCount(0)
+      await expect(load3d.recordingButton).toBeVisible()
     })
   })
 })

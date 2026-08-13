@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { markRaw } from 'vue'
 
 import type { NodeId } from '@/types/nodeId'
+import type { SlotId } from '@/types/slotId'
 
 type SlotEntry = {
   el: HTMLElement
@@ -12,7 +13,7 @@ type SlotEntry = {
 
 type NodeEntry = {
   nodeId: NodeId
-  slots: Map<string, SlotEntry>
+  slots: Map<SlotId, SlotEntry>
   stopWatch?: () => void
 }
 
@@ -28,7 +29,7 @@ export const useNodeSlotRegistryStore = defineStore('nodeSlotRegistry', () => {
     if (!node) {
       node = {
         nodeId,
-        slots: markRaw(new Map<string, SlotEntry>())
+        slots: markRaw(new Map<SlotId, SlotEntry>())
       }
       registry.set(nodeId, node)
     }

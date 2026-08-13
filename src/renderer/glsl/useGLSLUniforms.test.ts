@@ -1,13 +1,22 @@
 import { fromAny } from '@total-typescript/shoehorn'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
+import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 
 import {
   extractUniformSources,
   toNumber
 } from '@/renderer/glsl/useGLSLUniforms'
+
+const { createPromotedHostWidgetIdLookup } = vi.hoisted(() => ({
+  createPromotedHostWidgetIdLookup: vi.fn()
+}))
+
+vi.mock('@/core/graph/subgraph/promotionUtils', () => ({
+  createPromotedHostWidgetIdLookup
+}))
 
 function createMockSubgraph(
   links: Record<number, { origin_id: number; origin_slot: number }>,
@@ -96,6 +105,42 @@ describe('extractUniformSources', () => {
 
     choiceWidget.value = 'Reds'
     expect(result.ints[0].directValue()).toBe(1)
+  })
+
+  it('leaves hostWidgetId undefined when no subgraphNode is given', () => {
+    const glslNode = fromAny<LGraphNode, unknown>({
+      inputs: [{ name: 'curves.u_curve0', link: 1 }]
+    })
+    const subgraph = createMockSubgraph(
+      { 1: { origin_id: 10, origin_slot: 0 } },
+      { 10: { id: 10, widgets: [{ name: 'curve', value: {} }] } }
+    )
+
+    const result = extractUniformSources(glslNode, subgraph)
+
+    expect(result.curves[0].hostWidgetId).toBeUndefined()
+  })
+
+  it('resolves hostWidgetId from the promoted host input when subgraphNode is given', () => {
+    createPromotedHostWidgetIdLookup.mockReturnValueOnce(
+      (sourceNodeId: number, widgetName: string) =>
+        sourceNodeId === 10 && widgetName === 'curve'
+          ? 'graph:99:curve0'
+          : undefined
+    )
+
+    const glslNode = fromAny<LGraphNode, unknown>({
+      inputs: [{ name: 'curves.u_curve0', link: 1 }]
+    })
+    const subgraph = createMockSubgraph(
+      { 1: { origin_id: 10, origin_slot: 0 } },
+      { 10: { id: 10, widgets: [{ name: 'curve', value: {} }] } }
+    )
+    const subgraphNode = fromAny<SubgraphNode, unknown>({ id: 99 })
+
+    const result = extractUniformSources(glslNode, subgraph, subgraphNode)
+
+    expect(result.curves[0].hostWidgetId).toBe('graph:99:curve0')
   })
 })
 

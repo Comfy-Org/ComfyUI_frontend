@@ -9,18 +9,23 @@ import {
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { getComfyApiBaseUrl, getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
-import { fetchWithUnifiedRemint } from '@/platform/auth/unified/remintRetry'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
-import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
-import type { CheckoutAttributionMetadata } from '@/platform/telemetry/types'
+import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import type {
+  CheckoutAttributionMetadata,
+  ResubscribeClickMetadata
+} from '@/platform/telemetry/types'
+import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import { useDialogService } from '@/services/dialogService'
 import { TIER_TO_KEY } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { operations } from '@/types/comfyRegistryTypes'
+import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 import {
   PENDING_SUBSCRIPTION_CHECKOUT_EVENT,
   PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
@@ -35,18 +40,14 @@ type CloudSubscriptionCheckoutResponse = NonNullable<
   operations['createCloudSubscriptionCheckout']['responses']['201']['content']['application/json']
 >
 
-export type CloudSubscriptionStatusResponse = NonNullable<
-  operations['GetCloudSubscriptionStatus']['responses']['200']['content']['application/json']
->
-
 const PENDING_SUBSCRIPTION_CHECKOUT_RETRY_DELAYS_MS = [3000, 10000, 30000]
 
 function useSubscriptionInternal() {
-  const subscriptionStatus = ref<CloudSubscriptionStatusResponse | null>(null)
+  const subscriptionStatus = ref<BillingStatusResponse | null>(null)
   const telemetry = useTelemetry()
   const isInitialized = ref(false)
 
-  const isSubscribedOrIsNotCloud = computed(() => {
+  const canAccessSubscriptionFeatures = computed(() => {
     if (!isCloud || !window.__CONFIG__?.subscription_required) return true
 
     return subscriptionStatus.value?.is_active ?? false
@@ -55,14 +56,14 @@ function useSubscriptionInternal() {
   const { showSubscriptionRequiredDialog } = useDialogService()
 
   const authStore = useAuthStore()
-  const { getAuthHeader } = authStore
-  const { flags } = useFeatureFlags()
+  const workspaceStore = useTeamWorkspaceStore()
+  const { getAuthHeader, fetchWithCustomerRecovery } = authStore
   const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
   const { isLoggedIn } = useCurrentUser()
 
   const isCancelled = computed(() => {
-    return !!subscriptionStatus.value?.end_date
+    return !!subscriptionStatus.value?.cancel_at
   })
 
   const formattedRenewalDate = computed(() => {
@@ -78,9 +79,9 @@ function useSubscriptionInternal() {
   })
 
   const formattedEndDate = computed(() => {
-    if (!subscriptionStatus.value?.end_date) return ''
+    if (!subscriptionStatus.value?.cancel_at) return ''
 
-    const endDate = new Date(subscriptionStatus.value.end_date)
+    const endDate = new Date(subscriptionStatus.value.cancel_at)
 
     return endDate.toLocaleDateString('en-US', {
       month: 'short',
@@ -169,7 +170,7 @@ function useSubscriptionInternal() {
   }
 
   const syncPendingSubscriptionSuccess = (
-    statusData: CloudSubscriptionStatusResponse
+    statusData: BillingStatusResponse
   ) => {
     const metadata = consumePendingSubscriptionCheckoutSuccess(statusData)
 
@@ -186,6 +187,26 @@ function useSubscriptionInternal() {
       ...(authStore.userId ? { user_id: authStore.userId } : {}),
       ...metadata
     })
+
+    // The recovery flow is shared with plain (non-resubscribe) legacy subscribes,
+    // which all funnel through the same subscribeDirect(). Only emit the canonical
+    // resubscribe terminal when the attempt that just resolved was itself tagged
+    // as a resubscribe at click time — otherwise a plain new subscribe would be
+    // mislabeled as a resubscribe success. Without this, the legacy rail's
+    // `billing.resubscribe.started` (emitted at checkout-tab-open) never gets a
+    // matching terminal, so resubscribe conversion permanently reads ~0%.
+    if (metadata.operation === 'resubscribe') {
+      telemetry?.trackBillingEvent({
+        operation: 'resubscribe',
+        stage: 'succeeded',
+        outcome: 'success',
+        source: metadata.resubscribe_source ?? 'settings_billing_panel',
+        ...(metadata.payment_intent_source
+          ? { payment_intent_source: metadata.payment_intent_source }
+          : {})
+      })
+    }
+
     stopPendingCheckoutRecovery()
   }
 
@@ -206,7 +227,17 @@ function useSubscriptionInternal() {
     reportError
   )
 
-  const subscribe = wrapWithErrorHandlingAsync(async () => {
+  interface SubscribeDirectOptions {
+    /** Set when this call originates from the resubscribe flow, not a plain subscribe. */
+    operation?: 'resubscribe'
+    /** Click-time source for a resubscribe attempt; carried through to the terminal event. */
+    source?: ResubscribeClickMetadata['source']
+  }
+
+  /** Unwrapped `subscribe`, for callers that need rejections to propagate (e.g. telemetry). */
+  const subscribeDirect = async (
+    options?: SubscribeDirectOptions
+  ): Promise<void> => {
     const response = await initiateSubscriptionCheckout()
 
     if (!response.checkout_url) {
@@ -225,7 +256,7 @@ function useSubscriptionInternal() {
     recordPendingSubscriptionCheckoutAttempt({
       tier: 'standard',
       cycle: 'monthly',
-      checkout_type: isSubscribedOrIsNotCloud.value ? 'change' : 'new',
+      checkout_type: canAccessSubscriptionFeatures.value ? 'change' : 'new',
       ...(subscriptionTier.value
         ? { previous_tier: TIER_TO_KEY[subscriptionTier.value] }
         : {}),
@@ -233,18 +264,15 @@ function useSubscriptionInternal() {
         ? { previous_cycle: 'yearly' as const }
         : subscriptionDuration.value === 'MONTHLY'
           ? { previous_cycle: 'monthly' as const }
-          : {})
+          : {}),
+      ...(options?.operation ? { operation: options.operation } : {}),
+      ...(options?.source ? { resubscribe_source: options.source } : {})
     })
-  }, reportError)
+  }
 
-  const showSubscriptionDialog = (options?: {
-    reason?: SubscriptionDialogReason
-  }) => {
-    useTelemetry()?.trackSubscription('modal_opened', {
-      current_tier: subscriptionTier.value?.toLowerCase(),
-      reason: options?.reason
-    })
+  const subscribe = wrapWithErrorHandlingAsync(subscribeDirect, reportError)
 
+  const showSubscriptionDialog = (options?: SubscriptionDialogOptions) => {
     void showSubscriptionRequiredDialog(options)
   }
 
@@ -258,7 +286,7 @@ function useSubscriptionInternal() {
   const { startCancellationWatcher, stopCancellationWatcher } =
     useSubscriptionCancellationWatcher({
       fetchStatus,
-      isActiveSubscription: isSubscribedOrIsNotCloud,
+      canAccessSubscriptionFeatures: canAccessSubscriptionFeatures,
       subscriptionStatus,
       telemetry,
       shouldWatchCancellation: isSubscriptionEnabled
@@ -276,8 +304,8 @@ function useSubscriptionInternal() {
   const requireActiveSubscription = async (): Promise<void> => {
     await fetchSubscriptionStatus()
 
-    if (!isSubscribedOrIsNotCloud.value) {
-      showSubscriptionDialog()
+    if (!canAccessSubscriptionFeatures.value) {
+      showSubscriptionDialog({ reason: 'subscription_required' })
     }
   }
 
@@ -320,32 +348,46 @@ function useSubscriptionInternal() {
     }
   }
 
-  /**
-   * Fetch the current cloud subscription status for the authenticated user
-   * @returns Subscription status or null if no subscription exists
-   */
-  async function fetchSubscriptionStatus(): Promise<CloudSubscriptionStatusResponse | null> {
-    const headers = await buildAuthHeaders()
+  // Coalesce concurrent callers so an auth/session-rotation burst mints one fetch.
+  let inFlightStatusFetch: Promise<BillingStatusResponse | null> | null = null
+  let latestStatusRequestId = 0
 
-    const response = await fetchWithUnifiedRemint(
-      buildApiUrl('/customers/cloud-subscription-status'),
-      {
-        headers
-      },
-      isCloud && flags.unifiedCloudAuthEnabled
-    )
+  async function fetchSubscriptionStatus(): Promise<BillingStatusResponse | null> {
+    if (inFlightStatusFetch) return inFlightStatusFetch
+    inFlightStatusFetch = performFetchSubscriptionStatus().finally(() => {
+      inFlightStatusFetch = null
+    })
+    return inFlightStatusFetch
+  }
 
-    if (!response.ok) {
-      const errorData = await response.json()
+  async function performFetchSubscriptionStatus(): Promise<BillingStatusResponse | null> {
+    if (!isCloud) return null
+
+    const requestId = ++latestStatusRequestId
+    const workspaceId = workspaceStore.activeWorkspaceId
+    let statusData: BillingStatusResponse
+    try {
+      statusData = await workspaceApi.getBillingStatus()
+    } catch (error) {
       throw new AuthStoreError(
         t('toastMessages.failedToFetchSubscription', {
-          error: errorData.message
+          error: error instanceof Error ? error.message : String(error)
         })
       )
     }
-
-    const statusData = await response.json()
+    if (
+      requestId !== latestStatusRequestId ||
+      workspaceId !== workspaceStore.activeWorkspaceId
+    ) {
+      return null
+    }
     subscriptionStatus.value = statusData
+    if (workspaceId && statusData.billing_rail) {
+      workspaceStore.setWorkspaceBillingRail(
+        workspaceId,
+        statusData.billing_rail
+      )
+    }
     syncPendingSubscriptionSuccess(statusData)
 
     return statusData
@@ -418,22 +460,22 @@ function useSubscriptionInternal() {
       const headers = await buildAuthHeaders()
       const checkoutAttribution = await getCheckoutAttributionForCloud()
 
-      const response = await fetchWithUnifiedRemint(
+      const response = await fetchWithCustomerRecovery(
         buildApiUrl('/customers/cloud-subscription-checkout'),
         {
           method: 'POST',
           headers,
           body: JSON.stringify(checkoutAttribution)
-        },
-        isCloud && flags.unifiedCloudAuthEnabled
+        }
       )
 
       if (!response.ok) {
-        const errorData = await response.json()
+        const { message } = await parseErrorResponse(response)
         throw new AuthStoreError(
           t('toastMessages.failedToInitiateSubscription', {
-            error: errorData.message
-          })
+            error: message
+          }),
+          response.status
         )
       }
 
@@ -442,7 +484,7 @@ function useSubscriptionInternal() {
 
   return {
     // State
-    isActiveSubscription: isSubscribedOrIsNotCloud,
+    canAccessSubscriptionFeatures: canAccessSubscriptionFeatures,
     isInitialized,
     isCancelled,
     formattedRenewalDate,
@@ -459,6 +501,7 @@ function useSubscriptionInternal() {
 
     // Actions
     subscribe,
+    subscribeDirect,
     fetchStatus,
     showSubscriptionDialog,
     manageSubscription,

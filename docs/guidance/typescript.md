@@ -30,6 +30,11 @@ When you must handle uncertain types, prefer these approaches in order:
 - Use `z.unknown()` if the type is genuinely unknown, then narrow it
 - Never add test-only settings/types to production schemas
 
+### Server/API Response Types
+
+- Never hand-declare or inline types for server/API responses — import them from the generated shared types package (`@comfyorg/ingest-types` for Comfy Cloud's ingest API, `@comfyorg/registry-types` for the Registry API; both under `packages/`). Hand-declared copies silently drift from the real contract. This caused two real bugs in PR #14771: a status value missing from a hand-declared response type, and a hand-declared pagination type missing fields the generated one had.
+- A thin local intersection type on top of the generated export is fine for genuine FE-only extensions; a full local redeclaration is not.
+
 ### Public API Contracts
 
 - Keep public API types stable (e.g., `ExtensionManager` interface)
