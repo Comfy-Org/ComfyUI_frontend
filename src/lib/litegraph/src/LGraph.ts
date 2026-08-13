@@ -11,7 +11,7 @@ import { createUuidv4, zeroUuid } from '@/utils/uuid'
 import {
   attachGroupLayout,
   attachNodeLayout,
-  detachAllGraphLayout,
+  detachGraphLayouts,
   detachGroupLayout,
   detachNodeLayout,
   detachRerouteLayout,
@@ -255,7 +255,7 @@ function teardownOwnedGraphs(owner: LGraph): void {
       unregisterNodeState(node)
       node.graph = null
     }
-    detachAllGraphLayout(owner, { removeLayouts: !owner.isRootGraph })
+    detachGraphLayouts([owner], { removeLayouts: !owner.isRootGraph })
   }
 }
 
@@ -1148,7 +1148,7 @@ export class LGraph
       this.setDirtyCanvas(true)
       this.change()
       node.graph = this
-      attachGroupLayout(this, node, { adoptExisting: true })
+      attachGroupLayout(this, node)
       this.incrementVersion()
       return
     }
@@ -1203,7 +1203,7 @@ export class LGraph
 
     // Keep after onNodeAdded so its deferred hooks run before these writes
     // flush Vue.
-    attachNodeLayout(this, node, { adoptExisting: true })
+    attachNodeLayout(this, node)
     this.incrementVersion()
 
     this.setDirtyCanvas(true)
@@ -1306,9 +1306,9 @@ export class LGraph
         unregisterAllLinkTopologies(subgraph)
         unregisterAllRerouteChains(subgraph)
         unregisterAllNodeStates(subgraph)
-        detachAllGraphLayout(subgraph)
         this.rootGraph.subgraphs.delete(subgraph.id)
       }
+      detachGraphLayouts(releasedSubgraphs)
     }
 
     // callback
@@ -2616,7 +2616,7 @@ export class LGraph
       if (!data) return
       data = normalizeConfiguredTopology(data)
       if (options.clearGraph) this.clear()
-      else detachAllGraphLayout(this)
+      else detachGraphLayouts([this])
 
       this._configureBase(data)
 

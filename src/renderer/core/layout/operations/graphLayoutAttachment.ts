@@ -54,20 +54,18 @@ function canvasOperationMeta() {
   }
 }
 
-export interface AttachOptions {
-  /** Adopt an existing store entry for this id instead of failing to create. */
-  adoptExisting?: boolean
-}
-
 /** A newly attached node stacks above those already attached. */
 export function attachNodeLayout(
   graph: LayoutGraph,
-  node: LGraphNode,
-  options: AttachOptions = {}
+  node: LGraphNode
 ): LayoutOperationResult {
   if (nodeAttachments.has(node)) detachNodeLayout(node)
 
   const graphId = graph.rootGraph.id
+  if (layoutStore.getNodeLayout(graphId, node.id)) {
+    return adoptNodeAttachment(graphId, node) ? 'applied' : 'no-op'
+  }
+
   const position = { x: node._pos[0], y: node._pos[1] }
   const size = { width: node._size[0], height: node._size[1] }
   const result = layoutStore.applyOperation({
@@ -87,13 +85,6 @@ export function attachNodeLayout(
   })
   if (result === 'applied') {
     return adoptNodeAttachment(graphId, node) ? result : 'no-op'
-  }
-  if (
-    result === 'no-op' &&
-    options.adoptExisting &&
-    layoutStore.getNodeLayout(graphId, node.id)
-  ) {
-    return adoptNodeAttachment(graphId, node) ? 'applied' : 'no-op'
   }
   return result
 }
@@ -125,10 +116,15 @@ export function detachNodeLayout(node: LGraphNode): LayoutOperationResult {
 
 export function attachGroupLayout(
   graph: LayoutGraph,
-  group: LGraphGroup,
-  options: AttachOptions = {}
+  group: LGraphGroup
 ): LayoutOperationResult {
   const graphId = graph.rootGraph.id
+  if (layoutStore.getGroupLayout(graphId, group.id)) {
+    syncGroupBoundsFromLayout(group)
+    groupAttachments.set(group, { graphId, id: group.id })
+    return 'applied'
+  }
+
   const result = layoutStore.applyOperation({
     ...canvasOperationMeta(),
     entity: 'group',
@@ -145,20 +141,13 @@ export function attachGroupLayout(
     groupAttachments.set(group, { graphId, id: group.id })
     return result
   }
-  if (
-    result === 'no-op' &&
-    options.adoptExisting &&
-    layoutStore.getGroupLayout(graphId, group.id)
-  ) {
-    groupAttachments.set(group, { graphId, id: group.id })
-    return 'applied'
-  }
   return result
 }
 
 export function detachGroupLayout(group: LGraphGroup): LayoutOperationResult {
   const attachment = groupAttachments.get(group)
   if (!attachment) return 'no-op'
+  syncGroupBoundsFromLayout(group)
   groupAttachments.delete(group)
   return layoutStore.applyOperation({
     ...canvasOperationMeta(),
@@ -286,13 +275,17 @@ function syncReroutePositionFromLayout(reroute: Reroute): void {
   void reroute.pos[0]
 }
 
+function syncGroupBoundsFromLayout(group: LGraphGroup): void {
+  void group.pos[0]
+}
+
 /**
  * Invalidates every attachment a graph owns, including those inside its
  * subgraph definitions. Layout entries are removed in one store transaction
  * unless their graph bucket will be cleared separately.
  */
-export function detachAllGraphLayout(
-  graph: GraphLayoutOwner,
+export function detachGraphLayouts(
+  graphs: readonly GraphLayoutOwner[],
   { removeLayouts = true }: { removeLayouts?: boolean } = {}
 ): LayoutOperationResult {
   const meta = removeLayouts ? canvasOperationMeta() : undefined
@@ -323,6 +316,7 @@ export function detachAllGraphLayout(
     for (const group of owner._groups) {
       const attachment = groupAttachments.get(group)
       if (!attachment) continue
+      syncGroupBoundsFromLayout(group)
       groupAttachments.delete(group)
       didDetach = true
       if (meta) {
@@ -354,7 +348,7 @@ export function detachAllGraphLayout(
     for (const subgraph of owner._subgraphs.values()) collect(subgraph)
   }
 
-  collect(graph)
+  for (const graph of graphs) collect(graph)
   if (!removeLayouts) return didDetach ? 'applied' : 'no-op'
   return layoutStore.applyOperations(operations)
 }

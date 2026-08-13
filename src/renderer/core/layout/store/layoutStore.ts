@@ -349,7 +349,6 @@ class LayoutStore {
                 })
               }
             }
-            trigger()
           }
         }
       })
@@ -864,8 +863,6 @@ class LayoutStore {
       }
       case 'clearGraph':
         return this.handleClearGraph(operation.graphId, change)
-      default:
-        return false
     }
   }
 

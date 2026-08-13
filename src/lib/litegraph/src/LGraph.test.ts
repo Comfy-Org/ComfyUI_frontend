@@ -1743,6 +1743,40 @@ describe('node layout registration', () => {
     expect([...node.size]).toEqual([220, 160])
   })
 
+  it('does not consume a z-index when adopting existing geometry', () => {
+    const graph = new LGraph()
+    const adopted = new LGraphNode('adopted')
+    adopted.id = toNodeId(42)
+    useLayoutMutations().createNode(graph.id, adopted.id, {
+      position: { x: 0, y: 0 },
+      size: { width: 100, height: 80 },
+      zIndex: 1,
+      visible: true
+    })
+
+    graph.add(adopted)
+    const next = new LGraphNode('next')
+    graph.add(next)
+
+    expect(zIndexOf(graph, next)).toBe(zIndexOf(graph, adopted) + 1)
+  })
+
+  it('keeps canonical group geometry after removal', () => {
+    const graph = new LGraph()
+    const group = new LGraphGroup('group')
+    graph.add(group)
+    useLayoutMutations().setGroupBounds(
+      graph.id,
+      group.id,
+      { x: 300, y: 400 },
+      { width: 220, height: 160 }
+    )
+
+    graph.remove(group)
+
+    expect([...group.boundingRect]).toEqual([300, 400, 220, 160])
+  })
+
   function zIndexOf(graph: LGraph, node: LGraphNode): number {
     const zIndex = layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id)
       .value?.zIndex

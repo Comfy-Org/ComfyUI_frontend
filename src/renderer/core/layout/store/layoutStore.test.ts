@@ -2,6 +2,7 @@ import { toGroupId } from '@/types/groupId'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { fromPartial } from '@total-typescript/shoehorn'
+import { watch } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { toLinkId } from '@/types/linkId'
@@ -915,18 +916,22 @@ describe('layoutStore getNodeLayoutRef setter', () => {
   it('creates a node when setter receives a layout for an unknown id', () => {
     const ref = layoutStore.getNodeLayoutRef(GRAPH, REF_NODE)
     const layout = baseLayout()
+    const onChange = vi.fn()
+    const stop = watch(ref, onChange, { flush: 'sync' })
     expect(ref.value).toBeNull()
 
     const operations = getOperationsAddedBy(() => {
       ref.value = layout
     })
 
+    expect(onChange).toHaveBeenCalledOnce()
     expectSingleOperation(operations, {
       type: 'createNode',
       nodeId: REF_NODE,
       layout
     })
     expect(ref.value).toEqual(layout)
+    stop()
   })
 
   it.for<{

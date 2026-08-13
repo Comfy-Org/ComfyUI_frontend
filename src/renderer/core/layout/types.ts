@@ -139,7 +139,6 @@ type OperationType =
   | 'setNodeZIndex'
   | 'createNode'
   | 'deleteNode'
-  | 'setNodeVisibility'
   | 'batchUpdateBounds'
   | 'createReroute'
   | 'deleteReroute'
@@ -186,14 +185,6 @@ export interface CreateNodeOperation extends NodeOpBase {
  */
 export interface DeleteNodeOperation extends NodeOpBase {
   type: 'deleteNode'
-}
-
-/**
- * Set node visibility operation
- */
-interface SetNodeVisibilityOperation extends NodeOpBase {
-  type: 'setNodeVisibility'
-  visible: boolean
 }
 
 /**
@@ -267,7 +258,6 @@ export type LayoutOperation =
   | SetNodeZIndexOperation
   | CreateNodeOperation
   | DeleteNodeOperation
-  | SetNodeVisibilityOperation
   | BatchUpdateBoundsOperation
   | CreateRerouteOperation
   | DeleteRerouteOperation
