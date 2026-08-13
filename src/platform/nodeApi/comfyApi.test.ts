@@ -3,6 +3,7 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 
 import {
   LATEST_MAJOR,
@@ -133,6 +134,29 @@ describe('comfy API root', () => {
       const b = two.graph.node(String(node.id))!
       expect(one.sameEntity(a, b)).toBe(true)
       expect(two.sameEntity(a, b)).toBe(true)
+    })
+
+    it('mints a different handle for the same node reached through a subgraph', () => {
+      // The condition sameEntity's doc names. Reaching a node while its graph
+      // is on screen and reaching it through graph.subgraphs() go through
+      // different handle caches, so `===` says no and sameEntity says yes.
+      // Document-scoped onNodeChanged makes this the ordinary case, not a
+      // corner one, which is why the doc calls scope out by name.
+      const root = new LGraph()
+      const subgraph = createTestSubgraph({ rootGraph: root, name: 'Inner' })
+      root.subgraphs.set(subgraph.id, subgraph)
+      const node = new LGraphNode('A', 'Alpha')
+      subgraph.add(node)
+
+      const comfy = createComfyApi(() => subgraph)
+      const visible = comfy.graph.node(String(node.id))!
+      const viaDefinition = comfy.graph
+        .subgraphs()
+        .find(({ id }) => id === String(subgraph.id))!
+        .node(String(node.id))!
+
+      expect(visible).not.toBe(viaDefinition)
+      expect(comfy.sameEntity(visible, viaDefinition)).toBe(true)
     })
 
     it('reports different nodes as different', () => {

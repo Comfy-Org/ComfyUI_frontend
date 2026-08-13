@@ -28,7 +28,7 @@ import { useExecutionStore } from '@/stores/executionStore'
 
 import { onAppReady, onWorkflowLoaded } from './appReady'
 import { createNodeChangeObserver } from './nodeChanges'
-import type { NodeChangeEvent } from './nodeChanges'
+import type { NodeChangeEvent, NodeChangeOptions } from './nodeChanges'
 import { createQueueApi } from './queueHandle'
 import type { QueueHandle } from './queueHandle'
 import type { Unsubscribe } from './widgetHandle'
@@ -119,7 +119,8 @@ const CAPABILITIES: ReadonlyMap<string, string> = new Map([
   ['viewport.changed', '1.0'],
   ['interaction.state', '1.0'],
   ['interaction.nodeMoved', '1.0'],
-  ['interaction.nodeDragEnd', '1.0']
+  ['interaction.nodeDragEnd', '1.0'],
+  ['node.changeScope', '1.0']
 ])
 
 /**
@@ -158,11 +159,16 @@ export interface Comfy {
   forMajor(major: number): Comfy
 
   /**
-   * True when two handles refer to the same entity, whatever major or API
-   * instance produced them.
+   * True when two handles refer to the same entity, whatever major, API
+   * instance or graph scope produced them.
    *
-   * `===` is only reliable for handles from the *same* instance and major. Use
-   * this whenever a handle may have come from another pack.
+   * `===` is only reliable for handles from the same instance, the same major
+   * AND the same scope. Scope is the one most likely to catch a pack out: a
+   * node reached through `comfy.graph` while it is on screen and the same node
+   * reached through `graph.subgraphs()` or through a document-scoped
+   * `onNodeChanged` come from different handle caches, so they are equal here
+   * and not equal under `===`. Use this whenever a handle may have come from
+   * another pack, from an event, or from a graph other than the visible one.
    */
   sameEntity(a: unknown, b: unknown): boolean
 
@@ -232,8 +238,19 @@ export interface Comfy {
    *
    * Only fields the host tracks are reported. Position is not among them — it
    * changes per frame during a drag and is served by {@link onNodeMoved}.
+   *
+   * Reports the graph on screen unless `scope: 'document'` asks for the root
+   * graph and every subgraph definition as well. A pack that computes from
+   * other nodes wants `'document'`: a relay in a subgraph the user has
+   * navigated away from otherwise stops recomputing while still asserting its
+   * last answer. Each event names the graph it came from, and resolves its node
+   * there — ids repeat across definitions, so `event.node.id` alone is not a
+   * key.
    */
-  onNodeChanged(listener: (event: NodeChangeEvent) => void): Unsubscribe
+  onNodeChanged(
+    listener: (event: NodeChangeEvent) => void,
+    options?: NodeChangeOptions
+  ): Unsubscribe
   /**
    * The application has finished starting: canvas, settings and graph all
    * exist, and node definitions are registered.
@@ -280,11 +297,29 @@ function buildMajor(
   defs: ReturnType<typeof createDefRegistry>
 ): Comfy {
   const graph = createGraphApi(getGraph, `v${major}`)
+  const rootGraph = createGraphApi(
+    () => getGraph()?.rootGraph,
+    `v${major}:root`
+  )
   const settings = createSettingsApi()
   const storage = createStorageApi()
   const ui = createUiHandle()
   const commands = createCommandsApi()
   const backend = createBackendApi()
+
+  /**
+   * The node an event names, resolved inside the graph that owns it. Ids repeat
+   * across subgraph definitions, so the graph is half of the key.
+   *
+   * The graph on screen is tried first, so an event for it yields the same
+   * handle `comfy.graph.node()` does.
+   */
+  function nodeIn(graphId: string, nodeId: string): NodeHandle | undefined {
+    if (graphId === graph.id) return graph.node(nodeId)
+    const subgraph = graph.subgraphs().find(({ id }) => id === graphId)
+    if (subgraph) return subgraph.node(nodeId)
+    return graphId === rootGraph.id ? rootGraph.node(nodeId) : undefined
+  }
 
   return Object.freeze({
     version: major === LATEST_MAJOR ? NODE_API_VERSION : `${major}.0`,
@@ -318,7 +353,7 @@ function buildMajor(
     onNodeMoved: createNodeMoveObserver((id) => graph.node(id)),
     onNodeDragEnd: createNodeDragEndObserver((id) => graph.node(id)),
     onViewportChanged: createViewportObserver(),
-    onNodeChanged: createNodeChangeObserver((id) => graph.node(id)),
+    onNodeChanged: createNodeChangeObserver(nodeIn),
     onReady: onAppReady,
     queue: createQueueApi(getGraph),
     executingNode: () => {
