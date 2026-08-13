@@ -2350,6 +2350,11 @@
     "addColor": "Add a color",
     "swatchTitle": "Click edit · drag reorder · right-click remove"
   },
+  "partnerNodesEducation": {
+    "title": "This template uses partner nodes",
+    "body": "Partner nodes run on third-party services, so they use credits, the only paid part of Comfy.",
+    "gotIt": "Got it"
+  },
   "videoEdit": {
     "startFrame": "Start Frame",
     "endFrame": "End Frame",

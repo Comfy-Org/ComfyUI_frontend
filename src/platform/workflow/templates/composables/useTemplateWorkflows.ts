@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import type {
@@ -11,6 +12,7 @@ import type {
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useDialogStore } from '@/stores/dialogStore'
+import { usePartnerNodesEducationStore } from '@/stores/partnerNodesEducationStore'
 
 export function useTemplateWorkflows() {
   const { t } = useI18n()
@@ -140,6 +142,15 @@ export function useTemplateWorkflows() {
       await app.loadGraphData(json, true, true, workflowName, {
         openSource: 'template'
       })
+
+      if (!isCloud) {
+        const template = workflowTemplatesStore.enhancedTemplates.find(
+          (tpl) => tpl.name === id && tpl.sourceModule === sourceModule
+        )
+        if (template?.isPartnerNode) {
+          usePartnerNodesEducationStore().requestCard()
+        }
+      }
 
       return true
     } catch (error) {
