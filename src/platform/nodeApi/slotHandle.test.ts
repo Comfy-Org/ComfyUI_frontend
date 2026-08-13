@@ -65,6 +65,33 @@ describe('slot handles', () => {
       expect(saved.find((i) => i.name === 'plain')?.shape).toBeUndefined()
     })
 
+    it('shapes a slot the pack introduces, and clears it again', () => {
+      // rgthree's relay draws an arrow on the one output that may only ever
+      // reach a repeater. 'optional' was the whole vocabulary, so that output
+      // saved one field fewer than the same node saved before the migration —
+      // the pack's own files bifurcated by creation date.
+      const arrowed = outputs.add('REPEATER', '_NODE_REPEATER_', {
+        shape: 'directional'
+      })
+      const listed = outputs.add('images', 'IMAGE', { shape: 'list' })
+
+      const saved = () => source.serialize().outputs!
+      expect(saved().find((o) => o.name === 'REPEATER')?.shape).toBe(
+        RenderShape.ARROW
+      )
+      expect(saved().find((o) => o.name === 'images')?.shape).toBe(
+        RenderShape.GRID
+      )
+
+      arrowed.modify({ shape: 'default' })
+      expect(saved().find((o) => o.name === 'REPEATER')?.shape).toBeUndefined()
+
+      listed.modify({ shape: 'optional' })
+      expect(saved().find((o) => o.name === 'images')?.shape).toBe(
+        RenderShape.HollowCircle
+      )
+    })
+
     it('marks a slot as the socket form of a widget, as the saved file records it', () => {
       // A slot carrying `widget` serialises as { widget: { name } }; a plain
       // socket serialises as { pos }. A dynamic input added without it changes

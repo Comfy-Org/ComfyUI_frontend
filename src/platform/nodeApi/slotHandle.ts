@@ -85,6 +85,14 @@ export interface SlotPatch {
    */
   color?: string | null
   colorWhenUnconnected?: string | null
+  /**
+   * Sits on the same `INodeSlot` as the colours above and is omitted by the
+   * same `Omit`, so the argument made for them holds verbatim: a pack that
+   * shaped its slots and then stopped saves different bytes than it used to.
+   *
+   * `'default'` clears it back to the renderer's own choice.
+   */
+  shape?: SlotShape
 }
 
 /** @knipIgnoreUnusedButUsedByCustomNodes */
@@ -231,6 +239,10 @@ function applyPatch(
   if ('color' in patch) slot.color_on = patch.color ?? undefined
   if ('colorWhenUnconnected' in patch) {
     slot.color_off = patch.colorWhenUnconnected ?? undefined
+  }
+  if (patch.shape !== undefined) {
+    slot.shape =
+      patch.shape === 'default' ? undefined : SLOT_SHAPES[patch.shape]
   }
 }
 
@@ -474,8 +486,22 @@ function createOutputHandle(
  * Named rather than numbered: packs wrote `{ shape: 7 }`, and 7 is meaningless
  * without litegraph's RenderShape enum in front of you.
  */
+export type SlotShape = 'default' | 'optional' | 'list' | 'directional'
+
+const SLOT_SHAPES: Record<Exclude<SlotShape, 'default'>, RenderShape> = {
+  optional: RenderShape.HollowCircle,
+  list: RenderShape.GRID,
+  directional: RenderShape.ARROW
+}
+
 interface SlotOptions {
-  shape?: 'default' | 'optional'
+  /**
+   * `'optional'` is the hollow circle for an input that need not be connected,
+   * `'list'` the grid ComfyUI draws for an output that yields many values, and
+   * `'directional'` the arrow a pack uses for a slot that only ever feeds one
+   * particular kind of node.
+   */
+  shape?: SlotShape
   /**
    * Names the widget this slot is the socket form of — the "convert widget to
    * input" shape.
@@ -488,10 +514,22 @@ interface SlotOptions {
   widget?: string
 }
 
+/**
+ * The same named vocabulary for `defs.define`, whose outputs are built through
+ * `addOutput` rather than through a `SlotOptions`.
+ */
+export function slotShapeOf(shape?: SlotShape) {
+  return shape && shape !== 'default'
+    ? { shape: SLOT_SHAPES[shape] }
+    : undefined
+}
+
 function slotProperties(options?: SlotOptions) {
   if (!options) return undefined
   const properties: Partial<INodeInputSlot> = {}
-  if (options.shape === 'optional') properties.shape = RenderShape.HollowCircle
+  if (options.shape && options.shape !== 'default') {
+    properties.shape = SLOT_SHAPES[options.shape]
+  }
   if (options.widget) properties.widget = { name: options.widget }
   return Object.keys(properties).length ? properties : undefined
 }
@@ -662,7 +700,12 @@ export function createOutputCollection(
     () => getNode()?.outputs ?? [],
     (slotId) => createOutputHandle(getGraph, getNode, slotId),
     {
-      add: (name, type) => getNode()?.addOutput(name, normaliseType(type)),
+      add: (name, type, options) =>
+        getNode()?.addOutput(
+          name,
+          normaliseType(type),
+          slotProperties(options)
+        ),
       remove: (index) => getNode()?.removeOutput(index),
       reorder: (names) => reorderSlots(getGraph(), getNode(), 'output', names)
     }
