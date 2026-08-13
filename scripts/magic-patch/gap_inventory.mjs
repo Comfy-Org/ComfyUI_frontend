@@ -141,7 +141,7 @@ const CONSTRUCTS = [
     /\bsetting\s*\.\s*(?:get|set)\b|\baddSetting\b/,
     'comfy.settings'
   ],
-  ['node type replacement', /\brecreateNode\b|\breplaceNode\b/, null]
+  ['node type replacement', /\brecreateNode\b|\breplaceNode\b/, 'graph.replace']
 ]
 
 function jsFiles(dir, depth = 0) {
