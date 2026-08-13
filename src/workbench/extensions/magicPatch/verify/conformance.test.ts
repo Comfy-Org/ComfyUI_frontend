@@ -116,6 +116,29 @@ describe('general conversion conformance', () => {
       expect(find(report, 'no-net-new-lines').detail).toMatch(/shim/)
     })
 
+    it('does not count the notes a conversion writes about itself', () => {
+      // Three real conversions failed this while their CODE shrank, purely for
+      // documenting a wire-format change and two refused members. Penalising
+      // that is exactly backwards.
+      const original = Array.from({ length: 10 }, () => 'x()').join('\n')
+      const converted =
+        Array.from({ length: 50 }, (_, i) => `// note ${i}`).join('\n') +
+        '\n' +
+        Array.from({ length: 9 }, () => 'y()').join('\n')
+      const report = runConformance(context({ original, converted, edits: [] }))
+      expect(find(report, 'no-net-new-lines').status).toBe('passed')
+    })
+
+    it('still fails a shim that hides behind a wall of comments', () => {
+      const original = Array.from({ length: 10 }, () => 'x()').join('\n')
+      const converted =
+        Array.from({ length: 50 }, (_, i) => `// note ${i}`).join('\n') +
+        '\n' +
+        Array.from({ length: 60 }, () => 'y()').join('\n')
+      const report = runConformance(context({ original, converted, edits: [] }))
+      expect(find(report, 'no-net-new-lines').status).toBe('failed')
+    })
+
     it('tolerates a call site becoming a line or two longer', () => {
       const original = Array.from({ length: 200 }, () => 'x()').join('\n')
       const report = runConformance(
