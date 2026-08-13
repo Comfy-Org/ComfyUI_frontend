@@ -24,6 +24,8 @@ import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 
 import { ComfyApiError } from './errors'
 import type { NodeHandle } from './nodeHandle'
+import { slotShapeOf } from './slotHandle'
+import type { SlotShape } from './slotHandle'
 import type { Resolver, Supplier } from './resolution'
 import type { Unsubscribe, WidgetDef } from './widgetHandle'
 import { createWidgetTypeRegistrar } from './widgetTypes'
@@ -327,7 +329,11 @@ export interface NodeDefinition {
   readonly category?: string
   readonly description?: string
   readonly inputs?: readonly { name: string; type: string }[]
-  readonly outputs?: readonly { name: string; type: string }[]
+  readonly outputs?: readonly {
+    name: string
+    type: string
+    shape?: SlotShape
+  }[]
   readonly widgets?: readonly WidgetDef[]
   /**
    * `'frontend'` nodes never reach the backend: they are resolved away at
@@ -735,7 +741,7 @@ export function createDefRegistry(): {
           this.addInput(input.name, input.type)
         }
         for (const output of definition.outputs ?? []) {
-          this.addOutput(output.name, output.type)
+          this.addOutput(output.name, output.type, slotShapeOf(output.shape))
         }
       }
     }
