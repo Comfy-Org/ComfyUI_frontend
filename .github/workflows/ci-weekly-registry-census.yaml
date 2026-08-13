@@ -50,9 +50,11 @@ jobs:
   corpus:
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    # contents: read only. The fetch step below holds a token (for the
+    # codeload rate limit) while extracting untrusted archives, so this job
+    # must not also carry actions: write - cache pruning runs as its own job.
     permissions:
       contents: read
-      actions: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -71,8 +73,16 @@ jobs:
       - name: Refresh registry snapshot
         run: python3 scripts/registry-census/refresh_registry.py
 
+      # Authenticated codeload: anonymous fetches are rate-limited per IP, and
+      # a run where many packs drift at once exhausts that budget partway
+      # through. Run 31738365496 failed 145 of 150 attempted fetches this way
+      # and reported it as an ecosystem-wide outage. This job only downloads
+      # and unpacks archives; pack code executes in ecosystem-matrix, which
+      # checks out with persist-credentials: false.
       - name: Fetch corpus and revalidate drifted packs
         id: fetch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python3 scripts/registry-census/fetch_corpus.py --revalidate
 
       - name: Upload corpus lockfile
@@ -97,13 +107,21 @@ jobs:
           path: .census
           key: registry-corpus-v2-${{ hashFiles('.census/corpus.lock.json') }}
 
-      # Each drift writes a new ~1GB entry against the repo's shared 10GB
-      # cache budget; without pruning the census would evict every other
-      # workflow's caches within weeks. Keep the newest entry only. Branch
-      # runs only - PR-scoped entries expire with the PR and a fork PR's
-      # token cannot delete caches anyway.
+  # Each drift writes a new ~1GB entry against the repo's shared 10GB cache
+  # budget; without pruning the census would evict every other workflow's
+  # caches within weeks. Keep the newest entry only. Branch runs only - PR
+  # entries expire with the PR and a fork PR's token cannot delete caches.
+  # Its own job so `corpus`, which holds a token while extracting untrusted
+  # archives, stays at contents: read.
+  prune-corpus-cache:
+    needs: corpus
+    if: needs.corpus.result == 'success' && github.event_name != 'pull_request' && github.ref_name == github.event.repository.default_branch
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: write
+    steps:
       - name: Prune superseded corpus caches
-        if: always() && steps.fetch.outcome == 'success' && github.event_name != 'pull_request' && github.ref_name == github.event.repository.default_branch
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
