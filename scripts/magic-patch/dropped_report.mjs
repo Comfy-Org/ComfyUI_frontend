@@ -34,6 +34,10 @@ import { join, relative } from 'node:path'
 const KINDS = {
   'API-GAP': 'Wanted, no published destination yet.',
   REFUSED: 'Deliberately not published. A decision, not a backlog item.',
+  // The other half of a refusal: what the user loses by it. The corpus wrote
+  // this 22 times while both this report and node_status.mjs were looking for
+  // the word UNSUPPORTED, which it wrote never.
+  INOPERABLE: 'What stops working. "nothing" is a valid, and good, answer.',
   DROPPED: 'Behaviour the conversion does not reproduce.',
   'WIRE FORMAT': 'The saved workflow or queued prompt changed.',
   'SANCTIONED-HOLDOUT': 'Old surface retained on purpose, with an owner.',

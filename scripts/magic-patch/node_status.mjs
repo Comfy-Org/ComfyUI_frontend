@@ -12,13 +12,12 @@
  * leave every node it touches working; a file can convert cleanly and leave a
  * node inoperable. Only the node is what a user has or does not have.
  *
- * Markers this reads, both of which are new — nothing in the corpus used either
- * when this was written, so every grade below FULL is provisional until a human
- * applies them. That is the honest state, not a fault in the scan:
+ * Markers this reads:
  *
- *   // UNSUPPORTED: <NodeType> — <why>
+ *   // INOPERABLE: <what stopped working> — <why>    (also: UNSUPPORTED:)
  *       Terminal. The node wants something that fights the system or reaches
  *       somewhere dangerous, so it is inoperable and will not be supported.
+ *       `INOPERABLE: nothing` is a file declaring it broke no node.
  *   // COSMETIC: <what was lost>
  *       A loss that changes appearance and not behaviour. Lets a pack grade as
  *       fully supported for everything that functions.
@@ -59,7 +58,22 @@ const HANDLES = [
 const INDIRECT =
   /(?:defs\.extend|nodeData\.name\s*===?)\s*\(?\s*([A-Z][\w$]*\.[\w$]+)/g
 
-const UNSUPPORTED = /^\s*\/\/\s*UNSUPPORTED:\s*([^\s—-]+)/gm
+/**
+ * What a conversion declares it has stopped working.
+ *
+ * `INOPERABLE:` is the word the corpus actually settled on — 22 uses against
+ * zero for `UNSUPPORTED:`, which is what this scan used to look for alone. So
+ * the grade that decides whether a pack is fully converted found no declared
+ * losses anywhere, while twenty-two declarations sat in the files under a name
+ * it did not know. Both are read now; the corpus's own word leads.
+ *
+ * The subject is not always a node type. It is sometimes a feature ("Workflow
+ * Image Export, both PNG and SVG"), and sometimes the literal word "nothing",
+ * which is a file saying it broke no node at all — the opposite of a loss, and
+ * counted as one if the word is taken as a name.
+ */
+const UNSUPPORTED = /^\s*\/\/\s*(?:INOPERABLE|UNSUPPORTED):\s*(.+)$/gm
+const NOTHING_LOST = /^nothing\b/i
 const COSMETIC = /^\s*\/\/\s*COSMETIC:/m
 const LOSS = /^\s*\/\/\s*(?:DROPPED|LIMITATION):/m
 
@@ -132,8 +146,9 @@ export function nodeStatus(dbDir) {
         for (const type of matchAll(stripComments(converted), HANDLES)) {
           handled.add(type)
         }
-        for (const [, type] of converted.matchAll(UNSUPPORTED)) {
-          unsupported.add(type)
+        for (const [, subject] of converted.matchAll(UNSUPPORTED)) {
+          const named = subject.trim().replace(/[.,;]$/, '')
+          if (!NOTHING_LOST.test(named)) unsupported.add(named)
         }
         if (LOSS.test(converted)) {
           anyLoss = true
@@ -220,8 +235,9 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       `grade; one named only through a constant is invisible here and does.`
   )
   console.error(
-    `\nNothing in the corpus used UNSUPPORTED: or COSMETIC: when this was ` +
-      `written, so every grade below FULL is provisional until a human applies ` +
-      `them.`
+    `\nA grade below FULL is provisional until a human has declared what broke. ` +
+      `This once read that nothing in the corpus used these markers, which ` +
+      `stopped being true without the sentence changing: the corpus writes ` +
+      `INOPERABLE:, and the scan only knew UNSUPPORTED:.`
   )
 }
