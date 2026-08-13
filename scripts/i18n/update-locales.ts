@@ -38,6 +38,7 @@ import {
 } from './protected-tokens'
 import type { TranslateBatch, TranslationItem } from './translate'
 import {
+  chunkItems,
   createOpenAiTranslator,
   mapWithConcurrency,
   translateLocaleItems
@@ -455,6 +456,21 @@ async function run(argv: readonly string[]): Promise<void> {
     (count, plan) => count + plan.items.length,
     0
   )
+  const initialBatchCount = [...translationPlans.values()].reduce(
+    (count, plan) =>
+      count +
+      chunkItems(
+        plan.items,
+        config.maxItemsPerRequest,
+        config.maxSourceCharsPerRequest
+      ).length,
+    0
+  )
+  if (pendingTotal > 0) {
+    print(
+      `Translation preflight: ${pendingTotal} strings in ${initialBatchCount} initial batches across ${config.outputLocales.length} locales; retries and truncation splits can add requests.`
+    )
+  }
 
   const apiKey = process.env.OPENAI_API_KEY
   if (pendingTotal > 0 && !apiKey) {
@@ -462,12 +478,32 @@ async function run(argv: readonly string[]): Promise<void> {
       `${pendingTotal} strings need translation but OPENAI_API_KEY is not set.`
     )
   }
+  const usage = {
+    completionTokens: 0,
+    promptTokens: 0,
+    reasoningTokens: 0,
+    requests: 0,
+    totalTokens: 0
+  }
+  const countedFetch: typeof fetch = async (input, init) => {
+    usage.requests++
+    return fetch(input, init)
+  }
   const translateBatch: TranslateBatch = apiKey
     ? createOpenAiTranslator({
         apiKey,
+        fetchFn: countedFetch,
         model: config.model,
         reasoningEffort: config.reasoningEffort,
-        glossary: config.glossary
+        glossary: config.glossary,
+        onCompletion: (completion) => {
+          if (!completion.usage) return
+          usage.completionTokens += completion.usage.completion_tokens
+          usage.promptTokens += completion.usage.prompt_tokens
+          usage.reasoningTokens +=
+            completion.usage.completion_tokens_details?.reasoning_tokens ?? 0
+          usage.totalTokens += completion.usage.total_tokens
+        }
       })
     : async () => {
         throw new Error('No translator available')
@@ -475,7 +511,7 @@ async function run(argv: readonly string[]): Promise<void> {
 
   const outcomes = await mapWithConcurrency(
     states,
-    config.localeConcurrency,
+    config.stateConcurrency,
     async (
       state
     ): Promise<
@@ -588,6 +624,12 @@ async function run(argv: readonly string[]): Promise<void> {
       })
     )
   )
+
+  if (usage.requests > 0) {
+    print(
+      `OpenAI usage: ${usage.requests} HTTP requests; ${usage.promptTokens} input, ${usage.completionTokens} output (${usage.reasoningTokens} reasoning), ${usage.totalTokens} total tokens.`
+    )
+  }
 
   if (failuresByFile.size > 0) {
     const details = [...failuresByFile.values()].flat()

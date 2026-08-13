@@ -3,6 +3,7 @@
  * (happy-dom defines window/navigator), and nothing here needs a DOM.
  * @vitest-environment node
  */
+import type { OpenAI } from 'openai'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { OutputLocale } from './config'
@@ -505,20 +506,39 @@ describe('createOpenAiTranslator', () => {
       context: 'main.json: greeting',
       source: 'Hello {name}',
       preserve: ['{name}']
+    },
+    {
+      id: '2',
+      context: 'main.json: farewell',
+      source: 'Goodbye {name}',
+      preserve: ['{name}']
     }
   ]
 
-  const completion = (content: string, finishReason = 'stop') =>
+  const completion = (
+    content: string,
+    finishReason = 'stop',
+    usage?: OpenAI.CompletionUsage
+  ) =>
     new Response(
       JSON.stringify({
-        choices: [{ finish_reason: finishReason, message: { content } }]
+        choices: [{ finish_reason: finishReason, message: { content } }],
+        usage
       }),
       { status: 200, headers: { 'content-type': 'application/json' } }
     )
 
-  function translatorFor(responses: Response[]) {
+  function translatorFor(
+    responses: Response[],
+    onCompletion?: (completion: OpenAI.ChatCompletion) => void
+  ) {
     let calls = 0
-    const fetchFn: typeof fetch = async () => {
+    const requestBodies: string[] = []
+    const fetchFn: typeof fetch = async (_input, init) => {
+      if (typeof init?.body !== 'string') {
+        throw new Error('expected a JSON request body')
+      }
+      requestBodies.push(init.body)
       calls++
       return responses[calls - 1]
     }
@@ -527,20 +547,83 @@ describe('createOpenAiTranslator', () => {
       model: 'test-model',
       reasoningEffort: 'low',
       glossary: '',
-      fetchFn
+      fetchFn,
+      onCompletion
     })
-    return { translate, callCount: () => calls }
+    return { translate, callCount: () => calls, requestBodies }
   }
 
-  it('retries truncated responses instead of failing on the partial JSON', async () => {
-    const { translate, callCount } = translatorFor([
+  it('splits a truncated batch instead of retrying it unchanged', async () => {
+    const { translate, callCount, requestBodies } = translatorFor([
       completion('{"1": "Bonj', 'length'),
-      completion('{"1": "Bonjour {name}"}')
+      completion('{"1": "Bonjour {name}"}'),
+      completion('{"2": "Au revoir {name}"}')
     ])
     await expect(translate(locale, items)).resolves.toEqual({
-      '1': 'Bonjour {name}'
+      '1': 'Bonjour {name}',
+      '2': 'Au revoir {name}'
     })
-    expect(callCount()).toBe(2)
+    expect(callCount()).toBe(3)
+    expect(requestBodies[1].length).toBeLessThan(requestBodies[0].length)
+    expect(requestBodies[2].length).toBeLessThan(requestBodies[0].length)
+    expect(requestBodies[1]).toContain('main.json: greeting')
+    expect(requestBodies[1]).not.toContain('main.json: farewell')
+    expect(requestBodies[2]).not.toContain('main.json: greeting')
+    expect(requestBodies[2]).toContain('main.json: farewell')
+  })
+
+  it('does not retry a truncated single-item batch', async () => {
+    const { translate, callCount } = translatorFor([
+      completion('{"1": "Bonj', 'length')
+    ])
+    await expect(translate(locale, items.slice(0, 1))).rejects.toThrow(
+      'OpenAI response was truncated'
+    )
+    expect(callCount()).toBe(1)
+  })
+
+  it('reports non-string response values with their ids', async () => {
+    const malformed = () => completion('{"1": {"text": "Bonjour"}, "2": 42}')
+    const { translate, callCount } = translatorFor([
+      malformed(),
+      malformed(),
+      malformed(),
+      malformed()
+    ])
+    await expect(translate(locale, items)).rejects.toThrow(
+      'translation response has non-string values for ids: 1, 2'
+    )
+    expect(callCount()).toBe(4)
+  })
+
+  it('reports usage for every completed API request', async () => {
+    const totalTokens: number[] = []
+    const onCompletion = vi.fn((response: OpenAI.ChatCompletion) => {
+      if (response.usage) totalTokens.push(response.usage.total_tokens)
+    })
+    const { translate } = translatorFor(
+      [
+        completion('{"1": "Bonj', 'length', {
+          completion_tokens: 4,
+          prompt_tokens: 10,
+          total_tokens: 14
+        }),
+        completion('{"1": "Bonjour {name}"}', 'stop', {
+          completion_tokens: 5,
+          prompt_tokens: 7,
+          total_tokens: 12
+        }),
+        completion('{"2": "Au revoir {name}"}', 'stop', {
+          completion_tokens: 6,
+          prompt_tokens: 8,
+          total_tokens: 14
+        })
+      ],
+      onCompletion
+    )
+    await translate(locale, items)
+    expect(onCompletion).toHaveBeenCalledTimes(3)
+    expect(totalTokens).toEqual([14, 12, 14])
   })
 
   it('fails immediately on non-retryable statuses', async () => {
