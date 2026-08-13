@@ -24,7 +24,7 @@ describe('createSharedPagedList', () => {
     const useShared = createSharedPagedList(
       () => mockPagedList<string>([], () => 'test'),
       (p: string) => p
-    )
+    ).constructor
 
     const scope = effectScope()
     await scope.run(async () => {
@@ -47,7 +47,7 @@ describe('createSharedPagedList', () => {
         return mockPagedList()
       },
       (p: string) => p
-    )
+    ).constructor
 
     const scope1 = effectScope()
     const scope2 = effectScope()
@@ -90,7 +90,7 @@ describe('createSharedPagedList', () => {
       },
       (p: string) => p,
       (item) => item.id
-    )
+    ).constructor
 
     const scope = effectScope()
     const stale = [{ id: 'x' }]
@@ -116,7 +116,7 @@ describe('createSharedPagedList', () => {
       },
       (p: string) => p,
       (item) => item.id
-    )
+    ).constructor
 
     const scope = effectScope()
     await scope.run(async () => {

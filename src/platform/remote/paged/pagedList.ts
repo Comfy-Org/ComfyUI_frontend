@@ -38,43 +38,37 @@ export function createSharedPagedList<TParams, TItem>(
   factory: (params: TParams) => PagedList<TItem>,
   keyFn: (params: TParams) => string,
   itemKey: (item: TItem) => unknown = (item) => item
-): (params: TParams) => PagedList<TItem> {
+) {
   const cache = new Map<string, CacheEntry<TItem>>()
 
-  return (params: TParams): PagedList<TItem> => {
+  async function invalidateItems(items: Readonly<TItem[]>) {
+    await Promise.all([...cache.values()].map((e) => e.list.invalidate(items)))
+  }
+  async function invalidateEntry(entry: CacheEntry<TItem>) {
+    const snapshot = toValue(entry.list.items)
+    if (snapshot.length === 0) return
+
+    const staleKeys = new Set(snapshot.map(itemKey))
+    function overlapsEntry(e: CacheEntry<TItem>) {
+      return toValue(e.list.items).some((item) => staleKeys.has(itemKey(item)))
+    }
+    await Promise.all(
+      [...cache.values()].filter(overlapsEntry).map((e) => e.list.invalidate())
+    )
+  }
+  const constructor = (params: TParams): PagedList<TItem> => {
     const key = keyFn(params)
     const entry = cache.get(key) ?? { list: factory(params), refCount: 0 }
     cache.set(key, entry)
     entry.refCount++
 
-    onScopeDispose(() => {
-      entry.refCount--
-      if (entry.refCount === 0) cache.delete(key)
-    })
+    onScopeDispose(() => --entry.refCount || cache.delete(key))
 
     async function invalidate(stale?: Readonly<TItem[]>) {
-      if (stale) {
-        await Promise.all(
-          [...cache.values()].map((e) => e.list.invalidate(stale))
-        )
-        return
-      }
-
-      const snapshot = toValue(entry.list.items)
-      await entry.list.invalidate()
-      if (snapshot.length === 0) return
-
-      const staleKeys = new Set(snapshot.map(itemKey))
-      await Promise.all(
-        [...cache.values()]
-          .filter(
-            (e) =>
-              e !== entry &&
-              toValue(e.list.items).some((item) => staleKeys.has(itemKey(item)))
-          )
-          .map((e) => e.list.invalidate())
-      )
+      if (stale) await invalidateItems(stale)
+      else await invalidateEntry(entry)
     }
     return { ...entry.list, invalidate }
   }
+  return { constructor, invalidateItems }
 }

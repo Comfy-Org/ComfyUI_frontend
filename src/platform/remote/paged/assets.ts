@@ -97,8 +97,10 @@ export function useAssetsQuery(
   return { hasMore, invalidate, isLoading, items, loadMore, loadNew }
 }
 
-export const useSharedAssetsQuery = createSharedPagedList(
+const sharedPagedList = createSharedPagedList(
   useAssetsQuery,
   stableKey,
   (item) => item.id
 )
+export const useSharedAssetsQuery = sharedPagedList.constructor
+export const invalidateItems = sharedPagedList.invalidateItems
