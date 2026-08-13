@@ -128,8 +128,12 @@ jobs:
       matrix:
         shard: [1, 2, 3, 4]
     steps:
+      # This job EXECUTES unreviewed third-party pack code under vitest;
+      # the checkout must not leave a usable git credential behind for it.
       - name: Checkout repository
         uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       # The corpus job above saved the cache this run; same-run caches are
       # visible to later jobs. Restore-only - the matrix never writes it.
@@ -263,8 +267,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
+      # Runs the poison packs (and the same harness that runs real pack
+      # code); same rule as the shard jobs - no persisted credential.
       - name: Checkout repository
         uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
