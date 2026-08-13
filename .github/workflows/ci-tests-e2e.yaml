@@ -251,20 +251,39 @@ jobs:
             echo "has-new-tests=true" >> "$GITHUB_OUTPUT"
           fi
 
+          # The chromium project grep-excludes @cloud, and a cloud spec needs
+          # the cloud build to run at all, so record those under `cloud`.
+          CLOUD_FILES=$(echo "$NEW_FILES" | xargs -r grep -l '@cloud' || true)
+          if [ -n "$CLOUD_FILES" ]; then
+            RUN_FILES="$CLOUD_FILES"
+            echo "project=cloud" >> "$GITHUB_OUTPUT"
+            echo "dist=frontend-dist-cloud" >> "$GITHUB_OUTPUT"
+          else
+            RUN_FILES="$NEW_FILES"
+            echo "project=chromium" >> "$GITHUB_OUTPUT"
+            echo "dist=frontend-dist" >> "$GITHUB_OUTPUT"
+          fi
+
           {
             echo "files<<EOF_NEW_SPEC_FILES"
-            echo "$NEW_FILES"
+            echo "$RUN_FILES"
             echo "EOF_NEW_SPEC_FILES"
           } >> "$GITHUB_OUTPUT"
 
           echo "Newly-added spec files:"
           echo "${NEW_FILES:-<none>}"
+          echo "Recording:"
+          echo "${RUN_FILES:-<none>}"
+          if [ -n "$NEW_FILES" ] && [ "$NEW_FILES" != "$RUN_FILES" ]; then
+            echo "Not recorded, since one run serves a single build:"
+            comm -23 <(echo "$NEW_FILES" | sort) <(echo "$RUN_FILES" | sort)
+          fi
 
       - name: Download built frontend
         if: steps.detect.outputs.has-new-tests == 'true'
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: frontend-dist
+          name: ${{ steps.detect.outputs.dist }}
           path: dist/
 
       - name: Start ComfyUI server
@@ -283,7 +302,7 @@ jobs:
           NEW_SPEC_FILES: ${{ steps.detect.outputs.files }}
         run: |
           FILES=$(echo "$NEW_SPEC_FILES" | tr '\n' ' ')
-          pnpm exec playwright test --project=chromium $FILES
+          pnpm exec playwright test --project=${{ steps.detect.outputs.project }} $FILES
 
       - name: Upload new-test report (with embedded video)
         if: ${{ !cancelled() && steps.detect.outputs.has-new-tests == 'true' }}
