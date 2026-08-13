@@ -194,12 +194,21 @@ def fetch_one(
             for name in files:
                 if not name.lower().endswith(INCLUDES):
                     continue
-                if os.path.getsize(os.path.join(root, name)) > MAX_FILE_BYTES:
+                fp = os.path.join(root, name)
+                # Tarballs ship symlinks, sometimes broken; walk lists them
+                # as files and a follow-stat raises. Links have no place in
+                # the corpus either way.
+                if os.path.islink(fp):
                     continue
-                rel = os.path.relpath(os.path.join(root, name), extracted)
+                try:
+                    if os.path.getsize(fp) > MAX_FILE_BYTES:
+                        continue
+                except OSError:
+                    continue
+                rel = os.path.relpath(fp, extracted)
                 target = os.path.join(staged, rel)
                 os.makedirs(os.path.dirname(target), exist_ok=True)
-                shutil.move(os.path.join(root, name), target)
+                shutil.move(fp, target)
         if os.path.isdir(dest):
             shutil.rmtree(dest)
         shutil.move(staged, dest)
@@ -246,12 +255,18 @@ def main() -> int:
     print(f'{len(targets)} packs -> {CORPUS}', file=sys.stderr, flush=True)
 
     t0 = time.time()
+    # One pack's unexpected exception must degrade to that pack's 'failed'
+    # (feeding the mass-failure gate), never kill the other 5,000 fetches.
+    def fetch_guarded(entry: dict) -> tuple[str, str, str | None]:
+        try:
+            return fetch_one(entry, lock, args.frozen, args.revalidate)
+        except Exception as exc:  # noqa: BLE001
+            pack_id = str(entry.get('id') or '?')
+            print(f'  {pack_id}: {exc!r}', file=sys.stderr)
+            return (pack_id, 'failed', None)
+
     with ThreadPoolExecutor(max_workers=args.workers) as ex:
-        results = list(
-            ex.map(
-                lambda e: fetch_one(e, lock, args.frozen, args.revalidate), targets
-            )
-        )
+        results = list(ex.map(fetch_guarded, targets))
 
     counts = Counter(status for _, status, _ in results)
     for pack_id, status, etag in results:
