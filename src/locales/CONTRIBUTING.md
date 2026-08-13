@@ -58,6 +58,10 @@ pnpm locale
 pnpm locale:check
 ```
 
+Both commands need a clone with full history (a blobless partial clone works):
+the source manifest records git blob hashes of past English sources, and the
+pipeline reads them back with `git cat-file`.
+
 #### Option B: Let CI Handle It (Recommended)
 
 - Create your PR with the configuration changes above

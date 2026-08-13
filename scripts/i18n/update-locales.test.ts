@@ -220,6 +220,52 @@ describe('translateLocaleItems', () => {
     ).rejects.toThrow(/failed for 1 strings/)
   })
 
+  it('retries empty translations', async () => {
+    let calls = 0
+    const blankFirst: TranslateBatch = (_batchLocale, batch) => {
+      calls++
+      return Promise.resolve(
+        Object.fromEntries(
+          batch.map((item) => [item.id, calls === 1 ? '   ' : 'Bonjour {name}'])
+        )
+      )
+    }
+    const translations = await translateLocaleItems(
+      locale,
+      items,
+      blankFirst,
+      translationConfig
+    )
+    expect(translations.get('1')).toBe('Bonjour {name}')
+    expect(calls).toBe(2)
+  })
+
+  it('dispatches chunks concurrently without exceeding the request limit', async () => {
+    const sixItems: TranslationItem[] = ['1', '2', '3', '4', '5', '6'].map(
+      (id) => ({
+        id,
+        context: `main.json: key${id}`,
+        source: `Source ${id}`,
+        preserve: []
+      })
+    )
+    let inFlight = 0
+    let maxInFlight = 0
+    const gated: TranslateBatch = async (_batchLocale, batch) => {
+      inFlight++
+      maxInFlight = Math.max(maxInFlight, inFlight)
+      await new Promise((resolve) => setTimeout(resolve, 1))
+      inFlight--
+      return Object.fromEntries(batch.map((item) => [item.id, `t${item.id}`]))
+    }
+    const translations = await translateLocaleItems(locale, sixItems, gated, {
+      ...translationConfig,
+      requestConcurrency: 2
+    })
+    expect(translations.size).toBe(6)
+    expect(maxInFlight).toBe(2)
+  })
+
   it('ignores response ids that were not requested in the same chunk', async () => {
     const threeItems: TranslationItem[] = ['1', '2', '3'].map((id) => ({
       id,

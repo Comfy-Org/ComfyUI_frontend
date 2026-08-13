@@ -1,4 +1,8 @@
-import type { OutputLocale, TranslationPipelineConfig } from './config'
+import type {
+  OutputLocale,
+  ReasoningEffort,
+  TranslationPipelineConfig
+} from './config'
 import { tokenErrors } from './protected-tokens'
 
 export interface TranslationItem {
@@ -109,7 +113,7 @@ function parseBatchResponse(content: string): Record<string, string> {
 interface OpenAiTranslatorOptions {
   apiKey: string
   model: string
-  reasoningEffort: string
+  reasoningEffort: ReasoningEffort
   glossary: string
   fetchFn?: typeof fetch
   requestTimeoutMs?: number

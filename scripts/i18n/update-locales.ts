@@ -175,7 +175,9 @@ function loadManifest(filename: string): SourceManifest {
     !manifest.files ||
     typeof manifest.files !== 'object' ||
     Array.isArray(manifest.files) ||
-    !Object.values(manifest.files).every((hash) => typeof hash === 'string')
+    !Object.values(manifest.files).every(
+      (hash) => typeof hash === 'string' && /^[0-9a-f]{40,64}$/.test(hash)
+    )
   ) {
     throw new Error(`${filename} has an invalid source manifest`)
   }

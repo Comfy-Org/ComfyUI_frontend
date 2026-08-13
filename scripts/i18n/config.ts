@@ -4,11 +4,19 @@ export interface OutputLocale {
   guidance?: string
 }
 
+export type ReasoningEffort =
+  | 'none'
+  | 'low'
+  | 'medium'
+  | 'high'
+  | 'xhigh'
+  | 'max'
+
 export interface TranslationPipelineConfig {
   entry: string
   output: string
   model: string
-  reasoningEffort: 'none' | 'low' | 'medium' | 'high' | 'xhigh' | 'max'
+  reasoningEffort: ReasoningEffort
   maxItemsPerRequest: number
   maxSourceCharsPerRequest: number
   localeConcurrency: number
