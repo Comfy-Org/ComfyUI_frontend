@@ -716,8 +716,30 @@ serves the actual use case.
 | Reading another node's DOM element; writing `node.imgs`                 | Breaches the node sandbox in both directions                                                                                                        | `node.getOutputImages()`, `getDisplayedImageIndex()`                                                |
 | A pack-rendered element or renderer in the settings panel or app chrome | Precisely what then cannot be restyled — and Nodes 2.0 restyles                                                                                     | `ui.addTopBarBadge`, `addActionBarButton`, `settings.declare({ type })` with the real control types |
 | Node-local pointer hit-testing                                          | Hand-rolled hit testing against geometry the renderer owns                                                                                          | `widgets.mount` + DOM events on the element the pack owns                                           |
-| Replacing core connection validation globally                           | One pack changing validity for every other pack                                                                                                     | —                                                                                                   |
+| Replacing core connection validation globally                           | One pack changing validity for every other pack                                                                                                     | `b.onUnplacedLink` — the moment, not the prototype                                                  |
 | A subscription per node instance                                        | Fails silently: keyed by object, identity dies on undo/reload/subgraph re-entry; keyed by id, the entry is never collected                          | `comfy.onNodeChanged` — one stream, filtered by the pack                                            |
+
+**One of these stopped being a refusal, and how is the interesting part.**
+rgthree's headline feature is dropping a context link on a KSampler and having
+`model`, `positive`, `negative` and `latent` all wire at once. It got there by
+replacing `connectByType` on `LGraphNode.prototype` — so one pack's convenience
+silently became every other pack's link routing, which is as clear a case of
+"a pack rebuilt part of the front end" as the corpus contains. Refusing the
+mechanism was right. But refusing it left a real feature with nowhere to go, and
+"we refuse this" is only honest if we have actually looked for the moment
+underneath.
+
+The moment was already there: both branches of `LinkConnector.connectToNode`
+end in `console.warn` plus `return` when no single slot fits. `b.onUnplacedLink`
+fires exactly there, for that node type only, and the pack wires what it likes
+with members it already had. Nothing else about link routing changed — a drop
+that finds a slot never reaches that path.
+
+What stayed in the pack is the load-bearing half of the split: `SEED` matching
+anything with SEED in its name, `STEP_REFINER` matching `AT_STEP`, `POSITIVE`
+and `NEGATIVE` inferred from the peer's type or title. That is domain knowledge
+about ComfyUI's naming conventions and the host has no business holding it. The
+host publishes the moment; the pack keeps the match.
 
 Two of these were reached _by_ publishing something smaller. Command invocation
 unlocked the mask editor without clipspace; declarative chrome contributions
