@@ -13,11 +13,18 @@ const pluginPath = path.resolve('tools/oxlint-plugins/comfyIngestTypes.ts')
 const oxlintEntry = path.resolve('node_modules/oxlint/bin/oxlint')
 
 const fixture = `import type { z } from 'zod'
-import type { Member as GeneratedMember } from '@comfyorg/ingest-types'
+import type {
+  Member as GeneratedMember,
+  Plan as GeneratedPlan,
+  PreviewSubscribeRequest as GeneratedPreviewSubscribeRequest,
+  SubscribeRequest as GeneratedSubscribeRequest
+} from '@comfyorg/ingest-types'
 
 type Member = GeneratedMember & { credits_used_this_month?: number }
 
-type Plan = Omit<GeneratedMember, 'id'> & { id: string }
+type Plan = Omit<GeneratedPlan, 'id'> & { id: string }
+
+type AcceptInviteResponse = GeneratedMember & { acceptedAt: Date }
 
 type Workspace = { a: number } & { b: number }
 
@@ -29,12 +36,16 @@ interface PendingInvite {
   id: string
 }
 
-interface PreviewSubscribeRequest extends GeneratedMember {
+interface PreviewSubscribeRequest extends GeneratedPreviewSubscribeRequest {
   billing_cycle?: 'monthly' | 'yearly'
 }
 
-interface SubscribeRequest extends Omit<GeneratedMember, 'id'> {
+interface SubscribeRequest extends Omit<GeneratedSubscribeRequest, 'id'> {
   id: string
+}
+
+interface CreateInviteRequest extends GeneratedMember {
+  note?: string
 }
 
 interface ListMembersResponse extends LocalOnlyShape {
@@ -56,10 +67,12 @@ interface LocalOnlyShape {
 export type {
   Member,
   Plan,
+  AcceptInviteResponse,
   Workspace,
   PendingInvite,
   PreviewSubscribeRequest,
   SubscribeRequest,
+  CreateInviteRequest,
   ListMembersResponse,
   SubscriptionDuration,
   ResubscribeResponse,
@@ -146,6 +159,14 @@ describe('comfy/no-duplicate-ingest-type', () => {
 
   it('flags an interface extending something other than a generated export', () => {
     expect(reportedNames).toContain('ListMembersResponse')
+  })
+
+  it('flags an interface extending a generated export of a different name', () => {
+    expect(reportedNames).toContain('CreateInviteRequest')
+  })
+
+  it('flags an alias derived from a generated export of a different name', () => {
+    expect(reportedNames).toContain('AcceptInviteResponse')
   })
 })
 

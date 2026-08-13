@@ -47,7 +47,10 @@ interface InterfaceHeritage {
 
 interface ImportDeclaration {
   readonly source: { readonly value: string }
-  readonly specifiers?: readonly { readonly local?: Identifier }[]
+  readonly specifiers?: readonly {
+    readonly local?: Identifier
+    readonly imported?: Identifier
+  }[]
 }
 
 interface NamedDeclaration {
@@ -185,54 +188,54 @@ function isZodInference(annotation: TypeNode): boolean {
 function namesGeneratedImport(
   reference: Identifier | QualifiedName | MemberExpression | undefined,
   typeArguments: TypeArguments | undefined,
-  generatedLocalNames: ReadonlySet<string>
+  generatedBindings: ReadonlySet<string>
 ): boolean {
   if (
     reference?.type === 'Identifier' &&
-    generatedLocalNames.has(reference.name)
+    generatedBindings.has(reference.name)
   ) {
     return true
   }
   return (typeArguments?.params ?? []).some((param) =>
-    referencesGenerated(param, generatedLocalNames)
+    referencesGenerated(param, generatedBindings)
   )
 }
 
 function referencesGenerated(
   node: TypeNode,
-  generatedLocalNames: ReadonlySet<string>
+  generatedBindings: ReadonlySet<string>
 ): boolean {
   if (node.type !== 'TSTypeReference') return false
   return namesGeneratedImport(
     node.typeName,
     node.typeArguments,
-    generatedLocalNames
+    generatedBindings
   )
 }
 
 function extendsGenerated(
   heritage: readonly InterfaceHeritage[],
-  generatedLocalNames: ReadonlySet<string>
+  generatedBindings: ReadonlySet<string>
 ): boolean {
   return heritage.some((clause) =>
     namesGeneratedImport(
       clause.expression,
       clause.typeArguments,
-      generatedLocalNames
+      generatedBindings
     )
   )
 }
 
 function isDerivedRatherThanRedeclared(
   annotation: TypeNode,
-  generatedLocalNames: ReadonlySet<string>
+  generatedBindings: ReadonlySet<string>
 ): boolean {
   if (isZodInference(annotation)) return true
   if (annotation.type === 'TSIndexedAccessType') return true
-  if (referencesGenerated(annotation, generatedLocalNames)) return true
+  if (referencesGenerated(annotation, generatedBindings)) return true
   if (annotation.type !== 'TSIntersectionType') return false
   return (annotation.types ?? []).some((member) =>
-    referencesGenerated(member, generatedLocalNames)
+    referencesGenerated(member, generatedBindings)
   )
 }
 
@@ -242,11 +245,23 @@ function duplicateMessage(name: string): string {
 
 const noDuplicateIngestType = {
   create(context: RuleContext) {
-    const generatedLocalNames = new Set<string>()
+    const exportNameByLocalBinding = new Map<string, string>()
 
-    const reportIfDuplicate = (node: NamedDeclaration) => {
+    const bindingsAliasing = (exportName: string): ReadonlySet<string> => {
+      const bindings = new Set<string>()
+      for (const [binding, exported] of exportNameByLocalBinding) {
+        if (exported === exportName) bindings.add(binding)
+      }
+      return bindings
+    }
+
+    const reportUnlessDerived = (
+      node: NamedDeclaration,
+      derivesFrom: (sameNameBindings: ReadonlySet<string>) => boolean
+    ) => {
       const { name } = node.id
       if (!generatedTypeNames().has(name)) return
+      if (derivesFrom(bindingsAliasing(name))) return
       context.report({ node: node.id, message: duplicateMessage(name) })
     }
 
@@ -254,22 +269,24 @@ const noDuplicateIngestType = {
       ImportDeclaration(node: ImportDeclaration) {
         if (node.source.value !== GENERATED_PACKAGE) return
         for (const specifier of node.specifiers ?? []) {
-          if (specifier.local) generatedLocalNames.add(specifier.local.name)
+          const { local, imported } = specifier
+          if (!local) continue
+          exportNameByLocalBinding.set(local.name, imported?.name ?? local.name)
         }
       },
       TSInterfaceDeclaration(node: InterfaceDeclaration) {
-        if (extendsGenerated(node.extends ?? [], generatedLocalNames)) return
-        reportIfDuplicate(node)
+        reportUnlessDerived(node, (sameNameBindings) =>
+          extendsGenerated(node.extends ?? [], sameNameBindings)
+        )
       },
       TSTypeAliasDeclaration(node: TypeAliasDeclaration) {
-        const annotation = node.typeAnnotation
-        if (
-          annotation &&
-          isDerivedRatherThanRedeclared(annotation, generatedLocalNames)
-        ) {
-          return
-        }
-        reportIfDuplicate(node)
+        reportUnlessDerived(node, (sameNameBindings) => {
+          const annotation = node.typeAnnotation
+          return (
+            annotation !== undefined &&
+            isDerivedRatherThanRedeclared(annotation, sameNameBindings)
+          )
+        })
       }
     }
   }
