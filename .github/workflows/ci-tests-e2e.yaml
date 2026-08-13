@@ -17,12 +17,37 @@ jobs:
   changes:
     runs-on: ubuntu-latest
     permissions:
+      actions: read
       contents: read
     outputs:
-      should-run: ${{ steps.changes.outputs.should-run }}
+      merge-queue-run-id: ${{ steps.merge-queue-run.outputs.run-id }}
+      should-run: ${{ steps.merge-queue-run.outputs.run-id == '' && steps.changes.outputs.should-run == 'true' }}
     steps:
+      - name: Find successful merge queue run for this commit
+        id: merge-queue-run
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          if run_id=$(gh api --method GET \
+            "repos/${GH_REPO}/actions/workflows/ci-tests-e2e.yaml/runs" \
+            -f event=merge_group \
+            -f head_sha="$HEAD_SHA" \
+            -f status=success \
+            -F per_page=1 \
+            --jq '.workflow_runs[0].id // empty'); then
+            echo "run-id=$run_id" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::Could not check prior merge queue runs; running E2E"
+            echo "run-id=" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.merge-queue-run.outputs.run-id == ''
       - id: changes
+        if: steps.merge-queue-run.outputs.run-id == ''
         uses: ./.github/actions/changes-filter
 
   setup:
@@ -208,10 +233,12 @@ jobs:
     steps:
       - name: Check E2E results
         env:
+          MERGE_QUEUE_RUN_ID: ${{ needs.changes.outputs.merge-queue-run-id }}
           SHOULD_RUN: ${{ needs.changes.outputs.should-run }}
           SHARDED: ${{ needs.playwright-tests-chromium-sharded.result }}
           BROWSERS: ${{ needs.playwright-tests.result }}
         run: |
+          [[ -n "$MERGE_QUEUE_RUN_ID" ]] && echo "E2E passed in merge queue run $MERGE_QUEUE_RUN_ID" && exit 0
           [[ "$SHOULD_RUN" != "true" ]] && echo "E2E skipped" && exit 0
           [[ "$SHARDED" != "success" || "$BROWSERS" != "success" ]] && echo "E2E failed" && exit 1
           echo "E2E passed"

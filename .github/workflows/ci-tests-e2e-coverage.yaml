@@ -11,23 +11,52 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
+  actions: read
   contents: read
 
 jobs:
   merge:
     if: >
       github.repository == 'Comfy-Org/ComfyUI_frontend' &&
-      github.event.workflow_run.conclusion == 'success'
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event != 'merge_group'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     outputs:
       has-coverage: ${{ steps.coverage-shards.outputs.has-coverage }}
 
     steps:
+      - name: Select E2E run with coverage
+        id: coverage-run
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          TRIGGERING_EVENT: ${{ github.event.workflow_run.event }}
+          TRIGGERING_RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          run_id="$TRIGGERING_RUN_ID"
+          if [[ "$TRIGGERING_EVENT" == "push" ]]; then
+            if merge_queue_run_id=$(gh api --method GET \
+              "repos/${GH_REPO}/actions/workflows/ci-tests-e2e.yaml/runs" \
+              -f event=merge_group \
+              -f head_sha="$HEAD_SHA" \
+              -f status=success \
+              -F per_page=1 \
+              --jq '.workflow_runs[0].id // empty'); then
+              if [[ -n "$merge_queue_run_id" ]]; then
+                run_id="$merge_queue_run_id"
+              fi
+            else
+              echo "::warning::Could not check prior merge queue runs; using the triggering run"
+            fi
+          fi
+          echo "run-id=$run_id" >> "$GITHUB_OUTPUT"
+
       - name: Download all shard coverage data
         uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12
         with:
-          run_id: ${{ github.event.workflow_run.id }}
+          run_id: ${{ steps.coverage-run.outputs.run-id }}
           name: e2e-coverage-shard-.*
           name_is_regexp: true
           path: temp/coverage-shards
