@@ -44,19 +44,18 @@ export function createSharedPagedList<TParams, TItem>(
   async function invalidateItems(items: Readonly<TItem[]>) {
     await Promise.all([...cache.values()].map((e) => e.list.invalidate(items)))
   }
-  async function invalidateEntry(entry: CacheEntry<TItem>) {
+
+  function overlapping(entry: CacheEntry<TItem>): CacheEntry<TItem>[] {
     const snapshot = toValue(entry.list.items)
-    if (snapshot.length === 0) return
+    if (snapshot.length === 0) return [entry]
 
     const staleKeys = new Set(snapshot.map(itemKey))
-    function overlapsEntry(e: CacheEntry<TItem>) {
-      return toValue(e.list.items).some((item) => staleKeys.has(itemKey(item)))
-    }
-    await Promise.all(
-      [...cache.values()].filter(overlapsEntry).map((e) => e.list.invalidate())
+    return [...cache.values()].filter((e) =>
+      toValue(e.list.items).some((item) => staleKeys.has(itemKey(item)))
     )
   }
-  const constructor = (params: TParams): PagedList<TItem> => {
+
+  function constructor(params: TParams): PagedList<TItem> {
     const key = keyFn(params)
     const entry = cache.get(key) ?? { list: factory(params), refCount: 0 }
     cache.set(key, entry)
@@ -66,9 +65,13 @@ export function createSharedPagedList<TParams, TItem>(
 
     async function invalidate(stale?: Readonly<TItem[]>) {
       if (stale) await invalidateItems(stale)
-      else await invalidateEntry(entry)
+      else await Promise.all(overlapping(entry).map((e) => e.list.invalidate()))
     }
-    return { ...entry.list, invalidate }
+    async function loadNew() {
+      await Promise.all(overlapping(entry).map((e) => e.list.loadNew()))
+    }
+    return { ...entry.list, invalidate, loadNew }
   }
+
   return { constructor, invalidateItems }
 }
