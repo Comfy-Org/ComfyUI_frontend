@@ -172,6 +172,29 @@ export const useQueueNotificationBanners = () => {
     count
   })
 
+  /**
+   * Drops the "queuing" banner without claiming anything was queued.
+   *
+   * A run the backend refused outright used to leave that banner up forever,
+   * because the event resolving it was withheld unless something was accepted.
+   * Now that it always arrives, converting it would replace one wrong banner
+   * with a worse one: `sanitizeCount` reads an explicit 0 as "unknown, assume
+   * 1", so the user would be told a run started while the error dialog behind
+   * it says the opposite.
+   */
+  const dismissQueuedPending = (requestId: number | undefined) => {
+    const matches = (notification: { type: string; requestId?: number }) =>
+      notification.type === 'queuedPending' &&
+      (requestId === undefined || notification.requestId === requestId)
+
+    if (activeNotification.value && matches(activeNotification.value)) {
+      activeNotification.value = null
+    }
+    pendingNotifications.value = pendingNotifications.value.filter(
+      (notification) => !matches(notification)
+    )
+  }
+
   const convertQueuedPendingToQueued = (
     requestId: number | undefined,
     count: number
@@ -232,6 +255,10 @@ export const useQueueNotificationBanners = () => {
 
   const handlePromptQueued = (event: CustomEvent<PromptQueuedEventPayload>) => {
     const payload = event.detail
+    if (payload?.batchCount === 0) {
+      dismissQueuedPending(payload.requestId)
+      return
+    }
     const count = sanitizeCount(payload?.batchCount)
     const handled = convertQueuedPendingToQueued(payload?.requestId, count)
     if (!handled) {

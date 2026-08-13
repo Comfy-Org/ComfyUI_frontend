@@ -710,6 +710,27 @@ describe('ComfyApp', () => {
       expect(mockCanvas.draw).toHaveBeenCalledWith(true, true)
     })
 
+    it('reports a run the backend refused outright, not just an accepted one', async () => {
+      // promptQueueing fires whatever happens, but promptQueued was withheld
+      // when the submission errored out before anything was queued — the one
+      // case a listener most needs to hear about. A pack bracketing a temporary mutation around a run was left
+      // holding the graph open after a failed submission, and the "queuing"
+      // banner stayed up for good.
+      prepareEmptyPromptQueue()
+      const dispatch = vi.mocked(api.dispatchCustomEvent)
+      vi.spyOn(api, 'queuePrompt').mockRejectedValue(
+        new Error('backend unreachable')
+      )
+
+      await app.queuePrompt(0).catch(() => undefined)
+
+      expect(dispatch).toHaveBeenCalledWith('promptQueueing', expect.anything())
+      expect(dispatch).toHaveBeenCalledWith(
+        'promptQueued',
+        expect.objectContaining({ batchCount: 0, promptIds: [] })
+      )
+    })
+
     it('stores workflow telemetry metadata for every accepted batch submission', async () => {
       prepareEmptyPromptQueue()
       const registry = new TelemetryRegistry()

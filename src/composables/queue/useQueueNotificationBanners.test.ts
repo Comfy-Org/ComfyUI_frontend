@@ -183,19 +183,46 @@ describe(useQueueNotificationBanners, () => {
     }
   })
 
-  it('falls back to 1 when queued batch count is invalid', async () => {
+  it('falls back to 1 when queued batch count is missing', async () => {
     const { unmount, composable } = mountComposable()
 
     try {
-      mockApi.dispatchEvent(
-        new CustomEvent('promptQueued', { detail: { batchCount: 0 } })
-      )
+      mockApi.dispatchEvent(new CustomEvent('promptQueued', { detail: {} }))
       await nextTick()
 
       expect(composable.currentNotification.value).toEqual({
         type: 'queued',
         count: 1
       })
+    } finally {
+      unmount()
+    }
+  })
+
+  it('says nothing when the backend queued nothing', async () => {
+    // An explicit 0 is a fact, not a missing value. A run refused outright
+    // used to leave the "queuing" banner up forever because the resolving
+    // event was withheld; now it arrives, and reading 0 as "assume 1" would
+    // tell the user a run started while the error dialog says the opposite.
+    const { unmount, composable } = mountComposable()
+
+    try {
+      mockApi.dispatchEvent(
+        new CustomEvent('promptQueueing', {
+          detail: { batchCount: 1, requestId: 7 }
+        })
+      )
+      await nextTick()
+      expect(composable.currentNotification.value?.type).toBe('queuedPending')
+
+      mockApi.dispatchEvent(
+        new CustomEvent('promptQueued', {
+          detail: { batchCount: 0, requestId: 7, rejectedCount: 1 }
+        })
+      )
+      await nextTick()
+
+      expect(composable.currentNotification.value).toBeNull()
     } finally {
       unmount()
     }

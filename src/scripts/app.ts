@@ -1999,15 +1999,21 @@ export class ComfyApp {
           await this.ui.queue.update()
         }
 
-        if (queuedCount > 0) {
-          api.dispatchCustomEvent('promptQueued', {
-            number,
-            batchCount: queuedCount,
-            requestId,
-            promptIds,
-            rejectedCount
-          })
-        }
+        // Unguarded. `queuedCount` counts iterations that got that far, so the
+        // guard withheld this only when the submission errored out before any
+        // did — and that is exactly the case a listener most needs to hear
+        // about. `promptQueueing` fires whatever happens, so a pack bracketing
+        // a temporary mutation around a run — unmute a branch, build the
+        // prompt, mute it back — was left holding the graph open after a failed
+        // submission, and the queuing banner stayed up for good. `batchCount:
+        // 0` is what says nothing started.
+        api.dispatchCustomEvent('promptQueued', {
+          number,
+          batchCount: queuedCount,
+          requestId,
+          promptIds,
+          rejectedCount
+        })
       }
     } finally {
       this.processingQueue = false
