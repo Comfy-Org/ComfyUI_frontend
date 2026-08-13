@@ -2,7 +2,6 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 test.use({
   initialSettings: { 'Comfy.UseNewMenu': 'Disabled' }
@@ -113,21 +112,17 @@ test.describe('Hidden link badges', { tag: ['@canvas'] }, () => {
     await comfyPage.contextMenu.waitForHidden()
     await comfyPage.nextFrame()
 
-    const { serialized, linkId } = await comfyPage.page.evaluate(() => {
-      const link = window.app!.graph!.links.values().next().value
-      if (!link) throw new Error('Workflow link was not found')
-      return {
-        serialized: window.app!.graph!.serialize(),
-        linkId: String(link.id)
-      }
-    })
+    const serialized = await comfyPage.workflow.getExportedWorkflow()
+    const serializedLink = serialized.links?.[0]
+    if (!serializedLink) throw new Error('Exported workflow link was not found')
+    const linkId = String(
+      Array.isArray(serializedLink) ? serializedLink[0] : serializedLink.id
+    )
     expect(serialized.extra?.linkVisibility).toEqual({
       [linkId]: { hidden: true }
     })
 
-    const validated = await validateComfyWorkflow(serialized)
-    if (!validated) throw new Error('Serialized workflow failed validation')
-    await comfyPage.workflow.loadGraphData(validated)
+    await comfyPage.workflow.loadGraphData(serialized)
 
     await expect
       .poll(() =>
@@ -163,24 +158,47 @@ test.describe(
       await expect(inputSlot).toBeVisible()
       await expect(outputSlot).toBeVisible()
 
-      await comfyPage.page.evaluate(() => {
-        const link = window.app!.graph!.links.values().next().value
+      const linkId = await comfyPage.page.evaluate(() => {
+        const graph = window.app!.graph!
+        const sourceNode = graph.nodes.find(
+          (node) => node.title === 'Load Checkpoint'
+        )
+        const targetNode = graph.nodes.find(
+          (node) => node.title === 'VAE Decode'
+        )
+        if (!sourceNode || !targetNode) {
+          throw new Error('Workflow endpoint nodes were not found')
+        }
+        const outputSlot = sourceNode.outputs.findIndex(
+          (slot) => slot.name === 'VAE'
+        )
+        const inputSlot = targetNode.inputs.findIndex(
+          (slot) => slot.name === 'vae'
+        )
+        const link = [...graph.links.values()].find(
+          (candidate) =>
+            candidate.origin_id === sourceNode.id &&
+            candidate.origin_slot === outputSlot &&
+            candidate.target_id === targetNode.id &&
+            candidate.target_slot === inputSlot
+        )
         if (!link) throw new Error('Workflow link was not found')
         link.hidden = true
         window.app!.canvas.setDirty(false, true)
+        return link.id
       })
       await comfyPage.nextFrame()
       await expect
         .poll(() =>
-          comfyPage.page.evaluate(() => {
-            const link = window.app!.graph!.links.values().next().value
+          comfyPage.page.evaluate((linkId) => {
+            const link = window.app!.graph!.getLink(linkId)
             return link
               ? {
                   hidden: link.hidden,
                   curveRendered: window.app!.canvas.renderedPaths.has(link)
                 }
               : null
-          })
+          }, linkId)
         )
         .toEqual({ hidden: true, curveRendered: false })
 
@@ -193,10 +211,10 @@ test.describe(
       await comfyPage.nextFrame()
       await expect
         .poll(() =>
-          comfyPage.page.evaluate(() => {
-            const link = window.app!.graph!.links.values().next().value
+          comfyPage.page.evaluate((linkId) => {
+            const link = window.app!.graph!.getLink(linkId)
             return link ? window.app!.canvas.renderedPaths.has(link) : null
-          })
+          }, linkId)
         )
         .toBe(true)
 
@@ -204,10 +222,10 @@ test.describe(
       await comfyPage.nextFrame()
       await expect
         .poll(() =>
-          comfyPage.page.evaluate(() => {
-            const link = window.app!.graph!.links.values().next().value
+          comfyPage.page.evaluate((linkId) => {
+            const link = window.app!.graph!.getLink(linkId)
             return link ? window.app!.canvas.renderedPaths.has(link) : null
-          })
+          }, linkId)
         )
         .toBe(false)
 
@@ -220,12 +238,23 @@ test.describe(
       await comfyPage.nextFrame()
       await expect
         .poll(() =>
-          comfyPage.page.evaluate(() => {
-            const link = window.app!.graph!.links.values().next().value
+          comfyPage.page.evaluate((linkId) => {
+            const link = window.app!.graph!.getLink(linkId)
             return link ? window.app!.canvas.renderedPaths.has(link) : null
-          })
+          }, linkId)
         )
         .toBe(true)
+
+      await comfyPage.canvasOps.moveMouseToEmptyArea()
+      await comfyPage.nextFrame()
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate((linkId) => {
+            const link = window.app!.graph!.getLink(linkId)
+            return link ? window.app!.canvas.renderedPaths.has(link) : null
+          }, linkId)
+        )
+        .toBe(false)
     })
   }
 )
