@@ -1268,7 +1268,7 @@
     }
   },
   "ByteDanceSeedAudio": {
-    "description": "使用 ByteDance Seed Audio 1.0，通过单个提示生成语音、音乐、音效和多说话人对话。在提示中描述声音、情感、氛围、背景音乐和音效，并包含要说的台词。可选内置预设声音，从最多 3 个参考 clip（在提示中标记为 @Audio1-3）克隆声音，或从角色图像推导声音。每次最多生成 2 分钟音频。",
+    "description": "使用 ByteDance Seed Audio 1.0，通过单个提示词生成语音、音乐、音效和多说话人对话。在提示词中描述音色、情感、环境氛围、背景音乐和音效，并包含要朗读的台词。还可选择内置预设音色、从最多 3 个参考 clip 中克隆音色（在提示词中标记为 {'@'}Audio1-3），或根据角色图像生成音色。每次运行最多可生成 2 分钟的音频。多语言模型支持 20 种语言和基于时间戳的时序控制。",
     "display_name": "ByteDance Seed Audio 1.0",
     "inputs": {
       "control_after_generate": {

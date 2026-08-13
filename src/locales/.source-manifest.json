@@ -5,36 +5,5 @@
     "nodeDefs.json": "93c778a69bfe43a07e3bf07d1ecfadc26bf44661",
     "settings.json": "1028b58bfb4f3e4f5025cd8d933bd19085c291e3"
   },
-  "knownViolations": {
-    "main.json": [
-      "[\"assetBrowser\",\"civitaiLinkExample\"]",
-      "[\"assetBrowser\",\"civitaiLinkLabel\"]",
-      "[\"assetBrowser\",\"jobId\"]",
-      "[\"assetBrowser\",\"uploadModelDescription2\"]",
-      "[\"assetBrowser\",\"uploadModelDescription3\"]",
-      "[\"g\",\"disabling\"]",
-      "[\"g\",\"enabling\"]",
-      "[\"g\",\"itemsSelected\"]",
-      "[\"g\",\"searchPlaceholder\"]",
-      "[\"g\",\"updating\"]",
-      "[\"linearMode\",\"downloadAll\"]",
-      "[\"manager\",\"changingVersion\"]",
-      "[\"manager\",\"failed\"]",
-      "[\"manager\",\"uninstalling\"]",
-      "[\"rightSidePanel\",\"missingModels\",\"gatedModelsHint\"]",
-      "[\"subscription\",\"creditsRemainingThisMonth\"]",
-      "[\"subscription\",\"creditsRemainingThisYear\"]",
-      "[\"subscription\",\"inviteUpTo\"]",
-      "[\"subscription\",\"preview\",\"creditsRefillMonthlyTo\"]",
-      "[\"toastMessages\",\"failedToAccessBillingPortal\"]",
-      "[\"workspace\",\"addedToWorkspace\"]",
-      "[\"workspacePanel\",\"inviteLimitReached\"]",
-      "[\"workspacePanel\",\"members\",\"membersCount\"]"
-    ],
-    "nodeDefs.json": [
-      "[\"ByteDanceSeedAudio\",\"description\"]",
-      "[\"LTXVDurationPredictor\",\"description\"]"
-    ]
-  },
   "version": 1
 }

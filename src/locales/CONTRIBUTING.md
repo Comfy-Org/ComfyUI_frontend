@@ -125,12 +125,9 @@ rerun with `--allow-prune` (or the `allow_prune` input on the manual workflow
 dispatch) only after confirming the English sources are complete.
 `pnpm locale:check` runs offline in CI: it reports pending work and fails on
 protected-token violations that are not already queued for retranslation
-because the English source changed. The manifest's `knownViolations` field
-baselines violations that predate the pipeline; a successful locale run heals
-and drops them, and any corruption introduced beyond the baseline fails the
-check immediately. oxfmt ignores `src/locales/**/*.json` — the pipeline is the
-sole writer of those bytes, which keeps the manifest's recorded blob hashes
-valid.
+because the English source changed. oxfmt ignores `src/locales/**/*.json` — the
+pipeline is the sole writer of those bytes, which keeps the manifest's recorded
+blob hashes valid.
 
 ### Manual Translation Updates
 

@@ -46,10 +46,6 @@ import {
 
 interface SourceManifest {
   files: Record<string, string>
-  // Transitional baseline: leaf path keys per entry file whose committed
-  // translations violated token validation when the manifest was recorded.
-  // The check exempts them; a successful locale run heals and drops them.
-  knownViolations?: Record<string, string[]>
   version: 1
 }
 
@@ -60,7 +56,6 @@ interface SourcePlan {
   invalidated: Set<string>
   previousLeafCount: number
   degraded: boolean
-  knownViolationKeys: ReadonlySet<string>
 }
 
 interface LocaleFileState {
@@ -185,15 +180,7 @@ function loadManifest(filename: string): SourceManifest {
     Array.isArray(manifest.files) ||
     !Object.values(manifest.files).every(
       (hash) => typeof hash === 'string' && /^[0-9a-f]{40,64}$/.test(hash)
-    ) ||
-    ('knownViolations' in manifest &&
-      (!manifest.knownViolations ||
-        typeof manifest.knownViolations !== 'object' ||
-        Array.isArray(manifest.knownViolations) ||
-        !Object.values(manifest.knownViolations).every(
-          (keys) =>
-            Array.isArray(keys) && keys.every((key) => typeof key === 'string')
-        )))
+    )
   ) {
     throw new Error(`${filename} has an invalid source manifest`)
   }
@@ -242,8 +229,7 @@ function writeManifest(
   entryDir: string,
   manifestFile: string,
   advancedFilenames: readonly string[],
-  preservedFiles: Readonly<Record<string, string>>,
-  preservedViolations: Readonly<Record<string, string[]>>
+  preservedFiles: Readonly<Record<string, string>>
 ): void {
   const files = Object.fromEntries(
     [
@@ -257,13 +243,7 @@ function writeManifest(
       ])
     ].sort(([left], [right]) => left.localeCompare(right))
   )
-  const manifest: SourceManifest = {
-    files,
-    ...(Object.keys(preservedViolations).length > 0
-      ? { knownViolations: preservedViolations }
-      : {}),
-    version: 1
-  }
+  const manifest: SourceManifest = { files, version: 1 }
   const serialized = `${JSON.stringify(manifest, null, 2)}\n`
   if (
     !existsSync(manifestFile) ||
@@ -354,15 +334,14 @@ function reportCheck(states: readonly LocaleFileState[]): number {
       )
     }
     // Skip keys queued because the English source changed (comparing an old
-    // translation against new English is meaningless) and baseline violations
-    // recorded in the manifest; a key newly corrupted beyond those must fail
-    // the check. Degraded plans (recorded source unavailable) cannot tell
-    // staleness from corruption, so they skip the audit.
+    // translation against new English is meaningless). Degraded plans
+    // (recorded source unavailable) cannot tell staleness from corruption, so
+    // they skip the audit.
     if (state.plan.degraded) continue
     for (const error of auditProtectedLiterals(
       state.plan.source,
       state.existing,
-      new Set([...state.plan.invalidated, ...state.plan.knownViolationKeys])
+      state.plan.invalidated
     )) {
       auditErrors.push(`${label}: ${error}`)
     }
@@ -421,8 +400,7 @@ async function run(argv: readonly string[]): Promise<void> {
         [...changes.added, ...changes.modified].map(pathKey)
       ),
       previousLeafCount: collectLeaves(previous).size,
-      degraded: recorded === undefined,
-      knownViolationKeys: new Set(manifest.knownViolations?.[filename] ?? [])
+      degraded: recorded === undefined
     }
   })
 
@@ -631,15 +609,6 @@ async function run(argv: readonly string[]): Promise<void> {
         if (completedFilenames.has(filename)) return []
         const hash = manifest.files[filename]
         return hash ? [[filename, hash] as const] : []
-      })
-    ),
-    // A completed file's translations were fully revalidated, so its baseline
-    // violations are healed and dropped; failed files keep theirs
-    Object.fromEntries(
-      filenames.flatMap((filename) => {
-        if (completedFilenames.has(filename)) return []
-        const keys = manifest.knownViolations?.[filename]
-        return keys && keys.length > 0 ? [[filename, keys] as const] : []
       })
     )
   )

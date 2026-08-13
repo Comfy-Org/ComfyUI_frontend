@@ -1268,7 +1268,7 @@
     }
   },
   "ByteDanceSeedAudio": {
-    "description": "ByteDance Seed Audio 1.0 ile tek bir istemden konuşma, müzik, ses efektleri ve çoklu konuşmacı diyaloğu oluşturun. İstemde ses(ler)i, duyguyu, ortamı, arka plan müziğini ve ses efektlerini tanımlayın ve konuşulacak replikleri ekleyin. İsteğe bağlı olarak yerleşik bir hazır ses seçin, en fazla 3 referans clip'ten sesleri klonlayın (istemde @Audio1-3 olarak etiketlenmiş), ya da bir karakter görselinden ses türetin. Her çalıştırmada en fazla 2 dakika ses.",
+    "description": "Tek bir istemden konuşma, müzik, ses efektleri ve çok konuşmacılı diyalog üretin. İstemde sesleri, duyguyu, ortamı, arka plan müziğini ve ses efektlerini açıklayın ve seslendirilecek replikleri ekleyin. İsteğe bağlı olarak yerleşik ön ayarlı bir ses seçin, en fazla 3 referans clip kullanarak sesleri klonlayın (istemde {'@'}Audio1-3 olarak etiketlenmiş) veya bir karakter görüntüsünden ses türetin. Her çalıştırmada en fazla 2 dakika ses üretilebilir. Çok dilli model 20 dili ve zaman damgasına dayalı zamanlama denetimini destekler.",
     "display_name": "ByteDance Seed Audio 1.0",
     "inputs": {
       "control_after_generate": {
