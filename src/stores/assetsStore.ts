@@ -275,10 +275,10 @@ export const useAssetsStore = defineStore('assets', () => {
       ? useAssetsQuery({ include_tags: ['input'] })
       : historyInputs
   )
-  const outputDirs = ref(['output'])
+  const outputDirs = ref(['output', 'temp'])
   const outputAssets = computed(() =>
     flags.assetsEnabled
-      ? useAssetsQuery({ include_tags: outputDirs.value })
+      ? useAssetsQuery({ tags_any: outputDirs.value })
       : useHistoryAssets()
   )
 

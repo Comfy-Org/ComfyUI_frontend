@@ -8,6 +8,7 @@ import { z } from 'zod'
 const zAsset = z.object({
   ...zIngestAsset.shape,
   created_at: z.string().datetime({ local: true }),
+  hash: z.string().optional(),
   id: z.string(),
   last_access_time: z.string().datetime({ local: true }).optional(),
   preview_url: z.string().optional(),

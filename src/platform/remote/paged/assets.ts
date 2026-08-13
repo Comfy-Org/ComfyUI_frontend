@@ -17,12 +17,20 @@ type QueryOptions = {
   onError?: (reason: string, error?: unknown) => void
 }
 
+// @ts-expect-error tags must be stubbed into ingest-types
+type _TagsStubCheck = ListAssetsData['query']['tags_any']
+type AssetParams = ListAssetsData['query'] & {
+  tags_all?: string[]
+  tags_any?: string[]
+  tags_none?: string[]
+}
+
 const BASE_PARAMS: ListAssetsData['query'] = {
   sort: 'created_at'
 }
 
 export function useAssetsQuery(
-  params: ListAssetsData['query'] = {},
+  params: AssetParams = {},
   options: QueryOptions = {}
 ): PagedList<AssetItem> {
   const onError = options.onError ?? console.error
