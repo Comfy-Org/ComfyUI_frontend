@@ -890,6 +890,23 @@ describe('type colours', () => {
     expect(api.defs.typeColor('NOTHING_KNOWS_THIS')).toBeTruthy()
   })
 
+  it('resolves a palette name to the colours the user actually sees', () => {
+    setActivePinia(createPinia())
+    const api = createComfyApi(() => new LGraph())
+
+    // Whatever the palette holds is the right answer; hardcoding hexes here
+    // would only assert that this test and LGraphCanvas were edited together.
+    // What must hold is that the three fields are not crossed — a filter for
+    // "red groups" comparing against the title-bar colour matches nothing.
+    const palette = LGraphCanvas.node_colors['pale_blue']
+    expect(api.defs.nodeColor('pale_blue')).toEqual({
+      color: palette.color,
+      bgColor: palette.bgcolor,
+      groupColor: palette.groupcolor
+    })
+    expect(api.defs.nodeColor('no_such_colour')).toBeUndefined()
+  })
+
   it('lets a pack colour a type it introduces, and take it back', () => {
     // Packs shipping their own types wrote straight into link_type_colors so
     // their links were not all grey.

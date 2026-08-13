@@ -98,6 +98,7 @@ export const API_MEMBERS: ReadonlySet<string> = new Set([
   'getValue',
   'graph',
   'graphId',
+  'groupColor',
   'groups',
   'guard',
   'handleFor',

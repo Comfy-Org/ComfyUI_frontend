@@ -306,6 +306,18 @@ export interface NodeSubMenuItem {
   run(node: NodeHandle): void
 }
 
+/**
+ * One entry of ComfyUI's node palette: the title bar, the body, and the shade
+ * a group of that colour is filled with.
+ *
+ * @knipIgnoreUnusedButUsedByCustomNodes
+ */
+export interface NodeColor {
+  readonly color: string
+  readonly bgColor: string
+  readonly groupColor: string
+}
+
 /** @knipIgnoreUnusedButUsedByCustomNodes */
 export interface NodeMenuItem {
   /**
@@ -467,6 +479,22 @@ export interface DefRegistry {
    * the table itself is not.
    */
   typeColor(type: string): string
+  /**
+   * The colours behind a name in ComfyUI's node palette — `red`, `pale_blue` —
+   * or `undefined` for a name it does not define.
+   *
+   * Same reasoning as {@link typeColor}, and the same limit: the resolver is
+   * published, the table is not. What makes this a design token rather than a
+   * renderer internal is that the names are the user's own vocabulary. They
+   * pick "green" from a menu; nothing records the word, only the hex it stood
+   * for. So a pack offering "mute every red group" cannot match what the user
+   * chose without being told which hex "red" meant, and two packs did it by
+   * reading `LGraphCanvas.node_colors` directly.
+   *
+   * Colours move with the palette, names do not. Resolve on use; do not cache
+   * the result and do not persist it in a workflow.
+   */
+  nodeColor(name: string): NodeColor | undefined
   /**
    * Declares the colour for a data type this pack introduces.
    *
@@ -910,6 +938,16 @@ export function createDefRegistry(): {
       has: (type) => known.has(type),
 
       typeColor: (type) => packTypeColors.get(type) ?? getLinkTypeColor(type),
+
+      nodeColor(name) {
+        const entry = LGraphCanvas.node_colors[name]
+        if (!entry) return undefined
+        return Object.freeze({
+          color: entry.color,
+          bgColor: entry.bgcolor,
+          groupColor: entry.groupcolor
+        })
+      },
 
       setTypeColor(type, color) {
         // Loading a palette seeds every backend-registered type to '' — so the
