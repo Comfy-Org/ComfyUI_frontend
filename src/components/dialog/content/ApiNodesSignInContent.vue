@@ -54,20 +54,22 @@
       >
         <AccessibleTooltip
           :label="t('apiNodesSignInDialog.tooltip')"
-          side="top"
+          side="bottom"
         >
           <template #trigger>
             <a
               :href="partnerNodesDocsUrl"
               target="_blank"
               rel="noopener noreferrer"
-              class="flex items-center gap-1 text-xs leading-none text-muted-foreground no-underline transition-colors duration-150 hover:text-base-foreground"
+              class="flex items-center gap-1 text-xs text-muted-foreground no-underline transition-colors duration-150 hover:text-base-foreground"
             >
               <i
                 class="icon-[lucide--info] size-4 shrink-0"
                 aria-hidden="true"
               />
-              {{ t('apiNodesSignInDialog.whatArePartnerNodes') }}
+              <span class="leading-4">
+                {{ t('apiNodesSignInDialog.whatArePartnerNodes') }}
+              </span>
             </a>
           </template>
         </AccessibleTooltip>
