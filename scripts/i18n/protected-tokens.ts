@@ -65,6 +65,13 @@ function leafTokenErrors(
     : [`${label}: leaf value changed`]
 }
 
+export function leafTokensDiffer(
+  source: LocaleValue,
+  target: LocaleValue | undefined
+): boolean {
+  return leafTokenErrors(source, target, 'leaf').length > 0
+}
+
 export function validateLocale(
   source: LocaleObject,
   locale: LocaleObject,
@@ -115,10 +122,9 @@ export function auditProtectedLiterals(
   for (const [key, leaf] of collectLeaves(source)) {
     if (typeof leaf.value !== 'string') continue
     if (skipKeys.has(key)) continue
-    if (protectedTokens(leaf.value, false).length === 0) continue
     const targetValue = targetLeaves.get(key)?.value
     if (typeof targetValue !== 'string') continue
-    for (const error of tokenErrors(leaf.value, targetValue, false)) {
+    for (const error of tokenErrors(leaf.value, targetValue, true)) {
       errors.push(`${leaf.path.join('.')}: ${error}`)
     }
   }

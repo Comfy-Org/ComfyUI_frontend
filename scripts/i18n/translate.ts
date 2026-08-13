@@ -16,6 +16,15 @@ export type TranslateBatch = (
 
 const retryableStatuses = new Set([408, 429, 500, 502, 503, 504])
 const retryDelaysMs = [1000, 4000, 10000]
+const defaultRequestTimeoutMs = 120_000
+const maxRetryAfterMs = 60_000
+
+function retryAfterMs(response: Response): number {
+  const seconds = Number(response.headers.get('retry-after'))
+  return Number.isFinite(seconds) && seconds > 0
+    ? Math.min(seconds * 1000, maxRetryAfterMs)
+    : 0
+}
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -103,12 +112,14 @@ interface OpenAiTranslatorOptions {
   reasoningEffort: string
   glossary: string
   fetchFn?: typeof fetch
+  requestTimeoutMs?: number
 }
 
 export function createOpenAiTranslator(
   options: OpenAiTranslatorOptions
 ): TranslateBatch {
   const fetchFn = options.fetchFn ?? fetch
+  const timeoutMs = options.requestTimeoutMs ?? defaultRequestTimeoutMs
   return async (locale, items) => {
     const body = JSON.stringify({
       model: options.model,
@@ -124,8 +135,12 @@ export function createOpenAiTranslator(
     })
 
     let lastError = new Error('translation request was not attempted')
+    let serverRetryDelayMs = 0
     for (let attempt = 0; attempt <= retryDelaysMs.length; attempt++) {
-      if (attempt > 0) await sleep(retryDelaysMs[attempt - 1])
+      if (attempt > 0) {
+        await sleep(Math.max(retryDelaysMs[attempt - 1], serverRetryDelayMs))
+        serverRetryDelayMs = 0
+      }
       try {
         const response = await fetchFn(
           'https://api.openai.com/v1/chat/completions',
@@ -135,7 +150,8 @@ export function createOpenAiTranslator(
               Authorization: `Bearer ${options.apiKey}`,
               'Content-Type': 'application/json'
             },
-            body
+            body,
+            signal: AbortSignal.timeout(timeoutMs)
           }
         )
         if (!response.ok) {
@@ -144,6 +160,7 @@ export function createOpenAiTranslator(
             `OpenAI request failed with status ${response.status}: ${detail.slice(0, 500)}`
           )
           if (!retryableStatuses.has(response.status)) throw lastError
+          serverRetryDelayMs = retryAfterMs(response)
           continue
         }
         const payload: unknown = await response.json()
@@ -154,6 +171,16 @@ export function createOpenAiTranslator(
           Array.isArray(payload.choices)
             ? (payload.choices[0] as unknown)
             : undefined
+        const finishReason =
+          choice && typeof choice === 'object' && 'finish_reason' in choice
+            ? choice.finish_reason
+            : undefined
+        if (finishReason === 'length') {
+          lastError = new Error(
+            'OpenAI response was truncated (finish_reason "length"); lower maxItemsPerRequest or maxSourceCharsPerRequest'
+          )
+          continue
+        }
         const message =
           choice && typeof choice === 'object' && 'message' in choice
             ? (choice.message as unknown)

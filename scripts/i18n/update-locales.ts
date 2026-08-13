@@ -31,6 +31,7 @@ import {
 } from './locale-tree'
 import {
   auditProtectedLiterals,
+  leafTokensDiffer,
   protectedTokens,
   validateLocale
 } from './protected-tokens'
@@ -51,6 +52,7 @@ interface SourcePlan {
   source: LocaleObject
   changes: LocaleChanges
   invalidated: Set<string>
+  previousLeafCount: number
 }
 
 interface LocaleFileState {
@@ -184,19 +186,39 @@ function readManifestSource(
   repoRoot: string,
   filename: string,
   hash: string
-): LocaleObject {
+): LocaleObject | undefined {
+  let content: string
   try {
-    const content = execFileSync('git', ['cat-file', 'blob', hash], {
+    content = execFileSync('git', ['cat-file', 'blob', hash], {
       cwd: repoRoot,
       encoding: 'utf8',
       maxBuffer: 64 * 1024 * 1024
     })
-    return parseLocale(content, `${filename}@${hash}`)
   } catch {
+    return undefined
+  }
+  try {
+    return parseLocale(content, `${filename}@${hash}`)
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error)
     throw new Error(
-      `Cannot read the recorded English source for ${filename} (${hash}). Run from a clone with full history (a blobless partial clone works: fetch-depth: 0 with filter: blob:none, which lazily fetches the blob over the network).`
+      `The recorded English source for ${filename} (${hash}) is not valid locale JSON: ${detail}. The source manifest may be corrupted; restore src/locales/.source-manifest.json from git history.`,
+      { cause: error }
     )
   }
+}
+
+const pruneCountFloor = 25
+const pruneRatioLimit = 0.02
+
+export function exceedsPruneThreshold(
+  deletedCount: number,
+  previousLeafCount: number
+): boolean {
+  return (
+    deletedCount >
+    Math.max(pruneCountFloor, Math.ceil(previousLeafCount * pruneRatioLimit))
+  )
 }
 
 function writeManifest(
@@ -251,7 +273,8 @@ function loadLocaleFileStates(
         pendingLeaves: collectPendingLeaves(
           plan.source,
           existing,
-          plan.invalidated
+          plan.invalidated,
+          leafTokensDiffer
         ),
         strayPaths
       }
@@ -306,7 +329,7 @@ function reportCheck(states: readonly LocaleFileState[]): number {
   print(
     `Pending: ${pendingTotal} translations, ${strayTotal} prunable keys, ${auditErrors.length} protected-token violations.`
   )
-  return 1
+  return auditErrors.length > 0 ? 1 : 0
 }
 
 async function run(argv: readonly string[]): Promise<void> {
@@ -330,15 +353,49 @@ async function run(argv: readonly string[]): Promise<void> {
     const canonical = serializeLocale(source)
     if (!check && raw !== canonical) writeFileSync(entryFile, canonical)
     const hash = manifest.files[filename]
-    const previous = hash ? readManifestSource(repoRoot, filename, hash) : {}
+    const recorded = hash ? readManifestSource(repoRoot, filename, hash) : {}
+    if (recorded === undefined && !check) {
+      throw new Error(
+        `Cannot read the recorded English source for ${filename} (${hash}). Run from a clone with full history (a blobless partial clone works: fetch-depth: 0 with filter: blob:none, which lazily fetches the blob over the network).`
+      )
+    }
+    if (recorded === undefined) {
+      print(
+        `WARNING: ${filename}: the recorded English source (${hash}) is unavailable in this clone; changed-string detection is skipped for this check.`
+      )
+    }
+    const previous = recorded ?? source
     const changes = diffLocaleSources(previous, source)
     return {
       filename,
       source,
       changes,
-      invalidated: new Set([...changes.added, ...changes.modified].map(pathKey))
+      invalidated: new Set(
+        [...changes.added, ...changes.modified].map(pathKey)
+      ),
+      previousLeafCount: collectLeaves(previous).size
     }
   })
+
+  const oversizedPrunes = plans
+    .filter((plan) =>
+      exceedsPruneThreshold(plan.changes.deleted.length, plan.previousLeafCount)
+    )
+    .map(
+      (plan) =>
+        `${plan.filename}: ${plan.changes.deleted.length} of ${plan.previousLeafCount} keys would be deleted`
+    )
+  if (oversizedPrunes.length > 0) {
+    if (check) {
+      for (const line of oversizedPrunes) {
+        print(`WARNING: large prune pending — ${line}`)
+      }
+    } else if (!argv.includes('--allow-prune')) {
+      throw new Error(
+        `Refusing to prune:\n${oversizedPrunes.join('\n')}\nA shrink this large usually means collect-i18n observed a partial app (failed custom-node imports or an incomplete server node list). Verify the English sources are complete, or rerun with --allow-prune to confirm the deletions.`
+      )
+    }
+  }
 
   const states = loadLocaleFileStates(config, outputDir, plans)
 
@@ -375,34 +432,62 @@ async function run(argv: readonly string[]): Promise<void> {
         throw new Error('No translator available')
       }
 
-  const rebuilt = await mapWithConcurrency(
+  const outcomes = await mapWithConcurrency(
     states,
     config.localeConcurrency,
-    async (state) => {
-      const plan = translationPlans.get(state)
-      if (!plan) throw new Error('Missing translation plan')
-      const translations =
-        plan.items.length > 0
-          ? await translateLocaleItems(
-              state.locale,
-              plan.items,
-              translateBatch,
-              config
-            )
-          : new Map<string, string>()
-      const leafTranslations = assembleLeafTranslations(
-        state.pendingLeaves,
-        plan,
-        translations
-      )
-      const output = rebuildLocale(
-        state.plan.source,
-        state.existing,
-        state.plan.invalidated,
-        leafTranslations
-      )
-      return { state, output }
+    async (
+      state
+    ): Promise<
+      | { state: LocaleFileState; output: LocaleObject }
+      | { state: LocaleFileState; failure: string }
+    > => {
+      try {
+        const plan = translationPlans.get(state)
+        if (!plan) throw new Error('Missing translation plan')
+        const translations =
+          plan.items.length > 0
+            ? await translateLocaleItems(
+                state.locale,
+                plan.items,
+                translateBatch,
+                config
+              )
+            : new Map<string, string>()
+        const leafTranslations = assembleLeafTranslations(
+          state.pendingLeaves,
+          plan,
+          translations
+        )
+        const output = rebuildLocale(
+          state.plan.source,
+          state.existing,
+          state.plan.invalidated,
+          leafTranslations
+        )
+        return { state, output }
+      } catch (error) {
+        return {
+          state,
+          failure: error instanceof Error ? error.message : String(error)
+        }
+      }
     }
+  )
+
+  const failures = outcomes.flatMap((outcome) =>
+    'failure' in outcome
+      ? [
+          `${outcome.state.locale.code}/${outcome.state.plan.filename}: ${outcome.failure}`
+        ]
+      : []
+  )
+  if (failures.length > 0) {
+    throw new Error(
+      `Translation failed for ${failures.length} locale files:\n${failures.join('\n')}`
+    )
+  }
+  const rebuilt = outcomes.flatMap((outcome) =>
+    'output' in outcome ? [outcome] : []
   )
 
   const errors = rebuilt.flatMap(({ state, output }) =>

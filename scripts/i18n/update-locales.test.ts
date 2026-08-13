@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { OutputLocale } from './config'
 import type { LocaleObject } from './locale-tree'
@@ -8,12 +8,17 @@ import {
   pathKey,
   rebuildLocale
 } from './locale-tree'
-import { validateLocale } from './protected-tokens'
+import { leafTokensDiffer, validateLocale } from './protected-tokens'
 import type { TranslateBatch, TranslationItem } from './translate'
-import { chunkItems, translateLocaleItems } from './translate'
+import {
+  chunkItems,
+  createOpenAiTranslator,
+  translateLocaleItems
+} from './translate'
 import {
   assembleLeafTranslations,
-  buildTranslationItems
+  buildTranslationItems,
+  exceedsPruneThreshold
 } from './update-locales'
 
 const locale: OutputLocale = { code: 'xx', name: 'Test Language' }
@@ -42,7 +47,12 @@ async function updateLocaleFile(
   const invalidated = new Set(
     [...changes.added, ...changes.modified].map(pathKey)
   )
-  const pendingLeaves = collectPendingLeaves(source, existing, invalidated)
+  const pendingLeaves = collectPendingLeaves(
+    source,
+    existing,
+    invalidated,
+    leafTokensDiffer
+  )
   const plan = buildTranslationItems('main.json', pendingLeaves)
   const translations =
     plan.items.length > 0
@@ -120,6 +130,31 @@ describe('locale file update', () => {
     })
     expect(translatedCount).toBe(5)
     expect(Object.keys(output)).toEqual([...Object.keys(output)].sort())
+  })
+
+  it('retranslates existing translations whose placeholders were corrupted', async () => {
+    const parity = {
+      farewell: 'Goodbye',
+      greeting: 'Hello {name}',
+      intact: 'See {docs}'
+    }
+    const corrupted = {
+      farewell: 'translated ({count})',
+      greeting: 'Bonjour nom',
+      intact: 'translated {docs}'
+    }
+    const { output, translatedCount } = await updateLocaleFile(
+      parity,
+      parity,
+      corrupted,
+      echoTranslator
+    )
+    expect(output).toEqual({
+      farewell: 'xx: Goodbye',
+      greeting: 'xx: Hello {name}',
+      intact: 'translated {docs}'
+    })
+    expect(translatedCount).toBe(2)
   })
 
   it('is idempotent: a rerun translates nothing and leaves the output unchanged', async () => {
@@ -287,6 +322,18 @@ describe('validateLocale', () => {
     ).toEqual(["help: missing {'@'}, {0}, {username}"])
   })
 
+  it('flags placeholder corruption on unchanged keys', () => {
+    const source = { status: 'Failed', title: 'Hi {name}' }
+    const changes = diffLocaleSources(source, source)
+    expect(
+      validateLocale(
+        source,
+        { status: '失败 ({count})', title: 'Hola nombre' },
+        changes
+      )
+    ).toEqual(['status: added {count}', 'title: missing {name}'])
+  })
+
   it('flags keys that no longer exist in the source', () => {
     const source = { stable: 'Keep me' }
     const changes = diffLocaleSources(source, source)
@@ -312,5 +359,91 @@ describe('validateLocale', () => {
     expect(
       validateLocale(source, { count: 'None | {total} many' }, changes)
     ).toEqual(['count: missing {count}', 'count: added {total}'])
+  })
+})
+
+describe('exceedsPruneThreshold', () => {
+  it('permits small cleanups and refuses large shrinks', () => {
+    expect(exceedsPruneThreshold(0, 0)).toBe(false)
+    expect(exceedsPruneThreshold(79, 13557)).toBe(false)
+    expect(exceedsPruneThreshold(25, 100)).toBe(false)
+    expect(exceedsPruneThreshold(62, 124)).toBe(true)
+    expect(exceedsPruneThreshold(500, 9082)).toBe(true)
+  })
+})
+
+describe('createOpenAiTranslator', () => {
+  const items: TranslationItem[] = [
+    {
+      id: '1',
+      context: 'main.json: greeting',
+      source: 'Hello {name}',
+      preserve: ['{name}']
+    }
+  ]
+
+  const completion = (content: string, finishReason = 'stop') =>
+    new Response(
+      JSON.stringify({
+        choices: [{ finish_reason: finishReason, message: { content } }]
+      }),
+      { status: 200 }
+    )
+
+  function translatorFor(responses: Response[]) {
+    let calls = 0
+    const fetchFn: typeof fetch = async () => {
+      calls++
+      return responses[calls - 1]
+    }
+    const translate = createOpenAiTranslator({
+      apiKey: 'key',
+      model: 'test-model',
+      reasoningEffort: 'low',
+      glossary: '',
+      fetchFn
+    })
+    return { translate, callCount: () => calls }
+  }
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('retries truncated responses instead of failing on the partial JSON', async () => {
+    vi.useFakeTimers()
+    const { translate, callCount } = translatorFor([
+      completion('{"1": "Bonj', 'length'),
+      completion('{"1": "Bonjour {name}"}')
+    ])
+    const pending = translate(locale, items)
+    await vi.advanceTimersByTimeAsync(1000)
+    await expect(pending).resolves.toEqual({ '1': 'Bonjour {name}' })
+    expect(callCount()).toBe(2)
+  })
+
+  it('waits out Retry-After on rate-limited responses', async () => {
+    vi.useFakeTimers()
+    const { translate, callCount } = translatorFor([
+      new Response('rate limited', {
+        status: 429,
+        headers: { 'retry-after': '3' }
+      }),
+      completion('{"1": "Bonjour {name}"}')
+    ])
+    const pending = translate(locale, items)
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(callCount()).toBe(1)
+    await vi.advanceTimersByTimeAsync(2000)
+    await expect(pending).resolves.toEqual({ '1': 'Bonjour {name}' })
+    expect(callCount()).toBe(2)
+  })
+
+  it('fails immediately on non-retryable statuses', async () => {
+    const { translate, callCount } = translatorFor([
+      new Response('bad key', { status: 401 })
+    ])
+    await expect(translate(locale, items)).rejects.toThrow(/status 401/)
+    expect(callCount()).toBe(1)
   })
 })

@@ -109,6 +109,15 @@ last translated in `src/locales/.source-manifest.json`. On each run it
 retranslates strings whose English text changed, backfills missing keys, prunes
 keys removed from English, and validates that interpolation placeholders and
 protected literals (e.g. `<Picture N>`, `17k+5`) survive translation exactly.
+Existing translations whose placeholders no longer match the English source are
+re-queued for translation, so corrupted strings heal on the next run. Runs that
+would delete an implausibly large share of a file's keys abort without writing
+— that usually means `collect-i18n` observed a partial app; rerun with
+`--allow-prune` only after confirming the English sources are complete.
+`pnpm locale:check` runs offline in CI: it reports pending work and fails on
+protected-token violations. oxfmt ignores `src/locales/**/*.json` — the
+pipeline is the sole writer of those bytes, which keeps the manifest's recorded
+blob hashes valid.
 
 ### Manual Translation Updates
 

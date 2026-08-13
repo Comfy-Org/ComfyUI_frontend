@@ -160,14 +160,22 @@ export function isTranslatableLeaf(value: LocaleTrackedLeaf): boolean {
 export function collectPendingLeaves(
   source: LocaleObject,
   existing: LocaleObject,
-  invalidated: ReadonlySet<string>
+  invalidated: ReadonlySet<string>,
+  leafCorrupted?: (
+    source: LocaleTrackedLeaf,
+    target: LocaleTrackedLeaf
+  ) => boolean
 ): LocaleLeafEntry[] {
   const pending: LocaleLeafEntry[] = []
   for (const [key, leaf] of collectLeaves(source)) {
     if (!isTranslatableLeaf(leaf.value)) continue
+    const existingLeaf = getLeaf(existing, leaf.path)
     if (
       invalidated.has(key) ||
-      !leafShapeMatches(leaf.value, getLeaf(existing, leaf.path))
+      !leafShapeMatches(leaf.value, existingLeaf) ||
+      (existingLeaf !== undefined &&
+        leafCorrupted !== undefined &&
+        leafCorrupted(leaf.value, existingLeaf))
     ) {
       pending.push(leaf)
     }
