@@ -1,16 +1,21 @@
 #!/usr/bin/env python3
-"""Render the custom-node core gate's results table.
+"""Render a custom-node gate's results table.
 
-Reads custom-nodes-results.json from the working directory and renders the
+Reads the configured Playwright result from the working directory and renders the
 run's context (branch tested, head SHA, ComfyUI ref, filters) plus a
 per-pack x tier verdict table - as an aligned table on stdout for the job
 log, and as markdown appended to GITHUB_STEP_SUMMARY. Tolerates a missing
 results file (the suite died before Playwright reported) by emitting the
 context alone. Inputs arrive via env: BRANCH_TESTED, COMFYUI_REF_USED,
-GREP_FILTER, S14_ENABLED, S15_ENABLED, plus the standard GITHUB_* vars.
+GREP_FILTER, S14_ENABLED, S15_ENABLED, CUSTOM_NODES_RESULTS_FILE,
+CUSTOM_NODES_LOG_FILE, CUSTOM_NODES_SUMMARY_TITLE, plus the standard GITHUB_* vars.
 """
 
 import json, os, re, subprocess
+
+RESULT_FILE = os.environ.get('CUSTOM_NODES_RESULTS_FILE', 'custom-nodes-results.json')
+LOG_FILE = os.environ.get('CUSTOM_NODES_LOG_FILE', 'custom-nodes.log')
+SUITE_TITLE = os.environ.get('CUSTOM_NODES_SUMMARY_TITLE', 'Custom-node core suite')
 
 def out(md, log=None):
     with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as f:
@@ -27,16 +32,16 @@ ctx = [
     ('Grep filter', os.environ.get('GREP_FILTER') or '(full suite)'),
     ('S14 / S15', f"{os.environ.get('S14_ENABLED')} / {os.environ.get('S15_ENABLED')}"),
 ]
-if not os.path.exists('custom-nodes-results.json'):
-    out('## Custom-node core suite\n\n**No results json was written** - the suite step died before Playwright could report.')
+if not os.path.exists(RESULT_FILE):
+    out(f'## {SUITE_TITLE}\n\n**No results json was written** - the suite step died before Playwright could report.')
     for k, v in ctx:
         out(f'- **{k}**: {v}', f'{k}: {v}')
     raise SystemExit(0)
 
-data = json.load(open('custom-nodes-results.json'))
+data = json.load(open(RESULT_FILE))
 stats = data.get('stats', {})
 
-TIERS = ['startup/load', 'all nodes', 'curated run', 'dynamic inputs', 'interaction']
+TIERS = ['startup/load', 'S1', 'S2', 'S3', 'S9', 'S14', 'curated run', 'dynamic inputs', 'interaction']
 packs, wide = {}, {}
 
 def bucket(file, path):
@@ -46,6 +51,9 @@ def bucket(file, path):
     if m:
         pack = m.group(1).strip()
     if 'allNodes' in file:
+        tier = re.search(r'all nodes by tier @custom-nodes > (S(?:1|2|3|9|14)):', title)
+        if tier:
+            return (None, tier.group(1))
         return (pack, 'all nodes') if pack else (None, 'manifest coverage')
     if 'customNode.regression' in file:
         if pack is None:
@@ -93,13 +101,27 @@ def visit(suite, file, path):
 for s in data.get('suites', []):
     visit(s, s.get('file'), [])
 
+if os.path.exists(LOG_FILE):
+    for line in open(LOG_FILE):
+        m = re.fullmatch(r'\[tier-pack\] tier=(S(?:1|2|3|9|14)) pack=(.+) result=(pass|fail)\n?', line)
+        if not m:
+            continue
+        tier, pack, result = m.groups()
+        prev = packs.setdefault(pack, {}).get(tier, (0, 0, 0))
+        failed_pack = result == 'fail'
+        packs[pack][tier] = (
+            max(prev[0], 3 if failed_pack else 0),
+            prev[1] + 1,
+            prev[2] + failed_pack,
+        )
+
 def cell(v):
     if v is None:
         return '-'
     worst, total, fails = v
     return SYM[worst] if fails == 0 else f'FAIL {fails}/{total}'
 
-out('## Custom-node core suite')
+out(f'## {SUITE_TITLE}')
 out('')
 out('| | |\n|---|---|')
 for k, v in ctx:

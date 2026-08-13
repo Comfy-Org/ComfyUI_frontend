@@ -296,12 +296,21 @@ test.describe('customNode manifest', () => {
       expect(cannotRunAlone('ComfyUI-Upscaler-Tensorrt')).not.toContain(
         'LoadUpscalerTensorrtModel'
       )
+      expect(cannotRunAlone('ComfyUI_AudioTools')).toContain('AudioConcatenate')
+      expect(cannotRunAlone('ComfyUI_AudioTools')).not.toContain(
+        'AudioSpeechToTextWhisper'
+      )
       expect(cannotRunAlone('ComfyUI-LTXVideo')).not.toContain(
         'LTXVPromptEnhancerLoader'
       )
-      expect(
-        manifest.find((entry) => entry.pack === 'comfyui-itools')
-      ).not.toHaveProperty('cannotRunAlone')
+      expect(cannotRunAlone('comfyui_controlnet_aux')).toEqual([
+        'ExecuteAllControlNetPreprocessors',
+        'Unimatch_OptFlowPreprocessor'
+      ])
+      expect(cannotRunAlone('ComfyUI-FlashVSR_Ultra_Fast')).toEqual([])
+      expect(cannotRunAlone('ComfyUI-GIMM-VFI')).toEqual([])
+      expect(cannotRunAlone('comfyui-itools')).toEqual(['iToolsLoadImagePlus'])
+      expect(cannotRunAlone('comfyui-sharp')).toEqual([])
     } finally {
       if (prior === undefined) delete process.env.CUSTOM_NODES_ENV
       else process.env.CUSTOM_NODES_ENV = prior

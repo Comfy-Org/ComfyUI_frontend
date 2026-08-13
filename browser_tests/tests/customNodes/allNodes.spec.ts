@@ -5,6 +5,7 @@
 // from the live backend, so a pack update is covered the moment it installs.
 import type { Page } from '@playwright/test'
 
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import {
   comfyExpect as expect,
   comfyPageFixture as test
@@ -82,6 +83,7 @@ import {
 import {
   customNodeSuiteSettings,
   drainBackendToIdle,
+  runWithCollectedCleanup,
   trackSubmittedPrompts,
   waitForQueueQuiet
 } from '@e2e/fixtures/utils/customNodeSuite'
@@ -98,6 +100,8 @@ const AUTO_RUN_BATCH = 10
 // slow CPU run as a regression.
 const SINGLE_RERUN_TIMEOUT = 60_000
 const GRID_SPACING = { x: 420, y: 360 }
+
+type AllNodesTier = 'S1' | 'S2' | 'S3' | 'S9' | 'S14'
 
 // Nodes unsafe to execute on a bare backend; every entry names the mechanism.
 const AUTO_RUN_EXCLUDE: Record<string, Record<string, string>> = {
@@ -607,11 +611,17 @@ async function packNodeKeys(
   const defs = (await page.evaluate(() =>
     window.app!.api.getNodeDefs()
   )) as unknown as Record<string, RawNodeDef>
-  const keys = normalizeNodeDefs(defs)
+  return { keys: packNodeKeysFromDefs(defs, pack), defs }
+}
+
+function packNodeKeysFromDefs(
+  defs: Record<string, RawNodeDef>,
+  pack: string
+): string[] {
+  return normalizeNodeDefs(defs)
     .filter((node) => node.pack === pack)
     .map((node) => node.type)
     .sort()
-  return { keys, defs }
 }
 
 // Invariant across manifest entries: which harness nodes the target backend
@@ -676,35 +686,44 @@ if (unjoinedYamlPacks.length > 0) {
   })
 }
 
+type AllNodesTierRunner = {
+  entry: ReturnType<typeof loadManifest>[number]
+  run: (
+    comfyPage: ComfyPage,
+    tier: AllNodesTier,
+    defs: Record<string, RawNodeDef>
+  ) => Promise<void>
+}
+
+const allNodesTierRunners: AllNodesTierRunner[] = []
+
 for (const entry of loadManifest()) {
-  test.describe(`all nodes: ${entry.pack} @custom-nodes`, () => {
-    test('every registered node mounts, survives save/reload, and executes', async ({
-      comfyPage
-    }) => {
-      if (customNodesEnv() !== 'cloud') test.setTimeout(1_620_000)
-      const { keys, defs } = await packNodeKeys(comfyPage.page, entry.pack)
-      test.skip(
-        keys.length === 0,
+  const registerAllNodesTests = () => {
+    const expectAllNodesTier = async (
+      comfyPage: ComfyPage,
+      selectedTier: AllNodesTier,
+      defs: Record<string, RawNodeDef>
+    ) => {
+      const keys = packNodeKeysFromDefs(defs, entry.pack)
+      expect(
+        keys.length,
         `${entry.pack} not installed on this backend`
-      )
-      // One app boot serves all three tiers: measured on cloud, per-test
-      // boots were 113 of 148 suite-minutes. A tier's failure is collected,
-      // never allowed to skip the tiers after it; the graph is cleared and
-      // the backend drained at every tier boundary.
-      const tierFailures: string[] = []
-      async function runTier(tierName: string, tier: () => Promise<void>) {
-        try {
-          await tier()
-        } catch (error) {
-          tierFailures.push(
-            `[${tierName}] ${error instanceof Error ? error.message : String(error)}`
-          )
-        }
-        await comfyPage.nodeOps.clearGraph()
-        await drainBackendToIdle(comfyPage.page, 10_000)
+      ).toBeGreaterThan(0)
+      async function runTier(
+        selectedBy: AllNodesTier[],
+        tier: () => Promise<void>
+      ) {
+        if (!selectedBy.includes(selectedTier)) return
+        await runWithCollectedCleanup(tier, [
+          () => comfyPage.nodeOps.clearGraph(),
+          async () => {
+            await drainBackendToIdle(comfyPage.page, 10_000)
+          }
+        ])
       }
 
-      await runTier('mount', async () => {
+      await runTier(['S1', 'S2', 'S14'], async () => {
+        const validatesMount = selectedTier !== 'S14'
         // Exact-count guard: the corpus below comes from the live backend, so
         // a pack silently registering fewer nodes (broken sub-import, a core
         // change breaking registration) would shrink coverage while every
@@ -712,10 +731,11 @@ for (const entry of loadManifest()) {
         // deterministic; a delta in either direction fails until the manifest
         // is deliberately recalibrated with the pin/core change that moved it.
         console.log(`custom-nodes count: ${entry.pack} = ${keys.length}`)
-        expect(
-          keys,
-          `${entry.pack} registers ${keys.length} nodes but the manifest expects ${entry.expectedNodeCount} - a pack node failed to register (or the pack changed); recalibrate expectedNodeCount only with the change that moved it`
-        ).toHaveLength(entry.expectedNodeCount)
+        if (validatesMount)
+          expect(
+            keys,
+            `${entry.pack} registers ${keys.length} nodes but the manifest expects ${entry.expectedNodeCount} - a pack node failed to register (or the pack changed); recalibrate expectedNodeCount only with the change that moved it`
+          ).toHaveLength(entry.expectedNodeCount)
         const declaredByKey = new Map(
           keys.map((key) => [key, declaredShape(defs[key])])
         )
@@ -739,7 +759,8 @@ for (const entry of loadManifest()) {
             `unrecognized CN_ENABLE_S14 value "${geometryCompareMode}" - expected "0" or "1"`
           )
         const geometryEnabled =
-          geometryRecordMode || geometryCompareMode === '1'
+          selectedTier === 'S14' &&
+          (geometryRecordMode || geometryCompareMode === '1')
         const measuredGeometry: Record<string, NodeGeometry> = {}
         const geometryUnstable = geometryEnabled
           ? packLedgerFor(GEOMETRY_UNSTABLE_NODES, entry.pack)
@@ -760,21 +781,29 @@ for (const entry of loadManifest()) {
             keys,
             `stale GEOMETRY_UNSTABLE_PATHS entry: ${ledgered} is not registered by ${entry.pack}`
           ).toContain(ledgered)
-        for (const ledgered of stalenessCheckedKeys(entry, ledger))
-          expect(
-            keys,
-            `stale ledger entry: ${ledgered} is not registered by ${entry.pack}`
-          ).toContain(ledgered)
-        for (const ledgered of stalenessCheckedKeys(
-          entry,
-          packLedgerFor(MOUNT_WIDGET_ALLOWLIST, entry.pack)
-        ))
-          expect(
-            keys,
-            `stale MOUNT_WIDGET_ALLOWLIST entry: ${ledgered} is not registered by ${entry.pack}`
-          ).toContain(ledgered)
+        if (validatesMount) {
+          for (const ledgered of stalenessCheckedKeys(entry, ledger))
+            expect(
+              keys,
+              `stale ledger entry: ${ledgered} is not registered by ${entry.pack}`
+            ).toContain(ledgered)
+          for (const ledgered of stalenessCheckedKeys(
+            entry,
+            packLedgerFor(MOUNT_WIDGET_ALLOWLIST, entry.pack)
+          ))
+            expect(
+              keys,
+              `stale MOUNT_WIDGET_ALLOWLIST entry: ${ledgered} is not registered by ${entry.pack}`
+            ).toContain(ledgered)
+        }
 
-        for (const vueNodesEnabled of rendererPassesFor(entry)) {
+        const rendererPasses =
+          selectedTier === 'S1'
+            ? [false]
+            : selectedTier === 'S2'
+              ? [true]
+              : rendererPassesFor(entry)
+        for (const vueNodesEnabled of rendererPasses) {
           const rawOutputTopologyExpectations = packLedgerFor(
             rendererLedgerFor(
               vueNodesEnabled,
@@ -783,11 +812,13 @@ for (const entry of loadManifest()) {
             ),
             entry.pack
           )
-          const outputTopologyExpectations = Object.fromEntries(
-            stalenessCheckedKeys(entry, rawOutputTopologyExpectations).map(
-              (node) => [node, rawOutputTopologyExpectations[node]]
-            )
-          )
+          const outputTopologyExpectations = validatesMount
+            ? Object.fromEntries(
+                stalenessCheckedKeys(entry, rawOutputTopologyExpectations).map(
+                  (node) => [node, rawOutputTopologyExpectations[node]]
+                )
+              )
+            : {}
           const observedOutputTopologies = new Set<string>()
           for (const ledgered of Object.keys(outputTopologyExpectations))
             expect(
@@ -806,7 +837,7 @@ for (const entry of loadManifest()) {
             const shapes = await addChunk(comfyPage.page, chunk)
             await comfyPage.nextFrame()
             const count = await comfyPage.nodeOps.getGraphNodesCount()
-            if (count !== chunk.length)
+            if (validatesMount && count !== chunk.length)
               failures.push(
                 `chunk@${offset}: graph has ${count} of ${chunk.length} nodes`
               )
@@ -833,9 +864,11 @@ for (const entry of loadManifest()) {
             for (const [index, shape] of shapes.entries()) {
               const key = chunk[index]
               if (shape === null) {
-                failures.push(`${key}: createNode returned null`)
+                if (validatesMount)
+                  failures.push(`${key}: createNode returned null`)
                 continue
               }
+              if (!validatesMount) continue
               // Renderer-independent fidelity: the instance must materialize
               // everything the def declares. Pack JS converting a widget to a
               // socket (or back) is legal; dropping the input entirely is not.
@@ -881,7 +914,7 @@ for (const entry of loadManifest()) {
             }
             // A mount with missing widgets or slots is a broken node, not a
             // pass. Extra DOM elements are tolerated; missing ones fail.
-            if (vueNodesEnabled)
+            if (validatesMount && vueNodesEnabled)
               failures.push(
                 ...(await comfyPage.page.evaluate(
                   ([chunkIds, ledgered, customWidgetNodes]) => {
@@ -952,11 +985,16 @@ for (const entry of loadManifest()) {
                 ))
               )
           }
-          if (vueNodesEnabled && Object.keys(ledger).length > 0)
+          if (
+            validatesMount &&
+            vueNodesEnabled &&
+            Object.keys(ledger).length > 0
+          )
             console.log(
               `${entry.pack}: ${Object.keys(ledger).length} node(s) ledgered Vue-incompatible; Vue mount not asserted for them`
             )
           consoleErrors.stop()
+          if (!validatesMount) continue
           expect(
             failures,
             `VueNodes=${vueNodesEnabled}: ${JSON.stringify(failures, null, 1)}`
@@ -1030,7 +1068,7 @@ for (const entry of loadManifest()) {
         }
       })
 
-      await runTier('save/reload', async () => {
+      await runTier(['S3'], async () => {
         const roundtripConsoleErrors: string[] = []
         const allowedWidgets = packLedgerFor(WIDGET_SET_ALLOWLIST, entry.pack)
         for (const ledgered of stalenessCheckedKeys(entry, allowedWidgets))
@@ -1585,7 +1623,7 @@ for (const entry of loadManifest()) {
         await expectNoVisibleErrors(comfyPage.page, 'after save/reload sweep')
       })
 
-      await runTier('auto-run', async () => {
+      await runTier(['S9'], async () => {
         await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
 
         // A prior pack's slow CPU execution can still be draining when this tier
@@ -1733,6 +1771,15 @@ for (const entry of loadManifest()) {
               `${entry.pack}: ${key} produced allowed ${detail} (${allowedFailure.reason})`
             )
         }
+        for (const ledgered of allowedFailureKeys) {
+          if (
+            allowedFailures[ledgered].requireFailure &&
+            ranClean.has(ledgered)
+          )
+            hardFailures.push(
+              `${ledgered}: ran clean but its exact failure is required - re-derive or remove the contract`
+            )
+        }
         for (const key of baseline) {
           if (ranClean.has(key))
             hardFailures.push(
@@ -1764,31 +1811,86 @@ for (const entry of loadManifest()) {
         }
         expect(hardFailures.length === 0, autoRunFailureSummary).toBe(true)
       })
+    }
 
-      // Assert on the COUNT, not the array. `toEqual([])` renders every
-      // collected failure as a deep-equality diff, and each entry is itself a
-      // nested assertion dump - gate run 30973706693 turned 38 failed tests
-      // into ~17k log lines, unreadable enough that it was twice misdiagnosed
-      // as an infrastructure outage. The full list still ships, as an
-      // attachment.
-      if (tierFailures.length > 0)
+    allNodesTierRunners.push({ entry, run: expectAllNodesTier })
+  }
+
+  registerAllNodesTests()
+}
+
+const tiers: Array<[AllNodesTier, string]> = [
+  ['S1', 'every registered node mounts on the canvas renderer'],
+  ['S2', 'every registered node mounts on the DOM renderer'],
+  ['S3', 'every registered node survives save and reload'],
+  ['S9', 'every self-sufficient node executes']
+]
+if (process.env.CN_ENABLE_S14 === '1' || process.env.CN_GEOMETRY === 'record')
+  tiers.push(['S14', 'every registered node matches its geometry baseline'])
+
+test.describe('all nodes by tier @custom-nodes', () => {
+  for (const [tier, title] of tiers) {
+    test(`${tier}: ${title}`, async ({ comfyPage }) => {
+      if (customNodesEnv() !== 'cloud')
+        test.setTimeout(1_620_000 * loadManifest().length)
+      await comfyPage.page.evaluate((activeTier) => {
+        Object.assign(globalThis, {
+          __COMFY_CUSTOM_NODE_DETECTION_PROOF_TIER__: activeTier
+        })
+      }, tier)
+      const pageId = await comfyPage.page.evaluate(() => {
+        const key = '__customNodeTierPageId'
+        const existing = sessionStorage.getItem(key)
+        if (existing) return existing
+        const created = crypto.randomUUID()
+        sessionStorage.setItem(key, created)
+        return created
+      })
+      console.warn(
+        `[tier-session] pid=${process.pid} tier=${tier} pageId=${pageId}`
+      )
+
+      const defs = (await comfyPage.page.evaluate(() =>
+        window.app!.api.getNodeDefs()
+      )) as unknown as Record<string, RawNodeDef>
+      const failures: string[] = []
+      for (const runner of allNodesTierRunners) {
+        if (tier === 'S2' && !rendererPassesFor(runner.entry).includes(true))
+          continue
+        let result = 'pass'
+        try {
+          await runner.run(comfyPage, tier, defs)
+        } catch (error) {
+          result = 'fail'
+          const errors =
+            error instanceof AggregateError ? error.errors : [error]
+          failures.push(
+            `[${runner.entry.pack}] ${errors
+              .map((entry) =>
+                entry instanceof Error ? entry.message : String(entry)
+              )
+              .join('\n')}`
+          )
+        }
+        console.log(
+          `[tier-pack] tier=${tier} pack=${runner.entry.pack} result=${result}`
+        )
+      }
+      const attachment = `${tier.toLowerCase()}-failures.json`
+      if (failures.length > 0)
         await attachPageDiagnosticEvidence(
           comfyPage.page,
           test.info(),
-          'tier-failures.json',
-          tierFailures
+          attachment,
+          failures
         )
       expect(
-        tierFailures.length === 0,
-        failureSummary(
-          `${entry.pack} tier failures`,
-          tierFailures,
-          'tier-failures.json'
-        )
+        failures.length === 0,
+        failureSummary(`${tier} pack failures`, failures, attachment)
       ).toBe(true)
     })
-  })
-}
+  }
+})
 
 async function runBatch(
   page: Page,

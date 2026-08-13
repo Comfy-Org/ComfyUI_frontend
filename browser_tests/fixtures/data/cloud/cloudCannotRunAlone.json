@@ -10,8 +10,6 @@
     "DynamiCrafterCNLoader",
     "DynamiCrafterModelLoader"
   ],
-  "ComfyUI-FlashVSR_Ultra_Fast": ["FlashVSRInitPipe", "FlashVSRNode"],
-  "ComfyUI-GIMM-VFI": ["DownloadAndLoadGIMMVFIModel"],
   "ComfyUI-Image-Filters": [
     "AlphaMatte",
     "BatchAverageUnJittered",
@@ -252,8 +250,8 @@
     "SAMLoader"
   ],
   "comfyui-inpaint-nodes": ["INPAINT_ColorMatch", "INPAINT_LoadFooocusInpaint"],
+  "comfyui-itools": ["iToolsLoadImagePlus"],
   "comfyui-rmbg": ["AILab_CropObject", "AILab_SDMatte"],
-  "comfyui-sharp": ["LoadSharpModel"],
   "comfyui-string-converter": ["StringToFloat", "StringToInt"],
   "comfyui-supir": ["SUPIR_Upscale", "SUPIR_model_loader"],
   "comfyui-various": [
@@ -263,7 +261,10 @@
     "JWMaskSequenceFromMask",
     "JWStringGetLine"
   ],
-  "comfyui_controlnet_aux": ["Unimatch_OptFlowPreprocessor"],
+  "comfyui_controlnet_aux": [
+    "ExecuteAllControlNetPreprocessors",
+    "Unimatch_OptFlowPreprocessor"
+  ],
   "comfyui_essentials": [
     "ImageUntile+",
     "MaskFromList+",

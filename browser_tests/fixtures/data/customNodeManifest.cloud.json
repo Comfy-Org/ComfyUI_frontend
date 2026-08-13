@@ -120,8 +120,7 @@
       "expectedNodeCount": 3,
       "expectedExtensions": [],
       "disabledNodes": {},
-      "timeoutMs": 30000,
-      "cannotRunAlone": ["FlashVSRInitPipe", "FlashVSRNode"]
+      "timeoutMs": 30000
     },
     {
       "pack": "ComfyUI-Fluxtapoz",
@@ -143,8 +142,7 @@
       "expectedNodeCount": 2,
       "expectedExtensions": [],
       "disabledNodes": {},
-      "timeoutMs": 30000,
-      "cannotRunAlone": ["DownloadAndLoadGIMMVFIModel"]
+      "timeoutMs": 30000
     },
     {
       "pack": "ComfyUI-Image-Filters",
@@ -1316,7 +1314,8 @@
         "iToolsPromptStyler": ["DisabledOnCloud", "HasCustomEndpoints"],
         "iToolsPromptStylerExtra": ["DisabledOnCloud", "HasCustomEndpoints"]
       },
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "cannotRunAlone": ["iToolsLoadImagePlus"]
     },
     {
       "pack": "comfyui-layerdiffuse",
@@ -1408,8 +1407,7 @@
       "expectedNodeCount": 3,
       "expectedExtensions": [],
       "disabledNodes": {},
-      "timeoutMs": 30000,
-      "cannotRunAlone": ["LoadSharpModel"]
+      "timeoutMs": 30000
     },
     {
       "pack": "comfyui-string-converter",
@@ -1519,7 +1517,10 @@
       "expectedExtensions": [],
       "disabledNodes": {},
       "timeoutMs": 30000,
-      "cannotRunAlone": ["Unimatch_OptFlowPreprocessor"]
+      "cannotRunAlone": [
+        "ExecuteAllControlNetPreprocessors",
+        "Unimatch_OptFlowPreprocessor"
+      ]
     },
     {
       "pack": "comfyui_essentials",

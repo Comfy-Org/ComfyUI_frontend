@@ -46,6 +46,12 @@ on:
     branches: [main, master, nathaniel/custom-node-e2e-suite]
   merge_group:
   workflow_dispatch:
+    inputs:
+      grep:
+        description: 'Playwright grep filter (empty = full suite)'
+        required: false
+        type: string
+        default: ''
 
 concurrency:
   # One literal group SHARED with record-custom-nodes-geometry-cloud.yaml, NOT
@@ -105,9 +111,11 @@ jobs:
       (github.event_name != 'pull_request' ||
       github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
-    # Bounded: the longest healthy run observed is ~110m of suite; a wedged
-    # run otherwise occupies the serial group for GitHub's 360m default.
-    timeout-minutes: 150
+    # Bounded: legitimate runs reach ~160m of suite when testcloud is
+    # degraded (run 31541231667 completed honestly at 160m under boot-502
+    # retries); a wedged run otherwise occupies the serial group for
+    # GitHub's 360m default.
+    timeout-minutes: 180
     # This proof is intentionally one worker and unsharded. Cloud app boots are
     # network-bound, and waitForQueueQuiet observes the whole shared queue.
     # Preserve the serial execution contract for the S1-S12 gate.
@@ -128,6 +136,7 @@ jobs:
         env:
           SMOKE_ACCOUNT_EMAIL: ${{ secrets.SMOKE_ACCOUNT_EMAIL }}
           SMOKE_ACCOUNT_PASSWORD: ${{ secrets.SMOKE_ACCOUNT_PASSWORD }}
+          GREP_FILTER: ${{ inputs.grep }}
         shell: bash
         run: |
           set -euo pipefail
@@ -209,10 +218,13 @@ jobs:
           CUSTOM_NODES_ENV: cloud
           PLAYWRIGHT_TEST_URL: http://localhost:4173
           PLAYWRIGHT_JSON_OUTPUT_NAME: custom-nodes-cloud-results.json
+          GREP_FILTER: ${{ inputs.grep }}
           SMOKE_ACCOUNT_EMAIL: ${{ secrets.SMOKE_ACCOUNT_EMAIL }}
           SMOKE_ACCOUNT_PASSWORD: ${{ secrets.SMOKE_ACCOUNT_PASSWORD }}
         run: |
           set -o pipefail
+          grep_args=()
+          [ -n "${GREP_FILTER:-}" ] && grep_args=(--grep "$GREP_FILTER")
           # S13 is excluded by title. CN_ENABLE_S14=0 and CN_ENABLE_S15=0 are
           # the explicit ceiling for the embedded later-tier evidence paths.
           # Activate each only in its dedicated proof phase after S1-S12 is
@@ -221,7 +233,9 @@ jobs:
           # machine-readable gate and failure artifacts.
           pnpm exec playwright test browser_tests/tests/customNodes/ \
             --project=custom-nodes --reporter=list,json,html --workers=1 --retries=0 \
-            --grep-invert "interaction profiles:" 2>&1 | tee custom-nodes-cloud.log
+            --grep-invert "interaction profiles:" \
+            "${grep_args[@]}" \
+            2>&1 | tee custom-nodes-cloud.log
 
       # A skip means a cloud pack, devtools, or an under-enrolled cloud manifest
       # failed to surface a tier: on this backend every enrolled tier is meant
@@ -234,7 +248,8 @@ jobs:
         shell: bash
         env:
           SUITE_OUTCOME: ${{ steps.suite.outcome }}
-          EXPECTED_TESTS: 185
+          EXPECTED_TESTS: 102
+          GREP_FILTER: ${{ inputs.grep }}
         run: |
           set -euo pipefail
           # The JSON result is mandatory even when the suite step failed: the
@@ -245,7 +260,9 @@ jobs:
           fi
           collected=$(jq -er '[.stats.expected, .stats.unexpected, .stats.flaky, .stats.skipped] | add' custom-nodes-cloud-results.json)
           echo "collected tests: $collected"
-          if [ "$collected" != "$EXPECTED_TESTS" ]; then
+          if [ -n "${GREP_FILTER:-}" ]; then
+            echo "grep filter active ('$GREP_FILTER') - exact-count gate skipped for this manual subset run"
+          elif [ "$collected" != "$EXPECTED_TESTS" ]; then
             echo "::error::collected $collected tests; expected exactly $EXPECTED_TESTS S1-S12 tests"
             exit 1
           fi
@@ -279,6 +296,20 @@ jobs:
                      | .title' custom-nodes-cloud-results.json | sort -u | head -40
             exit 1
           fi
+
+      - name: Publish results table
+        if: always() && steps.gate.outputs.run-cloud == 'true'
+        shell: bash
+        env:
+          BRANCH_TESTED: ${{ github.ref_name }}
+          COMFYUI_REF_USED: Cloud
+          GREP_FILTER: ${{ inputs.grep }}
+          S14_ENABLED: '0'
+          S15_ENABLED: '0'
+          CUSTOM_NODES_RESULTS_FILE: custom-nodes-cloud-results.json
+          CUSTOM_NODES_LOG_FILE: custom-nodes-cloud.log
+          CUSTOM_NODES_SUMMARY_TITLE: Custom-node Cloud suite
+        run: python3 scripts/cicd/custom-nodes-summary.py
 
       # always() so a red suite or failed activation gate still publishes any
       # diagnostics that exist. if-no-files-found:warn preserves the gate's

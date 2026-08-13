@@ -23,6 +23,12 @@ on:
   merge_group:
   workflow_dispatch:
     inputs:
+      detection_proof_row:
+        description: 'Clean run or deliberate independent-tier break'
+        required: false
+        type: choice
+        options: ['0', 'all', '1', '2', '3', '9', '14']
+        default: '0'
       branch:
         description: 'Frontend branch/ref to test (empty = the ref this workflow runs from)'
         required: false
@@ -72,10 +78,15 @@ jobs:
       - id: changes
         uses: ./.github/actions/changes-filter
 
-  # This proof is intentionally serial and unsharded: its backend queue and
-  # cross-test state contracts require one worker for an accepted verdict.
+  # Each job is intentionally one worker and unsharded. The five isolated
+  # proof jobs may run concurrently because they own separate Core backends.
   custom-nodes-e2e-core:
     needs: changes
+    strategy:
+      fail-fast: false
+      matrix:
+        proof_row: >-
+          ${{ fromJSON(github.event_name == 'workflow_dispatch' && inputs.detection_proof_row == 'all' && '["1","2","3","9","14"]' || format('["{0}"]', inputs.detection_proof_row || '0')) }}
     # Run only when non-docs code changed AND the PR is same-repo. Fork PRs can
     # edit the manifest's repo/pin URLs, and this job clones and pip-installs
     # whatever they point at (setup.py runs at install time), so an untrusted
@@ -83,9 +94,10 @@ jobs:
     # Fork PRs still get the environment-agnostic coverage via the main e2e
     # shards. A skipped job counts as passing, so this stays required-safe.
     if: >-
-      needs.changes.outputs.should-run == 'true' &&
+      github.event_name == 'workflow_dispatch' ||
+      (needs.changes.outputs.should-run == 'true' &&
       (github.event_name != 'pull_request' ||
-      github.event.pull_request.head.repo.full_name == github.repository)
+      github.event.pull_request.head.repo.full_name == github.repository))
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -96,6 +108,35 @@ jobs:
           # workflow_dispatch may aim the suite at any frontend branch; every
           # other event tests its own ref exactly as before.
           ref: ${{ inputs.branch || github.ref }}
+
+      - name: Fetch Detection Proof ancestry
+        if: >-
+          github.event_name == 'workflow_dispatch' &&
+          matrix.proof_row != '0'
+        shell: bash
+        run: git fetch --no-tags --unshallow origin
+
+      - name: Apply Detection Proof source break
+        id: source-mutation
+        if: >-
+          github.event_name == 'workflow_dispatch' &&
+          matrix.proof_row != '0' &&
+          matrix.proof_row != '9'
+        shell: bash
+        env:
+          ROW: ${{ matrix.proof_row }}
+        run: |
+          set -euo pipefail
+          d=browser_tests/tests/customNodes/detection-proof
+          p=$(printf '%s/row-%02d-'"*.patch" "$d" "$ROW")
+          # shellcheck disable=SC2086
+          p=$(ls $p 2>/dev/null | head -1 || true)
+          [ -n "$p" ] || { echo "::error::no patch file for S$ROW"; exit 1; }
+          git apply --check "$p"
+          git apply "$p"
+          grep -rq "DETECTION PROOF (row $ROW" src/
+          echo "path=$p" >> "$GITHUB_OUTPUT"
+          echo "digest=$(shasum -a 256 "$p" | awk '{print $1}')" >> "$GITHUB_OUTPUT"
 
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
@@ -228,6 +269,55 @@ jobs:
           path: ~/.cache/cn-packs
           key: cn-packs-v2-${{ hashFiles('browser_tests/fixtures/data/customNodeManifest.core.json') }}
 
+      - name: Apply Detection Proof execution break
+        id: execution-mutation
+        if: >-
+          github.event_name == 'workflow_dispatch' &&
+          matrix.proof_row == '9'
+        shell: bash
+        run: |
+          set -euo pipefail
+          f=ComfyUI/custom_nodes/was-node-suite-comfyui/WAS_Node_Suite.py
+          perl -pi -e 's/(def return_constant_number\(self, number_type, number, number_as_text=None\):)/$1\n        raise ValueError("DETECTION PROOF (row 9): pack node runtime failure")/' "$f"
+          grep -q 'DETECTION PROOF (row 9)' "$f"
+          mutation='raise ValueError("DETECTION PROOF (row 9): pack node runtime failure")'
+          echo "path=$f" >> "$GITHUB_OUTPUT"
+          echo "digest=$(printf '%s' "$mutation" | shasum -a 256 | awk '{print $1}')" >> "$GITHUB_OUTPUT"
+
+      - name: Bind Detection Proof identity
+        if: >-
+          github.event_name == 'workflow_dispatch' &&
+          matrix.proof_row != '0'
+        shell: bash
+        env:
+          E2E_PARENT: d02f676c9e0d371248274bbfc93dfc9c49a606b8
+          MUTATION_DIGEST: ${{ steps.source-mutation.outputs.digest || steps.execution-mutation.outputs.digest }}
+          MUTATION_PATH: ${{ steps.source-mutation.outputs.path || steps.execution-mutation.outputs.path }}
+          PROOF_ROW: ${{ matrix.proof_row }}
+        run: |
+          set -euo pipefail
+          PROOF_SHA=$(git rev-parse HEAD)
+          git merge-base --is-ancestor "$E2E_PARENT" HEAD || { echo "::error::E2E parent $E2E_PARENT is not an ancestor"; exit 1; }
+          [ -n "$MUTATION_PATH" ] && [ -n "$MUTATION_DIGEST" ] || { echo '::error::mutation identity is incomplete'; exit 1; }
+          case "$PROOF_ROW" in
+            1) title='S1: every registered node mounts on the canvas renderer'; pat='ImpactInt: instance is missing declared input \\"value\\" \\(litegraph\\)' ;;
+            2) title='S2: every registered node mounts on the DOM renderer'; pat=': Vue mounts ' ;;
+            3) title='S3: every registered node survives save and reload'; pat='on (pristine|set-values) reload' ;;
+            9) title='S9: every self-sufficient node executes'; pat='DETECTION PROOF \\(row 9\\): pack node runtime failure' ;;
+            14) title='S14: every registered node matches its geometry baseline'; pat='widgets\\[[0-9]+\\]\\.y: expected [^,]+, got ' ;;
+          esac
+          {
+            echo "proof_sha=$PROOF_SHA"
+            echo "e2e_parent_sha=$E2E_PARENT"
+            echo "tier=S$PROOF_ROW"
+            echo "test_identity=$title"
+            echo "mutation_path=$MUTATION_PATH"
+            echo "mutation_sha256=$MUTATION_DIGEST"
+            echo "expected_failure_regex=$pat"
+            echo 'workers=1'
+            echo 'retries=0'
+          } | tee tier-isolation-proof-identity.txt
+
       # The VHS run-tier workflow reads input/plain_video.mp4.
       - name: Stage run-tier assets
         shell: bash
@@ -244,10 +334,13 @@ jobs:
 
       - name: Run custom-node suite
         id: suite
+        continue-on-error: >-
+          ${{ github.event_name == 'workflow_dispatch' && matrix.proof_row != '0' }}
         env:
-          CN_ENABLE_S14: ${{ (github.event_name != 'workflow_dispatch' || inputs.enable_s14) && '1' || '0' }}
+          CN_ENABLE_S14: ${{ (matrix.proof_row != '0' || github.event_name != 'workflow_dispatch' || inputs.enable_s14) && '1' || '0' }}
           CN_ENABLE_S15: ${{ (github.event_name != 'workflow_dispatch' || inputs.enable_s15) && '1' || '0' }}
           PLAYWRIGHT_JSON_OUTPUT_NAME: custom-nodes-results.json
+          PROOF_ROW: ${{ matrix.proof_row }}
           # Through env, not inline interpolation: dispatch input must never
           # be shell-parsed.
           GREP_FILTER: ${{ inputs.grep }}
@@ -262,19 +355,27 @@ jobs:
           # traces. List keeps live diagnostics visible.
           # Core keeps its already-proven S13-S15 coverage active. The
           # later-tier defer applies only to Cloud while Cloud S1-S12 is red.
+          grep_args=()
+          case "$PROOF_ROW" in
+            0) [ -n "${GREP_FILTER:-}" ] && grep_args=(--grep "$GREP_FILTER") ;;
+            1|2|3|9|14)
+              grep_args=(--grep 'all nodes by tier @custom-nodes.*S(1|2|3|9|14):')
+              ;;
+          esac
           pnpm exec playwright test browser_tests/tests/customNodes/ \
             --project=custom-nodes --reporter=list,json,html --workers=1 --retries=0 \
-            ${GREP_FILTER:+--grep "$GREP_FILTER"} \
-            2>&1 | tee custom-nodes.log
+            "${grep_args[@]}" 2>&1 | tee custom-nodes.log
 
       # A skip here means a pack or devtools did not load: on this backend every
       # tier is meant to run, so a skip is a gate failure, not an honest pass.
       - name: Forbid failed, skipped, or flaky tests
-        if: always()
+        if: >-
+          always() &&
+          !(github.event_name == 'workflow_dispatch' && matrix.proof_row != '0')
         shell: bash
         env:
           SUITE_OUTCOME: ${{ steps.suite.outcome }}
-          EXPECTED_TESTS: 34
+          EXPECTED_TESTS: ${{ (matrix.proof_row != '0' || github.event_name != 'workflow_dispatch' || inputs.enable_s14) && '33' || '32' }}
           GREP_FILTER: ${{ inputs.grep }}
         run: |
           set -euo pipefail
@@ -308,8 +409,6 @@ jobs:
           echo "skipped tests: $skipped"
           if [ "$skipped" != "0" ]; then
             echo "::error::$skipped test(s) skipped - a manifest pack or devtools failed to load; skips are not acceptable in the gating job"
-            # Recurse so specs nested under describe() blocks are found, and
-            # print only the specs that actually skipped.
             jq -r '.. | objects
                      | select(has("title") and has("tests"))
                      | select(any(.tests[]?; .status == "skipped"))
@@ -327,6 +426,80 @@ jobs:
             exit 1
           fi
 
+      - name: Assert deliberate failure independence
+        if: >-
+          always() &&
+          github.event_name == 'workflow_dispatch' &&
+          matrix.proof_row != '0'
+        shell: bash
+        env:
+          PROOF_ROW: ${{ matrix.proof_row }}
+          SUITE_OUTCOME: ${{ steps.suite.outcome }}
+        run: |
+          set -euo pipefail
+          [ -f custom-nodes-results.json ] || { echo "::error::proof wrote no JSON"; exit 1; }
+          collected=$(jq -er '[.stats.expected, .stats.unexpected, .stats.flaky, .stats.skipped] | add' custom-nodes-results.json)
+          expected=$(jq -er '.stats.expected' custom-nodes-results.json)
+          unexpected=$(jq -er '.stats.unexpected' custom-nodes-results.json)
+          skipped=$(jq -er '.stats.skipped' custom-nodes-results.json)
+          flaky=$(jq -er '.stats.flaky' custom-nodes-results.json)
+          expected_collected=5
+          expected_passed=4
+          expected_failed=1
+          [ "$collected" = "$expected_collected" ] || { echo "::error::S$PROOF_ROW collected $collected tests, expected $expected_collected"; exit 1; }
+          [ "$expected" = "$expected_passed" ] || { echo "::error::S$PROOF_ROW expected-pass count is $expected, expected $expected_passed"; exit 1; }
+          [ "$unexpected" = "$expected_failed" ] || { echo "::error::S$PROOF_ROW failure count is $unexpected, expected $expected_failed"; exit 1; }
+          [ "$skipped" = 0 ] && [ "$flaky" = 0 ] || { echo "::error::S$PROOF_ROW has skipped=$skipped flaky=$flaky"; exit 1; }
+          [ "$SUITE_OUTCOME" = failure ] || { echo "::error::S$PROOF_ROW did not break its witness"; exit 1; }
+
+          {
+            jq -r '.. | objects | select(.status? == "unexpected") | .results[]? | .error?.message? // empty' custom-nodes-results.json
+            jq -r '.. | objects | select(.status? == "unexpected") | .results[]?.attachments[]? | select(.contentType? == "application/json" and has("body")) | (.body | @base64d | fromjson) | if type == "array" then .[] else . end' custom-nodes-results.json
+          } > tier-isolation-proof-evidence.txt
+          case "$PROOF_ROW" in
+            1) pat='ImpactInt: instance is missing declared input \\"value\\" \(litegraph\)' ;;
+            2) pat=': Vue mounts ' ;;
+            3) pat='on (pristine|set-values) reload' ;;
+            9) pat='DETECTION PROOF \(row 9\): pack node runtime failure' ;;
+            14) pat='widgets\[[0-9]+\]\.y: expected [^,]+, got ' ;;
+          esac
+          grep -Eq -- "$pat" tier-isolation-proof-evidence.txt || { echo "::error::S$PROOF_ROW failure was not attributable to its Detection Proof break"; exit 1; }
+
+          case "$PROOF_ROW" in
+            1) target_tier=S1; target_title="S1: every registered node mounts on the canvas renderer"; next_tier=S2 ;;
+            2) target_tier=S2; target_title="S2: every registered node mounts on the DOM renderer"; next_tier=S3 ;;
+            3) target_tier=S3; target_title="S3: every registered node survives save and reload"; next_tier=S9 ;;
+            9) target_tier=S9; target_title="S9: every self-sufficient node executes"; next_tier=S14 ;;
+            14) target_tier=S14; target_title="S14: every registered node matches its geometry baseline"; next_tier= ;;
+          esac
+          jq -e --arg title "$target_title" '.. | objects | select(.title? == $title) | .tests[] | select(.status == "unexpected")' custom-nodes-results.json >/dev/null
+          for title in \
+            "S1: every registered node mounts on the canvas renderer" \
+            "S2: every registered node mounts on the DOM renderer" \
+            "S9: every self-sufficient node executes" \
+            "S3: every registered node survives save and reload" \
+            "S14: every registered node matches its geometry baseline"; do
+            [ "$title" = "$target_title" ] && continue
+            jq -e --arg title "$title" '.. | objects | select(.title? == $title) | .tests[] | select(.status == "expected")' custom-nodes-results.json >/dev/null || {
+              echo "::error::$title did not pass independently of the deliberate $target_tier failure"
+              exit 1
+            }
+          done
+          mapfile -t tier_sessions < <(grep -oE '\[tier-session\] pid=[0-9]+ tier=S(1|2|3|9|14) pageId=[^ ]+' custom-nodes.log)
+          [ "${#tier_sessions[@]}" -eq 5 ] || { echo "::error::$target_tier proof recorded ${#tier_sessions[@]} tier sessions, expected 5"; exit 1; }
+          page_ids=$(printf '%s\n' "${tier_sessions[@]}" | sed -E 's/.* pageId=([^ ]+).*/\1/' | sort -u | wc -l | tr -d ' ')
+          [ "$page_ids" = 5 ] || { echo "::error::$target_tier proof reused an application page between tiers"; exit 1; }
+          pids=$(printf '%s\n' "${tier_sessions[@]}" | sed -E 's/.* pid=([0-9]+).*/\1/' | sort -u | wc -l | tr -d ' ')
+          if [ -n "$next_tier" ]; then
+            [ "$pids" = 2 ] || { echo "::error::$target_tier proof used $pids Playwright workers, expected the failed worker plus one replacement"; exit 1; }
+            target_pid=$(printf '%s\n' "${tier_sessions[@]}" | sed -nE "s/.*pid=([0-9]+) tier=$target_tier .*/\\1/p")
+            next_pid=$(printf '%s\n' "${tier_sessions[@]}" | sed -nE "s/.*pid=([0-9]+) tier=$next_tier .*/\\1/p")
+            [ -n "$target_pid" ] && [ -n "$next_pid" ] && [ "$target_pid" != "$next_pid" ] || { echo "::error::$next_tier did not run in a replacement worker after $target_tier failed"; exit 1; }
+          else
+            [ "$pids" = 1 ] || { echo "::error::$target_tier is last but proof used $pids Playwright workers"; exit 1; }
+          fi
+          echo "$target_tier: real break failed; every other tier passed in its own fresh-page test"
+
       # Renders what ran and what it found - to the job log as an aligned
       # table and to the run's Summary panel as markdown - so a dispatch
       # answers "which branch, against what, with what verdict" without
@@ -338,7 +511,7 @@ jobs:
           BRANCH_TESTED: ${{ inputs.branch || github.ref_name }}
           COMFYUI_REF_USED: ${{ inputs.comfyui_ref || 'b08e6cf35fac50d3ca8470dffb3f9a1fbb7187d2' }}
           GREP_FILTER: ${{ inputs.grep }}
-          S14_ENABLED: ${{ (github.event_name != 'workflow_dispatch' || inputs.enable_s14) && '1' || '0' }}
+          S14_ENABLED: ${{ (matrix.proof_row != '0' || github.event_name != 'workflow_dispatch' || inputs.enable_s14) && '1' || '0' }}
           S15_ENABLED: ${{ (github.event_name != 'workflow_dispatch' || inputs.enable_s15) && '1' || '0' }}
         run: python3 scripts/cicd/custom-nodes-summary.py
 
@@ -346,10 +519,12 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v6
         with:
-          name: playwright-report-custom-nodes
+          name: ${{ github.event_name == 'workflow_dispatch' && matrix.proof_row != '0' && format('playwright-report-custom-nodes-row{0}', matrix.proof_row) || 'playwright-report-custom-nodes' }}
           path: |
             playwright-report/
             custom-nodes-results.json
             custom-nodes.log
+            tier-isolation-proof-evidence.txt
+            tier-isolation-proof-identity.txt
           retention-days: 7
           if-no-files-found: warn
