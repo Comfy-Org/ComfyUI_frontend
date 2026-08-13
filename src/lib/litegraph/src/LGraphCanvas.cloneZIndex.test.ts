@@ -100,7 +100,6 @@ function createLayoutEntry(
   }
   layoutStore.applyOperation({
     type: 'createNode',
-    entity: 'node',
     graphId: rootGraphId,
     nodeId,
     layout,
@@ -113,7 +112,6 @@ function createLayoutEntry(
 function setZIndex(rootGraphId: UUID, nodeId: NodeId, zIndex: number) {
   layoutStore.applyOperation({
     type: 'setNodeZIndex',
-    entity: 'node',
     graphId: rootGraphId,
     nodeId,
     zIndex,

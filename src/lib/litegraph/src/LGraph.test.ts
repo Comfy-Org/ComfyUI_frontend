@@ -7,7 +7,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { NodeLifecycleEvent } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
-import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import {
@@ -1731,16 +1730,21 @@ describe('node layout registration', () => {
     node.id = toNodeId(42)
     node.pos = [10, 20]
     node.size = [100, 80]
-    useLayoutMutations(LayoutSource.Canvas).createNode(
-      graph.rootGraph.id,
-      node.id,
-      {
+    layoutStore.applyOperation({
+      type: 'createNode',
+      graphId: graph.rootGraph.id,
+      nodeId: node.id,
+      layout: {
+        id: node.id,
         position: { x: 300, y: 400 },
         size: { width: 220, height: 160 },
         zIndex: 1,
-        visible: true
-      }
-    )
+        visible: true,
+        bounds: { x: 300, y: 400, width: 220, height: 160 }
+      },
+      timestamp: Date.now(),
+      source: LayoutSource.Canvas
+    })
 
     graph.add(node)
 
@@ -1752,11 +1756,20 @@ describe('node layout registration', () => {
     const graph = new LGraph()
     const adopted = new LGraphNode('adopted')
     adopted.id = toNodeId(42)
-    useLayoutMutations(LayoutSource.Canvas).createNode(graph.id, adopted.id, {
-      position: { x: 0, y: 0 },
-      size: { width: 100, height: 80 },
-      zIndex: 1,
-      visible: true
+    layoutStore.applyOperation({
+      type: 'createNode',
+      graphId: graph.id,
+      nodeId: adopted.id,
+      layout: {
+        id: adopted.id,
+        position: { x: 0, y: 0 },
+        size: { width: 100, height: 80 },
+        zIndex: 1,
+        visible: true,
+        bounds: { x: 0, y: 0, width: 100, height: 80 }
+      },
+      timestamp: Date.now(),
+      source: LayoutSource.Canvas
     })
 
     graph.add(adopted)
@@ -1770,12 +1783,15 @@ describe('node layout registration', () => {
     const graph = new LGraph()
     const group = new LGraphGroup('group')
     graph.add(group)
-    useLayoutMutations(LayoutSource.Canvas).setGroupBounds(
-      graph.id,
-      group.id,
-      { x: 300, y: 400 },
-      { width: 220, height: 160 }
-    )
+    layoutStore.applyOperation({
+      type: 'setGroupBounds',
+      graphId: graph.id,
+      groupId: group.id,
+      position: { x: 300, y: 400 },
+      size: { width: 220, height: 160 },
+      timestamp: Date.now(),
+      source: LayoutSource.Canvas
+    })
 
     graph.remove(group)
 

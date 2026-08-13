@@ -178,7 +178,7 @@ position data for nodes, links, and reroutes into Y.js CRDTs and is the source o
 truth for layout.
 
 **Approach:** New code reads position via `layoutStore` queries (and
-`useLayoutMutations()` for writes); legacy code continues to read `node.pos`
+`useLayoutMutations(source)` for writes); legacy code continues to read `node.pos`
 directly during the transition. No second copy of position data is introduced —
 `layoutStore` stays authoritative.
 

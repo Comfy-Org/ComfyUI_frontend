@@ -149,7 +149,7 @@ deferred mutations against a command buffer; the substrate applies them at
 defined sync points in the schedule. This is the same shape Bevy uses
 and is the closest direct external analog to the per-store mutation layer
 [ADR 0003](../adr/0003-crdt-based-layout-system.md) describes for this
-codebase (realized as store mutation APIs such as `useLayoutMutations()`).
+codebase (realized as store mutation APIs such as `useLayoutMutations(source)`).
 
 We deliberately match the **shape** of this pattern: external callers
 submit commands; only the executor calls the World's imperative

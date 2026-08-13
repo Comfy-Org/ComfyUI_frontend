@@ -53,7 +53,6 @@ export function attachNodeLayout(graph: LayoutGraph, node: LGraphNode): void {
   const size = { width: node._size[0], height: node._size[1] }
   layoutStore.applyOperation({
     ...canvasOperationMeta(),
-    entity: 'node',
     graphId,
     layout: {
       bounds: { ...position, ...size },
@@ -86,7 +85,6 @@ export function detachNodeLayout(node: LGraphNode): void {
   node._layoutRegistered = false
   layoutStore.applyOperation({
     ...canvasOperationMeta(),
-    entity: 'node',
     graphId,
     nodeId,
     type: 'deleteNode'
@@ -106,7 +104,6 @@ export function attachGroupLayout(
 
   layoutStore.applyOperation({
     ...canvasOperationMeta(),
-    entity: 'group',
     graphId,
     groupId: group.id,
     layout: {
@@ -126,7 +123,6 @@ export function detachGroupLayout(group: LGraphGroup): void {
   groupAttachments.delete(group)
   layoutStore.applyOperation({
     ...canvasOperationMeta(),
-    entity: 'group',
     graphId: attachment.graphId,
     groupId: attachment.id,
     type: 'deleteGroup'
@@ -146,7 +142,6 @@ export function materializeRerouteLayout(
 
   layoutStore.applyOperation({
     ...canvasOperationMeta(),
-    entity: 'reroute',
     graphId,
     position: { x: reroute.pos[0], y: reroute.pos[1] },
     rerouteId: reroute.id,
@@ -162,7 +157,6 @@ export function detachRerouteLayout(reroute: Reroute): void {
   rerouteAttachments.delete(reroute)
   layoutStore.applyOperation({
     ...canvasOperationMeta(),
-    entity: 'reroute',
     graphId: attachment.graphId,
     rerouteId: attachment.id,
     type: 'deleteReroute'
@@ -174,7 +168,6 @@ export function moveNodeLayout(node: LGraphNode, position: Point): void {
   if (!attachment) return
   layoutStore.applyOperation({
     ...canvasOperationMeta(),
-    entity: 'node',
     graphId: attachment.graphId,
     nodeId: attachment.id,
     position,
@@ -187,7 +180,6 @@ export function resizeNodeLayout(node: LGraphNode, size: Size): void {
   if (!attachment) return
   layoutStore.applyOperation({
     ...canvasOperationMeta(),
-    entity: 'node',
     graphId: attachment.graphId,
     nodeId: attachment.id,
     size,
@@ -204,7 +196,6 @@ export function setGroupBoundsLayout(
   if (!attachment) return
   layoutStore.applyOperation({
     ...canvasOperationMeta(),
-    entity: 'group',
     graphId: attachment.graphId,
     groupId: attachment.id,
     position,
@@ -218,7 +209,6 @@ export function moveRerouteLayout(reroute: Reroute, position: Point): void {
   if (!attachment) return
   layoutStore.applyOperation({
     ...canvasOperationMeta(),
-    entity: 'reroute',
     graphId: attachment.graphId,
     position,
     rerouteId: attachment.id,
@@ -263,7 +253,6 @@ export function detachGraphLayouts(
       if (meta) {
         operations.push({
           ...meta,
-          entity: 'node',
           graphId: attachment.graphId,
           nodeId: attachment.id,
           type: 'deleteNode'
@@ -278,7 +267,6 @@ export function detachGraphLayouts(
       if (meta) {
         operations.push({
           ...meta,
-          entity: 'group',
           graphId: attachment.graphId,
           groupId: attachment.id,
           type: 'deleteGroup'
@@ -293,7 +281,6 @@ export function detachGraphLayouts(
       if (meta) {
         operations.push({
           ...meta,
-          entity: 'reroute',
           graphId: attachment.graphId,
           rerouteId: attachment.id,
           type: 'deleteReroute'

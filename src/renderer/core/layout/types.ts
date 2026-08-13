@@ -106,8 +106,6 @@ export interface RerouteLayout {
  * Meta-only base for all operations - contains common fields
  */
 interface OperationMeta {
-  /** Unique operation ID for deduplication */
-  id?: string
   /** Timestamp for ordering operations */
   timestamp: number
   /** Actor who performed the operation (for CRDT) */
@@ -119,14 +117,8 @@ interface OperationMeta {
   type: OperationType
 }
 
-/**
- * Entity-specific base types for proper type discrimination
- */
-type NodeOpBase = OperationMeta & { entity: 'node'; nodeId: NodeId }
-type RerouteOpBase = OperationMeta & {
-  entity: 'reroute'
-  rerouteId: RerouteId
-}
+type NodeOpBase = OperationMeta & { nodeId: NodeId }
+type RerouteOpBase = OperationMeta & { rerouteId: RerouteId }
 
 /**
  * Operation type discriminator for type narrowing
@@ -189,7 +181,6 @@ export interface DeleteNodeOperation extends NodeOpBase {
  * Batch update operation for atomic multi-property changes
  */
 export interface BatchUpdateBoundsOperation extends OperationMeta {
-  entity: 'node'
   type: 'batchUpdateBounds'
   nodeIds: NodeId[]
   bounds: Record<NodeId, Bounds>
@@ -219,7 +210,6 @@ export interface MoveRerouteOperation extends RerouteOpBase {
 }
 
 type GroupOpBase = OperationMeta & {
-  entity: 'group'
   groupId: GroupId
 }
 
@@ -243,7 +233,6 @@ interface DeleteGroupOperation extends GroupOpBase {
 }
 
 interface ClearGraphOperation extends OperationMeta {
-  entity: 'graph'
   type: 'clearGraph'
 }
 

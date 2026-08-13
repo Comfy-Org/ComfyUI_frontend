@@ -173,7 +173,7 @@ entry, and bulk teardown goes through one of two paths. A root graph's `clear`
 calls `layoutStore.clearGraph(graphId)`, beside the five peer stores cleared
 there, because layout is keyed by `rootGraphId` and so has a bucket to wipe.
 Graphs that share the root's bucket — subgraphs, unconfigured graphs, and the
-orphaned subgraph release — call `unregisterAllGraphLayout` to drop entries
+orphaned subgraph release — call `detachGraphLayouts` to drop entries
 individually, mirroring `unregisterAllNodeStates` exactly. Both live in a
 dedicated module so no teardown path re-derives the store writes by hand.
 

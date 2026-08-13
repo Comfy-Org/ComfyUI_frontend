@@ -280,7 +280,7 @@ For the phased migration roadmap with shipping milestones, see [ECS Migration Pl
 
 - **Commands** (ADR 0003) describe mutation intent — serializable objects that can be logged, replayed, sent over a wire, or undone.
 - **Systems** (ADR 0008) are command handlers — they validate and execute mutations against the relevant stores.
-- **The dedicated stores** (ADR 0008) hold component data and expose mutation APIs (for example `useLayoutMutations()`, `widgetValueStore.setValue`); each owns its own transaction boundary.
+- **The dedicated stores** (ADR 0008) hold component data and expose mutation APIs (for example `useLayoutMutations(source)`, `widgetValueStore.setValue`); each owns its own transaction boundary.
 
 A store's imperative mutators are internal implementation. External callers submit commands; each mutating store wraps its writes in a transaction (the Y.js-backed `layoutStore` already does this). This follows Redux: internal mutation is imperative, while the public API is action-based.
 

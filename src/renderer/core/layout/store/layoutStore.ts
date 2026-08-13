@@ -902,7 +902,6 @@ class LayoutStoreImpl {
   clearGraph(rootGraphId: UUID): void {
     this.applyOperation({
       type: 'clearGraph',
-      entity: 'graph',
       graphId: rootGraphId,
       timestamp: Date.now(),
       source: LayoutSource.Canvas
@@ -911,7 +910,7 @@ class LayoutStoreImpl {
 
   /**
    * Test-only escape hatch: drops everything, including entity entries that
-   * production drops through `unregisterAllGraphLayout`. Calling it with a
+   * production drops through `detachGraphLayouts`. Calling it with a
    * graph attached desyncs the store from every entity in it.
    */
   resetForTests(): void {
@@ -930,7 +929,7 @@ class LayoutStoreImpl {
    * Drops the geometry scoped to the graph being left: slot and link layouts,
    * the spatial indexes over them, and the listeners and queues bound to them.
    * Entity geometry lives with the entity, and leaves through
-   * `unregisterAllGraphLayout`.
+   * `detachGraphLayouts`.
    */
   clearViewGeometry(): void {
     this.ydoc.transact(() => {
@@ -1318,7 +1317,6 @@ class LayoutStoreImpl {
 
     this.applyOperation({
       type: 'batchUpdateBounds',
-      entity: 'node',
       graphId: rootGraphId,
       nodeIds,
       bounds: boundsRecord,

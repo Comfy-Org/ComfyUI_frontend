@@ -4,7 +4,6 @@ import { beforeEach, describe, expect, vi } from 'vitest'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { GroupId } from '@/types/groupId'
@@ -286,10 +285,13 @@ describe('group layout in layoutStore', () => {
   test('keeps geometry locally when the store entry is gone', () => {
     const graph = new LGraph()
     const group = addedGroup(graph, toGroupId(809))
-    useLayoutMutations(LayoutSource.Canvas).deleteGroup(
-      graph.rootGraph.id,
-      group.id
-    )
+    layoutStore.applyOperation({
+      type: 'deleteGroup',
+      graphId: graph.rootGraph.id,
+      groupId: group.id,
+      timestamp: Date.now(),
+      source: LayoutSource.Canvas
+    })
 
     group.pos = [11, 22]
 
@@ -379,12 +381,10 @@ describe('group layout in layoutStore', () => {
     const size = group.size
 
     layoutStore.applyOperation({
-      id: 'set-group-bounds',
       type: 'setGroupBounds',
       actor: 'test',
       timestamp: 1,
       source: LayoutSource.Canvas,
-      entity: 'group',
       graphId: graph.rootGraph.id,
       groupId: group.id,
       position: { x: 11, y: 12 },

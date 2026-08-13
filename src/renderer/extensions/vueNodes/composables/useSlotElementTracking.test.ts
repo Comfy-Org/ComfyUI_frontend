@@ -124,7 +124,6 @@ describe('useSlotElementTracking', () => {
     layoutStore.resetForTests()
     layoutStore.applyOperation({
       type: 'createNode',
-      entity: 'node',
       graphId: ROOT_GRAPH_ID,
       nodeId: NODE_ID,
       layout: {

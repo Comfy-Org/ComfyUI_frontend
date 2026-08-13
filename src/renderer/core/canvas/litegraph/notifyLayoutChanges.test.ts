@@ -52,10 +52,13 @@ describe('notifyLayoutChanges', () => {
     {
       path: 'direct',
       resize: ({ graph, node }: TestContext) => {
-        const mutations = useLayoutMutations(LayoutSource.Vue)
-        mutations.resizeNode(graph.rootGraph.id, node.id, {
-          width: 300,
-          height: 200
+        layoutStore.applyOperation({
+          type: 'resizeNode',
+          graphId: graph.rootGraph.id,
+          nodeId: node.id,
+          size: { width: 300, height: 200 },
+          timestamp: Date.now(),
+          source: LayoutSource.Vue
         })
       }
     },
@@ -125,14 +128,14 @@ describe('notifyLayoutChanges', () => {
     const onResize = vi.fn()
     node.onResize = onResize
 
-    useLayoutMutations(LayoutSource.Canvas).resizeNode(
-      otherGraph.rootGraph.id,
-      otherNode.id,
-      {
-        width: 300,
-        height: 200
-      }
-    )
+    layoutStore.applyOperation({
+      type: 'resizeNode',
+      graphId: otherGraph.rootGraph.id,
+      nodeId: otherNode.id,
+      size: { width: 300, height: 200 },
+      timestamp: Date.now(),
+      source: LayoutSource.Canvas
+    })
     await Promise.resolve()
 
     expect(otherNode.id).toBe(node.id)
@@ -143,19 +146,30 @@ describe('notifyLayoutChanges', () => {
   it('invalidates rendering for a group-only change', async () => {
     using context = setup()
     const { graph, setDirty } = context
-    const mutations = useLayoutMutations(LayoutSource.Vue)
-    mutations.createGroup(graph.rootGraph.id, toGroupId(1), {
-      position: { x: 0, y: 0 },
-      size: { width: 100, height: 100 }
+    const groupId = toGroupId(1)
+    layoutStore.applyOperation({
+      type: 'createGroup',
+      graphId: graph.rootGraph.id,
+      groupId,
+      layout: {
+        id: groupId,
+        position: { x: 0, y: 0 },
+        size: { width: 100, height: 100 }
+      },
+      timestamp: Date.now(),
+      source: LayoutSource.Vue
     })
     setDirty.mockClear()
 
-    mutations.setGroupBounds(
-      graph.rootGraph.id,
-      toGroupId(1),
-      { x: 10, y: 10 },
-      { width: 120, height: 110 }
-    )
+    layoutStore.applyOperation({
+      type: 'setGroupBounds',
+      graphId: graph.rootGraph.id,
+      groupId,
+      position: { x: 10, y: 10 },
+      size: { width: 120, height: 110 },
+      timestamp: Date.now(),
+      source: LayoutSource.Vue
+    })
 
     await vi.waitFor(() => expect(setDirty).toHaveBeenCalledWith(true, true))
   })

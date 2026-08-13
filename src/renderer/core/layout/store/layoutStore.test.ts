@@ -12,7 +12,6 @@ import { createUuidv4 } from '@/utils/uuid'
 import type { UUID } from '@/utils/uuid'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
@@ -51,7 +50,6 @@ describe('layoutStore CRDT operations', () => {
     // Create node
     layoutStore.applyOperation({
       type: 'createNode',
-      entity: 'node',
       graphId: GRAPH,
       nodeId,
       layout,
@@ -72,7 +70,6 @@ describe('layoutStore CRDT operations', () => {
     // Create node first
     layoutStore.applyOperation({
       type: 'createNode',
-      entity: 'node',
       graphId: GRAPH,
       nodeId,
       layout,
@@ -85,7 +82,6 @@ describe('layoutStore CRDT operations', () => {
     const newPosition = { x: 200, y: 300 }
     layoutStore.applyOperation({
       type: 'moveNode',
-      entity: 'node',
       graphId: GRAPH,
       nodeId,
       position: newPosition,
@@ -106,7 +102,6 @@ describe('layoutStore CRDT operations', () => {
     // Create node
     layoutStore.applyOperation({
       type: 'createNode',
-      entity: 'node',
       graphId: GRAPH,
       nodeId,
       layout,
@@ -119,7 +114,6 @@ describe('layoutStore CRDT operations', () => {
     const newSize = { width: 300, height: 150 }
     layoutStore.applyOperation({
       type: 'resizeNode',
-      entity: 'node',
       graphId: GRAPH,
       nodeId,
       size: newSize,
@@ -140,7 +134,6 @@ describe('layoutStore CRDT operations', () => {
     // Create node
     layoutStore.applyOperation({
       type: 'createNode',
-      entity: 'node',
       graphId: GRAPH,
       nodeId,
       layout,
@@ -152,7 +145,6 @@ describe('layoutStore CRDT operations', () => {
     // Delete node
     layoutStore.applyOperation({
       type: 'deleteNode',
-      entity: 'node',
       graphId: GRAPH,
       nodeId,
       timestamp: Date.now(),
@@ -174,7 +166,6 @@ describe('layoutStore CRDT operations', () => {
     for (const nodeId of [toNodeId('test-node-5a'), toNodeId('test-node-5b')]) {
       layoutStore.applyOperation({
         type: 'createNode',
-        entity: 'node',
         graphId: GRAPH,
         nodeId,
         layout: createTestNode(nodeId),
@@ -204,7 +195,6 @@ describe('layoutStore CRDT operations', () => {
 
     layoutStore.applyOperation({
       type: 'createNode',
-      entity: 'node',
       graphId: GRAPH,
       nodeId: nodeA,
       layout: layoutA,
@@ -215,7 +205,6 @@ describe('layoutStore CRDT operations', () => {
 
     layoutStore.applyOperation({
       type: 'createNode',
-      entity: 'node',
       graphId: GRAPH,
       nodeId: nodeB,
       layout: layoutB,
@@ -235,7 +224,6 @@ describe('layoutStore CRDT operations', () => {
 
     layoutStore.applyOperation({
       type: 'moveNode',
-      entity: 'node',
       graphId: GRAPH,
       nodeId: nodeB,
       position: { x: 400, y: 400 },
@@ -250,7 +238,6 @@ describe('layoutStore CRDT operations', () => {
 
     layoutStore.applyOperation({
       type: 'moveNode',
-      entity: 'node',
       graphId: GRAPH,
       nodeId: nodeA,
       position: { x: 200, y: 250 },
@@ -273,7 +260,6 @@ describe('layoutStore CRDT operations', () => {
 
     layoutStore.applyOperation({
       type: 'createNode',
-      entity: 'node',
       graphId: GRAPH,
       nodeId,
       layout,
@@ -292,7 +278,6 @@ describe('layoutStore CRDT operations', () => {
 
     layoutStore.applyOperation({
       type: 'moveNode',
-      entity: 'node',
       graphId: GRAPH,
       nodeId,
       position: { x: 320, y: 180 },
@@ -318,17 +303,17 @@ describe('layoutStore CRDT operations', () => {
     layoutStore.onNodeChange(GRAPH, nodeId, staleListener)
 
     layoutStore.clearViewGeometry()
-    const mutations = useLayoutMutations(LayoutSource.Canvas)
-    mutations.createNode(GRAPH, nodeId, {
-      position: { x: 0, y: 0 },
-      size: { width: 200, height: 100 },
-      zIndex: 0,
-      visible: true
+    layoutStore.applyOperation({
+      type: 'createNode',
+      graphId: GRAPH,
+      nodeId,
+      layout: createTestNode(nodeId),
+      timestamp: Date.now(),
+      source: LayoutSource.Canvas
     })
 
     layoutStore.applyOperation({
       type: 'moveNode',
-      entity: 'node',
       graphId: GRAPH,
       nodeId,
       position: { x: 10, y: 20 },
@@ -346,7 +331,6 @@ describe('layoutStore CRDT operations', () => {
 
     layoutStore.applyOperation({
       type: 'createNode',
-      entity: 'node',
       graphId: GRAPH,
       nodeId,
       layout,
@@ -362,7 +346,6 @@ describe('layoutStore CRDT operations', () => {
 
     layoutStore.applyOperation({
       type: 'moveNode',
-      entity: 'node',
       graphId: GRAPH,
       nodeId,
       position: { x: 120, y: 110 },
@@ -372,7 +355,6 @@ describe('layoutStore CRDT operations', () => {
     })
     layoutStore.applyOperation({
       type: 'moveNode',
-      entity: 'node',
       graphId: GRAPH,
       nodeId,
       position: { x: 150, y: 140 },
@@ -400,7 +382,6 @@ describe('layoutStore CRDT operations', () => {
 
     layoutStore.applyOperation({
       type: 'createNode',
-      entity: 'node',
       graphId: GRAPH,
       nodeId,
       layout,
@@ -445,7 +426,6 @@ describe('layoutStore CRDT operations', () => {
 
     layoutStore.applyOperation({
       type: 'createNode',
-      entity: 'node',
       graphId: GRAPH,
       nodeId,
       layout,
@@ -483,7 +463,6 @@ describe('layoutStore CRDT operations', () => {
 
     layoutStore.applyOperation({
       type: 'createNode',
-      entity: 'node',
       graphId: GRAPH,
       nodeId,
       layout,
@@ -518,7 +497,6 @@ describe('layoutStore CRDT operations', () => {
 
     layoutStore.applyOperation({
       type: 'createNode',
-      entity: 'node',
       graphId: GRAPH,
       nodeId,
       layout,
@@ -578,7 +556,6 @@ describe('layoutStore CRDT operations', () => {
 
       layoutStore.applyOperation({
         type: 'createNode',
-        entity: 'node',
         graphId: GRAPH,
         nodeId,
         layout,
@@ -600,7 +577,6 @@ describe('layoutStore CRDT operations', () => {
 
       layoutStore.applyOperation({
         type: 'deleteNode',
-        entity: 'node',
         graphId: GRAPH,
         nodeId,
         timestamp: Date.now(),
@@ -622,7 +598,6 @@ describe('reroute layouts outlive an active-graph reseed', () => {
   function createReroute() {
     layoutStore.applyOperation({
       type: 'createReroute',
-      entity: 'reroute',
       graphId: GRAPH_ID,
       rerouteId: REROUTE,
       position: POSITION,
@@ -650,7 +625,6 @@ describe('reroute layouts outlive an active-graph reseed', () => {
 
     layoutStore.applyOperation({
       type: 'deleteReroute',
-      entity: 'reroute',
       graphId: GRAPH_ID,
       rerouteId: REROUTE,
       timestamp: Date.now(),
@@ -689,7 +663,6 @@ describe('root-scoped group and reroute layouts', () => {
       apply({
         ...metadata(),
         type: 'createGroup',
-        entity: 'group',
         graphId,
         groupId: GROUP_ID,
         layout: {
@@ -701,7 +674,6 @@ describe('root-scoped group and reroute layouts', () => {
       apply({
         ...metadata(),
         type: 'createReroute',
-        entity: 'reroute',
         graphId,
         rerouteId: REROUTE_ID,
         position: { x: offset + 5, y: offset + 5 }
@@ -711,7 +683,6 @@ describe('root-scoped group and reroute layouts', () => {
     apply({
       ...metadata(),
       type: 'setGroupBounds',
-      entity: 'group',
       graphId: FIRST_GRAPH,
       groupId: GROUP_ID,
       position: { x: 20, y: 30 },
@@ -720,7 +691,6 @@ describe('root-scoped group and reroute layouts', () => {
     apply({
       ...metadata(),
       type: 'moveReroute',
-      entity: 'reroute',
       graphId: FIRST_GRAPH,
       rerouteId: REROUTE_ID,
       position: { x: 25, y: 35 }
@@ -750,14 +720,12 @@ describe('root-scoped group and reroute layouts', () => {
     apply({
       ...metadata(),
       type: 'deleteGroup',
-      entity: 'group',
       graphId: FIRST_GRAPH,
       groupId: GROUP_ID
     })
     apply({
       ...metadata(),
       type: 'deleteReroute',
-      entity: 'reroute',
       graphId: FIRST_GRAPH,
       rerouteId: REROUTE_ID
     })
@@ -782,7 +750,6 @@ describe('root-scoped node layouts', () => {
   function seedNode(graphId: UUID, nodeId: NodeId, x: number): void {
     layoutStore.applyOperation({
       type: 'createNode',
-      entity: 'node',
       graphId,
       nodeId,
       layout: {
@@ -806,7 +773,6 @@ describe('root-scoped node layouts', () => {
 
     layoutStore.applyOperation({
       type: 'deleteNode',
-      entity: 'node',
       graphId: FIRST_GRAPH,
       nodeId,
       timestamp: Date.now(),
@@ -838,7 +804,6 @@ describe('root-scoped node layouts', () => {
     for (const graphId of [FIRST_GRAPH, SECOND_GRAPH]) {
       layoutStore.applyOperation({
         type: 'createGroup',
-        entity: 'group',
         graphId,
         groupId: GROUP_ID,
         layout: {
@@ -852,7 +817,6 @@ describe('root-scoped node layouts', () => {
       })
       layoutStore.applyOperation({
         type: 'createReroute',
-        entity: 'reroute',
         graphId,
         rerouteId: REROUTE_ID,
         position: { x: 0, y: 0 },
