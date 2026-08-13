@@ -882,6 +882,7 @@ describe('connection veto and menu items', () => {
   // node and slot index, so the peer just has to exist.
   const peerNode = new (nodeClass('Peer'))()
   const outputSlot = peerNode.addOutput('out', 'IMAGE')
+  const inputSlot = peerNode.addInput('in', 'IMAGE')
 
   const build = (apply: (b: NodeDefBuilder) => void) => {
     const registry = createDefRegistry()
@@ -905,6 +906,41 @@ describe('connection veto and menu items', () => {
     expect(node.onConnectInput?.(0, 'IMAGE', outputSlot, peerNode, 0)).toBe(
       true
     )
+  })
+
+  it('refuses on the output side too, and says which side it is', () => {
+    // side was typed 'input' | 'output' from the start but only the input
+    // hook was ever installed, so it was always 'input'. A node that may only
+    // feed particular types could be wired to anything and silently do
+    // nothing.
+    const seen: string[] = []
+    const node = build((b) =>
+      b.onBeforeConnect((_n, e) => {
+        seen.push(e.side)
+        return e.side !== 'output'
+      })
+    )
+
+    expect(node.onConnectOutput?.(0, 'IMAGE', inputSlot, peerNode, 0)).toBe(
+      false
+    )
+    expect(node.onConnectInput?.(0, 'IMAGE', outputSlot, peerNode, 0)).toBe(
+      true
+    )
+    expect(seen).toEqual(['output', 'input'])
+  })
+
+  it('names the node at the other end of an output connection', () => {
+    let peer: string | undefined
+    const node = build((b) =>
+      b.onBeforeConnect((_n, e) => {
+        peer = e.peerNodeId
+      })
+    )
+
+    node.onConnectOutput?.(0, 'IMAGE', inputSlot, peerNode, 0)
+
+    expect(peer).toBe(String(peerNode.id))
   })
 
   it('lets any listener refuse, not just the last', () => {

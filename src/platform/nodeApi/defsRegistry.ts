@@ -969,11 +969,19 @@ export function createDefRegistry(): {
           | 'onMouseEnter'
           | 'onMouseLeave'
           | 'onDblClick'
+          | 'onConnectInput'
+          | 'onConnectOutput'
           | 'onRemoved',
-        run: (node: LGraphNode, ...args: TArgs) => void
+        run: (node: LGraphNode, ...args: TArgs) => unknown,
+        /**
+         * A vetoing callback: litegraph reads `false` as "refuse", so the
+         * chain must return a value and stop at the first refusal rather than
+         * calling everything and discarding the answers.
+         */
+        options?: { veto: true }
       ) => {
         const previous = nodeType.prototype[key] as
-          | ((this: LGraphNode, ...args: TArgs) => void)
+          | ((this: LGraphNode, ...args: TArgs) => unknown)
           | undefined
         // The previous value may be another pack's legacy prototype patch, so
         // it is still called through — composition here, chaining underneath.
@@ -981,8 +989,10 @@ export function createDefRegistry(): {
           this: LGraphNode,
           ...args: TArgs
         ) {
-          previous?.apply(this, args)
-          run(this, ...args)
+          const before = previous?.apply(this, args)
+          if (options?.veto && before === false) return false
+          const answer = run(this, ...args)
+          return options?.veto ? answer !== false : undefined
         }
       }
 
@@ -1155,36 +1165,53 @@ export function createDefRegistry(): {
       }
 
       if (beforeConnect.length) {
-        const previous = nodeType.prototype.onConnectInput
-        ;(nodeType.prototype as Record<string, unknown>).onConnectInput =
-          function (
-            this: LGraphNode,
-            index: number,
-            type: unknown,
-            output: unknown,
-            sourceNode: unknown
-          ) {
-            const allowed = (
-              previous as ((...a: unknown[]) => unknown) | undefined
-            )?.call(this, index, type, output, sourceNode)
-            if (allowed === false) return false
-            const peer = sourceNode as
-              | { id?: unknown; type?: string }
-              | undefined
-            const event: BeforeConnectEvent = Object.freeze({
-              side: 'input',
-              index,
-              peerNodeId: peer?.id === undefined ? undefined : String(peer.id),
-              peerType: peer?.type
-            })
-            const id = String(this.id)
-            // Any listener refusing refuses the connection: a veto is only
-            // useful if one pack cannot be overruled by another's silence.
-            for (const { run, handleFor } of beforeConnect) {
-              if (run(handleFor(id), event) === false) return false
-            }
-            return true
+        /**
+         * Asks every listener, in registration order. Any refusal refuses the
+         * connection: a veto is only useful if one pack cannot be overruled by
+         * another's silence.
+         */
+        const mayConnect = (
+          node: LGraphNode,
+          event: BeforeConnectEvent
+        ): boolean => {
+          const id = String(node.id)
+          for (const { run, handleFor } of beforeConnect) {
+            if (run(handleFor(id), event) === false) return false
           }
+          return true
+        }
+        const peerOf = (candidate: unknown) => {
+          const peer = candidate as { id?: unknown; type?: string } | undefined
+          return {
+            peerNodeId: peer?.id === undefined ? undefined : String(peer.id),
+            peerType: peer?.type
+          }
+        }
+
+        install<[number, unknown, unknown, unknown]>(
+          'onConnectInput',
+          (node, index, _type, _output, sourceNode) =>
+            mayConnect(
+              node,
+              Object.freeze({ side: 'input', index, ...peerOf(sourceNode) })
+            ),
+          { veto: true }
+        )
+
+        // The output side was declared from the start and never installed, so
+        // `side` was typed 'input' | 'output' and was always 'input'. A node
+        // that may only feed particular types — rgthree's relay reaching only
+        // a repeater — could be wired to anything and would silently do
+        // nothing.
+        install<[number, unknown, unknown, unknown, number]>(
+          'onConnectOutput',
+          (node, index, _type, _input, targetNode) =>
+            mayConnect(
+              node,
+              Object.freeze({ side: 'output', index, ...peerOf(targetNode) })
+            ),
+          { veto: true }
+        )
       }
 
       if (menuItems.length) {
