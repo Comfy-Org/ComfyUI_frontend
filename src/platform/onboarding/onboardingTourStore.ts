@@ -28,6 +28,20 @@ import { useTourTriggers } from './useTourTriggers'
 
 const DEFER_TIMEOUT_MS = 8000
 
+/**
+ * How the last run of a tour ended. Whatever follows a tour has to know which
+ * ending it is following: "a tour ran" cannot tell a tour walked to the end
+ * apart from one the user waved away on step 1, or one a missing target tore
+ * down.
+ */
+export type TourEnding =
+  | { tour: EntryPath; outcome: 'completed' }
+  | {
+      tour: EntryPath
+      outcome: 'skipped'
+      skipReason: OnboardingTourSkipReason
+    }
+
 /** Empty when a runtime resolver fails, so one bad graph costs only its own tour. */
 async function resolveDefinition(
   definition: TourDefinition
@@ -51,6 +65,7 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
   const telemetry = useTelemetry()
 
   const state = shallowRef<TourState>(IDLE)
+  const lastEnding = shallowRef<TourEnding | null>(null)
   let stepController: AbortController | null = null
   let lastRun = 0
 
@@ -283,6 +298,11 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
 
     if (!dispatch({ type: 'ended', run })) return
 
+    if (ending.tour)
+      lastEnding.value =
+        outcome === 'skipped'
+          ? { tour: ending.tour, outcome, skipReason }
+          : { tour: ending.tour, outcome }
     trackTour(
       outcome,
       outcome === 'skipped' ? skipReason : undefined,
@@ -330,6 +350,8 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     if (!definition) return false
     const run = nextRun()
     if (!dispatch({ type: 'requested', tour: entryPath, run })) return false
+    // A new run has no ending yet; the one before it must not speak for it.
+    lastEnding.value = null
     const built = await resolveDefinition(definition)
     const resolved = resolveSteps(built.steps, targetMounted)
     if (!resolved.length) {
@@ -373,6 +395,7 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
 
   return {
     activeTour: readonly(activeTour),
+    lastEnding: readonly(lastEnding),
     step,
     isLast,
     canGoBack,

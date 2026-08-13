@@ -67,7 +67,6 @@ function readSerializedClipboardMetadata(dataTransfer: DataTransfer): string {
 describe('useCopy', () => {
   beforeEach(() => {
     copyMocks.copyHandler = undefined
-    copyMocks.canvas.copyToClipboard.mockReset()
   })
 
   it('should write large serialized node data to clipboard metadata', () => {

@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
 import { defineComponent } from 'vue'
 import { describe, expect, it } from 'vitest'
@@ -32,11 +33,11 @@ const MediaAssetCardStub = defineComponent({
     '<div data-testid="media-asset-card" :data-show-native-video-controls="showNativeVideoControls" />'
 })
 
-const videoAsset = {
+const videoAsset: AssetItem = fromPartial({
   id: 'video-asset',
   name: 'clip.mp4',
   tags: []
-} satisfies AssetItem
+})
 
 function renderGridView(gridMode: MediaAssetGridMode) {
   return render(AssetsSidebarGridView, {
