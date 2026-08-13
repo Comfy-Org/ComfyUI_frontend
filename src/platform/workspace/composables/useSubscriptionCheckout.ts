@@ -1047,6 +1047,8 @@ export function useSubscriptionCheckout(
     if (!permissions.value.canManageSubscriptionLifecycle) return
 
     const source = 'pricing_dialog' as const
+    const startedAt = Date.now()
+    const isWorkspaceResubscribe = shouldUseWorkspaceBilling.value
 
     telemetry?.trackResubscribeClicked({
       source,
@@ -1070,13 +1072,14 @@ export function useSubscriptionCheckout(
       // tab, which isn't terminal — its `succeeded` is emitted later, from
       // useSubscription.ts's pending-checkout recovery, once a status poll
       // confirms the payment actually went through.
-      if (shouldUseWorkspaceBilling.value) {
+      if (isWorkspaceResubscribe) {
         telemetry?.trackBillingEvent({
           operation: 'resubscribe',
           stage: 'succeeded',
           outcome: 'success',
           source,
-          payment_intent_source: paymentIntentSource
+          payment_intent_source: paymentIntentSource,
+          duration_ms: Date.now() - startedAt
         })
       }
       toast.add({
@@ -1094,7 +1097,10 @@ export function useSubscriptionCheckout(
         outcome: 'failure',
         source,
         payment_intent_source: paymentIntentSource,
-        failure_category: categorizeBillingApiError(error)
+        failure_category: categorizeBillingApiError(error),
+        ...(isWorkspaceResubscribe && {
+          duration_ms: Date.now() - startedAt
+        })
       })
       toast.add({
         severity: 'error',

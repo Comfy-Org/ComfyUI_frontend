@@ -667,6 +667,38 @@ describe('useDowngradeToPersonal', () => {
   })
 
   describe('downgradeToPersonal telemetry', () => {
+    it('keeps one telemetry attempt across an authoritative reactivation retry', async () => {
+      mockMembers.value = teamWithOwnerAnd('m1')
+      mockPreviewSubscribe.mockResolvedValue({
+        allowed: true,
+        transition_type: 'downgrade',
+        cost_today_cents: 1500
+      })
+      mockSubscribe.mockRejectedValueOnce(
+        Object.assign(new Error('reactivation confirmation required'), {
+          code: 'REACTIVATION_CONFIRMATION_REQUIRED'
+        })
+      )
+      const { downgradeToPersonal } = useDowngradeToPersonal()
+
+      await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
+        ReactivationConfirmationRequiredError
+      )
+      await downgradeToPersonal('founder-monthly', true, 1500)
+
+      const lifecycle = mockTrackBillingEvent.mock.calls.map(
+        ([event]) => `${event.operation}.${event.stage}`
+      )
+      expect(lifecycle).toEqual([
+        'downgrade_to_personal.started',
+        'subscription_checkout.started',
+        'operation.started',
+        'downgrade_to_personal.succeeded',
+        'subscription_checkout.succeeded',
+        'operation.succeeded'
+      ])
+    })
+
     it('tracks the start of the downgrade with the pending removal count', async () => {
       mockMembers.value = teamWithOwnerAnd('m1', 'm2')
       const { downgradeToPersonal } = useDowngradeToPersonal()
