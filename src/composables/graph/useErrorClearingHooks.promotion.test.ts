@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
@@ -31,7 +29,6 @@ function stubRootGraph(graph: LGraph) {
 
 describe('link ownership error surface', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     seedMediaNodeDefs()
     vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(false)
   })
@@ -81,7 +78,6 @@ describe('link ownership error surface', () => {
 
 describe('link ownership while a workflow loads', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     seedMediaNodeDefs()
     vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(false)
   })
@@ -157,7 +153,6 @@ describe('link ownership while a workflow loads', () => {
 
 describe('promotion listener lifecycle', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     seedMediaNodeDefs()
     vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(false)
   })
@@ -248,7 +243,6 @@ describe('promotion listener lifecycle', () => {
 
 describe('promoted widget promotion error surface moves with ownership', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     seedMediaNodeDefs()
     vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(false)
   })
@@ -331,7 +325,6 @@ describe('promoted widget promotion error surface moves with ownership', () => {
 
 describe('promoted widget demotion error clearing', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     seedMediaNodeDefs()
     vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(false)
   })

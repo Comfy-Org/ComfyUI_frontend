@@ -449,8 +449,6 @@ describe('useLoad3d', () => {
 
   describe('zoom watcher', () => {
     it('calls load3d.handleResize after debounce when canvas appScalePercentage changes', async () => {
-      vi.useFakeTimers()
-
       const canvasStore = reactive({ appScalePercentage: 100 })
       vi.mocked(getActivePinia).mockReturnValue({} as unknown as Pinia)
       vi.mocked(useCanvasStore).mockReturnValue(
@@ -469,13 +467,9 @@ describe('useLoad3d', () => {
 
       vi.advanceTimersByTime(150)
       expect(mockLoad3d.handleResize).toHaveBeenCalledOnce()
-
-      vi.useRealTimers()
     })
 
     it('debounces rapid zoom changes into a single handleResize call', async () => {
-      vi.useFakeTimers()
-
       const canvasStore = reactive({ appScalePercentage: 100 })
       vi.mocked(getActivePinia).mockReturnValue({} as unknown as Pinia)
       vi.mocked(useCanvasStore).mockReturnValue(
@@ -497,8 +491,6 @@ describe('useLoad3d', () => {
 
       vi.advanceTimersByTime(150)
       expect(mockLoad3d.handleResize).toHaveBeenCalledOnce()
-
-      vi.useRealTimers()
     })
   })
 

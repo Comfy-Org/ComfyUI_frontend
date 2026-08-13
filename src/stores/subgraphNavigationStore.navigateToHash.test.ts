@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
@@ -116,7 +114,6 @@ async function flushHashWatcher() {
 
 describe('useSubgraphNavigationStore - navigateToHash validation', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     app.rootGraph.id = ids.root
     app.rootGraph.subgraphs.clear()
     app.canvas.subgraph = undefined

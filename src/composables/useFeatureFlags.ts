@@ -10,6 +10,7 @@ import {
 } from '@/platform/remoteConfig/remoteConfig'
 import { api } from '@/scripts/api'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
+import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 
 /**
  * Known server feature flags (top-level, not extensions)
@@ -42,13 +43,17 @@ export enum ServerFeatureFlag {
 }
 
 /**
- * Resolves a feature flag value with dev override > remoteConfig > serverFeature priority.
+ * Resolves a feature flag value with session override > dev override >
+ * remoteConfig > serverFeature priority.
  */
 function resolveFlag<T>(
   flagKey: string,
   remoteConfigValue: T | undefined,
   defaultValue: T
 ): T {
+  const sessionOverride = getSessionOverride<T>(flagKey)
+  if (sessionOverride !== undefined) return sessionOverride
+
   const override = getDevOverride<T>(flagKey)
   if (override !== undefined) return override
   return remoteConfigValue ?? api.getServerFeature(flagKey, defaultValue)
@@ -65,6 +70,9 @@ function resolveAuthGatedFlag(
   remoteConfigValue: boolean | undefined,
   cachedValue: Ref<boolean | undefined>
 ): boolean {
+  const sessionOverride = getSessionOverride<boolean>(flagKey)
+  if (sessionOverride !== undefined) return sessionOverride
+
   const override = getDevOverride<boolean>(flagKey)
   if (override !== undefined) return override
 

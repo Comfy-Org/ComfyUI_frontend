@@ -27,7 +27,6 @@ catalog:
   '@iconify/tools': ^5.0.3
   '@iconify/utils': ^3.1.0
   '@intlify/eslint-plugin-vue-i18n': ^4.5.1
-  '@lobehub/i18n-cli': ^1.26.1
   '@lucide/vue': ^1.17.0
   '@pinia/testing': ^2.0.1
   '@playwright/test': ^1.61.1
@@ -106,6 +105,7 @@ catalog:
   minisearch: ^7.2.0
   mixpanel-browser: ^2.71.0
   monocart-coverage-reports: ^2.12.9
+  openai: ^7.4.0
   oxfmt: ^0.59.0
   oxlint: ^1.77.0
   oxlint-tsgolint: ^7.0.2001
@@ -116,7 +116,7 @@ catalog:
   pretty-bytes: ^7.1.0
   primeicons: ^7.0.0
   primevue: 4.2.5
-  reka-ui: 2.5.0
+  reka-ui: 2.6.2
   rollup-plugin-visualizer: ^6.0.4
   storybook: ^10.5.6
   stylelint: ^17.14.0
