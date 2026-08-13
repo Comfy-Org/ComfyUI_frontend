@@ -3994,15 +3994,6 @@
     "successDescription": "You can now upload your workflow to your creator page",
     "uploadWorkflowButton": "Upload my workflow"
   },
-  "desktopDialogs": {
-    "": {
-      "title": "Invalid Dialog",
-      "message": "Invalid dialog ID was provided.",
-      "buttons": {
-        "Close": "Close"
-      }
-    }
-  },
   "vueNodesSlot": {
     "iterative": "(Iterative)"
   },

@@ -3,8 +3,6 @@ import * as fs from 'fs'
 // Import Vite define shim to make __DISTRIBUTION__ and other define variables available
 import './vite-define-shim'
 
-// eslint-disable-next-line import-x/no-relative-packages -- desktop-ui is not a dependency of the root package
-import { DESKTOP_DIALOGS } from '../apps/desktop-ui/src/constants/desktopDialogs'
 import { comfyPageFixture as test } from '../browser_tests/fixtures/ComfyPage'
 import {
   formatCamelCase,
@@ -143,24 +141,6 @@ test('collect-i18n-general', async ({ comfyPage }) => {
     ])
   )
 
-  // Desktop Dialogs
-  const allDesktopDialogsLocale = Object.fromEntries(
-    Object.values(DESKTOP_DIALOGS).map((dialog) => [
-      // @ts-expect-error - not every DESKTOP_DIALOGS entry declares an id
-      normalizeI18nKey(dialog.id),
-      {
-        title: dialog.title,
-        message: dialog.message,
-        buttons: Object.fromEntries(
-          dialog.buttons.map((button) => [
-            normalizeI18nKey(button.label),
-            button.label
-          ])
-        )
-      }
-    ])
-  )
-
   fs.writeFileSync(
     localePath,
     JSON.stringify(
@@ -174,8 +154,7 @@ test('collect-i18n-general', async ({ comfyPage }) => {
           ...allSettingCategoriesLocale
         },
         serverConfigItems: allServerConfigsLocale,
-        serverConfigCategories: allServerConfigCategoriesLocale,
-        desktopDialogs: allDesktopDialogsLocale
+        serverConfigCategories: allServerConfigCategoriesLocale
       },
       null,
       2

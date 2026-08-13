@@ -57,7 +57,7 @@ jobs:
 
           # Defensive filter: only strict [v]X.Y.Z tags -- skips "-rc"/"-beta"
           # tags mis-flagged as stable, and other monorepo tags (design-system,
-          # desktop-ui, npm-types, etc.) that aren't ours.
+          # npm-types, etc.) that aren't ours.
           CANDIDATES=()
           while IFS= read -r tag; do
             if [[ "$tag" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]; then

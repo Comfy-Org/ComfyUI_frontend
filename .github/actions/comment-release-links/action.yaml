@@ -59,10 +59,6 @@ runs:
               'PyPI|https://pypi.org/project/comfyui-frontend-package/{{version}}/' \
               'npm types|https://www.npmjs.com/package/@comfyorg/comfyui-frontend-types/v/{{version}}')
             ;;
-          apps/desktop-ui/package.json)
-            MARKER='desktop-release-summary'
-            LINKS_VALUE='npm desktop UI|https://www.npmjs.com/package/@comfyorg/desktop-ui/v/{{version}}'
-            ;;
           packages/design-system/package.json)
             MARKER='design-system-release-summary'
             LINKS_VALUE='npm design-system|https://www.npmjs.com/package/@comfyorg/design-system/v/{{version}}'
