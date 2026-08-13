@@ -114,6 +114,10 @@ export const TestIds = {
     queueInlineProgress: 'queue-inline-progress',
     queueInlineProgressNodeFill: 'queue-inline-progress-node-fill'
   },
+  partnerNodes: {
+    signInToRunButton: 'partner-sign-in-to-run-button',
+    runGateCaption: 'partner-run-gate-caption'
+  },
   nodeLibrary: {
     bookmarksSection: 'node-library-bookmarks-section'
   },
