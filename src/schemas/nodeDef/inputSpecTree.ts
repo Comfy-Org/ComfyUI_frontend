@@ -10,7 +10,7 @@ import {
   isDynamicControlType,
   zAutogrowOptions,
   zDynamicComboOption,
-  zDynamicComboOptions,
+  zDynamicComboSpecV2,
   zMatchTypeOptions
 } from '@/schemas/nodeDefSchema'
 
@@ -49,6 +49,25 @@ export function splitSlotTypes(type: string): string[] {
     .filter(Boolean)
 }
 
+function parseDynamicComboOptions(
+  spec: InputSpecV2
+): { key: string; inputs: ComfyInputsSpec }[] {
+  const parsed = zDynamicComboSpecV2.safeParse(spec)
+  if (!parsed.success) {
+    warnSpecDrift(spec, parsed.error)
+    return []
+  }
+
+  return parsed.data.options.flatMap((option, index) => {
+    const parsedOption = zDynamicComboOption.safeParse(option)
+    if (!parsedOption.success) {
+      warnSpecDrift(spec, parsedOption.error, index)
+      return []
+    }
+    return [parsedOption.data]
+  })
+}
+
 const dynamicControls = {
   COMFY_AUTOGROW_V3: {
     nestedInputs: (spec) => {
@@ -62,21 +81,8 @@ const dynamicControls = {
     ownTypes: none
   },
   COMFY_DYNAMICCOMBO_V3: {
-    nestedInputs: (spec) => {
-      const parsed = zDynamicComboOptions.safeParse(spec)
-      if (!parsed.success) {
-        warnSpecDrift(spec, parsed.error)
-        return []
-      }
-      return parsed.data.options.flatMap((option, index) => {
-        const parsedOption = zDynamicComboOption.safeParse(option)
-        if (!parsedOption.success) {
-          warnSpecDrift(spec, parsedOption.error, index)
-          return []
-        }
-        return [parsedOption.data.inputs]
-      })
-    },
+    nestedInputs: (spec) =>
+      parseDynamicComboOptions(spec).map(({ inputs }) => inputs),
     ownTypes: none
   },
   COMFY_MATCHTYPE_V3: {
@@ -157,18 +163,12 @@ export function dynamicComboOptionTypes(
 ): { key: string; types: string[] }[] {
   if (spec.type !== 'COMFY_DYNAMICCOMBO_V3') return []
 
-  const parsed = zDynamicComboOptions.safeParse(spec)
-  if (!parsed.success) return []
-
-  return parsed.data.options.flatMap((option) => {
-    const parsedOption = zDynamicComboOption.safeParse(option)
-    if (!parsedOption.success) return []
-
-    const types = [...toInputSpecsV2(parsedOption.data.inputs)]
+  return parseDynamicComboOptions(spec).map(({ key, inputs }) => ({
+    key,
+    types: [...toInputSpecsV2(inputs)]
       .flatMap(inputSpecTree)
       .flatMap(ownSlotTypes)
-    return [{ key: parsedOption.data.key, types }]
-  })
+  }))
 }
 
 /**

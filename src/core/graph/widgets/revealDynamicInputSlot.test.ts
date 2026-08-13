@@ -10,28 +10,19 @@ import { useLitegraphService } from '@/services/litegraphService'
 
 setActivePinia(createTestingPinia())
 
-const comboSpec: InputSpec = [
-  'COMFY_DYNAMICCOMBO_V3',
-  {
-    options: [
-      {
-        key: 'text_to_image',
-        inputs: { required: { prompt: ['STRING', {}] } }
-      },
-      {
-        key: 'image_edit',
-        inputs: { required: { image: ['IMAGE', {}] } }
-      }
-    ]
-  }
+const defaultOptions = [
+  { key: 'text_to_image', inputs: { required: { prompt: ['STRING', {}] } } },
+  { key: 'image_edit', inputs: { required: { image: ['IMAGE', {}] } } }
 ]
 
-function nodeWithCombo() {
+function nodeWithCombo(
+  options: { key: string; inputs: unknown }[] = defaultOptions
+) {
   class TestNode extends LGraphNode {}
-  const specV2 = transformInputSpecV1ToV2(comboSpec, {
-    name: 'model',
-    isOptional: false
-  })
+  const specV2 = transformInputSpecV1ToV2(
+    ['COMFY_DYNAMICCOMBO_V3', { options }] as InputSpec,
+    { name: 'model', isOptional: false }
+  )
   Object.assign(TestNode, { nodeData: { inputs: { model: specV2 } } })
 
   const node = new TestNode('test')
@@ -64,5 +55,43 @@ describe('revealDynamicInputSlot', () => {
 
     expect(revealDynamicInputSlot(node, 'LATENT')).toBe(false)
     expect(node.widgets[0].value).toBe('text_to_image')
+  })
+
+  it('selects an option whose type is nested inside an Autogrow', () => {
+    const node = nodeWithCombo([
+      { key: 'plain', inputs: { required: { prompt: ['STRING', {}] } } },
+      {
+        key: 'batch',
+        inputs: {
+          required: {
+            images: [
+              'COMFY_AUTOGROW_V3',
+              { template: { input: { required: { image: ['IMAGE', {}] } } } }
+            ]
+          }
+        }
+      }
+    ])
+
+    expect(revealDynamicInputSlot(node, 'IMAGE')).toBe(true)
+    expect(node.widgets[0].value).toBe('batch')
+  })
+
+  it('does nothing for a malformed spec', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const node = nodeWithCombo()
+    Object.assign(node.constructor, {
+      nodeData: {
+        inputs: {
+          model: transformInputSpecV1ToV2(
+            ['COMFY_DYNAMICCOMBO_V3', { options: [{ key: 'bad' }] }],
+            { name: 'model', isOptional: false }
+          )
+        }
+      }
+    })
+
+    expect(revealDynamicInputSlot(node, 'IMAGE')).toBe(false)
+    warn.mockRestore()
   })
 })

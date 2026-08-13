@@ -246,9 +246,13 @@ describe('input filtering for nested dynamic inputs', () => {
     expect(search('MASK')).toHaveLength(1)
   })
 
+  it('does not match a type absent from every option', () => {
+    expect(search('LATENT')).toHaveLength(0)
+  })
+
   it('never offers a dynamic control wrapper as a filter value', () => {
     const [def] = DYNAMIC_COMBO_NODE_DEFS
-    expect(def.inputTypes).not.toEqual([])
+    expect(def.inputTypes.length).toBeGreaterThan(0)
     expect(def.inputTypes.filter((t) => /^COMFY_.*_V3$/.test(t))).toEqual([])
     expect(def.outputTypes.filter((t) => /^COMFY_.*_V3$/.test(t))).toEqual([])
   })

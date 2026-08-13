@@ -183,6 +183,23 @@ describe('collectSearchableInputTypes', () => {
     })
   })
 
+  describe('COMFY_AUTOGROW_V3', () => {
+    it('warns and yields nothing when the template is malformed', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      expect(
+        collectSearchableInputTypes(
+          toV2(['COMFY_AUTOGROW_V3', { template: {} }])
+        )
+      ).toEqual([])
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('Unparseable COMFY_AUTOGROW_V3 spec'),
+        expect.anything()
+      )
+      warn.mockRestore()
+    })
+  })
+
   describe('COMFY_MATCHTYPE_V3', () => {
     it('trims whitespace so each type can match a filter value', () => {
       expect(resolve(matchType('IMAGE, MASK'))).toEqual(['IMAGE', 'MASK'])

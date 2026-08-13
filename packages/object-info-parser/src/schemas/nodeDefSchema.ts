@@ -359,7 +359,7 @@ export const zDynamicComboInputSpec = z.tuple([
  * option does not discard its well-formed siblings. Consumers that need the
  * option bodies should validate each element with {@link zDynamicComboOption}.
  */
-export const zDynamicComboOptions = zBaseInputOptions.extend({
+export const zDynamicComboSpecV2 = zBaseInputOptions.extend({
   type: z.literal('COMFY_DYNAMICCOMBO_V3'),
   options: z.array(z.unknown())
 })
