@@ -113,6 +113,11 @@ const howToPromptAnswerZh = `该模型接受两种互补的输入：
 • 编曲（Arrangement）：主要和次要乐器、各段落的乐器演变、律动、贝斯、打击乐、织体和空间音效。
 这种表示方式让模型不仅能遵循整体风格，还能遵循歌曲随时间展开的音乐发展。`
 
+// The ComfyUI tutorial for generating music with MiniMax Music 3. Both the hero
+// and the steps section point here so a visitor can jump straight to the guide.
+const TUTORIAL_HREF =
+  'https://docs.comfy.org/tutorials/audio/minimax/minimax-music-3#minimax-music-3-in-comfyui-ai-music-generation'
+
 export const minimaxMusic3Page: ModelLaunchPage = {
   metaTitleKey: 'minimaxMusic3.meta.title',
   metaDescriptionKey: 'minimaxMusic3.meta.description',
@@ -122,6 +127,11 @@ export const minimaxMusic3Page: ModelLaunchPage = {
     titleKey: 'minimaxMusic3.hero.titleModel',
     titleRestKey: 'minimaxMusic3.hero.titleRest',
     descriptionKey: 'minimaxMusic3.hero.description',
+    primaryCta: {
+      labelKey: 'minimaxMusic3.hero.primaryCta',
+      href: TUTORIAL_HREF,
+      target: '_blank'
+    },
     badgeKeys: [
       'minimaxMusic3.hero.tagOpenWeights',
       'minimaxMusic3.hero.tagTextToMusic'
@@ -280,6 +290,11 @@ export const minimaxMusic3Page: ModelLaunchPage = {
   steps: {
     headingKey: 'minimaxMusic3.steps.heading',
     stepLabelKey: 'minimaxMusic3.steps.step',
+    primaryCta: {
+      labelKey: 'minimaxMusic3.steps.primaryCta',
+      href: TUTORIAL_HREF,
+      target: '_blank'
+    },
     items: [
       {
         id: 'write-your-lyrics',

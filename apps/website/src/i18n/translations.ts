@@ -5513,6 +5513,10 @@ const translations = {
     en: 'Text to Audio',
     'zh-CN': '文本生成音频'
   },
+  'minimaxMusic3.hero.primaryCta': {
+    en: 'Learn more',
+    'zh-CN': '了解更多'
+  },
   'minimaxMusic3.faq.heading': { en: 'Q&A', 'zh-CN': '问答' },
   'minimaxMusic3.pricing.banner.title': {
     en: "Start free. Upgrade when you're ready.",
@@ -5531,6 +5535,10 @@ const translations = {
     'zh-CN': '制作你的第一首歌'
   },
   'minimaxMusic3.steps.step': { en: 'Step', 'zh-CN': '步骤' },
+  'minimaxMusic3.steps.primaryCta': {
+    en: 'Learn more',
+    'zh-CN': '了解更多'
+  },
   'minimaxMusic3.runOptions.heading': {
     en: 'One engine, every way to run it',
     'zh-CN': '同一引擎，多种运行方式'
