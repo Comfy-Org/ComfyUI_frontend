@@ -638,6 +638,110 @@
       }
     }
   },
+  "BriaEraser": {
+    "description": "Bria kullanarak bir görüntüden maskeyle belirlenen nesneleri veya alanları kaldırın.",
+    "display_name": "Bria Silgisi",
+    "inputs": {
+      "image": {
+        "name": "görüntü"
+      },
+      "mask": {
+        "name": "maske",
+        "tooltip": "Beyaz alanlar silinir, siyah alanlar korunur. Maske gönderilmeden önce ikili hale getirilir; bu nedenle kısmen boyanmış alanlar beyaz sayılır. Görüntüyle aynı en-boy oranına sahip olmalıdır."
+      },
+      "mask_type": {
+        "name": "maske_türü",
+        "tooltip": "Elle çizilmiş veya fırçayla oluşturulmuş maskeler için manuel; SAM gibi segmentasyon modellerinin ürettiği maskeler için otomatik seçeneğini kullanın."
+      },
+      "moderation": {
+        "name": "moderasyon",
+        "tooltip": "Moderasyon ayarları"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaExpandImage": {
+    "description": "Bria kullanarak bir görüntüyü üretilen içerikle sınırlarının ötesine genişletin.",
+    "display_name": "Bria Görüntü Genişletme",
+    "inputs": {
+      "control_after_generate": {
+        "name": "üretim sonrası kontrol"
+      },
+      "expand_mode": {
+        "name": "genişletme_modu",
+        "tooltip": "Genişletilmiş görüntünün hedef şekli: hazır bir en-boy oranı, özel bir oran veya özgün görüntünün tuval üzerine manuel yerleşimi. 1:2'den daha yüksek bir tuvale yalnızca manuel modda ulaşılabilir."
+      },
+      "image": {
+        "name": "görüntü"
+      },
+      "moderation": {
+        "name": "moderasyon",
+        "tooltip": "Moderasyon ayarları"
+      },
+      "negative_prompt": {
+        "name": "negatif_istem"
+      },
+      "prompt": {
+        "name": "istem",
+        "tooltip": "Genişletilmiş sahnenin isteğe bağlı açıklaması; boş bırakıldığında Bria görüntüden bir açıklama oluşturur."
+      },
+      "seed": {
+        "name": "tohum"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "istem",
+        "tooltip": "Genişletme için kullanılan istem; istem girişi boş olduğunda Bria tarafından otomatik olarak oluşturulur."
+      }
+    }
+  },
+  "BriaGenFill": {
+    "description": "Bria kullanarak bir görüntünün maskelenmiş bölgesinde nesneler veya sahneler üretin.",
+    "display_name": "Bria Üretken Dolgu",
+    "inputs": {
+      "control_after_generate": {
+        "name": "üretim sonrası kontrol"
+      },
+      "image": {
+        "name": "görüntü"
+      },
+      "mask": {
+        "name": "maske",
+        "tooltip": "Beyaz alanlar üretilen içerikle doldurulur, siyah alanlar korunur. Maske gönderilmeden önce ikili hale getirilir; bu nedenle kısmen boyanmış alanlar beyaz sayılır. Görüntüyle aynı en-boy oranına sahip olmalıdır."
+      },
+      "moderation": {
+        "name": "moderasyon",
+        "tooltip": "Moderasyon ayarları"
+      },
+      "negative_prompt": {
+        "name": "negatif_istem"
+      },
+      "prompt": {
+        "name": "istem",
+        "tooltip": "Maskelenmiş bölgede üretilecek içeriğin açıklaması."
+      },
+      "refine_prompt": {
+        "name": "istemi_iyileştir",
+        "tooltip": "Daha iyi sonuçlar için istemi otomatik olarak ayarlayın; istemi tam olarak yazıldığı gibi kullanmak için devre dışı bırakın."
+      },
+      "seed": {
+        "name": "tohum"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "BriaImageEditNode": {
     "description": "Bria'nın en son modeliyle görüntüleri düzenleyin",
     "display_name": "Bria Görüntü Düzenleme",
@@ -687,6 +791,32 @@
       },
       "1": {
         "name": "yapılandırılmış_istem",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaIncreaseResolution": {
+    "description": "Bria kullanarak özgün içeriği koruyup bir görüntüyü 2x veya 4x büyütün.",
+    "display_name": "Bria Çözünürlük Artırma",
+    "inputs": {
+      "auto_downscale": {
+        "name": "otomatik_küçültme",
+        "tooltip": "Çıktı sınırı aşacaksa çarpanı otomatik olarak düşürür; bu da yeterli olmazsa girdi görüntüsünü küçültür."
+      },
+      "desired_increase": {
+        "name": "istenen_artış",
+        "tooltip": "Çözünürlük çarpanı. Çıktının her bir kenarı 8192 pikseli aşmamalıdır."
+      },
+      "image": {
+        "name": "görüntü"
+      },
+      "moderation": {
+        "name": "moderasyon",
+        "tooltip": "Moderasyon ayarları"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -1268,7 +1398,7 @@
     }
   },
   "ByteDanceSeedAudio": {
-    "description": "ByteDance Seed Audio 1.0 ile tek bir istemden konuşma, müzik, ses efektleri ve çoklu konuşmacı diyaloğu oluşturun. İstemde ses(ler)i, duyguyu, ortamı, arka plan müziğini ve ses efektlerini tanımlayın ve konuşulacak replikleri ekleyin. İsteğe bağlı olarak yerleşik bir hazır ses seçin, en fazla 3 referans clip'ten sesleri klonlayın (istemde @Audio1-3 olarak etiketlenmiş), ya da bir karakter görselinden ses türetin. Her çalıştırmada en fazla 2 dakika ses.",
+    "description": "Tek bir istemden konuşma, müzik, ses efektleri ve çok konuşmacılı diyalog üretin. İstemde sesleri, duyguyu, ortamı, arka plan müziğini ve ses efektlerini açıklayın ve seslendirilecek replikleri ekleyin. İsteğe bağlı olarak yerleşik ön ayarlı bir ses seçin, en fazla 3 referans clip kullanarak sesleri klonlayın (istemde {'@'}Audio1-3 olarak etiketlenmiş) veya bir karakter görüntüsünden ses türetin. Her çalıştırmada en fazla 2 dakika ses üretilebilir. Çok dilli model 20 dili ve zaman damgasına dayalı zamanlama denetimini destekler.",
     "display_name": "ByteDance Seed Audio 1.0",
     "inputs": {
       "control_after_generate": {
@@ -1663,7 +1793,7 @@
     }
   },
   "CLIPLoader": {
-    "description": "[Tarifler]\n\nstable_diffusion: clip-l\nstable_cascade: clip-g\nsd3: t5 xxl/ clip-g / clip-l\nstable_audio: t5 base\nmochi: t5 xxl\ncosmos: eski t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\n hidream: llama-3.1 (Önerilir) veya t5",
+    "description": "Tarifler:\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl (226 tokenlık dolgu)\ncosmos: eski t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1 (Önerilir) veya t5\nomnigen2: qwen vl 2.5 3B\njoyimage: qwen3-vl 8B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm\nminimax: MiniMax H3 Qwen3-VL veya Music3 Qwen/RVQ",
     "display_name": "CLIP Yükle",
     "inputs": {
       "clip_name": {
@@ -4249,6 +4379,23 @@
       },
       "width": {
         "name": "genişlik"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyMiniMaxMusic3LatentAudio": {
+    "description": "İstenen süre için boş bir MiniMax Music3 ses latenti oluşturur.",
+    "display_name": "Boş MiniMax Music3 Ses Latenti",
+    "inputs": {
+      "batch_size": {
+        "name": "yığın_boyutu"
+      },
+      "seconds": {
+        "name": "saniye"
       }
     },
     "outputs": {
@@ -8962,7 +9109,7 @@
     }
   },
   "LTXVDurationPredictor": {
-    "description": "Bir istem için doğal çekim süresini LTX 2.4 süre başlığı (ModelPatchLoader ile yüklenmiş) kullanarak tahmin eder ve bunu VAE'nin 8k+1 kare ızgarasına hizalar.",
+    "description": "ModelPatchLoader ile yüklenen LTX 2.4 süre başlığını kullanarak bir istemin doğal çekim süresini tahmin eder ve bunu VAE'nin 8k+1 kare ızgarasına hizalar.",
     "display_name": "LTXV Süre Tahmin Edici",
     "inputs": {
       "duration_head": {
@@ -11770,6 +11917,44 @@
       }
     }
   },
+  "MiniMaxH3AddGuide": {
+    "description": "Bir görüntüyü, kısa bir clip'i, sesi veya ses parçasıyla birlikte bir clip'i MiniMax H3 videosunun herhangi bir karesine sabitleyin. Birden çok kareyi sabitlemek için birkaç düğümü zincirleyin.",
+    "display_name": "MiniMax H3'e Kılavuz Ekle",
+    "inputs": {
+      "audio": {
+        "name": "ses",
+        "tooltip": "Aynı kare indeksinden başlayarak sabitlenecek ve videonun kalan süresine göre kırpılacak ses parçası."
+      },
+      "audio_vae": {
+        "name": "ses_vae",
+        "tooltip": "Ses bağlandığında gereken ses VAE'si."
+      },
+      "frame_idx": {
+        "name": "kare_indeksi",
+        "tooltip": "Görüntünün veya clip'in ilk karesinin sabitleneceği kare indeksi. Negatif değerler videonun sonundan itibaren sayılır."
+      },
+      "image": {
+        "name": "görüntü",
+        "tooltip": "Sabitlenecek görüntü veya video kareleri. Çok kareli yığınlar clip olarak sabitlenir ve modelin geçerli clip uzunluklarına kırpılır: 5, 22, 39... (17k + 5) kare. 5 kareden kısa yığınlarda yalnızca ilk görüntü kullanılır."
+      },
+      "latent": {
+        "name": "latent"
+      },
+      "positive": {
+        "name": "pozitif"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Bir görüntü bağlandığında gereken video VAE'si."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "pozitif",
+        "tooltip": null
+      }
+    }
+  },
   "MiniMaxH3ImageToVideo": {
     "display_name": "MiniMax H3 Görüntüden Videoya",
     "inputs": {
@@ -11882,6 +12067,78 @@
       }
     }
   },
+  "MiniMaxMusic3TextEncode": {
+    "description": "Akustik koşullandırma dizisini oluşturmak için bir MiniMax Music3 CLIP modeli kullanır.",
+    "display_name": "MiniMax Music3 Metin Kodlama",
+    "inputs": {
+      "caption": {
+        "name": "açıklama"
+      },
+      "cfg_scale": {
+        "name": "cfg_ölçeği"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "oluşturma sonrası kontrol"
+      },
+      "lyrics": {
+        "name": "şarkı sözleri"
+      },
+      "max_duration": {
+        "name": "maks_süre",
+        "tooltip": "Saniye cinsinden azami süre; model şarkıyı daha erken bitirebilir."
+      },
+      "seed": {
+        "name": "tohum"
+      },
+      "top_k": {
+        "name": "top_k"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "saniye",
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03ContextIRNode": {
+    "description": "Metin ve medya bağlamını MiniMax H3 Context IR ile analiz ederek geliştirilmiş, yapılandırılmış bir video istemi üretir. Çıktıyı bir MiniMax H3 video düğümünün istemine girin ve aynı medyayı o düğüme aynı sırayla ekleyin; çünkü geliştirilmiş istem, eklenen medyaya konumuna göre atıfta bulunur.",
+    "display_name": "MiniMax H3 Context IR (İstem Geliştirici)",
+    "inputs": {
+      "first_frame": {
+        "name": "ilk_kare",
+        "tooltip": "Oluşturmayı planladığınız videonun ilk karesi. Referans medyayla birlikte kullanılamaz."
+      },
+      "last_frame": {
+        "name": "son_kare",
+        "tooltip": "Oluşturmayı planladığınız videonun son karesi. Referans medyayla birlikte kullanılamaz."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "İstem geliştirme için kullanılacak model."
+      },
+      "model_duration": {
+        "name": "süre"
+      },
+      "model_prompt": {
+        "name": "istem"
+      },
+      "model_ratio": {
+        "name": "oran"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MinimaxHailuo03FirstLastFrameNode": {
     "description": "MiniMax H3 modeli ile ilk kare görseli ve isteğe bağlı son kare görseli kullanarak video üretin. Videonun en-boy oranı verilen görsellere göre ayarlanır.",
     "display_name": "MiniMax H3 İlk-Son-Kare'den Videoya",
@@ -11954,6 +12211,43 @@
       },
       "watermark": {
         "name": "watermark",
+        "tooltip": "Videoya AIGC filigranı eklenip eklenmeyeceği."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03RegenerateNode": {
+    "description": "Bir MiniMax H3 768P çıktısını 2K çözünürlükte yeniden işleyin. Değiştirilmemiş 768P videoyu ve videoyu oluşturmak için kullanılan istemin aynısını bağlayın; özgün oluşturmada ilk/son kareler veya referans medya kullanıldıysa aynı girdileri ekleyin.",
+    "display_name": "MiniMax H3 ile 2K Olarak Yeniden Oluştur",
+    "inputs": {
+      "first_frame": {
+        "name": "ilk_kare",
+        "tooltip": "Kullanıldıysa özgün oluşturmadaki ilk kare görüntüsü."
+      },
+      "last_frame": {
+        "name": "son_kare",
+        "tooltip": "Kullanıldıysa özgün oluşturmadaki son kare görüntüsü."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Video yeniden oluşturma için kullanılacak model."
+      },
+      "model_prompt": {
+        "name": "istem"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Yeniden işlenecek MiniMax H3 768P çıktı videosu. Bir MiniMax H3 video düğümünün değiştirilmemiş çıktısını bağlayın (24 FPS, 4-15 saniye). 2K çıktılar kullanılamaz."
+      },
+      "watermark": {
+        "name": "filigran",
         "tooltip": "Videoya AIGC filigranı eklenip eklenmeyeceği."
       }
     },

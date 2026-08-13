@@ -638,6 +638,110 @@
       }
     }
   },
+  "BriaEraser": {
+    "description": "Bria를 사용하여 이미지에서 마스크로 표시한 객체나 영역을 제거합니다.",
+    "display_name": "Bria 지우개",
+    "inputs": {
+      "image": {
+        "name": "이미지"
+      },
+      "mask": {
+        "name": "마스크",
+        "tooltip": "흰색 영역은 지워지고 검은색 영역은 보존됩니다. 전송 전에 마스크가 이진화되므로 일부만 칠해진 영역도 흰색으로 처리됩니다. 이미지와 가로세로 비율이 같아야 합니다."
+      },
+      "mask_type": {
+        "name": "마스크 유형",
+        "tooltip": "손으로 그리거나 브러시로 만든 마스크에는 수동을, SAM과 같은 세그멘테이션 모델로 생성한 마스크에는 자동을 사용합니다."
+      },
+      "moderation": {
+        "name": "콘텐츠 검토",
+        "tooltip": "콘텐츠 검토 설정"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaExpandImage": {
+    "description": "Bria를 사용하여 생성된 콘텐츠로 이미지의 경계 너머를 확장합니다.",
+    "display_name": "Bria 이미지 확장",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "expand_mode": {
+        "name": "확장 모드",
+        "tooltip": "확장된 이미지의 목표 형태로, 사전 설정된 가로세로 비율, 사용자 지정 비율 또는 캔버스에 원본 이미지를 수동으로 배치할 수 있습니다. 높이가 1:2보다 긴 캔버스를 만들 수 있는 모드는 수동뿐입니다."
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "moderation": {
+        "name": "콘텐츠 검토",
+        "tooltip": "콘텐츠 검토 설정"
+      },
+      "negative_prompt": {
+        "name": "네거티브 프롬프트"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "확장할 장면에 대한 선택적 설명입니다. 비워 두면 Bria가 이미지에서 설명을 생성합니다."
+      },
+      "seed": {
+        "name": "시드"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "프롬프트",
+        "tooltip": "확장에 사용된 프롬프트입니다. 프롬프트 입력이 비어 있으면 Bria가 자동으로 생성합니다."
+      }
+    }
+  },
+  "BriaGenFill": {
+    "description": "Bria를 사용하여 이미지에서 마스크로 지정한 영역 내부에 객체나 배경을 생성합니다.",
+    "display_name": "Bria 생성형 채우기",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "mask": {
+        "name": "마스크",
+        "tooltip": "흰색 영역은 생성된 콘텐츠로 채워지고 검은색 영역은 보존됩니다. 전송 전에 마스크가 이진화되므로 일부만 칠해진 영역도 흰색으로 처리됩니다. 이미지와 가로세로 비율이 같아야 합니다."
+      },
+      "moderation": {
+        "name": "콘텐츠 검토",
+        "tooltip": "콘텐츠 검토 설정"
+      },
+      "negative_prompt": {
+        "name": "네거티브 프롬프트"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "마스크로 지정한 영역 내부에 생성할 내용에 대한 설명입니다."
+      },
+      "refine_prompt": {
+        "name": "프롬프트 개선",
+        "tooltip": "더 나은 결과를 위해 프롬프트를 자동으로 조정합니다. 작성된 프롬프트를 그대로 사용하려면 비활성화하세요."
+      },
+      "seed": {
+        "name": "시드"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "BriaImageEditNode": {
     "description": "Bria 최신 모델을 사용하여 이미지를 편집합니다",
     "display_name": "Bria 이미지 편집",
@@ -687,6 +791,32 @@
       },
       "1": {
         "name": "구조화된 프롬프트",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaIncreaseResolution": {
+    "description": "Bria를 사용하여 원본 콘텐츠를 보존하면서 이미지 크기를 2배 또는 4배로 확대합니다.",
+    "display_name": "Bria 해상도 향상",
+    "inputs": {
+      "auto_downscale": {
+        "name": "자동 축소",
+        "tooltip": "출력이 제한을 초과할 경우 배율을 자동으로 낮추고, 그래도 충분하지 않으면 입력 이미지를 축소합니다."
+      },
+      "desired_increase": {
+        "name": "원하는 확대 배율",
+        "tooltip": "해상도 배율입니다. 출력의 각 변은 8192픽셀 이내여야 합니다."
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "moderation": {
+        "name": "콘텐츠 검토",
+        "tooltip": "콘텐츠 검토 설정"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -1268,7 +1398,7 @@
     }
   },
   "ByteDanceSeedAudio": {
-    "description": "ByteDance Seed Audio 1.0을 사용하여 하나의 프롬프트로 음성, 음악, 효과음, 다중 화자 대화를 생성합니다. 프롬프트에 음성(들), 감정, 분위기, 배경 음악, 효과음을 설명하고, 말할 대사를 포함하세요. 내장 프리셋 음성을 선택하거나, 최대 3개의 참조 clip에서 음성을 클론하거나(@Audio1-3으로 프롬프트에 태그), 캐릭터 이미지에서 음성을 추출할 수 있습니다. 실행당 최대 2분의 오디오를 생성할 수 있습니다.",
+    "description": "하나의 프롬프트로 ByteDance Seed Audio 1.0을 사용해 음성, 음악, 음향 효과, 다중 화자 대화를 생성합니다. 프롬프트에 음성, 감정, 분위기, 배경 음악, 음향 효과를 설명하고 말할 대사를 포함하세요. 선택적으로 내장 프리셋 음성을 사용하거나, 최대 3개의 참조 clip에서 음성을 복제하거나(프롬프트에서 {'@'}Audio1-3으로 태그), 캐릭터 이미지로 음성을 만들 수 있습니다. 실행당 최대 2분의 오디오를 생성할 수 있습니다. 다국어 모델은 20개 언어와 타임스탬프 기반 타이밍 제어를 지원합니다.",
     "display_name": "ByteDance Seed Audio 1.0",
     "inputs": {
       "control_after_generate": {
@@ -1663,7 +1793,7 @@
     }
   },
   "CLIPLoader": {
-    "description": "[조합법]\n\nstable_diffusion: clip-l\nstable_cascade: clip-g\nsd3: t5 / clip-g / clip-l\nstable_audio: t5\nmochi: t5\ncosmos: old t5 xxl",
+    "description": "구성:\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl (226토큰 패딩)\ncosmos: old t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1 (권장) 또는 t5\nomnigen2: qwen vl 2.5 3B\njoyimage: qwen3-vl 8B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm\nminimax: MiniMax H3 Qwen3-VL 또는 Music3 Qwen/RVQ",
     "display_name": "CLIP 로드",
     "inputs": {
       "clip_name": {
@@ -4249,6 +4379,23 @@
       },
       "width": {
         "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyMiniMaxMusic3LatentAudio": {
+    "description": "요청한 길이의 빈 MiniMax Music3 오디오 잠재 공간을 생성합니다.",
+    "display_name": "빈 MiniMax Music3 오디오 잠재 공간",
+    "inputs": {
+      "batch_size": {
+        "name": "배치 크기"
+      },
+      "seconds": {
+        "name": "초"
       }
     },
     "outputs": {
@@ -8962,7 +9109,7 @@
     }
   },
   "LTXVDurationPredictor": {
-    "description": "LTX 2.4 duration head(ModelPatchLoader로 로드됨)을 사용하여 프롬프트의 자연스러운 샷 지속 시간을 예측하고, VAE의 8k+1 프레임 그리드에 맞춥니다.",
+    "description": "ModelPatchLoader로 불러온 LTX 2.4 지속 시간 헤드를 사용해 프롬프트의 자연스러운 샷 길이를 예측하고 VAE의 8k+1 프레임 그리드에 맞춥니다.",
     "display_name": "LTXV Duration Predictor",
     "inputs": {
       "duration_head": {
@@ -11770,6 +11917,44 @@
       }
     }
   },
+  "MiniMaxH3AddGuide": {
+    "description": "MiniMax H3 비디오의 원하는 프레임에 이미지, 짧은 clip, 오디오 또는 사운드트랙이 포함된 clip을 고정합니다. 여러 노드를 연결해 여러 프레임을 고정할 수 있습니다.",
+    "display_name": "MiniMax H3에 가이드 추가",
+    "inputs": {
+      "audio": {
+        "name": "오디오",
+        "tooltip": "동일한 프레임 인덱스부터 고정할 사운드트랙입니다. 비디오의 남은 길이에 맞게 잘립니다."
+      },
+      "audio_vae": {
+        "name": "오디오 vae",
+        "tooltip": "오디오가 연결된 경우 필요한 오디오 VAE입니다."
+      },
+      "frame_idx": {
+        "name": "프레임 인덱스",
+        "tooltip": "이미지 또는 clip의 첫 프레임을 고정할 프레임 인덱스입니다. 음수 값은 비디오 끝에서부터 셉니다."
+      },
+      "image": {
+        "name": "이미지",
+        "tooltip": "고정할 이미지 또는 비디오 프레임입니다. 여러 프레임의 배치는 clip으로 고정되며 모델에서 유효한 clip 길이인 5, 22, 39...프레임(17k + 5)에 맞게 잘립니다. 5프레임보다 짧은 배치는 첫 번째 이미지만 사용합니다."
+      },
+      "latent": {
+        "name": "잠재 공간"
+      },
+      "positive": {
+        "name": "포지티브"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "이미지가 연결된 경우 필요한 비디오 VAE입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "포지티브",
+        "tooltip": null
+      }
+    }
+  },
   "MiniMaxH3ImageToVideo": {
     "display_name": "MiniMax H3 이미지 → 비디오",
     "inputs": {
@@ -11882,6 +12067,78 @@
       }
     }
   },
+  "MiniMaxMusic3TextEncode": {
+    "description": "MiniMax Music3 clip 모델을 사용해 음향 컨디셔닝 시퀀스를 생성합니다.",
+    "display_name": "MiniMax Music3 텍스트 인코딩",
+    "inputs": {
+      "caption": {
+        "name": "캡션"
+      },
+      "cfg_scale": {
+        "name": "cfg 스케일"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "lyrics": {
+        "name": "가사"
+      },
+      "max_duration": {
+        "name": "최대 길이",
+        "tooltip": "최대 길이(초)입니다. 모델이 노래를 더 일찍 끝낼 수 있습니다."
+      },
+      "seed": {
+        "name": "시드"
+      },
+      "top_k": {
+        "name": "top_k"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "초",
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03ContextIRNode": {
+    "description": "MiniMax H3 Context IR로 텍스트와 미디어 컨텍스트를 분석해 향상된 구조화 비디오 프롬프트를 생성합니다. 향상된 프롬프트는 첨부 미디어를 위치로 참조하므로, 출력을 MiniMax H3 비디오 노드의 프롬프트에 입력하고 동일한 미디어를 같은 순서로 첨부하세요.",
+    "display_name": "MiniMax H3 Context IR(프롬프트 향상)",
+    "inputs": {
+      "first_frame": {
+        "name": "첫 프레임",
+        "tooltip": "생성하려는 비디오의 첫 프레임입니다. 참조 미디어와 함께 사용할 수 없습니다."
+      },
+      "last_frame": {
+        "name": "마지막 프레임",
+        "tooltip": "생성하려는 비디오의 마지막 프레임입니다. 참조 미디어와 함께 사용할 수 없습니다."
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "프롬프트 향상에 사용할 모델입니다."
+      },
+      "model_duration": {
+        "name": "길이"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_ratio": {
+        "name": "비율"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MinimaxHailuo03FirstLastFrameNode": {
     "description": "MiniMax H3 모델을 사용하여 첫 프레임 이미지와 선택적 마지막 프레임 이미지로부터 영상을 생성합니다. 영상의 종횡비는 제공된 이미지를 따릅니다.",
     "display_name": "MiniMax H3 첫-마지막 프레임 영상 생성",
@@ -11954,6 +12211,43 @@
       },
       "watermark": {
         "name": "watermark",
+        "tooltip": "비디오에 AIGC 워터마크를 추가할지 여부입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03RegenerateNode": {
+    "description": "MiniMax H3 768P 출력을 2K 해상도로 다시 렌더링합니다. 수정하지 않은 768P 비디오와 생성에 사용한 정확한 프롬프트를 연결하세요. 원본 생성에 첫/마지막 프레임이나 참조 미디어를 사용했다면 동일한 입력을 첨부하세요.",
+    "display_name": "MiniMax H3 2K로 재생성",
+    "inputs": {
+      "first_frame": {
+        "name": "첫 프레임",
+        "tooltip": "원본 생성에 사용한 경우 해당 첫 프레임 이미지입니다."
+      },
+      "last_frame": {
+        "name": "마지막 프레임",
+        "tooltip": "원본 생성에 사용한 경우 해당 마지막 프레임 이미지입니다."
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "비디오 재생성에 사용할 모델입니다."
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "video": {
+        "name": "비디오",
+        "tooltip": "다시 렌더링할 MiniMax H3 768P 출력 비디오입니다. MiniMax H3 비디오 노드의 수정하지 않은 출력(24 FPS, 4~15초)을 연결하세요. 2K 출력은 사용할 수 없습니다."
+      },
+      "watermark": {
+        "name": "워터마크",
         "tooltip": "비디오에 AIGC 워터마크를 추가할지 여부입니다."
       }
     },

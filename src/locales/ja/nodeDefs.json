@@ -638,6 +638,110 @@
       }
     }
   },
+  "BriaEraser": {
+    "description": "Briaを使用して、マスクで指定したオブジェクトや領域を画像から削除します。",
+    "display_name": "Bria 消去",
+    "inputs": {
+      "image": {
+        "name": "画像"
+      },
+      "mask": {
+        "name": "マスク",
+        "tooltip": "白い領域は消去され、黒い領域は保持されます。マスクは送信前に二値化されるため、部分的に塗られた領域も白として扱われます。画像と同じアスペクト比にする必要があります。"
+      },
+      "mask_type": {
+        "name": "マスクタイプ",
+        "tooltip": "手描きやブラシで作成したマスクには手動、SAMなどのセグメンテーションモデルで生成したマスクには自動を使用します。"
+      },
+      "moderation": {
+        "name": "モデレーション",
+        "tooltip": "モデレーション設定"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaExpandImage": {
+    "description": "Briaを使用して生成コンテンツを追加し、画像を境界の外側まで拡張します。",
+    "display_name": "Bria 画像拡張",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "expand_mode": {
+        "name": "拡張モード",
+        "tooltip": "拡張後の画像の形状を指定します。プリセットのアスペクト比、カスタム比率、またはキャンバス上での元画像の手動配置から選択できます。1:2より縦長のキャンバスにできるのは手動モードのみです。"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "moderation": {
+        "name": "モデレーション",
+        "tooltip": "モデレーション設定"
+      },
+      "negative_prompt": {
+        "name": "ネガティブプロンプト"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "拡張するシーンの説明（任意）。空の場合、Briaが画像から自動生成します。"
+      },
+      "seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "プロンプト",
+        "tooltip": "拡張に使用されたプロンプト。プロンプト入力が空の場合はBriaによって自動生成されます。"
+      }
+    }
+  },
+  "BriaGenFill": {
+    "description": "Briaを使用して、画像のマスク領域内にオブジェクトや背景を生成します。",
+    "display_name": "Bria 生成塗りつぶし",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "mask": {
+        "name": "マスク",
+        "tooltip": "白い領域は生成コンテンツで塗りつぶされ、黒い領域は保持されます。マスクは送信前に二値化されるため、部分的に塗られた領域も白として扱われます。画像と同じアスペクト比にする必要があります。"
+      },
+      "moderation": {
+        "name": "モデレーション",
+        "tooltip": "モデレーション設定"
+      },
+      "negative_prompt": {
+        "name": "ネガティブプロンプト"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "マスク領域内に生成する内容の説明。"
+      },
+      "refine_prompt": {
+        "name": "プロンプト調整",
+        "tooltip": "より良い結果が得られるようプロンプトを自動調整します。記述どおりのプロンプトを使用するには無効にします。"
+      },
+      "seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "BriaImageEditNode": {
     "description": "Briaの最新モデルを使って画像を編集します",
     "display_name": "Bria画像編集",
@@ -687,6 +791,32 @@
       },
       "1": {
         "name": "構造化プロンプト",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaIncreaseResolution": {
+    "description": "元の内容を保持したまま、Briaを使用して画像を2倍または4倍にアップスケールします。",
+    "display_name": "Bria 解像度向上",
+    "inputs": {
+      "auto_downscale": {
+        "name": "自動ダウンスケール",
+        "tooltip": "出力が上限を超える場合、倍率を自動的に下げ、それでも収まらなければ入力画像をダウンスケールします。"
+      },
+      "desired_increase": {
+        "name": "希望拡大倍率",
+        "tooltip": "解像度の倍率。出力の各辺は8192ピクセル以内に収める必要があります。"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "moderation": {
+        "name": "モデレーション",
+        "tooltip": "モデレーション設定"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -1268,7 +1398,7 @@
     }
   },
   "ByteDanceSeedAudio": {
-    "description": "ByteDance Seed Audio 1.0 で、1つのプロンプトから音声、音楽、効果音、複数話者の対話を生成します。プロンプト内で声の特徴、感情、雰囲気、BGM、効果音を記述し、話すセリフも含めてください。内蔵プリセットボイスの選択、最大3つの参照clip（プロンプト内で@Audio1-3とタグ付け）からのボイスクローン、またはキャラクター画像からのボイス生成も可能です。1回の実行で最大2分の音声を生成できます。",
+    "description": "ByteDance Seed Audio 1.0を使用し、1つのプロンプトから音声、音楽、効果音、複数話者の対話を生成します。プロンプトに声、感情、環境音、背景音楽、効果音を記述し、発話するセリフも含めます。必要に応じて、内蔵のプリセット音声を選択したり、最大3つの参照clipから声をクローンしたり（プロンプト内で{'@'}Audio1-3とタグ付け）、キャラクター画像から声を生成したりできます。1回の実行につき最大2分のオーディオを生成できます。多言語モデルは20言語と、タイムスタンプによるタイミング制御に対応しています。",
     "display_name": "ByteDance Seed Audio 1.0",
     "inputs": {
       "control_after_generate": {
@@ -1663,7 +1793,7 @@
     }
   },
   "CLIPLoader": {
-    "description": "[レシピ]\n\nstable_diffusion: clip-l\nstable_cascade: clip-g\nsd3: t5 / clip-g / clip-l\nstable_audio: t5\nmochi: t5\ncosmos: old t5 xxl",
+    "description": "レシピ:\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl（226トークンのパディング）\ncosmos: old t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1（推奨）またはt5\nomnigen2: qwen vl 2.5 3B\njoyimage: qwen3-vl 8B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm\nminimax: MiniMax H3 Qwen3-VLまたはMusic3 Qwen/RVQ",
     "display_name": "CLIPを読み込む",
     "inputs": {
       "clip_name": {
@@ -4249,6 +4379,23 @@
       },
       "width": {
         "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyMiniMaxMusic3LatentAudio": {
+    "description": "指定した長さの空のMiniMax Music3オーディオlatentを作成します。",
+    "display_name": "空のMiniMax Music3オーディオlatent",
+    "inputs": {
+      "batch_size": {
+        "name": "バッチサイズ"
+      },
+      "seconds": {
+        "name": "秒数"
       }
     },
     "outputs": {
@@ -8962,7 +9109,7 @@
     }
   },
   "LTXVDurationPredictor": {
-    "description": "LTX 2.4のduration head（ModelPatchLoaderでロード）を使用してプロンプトの自然なショット持続時間を予測し、それをVAEの8k+1フレームグリッドにスナップします。",
+    "description": "LTX 2.4のduration head（ModelPatchLoaderで読み込み）を使用してプロンプトに適した自然なショット時間を予測し、VAEの8k+1フレームグリッドに合わせます。",
     "display_name": "LTXV持続時間予測器",
     "inputs": {
       "duration_head": {
@@ -11770,6 +11917,44 @@
       }
     }
   },
+  "MiniMaxH3AddGuide": {
+    "description": "MiniMax H3動画の任意のフレームに、画像、短いclip、オーディオ、またはサウンドトラック付きclipを固定します。複数のノードを連結すると、複数のフレームに固定できます。",
+    "display_name": "MiniMax H3にガイドを追加",
+    "inputs": {
+      "audio": {
+        "name": "オーディオ",
+        "tooltip": "同じフレームインデックスから固定するサウンドトラックです。動画の残りの長さに合わせて切り詰められます。"
+      },
+      "audio_vae": {
+        "name": "オーディオvae",
+        "tooltip": "オーディオが接続されている場合に必要なオーディオVAEです。"
+      },
+      "frame_idx": {
+        "name": "フレームインデックス",
+        "tooltip": "画像またはclipの先頭フレームを固定するフレームインデックスです。負の値は動画の末尾から数えます。"
+      },
+      "image": {
+        "name": "画像",
+        "tooltip": "固定する画像または動画フレームです。複数フレームのバッチはclipとして固定され、モデルで有効なclipの長さである5、22、39...（17k + 5）フレームに切り詰められます。5フレーム未満のバッチでは、最初の画像のみを使用します。"
+      },
+      "latent": {
+        "name": "latent"
+      },
+      "positive": {
+        "name": "ポジティブ"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "画像が接続されている場合に必要な動画VAEです。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ポジティブ",
+        "tooltip": null
+      }
+    }
+  },
   "MiniMaxH3ImageToVideo": {
     "display_name": "MiniMax H3 画像から動画へ",
     "inputs": {
@@ -11882,6 +12067,78 @@
       }
     }
   },
+  "MiniMaxMusic3TextEncode": {
+    "description": "MiniMax Music3 CLIPモデルを使用して、音響条件付けシーケンスを生成します。",
+    "display_name": "MiniMax Music3 テキストエンコード",
+    "inputs": {
+      "caption": {
+        "name": "キャプション"
+      },
+      "cfg_scale": {
+        "name": "cfgスケール"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "lyrics": {
+        "name": "歌詞"
+      },
+      "max_duration": {
+        "name": "最大再生時間",
+        "tooltip": "最大再生時間（秒）。モデルはそれより前に曲を終了できます。"
+      },
+      "seed": {
+        "name": "シード"
+      },
+      "top_k": {
+        "name": "top_k"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "秒",
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03ContextIRNode": {
+    "description": "MiniMax H3 Context IRでテキストとメディアのコンテキストを解析し、強化された構造化動画プロンプトを生成します。出力をMiniMax H3動画ノードのプロンプトに入力し、同じメディアを同じ順序で接続してください。強化されたプロンプトは、接続されたメディアを位置によって参照します。",
+    "display_name": "MiniMax H3 Context IR（プロンプト強化）",
+    "inputs": {
+      "first_frame": {
+        "name": "先頭フレーム",
+        "tooltip": "生成する動画の先頭フレームです。参照メディアとは併用できません。"
+      },
+      "last_frame": {
+        "name": "最終フレーム",
+        "tooltip": "生成する動画の最終フレームです。参照メディアとは併用できません。"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "プロンプトの強化に使用するモデルです。"
+      },
+      "model_duration": {
+        "name": "長さ"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_ratio": {
+        "name": "比率"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MinimaxHailuo03FirstLastFrameNode": {
     "description": "MiniMax H3モデルを使用し、最初のフレーム画像と（オプションで）最後のフレーム画像から動画を生成します。動画のアスペクト比は入力画像に従います。",
     "display_name": "MiniMax H3 最初・最後フレームから動画生成",
@@ -11955,6 +12212,43 @@
       "watermark": {
         "name": "ウォーターマーク",
         "tooltip": "ビデオにAIGCウォーターマークを追加するかどうか。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03RegenerateNode": {
+    "description": "MiniMax H3の768P出力を2K解像度で再レンダリングします。未変更の768P動画と、生成時に使用したものと完全に同じプロンプトを接続してください。元の生成で最初／最後のフレームや参照メディアを使用した場合は、同じ入力を接続してください。",
+    "display_name": "MiniMax H3を2Kに再生成",
+    "inputs": {
+      "first_frame": {
+        "name": "最初のフレーム",
+        "tooltip": "使用した場合、元の生成時の最初のフレーム画像。"
+      },
+      "last_frame": {
+        "name": "最後のフレーム",
+        "tooltip": "使用した場合、元の生成時の最後のフレーム画像。"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "動画の再生成に使用するモデル。"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "video": {
+        "name": "動画",
+        "tooltip": "再レンダリングするMiniMax H3の768P出力動画。MiniMax H3動画ノードの未変更の出力（24 FPS、4～15秒）を接続してください。2K出力は使用できません。"
+      },
+      "watermark": {
+        "name": "ウォーターマーク",
+        "tooltip": "動画にAIGCウォーターマークを追加するかどうか。"
       }
     },
     "outputs": {

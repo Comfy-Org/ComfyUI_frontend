@@ -638,6 +638,110 @@
       }
     }
   },
+  "BriaEraser": {
+    "description": "使用 Bria 從影像中移除遮罩框選的物件或區域。",
+    "display_name": "Bria 擦除工具",
+    "inputs": {
+      "image": {
+        "name": "影像"
+      },
+      "mask": {
+        "name": "遮罩",
+        "tooltip": "白色區域會被擦除，黑色區域會保留。遮罩會在傳送前進行二值化，因此只要有塗色的區域都視為白色。長寬比必須與影像相同。"
+      },
+      "mask_type": {
+        "name": "遮罩類型",
+        "tooltip": "「手動」適用於手繪或筆刷遮罩，「自動」適用於由 SAM 等分割模型產生的遮罩。"
+      },
+      "moderation": {
+        "name": "內容審核",
+        "tooltip": "內容審核設定"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaExpandImage": {
+    "description": "使用 Bria 產生內容，將影像擴展至原始邊界之外。",
+    "display_name": "Bria 擴展影像",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "expand_mode": {
+        "name": "擴展模式",
+        "tooltip": "擴展後影像的目標形狀：預設長寬比、自訂比例，或在畫布上手動放置原始影像。只有手動模式能建立比 1:2 更高的畫布。"
+      },
+      "image": {
+        "name": "影像"
+      },
+      "moderation": {
+        "name": "內容審核",
+        "tooltip": "內容審核設定"
+      },
+      "negative_prompt": {
+        "name": "負向提示詞"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "擴展場景的選填描述；留空時，Bria 會根據影像產生描述。"
+      },
+      "seed": {
+        "name": "種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "提示詞",
+        "tooltip": "擴展時使用的提示詞；若提示詞輸入留空，則由 Bria 自動產生。"
+      }
+    }
+  },
+  "BriaGenFill": {
+    "description": "使用 Bria 在影像的遮罩區域內生成物件或場景。",
+    "display_name": "Bria 生成式填色",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "image": {
+        "name": "影像"
+      },
+      "mask": {
+        "name": "遮罩",
+        "tooltip": "白色區域會填入生成內容，黑色區域會保留。遮罩會在傳送前進行二值化，因此只要有塗色的區域都視為白色。長寬比必須與影像相同。"
+      },
+      "moderation": {
+        "name": "內容審核",
+        "tooltip": "內容審核設定"
+      },
+      "negative_prompt": {
+        "name": "負向提示詞"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "描述要在遮罩區域內生成的內容。"
+      },
+      "refine_prompt": {
+        "name": "精修提示詞",
+        "tooltip": "自動調整提示詞以取得更佳結果；停用後將完全依照原提示詞生成。"
+      },
+      "seed": {
+        "name": "種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "BriaImageEditNode": {
     "description": "使用 Bria 最新模型編輯圖像",
     "display_name": "Bria FIBO 圖像編輯",
@@ -687,6 +791,32 @@
       },
       "1": {
         "name": "結構化提示詞",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaIncreaseResolution": {
+    "description": "使用 Bria 將影像放大 2 倍或 4 倍，同時保留原始內容。",
+    "display_name": "Bria 提升解析度",
+    "inputs": {
+      "auto_downscale": {
+        "name": "自動縮小",
+        "tooltip": "輸出超過限制時，自動降低倍率；若仍不足，則縮小輸入影像。"
+      },
+      "desired_increase": {
+        "name": "所需放大倍率",
+        "tooltip": "解析度倍率。輸出的每一邊都不得超過 8192 像素。"
+      },
+      "image": {
+        "name": "影像"
+      },
+      "moderation": {
+        "name": "內容審核",
+        "tooltip": "內容審核設定"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -1268,7 +1398,7 @@
     }
   },
   "ByteDanceSeedAudio": {
-    "description": "使用 ByteDance Seed Audio 1.0，從單一提示生成語音、音樂、音效及多角色對話。在提示中描述聲音、情感、氛圍、背景音樂與音效，並包含要說的台詞。可選擇內建預設聲音、從最多 3 個參考 clip（在提示中標記為 @Audio1-3）進行聲音克隆，或從角色圖像推導聲音。每次最多可生成 2 分鐘音訊。",
+    "description": "透過單一提示詞，使用 ByteDance Seed Audio 1.0 生成語音、音樂、音效及多人對話。在提示詞中描述聲音、情緒、環境氛圍、背景音樂與音效，並加入要朗讀的台詞。您也可以選用內建預設聲音、從最多 3 個參考音訊片段複製聲音（在提示詞中標記為 {'@'}Audio1-3），或從角色影像衍生聲音。每次執行最多可生成 2 分鐘的音訊。此多語言模型支援 20 種語言及以時間戳記控制時序。",
     "display_name": "ByteDance Seed Audio 1.0",
     "inputs": {
       "control_after_generate": {
@@ -1663,7 +1793,7 @@
     }
   },
   "CLIPLoader": {
-    "description": "[配方]\n\nstable_diffusion: clip-l\nstable_cascade: clip-g\nsd3: t5 xxl/ clip-g / clip-l\nstable_audio: t5 base\nmochi: t5 xxl\ncosmos: 舊 t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1（推薦）或 t5\nomnigen2: qwen vl 2.5 3B",
+    "description": "配置：\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl（填補至 226 個權杖）\ncosmos: 舊版 t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1（建議）或 t5\nomnigen2: qwen vl 2.5 3B\njoyimage: qwen3-vl 8B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm\nminimax: MiniMax H3 Qwen3-VL 或 Music3 Qwen/RVQ",
     "display_name": "載入 CLIP",
     "inputs": {
       "clip_name": {
@@ -4249,6 +4379,23 @@
       },
       "width": {
         "name": "寬度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyMiniMaxMusic3LatentAudio": {
+    "description": "依指定的持續時間建立空白的 MiniMax Music3 音訊潛在空間。",
+    "display_name": "空白 MiniMax Music3 音訊潛在空間",
+    "inputs": {
+      "batch_size": {
+        "name": "批次大小"
+      },
+      "seconds": {
+        "name": "秒數"
       }
     },
     "outputs": {
@@ -8962,7 +9109,7 @@
     }
   },
   "LTXVDurationPredictor": {
-    "description": "使用 LTX 2.4 duration head（由 ModelPatchLoader 載入）預測提示的自然鏡頭時長，並將其對齊至 VAE 的 8k+1 幀格。",
+    "description": "使用 LTX 2.4 持續時間預測頭（透過 ModelPatchLoader 載入）預測提示詞的自然鏡頭持續時間，並將其對齊至 VAE 的 8k+1 畫格網格。",
     "display_name": "LTXV 時長預測器",
     "inputs": {
       "duration_head": {
@@ -11770,6 +11917,44 @@
       }
     }
   },
+  "MiniMaxH3AddGuide": {
+    "description": "在 MiniMax H3 影片的任意畫格固定影像、短片段、音訊，或含有配樂的片段。可串接多個節點以固定多個畫格。",
+    "display_name": "為 MiniMax H3 新增引導",
+    "inputs": {
+      "audio": {
+        "name": "音訊",
+        "tooltip": "從相同畫格索引開始固定的配樂，並依影片剩餘的持續時間裁切。"
+      },
+      "audio_vae": {
+        "name": "音訊 vae",
+        "tooltip": "音訊 VAE，連接音訊時需要。"
+      },
+      "frame_idx": {
+        "name": "畫格索引",
+        "tooltip": "固定影像或片段第一個畫格的畫格索引。負值會從影片結尾開始倒數。"
+      },
+      "image": {
+        "name": "影像",
+        "tooltip": "要固定的影像或影片畫格。多畫格批次會以片段形式固定，並裁切為模型支援的有效片段長度：5、22、39……（17k + 5）個畫格。少於 5 個畫格的批次只會使用第一張影像。"
+      },
+      "latent": {
+        "name": "潛在空間"
+      },
+      "positive": {
+        "name": "正向"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "影片 VAE，連接影像時需要。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正向",
+        "tooltip": null
+      }
+    }
+  },
   "MiniMaxH3ImageToVideo": {
     "display_name": "MiniMax H3 圖片轉影片",
     "inputs": {
@@ -11882,6 +12067,78 @@
       }
     }
   },
+  "MiniMaxMusic3TextEncode": {
+    "description": "使用 MiniMax Music3 CLIP 模型生成聲學條件序列。",
+    "display_name": "MiniMax Music3 文字編碼",
+    "inputs": {
+      "caption": {
+        "name": "描述文字"
+      },
+      "cfg_scale": {
+        "name": "cfg_scale"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "lyrics": {
+        "name": "歌詞"
+      },
+      "max_duration": {
+        "name": "最長時間",
+        "tooltip": "最長時間（秒）；模型可能會提早結束歌曲。"
+      },
+      "seed": {
+        "name": "種子"
+      },
+      "top_k": {
+        "name": "top_k"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "秒",
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03ContextIRNode": {
+    "description": "使用 MiniMax H3 Context IR 分析文字與媒體內容，並產生經過增強且結構化的影片提示詞。請將輸出送入 MiniMax H3 影片節點的提示詞，並以相同順序在該節點附加相同媒體，因為增強後的提示詞會依位置引用附加的媒體。",
+    "display_name": "MiniMax H3 Context IR（提示詞增強器）",
+    "inputs": {
+      "first_frame": {
+        "name": "第一個畫格",
+        "tooltip": "您要生成之影片的第一個畫格。不可與參考媒體同時使用。"
+      },
+      "last_frame": {
+        "name": "最後一個畫格",
+        "tooltip": "您要生成之影片的最後一個畫格。不可與參考媒體同時使用。"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用於增強提示詞的模型。"
+      },
+      "model_duration": {
+        "name": "持續時間"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_ratio": {
+        "name": "比例"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MinimaxHailuo03FirstLastFrameNode": {
     "description": "使用 MiniMax H3 模型，根據首幀圖像與（可選）末幀圖像生成影片。影片長寬比將依據所提供的圖像。",
     "display_name": "MiniMax H3 首末幀生成影片",
@@ -11951,6 +12208,43 @@
       "seed": {
         "name": "隨機種子",
         "tooltip": "隨機種子。相同請求與相同種子會產生相似但不保證完全相同的結果。"
+      },
+      "watermark": {
+        "name": "浮水印",
+        "tooltip": "是否在影片中加入 AIGC 浮水印。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03RegenerateNode": {
+    "description": "以 2K 解析度重新算繪 MiniMax H3 768P 輸出。請連接未經修改的 768P 影片，以及生成該影片時使用的完全相同提示詞；若原始生成使用了首幀／末幀或參考媒體，請附加相同的輸入。",
+    "display_name": "MiniMax H3 重新生成至 2K",
+    "inputs": {
+      "first_frame": {
+        "name": "首幀",
+        "tooltip": "原始生成所使用的首幀影像（若有）。"
+      },
+      "last_frame": {
+        "name": "末幀",
+        "tooltip": "原始生成所使用的末幀影像（若有）。"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用於重新生成影片的模型。"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "video": {
+        "name": "影片",
+        "tooltip": "要重新算繪的 MiniMax H3 768P 輸出影片。請連接 MiniMax H3 影片節點未經修改的輸出（24 FPS、4 至 15 秒）。不能使用 2K 輸出。"
       },
       "watermark": {
         "name": "浮水印",
