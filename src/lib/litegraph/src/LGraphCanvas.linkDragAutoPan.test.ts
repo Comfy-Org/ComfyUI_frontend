@@ -61,11 +61,12 @@ describe('LGraphCanvas link drag auto-pan', () => {
 
   it('resumes auto-pan after Space panning during a link drag', () => {
     canvas.processMouseDown(
-      new MouseEvent('pointerdown', {
+      new PointerEvent('pointerdown', {
         button: 0,
         buttons: 1,
         clientX: 400,
-        clientY: 300
+        clientY: 300,
+        isPrimary: true
       })
     )
     canvas.linkConnector.state.connectingTo = 'output'
@@ -74,7 +75,8 @@ describe('LGraphCanvas link drag auto-pan', () => {
       new PointerEvent('pointermove', {
         buttons: 1,
         clientX: 5,
-        clientY: 300
+        clientY: 300,
+        isPrimary: true
       })
     )
     const keydown = new KeyboardEvent('keydown', { key: ' ' })

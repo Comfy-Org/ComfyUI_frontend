@@ -108,6 +108,46 @@ test.describe('Vue Nodes Canvas Pan', { tag: '@vue-nodes' }, () => {
   )
 
   test(
+    'Space in a focused native select does not start canvas panning',
+    { tag: ['@canvas', '@widget'] },
+    async ({ comfyPage, comfyMouse }) => {
+      await comfyPage.workflow.loadWorkflow('vueNodes/simple-triple')
+      const node = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+      const [nodeRef] = await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
+      if (!nodeRef) throw new Error('KSampler is not rendered')
+      const positionBeforeDrag = [
+        ...(await nodeRef.getProperty<[number, number]>('pos'))
+      ]
+      await node.root.evaluate((element) => {
+        const select = document.createElement('select')
+        select.ariaLabel = 'Native select'
+        select.append(document.createElement('option'))
+        element.append(select)
+      })
+      const select = node.root.getByRole('combobox', {
+        name: 'Native select'
+      })
+
+      await node.header.hover()
+      await using mouseRelease = await comfyMouse.hold()
+      await comfyPage.page.mouse.move(500, 500, { steps: 5 })
+      await expect
+        .poll(async () => [
+          ...(await nodeRef.getProperty<[number, number]>('pos'))
+        ])
+        .not.toEqual(positionBeforeDrag)
+
+      await select.focus()
+      await using spaceRelease = await comfyPage.keyboard.hold('Space')
+
+      await expect(select).toBeFocused()
+      await expect.poll(() => comfyPage.canvasOps.isReadOnly()).toBe(false)
+      await spaceRelease.disposeAsync()
+      await mouseRelease.disposeAsync()
+    }
+  )
+
+  test(
     'releasing the pointer during Space-pan ends the node drag',
     { tag: ['@canvas', '@node'] },
     async ({ comfyPage, comfyMouse }) => {
