@@ -59,7 +59,9 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
             if (!node?.widgets?.length) return {}
             return Object.fromEntries(
               node.widgets
-                .filter((widget) => !inputNames.includes(widget.name))
+                .filter(
+                  (widget) => widget?.name && !inputNames.includes(widget.name)
+                )
                 .map((widget) => [widget.name, widget.label])
             )
           },
