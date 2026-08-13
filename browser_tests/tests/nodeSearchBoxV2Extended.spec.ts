@@ -405,6 +405,9 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
       const { searchBoxV2 } = comfyPage
 
       await searchBoxV2.open()
+      await searchBoxV2.input.fill('Dynamic Combo')
+      await expect(searchBoxV2.results.first()).toBeVisible()
+
       await searchBoxV2.applyTypeFilter('input', 'IMAGE')
 
       await expect(
@@ -418,6 +421,9 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
       const { searchBoxV2 } = comfyPage
 
       await searchBoxV2.open()
+      await searchBoxV2.input.fill('Dynamic Combo')
+      await expect(searchBoxV2.results.first()).toBeVisible()
+
       await searchBoxV2.applyTypeFilter('input', 'MASK')
 
       await expect(
