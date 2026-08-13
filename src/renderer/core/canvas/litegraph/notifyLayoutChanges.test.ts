@@ -33,6 +33,8 @@ function setup() {
   }
 }
 
+type TestContext = ReturnType<typeof setup>
+
 describe('notifyLayoutChanges', () => {
   it('does not repeat onResize for a canvas resize', async () => {
     using context = setup()
@@ -46,22 +48,21 @@ describe('notifyLayoutChanges', () => {
     expect(onResize).toHaveBeenCalledTimes(1)
   })
 
-  it.for([{ path: 'direct' }, { path: 'batched' }] as const)(
-    'fires onResize for an external $path resize',
-    async ({ path }) => {
-      using context = setup()
-      const { graph, node } = context
-      const onResize = vi.fn()
-      node.onResize = onResize
-
-      if (path === 'direct') {
+  it.for([
+    {
+      path: 'direct',
+      resize: ({ graph, node }: TestContext) => {
         const mutations = useLayoutMutations()
         mutations.setSource(LayoutSource.Vue)
         mutations.resizeNode(graph.rootGraph.id, node.id, {
           width: 300,
           height: 200
         })
-      } else {
+      }
+    },
+    {
+      path: 'batched',
+      resize: ({ graph, node }: TestContext) => {
         layoutStore.batchUpdateNodeBounds(graph.rootGraph.id, [
           {
             nodeId: node.id,
@@ -69,9 +70,15 @@ describe('notifyLayoutChanges', () => {
           }
         ])
       }
-      await vi.waitFor(() => expect(onResize).toHaveBeenCalled())
     }
-  )
+  ])('fires onResize for an external $path resize', async ({ resize }) => {
+    using context = setup()
+    const onResize = vi.fn()
+    context.node.onResize = onResize
+
+    resize(context)
+    await vi.waitFor(() => expect(onResize).toHaveBeenCalled())
+  })
 
   it('leaves onResize alone when a bounds batch only moves', async () => {
     using context = setup()
