@@ -272,11 +272,11 @@ const buildJsonataContext = (
 const safeValueForSig = (v: unknown): string => {
   if (v === null || v === undefined) return ''
   if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean')
-    return String(v)
+    return `${typeof v}:${String(v)}`
   try {
-    return JSON.stringify(v)
+    return `json:${JSON.stringify(v)}`
   } catch {
-    return String(v)
+    return `fallback:${String(v)}`
   }
 }
 

@@ -1,13 +1,15 @@
 import type { Page } from '@playwright/test'
 
+import { DEV_FIREBASE_WEB_API_KEY } from '@/config/firebaseConstants'
+
 // Mirrors firebase-js-sdk browserLocalPersistence internals; the SDK reads exactly these at boot.
 const FIREBASE_AUTH_DB = 'firebaseLocalStorageDb'
 const FIREBASE_AUTH_STORE = 'firebaseLocalStorage'
 
 // The SDK's IndexedDB lookup key embeds getFirebaseConfig().apiKey, which the
 // backend reports at /api/features - testcloud resolves that to dreamboothy-dev,
-// so this equals src/config/firebase.ts DEV_CONFIG. A mismatch boots signed out.
-export const FIREBASE_WEB_API_KEY = 'AIzaSyDa_YMeyzV0SkVe92vBZ1tVikWBmOU5KVE'
+// i.e. the app's DEV_CONFIG. Single-sourced from it: a mismatch boots signed out.
+export const FIREBASE_WEB_API_KEY = DEV_FIREBASE_WEB_API_KEY
 export const FIREBASE_APP_NAME = '[DEFAULT]'
 
 export interface FirebaseAuthUserRecord {

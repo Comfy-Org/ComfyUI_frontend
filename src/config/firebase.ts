@@ -1,9 +1,10 @@
 import type { FirebaseOptions } from 'firebase/app'
 
+import { DEV_FIREBASE_WEB_API_KEY } from './firebaseConstants'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 
 const DEV_CONFIG: FirebaseOptions = {
-  apiKey: 'AIzaSyDa_YMeyzV0SkVe92vBZ1tVikWBmOU5KVE',
+  apiKey: DEV_FIREBASE_WEB_API_KEY,
   authDomain: 'dreamboothy-dev.firebaseapp.com',
   databaseURL: 'https://dreamboothy-dev-default-rtdb.firebaseio.com',
   projectId: 'dreamboothy-dev',
