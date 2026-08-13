@@ -119,12 +119,11 @@ function useFirstRunTourControllerInternal() {
    * `queuedJobs` without clearing its status, so a run can report a status
    * while this reads false. A refusal produces neither signal.
    *
-   * Losing acceptance is its own signal, not a re-armed deadline: that same
+   * Losing acceptance is itself a signal, not a re-armed deadline: that same
    * `resetExecutionState` drops the job without writing an outcome on the
-   * mid-run credits path, leaving nothing left to report the run. A finished
-   * run drops from the queue too, but writes its terminal status in the same
-   * tick, and the status watcher above is registered first, so it has already
-   * left `generating` by the time this fires.
+   * mid-run credits path. A finished run leaves the queue too, but reports a
+   * terminal status in the same flush, which the watch above applies regardless
+   * of which of the two runs first.
    */
   watch(tourRunAccepted, (accepted) => {
     if (accepted) stopAcceptDeadline()
