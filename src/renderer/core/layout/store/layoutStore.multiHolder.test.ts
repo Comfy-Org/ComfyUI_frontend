@@ -109,6 +109,24 @@ describe('layoutStore.getNodeLayoutRef with multiple holders', () => {
     holderA.release()
     holderB.release()
 
-    expect(layoutStore.getNodeLayoutRef(nodeId)).not.toBe(holderB.layout)
+    const rebuilt = layoutStore.retainNodeLayoutRef(nodeId)
+    expect(rebuilt.layout).not.toBe(holderB.layout)
+    rebuilt.release()
+  })
+
+  it('ignores a repeated release, which would drop a ref others still read', () => {
+    createNode(nodeId)
+    const holderA = layoutStore.retainNodeLayoutRef(nodeId)
+    const holderB = layoutStore.retainNodeLayoutRef(nodeId)
+
+    holderA.release()
+    holderA.release()
+
+    const { seen, stop } = observe(holderB.layout)
+    moveNodeTo(nodeId, 500)
+    stop()
+    holderB.release()
+
+    expect(seen.at(-1)).toBe(500)
   })
 })

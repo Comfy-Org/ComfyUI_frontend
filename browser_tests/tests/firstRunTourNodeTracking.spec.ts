@@ -6,7 +6,6 @@ import { TOUR_ROLE_PINS } from '@/renderer/extensions/firstRunTour/roles/tourRol
 import type { SupportedTemplateId } from '@/renderer/extensions/firstRunTour/roles/tourRolePins'
 
 import type { AssetResponse } from '@/platform/assets/schemas/assetSchema'
-import type { CloudSubscriptionStatusResponse } from '@/platform/cloud/subscription/composables/useSubscription'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
@@ -18,12 +17,6 @@ const CARD_TESTID_PREFIX = 'getting-started-card-'
 const TOUR_FEATURE_FLAGS: RemoteConfig = {
   onboarding_tour_enabled: true,
   subscription_required: true
-}
-
-const ACTIVE_SUBSCRIPTION: CloudSubscriptionStatusResponse = {
-  is_active: true,
-  subscription_id: 'sub_first_run_tour',
-  renewal_date: '2099-01-01'
 }
 
 const NO_ASSETS: AssetResponse = { assets: [], total: 0, has_more: false }
@@ -51,7 +44,7 @@ async function rolesResolve(
   }
   const pins = Object.values(TOUR_ROLE_PINS[templateId]).filter(
     (pin): pin is { id: number; type: string } =>
-      typeof pin === 'object' && pin !== null && 'id' in pin
+      typeof pin === 'object' && pin !== null && 'id' in pin && 'type' in pin
   )
 
   return pins.every((pin) =>
@@ -147,6 +140,8 @@ test.describe('first-run tour spotlight tracking', { tag: ['@cloud'] }, () => {
     initialSettings: {
       'Comfy.TutorialCompleted': false,
       'Comfy.OnboardingCoachmarks.Seen': ['appMode'],
+      // Not the `@vue-nodes` tag: that makes the fixture wait for nodes
+      // during setup, and this tour starts on an empty canvas.
       'Comfy.VueNodes.Enabled': true
     },
     initialFeatureFlags: { onboarding_tour_enabled: true }
@@ -155,9 +150,6 @@ test.describe('first-run tour spotlight tracking', { tag: ['@cloud'] }, () => {
   test.beforeEach(async ({ page }) => {
     await page.route('**/api/features', (route) =>
       route.fulfill(jsonRoute(TOUR_FEATURE_FLAGS))
-    )
-    await page.route('**/customers/cloud-subscription-status', (route) =>
-      route.fulfill(jsonRoute(ACTIVE_SUBSCRIPTION))
     )
     await page.route('**/api/assets**', (route) =>
       route.fulfill(jsonRoute(NO_ASSETS))
