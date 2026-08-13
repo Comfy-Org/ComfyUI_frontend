@@ -25,9 +25,9 @@
  * events on the document rather than callbacks on objects, which is what a
  * command log needs to replicate anyway.
  *
- * The source is injected by the app layer, as with node movement. Which graph
- * is observed — root only, or the active subgraph — is a wiring decision that
- * belongs where subgraph navigation is known, not here.
+ * The source is injected by the app layer, as with node movement. The caller
+ * names the scope it wants; how that scope maps onto graphs stays with the
+ * bridge, which is where subgraph navigation is known.
  */
 import { ComfyApiError } from './errors'
 import type { NodeHandle } from './nodeHandle'
@@ -42,21 +42,51 @@ export type TrackedProperty =
   | 'shape'
   | 'showAdvanced'
 
+/**
+ * Which graphs a listener hears from.
+ *
+ * `'visible'` is the default and the graph on screen, following the user into
+ * and out of subgraphs — what a pack decorating what the user is looking at
+ * wants.
+ *
+ * `'document'` is the root graph and every subgraph definition. A pack that
+ * *computes* from other nodes needs it: rgthree's relay derives a group's mute
+ * state from its inputs, and inside a subgraph the user had navigated away from
+ * it stopped recomputing while still asserting its last answer — so a group
+ * stayed muted against its inputs, intermittently, and healed on navigation.
+ */
+export type NodeChangeScope = 'visible' | 'document'
+
+export interface NodeChangeOptions {
+  scope?: NodeChangeScope
+}
+
 export interface NodeChangeEvent {
   /** The node that changed. It may belong to another pack, or to none. */
   readonly node: NodeHandle
+  /**
+   * The graph the change happened in — the root graph's id, or a subgraph
+   * definition's. Node ids are unique only within a graph, so a pack keeping
+   * its own records under `'document'` must key on both.
+   */
+  readonly graphId: string
   readonly property: TrackedProperty
   readonly from: unknown
   readonly to: unknown
 }
 
+/** A change as the host reports it, before the node is resolved to a handle. */
+interface NodeChangeReport {
+  graphId: string
+  nodeId: string
+  property: TrackedProperty
+  from: unknown
+  to: unknown
+}
+
 type NodeChangeSource = (
-  emit: (
-    nodeId: string,
-    property: TrackedProperty,
-    from: unknown,
-    to: unknown
-  ) => void
+  scope: NodeChangeScope,
+  emit: (change: NodeChangeReport) => void
 ) => Unsubscribe
 
 let source: NodeChangeSource | undefined
@@ -71,11 +101,17 @@ export function resetNodeChangeSource(): void {
   source = undefined
 }
 
+/**
+ * `handleFor` is asked for a node **in the graph the change came from**. Ids
+ * are not unique across subgraph definitions, so resolving one against the
+ * graph on screen would hand the pack an unrelated node of the same id.
+ */
 export function createNodeChangeObserver(
-  handleFor: (nodeId: string) => NodeHandle | undefined
+  handleFor: (graphId: string, nodeId: string) => NodeHandle | undefined
 ) {
   return function onNodeChanged(
-    listener: (event: NodeChangeEvent) => void
+    listener: (event: NodeChangeEvent) => void,
+    { scope = 'visible' }: NodeChangeOptions = {}
   ): Unsubscribe {
     // Loud rather than a silent no-op: a capability that accepts listeners and
     // never calls them is how `onPreview` shipped broken for weeks.
@@ -84,11 +120,11 @@ export function createNodeChangeObserver(
         'Node changes are unavailable: the host has not provided a source.'
       )
     }
-    return source((nodeId, property, from, to) => {
-      const node = handleFor(nodeId)
+    return source(scope, ({ graphId, nodeId, property, from, to }) => {
+      const node = handleFor(graphId, nodeId)
       // The node may have gone between the change and this fan-out.
       if (!node || node.isDeleted) return
-      listener({ node, property, from, to })
+      listener({ node, graphId, property, from, to })
     })
   }
 }

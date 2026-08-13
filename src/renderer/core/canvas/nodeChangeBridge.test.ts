@@ -5,7 +5,12 @@ import { nextTick, ref } from 'vue'
 
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import { LGraph as Graph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
+import type { NodeChangeScope } from '@/platform/nodeApi/nodeChanges'
 
 import { installNodeChangeBridge } from './nodeChangeBridge'
 
@@ -19,10 +24,21 @@ vi.mock('./canvasStore', () => ({
   })
 }))
 
+interface Change {
+  graphId: string
+  nodeId: string
+  property: string
+  from: unknown
+  to: unknown
+}
+
 /** Captures the provider the bridge pushes down to the API. */
 const captured = vi.hoisted(() => ({
   provider: undefined as
-    | ((emit: (...args: unknown[]) => void) => () => void)
+    | ((
+        scope: 'visible' | 'document',
+        emit: (change: Record<string, unknown>) => void
+      ) => () => void)
     | undefined
 }))
 vi.mock('@/platform/nodeApi/nodeChanges', () => ({
@@ -39,11 +55,23 @@ function graphWithNode() {
 }
 
 /** Installs the bridge and subscribes exactly as the API does. */
-function install() {
+function install(scope: NodeChangeScope = 'visible') {
   installNodeChangeBridge()
-  const emitted: unknown[][] = []
-  const stop = captured.provider!((...args) => emitted.push(args))
+  const emitted: Change[] = []
+  const stop = captured.provider!(scope, (change) =>
+    emitted.push(change as unknown as Change)
+  )
   return { emitted, stop }
+}
+
+/** A definition registered the way `createSubgraph` registers one. */
+function addSubgraph(root: LGraph, name: string) {
+  const definition = root.createSubgraph(
+    createTestSubgraph({ rootGraph: root, name }).asSerialisable()
+  )
+  const node = new LGraphNode(`${name} node`)
+  definition.add(node)
+  return { definition, node }
 }
 
 describe('nodeChangeBridge', () => {
@@ -61,7 +89,13 @@ describe('nodeChangeBridge', () => {
     node.mode = LGraphEventMode.NEVER
 
     expect(emitted).toEqual([
-      [String(node.id), 'mode', LGraphEventMode.ALWAYS, LGraphEventMode.NEVER]
+      {
+        graphId: String(graph.id),
+        nodeId: String(node.id),
+        property: 'mode',
+        from: LGraphEventMode.ALWAYS,
+        to: LGraphEventMode.NEVER
+      }
     ])
     stop()
   })
@@ -112,5 +146,70 @@ describe('nodeChangeBridge', () => {
     node.mode = LGraphEventMode.NEVER
 
     expect(emitted).toEqual([])
+  })
+
+  describe('document scope', () => {
+    it('reports a change inside a subgraph nobody is looking at', () => {
+      // A relay muting a group from inside a subgraph the user has left keeps
+      // asserting its last answer: silent, intermittent, and healed by
+      // navigating, which is the worst way to find a bug.
+      const root = new Graph()
+      currentGraph.value = root
+      const { definition, node } = addSubgraph(root, 'Upscale')
+      const { emitted, stop } = install('document')
+
+      node.mode = LGraphEventMode.NEVER
+
+      expect(emitted).toEqual([
+        {
+          graphId: String(definition.id),
+          nodeId: String(node.id),
+          property: 'mode',
+          from: LGraphEventMode.ALWAYS,
+          to: LGraphEventMode.NEVER
+        }
+      ])
+      stop()
+    })
+
+    it('is not what the default scope reports', () => {
+      const root = new Graph()
+      currentGraph.value = root
+      const { node } = addSubgraph(root, 'Upscale')
+      const { emitted, stop } = install()
+
+      node.mode = LGraphEventMode.NEVER
+
+      expect(emitted).toEqual([])
+      stop()
+    })
+
+    it('picks up a definition created after the subscription', () => {
+      const root = new Graph()
+      currentGraph.value = root
+      const { emitted, stop } = install('document')
+
+      const { node } = addSubgraph(root, 'Late')
+      node.mode = LGraphEventMode.NEVER
+
+      expect(emitted).toHaveLength(1)
+      stop()
+    })
+
+    it('lets go of a definition once its last instance is removed', () => {
+      const root = new Graph()
+      currentGraph.value = root
+      const { definition, node } = addSubgraph(root, 'Doomed')
+      const instance = createTestSubgraphNode(definition)
+      root.add(instance)
+      const { emitted, stop } = install('document')
+
+      root.remove(instance)
+      node.mode = LGraphEventMode.NEVER
+
+      expect(root.subgraphs.has(definition.id)).toBe(false)
+      expect(emitted).toEqual([])
+      stop()
+    })
   })
 })
