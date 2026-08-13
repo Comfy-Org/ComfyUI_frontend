@@ -29,6 +29,18 @@ interface PendingInvite {
   id: string
 }
 
+interface PreviewSubscribeRequest extends GeneratedMember {
+  billing_cycle?: 'monthly' | 'yearly'
+}
+
+interface SubscribeRequest extends Omit<GeneratedMember, 'id'> {
+  id: string
+}
+
+interface ListMembersResponse extends LocalOnlyShape {
+  total: number
+}
+
 type SubscriptionDuration = 'MONTHLY' | 'ANNUAL'
 
 type ResubscribeResponse = z.infer<typeof zResubscribeResponse>
@@ -46,6 +58,9 @@ export type {
   Plan,
   Workspace,
   PendingInvite,
+  PreviewSubscribeRequest,
+  SubscribeRequest,
+  ListMembersResponse,
   SubscriptionDuration,
   ResubscribeResponse,
   ErrorResponse,
@@ -119,6 +134,18 @@ describe('comfy/no-duplicate-ingest-type', () => {
 
   it('flags a local-only intersection that derives from nothing generated', () => {
     expect(reportedNames).toContain('Workspace')
+  })
+
+  it('ignores an interface that extends the generated export', () => {
+    expect(reportedNames).not.toContain('PreviewSubscribeRequest')
+  })
+
+  it('ignores an interface that extends a generated export through Omit', () => {
+    expect(reportedNames).not.toContain('SubscribeRequest')
+  })
+
+  it('flags an interface extending something other than a generated export', () => {
+    expect(reportedNames).toContain('ListMembersResponse')
   })
 })
 

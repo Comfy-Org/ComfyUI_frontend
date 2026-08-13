@@ -100,7 +100,7 @@ export type { TeamCreditStopSummary }
 
 type SubscribeBillingCycle = 'monthly' | 'yearly'
 
-type PreviewSubscribeRequest = GeneratedPreviewSubscribeRequest & {
+interface PreviewSubscribeRequest extends GeneratedPreviewSubscribeRequest {
   billing_cycle?: SubscribeBillingCycle
 }
 

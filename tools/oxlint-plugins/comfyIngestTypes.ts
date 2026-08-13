@@ -24,12 +24,25 @@ interface QualifiedName {
   readonly right?: Identifier
 }
 
+interface MemberExpression {
+  readonly type: 'MemberExpression'
+}
+
+interface TypeArguments {
+  readonly params?: readonly TypeNode[]
+}
+
 interface TypeNode {
   readonly type: string
   readonly typeName?: Identifier | QualifiedName
   readonly types?: readonly TypeNode[]
-  readonly typeArguments?: { readonly params?: readonly TypeNode[] }
+  readonly typeArguments?: TypeArguments
   readonly objectType?: TypeNode
+}
+
+interface InterfaceHeritage {
+  readonly expression?: Identifier | MemberExpression
+  readonly typeArguments?: TypeArguments
 }
 
 interface ImportDeclaration {
@@ -43,6 +56,10 @@ interface NamedDeclaration {
 
 interface TypeAliasDeclaration extends NamedDeclaration {
   readonly typeAnnotation?: TypeNode
+}
+
+interface InterfaceDeclaration extends NamedDeclaration {
+  readonly extends?: readonly InterfaceHeritage[]
 }
 
 interface RuleContext {
@@ -165,20 +182,44 @@ function isZodInference(annotation: TypeNode): boolean {
   return typeName.left?.name === 'z' && typeName.right?.name === 'infer'
 }
 
+function namesGeneratedImport(
+  reference: Identifier | QualifiedName | MemberExpression | undefined,
+  typeArguments: TypeArguments | undefined,
+  generatedLocalNames: ReadonlySet<string>
+): boolean {
+  if (
+    reference?.type === 'Identifier' &&
+    generatedLocalNames.has(reference.name)
+  ) {
+    return true
+  }
+  return (typeArguments?.params ?? []).some((param) =>
+    referencesGenerated(param, generatedLocalNames)
+  )
+}
+
 function referencesGenerated(
   node: TypeNode,
   generatedLocalNames: ReadonlySet<string>
 ): boolean {
   if (node.type !== 'TSTypeReference') return false
-  const typeName = node.typeName
-  if (
-    typeName?.type === 'Identifier' &&
-    generatedLocalNames.has(typeName.name)
-  ) {
-    return true
-  }
-  return (node.typeArguments?.params ?? []).some((param) =>
-    referencesGenerated(param, generatedLocalNames)
+  return namesGeneratedImport(
+    node.typeName,
+    node.typeArguments,
+    generatedLocalNames
+  )
+}
+
+function extendsGenerated(
+  heritage: readonly InterfaceHeritage[],
+  generatedLocalNames: ReadonlySet<string>
+): boolean {
+  return heritage.some((clause) =>
+    namesGeneratedImport(
+      clause.expression,
+      clause.typeArguments,
+      generatedLocalNames
+    )
   )
 }
 
@@ -216,7 +257,8 @@ const noDuplicateIngestType = {
           if (specifier.local) generatedLocalNames.add(specifier.local.name)
         }
       },
-      TSInterfaceDeclaration(node: NamedDeclaration) {
+      TSInterfaceDeclaration(node: InterfaceDeclaration) {
+        if (extendsGenerated(node.extends ?? [], generatedLocalNames)) return
         reportIfDuplicate(node)
       },
       TSTypeAliasDeclaration(node: TypeAliasDeclaration) {
