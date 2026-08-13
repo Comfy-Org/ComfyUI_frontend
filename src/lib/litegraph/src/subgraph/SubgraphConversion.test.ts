@@ -18,6 +18,7 @@ import {
 } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
 import { useLinkStore } from '@/stores/linkStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 import { toRerouteId } from '@/types/rerouteId'
 
 import {
@@ -51,26 +52,31 @@ describe('SubgraphConversion', () => {
 
       const linkStore = useLinkStore()
 
-      expect(linkStore.isInputSlotConnected(rootGraph.id, target.id, 0)).toBe(
-        true
-      )
+      expect(
+        linkStore.isInputSlotConnected(graphScopeOf(subgraph), target.id, 0)
+      ).toBe(true)
       const interiorTopology = linkStore.getInputSlotLink(
-        rootGraph.id,
+        graphScopeOf(subgraph),
         target.id,
         0
       )
       expect(interiorTopology?.originNodeId).toBe(origin.id)
       expect(subgraph.getLink(interiorTopology?.id)).toBeDefined()
 
-      expect(linkStore.isInputSlotConnected(rootGraph.id, origin.id, 0)).toBe(
-        true
-      )
       expect(
-        linkStore.getInputSlotLink(rootGraph.id, origin.id, 0)?.originNodeId
+        linkStore.isInputSlotConnected(graphScopeOf(subgraph), origin.id, 0)
+      ).toBe(true)
+      expect(
+        linkStore.getInputSlotLink(graphScopeOf(subgraph), origin.id, 0)
+          ?.originNodeId
       ).toBe(SUBGRAPH_INPUT_ID)
 
       expect(
-        linkStore.isInputSlotConnected(rootGraph.id, subgraphNode.id, 0)
+        linkStore.isInputSlotConnected(
+          graphScopeOf(rootGraph),
+          subgraphNode.id,
+          0
+        )
       ).toBe(true)
     })
 
@@ -92,12 +98,34 @@ describe('SubgraphConversion', () => {
       const clonedReroute = subgraph.reroutes.get(reroute.id)
       expect(clonedReroute).toBeDefined()
       expect(
-        useRerouteStore().getReroute(rootGraph.id, reroute.id)
+        useRerouteStore().getReroute(graphScopeOf(subgraph), reroute.id)
       ).toBeDefined()
       expect(clonedReroute!.linkIds.size).toBe(1)
       expect(
-        useRerouteStore().getMembership(rootGraph.id, reroute.id).linkIds.size
+        useRerouteStore().getMembership(graphScopeOf(subgraph), reroute.id)
+          .linkIds.size
       ).toBe(1)
+    })
+
+    it('connects a nested conversion to its enclosing subgraph output', () => {
+      const subgraph = createTestSubgraph({
+        outputs: [{ name: 'value', type: 'number' }]
+      })
+      onTestFinished(enableSubgraphNodeCreation(subgraph.rootGraph))
+      const origin = createTestNode(subgraph, [], ['number'])
+      const output = subgraph.outputNode.slots[0]
+      output.connect(origin.outputs[0], origin)
+
+      const { node: subgraphNode } = subgraph.convertToSubgraph(
+        new Set<Positionable>([origin])
+      )
+
+      const links = output.getLinks()
+      expect(links).toHaveLength(1)
+      expect(links[0]).toMatchObject({
+        origin_id: subgraphNode.id,
+        target_id: output.parent.id
+      })
     })
 
     it('preserves widget values on interior nodes through conversion', () => {

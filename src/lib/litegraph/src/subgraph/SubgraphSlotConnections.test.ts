@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   SUBGRAPH_INPUT_ID,
@@ -87,6 +87,28 @@ describe('Subgraph slot connections', () => {
 
       expect(outputSlot.isValidTarget(subgraphInput)).toBe(false)
     })
+
+    it('atomically replaces a connection from another subgraph input', () => {
+      const subgraph = createTestSubgraph({
+        inputs: [
+          { name: 'first', type: 'number' },
+          { name: 'second', type: 'number' }
+        ]
+      })
+      const node = new LGraphNode('Target')
+      node.addInput('in', 'number')
+      subgraph.add(node)
+      const [first, second] = subgraph.inputs
+      const initial = first.connect(node.inputs[0], node)
+      assert(initial)
+
+      const replacement = second.connect(node.inputs[0], node)
+
+      expect(first.linkIds).toEqual([])
+      expect(second.linkIds).toEqual([replacement?.id])
+      expect(subgraph.getLink(initial.id)).toBeUndefined()
+      expect(replacement?.origin_slot).toBe(1)
+    })
   })
 
   describe('SubgraphOutput connections', () => {
@@ -118,6 +140,25 @@ describe('Subgraph slot connections', () => {
       const subgraphOutput2 = subgraph.addOutput('result2', 'number')
 
       expect(subgraphOutput1.isValidTarget(subgraphOutput2)).toBe(false)
+    })
+
+    it('atomically replaces its existing node output', () => {
+      const subgraph = createTestSubgraph()
+      const first = new LGraphNode('First')
+      const second = new LGraphNode('Second')
+      first.addOutput('out', 'number')
+      second.addOutput('out', 'number')
+      subgraph.add(first)
+      subgraph.add(second)
+      const output = subgraph.addOutput('result', 'number')
+      const initial = output.connect(first.outputs[0], first)
+      assert(initial)
+
+      const replacement = output.connect(second.outputs[0], second)
+
+      expect(output.linkIds).toEqual([replacement?.id])
+      expect(subgraph.getLink(initial.id)).toBeUndefined()
+      expect(replacement?.origin_id).toBe(second.id)
     })
   })
 

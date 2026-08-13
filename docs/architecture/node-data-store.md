@@ -18,17 +18,24 @@ registered by reference with proxy-returning registration (the
 ADR 0008's Node component rows (`NodeVisual`, `Execution`, ...) become
 field groupings inside `NodeState`, not separate records or stores.
 
-Buckets are root-graph-scoped (`rootGraph.id`), keyed by `NodeId`.
-Node-id uniqueness across sibling subgraph definitions is already
-guaranteed by the load-time dedup pass
-(`src/lib/litegraph/src/subgraph/subgraphDeduplication.ts`).
+The store uses the same flat root-scoped identity model as link and reroute
+components:
+
+```text
+RootGraphId -> { byId, idsByOwner }
+```
+
+The root key groups one loaded workflow. `byId` enforces root-wide node
+identity, while `idsByOwner` provides direct owner-local lookup and teardown.
+`graphId` is association data, not an identity namespace. Registered ids are
+immutable; deletion also verifies component identity and owner.
 
 ## Decision 2: Field set — what is NodeState, what is elsewhere
 
-```
+```text
 NodeState {
   id: NodeId
-  graphId: UUID            // owning (sub)graph — partitioning + locator ids
+  graphId: UUID            // owning (sub)graph association + locator ids
   type: string             // identity
   title: string
   titleMode?: TitleMode
@@ -39,6 +46,8 @@ NodeState {
   shape?: RenderShape
   resizable?: boolean
   showAdvanced?: boolean
+  inputs: INodeInputSlot[]
+  outputs: INodeOutputSlot[]
 }
 ```
 
@@ -54,7 +63,6 @@ mirror (the hard constraint of this phase):
 | widget values / order   | `widgetValueStore`                                                                                                                                            |
 | input link connectivity | `linkStore` (`getInputSlotLink` / `isInputSlotConnected`)                                                                                                     |
 | `badges`                | derived on read by `nodeBadges()` in `src/systems/badgeSystem.ts`; the badge store was shipped and then deleted — see [Node Badge Store](node-badge-store.md) |
-| `inputs` / `outputs`    | `useNodeDataStore` sibling map, by reference (the arrays themselves) — see Decision 3                                                                         |
 
 `VueNodeData.selected` and `.executing` are dead fields today (no
 production consumer reads them); they are deleted, not migrated.
@@ -76,13 +84,9 @@ deleted. Shallow is deliberate: nested values (`boundingRect`, `_widget`,
 `pos`) stay raw so identity comparisons and `NodeInputSlot`'s `WeakMap`
 index cache keep working.
 
-The slot _arrays_ are held in a `useNodeDataStore` sibling map keyed by
-`NodeId`, by reference — the node's own arrays, not a copy — so the
-renderer can ask what slots a node has without resolving the node. There
-is no per-slot key and no slot id: index is a property of the containing
-array, not of the slot, and ~25 sites permute it, so an index-keyed store
-would need re-keying on every reorder. See ecs-migration-plan.md 2f for
-the full argument and the `linkStore` precedent it rejects.
+The slot arrays are fields on `NodeState`, held by reference rather than
+copied. There is no per-slot key and no slot id: index is a property of the
+containing array, and reorder operations mutate that array in place.
 
 What this phase does remove is the last `inputs[].link` dependency: the
 three remaining readers (`nodeDataUtils.linkedWidgetedInputs` used by
@@ -102,16 +106,16 @@ Shipped ahead of the store itself (2026-07-05).
 
 ## Decision 4: Renderer consumes the NodeState proxy, `VueNodeData` dies
 
-`GraphCanvas` iterates the store's bucket for the active graph (filtered
-by `NodeState.graphId`) and passes the reactive `NodeState` proxy down
+`GraphCanvas` reads the active owning graph's bucket and passes the reactive
+`NodeState` proxy down
 the existing prop-drilling path (`LGraphNode` → `NodeHeader` /
 `NodeSlots` / `NodeContent` / `NodeWidgets`). Children read proxy fields
 directly; Vue tracks the store state, so the per-property
 `node:property:changed` → snapshot-rewrite handlers in
 `useGraphNodeManager` are deleted wholesale.
 
-Slot arrays reach `NodeSlots` from the store's sibling slot map (Decision 3),
-not through `NodeState` and not via `getNodeByLocatorId`.
+Slot arrays reach `NodeSlots` through `NodeState`, not via
+`getNodeByLocatorId`.
 
 `LGraphNodePreview` constructs a synthetic `NodeState` (as it does a
 synthetic `VueNodeData` today). `AppModeWidgetList` stops calling
@@ -123,7 +127,7 @@ Follows the shipped trio convention (`LLink` / `Reroute`):
 
 - `LGraphNode` constructs its `_state: NodeState` at instantiation;
   `registerNodeState(graph, node)` inserts it by reference and the class
-  adopts the returned reactive proxy; `node._graphId` (root id) is the
+  adopts the returned reactive proxy; `node._graphScope` is the
   registration-ownership marker.
 - Chokepoints: `LGraph.add` / `LGraph.remove` (the canonical sites),
   `unregisterAllNodeStates(graph)` on graph `clear()`, identity-checked

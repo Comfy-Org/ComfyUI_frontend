@@ -6,6 +6,9 @@ import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLinkStore } from '@/stores/linkStore'
+import { graphScopeOf, toOwningGraphId } from '@/types/graphScopeId'
+import type { GraphScope } from '@/types/graphScopeId'
+import { zeroUuid } from '@/utils/uuid'
 import { toLinkId } from '@/types/linkId'
 import { UNASSIGNED_NODE_ID, toNodeId, serializeNodeId } from '@/types/nodeId'
 import { toRerouteId } from '@/types/rerouteId'
@@ -14,7 +17,6 @@ import type { EndpointPatch } from '@/stores/linkStore'
 import type { LinkId } from '@/types/linkId'
 import type { LinkTopology } from '@/types/linkTopology'
 import type { RerouteId } from '@/types/rerouteId'
-import type { UUID } from '@/utils/uuid'
 import type { LGraph } from './LGraph'
 import type { LGraphNode } from './LGraphNode'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
@@ -30,6 +32,7 @@ import type {
   ReadonlyLinkNetwork
 } from './interfaces'
 import type { Serialisable, SerialisableLLink } from './types/serialisation'
+import { toRaw } from 'vue'
 
 export type { LinkId } from '@/types/linkId'
 export type SerialisedLLinkArray = [
@@ -40,6 +43,12 @@ export type SerialisedLLinkArray = [
   target_slot: number,
   type: ISlotType
 ]
+
+const linkByTopology = new WeakMap<LinkTopology, LLink>()
+
+export function resolveLinkTopology(topology: LinkTopology): LLink | undefined {
+  return linkByTopology.get(toRaw(topology))
+}
 
 // Resolved connection union; eliminates subgraph in/out as a possibility
 export type ResolvedConnection = BaseResolvedConnection &
@@ -97,9 +106,9 @@ type BasicReadonlyNetwork = Pick<
 
 /** Routes an endpoint patch through {@link useLinkStore} if the link is registered, otherwise writes {@link LLink._state} directly. */
 function applyEndpointPatch(link: LLink, patch: EndpointPatch): void {
-  if (link._graphId) {
+  if (link._graphScope) {
     const result = useLinkStore().updateEndpoint(
-      link._graphId,
+      link._graphScope,
       link._state,
       patch
     )
@@ -122,7 +131,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   _state: LinkTopology
 
   /** The graph this link is registered with in {@link useLinkStore}, if any. */
-  _graphId?: UUID
+  _graphScope?: GraphScope
 
   /** Link ID */
   get id() {
@@ -130,7 +139,13 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   }
 
   set id(value: LinkId) {
-    this._state.id = value
+    if (this._graphScope) {
+      if (value !== this._state.id) {
+        console.error('LiteGraph: refusing to change a registered link id')
+      }
+      return
+    }
+    Object.assign(this._state, { id: value })
   }
 
   get type() {
@@ -242,6 +257,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   ) {
     this._state = {
       id,
+      graphId: toOwningGraphId(zeroUuid),
       type,
       originNodeId: toNodeId(origin_id),
       originSlot: origin_slot,
@@ -516,7 +532,9 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
     // When floating from output, 1-to-1 ratio of floating link to final reroute (tree-like)
     const outputFloating =
       keepReroutes === 'output' &&
-      lastReroute?.linkIds.size === 1 &&
+      lastReroute !== undefined &&
+      (lastReroute.linkIds.size === 0 ||
+        (lastReroute.linkIds.size === 1 && lastReroute.linkIds.has(this.id))) &&
       lastReroute.floatingLinkIds.size === 0
 
     // When floating from inputs, the final (input side) reroute may have many floating links
@@ -539,7 +557,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
       network.addFloatingLink(newLink)
     }
 
-    network.links.delete(this.id)
+    if (network.links.get(this.id) === this) network.links.delete(this.id)
     unregisterLinkTopology(this)
     layoutStore.deleteLinkLayout(this.id)
 
@@ -611,35 +629,66 @@ export function slotFloatingLinks(
  * always agree and field writes are tracked.  Call this at every site that
  * adds a link to a graph's link map (or floating link map).
  *
- * {@link LLink._graphId} is only set when the store keeps this link's state:
+ * {@link LLink._graphScope} is only set when the store keeps this link's state:
  * a link that loses a first-wins id collision stays detached, so its writes
  * and removal cannot corrupt the winner's registration.
  * @param graph The graph (or subgraph) the link belongs to
  * @param link The link to register
  */
 export function registerLinkTopology(
-  graph: Pick<LGraph, 'rootGraph'>,
+  graph: Pick<LGraph, 'rootGraph' | 'id'>,
   link: LLink
-): void {
-  if (link.id === toLinkId(-1)) return // transient toFloating clone
-  const graphId = graph.rootGraph.id
-  const registered = useLinkStore().registerLink(graphId, link._state)
-  if (registered) {
-    link._state = registered
-    link._graphId = graphId
+): boolean {
+  if (link.id === toLinkId(-1)) return false
+  const scope = graphScopeOf(graph)
+  const registered = useLinkStore().registerLink(scope, link._state)
+  if (!registered) return false
+  adoptLinkTopology(link, scope, registered)
+  return true
+}
+
+export function replaceLinkTopology(
+  graph: Pick<LGraph, 'rootGraph' | 'id'>,
+  incumbent: LLink | undefined,
+  replacement: LLink
+): boolean {
+  if (replacement.id === toLinkId(-1)) return false
+  const scope = graphScopeOf(graph)
+  const registered = useLinkStore().replaceLink(
+    scope,
+    incumbent?._state,
+    replacement._state
+  )
+  if (!registered) return false
+  if (incumbent) {
+    linkByTopology.delete(toRaw(incumbent._state))
+    incumbent._graphScope = undefined
   }
+  adoptLinkTopology(replacement, scope, registered)
+  return true
+}
+
+function adoptLinkTopology(
+  link: LLink,
+  scope: GraphScope,
+  registered: LinkTopology
+): void {
+  link._state = registered
+  link._graphScope = scope
+  linkByTopology.set(toRaw(registered), link)
 }
 
 /**
  * Removes a link's topology from {@link useLinkStore} and detaches the link.
- * No-op for links that never won registration ({@link LLink._graphId} unset),
+ * No-op for links that never won registration ({@link LLink._graphScope} unset),
  * so a first-wins collision loser cannot remove the winner's entry.
  * @param link The link to unregister
  */
 export function unregisterLinkTopology(link: LLink): void {
-  if (!link._graphId) return
-  useLinkStore().deleteLink(link._graphId, link._state)
-  link._graphId = undefined
+  if (!link._graphScope) return
+  useLinkStore().deleteLink(link._graphScope, link._state)
+  linkByTopology.delete(toRaw(link._state))
+  link._graphScope = undefined
 }
 
 /**
@@ -651,6 +700,10 @@ export function unregisterLinkTopology(link: LLink): void {
 export function unregisterAllLinkTopologies(
   graph: Pick<LGraph, 'links' | 'floatingLinks'>
 ): void {
-  for (const link of graph.links.values()) unregisterLinkTopology(link)
-  for (const link of graph.floatingLinks.values()) unregisterLinkTopology(link)
+  for (const link of [
+    ...graph.links.values(),
+    ...graph.floatingLinks.values()
+  ]) {
+    unregisterLinkTopology(link)
+  }
 }

@@ -12,6 +12,7 @@ import type {
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
 
+import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 
@@ -341,14 +342,14 @@ describe('fixBadLinks ↔ linkStore integration', () => {
     graph._addLink(link)
 
     const store = useLinkStore()
-    const graphId = graph.rootGraph.id
+    const graphId = graphScopeOf(graph)
     expect(store.isInputSlotConnected(graphId, b.id, 0)).toBe(true)
     expect(b.inputs[0].link).toBe(link.id)
 
     const result = fixBadLinks(graph, { fix: true, silent: true })
 
     expect(result).toMatchObject({ hasBadLinks: false, deleted: 0 })
-    expect(graph._links.has(link.id)).toBe(true)
+    expect(graph.links.has(link.id)).toBe(true)
     expect(store.isInputSlotConnected(graphId, b.id, 0)).toBe(true)
   })
 

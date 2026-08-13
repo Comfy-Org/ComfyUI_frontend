@@ -20,15 +20,16 @@ state, and promoted value data lives in `WidgetValueStore` keyed by the input's
 | NodeOutputStore         | Execution results                   | `nodeLocatorId`                | `"${subgraphId}:${nodeId}"`                                        | Output data, preview URLs     |
 | SubgraphNavigationStore | Canvas viewport                     | `subgraphId`                   | `subgraphId` or `'root'`                                           | LRU viewport cache            |
 | PreviewExposureStore    | Subgraph host node                  | host node locator              | host locator + exposure name                                       | Display-only preview state    |
-| LinkStore               | `LLink`                             | Root graph                     | `` `${targetNodeId}:${targetSlot}` `` (target input slot)          | Plain `LinkTopology` object   |
+| LinkStore               | `LLink`                             | Root and owning graph          | `LinkId` primary; owner-qualified target/origin indexes            | Plain `LinkTopology` object   |
 | RerouteStore            | `Reroute`                           | Root graph                     | `RerouteId`                                                        | Plain `RerouteChain` object   |
 | NodeDataStore           | `LGraphNode` shell state            | Root graph                     | `NodeId`                                                           | Plain `NodeState` object      |
 
 **Update (2026-07-05):** `LinkStore` (`src/stores/linkStore.ts`, PR #13436) and
 `RerouteStore` (`src/stores/rerouteStore.ts`, PR #13449) hold plain-data records
 in reactive `Map` buckets — not Y.js — scoped by root graph (subgraphs share
-their root's bucket). Floating links and links targeting subgraph outputs live
-in a per-graph unkeyed side set. Design records:
+their root's bucket). Every link topology lives in one root-wide identity map;
+owner and endpoint indexes provide graph-local iteration and connectivity
+queries. Design records:
 [Link Topology Store](link-topology-store.md),
 [Reroute Chain Store](reroute-chain-store.md).
 

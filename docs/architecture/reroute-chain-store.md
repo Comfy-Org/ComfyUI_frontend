@@ -21,7 +21,7 @@ store per [ADR 0008](../adr/0008-entity-component-system.md). Amends the
 
 The chain is primary. Membership becomes a derived reverse index:
 
-```
+```text
 linksThrough(R) = { L : R ∈ chain(L.parentId) }
 ```
 
@@ -40,14 +40,20 @@ disagree, and every dual write site survives.
 `rerouteStore` holds per-reroute chain state objects, registered by
 reference (the class reads through them, mirroring `LLink._state`):
 
-```
-RerouteChain { id, parentId?, floating? }
+```text
+RerouteChain { id, graphId, parentId?, floating? }
 ```
 
-Buckets are root-graph-scoped (`rootGraph.id`), keyed by `RerouteId`,
-matching `widgetValueStore` and `linkStore` scoping. Owning-graph buckets
-were evaluated and rejected for the link store (2026-07-04) and are
-rejected here for the same reasons.
+Buckets use the shared graph-scoped lifecycle:
+
+```text
+RootGraphId -> { chains, idsByOwner, membershipByOwner }
+```
+
+The root key groups one loaded workflow. `chains` is a flat root-wide identity
+map; `idsByOwner` is a secondary index for owner-local lookup and teardown.
+`graphId` associates a chain with its owning graph without namespacing its
+identity.
 
 `RerouteId` is the domain key because runtime allocation is already
 per-root-unique: `Subgraph.state` delegates to the root graph's state, so
@@ -56,10 +62,9 @@ all graphs increment one shared `lastRerouteId` counter.
 ## Decision 3: Load-time reroute-id dedup
 
 Serialized workflows from older frontends or external tools can carry
-colliding reroute ids across sibling subgraph definitions. Today the
-root-scoped bucket would break on it. Layout geometry now uses the same
-root-graph scope, so duplicate reroute IDs within one root still require
-load-time repair.
+colliding reroute ids anywhere in one root graph. Registration does not
+overwrite the incumbent, so import repairs those collisions before
+registration.
 
 On configure, colliding subgraph reroute ids are rewritten to fresh ids
 from the shared counter, patching that subgraph's `link.parentId` and
@@ -80,9 +85,16 @@ that proxy as `_state` (`BaseWidget.setNodeId`,
 `widgetValueStore.registerWidget`). Every subsequent class write goes
 through the proxy and is tracked.
 
-`rerouteStore.registerReroute` follows this: it returns the proxy and
-the `Reroute` class reads and writes chain state through it, so
-`reroute.parentId` mutations are tracked with no action chokepoint.
+`rerouteStore.registerReroute` follows this: it returns the proxy when
+registration succeeds or the same chain is already registered, and returns
+`undefined` when another chain owns the id. This matches `registerLink`; both
+APIs leave a colliding state detached instead of returning the incumbent.
+The `Reroute` class reads and writes chain state through a successful proxy,
+so `reroute.parentId` mutations are tracked with no action chokepoint.
+
+Each root bucket keeps one derived membership `ComputedRef` per owner. The
+chain map and owner indexes are reactive, so chain, link, and lifecycle changes
+invalidate the relevant membership view.
 
 `LLink` previously deviated — `registerLinkTopology` left `link._state`
 raw, which is why `linkStore.updateEndpoint` must re-wrap with

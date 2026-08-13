@@ -14,6 +14,7 @@ import type {
   SerialisableGraph
 } from '@/lib/litegraph/src/types/serialisation'
 import { useLinkStore } from '@/stores/linkStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
@@ -107,9 +108,9 @@ function shiftedNodesAndLinks(sourceId: number, targetId: number) {
 
 /**
  * As {@link shiftedNodesAndLinks}, but `in_a` carries a duplicate link: the
- * survivor registered first (id 3) is not the id the serialized input
- * references (id 4). Dedup keeps 3 and purges 4, so realignment must follow
- * the purged reference through to the survivor to correct its slot.
+ * link registered first (id 3) is not the id the serialized input references
+ * (id 4). Registration rejects 4, so realignment must follow
+ * the rejected alias through to the registered link to correct its slot.
  */
 function duplicateDriftedNodesAndLinks(sourceId: number, targetId: number) {
   const base = shiftedNodesAndLinks(sourceId, targetId)
@@ -173,6 +174,58 @@ function emptySubgraphDefinition(): ExportedSubgraph {
     nodes: [],
     links: []
   }
+}
+
+function subgraphInputFanoutWithRejectedDuplicate(): ExportedSubgraph {
+  const subgraph = emptySubgraphDefinition()
+  subgraph.state.lastNodeId = 2
+  subgraph.state.lastLinkId = 3
+  subgraph.inputs = [
+    { id: 'input', name: 'input', type: 'number', linkIds: [3] }
+  ]
+  subgraph.nodes = [1, 2].map((id) => ({
+    id,
+    type: 'test/RealignTarget',
+    pos: [300, id * 100] as [number, number],
+    size: [140, 80] as [number, number],
+    flags: {},
+    order: id,
+    mode: 0,
+    inputs: [
+      { name: 'in_a', type: 'number', link: id === 1 ? 1 : 3 },
+      { name: 'in_b', type: 'number', link: null },
+      { name: 'in_c', type: 'number', link: null }
+    ],
+    outputs: [],
+    properties: {}
+  }))
+  subgraph.links = [
+    {
+      id: 1,
+      origin_id: SUBGRAPH_INPUT_ID,
+      origin_slot: 0,
+      target_id: 1,
+      target_slot: 0,
+      type: 'number'
+    },
+    {
+      id: 2,
+      origin_id: SUBGRAPH_INPUT_ID,
+      origin_slot: 0,
+      target_id: 2,
+      target_slot: 0,
+      type: 'number'
+    },
+    {
+      id: 3,
+      origin_id: SUBGRAPH_INPUT_ID,
+      origin_slot: 0,
+      target_id: 2,
+      target_slot: 0,
+      type: 'number'
+    }
+  ]
+  return subgraph
 }
 
 interface WorkflowOptions {
@@ -247,7 +300,7 @@ function assertLinksRealigned(graph: LGraph, targetNodeId: NodeId) {
       slot
     )
     expect(
-      linkStore.getInputSlotLink(graph.rootGraph.id, target.id, slot)?.id,
+      linkStore.getInputSlotLink(graphScopeOf(graph), target.id, slot)?.id,
       `store registration for input ${input.name} at slot ${slot}`
     ).toBe(expectedLinkId)
   }
@@ -282,12 +335,27 @@ describe('LGraph.configure input slot realignment (#3348)', () => {
     }
   )
 
-  it('realigns the survivor when a drifted input referenced a deduplicated link', () => {
+  it('realigns the registered link when a drifted input referenced a rejected alias', () => {
     const graph = new LGraph()
     graph.configure(savedWorkflow({ duplicate: true }))
 
     expect(graph.links.has(toLinkId(4))).toBe(false)
     assertLinksRealigned(graph, toNodeId(2))
+  })
+
+  it('maps a rejected subgraph input fanout branch to its exact survivor', () => {
+    const workflow = savedWorkflow()
+    workflow.nodes = []
+    workflow.links = []
+    workflow.definitions = {
+      subgraphs: [subgraphInputFanoutWithRejectedDuplicate()]
+    }
+
+    const graph = new LGraph()
+    graph.configure(workflow)
+
+    const subgraph = graph.subgraphs.get(SUBGRAPH_ID)!
+    expect(subgraph.inputs[0].linkIds).toEqual([toLinkId(2)])
   })
 
   it('uses the first slot when one link is referenced by multiple inputs', () => {
@@ -316,10 +384,7 @@ describe('realignInputLinkSlots', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
-  it.for([
-    ['registered link id', false],
-    ['purged link alias', true]
-  ] as const)('rekeys a serialized %s', (_name, usePurgedAlias) => {
+  it('rekeys a serialized link', () => {
     const graph = new LGraph()
     const source = new LGraphNode('Source')
     source.addOutput('out', 'number')
@@ -329,25 +394,20 @@ describe('realignInputLinkSlots', () => {
     graph.add(source)
     graph.add(target)
     const link = source.connect(0, target, 0)!
-    const purgedId = toLinkId(99)
-    const serializedId = usePurgedAlias ? purgedId : link.id
     const nodeData = target.serialize()
     nodeData.inputs = [
       { ...nodeData.inputs![0], link: null },
-      { ...nodeData.inputs![1], link: serializedId }
+      { ...nodeData.inputs![1], link: link.id }
     ]
-    const survivorByPurged = usePurgedAlias
-      ? new Map([[purgedId, link.id]])
-      : new Map()
 
-    realignInputLinkSlots(graph, [nodeData], survivorByPurged)
+    realignInputLinkSlots(graph, [nodeData])
 
     const store = useLinkStore()
     expect(link.target_slot).toBe(1)
     expect(
-      store.getInputSlotLink(graph.rootGraph.id, target.id, 0)
+      store.getInputSlotLink(graphScopeOf(graph), target.id, 0)
     ).toBeUndefined()
-    expect(store.getInputSlotLink(graph.rootGraph.id, target.id, 1)?.id).toBe(
+    expect(store.getInputSlotLink(graphScopeOf(graph), target.id, 1)?.id).toBe(
       link.id
     )
   })

@@ -70,10 +70,13 @@ test.describe('Optional input', { tag: ['@screenshot', '@node'] }, () => {
 
   test('Renamed converted input', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('inputs/renamed_converted_widget')
-    const node = await comfyPage.nodeOps.getNodeRefById('3')
-    const inputs = (await node.getProperty('inputs')) as { name: string }[]
-    const renamedInput = inputs.find((w) => w.name === 'breadth')
-    expect(renamedInput).toBeUndefined()
+    const inputNames = await comfyPage.page.evaluate(
+      (nodeId) =>
+        window.app!.graph!.getNodeById(nodeId)!.inputs.map(({ name }) => name),
+      toNodeId(3)
+    )
+
+    expect(inputNames).not.toContain('breadth')
   })
 
   test('slider', async ({ comfyPage }) => {

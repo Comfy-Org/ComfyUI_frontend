@@ -1,9 +1,11 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, toRaw } from 'vue'
 
 import { useNodeDataStore } from '@/stores/nodeDataStore'
+import { graphScopeOf } from '@/types/graphScopeId'
+import { toNodeId } from '@/types/nodeId'
 
 import type { NodeState } from '@/types/nodeState'
 
@@ -36,7 +38,7 @@ describe('LGraphNode node-data adoption', () => {
     const rootId = subgraph.rootGraph.id
 
     expect(rootId).not.toBe(subgraph.id)
-    expect(node._graphId).toBe(rootId)
+    expect(node._graphScope).toEqual(graphScopeOf(subgraph))
     expect(node._state.graphId).toBe(subgraph.id)
 
     const [registered] = statesIn(subgraph)
@@ -63,16 +65,42 @@ describe('LGraphNode node-data adoption', () => {
     subgraph.remove(node)
 
     expect(statesIn(subgraph)).toEqual([])
-    expect(node._graphId).toBeUndefined()
+    expect(node._graphScope).toBeUndefined()
   })
 
-  it('keeps the registration when configure carries a stale id', () => {
+  it('keeps registered identity when configure carries stale values', () => {
     const { subgraph, node } = addNodeToSubgraph()
     const assignedId = node.id
+    const assignedType = node.type
 
-    node.configure({ ...node.serialize(), id: 9999 })
+    node.configure({
+      ...node.serialize(),
+      id: 9999,
+      type: 'replacement'
+    })
 
     expect(node.id).toBe(assignedId)
+    expect(node.type).toBe(assignedType)
     expect(statesIn(subgraph).map((s) => s.id)).toEqual([assignedId])
+  })
+
+  it('keeps registered identity assignments in store state', () => {
+    const { node } = addNodeToSubgraph()
+    const registeredState = node._state
+    const registeredId = node.id
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    node.id = node.id
+    node.id = toNodeId(9999)
+    node.type = 'replacement'
+
+    expect(node._state).toBe(registeredState)
+    expect(node.id).toBe(registeredId)
+    expect(node.type).toBe('replacement')
+    expect(registeredState.type).toBe('replacement')
+    expect(warn).toHaveBeenCalledWith(
+      'LiteGraph: changing a node type after construction is deprecated'
+    )
+    expect(warn).toHaveBeenCalledTimes(2)
   })
 })

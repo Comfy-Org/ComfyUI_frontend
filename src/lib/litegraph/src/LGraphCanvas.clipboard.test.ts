@@ -34,6 +34,7 @@ import type {
 } from '@/lib/litegraph/src/types/serialisation'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 import { toRerouteId } from '@/types/rerouteId'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 
@@ -302,7 +303,7 @@ describe('_deserializeItems paste-time migration & auto-expose', () => {
       throw new Error('Expected pasted input link')
     }
 
-    const pastedInputLink = rootGraph._links.get(pastedInputLinkId)
+    const pastedInputLink = rootGraph.links.get(pastedInputLinkId)
     expect(pastedInputLink?.origin_id).toBe(source.id)
     expect(pastedInputLink?.target_id).toBe(pastedTarget.id)
   })
@@ -521,7 +522,6 @@ describe('clipboard reroute id integrity', () => {
     const subgraphId = createUuidv4()
     const exported = createRerouteSubgraph(subgraphId)
     const subgraph = rootGraph.createSubgraph(exported)
-    subgraph.configure(exported)
     const host = LiteGraph.createNode(subgraphId)
     if (!host) throw new Error('Expected subgraph node type to be registered')
     rootGraph.add(host)
@@ -541,11 +541,13 @@ describe('clipboard reroute id integrity', () => {
     const terminal = subgraph.reroutes.get(toRerouteId(2))!
     terminal.parentId = undefined
     expect(
-      store.getReroute(rootGraph.id, toRerouteId(2))?.parentId
+      store.getReroute(graphScopeOf(subgraph), toRerouteId(2))?.parentId
     ).toBeUndefined()
 
     subgraph.removeReroute(toRerouteId(1))
-    expect(store.getReroute(rootGraph.id, toRerouteId(1))).toBeUndefined()
+    expect(
+      store.getReroute(graphScopeOf(subgraph), toRerouteId(1))
+    ).toBeUndefined()
   })
 
   it('pasting a subgraph node remaps colliding reroute ids instead of hijacking live registrations', () => {
@@ -573,17 +575,19 @@ describe('clipboard reroute id integrity', () => {
     expect(pastedIds).toHaveLength(2)
     expect(new Set([...liveIds, ...pastedIds]).size).toBe(4)
 
-    const [pastedLink] = [...pasted._links.values()]
+    const [pastedLink] = [...pasted.links.values()]
     expect(pastedIds).toContain(pastedLink.parentId)
 
     const store = useRerouteStore()
     const terminal = liveSubgraph.reroutes.get(toRerouteId(2))!
     terminal.parentId = undefined
     expect(
-      store.getReroute(rootGraph.id, toRerouteId(2))?.parentId
+      store.getReroute(graphScopeOf(liveSubgraph), toRerouteId(2))?.parentId
     ).toBeUndefined()
 
     liveSubgraph.removeReroute(toRerouteId(1))
-    expect(store.getReroute(rootGraph.id, toRerouteId(1))).toBeUndefined()
+    expect(
+      store.getReroute(graphScopeOf(liveSubgraph), toRerouteId(1))
+    ).toBeUndefined()
   })
 })

@@ -20,6 +20,7 @@ import type { GroupLayout, NodeLayout } from '@/renderer/core/layout/types'
 import { MinimapDataSourceFactory } from '@/renderer/extensions/minimap/data/MinimapDataSourceFactory'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
+import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
@@ -52,6 +53,10 @@ vi.mock('@/stores/executionStore', () => ({
 }))
 
 const GRAPH_ID: UUID = 'minimap-graph'
+const GRAPH_SCOPE = {
+  rootGraphId: toRootGraphId(GRAPH_ID),
+  owningGraphId: toOwningGraphId(GRAPH_ID)
+}
 
 function createMockGraph(
   nodes: LGraphNode[] = [],
@@ -63,7 +68,10 @@ function createMockGraph(
 /** Adds a node to `nodeDataStore`, which is how the layout source scopes. */
 function registerNodeState(id: string, graphId: UUID = GRAPH_ID) {
   useNodeDataStore().registerNode(
-    GRAPH_ID,
+    {
+      rootGraphId: toRootGraphId(GRAPH_ID),
+      owningGraphId: toOwningGraphId(graphId)
+    },
     createNodeState({
       id: toNodeId(id),
       graphId,
@@ -252,8 +260,9 @@ describe('MinimapDataSource', () => {
 
   describe('Link extraction', () => {
     it('derives links between visible nodes from the link store', () => {
-      useLinkStore().registerLink(GRAPH_ID, {
+      useLinkStore().registerLink(GRAPH_SCOPE, {
         id: toLinkId(1),
+        graphId: GRAPH_SCOPE.owningGraphId,
         originNodeId: toNodeId('node1'),
         originSlot: 0,
         targetNodeId: toNodeId('node2'),
@@ -276,8 +285,9 @@ describe('MinimapDataSource', () => {
     })
 
     it('omits links whose target is not in the viewed nodes', () => {
-      useLinkStore().registerLink(GRAPH_ID, {
+      useLinkStore().registerLink(GRAPH_SCOPE, {
         id: toLinkId(1),
+        graphId: GRAPH_SCOPE.owningGraphId,
         originNodeId: toNodeId('node1'),
         originSlot: 0,
         targetNodeId: toNodeId('elsewhere'),

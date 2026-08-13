@@ -7,7 +7,7 @@ import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
 /**
  * Root graph with two nodes (Source, Target) connected by one valid link
  * plus two duplicate links sharing the same connection tuple.
- * Tests that configure() deduplicates to a single link.
+ * Tests that configure() rejects persisted duplicates.
  */
 export const duplicateLinksRoot: SerialisableGraph = {
   id: 'dd000000-0000-4000-8000-000000000001',
@@ -140,7 +140,7 @@ export const duplicateLinksSlotShift: SerialisableGraph = {
 
 /**
  * Root graph containing a SubgraphNode whose subgraph definition has
- * duplicate links. Tests that configure() deduplicates links inside
+ * duplicate links. Tests that configure() rejects persisted duplicates inside
  * subgraph definitions during root-level configure.
  */
 export const duplicateLinksSubgraph: SerialisableGraph = {

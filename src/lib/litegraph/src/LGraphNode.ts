@@ -1,4 +1,4 @@
-import { reactive, shallowReactive, toValue } from 'vue'
+import { shallowReactive, toValue } from 'vue'
 
 import {
   calculateInputSlotPosFromSlot,
@@ -9,6 +9,8 @@ import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMuta
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { toLinkId } from '@/types/linkId'
+import { graphScopeOf } from '@/types/graphScopeId'
+import type { GraphScope } from '@/types/graphScopeId'
 import { mintLinkId } from './idAllocation'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -18,7 +20,6 @@ import type { NodeState } from '@/types/nodeState'
 import { adjustColor } from '@/utils/colorUtil'
 import type { ColorAdjustOptions } from '@/utils/colorUtil'
 import { zeroUuid } from '@/utils/uuid'
-import type { UUID } from '@/utils/uuid'
 import {
   commonType,
   isNodeBindable,
@@ -37,12 +38,13 @@ import { badgeDrawObjects, badgeRows } from './nodeBadgeDraw'
 import { LGraphButton } from './LGraphButton'
 import type { LGraphButtonOptions } from './LGraphButton'
 import { LGraphCanvas } from './LGraphCanvas'
-import { LLink, slotFloatingLinks } from './LLink'
+import { LLink, replaceLinkTopology, slotFloatingLinks } from './LLink'
 import {
   inputHasLink,
   inputLink,
   inputLinkId,
   captureInputLayout,
+  finalizeInputLinkRemoval,
   replaceNodeInputs,
   outputHasLinks,
   outputLinks
@@ -337,18 +339,31 @@ export class LGraphNode
   _state: NodeState
 
   /** The root graph this node is registered with in {@link useNodeDataStore}, if any. */
-  _graphId?: UUID
+  _graphScope?: GraphScope
 
   get id(): NodeId {
     return this._state.id
   }
 
   set id(value: NodeId) {
-    this._state.id = value
+    if (this._graphScope) {
+      if (value !== this._state.id)
+        console.warn('LiteGraph: refusing to change a registered node id')
+      return
+    }
+    this._state = { ...this._state, id: value }
   }
 
   get type(): string {
     return this._state.type
+  }
+
+  set type(value: string) {
+    if (value !== this._state.type)
+      console.warn(
+        'LiteGraph: changing a node type after construction is deprecated'
+      )
+    this._state.type = value
   }
 
   /** Assignment splices in place: the `shallowReactive` array identity is what the renderer tracks. */
@@ -1026,16 +1041,13 @@ export class LGraphNode
         continue
       }
 
-      if (j === 'type') {
-        if (info.type != null) this._state.type = String(info.type)
-        continue
-      }
+      if (j === 'type') continue
 
       if (j === 'id') {
         // Once registered, the owning graph owns the id — it may have
         // renumbered this node to resolve a collision that the serialised id
         // would reinstate.
-        if (this._graphId) continue
+        if (this._graphScope) continue
         const id = toNodeId(info.id)
         if (id !== UNASSIGNED_NODE_ID) this.id = id
         continue
@@ -1072,7 +1084,7 @@ export class LGraphNode
       const serialisedLink = info.inputs?.[i]?.link
       const link =
         this.graph && serialisedLink != null
-          ? this.graph._links.get(toLinkId(serialisedLink))
+          ? this.graph.links.get(toLinkId(serialisedLink))
           : null
       this.onConnectionsChange?.(NodeSlotType.INPUT, i, true, link, input)
       this.onInputAdded?.(input)
@@ -1086,7 +1098,7 @@ export class LGraphNode
       if (!serialisedLinks) continue
 
       for (const linkId of serialisedLinks) {
-        const link = this.graph ? this.graph._links.get(toLinkId(linkId)) : null
+        const link = this.graph ? this.graph.links.get(toLinkId(linkId)) : null
         this.onConnectionsChange?.(NodeSlotType.OUTPUT, i, true, link, output)
       }
       this.onOutputAdded?.(output)
@@ -3155,10 +3167,9 @@ export class LGraphNode
     )
       return null
 
-    // if there is something already plugged there, disconnect
-    if (inputHasLink(graph, inputNode.id, inputIndex)) {
+    const replacingLink = inputLink(graph, inputNode.id, inputIndex)
+    if (replacingLink) {
       graph.beforeChange()
-      inputNode.disconnectInput(inputIndex, true, afterRerouteId)
     }
 
     const maybeCommonType =
@@ -3176,8 +3187,25 @@ export class LGraphNode
       afterRerouteId
     )
 
-    // add to graph links list
-    graph._addLink(link)
+    if (!replaceLinkTopology(graph, replacingLink, link)) {
+      if (replacingLink) graph.afterChange()
+      return
+    }
+
+    if (replacingLink) {
+      finalizeInputLinkRemoval(
+        inputNode,
+        input,
+        inputIndex,
+        replacingLink,
+        true,
+        afterRerouteId
+      )
+      if (graph.getLink(link.id) !== link) {
+        graph.afterChange()
+        return
+      }
+    }
 
     anchorRerouteChain(graph, link)
     graph.incrementVersion()
@@ -3190,6 +3218,10 @@ export class LGraphNode
       link,
       output
     )
+    if (graph.getLink(link.id) !== link) {
+      graph.afterChange()
+      return
+    }
 
     inputNode.onConnectionsChange?.(
       NodeSlotType.INPUT,
@@ -3198,6 +3230,10 @@ export class LGraphNode
       link,
       input
     )
+    if (graph.getLink(link.id) !== link) {
+      graph.afterChange()
+      return
+    }
 
     this.setDirtyCanvas(false, true)
     graph.afterChange()
@@ -3209,7 +3245,7 @@ export class LGraphNode
     pos: Point,
     slot: INodeInputSlot | INodeOutputSlot,
     afterRerouteId?: RerouteId
-  ): Reroute {
+  ): Reroute | undefined {
     const { graph, id } = this
     if (!graph) throw new NullGraphError()
 
@@ -3226,6 +3262,7 @@ export class LGraphNode
       linkIds: [],
       floating: { slotType }
     })
+    if (!reroute) return
 
     const parentReroute = graph.getReroute(afterRerouteId)
     const fromLastFloatingReroute =
@@ -3399,7 +3436,7 @@ export class LGraphNode
     const link_id = inputLinkId(graph, this.id, slot) ?? null
     if (link_id !== null) {
       // remove other side
-      const link_info = graph._links.get(link_id)
+      const link_info = graph.links.get(link_id)
       if (link_info) {
         // Let SubgraphInput do the disconnect.
         if (link_info.origin_id === SUBGRAPH_INPUT_ID && 'inputNode' in graph) {
@@ -4419,12 +4456,14 @@ export class LGraphNode
 export function registerNodeState(
   graph: Pick<LGraph, 'rootGraph' | 'id'>,
   node: LGraphNode
-): void {
-  const rootGraphId = graph.rootGraph.id
+): boolean {
+  const graphScope = graphScopeOf(graph)
   node._state.graphId = graph.id
-  node._state = reactive(node._state)
-  useNodeDataStore().registerNode(rootGraphId, node._state)
-  node._graphId = rootGraphId
+  const registered = useNodeDataStore().registerNode(graphScope, node._state)
+  if (!registered) return false
+  node._state = registered
+  node._graphScope = graphScope
+  return true
 }
 
 /**
@@ -4433,9 +4472,9 @@ export function registerNodeState(
  * @param node The node to unregister
  */
 export function unregisterNodeState(node: LGraphNode): void {
-  if (!node._graphId) return
-  useNodeDataStore().deleteNode(node._graphId, node._state)
-  node._graphId = undefined
+  if (!node._graphScope) return
+  useNodeDataStore().deleteNode(node._graphScope, node._state)
+  node._graphScope = undefined
 }
 
 /**

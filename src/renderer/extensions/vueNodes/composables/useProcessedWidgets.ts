@@ -30,6 +30,7 @@ import {
 import { app } from '@/scripts/app'
 import { nodeTypeValidForApp } from '@/stores/appModeStore'
 import { useLinkStore } from '@/stores/linkStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import {
@@ -126,14 +127,14 @@ function normalizeWidgetValue(value: unknown): WidgetValue {
 function buildSlotMetadata(
   inputs: INodeInputSlot[] | undefined,
   graphRef: LGraph | null | undefined,
-  graphId: string | undefined,
   nodeId: NodeId
 ): Map<string, WidgetSlotMetadata> {
   const linkStore = useLinkStore()
+  const scope = graphRef ? graphScopeOf(graphRef) : undefined
   const metadata = new Map<string, WidgetSlotMetadata>()
   inputs?.forEach((input, index) => {
-    const link = graphId
-      ? linkStore.getInputSlotLink(graphId, nodeId, index)
+    const link = scope
+      ? linkStore.getInputSlotLink(scope, nodeId, index)
       : undefined
     const linked = link !== undefined
     const originNode = link ? graphRef?.getNodeById(link.originNodeId) : null
@@ -490,10 +491,10 @@ export function computeProcessedWidgets({
   const ids = hostNode
     ? orderedIds.filter((id) => liveWidgets.has(id))
     : orderedIds
+  const graphRef = hostNode?.graph ?? rootGraph
   const slotMetadata = buildSlotMetadata(
     hostNode?.inputs,
-    hostNode?.graph ?? rootGraph,
-    graphId,
+    graphRef,
     nodeData.id
   )
   const ctx: WidgetProcessingContext = {

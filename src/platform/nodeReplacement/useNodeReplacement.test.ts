@@ -11,6 +11,7 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import { useLinkStore } from '@/stores/linkStore'
 import type { MissingNodeType } from '@/types/comfy'
+import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
@@ -87,6 +88,10 @@ function createMockLink(
 }
 
 const GRAPH_ID: UUID = 'node-replacement-graph'
+const GRAPH_SCOPE = {
+  rootGraphId: toRootGraphId(GRAPH_ID),
+  owningGraphId: toOwningGraphId(GRAPH_ID)
+}
 
 function createMockGraph(
   nodes: LGraphNode[],
@@ -94,8 +99,9 @@ function createMockGraph(
 ): LGraph {
   const linksMap = new Map(links.map((l) => [l.id, l]))
   for (const l of links) {
-    useLinkStore().registerLink(GRAPH_ID, {
+    useLinkStore().registerLink(GRAPH_SCOPE, {
       id: toLinkId(l.id),
+      graphId: GRAPH_SCOPE.owningGraphId,
       originNodeId: toNodeId(l.origin_id),
       originSlot: l.origin_slot,
       targetNodeId: toNodeId(l.target_id),
@@ -108,6 +114,7 @@ function createMockGraph(
     _nodes_by_id: Object.fromEntries(nodes.map((n) => [n.id, n])),
     links: linksMap,
     getLink: (id: number) => linksMap.get(id),
+    id: GRAPH_ID,
     rootGraph: { id: GRAPH_ID },
     events: new CustomEventTarget<LGraphEventMap>(),
     updateExecutionOrder: vi.fn(),

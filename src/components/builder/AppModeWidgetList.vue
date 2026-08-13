@@ -21,6 +21,7 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useLinkStore } from '@/stores/linkStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { parseImageWidgetValue } from '@/utils/imageUtil'
@@ -80,10 +81,10 @@ function ensureSelectedWidgetState(
 }
 
 function isWidgetInputLinked(node: LGraphNode, widgetName: string): boolean {
-  const graphId = node.graph?.rootGraph.id
+  const graph = node.graph
   const slot = node.inputs?.findIndex((i) => i.widget?.name === widgetName)
-  if (!graphId || slot === undefined || slot < 0) return false
-  return linkStore.isInputSlotConnected(graphId, node.id, slot)
+  if (!graph || slot === undefined || slot < 0) return false
+  return linkStore.isInputSlotConnected(graphScopeOf(graph), node.id, slot)
 }
 
 const mappedSelections = computed((): WidgetEntry[] => {

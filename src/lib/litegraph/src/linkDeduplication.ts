@@ -1,74 +1,89 @@
 import { useLinkStore } from '@/stores/linkStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 import type { EndpointUpdate } from '@/stores/linkStore'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
-import { registerLinkTopology } from './LLink'
-import { inputLinkId } from './node/slotLinks'
-
+import cloneDeep from 'es-toolkit/compat/cloneDeep'
 import type { LGraph } from './LGraph'
-import type { LGraphNode } from './LGraphNode'
-import type { LLink, LinkId } from './LLink'
-import type { ISerialisedNode } from './types/serialisation'
+import type { LinkId, LLink, SerialisedLLinkArray } from './LLink'
+import type {
+  ExportedSubgraph,
+  ISerialisedGraph,
+  ISerialisedNode,
+  SerialisableGraph,
+  SerialisableLLink
+} from './types/serialisation'
 
-/** Generates a unique string key for a link's connection tuple. */
-function linkTupleKey(link: LLink): string {
-  return `${link.origin_id}\0${link.origin_slot}\0${link.target_id}\0${link.target_slot}`
+type ConfiguredGraph = (ISerialisedGraph | SerialisableGraph) &
+  Partial<Pick<ExportedSubgraph, 'inputs' | 'outputs' | 'reroutes'>>
+
+type ConfiguredLink = SerialisedLLinkArray | SerialisableLLink
+
+function linkFields(link: ConfiguredLink) {
+  if (!Array.isArray(link)) return link
+  const [id, origin_id, origin_slot, target_id, target_slot] = link
+  return { id, origin_id, origin_slot, target_id, target_slot }
 }
 
-/** Groups all link IDs by their connection tuple key. */
-export function groupLinksByTuple(
-  links: Map<LinkId, LLink>
-): Map<string, LinkId[]> {
-  const groups = new Map<string, LinkId[]>()
-  for (const [id, link] of links) {
-    const key = linkTupleKey(link)
-    if (!groups.has(key)) groups.set(key, [])
-    groups.get(key)!.push(id)
-  }
-  return groups
-}
-
-/**
- * Finds the link ID actually referenced by an input on the target node.
- * Cannot rely on target_slot index because widget-to-input conversions
- * during configure() can shift slot indices.
- */
-export function selectSurvivorLink(
-  ids: LinkId[],
-  node: LGraphNode | null
-): LinkId {
-  if (!node?.graph) return ids[0]
-
-  for (const [index] of (node.inputs ?? []).entries()) {
-    const registered = inputLinkId(node.graph, node.id, index)
-    if (registered != null && ids.includes(registered)) return registered
-  }
-  return ids[0]
-}
-
-/**
- * Removes duplicate links from origin outputs and the graph, routing map
- * removal through {@link LGraph._removeLink} so the link and layout stores
- * stay in sync.
- */
-export function purgeOrphanedLinks(
-  ids: LinkId[],
-  keepId: LinkId,
-  graph: LGraph
+export function remapLinkReferences(
+  data: ConfiguredGraph,
+  remapped: ReadonlyMap<number, number>
 ): void {
-  for (const id of ids) {
-    if (id === keepId) continue
+  const remap = (id: number) => remapped.get(id) ?? id
+  const nodes = data.nodes ?? []
 
-    const link = graph._links.get(id)
-    if (!link) continue
-
-    graph._removeLink(id)
+  for (const input of nodes.flatMap((node) => node.inputs ?? [])) {
+    if (input.link != null) input.link = remap(input.link)
   }
 
-  // Purging a duplicate that owned the survivor's target-slot index entry
-  // removes that entry, so re-assert the survivor's registration afterwards.
-  const survivor = graph._links.get(keepId)
-  if (survivor) registerLinkTopology(graph, survivor)
+  const linkIdLists = [
+    ...nodes.flatMap((node) =>
+      (node.outputs ?? []).map((output) => output.links)
+    ),
+    ...(data.inputs ?? []).map((slot) => slot.linkIds),
+    ...(data.outputs ?? []).map((slot) => slot.linkIds),
+    ...(data.reroutes ?? []).map((reroute) => reroute.linkIds)
+  ]
+  for (const ids of linkIdLists) {
+    if (ids) ids.splice(0, ids.length, ...new Set(ids.map(remap)))
+  }
+
+  for (const extension of data.extra?.linkExtensions ?? []) {
+    extension.id = toLinkId(remap(extension.id))
+  }
+}
+
+export function normalizeConfiguredTopology<T extends ConfiguredGraph>(
+  data: T
+): T {
+  if (!data.links?.length) return data
+
+  const survivorByTarget = new Map<string, ReturnType<typeof linkFields>>()
+  const survivorByDuplicateId = new Map<number, number>()
+  const links = data.links.filter((link) => {
+    const fields = linkFields(link)
+    const key = `${toNodeId(fields.target_id)}:${fields.target_slot}`
+    const survivor = survivorByTarget.get(key)
+    if (!survivor) {
+      survivorByTarget.set(key, fields)
+      return true
+    }
+    if (
+      toNodeId(survivor.origin_id) === toNodeId(fields.origin_id) &&
+      survivor.origin_slot === fields.origin_slot
+    ) {
+      survivorByDuplicateId.set(fields.id, survivor.id)
+    }
+    return false
+  })
+  if (links.length === data.links.length) return data
+
+  const normalized = Object.assign({}, data, { links })
+  if (!survivorByDuplicateId.size) return normalized
+
+  const cloned = cloneDeep(normalized)
+  remapLinkReferences(cloned, survivorByDuplicateId)
+  return cloned
 }
 
 /**
@@ -100,23 +115,17 @@ export function detachSerialisedLinks(
  * @param graph The graph whose links to realign
  * @param nodesData The serialized node data the graph's nodes were configured
  * from, after any in-place input reordering by node `configure()` overrides
- * @param survivorByPurged Maps a duplicate link id removed by
- * {@link purgeOrphanedLinks} to the survivor kept in its place, so an input
- * referencing a purged duplicate realigns the surviving link
  */
 export function realignInputLinkSlots(
   graph: LGraph,
-  nodesData: Iterable<ISerialisedNode>,
-  survivorByPurged: ReadonlyMap<LinkId, LinkId> = new Map()
+  nodesData: Iterable<ISerialisedNode>
 ): void {
   const referencedSlots = new Map<LLink, number[]>()
 
   for (const nodeData of nodesData) {
     for (const [slot, input] of (nodeData.inputs ?? []).entries()) {
       if (input.link == null) continue
-      const serializedId = toLinkId(input.link)
-      const linkId = survivorByPurged.get(serializedId) ?? serializedId
-      const link = graph._links.get(linkId)
+      const link = graph.links.get(toLinkId(input.link))
       if (!link || link.target_id !== toNodeId(nodeData.id)) continue
       const slots = referencedSlots.get(link) ?? []
       slots.push(slot)
@@ -133,7 +142,7 @@ export function realignInputLinkSlots(
       patch: { targetSlot: slot }
     })
   }
-  const result = useLinkStore().updateEndpoints(graph.rootGraph.id, updates)
+  const result = useLinkStore().updateEndpoints(graphScopeOf(graph), updates)
   if (!result.ok) {
     console.error('Failed to realign input link slots', result.error)
   }

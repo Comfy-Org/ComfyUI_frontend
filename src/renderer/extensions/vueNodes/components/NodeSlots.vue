@@ -49,6 +49,8 @@ import {
 } from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useLinkStore } from '@/stores/linkStore'
+import type { GraphScope } from '@/types/graphScopeId'
+import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import type { NodeState } from '@/types/nodeState'
 import { locatorIdFromState } from '@/utils/graphTraversalUtil'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -66,27 +68,32 @@ const linkStore = useLinkStore()
 const nodeLocatorId = computed(() =>
   locatorIdFromState(nodeData, canvasStore.rootGraphId)
 )
+const nodeScope = computed<GraphScope | null>(() => {
+  const graph = canvasStore.currentGraph
+  return graph
+    ? {
+        rootGraphId: toRootGraphId(graph.rootGraph.id),
+        owningGraphId: toOwningGraphId(nodeData.graphId)
+      }
+    : null
+})
 
 const linkedWidgetInputs = computed(() =>
-  unified && canvasStore.rootGraphId
-    ? linkedWidgetedInputs(
-        nodeData.id,
-        nodeData.inputs,
-        canvasStore.rootGraphId
-      )
+  unified && nodeScope.value
+    ? linkedWidgetedInputs(nodeData.id, nodeData.inputs, nodeScope.value)
     : []
 )
 
 function isInputConnected(index: number): boolean {
-  const graphId = canvasStore.rootGraphId
-  if (graphId === undefined) return false
-  return linkStore.isInputSlotConnected(graphId, nodeData.id, index)
+  const scope = nodeScope.value
+  if (!scope) return false
+  return linkStore.isInputSlotConnected(scope, nodeData.id, index)
 }
 
 function isOutputConnected(index: number): boolean {
-  const graphId = canvasStore.rootGraphId
-  if (graphId === undefined) return false
-  return linkStore.isOutputSlotConnected(graphId, nodeData.id, index)
+  const scope = nodeScope.value
+  if (!scope) return false
+  return linkStore.isOutputSlotConnected(scope, nodeData.id, index)
 }
 
 const filteredInputs = computed(() => [

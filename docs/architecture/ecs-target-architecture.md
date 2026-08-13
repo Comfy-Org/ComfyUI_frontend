@@ -21,8 +21,8 @@ Map&lt;WidgetId, DomWidgetState&gt;"]
 raw nodeId/linkId; rootGraphId:localId
 for group/reroute geometry"]
         LinkStore["linkStore
-rootGraphId → targetNodeId:targetSlot
-→ LinkTopology"]
+rootGraphId → linkId → LinkTopology
+owner-qualified endpoint indexes"]
         RerouteStore["rerouteStore
 rootGraphId → RerouteId → RerouteChain"]
         NodeOutputStore["nodeOutputStore
@@ -68,31 +68,30 @@ graphId:nodeId:name
         NLID["nodeLocatorId
 subgraphId:nodeId"]
         NID["nodeId (raw)"]
-        LID["linkId (raw)"]
+        LID["linkId (raw;
+root-scoped in linkStore)"]
         RID["rootGraphId:rerouteId"]
-        TIS["targetNodeId:targetSlot
-(root-graph-scoped bucket)"]
+        EPI["owningGraphId:nodeId:slot
+(target/origin index)"]
     end
 
     WID -->|widgetValueStore, domWidgetStore| W["keyed lookups"]
     NLID -->|nodeOutputStore| W
     NID -->|layoutStore| W
-    LID -->|layoutStore| W
+    LID -->|layoutStore, linkStore identity| W
     RID -->|layoutStore, rerouteStore| W
-    TIS -->|linkStore| W
+    EPI -->|linkStore indexes| W
 ```
 
 `WidgetId = graphId:nodeId:name` is itself a branded string (see
 `src/types/widgetId.ts`). `nodeLocatorId = subgraphId:nodeId` addresses node
 outputs. `layoutStore` keys geometry records by raw `nodeId` / `linkId` /
-`rerouteId`. `linkStore` keys `LinkTopology` by **target input slot**
-(`targetNodeId:targetSlot`) inside root-graph-scoped buckets — the link id is
-NOT the key; at most one live link can target an input slot, so the target is
-the natural primary key (see
-[link-topology-store.md](link-topology-store.md)). Links without a unique
-target (floating links, `SUBGRAPH_OUTPUT_ID` targets) live in a per-graph
-unkeyed side set. `rerouteStore` keys `RerouteChain` by raw `rerouteId` in
-root-graph-scoped buckets (see
+`rerouteId`. `linkStore` keys `LinkTopology` identity by `linkId` inside
+root-graph-scoped buckets. Owner-local and endpoint indexes provide graph
+iteration and slot queries; the target index includes only links whose target
+slot is unique (see [link-topology-store.md](link-topology-store.md)).
+`rerouteStore` keys `RerouteChain` by raw `rerouteId` in root-graph-scoped
+buckets (see
 [reroute-chain-store.md](reroute-chain-store.md)). Each store enforces its own
 key shape; there is no single shared entity-ID type across stores.
 
@@ -195,12 +194,12 @@ target_id, target_slot, type"]
         B5["resolve()"]
     end
 
-    subgraph After["target-slot-keyed topology (linkStore) + unextracted state"]
+    subgraph After["link-id-keyed topology (linkStore) + unextracted state"]
         direction TB
         A1["LinkTopology — SHIPPED
 { id, originNodeId, originSlot,
 targetNodeId, targetSlot, type, parentId? }
-keyed by targetNodeId:targetSlot"]
+primary linkId; owner-qualified endpoint indexes"]
         A2["LinkVisual — not yet extracted
 { color, path, centerPos }"]
         A3["LinkState — not yet extracted

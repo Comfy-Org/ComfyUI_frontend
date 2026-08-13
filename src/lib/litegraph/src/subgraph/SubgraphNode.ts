@@ -70,6 +70,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     return super.type as SubgraphId
   }
 
+  override set type(value: string) {
+    super.type = value
+  }
+
   override readonly isVirtualNode = true as const
   override graph: GraphOrSubgraph | null
 
