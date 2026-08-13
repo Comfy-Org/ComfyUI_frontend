@@ -58,7 +58,6 @@ interface SourcePlan {
   changes: LocaleChanges
   invalidated: Set<string>
   previousLeafCount: number
-  degraded: boolean
   knownViolationKeys: ReadonlySet<string>
 }
 
@@ -200,20 +199,24 @@ function loadManifest(filename: string): SourceManifest {
   return manifest as SourceManifest
 }
 
-function readManifestSource(
+export function readManifestSource(
   repoRoot: string,
   filename: string,
   hash: string
-): LocaleObject | undefined {
+): LocaleObject {
   let content: string
   try {
     content = execFileSync('git', ['cat-file', 'blob', hash], {
       cwd: repoRoot,
       encoding: 'utf8',
-      maxBuffer: 64 * 1024 * 1024
+      maxBuffer: 64 * 1024 * 1024,
+      stdio: ['ignore', 'pipe', 'pipe']
     })
-  } catch {
-    return undefined
+  } catch (error) {
+    throw new Error(
+      `Cannot read the recorded English source for ${filename} (${hash}). Run from a clone with full history (a blobless partial clone works: fetch-depth: 0 with filter: blob:none, which lazily fetches the blob over the network).`,
+      { cause: error }
+    )
   }
   try {
     return parseLocale(content, `${filename}@${hash}`)
@@ -359,9 +362,6 @@ function reportCheck(states: readonly LocaleFileState[]): number {
         `${label}: ${state.strayPaths.length} keys no longer exist in the English source and will be pruned`
       )
     }
-    // Degraded plans (recorded source unavailable) cannot tell staleness from
-    // corruption, so they skip the audit.
-    if (state.plan.degraded) continue
     for (const error of state.auditErrors) {
       auditErrors.push(`${label}: ${error}`)
     }
@@ -400,17 +400,7 @@ async function run(argv: readonly string[]): Promise<void> {
     if (!check && raw !== canonical) writeFileSync(entryFile, canonical)
     const hash = manifest.files[filename]
     const recorded = hash ? readManifestSource(repoRoot, filename, hash) : {}
-    if (recorded === undefined && !check) {
-      throw new Error(
-        `Cannot read the recorded English source for ${filename} (${hash}). Run from a clone with full history (a blobless partial clone works: fetch-depth: 0 with filter: blob:none, which lazily fetches the blob over the network).`
-      )
-    }
-    if (recorded === undefined) {
-      print(
-        `WARNING: ${filename}: the recorded English source (${hash}) is unavailable in this clone; changed-string detection is skipped for this check.`
-      )
-    }
-    const previous = recorded ?? source
+    const previous = recorded
     const changes = diffLocaleSources(previous, source)
     return {
       filename,
@@ -420,7 +410,6 @@ async function run(argv: readonly string[]): Promise<void> {
         [...changes.added, ...changes.modified].map(pathKey)
       ),
       previousLeafCount: collectLeaves(previous).size,
-      degraded: recorded === undefined,
       knownViolationKeys: new Set(manifest.knownViolations?.[filename] ?? [])
     }
   })
@@ -459,11 +448,9 @@ async function run(argv: readonly string[]): Promise<void> {
   }
 
   const auditFailures = states.flatMap((state) =>
-    state.plan.degraded
-      ? []
-      : state.auditErrors.map(
-          (error) => `${state.locale.code}/${state.plan.filename}: ${error}`
-        )
+    state.auditErrors.map(
+      (error) => `${state.locale.code}/${state.plan.filename}: ${error}`
+    )
   )
   if (auditFailures.length > 0) {
     throw new Error(
@@ -582,7 +569,8 @@ async function run(argv: readonly string[]): Promise<void> {
 
   // Persist per entry file: locale outputs and the manifest entry advance only
   // for entry files whose every locale translated and validated, so one
-  // failure does not discard the completed work of the other files
+  // failure does not discard the completed work of the other files. A crash
+  // before the manifest write can repeat work, but cannot advance provenance.
   const completedFilenames = new Set(
     filenames.filter((filename) => !failuresByFile.has(filename))
   )
@@ -627,6 +615,15 @@ async function run(argv: readonly string[]): Promise<void> {
       })
     )
   )
+
+  for (const state of states) {
+    if (!completedFilenames.has(state.plan.filename)) continue
+    for (const path of state.strayPaths) {
+      print(
+        `${state.locale.code}/${state.plan.filename}: pruned ${path.join('.')}`
+      )
+    }
+  }
 
   if (failuresByFile.size > 0) {
     const details = [...failuresByFile.values()].flat()

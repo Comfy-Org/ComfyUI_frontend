@@ -25,7 +25,8 @@ import {
 import {
   assembleLeafTranslations,
   buildTranslationItems,
-  exceedsPruneThreshold
+  exceedsPruneThreshold,
+  readManifestSource
 } from './update-locales'
 
 const locale: OutputLocale = { code: 'xx', name: 'Test Language' }
@@ -531,6 +532,18 @@ describe('exceedsPruneThreshold', () => {
     expect(exceedsPruneThreshold(25, 100)).toBe(false)
     expect(exceedsPruneThreshold(62, 124)).toBe(true)
     expect(exceedsPruneThreshold(500, 9082)).toBe(true)
+  })
+})
+
+describe('readManifestSource', () => {
+  it('fails when the recorded source blob is unavailable', () => {
+    expect(() =>
+      readManifestSource(
+        process.cwd(),
+        'main.json',
+        '0000000000000000000000000000000000000000'
+      )
+    ).toThrow('Cannot read the recorded English source for main.json')
   })
 })
 
