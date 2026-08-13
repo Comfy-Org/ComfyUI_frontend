@@ -39,7 +39,11 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
       { label: t('nav.comfyApi', locale), href: routes.api },
       { label: t('nav.comfyEnterprise', locale), href: routes.cloudEnterprise },
       { label: t('nav.mcpServer', locale), href: routes.mcp },
-      { label: t('nav.supportedModels', locale), href: routes.models }
+      { label: t('nav.supportedModels', locale), href: routes.models },
+      { label: t('footer.minimaxH3', locale), href: routes.minimax },
+      { label: t('footer.seedance', locale), href: routes.seedance },
+      { label: t('footer.wanAnimate2', locale), href: routes.wanAnimate2 },
+      { label: t('footer.ltx', locale), href: routes.ltx }
     ]
   },
   {
@@ -47,6 +51,7 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
     links: [
       { label: t('nav.learning', locale), href: routes.learning },
       { label: t('nav.launches', locale), href: routes.launches },
+      { label: t('nav.fdct', locale), href: routes.fdct },
       {
         label: t('footer.blog', locale),
         href: externalLinks.blog,
@@ -70,6 +75,16 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
       {
         label: t('nav.youtube', locale),
         href: externalLinks.youtube,
+        external: true
+      },
+      {
+        label: t('nav.instagram', locale),
+        href: externalLinks.instagram,
+        external: true
+      },
+      {
+        label: t('nav.x', locale),
+        href: externalLinks.x,
         external: true
       },
       {
@@ -122,7 +137,7 @@ const contactColumn: { title: string; links: FooterLink[] } = {
     class="bg-primary-comfy-ink px-6 py-8 text-primary-comfy-canvas lg:px-20"
   >
     <div
-      class="border-primary-warm-gray grid gap-12 border-t pt-16 lg:grid-cols-2 lg:gap-4"
+      class="grid gap-12 border-t border-primary-warm-gray pt-16 lg:grid-cols-2 lg:gap-4"
     >
       <!-- Tagline -->
       <p class="text-2xl font-medium tracking-wide uppercase lg:text-3xl">

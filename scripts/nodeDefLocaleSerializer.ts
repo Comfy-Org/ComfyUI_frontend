@@ -1,4 +1,4 @@
-import { normalizeI18nKey } from '@/utils/formatUtil'
+import { escapeI18nMessage, normalizeI18nKey } from '@/utils/formatUtil'
 
 interface LocalizableInput {
   type: string
@@ -26,12 +26,6 @@ export type WidgetLabels = Record<
   Record<string, { name: string | undefined }>
 >
 
-const VUE_I18N_SYNTAX_CHARS = /[@${}|%]/g
-
-function escapeMessage(text: string): string {
-  return text.replace(VUE_I18N_SYNTAX_CHARS, (char) => `{'${char}'}`)
-}
-
 export function serializeNodeDefLocales(
   nodeDefs: readonly LocalizableNodeDef[],
   widgetLabels: WidgetLabels = {}
@@ -43,7 +37,10 @@ export function serializeNodeDefLocales(
         ...nodeDef.outputs.map(({ type }) => type)
       ])
       .flatMap((type) => type.split(','))
-      .map((dataType) => [normalizeI18nKey(dataType), escapeMessage(dataType)])
+      .map((dataType) => [
+        normalizeI18nKey(dataType),
+        escapeI18nMessage(dataType)
+      ])
       .sort((a, b) => a[0].localeCompare(b[0]))
   )
 
@@ -56,7 +53,7 @@ export function serializeNodeDefLocales(
           [
             normalizeI18nKey(name ?? ''),
             {
-              name: name === undefined ? undefined : escapeMessage(name),
+              name: name === undefined ? undefined : escapeI18nMessage(name),
               tooltip
             }
           ]
@@ -72,7 +69,7 @@ export function serializeNodeDefLocales(
         const serializedName =
           name === undefined || name in dataTypes
             ? undefined
-            : escapeMessage(name)
+            : escapeI18nMessage(name)
         if (serializedName === undefined && tooltip === undefined) return []
 
         return [[index.toString(), { name: serializedName, tooltip }]]
@@ -86,7 +83,8 @@ export function serializeNodeDefLocales(
       Object.entries(widgetLabels[nodeName] ?? {}).map(([name, label]) => [
         normalizeI18nKey(name),
         {
-          name: label.name === undefined ? undefined : escapeMessage(label.name)
+          name:
+            label.name === undefined ? undefined : escapeI18nMessage(label.name)
         }
       ])
     )
@@ -104,9 +102,11 @@ export function serializeNodeDefLocales(
         return [
           normalizeI18nKey(nodeDef.name),
           {
-            display_name: escapeMessage(nodeDef.display_name ?? nodeDef.name),
+            display_name: escapeI18nMessage(
+              nodeDef.display_name ?? nodeDef.name
+            ),
             description: nodeDef.description
-              ? escapeMessage(nodeDef.description)
+              ? escapeI18nMessage(nodeDef.description)
               : undefined,
             inputs: Object.keys(inputs).length > 0 ? inputs : undefined,
             outputs: serializeOutputs(nodeDef)
@@ -119,7 +119,7 @@ export function serializeNodeDefLocales(
     nodeDefs.flatMap(({ category }) =>
       category
         .split('/')
-        .map((part) => [normalizeI18nKey(part), escapeMessage(part)])
+        .map((part) => [normalizeI18nKey(part), escapeI18nMessage(part)])
     )
   )
 

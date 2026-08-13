@@ -1,7 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { cleanup, render, screen } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, reactive, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -19,12 +19,15 @@ function makeTourState() {
     title: ref('Canvas title'),
     body: ref('Canvas body'),
     isLast: ref(false),
+    canGoBack: ref(true),
     primaryLabel: ref('Next'),
     skipLabel: ref('Skip'),
+    backLabel: ref('Back'),
     countedStepIdx: ref(0),
     countedStepsTotal: ref(0),
     waitingForTarget: ref(false),
     next: vi.fn(),
+    back: vi.fn(),
     skip: vi.fn()
   }
 }
@@ -32,11 +35,12 @@ function makeTourState() {
 // Stubbed so the suite covers only TourOverlay's branching and intent wiring.
 vi.mock('./TourSpotlight.vue', () => ({
   default: defineComponent({
-    emits: ['advance', 'skip'],
+    emits: ['advance', 'back', 'skip'],
     setup(_, { emit }) {
       return () =>
         h('div', { 'data-testid': 'spotlight' }, [
           h('button', { onClick: () => emit('advance') }, 'advance'),
+          h('button', { onClick: () => emit('back') }, 'back'),
           h('button', { onClick: () => emit('skip') }, 'skip')
         ])
     }
@@ -52,12 +56,13 @@ const i18n = createI18n({
 let s: ReturnType<typeof makeTourState>
 
 const spotlightStep: CoachStep = {
+  kind: 'spotlight',
   name: 'run',
   placement: 'right'
 }
 
 function landingStep(): CoachStep {
-  return { name: 'landing', placement: 'center', landing: true }
+  return { kind: 'landing', name: 'landing' }
 }
 
 function renderOverlay() {
@@ -69,8 +74,6 @@ describe('TourOverlay', () => {
     s = makeTourState()
     vi.mocked(useOnboardingTourStore).mockReturnValue(fromPartial(reactive(s)))
   })
-
-  afterEach(cleanup)
 
   it('renders nothing when no tour step is active', () => {
     renderOverlay()
@@ -87,6 +90,9 @@ describe('TourOverlay', () => {
 
     await user.click(screen.getByRole('button', { name: 'advance' }))
     expect(s.next).toHaveBeenCalledOnce()
+
+    await user.click(screen.getByRole('button', { name: 'back' }))
+    expect(s.back).toHaveBeenCalledOnce()
 
     await user.click(screen.getByRole('button', { name: 'skip' }))
     expect(s.skip).toHaveBeenCalledOnce()

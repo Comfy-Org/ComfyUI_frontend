@@ -53,7 +53,6 @@ describe('ControlsManager', () => {
   let manager: ControlsManager
 
   beforeEach(() => {
-    vi.clearAllMocks()
     events = makeMockEventManager()
     camera = new THREE.PerspectiveCamera()
   })

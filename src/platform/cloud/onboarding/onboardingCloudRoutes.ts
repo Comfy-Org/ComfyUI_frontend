@@ -45,12 +45,16 @@ export const cloudOnboardingRoutes: RouteRecordRaw[] = [
     path: '/cloud',
     component: () =>
       import('@/platform/cloud/onboarding/components/CloudLayoutView.vue'),
+    // UserCheckView's hard reload would destroy the desktop-login approval
+    // dialog mid-prompt (see desktopLoginRedemption.ts).
+    meta: { defersDesktopLoginRedemption: true },
     children: [
       {
         path: 'login',
         name: 'cloud-login',
         component: () =>
           import('@/platform/cloud/onboarding/CloudLoginView.vue'),
+        meta: { showTermsNotice: true },
         beforeEnter: async (to, _from, next) => {
           if (!to.query.switchAccount) {
             const { useCurrentUser } =
@@ -69,6 +73,7 @@ export const cloudOnboardingRoutes: RouteRecordRaw[] = [
         name: 'cloud-signup',
         component: () =>
           import('@/platform/cloud/onboarding/CloudSignupView.vue'),
+        meta: { showTermsNotice: true },
         beforeEnter: async (to, _from, next) => {
           if (!to.query.switchAccount) {
             const { useCurrentUser } =
@@ -144,5 +149,11 @@ export const cloudOnboardingRoutes: RouteRecordRaw[] = [
     // Remove once BE-4146 lands the backend path change.
     path: '/cloud/oauth/consent',
     redirect: (to) => ({ path: '/oauth/consent', query: to.query })
+  },
+  {
+    // Legacy sign-in URL still reached by bookmarks and external links. It was
+    // unregistered, so the SPA matched nothing and sat on the splash screen.
+    path: '/login',
+    redirect: (to) => ({ name: 'cloud-login', query: to.query, hash: to.hash })
   }
 ]

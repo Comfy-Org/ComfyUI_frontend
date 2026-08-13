@@ -10,6 +10,7 @@ import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { AuthFlowAction } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { clearAllWorkflowStorage } from '@/platform/workflow/persistence/base/storageIO'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useDialogService } from '@/services/dialogService'
@@ -112,6 +113,8 @@ export const useAuthActions = () => {
     }
 
     await authStore.logout()
+    if (isCloud) clearAllWorkflowStorage({ blockWrites: true })
+
     toastStore.add({
       severity: 'success',
       summary: t('auth.signOut.success'),
@@ -149,8 +152,8 @@ export const useAuthActions = () => {
    * resolves instead of re-throwing on failure.
    */
   const purchaseCreditsDirect = async (amount: number): Promise<void> => {
-    const { isActiveSubscription } = useBillingContext()
-    if (!isActiveSubscription.value) return
+    const { canAccessSubscriptionFeatures } = useBillingContext()
+    if (!canAccessSubscriptionFeatures.value) return
 
     const response = await authStore.initiateCreditPurchase({
       amount_micros: usdToMicros(amount),
