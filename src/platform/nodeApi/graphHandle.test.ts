@@ -9,6 +9,7 @@ import {
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
+import { toNodeId } from '@/types/nodeId'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
@@ -253,8 +254,183 @@ describe('duplicating a node', () => {
   })
 })
 
+describe('replacing a node with another type', () => {
+  let graph: LGraph
+  let api: GraphHandle
+
+  class Small extends LGraphNode {
+    static override title = 'Small'
+    constructor() {
+      super('Small', 'Small')
+      this.addInput('ctx', 'CTX')
+      this.addOutput('ctx', 'CTX')
+      this.addOutput('model', 'MODEL')
+      this.addWidget('number', 'seed', 1, () => {})
+      this.addProperty('shared', 'kept')
+    }
+  }
+  class Big extends LGraphNode {
+    static override title = 'Big'
+    constructor() {
+      super('Big', 'Big')
+      this.addInput('ctx', 'CTX')
+      // 'model' moved behind a new slot: an index match would wire it to the
+      // wrong place, which is why the name is tried first.
+      this.addOutput('ctx', 'CTX')
+      this.addOutput('clip', 'CLIP')
+      this.addOutput('model', 'MODEL')
+      this.addWidget('number', 'seed', 1, () => {})
+      this.addProperty('shared', 'default')
+    }
+  }
+  class Peer extends LGraphNode {
+    constructor() {
+      super('Peer', 'Peer')
+      this.addInput('ctx', 'CTX')
+      this.addInput('model', 'MODEL')
+      this.addOutput('ctx', 'CTX')
+    }
+  }
+
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    LiteGraph.registerNodeType('Small', Small)
+    LiteGraph.registerNodeType('Big', Big)
+    LiteGraph.registerNodeType('Peer', Peer)
+    graph = new LGraph()
+    api = createGraphApi(() => graph)
+  })
+
+  function small() {
+    const node = LiteGraph.createNode('Small')!
+    graph.add(node)
+    return node
+  }
+
+  it('becomes the new type and keeps where the user put it', () => {
+    const node = small()
+    node.pos = [120, 340]
+
+    const swapped = api.replace(String(node.id), 'Big')!
+
+    expect(swapped.type).toBe('Big')
+    expect(swapped.getPosition()).toEqual({ x: 120, y: 340 })
+    expect(graph.getNodeById(node.id)).toBeFalsy()
+  })
+
+  it('re-makes the links by name, not by index', () => {
+    // 'model' is output 1 on Small and output 2 on Big. Matching by index
+    // would silently wire the peer's MODEL input to a CLIP slot, or nothing.
+    const node = small()
+    const upstream = LiteGraph.createNode('Peer')!
+    const downstream = LiteGraph.createNode('Peer')!
+    graph.add(upstream)
+    graph.add(downstream)
+    upstream.connect(0, node, 'ctx')
+    node.connect('model', downstream, 'model')
+
+    const swapped = api.replace(String(node.id), 'Big')!
+    const replaced = graph.getNodeById(toNodeId(swapped.id))!
+
+    expect(replaced.inputs[0].link).not.toBeNull()
+    expect(replaced.findOutputSlot('model')).toBe(2)
+    expect(downstream.inputs[1].link).not.toBeNull()
+  })
+
+  it('carries widget values across', () => {
+    // Neither pack that ships this feature does. Swapping a sampler for its
+    // advanced form and losing the seed the user typed is a bug, not a policy.
+    const node = small()
+    node.widgets![0].value = 42
+
+    const swapped = api.replace(String(node.id), 'Big')!
+
+    expect(swapped.widgets.get('seed')?.getValue()).toBe(42)
+  })
+
+  it('carries a title the user chose, but not the old type name', () => {
+    const renamed = small()
+    renamed.title = 'My context'
+    const untouched = small()
+
+    expect(api.replace(String(renamed.id), 'Big')!.getTitle()).toBe(
+      'My context'
+    )
+    expect(api.replace(String(untouched.id), 'Big')!.getTitle()).toBe('Big')
+  })
+
+  it('carries a property the new type declares', () => {
+    const node = small()
+    node.setProperty('shared', 'mine')
+
+    expect(api.replace(String(node.id), 'Big')!.getProperty('shared')).toBe(
+      'mine'
+    )
+  })
+
+  it('keeps a width the user chose, and grows a height the new type needs', () => {
+    const widened = small()
+    widened.size = [600, 10]
+    const squashed = small()
+    squashed.size = [10, 10]
+
+    const kept = graph.getNodeById(
+      toNodeId(api.replace(String(widened.id), 'Big')!.id)
+    )!
+    const grown = graph.getNodeById(
+      toNodeId(api.replace(String(squashed.id), 'Big')!.id)
+    )!
+
+    expect(kept.size[0]).toBe(600)
+    // Big has an extra output; keeping the old height verbatim clips it.
+    expect(grown.size[1]).toBe(grown.computeSize()[1])
+  })
+
+  it('warns about a link the new type cannot take', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const node = small()
+    const downstream = LiteGraph.createNode('Peer')!
+    graph.add(downstream)
+    node.connect('model', downstream, 'model')
+
+    api.replace(String(node.id), 'Peer')
+
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("output 'model'"))
+    warn.mockRestore()
+  })
+
+  it('is one undo step', () => {
+    // Not a call count: graph.remove opens its own scope, and nesting is fine
+    // because ChangeTracker counts. What must hold is that the count returns
+    // to zero exactly once, at the very end — that is the single capture.
+    const canvas = testCanvas(graph)
+    LGraphCanvas.active_canvas = canvas
+    let depth = 0
+    let captures = 0
+    canvas.onBeforeChange = () => depth++
+    canvas.onAfterChange = () => {
+      if (--depth === 0) captures++
+    }
+
+    api.replace(String(small().id), 'Big')
+
+    expect(depth).toBe(0)
+    expect(captures).toBe(1)
+  })
+
+  it('returns undefined for a node that is not there', () => {
+    expect(api.replace('999', 'Big')).toBeUndefined()
+  })
+
+  it('refuses a type that is not registered', () => {
+    expect(() => api.replace(String(small().id), 'Nope')).toThrow(ComfyApiError)
+  })
+})
+
 function testCanvas(graph: LGraph) {
   const element = document.createElement('canvas')
+  // Parented: LGraph.remove reaches checkPanels, which throws without one.
+  document.body.appendChild(element)
   element.width = 800
   element.height = 600
   element.getContext = vi

@@ -7,6 +7,7 @@
  */
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/LGraph'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 import { toNodeId } from '@/types/nodeId'
 
@@ -164,6 +165,27 @@ export interface GraphHandle {
     id: string,
     position?: { x: number; y: number }
   ): NodeHandle | undefined
+  /**
+   * Swaps a node for one of a different type, keeping what the user set and
+   * every link that still fits. `undefined` if the node is gone; throws if the
+   * type is not registered.
+   *
+   * This is a real feature four packs ship — "Convert to Context Big", "Swap to
+   * KSampler (Efficient)" — and all four hand-rolled it out of `graph.links`,
+   * `getNodeById` and `LiteGraph.createNode`, which is most of what this
+   * migration exists to delete. All four also got it wrong: one drops every
+   * widget value and hardcodes "slot 0 only", the other recurses through
+   * requestAnimationFrame forever on an inverted comparison and leaves a
+   * separate undo step for the add, each connection, and the remove.
+   *
+   * Position, custom title, colour, mode, declared properties and widget values
+   * carry over by name. Size is the larger of what the user set and what the new
+   * type needs, so a node that grew more slots is not clipped. Links are re-made
+   * by slot name, falling back to the same index; type checking is the ordinary
+   * connection rule, so a link that no longer fits is dropped and warned about
+   * rather than forced. The whole swap is one undo step.
+   */
+  replace(id: string, type: string): NodeHandle | undefined
   /** Diagnostics: live handle-cache slots across all kinds. */
   readonly cacheSize: number
 }
@@ -273,6 +295,107 @@ export function createGraphApi(
       graph.add(copy)
       if (position) copy.pos = [position.x, position.y]
       return handleFor(String(copy.id))
+    },
+
+    replace(id, type) {
+      const graph = getGraph()
+      const old = nodeById(id)
+      if (!graph || !old) return undefined
+      const replacement = LiteGraph.createNode(type)
+      if (!replacement) {
+        throw new ComfyApiError(
+          `Cannot replace with '${type}': no such node type is registered.`
+        )
+      }
+
+      // Everything is read before the old node leaves the graph: removing it
+      // clears its links, and its size is wanted for the max below.
+      const sources = old.inputs.map((input, index) => {
+        const link = input.link == null ? undefined : graph.getLink(input.link)
+        const origin = link && graph.getNodeById(link.origin_id)
+        return origin
+          ? { name: input.name, index, origin, originSlot: link.origin_slot }
+          : undefined
+      })
+      const targets = old.outputs.flatMap((output, index) =>
+        outputLinks(graph, old.id, index).flatMap((link) => {
+          const target = graph.getNodeById(link.target_id)
+          return target
+            ? [
+                {
+                  name: output.name,
+                  index,
+                  target,
+                  targetSlot: link.target_slot
+                }
+              ]
+            : []
+        })
+      )
+      const wanted = old.size
+      const values = new Map(old.widgets?.map((w) => [w.name, w.value]))
+
+      return this.batch(() => {
+        graph.add(replacement)
+        replacement.pos = [...old.pos]
+        // Only a title the user actually changed. Carrying the old *type's*
+        // default would leave a Context Big node captioned "Context".
+        const isDefaultTitle =
+          old.title === (old.constructor as { title?: string }).title
+        if (!isDefaultTitle) replacement.title = old.title
+        replacement.mode = old.mode
+        if (old.color !== undefined) replacement.color = old.color
+        if (old.bgcolor !== undefined) replacement.bgcolor = old.bgcolor
+        for (const key of Object.keys(replacement.properties)) {
+          if (key in old.properties) {
+            replacement.properties[key] = old.properties[key]
+          }
+        }
+        for (const widget of replacement.widgets ?? []) {
+          if (values.has(widget.name)) widget.value = values.get(widget.name)
+        }
+        const needed = replacement.computeSize()
+        replacement.size = [
+          Math.max(wanted[0], needed[0]),
+          Math.max(wanted[1], needed[1])
+        ]
+
+        graph.remove(old)
+
+        const dropped: string[] = []
+        // By name where the new type has one, else the same index. Name is the
+        // stabler match — a type that grew a slot in the middle keeps its
+        // wiring — and the index is what a renamed slot still has in common.
+        const slotOn = (node: LGraphNode, name: string, index: number) =>
+          node.findInputSlot(name) !== -1 || node.findOutputSlot(name) !== -1
+            ? name
+            : index
+        for (const source of sources) {
+          if (!source) continue
+          const made = source.origin.connect(
+            source.originSlot,
+            replacement,
+            slotOn(replacement, source.name, source.index)
+          )
+          if (!made) dropped.push(`input '${source.name}'`)
+        }
+        for (const target of targets) {
+          const made = replacement.connect(
+            slotOn(replacement, target.name, target.index),
+            target.target,
+            target.targetSlot
+          )
+          if (!made) dropped.push(`output '${target.name}'`)
+        }
+        if (dropped.length) {
+          console.warn(
+            `[comfy] Replacing node ${id} with '${type}' dropped ` +
+              `${dropped.length} link(s): ${dropped.join(', ')}. The new type ` +
+              `has no compatible slot for them.`
+          )
+        }
+        return handleFor(String(replacement.id))
+      })
     },
 
     nodeAt(point) {

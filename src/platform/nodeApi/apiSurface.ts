@@ -222,6 +222,7 @@ export const API_MEMBERS: ReadonlySet<string> = new Set([
   'remove',
   'render',
   'reorder',
+  'replace',
   'require',
   'required',
   'resolve',

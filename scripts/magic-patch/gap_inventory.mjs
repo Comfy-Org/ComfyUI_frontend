@@ -123,7 +123,11 @@ const CONSTRUCTS = [
   ],
 
   // ── App and wire format ────────────────────────────────────────────
-  ['graphToPrompt', /\bgraphToPrompt\b/, REFUSED('reading or editing the built prompt')],
+  [
+    'graphToPrompt',
+    /\bgraphToPrompt\b/,
+    REFUSED('reading or editing the built prompt')
+  ],
   ['queuePrompt', /\bqueuePrompt\b/, 'comfy.queue'],
   [
     'api.addEventListener',
@@ -132,7 +136,11 @@ const CONSTRUCTS = [
   ],
   ['api.fetchApi', /\bapi\.fetchApi\s*\(/, 'comfy.backend'],
   ['app.extensionManager', /\bextensionManager\b/, 'comfy.commands + comfy.ui'],
-  ['settings get/set', /\bsetting\s*\.\s*(?:get|set)\b|\baddSetting\b/, 'comfy.settings'],
+  [
+    'settings get/set',
+    /\bsetting\s*\.\s*(?:get|set)\b|\baddSetting\b/,
+    'comfy.settings'
+  ],
   ['node type replacement', /\brecreateNode\b|\breplaceNode\b/, null]
 ]
 
