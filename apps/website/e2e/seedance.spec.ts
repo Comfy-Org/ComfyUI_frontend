@@ -151,12 +151,12 @@ test.describe('Seedance 2.5 page — link targets', () => {
     })
     await gallery.scrollIntoViewIfNeeded()
 
-    const withPrompt = (seedancePage.gallery?.cards ?? []).filter(
-      (card) => card.prompt
-    )
+    // Five of the six cards carry a prompt. The world cup card is waiting on its
+    // re-render prompt, so this becomes six when that lands.
+    const EXPECTED_PROMPTS = 5
+
     const prompts = gallery.getByTestId('gallery-card-prompt')
-    await expect(prompts).toHaveCount(withPrompt.length)
-    expect(withPrompt.length).toBeGreaterThan(0)
+    await expect(prompts).toHaveCount(EXPECTED_PROMPTS)
 
     for (const text of await prompts.allInnerTexts()) {
       expect(text).not.toMatch(/\b4k\b/i)
