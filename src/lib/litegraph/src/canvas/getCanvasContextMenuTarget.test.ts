@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { getCanvasContextMenuTarget } from '@/lib/litegraph/src/canvas/getCanvasContextMenuTarget'
@@ -128,7 +128,7 @@ describe('getCanvasContextMenuTarget', () => {
 
   it('falls back to current-frame paths when the layout store has no geometry', () => {
     const link = new LLink(toLinkId(4), 'MODEL', 4, 0, 5, 0)
-    link.path = fromAny({})
+    link.path = fromPartial<Path2D>({})
     canvas.renderedPaths.add(link)
     isPointInStroke.mockReturnValue(true)
 
@@ -158,9 +158,9 @@ describe('getCanvasContextMenuTarget', () => {
   it('skips a revealed hidden curve and returns the visible link behind it', () => {
     const hiddenLink = new LLink(toLinkId(5), 'MODEL', 4, 0, 5, 0)
     hiddenLink.hidden = true
-    hiddenLink.path = fromAny({})
+    hiddenLink.path = fromPartial<Path2D>({})
     const visibleLink = new LLink(toLinkId(6), 'MODEL', 6, 0, 7, 0)
-    visibleLink.path = fromAny({})
+    visibleLink.path = fromPartial<Path2D>({})
     canvas.renderedPaths.add(hiddenLink)
     canvas.renderedPaths.add(visibleLink)
     isPointInStroke.mockReturnValue(true)
