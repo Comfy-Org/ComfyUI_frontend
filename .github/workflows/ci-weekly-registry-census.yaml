@@ -154,6 +154,23 @@ jobs:
       - name: Build shard fixture
         run: python3 scripts/registry-census/build_matrix.py --shard ${{ matrix.shard }}/4
 
+      # Every built spec gets its stub row BEFORE vitest starts: no failure
+      # mode - worker crash, collection kill, hang - can produce a missing
+      # row, only an incomplete one, which the verdict counts and reports.
+      - name: Pre-create stub rows
+        run: |
+          python3 - <<'PY'
+          import json, os
+          manifest = json.load(open('src/__ecs_matrix__/manifest.json'))
+          os.makedirs('matrix-rows', exist_ok=True)
+          for pack, entry in manifest.items():
+              if 'entries' in entry:
+                  json.dump(
+                      {'pack': pack, 'incomplete': True},
+                      open(os.path.join('matrix-rows', entry['safe'] + '.json'), 'w'),
+                  )
+          PY
+
       - name: Run the matrix
         run: |
           set -o pipefail

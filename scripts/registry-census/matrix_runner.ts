@@ -21,7 +21,11 @@ const argText = (a: unknown): string => {
   if (a && typeof a === 'object') {
     const e = (a as { error?: unknown }).error
     if (e instanceof Error) return `${e.name}: ${e.message}`
-    return S(a)
+    try {
+      return S(a)
+    } catch {
+      return '[unserializable]'
+    }
   }
   return String(a)
 }

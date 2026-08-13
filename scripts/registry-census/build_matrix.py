@@ -144,7 +144,7 @@ def build(limit: int = 0, shard: str = ''):
         open(
             os.path.join(DEST, f'{safe}.matrix.test.ts'), 'w', encoding='utf-8'
         ).write(spec)
-        manifest[pack] = {'files': n_files, 'entries': len(entries)}
+        manifest[pack] = {'files': n_files, 'entries': len(entries), 'safe': safe}
         if truncated:
             manifest[pack]['truncated'] = True
     json.dump(
