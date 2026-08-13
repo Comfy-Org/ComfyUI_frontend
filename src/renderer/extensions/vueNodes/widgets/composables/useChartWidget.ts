@@ -10,7 +10,9 @@ export const useChartWidget = (): ComfyWidgetConstructorV2 => {
       throw new Error('Invalid input spec for chart widget')
     }
 
-    const { name, chartType = 'line', data = {} } = inputSpec
+    const { name, options } = inputSpec
+    const chartType = inputSpec.chartType ?? options?.type ?? 'line'
+    const data = inputSpec.data ?? options?.data ?? {}
 
     const widgetOptions = { serialize: true, type: chartType }
 

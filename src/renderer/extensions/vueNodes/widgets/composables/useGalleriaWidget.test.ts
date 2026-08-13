@@ -48,6 +48,20 @@ describe('useGalleriaWidget', () => {
     expect(widget.value).toBe(images)
   })
 
+  it('supports legacy nested images', () => {
+    const { node } = createMockNode()
+    const images = ['a.png', 'b.png']
+    const inputSpec = {
+      type: 'GALLERIA',
+      name: 'gallery',
+      options: { images }
+    } as InputSpec
+
+    const widget = useGalleriaWidget()(node, inputSpec)
+
+    expect(widget.value).toBe(images)
+  })
+
   it('defaults to an empty image list', () => {
     const { node, addWidget } = createMockNode()
 

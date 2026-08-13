@@ -44,7 +44,8 @@ const zColorInputSpec = zBaseInputOptions.extend({
   type: z.literal('COLOR'),
   name: z.string(),
   isOptional: z.boolean().optional(),
-  default: z.string().optional()
+  default: z.string().optional(),
+  options: z.object({ default: z.string().optional() }).optional()
 })
 
 const zImageInputSpec = zBaseInputOptions.extend({
@@ -88,14 +89,21 @@ const zChartInputSpec = zBaseInputOptions.extend({
   name: z.string(),
   isOptional: z.boolean().optional(),
   chartType: z.enum(['bar', 'line']).optional(),
-  data: z.object({}).optional()
+  data: z.object({}).optional(),
+  options: z
+    .object({
+      type: z.enum(['bar', 'line']).optional(),
+      data: z.object({}).optional()
+    })
+    .optional()
 })
 
 const zGalleriaInputSpec = zBaseInputOptions.extend({
   type: z.literal('GALLERIA'),
   name: z.string(),
   isOptional: z.boolean().optional(),
-  images: z.array(z.string()).optional()
+  images: z.array(z.string()).optional(),
+  options: z.object({ images: z.array(z.string()).optional() }).optional()
 })
 
 const zColorsInputSpec = zBaseInputOptions.extend({
@@ -133,7 +141,14 @@ const zTextareaInputSpec = zBaseInputOptions.extend({
   isOptional: z.boolean().optional(),
   rows: z.number().optional(),
   cols: z.number().optional(),
-  default: z.string().optional()
+  default: z.string().optional(),
+  options: z
+    .object({
+      rows: z.number().optional(),
+      cols: z.number().optional(),
+      default: z.string().optional()
+    })
+    .optional()
 })
 
 const zCurvePoint = z.tuple([z.number(), z.number()])

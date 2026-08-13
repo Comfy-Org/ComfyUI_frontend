@@ -124,7 +124,12 @@ export function transformInputSpecV1ToV2(
   } else if (inputSpecV1[0] === 'CHART') {
     // CHART uses `chartType` in V2 because `type` is the discriminator key
     const { type, ...chartOptions } = options
-    const chartType = type === 'bar' || type === 'line' ? type : undefined
+    const chartType =
+      type === 'bar' || type === 'line'
+        ? type
+        : options.chartType === 'bar' || options.chartType === 'line'
+          ? options.chartType
+          : undefined
     return {
       type: 'CHART',
       name,

@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { transformNodeDefV1ToV2 } from '@/schemas/nodeDef/migration'
+import {
+  transformInputSpecV1ToV2,
+  transformInputSpecV2ToV1,
+  transformNodeDefV1ToV2
+} from '@/schemas/nodeDef/migration'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
@@ -223,6 +227,19 @@ describe('NodeDef Migration', () => {
     const chartInput = result.inputs['chartInput']
     expect(chartInput.type).toBe('CHART')
     expect(chartInput).toMatchObject({ chartType: 'bar', data: { labels: [] } })
+  })
+
+  it('should preserve chartType across a V2 to V1 round trip', () => {
+    const inputSpec = transformInputSpecV1ToV2(['CHART', { type: 'bar' }], {
+      name: 'chartInput'
+    })
+
+    const result = transformInputSpecV1ToV2(
+      transformInputSpecV2ToV1(inputSpec),
+      { name: 'chartInput' }
+    )
+
+    expect(result.chartType).toBe('bar')
   })
 
   it('should not transform hidden fields', () => {

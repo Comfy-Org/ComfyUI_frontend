@@ -10,7 +10,10 @@ export const useTextareaWidget = (): ComfyWidgetConstructorV2 => {
       throw new Error('Invalid input spec for textarea widget')
     }
 
-    const { name, default: defaultValue = '', rows = 5, cols = 50 } = inputSpec
+    const { name, options } = inputSpec
+    const defaultValue = inputSpec.default ?? options?.default ?? ''
+    const rows = inputSpec.rows ?? options?.rows ?? 5
+    const cols = inputSpec.cols ?? options?.cols ?? 50
 
     const widgetOptions = { rows, cols }
 

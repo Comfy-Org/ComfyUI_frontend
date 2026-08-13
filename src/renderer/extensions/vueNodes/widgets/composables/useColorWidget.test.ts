@@ -56,6 +56,17 @@ describe('useColorWidget', () => {
     expect(widget.value).toBe(DECLARED_DEFAULT)
   })
 
+  it('supports the legacy nested default', () => {
+    const { node } = createMockNode()
+    const inputSpec = createColorSpec({
+      options: { default: DECLARED_DEFAULT }
+    })
+
+    const widget = useColorWidget()(node, inputSpec)
+
+    expect(widget.value).toBe(DECLARED_DEFAULT)
+  })
+
   it('falls back to black when no default is supplied', () => {
     const { node, addWidget } = createMockNode()
 

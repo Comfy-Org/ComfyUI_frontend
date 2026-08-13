@@ -10,7 +10,9 @@ export const useColorWidget = (): ComfyWidgetConstructorV2 => {
       throw new Error('Invalid input spec for color widget')
     }
 
-    const { name, default: defaultValue = '#000000' } = inputSpec
+    const { name } = inputSpec
+    const defaultValue =
+      inputSpec.default ?? inputSpec.options?.default ?? '#000000'
 
     const existing = node.widgets?.find(
       (w): w is IColorWidget => w.name === name && w.type === 'color'

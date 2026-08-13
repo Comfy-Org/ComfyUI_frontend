@@ -56,6 +56,25 @@ describe('useChartWidget', () => {
     expect(widget.value).toBe(data)
   })
 
+  it('supports legacy nested chart options', () => {
+    const { node, addWidget } = createMockNode()
+    const data = { series: [1, 2, 3] }
+
+    const widget = useChartWidget()(
+      node,
+      createChartSpec({ options: { type: 'bar', data } })
+    )
+
+    expect(addWidget).toHaveBeenCalledWith(
+      'chart',
+      'chart',
+      data,
+      expect.any(Function),
+      { serialize: true, type: 'bar' }
+    )
+    expect(widget.value).toBe(data)
+  })
+
   it('defaults to a line chart with empty data', () => {
     const { node, addWidget } = createMockNode()
 

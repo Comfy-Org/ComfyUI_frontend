@@ -10,7 +10,8 @@ export const useGalleriaWidget = (): ComfyWidgetConstructorV2 => {
       throw new Error('Invalid input spec for galleria widget')
     }
 
-    const { name, images = [] } = inputSpec
+    const { name } = inputSpec
+    const images = inputSpec.images ?? inputSpec.options?.images ?? []
 
     const widget = node.addWidget('galleria', name, images, () => {}, {
       serialize: true

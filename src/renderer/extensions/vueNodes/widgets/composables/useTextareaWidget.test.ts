@@ -56,6 +56,20 @@ describe('useTextareaWidget', () => {
     expect(widget.value).toBe('hello')
   })
 
+  it('supports legacy nested textarea options', () => {
+    const { node } = createMockNode()
+    const inputSpec = {
+      type: 'TEXTAREA',
+      name: 'text',
+      options: { default: 'hello', rows: 10, cols: 80 }
+    } as InputSpec
+
+    const widget = useTextareaWidget()(node, inputSpec)
+
+    expect(widget.value).toBe('hello')
+    expect(widget.options).toMatchObject({ rows: 10, cols: 80 })
+  })
+
   it('falls back to an empty default with 5 rows and 50 cols', () => {
     const { node, addWidget } = createMockNode()
 
