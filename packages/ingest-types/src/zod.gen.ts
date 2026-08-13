@@ -164,6 +164,7 @@ export const zHubWorkflowDetail = z.object({
   workflow_id: z.string(),
   name: z.string(),
   status: zHubWorkflowStatus,
+  is_app: z.boolean(),
   description: z.string().optional(),
   tags: z.array(zLabelRef).optional(),
   thumbnail_type: z.enum(['image', 'video', 'image_comparison']).optional(),
@@ -198,7 +199,8 @@ export const zHubWorkflowSummary = z.object({
   profile: zHubProfileSummary,
   metadata: z.record(z.unknown()).optional(),
   tutorial_url: z.string().optional(),
-  sample_image_urls: z.array(z.string()).optional()
+  sample_image_urls: z.array(z.string()).optional(),
+  is_app: z.boolean()
 })
 
 /**
@@ -278,6 +280,7 @@ export const zHubWorkflowTemplateEntry = z.object({
     .optional(),
   isEssential: z.boolean().optional(),
   openSource: z.boolean().optional(),
+  isApp: z.boolean(),
   profile: zHubProfileSummary.optional(),
   tutorialUrl: z.string().optional(),
   logos: z.array(z.record(z.unknown())).optional(),
