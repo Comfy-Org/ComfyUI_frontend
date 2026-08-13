@@ -20,7 +20,7 @@ from paths import CORPUS  # noqa: E402
 DEST = os.path.abspath(os.path.join(HERE, os.pardir, os.pardir, 'src', '__ecs_matrix__'))
 REPOS = CORPUS
 
-PREFIX = r'(["\'])(?:/|(?:\.\./)+|\./)'
+PREFIX = r'(["\'])(?:/|(?:\./)?(?:\.\./)+)'
 REWRITES = [
     (re.compile(PREFIX + r'scripts/app\.js\1'), '"@/scripts/app"'),
     (re.compile(PREFIX + r'scripts/api\.js\1'), '"@/scripts/api"'),

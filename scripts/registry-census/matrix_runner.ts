@@ -404,10 +404,13 @@ export async function runPack(
   )
   // Harness self-check: if the default workflow did not materialize, the
   // if-guarded ops below would all no-op and report a vacuously clean pack.
-  // The summarizer withholds the verdict when this fails broadly.
+  // The summarizer withholds the verdict when this fails broadly. Floors,
+  // not pins (workflow has 7 nodes / KSampler has 7 widgets today): the
+  // check must catch "nothing loaded", not fail on a legitimate upstream
+  // workflow edit.
   const kAfterLoad = byType('KSampler')
   row.selfCheck =
-    graph._nodes.length >= 7 && (kAfterLoad?.widgets?.length ?? 0) >= 7
+    graph._nodes.length >= 4 && (kAfterLoad?.widgets?.length ?? 0) >= 4
       ? 'OK'
       : `default workflow degraded: nodes=${graph._nodes.length}` +
         ` kSamplerWidgets=${kAfterLoad?.widgets?.length ?? 0}`

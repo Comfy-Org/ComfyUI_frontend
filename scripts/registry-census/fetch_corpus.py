@@ -259,16 +259,24 @@ def main() -> int:
     # A few failures are ecosystem weather (deleted repos, host blips); a
     # mass failure (rate limiting, host outage) would silently shrink every
     # downstream denominator, so it fails the run instead of shipping a
-    # partial corpus as if it were complete.
+    # partial corpus as if it were complete. The denominator is what this
+    # run actually ATTEMPTED over the network - on an incremental run most
+    # packs short-circuit as cached, and measuring against the full target
+    # list would let a 100% outage of the attempted fetches pass.
     if counts.get('failed'):
+        attempted = sum(
+            n for status, n in counts.items()
+            if status in ('ok', 'empty', 'failed', 'drifted')
+        )
         print(
-            f"\n{counts['failed']} fetches failed; re-run to retry "
-            f'(they are not marked done and will not be skipped)',
+            f"\n{counts['failed']} of {attempted} attempted fetches failed; "
+            f're-run to retry (they are not marked done and will not be '
+            f'skipped)',
             file=sys.stderr,
         )
-        if targets and counts['failed'] > 0.05 * len(targets):
+        if counts['failed'] >= 5 and counts['failed'] > 0.05 * attempted:
             print(
-                f"{counts['failed']}/{len(targets)} failed exceeds the 5% "
+                f"{counts['failed']}/{attempted} attempted exceeds the 5% "
                 f'mass-failure threshold - refusing to treat a partial '
                 f'corpus as complete',
                 file=sys.stderr,

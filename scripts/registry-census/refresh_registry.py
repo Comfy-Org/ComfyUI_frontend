@@ -39,7 +39,12 @@ def fetch_page(page: int) -> dict:
     )
     if r.returncode != 0:
         raise RegistryUnavailable(f'registry API request failed on page {page}')
-    return json.loads(r.stdout)
+    try:
+        return json.loads(r.stdout)
+    except ValueError as exc:
+        raise RegistryUnavailable(
+            f'registry API returned non-JSON on page {page}: {exc}'
+        ) from exc
 
 
 class RegistryUnavailable(Exception):

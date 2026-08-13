@@ -55,7 +55,11 @@ def main() -> int:
     skipped = 0
     for name in os.listdir(out_dir):
         if name.startswith('_manifest') and name.endswith('.json'):
-            manifest = json.load(open(os.path.join(out_dir, name)))
+            try:
+                manifest = json.load(open(os.path.join(out_dir, name)))
+            except (OSError, ValueError):
+                print(f'unreadable shard manifest: {name}', file=sys.stderr)
+                continue
             skipped += sum(1 for v in manifest.values() if 'skipped' in v)
 
     lines = [
@@ -165,11 +169,20 @@ def main() -> int:
         if not held:
             breaches.append(f'{label} {measured_pct:.1f}% < {floor:.0f}%')
 
+    run_id = os.environ.get('MATRIX_RUN_ID', '')
     prev_path = os.environ.get('MATRIX_PREV', '')
     if prev_path and os.path.exists(prev_path):
         prev = json.load(open(prev_path))
         prev_entry = prev.get('entryPct')
-        if isinstance(prev_entry, (int, float)):
+        if run_id and prev.get('runId') == run_id:
+            # A re-run restored this same run's earlier write; comparing a
+            # run against itself would blind the gate exactly when someone
+            # is re-running a red verdict.
+            lines.append(
+                f'  {"entry-clean delta vs previous run":42s}   n/a'
+                '  (previous metrics are from this run)'
+            )
+        elif isinstance(prev_entry, (int, float)):
             delta = entry_pct - prev_entry
             held = delta >= -DELTA_TOLERANCE
             lines.append(
@@ -191,8 +204,11 @@ def main() -> int:
         'VERDICT: ' + ('FAIL - ' + '; '.join(breaches) if breaches else 'PASS')
     )
 
+    # Baseline-from-health: a FAILing run must not ratchet the baseline down
+    # to its own eroded numbers, or next week's delta forgives the
+    # regression exactly once it has become permanent.
     metrics_out = os.environ.get('MATRIX_METRICS_OUT', '')
-    if metrics_out:
+    if metrics_out and not breaches:
         os.makedirs(os.path.dirname(metrics_out) or '.', exist_ok=True)
         json.dump(
             {
@@ -202,7 +218,8 @@ def main() -> int:
                 'regPct': round(reg_pct, 3),
                 'worstOp': worst_op,
                 'worstOpPct': round(worst_pct, 3),
-                'verdict': 'FAIL' if breaches else 'PASS',
+                'runId': run_id,
+                'verdict': 'PASS',
             },
             open(metrics_out, 'w'),
             indent=1,
