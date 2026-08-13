@@ -39,4 +39,11 @@ describe('unmatchedRouteRedirect', () => {
       }
     )
   })
+
+  it('truncates an unbounded attacker-supplied path', () => {
+    unmatchedRouteRedirect({ path: `/${'a'.repeat(5000)}` } as RouteLocation)
+
+    const { context } = mockReportError.mock.calls[0][1]
+    expect(context.path).toHaveLength(128)
+  })
 })

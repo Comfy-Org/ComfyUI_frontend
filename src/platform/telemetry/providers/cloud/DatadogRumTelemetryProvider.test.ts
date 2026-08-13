@@ -37,6 +37,24 @@ describe('DatadogRumTelemetryProvider', () => {
     })
   })
 
+  it('keeps report identity when context carries colliding keys', () => {
+    const error = new Error('boom')
+
+    new DatadogRumTelemetryProvider().reportError(error, {
+      error_type: 'bootstrap_auth_wait_timeout',
+      level: 'error',
+      context: {
+        error_type: 'spoofed',
+        level: 'warning'
+      } as unknown as Record<string, string>
+    })
+
+    expect(addError).toHaveBeenCalledExactlyOnceWith(error, {
+      error_type: 'bootstrap_auth_wait_timeout',
+      level: 'error'
+    })
+  })
+
   it('defaults an unspecified level to error', () => {
     const error = new Error('boom')
 

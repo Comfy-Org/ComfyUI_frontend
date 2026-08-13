@@ -18,7 +18,7 @@ export class DatadogRumTelemetryProvider implements TelemetryProvider {
     error: Error,
     { error_type, level = 'error', context }: ErrorReportMetadata
   ): void {
-    datadogRum.addError(error, { error_type, level, ...context })
+    datadogRum.addError(error, { ...context, error_type, level })
   }
 
   trackUnifiedAuthRetry(metadata: UnifiedAuthRetryMetadata): void {
