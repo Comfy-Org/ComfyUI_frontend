@@ -51,7 +51,7 @@ Keep widely-recognized technical terms in English (Latin script): API, GPU, CUDA
 export const translationPipelineConfig: TranslationPipelineConfig = {
   entry: 'src/locales/en',
   output: 'src/locales',
-  model: 'gpt-5.6-terra',
+  model: 'gpt-5.6-sol',
   reasoningEffort: 'high',
   maxItemsPerRequest: 40,
   maxSourceCharsPerRequest: 6000,

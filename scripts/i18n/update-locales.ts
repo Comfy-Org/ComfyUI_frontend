@@ -403,15 +403,19 @@ async function run(argv: readonly string[]): Promise<void> {
     const recorded = hash ? readManifestSource(repoRoot, filename, hash) : {}
     const previous = recorded
     const changes = diffLocaleSources(previous, source)
+    const knownViolationKeys = new Set(
+      manifest.knownViolations?.[filename] ?? []
+    )
     return {
       filename,
       source,
       changes,
-      invalidated: new Set(
-        [...changes.added, ...changes.modified].map(pathKey)
-      ),
+      invalidated: new Set([
+        ...[...changes.added, ...changes.modified].map(pathKey),
+        ...knownViolationKeys
+      ]),
       previousLeafCount: collectLeaves(previous).size,
-      knownViolationKeys: new Set(manifest.knownViolations?.[filename] ?? [])
+      knownViolationKeys
     }
   })
 
