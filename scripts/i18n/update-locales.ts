@@ -18,7 +18,8 @@ import type {
   LocaleLeafEntry,
   LocaleObject,
   LocaleTrackedLeaf,
-  LocaleValue
+  LocaleValue,
+  PendingLocaleLeaf
 } from './locale-tree'
 import {
   collectLeaves,
@@ -32,7 +33,6 @@ import {
 } from './locale-tree'
 import {
   auditProtectedLiterals,
-  leafTokensDiffer,
   protectedTokens,
   validateLocale
 } from './protected-tokens'
@@ -67,7 +67,8 @@ interface LocaleFileState {
   plan: SourcePlan
   outputFile: string
   existing: LocaleObject
-  pendingLeaves: LocaleLeafEntry[]
+  pendingLeaves: PendingLocaleLeaf[]
+  auditErrors: string[]
   strayPaths: string[][]
 }
 
@@ -308,6 +309,10 @@ function loadLocaleFileStates(
       const strayPaths = [...collectLeaves(existing).values()]
         .filter((leaf) => !sourceLeafKeys.has(pathKey(leaf.path)))
         .map((leaf) => leaf.path)
+      const auditSkipKeys = new Set([
+        ...plan.invalidated,
+        ...plan.knownViolationKeys
+      ])
       return {
         locale,
         plan,
@@ -316,8 +321,12 @@ function loadLocaleFileStates(
         pendingLeaves: collectPendingLeaves(
           plan.source,
           existing,
-          plan.invalidated,
-          leafTokensDiffer
+          plan.invalidated
+        ),
+        auditErrors: auditProtectedLiterals(
+          plan.source,
+          existing,
+          auditSkipKeys
         ),
         strayPaths
       }
@@ -338,13 +347,11 @@ function reportCheck(states: readonly LocaleFileState[]): number {
     const label = `${state.locale.code}/${state.plan.filename}`
     if (state.pendingLeaves.length > 0) {
       pendingTotal += state.pendingLeaves.length
-      const examples = state.pendingLeaves
-        .slice(0, 5)
-        .map((leaf) => leaf.path.join('.'))
-        .join(', ')
-      print(
-        `${label}: ${state.pendingLeaves.length} strings need translation (${examples}${state.pendingLeaves.length > 5 ? ', …' : ''})`
-      )
+      for (const leaf of state.pendingLeaves) {
+        print(
+          `${label}: ${leaf.path.join('.')}: translation required (${leaf.reason})`
+        )
+      }
     }
     if (state.strayPaths.length > 0) {
       strayTotal += state.strayPaths.length
@@ -352,17 +359,10 @@ function reportCheck(states: readonly LocaleFileState[]): number {
         `${label}: ${state.strayPaths.length} keys no longer exist in the English source and will be pruned`
       )
     }
-    // Skip keys queued because the English source changed (comparing an old
-    // translation against new English is meaningless) and baseline violations
-    // recorded in the manifest; a key newly corrupted beyond those must fail
-    // the check. Degraded plans (recorded source unavailable) cannot tell
-    // staleness from corruption, so they skip the audit.
+    // Degraded plans (recorded source unavailable) cannot tell staleness from
+    // corruption, so they skip the audit.
     if (state.plan.degraded) continue
-    for (const error of auditProtectedLiterals(
-      state.plan.source,
-      state.existing,
-      new Set([...state.plan.invalidated, ...state.plan.knownViolationKeys])
-    )) {
+    for (const error of state.auditErrors) {
       auditErrors.push(`${label}: ${error}`)
     }
   }
@@ -458,6 +458,26 @@ async function run(argv: readonly string[]): Promise<void> {
     return
   }
 
+  const auditFailures = states.flatMap((state) =>
+    state.plan.degraded
+      ? []
+      : state.auditErrors.map(
+          (error) => `${state.locale.code}/${state.plan.filename}: ${error}`
+        )
+  )
+  if (auditFailures.length > 0) {
+    throw new Error(
+      `Refusing to overwrite unchanged translations with protected-token violations:\n${auditFailures.join('\n')}`
+    )
+  }
+
+  for (const state of states) {
+    const label = `${state.locale.code}/${state.plan.filename}`
+    for (const leaf of state.pendingLeaves) {
+      print(`${label}: ${leaf.path.join('.')}: queued (${leaf.reason})`)
+    }
+  }
+
   const translationPlans = new Map(
     states.map((state) => [
       state,
@@ -550,7 +570,8 @@ async function run(argv: readonly string[]): Promise<void> {
     for (const error of validateLocale(
       state.plan.source,
       output,
-      state.plan.changes
+      state.plan.changes,
+      state.plan.knownViolationKeys
     )) {
       addFailure(
         state.plan.filename,
@@ -591,13 +612,18 @@ async function run(argv: readonly string[]): Promise<void> {
         return hash ? [[filename, hash] as const] : []
       })
     ),
-    // A completed file's translations were fully revalidated, so its baseline
-    // violations are healed and dropped; failed files keep theirs
+    // Unchanged translations are never rewritten to heal baseline violations.
+    // Drop only invalidated keys that a completed file regenerated.
     Object.fromEntries(
       filenames.flatMap((filename) => {
-        if (completedFilenames.has(filename)) return []
         const keys = manifest.knownViolations?.[filename]
-        return keys && keys.length > 0 ? [[filename, keys] as const] : []
+        const plan = plans.find((candidate) => candidate.filename === filename)
+        const preservedKeys = completedFilenames.has(filename)
+          ? keys?.filter((key) => !plan?.invalidated.has(key))
+          : keys
+        return preservedKeys && preservedKeys.length > 0
+          ? [[filename, preservedKeys] as const]
+          : []
       })
     )
   )

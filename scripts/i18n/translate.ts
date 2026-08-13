@@ -1,10 +1,6 @@
 import OpenAI from 'openai'
 
-import type {
-  OutputLocale,
-  ReasoningEffort,
-  TranslationPipelineConfig
-} from './config'
+import type { OutputLocale, TranslationPipelineConfig } from './config'
 import { tokenErrors } from './protected-tokens'
 
 export interface TranslationItem {
@@ -58,6 +54,8 @@ export function chunkItems(
   maxItems: number,
   maxSourceChars: number
 ): TranslationItem[][] {
+  // Character count is an initial batching heuristic; truncated responses are
+  // recursively split before the translation run fails.
   const chunks: TranslationItem[][] = []
   let chunk: TranslationItem[] = []
   let chunkChars = 0
@@ -89,7 +87,8 @@ Rules:
 - Respond with a JSON object that maps every item "id" to its translated string — every id, no other keys, no commentary.
 - Every substring listed in an item's "preserve" array must appear in the translation exactly as written, byte for byte. Never translate, transliterate, or renumber them.
 - Interpolation placeholders such as {name} stay exactly as written.
-- The | character separates plural forms. Keep the same number of forms and translate each form.
+- The | character separates plural forms. Use the target locale's appropriate number of forms and translate each form.
+- If an item has a "retryNote", correct every reported issue in the next translation.
 - The "context" field is the JSON path of the string in the UI resources; use it to resolve ambiguity. Keep values that are technical identifiers (node type names, parameter names, file names) unchanged when translating them would break meaning.
 - Match the brevity and professional tone of the source.
 
@@ -103,8 +102,18 @@ function parseBatchResponse(content: string): Record<string, string> {
     throw new Error('translation response is not a JSON object')
   }
   const record: Record<string, string> = {}
+  const invalidIds: string[] = []
   for (const [key, value] of Object.entries(parsed)) {
-    if (typeof value === 'string') record[key] = value
+    if (typeof value === 'string') {
+      record[key] = value
+    } else {
+      invalidIds.push(key)
+    }
+  }
+  if (invalidIds.length > 0) {
+    throw new Error(
+      `translation response has non-string values for ids: ${invalidIds.join(', ')}`
+    )
   }
   return record
 }
@@ -112,7 +121,7 @@ function parseBatchResponse(content: string): Record<string, string> {
 interface OpenAiTranslatorOptions {
   apiKey: string
   model: string
-  reasoningEffort: ReasoningEffort
+  reasoningEffort: TranslationPipelineConfig['reasoningEffort']
   glossary: string
   fetchFn?: typeof fetch
   requestTimeoutMs?: number
@@ -127,7 +136,11 @@ export function createOpenAiTranslator(
     timeout: options.requestTimeoutMs ?? defaultRequestTimeoutMs,
     maxRetries: maxNetworkRetries
   })
-  return async (locale, items) => {
+
+  async function translateBatch(
+    locale: OutputLocale,
+    items: TranslationItem[]
+  ): Promise<Record<string, string>> {
     let lastError = new Error('translation request was not attempted')
     for (let attempt = 0; attempt <= maxMalformedResponseRetries; attempt++) {
       const completion = await client.chat.completions.create({
@@ -144,10 +157,15 @@ export function createOpenAiTranslator(
       })
       const choice = completion.choices[0]
       if (choice?.finish_reason === 'length') {
-        lastError = new Error(
-          'OpenAI response was truncated (finish_reason "length"); lower maxItemsPerRequest or maxSourceCharsPerRequest'
-        )
-        continue
+        if (items.length === 1) {
+          throw new Error(
+            'OpenAI response was truncated (finish_reason "length"); lower maxItemsPerRequest or maxSourceCharsPerRequest'
+          )
+        }
+        const splitIndex = Math.ceil(items.length / 2)
+        const first = await translateBatch(locale, items.slice(0, splitIndex))
+        const second = await translateBatch(locale, items.slice(splitIndex))
+        return { ...first, ...second }
       }
       const content = choice?.message.content
       if (typeof content !== 'string') {
@@ -162,6 +180,8 @@ export function createOpenAiTranslator(
     }
     throw lastError
   }
+
+  return translateBatch
 }
 
 export async function translateLocaleItems(

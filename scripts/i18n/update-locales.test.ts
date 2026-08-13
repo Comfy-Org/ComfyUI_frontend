@@ -14,7 +14,7 @@ import {
   pathKey,
   rebuildLocale
 } from './locale-tree'
-import { leafTokensDiffer, validateLocale } from './protected-tokens'
+import { auditProtectedLiterals, validateLocale } from './protected-tokens'
 import type { TranslateBatch, TranslationItem } from './translate'
 import {
   chunkItems,
@@ -54,12 +54,7 @@ async function updateLocaleFile(
   const invalidated = new Set(
     [...changes.added, ...changes.modified].map(pathKey)
   )
-  const pendingLeaves = collectPendingLeaves(
-    source,
-    existing,
-    invalidated,
-    leafTokensDiffer
-  )
+  const pendingLeaves = collectPendingLeaves(source, existing, invalidated)
   const plan = buildTranslationItems('main.json', pendingLeaves)
   const translations =
     plan.items.length > 0
@@ -118,6 +113,24 @@ describe('locale file update', () => {
     stray: 'no longer in source'
   }
 
+  it('reports why each leaf is queued for translation', () => {
+    const invalidated = new Set([pathKey(['changed'])])
+    expect(
+      collectPendingLeaves(
+        { changed: 'New source', missing: 'Missing translation' },
+        { changed: 'Existing translation' },
+        invalidated
+      )
+    ).toEqual([
+      { path: ['changed'], reason: 'invalidated', value: 'New source' },
+      {
+        path: ['missing'],
+        reason: 'shape',
+        value: 'Missing translation'
+      }
+    ])
+  })
+
   it('translates added, modified, and missing values; prunes deleted and stray keys; keeps valid translations', async () => {
     const { output, translatedCount } = await updateLocaleFile(
       source,
@@ -139,7 +152,7 @@ describe('locale file update', () => {
     expect(Object.keys(output)).toEqual([...Object.keys(output)].sort())
   })
 
-  it('retranslates existing translations that were corrupted or blanked', async () => {
+  it('reports unchanged corrupted translations without replacing them', () => {
     const parity = {
       blanked: 'Save',
       farewell: 'Goodbye',
@@ -152,19 +165,15 @@ describe('locale file update', () => {
       greeting: 'Bonjour nom',
       intact: 'translated {docs}'
     }
-    const { output, translatedCount } = await updateLocaleFile(
-      parity,
-      parity,
-      corrupted,
-      echoTranslator
+    expect(collectPendingLeaves(parity, corrupted, new Set())).toEqual([])
+    expect(auditProtectedLiterals(parity, corrupted, new Set())).toEqual([
+      'blanked: empty translation',
+      'farewell: added {count}',
+      'greeting: missing {name}'
+    ])
+    expect(rebuildLocale(parity, corrupted, new Set(), new Map())).toEqual(
+      corrupted
     )
-    expect(output).toEqual({
-      blanked: 'xx: Save',
-      farewell: 'xx: Goodbye',
-      greeting: 'xx: Hello {name}',
-      intact: 'translated {docs}'
-    })
-    expect(translatedCount).toBe(3)
   })
 
   it('preserves keys named __proto__', async () => {
@@ -467,7 +476,25 @@ describe('validateLocale', () => {
         { scale: source.scale, send: 'Enviar @:g.cancel' },
         changes
       )
-    ).toEqual(['send: added linked message @'])
+    ).toEqual(['send: added @:g.cancel'])
+  })
+
+  it('protects linked message keys and modifiers', () => {
+    const source = {
+      link: 'Open @:menu.save or @.lower:menu.cancel'
+    }
+    const changes = diffLocaleSources({}, source)
+    expect(validateLocale(source, source, changes)).toEqual([])
+    expect(
+      validateLocale(
+        source,
+        { link: 'Open @:menu.open or @.upper:menu.cancel' },
+        changes
+      )
+    ).toEqual([
+      'link: missing @.lower:menu.cancel, @:menu.save',
+      'link: added @.upper:menu.cancel, @:menu.open'
+    ])
   })
 
   it('compares placeholder names as a set across plural forms', () => {
@@ -483,6 +510,17 @@ describe('validateLocale', () => {
     expect(
       validateLocale(source, { count: 'None | {total} many' }, changes)
     ).toEqual(['count: missing {count}', 'count: added {total}'])
+  })
+
+  it('allows locale-specific plural counts and rejects empty forms', () => {
+    const source = { count: 'No items | {count} item | {count} items' }
+    const changes = diffLocaleSources({}, source)
+    expect(validateLocale(source, { count: '{count} items' }, changes)).toEqual(
+      []
+    )
+    expect(
+      validateLocale(source, { count: 'None | | {count} items' }, changes)
+    ).toEqual(['count: empty plural form'])
   })
 })
 
@@ -503,6 +541,12 @@ describe('createOpenAiTranslator', () => {
       context: 'main.json: greeting',
       source: 'Hello {name}',
       preserve: ['{name}']
+    },
+    {
+      id: '2',
+      context: 'main.json: farewell',
+      source: 'Goodbye {name}',
+      preserve: ['{name}']
     }
   ]
 
@@ -516,7 +560,12 @@ describe('createOpenAiTranslator', () => {
 
   function translatorFor(responses: Response[]) {
     let calls = 0
-    const fetchFn: typeof fetch = async () => {
+    const requestBodies: string[] = []
+    const fetchFn: typeof fetch = async (_input, init) => {
+      if (typeof init?.body !== 'string') {
+        throw new Error('expected a JSON request body')
+      }
+      requestBodies.push(init.body)
       calls++
       return responses[calls - 1]
     }
@@ -527,18 +576,50 @@ describe('createOpenAiTranslator', () => {
       glossary: '',
       fetchFn
     })
-    return { translate, callCount: () => calls }
+    return { translate, callCount: () => calls, requestBodies }
   }
 
-  it('retries truncated responses instead of failing on the partial JSON', async () => {
-    const { translate, callCount } = translatorFor([
+  it('splits a truncated batch instead of retrying it unchanged', async () => {
+    const { translate, callCount, requestBodies } = translatorFor([
       completion('{"1": "Bonj', 'length'),
-      completion('{"1": "Bonjour {name}"}')
+      completion('{"1": "Bonjour {name}"}'),
+      completion('{"2": "Au revoir {name}"}')
     ])
     await expect(translate(locale, items)).resolves.toEqual({
-      '1': 'Bonjour {name}'
+      '1': 'Bonjour {name}',
+      '2': 'Au revoir {name}'
     })
-    expect(callCount()).toBe(2)
+    expect(callCount()).toBe(3)
+    expect(requestBodies[1].length).toBeLessThan(requestBodies[0].length)
+    expect(requestBodies[2].length).toBeLessThan(requestBodies[0].length)
+    expect(requestBodies[1]).toContain('main.json: greeting')
+    expect(requestBodies[1]).not.toContain('main.json: farewell')
+    expect(requestBodies[2]).not.toContain('main.json: greeting')
+    expect(requestBodies[2]).toContain('main.json: farewell')
+  })
+
+  it('does not retry a truncated single-item batch', async () => {
+    const { translate, callCount } = translatorFor([
+      completion('{"1": "Bonj', 'length')
+    ])
+    await expect(translate(locale, items.slice(0, 1))).rejects.toThrow(
+      'OpenAI response was truncated'
+    )
+    expect(callCount()).toBe(1)
+  })
+
+  it('reports non-string response values with their ids', async () => {
+    const malformed = () => completion('{"1": {"text": "Bonjour"}, "2": 42}')
+    const { translate, callCount } = translatorFor([
+      malformed(),
+      malformed(),
+      malformed(),
+      malformed()
+    ])
+    await expect(translate(locale, items)).rejects.toThrow(
+      'translation response has non-string values for ids: 1, 2'
+    )
+    expect(callCount()).toBe(4)
   })
 
   it('fails immediately on non-retryable statuses', async () => {
