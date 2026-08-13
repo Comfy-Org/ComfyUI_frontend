@@ -1,6 +1,6 @@
 import type { Mock } from 'vitest'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, shallowRef } from 'vue'
+import { nextTick, ref, shallowRef } from 'vue'
 
 import {
   createMockCanvas2DContext,
@@ -18,7 +18,7 @@ interface MockNode {
 
 interface MockGraph {
   _nodes: MockNode[]
-  links: Record<string, { id: string; target_id: string }>
+  links: Map<string, { id: string; target_id: string }>
   getNodeById: Mock
   setDirtyCanvas: Mock
   onNodeAdded: ((node: MockNode) => void) | null
@@ -59,12 +59,15 @@ const triggerRAF = async () => {
 
 const mockPause = vi.fn()
 const mockResume = vi.fn()
+const mockIntervalPause = vi.fn()
+const mockIntervalResume = vi.fn()
 
 const rafCallbacks: Record<string, () => void> = {}
 let rafCallbackId = 0
 
 vi.mock('@vueuse/core', () => {
   return {
+    useDocumentVisibility: vi.fn(() => ref('visible')),
     useRafFn: vi.fn((callback, options) => {
       const id = rafCallbackId++
       rafCallbacks[id] = callback
@@ -86,26 +89,31 @@ vi.mock('@vueuse/core', () => {
         resume: resumeFn
       }
     }),
-    // Change detection runs on an interval rather than every frame; register it
-    // alongside the RAF callbacks so triggerRAF() drives both loops.
+    // Change detection runs on an interval rather than every frame. Its spies
+    // are distinct from the RAF ones so the two loops useMinimap drives stay
+    // distinguishable, and `active` keeps a paused loop from firing under
+    // triggerRAF().
     useIntervalFn: vi.fn((callback, _interval, options) => {
       const id = rafCallbackId++
-      rafCallbacks[id] = callback
+      const state = { active: options?.immediate !== false }
+      rafCallbacks[id] = () => {
+        if (state.active) callback()
+      }
 
-      if (options?.immediate !== false) {
+      if (state.active) {
         void Promise.resolve().then(() => callback())
       }
 
-      const resumeFn = vi.fn(() => {
-        mockResume()
-        if (rafCallbacks[id]) {
-          rafCallbacks[id]()
-        }
-      })
-
       return {
-        pause: mockPause,
-        resume: resumeFn
+        pause: vi.fn(() => {
+          state.active = false
+          mockIntervalPause()
+        }),
+        resume: vi.fn(() => {
+          state.active = true
+          mockIntervalResume()
+          callback()
+        })
       }
     }),
     useThrottleFn: vi.fn((callback) => {
@@ -144,12 +152,7 @@ const setupMocks = () => {
 
   moduleMockGraph = {
     _nodes: mockNodes,
-    links: {
-      link1: {
-        id: 'link1',
-        target_id: 'node2'
-      }
-    },
+    links: new Map([['link1', { id: 'link1', target_id: 'node2' }]]),
     getNodeById: vi.fn((id) => mockNodes.find((n) => n.id === id)),
     setDirtyCanvas: vi.fn(),
     onNodeAdded: null,
@@ -307,12 +310,7 @@ describe('useMinimap', () => {
 
     moduleMockGraph = {
       _nodes: mockNodes,
-      links: {
-        link1: {
-          id: 'link1',
-          target_id: 'node2'
-        }
-      },
+      links: new Map([['link1', { id: 'link1', target_id: 'node2' }]]),
       getNodeById: vi.fn((id) => mockNodes.find((n) => n.id === id)),
       setDirtyCanvas: vi.fn(),
       onNodeAdded: null,
@@ -966,7 +964,7 @@ describe('useMinimap', () => {
     })
 
     it('should handle invalid link references', async () => {
-      moduleMockGraph.links.link1.target_id = 'invalid-node'
+      moduleMockGraph.links.get('link1')!.target_id = 'invalid-node'
       moduleMockGraph.getNodeById.mockReturnValue(null)
 
       const minimap = await createAndInitializeMinimap()

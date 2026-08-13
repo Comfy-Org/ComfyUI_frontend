@@ -331,6 +331,35 @@ describe('useMinimapGraph', () => {
     expect(graphManager.updateFlags.value.connections).toBe(true)
   })
 
+  it('keeps reporting no change while the graph is untouched', () => {
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
+    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
+
+    graphManager.checkForChanges()
+
+    for (let poll = 0; poll < 10; poll++) {
+      expect(graphManager.checkForChanges()).toBe(false)
+    }
+  })
+
+  it('is not blinded by a non-finite value elsewhere in the graph', () => {
+    // A NaN coordinate must contribute zero on its own term rather than
+    // resetting the accumulator, which would hide every other node's movement.
+    mockGraph._nodes.push(
+      createMockLGraphNode({ id: '3', pos: [Number.NaN, 0], size: [10, 10] })
+    )
+
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
+    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
+
+    graphManager.checkForChanges()
+    expect(graphManager.checkForChanges()).toBe(false)
+
+    mockGraph._nodes[0].pos = [100, 0]
+
+    expect(graphManager.checkForChanges()).toBe(true)
+  })
+
   it('should detect a fractional-only position change', () => {
     const graphRef = ref(mockGraph) as Ref<LGraph | null>
     const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)

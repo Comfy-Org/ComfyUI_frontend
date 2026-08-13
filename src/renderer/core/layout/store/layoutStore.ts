@@ -175,12 +175,18 @@ class LayoutStoreImpl implements LayoutStore {
   }
 
   /**
-   * Counter bumped on every layout mutation, for use as a cache key.
+   * Counter bumped when the Yjs-backed node, link and reroute maps change, for
+   * use as a cache key.
    *
-   * Deliberately a plain number rather than a ref: consumers poll it to decide
-   * whether a derived structure is stale, and must not re-run reactively on
-   * every mutation. Anything deriving node geometry from this should also read
-   * that geometry from this store, so key and data stay consistent.
+   * Scope is exactly those maps. Slot, link and reroute *geometry* live in
+   * plain Maps that are mutated without bumping this, so a cache over
+   * `updateSlotLayout`/`clearAllSlotLayouts` output cannot be keyed on it.
+   * Anything deriving node geometry from this should also read that geometry
+   * from this store, so key and data stay consistent.
+   *
+   * Local per-peer counter, not a CRDT document version: two peers holding
+   * identical layouts will hold different values, so it is not meaningful to
+   * compare across peers.
    */
   get layoutVersion(): number {
     return this.version
@@ -393,13 +399,6 @@ class LayoutStoreImpl implements LayoutStore {
       }
       return result
     })
-  }
-
-  /**
-   * Get current version for change detection
-   */
-  getVersion(): ComputedRef<number> {
-    return computed(() => this.version)
   }
 
   /**

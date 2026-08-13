@@ -25,6 +25,17 @@ function quantise(value: number): number {
 }
 
 /**
+ * Mixes one term into a rolling digest.
+ *
+ * The coercion is on the term, not the sum: `(digest + NaN) | 0` is 0, which
+ * would discard every node mixed in so far and make an unrelated change
+ * invisible for as long as the non-finite value stays in the graph.
+ */
+function mixIn(digest: number, value: number): number {
+  return (Math.imul(digest, 31) + (Number.isFinite(value) ? value : 0)) | 0
+}
+
+/**
  * Rolling digest of every node's position, size and rendered state.
  *
  * Reads `graph._nodes` directly and allocates nothing, so it stays cheap on
@@ -35,12 +46,14 @@ function quantise(value: number): number {
 function computeLayoutDigest(graph: LGraph): number {
   let digest = graph._nodes.length
   for (const node of graph._nodes) {
-    digest = (Math.imul(digest, 31) + quantise(node.pos[0])) | 0
-    digest = (Math.imul(digest, 31) + quantise(node.pos[1])) | 0
-    digest = (Math.imul(digest, 31) + quantise(node.size[0])) | 0
-    digest = (Math.imul(digest, 31) + quantise(node.size[1])) | 0
-    digest = (Math.imul(digest, 31) + (node.mode ?? 0)) | 0
-    digest = (Math.imul(digest, 31) + (node.has_errors ? 1 : 0)) | 0
+    const [x, y] = node.pos
+    const [width, height] = node.size
+    digest = mixIn(digest, quantise(x))
+    digest = mixIn(digest, quantise(y))
+    digest = mixIn(digest, quantise(width))
+    digest = mixIn(digest, quantise(height))
+    digest = mixIn(digest, node.mode ?? 0)
+    digest = mixIn(digest, node.has_errors ? 1 : 0)
   }
   return digest
 }
@@ -51,36 +64,18 @@ function computeLayoutDigest(graph: LGraph): number {
  * link moved to a different slot on the same pair of nodes.
  */
 function computeLinkDigest(graph: LGraph): number {
-  // Declared as a Map, but plain objects reach this at runtime too.
-  const links: unknown = graph.links
-  if (!links || typeof links !== 'object') return 0
+  const links = graph.links
+  if (!links) return 0
 
   let digest = 0
-  const mix = (link: unknown) => {
-    if (!link || typeof link !== 'object') return
-    const {
-      origin_id: origin,
-      target_id: target,
-      origin_slot: originSlot,
-      target_slot: targetSlot
-    } = link as {
-      origin_id?: unknown
-      target_id?: unknown
-      origin_slot?: unknown
-      target_slot?: unknown
-    }
-    // Non-numeric ids coerce to 0 via `| 0`; those rewires are still caught by
-    // the onConnectionChange hook.
-    digest = (Math.imul(digest, 31) + Number(origin)) | 0
-    digest = (Math.imul(digest, 31) + Number(target)) | 0
-    digest = (Math.imul(digest, 31) + Number(originSlot)) | 0
-    digest = (Math.imul(digest, 31) + Number(targetSlot)) | 0
-  }
-
-  if (links instanceof Map) {
-    for (const link of links.values()) mix(link)
-  } else {
-    for (const link of Object.values(links)) mix(link)
+  for (const link of links.values()) {
+    if (!link) continue
+    // Node ids are branded strings and need not be numeric; non-numeric ones
+    // contribute 0 here and are caught instead by the onConnectionChange hook.
+    digest = mixIn(digest, Number(link.origin_id))
+    digest = mixIn(digest, Number(link.target_id))
+    digest = mixIn(digest, link.origin_slot)
+    digest = mixIn(digest, link.target_slot)
   }
 
   return digest
@@ -90,8 +85,11 @@ export function useMinimapGraph(
   graph: Ref<LGraph | null>,
   onGraphChanged: () => void
 ) {
-  let layoutDigest = 0
-  let linkDigest = -1
+  // Null rather than a numeric sentinel: 0 is a digest both functions produce
+  // for an empty graph, so a numeric "no baseline" would be indistinguishable
+  // from a real first reading.
+  let layoutDigest: number | null = null
+  let linkDigest: number | null = null
   const updateFlags = ref<UpdateFlags>({
     bounds: false,
     nodes: false,
@@ -233,8 +231,8 @@ export function useMinimapGraph(
   }
 
   const clearCache = () => {
-    layoutDigest = 0
-    linkDigest = -1
+    layoutDigest = null
+    linkDigest = null
   }
 
   return {

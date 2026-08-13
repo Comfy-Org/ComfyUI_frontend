@@ -1,4 +1,4 @@
-import { useIntervalFn } from '@vueuse/core'
+import { useDocumentVisibility, useIntervalFn } from '@vueuse/core'
 import { computed, nextTick, ref, shallowRef, watch } from 'vue'
 import type { ShallowRef } from 'vue'
 
@@ -96,14 +96,22 @@ export function useMinimap({
     height
   )
 
-  // Structural edits already force a redraw through useMinimapGraph's event
-  // hooks. This loop only exists to catch node drags and resizes, which emit
-  // no event, so it runs well below frame rate - the minimap is an approximate
-  // overview and does not need to track a drag frame by frame.
+  // Most edits already force a redraw through useMinimapGraph's event hooks,
+  // which cover node add/remove, connection changes and visual properties;
+  // moves and resizes reach layoutStore and could be observed the same way.
+  // This loop is the backstop for the writes that reach neither: snapPoint
+  // mutating `_pos` elements in place, extensions assigning `node.pos[0]`
+  // directly (only `size` is Proxy-wrapped against that), and `has_errors`,
+  // which has no event at all. Subscribing to layoutStore changes and letting
+  // the poll cover only that residue would allow a much longer period.
   const { pause: pauseChangeDetection, resume: resumeChangeDetection } =
     useIntervalFn(
       () => {
-        if (!visible.value) return
+        // Two of the three useMinimap() call sites have no canvas, and a
+        // detected change would otherwise still pay a full data-source build
+        // in updateBounds before renderMinimap discovers there is nothing to
+        // draw.
+        if (!visible.value || !canvasRef.value) return
         if (graphManager.checkForChanges()) {
           renderer.updateMinimap(viewport.updateBounds, viewport.updateViewport)
         }
@@ -111,6 +119,14 @@ export function useMinimap({
       CHANGE_DETECTION_INTERVAL_MS,
       { immediate: false }
     )
+
+  // rAF was suspended entirely on a hidden tab; setInterval is only clamped to
+  // roughly 1s, so without this a parked tab keeps digesting the whole graph.
+  const documentVisibility = useDocumentVisibility()
+  watch(documentVisibility, (state) => {
+    if (state === 'hidden') pauseChangeDetection()
+    else if (visible.value) resumeChangeDetection()
+  })
 
   const init = async () => {
     if (initialized.value) return

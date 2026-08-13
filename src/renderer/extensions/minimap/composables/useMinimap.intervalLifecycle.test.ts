@@ -9,6 +9,7 @@ import { nextTick, shallowRef } from 'vue'
 
 import {
   createMockCanvas2DContext,
+  createMockLinks,
   createMockMinimapCanvas
 } from '@/utils/__tests__/litegraphTestUtils'
 
@@ -19,7 +20,7 @@ const mockNodes = [
 
 const mockGraph = {
   _nodes: mockNodes,
-  links: {},
+  links: createMockLinks([]),
   getNodeById: vi.fn((id: string) => mockNodes.find((n) => n.id === id)),
   setDirtyCanvas: vi.fn(),
   onNodeAdded: null,

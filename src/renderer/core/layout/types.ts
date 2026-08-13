@@ -273,7 +273,6 @@ export interface LayoutStore {
   getNodeLayoutRef(nodeId: NodeId): Ref<NodeLayout | null>
   getNodesInBounds(bounds: Bounds): ComputedRef<NodeId[]>
   getAllNodes(): ComputedRef<ReadonlyMap<NodeId, NodeLayout>>
-  getVersion(): ComputedRef<number>
 
   // Spatial queries (non-reactive)
   queryNodeAtPoint(point: Point): NodeId | null
