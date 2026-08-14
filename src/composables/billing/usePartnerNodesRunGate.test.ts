@@ -1,22 +1,25 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { effectScope, nextTick } from 'vue'
-import type { EffectScope } from 'vue'
+import { effectScope, nextTick, ref } from 'vue'
+import type { EffectScope, Ref } from 'vue'
 
 import * as currentUserModule from '@/composables/auth/useCurrentUser'
 
 import { usePartnerNodesRunGate } from './usePartnerNodesRunGate'
 
-const state = vi.hoisted(() => ({
-  hasPartnerNodes: false,
-  partnerNodes: [] as { nodeName: string; displayName: string }[]
-}))
+const state = vi.hoisted(
+  () =>
+    ({}) as {
+      hasPartnerNodes: Ref<boolean>
+      partnerNodes: Ref<{ nodeName: string; displayName: string }[]>
+    }
+)
 
 vi.mock('@/composables/node/usePartnerNodesInGraph', async () => {
   const { computed } = await import('vue')
   return {
     usePartnerNodesInGraph: () => ({
-      partnerNodes: computed(() => state.partnerNodes),
-      hasPartnerNodes: computed(() => state.hasPartnerNodes)
+      partnerNodes: computed(() => state.partnerNodes.value),
+      hasPartnerNodes: computed(() => state.hasPartnerNodes.value)
     })
   }
 })
@@ -47,8 +50,8 @@ function setup() {
 
 describe('usePartnerNodesRunGate', () => {
   beforeEach(() => {
-    state.hasPartnerNodes = false
-    state.partnerNodes = []
+    state.hasPartnerNodes = ref(false)
+    state.partnerNodes = ref([])
     __setLoggedIn(false)
   })
 
@@ -63,20 +66,33 @@ describe('usePartnerNodesRunGate', () => {
   })
 
   it('gates on sign-in when signed out with partner nodes', () => {
-    state.hasPartnerNodes = true
+    state.hasPartnerNodes.value = true
     const { gate } = setup()
     expect(gate.value).toBe('sign-in')
   })
 
   it('resolves none when signed in', () => {
-    state.hasPartnerNodes = true
+    state.hasPartnerNodes.value = true
     __setLoggedIn(true)
     const { gate } = setup()
     expect(gate.value).toBe('none')
   })
 
+  it('follows partner nodes appearing and disappearing while signed out', async () => {
+    const { gate } = setup()
+    expect(gate.value).toBe('none')
+
+    state.hasPartnerNodes.value = true
+    await nextTick()
+    expect(gate.value).toBe('sign-in')
+
+    state.hasPartnerNodes.value = false
+    await nextTick()
+    expect(gate.value).toBe('none')
+  })
+
   it('flips to sign-in when the user signs out mid-session', async () => {
-    state.hasPartnerNodes = true
+    state.hasPartnerNodes.value = true
     __setLoggedIn(true)
     const { gate } = setup()
     expect(gate.value).toBe('none')
