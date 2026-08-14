@@ -31,6 +31,7 @@ const CATEGORY_ICONS: Record<string, string> = {
   'Mask Editor': 'icon-[lucide--pen-tool]',
   Members: 'icon-[lucide--users]',
   Other: 'icon-[lucide--ellipsis]',
+  'plan-credits': 'icon-[lucide--coins]',
   PlanCredits: 'icon-[lucide--receipt-text]',
   secrets: 'icon-[lucide--key-round]',
   'server-config': 'icon-[lucide--server]',
@@ -182,7 +183,7 @@ export function useSettingUI(
   const localPlanCreditsPanel: SettingPanelItem = {
     node: {
       key: 'plan-credits',
-      label: 'PlanCredits',
+      label: 'Credits',
       children: []
     },
     component: defineAsyncComponent(
