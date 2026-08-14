@@ -14,9 +14,7 @@ import type { UUID } from '@/utils/uuid'
 // Enum for layout source types
 export enum LayoutSource {
   Canvas = 'canvas',
-  Vue = 'vue',
-  DOM = 'dom',
-  External = 'external'
+  Vue = 'vue'
 }
 
 // Basic geometric types
@@ -108,12 +106,10 @@ export interface RerouteLayout {
  * Meta-only base for all operations - contains common fields
  */
 interface OperationMeta {
-  /** Unique operation ID for deduplication */
-  id?: string
   /** Timestamp for ordering operations */
   timestamp: number
   /** Actor who performed the operation (for CRDT) */
-  actor: string
+  actor?: string
   /** Source system that initiated the operation */
   source: LayoutSource
   graphId: UUID
@@ -121,14 +117,8 @@ interface OperationMeta {
   type: OperationType
 }
 
-/**
- * Entity-specific base types for proper type discrimination
- */
-type NodeOpBase = OperationMeta & { entity: 'node'; nodeId: NodeId }
-type RerouteOpBase = OperationMeta & {
-  entity: 'reroute'
-  rerouteId: RerouteId
-}
+type NodeOpBase = OperationMeta & { nodeId: NodeId }
+type RerouteOpBase = OperationMeta & { rerouteId: RerouteId }
 
 /**
  * Operation type discriminator for type narrowing
@@ -139,7 +129,6 @@ type OperationType =
   | 'setNodeZIndex'
   | 'createNode'
   | 'deleteNode'
-  | 'setNodeVisibility'
   | 'batchUpdateBounds'
   | 'createReroute'
   | 'deleteReroute'
@@ -189,18 +178,9 @@ export interface DeleteNodeOperation extends NodeOpBase {
 }
 
 /**
- * Set node visibility operation
- */
-interface SetNodeVisibilityOperation extends NodeOpBase {
-  type: 'setNodeVisibility'
-  visible: boolean
-}
-
-/**
  * Batch update operation for atomic multi-property changes
  */
 export interface BatchUpdateBoundsOperation extends OperationMeta {
-  entity: 'node'
   type: 'batchUpdateBounds'
   nodeIds: NodeId[]
   bounds: Record<NodeId, Bounds>
@@ -230,7 +210,6 @@ export interface MoveRerouteOperation extends RerouteOpBase {
 }
 
 type GroupOpBase = OperationMeta & {
-  entity: 'group'
   groupId: GroupId
 }
 
@@ -254,7 +233,6 @@ interface DeleteGroupOperation extends GroupOpBase {
 }
 
 interface ClearGraphOperation extends OperationMeta {
-  entity: 'graph'
   type: 'clearGraph'
 }
 
@@ -267,7 +245,6 @@ export type LayoutOperation =
   | SetNodeZIndexOperation
   | CreateNodeOperation
   | DeleteNodeOperation
-  | SetNodeVisibilityOperation
   | BatchUpdateBoundsOperation
   | CreateRerouteOperation
   | DeleteRerouteOperation

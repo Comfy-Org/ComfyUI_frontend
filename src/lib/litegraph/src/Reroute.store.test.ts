@@ -19,8 +19,8 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import { enableSubgraphNodeCreation } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
-import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { LayoutSource } from '@/renderer/core/layout/types'
 import { useRerouteStore } from '@/stores/rerouteStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toRerouteId } from '@/types/rerouteId'
@@ -62,15 +62,23 @@ describe('Reroute ↔ rerouteStore integration', () => {
     const incumbent = new Reroute(toRerouteId(1), graph, [0, 0])
     vi.spyOn(console, 'error').mockImplementation(() => {})
     useRerouteStore().registerReroute(graphScopeOf(graph), incumbent._chain)
-
-    const collision = graph.setReroute({
-      id: incumbent.id,
-      pos: [10, 10],
-      linkIds: []
+    layoutStore.applyOperation({
+      type: 'createReroute',
+      graphId: graph.rootGraph.id,
+      rerouteId: incumbent.id,
+      position: { x: 0, y: 0 },
+      timestamp: Date.now(),
+      source: LayoutSource.Canvas
     })
 
-    expect(collision).toBeUndefined()
+    const collision = new Reroute(incumbent.id, graph, [10, 10])
+
+    expect(graph._addReroute(collision)).toBe(false)
     expect(graph.reroutes.has(incumbent.id)).toBe(false)
+    collision.pos = [20, 30]
+    expect(
+      layoutStore.getRerouteLayout(graph.rootGraph.id, incumbent.id)?.position
+    ).toEqual({ x: 0, y: 0 })
   })
 
   it('setReroute creates and updates geometry in one layout write', () => {
@@ -89,7 +97,7 @@ describe('Reroute ↔ rerouteStore integration', () => {
 
     expect(store.getReroute(graphScopeOf(graph), reroute.id)?.id).toBe(3)
     const creationOperations = applyOperation.mock.calls.filter(
-      ([operation]) => operation.entity === 'reroute'
+      ([operation]) => operation.type === 'createReroute'
     )
     expect(creationOperations).toHaveLength(1)
     expect(creationOperations[0][0]).toMatchObject({
@@ -110,7 +118,7 @@ describe('Reroute ↔ rerouteStore integration', () => {
     expect(existing).toBe(reroute)
     expect(existing.pos).toEqual([8, 9])
     const updateOperations = applyOperation.mock.calls.filter(
-      ([operation]) => operation.entity === 'reroute'
+      ([operation]) => operation.type === 'moveReroute'
     )
     expect(updateOperations).toHaveLength(1)
     expect(updateOperations[0][0]).toMatchObject({
@@ -358,7 +366,7 @@ describe('Reroute ↔ rerouteStore integration', () => {
 describe('Reroute position lives only in layoutStore', () => {
   beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
 
-  it('registers geometry on construction, before any graph wiring', () => {
+  it('registers geometry after graph ownership', () => {
     const { graph, link } = connectedGraph()
 
     const reroute = graph.createReroute([37, 41], link)
@@ -417,15 +425,37 @@ describe('Reroute position lives only in layoutStore', () => {
 
     // Move it in the store only. A mirrored copy on the class could not see
     // this without a synchronisation step.
-    useLayoutMutations().moveReroute(graph.rootGraph.id, reroute.id, {
-      x: 300,
-      y: 400
+    layoutStore.applyOperation({
+      type: 'moveReroute',
+      graphId: graph.rootGraph.id,
+      rerouteId: reroute.id,
+      position: { x: 300, y: 400 },
+      timestamp: Date.now(),
+      source: LayoutSource.Canvas
     })
 
     expect([...reroute.pos]).toEqual([300, 400])
     expect(reroute.pos).toBe(pos)
     expect([...pos]).toEqual([300, 400])
     expect(reroute.boundingRect[0]).toBe(300 - Reroute.radius)
+  })
+
+  it('keeps canonical position after removal', () => {
+    const { graph, link } = connectedGraph()
+    const reroute = graph.createReroute([10, 10], link)
+    assert(reroute)
+    layoutStore.applyOperation({
+      type: 'moveReroute',
+      graphId: graph.rootGraph.id,
+      rerouteId: reroute.id,
+      position: { x: 300, y: 400 },
+      timestamp: Date.now(),
+      source: LayoutSource.Canvas
+    })
+
+    graph.removeReroute(reroute.id)
+
+    expect([...reroute.pos]).toEqual([300, 400])
   })
 
   it('writes indexed and method mutations through to the store', () => {

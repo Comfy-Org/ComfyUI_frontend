@@ -1,12 +1,12 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { notifyLayoutChanges } from '@/renderer/core/canvas/litegraph/notifyLayoutChanges'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import { toGroupId } from '@/types/groupId'
 import { createUuidv4 } from '@/utils/uuid'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 
@@ -21,8 +21,19 @@ function setup() {
   const setDirty = vi.fn()
   const canvas = { graph, setDirty } as unknown as LGraphCanvas
   const stop = notifyLayoutChanges(canvas)
-  return { graph, node, setDirty, stop, [Symbol.dispose]: stop }
+  return {
+    graph,
+    node,
+    setDirty,
+    stop,
+    [Symbol.dispose]() {
+      stop()
+      graph.clear()
+    }
+  }
 }
+
+type TestContext = ReturnType<typeof setup>
 
 describe('notifyLayoutChanges', () => {
   it('does not repeat onResize for a canvas resize', async () => {
@@ -37,33 +48,41 @@ describe('notifyLayoutChanges', () => {
     expect(onResize).toHaveBeenCalledTimes(1)
   })
 
-  it('fires onResize for a resize the store originates', async () => {
-    using context = setup()
-    const { graph, node } = context
-    const onResize = vi.fn()
-    node.onResize = onResize
-
-    const mutations = useLayoutMutations()
-    mutations.setSource(LayoutSource.Vue)
-    mutations.resizeNode(graph.rootGraph.id, node.id, {
-      width: 300,
-      height: 200
-    })
-    await vi.waitFor(() => expect(onResize).toHaveBeenCalled())
-  })
-
-  it('fires onResize when a bounds batch changes size', async () => {
-    using context = setup()
-    const { graph, node } = context
-    const onResize = vi.fn()
-    node.onResize = onResize
-
-    layoutStore.batchUpdateNodeBounds(graph.rootGraph.id, [
-      {
-        nodeId: node.id,
-        bounds: { x: 0, y: 0, width: 300, height: 200 }
+  it.for([
+    {
+      path: 'direct',
+      resize: ({ graph, node }: TestContext) => {
+        layoutStore.applyOperation({
+          type: 'resizeNode',
+          graphId: graph.rootGraph.id,
+          nodeId: node.id,
+          size: { width: 300, height: 200 },
+          timestamp: Date.now(),
+          source: LayoutSource.Vue
+        })
       }
-    ])
+    },
+    {
+      path: 'batched',
+      resize: ({ graph, node }: TestContext) => {
+        layoutStore.batchUpdateNodeBounds(
+          graph.rootGraph.id,
+          [
+            {
+              nodeId: node.id,
+              bounds: { x: 0, y: 0, width: 300, height: 200 }
+            }
+          ],
+          { source: LayoutSource.Vue }
+        )
+      }
+    }
+  ])('fires onResize for an external $path resize', async ({ resize }) => {
+    using context = setup()
+    const onResize = vi.fn()
+    context.node.onResize = onResize
+
+    resize(context)
     await vi.waitFor(() => expect(onResize).toHaveBeenCalled())
   })
 
@@ -79,17 +98,21 @@ describe('notifyLayoutChanges', () => {
     ).value
     if (!layout) throw new Error('Expected registered node layout')
 
-    layoutStore.batchUpdateNodeBounds(graph.rootGraph.id, [
-      {
-        nodeId: node.id,
-        bounds: {
-          x: 50,
-          y: 60,
-          width: layout.size.width,
-          height: layout.size.height
+    layoutStore.batchUpdateNodeBounds(
+      graph.rootGraph.id,
+      [
+        {
+          nodeId: node.id,
+          bounds: {
+            x: 50,
+            y: 60,
+            width: layout.size.width,
+            height: layout.size.height
+          }
         }
-      }
-    ])
+      ],
+      { source: LayoutSource.Vue }
+    )
     await vi.waitFor(() => expect(setDirtyCalled()).toBe(true))
 
     expect(onResize).not.toHaveBeenCalled()
@@ -105,9 +128,13 @@ describe('notifyLayoutChanges', () => {
     const onResize = vi.fn()
     node.onResize = onResize
 
-    useLayoutMutations().resizeNode(otherGraph.rootGraph.id, otherNode.id, {
-      width: 300,
-      height: 200
+    layoutStore.applyOperation({
+      type: 'resizeNode',
+      graphId: otherGraph.rootGraph.id,
+      nodeId: otherNode.id,
+      size: { width: 300, height: 200 },
+      timestamp: Date.now(),
+      source: LayoutSource.Canvas
     })
     await Promise.resolve()
 
@@ -116,13 +143,48 @@ describe('notifyLayoutChanges', () => {
     expect(setDirty).not.toHaveBeenCalled()
   })
 
+  it('invalidates rendering for a group-only change', async () => {
+    using context = setup()
+    const { graph, setDirty } = context
+    const groupId = toGroupId(1)
+    layoutStore.applyOperation({
+      type: 'createGroup',
+      graphId: graph.rootGraph.id,
+      groupId,
+      layout: {
+        id: groupId,
+        position: { x: 0, y: 0 },
+        size: { width: 100, height: 100 }
+      },
+      timestamp: Date.now(),
+      source: LayoutSource.Vue
+    })
+    setDirty.mockClear()
+
+    layoutStore.applyOperation({
+      type: 'setGroupBounds',
+      graphId: graph.rootGraph.id,
+      groupId,
+      position: { x: 10, y: 10 },
+      size: { width: 120, height: 110 },
+      timestamp: Date.now(),
+      source: LayoutSource.Vue
+    })
+
+    await vi.waitFor(() => expect(setDirty).toHaveBeenCalledWith(true, true))
+  })
+
   it('stops notifying once stopped', async () => {
     using context = setup()
     const { graph, node, setDirty } = context
     context.stop()
     setDirty.mockClear()
 
-    useLayoutMutations().moveNode(graph.rootGraph.id, node.id, { x: 10, y: 10 })
+    useLayoutMutations(LayoutSource.Canvas).moveNode(
+      graph.rootGraph.id,
+      node.id,
+      { x: 10, y: 10 }
+    )
     await Promise.resolve()
 
     expect(setDirty).not.toHaveBeenCalled()

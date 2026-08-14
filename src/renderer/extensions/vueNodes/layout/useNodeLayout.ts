@@ -14,7 +14,7 @@ import type { NodeId } from '@/types/nodeId'
  */
 export function useNodeLayout(nodeIdMaybe: MaybeRefOrGetter<NodeId>) {
   const nodeId = toValue(nodeIdMaybe)
-  const mutations = useLayoutMutations()
+  const mutations = useLayoutMutations(LayoutSource.Vue)
   const canvasStore = useCanvasStore()
 
   const layout = computed(() => {
@@ -45,7 +45,6 @@ export function useNodeLayout(nodeIdMaybe: MaybeRefOrGetter<NodeId>) {
     const { rootGraphId } = canvasStore
     if (!rootGraphId) return
 
-    mutations.setSource(LayoutSource.Vue)
     mutations.moveNode(rootGraphId, nodeId, position)
   }
 

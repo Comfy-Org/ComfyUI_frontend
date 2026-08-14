@@ -70,7 +70,10 @@ const trackingConfigs = new Map<string, ElementTrackingConfig>([
           nodeId: id,
           bounds
         }))
-        layoutStore.batchUpdateNodeBounds(rootGraphId, nodeUpdates)
+        layoutStore.batchUpdateNodeBounds(rootGraphId, nodeUpdates, {
+          source: LayoutSource.Vue,
+          boundsIncludeTitleHeight: true
+        })
       }
     }
   ],
@@ -250,14 +253,10 @@ const resizeObserver = new ResizeObserver((entries) => {
 
   if (updatesByType.size === 0 && nodesNeedingSlotResync.size === 0) return
 
-  if (updatesByType.size > 0) {
-    layoutStore.setSource(LayoutSource.DOM)
-
-    // Flush per-type
-    for (const [type, updates] of updatesByType) {
-      const config = trackingConfigs.get(type)
-      if (config?.updateHandler && updates.length) config.updateHandler(updates)
-    }
+  // Flush per-type
+  for (const [type, updates] of updatesByType) {
+    const config = trackingConfigs.get(type)
+    if (config?.updateHandler && updates.length) config.updateHandler(updates)
   }
 
   // After node bounds are updated, refresh slot cached offsets and layouts

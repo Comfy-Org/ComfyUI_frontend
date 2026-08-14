@@ -8,6 +8,7 @@ import type { NodeLifecycleEvent } from '@/lib/litegraph/src/infrastructure/LGra
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { LayoutSource } from '@/renderer/core/layout/types'
 import {
   LGraph,
   LGraphGroup,
@@ -1723,6 +1724,80 @@ describe('node layout registration', () => {
     ).toBeNull()
   })
 
+  it('adopts existing store geometry when added', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.id = toNodeId(42)
+    node.pos = [10, 20]
+    node.size = [100, 80]
+    layoutStore.applyOperation({
+      type: 'createNode',
+      graphId: graph.rootGraph.id,
+      nodeId: node.id,
+      layout: {
+        id: node.id,
+        position: { x: 300, y: 400 },
+        size: { width: 220, height: 160 },
+        zIndex: 1,
+        visible: true,
+        bounds: { x: 300, y: 400, width: 220, height: 160 }
+      },
+      timestamp: Date.now(),
+      source: LayoutSource.Canvas
+    })
+
+    graph.add(node)
+
+    expect([...node.pos]).toEqual([300, 400])
+    expect([...node.size]).toEqual([220, 160])
+  })
+
+  it('does not consume a z-index when adopting existing geometry', () => {
+    const graph = new LGraph()
+    const adopted = new LGraphNode('adopted')
+    adopted.id = toNodeId(42)
+    layoutStore.applyOperation({
+      type: 'createNode',
+      graphId: graph.id,
+      nodeId: adopted.id,
+      layout: {
+        id: adopted.id,
+        position: { x: 0, y: 0 },
+        size: { width: 100, height: 80 },
+        zIndex: 1,
+        visible: true,
+        bounds: { x: 0, y: 0, width: 100, height: 80 }
+      },
+      timestamp: Date.now(),
+      source: LayoutSource.Canvas
+    })
+
+    graph.add(adopted)
+    const next = new LGraphNode('next')
+    graph.add(next)
+
+    expect(zIndexOf(graph, next)).toBe(zIndexOf(graph, adopted) + 1)
+  })
+
+  it('keeps canonical group geometry after removal', () => {
+    const graph = new LGraph()
+    const group = new LGraphGroup('group')
+    graph.add(group)
+    layoutStore.applyOperation({
+      type: 'setGroupBounds',
+      graphId: graph.id,
+      groupId: group.id,
+      position: { x: 300, y: 400 },
+      size: { width: 220, height: 160 },
+      timestamp: Date.now(),
+      source: LayoutSource.Canvas
+    })
+
+    graph.remove(group)
+
+    expect([...group.boundingRect]).toEqual([300, 400, 220, 160])
+  })
+
   function zIndexOf(graph: LGraph, node: LGraphNode): number {
     const zIndex = layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id)
       .value?.zIndex
@@ -1770,6 +1845,27 @@ describe('node layout registration', () => {
     expect(
       layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value
     ).not.toBeNull()
+  })
+
+  it('clears ownership despite a mutating listener that throws', async () => {
+    const graph = new LGraph()
+    const graphId = graph.id
+    const node = new LGraphNode('test')
+    graph.add(node)
+    await Promise.resolve()
+
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const stop = layoutStore.onGeometryChange(() => {
+      node.pos = [500, 600]
+      throw new Error('listener failure')
+    })
+
+    expect(() => graph.clear()).not.toThrow()
+    await vi.waitFor(() => expect([...node.pos]).toEqual([500, 600]))
+    stop()
+
+    node.pos = [700, 800]
+    expect(layoutStore.getNodeLayout(graphId, node.id)).toBeNull()
   })
 })
 

@@ -152,13 +152,14 @@ Transmission stays a capability of the document rather than of the store:
 `applyUpdate` / `getStateAsUpdate` were removed as callerless (see
 [Removed CRDT sync seam](../architecture/ecs-migration-plan.md)) and are a few
 lines against `this.ydoc` to reinstate. `LayoutOperation` is still the
-serializable command shape every mutation goes through.
+serializable command shape every mutation goes through. Producers supply the
+operation source; the store stamps its session actor at submission.
 
 Entity geometry registers and unregisters with the entity that owns it
 (`LGraph.add` / `LGraph.remove`) rather than being seeded per graph on renderer
 entry. All three entity types key by `makeScopedLayoutKey(rootGraphId, id)`, so
 a root graph's teardown is one `clearGraph`; graphs sharing that bucket drop
-their entries individually through `unregisterAllGraphLayout`.
+their entries individually through `detachGraphLayouts`.
 
 ## Notes
 

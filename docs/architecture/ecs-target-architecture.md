@@ -526,14 +526,14 @@ sequenceDiagram
 
     Legacy->>Class: node.pos = [100, 200]
     Class->>Bridge: pos setter intercepted
-    Bridge->>Store: useLayoutMutations().moveNode(nodeId, { pos: [100, 200] })
+    Bridge->>Store: useLayoutMutations(source).moveNode(nodeId, { pos: [100, 200] })
 
     New->>Store: layoutStore read for nodeId
     Store-->>New: { pos: [100, 200], size: [...] }
 
     Note over Legacy,New: Phase 2: New features build on ECS directly
 
-    New->>Store: useLayoutMutations().moveNode(nodeId, { pos: [150, 250] })
+    New->>Store: useLayoutMutations(source).moveNode(nodeId, { pos: [150, 250] })
     Store->>Bridge: change detected
     Bridge->>Class: node._pos = [150, 250]
     Legacy->>Class: node.pos

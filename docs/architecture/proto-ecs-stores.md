@@ -187,32 +187,18 @@ only — the write-only `parentId`/`linkIds` fields were removed.
 
 ### Write API
 
-`useLayoutMutations()` (`src/renderer/core/layout/operations/layoutMutations.ts`) provides the mutation API:
+`useLayoutMutations(source)` (`src/renderer/core/layout/operations/layoutMutations.ts`) provides the mutation API:
 
 - `moveNode(nodeId, pos)` / `batchMoveNodes(...)`
-- `resizeNode(nodeId, size)`
 - `setNodeZIndex(nodeId, zIndex)` / `bringNodeToFront(nodeId)`
-- `createNode(nodeId, layout)` / `deleteNode(nodeId)`
-- `createReroute(rootGraphId, rerouteId, pos)` /
-  `deleteReroute(rootGraphId, rerouteId)` /
-  `moveReroute(rootGraphId, rerouteId, pos)`
-- `createGroup(rootGraphId, groupId, layout)` /
-  `setGroupBounds(rootGraphId, groupId, pos, size)` /
-  `deleteGroup(rootGraphId, groupId)`
 
-(`createLink`/`removeLink` are gone — link topology is `LinkStore`'s concern.)
+Entity lifecycle and legacy geometry proxies submit commands through
+`graphLayoutAttachment`; link topology is `LinkStore`'s concern.
 
-### The Scattered Access Problem
+### Attachment boundary
 
-This composable is called at **module scope** in domain objects:
-
-- `Reroute.ts:31` — `const layoutMutations = useLayoutMutations()`
-- `LGraphNode.ts` — imported and called in methods
-- `LLink.ts` no longer uses `useLayoutMutations` (its layout writes went away
-  with the `ylinks` mirror), but it still imports `layoutStore` and
-  `useLinkStore` at module scope
-
-These module-scope calls create implicit dependencies on the Vue runtime and make the domain objects untestable without a full app context.
+`graphLayoutAttachment` owns the temporary instance-to-store bridge. Domain
+objects do not instantiate the mutation composable at module scope.
 
 ### ECS Alignment
 
