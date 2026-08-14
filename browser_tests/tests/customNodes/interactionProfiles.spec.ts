@@ -11,7 +11,7 @@ import {
   loadPackProfiles,
   recordPackProfiles
 } from '@e2e/fixtures/customNode/interactionProfiles'
-import { loadManifest } from '@e2e/fixtures/customNode/manifest'
+import { loadManifest, packIdentity } from '@e2e/fixtures/customNode/manifest'
 import type { RawNodeDef } from '@e2e/fixtures/customNode/typePairing'
 import {
   isTypeCompatible,
@@ -241,7 +241,7 @@ for (const entry of loadManifest()) {
     if (recordMode === 'record') {
       recordPackProfiles(entry.pack, observed, {
         core: process.env.CN_INTERACTION_CORE ?? 'unpinned-local',
-        pin: entry.pin
+        pin: packIdentity(entry)
       })
       expect(
         null,

@@ -22,6 +22,7 @@ import {
 import {
   AUTOGROW_CASES,
   loadManifest,
+  loadAllManifestPackNames,
   rendererPassesFor,
   staleAutogrowApplicabilityIssues
 } from '@e2e/fixtures/customNode/manifest'
@@ -52,7 +53,7 @@ const KNOWN_BROKEN_EXTENSIONS: Record<string, Record<string, string>> = {}
 assertPackLedgerKeys(
   'KNOWN_BROKEN_EXTENSIONS',
   KNOWN_BROKEN_EXTENSIONS,
-  loadManifest().map((entry) => entry.pack)
+  loadAllManifestPackNames()
 )
 
 test.use({ initialSettings: customNodeSuiteSettings })

@@ -31,6 +31,7 @@ import {
 import { failureSummary } from '@e2e/fixtures/customNode/failureReport'
 import {
   loadManifest,
+  loadAllManifestPackNames,
   rendererPassesFor
 } from '@e2e/fixtures/customNode/manifest'
 import { describeRunOutcome } from '@e2e/fixtures/customNode/runResult'
@@ -288,9 +289,8 @@ const PACK_LEDGERS: Record<string, Record<string, Record<string, unknown>>> = {
   WIDGET_SET_ALLOWLIST
 }
 
-const manifestPacks = loadManifest().map((entry) => entry.pack)
 for (const [name, ledger] of Object.entries(PACK_LEDGERS))
-  assertPackLedgerKeys(name, ledger, manifestPacks)
+  assertPackLedgerKeys(name, ledger, loadAllManifestPackNames())
 
 test.use({ initialSettings: customNodeSuiteSettings })
 

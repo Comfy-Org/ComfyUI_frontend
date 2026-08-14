@@ -6,7 +6,7 @@ import type { CoreManifestEntry } from '@e2e/fixtures/customNode/manifest'
 import {
   assertCoreEntry,
   loadApplicableAutogrowCases,
-  loadManifest,
+  loadFullManifest,
   rendererPassesFor
 } from '@e2e/fixtures/customNode/manifest'
 
@@ -28,7 +28,7 @@ function validEntry(): CoreManifestEntry {
 
 test.describe('customNode manifest', () => {
   test('loads entries with the shape the regression spec depends on', () => {
-    const entries = loadManifest()
+    const entries = loadFullManifest()
     expect(entries.length).toBeGreaterThan(0)
     for (const entry of entries) {
       expect(entry.pack).toBeTruthy()
@@ -124,7 +124,7 @@ test.describe('customNode manifest', () => {
   })
 
   test('matches Impact frontend applicability to what the target serves', () => {
-    const impactExtensions = loadManifest().find(
+    const impactExtensions = loadFullManifest().find(
       (entry) => entry.pack.toLowerCase() === 'comfyui-impact-pack'
     )?.expectedExtensions
     expect(impactExtensions).toContain('Comfy.Impack')
