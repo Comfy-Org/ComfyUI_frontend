@@ -8,7 +8,8 @@ const tierKeyMap: Record<string, string> = {
   CREATOR: 'creator',
   PRO: 'pro',
   FOUNDER: 'founder',
-  FOUNDERS_EDITION: 'founder'
+  FOUNDERS_EDITION: 'founder',
+  ENTERPRISE: 'enterprise'
 }
 
 interface WorkspaceSubscriptionInfo {

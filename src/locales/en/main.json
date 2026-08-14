@@ -2878,6 +2878,9 @@
       "pro": {
         "name": "Pro",
         "feature1": "Longer workflow runtime (up to 1 hr)"
+      },
+      "enterprise": {
+        "name": "Enterprise"
       }
     },
     "required": {
