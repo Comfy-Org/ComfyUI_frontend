@@ -1,19 +1,24 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
+
+import { render, screen, waitFor } from '@testing-library/vue'
 
 import enMessages from '@/locales/en/main.json'
 
 import PlanCreditsPanelContent from './PlanCreditsPanelContent.vue'
 
+const refreshSpy = vi.hoisted(() => vi.fn(() => Promise.resolve()))
+
 const stubs = {
   SubscriptionPanelContentWorkspace: {
     template: '<div data-testid="credits-body" />'
   },
-  WorkspaceActivityContent: {
-    props: ['search'],
-    template: '<div data-testid="activity-body">{{ search }}</div>'
+  UsageLogsTable: {
+    template: '<div data-testid="usage-logs" />',
+    methods: {
+      refresh: refreshSpy
+    }
   }
 }
 
@@ -32,32 +37,33 @@ describe('PlanCreditsPanelContent', () => {
     expect(screen.getByRole('button', { name: 'Credits' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Activity' })).toBeTruthy()
     expect(screen.getByTestId('credits-body')).toBeTruthy()
-    expect(screen.queryByTestId('activity-body')).toBeNull()
+    expect(screen.queryByTestId('usage-logs')).toBeNull()
   })
 
-  it('shows the search box only on the Activity tab', async () => {
+  it('loads the usage log on the Activity tab', async () => {
     renderPanel()
-    expect(screen.queryByPlaceholderText('Search')).toBeNull()
 
     await userEvent.click(screen.getByRole('button', { name: 'Activity' }))
-    expect(screen.getByTestId('activity-body')).toBeTruthy()
+    expect(screen.getByTestId('usage-logs')).toBeTruthy()
     expect(screen.queryByTestId('credits-body')).toBeNull()
-    expect(screen.getByPlaceholderText('Search')).toBeTruthy()
+    await waitFor(() => expect(refreshSpy).toHaveBeenCalledOnce())
   })
 
-  it('passes the search query to the Activity tab and clears it on tab change', async () => {
+  it('reports usage-log refresh failures', async () => {
+    const error = new Error('refresh failed')
+    refreshSpy.mockRejectedValueOnce(error)
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined)
     renderPanel()
-    await userEvent.click(screen.getByRole('button', { name: 'Activity' }))
-    await userEvent.type(screen.getByPlaceholderText('Search'), 'flux')
-    expect(screen.getByTestId('activity-body').textContent).toContain('flux')
 
-    await userEvent.click(screen.getByRole('button', { name: 'Credits' }))
     await userEvent.click(screen.getByRole('button', { name: 'Activity' }))
-    expect(screen.getByTestId('activity-body').textContent).not.toContain(
-      'flux'
+
+    await waitFor(() =>
+      expect(consoleError).toHaveBeenCalledWith(
+        'Error refreshing usage logs:',
+        error
+      )
     )
-    expect(
-      (screen.getByPlaceholderText('Search') as HTMLInputElement).value
-    ).toBe('')
   })
 })
