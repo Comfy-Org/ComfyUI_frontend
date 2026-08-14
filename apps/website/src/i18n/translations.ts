@@ -2037,8 +2037,8 @@ const translations = {
 
   // MCP – HeroSection
   'mcp.hero.heading': {
-    en: 'Drive ComfyUI from\nany AI agent.',
-    'zh-CN': '让任何 AI 智能体\n驱动 ComfyUI。'
+    en: 'Drive ComfyUI from\nany AI agent,\nlocal or cloud.',
+    'zh-CN': '让任何 AI 智能体\n驱动 ComfyUI，\n本地或云端。'
   },
   'mcp.hero.subtitle': {
     en: 'Connect any AI agent to ComfyUI on Comfy Cloud GPUs or on your own machine. Generate images, video, audio and 3D, search models, nodes and templates, and run real workflows.',
