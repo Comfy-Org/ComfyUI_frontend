@@ -526,6 +526,401 @@ describe('installErrorClearingHooks lifecycle', () => {
     expect(useMissingMediaStore().missingMediaCandidates).toBeNull()
     expect(mediaScan).toHaveBeenCalledOnce()
   })
+
+  it('keeps an added-node scan pending until async verification settles', async () => {
+    const graph = new LGraph()
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    const candidate = fromAny<MissingModelCandidate, unknown>({
+      nodeId: '1',
+      nodeType: 'CheckpointLoaderSimple',
+      widgetName: 'ckpt_name',
+      name: 'pending.safetensors',
+      isMissing: undefined
+    })
+    vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([
+      candidate
+    ])
+    vi.spyOn(missingMediaScan, 'scanNodeMediaCandidates').mockReturnValue([])
+    let resolveVerification: () => void = () => undefined
+    vi.spyOn(
+      missingModelScan,
+      'verifyAssetSupportedCandidates'
+    ).mockImplementation(async () => {
+      await new Promise<void>((resolve) => {
+        resolveVerification = resolve
+      })
+      candidate.isMissing = true
+    })
+    installErrorClearingHooks(graph)
+
+    const node = new LGraphNode('CheckpointLoaderSimple')
+    node.id = toNodeId(1)
+    node.addWidget(
+      'combo',
+      'ckpt_name',
+      'pending.safetensors',
+      () => undefined,
+      { values: [] }
+    )
+    graph.add(node)
+
+    const store = useExecutionErrorStore()
+    const executionId = createNodeExecutionId([node.id])
+    expect(store.hasPendingAddedNodeErrorScan(graph, executionId)).toBe(true)
+
+    await vi.waitFor(() =>
+      expect(
+        missingModelScan.verifyAssetSupportedCandidates
+      ).toHaveBeenCalledOnce()
+    )
+    expect(store.hasPendingAddedNodeErrorScan(graph, executionId)).toBe(true)
+
+    resolveVerification()
+    await vi.waitFor(() =>
+      expect(store.hasPendingAddedNodeErrorScan(graph, executionId)).toBe(false)
+    )
+    expect(useMissingModelStore().missingModelCandidates).toEqual([candidate])
+  })
+
+  it('waits for started verification when a later scan stage fails', async () => {
+    const graph = new LGraph()
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    const candidate = fromAny<MissingModelCandidate, unknown>({
+      nodeId: '1',
+      nodeType: 'CheckpointLoaderSimple',
+      widgetName: 'ckpt_name',
+      name: 'pending.safetensors',
+      isMissing: undefined
+    })
+    vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([
+      candidate
+    ])
+    const scanError = new Error('Malformed media widget')
+    vi.spyOn(missingMediaScan, 'scanNodeMediaCandidates').mockImplementation(
+      () => {
+        throw scanError
+      }
+    )
+    let resolveVerification: () => void = () => undefined
+    vi.spyOn(
+      missingModelScan,
+      'verifyAssetSupportedCandidates'
+    ).mockImplementation(async () => {
+      await new Promise<void>((resolve) => {
+        resolveVerification = resolve
+      })
+    })
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    installErrorClearingHooks(graph)
+
+    const node = new LGraphNode('CheckpointLoaderSimple')
+    node.id = toNodeId(1)
+    graph.add(node)
+    const store = useExecutionErrorStore()
+    const executionId = createNodeExecutionId([node.id])
+
+    await vi.waitFor(() =>
+      expect(
+        missingModelScan.verifyAssetSupportedCandidates
+      ).toHaveBeenCalledOnce()
+    )
+    await Promise.resolve()
+    expect(store.hasPendingAddedNodeErrorScan(graph, executionId)).toBe(true)
+    expect(warn).not.toHaveBeenCalledWith(
+      '[useErrorClearingHooks] added-node scan failed:',
+      scanError
+    )
+
+    resolveVerification()
+    await vi.waitFor(() =>
+      expect(store.hasPendingAddedNodeErrorScan(graph, executionId)).toBe(false)
+    )
+    expect(warn).toHaveBeenCalledWith(
+      '[useErrorClearingHooks] added-node scan failed:',
+      scanError
+    )
+  })
+
+  it('releases a pending added-node scan when hooks are disposed', () => {
+    const graph = new LGraph()
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    const cleanup = installErrorClearingHooks(graph)
+    const node = new LGraphNode('test')
+    graph.add(node)
+
+    const store = useExecutionErrorStore()
+    const executionId = createNodeExecutionId([node.id])
+    expect(store.hasPendingAddedNodeErrorScan(graph, executionId)).toBe(true)
+
+    cleanup()
+
+    expect(store.hasPendingAddedNodeErrorScan(graph, executionId)).toBe(false)
+  })
+
+  it('continues async verification after hooks are disposed', async () => {
+    const graph = new LGraph()
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    const candidate = fromAny<MissingModelCandidate, unknown>({
+      nodeId: '1',
+      nodeType: 'CheckpointLoaderSimple',
+      widgetName: 'ckpt_name',
+      name: 'pending.safetensors',
+      isMissing: undefined
+    })
+    vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([
+      candidate
+    ])
+    vi.spyOn(missingMediaScan, 'scanNodeMediaCandidates').mockReturnValue([])
+    let resolveVerification: () => void = () => undefined
+    vi.spyOn(
+      missingModelScan,
+      'verifyAssetSupportedCandidates'
+    ).mockImplementation(async () => {
+      await new Promise<void>((resolve) => {
+        resolveVerification = resolve
+      })
+      candidate.isMissing = true
+    })
+    const cleanup = installErrorClearingHooks(graph)
+    const node = new LGraphNode('CheckpointLoaderSimple')
+    node.id = toNodeId(1)
+    node.addWidget(
+      'combo',
+      'ckpt_name',
+      'pending.safetensors',
+      () => undefined,
+      { values: [] }
+    )
+    graph.add(node)
+
+    await vi.waitFor(() =>
+      expect(
+        missingModelScan.verifyAssetSupportedCandidates
+      ).toHaveBeenCalledOnce()
+    )
+    cleanup()
+    resolveVerification()
+    await vi.waitFor(() => expect(candidate.isMissing).toBe(true))
+
+    expect(
+      useExecutionErrorStore().hasPendingAddedNodeErrorScan(
+        graph,
+        createNodeExecutionId([node.id])
+      )
+    ).toBe(false)
+    expect(useMissingModelStore().missingModelCandidates).toEqual([candidate])
+  })
+
+  it('does not scan a disposed workflow after the root graph changes', async () => {
+    const graphA = new LGraph()
+    const graphB = new LGraph()
+    let currentRoot = graphA
+    vi.spyOn(app, 'rootGraph', 'get').mockImplementation(() => currentRoot)
+    const modelScan = vi.spyOn(missingModelScan, 'scanNodeModelCandidates')
+    const cleanup = installErrorClearingHooks(graphA)
+    const nodeA = new LGraphNode('CheckpointLoaderSimple')
+    nodeA.id = toNodeId(1)
+    const nodeB = new LGraphNode('CheckpointLoaderSimple')
+    nodeB.id = toNodeId(1)
+    graphB.add(nodeB)
+
+    graphA.add(nodeA)
+    cleanup()
+    currentRoot = graphB
+    await Promise.resolve()
+
+    expect(modelScan).not.toHaveBeenCalled()
+    expect(useMissingModelStore().missingModelCandidates).toBeNull()
+  })
+
+  it('does not surface verification from replaced nodes in the same root graph', async () => {
+    const graph = new LGraph()
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    const candidate = fromAny<MissingModelCandidate, unknown>({
+      nodeId: '1',
+      nodeType: 'CheckpointLoaderSimple',
+      widgetName: 'ckpt_name',
+      name: 'same.safetensors',
+      isMissing: undefined
+    })
+    vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([
+      candidate
+    ])
+    vi.spyOn(missingMediaScan, 'scanNodeMediaCandidates').mockReturnValue([])
+    let resolveVerification: () => void = () => undefined
+    const verifySpy = vi
+      .spyOn(missingModelScan, 'verifyAssetSupportedCandidates')
+      .mockImplementation(async () => {
+        await new Promise<void>((resolve) => {
+          resolveVerification = resolve
+        })
+        candidate.isMissing = true
+      })
+    const cleanup = installErrorClearingHooks(graph)
+    const oldNode = new LGraphNode('CheckpointLoaderSimple')
+    oldNode.id = toNodeId(1)
+    oldNode.addWidget(
+      'combo',
+      'ckpt_name',
+      'same.safetensors',
+      () => undefined,
+      { values: [] }
+    )
+    graph.add(oldNode)
+    await vi.waitFor(() => expect(verifySpy).toHaveBeenCalledOnce())
+
+    cleanup()
+    graph.remove(oldNode)
+    const replacement = new LGraphNode('CheckpointLoaderSimple')
+    replacement.id = toNodeId(1)
+    replacement.addWidget(
+      'combo',
+      'ckpt_name',
+      'same.safetensors',
+      () => undefined,
+      { values: [] }
+    )
+    graph.add(replacement)
+    resolveVerification()
+
+    await vi.waitFor(() => expect(candidate.isMissing).toBe(true))
+    expect(useMissingModelStore().missingModelCandidates).toBeNull()
+  })
+
+  it('does not surface a model value changed during verification', async () => {
+    const graph = new LGraph()
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    const node = new LGraphNode('CheckpointLoaderSimple')
+    node.id = toNodeId(1)
+    const widget = node.addWidget(
+      'combo',
+      'ckpt_name',
+      'old.safetensors',
+      () => undefined,
+      { values: [] }
+    )
+    const candidate = fromAny<MissingModelCandidate, unknown>({
+      nodeId: '1',
+      nodeType: 'CheckpointLoaderSimple',
+      widgetName: 'ckpt_name',
+      name: 'old.safetensors',
+      isMissing: undefined
+    })
+    vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([
+      candidate
+    ])
+    vi.spyOn(missingMediaScan, 'scanNodeMediaCandidates').mockReturnValue([])
+    let resolveVerification: () => void = () => undefined
+    const verifySpy = vi
+      .spyOn(missingModelScan, 'verifyAssetSupportedCandidates')
+      .mockImplementation(async () => {
+        await new Promise<void>((resolve) => {
+          resolveVerification = resolve
+        })
+        candidate.isMissing = true
+      })
+    installErrorClearingHooks(graph)
+
+    graph.add(node)
+    await vi.waitFor(() => expect(verifySpy).toHaveBeenCalledOnce())
+    widget.value = 'new.safetensors'
+    resolveVerification()
+
+    await vi.waitFor(() => expect(candidate.isMissing).toBe(true))
+    expect(useMissingModelStore().missingModelCandidates).toBeNull()
+  })
+
+  it('cancels an added-node model scan when its node is removed', async () => {
+    const graph = new LGraph()
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    const node = new LGraphNode('CheckpointLoaderSimple')
+    node.id = toNodeId(1)
+    const candidate = fromAny<MissingModelCandidate, unknown>({
+      nodeId: '1',
+      nodeType: 'CheckpointLoaderSimple',
+      widgetName: 'ckpt_name',
+      name: 'pending.safetensors',
+      isMissing: undefined
+    })
+    vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([
+      candidate
+    ])
+    vi.spyOn(missingMediaScan, 'scanNodeMediaCandidates').mockReturnValue([])
+    let resolveVerification: () => void = () => undefined
+    const verifySpy = vi
+      .spyOn(missingModelScan, 'verifyAssetSupportedCandidates')
+      .mockImplementation(async (_candidates, signal) => {
+        await new Promise<void>((resolve) => {
+          resolveVerification = resolve
+        })
+        if (!signal?.aborted) candidate.isMissing = true
+      })
+    installErrorClearingHooks(graph)
+
+    graph.add(node)
+    await vi.waitFor(() => expect(verifySpy).toHaveBeenCalledOnce())
+    const store = useExecutionErrorStore()
+    const executionId = createNodeExecutionId([node.id])
+
+    graph.remove(node)
+
+    expect(store.hasPendingAddedNodeErrorScan(graph, executionId)).toBe(false)
+    expect(verifySpy.mock.calls[0][1]?.aborted).toBe(true)
+    resolveVerification()
+    await Promise.resolve()
+    expect(useMissingModelStore().missingModelCandidates).toBeNull()
+  })
+
+  it('cancels an added-node media scan when its node is removed', async () => {
+    const graph = new LGraph()
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    const node = new LGraphNode('LoadImage')
+    node.id = toNodeId(1)
+    const candidate = createMissingMediaCandidate([node.id], {
+      isMissing: undefined
+    })
+    vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([])
+    vi.spyOn(missingMediaScan, 'scanNodeMediaCandidates').mockReturnValue([
+      candidate
+    ])
+    const { verifySpy, resolveVerification } = deferMediaVerification()
+    installErrorClearingHooks(graph)
+
+    graph.add(node)
+    await vi.waitFor(() => expect(verifySpy).toHaveBeenCalledOnce())
+    const store = useExecutionErrorStore()
+    const executionId = createNodeExecutionId([node.id])
+    expect(store.hasPendingAddedNodeErrorScan(graph, executionId)).toBe(true)
+
+    graph.remove(node)
+
+    expect(store.hasPendingAddedNodeErrorScan(graph, executionId)).toBe(false)
+    expect(verifySpy.mock.calls[0][1]?.signal?.aborted).toBe(true)
+
+    resolveVerification()
+    await vi.waitFor(() => expect(candidate.isMissing).toBe(true))
+    expect(useMissingMediaStore().missingMediaCandidates).toBeNull()
+  })
+
+  it('does not schedule scans through a retained disposed callback', () => {
+    const graph = new LGraph()
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    const cleanup = installErrorClearingHooks(graph)
+    const disposedOnNodeAdded = graph.onNodeAdded
+    cleanup()
+
+    const node = new LGraphNode('test')
+    node.id = toNodeId(1)
+    graph.add(node, true)
+    disposedOnNodeAdded?.(node)
+
+    expect(
+      useExecutionErrorStore().hasPendingAddedNodeErrorScan(
+        graph,
+        createNodeExecutionId([node.id])
+      )
+    ).toBe(false)
+  })
 })
 
 describe('onNodeRemoved clears missing asset errors by execution ID', () => {
@@ -703,6 +1098,13 @@ describe('realtime scan verifies pending cloud candidates', () => {
   it('un-bypass path surfaces pending model candidates after verification', async () => {
     const graph = new LGraph()
     const node = new LGraphNode('CheckpointLoaderSimple')
+    node.addWidget(
+      'combo',
+      'ckpt_name',
+      'cloud_model.safetensors',
+      () => undefined,
+      { values: [] }
+    )
     graph.add(node)
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
 

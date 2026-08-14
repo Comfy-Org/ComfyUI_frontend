@@ -29,7 +29,7 @@ jobs:
     # SHA-pinned per zizmor `unpinned-uses: hash-pin`. Bump this SHA to pick up
     # upstream changes; keep `workflows_ref` matching so prompts/scripts load
     # from the same commit as the workflow definition.
-    uses: Comfy-Org/github-workflows/.github/workflows/cursor-review.yml@0096e1a0098b7fb22fc3740d63e84b349feaad04 # github-workflows main (0096e1a)
+    uses: Comfy-Org/github-workflows/.github/workflows/cursor-review.yml@732100bee739ef94fe650016b382a78b377c0af7 # github-workflows main (732100b)
     with:
       # Overriding diff_excludes replaces the reusable default wholesale, so
       # this restates the generated/vendored defaults and adds this repo's heavy
@@ -48,7 +48,7 @@ jobs:
         :!**/*-snapshots/**
         :!src/workbench/extensions/manager/types/generatedManagerTypes.ts
       # Load the prompts/scripts from the same ref as `uses:`.
-      workflows_ref: 0096e1a0098b7fb22fc3740d63e84b349feaad04
+      workflows_ref: 732100bee739ef94fe650016b382a78b377c0af7
     secrets:
       CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
       # Optional — enables start/complete Slack DMs to the triggerer.
