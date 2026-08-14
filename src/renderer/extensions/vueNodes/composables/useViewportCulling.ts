@@ -370,10 +370,36 @@ export function useViewportCulling({
     }
   }
 
+  /**
+   * Drops departed nodes, and only those.
+   *
+   * Assigning the full visible set here would also admit everything still
+   * sitting in the mount queue, so a pan that stops with hundreds queued would
+   * mount the whole remainder in one write 250ms later - the single flush the
+   * queue exists to avoid, arriving exactly where frames are slowest.
+   */
   const pruneMountedNodes = useDebounceFn(() => {
     if (disposed) return
-    mountedNodeIds.value = computeVisibleNodeIds()
+    const visible = computeVisibleNodeIds()
+    const mounted = mountedNodeIds.value
+    const retained = new Set<NodeId>()
+    for (const id of mounted) {
+      if (visible.has(id)) retained.add(id)
+    }
+    if (retained.size !== mounted.size) mountedNodeIds.value = retained
   }, UNMOUNT_DELAY_MS)
+
+  /**
+   * Replaces the mounted set outright, cancelling any fill still in flight.
+   *
+   * That queue was computed for a camera position that no longer applies, so
+   * draining it afterwards re-adds ids this just dropped, each frame paying a
+   * full Set copy and a shallowRef reassign for no visual change.
+   */
+  function commitMountedNodes(visible: Set<NodeId>): void {
+    cancelQueuedMounts()
+    mountedNodeIds.value = visible
+  }
 
   /**
    * @param allowMount false while a zoom gesture is in flight: the set is
@@ -414,7 +440,7 @@ export function useViewportCulling({
     // Once the mounted set is much larger than what is actually visible,
     // drop the stale entries immediately instead of waiting.
     if (mounted.size > visible.size * 2 + PRUNE_SLACK) {
-      mountedNodeIds.value = visible
+      commitMountedNodes(visible)
       return
     }
 
@@ -478,14 +504,35 @@ export function useViewportCulling({
   // The fingerprint makes an idle tick cost a few comparisons and nothing
   // else, and is seeded now so the first tick does not read as a change and
   // spuriously restart the unmount debounce.
+  // Order-independent, and no per-tick string of the whole pinned set: joining
+  // it allocates and discards proportional to selection size on every tick, and
+  // makes a reorder with identical membership read as a change.
   const computeFingerprint = () => {
     const viewport = getViewportSize()
     const pinned = getPinnedIds?.()
-    return `${layoutStore.nodeGeometryVersion}|${viewport.width}x${viewport.height}|${pinned?.size ?? 0}:${[...(pinned ?? [])].join(',')}`
+    let pinnedDigest = 0
+    for (const id of pinned ?? []) {
+      let hash = 0
+      const text = String(id)
+      for (let i = 0; i < text.length; i++) {
+        hash = (Math.imul(hash, 31) + text.charCodeAt(i)) | 0
+      }
+      pinnedDigest = (pinnedDigest + hash) | 0
+    }
+    return `${layoutStore.nodeGeometryVersion}|${viewport.width}x${viewport.height}|${pinned?.size ?? 0}:${pinnedDigest}`
   }
   let lastFingerprint = computeFingerprint()
   useIntervalFn(() => {
     if (disposed) return
+
+    // nodeGeometryVersion bumps on every position write, so during a drag or
+    // auto-pan the fingerprint differs on every tick and this would rebuild the
+    // spatial index - decoding the whole layout map - 4x/sec for as long as the
+    // drag lasts. Before culling existed, a drag with a stationary camera did
+    // not touch the index at all. The camera watch still covers any real
+    // viewport change during the drag.
+    if (layoutStore.isDraggingVueNodes.value) return
+
     const fingerprint = computeFingerprint()
     if (fingerprint === lastFingerprint) return
     lastFingerprint = fingerprint

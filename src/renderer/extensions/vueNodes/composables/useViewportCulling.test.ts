@@ -3,7 +3,6 @@ import { computed, effectScope, nextTick, reactive, ref } from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import {
-  MOUNT_BATCH_PER_FRAME,
   getCullingBounds,
   useViewportCulling
 } from '@/renderer/extensions/vueNodes/composables/useViewportCulling'
@@ -193,7 +192,11 @@ describe('useViewportCulling', () => {
 
     camera.x = -10_000
     await nextTick()
-    expect(mountedNodeIds.value.size).toBe(MOUNT_BATCH_PER_FRAME)
+    // Literal bounds, not MOUNT_BATCH_PER_FRAME: comparing against the constant
+    // that produces the behaviour passes just as readily for a batch of 600,
+    // which is the shape this test exists to rule out.
+    expect(mountedNodeIds.value.size).toBeGreaterThan(0)
+    expect(mountedNodeIds.value.size).toBeLessThanOrEqual(16)
 
     await vi.advanceTimersByTimeAsync(3000)
     expect(mountedNodeIds.value.size).toBe(600)
@@ -352,15 +355,40 @@ describe('useViewportCulling', () => {
     )
     const { mountedNodeIds } = setup(bounds)
 
-    // Pan far away, past the margin, before the queue can drain.
+    // Clear the set first: setup mounts the whole graph through the membership
+    // watcher, so without this there is nothing left to enter.
+    camera.x = -60_000
+    await nextTick()
+    await vi.advanceTimersByTimeAsync(600)
+    expect(mountedNodeIds.value.size).toBe(0)
+
+    // Pan back so all 600 are entering, and stop mid-fill. Asserting a partial
+    // baseline is the point: without it the whole test passes on 0 <= 0, which
+    // is what it did while the queue was never populated at all.
+    camera.x = 0
+    await nextTick()
+    await vi.advanceTimersByTimeAsync(32)
+    const midDrain = mountedNodeIds.value.size
+    expect(midDrain).toBeGreaterThan(0)
+    expect(midDrain).toBeLessThan(COUNT)
+
+    // Pan far away, past the margin, and let the throttled refresh land. The
+    // eager prune drops everything, because nothing is in range any more.
     camera.x = -60_000
     await nextTick()
     await vi.advanceTimersByTimeAsync(150)
-    const afterPan = mountedNodeIds.value.size
+    expect(mountedNodeIds.value.size).toBe(0)
 
-    // Nothing is in range now, so the stale queue must not keep filling in.
+    // Then advance a single frame. A queue that survived the refresh drains
+    // back into the set here, and the debounced prune is 250ms away so nothing
+    // would take those ids out again. Comparing end states after 2000ms - as
+    // this test used to - cannot see that, because the prune eventually
+    // removes them either way.
+    await vi.advanceTimersByTimeAsync(32)
+    expect(mountedNodeIds.value.size).toBe(0)
+
     await vi.advanceTimersByTimeAsync(2000)
-    expect(mountedNodeIds.value.size).toBeLessThanOrEqual(afterPan)
+    expect(mountedNodeIds.value.size).toBe(0)
   })
 
   it('drops nodes removed from the graph', async () => {

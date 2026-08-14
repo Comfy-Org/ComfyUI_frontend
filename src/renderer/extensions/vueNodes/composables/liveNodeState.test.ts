@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import type { NodeId } from '@/renderer/core/layout/types'
 import {
-  DISABLE_CULLING_PROPERTY,
   findNodesOptedOutOfCulling,
   findNodesWithLiveState
 } from '@/renderer/extensions/vueNodes/composables/liveNodeState'
@@ -69,22 +68,12 @@ describe('findNodesWithLiveState', () => {
 })
 
 describe('findNodesOptedOutOfCulling', () => {
-  it('reports nodes whose author disabled culling', () => {
-    const properties: Record<string, Record<string, unknown>> = {
-      keep: { [DISABLE_CULLING_PROPERTY]: true },
-      normal: {}
-    }
-
-    const result = findNodesOptedOutOfCulling(
-      [node('keep'), node('normal')],
-      (id) => properties[id]
-    )
-
-    expect(result).toEqual(new Set(['keep']))
-  })
-
-  it('is empty when nothing opts out', () => {
-    expect(findNodesOptedOutOfCulling([node('a')], () => ({}))).toEqual(
+  it('is empty while no node type is excluded', () => {
+    // The registry is deliberately empty: the opt-out is internal so it cannot
+    // reach `LGraphNode.serialize` and become permanent workflow JSON. This
+    // pins that nothing is excluded by default, so adding an entry is a
+    // visible decision rather than a silent one.
+    expect(findNodesOptedOutOfCulling([node('a'), node('b')])).toEqual(
       new Set()
     )
   })

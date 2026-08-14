@@ -2,10 +2,18 @@ import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import type { NodeId } from '@/renderer/core/layout/types'
 
 /**
- * Node property an extension author can set to keep a node out of viewport
- * culling entirely, for state this module cannot detect from the DOM.
+ * Node types kept out of viewport culling entirely, for state this module
+ * cannot detect from the DOM.
+ *
+ * A registry rather than a node property. `LGraphNode.serialize` clones
+ * `properties` wholesale, so an opt-out stored there becomes permanent
+ * workflow JSON the first time anyone sets it - a renderer-internal hint
+ * travelling to other users and other frontend versions, on a path graded R3
+ * `workflow-serialization`. Nothing consumes the opt-out yet, so this is the
+ * cheap moment to keep it internal; publishing it later is additive, and
+ * un-publishing it would not be.
  */
-export const DISABLE_CULLING_PROPERTY = 'comfy.disableViewportCulling'
+const NODE_TYPES_EXCLUDED_FROM_CULLING = new Set<string>()
 
 /**
  * Elements whose live state a re-render cannot reproduce.
@@ -54,17 +62,15 @@ export function findNodesWithLiveState(
   return ids
 }
 
-/** Nodes whose author asked for them never to be culled. */
+/** Nodes excluded from culling by type; see the registry above. */
 export function findNodesOptedOutOfCulling(
-  nodes: readonly VueNodeData[],
-  getProperties: (id: NodeId) => Record<string, unknown> | undefined
+  nodes: readonly VueNodeData[]
 ): Set<NodeId> {
   const ids = new Set<NodeId>()
+  if (NODE_TYPES_EXCLUDED_FROM_CULLING.size === 0) return ids
 
   for (const node of nodes) {
-    if (getProperties(node.id)?.[DISABLE_CULLING_PROPERTY] === true) {
-      ids.add(node.id)
-    }
+    if (NODE_TYPES_EXCLUDED_FROM_CULLING.has(node.type)) ids.add(node.id)
   }
 
   return ids

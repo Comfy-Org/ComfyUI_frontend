@@ -354,10 +354,7 @@ watch(
 // Opt-out is static per node, so it only needs recomputing when the node list
 // changes. Live state is dynamic and handled in getPinnedIds instead.
 const nodesOptedOutOfCulling = computed(() =>
-  findNodesOptedOutOfCulling(
-    rawNodes.value,
-    (id) => vueNodeLifecycle.nodeManager.value?.getNode(id)?.properties
-  )
+  findNodesOptedOutOfCulling(rawNodes.value)
 )
 
 const { mountedNodeIds } = useViewportCulling({
@@ -394,7 +391,11 @@ const { mountedNodeIds } = useViewportCulling({
     // Media mid-playback, live capture streams and iframes: state a remount
     // cannot rebuild. Scans mounted nodes only, so it is bounded by the
     // mounted count rather than by graph size.
-    for (const id of findNodesWithLiveState()) pinned.add(id)
+    // Scoped to the pane the nodes live in. Passing no root scans the whole
+    // document, which makes this bounded by page size rather than by mounted
+    // count, on a path that runs on every backstop tick.
+    const pane = document.querySelector('[data-testid="transform-pane"]')
+    if (pane) for (const id of findNodesWithLiveState(pane)) pinned.add(id)
 
     return pinned
   }
