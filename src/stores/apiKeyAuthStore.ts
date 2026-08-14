@@ -51,6 +51,23 @@ const errorCodeFor = (error: unknown, failure: ApiKeyFailure) =>
     ? `${failure}_${error.status}`
     : failure
 
+/**
+ * Reports every failure, including the unverified one the watch only logs, so
+ * the case that made BE-7550 invisible is the case this can be alerted on.
+ * Isolated because the dispatcher is a bare interface with no no-throw
+ * guarantee, and a reporting fault must never decide what happens to the key.
+ */
+const reportFailure = (error: unknown, failure: ApiKeyFailure) => {
+  try {
+    useTelemetry()?.trackAuthFailed({
+      error_code: errorCodeFor(error, failure),
+      auth_action: 'api_key_sign_in'
+    })
+  } catch (reportingError) {
+    console.error('Failed to report API key sign-in failure', reportingError)
+  }
+}
+
 const FAILURE_MESSAGES: Record<
   ApiKeyFailure,
   { summary: string; detail: string }
@@ -104,13 +121,7 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
       if (!stillWanted()) return false
       currentUser.value = null
       const failure = failureFor(error)
-      // Reported for every failure, including the unverified one the watch
-      // only logs, so the case that made BE-7550 invisible is the case this
-      // can be alerted on.
-      useTelemetry()?.trackAuthFailed({
-        error_code: errorCodeFor(error, failure),
-        auth_action: 'api_key_sign_in'
-      })
+      reportFailure(error, failure)
       if (failure === 'rejected') apiKey.value = null
       const { summary, detail } = FAILURE_MESSAGES[failure]
       throw new ApiKeyAuthError(failure, t(summary), t(detail))

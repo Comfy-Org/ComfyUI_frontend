@@ -206,6 +206,21 @@ describe('useApiKeyAuthStore', () => {
       })
     })
 
+    it('still discards the key and tells the user when reporting throws', async () => {
+      mockTrackAuthFailed.mockImplementation(() => {
+        throw new Error('telemetry is down')
+      })
+      mockCreateCustomer.mockRejectedValue(new AuthStoreError('rejected', 401))
+      const store = useApiKeyAuthStore()
+
+      await expect(store.storeApiKey(VALID_KEY)).resolves.toBeFalsy()
+      await nextTick()
+
+      expect(store.getApiKey()).toBeNull()
+      expect(store.isAuthenticated).toBe(false)
+      expect(severities()).toEqual(['error:auth.apiKey.invalid'])
+    })
+
     it('reports nothing when the key is accepted', async () => {
       mockCreateCustomer.mockResolvedValue(customer)
       const store = useApiKeyAuthStore()
