@@ -84,6 +84,29 @@ describe('defs.extend', () => {
       expect(def.outputs).toEqual([{ name: 'LATENT', type: 'LATENT' }])
     })
 
+    it('carries hidden declarations without turning them into slots', () => {
+      // easy-use and tinyterraNodes both ship an XY-plot axis catalogue as
+      // input.hidden.plot_dict[0] and read it back. Listing it in `inputs`
+      // instead would put a connectable slot on the node for something the
+      // server fills in, so it is reachable but separate.
+      const registry = createDefRegistry()
+      const seen = vi.fn()
+      registry.forMajor(() => comfy.graph.node('1')!).extend('XYPlot', seen)
+      registry.applyTo(nodeClass('XYPlot'), {
+        name: 'XYPlot',
+        input: {
+          required: { steps: ['INT', { default: 20 }] },
+          hidden: { plot_dict: [{ seed: ['a', 'b'] }], prompt: 'PROMPT' }
+        }
+      })
+
+      const { def } = seen.mock.calls[0][0]
+      expect(def.hidden.plot_dict).toEqual([{ seed: ['a', 'b'] }])
+      expect(def.hidden.prompt).toBe('PROMPT')
+      expect(def.inputs).toHaveLength(1)
+      expect(def.inputs[0].name).toBe('steps')
+    })
+
     it("carries an input's declaration dict, including the pack's own keys", () => {
       // A pack declares bespoke keys on its own Python input spec and reads
       // them back to drive frontend behaviour. Dropping unrecognised keys
