@@ -59,6 +59,17 @@ const RECOMPUTE_THROTTLE_MS = 100
 const BACKSTOP_INTERVAL_MS = 250
 
 /**
+ * Quiet period after the last zoom step before the mounted set is recomputed.
+ *
+ * A zoom sweeps through scales the user is passing over, not stopping at, and
+ * each intermediate scale would mount a different set - the expensive half of
+ * the work, thrown away a frame later. Existing nodes keep scaling via the
+ * pane transform throughout, which costs nothing extra, so deferring only
+ * changes when new nodes appear.
+ */
+const ZOOM_SETTLE_MS = 160
+
+/**
  * Extra mounted nodes tolerated before pruning eagerly, so small graphs are
  * not pruned on every recompute.
  */
@@ -73,6 +84,16 @@ const PRUNE_SLACK = 8
  * refreshes, so the full set still arrives, spread across a few frames.
  */
 const MOUNT_BATCH_LIMIT = 250
+
+/**
+ * Graph size below which nothing is culled.
+ *
+ * Ordinary workflows are an order of magnitude smaller and render fine with every node
+ * mounted, so they keep exactly today's behaviour and take none of culling's
+ * interaction risk - unmounting near live widgets, link anchors, remount cost.
+ * Culling only engages where the alternative is genuinely unusable.
+ */
+const MIN_NODES_FOR_CULLING = 200
 
 interface Size {
   width: number
@@ -126,13 +147,25 @@ interface UseViewportCullingOptions {
    * select-all cannot mount the whole graph.
    */
   getPinnedIds?: () => ReadonlySet<NodeId> | undefined
+  /**
+   * Nodes that must always be mounted, whether or not they ever entered the
+   * viewport. Admission, unlike the retention above: for nodes owning real DOM
+   * elements, unmounting destroys state that re-rendering cannot rebuild, so
+   * they are excluded from culling entirely. Expected to be a small minority -
+   * anything that grows with graph size belongs in the retention set instead.
+   */
+  getAlwaysMountedIds?: () => ReadonlySet<NodeId> | undefined
+  /** Graph size below which nothing is culled. Defaults to MIN_NODES_FOR_CULLING. */
+  minNodesForCulling?: number
 }
 
 export function useViewportCulling({
   nodes,
   queryNodesInBounds,
   getViewportSize,
-  getPinnedIds
+  getPinnedIds,
+  getAlwaysMountedIds,
+  minNodesForCulling = MIN_NODES_FOR_CULLING
 }: UseViewportCullingOptions) {
   const { camera } = useTransformState()
   const mountedNodeIds = shallowRef<Set<NodeId>>(new Set())
@@ -142,16 +175,26 @@ export function useViewportCulling({
   // route change and would recompute against a torn-down canvas.
   let disposed = false
 
+  /** Small graphs render whole; see MIN_NODES_FOR_CULLING. */
+  const isCullingWorthwhile = () => nodes.value.length >= minNodesForCulling
+
   function computeVisibleNodeIds(): Set<NodeId> {
     const visible = new Set<NodeId>()
     const viewport = getViewportSize()
     const mounted = mountedNodeIds.value
 
+    if (!isCullingWorthwhile()) {
+      for (const node of nodes.value) visible.add(node.id)
+      return visible
+    }
+
     // No measurable viewport (canvas absent, or hidden by App mode's
     // display:none). Nothing can be judged visible or hidden, so hold the
     // current set rather than defaulting open and mounting the whole graph.
     if (!viewport.width || !viewport.height) {
-      return new Set(mounted)
+      const held = new Set(mounted)
+      for (const id of getAlwaysMountedIds?.() ?? []) held.add(id)
+      return held
     }
 
     for (const id of queryNodesInBounds(getCullingBounds(camera, viewport))) {
@@ -167,6 +210,8 @@ export function useViewportCulling({
       }
     }
 
+    for (const id of getAlwaysMountedIds?.() ?? []) visible.add(id)
+
     return visible
   }
 
@@ -175,7 +220,12 @@ export function useViewportCulling({
     mountedNodeIds.value = computeVisibleNodeIds()
   }, UNMOUNT_DELAY_MS)
 
-  function refreshMountedNodes() {
+  /**
+   * @param allowMount false while a zoom gesture is in flight: the set is
+   * still pruned, so zooming in sheds nodes and gets cheaper as it goes, but
+   * nothing new mounts until the gesture settles.
+   */
+  function refreshMountedNodes(allowMount = true) {
     if (disposed) return
     const visible = computeVisibleNodeIds()
     const mounted = mountedNodeIds.value
@@ -193,7 +243,7 @@ export function useViewportCulling({
       }
     }
 
-    if (entering.length > 0) {
+    if (entering.length > 0 && allowMount) {
       const next = new Set(mounted)
       const batch = entering.slice(0, MOUNT_BATCH_LIMIT)
       for (const id of batch) next.add(id)
@@ -221,19 +271,44 @@ export function useViewportCulling({
   }
 
   const refreshThrottled = useThrottleFn(
-    refreshMountedNodes,
+    () => refreshMountedNodes(),
     RECOMPUTE_THROTTLE_MS,
     true
   )
 
-  watch(nodes, refreshMountedNodes, { immediate: true })
-
-  watch(
-    () => [camera.x, camera.y, camera.z],
-    () => void refreshThrottled()
+  const refreshThrottledPruneOnly = useThrottleFn(
+    () => refreshMountedNodes(false),
+    RECOMPUTE_THROTTLE_MS,
+    true
   )
 
-  useEventListener(window, 'resize', refreshMountedNodes)
+  watch(nodes, () => refreshMountedNodes(), { immediate: true })
+
+  const refreshAfterZoom = useDebounceFn(() => {
+    if (disposed) return
+    refreshMountedNodes()
+  }, ZOOM_SETTLE_MS)
+
+  let lastScale = camera.z
+  watch(
+    () => [camera.x, camera.y, camera.z],
+    () => {
+      // Zooming: defer entirely until the gesture settles. Panning keeps its
+      // throttled refresh, because a pan moves into genuinely new territory
+      // and has to mount as it goes.
+      if (camera.z !== lastScale) {
+        lastScale = camera.z
+        // Prune as the gesture runs so zooming in sheds nodes; defer mounting
+        // until it settles.
+        void refreshThrottledPruneOnly()
+        void refreshAfterZoom()
+        return
+      }
+      void refreshThrottled()
+    }
+  )
+
+  useEventListener(window, 'resize', () => refreshMountedNodes())
 
   // Backstop for the inputs with no watcher: node bounds (a drag moves nodes
   // without touching the camera), the pinned set, and canvas element size.

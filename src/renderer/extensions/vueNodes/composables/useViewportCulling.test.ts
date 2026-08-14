@@ -54,6 +54,7 @@ function setup(
         nodes: computed(() => nodes.value),
         queryNodesInBounds,
         getViewportSize: () => VIEWPORT,
+        minNodesForCulling: 0,
         getPinnedIds: () => pinned
       }).mountedNodeIds
   )!
@@ -158,7 +159,8 @@ describe('useViewportCulling', () => {
         useViewportCulling({
           nodes: computed(() => nodes.value),
           queryNodesInBounds: () => ['a' as NodeId],
-          getViewportSize: () => ({ width: 0, height: 0 })
+          getViewportSize: () => ({ width: 0, height: 0 }),
+          minNodesForCulling: 0
         }).mountedNodeIds
     )!
 
@@ -182,6 +184,27 @@ describe('useViewportCulling', () => {
     // The remainder arrives on the follow-up refreshes.
     await vi.advanceTimersByTimeAsync(200)
     expect(mountedNodeIds.value.size).toBe(COUNT)
+  })
+
+  it('mounts every node when the graph is below the culling threshold', async () => {
+    // Ordinary workflows keep today's behaviour and take none of culling's
+    // interaction risk; culling only engages where it is actually needed.
+    const nodes = ref([nodeData('a'), nodeData('b')])
+    const scope = effectScope()
+    activeScopes.push(scope)
+    const mountedNodeIds = scope.run(
+      () =>
+        useViewportCulling({
+          nodes: computed(() => nodes.value),
+          // Would cull everything if the threshold did not short-circuit it.
+          queryNodesInBounds: () => [],
+          getViewportSize: () => VIEWPORT,
+          minNodesForCulling: 10
+        }).mountedNodeIds
+    )!
+
+    await vi.advanceTimersByTimeAsync(600)
+    expect(mountedNodeIds.value).toEqual(new Set(['a', 'b'] as NodeId[]))
   })
 
   it('mounts nodes that have no layout yet so they can measure themselves', () => {

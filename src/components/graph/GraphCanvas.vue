@@ -159,6 +159,10 @@ import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { useGroupContextMenu } from '@/composables/graph/useGroupContextMenu'
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import {
+  findNodesOptedOutOfCulling,
+  findNodesWithLiveState
+} from '@/renderer/extensions/vueNodes/composables/liveNodeState'
 import { useViewportCulling } from '@/renderer/extensions/vueNodes/composables/useViewportCulling'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useNodeBadge } from '@/composables/node/useNodeBadge'
@@ -336,6 +340,15 @@ watch(
   () => cullingIndex.invalidate()
 )
 
+// Opt-out is static per node, so it only needs recomputing when the node list
+// changes. Live state is dynamic and handled in getPinnedIds instead.
+const nodesOptedOutOfCulling = computed(() =>
+  findNodesOptedOutOfCulling(
+    rawNodes.value,
+    (id) => vueNodeLifecycle.nodeManager.value?.getNode(id)?.properties
+  )
+)
+
 const { mountedNodeIds } = useViewportCulling({
   nodes: rawNodes,
   queryNodesInBounds: (bounds) => cullingIndex.query(bounds),
@@ -346,18 +359,23 @@ const { mountedNodeIds } = useViewportCulling({
       height: element?.clientHeight ?? 0
     }
   },
+  getAlwaysMountedIds: () => nodesOptedOutOfCulling.value,
   getPinnedIds: () => {
-    const selected = canvasStore.selectedNodeIds
+    const pinned = new Set(canvasStore.selectedNodeIds)
 
-    // Also retain the node the user is typing in. Focus does not require
-    // selection, and unmounting it destroys IME composition and caret state.
+    // Retain the node being typed in. Focus does not imply selection, and
+    // unmounting it destroys IME composition and caret position. This is what
+    // covers prompt textareas, rather than pinning every node that has one.
     const focusedNode = document.activeElement?.closest?.('[data-node-id]')
     const focusedId = focusedNode?.getAttribute('data-node-id')
-    if (!focusedId || selected.has(focusedId as NodeId)) return selected
+    if (focusedId) pinned.add(focusedId as NodeId)
 
-    const merged = new Set(selected)
-    merged.add(focusedId as NodeId)
-    return merged
+    // Media mid-playback, live capture streams and iframes: state a remount
+    // cannot rebuild. Scans mounted nodes only, so it is bounded by the
+    // mounted count rather than by graph size.
+    for (const id of findNodesWithLiveState()) pinned.add(id)
+
+    return pinned
   }
 })
 
