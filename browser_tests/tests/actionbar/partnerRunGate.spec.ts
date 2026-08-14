@@ -2,6 +2,7 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
+import { createBalance } from '@e2e/fixtures/data/subscriptionFixtures'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { localAuthFixture } from '@e2e/fixtures/localAuthFixture'
 import { TestIds } from '@e2e/fixtures/selectors'
@@ -79,7 +80,14 @@ localAuthFixture.describe('Partner nodes run gate (local, signed in)', () => {
       // Simulate returning from an external Stripe top-up: the balance
       // endpoint now reports funds and the gate refetches on window focus.
       await page.route('**/customers/balance', (r) =>
-        r.fulfill(jsonRoute({ amount_micros: 5_000_000, currency: 'usd' }))
+        r.fulfill(
+          jsonRoute(
+            createBalance({
+              amount_micros: 5_000_000,
+              effective_balance_micros: 5_000_000
+            })
+          )
+        )
       )
       await page.evaluate(() => window.dispatchEvent(new Event('focus')))
 

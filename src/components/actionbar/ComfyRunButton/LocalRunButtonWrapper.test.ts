@@ -3,6 +3,8 @@ import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+
 import LocalRunButtonWrapper from './LocalRunButtonWrapper.vue'
 
 type PartnerNode = { nodeName: string; displayName: string }
@@ -71,10 +73,7 @@ const i18n = createI18n({
   messages: {
     en: {
       actionbar: {
-        partnerRunGate: {
-          signInToRun: 'Sign in to run',
-          addCredits: 'Add Credits'
-        }
+        partnerRunGate: enMessages.actionbar.partnerRunGate
       }
     }
   }
@@ -91,6 +90,8 @@ describe('LocalRunButtonWrapper', () => {
     gateState.gate.value = 'none'
     gateState.partnerNodes.value = []
     __setQueueMode('instant')
+    showApiNodesSignInDialog.mockClear()
+    showTopUpCreditsDialog.mockClear()
   })
 
   it('renders the normal queue button when not gated, leaving queue mode alone', () => {
@@ -124,7 +125,7 @@ describe('LocalRunButtonWrapper', () => {
     expect(__getQueueMode()).toBe('disabled')
     await userEvent.click(screen.getByRole('button', { name: 'Add Credits' }))
 
-    expect(showTopUpCreditsDialog).toHaveBeenCalledWith({
+    expect(showTopUpCreditsDialog).toHaveBeenCalledExactlyOnceWith({
       isInsufficientCredits: true
     })
   })
@@ -165,7 +166,7 @@ describe('LocalRunButtonWrapper', () => {
       screen.getByRole('button', { name: 'Sign in to run' })
     )
 
-    expect(showApiNodesSignInDialog).toHaveBeenCalledWith([
+    expect(showApiNodesSignInDialog).toHaveBeenCalledExactlyOnceWith([
       'Partner A',
       'Partner B'
     ])

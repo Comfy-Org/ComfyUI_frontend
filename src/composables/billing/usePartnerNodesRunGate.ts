@@ -42,6 +42,13 @@ export const usePartnerNodesRunGate = createSharedComposable(() => {
   const probe = ref<BalanceProbe>('idle')
   let probeGeneration = 0
 
+  /** Only Firebase sign-in nulls authStore.balance; after an API-key switch it still holds the previous user's figure. */
+  const isStoreBalanceStale = ref(false)
+
+  const isStoreBalanceTrusted = computed(
+    () => authStore.balance !== null && !isStoreBalanceStale.value
+  )
+
   const probeBalance = async () => {
     const generation = ++probeGeneration
     const requestUserId = userId.value
@@ -63,19 +70,24 @@ export const usePartnerNodesRunGate = createSharedComposable(() => {
       return
     }
     probe.value = result
+    if (result !== 'unknown') isStoreBalanceStale.value = false
   }
 
   watch(
     [isLoggedIn, hasPartnerNodes, userId],
     ([loggedIn, hasNodes, id], previous) => {
-      if (!loggedIn || (previous && id !== previous[2])) {
+      // The immediate run reports previous as [], which is not an identity change.
+      const switchedIdentity = previous.length > 0 && id !== previous[2]
+      if (!loggedIn || switchedIdentity) {
         probe.value = 'idle'
+        // Only an identity change can leave another account's balance behind.
+        if (switchedIdentity) isStoreBalanceStale.value = true
       }
       if (
         loggedIn &&
         hasNodes &&
         (probe.value === 'idle' || probe.value === 'unknown') &&
-        authStore.balance === null
+        !isStoreBalanceTrusted.value
       ) {
         void probeBalance()
       }
@@ -84,10 +96,8 @@ export const usePartnerNodesRunGate = createSharedComposable(() => {
   )
 
   const hasNoCredits = computed(() => {
-    // Safe against account switches: authStore nulls balance synchronously
-    // with currentUser in onAuthStateChanged.
-    if (authStore.balance !== null) {
-      return (authStore.balance.amount_micros ?? 0) <= 0
+    if (isStoreBalanceTrusted.value) {
+      return (authStore.balance?.amount_micros ?? 0) <= 0
     }
     return probe.value === 'zero'
   })
@@ -101,6 +111,7 @@ export const usePartnerNodesRunGate = createSharedComposable(() => {
   // Top-up happens in an external Stripe tab; refresh when the user returns.
   // Also retries a probe that previously failed ('unknown').
   useEventListener(window, 'focus', () => {
+    if (!isLoggedIn.value || !hasPartnerNodes.value) return
     if (gate.value === 'add-credits' || probe.value === 'unknown') {
       void probeBalance()
     }

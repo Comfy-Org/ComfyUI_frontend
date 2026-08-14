@@ -56,7 +56,11 @@ vi.mock('@/stores/authStore', async () => {
       get balance() {
         return balance.value
       },
-      fetchBalance: mockFetchBalance
+      fetchBalance: async () => {
+        const result = await mockFetchBalance()
+        if (result !== null) balance.value = result
+        return result
+      }
     }),
     __setBalance: (value: { amount_micros?: number } | null) => {
       balance.value = value
@@ -189,6 +193,19 @@ describe('usePartnerNodesRunGate', () => {
     expect(gate.value).toBe('none')
   })
 
+  it('trusts an already-fetched store balance without probing again', async () => {
+    state.hasPartnerNodes = true
+    __setLoggedIn(true)
+    __setUserId('user-a')
+    __setBalance({ amount_micros: 0 })
+
+    const { gate } = setup()
+    await flushPromises()
+
+    expect(gate.value).toBe('add-credits')
+    expect(mockFetchBalance).not.toHaveBeenCalled()
+  })
+
   it('prefers the live store balance over the probe result', async () => {
     state.hasPartnerNodes = true
     __setLoggedIn(true)
@@ -222,14 +239,32 @@ describe('usePartnerNodesRunGate', () => {
     const { gate } = setup()
     expect(gate.value).toBe('none')
 
+    mockFetchBalance.mockResolvedValue({ amount_micros: 0 })
+    __setUserId('user-b')
+    await nextTick()
+    await flushPromises()
+    expect(gate.value).toBe('add-credits')
+
+    resolveStaleProbe(null)
+    await flushPromises()
+    expect(gate.value).toBe('add-credits')
+  })
+
+  it('re-probes instead of trusting a balance left behind by the previous account', async () => {
+    state.hasPartnerNodes = true
+    __setLoggedIn(true)
+    __setUserId('user-a')
+    __setBalance({ amount_micros: 0 })
+
+    const { gate } = setup()
+    await flushPromises()
+    expect(gate.value).toBe('add-credits')
+
     mockFetchBalance.mockResolvedValue({ amount_micros: 5_000_000 })
     __setUserId('user-b')
     await nextTick()
     await flushPromises()
-    expect(gate.value).toBe('none')
 
-    resolveStaleProbe(null)
-    await flushPromises()
     expect(gate.value).toBe('none')
   })
 
