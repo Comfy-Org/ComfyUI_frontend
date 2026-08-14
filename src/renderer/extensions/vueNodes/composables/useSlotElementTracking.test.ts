@@ -69,17 +69,21 @@ function createTestSetup(type: 'input' | 'output') {
   return { el, TestComponent }
 }
 
-function createSlotElement(collapsed = false): HTMLElement {
+function createSlotElement(
+  collapsed = false,
+  { renderedWidth = 200, slotLeft = 10 } = {}
+): HTMLElement {
   const container = document.createElement('div')
   container.dataset.nodeId = NODE_ID
   if (collapsed) container.dataset.collapsed = ''
+  Object.defineProperty(container, 'offsetWidth', { value: renderedWidth })
   container.getBoundingClientRect = () =>
     ({
       left: 0,
       top: 0,
-      right: 200,
+      right: renderedWidth,
       bottom: 100,
-      width: 200,
+      width: renderedWidth,
       height: 100,
       x: 0,
       y: 0,
@@ -90,13 +94,13 @@ function createSlotElement(collapsed = false): HTMLElement {
   const el = document.createElement('div')
   el.getBoundingClientRect = () =>
     ({
-      left: 10,
+      left: slotLeft,
       top: 30,
-      right: 20,
+      right: slotLeft + 10,
       bottom: 40,
       width: 10,
       height: 10,
-      x: 10,
+      x: slotLeft,
       y: 30,
       toJSON: () => ({})
     }) as DOMRect
@@ -279,6 +283,24 @@ describe('useSlotElementTracking', () => {
     syncNodeSlotLayoutsFromDOM(NODE_ID)
 
     expect(batchUpdateSpy).not.toHaveBeenCalled()
+  })
+
+  it('measures slot offsets from rendered size rather than requested size', () => {
+    const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, false)
+    const slotEl = createSlotElement(false, {
+      renderedWidth: 300,
+      slotLeft: 285
+    })
+    const node = useNodeSlotRegistryStore().ensureNode(NODE_ID)
+    node.slots.set(slotKey, {
+      el: slotEl,
+      index: SLOT_INDEX,
+      type: 'output'
+    })
+
+    syncNodeSlotLayoutsFromDOM(NODE_ID)
+
+    expect(layoutStore.getSlotLayout(slotKey)?.position.x).toBe(290)
   })
 
   describe('collapsed node slot sync', () => {

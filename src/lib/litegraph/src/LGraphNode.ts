@@ -3519,7 +3519,7 @@ export class LGraphNode
     } = this
 
     if (this.flags.collapsed) {
-      const w = this._collapsed_width || LiteGraph.NODE_COLLAPSED_WIDTH
+      const w = this.renderingSize[0]
       out[0] = is_input ? nodeX : nodeX + w
       out[1] = nodeY - LiteGraph.NODE_TITLE_HEIGHT * 0.5
       return out
@@ -3770,9 +3770,7 @@ export class LGraphNode
   }
 
   get width() {
-    return this.collapsed
-      ? this._collapsed_width || LiteGraph.NODE_COLLAPSED_WIDTH
-      : this.renderingSize[0]
+    return this.renderingSize[0]
   }
 
   /**

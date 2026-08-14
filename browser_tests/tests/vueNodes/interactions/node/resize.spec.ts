@@ -108,6 +108,9 @@ test.describe(
       await expect
         .poll(async () => measureWidth('KSampler'))
         .toBeGreaterThan(resizedWidth - 5)
+      await expect
+        .poll(async () => measureWidth('KSampler'))
+        .toBeLessThan(resizedWidth + 5)
     })
 
     test.describe('minimum size enforcement', () => {

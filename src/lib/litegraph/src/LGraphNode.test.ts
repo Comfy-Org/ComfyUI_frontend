@@ -899,6 +899,7 @@ describe('layout geometry projection', () => {
       }
     )
 
+    expect(batchUpdateNodeBounds).toHaveBeenCalledOnce()
     expect(batchUpdateNodeBounds).toHaveBeenCalledWith(
       graph.rootGraph.id,
       [
@@ -915,6 +916,20 @@ describe('layout geometry projection', () => {
       position: { x: 40, y: 60 },
       size: { width: 300, height: 120 }
     })
+  })
+
+  test('uses measured collapsed width for node and connection geometry', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    node.flags.collapsed = true
+    layoutStore.reportContentSize(graph.rootGraph.id, node.id, {
+      width: 123,
+      height: 30
+    })
+
+    expect(node.width).toBe(123)
+    expect(node.getConnectionPos(false, 0)[0]).toBe(node.pos[0] + 123)
   })
 
   test('moves from the latest stored position', () => {

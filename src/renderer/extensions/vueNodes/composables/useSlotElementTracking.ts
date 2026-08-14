@@ -148,12 +148,12 @@ export function syncNodeSlotLayoutsFromDOM(nodeId: NodeId) {
   const nodeEl = closestNode instanceof HTMLElement ? closestNode : null
   const nodeRect = nodeEl?.getBoundingClientRect()
 
-  // Collapsed nodes preserve expanded size in layoutStore, so DOM-relative
-  // scale derivation breaks. Fall back to clientPosToCanvasPos instead.
+  // Collapsed offsets cannot be reused after expansion, so measure them in
+  // absolute canvas space instead of caching them relative to the node.
   const isCollapsed = nodeEl?.dataset.collapsed != null
   const effectiveScale =
-    !isCollapsed && nodeRect && nodeLayout.size.width > 0
-      ? nodeRect.width / nodeLayout.size.width
+    !isCollapsed && nodeEl && nodeRect && nodeEl.offsetWidth > 0
+      ? nodeRect.width / nodeEl.offsetWidth
       : 0
 
   const canvasStore = useCanvasStore()

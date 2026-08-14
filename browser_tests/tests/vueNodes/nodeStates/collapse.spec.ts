@@ -92,6 +92,9 @@ test.describe('Vue Node Collapse', { tag: '@vue-nodes' }, () => {
     await expect
       .poll(async () => (await reloaded.boundingBox())?.width)
       .toBeGreaterThan(resized.width - 5)
+    await expect
+      .poll(async () => (await reloaded.boundingBox())?.width)
+      .toBeLessThan(resized.width + 5)
   })
 
   test('should preserve title when collapsing/expanding', async ({

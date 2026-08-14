@@ -404,8 +404,9 @@ const { startDrag } = useNodeDrag()
 const badges = usePartitionedBadges(nodeData)
 
 async function nodeOnPointerdown(event: PointerEvent) {
-  if (event.altKey && lgraphNode.value) {
-    const result = LGraphCanvas.cloneNodes([lgraphNode.value])
+  const node = resolveLGraphNode()
+  if (event.altKey && node) {
+    const result = LGraphCanvas.cloneNodes([node])
     if (result?.created?.length) {
       const [newNode] = result.created
       const newNodeId =
@@ -437,7 +438,7 @@ const baseResizeHandleClasses =
 
 const { startResize } = useNodeResize((result) => {
   if (isCollapsed.value) return
-  const node = lgraphNode.value
+  const node = resolveLGraphNode()
   if (!node) return
 
   resizeNodeLayout(
@@ -573,7 +574,7 @@ const handleOpenErrors = () => {
 }
 
 const handleToggleAdvanced = () => {
-  const node = lgraphNode.value
+  const node = resolveLGraphNode()
   if (!node) return
 
   // A subgraph node has no advanced section of its own; the side panel hosts it.
@@ -622,12 +623,15 @@ const nodeOutputLocatorId = computed(() => {
   return subgraphId ? `${subgraphId}:${nodeData.id}` : nodeData.id
 })
 
-const lgraphNode = computed(() => {
+function resolveLGraphNode() {
   const locatorId = nodeLocatorId.value
-  if (!locatorId) return null
+  const rootGraph = canvasStore.currentGraph?.rootGraph
+  if (!locatorId || !rootGraph) return null
 
-  return getNodeByLocatorId(app.rootGraph, locatorId)
-})
+  return getNodeByLocatorId(rootGraph, locatorId)
+}
+
+const lgraphNode = computed(resolveLGraphNode)
 
 // TODO: Surface subgraph info more cleanly in NodeState instead of
 // reaching through lgraphNode for promoted preview resolution.
@@ -708,7 +712,7 @@ const nodeMedia = computed(() => {
 const isDraggingOver = ref(false)
 
 function handleDragOver(event: DragEvent) {
-  const node = lgraphNode.value
+  const node = resolveLGraphNode()
   if (!node || !node.onDragOver) {
     isDraggingOver.value = false
     return
@@ -725,6 +729,6 @@ function handleDragLeave() {
 
 function handleDrop() {
   isDraggingOver.value = false
-  app.dragOverNode = lgraphNode.value
+  app.dragOverNode = resolveLGraphNode()
 }
 </script>

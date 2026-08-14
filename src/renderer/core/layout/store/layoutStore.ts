@@ -885,6 +885,9 @@ class LayoutStoreImpl {
       change.nodeIds.push(toNodeId(parseLayoutKey(key).localId))
       deleted = true
     }
+    for (const key of this.contentSizes.keys()) {
+      if (key.startsWith(prefix)) this.contentSizes.delete(key)
+    }
     for (const key of [...this.ygroups.keys()]) {
       if (!key.startsWith(prefix)) continue
       this.ygroups.delete(key)
@@ -1126,6 +1129,7 @@ class LayoutStoreImpl {
     if (!this.ynodes.has(nodeKey)) return false
 
     this.ynodes.delete(nodeKey)
+    this.contentSizes.delete(nodeKey)
     // Note: We intentionally do NOT delete nodeRefs and nodeTriggers here.
     // During undo/redo, Vue components may still hold references to the old ref.
     // If we delete the trigger, Vue won't be notified when the node is re-created.
