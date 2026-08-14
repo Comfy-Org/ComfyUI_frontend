@@ -48,8 +48,8 @@ const faqPage = page.faq
   ? faqPageNode(
       url,
       page.faq.items.map((item) => ({
-        question: item.question[locale],
-        answer: faqAnswerPlainText(item.answer[locale]),
+        question: item.question[locale] || item.question.en,
+        answer: faqAnswerPlainText(item.answer[locale] || item.answer.en),
       })),
     )
   : undefined

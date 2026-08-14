@@ -4,7 +4,7 @@ import sitemap from '@astrojs/sitemap'
 import vue from '@astrojs/vue'
 import tailwindcss from '@tailwindcss/vite'
 
-const LOCALES = ['en', 'zh-CN'] as const
+const LOCALES = ['en', 'zh-CN', 'ja', 'ko'] as const
 const DEFAULT_LOCALE = 'en'
 const PAYMENT_STATUSES = ['success', 'failed'] as const
 const LOCALE_PREFIXES = LOCALES.map((locale) =>
@@ -47,7 +47,48 @@ export default defineConfig({
     vue(),
     mdx(),
     sitemap({
-      filter: (page) => !isExcludedFromSitemap(page)
+      filter: (page) => !isExcludedFromSitemap(page),
+      serialize(item) {
+        const urlObj = new URL(item.url)
+        let basePath = urlObj.pathname
+        const knownPrefixes = ['/zh-CN', '/ja', '/ko']
+        for (const prefix of knownPrefixes) {
+          if (basePath === prefix || basePath.startsWith(prefix + '/')) {
+            basePath = basePath.slice(prefix.length) || '/'
+            break
+          }
+        }
+        if (!basePath.startsWith('/')) basePath = '/' + basePath
+        const cleanBasePath = basePath === '/' ? '' : basePath
+
+        item.links = [
+          {
+            lang: 'x-default',
+            url: new URL(cleanBasePath || '/', urlObj.origin).href
+          },
+          {
+            lang: 'en',
+            url: new URL(cleanBasePath || '/', urlObj.origin).href
+          },
+          {
+            lang: 'ja',
+            url: new URL(`/ja${cleanBasePath}`, urlObj.origin).href
+          },
+          {
+            lang: 'ko',
+            url: new URL(`/ko${cleanBasePath}`, urlObj.origin).href
+          },
+          {
+            lang: 'zh-CN',
+            url: new URL(`/zh-CN${cleanBasePath}`, urlObj.origin).href
+          },
+          {
+            lang: 'zh',
+            url: new URL(`/zh-CN${cleanBasePath}`, urlObj.origin).href
+          }
+        ]
+        return item
+      }
     })
   ],
   vite: {

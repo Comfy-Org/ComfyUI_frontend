@@ -51,6 +51,27 @@ const { siteUrl, locale, url } = pageContext(
   Astro.currentLocale,
 )
 const canonicalURL = new URL(url)
+
+let basePath = canonicalURL.pathname
+const knownPrefixes = ['/zh-CN', '/ja', '/ko']
+for (const prefix of knownPrefixes) {
+  if (basePath === prefix || basePath.startsWith(prefix + '/')) {
+    basePath = basePath.slice(prefix.length) || '/'
+    break
+  }
+}
+if (!basePath.startsWith('/')) basePath = '/' + basePath
+const cleanBasePath = basePath === '/' ? '' : basePath
+
+const hreflangLinks = [
+  { hreflang: 'x-default', href: new URL(cleanBasePath || '/', canonicalURL.origin).href },
+  { hreflang: 'en', href: new URL(cleanBasePath || '/', canonicalURL.origin).href },
+  { hreflang: 'ja', href: new URL(`/ja${cleanBasePath}`, canonicalURL.origin).href },
+  { hreflang: 'ko', href: new URL(`/ko${cleanBasePath}`, canonicalURL.origin).href },
+  { hreflang: 'zh-CN', href: new URL(`/zh-CN${cleanBasePath}`, canonicalURL.origin).href },
+  { hreflang: 'zh', href: new URL(`/zh-CN${cleanBasePath}`, canonicalURL.origin).href }
+]
+
 const ogImageURL = new URL(ogImage, Astro.site ?? 'https://comfy.org')
 const rawStars = await fetchGitHubStars('Comfy-Org', 'ComfyUI')
 const githubStars = rawStars ? formatStarCount(rawStars) : ''
@@ -109,6 +130,9 @@ const structuredData = noindex
     <link rel="manifest" href="/site.webmanifest" />
     <meta name="theme-color" content="#211927" />
     <link rel="canonical" href={canonicalURL.href} />
+    {hreflangLinks.map((link) => (
+      <link rel="alternate" hreflang={link.hreflang} href={link.href} />
+    ))}
     <link rel="preconnect" href="https://www.googletagmanager.com" />
     <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
 

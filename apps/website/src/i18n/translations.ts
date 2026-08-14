@@ -1,4 +1,4 @@
-type Locale = 'en' | 'zh-CN'
+type Locale = 'en' | 'zh-CN' | 'ja' | 'ko'
 
 const translations = {
   // Tags (global, reusable across sections)
@@ -6012,14 +6012,20 @@ const translations = {
     en: 'Build your custom workflows with Comfy experts.',
     'zh-CN': '与 Comfy 专家一起构建你的定制工作流。'
   }
-} as const satisfies Record<string, Record<Locale, string>>
+} as const satisfies Record<
+  string,
+  Partial<Record<Locale, string>> & { en: string }
+>
 
 type TranslationKey = keyof typeof translations
 
-type LocalizedText = Record<Locale, string>
+type LocalizedText = Partial<Record<Locale, string>> & { en: string }
 
 export function t(key: TranslationKey, locale: Locale = 'en'): string {
-  return translations[key][locale] ?? translations[key].en
+  return (
+    (translations[key] as Record<string, string | undefined>)[locale] ??
+    translations[key].en
+  )
 }
 
 export const translationKeys = Object.keys(translations) as TranslationKey[]

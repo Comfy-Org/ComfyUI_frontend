@@ -345,9 +345,9 @@ test.describe('Learning tutorial page @smoke', () => {
   test('renders under the zh-CN locale', async ({ page }) => {
     const zhPath = `/zh-CN${tutorialPath(firstTutorial)}`
     await page.goto(zhPath)
-    await expect(page).toHaveTitle(`${firstTutorial.title['zh-CN']} - Comfy`)
+    await expect(page).toHaveTitle(`${firstTutorial.title['zh-CN']!} - Comfy`)
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-      firstTutorial.title['zh-CN']
+      firstTutorial.title['zh-CN']!
     )
   })
 })
@@ -410,7 +410,7 @@ test.describe('Learning page (zh-CN) @smoke', () => {
     const [firstTutorial] = learningTutorials
     await expect(
       page.getByRole('link', {
-        name: thumbnailLinkName(firstTutorial.title['zh-CN'], 'zh-CN')
+        name: thumbnailLinkName(firstTutorial.title['zh-CN']!, 'zh-CN')
       })
     ).toBeVisible()
   })
