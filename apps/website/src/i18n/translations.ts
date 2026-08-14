@@ -2332,44 +2332,45 @@ const translations = {
     'zh-CN': 'Comfy MCP？'
   },
   'mcp.why.subtitle': {
-    en: 'A trusted infrastructure that lets engineers and professionals ship faster.',
-    'zh-CN': '一套值得信赖的基础设施，让工程师和专业人士交付更快。'
+    en: 'The first MCP built for production pipelines: trusted infrastructure that lets engineers and professionals ship faster.',
+    'zh-CN':
+      '首个为生产管线打造的 MCP：值得信赖的基础设施，让工程师和专业人士交付更快。'
   },
   'mcp.why.1.title': {
     en: 'Open protocol,\nany client.',
     'zh-CN': '开放协议，\n任意客户端。'
   },
   'mcp.why.1.description': {
-    en: 'MCP is an open standard, so any MCP-compatible client can connect. Claude Code, Claude Desktop, and Codex sign in with OAuth; every other agent connects with an API key.',
+    en: 'MCP is an open standard, so any MCP-compatible client can connect: Claude Code, Claude Desktop, Codex, Cursor, and more. Sign in with OAuth or an API key on cloud; local runs need no account at all.',
     'zh-CN':
-      'MCP 是开放标准，因此任何兼容 MCP 的客户端都能接入。Claude Code、Claude Desktop 和 Codex 通过 OAuth 登录，其他智能体使用 API 密钥连接。'
+      'MCP 是开放标准，任何兼容 MCP 的客户端都能接入：Claude Code、Claude Desktop、Codex、Cursor 等。云端通过 OAuth 或 API 密钥登录；本地运行完全不需要账户。'
   },
   'mcp.why.2.title': {
     en: 'The full engine,\nnot a sandbox.',
     'zh-CN': '完整引擎，\n非沙箱环境。'
   },
   'mcp.why.2.description': {
-    en: 'Same tool your team uses. Fully connected multi-step, multi-GPU workflows. Everything available now and in the future.',
+    en: 'Same tool your team uses. Fully connected multi-step, multi-GPU workflows, with best-practice templates that update as the ecosystem moves. Everything available now and in the future.',
     'zh-CN':
-      '与你团队使用的相同工具。完整连接的多步骤、多 GPU 工作流。当前及未来的所有功能均可使用。'
+      '与你团队使用的相同工具。完整连接的多步骤、多 GPU 工作流，以及随生态更新的最佳实践模板。当前及未来的所有功能均可使用。'
   },
   'mcp.why.3.title': {
-    en: 'Outputs you keep.',
-    'zh-CN': '输出归你所有。'
+    en: 'Reproducible\nby design.',
+    'zh-CN': '为可复现性\n而设计。'
   },
   'mcp.why.3.description': {
-    en: 'Downloads go to your Comfy library — store, reuse, remix, and share without leaving the ecosystem.',
+    en: 'Every generation is a workflow: rerun it, share it by URL, hand it to a teammate. Made for long-term projects, not one-off generations. Outputs land in your Comfy library to store, reuse, and remix.',
     'zh-CN':
-      '下载内容保存到你的 Comfy 库——在生态系统内存储、复用、二次创作和分享。'
+      '每次生成都是一个工作流：可以重跑、通过 URL 分享、交给队友。为长期项目而生，而非一次性生成。输出保存到你的 Comfy 库，随时存储、复用和二次创作。'
   },
   'mcp.why.4.title': {
     en: 'Your GPUs,\nor ours.',
     'zh-CN': '你的 GPU，\n或我们的。'
   },
   'mcp.why.4.description': {
-    en: 'Run without a local GPU on Comfy Cloud infrastructure, or keep everything on your own machine with the open-source local server. Same tools, same client, your choice.',
+    en: 'Run without a GPU on Comfy Cloud, or go local and let the agent do the hard part: it reads your machine (models, custom nodes, VRAM), untangles complex open-source workflows, and builds ones your hardware can actually run.',
     'zh-CN':
-      '无需本地 GPU，在 Comfy Cloud 基础设施上运行；或使用开源本地服务器，让一切都留在你自己的机器上。同样的工具，同样的客户端，由你选择。'
+      '无需 GPU，在 Comfy Cloud 上运行；或选择本地，把难题交给智能体：它了解你的机器（模型、自定义节点、显存），理清复杂的开源工作流，构建你的硬件真正跑得动的工作流。'
   },
 
   // MCP – ToolsSection
