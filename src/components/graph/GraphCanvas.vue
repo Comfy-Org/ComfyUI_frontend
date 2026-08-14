@@ -362,6 +362,12 @@ const nodesOptedOutOfCulling = computed(() =>
 
 const { mountedNodeIds } = useViewportCulling({
   nodes: rawNodes,
+  // A getter, so the composable has a reactive dependency on the setting. The
+  // callbacks below are plain functions, so reading it inside them alone would
+  // leave nothing to recompute the mounted set when the switch is turned back
+  // on - it would stay at the empty value it converged to while disabled, and
+  // `allNodes` would filter every node against it.
+  isEnabled: () => cullingEnabled.value,
   // Disabled means no work, not just no effect: an empty query short-circuits
   // the index rebuild and the layout decode behind it, so the setting is a
   // true bypass if the fault ever turns out to be in that path.
@@ -400,7 +406,12 @@ const { mountedNodeIds } = useViewportCulling({
 // pendingSlotSync itself is non-reactive, so the check runs whenever either
 // signal that can create the condition changes: the mounted set, or the node
 // membership a graph reconfigure replaces.
-watch([mountedNodeIds, () => rawNodes.value.length], () => {
+// Only meaningful while culling owns the mounted set. With the setting off it
+// is permanently empty and every node is rendered anyway, so reading empty as
+// "nothing is visible" would release the latch while measurement is still in
+// flight and draw every link from fallback geometry.
+watch([mountedNodeIds, () => rawNodes.value.length, cullingEnabled], () => {
+  if (!cullingEnabled.value) return
   if (mountedNodeIds.value.size === 0 && layoutStore.pendingSlotSync) {
     layoutStore.setPendingSlotSync(false)
   }

@@ -169,7 +169,12 @@ export function useNodePointerInteractions(
   }
 
   function onPointercancel(event: PointerEvent) {
-    if (!layoutStore.isDraggingVueNodes.value) return
+    // Matches onPointerup: ownership is set on pointerdown, the global flag only
+    // once the move threshold is passed. Guarding on the global alone would let
+    // a cancel between the two leave this scope marked as owner with nothing
+    // left to clear it - pointercancel replaces pointerup - and a later dispose
+    // would then end whatever drag another node had since started.
+    if (!hasDraggingStarted && !layoutStore.isDraggingVueNodes.value) return
     safeDragEnd(event)
   }
 

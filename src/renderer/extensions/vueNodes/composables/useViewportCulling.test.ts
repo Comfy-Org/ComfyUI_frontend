@@ -241,6 +241,62 @@ describe('useViewportCulling', () => {
     expect(mountedNodeIds.value.has('unmeasured' as NodeId)).toBe(true)
   })
 
+  it('holds every node mounted while culling is disabled', async () => {
+    // The mounted set stays authoritative when the switch is off, rather than
+    // converging to empty. A caller filtering rendered nodes against it would
+    // otherwise blank the canvas the moment the switch is turned back on.
+    const enabled = ref(false)
+    const nodes = ref([nodeData('a'), nodeData('b')])
+    const scope = effectScope()
+    activeScopes.push(scope)
+    const mountedNodeIds = scope.run(
+      () =>
+        useViewportCulling({
+          nodes: computed(() => nodes.value),
+          // Culls everything, so an active gate would leave the set empty.
+          queryNodesInBounds: () => [],
+          getViewportSize: () => VIEWPORT,
+          minNodesForCulling: 0,
+          isEnabled: () => enabled.value
+        }).mountedNodeIds
+    )!
+
+    await vi.advanceTimersByTimeAsync(600)
+    expect(mountedNodeIds.value).toEqual(new Set(['a', 'b'] as NodeId[]))
+
+    enabled.value = true
+    await vi.advanceTimersByTimeAsync(600)
+    expect(mountedNodeIds.value.size).toBe(0)
+  })
+
+  it('keeps culling on when a node is deleted at the threshold', async () => {
+    // The gate swaps the whole mounted set rather than its edge, so flipping
+    // off at the boundary mounts everything that was culled in one frame -
+    // and undo/redo across the boundary repeats it.
+    const nodes = ref(Array.from({ length: 10 }, (_, i) => nodeData(`n${i}`)))
+    const scope = effectScope()
+    activeScopes.push(scope)
+    const mountedNodeIds = scope.run(
+      () =>
+        useViewportCulling({
+          nodes: computed(() => nodes.value),
+          // Culls everything, so an active gate leaves the set empty and an
+          // inactive one mounts all of them.
+          queryNodesInBounds: () => [],
+          getViewportSize: () => VIEWPORT,
+          minNodesForCulling: 10
+        }).mountedNodeIds
+    )!
+
+    await vi.advanceTimersByTimeAsync(600)
+    expect(mountedNodeIds.value.size).toBe(0)
+
+    nodes.value = nodes.value.slice(0, 9)
+    await vi.advanceTimersByTimeAsync(600)
+
+    expect(mountedNodeIds.value.size).toBe(0)
+  })
+
   it('mounts entering nodes immediately but delays unmounting departing ones', async () => {
     const { mountedNodeIds } = setup({
       left: { x: -3000, y: 0, width: 100, height: 100 },

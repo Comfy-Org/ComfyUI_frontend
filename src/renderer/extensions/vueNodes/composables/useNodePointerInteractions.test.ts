@@ -191,6 +191,35 @@ describe('useNodePointerInteractions', () => {
     store.isDraggingVueNodes.value = false
   })
 
+  it('cancelling before the move threshold also releases drag ownership', () => {
+    // Ownership is set on pointerdown, the global flag only once the move
+    // threshold is passed. A cancel in between must still clear ownership,
+    // because pointercancel replaces pointerup so nothing else will.
+    const store = fromAny<{ isDraggingVueNodes: { value: boolean } }, unknown>(
+      layoutStore
+    )
+
+    const scope = effectScope()
+    const handlers = scope.run(() => useNodePointerInteractions(testNodeId))!
+    handlers.pointerHandlers.onPointerdown(
+      createPointerEvent('pointerdown', { button: 0 })
+    )
+    // No pointermove, so the threshold was never crossed.
+    expect(store.isDraggingVueNodes.value).toBe(false)
+    handlers.pointerHandlers.onPointercancel(
+      createPointerEvent('pointercancel', { button: 0 })
+    )
+
+    // A different node now owns a drag.
+    store.isDraggingVueNodes.value = true
+    scope.stop()
+
+    expect(store.isDraggingVueNodes.value).toBe(true)
+
+    // Shared module-level flag; leaving it set would break later cases.
+    store.isDraggingVueNodes.value = false
+  })
+
   it('should only start drag on left-click', async () => {
     const { handleNodeSelect } = useNodeEventHandlers()
     const { startDrag } = useNodeDrag()

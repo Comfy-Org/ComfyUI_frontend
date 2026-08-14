@@ -85,6 +85,19 @@ const PRUNE_SLACK = 8
  */
 export const MOUNT_BATCH_PER_FRAME = 8
 
+/**
+ * Smallest batch backpressure may shrink to.
+ *
+ * Distinct from the starting size on purpose: when the floor equals the start,
+ * the shrink branch can never produce a value the fill did not already begin
+ * with, so on a machine whose frames exceed the budget with zero mounting the
+ * controller pins at the default and looks like it is working.
+ */
+const MOUNT_BATCH_FLOOR = 2
+
+/** Largest batch, and so the bound on the worst frame the fill-in can produce. */
+const MOUNT_BATCH_CEILING = MOUNT_BATCH_PER_FRAME * 8
+
 /** Frame budget the fill-in tries to stay within, in milliseconds. */
 const MOUNT_FRAME_BUDGET_MS = 20
 
@@ -97,6 +110,12 @@ const MOUNT_FRAME_BUDGET_MS = 20
  * One bounded hitch is better than a fill-in the user watches crawl.
  */
 const MOUNT_QUEUE_DEADLINE_MS = 600
+
+/**
+ * Fraction of {@link MIN_NODES_FOR_CULLING} the graph must shrink past before
+ * culling switches back off, once it is on.
+ */
+const GATE_HYSTERESIS = 0.9
 
 /**
  * Graph size below which nothing is culled.
@@ -171,6 +190,13 @@ interface UseViewportCullingOptions {
    * anything that grows with graph size belongs in the retention set instead.
    */
   getAlwaysMountedIds?: () => ReadonlySet<NodeId> | undefined
+  /**
+   * Whether culling should run at all. A getter rather than a plain boolean so
+   * that turning it back on recomputes the mounted set: while off, that set
+   * converges to empty, and a caller filtering against a stale empty set would
+   * render nothing.
+   */
+  isEnabled?: () => boolean
   /** Graph size below which nothing is culled. Defaults to MIN_NODES_FOR_CULLING. */
   minNodesForCulling?: number
 }
@@ -181,6 +207,7 @@ export function useViewportCulling({
   getViewportSize,
   getPinnedIds,
   getAlwaysMountedIds,
+  isEnabled,
   minNodesForCulling = MIN_NODES_FOR_CULLING
 }: UseViewportCullingOptions) {
   const { camera } = useTransformState()
@@ -191,8 +218,28 @@ export function useViewportCulling({
   // route change and would recompute against a torn-down canvas.
   let disposed = false
 
-  /** Small graphs render whole; see MIN_NODES_FOR_CULLING. */
-  const isCullingWorthwhile = () => nodes.value.length >= minNodesForCulling
+  /**
+   * Small graphs render whole; see MIN_NODES_FOR_CULLING.
+   *
+   * Latched, because the gate swaps the entire mounted set rather than its
+   * edge: without it, deleting one node from a graph sitting on the boundary
+   * turns culling off and mounts everything that was culled, and undo/redo
+   * across the boundary repeats it on every keystroke. Once on, it stays on
+   * until the graph is clearly smaller.
+   */
+  let cullingLatched = false
+  const isCullingWorthwhile = () => {
+    if (isEnabled?.() === false) {
+      cullingLatched = false
+      return false
+    }
+
+    const count = nodes.value.length
+    cullingLatched = cullingLatched
+      ? count >= minNodesForCulling * GATE_HYSTERESIS
+      : count >= minNodesForCulling
+    return cullingLatched
+  }
 
   function computeVisibleNodeIds(): Set<NodeId> {
     const visible = new Set<NodeId>()
@@ -260,28 +307,25 @@ export function useViewportCulling({
     mountFrame = null
     if (disposed || mountQueue.length === 0) return
 
-    // Past the deadline, stop pacing and finish. Backpressure is an
-    // optimisation; it must not become the reason nothing renders.
-    if (queueStartedAt > 0 && now - queueStartedAt > MOUNT_QUEUE_DEADLINE_MS) {
-      const rest = mountQueue
-      mountQueue = []
-      const all = new Set(mountedNodeIds.value)
-      for (const id of rest) all.add(id)
-      mountedNodeIds.value = all
-      return
-    }
+    // Past the deadline, stop adapting rather than stop pacing. Draining the
+    // whole remainder in one assignment is unbounded - the queue is sized by
+    // the viewport query, which at minimum zoom is most of the graph - so it
+    // trades a crawl for a multi-second freeze. Pinning the batch high keeps
+    // the worst frame bounded by MOUNT_BATCH_CEILING instead.
+    const pastDeadline =
+      queueStartedAt > 0 && now - queueStartedAt > MOUNT_QUEUE_DEADLINE_MS
 
-    if (lastDrainAt > 0) {
+    if (pastDeadline) {
+      mountBatchSize = MOUNT_BATCH_CEILING
+    } else if (lastDrainAt > 0) {
       const frameMs = now - lastDrainAt
       if (frameMs > MOUNT_FRAME_BUDGET_MS) {
-        // Never below a useful floor: halving to one node per frame is how a
-        // fill-in turns into a crawl the user notices.
         mountBatchSize = Math.max(
-          MOUNT_BATCH_PER_FRAME,
+          MOUNT_BATCH_FLOOR,
           Math.floor(mountBatchSize / 2)
         )
       } else {
-        mountBatchSize = Math.min(MOUNT_BATCH_PER_FRAME * 8, mountBatchSize * 2)
+        mountBatchSize = Math.min(MOUNT_BATCH_CEILING, mountBatchSize * 2)
       }
     }
     lastDrainAt = now
@@ -391,6 +435,17 @@ export function useViewportCulling({
 
   // Membership changes mount without pacing; see queueMount.
   watch(nodes, () => refreshMountedNodes(true, true), { immediate: true })
+
+  // The backstop's fingerprint does not include this flag, so without an
+  // explicit watch, switching culling on has no effect until some other signal
+  // happens to change - the graph stays fully mounted and the setting appears
+  // to do nothing.
+  if (isEnabled) {
+    watch(
+      () => isEnabled(),
+      () => refreshMountedNodes(true, true)
+    )
+  }
 
   const refreshAfterZoom = useDebounceFn(() => {
     if (disposed) return
