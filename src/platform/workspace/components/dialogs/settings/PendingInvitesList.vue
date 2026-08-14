@@ -5,7 +5,7 @@
       :key="invite.id"
       :class="
         cn(
-          'grid w-full items-center border-b border-interface-stroke/60 p-2 transition-colors last:border-0 hover:bg-secondary-background/50',
+          'grid w-full items-center border-b border-interface-stroke/30 p-2 transition-colors last:border-0 hover:bg-secondary-background/50',
           gridCols
         )
       "
