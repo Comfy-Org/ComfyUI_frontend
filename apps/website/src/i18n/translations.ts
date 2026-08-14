@@ -2407,9 +2407,9 @@ const translations = {
     'zh-CN': '运行真实工作流'
   },
   'mcp.tools.3.description': {
-    en: 'Submit graphs, track jobs, and pull outputs back. Save and share workflows, reuse a saved one, or open any run on the ComfyUI canvas — the full engine, driven by tool calls.',
+    en: 'Submit graphs, track jobs, and pull outputs back. It reads the workflows you already have, so you start where you are: save, share, and reuse them, or open any run on the ComfyUI canvas — the full engine, driven by tool calls.',
     'zh-CN':
-      '提交计算图、跟踪任务并取回输出。保存和分享工作流，复用已保存的工作流，或在 ComfyUI 画布上打开任意运行——完整的引擎，由工具调用驱动。'
+      '提交计算图、跟踪任务并取回输出。它能读取你已有的工作流，让你从现有基础直接开始：保存、分享、复用，或在 ComfyUI 画布上打开任意运行——完整的引擎，由工具调用驱动。'
   },
   'mcp.tools.3.alt': {
     en: 'Comfy MCP running a ComfyUI workflow as a callable tool from a chat',
