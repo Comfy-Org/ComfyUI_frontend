@@ -90,8 +90,7 @@ const REPORTED_METRICS: MetricDef[] = [
   { key: 'eventListeners', label: 'event listeners', unit: '', minAbsDelta: 5 }
 ]
 
-/** Target: P5 FPS ≥ 52 → P95 frame time ≤ 19.2ms */
-const TARGET_P95_FRAME_MS = 19.2
+/** Target: P5 FPS ≥ 52 */
 const TARGET_P5_FPS = 52
 
 function groupByName(

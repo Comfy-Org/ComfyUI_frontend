@@ -1,7 +1,7 @@
 name: 'Lint and format verify'
 description: >
   Runs the lint/format/knip verification suite plus the browser-tests
-  typecheck. Shared by ci-lint-format.yaml (PR) and
+  and scripts typechecks. Shared by ci-lint-format.yaml (PR) and
   ci-lint-format-queue.yaml (merge queue) so both paths run the exact
   same checks. The caller is responsible for checkout and frontend setup
   before invoking this action.
@@ -24,3 +24,7 @@ runs:
     - name: Typecheck browser tests
       shell: bash
       run: pnpm typecheck:browser
+
+    - name: Typecheck scripts
+      shell: bash
+      run: pnpm typecheck:scripts
