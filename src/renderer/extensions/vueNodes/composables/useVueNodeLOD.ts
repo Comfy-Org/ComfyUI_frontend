@@ -33,10 +33,11 @@ export function useVueNodeLOD({
   fullDetailZoom,
   vueNodesEnabled
 }: VueNodeLODOptions): void {
+  let lastCanvas: LGraphCanvas | null | undefined = toValue(canvas)
   let lastLowDetail: boolean | undefined
   let lastScale: number | undefined
 
-  function update(scale = toValue(canvas)?.ds.scale): void {
+  function update(scale: number | undefined): void {
     const lowDetail = shouldUseVueNodeLowDetail(
       Number(scale),
       toValue(enabled),
@@ -57,15 +58,22 @@ export function useVueNodeLOD({
       () => toValue(fullDetailZoom),
       () => toValue(vueNodesEnabled)
     ],
-    () => update(),
+    () => update(toValue(canvas)?.ds.scale),
     {
       immediate: true
     }
   )
 
   useRafFn(() => {
-    const scale = toValue(canvas)?.ds.scale
-    if (scale == null || Object.is(scale, lastScale)) return
+    const currentCanvas = toValue(canvas)
+    const canvasChanged = currentCanvas !== lastCanvas
+    if (canvasChanged) {
+      lastCanvas = currentCanvas
+      lastScale = undefined
+    }
+
+    const scale = currentCanvas?.ds.scale
+    if (!canvasChanged && Object.is(scale, lastScale)) return
     lastScale = scale
     update(scale)
   })

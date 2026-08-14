@@ -1,5 +1,5 @@
 import type * as VueUse from '@vueuse/core'
-import { effectScope } from 'vue'
+import { effectScope, shallowRef } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
@@ -49,9 +49,9 @@ describe('shouldUseVueNodeLowDetail', () => {
     expect(shouldUseVueNodeLowDetail(1, true, 200, true)).toBe(false)
   })
 
-  it('keeps full detail across frames with an unchanged NaN scale', () => {
+  it('removes low detail when its effect scope stops', () => {
     const canvas = {
-      ds: { scale: Number.NaN }
+      ds: { scale: 0.5 }
     } as unknown as LGraphCanvas
     const scope = effectScope()
     try {
@@ -69,8 +69,55 @@ describe('shouldUseVueNodeLowDetail', () => {
       callback({ delta: 0, timestamp: 0 })
       expect(
         document.documentElement.classList.contains('vue-nodes-low-detail')
-      ).toBe(false)
+      ).toBe(true)
+    } finally {
+      scope.stop()
+    }
+    expect(
+      document.documentElement.classList.contains('vue-nodes-low-detail')
+    ).toBe(false)
+  })
+
+  it('re-evaluates replacement canvases and clears a missing canvas', () => {
+    function createCanvas() {
+      return { ds: { scale: 0.5 } } as unknown as LGraphCanvas
+    }
+    const canvas = shallowRef<LGraphCanvas | null>(createCanvas())
+    let enabled = true
+    const scope = effectScope()
+    try {
+      scope.run(() =>
+        useVueNodeLOD({
+          canvas,
+          enabled: () => enabled,
+          fullDetailZoom: 95,
+          vueNodesEnabled: true
+        })
+      )
+      const callback = rafWatcher.callback
+      if (!callback) throw new Error('RAF watcher callback was not captured')
+
+      callback({ delta: 0, timestamp: 0 })
+      expect(
+        document.documentElement.classList.contains('vue-nodes-low-detail')
+      ).toBe(true)
+
+      enabled = false
+      canvas.value = createCanvas()
       callback({ delta: 0, timestamp: 16 })
+      expect(
+        document.documentElement.classList.contains('vue-nodes-low-detail')
+      ).toBe(false)
+
+      enabled = true
+      canvas.value = createCanvas()
+      callback({ delta: 0, timestamp: 32 })
+      expect(
+        document.documentElement.classList.contains('vue-nodes-low-detail')
+      ).toBe(true)
+
+      canvas.value = null
+      callback({ delta: 0, timestamp: 48 })
       expect(
         document.documentElement.classList.contains('vue-nodes-low-detail')
       ).toBe(false)
