@@ -152,6 +152,21 @@ describe('useSubscriptionActions', () => {
         tags: { error_type: 'contact_support_failed' }
       })
     })
+
+    // Commands run arbitrary registered functions, including ones contributed
+    // by extensions, so the rejected value is not guaranteed to be an Error.
+    it('reports a thrown non-Error as an Error so it carries a stack', async () => {
+      mockExecute.mockRejectedValueOnce('Command failed')
+      const { handleMessageSupport } = useSubscriptionActions()
+
+      await handleMessageSupport()
+
+      expect(mockCaptureException).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'Command failed' }),
+        { tags: { error_type: 'contact_support_failed' } }
+      )
+      expect(mockCaptureException.mock.calls[0][0]).toBeInstanceOf(Error)
+    })
   })
 
   describe('handleRefresh', () => {
