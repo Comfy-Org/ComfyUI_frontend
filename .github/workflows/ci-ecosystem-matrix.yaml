@@ -58,6 +58,25 @@ env:
   CORPUS_CACHE_PREFIX: registry-corpus-v3-
 
 jobs:
+  # First job in the run, and deliberately dependency-free so its annotation
+  # and step summary land at the top. Stale pins are the one failure mode this
+  # instrument cannot detect from the inside: everything stays green while the
+  # ecosystem it claims to measure moves on without it.
+  pin-status:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: How old is the corpus, and how do I bump it
+        run: python3 scripts/registry-census/pins.py
+
   corpus:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -77,14 +96,15 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      # Restore the newest corpus regardless of key: the primary key never
-      # hits (run-scoped), so restore-keys always serves the latest save.
+      # Keyed on the pins, so it is an exact hit for every run measuring the
+      # same commits and a guaranteed miss the moment they are bumped. The
+      # prefix fallback serves a cold PR something usable rather than nothing.
       - name: Restore corpus cache
         id: restore
         uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           path: .census
-          key: ${{ env.CORPUS_CACHE_PREFIX }}${{ github.run_id }}
+          key: ${{ env.CORPUS_CACHE_PREFIX }}${{ hashFiles('scripts/registry-census/corpus.pins.json') }}
           restore-keys: ${{ env.CORPUS_CACHE_PREFIX }}
 
       # Re-pin the registry snapshot every run: it is the corpus's target
@@ -99,16 +119,13 @@ jobs:
       # and unpacks archives; pack code executes in ecosystem-matrix, which
       # checks out with persist-credentials: false.
       #
-      # --revalidate only off main. On a PR the restored corpus is the
-      # measurement's control: refetching drifted packs there would move the
-      # population out from under the baseline it is being compared to.
+      # Fetches at the commits named in corpus.pins.json, so this only does
+      # real work on a cold cache or a pin bump. Prints the pin banner first.
       - name: Fetch corpus
         id: fetch
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          python3 scripts/registry-census/fetch_corpus.py \
-            ${{ github.event_name == 'pull_request' && ' ' || '--revalidate' }}
+        run: python3 scripts/registry-census/fetch_corpus.py
 
       # corpus.lock.json records the ETag and resolved tree of every pack this
       # run measured - the identity a published figure has to be cited with.

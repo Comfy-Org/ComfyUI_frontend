@@ -39,9 +39,11 @@ import tempfile
 import time
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
+from datetime import date
 from typing import NamedTuple
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import pins  # noqa: E402
 from paths import CORPUS, LOCKFILE, registry_snapshot  # noqa: E402
 
 # ComfyUI serves plain browser ES modules out of a pack's web directory, so
@@ -169,37 +171,39 @@ class Fetched(NamedTuple):
     status: str
     etag: str | None
     detail: str
-    tree: str = ''
+    ref: str = ''
 
 
-def _archive_root(extracted: str) -> tuple[str, str]:
-    """The archive's single top-level directory, and its name.
+def _archive_root(extracted: str) -> str:
+    """The archive's single top-level directory.
 
-    Codeload names it `<repo>-<committish>`, so for a HEAD fetch the name
-    records which commit was actually measured. That is the only per-pack
-    identity available without a second request per pack, and it is what makes
-    a red delta diffable: 'these 31 packs moved since the last green run'.
+    Codeload names it `<repo>-<ref>` verbatim, so a HEAD fetch yields
+    `<repo>-HEAD` and the archive carries no commit identity of its own -
+    that comes from corpus.pins.json.
     """
     names = os.listdir(extracted)
     if len(names) == 1 and os.path.isdir(os.path.join(extracted, names[0])):
-        return os.path.join(extracted, names[0]), names[0]
-    return extracted, ''
+        return os.path.join(extracted, names[0])
+    return extracted
 
 
-def _identity_holds(prev: dict, etag: str | None) -> bool:
+def _identity_holds(prev: dict, etag: str | None, ref: str) -> bool:
     """--frozen reproduces a published corpus only if identity was recorded.
 
     An absent ETag on either side previously ACCEPTED the fetch and replaced
     the content, so frozen mode could silently measure different bytes than
-    the run it claims to reproduce.
+    the run it claims to reproduce. A pinned commit is stronger evidence than
+    an ETag and is accepted on its own.
     """
+    if len(ref) == 40 and prev.get('ref') == ref:
+        return True
     known = prev.get('etag')
     return bool(known) and bool(etag) and known == etag
 
 
-def _write_identity(dest: str, etag: str | None, tree: str) -> None:
+def _write_identity(dest: str, etag: str | None, ref: str) -> None:
     with open(os.path.join(dest, '.identity'), 'w', encoding='utf-8') as fh:
-        json.dump({'etag': etag or '', 'tree': tree}, fh)
+        json.dump({'etag': etag or '', 'ref': ref}, fh)
 
 
 def _stage(src: str, staged: str) -> bool:
@@ -240,6 +244,52 @@ def _stage(src: str, staged: str) -> bool:
     return True
 
 
+def resolve_head(repo: str) -> tuple[str, str]:
+    """(pack ref, resolved commit sha) for a repo's default branch.
+
+    git ls-remote rather than the REST API: 5,100 packs would blow the
+    authenticated 5,000/hour REST budget, and the git protocol is not
+    rate-limited the same way. codeload names a HEAD tarball's root
+    `<repo>-HEAD`, so the archive itself carries no commit identity - this is
+    the only cheap place to get one.
+    """
+    target = target_of(repo)
+    if not target:
+        return ('', '')
+    host = _host(repo)
+    if host not in ('github.com', 'gitlab.com'):
+        return ('', '')
+    r = subprocess.run(
+        ['git', 'ls-remote', f'https://{host}/{target.slug}', target.ref],
+        capture_output=True, text=True, timeout=60,
+    )
+    if r.returncode != 0 or not r.stdout.strip():
+        return ('', '')
+    return (target.ref, r.stdout.split()[0])
+
+
+def write_pins(targets: list[dict], workers: int) -> int:
+    resolved: dict[str, str] = {}
+    with ThreadPoolExecutor(max_workers=workers) as ex:
+        shas = ex.map(lambda t: resolve_head(t.get('repo') or ''), targets)
+        for entry, (_ref, sha) in zip(targets, shas):
+            if sha:
+                resolved[entry['id']] = sha
+    with open(pins.PINS, 'w', encoding='utf-8') as fh:
+        json.dump(
+            {'updated': date.today().isoformat(), 'packs': resolved},
+            fh, indent=1, sort_keys=True,
+        )
+    unresolved = len(targets) - len(resolved)
+    print(
+        f'pinned {len(resolved)} packs -> {pins.PINS}'
+        + (f' ({unresolved} unresolvable, will track their ref)'
+           if unresolved else ''),
+        file=sys.stderr,
+    )
+    return 0
+
+
 def fetch_one(
     entry: dict, lock: dict, frozen: bool, revalidate: bool = False
 ) -> Fetched:
@@ -257,14 +307,18 @@ def fetch_one(
     if not target:
         return Fetched(pack_id, 'bad-url', None, '')
 
-    url = tarball_url(repo, target.slug, target.ref)
+    # A pinned commit is the whole point of the gate being reproducible. A
+    # pack the pins do not cover yet (registered since the last bump) tracks
+    # its registry ref rather than being dropped from the population.
+    ref = pins.packs().get(pack_id) or target.ref
+    url = tarball_url(repo, target.slug, ref)
     if not url:
         return Fetched(pack_id, 'unsupported-host', None, '')
 
     # Already fetched successfully and we are not being asked to verify.
     if os.path.exists(marker) and not frozen:
         if not revalidate:
-            return Fetched(pack_id, 'cached', prev.get('etag'), '', prev.get('tree', ''))
+            return Fetched(pack_id, 'cached', prev.get('etag'), '', prev.get('ref', ''))
         # Cheap drift check: one HEAD request against the lockfile ETag.
         # On any HEAD failure keep the cached copy - a network blip must
         # not evict corpus. A pack with no RECORDED etag but a live one
@@ -273,7 +327,7 @@ def fetch_one(
         # replacement is fully staged below.
         live = _head_etag(url)
         if live is None or (prev.get('etag') and live == prev['etag']):
-            return Fetched(pack_id, 'cached', prev.get('etag'), '', prev.get('tree', ''))
+            return Fetched(pack_id, 'cached', prev.get('etag'), '', prev.get('ref', ''))
 
     with tempfile.TemporaryDirectory() as tmp:
         tar_path = os.path.join(tmp, 'a.tar.gz')
@@ -304,7 +358,7 @@ def fetch_one(
         except OSError:
             pass
 
-        if frozen and not _identity_holds(prev, etag):
+        if frozen and not _identity_holds(prev, etag, ref):
             return Fetched(pack_id, 'drifted', etag, '')
 
         # Extract WITHOUT tar filter flags: --include is bsdtar-only and GNU
@@ -325,7 +379,7 @@ def fetch_one(
         if rc != 0:
             return Fetched(pack_id, 'failed', None, 'tar')
 
-        root_dir, tree = _archive_root(extracted)
+        root_dir = _archive_root(extracted)
         scoped = os.path.join(root_dir, target.subdir) if target.subdir else root_dir
         if not os.path.isdir(scoped):
             return Fetched(pack_id, 'failed', None, 'subdir absent')
@@ -337,7 +391,7 @@ def fetch_one(
         if os.path.isdir(dest):
             shutil.rmtree(dest)
         shutil.move(staged, dest)
-        _write_identity(dest, etag, tree)
+        _write_identity(dest, etag, ref)
 
     # Both outcomes below are *successful* fetches, so both are marked done and
     # skipped next run. Only 'failed' is retried. The distinction between them
@@ -346,7 +400,7 @@ def fetch_one(
     status = 'ok' if _has_payload(dest) else 'empty'
     with open(marker, 'w', encoding='utf-8') as fh:
         fh.write(etag or '')
-    return Fetched(pack_id, status, etag, '', tree)
+    return Fetched(pack_id, status, etag, '', ref)
 
 
 def main() -> int:
@@ -359,6 +413,11 @@ def main() -> int:
     )
     ap.add_argument('--limit', type=int, default=0, help='only N packs (smoke test)')
     ap.add_argument('--workers', type=int, default=int(os.environ.get('WORKERS', 16)))
+    ap.add_argument(
+        '--write-pins',
+        action='store_true',
+        help='resolve every pack to a commit and rewrite corpus.pins.json',
+    )
     args = ap.parse_args()
 
     snapshot = registry_snapshot()
@@ -374,6 +433,12 @@ def main() -> int:
         targets = [x for x in json.load(fh) if x.get('repo')]
     if args.limit:
         targets = targets[: args.limit]
+
+    if args.write_pins:
+        return write_pins(targets, args.workers)
+
+    for line in pins.banner():
+        print(line, file=sys.stderr)
 
     lock: dict = {}
     if os.path.exists(LOCKFILE):
@@ -403,8 +468,8 @@ def main() -> int:
             entry = lock.setdefault(r.pack_id, {})
             if r.etag:
                 entry['etag'] = r.etag
-            if r.tree:
-                entry['tree'] = r.tree
+            if r.ref:
+                entry['ref'] = r.ref
             # 'cached' is a fact about this run, not about the pack — keep the
             # ok/empty distinction the original fetch established.
             if r.status != 'cached':

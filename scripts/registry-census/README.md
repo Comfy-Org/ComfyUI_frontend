@@ -27,20 +27,52 @@ shared 10GB Actions budget, which evicted itself mid-run — run 31753242605
 saved the entry, shard 2 restored it, and shards 1/3/4 found no corpus at
 all.
 
-Each pack's tarball ETag and resolved tree name are recorded in
-`corpus.lock.json`. codeload names the archive root `<repo>-<committish>`, so
-for a HEAD fetch that name is the commit actually measured — which is what
-makes a red delta diffable ("these 31 packs moved since the last green run")
-rather than an unattributable number.
+## Pins — read this before wondering why a pack looks stale
+
+`corpus.pins.json` is **checked in** and names the exact commit of every pack
+the matrix measures. The fetch uses those commits, not `HEAD`.
+
+This is the difference between a PR gate and a liability. Tracking pack HEADs
+makes every one of ~5,100 pack authors a committer to this repo's CI: one of
+them pushes a bug at 3am and the next unrelated PR goes red for it, and the
+person who has to work that out is whoever opened it. Pinned, a pack can only
+change through a reviewed bump.
+
+**Bumping is manual, and currently the only thing keeping the pins honest.**
+
+- Workflow: [`update-corpus-pins.yaml`](https://github.com/Comfy-Org/ComfyUI_frontend/actions/workflows/update-corpus-pins.yaml) (`workflow_dispatch`) — resolves every
+  pack, opens a PR, and summarizes what moved.
+- Locally: `python3 scripts/registry-census/fetch_corpus.py --write-pins`
+
+**A red `CI: Ecosystem Matrix` on a pin-bump PR means the ecosystem moved, not
+that the diff broke something.** That is what the bump PR is for. Anywhere
+else, a red means the diff. Keeping those two apart is the whole point.
+
+Every matrix run opens with a `pin-status` job printing the pin date, the age,
+and the bump URL, and raises a `::warning::` annotation once the pins are more
+than **30 days** old. It does not fail the build — a stale-pin failure would
+block everyone for something nobody's PR caused — but it is the loudest thing
+in the run, because a stale corpus is the one defect this instrument cannot
+detect from the inside. Everything stays green while the ecosystem it claims
+to measure moves on without it.
+
+Packs registered since the last bump have no pin and track their registry ref
+until the next one, rather than dropping out of the population.
+
+Each pack's tarball ETag and the ref actually fetched are recorded in
+`corpus.lock.json`, which ships as a run artifact — that is the identity a
+published figure has to be cited with, and diffing two runs' lockfiles gives
+you the packs that moved between them.
 
 ## Running locally
 
 ```bash
-python3 scripts/registry-census/refresh_registry.py     # pin the registry snapshot
-python3 scripts/registry-census/fetch_corpus.py         # fetch missing packs
-python3 scripts/registry-census/fetch_corpus.py --revalidate   # also refetch drifted packs
-python3 scripts/registry-census/fetch_corpus.py --limit 50     # smoke test
-python3 -m unittest discover -s scripts/registry-census        # verdict unit tests
+python3 scripts/registry-census/pins.py                 # how old is the corpus
+python3 scripts/registry-census/refresh_registry.py     # re-pin the registry snapshot
+python3 scripts/registry-census/fetch_corpus.py         # fetch at the pinned commits
+python3 scripts/registry-census/fetch_corpus.py --limit 50      # smoke test
+python3 scripts/registry-census/fetch_corpus.py --write-pins    # bump the pins
+python3 -m unittest discover -s scripts/registry-census         # verdict unit tests
 ```
 
 Pure stdlib; needs `curl` and `tar` on PATH.
@@ -50,13 +82,14 @@ Pure stdlib; needs `curl` and `tar` on PATH.
 `.github/workflows/ci-ecosystem-matrix.yaml`. **Corpus freshness is a
 push-to-main concern, not a PR concern:**
 
-| event          | corpus                                    | metrics              |
-| -------------- | ----------------------------------------- | -------------------- |
-| `push` to main | ETag-revalidated, drifted packs refetched | baseline **written** |
-| `pull_request` | main's corpus restored and used as-is     | baseline **read**    |
+| event          | corpus                                         | metrics              |
+| -------------- | ---------------------------------------------- | -------------------- |
+| `push` to main | fetched at the pinned commits, cache **saved** | baseline **written** |
+| `pull_request` | main's cached corpus, restored as-is           | baseline **read**    |
 
-Both sides of the comparison then measure the same packs, so a red delta is
-attributable to the diff rather than to a pack that moved overnight. Actions
+Both sides measure the same packs — the pins guarantee it across cache
+evictions, the restore-without-refetch guarantees it within a run — so a red
+delta is attributable to the diff rather than to a pack that moved. Actions
 cache scoping also means only a default-branch run can produce an entry other
 branches restore, so a PR never writes one.
 
