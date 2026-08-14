@@ -627,14 +627,24 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
     await expectSlotPositionTracksDom(comfyPage, checkpointId, 0, false)
   })
 
-  test('pointerCancel stops autopan', async ({ comfyPage }) => {
+  test('pointerCancel stops autopan', async ({ comfyPage, comfyMouse }) => {
     const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
-    await ksampler.header.click({ trial: true })
-    await comfyPage.page.mouse.down()
+    const canvasBox = await comfyPage.canvas.boundingBox()
+    const headerBox = await ksampler.header.boundingBox()
+    if (!canvasBox) throw new Error('Canvas bounding box not found')
+    if (!headerBox) throw new Error('KSampler header bounding box not found')
+    const panTarget = {
+      x: canvasBox.x + canvasBox.width - 2,
+      y: canvasBox.y + canvasBox.height / 2
+    }
+    await comfyMouse.move({
+      x: headerBox.x + headerBox.width / 2,
+      y: headerBox.y + headerBox.height / 2
+    })
 
     const getOffset = () => comfyPage.canvasOps.getOffset()
     const initialOffset = await getOffset()
-    await comfyPage.page.mouse.move(10, 10, { steps: 20 })
+    await comfyMouse.drag(panTarget, { steps: 20 })
     await expect.poll(getOffset, 'drag with autopan').not.toEqual(initialOffset)
 
     await test.step('move outside pan range and cancel drag', async () => {
@@ -646,7 +656,7 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
 
     const secondaryOffset = await getOffset()
 
-    await comfyPage.page.mouse.move(10, 10, { steps: 20 })
+    await comfyPage.page.mouse.move(panTarget.x, panTarget.y, { steps: 20 })
     await comfyPage.nextFrame()
     expect(await getOffset(), 'drag canceled').toEqual(secondaryOffset)
   })
