@@ -253,7 +253,10 @@ jobs:
 
           # The chromium project grep-excludes @cloud, and a cloud spec needs
           # the cloud build to run at all, so record those under `cloud`.
-          CLOUD_FILES=$(echo "$NEW_FILES" | xargs -r grep -l '@cloud' || true)
+          CLOUD_FILES=$(echo "$NEW_FILES" | while read -r spec; do
+            [ -n "$spec" ] || continue
+            if grep -q '@cloud' "$spec"; then echo "$spec"; fi
+          done)
           if [ -n "$CLOUD_FILES" ]; then
             RUN_FILES="$CLOUD_FILES"
             echo "project=cloud" >> "$GITHUB_OUTPUT"
@@ -276,7 +279,7 @@ jobs:
           echo "${RUN_FILES:-<none>}"
           if [ -n "$NEW_FILES" ] && [ "$NEW_FILES" != "$RUN_FILES" ]; then
             echo "Not recorded, since one run serves a single build:"
-            comm -23 <(echo "$NEW_FILES" | sort) <(echo "$RUN_FILES" | sort)
+            echo "$NEW_FILES" | grep -vxF "$RUN_FILES" || true
           fi
 
       - name: Download built frontend
