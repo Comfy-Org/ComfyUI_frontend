@@ -7,7 +7,22 @@
       <Divider />
     </div>
 
-    <CreditsTile />
+    <div v-if="embedded" class="rounded-2xl border border-interface-stroke p-6">
+      <div class="mb-4 flex items-center justify-between">
+        <h3 class="m-0 text-base font-semibold">
+          {{ $t('credits.workspaceCredits') }}
+        </h3>
+        <Button
+          variant="secondary"
+          size="lg"
+          @click="handleCreditsHistoryClick"
+        >
+          {{ $t('subscription.manageBilling') }}
+        </Button>
+      </div>
+      <CreditsTile class="max-w-md" />
+    </div>
+    <CreditsTile v-else />
 
     <div v-if="!embedded" class="flex items-center justify-between">
       <h3 class="m-0">{{ $t('credits.activity') }}</h3>
@@ -20,14 +35,6 @@
     <UsageLogsTable v-if="!embedded" ref="usageLogsTableRef" />
 
     <div class="flex flex-row gap-2">
-      <Button
-        v-if="embedded"
-        variant="muted-textonly"
-        @click="handleCreditsHistoryClick"
-      >
-        <i class="pi pi-arrow-up-right" />
-        {{ $t('credits.invoiceHistory') }}
-      </Button>
       <Button variant="muted-textonly" @click="handleFaqClick">
         <i class="pi pi-question-circle" />
         {{ $t('credits.faqs') }}
