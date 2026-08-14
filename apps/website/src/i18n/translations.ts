@@ -378,6 +378,10 @@ const translations = {
     en: 'VIEW DOCS',
     'zh-CN': '查看文档'
   },
+  'api.hero.trySdk': {
+    en: 'TRY COMFY SDK',
+    'zh-CN': '试用 Comfy SDK'
+  },
 
   // Enterprise – TeamSection
   'enterprise.team.heading': {
@@ -4865,6 +4869,10 @@ const translations = {
     en: 'Made with LTX 2.5',
     'zh-CN': '用 LTX 2.5 制作'
   },
+  'ltx.faq.heading': {
+    en: 'Q&A',
+    'zh-CN': '问答'
+  },
   'ltx.hero.primaryCta': {
     en: 'RUN LTX 2.5',
     'zh-CN': '运行 LTX 2.5'
@@ -5514,6 +5522,10 @@ const translations = {
     'zh-CN': '文本生成音频'
   },
   'minimaxMusic3.hero.primaryCta': {
+    en: 'RUN WORKFLOW',
+    'zh-CN': '运行工作流'
+  },
+  'minimaxMusic3.hero.secondaryCta': {
     en: 'LEARN MORE',
     'zh-CN': '了解更多'
   },
@@ -5536,6 +5548,10 @@ const translations = {
   },
   'minimaxMusic3.steps.step': { en: 'Step', 'zh-CN': '步骤' },
   'minimaxMusic3.steps.primaryCta': {
+    en: 'RUN WORKFLOW',
+    'zh-CN': '运行工作流'
+  },
+  'minimaxMusic3.steps.secondaryCta': {
     en: 'LEARN MORE',
     'zh-CN': '了解更多'
   },

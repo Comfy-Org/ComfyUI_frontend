@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue'
+import { useMediaQuery } from '@vueuse/core'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
 
 import type { Locale } from '../../../i18n/translations'
 
@@ -12,6 +13,7 @@ import ProductHeroBadge from '../../common/ProductHeroBadge.vue'
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const canvasRef = ref<HTMLCanvasElement>()
+const isIllustrationVisible = useMediaQuery('(min-width: 64rem)')
 let animationId: number | null = null
 
 onMounted(() => {
@@ -173,12 +175,24 @@ onMounted(() => {
 
     ctx.restore()
 
-    if (!prefersReducedMotion()) {
+    if (!prefersReducedMotion() && isIllustrationVisible.value) {
       animationId = requestAnimationFrame(drawLoop)
     }
   }
 
-  drawLoop()
+  watch(
+    [isIllustrationVisible, prefersReducedMotion],
+    ([visible]) => {
+      if (animationId !== null) {
+        cancelAnimationFrame(animationId)
+        animationId = null
+      }
+      if (visible) {
+        drawLoop()
+      }
+    },
+    { immediate: true }
+  )
 })
 
 onUnmounted(() => {
@@ -190,9 +204,9 @@ onUnmounted(() => {
   <section
     class="max-w-9xl relative mx-auto flex flex-col items-center overflow-hidden lg:flex-row-reverse lg:items-center lg:overflow-x-visible lg:pb-[min(8vw,10rem)]"
   >
-    <!-- Illustration (stacks above on mobile, right on lg) -->
+    <!-- Illustration (hidden below lg, right on lg) -->
     <div
-      class="w-4/5 max-w-md scale-150 self-center md:max-w-2xl lg:pointer-events-none lg:z-1 lg:-ml-12 lg:scale-[1.95] lg:self-center xl:size-[clamp(32rem,max(40vh,32vw),36rem)] xl:min-h-[min(32vw,24rem)] xl:min-w-[min(24vw,20rem)]"
+      class="hidden w-4/5 max-w-md self-center md:max-w-2xl lg:pointer-events-none lg:z-1 lg:-ml-12 lg:block lg:scale-[1.95] lg:self-center xl:size-[clamp(32rem,max(40vh,32vw),36rem)] xl:min-h-[min(32vw,24rem)] xl:min-w-[min(24vw,20rem)]"
     >
       <canvas
         ref="canvasRef"
@@ -205,12 +219,12 @@ onUnmounted(() => {
 
     <!-- Text -->
     <div
-      class="relative z-10 w-full px-4 pb-16 lg:min-w-160 lg:flex-1 lg:translate-x-[10%] lg:px-20 lg:py-14"
+      class="relative z-10 mt-17 w-full px-4 pb-16 lg:mt-0 lg:min-w-160 lg:flex-1 lg:translate-x-[10%] lg:px-20 lg:py-14"
     >
       <ProductHeroBadge text="API" />
 
       <h1
-        class="text-primary-comfy-canvas mt-6 text-3xl/tight font-light whitespace-pre-line md:text-4xl/tight lg:max-w-2xl lg:text-5xl/tight"
+        class="text-primary-comfy-canvas mt-6 text-3xl/tight font-light md:text-4xl/tight lg:max-w-2xl lg:text-5xl/tight xl:whitespace-pre-line"
       >
         {{ t('api.hero.heading', locale) }}
       </h1>
@@ -221,7 +235,7 @@ onUnmounted(() => {
         {{ t('api.hero.subtitle', locale) }}
       </p>
 
-      <div class="mt-8 flex flex-col gap-4 lg:flex-row">
+      <div class="mt-8 grid gap-4 lg:w-fit lg:grid-cols-2">
         <BrandButton
           :href="externalLinks.apiKeys"
           size="lg"
@@ -236,6 +250,14 @@ onUnmounted(() => {
           class="text-center lg:min-w-60 lg:p-4"
         >
           {{ t('api.hero.viewDocs', locale) }}
+        </BrandButton>
+        <BrandButton
+          :href="externalLinks.docsSdk"
+          variant="outline"
+          size="lg"
+          class="text-center lg:col-span-2 lg:p-4"
+        >
+          {{ t('api.hero.trySdk', locale) }}
         </BrandButton>
       </div>
     </div>
