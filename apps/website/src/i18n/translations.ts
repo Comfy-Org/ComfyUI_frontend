@@ -2041,9 +2041,9 @@ const translations = {
     'zh-CN': '让任何 AI 智能体\n驱动 ComfyUI。'
   },
   'mcp.hero.subtitle': {
-    en: 'Comfy MCP exposes the full ComfyUI engine over the Model Context Protocol — so your assistant can access the ecosystem, build workflows, and generate images, video, audio, or 3D. On Comfy Cloud GPUs, or on your own machine.',
+    en: 'Connect any AI agent to ComfyUI on Comfy Cloud GPUs or on your own machine. Generate images, video, audio and 3D, search models, nodes and templates, and run real workflows.',
     'zh-CN':
-      'Comfy MCP 通过模型上下文协议暴露完整的 ComfyUI 引擎——让你的助手能够接入生态系统、构建工作流，并生成图像、视频、音频或 3D 内容。在 Comfy Cloud 的 GPU 上运行，或就在你自己的机器上。'
+      '将任意 AI 智能体连接到 Comfy Cloud GPU 或本机上的 ComfyUI。生成图像、视频、音频和 3D，搜索模型、节点与模板，并运行真实工作流。'
   },
   'mcp.hero.demoPromptKeyframeBoard': {
     en: 'board the launch film — 8 key frames from the brief',
@@ -2274,8 +2274,8 @@ const translations = {
     'zh-CN': '在 GitHub 上查看'
   },
   'mcp.setup.local.requirementPrefix': {
-    en: 'The local connection runs free on your own hardware, and the server is ',
-    'zh-CN': '本地连接在你自己的硬件上免费运行，服务器'
+    en: 'The local ComfyUI connection runs free on your own hardware, and the MCP is ',
+    'zh-CN': '本地 ComfyUI 连接在你自己的硬件上免费运行，MCP '
   },
   'mcp.setup.local.requirementLinkLabel': {
     en: 'open source on GitHub',
@@ -2284,10 +2284,6 @@ const translations = {
   'mcp.setup.local.requirementSuffix': {
     en: '.',
     'zh-CN': '。'
-  },
-  'mcp.setup.local.requirementFootnote': {
-    en: ' It needs Python 3.10+, comfy-cli, and a ComfyUI install on your machine.',
-    'zh-CN': '它需要你的机器上安装 Python 3.10+、comfy-cli 和 ComfyUI。'
   },
   'mcp.setup.local.manual.title': {
     en: 'Install the server',

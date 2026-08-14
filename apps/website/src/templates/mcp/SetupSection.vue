@@ -253,8 +253,7 @@ const copiedLabel = t('ui.copied', locale)
             rel="noopener noreferrer"
             class="focus-visible:ring-primary-comfy-yellow/50 rounded-sm text-primary-comfy-canvas underline underline-offset-4 focus-visible:ring-2 focus-visible:outline-none"
             >{{ t('mcp.setup.local.requirementLinkLabel', locale) }}</a
-          >{{ t('mcp.setup.local.requirementSuffix', locale)
-          }}{{ t('mcp.setup.local.requirementFootnote', locale) }}
+          >{{ t('mcp.setup.local.requirementSuffix', locale) }}
         </p>
       </template>
     </SectionHeader>
