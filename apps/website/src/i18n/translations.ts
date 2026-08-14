@@ -2518,9 +2518,9 @@ const translations = {
     'zh-CN': '云端连接和本地连接有什么区别？'
   },
   'mcp.faq.3.a': {
-    en: 'The cloud connection is hosted: one URL, nothing to install, and workflows run on Comfy Cloud GPUs with our model catalog. The local connection is open source: your client launches the comfy-mcp server on your machine, and it drives your own ComfyUI — your models, your custom nodes, your GPU. Not sure? Start with cloud.',
+    en: "The cloud connection is hosted: one URL, nothing to install, and workflows run on Comfy Cloud GPUs with our model catalog. The local connection is open source: your client launches the comfy-mcp server on your machine, and it drives your own ComfyUI — your models, your custom nodes, your GPU.\nWhich one to choose: new users should start with cloud — it is the simplest setup, and the more compatible choice for claude.ai, ChatGPT, and Claude Desktop. Pick local if you already run ComfyUI on your machine or work mostly in a coding agent like Claude Code, Cursor, or Codex. One caveat for Mac users: today's big open-weight models will not run at a workable speed on the Apple GPU, so run those on cloud.",
     'zh-CN':
-      '云端连接是托管服务：一个 URL，无需安装，工作流在 Comfy Cloud 的 GPU 上运行，并可使用我们的模型目录。本地连接是开源的：客户端在你的机器上启动 comfy-mcp 服务器，驱动你自己的 ComfyUI——你的模型、你的自定义节点、你的 GPU。拿不准？从云端开始。'
+      '云端连接是托管服务：一个 URL，无需安装，工作流在 Comfy Cloud 的 GPU 上运行，并可使用我们的模型目录。本地连接是开源的：客户端在你的机器上启动 comfy-mcp 服务器，驱动你自己的 ComfyUI——你的模型、你的自定义节点、你的 GPU。\n如何选择：新用户建议从云端开始——配置最简单，对 claude.ai、ChatGPT 和 Claude Desktop 的兼容性也更好。如果你已经在本机运行 ComfyUI，或主要在 Claude Code、Cursor、Codex 等编程智能体中工作，选本地。Mac 用户注意：如今的大型开源权重模型在 Apple GPU 上跑不出实用的速度，请在云端运行。'
   },
   'mcp.faq.4.q': {
     en: 'Can I use both connections at once?',
