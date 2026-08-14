@@ -19,7 +19,7 @@ const {
   mockCreateInvite: vi.fn(),
   mockFetchPendingInvites: vi.fn(),
   mockFetchStatus: vi.fn(),
-  mockPendingInvites: [] as PendingInvite[],
+  mockPendingInvites: { value: [] as PendingInvite[] },
   mockToastAdd: vi.fn(),
   mockTrackInviteSent: vi.fn(),
   mockTrackInviteFailed: vi.fn()
@@ -34,7 +34,7 @@ vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
     createInvite: mockCreateInvite as (email: string) => Promise<PendingInvite>,
     fetchPendingInvites: mockFetchPendingInvites,
     get pendingInvites() {
-      return mockPendingInvites
+      return [...mockPendingInvites.value]
     }
   })
 }))
@@ -93,8 +93,8 @@ function submitButton() {
 
 describe('InviteMembersForm', () => {
   beforeEach(() => {
-    mockPendingInvites.splice(0)
-    mockFetchPendingInvites.mockResolvedValue([])
+    mockPendingInvites.value = []
+    mockFetchPendingInvites.mockResolvedValue([...mockPendingInvites.value])
     mockFetchStatus.mockResolvedValue(undefined)
     mockCreateInvite.mockImplementation(async (email: string) =>
       pendingInviteFor(email)
@@ -161,7 +161,7 @@ describe('InviteMembersForm', () => {
 
   it('ignores stale cached invites when pending invites cannot be refreshed', async () => {
     const refreshError = new Error('pending invites failed')
-    mockPendingInvites.push(pendingInviteFor('stale@example.com'))
+    mockPendingInvites.value.push(pendingInviteFor('stale@example.com'))
     mockFetchPendingInvites.mockRejectedValueOnce(refreshError)
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { user, emitted } = renderForm()
@@ -273,7 +273,7 @@ describe('InviteMembersForm', () => {
 
   it('disables submit when every email has a pending invite', async () => {
     const pendingInvite = pendingInviteFor('ALREADY@EXAMPLE.COM')
-    mockPendingInvites.push(pendingInvite)
+    mockPendingInvites.value.push(pendingInvite)
     mockFetchPendingInvites.mockResolvedValueOnce([pendingInvite])
     const { user } = renderForm()
 
@@ -291,7 +291,7 @@ describe('InviteMembersForm', () => {
       pendingInviteFor('first@example.com'),
       pendingInviteFor('second@example.com')
     ]
-    mockPendingInvites.push(...pendingInvites)
+    mockPendingInvites.value.push(...pendingInvites)
     mockFetchPendingInvites.mockResolvedValueOnce(pendingInvites)
     const { user, emitted } = renderForm({ maxSeats: 3, occupiedSeats: 2 })
 

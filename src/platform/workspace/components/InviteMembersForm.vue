@@ -106,7 +106,7 @@
 
 <script setup lang="ts">
 import { useToast } from 'primevue/usetoast'
-import { computed, onMounted, ref, useId } from 'vue'
+import { computed, onMounted, onUnmounted, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
@@ -172,6 +172,7 @@ const invitedEmails = ref<string[]>([])
 const loading = ref(false)
 const pendingInvites = ref<PendingInvite[]>(workspaceStore.pendingInvites)
 let pendingInvitesRequest: Promise<void> | undefined
+let mounted = false
 
 const invalidEmailsHintId = useId()
 const pendingInvitesHintId = useId()
@@ -273,15 +274,22 @@ async function onSubmit() {
 }
 
 onMounted(() => {
+  mounted = true
   pendingInvitesRequest = workspaceStore
     .fetchPendingInvites()
     .then((invites) => {
+      if (!mounted) return
       pendingInvites.value = invites
     })
     .catch((error: unknown) => {
       console.error(error)
+      if (!mounted) return
       pendingInvites.value = []
     })
+})
+
+onUnmounted(() => {
+  mounted = false
 })
 
 defineExpose({
