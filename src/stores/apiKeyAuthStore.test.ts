@@ -165,6 +165,31 @@ describe('useApiKeyAuthStore', () => {
     })
   })
 
+  describe('replacing the key of an authenticated session', () => {
+    it('stops reporting the previous identity while the new key is unverified', async () => {
+      mockCreateCustomer.mockResolvedValueOnce(customer)
+      const store = useApiKeyAuthStore()
+      await store.storeApiKey(VALID_KEY)
+      expect(store.isAuthenticated).toBe(true)
+
+      const replacement = { id: 'customer-2', email: 'second@example.com' }
+      let resolveReplacement!: (value: typeof customer) => void
+      mockCreateCustomer.mockReturnValueOnce(
+        new Promise<typeof customer>((res) => {
+          resolveReplacement = res
+        })
+      )
+
+      const signIn = store.storeApiKey('comfyui-replacement-key')
+      await nextTick()
+      expect(store.isAuthenticated).toBe(false)
+
+      resolveReplacement(replacement)
+      await expect(signIn).resolves.toBe(true)
+      expect(store.currentUser).toEqual(replacement)
+    })
+  })
+
   describe('clearing the key while it is being validated', () => {
     it('does not let the in-flight result sign the user back in', async () => {
       localStorage.setItem(STORAGE_KEY, VALID_KEY)
@@ -198,6 +223,19 @@ describe('useApiKeyAuthStore', () => {
 
       expect(store.isAuthenticated).toBe(false)
       expect(severities()).toEqual(['error:auth.apiKey.invalid'])
+    })
+
+    it('reports a key the account is no longer permitted to use, and keeps it', async () => {
+      localStorage.setItem(STORAGE_KEY, VALID_KEY)
+      mockCreateCustomer.mockRejectedValue(new AuthStoreError('denied', 403))
+
+      const store = useApiKeyAuthStore()
+      await vi.waitFor(() => expect(mockCreateCustomer).toHaveBeenCalled())
+      await nextTick()
+
+      expect(store.isAuthenticated).toBe(false)
+      expect(store.getApiKey()).toBe(VALID_KEY)
+      expect(severities()).toEqual(['error:auth.apiKey.notPermitted'])
     })
 
     it('stays quiet when the backend is merely unreachable', async () => {
