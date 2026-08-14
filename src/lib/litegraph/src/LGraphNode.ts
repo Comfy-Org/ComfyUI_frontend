@@ -753,18 +753,17 @@ export class LGraphNode
    */
   get renderingSize(): Size {
     this.refreshGeometry()
-    if (this.flags.collapsed) {
-      const contentSize = this.graph
-        ? layoutStore.contentSizeOf(this.graph.rootGraph.id, this.id)
-        : undefined
-      return [
-        contentSize?.width ??
-          this._collapsed_width ??
-          LiteGraph.NODE_COLLAPSED_WIDTH,
-        contentSize?.height ?? 0
-      ]
-    }
-    return this._renderedSize
+    if (!this.flags.collapsed) return this._renderedSize
+
+    const contentSize = this.graph
+      ? layoutStore.contentSizeOf(this.graph.rootGraph.id, this.id)
+      : undefined
+    return [
+      contentSize?.width ??
+        this._collapsed_width ??
+        LiteGraph.NODE_COLLAPSED_WIDTH,
+      contentSize?.height ?? 0
+    ]
   }
 
   get shape(): RenderShape | undefined {

@@ -392,16 +392,10 @@ class LayoutStoreImpl {
     return true
   }
 
-  /** Size the DOM made of this node, if it has been measured. */
   contentSizeOf(rootGraphId: UUID, nodeId: NodeId): Size | undefined {
     return this.contentSizes.get(makeScopedLayoutKey(rootGraphId, nodeId))
   }
 
-  /**
-   * Records what the DOM made of a node. Local and view-scoped: a measurement
-   * is not replayable on a peer whose fonts, locale or custom nodes differ, so
-   * it never enters the replicated document (ADR 0003, 2026-08-04).
-   */
   reportContentSize(rootGraphId: UUID, nodeId: NodeId, size: Size): void {
     this.contentSizes.set(makeScopedLayoutKey(rootGraphId, nodeId), size)
   }
