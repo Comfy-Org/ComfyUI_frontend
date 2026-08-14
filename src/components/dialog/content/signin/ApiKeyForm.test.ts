@@ -14,6 +14,8 @@ import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import ApiKeyForm from './ApiKeyForm.vue'
 
 const mockStoreApiKey = vi.fn()
+// apiKeySchema requires the comfyui- prefix and a total length of 72.
+const VALID_API_KEY = `comfyui-${'a'.repeat(64)}`
 const mockLoadingRef = ref(false)
 
 vi.mock('@/stores/authStore', () => ({
@@ -59,6 +61,7 @@ const i18n = createI18n({
 describe('ApiKeyForm', () => {
   beforeEach(() => {
     mockLoadingRef.value = false
+    mockStoreApiKey.mockReset()
   })
 
   function renderComponent(props: Record<string, unknown> = {}) {
@@ -97,6 +100,29 @@ describe('ApiKeyForm', () => {
     // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const submitButton = container.querySelector('button[type="submit"]')
     expect(submitButton).toBeDisabled()
+  })
+
+  it('emits success once the key has been accepted', async () => {
+    mockStoreApiKey.mockResolvedValue(true)
+    const onSuccess = vi.fn()
+    const { user } = renderComponent({ onSuccess })
+
+    await user.type(screen.getByLabelText('API Key'), VALID_API_KEY)
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+
+    await vi.waitFor(() => expect(onSuccess).toHaveBeenCalled())
+  })
+
+  it('does not emit success when the key was not accepted', async () => {
+    mockStoreApiKey.mockResolvedValue(undefined)
+    const onSuccess = vi.fn()
+    const { user } = renderComponent({ onSuccess })
+
+    await user.type(screen.getByLabelText('API Key'), VALID_API_KEY)
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+
+    await vi.waitFor(() => expect(mockStoreApiKey).toHaveBeenCalled())
+    expect(onSuccess).not.toHaveBeenCalled()
   })
 
   it('displays help text and links correctly', () => {
