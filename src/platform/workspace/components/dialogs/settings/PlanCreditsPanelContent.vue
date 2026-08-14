@@ -20,6 +20,7 @@
       <SubscriptionPanelContentWorkspace v-if="isCloud" />
       <div v-else class="flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto">
         <CreditsPanel embedded :show-footer-links="false" />
+        <SettingsPlansSection />
         <SubscriptionFooterLinks
           class="shrink-0"
           :show-invoice-history="false"
@@ -53,6 +54,7 @@ import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import SubscriptionFooterLinks from '@/platform/cloud/subscription/components/SubscriptionFooterLinks.vue'
 import { isCloud } from '@/platform/distribution/types'
 import SubscriptionPanelContentWorkspace from '@/platform/workspace/components/SubscriptionPanelContentWorkspace.vue'
+import SettingsPlansSection from '@/platform/workspace/components/dialogs/settings/SettingsPlansSection.vue'
 
 type View = 'overview' | 'activity'
 
