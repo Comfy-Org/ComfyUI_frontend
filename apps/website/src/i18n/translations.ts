@@ -378,6 +378,10 @@ const translations = {
     en: 'VIEW DOCS',
     'zh-CN': '查看文档'
   },
+  'api.hero.trySdk': {
+    en: 'TRY COMFY SDK',
+    'zh-CN': '试用 Comfy SDK'
+  },
 
   // Enterprise – TeamSection
   'enterprise.team.heading': {
