@@ -14,8 +14,8 @@ type ComfyApiUser =
 
 const STORAGE_KEY = 'comfy_api_key'
 
-/** A rejected key is discarded; an unverified one is kept so it can be retried. */
-type ApiKeyFailure = 'rejected' | 'unverified'
+/** Only a rejected key is discarded; the other two are kept and can be retried. */
+type ApiKeyFailure = 'rejected' | 'denied' | 'unverified'
 
 class ApiKeyAuthError extends Error {
   constructor(
@@ -28,9 +28,35 @@ class ApiKeyAuthError extends Error {
   }
 }
 
-const isKeyRejection = (error: unknown) =>
-  error instanceof AuthStoreError &&
-  (error.status === 401 || error.status === 403)
+/**
+ * 401 is the API saying it does not accept this key. 403 accepts the key and
+ * refuses the account (no permission on the workspace, a plan that excludes
+ * key auth), so the key itself is still good and must survive.
+ */
+const failureFor = (error: unknown): ApiKeyFailure => {
+  if (!(error instanceof AuthStoreError)) return 'unverified'
+  if (error.status === 401) return 'rejected'
+  if (error.status === 403) return 'denied'
+  return 'unverified'
+}
+
+const FAILURE_MESSAGES: Record<
+  ApiKeyFailure,
+  { summary: string; detail: string }
+> = {
+  rejected: {
+    summary: 'auth.apiKey.invalid',
+    detail: 'auth.login.noAssociatedUser'
+  },
+  denied: {
+    summary: 'auth.apiKey.notPermitted',
+    detail: 'auth.apiKey.notPermittedDetail'
+  },
+  unverified: {
+    summary: 'auth.apiKey.verificationUnavailable',
+    detail: 'auth.apiKey.verificationUnavailableDetail'
+  }
+}
 
 export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
   const authStore = useAuthStore()
@@ -46,19 +72,10 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
       currentUser.value = await authStore.createCustomer()
     } catch (error) {
       currentUser.value = null
-      if (isKeyRejection(error)) {
-        apiKey.value = null
-        throw new ApiKeyAuthError(
-          'rejected',
-          t('auth.apiKey.invalid'),
-          t('auth.login.noAssociatedUser')
-        )
-      }
-      throw new ApiKeyAuthError(
-        'unverified',
-        t('auth.apiKey.verificationUnavailable'),
-        t('auth.apiKey.verificationUnavailableDetail')
-      )
+      const failure = failureFor(error)
+      if (failure === 'rejected') apiKey.value = null
+      const { summary, detail } = FAILURE_MESSAGES[failure]
+      throw new ApiKeyAuthError(failure, t(summary), t(detail))
     }
   }
 
@@ -80,10 +97,11 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
     }
   }
 
-  // Set while storeApiKey drives the check itself, so the write it makes to
-  // `apiKey` does not have the watch below repeat the same POST and report the
-  // same failure twice.
-  let signingIn = false
+  // True while storeApiKey is driving the check itself. It keeps the write it
+  // makes to `apiKey` from having the watch below repeat the same POST and
+  // report the same failure twice, and it lets the form disable submission for
+  // the duration rather than letting a second attempt race the first.
+  const isValidating = ref(false)
 
   watch(
     apiKey,
@@ -92,11 +110,14 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
         currentUser.value = null
         return
       }
-      if (signingIn) return
-      // A stored key the backend now rejects is the user's problem to fix, but
-      // a backend that is merely unreachable is not worth a startup toast.
+      if (isValidating.value) return
+      // A stored key the backend rejects or refuses is the user's problem to
+      // fix; a backend that is merely unreachable is not worth a startup toast.
       void resolveUser().catch((error: unknown) => {
-        if (error instanceof ApiKeyAuthError && error.failure === 'rejected') {
+        if (
+          error instanceof ApiKeyAuthError &&
+          error.failure !== 'unverified'
+        ) {
           reportError(error)
         } else {
           console.error(error)
@@ -107,12 +128,13 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
   )
 
   const storeApiKey = wrapWithErrorHandlingAsync(async (newApiKey: string) => {
-    signingIn = true
+    if (isValidating.value) return false
+    isValidating.value = true
     try {
       apiKey.value = newApiKey
       await resolveUser()
     } finally {
-      signingIn = false
+      isValidating.value = false
     }
     toastStore.add({
       severity: 'success',
@@ -154,6 +176,7 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
     // State
     currentUser,
     isAuthenticated,
+    isValidating,
 
     // Actions
     storeApiKey,
