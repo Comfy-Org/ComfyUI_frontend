@@ -10,7 +10,6 @@
     "public/materialdesignicons.min.css",
     "src/types/generatedManagerTypes.ts",
     "**/__fixtures__/**/*.json",
-    "apps/website/src/content/**/*.mdx",
-    "browser_tests/fixtures/data/cloud/supported_nodes.yaml"
+    "apps/website/src/content/**/*.mdx"
   ]
 }
