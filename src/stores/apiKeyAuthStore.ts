@@ -1,11 +1,11 @@
 import { useLocalStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import { useAuthStore } from '@/stores/authStore'
+import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import type { ApiKeyAuthHeader } from '@/types/authTypes'
 import type { operations } from '@/types/comfyRegistryTypes'
 
@@ -13,6 +13,24 @@ type ComfyApiUser =
   operations['createCustomer']['responses']['201']['content']['application/json']
 
 const STORAGE_KEY = 'comfy_api_key'
+
+/** A rejected key is discarded; an unverified one is kept so it can be retried. */
+type ApiKeyFailure = 'rejected' | 'unverified'
+
+class ApiKeyAuthError extends Error {
+  constructor(
+    readonly failure: ApiKeyFailure,
+    readonly summary: string,
+    readonly detail: string
+  ) {
+    super(detail)
+    this.name = 'ApiKeyAuthError'
+  }
+}
+
+const isKeyRejection = (error: unknown) =>
+  error instanceof AuthStoreError &&
+  (error.status === 401 || error.status === 403)
 
 export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
   const authStore = useAuthStore()
@@ -23,39 +41,35 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
   const currentUser = ref<ComfyApiUser | null>(null)
   const isAuthenticated = computed(() => !!currentUser.value)
 
-  const initializeUserFromApiKey = async (watchedApiKey: string) => {
-    const createCustomerResponse = await authStore
-      .createCustomer()
-      .catch((err) => {
-        console.error(err)
-        return
-      })
-    if (apiKey.value !== watchedApiKey) return
-    if (!createCustomerResponse) {
-      apiKey.value = null
-      throw new Error(t('auth.login.noAssociatedUser'))
+  const resolveUser = async () => {
+    try {
+      currentUser.value = await authStore.createCustomer()
+    } catch (error) {
+      currentUser.value = null
+      if (isKeyRejection(error)) {
+        apiKey.value = null
+        throw new ApiKeyAuthError(
+          'rejected',
+          t('auth.apiKey.invalid'),
+          t('auth.login.noAssociatedUser')
+        )
+      }
+      throw new ApiKeyAuthError(
+        'unverified',
+        t('auth.apiKey.verificationUnavailable'),
+        t('auth.apiKey.verificationUnavailableDetail')
+      )
     }
-    currentUser.value = createCustomerResponse
   }
 
-  // The stored key and its validated user form one session value: replacing
-  // the key ends the previous user's session immediately instead of exposing
-  // the old user while the new key validates.
-  watch(
-    apiKey,
-    async (watchedApiKey) => {
-      currentUser.value = null
-      if (watchedApiKey) {
-        await nextTick()
-        if (apiKey.value !== watchedApiKey) return
-        void initializeUserFromApiKey(watchedApiKey)
-      }
-    },
-    { immediate: true }
-  )
-
   const reportError = (error: unknown) => {
-    if (error instanceof Error && error.message === 'STORAGE_FAILED') {
+    if (error instanceof ApiKeyAuthError) {
+      toastStore.add({
+        severity: 'error',
+        summary: error.summary,
+        detail: error.detail
+      })
+    } else if (error instanceof Error && error.message === 'STORAGE_FAILED') {
       toastStore.add({
         severity: 'error',
         summary: t('auth.apiKey.storageFailed'),
@@ -66,8 +80,40 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
     }
   }
 
+  // Set while storeApiKey drives the check itself, so the write it makes to
+  // `apiKey` does not have the watch below repeat the same POST and report the
+  // same failure twice.
+  let signingIn = false
+
+  watch(
+    apiKey,
+    () => {
+      if (!apiKey.value) {
+        currentUser.value = null
+        return
+      }
+      if (signingIn) return
+      // A stored key the backend now rejects is the user's problem to fix, but
+      // a backend that is merely unreachable is not worth a startup toast.
+      void resolveUser().catch((error: unknown) => {
+        if (error instanceof ApiKeyAuthError && error.failure === 'rejected') {
+          reportError(error)
+        } else {
+          console.error(error)
+        }
+      })
+    },
+    { immediate: true }
+  )
+
   const storeApiKey = wrapWithErrorHandlingAsync(async (newApiKey: string) => {
-    apiKey.value = newApiKey
+    signingIn = true
+    try {
+      apiKey.value = newApiKey
+      await resolveUser()
+    } finally {
+      signingIn = false
+    }
     toastStore.add({
       severity: 'success',
       summary: t('auth.apiKey.stored'),
