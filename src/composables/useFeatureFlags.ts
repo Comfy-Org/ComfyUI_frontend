@@ -34,6 +34,7 @@ export enum ServerFeatureFlag {
   SHOW_SIGNIN_BUTTON = 'show_signin_button',
   UNIFIED_CLOUD_AUTH = 'unified_cloud_auth',
   BILLING_CONTROL_ENABLED = 'billing_control_enabled',
+  EMBEDDED_CHECKOUT_ENABLED = 'embedded_checked_enabled',
   V1_PAYMENT_RECOVERY = 'v1_payment_recovery',
   FREE_TIER_JOB_ALLOWANCE_ENABLED = 'free_tier_job_allowance_enabled',
   CHURNKEY_APP_ID = 'churnkey_app_id',
@@ -80,6 +81,14 @@ function resolveAuthGatedFlag(
   if (!isAuthenticatedConfigLoaded.value) return cachedValue.value ?? false
 
   return remoteConfigValue ?? api.getServerFeature(flagKey, false)
+}
+
+function resolveFailClosedBooleanFlag(flagKey: string): boolean {
+  try {
+    return api.getServerFeature<unknown>(flagKey, false) === true
+  } catch {
+    return false
+  }
 }
 
 /**
@@ -202,6 +211,11 @@ export function useFeatureFlags() {
         ServerFeatureFlag.BILLING_CONTROL_ENABLED,
         remoteConfig.value.billing_control_enabled,
         cachedBillingControlEnabled
+      )
+    },
+    get embeddedCheckoutEnabled() {
+      return resolveFailClosedBooleanFlag(
+        ServerFeatureFlag.EMBEDDED_CHECKOUT_ENABLED
       )
     },
     get v1PaymentRecovery() {

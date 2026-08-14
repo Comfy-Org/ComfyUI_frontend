@@ -566,7 +566,15 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
     it('does not confirm without a current quote', async () => {
       const user = userEvent.setup()
       mockSubscription.value = { isCancelled: false, endDate: null }
-      const { emitted } = renderComponent(makePreview({}), false, false)
+      const { emitted } = render(SubscriptionTransitionPreviewWorkspace, {
+        props: {
+          previewData: makePreview({}),
+          forceReactivation: false,
+          quoteIsCurrent: false,
+          embeddedCheckoutEnabled: true
+        },
+        global: { plugins: [i18n] }
+      })
       const confirmButton = screen.getByRole('button', {
         name: 'Confirm upgrade'
       })

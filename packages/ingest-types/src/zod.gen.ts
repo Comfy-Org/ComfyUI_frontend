@@ -842,6 +842,7 @@ export const zPreviewSubscribeResponse = z.object({
   is_immediate: z.boolean(),
   new_plan: zPreviewPlanInfo,
   payment_method_configuration_id: z.string().optional(),
+  requires_reactivation_confirmation: z.boolean().optional(),
   promotion_code: z.string().optional(),
   proration_at: z.string().datetime().optional(),
   quote_id: z.string().optional(),

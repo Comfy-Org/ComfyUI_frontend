@@ -201,7 +201,7 @@
         </div>
         <span class="text-sm text-muted-foreground">{{ renewalTerms }}</span>
       </div>
-      <div class="flex gap-2 pt-6">
+      <div v-if="embeddedCheckoutEnabled" class="flex gap-2 pt-6">
         <input
           v-model="promotionCode"
           :aria-label="$t('subscription.preview.promoCodePlaceholder')"
@@ -224,7 +224,7 @@
     <!-- Footer -->
     <div class="flex flex-col gap-2 pt-8 pb-4">
       <div
-        v-if="reconciliationOperationId"
+        v-if="embeddedCheckoutEnabled && reconciliationOperationId"
         class="rounded-lg border border-interface-stroke bg-secondary-background p-4"
       >
         <p class="m-0 font-semibold text-base-foreground">
@@ -237,7 +237,9 @@
       </div>
 
       <div
-        v-if="authenticationState === 'failed_retryable'"
+        v-if="
+          embeddedCheckoutEnabled && authenticationState === 'failed_retryable'
+        "
         role="alert"
         class="rounded-lg border border-interface-stroke bg-secondary-background p-4 text-sm text-base-foreground"
       >
@@ -251,6 +253,7 @@
 
       <Button
         v-if="
+          embeddedCheckoutEnabled &&
           (authenticationState === 'failed_retryable' ||
             authenticationState === 'requires_action') &&
           canRetryAuthentication
@@ -293,7 +296,7 @@
         class="w-full rounded-lg"
         :loading="isLoading"
         :disabled="
-          confirmDisabled || !quoteIsCurrent || verificationRecoveryActive
+          confirmDisabled || !quoteIsUsable || verificationRecoveryActive
         "
         @click="$emit('confirm', confirmReactivation)"
       >
@@ -338,7 +341,8 @@ const {
   isAuthenticating = false,
   reconciliationOperationId = null,
   quoteIsCurrent = false,
-  isApplyingPromotionCode = false
+  isApplyingPromotionCode = false,
+  embeddedCheckoutEnabled = false
 } = defineProps<{
   previewData: PreviewSubscribeResponse
   isLoading?: boolean
@@ -356,6 +360,7 @@ const {
   reconciliationOperationId?: string | null
   quoteIsCurrent?: boolean
   isApplyingPromotionCode?: boolean
+  embeddedCheckoutEnabled?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -371,10 +376,12 @@ const emit = defineEmits<{
 const { locale, n, t } = useI18n()
 const verificationRecoveryActive = computed(
   () =>
-    authenticationState === 'requires_action' ||
-    authenticationState === 'failed_retryable' ||
-    Boolean(reconciliationOperationId)
+    embeddedCheckoutEnabled &&
+    (authenticationState === 'requires_action' ||
+      authenticationState === 'failed_retryable' ||
+      Boolean(reconciliationOperationId))
 )
+const quoteIsUsable = computed(() => !embeddedCheckoutEnabled || quoteIsCurrent)
 const interactionLocked = computed(() => isLoading || isApplyingPromotionCode)
 
 const { subscription } = useBillingContext()
@@ -443,7 +450,9 @@ const currentTierName = computed(() => {
 })
 
 const isCancelled = computed(
-  () => forceReactivation || (subscription.value?.isCancelled ?? false)
+  () =>
+    forceReactivation ||
+    (!embeddedCheckoutEnabled && (subscription.value?.isCancelled ?? false))
 )
 
 const reactivationVariant = computed<

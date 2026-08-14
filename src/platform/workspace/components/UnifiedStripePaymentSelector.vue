@@ -101,6 +101,10 @@ onMounted(async () => {
     configurationError.value = t('subscription.preview.stripeUnavailable')
     return
   }
+  if (!paymentMethodConfigurationId) {
+    configurationError.value = t('subscription.preview.stripeUnavailable')
+    return
+  }
   // A non-positive amount means the caller mounted this before its quote
   // resolved. Stay silent rather than latching an error the caller cannot
   // clear: callers gate on a ready quote, and a wrong error here reads to the
@@ -127,12 +131,7 @@ onMounted(async () => {
     // a configuration-enabled method without off-session support (or without
     // this account's permission for it) simply never renders.
     setupFutureUsage: 'off_session',
-    // The environment's dashboard-managed configuration decides the method
-    // mix; the static pair is only the fallback for environments (or older
-    // servers) that expose none.
-    ...(paymentMethodConfigurationId
-      ? { paymentMethodConfiguration: paymentMethodConfigurationId }
-      : { paymentMethodTypes: ['card', 'alipay'] }),
+    paymentMethodConfiguration: paymentMethodConfigurationId,
     appearance: {
       variables: {
         // Selection (radio, selected label, accordion highlight) uses the

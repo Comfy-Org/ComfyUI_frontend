@@ -146,7 +146,7 @@
           </span>
         </div>
       </div>
-      <div class="flex gap-2 pt-6">
+      <div v-if="embeddedCheckoutEnabled" class="flex gap-2 pt-6">
         <input
           v-model="promotionCode"
           :aria-label="$t('subscription.preview.promoCodePlaceholder')"
@@ -166,7 +166,10 @@
       </div>
       <!-- Saved method: no capture column; a card row with a change
            affordance stands in for the form. -->
-      <div v-if="savedMethods?.length" class="flex flex-col gap-2 pt-6">
+      <div
+        v-if="embeddedCheckoutEnabled && savedMethods?.length"
+        class="flex flex-col gap-2 pt-6"
+      >
         <span class="text-sm text-muted-foreground">
           {{ $t('subscription.preview.savedPaymentMethod') }}
         </span>
@@ -221,7 +224,7 @@
            the top of the column; the pay button below it is demoted and
            disabled while it shows. -->
       <div
-        v-if="reconciliationOperationId"
+        v-if="embeddedCheckoutEnabled && reconciliationOperationId"
         class="rounded-lg border border-interface-stroke bg-secondary-background p-4"
       >
         <p class="m-0 font-semibold text-base-foreground">
@@ -234,7 +237,9 @@
       </div>
 
       <div
-        v-if="authenticationState === 'failed_retryable'"
+        v-if="
+          embeddedCheckoutEnabled && authenticationState === 'failed_retryable'
+        "
         role="alert"
         class="rounded-lg border border-interface-stroke bg-secondary-background p-4 text-sm text-base-foreground"
       >
@@ -248,6 +253,7 @@
 
       <Button
         v-if="
+          embeddedCheckoutEnabled &&
           (authenticationState === 'failed_retryable' ||
             authenticationState === 'requires_action') &&
           canRetryAuthentication
@@ -306,7 +312,7 @@
         class="w-full rounded-lg"
         :loading="isLoading"
         :disabled="
-          interactionLocked || !quoteIsCurrent || verificationRecoveryActive
+          interactionLocked || !quoteIsUsable || verificationRecoveryActive
         "
         @click="$emit('addCreditCard')"
       >
@@ -320,7 +326,7 @@
         class="w-full rounded-lg"
         :loading="isLoading"
         :disabled="
-          interactionLocked || !quoteIsCurrent || verificationRecoveryActive
+          interactionLocked || !quoteIsUsable || verificationRecoveryActive
         "
         @click="$emit('addCreditCard')"
       >
@@ -334,7 +340,7 @@
         class="w-full rounded-lg"
         :loading="isLoading"
         :disabled="
-          interactionLocked || !quoteIsCurrent || verificationRecoveryActive
+          interactionLocked || !quoteIsUsable || verificationRecoveryActive
         "
         @click="$emit('addCreditCard')"
       >
@@ -395,6 +401,7 @@ interface Props {
   savedMethods?: SavedPaymentMethod[] | null
   quoteIsCurrent?: boolean
   isApplyingPromotionCode?: boolean
+  embeddedCheckoutEnabled?: boolean
 }
 
 const {
@@ -412,7 +419,8 @@ const {
   usePaymentElement = false,
   savedMethods = null,
   quoteIsCurrent = false,
-  isApplyingPromotionCode = false
+  isApplyingPromotionCode = false,
+  embeddedCheckoutEnabled = false
 } = defineProps<Props>()
 
 const emit = defineEmits<{
@@ -449,10 +457,12 @@ const quoteReady = computed(
 )
 const verificationRecoveryActive = computed(
   () =>
-    authenticationState === 'requires_action' ||
-    authenticationState === 'failed_retryable' ||
-    Boolean(reconciliationOperationId)
+    embeddedCheckoutEnabled &&
+    (authenticationState === 'requires_action' ||
+      authenticationState === 'failed_retryable' ||
+      Boolean(reconciliationOperationId))
 )
+const quoteIsUsable = computed(() => !embeddedCheckoutEnabled || quoteIsCurrent)
 
 function methodLabel(m: SavedPaymentMethod) {
   if (m.type === 'alipay') return t('subscription.preview.alipay')

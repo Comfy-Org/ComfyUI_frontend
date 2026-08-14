@@ -3,10 +3,13 @@ import { ref } from 'vue'
 
 import type { BillingOpStatusResponse } from '@/platform/workspace/api/workspaceApi'
 
-const { mockHandleNextAction, mockLoadStripe } = vi.hoisted(() => ({
-  mockHandleNextAction: vi.fn(),
-  mockLoadStripe: vi.fn()
-}))
+const { mockHandleNextAction, mockLoadStripe, mockFeatureFlags } = vi.hoisted(
+  () => ({
+    mockHandleNextAction: vi.fn(),
+    mockLoadStripe: vi.fn(),
+    mockFeatureFlags: { embeddedCheckoutEnabled: true }
+  })
+)
 
 vi.mock('@stripe/stripe-js/pure', () => ({
   loadStripe: mockLoadStripe
@@ -21,6 +24,12 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     fetchStatus: mockFetchStatus,
     fetchBalance: mockFetchBalance,
     reconcileSubscriptionSuccess: mockReconcileSubscriptionSuccess
+  })
+}))
+
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({
+    flags: mockFeatureFlags
   })
 }))
 
@@ -91,6 +100,7 @@ import { useBillingOperationStore } from './billingOperationStore'
 describe('billingOperationStore', () => {
   beforeEach(() => {
     mockActiveWorkspaceId.value = 'workspace-1'
+    mockFeatureFlags.embeddedCheckoutEnabled = true
     vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', 'pk_test_3ds')
     mockHandleNextAction.mockResolvedValue({})
     mockLoadStripe.mockResolvedValue({
@@ -983,6 +993,40 @@ describe('billingOperationStore', () => {
   })
 
   describe('payment authentication recovery', () => {
+    it('does not initialize embedded recovery while the flag is off', async () => {
+      mockFeatureFlags.embeddedCheckoutEnabled = false
+      vi.mocked(workspaceApi.getBillingOpStatus)
+        .mockResolvedValueOnce({
+          id: 'op-3ds',
+          status: 'pending',
+          authentication_state: 'requires_action',
+          payment_intent_client_secret: 'pi_secret_current',
+          started_at: new Date().toISOString()
+        })
+        .mockResolvedValue({
+          id: 'op-3ds',
+          status: 'succeeded',
+          authentication_state: 'succeeded',
+          started_at: new Date().toISOString()
+        })
+
+      const store = useBillingOperationStore()
+      const terminal = store.startOperation('op-3ds', 'subscription', {
+        autoHandleRequiresAction: true
+      })
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(store.getOperation('op-3ds')?.authenticationState).toBeNull()
+      expect(mockLoadStripe).not.toHaveBeenCalled()
+      await expect(store.retryPaymentAuthentication('op-3ds')).resolves.toBe(
+        false
+      )
+
+      await vi.advanceTimersByTimeAsync(1_500)
+      await expect(terminal).resolves.toMatchObject({ status: 'succeeded' })
+      expect(mockHandleNextAction).not.toHaveBeenCalled()
+    })
+
     it('recovers when Stripe.js fails to load', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-3ds',

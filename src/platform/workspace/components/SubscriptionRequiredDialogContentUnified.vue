@@ -108,6 +108,7 @@
         :reconciliation-operation-id
         :quote-is-current="quoteIsCurrent"
         :is-applying-promotion-code
+        :embedded-checkout-enabled
         @confirm="handleTeamSubscribe"
         @apply-promotion-code="applyPromotionCode"
         @invalidate-quote="invalidateQuote"
@@ -132,6 +133,7 @@
         :selected-saved-method-id="selectedSavedPaymentMethodId"
         :quote-is-current="quoteIsCurrent"
         :is-applying-promotion-code
+        :embedded-checkout-enabled
         @update:selected-saved-method-id="selectSavedPaymentMethod"
         @add-credit-card="handleTeamSubscribe"
         @change-payment-method="selectSavedPaymentMethod(null)"
@@ -159,6 +161,7 @@
         :selected-saved-method-id="selectedSavedPaymentMethodId"
         :quote-is-current="quoteIsCurrent"
         :is-applying-promotion-code
+        :embedded-checkout-enabled
         @update:selected-saved-method-id="selectSavedPaymentMethod"
         @add-credit-card="handleAddCreditCard"
         @change-payment-method="selectSavedPaymentMethod(null)"
@@ -182,6 +185,7 @@
         :reconciliation-operation-id
         :quote-is-current="quoteIsCurrent"
         :is-applying-promotion-code
+        :embedded-checkout-enabled
         @confirm="handleConfirmTransition"
         @apply-promotion-code="applyPromotionCode"
         @invalidate-quote="invalidateQuote"
@@ -218,9 +222,16 @@ import SubscriptionSuccessWorkspace from './SubscriptionSuccessWorkspace.vue'
 import SubscriptionTransitionPreviewWorkspace from './SubscriptionTransitionPreviewWorkspace.vue'
 import UnifiedPricingTable from './UnifiedPricingTable.vue'
 
-const { onClose, reason, initialPlanMode, initialCheckout } = defineProps<{
+const {
+  onClose,
+  reason,
+  embeddedCheckoutEnabled = false,
+  initialPlanMode,
+  initialCheckout
+} = defineProps<{
   onClose: () => void
   reason?: PaymentIntentSource
+  embeddedCheckoutEnabled?: boolean
   initialPlanMode?: 'personal' | 'team'
   initialCheckout?: SubscriptionCheckoutSelection
 }>()
@@ -229,9 +240,9 @@ const emit = defineEmits<{
   close: [subscribed: boolean]
 }>()
 
-const stripePaymentElementEnabled = Boolean(
-  import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
-)
+const stripePaymentElementEnabled =
+  embeddedCheckoutEnabled &&
+  Boolean(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY)
 
 // The embedded-payment confirm step keeps the pricing table's dialog
 // dimensions so stepping between them reads as one dialog changing content,
@@ -275,10 +286,12 @@ const {
   applyPromotionCode,
   invalidateQuote,
   handleResubscribe
-} = useSubscriptionCheckout(emit, reason)
+} = useSubscriptionCheckout(emit, reason, { embeddedCheckoutEnabled })
 
 const savedMethodsForConfirm = computed(() =>
-  collectingNewPaymentMethod.value ? [] : savedPaymentMethods.value
+  collectingNewPaymentMethod.value || !selectedSavedPaymentMethodId.value
+    ? []
+    : savedPaymentMethods.value
 )
 const isEmbeddedPaymentStep = computed(
   () =>

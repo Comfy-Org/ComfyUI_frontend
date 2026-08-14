@@ -1330,6 +1330,14 @@ export type PreviewSubscribeResponse = {
    */
   payment_method_configuration_id?: string
   /**
+   * Whether this previewed change requires explicit reactivation
+   * consent. This decision is authoritative for the preview and is
+   * computed from the persisted subscription plus the live Stripe
+   * lifecycle state used by the subscribe enforcement path.
+   *
+   */
+  requires_reactivation_confirmation?: boolean
+  /**
    * Normalized promotion code accepted by Stripe.
    */
   promotion_code?: string

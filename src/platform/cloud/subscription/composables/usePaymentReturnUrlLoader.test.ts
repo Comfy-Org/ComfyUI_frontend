@@ -5,16 +5,28 @@ import { stripPaymentReturnParams } from '@/platform/cloud/subscription/utils/pa
 import { usePaymentReturnUrlLoader } from './usePaymentReturnUrlLoader'
 
 const mocks = vi.hoisted(() => ({
-  fetchStatus: vi.fn().mockResolvedValue(undefined)
+  fetchStatus: vi.fn().mockResolvedValue(undefined),
+  embeddedCheckoutEnabled: true
 }))
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({ fetchStatus: mocks.fetchStatus })
 }))
 
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({
+    flags: {
+      get embeddedCheckoutEnabled() {
+        return mocks.embeddedCheckoutEnabled
+      }
+    }
+  })
+}))
+
 describe('usePaymentReturnUrlLoader', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mocks.embeddedCheckoutEnabled = true
     window.history.replaceState({}, '', '/')
   })
 
@@ -38,6 +50,20 @@ describe('usePaymentReturnUrlLoader', () => {
 
     const { loadPaymentReturnFromUrl } = usePaymentReturnUrlLoader()
     await loadPaymentReturnFromUrl()
+
+    expect(mocks.fetchStatus).not.toHaveBeenCalled()
+  })
+
+  it('does not start embedded recovery while the flag is off', async () => {
+    mocks.embeddedCheckoutEnabled = false
+    window.history.replaceState(
+      {},
+      '',
+      '/?payment_intent=pi_123&redirect_status=succeeded'
+    )
+    stripPaymentReturnParams()
+
+    await usePaymentReturnUrlLoader().loadPaymentReturnFromUrl()
 
     expect(mocks.fetchStatus).not.toHaveBeenCalled()
   })
