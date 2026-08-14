@@ -209,6 +209,7 @@
             baseResizeHandleClasses,
             handle.positionClasses,
             handle.cursorClass,
+            handle.corner === 'NW' && '[clip-path:polygon(0_0,100%_0,0_100%)]',
             'group-hover/node:opacity-100'
           )
         "
@@ -437,21 +438,32 @@ const baseResizeHandleClasses =
 
 const mutations = useLayoutMutations(LayoutSource.Vue)
 
-const { startResize } = useNodeResize((result) => {
-  if (isCollapsed.value) return
-  const { rootGraphId } = canvasStore
-  if (!rootGraphId) return
+const { startResize } = useNodeResize(
+  (result) => {
+    if (isCollapsed.value) return
+    const { rootGraphId } = canvasStore
+    if (!rootGraphId) return
 
-  mutations.resizeNode(rootGraphId, nodeData.id, {
-    width: Math.max(result.size.width, MIN_NODE_WIDTH),
-    height: removeNodeTitleHeight(result.size.height)
-  })
+    mutations.resizeNode(rootGraphId, nodeData.id, {
+      width: Math.max(result.size.width, MIN_NODE_WIDTH),
+      height: removeNodeTitleHeight(result.size.height)
+    })
 
-  // Update position for non-SE corner resizing
-  if (result.position) {
-    mutations.moveNode(rootGraphId, nodeData.id, result.position)
+    if (result.position) {
+      mutations.moveNode(rootGraphId, nodeData.id, result.position)
+    }
+  },
+  {
+    onStart: () => {
+      canvasStore.canvas?.emitBeforeChange()
+      lgraphNode.value?.graph?.beforeChange()
+    },
+    onEnd: () => {
+      lgraphNode.value?.graph?.afterChange()
+      canvasStore.canvas?.emitAfterChange()
+    }
   }
-})
+)
 
 const handleResizePointerDown = (
   event: PointerEvent,

@@ -20,6 +20,11 @@ export interface ResizeCallbackPayload {
   position?: Point
 }
 
+interface ResizeLifecycleCallbacks {
+  onStart?: () => void
+  onEnd?: () => void
+}
+
 /**
  * Composable for node resizing functionality from any corner.
  *
@@ -28,7 +33,11 @@ export interface ResizeCallbackPayload {
  * and position adjustments for non-SE corners.
  */
 export function useNodeResize(
-  resizeCallback: (payload: ResizeCallbackPayload, element: HTMLElement) => void
+  resizeCallback: (
+    payload: ResizeCallbackPayload,
+    element: HTMLElement
+  ) => void,
+  { onStart, onEnd }: ResizeLifecycleCallbacks = {}
 ) {
   const transformState = useTransformState()
 
@@ -87,6 +96,8 @@ export function useNodeResize(
 
     // Track shift key state and sync to canvas for snap preview
     const stopShiftSync = trackShiftKey(event)
+
+    onStart?.()
 
     // Capture pointer to ensure we get all move/up events
     target.setPointerCapture(event.pointerId)
@@ -229,6 +240,7 @@ export function useNodeResize(
       stopMoveListen()
       stopUpListen()
       stopCancelListen()
+      onEnd?.()
     }
 
     const handlePointerUp = (upEvent: PointerEvent) => {

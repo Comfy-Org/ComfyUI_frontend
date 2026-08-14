@@ -124,8 +124,8 @@ export class VueNodeFixture {
     }
 
     const page = this.locator.page()
-    const startX = box.x + box.width / 2
-    const startY = box.y + box.height / 2
+    const startX = box.x + (corner === 'NW' ? box.width / 4 : box.width / 2)
+    const startY = box.y + (corner === 'NW' ? box.height / 4 : box.height / 2)
     await page.mouse.move(startX, startY)
     await page.mouse.down()
     await page.mouse.move(startX + deltaX, startY + deltaY, {

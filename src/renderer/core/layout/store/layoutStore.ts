@@ -916,6 +916,11 @@ class LayoutStoreImpl {
 
   /** Drops entity layout owned by a root graph and its subgraph definitions. */
   clearGraph(rootGraphId: UUID): void {
+    const prefix = rootGraphId + ':'
+    for (const key of this.contentSizes.keys()) {
+      if (key.startsWith(prefix)) this.contentSizes.delete(key)
+    }
+
     this.applyOperation({
       type: 'clearGraph',
       graphId: rootGraphId,

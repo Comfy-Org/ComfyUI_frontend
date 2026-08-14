@@ -14,13 +14,18 @@ type ResizeCallback = (
 // Capture pointermove/pointerup handlers registered via useEventListener
 const eventHandlers = vi.hoisted(() => ({
   pointermove: null as ((e: PointerEvent) => void) | null,
-  pointerup: null as ((e: PointerEvent) => void) | null
+  pointerup: null as ((e: PointerEvent) => void) | null,
+  pointercancel: null as ((e: PointerEvent) => void) | null
 }))
 
 vi.mock('@vueuse/core', () => ({
   useEventListener: vi.fn(
     (eventName: string, handler: (...args: unknown[]) => void) => {
-      if (eventName === 'pointermove' || eventName === 'pointerup') {
+      if (
+        eventName === 'pointermove' ||
+        eventName === 'pointerup' ||
+        eventName === 'pointercancel'
+      ) {
         eventHandlers[eventName] = handler as (e: PointerEvent) => void
       }
       return vi.fn()
@@ -73,6 +78,8 @@ vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
     }))
   }
 }))
+
+const { useNodeResize } = await import('./useNodeResize')
 
 function createMockNodeElement(
   width = 300,
@@ -161,6 +168,7 @@ describe('useNodeResize', () => {
   beforeEach(async () => {
     eventHandlers.pointermove = null
     eventHandlers.pointerup = null
+    eventHandlers.pointercancel = null
     snapState.shouldSnap = false
     snapState.applySnapToPosition = (pos) => pos
     snapState.applySnapToSize = (size) => size
@@ -169,8 +177,6 @@ describe('useNodeResize', () => {
     nodeElement = createMockNodeElement()
     handle = createMockHandle(nodeElement)
 
-    // Need fresh import after mocks are set up
-    const { useNodeResize } = await import('./useNodeResize')
     const { startResize } = useNodeResize(callback)
 
     // Store startResize for access in tests
@@ -323,7 +329,6 @@ describe('useNodeResize', () => {
       const cb = vi.fn<ResizeCallback>()
       const el = makeReflowingElement(300, 400, getMinContentHeight)
       const h = createMockHandle(el)
-      const { useNodeResize } = await import('./useNodeResize')
       const { startResize } = useNodeResize(cb)
       return { cb, el, handle: h, startResize }
     }
@@ -415,6 +420,33 @@ describe('useNodeResize', () => {
       expect(el).toBeDefined()
     })
 
+    it('ends the resize lifecycle on pointerup', async () => {
+      const onStart = vi.fn()
+      const onEnd = vi.fn()
+      const { startResize } = useNodeResize(callback, { onStart, onEnd })
+
+      startResizeAt(startResize, handle, 'SE')
+      expect(onStart).toHaveBeenCalledOnce()
+      expect(onEnd).not.toHaveBeenCalled()
+
+      eventHandlers.pointerup?.(
+        createPointerEvent('pointerup', { pointerId: 1 })
+      )
+      expect(onEnd).toHaveBeenCalledOnce()
+    })
+
+    it('ends the resize lifecycle on pointercancel', async () => {
+      const onStart = vi.fn()
+      const onEnd = vi.fn()
+      const { startResize } = useNodeResize(callback, { onStart, onEnd })
+
+      startResizeAt(startResize, handle, 'SE')
+      eventHandlers.pointercancel?.(createPointerEvent('pointercancel'))
+
+      expect(onStart).toHaveBeenCalledOnce()
+      expect(onEnd).toHaveBeenCalledOnce()
+    })
+
     it('applies snap-to-grid on SE (size only)', async () => {
       snapState.shouldSnap = true
       snapState.applySnapToSize = ({ width, height }) => ({
@@ -489,7 +521,6 @@ describe('useNodeResize', () => {
       })()
       const cb = vi.fn<ResizeCallback>()
       const h = createMockHandle(breakpointAwareElement)
-      const { useNodeResize } = await import('./useNodeResize')
       const { startResize } = useNodeResize(cb)
 
       // Start at width=300 (still narrow side, but the breakpoint logic

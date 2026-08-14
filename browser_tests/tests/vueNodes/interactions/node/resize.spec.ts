@@ -165,14 +165,18 @@ test.describe(
           const bounds = await node.boundingBox()
           return bounds ? bounds.x + bounds.width : -1
         }
-        const getWidth = async () => (await node.boundingBox())?.width ?? -1
+        const nodeId = await node.root.getAttribute('data-node-id')
+        if (!nodeId) throw new Error('Node ID not found')
+        const nodeRef = await comfyPage.nodeOps.getNodeRefById(nodeId)
 
         const initialRight = await getRight()
 
         await node.resizeFromCorner('SW', box.width + 100, 0)
 
         await expect.poll(getRight).toBeCloseTo(initialRight, 0)
-        await expect.poll(getWidth).toBeGreaterThanOrEqual(MIN_NODE_WIDTH)
+        await expect
+          .poll(async () => (await nodeRef.getSize()).width)
+          .toBeGreaterThanOrEqual(MIN_NODE_WIDTH)
       })
 
       test('NE resize clamps height at its lower bound', async ({

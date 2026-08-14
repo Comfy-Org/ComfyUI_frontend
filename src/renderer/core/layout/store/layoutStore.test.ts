@@ -800,6 +800,14 @@ describe('root-scoped node layouts', () => {
     const nodeId = toNodeId('1')
     seedNode(FIRST_GRAPH, nodeId, 10)
     seedNode(SECOND_GRAPH, nodeId, 100)
+    layoutStore.reportContentSize(FIRST_GRAPH, nodeId, {
+      width: 20,
+      height: 20
+    })
+    layoutStore.reportContentSize(SECOND_GRAPH, nodeId, {
+      width: 200,
+      height: 200
+    })
 
     for (const graphId of [FIRST_GRAPH, SECOND_GRAPH]) {
       layoutStore.applyOperation({
@@ -831,6 +839,7 @@ describe('root-scoped node layouts', () => {
     expect(layoutStore.getNodeLayoutRef(FIRST_GRAPH, nodeId).value).toBeNull()
     expect(layoutStore.getGroupLayout(FIRST_GRAPH, GROUP_ID)).toBeNull()
     expect(layoutStore.getRerouteLayout(FIRST_GRAPH, REROUTE_ID)).toBeNull()
+    expect(layoutStore.contentSizeOf(FIRST_GRAPH, nodeId)).toBeUndefined()
 
     expect(
       layoutStore.getNodeLayoutRef(SECOND_GRAPH, nodeId).value
@@ -839,6 +848,10 @@ describe('root-scoped node layouts', () => {
     expect(
       layoutStore.getRerouteLayout(SECOND_GRAPH, REROUTE_ID)
     ).not.toBeNull()
+    expect(layoutStore.contentSizeOf(SECOND_GRAPH, nodeId)).toEqual({
+      width: 200,
+      height: 200
+    })
   })
 })
 
