@@ -179,10 +179,8 @@ describe('useViewportCulling', () => {
     )
     const { mountedNodeIds } = setup(bounds)
 
-    // The first refresh mounts one frame's worth, not the whole set.
-    const first = mountedNodeIds.value.size
-    expect(first).toBeGreaterThan(0)
-    expect(first).toBeLessThan(COUNT / 4)
+    // The first refresh mounts exactly one frame's worth, not the whole set.
+    expect(mountedNodeIds.value.size).toBe(MOUNT_BATCH_PER_FRAME)
 
     // Remaining nodes arrive over subsequent frames.
     await vi.advanceTimersByTimeAsync(2000)
