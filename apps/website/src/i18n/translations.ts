@@ -2209,6 +2209,10 @@ const translations = {
     en: 'Ask your agent to install Comfy MCP',
     'zh-CN': '让你的智能体安装 Comfy MCP'
   },
+  'mcp.setup.agent.recommended': {
+    en: 'Recommended',
+    'zh-CN': '推荐'
+  },
   'mcp.setup.agent.command': {
     en: 'Help me install Comfy MCP.\nFollow the setup guide at {url}',
     'zh-CN': '帮我安装 Comfy MCP。\n请按照 {url} 上的设置指南操作。'

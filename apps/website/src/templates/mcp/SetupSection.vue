@@ -36,6 +36,8 @@ interface McpConnection {
   manualTitle: string
   manualDescription: string
   agentCommand: string
+  /** Badge the agent card as the recommended path (local setup is fiddlier by hand). */
+  agentRecommended: boolean
   /** The comfy-skills plugin ships cloud slash commands only. */
   showSkillsNote: boolean
   clients: McpClient[]
@@ -145,6 +147,7 @@ const connections: McpConnection[] = [
       '{url}',
       externalLinks.docsMcpMd
     ),
+    agentRecommended: false,
     showSkillsNote: true,
     clients: cloudClients
   },
@@ -159,6 +162,7 @@ const connections: McpConnection[] = [
       '{url}',
       externalLinks.docsMcpLocalMd
     ),
+    agentRecommended: true,
     showSkillsNote: false,
     clients: localClients
   }
@@ -366,9 +370,15 @@ const copiedLabel = t('ui.copied', locale)
             >
               <template v-if="activeClientFor(conn).showAgentCard">
                 <h3
-                  class="text-xl font-light text-primary-comfy-canvas lg:text-2xl"
+                  class="flex flex-wrap items-center gap-2.5 text-xl font-light text-primary-comfy-canvas lg:text-2xl"
                 >
                   {{ t('mcp.setup.agent.title', locale) }}
+                  <span
+                    v-if="conn.agentRecommended"
+                    class="bg-primary-comfy-yellow rounded-md px-2 py-1 text-[10px] font-bold tracking-wider text-primary-comfy-ink uppercase"
+                  >
+                    {{ t('mcp.setup.agent.recommended', locale) }}
+                  </span>
                 </h3>
                 <p class="mt-3 text-sm text-smoke-700">
                   {{ t('mcp.setup.agent.description', locale) }}
