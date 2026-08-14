@@ -166,6 +166,31 @@ describe('useNodePointerInteractions', () => {
     expect(store.isDraggingVueNodes.value).toBe(false)
   })
 
+  it('cancelling via context menu also releases drag ownership', () => {
+    // Otherwise this scope still looks like the owner and a later dispose
+    // would clear whatever drag is active by then.
+    const store = fromAny<{ isDraggingVueNodes: { value: boolean } }, unknown>(
+      layoutStore
+    )
+
+    const scope = effectScope()
+    const handlers = scope.run(() => useNodePointerInteractions(testNodeId))!
+    handlers.pointerHandlers.onPointerdown(
+      createPointerEvent('pointerdown', { button: 0 })
+    )
+    store.isDraggingVueNodes.value = true
+    handlers.pointerHandlers.onContextmenu(createMouseEvent('contextmenu'))
+
+    // A different node now owns a drag.
+    store.isDraggingVueNodes.value = true
+    scope.stop()
+
+    expect(store.isDraggingVueNodes.value).toBe(true)
+
+    // Shared module-level flag; leaving it set would break later cases.
+    store.isDraggingVueNodes.value = false
+  })
+
   it('should only start drag on left-click', async () => {
     const { handleNodeSelect } = useNodeEventHandlers()
     const { startDrag } = useNodeDrag()

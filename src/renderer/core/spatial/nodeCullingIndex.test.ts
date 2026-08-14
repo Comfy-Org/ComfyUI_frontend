@@ -46,6 +46,20 @@ describe('createNodeCullingIndex', () => {
     expect(index.size).toBe(1)
   })
 
+  it('still reports a node whose bounds cannot be indexed', () => {
+    // A non-finite coordinate makes the computed root non-finite, so insert
+    // fails; the node must fall back to always-reported rather than vanish.
+    const { index } = setup([
+      { id: id('valid'), bounds: box(0, 0) },
+      {
+        id: id('broken'),
+        bounds: { x: Number.NaN, y: 0, width: 100, height: 100 }
+      }
+    ])
+
+    expect(index.query(box(-10, -10, 500))).toContain(id('broken'))
+  })
+
   it('always reports nodes that have no bounds yet', () => {
     const { index } = setup([
       { id: id('unmeasured'), bounds: null },

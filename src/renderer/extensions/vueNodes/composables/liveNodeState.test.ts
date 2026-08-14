@@ -42,6 +42,16 @@ describe('findNodesWithLiveState', () => {
     expect(findNodesWithLiveState(root)).toEqual(new Set(['player']))
   })
 
+  it('reports media playing from time zero', () => {
+    // Playback starts at zero, and a seek to zero is still playback.
+    const root = mountNode('starting', '<video></video>')
+    const video = root.querySelector('video') as HTMLVideoElement
+    Object.defineProperty(video, 'paused', { value: false })
+    Object.defineProperty(video, 'currentTime', { value: 0 })
+
+    expect(findNodesWithLiveState(root)).toEqual(new Set(['starting']))
+  })
+
   it('ignores idle media, which rebuilds from its source', () => {
     const root = mountNode('idle', '<video></video>')
 

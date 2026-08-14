@@ -27,9 +27,10 @@ function isLiveElement(element: Element): boolean {
 
   // Media only counts while actually running; an idle <video> rebuilds from
   // its src, and pinning every node that has one would creep back towards the
-  // over-broad rule this replaces.
+  // over-broad rule this replaces. No currentTime check: playback starts at
+  // zero, and a seek to zero is still playback.
   const media = element as HTMLMediaElement
-  return !media.paused && !media.ended && media.currentTime > 0
+  return !media.paused && !media.ended
 }
 
 /**

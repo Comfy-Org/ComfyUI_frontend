@@ -184,7 +184,7 @@ import { useWorkflowPersistenceV2 as useWorkflowPersistence } from '@/platform/w
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import type { NodeId } from '@/renderer/core/layout/types'
+import { toNodeId } from '@/types/nodeId'
 import { createNodeCullingIndex } from '@/renderer/core/spatial/nodeCullingIndex'
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
@@ -309,10 +309,21 @@ const rawNodes = computed((): VueNodeData[] =>
 // would let it hold stale bounds indefinitely. Geometry version, not
 // layoutVersion: the latter counts operations, so zIndex writes (one per
 // widget pointerdown) would rebuild the tree for changes that move nothing.
+// Kill switch: culling ships default-on wherever Vue nodes are on, so field
+// issues need a way out that does not mean abandoning Nodes 2.0 entirely.
+const cullingEnabled = computed(() =>
+  settingStore.get('Comfy.VueNodes.ViewportCulling')
+)
+
+// Declared once: getAllNodes() builds a fresh ComputedRef per call, so calling
+// it inside getEntries would discard the cache and decode the whole ynodes map
+// on every rebuild - and rebuilds now happen on every geometry change.
+const allNodeLayouts = layoutStore.getAllNodes()
+
 const cullingIndex = createNodeCullingIndex({
   getVersion: () => layoutStore.nodeGeometryVersion,
   getEntries: () => {
-    const layouts = layoutStore.getAllNodes().value
+    const layouts = allNodeLayouts.value
     return rawNodes.value.map((node) => {
       const layout = layouts.get(node.id)
       if (!layout) return { id: node.id, bounds: null }
@@ -351,7 +362,11 @@ const nodesOptedOutOfCulling = computed(() =>
 
 const { mountedNodeIds } = useViewportCulling({
   nodes: rawNodes,
-  queryNodesInBounds: (bounds) => cullingIndex.query(bounds),
+  // Disabled means no work, not just no effect: an empty query short-circuits
+  // the index rebuild and the layout decode behind it, so the setting is a
+  // true bypass if the fault ever turns out to be in that path.
+  queryNodesInBounds: (bounds) =>
+    cullingEnabled.value ? cullingIndex.query(bounds) : [],
   getViewportSize: () => {
     const element = comfyApp.canvas?.canvas
     return {
@@ -367,8 +382,8 @@ const { mountedNodeIds } = useViewportCulling({
     // unmounting it destroys IME composition and caret position. This is what
     // covers prompt textareas, rather than pinning every node that has one.
     const focusedNode = document.activeElement?.closest?.('[data-node-id]')
-    const focusedId = focusedNode?.getAttribute('data-node-id')
-    if (focusedId) pinned.add(focusedId as NodeId)
+    const rawFocusedId = focusedNode?.getAttribute('data-node-id')
+    if (rawFocusedId) pinned.add(toNodeId(rawFocusedId))
 
     // Media mid-playback, live capture streams and iframes: state a remount
     // cannot rebuild. Scans mounted nodes only, so it is bounded by the
@@ -390,12 +405,6 @@ watch([mountedNodeIds, () => rawNodes.value.length], () => {
     layoutStore.setPendingSlotSync(false)
   }
 })
-
-// Kill switch: culling ships default-on wherever Vue nodes are on, so field
-// issues need a way out that does not mean abandoning Nodes 2.0 entirely.
-const cullingEnabled = computed(() =>
-  settingStore.get('Comfy.VueNodes.ViewportCulling')
-)
 
 const allNodes = computed((): VueNodeData[] =>
   cullingEnabled.value

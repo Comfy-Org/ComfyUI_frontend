@@ -183,6 +183,9 @@ export function useNodePointerInteractions(
     event.preventDefault()
     // Simply cleanup state without calling endDrag to avoid synthetic event creation
     cleanupDragState()
+    // Ownership ends with the drag. Leaving this set would let a later dispose
+    // of this scope clear a drag that another node has since started.
+    hasDraggingStarted = false
   }
 
   // Cleanup on unmount to prevent resource leaks.

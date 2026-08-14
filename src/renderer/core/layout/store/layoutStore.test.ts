@@ -66,6 +66,38 @@ describe('layoutStore CRDT operations', () => {
     expect(layoutStore.layoutVersion).toBe(before)
   })
 
+  it('batchUpdateNodeBounds ignores a DOM re-measure of unchanged height', () => {
+    // The real remount path reports DOM-measured height including the title,
+    // and the source normalises it away before comparing.
+    const nodeId = toNodeId('noop-dom-bounds')
+    layoutStore.setSource(LayoutSource.External)
+    layoutStore.applyOperation({
+      type: 'createNode',
+      entity: 'node',
+      nodeId,
+      layout: createTestNode(nodeId),
+      timestamp: Date.now(),
+      source: LayoutSource.External,
+      actor: 'test'
+    })
+    const before = layoutStore.layoutVersion
+
+    layoutStore.setSource(LayoutSource.DOM)
+    layoutStore.batchUpdateNodeBounds([
+      {
+        nodeId,
+        bounds: {
+          x: 100,
+          y: 100,
+          width: 200,
+          height: 100 + LiteGraph.NODE_TITLE_HEIGHT
+        }
+      }
+    ])
+
+    expect(layoutStore.layoutVersion).toBe(before)
+  })
+
   it('should create and retrieve nodes', () => {
     const nodeId = toNodeId('test-node-1')
     const layout = createTestNode(nodeId)

@@ -93,6 +93,10 @@ export function createNodeCullingIndex({
         pending.push(id)
       }
     }
+
+    // Published only now: the loop above can add to `pending`, and relying on
+    // the two names aliasing one array would break the moment either is copied.
+    unpositioned = pending
   }
 
   function ensureFresh(): void {
