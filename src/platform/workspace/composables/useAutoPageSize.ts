@@ -11,7 +11,8 @@ const MIN_ROWS = 5
  */
 export function useAutoPageSize(
   containerRef: Ref<HTMLElement | null>,
-  min: number = MIN_ROWS
+  min: number = MIN_ROWS,
+  reserved: (container: HTMLElement) => number = () => 0
 ) {
   const pageSize = ref(min)
 
@@ -28,7 +29,9 @@ export function useAutoPageSize(
     const headerHeight =
       container.querySelector<HTMLElement>('thead')?.getBoundingClientRect()
         .height ?? 0
-    const fit = Math.floor((container.clientHeight - headerHeight) / rowHeight)
+    const fit = Math.floor(
+      (container.clientHeight - headerHeight - reserved(container)) / rowHeight
+    )
     pageSize.value = Math.max(min, fit)
   }
 

@@ -1,5 +1,12 @@
 <template>
-  <div class="credits-container flex h-full flex-col gap-4">
+  <div
+    :class="
+      cn(
+        'credits-container flex flex-col gap-4',
+        embedded ? 'min-h-0 flex-1 overflow-y-auto' : 'h-full'
+      )
+    "
+  >
     <div v-if="!embedded">
       <h2 class="mb-2 text-2xl font-bold">
         {{ $t('credits.credits') }}
@@ -34,7 +41,11 @@
 
     <UsageLogsTable v-if="!embedded" ref="usageLogsTableRef" />
 
-    <SubscriptionFooterLinks v-if="embedded" :show-invoice-history="false" />
+    <SubscriptionFooterLinks
+      v-if="embedded"
+      class="mt-auto"
+      :show-invoice-history="false"
+    />
     <div v-else class="flex flex-row gap-2">
       <Button variant="muted-textonly" @click="handleFaqClick">
         <i class="pi pi-question-circle" />
@@ -54,6 +65,7 @@
 
 <script setup lang="ts">
 import Divider from 'primevue/divider'
+import { cn } from '@comfyorg/tailwind-utils'
 import { ref, watch } from 'vue'
 
 import UsageLogsTable from '@/components/dialog/content/setting/UsageLogsTable.vue'

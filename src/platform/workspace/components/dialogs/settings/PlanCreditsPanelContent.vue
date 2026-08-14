@@ -20,7 +20,19 @@
       <SubscriptionPanelContentWorkspace v-if="isCloud" />
       <CreditsPanel v-else embedded />
     </template>
-    <UsageLogsTable v-else ref="usageLogsTable" />
+    <template v-else>
+      <UsageLogsTable ref="usageLogsTable" fit-container />
+      <div class="flex items-center pt-3">
+        <Button
+          variant="muted-textonly"
+          class="text-xs text-text-secondary"
+          @click="openFullActivity"
+        >
+          {{ $t('workspacePanel.activity.fullActivity') }}
+          <i class="pi pi-external-link text-xs text-text-secondary" />
+        </Button>
+      </div>
+    </template>
   </div>
 </template>
 
@@ -31,6 +43,7 @@ import { useI18n } from 'vue-i18n'
 import CreditsPanel from '@/components/dialog/content/setting/CreditsPanel.vue'
 import UsageLogsTable from '@/components/dialog/content/setting/UsageLogsTable.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { isCloud } from '@/platform/distribution/types'
 import SubscriptionPanelContentWorkspace from '@/platform/workspace/components/SubscriptionPanelContentWorkspace.vue'
 
@@ -49,6 +62,12 @@ const tabs = computed<{ key: View; label: string }[]>(() => [
 ])
 
 const activeView = ref<View>('overview')
+
+const fullActivityUrl = `${getComfyPlatformBaseUrl()}/profile/usage`
+
+function openFullActivity() {
+  window.open(fullActivityUrl, '_blank', 'noopener,noreferrer')
+}
 
 const usageLogsTable = useTemplateRef('usageLogsTable')
 watch(usageLogsTable, (table) => {

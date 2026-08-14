@@ -188,7 +188,8 @@ export function useSettingUI(
     component: defineAsyncComponent(
       () =>
         import('@/platform/workspace/components/dialogs/settings/PlanCreditsPanelContent.vue')
-    )
+    ),
+    props: { class: 'size-full' }
   }
 
   const membersPanel: SettingPanelItem = {

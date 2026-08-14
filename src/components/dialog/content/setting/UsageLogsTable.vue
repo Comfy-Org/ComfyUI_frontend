@@ -1,5 +1,8 @@
 <template>
-  <div>
+  <div
+    ref="rootContainer"
+    :class="cn(fitContainer && 'min-h-0 flex-1 overflow-y-auto')"
+  >
     <div v-if="loading" class="flex items-center justify-center p-8">
       <ProgressSpinner />
     </div>
@@ -102,12 +105,16 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { useTelemetry } from '@/platform/telemetry'
+import { useAutoPageSize } from '@/platform/workspace/composables/useAutoPageSize'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import type { AuditLog } from '@/services/customerEventsService'
 import {
   EventType,
   useCustomerEventsService
 } from '@/services/customerEventsService'
+import { cn } from '@comfyorg/tailwind-utils'
+
+const { fitContainer = false } = defineProps<{ fitContainer?: boolean }>()
 
 const { t } = useI18n()
 
@@ -214,6 +221,23 @@ const refresh = async () => {
 
 watch(shouldUseWorkspaceBilling, () => {
   refresh().catch((error) => {
+    console.error('Error loading events:', error)
+  })
+})
+
+const rootContainer = ref<HTMLElement | null>(null)
+const { pageSize } = useAutoPageSize(
+  rootContainer,
+  7,
+  (container) =>
+    container.querySelector('.p-paginator')?.getBoundingClientRect().height ??
+    56
+)
+watch(pageSize, (size) => {
+  if (!fitContainer || size === pagination.value.limit) return
+  pagination.value.limit = size
+  pagination.value.page = 1
+  loadEvents().catch((error) => {
     console.error('Error loading events:', error)
   })
 })
