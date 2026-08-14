@@ -16,9 +16,6 @@
       >
         {{ t('auth.login.cloudSignUp') }}
       </RouterLink>
-      <span>
-        {{ ' ' + t('auth.login.freeRunsSuffix', { count: 5 }) }}
-      </span>
     </p>
 
     <Message v-if="!isSecureContext" severity="warn" class="mt-4 w-full">

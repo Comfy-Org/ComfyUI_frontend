@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import CloudLoginView from '@/platform/cloud/onboarding/CloudLoginView.vue'
 
 vi.mock('@/composables/auth/useAuthActions', () => ({
@@ -22,19 +23,11 @@ vi.mock('@/base/webviewDetection', () => ({
   isEmbeddedWebView: () => isEmbeddedWebView.value
 }))
 
-const FREE_RUN_MESSAGES = {
-  auth: {
-    login: {
-      cloudNewUser: 'New to Comfy?',
-      cloudSignUp: 'Sign up here',
-      freeRunsSuffix: 'to get {count} free run. | to get {count} free runs.'
-    }
-  }
-}
+const EN_MESSAGES = { auth: { login: enMessages.auth.login } }
 
 async function renderLoginView(
   url = '/cloud/login',
-  messages: Partial<typeof FREE_RUN_MESSAGES> = {}
+  messages: Partial<typeof EN_MESSAGES> = {}
 ) {
   const router = createRouter({
     history: createMemoryHistory(),
@@ -68,10 +61,11 @@ afterEach(() => {
 })
 
 describe('CloudLoginView', () => {
-  it('advertises the free runs offered on sign-up', async () => {
-    await renderLoginView('/cloud/login', FREE_RUN_MESSAGES)
+  it('points new users to sign-up without advertising a free tier', async () => {
+    const { container } = await renderLoginView('/cloud/login', EN_MESSAGES)
 
-    expect(screen.getByText(/to get 5 free runs\./)).toBeInTheDocument()
+    expect(container.textContent).toContain(enMessages.auth.login.cloudNewUser)
+    expect(container.textContent).not.toMatch(/free/i)
   })
 
   it('carries the incoming query onto the sign-up link', async () => {
