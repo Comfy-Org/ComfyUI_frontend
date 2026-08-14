@@ -147,9 +147,11 @@ export function useTemplateWorkflows() {
         const template = workflowTemplatesStore.enhancedTemplates.find(
           (tpl) => tpl.name === id && tpl.sourceModule === sourceModule
         )
-        if (template?.isPartnerNode) {
-          usePartnerNodesEducationStore().requestCard()
-        }
+        const educationStore = usePartnerNodesEducationStore()
+        // A free template can still contain partner nodes, so retire any
+        // earlier request rather than let the card describe this one.
+        if (template?.isPartnerNode) educationStore.requestCard()
+        else educationStore.dismissCard()
       }
 
       return true
