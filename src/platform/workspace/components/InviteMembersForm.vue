@@ -170,7 +170,8 @@ const { fetchStatus } = useBillingContext()
 const emails = ref<string[]>([])
 const invitedEmails = ref<string[]>([])
 const loading = ref(false)
-let pendingInvitesRequest: Promise<PendingInvite[]> | undefined
+const pendingInvites = ref<PendingInvite[]>(workspaceStore.pendingInvites)
+let pendingInvitesRequest: Promise<void> | undefined
 
 const invalidEmailsHintId = useId()
 const pendingInvitesHintId = useId()
@@ -181,11 +182,7 @@ const invalidEmails = computed(() =>
 )
 const pendingInviteEmailSet = computed(
   () =>
-    new Set(
-      workspaceStore.pendingInvites.map((invite) =>
-        normalizeEmail(invite.email)
-      )
-    )
+    new Set(pendingInvites.value.map((invite) => normalizeEmail(invite.email)))
 )
 const alreadyInvitedEmails = computed(() =>
   emails.value.filter((email) => pendingInviteEmailSet.value.has(email))
@@ -226,6 +223,8 @@ async function onSubmit() {
   loading.value = true
   try {
     await pendingInvitesRequest
+    if (!canSubmit.value) return
+
     const emailSnapshot = [...newInviteEmails.value]
     if (emailSnapshot.length === 0) return
     const results = await Promise.allSettled(
@@ -275,9 +274,12 @@ async function onSubmit() {
 onMounted(() => {
   pendingInvitesRequest = workspaceStore
     .fetchPendingInvites()
+    .then((invites) => {
+      pendingInvites.value = invites
+    })
     .catch((error: unknown) => {
       console.error(error)
-      return []
+      pendingInvites.value = []
     })
 })
 

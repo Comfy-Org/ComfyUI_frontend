@@ -12,13 +12,10 @@ vi.mock('vue-i18n', () => ({
   })
 }))
 
-const { mockMembers, mockPendingInvites, mockMaxSeats, mockOccupiedSeats } =
-  vi.hoisted(() => ({
-    mockMembers: [] as unknown[],
-    mockPendingInvites: [] as unknown[],
-    mockMaxSeats: { value: 73 as number | null },
-    mockOccupiedSeats: { value: 1 as number | null }
-  }))
+const { mockMaxSeats, mockOccupiedSeats } = vi.hoisted(() => ({
+  mockMaxSeats: { value: 73 as number | null },
+  mockOccupiedSeats: { value: 1 as number | null }
+}))
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
@@ -27,20 +24,19 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   })
 }))
 
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    members: mockMembers,
-    pendingInvites: mockPendingInvites
-  })
-}))
-
 vi.mock('./InviteMembersForm.vue', () => ({
   default: {
     name: 'InviteMembersForm',
-    props: ['maxSeats', 'source', 'submitLabel', 'placeholder'],
+    props: [
+      'maxSeats',
+      'occupiedSeats',
+      'source',
+      'submitLabel',
+      'placeholder'
+    ],
     emits: ['submitted'],
     template:
-      '<div data-testid="invite-form">seats:{{ maxSeats }}<button data-testid="stub-submit" @click="$emit(\'submitted\', [\'a@b.com\'])">submit</button></div>'
+      '<div data-testid="invite-form">max:{{ maxSeats }} occupied:{{ occupiedSeats }}<button data-testid="stub-submit" @click="$emit(\'submitted\', [\'a@b.com\'])">submit</button></div>'
   }
 }))
 
@@ -110,8 +106,6 @@ function renderTeamCard(props: Record<string, unknown> = {}) {
 
 describe('SubscriptionSuccessWorkspace', () => {
   beforeEach(() => {
-    mockMembers.length = 0
-    mockPendingInvites.length = 0
     mockMaxSeats.value = 73
     mockOccupiedSeats.value = 1
   })
@@ -194,10 +188,12 @@ describe('SubscriptionSuccessWorkspace', () => {
     expect(emitted().close).toBeTruthy()
   })
 
-  it('renders the invite block capped at the workspace member limit', () => {
+  it('passes workspace capacity to the invite form', () => {
     renderTeamCard()
     expect(screen.getByText('subscription.success.inviteTitle')).toBeTruthy()
-    expect(screen.getByTestId('invite-form')).toHaveTextContent('seats:72')
+    expect(screen.getByTestId('invite-form')).toHaveTextContent(
+      'max:73 occupied:1'
+    )
   })
 
   it('places the Send invites action in the footer for a team upgrade', () => {
@@ -215,21 +211,23 @@ describe('SubscriptionSuccessWorkspace', () => {
     mockMaxSeats.value = 1
     renderCard()
     expect(screen.queryByText('subscription.success.inviteTitle')).toBeNull()
-    expect(screen.queryByText(/^seats:/)).toBeNull()
+    expect(screen.queryByTestId('invite-form')).toBeNull()
   })
 
   it('renders the invite block for a multi-seat personal upgrade', () => {
     mockMaxSeats.value = 5
     renderCard()
-    expect(screen.getByText('seats:4', { exact: false })).toBeTruthy()
+    expect(screen.getByTestId('invite-form')).toHaveTextContent(
+      'max:5 occupied:1'
+    )
   })
 
-  it('subtracts existing members and pending invites from invitable seats', () => {
-    mockMembers.push({}, {})
-    mockPendingInvites.push({})
+  it('passes occupied workspace seats to the invite form', () => {
     mockOccupiedSeats.value = 10
     renderTeamCard()
-    expect(screen.getByTestId('invite-form')).toHaveTextContent('seats:63')
+    expect(screen.getByTestId('invite-form')).toHaveTextContent(
+      'max:73 occupied:10'
+    )
   })
 
   it('swaps the form for the success message once invites are submitted', async () => {

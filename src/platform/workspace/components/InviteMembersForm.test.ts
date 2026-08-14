@@ -160,18 +160,48 @@ describe('InviteMembersForm', () => {
     consoleError.mockRestore()
   })
 
-  it('submits when pending invites cannot be refreshed', async () => {
+  it('ignores stale cached invites when pending invites cannot be refreshed', async () => {
     const refreshError = new Error('pending invites failed')
+    mockPendingInvites.push(pendingInviteFor('stale@example.com'))
     mockFetchPendingInvites.mockRejectedValueOnce(refreshError)
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { user, emitted } = renderForm()
 
-    await user.type(emailInput(), 'a@b.com{Enter}')
+    await user.type(emailInput(), 'stale@example.com{Enter}')
+    await waitFor(() => expect(consoleError).toHaveBeenCalledWith(refreshError))
+
+    expect(
+      screen.queryByText(
+        'workspacePanel.inviteMemberDialog.pendingInviteSingle'
+      )
+    ).not.toBeInTheDocument()
     await user.click(submitButton())
 
-    await waitFor(() => expect(emitted().submitted).toEqual([[['a@b.com']]]))
-    expect(consoleError).toHaveBeenCalledWith(refreshError)
+    await waitFor(() =>
+      expect(emitted().submitted).toEqual([[['stale@example.com']]])
+    )
     consoleError.mockRestore()
+  })
+
+  it('revalidates emails after pending invites finish loading', async () => {
+    let resolvePendingInvites: (invites: PendingInvite[]) => void = () => {}
+    mockFetchPendingInvites.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolvePendingInvites = resolve
+        })
+    )
+    const { user } = renderForm()
+
+    await user.type(emailInput(), 'valid@example.com{Enter}')
+    await user.click(submitButton())
+    await user.type(emailInput(), 'invalid{Enter}')
+    resolvePendingInvites([])
+
+    await waitFor(() =>
+      expect(submitButton()).toHaveAttribute('aria-busy', 'false')
+    )
+    expect(mockCreateInvite).not.toHaveBeenCalled()
   })
 
   it('keeps failed emails for retry and emits all invited emails after recovery', async () => {
@@ -244,7 +274,9 @@ describe('InviteMembersForm', () => {
   })
 
   it('warns about one pending invite without disabling submit', async () => {
-    mockPendingInvites.push(pendingInviteFor('ALREADY@EXAMPLE.COM'))
+    const pendingInvite = pendingInviteFor('ALREADY@EXAMPLE.COM')
+    mockPendingInvites.push(pendingInvite)
+    mockFetchPendingInvites.mockResolvedValueOnce([pendingInvite])
     const { user } = renderForm()
 
     await user.type(emailInput(), 'already@example.com{Enter}')
@@ -260,10 +292,12 @@ describe('InviteMembersForm', () => {
   })
 
   it('skips pending invites and sends the rest of the batch', async () => {
-    mockPendingInvites.push(
+    const pendingInvites = [
       pendingInviteFor('first@example.com'),
       pendingInviteFor('second@example.com')
-    )
+    ]
+    mockPendingInvites.push(...pendingInvites)
+    mockFetchPendingInvites.mockResolvedValueOnce(pendingInvites)
     const { user, emitted } = renderForm({ maxSeats: 3, occupiedSeats: 2 })
 
     await user.type(
