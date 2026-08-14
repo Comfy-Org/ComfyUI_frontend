@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
 import { computed, ref } from 'vue'
 
@@ -168,16 +169,19 @@ const connections: McpConnection[] = [
   }
 ]
 
-const activeConnectionId = ref<string>(connections[0].id)
+type ConnectionId = McpConnection['id']
+
+const activeConnectionId = ref<ConnectionId>(connections[0].id)
 const activeConnection = computed(
   () =>
     connections.find((conn) => conn.id === activeConnectionId.value) ??
     connections[0]
 )
 
-const activeClientIds = ref<Record<string, string>>(
-  Object.fromEntries(connections.map((conn) => [conn.id, conn.clients[0].id]))
-)
+const activeClientIds = ref<Record<ConnectionId, string>>({
+  cloud: cloudClients[0].id,
+  local: localClients[0].id
+})
 
 function activeClientFor(conn: McpConnection): McpClient {
   return (
@@ -361,11 +365,13 @@ const copiedLabel = t('ui.copied', locale)
             </div>
 
             <div
-              class="bg-transparency-white-t4 flex flex-col rounded-3xl"
               :class="
-                activeClientFor(conn).showAgentCard
-                  ? 'p-6 lg:p-8'
-                  : 'relative overflow-hidden max-lg:aspect-video'
+                cn(
+                  'bg-transparency-white-t4 flex flex-col rounded-3xl',
+                  activeClientFor(conn).showAgentCard
+                    ? 'p-6 lg:p-8'
+                    : 'relative overflow-hidden max-lg:aspect-video'
+                )
               "
             >
               <template v-if="activeClientFor(conn).showAgentCard">

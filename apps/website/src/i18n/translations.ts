@@ -2528,9 +2528,9 @@ const translations = {
     'zh-CN': '可以同时使用两种连接吗？'
   },
   'mcp.faq.4.a': {
-    en: 'Yes. Most clients happily run two MCP servers side by side. They sign in to the same Comfy account, but separately — one sign-in does not cover the other. Prototype free on your own GPU, then send the heavy batch to cloud GPUs from the same chat.',
+    en: 'Yes. Most clients happily run two MCP servers side by side, and they authenticate independently: the cloud connection signs in to your Comfy account, while the local one needs no sign-in at all until you run partner models. Prototype free on your own GPU, then send the heavy batch to cloud GPUs from the same chat.',
     'zh-CN':
-      '可以。大多数客户端可以同时运行两个 MCP 服务器。它们登录同一个 Comfy 账户，但各自独立——登录其中一个并不覆盖另一个。你可以先在自己的 GPU 上免费打样，再在同一个对话里把大批量任务发到云端 GPU。'
+      '可以。大多数客户端可以同时运行两个 MCP 服务器，且各自独立认证：云端连接登录你的 Comfy 账户，本地连接在运行合作伙伴模型之前完全不需要登录。你可以先在自己的 GPU 上免费打样，再在同一个对话里把大批量任务发到云端 GPU。'
   },
   'mcp.faq.5.q': {
     en: 'Do I need an API key?',
@@ -2564,9 +2564,9 @@ const translations = {
     'zh-CN': '连接后我的智能体能做什么？'
   },
   'mcp.faq.8.a': {
-    en: "• Generate images, video, audio, and 3D — including all open-source workflows and partner models like Seedance, GPT-Image, Nano Banana, and Kling\n• Build, edit, and run workflows; save and re-run workflows\n• Run and read in large batches\n• Search models, nodes, and template workflows\n• Read and execute shared workflow URLs\n• Upload and download assets for you\n\nEverything is now in natural language. No nodes, no downloads, no GPU, no node graphs if you don't want them.",
+    en: "• Generate images, video, audio, and 3D — including all open-source workflows and partner models like Seedance, GPT-Image, Nano Banana, and Kling\n• Build, edit, and run workflows; save and re-run workflows\n• Run and read in large batches\n• Search models, nodes, and template workflows\n• Read and execute shared workflow URLs\n• Upload and download assets for you\n\nEverything is in natural language, with no nodes or node graphs if you don't want them. On the cloud connection there is nothing to download and no GPU needed; the local connection drives the ComfyUI already installed on your machine.",
     'zh-CN':
-      '• 生成图像、视频、音频和 3D——包括所有开源工作流以及 Seedance、GPT-Image、Nano Banana 和 Kling 等合作伙伴模型\n• 构建、编辑和运行工作流；保存并重新运行工作流\n• 大批量运行和读取\n• 搜索模型、节点和模板工作流\n• 读取并执行分享的工作流链接\n• 为你上传和下载资产\n\n现在一切都用自然语言完成。如果你愿意，无需节点、无需下载、无需 GPU、无需节点图。'
+      '• 生成图像、视频、音频和 3D——包括所有开源工作流以及 Seedance、GPT-Image、Nano Banana 和 Kling 等合作伙伴模型\n• 构建、编辑和运行工作流；保存并重新运行工作流\n• 大批量运行和读取\n• 搜索模型、节点和模板工作流\n• 读取并执行分享的工作流链接\n• 为你上传和下载资产\n\n一切都用自然语言完成，如果你愿意，无需节点、无需节点图。云端连接无需下载、无需 GPU；本地连接则驱动你机器上已安装的 ComfyUI。'
   },
   'mcp.faq.9.q': {
     en: 'Where do my outputs go?',

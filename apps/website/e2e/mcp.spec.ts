@@ -152,12 +152,22 @@ test.describe('MCP page @smoke', () => {
     await expect(
       setup.getByRole('link', { name: 'open source on GitHub' })
     ).toHaveAttribute('href', 'https://github.com/Comfy-Org/comfy-mcp')
+    await expect(
+      setup.getByRole('link', { name: 'subscription of any tier' })
+    ).toHaveCount(0)
 
     // Client tabs inside the local panel swap the per-client instructions.
     await selectClientTab(setup, 'Cursor')
     await expect(
       setup.locator('[role="tabpanel"][data-state="active"]').last()
     ).toContainText('.cursor/mcp.json')
+
+    // Switching back to cloud restores the subscription note and endpoint.
+    await setup.getByRole('tab', { name: /Comfy Cloud/ }).click()
+    await expect(
+      setup.getByRole('link', { name: 'subscription of any tier' })
+    ).toBeVisible()
+    await expect(setup.getByText(MCP_ENDPOINT, { exact: true })).toBeVisible()
   })
 
   test('capabilities section shows all six tool cards', async ({ page }) => {
