@@ -1,8 +1,41 @@
 coverage:
   status:
+    project:
+      # Scoped to the pre-existing uploads so that adding the website report
+      # (which starts near 22%) cannot drag this status down and fail PRs
+      # that never touched the website.
+      default:
+        target: auto
+        flags:
+          - unit
+          - e2e
+
+      website:
+        target: auto
+        threshold: '1%'
+        informational: true
+        flags:
+          - website-unit
+        paths:
+          - apps/website/src/**
+        flag_coverage_not_uploaded_behavior: pass
+
     patch:
       default:
         informational: true
+
+      # The enforcing gate: lines changed under apps/website must be covered.
+      # Deliberately patch-based — it asks "is the code you just wrote
+      # tested?" rather than punishing authors for pre-existing gaps.
+      website:
+        target: '80%'
+        threshold: '0%'
+        informational: true
+        flags:
+          - website-unit
+        paths:
+          - apps/website/src/**
+        flag_coverage_not_uploaded_behavior: pass
 
 comment:
   layout: 'header, diff, flags, files'
@@ -21,3 +54,9 @@ flags:
     carryforward: true
   e2e:
     carryforward: true
+  # No carryforward: the website job is the sole authority for these paths, so
+  # a missing upload must never be papered over with stale coverage.
+  website-unit:
+    paths:
+      - apps/website/src/**
+    carryforward: false

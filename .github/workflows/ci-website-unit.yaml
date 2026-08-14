@@ -1,0 +1,77 @@
+# Description: Unit tests + coverage reporting for the website (apps/website)
+name: 'CI: Website Unit'
+
+on:
+  push:
+    branches: [main, master, website/*]
+  pull_request:
+    branches-ignore: [wip/*, draft/*, temp/*]
+  merge_group:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      app-website-changes: ${{ steps.changes.outputs.app-website-changes }}
+      packages-changes: ${{ steps.changes.outputs.packages-changes }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: changes
+        uses: ./.github/actions/changes-filter
+
+  website-unit:
+    needs: changes
+    if: ${{ needs.changes.outputs.app-website-changes == 'true' || needs.changes.outputs.packages-changes == 'true' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Run website unit tests with coverage
+        run: pnpm --filter @comfyorg/website test:coverage
+
+      - name: Upload website coverage to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+        with:
+          files: apps/website/coverage/lcov.info
+          disable_search: true
+          flags: website-unit
+          # LCOV records paths relative to apps/website (`src/...`), which
+          # would collide with the root app's own `src/`. These realign the
+          # report onto `apps/website/src/...` in the repo-root file network.
+          network_filter: apps/website/
+          network_prefix: apps/website/
+          token: ${{ secrets.CODECOV_TOKEN }}
+          # Forks receive no CODECOV_TOKEN; a failed upload must not block an
+          # external contributor. Everywhere else a silent upload failure
+          # would silently disable the coverage gate.
+          fail_ci_if_error: ${{ github.event.pull_request.head.repo.fork != true }}
+
+  # Always runs, so branch protection has a context that reliably posts even
+  # when the test job is correctly skipped for non-website changes.
+  website-unit-gate:
+    needs: [website-unit]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify website unit tests passed or were not required
+        env:
+          RESULT: ${{ needs.website-unit.result }}
+        run: |
+          if [ "$RESULT" = "success" ] || [ "$RESULT" = "skipped" ]; then
+            echo "Website unit tests: $RESULT"
+            exit 0
+          fi
+          echo "::error title=Website unit tests::Job result was '$RESULT'"
+          exit 1
