@@ -3,6 +3,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, vi } from 'vitest'
 import 'vue'
+import DOMPurify from 'dompurify'
 
 beforeEach(() => {
   setActivePinia(createTestingPinia({ stubActions: false }))
@@ -146,3 +147,24 @@ globalThis.Worker = vi.fn(function () {
     dispatchEvent: vi.fn()
   }
 })
+
+// Tripwire: dompurify >= 3.4.8 is inert under happy-dom — its NodeIterator
+// lacks the spec's node-removal reference adjustment, so after DOMPurify's
+// first removal the walk descends into the detached subtree and everything
+// after it is returned UNSANITIZED (dropped wrappers and surviving <script>
+// are the same bug). jsdom is spec-conformant; real browsers are unaffected.
+// See capricorn86/happy-dom#2182 / FE-1189. Throwing on call (not on load)
+// keeps the ~16k tests that never sanitize unaffected while making it
+// impossible to assert against an inert sanitizer silently.
+if (
+  typeof DOMPurify?.sanitize === 'function' &&
+  DOMPurify.sanitize('<h1>x</h1>') !== '<h1>x</h1>'
+) {
+  DOMPurify.sanitize = (() => {
+    throw new Error(
+      'DOMPurify.sanitize is inert in this test environment (happy-dom ' +
+        'NodeIterator bug — see vitest.setup.ts). Add ' +
+        '`// @vitest-environment jsdom` to this test file.'
+    )
+  }) as typeof DOMPurify.sanitize
+}

@@ -1,7 +1,12 @@
 // @vitest-environment jsdom
-// dompurify >= 3.4.8 (bumped for GHSA-55q2-fjhq-7xh7 et al.) mis-walks
-// happy-dom NodeIterators and strips sanitized elements; jsdom matches
-// real-browser output for the markdown rendering these tests assert on.
+// dompurify >= 3.4.8 is inert under happy-dom: happy-dom's NodeIterator
+// lacks the spec's node-removal reference adjustment, so after DOMPurify's
+// first removal the walk descends into the detached subtree and everything
+// after it is returned UNSANITIZED — wrappers get dropped AND <script>/
+// javascript: payloads survive (one bug, both directions). jsdom is
+// spec-conformant and byte-identical to real-browser output. See
+// capricorn86/happy-dom#2182 / FE-1189; vitest.setup.ts trips on any
+// happy-dom test that calls sanitize.
 import { render, screen } from '@testing-library/vue'
 import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
