@@ -76,14 +76,17 @@ const ZOOM_SETTLE_MS = 160
 const PRUNE_SLACK = 8
 
 /**
- * Most component trees mounted in one refresh.
+ * Starting number of component trees to mount per animation frame.
  *
- * A wheel zoom-out can bring the whole graph into the culling bounds at once;
- * mounting thousands of trees in one synchronous flush freezes the frame the
- * user is interacting in. Excess entries mount on immediately following
- * refreshes, so the full set still arrives, spread across a few frames.
+ * Adapted from there against real frame cost, because per-node mount cost
+ * varies by an order of magnitude with zoom: cheap at working zoom, and
+ * roughly 8-14ms each at minimum zoom where every mount also lays out and
+ * measures a scaled subtree. No fixed number is right for both.
  */
-const MOUNT_BATCH_LIMIT = 250
+export const MOUNT_BATCH_PER_FRAME = 8
+
+/** Frame budget the fill-in tries to stay within, in milliseconds. */
+const MOUNT_FRAME_BUDGET_MS = 20
 
 /**
  * Graph size below which nothing is culled.
@@ -218,6 +221,70 @@ export function useViewportCulling({
     return visible
   }
 
+  // Nodes waiting to mount, drained a batch per frame. Kept outside the
+  // mounted set so an interrupted fill-in leaves no partial state behind.
+  let mountQueue: NodeId[] = []
+  let mountFrame: number | null = null
+
+  function cancelQueuedMounts(): void {
+    mountQueue = []
+    lastDrainAt = 0
+    mountBatchSize = MOUNT_BATCH_PER_FRAME
+    if (mountFrame !== null) {
+      cancelAnimationFrame(mountFrame)
+      mountFrame = null
+    }
+  }
+
+  /**
+   * Batch size, adapted against the frame the previous batch produced. Vue
+   * renders after the set is assigned, so the cost cannot be measured while
+   * mounting - only observed on the next frame and corrected for.
+   */
+  let mountBatchSize = MOUNT_BATCH_PER_FRAME
+  let lastDrainAt = 0
+
+  function drainMountQueue(now: number): void {
+    mountFrame = null
+    if (disposed || mountQueue.length === 0) return
+
+    if (lastDrainAt > 0) {
+      const frameMs = now - lastDrainAt
+      if (frameMs > MOUNT_FRAME_BUDGET_MS) {
+        mountBatchSize = Math.max(1, Math.floor(mountBatchSize / 2))
+      } else if (frameMs < MOUNT_FRAME_BUDGET_MS / 2) {
+        mountBatchSize = Math.min(MOUNT_BATCH_PER_FRAME * 4, mountBatchSize + 2)
+      }
+    }
+    lastDrainAt = now
+
+    const batch = mountQueue.splice(0, mountBatchSize)
+    const next = new Set(mountedNodeIds.value)
+    for (const id of batch) next.add(id)
+    mountedNodeIds.value = next
+
+    if (mountQueue.length > 0) {
+      mountFrame = requestAnimationFrame(drainMountQueue)
+    }
+  }
+
+  function queueMount(entering: NodeId[]): void {
+    cancelQueuedMounts()
+    if (entering.length === 0) return
+
+    // First batch synchronously so a small change appears this frame rather
+    // than a frame late; the rest fills in over following frames.
+    const immediate = entering.slice(0, MOUNT_BATCH_PER_FRAME)
+    const next = new Set(mountedNodeIds.value)
+    for (const id of immediate) next.add(id)
+    mountedNodeIds.value = next
+
+    mountQueue = entering.slice(immediate.length)
+    if (mountQueue.length > 0) {
+      mountFrame = requestAnimationFrame(drainMountQueue)
+    }
+  }
+
   const pruneMountedNodes = useDebounceFn(() => {
     if (disposed) return
     mountedNodeIds.value = computeVisibleNodeIds()
@@ -246,17 +313,13 @@ export function useViewportCulling({
       }
     }
 
-    if (entering.length > 0 && allowMount) {
-      const next = new Set(mounted)
-      const batch = entering.slice(0, MOUNT_BATCH_LIMIT)
-      for (const id of batch) next.add(id)
-      mountedNodeIds.value = next
-
-      // More waiting than one flush should mount: continue next macrotask so
-      // the renderer gets a frame in between.
-      if (entering.length > batch.length) {
-        setTimeout(() => refreshMountedNodes(), 32)
-      }
+    if (allowMount) {
+      // Replaces rather than appends: the previous queue was computed for a
+      // camera position the user has already left, so anything still in it is
+      // either in `entering` again or no longer wanted.
+      queueMount(entering)
+    } else {
+      cancelQueuedMounts()
     }
 
     if (!hasLeft) return
@@ -334,6 +397,7 @@ export function useViewportCulling({
 
   tryOnScopeDispose(() => {
     disposed = true
+    cancelQueuedMounts()
   })
 
   return { mountedNodeIds }

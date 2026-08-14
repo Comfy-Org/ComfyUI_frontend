@@ -3,6 +3,7 @@ import { computed, effectScope, nextTick, reactive, ref } from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import {
+  MOUNT_BATCH_PER_FRAME,
   getCullingBounds,
   useViewportCulling
 } from '@/renderer/extensions/vueNodes/composables/useViewportCulling'
@@ -168,7 +169,7 @@ describe('useViewportCulling', () => {
     expect(mountedNodeIds.value.size).toBe(0)
   })
 
-  it('mounts a large entering set in batches rather than one flush', async () => {
+  it('fills a large entering set in over several frames, not one flush', async () => {
     const COUNT = 600
     const bounds = Object.fromEntries(
       Array.from({ length: COUNT }, (_, i) => [
@@ -178,12 +179,36 @@ describe('useViewportCulling', () => {
     )
     const { mountedNodeIds } = setup(bounds)
 
-    // First synchronous refresh mounts at most one batch.
-    expect(mountedNodeIds.value.size).toBeLessThanOrEqual(250)
+    // The first refresh mounts one frame's worth, not the whole set.
+    const first = mountedNodeIds.value.size
+    expect(first).toBeGreaterThan(0)
+    expect(first).toBeLessThan(COUNT / 4)
 
-    // The remainder arrives on the follow-up refreshes.
-    await vi.advanceTimersByTimeAsync(200)
+    // Remaining nodes arrive over subsequent frames.
+    await vi.advanceTimersByTimeAsync(2000)
     expect(mountedNodeIds.value.size).toBe(COUNT)
+  })
+
+  it('abandons a queued fill-in when the camera moves again', async () => {
+    const COUNT = 600
+    const bounds = Object.fromEntries(
+      Array.from({ length: COUNT }, (_, i) => [
+        `n${i}`,
+        { x: (i % 30) * 40, y: Math.floor(i / 30) * 40, width: 30, height: 30 }
+      ])
+    )
+    const { mountedNodeIds } = setup(bounds)
+    const afterFirstFrame = mountedNodeIds.value.size
+
+    // Zoom away before the queue drains: the pending nodes were computed for a
+    // camera position the user has left, so they must not keep arriving.
+    camera.z = 0.05
+    await nextTick()
+    await vi.advanceTimersByTimeAsync(50)
+
+    expect(mountedNodeIds.value.size).toBeLessThanOrEqual(
+      afterFirstFrame + MOUNT_BATCH_PER_FRAME
+    )
   })
 
   it('mounts every node when the graph is below the culling threshold', async () => {
@@ -253,6 +278,30 @@ describe('useViewportCulling', () => {
     // Without eager pruning the mounted set would cover every node the
     // viewport swept over.
     expect(mountedNodeIds.value.size).toBeLessThan(NODE_COUNT / 3)
+  })
+
+  it('does not keep mounting nodes the camera has already left behind', async () => {
+    // A pan re-refreshes while the previous fill-in is still draining. The
+    // queued ids were computed for the old position, so they must be replaced
+    // rather than continuing to arrive alongside the new ones.
+    const COUNT = 600
+    const bounds = Object.fromEntries(
+      Array.from({ length: COUNT }, (_, i) => [
+        `n${i}`,
+        { x: (i % 30) * 40, y: Math.floor(i / 30) * 40, width: 30, height: 30 }
+      ])
+    )
+    const { mountedNodeIds } = setup(bounds)
+
+    // Pan far away, past the margin, before the queue can drain.
+    camera.x = -60_000
+    await nextTick()
+    await vi.advanceTimersByTimeAsync(150)
+    const afterPan = mountedNodeIds.value.size
+
+    // Nothing is in range now, so the stale queue must not keep filling in.
+    await vi.advanceTimersByTimeAsync(2000)
+    expect(mountedNodeIds.value.size).toBeLessThanOrEqual(afterPan)
   })
 
   it('drops nodes removed from the graph', async () => {
