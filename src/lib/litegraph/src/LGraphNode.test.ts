@@ -774,13 +774,13 @@ describe('LGraphNode', () => {
       graph.add(node)
       layoutStore.reportContentSize(graph.rootGraph.id, node.id, {
         width: 90,
-        height: 0
+        height: 12
       })
       LiteGraph.vueNodesMode = true
       node.measure(out)
 
       expect(out[2]).toBe(90)
-      expect(out[3]).toBe(LiteGraph.NODE_TITLE_HEIGHT)
+      expect(out[3]).toBe(LiteGraph.NODE_TITLE_HEIGHT + 12)
       expect(node.serialize().size).toEqual([150, 10])
     })
 

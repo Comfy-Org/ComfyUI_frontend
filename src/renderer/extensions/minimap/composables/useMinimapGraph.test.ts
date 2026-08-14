@@ -277,11 +277,9 @@ describe('useMinimapGraph', () => {
     graphManager.checkForChanges()
 
     // Add a node
-    mockGraph._nodes.push({
-      id: '3',
-      pos: [400, 300],
-      size: [100, 50]
-    } as Partial<LGraphNode> as LGraphNode)
+    mockGraph._nodes.push(
+      createMockLGraphNode({ id: '3', pos: [400, 300], size: [100, 50] })
+    )
 
     const hasChanges = graphManager.checkForChanges()
     expect(hasChanges).toBe(true)

@@ -29,7 +29,7 @@ vi.mock('@/utils/colorUtil', () => ({
 
 vi.mock('@/stores/executionStore', () => ({
   useExecutionStore: vi.fn(() => ({
-    nodeProgressStates: {}
+    nodeLocationProgressStates: {}
   }))
 }))
 
