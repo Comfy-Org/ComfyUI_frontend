@@ -88,6 +88,7 @@ const endedPersonalBillingStatus: BillingStatusResponse = {
 const pastDueBillingStatus: BillingStatusResponse = {
   ...mockBillingStatus,
   is_active: false,
+  plan_slug: 'pro-monthly',
   billing_status: 'payment_failed'
 }
 
