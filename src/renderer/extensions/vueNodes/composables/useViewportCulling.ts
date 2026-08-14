@@ -88,12 +88,15 @@ const MOUNT_BATCH_LIMIT = 250
 /**
  * Graph size below which nothing is culled.
  *
- * Ordinary workflows are an order of magnitude smaller and render fine with every node
- * mounted, so they keep exactly today's behaviour and take none of culling's
- * interaction risk - unmounting near live widgets, link anchors, remount cost.
- * Culling only engages where the alternative is genuinely unusable.
+ * Ordinary workflows are an order of magnitude smaller, render fine whole, and
+ * take none of culling's interaction risk. Chosen from measurement rather than
+ * feel: panning an unculled graph on a 4x-throttled CPU (roughly a mid-range
+ * laptop) costs 37.6ms/frame at 150 nodes against 18.6ms culled, so this is
+ * where culling starts being decisive for the machines that need it. On a fast
+ * machine the same graph is 8ms either way, so a threshold set from local
+ * timings alone would land far too high.
  */
-const MIN_NODES_FOR_CULLING = 200
+const MIN_NODES_FOR_CULLING = 150
 
 interface Size {
   width: number
