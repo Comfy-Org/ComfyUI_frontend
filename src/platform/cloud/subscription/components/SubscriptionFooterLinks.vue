@@ -1,7 +1,5 @@
 <template>
-  <div
-    class="flex items-center justify-between border-t border-interface-stroke pt-3"
-  >
+  <div class="flex items-center justify-between pt-3 pb-6">
     <div class="flex gap-2">
       <Button
         variant="muted-textonly"
