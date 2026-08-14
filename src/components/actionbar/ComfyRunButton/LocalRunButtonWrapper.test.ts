@@ -9,14 +9,11 @@ import LocalRunButtonWrapper from './LocalRunButtonWrapper.vue'
 
 type PartnerNode = { nodeName: string; displayName: string }
 
+type PartnerRunGate = 'sign-in' | 'add-credits' | 'none'
+
 const gateState = vi.hoisted(() => ({
-<<<<<<< HEAD
-  gate: undefined as unknown as { value: 'sign-in' | 'none' },
+  gate: undefined as unknown as { value: PartnerRunGate },
   partnerNodes: undefined as unknown as { value: PartnerNode[] }
-=======
-  gate: 'none' as 'sign-in' | 'add-credits' | 'none',
-  partnerNodes: [] as { nodeName: string; displayName: string }[]
->>>>>>> bb518643d9 (feat: gate Run button on credits for partner nodes on local/desktop)
 }))
 
 const showApiNodesSignInDialog = vi.hoisted(() =>
@@ -26,7 +23,7 @@ const showTopUpCreditsDialog = vi.hoisted(() => vi.fn(() => Promise.resolve()))
 
 vi.mock('@/composables/billing/usePartnerNodesRunGate', async () => {
   const { ref } = await import('vue')
-  gateState.gate = ref<'sign-in' | 'none'>('none')
+  gateState.gate = ref<PartnerRunGate>('none')
   gateState.partnerNodes = ref<PartnerNode[]>([])
   return {
     usePartnerNodesRunGate: () => ({
@@ -103,22 +100,18 @@ describe('LocalRunButtonWrapper', () => {
     expect(__getQueueMode()).toBe('instant')
   })
 
-<<<<<<< HEAD
   it('replaces the queue button and disables auto-queue when gated', () => {
     gateState.gate.value = 'sign-in'
-=======
-  it('replaces the queue button with sign-in when gated', () => {
-    gateState.gate = 'sign-in'
->>>>>>> bb518643d9 (feat: gate Run button on credits for partner nodes on local/desktop)
     renderWrapper()
     expect(screen.queryByTestId('queue-button')).not.toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: 'Sign in to run' })
     ).toBeInTheDocument()
+    expect(__getQueueMode()).toBe('disabled')
   })
 
   it('shows Add Credits, opens the top-up dialog, and disables auto-queue when gated', async () => {
-    gateState.gate = 'add-credits'
+    gateState.gate.value = 'add-credits'
     renderWrapper()
 
     expect(screen.queryByTestId('queue-button')).not.toBeInTheDocument()
@@ -130,13 +123,20 @@ describe('LocalRunButtonWrapper', () => {
     })
   })
 
-  it('points the gated button at the caption explaining why it is gated', () => {
+  it('points the gated buttons at the caption explaining why they are gated', () => {
     gateState.gate.value = 'sign-in'
-    renderWrapper()
-
+    const { unmount } = renderWrapper()
     expect(
       screen.getByRole('button', { name: 'Sign in to run' })
     ).toHaveAttribute('aria-describedby', 'partner-run-gate-caption')
+    unmount()
+
+    gateState.gate.value = 'add-credits'
+    renderWrapper()
+    expect(screen.getByRole('button', { name: 'Add Credits' })).toHaveAttribute(
+      'aria-describedby',
+      'partner-run-gate-caption'
+    )
   })
 
   it('moves focus to the queue button when signing in unmounts the gated button', async () => {

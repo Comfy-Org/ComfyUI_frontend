@@ -1,16 +1,19 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { effectScope, nextTick } from 'vue'
-import type { EffectScope } from 'vue'
+import { effectScope, nextTick, ref } from 'vue'
+import type { EffectScope, Ref } from 'vue'
 
 import * as authStoreModule from '@/stores/authStore'
 import * as currentUserModule from '@/composables/auth/useCurrentUser'
 
 import { usePartnerNodesRunGate } from './usePartnerNodesRunGate'
 
-const state = vi.hoisted(() => ({
-  hasPartnerNodes: false,
-  partnerNodes: [] as { nodeName: string; displayName: string }[]
-}))
+const state = vi.hoisted(
+  () =>
+    ({}) as {
+      hasPartnerNodes: Ref<boolean>
+      partnerNodes: Ref<{ nodeName: string; displayName: string }[]>
+    }
+)
 
 const mockFetchBalance = vi.hoisted(() =>
   vi.fn<() => Promise<{ amount_micros?: number } | null>>(() =>
@@ -22,8 +25,8 @@ vi.mock('@/composables/node/usePartnerNodesInGraph', async () => {
   const { computed } = await import('vue')
   return {
     usePartnerNodesInGraph: () => ({
-      partnerNodes: computed(() => state.partnerNodes),
-      hasPartnerNodes: computed(() => state.hasPartnerNodes)
+      partnerNodes: computed(() => state.partnerNodes.value),
+      hasPartnerNodes: computed(() => state.hasPartnerNodes.value)
     })
   }
 })
@@ -92,8 +95,8 @@ function setup() {
 
 describe('usePartnerNodesRunGate', () => {
   beforeEach(() => {
-    state.hasPartnerNodes = false
-    state.partnerNodes = []
+    state.hasPartnerNodes = ref(false)
+    state.partnerNodes = ref([])
     __setLoggedIn(false)
     __setUserId(null)
     __setBalance(null)
@@ -115,7 +118,7 @@ describe('usePartnerNodesRunGate', () => {
   })
 
   it('gates on sign-in when signed out, without fetching balance', () => {
-    state.hasPartnerNodes = true
+    state.hasPartnerNodes.value = true
     const { gate } = setup()
 
     expect(gate.value).toBe('sign-in')
@@ -123,7 +126,7 @@ describe('usePartnerNodesRunGate', () => {
   })
 
   it('gates on add-credits when the probe finds a zero balance', async () => {
-    state.hasPartnerNodes = true
+    state.hasPartnerNodes.value = true
     __setLoggedIn(true)
     mockFetchBalance.mockResolvedValue({ amount_micros: 0 })
 
@@ -134,7 +137,7 @@ describe('usePartnerNodesRunGate', () => {
   })
 
   it('treats the 404 new-customer null as no credits', async () => {
-    state.hasPartnerNodes = true
+    state.hasPartnerNodes.value = true
     __setLoggedIn(true)
     mockFetchBalance.mockResolvedValue(null)
 
@@ -145,7 +148,7 @@ describe('usePartnerNodesRunGate', () => {
   })
 
   it('fails open while the probe is pending and when it errors', async () => {
-    state.hasPartnerNodes = true
+    state.hasPartnerNodes.value = true
     __setLoggedIn(true)
     let rejectProbe!: (reason: Error) => void
     mockFetchBalance.mockImplementation(
@@ -166,7 +169,7 @@ describe('usePartnerNodesRunGate', () => {
   })
 
   it('retries a failed probe on window focus', async () => {
-    state.hasPartnerNodes = true
+    state.hasPartnerNodes.value = true
     __setLoggedIn(true)
     mockFetchBalance.mockRejectedValueOnce(new Error('offline'))
     vi.spyOn(console, 'warn').mockImplementation(() => {})
@@ -182,8 +185,27 @@ describe('usePartnerNodesRunGate', () => {
     expect(gate.value).toBe('add-credits')
   })
 
+  it('stops retrying a failed probe on focus once the partner nodes are gone', async () => {
+    state.hasPartnerNodes.value = true
+    __setLoggedIn(true)
+    mockFetchBalance.mockRejectedValue(new Error('offline'))
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    setup()
+    await flushPromises()
+
+    state.hasPartnerNodes.value = false
+    await nextTick()
+    mockFetchBalance.mockClear()
+
+    window.dispatchEvent(new Event('focus'))
+    await flushPromises()
+
+    expect(mockFetchBalance).not.toHaveBeenCalled()
+  })
+
   it('resolves none when the probe finds funds', async () => {
-    state.hasPartnerNodes = true
+    state.hasPartnerNodes.value = true
     __setLoggedIn(true)
     mockFetchBalance.mockResolvedValue({ amount_micros: 5_000_000 })
 
@@ -194,7 +216,7 @@ describe('usePartnerNodesRunGate', () => {
   })
 
   it('trusts an already-fetched store balance without probing again', async () => {
-    state.hasPartnerNodes = true
+    state.hasPartnerNodes.value = true
     __setLoggedIn(true)
     __setUserId('user-a')
     __setBalance({ amount_micros: 0 })
@@ -207,7 +229,7 @@ describe('usePartnerNodesRunGate', () => {
   })
 
   it('prefers the live store balance over the probe result', async () => {
-    state.hasPartnerNodes = true
+    state.hasPartnerNodes.value = true
     __setLoggedIn(true)
     mockFetchBalance.mockResolvedValue(null)
 
@@ -225,7 +247,7 @@ describe('usePartnerNodesRunGate', () => {
   })
 
   it('discards a stale probe that resolves after an account switch', async () => {
-    state.hasPartnerNodes = true
+    state.hasPartnerNodes.value = true
     __setLoggedIn(true)
     __setUserId('user-a')
     let resolveStaleProbe!: (value: null) => void
@@ -251,7 +273,7 @@ describe('usePartnerNodesRunGate', () => {
   })
 
   it('re-probes instead of trusting a balance left behind by the previous account', async () => {
-    state.hasPartnerNodes = true
+    state.hasPartnerNodes.value = true
     __setLoggedIn(true)
     __setUserId('user-a')
     __setBalance({ amount_micros: 0 })
@@ -269,7 +291,7 @@ describe('usePartnerNodesRunGate', () => {
   })
 
   it('flips to sign-in when the user signs out mid-session', async () => {
-    state.hasPartnerNodes = true
+    state.hasPartnerNodes.value = true
     __setLoggedIn(true)
     mockFetchBalance.mockResolvedValue({ amount_micros: 0 })
 
