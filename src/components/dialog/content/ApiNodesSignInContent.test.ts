@@ -3,6 +3,8 @@ import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+
 import ApiNodesSignInContent from './ApiNodesSignInContent.vue'
 
 const hoisted = vi.hoisted(() => ({
@@ -13,10 +15,12 @@ vi.mock('@/stores/nodeDefStore', () => ({
   useNodeDefStore: () => ({ nodeDefsByName: hoisted.nodeDefsByName })
 }))
 
+const buildDocsUrl = vi.hoisted(() =>
+  vi.fn((path: string) => `https://docs.comfy.org${path}`)
+)
+
 vi.mock('@/composables/useExternalLink', () => ({
-  useExternalLink: () => ({
-    buildDocsUrl: (path: string) => `https://docs.comfy.org${path}`
-  })
+  useExternalLink: () => ({ buildDocsUrl })
 }))
 
 const i18n = createI18n({
@@ -24,13 +28,8 @@ const i18n = createI18n({
   locale: 'en',
   messages: {
     en: {
-      apiNodesSignInDialog: {
-        title: 'Sign in to run partner nodes',
-        message: 'Partner nodes run on third-party services.',
-        partnerNodesInWorkflow: 'Partner nodes in this workflow',
-        whatArePartnerNodes: 'What are partner nodes?',
-        signIn: 'Sign In'
-      }
+      g: enMessages.g,
+      apiNodesSignInDialog: enMessages.apiNodesSignInDialog
     }
   }
 })
@@ -38,9 +37,10 @@ const i18n = createI18n({
 function renderContent(props: {
   apiNodeNames: string[]
   onLogin?: () => void
+  onCancel?: () => void
 }) {
   return render(ApiNodesSignInContent, {
-    props,
+    props: { titleId: 'api-nodes-signin', ...props },
     global: { plugins: [i18n] }
   })
 }
@@ -77,6 +77,9 @@ describe('ApiNodesSignInContent', () => {
       'https://docs.comfy.org/tutorials/api-nodes/faq'
     )
     expect(link).toHaveAttribute('rel', 'noopener noreferrer')
+    expect(buildDocsUrl).toHaveBeenCalledWith('/tutorials/api-nodes/faq', {
+      includeLocale: true
+    })
   })
 
   it('invokes onLogin from the Sign In button', async () => {
@@ -85,6 +88,23 @@ describe('ApiNodesSignInContent', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Sign In' }))
 
-    expect(onLogin).toHaveBeenCalled()
+    expect(onLogin).toHaveBeenCalledExactlyOnceWith()
+  })
+
+  it('dismisses via the close button', async () => {
+    const onCancel = vi.fn()
+    renderContent({ apiNodeNames: ['PartnerA'], onCancel })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Close' }))
+
+    expect(onCancel).toHaveBeenCalledExactlyOnceWith()
+  })
+
+  it('names the dialog for assistive technology', () => {
+    renderContent({ apiNodeNames: [] })
+
+    expect(
+      screen.getByRole('heading', { name: 'Sign in to run partner nodes' })
+    ).toHaveAttribute('id', 'api-nodes-signin')
   })
 })

@@ -214,13 +214,17 @@ export const useDialogService = () => {
   ): Promise<boolean> {
     const { default: ApiNodesSignInContent } = await lazyApiNodesSignInContent()
 
+    const key = 'api-nodes-signin'
+
     return new Promise<boolean>((resolve) => {
       dialogStore.showDialog({
-        key: 'api-nodes-signin',
+        key,
         component: ApiNodesSignInContent,
         props: {
           apiNodeNames,
-          onLogin: () => showSignInDialog().then((result) => resolve(result))
+          titleId: key,
+          onLogin: () => showSignInDialog().then((result) => resolve(result)),
+          onCancel: () => resolve(false)
         },
         dialogComponentProps: {
           renderer: 'reka',
@@ -231,7 +235,7 @@ export const useDialogService = () => {
         }
       })
     }).then((result) => {
-      dialogStore.closeDialog({ key: 'api-nodes-signin' })
+      dialogStore.closeDialog({ key })
       return result
     })
   }
