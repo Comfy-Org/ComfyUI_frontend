@@ -199,6 +199,7 @@ const seatOverage = computed(() =>
 const canSubmit = computed(
   () =>
     emails.value.length > 0 &&
+    newInviteEmails.value.length > 0 &&
     invalidEmails.value.length === 0 &&
     seatOverage.value === 0
 )

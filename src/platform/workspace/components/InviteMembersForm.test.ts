@@ -271,7 +271,7 @@ describe('InviteMembersForm', () => {
     expect(submitButton()).toBeDisabled()
   })
 
-  it('warns about one pending invite without disabling submit', async () => {
+  it('disables submit when every email has a pending invite', async () => {
     const pendingInvite = pendingInviteFor('ALREADY@EXAMPLE.COM')
     mockPendingInvites.push(pendingInvite)
     mockFetchPendingInvites.mockResolvedValueOnce([pendingInvite])
@@ -282,10 +282,7 @@ describe('InviteMembersForm', () => {
     expect(
       screen.getByText('workspacePanel.inviteMemberDialog.pendingInviteSingle')
     ).toBeInTheDocument()
-    expect(submitButton()).toBeEnabled()
-
-    await user.click(submitButton())
-
+    expect(submitButton()).toBeDisabled()
     expect(mockCreateInvite).not.toHaveBeenCalled()
   })
 
