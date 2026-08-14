@@ -62,14 +62,16 @@ reviews:
           Do not inspect reverse diffs, files changed only on the base branch, or files outside this PR.
           If the changed-file list or commit subjects are unavailable, mark the check inconclusive instead of guessing.
 
-          This check applies ONLY when the PR changes files under `apps/website/`. If no `apps/website/` files changed, pass immediately.
+          This check applies ONLY when the PR changes website runtime files under `apps/website/src/` or `apps/website/public/`. If no such files changed, pass immediately — that includes PRs touching only `apps/website/e2e/`, tooling, config, or CI.
+
+          Changes confined to `packages/` are deliberately out of scope here, even though the website consumes those packages: the generic "End-to-end regression coverage for fixes" check already requires a `browser_tests/` regression test for them. Do not demand a second website-specific test for a shared-package change.
 
           Fail if all of the following are true:
-          1. The change alters observable website behaviour: it fixes a bug (title or a commit subject uses `fix`, `fixed`, `fixes`, `fixing`, `bugfix`, or `hotfix`), adds a new page or route, or changes an interactive flow, form, or navigation.
-          2. The PR does not add or update a meaningful Playwright assertion under `apps/website/e2e/**/*.spec.ts`.
+          1. The diff itself changes observable website runtime behaviour — fixes a user-visible bug, adds a page or route, or changes an interactive flow, form, or navigation. A `fix`/`bugfix`/`hotfix` style title or commit subject is only a hint: confirm it against the diff, and never treat the wording alone as qualifying.
+          2. The PR does not add or update a Playwright assertion under `apps/website/e2e/**/*.spec.ts` that actually exercises the route, flow, or behaviour this PR changed. An unrelated assertion elsewhere in the suite does not satisfy this.
           3. The PR description lacks a concrete explanation of why an end-to-end regression test was not added.
 
-          Do not fail for text/copy-only edits, translation-only changes, static asset swaps, styling-only changes, generated files, dependency metadata, or refactors that preserve behaviour.
+          Do not fail for text/copy-only edits, translation-only changes, static asset swaps, styling-only changes, generated files, dependency metadata, refactors that preserve behaviour, or changes confined to tests, tooling, or CI.
           A reformatted or whitespace-only edit to an existing spec does not count as adding coverage.
 
           Pass otherwise.
@@ -129,6 +131,9 @@ reviews:
         status, so new behaviour needs a colocated Vitest test. Treat
         `docs/guidance/vitest.md` as required review context. Flag new
         exported logic that no test exercises.
+        Exception: `src/content/**`, `src/i18n/**` and `src/content.config.ts`
+        are excluded from coverage in `apps/website/vitest.config.ts`, so do
+        not invoke the `website-unit` gate for changes confined to those.
     - path: 'apps/website/src/**/*.astro'
       instructions: |
         `.astro` files are excluded from coverage because V8 cannot
@@ -137,6 +142,9 @@ reviews:
         for it to be extracted into a `.ts` module beside the component so it
         is covered by the `website-unit` gate. Markup and static content are
         fine to leave inline.
+        Extraction only helps where the destination is instrumented:
+        `src/content/**` and `src/i18n/**` are excluded from coverage, so do
+        not ask for logic to be moved into them.
     - path: '{browser_tests,apps/website/e2e}/**/*.spec.ts'
       instructions: |
         Treat `.agents/checks/test-quality.md`, `docs/testing/README.md`,
