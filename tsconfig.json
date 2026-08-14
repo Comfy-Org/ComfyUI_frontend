@@ -49,7 +49,6 @@
     "src/types/**/*.d.ts",
     "playwright.config.ts",
     "playwright.i18n.config.ts",
-    "scripts/registry-census/**/*.ts",
     "vite.config.mts",
     "vitest.config.ts"
     // "vitest.setup.ts",

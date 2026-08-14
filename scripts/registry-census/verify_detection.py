@@ -1,13 +1,21 @@
 #!/usr/bin/env python3
-"""Detection proof: assert every poison pack tripped its designated channel.
+"""Detection proof: every poison pack must trip, and gate, its own channel.
 
 Counter-evidence for the ecosystem matrix. detection-proof/corpus/ holds one
 synthetic pack per measurement channel, each broken in exactly one way. After
 running the matrix over it (CENSUS_ROOT=scripts/registry-census/detection-proof),
-this script fails unless every channel fired with its exact poison message,
-the clean control stayed fully clean, and every spec still wrote its row.
-The workflow pairs it with summarize_matrix.py, which must exit FAIL on this
-corpus - a green weekly verdict is only meaningful if poison reliably reds it.
+this script asserts two things:
+
+  observation  each channel recorded its exact poison message, the clean
+               controls stayed clean, and every spec still wrote its row.
+
+  gating       summarize_matrix.evaluate() over that one poison row plus the
+               clean controls breaches the criterion the pack targets, and
+               names it. Observation alone is not a proof: the workflow's
+               other leg only requires the COMBINED verdict to be FAIL, so a
+               channel can be certified as fired while contributing nothing
+               to the judgment, and one surviving poison keeps the aggregate
+               red while another channel quietly goes dead.
 """
 
 from __future__ import annotations
@@ -16,20 +24,50 @@ import json
 import os
 import sys
 
-FIXTURE_CORPUS = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)),
-    'detection-proof', 'corpus', 'registry_js',
-)
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+from summarize_matrix import Verdict, evaluate  # noqa: E402
+
+FIXTURE_CORPUS = os.path.join(HERE, 'detection-proof', 'corpus', 'registry_js')
+
+CONTROLS = ('clean-control', 'clean-mjs-control', 'clean-asset-control')
+
+# The PASS criterion each poison pack exists to breach, by the label
+# summarize_matrix.evaluate() reports it under. A poison pack with no entry
+# here fails the coverage leg below, so a new channel cannot be added as
+# observation-only. The two hook poisons share a criterion because the app
+# contains both throws (registerNodeDef/registerCustomNodes stay OK) - they
+# still test different dispatch points, since a dispatch that stopped firing
+# would empty hookErrors and stop the breach.
+GATES = {
+    'poison-load-throw': 'entry JS loads (any entry per pack)',
+    'poison-regdef-throw': 'packs free of contained hook errors',
+    'poison-customnodes-throw': 'packs free of contained hook errors',
+    'poison-op-break': 'every operation clean',
+    'poison-serialize-throw': 'every operation clean',
+    'poison-desync': 'every operation clean',
+}
 
 
-def expected_packs() -> int:
-    if os.path.isdir(FIXTURE_CORPUS):
-        return sum(
-            1
-            for d in os.listdir(FIXTURE_CORPUS)
-            if os.path.isdir(os.path.join(FIXTURE_CORPUS, d))
+def corpus_packs() -> list[str]:
+    if not os.path.isdir(FIXTURE_CORPUS):
+        sys.exit(
+            f'poison corpus missing: {FIXTURE_CORPUS} - without it the proof'
+            ' has no population and no idea how many channels exist'
         )
-    return 9
+    return sorted(
+        d
+        for d in os.listdir(FIXTURE_CORPUS)
+        if os.path.isdir(os.path.join(FIXTURE_CORPUS, d))
+    )
+
+
+def outcome(verdict: Verdict) -> str:
+    if verdict.code == 2:
+        return 'verdict withheld (exit 2)'
+    if not verdict.breaches:
+        return 'verdict PASS - no criterion covers this channel'
+    return 'breached instead: ' + '; '.join(verdict.breaches)
 
 
 def main() -> int:
@@ -48,8 +86,9 @@ def main() -> int:
 
     failures: list[str] = []
 
-    def check(label: str, fired: bool) -> None:
-        print(f'  {"PASS" if fired else "MISS"}  {label}')
+    def check(label: str, fired: bool, detail: str = '') -> None:
+        print(f'  {"PASS" if fired else "MISS"}  {label}'
+              + (f'   [{detail}]' if detail else ''))
         if not fired:
             failures.append(label)
 
@@ -59,12 +98,13 @@ def main() -> int:
     def hook_errors(pack: str) -> list[str]:
         return rows.get(pack, {}).get('hookErrors') or []
 
-    expected = expected_packs()
+    packs = corpus_packs()
     print('detection proof over', out)
+    print('observation - every channel must record its own breakage:')
     check(
-        f'harness integrity: {len(rows)}/{expected} rows written'
+        f'harness integrity: {len(rows)}/{len(packs)} rows written'
         ' despite universal breakage',
-        len(rows) == expected,
+        len(rows) == len(packs),
     )
 
     check(
@@ -142,6 +182,21 @@ def main() -> int:
         'poison_ghost'
         not in (ops('clean-control').get('load') or {}).get('sig', ''),
     )
+    # The signature legs above are built from live node.widgets and hold
+    # whether or not the store comparator ran, which is how the comparator
+    # stayed dead through a green proof. These two read the comparator's own
+    # output, so it cannot be silently disabled again.
+    check(
+        'desync: the store comparator itself fires on the poison',
+        bool((ops('poison-desync').get('load') or {}).get('desync')),
+    )
+    check(
+        'desync: the store comparator stays silent on the clean control',
+        rows.get('clean-control', {}).get('storeMeasured') is True
+        and not any(
+            v.get('desync') for v in ops('clean-control').values()
+        ),
+    )
 
     control = rows.get('clean-control', {})
     check(
@@ -154,12 +209,48 @@ def main() -> int:
     )
 
     print()
+    print('gating - each channel must breach the criterion it targets:')
+    unmapped = sorted(set(packs) - set(CONTROLS) - set(GATES))
+    check(
+        'coverage: every poison pack names the criterion it must breach',
+        not unmapped,
+        'unmapped: ' + ', '.join(unmapped) if unmapped else '',
+    )
+
+    # Each poison is judged over its own row plus the clean controls: a
+    # one-row population trips the self-check harness gate, which withholds
+    # the verdict (exit 2) before any criterion is reached. The controls give
+    # that gate a healthy majority, so only the poison can breach.
+    controls = [rows[c] for c in CONTROLS if c in rows]
+    baseline = evaluate(controls, {})
+    check(
+        'control: the clean controls alone return PASS',
+        baseline.code == 0,
+        '' if baseline.code == 0 else outcome(baseline),
+    )
+
+    for poison, label in sorted(GATES.items()):
+        if poison not in rows:
+            check(f'gating: {poison} breaches "{label}"', False, 'no row')
+            continue
+        verdict = evaluate([*controls, rows[poison]], {})
+        breach = next((b for b in verdict.breaches if b.startswith(label)), '')
+        # Attribution: the criterion has to be clean without the poison, or
+        # the breach says nothing about the channel this pack injects.
+        if any(b.startswith(label) for b in baseline.breaches):
+            breach = ''
+            detail = 'the clean controls already breach this criterion'
+        else:
+            detail = breach or outcome(verdict)
+        check(f'gating: {poison} breaches "{label}"', bool(breach), detail)
+
+    print()
     if failures:
         print(f'DETECTION PROOF FAILED: {len(failures)} channel(s) silent')
         return 1
     print(
-        f'DETECTION PROOF PASSED: every channel fired, control clean,'
-        f' {len(rows)}/{expected} rows'
+        'DETECTION PROOF PASSED: every channel fired and gated its own'
+        f' criterion, control clean, {len(rows)}/{len(packs)} rows'
     )
     return 0
 

@@ -6,8 +6,9 @@ unit and the whole tree stays gitignored:
 
     <CENSUS_ROOT>/
       data/registry.json    pinned registry snapshot (refresh_registry.py)
-      corpus/registry_js/   per-pack frontend JS (fetch_corpus.py, ~1GB)
-      corpus.lock.json      per-pack tarball ETags - the drift record
+      corpus/registry_js/   per-pack frontend JS (fetch_corpus.py, ~0.9GB)
+      corpus.lock.json      per-pack tarball ETag + tree - the identity record
+      registry-stale.json   present only when the snapshot is a fallback
       results/              scan outputs
 
 CENSUS_ROOT defaults to `.census` under the current working directory; the CI
@@ -25,6 +26,7 @@ CORPUS_ROOT = os.path.join(ROOT, 'corpus')
 CORPUS = os.path.join(CORPUS_ROOT, 'registry_js')
 
 LOCKFILE = os.path.join(ROOT, 'corpus.lock.json')
+STALE_MARKER = os.path.join(ROOT, 'registry-stale.json')
 
 
 def registry_snapshot() -> str:

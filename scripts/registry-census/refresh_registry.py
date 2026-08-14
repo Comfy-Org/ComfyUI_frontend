@@ -7,7 +7,7 @@ every percentage this tool reports. It is gitignored and pulled on first use.
 The registry gains packs continuously, so two runs weeks apart do not share
 denominators. Snapshot this file alongside any published figure; re-pull with:
 
-    ./run refresh-registry
+    python3 scripts/registry-census/refresh_registry.py
 
 Only the three fields the checker reads are kept (id, repo, downloads), which
 is a fraction of what the API returns.
@@ -21,7 +21,7 @@ import subprocess
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from paths import registry_snapshot  # noqa: E402
+from paths import STALE_MARKER, registry_snapshot  # noqa: E402
 
 API = 'https://api.comfy.org/nodes'
 PAGE_SIZE = 100
@@ -52,12 +52,20 @@ class RegistryUnavailable(Exception):
 
 
 def keep_cached(reason: str) -> int:
-    """A transient registry problem must not kill the weekly run: the cached
-    snapshot is a complete, recently-valid target list. Only a first-ever run
-    (no cache to fall back on) fails hard."""
+    """A transient registry problem must not kill the run: the cached snapshot
+    is a complete, recently-valid target list. Only a first-ever run (no cache
+    to fall back on) fails hard.
+
+    A stale snapshot is a different denominator, and that denominator feeds the
+    delta gate - so it is recorded where the verdict can surface it rather than
+    left as one stderr line in a job log nobody opens on a green run.
+    """
     dest = registry_snapshot()
     if os.path.exists(dest):
         print(f'{reason}; keeping the cached snapshot at {dest}', file=sys.stderr)
+        os.makedirs(os.path.dirname(STALE_MARKER), exist_ok=True)
+        with open(STALE_MARKER, 'w', encoding='utf-8') as fh:
+            json.dump({'reason': reason}, fh)
         return 0
     raise SystemExit(reason + ' and no cached snapshot exists')
 
@@ -69,6 +77,8 @@ def main() -> int:
     try:
         first = fetch_page(1)
         total_pages = int(first.get('totalPages') or 1)
+        if total_pages < 1:
+            raise RegistryUnavailable(f'registry reported {total_pages} pages')
         nodes = list(first.get('nodes') or [])
 
         for page in range(2, total_pages + 1):
@@ -78,14 +88,26 @@ def main() -> int:
         seen: set[str] = set()
         out = []
         for n in nodes:
+            # A truthy non-string id reaches _PACK_ID_RE.fullmatch() in
+            # fetch_corpus.py as a TypeError, and a non-string repository
+            # reaches URL parsing the same way. Reject the payload instead:
+            # a shape the projection cannot honour is the same operational
+            # event as an unreachable API.
+            if not isinstance(n, dict):
+                raise RegistryUnavailable('registry returned a non-mapping node row')
             node_id = n.get('id')
-            if not node_id or node_id in seen:
+            if not isinstance(node_id, str) or not node_id:
+                continue
+            repo = n.get('repository') or ''
+            if not isinstance(repo, str):
+                raise RegistryUnavailable(f'non-string repository for {node_id}')
+            if node_id in seen:
                 continue
             seen.add(node_id)
             out.append(
                 {
                     'id': node_id,
-                    'repo': n.get('repository') or '',
+                    'repo': repo,
                     'downloads': n.get('downloads') or 0,
                 }
             )
@@ -107,6 +129,10 @@ def main() -> int:
     os.makedirs(os.path.dirname(dest), exist_ok=True)
     with open(dest, 'w', encoding='utf-8') as fh:
         json.dump(out, fh, indent=0, sort_keys=True)
+    # The marker rides the corpus cache; a fresh snapshot must clear a
+    # previous run's staleness rather than inherit it.
+    if os.path.exists(STALE_MARKER):
+        os.remove(STALE_MARKER)
 
     with_repo = sum(1 for x in out if x['repo'])
     print(

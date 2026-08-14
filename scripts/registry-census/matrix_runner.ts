@@ -10,6 +10,15 @@ import fs from 'node:fs'
 import { vi } from 'vitest'
 
 import defaultWorkflow from '../../browser_tests/assets/default.json'
+import type {
+  LGraph,
+  LGraphCanvas,
+  LGraphNode,
+  Point
+} from '@/lib/litegraph/src/litegraph'
+import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 const S = (v: unknown) => JSON.stringify(v)
 const errMsg = (e: unknown) =>
@@ -31,32 +40,18 @@ const argText = (a: unknown): string => {
 }
 
 let DEPR: string[] = []
+let NOTE = ''
+let DISPATCHED = true
 
-interface WidgetLike {
-  name: string
-  type?: string
-  value?: unknown
-}
+/** Store rows could not be read at all, as distinct from "read, and clean". */
+const UNMEASURED = 'unmeasured'
 
-interface LooseWidget extends WidgetLike {
-  computeSize?: (...args: unknown[]) => unknown
+type WidgetValueStore = ReturnType<typeof useWidgetValueStore>
+
+/** The pre-Vue "convert widget to input" convention, still shipped by packs. */
+type ConvertibleWidget = IBaseWidget & {
   origType?: string
-  origComputeSize?: unknown
-}
-
-interface LooseNode {
-  id: number | string
-  type?: string
-  mode?: number
-  pos: number[]
-  size: number[]
-  flags: { collapsed?: boolean }
-  widgets?: LooseWidget[]
-  inputs?: { type?: string }[]
-  outputs?: unknown[]
-  connect(output: number, target: LooseNode, input: number): unknown
-  disconnectInput(input: number): unknown
-  serialize(): unknown
+  origComputeSize?: IBaseWidget['computeSize']
 }
 
 interface SigNode {
@@ -68,27 +63,13 @@ interface SigNode {
   wn: unknown
 }
 
-interface NodeLike {
-  id: number | string
-  type?: string
-  mode?: number
-  flags?: { collapsed?: boolean }
-  widgets?: WidgetLike[]
-  inputs?: unknown[]
-  outputs?: unknown[]
-  isInputConnected(index: number): boolean
-  isOutputConnected(index: number): boolean
-}
-
-interface GraphLike {
-  _nodes: NodeLike[]
-  links: Map<unknown, unknown>
-  rootGraph: { id: unknown }
-}
-
-interface WidgetStoreLike {
-  getNodeWidgetIds?(graphId: unknown, nodeId: unknown): string[]
-  getWidget?(key: string): WidgetLike | undefined
+interface OpRecord {
+  err: string
+  sig: string
+  depr: string
+  desync: string
+  dispatching: boolean
+  note: string
 }
 
 const COMBO = (o: string[]) => [o, {}]
@@ -159,10 +140,9 @@ async function installGlobals() {
   const widgetsMod = await import('@/scripts/widgets')
   const utilsMod = await import('@/scripts/utils')
   const domWidgetMod = await import('@/scripts/domWidget')
-  const anyLg = lg.LiteGraph as unknown as Record<string, unknown>
-  anyLg.alwaysRepeatWarnings = true
-  if (process.env.MATRIX_VUE) anyLg.vueNodesMode = true
-  anyLg.onDeprecationWarning = [
+  lg.LiteGraph.alwaysRepeatWarnings = true
+  if (process.env.MATRIX_VUE) lg.LiteGraph.vueNodesMode = true
+  lg.LiteGraph.onDeprecationWarning = [
     (m: string) => {
       const st = new Error().stack ?? ''
       const frame = st
@@ -180,41 +160,39 @@ async function installGlobals() {
       utils: utilsMod,
       domWidget: domWidgetMod
     },
-    app: (appMod as { app?: unknown }).app,
-    api: (apiMod as { api?: unknown }).api,
+    app: appMod.app,
+    api: apiMod.api,
     LiteGraph: lg.LiteGraph,
     LGraphNode: lg.LGraphNode,
     LGraph: lg.LGraph,
     LGraphCanvas: lg.LGraphCanvas,
     LLink: lg.LLink
   }
-  Object.assign(globalThis as Record<string, unknown>, globals)
+  Object.assign(globalThis, globals)
   if (typeof window !== 'undefined') Object.assign(window, globals)
-  return lg
+  return { lg, app: appMod.app }
 }
 
-function signature(graph: GraphLike, store?: WidgetStoreLike) {
+function signature(graph: LGraph, store: WidgetValueStore | undefined) {
   const nodes = [...graph._nodes]
     .sort((a, b) => Number(a.id) - Number(b.id))
     .map((n) => {
-      // Vue-renderer observable: rows = store order filtered to live widgets
-      let r: unknown = 'n/a'
-      let st: unknown = 'n/a'
-      try {
-        if (store?.getNodeWidgetIds) {
-          const ids: string[] = store.getNodeWidgetIds(graph.rootGraph.id, n.id)
+      // Vue-renderer observable: the widget rows the store would draw, beside
+      // the live widget array litegraph draws. r counts store rows that are
+      // still live; st names every store row, so a row the pack dropped from
+      // node.widgets but left in the store still shows up.
+      let r: number | string = UNMEASURED
+      let st = UNMEASURED
+      if (store) {
+        try {
+          const states = store.getNodeWidgets(graph.rootGraph.id, n.id)
           const liveNames = new Set((n.widgets ?? []).map((w) => w.name))
-          const names = ids.map((i) => String(i).split(':').pop() ?? '')
-          r = names.filter((nm) => liveNames.has(nm)).length
-          st = names
-            .map((nm) => {
-              const w = store.getWidget?.(`${graph.rootGraph.id}:${n.id}:${nm}`)
-              return w ? `${nm}=${w.type}` : `${nm}=?`
-            })
-            .join(',')
+          r = states.filter((s) => liveNames.has(s.name)).length
+          st = states.map((s) => `${s.name}=${s.type}`).join(',')
+        } catch {
+          r = 'err'
+          st = 'err'
         }
-      } catch {
-        r = 'err'
       }
       return {
         id: n.id,
@@ -225,14 +203,14 @@ function signature(graph: GraphLike, store?: WidgetStoreLike) {
         wn: (n.widgets ?? []).map((w) => `${w.name}=${w.type}`).join(','),
         r,
         st,
-        in: (n.inputs ?? []).map((_: unknown, i: number) => {
+        in: (n.inputs ?? []).map((_, i: number) => {
           try {
             return n.isInputConnected(i) ? 1 : 0
           } catch {
             return 'e'
           }
         }),
-        out: (n.outputs ?? []).map((_: unknown, i: number) => {
+        out: (n.outputs ?? []).map((_, i: number) => {
           try {
             return n.isOutputConnected(i) ? 1 : 0
           } catch {
@@ -256,7 +234,7 @@ export async function runPack(
   const dir = process.env.MATRIX_OUT ?? '/tmp/matrix'
   fs.mkdirSync(dir, { recursive: true })
   const rowPath = `${dir}/${safe}.json`
-  fs.writeFileSync(rowPath, JSON.stringify({ pack, incomplete: true }))
+  fs.writeFileSync(rowPath, JSON.stringify({ pack, safe, incomplete: true }))
   // The app CONTAINS throwing extension hooks (extensionService catches and
   // console.errors them), so a pack whose hook throws would otherwise read
   // clean. Capture the containment signature as row data.
@@ -271,13 +249,12 @@ export async function runPack(
   vi.spyOn(console, 'info').mockImplementation(() => {})
   setActivePinia(createTestingPinia({ stubActions: false }))
 
-  const row: Record<string, unknown> = { pack }
-  const ops: Record<
-    string,
-    { err: string; sig: string; depr: string; desync: string }
-  > = {}
-  const lg = await installGlobals()
-  const { LGraph, LGraphNode, LiteGraph } = lg
+  // safe is the filename this row is written under; carrying it in the row
+  // lets the verdict job cross-check filename against row identity.
+  const row: Record<string, unknown> = { pack, safe }
+  const ops: Record<string, OpRecord> = {}
+  const { lg, app } = await installGlobals()
+  const { LGraph, LiteGraph } = lg
 
   // ---- LOAD the pack's real entry files ---------------------------------
   const typesBefore = new Set(Object.keys(LiteGraph.registered_node_types))
@@ -337,10 +314,7 @@ export async function runPack(
   row.newTypes = newTypes
   try {
     const { useExtensionStore } = await import('@/stores/extensionStore')
-    const st = useExtensionStore() as unknown as {
-      extensions: { name: string }[]
-      enabledExtensions: { name: string }[]
-    }
+    const st = useExtensionStore()
     row.extTotal = st.extensions.length
     row.extEnabled = st.enabledExtensions.length
     row.typesTotal = Object.keys(LiteGraph.registered_node_types).length
@@ -350,24 +324,77 @@ export async function runPack(
 
   // ---- graph + boot-order fidelity --------------------------------------
   const graph = new LGraph()
-  const appObj = (globalThis as Record<string, unknown>).app as Record<
-    string,
-    unknown
-  >
-  if (appObj) appObj.rootGraphInternal = graph
-  const byType = (t: string) =>
-    graph._nodes.find((n) => n.type === t) as unknown as LooseNode | undefined
+  // ComfyApp.setup() non-null-asserts five DOM elements and needs a 2D
+  // context, so it cannot boot here. DOM widgets read app.rootGraph while
+  // graph.configure runs, so the private field has to be seeded directly.
+  Reflect.set(app, 'rootGraphInternal', graph)
+  const byType = (t: string) => graph._nodes.find((n) => n.type === t)
 
-  let wvStore: WidgetStoreLike | undefined
+  let wvStore: WidgetValueStore | undefined
   try {
     const { useWidgetValueStore } = await import('@/stores/widgetValueStore')
-    wvStore = useWidgetValueStore() as unknown as WidgetStoreLike
+    wvStore = useWidgetValueStore()
   } catch {
     wvStore = undefined
   }
+  row.storeMeasured = !!wvStore
 
-  async function op(name: string, fn: () => unknown | Promise<unknown>) {
+  // LGraphCanvas cannot be constructed under happy-dom ("This browser doesn't
+  // support Canvas"), but BaseWidget.setValue only reads graph_mouse off it
+  // and hands it to widget.callback. A prototype-backed stand-in keeps the
+  // real method surface for pack callbacks that reach for one.
+  const canvas: LGraphCanvas = Object.assign(
+    Object.create(lg.LGraphCanvas.prototype) as LGraphCanvas,
+    { graph_mouse: [0, 0] as Point, graph }
+  )
+  const pointerEvent: CanvasPointerEvent = Object.assign(
+    new PointerEvent('pointerdown'),
+    {
+      canvasX: 0,
+      canvasY: 0,
+      deltaX: 0,
+      deltaY: 0,
+      safeOffsetX: 0,
+      safeOffsetY: 0
+    }
+  )
+
+  // The real edit path: setValue fires widget.callback, node.onWidgetChanged
+  // and graph.incrementVersion(). A bare `w.value =` fires none of them.
+  const editWidgetValue = (
+    node: LGraphNode | undefined,
+    name: string,
+    value: number | string
+  ) => {
+    const widget = node?.widgets?.find((w) => w.name === name)
+    if (!node || !widget) {
+      NOTE = 'no target widget'
+      DISPATCHED = false
+      return
+    }
+    if (widget instanceof lg.BaseWidget) {
+      widget.setValue(value, { e: pointerEvent, node, canvas })
+      return
+    }
+    widget.value = value
+    NOTE = 'plain-object widget: assigned, setValue unavailable'
+    DISPATCHED = false
+  }
+
+  /** `nodeId:widgetName` of every row the battery desynced deliberately. */
+  const mangled = new Set<string>()
+
+  // dispatching=false marks an op that is a bare property or array write with
+  // no call into the app: its err channel cannot fail, so the summarizer must
+  // exclude it from the gated cleanliness percentage.
+  async function op(
+    name: string,
+    fn: () => unknown | Promise<unknown>,
+    dispatching = true
+  ) {
     DEPR = []
+    NOTE = ''
+    DISPATCHED = dispatching
     let err = ''
     try {
       await fn()
@@ -376,26 +403,31 @@ export async function runPack(
     }
     let sig: string
     try {
-      sig = signature(graph as unknown as GraphLike, wvStore)
+      sig = signature(graph, wvStore)
     } catch (e) {
       sig = 'SIGFAIL ' + errMsg(e)
     }
-    // Vue-renderer desync: any node whose live widget rows diverge from the
-    // store's rows (count) or whose store types diverge from live types.
+    // Vue-renderer desync: a live widget row the store does not back, or backs
+    // with a different type. Rows the battery mangled itself are skipped -
+    // they diverge by construction and are permanent once made, so leaving
+    // them in would mask a real divergence on every op that follows.
     let desync = ''
     try {
       const d = JSON.parse(sig) as { nodes?: SigNode[] }
-      const bad = (d.nodes ?? []).filter(
-        (n) =>
-          n.r !== 'n/a' &&
-          n.r !== 'err' &&
-          (n.r !== n.widgets ||
-            (typeof n.st === 'string' &&
-              typeof n.wn === 'string' &&
-              n.st !== '' &&
-              n.st.split(',').sort().join(',') !==
-                n.wn.split(',').sort().join(',')))
-      )
+      const bad = (d.nodes ?? []).filter((n) => {
+        if (typeof n.r !== 'number') return false
+        const rows = (csv: unknown) =>
+          String(csv ?? '')
+            .split(',')
+            .filter((e) => e && !mangled.has(`${n.id}:${e.split('=')[0]}`))
+        const live = rows(n.wn).sort()
+        const stored = rows(n.st).sort()
+        const liveNames = new Set(live.map((e) => e.split('=')[0]))
+        const backed = stored.filter((e) => liveNames.has(e.split('=')[0]))
+        return (
+          backed.length !== live.length || stored.join(',') !== live.join(',')
+        )
+      })
       if (bad.length)
         desync = bad
           .map((n) => `${n.type}#${n.id}(w${n.widgets}/r${n.r})`)
@@ -407,7 +439,9 @@ export async function runPack(
       err,
       sig,
       depr: [...new Set(DEPR)].sort().join('|'),
-      desync
+      desync,
+      dispatching: DISPATCHED,
+      note: NOTE
     }
   }
 
@@ -432,74 +466,96 @@ export async function runPack(
       : `default workflow degraded: nodes=${graph._nodes.length}` +
         ` kSamplerWidgets=${kAfterLoad?.widgets?.length ?? 0}`
   await op('editWidget', () => {
-    const k = byType('KSampler')
-    const w = k?.widgets?.find((x) => x.name === 'seed')
-    if (w) w.value = 123456
+    editWidgetValue(byType('KSampler'), 'seed', 123456)
   })
   await op('editText', () => {
-    const c = byType('CLIPTextEncode')
-    const w = c?.widgets?.find((x) => x.name === 'text')
-    if (w) w.value = 'a cat wearing a hat'
+    editWidgetValue(byType('CLIPTextEncode'), 'text', 'a cat wearing a hat')
   })
-  await op('mute', () => {
-    const n = byType('SaveImage')
-    if (n) n.mode = 2
-  })
-  await op('bypass', () => {
-    const n = byType('VAEDecode')
-    if (n) n.mode = 4
-  })
+  await op(
+    'mute',
+    () => {
+      const n = byType('SaveImage')
+      if (n) n.mode = 2
+    },
+    false
+  )
+  await op(
+    'bypass',
+    () => {
+      const n = byType('VAEDecode')
+      if (n) n.mode = 4
+    },
+    false
+  )
   await op('collapse', () => {
-    const n = byType('EmptyLatentImage')
-    if (n) n.flags.collapsed = true
+    byType('EmptyLatentImage')?.collapse()
   })
   await op('move', () => {
     const n = byType('KSampler')
-    if (n) {
-      n.pos[0] += 40
-      n.pos[1] += 25
-    }
+    if (n) n.setPos(n.pos[0] + 40, n.pos[1] + 25)
   })
   await op('resize', () => {
     const n = byType('CLIPTextEncode')
-    if (n) n.size[1] = (n.size[1] ?? 100) + 60
+    if (n) n.setSize([n.size[0], n.size[1] + 60])
   })
   await op('disconnect', () => {
-    const k = byType('KSampler')
-    if (k) k.disconnectInput(0)
+    byType('KSampler')?.disconnectInput(0)
   })
   await op('reconnect', () => {
     const k = byType('KSampler')
     const ck = byType('CheckpointLoaderSimple')
     if (k && ck) ck.connect(0, k, 0)
   })
-  await op('wSplice', () => {
-    const k = byType('KSampler')
-    if (k?.widgets?.length) k.widgets.splice(0, 1)
-  })
-  await op('wReorder', () => {
-    const w = byType('KSampler')?.widgets
-    if (w && w.length > 1) w.splice(0, 0, w.splice(w.length - 1, 1)[0])
-  })
-  await op('wConvert', () => {
-    const k = byType('KSampler')
-    const w = k?.widgets?.find((x) => x.name === 'steps')
-    if (w) {
-      w.origType = w.type
-      w.origComputeSize = w.computeSize
-      w.computeSize = () => [0, -4]
-      w.type = 'converted-widget'
-    }
-  })
-  await op('wPushPojo', () => {
-    const k = byType('KSampler')
-    k?.widgets?.push({
-      name: 'XPOJO',
-      type: 'X.CUSTOM',
-      value: 1,
-      computeSize: () => [100, 20]
-    })
-  })
+  await op(
+    'wSplice',
+    () => {
+      const k = byType('KSampler')
+      const removed = k?.widgets?.splice(0, 1)[0]
+      if (k && removed) mangled.add(`${k.id}:${removed.name}`)
+    },
+    false
+  )
+  await op(
+    'wReorder',
+    () => {
+      const w = byType('KSampler')?.widgets
+      if (w && w.length > 1) w.splice(0, 0, w.splice(w.length - 1, 1)[0])
+    },
+    false
+  )
+  await op(
+    'wConvert',
+    () => {
+      const k = byType('KSampler')
+      const w = k?.widgets?.find((x) => x.name === 'steps') as
+        | ConvertibleWidget
+        | undefined
+      if (k && w) {
+        w.origType = w.type
+        w.origComputeSize = w.computeSize
+        w.computeSize = () => [0, -4]
+        w.type = 'converted-widget'
+        mangled.add(`${k.id}:${w.name}`)
+      }
+    },
+    false
+  )
+  await op(
+    'wPushPojo',
+    () => {
+      const k = byType('KSampler')
+      k?.widgets?.push({
+        name: 'XPOJO',
+        type: 'X.CUSTOM',
+        value: 1,
+        options: {},
+        y: 0,
+        computeSize: () => [100, 20]
+      })
+      if (k) mangled.add(`${k.id}:XPOJO`)
+    },
+    false
+  )
   await op('addNode', () => {
     const n = LiteGraph.createNode('EmptyLatentImage')
     if (n) {
@@ -523,13 +579,13 @@ export async function runPack(
   for (const t of newTypes.slice(0, 8)) {
     DEPR = []
     try {
-      const n = LiteGraph.createNode(t) as unknown as LooseNode | null
+      const n = LiteGraph.createNode(t)
       if (!n) {
         driven[t] = 'createNode null'
         continue
       }
       n.pos = [1200, 100]
-      graph.add(n as unknown as InstanceType<typeof LGraphNode>)
+      graph.add(n)
       const parts = [
         `in=${n.inputs?.length ?? 0}`,
         `out=${n.outputs?.length ?? 0}`,
@@ -548,7 +604,7 @@ export async function runPack(
         }
       }
       n.serialize()
-      graph.remove(n as unknown as InstanceType<typeof LGraphNode>)
+      graph.remove(n)
       if (DEPR.length)
         parts.push(`depr=${[...new Set(DEPR)].join(';').slice(0, 60)}`)
       driven[t] = parts.join(' ')
@@ -559,25 +615,20 @@ export async function runPack(
   row.driveTypes = driven
 
   await op('serialize', () => {
-    ;(row as Record<string, unknown>).serialized = S(graph.serialize())
+    row.serialized = S(graph.serialize())
   })
   await op('reload', () => {
     const g2 = new LGraph()
     g2.configure(
-      structuredClone(
-        JSON.parse((row.serialized as string) ?? '{}')
-      ) as Parameters<typeof g2.configure>[0]
+      structuredClone(JSON.parse(String(row.serialized ?? '{}'))) as Parameters<
+        typeof g2.configure
+      >[0]
     )
-    ;(row as Record<string, unknown>).reloadedNodes = g2._nodes.length
+    row.reloadedNodes = g2._nodes.length
   })
   await op('graphToPrompt', async () => {
-    const a = appObj as {
-      graphToPrompt?: (g: unknown) => Promise<{ output?: unknown }>
-    }
-    const p = a?.graphToPrompt
-      ? await a.graphToPrompt(graph)
-      : { output: 'no-app' }
-    ;(row as Record<string, unknown>).prompt = S(p?.output ?? {})
+    const p = await app.graphToPrompt(graph)
+    row.prompt = S(p.output ?? {})
   })
 
   row.ops = ops
