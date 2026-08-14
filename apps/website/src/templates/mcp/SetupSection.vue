@@ -14,7 +14,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const agentCommand = t('mcp.setup.agent.command', locale).replace(
   '{url}',
-  externalLinks.docsMcp
+  externalLinks.docsMcpMd
 )
 
 interface McpClient {
