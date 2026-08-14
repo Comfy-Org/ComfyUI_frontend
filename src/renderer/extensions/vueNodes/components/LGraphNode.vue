@@ -625,10 +625,9 @@ const nodeOutputLocatorId = computed(() => {
 
 function resolveLGraphNode() {
   const locatorId = nodeLocatorId.value
-  const rootGraph = canvasStore.currentGraph?.rootGraph
-  if (!locatorId || !rootGraph) return null
+  if (!locatorId) return null
 
-  return getNodeByLocatorId(rootGraph, locatorId)
+  return getNodeByLocatorId(app.rootGraph, locatorId)
 }
 
 const lgraphNode = computed(resolveLGraphNode)
