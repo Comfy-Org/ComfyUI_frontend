@@ -149,7 +149,8 @@ const positiveBalance = {
   currency: 'USD',
   effective_balance_micros: 5_000_000,
   prepaid_balance_micros: 3_000_000,
-  cloud_credit_balance_micros: 2_000_000
+  cloud_credit_balance_micros: 2_000_000,
+  cloud_credit_total_micros: 4_000_000
 }
 
 const subscribeResponses = [
@@ -557,7 +558,8 @@ describe('useWorkspaceBilling', () => {
         currency: 'USD',
         effectiveBalanceMicros: 5_000_000,
         prepaidBalanceMicros: 3_000_000,
-        cloudCreditBalanceMicros: 2_000_000
+        cloudCreditBalanceMicros: 2_000_000,
+        cloudCreditTotalMicros: 4_000_000
       })
     })
 
