@@ -39,6 +39,7 @@ import {
   assertPackLedgerKeys,
   packLedgerFor
 } from '@e2e/fixtures/customNode/packLedger'
+import type { CustomNodeTier } from '@e2e/fixtures/customNode/manifest'
 import type { RawNodeDef } from '@e2e/fixtures/customNode/typePairing'
 import { normalizeNodeDefs } from '@e2e/fixtures/customNode/typePairing'
 import {
@@ -1476,10 +1477,33 @@ const tiers: Array<[AllNodesTier, string]> = [
   ['S9', 'every self-sufficient node executes']
 ]
 
+// The capability each tier needs from a pack's manifest row. Mounting and
+// save/reload are frontend work every loadable pack owes; executing a node is
+// not, and the row says so. These tiers used to sweep whatever the backend
+// registered, which meant S9 executed every node of every installed pack no
+// matter what its row asked for - 17.6 of one shard's 21.1 minutes on run
+// 31842166428, for packs that declare load and connectivity only.
+const TIER_REQUIRES: Record<AllNodesTier, CustomNodeTier> = {
+  S1: 'load',
+  S2: 'load',
+  S3: 'load',
+  S9: 'run'
+}
+
+const runnersForTier = (tier: AllNodesTier): AllNodesTierRunner[] =>
+  allNodesTierRunners.filter((runner) =>
+    runner.entry.tiers.includes(TIER_REQUIRES[tier])
+  )
+
 test.describe('all nodes by tier @custom-nodes', () => {
   for (const [tier, title] of tiers) {
+    // Registered only when a pack in this slice asks for it: a tier with no
+    // packs would otherwise be a skip, and the gate forbids skips because a
+    // skip is how lost coverage reads as a pass.
+    if (runnersForTier(tier).length === 0) continue
+
     test(`${tier}: ${title}`, async ({ comfyPage }) => {
-      test.setTimeout(1_620_000 * loadManifest().length)
+      test.setTimeout(1_620_000 * runnersForTier(tier).length)
       await comfyPage.page.evaluate((activeTier) => {
         Object.assign(globalThis, {
           __COMFY_CUSTOM_NODE_DETECTION_PROOF_TIER__: activeTier
@@ -1501,7 +1525,7 @@ test.describe('all nodes by tier @custom-nodes', () => {
         window.app!.api.getNodeDefs()
       )) as unknown as Record<string, RawNodeDef>
       const failures: string[] = []
-      for (const runner of allNodesTierRunners) {
+      for (const runner of runnersForTier(tier)) {
         if (tier === 'S2' && !rendererPassesFor(runner.entry).includes(true))
           continue
         let result = 'pass'

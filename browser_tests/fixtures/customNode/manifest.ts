@@ -8,7 +8,7 @@ function dataPath(basename: string): string {
 
 const VALID_TIERS = ['load', 'run', 'connectivity', 'io'] as const
 
-type CustomNodeTier = (typeof VALID_TIERS)[number]
+export type CustomNodeTier = (typeof VALID_TIERS)[number]
 
 // Which pack list to test. The local gate tests the CLOUD pack list against a
 // LOCAL backend, so this must NOT also select backend behaviour: cloud's

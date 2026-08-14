@@ -87,30 +87,11 @@ jobs:
         # THE shard-count knob. Each value is the `index/total` the manifest
         # loader wants, so the count lives in exactly one place and the list
         # cannot drift out of step with a separate total. Rebalancing is
-        # rewriting this list. Measured on run 31842166428: 3.8 min fixed
-        # plus ~2.0 min per pack of suite time, so 5 packs lands near 14. Slices are striped, not contiguous (see
+        # rewriting this list. Measured on run 31842166428: 3.8 min fixed plus
+        # 0.39 min per pack once S9 is scoped to run-tier rows, so 15 packs
+        # lands near 10 - the shard holding the one run-tier pack costs more. Slices are striped, not contiguous (see
         # manifestShard), so every shard gets a mix of cheap and heavy packs.
-        shard:
-          [
-            '1/18',
-            '2/18',
-            '3/18',
-            '4/18',
-            '5/18',
-            '6/18',
-            '7/18',
-            '8/18',
-            '9/18',
-            '10/18',
-            '11/18',
-            '12/18',
-            '13/18',
-            '14/18',
-            '15/18',
-            '16/18',
-            '17/18',
-            '18/18'
-          ]
+        shard: ['1/6', '2/6', '3/6', '4/6', '5/6', '6/6']
         proof_row: >-
           ${{ fromJSON(github.event_name == 'workflow_dispatch' && inputs.detection_proof_row == 'all' && '["1","2","3","9"]' || format('["{0}"]', inputs.detection_proof_row || '0')) }}
     # Run only when non-docs code changed AND the PR is same-repo. Fork PRs can
