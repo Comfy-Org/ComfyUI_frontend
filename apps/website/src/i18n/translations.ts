@@ -2420,9 +2420,9 @@ const translations = {
     'zh-CN': '直接调用任意模型'
   },
   'mcp.tools.4.description': {
-    en: 'Kling, Veo, Seedance, Flux, GPT-Image, Nano Banana, and ElevenLabs. Closed partner APIs and open-source models, reached through one set of tools.',
+    en: 'MiniMax H3, Seedance, Flux, GPT-Image, Nano Banana, Kling, Z-Image, ElevenLabs, HY3D, and more. Closed partner APIs and open-source models, reached through one set of tools.',
     'zh-CN':
-      'Kling、Veo、Seedance、Flux、GPT-Image、Nano Banana 和 ElevenLabs。封闭的合作伙伴 API 与开源模型，通过同一套工具即可调用。'
+      'MiniMax H3、Seedance、Flux、GPT-Image、Nano Banana、Kling、Z-Image、ElevenLabs、HY3D 等。封闭的合作伙伴 API 与开源模型，通过同一套工具即可调用。'
   },
   'mcp.tools.4.alt': {
     en: 'Comfy MCP directing closed partner APIs and open-source models through one set of tools',
