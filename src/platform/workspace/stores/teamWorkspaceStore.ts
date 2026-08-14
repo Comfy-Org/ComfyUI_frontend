@@ -605,7 +605,10 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     const workspaceId = activeWorkspaceId.value
     if (!workspaceId) return []
 
-    const response = await workspaceApi.listMembers({ limit: 100, ...params })
+    const response = await workspaceApi.listMembers({
+      ...params,
+      limit: params.limit ?? 100
+    })
     const members = response.members.map(mapApiMemberToWorkspaceMember)
     if (!isStaleWorkspace(generation, workspaceId)) {
       updateWorkspace(workspaceId, { members })

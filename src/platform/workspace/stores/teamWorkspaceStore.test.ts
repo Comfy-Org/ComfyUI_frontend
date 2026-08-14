@@ -893,6 +893,12 @@ describe('useTeamWorkspaceStore', () => {
         offset: 20
       })
 
+      await store.fetchMembers({ offset: 20, limit: undefined })
+      expect(mockWorkspaceApi.listMembers).toHaveBeenLastCalledWith({
+        limit: 100,
+        offset: 20
+      })
+
       await store.fetchMembers({ offset: 20, limit: 25 })
       expect(mockWorkspaceApi.listMembers).toHaveBeenLastCalledWith({
         limit: 25,
