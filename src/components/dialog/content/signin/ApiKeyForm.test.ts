@@ -17,6 +17,7 @@ const mockStoreApiKey = vi.fn()
 // apiKeySchema requires the comfyui- prefix and a total length of 72.
 const VALID_API_KEY = `comfyui-${'a'.repeat(64)}`
 const mockLoadingRef = ref(false)
+const mockIsValidatingRef = ref(false)
 
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: vi.fn(() => ({
@@ -28,7 +29,10 @@ vi.mock('@/stores/authStore', () => ({
 
 vi.mock('@/stores/apiKeyAuthStore', () => ({
   useApiKeyAuthStore: vi.fn(() => ({
-    storeApiKey: mockStoreApiKey
+    storeApiKey: mockStoreApiKey,
+    get isValidating() {
+      return mockIsValidatingRef.value
+    }
   }))
 }))
 
@@ -61,6 +65,7 @@ const i18n = createI18n({
 describe('ApiKeyForm', () => {
   beforeEach(() => {
     mockLoadingRef.value = false
+    mockIsValidatingRef.value = false
     mockStoreApiKey.mockReset()
   })
 
@@ -91,6 +96,14 @@ describe('ApiKeyForm', () => {
     await user.click(screen.getByRole('button', { name: 'Back' }))
 
     expect(onBack).toHaveBeenCalled()
+  })
+
+  it('blocks a second submission while a key is being validated', () => {
+    mockIsValidatingRef.value = true
+    const { container } = renderComponent()
+
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    expect(container.querySelector('button[type="submit"]')).toBeDisabled()
   })
 
   it('shows loading state when submitting', () => {

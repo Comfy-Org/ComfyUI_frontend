@@ -104,7 +104,7 @@ import { useAuthStore } from '@/stores/authStore'
 
 const authStore = useAuthStore()
 const apiKeyStore = useApiKeyAuthStore()
-const loading = computed(() => authStore.loading)
+const loading = computed(() => authStore.loading || apiKeyStore.isValidating)
 const comfyPlatformBaseUrl = computed(() =>
   configValueOrDefault(
     remoteConfig.value,

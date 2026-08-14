@@ -54,18 +54,21 @@ describe('useApiKeyAuthStore', () => {
       expect(severities()).toEqual(['success:auth.apiKey.stored'])
     })
 
-    it.for([401, 403])(
+    it.for([
+      [401, 'auth.apiKey.invalid'],
+      [403, 'auth.apiKey.notPermitted']
+    ] as const)(
       'does not claim success when validation returns %i',
-      async (status) => {
+      async ([status, summary]) => {
         mockCreateCustomer.mockRejectedValue(
-          new AuthStoreError('rejected', status)
+          new AuthStoreError('refused', status)
         )
         const store = useApiKeyAuthStore()
 
         await expect(store.storeApiKey(VALID_KEY)).resolves.toBeFalsy()
 
         expect(store.isAuthenticated).toBe(false)
-        expect(severities()).toEqual(['error:auth.apiKey.invalid'])
+        expect(severities()).toEqual([`error:${summary}`])
       }
     )
 
@@ -77,6 +80,37 @@ describe('useApiKeyAuthStore', () => {
       await nextTick()
 
       expect(store.getApiKey()).toBeNull()
+    })
+
+    it('keeps the key when the account is refused rather than the key', async () => {
+      mockCreateCustomer.mockRejectedValue(new AuthStoreError('denied', 403))
+      const store = useApiKeyAuthStore()
+
+      await store.storeApiKey(VALID_KEY)
+      await nextTick()
+
+      expect(store.getApiKey()).toBe(VALID_KEY)
+    })
+
+    it('ignores a second attempt while one is still being validated', async () => {
+      let resolve!: (value: typeof customer) => void
+      mockCreateCustomer.mockReturnValue(
+        new Promise<typeof customer>((res) => {
+          resolve = res
+        })
+      )
+      const store = useApiKeyAuthStore()
+
+      const first = store.storeApiKey(VALID_KEY)
+      expect(store.isValidating).toBe(true)
+
+      await expect(store.storeApiKey('comfyui-other-key')).resolves.toBe(false)
+
+      resolve(customer)
+      await expect(first).resolves.toBe(true)
+      expect(store.isValidating).toBe(false)
+      expect(mockCreateCustomer).toHaveBeenCalledTimes(1)
+      expect(store.getApiKey()).toBe(VALID_KEY)
     })
 
     it('keeps the key but reports the failure when validation is unavailable', async () => {
