@@ -2536,9 +2536,9 @@ const translations = {
     'zh-CN': '我需要 API 密钥吗？'
   },
   'mcp.faq.5.a': {
-    en: 'On the local connection, driving your own ComfyUI needs no key and no account. You only sign in when you run partner models: through comfy-cli with a browser sign-in, or with a Comfy API key. On the cloud connection, Claude Code, Claude Desktop, Codex, and OpenClaw sign in with OAuth; Cursor and Hermes need a Comfy API key for now. Just copy https://docs.comfy.org/agent-tools/mcp.md and your agent will figure out the installation for you.',
+    en: 'In short, no. On the local connection, driving your own ComfyUI needs no key and no account. You only sign in when you run partner models: through comfy-cli with a browser sign-in, or with a Comfy API key. On the cloud connection, Claude Code, Claude Desktop, Codex, and OpenClaw sign in with OAuth; Cursor and Hermes need a Comfy API key for now. Just copy https://docs.comfy.org/agent-tools/mcp.md and your agent will figure out the installation for you.',
     'zh-CN':
-      '本地连接方面，驱动你自己的 ComfyUI 不需要密钥，也不需要账户。只有在运行合作伙伴模型时才需要登录：通过 comfy-cli 在浏览器中登录，或使用 Comfy API 密钥。云端连接方面，Claude Code、Claude Desktop、Codex 和 OpenClaw 通过 OAuth 登录；Cursor 和 Hermes 目前需要 Comfy API 密钥。只需复制 https://docs.comfy.org/agent-tools/mcp.md，你的智能体就会为你完成安装。'
+      '简而言之，不需要。本地连接方面，驱动你自己的 ComfyUI 不需要密钥，也不需要账户。只有在运行合作伙伴模型时才需要登录：通过 comfy-cli 在浏览器中登录，或使用 Comfy API 密钥。云端连接方面，Claude Code、Claude Desktop、Codex 和 OpenClaw 通过 OAuth 登录；Cursor 和 Hermes 目前需要 Comfy API 密钥。只需复制 https://docs.comfy.org/agent-tools/mcp.md，你的智能体就会为你完成安装。'
   },
   'mcp.faq.6.q': {
     en: 'Does it cost anything?',
