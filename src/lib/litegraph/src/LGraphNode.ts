@@ -651,12 +651,8 @@ export class LGraphNode
     commit: () => this._positionUpdated(),
     synchronize: () => this.refreshGeometry()
   })
-  private readonly sizeView = createGeometryView(this._renderedSize, {
-    commit: () => {
-      this._size[0] = this._renderedSize[0]
-      this._size[1] = this._renderedSize[1]
-      this._sizeUpdated()
-    },
+  private readonly sizeView = createGeometryView(this._size, {
+    commit: () => this._sizeUpdated(),
     synchronize: () => this.refreshGeometry()
   })
 
@@ -766,7 +762,7 @@ export class LGraphNode
         0
       ]
     }
-    return this.sizeView
+    return this._renderedSize
   }
 
   get shape(): RenderShape | undefined {
@@ -1205,7 +1201,7 @@ export class LGraphNode
       id: serializeNodeId(this.id),
       type: this.type,
       pos: [this.pos[0], this.pos[1]],
-      size: [this._size[0], this._size[1]],
+      size: [this.size[0], this.size[1]],
       flags: LiteGraph.cloneObject(this.flags),
       order: this.order,
       mode: this.mode,
@@ -2102,11 +2098,12 @@ export class LGraphNode
     const rows = this.outputs ? this.outputs.length : 1
     const outputs_offset =
       (this.constructor.slot_start_y || 0) + rows * LiteGraph.NODE_SLOT_HEIGHT
+    const size = this.renderingSize
     return isInRectangle(
       canvasX,
       canvasY,
-      this.pos[0] + this.size[0] - 15,
-      this.pos[1] + Math.max(this.size[1] - 15, outputs_offset),
+      this.pos[0] + size[0] - 15,
+      this.pos[1] + Math.max(size[1] - 15, outputs_offset),
       20,
       20
     )
@@ -3553,7 +3550,9 @@ export class LGraphNode
       ? this._defaultVerticalInputs.indexOf(this.inputs[slot_number])
       : this._defaultVerticalOutputs.indexOf(this.outputs[slot_number])
 
-    out[0] = is_input ? nodeX + offset : nodeX + this.size[0] + 1 - offset
+    out[0] = is_input
+      ? nodeX + offset
+      : nodeX + this.renderingSize[0] + 1 - offset
     out[1] =
       nodeY +
       (slotIndex + 0.7) * LiteGraph.NODE_SLOT_HEIGHT +
@@ -3582,11 +3581,12 @@ export class LGraphNode
    * @internal
    */
   private _getSlotPositionContext(): SlotPositionContext {
+    const size = this.renderingSize
     return {
       nodeX: this.pos[0],
       nodeY: this.pos[1],
-      nodeWidth: this.size[0],
-      nodeHeight: this.size[1],
+      nodeWidth: size[0],
+      nodeHeight: size[1],
       collapsed: this.flags.collapsed ?? false,
       collapsedWidth: this._collapsed_width,
       slotStartY: this.constructor.slot_start_y,
@@ -3770,7 +3770,7 @@ export class LGraphNode
   get width() {
     return this.collapsed
       ? this._collapsed_width || LiteGraph.NODE_COLLAPSED_WIDTH
-      : this.size[0]
+      : this.renderingSize[0]
   }
 
   /**
@@ -3784,7 +3784,7 @@ export class LGraphNode
    * Returns the height of the node, excluding the title bar.
    */
   get bodyHeight() {
-    return this.collapsed ? 0 : this.size[1]
+    return this.collapsed ? 0 : this.renderingSize[1]
   }
 
   drawBadges(ctx: CanvasRenderingContext2D, { gap = 2 } = {}): void {
@@ -4132,7 +4132,7 @@ export class LGraphNode
   ): void {
     if (!this.widgets) return
 
-    const nodeWidth = this.size[0]
+    const nodeWidth = this.renderingSize[0]
     const { widgets } = this
     const H = LiteGraph.NODE_WIDGET_HEIGHT
     const showText = !lowQuality

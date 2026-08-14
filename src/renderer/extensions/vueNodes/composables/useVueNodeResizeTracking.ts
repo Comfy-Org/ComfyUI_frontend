@@ -232,10 +232,6 @@ const resizeObserver = new ResizeObserver((entries) => {
       })
     }
 
-    if (nodeLayout && isBoundsEqual(nodeLayout.bounds, normalizedBounds)) {
-      continue
-    }
-
     let updates = updatesByType.get(elementType)
     if (!updates) {
       updates = []

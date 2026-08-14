@@ -166,7 +166,7 @@ describe('useVueNodeResizeTracking', () => {
     testState.nodeLayouts.clear()
   })
 
-  it('skips repeated no-op resize entries after first measurement', () => {
+  it('reports the first measurement and skips repeated entries', () => {
     const nodeId = toNodeId('test-node')
     const width = 240
     const height = 180
@@ -187,8 +187,15 @@ describe('useVueNodeResizeTracking', () => {
     // When layout store already has correct position, getBoundingClientRect
     // is not needed — position is read from the store instead.
     expect(rectSpy).not.toHaveBeenCalled()
-    expect(testState.reportContentSize).not.toHaveBeenCalled()
-    expect(testState.syncNodeSlotLayoutsFromDOM).not.toHaveBeenCalled()
+    expect(testState.reportContentSize).toHaveBeenCalledWith(
+      ROOT_GRAPH_ID,
+      nodeId,
+      {
+        width,
+        height: height - LiteGraph.NODE_TITLE_HEIGHT
+      }
+    )
+    expect(testState.syncNodeSlotLayoutsFromDOM).toHaveBeenCalledWith(nodeId)
 
     testState.reportContentSize.mockReset()
     testState.syncNodeSlotLayoutsFromDOM.mockReset()
@@ -200,7 +207,7 @@ describe('useVueNodeResizeTracking', () => {
     expect(testState.syncNodeSlotLayoutsFromDOM).not.toHaveBeenCalled()
   })
 
-  it('preserves layout store position when size matches but DOM position differs', () => {
+  it('reports size without replacing the stored position', () => {
     const nodeId = toNodeId('test-node')
     const width = 240
     const height = 180
@@ -224,7 +231,14 @@ describe('useVueNodeResizeTracking', () => {
 
     // Position from DOM should NOT override layout store position
     expect(rectSpy).not.toHaveBeenCalled()
-    expect(testState.reportContentSize).not.toHaveBeenCalled()
+    expect(testState.reportContentSize).toHaveBeenCalledWith(
+      ROOT_GRAPH_ID,
+      nodeId,
+      {
+        width,
+        height: height - LiteGraph.NODE_TITLE_HEIGHT
+      }
+    )
   })
 
   it('updates node bounds + slot layouts when size changes', () => {

@@ -199,7 +199,8 @@ commands. Measured geometry belongs to the local, view-scoped tier that
 than node height and has never been considered a violation, because it lands in
 a tier that nothing replicates and nothing writes back into the DOM. Recording a
 measurement stays an explicit, named mutation rather than an ambient observer
-write. Collapse becomes stored data.
+write. `LGraphNode.size` exposes requested size; `renderingSize`, `measure()`,
+and `boundingRect` expose rendered geometry. Collapse becomes stored data.
 
 **This does not forbid measurement.** Content-driven height is real: widget
 hydration, media loading, badges, slot changes, and third-party DOM inserted by

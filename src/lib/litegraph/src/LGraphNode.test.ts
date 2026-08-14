@@ -1093,7 +1093,7 @@ describe('layout geometry projection', () => {
     })
   })
 
-  test('uses measured size for geometry without serializing it', () => {
+  test('keeps measured geometry separate from requested size', () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')
     node.size = [100, 50]
@@ -1103,21 +1103,21 @@ describe('layout geometry projection', () => {
       height: 80
     })
 
-    expect([...node.size]).toEqual([225, 80])
+    expect([...node.size]).toEqual([100, 50])
     expect(node.serialize().size).toEqual([100, 50])
 
     node.setSize([node.size[0] + 90, node.size[1] + 100])
 
-    expect([...node.renderingSize]).toEqual([315, 180])
+    expect([...node.renderingSize]).toEqual([225, 150])
     const bounds: Rect = [0, 0, 0, 0]
     node.measure(bounds)
     expect(bounds).toEqual([
       node.pos[0],
       node.pos[1] - LiteGraph.NODE_TITLE_HEIGHT,
-      315,
-      180 + LiteGraph.NODE_TITLE_HEIGHT
+      225,
+      150 + LiteGraph.NODE_TITLE_HEIGHT
     ])
-    expect(node.serialize().size).toEqual([315, 180])
+    expect(node.serialize().size).toEqual([190, 150])
   })
 })
 
