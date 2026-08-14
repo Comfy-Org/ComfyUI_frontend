@@ -13,6 +13,7 @@ import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuth
 
 import type {
   BillingRail,
+  ListMembersParams,
   Member,
   PendingInvite as ApiPendingInvite,
   SubscriptionTier,
@@ -597,12 +598,14 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
   /**
    * Fetch members for the current workspace.
    */
-  async function fetchMembers(): Promise<WorkspaceMember[]> {
+  async function fetchMembers(
+    params: ListMembersParams = { limit: 100 }
+  ): Promise<WorkspaceMember[]> {
     const generation = identityGeneration
     const workspaceId = activeWorkspaceId.value
     if (!workspaceId) return []
 
-    const response = await workspaceApi.listMembers({ limit: 100 })
+    const response = await workspaceApi.listMembers(params)
     const members = response.members.map(mapApiMemberToWorkspaceMember)
     if (!isStaleWorkspace(generation, workspaceId)) {
       updateWorkspace(workspaceId, { members })
