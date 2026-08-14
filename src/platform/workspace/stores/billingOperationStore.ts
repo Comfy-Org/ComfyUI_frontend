@@ -5,6 +5,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
@@ -96,6 +97,7 @@ type TerminalResolver = (operation: BillingOperation) => void
 
 export const useBillingOperationStore = defineStore('billingOperation', () => {
   const workspaceStore = useTeamWorkspaceStore()
+  const { flags } = useFeatureFlags()
   const operations = ref<Map<string, BillingOperation>>(new Map())
   const timeouts = new Map<string, ReturnType<typeof setTimeout>>()
   const intervals = new Map<string, number>()
@@ -303,8 +305,9 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       }
 
       if (
-        response.status === 'reconciliation_needed' ||
-        response.authentication_state === 'reconciliation_needed'
+        flags.embeddedCheckoutEnabled &&
+        (response.status === 'reconciliation_needed' ||
+          response.authentication_state === 'reconciliation_needed')
       ) {
         handleReconciliationNeeded(opId)
         return
@@ -312,12 +315,14 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
       if (stopIfTimedOut(opId, operation)) return
 
-      const pollingPaused = await updateAuthenticationState(
-        opId,
-        response.authentication_state,
-        response.payment_intent_client_secret,
-        response.decline_reason
-      )
+      const pollingPaused = flags.embeddedCheckoutEnabled
+        ? await updateAuthenticationState(
+            opId,
+            response.authentication_state,
+            response.payment_intent_client_secret,
+            response.decline_reason
+          )
+        : false
       updateOperationActionUrl(opId, validateActionUrl(response.action_url))
       if (pollingPaused) return
       scheduleNextPoll(opId)
@@ -466,6 +471,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   }
 
   async function retryPaymentAuthentication(opId: string): Promise<boolean> {
+    if (!flags.embeddedCheckoutEnabled) return false
     const operation = operations.value.get(opId)
     if (
       !operation ||

@@ -15,6 +15,7 @@ const mockPreviewVariant = ref<string | null>(null)
 const mockPreviewData = ref<Record<string, unknown> | null>(null)
 const mockSelectedTeamStop = ref<Record<string, unknown> | null>(null)
 const mockSelectedSavedPaymentMethodId = ref<string | null>('pm_default')
+const mockSavedPaymentMethods = ref<Record<string, unknown>[]>([])
 
 vi.mock('@/platform/workspace/composables/useSubscriptionCheckout', () => ({
   useSubscriptionCheckout: () => ({
@@ -25,7 +26,7 @@ vi.mock('@/platform/workspace/composables/useSubscriptionCheckout', () => ({
     isResubscribing: ref(false),
     previewData: mockPreviewData,
     quoteIsCurrent: ref(false),
-    savedPaymentMethods: ref([]),
+    savedPaymentMethods: mockSavedPaymentMethods,
     selectedSavedPaymentMethodId: mockSelectedSavedPaymentMethodId,
     selectedTierKey: ref(null),
     selectedTeamStop: mockSelectedTeamStop,
@@ -92,16 +93,23 @@ const UnifiedPricingTableStub = {
 
 function renderComponent(props: Record<string, unknown> = {}) {
   return render(SubscriptionRequiredDialogContentUnified, {
-    props: { onClose: vi.fn(), ...props },
+    props: { onClose: vi.fn(), embeddedCheckoutEnabled: true, ...props },
     global: {
       plugins: [i18n],
       stubs: {
         UnifiedPricingTable: UnifiedPricingTableStub,
         SubscriptionAddPaymentPreviewWorkspace: {
           name: 'SubscriptionAddPaymentPreviewWorkspace',
-          props: ['previewData', 'teamPlan'],
+          props: [
+            'previewData',
+            'teamPlan',
+            'savedMethods',
+            'usePaymentElement'
+          ],
           template: `<div data-testid="add-payment-preview">
             {{ previewData?.amount_due_cents ?? "no-quote" }}
+            <span data-testid="saved-method-count">{{ savedMethods.length }}</span>
+            <span data-testid="payment-element-enabled">{{ usePaymentElement }}</span>
             <button data-testid="saved-method-btn" @click="$emit('update:selectedSavedMethodId', 'pm_other')">Saved method</button>
             <button data-testid="new-method-btn" @click="$emit('changePaymentMethod')">New method</button>
           </div>`
@@ -121,6 +129,7 @@ describe('SubscriptionRequiredDialogContentUnified team-plan subscribe', () => {
     mockPreviewData.value = null
     mockSelectedTeamStop.value = null
     mockSelectedSavedPaymentMethodId.value = 'pm_default'
+    mockSavedPaymentMethods.value = []
   })
 
   // The team checkout mounts the payment element against the quote's amount, so
@@ -151,6 +160,32 @@ describe('SubscriptionRequiredDialogContentUnified team-plan subscribe', () => {
 
     expect(mockSelectedSavedPaymentMethodId.value).toBeNull()
     expect(mockInvalidateQuote).not.toHaveBeenCalled()
+  })
+
+  it('collects a new method when none is selected', () => {
+    mockCheckoutStep.value = 'preview'
+    mockPreviewVariant.value = 'personal-new'
+    mockPreviewData.value = { amount_due_cents: 1600, currency: 'usd' }
+    mockSavedPaymentMethods.value = [
+      { id: 'pm_first', type: 'card', last4: '1111', is_default: false }
+    ]
+    mockSelectedSavedPaymentMethodId.value = null
+
+    renderComponent()
+
+    expect(screen.getByTestId('saved-method-count')).toHaveTextContent('0')
+  })
+
+  it('does not initialize the payment element while embedded checkout is off', () => {
+    mockCheckoutStep.value = 'preview'
+    mockPreviewVariant.value = 'personal-new'
+    mockPreviewData.value = { amount_due_cents: 1600, currency: 'usd' }
+
+    renderComponent({ embeddedCheckoutEnabled: false })
+
+    expect(screen.getByTestId('payment-element-enabled')).toHaveTextContent(
+      'false'
+    )
   })
 
   it('advances to team checkout from a team workspace', async () => {

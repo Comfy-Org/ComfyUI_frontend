@@ -57,7 +57,7 @@ const i18n = createI18n({
 
 function renderSelector(
   amountCents = 66500,
-  paymentMethodConfigurationId = '',
+  paymentMethodConfigurationId = 'pmc_test',
   props: { canSubmit?: boolean; verificationPending?: boolean } = {}
 ) {
   return render(UnifiedStripePaymentSelector, {
@@ -102,7 +102,7 @@ describe('UnifiedStripePaymentSelector', () => {
           amount: 66500,
           currency: 'usd',
           setupFutureUsage: 'off_session',
-          paymentMethodTypes: ['card', 'alipay']
+          paymentMethodConfiguration: 'pmc_test'
         })
       )
     })
@@ -179,7 +179,7 @@ describe('UnifiedStripePaymentSelector', () => {
       props: { verificationPending: true }
     }
   ])('blocks paying when $description', async ({ props }) => {
-    renderSelector(66500, '', props)
+    renderSelector(66500, 'pmc_test', props)
     await waitFor(() => expect(stripeMocks.mount).toHaveBeenCalledTimes(1))
 
     expect(
@@ -258,5 +258,13 @@ describe('UnifiedStripePaymentSelector payment method configuration', () => {
     expect(stripeMocks.stripe.elements).not.toHaveBeenCalledWith(
       expect.objectContaining({ paymentMethodTypes: expect.anything() })
     )
+  })
+
+  it('does not initialize Stripe when the backend configuration is absent', async () => {
+    renderSelector(66500, '')
+
+    expect(await screen.findByText('Stripe is unavailable')).toBeTruthy()
+    expect(stripeMocks.loadStripe).not.toHaveBeenCalled()
+    expect(stripeMocks.stripe.elements).not.toHaveBeenCalled()
   })
 })

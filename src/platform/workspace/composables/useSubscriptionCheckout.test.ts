@@ -353,7 +353,8 @@ describe('useSubscriptionCheckout', () => {
 
   async function setup(
     paymentIntentSource?: PaymentIntentSource,
-    tierPlanType: 'personal' | 'team' = 'personal'
+    tierPlanType: 'personal' | 'team' = 'personal',
+    embeddedCheckoutEnabled = true
   ) {
     const { useSubscriptionCheckout } =
       await import('./useSubscriptionCheckout')
@@ -361,7 +362,8 @@ describe('useSubscriptionCheckout', () => {
     scopes.push(scope)
     return scope.run(() =>
       useSubscriptionCheckout(emit as never, paymentIntentSource, {
-        tierPlanType
+        tierPlanType,
+        embeddedCheckoutEnabled
       })
     )!
   }
@@ -430,6 +432,43 @@ describe('useSubscriptionCheckout', () => {
   })
 
   describe('handleSubscribeClick', () => {
+    it('keeps embedded endpoints and request fields unreachable while disabled', async () => {
+      const checkout = await setup(undefined, 'personal', false)
+
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+      checkout.invalidateQuote()
+      expect(await checkout.applyPromotionCode('SAVE20')).toBe(false)
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'subscribed',
+        billing_op_id: 'op-legacy'
+      })
+
+      await checkout.handleConfirmTransition()
+
+      expect(mockListSavedPaymentMethods).not.toHaveBeenCalled()
+      expect(mockPreviewSubscribe).toHaveBeenCalledOnce()
+      expect(mockPreviewSubscribe).toHaveBeenCalledWith('standard-yearly')
+      expect(mockSubscribe).toHaveBeenCalledWith(
+        'standard-yearly',
+        expect.not.objectContaining({
+          confirmationToken: expect.anything(),
+          promotionCode: expect.anything(),
+          quoteId: expect.anything(),
+          quoteVersion: expect.anything(),
+          savedPaymentMethodId: expect.anything()
+        })
+      )
+      expect(mockSubscribe).toHaveBeenCalledWith(
+        'standard-yearly',
+        expect.objectContaining({
+          returnUrl: 'https://platform.comfy.org/payment/success'
+        })
+      )
+    })
+
     it('selects the backend default saved payment method', async () => {
       const checkout = await setup()
       mockListSavedPaymentMethods.mockResolvedValueOnce([
@@ -453,6 +492,26 @@ describe('useSubscriptionCheckout', () => {
       })
 
       expect(checkout.selectedSavedPaymentMethodId.value).toBe('pm_default')
+    })
+
+    it('collects a new method when the backend has no default', async () => {
+      const checkout = await setup()
+      mockListSavedPaymentMethods.mockResolvedValueOnce([
+        {
+          type: 'card',
+          id: 'pm_first',
+          brand: 'visa',
+          last4: '1111',
+          is_default: false
+        }
+      ])
+
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+
+      expect(checkout.selectedSavedPaymentMethodId.value).toBeNull()
     })
 
     it('previews a promotion only after Apply and submits the exact quote', async () => {
@@ -706,6 +765,25 @@ describe('useSubscriptionCheckout', () => {
       expect(checkout.checkoutStep.value).toBe('preview')
       expect(checkout.previewData.value).toStrictEqual(preview)
       expect(mockSubscribe).not.toHaveBeenCalled()
+    })
+
+    it('uses the backend reactivation decision instead of stale status', async () => {
+      mockSubscription.value = { isCancelled: true }
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'upgrade',
+        is_immediate: true,
+        requires_reactivation_confirmation: false,
+        current_plan: { period_end: '2026-08-29T00:00:00Z' }
+      })
+      const checkout = await setup()
+
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+
+      expect(checkout.reactivationRequired.value).toBe(false)
     })
 
     it('shows error toast when preview is disallowed', async () => {
