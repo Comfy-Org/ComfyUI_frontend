@@ -25,7 +25,7 @@
   <RerouteMigrationToast />
   <ModelImportProgressDialog />
   <AssetExportProgressDialog />
-  <PartnerNodesEducationCard />
+  <PartnerNodesEducationCard v-if="!isCloud" />
   <ManagerProgressToast />
   <DesktopCloudNotificationController />
   <UnloadWindowConfirmDialog v-if="!isDesktop" />
