@@ -18,7 +18,10 @@ describe('useSubscriptionCancellationWatcher', () => {
   const baseStatus: BillingStatusResponse = {
     is_active: true,
     has_funds: true,
-    renewal_date: '2025-11-16'
+    renewal_date: '2025-11-16',
+    max_seats: 1,
+    occupied_seats: 1,
+    team_credit_stop: null
   }
 
   const subscriptionStatus = ref<BillingStatusResponse | null>(baseStatus)
@@ -65,7 +68,10 @@ describe('useSubscriptionCancellationWatcher', () => {
           is_active: false,
           has_funds: true,
           renewal_date: '2025-11-16',
-          cancel_at: '2025-12-01'
+          cancel_at: '2025-12-01',
+          max_seats: 1,
+          occupied_seats: 1,
+          team_credit_stop: null
         }
       }
     })

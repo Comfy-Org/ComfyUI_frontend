@@ -355,11 +355,7 @@ describe('workspaceApi', () => {
           headers: AUTH_HEADER
         }
       )
-      expect(result).toEqual({
-        ...data,
-        max_seats: null,
-        occupied_seats: null
-      })
+      expect(result).toEqual(data)
     })
 
     it('getBillingBalance() sends GET /billing/balance', async () => {

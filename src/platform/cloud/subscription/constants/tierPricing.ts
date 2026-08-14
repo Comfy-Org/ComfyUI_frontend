@@ -1,7 +1,7 @@
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
-import type { components } from '@/types/comfyRegistryTypes'
+import type { SubscriptionTier as IngestSubscriptionTier } from '@comfyorg/ingest-types'
 
-export type SubscriptionTier = components['schemas']['SubscriptionTier']
+export type SubscriptionTier = IngestSubscriptionTier
 
 export type TierKey = 'free' | 'standard' | 'creator' | 'pro' | 'founder'
 
@@ -10,7 +10,8 @@ export const TIER_TO_KEY: Record<SubscriptionTier, TierKey> = {
   STANDARD: 'standard',
   CREATOR: 'creator',
   PRO: 'pro',
-  FOUNDERS_EDITION: 'founder'
+  FOUNDERS_EDITION: 'founder',
+  TEAM: 'standard'
 }
 
 export const KEY_TO_TIER: Record<TierKey, SubscriptionTier> = {
