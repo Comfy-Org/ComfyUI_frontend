@@ -108,7 +108,7 @@
             <Button
               variant="muted-textonly"
               size="sm"
-              class="justify-start"
+              class="w-fit justify-self-start"
               @click="toggleSort('inviteDate')"
             >
               {{ $t('workspacePanel.members.columns.inviteDate') }}
@@ -117,7 +117,7 @@
             <Button
               variant="muted-textonly"
               size="sm"
-              class="justify-start"
+              class="w-fit justify-self-start"
               @click="toggleSort('expiryDate')"
             >
               {{ $t('workspacePanel.members.columns.expiryDate') }}
@@ -130,7 +130,12 @@
               variant="muted-textonly"
               size="sm"
               :class="
-                uiConfig.showCreditsColumn ? 'justify-start' : 'justify-end'
+                cn(
+                  'w-fit',
+                  uiConfig.showCreditsColumn
+                    ? 'justify-self-start'
+                    : 'justify-self-end'
+                )
               "
               @click="toggleSort('role')"
             >
@@ -173,7 +178,7 @@
 
             <template v-else>
               <MemberListItem
-                v-for="(member, index) in filteredMembers"
+                v-for="member in filteredMembers"
                 :key="member.id"
                 :member="member"
                 :is-current-user="isCurrentUser(member)"
@@ -188,7 +193,6 @@
                 "
                 :show-credits-column="uiConfig.showCreditsColumn"
                 :can-manage-members="permissions.canManageMembers"
-                :striped="index % 2 === 1"
                 :menu-items="memberMenus.get(member.id)"
               />
             </template>

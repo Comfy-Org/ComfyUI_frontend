@@ -1,15 +1,9 @@
 <template>
   <div>
     <div
-      v-for="(invite, index) in invites"
+      v-for="invite in invites"
       :key="invite.id"
-      :class="
-        cn(
-          'grid w-full items-center rounded-lg p-2',
-          gridCols,
-          index % 2 === 1 && 'bg-secondary-background/50'
-        )
-      "
+      :class="cn('grid w-full items-center rounded-lg p-2', gridCols)"
     >
       <div class="flex items-center gap-3">
         <div
