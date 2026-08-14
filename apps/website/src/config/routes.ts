@@ -40,7 +40,7 @@ const baseRoutes = {
 
 type RouteKey = keyof typeof baseRoutes
 
-type Routes = Record<RouteKey, string>
+type Routes = Readonly<Record<RouteKey, string>>
 
 // Routes that are served only at their canonical path regardless of the
 // active locale. Localized variants of these routes intentionally do not
