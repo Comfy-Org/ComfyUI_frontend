@@ -116,7 +116,7 @@ describe('useWorkspaceMenuItems', () => {
     )
   })
 
-  it.each(['payment_failed', 'paused'])(
+  it.for(['payment_failed', 'paused'])(
     'allows cancellation while a %s plan needs payment recovery',
     (billingStatus) => {
       state.billingStatus = billingStatus

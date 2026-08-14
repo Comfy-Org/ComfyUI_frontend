@@ -252,7 +252,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     ).not.toBeInTheDocument()
   })
 
-  it.each(['payment_failed', 'paused'])(
+  it.for(['payment_failed', 'paused'])(
     'keeps Manage plan available instead of Subscribe when billing is %s',
     (billingStatus) => {
       state.billingStatus = billingStatus
@@ -354,10 +354,13 @@ describe('CurrentUserPopoverWorkspace', () => {
       state.canManageSubscription = true
       const { emitted } = renderComponent(workspaceType)
 
-      const menuItem = screen.getByTestId('manage-plan-menu-item')
+      const menuItem = screen.getByRole('button', {
+        name: enMessages.subscription.managePlan
+      })
       expect(menuItem).toHaveTextContent(enMessages.subscription.managePlan)
 
-      await user.click(menuItem)
+      menuItem.focus()
+      await user.keyboard('{Enter}')
 
       expect(state.showSettingsDialog).toHaveBeenCalledWith('workspace')
       expect(emitted('close')).toHaveLength(1)
