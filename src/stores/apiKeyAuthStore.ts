@@ -67,10 +67,21 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
   const currentUser = ref<ComfyApiUser | null>(null)
   const isAuthenticated = computed(() => !!currentUser.value)
 
-  const resolveUser = async () => {
+  // Validation started for a key the app restored at launch can still be in
+  // flight when the user signs in with a different key. Whichever request
+  // started last owns the outcome, so an earlier one that lands afterwards is
+  // dropped instead of clearing the newer key or reporting its stale verdict.
+  let latestRequest = 0
+
+  const resolveUser = async (): Promise<boolean> => {
+    const request = ++latestRequest
     try {
-      currentUser.value = await authStore.createCustomer()
+      const user = await authStore.createCustomer()
+      if (request !== latestRequest) return false
+      currentUser.value = user
+      return true
     } catch (error) {
+      if (request !== latestRequest) return false
       currentUser.value = null
       const failure = failureFor(error)
       if (failure === 'rejected') apiKey.value = null
@@ -130,12 +141,14 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
   const storeApiKey = wrapWithErrorHandlingAsync(async (newApiKey: string) => {
     if (isValidating.value) return false
     isValidating.value = true
+    let signedIn: boolean
     try {
       apiKey.value = newApiKey
-      await resolveUser()
+      signedIn = await resolveUser()
     } finally {
       isValidating.value = false
     }
+    if (!signedIn) return false
     toastStore.add({
       severity: 'success',
       summary: t('auth.apiKey.stored'),

@@ -100,10 +100,9 @@ describe('ApiKeyForm', () => {
 
   it('blocks a second submission while a key is being validated', () => {
     mockIsValidatingRef.value = true
-    const { container } = renderComponent()
+    renderComponent()
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-    expect(container.querySelector('button[type="submit"]')).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled()
   })
 
   it('shows loading state when submitting', () => {
