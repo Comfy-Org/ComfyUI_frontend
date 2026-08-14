@@ -79,9 +79,9 @@ const buttons = computed<ButtonSpec[]>(() => {
       <img
         :src="btn.icon"
         alt=""
-        class="ppformula-text-center size-5 -translate-y-0.75"
+        class="inline-block size-5 -translate-y-0.75"
       />
-      <span class="ppformula-text-center">{{ label }}</span>
+      {{ label }}
     </span>
   </BrandButton>
 </template>

@@ -38,7 +38,7 @@ const emit = defineEmits<{
     >
       <span v-if="modelValue === category.value" class="relative inline-block">
         <span
-          class="bg-primary-comfy-yellow ppformula-text-center inline-flex items-center rounded-lg px-4 py-2"
+          class="bg-primary-comfy-yellow inline-flex items-center rounded-lg px-4 py-2"
         >
           {{ category.label }}
         </span>
@@ -50,7 +50,7 @@ const emit = defineEmits<{
       </span>
       <span
         v-else
-        class="bg-transparency-white-t4 ppformula-text-center inline-flex items-center rounded-lg px-4 py-2"
+        class="bg-transparency-white-t4 inline-flex items-center rounded-lg px-4 py-2"
       >
         {{ category.label }}
       </span>

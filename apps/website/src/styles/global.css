@@ -4,13 +4,6 @@
 @import '@comfyorg/design-system/css/base.css';
 @import 'tw-animate-css';
 
-/* PP Formula's native vertical metrics place the baseline too high, so caps
-   sit in the upper half of the line box. Overriding ascent/descent re-anchors
-   the baseline so caps render optically centered when line-height is tight. 
-    BUT, IT IS NOT WELL SUPPORTED:
-    ascent-override: 92%;
-    descent-override: 8%;
-    line-gap-override: 0%; */
 @font-face {
   font-family: 'PP Formula';
   src: url('/fonts/PPFormula-Light.woff2') format('woff2');
@@ -256,15 +249,6 @@
   mask-size: contain;
   mask-repeat: no-repeat;
   mask-position: center;
-}
-
-/* PP Formula has asymmetric vertical metrics
-   Shifting visually with `top` corrects the appearance without changing the
-   inline-block's bounding box, so button/badge sizes are unaffected. */
-@utility ppformula-text-center {
-  display: inline-block;
-  position: relative;
-  top: 0.1em;
 }
 
 /* Hide native play-button overlay iOS Safari shows when autoplay is blocked
