@@ -143,6 +143,37 @@ test.describe('customNode manifest', () => {
     ])
   })
 
+  test('sharding balances by weight, not by count', () => {
+    // The distribution that matters: expectedNodeCount runs 1..285 with a
+    // median of 6, so equal pack counts are not equal work. Counting packs
+    // per shard would pass on the 4.86x spread this replaced.
+    // Heavy packs on a stride the old round-robin shared a residue with:
+    // striping sent every one of them to the same shard (10.2x spread),
+    // which is the real distribution this replaced.
+    const heavy = Array.from({ length: 32 }, (_, i) => ({
+      pack: `p${i}`,
+      weight: i % 4 === 2 ? 250 : 5
+    }))
+    const original = process.env.CUSTOM_NODES_SHARD
+    try {
+      const loads: number[] = []
+      for (let index = 1; index <= 4; index++) {
+        process.env.CUSTOM_NODES_SHARD = `${index}/4`
+        loads.push(
+          shardOf(heavy, (entry) => entry.weight).reduce(
+            (sum, entry) => sum + entry.weight,
+            0
+          )
+        )
+      }
+      // Striping this fixture gives 50x; balanced divides exactly.
+      expect(Math.max(...loads) / Math.min(...loads)).toBe(1)
+    } finally {
+      if (original === undefined) delete process.env.CUSTOM_NODES_SHARD
+      else process.env.CUSTOM_NODES_SHARD = original
+    }
+  })
+
   test('sharding partitions the manifest - every pack exactly once', () => {
     const packs = Array.from({ length: 87 }, (_, i) => `pack-${i}`)
     const original = process.env.CUSTOM_NODES_SHARD

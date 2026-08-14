@@ -90,8 +90,9 @@ jobs:
         # rewriting this list. Measured on run 31842166428: 3.8 min fixed plus
         # 0.39 min per pack once S9 is scoped to run-tier rows, so 22 packs
         # lands near 12 - the shard holding the one run-tier pack costs more.
-        # Slices are striped, not contiguous (see manifestShard), so every
-        # shard gets a mix of cheap and heavy packs.
+        # Slices are balanced by expectedNodeCount (see shardOf), not by pack
+        # count: node counts run 1..285 with a median of 6, and a matrix costs
+        # its slowest shard.
         shard: ['1/4', '2/4', '3/4', '4/4']
         proof_row: >-
           ${{ fromJSON(github.event_name == 'workflow_dispatch' && inputs.detection_proof_row == 'all' && '["1","2","3","9"]' || format('["{0}"]', inputs.detection_proof_row || '0')) }}

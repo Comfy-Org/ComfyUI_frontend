@@ -333,11 +333,6 @@ function customNodesManifest(): (typeof VALID_MANIFESTS)[number] {
 
 /**
  * Which slice of the manifest this run owns, as `index/total`, 1-based.
- *
- * Striped rather than contiguous. Pack cost spans an order of magnitude in
- * node count and dependency weight, and `supported_nodes.yaml` groups related
- * packs together, so contiguous slices would put the heavy neighbours in one
- * shard and starve the rest.
  */
 function manifestShard(): { index: number; total: number } | null {
   const raw = process.env.CUSTOM_NODES_SHARD
@@ -356,10 +351,36 @@ function manifestShard(): { index: number; total: number } | null {
   return { index, total }
 }
 
-export function shardOf<T>(entries: readonly T[]): T[] {
+/**
+ * Balanced by node count, not by pack count.
+ *
+ * Equal pack counts are not equal work: expectedNodeCount runs from 1 to 285
+ * with a median of 6, and S1/S2/S3 walk every node, so a few packs dominate a
+ * slice. Round-robin striping ignored that and produced a 4.86x spread on run
+ * 31849196357 - 1,220 nodes in one shard against 251 in another - and since a
+ * matrix costs its slowest shard, that one straggler was the whole run.
+ *
+ * Greedy longest-processing-time: heaviest pack first, always into the
+ * lightest shard. Deterministic given the manifest, and ties break on pack
+ * name so a reordered manifest cannot silently reshuffle the slices.
+ */
+export function shardOf<T>(
+  entries: readonly T[],
+  weightOf: (entry: T) => number = () => 1
+): T[] {
   const shard = manifestShard()
   if (!shard) return [...entries]
-  return entries.filter((_, i) => i % shard.total === shard.index - 1)
+  const bins: T[][] = Array.from({ length: shard.total }, () => [])
+  const load = new Array<number>(shard.total).fill(0)
+  const ordered = [...entries]
+    .map((entry, index) => ({ entry, index }))
+    .sort((a, b) => weightOf(b.entry) - weightOf(a.entry) || a.index - b.index)
+  for (const { entry } of ordered) {
+    const lightest = load.indexOf(Math.min(...load))
+    bins[lightest].push(entry)
+    load[lightest] += weightOf(entry)
+  }
+  return bins[shard.index - 1]
 }
 
 function assertCloudManifestShape(
@@ -469,7 +490,8 @@ export const MAX_QUARANTINED_PACKS = 5
 export function loadManifest(): (CoreManifestEntry | CloudManifestEntry)[] {
   const quarantined = loadPackQuarantine()
   return shardOf(
-    loadFullManifest().filter((entry) => !(entry.pack in quarantined))
+    loadFullManifest().filter((entry) => !(entry.pack in quarantined)),
+    (entry) => entry.expectedNodeCount
   )
 }
 
