@@ -9,7 +9,7 @@
         <div
           class="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary-background"
         >
-          <span class="text-sm font-bold text-base-foreground">
+          <span class="text-sm text-muted-foreground">
             {{ getInviteInitial(invite.email) }}
           </span>
         </div>
