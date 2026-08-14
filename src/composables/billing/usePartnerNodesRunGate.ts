@@ -7,7 +7,7 @@ import { isCloud } from '@/platform/distribution/types'
 
 import type { PartnerNodeInfo } from '@/composables/node/usePartnerNodesInGraph'
 
-export type PartnerRunGate = 'sign-in' | 'none'
+type PartnerRunGate = 'sign-in' | 'none'
 
 /**
  * Decides whether the local/desktop Run button must be replaced because the
