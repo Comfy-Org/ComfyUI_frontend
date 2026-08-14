@@ -238,6 +238,12 @@ All architectural decisions are documented in `docs/adr/`. Code changes must be 
 
 Rules for agent-based coding tasks.
 
+### GitHub Authentication in Amp Orbs
+
+- In an Amp orb, run `gh auth setup-git` before the first `git push`.
+- Push to `origin` with normal Git commands.
+- On 403, rerun setup, check `gh api repos/OWNER/REPO --jq '.permissions.push'`, and retry once. Use a fork only when that check returns `false`; never inject auth headers.
+
 ### PR Review Comment Resolution
 
 **Never resolve review comments on PRs where you are the author.**
