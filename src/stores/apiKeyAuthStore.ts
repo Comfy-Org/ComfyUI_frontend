@@ -76,6 +76,10 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
   const resolveUser = async (): Promise<boolean> => {
     const request = ++latestRequest
     const validated = apiKey.value
+    // Whoever we were signed in as belonged to the previous key. Holding onto
+    // it would report that identity as authenticated while requests already
+    // carry the replacement key.
+    currentUser.value = null
     // Clearing the key does not start a request, so the token alone would let
     // an attempt that began earlier still sign the user back in afterwards.
     const stillWanted = () =>
