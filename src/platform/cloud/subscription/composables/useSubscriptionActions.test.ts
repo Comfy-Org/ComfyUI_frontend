@@ -118,13 +118,20 @@ describe('useSubscriptionActions', () => {
       expect(mockTrackHelpResourceClicked).not.toHaveBeenCalled()
     })
 
-    it('should handle errors gracefully', async () => {
+    it('tells the user when contacting support fails, and stops loading', async () => {
       mockExecute.mockRejectedValueOnce(new Error('Command failed'))
       const { handleMessageSupport, isLoadingSupport } =
         useSubscriptionActions()
 
       await handleMessageSupport()
+
       expect(isLoadingSupport.value).toBe(false)
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: 'error',
+          detail: 'Command failed'
+        })
+      )
     })
   })
 
