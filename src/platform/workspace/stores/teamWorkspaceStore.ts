@@ -602,17 +602,8 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     const workspaceId = activeWorkspaceId.value
     if (!workspaceId) return []
 
-    const members: WorkspaceMember[] = []
-    let offset = 0
-
-    while (true) {
-      const response = await workspaceApi.listMembers({ offset, limit: 100 })
-      const page = response.members.map(mapApiMemberToWorkspaceMember)
-      members.push(...page)
-      if (!response.pagination.has_more || page.length === 0) break
-      offset = response.pagination.offset + page.length
-    }
-
+    const response = await workspaceApi.listMembers({ limit: 100 })
+    const members = response.members.map(mapApiMemberToWorkspaceMember)
     if (!isStaleWorkspace(generation, workspaceId)) {
       updateWorkspace(workspaceId, { members })
     }

@@ -876,64 +876,7 @@ describe('useTeamWorkspaceStore', () => {
       expect(store.members[0].monthlyCreditLimit).toBeNull()
       expect(store.members[1].creditsUsedThisMonth).toBeUndefined()
       expect(store.members[1].monthlyCreditLimit).toBeUndefined()
-    })
-
-    it('fetchMembers loads every page', async () => {
-      const firstPage = [
-        {
-          id: 'user-1',
-          name: 'User One',
-          email: 'one@test.com',
-          joined_at: '2024-01-01T00:00:00Z',
-          role: 'member' as const
-        }
-      ]
-      const secondPage = [
-        {
-          id: 'user-2',
-          name: 'User Two',
-          email: 'two@test.com',
-          joined_at: '2024-01-02T00:00:00Z',
-          role: 'member' as const
-        }
-      ]
-      mockWorkspaceApi.listMembers
-        .mockResolvedValueOnce({
-          members: firstPage,
-          pagination: {
-            offset: 0,
-            limit: 100,
-            total: 2,
-            has_more: true
-          }
-        })
-        .mockResolvedValueOnce({
-          members: secondPage,
-          pagination: {
-            offset: 1,
-            limit: 100,
-            total: 2,
-            has_more: false
-          }
-        })
-      mockWorkspaceAuthStore.initializeFromSession.mockReturnValue(true)
-      mockWorkspaceAuthStore.currentWorkspace = mockTeamWorkspace
-
-      const store = useTeamWorkspaceStore()
-      await store.initialize()
-
-      const result = await store.fetchMembers()
-
-      expect(mockWorkspaceApi.listMembers).toHaveBeenNthCalledWith(1, {
-        offset: 0,
-        limit: 100
-      })
-      expect(mockWorkspaceApi.listMembers).toHaveBeenNthCalledWith(2, {
-        offset: 1,
-        limit: 100
-      })
-      expect(result.map(({ id }) => id)).toEqual(['user-1', 'user-2'])
-      expect(store.members.map(({ id }) => id)).toEqual(['user-1', 'user-2'])
+      expect(mockWorkspaceApi.listMembers).toHaveBeenCalledWith({ limit: 100 })
     })
 
     it('fetchMembers supports a personal workspace with Team entitlement', async () => {
