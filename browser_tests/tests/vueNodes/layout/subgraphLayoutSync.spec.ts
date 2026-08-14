@@ -25,26 +25,30 @@ async function expectGrowthRenders(
   nodeId: string,
   label: string
 ) {
-  const before = await renderedBounds(comfyPage, nodeId)
-  expect(before[0], `${label}: node has a rendered width`).toBeGreaterThan(0)
-  expect(before[1], `${label}: node has a rendered height`).toBeGreaterThan(0)
+  await test.step(`Render a graph mutation ${label}`, async () => {
+    const before = await renderedBounds(comfyPage, nodeId)
+    expect(before[0], `${label}: node has a rendered width`).toBeGreaterThan(0)
+    expect(before[1], `${label}: node has a rendered height`).toBeGreaterThan(0)
 
-  await comfyPage.page.evaluate(
-    ({ id, growWidth, growHeight }) => {
-      const node = window.app?.canvas.graph?.getNodeById(id)
-      if (!node) throw new Error(`Node ${id} not found`)
+    const mutated = await comfyPage.page.evaluate(
+      ({ id, growWidth, growHeight }) => {
+        const node = window.app?.canvas.graph?.getNodeById(id)
+        if (!node) return false
 
-      node.setSize([
-        node.renderingSize[0] + growWidth,
-        node.renderingSize[1] + growHeight
-      ])
-    },
-    { id: toNodeId(nodeId), growWidth: GROWTH[0], growHeight: GROWTH[1] }
-  )
+        node.setSize([
+          node.renderingSize[0] + growWidth,
+          node.renderingSize[1] + growHeight
+        ])
+        return true
+      },
+      { id: toNodeId(nodeId), growWidth: GROWTH[0], growHeight: GROWTH[1] }
+    )
+    expect(mutated, `${label}: graph node exists`).toBe(true)
 
-  await expect
-    .poll(async () => renderedBounds(comfyPage, nodeId), { message: label })
-    .toEqual([before[0] + GROWTH[0], before[1] + GROWTH[1]])
+    await expect
+      .poll(async () => renderedBounds(comfyPage, nodeId), { message: label })
+      .toEqual([before[0] + GROWTH[0], before[1] + GROWTH[1]])
+  })
 }
 
 test(

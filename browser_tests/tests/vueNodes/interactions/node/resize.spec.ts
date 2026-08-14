@@ -82,35 +82,42 @@ test.describe(
         const node = await comfyPage.vueNodes.getFixtureByTitle(title)
         await expect(node.root).toBeVisible()
         const box = await node.boundingBox()
-        if (!box) throw new Error(`Failed to measure node "${title}"`)
-        return box.width
+        expect(box, `Measure node "${title}"`).not.toBeNull()
+        return box?.width ?? 0
       }
 
-      const initialWidth = await measureWidth('KSampler')
-      const referenceWidth = await measureWidth('Save Image')
+      const { beforeResize, referenceWidth, resizedWidth } =
+        await test.step('Resize the node', async () => {
+          const initialWidth = await measureWidth('KSampler')
+          const referenceWidth = await measureWidth('Save Image')
+          const vueNode = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+          const beforeResize = Date.now()
 
-      const vueNode = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
-      const beforeResize = Date.now()
-      await vueNode.resizeFromCorner('SE', 120, 0)
-      await comfyPage.nextFrame()
-      const resizedWidth = await measureWidth('KSampler')
-      expect(resizedWidth).toBeGreaterThan(initialWidth + 100)
+          await vueNode.resizeFromCorner('SE', 120, 0)
+          await comfyPage.nextFrame()
 
-      await comfyPage.workflow.waitForDraftIndexUpdatedSince(beforeResize)
-      await comfyPage.workflow.reloadAndWaitForApp()
+          const resizedWidth = await measureWidth('KSampler')
+          expect(resizedWidth).toBeGreaterThan(initialWidth + 100)
+          return { beforeResize, referenceWidth, resizedWidth }
+        })
 
-      // Untouched node keeps its width, proving the viewport scale is
-      // comparable across the reload.
-      await expect
-        .poll(async () => measureWidth('Save Image'))
-        .toBeCloseTo(referenceWidth, 0)
+      await test.step('Save and reload the workflow', async () => {
+        await comfyPage.workflow.waitForDraftIndexUpdatedSince(beforeResize)
+        await comfyPage.workflow.reloadAndWaitForApp()
+      })
 
-      await expect
-        .poll(async () => measureWidth('KSampler'))
-        .toBeGreaterThan(resizedWidth - 5)
-      await expect
-        .poll(async () => measureWidth('KSampler'))
-        .toBeLessThan(resizedWidth + 5)
+      await test.step('Restore the width without changing viewport scale', async () => {
+        await expect
+          .poll(async () => measureWidth('Save Image'))
+          .toBeCloseTo(referenceWidth, 0)
+
+        await expect
+          .poll(async () => measureWidth('KSampler'))
+          .toBeGreaterThan(resizedWidth - 5)
+        await expect
+          .poll(async () => measureWidth('KSampler'))
+          .toBeLessThan(resizedWidth + 5)
+      })
     })
 
     test.describe('minimum size enforcement', () => {
