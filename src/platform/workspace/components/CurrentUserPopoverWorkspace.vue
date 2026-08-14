@@ -271,6 +271,7 @@ const { userDisplayName, userEmail, userPhotoUrl, handleSignOut } =
 const settingsDialog = useSettingsDialog()
 const dialogService = useDialogService()
 const {
+  billingStatus,
   canAccessSubscriptionFeatures,
   isFreeTier,
   subscription,
@@ -307,12 +308,16 @@ const showPlansAndPricing = computed(
 const showManagePlan = computed(
   () =>
     permissions.value.canManageSubscription &&
-    canAccessSubscriptionFeatures.value
+    (canAccessSubscriptionFeatures.value ||
+      billingStatus.value === 'payment_failed' ||
+      billingStatus.value === 'paused')
 )
 const showSubscribeAction = computed(
   () =>
     (isCancelled.value && permissions.value.canManageSubscriptionLifecycle) ||
     (!canAccessSubscriptionFeatures.value &&
+      billingStatus.value !== 'payment_failed' &&
+      billingStatus.value !== 'paused' &&
       permissions.value.canManageSubscription)
 )
 

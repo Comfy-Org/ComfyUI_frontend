@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useWorkspaceMenuItems } from './useWorkspaceMenuItems'
 
 const state = vi.hoisted(() => ({
+  billingStatus: 'paid',
   canLeaveWorkspace: false,
   canManageSubscription: false,
   canManageSubscriptionLifecycle: false,
@@ -27,6 +28,7 @@ vi.mock('vue-i18n', () => ({
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
+    billingStatus: computed(() => state.billingStatus),
     isFreeTier: computed(() => state.isFreeTier),
     subscription: computed(() => ({ endDate: '2026-08-01T00:00:00Z' }))
   })
@@ -66,6 +68,7 @@ vi.mock('@/services/dialogService', () => ({
 
 describe('useWorkspaceMenuItems', () => {
   beforeEach(() => {
+    state.billingStatus = 'paid'
     state.canLeaveWorkspace = false
     state.canManageSubscription = false
     state.canManageSubscriptionLifecycle = false
@@ -112,6 +115,21 @@ describe('useWorkspaceMenuItems', () => {
       'subscription.cancelPlan'
     )
   })
+
+  it.each(['payment_failed', 'paused'])(
+    'allows cancellation while a %s plan needs payment recovery',
+    (billingStatus) => {
+      state.billingStatus = billingStatus
+      state.canManageSubscriptionLifecycle = true
+      state.isActiveSubscription = false
+
+      const { menuItems } = useWorkspaceMenuItems()
+
+      expect(menuItems.value.map((item) => item.label)).toContain(
+        'subscription.cancelPlan'
+      )
+    }
+  )
 
   it('rechecks eligibility before opening the cancellation dialog', () => {
     state.canManageSubscriptionLifecycle = true

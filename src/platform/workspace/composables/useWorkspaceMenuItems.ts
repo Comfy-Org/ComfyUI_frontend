@@ -15,7 +15,7 @@ import { useDialogService } from '@/services/dialogService'
  */
 export function useWorkspaceMenuItems() {
   const { t } = useI18n()
-  const { isFreeTier, subscription } = useBillingContext()
+  const { billingStatus, isFreeTier, subscription } = useBillingContext()
   const {
     permissions,
     uiConfig,
@@ -65,7 +65,9 @@ export function useWorkspaceMenuItems() {
   const canCancelPlan = computed(
     () =>
       permissions.value.canManageSubscriptionLifecycle &&
-      isActiveSubscription.value &&
+      (isActiveSubscription.value ||
+        billingStatus.value === 'payment_failed' ||
+        billingStatus.value === 'paused') &&
       !isSubscriptionCancelled.value &&
       !isFreeTier.value
   )

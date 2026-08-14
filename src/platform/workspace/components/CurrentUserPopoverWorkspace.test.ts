@@ -12,6 +12,7 @@ import enMessages from '@/locales/en/main.json'
 import CurrentUserPopoverWorkspace from './CurrentUserPopoverWorkspace.vue'
 
 const state = vi.hoisted(() => ({
+  billingStatus: 'paid',
   canAccessSubscriptionFeatures: true,
   isFreeTier: false,
   isCancelled: false,
@@ -53,6 +54,7 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
+    billingStatus: computed(() => state.billingStatus),
     canAccessSubscriptionFeatures: computed(
       () => state.canAccessSubscriptionFeatures
     ),
@@ -157,6 +159,7 @@ function renderComponent(
 
 describe('CurrentUserPopoverWorkspace', () => {
   beforeEach(() => {
+    state.billingStatus = 'paid'
     state.canAccessSubscriptionFeatures = true
     state.isFreeTier = false
     state.isCancelled = false
@@ -248,6 +251,22 @@ describe('CurrentUserPopoverWorkspace', () => {
       screen.queryByTestId('manage-plan-menu-item')
     ).not.toBeInTheDocument()
   })
+
+  it.each(['payment_failed', 'paused'])(
+    'keeps Manage plan available instead of Subscribe when billing is %s',
+    (billingStatus) => {
+      state.billingStatus = billingStatus
+      state.canAccessSubscriptionFeatures = false
+      state.canManageSubscription = true
+
+      renderComponent('team')
+
+      expect(screen.getByTestId('manage-plan-menu-item')).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'Subscribe' })
+      ).not.toBeInTheDocument()
+    }
+  )
 
   it.for([
     {
