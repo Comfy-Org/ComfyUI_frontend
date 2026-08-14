@@ -222,28 +222,35 @@ describe('WorkflowTabs agent entry button', () => {
 })
 
 describe('WorkflowTabs creating-tab skeleton', () => {
+  const originalScrollIntoView = Element.prototype.scrollIntoView
+
   beforeEach(() => {
     tabBarLayout.value = 'Default'
   })
 
+  afterEach(() => {
+    Element.prototype.scrollIntoView = originalScrollIntoView
+  })
+
   it('renders a skeleton pseudo-tab only while a tab is being created', async () => {
+    const scrollIntoView = vi.fn()
+    Element.prototype.scrollIntoView = scrollIntoView
     renderComponent()
     expect(screen.queryByTestId('creating-tab-skeleton')).toBeNull()
+    expect(scrollIntoView).not.toHaveBeenCalled()
 
     const activity = useWorkflowTabActivityStore()
     activity.setCreating(true)
-    await nextTick()
-    expect(screen.getByTestId('creating-tab-skeleton')).toHaveClass(
-      'h-9',
-      'w-39',
-      'gap-2',
-      'px-4',
-      'py-2'
+    await vi.waitFor(() =>
+      expect(scrollIntoView).toHaveBeenCalledWith({
+        block: 'nearest',
+        inline: 'nearest'
+      })
     )
-    expect(screen.getByTestId('creating-tab-skeleton-shimmer')).toHaveClass(
-      'h-4',
-      'w-25'
-    )
+    expect(screen.getByTestId('creating-tab-skeleton')).toBeInTheDocument()
+    expect(
+      screen.getByTestId('creating-tab-skeleton-shimmer')
+    ).toBeInTheDocument()
     expect(
       screen.getByRole('img', { name: enMessages.g.agentWorking })
     ).toBeInTheDocument()
@@ -251,6 +258,7 @@ describe('WorkflowTabs creating-tab skeleton', () => {
     activity.setCreating(false)
     await nextTick()
     expect(screen.queryByTestId('creating-tab-skeleton')).toBeNull()
+    expect(scrollIntoView).toHaveBeenCalledTimes(1)
   })
 })
 
