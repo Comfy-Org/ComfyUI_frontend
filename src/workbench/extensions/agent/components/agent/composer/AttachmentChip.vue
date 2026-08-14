@@ -31,10 +31,10 @@ const emit = defineEmits<{ remove: [] }>()
     <button
       type="button"
       :aria-label="$t('agent.remove')"
-      class="text-agent-fg-muted hover:text-agent-fg flex size-3.5 cursor-pointer items-center justify-center transition-colors"
+      class="text-agent-fg-muted hover:text-agent-fg flex size-3.5 shrink-0 cursor-pointer items-center justify-center p-0 transition-colors"
       @click="emit('remove')"
     >
-      <span class="icon-[lucide--x] size-3.5" />
+      <span class="icon-[lucide--x] size-3.5 shrink-0" />
     </button>
   </span>
 </template>

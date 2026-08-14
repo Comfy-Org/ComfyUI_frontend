@@ -840,6 +840,116 @@ describe('AgentPanelRoot attach flow', () => {
     }
   )
 
+  it.for([
+    { mime: 'image/png', filename: 'gen.png' },
+    { mime: 'video/mp4', filename: 'movie.mp4' }
+  ])(
+    'stages an existing Media-card $mime reference without uploading',
+    async ({ mime, filename }) => {
+      const messageBodies: unknown[] = []
+      const fetchSpy = vi.fn(
+        async (input: RequestInfo | URL, init?: RequestInit) => {
+          const url = String(input)
+          if (init?.method === 'POST' && url.includes('/messages')) {
+            messageBodies.push(JSON.parse(String(init.body)))
+            return json(202, { thread_id: 'th-1', message_id: 'm-1' })
+          }
+          return new Response('{"threads":[]}', {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' }
+          })
+        }
+      )
+      vi.stubGlobal('fetch', fetchSpy)
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      await nextTick()
+      const target = screen.getByRole('textbox')
+      const ref = `stored_${filename}`
+      const dragData = {
+        types: ['application/x-comfy-asset-info'],
+        getData: () =>
+          JSON.stringify({
+            filename,
+            type: 'input',
+            attachment_ref: ref,
+            media_kind: mime === 'image/png' ? 'image' : 'video',
+            preview_url:
+              mime === 'image/png'
+                ? `http://localhost/api/assets/${filename}/content`
+                : undefined
+          })
+      }
+
+      expect(dispatchDrag(target, 'drop', dragData)).toBe(true)
+      expect(dispatchDrag(target, 'drop', dragData)).toBe(true)
+      expect(await screen.findByText(filename)).toBeInTheDocument()
+      expect(screen.getAllByText(filename)).toHaveLength(1)
+      expect(
+        screen.queryByLabelText(i18n.global.t('agent.uploading'))
+      ).not.toBeInTheDocument()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+      expect(messageBodies).toHaveLength(1)
+      expect(messageBodies[0]).toMatchObject({ attachments: [ref] })
+      expect(
+        fetchSpy.mock.calls.some(([url]) =>
+          /\/api\/(view|upload\/image)/.test(String(url))
+        )
+      ).toBe(false)
+    }
+  )
+
+  it('shows an uploading chip while a Media-card URI is still loading', async () => {
+    let resolveAsset: (response: Response) => void = () => {}
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((input: RequestInfo | URL) => {
+        const url = String(input)
+        if (url.includes('/api/view'))
+          return new Promise<Response>((resolve) => {
+            resolveAsset = resolve
+          })
+        if (url.endsWith('/api/upload/image'))
+          return Promise.resolve(
+            new Response(JSON.stringify({ name: 'uploaded_gen.png' }), {
+              status: 200,
+              headers: { 'Content-Type': 'application/json' }
+            })
+          )
+        return Promise.resolve(
+          new Response('{"threads":[]}', {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' }
+          })
+        )
+      })
+    )
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await nextTick()
+    const target = screen.getByRole('textbox')
+    const dragData = {
+      types: ['application/x-comfy-asset-info', 'text/uri-list'],
+      getData: (type: string) =>
+        type === 'application/x-comfy-asset-info'
+          ? JSON.stringify({ filename: 'gen.png', type: 'input' })
+          : 'http://localhost/api/view?filename=gen.png'
+    }
+
+    expect(dispatchDrag(target, 'drop', dragData)).toBe(true)
+    expect(await screen.findByText('gen.png')).toBeInTheDocument()
+    expect(
+      screen.getByLabelText(i18n.global.t('agent.uploading'))
+    ).toBeInTheDocument()
+
+    resolveAsset(new Response(new Blob(['asset'], { type: 'image/png' })))
+    await vi.waitFor(() =>
+      expect(
+        screen.queryByLabelText(i18n.global.t('agent.uploading'))
+      ).not.toBeInTheDocument()
+    )
+  })
+
   it('attaches dropped assets and leaves other files to the graph loader', async () => {
     // The graph loader only opens a dropped workflow while the drop is
     // unclaimed, so the panel must not claim files it cannot attach.
