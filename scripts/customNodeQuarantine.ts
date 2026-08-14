@@ -11,7 +11,7 @@
  *   pnpm custom-node-quarantine
  */
 import { execFile } from 'node:child_process'
-import { mkdtempSync, writeFileSync } from 'node:fs'
+import { appendFileSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
@@ -21,7 +21,8 @@ import {
   MAX_QUARANTINED_PACKS,
   loadFullManifest,
   loadPackQuarantine,
-  packIdentity
+  packIdentity,
+  staleLocalExpectations
 } from '../browser_tests/fixtures/customNode/manifest'
 
 const run = promisify(execFile)
@@ -96,6 +97,10 @@ async function stillBroken(
       return refStillMissing(deployRef)
     case 'unsatisfiable-requirement':
       return requirementsStillUnsatisfiable(deployRef)
+    case 'registers-fewer-nodes':
+      // Only a live backend can answer this, and the shard that would know
+      // has excluded the pack. Re-checked by the suite, not from here.
+      return true
     default:
       throw new Error(`${pack}: unknown quarantine class '${entry.class}'`)
   }
@@ -105,9 +110,16 @@ const quarantine = loadPackQuarantine()
 const manifest = new Map(loadFullManifest().map((e) => [e.pack, e]))
 const entries = Object.entries(quarantine)
 
-say('='.repeat(72))
-say(`quarantined packs: ${entries.length} of ${manifest.size}`)
-say('='.repeat(72))
+const summary: string[] = []
+const note = (line: string) => {
+  say(line)
+  summary.push(line)
+}
+
+note(`## Excluded packs - **${entries.length} of ${manifest.size}**`)
+note('')
+note('Every entry below is coverage this run did NOT measure.')
+note('')
 
 const stale: string[] = []
 const unknown: string[] = []
@@ -116,14 +128,19 @@ for (const [pack, entry] of entries) {
   const row = manifest.get(pack)
   if (!row) {
     unknown.push(pack)
-    say(`  ${pack}: NOT IN MANIFEST - the quarantine outlived the pack`)
+    note(`- **${pack}** - NOT IN MANIFEST, the exclusion outlived the pack`)
     continue
   }
   const ref = packIdentity(row)
   const broken = await stillBroken(pack, entry, ref)
-  say(`  ${pack}  [${entry.class}]  ${broken ? 'still broken' : 'FIXED'}`)
-  say(`     ${entry.reason}`)
-  say(`     upstream fix: ${entry.upstreamFix}`)
+  note(
+    `- **${pack}** \`${entry.class}\` - ${broken ? 'still excluded' : '**FIXED UPSTREAM**'}`
+  )
+  note(`  - ${entry.reason}`)
+  note(`  - to remove: ${entry.upstreamFix}`)
+  process.stdout.write(
+    `::warning title=Pack excluded from the suite::${pack} - ${entry.reason}\n`
+  )
   if (!broken) stale.push(pack)
 }
 
@@ -137,10 +154,21 @@ if (unknown.length)
   problems.push(
     `${unknown.join(', ')} are quarantined but not in the manifest - drop the entries`
   )
+const staleBaselines = staleLocalExpectations()
+if (staleBaselines.length)
+  problems.push(
+    `${staleBaselines.join(', ')} now register the count the manifest expects - drop them from localExpectations.json`
+  )
 if (entries.length > MAX_QUARANTINED_PACKS)
   problems.push(
     `${entries.length} packs quarantined, limit is ${MAX_QUARANTINED_PACKS} - the suite is measuring materially less than it claims`
   )
 
-for (const problem of problems) process.stdout.write(`::error::${problem}\n`)
+for (const problem of problems) {
+  note(`- **PROBLEM** ${problem}`)
+  process.stdout.write(`::error::${problem}\n`)
+}
+
+const stepSummary = process.env.GITHUB_STEP_SUMMARY
+if (stepSummary) appendFileSync(stepSummary, `${summary.join('\n')}\n`)
 process.exitCode = problems.length ? 1 : 0

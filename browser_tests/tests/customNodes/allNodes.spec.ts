@@ -31,6 +31,7 @@ import {
 import { failureSummary } from '@e2e/fixtures/customNode/failureReport'
 import {
   loadManifest,
+  expectedNodeCountFor,
   loadAllManifestPackNames,
   rendererPassesFor
 } from '@e2e/fixtures/customNode/manifest'
@@ -531,8 +532,8 @@ for (const entry of loadManifest()) {
         console.log(`custom-nodes count: ${entry.pack} = ${keys.length}`)
         expect(
           keys,
-          `${entry.pack} registers ${keys.length} nodes but the manifest expects ${entry.expectedNodeCount} - a pack node failed to register (or the pack changed); recalibrate expectedNodeCount only with the change that moved it`
-        ).toHaveLength(entry.expectedNodeCount)
+          `${entry.pack} registers ${keys.length} nodes but ${expectedNodeCountFor(entry)} are expected on this backend - a pack node failed to register (or the pack changed); recalibrate only with the change that moved it`
+        ).toHaveLength(expectedNodeCountFor(entry))
         const declaredByKey = new Map(
           keys.map((key) => [key, declaredShape(defs[key])])
         )

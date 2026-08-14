@@ -16,6 +16,11 @@ export type CustomNodeTier = (typeof VALID_TIERS)[number]
 // would expect nodes to be absent that this backend serves. When the cloud
 // assertions land, they need their own backend flag, not this one.
 const VALID_MANIFESTS = ['core', 'cloud'] as const
+// Separate from the manifest: the local gate runs CLOUD's pack list against a
+// LOCAL backend, and the two disagree about which nodes exist because Cloud
+// disables some. localExpectations records that difference; it must not apply
+// when these same specs run against Cloud.
+const VALID_BACKENDS = ['local', 'cloud'] as const
 
 interface SharedNodeExpectations {
   pack: string
@@ -331,6 +336,71 @@ function customNodesManifest(): (typeof VALID_MANIFESTS)[number] {
   return readEnum('CUSTOM_NODES_MANIFEST', VALID_MANIFESTS, 'core')
 }
 
+function customNodesBackend(): (typeof VALID_BACKENDS)[number] {
+  return readEnum('CUSTOM_NODES_BACKEND', VALID_BACKENDS, 'local')
+}
+
+interface LocalExpectation {
+  expectedNodeCount: number
+  expectedExtensions?: string[]
+  reason: string
+}
+
+function loadLocalExpectations(): Record<string, LocalExpectation> {
+  if (customNodesBackend() !== 'local') return {}
+  const path = dataPath('cloud/localExpectations.json')
+  if (!existsSync(path)) return {}
+  const parsed: unknown = JSON.parse(readFileSync(path, 'utf-8'))
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed))
+    throw new Error(`${path} must be a JSON object keyed by pack name`)
+  return parsed as Record<string, LocalExpectation>
+}
+
+/**
+ * How many nodes this pack registers on the backend under test.
+ *
+ * The cloud manifest is generated from Cloud's object_info, and a local
+ * ComfyUI serves the nodes Cloud disables - so the manifest number is right
+ * for Cloud and wrong here. Nodes are not disabled locally to imitate Cloud;
+ * what a local backend actually serves is recorded instead.
+ */
+export function expectedNodeCountFor(
+  entry: CoreManifestEntry | CloudManifestEntry
+): number {
+  return (
+    loadLocalExpectations()[entry.pack]?.expectedNodeCount ??
+    entry.expectedNodeCount
+  )
+}
+
+/**
+ * Frontend extensions this pack registers on the backend under test.
+ *
+ * Cloud serves no frontend assets for some packs and records an empty list; a
+ * local install serves them, and staleAutogrowApplicabilityIssues correctly
+ * reds when coverage was withheld on a premise that no longer holds here.
+ */
+export function expectedExtensionsFor(
+  entry: CoreManifestEntry | CloudManifestEntry
+): string[] {
+  return (
+    loadLocalExpectations()[entry.pack]?.expectedExtensions ??
+    entry.expectedExtensions
+  )
+}
+
+/** Entries whose local count has caught up with the manifest are stale. */
+export function staleLocalExpectations(): string[] {
+  const local = loadLocalExpectations()
+  return loadFullManifest()
+    .filter(
+      (entry) =>
+        local[entry.pack] !== undefined &&
+        local[entry.pack].expectedNodeCount === entry.expectedNodeCount
+    )
+    .map((entry) => entry.pack)
+}
+
 /**
  * Which slice of the manifest this run owns, as `index/total`, 1-based.
  */
@@ -461,7 +531,10 @@ export function packIdentity(
 }
 
 export interface QuarantinedPack {
-  class: 'unfetchable-ref' | 'unsatisfiable-requirement'
+  class:
+    | 'unfetchable-ref'
+    | 'unsatisfiable-requirement'
+    | 'registers-fewer-nodes'
   reason: string
   evidence: string
   upstreamFix: string

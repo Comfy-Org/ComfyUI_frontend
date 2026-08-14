@@ -22,6 +22,7 @@ import {
 import {
   AUTOGROW_CASES,
   loadManifest,
+  expectedExtensionsFor,
   loadAllManifestPackNames,
   rendererPassesFor,
   staleAutogrowApplicabilityIssues
@@ -122,7 +123,7 @@ for (const entry of loadManifest()) {
         ({ pack }) => pack.toLowerCase() === entry.pack.toLowerCase()
       )
       if (
-        entry.expectedExtensions.length > 0 ||
+        expectedExtensionsFor(entry).length > 0 ||
         Object.keys(knownBroken).length > 0 ||
         ownedAutogrowCases.length > 0
       ) {
@@ -131,11 +132,11 @@ for (const entry of loadManifest()) {
         )
         const servedExtensionPaths = ownedAutogrowCases.some(
           ({ extensionName }) =>
-            !entry.expectedExtensions.includes(extensionName)
+            !expectedExtensionsFor(entry).includes(extensionName)
         )
           ? await comfyPage.page.evaluate(() => window.app!.api.getExtensions())
           : []
-        for (const name of entry.expectedExtensions)
+        for (const name of expectedExtensionsFor(entry))
           expect(
             registered,
             `${entry.pack}: frontend extension "${name}" not registered - pack JS did not load`
@@ -146,7 +147,10 @@ for (const entry of loadManifest()) {
             `${entry.pack}: known-broken frontend extension "${name}" registered despite its ledgered mechanism (${reason}) - remove the stale entry and restore it to expectedExtensions`
           ).not.toContain(name)
         const staleAutogrowApplicability = staleAutogrowApplicabilityIssues(
-          entry,
+          {
+            pack: entry.pack,
+            expectedExtensions: expectedExtensionsFor(entry)
+          },
           registered,
           servedExtensionPaths
         )

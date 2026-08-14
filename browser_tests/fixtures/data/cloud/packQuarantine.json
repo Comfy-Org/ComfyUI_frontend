@@ -1,16 +1,30 @@
 {
   "ComfyUI-LivePortraitKJ": {
     "class": "unfetchable-ref",
-    "reason": "supported_nodes.yaml pins a commit that does not exist upstream",
     "evidence": "deployRef @4d9dc6205b79e50f81c0e6d245a2e0e5e53d5ecd returns HTTP 422 'No commit found'; a full clone across all 6 branches and 134 commits does not contain it. The first 12 characters match the repository's real HEAD (4d9dc6205b793ffd0fb319816136d9b8c0dbfdff) and then diverge, which is a short sha expanded wrongly rather than a force-push.",
-    "upstreamFix": "correct the sha in supported_nodes.yaml to 4d9dc6205b793ffd0fb319816136d9b8c0dbfdff",
-    "since": "2026-08-14"
+    "reason": "supported_nodes.yaml pins a commit that does not exist upstream",
+    "since": "2026-08-14",
+    "upstreamFix": "correct the sha in supported_nodes.yaml to 4d9dc6205b793ffd0fb319816136d9b8c0dbfdff"
+  },
+  "ComfyUI-test-framework": {
+    "class": "registers-fewer-nodes",
+    "evidence": "Cloud DISABLING nodes explains a local backend serving MORE, never fewer. Eight nodes the Cloud snapshot recorded do not register here, so something in the pack is failing to import on this backend. Baselining 9 would launder that into a green run.",
+    "reason": "registers 9 nodes locally where the manifest expects 17",
+    "since": "2026-08-14",
+    "upstreamFix": "INVESTIGATE - find why 8 nodes do not register locally, then either fix or record the cause here"
+  },
+  "comfyui-qwenmultiangle": {
+    "class": "registers-fewer-nodes",
+    "evidence": "Same shape as ComfyUI-test-framework: fewer nodes locally than Cloud recorded cannot be explained by Cloud's disable list.",
+    "reason": "registers 1 node locally where the manifest expects 2",
+    "since": "2026-08-14",
+    "upstreamFix": "INVESTIGATE - find why the second node does not register locally"
   },
   "radiance": {
     "class": "unsatisfiable-requirement",
-    "reason": "requirements.txt pins Imath>=3.1.0, which does not exist on PyPI",
     "evidence": "PyPI's Imath package tops out at 0.0.2, so pip cannot resolve it. The pin appears to name the C++ Imath library version. OpenEXR>=3.2.0, which this pack already requires on the line above, ships Imath.py inside its wheel - so the requirement is redundant, not merely unsatisfiable.",
-    "upstreamFix": "remove the Imath line from fxtdstudios/radiance requirements.txt",
-    "since": "2026-08-14"
+    "reason": "requirements.txt pins Imath>=3.1.0, which does not exist on PyPI",
+    "since": "2026-08-14",
+    "upstreamFix": "remove the Imath line from fxtdstudios/radiance requirements.txt"
   }
 }

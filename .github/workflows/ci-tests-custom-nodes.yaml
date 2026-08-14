@@ -232,8 +232,11 @@ jobs:
       # was fixed upstream fails, so a quarantine cannot outlive its reason.
       # Shard 1 only - the ledger is global, and checking it four times over
       # would just be three duplicate reds.
-      - name: Quarantined packs must still be broken
-        if: matrix.shard == '1/4'
+      # Runs before install so the excluded-pack block is at the TOP of the
+      # summary, and `always()` so a red suite still reports what it never
+      # measured - the case where that block matters most.
+      - name: Report excluded packs
+        if: always() && matrix.shard == '1/4'
         run: pnpm custom-node-quarantine
 
       - name: Install manifest custom nodes

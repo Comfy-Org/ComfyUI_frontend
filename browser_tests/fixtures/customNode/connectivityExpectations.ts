@@ -22,5 +22,13 @@ export const connectivityExpectations: ConnectivityExpectations = {
     'AddTextPrefix.texts -> VHS_SelectLatest.filename_postfix',
     'VHS_SelectLatest.Filename -> AddLabel.font_color'
   ],
-  zeroPairDragExpectedNodeCounts: {}
+  // Packs too small to wire to themselves: the drag sweep needs a producer and
+  // a consumer inside one pack, and these register one or two nodes. The count
+  // is the assertion - a pack that grows past it has pairs to find and the
+  // entry must go.
+  zeroPairDragExpectedNodeCounts: {
+    'comfyui-impact-subpack': 1,
+    'comfyui-qwenmultiangle': 1,
+    'comfyui-string-converter': 2
+  }
 }
