@@ -2152,9 +2152,9 @@ const translations = {
     'zh-CN': '配置 Comfy MCP'
   },
   'mcp.setup.subtitle': {
-    en: 'First pick where it runs: on Comfy Cloud GPUs, or on the ComfyUI on your own machine. Then add the server yourself, or ask your agent to install it. Either way, the full ComfyUI toolset lands right in your chat.',
+    en: 'Pick where it runs: Comfy Cloud GPUs, or your own machine. Add the server yourself or ask your agent to install it, and the full ComfyUI toolset lands in your chat.',
     'zh-CN':
-      '先选择运行位置：Comfy Cloud 的 GPU，或你自己机器上的 ComfyUI。然后自行添加服务器，或让你的智能体代劳。无论哪种方式，ComfyUI 全套工具都会直接进入你的对话。'
+      '选择运行位置：Comfy Cloud 的 GPU，或你自己的机器。自行添加服务器，或让智能体代劳，ComfyUI 全套工具即可进入你的对话。'
   },
   'mcp.setup.connections.tabsLabel': {
     en: 'Pick your connection',
