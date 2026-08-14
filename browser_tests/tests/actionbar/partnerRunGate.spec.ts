@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { ApiSignin } from '@e2e/fixtures/components/ApiSignin'
 import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
 import { createBalance } from '@e2e/fixtures/data/subscriptionFixtures'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -45,7 +46,7 @@ test.describe('Partner nodes run gate (local, signed out)', () => {
     await expect(dialog).toBeVisible()
     await expect(dialog.getByText(PARTNER_NODE_DISPLAY_NAME)).toBeVisible()
 
-    await page.keyboard.press('Escape')
+    await new ApiSignin(page).cancel.click()
     await expect(dialog).toBeHidden()
     await expect(signInButton).toBeVisible()
 
