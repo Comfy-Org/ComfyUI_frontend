@@ -85,6 +85,9 @@ describe('useFirstRunEntry', () => {
     mocks.isNewUser = true
     mocks.tourFlag = true
     mocks.settings = {}
+    mocks.setSetting.mockImplementation((key: string, value: unknown) => {
+      mocks.settings[key] = value
+    })
   })
 
   describe('what a fresh user sees', () => {
@@ -97,16 +100,19 @@ describe('useFirstRunEntry', () => {
       expect(mocks.execute).not.toHaveBeenCalled()
     })
 
-    const disqualifiers: [string, () => void][] = [
+    const permanentDisqualifiers: [string, () => void][] = [
       ['not on cloud', () => void (mocks.isCloud = false)],
+      ['a returning user', () => void (mocks.isNewUser = false)]
+    ]
+
+    const transientDisqualifiers: [string, () => void][] = [
       ['below the md breakpoint', () => void (mocks.isDesktopWidth = false)],
       ['subscription disabled', () => void (mocks.subscriptionEnabled = false)],
-      ['a returning user', () => void (mocks.isNewUser = false)],
       ['new-user state undetermined', () => void (mocks.isNewUser = null)],
       ['the tour flag off', () => void (mocks.tourFlag = false)]
     ]
 
-    it.for(disqualifiers)(
+    it.for([...permanentDisqualifiers, ...transientDisqualifiers])(
       'opens the template browser instead, with %s',
       async ([, disqualify]) => {
         disqualify()
@@ -119,12 +125,53 @@ describe('useFirstRunEntry', () => {
           'A non-candidate must keep the existing template-browser flow'
         ).toBe(false)
         expect(mocks.execute).toHaveBeenCalledWith('Comfy.BrowseTemplates')
+      }
+    )
+
+    it.for(permanentDisqualifiers)(
+      'marks the tutorial completed for %s, which no later boot can lift',
+      async ([, disqualify]) => {
+        disqualify()
+        const entry = await freshEntry()
+
+        await entry.handleStartupOutcome('fresh')
+
         expect(
           mocks.setSetting,
           'Without this the browser reopens on every launch, forever'
         ).toHaveBeenCalledWith('Comfy.TutorialCompleted', true)
       }
     )
+
+    it.for(transientDisqualifiers)(
+      'leaves the tutorial unmarked for %s, so a later boot can still onboard',
+      async ([, disqualify]) => {
+        disqualify()
+        const entry = await freshEntry()
+
+        await entry.handleStartupOutcome('fresh')
+
+        expect(
+          mocks.setSetting,
+          'Comfy.TutorialCompleted is write-once and server-side; setting it here burns the tour for an account that was only ineligible this boot'
+        ).not.toHaveBeenCalled()
+      }
+    )
+
+    it('onboards a user whose earlier boot was only transiently ineligible', async () => {
+      mocks.isDesktopWidth = false
+      const phone = await freshEntry()
+      await phone.handleStartupOutcome('fresh')
+
+      mocks.isDesktopWidth = true
+      const laptop = await freshEntry()
+      await laptop.handleStartupOutcome('fresh')
+
+      expect(
+        laptop.gettingStartedVisible.value,
+        'signing up on a phone and returning on a laptop is ordinary behaviour'
+      ).toBe(true)
+    })
   })
 
   it('marks a url-intent startup completed without taking over the screen', async () => {
@@ -167,8 +214,9 @@ describe('useFirstRunEntry', () => {
 
       expect(
         entry.gettingStartedVisible.value ||
-          mocks.setSetting.mock.calls.length > 0,
-        'a startup that opened a blank canvas must either offer onboarding or record that it is done; anything else strands the user with no screen and no flag'
+          mocks.setSetting.mock.calls.length > 0 ||
+          mocks.execute.mock.calls.length > 0,
+        'a startup that opened a blank canvas must offer onboarding, record that it is done, or open the template browser; anything else strands the user with an empty screen'
       ).toBe(true)
     }
   )

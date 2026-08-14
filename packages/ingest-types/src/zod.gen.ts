@@ -1799,6 +1799,7 @@ export const zJobDetailResponse = z.object({
   outputs_count: z.number().int().optional(),
   previewable_outputs_count: z.number().int().optional(),
   workflow_id: z.string().optional(),
+  workflow_version_id: z.string().optional(),
   execution_status: z.record(z.unknown()).optional(),
   execution_meta: z.record(z.unknown()).optional(),
   execution_start_time: z.coerce
@@ -4066,6 +4067,16 @@ export const zGetWorkflowContentPath = z.object({
  * Success
  */
 export const zGetWorkflowContentResponse = zWorkflowVersionContentResponse
+
+export const zGetWorkflowVersionContentPath = z.object({
+  id: z.string()
+})
+
+/**
+ * Success
+ */
+export const zGetWorkflowVersionContentResponse =
+  zWorkflowVersionContentResponse
 
 export const zForkWorkflowBody = zForkWorkflowRequest
 

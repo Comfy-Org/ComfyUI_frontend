@@ -3117,6 +3117,14 @@ export type JobDetailResponse = {
    */
   workflow_id?: string
   /**
+   * UUID of the cloud workflow version this job is pinned to, if the
+   * submission carried one (see PromptRequest's workflow_version_id).
+   * Absent for jobs submitted without that association, including
+   * every job submitted through the public API v2 today.
+   *
+   */
+  workflow_version_id?: string
+  /**
    * ComfyUI execution status and timeline (only for terminal states)
    */
   execution_status?: {
@@ -9097,7 +9105,7 @@ export type GetProvidersErrors = {
    */
   401: ErrorResponse
   /**
-   * Governance not available (workspace outside the rollout cohort with no configured policy - personal or team)
+   * Governance not available (no governance entitlement)
    */
   403: ErrorResponse
   /**
@@ -9131,11 +9139,11 @@ export type GetProviderPolicyErrors = {
    */
   401: ErrorResponse
   /**
-   * Governance not available (workspace outside the rollout cohort with no configured policy - personal or team)
+   * Governance not available (no governance entitlement)
    */
   403: ErrorResponse
   /**
-   * Eligible workspace with no policy document yet
+   * Entitled workspace with no policy document yet
    */
   404: ErrorResponse
   /**
@@ -9174,7 +9182,7 @@ export type PutProviderPolicyErrors = {
    */
   401: ErrorResponse
   /**
-   * Not a workspace owner, or governance not available (workspace outside the rollout cohort with no configured policy, creating a new document)
+   * Not a workspace owner, or governance not available (no governance entitlement)
    */
   403: ErrorResponse
   /**
@@ -11018,6 +11026,46 @@ export type GetWorkflowContentResponses = {
 
 export type GetWorkflowContentResponse =
   GetWorkflowContentResponses[keyof GetWorkflowContentResponses]
+
+export type GetWorkflowVersionContentData = {
+  body?: never
+  path: {
+    /**
+     * The UUID of the workflow version whose content should be retrieved.
+     */
+    id: string
+  }
+  query?: never
+  url: '/api/workflow-versions/{id}/content'
+}
+
+export type GetWorkflowVersionContentErrors = {
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Workflow version not found, or not in the caller's workspace
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type GetWorkflowVersionContentError =
+  GetWorkflowVersionContentErrors[keyof GetWorkflowVersionContentErrors]
+
+export type GetWorkflowVersionContentResponses = {
+  /**
+   * Success
+   */
+  200: WorkflowVersionContentResponse
+}
+
+export type GetWorkflowVersionContentResponse =
+  GetWorkflowVersionContentResponses[keyof GetWorkflowVersionContentResponses]
 
 export type ForkWorkflowData = {
   body: ForkWorkflowRequest
