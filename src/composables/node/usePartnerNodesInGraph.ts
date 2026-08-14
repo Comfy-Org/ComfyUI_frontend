@@ -52,7 +52,7 @@ export const usePartnerNodesInGraph = createSharedComposable(() => {
   const partnerNodes = computed<PartnerNodeInfo[]>(() => {
     // Dependency on graphVersion: re-scan when the graph mutates.
     void graphVersion.value
-    if (!app.rootGraph) return []
+    if (!app.isGraphReady) return []
     const partnerNodesByName = reduceAllNodes<Map<string, PartnerNodeInfo>>(
       app.rootGraph,
       (found, node) => {
