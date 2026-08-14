@@ -139,6 +139,31 @@ describe('useApiKeyAuthStore', () => {
     })
   })
 
+  describe('a restored key still being validated when a new one is signed in', () => {
+    it('does not let the older verdict clear the newly stored key', async () => {
+      localStorage.setItem(STORAGE_KEY, 'comfyui-restored-key')
+      let rejectRestored!: (reason: unknown) => void
+      mockCreateCustomer.mockReturnValueOnce(
+        new Promise((_, rej) => {
+          rejectRestored = rej
+        })
+      )
+
+      const store = useApiKeyAuthStore()
+      await vi.waitFor(() => expect(mockCreateCustomer).toHaveBeenCalled())
+
+      mockCreateCustomer.mockResolvedValueOnce(customer)
+      await expect(store.storeApiKey(VALID_KEY)).resolves.toBe(true)
+
+      rejectRestored(new AuthStoreError('rejected', 401))
+      await nextTick()
+
+      expect(store.getApiKey()).toBe(VALID_KEY)
+      expect(store.isAuthenticated).toBe(true)
+      expect(severities()).toEqual(['success:auth.apiKey.stored'])
+    })
+  })
+
   describe('a key restored from storage', () => {
     it('reports a key the backend now rejects', async () => {
       localStorage.setItem(STORAGE_KEY, VALID_KEY)
