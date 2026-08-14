@@ -66,7 +66,9 @@ export function useWorkspaceMenuItems() {
     () =>
       permissions.value.canManageSubscriptionLifecycle &&
       (isActiveSubscription.value ||
-        billingStatus.value === 'payment_failed') &&
+        ((billingStatus.value === 'payment_failed' ||
+          billingStatus.value === 'paused') &&
+          Boolean(subscription.value?.planSlug))) &&
       !isSubscriptionCancelled.value &&
       !isFreeTier.value
   )

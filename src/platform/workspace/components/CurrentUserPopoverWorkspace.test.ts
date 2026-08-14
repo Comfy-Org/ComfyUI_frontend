@@ -16,6 +16,7 @@ const state = vi.hoisted(() => ({
   canAccessSubscriptionFeatures: true,
   isFreeTier: false,
   isCancelled: false,
+  planSlug: 'pro-monthly' as string | null,
   canTopUp: false,
   canManageSubscription: false,
   canManageSubscriptionLifecycle: false,
@@ -60,7 +61,8 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     ),
     isFreeTier: computed(() => state.isFreeTier),
     subscription: computed(() => ({
-      isCancelled: state.isCancelled
+      isCancelled: state.isCancelled,
+      planSlug: state.planSlug
     })),
     balance: ref({ amountMicros: 100 }),
     isLoading: ref(false),
@@ -163,6 +165,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     state.canAccessSubscriptionFeatures = true
     state.isFreeTier = false
     state.isCancelled = false
+    state.planSlug = 'pro-monthly'
     state.canTopUp = false
     state.canManageSubscription = false
     state.canManageSubscriptionLifecycle = false
@@ -253,7 +256,7 @@ describe('CurrentUserPopoverWorkspace', () => {
   })
 
   it.for(['payment_failed', 'paused'])(
-    'keeps Manage plan available instead of Subscribe when billing is %s',
+    'keeps Manage plan available for an existing %s subscription',
     (billingStatus) => {
       state.billingStatus = billingStatus
       state.canAccessSubscriptionFeatures = false
@@ -267,6 +270,22 @@ describe('CurrentUserPopoverWorkspace', () => {
       ).not.toBeInTheDocument()
     }
   )
+
+  it('shows Subscribe instead of Manage plan when payment_failed has no plan', () => {
+    state.billingStatus = 'payment_failed'
+    state.canAccessSubscriptionFeatures = false
+    state.canManageSubscription = true
+    state.planSlug = null
+
+    renderComponent('team')
+
+    expect(
+      screen.queryByTestId('manage-plan-menu-item')
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Subscribe' })
+    ).toBeInTheDocument()
+  })
 
   it.for([
     {

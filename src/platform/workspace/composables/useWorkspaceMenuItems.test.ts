@@ -12,6 +12,7 @@ const state = vi.hoisted(() => ({
   isDeleteDisabled: false,
   isFreeTier: false,
   isInPersonalWorkspace: false,
+  planSlug: 'pro-monthly' as string | null,
   isSubscriptionCancelled: false
 }))
 
@@ -30,7 +31,10 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
     billingStatus: computed(() => state.billingStatus),
     isFreeTier: computed(() => state.isFreeTier),
-    subscription: computed(() => ({ endDate: '2026-08-01T00:00:00Z' }))
+    subscription: computed(() => ({
+      endDate: '2026-08-01T00:00:00Z',
+      planSlug: state.planSlug
+    }))
   })
 }))
 
@@ -76,6 +80,7 @@ describe('useWorkspaceMenuItems', () => {
     state.isDeleteDisabled = false
     state.isFreeTier = false
     state.isInPersonalWorkspace = false
+    state.planSlug = 'pro-monthly'
     state.isSubscriptionCancelled = false
   })
 
@@ -128,10 +133,23 @@ describe('useWorkspaceMenuItems', () => {
     )
   })
 
-  it('withholds cancellation while a plan is paused', () => {
+  it('allows cancellation while an existing plan is paused', () => {
     state.billingStatus = 'paused'
     state.canManageSubscriptionLifecycle = true
     state.isActiveSubscription = false
+
+    const { menuItems } = useWorkspaceMenuItems()
+
+    expect(menuItems.value.map((item) => item.label)).toContain(
+      'subscription.cancelPlan'
+    )
+  })
+
+  it('withholds cancellation when payment_failed has no subscription plan', () => {
+    state.billingStatus = 'payment_failed'
+    state.canManageSubscriptionLifecycle = true
+    state.isActiveSubscription = false
+    state.planSlug = null
 
     const { menuItems } = useWorkspaceMenuItems()
 

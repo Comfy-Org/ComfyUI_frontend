@@ -306,19 +306,22 @@ const displayedCredits = computed(() => {
 const showPlansAndPricing = computed(
   () => permissions.value.canManageSubscription
 )
+const hasDelinquentSubscription = computed(
+  () =>
+    (billingStatus.value === 'payment_failed' ||
+      billingStatus.value === 'paused') &&
+    Boolean(subscription.value?.planSlug)
+)
 const showManagePlan = computed(
   () =>
     permissions.value.canManageSubscription &&
-    (canAccessSubscriptionFeatures.value ||
-      billingStatus.value === 'payment_failed' ||
-      billingStatus.value === 'paused')
+    (canAccessSubscriptionFeatures.value || hasDelinquentSubscription.value)
 )
 const showSubscribeAction = computed(
   () =>
     (isCancelled.value && permissions.value.canManageSubscriptionLifecycle) ||
     (!canAccessSubscriptionFeatures.value &&
-      billingStatus.value !== 'payment_failed' &&
-      billingStatus.value !== 'paused' &&
+      !hasDelinquentSubscription.value &&
       permissions.value.canManageSubscription)
 )
 

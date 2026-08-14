@@ -85,7 +85,7 @@ const endedPersonalBillingStatus: BillingStatusResponse = {
   has_funds: true
 }
 
-const paymentFailedBillingStatus: BillingStatusResponse = {
+const pastDueBillingStatus: BillingStatusResponse = {
   ...mockBillingStatus,
   is_active: false,
   billing_status: 'payment_failed'
@@ -282,12 +282,12 @@ test.describe('Credits tile (Plan & Credits)', { tag: '@cloud' }, () => {
       .toBe('https://billing.example/portal')
   })
 
-  test('keeps billing management available when payment fails', async ({
+  test('keeps billing management available for a past-due subscription', async ({
     page
   }) => {
     test.setTimeout(60_000)
 
-    await mockCloudBoot(page, true, paymentFailedBillingStatus)
+    await mockCloudBoot(page, true, pastDueBillingStatus)
 
     const content = await openPlanAndCredits(page)
     await expect(
