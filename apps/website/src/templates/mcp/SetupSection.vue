@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 
 import SectionHeader from '../../components/common/SectionHeader.vue'
 import VideoPlayer from '../../components/common/VideoPlayer.vue'
@@ -16,8 +16,9 @@ import {
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
+type ConnectionId = 'cloud' | 'local'
+
 interface McpClient {
-  id: string
   name: string
   step: string
   command?: string
@@ -29,7 +30,6 @@ interface McpClient {
 }
 
 interface McpConnection {
-  id: 'cloud' | 'local'
   name: string
   tagline: string
   /** Value surfaced in the manual card's copy field (server URL or install command). */
@@ -41,35 +41,32 @@ interface McpConnection {
   agentRecommended: boolean
   /** The comfy-skills plugin ships cloud slash commands only. */
   showSkillsNote: boolean
-  clients: McpClient[]
+  /** Client id → client; insertion order is the tab order. */
+  clients: Record<string, McpClient>
 }
 
-const cloudClients: McpClient[] = [
-  {
-    id: 'claude-desktop',
+const cloudClients: Record<string, McpClient> = {
+  'claude-desktop': {
     name: 'Claude Desktop',
     step: t('mcp.setup.clients.claudeDesktop.step', locale),
     manualTitle: t('mcp.setup.clients.claudeDesktop.manualTitle', locale),
     showAgentCard: false,
     video: 'https://media.comfy.org/website/mcp/setup-claude-desktop-v2.mp4'
   },
-  {
-    id: 'claude-code',
+  'claude-code': {
     name: 'Claude Code Terminal',
     step: t('mcp.setup.clients.claudeCode.step', locale),
     command: `claude mcp add --transport http comfy-cloud ${externalLinks.mcpEndpoint}`,
     showAgentCard: true
   },
-  {
-    id: 'codex',
+  codex: {
     name: 'Codex',
     step: t('mcp.setup.clients.codex.step', locale),
     command: `codex mcp add comfy-cloud --url ${externalLinks.mcpEndpoint}`,
     showAgentCard: false,
     video: 'https://media.comfy.org/website/mcp/setup-codex-oauth-v2.mp4'
   },
-  {
-    id: 'cursor',
+  cursor: {
     name: 'Cursor',
     step: t('mcp.setup.clients.cursor.step', locale),
     link: {
@@ -78,15 +75,13 @@ const cloudClients: McpClient[] = [
     },
     showAgentCard: true
   },
-  {
-    id: 'openclaw',
+  openclaw: {
     name: 'OpenClaw',
     step: t('mcp.setup.clients.openclaw.step', locale),
     command: `openclaw skills install @comfy-org/comfy\nopenclaw mcp set comfy '{"url":"${externalLinks.mcpEndpoint}","transport":"streamable-http","auth":"oauth"}'`,
     showAgentCard: true
   },
-  {
-    id: 'other',
+  other: {
     name: t('mcp.setup.clients.other.name', locale),
     step: t('mcp.setup.clients.other.step', locale),
     link: {
@@ -95,37 +90,33 @@ const cloudClients: McpClient[] = [
     },
     showAgentCard: true
   }
-]
+}
 
 // Same stdio registration for every JSON-config client (source:
 // docs.comfy.org/agent-tools/mcp#manual-configuration).
 const LOCAL_CONFIG_SNIPPET =
   '{ "mcpServers": { "comfy-mcp": { "command": "comfy-mcp" } } }'
 
-const localClients: McpClient[] = [
-  {
-    id: 'local-claude-code',
+const localClients: Record<string, McpClient> = {
+  'local-claude-code': {
     name: 'Claude Code Terminal',
     step: t('mcp.setup.local.clients.claudeCode.step', locale),
     command: 'claude mcp add comfy-mcp -- comfy-mcp',
     showAgentCard: true
   },
-  {
-    id: 'local-claude-desktop',
+  'local-claude-desktop': {
     name: 'Claude Desktop',
     step: t('mcp.setup.local.clients.claudeDesktop.step', locale),
     command: LOCAL_CONFIG_SNIPPET,
     showAgentCard: true
   },
-  {
-    id: 'local-cursor',
+  'local-cursor': {
     name: 'Cursor',
     step: t('mcp.setup.local.clients.cursor.step', locale),
     command: LOCAL_CONFIG_SNIPPET,
     showAgentCard: true
   },
-  {
-    id: 'local-other',
+  'local-other': {
     name: t('mcp.setup.clients.other.name', locale),
     step: t('mcp.setup.local.clients.other.step', locale),
     link: {
@@ -134,11 +125,10 @@ const localClients: McpClient[] = [
     },
     showAgentCard: true
   }
-]
+}
 
-const connections: McpConnection[] = [
-  {
-    id: 'cloud',
+const connections: Record<ConnectionId, McpConnection> = {
+  cloud: {
     name: t('mcp.setup.connections.cloud.name', locale),
     tagline: t('mcp.setup.connections.cloud.tagline', locale),
     copyValue: externalLinks.mcpEndpoint,
@@ -152,8 +142,7 @@ const connections: McpConnection[] = [
     showSkillsNote: true,
     clients: cloudClients
   },
-  {
-    id: 'local',
+  local: {
     name: t('mcp.setup.connections.local.name', locale),
     tagline: t('mcp.setup.connections.local.tagline', locale),
     copyValue: 'pip install comfy-mcp',
@@ -167,32 +156,28 @@ const connections: McpConnection[] = [
     showSkillsNote: false,
     clients: localClients
   }
-]
+}
 
-type ConnectionId = McpConnection['id']
+const DEFAULT_CLIENT_IDS: Record<ConnectionId, string> = {
+  cloud: 'claude-desktop',
+  local: 'local-claude-code'
+}
 
-const activeConnectionId = ref<ConnectionId>(connections[0].id)
-const activeConnection = computed(
-  () =>
-    connections.find((conn) => conn.id === activeConnectionId.value) ??
-    connections[0]
-)
-
+const activeConnectionId = ref<ConnectionId>('cloud')
 const activeClientIds = ref<Record<ConnectionId, string>>({
-  cloud: cloudClients[0].id,
-  local: localClients[0].id
+  ...DEFAULT_CLIENT_IDS
 })
 
-function activeClientFor(conn: McpConnection): McpClient {
+function activeClientFor(connId: ConnectionId): McpClient {
+  const conn = connections[connId]
   return (
-    conn.clients.find(
-      (client) => client.id === activeClientIds.value[conn.id]
-    ) ?? conn.clients[0]
+    conn.clients[activeClientIds.value[connId]] ??
+    conn.clients[DEFAULT_CLIENT_IDS[connId]]
   )
 }
 
-function manualTitleFor(conn: McpConnection): string {
-  return activeClientFor(conn).manualTitle ?? conn.manualTitle
+function manualTitleFor(connId: ConnectionId): string {
+  return activeClientFor(connId).manualTitle ?? connections[connId].manualTitle
 }
 
 // reka-ui re-emits update:modelValue even when the value is unchanged
@@ -215,10 +200,10 @@ function onClientTabChange(value: string | number | undefined) {
   captureMcpClientTabClick(id)
 }
 
-function walkthroughLabelFor(conn: McpConnection): string {
+function walkthroughLabelFor(connId: ConnectionId): string {
   return t('mcp.setup.walkthroughAlt', locale).replace(
     '{client}',
-    activeClientFor(conn).name
+    activeClientFor(connId).name
   )
 }
 
@@ -242,7 +227,7 @@ const copiedLabel = t('ui.copied', locale)
           {{ t('mcp.setup.subtitle', locale) }}
         </p>
         <p
-          v-if="activeConnection.id === 'cloud'"
+          v-if="activeConnectionId === 'cloud'"
           class="mt-4 max-w-xl text-xs text-primary-warm-gray"
         >
           {{ t('mcp.setup.requirementPrefix', locale)
@@ -277,9 +262,9 @@ const copiedLabel = t('ui.copied', locale)
         class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:max-w-3xl"
       >
         <TabsTrigger
-          v-for="conn in connections"
-          :key="conn.id"
-          :value="conn.id"
+          v-for="(conn, connId) in connections"
+          :key="connId"
+          :value="connId"
           class="focus-visible:ring-primary-comfy-yellow/50 data-[state=active]:border-primary-comfy-yellow cursor-pointer rounded-2xl border border-white/15 bg-white/4 p-5 text-left transition-colors hover:bg-white/8 focus-visible:ring-2 focus-visible:outline-none data-[state=active]:bg-white/8"
         >
           <span
@@ -294,13 +279,13 @@ const copiedLabel = t('ui.copied', locale)
       </TabsList>
 
       <TabsContent
-        v-for="conn in connections"
-        :key="conn.id"
-        :value="conn.id"
+        v-for="(conn, connId) in connections"
+        :key="connId"
+        :value="connId"
         class="mt-10 block"
       >
         <TabsRoot
-          v-model="activeClientIds[conn.id]"
+          v-model="activeClientIds[connId]"
           activation-mode="manual"
           class="block"
           @update:model-value="onClientTabChange"
@@ -310,9 +295,9 @@ const copiedLabel = t('ui.copied', locale)
             class="grid grid-cols-1 gap-px rounded-2xl border border-white/15 bg-primary-comfy-ink p-1 min-[360px]:grid-cols-2 lg:inline-flex lg:flex-nowrap"
           >
             <TabsTrigger
-              v-for="client in conn.clients"
-              :key="client.id"
-              :value="client.id"
+              v-for="(client, clientId) in conn.clients"
+              :key="clientId"
+              :value="clientId"
               class="focus-visible:ring-primary-comfy-yellow/50 data-[state=active]:bg-primary-comfy-yellow shrink-0 cursor-pointer rounded-lg bg-white/8 px-2 py-2.5 text-[10px] font-bold tracking-wider whitespace-nowrap text-smoke-700 uppercase transition-colors hover:text-primary-comfy-canvas focus-visible:ring-2 focus-visible:outline-none data-[state=active]:text-primary-comfy-ink lg:rounded-none lg:px-6 lg:text-xs lg:first:rounded-l-xl lg:last:rounded-r-xl"
             >
               {{ client.name }}
@@ -326,7 +311,7 @@ const copiedLabel = t('ui.copied', locale)
               <h3
                 class="text-xl font-light text-primary-comfy-canvas lg:text-2xl"
               >
-                {{ manualTitleFor(conn) }}
+                {{ manualTitleFor(connId) }}
               </h3>
               <p class="mt-3 text-sm text-smoke-700">
                 {{ conn.manualDescription }}
@@ -339,9 +324,9 @@ const copiedLabel = t('ui.copied', locale)
                 />
               </div>
               <TabsContent
-                v-for="client in conn.clients"
-                :key="client.id"
-                :value="client.id"
+                v-for="(client, clientId) in conn.clients"
+                :key="clientId"
+                :value="clientId"
                 class="mt-6 flex min-h-36 flex-col gap-3"
               >
                 <p class="text-sm text-smoke-700">
@@ -368,13 +353,13 @@ const copiedLabel = t('ui.copied', locale)
               :class="
                 cn(
                   'bg-transparency-white-t4 flex flex-col rounded-3xl',
-                  activeClientFor(conn).showAgentCard
+                  activeClientFor(connId).showAgentCard
                     ? 'p-6 lg:p-8'
                     : 'relative overflow-hidden max-lg:aspect-video'
                 )
               "
             >
-              <template v-if="activeClientFor(conn).showAgentCard">
+              <template v-if="activeClientFor(connId).showAgentCard">
                 <h3
                   class="flex flex-wrap items-center gap-2.5 text-xl font-light text-primary-comfy-canvas lg:text-2xl"
                 >
@@ -411,11 +396,11 @@ const copiedLabel = t('ui.copied', locale)
                 </p>
               </template>
               <VideoPlayer
-                v-else-if="activeClientFor(conn).video"
-                :key="activeClientFor(conn).id"
+                v-else-if="activeClientFor(connId).video"
+                :key="activeClientIds[connId]"
                 :locale="locale"
-                :aria-label="walkthroughLabelFor(conn)"
-                :src="activeClientFor(conn).video"
+                :aria-label="walkthroughLabelFor(connId)"
+                :src="activeClientFor(connId).video"
                 autoplay
                 loop
                 hide-controls
