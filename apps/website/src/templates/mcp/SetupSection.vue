@@ -14,10 +14,10 @@ import {
   captureMcpClientTabClick,
   captureMcpConnectionTabClick
 } from '../../scripts/posthog'
+import type { ConnectionId, McpClientId } from './clients'
+import { isConnectionId, isMcpClientId } from './clients'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
-
-type ConnectionId = 'cloud' | 'local'
 
 interface McpClient {
   name: string
@@ -43,10 +43,10 @@ interface McpConnection {
   /** The comfy-skills plugin ships cloud slash commands only. */
   showSkillsNote: boolean
   /** Client id → client; insertion order is the tab order. */
-  clients: Record<string, McpClient>
+  clients: Partial<Record<McpClientId, McpClient>>
 }
 
-const cloudClients: Record<string, McpClient> = {
+const cloudClients: Partial<Record<McpClientId, McpClient>> = {
   'claude-desktop': {
     name: 'Claude Desktop',
     step: t('mcp.setup.clients.claudeDesktop.step', locale),
@@ -98,7 +98,7 @@ const cloudClients: Record<string, McpClient> = {
 const LOCAL_CONFIG_SNIPPET =
   '{ "mcpServers": { "comfy-mcp": { "command": "comfy-mcp" } } }'
 
-const localClients: Record<string, McpClient> = {
+const localClients: Partial<Record<McpClientId, McpClient>> = {
   'local-claude-code': {
     name: 'Claude Code Terminal',
     step: t('mcp.setup.local.clients.claudeCode.step', locale),
@@ -159,22 +159,19 @@ const connections: Record<ConnectionId, McpConnection> = {
   }
 }
 
-const DEFAULT_CLIENT_IDS: Record<ConnectionId, string> = {
+const DEFAULT_CLIENT_IDS: Record<ConnectionId, McpClientId> = {
   cloud: 'claude-desktop',
   local: 'local-claude-code'
 }
 
 const activeConnectionId = ref<ConnectionId>('cloud')
-const activeClientIds = ref<Record<ConnectionId, string>>({
+const activeClientIds = ref<Record<ConnectionId, McpClientId>>({
   ...DEFAULT_CLIENT_IDS
 })
 
 function activeClientFor(connId: ConnectionId): McpClient {
   const conn = connections[connId]
-  return (
-    conn.clients[activeClientIds.value[connId]] ??
-    conn.clients[DEFAULT_CLIENT_IDS[connId]]
-  )
+  return conn.clients[activeClientIds.value[connId]]!
 }
 
 function manualTitleFor(connId: ConnectionId): string {
@@ -183,22 +180,18 @@ function manualTitleFor(connId: ConnectionId): string {
 
 // reka-ui re-emits update:modelValue even when the value is unchanged
 // (re-clicking the active tab), so dedupe before capturing.
-let lastTrackedConnectionId: string | undefined
+let lastTrackedConnectionId: ConnectionId | undefined
 function onConnectionTabChange(value: string | number | undefined) {
-  if (!value) return
-  const id = String(value)
-  if (id === lastTrackedConnectionId) return
-  lastTrackedConnectionId = id
-  captureMcpConnectionTabClick(id)
+  if (!isConnectionId(value) || value === lastTrackedConnectionId) return
+  lastTrackedConnectionId = value
+  captureMcpConnectionTabClick(value)
 }
 
-let lastTrackedClientId: string | undefined
+let lastTrackedClientId: McpClientId | undefined
 function onClientTabChange(value: string | number | undefined) {
-  if (!value) return
-  const id = String(value)
-  if (id === lastTrackedClientId) return
-  lastTrackedClientId = id
-  captureMcpClientTabClick(id)
+  if (!isMcpClientId(value) || value === lastTrackedClientId) return
+  lastTrackedClientId = value
+  captureMcpClientTabClick(value)
 }
 
 function walkthroughLabelFor(connId: ConnectionId): string {

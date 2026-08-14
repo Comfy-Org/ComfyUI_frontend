@@ -38,7 +38,9 @@ const baseRoutes = {
   brand: '/brand'
 } as const
 
-type Routes = typeof baseRoutes
+type RouteKey = keyof typeof baseRoutes
+
+type Routes = Record<RouteKey, string>
 
 // Routes that are served only at their canonical path regardless of the
 // active locale. Localized variants of these routes intentionally do not
@@ -86,7 +88,7 @@ export function getRoutes(locale: Locale = 'en'): Routes {
       key,
       localizeHref(path, locale)
     ])
-  ) as unknown as Routes
+  ) as Routes
 }
 
 export const externalLinks = {
