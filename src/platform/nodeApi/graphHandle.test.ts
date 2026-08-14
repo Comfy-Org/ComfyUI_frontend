@@ -151,6 +151,19 @@ describe('graph API (composed)', () => {
       // value changes the doc becomes a lie, and this is what says so.
       expect(api.version).toBe(before)
     })
+
+    it('advances when a value is committed through the API', () => {
+      // The contrast with the raw write above is the contract: a bare
+      // `widget.value =` is a silent restore, `setValue` is a user-grade
+      // commit, and packs watching `version` must see the latter.
+      const node = addNode('A', 'Alpha')
+      node.addWidget('number', 'seed', 1, () => undefined, {})
+
+      const before = api.version
+      api.node(String(node.id))!.widgets.get('seed')!.setValue(42)
+
+      expect(api.version).not.toBe(before)
+    })
   })
 
   describe('end-to-end wiring', () => {

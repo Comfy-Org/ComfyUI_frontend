@@ -406,6 +406,109 @@ describe('widget listeners', () => {
   })
 })
 
+describe('setValue commits like a user edit', () => {
+  let node: LGraphNode
+  let widgets: WidgetCollection
+
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    const graph = new LGraph()
+    node = new LGraphNode('t')
+    node.addWidget('number', 'seed', 1, null, {})
+    graph.add(node)
+    const handles = createWidgetHandles(() => graph)
+    widgets = createWidgetCollection(
+      () => graph.getNodeById(node.id) ?? undefined,
+      handles,
+      String(node.id)
+    )
+  })
+
+  it('runs the callback chain the host installed', () => {
+    // The corpus idiom `widget.value = x; widget.callback?.(x)` exists because
+    // core behavior hangs off the callback — an upload combo repaints its
+    // preview there. A write that skips the chain forks the UI from the state.
+    const hostCallback = vi.fn()
+    node.widgets![0].callback = hostCallback
+    widgets.get('seed')!.setValue(5)
+    expect(hostCallback).toHaveBeenCalledOnce()
+    expect(hostCallback).toHaveBeenCalledWith(
+      5,
+      undefined,
+      node,
+      undefined,
+      undefined
+    )
+  })
+
+  it('syncs the node property the widget is bound to', () => {
+    node.widgets![0].options.property = 'seedProp'
+    node.properties.seedProp = 1
+    widgets.get('seed')!.setValue(9)
+    expect(node.properties.seedProp).toBe(9)
+  })
+
+  it('notifies the node through onWidgetChanged', () => {
+    const onWidgetChanged = vi.fn()
+    node.onWidgetChanged = onWidgetChanged
+    widgets.get('seed')!.setValue(9)
+    expect(onWidgetChanged).toHaveBeenCalledWith('seed', 9, 1, node.widgets![0])
+  })
+
+  it('does not fire activate, which reports a user act', () => {
+    const activated = vi.fn()
+    widgets.get('seed')!.on('activate', activated)
+    widgets.get('seed')!.setValue(5)
+    expect(activated).not.toHaveBeenCalled()
+
+    node.widgets![0].callback?.(6)
+    expect(activated).toHaveBeenCalledOnce()
+    expect(activated).toHaveBeenCalledWith(6)
+  })
+
+  it('keeps activate for a user edit whose handler writes another widget', () => {
+    node.addWidget('number', 'steps', 20, null, {})
+    const seed = widgets.get('seed')!
+    const steps = widgets.get('steps')!
+    const seedActivated = vi.fn()
+    const stepsActivated = vi.fn()
+    seed.on('activate', seedActivated)
+    steps.on('activate', stepsActivated)
+    seed.on('change', (v) => steps.setValue(v))
+
+    node.widgets![0].callback?.(3)
+
+    expect(seedActivated).toHaveBeenCalledOnce()
+    expect(stepsActivated).not.toHaveBeenCalled()
+    expect(steps.getValue()).toBe(3)
+  })
+
+  it('reports the previous value correctly after a mixed sequence', () => {
+    // Before setValue drove the callback chain, its writes never reached the
+    // bridge's record of the last value: a user edit reverting a programmatic
+    // write compared equal to it and the change was swallowed.
+    const seen: unknown[] = []
+    widgets.get('seed')!.on('change', (v, o) => seen.push([v, o]))
+
+    widgets.get('seed')!.setValue(5)
+    const widget = node.widgets![0]
+    widget.value = 1
+    widget.callback?.(1)
+
+    expect(seen).toEqual([
+      [5, 1],
+      [1, 5]
+    ])
+  })
+
+  it('leaves the chain untouched when the value is unchanged', () => {
+    const hostCallback = vi.fn()
+    node.widgets![0].callback = hostCallback
+    widgets.get('seed')!.setValue(1)
+    expect(hostCallback).not.toHaveBeenCalled()
+  })
+})
+
 describe('mounted and canvas widgets', () => {
   let node: LGraphNode
   let widgets: WidgetCollection

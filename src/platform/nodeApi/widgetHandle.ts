@@ -13,6 +13,7 @@ import type {
   IWidgetOptions
 } from '@/lib/litegraph/src/types/widgets'
 import { getWidgetIds } from '@/lib/litegraph/src/utils/widget'
+import { commitWidgetValue } from '@/lib/litegraph/src/widgets/commitWidgetValue'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
 
@@ -38,6 +39,19 @@ export interface WidgetHandle extends HandleCommon {
   readonly widgetType: string
 
   getValue<T = WidgetValue>(): T
+  /**
+   * Commits a value exactly as a user edit does: the value is written, a
+   * widget bound to a node property syncs it, the widget's callback chain and
+   * the node's `onWidgetChanged` run, and `graph.version` advances. This
+   * replaces the manual pair `widget.value = x; widget.callback?.(x)` — and
+   * the bare write too, because a write the rest of the system cannot see was
+   * never a feature, it was litegraph defaulting to inconsistency.
+   *
+   * Writing the current value again is a no-op, which is also what ends a
+   * cycle of handlers writing to each other. `on('change')` fires once per
+   * commit; `on('activate')` does not fire, because activate reports a user's
+   * act.
+   */
   setValue(value: WidgetValue): void
 
   /**
@@ -99,7 +113,8 @@ export interface WidgetHandle extends HandleCommon {
    *
    * Buttons carry no value, so `change` can never fire for one and a button
    * created through this API would otherwise be inert. Prefer `change` when you
-   * care about the value; use this when you care that the user acted.
+   * care about the value; use this when you care that the user acted — a
+   * programmatic `setValue` never fires it.
    */
   on(event: 'activate', listener: (value: WidgetValue) => void): Unsubscribe
   /**
@@ -186,15 +201,24 @@ export function createWidgetHandles(
                 ) as WidgetHandle
             )
           )
+        },
+        setValue: (w, id, ...args) => {
+          const [nodeId] = id.split(SEP)
+          const node = resolveNode(nodeId)
+          if (!node) return
+          // Change listeners are notified by the callback bridge, which the
+          // commit's chain invocation reaches — the same path a user edit
+          // takes, so `previous` bookkeeping cannot diverge between the two.
+          programmaticWrites++
+          try {
+            commitWidgetValue(w, args[0] as IBaseWidget['value'], { node })
+          } finally {
+            programmaticWrites--
+          }
         }
       },
       methods: {
         getValue: (w) => w.value as WidgetValue,
-        setValue: (w, ...args) => {
-          const previous = w.value as WidgetValue
-          w.value = args[0] as IBaseWidget['value']
-          notify(w, w.value as WidgetValue, previous)
-        },
         isHidden: (w) => w.hidden ?? false,
         setHidden: (w, ...args) => {
           const hidden = Boolean(args[0])
@@ -364,8 +388,10 @@ export function createWidgetHandles(
       lastNotified.set(w, value as WidgetValue)
       original?.apply(this as never, [value, ...rest] as never)
       notify(w, value as WidgetValue, previous)
-      // Unconditional: a button's value never moves, so gating this on a
-      // change would make every button silently dead.
+      // `activate` reports a user act, which a programmatic commit is not.
+      if (programmaticWrites > 0) return
+      // Otherwise unconditional: a button's value never moves, so gating this
+      // on a change would make every button silently dead.
       for (const listener of listeners.get(w)?.activate ?? []) {
         listener(value as WidgetValue)
       }
@@ -439,6 +465,16 @@ export function createWidgetHandles(
 /** Marks a widget whose callback has already been bridged to listeners. */
 const BRIDGED = Symbol('comfy.widget.bridged')
 const SERIALIZE_BRIDGED = Symbol('comfy.widget.serializeBridged')
+
+/**
+ * Non-zero while a `setValue` commit is on the stack.
+ *
+ * Module-scoped rather than per-factory because bridges are per-namespace and
+ * chain onto each other: pack A's write must read as programmatic to pack B's
+ * bridge too. Dispatch is synchronous, so a plain depth counter is exact — and
+ * it makes any commit an activate cascade triggers itself programmatic.
+ */
+let programmaticWrites = 0
 
 /**
  * A widget whose body the pack renders itself.
