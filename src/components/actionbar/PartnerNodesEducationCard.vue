@@ -1,12 +1,12 @@
 <template>
   <Teleport to="body">
     <Transition
-      enter-active-class="transition-all duration-300 ease-out"
-      enter-from-class="-translate-y-3 opacity-0"
+      enter-active-class="motion-safe:transition-all duration-300 ease-out"
+      enter-from-class="motion-safe:-translate-y-3 opacity-0"
       enter-to-class="translate-y-0 opacity-100"
-      leave-active-class="transition-all duration-200 ease-in"
+      leave-active-class="motion-safe:transition-all duration-200 ease-in"
       leave-from-class="translate-y-0 opacity-100"
-      leave-to-class="-translate-y-3 opacity-0"
+      leave-to-class="motion-safe:-translate-y-3 opacity-0"
     >
       <div
         v-if="isVisible"
@@ -67,13 +67,13 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { usePartnerNodesInGraph } from '@/composables/node/usePartnerNodesInGraph'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { usePartnerNodesEducationStore } from '@/stores/partnerNodesEducationStore'
+import { usePartnerNodesEducationStore } from '@/platform/workflow/templates/stores/partnerNodesEducationStore'
 
 const { t } = useI18n()
 const educationStore = usePartnerNodesEducationStore()
@@ -87,4 +87,10 @@ const isVisible = computed(
   () =>
     isCardRequested.value && hasPartnerNodes.value && !isErrorOverlayOpen.value
 )
+
+// The card describes the template that was just loaded, so leaving that graph
+// retires the request; a later partner-node workflow must not revive it.
+watch(hasPartnerNodes, (present) => {
+  if (!present) educationStore.dismissCard()
+})
 </script>
