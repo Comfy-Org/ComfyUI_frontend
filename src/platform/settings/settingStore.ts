@@ -38,6 +38,27 @@ function tryMigrateDeprecatedValue(
   return setting?.migrateDeprecatedValue?.(value) ?? value
 }
 
+/**
+ * Runs the handler, absorbing both a synchronous throw and a rejected promise.
+ * `SettingParams.onChange` is extension-facing public API and its caller
+ * persists the setting only after awaiting it, so letting a third-party
+ * failure escape would discard the user's own change without saving it.
+ */
+async function callHandler(
+  setting: SettingParams | undefined,
+  newValue: unknown,
+  oldValue: unknown
+) {
+  try {
+    await setting?.onChange?.(newValue, oldValue)
+  } catch (error) {
+    console.error(
+      `[settings] onChange handler for ${setting?.id} failed`,
+      error
+    )
+  }
+}
+
 async function onChange(
   setting: SettingParams | undefined,
   newValue: unknown,
@@ -47,13 +68,31 @@ async function onChange(
   // the same point, but awaited afterwards: a handler that cascades into other
   // settings must finish writing them before the caller writes this one, or
   // the two requests race in the backend's read-modify-write.
-  const handled = setting?.onChange?.(newValue, oldValue)
+  const handled = callHandler(setting, newValue, oldValue)
   // Backward compatibility with old settings dialog.
   // Some extensions still listens event emitted by the old settings dialog.
   if (setting) {
     app.ui.settings.dispatchChange(setting.id, newValue, oldValue)
   }
   await handled
+}
+
+/**
+ * Migrations run inside the boot-critical settings loader, where a rejection
+ * becomes `settingStore.error` and GraphCanvas rethrows it before any core
+ * setting registers — turning a failed write into an app that will not start.
+ * The migrated value is already in memory and the server still holds the
+ * un-migrated state, so swallowing the failure leaves the next load to retry.
+ */
+async function persistMigration(write: () => Promise<unknown>) {
+  try {
+    await write()
+  } catch (error) {
+    console.warn(
+      '[settings] Failed to persist migration; retrying on next load',
+      error
+    )
+  }
 }
 
 function settingChangedEvent<K extends keyof Settings>(
@@ -338,7 +377,7 @@ export const useSettingStore = defineStore('setting', () => {
     if (!Object.keys(unset).length) return
 
     Object.assign(settingValues.value, unset)
-    await api.storeSettings(unset)
+    await persistMigration(() => api.storeSettings(unset))
   }
 
   /**
@@ -375,8 +414,10 @@ export const useSettingStore = defineStore('setting', () => {
       delete settingValues.value[oldKey]
 
       // Store the migrated setting
-      await api.storeSetting(newKey, clampedFontSize)
-      await api.storeSetting(oldKey, undefined)
+      await persistMigration(async () => {
+        await api.storeSetting(newKey, clampedFontSize)
+        await api.storeSetting(oldKey, undefined)
+      })
     }
   }
 

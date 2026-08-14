@@ -117,6 +117,33 @@ describe('useSettingStore', () => {
 
         expect(api.storeSettings).not.toHaveBeenCalled()
       })
+
+      // GraphCanvas rethrows `error` before registering any core setting, so a
+      // rejection here would leave the app unable to start.
+      it('leaves the store loadable when the write fails', async () => {
+        vi.spyOn(console, 'warn').mockImplementation(() => {})
+        vi.mocked(api.storeSettings).mockRejectedValue(new Error('offline'))
+
+        await loadWith({ [NAV]: 'standard' })
+
+        expect(store.error).toBeUndefined()
+        expect(store.isReady).toBe(true)
+        expect(store.settingValues[LEFT]).toBe('select')
+      })
+    })
+
+    it('leaves the store loadable when the zoom threshold write fails', async () => {
+      vi.spyOn(console, 'warn').mockImplementation(() => {})
+      vi.mocked(api.storeSetting).mockRejectedValue(new Error('offline'))
+      vi.mocked(api.getSettings).mockResolvedValue({
+        'LiteGraph.Canvas.LowQualityRenderingZoomThreshold': 0.6
+      } as Partial<Settings> as Settings)
+
+      await store.load()
+
+      expect(store.error).toBeUndefined()
+      expect(store.isReady).toBe(true)
+      expect(store.settingValues['LiteGraph.Canvas.MinFontSizeForLOD']).toBe(8)
     })
 
     it('should set error if settings are loaded after registration', async () => {
@@ -492,6 +519,39 @@ describe('useSettingStore', () => {
       await store.set('test.setting', 'newvalue')
 
       expect(order).toEqual(['onChange', 'storeSetting'])
+    })
+
+    // onChange is extension-facing, and set() persists only after awaiting it,
+    // so an unisolated failure would discard the user's change unsaved.
+    it.for([
+      {
+        label: 'rejects',
+        onChange: async () => {
+          throw new Error('extension blew up')
+        }
+      },
+      {
+        label: 'throws synchronously',
+        onChange: () => {
+          throw new Error('extension blew up')
+        }
+      }
+    ])('persists the value when a handler $label', async ({ onChange }) => {
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+      store.addSetting({
+        id: 'test.setting',
+        name: 'test.setting',
+        type: 'text',
+        defaultValue: 'default',
+        onChange
+      })
+
+      await expect(
+        store.set('test.setting', 'newvalue')
+      ).resolves.toBeUndefined()
+
+      expect(api.storeSetting).toHaveBeenCalledWith('test.setting', 'newvalue')
+      expect(store.get('test.setting')).toBe('newvalue')
     })
 
     it('exposes the new value to onChange handlers', async () => {

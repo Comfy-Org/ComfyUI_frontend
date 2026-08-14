@@ -257,20 +257,20 @@ test.describe('Canvas settings', { tag: '@canvas' }, () => {
         ).toBe('standard')
       })
 
+      // Reads the server, not the store: the migration is idempotent, so an
+      // in-memory read passes whether or not the write ever landed.
       test('persists the stored preset to the overrides', async ({
         comfyPage
       }) => {
-        // Reload first so this asserts what reached the server, not just what
-        // the migration put in the in-memory store.
-        await comfyPage.workflow.reloadAndWaitForApp()
-
         expect(
-          await comfyPage.settings.getSetting(
+          await comfyPage.settings.getPersistedSetting(
             'Comfy.Canvas.LeftMouseClickBehavior'
           )
         ).toBe('select')
         expect(
-          await comfyPage.settings.getSetting('Comfy.Canvas.MouseWheelScroll')
+          await comfyPage.settings.getPersistedSetting(
+            'Comfy.Canvas.MouseWheelScroll'
+          )
         ).toBe('panning')
       })
     })
