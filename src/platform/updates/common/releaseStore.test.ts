@@ -3,6 +3,7 @@ import { compare } from 'semver'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
+import type { EntryPath } from '@/platform/onboarding/onboardingTours'
 import type { ReleaseNote } from '@/platform/updates/common/releaseService'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
@@ -101,7 +102,7 @@ vi.mock('@vueuse/core', () => ({
 }))
 
 const mocks = vi.hoisted(() => ({
-  tour: { activeTour: null as string | null }
+  tour: { activeTour: null as EntryPath | null }
 }))
 vi.mock('@/platform/onboarding/onboardingTourStore', async () => {
   const { reactive } = await import('vue')
