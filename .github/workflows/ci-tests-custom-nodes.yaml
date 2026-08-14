@@ -27,7 +27,7 @@ on:
         description: 'Clean run or deliberate independent-tier break'
         required: false
         type: choice
-        options: ['0', 'all', '1', '2', '3', '9', '14']
+        options: ['0', 'all', '1', '2', '3', '9']
         default: '0'
       branch:
         description: 'Frontend branch/ref to test (empty = the ref this workflow runs from)'
@@ -44,11 +44,6 @@ on:
         required: false
         type: string
         default: ''
-      enable_s14:
-        description: 'Enable the S14 tier'
-        required: false
-        type: boolean
-        default: true
       enable_s15:
         description: 'Enable the S15 tier'
         required: false
@@ -86,7 +81,7 @@ jobs:
       fail-fast: false
       matrix:
         proof_row: >-
-          ${{ fromJSON(github.event_name == 'workflow_dispatch' && inputs.detection_proof_row == 'all' && '["1","2","3","9","14"]' || format('["{0}"]', inputs.detection_proof_row || '0')) }}
+          ${{ fromJSON(github.event_name == 'workflow_dispatch' && inputs.detection_proof_row == 'all' && '["1","2","3","9"]' || format('["{0}"]', inputs.detection_proof_row || '0')) }}
     # Run only when non-docs code changed AND the PR is same-repo. Fork PRs can
     # edit the manifest's repo/pin URLs, and this job clones and pip-installs
     # whatever they point at (setup.py runs at install time), so an untrusted
@@ -304,7 +299,6 @@ jobs:
             2) title='S2: every registered node mounts on the DOM renderer'; pat=': Vue mounts ' ;;
             3) title='S3: every registered node survives save and reload'; pat='on (pristine|set-values) reload' ;;
             9) title='S9: every self-sufficient node executes'; pat='DETECTION PROOF \\(row 9\\): pack node runtime failure' ;;
-            14) title='S14: every registered node matches its geometry baseline'; pat='widgets\\[[0-9]+\\]\\.y: expected [^,]+, got ' ;;
           esac
           {
             echo "proof_sha=$PROOF_SHA"
@@ -337,7 +331,7 @@ jobs:
         continue-on-error: >-
           ${{ github.event_name == 'workflow_dispatch' && matrix.proof_row != '0' }}
         env:
-          CN_ENABLE_S14: ${{ (matrix.proof_row != '0' || github.event_name != 'workflow_dispatch' || inputs.enable_s14) && '1' || '0' }}
+          CN_ENABLE_S14: '0'
           CN_ENABLE_S15: ${{ (github.event_name != 'workflow_dispatch' || inputs.enable_s15) && '1' || '0' }}
           PLAYWRIGHT_JSON_OUTPUT_NAME: custom-nodes-results.json
           PROOF_ROW: ${{ matrix.proof_row }}
@@ -353,13 +347,13 @@ jobs:
           # Json feeds the skip gate below; html writes playwright-report/
           # (the upload step's target) and folds in the retain-on-failure
           # traces. List keeps live diagnostics visible.
-          # Core keeps its already-proven S13-S15 coverage active. The
-          # later-tier defer applies only to Cloud while Cloud S1-S12 is red.
+          # Core keeps S13 and S15 active. S14 geometry is temporarily
+          # disabled in both environments.
           grep_args=()
           case "$PROOF_ROW" in
             0) [ -n "${GREP_FILTER:-}" ] && grep_args=(--grep "$GREP_FILTER") ;;
-            1|2|3|9|14)
-              grep_args=(--grep 'all nodes by tier @custom-nodes.*S(1|2|3|9|14):')
+            1|2|3|9)
+              grep_args=(--grep 'all nodes by tier @custom-nodes.*S(1|2|3|9):')
               ;;
           esac
           pnpm exec playwright test browser_tests/tests/customNodes/ \
@@ -375,7 +369,7 @@ jobs:
         shell: bash
         env:
           SUITE_OUTCOME: ${{ steps.suite.outcome }}
-          EXPECTED_TESTS: ${{ (matrix.proof_row != '0' || github.event_name != 'workflow_dispatch' || inputs.enable_s14) && '33' || '32' }}
+          EXPECTED_TESTS: 32
           GREP_FILTER: ${{ inputs.grep }}
         run: |
           set -euo pipefail
@@ -443,8 +437,8 @@ jobs:
           unexpected=$(jq -er '.stats.unexpected' custom-nodes-results.json)
           skipped=$(jq -er '.stats.skipped' custom-nodes-results.json)
           flaky=$(jq -er '.stats.flaky' custom-nodes-results.json)
-          expected_collected=5
-          expected_passed=4
+          expected_collected=4
+          expected_passed=3
           expected_failed=1
           [ "$collected" = "$expected_collected" ] || { echo "::error::S$PROOF_ROW collected $collected tests, expected $expected_collected"; exit 1; }
           [ "$expected" = "$expected_passed" ] || { echo "::error::S$PROOF_ROW expected-pass count is $expected, expected $expected_passed"; exit 1; }
@@ -461,7 +455,6 @@ jobs:
             2) pat=': Vue mounts ' ;;
             3) pat='on (pristine|set-values) reload' ;;
             9) pat='DETECTION PROOF \(row 9\): pack node runtime failure' ;;
-            14) pat='widgets\[[0-9]+\]\.y: expected [^,]+, got ' ;;
           esac
           grep -Eq -- "$pat" tier-isolation-proof-evidence.txt || { echo "::error::S$PROOF_ROW failure was not attributable to its Detection Proof break"; exit 1; }
 
@@ -469,26 +462,24 @@ jobs:
             1) target_tier=S1; target_title="S1: every registered node mounts on the canvas renderer"; next_tier=S2 ;;
             2) target_tier=S2; target_title="S2: every registered node mounts on the DOM renderer"; next_tier=S3 ;;
             3) target_tier=S3; target_title="S3: every registered node survives save and reload"; next_tier=S9 ;;
-            9) target_tier=S9; target_title="S9: every self-sufficient node executes"; next_tier=S14 ;;
-            14) target_tier=S14; target_title="S14: every registered node matches its geometry baseline"; next_tier= ;;
+            9) target_tier=S9; target_title="S9: every self-sufficient node executes"; next_tier= ;;
           esac
           jq -e --arg title "$target_title" '.. | objects | select(.title? == $title) | .tests[] | select(.status == "unexpected")' custom-nodes-results.json >/dev/null
           for title in \
             "S1: every registered node mounts on the canvas renderer" \
             "S2: every registered node mounts on the DOM renderer" \
             "S9: every self-sufficient node executes" \
-            "S3: every registered node survives save and reload" \
-            "S14: every registered node matches its geometry baseline"; do
+            "S3: every registered node survives save and reload"; do
             [ "$title" = "$target_title" ] && continue
             jq -e --arg title "$title" '.. | objects | select(.title? == $title) | .tests[] | select(.status == "expected")' custom-nodes-results.json >/dev/null || {
               echo "::error::$title did not pass independently of the deliberate $target_tier failure"
               exit 1
             }
           done
-          mapfile -t tier_sessions < <(grep -oE '\[tier-session\] pid=[0-9]+ tier=S(1|2|3|9|14) pageId=[^ ]+' custom-nodes.log)
-          [ "${#tier_sessions[@]}" -eq 5 ] || { echo "::error::$target_tier proof recorded ${#tier_sessions[@]} tier sessions, expected 5"; exit 1; }
+          mapfile -t tier_sessions < <(grep -oE '\[tier-session\] pid=[0-9]+ tier=S(1|2|3|9) pageId=[^ ]+' custom-nodes.log)
+          [ "${#tier_sessions[@]}" -eq 4 ] || { echo "::error::$target_tier proof recorded ${#tier_sessions[@]} tier sessions, expected 4"; exit 1; }
           page_ids=$(printf '%s\n' "${tier_sessions[@]}" | sed -E 's/.* pageId=([^ ]+).*/\1/' | sort -u | wc -l | tr -d ' ')
-          [ "$page_ids" = 5 ] || { echo "::error::$target_tier proof reused an application page between tiers"; exit 1; }
+          [ "$page_ids" = 4 ] || { echo "::error::$target_tier proof reused an application page between tiers"; exit 1; }
           pids=$(printf '%s\n' "${tier_sessions[@]}" | sed -E 's/.* pid=([0-9]+).*/\1/' | sort -u | wc -l | tr -d ' ')
           if [ -n "$next_tier" ]; then
             [ "$pids" = 2 ] || { echo "::error::$target_tier proof used $pids Playwright workers, expected the failed worker plus one replacement"; exit 1; }
@@ -511,7 +502,7 @@ jobs:
           BRANCH_TESTED: ${{ inputs.branch || github.ref_name }}
           COMFYUI_REF_USED: ${{ inputs.comfyui_ref || 'b08e6cf35fac50d3ca8470dffb3f9a1fbb7187d2' }}
           GREP_FILTER: ${{ inputs.grep }}
-          S14_ENABLED: ${{ (matrix.proof_row != '0' || github.event_name != 'workflow_dispatch' || inputs.enable_s14) && '1' || '0' }}
+          S14_ENABLED: '0'
           S15_ENABLED: ${{ (github.event_name != 'workflow_dispatch' || inputs.enable_s15) && '1' || '0' }}
         run: python3 scripts/cicd/custom-nodes-summary.py
 

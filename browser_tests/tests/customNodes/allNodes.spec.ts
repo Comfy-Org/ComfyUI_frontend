@@ -740,10 +740,8 @@ for (const entry of loadManifest()) {
           keys.map((key) => [key, declaredShape(defs[key])])
         )
         const ledger = entry.vueIncompatibleNodes ?? {}
-        // S14 is a separately activated tier. Its record workflow sets
-        // CN_GEOMETRY=record; its compare proof sets CN_ENABLE_S14=1. The
-        // Cloud S1-S12 sets CN_ENABLE_S14=0 while Core keeps its proven S14
-        // comparison active with CN_ENABLE_S14=1.
+        // S14 remains available only for an explicit future re-enable. Normal
+        // Core and Cloud CI currently set CN_ENABLE_S14=0.
         const geometryRecordMode = process.env.CN_GEOMETRY === 'record'
         if (process.env.CN_GEOMETRY && !geometryRecordMode)
           throw new Error(

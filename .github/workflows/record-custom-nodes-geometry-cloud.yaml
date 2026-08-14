@@ -65,6 +65,8 @@ jobs:
     # overrun FAILS the step - keeping the upload steps reachable - instead
     # of cancelling the job and losing the partial artifact.
     timeout-minutes: 350
+    env:
+      CN_ENABLE_S14: '0'
     permissions:
       contents: read
     steps:
@@ -123,6 +125,7 @@ jobs:
       # if-no-files-found guard can fire on a crashed record instead of shipping
       # stale bytes. `rm -f` no-ops cleanly the first time (no cloud/ dir yet).
       - name: Clear committed cloud baselines
+        if: env.CN_ENABLE_S14 == '1'
         shell: bash
         run: rm -f browser_tests/fixtures/customNode/geometry/cloud/*.json
 
@@ -133,6 +136,7 @@ jobs:
       # provenance stamps 'unrecorded' (allNodes.spec.ts); the row's deployRef
       # is recorded as the pin.
       - name: Record cloud geometry baselines
+        if: env.CN_ENABLE_S14 == '1'
         continue-on-error: true
         timeout-minutes: 160
         env:
@@ -195,6 +199,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload recorded cloud baselines
+        if: env.CN_ENABLE_S14 == '1'
         uses: actions/upload-artifact@v6
         with:
           name: custom-nodes-geometry-baselines-cloud

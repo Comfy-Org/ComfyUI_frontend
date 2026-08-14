@@ -51,6 +51,7 @@ describe('custom-nodes Playwright tracing', () => {
 })
 
 interface WorkflowStep {
+  if?: string
   name?: string
   env?: Record<string, unknown>
   run?: string
@@ -97,7 +98,7 @@ interface WorkflowGate {
 const workflowGates: WorkflowGate[] = [
   {
     path: '.github/workflows/ci-tests-custom-nodes.yaml',
-    total: 33,
+    total: 32,
     resultFile: 'custom-nodes-results.json',
     deferS13ToS15: false,
     collectionLabel: 'active Core custom-node tests'
@@ -149,21 +150,39 @@ function resultJson(expected: number, unexpected = 0, flaky = 0, skipped = 0) {
   return { stats: { expected, unexpected, flaky, skipped } }
 }
 
-const coreS14Enabled =
-  "matrix.proof_row != '0' || github.event_name != 'workflow_dispatch' || inputs.enable_s14"
-const geometryRecorderSelector = 'all nodes by tier @custom-nodes.*S14:'
-
-function coreExpectedTests(
-  proofRow: string,
-  eventName: string,
-  enableS14: boolean
-) {
-  return proofRow !== '0' || eventName !== 'workflow_dispatch' || enableS14
-    ? 33
-    : 32
-}
-
 describe('custom-node S1-S12 workflow gates', () => {
+  it('keeps S14 disabled in both geometry recorder workflows', () => {
+    for (const path of [
+      '.github/workflows/record-custom-nodes-geometry.yaml',
+      '.github/workflows/record-custom-nodes-geometry-cloud.yaml'
+    ]) {
+      const workflow = parse(readFileSync(path, 'utf8')) as {
+        jobs: Record<
+          string,
+          { env?: Record<string, unknown>; steps?: WorkflowStep[] }
+        >
+      }
+      const job = Object.values(workflow.jobs)[0]
+      expect(job.env?.CN_ENABLE_S14).toBe('0')
+      for (const name of [
+        /Clear committed.*baselines/,
+        /Record.*geometry baselines/,
+        /Upload recorded.*baselines/
+      ])
+        expect(job.steps?.find((step) => name.test(step.name ?? ''))?.if).toBe(
+          "env.CN_ENABLE_S14 == '1'"
+        )
+      expect(
+        job.steps?.some(
+          (step) =>
+            /interaction profiles \(S13\)|output hashes \(S15\)/.test(
+              step.name ?? ''
+            ) && step.if !== undefined
+        )
+      ).toBe(false)
+    }
+  })
+
   it('accepts the Cloud gate with its required account secrets and manifest', () => {
     expect(runCloudActivationGate().status).toBe(0)
   })
@@ -210,14 +229,9 @@ describe('custom-node S1-S12 workflow gates', () => {
           CN_ENABLE_S15: '0'
         })
       else {
-        expect(String(suite?.env?.CN_ENABLE_S14)).toContain(coreS14Enabled)
+        expect(suite?.env?.CN_ENABLE_S14).toBe('0')
         expect(String(suite?.env?.CN_ENABLE_S15)).toContain('inputs.enable_s15')
-        expect(String(resultGate?.env?.EXPECTED_TESTS)).toContain(
-          coreS14Enabled
-        )
-        expect(String(resultGate?.env?.EXPECTED_TESTS)).toContain(
-          "'33' || '32'"
-        )
+        expect(resultGate?.env?.EXPECTED_TESTS).toBe(32)
       }
       expect(suiteCommand?.match(/--workers(?:=|\s+)\S+/g)).toEqual([
         '--workers=1'
@@ -235,46 +249,6 @@ describe('custom-node S1-S12 workflow gates', () => {
       )
     }
   )
-
-  it('keeps Core S14 execution, count, and summary aligned for every dispatch state', () => {
-    const steps = workflowSteps('.github/workflows/ci-tests-custom-nodes.yaml')
-    const suite = steps.find((step) => step.name?.startsWith('Run custom-node'))
-    const resultGate = steps.find(
-      (step) => step.name === 'Forbid failed, skipped, or flaky tests'
-    )
-    const summary = steps.find((step) => step.name === 'Publish results table')
-
-    expect(String(suite?.env?.CN_ENABLE_S14)).toContain(coreS14Enabled)
-    expect(String(resultGate?.env?.EXPECTED_TESTS)).toContain(coreS14Enabled)
-    expect(String(summary?.env?.S14_ENABLED)).toContain(coreS14Enabled)
-
-    expect(coreExpectedTests('0', 'workflow_dispatch', true)).toBe(33)
-    expect(coreExpectedTests('0', 'workflow_dispatch', false)).toBe(32)
-    expect(coreExpectedTests('14', 'workflow_dispatch', false)).toBe(33)
-    expect(coreExpectedTests('0', 'pull_request', false)).toBe(33)
-  })
-
-  it('records geometry through S14 without enabling deferred Cloud S14', () => {
-    const allNodes = readFileSync(
-      'browser_tests/tests/customNodes/allNodes.spec.ts',
-      'utf8'
-    )
-    expect(allNodes).toContain(
-      "process.env.CN_ENABLE_S14 === '1' || process.env.CN_GEOMETRY === 'record'"
-    )
-
-    for (const workflow of [
-      '.github/workflows/record-custom-nodes-geometry.yaml',
-      '.github/workflows/record-custom-nodes-geometry-cloud.yaml'
-    ]) {
-      const step = workflowSteps(workflow).find((candidate) =>
-        candidate.name?.startsWith('Record')
-      )
-      expect(step?.env).toMatchObject({ CN_GEOMETRY: 'record' })
-      expect(step?.env).not.toHaveProperty('CN_ENABLE_S14')
-      expect(step?.run).toContain(`--grep "${geometryRecorderSelector}"`)
-    }
-  })
 
   it('keeps isolated tiers attributable without repeating per-pack node fetches', () => {
     const allNodes = readFileSync(

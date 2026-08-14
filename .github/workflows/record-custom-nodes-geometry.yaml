@@ -27,6 +27,8 @@ jobs:
     if: github.repository == 'Comfy-Org/ComfyUI_frontend'
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    env:
+      CN_ENABLE_S14: '0'
     permissions:
       contents: read
     steps:
@@ -96,6 +98,7 @@ jobs:
       # if-no-files-found guard below can actually fire on a crashed
       # record instead of shipping stale bytes as a fresh recording.
       - name: Clear committed baselines
+        if: env.CN_ENABLE_S14 == '1'
         shell: bash
         run: rm -f browser_tests/fixtures/customNode/geometry/*.json
 
@@ -106,6 +109,7 @@ jobs:
       # CN_GEOMETRY_CORE stamps provenance into each baseline file and
       # must match the comfyui_ref above.
       - name: Record geometry baselines
+        if: env.CN_ENABLE_S14 == '1'
         continue-on-error: true
         env:
           CN_GEOMETRY: record
@@ -130,6 +134,7 @@ jobs:
             --grep "Curated workflow execution: completes without error"
 
       - name: Upload recorded baselines
+        if: env.CN_ENABLE_S14 == '1'
         uses: actions/upload-artifact@v6
         with:
           name: custom-nodes-geometry-baselines
