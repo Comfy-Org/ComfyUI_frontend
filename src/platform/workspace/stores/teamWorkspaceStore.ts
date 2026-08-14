@@ -127,7 +127,8 @@ const BASE_RETRY_DELAY_MS = 1000
 export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
   const initState = ref<InitState>('uninitialized')
   const workspaces = shallowRef<WorkspaceState[]>([])
-  const activeWorkspaceId = ref<string | null>(null)
+  const mutableActiveWorkspaceId = ref<string | null>(null)
+  const activeWorkspaceId = computed(() => mutableActiveWorkspaceId.value)
   const billingRailByWorkspaceId = shallowRef<Record<string, BillingRail>>({})
   const error = ref<Error | null>(null)
 
@@ -300,7 +301,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
           )
 
           if (sessionWorkspaceExists) {
-            activeWorkspaceId.value = sessionWorkspaceId
+            mutableActiveWorkspaceId.value = sessionWorkspaceId
             initState.value = 'ready'
             isFetchingWorkspaces.value = false
             return
@@ -317,7 +318,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
 
           if (isStaleIdentity(generation)) return
 
-          activeWorkspaceId.value = fallbackWorkspaceId
+          mutableActiveWorkspaceId.value = fallbackWorkspaceId
           setLastWorkspaceId(fallbackWorkspaceId)
           initState.value = 'ready'
           isFetchingWorkspaces.value = false
@@ -354,7 +355,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
         if (isStaleIdentity(generation)) return
 
         // 5. Set active workspace
-        activeWorkspaceId.value = targetWorkspaceId
+        mutableActiveWorkspaceId.value = targetWorkspaceId
         setLastWorkspaceId(targetWorkspaceId)
 
         initState.value = 'ready'
@@ -852,7 +853,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     identityGeneration++
     initState.value = 'uninitialized'
     workspaces.value = []
-    activeWorkspaceId.value = null
+    mutableActiveWorkspaceId.value = null
     error.value = null
     isCreating.value = false
     isDeleting.value = false

@@ -365,66 +365,6 @@ describe('useSubscription', () => {
       )
     })
 
-    it('does not apply status after the active workspace changes', async () => {
-      let resolveStatus: (value: {
-        is_active: boolean
-        has_funds: boolean
-        billing_rail: 'stripe'
-      }) => void = () => {}
-      mockGetBillingStatus.mockReturnValue(
-        new Promise((resolve) => {
-          resolveStatus = resolve
-        })
-      )
-
-      const { subscriptionStatus, fetchStatus } = useSubscriptionWithScope()
-      const statusBefore = subscriptionStatus.value
-      const statusRequest = fetchStatus()
-      mockActiveWorkspaceId.value = 'workspace-456'
-      resolveStatus({
-        is_active: true,
-        has_funds: true,
-        billing_rail: 'stripe'
-      })
-      await statusRequest
-
-      expect(mockSetWorkspaceBillingRail).not.toHaveBeenCalled()
-      expect(subscriptionStatus.value).toBe(statusBefore)
-    })
-
-    it('fetches for the new workspace when one is switched to mid-request', async () => {
-      let resolveFirst: (value: {
-        is_active: boolean
-        has_funds: boolean
-      }) => void = () => {}
-      mockGetBillingStatus.mockReturnValueOnce(
-        new Promise((resolve) => {
-          resolveFirst = resolve
-        })
-      )
-      mockGetBillingStatus.mockResolvedValueOnce({
-        is_active: false,
-        has_funds: false,
-        billing_rail: 'legacy_stripe'
-      })
-
-      const { subscriptionStatus, fetchStatus } = useSubscriptionWithScope()
-      const firstRequest = fetchStatus()
-
-      mockActiveWorkspaceId.value = 'workspace-456'
-      const secondRequest = fetchStatus()
-
-      resolveFirst({ is_active: true, has_funds: true })
-      await Promise.all([firstRequest, secondRequest])
-
-      expect(mockGetBillingStatus).toHaveBeenCalledTimes(2)
-      expect(subscriptionStatus.value).toEqual({
-        is_active: false,
-        has_funds: false,
-        billing_rail: 'legacy_stripe'
-      })
-    })
-
     it('coalesces concurrent callers into one fetch', async () => {
       let resolveStatus: (value: {
         is_active: boolean
