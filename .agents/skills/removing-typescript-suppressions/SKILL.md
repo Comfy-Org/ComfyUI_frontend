@@ -1,6 +1,6 @@
 ---
 name: removing-typescript-suppressions
-description: Replaces TypeScript suppressions with minimal type-safe fixes. Use when removing @ts-expect-error, @ts-ignore, unsafe assertions, or temporary strict-mode workarounds.
+description: Replaces @ts-expect-error and @ts-ignore directives with minimal type-safe fixes. Use when removing TypeScript compiler suppressions.
 ---
 
 # Removing TypeScript suppressions
@@ -192,7 +192,7 @@ instead of assigning `{}` to a full `Window` type:
 
 ```typescript
 if (typeof window === 'undefined') {
-  Object.assign(globalWithDefines, { window: {} })
+  Object.assign(globalThis, { window: {} })
 }
 ```
 
