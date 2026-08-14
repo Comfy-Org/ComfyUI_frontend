@@ -599,13 +599,16 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
    * Fetch members for the current workspace.
    */
   async function fetchMembers(
-    params?: ListMembersParams
+    params: ListMembersParams = {}
   ): Promise<WorkspaceMember[]> {
     const generation = identityGeneration
     const workspaceId = activeWorkspaceId.value
     if (!workspaceId) return []
 
-    const response = await workspaceApi.listMembers(params)
+    const response = await workspaceApi.listMembers({
+      ...params,
+      limit: params.limit ?? 100
+    })
     const members = response.members.map(mapApiMemberToWorkspaceMember)
     if (!isStaleWorkspace(generation, workspaceId)) {
       updateWorkspace(workspaceId, { members })
