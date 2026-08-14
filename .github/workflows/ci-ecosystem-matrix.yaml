@@ -96,16 +96,17 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      # Keyed on the pins, so it is an exact hit for every run measuring the
-      # same commits and a guaranteed miss the moment they are bumped. The
-      # prefix fallback serves a cold PR something usable rather than nothing.
+      # Exact key only, deliberately no restore-keys. The key IS the pin set,
+      # so a prefix fallback would hand back a corpus pinned to different
+      # commits - and since a pinned fetch treats an already-present pack as
+      # done, nothing downstream would correct it. Better a 4-minute cold
+      # fetch than a green verdict over the wrong packs.
       - name: Restore corpus cache
         id: restore
         uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           path: .census
           key: ${{ env.CORPUS_CACHE_PREFIX }}${{ hashFiles('scripts/registry-census/corpus.pins.json') }}
-          restore-keys: ${{ env.CORPUS_CACHE_PREFIX }}
 
       # Re-pin the registry snapshot every run: it is the corpus's target
       # list, and new packs only enter the corpus through it.
@@ -139,29 +140,33 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
 
-      # Key derived from the lockfile: unchanged corpus finds its key taken
-      # and the server rejects the duplicate; any pack drift writes a new
-      # entry. Gated on the FETCH step and a present lockfile: an early
-      # failure must not save a partial .census - least of all under the
-      # empty-hash key, which equals the restore-keys prefix and would
-      # become the best match for every later run.
+      # Same key as the restore, which is the PIN SET - so there is exactly
+      # one entry per pin bump rather than one per run that saw drift, and
+      # concurrent runs on the same pins race for one key with the loser
+      # rejected as a duplicate.
       #
-      # Default branch only. A PR that saved would spend the repo's shared
-      # cache budget on an entry no other branch can restore.
+      # Saved on any event, not just main. The shards are separate jobs and
+      # this cache is the only thing that carries the corpus to them: gating
+      # the save to the default branch meant a PR could never run the matrix
+      # at all, which is what reddened run 31827717441. Affordable now that
+      # the corpus is ~0.32GB rather than the 6.0GB that evicted itself.
+      #
+      # Gated on the FETCH step and a present lockfile: an early failure must
+      # not save a partial .census.
       - name: Save corpus cache
         if: |
-          github.event_name != 'pull_request'
-          && github.ref_name == github.event.repository.default_branch
+          steps.restore.outputs.cache-hit != 'true'
           && steps.fetch.outcome == 'success'
           && hashFiles('.census/corpus.lock.json') != ''
         uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           path: .census
-          key: ${{ env.CORPUS_CACHE_PREFIX }}${{ hashFiles('.census/corpus.lock.json') }}
+          key: ${{ env.CORPUS_CACHE_PREFIX }}${{ hashFiles('scripts/registry-census/corpus.pins.json') }}
 
-  # Each drift writes a new entry against the repo's shared 10GB budget; keep
-  # the newest only. Its own job so `corpus`, which holds a token while
-  # extracting untrusted archives, stays at contents: read.
+  # One entry per pin bump against the repo's shared 10GB budget; keep the
+  # newest only. Branch-scoped, so a PR's entry is never deleted out from
+  # under it - those expire with the PR. Its own job so `corpus`, which holds
+  # a token while extracting untrusted archives, stays at contents: read.
   prune-corpus-cache:
     needs: corpus
     if: |
@@ -226,14 +231,17 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      # The corpus job above saved the cache this run; same-run caches are
-      # visible to later jobs. Restore-only - the matrix never writes it.
+      # The corpus job saved this exact key; same-run caches are visible to
+      # later jobs. Restore-only, exact key, and fail-on-cache-miss: a prefix
+      # fallback here would hand the shard a corpus pinned to different
+      # commits, and `corpus missing` further down is a much clearer failure
+      # than a green verdict over the wrong packs.
       - name: Restore corpus cache
         uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           path: .census
-          key: ${{ env.CORPUS_CACHE_PREFIX }}${{ github.run_id }}-matrix
-          restore-keys: ${{ env.CORPUS_CACHE_PREFIX }}
+          key: ${{ env.CORPUS_CACHE_PREFIX }}${{ hashFiles('scripts/registry-census/corpus.pins.json') }}
+          fail-on-cache-miss: true
 
       # node_cache: false - setup-node's post step writes the pnpm store
       # AFTER this job has executed ~1,900 packs' code, and the publish
