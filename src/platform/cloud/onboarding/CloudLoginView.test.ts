@@ -65,6 +65,9 @@ describe('CloudLoginView', () => {
     const { container } = await renderLoginView('/cloud/login', EN_MESSAGES)
 
     expect(container.textContent).toContain(enMessages.auth.login.cloudNewUser)
+    expect(
+      screen.getByRole('link', { name: enMessages.auth.login.cloudSignUp })
+    ).toBeInTheDocument()
     expect(container.textContent).not.toMatch(/free/i)
   })
 

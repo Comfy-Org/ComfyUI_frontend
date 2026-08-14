@@ -47,6 +47,16 @@ test.describe('Cloud distribution UI', { tag: '@cloud' }, () => {
     await expect(page.getByRole('button', { name: /google/i })).toBeVisible()
   })
 
+  test('cloud login page points new users to sign-up without promising free runs', async ({
+    page
+  }) => {
+    await page.goto(APP_URL)
+    await expect(page).toHaveURL(/\/cloud\/login/, { timeout: 10_000 })
+
+    await expect(page.getByRole('link', { name: /sign up/i })).toBeVisible()
+    await expect(page.getByText(/free run/i)).toHaveCount(0)
+  })
+
   test('unknown paths redirect to cloud login instead of hanging on splash screen', async ({
     page
   }) => {
