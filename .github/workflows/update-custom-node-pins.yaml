@@ -1,0 +1,66 @@
+# Bump the custom-node suite's pack pins.
+#
+# Manual, and that is the design. customNodeManifest.core.json names the exact
+# commit of every pack the suite installs, so no git surface moves underneath a
+# PR: unpinned, every pack author is a committer to this repo's CI and a bug
+# pushed to any of them reds the next unrelated PR.
+#
+# The cost is the mirror image - pack breakage stays invisible until someone
+# bumps - so this opens the PR where it all lands at once, reviewed, by someone
+# who expected it. A red suite on THAT pr means the ecosystem moved. A red
+# anywhere else means the diff did.
+name: 'Update custom-node pins'
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  update-pins:
+    if: github.repository == 'Comfy-Org/ComfyUI_frontend'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+        with:
+          include_build_step: false
+
+      - name: Report the pins being replaced
+        run: pnpm custom-node-pins
+
+      - name: Bump every pin to upstream HEAD
+        run: pnpm custom-node-pins:update | tee bump.txt
+
+      - name: Open the bump PR
+        uses: peter-evans/create-pull-request@22a9089034f40e5a961c8808d113e2c98fb63676 # v7.0.11
+        with:
+          branch: chore/custom-node-pins
+          commit-message: 'chore: bump custom-node suite pack pins'
+          title: 'chore: bump custom-node suite pack pins'
+          body: |
+            Regenerates the `pin` and `pinnedAt` fields in
+            `browser_tests/fixtures/data/customNodeManifest.core.json`.
+
+            **`CI: Custom Nodes` is expected to red on this PR, and that is the
+            point.** `expectedNodeCount` and `expectedExtensions` are calibrated
+            against the pinned source, and the manifest is deliberate that any
+            delta — either direction — fails until it is recalibrated. A red here
+            is the suite telling you what changed in the ecosystem since the last
+            bump; a red anywhere else means the diff did it.
+
+            To land this: read the failures, decide whether each is real breakage
+            worth an upstream issue or acceptable churn, recalibrate the counts,
+            and merge. Leaving the pins stale is strictly worse — it makes the
+            suite measure an ecosystem that no longer exists.
+
+            See the triggering run's log for which pins moved.
+          add-paths: browser_tests/fixtures/data/customNodeManifest.core.json

@@ -130,6 +130,16 @@ jobs:
         with:
           include_build_step: true
 
+      # Pinning is what stops a pack author's 3am push from redding an
+      # unrelated PR. The cost is that pack breakage stays invisible until
+      # someone bumps, and nothing used to say when - so this reports the age
+      # of every pin and warns past 30 days. Never fails the job: blocking
+      # every PR over a pin nobody's diff touched is how a gate gets routed
+      # around.
+      - name: How old are the pack pins
+        continue-on-error: true
+        run: pnpm custom-node-pins
+
       - name: Setup Playwright
         uses: ./.github/actions/setup-playwright
 
