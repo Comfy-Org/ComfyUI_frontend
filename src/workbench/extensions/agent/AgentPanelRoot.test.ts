@@ -67,11 +67,17 @@ const appMock = vi.hoisted(() => {
           }
           selectedItems: Set<unknown>
           selectItems: ReturnType<typeof vi.fn>
+          select: ReturnType<typeof vi.fn>
           deselect: (node: unknown) => void
+          animateToBounds: ReturnType<typeof vi.fn>
           multi_select: boolean
           allow_dragnodes: boolean
           selectOnly: boolean
-          canvas: { focus: ReturnType<typeof vi.fn> }
+          canvas: {
+            focus: ReturnType<typeof vi.fn>
+            width: number
+            height: number
+          }
         }
       | undefined
   }
@@ -416,6 +422,10 @@ function setupNodeSelectionCanvas() {
     for (const item of items) selectedItems.add(item)
   })
   const deselect = vi.fn((node: unknown) => selectedItems.delete(node))
+  const select = vi.fn((node: unknown) => selectedItems.add(node))
+  // Entering selection mode frames the graph; the stub only has to record the
+  // call, but it must exist or onSelectNodes throws part-way through.
+  const animateToBounds = vi.fn()
   const graph = {
     nodes,
     getNodeById: (id: string) =>
@@ -425,15 +435,26 @@ function setupNodeSelectionCanvas() {
     graph,
     selectedItems,
     selectItems,
+    select,
     deselect,
+    animateToBounds,
     multi_select: false,
     allow_dragnodes: true,
     selectOnly: false,
-    canvas: { focus }
+    canvas: { focus, width: 1600, height: 900 }
   }
   appMock.canvas = canvas
   hostStores.canvas.currentGraph = graph
-  return { canvas, focus, nodes, selectedItems, selectItems, deselect }
+  return {
+    canvas,
+    focus,
+    nodes,
+    selectedItems,
+    selectItems,
+    select,
+    deselect,
+    animateToBounds
+  }
 }
 
 function renderCanvasNodeButtons(
@@ -4071,18 +4092,24 @@ describe('AgentPanelRoot workflow binding', () => {
   it('resolves picker nodes from the viewed subgraph, not the root graph', async () => {
     makeTab()
     const bodies = mockMessagesEndpoint('wf-42')
+    // `select` has to actually add to the selection: picking a mention now
+    // selects the node on the canvas, and staged chips are rebuilt from that
+    // selection, so a no-op stub would drop the chip it just staged.
+    const selectedItems = new Set<unknown>()
     appMock.canvas = {
       graph: {
         nodes: [{ id: 12, title: 'KSampler' }],
         getNodeById: () => null
       },
-      selectedItems: new Set(),
+      selectedItems,
       selectItems: vi.fn(),
+      select: vi.fn((node: unknown) => selectedItems.add(node)),
       deselect: vi.fn(),
+      animateToBounds: vi.fn(),
       multi_select: false,
       allow_dragnodes: true,
       selectOnly: false,
-      canvas: { focus: vi.fn() }
+      canvas: { focus: vi.fn(), width: 1600, height: 900 }
     }
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })

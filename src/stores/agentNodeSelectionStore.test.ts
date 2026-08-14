@@ -2,6 +2,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
@@ -10,6 +11,29 @@ const dialogStack = vi.hoisted(() => [] as unknown[])
 vi.mock('@/stores/dialogStore', () => ({
   useDialogStore: () => ({ dialogStack })
 }))
+
+/**
+ * Real nodes carry `pos`/`size`; `boundingRect` is litegraph-renderer cache that
+ * stays zeroed under Vue nodes, so the fit deliberately ignores it.
+ */
+function graphNode(
+  id: number,
+  pos?: [number, number],
+  size?: [number, number]
+) {
+  return { id, pos, size, boundingRect: new Float64Array(4) }
+}
+
+/** The minimum canvas surface the fit-to-view path touches. */
+function stubCanvas(nodes: unknown[]) {
+  const animateToBounds = vi.fn()
+  useCanvasStore().canvas = {
+    graph: { nodes },
+    animateToBounds,
+    canvas: { width: 1600, height: 900 }
+  } as never
+  return { animateToBounds }
+}
 
 describe('agentNodeSelectionStore', () => {
   beforeEach(() => {
@@ -20,6 +44,61 @@ describe('agentNodeSelectionStore', () => {
 
   afterEach(() => {
     vi.useRealTimers()
+  })
+
+  it('frames the graph on entering, whatever opened the mode', () => {
+    const { animateToBounds } = stubCanvas([
+      graphNode(1, [0, 0], [100, 100]),
+      graphNode(2, [500, 300], [100, 100])
+    ])
+
+    useAgentNodeSelectionStore().enter()
+
+    expect(animateToBounds).toHaveBeenCalledOnce()
+    const [bounds, options] = animateToBounds.mock.calls[0]
+    // Encloses both nodes (0,0 to 600,400), plus 40 units of padding each side.
+    expect(bounds).toEqual([-40, -40, 680, 480])
+    expect(options.viewport).toEqual([0, 0, 1600, 900])
+  })
+
+  // Under Vue nodes `boundingRect` is all zeroes, so a fit driven off it would
+  // frame a degenerate rect at the origin instead of the graph.
+  it('frames from pos/size, not the zeroed litegraph boundingRect', () => {
+    const { animateToBounds } = stubCanvas([
+      graphNode(1, [1000, 800], [200, 100])
+    ])
+
+    useAgentNodeSelectionStore().enter()
+
+    const [bounds] = animateToBounds.mock.calls[0]
+    expect(bounds).toEqual([960, 760, 280, 180])
+  })
+
+  it('leaves the camera alone when nothing is positioned yet', () => {
+    const { animateToBounds } = stubCanvas([graphNode(1), graphNode(2)])
+
+    useAgentNodeSelectionStore().enter()
+
+    expect(animateToBounds).not.toHaveBeenCalled()
+  })
+
+  it('leaves the camera alone on an empty graph', () => {
+    const { animateToBounds } = stubCanvas([])
+
+    useAgentNodeSelectionStore().enter()
+
+    expect(animateToBounds).not.toHaveBeenCalled()
+  })
+
+  it('does not frame the graph on exit', () => {
+    const { animateToBounds } = stubCanvas([graphNode(1, [0, 0], [100, 100])])
+    const store = useAgentNodeSelectionStore()
+
+    store.enter()
+    animateToBounds.mockClear()
+    store.exit()
+
+    expect(animateToBounds).not.toHaveBeenCalled()
   })
 
   it('sequences selection chrome and restores the open sidebar', async () => {

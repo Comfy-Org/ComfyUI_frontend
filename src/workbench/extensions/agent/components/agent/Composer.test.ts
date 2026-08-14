@@ -543,6 +543,31 @@ describe('Composer', () => {
     ).toHaveTextContent('Remove')
   })
 
+  it('emits focusTag when a selection chip is activated', async () => {
+    const { emitted } = mount({
+      selectionTags: [{ id: '5', title: 'KSampler' }]
+    })
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Show on canvas' })
+    )
+
+    expect(emitted().focusTag).toEqual([['5']])
+  })
+
+  // The remove button sits outside the focus trigger; removing a chip must not
+  // also fly the canvas to the node being removed.
+  it('removes a selection chip without focusing its node', async () => {
+    const { emitted } = mount({
+      selectionTags: [{ id: '5', title: 'KSampler' }]
+    })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Remove' }))
+
+    expect(emitted().removeTag).toEqual([['5']])
+    expect(emitted().focusTag).toBeUndefined()
+  })
+
   it('shows the id on a lone selection chip with a graph title twin', () => {
     const selected = { id: '5', title: 'KSampler' }
     mount({

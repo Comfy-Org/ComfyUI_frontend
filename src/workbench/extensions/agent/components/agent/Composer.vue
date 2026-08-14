@@ -52,6 +52,7 @@ const emit = defineEmits<{
   openAssets: []
   selectNodes: []
   removeTag: [id: string]
+  focusTag: [id: string]
   mentionPick: [node: SelectedNode]
 }>()
 
@@ -376,24 +377,38 @@ defineExpose({
         <span>{{ t('agent.dragAndDropAssets') }}</span>
       </div>
       <div v-if="selectionTags.length" class="flex flex-wrap gap-2 p-3">
+        <!-- The label is the control that reveals the node on the canvas. The
+             remove button sits outside that trigger deliberately: nesting it
+             inside would surface both tooltips at once on hover. -->
         <span
           v-for="tag in selectionTags"
           :key="tag.id"
           class="bg-agent-surface-hover text-agent-fg inline-flex h-7 items-center gap-1 rounded-lg border border-neutral-200 px-2.5 text-xs/4 font-medium"
         >
-          <span class="icon-[comfy--node] size-3.5" />
-          <span class="max-w-40 truncate">{{ tag.title }}</span>
           <span
-            v-if="graphDupes.has(tag.title) || tagDupes.has(tag.title)"
-            :class="duplicateIdClass"
-            >#{{ tag.id }}</span
+            v-tooltip.top="buildAgentTooltipConfig(t('agent.focusNode'))"
+            role="button"
+            tabindex="0"
+            :aria-label="t('agent.focusNode')"
+            class="hover:text-agent-fg-hover flex cursor-pointer items-center gap-1 transition-colors"
+            @click="emit('focusTag', tag.id)"
+            @keydown.enter="emit('focusTag', tag.id)"
+            @keydown.space.prevent="emit('focusTag', tag.id)"
           >
+            <span class="icon-[comfy--node] size-3.5" />
+            <span class="max-w-40 truncate">{{ tag.title }}</span>
+            <span
+              v-if="graphDupes.has(tag.title) || tagDupes.has(tag.title)"
+              :class="duplicateIdClass"
+              >#{{ tag.id }}</span
+            >
+          </span>
           <button
             v-tooltip.top="buildAgentTooltipConfig(t('agent.remove'))"
             type="button"
             :aria-label="t('agent.remove')"
             class="text-agent-fg-muted hover:text-agent-fg flex size-3.5 cursor-pointer items-center justify-center transition-colors"
-            @click="emit('removeTag', tag.id)"
+            @click.stop="emit('removeTag', tag.id)"
           >
             <span class="icon-[lucide--x] size-3.5 shrink-0" />
           </button>
