@@ -94,19 +94,34 @@ describe('MediaAssetCard', () => {
     ])(
       'includes trusted metadata for an imported $mime card',
       ({ name, display_name }) => {
-        renderCard({
-          id: name,
-          name,
-          display_name,
-          tags: ['input'],
-          preview_url: `/api/view?filename=${name}`
+        const attachmentRef = `stored-${name}`
+        const previewUrl = new URL(
+          `/api/view?filename=${name}`,
+          location.href
+        ).toString()
+        const { container } = renderCard({
+          asset: fromPartial({
+            id: name,
+            name,
+            hash: attachmentRef,
+            display_name,
+            tags: ['input'],
+            preview_url: `/api/view?filename=${name}`
+          })
         })
 
         const { event, add } = dispatchDragStart()
 
         expect(event.defaultPrevented).toBe(false)
         expect(add).toHaveBeenCalledWith(
-          JSON.stringify({ filename: name, type: 'input', display_name }),
+          JSON.stringify({
+            filename: name,
+            type: 'input',
+            display_name,
+            attachment_ref: attachmentRef,
+            media_kind: name.endsWith('.png') ? 'image' : 'video',
+            preview_url: name.endsWith('.png') ? previewUrl : undefined
+          }),
           MIME_ASSET_INFO
         )
         expect(add).toHaveBeenCalledWith(
@@ -145,7 +160,10 @@ describe('MediaAssetCard', () => {
           filename: 'generated.png',
           subfolder: 'outputs',
           type: 'output',
-          display_name: 'Generated image'
+          display_name: 'Generated image',
+          attachment_ref: 'card-name.png',
+          media_kind: 'image',
+          preview_url: new URL('/api/preview.png', location.href).toString()
         }),
         MIME_ASSET_INFO
       )
@@ -164,7 +182,9 @@ describe('MediaAssetCard', () => {
         JSON.stringify({
           filename: 'plain_video.mp4',
           type: 'input',
-          display_name: undefined
+          display_name: undefined,
+          attachment_ref: 'plain_video.mp4',
+          media_kind: 'video'
         }),
         MIME_ASSET_INFO
       )
