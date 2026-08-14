@@ -2,11 +2,13 @@ import { computed, ref } from 'vue'
 import { fromZodError } from 'zod-validation-error'
 import type { ListAssetsData } from '@comfyorg/ingest-types'
 
+import { unflattenOutputAssets } from '@/platform/assets/composables/media/assetMappers'
 import { assetResponseSchema } from '@/platform/assets/schemas/assetSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import {
   createSharedPagedList,
-  stableKey
+  stableKey,
+  wrapPagedList
 } from '@/platform/remote/paged/pagedList'
 import type { PagedList } from '@/platform/remote/paged/pagedList'
 import { api } from '@/scripts/api'
@@ -112,10 +114,11 @@ function assetsQueryInternal(
   return { hasMore, invalidate, isLoading, items, loadMore, loadNew }
 }
 
-const sharedPagedList = createSharedPagedList(
-  assetsQueryInternal,
+export const useAssetsQuery = createSharedPagedList(
+  (p) =>
+    wrapPagedList(assetsQueryInternal(p), (items) =>
+      unflattenOutputAssets(items)
+    ),
   stableKey,
   (item) => item.id
 )
-export const useAssetsQuery = sharedPagedList.constructor
-export const invalidateItems = sharedPagedList.invalidateItems

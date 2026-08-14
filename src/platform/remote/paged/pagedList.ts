@@ -1,5 +1,5 @@
+import { computed, onScopeDispose, toValue } from 'vue'
 import type { MaybeRef } from 'vue'
-import { onScopeDispose, toValue } from 'vue'
 
 export type PagedList<T> = {
   hasMore: Readonly<MaybeRef<boolean>>
@@ -12,9 +12,9 @@ export type PagedList<T> = {
 
 export function wrapPagedList<T>(
   list: PagedList<T>,
-  filter: (items: MaybeRef<readonly T[]>) => MaybeRef<T[]>
+  filter: (items: MaybeRef<readonly T[]>) => T[]
 ): PagedList<T> {
-  return { ...list, items: filter(list.items) }
+  return { ...list, items: computed(() => filter(list.items)) }
 }
 
 interface CacheEntry<T> {
@@ -55,7 +55,7 @@ export function createSharedPagedList<TParams, TItem>(
     )
   }
 
-  function constructor(params: TParams): PagedList<TItem> {
+  return function (params: TParams): PagedList<TItem> {
     const key = paramKeyFn(params)
     const entry = cache.get(key) ?? { list: factory(params), refCount: 0 }
     cache.set(key, entry)
@@ -72,6 +72,4 @@ export function createSharedPagedList<TParams, TItem>(
     }
     return { ...entry.list, invalidate, loadNew }
   }
-
-  return { constructor, invalidateItems }
 }
