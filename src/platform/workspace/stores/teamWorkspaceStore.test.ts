@@ -893,6 +893,34 @@ describe('useTeamWorkspaceStore', () => {
       expect(store.members[0].monthlyCreditLimit).toBeNull()
       expect(store.members[1].creditsUsedThisMonth).toBeUndefined()
       expect(store.members[1].monthlyCreditLimit).toBeUndefined()
+      expect(mockWorkspaceApi.listMembers).toHaveBeenCalledWith({ limit: 100 })
+    })
+
+    it('fetchMembers applies the default limit to partial parameters', async () => {
+      mockWorkspaceApi.listMembers.mockResolvedValue({
+        members: [],
+        pagination: { offset: 20, limit: 100, total: 0 }
+      })
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+
+      await store.fetchMembers({ offset: 20 })
+      expect(mockWorkspaceApi.listMembers).toHaveBeenLastCalledWith({
+        limit: 100,
+        offset: 20
+      })
+
+      await store.fetchMembers({ offset: 20, limit: undefined })
+      expect(mockWorkspaceApi.listMembers).toHaveBeenLastCalledWith({
+        limit: 100,
+        offset: 20
+      })
+
+      await store.fetchMembers({ offset: 20, limit: 25 })
+      expect(mockWorkspaceApi.listMembers).toHaveBeenLastCalledWith({
+        limit: 25,
+        offset: 20
+      })
     })
 
     it('fetchMembers supports a personal workspace with Team entitlement', async () => {
