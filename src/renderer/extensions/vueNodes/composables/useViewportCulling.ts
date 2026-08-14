@@ -83,7 +83,7 @@ const PRUNE_SLACK = 8
  * roughly 8-14ms each at minimum zoom where every mount also lays out and
  * measures a scaled subtree. No fixed number is right for both.
  */
-export const MOUNT_BATCH_PER_FRAME = 8
+const MOUNT_BATCH_PER_FRAME = 8
 
 /**
  * Smallest batch backpressure may shrink to.
@@ -95,8 +95,14 @@ export const MOUNT_BATCH_PER_FRAME = 8
  */
 const MOUNT_BATCH_FLOOR = 2
 
-/** Largest batch, and so the bound on the worst frame the fill-in can produce. */
-const MOUNT_BATCH_CEILING = MOUNT_BATCH_PER_FRAME * 8
+/**
+ * Largest batch, and so the bound on the worst frame the fill-in can produce.
+ *
+ * Deliberately close to the starting size. Mounting costs roughly 8ms per node
+ * at minimum zoom, where fills are largest, so every doubling here is another
+ * ~64ms of frozen frame - a ceiling of 64 measured at 300ms in one frame.
+ */
+const MOUNT_BATCH_CEILING = MOUNT_BATCH_PER_FRAME * 2
 
 /** Frame budget the fill-in tries to stay within, in milliseconds. */
 const MOUNT_FRAME_BUDGET_MS = 20
@@ -337,10 +343,19 @@ export function useViewportCulling({
 
     if (mountQueue.length > 0) {
       mountFrame = requestAnimationFrame(drainMountQueue)
+    } else {
+      // Fill complete: the next one starts its own clock.
+      queueStartedAt = 0
     }
   }
 
   function queueMount(entering: NodeId[], immediate = false): void {
+    // How long the user has been waiting for nodes to finish arriving, carried
+    // across re-queues. Panning re-computes the entering set every 100ms and
+    // the backstop every 250ms, so starting this afresh each time meant the
+    // deadline could never elapse and the batch stayed pinned at whatever
+    // backpressure had shrunk it to.
+    const fillStartedAt = queueStartedAt
     cancelQueuedMounts()
     if (entering.length === 0) return
 
@@ -355,7 +370,7 @@ export function useViewportCulling({
       return
     }
 
-    queueStartedAt = performance.now()
+    queueStartedAt = fillStartedAt || performance.now()
 
     // First batch synchronously so a small change appears this frame rather
     // than a frame late; the rest fills in over following frames.
