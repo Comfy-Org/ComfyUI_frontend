@@ -1,6 +1,7 @@
 import { render } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import type * as VueUseCore from '@vueuse/core'
 import { useReconnectQueueRefresh } from '@/composables/useReconnectQueueRefresh'
@@ -198,9 +199,11 @@ vi.mock('@/renderer/extensions/firstRunTour/FirstRunTour.vue', () => stubModule)
 // loaded worker pool while it passed in isolation (#14666).
 const { default: GraphView } = await import('./GraphView.vue')
 
+const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
+
 describe('GraphView - reconnect wiring', () => {
   it('wires the reconnected event to the toast and queue refresh', () => {
-    render(GraphView)
+    render(GraphView, { global: { plugins: [i18n] } })
 
     apiMock.dispatchEvent(new Event('reconnected'))
 
