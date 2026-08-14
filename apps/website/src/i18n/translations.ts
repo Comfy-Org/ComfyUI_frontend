@@ -378,6 +378,10 @@ const translations = {
     en: 'VIEW DOCS',
     'zh-CN': '查看文档'
   },
+  'api.hero.trySdk': {
+    en: 'TRY COMFY SDK',
+    'zh-CN': '试用 Comfy SDK'
+  },
 
   // Enterprise – TeamSection
   'enterprise.team.heading': {
@@ -2627,6 +2631,10 @@ const translations = {
   'footer.company': { en: 'Company', 'zh-CN': '公司' },
   'footer.contact': { en: 'Contact', 'zh-CN': '联系我们' },
   'footer.minimaxH3': { en: 'MiniMax H3', 'zh-CN': 'MiniMax H3' },
+  'footer.minimaxMusic3': {
+    en: 'MiniMax Music 3',
+    'zh-CN': 'MiniMax Music 3'
+  },
   'footer.seedance': { en: 'Seedance 2.5', 'zh-CN': 'Seedance 2.5' },
   'footer.about': { en: 'About', 'zh-CN': '关于' },
   'footer.termsOfService': { en: 'Terms of Service', 'zh-CN': '服务条款' },
@@ -4861,6 +4869,10 @@ const translations = {
     en: 'Made with LTX 2.5',
     'zh-CN': '用 LTX 2.5 制作'
   },
+  'ltx.faq.heading': {
+    en: 'Q&A',
+    'zh-CN': '问答'
+  },
   'ltx.hero.primaryCta': {
     en: 'RUN LTX 2.5',
     'zh-CN': '运行 LTX 2.5'
@@ -5418,6 +5430,51 @@ const translations = {
   'footer.wanAnimate2': { en: 'Wan Animate 2', 'zh-CN': 'Wan Animate 2' },
   'footer.ltx': { en: 'LTX 2.5', 'zh-CN': 'LTX 2.5' },
   'modelLaunch.copyPrompt': { en: 'Copy prompt', 'zh-CN': '复制提示词' },
+  // Wan 3.0 model page (/wan-3.0) — announcement until the model ships
+  'wan3.meta.title': {
+    en: 'Wan 3.0 on Comfy — Coming Soon',
+    'zh-CN': 'Comfy 上的 Wan 3.0 — 即将推出'
+  },
+  'wan3.meta.description': {
+    en: 'Wan 3.0 is coming to Comfy. Run it on Comfy Cloud the day it lands, or start building workflows for free now with every other model Comfy supports.',
+    'zh-CN':
+      'Wan 3.0 即将登陆 Comfy。上线当天即可在 Comfy Cloud 上运行；现在就可以用 Comfy 支持的其他模型免费开始搭建工作流。'
+  },
+  'wan3.breadcrumb.model': { en: 'Wan 3.0', 'zh-CN': 'Wan 3.0' },
+  'wan3.breadcrumb.updated': {
+    en: 'Updated August 2026',
+    'zh-CN': '更新于 2026 年 8 月'
+  },
+  'wan3.hero.eyebrow': { en: 'Coming soon', 'zh-CN': '即将推出' },
+  'wan3.hero.title': { en: 'Wan 3.0', 'zh-CN': 'Wan 3.0' },
+  'wan3.hero.primaryCta': {
+    en: 'RUN COMFY FOR FREE',
+    'zh-CN': '免费使用 Comfy'
+  },
+  'wan3.runOptions.heading': {
+    en: 'One engine, every way to run it',
+    'zh-CN': '同一引擎，多种运行方式'
+  },
+  'wan3.runOptions.subtitle': {
+    en: 'Build workflows in the browser today. Batch campaigns with the API, or bring it in-house.',
+    'zh-CN': '今天就在浏览器中搭建工作流。用 API 批量制作，或部署到自有环境。'
+  },
+  'wan3.runOptions.cta': { en: 'LEARN MORE', 'zh-CN': '了解更多' },
+  'wan3.reviews.heading': {
+    en: '4+ million Comfy creators say',
+    'zh-CN': '超过 400 万 Comfy 创作者这样说'
+  },
+  'wan3.reviews.highlightTitle': {
+    en: 'Comfy MCP: now turn your agent into a creative technologist.',
+    'zh-CN': 'Comfy MCP：让你的智能体成为创意技术专家。'
+  },
+  'wan3.reviews.highlightDescription': {
+    en: 'Your AI assistant can access the ecosystem, build workflows, and generate images, video, audio, or 3D.',
+    'zh-CN':
+      '你的 AI 助手可以接入整个生态、构建工作流，并生成图像、视频、音频或 3D 内容。'
+  },
+  'wan3.reviews.highlightCta': { en: 'GET STARTED', 'zh-CN': '开始使用' },
+  'footer.wan3': { en: 'Wan 3.0', 'zh-CN': 'Wan 3.0' },
   'minimax.meta.title': {
     en: 'MiniMax H3 on Comfy — Open-Weight Video Model',
     'zh-CN': 'Comfy 上的 MiniMax H3 — 开源权重视频模型'
@@ -5428,6 +5485,103 @@ const translations = {
       '在 Comfy 上运行 MiniMax H3：以开源权重形式提供，也可通过合作伙伴节点使用，多模态输入/输出，每个片段都带原生立体声音频，最高 2K，每次生成 5–15 秒。免费开始使用。'
   },
   'minimax.breadcrumb.model': { en: 'MiniMax H3', 'zh-CN': 'MiniMax H3' },
+  // MiniMax Music 3 SEO page (/minimax-music-3). zh-CN hand-translated.
+  'minimaxMusic3.meta.title': {
+    en: 'MiniMax Music 3 on Comfy — Open-Weights Music Model',
+    'zh-CN': 'Comfy 上的 MiniMax Music 3 — 开源权重音乐模型'
+  },
+  'minimaxMusic3.meta.description': {
+    en: 'Run MiniMax Music 3 on Comfy. Open weights for text to music, directed on the canvas alongside every other model, on Comfy Cloud or your own GPU.',
+    'zh-CN':
+      '在 Comfy 上运行 MiniMax Music 3。文本生成音乐的开源权重模型，可在画布上与其他所有模型一同执导，支持 Comfy Cloud 或你自己的 GPU。'
+  },
+  'minimaxMusic3.breadcrumb.model': {
+    en: 'MiniMax Music 3',
+    'zh-CN': 'MiniMax Music 3'
+  },
+  'minimaxMusic3.breadcrumb.updated': {
+    en: 'Updated August 2026',
+    'zh-CN': '更新于 2026 年 8 月'
+  },
+  'minimaxMusic3.hero.titleModel': {
+    en: 'MiniMax Music 3',
+    'zh-CN': 'MiniMax Music 3'
+  },
+  'minimaxMusic3.hero.titleRest': { en: ' is here', 'zh-CN': ' 已上线' },
+  'minimaxMusic3.hero.description': {
+    en: 'Full songs up to five minutes in one generation. Feed lyrics and a music description, and get coherent structure, expressive vocals, and evolving arrangements. Quality holds steady across the whole track, and the open weights are free to use commercially under Apache 2.0.',
+    'zh-CN':
+      '一次生成最长五分钟的完整歌曲。输入歌词和音乐描述，即可获得连贯的结构、富有表现力的人声和层层递进的编曲。整首曲目质量稳定如一，且开源权重依据 Apache 2.0 许可可免费商用。'
+  },
+  'minimaxMusic3.hero.tagOpenWeights': {
+    en: 'Open Weight',
+    'zh-CN': '开源权重'
+  },
+  'minimaxMusic3.hero.tagTextToMusic': {
+    en: 'Text to Audio',
+    'zh-CN': '文本生成音频'
+  },
+  'minimaxMusic3.hero.primaryCta': {
+    en: 'RUN WORKFLOW',
+    'zh-CN': '运行工作流'
+  },
+  'minimaxMusic3.hero.secondaryCta': {
+    en: 'LEARN MORE',
+    'zh-CN': '了解更多'
+  },
+  'minimaxMusic3.faq.heading': { en: 'Q&A', 'zh-CN': '问答' },
+  'minimaxMusic3.pricing.banner.title': {
+    en: "Start free. Upgrade when you're ready.",
+    'zh-CN': '免费开始，准备好了再升级。'
+  },
+  'minimaxMusic3.pricing.banner.subtitle': {
+    en: '5 free runs on real GPUs — no credit card required.',
+    'zh-CN': '在真实 GPU 上免费运行 5 次 — 无需信用卡。'
+  },
+  'minimaxMusic3.pricing.banner.cta': {
+    en: 'TRY FREE',
+    'zh-CN': '免费试用'
+  },
+  'minimaxMusic3.steps.heading': {
+    en: 'Make your first song',
+    'zh-CN': '制作你的第一首歌'
+  },
+  'minimaxMusic3.steps.step': { en: 'Step', 'zh-CN': '步骤' },
+  'minimaxMusic3.steps.primaryCta': {
+    en: 'RUN WORKFLOW',
+    'zh-CN': '运行工作流'
+  },
+  'minimaxMusic3.steps.secondaryCta': {
+    en: 'LEARN MORE',
+    'zh-CN': '了解更多'
+  },
+  'minimaxMusic3.runOptions.heading': {
+    en: 'One engine, every way to run it',
+    'zh-CN': '同一引擎，多种运行方式'
+  },
+  'minimaxMusic3.runOptions.subtitle': {
+    en: 'Run MiniMax Music 3 in the browser today. Batch with the API, or bring it in-house.',
+    'zh-CN':
+      '今天就在浏览器中运行 MiniMax Music 3。用 API 批量生成，或部署到自有环境。'
+  },
+  'minimaxMusic3.runOptions.cta': { en: 'LEARN MORE', 'zh-CN': '了解更多' },
+  'minimaxMusic3.reviews.heading': {
+    en: '4+ million Comfy creators say',
+    'zh-CN': '400 万+ Comfy 创作者这样说'
+  },
+  'minimaxMusic3.reviews.highlightTitle': {
+    en: 'Comfy MCP: now turn your agent into a creative technologist.',
+    'zh-CN': 'Comfy MCP：让你的智能体成为创意技术专家。'
+  },
+  'minimaxMusic3.reviews.highlightDescription': {
+    en: 'Your AI assistant can access the ecosystem, build workflows, and generate images, video, audio, or 3D.',
+    'zh-CN':
+      '你的 AI 助手可以接入整个生态、构建工作流，并生成图像、视频、音频或 3D 内容。'
+  },
+  'minimaxMusic3.reviews.highlightCta': {
+    en: 'GET STARTED',
+    'zh-CN': '开始使用'
+  },
   'minimax.breadcrumb.updated': {
     en: 'Updated August 2026',
     'zh-CN': '更新于 2026 年 8 月'
