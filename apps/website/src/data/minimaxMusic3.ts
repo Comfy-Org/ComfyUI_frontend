@@ -125,9 +125,9 @@ export const minimaxMusic3Page: ModelLaunchPage = {
   breadcrumbUpdatedKey: 'minimaxMusic3.breadcrumb.updated',
   hero: {
     videoSrc:
-      'https://media.comfy.org/website/minimax-music-3/16x9-option-01.mp4',
+      'https://media.comfy.org/website/minimax-music-3/16x9-option-01_v2.mp4',
     posterSrc:
-      'https://media.comfy.org/website/minimax-music-3/16x9-thumb-01.png',
+      'https://media.comfy.org/website/minimax-music-3/16x9-thumb-01.jpeg',
     titleKey: 'minimaxMusic3.hero.titleModel',
     titleRestKey: 'minimaxMusic3.hero.titleRest',
     descriptionKey: 'minimaxMusic3.hero.description',
