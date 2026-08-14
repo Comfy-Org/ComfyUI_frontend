@@ -131,9 +131,12 @@ reviews:
         status, so new behaviour needs a colocated Vitest test. Treat
         `docs/guidance/vitest.md` as required review context. Flag new
         exported logic that no test exercises.
-        Exception: `src/content/**`, `src/i18n/**` and `src/content.config.ts`
-        are excluded from coverage in `apps/website/vitest.config.ts`, so do
-        not invoke the `website-unit` gate for changes confined to those.
+        This glob is wider than the gate: `coverage.exclude` in
+        `apps/website/vitest.config.ts` is the source of truth, and anything
+        it lists is unmeasured. At time of writing that is `*.test.ts`,
+        `*.spec.ts`, `*.stories.ts`, `*.d.ts`, `src/test/**`,
+        `src/content/**`, `src/i18n/**` and `src/content.config.ts`. Do not
+        cite the `website-unit` gate for changes confined to those.
     - path: 'apps/website/src/**/*.astro'
       instructions: |
         `.astro` files are excluded from coverage because V8 cannot
