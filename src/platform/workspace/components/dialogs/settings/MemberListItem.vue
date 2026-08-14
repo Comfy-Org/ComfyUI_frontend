@@ -3,7 +3,7 @@
     :data-testid="`member-row-${member.id}`"
     :class="
       cn(
-        'grid w-full items-center rounded-lg p-2',
+        'grid w-full items-center border-b border-interface-stroke/60 p-2 transition-colors last:border-0 hover:bg-secondary-background/50',
         isSingleSeatPlan ? 'grid-cols-1' : gridCols,
         striped && 'bg-secondary-background/50'
       )

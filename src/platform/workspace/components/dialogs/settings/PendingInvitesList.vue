@@ -3,7 +3,12 @@
     <div
       v-for="invite in invites"
       :key="invite.id"
-      :class="cn('grid w-full items-center rounded-lg p-2', gridCols)"
+      :class="
+        cn(
+          'grid w-full items-center border-b border-interface-stroke/60 p-2 transition-colors last:border-0 hover:bg-secondary-background/50',
+          gridCols
+        )
+      "
     >
       <div class="flex items-center gap-3">
         <div
