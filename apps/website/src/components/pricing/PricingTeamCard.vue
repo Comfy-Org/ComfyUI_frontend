@@ -122,6 +122,7 @@ const ctaHref = computed(() =>
                     ? 'text-primary-comfy-orange'
                     : 'text-primary-warm-gray'
                 "
+                aria-hidden="true"
               />
               <span
                 class="text-sm max-sm:text-[10px]"

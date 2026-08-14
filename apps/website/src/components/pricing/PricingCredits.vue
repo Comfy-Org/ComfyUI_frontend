@@ -28,7 +28,10 @@ const estimate = computed(() => {
 <template>
   <div class="mt-6">
     <div class="flex items-center gap-2">
-      <CreditsIcon class="text-primary-comfy-orange size-4 shrink-0" />
+      <CreditsIcon
+        class="text-primary-comfy-orange size-4 shrink-0"
+        aria-hidden="true"
+      />
       <span class="ppformula-text-center text-sm text-primary-warm-white">
         <span class="font-extrabold">
           {{ credits }}
