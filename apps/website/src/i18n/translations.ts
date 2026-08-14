@@ -2041,9 +2041,9 @@ const translations = {
     'zh-CN': '让任何 AI 智能体\n驱动 ComfyUI，\n本地或云端。'
   },
   'mcp.hero.subtitle': {
-    en: 'Connect any AI agent to ComfyUI on Comfy Cloud GPUs or on your own machine. Generate images, video, audio and 3D, search models, nodes and templates, and run real workflows.',
+    en: 'Turn your agent into a creative technologist. Generate images, video, audio and 3D, search models, nodes and templates, and run real workflows. Built for reproducibility and teamwork.',
     'zh-CN':
-      '将任意 AI 智能体连接到 Comfy Cloud GPU 或本机上的 ComfyUI。生成图像、视频、音频和 3D，搜索模型、节点与模板，并运行真实工作流。'
+      '让你的智能体成为创意技术专家。生成图像、视频、音频和 3D，搜索模型、节点与模板，并运行真实工作流。为可复现性与团队协作而打造。'
   },
   'mcp.hero.demoPromptKeyframeBoard': {
     en: 'board the launch film — 8 key frames from the brief',
