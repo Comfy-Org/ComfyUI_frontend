@@ -6099,10 +6099,16 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         if (start_node == null) continue
 
         // Reject links that cannot reach the screen before computing either
-        // slot position, which is the most expensive part of this loop. Skipped
-        // for reroutes, whose waypoints this test does not account for.
+        // slot position, which is the most expensive part of this loop.
+        //
+        // Only valid while both endpoints are known to sit inside their node's
+        // bounding rect. Reroute waypoints are placed independently of either
+        // node, and a hard-coded `INodeSlot.pos` is applied unclamped by
+        // `calculateInputSlotPosFromSlot`, so both take the exact path.
         if (
           link.parentId === undefined &&
+          !input.pos &&
+          !start_node.outputs?.[link.origin_slot]?.pos &&
           !couldLinkBeVisible(
             start_node.boundingRect,
             node.boundingRect,

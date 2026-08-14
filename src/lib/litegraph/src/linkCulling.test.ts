@@ -46,6 +46,23 @@ describe('couldLinkBeVisible', () => {
 
     expect(couldLinkBeVisible(touching, touching, SCREEN)).toBe(true)
   })
+
+  it('is wrong for a slot placed outside its node, which callers must exclude', () => {
+    // `calculateInputSlotPosFromSlot` applies a hard-coded `INodeSlot.pos`
+    // unclamped, so an extension can put a connection point far outside its own
+    // node. This test does not assert desirable behaviour - it pins the reason
+    // `drawConnections` checks for `pos` before trusting this function, so that
+    // deleting that check fails here rather than silently losing links.
+    const offScreenNode: Rect = [-5000, 300, 200, 100]
+    const alsoOffScreen: Rect = [-4000, 300, 200, 100]
+
+    expect(couldLinkBeVisible(offScreenNode, alsoOffScreen, SCREEN)).toBe(false)
+
+    // ...yet a slot offset of +4500 puts the real endpoint on screen.
+    const realEndpointX = alsoOffScreen[0] + 4500
+    expect(realEndpointX).toBeGreaterThan(SCREEN[0])
+    expect(realEndpointX).toBeLessThan(SCREEN[0] + SCREEN[2])
+  })
 })
 
 /**

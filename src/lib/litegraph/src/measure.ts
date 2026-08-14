@@ -115,17 +115,20 @@ export function isInsideRectangle(
  *
  * `drawConnections` already culls links against the axis-aligned box of their
  * endpoints, but only after computing both, which is the dominant per-frame
- * cost on a large graph. Every slot lies within its node's bounding rect, so
+ * cost on a large graph. When both slots sit inside their node's bounding rect,
  * the box spanning the two node rects contains that endpoint box, and a miss
  * here implies a miss there.
  *
  * Conservative in one direction only. It may report a link as possibly visible
  * when it is not - a diagonally separated pair spans a far larger box than the
  * link between them - which costs only the exact test that would have run
- * regardless. It never reports a visible link as hidden.
+ * regardless. It never reports a visible link as hidden, *provided* that
+ * premise holds.
  *
- * Not valid for links with reroutes, whose waypoints can sit outside both node
- * rects and extend the exact box beyond this one.
+ * Two things break it, and callers must route both down the exact path:
+ * - reroutes, whose waypoints are placed independently of either node
+ * - a hard-coded slot `pos`, which `calculateInputSlotPosFromSlot` applies
+ *   unclamped, letting an extension put a connection point outside its own node
  *
  * @param startBounds Bounding rect of the originating node
  * @param endBounds Bounding rect of the terminating node
