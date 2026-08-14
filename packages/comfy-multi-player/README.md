@@ -7,9 +7,6 @@ the deterministic projection back to ComfyUI workflow JSON — so every host
 that applies the same stamped ops converges on the same document and renders
 the same JSON.
 
-> Naming note: the V1 design docs call this package `@comfy/graph-doc` — it
-> was renamed to `@comfyorg/comfy-multi-player` at repo creation. Same thing.
-
 ## What lives here
 
 - `applyOps(doc, ops, catalog?)` — apply stamped ops: idempotent per `op_id`
