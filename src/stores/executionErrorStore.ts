@@ -119,7 +119,8 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   }
 
   /** Clear error state produced by a run. Missing-resource state describes the
-   *  loaded graph rather than the run, so only a graph swap invalidates it. */
+   *  loaded graph rather than the run, so only replacing or discarding the
+   *  graph invalidates it. */
   function clearRunErrors() {
     lastExecutionError.value = null
     lastPromptError.value = null
