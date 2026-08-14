@@ -76,6 +76,7 @@
       v-for="nodeData in allNodes"
       :key="nodeData.id"
       :node-data
+      :paint-order="nodePaintOrder.get(nodeData.id) ?? 0"
       :data-node-id="nodeData.id"
     />
   </TransformPane>
@@ -182,6 +183,7 @@ import { useFirstRunEntry } from '@/renderer/extensions/firstRunTour/gettingStar
 import MiniMap from '@/renderer/extensions/minimap/MiniMap.vue'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import { requestSlotLayoutSyncForAllNodes } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
+import { orderNodesForPainting } from '@/renderer/extensions/vueNodes/utils/nodePaintOrder'
 import { UnauthorizedError } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
@@ -220,7 +222,7 @@ const workspaceStore = useWorkspaceStore()
 const { isBuilderMode } = useAppMode()
 const canvasStore = useCanvasStore()
 const workflowStore = useWorkflowStore()
-const { linearMode } = storeToRefs(canvasStore)
+const { linearMode, selectedNodeIds } = storeToRefs(canvasStore)
 const executionStore = useExecutionStore()
 const executionErrorStore = useExecutionErrorStore()
 const toastStore = useToastStore()
@@ -308,6 +310,28 @@ const allNodes = computed((): NodeState[] => {
   if (!rootGraphId || graphId === undefined) return []
   return nodeDataStore.getGraphNodesFor(rootGraphId, graphId)
 })
+
+const nodeLayouts = computed(() => {
+  const { rootGraphId } = canvasStore
+  if (!rootGraphId) return new Map()
+
+  return new Map(
+    allNodes.value.flatMap(({ id }) => {
+      const layout = layoutStore.getNodeLayoutRef(rootGraphId, id).value
+      return layout ? [[id, layout] as const] : []
+    })
+  )
+})
+const nodePaintOrder = computed(
+  () =>
+    new Map(
+      orderNodesForPainting(
+        allNodes.value,
+        nodeLayouts.value,
+        selectedNodeIds.value
+      ).map((node, index) => [node.id, index])
+    )
+)
 watch(
   () => linearMode.value,
   (isLinearMode) => {

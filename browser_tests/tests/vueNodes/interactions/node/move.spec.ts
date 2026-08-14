@@ -6,6 +6,7 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import type { Position } from '@e2e/fixtures/types'
+import { findEmptyCanvasPoint } from '@e2e/fixtures/utils/findEmptyCanvasPoint'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { toNodeId } from '@/types/nodeId'
@@ -14,16 +15,21 @@ import type { NodeId } from '@/types/nodeId'
 const CREATE_GROUP_HOTKEY = 'Control+g'
 
 test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
-  const getHeaderPos = async (
-    comfyPage: ComfyPage,
-    title: string
-  ): Promise<{ x: number; y: number }> => {
+  const getHeaderBounds = async (comfyPage: ComfyPage, title: string) => {
     const box = await comfyPage.vueNodes
       .getNodeByTitle(title)
       .getByTestId('node-title')
       .first()
       .boundingBox()
     if (!box) throw new Error(`${title} header not found`)
+    return box
+  }
+
+  const getHeaderPos = async (
+    comfyPage: ComfyPage,
+    title: string
+  ): Promise<{ x: number; y: number }> => {
+    const box = await getHeaderBounds(comfyPage, title)
     return { x: box.x + box.width / 2, y: box.y + box.height / 2 }
   }
 
@@ -109,6 +115,103 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
   const getAdvancedInputsButton = (node: Locator) =>
     node.getByTestId('advanced-inputs-button')
 
+  const armPointerCaptureTracking = async (comfyPage: ComfyPage) => {
+    await comfyPage.page.evaluate(() => {
+      window.addEventListener(
+        'pointerdown',
+        (event) => {
+          document.documentElement.dataset.dragTestPointerId = String(
+            event.pointerId
+          )
+        },
+        { capture: true, once: true }
+      )
+    })
+  }
+
+  const releaseActivePointerCapture = async (comfyPage: ComfyPage) => {
+    const released = await comfyPage.page.evaluate(() => {
+      const pointerId = Number(
+        document.documentElement.dataset.dragTestPointerId
+      )
+      if (!Number.isInteger(pointerId)) return false
+
+      const elements = [
+        document.documentElement,
+        ...document.querySelectorAll<HTMLElement>('*')
+      ]
+      const captureOwner = elements.find((element) =>
+        element.hasPointerCapture(pointerId)
+      )
+      if (!captureOwner) return false
+
+      captureOwner.releasePointerCapture(pointerId)
+      return true
+    })
+
+    expect(released, 'A DOM element should own pointer capture').toBe(true)
+  }
+
+  const getDistantVisibleNode = async (
+    comfyPage: ComfyPage,
+    source: { x: number; y: number; width: number; height: number },
+    sourceNodeId: string
+  ) => {
+    return await comfyPage.page.evaluate(
+      ({ source, sourceNodeId }) => {
+        const sourceCenter = {
+          x: source.x + source.width / 2,
+          y: source.y + source.height / 2
+        }
+
+        const candidates = Array.from(
+          document.querySelectorAll<HTMLElement>('[data-node-id]')
+        ).flatMap((node) => {
+          if (node.dataset.nodeId === sourceNodeId) return []
+
+          const title = node.querySelector<HTMLElement>(
+            '[data-testid="node-title"]'
+          )
+          if (!title) return []
+
+          const bounds = title.getBoundingClientRect()
+          const center = {
+            x: bounds.x + bounds.width / 2,
+            y: bounds.y + bounds.height / 2
+          }
+          const distance = Math.hypot(
+            center.x - sourceCenter.x,
+            center.y - sourceCenter.y
+          )
+          if (
+            document
+              .elementFromPoint(center.x, center.y)
+              ?.closest('[data-node-id]') !== node
+          ) {
+            return []
+          }
+
+          return [
+            {
+              nodeId: node.dataset.nodeId,
+              x: bounds.x,
+              y: bounds.y,
+              width: bounds.width,
+              height: bounds.height,
+              distance
+            }
+          ]
+        })
+
+        const target = candidates.toSorted((a, b) => b.distance - a.distance)[0]
+        const nodeId = target?.nodeId
+        if (!nodeId) throw new Error('No visible target node found')
+        return { ...target, nodeId }
+      },
+      { source, sourceNodeId }
+    )
+  }
+
   const moveAdvancedButtonRightEdgePastCanvas = async (
     comfyPage: ComfyPage,
     button: Locator,
@@ -179,6 +282,69 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
 
     const afterPos = await getLoadCheckpointHeaderPos(comfyPage)
     await expectPosChanged(headerPos, afterPos)
+  })
+
+  test('keeps drag ownership after pointer capture is lost', async ({
+    comfyPage
+  }) => {
+    const sourceBefore = await getHeaderBounds(comfyPage, 'KSampler')
+    const sourceNodeId = await comfyPage.vueNodes.getNodeIdByTitle('KSampler')
+    const targetBefore = await getDistantVisibleNode(
+      comfyPage,
+      sourceBefore,
+      sourceNodeId
+    )
+    const targetTitle = comfyPage.vueNodes
+      .getNodeLocator(targetBefore.nodeId)
+      .getByTestId('node-title')
+    const sourceStart = {
+      x: sourceBefore.x + sourceBefore.width / 2,
+      y: sourceBefore.y + sourceBefore.height / 2
+    }
+    const targetCenter = {
+      x: targetBefore.x + targetBefore.width / 2,
+      y: targetBefore.y + targetBefore.height / 2
+    }
+    await armPointerCaptureTracking(comfyPage)
+    await comfyPage.page.mouse.move(sourceStart.x, sourceStart.y)
+    await comfyPage.page.mouse.down()
+    try {
+      await comfyPage.page.mouse.move(sourceStart.x + 10, sourceStart.y + 10, {
+        steps: 5
+      })
+      await comfyPage.nextFrame()
+      await releaseActivePointerCapture(comfyPage)
+
+      await comfyPage.page.mouse.move(targetCenter.x, targetCenter.y, {
+        steps: 1
+      })
+      await comfyPage.nextFrame()
+      await releaseActivePointerCapture(comfyPage)
+
+      const releasePoint = await findEmptyCanvasPoint(comfyPage.canvas)
+      await comfyPage.page.mouse.move(releasePoint.x, releasePoint.y)
+    } finally {
+      await comfyPage.page.mouse.up()
+    }
+    await comfyPage.nextFrame()
+
+    const sourceAfterRelease = await getHeaderBounds(comfyPage, 'KSampler')
+    const targetAfterRelease = await targetTitle.boundingBox()
+    if (!targetAfterRelease) throw new Error('Target node header not found')
+
+    await expectPosChanged(sourceBefore, sourceAfterRelease)
+    expectSameDelta(targetAfterRelease, targetBefore)
+
+    await comfyPage.page.mouse.move(targetCenter.x + 20, targetCenter.y + 20, {
+      steps: 5
+    })
+    await comfyPage.nextFrame()
+
+    const sourceFinal = await getHeaderBounds(comfyPage, 'KSampler')
+    const targetFinal = await targetTitle.boundingBox()
+    if (!targetFinal) throw new Error('Target node header not found')
+    expectSameDelta(sourceFinal, sourceAfterRelease)
+    expectSameDelta(targetFinal, targetAfterRelease)
   })
 
   test('should not toggle advanced inputs when dragging by the Advanced button', async ({
@@ -435,11 +601,28 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
     await expect
       .poll(() => comfyPage.canvasOps.getGroupPosition('Linked nodes'))
       .toBeTruthy()
-    await comfyPage.canvasOps.dragGroup({
-      name: 'Linked nodes',
-      deltaX: 120,
-      deltaY: 80
-    })
+    const groupPosition =
+      await comfyPage.canvasOps.getGroupPosition('Linked nodes')
+    const groupStart = await comfyPage.page.evaluate(({ x, y }) => {
+      const [clientX, clientY] = window.app!.canvasPosToClientPos([
+        x + 50,
+        y + 15
+      ])
+      return { x: clientX, y: clientY }
+    }, groupPosition)
+
+    await comfyPage.page.mouse.move(groupStart.x, groupStart.y)
+    await comfyPage.page.mouse.down()
+    try {
+      await comfyPage.page.mouse.move(groupStart.x + 120, groupStart.y + 80, {
+        steps: 10
+      })
+      await comfyPage.nextFrame()
+      await expectSlotPositionTracksDom(comfyPage, checkpointId, 0, false)
+    } finally {
+      await comfyPage.page.mouse.up()
+    }
+    await comfyPage.nextFrame()
 
     await expectSlotPositionTracksDom(comfyPage, checkpointId, 0, false)
   })

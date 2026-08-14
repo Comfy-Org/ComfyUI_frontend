@@ -1165,7 +1165,10 @@ export class LGraphNode
 
       if (namedValues && LiteGraph.namedValuesRestore) {
         for (const widget of this.widgets) {
-          if (widget.serialize === false || !(widget.name in namedValues))
+          if (
+            widget.serialize === false ||
+            !Object.prototype.hasOwnProperty.call(namedValues, widget.name)
+          )
             continue
 
           widget.value = namedValues[widget.name]
@@ -1232,7 +1235,6 @@ export class LGraphNode
     if (widgets?.length && this.serialize_widgets) {
       o.widgets_values = []
       o.widgets_values_named = {}
-      let i = 0
       for (const widget of widgets) {
         if (widget.serialize === false) continue
         const val = widget.value
@@ -1241,7 +1243,7 @@ export class LGraphNode
           val != null && typeof val === 'object'
             ? JSON.parse(JSON.stringify(val))
             : (val ?? null)
-        o.widgets_values[i++] = serialisedVal
+        o.widgets_values.push(serialisedVal)
         o.widgets_values_named[widget.name] = serialisedVal
       }
     }

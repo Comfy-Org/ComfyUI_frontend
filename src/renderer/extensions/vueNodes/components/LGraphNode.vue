@@ -32,8 +32,8 @@
       ...nodeSizeStyle,
       '--min-node-width': `${MIN_NODE_WIDTH}px`,
       transform: `translate(${position.x ?? 0}px, ${(position.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
-      zIndex: zIndex,
-      opacity: nodeOpacity
+      opacity: nodeOpacity,
+      zIndex: paintOrder
     }"
     :inert="isGhostPlacing"
     v-bind="remainingPointerHandlers"
@@ -310,8 +310,9 @@ import NodeFooter from './NodeFooter.vue'
 import NodeSlots from './NodeSlots.vue'
 import NodeWidgets from './NodeWidgets.vue'
 
-const { nodeData } = defineProps<{
+const { nodeData, paintOrder = 0 } = defineProps<{
   nodeData: NodeState
+  paintOrder?: number
 }>()
 
 const { t } = useI18n()
@@ -388,7 +389,7 @@ onErrorCaptured((error) => {
   return false // Prevent error propagation
 })
 
-const { position, size, zIndex } = useNodeLayout(() => nodeData.id)
+const { position, size } = useNodeLayout(() => nodeData.id)
 
 const nodeSizeStyle = computed(() =>
   isCollapsed.value
