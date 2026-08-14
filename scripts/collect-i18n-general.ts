@@ -3,7 +3,6 @@ import * as fs from 'fs'
 // Import Vite define shim to make __DISTRIBUTION__ and other define variables available
 import './vite-define-shim'
 
-// eslint-disable-next-line import-x/no-relative-packages -- desktop-ui is not a dependency of the root package
 import { DESKTOP_DIALOGS } from '../apps/desktop-ui/src/constants/desktopDialogs'
 import { comfyPageFixture as test } from '../browser_tests/fixtures/ComfyPage'
 import {
