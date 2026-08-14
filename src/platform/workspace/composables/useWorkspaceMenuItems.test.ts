@@ -140,6 +140,18 @@ describe('useWorkspaceMenuItems', () => {
     )
   })
 
+  it('withholds cancellation for payment_failed without lifecycle permission', () => {
+    state.billingStatus = 'payment_failed'
+    state.canManageSubscriptionLifecycle = false
+    state.isActiveSubscription = false
+
+    const { menuItems } = useWorkspaceMenuItems()
+
+    expect(menuItems.value.map((item) => item.label)).not.toContain(
+      'subscription.cancelPlan'
+    )
+  })
+
   it('rechecks eligibility before opening the cancellation dialog', () => {
     state.canManageSubscriptionLifecycle = true
     const { menuItems } = useWorkspaceMenuItems()
