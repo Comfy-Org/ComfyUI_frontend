@@ -25,6 +25,9 @@ const stubs = {
     props: ['embedded'],
     template: '<div data-testid="legacy-credits-body" />'
   },
+  SettingsPlansSection: {
+    template: '<div data-testid="plans-section" />'
+  },
   SubscriptionFooterLinks: {
     template: '<div data-testid="footer-links" />'
   },
@@ -58,6 +61,7 @@ describe('PlanCreditsPanelContent', () => {
   it('shows the embedded credits body and plans section on local', () => {
     renderPanel({ cloud: false })
     expect(screen.getByTestId('legacy-credits-body')).toBeTruthy()
+    expect(screen.getByTestId('plans-section')).toBeTruthy()
     expect(screen.getByTestId('footer-links')).toBeTruthy()
     expect(screen.queryByTestId('credits-body')).toBeNull()
   })
