@@ -110,6 +110,52 @@ export function isInsideRectangle(
 }
 
 /**
+ * Whether a link between two nodes could intersect {@link renderArea}, decided
+ * without computing either slot position.
+ *
+ * `drawConnections` already culls links against the axis-aligned box of their
+ * endpoints, but only after computing both, which is the dominant per-frame
+ * cost on a large graph. Every slot lies within its node's bounding rect, so
+ * the box spanning the two node rects contains that endpoint box, and a miss
+ * here implies a miss there.
+ *
+ * Conservative in one direction only. It may report a link as possibly visible
+ * when it is not - a diagonally separated pair spans a far larger box than the
+ * link between them - which costs only the exact test that would have run
+ * regardless. It never reports a visible link as hidden.
+ *
+ * Not valid for links with reroutes, whose waypoints can sit outside both node
+ * rects and extend the exact box beyond this one.
+ *
+ * @param startBounds Bounding rect of the originating node
+ * @param endBounds Bounding rect of the terminating node
+ * @param renderArea Area being drawn, as `x, y, width, height`
+ */
+export function couldLinkBeVisible(
+  startBounds: ReadOnlyRect,
+  endBounds: ReadOnlyRect,
+  renderArea: ReadOnlyRect
+): boolean {
+  const left = Math.min(startBounds[0], endBounds[0])
+  const top = Math.min(startBounds[1], endBounds[1])
+  const right = Math.max(
+    startBounds[0] + startBounds[2],
+    endBounds[0] + endBounds[2]
+  )
+  const bottom = Math.max(
+    startBounds[1] + startBounds[3],
+    endBounds[1] + endBounds[3]
+  )
+
+  return !(
+    left > renderArea[0] + renderArea[2] ||
+    top > renderArea[1] + renderArea[3] ||
+    right < renderArea[0] ||
+    bottom < renderArea[1]
+  )
+}
+
+/**
  * Determines if two rectangles have any overlap
  * @param a Rectangle A as `x, y, width, height`
  * @param b Rectangle B as `x, y, width, height`
