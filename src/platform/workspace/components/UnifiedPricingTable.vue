@@ -817,7 +817,9 @@ const getButtonLabel = (tier: PricingTierConfig): string => {
 
   // Free tier is not a paid plan to "change" from — those users subscribe.
   const hasActivePaidPlan =
-    currentTierKey.value !== null && currentTierKey.value !== 'free'
+    subscription.value?.tier !== undefined &&
+    subscription.value.tier !== 'FREE' &&
+    !isEnded.value
 
   return hasActivePaidPlan
     ? t('subscription.changeTo', { plan: planName })

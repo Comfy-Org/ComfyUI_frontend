@@ -50,7 +50,7 @@ const mockWorkspaceBalance: BillingBalanceResponse = {
 
 async function mockCloudBoot(
   page: Page,
-  subscriptionStatus: BillingStatusResponse,
+  subscriptionStatus: Partial<BillingStatusResponse>,
   remoteConfig: RemoteConfig = {},
   billingRail?: BillingStatusResponse['billing_rail']
 ) {
@@ -119,6 +119,9 @@ async function mockCloudBoot(
     billingRequests.workspaceStatus++
     return r.fulfill(
       jsonRoute({
+        max_seats: 0,
+        occupied_seats: 0,
+        team_credit_stop: null,
         ...subscriptionStatus,
         billing_rail: billingRail
       })

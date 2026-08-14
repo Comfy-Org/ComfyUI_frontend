@@ -209,7 +209,7 @@ export function useDowngradeToPersonal() {
       ensureCanDowngrade()
       targetTier =
         preview.new_plan?.tier && preview.new_plan.tier !== 'TEAM'
-          ? TIER_TO_KEY[preview.new_plan.tier]
+          ? (TIER_TO_KEY[preview.new_plan.tier] ?? undefined)
           : undefined
       targetCycle = preview.new_plan
         ? preview.new_plan.duration === 'ANNUAL'

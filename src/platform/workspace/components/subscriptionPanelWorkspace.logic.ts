@@ -6,7 +6,7 @@ export function resolveSubscriptionTierKey(
   tier: SubscriptionTier | null | undefined
 ): TierKey {
   if (!tier) return 'free'
-  return TIER_TO_KEY[tier]
+  return TIER_TO_KEY[tier] ?? 'standard'
 }
 
 export function formatSubscriptionDate(

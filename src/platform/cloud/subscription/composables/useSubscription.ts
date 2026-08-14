@@ -258,7 +258,7 @@ function useSubscriptionInternal() {
       cycle: 'monthly',
       checkout_type: canAccessSubscriptionFeatures.value ? 'change' : 'new',
       ...(subscriptionTier.value
-        ? { previous_tier: TIER_TO_KEY[subscriptionTier.value] }
+        ? { previous_tier: TIER_TO_KEY[subscriptionTier.value] ?? undefined }
         : {}),
       ...(subscriptionDuration.value === 'ANNUAL'
         ? { previous_cycle: 'yearly' as const }

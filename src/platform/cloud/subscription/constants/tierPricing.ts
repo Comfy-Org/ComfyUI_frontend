@@ -5,13 +5,13 @@ export type SubscriptionTier = IngestSubscriptionTier
 
 export type TierKey = 'free' | 'standard' | 'creator' | 'pro' | 'founder'
 
-export const TIER_TO_KEY: Record<SubscriptionTier, TierKey> = {
+export const TIER_TO_KEY: Record<SubscriptionTier, TierKey | null> = {
   FREE: 'free',
   STANDARD: 'standard',
   CREATOR: 'creator',
   PRO: 'pro',
   FOUNDERS_EDITION: 'founder',
-  TEAM: 'standard'
+  TEAM: null
 }
 
 export const KEY_TO_TIER: Record<TierKey, SubscriptionTier> = {
