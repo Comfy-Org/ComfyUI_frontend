@@ -23,8 +23,7 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'lcov'],
       reportsDirectory: './coverage',
-      // Load-bearing: without it, untested files are absent from the report
-      // rather than counted as 0%, so patch coverage passes on untested code.
+      // Include untested files so patch coverage counts them as 0%.
       include: ['src/**/*.{ts,vue}'],
       exclude: [
         'src/**/*.{test,spec}.ts',

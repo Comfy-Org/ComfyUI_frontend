@@ -67,15 +67,15 @@ reviews:
           Changes confined to `packages/` are deliberately out of scope here, even though the website consumes those packages: the generic "End-to-end regression coverage for fixes" check already requires a `browser_tests/` regression test for them. Do not demand a second website-specific test for a shared-package change.
 
           Fail if all of the following are true:
-          1. The diff itself changes observable website runtime behaviour — fixes a user-visible bug, adds a page or route, or changes an interactive flow, form, or navigation. A `fix`/`bugfix`/`hotfix` style title or commit subject is only a hint: confirm it against the diff, and never treat the wording alone as qualifying.
-          2. The PR does not add or update a Playwright assertion under `apps/website/e2e/**/*.spec.ts` that actually exercises the route, flow, or behaviour this PR changed. An unrelated assertion elsewhere in the suite does not satisfy this.
+          1. The diff itself changes observable website runtime behavior — fixes a user-visible bug, adds a page or route, or changes an interactive flow, form, or navigation. A `fix`/`bugfix`/`hotfix` style title or commit subject is only a hint: confirm it against the diff, and never treat the wording alone as qualifying.
+          2. The PR does not add or update a Playwright assertion under `apps/website/e2e/**/*.spec.ts` that actually exercises the route, flow, or behavior this PR changed. An unrelated assertion elsewhere in the suite does not satisfy this.
           3. The PR description lacks a concrete explanation of why an end-to-end regression test was not added.
 
-          Do not fail for text/copy-only edits, translation-only changes, static asset swaps, styling-only changes, generated files, dependency metadata, refactors that preserve behaviour, or changes confined to tests, tooling, or CI.
+          Do not fail for text/copy-only edits, translation-only changes, static asset swaps, styling-only changes, generated files, dependency metadata, refactors that preserve behavior, or changes confined to tests, tooling, or CI.
           A reformatted or whitespace-only edit to an existing spec does not count as adding coverage.
 
           Pass otherwise.
-          When failing, name the behaviour-changing signal you found and ask the author to either add or update a Playwright regression test under `apps/website/e2e/` or record in the PR description why an end-to-end test is not practical.
+          When failing, name the behavior-changing signal you found and ask the author to either add or update a Playwright regression test under `apps/website/e2e/` or record in the PR description why an end-to-end test is not practical.
 
       - name: ADR compliance for entity/litegraph changes
         mode: warning
@@ -128,7 +128,7 @@ reviews:
     - path: 'apps/website/src/**/*.{ts,vue}'
       instructions: |
         Changed lines here are measured by the `website-unit` Codecov patch
-        status, so new behaviour needs a colocated Vitest test. Treat
+        status, so new behavior needs a colocated Vitest test. Treat
         `docs/guidance/vitest.md` as required review context. Flag new
         exported logic that no test exercises.
         This glob is wider than the gate: `coverage.exclude` in

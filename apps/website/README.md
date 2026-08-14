@@ -36,10 +36,6 @@ inline that into the client bundle).
 This repo's `.github/workflows/*.yaml` changes cannot be pushed by a
 GitHub App. A maintainer must apply the following edits **once**:
 
-Unit tests are no longer part of this list — they run in
-`.github/workflows/ci-website-unit.yaml`, which also uploads coverage to
-Codecov under the `website-unit` flag.
-
 **`.github/workflows/ci-website-build.yaml`** — pass the env into the
 build step:
 
