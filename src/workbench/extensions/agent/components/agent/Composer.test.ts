@@ -315,6 +315,37 @@ describe('Composer', () => {
       ).toEqual(['Alpha', 'KSampler', 'VAE Decode'])
     })
 
+    // Re-picking a staged node is a no-op, so it drops out of the list.
+    it('hides nodes already in the basket', async () => {
+      mount({
+        getMentionNodes: () => NODES,
+        selectionTags: [NODES[0]]
+      })
+
+      await userEvent.type(screen.getByRole('textbox'), '@')
+
+      const labels = screen
+        .getAllByRole('option')
+        .map((option) => option.textContent?.trim())
+      expect(labels).not.toContain(NODES[0].title)
+      expect(screen.getAllByRole('option')).toHaveLength(NODES.length - 1)
+    })
+
+    // The staged node is only hidden from the picker, not from the duplicate
+    // check - its chip must still show the id that tells it apart from the
+    // same-titled node still in the graph.
+    it('keeps disambiguating a staged node against its graph twin', async () => {
+      const twin = { id: '11', title: NODES[0].title }
+      mount({
+        getMentionNodes: () => [...NODES, twin],
+        selectionTags: [NODES[0]]
+      })
+
+      await userEvent.type(screen.getByRole('textbox'), '@')
+
+      expect(screen.getByText(`#${NODES[0].id}`)).toBeInTheDocument()
+    })
+
     it('opens on @, filters with spaces, and stages the pick on Enter', async () => {
       const { emitted } = mount({ getMentionNodes: () => NODES })
       const box = screen.getByRole('textbox')
