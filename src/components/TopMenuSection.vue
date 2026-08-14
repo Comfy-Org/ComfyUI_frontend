@@ -105,7 +105,7 @@
             </div>
             <FreeTierQuota v-if="!isActionbarFloating" />
             <!-- Complement of ComfyActionbar's `!isDocked` mount (same storage
-                 key), so exactly one caption renders in every menu state. -->
+                 key), so at most one caption renders in any menu state. -->
             <PartnerNodesRunCaption v-if="isActionbarDocked" />
           </div>
         </div>
