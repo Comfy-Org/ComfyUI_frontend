@@ -44,13 +44,14 @@ jobs:
         if: ${{ !cancelled() }}
         uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
-          files: apps/website/coverage/lcov.info
+          working-directory: ./apps/website
+          files: ./coverage/lcov.info
           disable_search: true
           flags: website-unit
-          # LCOV records paths relative to apps/website (`src/...`), which
-          # would collide with the root app's own `src/`. These realign the
-          # report onto `apps/website/src/...` in the repo-root file network.
-          network_filter: apps/website/
+          # LCOV records paths relative to apps/website (`src/...`), which on
+          # their own would collide with the root app's `src/`. Uploading from
+          # that directory keeps report and network paths aligned, and the
+          # prefix re-roots both onto `apps/website/src/...`.
           network_prefix: apps/website/
           token: ${{ secrets.CODECOV_TOKEN }}
           # Forks receive no CODECOV_TOKEN; a failed upload must not block an
@@ -61,17 +62,30 @@ jobs:
   # Always runs, so branch protection has a context that reliably posts even
   # when the test job is correctly skipped for non-website changes.
   website-unit-gate:
-    needs: [website-unit]
+    needs: [changes, website-unit]
     if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
       - name: Verify website unit tests passed or were not required
         env:
-          RESULT: ${{ needs.website-unit.result }}
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          UNIT_RESULT: ${{ needs.website-unit.result }}
+          WEBSITE_CHANGED: ${{ needs.changes.outputs.app-website-changes }}
+          PACKAGES_CHANGED: ${{ needs.changes.outputs.packages-changes }}
         run: |
-          if [ "$RESULT" = "success" ] || [ "$RESULT" = "skipped" ]; then
-            echo "Website unit tests: $RESULT"
+          if [ "$UNIT_RESULT" = "success" ]; then
+            echo "Website unit tests passed."
             exit 0
           fi
-          echo "::error title=Website unit tests::Job result was '$RESULT'"
+          # Only a deliberate skip counts as a pass: the filter itself must
+          # have succeeded and reported nothing relevant changed. Otherwise a
+          # failed filter job would silently satisfy this gate.
+          if [ "$UNIT_RESULT" = "skipped" ] &&
+             [ "$CHANGES_RESULT" = "success" ] &&
+             [ "$WEBSITE_CHANGED" != "true" ] &&
+             [ "$PACKAGES_CHANGED" != "true" ]; then
+            echo "No website or package changes; website unit tests not required."
+            exit 0
+          fi
+          echo "::error title=Website unit tests::changes=$CHANGES_RESULT unit=$UNIT_RESULT website=$WEBSITE_CHANGED packages=$PACKAGES_CHANGED"
           exit 1
