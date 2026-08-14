@@ -2,6 +2,7 @@
   <!-- Case 1: Subgraph + Error (Dual Tabs) -->
   <div
     v-if="isSubgraph && hasAnyError && showErrorsTabEnabled"
+    data-node-lod="hide"
     :class="errorWrapperStyles"
   >
     <Button
@@ -51,6 +52,7 @@
       showErrorsTabEnabled &&
       (showAdvancedInputsButton || showAdvancedState)
     "
+    data-node-lod="hide"
     :class="errorWrapperStyles"
   >
     <Button
@@ -105,6 +107,7 @@
   <!-- Case 2: Error Only (Full Width) -->
   <div
     v-else-if="hasAnyError && showErrorsTabEnabled"
+    data-node-lod="hide"
     :class="errorWrapperStyles"
   >
     <Button
@@ -129,6 +132,7 @@
   <!-- Case 3: Subgraph only (Full Width) -->
   <div
     v-else-if="isSubgraph"
+    data-node-lod="hide"
     :class="
       cn(
         footerWrapperBase,
@@ -161,6 +165,7 @@
   <!-- Case 4: Advanced Footer (Regular Nodes) -->
   <div
     v-else-if="showAdvancedInputsButton || showAdvancedState"
+    data-node-lod="hide"
     :class="
       cn(
         footerWrapperBase,

@@ -1,5 +1,9 @@
 <template>
-  <div v-if="audioUrls.length > 0" class="flex flex-col gap-2 px-2">
+  <div
+    v-if="audioUrls.length > 0"
+    data-node-lod="hide"
+    class="flex flex-col gap-2 px-2"
+  >
     <audio
       v-for="(url, index) in audioUrls"
       :key="index"

@@ -202,6 +202,7 @@
         v-for="handle in RESIZE_HANDLES"
         :key="handle.corner"
         role="button"
+        data-node-lod="show"
         :data-corner="handle.corner"
         :aria-label="t(handle.i18nKey)"
         :class="

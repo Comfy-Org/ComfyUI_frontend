@@ -1,5 +1,20 @@
 @import '@comfyorg/design-system/css/style.css';
 
+html.vue-nodes-low-detail
+  .lg-node[data-node-id]:not([data-node-id^='preview-'])
+  [data-node-lod='hide'],
+html.vue-nodes-low-detail .dom-widget[data-node-lod='hide'] {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+html.vue-nodes-low-detail
+  .lg-node[data-node-id]:not([data-node-id^='preview-'])
+  [data-node-lod='show'] {
+  visibility: visible;
+  pointer-events: auto;
+}
+
 /* Use 0.001ms instead of 0s so transitionend/animationend events still fire
    and JS listeners aren't broken. */
 .disable-animations *,

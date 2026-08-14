@@ -428,6 +428,8 @@ const zSettings = z.object({
   'Comfy.Canvas.LeftMouseClickBehavior': z.string(),
   'Comfy.Canvas.MouseWheelScroll': z.string(),
   'Comfy.VueNodes.Enabled': z.boolean(),
+  'Comfy.VueNodes.LowZoomLOD': z.boolean(),
+  'Comfy.VueNodes.FullDetailZoom': z.number(),
   'Comfy.AppBuilder.VueNodeSwitchDismissed': z.boolean(),
   'Comfy.Assets.UseAssetAPI': z.boolean(),
   'Comfy.ModelLibrary.UseAssetBrowser': z.boolean(),

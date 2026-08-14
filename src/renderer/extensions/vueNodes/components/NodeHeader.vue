@@ -64,6 +64,7 @@
       <NodeBadge v-if="statusBadge" v-bind="statusBadge" />
       <i
         v-if="isPinned"
+        data-node-lod="hide"
         class="icon-[comfy--pin] size-4"
         data-testid="node-pin-indicator"
       />

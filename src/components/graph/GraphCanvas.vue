@@ -182,6 +182,7 @@ import { useFirstRunEntry } from '@/renderer/extensions/firstRunTour/gettingStar
 import MiniMap from '@/renderer/extensions/minimap/MiniMap.vue'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import { requestSlotLayoutSyncForAllNodes } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
+import { useVueNodeLOD } from '@/renderer/extensions/vueNodes/composables/useVueNodeLOD'
 import { UnauthorizedError } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
@@ -307,6 +308,12 @@ const allNodes = computed((): NodeState[] => {
   const graphId = canvasStore.currentGraph?.id
   if (!rootGraphId || graphId === undefined) return []
   return nodeDataStore.getGraphNodesFor(rootGraphId, graphId)
+})
+useVueNodeLOD({
+  canvas: () => canvasStore.canvas,
+  enabled: () => settingStore.get('Comfy.VueNodes.LowZoomLOD') ?? true,
+  fullDetailZoom: () => settingStore.get('Comfy.VueNodes.FullDetailZoom') ?? 95,
+  vueNodesEnabled: shouldRenderVueNodes
 })
 watch(
   () => linearMode.value,
