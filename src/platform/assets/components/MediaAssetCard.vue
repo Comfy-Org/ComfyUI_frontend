@@ -188,6 +188,7 @@ import { useMediaAssetActions } from '../composables/useMediaAssetActions'
 import type { AssetItem } from '../schemas/assetSchema'
 import {
   getAssetDisplayName,
+  getAssetUrlFilename,
   resolveDisplayImageDimensions
 } from '../utils/assetMetadataUtils'
 import type { MediaKind } from '../schemas/mediaAssetSchema'
@@ -385,21 +386,26 @@ function dragStart(e: DragEvent) {
   if (!dataTransfer) return
 
   const output = getOutputAssetMetadata(asset.user_metadata)?.allOutputs?.[0]
-  const assetInfo = output?.filename
-    ? {
-        filename: output.filename,
-        subfolder: output.subfolder,
-        type: output.type,
-        display_name: output.display_name
-      }
-    : {
-        filename: asset.name,
-        type: assetType.value,
-        display_name: asset.display_name
-      }
+  const url = URL.parse(resolvePreviewUrl(asset), location.href)
+  const assetInfo = {
+    ...(output?.filename
+      ? {
+          filename: output.filename,
+          subfolder: output.subfolder,
+          type: output.type,
+          display_name: output.display_name
+        }
+      : {
+          filename: asset.name,
+          type: assetType.value,
+          display_name: asset.display_name
+        }),
+    attachment_ref: getAssetUrlFilename(asset),
+    media_kind: fileKind.value,
+    preview_url: fileKind.value === 'image' ? url?.toString() : undefined
+  }
   dataTransfer.items.add(JSON.stringify(assetInfo), MIME_ASSET_INFO)
 
-  const url = URL.parse(resolvePreviewUrl(asset), location.href)
   if (!url) return
 
   dataTransfer.items.add(url.toString(), 'text/uri-list')
