@@ -746,6 +746,7 @@ describe('SubgraphWidgetPromotion', () => {
         initialValue: unknown
         withComfyClass?: boolean
         hugeMaxSeed?: boolean
+        serialize?: boolean
       }
       type EditValue = string | number | boolean
       type EditSpec = {
@@ -810,6 +811,7 @@ describe('SubgraphWidgetPromotion', () => {
           )
           if (s.withComfyClass) created.node.comfyClass = s.title
           if (s.hugeMaxSeed) created.widget.options.max = 1125899906842624
+          if (s.serialize !== undefined) created.widget.serialize = s.serialize
           subgraph.add(created.node)
           return created
         })
@@ -1042,6 +1044,47 @@ describe('SubgraphWidgetPromotion', () => {
 
         expect(firstHost.serialize().widgets_values).toEqual([111])
         expect(secondHost.serialize().widgets_values).toEqual([222])
+        expect(firstHost.serialize().widgets_values_named).toEqual({
+          value: 111
+        })
+        expect(secondHost.serialize().widgets_values_named).toEqual({
+          value: 222
+        })
+      })
+
+      it('keeps named values aligned when a promoted widget is not persisted', () => {
+        const subgraph = createTestSubgraph()
+        buildSources(subgraph, [
+          { ...NUMBER_PAIR[0], serialize: false },
+          NUMBER_PAIR[1]
+        ])
+        const host = createTestSubgraphNode(subgraph)
+
+        const legacy = host.serialize()
+        delete legacy.widgets_values_named
+        legacy.widgets_values = [222]
+        host.configure(legacy)
+
+        const serialized = host.serialize()
+
+        expect(serialized.widgets_values).toEqual([222])
+        expect(serialized.widgets_values_named).toEqual({ second: 222 })
+      })
+
+      it('serializes undefined promoted values as null', () => {
+        const subgraph = createTestSubgraph()
+        buildSources(subgraph, NUMBER_PAIR)
+        const host = createTestSubgraphNode(subgraph)
+        writePromotedWidgetValue(host, 0, undefined)
+        writePromotedWidgetValue(host, 1, undefined)
+
+        const serialized = host.serialize()
+
+        expect(serialized.widgets_values).toEqual([null, null])
+        expect(serialized.widgets_values_named).toEqual({
+          first: null,
+          second: null
+        })
       })
 
       it('does not persist source widget store fallback values after reordering', () => {

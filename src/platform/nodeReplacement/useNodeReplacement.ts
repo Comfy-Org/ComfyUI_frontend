@@ -6,6 +6,7 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import { inputLinkId, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
+import { isNamedWidgetValues } from '@/lib/litegraph/src/types/serialisation'
 import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
 import { t } from '@/i18n'
@@ -74,7 +75,6 @@ function transferOutputConnections(
   }
 }
 
-/** Uses old_widget_ids as name→index lookup into widgets_values. */
 function transferWidgetValue(
   serialized: ISerialisedNode,
   oldWidgetIds: string[] | null,
@@ -82,13 +82,19 @@ function transferWidgetValue(
   newNode: LGraphNode,
   newInputName: string
 ): void {
-  if (!oldWidgetIds || !serialized.widgets_values) return
-
-  const oldWidgetIdx = oldWidgetIds.indexOf(oldInputName)
-  if (oldWidgetIdx === -1) return
-
-  const oldValue = serialized.widgets_values[oldWidgetIdx]
-  if (oldValue === undefined) return
+  const namedValues = isNamedWidgetValues(serialized.widgets_values_named)
+    ? serialized.widgets_values_named
+    : undefined
+  const hasNamedValue =
+    namedValues !== undefined &&
+    Object.prototype.hasOwnProperty.call(namedValues, oldInputName)
+  const oldWidgetIdx = oldWidgetIds?.indexOf(oldInputName) ?? -1
+  const oldValue = hasNamedValue
+    ? namedValues[oldInputName]
+    : oldWidgetIdx === -1
+      ? undefined
+      : serialized.widgets_values?.[oldWidgetIdx]
+  if (oldValue == null) return
 
   const newWidget = newNode.widgets?.find((w) => w.name === newInputName)
   if (newWidget) {

@@ -151,6 +151,20 @@ describe('LGraphNode widget ordering', () => {
       expect(node.widgets!.map((w) => w.value)).toStrictEqual(expected)
     })
 
+    it('should ignore inherited named widget values', () => {
+      node.addWidget('text', 'constructor', 'constructor value', null, {})
+      node.addWidget('text', 'toString', 'toString value', null, {})
+      node.addWidget('number', 'seed', 0, null, {})
+
+      node.configure(mockNode(undefined, { seed: 54321 }))
+
+      expect(node.widgets!.map((w) => w.value)).toStrictEqual([
+        'constructor value',
+        'toString value',
+        54321
+      ])
+    })
+
     it('should restore widgets which are dynamically added', () => {
       addDynamicCombo(node, [['INT'], ['INT', 'STRING']])
 
@@ -183,6 +197,21 @@ describe('LGraphNode widget ordering', () => {
       })
       node.constructor = Object.assign({}, node.constructor, { nodeData })
       node.configure(mockNode([20, 5]))
+
+      expect(node.widgets!.map((w) => w.value)).toStrictEqual([5, 20])
+    })
+
+    it('should treat invalid named values as absent for legacy fallback', () => {
+      node.addWidget('number', 'steps', 0, null, {})
+      node.addWidget('number', 'seed', 0, null, {})
+      const nodeData = fromPartial({
+        fallbackWidgetsValuesNames: ['seed', 'steps']
+      })
+      node.constructor = Object.assign({}, node.constructor, { nodeData })
+      const info = mockNode([20, 5])
+      Object.assign(info, { widgets_values_named: [] })
+
+      node.configure(info)
 
       expect(node.widgets!.map((w) => w.value)).toStrictEqual([5, 20])
     })

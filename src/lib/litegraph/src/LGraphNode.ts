@@ -109,6 +109,7 @@ import {
   TitleMode
 } from './types/globalEnums'
 import type { ISerialisedNode, SubgraphIO } from './types/serialisation'
+import { isNamedWidgetValues } from './types/serialisation'
 import type {
   IBaseWidget,
   IWidgetOptions,
@@ -1139,8 +1140,14 @@ export class LGraphNode
           )
       }
 
+      const serializedNamedValues = isNamedWidgetValues(
+        info.widgets_values_named
+      )
+        ? info.widgets_values_named
+        : undefined
+
       const getNamedValues = () => {
-        if (info.widgets_values_named) return info.widgets_values_named
+        if (serializedNamedValues) return serializedNamedValues
 
         const map = this.constructor.nodeData?.fallbackWidgetsValuesNames
         if (!info.widgets_values || !map) return
@@ -1159,23 +1166,26 @@ export class LGraphNode
         reportNamedValuesShadowDiff(
           this,
           diffNamedValuesShadow(namedValues, legacyShadow),
-          Boolean(info.widgets_values_named)
+          Boolean(serializedNamedValues)
         )
       }
 
       if (namedValues && LiteGraph.namedValuesRestore) {
         for (const widget of this.widgets) {
-          if (widget.serialize === false || !(widget.name in namedValues))
+          if (
+            widget.serialize === false ||
+            !Object.prototype.hasOwnProperty.call(namedValues, widget.name)
+          )
             continue
 
-          widget.value = namedValues[widget.name]
+          widget.value = namedValues[widget.name] ?? undefined
         }
       } else if (info.widgets_values) {
         let i = 0
         for (const widget of this.widgets ?? []) {
           if (widget.serialize === false) continue
           if (i >= info.widgets_values.length) break
-          widget.value = info.widgets_values[i++]
+          widget.value = info.widgets_values[i++] ?? undefined
         }
       }
     }
