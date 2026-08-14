@@ -43,6 +43,10 @@ function tryMigrateDeprecatedValue(
  * `SettingParams.onChange` is extension-facing public API and its caller
  * persists the setting only after awaiting it, so letting a third-party
  * failure escape would discard the user's own change without saving it.
+ *
+ * Logged at `warn` for the same reason {@link ComfyApi.wrapListener} is: RUM
+ * collects `console.error`, so reporting third-party faults there would just
+ * relocate the noise this guard exists to remove.
  */
 async function callHandler(
   setting: SettingParams | undefined,
@@ -52,10 +56,7 @@ async function callHandler(
   try {
     await setting?.onChange?.(newValue, oldValue)
   } catch (error) {
-    console.error(
-      `[settings] onChange handler for ${setting?.id} failed`,
-      error
-    )
+    console.warn(`[settings] onChange handler for ${setting?.id} failed`, error)
   }
 }
 
@@ -120,6 +121,7 @@ function settingChangedEvent<K extends keyof Settings>(
 export const useSettingStore = defineStore('setting', () => {
   const settingValues = ref<Partial<Settings>>({})
   const settingsById = ref<Record<string, SettingParams>>({})
+  const latestWrite = new Map<keyof Settings, number>()
 
   const {
     isReady,
@@ -187,7 +189,14 @@ export const useSettingStore = defineStore('setting', () => {
 
     const typedNewValue = newValue as Settings[K]
     settingValues.value[key] = typedNewValue
+    const write = (latestWrite.get(key) ?? 0) + 1
+    latestWrite.set(key, write)
+
     await onChange(settingsById.value[key], newValue, oldValue)
+
+    // Handlers are awaited, so a slow one lets a later change to this key land
+    // first. That change owns the value now; persisting ours would revert it.
+    if (latestWrite.get(key) !== write) return undefined
     return {
       previousValue: oldValue,
       newValue: typedNewValue

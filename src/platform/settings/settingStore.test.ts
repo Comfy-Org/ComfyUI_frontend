@@ -537,7 +537,7 @@ describe('useSettingStore', () => {
         }
       }
     ])('persists the value when a handler $label', async ({ onChange }) => {
-      vi.spyOn(console, 'error').mockImplementation(() => {})
+      vi.spyOn(console, 'warn').mockImplementation(() => {})
       store.addSetting({
         id: 'test.setting',
         name: 'test.setting',
@@ -552,6 +552,36 @@ describe('useSettingStore', () => {
 
       expect(api.storeSetting).toHaveBeenCalledWith('test.setting', 'newvalue')
       expect(store.get('test.setting')).toBe('newvalue')
+    })
+
+    it('does not persist a value a newer set() has superseded', async () => {
+      let releaseFirst = () => {}
+      const firstHandlerGate = new Promise<void>((resolve) => {
+        releaseFirst = resolve
+      })
+      let isFirstChange = true
+      store.addSetting({
+        id: 'test.setting',
+        name: 'test.setting',
+        type: 'text',
+        defaultValue: 'default',
+        onChange: async (_value, old) => {
+          if (!old || !isFirstChange) return
+          isFirstChange = false
+          await firstHandlerGate
+        }
+      })
+
+      const stalled = store.set('test.setting', 'first')
+      await store.set('test.setting', 'second')
+      releaseFirst()
+      await stalled
+
+      expect(store.get('test.setting')).toBe('second')
+      expect(api.storeSetting).toHaveBeenLastCalledWith(
+        'test.setting',
+        'second'
+      )
     })
 
     it('exposes the new value to onChange handlers', async () => {
