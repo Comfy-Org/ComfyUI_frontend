@@ -143,7 +143,7 @@ const connections: McpConnection[] = [
     manualDescription: t('mcp.setup.manual.description', locale),
     agentCommand: t('mcp.setup.agent.command', locale).replace(
       '{url}',
-      externalLinks.docsMcp
+      externalLinks.docsMcpMd
     ),
     showSkillsNote: true,
     clients: cloudClients
@@ -157,7 +157,7 @@ const connections: McpConnection[] = [
     manualDescription: t('mcp.setup.local.manual.description', locale),
     agentCommand: t('mcp.setup.local.agent.command', locale).replace(
       '{url}',
-      externalLinks.docsMcpLocal
+      externalLinks.docsMcpLocalMd
     ),
     showSkillsNote: false,
     clients: localClients

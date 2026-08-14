@@ -100,6 +100,11 @@ export const externalLinks = {
   docsMcp: 'https://docs.comfy.org/agent-tools/mcp',
   docsMcpLocal:
     'https://docs.comfy.org/agent-tools/mcp#local-comfy-mcp-connection',
+  // Markdown variants handed to agents in the "ask your agent" cards: agents
+  // fetch the .md URL and get readable markdown instead of the HTML shell.
+  docsMcpMd: 'https://docs.comfy.org/agent-tools/mcp.md',
+  docsMcpLocalMd:
+    'https://docs.comfy.org/agent-tools/mcp.md#local-comfy-mcp-connection',
   docsSdk: 'https://docs.comfy.org/development/api-development/sdks',
   docsSubscription: 'https://docs.comfy.org/support/subscription/subscribing',
   g2ComfyUi: 'https://www.g2.com/products/comfyui',
