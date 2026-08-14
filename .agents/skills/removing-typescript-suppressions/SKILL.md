@@ -66,13 +66,14 @@ not expose internal store types through public facades.
 ### 5. Verify behavior and absence
 
 Run the owning typecheck, focused tests, lint, formatting, and a whitespace
-check. Confirm that the diff adds no suppression:
+check. Use `pnpm exec vitest run` for Vitest, `pnpm test:browser:local` or
+`pnpm test:browser` for Playwright, and the owning repository script for other
+test types. Confirm that the diff adds no suppression:
 
 ```bash
 pnpm exec eslint <changed-files>
 pnpm exec oxfmt --check <changed-files>
-pnpm exec vitest run <affected-test-files>
-git diff --check
+git diff --check <base-ref>...HEAD -- <paths>
 git diff --unified=0 <base-ref>...HEAD -- <paths> \
   | rg '^\+.*@ts-(expect-error|ignore)'
 ```
@@ -110,9 +111,8 @@ const label =
 ```
 
 Resolve a factory default before passing it to another resolver. Keep untyped
-legacy data as `unknown`, use `Reflect.get` or `Reflect.apply` only at that
-boundary, then narrow with `typeof`, `Array.isArray`, property checks, or a type
-guard.
+legacy data as `unknown`. Narrow objects before reading properties, functions
+before calling them, and returned values before use.
 
 ### Read map identity from `Object.entries`
 
@@ -149,28 +149,12 @@ await page.evaluate(
 )
 ```
 
-### Type serialization boundaries with domain shapes
+### Validate serialization boundaries
 
-When `Object.fromEntries`, JSON, or browser serialization erases useful types,
-declare the smallest accurate result shape at that boundary. Reuse an existing
-domain type when one exists. Keep genuinely optional fields optional, then guard
-them before use.
-
-```typescript
-interface SerializedLabel {
-  name?: string
-  tooltip?: string
-}
-
-interface SerializedNodeDefinition {
-  display_name: string
-  inputs?: Record<string, SerializedLabel>
-  outputs?: Record<string, SerializedLabel>
-}
-
-const definitions: Record<string, SerializedNodeDefinition> =
-  Object.fromEntries(entries)
-```
+Type values produced by code you own before passing them to
+`Object.fromEntries`. If JSON or browser data arrives as `unknown`, validate its
+full nested shape before assigning a domain type. A result annotation does not
+validate data.
 
 ### Make test preconditions executable
 
