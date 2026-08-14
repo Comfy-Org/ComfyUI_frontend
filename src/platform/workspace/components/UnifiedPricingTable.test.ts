@@ -10,7 +10,7 @@ import type { BillingSubscriptionStatus } from '@/platform/workspace/api/workspa
 import UnifiedPricingTable from '@/platform/workspace/components/UnifiedPricingTable.vue'
 
 interface MockSubscription {
-  tier: string
+  tier: string | null
   isCancelled?: boolean
   duration?: string
 }
@@ -100,6 +100,17 @@ describe('UnifiedPricingTable plan CTA labels', () => {
     ).toBeTruthy()
     expect(
       screen.getByRole('button', { name: 'Subscribe to Pro Yearly' })
+    ).toBeTruthy()
+    expect(screen.queryByRole('button', { name: /^Change to/ })).toBeNull()
+  })
+
+  it('prompts users with an unresolved tier to subscribe', () => {
+    mockSubscription.value = { tier: null, duration: 'ANNUAL' }
+
+    renderComponent()
+
+    expect(
+      screen.getByRole('button', { name: 'Subscribe to Standard Yearly' })
     ).toBeTruthy()
     expect(screen.queryByRole('button', { name: /^Change to/ })).toBeNull()
   })

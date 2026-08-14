@@ -95,4 +95,21 @@ describe('deriveBillingPolicyState', () => {
       ).toEqual({ kind })
     }
   )
+
+  it.for<[string, boolean]>([
+    ['LocalTeamWithoutActiveSubscription', false],
+    ['CloudTeamWithoutActiveSubscription', true]
+  ])(
+    'uses the TEAM tier when plan metadata is unavailable for %s (isCloud=%s)',
+    ([kind, isCloud]) => {
+      expect(
+        deriveBillingPolicyState({
+          isCloud,
+          canAccessSubscriptionFeatures: false,
+          isTeamPlan: false,
+          tier: 'TEAM'
+        })
+      ).toEqual({ kind })
+    }
+  )
 })

@@ -18,7 +18,7 @@ export function deriveBillingPolicyState(input: {
 }): BillingPolicyState {
   const distribution = input.isCloud ? 'Cloud' : 'Local'
 
-  if (input.isTeamPlan) {
+  if (input.isTeamPlan || input.tier === 'TEAM') {
     return {
       kind: input.canAccessSubscriptionFeatures
         ? `${distribution}AndTeam`
@@ -41,12 +41,6 @@ export function deriveBillingPolicyState(input: {
       return { kind: `${distribution}AndPro` }
     case 'FOUNDERS_EDITION':
       return { kind: `${distribution}AndFounders` }
-    case 'TEAM':
-      return {
-        kind: input.canAccessSubscriptionFeatures
-          ? `${distribution}AndTeam`
-          : `${distribution}TeamWithoutActiveSubscription`
-      }
     case null:
       return { kind: `${distribution}AndUnknown` }
     default:
