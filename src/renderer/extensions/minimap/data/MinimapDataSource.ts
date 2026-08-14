@@ -58,23 +58,17 @@ export class MinimapDataSource {
     const links: MinimapLinkData[] = []
     const nodeMap = new Map(this.getNodes().map((node) => [node.id, node]))
 
-    for (const node of graph._nodes) {
-      const sourceNode = nodeMap.get(node.id)
-      if (!sourceNode) continue
+    for (const link of linkStore.graphTopologies(scope)) {
+      const sourceNode = nodeMap.get(link.originNodeId)
+      const targetNode = nodeMap.get(link.targetNodeId)
+      if (!sourceNode || !targetNode) continue
 
-      for (const [slot] of node.outputs?.entries() ?? []) {
-        for (const link of linkStore.getOutputSlotLinks(scope, node.id, slot)) {
-          const targetNode = nodeMap.get(link.targetNodeId)
-          if (!targetNode) continue
-
-          links.push({
-            sourceNode,
-            targetNode,
-            sourceSlot: link.originSlot,
-            targetSlot: link.targetSlot
-          })
-        }
-      }
+      links.push({
+        sourceNode,
+        targetNode,
+        sourceSlot: link.originSlot,
+        targetSlot: link.targetSlot
+      })
     }
 
     return links
@@ -111,7 +105,7 @@ export class MinimapDataSource {
   }
 
   getNodeCount(): number {
-    return this.graph?._nodes?.length ?? 0
+    return this.graph?._nodes.length ?? 0
   }
 
   hasData(): boolean {
