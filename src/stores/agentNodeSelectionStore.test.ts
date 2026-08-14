@@ -24,15 +24,19 @@ function graphNode(
   return { id, pos, size, boundingRect: new Float64Array(4) }
 }
 
-/** The minimum canvas surface the fit-to-view path touches. */
-function stubCanvas(nodes: unknown[]) {
+/** The minimum canvas surface entering and leaving the mode touches. */
+function stubCanvas(nodes: unknown[], selected: unknown[] = []) {
   const animateToBounds = vi.fn()
+  const selectedItems = new Set(selected)
+  const deselectAll = vi.fn(() => selectedItems.clear())
   useCanvasStore().canvas = {
     graph: { nodes },
+    selectedItems,
+    deselectAll,
     animateToBounds,
     canvas: { width: 1600, height: 900 }
   } as never
-  return { animateToBounds }
+  return { animateToBounds, deselectAll, selectedItems }
 }
 
 describe('agentNodeSelectionStore', () => {
@@ -88,6 +92,45 @@ describe('agentNodeSelectionStore', () => {
     useAgentNodeSelectionStore().enter()
 
     expect(animateToBounds).not.toHaveBeenCalled()
+  })
+
+  // Picking is finished, but the references stay in the composer - so the
+  // canvas goes back to looking untouched while the basket keeps its chips.
+  it('clears the canvas selection on exit', () => {
+    const node = graphNode(1, [0, 0], [100, 100])
+    const { deselectAll, selectedItems } = stubCanvas([node], [node])
+    const store = useAgentNodeSelectionStore()
+
+    store.enter()
+    store.exit()
+
+    expect(deselectAll).toHaveBeenCalledOnce()
+    expect(selectedItems.size).toBe(0)
+  })
+
+  it('leaves the canvas alone on exit when nothing was selected', () => {
+    const { deselectAll } = stubCanvas([graphNode(1, [0, 0], [100, 100])])
+    const store = useAgentNodeSelectionStore()
+
+    store.enter()
+    store.exit()
+
+    expect(deselectAll).not.toHaveBeenCalled()
+  })
+
+  // Entering with a selection means the user already knows which nodes they
+  // care about; framing the whole graph would zoom away from them.
+  it('frames the selection when entering with nodes already selected', () => {
+    const selected = graphNode(2, [1000, 800], [200, 100])
+    const { animateToBounds } = stubCanvas(
+      [graphNode(1, [0, 0], [100, 100]), selected],
+      [selected]
+    )
+
+    useAgentNodeSelectionStore().enter()
+
+    const [bounds] = animateToBounds.mock.calls[0]
+    expect(bounds).toEqual([960, 760, 280, 180])
   })
 
   it('does not frame the graph on exit', () => {

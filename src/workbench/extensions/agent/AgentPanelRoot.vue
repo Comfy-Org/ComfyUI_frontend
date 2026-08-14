@@ -116,7 +116,9 @@ const {
   add: addSelectionTag
 } = useCanvasSelection({
   selection: selectedNodes,
-  isLive: () => agentPanelStore.isOpen,
+  // Only picking mode fills the basket. Selecting nodes in the normal graph
+  // view is ordinary canvas work and must not stage a reference.
+  isLive: () => agentNodeSelectionStore.isActive,
   isPaused: () => agentNodeSelectionStore.isLoadingWorkflow,
   scope: () => workflowStore.activeWorkflow?.path ?? null,
   dismissedSignature: dismissedSelectionSignature
@@ -922,12 +924,17 @@ function onSelectNodes(): void {
   canvas.multi_select = true
   nodeSelectionCanvas = canvas
   selectingNodes = true
-  agentNodeSelectionStore.enter()
 
+  // Apply the selection before entering: `enter()` frames whatever is selected,
+  // so the merged set has to be in place first or it frames the stale one.
+  // Selecting here is safe because the basket only mirrors the canvas once the
+  // mode is active.
   if (merged.size) {
     canvas.selectItems([...merged.values()])
     canvasStore.updateSelectedItems()
   }
+
+  agentNodeSelectionStore.enter()
 
   void nextTick(() => {
     if (selectingNodes) canvas.canvas.focus()

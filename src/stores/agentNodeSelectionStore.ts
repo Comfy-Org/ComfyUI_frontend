@@ -120,7 +120,16 @@ export const useAgentNodeSelectionStore = defineStore(
       const canvas = canvasStore.canvas
       if (!canvas) return
 
-      const bounds = graphBounds(canvas.graph?.nodes ?? [])
+      // Frame what the user is already referencing when there is a selection,
+      // and fall back to the whole graph when there isn't. Entering with a
+      // selection means they know which nodes they care about; framing
+      // everything would zoom away from them.
+      const selected = [...canvas.selectedItems].filter(
+        (item): item is LGraphNode => 'pos' in item && 'size' in item
+      )
+      const bounds = graphBounds(
+        selected.length ? selected : (canvas.graph?.nodes ?? [])
+      )
       if (!bounds) return
 
       canvas.animateToBounds(bounds, {
@@ -134,7 +143,16 @@ export const useAgentNodeSelectionStore = defineStore(
     }
 
     function exit(): void {
+      // Order matters: dropping out of the mode first stops the basket
+      // mirroring the canvas, so clearing the selection below leaves the
+      // staged chips intact. Picking is finished - the references stay in the
+      // composer, but the graph goes back to looking untouched.
       isActive.value = false
+
+      const canvas = canvasStore.canvas
+      if (!canvas?.selectedItems.size) return
+      canvas.deselectAll()
+      canvasStore.updateSelectedItems()
     }
 
     function saveNodeIds(

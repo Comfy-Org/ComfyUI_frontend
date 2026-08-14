@@ -492,6 +492,16 @@ async function enterNodeSelectionMode(): Promise<void> {
   )
 }
 
+/**
+ * The basket only mirrors the canvas while picking, so anything asserting on
+ * staged chips has to be in the mode first. Set directly rather than driving the
+ * composer control: these tests are about what gets staged, not about how the
+ * mode is entered.
+ */
+function startPicking(): void {
+  useAgentNodeSelectionStore().isActive = true
+}
+
 async function startVueNodeSelection() {
   const state = setupNodeSelectionCanvas()
   const collapseToClickedNode = vi.fn((node: SelectionTestNode) => {
@@ -3590,6 +3600,7 @@ describe('AgentPanelRoot workflow binding', () => {
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
     useAgentPanelStore().isOpen = true
+    startPicking()
     hostStores.canvas.selectedItems = [
       { isNodeFake: true, id: 7, title: 'KSampler' }
     ]
@@ -3722,6 +3733,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentPanelStore().isOpen = true
+    startPicking()
 
     hostStores.canvas.selectedItems = [
       { isNodeFake: true, id: 5, title: 'KSampler' },
@@ -3755,6 +3767,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentPanelStore().isOpen = true
+    startPicking()
 
     expect(await screen.findByText('VAE Decode')).toBeInTheDocument()
     expect(screen.getByText('KSampler')).toBeInTheDocument()
@@ -3769,12 +3782,46 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(hostStores.canvas.selectedItems).toEqual([state.nodes[1]])
   })
 
+  // Selecting nodes in the normal graph view is ordinary canvas work. Only
+  // picking mode fills the basket, so an open panel alone must stage nothing.
+  it('does not stage canvas selections outside picking mode', async () => {
+    makeTab()
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentPanelStore().isOpen = true
+
+    hostStores.canvas.selectedItems = [
+      { isNodeFake: true, id: 5, title: 'KSampler' }
+    ]
+    await nextTick()
+
+    expect(screen.queryByText('KSampler')).not.toBeInTheDocument()
+  })
+
+  // ...but a selection made beforehand is honoured the moment picking starts.
+  it('stages a pre-existing canvas selection once picking starts', async () => {
+    makeTab()
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentPanelStore().isOpen = true
+    hostStores.canvas.selectedItems = [
+      { isNodeFake: true, id: 5, title: 'KSampler' }
+    ]
+    await nextTick()
+    expect(screen.queryByText('KSampler')).not.toBeInTheDocument()
+
+    startPicking()
+
+    expect(await screen.findByText('KSampler')).toBeInTheDocument()
+  })
+
   it('stages selected nodes as chips and sends their ids once', async () => {
     makeTab()
     const bodies = mockMessagesEndpoint('wf-42')
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentPanelStore().isOpen = true
+    startPicking()
 
     hostStores.canvas.selectedItems = [
       { isNodeFake: true, id: 5, title: 'KSampler' }
@@ -3795,6 +3842,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentPanelStore().isOpen = true
+    startPicking()
 
     hostStores.canvas.selectedItems = [
       { isNodeFake: true, id: 7, title: 'KSampler' }
@@ -3820,6 +3868,7 @@ describe('AgentPanelRoot workflow binding', () => {
     const panelStore = useAgentPanelStore()
     const first = render(AgentPanelRoot, { global: { plugins: [i18n] } })
     panelStore.isOpen = true
+    startPicking()
 
     hostStores.canvas.selectedItems = [
       { isNodeFake: true, id: 7, title: 'KSampler' }
@@ -3835,6 +3884,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     panelStore.isOpen = true
+    startPicking()
     await nextTick()
     expect(screen.queryByText('KSampler')).not.toBeInTheDocument()
     await sendFromComposer('no nodes please')
@@ -3853,6 +3903,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
     ws.emit('agent_message_done', { message_id: 'm-2', thread_id: 'th-1' })
     await screen.findByRole('button', { name: 'Send' })
+    startPicking()
     hostStores.canvas.selectedItems = [
       { isNodeFake: true, id: 8, title: 'VAEDecode' }
     ]
@@ -3870,6 +3921,7 @@ describe('AgentPanelRoot workflow binding', () => {
     const panelStore = useAgentPanelStore()
     const first = render(AgentPanelRoot, { global: { plugins: [i18n] } })
     panelStore.isOpen = true
+    startPicking()
 
     hostStores.canvas.selectedItems = [
       { isNodeFake: true, id: 7, title: 'First KSampler' }
@@ -3891,6 +3943,7 @@ describe('AgentPanelRoot workflow binding', () => {
     ]
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     panelStore.isOpen = true
+    startPicking()
 
     expect(await screen.findByText('Second KSampler')).toBeInTheDocument()
     await sendFromComposer('use this workflow')
