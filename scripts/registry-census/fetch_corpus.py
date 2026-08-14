@@ -10,7 +10,8 @@ What this fixes versus the original inline fetch:
   * Honest status. The original wrote its `.done` marker and returned 'ok'
     unconditionally, so a failed fetch was cached forever, never retried, and
     counted as a clean pack. Status is now one of ok / empty / failed /
-    unsupported-host / bad-url, and `.done` is only written on success.
+    oversize / no-subdir / unsupported-host / bad-url, and `.done` is only
+    written on success.
   * Drift detection. Each pack's tarball ETag is recorded in corpus.lock.json.
     Re-runs verify it, so two runs are known-comparable instead of assumed to be.
     `--frozen` turns a drift into an error, for reproducing a published result.
@@ -347,6 +348,11 @@ def fetch_one(
             # from every other, and a rate-limit wall reads the same as 145
             # simultaneously deleted repos (run 31738365496).
             code = (got.stdout or '').strip() or '000'
+            # curl 63 is --max-filesize: the archive is larger than any
+            # frontend extension needs, so the pack is excluded on purpose
+            # rather than having failed to download.
+            if got.returncode == 63:
+                return Fetched(pack_id, 'oversize', None, '')
             return Fetched(pack_id, 'failed', None, f'http {code} curl {got.returncode}')
 
         etag = None
@@ -382,7 +388,7 @@ def fetch_one(
         root_dir = _archive_root(extracted)
         scoped = os.path.join(root_dir, target.subdir) if target.subdir else root_dir
         if not os.path.isdir(scoped):
-            return Fetched(pack_id, 'failed', None, 'subdir absent')
+            return Fetched(pack_id, 'no-subdir', None, '')
 
         staged = os.path.join(tmp, 'staged')
         os.makedirs(staged)
@@ -444,6 +450,9 @@ def main() -> int:
     if os.path.exists(LOCKFILE):
         with open(LOCKFILE, encoding='utf-8') as fh:
             lock = json.load(fh).get('packs', {})
+    # The mass-failure gate compares against what was known BEFORE this run;
+    # `lock` is mutated in place below.
+    prior = {k: dict(v) for k, v in lock.items() if isinstance(v, dict)}
 
     os.makedirs(CORPUS, exist_ok=True)
     print(f'{len(targets)} packs -> {CORPUS}', file=sys.stderr, flush=True)
@@ -492,33 +501,43 @@ def main() -> int:
     if args.frozen and drifted:
         print(f'\n{drifted} packs drifted from the lockfile', file=sys.stderr)
         return 1
-    # A failed fetch is not a clean pack. Surface it rather than caching it.
-    # A few failures are ecosystem weather (deleted repos, host blips); a
-    # mass failure (rate limiting, host outage) would silently shrink every
-    # downstream denominator, so it fails the run instead of shipping a
-    # partial corpus as if it were complete. The denominator is what this
-    # run actually ATTEMPTED over the network - on an incremental run most
-    # packs short-circuit as cached, and measuring against the full target
-    # list would let a 100% outage of the attempted fetches pass.
-    if counts.get('failed'):
-        attempted = sum(
-            n for status, n in counts.items()
-            if status in ('ok', 'empty', 'failed', 'drifted')
-        )
+
+    # What this gate exists to catch is an OUTAGE - rate limiting, a host down -
+    # silently shrinking every downstream denominator. What it must not catch is
+    # the permanently unfetchable tail: at pinned commits, a deleted or private
+    # repo fails identically on every run forever.
+    #
+    # A ratio over "packs attempted this run" cannot tell those apart, and once
+    # the cache warms it inverts: the only packs still attempted ARE the
+    # permanently broken ones, so the gate reads 100% failure and reds every
+    # run (run 31835130531, 166 of 166). The signal is a REGRESSION - a pack the
+    # lockfile records as previously fetched that will not fetch now.
+    failed = [r for r in results if r.status == 'failed']
+    known_bad = [r for r in failed if not prior.get(r.pack_id, {}).get('status')]
+    regressed = [r for r in failed if prior.get(r.pack_id, {}).get('status')]
+    if known_bad:
         print(
-            f"\n{counts['failed']} of {attempted} attempted fetches failed; "
-            f're-run to retry (they are not marked done and will not be '
-            f'skipped)',
+            f'\n{len(known_bad)} packs have never fetched at their pinned'
+            ' commit (deleted, private, or gone); excluded from the corpus'
+            ' and from this gate',
             file=sys.stderr,
         )
-        if counts['failed'] >= 5 and counts['failed'] > 0.05 * attempted:
-            print(
-                f"{counts['failed']}/{attempted} attempted exceeds the 5% "
-                f'mass-failure threshold - refusing to treat a partial '
-                f'corpus as complete',
-                file=sys.stderr,
-            )
-            return 1
+    if not regressed:
+        return 0
+
+    previously_ok = sum(1 for v in prior.values() if v.get('status')) or len(targets)
+    print(
+        f'\n{len(regressed)} packs that fetched before will not fetch now,'
+        f' out of {previously_ok} previously fetched',
+        file=sys.stderr,
+    )
+    if len(regressed) >= 5 and len(regressed) > 0.05 * previously_ok:
+        print(
+            f'{len(regressed)}/{previously_ok} exceeds the 5% mass-failure'
+            ' threshold - refusing to treat a partial corpus as complete',
+            file=sys.stderr,
+        )
+        return 1
     return 0
 
 
