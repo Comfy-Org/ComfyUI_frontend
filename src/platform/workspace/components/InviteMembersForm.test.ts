@@ -157,7 +157,6 @@ describe('InviteMembersForm', () => {
     expect(submitButton()).toBeEnabled()
     expect(mockFetchStatus).toHaveBeenCalledOnce()
     await waitFor(() => expect(consoleError).toHaveBeenCalledWith(refreshError))
-    consoleError.mockRestore()
   })
 
   it('ignores stale cached invites when pending invites cannot be refreshed', async () => {
@@ -180,7 +179,6 @@ describe('InviteMembersForm', () => {
     await waitFor(() =>
       expect(emitted().submitted).toEqual([[['stale@example.com']]])
     )
-    consoleError.mockRestore()
   })
 
   it('revalidates emails after pending invites finish loading', async () => {
