@@ -1,4 +1,10 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  writeFileSync
+} from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 // S13 differential interaction profiles: the def-driven tiers are
@@ -76,6 +82,34 @@ export function diffShapes(
 
 function profilePath(pack: string): string {
   return `${PROFILE_DIR}${pack}.json`
+}
+
+/**
+ * A recorded baseline exists for this pack AND was recorded at this ref.
+ *
+ * S13 diffs a pack's live interaction shape against a committed recording, so
+ * it can only cover packs that have one. Recording is a real artifact - the six
+ * committed here run 1.7KB to 27KB each - and the cloud pack set deliberately
+ * has none, so those packs sit outside S13 rather than being skipped inside it.
+ *
+ * The ref check is what stops a core recording being reused for the same pack
+ * at a different cloud pin, where the baseline describes different code and
+ * every legitimate version difference would read as drift.
+ *
+ * Directory listing rather than existsSync: the filenames are mixed-case and
+ * the cloud rows are lowercase registry dirnames, so a case-insensitive
+ * filesystem (macOS) matched five packs that Linux CI would match two of.
+ */
+export function hasCommittedProfile(pack: string, ref: string): boolean {
+  const match = readdirSync(PROFILE_DIR).find(
+    (name) => name.toLowerCase() === `${pack.toLowerCase()}.json`
+  )
+  if (!match) return false
+  const parsed: unknown = JSON.parse(
+    readFileSync(`${PROFILE_DIR}${match}`, 'utf-8')
+  )
+  assertProfileFile(parsed, `${PROFILE_DIR}${match}`)
+  return parsed.recordedAt.pin === ref
 }
 
 const PROBES = ['connectFirst', 'connectLast', 'disconnect'] as const

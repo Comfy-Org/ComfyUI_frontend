@@ -8,6 +8,7 @@ import type { NodeInteractionProfile } from '@e2e/fixtures/customNode/interactio
 import {
   INTERACTION_UNSTABLE_NODES,
   comparePackProfiles,
+  hasCommittedProfile,
   loadPackProfiles,
   recordPackProfiles
 } from '@e2e/fixtures/customNode/interactionProfiles'
@@ -77,7 +78,9 @@ test.beforeEach(({ comfyPage }) => {
   trackSubmittedPrompts(comfyPage.page)
 })
 
-for (const entry of loadManifest()) {
+for (const entry of loadManifest().filter((row) =>
+  hasCommittedProfile(row.pack, packIdentity(row))
+)) {
   test(`interaction profiles: ${entry.pack} @custom-nodes`, async ({
     comfyPage
   }) => {

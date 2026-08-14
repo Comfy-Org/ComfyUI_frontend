@@ -13,6 +13,7 @@
  * Reads CUSTOM_NODES_MANIFEST / CUSTOM_NODES_BACKEND / CUSTOM_NODES_SHARD,
  * exactly as the specs do.
  */
+import { hasCommittedProfile } from '../browser_tests/fixtures/customNode/interactionProfiles'
 import {
   loadApplicableAutogrowCases,
   loadManifest,
@@ -29,9 +30,10 @@ const SLICE_INDEPENDENT_TESTS = 9
 // registers neither.
 const LOAD_TIERS = 3
 const RUN_TIERS = 1
-// Per pack in the slice: the regression spec's load test, and its interaction
-// profile. Run-tier and autogrow rows each add one more, counted separately.
-const TESTS_PER_PACK = 2
+// Per pack in the slice: the regression spec's load test. The interaction
+// profile is counted separately - S13 only covers packs with a baseline
+// recorded at the ref this manifest declares, which is the six core packs.
+const TESTS_PER_PACK = 1
 
 function expectedTestCount(): number {
   const entries = loadManifest()
@@ -42,6 +44,9 @@ function expectedTestCount(): number {
     (loadPacks.length > 0 ? LOAD_TIERS : 0) +
     (runPacks.length > 0 ? RUN_TIERS : 0) +
     TESTS_PER_PACK * entries.length +
+    entries.filter((entry) =>
+      hasCommittedProfile(entry.pack, packIdentity(entry))
+    ).length +
     runPacks.length +
     loadApplicableAutogrowCases().length
   )
