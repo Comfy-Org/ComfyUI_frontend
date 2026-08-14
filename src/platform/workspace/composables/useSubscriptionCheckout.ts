@@ -586,8 +586,7 @@ export function useSubscriptionCheckout(
     try {
       const planSlug = getTeamPlanSlug(payload.billingCycle)
       response = await previewSubscribe(planSlug, {
-        teamCreditStopId: payload.stop.id,
-        billingCycle: payload.billingCycle
+        teamCreditStopId: payload.stop.id
       })
     } catch (error) {
       previewError = error
@@ -965,8 +964,7 @@ export function useSubscriptionCheckout(
         (isCancelled.value || reactivationRequired.value)
       ) {
         await refreshPreviewOnReactivationBlock(planSlug, {
-          teamCreditStopId: stop.id,
-          billingCycle
+          teamCreditStopId: stop.id
         })
         return
       }
@@ -980,8 +978,7 @@ export function useSubscriptionCheckout(
         (isCancelled.value || reactivationRequired.value)
       ) {
         await assertReactivationAmountUnchanged(planSlug, {
-          teamCreditStopId: stop.id,
-          billingCycle
+          teamCreditStopId: stop.id
         })
       }
       const response = await subscribe(planSlug, {
@@ -1014,8 +1011,7 @@ export function useSubscriptionCheckout(
     } catch (error) {
       if (hasErrorCode(error, 'REACTIVATION_CONFIRMATION_REQUIRED')) {
         await refreshPreviewOnReactivationBlock(planSlug, {
-          teamCreditStopId: stop.id,
-          billingCycle
+          teamCreditStopId: stop.id
         })
         return
       }
@@ -1032,8 +1028,7 @@ export function useSubscriptionCheckout(
       if (await recoverOutstandingPayment(error)) return
       if (
         await refreshExpiredProrationQuote(error, planSlug, {
-          teamCreditStopId: stop.id,
-          billingCycle
+          teamCreditStopId: stop.id
         })
       )
         return

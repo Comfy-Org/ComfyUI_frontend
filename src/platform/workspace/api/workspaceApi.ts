@@ -21,7 +21,7 @@ import type {
   PaymentPortalResponse,
   PendingInvite,
   Plan,
-  PreviewSubscribeRequest as GeneratedPreviewSubscribeRequest,
+  PreviewSubscribeRequest,
   PreviewSubscribeResponse,
   ResubscribeRequest,
   ResubscribeResponse,
@@ -77,10 +77,6 @@ export type { TeamCreditStopSummary }
 
 type SubscribeBillingCycle = 'monthly' | 'yearly'
 
-interface PreviewSubscribeRequest extends GeneratedPreviewSubscribeRequest {
-  billing_cycle?: SubscribeBillingCycle
-}
-
 export interface SubscribeOptions {
   returnUrl?: string
   cancelUrl?: string
@@ -92,7 +88,6 @@ export interface SubscribeOptions {
 
 export interface PreviewSubscribeOptions {
   teamCreditStopId?: string
-  billingCycle?: SubscribeBillingCycle
 }
 
 export type { SubscribeResponse }
@@ -447,8 +442,7 @@ export const workspaceApi = {
         api.apiURL('/billing/preview-subscribe'),
         {
           plan_slug: planSlug,
-          team_credit_stop_id: options.teamCreditStopId,
-          billing_cycle: options.billingCycle
+          team_credit_stop_id: options.teamCreditStopId
         } satisfies PreviewSubscribeRequest,
         { headers }
       )
