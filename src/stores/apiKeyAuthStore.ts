@@ -4,6 +4,7 @@ import { computed, ref, watch } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
+import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import type { ApiKeyAuthHeader } from '@/types/authTypes'
@@ -39,6 +40,16 @@ const failureFor = (error: unknown): ApiKeyFailure => {
   if (error.status === 403) return 'denied'
   return 'unverified'
 }
+
+/**
+ * Pairs the failure kind with the status that produced it so the cases stay
+ * separable when reported: a rise in `unverified_503` is the backend declining
+ * to vouch for keys, a different incident from a rise in `rejected_401`.
+ */
+const errorCodeFor = (error: unknown, failure: ApiKeyFailure) =>
+  error instanceof AuthStoreError && error.status
+    ? `${failure}_${error.status}`
+    : failure
 
 const FAILURE_MESSAGES: Record<
   ApiKeyFailure,
@@ -93,6 +104,13 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
       if (!stillWanted()) return false
       currentUser.value = null
       const failure = failureFor(error)
+      // Reported for every failure, including the unverified one the watch
+      // only logs, so the case that made BE-7550 invisible is the case this
+      // can be alerted on.
+      useTelemetry()?.trackAuthFailed({
+        error_code: errorCodeFor(error, failure),
+        auth_action: 'api_key_sign_in'
+      })
       if (failure === 'rejected') apiKey.value = null
       const { summary, detail } = FAILURE_MESSAGES[failure]
       throw new ApiKeyAuthError(failure, t(summary), t(detail))

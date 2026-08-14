@@ -7,6 +7,14 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { AuthStoreError } from '@/stores/authStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 
+const { mockTrackAuthFailed } = vi.hoisted(() => ({
+  mockTrackAuthFailed: vi.fn()
+}))
+
+vi.mock('@/platform/telemetry', () => ({
+  useTelemetry: () => ({ trackAuthFailed: mockTrackAuthFailed })
+}))
+
 // authStore initialises Firebase at module setup, which cannot run under test.
 const { mockCreateCustomer, MockAuthStoreError } = vi.hoisted(() => {
   class MockAuthStoreError extends Error {
@@ -41,6 +49,7 @@ describe('useApiKeyAuthStore', () => {
     localStorage.clear()
     setActivePinia(createTestingPinia({ stubActions: false }))
     mockCreateCustomer.mockReset()
+    mockTrackAuthFailed.mockReset()
   })
 
   describe('storeApiKey', () => {
@@ -162,6 +171,48 @@ describe('useApiKeyAuthStore', () => {
       expect(store.getApiKey()).toBe(VALID_KEY)
       expect(store.isAuthenticated).toBe(true)
       expect(severities()).toEqual(['success:auth.apiKey.stored'])
+    })
+  })
+
+  describe('reporting failures for alerting', () => {
+    it.for([
+      [401, 'rejected_401'],
+      [403, 'denied_403'],
+      [503, 'unverified_503']
+    ] as const)('reports a %i as %s', async ([status, code]) => {
+      mockCreateCustomer.mockRejectedValue(new AuthStoreError('failed', status))
+      const store = useApiKeyAuthStore()
+
+      await store.storeApiKey(VALID_KEY)
+
+      expect(mockTrackAuthFailed).toHaveBeenCalledWith({
+        error_code: code,
+        auth_action: 'api_key_sign_in'
+      })
+    })
+
+    it('reports the unreachable-backend case the UI only logs', async () => {
+      localStorage.setItem(STORAGE_KEY, VALID_KEY)
+      mockCreateCustomer.mockRejectedValue(new TypeError('Failed to fetch'))
+
+      useApiKeyAuthStore()
+      await vi.waitFor(() => expect(mockCreateCustomer).toHaveBeenCalled())
+      await nextTick()
+
+      expect(severities()).toEqual([])
+      expect(mockTrackAuthFailed).toHaveBeenCalledWith({
+        error_code: 'unverified',
+        auth_action: 'api_key_sign_in'
+      })
+    })
+
+    it('reports nothing when the key is accepted', async () => {
+      mockCreateCustomer.mockResolvedValue(customer)
+      const store = useApiKeyAuthStore()
+
+      await store.storeApiKey(VALID_KEY)
+
+      expect(mockTrackAuthFailed).not.toHaveBeenCalled()
     })
   })
 
