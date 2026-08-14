@@ -9,6 +9,12 @@ const mockShowTopUpCreditsDialog = vi.fn()
 const mockExecute = vi.fn()
 const mockToastAdd = vi.fn()
 
+const { mockCaptureException } = vi.hoisted(() => ({
+  mockCaptureException: vi.fn()
+}))
+
+vi.mock('@sentry/vue', () => ({ captureException: mockCaptureException }))
+
 vi.mock('@/platform/updates/common/toastStore', () => ({
   useToastStore: () => ({ add: mockToastAdd })
 }))
@@ -69,6 +75,7 @@ Object.defineProperty(window, 'open', {
 describe('useSubscriptionActions', () => {
   beforeEach(() => {
     mockIsCloud.value = true
+    mockCaptureException.mockReset()
   })
 
   describe('handleAddApiCredits', () => {
@@ -132,6 +139,18 @@ describe('useSubscriptionActions', () => {
           detail: 'Command failed'
         })
       )
+    })
+
+    it('reports a failed support request so it is visible without the user', async () => {
+      const failure = new Error('Command failed')
+      mockExecute.mockRejectedValueOnce(failure)
+      const { handleMessageSupport } = useSubscriptionActions()
+
+      await handleMessageSupport()
+
+      expect(mockCaptureException).toHaveBeenCalledWith(failure, {
+        tags: { error_type: 'contact_support_failed' }
+      })
     })
   })
 

@@ -1,3 +1,4 @@
+import { captureException } from '@sentry/vue'
 import { onMounted, ref } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
@@ -29,6 +30,18 @@ export function useSubscriptionActions() {
     void dialogService.showTopUpCreditsDialog()
   }
 
+  // A user who cannot reach support cannot tell us that they cannot reach
+  // support, so this failure has to report itself.
+  const reportSupportFailure = (error: unknown) => {
+    captureException(
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        tags: { error_type: 'contact_support_failed' }
+      }
+    )
+    toastErrorHandler(error)
+  }
+
   const handleMessageSupport = wrapWithErrorHandlingAsync(
     async () => {
       isLoadingSupport.value = true
@@ -39,7 +52,7 @@ export function useSubscriptionActions() {
       })
       await commandStore.execute('Comfy.ContactSupport')
     },
-    toastErrorHandler,
+    reportSupportFailure,
     () => {
       isLoadingSupport.value = false
     }
