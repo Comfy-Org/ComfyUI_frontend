@@ -350,21 +350,42 @@ function useSubscriptionInternal() {
 
   // Coalesce concurrent callers so an auth/session-rotation burst mints one fetch.
   let inFlightStatusFetch: Promise<BillingStatusResponse | null> | null = null
-  let latestStatusRequestId = 0
+  let inFlightStatusOwnerId: string | null = null
+  let inFlightStatusWorkspaceId: string | null = null
 
   async function fetchSubscriptionStatus(): Promise<BillingStatusResponse | null> {
-    if (inFlightStatusFetch) return inFlightStatusFetch
-    inFlightStatusFetch = performFetchSubscriptionStatus().finally(() => {
-      inFlightStatusFetch = null
-    })
-    return inFlightStatusFetch
+    const ownerId = authStore.userId ?? null
+    const workspaceId = workspaceStore.activeWorkspaceId
+    if (
+      inFlightStatusFetch &&
+      inFlightStatusOwnerId === ownerId &&
+      inFlightStatusWorkspaceId === workspaceId
+    ) {
+      return inFlightStatusFetch
+    }
+
+    const fetchPromise = performFetchSubscriptionStatus(ownerId, workspaceId)
+    inFlightStatusFetch = fetchPromise
+    inFlightStatusOwnerId = ownerId
+    inFlightStatusWorkspaceId = workspaceId
+    void fetchPromise
+      .catch(() => undefined)
+      .finally(() => {
+        if (inFlightStatusFetch === fetchPromise) {
+          inFlightStatusFetch = null
+          inFlightStatusOwnerId = null
+          inFlightStatusWorkspaceId = null
+        }
+      })
+    return fetchPromise
   }
 
-  async function performFetchSubscriptionStatus(): Promise<BillingStatusResponse | null> {
+  async function performFetchSubscriptionStatus(
+    ownerId: string | null,
+    workspaceId: string | null
+  ): Promise<BillingStatusResponse | null> {
     if (!isCloud) return null
 
-    const requestId = ++latestStatusRequestId
-    const workspaceId = workspaceStore.activeWorkspaceId
     let statusData: BillingStatusResponse
     try {
       statusData = await workspaceApi.getBillingStatus()
@@ -376,8 +397,8 @@ function useSubscriptionInternal() {
       )
     }
     if (
-      requestId !== latestStatusRequestId ||
-      workspaceId !== workspaceStore.activeWorkspaceId
+      (authStore.userId ?? null) !== ownerId ||
+      workspaceStore.activeWorkspaceId !== workspaceId
     ) {
       return null
     }
@@ -424,7 +445,8 @@ function useSubscriptionInternal() {
   })
 
   watch(
-    () => [authStore.isInitialized, isLoggedIn.value] as const,
+    () =>
+      [authStore.isInitialized, isLoggedIn.value, authStore.userId] as const,
     async ([authInitialized, loggedIn]) => {
       if (!authInitialized) {
         return
