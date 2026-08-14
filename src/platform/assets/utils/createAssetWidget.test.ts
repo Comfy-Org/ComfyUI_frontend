@@ -72,7 +72,6 @@ describe('createAssetWidget', () => {
   let captureCanvasState: ReturnType<typeof vi.fn>
 
   beforeEach(() => {
-    vi.resetAllMocks()
     captureCanvasState = vi.fn()
     setActivePinia(
       createTestingPinia({

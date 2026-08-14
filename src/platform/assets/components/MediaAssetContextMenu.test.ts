@@ -141,10 +141,8 @@ async function showMenu(container: Element): Promise<HTMLElement> {
 }
 
 afterEach(() => {
-  vi.clearAllMocks()
   capturedRef = null
   capturedMenu.model = []
-  document.body.innerHTML = ''
 })
 
 type MenuItemWithCommand = MenuItem & {

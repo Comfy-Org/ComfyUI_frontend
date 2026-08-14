@@ -88,6 +88,14 @@ vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
   })
 }))
 
+const mockTrackBillingEvent = vi.hoisted(() => vi.fn())
+
+vi.mock('@/platform/telemetry', () => ({
+  useTelemetry: () => ({
+    trackBillingEvent: mockTrackBillingEvent
+  })
+}))
+
 let scope: ReturnType<typeof effectScope> | undefined
 
 function setupBilling() {
@@ -162,7 +170,6 @@ const subscribeResponses = [
 
 describe('useWorkspaceBilling', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockActiveWorkspaceId.value = 'workspace-1'
     mockBillingPlans.plans.value = []
     mockBillingPlans.currentPlanSlug.value = null
@@ -173,8 +180,6 @@ describe('useWorkspaceBilling', () => {
   afterEach(() => {
     scope?.stop()
     scope = undefined
-    vi.unstubAllGlobals()
-    vi.useRealTimers()
   })
 
   describe('initialize', () => {
@@ -885,7 +890,9 @@ describe('useWorkspaceBilling', () => {
       const billing = setupBilling()
       await billing.cancelSubscription()
 
-      expect(mockStartOperation).toHaveBeenCalledWith('op-cancel', 'cancel')
+      expect(mockStartOperation).toHaveBeenCalledWith('op-cancel', 'cancel', {
+        attemptStartedAt: expect.any(Number)
+      })
       expect(billing.error.value).toBeNull()
     })
 
@@ -953,6 +960,76 @@ describe('useWorkspaceBilling', () => {
       expect(mockStartOperation).not.toHaveBeenCalled()
     })
 
+    it('fires a started event before the cancel API call resolves', async () => {
+      mockWorkspaceApi.cancelSubscription.mockResolvedValue({
+        billing_op_id: 'op-cancel',
+        cancel_at: '2026-06-01T00:00:00Z'
+      })
+      mockStartOperation.mockResolvedValue(operation())
+
+      const billing = setupBilling()
+      await billing.cancelSubscription()
+
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        operation: 'operation',
+        stage: 'started',
+        outcome: 'pending',
+        operation_type: 'cancel'
+      })
+    })
+
+    it('fires billing telemetry directly when the initiating call fails before a billing_op_id exists', async () => {
+      mockWorkspaceApi.cancelSubscription.mockRejectedValue(
+        new mockWorkspaceApiError('Upstream failure', 502)
+      )
+
+      const billing = setupBilling()
+
+      await expect(billing.cancelSubscription()).rejects.toThrow(
+        'Upstream failure'
+      )
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        operation: 'operation',
+        stage: 'failed',
+        outcome: 'failure',
+        operation_type: 'cancel',
+        failure_category: 'api_rejected',
+        duration_ms: expect.any(Number)
+      })
+    })
+
+    it('categorizes a status-less initiating failure as network', async () => {
+      mockWorkspaceApi.cancelSubscription.mockRejectedValue(
+        new mockWorkspaceApiError('Failed to fetch')
+      )
+
+      const billing = setupBilling()
+
+      await expect(billing.cancelSubscription()).rejects.toThrow()
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith(
+        expect.objectContaining({ failure_category: 'network' })
+      )
+    })
+
+    it('does not duplicate telemetry for a poller failure once a billing_op_id exists', async () => {
+      mockWorkspaceApi.cancelSubscription.mockResolvedValue({
+        billing_op_id: 'op-fail',
+        cancel_at: '2026-06-01T00:00:00Z'
+      })
+      mockStartOperation.mockResolvedValue(
+        operation({ status: 'failed', errorMessage: 'processor rejected' })
+      )
+
+      const billing = setupBilling()
+
+      await expect(billing.cancelSubscription()).rejects.toThrow(
+        'processor rejected'
+      )
+      expect(mockTrackBillingEvent).not.toHaveBeenCalledWith(
+        expect.objectContaining({ stage: 'failed' })
+      )
+    })
+
     it('falls back to a generic error message when cancel rejects with a non-Error', async () => {
       mockWorkspaceApi.cancelSubscription.mockRejectedValue('boom')
 
@@ -986,6 +1063,22 @@ describe('useWorkspaceBilling', () => {
       expect(billing.subscription.value?.tier).toBe('CREATOR')
       expect(mockStartOperation).not.toHaveBeenCalled()
       expect(billing.isLoading.value).toBe(false)
+      expect(mockTrackBillingEvent).not.toHaveBeenCalledWith(
+        expect.objectContaining({ stage: 'failed' })
+      )
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        operation: 'operation',
+        stage: 'started',
+        outcome: 'pending',
+        operation_type: 'cancel'
+      })
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        operation: 'operation',
+        stage: 'succeeded',
+        outcome: 'success',
+        operation_type: 'cancel',
+        duration_ms: expect.any(Number)
+      })
     })
 
     it('stays a success when the follow-up status read also fails', async () => {
@@ -1038,7 +1131,10 @@ describe('useWorkspaceBilling', () => {
 
   describe('resubscribe', () => {
     it('refreshes status and balance after a successful resubscribe', async () => {
-      mockWorkspaceApi.resubscribe.mockResolvedValue(undefined)
+      mockWorkspaceApi.resubscribe.mockResolvedValue({
+        billing_op_id: 'op-resub',
+        status: 'active'
+      })
       mockWorkspaceApi.getBillingStatus.mockResolvedValue(activeStatus)
       mockWorkspaceApi.getBillingBalance.mockResolvedValue(positiveBalance)
 
@@ -1054,8 +1150,57 @@ describe('useWorkspaceBilling', () => {
       expect(billing.isLoading.value).toBe(false)
     })
 
+    it('waits for a pending resubscribe op to succeed before resolving', async () => {
+      mockWorkspaceApi.resubscribe.mockResolvedValue({
+        billing_op_id: 'op-resub-pending',
+        status: 'pending'
+      })
+      mockWorkspaceApi.getBillingStatus.mockResolvedValue(activeStatus)
+      mockWorkspaceApi.getBillingBalance.mockResolvedValue(positiveBalance)
+      mockStartOperation.mockResolvedValue({
+        opId: 'op-resub-pending',
+        type: 'subscription',
+        status: 'succeeded',
+        errorMessage: null,
+        startedAt: 0
+      })
+
+      const billing = setupBilling()
+      await billing.resubscribe()
+
+      expect(mockStartOperation).toHaveBeenCalledWith(
+        'op-resub-pending',
+        'subscription'
+      )
+      expect(billing.error.value).toBeNull()
+    })
+
+    it('throws when a pending resubscribe op fails', async () => {
+      mockWorkspaceApi.resubscribe.mockResolvedValue({
+        billing_op_id: 'op-resub-failed',
+        status: 'pending'
+      })
+      mockWorkspaceApi.getBillingStatus.mockResolvedValue(activeStatus)
+      mockWorkspaceApi.getBillingBalance.mockResolvedValue(positiveBalance)
+      mockStartOperation.mockResolvedValue({
+        opId: 'op-resub-failed',
+        type: 'subscription',
+        status: 'failed',
+        errorMessage: 'card declined',
+        startedAt: 0
+      })
+
+      const billing = setupBilling()
+
+      await expect(billing.resubscribe()).rejects.toThrow('card declined')
+      expect(billing.error.value).toBe('card declined')
+    })
+
     it('keeps the mutation successful when reconciliation fails', async () => {
-      mockWorkspaceApi.resubscribe.mockResolvedValue(undefined)
+      mockWorkspaceApi.resubscribe.mockResolvedValue({
+        billing_op_id: 'op-resub',
+        status: 'active'
+      })
       mockWorkspaceApi.getBillingStatus.mockRejectedValue(
         new Error('status unavailable')
       )
@@ -1221,7 +1366,10 @@ describe('useWorkspaceBilling', () => {
 
   describe('resubscribe', () => {
     it('refreshes status and balance after a successful resubscribe', async () => {
-      mockWorkspaceApi.resubscribe.mockResolvedValue(undefined)
+      mockWorkspaceApi.resubscribe.mockResolvedValue({
+        billing_op_id: 'op-resub',
+        status: 'active'
+      })
       mockWorkspaceApi.getBillingStatus.mockResolvedValue(activeStatus)
       mockWorkspaceApi.getBillingBalance.mockResolvedValue(positiveBalance)
 

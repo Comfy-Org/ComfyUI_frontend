@@ -1,7 +1,4 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, watch } from 'vue'
 
@@ -185,9 +182,7 @@ vi.mock('@/platform/assets/composables/media/assetMappers', () => ({
 
 describe('assetsStore - Model Assets Cache (Cloud)', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     mockIsCloud.value = true
-    vi.clearAllMocks()
   })
 
   afterEach(() => {
@@ -1335,9 +1330,7 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
 
 describe('assetsStore - Model Assets Cache (non-cloud)', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     mockIsCloud.value = false
-    vi.clearAllMocks()
   })
 
   it('caches model assets fetched by tag on non-cloud builds', async () => {
@@ -1371,11 +1364,6 @@ describe('assetsStore - Model Assets Cache (non-cloud)', () => {
 })
 
 describe('assetsStore - Deletion State and Input Mapping', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
-  })
-
   describe('setAssetDeleting / isAssetDeleting', () => {
     it('tracks per-asset deletion state and clears it on flip', () => {
       const store = useAssetsStore()

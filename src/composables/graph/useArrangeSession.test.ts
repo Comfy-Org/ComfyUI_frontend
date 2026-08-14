@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type * as ArrangeNodesModule from '@/composables/graph/useArrangeNodes'
 import { useArrangeSession } from '@/composables/graph/useArrangeSession'
@@ -20,7 +20,6 @@ describe('useArrangeSession', () => {
   let nextHandle: number
 
   beforeEach(() => {
-    mockArrangeNodes.mockReset()
     frameCallbacks = []
     nextHandle = 1
     vi.spyOn(globalThis, 'requestAnimationFrame').mockImplementation(
@@ -32,10 +31,6 @@ describe('useArrangeSession', () => {
     vi.spyOn(globalThis, 'cancelAnimationFrame').mockImplementation((id) => {
       frameCallbacks[id - 1] = () => {}
     })
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   const flushFrames = () => {

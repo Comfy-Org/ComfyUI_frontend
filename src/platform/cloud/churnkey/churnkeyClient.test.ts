@@ -47,7 +47,6 @@ function capturedConfig(): ChurnkeyInitConfig {
 
 describe('churnkeyClient', () => {
   beforeEach(() => {
-    vi.resetAllMocks()
     mocks.appId = 'app_test'
     mocks.getChurnkeyAuth.mockResolvedValue(authResponse())
     window.churnkey = {

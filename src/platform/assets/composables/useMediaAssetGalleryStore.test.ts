@@ -1,6 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ResultItemImpl } from '@/stores/queueStore'
@@ -9,19 +8,17 @@ import type { AssetMeta } from '../schemas/mediaAssetSchema'
 import { useMediaAssetGalleryStore } from './useMediaAssetGalleryStore'
 
 vi.mock('@/stores/queueStore', () => ({
-  ResultItemImpl: vi
-    .fn<typeof ResultItemImpl>()
-    .mockImplementation(function (data) {
+  ResultItemImpl: vi.fn<typeof ResultItemImpl>()
+}))
+
+describe('useMediaAssetGalleryStore', () => {
+  beforeEach(() => {
+    vi.mocked(ResultItemImpl).mockImplementation(function (data) {
       Object.assign(this, {
         ...data,
         url: ''
       })
     })
-}))
-
-describe('useMediaAssetGalleryStore', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
   })
 
   describe('openSingle', () => {

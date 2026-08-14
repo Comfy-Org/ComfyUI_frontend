@@ -1,12 +1,8 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { ComfyApi } from '@/scripts/api'
 
 describe('ComfyApi event listener error isolation', () => {
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
   it('does not let a throwing listener abort dispatch to other listeners', () => {
     const api = new ComfyApi()
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})

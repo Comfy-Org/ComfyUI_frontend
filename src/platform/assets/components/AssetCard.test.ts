@@ -1,8 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import { render, screen } from '@testing-library/vue'
-import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import AssetCard from '@/platform/assets/components/AssetCard.vue'
@@ -67,7 +66,6 @@ function createDisplayAsset(
 }
 
 function renderCard(asset: AssetDisplayItem) {
-  setActivePinia(createPinia())
   const i18n = createI18n({
     legacy: false,
     locale: 'en',
@@ -94,10 +92,6 @@ function renderCard(asset: AssetDisplayItem) {
 }
 
 describe('AssetCard', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   describe('FE-228: filename rendering', () => {
     it('renders the human-readable filename instead of hash when asset.name equals hash', () => {
       const asset = createDisplayAsset()

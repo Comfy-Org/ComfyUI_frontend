@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -201,7 +199,6 @@ function makeHistoryJob(
 }
 
 beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
   seedMediaNodeDefs()
 })
 
@@ -502,6 +499,17 @@ describe('isMissingMediaCandidateScopeActive', () => {
 
     expect(isMissingMediaCandidateScopeActive(graph, candidate)).toBe(false)
   })
+
+  it('drops a candidate whose widget value changed while verification was pending', () => {
+    const { graph, node, widget } = createLoadImageGraph()
+    const candidate = makeCandidate(String(node.id), 'missing.png')
+
+    expect.soft(isMissingMediaCandidateScopeActive(graph, candidate)).toBe(true)
+
+    widget.value = 'valid.png'
+
+    expect(isMissingMediaCandidateScopeActive(graph, candidate)).toBe(false)
+  })
 })
 
 describe('scanAllMediaCandidates', () => {
@@ -652,7 +660,6 @@ describe('verifyMediaCandidates', () => {
     'blake3:2222222222222222222222222222222222222222222222222222222222222222'
 
   beforeEach(() => {
-    vi.clearAllMocks()
     mockGetInputAssetsIncludingPublic.mockResolvedValue([])
     mockGetAssetsPageByTag.mockResolvedValue(makeAssetPage([]))
     mockFetchHistoryPage.mockResolvedValue({
