@@ -266,6 +266,21 @@ describe('LGraphNode', () => {
     expect(root.style.getPropertyValue('--node-height')).toBe('130px')
   })
 
+  it('should render the collapsed node layout', () => {
+    const { container } = renderLGraphNode({
+      nodeData: {
+        ...mockNodeData,
+        flags: { collapsed: true }
+      }
+    })
+    const root = getNodeRoot(container)
+
+    expect(root).toHaveAttribute('data-collapsed', 'true')
+    expect(
+      screen.queryByTestId(`node-body-${mockNodeData.id}`)
+    ).not.toBeInTheDocument()
+  })
+
   it('should initialize height CSS vars for expanded nodes', () => {
     const { container } = renderLGraphNode({
       nodeData: {
