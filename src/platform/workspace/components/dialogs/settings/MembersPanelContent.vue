@@ -1,7 +1,7 @@
 <template>
-  <div class="grow overflow-auto pt-6">
+  <div class="flex h-full flex-col pt-6">
     <div
-      class="border-inter flex size-full flex-col gap-2 rounded-2xl border border-interface-stroke p-6"
+      class="border-inter flex min-h-0 w-full flex-1 flex-col gap-2 rounded-2xl border border-interface-stroke p-6"
     >
       <!-- Section Header -->
       <div class="flex w-full items-center gap-9">
@@ -208,7 +208,7 @@
       @show-plans="showTeamPlans()"
     />
     <!-- Need More Members Footer -->
-    <div v-if="hasMemberSeats" class="flex items-center pt-2">
+    <div v-if="hasMemberSeats" class="flex shrink-0 items-center pt-2">
       <p class="text-sm text-muted-foreground">
         {{ $t('workspacePanel.members.needMoreMembers') }}
       </p>
