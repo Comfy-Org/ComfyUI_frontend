@@ -34,7 +34,8 @@
 
     <UsageLogsTable v-if="!embedded" ref="usageLogsTableRef" />
 
-    <div class="flex flex-row gap-2">
+    <SubscriptionFooterLinks v-if="embedded" :show-invoice-history="false" />
+    <div v-else class="flex flex-row gap-2">
       <Button variant="muted-textonly" @click="handleFaqClick">
         <i class="pi pi-question-circle" />
         {{ $t('credits.faqs') }}
@@ -57,6 +58,7 @@ import { ref, watch } from 'vue'
 
 import UsageLogsTable from '@/components/dialog/content/setting/UsageLogsTable.vue'
 import Button from '@/components/ui/button/Button.vue'
+import SubscriptionFooterLinks from '@/platform/cloud/subscription/components/SubscriptionFooterLinks.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useExternalLink } from '@/composables/useExternalLink'
 import CreditsTile from '@/platform/cloud/subscription/components/CreditsTile.vue'
