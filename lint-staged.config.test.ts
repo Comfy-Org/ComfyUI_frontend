@@ -32,6 +32,18 @@ describe('lintStaged', () => {
     expect(commandFor(commands, 'oxlint')).toBeUndefined()
   })
 
+  it('does not fall back to a whole-repo lint when only apps/ code pushes past the limit', () => {
+    const commands = lintStaged(
+      staged(
+        ...Array.from({ length: 11 }, (_, i) => `apps/website/src/foo${i}.ts`)
+      )
+    )
+
+    expect(commands).not.toContain('pnpm lint')
+    expect(commandFor(commands, 'eslint')).toBeUndefined()
+    expect(commandFor(commands, 'oxlint')).toBeUndefined()
+  })
+
   it('still runs stylelint on apps/ vue files, which stylelint globs', () => {
     const command = commandFor(
       lintStaged(staged('apps/website/src/Bar.vue')),
