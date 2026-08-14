@@ -242,6 +242,7 @@ jobs:
             echo "::error::shard $CUSTOM_NODES_SHARD owns no packs"; exit 1
           fi
           echo "shard $CUSTOM_NODES_SHARD owns ${#rows[@]} pack(s)"
+          uninstallable=()
           for row in "${rows[@]}"; do
             # Install under the manifest `pack` key, not anything derived from
             # the deployRef: node attribution keys on the install dirname via
@@ -319,10 +320,24 @@ jobs:
               printf '%s' "$ref" > "$cache_dir.ref"
             fi
             if [ -f "$dir/requirements.txt" ]; then
-              pip install -r "$dir/requirements.txt" -c /tmp/torch-constraints.txt
+              # Collected, not aborted. An unsatisfiable requirement upstream
+              # (radiance pins Imath>=3.1.0; PyPI has 0.0.2) is one pack's
+              # problem, and failing here took the other 21 packs in the shard
+              # down with it - a real pack bug erasing unrelated coverage.
+              if ! pip install -r "$dir/requirements.txt" \
+                   -c /tmp/torch-constraints.txt; then
+                uninstallable+=("$pack")
+                rm -rf "$dir"
+              fi
             fi
             echo "::endgroup::"
           done
+          # Still a gate failure - a pack that cannot install has no coverage -
+          # but reported once, naming every offender, after the rest installed.
+          if [ ${#uninstallable[@]} -gt 0 ]; then
+            echo "::error::${#uninstallable[@]} pack(s) failed to install: ${uninstallable[*]}"
+            exit 1
+          fi
           # Prune entries for packs this shard no longer owns: the prefix
           # fallback restores old entries and the save re-tars the whole
           # directory, so without this the entry grows monotonically and
