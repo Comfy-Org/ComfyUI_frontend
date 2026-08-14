@@ -98,9 +98,15 @@ export const useAgentNodeSelectionStore = defineStore(
         isActionBarsHidden.value = false
       }, BANNER_TRANSITION_MS)
 
+      // Staged like the entry side rather than snapping back: the panel
+      // reappears with the action bars, once the banner has retracted, so the
+      // two never animate over each other.
       if (restoreSidebarTabId) {
-        sidebarTabStore.activeSidebarTabId = restoreSidebarTabId
+        const tabId = restoreSidebarTabId
         restoreSidebarTabId = null
+        sidebarTimeoutId = setTimeout(() => {
+          sidebarTabStore.activeSidebarTabId = tabId
+        }, BANNER_TRANSITION_MS)
       }
     })
 
