@@ -44,6 +44,28 @@ describe('layoutStore CRDT operations', () => {
     bounds: { x: 100, y: 100, width: 200, height: 100 }
   })
 
+  it('batchUpdateNodeBounds records nothing when bounds are unchanged', () => {
+    const nodeId = toNodeId('noop-bounds')
+    layoutStore.setSource(LayoutSource.External)
+    layoutStore.applyOperation({
+      type: 'createNode',
+      entity: 'node',
+      nodeId,
+      layout: createTestNode(nodeId),
+      timestamp: Date.now(),
+      source: LayoutSource.External,
+      actor: 'test'
+    })
+    const before = layoutStore.layoutVersion
+
+    // A culled node re-mounting re-measures and reports its existing bounds.
+    layoutStore.batchUpdateNodeBounds([
+      { nodeId, bounds: { x: 100, y: 100, width: 200, height: 100 } }
+    ])
+
+    expect(layoutStore.layoutVersion).toBe(before)
+  })
+
   it('should create and retrieve nodes', () => {
     const nodeId = toNodeId('test-node-1')
     const layout = createTestNode(nodeId)

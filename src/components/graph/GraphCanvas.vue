@@ -159,7 +159,7 @@ import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { useGroupContextMenu } from '@/composables/graph/useGroupContextMenu'
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
-import { useViewportCulling } from '@/composables/graph/useViewportCulling'
+import { useViewportCulling } from '@/renderer/extensions/vueNodes/composables/useViewportCulling'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useNodeBadge } from '@/composables/node/useNodeBadge'
 import { useCanvasDrop } from '@/composables/useCanvasDrop'
@@ -180,6 +180,7 @@ import { useWorkflowPersistenceV2 as useWorkflowPersistence } from '@/platform/w
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import type { NodeId } from '@/renderer/core/layout/types'
 import { createNodeCullingIndex } from '@/renderer/core/spatial/nodeCullingIndex'
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
@@ -300,10 +301,12 @@ const rawNodes = computed((): VueNodeData[] =>
 )
 
 // Bounds come from layoutStore rather than the litegraph nodes so they share a
-// source with layoutVersion; keying the cache on one and reading the other
-// would let it hold stale bounds indefinitely.
+// source with the version; keying the cache on one and reading the other
+// would let it hold stale bounds indefinitely. Geometry version, not
+// layoutVersion: the latter counts operations, so zIndex writes (one per
+// widget pointerdown) would rebuild the tree for changes that move nothing.
 const cullingIndex = createNodeCullingIndex({
-  getVersion: () => layoutStore.layoutVersion,
+  getVersion: () => layoutStore.nodeGeometryVersion,
   getEntries: () => {
     const layouts = layoutStore.getAllNodes().value
     return rawNodes.value.map((node) => {
@@ -324,7 +327,14 @@ const cullingIndex = createNodeCullingIndex({
   }
 })
 
-watch(rawNodes, () => cullingIndex.invalidate())
+// Invalidate on membership change only. rawNodes gets a new identity whenever
+// any entry of the reactive map is replaced (title, colour, badges, ...), and
+// those cannot move a node; adds and removes can, and are what the version
+// does not cover for nodes that never reached the layout store.
+watch(
+  () => rawNodes.value.map((node) => node.id).join(','),
+  () => cullingIndex.invalidate()
+)
 
 const { mountedNodeIds } = useViewportCulling({
   nodes: rawNodes,
@@ -336,11 +346,43 @@ const { mountedNodeIds } = useViewportCulling({
       height: element?.clientHeight ?? 0
     }
   },
-  isPinned: (id) => canvasStore.selectedNodeIds.has(id)
+  getPinnedIds: () => {
+    const selected = canvasStore.selectedNodeIds
+
+    // Also retain the node the user is typing in. Focus does not require
+    // selection, and unmounting it destroys IME composition and caret state.
+    const focusedNode = document.activeElement?.closest?.('[data-node-id]')
+    const focusedId = focusedNode?.getAttribute('data-node-id')
+    if (!focusedId || selected.has(focusedId as NodeId)) return selected
+
+    const merged = new Set(selected)
+    merged.add(focusedId as NodeId)
+    return merged
+  }
 })
 
+// Culling can leave zero nodes mounted (empty viewport region). Slot layouts
+// only exist for mounted nodes, so the wait-for-slot-measurement latch would
+// otherwise never release and every link on the canvas would stay hidden.
+// pendingSlotSync itself is non-reactive, so the check runs whenever either
+// signal that can create the condition changes: the mounted set, or the node
+// membership a graph reconfigure replaces.
+watch([mountedNodeIds, () => rawNodes.value.length], () => {
+  if (mountedNodeIds.value.size === 0 && layoutStore.pendingSlotSync) {
+    layoutStore.setPendingSlotSync(false)
+  }
+})
+
+// Kill switch: culling ships default-on wherever Vue nodes are on, so field
+// issues need a way out that does not mean abandoning Nodes 2.0 entirely.
+const cullingEnabled = computed(() =>
+  settingStore.get('Comfy.VueNodes.ViewportCulling')
+)
+
 const allNodes = computed((): VueNodeData[] =>
-  rawNodes.value.filter((node) => mountedNodeIds.value.has(node.id))
+  cullingEnabled.value
+    ? rawNodes.value.filter((node) => mountedNodeIds.value.has(node.id))
+    : rawNodes.value
 )
 watch(
   () => linearMode.value,

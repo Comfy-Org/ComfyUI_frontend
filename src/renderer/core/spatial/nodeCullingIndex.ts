@@ -45,7 +45,7 @@ export function createNodeCullingIndex({
   let unpositioned: NodeId[] = []
 
   function rebuild(): void {
-    const positioned: CullingIndexEntry[] = []
+    const positioned: { id: NodeId; bounds: Bounds }[] = []
     const pending: NodeId[] = []
 
     let minX = Infinity
@@ -59,7 +59,7 @@ export function createNodeCullingIndex({
         pending.push(entry.id)
         continue
       }
-      positioned.push(entry)
+      positioned.push({ id: entry.id, bounds })
       if (bounds.x < minX) minX = bounds.x
       if (bounds.y < minY) minY = bounds.y
       if (bounds.x + bounds.width > maxX) maxX = bounds.x + bounds.width
@@ -85,7 +85,13 @@ export function createNodeCullingIndex({
 
     tree = new QuadTree<NodeId>(root, QUAD_TREE_OPTIONS)
     for (const { id, bounds } of positioned) {
-      tree.insert(String(id), bounds!, id)
+      // The root is sized from these same entries, so a failed insert means
+      // that invariant broke; surface it rather than silently dropping the
+      // node from every future query.
+      if (!tree.insert(String(id), bounds, id)) {
+        console.warn(`nodeCullingIndex: bounds outside computed root for ${id}`)
+        pending.push(id)
+      }
     }
   }
 

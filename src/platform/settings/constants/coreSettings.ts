@@ -1207,6 +1207,18 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.27.1'
   },
   {
+    id: 'Comfy.VueNodes.ViewportCulling',
+    category: ['Comfy', 'Nodes 2.0', 'ViewportCulling'],
+    name: 'Only render nodes near the viewport',
+    type: 'boolean',
+    tooltip:
+      'Keeps only nodes in or near the visible area mounted in the DOM, which makes large workflows much faster. Disable if nodes or links misbehave when scrolled off screen.',
+    defaultValue: true,
+    sortOrder: 101,
+    experimental: true,
+    versionAdded: '1.63.0'
+  },
+  {
     id: 'Comfy.AppBuilder.VueNodeSwitchDismissed',
     name: 'App Builder Vue Node switch dismissed',
     type: 'hidden',

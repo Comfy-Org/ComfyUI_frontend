@@ -2,7 +2,7 @@ import { setActivePinia } from 'pinia'
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { nextTick, ref } from 'vue'
+import { effectScope, nextTick, ref } from 'vue'
 
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
@@ -139,6 +139,31 @@ describe('useNodePointerInteractions', () => {
   beforeEach(async () => {
     selectedItemsState.items = []
     setActivePinia(createTestingPinia())
+  })
+
+  it("a bystander unmount does not end another node's drag", () => {
+    // Viewport culling unmounts nodes mid-drag; only the node that started
+    // the drag may clear the global flag on dispose.
+    const store = fromAny<{ isDraggingVueNodes: { value: boolean } }, unknown>(
+      layoutStore
+    )
+
+    const bystander = effectScope()
+    bystander.run(() => useNodePointerInteractions(testNodeId))
+
+    store.isDraggingVueNodes.value = true
+    bystander.stop()
+    expect(store.isDraggingVueNodes.value).toBe(true)
+
+    // The owner disposing mid-drag still releases it.
+    const owner = effectScope()
+    const handlers = owner.run(() => useNodePointerInteractions(testNodeId))!
+    handlers.pointerHandlers.onPointerdown(
+      createPointerEvent('pointerdown', { button: 0 })
+    )
+    store.isDraggingVueNodes.value = true
+    owner.stop()
+    expect(store.isDraggingVueNodes.value).toBe(false)
   })
 
   it('should only start drag on left-click', async () => {

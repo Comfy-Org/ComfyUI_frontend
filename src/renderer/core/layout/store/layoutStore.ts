@@ -1574,6 +1574,11 @@ class LayoutStoreImpl implements LayoutStore {
           }
         : bounds
 
+      // Remounts re-measure and report unchanged bounds; recording those as
+      // operations would bump versions and dirty the workflow for a write
+      // that changes nothing.
+      if (isBoundsEqual(normalizedBounds, currentLayout.bounds)) continue
+
       boundsRecord[nodeId] = {
         bounds: normalizedBounds,
         previousBounds: currentLayout.bounds

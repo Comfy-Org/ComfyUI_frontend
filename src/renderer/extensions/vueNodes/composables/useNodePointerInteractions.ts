@@ -185,9 +185,14 @@ export function useNodePointerInteractions(
     cleanupDragState()
   }
 
-  // Cleanup on unmount to prevent resource leaks
+  // Cleanup on unmount to prevent resource leaks.
+  //
+  // Owner-scoped: isDraggingVueNodes is a module-global flag, and viewport
+  // culling unmounts nodes while a drag is in progress. An unconditional
+  // clear here would let any bystander node's unmount end another node's
+  // drag; hasDraggingStarted is true exactly while this node owns one.
   onScopeDispose(() => {
-    cleanupDragState()
+    if (hasDraggingStarted) cleanupDragState()
   })
 
   const pointerHandlers = {

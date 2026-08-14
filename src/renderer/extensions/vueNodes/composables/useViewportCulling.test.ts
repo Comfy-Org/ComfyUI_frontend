@@ -1,11 +1,11 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, effectScope, nextTick, reactive, ref } from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import {
   getCullingBounds,
   useViewportCulling
-} from '@/composables/graph/useViewportCulling'
+} from '@/renderer/extensions/vueNodes/composables/useViewportCulling'
 import type { Bounds, NodeId } from '@/renderer/core/layout/types'
 import { boundsIntersect } from '@/renderer/core/layout/utils/layoutMath'
 
@@ -28,13 +28,16 @@ function nodeData(id: string): VueNodeData {
 
 const VIEWPORT = { width: 1000, height: 1000 }
 
+const activeScopes: ReturnType<typeof effectScope>[] = []
+
 /** Runs the culling composable inside a scope and exposes its reactive result. */
 function setup(
   bounds: Record<string, Bounds | null>,
-  pinned: Set<string> = new Set()
+  pinned: Set<NodeId> = new Set()
 ) {
   const nodes = ref(Object.keys(bounds).map(nodeData))
   const scope = effectScope()
+  activeScopes.push(scope)
 
   // Plain scan stands in for the spatial index; the index has its own tests.
   const queryNodesInBounds = (rect: Bounds) =>
@@ -51,7 +54,7 @@ function setup(
         nodes: computed(() => nodes.value),
         queryNodesInBounds,
         getViewportSize: () => VIEWPORT,
-        isPinned: (id) => pinned.has(id)
+        getPinnedIds: () => pinned
       }).mountedNodeIds
   )!
 
@@ -61,6 +64,13 @@ function setup(
 beforeEach(() => {
   vi.useFakeTimers()
   Object.assign(camera, { x: 0, y: 0, z: 1 })
+})
+
+afterEach(() => {
+  // Scopes hold watchers on the module-level shared camera; fake timers have
+  // no automatic restore.
+  for (const scope of activeScopes.splice(0)) scope.stop()
+  vi.useRealTimers()
 })
 
 describe('getCullingBounds', () => {
@@ -106,13 +116,72 @@ describe('useViewportCulling', () => {
     )
   })
 
-  it('keeps pinned nodes mounted even when far off screen', () => {
+  it('retains a mounted pinned node when it leaves the viewport', async () => {
+    const pinned = new Set<NodeId>()
     const { mountedNodeIds } = setup(
-      { dragged: { x: 50_000, y: 0, width: 100, height: 100 } },
-      new Set(['dragged'])
+      { dragged: { x: 100, y: 0, width: 100, height: 100 } },
+      pinned
     )
+    expect(mountedNodeIds.value.has('dragged' as NodeId)).toBe(true)
+
+    // Pin (select) it, then pan far away: it must survive the prune.
+    pinned.add('dragged' as NodeId)
+    camera.x = 50_000
+    await nextTick()
+    await vi.advanceTimersByTimeAsync(600)
 
     expect(mountedNodeIds.value.has('dragged' as NodeId)).toBe(true)
+  })
+
+  it('does not mount unmounted nodes just because they are pinned', async () => {
+    // Select-all pins every node; admission on pin would mount the graph.
+    const pinned = new Set<NodeId>(['far' as NodeId])
+    const { mountedNodeIds } = setup(
+      {
+        near: { x: 0, y: 0, width: 100, height: 100 },
+        far: { x: 50_000, y: 0, width: 100, height: 100 }
+      },
+      pinned
+    )
+
+    await vi.advanceTimersByTimeAsync(600)
+    expect(mountedNodeIds.value.has('far' as NodeId)).toBe(false)
+  })
+
+  it('holds the current set while the viewport is unmeasurable', async () => {
+    // Canvas absent or display:none must not default open and mount the graph.
+    const nodes = ref([nodeData('a'), nodeData('b')])
+    const scope = effectScope()
+    activeScopes.push(scope)
+    const mountedNodeIds = scope.run(
+      () =>
+        useViewportCulling({
+          nodes: computed(() => nodes.value),
+          queryNodesInBounds: () => ['a' as NodeId],
+          getViewportSize: () => ({ width: 0, height: 0 })
+        }).mountedNodeIds
+    )!
+
+    await vi.advanceTimersByTimeAsync(600)
+    expect(mountedNodeIds.value.size).toBe(0)
+  })
+
+  it('mounts a large entering set in batches rather than one flush', async () => {
+    const COUNT = 600
+    const bounds = Object.fromEntries(
+      Array.from({ length: COUNT }, (_, i) => [
+        `n${i}`,
+        { x: (i % 30) * 40, y: Math.floor(i / 30) * 40, width: 30, height: 30 }
+      ])
+    )
+    const { mountedNodeIds } = setup(bounds)
+
+    // First synchronous refresh mounts at most one batch.
+    expect(mountedNodeIds.value.size).toBeLessThanOrEqual(250)
+
+    // The remainder arrives on the follow-up refreshes.
+    await vi.advanceTimersByTimeAsync(200)
+    expect(mountedNodeIds.value.size).toBe(COUNT)
   })
 
   it('mounts nodes that have no layout yet so they can measure themselves', () => {
