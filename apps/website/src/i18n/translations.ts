@@ -2523,85 +2523,58 @@ const translations = {
       '云端连接是托管服务：一个 URL，无需安装，工作流在 Comfy Cloud 的 GPU 上运行，并可使用我们的模型目录。本地连接是开源的：客户端在你的机器上启动 comfy-mcp 服务器，驱动你自己的 ComfyUI——你的模型、你的自定义节点、你的 GPU。拿不准？从云端开始。'
   },
   'mcp.faq.4.q': {
-    en: 'Can I use it with my local ComfyUI?',
-    'zh-CN': '可以配合我的本地 ComfyUI 使用吗？'
-  },
-  'mcp.faq.4.a': {
-    en: "Yes — that's the local connection. Install it with pip install comfy-mcp and point your client at the comfy-mcp command. It runs the ComfyUI on your own machine, with your models and custom nodes. Setup guide: https://docs.comfy.org/agent-tools/mcp",
-    'zh-CN':
-      '可以——这正是本地连接。运行 pip install comfy-mcp 安装，然后让客户端指向 comfy-mcp 命令即可。它驱动你自己机器上的 ComfyUI，使用你的模型和自定义节点。设置指南：https://docs.comfy.org/agent-tools/mcp'
-  },
-  'mcp.faq.5.q': {
     en: 'Can I use both connections at once?',
     'zh-CN': '可以同时使用两种连接吗？'
   },
-  'mcp.faq.5.a': {
+  'mcp.faq.4.a': {
     en: 'Yes. Most clients happily run two MCP servers side by side. They sign in to the same Comfy account, but separately — one sign-in does not cover the other. Prototype free on your own GPU, then send the heavy batch to cloud GPUs from the same chat.',
     'zh-CN':
       '可以。大多数客户端可以同时运行两个 MCP 服务器。它们登录同一个 Comfy 账户，但各自独立——登录其中一个并不覆盖另一个。你可以先在自己的 GPU 上免费打样，再在同一个对话里把大批量任务发到云端 GPU。'
   },
-  'mcp.faq.6.q': {
+  'mcp.faq.5.q': {
     en: 'Do I need an API key?',
     'zh-CN': '我需要 API 密钥吗？'
   },
-  'mcp.faq.6.a': {
-    en: 'The local connection never needs one. On the cloud connection, Claude Code, Claude Desktop, Codex, and OpenClaw sign in with OAuth; Cursor and Hermes need a Comfy API key for now. Just copy https://docs.comfy.org/agent-tools/mcp and your agent will figure out the installation for you.',
+  'mcp.faq.5.a': {
+    en: 'On the local connection, driving your own ComfyUI needs no key and no account. You only sign in when you run partner models: through comfy-cli with a browser sign-in, or with a Comfy API key. On the cloud connection, Claude Code, Claude Desktop, Codex, and OpenClaw sign in with OAuth; Cursor and Hermes need a Comfy API key for now. Just copy https://docs.comfy.org/agent-tools/mcp and your agent will figure out the installation for you.',
     'zh-CN':
-      '本地连接完全不需要。云端连接方面，Claude Code、Claude Desktop、Codex 和 OpenClaw 通过 OAuth 登录；Cursor 和 Hermes 目前需要 Comfy API 密钥。只需复制 https://docs.comfy.org/agent-tools/mcp，你的智能体就会为你完成安装。'
+      '本地连接方面，驱动你自己的 ComfyUI 不需要密钥，也不需要账户。只有在运行合作伙伴模型时才需要登录：通过 comfy-cli 在浏览器中登录，或使用 Comfy API 密钥。云端连接方面，Claude Code、Claude Desktop、Codex 和 OpenClaw 通过 OAuth 登录；Cursor 和 Hermes 目前需要 Comfy API 密钥。只需复制 https://docs.comfy.org/agent-tools/mcp，你的智能体就会为你完成安装。'
   },
-  'mcp.faq.7.q': {
+  'mcp.faq.6.q': {
     en: 'Does it cost anything?',
     'zh-CN': '需要付费吗？'
   },
-  'mcp.faq.7.a': {
-    en: "The local connection is free: runs happen on your own hardware, and the server is open source. The one exception is partner models, which run on partner infrastructure and use credits. On the cloud connection, connecting and searching are free, and running a generation uses Comfy Cloud credits — you need a [subscription of any tier](https://comfy.org/cloud/pricing); a credit top-up alone isn't enough. Your agent confirms with you before it spends.",
+  'mcp.faq.6.a': {
+    en: "On the local connection, runs on your own hardware are free, and the server is open source. Partner models are the exception: they run on partner infrastructure and spend Comfy credits from your account, so you sign in before using them. On the cloud connection, connecting and searching are free, and running a generation uses Comfy Cloud credits — you need a [subscription of any tier](https://comfy.org/cloud/pricing); a credit top-up alone isn't enough. Either way, your agent confirms with you before it spends.",
     'zh-CN':
-      '本地连接是免费的：生成在你自己的硬件上运行，服务器也是开源的。唯一的例外是合作伙伴模型，它们在合作伙伴的基础设施上运行并消耗积分。云端连接方面，连接和搜索免费，运行生成会使用 Comfy Cloud 积分——你需要[任意套餐的订阅](https://comfy.org/cloud/pricing)，仅充值积分是不够的。智能体在消费前会先与你确认。'
+      '本地连接方面，在你自己硬件上的生成是免费的，服务器也是开源的。合作伙伴模型是例外：它们在合作伙伴的基础设施上运行，消耗你 Comfy 账户中的积分，因此使用前需要登录。云端连接方面，连接和搜索免费，运行生成会使用 Comfy Cloud 积分——你需要[任意套餐的订阅](https://comfy.org/cloud/pricing)，仅充值积分是不够的。无论哪种方式，智能体在消费前都会先与你确认。'
   },
-  'mcp.faq.8.q': {
+  'mcp.faq.7.q': {
     en: 'Is Comfy MCP open source?',
     'zh-CN': 'Comfy MCP 开源吗？'
   },
-  'mcp.faq.8.a': {
+  'mcp.faq.7.a': {
     en: 'The local connection is: comfy-mcp lives at https://github.com/Comfy-Org/comfy-mcp and installs from PyPI with pip install comfy-mcp. The cloud connection is a hosted service in front of Comfy Cloud.',
     'zh-CN':
       '本地连接是开源的：comfy-mcp 的代码在 https://github.com/Comfy-Org/comfy-mcp，可通过 pip install comfy-mcp 从 PyPI 安装。云端连接是构建在 Comfy Cloud 之上的托管服务。'
   },
-  'mcp.faq.9.q': {
+  'mcp.faq.8.q': {
     en: 'What can my agent do once connected?',
     'zh-CN': '连接后我的智能体能做什么？'
   },
-  'mcp.faq.9.a': {
+  'mcp.faq.8.a': {
     en: "• Generate images, video, audio, and 3D — including all open-source workflows and partner models like Seedance, GPT-Image, Nano Banana, and Kling\n• Build, edit, and run workflows; save and re-run workflows\n• Run and read in large batches\n• Search models, nodes, and template workflows\n• Read and execute shared workflow URLs\n• Upload and download assets for you\n\nEverything is now in natural language. No nodes, no downloads, no GPU, no node graphs if you don't want them.",
     'zh-CN':
       '• 生成图像、视频、音频和 3D——包括所有开源工作流以及 Seedance、GPT-Image、Nano Banana 和 Kling 等合作伙伴模型\n• 构建、编辑和运行工作流；保存并重新运行工作流\n• 大批量运行和读取\n• 搜索模型、节点和模板工作流\n• 读取并执行分享的工作流链接\n• 为你上传和下载资产\n\n现在一切都用自然语言完成。如果你愿意，无需节点、无需下载、无需 GPU、无需节点图。'
   },
-  'mcp.faq.10.q': {
+  'mcp.faq.9.q': {
     en: 'Where do my outputs go?',
     'zh-CN': '我的输出会保存到哪里？'
   },
-  'mcp.faq.10.a': {
+  'mcp.faq.9.a': {
     en: 'On the cloud connection, into your Comfy Cloud asset library, so you can reuse, remix, and share them — and open any run on the canvas to keep editing. You can also ask your agent to download the assets locally for you. On the local connection, outputs land in your ComfyUI output folder, and your agent can copy them anywhere you name.',
     'zh-CN':
       '云端连接：保存到你的 Comfy Cloud 资产库，你可以复用、二次创作和分享——还能在画布上打开任意运行继续编辑。你也可以让智能体把资产下载到本地。本地连接：输出保存在你的 ComfyUI 输出文件夹中，智能体可以把它们复制到你指定的任何位置。'
-  },
-  'mcp.faq.11.q': {
-    en: 'Do slash commands work in Claude Desktop?',
-    'zh-CN': '斜杠命令在 Claude Desktop 中可以使用吗？'
-  },
-  'mcp.faq.11.a': {
-    en: 'No. They ship with the Claude Code comfy-cloud plugin. Desktop connects to the same MCP server, so every tool works; just ask in plain language.',
-    'zh-CN':
-      '不可以。斜杠命令随 Claude Code 的 comfy-cloud 插件一起提供。Claude Desktop 连接的是同一个 MCP 服务器，因此所有工具都能使用；直接用自然语言提问即可。'
-  },
-  'mcp.faq.12.q': {
-    en: 'Is it generally available?',
-    'zh-CN': '现已正式发布了吗？'
-  },
-  'mcp.faq.12.a': {
-    en: 'The cloud connection is in open beta and available to everyone with a Comfy account. The local connection is released and open source — install it today with pip install comfy-mcp.',
-    'zh-CN':
-      '云端连接目前处于公开测试阶段，任何拥有 Comfy 账户的人都可以使用。本地连接已正式发布并开源——现在就可以通过 pip install comfy-mcp 安装。'
   },
 
   // SiteNav

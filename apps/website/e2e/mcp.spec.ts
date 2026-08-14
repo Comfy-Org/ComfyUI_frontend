@@ -175,12 +175,12 @@ test.describe('MCP page @smoke', () => {
     }
   })
 
-  test('FAQ lists twelve questions and autolinks the server URL', async ({
+  test('FAQ lists nine questions and autolinks the server URL', async ({
     page
   }) => {
     const triggers = page.locator('[id^="faq-trigger-"]')
     await triggers.first().scrollIntoViewIfNeeded()
-    await expect(triggers).toHaveCount(12)
+    await expect(triggers).toHaveCount(9)
 
     const question = page.getByRole('button', {
       name: "What's the server URL?"
