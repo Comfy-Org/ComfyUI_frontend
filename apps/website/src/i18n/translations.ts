@@ -2496,8 +2496,8 @@ const translations = {
     'zh-CN': '常见问答'
   },
   'mcp.faq.1.q': {
-    en: 'Which clients are supported?',
-    'zh-CN': '支持哪些客户端？'
+    en: 'Which agents are supported?',
+    'zh-CN': '支持哪些智能体？'
   },
   'mcp.faq.1.a': {
     en: 'Any MCP-compatible client. For the cloud connection, add https://cloud.comfy.org/mcp as a custom connector or remote MCP server, then sign in when prompted. For the local connection, your client launches the open-source comfy-mcp server: Claude Code, Claude Desktop, Cursor, and any client that supports stdio servers. Send the docs https://docs.comfy.org/agent-tools/mcp.md to your agent and it will figure out the installation for you.',
