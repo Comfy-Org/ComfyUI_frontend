@@ -9,11 +9,11 @@
 # put it at 6.0GB, which evicted itself mid-run (run 31753242605: three of
 # four shards found no corpus at all).
 #
-# Corpus freshness is a push-to-main concern, not a PR concern. main
-# revalidates every pack by ETag and saves the cache; a PR restores that
-# corpus and uses it as-is. Both sides of the comparison then measure the
-# same packs, so a red delta is attributable to the diff rather than to a
-# pack that moved overnight.
+# Every pack is fetched at the commit named in corpus.pins.json, which is
+# checked in and bumped by hand. Both sides of a comparison therefore measure
+# the same packs, so a red delta is attributable to the diff rather than to a
+# pack that moved overnight - and no pack author can red an unrelated PR. The
+# pin-status job below leads every run with how old that snapshot is.
 #
 # The upstream static idiom scan (L1) is deliberately absent: its
 # false-positive/negative rate was judged too high to act on. Packs are
@@ -285,9 +285,9 @@ jobs:
             exit 1
           fi
           MATRIX_OUT="$PWD/matrix-rows" pnpm exec vitest run \
-            --config vitest.matrix.config.mts > vitest-shard.log 2>&1 \
+            --config vitest.matrix.config.mts > matrix-rows/_vitest-shard.log 2>&1 \
             || echo "vitest exited nonzero - tolerated, pack code may leak unhandled errors"
-          tail -25 vitest-shard.log
+          tail -25 matrix-rows/_vitest-shard.log
           cp src/__ecs_matrix__/manifest.json "matrix-rows/_manifest-shard-${{ matrix.shard }}.json"
 
           # nullglob makes an empty match an empty array rather than the
@@ -312,17 +312,18 @@ jobs:
             exit 1
           fi
 
-      # The shard log is the only record of WHY a shard died. Without it a
-      # 06:30 failure leaves the last 25 lines of a truncated tail and nothing
-      # to go back to.
+      # The shard log is the only record of WHY a shard died, so it rides
+      # inside matrix-rows/ rather than as a second upload path: two paths
+      # make upload-artifact re-root the artifact at their common ancestor,
+      # which put every row one directory deeper than the verdict job looks
+      # and emptied the population (run 31829344129, 'no matrix rows'). The
+      # leading underscore and .log keep it out of both consumers' globs.
       - name: Upload rows
         if: always()
         uses: actions/upload-artifact@v6
         with:
           name: ecosystem-matrix-shard-${{ matrix.shard }}
-          path: |
-            matrix-rows/
-            vitest-shard.log
+          path: matrix-rows/
           retention-days: 30
           if-no-files-found: warn
 
