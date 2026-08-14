@@ -116,20 +116,29 @@ describe('useWorkspaceMenuItems', () => {
     )
   })
 
-  it.for(['payment_failed', 'paused'])(
-    'allows cancellation while a %s plan needs payment recovery',
-    (billingStatus) => {
-      state.billingStatus = billingStatus
-      state.canManageSubscriptionLifecycle = true
-      state.isActiveSubscription = false
+  it('allows cancellation while a payment_failed plan needs payment recovery', () => {
+    state.billingStatus = 'payment_failed'
+    state.canManageSubscriptionLifecycle = true
+    state.isActiveSubscription = false
 
-      const { menuItems } = useWorkspaceMenuItems()
+    const { menuItems } = useWorkspaceMenuItems()
 
-      expect(menuItems.value.map((item) => item.label)).toContain(
-        'subscription.cancelPlan'
-      )
-    }
-  )
+    expect(menuItems.value.map((item) => item.label)).toContain(
+      'subscription.cancelPlan'
+    )
+  })
+
+  it('withholds cancellation while a plan is paused', () => {
+    state.billingStatus = 'paused'
+    state.canManageSubscriptionLifecycle = true
+    state.isActiveSubscription = false
+
+    const { menuItems } = useWorkspaceMenuItems()
+
+    expect(menuItems.value.map((item) => item.label)).not.toContain(
+      'subscription.cancelPlan'
+    )
+  })
 
   it('rechecks eligibility before opening the cancellation dialog', () => {
     state.canManageSubscriptionLifecycle = true
