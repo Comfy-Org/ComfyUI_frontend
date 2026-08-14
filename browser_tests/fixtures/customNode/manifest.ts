@@ -439,8 +439,38 @@ export function packIdentity(
   return 'deployRef' in entry ? entry.deployRef : entry.pin
 }
 
+export interface QuarantinedPack {
+  class: 'unfetchable-ref' | 'unsatisfiable-requirement'
+  reason: string
+  evidence: string
+  upstreamFix: string
+  since: string
+}
+
+// Packs that cannot be installed at the ref the manifest declares, for a
+// reason only their author can fix. They are excluded from the population
+// rather than left to red every run - but the exclusion is asserted, not
+// trusted: the workflow re-checks each entry and fails when one starts
+// working, so a quarantine cannot outlive the bug it documents.
+export function loadPackQuarantine(): Record<string, QuarantinedPack> {
+  const path = dataPath('cloud/packQuarantine.json')
+  if (!existsSync(path)) return {}
+  const parsed: unknown = JSON.parse(readFileSync(path, 'utf-8'))
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed))
+    throw new Error(`${path} must be a JSON object keyed by pack name`)
+  return parsed as Record<string, QuarantinedPack>
+}
+
+// A quarantine is lost coverage, so its size is gated: past this many packs
+// the run fails rather than quietly measuring less of the ecosystem. Raising
+// it is a deliberate edit, which is the point.
+export const MAX_QUARANTINED_PACKS = 5
+
 export function loadManifest(): (CoreManifestEntry | CloudManifestEntry)[] {
-  return shardOf(loadFullManifest())
+  const quarantined = loadPackQuarantine()
+  return shardOf(
+    loadFullManifest().filter((entry) => !(entry.pack in quarantined))
+  )
 }
 
 /** Every pack the manifest declares, ignoring the shard slice. */

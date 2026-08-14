@@ -225,6 +225,16 @@ jobs:
       # that is a gate failure, not something to paper over. A `| while` pipe
       # hides failures in a subshell, so read into an array and loop with
       # `set -e`.
+      # Quarantined packs are excluded from the population, which is lost
+      # coverage that looks like a green run. This is what keeps that honest:
+      # each entry is re-checked against the live world and an entry whose bug
+      # was fixed upstream fails, so a quarantine cannot outlive its reason.
+      # Shard 1 only - the ledger is global, and checking it four times over
+      # would just be three duplicate reds.
+      - name: Quarantined packs must still be broken
+        if: matrix.shard == '1/4'
+        run: pnpm custom-node-quarantine
+
       - name: Install manifest custom nodes
         id: install
         shell: bash
