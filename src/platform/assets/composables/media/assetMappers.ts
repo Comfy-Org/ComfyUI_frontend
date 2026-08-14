@@ -106,7 +106,7 @@ export function unflattenOutputAssets(
     else assetsByJob.set(job_id, [asset])
   }
 
-  const grouped = Object.entries(assetsByJob).map(([job_id, assets]) => {
+  const grouped = [...assetsByJob.entries()].map(([job_id, assets]) => {
     const ordered = [...assets].sort(byCreatedAtAsc)
     const representative =
       ordered.findLast((asset) =>
@@ -117,6 +117,9 @@ export function unflattenOutputAssets(
       id: job_id,
       created_at: ordered.at(-1)!.created_at,
       user_metadata: {
+        jobId: job_id,
+        // FIXME exploring job entries requires a node id...
+        nodeId: -1,
         ...representative.user_metadata,
         outputCount: ordered.length,
         allOutputs: ordered.map(flatAssetToResultItem)

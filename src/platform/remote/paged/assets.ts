@@ -75,6 +75,7 @@ function assetsQueryInternal(
   }
 
   async function doLoadMore() {
+    if (!hasMore.value) return
     const assetResponse = await doQuery({ after: next_cursor ?? params.after })
     if (!assetResponse) return
     next_cursor = assetResponse.next_cursor
