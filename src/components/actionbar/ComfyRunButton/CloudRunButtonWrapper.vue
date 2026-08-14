@@ -43,10 +43,19 @@ onUnmounted(() => {
   isUnmounted = true
 })
 
+const paymentRecoveryLock = computed<'owner' | 'member' | null>(() =>
+  flags.v1PaymentRecovery && billingStatus.value === 'paused'
+    ? permissions.value.canManageSubscription
+      ? 'owner'
+      : 'member'
+    : null
+)
+
 function refreshStaleBillingState() {
   if (
     billingRefreshRequest ||
-    (!refreshBillingOnFocus && !showsSubscribeToRunPrompt.value)
+    (!refreshBillingOnFocus &&
+      (!showsSubscribeToRunPrompt.value || paymentRecoveryLock.value))
   ) {
     return
   }
@@ -65,14 +74,6 @@ useEventListener(window, 'focus', refreshStaleBillingState)
 useEventListener(document, 'visibilitychange', () => {
   if (document.visibilityState === 'visible') refreshStaleBillingState()
 })
-
-const paymentRecoveryLock = computed<'owner' | 'member' | null>(() =>
-  flags.v1PaymentRecovery && billingStatus.value === 'paused'
-    ? permissions.value.canManageSubscription
-      ? 'owner'
-      : 'member'
-    : null
-)
 
 function closePaymentRecoveryDialog() {
   dialogStore.closeDialog({ key: DIALOG_KEY })
