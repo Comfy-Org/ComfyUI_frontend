@@ -56,6 +56,25 @@ export interface NodeDef {
   }>[]
   readonly outputs: readonly Readonly<{ name: string; type: string }>[]
   readonly isOutputNode: boolean
+  /**
+   * The node's `hidden` input declarations, verbatim.
+   *
+   * Deliberately not merged into {@link inputs}: a hidden input is not a slot,
+   * and listing it as one would put a connectable input on the node for
+   * something the server fills in.
+   *
+   * Packs ship their own data here and read it back — easy-use and
+   * tinyterraNodes both carry an XY-plot axis catalogue as
+   * `input.hidden.plot_dict[0]`, on their own key, from their own Python spec.
+   * That is the same passthrough reasoning `inputs[].options` already rests on,
+   * and dropping it broke both packs against their own data.
+   *
+   * These are declarations, not values. `PROMPT`, `UNIQUE_ID` and
+   * `EXTRA_PNGINFO` appear here as the type markers the node asked for; the
+   * server substitutes the real thing at execution time and it never passes
+   * through here.
+   */
+  readonly hidden: Readonly<Record<string, unknown>>
   /** Which pack supplied it, when the backend reports one. */
   readonly source: string | undefined
 }
@@ -591,6 +610,7 @@ interface RawNodeDef {
   input?: {
     required?: Record<string, unknown>
     optional?: Record<string, unknown>
+    hidden?: Record<string, unknown>
   }
 }
 
@@ -628,6 +648,7 @@ function toNodeDef(raw: RawNodeDef): NodeDef {
     inputs: Object.freeze(inputs),
     outputs: Object.freeze(outputs),
     isOutputNode: raw.output_node ?? false,
+    hidden: Object.freeze({ ...(raw.input?.hidden ?? {}) }),
     source: raw.python_module
   })
 }
