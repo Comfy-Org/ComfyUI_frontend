@@ -71,9 +71,12 @@ vi.mock('@/platform/distribution/types', () => ({
   }
 }))
 
-vi.mock('@/stores/partnerNodesEducationStore', () => ({
-  usePartnerNodesEducationStore: () => ({ requestCard: mockRequestCard })
-}))
+vi.mock(
+  '@/platform/workflow/templates/stores/partnerNodesEducationStore',
+  () => ({
+    usePartnerNodesEducationStore: () => ({ requestCard: mockRequestCard })
+  })
+)
 
 // Mock fetch
 global.fetch = vi.fn()
