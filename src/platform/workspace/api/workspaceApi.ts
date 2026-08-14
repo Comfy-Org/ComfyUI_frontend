@@ -3,9 +3,9 @@ import type {
   BillingBalanceResponse,
   BillingEventsResponse,
   BillingOpStatusResponse,
-  BillingPlansResponse as GeneratedBillingPlansResponse,
+  BillingPlansResponse,
   BillingStatus,
-  BillingStatusResponse as GeneratedBillingStatusResponse,
+  BillingStatusResponse,
   CancelSubscriptionRequest,
   CancelSubscriptionResponse,
   ChurnkeyAuthResponse,
@@ -15,12 +15,12 @@ import type {
   CreateWorkspaceRequest,
   ListInvitesResponse,
   ListMembersResponse,
-  ListWorkspacesResponse as GeneratedListWorkspacesResponse,
+  ListWorkspacesResponse,
   Member as GeneratedMember,
   PaymentPortalRequest,
   PaymentPortalResponse,
   PendingInvite,
-  Plan as GeneratedPlan,
+  Plan,
   PreviewSubscribeRequest as GeneratedPreviewSubscribeRequest,
   PreviewSubscribeResponse,
   ResubscribeRequest,
@@ -28,16 +28,16 @@ import type {
   SubscribeRequest,
   SubscribeResponse,
   SubscriptionDuration,
+  SubscriptionTier,
   TeamCreditStops,
   TeamCreditStopSummary,
   UpdateWorkspaceRequest,
-  WorkspaceWithRole as GeneratedWorkspaceWithRole
+  WorkspaceWithRole
 } from '@comfyorg/ingest-types'
 import axios from 'axios'
 
 import { attachUnifiedRemintInterceptor } from '@/platform/auth/unified/remintRetry'
 import { churnkeyAuthResponseSchema } from '@/platform/cloud/churnkey/churnkeyAuthSchema'
-import type { SubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import {
   UNKNOWN_ERROR_CODE,
   errorResponseFromBody
@@ -52,24 +52,7 @@ import type { UserId } from '@/types/authTypes'
 
 export type WorkspaceType = 'personal' | 'team'
 export type WorkspaceRole = 'owner' | 'member'
-export type BillingRail = NonNullable<
-  GeneratedBillingStatusResponse['billing_rail']
->
-
-export type WorkspaceWithRole = Omit<
-  GeneratedWorkspaceWithRole,
-  'subscription_tier'
-> & {
-  // Uses the registry's SubscriptionTier (no TEAM) to match how the rest of
-  // the app threads subscription_tier through personal-plan pricing;
-  // workspace.type distinguishes team workspaces instead.
-  subscription_tier?: SubscriptionTier
-}
-
-export type ListWorkspacesResponse = Omit<
-  GeneratedListWorkspacesResponse,
-  'workspaces'
-> & { workspaces: WorkspaceWithRole[] }
+export type BillingRail = NonNullable<BillingStatusResponse['billing_rail']>
 
 export type Member = GeneratedMember & {
   // Per-member monthly credit limit UI (FE-1277). The cloud OpenAPI carries
@@ -87,14 +70,8 @@ export type { PendingInvite }
 
 export type { SubscriptionTier }
 export type { SubscriptionDuration }
-
-// Uses the registry's SubscriptionTier (no TEAM); the personal plan catalog
-// never lists team plans.
-export type Plan = Omit<GeneratedPlan, 'tier'> & { tier: SubscriptionTier }
-export type BillingPlansResponse = Omit<
-  GeneratedBillingPlansResponse,
-  'plans'
-> & { plans: Plan[] }
+export type { WorkspaceWithRole }
+export type { Plan }
 export type { TeamCreditStops }
 export type { TeamCreditStopSummary }
 
@@ -123,29 +100,11 @@ export type { SubscribeResponse }
 export type { PreviewSubscribeResponse }
 
 export type BillingSubscriptionStatus = NonNullable<
-  GeneratedBillingStatusResponse['subscription_status']
+  BillingStatusResponse['subscription_status']
 >
 
 export type { BillingStatus }
-
-export type BillingStatusResponse = Omit<
-  GeneratedBillingStatusResponse,
-  'max_seats' | 'occupied_seats' | 'subscription_tier' | 'team_credit_stop'
-> & {
-  // The spec marks these required, but older/billing-disabled deployments
-  // can omit them; getBillingStatus() normalizes a missing value to null.
-  max_seats?: number | null
-  occupied_seats?: number | null
-  // Uses the registry's SubscriptionTier (no TEAM), matching WorkspaceWithRole.
-  subscription_tier?: SubscriptionTier
-  // The spec marks this required (always present, nullable); kept optional
-  // here to match how existing callers already read it defensively.
-  team_credit_stop?: TeamCreditStopSummary | null
-  // Not yet part of the ingest OpenAPI spec; scheduled-plan-change display
-  // ships ahead of the backend documenting these fields.
-  scheduled_plan_slug?: string
-  change_at?: string
-}
+export type { BillingStatusResponse }
 
 export type { BillingBalanceResponse }
 export type { CreateTopupResponse }
@@ -434,11 +393,7 @@ export const workspaceApi = {
         api.apiURL('/billing/status'),
         { headers }
       )
-      return {
-        ...response.data,
-        max_seats: response.data.max_seats ?? null,
-        occupied_seats: response.data.occupied_seats ?? null
-      }
+      return response.data
     } catch (err) {
       handleAxiosError(err)
     }
