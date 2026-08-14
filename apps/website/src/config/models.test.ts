@@ -51,7 +51,7 @@ describe('loading models with an undeclared directory', () => {
     vi.resetModules()
   })
 
-  async function importModelsWith(directory: string): Promise<unknown> {
+  async function importModelsWith(directory: string): Promise<Error> {
     hoisted.generatedModelsOverride = [
       {
         slug: 'some-model',
@@ -64,24 +64,30 @@ describe('loading models with an undeclared directory', () => {
     ]
     vi.resetModules()
 
-    return import('./models').then(
-      () => null,
-      (error: unknown) => error
+    try {
+      await import('./models')
+    } catch (error) {
+      if (error instanceof Error) return error
+      throw new TypeError(`Expected an Error, received ${String(error)}`, {
+        cause: error
+      })
+    }
+    throw new Error(
+      `Expected directory ${JSON.stringify(directory)} to be rejected`
     )
   }
 
   it('throws naming both the directory and the model slug', async () => {
     const error = await importModelsWith('not_a_real_directory')
 
-    expect(error).toBeInstanceOf(Error)
-    expect((error as Error).message).toContain('not_a_real_directory')
-    expect((error as Error).message).toContain('some-model')
+    expect(error.message).toContain('"not_a_real_directory"')
+    expect(error.message).toContain('some-model')
   })
 
   it('rejects a missing directory, which the generator emits as an empty string', async () => {
     const error = await importModelsWith('')
 
-    expect(error).toBeInstanceOf(Error)
-    expect((error as Error).message).toContain('some-model')
+    expect(error.message).toContain('Unknown model directory ""')
+    expect(error.message).toContain('some-model')
   })
 })
