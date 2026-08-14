@@ -1,47 +1,33 @@
 import { expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
+import { makeTemplate } from '@e2e/fixtures/data/templateFixtures'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import {
+  createTemplateHelper,
+  withTemplates
+} from '@e2e/fixtures/helpers/TemplateHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
 
-async function mockTemplateIndex(page: Page) {
-  await page.route('**/templates/index.json', (route) =>
-    route.fulfill({
-      status: 200,
-      body: JSON.stringify([
-        {
-          moduleName: 'default',
-          title: 'Test Templates',
-          type: 'image',
-          templates: [
-            {
-              name: 'paid-template',
-              title: 'Paid Template',
-              mediaType: 'image',
-              mediaSubtype: 'webp',
-              description: 'Uses partner nodes.',
-              openSource: false
-            }
-          ]
-        }
-      ]),
-      headers: {
-        'Content-Type': 'application/json',
-        'Cache-Control': 'no-store'
-      }
-    })
-  )
-  await page.route('**/templates/**.webp', (route) =>
-    route.fulfill({
-      status: 200,
-      path: 'browser_tests/assets/example.webp',
-      headers: { 'Content-Type': 'image/webp', 'Cache-Control': 'no-store' }
-    })
-  )
+const PAID_TEMPLATE = 'paid-template'
+
+async function mockPaidTemplate(page: Page) {
+  await createTemplateHelper(
+    page,
+    withTemplates([
+      makeTemplate({
+        name: PAID_TEMPLATE,
+        title: 'Paid Template',
+        description: 'Uses partner nodes.',
+        openSource: false
+      })
+    ])
+  ).mock()
+
   // The paid template's workflow genuinely contains a partner node; the
   // card additionally gates on live graph content, not just the flag.
-  await page.route('**/templates/paid-template.json', (route) =>
+  await page.route(`**/templates/${PAID_TEMPLATE}.json`, (route) =>
     route.fulfill({
       status: 200,
       path: 'browser_tests/assets/partner_api_node.json',
@@ -56,7 +42,7 @@ async function mockTemplateIndex(page: Page) {
 async function loadPaidTemplate(comfyPage: ComfyPage) {
   await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
   const card = comfyPage.page.getByTestId(
-    TestIds.templates.workflowCard('paid-template')
+    TestIds.templates.workflowCard(PAID_TEMPLATE)
   )
   await expect(card).toBeVisible()
   await card.click()
@@ -68,7 +54,7 @@ test.describe('Partner nodes education card (local)', () => {
     comfyPage
   }) => {
     const page = comfyPage.page
-    await mockTemplateIndex(page)
+    await mockPaidTemplate(page)
 
     const card = page.getByTestId(TestIds.partnerNodes.educationCard)
 
@@ -81,8 +67,12 @@ test.describe('Partner nodes education card (local)', () => {
     await comfyPage.workflow.loadWorkflow('default')
     await expect(card).toHaveCount(0)
 
-    // A later paid-template load shows it again (no seen-flag persistence),
-    // and Got it dismisses it.
+    await loadPaidTemplate(comfyPage)
+    await expect(card).toBeVisible()
+    await page.getByTestId(TestIds.partnerNodes.educationCardDismiss).click()
+    await expect(card).toHaveCount(0)
+
+    // Dismissing carries no seen-flag: the next paid load shows it again.
     await loadPaidTemplate(comfyPage)
     await expect(card).toBeVisible()
     await page.getByTestId(TestIds.partnerNodes.educationCardGotIt).click()

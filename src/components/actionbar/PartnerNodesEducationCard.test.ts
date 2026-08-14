@@ -7,7 +7,7 @@ import { createI18n } from 'vue-i18n'
 
 import * as partnerNodesInGraphModule from '@/composables/node/usePartnerNodesInGraph'
 import * as executionErrorStoreModule from '@/stores/executionErrorStore'
-import { usePartnerNodesEducationStore } from '@/stores/partnerNodesEducationStore'
+import { usePartnerNodesEducationStore } from '@/platform/workflow/templates/stores/partnerNodesEducationStore'
 
 import PartnerNodesEducationCard from './PartnerNodesEducationCard.vue'
 
@@ -118,6 +118,23 @@ describe('PartnerNodesEducationCard', () => {
     __setHasPartnerNodes(false)
     await nextTick()
     expect(screen.queryByTestId(CARD_TESTID)).not.toBeInTheDocument()
+  })
+
+  it('does not resurface on a later partner-node graph the template never described', async () => {
+    const store = usePartnerNodesEducationStore()
+    renderCard()
+    store.requestCard()
+    await nextTick()
+
+    __setHasPartnerNodes(false)
+    await nextTick()
+
+    // Opening an unrelated workflow that happens to contain partner nodes must
+    // not revive a card that claims a template introduced them.
+    __setHasPartnerNodes(true)
+    await nextTick()
+    expect(screen.queryByTestId(CARD_TESTID)).not.toBeInTheDocument()
+    expect(store.isCardRequested).toBe(false)
   })
 
   it('defers to the error overlay and appears once it clears', async () => {
