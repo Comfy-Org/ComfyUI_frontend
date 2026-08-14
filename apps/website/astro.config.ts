@@ -3,6 +3,7 @@ import mdx from '@astrojs/mdx'
 import sitemap from '@astrojs/sitemap'
 import vue from '@astrojs/vue'
 import tailwindcss from '@tailwindcss/vite'
+import { localizeHref } from './src/config/routes'
 
 const LOCALES = ['en', 'zh-CN', 'ja', 'ko'] as const
 const DEFAULT_LOCALE = 'en'
@@ -64,27 +65,45 @@ export default defineConfig({
         item.links = [
           {
             lang: 'x-default',
-            url: new URL(cleanBasePath || '/', urlObj.origin).href
+            url: new URL(
+              localizeHref(cleanBasePath || '/', 'en'),
+              urlObj.origin
+            ).href
           },
           {
             lang: 'en',
-            url: new URL(cleanBasePath || '/', urlObj.origin).href
+            url: new URL(
+              localizeHref(cleanBasePath || '/', 'en'),
+              urlObj.origin
+            ).href
           },
           {
             lang: 'ja',
-            url: new URL(`/ja${cleanBasePath}`, urlObj.origin).href
+            url: new URL(
+              localizeHref(cleanBasePath || '/', 'ja'),
+              urlObj.origin
+            ).href
           },
           {
             lang: 'ko',
-            url: new URL(`/ko${cleanBasePath}`, urlObj.origin).href
+            url: new URL(
+              localizeHref(cleanBasePath || '/', 'ko'),
+              urlObj.origin
+            ).href
           },
           {
             lang: 'zh-CN',
-            url: new URL(`/zh-CN${cleanBasePath}`, urlObj.origin).href
+            url: new URL(
+              localizeHref(cleanBasePath || '/', 'zh-CN'),
+              urlObj.origin
+            ).href
           },
           {
             lang: 'zh',
-            url: new URL(`/zh-CN${cleanBasePath}`, urlObj.origin).href
+            url: new URL(
+              localizeHref(cleanBasePath || '/', 'zh-CN'),
+              urlObj.origin
+            ).href
           }
         ]
         return item

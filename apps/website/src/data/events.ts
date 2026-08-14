@@ -114,7 +114,7 @@ export function toCalendarEvent(
   const href = new URL(target!, SITE_ORIGIN).href
   const start = new Date(event.startDateTime)
   return {
-    title: event.title[locale]!,
+    title: event.title[locale] ?? event.title.en,
     description: `${event.description[locale]}\n\n${href}`,
     location: event.location?.[locale] ?? '',
     start,
@@ -138,7 +138,7 @@ export function eventJsonLdNode(
   return eventNode({
     siteUrl,
     id: jsonLdId(pageUrl, `event-${event.id}`),
-    name: event.title[locale]!,
+    name: event.title[locale] ?? event.title.en,
     description: event.description[locale],
     startDate: event.startDateTime,
     ...(online

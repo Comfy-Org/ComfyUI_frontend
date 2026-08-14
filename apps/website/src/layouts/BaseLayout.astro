@@ -14,6 +14,7 @@ import {
   createBannerVersion,
   evaluateBannerVisibility
 } from '../utils/banner'
+import { localizeHref } from '../config/routes'
 import { fetchGitHubStars, formatStarCount } from '../utils/github'
 import { buildPageGraph, pageContext } from '../utils/jsonLd'
 import type { Crumb, JsonLdNode, WebPageType } from '../utils/jsonLd'
@@ -64,12 +65,12 @@ if (!basePath.startsWith('/')) basePath = '/' + basePath
 const cleanBasePath = basePath === '/' ? '' : basePath
 
 const hreflangLinks = [
-  { hreflang: 'x-default', href: new URL(cleanBasePath || '/', canonicalURL.origin).href },
-  { hreflang: 'en', href: new URL(cleanBasePath || '/', canonicalURL.origin).href },
-  { hreflang: 'ja', href: new URL(`/ja${cleanBasePath}`, canonicalURL.origin).href },
-  { hreflang: 'ko', href: new URL(`/ko${cleanBasePath}`, canonicalURL.origin).href },
-  { hreflang: 'zh-CN', href: new URL(`/zh-CN${cleanBasePath}`, canonicalURL.origin).href },
-  { hreflang: 'zh', href: new URL(`/zh-CN${cleanBasePath}`, canonicalURL.origin).href }
+  { hreflang: 'x-default', href: new URL(localizeHref(cleanBasePath || '/', 'en'), canonicalURL.origin).href },
+  { hreflang: 'en', href: new URL(localizeHref(cleanBasePath || '/', 'en'), canonicalURL.origin).href },
+  { hreflang: 'ja', href: new URL(localizeHref(cleanBasePath || '/', 'ja'), canonicalURL.origin).href },
+  { hreflang: 'ko', href: new URL(localizeHref(cleanBasePath || '/', 'ko'), canonicalURL.origin).href },
+  { hreflang: 'zh-CN', href: new URL(localizeHref(cleanBasePath || '/', 'zh-CN'), canonicalURL.origin).href },
+  { hreflang: 'zh', href: new URL(localizeHref(cleanBasePath || '/', 'zh-CN'), canonicalURL.origin).href }
 ]
 
 const ogImageURL = new URL(ogImage, Astro.site ?? 'https://comfy.org')
