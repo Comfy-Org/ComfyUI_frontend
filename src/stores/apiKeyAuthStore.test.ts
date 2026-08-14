@@ -1,4 +1,5 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -38,7 +39,7 @@ const severities = () =>
 describe('useApiKeyAuthStore', () => {
   beforeEach(() => {
     localStorage.clear()
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
     mockCreateCustomer.mockReset()
   })
 
@@ -161,6 +162,28 @@ describe('useApiKeyAuthStore', () => {
       expect(store.getApiKey()).toBe(VALID_KEY)
       expect(store.isAuthenticated).toBe(true)
       expect(severities()).toEqual(['success:auth.apiKey.stored'])
+    })
+  })
+
+  describe('clearing the key while it is being validated', () => {
+    it('does not let the in-flight result sign the user back in', async () => {
+      localStorage.setItem(STORAGE_KEY, VALID_KEY)
+      let resolveRestored!: (value: typeof customer) => void
+      mockCreateCustomer.mockReturnValue(
+        new Promise<typeof customer>((res) => {
+          resolveRestored = res
+        })
+      )
+
+      const store = useApiKeyAuthStore()
+      await vi.waitFor(() => expect(mockCreateCustomer).toHaveBeenCalled())
+
+      await store.clearStoredApiKey()
+      resolveRestored(customer)
+      await nextTick()
+
+      expect(store.getApiKey()).toBeNull()
+      expect(store.isAuthenticated).toBe(false)
     })
   })
 

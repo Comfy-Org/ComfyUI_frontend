@@ -75,13 +75,18 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
 
   const resolveUser = async (): Promise<boolean> => {
     const request = ++latestRequest
+    const validated = apiKey.value
+    // Clearing the key does not start a request, so the token alone would let
+    // an attempt that began earlier still sign the user back in afterwards.
+    const stillWanted = () =>
+      request === latestRequest && apiKey.value === validated
     try {
       const user = await authStore.createCustomer()
-      if (request !== latestRequest) return false
+      if (!stillWanted()) return false
       currentUser.value = user
       return true
     } catch (error) {
-      if (request !== latestRequest) return false
+      if (!stillWanted()) return false
       currentUser.value = null
       const failure = failureFor(error)
       if (failure === 'rejected') apiKey.value = null
