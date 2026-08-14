@@ -146,7 +146,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     )
   }
 
-  private syncBoundsFromStore(): void {
+  syncBoundsFromStore(): void {
     if (!this.graph || this.id === -1) return
 
     const layout = layoutStore.getGroupLayout(this.graph.rootGraph.id, this.id)

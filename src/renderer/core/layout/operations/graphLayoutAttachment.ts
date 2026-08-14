@@ -69,10 +69,16 @@ export function attachNodeLayout(graph: LayoutGraph, node: LGraphNode): void {
 }
 
 function adoptNodeAttachment(graphId: UUID, node: LGraphNode): void {
-  if (!layoutStore.readNodeRect(graphId, node.id, node._posSize)) return
+  const geometrySynchronized = layoutStore.readNodeRect(
+    graphId,
+    node.id,
+    node._posSize
+  )
   nodeAttachments.set(node, { graphId, id: node.id })
   node._layoutRegistered = true
-  node._geometryVersion = layoutStore.geometryVersion
+  if (geometrySynchronized) {
+    node._geometryVersion = layoutStore.geometryVersion
+  }
 }
 
 export function detachNodeLayout(node: LGraphNode): void {
@@ -97,7 +103,7 @@ export function attachGroupLayout(
 ): void {
   const graphId = graph.rootGraph.id
   if (layoutStore.getGroupLayout(graphId, group.id)) {
-    syncGroupBoundsFromLayout(group)
+    group.syncBoundsFromStore()
     groupAttachments.set(group, { graphId, id: group.id })
     return
   }
@@ -119,7 +125,7 @@ export function attachGroupLayout(
 export function detachGroupLayout(group: LGraphGroup): void {
   const attachment = groupAttachments.get(group)
   if (!attachment) return
-  syncGroupBoundsFromLayout(group)
+  group.syncBoundsFromStore()
   groupAttachments.delete(group)
   layoutStore.applyOperation({
     ...canvasOperationMeta(),
@@ -153,7 +159,7 @@ export function materializeRerouteLayout(
 export function detachRerouteLayout(reroute: Reroute): void {
   const attachment = rerouteAttachments.get(reroute)
   if (!attachment) return
-  syncReroutePositionFromLayout(reroute)
+  reroute.syncPosition()
   rerouteAttachments.delete(reroute)
   layoutStore.applyOperation({
     ...canvasOperationMeta(),
@@ -217,18 +223,6 @@ export function moveRerouteLayout(reroute: Reroute, position: Point): void {
 }
 
 /**
- * Reads the reroute position through its geometry-view Proxy, which copies
- * the store position into the reroute's local buffer before detach.
- */
-function syncReroutePositionFromLayout(reroute: Reroute): void {
-  void reroute.pos[0]
-}
-
-function syncGroupBoundsFromLayout(group: LGraphGroup): void {
-  void group.pos[0]
-}
-
-/**
  * Invalidates every attachment a graph owns, including those inside its
  * subgraph definitions. Layout entries are removed in one store transaction
  * unless their graph bucket will be cleared separately.
@@ -262,7 +256,7 @@ export function detachGraphLayouts(
     for (const group of owner._groups) {
       const attachment = groupAttachments.get(group)
       if (!attachment) continue
-      syncGroupBoundsFromLayout(group)
+      group.syncBoundsFromStore()
       groupAttachments.delete(group)
       if (meta) {
         operations.push({
@@ -276,7 +270,7 @@ export function detachGraphLayouts(
     for (const reroute of owner.reroutes.values()) {
       const attachment = rerouteAttachments.get(reroute)
       if (!attachment) continue
-      syncReroutePositionFromLayout(reroute)
+      reroute.syncPosition()
       rerouteAttachments.delete(reroute)
       if (meta) {
         operations.push({

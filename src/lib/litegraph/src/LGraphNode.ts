@@ -133,8 +133,6 @@ import type { WidgetTypeMap } from './widgets/widgetMap'
 
 export type NodeProperty = string | number | boolean | object | null
 
-/** Captures only the {@link layoutStore} singleton, so shared across nodes. */
-
 const storedRectScratch = new Float64Array(4)
 
 interface INodePropertyInfo {

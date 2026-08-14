@@ -115,10 +115,7 @@ export class Reroute
     this._chain.floating = value
   }
 
-  /**
-   * Position lives in {@link layoutStore} and nowhere else — the reroute
-   * registers itself on construction, so there is always an entry to read.
-   */
+  /** Stable position view, synchronized with {@link layoutStore} while attached. */
   get pos(): Point {
     return this.positionView
   }
@@ -137,7 +134,7 @@ export class Reroute
     })
   }
 
-  private syncPosition(): void {
+  syncPosition(): void {
     const { x, y } = this.storedPosition
     this.position.length = 2
     this.position[0] = x

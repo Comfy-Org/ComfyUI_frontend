@@ -440,6 +440,24 @@ describe('Reroute position lives only in layoutStore', () => {
     expect(reroute.boundingRect[0]).toBe(300 - Reroute.radius)
   })
 
+  it('keeps canonical position after removal', () => {
+    const { graph, link } = connectedGraph()
+    const reroute = graph.createReroute([10, 10], link)
+    assert(reroute)
+    layoutStore.applyOperation({
+      type: 'moveReroute',
+      graphId: graph.rootGraph.id,
+      rerouteId: reroute.id,
+      position: { x: 300, y: 400 },
+      timestamp: Date.now(),
+      source: LayoutSource.Canvas
+    })
+
+    graph.removeReroute(reroute.id)
+
+    expect([...reroute.pos]).toEqual([300, 400])
+  })
+
   it('writes indexed and method mutations through to the store', () => {
     const { graph, link } = connectedGraph()
     const reroute = graph.createReroute([10, 20], link)
