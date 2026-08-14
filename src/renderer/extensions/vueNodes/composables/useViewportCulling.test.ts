@@ -169,44 +169,49 @@ describe('useViewportCulling', () => {
     expect(mountedNodeIds.value.size).toBe(0)
   })
 
-  it('fills a large entering set in over several frames, not one flush', async () => {
-    const COUNT = 600
-    const bounds = Object.fromEntries(
-      Array.from({ length: COUNT }, (_, i) => [
+  /** 600 nodes parked outside the initial viewport, brought in by panning. */
+  function offscreenGrid(count = 600) {
+    return Object.fromEntries(
+      Array.from({ length: count }, (_, i) => [
         `n${i}`,
-        { x: (i % 30) * 40, y: Math.floor(i / 30) * 40, width: 30, height: 30 }
+        {
+          x: 10_000 + (i % 30) * 40,
+          y: Math.floor(i / 30) * 40,
+          width: 30,
+          height: 30
+        }
       ])
     )
-    const { mountedNodeIds } = setup(bounds)
+  }
 
-    // The first refresh mounts exactly one frame's worth, not the whole set.
+  it('paces a camera-driven fill-in across frames', async () => {
+    // Panning into a dense region is the case staging exists for: the nodes
+    // were always there, and arriving over a few frames is imperceptible.
+    const bounds = offscreenGrid()
+    const { mountedNodeIds } = setup(bounds)
+    expect(mountedNodeIds.value.size).toBe(0)
+
+    camera.x = -10_000
+    await nextTick()
     expect(mountedNodeIds.value.size).toBe(MOUNT_BATCH_PER_FRAME)
 
-    // Remaining nodes arrive over subsequent frames.
-    await vi.advanceTimersByTimeAsync(2000)
-    expect(mountedNodeIds.value.size).toBe(COUNT)
+    await vi.advanceTimersByTimeAsync(3000)
+    expect(mountedNodeIds.value.size).toBe(600)
   })
 
-  it('abandons a queued fill-in when the camera moves again', async () => {
-    const COUNT = 600
+  it('mounts nodes newly added to the graph without pacing', async () => {
+    // A paste is a direct user action awaiting feedback, and the set is
+    // already bounded by the viewport. Pacing it is what makes a large paste
+    // look like it is rendering one node at a time.
     const bounds = Object.fromEntries(
-      Array.from({ length: COUNT }, (_, i) => [
+      Array.from({ length: 300 }, (_, i) => [
         `n${i}`,
-        { x: (i % 30) * 40, y: Math.floor(i / 30) * 40, width: 30, height: 30 }
+        { x: (i % 20) * 40, y: Math.floor(i / 20) * 40, width: 30, height: 30 }
       ])
     )
     const { mountedNodeIds } = setup(bounds)
-    const afterFirstFrame = mountedNodeIds.value.size
 
-    // Zoom away before the queue drains: the pending nodes were computed for a
-    // camera position the user has left, so they must not keep arriving.
-    camera.z = 0.05
-    await nextTick()
-    await vi.advanceTimersByTimeAsync(50)
-
-    expect(mountedNodeIds.value.size).toBeLessThanOrEqual(
-      afterFirstFrame + MOUNT_BATCH_PER_FRAME
-    )
+    expect(mountedNodeIds.value.size).toBe(300)
   })
 
   it('mounts every node when the graph is below the culling threshold', async () => {

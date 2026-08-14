@@ -89,6 +89,16 @@ export const MOUNT_BATCH_PER_FRAME = 8
 const MOUNT_FRAME_BUDGET_MS = 20
 
 /**
+ * How long a staged fill-in may take before the remainder is mounted at once.
+ *
+ * Backpressure alone can deadlock: a mass paste makes frames slow for reasons
+ * that have nothing to do with mounting, the batch shrinks in response, and
+ * frames stay slow, so it never recovers and nodes trickle in one per frame.
+ * One bounded hitch is better than a fill-in the user watches crawl.
+ */
+const MOUNT_QUEUE_DEADLINE_MS = 600
+
+/**
  * Graph size below which nothing is culled.
  *
  * Ordinary workflows are an order of magnitude smaller, render fine whole, and
@@ -229,6 +239,7 @@ export function useViewportCulling({
   function cancelQueuedMounts(): void {
     mountQueue = []
     lastDrainAt = 0
+    queueStartedAt = 0
     mountBatchSize = MOUNT_BATCH_PER_FRAME
     if (mountFrame !== null) {
       cancelAnimationFrame(mountFrame)
@@ -243,17 +254,34 @@ export function useViewportCulling({
    */
   let mountBatchSize = MOUNT_BATCH_PER_FRAME
   let lastDrainAt = 0
+  let queueStartedAt = 0
 
   function drainMountQueue(now: number): void {
     mountFrame = null
     if (disposed || mountQueue.length === 0) return
 
+    // Past the deadline, stop pacing and finish. Backpressure is an
+    // optimisation; it must not become the reason nothing renders.
+    if (queueStartedAt > 0 && now - queueStartedAt > MOUNT_QUEUE_DEADLINE_MS) {
+      const rest = mountQueue
+      mountQueue = []
+      const all = new Set(mountedNodeIds.value)
+      for (const id of rest) all.add(id)
+      mountedNodeIds.value = all
+      return
+    }
+
     if (lastDrainAt > 0) {
       const frameMs = now - lastDrainAt
       if (frameMs > MOUNT_FRAME_BUDGET_MS) {
-        mountBatchSize = Math.max(1, Math.floor(mountBatchSize / 2))
-      } else if (frameMs < MOUNT_FRAME_BUDGET_MS / 2) {
-        mountBatchSize = Math.min(MOUNT_BATCH_PER_FRAME * 4, mountBatchSize + 2)
+        // Never below a useful floor: halving to one node per frame is how a
+        // fill-in turns into a crawl the user notices.
+        mountBatchSize = Math.max(
+          MOUNT_BATCH_PER_FRAME,
+          Math.floor(mountBatchSize / 2)
+        )
+      } else {
+        mountBatchSize = Math.min(MOUNT_BATCH_PER_FRAME * 8, mountBatchSize * 2)
       }
     }
     lastDrainAt = now
@@ -268,18 +296,31 @@ export function useViewportCulling({
     }
   }
 
-  function queueMount(entering: NodeId[]): void {
+  function queueMount(entering: NodeId[], immediate = false): void {
     cancelQueuedMounts()
     if (entering.length === 0) return
 
+    // Nodes that just appeared in the graph - a paste, a drop, an undo - are a
+    // direct user action awaiting feedback, and the set is already bounded by
+    // the viewport. Pacing those is what makes a large paste look like it is
+    // rendering one node at a time.
+    if (immediate) {
+      const all = new Set(mountedNodeIds.value)
+      for (const id of entering) all.add(id)
+      mountedNodeIds.value = all
+      return
+    }
+
+    queueStartedAt = performance.now()
+
     // First batch synchronously so a small change appears this frame rather
     // than a frame late; the rest fills in over following frames.
-    const immediate = entering.slice(0, MOUNT_BATCH_PER_FRAME)
+    const firstBatch = entering.slice(0, MOUNT_BATCH_PER_FRAME)
     const next = new Set(mountedNodeIds.value)
-    for (const id of immediate) next.add(id)
+    for (const id of firstBatch) next.add(id)
     mountedNodeIds.value = next
 
-    mountQueue = entering.slice(immediate.length)
+    mountQueue = entering.slice(firstBatch.length)
     if (mountQueue.length > 0) {
       mountFrame = requestAnimationFrame(drainMountQueue)
     }
@@ -295,7 +336,7 @@ export function useViewportCulling({
    * still pruned, so zooming in sheds nodes and gets cheaper as it goes, but
    * nothing new mounts until the gesture settles.
    */
-  function refreshMountedNodes(allowMount = true) {
+  function refreshMountedNodes(allowMount = true, immediate = false) {
     if (disposed) return
     const visible = computeVisibleNodeIds()
     const mounted = mountedNodeIds.value
@@ -317,7 +358,7 @@ export function useViewportCulling({
       // Replaces rather than appends: the previous queue was computed for a
       // camera position the user has already left, so anything still in it is
       // either in `entering` again or no longer wanted.
-      queueMount(entering)
+      queueMount(entering, immediate)
     } else {
       cancelQueuedMounts()
     }
@@ -348,7 +389,8 @@ export function useViewportCulling({
     true
   )
 
-  watch(nodes, () => refreshMountedNodes(), { immediate: true })
+  // Membership changes mount without pacing; see queueMount.
+  watch(nodes, () => refreshMountedNodes(true, true), { immediate: true })
 
   const refreshAfterZoom = useDebounceFn(() => {
     if (disposed) return
