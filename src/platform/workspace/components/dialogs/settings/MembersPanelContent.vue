@@ -151,6 +151,14 @@
 
         <!-- Members List -->
         <div class="min-h-0 flex-1 overflow-y-auto">
+          <!-- Empty States -->
+          <p
+            v-if="emptyStateMessage"
+            class="p-6 text-center text-sm text-muted-foreground"
+          >
+            {{ emptyStateMessage }}
+          </p>
+
           <!-- Active Members -->
           <template v-if="activeView === 'active'">
             <template v-if="isInPersonalWorkspace && maxSeats === 1">
@@ -191,6 +199,7 @@
             v-if="activeView === 'pending'"
             :invites="filteredPendingInvites"
             :grid-cols="uiConfig.pendingGridCols"
+            :search-query="searchQuery"
             @resend="handleResendInvite"
             @revoke="handleRevokeInvite"
           />
@@ -225,6 +234,9 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Button from '@/components/ui/button/Button.vue'
 import MemberListItem from '@/platform/workspace/components/dialogs/settings/MemberListItem.vue'
@@ -268,6 +280,19 @@ const {
   handleResendInvite,
   handleRevokeInvite
 } = useMembersPanel()
+
+const { t } = useI18n()
+
+const emptyStateMessage = computed(() => {
+  if (activeView.value !== 'active') return null
+  if (isInPersonalWorkspace.value && maxSeats.value === 1) return null
+  if (filteredMembers.value.length > 0) return null
+
+  const query = searchQuery.value.trim()
+  return query
+    ? t('workspacePanel.members.noMembersMatch', { query })
+    : t('workspacePanel.members.noMembers')
+})
 
 function handleContactUs() {
   window.open(TEAM_PLAN_REQUEST_URL, '_blank', 'noopener,noreferrer')

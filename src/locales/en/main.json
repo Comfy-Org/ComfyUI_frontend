@@ -3179,7 +3179,9 @@
       "needMoreMembers": "Need more members?",
       "contactUs": "Contact us",
       "noInvites": "No pending invites",
+      "noInvitesMatch": "No invites match \"{query}\"",
       "noMembers": "No members",
+      "noMembersMatch": "No members match \"{query}\"",
       "searchPlaceholder": "Search..."
     },
     "partnerNodes": {

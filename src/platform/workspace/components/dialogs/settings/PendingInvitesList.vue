@@ -35,7 +35,11 @@
         {{ formatDate(invite.expiryDate) }}
       </span>
       <div class="flex items-center justify-end">
-        <MoreButton v-slot="{ close }" :aria-label="$t('g.moreOptions')">
+        <MoreButton
+          v-slot="{ close }"
+          variant="muted-textonly"
+          :aria-label="$t('g.moreOptions')"
+        >
           <Button
             variant="textonly"
             size="unset"
@@ -71,7 +75,13 @@
       v-if="invites.length === 0"
       class="flex w-full items-center justify-center py-8 text-sm text-muted-foreground"
     >
-      {{ $t('workspacePanel.members.noInvites') }}
+      {{
+        searchQuery.trim()
+          ? $t('workspacePanel.members.noInvitesMatch', {
+              query: searchQuery.trim()
+            })
+          : $t('workspacePanel.members.noInvites')
+      }}
     </div>
   </div>
 </template>
@@ -86,9 +96,10 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 const menuItemClass = 'w-full justify-start rounded-sm px-3 py-2'
 
-defineProps<{
+const { searchQuery = '' } = defineProps<{
   invites: PendingInvite[]
   gridCols: string
+  searchQuery?: string
 }>()
 
 defineEmits<{
