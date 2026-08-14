@@ -25,10 +25,18 @@ vi.mock('@/stores/nodeDefStore', () => ({
   useNodeDefStore: () => ({ nodeDefsByName: hoisted.nodeDefsByName })
 }))
 
+// Mirrors ComfyApp: reading `rootGraph` before init logs an error, so
+// consumers must gate on `isGraphReady` instead.
 vi.mock('@/scripts/app', () => ({
   app: {
     get rootGraph() {
+      if (!hoisted.rootGraph) {
+        console.error('ComfyApp graph accessed before initialization')
+      }
       return hoisted.rootGraph
+    },
+    get isGraphReady() {
+      return !!hoisted.rootGraph
     }
   }
 }))
@@ -104,10 +112,15 @@ describe('usePartnerNodesInGraph', () => {
     scope.stop()
   })
 
-  it('returns empty when no root graph is loaded', () => {
+  it('returns empty without touching rootGraph before the graph is ready', () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+
     const { partnerNodes, hasPartnerNodes } = setup()
     expect(partnerNodes.value).toEqual([])
     expect(hasPartnerNodes.value).toBe(false)
+    expect(consoleError).not.toHaveBeenCalled()
+
+    consoleError.mockRestore()
   })
 
   it('collects only api_node defs, deduped, with display-name fallback', () => {

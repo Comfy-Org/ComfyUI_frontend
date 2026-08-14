@@ -1,13 +1,15 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import LocalRunButtonWrapper from './LocalRunButtonWrapper.vue'
 
+type PartnerNode = { nodeName: string; displayName: string }
+
 const gateState = vi.hoisted(() => ({
-  gate: 'none' as 'sign-in' | 'none',
-  partnerNodes: [] as { nodeName: string; displayName: string }[]
+  gate: undefined as unknown as { value: 'sign-in' | 'none' },
+  partnerNodes: undefined as unknown as { value: PartnerNode[] }
 }))
 
 const showApiNodesSignInDialog = vi.hoisted(() =>
@@ -15,11 +17,13 @@ const showApiNodesSignInDialog = vi.hoisted(() =>
 )
 
 vi.mock('@/composables/billing/usePartnerNodesRunGate', async () => {
-  const { computed } = await import('vue')
+  const { ref } = await import('vue')
+  gateState.gate = ref<'sign-in' | 'none'>('none')
+  gateState.partnerNodes = ref<PartnerNode[]>([])
   return {
     usePartnerNodesRunGate: () => ({
-      gate: computed(() => gateState.gate),
-      partnerNodes: computed(() => gateState.partnerNodes)
+      gate: gateState.gate,
+      partnerNodes: gateState.partnerNodes
     })
   }
 })
@@ -78,8 +82,8 @@ function renderWrapper() {
 
 describe('LocalRunButtonWrapper', () => {
   beforeEach(() => {
-    gateState.gate = 'none'
-    gateState.partnerNodes = []
+    gateState.gate.value = 'none'
+    gateState.partnerNodes.value = []
     __setQueueMode('instant')
   })
 
@@ -93,7 +97,7 @@ describe('LocalRunButtonWrapper', () => {
   })
 
   it('replaces the queue button and disables auto-queue when gated', () => {
-    gateState.gate = 'sign-in'
+    gateState.gate.value = 'sign-in'
     renderWrapper()
     expect(screen.queryByTestId('queue-button')).not.toBeInTheDocument()
     expect(
@@ -102,9 +106,24 @@ describe('LocalRunButtonWrapper', () => {
     expect(__getQueueMode()).toBe('disabled')
   })
 
-  it('opens the partner sign-in dialog with all partner node names', async () => {
-    gateState.gate = 'sign-in'
-    gateState.partnerNodes = [
+  it('moves focus to the queue button when signing in unmounts the gated button', async () => {
+    gateState.gate.value = 'sign-in'
+    renderWrapper()
+
+    const gatedButton = screen.getByRole('button', { name: 'Sign in to run' })
+    gatedButton.focus()
+    expect(gatedButton).toHaveFocus()
+
+    gateState.gate.value = 'none'
+
+    await waitFor(() => {
+      expect(screen.getByTestId('queue-button')).toHaveFocus()
+    })
+  })
+
+  it('opens the partner sign-in dialog with every partner node display name', async () => {
+    gateState.gate.value = 'sign-in'
+    gateState.partnerNodes.value = [
       { nodeName: 'PartnerA', displayName: 'Partner A' },
       { nodeName: 'PartnerB', displayName: 'Partner B' }
     ]
@@ -115,8 +134,8 @@ describe('LocalRunButtonWrapper', () => {
     )
 
     expect(showApiNodesSignInDialog).toHaveBeenCalledWith([
-      'PartnerA',
-      'PartnerB'
+      'Partner A',
+      'Partner B'
     ])
   })
 })
