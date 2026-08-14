@@ -10,13 +10,12 @@ const VALID_TIERS = ['load', 'run', 'connectivity', 'io'] as const
 
 type CustomNodeTier = (typeof VALID_TIERS)[number]
 
-// Which pack list to test, and which backend it runs against. These are two
-// axes, not one: the local gate now tests the CLOUD pack list against a LOCAL
-// backend, because the cloud pack set is what ships and a local ComfyUI is
-// what CI can afford to boot. Collapsing them into one flag would apply
-// cloud's disabled-node expectations to a backend where those nodes are live.
+// Which pack list to test. The local gate tests the CLOUD pack list against a
+// LOCAL backend, so this must NOT also select backend behaviour: cloud's
+// coreDisabledNodes/unjoinedYamlPacks describe Cloud, and applying them here
+// would expect nodes to be absent that this backend serves. When the cloud
+// assertions land, they need their own backend flag, not this one.
 const VALID_MANIFESTS = ['core', 'cloud'] as const
-const VALID_BACKENDS = ['local', 'cloud'] as const
 
 interface SharedNodeExpectations {
   pack: string
@@ -328,12 +327,8 @@ function readEnum<T extends readonly string[]>(
   return hit
 }
 
-export function customNodesManifest(): (typeof VALID_MANIFESTS)[number] {
+function customNodesManifest(): (typeof VALID_MANIFESTS)[number] {
   return readEnum('CUSTOM_NODES_MANIFEST', VALID_MANIFESTS, 'core')
-}
-
-export function customNodesBackend(): (typeof VALID_BACKENDS)[number] {
-  return readEnum('CUSTOM_NODES_BACKEND', VALID_BACKENDS, 'local')
 }
 
 /**
@@ -344,7 +339,7 @@ export function customNodesBackend(): (typeof VALID_BACKENDS)[number] {
  * packs together, so contiguous slices would put the heavy neighbours in one
  * shard and starve the rest.
  */
-export function manifestShard(): { index: number; total: number } | null {
+function manifestShard(): { index: number; total: number } | null {
   const raw = process.env.CUSTOM_NODES_SHARD
   if (!raw) return null
   const parsed = /^(\d+)\/(\d+)$/.exec(raw)
@@ -367,7 +362,7 @@ export function shardOf<T>(entries: readonly T[]): T[] {
   return entries.filter((_, i) => i % shard.total === shard.index - 1)
 }
 
-export function assertCloudManifestShape(
+function assertCloudManifestShape(
   parsed: unknown,
   sourcePath: string
 ): CloudManifest {
@@ -428,23 +423,6 @@ export function loadAllManifestPackNames(): string[] {
     ...readCoreManifest().map((entry) => entry.pack),
     ...readCloudManifest().packs.map((entry) => entry.pack)
   ]
-}
-
-export function loadCloudCoreDisabledNodes(): Record<string, string[]> {
-  // Keyed on the BACKEND: these nodes are disabled by Cloud, not by the
-  // manifest. Testing the cloud pack list locally must not inherit them.
-  return customNodesBackend() === 'cloud'
-    ? readCloudManifest().coreDisabledNodes
-    : {}
-}
-
-// Packs the generator could not join to any snapshot node. Asserted against the
-// LIVE backend so the record cannot rot: one of these registering nodes on
-// Cloud means it now has coverage to gain and the manifest must be regenerated.
-export function loadCloudUnjoinedYamlPacks(): string[] {
-  return customNodesBackend() === 'cloud'
-    ? readCloudManifest().unjoinedYamlPacks
-    : []
 }
 
 /**

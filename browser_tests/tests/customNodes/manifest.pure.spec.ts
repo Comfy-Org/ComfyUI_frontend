@@ -7,7 +7,8 @@ import {
   assertCoreEntry,
   loadApplicableAutogrowCases,
   loadFullManifest,
-  rendererPassesFor
+  rendererPassesFor,
+  shardOf
 } from '@e2e/fixtures/customNode/manifest'
 
 function validEntry(): CoreManifestEntry {
@@ -140,5 +141,38 @@ test.describe('customNode manifest', () => {
         producerSlot: 'IMAGE'
       }
     ])
+  })
+
+  test('sharding partitions the manifest - every pack exactly once', () => {
+    const packs = Array.from({ length: 87 }, (_, i) => `pack-${i}`)
+    const original = process.env.CUSTOM_NODES_SHARD
+    try {
+      for (const total of [10, 14, 18]) {
+        const seen: string[] = []
+        for (let index = 1; index <= total; index++) {
+          process.env.CUSTOM_NODES_SHARD = `${index}/${total}`
+          seen.push(...shardOf(packs))
+        }
+        // Loss is the failure that matters: a pack dropped from every shard
+        // reads as a smaller green run, not as missing coverage.
+        expect(seen.slice().sort()).toEqual(packs.slice().sort())
+      }
+    } finally {
+      if (original === undefined) delete process.env.CUSTOM_NODES_SHARD
+      else process.env.CUSTOM_NODES_SHARD = original
+    }
+  })
+
+  test('an unshaped CUSTOM_NODES_SHARD fails rather than running everything', () => {
+    const original = process.env.CUSTOM_NODES_SHARD
+    try {
+      process.env.CUSTOM_NODES_SHARD = '11/10'
+      expect(() => shardOf(['a'])).toThrow(/out of range/)
+      process.env.CUSTOM_NODES_SHARD = 'half'
+      expect(() => shardOf(['a'])).toThrow(/index\/total/)
+    } finally {
+      if (original === undefined) delete process.env.CUSTOM_NODES_SHARD
+      else process.env.CUSTOM_NODES_SHARD = original
+    }
   })
 })

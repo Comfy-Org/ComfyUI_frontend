@@ -128,7 +128,6 @@ jobs:
     # their pack list from these three (see scripts/customNodeShard.ts).
     env:
       CUSTOM_NODES_MANIFEST: cloud
-      CUSTOM_NODES_BACKEND: local
       CUSTOM_NODES_SHARD: ${{ matrix.shard }}
     steps:
       # Artifact and cache names cannot contain `/`, which the shard id does.
