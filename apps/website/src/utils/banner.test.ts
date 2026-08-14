@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest'
 
 import type { EvaluableBanner } from './banner'
 
-import { createBannerVersion, evaluateBannerVisibility } from './banner'
+import {
+  createBannerVersion,
+  evaluateBannerVisibility,
+  toClosedBanners
+} from './banner'
 
 const base: EvaluableBanner = {
   isActive: true,
@@ -105,5 +109,29 @@ describe('createBannerVersion', () => {
     expect(createBannerVersion(content, 'en')).not.toBe(
       createBannerVersion(content, 'zh-CN')
     )
+  })
+})
+
+describe('toClosedBanners', () => {
+  it('keeps boolean entries', () => {
+    expect(toClosedBanners({ promo_en_v1: true, promo_en_v2: false })).toEqual({
+      promo_en_v1: true,
+      promo_en_v2: false
+    })
+  })
+
+  it.for([
+    { label: 'null', parsed: null },
+    { label: 'an array', parsed: ['promo_en_v1'] },
+    { label: 'a string', parsed: 'promo_en_v1' },
+    { label: 'a number', parsed: 7 }
+  ])('returns an empty record for $label', ({ parsed }) => {
+    expect(toClosedBanners(parsed)).toEqual({})
+  })
+
+  it('drops non-boolean values rather than trusting them', () => {
+    expect(
+      toClosedBanners({ kept: true, dropped: 'yes', alsoDropped: { a: 1 } })
+    ).toEqual({ kept: true })
   })
 })

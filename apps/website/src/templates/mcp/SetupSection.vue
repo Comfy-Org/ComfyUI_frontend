@@ -9,6 +9,8 @@ import { externalLinks, getRoutes } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { captureMcpClientTabClick } from '../../scripts/posthog'
+import type { McpClientId } from './clients'
+import { createMcpClients, isMcpClientId } from './clients'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
@@ -17,75 +19,17 @@ const agentCommand = t('mcp.setup.agent.command', locale).replace(
   externalLinks.docsMcp
 )
 
-interface McpClient {
-  id: string
-  name: string
-  step: string
-  command?: string
-  link?: { label: string; href: string }
-  manualTitle?: string
-  showAgentCard: boolean
-  // Walkthrough clip shown in place of the agent card (source: docs.comfy.org/agent-tools/mcp)
-  video?: string
-}
+const clients = createMcpClients(locale)
 
-const clients: McpClient[] = [
-  {
-    id: 'claude-desktop',
-    name: 'Claude Desktop',
-    step: t('mcp.setup.clients.claudeDesktop.step', locale),
-    manualTitle: t('mcp.setup.clients.claudeDesktop.manualTitle', locale),
-    showAgentCard: false,
-    video: 'https://media.comfy.org/website/mcp/setup-claude-desktop-v2.mp4'
-  },
-  {
-    id: 'claude-code',
-    name: 'Claude Code Terminal',
-    step: t('mcp.setup.clients.claudeCode.step', locale),
-    command: `claude mcp add --transport http comfy-cloud ${externalLinks.mcpEndpoint}`,
-    showAgentCard: true
-  },
-  {
-    id: 'codex',
-    name: 'Codex',
-    step: t('mcp.setup.clients.codex.step', locale),
-    command: `codex mcp add comfy-cloud --url ${externalLinks.mcpEndpoint}`,
-    showAgentCard: false,
-    video: 'https://media.comfy.org/website/mcp/setup-codex-oauth-v2.mp4'
-  },
-  {
-    id: 'cursor',
-    name: 'Cursor',
-    step: t('mcp.setup.clients.cursor.step', locale),
-    link: {
-      label: t('mcp.setup.clients.cursor.linkLabel', locale),
-      href: externalLinks.apiKeys
-    },
-    showAgentCard: true
-  },
-  {
-    id: 'openclaw',
-    name: 'OpenClaw',
-    step: t('mcp.setup.clients.openclaw.step', locale),
-    command: `openclaw skills install @comfy-org/comfy\nopenclaw mcp set comfy '{"url":"${externalLinks.mcpEndpoint}","transport":"streamable-http","auth":"oauth"}'`,
-    showAgentCard: true
-  },
-  {
-    id: 'other',
-    name: t('mcp.setup.clients.other.name', locale),
-    step: t('mcp.setup.clients.other.step', locale),
-    link: {
-      label: t('mcp.setup.clients.other.linkLabel', locale),
-      href: externalLinks.docsMcp
-    },
-    showAgentCard: true
-  }
-]
-
-const activeClientId = ref(clients[0].id)
+const activeClientId = ref<McpClientId>(clients[0].id)
 const activeClient = computed(
   () =>
     clients.find((client) => client.id === activeClientId.value) ?? clients[0]
+)
+const walkthrough = computed(() =>
+  activeClient.value.panel.kind === 'walkthrough'
+    ? activeClient.value.panel
+    : null
 )
 const manualTitle = computed(
   () => activeClient.value.manualTitle ?? t('mcp.setup.manual.title', locale)
@@ -93,13 +37,11 @@ const manualTitle = computed(
 
 // reka-ui re-emits update:modelValue even when the value is unchanged
 // (re-clicking the active tab), so dedupe before capturing.
-let lastTrackedClientId: string | undefined
+let lastTrackedClientId: McpClientId | undefined
 function onClientTabChange(value: string | number | undefined) {
-  if (!value) return
-  const id = String(value)
-  if (id === lastTrackedClientId) return
-  lastTrackedClientId = id
-  captureMcpClientTabClick(id)
+  if (!isMcpClientId(value) || value === lastTrackedClientId) return
+  lastTrackedClientId = value
+  captureMcpClientTabClick(value)
 }
 
 const walkthroughLabel = computed(() =>
@@ -206,12 +148,12 @@ const copiedLabel = t('ui.copied', locale)
         <div
           class="bg-transparency-white-t4 flex flex-col rounded-3xl"
           :class="
-            activeClient.showAgentCard
+            activeClient.panel.kind === 'agent-card'
               ? 'p-6 lg:p-8'
               : 'relative overflow-hidden max-lg:aspect-video'
           "
         >
-          <template v-if="activeClient.showAgentCard">
+          <template v-if="activeClient.panel.kind === 'agent-card'">
             <h3
               class="text-xl font-light text-primary-comfy-canvas lg:text-2xl"
             >
@@ -239,11 +181,11 @@ const copiedLabel = t('ui.copied', locale)
             </p>
           </template>
           <VideoPlayer
-            v-else-if="activeClient.video"
+            v-else-if="walkthrough"
             :key="activeClient.id"
             :locale="locale"
             :aria-label="walkthroughLabel"
-            :src="activeClient.video"
+            :src="walkthrough.video"
             autoplay
             loop
             hide-controls
