@@ -100,6 +100,15 @@ vi.mock('@vueuse/core', () => ({
   createSharedComposable: vi.fn((fn) => fn)
 }))
 
+const mocks = vi.hoisted(() => ({
+  tour: { activeTour: null as string | null }
+}))
+vi.mock('@/platform/onboarding/onboardingTourStore', async () => {
+  const { reactive } = await import('vue')
+  mocks.tour = reactive(mocks.tour)
+  return { useOnboardingTourStore: () => mocks.tour }
+})
+
 describe('useReleaseStore', () => {
   const mockRelease = {
     id: 1,
@@ -113,6 +122,7 @@ describe('useReleaseStore', () => {
   beforeEach(() => {
     mockSystemStatsState.reset()
     mockData.isCloud = false
+    mocks.tour.activeTour = null
   })
 
   describe('initial state', () => {
@@ -636,6 +646,43 @@ describe('useReleaseStore', () => {
       vi.mocked(compare).mockReturnValue(0) // versions are equal (latest version)
 
       store.releases = [mockRelease]
+
+      expect(store.shouldShowPopup).toBe(true)
+    })
+
+    it('withholds the popup while the first-run tour is on screen', () => {
+      const store = useReleaseStore()
+      const systemStatsStore = useSystemStatsStore()
+      const settingStore = useSettingStore()
+      systemStatsStore.systemStats!.system.comfyui_version = '1.2.0'
+      vi.mocked(settingStore.get).mockImplementation((key: string) => {
+        if (key === 'Comfy.Notification.ShowVersionUpdates') return true
+        return null
+      })
+      vi.mocked(compare).mockReturnValue(0)
+
+      store.releases = [mockRelease]
+
+      mocks.tour.activeTour = 'firstRun'
+      expect(store.shouldShowPopup).toBe(false)
+
+      mocks.tour.activeTour = null
+      expect(store.shouldShowPopup).toBe(true)
+    })
+
+    it('shows the popup during a tour it does not overlap', () => {
+      const store = useReleaseStore()
+      const systemStatsStore = useSystemStatsStore()
+      const settingStore = useSettingStore()
+      systemStatsStore.systemStats!.system.comfyui_version = '1.2.0'
+      vi.mocked(settingStore.get).mockImplementation((key: string) => {
+        if (key === 'Comfy.Notification.ShowVersionUpdates') return true
+        return null
+      })
+      vi.mocked(compare).mockReturnValue(0)
+
+      store.releases = [mockRelease]
+      mocks.tour.activeTour = 'appMode'
 
       expect(store.shouldShowPopup).toBe(true)
     })
