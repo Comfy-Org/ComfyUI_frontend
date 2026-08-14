@@ -290,6 +290,19 @@ describe('usePartnerNodesRunGate', () => {
     expect(gate.value).toBe('none')
   })
 
+  it('follows partner nodes appearing and disappearing while signed out', async () => {
+    const { gate } = setup()
+    expect(gate.value).toBe('none')
+
+    state.hasPartnerNodes.value = true
+    await nextTick()
+    expect(gate.value).toBe('sign-in')
+
+    state.hasPartnerNodes.value = false
+    await nextTick()
+    expect(gate.value).toBe('none')
+  })
+
   it('flips to sign-in when the user signs out mid-session', async () => {
     state.hasPartnerNodes.value = true
     __setLoggedIn(true)
