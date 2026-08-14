@@ -29,7 +29,10 @@ const mockData = vi.hoisted(() => ({
 vi.mock('@/composables/auth/useCurrentUser', () => ({
   useCurrentUser: () => {
     return {
-      isLoggedIn: computed(() => mockData.isLoggedIn)
+      isLoggedIn: computed(() => mockData.isLoggedIn),
+      resolvedUserInfo: computed(() =>
+        mockData.isLoggedIn ? { id: 'test-user' } : null
+      )
     }
   }
 }))
