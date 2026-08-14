@@ -1,7 +1,6 @@
 import type { ConsoleMessage, Page, TestInfo } from '@playwright/test'
 
 export async function attachPageDiagnosticEvidence(
-  _page: Page,
   testInfo: Pick<TestInfo, 'attach'>,
   name: string,
   values: readonly string[]

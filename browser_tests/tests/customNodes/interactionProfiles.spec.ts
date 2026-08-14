@@ -89,9 +89,10 @@ for (const entry of loadManifest()) {
     test.skip(plans.length === 0, `${entry.pack} not installed on this backend`)
 
     const observed: Record<string, NodeInteractionProfile> = {}
+    const probeThrows: Record<string, string> = {}
     for (let start = 0; start < plans.length; start += PROBE_CHUNK) {
       const chunk = plans.slice(start, start + PROBE_CHUNK)
-      const chunkResults = await comfyPage.page.evaluate((probePlans) => {
+      const probed = await comfyPage.page.evaluate((probePlans) => {
         // Shape entries are `kind:name:type`, sorted by the node-side diff;
         // capture reads the INSTANCE (what pack JS materialized), not the def.
         function shapeOf(node: {
@@ -142,69 +143,87 @@ for (const entry of loadManifest()) {
             disconnect: string[] | 'NO_PRODUCER' | 'NO_INPUTS'
           }
         > = {}
+        // One throwing node must not take its whole chunk with it: name it,
+        // drop what it created, and probe the rest of the chunk anyway.
+        const threw: Record<string, string> = {}
         for (const plan of probePlans) {
           const node = window.LiteGraph!.createNode(plan.type)
           if (!node) continue
-          graph.last_node_id = ++window.__cnIdBase!
-          graph.add(node)
-          const fresh = shapeOf(node)
-          const probeConnect = (spec: {
-            inputName: string
-            producer: string
-            producerOutput: number
-          }) => {
-            const producerNode = window.LiteGraph!.createNode(spec.producer)
-            if (!producerNode) return null
+          try {
             graph.last_node_id = ++window.__cnIdBase!
-            graph.add(producerNode)
-            const inputIndex = (node.inputs ?? []).findIndex(
-              (slot: { name: string }) => slot.name === spec.inputName
-            )
-            if (inputIndex === -1) {
-              graph.remove(producerNode)
-              return null
+            graph.add(node)
+            const fresh = shapeOf(node)
+            const probeConnect = (spec: {
+              inputName: string
+              producer: string
+              producerOutput: number
+            }) => {
+              const producerNode = window.LiteGraph!.createNode(spec.producer)
+              if (!producerNode) return null
+              try {
+                graph.last_node_id = ++window.__cnIdBase!
+                graph.add(producerNode)
+                const inputIndex = (node.inputs ?? []).findIndex(
+                  (slot: { name: string }) => slot.name === spec.inputName
+                )
+                if (inputIndex === -1) return null
+                producerNode.connect(spec.producerOutput, node, inputIndex)
+                const connected = shapeOf(node)
+                node.disconnectInput(inputIndex)
+                const disconnected = shapeOf(node)
+                return { connected, disconnected }
+              } finally {
+                if (producerNode.graph) graph.remove(producerNode)
+              }
             }
-            producerNode.connect(spec.producerOutput, node, inputIndex)
-            const connected = shapeOf(node)
-            node.disconnectInput(inputIndex)
-            const disconnected = shapeOf(node)
-            graph.remove(producerNode)
-            return { connected, disconnected }
-          }
-          const hasInputs = (node.inputs ?? []).length > 0
-          if (!hasInputs) {
-            results[plan.type] = {
-              connectFirst: 'NO_INPUTS',
-              connectLast: 'NO_INPUTS',
-              disconnect: 'NO_INPUTS'
-            }
-          } else {
-            const first = plan.first ? probeConnect(plan.first) : null
-            const last = plan.last ? probeConnect(plan.last) : null
-            const anchor = last ?? first
-            results[plan.type] = {
-              connectFirst: first
-                ? diff(fresh, first.connected)
-                : 'NO_PRODUCER',
-              connectLast: plan.last
-                ? last
-                  ? diff(fresh, last.connected)
+            const hasInputs = (node.inputs ?? []).length > 0
+            if (!hasInputs) {
+              results[plan.type] = {
+                connectFirst: 'NO_INPUTS',
+                connectLast: 'NO_INPUTS',
+                disconnect: 'NO_INPUTS'
+              }
+            } else {
+              const first = plan.first ? probeConnect(plan.first) : null
+              const last = plan.last ? probeConnect(plan.last) : null
+              const anchor = last ?? first
+              results[plan.type] = {
+                connectFirst: first
+                  ? diff(fresh, first.connected)
+                  : 'NO_PRODUCER',
+                connectLast: plan.last
+                  ? last
+                    ? diff(fresh, last.connected)
+                    : 'NO_PRODUCER'
+                  : 'SAME_AS_FIRST',
+                disconnect: anchor
+                  ? diff(anchor.connected, anchor.disconnected)
                   : 'NO_PRODUCER'
-                : 'SAME_AS_FIRST',
-              disconnect: anchor
-                ? diff(anchor.connected, anchor.disconnected)
-                : 'NO_PRODUCER'
+              }
             }
+          } catch (error) {
+            threw[plan.type] = String(error)
+          } finally {
+            if (node.graph) graph.remove(node)
           }
-          graph.remove(node)
         }
-        return results
+        return { results, threw }
       }, chunk)
-      Object.assign(observed, chunkResults)
+      Object.assign(observed, probed.results)
+      Object.assign(probeThrows, probed.threw)
     }
     // The probes queue nothing, so this returns without a round-trip; it stays
     // as the guard for pack JS that queues behind our back while being probed.
     await drainBackendToIdle(comfyPage.page, 10_000)
+
+    // Ahead of the ledger and profile gates: a node that threw is absent from
+    // `observed`, which those would report as a stale baseline instead.
+    expect(
+      Object.entries(probeThrows).map(
+        ([node, error]) => `${entry.pack}/${node}: probe threw: ${error}`
+      ),
+      'nodes that threw while being probed'
+    ).toEqual([])
 
     for (const node of Object.keys(
       INTERACTION_UNSTABLE_NODES[entry.pack] ?? {}

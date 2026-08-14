@@ -632,7 +632,8 @@ for (const entry of loadManifest()) {
               if (key in ledger) continue
               const visible = await comfyPage.page
                 .locator(`[data-node-id="${shape.id}"]`)
-                .isVisible({ timeout: 2_000 })
+                .waitFor({ state: 'visible', timeout: 2_000 })
+                .then(() => true)
                 .catch(() => false)
               if (!visible) failures.push(`${key}: no Vue mount`)
             }
@@ -1385,7 +1386,7 @@ for (const entry of loadManifest()) {
               hardFailures.push(
                 `${verdict.key}: ${single} - add to AUTO_RUN_EXCLUDE with its mechanism`
               )
-              break
+              break batchLoop
             } else cannotRun.set(verdict.key, single)
           }
         }
@@ -1453,7 +1454,6 @@ for (const entry of loadManifest()) {
         if (hardFailures.length > 0) {
           console.log(autoRunFailureSummary)
           await attachPageDiagnosticEvidence(
-            comfyPage.page,
             test.info(),
             'auto-run-failures.json',
             hardFailures
@@ -1525,12 +1525,7 @@ test.describe('all nodes by tier @custom-nodes', () => {
       }
       const attachment = `${tier.toLowerCase()}-failures.json`
       if (failures.length > 0)
-        await attachPageDiagnosticEvidence(
-          comfyPage.page,
-          test.info(),
-          attachment,
-          failures
-        )
+        await attachPageDiagnosticEvidence(test.info(), attachment, failures)
       expect(
         failures.length === 0,
         failureSummary(`${tier} pack failures`, failures, attachment)

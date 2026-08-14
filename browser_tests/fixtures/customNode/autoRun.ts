@@ -52,10 +52,8 @@ export const SYNTH_PRODUCERS: Record<
 
 const WIDGET_TYPES = new Set(['INT', 'FLOAT', 'STRING', 'BOOLEAN'])
 
-type InputSpec = [unknown, Record<string, unknown>?] | unknown
-
-function classifyInput(spec: InputSpec): 'widget' | 'socket' | 'empty-combo' {
-  const specArray = Array.isArray(spec) ? spec : [spec]
+function classifyInput(spec: unknown): 'widget' | 'socket' | 'empty-combo' {
+  const specArray: unknown[] = Array.isArray(spec) ? spec : [spec]
   const rawType = specArray[0]
   const options = specArray[1] as
     | { forceInput?: boolean; options?: unknown; widgetType?: string }
@@ -80,8 +78,8 @@ function classifyInput(spec: InputSpec): 'widget' | 'socket' | 'empty-combo' {
     : 'socket'
 }
 
-function socketType(spec: InputSpec): string {
-  const specArray = Array.isArray(spec) ? spec : [spec]
+function socketType(spec: unknown): string {
+  const specArray: unknown[] = Array.isArray(spec) ? spec : [spec]
   return String(specArray[0])
 }
 

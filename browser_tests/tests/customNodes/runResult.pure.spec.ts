@@ -95,6 +95,70 @@ test.describe('classifyRun', () => {
     ).toBe('EXECUTION_ERROR (allocation failed)')
   })
 
+  test('an execution_error naming a node outside the queued graph is not this run', () => {
+    const result = classifyRun({
+      events: [
+        { type: 'executing', node: '1' },
+        {
+          type: 'execution_error',
+          error: { exceptionMessage: 'stray', nodeId: '99' }
+        },
+        { type: 'execution_success' }
+      ],
+      expectedNodeIds: ['1'],
+      graphNodeIds: ['1']
+    })
+    expect(result.outcome).toBe('PASS')
+    expect(result.error).toBeUndefined()
+  })
+
+  test('an execution_error inside the queued graph, or carrying no node id, is reported', () => {
+    const inGraph = classifyRun({
+      events: [
+        { type: 'executing', node: '1' },
+        {
+          type: 'execution_error',
+          error: { exceptionMessage: 'ours', nodeId: '1' }
+        },
+        { type: 'execution_success' }
+      ],
+      expectedNodeIds: ['1'],
+      graphNodeIds: ['1']
+    })
+    const anonymous = classifyRun({
+      events: [
+        { type: 'executing', node: '1' },
+        { type: 'execution_error', error: { exceptionMessage: 'allocation' } },
+        { type: 'execution_success' }
+      ],
+      expectedNodeIds: ['1'],
+      graphNodeIds: ['1']
+    })
+    expect(inGraph.outcome).toBe('EXECUTION_ERROR')
+    expect(inGraph.error?.exceptionMessage).toBe('ours')
+    expect(anonymous.outcome).toBe('EXECUTION_ERROR')
+    expect(anonymous.error?.exceptionMessage).toBe('allocation')
+  })
+
+  test('an executed event carries the ui payload without counting as a run', () => {
+    const result = classifyRun({
+      events: [
+        { type: 'executing', node: '1' },
+        { type: 'executed', node: '1', output: { images: ['a.png'] } },
+        { type: 'executed', node: '2', output: { images: ['b.png'] } },
+        { type: 'executed', node: null, output: { images: [] } },
+        { type: 'execution_success' }
+      ],
+      expectedNodeIds: ['1', '2']
+    })
+    expect(result.outputsByNode).toEqual({
+      '1': { images: ['a.png'] },
+      '2': { images: ['b.png'] }
+    })
+    expect(result.executedNodes).toEqual(['1'])
+    expect(result.outcome).toBe('PARTIAL')
+  })
+
   test('EXECUTION_ERROR when the run is interrupted', () => {
     const result = classifyRun({
       events: [

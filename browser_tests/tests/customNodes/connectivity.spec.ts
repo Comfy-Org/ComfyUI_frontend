@@ -41,8 +41,13 @@ const CORE_PROOF_NODE_COUNT = 16
 // 30961895204 swept 16832 pairs and did not finish inside a flat 120s cap, so
 // the real rate is above 6.5ms/pair; the multiplier below carries margin over
 // that floor and the sweep logs its actual rate so it can be tightened.
-const SWEEP_SETUP_MS = 120_000
+const PLAN_SETUP_MS = 120_000
 const SWEEP_MS_PER_PAIR = 40
+// Same discipline for the drag pass, whose edge list grows with every
+// connectivity pack: one drag per edge per renderer. This test carried a flat
+// 120s cap over today's 6 packs (16 drags) until the since-removed cloud
+// surface uncapped it, so 15s per drag is that budget with margin.
+const DRAG_MS_PER_DRAG = 15_000
 const {
   connectRejected,
   conditionalSlotContractMismatch,
@@ -82,7 +87,7 @@ const connectivityEntries = loadManifest().filter((entry) =>
 test('connectivity: every type-paired link survives model, serialize, and prompt round-trips @custom-nodes', async ({
   comfyPage
 }) => {
-  test.setTimeout(120_000)
+  test.setTimeout(PLAN_SETUP_MS)
   const defs = (await comfyPage.page.evaluate(() =>
     window.app!.api.getNodeDefs()
   )) as unknown as Record<string, RawNodeDef>
@@ -136,7 +141,7 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
   // values and links flow through the same stores in both renderers). The
   // curated drag test below covers real pointer wiring under BOTH renderers.
   const consoleErrors = collectConsoleErrors(comfyPage.page)
-  test.setTimeout(SWEEP_SETUP_MS + plan.pairs.length * SWEEP_MS_PER_PAIR)
+  test.setTimeout(PLAN_SETUP_MS + plan.pairs.length * SWEEP_MS_PER_PAIR)
   const sweepStart = Date.now()
   const results = await runPairsInPage(comfyPage.page, plan.pairs)
   const sweepMs = Date.now() - sweepStart
@@ -201,7 +206,6 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
     )
   if (unledgered.length > 0)
     await attachPageDiagnosticEvidence(
-      comfyPage.page,
       test.info(),
       'connectivity-console-errors.json',
       unledgered
@@ -435,7 +439,7 @@ test('connectivity self-check: the executor rejects broken pairs @custom-nodes',
 test('connectivity drags: curated slot-to-slot wires connect under both renderers @custom-nodes', async ({
   comfyPage
 }) => {
-  test.setTimeout(0)
+  test.setTimeout(PLAN_SETUP_MS)
   const defs = (await comfyPage.page.evaluate(() =>
     window.app!.api.getNodeDefs()
   )) as unknown as Record<string, RawNodeDef>
@@ -534,7 +538,11 @@ test('connectivity drags: curated slot-to-slot wires connect under both renderer
       .filter((entry) => entry.vueNodesCompatible === false)
       .map((entry) => entry.pack)
   )
-  for (const vueNodesEnabled of [false, true]) {
+  const rendererPasses = [false, true]
+  test.setTimeout(
+    PLAN_SETUP_MS + dragEdges.length * rendererPasses.length * DRAG_MS_PER_DRAG
+  )
+  for (const vueNodesEnabled of rendererPasses) {
     const consoleErrors = collectConsoleErrors(comfyPage.page)
     await comfyPage.settings.setSetting(
       'Comfy.VueNodes.Enabled',
@@ -631,7 +639,6 @@ test('connectivity drags: curated slot-to-slot wires connect under both renderer
       )
     if (unledgered.length > 0)
       await attachPageDiagnosticEvidence(
-        comfyPage.page,
         test.info(),
         'connectivity-drag-console-errors.json',
         unledgered

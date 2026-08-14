@@ -49,8 +49,8 @@ export interface PackInteractionProfileFile {
 }
 
 // Nodes whose interaction deltas are not reproducible run-to-run, keyed by
-// the MECHANISM (the geometry/console ledger discipline): registration-
-// guarded in the spec, announced in run output, omitted from baselines.
+// the MECHANISM (the console ledger discipline): registration-guarded in
+// the spec, announced in run output, omitted from baselines.
 // Empty until a record/compare cycle observes real instability - entries
 // are earned by evidence, never pre-emptively.
 export const INTERACTION_UNSTABLE_NODES: Record<
@@ -78,6 +78,65 @@ function profilePath(pack: string): string {
   return `${PROFILE_DIR}${pack}.json`
 }
 
+const PROBES = ['connectFirst', 'connectLast', 'disconnect'] as const
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === 'string' && value.length > 0
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function isProbeResult(value: unknown): value is ProbeResult {
+  if (value === 'NO_PRODUCER' || value === 'NO_INPUTS') return true
+  return (
+    Array.isArray(value) && value.every((entry) => typeof entry === 'string')
+  )
+}
+
+// The offending field path, or null when the file is a valid profile set.
+// A malformed baseline must name itself here: left unchecked it surfaces as
+// an unrelated TypeError deep inside comparePackProfiles.
+function invalidProfileField(parsed: unknown): string | null {
+  if (!isPlainObject(parsed)) return 'root (expected a JSON object)'
+  if (parsed.schema !== 1) return 'schema (expected 1)'
+  if (!isPlainObject(parsed.recordedAt))
+    return 'recordedAt (expected { core, pin })'
+  if (!isNonEmptyString(parsed.recordedAt.core))
+    return 'recordedAt.core (expected a non-empty string)'
+  if (!isNonEmptyString(parsed.recordedAt.pin))
+    return 'recordedAt.pin (expected a non-empty string)'
+  if (!isPlainObject(parsed.nodes))
+    return 'nodes (expected an object keyed by node type)'
+  for (const [node, profile] of Object.entries(parsed.nodes)) {
+    if (!isPlainObject(profile))
+      return `nodes.${node} (expected a profile object)`
+    for (const probe of PROBES) {
+      const value = profile[probe]
+      if (isProbeResult(value)) continue
+      if (probe === 'connectLast' && value === 'SAME_AS_FIRST') continue
+      const markers =
+        probe === 'connectLast'
+          ? "'NO_PRODUCER', 'NO_INPUTS', or 'SAME_AS_FIRST'"
+          : "'NO_PRODUCER' or 'NO_INPUTS'"
+      return `nodes.${node}.${probe} (expected a string[] delta, ${markers})`
+    }
+  }
+  return null
+}
+
+function assertProfileFile(
+  parsed: unknown,
+  path: string
+): asserts parsed is PackInteractionProfileFile {
+  const field = invalidProfileField(parsed)
+  if (field !== null)
+    throw new Error(
+      `${path} is not a valid interaction profile file - ${field} - re-record it (docs/custom-node-regression-suite.md Step 5d)`
+    )
+}
+
 // null = no baseline recorded yet; compare mode must red on that (an
 // uncovered pack is the failure mode this suite bans), record mode expects it.
 export function loadPackProfiles(
@@ -85,11 +144,8 @@ export function loadPackProfiles(
 ): PackInteractionProfileFile | null {
   const path = profilePath(pack)
   if (!existsSync(path)) return null
-  const parsed = JSON.parse(readFileSync(path, 'utf-8'))
-  if (parsed.schema !== 1 || !parsed.recordedAt?.core)
-    throw new Error(
-      `${path} is not schema 1 with recordedAt provenance - re-record it (docs/custom-node-regression-suite.md Step 5d)`
-    )
+  const parsed: unknown = JSON.parse(readFileSync(path, 'utf-8'))
+  assertProfileFile(parsed, path)
   return parsed
 }
 
@@ -108,7 +164,7 @@ function probesEqual(
   b: NodeInteractionProfile
 ): string[] {
   const problems: string[] = []
-  for (const probe of ['connectFirst', 'connectLast', 'disconnect'] as const) {
+  for (const probe of PROBES) {
     const expected = a[probe]
     const actual = b[probe]
     const same =

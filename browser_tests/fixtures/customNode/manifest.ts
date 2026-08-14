@@ -255,9 +255,13 @@ export function rendererPassesFor(
 }
 
 export function loadManifest(): CoreManifestEntry[] {
-  const entries = JSON.parse(
-    readFileSync(dataPath('customNodeManifest.core.json'), 'utf-8')
-  ) as CoreManifestEntry[]
+  const path = dataPath('customNodeManifest.core.json')
+  const parsed: unknown = JSON.parse(readFileSync(path, 'utf-8'))
+  if (!Array.isArray(parsed))
+    throw new Error(
+      `custom-node manifest ${path} must be a JSON array of entries, got ${parsed === null ? 'null' : typeof parsed}`
+    )
+  const entries: CoreManifestEntry[] = parsed
   entries.forEach(assertCoreEntry)
   return entries
 }

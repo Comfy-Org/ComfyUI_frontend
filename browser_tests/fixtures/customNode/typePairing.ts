@@ -9,7 +9,9 @@ export interface RawNodeDef {
     optional?: Record<string, unknown>
   }
   output?: unknown[]
-  output_name?: string[]
+  // object_info repeats RETURN_TYPES here when a node declares no
+  // RETURN_NAMES, so a combo output's entry is its option array.
+  output_name?: unknown[]
   python_module?: string
 }
 
@@ -25,8 +27,9 @@ export interface NormalizedNode {
   pack: string
   inputs: NormalizedSlot[]
   outputs: NormalizedSlot[]
-  // Slots whose raw spec carried no recognizable type (slotTypeOf null):
-  // recorded so a schema change can never silently shrink the corpus.
+  // Slots the corpus cannot address: no recognizable type (slotTypeOf null)
+  // or no string name on the instance (outputSlotName null). Recorded so a
+  // schema change can never silently shrink the corpus.
   unknownSlots?: string[]
 }
 
@@ -55,7 +58,7 @@ export interface PairingPlan {
   // Combos whose option lists match exactly ARE paired like any other type.
   combos: Array<SlotRef & { dir: 'in' | 'out' }>
   // Slots dropped at normalize time because their raw spec had no
-  // recognizable type - surfaced here (and logged by the sweep) so a
+  // recognizable type or name - surfaced here (and logged by the sweep) so a
   // backend or pack schema change cannot silently shrink the corpus.
   unknownShapes: string[]
 }
@@ -86,6 +89,14 @@ export function isWildcard(type: string): boolean {
 function slotTypeOf(rawType: unknown): string | null {
   if (Array.isArray(rawType)) return 'COMBO'
   return typeof rawType === 'string' ? rawType : null
+}
+
+// Faithful mirror of production naming (schemas/nodeDef/migration.ts):
+// `output_name[index] || output_<index>`, uncoerced - so a truthy non-string
+// entry names the live slot something no string lookup can match (null here).
+function outputSlotName(rawName: unknown, index: number): string | null {
+  if (!rawName) return `output_${index}`
+  return typeof rawName === 'string' ? rawName : null
 }
 
 function inputSlots(
@@ -140,18 +151,12 @@ export function normalizeNodeDefs(
           unknown.push(`output[${index}]`)
           return []
         }
-        // output_name entries can be non-strings (COMBO literals repeat the
-        // option array); the slot name must stay a string.
-        const rawName = def.output_name?.[index]
-        const slot: NormalizedSlot = {
-          name:
-            typeof rawName === 'string'
-              ? rawName || `output_${index}`
-              : rawName === undefined
-                ? `output_${index}`
-                : slotType,
-          type: slotType
+        const name = outputSlotName(def.output_name?.[index], index)
+        if (name === null) {
+          unknown.push(`output[${index}].name`)
+          return []
         }
+        const slot: NormalizedSlot = { name, type: slotType }
         if (slotType === 'COMBO') slot.comboOptions = rawType as unknown[]
         return [slot]
       })

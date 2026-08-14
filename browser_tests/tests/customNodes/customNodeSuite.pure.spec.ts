@@ -11,6 +11,10 @@ import {
   trackSubmittedPrompts,
   waitForQueueQuiet
 } from '@e2e/fixtures/utils/customNodeSuite'
+import type {
+  DraftIndexV2,
+  DraftPayloadV2
+} from '@/platform/workflow/persistence/base/draftTypes'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 
 interface QueueSnapshot {
@@ -23,7 +27,7 @@ interface QueueSnapshot {
 // get interrupted vs deleted, and whether a cancellation pass happens at all)
 // without a browser. The last snapshot repeats once the script runs out.
 function scriptedPage(reads: QueueSnapshot[]) {
-  const listeners: ((response: unknown) => void)[] = []
+  const listeners = new Set<(response: unknown) => void>()
   const interrupted: string[] = []
   const deleted: string[] = []
   let read = 0
@@ -40,9 +44,11 @@ function scriptedPage(reads: QueueSnapshot[]) {
   }
   const page = {
     on: (event: string, listener: (response: unknown) => void) => {
-      if (event === 'response') listeners.push(listener)
+      if (event === 'response') listeners.add(listener)
     },
-    off: () => {},
+    off: (event: string, listener: (response: unknown) => void) => {
+      if (event === 'response') listeners.delete(listener)
+    },
     evaluate: async (fn: (arg?: unknown) => unknown, arg?: unknown) => {
       const saved = Reflect.get(globalThis, 'window') as unknown
       Reflect.set(globalThis, 'window', { app: { api } })
@@ -55,7 +61,7 @@ function scriptedPage(reads: QueueSnapshot[]) {
   }
   return {
     page: page as unknown as Page,
-    listenerCount: () => listeners.length,
+    listenerCount: () => listeners.size,
     interrupted,
     deleted,
     submit: (promptId: string) => {
@@ -91,8 +97,12 @@ test('preseeds a restorable blank workflow before first boot', async ({
 
   const state = await page.evaluate(
     ({ keys, path }) => {
-      const index = JSON.parse(localStorage.getItem(keys.index)!)
-      const payload = JSON.parse(localStorage.getItem(keys.payload)!)
+      const index = JSON.parse(
+        localStorage.getItem(keys.index)!
+      ) as DraftIndexV2
+      const payload = JSON.parse(
+        localStorage.getItem(keys.payload)!
+      ) as DraftPayloadV2
       return {
         storedKeys: Object.keys(localStorage)
           .filter((key) => key.startsWith('Comfy.Workflow.'))
@@ -107,17 +117,19 @@ test('preseeds a restorable blank workflow before first boot', async ({
     { keys, path }
   )
 
+  const { updatedAt } = state.index
   expect(state.storedKeys).toEqual(Object.values(keys).sort())
+  expect(updatedAt).toEqual(expect.any(Number))
   expect(state.index).toEqual({
     v: 2,
-    updatedAt: expect.any(Number),
+    updatedAt,
     order: [draftKey],
     entries: {
       [draftKey]: {
         path,
         name: 'Custom Nodes E2E Blank Workflow.json',
         isTemporary: true,
-        updatedAt: state.index.updatedAt
+        updatedAt
       }
     }
   })
@@ -132,7 +144,7 @@ test('preseeds a restorable blank workflow before first boot', async ({
       extra: {},
       version: 0.4
     }),
-    updatedAt: state.index.updatedAt
+    updatedAt
   })
   expect(state.active).toEqual({ workspaceId: 'personal', path })
   expect(state.open).toEqual({

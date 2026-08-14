@@ -157,6 +157,16 @@ test.describe('typePairing', () => {
       { name: 'output_1', type: 'MASK' }
     ])
 
+    const [falsyName] = normalizeNodeDefs({
+      FalsyName: {
+        input: { required: {} },
+        output: ['IMAGE'],
+        output_name: [null],
+        python_module: 'custom_nodes.falsy-name'
+      }
+    })
+    expect(falsyName.outputs).toEqual([{ name: 'output_0', type: 'IMAGE' }])
+
     const [emptyName] = normalizeNodeDefs({
       EmptyName: {
         input: { required: {} },
@@ -188,7 +198,7 @@ test.describe('typePairing', () => {
       ComboSource: {
         input: { required: {} },
         output: [['A', 'B', 'C']],
-        output_name: [['A', 'B', 'C'] as unknown as string],
+        output_name: ['COMBO'],
         python_module: 'nodes'
       },
       ...DEFS
@@ -211,7 +221,7 @@ test.describe('typePairing', () => {
       SamplerNameSource: {
         input: { required: {} },
         output: [['euler', 'ddim']],
-        output_name: [['euler', 'ddim'] as unknown as string],
+        output_name: ['COMBO'],
         python_module: 'nodes'
       },
       SamplerNameSink: {
@@ -240,7 +250,7 @@ test.describe('typePairing', () => {
       ListFormSource: {
         input: { required: {} },
         output: [['x', 'y']],
-        output_name: [['x', 'y'] as unknown as string],
+        output_name: ['COMBO'],
         python_module: 'nodes'
       },
       V2FormSink: {
@@ -286,7 +296,7 @@ test.describe('typePairing', () => {
       ShuffledSource: {
         input: { required: {} },
         output: [['ddim', 'euler']],
-        output_name: [['ddim', 'euler'] as unknown as string],
+        output_name: ['COMBO'],
         python_module: 'nodes'
       },
       SamplerNameSink: {
@@ -323,5 +333,39 @@ test.describe('typePairing', () => {
       }
     ])
     expect(plan.pairs).toEqual([])
+  })
+
+  test('an output whose output_name is not a string is recorded, never renamed', () => {
+    const nodes = normalizeNodeDefs({
+      TwoCombos: {
+        input: { required: {} },
+        output: [
+          ['a', 'b'],
+          ['x', 'y']
+        ],
+        output_name: [
+          ['a', 'b'],
+          ['x', 'y']
+        ],
+        python_module: 'custom_nodes.two-combos'
+      },
+      ComboSinkXY: {
+        input: { required: { pick: [['x', 'y'], {}] } },
+        output: [],
+        python_module: 'nodes'
+      }
+    })
+    const twoCombos = nodes.find((node) => node.type === 'TwoCombos')!
+    expect(twoCombos.outputs).toEqual([])
+    expect(twoCombos.unknownSlots).toEqual(['output[0].name', 'output[1].name'])
+    const plan = planPairs(nodes, ['TwoCombos', 'ComboSinkXY'])
+    expect(plan.pairs).toEqual([])
+    expect(plan.unknownShapes).toEqual([
+      'TwoCombos.output[0].name',
+      'TwoCombos.output[1].name'
+    ])
+    expect(
+      plan.combos.map((slot) => `${slot.nodeType}.${slot.slotName}`)
+    ).toEqual(['ComboSinkXY.pick'])
   })
 })

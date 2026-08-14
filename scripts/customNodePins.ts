@@ -45,7 +45,7 @@ interface PinnedPack {
   pinnedAt?: string
 }
 
-/** Whole days elapsed, or null when the pin carries no date yet. */
+/** Whole days elapsed, or null when the pin carries no usable date. */
 export function ageInDays(
   pinnedAt: string | undefined,
   today: Date
@@ -53,6 +53,9 @@ export function ageInDays(
   if (!pinnedAt) return null
   const then = Date.parse(`${pinnedAt}T00:00:00Z`)
   if (Number.isNaN(then)) return null
+  // Date.parse rolls 2026-02-31 forward to March 3 rather than rejecting it,
+  // which would report an age three days short instead of no age at all.
+  if (new Date(then).toISOString().slice(0, 10) !== pinnedAt) return null
   return Math.floor((today.getTime() - then) / 86_400_000)
 }
 

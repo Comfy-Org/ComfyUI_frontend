@@ -16,6 +16,10 @@ describe('ageInDays', () => {
   it('reports null for a date it cannot parse', () => {
     expect(ageInDays('last tuesday', at('2026-08-31'))).toBeNull()
   })
+
+  it('reports null for a date the calendar does not have', () => {
+    expect(ageInDays('2026-02-31', at('2026-08-31'))).toBeNull()
+  })
 })
 
 describe('stalest', () => {

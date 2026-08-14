@@ -49,6 +49,9 @@ concurrency:
   group: ${{ github.event_name == 'workflow_dispatch' && format('{0}-dispatch-{1}', github.workflow, github.run_id) || format('{0}-{1}', github.workflow, github.ref) }}
   cancel-in-progress: true
 
+env:
+  COMFYUI_PIN: b08e6cf35fac50d3ca8470dffb3f9a1fbb7187d2
+
 jobs:
   # Path gating lives here, not in a trigger-level `paths:` filter: a required
   # check gated by trigger paths never creates a check run on an unrelated PR
@@ -86,6 +89,8 @@ jobs:
       (github.event_name != 'pull_request' ||
       github.event.pull_request.head.repo.full_name == github.repository))
     runs-on: ubuntu-latest
+    # Green runs of this job land at 13-19 minutes.
+    timeout-minutes: 40
     permissions:
       contents: read
     steps:
@@ -145,7 +150,7 @@ jobs:
 
       # Checks out ComfyUI, installs Python/torch/requirements and ComfyUI_devtools.
       # launch_server:false so we can add the manifest packs before booting.
-      # comfyui_ref pins core so the gate is reproducible: this SHA is the
+      # comfyui_ref pins core so the gate is reproducible: COMFYUI_PIN is the
       # exact master commit the suite (incl. the KJNodes ledger entries and
       # per-pack node counts) was last verified green against. Bump it
       # deliberately, in its own PR, recalibrating ledgers/counts if the run
@@ -157,7 +162,7 @@ jobs:
           # workflow_dispatch may override the pin (e.g. probing a core
           # candidate before a deliberate bump); every gating event stays
           # pinned.
-          comfyui_ref: ${{ inputs.comfyui_ref || 'b08e6cf35fac50d3ca8470dffb3f9a1fbb7187d2' }}
+          comfyui_ref: ${{ inputs.comfyui_ref || env.COMFYUI_PIN }}
 
       # Pack sources are SHA-pinned, so their content is fully determined by
       # the manifest: cache the checked-out trees (sans .git) and restore by
@@ -205,6 +210,11 @@ jobs:
             # mandatory here, before anything installs.
             if ! [[ "$pin" =~ ^[0-9a-f]{40}$ ]]; then
               echo "::error::$pack: pin must be a full commit SHA (got '$pin')"; exit 1
+            fi
+            # git clone reads a leading `-` as an option, and options such as
+            # --upload-pack= run a command on the runner.
+            if ! [[ "$repo" =~ ^https://github\.com/[A-Za-z0-9._-]+/[A-Za-z0-9._-]+$ ]]; then
+              echo "::error::$pack: repo must be an https://github.com/<owner>/<name> URL (got '$repo')"; exit 1
             fi
             dir="ComfyUI/custom_nodes/$pack"
             cache_dir="$HOME/.cache/cn-packs/$pack"
@@ -310,7 +320,11 @@ jobs:
       # The VHS run-tier workflow reads input/plain_video.mp4.
       - name: Stage run-tier assets
         shell: bash
-        run: cp browser_tests/assets/plain_video.mp4 ComfyUI/input/plain_video.mp4
+        run: |
+          set -euo pipefail
+          mkdir -p ComfyUI/input
+          cp browser_tests/assets/plain_video.mp4 ComfyUI/input/plain_video.mp4 \
+            || { echo "::error::could not stage plain_video.mp4 - the VHS run tier has no input to execute on"; exit 1; }
 
       # --cache-none so retried run-tier tests re-execute every node (a cached
       # node emits no `executing` event and would false-fail PARTIAL).
@@ -343,7 +357,7 @@ jobs:
           grep_args=()
           case "$PROOF_ROW" in
             0) [ -n "${GREP_FILTER:-}" ] && grep_args=(--grep "$GREP_FILTER") ;;
-            1|2|3|9|14)
+            1|2|3|9)
               grep_args=(--grep 'all nodes by tier @custom-nodes.*S(1|2|3|9):')
               ;;
           esac
@@ -446,7 +460,6 @@ jobs:
             2) pat=': Vue mounts ' ;;
             3) pat='on (pristine|set-values) reload' ;;
             9) pat='DETECTION PROOF \(row 9\): pack node runtime failure' ;;
-            14) pat='widgets\[[0-9]+\]\.y: expected [^,]+, got ' ;;
           esac
           grep -Eq -- "$pat" tier-isolation-proof-evidence.txt || { echo "::error::S$PROOF_ROW failure was not attributable to its Detection Proof break"; exit 1; }
 
@@ -493,7 +506,7 @@ jobs:
         shell: bash
         env:
           BRANCH_TESTED: ${{ inputs.branch || github.ref_name }}
-          COMFYUI_REF_USED: ${{ inputs.comfyui_ref || 'b08e6cf35fac50d3ca8470dffb3f9a1fbb7187d2' }}
+          COMFYUI_REF_USED: ${{ inputs.comfyui_ref || env.COMFYUI_PIN }}
           GREP_FILTER: ${{ inputs.grep }}
         run: python3 scripts/cicd/custom-nodes-summary.py
 

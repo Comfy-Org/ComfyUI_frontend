@@ -23,20 +23,22 @@ function committedWith(nodes: Record<string, NodeInteractionProfile>) {
 }
 
 test.describe('S13 interaction profiles', () => {
-  test('diffShapes is symmetric-difference, order-independent, facet-tagged', () => {
+  // The sort is load-bearing: probesEqual compares deltas element by element.
+  test('diffShapes is a sorted, facet-tagged symmetric difference blind to slot order', () => {
     const before = {
-      inputs: ['input:a:IMAGE'],
+      inputs: ['input:a:IMAGE', 'input:c:MASK'],
       outputs: ['output:out:IMAGE'],
       widgets: ['widget:w:INT']
     }
     const after = {
-      inputs: ['input:b:IMAGE', 'input:a:IMAGE'],
+      inputs: ['input:c:MASK', 'input:b:IMAGE'],
       outputs: ['output:out:IMAGE'],
-      widgets: []
+      widgets: ['widget:w:INT', 'widget:z:FLOAT']
     }
     expect(diffShapes(before, after)).toEqual([
       '+input:b:IMAGE',
-      '-widget:w:INT'
+      '+widget:z:FLOAT',
+      '-input:a:IMAGE'
     ])
     expect(diffShapes(before, { ...before })).toEqual([])
     const reordered = {
