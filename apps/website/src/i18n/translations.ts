@@ -5522,6 +5522,10 @@ const translations = {
     'zh-CN': '文本生成音频'
   },
   'minimaxMusic3.hero.primaryCta': {
+    en: 'RUN WORKFLOW',
+    'zh-CN': '运行工作流'
+  },
+  'minimaxMusic3.hero.secondaryCta': {
     en: 'LEARN MORE',
     'zh-CN': '了解更多'
   },
@@ -5544,6 +5548,10 @@ const translations = {
   },
   'minimaxMusic3.steps.step': { en: 'Step', 'zh-CN': '步骤' },
   'minimaxMusic3.steps.primaryCta': {
+    en: 'RUN WORKFLOW',
+    'zh-CN': '运行工作流'
+  },
+  'minimaxMusic3.steps.secondaryCta': {
     en: 'LEARN MORE',
     'zh-CN': '了解更多'
   },
