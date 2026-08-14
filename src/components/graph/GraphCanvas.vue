@@ -160,6 +160,7 @@ import { useGroupContextMenu } from '@/composables/graph/useGroupContextMenu'
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import {
+  findLinkDragSourceIds,
   findNodesOptedOutOfCulling,
   findNodesWithLiveState
 } from '@/renderer/extensions/vueNodes/composables/liveNodeState'
@@ -396,6 +397,11 @@ const { mountedNodeIds } = useViewportCulling({
     // count, on a path that runs on every backstop tick.
     const pane = document.querySelector('[data-testid="transform-pane"]')
     if (pane) for (const id of findNodesWithLiveState(pane)) pinned.add(id)
+
+    // Source of a link drag in flight; unmounting it cancels the gesture.
+    for (const id of findLinkDragSourceIds(comfyApp.canvas?.linkConnector)) {
+      pinned.add(id)
+    }
 
     return pinned
   }

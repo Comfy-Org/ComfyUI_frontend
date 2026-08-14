@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import type { NodeId } from '@/renderer/core/layout/types'
 import {
+  findLinkDragSourceIds,
   findNodesOptedOutOfCulling,
   findNodesWithLiveState
 } from '@/renderer/extensions/vueNodes/composables/liveNodeState'
@@ -64,6 +65,38 @@ describe('findNodesWithLiveState', () => {
     const root = mountNode('prompt', '<textarea>a prompt</textarea>')
 
     expect(findNodesWithLiveState(root)).toEqual(new Set())
+  })
+})
+
+describe('findLinkDragSourceIds', () => {
+  it('reports the source node of a link drag in flight', () => {
+    // Unmounting it removes the slot element the gesture started from, and
+    // reaching toward an off-screen target is exactly what makes the user pan
+    // far enough for that to happen.
+    const connector = {
+      isConnecting: true,
+      renderLinks: [{ node: { id: 'source' } }, { node: { id: 7 } }]
+    }
+
+    expect(findLinkDragSourceIds(connector)).toEqual(new Set(['source', '7']))
+  })
+
+  it('is empty when no drag is in flight', () => {
+    // renderLinks is not emptied on reset, so the connecting flag is what
+    // decides; reading the array alone would pin the last drag forever.
+    const connector = {
+      isConnecting: false,
+      renderLinks: [{ node: { id: 'stale' } }]
+    }
+
+    expect(findLinkDragSourceIds(connector)).toEqual(new Set())
+  })
+
+  it('tolerates a missing connector or node', () => {
+    expect(findLinkDragSourceIds(undefined)).toEqual(new Set())
+    expect(
+      findLinkDragSourceIds({ isConnecting: true, renderLinks: [{}] })
+    ).toEqual(new Set())
   })
 })
 

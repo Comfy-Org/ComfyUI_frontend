@@ -62,6 +62,35 @@ export function findNodesWithLiveState(
   return ids
 }
 
+/** Minimal shape of the link connector this needs; see LinkConnector. */
+interface LinkDragSource {
+  isConnecting: boolean
+  renderLinks: readonly { node?: { id?: unknown } | null }[]
+}
+
+/**
+ * Source nodes of any link drag in flight.
+ *
+ * The gesture originates from a slot element inside its source node, so
+ * unmounting that node mid-drag removes the element the drag started from and
+ * cancels it. Reaching toward a target that is off screen is exactly what makes
+ * a user pan far enough for the source to leave the viewport, and selection
+ * does not cover it - the source need not be selected.
+ */
+export function findLinkDragSourceIds(
+  connector: LinkDragSource | null | undefined
+): Set<NodeId> {
+  const ids = new Set<NodeId>()
+  if (!connector?.isConnecting) return ids
+
+  for (const renderLink of connector.renderLinks) {
+    const id = renderLink.node?.id
+    if (id != null) ids.add(String(id) as NodeId)
+  }
+
+  return ids
+}
+
 /** Nodes excluded from culling by type; see the registry above. */
 export function findNodesOptedOutOfCulling(
   nodes: readonly VueNodeData[]
