@@ -9,13 +9,17 @@ import type { PendingInvite } from '@/platform/workspace/stores/teamWorkspaceSto
 
 const {
   mockCreateInvite,
+  mockFetchPendingInvites,
   mockFetchStatus,
+  mockPendingInvites,
   mockToastAdd,
   mockTrackInviteSent,
   mockTrackInviteFailed
 } = vi.hoisted(() => ({
   mockCreateInvite: vi.fn(),
+  mockFetchPendingInvites: vi.fn(),
   mockFetchStatus: vi.fn(),
+  mockPendingInvites: [] as PendingInvite[],
   mockToastAdd: vi.fn(),
   mockTrackInviteSent: vi.fn(),
   mockTrackInviteFailed: vi.fn()
@@ -27,7 +31,11 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
 
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
   useTeamWorkspaceStore: () => ({
-    createInvite: mockCreateInvite as (email: string) => Promise<PendingInvite>
+    createInvite: mockCreateInvite as (email: string) => Promise<PendingInvite>,
+    fetchPendingInvites: mockFetchPendingInvites,
+    get pendingInvites() {
+      return mockPendingInvites
+    }
   })
 }))
 
@@ -85,6 +93,8 @@ function submitButton() {
 
 describe('InviteMembersForm', () => {
   beforeEach(() => {
+    mockPendingInvites.splice(0)
+    mockFetchPendingInvites.mockResolvedValue([])
     mockFetchStatus.mockResolvedValue(undefined)
     mockCreateInvite.mockImplementation(async (email: string) =>
       pendingInviteFor(email)
@@ -150,6 +160,20 @@ describe('InviteMembersForm', () => {
     consoleError.mockRestore()
   })
 
+  it('submits when pending invites cannot be refreshed', async () => {
+    const refreshError = new Error('pending invites failed')
+    mockFetchPendingInvites.mockRejectedValueOnce(refreshError)
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { user, emitted } = renderForm()
+
+    await user.type(emailInput(), 'a@b.com{Enter}')
+    await user.click(submitButton())
+
+    await waitFor(() => expect(emitted().submitted).toEqual([[['a@b.com']]]))
+    expect(consoleError).toHaveBeenCalledWith(refreshError)
+    consoleError.mockRestore()
+  })
+
   it('keeps failed emails for retry and emits all invited emails after recovery', async () => {
     let shouldFail = true
     mockCreateInvite.mockImplementation(async (email: string) => {
@@ -205,17 +229,58 @@ describe('InviteMembersForm', () => {
     expect(mockFetchStatus).not.toHaveBeenCalled()
   })
 
-  it('caps the number of chips at maxSeats', async () => {
+  it('keeps over-limit chips visible and blocks submission', async () => {
     const { user } = renderForm({ maxSeats: 2 })
 
     await user.type(emailInput(), 'a@b.com,b@b.com,c@b.com{Enter}')
 
     expect(screen.getByText('a@b.com')).toBeInTheDocument()
     expect(screen.getByText('b@b.com')).toBeInTheDocument()
-    expect(screen.queryByText('c@b.com')).not.toBeInTheDocument()
+    expect(screen.getByText('c@b.com')).toBeInTheDocument()
     expect(
-      screen.getByText('workspacePanel.inviteMemberDialog.seatLimitReached')
+      screen.getByText('workspacePanel.inviteMemberDialog.seatLimitExceeded')
     ).toBeInTheDocument()
+    expect(submitButton()).toBeDisabled()
+  })
+
+  it('warns about one pending invite without disabling submit', async () => {
+    mockPendingInvites.push(pendingInviteFor('ALREADY@EXAMPLE.COM'))
+    const { user } = renderForm()
+
+    await user.type(emailInput(), 'already@example.com{Enter}')
+
+    expect(
+      screen.getByText('workspacePanel.inviteMemberDialog.pendingInviteSingle')
+    ).toBeInTheDocument()
+    expect(submitButton()).toBeEnabled()
+
+    await user.click(submitButton())
+
+    expect(mockCreateInvite).not.toHaveBeenCalled()
+  })
+
+  it('skips pending invites and sends the rest of the batch', async () => {
+    mockPendingInvites.push(
+      pendingInviteFor('first@example.com'),
+      pendingInviteFor('second@example.com')
+    )
+    const { user, emitted } = renderForm({ maxSeats: 3, occupiedSeats: 2 })
+
+    await user.type(
+      emailInput(),
+      'first@example.com,second@example.com,new@example.com{Enter}'
+    )
+
+    expect(
+      screen.getByText('workspacePanel.inviteMemberDialog.pendingInviteCount')
+    ).toBeInTheDocument()
+    expect(submitButton()).toBeEnabled()
+
+    await user.click(submitButton())
+
+    await waitFor(() => expect(mockCreateInvite).toHaveBeenCalledOnce())
+    expect(mockCreateInvite).toHaveBeenCalledWith('new@example.com')
+    expect(emitted().submitted).toEqual([[['new@example.com']]])
   })
 
   it('caps unlimited workspaces to one invite batch', async () => {
