@@ -1,6 +1,7 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import { createPinia, setActivePinia } from 'pinia'
+import { setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -64,7 +65,7 @@ const i18n = createI18n({
 
 const CARD_TESTID = 'partner-nodes-education-card'
 
-let pinia: ReturnType<typeof createPinia>
+let pinia: ReturnType<typeof createTestingPinia>
 
 function renderCard() {
   return render(PartnerNodesEducationCard, {
@@ -74,7 +75,7 @@ function renderCard() {
 
 describe('PartnerNodesEducationCard', () => {
   beforeEach(() => {
-    pinia = createPinia()
+    pinia = createTestingPinia({ stubActions: false })
     setActivePinia(pinia)
     __setErrorOverlayOpen(false)
     __setHasPartnerNodes(true)
