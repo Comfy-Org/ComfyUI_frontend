@@ -317,6 +317,17 @@ watch(
   { immediate: true }
 )
 
+watch(
+  () => tabActivity.creatingTab,
+  async (creating) => {
+    if (!creating) return
+    await nextTick()
+    containerRef.value
+      ?.querySelector('[data-testid="creating-tab-skeleton"]')
+      ?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+  }
+)
+
 let overflowObserver: ReturnType<typeof useOverflowObserver> | null = null
 let stopArrivedWatch: WatchStopHandle | null = null
 let stopOverflowWatch: WatchStopHandle | null = null
