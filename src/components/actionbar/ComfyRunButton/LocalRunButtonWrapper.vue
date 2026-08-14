@@ -11,6 +11,7 @@
       size="unset"
       class="h-8 gap-1.5 rounded-lg px-4 whitespace-nowrap"
       data-testid="partner-sign-in-to-run-button"
+      aria-describedby="partner-run-gate-caption"
       @click="openPartnerSignInDialog"
     >
       <i class="icon-[lucide--log-in] size-4" aria-hidden="true" />

@@ -106,6 +106,15 @@ describe('LocalRunButtonWrapper', () => {
     expect(__getQueueMode()).toBe('disabled')
   })
 
+  it('points the gated button at the caption explaining why it is gated', () => {
+    gateState.gate.value = 'sign-in'
+    renderWrapper()
+
+    expect(
+      screen.getByRole('button', { name: 'Sign in to run' })
+    ).toHaveAttribute('aria-describedby', 'partner-run-gate-caption')
+  })
+
   it('moves focus to the queue button when signing in unmounts the gated button', async () => {
     gateState.gate.value = 'sign-in'
     renderWrapper()
