@@ -121,6 +121,68 @@ describe('useAttachment', () => {
     })
   })
 
+  it('stages a deferred file before its source resolves', async () => {
+    let resolveFile: (file: File | undefined) => void = () => {}
+    const resolve = vi.fn(
+      () =>
+        new Promise<File | undefined>((done) => {
+          resolveFile = done
+        })
+    )
+    const upload = vi.fn(async (file: File) => ({ ref: file.name }))
+    const registry = chipRegistry()
+    const { addDeferredFile } = useAttachment({ upload, ...registry })
+
+    const pending = addDeferredFile('dropped.mp4', resolve)
+
+    expect(registry.chips).toMatchObject([
+      { name: 'dropped.mp4', ref: '', uploading: true }
+    ])
+    expect(upload).not.toHaveBeenCalled()
+
+    resolveFile(fileOfSize('dropped.mp4', 1024, 'video/mp4'))
+    await expect(pending).resolves.toMatchObject({ name: 'dropped.mp4' })
+    expect(upload).toHaveBeenCalledOnce()
+    expect(registry.chips[0]).toMatchObject({
+      ref: 'dropped.mp4',
+      uploading: false
+    })
+  })
+
+  it('removes a deferred chip when its source cannot be resolved', async () => {
+    const upload = vi.fn()
+    const registry = chipRegistry()
+    const { addDeferredFile } = useAttachment({ upload, ...registry })
+
+    await expect(
+      addDeferredFile('missing.mp4', async () => undefined)
+    ).resolves.toBeUndefined()
+
+    expect(registry.chips).toEqual([])
+    expect(upload).not.toHaveBeenCalled()
+  })
+
+  it('removes an oversized deferred chip and reports the resolved limit', async () => {
+    const upload = vi.fn()
+    const onError = vi.fn()
+    const registry = chipRegistry()
+    const oversized = fileOfSize('large.mp4', 30 * 1024 * 1024 + 1, 'video/mp4')
+    const { addDeferredFile } = useAttachment({
+      upload,
+      maxBytes: () => 30 * 1024 * 1024,
+      onError,
+      ...registry
+    })
+
+    await expect(
+      addDeferredFile('large.mp4', async () => oversized)
+    ).resolves.toBe(oversized)
+
+    expect(registry.chips).toEqual([])
+    expect(upload).not.toHaveBeenCalled()
+    expect(onError).toHaveBeenCalledWith('large.mp4 is larger than 30MB')
+  })
+
   it('removes the chip and surfaces the error when the upload fails', async () => {
     const upload = vi.fn().mockRejectedValue(new Error('network down'))
     const onError = vi.fn()

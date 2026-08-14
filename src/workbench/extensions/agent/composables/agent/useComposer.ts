@@ -42,6 +42,7 @@ export function useComposer(options: UseComposerOptions) {
   }
 
   function addAttachment(attachment: ComposerAttachment): void {
+    if (attachments.value.some((item) => item.id === attachment.id)) return
     attachments.value = [...attachments.value, attachment]
   }
 
