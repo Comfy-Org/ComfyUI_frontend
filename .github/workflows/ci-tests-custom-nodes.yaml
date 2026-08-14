@@ -88,10 +88,11 @@ jobs:
         # loader wants, so the count lives in exactly one place and the list
         # cannot drift out of step with a separate total. Rebalancing is
         # rewriting this list. Measured on run 31842166428: 3.8 min fixed plus
-        # 0.39 min per pack once S9 is scoped to run-tier rows, so 15 packs
-        # lands near 10 - the shard holding the one run-tier pack costs more. Slices are striped, not contiguous (see
-        # manifestShard), so every shard gets a mix of cheap and heavy packs.
-        shard: ['1/6', '2/6', '3/6', '4/6', '5/6', '6/6']
+        # 0.39 min per pack once S9 is scoped to run-tier rows, so 22 packs
+        # lands near 12 - the shard holding the one run-tier pack costs more.
+        # Slices are striped, not contiguous (see manifestShard), so every
+        # shard gets a mix of cheap and heavy packs.
+        shard: ['1/4', '2/4', '3/4', '4/4']
         proof_row: >-
           ${{ fromJSON(github.event_name == 'workflow_dispatch' && inputs.detection_proof_row == 'all' && '["1","2","3","9"]' || format('["{0}"]', inputs.detection_proof_row || '0')) }}
     # Run only when non-docs code changed AND the PR is same-repo. Fork PRs can
