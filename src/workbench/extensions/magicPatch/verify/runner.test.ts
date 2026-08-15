@@ -23,9 +23,17 @@ const evaluate: Evaluate = (source) => {
 /**
  * The rgthree shape, reduced to the part that matters.
  *
- * `onConstructed` self-assigns `type`, which is getter-only — so the
- * constructor throws and `createNode` returns null for every type built this
- * way. This is the real, measured failure (8 packs, 3.86M downloads).
+ * `onConstructed` self-assigns `type`. This used to be the sharpest failure in
+ * the corpus: `type` was getter-only, so the constructor threw and `createNode`
+ * returned null for every type built this way (8 packs, 3.86M downloads).
+ *
+ * ECS softened it. `set type` now warns and assigns rather than throwing — and
+ * because it warns only `if (value !== this._state.type)`, a *self*-assignment
+ * is completely silent. So the idiom neither breaks nor announces itself, and
+ * the battery has nothing left to measure: the case below is NO-SIGNAL, which
+ * is the harness reporting its own blindness rather than a passing conversion.
+ * Restoring the signal needs `type` writes to warn unconditionally, or to
+ * throw again.
  */
 const RGTHREE_SHAPE = `
 class RgthreeBaseNode extends LGraphNode {
@@ -52,7 +60,7 @@ describe('conversion runner', () => {
   })
 
   describe('the rgthree case, end to end', () => {
-    it('converts the real idiom and the nodes construct', async () => {
+    it('converts the real idiom, and reports that it cannot prove it', async () => {
       const converted = convert(RGTHREE_SHAPE)
 
       // The mechanical rule fired, and changed exactly one line.
@@ -69,21 +77,25 @@ describe('conversion runner', () => {
         attribution: 'rgthree'
       })
 
-      // Measured, not assumed: broken before, working after.
+      // Measured, not assumed: the write no longer takes the node type out.
       const muter = result.observations.find(
         (o) => o.name === 'construct:RgthreeFastMuter'
       )
       expect(muter).toEqual({
         name: 'construct:RgthreeFastMuter',
-        before: 'failed',
+        before: 'ok',
         after: 'ok'
       })
 
+      // And the silent setter leaves no deprecation to retire either, so there
+      // is no evidence in any channel the battery reads.
+      expect(result.deprecations).toEqual({ before: 0, after: 0 })
+
       const verdict = grade(result)
-      expect(verdict.verdict).toBe('IMPROVED')
-      expect(verdict.shippable).toBe(true)
-      expect(verdict.fixed).toContain('construct:RgthreeFastBypasser')
+      expect(verdict.verdict).toBe('NO-SIGNAL')
+      expect(verdict.shippable).toBe(false)
       expect(verdict.broken).toEqual([])
+      expect(verdict.notes[0]).toMatch(/proves nothing/)
     })
 
     it('reports both node types, not just the first', async () => {
