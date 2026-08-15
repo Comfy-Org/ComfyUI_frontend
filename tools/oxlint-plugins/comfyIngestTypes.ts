@@ -22,7 +22,11 @@ interface TypeArguments {
 interface PropertySignature {
   readonly type: string
   readonly computed?: boolean
-  readonly key?: { readonly type: string; readonly name?: string }
+  readonly key?: {
+    readonly type: string
+    readonly name?: string
+    readonly value?: unknown
+  }
 }
 
 interface TypeNode {
@@ -149,14 +153,20 @@ function keysOmittedFrom(
   return stringLiteralsIn(keys, literalUnionAliases)
 }
 
+// `{ tier: T }` and `{ 'tier': T }` declare the same property, so both key
+// forms have to count. Computed keys are unreadable and so never reported.
 function propertyNamesIn(
   members: readonly PropertySignature[] | undefined
 ): string[] {
   const names: string[] = []
   for (const member of members ?? []) {
     if (member.type !== 'TSPropertySignature' || member.computed) continue
-    if (member.key?.type !== 'Identifier') continue
-    if (member.key.name !== undefined) names.push(member.key.name)
+    const key = member.key
+    if (key?.type === 'Identifier' && key.name !== undefined) {
+      names.push(key.name)
+    } else if (key?.type === 'Literal' && typeof key.value === 'string') {
+      names.push(key.value)
+    }
   }
   return names
 }

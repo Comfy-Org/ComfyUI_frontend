@@ -68,6 +68,7 @@ export type {
 `
 
 const reportedSource = `import type {
+  BillingStatusResponse as GeneratedBillingStatusResponse,
   ListMembersResponse as GeneratedListMembersResponse,
   Member as GeneratedMember,
   PendingInvite as GeneratedPendingInvite,
@@ -94,12 +95,17 @@ type PendingInvite = Omit<GeneratedPendingInvite, HiddenKeys> & {
   expires_at?: number
 }
 
+type BillingStatusResponse = Omit<GeneratedBillingStatusResponse, 'plan_slug'> & {
+  'plan_slug': number
+}
+
 export type {
   Plan,
   SubscribeRequest,
   ListMembersResponse,
   Member,
   PendingInvite,
+  BillingStatusResponse,
   HiddenKeys,
   GeneratedListMembersResponse,
   GeneratedMember
@@ -196,7 +202,8 @@ describe('comfy/no-duplicate-ingest-type', () => {
       'ListMembersResponse'
     ],
     ['an alias deriving from a generated export of another name', 'Member'],
-    ['omitted keys hidden behind a same-file alias', 'PendingInvite']
+    ['omitted keys hidden behind a same-file alias', 'PendingInvite'],
+    ['a re-declared key written as a string literal', 'BillingStatusResponse']
   ])('reports %s', ([, name]) => {
     expect(reported('reported.ts')).toContain(name)
   })
