@@ -22,23 +22,60 @@ interface Finding {
   readonly name: string
 }
 
+interface OxlintDiagnostic {
+  readonly code?: string
+  readonly severity?: string
+  readonly filename?: string
+  readonly message?: string
+}
+
+const RULE_CODE = 'comfy(no-duplicate-ingest-type)'
+
+// `--format` is pinned: Oxlint picks its renderer from the environment, using a
+// compact one-line format when it detects an agent CLI and a graphical one in CI.
 function lint(targets: string[]): Finding[] {
   let stdout: string
+  let failure: string | undefined
   try {
     stdout = execFileSync(
       process.execPath,
-      [oxlintEntry, '--config', repoConfig, ...targets],
+      [oxlintEntry, '--format=json', '--config', repoConfig, ...targets],
       { cwd: path.resolve('.'), encoding: 'utf8' }
     )
   } catch (err) {
     // Non-zero exit is expected: the rule reports at error severity.
-    stdout = (err as { stdout?: string }).stdout ?? ''
+    const failed = err as {
+      stdout?: string
+      stderr?: string
+      status?: number
+      message?: string
+    }
+    stdout = failed.stdout ?? ''
+    failure = `exit ${failed.status ?? '?'}: ${failed.message ?? ''}\n${failed.stderr ?? ''}`
   }
-  return [
-    ...stdout.matchAll(
-      /^(\S+?):\d+:\d+: (\w+) comfy\(no-duplicate-ingest-type\): '([^']+)'/gm
+
+  let diagnostics: readonly OxlintDiagnostic[] | undefined
+  try {
+    diagnostics = (JSON.parse(stdout) as { diagnostics?: OxlintDiagnostic[] })
+      .diagnostics
+  } catch {
+    diagnostics = undefined
+  }
+  // An unreadable report must fail loudly. Yielding zero findings instead would
+  // turn every "reports ..." case below into a silent pass of the negatives.
+  if (diagnostics === undefined) {
+    throw new Error(
+      `Could not read Oxlint's JSON report (${failure ?? 'exit 0'}). stdout: ${stdout.slice(0, 400)}`
     )
-  ].map((match) => ({ file: match[1], severity: match[2], name: match[3] }))
+  }
+
+  return diagnostics
+    .filter((diagnostic) => diagnostic.code === RULE_CODE)
+    .map((diagnostic) => ({
+      file: diagnostic.filename ?? '',
+      severity: diagnostic.severity ?? '',
+      name: /^'([^']+)'/.exec(diagnostic.message ?? '')?.[1] ?? ''
+    }))
 }
 
 const accepted = `import type {
