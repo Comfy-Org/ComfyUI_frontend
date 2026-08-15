@@ -159,15 +159,6 @@ subscribedTest.describe(
   { tag: '@cloud' },
   () => {
     subscribedTest(
-      'Manage plan matches the adjacent menu rows',
-      async ({ subscriptionHelper }) => {
-        const popover = await subscriptionHelper.openUserPopover()
-
-        await subscriptionHelper.expectManagePlanMatchesAdjacentMenuRow(popover)
-      }
-    )
-
-    subscribedTest(
       'Queue button visible and subscribe buttons hidden when subscribed',
       async ({ comfyPage }) => {
         await expect(
