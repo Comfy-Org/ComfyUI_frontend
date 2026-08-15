@@ -1,9 +1,20 @@
 // @vitest-environment happy-dom
 import { render, screen } from '@testing-library/vue'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import PricingFreeBanner from './PricingFreeBanner.vue'
+
+const showFreeTier = vi.hoisted(() => ({ value: true }))
+vi.mock('../../config/features', () => ({
+  get SHOW_FREE_TIER() {
+    return showFreeTier.value
+  }
+}))
+
+afterEach(() => {
+  showFreeTier.value = true
+})
 
 type BannerProps = ComponentProps<typeof PricingFreeBanner>
 
@@ -62,6 +73,15 @@ describe('PricingFreeBanner', () => {
     expect(screen.getByRole('link', { name: '免费试用' })).toBeTruthy()
     expect(screen.queryByText(/Start free/)).toBeNull()
     expect(screen.queryByText(/no credit card required/)).toBeNull()
+    expect(screen.queryByRole('link', { name: 'TRY FREE' })).toBeNull()
+  })
+
+  it('renders nothing at all while SHOW_FREE_TIER is off, whoever mounts it', () => {
+    showFreeTier.value = false
+
+    const { container } = renderBanner()
+
+    expect(container.textContent).toBe('')
     expect(screen.queryByRole('link', { name: 'TRY FREE' })).toBeNull()
   })
 })

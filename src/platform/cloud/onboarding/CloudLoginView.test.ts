@@ -23,6 +23,13 @@ vi.mock('@/base/webviewDetection', () => ({
   isEmbeddedWebView: () => isEmbeddedWebView.value
 }))
 
+const freeTierOpen = vi.hoisted(() => ({ value: false }))
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({
+    flags: { freeTierSubscriptionsEnabled: freeTierOpen.value }
+  })
+}))
+
 const EN_MESSAGES = { auth: { login: enMessages.auth.login } }
 
 async function renderLoginView(
@@ -58,10 +65,19 @@ async function renderLoginView(
 
 afterEach(() => {
   isEmbeddedWebView.value = false
+  freeTierOpen.value = false
 })
 
 describe('CloudLoginView', () => {
-  it('points new users to sign-up without advertising a free tier', async () => {
+  it('advertises the free runs offered on sign-up while the free tier is open', async () => {
+    freeTierOpen.value = true
+
+    const { container } = await renderLoginView('/cloud/login', EN_MESSAGES)
+
+    expect(container.textContent).toMatch(/to get 5 free runs\./)
+  })
+
+  it('drops the free-run claim once the free tier stops taking sign-ups', async () => {
     const { container } = await renderLoginView('/cloud/login', EN_MESSAGES)
 
     expect(container.textContent).toContain(enMessages.auth.login.cloudNewUser)

@@ -265,6 +265,7 @@
       "failed": "ログイン失敗",
       "forgotPassword": "パスワードを忘れましたか？",
       "forgotPasswordError": "パスワードリセット用メールの送信に失敗しました",
+      "freeRunsSuffix": "{count}回の無料実行を獲得しましょう。",
       "freeTierBadge": "無料プラン対象",
       "freeTierDescription": "Googleでサインアップすると、毎月{credits}の無料クレジットがもらえます。クレジットカード不要。",
       "freeTierDescriptionGeneric": "Googleでサインアップすると、毎月無料クレジットがもらえます。クレジットカード不要。",

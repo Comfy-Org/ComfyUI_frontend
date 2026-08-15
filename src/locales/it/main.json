@@ -265,6 +265,7 @@
       "failed": "Accesso non riuscito",
       "forgotPassword": "Password dimenticata?",
       "forgotPasswordError": "Invio dell'email di reimpostazione password non riuscito",
+      "freeRunsSuffix": "per ottenere {count} esecuzione gratuita. | per ottenere {count} esecuzioni gratuite.",
       "freeTierBadge": "Idoneo per Free Tier",
       "freeTierDescription": "Registrati con Google per ottenere {credits} crediti gratuiti ogni mese. Nessuna carta richiesta.",
       "freeTierDescriptionGeneric": "Registrati con Google per ottenere crediti gratuiti ogni mese. Nessuna carta richiesta.",

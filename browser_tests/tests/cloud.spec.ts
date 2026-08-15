@@ -47,7 +47,7 @@ test.describe('Cloud distribution UI', { tag: '@cloud' }, () => {
     await expect(page.getByRole('button', { name: /google/i })).toBeVisible()
   })
 
-  test('cloud login page points new users to sign-up without promising free runs', async ({
+  test('cloud login page points new users to sign-up, and withholds the free-run claim while the free tier is closed', async ({
     page
   }) => {
     await page.goto(APP_URL)

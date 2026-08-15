@@ -265,6 +265,7 @@
       "failed": "ההתחברות נכשלה",
       "forgotPassword": "שכחת סיסמה?",
       "forgotPasswordError": "שליחת מייל לאיפוס הסיסמה נכשלה",
+      "freeRunsSuffix": "לקבלת {count} הרצה חינמית. | לקבלת {count} הרצות חינמיות.",
       "freeTierBadge": "זכאי לדרגה החינמית",
       "freeTierDescription": "הירשם באמצעות Google כדי לקבל {credits} קרדיטים חינם בכל חודש. אין צורך בכרטיס אשראי.",
       "freeTierDescriptionGeneric": "הירשם באמצעות Google כדי לקבל קרדיטים חינם בכל חודש. אין צורך בכרטיס אשראי.",

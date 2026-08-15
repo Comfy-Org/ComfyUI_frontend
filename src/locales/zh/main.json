@@ -265,6 +265,7 @@
       "failed": "登录失败",
       "forgotPassword": "忘记密码？",
       "forgotPasswordError": "发送重置密码邮件失败",
+      "freeRunsSuffix": "可获得 {count} 次免费运行。| 可获得 {count} 次免费运行。",
       "freeTierBadge": "可享免费套餐",
       "freeTierDescription": "使用 Google 注册，每月可获得 {credits} 免费积分。无需绑定银行卡。",
       "freeTierDescriptionGeneric": "使用 Google 注册，每月可获得免费积分。无需绑定银行卡。",

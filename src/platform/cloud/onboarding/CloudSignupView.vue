@@ -42,7 +42,11 @@
       </template>
 
       <template v-else>
-        <Message v-if="isFreeTierEnabled" severity="warn" class="w-full">
+        <Message
+          v-if="flags.freeTierSubscriptionsEnabled"
+          severity="warn"
+          class="w-full"
+        >
           {{ t('auth.signup.emailNotEligibleForFreeTier') }}
         </Message>
 
@@ -95,9 +99,9 @@ import SignUpForm from '@/components/dialog/content/signin/SignUpForm.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useRegionGate } from '@/composables/auth/useRegionGate'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import CloudSocialAuthButtons from '@/platform/cloud/onboarding/components/CloudSocialAuthButtons.vue'
 import { useCloudAuthPage } from '@/platform/cloud/onboarding/composables/useCloudAuthPage'
-import { useFreeTierOnboarding } from '@/platform/cloud/onboarding/composables/useFreeTierOnboarding'
 import {
   CLOUD_AUTH_FIELD_CLASS,
   CLOUD_AUTH_LINK_BUTTON_CLASS
@@ -111,7 +115,7 @@ const authActions = useAuthActions()
 const telemetry = useTelemetry()
 
 const { status: regionStatus } = useRegionGate()
-const { isFreeTierEnabled } = useFreeTierOnboarding()
+const { flags } = useFeatureFlags()
 
 const {
   authError,

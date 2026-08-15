@@ -1,9 +1,20 @@
 // @vitest-environment happy-dom
 import { render, screen } from '@testing-library/vue'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { minimaxPage } from '../../data/minimax'
 import ModelLaunchPricingSection from './ModelLaunchPricingSection.vue'
+
+const showFreeTier = vi.hoisted(() => ({ value: true }))
+vi.mock('../../config/features', () => ({
+  get SHOW_FREE_TIER() {
+    return showFreeTier.value
+  }
+}))
+
+afterEach(() => {
+  showFreeTier.value = true
+})
 
 // The live /minimax config, so a refactor of the shared banner cannot quietly
 // change what that page ships. `pricing` is optional on a launch page, so fail
@@ -42,6 +53,16 @@ describe('ModelLaunchPricingSection', () => {
       props: { pricing: { defaultBillingCycle: 'monthly' } }
     })
 
+    expect(screen.queryByRole('link', { name: 'TRY FREE' })).toBeNull()
+    expect(screen.getByText('Choose a plan')).toBeTruthy()
+  })
+
+  it('drops the /minimax banner while SHOW_FREE_TIER is off, config notwithstanding', () => {
+    showFreeTier.value = false
+
+    render(ModelLaunchPricingSection, { props: { pricing } })
+
+    expect(screen.queryByText(/5 free runs on real GPUs/)).toBeNull()
     expect(screen.queryByRole('link', { name: 'TRY FREE' })).toBeNull()
     expect(screen.getByText('Choose a plan')).toBeTruthy()
   })

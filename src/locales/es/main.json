@@ -265,6 +265,7 @@
       "failed": "Inicio de sesión fallido",
       "forgotPassword": "¿Olvidaste tu contraseña?",
       "forgotPasswordError": "No se pudo enviar el correo electrónico para restablecer la contraseña",
+      "freeRunsSuffix": "para obtener {count} ejecución gratuita. | para obtener {count} ejecuciones gratuitas.",
       "freeTierBadge": "Elegible para el plan gratuito",
       "freeTierDescription": "Regístrate con Google para obtener {credits} créditos gratis cada mes. No se necesita tarjeta.",
       "freeTierDescriptionGeneric": "Regístrate con Google para obtener créditos gratis cada mes. No se necesita tarjeta.",

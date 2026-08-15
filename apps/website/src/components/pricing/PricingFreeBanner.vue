@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { AnchorHTMLAttributes } from 'vue'
 
+import { SHOW_FREE_TIER } from '../../config/features'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import BrandButton from '../common/BrandButton.vue'
@@ -19,6 +20,7 @@ const { locale = 'en' } = defineProps<{
 
 <template>
   <div
+    v-if="SHOW_FREE_TIER"
     class="bg-primary-comfy-ink-light mb-4 flex flex-col gap-4 rounded-3xl px-8 py-6 sm:flex-row sm:items-center sm:justify-between"
   >
     <div>
