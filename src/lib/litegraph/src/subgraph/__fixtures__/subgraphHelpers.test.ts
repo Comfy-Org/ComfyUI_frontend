@@ -66,6 +66,28 @@ describe('enableSubgraphNodeCreation', () => {
     dispose()
 
     expect(LiteGraph.createNode(subgraph.id)).toBeNull()
+
+    const laterSubgraph = rootGraph.createSubgraph(createTestSubgraphData())
+    expect(LiteGraph.createNode(laterSubgraph.id)).toBeNull()
+  })
+
+  it('only removes registrations owned by its invocation', () => {
+    const firstRoot = createTestRootGraph()
+    const secondRoot = createTestRootGraph()
+    const disposeFirst = enableSubgraphNodeCreation(firstRoot)
+    const disposeSecond = enableSubgraphNodeCreation(secondRoot)
+    const data = createTestSubgraphData()
+    firstRoot.createSubgraph(data)
+    const secondSubgraph = secondRoot.createSubgraph(data)
+
+    disposeFirst()
+
+    expect(LiteGraph.createNode(data.id)).toMatchObject({
+      subgraph: secondSubgraph
+    })
+
+    disposeSecond()
+    expect(LiteGraph.createNode(data.id)).toBeNull()
   })
 })
 

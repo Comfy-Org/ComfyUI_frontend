@@ -47,6 +47,13 @@ export function createTestWidgetNode(graph: LGraph | Subgraph): LGraphNode {
       }
     }
     LiteGraph.registered_node_types[WIDGET_NODE_TYPE] = WidgetTestNode
+    onTestFinished(() => {
+      if (
+        LiteGraph.registered_node_types[WIDGET_NODE_TYPE] === WidgetTestNode
+      ) {
+        delete LiteGraph.registered_node_types[WIDGET_NODE_TYPE]
+      }
+    })
   }
   const node = LiteGraph.createNode(WIDGET_NODE_TYPE)
   if (!node) throw new Error('Failed to create widget node')

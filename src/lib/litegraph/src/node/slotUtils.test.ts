@@ -5,21 +5,23 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import type { INodeOutputSlot } from '@/lib/litegraph/src/interfaces'
 import type { IWidget } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { toLinkId } from '@/types/linkId'
 
 import { outputAsSerialisable } from './slotUtils'
 
 type OutputSlotParam = INodeOutputSlot & { widget?: IWidget }
 
-function createConnectedGraph(targetCount: number) {
+function createConnectedGraph(linkIds: number[]) {
   const graph = new LGraph()
   const source = new LGraphNode('Source')
   source.addOutput('out', 'number')
   graph.add(source)
 
-  for (let i = 0; i < targetCount; i++) {
+  for (const [i, linkId] of linkIds.entries()) {
     const target = new LGraphNode(`Target${i}`)
     target.addInput('in', 'number')
     graph.add(target)
+    graph.state.lastLinkId = toLinkId(linkId - 1)
     source.connect(0, target, 0)
   }
 
@@ -30,7 +32,7 @@ describe('outputAsSerialisable', () => {
   beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
 
   it('serialises the links leaving the slot, ascending by id', () => {
-    const { source } = createConnectedGraph(3)
+    const { source } = createConnectedGraph([10, 2])
 
     const serialised = outputAsSerialisable(
       source.outputs[0] as OutputSlotParam,
@@ -38,12 +40,14 @@ describe('outputAsSerialisable', () => {
       0
     )
 
-    expect(serialised.links).toHaveLength(3)
-    expect(serialised.links).toEqual([...serialised.links!].sort())
+    expect(serialised.links).toEqual(
+      [...serialised.links!].sort((a, b) => a - b)
+    )
+    expect(serialised.links).toEqual([2, 10])
   })
 
   it('returns a snapshot unaffected by later graph changes', () => {
-    const { source } = createConnectedGraph(2)
+    const { source } = createConnectedGraph([1, 2])
 
     const serialised = outputAsSerialisable(
       source.outputs[0] as OutputSlotParam,
@@ -57,7 +61,7 @@ describe('outputAsSerialisable', () => {
   })
 
   it('serialises null when the slot has no links', () => {
-    const { source } = createConnectedGraph(0)
+    const { source } = createConnectedGraph([])
 
     const serialised = outputAsSerialisable(
       source.outputs[0] as OutputSlotParam,

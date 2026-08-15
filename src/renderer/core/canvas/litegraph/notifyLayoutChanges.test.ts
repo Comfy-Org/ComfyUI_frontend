@@ -84,6 +84,7 @@ describe('notifyLayoutChanges', () => {
 
     resize(context)
     await vi.waitFor(() => expect(onResize).toHaveBeenCalled())
+    expect([...onResize.mock.calls[0][0]]).toEqual([300, 200])
   })
 
   it('leaves onResize alone when a bounds batch only moves', async () => {
