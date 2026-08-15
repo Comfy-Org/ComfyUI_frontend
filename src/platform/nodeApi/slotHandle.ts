@@ -16,6 +16,7 @@ import { inputLink, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 import { useLinkStore } from '@/stores/linkStore'
 import type { EndpointUpdate } from '@/stores/linkStore'
 import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
+import { graphScopeOf } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
 
 import { ComfyApiError } from './errors'
@@ -444,12 +445,12 @@ function createOutputHandle(
       // Retarget in the link store: endpoints are patched in place, so link
       // ids — and therefore the serialized workflow — are preserved.
       const store = useLinkStore()
-      const graphId = graph.rootGraph.id
-      const topologies = [...store.getOutputSlotLinks(graphId, node.id, from)]
+      const scope = graphScopeOf(graph)
+      const topologies = [...store.getOutputSlotLinks(scope, node.id, from)]
       if (!topologies.length) return Object.freeze([])
 
       const result = store.updateEndpoints(
-        graphId,
+        scope,
         topologies.map((topology) => ({ topology, patch: { originSlot: to } }))
       )
       if (!result.ok) {
@@ -559,20 +560,16 @@ function reorderSlots(
   const moved = names.map((name) => slots[from.get(name)!])
 
   const store = useLinkStore()
-  const graphId = graph.rootGraph.id
+  const scope = graphScopeOf(graph)
   const patches: EndpointUpdate[] = []
   for (const [to, name] of names.entries()) {
     const wasAt = from.get(name)!
     if (wasAt === to) continue
     if (side === 'input') {
-      const topology = store.getInputSlotLink(graphId, node.id, wasAt)
+      const topology = store.getInputSlotLink(scope, node.id, wasAt)
       if (topology) patches.push({ topology, patch: { targetSlot: to } })
     } else {
-      for (const topology of store.getOutputSlotLinks(
-        graphId,
-        node.id,
-        wasAt
-      )) {
+      for (const topology of store.getOutputSlotLinks(scope, node.id, wasAt)) {
         patches.push({ topology, patch: { originSlot: to } })
       }
     }
@@ -582,7 +579,7 @@ function reorderSlots(
   slots.push(...moved)
 
   if (!patches.length) return
-  const result = store.updateEndpoints(graphId, patches)
+  const result = store.updateEndpoints(scope, patches)
   if (!result.ok) {
     throw new ComfyApiError(
       `Could not re-point links while reordering slots: ${String(result.error)}`

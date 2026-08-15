@@ -22,6 +22,7 @@ import { createUuidv4 } from '@/utils/uuid'
 import { installNodeMoveBridge } from './nodeMoveBridge'
 import { layoutStore } from './store/layoutStore'
 import { useLayoutMutations } from './operations/layoutMutations'
+import { LayoutSource } from './types'
 
 /** The global listener fan-out is queued, not synchronous. */
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0))
@@ -52,10 +53,26 @@ describe('node movement reaches the published API', () => {
     graph = new LGraph()
     node = new LGraphNode('Mover', 'Mover')
     graph.add(node)
-    mutations = useLayoutMutations()
+    mutations = useLayoutMutations(LayoutSource.Canvas)
     // `moveNode` early-returns unless the node already has a layout entry,
     // which the app creates as the node enters the graph.
-    mutations.createNode(GRAPH, node.id, { position: { x: 0, y: 0 } })
+    const position = { x: 0, y: 0 }
+    const size = { width: 100, height: 60 }
+    layoutStore.applyOperation({
+      type: 'createNode',
+      graphId: GRAPH,
+      nodeId: node.id,
+      layout: {
+        id: node.id,
+        position,
+        size,
+        bounds: { ...position, ...size },
+        zIndex: layoutStore.allocateZIndex(),
+        visible: true
+      },
+      source: LayoutSource.Canvas,
+      timestamp: Date.now()
+    })
     seen = []
   })
 
@@ -120,7 +137,14 @@ describe('node movement reaches the published API', () => {
   it('ignores layout changes that are not moves', async () => {
     observe()
 
-    mutations.resizeNode(GRAPH, node.id, { width: 400, height: 300 })
+    layoutStore.applyOperation({
+      type: 'resizeNode',
+      graphId: GRAPH,
+      nodeId: node.id,
+      size: { width: 400, height: 300 },
+      source: LayoutSource.Canvas,
+      timestamp: Date.now()
+    })
     await settle()
 
     expect(seen).toEqual([])
