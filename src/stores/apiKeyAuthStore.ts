@@ -2,7 +2,10 @@ import { useLocalStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
-import { useErrorHandling } from '@/composables/useErrorHandling'
+import {
+  isNetworkError,
+  useErrorHandling
+} from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -55,10 +58,7 @@ const reportFailure = (error: unknown, failure: ApiKeyFailure) => {
   })
 }
 
-const FAILURE_MESSAGES: Record<
-  ApiKeyFailure,
-  { summary: string; detail: string }
-> = {
+const FAILURE_MESSAGES = {
   rejected: {
     summary: 'auth.apiKey.invalid',
     detail: 'auth.login.noAssociatedUser'
@@ -67,11 +67,24 @@ const FAILURE_MESSAGES: Record<
     summary: 'auth.apiKey.notPermitted',
     detail: 'auth.apiKey.notPermittedDetail'
   },
-  unverified: {
+  unreachable: {
     summary: 'auth.apiKey.verificationUnavailable',
     detail: 'auth.apiKey.verificationUnavailableDetail'
+  },
+  unverified: {
+    summary: 'auth.apiKey.verificationUnavailable',
+    detail: 'auth.apiKey.verificationFailedDetail'
   }
-}
+} satisfies Record<string, { summary: string; detail: string }>
+
+/**
+ * Naming the network as the cause is the clearest message available, but only
+ * when it is the cause: `unverified` also covers responses the API did send.
+ */
+const messageFor = (error: unknown, failure: ApiKeyFailure) =>
+  FAILURE_MESSAGES[
+    failure === 'unverified' && isNetworkError(error) ? 'unreachable' : failure
+  ]
 
 export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
   const authStore = useAuthStore()
@@ -117,7 +130,7 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
       const failure = failureFor(error)
       reportFailure(error, failure)
       if (failure === 'rejected') apiKey.value = null
-      const { summary, detail } = FAILURE_MESSAGES[failure]
+      const { summary, detail } = messageFor(error, failure)
       throw new ApiKeyAuthError(failure, t(summary), t(detail))
     }
   }

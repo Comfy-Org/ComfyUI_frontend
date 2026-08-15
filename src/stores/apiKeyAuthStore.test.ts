@@ -44,6 +44,8 @@ const customer = { id: 'customer-1', email: 'user@example.com' }
 const severities = () =>
   useToastStore().messagesToAdd.map((m) => `${m.severity}:${m.summary}`)
 
+const details = () => useToastStore().messagesToAdd.map((m) => m.detail)
+
 describe('useApiKeyAuthStore', () => {
   beforeEach(() => {
     localStorage.clear()
@@ -136,6 +138,26 @@ describe('useApiKeyAuthStore', () => {
       expect(severities()).toEqual([
         'error:auth.apiKey.verificationUnavailable'
       ])
+    })
+
+    it('blames the network when the request never got a response', async () => {
+      mockCreateCustomer.mockRejectedValue(new TypeError('Failed to fetch'))
+      const store = useApiKeyAuthStore()
+
+      await store.storeApiKey(VALID_KEY)
+
+      expect(details()).toEqual(['auth.apiKey.verificationUnavailableDetail'])
+    })
+
+    it('does not blame the network for a response the API did send', async () => {
+      mockCreateCustomer.mockRejectedValue(
+        new AuthStoreError('unavailable', 503)
+      )
+      const store = useApiKeyAuthStore()
+
+      await store.storeApiKey(VALID_KEY)
+
+      expect(details()).toEqual(['auth.apiKey.verificationFailedDetail'])
     })
 
     it('validates the key exactly once per sign-in', async () => {

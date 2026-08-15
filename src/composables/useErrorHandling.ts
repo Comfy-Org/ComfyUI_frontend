@@ -49,13 +49,15 @@ export interface ErrorRecoveryStrategy<
   ) => Promise<void>
 }
 
+/** The request never got a response, as opposed to getting an unwelcome one. */
+export const isNetworkError = (error: unknown) =>
+  error instanceof TypeError &&
+  /failed to fetch|networkerror|load failed/i.test(error.message)
+
 export function useErrorHandling() {
   const toast = useToastStore()
   const toastErrorHandler = (error: unknown) => {
-    const isNetworkError =
-      error instanceof TypeError &&
-      /failed to fetch|networkerror|load failed/i.test(error.message)
-    const message = isNetworkError
+    const message = isNetworkError(error)
       ? t('g.disconnectedFromBackend')
       : error instanceof Error
         ? error.message
