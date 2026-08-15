@@ -18,7 +18,7 @@ export type TranslateBatch = (
 
 const defaultRequestTimeoutMs = 120_000
 const maxNetworkRetries = 3
-const maxMalformedResponseRetries = 3
+const maxMalformedResponseRetries = 1
 
 // Unlike es-toolkit's mapAsync, which dispatches every item up front, this
 // pool stops dispatching once any task fails so a fatal error does not keep
@@ -54,8 +54,6 @@ export function chunkItems(
   maxItems: number,
   maxSourceChars: number
 ): TranslationItem[][] {
-  // Character count is an initial batching heuristic; truncated responses are
-  // recursively split before the translation run fails.
   const chunks: TranslationItem[][] = []
   let chunk: TranslationItem[] = []
   let chunkChars = 0
@@ -101,18 +99,8 @@ function parseBatchResponse(content: string): Record<string, string> {
     throw new Error('translation response is not a JSON object')
   }
   const record: Record<string, string> = {}
-  const invalidIds: string[] = []
   for (const [key, value] of Object.entries(parsed)) {
-    if (typeof value === 'string') {
-      record[key] = value
-    } else {
-      invalidIds.push(key)
-    }
-  }
-  if (invalidIds.length > 0) {
-    throw new Error(
-      `translation response has non-string values for ids: ${invalidIds.join(', ')}`
-    )
+    if (typeof value === 'string') record[key] = value
   }
   return record
 }
