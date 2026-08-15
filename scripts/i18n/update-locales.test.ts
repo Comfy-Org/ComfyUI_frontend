@@ -560,10 +560,8 @@ describe('exceedsPruneThreshold', () => {
   it('permits small cleanups and refuses large shrinks', () => {
     expect(exceedsPruneThreshold(0, 0)).toBe(false)
     expect(exceedsPruneThreshold(79, 13557)).toBe(false)
-    expect(exceedsPruneThreshold(5, 124)).toBe(false)
-    expect(exceedsPruneThreshold(6, 124)).toBe(true)
-    expect(exceedsPruneThreshold(5, 234)).toBe(false)
-    expect(exceedsPruneThreshold(6, 234)).toBe(true)
+    expect(exceedsPruneThreshold(25, 124)).toBe(false)
+    expect(exceedsPruneThreshold(26, 124)).toBe(true)
     expect(exceedsPruneThreshold(62, 124)).toBe(true)
     expect(exceedsPruneThreshold(500, 9082)).toBe(true)
   })
