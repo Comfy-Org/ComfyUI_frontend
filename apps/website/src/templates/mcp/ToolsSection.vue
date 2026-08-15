@@ -104,6 +104,7 @@ const rows: FeatureRow[] = tools.map(({ n, media, altKey }) => {
         :aria-label="t('mcp.tools.film.alt', locale)"
         src="https://media.comfy.org/website/mcp/launch-film.mp4"
         autoplay
+        lazy-autoplay
         loop
         mute-only
       />
