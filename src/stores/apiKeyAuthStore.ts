@@ -14,6 +14,7 @@ type ComfyApiUser =
   operations['createCustomer']['responses']['201']['content']['application/json']
 
 const STORAGE_KEY = 'comfy_api_key'
+const DENIAL_REPORTED_KEY = 'comfy_api_key_denial_reported'
 
 /** Only a rejected key is discarded; the other two are kept and can be retried. */
 type ApiKeyFailure = 'rejected' | 'denied' | 'unverified'
@@ -41,31 +42,17 @@ const failureFor = (error: unknown): ApiKeyFailure => {
   return 'unverified'
 }
 
-/**
- * Pairs the failure kind with the status that produced it so the cases stay
- * separable when reported: a rise in `unverified_503` is the backend declining
- * to vouch for keys, a different incident from a rise in `rejected_401`.
- */
+/** `unverified_503` and `rejected_401` are separate incidents, not one rate. */
 const errorCodeFor = (error: unknown, failure: ApiKeyFailure) =>
   error instanceof AuthStoreError && error.status
     ? `${failure}_${error.status}`
     : failure
 
-/**
- * Reports every failure, including the unverified one the watch only logs, so
- * the case that made BE-7550 invisible is the case this can be alerted on.
- * Isolated because the dispatcher is a bare interface with no no-throw
- * guarantee, and a reporting fault must never decide what happens to the key.
- */
 const reportFailure = (error: unknown, failure: ApiKeyFailure) => {
-  try {
-    useTelemetry()?.trackAuthFailed({
-      error_code: errorCodeFor(error, failure),
-      auth_action: 'api_key_sign_in'
-    })
-  } catch (reportingError) {
-    console.error('Failed to report API key sign-in failure', reportingError)
-  }
+  useTelemetry()?.trackAuthFailed({
+    error_code: errorCodeFor(error, failure),
+    auth_action: 'api_key_sign_in'
+  })
 }
 
 const FAILURE_MESSAGES: Record<
@@ -89,6 +76,12 @@ const FAILURE_MESSAGES: Record<
 export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
   const authStore = useAuthStore()
   const apiKey = useLocalStorage<string | null>(STORAGE_KEY, null)
+  // A denied key is kept, so without a record of having already said so the
+  // same error toast greets the user on every launch.
+  const reportedDenialFor = useLocalStorage<string | null>(
+    DENIAL_REPORTED_KEY,
+    null
+  )
   const toastStore = useToastStore()
   const { wrapWithErrorHandlingAsync, toastErrorHandler } = useErrorHandling()
 
@@ -116,6 +109,7 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
       const user = await authStore.createCustomer()
       if (!stillWanted()) return false
       currentUser.value = user
+      reportedDenialFor.value = null
       return true
     } catch (error) {
       if (!stillWanted()) return false
@@ -146,10 +140,8 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
     }
   }
 
-  // True while storeApiKey is driving the check itself. It keeps the write it
-  // makes to `apiKey` from having the watch below repeat the same POST and
-  // report the same failure twice, and it lets the form disable submission for
-  // the duration rather than letting a second attempt race the first.
+  // Set only while storeApiKey drives the check itself: it stops the watch from
+  // repeating the same POST, and lets the form disable submit for the duration.
   const isValidating = ref(false)
 
   watch(
@@ -157,6 +149,7 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
     () => {
       if (!apiKey.value) {
         currentUser.value = null
+        reportedDenialFor.value = null
         return
       }
       if (isValidating.value) return
@@ -164,13 +157,17 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
       // fix; a backend that is merely unreachable is not worth a startup toast.
       void resolveUser().catch((error: unknown) => {
         if (
-          error instanceof ApiKeyAuthError &&
-          error.failure !== 'unverified'
+          !(error instanceof ApiKeyAuthError) ||
+          error.failure === 'unverified'
         ) {
-          reportError(error)
-        } else {
           console.error(error)
+          return
         }
+        if (error.failure === 'denied') {
+          if (reportedDenialFor.value === apiKey.value) return
+          reportedDenialFor.value = apiKey.value
+        }
+        reportError(error)
       })
     },
     { immediate: true }

@@ -206,21 +206,6 @@ describe('useApiKeyAuthStore', () => {
       })
     })
 
-    it('still discards the key and tells the user when reporting throws', async () => {
-      mockTrackAuthFailed.mockImplementation(() => {
-        throw new Error('telemetry is down')
-      })
-      mockCreateCustomer.mockRejectedValue(new AuthStoreError('rejected', 401))
-      const store = useApiKeyAuthStore()
-
-      await expect(store.storeApiKey(VALID_KEY)).resolves.toBeFalsy()
-      await nextTick()
-
-      expect(store.getApiKey()).toBeNull()
-      expect(store.isAuthenticated).toBe(false)
-      expect(severities()).toEqual(['error:auth.apiKey.invalid'])
-    })
-
     it('reports nothing when the key is accepted', async () => {
       mockCreateCustomer.mockResolvedValue(customer)
       const store = useApiKeyAuthStore()
@@ -315,6 +300,55 @@ describe('useApiKeyAuthStore', () => {
       expect(store.isAuthenticated).toBe(false)
       expect(store.getApiKey()).toBe(VALID_KEY)
       expect(severities()).toEqual([])
+    })
+  })
+
+  describe('a key the account is not permitted to use', () => {
+    // The key is kept, so every launch re-validates it and would re-toast.
+    const launch = async () => {
+      setActivePinia(createTestingPinia({ stubActions: false }))
+      mockCreateCustomer.mockClear()
+      const store = useApiKeyAuthStore()
+      await vi.waitFor(() => expect(mockCreateCustomer).toHaveBeenCalled())
+      await nextTick()
+      return store
+    }
+
+    beforeEach(() => {
+      localStorage.setItem(STORAGE_KEY, VALID_KEY)
+      mockCreateCustomer.mockRejectedValue(new AuthStoreError('denied', 403))
+    })
+
+    it('is reported on the launch that finds it, and not again after', async () => {
+      await launch()
+      expect(severities()).toEqual(['error:auth.apiKey.notPermitted'])
+
+      const relaunched = await launch()
+
+      expect(relaunched.getApiKey()).toBe(VALID_KEY)
+      expect(severities()).toEqual([])
+    })
+
+    it('is reported again for a different key', async () => {
+      await launch()
+
+      localStorage.setItem(STORAGE_KEY, 'comfyui-other-denied-key')
+      await launch()
+
+      expect(severities()).toEqual(['error:auth.apiKey.notPermitted'])
+    })
+
+    it('is reported again once the account regains permission and loses it', async () => {
+      await launch()
+
+      mockCreateCustomer.mockResolvedValue(customer)
+      await launch()
+      expect(severities()).toEqual([])
+
+      mockCreateCustomer.mockRejectedValue(new AuthStoreError('denied', 403))
+      await launch()
+
+      expect(severities()).toEqual(['error:auth.apiKey.notPermitted'])
     })
   })
 })
