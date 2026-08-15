@@ -4,27 +4,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useLinkStore } from '@/stores/linkStore'
-import {
-  graphScopeOf,
-  toOwningGraphId,
-  toRootGraphId
-} from '@/types/graphScopeId'
+import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
 
 import { nodeBadges } from './badgeSystem'
 
-const getNodeDisplayPrice = vi.fn((node: LGraphNode) => {
-  const graph = node.graph
-  if (!graph) return '$disconnected'
-  const connected = node.inputs.some(
-    (input, index) =>
-      (input.name === 'image' || input.name?.startsWith('ref_images.')) &&
-      useLinkStore().isInputSlotConnected(graphScopeOf(graph), node.id, index)
-  )
-  return connected ? '$connected' : '$disconnected'
-})
+let displayPrice = '$disconnected'
+const getNodeDisplayPrice = vi.fn(() => displayPrice)
 
 vi.mock('@/composables/node/useNodePricing', () => {
   return {
@@ -59,6 +47,7 @@ function scopeOf(id: string) {
 describe('badge derivation pricing input connectivity', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
+    displayPrice = '$disconnected'
     getNodeDisplayPrice.mockClear()
   })
 
@@ -89,9 +78,11 @@ describe('badge derivation pricing input connectivity', () => {
     const { node } = setup(['image', 'other'])
     expect(nodeBadges(node).at(-1)?.text).toBe('$disconnected')
 
+    displayPrice = '$connected'
     connect(0, 1)
     expect(nodeBadges(node).at(-1)?.text).toBe('$connected')
 
+    displayPrice = '$disconnected'
     const linkStore = useLinkStore()
     const topology = linkStore.getInputSlotLink(
       scopeOf(graphId),
@@ -107,6 +98,7 @@ describe('badge derivation pricing input connectivity', () => {
 
     expect(nodeBadges(node).at(-1)?.text).toBe('$disconnected')
 
+    displayPrice = '$connected'
     connect(1, 2)
     expect(nodeBadges(node).at(-1)?.text).toBe('$connected')
   })
@@ -117,6 +109,7 @@ describe('badge derivation pricing input connectivity', () => {
 
     expect(nodeBadges(node).at(-1)?.text).toBe('$disconnected')
 
+    displayPrice = '$connected'
     connect(1, 3)
     expect(nodeBadges(node).at(-1)?.text).toBe('$disconnected')
   })
@@ -127,6 +120,7 @@ describe('badge derivation pricing input connectivity', () => {
 
     const reloadedGraphId: UUID = 'graph-pricing-reloaded'
     node.graph!.rootGraph.id = reloadedGraphId
+    displayPrice = '$connected'
     connect(0, 4, reloadedGraphId)
 
     expect(nodeBadges(node).at(-1)?.text).toBe('$connected')

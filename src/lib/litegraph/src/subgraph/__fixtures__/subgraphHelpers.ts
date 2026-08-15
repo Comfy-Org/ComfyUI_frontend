@@ -17,6 +17,7 @@ import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
+import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import type { SerializedNodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
 import {
@@ -60,22 +61,15 @@ function nextFixtureUuid(): UUID {
 export function resetSubgraphFixtureState(): void {
   fixtureUuidSequence = 1
   cleanupComplexPromotionFixtureNodeType()
-  disposeSubgraphNodeCreation()
-}
-
-const subgraphNodeTypesToDispose: string[] = []
-
-function disposeSubgraphNodeCreation(): void {
-  for (const type of subgraphNodeTypesToDispose) {
-    delete LiteGraph.registered_node_types[type]
-  }
-  subgraphNodeTypesToDispose.length = 0
 }
 
 export function enableSubgraphNodeCreation(rootGraph: LGraph): () => void {
-  rootGraph.events.addEventListener('subgraph-created', (e) => {
+  const registrations = new Map<string, typeof LGraphNode>()
+  const listener = (
+    e: CustomEvent<LGraphEventMap['subgraph-created']>
+  ): void => {
     const { subgraph } = e.detail
-    LiteGraph.registered_node_types[subgraph.id] = class extends SubgraphNode {
+    class TestSubgraphNode extends SubgraphNode {
       constructor() {
         super(rootGraph, subgraph, {
           id: -1,
@@ -90,9 +84,19 @@ export function enableSubgraphNodeCreation(rootGraph: LGraph): () => void {
         })
       }
     }
-    subgraphNodeTypesToDispose.push(subgraph.id)
-  })
-  return disposeSubgraphNodeCreation
+    LiteGraph.registered_node_types[subgraph.id] = TestSubgraphNode
+    registrations.set(subgraph.id, TestSubgraphNode)
+  }
+  rootGraph.events.addEventListener('subgraph-created', listener)
+
+  return () => {
+    rootGraph.events.removeEventListener('subgraph-created', listener)
+    for (const [type, constructor] of registrations) {
+      if (LiteGraph.registered_node_types[type] === constructor) {
+        delete LiteGraph.registered_node_types[type]
+      }
+    }
+  }
 }
 
 export function createTestRootGraph(id: UUID = nextFixtureUuid()): LGraph {
