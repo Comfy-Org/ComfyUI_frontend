@@ -342,6 +342,124 @@ describe('useViewportCulling', () => {
     expect(mountedNodeIds.value.size).toBeLessThan(NODE_COUNT / 3)
   })
 
+  it('does not flush the paced fill when a node entry is replaced cosmetically', async () => {
+    // rawNodes gets a new array identity whenever any entry is replaced -
+    // badges, progress and titles do this on every execution tick. Treating
+    // that as membership would cancel the paced fill and mount the whole
+    // entering set in one synchronous write, exactly while the graph is busy.
+    const bounds = offscreenGrid()
+    const { nodes, mountedNodeIds } = setup(bounds)
+
+    camera.x = -10_000
+    await nextTick()
+    await vi.advanceTimersByTimeAsync(48)
+    const midFill = mountedNodeIds.value.size
+    expect(midFill).toBeGreaterThan(0)
+    expect(midFill).toBeLessThan(600)
+
+    // Same ids, new objects - a badge update, not a membership change.
+    nodes.value = nodes.value.map((node) => ({ ...node }))
+    await nextTick()
+
+    // No animation frames have run, so any growth here is the synchronous
+    // unpaced flush this test exists to rule out.
+    expect(mountedNodeIds.value.size).toBe(midFill)
+
+    // And the fill itself is undisturbed: it still completes.
+    await vi.advanceTimersByTimeAsync(3000)
+    expect(mountedNodeIds.value.size).toBe(600)
+  })
+
+  it('raises the batch floor when a fill overruns, without losing the controller', async () => {
+    // The deadline's observable effect needs over-budget frames, which fake
+    // timers cannot produce against the 20ms production budget - frames arrive
+    // at a fixed 16ms. Injecting a 1ms budget makes every frame slow, so
+    // backpressure shrinks the batch to its floor and the deadline is the only
+    // thing that can raise it.
+    const bounds: Record<string, Bounds> = {}
+    for (let i = 0; i < 600; i++) {
+      bounds[`n${i}`] = {
+        x: 10_000 + (i % 30) * 40,
+        y: Math.floor(i / 30) * 40,
+        width: 30,
+        height: 30
+      }
+    }
+    const nodes = ref(Object.keys(bounds).map(nodeData))
+    const scope = effectScope()
+    activeScopes.push(scope)
+    const mountedNodeIds = scope.run(
+      () =>
+        useViewportCulling({
+          nodes: computed(() => nodes.value),
+          queryNodesInBounds: (rect) =>
+            nodes.value
+              .map((node) => node.id)
+              .filter((id) => boundsIntersect(bounds[id], rect)),
+          getViewportSize: () => VIEWPORT,
+          minNodesForCulling: 0,
+          mountFrameBudgetMs: 1
+        }).mountedNodeIds
+    )!
+
+    let biggestWrite = 0
+    let previous = new Set(mountedNodeIds.value)
+    scope.run(() =>
+      watch(
+        mountedNodeIds,
+        (next) => {
+          let added = 0
+          for (const id of next) if (!previous.has(id)) added++
+          biggestWrite = Math.max(biggestWrite, added)
+          previous = new Set(next)
+        },
+        { flush: 'sync' }
+      )
+    )
+
+    // A sustained pan: the camera nudges every 100ms, so the fill re-queues
+    // continuously and never completes - the shape where a per-queue deadline
+    // clock never elapses, and where a deadline that replaces the controller
+    // never hands control back.
+    const advance = async (ms: number) => {
+      for (let t = 0; t < ms; t += 100) {
+        camera.x -= 1
+        await nextTick()
+        await vi.advanceTimersByTimeAsync(100)
+      }
+    }
+
+    camera.x = -10_000
+    await nextTick()
+
+    // Pre-deadline window, including the initial burst.
+    await advance(500)
+    const preDeadline = mountedNodeIds.value.size
+    expect(preDeadline).toBeGreaterThan(0)
+    expect(preDeadline).toBeLessThan(600)
+
+    // Cross the 600ms deadline; the transition window is measured by neither
+    // side.
+    await advance(300)
+    const atTransition = mountedNodeIds.value.size
+    biggestWrite = 0
+
+    // Post-deadline window, 100ms shorter than the pre window.
+    await advance(400)
+    const mountedAfter = mountedNodeIds.value.size - atTransition
+    expect(mountedNodeIds.value.size).toBeLessThan(600)
+
+    // The floor rose, so the shorter window still mounts more than the longer
+    // pre-deadline one did even with its startup burst - the crawl ended...
+    expect(mountedAfter).toBeGreaterThan(preDeadline)
+    // ...and the controller stayed in circuit: every frame is over budget, so
+    // the batch keeps halving back to the raised floor rather than pinning at
+    // the ceiling. Literals on purpose - the overrun floor is 8, the ceiling
+    // 16, and a controller-dead deadline mounts 16 per write here.
+    expect(biggestWrite).toBeGreaterThan(0)
+    expect(biggestWrite).toBeLessThanOrEqual(8)
+  })
+
   it('never admits more than one batch in a single write', async () => {
     // The eager prune fires when the mounted set is much larger than what is
     // visible, which on a fast pan means the set has rotated rather than

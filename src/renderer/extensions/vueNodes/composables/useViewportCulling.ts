@@ -27,7 +27,7 @@ import {
   useIntervalFn,
   useThrottleFn
 } from '@vueuse/core'
-import { shallowRef, watch } from 'vue'
+import { computed, shallowRef, watch } from 'vue'
 import type { ComputedRef } from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
@@ -118,12 +118,14 @@ const OVERRUN_BATCH_FLOOR = MOUNT_BATCH_PER_FRAME
 const MOUNT_FRAME_BUDGET_MS = 20
 
 /**
- * How long a staged fill-in may take before the remainder is mounted at once.
+ * How long a fill may run before its batch floor rises to
+ * {@link OVERRUN_BATCH_FLOOR}.
  *
- * Backpressure alone can deadlock: a mass paste makes frames slow for reasons
- * that have nothing to do with mounting, the batch shrinks in response, and
- * frames stay slow, so it never recovers and nodes trickle in one per frame.
- * One bounded hitch is better than a fill-in the user watches crawl.
+ * Backpressure alone can deadlock: slow frames shrink the batch, mounting is
+ * not what is making the frames slow, and the fill crawls at the floor
+ * indefinitely. Carried across re-queues - a pan rebuilds the queue every
+ * 100ms, so a per-queue clock would never elapse - and reset when a fill
+ * completes.
  */
 const MOUNT_QUEUE_DEADLINE_MS = 600
 
@@ -207,6 +209,23 @@ interface UseViewportCullingOptions {
    */
   getAlwaysMountedIds?: () => ReadonlySet<NodeId> | undefined
   /**
+   * Node membership as a stable key - the joined id list, changing only on add
+   * or remove. `nodes` itself gets a new identity whenever any entry is
+   * replaced (title, badge, progress), and treating those as membership would
+   * cancel an in-flight paced fill and mount the whole entering set in one
+   * write on every cosmetic update during execution.
+   */
+  membership?: ComputedRef<string>
+  /**
+   * Frame budget for the paced fill, in milliseconds.
+   *
+   * Injectable for the same reason as `minNodesForCulling`: fake timers fire
+   * animation frames at a fixed 16ms, so the over-budget branch - and
+   * everything downstream of it, including the overrun floor - is unreachable
+   * in tests against the production constant.
+   */
+  mountFrameBudgetMs?: number
+  /**
    * Whether culling should run at all. A getter rather than a plain boolean so
    * that turning it back on recomputes the mounted set: while off, that set
    * converges to empty, and a caller filtering against a stale empty set would
@@ -223,8 +242,10 @@ export function useViewportCulling({
   getViewportSize,
   getPinnedIds,
   getAlwaysMountedIds,
+  membership,
   isEnabled,
-  minNodesForCulling = MIN_NODES_FOR_CULLING
+  minNodesForCulling = MIN_NODES_FOR_CULLING,
+  mountFrameBudgetMs = MOUNT_FRAME_BUDGET_MS
 }: UseViewportCullingOptions) {
   const { camera } = useTransformState()
   const mountedNodeIds = shallowRef<Set<NodeId>>(new Set())
@@ -337,7 +358,7 @@ export function useViewportCulling({
     if (lastDrainAt > 0) {
       const frameMs = now - lastDrainAt
       mountBatchSize =
-        frameMs > MOUNT_FRAME_BUDGET_MS
+        frameMs > mountFrameBudgetMs
           ? Math.max(floor, Math.floor(mountBatchSize / 2))
           : Math.min(MOUNT_BATCH_CEILING, mountBatchSize * 2)
     } else if (pastDeadline) {
@@ -359,12 +380,14 @@ export function useViewportCulling({
   }
 
   function queueMount(entering: NodeId[], immediate = false): void {
-    // How long the user has been waiting for nodes to finish arriving, carried
-    // across re-queues. Panning re-computes the entering set every 100ms and
-    // the backstop every 250ms, so starting this afresh each time meant the
-    // deadline could never elapse and the batch stayed pinned at whatever
-    // backpressure had shrunk it to.
+    // Fill state is carried across re-queues, reset only when a fill completes
+    // or is genuinely abandoned. Panning rebuilds the queue every 100ms, so
+    // per-queue state would never accumulate: the deadline could never elapse,
+    // and the adapted batch size - knowledge about frame cost, not about any
+    // particular queue - would snap back to the default each time.
     const fillStartedAt = queueStartedAt
+    const carriedBatchSize = mountBatchSize
+    const carriedLastDrainAt = lastDrainAt
     cancelQueuedMounts()
     if (entering.length === 0) return
 
@@ -379,11 +402,23 @@ export function useViewportCulling({
       return
     }
 
-    queueStartedAt = fillStartedAt || performance.now()
+    if (fillStartedAt) {
+      queueStartedAt = fillStartedAt
+      mountBatchSize = carriedBatchSize
+      lastDrainAt = carriedLastDrainAt
+    } else {
+      queueStartedAt = performance.now()
+    }
 
     // First batch synchronously so a small change appears this frame rather
-    // than a frame late; the rest fills in over following frames.
-    const firstBatch = entering.slice(0, MOUNT_BATCH_PER_FRAME)
+    // than a frame late; the rest fills in over following frames. A continuing
+    // fill uses the adapted size - the default would let a sustained pan
+    // bypass backpressure with a full-size synchronous batch on every
+    // re-queue, exactly while frames are over budget.
+    const firstBatch = entering.slice(
+      0,
+      fillStartedAt ? mountBatchSize : MOUNT_BATCH_PER_FRAME
+    )
     const next = new Set(mountedNodeIds.value)
     for (const id of firstBatch) next.add(id)
     mountedNodeIds.value = next
@@ -458,11 +493,16 @@ export function useViewportCulling({
     // large and land in one frame, which is the flush the paced queue exists to
     // avoid. Arrivals stay with the queue `queueMount` just built.
     if (mounted.size > visible.size * 2 + PRUNE_SLACK) {
+      // Read back rather than reusing `mounted`: queueMount above has already
+      // written its first synchronous batch, and filtering the pre-write
+      // snapshot would silently drop exactly those nodes - they are gone from
+      // the queue too, so nothing would restore them until the next refresh.
+      const current = mountedNodeIds.value
       const retained = new Set<NodeId>()
-      for (const id of mounted) {
+      for (const id of current) {
         if (visible.has(id)) retained.add(id)
       }
-      mountedNodeIds.value = retained
+      if (retained.size !== current.size) mountedNodeIds.value = retained
       return
     }
 
@@ -481,8 +521,15 @@ export function useViewportCulling({
     true
   )
 
-  // Membership changes mount without pacing; see queueMount.
-  watch(nodes, () => refreshMountedNodes(true, true), { immediate: true })
+  // Membership changes mount without pacing; see queueMount. Keyed on the id
+  // list, not the array identity: `nodes` is replaced on any cosmetic entry
+  // update, and unpaced mounting on those is exactly the flush this file
+  // otherwise works to avoid.
+  const membershipKey =
+    membership ?? computed(() => nodes.value.map((node) => node.id).join(','))
+  watch(membershipKey, () => refreshMountedNodes(true, true), {
+    immediate: true
+  })
 
   // The backstop's fingerprint does not include this flag, so without an
   // explicit watch, switching culling on has no effect until some other signal

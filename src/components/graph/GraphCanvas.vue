@@ -343,14 +343,17 @@ const cullingIndex = createNodeCullingIndex({
   }
 })
 
-// Invalidate on membership change only. rawNodes gets a new identity whenever
-// any entry of the reactive map is replaced (title, colour, badges, ...), and
-// those cannot move a node; adds and removes can, and are what the version
-// does not cover for nodes that never reached the layout store.
-watch(
-  () => rawNodes.value.map((node) => node.id).join(','),
-  () => cullingIndex.invalidate()
+// Membership, not identity: rawNodes is replaced wholesale whenever any entry
+// of the reactive map is replaced (title, colour, badges, progress), and those
+// cannot add or move a node. Computed once and shared - the index invalidation
+// and the culling composable both key off it.
+const nodeMembership = computed(() =>
+  rawNodes.value.map((node) => node.id).join(',')
 )
+
+// Adds and removes are what the geometry version does not cover for nodes that
+// never reached the layout store.
+watch(nodeMembership, () => cullingIndex.invalidate())
 
 // Opt-out is static per node, so it only needs recomputing when the node list
 // changes. Live state is dynamic and handled in getPinnedIds instead.
@@ -360,6 +363,7 @@ const nodesOptedOutOfCulling = computed(() =>
 
 const { mountedNodeIds } = useViewportCulling({
   nodes: rawNodes,
+  membership: nodeMembership,
   // A getter, so the composable has a reactive dependency on the setting. The
   // callbacks below are plain functions, so reading it inside them alone would
   // leave nothing to recompute the mounted set when the switch is turned back
