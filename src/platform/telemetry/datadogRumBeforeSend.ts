@@ -27,7 +27,6 @@ const THIRD_PARTY_SCRIPT_ORIGINS = [
 ]
 
 const RESOURCE_LOAD_FAILURE_MARKERS = [
-  'resource:loadError',
   'loadError',
   'Failed to load',
   'Failed to fetch',

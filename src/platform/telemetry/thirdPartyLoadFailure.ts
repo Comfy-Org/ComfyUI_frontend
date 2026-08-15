@@ -4,8 +4,10 @@
  * protection, corporate proxy, strict DNS) rather than of anything we shipped.
  * Chromium, Firefox and WebKit each word this differently, hence the list.
  *
- * Deliberately narrow: a vendor 5xx, a malformed response, or a bug in our own
- * initialisation produces none of these and stays an error.
+ * Browsers report a non-2xx or wrong-MIME dynamic import with the same wording
+ * as a blocked one, so a vendor outage lands here too. Only the log level
+ * differs — the provider is disabled either way. Anything thrown after the
+ * module loads, including a bug in our own initialisation, stays an error.
  */
 const BLOCKED_LOAD_MESSAGES = [
   'failed to fetch dynamically imported module',
