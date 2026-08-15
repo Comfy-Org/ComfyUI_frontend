@@ -28,7 +28,7 @@ export const connectivityExpectations: ConnectivityExpectations = {
   // entry must go.
   zeroPairDragExpectedNodeCounts: {
     'comfyui-impact-subpack': 1,
-    'comfyui-qwenmultiangle': 1,
-    'comfyui-string-converter': 2
+    'comfyui-string-converter': 2,
+    'comfyui-workflow-prettier': 1
   }
 }

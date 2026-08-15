@@ -17,7 +17,10 @@ import {
 } from '@e2e/fixtures/customNode/consoleErrorLedger'
 import { connectivityExpectations } from '@e2e/fixtures/customNode/connectivityExpectations'
 import { failureSummary } from '@e2e/fixtures/customNode/failureReport'
-import { loadManifest } from '@e2e/fixtures/customNode/manifest'
+import {
+  loadFullManifest,
+  loadManifest
+} from '@e2e/fixtures/customNode/manifest'
 import type {
   ConnectivityOutcome,
   PlannedPair,
@@ -521,11 +524,14 @@ test('connectivity drags: curated slot-to-slot wires connect under both renderer
     dragEdges.push(inPack)
   }
   for (const pack of Object.keys(zeroPairDragExpectedNodeCounts)) {
-    const entry = connectivityEntries.find((entry) => entry.pack === pack)
+    // Existence is a manifest-wide fact; whether this shard owns the pack is
+    // a separate question. Checking both against the slice made every shard
+    // that does not own a listed pack report it as stale.
     expect(
-      entry,
-      `${pack} has a zero-pair expectation but is not a connectivity manifest entry`
-    ).toBeDefined()
+      loadFullManifest().some((entry) => entry.pack === pack),
+      `${pack} has a zero-pair expectation but is not a manifest entry`
+    ).toBe(true)
+    const entry = connectivityEntries.find((entry) => entry.pack === pack)
     if (!entry || !isEntryInstalled(nodeTypes, entry)) continue
     expect(
       observedZeroPairPacks.has(entry.pack),

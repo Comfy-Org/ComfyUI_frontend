@@ -15,9 +15,17 @@
     "expectedNodeCount": 61,
     "reason": "Cloud disables 1 node(s) this backend serves; the delta is exactly that count"
   },
+  "ComfyUI-KJNodes": {
+    "expectedNodeCount": 241,
+    "reason": "Cloud disables 14 node(s) this backend serves; the delta is exactly that count"
+  },
   "ComfyUI-LTXVideo": {
     "expectedNodeCount": 76,
     "reason": "local backend serves 2 more node(s) than Cloud's snapshot recorded (Cloud disables 4)"
+  },
+  "ComfyUI-Prompt-Combinator": {
+    "expectedNodeCount": 4,
+    "reason": "Cloud disables 1 node(s) this backend serves; the delta is exactly that count"
   },
   "ComfyUI-Qwen-TTS": {
     "expectedNodeCount": 8,
@@ -27,9 +35,21 @@
     "expectedNodeCount": 5,
     "reason": "Cloud disables 2 node(s) this backend serves; the delta is exactly that count"
   },
+  "ComfyUI-SeedVR2_VideoUpscaler": {
+    "expectedNodeCount": 1,
+    "reason": "GPU-only imports do not resolve on a CPU runner, so fewer node classes register here than Cloud recorded; the count is exact, so any further drop still fails"
+  },
+  "ComfyUI-WanAnimatePreprocess": {
+    "expectedNodeCount": 4,
+    "reason": "GPU-only imports do not resolve on a CPU runner, so fewer node classes register here than Cloud recorded; the count is exact, so any further drop still fails"
+  },
   "ComfyUI-WanVideoWrapper": {
     "expectedNodeCount": 142,
     "reason": "local backend serves 1 more node(s) than Cloud's snapshot recorded (Cloud disables 6)"
+  },
+  "ComfyUI-test-framework": {
+    "expectedNodeCount": 9,
+    "reason": "GPU-only imports do not resolve on a CPU runner, so fewer node classes register here than Cloud recorded; the count is exact, so any further drop still fails"
   },
   "ComfyUI_AudioTools": {
     "expectedNodeCount": 31,
@@ -51,9 +71,17 @@
     "expectedNodeCount": 8,
     "reason": "Cloud disables 1 node(s) this backend serves; the delta is exactly that count"
   },
+  "RES4LYF": {
+    "expectedNodeCount": 293,
+    "reason": "local backend serves 8 more node(s) than Cloud's snapshot recorded (Cloud disables 9)"
+  },
   "WhatDreamsCost-ComfyUI": {
     "expectedNodeCount": 8,
     "reason": "local backend serves 2 more node(s) than Cloud's snapshot recorded (Cloud disables 3)"
+  },
+  "basic_data_handling": {
+    "expectedNodeCount": 309,
+    "reason": "Cloud disables 30 node(s) this backend serves; the delta is exactly that count"
   },
   "comfyui-PlyPreview": {
     "expectedNodeCount": 4,
@@ -63,9 +91,17 @@
     "expectedNodeCount": 43,
     "reason": "Cloud disables 1 node(s) this backend serves; the delta is exactly that count"
   },
+  "comfyui-animatediff-evolved": {
+    "expectedNodeCount": 145,
+    "reason": "Cloud disables 1 node(s) this backend serves; the delta is exactly that count"
+  },
   "comfyui-florence2": {
     "expectedNodeCount": 4,
     "reason": "Cloud disables 1 node(s) this backend serves; the delta is exactly that count"
+  },
+  "comfyui-frame-interpolation": {
+    "expectedNodeCount": 14,
+    "reason": "local backend serves 3 more node(s) than Cloud's snapshot recorded (Cloud disables 5)"
   },
   "comfyui-impact-pack": {
     "expectedExtensions": ["Comfy.Impack"],
@@ -80,13 +116,37 @@
     "expectedNodeCount": 8,
     "reason": "Cloud disables 2 node(s) this backend serves; the delta is exactly that count"
   },
+  "comfyui-logic": {
+    "expectedNodeCount": 7,
+    "reason": "Cloud disables 1 node(s) this backend serves; the delta is exactly that count"
+  },
+  "comfyui-qwenmultiangle": {
+    "expectedNodeCount": 1,
+    "reason": "GPU-only imports do not resolve on a CPU runner, so fewer node classes register here than Cloud recorded; the count is exact, so any further drop still fails"
+  },
+  "comfyui-rmbg": {
+    "expectedNodeCount": 42,
+    "reason": "local backend serves 7 more node(s) than Cloud's snapshot recorded (Cloud disables 8)"
+  },
   "comfyui-various": {
     "expectedNodeCount": 68,
     "reason": "Cloud disables 13 node(s) this backend serves; the delta is exactly that count"
   },
+  "comfyui-videohelpersuite": {
+    "expectedNodeCount": 40,
+    "reason": "Cloud disables 8 node(s) this backend serves; the delta is exactly that count"
+  },
   "comfyui_ipadapter_plus": {
     "expectedNodeCount": 30,
     "reason": "local backend serves 1 more node(s) than Cloud's snapshot recorded (Cloud disables 2)"
+  },
+  "comfyui_layerstyle": {
+    "expectedNodeCount": 165,
+    "reason": "local backend serves 3 more node(s) than Cloud's snapshot recorded (Cloud disables 13)"
+  },
+  "comfyui_steudio": {
+    "expectedNodeCount": 10,
+    "reason": "local backend serves 2 more node(s) than Cloud's snapshot recorded (Cloud disables 3)"
   },
   "masquerade-nodes-comfyui": {
     "expectedNodeCount": 22,
@@ -95,5 +155,9 @@
   "wanvaceadvanced": {
     "expectedNodeCount": 13,
     "reason": "Cloud disables 2 node(s) this backend serves; the delta is exactly that count"
+  },
+  "was-node-suite-comfyui": {
+    "expectedNodeCount": 220,
+    "reason": "local backend serves 37 more node(s) than Cloud's snapshot recorded (Cloud disables 40)"
   }
 }
