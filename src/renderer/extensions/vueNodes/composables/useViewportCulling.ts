@@ -104,6 +104,16 @@ const MOUNT_BATCH_FLOOR = 2
  */
 const MOUNT_BATCH_CEILING = MOUNT_BATCH_PER_FRAME * 2
 
+/**
+ * Floor applied once a fill has overrun {@link MOUNT_QUEUE_DEADLINE_MS}.
+ *
+ * High enough to end the crawl the deadline exists for, low enough that
+ * backpressure can still halve towards it and keep frames near budget - which
+ * a sustained pan needs, because it re-queues continuously and so can sit past
+ * the deadline for the whole gesture.
+ */
+const OVERRUN_BATCH_FLOOR = MOUNT_BATCH_PER_FRAME
+
 /** Frame budget the fill-in tries to stay within, in milliseconds. */
 const MOUNT_FRAME_BUDGET_MS = 20
 
@@ -313,26 +323,25 @@ export function useViewportCulling({
     mountFrame = null
     if (disposed || mountQueue.length === 0) return
 
-    // Past the deadline, stop adapting rather than stop pacing. Draining the
-    // whole remainder in one assignment is unbounded - the queue is sized by
-    // the viewport query, which at minimum zoom is most of the graph - so it
-    // trades a crawl for a multi-second freeze. Pinning the batch high keeps
-    // the worst frame bounded by MOUNT_BATCH_CEILING instead.
+    // Overrunning raises the floor rather than replacing the controller.
+    //
+    // A sustained pan re-queues about every 100ms and never completes, so the
+    // deadline can hold for a whole gesture; taking the controller out of
+    // circuit then would pin the batch exactly while frame cost matters most.
+    // Raising the floor still ends the crawl - which is all the deadline was
+    // ever for - while backpressure keeps responding above it.
     const pastDeadline =
       queueStartedAt > 0 && now - queueStartedAt > MOUNT_QUEUE_DEADLINE_MS
+    const floor = pastDeadline ? OVERRUN_BATCH_FLOOR : MOUNT_BATCH_FLOOR
 
-    if (pastDeadline) {
-      mountBatchSize = MOUNT_BATCH_CEILING
-    } else if (lastDrainAt > 0) {
+    if (lastDrainAt > 0) {
       const frameMs = now - lastDrainAt
-      if (frameMs > MOUNT_FRAME_BUDGET_MS) {
-        mountBatchSize = Math.max(
-          MOUNT_BATCH_FLOOR,
-          Math.floor(mountBatchSize / 2)
-        )
-      } else {
-        mountBatchSize = Math.min(MOUNT_BATCH_CEILING, mountBatchSize * 2)
-      }
+      mountBatchSize =
+        frameMs > MOUNT_FRAME_BUDGET_MS
+          ? Math.max(floor, Math.floor(mountBatchSize / 2))
+          : Math.min(MOUNT_BATCH_CEILING, mountBatchSize * 2)
+    } else if (pastDeadline) {
+      mountBatchSize = Math.max(floor, mountBatchSize)
     }
     lastDrainAt = now
 
@@ -405,18 +414,6 @@ export function useViewportCulling({
   }, UNMOUNT_DELAY_MS)
 
   /**
-   * Replaces the mounted set outright, cancelling any fill still in flight.
-   *
-   * That queue was computed for a camera position that no longer applies, so
-   * draining it afterwards re-adds ids this just dropped, each frame paying a
-   * full Set copy and a shallowRef reassign for no visual change.
-   */
-  function commitMountedNodes(visible: Set<NodeId>): void {
-    cancelQueuedMounts()
-    mountedNodeIds.value = visible
-  }
-
-  /**
    * @param allowMount false while a zoom gesture is in flight: the set is
    * still pruned, so zooming in sheds nodes and gets cheaper as it goes, but
    * nothing new mounts until the gesture settles.
@@ -454,8 +451,18 @@ export function useViewportCulling({
     // continuous pan would otherwise keep every node it swept over mounted.
     // Once the mounted set is much larger than what is actually visible,
     // drop the stale entries immediately instead of waiting.
+    //
+    // Departures only. Committing the whole visible set would also admit every
+    // arrival in the same write, and this guard fires precisely on a fast pan,
+    // where the set has rotated rather than shrunk - so the admissions are
+    // large and land in one frame, which is the flush the paced queue exists to
+    // avoid. Arrivals stay with the queue `queueMount` just built.
     if (mounted.size > visible.size * 2 + PRUNE_SLACK) {
-      commitMountedNodes(visible)
+      const retained = new Set<NodeId>()
+      for (const id of mounted) {
+        if (visible.has(id)) retained.add(id)
+      }
+      mountedNodeIds.value = retained
       return
     }
 

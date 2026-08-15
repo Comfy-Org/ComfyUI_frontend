@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, effectScope, nextTick, reactive, ref } from 'vue'
+import { computed, effectScope, nextTick, reactive, ref, watch } from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import {
@@ -340,6 +340,63 @@ describe('useViewportCulling', () => {
     // Without eager pruning the mounted set would cover every node the
     // viewport swept over.
     expect(mountedNodeIds.value.size).toBeLessThan(NODE_COUNT / 3)
+  })
+
+  it('never admits more than one batch in a single write', async () => {
+    // The eager prune fires when the mounted set is much larger than what is
+    // visible, which on a fast pan means the set has rotated rather than
+    // shrunk. Committing the visible set wholesale then admits every arrival
+    // in one frame - the flush the paced queue exists to avoid.
+    //
+    // Both clusters are dense on purpose: the prune needs mounted > 2x visible
+    // to fire at all, and the destination needs enough nodes that a wholesale
+    // commit is visibly larger than one batch.
+    const bounds: Record<string, Bounds> = {}
+    for (let i = 0; i < 500; i++) {
+      bounds[`here${i}`] = {
+        x: (i % 25) * 40,
+        y: Math.floor(i / 25) * 40,
+        width: 20,
+        height: 20
+      }
+    }
+    for (let i = 0; i < 200; i++) {
+      bounds[`there${i}`] = {
+        x: 90_000 + (i % 20) * 40,
+        y: Math.floor(i / 20) * 40,
+        width: 20,
+        height: 20
+      }
+    }
+    const { mountedNodeIds, scope } = setup(bounds)
+
+    await vi.advanceTimersByTimeAsync(3000)
+    expect(mountedNodeIds.value.size).toBeGreaterThan(400)
+
+    let biggestAdmission = 0
+    let previous = new Set(mountedNodeIds.value)
+    scope.run(() =>
+      watch(
+        mountedNodeIds,
+        (next) => {
+          let added = 0
+          for (const id of next) if (!previous.has(id)) added++
+          biggestAdmission = Math.max(biggestAdmission, added)
+          previous = new Set(next)
+        },
+        { flush: 'sync' }
+      )
+    )
+
+    camera.x = -90_000
+    await nextTick()
+    await vi.advanceTimersByTimeAsync(3000)
+
+    // The destination did fill in...
+    expect(mountedNodeIds.value.size).toBeGreaterThan(100)
+    // ...but never more than a batch at a time.
+    expect(biggestAdmission).toBeGreaterThan(0)
+    expect(biggestAdmission).toBeLessThanOrEqual(16)
   })
 
   it('does not keep mounting nodes the camera has already left behind', async () => {
