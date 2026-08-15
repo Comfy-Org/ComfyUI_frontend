@@ -39,7 +39,7 @@ import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
 import {
   inputHasLink,
-  inputLinkId,
+  inputLink,
   outputHasLinks,
   outputLinks
 } from './node/slotLinks'
@@ -2232,30 +2232,22 @@ export class LGraph
       externalFirst: boolean
     }[] = []
     for (const [, link] of subgraphNode.subgraph.links) {
-      let externalParentId: RerouteId | undefined
-      let originId: NodeId
-      let originSlot = link.origin_slot
-      if (link.origin_id === SUBGRAPH_INPUT_ID) {
-        const outerLinkId = inputLinkId(this, subgraphNode.id, link.origin_slot)
-        if (!outerLinkId) {
-          console.error('Missing Link ID when unpacking')
-          continue
-        }
-        const outerLink = this.links[outerLinkId]
-        originId = outerLink.origin_id
-        originSlot = outerLink.origin_slot
-        externalParentId = outerLink.parentId
-      } else {
-        const mappedOriginId =
-          link.origin_id === UNASSIGNED_NODE_ID
+      const outerLink =
+        link.origin_id === SUBGRAPH_INPUT_ID
+          ? inputLink(this, subgraphNode.id, link.origin_slot)
+          : undefined
+      const originId =
+        link.origin_id === SUBGRAPH_INPUT_ID
+          ? outerLink?.origin_id
+          : link.origin_id === UNASSIGNED_NODE_ID
             ? undefined
             : nodeIdMap.get(link.origin_id)
-        if (!mappedOriginId) {
-          console.error('Missing Link ID when unpacking')
-          continue
-        }
-        originId = mappedOriginId
+      if (!originId) {
+        console.error('Missing Link ID when unpacking')
+        continue
       }
+      const originSlot = outerLink?.origin_slot ?? link.origin_slot
+      const externalParentId = outerLink?.parentId
       if (link.target_id === SUBGRAPH_OUTPUT_ID) {
         for (const sublink of outputLinks(
           this,
