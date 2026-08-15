@@ -26,6 +26,7 @@
       <div
         v-if="widget.visible"
         data-testid="node-widget"
+        :data-has-error="widget.hasError || undefined"
         class="lg-node-widget group col-span-full grid grid-cols-subgrid items-stretch pr-3"
       >
         <!-- Widget Input Slot Dot -->
