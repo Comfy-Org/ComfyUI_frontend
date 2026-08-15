@@ -83,18 +83,17 @@ test.describe('Renderer toggle geometry', { tag: ['@vue-nodes'] }, () => {
       await expect(comfyPage.vueNodes.nodes).toHaveCount(3)
 
       const ksamplerNode = comfyPage.vueNodes.getNodeByTitle('KSampler')
-      const clipNode = comfyPage.vueNodes.getNodeByTitle('CLIP Text Encode')
       await expect
         .poll(async () => {
           const ksamplerZIndex = await ksamplerNode.evaluate((node) =>
             Number(getComputedStyle(node).zIndex)
           )
-          const clipZIndex = await clipNode.evaluate((node) =>
-            Number(getComputedStyle(node).zIndex)
+          const zIndices = await comfyPage.vueNodes.nodes.evaluateAll((nodes) =>
+            nodes.map((node) => Number(getComputedStyle(node).zIndex))
           )
-          return ksamplerZIndex - clipZIndex
+          return zIndices.filter((zIndex) => zIndex >= ksamplerZIndex).length
         })
-        .toBeGreaterThan(0)
+        .toBe(1)
     }
   )
 })
