@@ -4498,7 +4498,12 @@ function transferNodeState(node: LGraphNode, replacement: LGraphNode): void {
     resizable: undefined,
     shape: undefined,
     showAdvanced: undefined,
+    titleMode: undefined,
     ...replacementState
+  } satisfies {
+    [K in Exclude<keyof NodeState, 'graphId' | 'id'>]-?:
+      | NodeState[K]
+      | undefined
   })
   replacement._state = registeredState
   replacement._graphScope = node._graphScope

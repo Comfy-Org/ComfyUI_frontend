@@ -5,6 +5,10 @@ import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEven
 import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  canTransferReplacementOwnership,
+  transferReplacementOwnership
+} from '@/lib/litegraph/src/LGraphNode'
 import { useLinkStore } from '@/stores/linkStore'
 import type { MissingNodeType } from '@/types/comfy'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
@@ -34,9 +38,14 @@ vi.mock('@/utils/graphTraversalUtil', () => ({
   collectAllNodes: vi.fn()
 }))
 
+const { mockRemoveMissingNodesByType, mockToastAdd } = vi.hoisted(() => ({
+  mockRemoveMissingNodesByType: vi.fn(),
+  mockToastAdd: vi.fn()
+}))
+
 vi.mock('@/platform/updates/common/toastStore', () => ({
   useToastStore: vi.fn(() => ({
-    add: vi.fn()
+    add: mockToastAdd
   }))
 }))
 
@@ -56,9 +65,6 @@ vi.mock('@/i18n', () => ({
     params ? `${key}:${JSON.stringify(params)}` : key
 }))
 
-const { mockRemoveMissingNodesByType } = vi.hoisted(() => ({
-  mockRemoveMissingNodesByType: vi.fn()
-}))
 vi.mock('@/platform/nodeReplacement/missingNodesErrorStore', () => ({
   useMissingNodesErrorStore: vi.fn(() => ({
     removeMissingNodesByType: mockRemoveMissingNodesByType
@@ -430,6 +436,42 @@ describe('useNodeReplacement', () => {
 
       expect(result).toEqual([])
     })
+
+    it.for([
+      ['preflight', false, true, false],
+      ['transfer', true, false, true]
+    ] as const)(
+      'reports an ownership %s refusal',
+      ([_stage, canTransfer, didTransfer, removed]) => {
+        const placeholder = createPlaceholderNode(1, 'OldNode')
+        placeholder.onRemoved = vi.fn()
+        const graph = createMockGraph([placeholder])
+        placeholder.graph = graph
+        Object.assign(app, { rootGraph: graph })
+        vi.mocked(collectAllNodes).mockReturnValue([placeholder])
+        vi.mocked(LiteGraph.createNode).mockReturnValue(createNewNode())
+        vi.mocked(canTransferReplacementOwnership).mockReturnValue(canTransfer)
+        vi.mocked(transferReplacementOwnership).mockReturnValue(didTransfer)
+        vi.spyOn(console, 'error').mockImplementation(() => {})
+
+        const result = useNodeReplacement().replaceNodesInPlace([
+          makeMissingNodeType('OldNode', {
+            new_node_id: 'NewNode',
+            old_node_id: 'OldNode',
+            old_widget_ids: null,
+            input_mapping: null,
+            output_mapping: null
+          })
+        ])
+
+        expect(result).toEqual([])
+        expect(graph._nodes[0]).toBe(placeholder)
+        expect(placeholder.onRemoved).toHaveBeenCalledTimes(removed ? 1 : 0)
+        expect(mockToastAdd).toHaveBeenCalledWith(
+          expect.objectContaining({ severity: 'error' })
+        )
+      }
+    )
 
     it('should replace multiple different node types at once', () => {
       const placeholder1 = createPlaceholderNode(1, 'Load3DAnimation')

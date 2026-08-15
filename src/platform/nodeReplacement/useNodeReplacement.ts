@@ -158,7 +158,7 @@ function replaceWithMapping(
   replacement: NodeReplacement,
   nodeGraph: LGraph,
   idx: number
-): boolean {
+): void {
   newNode.id = node.id
   newNode.pos = [...node.pos]
   newNode.size = [...node.size]
@@ -171,7 +171,7 @@ function replaceWithMapping(
     nodeGraph._nodes_by_id[node.id] !== node ||
     !canTransferReplacementOwnership(node, newNode)
   )
-    return false
+    throw new Error(`Cannot replace node ${node.id}: ownership is invalid`)
 
   node.onRemoved?.()
   if (
@@ -179,7 +179,9 @@ function replaceWithMapping(
     nodeGraph._nodes_by_id[node.id] !== node ||
     !transferReplacementOwnership(node, newNode)
   )
-    return false
+    throw new Error(
+      `Cannot replace node ${node.id}: ownership changed during removal`
+    )
   nodeGraph._nodes[idx] = newNode
   newNode.graph = nodeGraph
   node.graph = null
@@ -242,7 +244,6 @@ function replaceWithMapping(
   // Announce the add that graph.add() would have.
   nodeGraph.onNodeAdded?.(newNode)
   nodeGraph.events.dispatch('node:added', { node: newNode })
-  return true
 }
 
 export function useNodeReplacement() {
@@ -308,17 +309,7 @@ export function useNodeReplacement() {
                 newNode
               )
             }
-        if (
-          !replaceWithMapping(
-            node,
-            newNode,
-            effectiveReplacement,
-            nodeGraph,
-            idx
-          )
-        ) {
-          continue
-        }
+        replaceWithMapping(node, newNode, effectiveReplacement, nodeGraph, idx)
 
         if (!replacedTypes.includes(match.type)) {
           replacedTypes.push(match.type)
