@@ -4887,11 +4887,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    * @todo Refactor deletion task to LGraph.  Selection is a canvas property, delete is a graph action.
    */
   deleteSelected(): void {
-    // `selectOnly` means the canvas is being used to pick items rather than
-    // edit them. Deleting is an edit, and every delete path - the command, the
-    // node context menu and the keybinding - funnels through here.
-    if (this.selectOnly) return
-
     const { graph } = this
     if (!graph) throw new NullGraphError()
 
