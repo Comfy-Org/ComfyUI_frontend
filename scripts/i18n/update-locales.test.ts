@@ -133,6 +133,20 @@ describe('locale file update', () => {
     ])
   })
 
+  it('does not audit leaves the rebuild will overwrite', () => {
+    const source = { enabled: true, list: ['one', 'two'], text: 'Hello {name}' }
+    const existing = { enabled: false, list: ['uno'], text: 'Hola {name}' }
+    const pendingLeaves = collectPendingLeaves(source, existing, new Set())
+    expect(pendingLeaves.map((leaf) => leaf.path.join('.'))).toEqual(['list'])
+    expect(
+      auditProtectedLiterals(
+        source,
+        existing,
+        new Set(pendingLeaves.map((leaf) => pathKey(leaf.path)))
+      )
+    ).toEqual([])
+  })
+
   it('translates added, modified, and missing values; prunes deleted and stray keys; keeps valid translations', async () => {
     const { output, translatedCount } = await updateLocaleFile(
       source,
@@ -523,6 +537,25 @@ describe('validateLocale', () => {
     expect(
       validateLocale(source, { count: 'None | | {count} items' }, changes)
     ).toEqual(['count: empty plural form'])
+  })
+
+  it('allows an empty plural form the English source also has', () => {
+    const source = { count: '| {count} item | {count} items' }
+    const changes = diffLocaleSources({}, source)
+    expect(
+      validateLocale(source, { count: '| {count} 개 | {count} 개' }, changes)
+    ).toEqual([])
+  })
+
+  it('rejects malformed linked message syntax', () => {
+    const source = { send: 'Send' }
+    const changes = diffLocaleSources({}, source)
+    expect(
+      validateLocale(source, { send: 'Enviar @: g.cancel' }, changes)
+    ).toEqual(['send: added malformed linked message @'])
+    expect(
+      validateLocale(source, { send: 'Enviar @.lower g.cancel' }, changes)
+    ).toEqual(['send: added malformed linked message @'])
   })
 })
 

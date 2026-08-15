@@ -293,20 +293,21 @@ function loadLocaleFileStates(
       const strayPaths = [...collectLeaves(existing).values()]
         .filter((leaf) => !sourceLeafKeys.has(pathKey(leaf.path)))
         .map((leaf) => leaf.path)
+      const pendingLeaves = collectPendingLeaves(
+        plan.source,
+        existing,
+        plan.invalidated
+      )
       return {
         locale,
         plan,
         outputFile,
         existing,
-        pendingLeaves: collectPendingLeaves(
-          plan.source,
-          existing,
-          plan.invalidated
-        ),
+        pendingLeaves,
         auditErrors: auditProtectedLiterals(
           plan.source,
           existing,
-          plan.invalidated
+          new Set(pendingLeaves.map((leaf) => pathKey(leaf.path)))
         ),
         strayPaths
       }
@@ -318,6 +319,23 @@ function print(line: string): void {
   process.stdout.write(`${line}\n`)
 }
 
+const reportExampleLimit = 5
+
+function printCapped(
+  label: string,
+  lines: readonly string[],
+  remainderNoun: string
+): void {
+  for (const line of lines.slice(0, reportExampleLimit)) {
+    print(`${label}: ${line}`)
+  }
+  if (lines.length > reportExampleLimit) {
+    print(
+      `${label}: … and ${lines.length - reportExampleLimit} more ${remainderNoun}`
+    )
+  }
+}
+
 function reportCheck(states: readonly LocaleFileState[]): number {
   let pendingTotal = 0
   let strayTotal = 0
@@ -327,11 +345,14 @@ function reportCheck(states: readonly LocaleFileState[]): number {
     const label = `${state.locale.code}/${state.plan.filename}`
     if (state.pendingLeaves.length > 0) {
       pendingTotal += state.pendingLeaves.length
-      for (const leaf of state.pendingLeaves) {
-        print(
-          `${label}: ${leaf.path.join('.')}: translation required (${leaf.reason})`
-        )
-      }
+      printCapped(
+        label,
+        state.pendingLeaves.map(
+          (leaf) =>
+            `${leaf.path.join('.')}: translation required (${leaf.reason})`
+        ),
+        'strings need translation'
+      )
     }
     if (state.strayPaths.length > 0) {
       strayTotal += state.strayPaths.length
@@ -435,10 +456,13 @@ async function run(argv: readonly string[]): Promise<void> {
   }
 
   for (const state of states) {
-    const label = `${state.locale.code}/${state.plan.filename}`
-    for (const leaf of state.pendingLeaves) {
-      print(`${label}: ${leaf.path.join('.')}: queued (${leaf.reason})`)
-    }
+    printCapped(
+      `${state.locale.code}/${state.plan.filename}`,
+      state.pendingLeaves.map(
+        (leaf) => `${leaf.path.join('.')}: queued (${leaf.reason})`
+      ),
+      'queued'
+    )
   }
 
   const translationPlans = new Map(
@@ -620,11 +644,11 @@ async function run(argv: readonly string[]): Promise<void> {
 
   for (const state of states) {
     if (!completedFilenames.has(state.plan.filename)) continue
-    for (const path of state.strayPaths) {
-      print(
-        `${state.locale.code}/${state.plan.filename}: pruned ${path.join('.')}`
-      )
-    }
+    printCapped(
+      `${state.locale.code}/${state.plan.filename}`,
+      state.strayPaths.map((path) => `pruned ${path.join('.')}`),
+      'pruned'
+    )
   }
 
   if (usage.requests > 0) {
