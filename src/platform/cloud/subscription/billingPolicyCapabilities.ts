@@ -71,7 +71,10 @@ export function getBillingPolicyCapabilities(
     default: {
       const unhandledState: never = state
       void unhandledState
-      return { topUpAccess: 'allowed', showsSubscribeUpsellUI: false }
+      return {
+        topUpAccess: 'subscription-required',
+        showsSubscribeUpsellUI: false
+      }
     }
   }
 }

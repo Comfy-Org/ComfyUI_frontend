@@ -85,7 +85,7 @@ describe('getBillingPolicyCapabilities', () => {
     } as unknown as Parameters<typeof getBillingPolicyCapabilities>[0])
 
     expect(capabilities).toBeDefined()
-    expect(capabilities.topUpAccess).toBe('allowed')
+    expect(capabilities.topUpAccess).toBe('subscription-required')
     expect(capabilities.showsSubscribeUpsellUI).toBe(false)
   })
 })
