@@ -223,7 +223,9 @@ const copiedLabel = t('ui.copied', locale)
     >
       {{ t('mcp.setup.heading', locale) }}
       <template #subtitle>
-        <p class="mt-4 max-w-xl text-sm text-smoke-700 lg:text-base">
+        <p
+          class="mt-4 max-w-xl text-sm whitespace-pre-line text-smoke-700 lg:text-base"
+        >
           {{ t('mcp.setup.subtitle', locale) }}
         </p>
         <p
