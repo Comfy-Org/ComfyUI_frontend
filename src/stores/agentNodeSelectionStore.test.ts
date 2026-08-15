@@ -99,10 +99,12 @@ describe('agentNodeSelectionStore', () => {
     expect(store.isActive).toBe(false)
     expect(store.isBannerVisible).toBe(false)
     expect(store.isActionBarsHidden).toBe(true)
-    expect(sidebar.activeSidebarTabId).toBe('assets')
+    // Staged like the entry side: still closed while the banner retracts.
+    expect(sidebar.activeSidebarTabId).toBeNull()
 
     vi.advanceTimersByTime(150)
     expect(store.isActionBarsHidden).toBe(false)
+    expect(sidebar.activeSidebarTabId).toBe('assets')
   })
 
   it('does not reopen a sidebar the user never had open', () => {

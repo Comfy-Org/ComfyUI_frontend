@@ -26,7 +26,8 @@ import { useAppMode } from '@/composables/useAppMode'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import {
-  extractFilesFromDragEvent,
+  fetchDroppedAsset,
+  getDroppedAsset,
   hasImageType,
   hasVideoType
 } from '@/utils/eventUtils'
@@ -1056,10 +1057,8 @@ function onPanelDragLeave(): void {
 }
 
 async function attachDroppedAsset(event: DragEvent): Promise<void> {
-  const files = (await extractFilesFromDragEvent(event)).filter(
-    (file) => hasImageType(file) || hasVideoType(file)
-  )
-  if (files.length === 0) {
+  const asset = event.dataTransfer && getDroppedAsset(event.dataTransfer)
+  if (!asset) {
     toast.add({
       severity: 'warn',
       detail: t('agent.assetNotAttachable'),
@@ -1067,7 +1066,27 @@ async function attachDroppedAsset(event: DragEvent): Promise<void> {
     })
     return
   }
-  await attachment.addFiles(files)
+
+  if (asset.ref && (asset.kind === 'image' || asset.kind === 'video')) {
+    panelRef.value?.addAttachment({
+      id: `asset:${asset.ref}`,
+      name: asset.name,
+      ref: asset.ref,
+      previewUrl: asset.previewUrl
+    })
+    return
+  }
+
+  const file = await attachment.addDeferredFile(asset.name, async () => {
+    const file = await fetchDroppedAsset(asset)
+    return file && (hasImageType(file) || hasVideoType(file)) ? file : undefined
+  })
+  if (!file)
+    toast.add({
+      severity: 'warn',
+      detail: t('agent.assetNotAttachable'),
+      life: 5000
+    })
 }
 
 function onPanelDragOver(event: DragEvent): void {
