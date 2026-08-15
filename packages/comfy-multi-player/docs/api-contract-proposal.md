@@ -334,7 +334,7 @@ them, or say which one is not acceptable:
 - **`mint()`'s third parameter is undocumented in the current README** — one
   symptom of the README not being the contract. This PR rewrites it.
 
-## What I want out of the meeting
+## Decisions
 
 1. **Q1 — writer topology.** The one genuine disagreement. Decide where the
    document lives and whether an agent turn runs with no client attached.
@@ -346,5 +346,3 @@ them, or say which one is not acceptable:
    now, epoch semantics later.
 6. **Q6 — carve-outs.** Explicit acceptance, or name the one that is not
    acceptable.
-
-Part 1 needs no meeting time unless someone disagrees. Say so here instead.
