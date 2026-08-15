@@ -52,6 +52,7 @@ const emit = defineEmits<{
   openAssets: []
   selectNodes: []
   removeTag: [id: string]
+  focusTag: [id: string]
   mentionPick: [node: SelectedNode]
 }>()
 
@@ -60,8 +61,11 @@ const assetDragActive = inject<Readonly<Ref<boolean>>>(
   ref(false)
 )
 
+// Shared by the reference chips and the `@`-mention rows. Uses the same surface
+// token as the chip itself so the badge tracks the chip across themes, and the
+// same muted foreground as the chip's icon and remove button.
 const duplicateIdClass =
-  'shrink-0 rounded-[26px] bg-charcoal-400 px-1 py-0.5 font-mono text-xs/4 font-medium text-smoke-800'
+  'shrink-0 rounded-[26px] bg-agent-surface-hover px-1 py-0.5 font-mono text-xs/4 font-medium text-agent-fg-muted'
 
 const mentionNodes = ref<SelectedNode[]>([])
 const mentionAssets = ref<AssetItem[]>([])
@@ -90,6 +94,16 @@ type MentionMatch =
   | { kind: 'node'; id: string; label: string; node: SelectedNode }
   | { kind: 'asset'; id: string; label: string; asset: AssetItem }
 
+/**
+ * Nodes already in the basket, hidden from the picker - re-picking one is a
+ * no-op and only makes the list harder to scan.
+ *
+ * Filtered here rather than out of `mentionNodes`, because that list also feeds
+ * `graphDupes`: dropping a staged node from it would stop its chip showing the
+ * `#id` that disambiguates it from a same-titled node still in the graph.
+ */
+const stagedIds = computed(() => new Set(selectionTags.map((tag) => tag.id)))
+
 const mentionMatches = computed<MentionMatch[]>(() => {
   if (!mentionOpen.value) return []
   const query = mentionQuery.value.toLowerCase()
@@ -97,7 +111,8 @@ const mentionMatches = computed<MentionMatch[]>(() => {
     ...mentionNodes.value
       .filter(
         (node) =>
-          node.title.toLowerCase().includes(query) || node.id.includes(query)
+          !stagedIds.value.has(node.id) &&
+          (node.title.toLowerCase().includes(query) || node.id.includes(query))
       )
       .map(
         (node): MentionMatch => ({
@@ -376,24 +391,40 @@ defineExpose({
         <span>{{ t('agent.dragAndDropAssets') }}</span>
       </div>
       <div v-if="selectionTags.length" class="flex flex-wrap gap-2 p-3">
+        <!-- The label is the control that reveals the node on the canvas. The
+             remove button sits outside that trigger deliberately: nesting it
+             inside would surface both tooltips at once on hover. The hover fill
+             sits on the whole chip so the pill lights as one shape rather than
+             painting only the label's inline box. -->
         <span
           v-for="tag in selectionTags"
           :key="tag.id"
-          class="bg-agent-surface-hover text-agent-fg inline-flex h-7 items-center gap-1 rounded-lg border border-neutral-200 px-2.5 text-xs/4 font-medium"
+          class="bg-agent-surface-hover text-agent-fg inline-flex h-7 items-center gap-1 rounded-lg border border-border-default px-2.5 text-xs/4 font-medium transition-colors hover:bg-tertiary-background-hover"
         >
-          <span class="icon-[comfy--node] size-3.5" />
-          <span class="max-w-40 truncate">{{ tag.title }}</span>
           <span
-            v-if="graphDupes.has(tag.title) || tagDupes.has(tag.title)"
-            :class="duplicateIdClass"
-            >#{{ tag.id }}</span
+            v-tooltip.top="buildAgentTooltipConfig(t('agent.focusNode'))"
+            role="button"
+            tabindex="0"
+            :aria-label="t('agent.focusNode')"
+            class="flex cursor-pointer items-center gap-1 transition-colors"
+            @click="emit('focusTag', tag.id)"
+            @keydown.enter="emit('focusTag', tag.id)"
+            @keydown.space.prevent="emit('focusTag', tag.id)"
           >
+            <span class="text-agent-fg-muted icon-[comfy--node] size-3.5" />
+            <span class="max-w-40 truncate">{{ tag.title }}</span>
+            <span
+              v-if="graphDupes.has(tag.title) || tagDupes.has(tag.title)"
+              :class="duplicateIdClass"
+              >#{{ tag.id }}</span
+            >
+          </span>
           <button
             v-tooltip.top="buildAgentTooltipConfig(t('agent.remove'))"
             type="button"
             :aria-label="t('agent.remove')"
             class="text-agent-fg-muted hover:text-agent-fg flex size-3.5 cursor-pointer items-center justify-center transition-colors"
-            @click="emit('removeTag', tag.id)"
+            @click.stop="emit('removeTag', tag.id)"
           >
             <span class="icon-[lucide--x] size-3.5 shrink-0" />
           </button>

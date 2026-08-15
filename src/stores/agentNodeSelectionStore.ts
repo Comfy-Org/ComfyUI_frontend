@@ -2,18 +2,19 @@ import { useEventListener } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
 
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 const ACTION_BARS_TRANSITION_MS = 300
 const BANNER_TRANSITION_MS = 150
 const SIDEBAR_PANEL_TRANSITION_MS = 200
-
 export const useAgentNodeSelectionStore = defineStore(
   'agentNodeSelection',
   () => {
     const dialogStore = useDialogStore()
     const sidebarTabStore = useSidebarTabStore()
+    const canvasStore = useCanvasStore()
     const isActive = ref(false)
     const isActionBarsHidden = ref(false)
     const isBannerVisible = ref(false)
@@ -59,7 +60,16 @@ export const useAgentNodeSelectionStore = defineStore(
     }
 
     function exit(): void {
+      // Order matters: dropping out of the mode first stops the basket
+      // mirroring the canvas, so clearing the selection below leaves the
+      // staged chips intact. Picking is finished - the references stay in the
+      // composer, but the graph goes back to looking untouched.
       isActive.value = false
+
+      const canvas = canvasStore.canvas
+      if (!canvas?.selectedItems.size) return
+      canvas.deselectAll()
+      canvasStore.updateSelectedItems()
     }
 
     function saveNodeIds(

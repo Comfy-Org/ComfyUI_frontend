@@ -67,11 +67,17 @@ const appMock = vi.hoisted(() => {
           }
           selectedItems: Set<unknown>
           selectItems: ReturnType<typeof vi.fn>
+          select: ReturnType<typeof vi.fn>
           deselect: (node: unknown) => void
+          animateToBounds: ReturnType<typeof vi.fn>
           multi_select: boolean
           allow_dragnodes: boolean
           selectOnly: boolean
-          canvas: { focus: ReturnType<typeof vi.fn> }
+          canvas: {
+            focus: ReturnType<typeof vi.fn>
+            width: number
+            height: number
+          }
         }
       | undefined
   }
@@ -416,6 +422,10 @@ function setupNodeSelectionCanvas() {
     for (const item of items) selectedItems.add(item)
   })
   const deselect = vi.fn((node: unknown) => selectedItems.delete(node))
+  const select = vi.fn((node: unknown) => selectedItems.add(node))
+  // Entering selection mode frames the graph; the stub only has to record the
+  // call, but it must exist or onSelectNodes throws part-way through.
+  const animateToBounds = vi.fn()
   const graph = {
     nodes,
     getNodeById: (id: string) =>
@@ -425,15 +435,26 @@ function setupNodeSelectionCanvas() {
     graph,
     selectedItems,
     selectItems,
+    select,
     deselect,
+    animateToBounds,
     multi_select: false,
     allow_dragnodes: true,
     selectOnly: false,
-    canvas: { focus }
+    canvas: { focus, width: 1600, height: 900 }
   }
   appMock.canvas = canvas
   hostStores.canvas.currentGraph = graph
-  return { canvas, focus, nodes, selectedItems, selectItems, deselect }
+  return {
+    canvas,
+    focus,
+    nodes,
+    selectedItems,
+    selectItems,
+    select,
+    deselect,
+    animateToBounds
+  }
 }
 
 function renderCanvasNodeButtons(
@@ -469,6 +490,16 @@ async function enterNodeSelectionMode(): Promise<void> {
       name: i18n.global.t('agent.addNodesFromGraph')
     })
   )
+}
+
+/**
+ * The basket only mirrors the canvas while picking, so anything asserting on
+ * staged chips has to be in the mode first. Set directly rather than driving the
+ * composer control: these tests are about what gets staged, not about how the
+ * mode is entered.
+ */
+function startPicking(): void {
+  useAgentNodeSelectionStore().isActive = true
 }
 
 async function startVueNodeSelection() {
@@ -847,116 +878,6 @@ describe('AgentPanelRoot attach flow', () => {
       })
     }
   )
-
-  it.for([
-    { mime: 'image/png', filename: 'gen.png' },
-    { mime: 'video/mp4', filename: 'movie.mp4' }
-  ])(
-    'stages an existing Media-card $mime reference without uploading',
-    async ({ mime, filename }) => {
-      const messageBodies: unknown[] = []
-      const fetchSpy = vi.fn(
-        async (input: RequestInfo | URL, init?: RequestInit) => {
-          const url = String(input)
-          if (init?.method === 'POST' && url.includes('/messages')) {
-            messageBodies.push(JSON.parse(String(init.body)))
-            return json(202, { thread_id: 'th-1', message_id: 'm-1' })
-          }
-          return new Response('{"threads":[]}', {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' }
-          })
-        }
-      )
-      vi.stubGlobal('fetch', fetchSpy)
-      render(AgentPanelRoot, { global: { plugins: [i18n] } })
-      await nextTick()
-      const target = screen.getByRole('textbox')
-      const ref = `stored_${filename}`
-      const dragData = {
-        types: ['application/x-comfy-asset-info'],
-        getData: () =>
-          JSON.stringify({
-            filename,
-            type: 'input',
-            attachment_ref: ref,
-            media_kind: mime === 'image/png' ? 'image' : 'video',
-            preview_url:
-              mime === 'image/png'
-                ? `http://localhost/api/assets/${filename}/content`
-                : undefined
-          })
-      }
-
-      expect(dispatchDrag(target, 'drop', dragData)).toBe(true)
-      expect(dispatchDrag(target, 'drop', dragData)).toBe(true)
-      expect(await screen.findByText(filename)).toBeInTheDocument()
-      expect(screen.getAllByText(filename)).toHaveLength(1)
-      expect(
-        screen.queryByLabelText(i18n.global.t('agent.uploading'))
-      ).not.toBeInTheDocument()
-
-      await userEvent.click(screen.getByRole('button', { name: 'Send' }))
-
-      expect(messageBodies).toHaveLength(1)
-      expect(messageBodies[0]).toMatchObject({ attachments: [ref] })
-      expect(
-        fetchSpy.mock.calls.some(([url]) =>
-          /\/api\/(view|upload\/image)/.test(String(url))
-        )
-      ).toBe(false)
-    }
-  )
-
-  it('shows an uploading chip while a Media-card URI is still loading', async () => {
-    let resolveAsset: (response: Response) => void = () => {}
-    vi.stubGlobal(
-      'fetch',
-      vi.fn((input: RequestInfo | URL) => {
-        const url = String(input)
-        if (url.includes('/api/view'))
-          return new Promise<Response>((resolve) => {
-            resolveAsset = resolve
-          })
-        if (url.endsWith('/api/upload/image'))
-          return Promise.resolve(
-            new Response(JSON.stringify({ name: 'uploaded_gen.png' }), {
-              status: 200,
-              headers: { 'Content-Type': 'application/json' }
-            })
-          )
-        return Promise.resolve(
-          new Response('{"threads":[]}', {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' }
-          })
-        )
-      })
-    )
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
-    await nextTick()
-    const target = screen.getByRole('textbox')
-    const dragData = {
-      types: ['application/x-comfy-asset-info', 'text/uri-list'],
-      getData: (type: string) =>
-        type === 'application/x-comfy-asset-info'
-          ? JSON.stringify({ filename: 'gen.png', type: 'input' })
-          : 'http://localhost/api/view?filename=gen.png'
-    }
-
-    expect(dispatchDrag(target, 'drop', dragData)).toBe(true)
-    expect(await screen.findByText('gen.png')).toBeInTheDocument()
-    expect(
-      screen.getByLabelText(i18n.global.t('agent.uploading'))
-    ).toBeInTheDocument()
-
-    resolveAsset(new Response(new Blob(['asset'], { type: 'image/png' })))
-    await vi.waitFor(() =>
-      expect(
-        screen.queryByLabelText(i18n.global.t('agent.uploading'))
-      ).not.toBeInTheDocument()
-    )
-  })
 
   it('attaches dropped assets and leaves other files to the graph loader', async () => {
     // The graph loader only opens a dropped workflow while the drop is
@@ -3679,6 +3600,7 @@ describe('AgentPanelRoot workflow binding', () => {
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
     useAgentPanelStore().isOpen = true
+    startPicking()
     hostStores.canvas.selectedItems = [
       { isNodeFake: true, id: 7, title: 'KSampler' }
     ]
@@ -3811,6 +3733,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentPanelStore().isOpen = true
+    startPicking()
 
     hostStores.canvas.selectedItems = [
       { isNodeFake: true, id: 5, title: 'KSampler' },
@@ -3844,6 +3767,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentPanelStore().isOpen = true
+    startPicking()
 
     expect(await screen.findByText('VAE Decode')).toBeInTheDocument()
     expect(screen.getByText('KSampler')).toBeInTheDocument()
@@ -3858,12 +3782,46 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(hostStores.canvas.selectedItems).toEqual([state.nodes[1]])
   })
 
+  // Selecting nodes in the normal graph view is ordinary canvas work. Only
+  // picking mode fills the basket, so an open panel alone must stage nothing.
+  it('does not stage canvas selections outside picking mode', async () => {
+    makeTab()
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentPanelStore().isOpen = true
+
+    hostStores.canvas.selectedItems = [
+      { isNodeFake: true, id: 5, title: 'KSampler' }
+    ]
+    await nextTick()
+
+    expect(screen.queryByText('KSampler')).not.toBeInTheDocument()
+  })
+
+  // ...but a selection made beforehand is honoured the moment picking starts.
+  it('stages a pre-existing canvas selection once picking starts', async () => {
+    makeTab()
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentPanelStore().isOpen = true
+    hostStores.canvas.selectedItems = [
+      { isNodeFake: true, id: 5, title: 'KSampler' }
+    ]
+    await nextTick()
+    expect(screen.queryByText('KSampler')).not.toBeInTheDocument()
+
+    startPicking()
+
+    expect(await screen.findByText('KSampler')).toBeInTheDocument()
+  })
+
   it('stages selected nodes as chips and sends their ids once', async () => {
     makeTab()
     const bodies = mockMessagesEndpoint('wf-42')
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentPanelStore().isOpen = true
+    startPicking()
 
     hostStores.canvas.selectedItems = [
       { isNodeFake: true, id: 5, title: 'KSampler' }
@@ -3884,6 +3842,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentPanelStore().isOpen = true
+    startPicking()
 
     hostStores.canvas.selectedItems = [
       { isNodeFake: true, id: 7, title: 'KSampler' }
@@ -3909,6 +3868,7 @@ describe('AgentPanelRoot workflow binding', () => {
     const panelStore = useAgentPanelStore()
     const first = render(AgentPanelRoot, { global: { plugins: [i18n] } })
     panelStore.isOpen = true
+    startPicking()
 
     hostStores.canvas.selectedItems = [
       { isNodeFake: true, id: 7, title: 'KSampler' }
@@ -3924,6 +3884,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     panelStore.isOpen = true
+    startPicking()
     await nextTick()
     expect(screen.queryByText('KSampler')).not.toBeInTheDocument()
     await sendFromComposer('no nodes please')
@@ -3942,6 +3903,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
     ws.emit('agent_message_done', { message_id: 'm-2', thread_id: 'th-1' })
     await screen.findByRole('button', { name: 'Send' })
+    startPicking()
     hostStores.canvas.selectedItems = [
       { isNodeFake: true, id: 8, title: 'VAEDecode' }
     ]
@@ -3959,6 +3921,7 @@ describe('AgentPanelRoot workflow binding', () => {
     const panelStore = useAgentPanelStore()
     const first = render(AgentPanelRoot, { global: { plugins: [i18n] } })
     panelStore.isOpen = true
+    startPicking()
 
     hostStores.canvas.selectedItems = [
       { isNodeFake: true, id: 7, title: 'First KSampler' }
@@ -3980,6 +3943,7 @@ describe('AgentPanelRoot workflow binding', () => {
     ]
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     panelStore.isOpen = true
+    startPicking()
 
     expect(await screen.findByText('Second KSampler')).toBeInTheDocument()
     await sendFromComposer('use this workflow')
@@ -4181,18 +4145,24 @@ describe('AgentPanelRoot workflow binding', () => {
   it('resolves picker nodes from the viewed subgraph, not the root graph', async () => {
     makeTab()
     const bodies = mockMessagesEndpoint('wf-42')
+    // `select` has to actually add to the selection: picking a mention now
+    // selects the node on the canvas, and staged chips are rebuilt from that
+    // selection, so a no-op stub would drop the chip it just staged.
+    const selectedItems = new Set<unknown>()
     appMock.canvas = {
       graph: {
         nodes: [{ id: 12, title: 'KSampler' }],
         getNodeById: () => null
       },
-      selectedItems: new Set(),
+      selectedItems,
       selectItems: vi.fn(),
+      select: vi.fn((node: unknown) => selectedItems.add(node)),
       deselect: vi.fn(),
+      animateToBounds: vi.fn(),
       multi_select: false,
       allow_dragnodes: true,
       selectOnly: false,
-      canvas: { focus: vi.fn() }
+      canvas: { focus: vi.fn(), width: 1600, height: 900 }
     }
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })

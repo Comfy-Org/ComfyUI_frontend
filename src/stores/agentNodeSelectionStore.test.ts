@@ -2,6 +2,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
@@ -10,6 +11,33 @@ const dialogStack = vi.hoisted(() => [] as unknown[])
 vi.mock('@/stores/dialogStore', () => ({
   useDialogStore: () => ({ dialogStack })
 }))
+
+/**
+ * Real nodes carry `pos`/`size`; `boundingRect` is litegraph-renderer cache that
+ * stays zeroed under Vue nodes, so the fit deliberately ignores it.
+ */
+function graphNode(
+  id: number,
+  pos?: [number, number],
+  size?: [number, number]
+) {
+  return { id, pos, size, boundingRect: new Float64Array(4) }
+}
+
+/** The minimum canvas surface entering and leaving the mode touches. */
+function stubCanvas(nodes: unknown[], selected: unknown[] = []) {
+  const animateToBounds = vi.fn()
+  const selectedItems = new Set(selected)
+  const deselectAll = vi.fn(() => selectedItems.clear())
+  useCanvasStore().canvas = {
+    graph: { nodes },
+    selectedItems,
+    deselectAll,
+    animateToBounds,
+    canvas: { width: 1600, height: 900 }
+  } as never
+  return { animateToBounds, deselectAll, selectedItems }
+}
 
 describe('agentNodeSelectionStore', () => {
   beforeEach(() => {
@@ -22,6 +50,30 @@ describe('agentNodeSelectionStore', () => {
     vi.useRealTimers()
   })
 
+  it('clears the canvas selection on exit', () => {
+    const node = graphNode(1, [0, 0], [100, 100])
+    const { deselectAll, selectedItems } = stubCanvas([node], [node])
+    const store = useAgentNodeSelectionStore()
+
+    store.enter()
+    store.exit()
+
+    expect(deselectAll).toHaveBeenCalledOnce()
+    expect(selectedItems.size).toBe(0)
+  })
+
+  it('leaves the canvas alone on exit when nothing was selected', () => {
+    const { deselectAll } = stubCanvas([graphNode(1, [0, 0], [100, 100])])
+    const store = useAgentNodeSelectionStore()
+
+    store.enter()
+    store.exit()
+
+    expect(deselectAll).not.toHaveBeenCalled()
+  })
+
+  // Entering with a selection means the user already knows which nodes they
+  // care about; framing the whole graph would zoom away from them.
   it('sequences selection chrome and restores the open sidebar', async () => {
     const sidebar = useSidebarTabStore()
     sidebar.activeSidebarTabId = 'assets'
@@ -51,6 +103,19 @@ describe('agentNodeSelectionStore', () => {
 
     vi.advanceTimersByTime(150)
     expect(store.isActionBarsHidden).toBe(false)
+  })
+
+  it('does not reopen a sidebar the user never had open', () => {
+    const sidebar = useSidebarTabStore()
+    sidebar.activeSidebarTabId = null
+    const store = useAgentNodeSelectionStore()
+
+    store.enter()
+    vi.advanceTimersByTime(200)
+    store.exit()
+    vi.advanceTimersByTime(150)
+
+    expect(sidebar.activeSidebarTabId).toBeNull()
   })
 
   it('exits on Escape unless a dialog is open', async () => {

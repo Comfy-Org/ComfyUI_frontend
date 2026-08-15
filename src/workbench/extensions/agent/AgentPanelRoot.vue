@@ -15,6 +15,7 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useFocusNode } from '@/composables/canvas/useFocusNode'
 import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
@@ -25,8 +26,7 @@ import { useAppMode } from '@/composables/useAppMode'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import {
-  fetchDroppedAsset,
-  getDroppedAsset,
+  extractFilesFromDragEvent,
   hasImageType,
   hasVideoType
 } from '@/utils/eventUtils'
@@ -101,6 +101,7 @@ const tabActivity = useWorkflowTabActivityStore()
 const CREATING_TAB_MIN_DURATION_MS = 500
 
 const canvasStore = useCanvasStore()
+const { focusNodeInstance } = useFocusNode()
 const selectedNodes = computed<SelectedNode[]>(() =>
   canvasStore.selectedItems.filter(isLGraphNode).map((node) => ({
     id: String(node.id),
@@ -115,7 +116,9 @@ const {
   add: addSelectionTag
 } = useCanvasSelection({
   selection: selectedNodes,
-  isLive: () => agentPanelStore.isOpen,
+  // Only picking mode fills the basket. Selecting nodes in the normal graph
+  // view is ordinary canvas work and must not stage a reference.
+  isLive: () => agentNodeSelectionStore.isActive,
   isPaused: () => agentNodeSelectionStore.isLoadingWorkflow,
   scope: () => workflowStore.activeWorkflow?.path ?? null,
   dismissedSignature: dismissedSelectionSignature
@@ -889,15 +892,31 @@ watch(
   }
 )
 
+/** Resolve a staged chip back to its node in the viewed graph. */
+function graphNodeById(id: string): LGraphNode | undefined {
+  return viewedGraphNodes().find((node) => String(node.id) === id)
+}
+
 function onSelectNodes(): void {
   if (selectingNodes) return
   const canvas = app.canvas
   if (!canvas) return
-  selectedGraphNodes = new Map(
+
+  // Chips staged before entering (via `@` mention) must read as selected on the
+  // canvas too, or the composer and the graph disagree about the same set.
+  // Merge them with whatever was already selected rather than one replacing the
+  // other.
+  const merged = new Map(
     [...canvas.selectedItems]
       .filter(isLGraphNode)
       .map((node) => [String(node.id), node] as const)
   )
+  for (const tag of selectionTags.value) {
+    const node = graphNodeById(tag.id)
+    if (node) merged.set(tag.id, node)
+  }
+  selectedGraphNodes = merged
+
   restoreAllowDragNodes = canvas.allow_dragnodes
   restoreSelectOnly = canvas.selectOnly
   canvas.allow_dragnodes = false
@@ -905,7 +924,18 @@ function onSelectNodes(): void {
   canvas.multi_select = true
   nodeSelectionCanvas = canvas
   selectingNodes = true
+
+  // Apply the selection before entering: `enter()` frames whatever is selected,
+  // so the merged set has to be in place first or it frames the stale one.
+  // Selecting here is safe because the basket only mirrors the canvas once the
+  // mode is active.
+  if (merged.size) {
+    canvas.selectItems([...merged.values()])
+    canvasStore.updateSelectedItems()
+  }
+
   agentNodeSelectionStore.enter()
+
   void nextTick(() => {
     if (selectingNodes) canvas.canvas.focus()
   })
@@ -946,9 +976,29 @@ function onOpenAssets(): void {
 
 function onMentionPick(node: SelectedNode): void {
   const stagedBefore = selectionTags.value.length
-  addSelectionTag(node)
+
+  // Select on the canvas first, so the chip and the graph agree about the same
+  // set. Staged chips are rebuilt wholesale from the canvas selection, so
+  // selecting is what makes the chip durable - staging it directly is the
+  // fallback for a node the canvas doesn't have.
+  const canvas = app.canvas
+  const graphNode = graphNodeById(node.id)
+  if (canvas && graphNode && !canvas.selectedItems.has(graphNode)) {
+    canvas.select(graphNode)
+    canvasStore.updateSelectedItems()
+  }
+  if (!selectionTags.value.some((tag) => tag.id === node.id)) {
+    addSelectionTag(node)
+  }
+
   if (selectionTags.value.length > stagedBefore)
     useTelemetry()?.trackAgentNodeTagged({ source: 'mention_picker' })
+}
+
+/** Fly the canvas to a chip's node so the user can see what they referenced. */
+function onFocusSelectionTag(id: string): void {
+  const node = graphNodeById(id)
+  if (node) void focusNodeInstance(node)
 }
 
 function onRemoveSelectionTag(id: string): void {
@@ -1006,8 +1056,10 @@ function onPanelDragLeave(): void {
 }
 
 async function attachDroppedAsset(event: DragEvent): Promise<void> {
-  const asset = event.dataTransfer && getDroppedAsset(event.dataTransfer)
-  if (!asset) {
+  const files = (await extractFilesFromDragEvent(event)).filter(
+    (file) => hasImageType(file) || hasVideoType(file)
+  )
+  if (files.length === 0) {
     toast.add({
       severity: 'warn',
       detail: t('agent.assetNotAttachable'),
@@ -1015,27 +1067,7 @@ async function attachDroppedAsset(event: DragEvent): Promise<void> {
     })
     return
   }
-
-  if (asset.ref && (asset.kind === 'image' || asset.kind === 'video')) {
-    panelRef.value?.addAttachment({
-      id: `asset:${asset.ref}`,
-      name: asset.name,
-      ref: asset.ref,
-      previewUrl: asset.previewUrl
-    })
-    return
-  }
-
-  const file = await attachment.addDeferredFile(asset.name, async () => {
-    const file = await fetchDroppedAsset(asset)
-    return file && (hasImageType(file) || hasVideoType(file)) ? file : undefined
-  })
-  if (!file)
-    toast.add({
-      severity: 'warn',
-      detail: t('agent.assetNotAttachable'),
-      life: 5000
-    })
+  await attachment.addFiles(files)
 }
 
 function onPanelDragOver(event: DragEvent): void {
@@ -1106,6 +1138,7 @@ function onPanelDrop(event: DragEvent): void {
       @open-assets="onOpenAssets"
       @select-nodes="onSelectNodes"
       @remove-tag="onRemoveSelectionTag"
+      @focus-tag="onFocusSelectionTag"
       @mention-pick="onMentionPick"
       @feedback="onFeedback"
       @new-chat="onNewChat"
