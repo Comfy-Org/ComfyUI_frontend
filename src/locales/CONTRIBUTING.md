@@ -125,9 +125,11 @@ that would delete an implausibly large share of a file's keys abort that file
 without writing — that usually means `collect-i18n` observed a partial app;
 rerun with `--allow-prune` (or the `allow_prune` input on the manual workflow
 dispatch) only after confirming the English sources are complete.
-`pnpm locale:check` runs offline in CI: it reports pending work and fails on
-protected-token violations that are not already queued for retranslation
-because the English source changed.
+`pnpm locale:check` makes no OpenAI requests: it reports pending work and fails
+on protected-token violations that are not already queued for retranslation.
+It does read the English sources recorded in the manifest, so run it from a
+clone with full history — CI checks out `fetch-depth: 0` with
+`filter: blob:none`, which fetches those blobs lazily.
 
 Manual translation edits are supported. Locale JSON uses the pipeline's
 canonical format: recursively sorted object keys, two-space indentation, and a
