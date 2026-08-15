@@ -12,9 +12,11 @@ import enMessages from '@/locales/en/main.json'
 import CurrentUserPopoverWorkspace from './CurrentUserPopoverWorkspace.vue'
 
 const state = vi.hoisted(() => ({
+  billingStatus: 'paid',
   canAccessSubscriptionFeatures: true,
   isFreeTier: false,
   isCancelled: false,
+  planSlug: 'pro-monthly' as string | null,
   canTopUp: false,
   canManageSubscription: false,
   canManageSubscriptionLifecycle: false,
@@ -53,12 +55,14 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
+    billingStatus: computed(() => state.billingStatus),
     canAccessSubscriptionFeatures: computed(
       () => state.canAccessSubscriptionFeatures
     ),
     isFreeTier: computed(() => state.isFreeTier),
     subscription: computed(() => ({
-      isCancelled: state.isCancelled
+      isCancelled: state.isCancelled,
+      planSlug: state.planSlug
     })),
     balance: ref({ amountMicros: 100 }),
     isLoading: ref(false),
@@ -157,9 +161,11 @@ function renderComponent(
 
 describe('CurrentUserPopoverWorkspace', () => {
   beforeEach(() => {
+    state.billingStatus = 'paid'
     state.canAccessSubscriptionFeatures = true
     state.isFreeTier = false
     state.isCancelled = false
+    state.planSlug = 'pro-monthly'
     state.canTopUp = false
     state.canManageSubscription = false
     state.canManageSubscriptionLifecycle = false
@@ -249,6 +255,38 @@ describe('CurrentUserPopoverWorkspace', () => {
     ).not.toBeInTheDocument()
   })
 
+  it.for(['payment_failed', 'paused'])(
+    'keeps Manage plan available for an existing %s subscription',
+    (billingStatus) => {
+      state.billingStatus = billingStatus
+      state.canAccessSubscriptionFeatures = false
+      state.canManageSubscription = true
+
+      renderComponent('team')
+
+      expect(screen.getByTestId('manage-plan-menu-item')).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'Subscribe' })
+      ).not.toBeInTheDocument()
+    }
+  )
+
+  it('shows Subscribe instead of Manage plan when payment_failed has no plan', () => {
+    state.billingStatus = 'payment_failed'
+    state.canAccessSubscriptionFeatures = false
+    state.canManageSubscription = true
+    state.planSlug = null
+
+    renderComponent('team')
+
+    expect(
+      screen.queryByTestId('manage-plan-menu-item')
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Subscribe' })
+    ).toBeInTheDocument()
+  })
+
   it.for([
     {
       name: 'allows a lifecycle manager to resubscribe a cancelled plan',
@@ -335,10 +373,13 @@ describe('CurrentUserPopoverWorkspace', () => {
       state.canManageSubscription = true
       const { emitted } = renderComponent(workspaceType)
 
-      const menuItem = screen.getByTestId('manage-plan-menu-item')
+      const menuItem = screen.getByRole('button', {
+        name: enMessages.subscription.managePlan
+      })
       expect(menuItem).toHaveTextContent(enMessages.subscription.managePlan)
 
-      await user.click(menuItem)
+      menuItem.focus()
+      await user.keyboard('{Enter}')
 
       expect(state.showSettingsDialog).toHaveBeenCalledWith('workspace')
       expect(emitted('close')).toHaveLength(1)
