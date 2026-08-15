@@ -29,6 +29,10 @@ describe('isBlockedThirdPartyLoad', () => {
       true
     )
   })
+
+  it('reads a rejection that is not an Error', () => {
+    expect(isBlockedThirdPartyLoad('Load failed')).toBe(true)
+  })
 })
 
 describe('reportThirdPartyLoadFailure', () => {

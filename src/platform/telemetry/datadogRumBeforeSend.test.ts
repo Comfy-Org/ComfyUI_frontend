@@ -103,6 +103,12 @@ describe('rumBeforeSend', () => {
     expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
   })
 
+  it('keeps a load failure whose URL cannot be parsed', () => {
+    const event = createErrorEvent('[resource:loadError] http://[')
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
+  })
+
   it('keeps a runtime error thrown by a third-party script', () => {
     const event = createErrorEvent(
       'gtag is not a function',
