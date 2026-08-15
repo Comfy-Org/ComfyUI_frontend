@@ -25,6 +25,7 @@ export const connectivityExpectations: ConnectivityExpectations = {
     'AddTextPrefix.texts -> Vewd.filename_prefix',
     'AddTextPrefix.texts -> Vewd.selected_media',
     'BatchCount+.INT -> Vewd.max_frames',
+    'VHS_SelectLatest.Filename -> AddTextPrefix.texts',
     'AddTextPrefix.texts -> VHS_SelectLatest.filename_prefix',
     'AddTextPrefix.texts -> VHS_SelectLatest.filename_postfix',
     'VHS_SelectLatest.Filename -> AddLabel.font_color'

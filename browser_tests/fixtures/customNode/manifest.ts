@@ -535,6 +535,7 @@ export interface QuarantinedPack {
     | 'unfetchable-ref'
     | 'unsatisfiable-requirement'
     | 'registers-fewer-nodes'
+    | 'registers-no-nodes'
   reason: string
   evidence: string
   upstreamFix: string

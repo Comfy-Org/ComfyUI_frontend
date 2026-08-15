@@ -35,10 +35,6 @@
     "expectedNodeCount": 5,
     "reason": "Cloud disables 2 node(s) this backend serves; the delta is exactly that count"
   },
-  "ComfyUI-SeedVR2_VideoUpscaler": {
-    "expectedNodeCount": 1,
-    "reason": "GPU-only imports do not resolve on a CPU runner, so fewer node classes register here than Cloud recorded; the count is exact, so any further drop still fails"
-  },
   "ComfyUI-WanAnimatePreprocess": {
     "expectedNodeCount": 4,
     "reason": "GPU-only imports do not resolve on a CPU runner, so fewer node classes register here than Cloud recorded; the count is exact, so any further drop still fails"

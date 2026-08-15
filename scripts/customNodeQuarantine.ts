@@ -97,6 +97,7 @@ async function stillBroken(
       return refStillMissing(deployRef)
     case 'unsatisfiable-requirement':
       return requirementsStillUnsatisfiable(deployRef)
+    case 'registers-no-nodes':
     case 'registers-fewer-nodes':
       // Only a live backend can answer this, and the shard that would know
       // has excluded the pack. Re-checked by the suite, not from here.
