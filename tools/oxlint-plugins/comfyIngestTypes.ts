@@ -1,17 +1,4 @@
-import { readFileSync } from 'node:fs'
-import { createRequire } from 'node:module'
-import type TypeScript from 'typescript'
-import { fileURLToPath } from 'node:url'
-
 const GENERATED_PACKAGE = '@comfyorg/ingest-types'
-const PLUGIN_SOURCE = 'tools/oxlint-plugins/comfyIngestTypes.ts'
-const MIN_EXPECTED_EXPORTS = 100
-
-const requireFrom = createRequire(import.meta.url)
-
-function loadTypeScript(): typeof TypeScript {
-  return requireFrom('typescript')
-}
 
 interface Identifier {
   readonly type: 'Identifier'
@@ -32,12 +19,19 @@ interface TypeArguments {
   readonly params?: readonly TypeNode[]
 }
 
+interface PropertySignature {
+  readonly type: string
+  readonly computed?: boolean
+  readonly key?: { readonly type: string; readonly name?: string }
+}
+
 interface TypeNode {
   readonly type: string
   readonly typeName?: Identifier | QualifiedName
   readonly types?: readonly TypeNode[]
   readonly typeArguments?: TypeArguments
-  readonly objectType?: TypeNode
+  readonly members?: readonly PropertySignature[]
+  readonly literal?: { readonly value?: unknown }
 }
 
 interface InterfaceHeritage {
@@ -45,12 +39,15 @@ interface InterfaceHeritage {
   readonly typeArguments?: TypeArguments
 }
 
+interface ImportSpecifier {
+  readonly type: string
+  readonly local?: Identifier
+  readonly imported?: { readonly type: string; readonly name?: string }
+}
+
 interface ImportDeclaration {
   readonly source: { readonly value: string }
-  readonly specifiers?: readonly {
-    readonly local?: Identifier
-    readonly imported?: Identifier
-  }[]
+  readonly specifiers?: readonly ImportSpecifier[]
 }
 
 interface NamedDeclaration {
@@ -63,189 +60,153 @@ interface TypeAliasDeclaration extends NamedDeclaration {
 
 interface InterfaceDeclaration extends NamedDeclaration {
   readonly extends?: readonly InterfaceHeritage[]
+  readonly body?: { readonly body?: readonly PropertySignature[] }
 }
 
 interface RuleContext {
   report(descriptor: { node: unknown; message: string }): void
 }
 
-interface ParsedSourceFile {
-  readonly parseDiagnostics?: readonly TypeScript.Diagnostic[]
-}
-
-function barrelProblem(problem: string): Error {
-  return new Error(
-    `${problem} in ${GENERATED_PACKAGE}. Update ${PLUGIN_SOURCE} to handle the generated barrel's current format.`
-  )
-}
-
-function unsupportedDeclaration(text: string): Error {
-  return barrelProblem(`Unsupported export declaration '${firstLineOf(text)}'`)
-}
-
-function firstLineOf(text: string): string {
-  return text.split('\n', 1)[0].trim().slice(0, 80)
-}
-
-function syntaxErrorsIn(
-  ts: typeof TypeScript,
-  barrel: TypeScript.SourceFile
-): string[] {
-  const parsed = barrel as TypeScript.SourceFile & ParsedSourceFile
-  return (parsed.parseDiagnostics ?? []).map((diagnostic) =>
-    ts.flattenDiagnosticMessageText(diagnostic.messageText, ' ')
-  )
-}
-
-function declaresItsOwnExport(
-  ts: typeof TypeScript,
-  statement: TypeScript.Statement
-): boolean {
-  if (ts.isExportAssignment(statement)) return true
-  if (ts.isNamespaceExportDeclaration(statement)) return true
-  return (
-    ts.canHaveModifiers(statement) &&
-    (ts.getModifiers(statement) ?? []).some(
-      (modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword
-    )
-  )
-}
-
-function isTypeOnlyReExport(
-  ts: typeof TypeScript,
-  statement: TypeScript.ExportDeclaration
-): statement is TypeScript.ExportDeclaration & {
-  exportClause: TypeScript.NamedExports
-} {
-  const clause = statement.exportClause
-  return (
-    statement.isTypeOnly &&
-    statement.moduleSpecifier !== undefined &&
-    clause !== undefined &&
-    ts.isNamedExports(clause)
-  )
-}
-
-export function collectExportedNames(source: string): Set<string> {
-  const ts = loadTypeScript()
-  const barrel = ts.createSourceFile(
-    'barrel.ts',
-    source,
-    ts.ScriptTarget.Latest,
-    false,
-    ts.ScriptKind.TS
-  )
-
-  const syntaxErrors = syntaxErrorsIn(ts, barrel)
-  if (syntaxErrors.length > 0) {
-    throw barrelProblem(`Unparsable source (${syntaxErrors[0]})`)
-  }
-
-  const names = new Set<string>()
-  for (const statement of barrel.statements) {
-    if (!ts.isExportDeclaration(statement)) {
-      if (declaresItsOwnExport(ts, statement)) {
-        throw unsupportedDeclaration(statement.getText(barrel))
-      }
-      continue
-    }
-    if (!isTypeOnlyReExport(ts, statement)) {
-      throw unsupportedDeclaration(statement.getText(barrel))
-    }
-    for (const element of statement.exportClause.elements) {
-      names.add(element.name.text)
-    }
-  }
-  return names
-}
-
-function parseGeneratedTypeNames(): ReadonlySet<string> {
-  const barrelPath = fileURLToPath(import.meta.resolve(GENERATED_PACKAGE))
-  const names = collectExportedNames(readFileSync(barrelPath, 'utf8'))
-
-  if (names.size < MIN_EXPECTED_EXPORTS) {
-    throw new Error(
-      `Parsed only ${names.size} export names from ${barrelPath}, expected at least ${MIN_EXPECTED_EXPORTS}. The generated barrel format likely changed; update ${PLUGIN_SOURCE}.`
-    )
-  }
-  return names
-}
-
-let cachedNames: ReadonlySet<string> | undefined
-
-function generatedTypeNames(): ReadonlySet<string> {
-  cachedNames ??= parseGeneratedTypeNames()
-  return cachedNames
-}
-
-function isZodInference(annotation: TypeNode): boolean {
-  if (annotation.type !== 'TSTypeReference') return false
-  const typeName = annotation.typeName
-  if (typeName?.type !== 'TSQualifiedName') return false
-  return typeName.left?.name === 'z' && typeName.right?.name === 'infer'
-}
-
-function namesGeneratedImport(
+function namesBinding(
   reference: Identifier | QualifiedName | MemberExpression | undefined,
   typeArguments: TypeArguments | undefined,
-  generatedBindings: ReadonlySet<string>
+  bindings: ReadonlySet<string>
 ): boolean {
-  if (
-    reference?.type === 'Identifier' &&
-    generatedBindings.has(reference.name)
-  ) {
+  if (reference?.type === 'Identifier' && bindings.has(reference.name)) {
     return true
   }
   return (typeArguments?.params ?? []).some((param) =>
-    referencesGenerated(param, generatedBindings)
+    referencesBinding(param, bindings)
   )
 }
 
-function referencesGenerated(
-  node: TypeNode,
-  generatedBindings: ReadonlySet<string>
+function referencesBinding(
+  node: TypeNode | undefined,
+  bindings: ReadonlySet<string>
 ): boolean {
-  if (node.type !== 'TSTypeReference') return false
-  return namesGeneratedImport(
-    node.typeName,
-    node.typeArguments,
-    generatedBindings
-  )
+  if (node?.type !== 'TSTypeReference') return false
+  return namesBinding(node.typeName, node.typeArguments, bindings)
 }
 
-function extendsGenerated(
-  heritage: readonly InterfaceHeritage[],
-  generatedBindings: ReadonlySet<string>
-): boolean {
-  return heritage.some((clause) =>
-    namesGeneratedImport(
-      clause.expression,
-      clause.typeArguments,
-      generatedBindings
+function intersectionMembers(annotation: TypeNode): readonly TypeNode[] {
+  return annotation.type === 'TSIntersectionType'
+    ? (annotation.types ?? [])
+    : [annotation]
+}
+
+function heritageAsTypeReference(clause: InterfaceHeritage): TypeNode {
+  return {
+    type: 'TSTypeReference',
+    typeName:
+      clause.expression?.type === 'Identifier' ? clause.expression : undefined,
+    typeArguments: clause.typeArguments
+  }
+}
+
+// Resolves same-file aliases so `Omit<G, Keys>` is as readable as
+// `Omit<G, 'a' | 'b'>`. Keys behind an import or a mapped type stay unreadable
+// without type information, and are therefore never reported.
+function stringLiteralsIn(
+  node: TypeNode | undefined,
+  literalUnionAliases: ReadonlyMap<string, TypeNode>,
+  seen: Set<string> = new Set()
+): string[] {
+  if (node === undefined) return []
+  if (node.type === 'TSLiteralType') {
+    const value = node.literal?.value
+    return typeof value === 'string' ? [value] : []
+  }
+  if (node.type === 'TSUnionType') {
+    return (node.types ?? []).flatMap((member) =>
+      stringLiteralsIn(member, literalUnionAliases, seen)
     )
-  )
+  }
+  if (node.type === 'TSTypeReference' && node.typeName?.type === 'Identifier') {
+    const { name } = node.typeName
+    if (seen.has(name)) return []
+    const aliased = literalUnionAliases.get(name)
+    if (aliased === undefined) return []
+    return stringLiteralsIn(
+      aliased,
+      literalUnionAliases,
+      new Set([...seen, name])
+    )
+  }
+  return []
 }
 
-function isDerivedRatherThanRedeclared(
-  annotation: TypeNode,
-  generatedBindings: ReadonlySet<string>
-): boolean {
-  if (isZodInference(annotation)) return true
-  if (annotation.type === 'TSIndexedAccessType') return true
-  if (referencesGenerated(annotation, generatedBindings)) return true
-  if (annotation.type !== 'TSIntersectionType') return false
-  return (annotation.types ?? []).some((member) =>
-    referencesGenerated(member, generatedBindings)
-  )
+function keysOmittedFrom(
+  member: TypeNode,
+  bindings: ReadonlySet<string>,
+  literalUnionAliases: ReadonlyMap<string, TypeNode>
+): string[] {
+  if (member.type !== 'TSTypeReference') return []
+  if (member.typeName?.type !== 'Identifier') return []
+  if (member.typeName.name !== 'Omit') return []
+
+  const [source, keys] = member.typeArguments?.params ?? []
+  if (!referencesBinding(source, bindings)) return []
+  return stringLiteralsIn(keys, literalUnionAliases)
+}
+
+function propertyNamesIn(
+  members: readonly PropertySignature[] | undefined
+): string[] {
+  const names: string[] = []
+  for (const member of members ?? []) {
+    if (member.type !== 'TSPropertySignature' || member.computed) continue
+    if (member.key?.type !== 'Identifier') continue
+    if (member.key.name !== undefined) names.push(member.key.name)
+  }
+  return names
+}
+
+// A key omitted from the generated type and then re-declared locally is drift
+// wearing a derivation's clothes: the local shape claims to follow the contract
+// while silently replacing that field's type or optionality. Relaxing presence
+// with `Omit<G, K> & Partial<Pick<G, K>>` re-declares nothing, so it stays clean.
+function keysOmittedThenRedeclared(
+  members: readonly TypeNode[],
+  ownProperties: readonly string[],
+  bindings: ReadonlySet<string>,
+  literalUnionAliases: ReadonlyMap<string, TypeNode>
+): string[] {
+  const redeclared = new Set(ownProperties)
+  for (const member of members) {
+    if (member.type !== 'TSTypeLiteral') continue
+    for (const name of propertyNamesIn(member.members)) redeclared.add(name)
+  }
+  if (redeclared.size === 0) return []
+
+  return [
+    ...new Set(
+      members
+        .flatMap((member) =>
+          keysOmittedFrom(member, bindings, literalUnionAliases)
+        )
+        .filter((key) => redeclared.has(key))
+    )
+  ]
 }
 
 function duplicateMessage(name: string): string {
-  return `'${name}' is already exported from ${GENERATED_PACKAGE}. Import it instead of redeclaring — local copies drift from the API contract (see docs/guidance/typescript.md).`
+  return `'${name}' is imported from ${GENERATED_PACKAGE} and re-declared here. Re-export the generated type, or give the local model a distinct name (e.g. '${name}View') so the contract and the local view cannot be confused — see docs/guidance/typescript.md.`
 }
 
+function driftMessage(name: string, keys: readonly string[]): string {
+  const plural = keys.length > 1
+  const list = keys.map((key) => `'${key}'`).join(', ')
+  return `'${name}' omits ${list} from the generated '${name}' and re-declares ${plural ? 'them' : 'it'}, silently replacing the API contract for ${plural ? 'those fields' : 'that field'}. Keep the generated ${plural ? 'fields' : 'field'}, relax presence with 'Partial<Pick<...>>' so the ${plural ? 'types' : 'type'} still ${plural ? 'come' : 'comes'} from the contract, or rename the local model — see docs/guidance/typescript.md.`
+}
+
+// Imports and key aliases are only complete once the file has been walked, so
+// declarations are queued and judged on Program:exit rather than in place.
 const noDuplicateIngestType = {
   create(context: RuleContext) {
     const exportNameByLocalBinding = new Map<string, string>()
+    const literalUnionAliases = new Map<string, TypeNode>()
+    const aliases: TypeAliasDeclaration[] = []
+    const interfaces: InterfaceDeclaration[] = []
 
     const bindingsAliasing = (exportName: string): ReadonlySet<string> => {
       const bindings = new Set<string>()
@@ -255,38 +216,93 @@ const noDuplicateIngestType = {
       return bindings
     }
 
-    const reportUnlessDerived = (
+    const reportDuplicate = (node: NamedDeclaration) =>
+      context.report({
+        node: node.id,
+        message: duplicateMessage(node.id.name)
+      })
+
+    const reportDriftIfAny = (
       node: NamedDeclaration,
-      derivesFrom: (sameNameBindings: ReadonlySet<string>) => boolean
+      members: readonly TypeNode[],
+      ownProperties: readonly string[],
+      bindings: ReadonlySet<string>
     ) => {
-      const { name } = node.id
-      if (!generatedTypeNames().has(name)) return
-      if (derivesFrom(bindingsAliasing(name))) return
-      context.report({ node: node.id, message: duplicateMessage(name) })
+      const keys = keysOmittedThenRedeclared(
+        members,
+        ownProperties,
+        bindings,
+        literalUnionAliases
+      )
+      if (keys.length === 0) return
+      context.report({
+        node: node.id,
+        message: driftMessage(node.id.name, keys)
+      })
+    }
+
+    const checkInterface = (node: InterfaceDeclaration) => {
+      const bindings = bindingsAliasing(node.id.name)
+      if (bindings.size === 0) return
+
+      const heritage = (node.extends ?? []).map(heritageAsTypeReference)
+      if (!heritage.some((clause) => referencesBinding(clause, bindings))) {
+        reportDuplicate(node)
+        return
+      }
+      reportDriftIfAny(
+        node,
+        heritage,
+        propertyNamesIn(node.body?.body),
+        bindings
+      )
+    }
+
+    const checkAlias = (node: TypeAliasDeclaration) => {
+      const bindings = bindingsAliasing(node.id.name)
+      if (bindings.size === 0) return
+
+      const annotation = node.typeAnnotation
+      if (annotation === undefined) {
+        reportDuplicate(node)
+        return
+      }
+
+      const members = intersectionMembers(annotation)
+      if (!members.some((member) => referencesBinding(member, bindings))) {
+        reportDuplicate(node)
+        return
+      }
+      reportDriftIfAny(node, members, [], bindings)
     }
 
     return {
       ImportDeclaration(node: ImportDeclaration) {
         if (node.source.value !== GENERATED_PACKAGE) return
         for (const specifier of node.specifiers ?? []) {
+          if (specifier.type !== 'ImportSpecifier') continue
           const { local, imported } = specifier
-          if (!local) continue
-          exportNameByLocalBinding.set(local.name, imported?.name ?? local.name)
+          if (!local || imported?.type !== 'Identifier') continue
+          exportNameByLocalBinding.set(local.name, imported.name ?? local.name)
         }
       },
       TSInterfaceDeclaration(node: InterfaceDeclaration) {
-        reportUnlessDerived(node, (sameNameBindings) =>
-          extendsGenerated(node.extends ?? [], sameNameBindings)
-        )
+        interfaces.push(node)
       },
       TSTypeAliasDeclaration(node: TypeAliasDeclaration) {
-        reportUnlessDerived(node, (sameNameBindings) => {
-          const annotation = node.typeAnnotation
-          return (
-            annotation !== undefined &&
-            isDerivedRatherThanRedeclared(annotation, sameNameBindings)
-          )
-        })
+        aliases.push(node)
+        const annotation = node.typeAnnotation
+        if (
+          annotation?.type === 'TSLiteralType' ||
+          annotation?.type === 'TSUnionType' ||
+          annotation?.type === 'TSTypeReference'
+        ) {
+          literalUnionAliases.set(node.id.name, annotation)
+        }
+      },
+      'Program:exit'() {
+        for (const node of interfaces) checkInterface(node)
+        for (const node of aliases) checkAlias(node)
       }
     }
   }

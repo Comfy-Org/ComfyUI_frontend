@@ -417,10 +417,11 @@ import CreditSlider from '@/components/ui/credit-slider/CreditSlider.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import {
   TIER_PRICING,
+  hasActivePaidPlan,
   toTierKey
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
-  SubscriptionTier,
+  RegistrySubscriptionTier,
   TierKey,
   TierPricing
 } from '@/platform/cloud/subscription/constants/tierPricing'
@@ -494,7 +495,7 @@ interface PlanScopeOption {
 }
 
 interface PricingTierConfig {
-  id: SubscriptionTier
+  id: RegistrySubscriptionTier
   key: CheckoutTierKey
   name: string
   pricing: TierPricing
@@ -817,12 +818,7 @@ const getButtonLabel = (tier: PricingTierConfig): string => {
       : t('subscription.currentPlan')
   }
 
-  // Free tier is not a paid plan to "change" from — those users subscribe.
-  // Keyed off the account tier, not the catalog key, so a Team plan counts.
-  const hasActivePaidPlan =
-    currentAccountTier.value !== null && currentAccountTier.value !== 'FREE'
-
-  return hasActivePaidPlan
+  return hasActivePaidPlan(currentAccountTier.value)
     ? t('subscription.changeTo', { plan: planName })
     : t('subscription.subscribeTo', { plan: planName })
 }

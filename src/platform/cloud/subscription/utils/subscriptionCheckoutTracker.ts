@@ -1,10 +1,10 @@
 import type { SubscriptionDuration } from '@comfyorg/ingest-types'
 import {
-  TIER_TO_KEY,
-  getTierPrice
+  getTierPrice,
+  toTierKey
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
-  SubscriptionTier,
+  IngestSubscriptionTier,
   TierKey
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
@@ -32,7 +32,7 @@ export const PENDING_SUBSCRIPTION_CHECKOUT_EVENT =
 
 interface SubscriptionStatusSnapshot {
   is_active?: boolean
-  subscription_tier?: SubscriptionTier | null
+  subscription_tier?: IngestSubscriptionTier | null
   subscription_duration?: SubscriptionDuration | null
 }
 
@@ -120,7 +120,7 @@ const getTierFromStatus = (
     return null
   }
 
-  return TIER_TO_KEY[subscriptionTier] ?? null
+  return toTierKey(subscriptionTier)
 }
 
 const getCycleFromStatus = (

@@ -1,3 +1,4 @@
+import { zWorkspaceWithRole } from '@comfyorg/ingest-types/zod'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 import { z } from 'zod'
@@ -15,30 +16,23 @@ import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import type { AuthHeader } from '@/types/authTypes'
 import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
-import type { WorkspaceWithRole } from '@/platform/workspace/api/workspaceApi'
+import type { WorkspaceIdentity } from '@/platform/workspace/workspaceTypes'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 
-type WorkspaceIdentity = Pick<
-  WorkspaceWithRole,
-  'id' | 'name' | 'type' | 'role'
->
-
-const WorkspaceIdentitySchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  type: z.enum(['personal', 'team']),
-  role: z.enum(['owner', 'member'])
+// Picked off the generated schema: a hand-written enum that lags the spec would
+// reject a valid persisted identity and silently clear the session.
+const WorkspaceIdentitySchema = zWorkspaceWithRole.pick({
+  id: true,
+  name: true,
+  type: true,
+  role: true
 })
 
 const WorkspaceTokenResponseSchema = z.object({
   token: z.string(),
   expires_at: z.string(),
-  workspace: z.object({
-    id: z.string(),
-    name: z.string(),
-    type: z.enum(['personal', 'team'])
-  }),
-  role: z.enum(['owner', 'member']),
+  workspace: zWorkspaceWithRole.pick({ id: true, name: true, type: true }),
+  role: zWorkspaceWithRole.shape.role,
   permissions: z.array(z.string())
 })
 
