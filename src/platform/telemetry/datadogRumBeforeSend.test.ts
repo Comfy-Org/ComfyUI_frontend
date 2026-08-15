@@ -67,6 +67,19 @@ describe('rumBeforeSend', () => {
     expect(rumBeforeSend(event, fromPartial({}))).toBe(false)
   })
 
+  it('keeps a load failure from a host that merely ends with a third-party origin', () => {
+    const event = fromPartial<RumErrorEvent>({
+      type: 'error',
+      error: {
+        message: '[resource:loadError]',
+        source: 'source',
+        resource: { url: 'https://notgoogletagmanager.com/gtm.js' }
+      }
+    })
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
+  })
+
   it('keeps our own load failure whose path names a third-party origin', () => {
     const event = fromPartial<RumErrorEvent>({
       type: 'error',
