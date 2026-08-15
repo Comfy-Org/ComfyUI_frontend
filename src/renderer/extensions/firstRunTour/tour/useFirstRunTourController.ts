@@ -14,6 +14,11 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import type {
+  ExecutedWsMessage,
+  ExecutionStartWsMessage,
+  ResultItem
+} from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -43,8 +48,10 @@ function useFirstRunTourControllerInternal() {
   const desktopLayout = useBreakpoints(breakpointsTailwind).greaterOrEqual('md')
   const tourWorkflow = shallowRef<ComfyWorkflow | null>(null)
   const nudgeArmed = ref(false)
-  /** Only a tour walked to the end made a first result to be congratulated for. */
   const tourWasCompleted = ref(false)
+  const nudgeOutput = shallowRef<ResultItem | null>(null)
+  const firstRunOutput = shallowRef<ResultItem | null>(null)
+  let tourJobId: string | null = null
 
   // The tour's node ids are graph-local, so they only describe the workflow it
   // resolved against: swapping workflows leaves it pointing at strangers.
@@ -97,6 +104,24 @@ function useFirstRunTourControllerInternal() {
   })
   useEventListener(api, 'reconnected', stopOfflineGrace)
 
+  useEventListener(api, 'execution_start', (event) => {
+    const { detail } = event as CustomEvent<ExecutionStartWsMessage>
+    if (
+      engine.activeTour !== 'firstRun' ||
+      runState.value !== 'generating' ||
+      tourJobId
+    )
+      return
+    tourJobId = detail.prompt_id
+  })
+
+  useEventListener(api, 'executed', (event) => {
+    const { detail } = event as CustomEvent<ExecutedWsMessage>
+    if (detail.prompt_id !== tourJobId || firstRunOutput.value) return
+    const image = detail.output.images?.find(({ filename }) => filename)
+    if (image) firstRunOutput.value = { ...image, type: image.type ?? 'output' }
+  })
+
   /**
    * A run outlives the step that starts it, so the click moves the tour on. One
    * the paywall will refuse never queues, so the tour parks and leaves the
@@ -125,15 +150,16 @@ function useFirstRunTourControllerInternal() {
     () => engine.activeTour === 'firstRun',
     (active) => {
       if (active) return
-      // Every ending leaves the user somewhere to go next, so every ending arms
-      // the nudge; only what it says depends on how the tour ended.
       const ending = engine.lastEnding
       tourWasCompleted.value =
         ending?.tour === 'firstRun' && ending.outcome === 'completed'
-      nudgeArmed.value = true
+      nudgeOutput.value = tourWasCompleted.value ? firstRunOutput.value : null
+      nudgeArmed.value = nudgeOutput.value !== null
       stopOfflineGrace()
       releaseFirstRunTargets()
       tourWorkflow.value = null
+      firstRunOutput.value = null
+      tourJobId = null
       runState.value = 'idle'
     }
   )
@@ -152,6 +178,9 @@ function useFirstRunTourControllerInternal() {
     tourWorkflow.value = workflowStore.activeWorkflow ?? null
     runState.value = 'idle'
     nudgeArmed.value = false
+    nudgeOutput.value = null
+    firstRunOutput.value = null
+    tourJobId = null
     registerTour(
       'firstRun',
       () => firstRunTourSteps(templateId, runState),
@@ -171,6 +200,7 @@ function useFirstRunTourControllerInternal() {
   return {
     beginTour,
     nudgeArmed: readonly(nudgeArmed),
+    nudgeOutput: readonly(nudgeOutput),
     tourWasCompleted: readonly(tourWasCompleted),
     dismissNudge
   }
