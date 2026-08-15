@@ -333,6 +333,24 @@ function gh(args: string[]): string {
   return execFileSync('gh', args, { encoding: 'utf8' })
 }
 
+// GitHub's GraphQL API occasionally returns 502/503; retry with backoff before
+// giving up so a transient gateway error doesn't degrade the whole run.
+function ghWithRetry(args: string[], retries = 3): string {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      return gh(args)
+    } catch (err) {
+      if (attempt === retries) throw err
+      const delayMs = 2000 * attempt
+      warn(
+        `gh command failed (attempt ${attempt}/${retries}), retrying in ${delayMs}ms: ${String(err)}`
+      )
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, delayMs)
+    }
+  }
+  throw new Error('unreachable')
+}
+
 function ghPrList(selector: string[]): PullRequestSummary[] {
   const fixed = [
     'pr',
@@ -344,7 +362,7 @@ function ghPrList(selector: string[]): PullRequestSummary[] {
     '--json'
   ]
   const prs = JSON.parse(
-    gh([...fixed, PR_FIELDS, ...selector])
+    ghWithRetry([...fixed, PR_FIELDS, ...selector])
   ) as PullRequestSummary[]
   if (prs.length === QUERY_LIMIT) {
     warn(
