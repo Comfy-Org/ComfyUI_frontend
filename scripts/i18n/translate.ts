@@ -85,7 +85,7 @@ Rules:
 - Respond with a JSON object that maps every item "id" to its translated string — every id, no other keys, no commentary.
 - Every substring listed in an item's "preserve" array must appear in the translation exactly as written, byte for byte. Never translate, transliterate, or renumber them.
 - Interpolation placeholders such as {name} stay exactly as written.
-- The | character separates plural forms. Use the target locale's appropriate number of forms and translate each form.
+- The | character separates plural forms. Keep the same number of forms and translate each form.
 - If an item has a "retryNote", correct every reported issue in the next translation.
 - The "context" field is the JSON path of the string in the UI resources; use it to resolve ambiguity. Keep values that are technical identifiers (node type names, parameter names, file names) unchanged when translating them would break meaning.
 - Match the brevity and professional tone of the source.

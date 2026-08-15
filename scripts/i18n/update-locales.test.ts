@@ -528,12 +528,9 @@ describe('validateLocale', () => {
     ).toEqual(['count: missing {count}', 'count: added {total}'])
   })
 
-  it('allows locale-specific plural counts and rejects empty forms', () => {
+  it('rejects empty plural forms', () => {
     const source = { count: 'No items | {count} item | {count} items' }
     const changes = diffLocaleSources({}, source)
-    expect(validateLocale(source, { count: '{count} items' }, changes)).toEqual(
-      []
-    )
     expect(
       validateLocale(source, { count: 'None | | {count} items' }, changes)
     ).toEqual(['count: empty plural form'])
