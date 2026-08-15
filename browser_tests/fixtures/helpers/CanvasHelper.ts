@@ -1,8 +1,10 @@
+import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
 import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
 import type { Position } from '@e2e/fixtures/types'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
+import type { RerouteId } from '@/types/rerouteId'
 
 export class CanvasHelper {
   constructor(
@@ -122,7 +124,7 @@ export class CanvasHelper {
   async dragAndDrop(source: Position, target: Position): Promise<void> {
     await this.page.mouse.move(source.x, source.y)
     await this.page.mouse.down()
-    await this.page.mouse.move(target.x, target.y, { steps: 100 })
+    await this.page.mouse.move(target.x, target.y, { steps: 20 })
     await this.page.mouse.up()
     await nextFrame(this.page)
   }
@@ -193,6 +195,30 @@ export class CanvasHelper {
       const [clientX, clientY] = app.canvasPosToClientPos([centerX, centerY])
       return { x: clientX, y: clientY }
     }, title)
+  }
+
+  async expectRootReroutePositions(
+    expectedReroutes: Record<RerouteId, Position>
+  ): Promise<void> {
+    await expect(async () => {
+      const reroutes = await this.page.evaluate(() => {
+        const graph = window.app!.canvas.graph?.rootGraph
+        if (!graph) throw new Error('Graph not available')
+        return [...graph.reroutes.values()].map((reroute) => ({
+          id: reroute.id,
+          x: reroute.pos[0],
+          y: reroute.pos[1]
+        }))
+      })
+
+      expect(reroutes).toHaveLength(Object.keys(expectedReroutes).length)
+      for (const reroute of reroutes) {
+        const expected = expectedReroutes[reroute.id]
+        if (!expected) throw new Error(`Unexpected reroute ${reroute.id}`)
+        expect(reroute.x).toBeCloseTo(expected.x, 1)
+        expect(reroute.y).toBeCloseTo(expected.y, 1)
+      }
+    }).toPass({ timeout: 5000 })
   }
 
   async getGroupPosition(title: string): Promise<Position> {

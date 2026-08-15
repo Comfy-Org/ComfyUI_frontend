@@ -12,7 +12,8 @@ For verified accuracy of these documents, see
 
 > **Target end-state (revised):** N dedicated Pinia stores keyed by composite
 > string IDs, one store per concern (widget values, DOM widgets, layout, node
-> outputs, subgraph navigation, preview exposure). The earlier "single unified
+> outputs, subgraph navigation, preview exposure, link topology, reroute
+> chains). The earlier "single unified
 > World with branded numeric entity IDs and `getComponent`/`setComponent`" model
 > was rejected. PR 12617 shipped the first stores against composite
 > `graphId:nodeId:name` string keys (`WidgetId`). Phases below are reframed
@@ -73,7 +74,7 @@ Five factual errors verified during code review (see
 ## Phase 1: Types and Dedicated Stores
 
 Introduces the ID type vocabulary and the dedicated stores. Phase 1 end-state is
-N dedicated Pinia stores, each keyed by a composite string ID, coexisting with
+N dedicated Pinia stores, each keyed by its own entity ID, coexisting with
 legacy class instances.
 
 ### 1a. Branded string ID types ✅ Shipped (PR 12617)
@@ -108,19 +109,44 @@ endpoints).
 ### 1c. Dedicated stores
 
 Phase 1 end-state is a set of dedicated Pinia stores, one per concern, each
-keyed by its own composite string ID. Each store owns its data and exposes a
-narrow accessor surface. There is no single container that fronts all entities.
+keyed by its own entity ID — a composite string where the key has to carry the
+graph relationship, a bare ID inside root-graph-scoped buckets where the bucket
+already supplies it. Each store owns its data and exposes a narrow accessor
+surface. There is no single container that fronts all entities.
 
 Shipped stores:
 
-| Store                     | File                                            |
-| ------------------------- | ----------------------------------------------- |
-| `widgetValueStore`        | `src/stores/widgetValueStore.ts`                |
-| `domWidgetStore`          | `src/stores/domWidgetStore.ts`                  |
-| `layoutStore`             | `src/renderer/core/layout/store/layoutStore.ts` |
-| `nodeOutputStore`         | `src/stores/nodeOutputStore.ts`                 |
-| `subgraphNavigationStore` | `src/stores/subgraphNavigationStore.ts`         |
-| `previewExposureStore`    | `src/stores/previewExposureStore.ts`            |
+| Store                      | File                                            |
+| -------------------------- | ----------------------------------------------- |
+| `widgetValueStore`         | `src/stores/widgetValueStore.ts`                |
+| `domWidgetStore`           | `src/stores/domWidgetStore.ts`                  |
+| `layoutStore`              | `src/renderer/core/layout/store/layoutStore.ts` |
+| `nodeOutputStore`          | `src/stores/nodeOutputStore.ts`                 |
+| `subgraphNavigationStore`  | `src/stores/subgraphNavigationStore.ts`         |
+| `previewExposureStore`     | `src/stores/previewExposureStore.ts`            |
+| `linkStore` ✅ PR 13436    | `src/stores/linkStore.ts`                       |
+| `rerouteStore` ✅ PR 13449 | `src/stores/rerouteStore.ts`                    |
+| `nodeDataStore` ✅         | `src/stores/nodeDataStore.ts`                   |
+
+`nodeBadgeStore` was shipped in PR 13458 and then deleted: badge rows are
+cheaper to derive on read than to store, so `src/systems/badgeSystem.ts`
+computes them from the stores that already own the inputs. No badge store
+exists. See [Node Badge Store](node-badge-store.md) for the reversal.
+
+`linkStore` holds `LinkTopology` records (`src/types/linkTopology.ts`) in
+root-graph-scoped buckets. Link identity is root-wide; input and output query
+indexes use owner-qualified slot keys
+(`` `${owningGraphId}:${nodeId}:${slot}` ``). Subgraphs share their root's
+identity bucket while retaining owner-local queries and teardown. Floating
+links remain in the root-wide identity map but are omitted from slot indexes.
+Entity store registration is idempotent only when the existing entity has the
+same owner and raw object identity. The stores perform every collision check at
+the registration mutation boundary.
+`rerouteStore` holds `RerouteChain` records keyed by `RerouteId` in
+root-graph-scoped buckets; link membership is not stored but derived from the
+links' `parentId` chains.
+Design records: [Link Topology Store](link-topology-store.md),
+[Reroute Chain Store](reroute-chain-store.md).
 
 `widgetValueStore` exposes `registerWidget`, `getWidget`, `setValue`,
 `deleteWidget`, `getNodeWidgets`, and `clearGraph`, all `WidgetId`-native. There
@@ -152,7 +178,7 @@ position data for nodes, links, and reroutes into Y.js CRDTs and is the source o
 truth for layout.
 
 **Approach:** New code reads position via `layoutStore` queries (and
-`useLayoutMutations()` for writes); legacy code continues to read `node.pos`
+`useLayoutMutations(source)` for writes); legacy code continues to read `node.pos`
 directly during the transition. No second copy of position data is introduced —
 `layoutStore` stays authoritative.
 
@@ -179,20 +205,140 @@ host-boundary identity (`host node locator + SubgraphInput.name`). Interior
 source node/widget identity is preserved only as migration and diagnostic
 metadata.
 
-### 2c. Node metadata stores
+### 2c. Node shell state ✅ Shipped
 
-Populate node-metadata records (node type, visual, properties, execution) by
-reading from `LGraphNode` instances. These are simple property copies into the
-relevant store.
+Node shell state (`title`, `type`, `mode`, `flags`, colours, `shape`,
+`resizable`, `showAdvanced`) lives in `nodeDataStore` as one plain `NodeState`
+per node. **No copy is made.** `LGraphNode` constructs its `_state` and adopts
+the store's reactive proxy at `LGraph.add`; the class fields are accessors over
+that proxy, so class, store, and renderer read the same object. The
+`incrementVersion()` re-sync hook this phase originally anticipated is
+unnecessary — there is nothing to re-sync.
 
-**Approach:** When a node is added to the graph (`LGraph.add()`), the store
-records its metadata. When a node is removed, the store drops it. The
-`incrementVersion()` seam from Phase 0a is a candidate hook point for re-sync
-when changed.
+Registration chokepoints are `LGraph.add` / `LGraph.remove`, with
+identity-checked vacate (`toRaw` compare) so only the registered state can free
+its key. Design record: [Node Data Store](node-data-store.md).
 
-**Risk:** Medium. Must handle the full node lifecycle (add, configure, remove)
-without breaking existing behavior. Stores mirror the classes during the
-transition, which limits blast radius.
+**Risk:** taken. Shell-state fields moved from own enumerable data properties to
+prototype accessors, so `Object.keys(node)` / `{ ...node }` no longer carry them,
+and `type` is read-only. See node-data-store.md Decision 7 for the extension
+migration map.
+
+### 2d. Renderer node lifecycle ✅ Shipped
+
+`useGraphNodeManager` is **deleted**. Its four responsibilities were resolved
+rather than relocated:
+
+| Responsibility                                                | Resolution                                                                                                                |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `VueNodeData` mirror + `node:property:changed` handlers       | deleted; the renderer drills the `NodeState` proxy from `nodeDataStore`                                                   |
+| `getNode()` / `nodeRefs` map                                  | deleted; pinned state is read off the `NodeState` the renderer already holds, live-node lookups go to `graph.getNodeById` |
+| `shallowReactive` graft onto `inputs` / `outputs` / `widgets` | deleted; see 2e                                                                                                           |
+| `layoutStore` seeding on add/remove                           | moved to `LGraph.add` / `LGraph.remove`, where the entity's geometry registers and unregisters with the entity itself     |
+
+Two consequences worth recording:
+
+- The **`configuringGraph` deferral is gone.** `LGraph.add` registers the layout
+  entry with whatever geometry the node has; the `pos`/`size` setters already
+  write through to `layoutStore`, so `configure()` updates the entry as the real
+  values land. No `onAfterGraphConfigured` chaining, no `window.app` read.
+- The **`onNodeAdded` replay loop is gone.** It re-fired `onNodeAdded` for every
+  pre-existing node on each graph switch, which leaked spurious node-added
+  notifications to unrelated subscribers (`useErrorClearingHooks` still carries
+  a guard written for exactly that). Geometry registers at attach and
+  unregisters at detach instead, so no bootstrap pass re-seeds a graph on entry.
+
+`useVueNodeLifecycle` is gone. `GraphCanvas` owns the Layout↔LiteGraph sync
+lifecycle and no longer patches `onNodeAdded` — see 2g.
+
+### 2e. Slot reactivity ✅ Shipped
+
+Slot arrays and slot objects are reactive from construction, so the renderer
+needs no reprojection pass:
+
+- `LGraphNode.inputs` / `.outputs` are accessors over `shallowReactive` arrays
+  (`_inputs` / `_outputs`, lazily created). Assignment replaces contents in
+  place, so the array identity the renderer subscribed to survives
+  `configure()`, `clone()`, and the several call sites that do
+  `node.inputs = node.inputs.filter(…)`.
+- `NodeSlot`'s constructor returns `shallowReactive(this)`, making every
+  reference to a slot the tracked one. **Shallow is load-bearing:** nested values
+  (`boundingRect`, `_widget`, `pos`) stay raw, so identity comparisons like
+  `input._widget === widget` and the `WeakMap` slot-index cache in
+  `NodeInputSlot` keep working. A deep `reactive()` would break both.
+
+This deleted the `node:slot-label:changed` → `node.inputs = [...node.inputs]`
+reprojection. The trigger itself stays (`useResolvedSelectedInputs` listens for
+it); only the renderer's array-identity churn is gone. Renames now propagate
+because `slot.label = …` is a tracked write.
+
+**Open item:** every slot property read in the canvas draw path now goes through
+a proxy get trap. Benchmark against the Phase 4 "Render hot-path performance
+gate" below before assuming this is free.
+
+### 2f. Slot arrays in nodeDataStore ✅ Shipped
+
+The renderer can ask what slots a node has without resolving the live
+`LGraphNode`. `NodeState` carries the node's own `inputs` / `outputs` arrays
+**by reference** — not a copy — so they register at the same `LGraph.add` /
+`LGraph.remove` chokepoint as the rest of the shell state. This is the shape
+`widgetValueStore` already uses for widget order: order data beside record data
+in one store, rather than a new store per concern.
+
+Because the arrays are the node's, array order _is_ slot order and there is
+nothing to keep in step. `NodeSlots.vue` no longer calls `getNodeByLocatorId` or
+touches `app.rootGraph`; `LGraphNode.vue`'s `hasInputs` / `hasOutputs` /
+`hasVideoInput` read the store too.
+
+**Why no keyed `SlotState` and no slot ids.** The draft above proposed
+`getSlotKey(nodeId, index, isInput)`. That is not viable: slot index is a
+property of the containing array, not of the slot, and ~25 sites permute it —
+including `reorderSubgraphInputs` (`subgraphUtils.ts`), a _pure permutation_ with
+no add or remove, reachable by dragging subgraph inputs in the right panel. An
+index-keyed store must re-key on every one of them. `linkStore` shows the price:
+it survives reorder only via six separate mechanisms, one of which
+(`realignInputLinkSlots`, `linkDeduplication.ts`) is a load-time
+corruption-repair pass added for the reorder case that was originally missed
+(#3348). A link's key is derived from fields the link genuinely owns; a slot's
+index is not slot state, so keying on it would be a mirror.
+
+Holding the array instead makes the question moot — no key, no ids, no re-keying,
+no order sync. It rests on one Vue guarantee, which is pinned by test: `reactive()`
+returns an already-`shallowReactive` value **unchanged**, so putting the node's
+array in a reactive store record does not swap its identity or deep-wrap the
+slots inside it. A _plain_ array in the same position would be wrapped — which is
+why the arrays must stay `shallowReactive`.
+
+**Still deferred:** slot data is still class instances with behaviour
+(`draw()`, `isValidTarget()`, `renderingColor()`). Splitting plain `SlotState`
+rows out of `NodeInputSlot` / `NodeOutputSlot` — ADR 0008's "plain data
+components" — is its own phase, and it needs a real consumer first: interaction
+code (`useSlotLinkInteraction`) hands the live slot instance to litegraph's
+`RenderLink`, and the badge system needs `node.constructor.nodeData.api_node`
+and `isSubgraphNode()` alongside the slots, so slot rows alone would not unblock
+it.
+
+### 2g. node:added / node:removed events ✅ Shipped
+
+`LGraphEventMap` had `node:before-removed` but no add-side counterpart, so every
+consumer that needed to know about a node add wrapped the single
+`graph.onNodeAdded` callback slot, saving and restoring the previous value.
+**Four** did so concurrently: the renderer's empty-graph bootstrap, the
+error-clearing hooks, the minimap, and node-added telemetry. Whichever restored
+first put back the _pre-its-own-install_ value and silently discarded the others
+— order-dependent, per graph switch.
+
+`LGraph.add` now dispatches `node:added` (after the node is attached and
+registered) and `LGraph.remove` dispatches `node:removed` (after detach, so
+`node.graph` is already null and execution ids must be derived from the
+dispatching graph plus `node.id`). All four consumers are plain
+`addEventListener` subscribers; none touches the callback slot. `onNodeAdded` /
+`onNodeRemoved` remain for extension compatibility.
+
+`useNodeReplacement` bypasses `graph.add` by design (it swaps a node in place,
+preserving the id), so `replaceWithMapping` announces the add itself.
+
+Prefer the events for anything new. The callback slots cannot be shared.
 
 ### Store sunset criteria (applies to every Phase 2 concern)
 
@@ -260,6 +406,24 @@ link-endpoint records from the relevant stores:
 Does not perform mutations yet — just queries. Validates that store connectivity
 data is complete and consistent with the class-based graph.
 
+> **Status (2026-07-05):** The reroute-membership query shipped as `linkStore` +
+> `rerouteStore` (PRs 13436, 13449): "what links pass through this reroute" is
+> derived per root graph by a cached reverse index over the links' `parentId`
+> chains, and input-side connectivity is one lookup via
+> `linkStore.isInputSlotConnected()` / `getInputSlotLink()`.
+>
+> **Status (2026-07-17):** Output-side queries shipped and the `output.links`
+> mirror is deleted (PR 13479): `linkStore.isOutputSlotConnected()` /
+> `getOutputSlotLinks()`, litegraph internals reading through
+> `node/slotLinks.ts` (see
+> [output slot connectivity](output-slot-connectivity.md)). Remaining: the
+> `input.link` slot mirror and execution order.
+>
+> **Status (2026-07-18):** The `input.link` mirror is deleted (PR 13498) by the
+> same recipe: a deprecated warning getter on `NodeInputSlot`, readers going
+> through the `slotLinks` input helpers, and serialization deriving
+> `inputs[].link` from the store. Remaining: execution order.
+
 **Risk:** Low. Read-only system with equivalence tests.
 
 ---
@@ -269,18 +433,93 @@ data is complete and consistent with the class-based graph.
 Systems begin owning mutations. Legacy class methods delegate to stores and
 systems. This is the highest-risk phase.
 
-### 4a. Position writes through layoutStore
+### 4a. Position writes through layoutStore ✅ Shipped
 
-New code writes position via `useLayoutMutations()` against `layoutStore`. A
-compatibility shim propagates changes back to `LGraphNode.pos` for legacy
-readers.
+Planned as adding a compatibility shim; was mostly about deleting them. Every
+entity now has exactly one write path, and the workarounds that existed because
+writes bypassed it are gone.
 
-**This inverts the data flow:** Phase 2 had legacy -> store (read path). Phase 4
-has store -> legacy (write path). Both must work during the transition.
+**One write path per entity.** Whole-value assignment through `pos` / `size` is
+the normal path, and the setters commit to the store. `createGeometryView`
+commits indexed writes too. Most in-repo indexed writes now use whole-value
+assignments. The migration found three forms:
 
-**Risk:** High. Two-way sync between `layoutStore` and legacy state. Must handle
-re-entrant updates (store write triggers the shim, which writes to legacy, which
-must NOT trigger another store write).
+| Form               | Example                              | Where it hid         |
+| ------------------ | ------------------------------------ | -------------------- |
+| Direct             | `node.pos[0] += dx`                  | greppable            |
+| Helper-routed      | `snapPoint(this.pos, snapTo)`        | mutates its argument |
+| Destructured local | `const { size } = this; size[0] = w` | not a `this.` write  |
+
+The helper-routed form was the costly one: `LGraphNode.snapToGrid` never
+reached the store, and `LGraph.configure` carried a local workaround
+(`node.pos = [node.pos[0], node.pos[1]]`) for that one call site while three
+others had none.
+
+**Groups and reroutes joined the store.** `GroupLayout` is id/position/size
+with no zIndex or spatial index. Groups draw beneath nodes in insertion order,
+and nothing queries them positionally. Geometry is a single
+`setGroupBounds` operation, because `pos` and `size` are two views onto one
+`Rectangle` and must never be stored apart. Reroutes went further: `posInternal`
+is deleted, `pos` reads the stored point, and a reroute registers its own
+geometry in its constructor, which removed two seeding sites.
+
+**`LGraphNode` no longer runs a continuous store-to-class sync.** When code
+reads geometry, the node checks the global geometry version and copies the
+stored rectangle into `_posSize` if its cache is stale. Serialization and legacy
+rendering read current values through `this.pos` and `this.size` without walking
+every node after each layout change.
+
+While Vue-node rendering is active, `notifyLayoutChanges` dirties the canvas for
+node layout changes. For non-canvas `resizeNode` and `batchUpdateBounds`
+operations, it also calls `onResize`; canvas resizes already own that callback
+through `LGraphNode.setSize()`. It does not copy geometry into nodes.
+
+**Whole-value setters re-read after committing.** `_positionUpdated` and
+`_sizeUpdated` write only their own half of `_posSize`, so stamping
+`_geometryVersion` to the post-commit store version would mark the untouched
+half fresh while it was still stale. The next commit of that half would then
+publish the stale value to the store and to CRDT peers. Both invalidate and
+refresh instead, which also picks up any value the store clamped or merged.
+
+**Deferred follow-up: extract geometry projection ownership.** Land this after
+the node geometry facade and its CRDT-safety follow-up (PRs 14133 and 14480) so
+the ownership and compensation rules are stable before moving them. Preserve
+behavior while making one focused projection module responsible for the legacy
+geometry cache:
+
+1. Move `_geometryVersion`, `_layoutRegistered`, and `refreshGeometry()` out of
+   `LGraphNode`. Keep ephemeral projection state private to the module, keyed by
+   node identity; do not add another entity store for compatibility-only state.
+2. Make layout registration and removal call that module instead of coordinating
+   node flags and backing buffers directly. `LGraphNode.pos` and `.size` remain
+   compatibility accessors, but delegate synchronization rather than owning its
+   lifecycle.
+3. Once the lifecycle has one owner, replace the store-wide geometry version
+   check with node-scoped invalidation. A geometry change should make only the
+   affected nodes refresh; unrelated node, group, and reroute operations should
+   not force every rendered node through a Yjs lookup.
+
+Completion requires no projection lifecycle fields or methods on `LGraphNode`,
+no registration code that mutates such fields, unchanged extension-facing
+`pos` / `size` behavior, and coverage for store-originated updates, indexed
+writes, removal/re-addition, and CRDT compensation.
+
+**Open decisions:**
+
+1. The geometry views. The hand-written `size` Proxy is gone, replaced by
+   `createGeometryView` over `pos` and `size` on `LGraphNode` plus `pos`,
+   `size` and `bounding` on `LGraphGroup`. The views still handle the indexed
+   position write in `distributeNodes()` and extension writes such as
+   `node.size[1] = h`. Retiring them requires whole-value assignment in
+   `distributeNodes()` and a stable resize API for extensions.
+2. Subgraph IO nodes have conforming write paths but no store entry. A keyed
+   entry needs subgraph scoping (`SUBGRAPH_INPUT_ID` is a constant shared by
+   every subgraph) and `Subgraph.id` is reassigned by `clear()`, so the key can
+   go stale. The link store rejected the same pattern. Nothing needs keyed
+   access, since callers reach them as `subgraph.inputNode`.
+3. Two hit-testing systems: litegraph against class geometry, `layoutStore`
+   against a spatial index. Node bounds are duplicated between `_boundingRect`
+   and `NodeLayout.bounds`.
 
 ### 4b. ConnectivitySystem mutations
 
@@ -310,6 +549,13 @@ the system knowing about the callback API.
   source-then-target ordering.
 - Bridge lifecycle events remain internal. Legacy callbacks stay the public
   compatibility API during Phase 4.
+
+> **Status (2026-07-05):** Link and reroute store registration now funnels
+> through canonical `LGraph` mutation chokepoints: `_addLink`/`_removeLink` and
+> `_addReroute`/`_removeReroute` pair every map mutation with store
+> (un)registration, and `clear()` / subgraph-definition GC unregister whole
+> graphs. The callback contract above remains (`output.links` was deleted in
+> PR 13479, `input.link` in PR 13498).
 
 **Risk:** High. Extensions depend on callback ordering and timing. Must be
 validated against real-world extensions.
@@ -441,9 +687,11 @@ requires a separate ADR.
 **Questions to resolve:**
 
 - Should non-position stores also be CRDT-backed for collaboration?
-- Do the stores need an operation log for undo/redo, or can that remain external
-  (Y.js undo manager)?
 - How does conflict resolution work when two users modify the same record?
+
+Settled: the stores do not need an operation log for undo/redo. `layoutStore`
+carried one and nothing ever read it — undo/redo is snapshot-based through
+`changeTracker` — so it was deleted.
 
 ### Extension API preservation
 
@@ -474,6 +722,64 @@ event listeners instead of callbacks.
 - Callback dispatch remains synchronous during the bridge period.
 - Callback order remains: output validation -> input validation -> commit ->
   output change notification -> input change notification.
+
+### Removed layoutStore queries (custom-node audit pending)
+
+These `layoutStore` methods were deleted once their last in-repo caller went
+away. They were never advertised as extension API, but `layoutStore` is
+reachable from custom nodes, so Hyrum's law applies: someone may depend on
+them.
+
+| Removed method         | Was                                             |
+| ---------------------- | ----------------------------------------------- |
+| `getAllNodes()`        | Reactive map of every node layout, unscoped     |
+| `getNodesInBounds()`   | Reactive node ids intersecting bounds           |
+| `queryNodeAtPoint()`   | Top-zIndex node containing a point              |
+| `queryNodesInBounds()` | Node ids intersecting bounds, via spatial index |
+| `queryItemsInBounds()` | Nodes, links, slots and reroutes in bounds      |
+
+**Action required:** grep the custom-node ecosystem for these names before the
+next release. If any have external dependents, restore them as deprecated
+shims per [Extension API preservation](#extension-api-preservation) rather
+than reintroducing the call sites.
+
+Note that the node-facing ones were also _wrong_ by the time they were
+removed: node layout was keyed by bare `NodeId` with no root-graph scope, and
+registration now happens for every graph including unopened subgraph
+definitions, so any of these would have returned nodes the user cannot see. A
+restored shim must take a `rootGraphId`, which node layout is now keyed by.
+
+### Removed CRDT sync seam (prior art for multiplayer)
+
+`layoutStore` carried three methods reserved for a networked future that has
+not arrived:
+
+| Removed method       | Was                                           |
+| -------------------- | --------------------------------------------- |
+| `getYDoc()`          | The raw `Y.Doc`, for a sync provider          |
+| `applyUpdate()`      | `Y.applyUpdate` — merge a remote peer's ops   |
+| `getStateAsUpdate()` | `Y.encodeStateAsUpdate` — full-state snapshot |
+
+None had a caller. Removed as YAGNI, not as a change of direction: the layout
+store is still a Yjs document and
+[ADR 0003](../adr/0003-crdt-based-layout-system.md) still holds. Reinstating
+them is a few lines against `this.ydoc`.
+
+Two things worth carrying forward when multiplayer is actually built, both
+learned by deleting this:
+
+- `applyUpdate` bypassed `applyOperation`, so nothing that derives state from
+  the operation stream would have seen a remote change. `highestZIndex` (see
+  `allocateZIndex`) is exactly such a counter — a remote peer's node with a
+  higher `zIndex` would not have raised it, and the next allocation would
+  collide. Any real sync path must rebuild that kind of derived state from the
+  document, or observe `ynodes` rather than the operation stream.
+- All three entity types are now keyed by `makeScopedLayoutKey(rootGraphId, id)`,
+  so two peers in different workflows cannot collide. They still share a bucket
+  across subgraphs of one root graph, which is safe only because node ids are
+  unique root-wide — `Subgraph` shares the root graph's `state`, so one counter
+  issues every id. A sync path that merges documents from peers holding
+  different workflows must not assume that invariant survives the merge.
 
 ### Extension Migration Examples (old -> new)
 
@@ -571,7 +877,31 @@ stores.
 
 **Current state:** `beforeChange()` / `afterChange()` provide undo/redo
 checkpoints but not true transactions. The graph can be in an inconsistent
-state between these calls.
+state between these calls. Link topology mutations are centralized in
+`linkStore`: endpoint updates validate their batch before mutation, and link
+replacement validates ownership, identity, the expected incumbent, ID, and
+target availability before changing its indexes. These operations are atomic
+only within `linkStore`; they do not provide rollback across callbacks, layout,
+reroutes, graph maps, versioning, or other stores.
+
+Centralizing each mutation point removes duplicated caller checks, reduces the
+number of paths that can violate store invariants, and provides one place for
+atomic validation and rollback as the migration continues. Command-executor
+transactions should wrap these store mutation points rather than adding
+caller-specific compensation.
+
+Input replacement commits new topology before old-link disconnect callbacks, so
+callback queries see the replacement rather than an intermediate empty slot.
+
+**Rejected transitional options:**
+
+| Option                                   | Why it was rejected                                                                |
+| ---------------------------------------- | ---------------------------------------------------------------------------------- |
+| Preflight in each graph caller           | Duplicates store invariants and leaves a check-to-mutation race.                   |
+| Disconnect, register, then restore       | Callbacks and multi-store cleanup make the removed state unsafe to reconstruct.    |
+| Add caller-specific failure compensation | Spreads rollback policy across paths instead of establishing one transaction seam. |
+| Normalize only in `createSubgraph`       | Misses workflow load, paste, and conversion paths and can mutate caller input.     |
+| Add pseudo-live `LinkMap` iterators      | Does not preserve native iterator semantics; cached snapshots preserve it instead. |
 
 **Phase 4 baseline semantics:**
 
@@ -596,13 +926,16 @@ state between these calls.
 
 The dedicated stores use per-concern keying strategies:
 
-| Store                     | Key Format                         |
-| ------------------------- | ---------------------------------- |
-| `widgetValueStore`        | `WidgetId` (`graphId:nodeId:name`) |
-| `domWidgetStore`          | Widget UUID                        |
-| `layoutStore`             | Raw nodeId/linkId/rerouteId        |
-| `nodeOutputStore`         | `"${subgraphId}:${nodeId}"`        |
-| `subgraphNavigationStore` | subgraphId or `'root'`             |
+| Store                     | Key Format                                                                      |
+| ------------------------- | ------------------------------------------------------------------------------- |
+| `widgetValueStore`        | `WidgetId` (`graphId:nodeId:name`)                                              |
+| `domWidgetStore`          | Widget UUID                                                                     |
+| `layoutStore`             | Raw node/link IDs; `${rootGraphId}:${localId}` for group/reroute geometry       |
+| `nodeOutputStore`         | `"${subgraphId}:${nodeId}"`                                                     |
+| `subgraphNavigationStore` | subgraphId or `'root'`                                                          |
+| `linkStore`               | `` `${owningGraphId}:${nodeId}:${slot}` `` query indexes in root-scoped buckets |
+| `rerouteStore`            | `RerouteId`, root-graph-scoped buckets                                          |
+| `nodeDataStore`           | `NodeState` identity (`Set`), root-graph-scoped buckets                         |
 
 ADR 0009 refines the promoted-widget target: promoted value widgets should use
 host boundary identity (`host node locator + SubgraphInput.name`), not interior
@@ -618,6 +951,79 @@ recovers the parts on demand.
 keeps the key format that matches its concern; there is no forced unification
 under a single ID space.
 
+### Deferred topology follow-ups
+
+The scoped-topology migration now has the following boundaries and leaves the
+remaining decisions for later work.
+
+**Implemented boundaries:**
+
+- `createSubgraphs` and `createSubgraph` share one immutable normalization
+  boundary used by workflow loading, direct creation, clipboard/paste, and
+  conversion. It creates shells first and fills leaves first without changing
+  caller input. Malformed same-owner duplicate IDs are deterministic:
+  first-wins and later duplicates are dropped because references cannot
+  disambiguate them.
+- Graph clear uses one exact-entity teardown traversal. Lifecycle callbacks run
+  first while topology remains observable, followed by link, reroute, node, and
+  layout detachment. Only the root clear defensively clears whole store buckets.
+- Root and subgraph serialization consume one owner-local topology partition.
+  It preserves the regular and floating wire categories in workflow output.
+
+**Still deferred:**
+
+- Keep entity identity flat and root-wide. Replacing it with owner-nested
+  identity would reverse the current architecture rather than simplify it.
+- Keep `idsByOwner` for owner-local iteration and teardown; removing it would
+  replace indexed access with root-bucket scans.
+- Keep cached reroute membership; recomputing it would add graph walks to read
+  paths.
+- Do not restore the legacy `_links` mirror or broaden that compatibility
+  surface.
+- Keep registration failure as an explicit return value rather than adding
+  thrown errors.
+- `LinkMap` caches owner-local snapshots, but every topology mutation currently
+  invalidates all views, including endpoint-only updates. Profile Pinia revision
+  and cache-rebuild cost before considering owner-scoped revisions; do not
+  replace the cache with pseudo-live iterators or an `_links` mirror.
+- Graph teardown now finishes exact detachment, defensive root-bucket clearing,
+  graph reset, and canvas clearing after a lifecycle callback fails, then
+  propagates that same failure. Lifecycle callbacks remain fail-fast, so later
+  callbacks do not run. This is the current chosen policy: it preserves callback
+  ordering and topology observation while preventing partially cleared graphs.
+
+  | Future direction                                              | Failure handling                            | Tradeoff                                                                                    |
+  | ------------------------------------------------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------- |
+  | **1. Current: finish teardown, then propagate first failure** | Fail fast; later callbacks do not run       | Preserves current lifecycle semantics, but skips later notifications                        |
+  | 2. Run all callbacks, then report                             | Propagate the first failure or an aggregate | Completes notifications, but changes fail-fast behavior                                     |
+  | 3. Finish and report without propagating                      | Swallow and report callback failures        | Keeps clear callers running, but hides extension failures from them                         |
+  | 4. Detach first, then notify from a queue                     | Run callbacks after teardown                | Simplifies teardown isolation, but breaks compatibility for callbacks that observe topology |
+
+- Keep the browser hydration test as the workflow-level composition check.
+- Investigate separately whether link geometry in `layoutStore`, still keyed by
+  bare `LinkId`, can collide across simultaneously live root graphs.
+- Document that root-wide identity lookup uses `rootGraphId`, while owner-local
+  iteration and slot queries use `graphScopeOf()` with the directly owning
+  graph. Callers should not construct root/owner pairs manually.
+- Defer a persistent root-wide group ID index until profiling shows it is
+  warranted. `LGraph.add()` currently scans root and subgraph groups for each
+  group insertion, which can make loading G groups take quadratic time. A
+  `Set` per insertion has the same asymptotic cost, while a persistent index
+  duplicates lifecycle state. Defer evaluation of its real workflow load-speed
+  impact. Measure representative large workflow load, deserialization, paste,
+  and unpack paths first. If the scan has material impact, optimize the
+  insertion path while preserving the existing root-shared high-water allocator
+  and import-time collision repair.
+- Defer floating reroute/link multi-store rollback. Normal root-shared link ID
+  allocation avoids collisions for minted IDs, while registration can reject
+  externally supplied runtime IDs that collide. Future transaction work should
+  wrap the centralized store mutation rather than add compensation here.
+- Treat floating as one-ended link state, not a separate entity category. The
+  runtime topology collection is unified; `graph.links` and
+  `graph.floatingLinks` remain filtered compatibility views. Keep the separate
+  serialized `floatingLinks` field until a versioned workflow migration has
+  enough value to justify its extension and fixture impact.
+
 ---
 
 ## Dependency Graph
@@ -629,7 +1035,8 @@ Phase 0c (doc fixes)  ─────────┤── no dependencies betwe
 
 Phase 1a (branded WidgetId)  ── ✅ shipped (PR 12617)
 Phase 1b (store state shapes) ─┐── depends on 1a
-Phase 1c (dedicated stores)  ──┘── widgetValueStore + 5 others shipped (PR 12617)
+Phase 1c (dedicated stores)  ──┘── widgetValueStore + 7 others shipped
+                                   (PR 12617; linkStore PR 13436; rerouteStore PR 13449)
 
 Phase 2a (Position via layoutStore) ─┐── depends on 1c
 Phase 2b (Widget consolidation)  ────┤── ✅ largely shipped; depends on 1a, 1c
@@ -642,6 +1049,7 @@ Phase 3c (ConnectivitySystem)  ──── depends on 2c
 Phase 3->4 gate checklist  ──────── depends on 3a, 3b, 3c
 
 Phase 4a (Position writes)  ────── depends on 2a, 3b
+  Geometry projection ownership ── after PRs 14133, 14480; depends on 4a
 Phase 4b (Connectivity mutations) ─ depends on 3c, 3->4 gate
 Phase 4c (Widget writes)  ─────── ✅ largely shipped; depends on 2b
 Phase 4d (Layout decoupling)  ─── depends on 2a, 3->4 gate

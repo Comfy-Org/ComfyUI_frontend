@@ -394,7 +394,10 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
     })
 
     const getReroutePos = () =>
-      comfyPage.page.evaluate(() => [...graph!.reroutes.values()][0])
+      comfyPage.page.evaluate(() => {
+        const reroute = graph!.reroutes.values().next().value
+        return reroute ? [...reroute.pos] : null
+      })
     const getGroupPos = () =>
       comfyPage.page.evaluate(() => graph!.groups[0].pos)
     const initialReroutePos = await getReroutePos()
@@ -403,6 +406,18 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
 
     await expect.poll(getReroutePos).not.toEqual(initialReroutePos)
     await expect.poll(getGroupPos).not.toEqual(initialGroupPos)
+    const movedReroutePos = await getReroutePos()
+    const movedGroupPos = await getGroupPos()
+
+    await comfyPage.keyboard.undo()
+
+    await expect.poll(getReroutePos).toEqual(initialReroutePos)
+    await expect.poll(getGroupPos).toEqual(initialGroupPos)
+
+    await comfyPage.keyboard.redo()
+
+    await expect.poll(getReroutePos).toEqual(movedReroutePos)
+    await expect.poll(getGroupPos).toEqual(movedGroupPos)
   })
 
   test(

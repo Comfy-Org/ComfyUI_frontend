@@ -19,6 +19,8 @@ const mockNodes = [
 ]
 
 const mockGraph = {
+  id: 'root',
+  rootGraph: { id: 'root' },
   _nodes: mockNodes,
   links: createMockLinks([]),
   getNodeById: vi.fn((id: string) => mockNodes.find((n) => n.id === id)),

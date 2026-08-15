@@ -62,7 +62,10 @@ function getFullNodeBounds(item: LGraphNode | LGraphGroup): ReadOnlyRect {
 }
 
 function getVueNodeBounds(item: LGraphNode): ReadOnlyRect | null {
-  const layout = layoutStore.getNodeLayoutRef(item.id).value
+  const rootGraphId = item.graph?.rootGraph.id
+  if (!rootGraphId) return null
+
+  const layout = layoutStore.getNodeLayoutRef(rootGraphId, item.id).value
   if (!layout) return null
 
   return [

@@ -288,8 +288,7 @@ describe('importA1111', () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {})
     vi.spyOn(graph, 'arrange').mockImplementation(() => {})
     vi.spyOn(LiteGraph, 'createNode').mockImplementation((type) => {
-      const node = new LGraphNode(type)
-      node.type = type
+      const node = new LGraphNode(type, type)
       if (type === 'CLIPTextEncode') {
         node.addWidget('text', 'text', '', () => {})
       }

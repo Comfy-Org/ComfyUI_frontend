@@ -63,11 +63,17 @@ const trackingConfigs = new Map<string, ElementTrackingConfig>([
     {
       dataAttribute: 'nodeId',
       updateHandler: (updates) => {
+        const { rootGraphId } = useCanvasStore()
+        if (!rootGraphId) return
+
         const nodeUpdates = updates.map(({ id, bounds }) => ({
           nodeId: id,
           bounds
         }))
-        layoutStore.batchUpdateNodeBounds(nodeUpdates)
+        layoutStore.batchUpdateNodeBounds(rootGraphId, nodeUpdates, {
+          source: LayoutSource.Vue,
+          boundsIncludeTitleHeight: true
+        })
       }
     }
   ],
@@ -102,7 +108,8 @@ watch(visibility, (state) => {
 
 // Single ResizeObserver instance for all Vue elements
 const resizeObserver = new ResizeObserver((entries) => {
-  if (useCanvasStore().linearMode) return
+  const { linearMode, rootGraphId } = useCanvasStore()
+  if (linearMode) return
 
   // Skip measurements when tab is hidden — bounding rects are unreliable
   if (visibility.value === 'hidden') {
@@ -163,9 +170,10 @@ const resizeObserver = new ResizeObserver((entries) => {
     const width = Math.max(0, borderBox.inlineSize)
     const height = Math.max(0, borderBox.blockSize)
 
-    const nodeLayout = nodeId
-      ? layoutStore.getNodeLayoutRef(nodeId).value
-      : null
+    const nodeLayout =
+      nodeId && rootGraphId
+        ? layoutStore.getNodeLayoutRef(rootGraphId, nodeId).value
+        : null
     const normalizedHeight = removeNodeTitleHeight(height)
     const previousMeasurement = cachedNodeMeasurements.get(element)
     const hasFreshMeasurementPending =
@@ -245,14 +253,10 @@ const resizeObserver = new ResizeObserver((entries) => {
 
   if (updatesByType.size === 0 && nodesNeedingSlotResync.size === 0) return
 
-  if (updatesByType.size > 0) {
-    layoutStore.setSource(LayoutSource.DOM)
-
-    // Flush per-type
-    for (const [type, updates] of updatesByType) {
-      const config = trackingConfigs.get(type)
-      if (config?.updateHandler && updates.length) config.updateHandler(updates)
-    }
+  // Flush per-type
+  for (const [type, updates] of updatesByType) {
+    const config = trackingConfigs.get(type)
+    if (config?.updateHandler && updates.length) config.updateHandler(updates)
   }
 
   // After node bounds are updated, refresh slot cached offsets and layouts

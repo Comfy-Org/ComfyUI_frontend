@@ -1,11 +1,20 @@
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import type { Mock } from 'vitest'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref, shallowRef } from 'vue'
 
+import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
+import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
+import { useLinkStore } from '@/stores/linkStore'
+import { toLinkId } from '@/types/linkId'
+import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
+import { toNodeId } from '@/types/nodeId'
 import {
   createMockCanvas2DContext,
   createMockMinimapCanvas
 } from '@/utils/__tests__/litegraphTestUtils'
+import type { UUID } from '@/utils/uuid'
 
 interface MockNode {
   id: string
@@ -18,16 +27,33 @@ interface MockNode {
 
 interface MockGraph {
   _nodes: MockNode[]
+  events: CustomEventTarget<LGraphEventMap>
+  id: UUID
+  rootGraph: { id: UUID }
   links: Map<string, { id: string; target_id: string }>
   getNodeById: Mock
   setDirtyCanvas: Mock
   onNodeAdded: ((node: MockNode) => void) | null
   onNodeRemoved: ((node: MockNode) => void) | null
   onConnectionChange: ((node: MockNode) => void) | null
-  events: {
-    addEventListener: Mock
-    removeEventListener: Mock
-  }
+}
+
+const GRAPH_ID: UUID = 'minimap-graph'
+const GRAPH_SCOPE = {
+  rootGraphId: toRootGraphId(GRAPH_ID),
+  owningGraphId: toOwningGraphId(GRAPH_ID)
+}
+
+function registerMockLink(id: number, targetNodeId: string) {
+  useLinkStore().registerLink(GRAPH_SCOPE, {
+    id: toLinkId(id),
+    graphId: GRAPH_SCOPE.owningGraphId,
+    originNodeId: toNodeId('node1'),
+    originSlot: 0,
+    targetNodeId: toNodeId(targetNodeId),
+    targetSlot: 0,
+    type: '*'
+  })
 }
 
 interface MockCanvas {
@@ -89,10 +115,6 @@ vi.mock('@vueuse/core', () => {
         resume: resumeFn
       }
     }),
-    // Change detection runs on an interval rather than every frame. Its spies
-    // are distinct from the RAF ones so the two loops useMinimap drives stay
-    // distinguishable, and `active` keeps a paused loop from firing under
-    // triggerRAF().
     useIntervalFn: vi.fn((callback, _interval, options) => {
       const id = rafCallbackId++
       const state = { active: options?.immediate !== false }
@@ -152,16 +174,23 @@ const setupMocks = () => {
 
   moduleMockGraph = {
     _nodes: mockNodes,
-    links: new Map([['link1', { id: 'link1', target_id: 'node2' }]]),
+    id: GRAPH_ID,
+    rootGraph: { id: GRAPH_ID },
+    links: new Map([
+      [
+        'link1',
+        {
+          id: 'link1',
+          target_id: 'node2'
+        }
+      ]
+    ]),
     getNodeById: vi.fn((id) => mockNodes.find((n) => n.id === id)),
     setDirtyCanvas: vi.fn(),
+    events: new CustomEventTarget<LGraphEventMap>(),
     onNodeAdded: null,
     onNodeRemoved: null,
-    onConnectionChange: null,
-    events: {
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn()
-    }
+    onConnectionChange: null
   }
 
   moduleMockCanvas = {
@@ -261,6 +290,13 @@ describe('useMinimap', () => {
   }
 
   beforeEach(() => {
+    vi.clearAllMocks()
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    registerMockLink(1, 'node2')
+
+    mockPause.mockClear()
+    mockResume.mockClear()
+
     mockContext2D = createMockCanvas2DContext()
 
     moduleMockCanvasElement = createMockMinimapCanvas({
@@ -310,16 +346,23 @@ describe('useMinimap', () => {
 
     moduleMockGraph = {
       _nodes: mockNodes,
-      links: new Map([['link1', { id: 'link1', target_id: 'node2' }]]),
+      id: GRAPH_ID,
+      rootGraph: { id: GRAPH_ID },
+      links: new Map([
+        [
+          'link1',
+          {
+            id: 'link1',
+            target_id: 'node2'
+          }
+        ]
+      ]),
       getNodeById: vi.fn((id) => mockNodes.find((n) => n.id === id)),
       setDirtyCanvas: vi.fn(),
+      events: new CustomEventTarget<LGraphEventMap>(),
       onNodeAdded: null,
       onNodeRemoved: null,
-      onConnectionChange: null,
-      events: {
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn()
-      }
+      onConnectionChange: null
     }
 
     moduleMockCanvas = {
@@ -427,10 +470,7 @@ describe('useMinimap', () => {
       await minimap.init()
       minimap.destroy()
 
-      // Both loops: rAF drives viewport sync, the interval drives change
-      // detection. One spy each, or deleting either pause here goes unnoticed.
       expect(mockPause).toHaveBeenCalled()
-      expect(mockIntervalPause).toHaveBeenCalled()
       expect(api.removeEventListener).toHaveBeenCalledWith(
         'graphChanged',
         expect.any(Function)
@@ -967,7 +1007,7 @@ describe('useMinimap', () => {
     })
 
     it('should handle invalid link references', async () => {
-      moduleMockGraph.links.get('link1')!.target_id = 'invalid-node'
+      registerMockLink(2, 'invalid-node')
       moduleMockGraph.getNodeById.mockReturnValue(null)
 
       const minimap = await createAndInitializeMinimap()

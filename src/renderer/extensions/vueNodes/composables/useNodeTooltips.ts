@@ -5,7 +5,6 @@ import type {
 import { computed, ref, unref } from 'vue'
 import type { MaybeRef } from 'vue'
 
-import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
 import { st, stRaw } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -136,11 +135,11 @@ export function useNodeTooltips(nodeType: MaybeRef<string>) {
   /**
    * Get tooltip text for widgets
    */
-  const getWidgetTooltip = (widget: SafeWidgetData) => {
+  const getWidgetTooltip = (widget: { name: string; tooltip?: string }) => {
     if (!tooltipsEnabled.value || !nodeDef.value) return ''
 
     // First try widget-specific tooltip
-    const widgetTooltip = (widget as { tooltip?: string }).tooltip
+    const widgetTooltip = widget.tooltip
     if (widgetTooltip) return widgetTooltip
 
     // Then try input-based tooltip lookup
