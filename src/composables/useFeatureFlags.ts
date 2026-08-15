@@ -223,10 +223,12 @@ export function useFeatureFlags() {
       )
     },
     /**
-     * Whether the free tier is open to new sign-ups. This is the single gate
-     * for every surface that *advertises* the free tier. It is distinct from
-     * `freeTierJobAllowanceEnabled`, which governs run quota for users who are
-     * already on the free tier.
+     * Whether the free tier is open to new sign-ups. Gate every Cloud app
+     * surface that *advertises* the free tier on this. Two neighbours are easy
+     * to confuse it with: `freeTierJobAllowanceEnabled` governs run quota for
+     * users already on the free tier, and the marketing site has its own
+     * build-time `SHOW_FREE_TIER` constant, since it ships statically and
+     * cannot read this at runtime.
      */
     get freeTierSubscriptionsEnabled() {
       return resolveFlag(
