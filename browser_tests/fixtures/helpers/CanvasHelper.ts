@@ -9,10 +9,10 @@ import type { NodeId } from '@/types/nodeId'
 import type { RerouteId } from '@/types/rerouteId'
 
 type NodeGeometry = {
-  pos: Point
-  size: Point
   inputs: Point[]
   outputs: Point[]
+  pos: Point
+  size: Point
 }
 
 export class CanvasHelper {
