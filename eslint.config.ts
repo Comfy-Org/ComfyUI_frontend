@@ -488,11 +488,7 @@ export default defineConfig([
       'import-x/no-unresolved': ['error', { ignore: ['^astro:'] }]
     }
   },
-  // These wrappers forward reka-ui props wholesale via
-  // useForwardPropsEmits/reactiveOmit + v-bind, which the rule cannot trace,
-  // so it reports every forwarded prop as unused. Deleting them would drop
-  // the component's public API. Scoped to the wrapper directories so the
-  // bespoke components under ui/ keep the rule.
+  // reka-ui wrappers forward props via v-bind, which the rule cannot trace.
   {
     files: [
       'apps/website/src/components/ui/accordion/*.vue',
