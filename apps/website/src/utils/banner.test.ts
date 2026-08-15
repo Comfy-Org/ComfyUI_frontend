@@ -122,6 +122,9 @@ describe('toClosedBanners', () => {
 
   it.for([
     { label: 'null', parsed: null },
+    { label: 'undefined', parsed: undefined },
+    { label: 'an empty object', parsed: {} },
+    { label: 'an empty string', parsed: '' },
     { label: 'an array', parsed: ['promo_en_v1'] },
     { label: 'a string', parsed: 'promo_en_v1' },
     { label: 'a number', parsed: 7 }

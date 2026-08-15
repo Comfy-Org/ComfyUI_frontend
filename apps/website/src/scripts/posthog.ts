@@ -3,7 +3,7 @@ import posthog from 'posthog-js'
 import { createPostHogBeforeSend } from '@comfyorg/shared-frontend-utils/piiUtil'
 
 import type { Platform } from '@/composables/useDownloadUrl'
-import type { McpClientId } from '@/templates/mcp/clients'
+import type { ConnectionId, McpClientId } from '@/templates/mcp/clients'
 
 const POSTHOG_KEY =
   import.meta.env.PUBLIC_POSTHOG_KEY ??
@@ -16,6 +16,7 @@ const POSTHOG_UI_HOST =
 const ANALYTICS_EVENT = {
   pageview: '$pageview',
   downloadButtonClicked: 'website:download_button_clicked',
+  mcpConnectionTabClicked: 'website:mcp_connection_tab_clicked',
   mcpClientTabClicked: 'website:mcp_client_tab_clicked'
 } as const
 
@@ -24,6 +25,10 @@ type AnalyticsEvent =
   | {
       name: typeof ANALYTICS_EVENT.downloadButtonClicked
       properties: { platform: Platform }
+    }
+  | {
+      name: typeof ANALYTICS_EVENT.mcpConnectionTabClicked
+      properties: { connection: ConnectionId }
     }
   | {
       name: typeof ANALYTICS_EVENT.mcpClientTabClicked
@@ -67,6 +72,13 @@ export function captureDownloadClick(platform: Platform): void {
   captureEvent({
     name: ANALYTICS_EVENT.downloadButtonClicked,
     properties: { platform }
+  })
+}
+
+export function captureMcpConnectionTabClick(connection: ConnectionId): void {
+  captureEvent({
+    name: ANALYTICS_EVENT.mcpConnectionTabClicked,
+    properties: { connection }
   })
 }
 
