@@ -92,10 +92,31 @@ function referencesBinding(
   return namesBinding(node.typeName, node.typeArguments, bindings)
 }
 
-function intersectionMembers(annotation: TypeNode): readonly TypeNode[] {
-  return annotation.type === 'TSIntersectionType'
-    ? (annotation.types ?? [])
+function isComposite(node: TypeNode): boolean {
+  return node.type === 'TSUnionType' || node.type === 'TSIntersectionType'
+}
+
+// `GeneratedX | null` and `Omit<GeneratedX, 'k'> & { … }` are both derivations,
+// so unions and intersections alike are flattened before looking for the import.
+function compositeLeaves(annotation: TypeNode): readonly TypeNode[] {
+  return isComposite(annotation)
+    ? (annotation.types ?? []).flatMap(compositeLeaves)
     : [annotation]
+}
+
+// Only an intersection can omit a key and add it back; a union's arms are
+// alternatives, so each arm is examined on its own.
+function intersectionGroups(
+  annotation: TypeNode
+): readonly (readonly TypeNode[])[] {
+  if (annotation.type === 'TSUnionType') {
+    return (annotation.types ?? []).flatMap(intersectionGroups)
+  }
+  return [
+    annotation.type === 'TSIntersectionType'
+      ? (annotation.types ?? [])
+      : [annotation]
+  ]
 }
 
 function heritageAsTypeReference(clause: InterfaceHeritage): TypeNode {
@@ -278,12 +299,14 @@ const noDuplicateIngestType = {
         return
       }
 
-      const members = intersectionMembers(annotation)
-      if (!members.some((member) => referencesBinding(member, bindings))) {
+      const leaves = compositeLeaves(annotation)
+      if (!leaves.some((leaf) => referencesBinding(leaf, bindings))) {
         reportDuplicate(node)
         return
       }
-      reportDriftIfAny(node, members, [], bindings)
+      for (const group of intersectionGroups(annotation)) {
+        reportDriftIfAny(node, group, [], bindings)
+      }
     }
 
     return {

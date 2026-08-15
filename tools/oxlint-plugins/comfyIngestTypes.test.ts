@@ -42,6 +42,7 @@ function lint(targets: string[]): Finding[] {
 }
 
 const accepted = `import type {
+  ListMembersResponse as GeneratedListMembersResponse,
   Member as GeneratedMember,
   PendingInvite as GeneratedPendingInvite,
   PreviewSubscribeRequest as GeneratedPreviewSubscribeRequest,
@@ -59,15 +60,19 @@ interface PreviewSubscribeRequest extends GeneratedPreviewSubscribeRequest {
   billing_cycle?: 'monthly' | 'yearly'
 }
 
+type ListMembersResponse = GeneratedListMembersResponse | null
+
 export type {
   Member,
   PendingInvite,
   SubscribeRequest,
-  PreviewSubscribeRequest
+  PreviewSubscribeRequest,
+  ListMembersResponse
 }
 `
 
 const reportedSource = `import type {
+  AcceptInviteResponse as GeneratedAcceptInviteResponse,
   BillingStatusResponse as GeneratedBillingStatusResponse,
   ListMembersResponse as GeneratedListMembersResponse,
   Member as GeneratedMember,
@@ -99,6 +104,12 @@ type BillingStatusResponse = Omit<GeneratedBillingStatusResponse, 'plan_slug'> &
   'plan_slug': number
 }
 
+type AcceptInviteResponse =
+  | (Omit<GeneratedAcceptInviteResponse, 'workspace_id'> & {
+      workspace_id: number
+    })
+  | null
+
 export type {
   Plan,
   SubscribeRequest,
@@ -106,6 +117,7 @@ export type {
   Member,
   PendingInvite,
   BillingStatusResponse,
+  AcceptInviteResponse,
   HiddenKeys,
   GeneratedListMembersResponse,
   GeneratedMember
@@ -189,7 +201,8 @@ describe('comfy/no-duplicate-ingest-type', () => {
     ['an additive intersection', 'Member'],
     ['a projection that re-adds nothing', 'PendingInvite'],
     ['presence relaxed via Partial<Pick<...>>', 'SubscribeRequest'],
-    ['an interface extending the generated export', 'PreviewSubscribeRequest']
+    ['an interface extending the generated export', 'PreviewSubscribeRequest'],
+    ['a union of the generated export with null', 'ListMembersResponse']
   ])('accepts %s', ([, name]) => {
     expect(reported('accepted.ts')).not.toContain(name)
   })
@@ -203,7 +216,8 @@ describe('comfy/no-duplicate-ingest-type', () => {
     ],
     ['an alias deriving from a generated export of another name', 'Member'],
     ['omitted keys hidden behind a same-file alias', 'PendingInvite'],
-    ['a re-declared key written as a string literal', 'BillingStatusResponse']
+    ['a re-declared key written as a string literal', 'BillingStatusResponse'],
+    ['drift inside one arm of a union', 'AcceptInviteResponse']
   ])('reports %s', ([, name]) => {
     expect(reported('reported.ts')).toContain(name)
   })
