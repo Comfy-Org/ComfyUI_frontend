@@ -72,6 +72,35 @@ describe('conversion verdicts', () => {
       expect(result.verdict).toBe('WIRE-CHANGED')
       expect(result.notes[0]).toMatch(/link ids/)
     })
+
+    it('does not fire on the document id, which every run mints afresh', () => {
+      // Both runs serialize a different LGraph, so this field always differs.
+      // Grading it would have blocked every conversion in the corpus.
+      const result = grade(
+        input({
+          deprecations: { before: 2, after: 0 },
+          wire: {
+            before: wire('same', '{"id":"1a2b","nodes":[]}'),
+            after: wire('same', '{"id":"9z8y","nodes":[]}')
+          }
+        })
+      )
+      expect(result.verdict).toBe('CLEANED')
+    })
+
+    it('still fires when the document id is equal but a node moved', () => {
+      // The boundary: excluding identity must not excuse anything beside it.
+      const result = grade(
+        input({
+          deprecations: { before: 2, after: 0 },
+          wire: {
+            before: wire('same', '{"id":"1a2b","nodes":[{"mode":0}]}'),
+            after: wire('same', '{"id":"1a2b","nodes":[{"mode":4}]}')
+          }
+        })
+      )
+      expect(result.verdict).toBe('WIRE-CHANGED')
+    })
   })
 
   describe('shippable outcomes', () => {
