@@ -9,6 +9,7 @@ import { externalLinks } from '../../../config/routes'
 import { t } from '../../../i18n/translations'
 import BrandButton from '../../common/BrandButton.vue'
 import ProductHeroBadge from '../../common/ProductHeroBadge.vue'
+import { stampCycleAt } from './stampCycle'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
@@ -109,18 +110,7 @@ onMounted(() => {
     const time = Date.now() / 1000
     const cycle = time % 1.0
 
-    let stampAmt: number
-    let conveyorEject: number
-
-    if (cycle < 0.35) {
-      const p = cycle / 0.35
-      stampAmt = Math.pow(Math.sin(p * Math.PI), 1.2)
-      conveyorEject = 0
-    } else {
-      const p = (cycle - 0.35) / 0.65
-      conveyorEject = (1 - Math.cos(p * Math.PI)) / 2
-      stampAmt = 0
-    }
+    const { stampAmt, conveyorEject } = stampCycleAt(cycle)
 
     const maxPushDistance = 210
     const travelMagnitude = stampAmt * maxPushDistance
