@@ -4491,20 +4491,14 @@ function canTransferNodeState(
 function transferNodeState(node: LGraphNode, replacement: LGraphNode): void {
   const registeredState = node._state
   const detachedState = { ...registeredState }
-  const replacementState = replacement._state
+  const { graphId: _graphId, id: _id, ...replacementState } = replacement._state
   Object.assign(registeredState, {
-    flags: replacementState.flags,
-    inputs: replacementState.inputs,
-    mode: replacementState.mode,
-    outputs: replacementState.outputs,
-    title: replacementState.title,
-    type: replacementState.type,
-    bgcolor: replacementState.bgcolor,
-    color: replacementState.color,
-    resizable: replacementState.resizable,
-    shape: replacementState.shape,
-    showAdvanced: replacementState.showAdvanced,
-    titleMode: replacementState.titleMode
+    bgcolor: undefined,
+    color: undefined,
+    resizable: undefined,
+    shape: undefined,
+    showAdvanced: undefined,
+    ...replacementState
   })
   replacement._state = registeredState
   replacement._graphScope = node._graphScope
