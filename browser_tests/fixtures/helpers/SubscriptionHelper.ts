@@ -1,5 +1,5 @@
 import { expect } from '@playwright/test'
-import type { Page, Route } from '@playwright/test'
+import type { Locator, Page, Route } from '@playwright/test'
 
 import {
   PENDING_SUBSCRIPTION_CHECKOUT_EVENT,
@@ -213,6 +213,25 @@ export class SubscriptionHelper {
     return popover
   }
 
+  async expectManagePlanMatchesAdjacentMenuRow(
+    popover: Locator
+  ): Promise<void> {
+    const managePlan = popover.getByRole('button', { name: 'Manage plan' })
+    const adjacentRow = popover.getByTestId('partner-nodes-menu-item')
+
+    await expect(managePlan).toBeVisible()
+    await expect(adjacentRow).toBeVisible()
+    await expect(async () => {
+      const [managePlanPresentation, adjacentRowPresentation] =
+        await Promise.all([
+          this.getMenuRowPresentation(managePlan),
+          this.getMenuRowPresentation(adjacentRow)
+        ])
+
+      expect(managePlanPresentation).toEqual(adjacentRowPresentation)
+    }).toPass({ timeout: 5_000 })
+  }
+
   /**
    * Open the user popover and click the subscribe button.
    * Uses `dispatchEvent` on the button too — the subscription dialog's
@@ -260,6 +279,21 @@ export class SubscriptionHelper {
     this.routeHandlers = []
     this.statusResponse = { ...UNSUBSCRIBED }
     this.balanceResponse = { ...ZERO_BALANCE }
+  }
+
+  private async getMenuRowPresentation(locator: Locator) {
+    return await locator.evaluate((element) => {
+      const style = getComputedStyle(element)
+      const bounds = element.getBoundingClientRect()
+      return {
+        backgroundColor: style.backgroundColor,
+        borderTopStyle: style.borderTopStyle,
+        borderTopWidth: style.borderTopWidth,
+        fontFamily: style.fontFamily.split(',')[0].trim(),
+        left: bounds.left,
+        width: bounds.width
+      }
+    })
   }
 }
 

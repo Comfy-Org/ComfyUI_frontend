@@ -143,10 +143,12 @@
       }}</span>
     </div>
 
-    <button
+    <Button
       v-if="!accountActionsOnly && showManagePlan"
       type="button"
-      class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
+      variant="textonly"
+      size="unset"
+      class="w-full justify-start rounded-none px-4 py-2 text-left font-normal"
       data-testid="manage-plan-menu-item"
       @click="handleOpenPlanAndCreditsSettings"
     >
@@ -154,7 +156,7 @@
       <span class="flex-1 text-sm text-base-foreground">{{
         $t('subscription.managePlan')
       }}</span>
-    </button>
+    </Button>
 
     <!-- Partner Nodes Pricing (always shown) -->
     <div
