@@ -8,9 +8,17 @@ import type {
   TemplateInfo,
   WorkflowTemplates
 } from '@/platform/workflow/templates/types/template'
+import { replaceTemplateImageInput } from '@/platform/workflow/templates/utils/templateWorkflowTransforms'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ResultItem } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useDialogStore } from '@/stores/dialogStore'
+
+interface LoadWorkflowTemplateOptions {
+  input?: ResultItem
+  transformWorkflow?: (workflow: ComfyWorkflowJSON) => ComfyWorkflowJSON
+}
 
 export function useTemplateWorkflows() {
   const { t } = useI18n()
@@ -97,11 +105,15 @@ export function useTemplateWorkflows() {
   /**
    * Loads a workflow template
    */
-  const loadWorkflowTemplate = async (id: string, sourceModule: string) => {
+  const loadWorkflowTemplate = async (
+    id: string,
+    sourceModule: string,
+    options: LoadWorkflowTemplateOptions = {}
+  ) => {
     if (!isTemplatesLoaded.value) return false
 
     loadingTemplateId.value = id
-    let json
+    let json: ComfyWorkflowJSON
 
     try {
       // Handle "All" category as a special case
@@ -125,6 +137,14 @@ export function useTemplateWorkflows() {
 
       // Regular case for normal categories
       json = await fetchTemplateJson(id, sourceModule)
+
+      if (options.input) {
+        const template = workflowTemplatesStore.getTemplateByName(id)
+        if (!template || template.sourceModule !== sourceModule) return false
+        json = replaceTemplateImageInput(json, template, options.input)
+      }
+
+      if (options.transformWorkflow) json = options.transformWorkflow(json)
 
       const workflowName =
         sourceModule === 'default'
@@ -153,7 +173,10 @@ export function useTemplateWorkflows() {
   /**
    * Fetches template JSON from the appropriate endpoint
    */
-  const fetchTemplateJson = async (id: string, sourceModule: string) => {
+  const fetchTemplateJson = async (
+    id: string,
+    sourceModule: string
+  ): Promise<ComfyWorkflowJSON> => {
     if (sourceModule === 'default') {
       // Default templates provided by frontend are served on this separate endpoint
       return fetch(api.fileURL(`/templates/${id}.json`)).then((r) => r.json())
