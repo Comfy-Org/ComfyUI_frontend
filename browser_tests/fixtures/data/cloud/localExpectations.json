@@ -52,8 +52,8 @@
     "reason": "GPU-only imports do not resolve on a CPU runner, so fewer node classes register here than Cloud recorded; the count is exact, so any further drop still fails"
   },
   "ComfyUI_AudioTools": {
-    "expectedNodeCount": 31,
-    "reason": "Cloud disables 2 node(s) this backend serves; the delta is exactly that count"
+    "expectedNodeCount": 30,
+    "reason": "GPU-only imports do not resolve on a CPU runner, so fewer node classes register here than Cloud recorded; the count is exact, so any further drop still fails"
   },
   "ComfyUI_Fill-Nodes": {
     "expectedNodeCount": 188,
@@ -125,8 +125,8 @@
     "reason": "GPU-only imports do not resolve on a CPU runner, so fewer node classes register here than Cloud recorded; the count is exact, so any further drop still fails"
   },
   "comfyui-rmbg": {
-    "expectedNodeCount": 42,
-    "reason": "local backend serves 7 more node(s) than Cloud's snapshot recorded (Cloud disables 8)"
+    "expectedNodeCount": 43,
+    "reason": "local backend serves more node(s) than Cloud's snapshot recorded"
   },
   "comfyui-various": {
     "expectedNodeCount": 68,

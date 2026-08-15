@@ -56,6 +56,7 @@ const {
   conditionalSlotContractMismatch,
   deterministicSlotContractMismatch,
   roundtripLost,
+  noPairContributionExpectedNodeCounts,
   zeroPairDragExpectedNodeCounts
 } = connectivityExpectations
 
@@ -128,13 +129,30 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
     `connectivity plan: ${plan.pairs.length} pairs, ${plan.orphans.length} orphan slots, ${plan.wildcards.length} wildcard + ${plan.combos.length} combo slots (excluded by design), ${plan.unknownShapes.length} unknown-shape slots (recorded: ${plan.unknownShapes.join('; ') || 'none'})`
   )
 
+  const observedNoPairPacks = new Set<string>()
   for (const entry of installedEntries) {
+    const contributes = plan.pairs.some(
+      (pair) =>
+        pair.producer.pack === entry.pack || pair.consumer.pack === entry.pack
+    )
+    if (contributes) continue
+    const packNodes = nodes.filter((node) => node.pack === entry.pack)
     expect(
-      plan.pairs.some(
-        (pair) =>
-          pair.producer.pack === entry.pack || pair.consumer.pack === entry.pack
-      ),
+      noPairContributionExpectedNodeCounts[entry.pack],
       `${entry.pack} contributes no pairs - corpus or pack attribution broke`
+    ).toBe(packNodes.length)
+    observedNoPairPacks.add(entry.pack)
+  }
+  for (const pack of Object.keys(noPairContributionExpectedNodeCounts)) {
+    expect(
+      loadFullManifest().some((entry) => entry.pack === pack),
+      `${pack} has a no-pair expectation but is not a manifest entry`
+    ).toBe(true)
+    const entry = installedEntries.find((entry) => entry.pack === pack)
+    if (!entry) continue
+    expect(
+      observedNoPairPacks.has(pack),
+      `${pack} now contributes a pair - remove the stale no-pair expectation`
     ).toBe(true)
   }
 
