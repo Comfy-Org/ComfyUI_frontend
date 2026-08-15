@@ -143,6 +143,38 @@ test.describe('customNode manifest', () => {
     ])
   })
 
+  test('a pack keeps its shard when another pack is excluded', () => {
+    // All packs in a shard share one Python environment, so a pack's
+    // neighbours decide which of its optional imports resolve and how many
+    // node classes it registers. Bin-packing the FILTERED list moved 26 of 81
+    // packs when four left the quarantine, and every recorded node count moved
+    // with them - calibration could never converge.
+    const packs = Array.from({ length: 40 }, (_, i) => ({
+      pack: `p${i}`,
+      weight: (i % 7) + 1
+    }))
+    const original = process.env.CUSTOM_NODES_SHARD
+    const shardIndexOf = (excluded: string[]) => {
+      const dropped = new Set(excluded)
+      const where = new Map<string, number>()
+      for (let index = 1; index <= 4; index++) {
+        process.env.CUSTOM_NODES_SHARD = `${index}/4`
+        for (const entry of shardOf(packs, (e) => e.weight))
+          if (!dropped.has(entry.pack)) where.set(entry.pack, index)
+      }
+      return where
+    }
+    try {
+      const before = shardIndexOf([])
+      const after = shardIndexOf(['p3', 'p11', 'p27'])
+      const moved = [...after].filter(([pack, i]) => before.get(pack) !== i)
+      expect(moved).toEqual([])
+    } finally {
+      if (original === undefined) delete process.env.CUSTOM_NODES_SHARD
+      else process.env.CUSTOM_NODES_SHARD = original
+    }
+  })
+
   test('sharding balances by weight, not by count', () => {
     // The distribution that matters: expectedNodeCount runs 1..285 with a
     // median of 6, so equal pack counts are not equal work. Counting packs

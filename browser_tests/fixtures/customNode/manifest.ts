@@ -561,10 +561,17 @@ export function loadPackQuarantine(): Record<string, QuarantinedPack> {
 export const MAX_QUARANTINED_PACKS = 5
 
 export function loadManifest(): (CoreManifestEntry | CloudManifestEntry)[] {
+  // Assign over the FULL manifest, then drop the excluded packs. Packing the
+  // filtered list instead made shard composition depend on the exclusion
+  // ledgers: moving four packs out of quarantine moved 26 of 81 packs to a
+  // different shard. All packs in a shard share one Python environment, so a
+  // pack's neighbours decide which of its optional imports resolve and how
+  // many node classes it registers - WanVideoWrapper measured 141, 142 and 146
+  // across three runs without its own pin changing. Composition now moves only
+  // when the manifest does.
   const quarantined = loadPackQuarantine()
-  return shardOf(
-    loadFullManifest().filter((entry) => !(entry.pack in quarantined)),
-    (entry) => entry.expectedNodeCount
+  return shardOf(loadFullManifest(), (entry) => entry.expectedNodeCount).filter(
+    (entry) => !(entry.pack in quarantined)
   )
 }
 
