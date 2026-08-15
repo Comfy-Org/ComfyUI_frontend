@@ -11,7 +11,7 @@ test.describe(
       await comfyPage.workflow.setupWorkflowsDirectory({})
     })
 
-    test('an emptied text widget remains empty after save and reload', async ({
+    test('an emptied text widget remains empty after save and reopen', async ({
       comfyPage
     }) => {
       test.slow()
@@ -27,7 +27,15 @@ test.describe(
       await expect(widget).toHaveValue('')
 
       await comfyPage.menu.topbar.saveWorkflow('empty-widget-value')
-      await comfyPage.workflow.reloadAndWaitForApp()
+      await comfyPage.menu.topbar.closeWorkflowTab('empty-widget-value')
+      await comfyPage.page.keyboard.press('w')
+      await comfyPage.menu.workflowsTab
+        .getPersistedItem('empty-widget-value')
+        .dblclick()
+      await expect
+        .poll(() => comfyPage.workflow.getActiveWorkflowPath())
+        .toContain('empty-widget-value')
+      await comfyPage.vueNodes.waitForNodes()
 
       await expect(
         comfyPage.vueNodes.getWidgetByName(

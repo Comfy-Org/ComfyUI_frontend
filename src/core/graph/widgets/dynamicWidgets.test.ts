@@ -70,22 +70,38 @@ describe('Dynamic Combos', () => {
     expect(node.inputs[1].name).toBe('0.0.0.0')
     expect(node.inputs[3].name).toBe('2.2.0.0')
   })
-  test('Shrinking rebuild preserves retained connections', () => {
+  test('Shrinking dynamic inputs preserves remaining connections and disconnects removed links', () => {
     const graph = new LGraph()
     const node = testNode()
-    addDynamicCombo(node, [[], ['IMAGE', 'IMAGE'], ['IMAGE']])
+    addDynamicCombo(node, [[], ['IMAGE', 'IMAGE', 'IMAGE'], ['IMAGE']])
     graph.add(node)
     addNodeInput(node, { name: 'other', isOptional: false, type: 'IMAGE' })
     node.widgets[0].value = '1'
     const retained = connectInput(node, 1, graph)
-    const removed = connectInput(node, 2, graph)
-    const unrelated = connectInput(node, 3, graph)
+    const removed = [connectInput(node, 2, graph), connectInput(node, 3, graph)]
+    const removedSources = removed.map((link) =>
+      graph.getNodeById(link.origin_id)
+    )
+    const unrelated = connectInput(node, 4, graph)
+    const onConnectionsChange =
+      vi.fn<NonNullable<LGraphNode['onConnectionsChange']>>()
+    node.onConnectionsChange = onConnectionsChange
 
     node.widgets[0].value = '2'
 
     expect(node.getInputLink(1)).toBe(retained)
     expect(node.getInputLink(2)).toBe(unrelated)
-    expect(graph.getLink(removed.id)).toBeUndefined()
+    for (const link of removed) {
+      expect(graph.getLink(link.id)).toBeUndefined()
+    }
+    for (const source of removedSources) {
+      expect(source?.outputs[0].links).toEqual([])
+    }
+    const disconnectedLinks = onConnectionsChange.mock.calls
+      .filter(([, , connected]) => !connected)
+      .map(([, , , link]) => link)
+    expect(disconnectedLinks).toHaveLength(2)
+    expect(new Set(disconnectedLinks)).toEqual(new Set(removed))
   })
   test('Growing rebuild preserves retained connections', () => {
     const graph = new LGraph()
@@ -101,22 +117,6 @@ describe('Dynamic Combos', () => {
 
     expect(node.getInputLink(1)).toBe(retained)
     expect(node.getInputLink(3)).toBe(unrelated)
-  })
-  test('Shrinking a larger group disconnects every removed link', () => {
-    const graph = new LGraph()
-    const node = testNode()
-    addDynamicCombo(node, [[], ['IMAGE', 'IMAGE', 'IMAGE'], ['IMAGE']])
-    graph.add(node)
-    node.widgets[0].value = '1'
-    const retained = connectInput(node, 1, graph)
-    const removed = [connectInput(node, 2, graph), connectInput(node, 3, graph)]
-
-    node.widgets[0].value = '2'
-
-    expect(node.getInputLink(1)).toBe(retained)
-    expect(removed.every((link) => graph.getLink(link.id) === undefined)).toBe(
-      true
-    )
   })
   test('Replacing a linked input emits one connected callback', () => {
     const graph = new LGraph()
