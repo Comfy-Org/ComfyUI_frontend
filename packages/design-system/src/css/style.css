@@ -721,6 +721,32 @@ body {
   border: thin solid;
 }
 
+/* Heading rhythm shared by both markdown renderers; em-relative so margins scale with the heading, not the root font size. */
+.comfy-markdown .tiptap h1,
+.comfy-markdown .tiptap h2,
+.comfy-markdown .tiptap h3,
+.comfy-markdown .tiptap h4,
+.comfy-markdown .tiptap h5,
+.comfy-markdown .tiptap h6,
+.comfy-markdown-content h1,
+.comfy-markdown-content h2,
+.comfy-markdown-content h3,
+.comfy-markdown-content h4,
+.comfy-markdown-content h5,
+.comfy-markdown-content h6 {
+  margin-block: 0.67em;
+}
+
+/* Tiptap headings already resolve to `normal`; only the parsed-HTML renderer needs its 1.6 body leading overridden. */
+.comfy-markdown-content h1,
+.comfy-markdown-content h2,
+.comfy-markdown-content h3,
+.comfy-markdown-content h4,
+.comfy-markdown-content h5,
+.comfy-markdown-content h6 {
+  line-height: 1.2;
+}
+
 /* Shared markdown content styling for consistent rendering across components */
 .comfy-markdown-content {
   /* Typography */
@@ -733,47 +759,16 @@ body {
 .comfy-markdown-content h1 {
   font-size: calc(22 / 14 * var(--comfy-textarea-font-size));
   font-weight: 700; /* font-bold */
-  margin-top: 2rem; /* mt-8 */
-  margin-bottom: 1rem; /* mb-4 */
-}
-
-.comfy-markdown-content h1:first-child {
-  margin-top: 0; /* first:mt-0 */
 }
 
 .comfy-markdown-content h2 {
   font-size: calc(18 / 14 * var(--comfy-textarea-font-size));
   font-weight: 700; /* font-bold */
-  margin-top: 2rem; /* mt-8 */
-  margin-bottom: 1rem; /* mb-4 */
-}
-
-.comfy-markdown-content h2:first-child {
-  margin-top: 0; /* first:mt-0 */
 }
 
 .comfy-markdown-content h3 {
   font-size: calc(16 / 14 * var(--comfy-textarea-font-size));
   font-weight: 700; /* font-bold */
-  margin-top: 2rem; /* mt-8 */
-  margin-bottom: 1rem; /* mb-4 */
-}
-
-.comfy-markdown-content h3:first-child {
-  margin-top: 0; /* first:mt-0 */
-}
-
-.comfy-markdown-content h4,
-.comfy-markdown-content h5,
-.comfy-markdown-content h6 {
-  margin-top: 2rem; /* mt-8 */
-  margin-bottom: 1rem; /* mb-4 */
-}
-
-.comfy-markdown-content h4:first-child,
-.comfy-markdown-content h5:first-child,
-.comfy-markdown-content h6:first-child {
-  margin-top: 0; /* first:mt-0 */
 }
 
 /* Paragraphs */

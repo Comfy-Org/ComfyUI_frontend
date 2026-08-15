@@ -890,7 +890,7 @@
       },
       "model": {
         "name": "modelo",
-        "tooltip": "Seedance 2.0 para máxima qualidade; Seedance 2.0 Fast para otimização de velocidade."
+        "tooltip": "Seedance 2.5 para o modelo mais recente, vídeos de até 30 segundos e saída em mp4/mov; Seedance 2.0 para qualidade máxima e 1080p/4k; Fast para otimização de velocidade; Mini para a geração mais rápida e de menor custo."
       },
       "model_duration": {
         "name": "duração"
@@ -931,7 +931,7 @@
       },
       "model": {
         "name": "modelo",
-        "tooltip": "Seedance 2.0 para máxima qualidade; Seedance 2.0 Fast para otimização de velocidade."
+        "tooltip": "Seedance 2.5 para o modelo mais recente, vídeos de até 30 segundos e saída em mp4/mov; Seedance 2.0 para qualidade máxima e 1080p/4k; Fast para otimização de velocidade; Mini para a geração mais rápida e de menor custo."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -984,7 +984,7 @@
       },
       "model": {
         "name": "modelo",
-        "tooltip": "Seedance 2.0 para máxima qualidade; Seedance 2.0 Fast para otimização de velocidade."
+        "tooltip": "Seedance 2.5 para o modelo mais recente, vídeos de até 30 segundos e saída em mp4/mov; Seedance 2.0 para qualidade máxima e 1080p/4k; Fast para otimização de velocidade; Mini para a geração mais rápida e de menor custo."
       },
       "model_duration": {
         "name": "duração"
@@ -5963,19 +5963,19 @@
       },
       "image": {
         "name": "image",
-        "tooltip": "Imagem inicial opcional para grok-imagine-video. Obrigatória para grok-imagine-video-1.5."
+        "tooltip": "Imagem inicial opcional. Se omitida, o vídeo é gerado apenas a partir do prompt de texto."
       },
       "model": {
         "name": "model",
-        "tooltip": "grok-imagine-video-1.5 atualmente sempre requer uma imagem de entrada."
+        "tooltip": "O modelo a ser usado para a geração de vídeo."
       },
       "prompt": {
         "name": "prompt",
-        "tooltip": "Descrição em texto do vídeo desejado."
+        "tooltip": "Descrição em texto do vídeo desejado. Opcional para grok-imagine-video-1.5 quando uma imagem de entrada é fornecida."
       },
       "resolution": {
         "name": "resolution",
-        "tooltip": "A resolução do vídeo de saída."
+        "tooltip": "A resolução do vídeo de saída. 1080p está disponível apenas para grok-imagine-video-1.5."
       },
       "seed": {
         "name": "seed",
@@ -5989,7 +5989,7 @@
     }
   },
   "GrokVideoReferenceNode": {
-    "description": "Gere vídeo guiado por imagens de referência como referências de estilo e conteúdo.",
+    "description": "Gere um vídeo guiado por imagens de referência, com referências de vozes predefinidas opcionais.",
     "display_name": "Grok Referência-para-Vídeo",
     "inputs": {
       "control_after_generate": {
@@ -8816,7 +8816,7 @@
   },
   "LTXVConcatAVLatent": {
     "description": "Mescla um latente de vídeo e um latente de áudio em um latente AV conjunto (qualquer modelo AV, ex: LTXV ou MiniMax H3).",
-    "display_name": "LTXVConcatAVLatent",
+    "display_name": "Concatenar latente AV",
     "inputs": {
       "audio_latent": {
         "name": "audio_latent"
@@ -9235,8 +9235,8 @@
     }
   },
   "LTXVSeparateAVLatent": {
-    "description": "LTXV Separar AV Latent",
-    "display_name": "LTXVSeparateAVLatent",
+    "description": "Divide um latente AV conjunto em seus latentes de vídeo e áudio (qualquer modelo AV, por exemplo, LTXV ou MiniMax H3).",
+    "display_name": "Separar latente AV",
     "inputs": {
       "av_latent": {
         "name": "av_latent"
@@ -15609,7 +15609,7 @@
     "description": "Visualize qualquer valor de entrada como texto.",
     "display_name": "Pré-visualizar como Texto",
     "inputs": {
-      "preview_mode": "Modo de visualização",
+      "preview_mode": {},
       "preview_text": {},
       "source": {
         "name": "source"

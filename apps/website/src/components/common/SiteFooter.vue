@@ -41,9 +41,14 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
       { label: t('nav.mcpServer', locale), href: routes.mcp },
       { label: t('nav.supportedModels', locale), href: routes.models },
       { label: t('footer.minimaxH3', locale), href: routes.minimax },
+      {
+        label: t('footer.minimaxMusic3', locale),
+        href: routes.minimaxMusic3
+      },
       { label: t('footer.seedance', locale), href: routes.seedance },
       { label: t('footer.wanAnimate2', locale), href: routes.wanAnimate2 },
-      { label: t('footer.ltx', locale), href: routes.ltx }
+      { label: t('footer.ltx', locale), href: routes.ltx },
+      { label: t('footer.wan3', locale), href: routes.wan3 }
     ]
   },
   {
@@ -51,6 +56,7 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
     links: [
       { label: t('nav.learning', locale), href: routes.learning },
       { label: t('nav.launches', locale), href: routes.launches },
+      { label: t('nav.fdct', locale), href: routes.fdct },
       {
         label: t('footer.blog', locale),
         href: externalLinks.blog,

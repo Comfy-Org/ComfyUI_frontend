@@ -890,7 +890,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "최고 품질을 위한 Seedance 2.0; 속도 최적화를 위한 Seedance 2.0 Fast."
+        "tooltip": "최신 모델, 최대 30초 동영상 및 mp4/mov 출력에는 Seedance 2.5를 사용하세요. 최고 품질 및 1080p/4k에는 Seedance 2.0, 속도 최적화에는 Fast, 가장 빠르고 저렴한 생성에는 Mini를 사용하세요."
       },
       "model_duration": {
         "name": "duration"
@@ -931,7 +931,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "최고 품질을 위한 Seedance 2.0; 속도 최적화를 위한 Seedance 2.0 Fast."
+        "tooltip": "최신 모델, 최대 30초 동영상 및 mp4/mov 출력에는 Seedance 2.5를 사용하세요. 최고 품질 및 1080p/4k에는 Seedance 2.0, 속도 최적화에는 Fast, 가장 빠르고 저렴한 생성에는 Mini를 사용하세요."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -984,7 +984,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "최고 품질을 위한 Seedance 2.0; 속도 최적화를 위한 Seedance 2.0 Fast."
+        "tooltip": "최신 모델, 최대 30초 동영상 및 mp4/mov 출력에는 Seedance 2.5를 사용하세요. 최고 품질 및 1080p/4k에는 Seedance 2.0, 속도 최적화에는 Fast, 가장 빠르고 저렴한 생성에는 Mini를 사용하세요."
       },
       "model_duration": {
         "name": "duration"
@@ -5963,19 +5963,19 @@
       },
       "image": {
         "name": "image",
-        "tooltip": "grok-imagine-video의 선택적 시작 이미지입니다. grok-imagine-video-1.5에서는 필수입니다."
+        "tooltip": "선택적 시작 이미지입니다. 생략하면 텍스트 프롬프트만으로 비디오가 생성됩니다."
       },
       "model": {
         "name": "model",
-        "tooltip": "grok-imagine-video-1.5는 항상 입력 이미지를 필요로 합니다."
+        "tooltip": "비디오 생성에 사용할 모델입니다."
       },
       "prompt": {
         "name": "프롬프트",
-        "tooltip": "원하는 비디오에 대한 텍스트 설명입니다."
+        "tooltip": "원하는 비디오의 텍스트 설명입니다. 입력 이미지가 제공된 경우 grok-imagine-video-1.5에서는 선택 사항입니다."
       },
       "resolution": {
         "name": "해상도",
-        "tooltip": "출력 비디오의 해상도입니다."
+        "tooltip": "출력 동영상의 해상도입니다. 1080p는 grok-imagine-video-1.5에서만 사용할 수 있습니다."
       },
       "seed": {
         "name": "시드",
@@ -5989,7 +5989,7 @@
     }
   },
   "GrokVideoReferenceNode": {
-    "description": "참조 이미지를 스타일 및 콘텐츠 참조로 사용하여 비디오를 생성합니다.",
+    "description": "참조 이미지의 안내에 따라 비디오를 생성하며, 사전 설정된 음성 참조를 선택적으로 사용할 수 있습니다.",
     "display_name": "Grok 참조-비디오",
     "inputs": {
       "control_after_generate": {
@@ -8816,7 +8816,7 @@
   },
   "LTXVConcatAVLatent": {
     "description": "비디오 latent와 오디오 latent를 결합하여 하나의 AV latent로 만듭니다 (모든 AV 모델, 예: LTXV 또는 MiniMax H3).",
-    "display_name": "LTXVConcatAVLatent",
+    "display_name": "AV Latent 연결",
     "inputs": {
       "audio_latent": {
         "name": "audio_latent"
@@ -9235,8 +9235,8 @@
     }
   },
   "LTXVSeparateAVLatent": {
-    "description": "LTXV Separate AV Latent",
-    "display_name": "LTXVSeparateAVLatent",
+    "description": "결합된 AV latent를 비디오 및 오디오 latent로 분리합니다(모든 AV 모델, 예: LTXV 또는 MiniMax H3).",
+    "display_name": "AV Latent 분리",
     "inputs": {
       "av_latent": {
         "name": "av_latent"
@@ -9766,7 +9766,7 @@
   "Load3D": {
     "display_name": "3D 불러오기",
     "inputs": {
-      "clear": "지우기",
+      "clear": {},
       "height": {
         "name": "높이"
       },
@@ -9776,8 +9776,8 @@
       "model_file": {
         "name": "모델 파일"
       },
-      "upload 3d model": "3D 모델 업로드",
-      "upload extra resources": "추가 리소스 업로드",
+      "upload 3d model": {},
+      "upload extra resources": {},
       "width": {
         "name": "너비"
       }
@@ -15609,7 +15609,7 @@
     "description": "모든 입력 값을 텍스트로 미리보기합니다.",
     "display_name": "미리보기 아무거나",
     "inputs": {
-      "preview_mode": "미리보기 모드",
+      "preview_mode": {},
       "preview_text": {},
       "source": {
         "name": "소스"
