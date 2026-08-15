@@ -54,6 +54,42 @@ describe('rumBeforeSend', () => {
     expect(rumBeforeSend(event, fromPartial({}))).toBe(false)
   })
 
+  it('drops a load failure from a subdomain of a third-party origin', () => {
+    const event = fromPartial<RumErrorEvent>({
+      type: 'error',
+      error: {
+        message: '[resource:loadError]',
+        source: 'source',
+        resource: { url: 'https://www.googletagmanager.com/gtm.js' }
+      }
+    })
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(false)
+  })
+
+  it('keeps our own load failure whose path names a third-party origin', () => {
+    const event = fromPartial<RumErrorEvent>({
+      type: 'error',
+      error: {
+        message: '[resource:loadError]',
+        source: 'source',
+        resource: {
+          url: 'https://cloud.comfy.org/assets/google-analytics.com/app.js'
+        }
+      }
+    })
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
+  })
+
+  it('keeps our own load failure whose query names a third-party origin', () => {
+    const event = createErrorEvent(
+      '[resource:loadError] https://cloud.comfy.org/app.js?next=googletagmanager.com'
+    )
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
+  })
+
   it('keeps a runtime error thrown by a third-party script', () => {
     const event = createErrorEvent(
       'gtag is not a function',

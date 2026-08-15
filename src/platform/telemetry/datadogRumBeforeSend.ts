@@ -58,16 +58,38 @@ export function classifyRumErrorOrigin(stack?: string): RumErrorOrigin {
   return { origin: 'third_party' }
 }
 
+const URL_IN_TEXT = /https?:\/\/[^\s'"<>)\]]+/g
+
+function isThirdPartyHost(hostname: string): boolean {
+  return THIRD_PARTY_SCRIPT_ORIGINS.some(
+    (origin) => hostname === origin || hostname.endsWith(`.${origin}`)
+  )
+}
+
+/**
+ * Matches on the host of a URL rather than on the raw text, so one of our own
+ * URLs that merely names an origin in its path or query is not mistaken for a
+ * request to that origin.
+ */
+function namesThirdPartyOrigin(text: string): boolean {
+  return [...text.matchAll(URL_IN_TEXT)].some(([url]) => {
+    try {
+      return isThirdPartyHost(new URL(url).hostname)
+    } catch {
+      return false
+    }
+  })
+}
+
 function isThirdPartyLoadFailure(event: RumErrorEvent): boolean {
   const resourceUrl = event.error.resource?.url
-  const target = resourceUrl ?? event.error.message
-  if (
-    !resourceUrl &&
-    !RESOURCE_LOAD_FAILURE_MARKERS.some((marker) => target.includes(marker))
-  ) {
-    return false
-  }
-  return THIRD_PARTY_SCRIPT_ORIGINS.some((origin) => target.includes(origin))
+  if (resourceUrl) return namesThirdPartyOrigin(resourceUrl)
+
+  const { message } = event.error
+  return (
+    RESOURCE_LOAD_FAILURE_MARKERS.some((marker) => message.includes(marker)) &&
+    namesThirdPartyOrigin(message)
+  )
 }
 
 function shouldKeepRumEvent(event: Parameters<RumBeforeSend>[0]): boolean {
