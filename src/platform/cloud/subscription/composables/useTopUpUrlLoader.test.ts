@@ -46,12 +46,9 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
   useWorkspaceUI: () => ({ permissions: mockPermissions })
 }))
 
-const mockIsCloud = vi.hoisted(() => ({ value: true }))
-vi.mock('@/platform/distribution/types', () => ({
-  get isCloud() {
-    return mockIsCloud.value
-  }
-}))
+// useUrlActionLoaders instantiates this loader only on Cloud, so every case
+// below is a Cloud case.
+vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
 
 const mockBilling = vi.hoisted(() => ({
   fetchStatus: vi.fn().mockResolvedValue(undefined),
@@ -79,7 +76,6 @@ describe('useTopUpUrlLoader', () => {
     mockPermissions.value = { canTopUp: true }
     mockBilling.fetchStatus.mockResolvedValue(undefined)
     mockBilling.subscription.value = { isActive: true }
-    mockIsCloud.value = true
     mockBilling.canAccessSubscriptionFeatures.value = true
     mockBilling.isTeamPlan.value = false
     mockBilling.tier.value = 'STANDARD'
@@ -180,19 +176,6 @@ describe('useTopUpUrlLoader', () => {
 
     expect(mockShowTopUpCreditsDialog).toHaveBeenCalledOnce()
     expect(mockTrackAddApiCreditButtonClicked).not.toHaveBeenCalled()
-  })
-
-  it('emits deep_link telemetry for a free-tier user off Cloud, where top-up is allowed', async () => {
-    mockRouteQuery.value = { topup: '1' }
-    mockIsCloud.value = false
-    mockBilling.tier.value = 'FREE'
-
-    const { loadTopUpFromUrl } = useTopUpUrlLoader()
-    await loadTopUpFromUrl()
-
-    expect(mockTrackAddApiCreditButtonClicked).toHaveBeenCalledWith({
-      source: 'deep_link'
-    })
   })
 
   it('is a silent no-op for a team member', async () => {
