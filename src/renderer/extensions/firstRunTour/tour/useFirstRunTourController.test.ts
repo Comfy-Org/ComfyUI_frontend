@@ -216,6 +216,29 @@ function finishRun(workflow: unknown, status: string) {
   return nextTick()
 }
 
+async function captureFirstImage(promptId = 'tour-job') {
+  const { api } = await import('@/scripts/api')
+  api.dispatchCustomEvent('execution_start', {
+    prompt_id: promptId,
+    timestamp: 1
+  })
+  api.dispatchCustomEvent('executed', {
+    prompt_id: promptId,
+    node: 1,
+    display_node: 1,
+    output: {
+      images: [
+        {
+          filename: 'first-output.png',
+          subfolder: 'tour',
+          type: 'output'
+        }
+      ]
+    }
+  })
+  await nextTick()
+}
+
 /** A user stop, which drops the status instead of reporting an outcome. */
 function dropRun(workflow: unknown) {
   const next = new Map(mocks.workflowStatus.value)
@@ -889,37 +912,76 @@ describe('useFirstRunTourController', () => {
   })
 
   describe('the nudge', () => {
-    it('arms only once the tour is over', async () => {
+    it('arms after a completed tour produced an image', async () => {
       const { controller } = await tourOnRunStep()
+      mountRunButton('queue-button', () => {}).click()
+      await captureFirstImage()
+
       expect(
         controller.nudgeArmed.value,
         'a nudge fighting a live tour for the screen helps nobody'
       ).toBe(false)
 
-      mocks.engine.activeTour = null
-      await nextTick()
+      await endTour(COMPLETED)
 
       expect(controller.nudgeArmed.value).toBe(true)
+      expect(controller.nudgeOutput.value).toEqual({
+        filename: 'first-output.png',
+        subfolder: 'tour',
+        type: 'output'
+      })
     })
 
-    it('arms whatever the run did', async () => {
+    it('does not arm when a completed tour produced no image', async () => {
+      const { controller } = await tourOnRunStep()
+
+      await endTour(COMPLETED)
+
+      expect(controller.nudgeArmed.value).toBe(false)
+      expect(controller.nudgeOutput.value).toBeNull()
+    })
+
+    it.for(UNFINISHED_ENDINGS)(
+      'does not arm after a tour $named',
+      async ({ ending }) => {
+        const { controller } = await tourOnRunStep()
+        mountRunButton('queue-button', () => {}).click()
+        await captureFirstImage()
+
+        await endTour(ending)
+
+        expect(controller.nudgeArmed.value).toBe(false)
+        expect(controller.nudgeOutput.value).toBeNull()
+      }
+    )
+
+    it('ignores image output from a different job', async () => {
       const { controller } = await tourOnRunStep()
       mountRunButton('queue-button', () => {}).click()
-      await finishRun(TOUR_WORKFLOW, 'failed')
+      const { api } = await import('@/scripts/api')
+      api.dispatchCustomEvent('execution_start', {
+        prompt_id: 'tour-job',
+        timestamp: 1
+      })
+      api.dispatchCustomEvent('executed', {
+        prompt_id: 'other-job',
+        node: 1,
+        display_node: 1,
+        output: {
+          images: [{ filename: 'other.png', type: 'output' }]
+        }
+      })
 
-      mocks.engine.activeTour = null
-      await nextTick()
+      await endTour(COMPLETED)
 
-      expect(
-        controller.nudgeArmed.value,
-        'the user who most needs somewhere to go next is the one whose first run failed'
-      ).toBe(true)
+      expect(controller.nudgeArmed.value).toBe(false)
     })
 
     it('takes an armed nudge off the screen when a second tour starts', async () => {
       const { controller } = await tourOnRunStep()
-      mocks.engine.activeTour = null
-      await nextTick()
+      mountRunButton('queue-button', () => {}).click()
+      await captureFirstImage()
+      await endTour(COMPLETED)
       expect(controller.nudgeArmed.value).toBe(true)
 
       const starting = controller.beginTour('image_z_image_turbo')
@@ -954,21 +1016,7 @@ describe('useFirstRunTourController', () => {
       }
     )
 
-    it.for(EVERY_ENDING)(
-      'still offers the nudge after a tour $named',
-      async ({ ending }) => {
-        const { controller } = await tourOnRunStep()
-
-        await endTour(ending)
-
-        expect(
-          controller.nudgeArmed.value,
-          'suppressing the nudge takes the way forward from the user who most needs it (#14144)'
-        ).toBe(true)
-      }
-    )
-
-    it('congratulates nobody when the tour never appeared', async () => {
+    it('offers no continuation when the tour never appeared', async () => {
       mocks.steps = []
       mocks.activeWorkflow.value = TOUR_WORKFLOW
       mocks.engine.startTour.mockImplementation(async () => {
@@ -993,14 +1041,15 @@ describe('useFirstRunTourController', () => {
       ).toBe(false)
       expect(
         controller.nudgeArmed.value,
-        'a user who saw no tour is the one who most needs somewhere to go next'
-      ).toBe(true)
+        'there is no first output to seed into any suggestion'
+      ).toBe(false)
     })
 
     it('stops offering the nudge once it is waved away', async () => {
       const { controller } = await tourOnRunStep()
-      mocks.engine.activeTour = null
-      await nextTick()
+      mountRunButton('queue-button', () => {}).click()
+      await captureFirstImage()
+      await endTour(COMPLETED)
 
       controller.dismissNudge()
 
