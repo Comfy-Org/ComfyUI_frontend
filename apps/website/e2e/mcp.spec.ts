@@ -185,6 +185,20 @@ test.describe('MCP page @smoke', () => {
     }
   })
 
+  test('production use cases section offers a click-to-play walkthrough', async ({
+    page
+  }) => {
+    const heading = page.getByRole('heading', {
+      name: 'Production use cases.'
+    })
+    await heading.scrollIntoViewIfNeeded()
+    await expect(heading).toBeVisible()
+
+    const video = page.getByLabel(/running production jobs/)
+    await expect(video).toHaveAttribute('poster', /production-use-cases/)
+    await expect(video).not.toHaveAttribute('autoplay', /.*/)
+  })
+
   test('FAQ lists nine questions and autolinks the server URL', async ({
     page
   }) => {

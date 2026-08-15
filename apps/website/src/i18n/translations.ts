@@ -2152,9 +2152,9 @@ const translations = {
     'zh-CN': '配置 Comfy MCP'
   },
   'mcp.setup.subtitle': {
-    en: 'Pick where it runs: Comfy Cloud GPUs, or your own machine. Add the server yourself or ask your agent to install it, and the full ComfyUI toolset lands in your chat.',
+    en: 'Pick where it runs: Comfy Cloud GPUs, or your own machine.\nAdd the server yourself or ask your agent to install it, and the full ComfyUI toolset lands in your chat.',
     'zh-CN':
-      '选择运行位置：Comfy Cloud 的 GPU，或你自己的机器。自行添加服务器，或让智能体代劳，ComfyUI 全套工具即可进入你的对话。'
+      '选择运行位置：Comfy Cloud 的 GPU，或你自己的机器。\n自行添加服务器，或让智能体代劳，ComfyUI 全套工具即可进入你的对话。'
   },
   'mcp.setup.connections.tabsLabel': {
     en: 'Pick your connection',
@@ -2378,6 +2378,10 @@ const translations = {
     en: 'Everything ComfyUI can do,\nnow available as tools.',
     'zh-CN': 'ComfyUI 能做的一切，\n现在都可作为工具调用。'
   },
+  'mcp.tools.film.alt': {
+    en: 'Comfy MCP launch film: an agent driving ComfyUI workflows end to end',
+    'zh-CN': 'Comfy MCP 发布影片：智能体端到端驱动 ComfyUI 工作流'
+  },
   'mcp.tools.1.title': {
     en: 'Generate anything',
     'zh-CN': '生成任意内容'
@@ -2454,6 +2458,22 @@ const translations = {
   'mcp.tools.6.alt': {
     en: 'Comfy MCP turning a workflow into a shareable browser app',
     'zh-CN': 'Comfy MCP 将工作流变成可在浏览器中分享的应用'
+  },
+
+  // MCP – UseCasesSection
+  'mcp.useCases.heading': {
+    en: 'Production use cases.',
+    'zh-CN': '生产级用例。'
+  },
+  'mcp.useCases.subtitle': {
+    en: 'One prompt, a real campaign: batch pack shots for every SKU, character sheets from a saved workflow, outputs filed straight back into your project folders.',
+    'zh-CN':
+      '一条提示，一整个真实项目：为每个 SKU 批量生成产品图，用已保存的工作流生成角色设定表，输出直接归档到你的项目文件夹。'
+  },
+  'mcp.useCases.alt': {
+    en: 'Comfy MCP running production jobs: batch pack-shot variations per SKU and a character sheet from a saved workflow',
+    'zh-CN':
+      'Comfy MCP 运行生产任务：为每个 SKU 批量生成产品图变体，并用已保存的工作流生成角色设定表'
   },
 
   // MCP – HowItWorksSection
