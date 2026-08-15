@@ -1644,7 +1644,7 @@
     "installing": "Yükleniyor",
     "interrupted": "Kesintiye uğradı",
     "itemsCopiedToClipboard": "Öğeler panoya kopyalandı",
-    "itemsSelected": "{count} öğe seçildi | {count} öğe seçildi",
+    "itemsSelected": "Hiçbir öğe seçilmedi | {count} öğe seçildi | {count} öğe seçildi",
     "job": "Görev",
     "jobIdCopied": "İş kimliği panoya kopyalandı",
     "keybinding": "Tuş Ataması",
