@@ -71,6 +71,12 @@ export function requestSlotLayoutSyncForAllNodes(): void {
   }
 }
 
+function viewedNodeLayout(nodeId: NodeId) {
+  const { rootGraphId } = useCanvasStore()
+  if (!rootGraphId) return null
+  return layoutStore.getNodeLayoutRef(rootGraphId, nodeId).value
+}
+
 function createSlotLayout(options: {
   nodeId: NodeId
   index: number
@@ -124,7 +130,7 @@ export function syncNodeSlotLayoutsFromDOM(nodeId: NodeId) {
   const nodeSlotRegistryStore = useNodeSlotRegistryStore()
   const node = nodeSlotRegistryStore.getNode(nodeId)
   if (!node) return
-  const nodeLayout = layoutStore.getNodeLayoutRef(nodeId).value
+  const nodeLayout = viewedNodeLayout(nodeId)
   if (!nodeLayout) return
 
   // Find the node's DOM element for relative offset measurement.
@@ -230,7 +236,7 @@ function updateNodeSlotsFromCache(nodeId: NodeId) {
   const nodeSlotRegistryStore = useNodeSlotRegistryStore()
   const node = nodeSlotRegistryStore.getNode(nodeId)
   if (!node) return
-  const nodeLayout = layoutStore.getNodeLayoutRef(nodeId).value
+  const nodeLayout = viewedNodeLayout(nodeId)
   if (!nodeLayout) return
 
   const batch: Array<{ key: SlotId; layout: SlotLayout }> = []
@@ -280,10 +286,8 @@ export function useSlotElementTracking(options: {
         const node = nodeSlotRegistryStore.ensureNode(nodeId)
 
         if (!node.stopWatch) {
-          const layoutRef = layoutStore.getNodeLayoutRef(nodeId)
-
           const stopPositionWatch = watch(
-            () => layoutRef.value?.position,
+            () => viewedNodeLayout(nodeId)?.position,
             (newPosition, oldPosition) => {
               if (!newPosition) return
               if (!oldPosition || !isPointEqual(newPosition, oldPosition)) {
@@ -293,7 +297,7 @@ export function useSlotElementTracking(options: {
           )
 
           const stopSizeWatch = watch(
-            () => layoutRef.value?.size,
+            () => viewedNodeLayout(nodeId)?.size,
             (newSize, oldSize) => {
               if (!newSize) return
               if (!oldSize || !isSizeEqual(newSize, oldSize)) {

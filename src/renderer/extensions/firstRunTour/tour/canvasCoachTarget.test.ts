@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick } from 'vue'
 
 import { toNodeId } from '@/types/nodeId'
+import { createUuidv4 } from '@/utils/uuid'
 
 import { canvasNodeTarget } from './canvasCoachTarget'
 
@@ -9,7 +10,10 @@ const { TITLE_HEIGHT } = vi.hoisted(() => ({ TITLE_HEIGHT: 30 }))
 
 const state = vi.hoisted(() => ({
   camera: null as Record<string, number> | null,
-  currentGraph: null as { getNodeById: (id: unknown) => unknown } | null,
+  currentGraph: null as {
+    getNodeById: (id: unknown) => unknown
+    rootGraph: { id: ReturnType<typeof createUuidv4> }
+  } | null,
   collapsed: new Set<string>(),
   layout: null as { value: unknown } | null,
   canvasOffset: { left: 0, top: 0 },
@@ -19,6 +23,7 @@ const state = vi.hoisted(() => ({
 function graph(id: string) {
   return {
     id,
+    rootGraph: { id: createUuidv4() },
     getNodeById: (nodeId: unknown) => ({
       collapsed: state.collapsed.has(String(nodeId))
     })

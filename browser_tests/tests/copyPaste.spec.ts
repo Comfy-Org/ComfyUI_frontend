@@ -30,6 +30,31 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
     await expect(comfyPage.canvas).toHaveScreenshot('copied-node-with-link.png')
   })
 
+  test('Pasted copy of a pinned node lands at the cursor', async ({
+    comfyPage
+  }) => {
+    const node = (await comfyPage.nodeOps.getNodeRefsByType('KSampler'))[0]
+    await node.clickContextMenuOption('Pin')
+    await comfyPage.contextMenu.waitForHidden()
+    await expect.poll(() => node.isPinned()).toBe(true)
+
+    await node.click('title')
+    await comfyPage.page.mouse.move(10, 10)
+    await comfyPage.nextFrame()
+    await comfyPage.clipboard.copy(comfyPage.canvas)
+    await comfyPage.clipboard.paste(comfyPage.canvas)
+
+    await expect
+      .poll(
+        async () =>
+          (await comfyPage.nodeOps.getNodeRefsByType('KSampler')).length
+      )
+      .toBe(2)
+    const [original, pasted] =
+      await comfyPage.nodeOps.getNodeRefsByType('KSampler')
+    expect(await pasted.getPosition()).not.toEqual(await original.getPosition())
+  })
+
   test('Can copy and paste text', async ({ comfyPage }) => {
     const textBox = comfyPage.widgetTextBox
     await textBox.click()

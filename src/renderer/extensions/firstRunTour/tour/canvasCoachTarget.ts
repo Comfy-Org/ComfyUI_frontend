@@ -1,5 +1,5 @@
 import { useElementBounding, useEventListener } from '@vueuse/core'
-import { effectScope, watch } from 'vue'
+import { computed, effectScope, watch } from 'vue'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { RectTarget } from '@/platform/onboarding/coachmarkRegistry'
@@ -12,8 +12,12 @@ import type { NodeId } from '@/types/nodeId'
 export function canvasNodeTarget(nodeId: NodeId): RectTarget {
   const { camera } = useTransformState()
   const canvasStore = useCanvasStore()
-  const layout = layoutStore.getNodeLayoutRef(nodeId)
   const resolvedGraph = canvasStore.currentGraph
+  const layout = computed(() =>
+    resolvedGraph
+      ? layoutStore.getNodeLayoutRef(resolvedGraph.rootGraph.id, nodeId).value
+      : null
+  )
   const scope = effectScope(true)
   const canvasBounds = scope.run(() =>
     useElementBounding(() => canvasStore.canvas?.canvas)
