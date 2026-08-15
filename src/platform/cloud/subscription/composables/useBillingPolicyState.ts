@@ -1,10 +1,18 @@
+import type { SubscriptionTier as IngestSubscriptionTier } from '@comfyorg/ingest-types'
 import { computed } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import type { SubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
+import type { SubscriptionTier as RegistrySubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import { isCloud } from '@/platform/distribution/types'
 
 import type { BillingPolicyState } from '../billingPolicyState'
+
+/**
+ * The two generated contracts disagree: the registry spec stops at
+ * `FOUNDERS_EDITION`, the ingest spec also declares `TEAM`. Accepting the union
+ * keeps `TEAM` a compile-time case rather than a runtime surprise.
+ */
+type KnownSubscriptionTier = RegistrySubscriptionTier | IngestSubscriptionTier
 
 /**
  * Pure derivation, kept separate from the composable so it can be unit
@@ -14,7 +22,7 @@ export function deriveBillingPolicyState(input: {
   isCloud: boolean
   canAccessSubscriptionFeatures: boolean
   isTeamPlan: boolean
-  tier: SubscriptionTier | null
+  tier: KnownSubscriptionTier | null
 }): BillingPolicyState {
   const distribution = input.isCloud ? 'Cloud' : 'Local'
 
@@ -41,12 +49,14 @@ export function deriveBillingPolicyState(input: {
       return { kind: `${distribution}AndPro` }
     case 'FOUNDERS_EDITION':
       return { kind: `${distribution}AndFounders` }
+    case 'TEAM':
+      return { kind: `${distribution}AndTeam` }
     case null:
       return { kind: `${distribution}AndUnknown` }
     default: {
       const unhandledTier: never = input.tier
       void unhandledTier
-      return { kind: `${distribution}AndUnknown` }
+      return { kind: `${distribution}AndUnrecognizedTier` }
     }
   }
 }

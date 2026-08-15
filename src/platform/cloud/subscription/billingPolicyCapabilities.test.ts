@@ -38,6 +38,10 @@ describe('getBillingPolicyCapabilities', () => {
     ],
     ['LocalAndTeam', { topUpAccess: 'allowed', showsSubscribeUpsellUI: false }],
     [
+      'LocalAndUnrecognizedTier',
+      { topUpAccess: 'allowed', showsSubscribeUpsellUI: false }
+    ],
+    [
       'CloudWithoutActiveSubscription',
       { topUpAccess: 'subscription-required', showsSubscribeUpsellUI: true }
     ],
@@ -66,7 +70,11 @@ describe('getBillingPolicyCapabilities', () => {
       'CloudAndFounders',
       { topUpAccess: 'allowed', showsSubscribeUpsellUI: false }
     ],
-    ['CloudAndTeam', { topUpAccess: 'allowed', showsSubscribeUpsellUI: false }]
+    ['CloudAndTeam', { topUpAccess: 'allowed', showsSubscribeUpsellUI: false }],
+    [
+      'CloudAndUnrecognizedTier',
+      { topUpAccess: 'subscription-required', showsSubscribeUpsellUI: false }
+    ]
   ])('maps %s to %o', ([kind, expected]) => {
     expect(getBillingPolicyCapabilities({ kind })).toEqual(expected)
   })

@@ -34,6 +34,8 @@ export function getBillingPolicyCapabilities(
       return { topUpAccess: 'allowed', showsSubscribeUpsellUI: false }
     case 'LocalAndTeam':
       return { topUpAccess: 'allowed', showsSubscribeUpsellUI: false }
+    case 'LocalAndUnrecognizedTier':
+      return { topUpAccess: 'allowed', showsSubscribeUpsellUI: false }
     case 'CloudWithoutActiveSubscription':
       return {
         topUpAccess: 'subscription-required',
@@ -61,6 +63,11 @@ export function getBillingPolicyCapabilities(
       return { topUpAccess: 'allowed', showsSubscribeUpsellUI: false }
     case 'CloudAndTeam':
       return { topUpAccess: 'allowed', showsSubscribeUpsellUI: false }
+    case 'CloudAndUnrecognizedTier':
+      return {
+        topUpAccess: 'subscription-required',
+        showsSubscribeUpsellUI: false
+      }
     default: {
       const unhandledState: never = state
       void unhandledState

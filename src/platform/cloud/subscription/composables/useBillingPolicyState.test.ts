@@ -24,7 +24,8 @@ describe('deriveBillingPolicyState', () => {
     ['STANDARD', 'LocalAndStandard', 'CloudAndStandard'],
     ['CREATOR', 'LocalAndCreator', 'CloudAndCreator'],
     ['PRO', 'LocalAndPro', 'CloudAndPro'],
-    ['FOUNDERS_EDITION', 'LocalAndFounders', 'CloudAndFounders']
+    ['FOUNDERS_EDITION', 'LocalAndFounders', 'CloudAndFounders'],
+    ['TEAM', 'LocalAndTeam', 'CloudAndTeam']
   ])(
     'maps an active subscription tier %s to %s off Cloud and %s on Cloud',
     ([tier, localKind, cloudKind]) => {
@@ -96,8 +97,8 @@ describe('deriveBillingPolicyState', () => {
   )
 
   it.for<[boolean, string]>([
-    [false, 'LocalAndUnknown'],
-    [true, 'CloudAndUnknown']
+    [false, 'LocalAndUnrecognizedTier'],
+    [true, 'CloudAndUnrecognizedTier']
   ])(
     'falls back to a real state for an unrecognised tier (isCloud=%s)',
     ([isCloud, kind]) => {
