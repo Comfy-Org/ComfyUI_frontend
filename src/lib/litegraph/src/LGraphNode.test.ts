@@ -180,6 +180,15 @@ describe('LGraphNode', () => {
       expect(onConnectionsChange).toHaveBeenCalledOnce()
     })
 
+    test('exposes disconnected state in callbacks when an input is disconnected', () => {
+      const { targetNode } = createConnectedPair()
+      const onConnectionsChange = observeDisconnectedInput(targetNode)
+
+      expect(targetNode.disconnectInput(0)).toBe(true)
+
+      expect(onConnectionsChange).toHaveBeenCalledOnce()
+    })
+
     test('exposes disconnected state in callbacks when the source is removed', () => {
       const { graph, sourceNode, targetNode } = createConnectedPair()
       const onConnectionsChange = observeDisconnectedInput(targetNode)
