@@ -442,6 +442,34 @@ describe('node:before-removed event', () => {
       'onNodeRemoved(graph=null)'
     ])
   })
+
+  it('fires node:before-removed for every node cleared', () => {
+    const graph = new LGraph()
+    graph.add(new LGraphNode('a'))
+    graph.add(new LGraphNode('b'))
+    const removed = vi.fn()
+    graph.events.addEventListener('node:before-removed', removed)
+
+    graph.clear()
+
+    expect(removed).toHaveBeenCalledTimes(2)
+  })
+
+  it('keeps floating links available during clear removal callbacks', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('node')
+    graph.add(node)
+    const link = new LLink(toLinkId(1), '*', node.id, 0, UNASSIGNED_NODE_ID, -1)
+    graph.addFloatingLink(link)
+    node.onRemoved = vi.fn(() => {
+      expect(graph.floatingLinks.get(link.id)).toBe(link)
+    })
+
+    graph.clear()
+
+    expect(node.onRemoved).toHaveBeenCalledOnce()
+    expect(graph.floatingLinks.size).toBe(0)
+  })
 })
 
 describe('Subgraph Definition Garbage Collection', () => {
