@@ -10,9 +10,9 @@
  * | Asks | "did ECS change behaviour?" | "is the conversion safe and did it work?" |
  * | Wants | identical | **not** identical — the whole point is that broken becomes working |
  *
- * So "behaviour is identical" is the wrong invariant. A conversion that fixes
- * rgthree's virtual nodes *must* differ from the original, because the original
- * throws. The invariants that actually hold are narrower and stated below.
+ * So "behaviour is identical" is the wrong invariant. A conversion that repairs
+ * a pack whose nodes fail to construct *must* differ from the original. The
+ * invariants that actually hold are narrower and stated below.
  */
 
 /** One observed capability of a pack, before and after conversion. */
@@ -66,6 +66,26 @@ export interface VerificationResult {
 }
 
 /**
+ * The serialized workflow with the document's own identity removed.
+ *
+ * `LGraph` mints a random UUID per instance and serializes it, so the before
+ * and after runs — necessarily two different graphs — differ on that field
+ * alone. Comparing it reports WIRE-CHANGED for every conversion ever graded:
+ * the hard gate tripped by the harness rather than by the pack. Which document
+ * a pack ran in is not something a conversion can change.
+ *
+ * Nothing else is excluded. A node, link, group, config or extra that moved
+ * still fails the gate, which is what the tests below pin.
+ */
+function comparableWorkflow(workflow: string): string {
+  const { id: _id, ...document } = JSON.parse(workflow) as Record<
+    string,
+    unknown
+  >
+  return JSON.stringify(document)
+}
+
+/**
  * Grades one pack's conversion.
  *
  * Ordering matters: regressions and wire changes are disqualifying and are
@@ -106,7 +126,9 @@ export function grade(input: VerificationInput): VerificationResult {
         ]
       }
     }
-    if (before.workflow !== after.workflow) {
+    if (
+      comparableWorkflow(before.workflow) !== comparableWorkflow(after.workflow)
+    ) {
       return {
         pack: input.pack,
         verdict: 'WIRE-CHANGED',
