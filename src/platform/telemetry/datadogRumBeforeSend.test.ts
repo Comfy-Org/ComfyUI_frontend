@@ -46,6 +46,14 @@ describe('rumBeforeSend', () => {
     expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
   })
 
+  it('drops a load failure named only in the message, with no resource', () => {
+    const event = createErrorEvent(
+      '[resource:loadError] https://utt.impactcdn.com/A0000000.js'
+    )
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(false)
+  })
+
   it('keeps a runtime error thrown by a third-party script', () => {
     const event = createErrorEvent(
       'gtag is not a function',
