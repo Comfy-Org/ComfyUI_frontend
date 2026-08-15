@@ -1644,7 +1644,7 @@
     "installing": "Instalando",
     "interrupted": "Interrompido",
     "itemsCopiedToClipboard": "Itens copiados para a área de transferência",
-    "itemsSelected": "{count} item selecionado | {count} itens selecionados",
+    "itemsSelected": "Nenhum item selecionado | {count} item selecionado | {count} itens selecionados",
     "job": "Tarefa",
     "jobIdCopied": "ID da tarefa copiado para a área de transferência",
     "keybinding": "Atalho",
