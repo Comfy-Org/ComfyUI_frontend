@@ -582,18 +582,23 @@ describe('createOpenAiTranslator', () => {
     expect(callCount()).toBe(1)
   })
 
-  it('reports non-string response values with their ids', async () => {
-    const malformed = () => completion('{"1": {"text": "Bonjour"}, "2": 42}')
+  it('drops non-string values instead of failing the whole batch', async () => {
     const { translate, callCount } = translatorFor([
-      malformed(),
-      malformed(),
-      malformed(),
-      malformed()
+      completion('{"1": "Bonjour {name}", "2": 42}')
     ])
-    await expect(translate(locale, items)).rejects.toThrow(
-      'translation response has non-string values for ids: 1, 2'
-    )
-    expect(callCount()).toBe(4)
+    await expect(translate(locale, items)).resolves.toEqual({
+      '1': 'Bonjour {name}'
+    })
+    expect(callCount()).toBe(1)
+  })
+
+  it('stops after one retry on a malformed response', async () => {
+    const { translate, callCount } = translatorFor([
+      completion('not json'),
+      completion('not json')
+    ])
+    await expect(translate(locale, items)).rejects.toThrow()
+    expect(callCount()).toBe(2)
   })
 
   it('reports usage for every completed API request', async () => {

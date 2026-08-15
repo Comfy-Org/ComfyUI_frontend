@@ -456,8 +456,11 @@ async function run(argv: readonly string[]): Promise<void> {
     (count, plan) => count + plan.items.length,
     0
   )
-  const initialBatchCount = [...translationPlans.values()].reduce(
-    (count, plan) =>
+  const pendingPlans = [...translationPlans].filter(
+    ([, plan]) => plan.items.length > 0
+  )
+  const initialBatchCount = pendingPlans.reduce(
+    (count, [, plan]) =>
       count +
       chunkItems(
         plan.items,
@@ -466,9 +469,12 @@ async function run(argv: readonly string[]): Promise<void> {
       ).length,
     0
   )
+  const pendingLocaleCount = new Set(
+    pendingPlans.map(([state]) => state.locale.code)
+  ).size
   if (pendingTotal > 0) {
     print(
-      `Translation preflight: ${pendingTotal} strings in ${initialBatchCount} initial batches across ${config.outputLocales.length} locales; retries and truncation splits can add requests.`
+      `Translation preflight: ${pendingTotal} strings in ${initialBatchCount} initial batches across ${pendingLocaleCount} locales; retries and truncation splits can add requests.`
     )
   }
 
