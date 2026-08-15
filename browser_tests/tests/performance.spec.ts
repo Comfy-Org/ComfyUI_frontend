@@ -158,6 +158,7 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
   })
 
   test('large graph legacy node drag', async ({ comfyPage }) => {
+    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
     await comfyPage.workflow.loadWorkflow('large-graph-workflow')
 
     // Legacy drags write to layoutStore every frame because registration is

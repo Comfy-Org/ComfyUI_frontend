@@ -4,7 +4,16 @@ import type { Locator, Page } from '@playwright/test'
 import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
 import type { Position } from '@e2e/fixtures/types'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
+import type { Point } from '@/lib/litegraph/src/litegraph'
+import type { NodeId } from '@/types/nodeId'
 import type { RerouteId } from '@/types/rerouteId'
+
+type NodeGeometry = {
+  pos: Point
+  size: Point
+  inputs: Point[]
+  outputs: Point[]
+}
 
 export class CanvasHelper {
   constructor(
@@ -195,6 +204,83 @@ export class CanvasHelper {
       const [clientX, clientY] = app.canvasPosToClientPos([centerX, centerY])
       return { x: clientX, y: clientY }
     }, title)
+  }
+
+  async getNodeGeometry(nodeId: NodeId): Promise<NodeGeometry> {
+    return this.page.evaluate((id): NodeGeometry => {
+      const node = window.app?.canvas.graph?.getNodeById(id)
+      if (!node) throw new Error(`Node ${id} not found`)
+
+      return {
+        pos: [node.pos[0], node.pos[1]],
+        size: [node.size[0], node.size[1]],
+        inputs: node.inputs.map((_, i) => node.getInputPos(i)),
+        outputs: node.outputs.map((_, i) => node.getOutputPos(i))
+      }
+    }, nodeId)
+  }
+
+  expectSlotsTrackedNode(after: NodeGeometry, before: NodeGeometry): void {
+    const dx = after.pos[0] - before.pos[0]
+    const dy = after.pos[1] - before.pos[1]
+    expect(Math.abs(dx) + Math.abs(dy), 'drag moved the node').toBeGreaterThan(
+      1
+    )
+
+    const beforeSlots = [...before.inputs, ...before.outputs]
+    const afterSlots = [...after.inputs, ...after.outputs]
+    expect(afterSlots, 'slot count after drag').toHaveLength(beforeSlots.length)
+    afterSlots.forEach(([x, y], i) => {
+      expect(x, `slot ${i} x tracked the node`).toBeCloseTo(
+        beforeSlots[i][0] + dx,
+        0
+      )
+      expect(y, `slot ${i} y tracked the node`).toBeCloseTo(
+        beforeSlots[i][1] + dy,
+        0
+      )
+    })
+  }
+
+  expectNodeGeometryPreserved(
+    actual: NodeGeometry,
+    reference: NodeGeometry,
+    label: string
+  ): void {
+    expect(actual.pos[0], `${label}: x`).toBeCloseTo(reference.pos[0], 0)
+    expect(actual.pos[1], `${label}: y`).toBeCloseTo(reference.pos[1], 0)
+    expect(actual.size, `${label}: size`).toEqual(reference.size)
+
+    const referenceSlots = [...reference.inputs, ...reference.outputs]
+    const actualSlots = [...actual.inputs, ...actual.outputs]
+    expect(actualSlots, `${label}: slot count`).toHaveLength(
+      referenceSlots.length
+    )
+    actualSlots.forEach(([x, y], i) => {
+      expect(x, `${label}: slot ${i} x`).toBeCloseTo(referenceSlots[i][0], 0)
+      expect(y, `${label}: slot ${i} y`).toBeCloseTo(referenceSlots[i][1], 0)
+    })
+  }
+
+  expectSlotsOnNode(geometry: NodeGeometry, label: string): void {
+    const [x, y] = geometry.pos
+    const [width, height] = geometry.size
+    const slots = [...geometry.inputs, ...geometry.outputs]
+
+    slots.forEach(([slotX, slotY], i) => {
+      expect(slotX, `${label}: slot ${i} x within node`).toBeGreaterThanOrEqual(
+        x - 20
+      )
+      expect(slotX, `${label}: slot ${i} x within node`).toBeLessThanOrEqual(
+        x + width + 20
+      )
+      expect(slotY, `${label}: slot ${i} y within node`).toBeGreaterThanOrEqual(
+        y - 50
+      )
+      expect(slotY, `${label}: slot ${i} y within node`).toBeLessThanOrEqual(
+        y + height + 20
+      )
+    })
   }
 
   async expectRootReroutePositions(
