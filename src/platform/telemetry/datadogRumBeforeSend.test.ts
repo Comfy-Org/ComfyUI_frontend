@@ -33,6 +33,19 @@ describe('rumBeforeSend', () => {
     expect(rumBeforeSend(event, fromPartial({}))).toBe(false)
   })
 
+  it('drops a resource-backed failure whose message names no load failure', () => {
+    const event = fromPartial<RumErrorEvent>({
+      type: 'error',
+      error: {
+        message: 'Script error.',
+        source: 'source',
+        resource: { url: 'https://connect.facebook.net/en_US/fbevents.js' }
+      }
+    })
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(false)
+  })
+
   it('keeps resource load failures from our own origin', () => {
     const event = fromPartial<RumErrorEvent>({
       type: 'error',
