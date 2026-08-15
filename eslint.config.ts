@@ -488,6 +488,24 @@ export default defineConfig([
       'import-x/no-unresolved': ['error', { ignore: ['^astro:'] }]
     }
   },
+  // These wrappers forward reka-ui props wholesale via
+  // useForwardPropsEmits/reactiveOmit + v-bind, which the rule cannot trace,
+  // so it reports every forwarded prop as unused. Deleting them would drop
+  // the component's public API. Scoped to the wrapper directories so the
+  // bespoke components under ui/ keep the rule.
+  {
+    files: [
+      'apps/website/src/components/ui/accordion/*.vue',
+      'apps/website/src/components/ui/dialog/*.vue',
+      'apps/website/src/components/ui/navigation-menu/*.vue',
+      'apps/website/src/components/ui/sheet/*.vue',
+      'apps/website/src/components/ui/slider/*.vue',
+      'apps/website/src/components/ui/toggle-group/*.vue'
+    ],
+    rules: {
+      'vue/no-unused-properties': 'off'
+    }
+  },
   // i18n import enforcement
   // Vue components must use the useI18n() composable, not the global t/d/st/te
   {
