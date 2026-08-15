@@ -34,17 +34,21 @@
 name: 'CI: Tests Custom Nodes Cloud'
 
 on:
-  # No pull_request trigger. Every automatic run shares ONE serial Cloud
-  # resource (the smoke account's queue), and GitHub keeps a single pending
-  # slot per concurrency group - so per-PR pushes stampeded the group and
-  # evicted each other instead of queueing (16 of the 40 runs before this
-  # change were cancelled; none of the PR-triggered survivors produced a
-  # verdict PRs acted on). PR-time custom-node coverage stays with the core
-  # gate and the pure specs in the main shards; Cloud verdicts come from
-  # suite-branch/main pushes, the merge queue, and manual dispatch.
-  push:
-    branches: [main, master, nathaniel/custom-node-e2e-suite]
-  merge_group:
+  # Timer-driven, never per-commit. Every automatic run occupies ONE serial
+  # Cloud resource (the smoke account's queue) for 75-160 minutes, and
+  # GitHub keeps a single pending slot per concurrency group - per-PR and
+  # per-push triggers both stampeded the group and evicted each other
+  # instead of queueing (16 of 40 runs cancelled in the per-PR era). The
+  # cron ticks every 3 hours - above the longest observed run, so a tick
+  # never overlaps its predecessor - and the freshness job skips ticks
+  # where nothing relevant changed since the last completed run. PR-time
+  # custom-node coverage stays with the core gate and the pure specs in
+  # the main shards; Cloud verdicts come from the timer and manual
+  # dispatch. Scheduled workflows execute only from the default branch, so
+  # the timer activates when the suite lands on main; until then dispatch
+  # drives runs. Minute 23: off the top-of-hour scheduler stampede.
+  schedule:
+    - cron: '23 */3 * * *'
   workflow_dispatch:
     inputs:
       grep:
@@ -99,17 +103,58 @@ jobs:
       - id: changes
         uses: ./.github/actions/changes-filter
 
+  # The change gate for scheduled ticks: skip when HEAD has not moved since
+  # the last completed run of this workflow on this ref, or when the delta
+  # is only docs/apps/storybook/markdown (the same relevance classes as
+  # changes-filter). Dispatches always run.
+  freshness:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      should-run: ${{ steps.gate.outputs.should-run }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - id: gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_EVENT_NAME}" != "schedule" ]; then
+            echo "should-run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          last=$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/ci-tests-custom-nodes-cloud.yaml/runs?status=completed&branch=${GITHUB_REF_NAME}&per_page=1" --jq '.workflow_runs[0].head_sha // ""')
+          if [ -z "$last" ] || ! git cat-file -e "$last" 2>/dev/null; then
+            echo "no comparable previous run - running"
+            echo "should-run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ "$last" = "$GITHUB_SHA" ]; then
+            echo "HEAD unchanged since the last completed run ($last) - skipping this tick"
+            echo "should-run=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if git diff --name-only "$last" "$GITHUB_SHA" | grep -qvE '^(docs/|apps/|\.storybook/)|\.md$'; then
+            echo "relevant changes since $last - running"
+            echo "should-run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "only docs/apps/storybook/markdown changed since $last - skipping this tick"
+            echo "should-run=false" >> "$GITHUB_OUTPUT"
+          fi
+
   custom-nodes-e2e-cloud:
-    needs: changes
-    # Run only when non-docs code changed AND the PR is same-repo. The same-repo
-    # guard is the fork-safety gate (see the header): fork PRs have no secrets
-    # and this job would have nothing to run, so skip it (a skip counts as
-    # passing, keeping this required-safe). Non-PR events (push, merge_group,
-    # workflow_dispatch) are same-repo by construction and fall through the OR.
+    needs: [changes, freshness]
+    # changes-filter passes non-PR events through; the freshness gate makes
+    # scheduled ticks conditional on a relevant delta. No pull_request
+    # trigger exists, so every event here is same-repo by construction.
     if: >-
       needs.changes.outputs.should-run == 'true' &&
-      (github.event_name != 'pull_request' ||
-      github.event.pull_request.head.repo.full_name == github.repository)
+      (github.event_name != 'schedule' ||
+      needs.freshness.outputs.should-run == 'true')
     runs-on: ubuntu-latest
     # Bounded: legitimate runs reach ~160m of suite when testcloud is
     # degraded (run 31541231667 completed honestly at 160m under boot-502
