@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import * as Y from "yjs";
 import {
+  OPAQUE_WIDGETS_KEY,
   SCHEMA_VERSION,
   createNodeMap,
   definitionsMap,
@@ -80,12 +81,44 @@ describe("schema", () => {
     expect(widgets.get("text")).toBe("a fluffy cat");
   });
 
-  it("createNodeMap rejects positional widgets_values without the pinned widget order", () => {
-    expect(() =>
-      createNodeMap({ id: 1, type: "KSampler", widgets_values: [123] }),
-    ).toThrow(/widget_order/);
+  it("createNodeMap stores an UNKNOWN class's positional widgets_values opaquely (schema §1.2)", () => {
+    // Frontend-only classes are never in object_info, so no catalog can ever
+    // carry a widget_order for them — this is the sticky-note path.
+    const doc = initDoc(new Y.Doc());
+    const values = ["A sticky note.\n\nWith a second line."];
+    nodesMap(doc).set("1", createNodeMap({ id: 1, type: "Note", widgets_values: values }));
+    const node = nodesMap(doc).get("1")!;
+    expect(node.get("widgets")).toBeUndefined();
+    expect(node.get(OPAQUE_WIDGETS_KEY)).toEqual(values);
+    // Stored as ONE plain value, never a Y type: nothing to merge element-wise,
+    // so §1.2's positional-array corruption cannot arise. Concurrent writes
+    // resolve as whole-value LWW.
+    expect(node.get(OPAQUE_WIDGETS_KEY)).not.toBeInstanceOf(Y.Array);
+    expect(node.get(OPAQUE_WIDGETS_KEY)).not.toBeInstanceOf(Y.Map);
+    // Whole-array, not element-wise: mutating the source cannot reach the doc.
+    values[0] = "mutated after the fact";
+    expect((node.get(OPAQUE_WIDGETS_KEY) as string[])[0]).toMatch(/^A sticky note/);
+  });
+
+  it("createNodeMap keeps failing loudly when widget_order is present but too SHORT", () => {
+    // A catalog MISMATCH is not an unknown class: swallowing it would mis-key
+    // real widget values. The opaque path is guarded to absent order only.
     expect(() =>
       createNodeMap({ id: 1, type: "KSampler", widgets_values: [123, 20] }, ["seed"]),
     ).toThrow(/names only 1/);
+  });
+
+  it("createNodeMap rejects a node carrying the reserved opaque key", () => {
+    expect(() =>
+      createNodeMap({ id: 1, type: "Note", [OPAQUE_WIDGETS_KEY]: ["x"] }),
+    ).toThrow(/reserved key/);
+  });
+
+  it("createNodeMap keeps an EMPTY positional widgets_values name-keyed (not opaque)", () => {
+    const doc = initDoc(new Y.Doc());
+    nodesMap(doc).set("1", createNodeMap({ id: 1, type: "Note", widgets_values: [] }));
+    const node = nodesMap(doc).get("1")!;
+    expect(node.get(OPAQUE_WIDGETS_KEY)).toBeUndefined();
+    expect(node.get("widgets")).toBeInstanceOf(Y.Map);
   });
 });

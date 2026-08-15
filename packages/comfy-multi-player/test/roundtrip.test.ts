@@ -40,7 +40,44 @@ describe("mint→project round trip", () => {
       const projected = project(mint(wf, catalog), catalog);
       expect(canonicalize(projected)).toEqual(canonicalize(wf));
     });
+
+    // Byte-level fidelity, not just deep equality: the canonical serialization
+    // (schema §7 rule 3) of every node's widgets_values must come back
+    // character-for-character. This is what pins OPAQUE storage for classes the
+    // pinned catalog cannot describe (§1.2) — an opaque array is re-emitted
+    // verbatim, so any re-keying, padding, or re-typing shows up here.
+    it(`${name}: every widgets_values projects byte-identically`, () => {
+      const projected = project(mint(wf, catalog), catalog);
+      const byId = new Map(projected.nodes.map((n) => [String(n.id), n]));
+      for (const src of wf.nodes) {
+        if (!("widgets_values" in src)) continue;
+        expect(
+          JSON.stringify(byId.get(String(src.id))!.widgets_values),
+          `node ${String(src.id)} (${src.type})`,
+        ).toBe(JSON.stringify(src.widgets_values));
+      }
+    });
   }
+
+  /**
+   * Anti-vacuity guard for the byte-identity check above: the corpus must keep
+   * carrying frontend-only classes, and the pinned catalog must keep NOT
+   * describing them. Adding `Note: ["text"]` to fixtures/catalog.json would
+   * make the opaque path unreachable and every assertion above vacuous — and
+   * that is the rejected alternative (a hand-maintained list that the next
+   * frontend-only node breaks identically).
+   */
+  it("the corpus pins frontend-only classes that the catalog cannot describe", () => {
+    const frontendOnly = corpus().flatMap(([, wf]) =>
+      wf.nodes.filter((n) => n.type === "Note" || n.type === "MarkdownNote"),
+    );
+    expect(frontendOnly.length).toBeGreaterThan(0);
+    expect(new Set(frontendOnly.map((n) => n.type))).toEqual(new Set(["Note", "MarkdownNote"]));
+    for (const n of frontendOnly) {
+      expect(catalog.types[n.type], `${n.type} must stay ABSENT from the pinned catalog`).toBeUndefined();
+      expect((n.widgets_values as unknown[]).length, `${n.type} needs non-empty values`).toBeGreaterThan(0);
+    }
+  });
 
   it("projection is deterministic (byte-stable across repeated reads)", () => {
     const { header } = loadSession(sessionFiles()[0]!);

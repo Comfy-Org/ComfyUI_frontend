@@ -17,7 +17,11 @@ the same JSON.
 - `project(doc, catalog)` — canonical projection to ComfyUI workflow JSON
   (schema §7): nodes/links sorted by id, the name-keyed `widgets` map
   assembled into positional `widgets_values` via the pinned catalog,
-  `links: null` preserved, passthrough keys verbatim.
+  `links: null` preserved, passthrough keys verbatim. A class the catalog
+  cannot describe — the frontend-only `Note`/`MarkdownNote` are never in
+  `object_info` — keeps its `widgets_values` opaque (whole-value, verbatim
+  round-trip; `set_widget` against it is rejected `opaque_widgets`), schema
+  Amendment A2.
 - `mint(workflow, catalog)` — import an existing workflow JSON into a fresh
   doc (lazy-mint at cutover); the mint output is THE bootstrap snapshot every
   replica forks from (schema §9).

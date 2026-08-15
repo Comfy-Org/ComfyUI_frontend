@@ -8,7 +8,9 @@
  *   2. the name-keyed `widgets` map is emitted as the positional
  *      `widgets_values` array via the pinned catalog's `widget_order`;
  *      missing interior names project as null (Python pads with None), and
- *      the array length is 1 + the highest widget index present;
+ *      the array length is 1 + the highest widget index present. A node stored
+ *      opaquely (`__widgets_opaque` — a class the catalog does not know, e.g.
+ *      the frontend-only `Note`/`MarkdownNote`) emits its array verbatim;
  *   3. numbers serialize as JS numbers;
  *   4. `outputs[].links: null` preserved verbatim; an empty Y.Array → `[]`;
  *   5. meta passthrough keys project unmodified (schema §6). Doc-internal
@@ -22,7 +24,7 @@
  */
 
 import * as Y from "yjs";
-import { definitionsMap, linksMap, metaMap, nodesMap } from "./doc.js";
+import { OPAQUE_WIDGETS_KEY, definitionsMap, linksMap, metaMap, nodesMap } from "./doc.js";
 import type { WidgetCatalog, WorkflowJSON, WorkflowNode } from "./types.js";
 
 /** Sorted-by-id comparator: numeric when both ids are numbers, else string order. */
@@ -82,7 +84,11 @@ function projectNode(ym: Y.Map<unknown>, catalog: WidgetCatalog): WorkflowNode {
   const out: Record<string, unknown> = {};
   const nodeType = String(ym.get("type") ?? "");
   ym.forEach((v, k) => {
-    if (k === "widgets") {
+    if (k === OPAQUE_WIDGETS_KEY) {
+      // Opaque whole-array storage for a class the catalog cannot describe
+      // (schema §1.2): emitted VERBATIM, no catalog lookup, no re-keying.
+      out["widgets_values"] = structuredClone(v);
+    } else if (k === "widgets") {
       out["widgets_values"] = widgetsToPositional(nodeType, v as Y.Map<unknown>, catalog);
     } else if (v instanceof Y.Array) {
       out[k] = v.toArray().map((slot) => projectSlot(slot));

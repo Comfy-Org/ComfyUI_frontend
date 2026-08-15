@@ -372,3 +372,104 @@ describe("bounded writes (schema §11)", () => {
     });
   }
 });
+
+// ---------------------------------------------------------------------------
+// Opaque widgets — classes the pinned catalog cannot describe (schema §1.2)
+// ---------------------------------------------------------------------------
+
+describe("opaque widgets (frontend-only classes)", () => {
+  const notes = loadSession("session-frontend-only-notes.session.jsonl").header.base_workflow;
+  const noteNode = notes.nodes.find((n) => n.type === "Note")!;
+  const noteValues = noteNode.widgets_values as unknown[];
+
+  it("mints and projects a sticky note the catalog has no entry for", () => {
+    // The regression: this used to throw at mint, so ANY workflow containing a
+    // sticky note failed to mint — and most official templates contain one.
+    expect(catalog.types["Note"]).toBeUndefined();
+    const doc = mint(notes, catalog);
+    const projected = project(doc, catalog).nodes.find((n) => String(n.id) === String(noteNode.id))!;
+    expect(JSON.stringify(projected.widgets_values)).toBe(JSON.stringify(noteValues));
+  });
+
+  it("REFUSES a set_widget against an opaque node instead of silently no-oping", () => {
+    const doc = mint(notes, catalog);
+    const bytes = Buffer.from(Y.encodeStateAsUpdate(doc));
+    const op: SetWidgetOp = {
+      op: "set_widget",
+      ...envelope("alice", 1),
+      node_id: noteNode.id,
+      widget: "text",
+      value: "hijacked",
+    };
+    const res = applyOps(doc, [op], catalog);
+    expect(res.failed).toMatchObject({ index: 0, code: "opaque_widgets" });
+    expect(res.failed!.message).toMatch(/not name-addressable/);
+    expect(res.applied).toEqual([]);
+    // A rejected op consumes nothing and mutates nothing (§4 retryability).
+    expect(appliedMap(doc).has(op.op_id)).toBe(false);
+    expect(Buffer.from(Y.encodeStateAsUpdate(doc)).equals(bytes)).toBe(true);
+    // And the document still projects: a silent write would have created a
+    // name-keyed widgets map for an uncatalogued class, making EVERY later
+    // project() throw.
+    const after = project(doc, catalog).nodes.find((n) => String(n.id) === String(noteNode.id))!;
+    expect(JSON.stringify(after.widgets_values)).toBe(JSON.stringify(noteValues));
+  });
+
+  it("add_node of an uncatalogued class stores its values opaquely and round-trips", () => {
+    const doc = mint({ nodes: [], links: [] }, catalog);
+    const node: WorkflowNode = {
+      id: 8391847293013,
+      type: "MarkdownNote",
+      pos: [10, 20],
+      flags: {},
+      widgets_values: ["# added\n\nverbatim — 100%"],
+    };
+    const op = { op: "add_node", ...envelope("alice", 1), node_id: node.id, class_type: node.type, pos: [10, 20], node } as Op;
+    expect(applyOps(doc, [op], catalog).failed).toBeNull();
+    const projected = project(doc, catalog).nodes[0]!;
+    expect(JSON.stringify(projected.widgets_values)).toBe(JSON.stringify(node.widgets_values));
+  });
+
+  it("a catalog-LESS host still refuses positional widgets_values (catalog_required)", () => {
+    // No catalog at all cannot distinguish "unknown class" from "class I just
+    // can't see", so the pre-existing rejection stands — the fix is narrow.
+    const doc = mint({ nodes: [], links: [] }, catalog);
+    const node: WorkflowNode = { id: 77, type: "KSampler", widgets_values: [1, "fixed", 20] };
+    const op = { op: "add_node", ...envelope("alice", 1), node_id: 77, class_type: "KSampler", pos: [0, 0], node } as Op;
+    expect(applyOps(doc, [op]).failed).toMatchObject({ code: "catalog_required" });
+  });
+
+  it("refuses an inputcount grow onto an opaque destination BEFORE growing the slot", () => {
+    const base: WorkflowJSON = {
+      nodes: [
+        {
+          id: 1,
+          type: "LoadImage",
+          inputs: [],
+          outputs: [{ name: "IMAGE", type: "IMAGE", links: null }],
+          widgets_values: ["photo.png"],
+        },
+        // Uncatalogued *Multi-family node: its widgets_values are opaque, so
+        // the §8.4 count-widget write cannot be expressed.
+        { id: 2, type: "ImageBatchMulti", inputs: [], outputs: [], widgets_values: [2] },
+      ],
+      links: [],
+    };
+    const doc = mint(base, catalog);
+    const bytes = Buffer.from(Y.encodeStateAsUpdate(doc));
+    const op: ConnectOp = {
+      op: "connect",
+      ...envelope("alice", 1),
+      link_id: 9001,
+      from_node: 1,
+      from_slot: 0,
+      to_node: 2,
+      to_slot: null,
+      link_type: "IMAGE",
+      grow: { name: "image_2", type: "IMAGE", inputcount: { widget: "inputcount", value: 2 } },
+    };
+    const res = applyOps(doc, [op], catalog);
+    expect(res.failed).toMatchObject({ index: 0, code: "opaque_widgets" });
+    expect(Buffer.from(Y.encodeStateAsUpdate(doc)).equals(bytes)).toBe(true);
+  });
+});

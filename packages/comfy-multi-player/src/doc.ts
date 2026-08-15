@@ -22,6 +22,48 @@ import * as Y from "yjs";
 import { SCHEMA_VERSION, type WorkflowNode } from "./types.js";
 
 // ---------------------------------------------------------------------------
+// Opaque widgets (schema §1.2 — unknown classes)
+// ---------------------------------------------------------------------------
+
+/**
+ * Reserved per-node key holding a whole `widgets_values` array VERBATIM, used
+ * for a class the pinned catalog does not know and therefore cannot be
+ * name-decomposed (schema §1.2).
+ *
+ * Frontend-only nodes (`Note`, `MarkdownNote`, …) are rendered by the ComfyUI
+ * frontend and never appear in `object_info`, so they can never appear in a
+ * catalog derived from it — there is no `widget_order` to key their values by,
+ * and there never will be. Refusing to mint them made every workflow
+ * containing a sticky note unmintable (most official templates have one).
+ *
+ * This does NOT reintroduce the §1.2 corruption. §1.2 bans ELEMENT-WISE
+ * merging of a positional array: two writers editing the same index of a
+ * 7-element `widgets_values`, exchanged as Yjs structs, merge to a length-8
+ * array and every downstream widget shifts. An opaque value is a single plain
+ * value under one key — it is never merged element-wise; concurrent writes
+ * resolve as whole-value LWW, which is the correct semantics for an
+ * annotation node whose content is one logical value.
+ *
+ * The cost, stated: the values under this key are NOT name-addressable, so
+ * `set_widget` against such a node is rejected (`opaque_widgets`) rather than
+ * silently dropped — see the applier.
+ */
+export const OPAQUE_WIDGETS_KEY = "__widgets_opaque";
+
+/**
+ * Whether a node's `widgets_values` must be stored opaquely: a NON-EMPTY
+ * positional array whose class has no `widget_order` in the pinned catalog.
+ *
+ * Deliberately narrow. A `widget_order` that is present but SHORTER than
+ * `widgets_values` is a genuine catalog/workflow mismatch and keeps failing
+ * loudly (see `widgetsToYMap`) — this path is only for classes the catalog
+ * does not describe at all.
+ */
+export function isOpaqueWidgets(wv: unknown, widgetOrder: readonly string[] | undefined): boolean {
+  return widgetOrder === undefined && Array.isArray(wv) && wv.length > 0;
+}
+
+// ---------------------------------------------------------------------------
 // Root maps
 // ---------------------------------------------------------------------------
 
@@ -172,6 +214,12 @@ function slotToYMap(slot: unknown): Y.Map<unknown> | unknown {
  * `widget_order` for the node's type; an already name-keyed record does not.
  * Anything else (comfy-cli `_widgets_as_list`: non-list, non-object) reads as
  * "no positional values known" — an empty map.
+ *
+ * A non-empty positional array for a class with NO `widget_order` never
+ * reaches here — `createNodeMap` routes it to opaque storage
+ * ({@link OPAQUE_WIDGETS_KEY}). A `widget_order` that is present but too
+ * SHORT still throws: that is a catalog/workflow mismatch, not an unknown
+ * class, and silently swallowing it would mis-key real widget values.
  */
 function widgetsToYMap(
   node: WorkflowNode,
@@ -180,11 +228,6 @@ function widgetsToYMap(
 ): Y.Map<unknown> {
   const widgets = new Y.Map<unknown>();
   if (Array.isArray(wv)) {
-    if (wv.length > 0 && !widgetOrder) {
-      throw new TypeError(
-        `createNodeMap(${node.type}): positional widgets_values requires the pinned catalog widget_order (schema §1.2)`,
-      );
-    }
     const order = widgetOrder ?? [];
     if (wv.length > order.length) {
       throw new TypeError(
@@ -206,6 +249,10 @@ function widgetsToYMap(
  * - `widgets_values` → the NAME-KEYED `widgets` Y.Map (schema §1.2 — the spike
  *   proved positional Y.Array widgets corrupt under same-index concurrency).
  *   The key is stored even when empty, so key presence round-trips.
+ *   EXCEPTION: a non-empty positional array for a class absent from the pinned
+ *   catalog is stored whole under {@link OPAQUE_WIDGETS_KEY} and round-trips
+ *   verbatim — frontend-only classes (`Note`, `MarkdownNote`) can never have a
+ *   `widget_order`.
  * - `flags` → nested Y.Map.
  * - `inputs` / `outputs` → Y.Array of slot Y.Maps; `outputs[].links: null`
  *   preserved verbatim, arrays become Y.Arrays (schema §7).
@@ -218,8 +265,18 @@ function widgetsToYMap(
 export function createNodeMap(node: WorkflowNode, widgetOrder?: readonly string[]): Y.Map<unknown> {
   const m = new Y.Map<unknown>();
   for (const [k, v] of Object.entries(node)) {
-    if (k === "widgets_values") {
-      m.set("widgets", widgetsToYMap(node, v, widgetOrder));
+    if (k === OPAQUE_WIDGETS_KEY) {
+      throw new TypeError(
+        `createNodeMap(${node.type}): node carries the reserved key '${OPAQUE_WIDGETS_KEY}'`,
+      );
+    } else if (k === "widgets_values") {
+      if (isOpaqueWidgets(v, widgetOrder)) {
+        // Whole-value storage: never merged element-wise, so §1.2's
+        // positional-array corruption cannot arise. See OPAQUE_WIDGETS_KEY.
+        m.set(OPAQUE_WIDGETS_KEY, structuredClone(v));
+      } else {
+        m.set("widgets", widgetsToYMap(node, v, widgetOrder));
+      }
     } else if (k === "flags" && isPlainObject(v)) {
       m.set("flags", plainToYMap(v));
     } else if ((k === "inputs" || k === "outputs") && Array.isArray(v)) {

@@ -20,6 +20,7 @@
 
 import * as Y from "yjs";
 import {
+  OPAQUE_WIDGETS_KEY,
   adel,
   appliedMap,
   apush,
@@ -159,7 +160,12 @@ function applyAddNode(doc: Y.Doc, op: AddNodeOp, catalog?: WidgetCatalog): void 
   // into the name-keyed widgets map (schema §1.2) requires widget_order.
   const wv = op.node.widgets_values;
   const order = catalog?.types[op.node.type]?.widget_order;
-  if (Array.isArray(wv) && wv.length > 0 && !order) {
+  // No catalog AT ALL: the host cannot tell an unknown class from a known one,
+  // so it cannot decide between name-decomposition and opaque storage — reject
+  // rather than guess. A catalog that simply lacks THIS class is a different
+  // case: the class is unknown to object_info (frontend-only nodes always are),
+  // and `createNodeMap` stores its values opaquely (schema §1.2).
+  if (!catalog && Array.isArray(wv) && wv.length > 0) {
     throw new OpRejectedError(
       "catalog_required",
       `add_node(${op.node.type}): positional widgets_values needs the pinned catalog widget_order to decompose into the name-keyed widgets map (schema §1.2)`,
@@ -167,7 +173,7 @@ function applyAddNode(doc: Y.Doc, op: AddNodeOp, catalog?: WidgetCatalog): void 
   }
   let nodeMap: Y.Map<unknown>;
   try {
-    nodeMap = createNodeMap(op.node, order ?? []);
+    nodeMap = createNodeMap(op.node, order);
   } catch (err) {
     throw new OpRejectedError(
       "invalid_node_payload",
@@ -204,6 +210,33 @@ function validateWidgetName(
   }
 }
 
+/**
+ * Refuse a name-addressed widget write against a node whose `widgets_values`
+ * is stored opaquely (schema §1.2 — a class the pinned catalog does not
+ * describe, e.g. the frontend-only `Note`/`MarkdownNote`).
+ *
+ * REJECTED, not silently skipped, and deliberately: the opaque array has no
+ * name→position mapping, so the write cannot be expressed. Silently no-oping
+ * it is exactly the failure this whole change exists to kill — the writer is
+ * told "applied" while nothing changed. Delete-wins silence is justified
+ * because the target genuinely no longer exists; here the target exists and
+ * the op is unsatisfiable, which schema §3 pin 4 puts in the "reject loudly"
+ * bucket.
+ *
+ * Writing anyway would be worse than a lie: it would create a name-keyed
+ * `widgets` map alongside the opaque key, and `project()` would then throw for
+ * the unknown class on EVERY subsequent read — one bad op poisoning the whole
+ * document.
+ */
+function rejectIfOpaqueWidgets(node: Y.Map<unknown>, widget: string): void {
+  if (!node.has(OPAQUE_WIDGETS_KEY)) return;
+  const type = String(node.get("type") ?? "");
+  throw new OpRejectedError(
+    "opaque_widgets",
+    `widget write '${widget}' on node ${String(node.get("id"))} (${type}): ${type} is absent from the pinned catalog, so its widgets_values is stored opaquely (schema §1.2) and is not name-addressable`,
+  );
+}
+
 function widgetsOf(node: Y.Map<unknown>): Y.Map<unknown> {
   let widgets = node.get("widgets");
   if (!(widgets instanceof Y.Map)) {
@@ -236,6 +269,7 @@ function applySetWidget(doc: Y.Doc, op: SetWidgetOp, catalog?: WidgetCatalog): v
     if (target === null) return; // head instance concurrently deleted → no-op (delete wins)
     const nodeType = String(target.get("type") ?? "");
     const widget = op.inner_widget!;
+    rejectIfOpaqueWidgets(target, widget);
     const entry = catalog?.types[nodeType];
     if (entry) {
       const idx = entry.widget_order.indexOf(widget);
@@ -260,6 +294,7 @@ function applySetWidget(doc: Y.Doc, op: SetWidgetOp, catalog?: WidgetCatalog): v
 
   const node = nodesMap(doc).get(String(op.node_id));
   if (!node) return; // target concurrently deleted → no-op (delete wins)
+  rejectIfOpaqueWidgets(node, op.widget);
   validateWidgetName(catalog, String(node.get("type") ?? ""), op.widget);
   // Top-level writes may extend past the current positional length — comfy-cli
   // pads with None; here the name-keyed map makes padding a projection concern.
@@ -343,6 +378,13 @@ function applyConnect(doc: Y.Doc, op: ConnectOp, catalog?: WidgetCatalog): void 
   // The destination is gone → the target slot does not exist and never will
   // (ids are never reused), so there is no register to claim: delete wins.
   if (!dst) return;
+
+  // The §8.4 inputcount grow carries a widget write; if that write is
+  // impossible (opaque destination) the whole op is refused HERE, before the
+  // slot append, so a rejected op still leaves the doc untouched.
+  if (op.grow?.inputcount != null) {
+    rejectIfOpaqueWidgets(dst, String(op.grow.inputcount.widget));
+  }
 
   let toIdx: number;
   if (op.grow != null) {

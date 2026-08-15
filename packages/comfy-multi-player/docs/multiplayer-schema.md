@@ -106,6 +106,14 @@ Therefore v1 stores widgets as a Y.Map keyed by **widget name**:
   positional storage, not of this layout; the payload stays authoritative
   either way (values are never re-derived from the catalog, only re-keyed).
 
+- Third consequence, pinned (Amendment A2): a class the pinned catalog does
+  **not** describe has no `widget_order` and can never get one — the
+  frontend-only `Note`/`MarkdownNote` are rendered by the frontend and never
+  appear in `object_info`. Their non-empty positional `widgets_values` is
+  stored **opaquely**, as one whole plain value under the reserved per-node key
+  `__widgets_opaque`, and projected back verbatim. See Amendment A2 for why
+  this does not reopen the corruption this section closed.
+
 Note the residual conflict semantics: a name-keyed Y.Map fixes the
 *structural* corruption, but Y.Map's native conflict pick is client-based,
 not stamp-based (spike experiment 5: bob's write beat alice's higher stamp).
@@ -460,7 +468,9 @@ exhaustive for its corpus):
    positional `widgets_values` array using the pinned catalog's
    `widget_order` for the node's type — including dynamic-combo expansion
    driven by the node's current widget values. Missing names project as
-   `null` (Python pads with `None`).
+   `null` (Python pads with `None`). A node stored opaquely
+   (`__widgets_opaque` — Amendment A2) emits its array verbatim and needs no
+   catalog entry.
 3. **Numbers serialize as JS numbers.** Python may emit `8.0` where JS emits
    `8`; the values compare equal but the bytes differ. Canonical JSON is the
    JS serialization; byte-level consumers MUST compare canonically, not
@@ -642,3 +652,88 @@ code did not have. PR #6725 caught the id-type half the same way.
 separately. Because the two implementations must agree on the same register,
 **both pins move in the same change** — the applier first (it is the
 document's authority), then the CLI.
+
+---
+
+## Amendment A2 — 2026-08-14 — opaque widgets for classes the catalog cannot describe
+
+**Found in production, not in review.** `Note` and `MarkdownNote` are
+frontend-only ComfyUI nodes: the frontend renders them, `object_info` never
+lists them, so no catalog derived from `object_info` can ever carry a
+`widget_order` for them. §1.2's decomposition then threw at mint, and **any
+workflow containing a sticky note failed to mint** — most official templates
+contain one. Downstream, the failure surfaced as a lie: the CLI had already
+written the graph to its scratch file, so `ls_nodes` and `validate` reported a
+healthy graph while `workflow_docs` held an empty document and the canvas had
+zero nodes.
+
+### The rule
+
+When a node's `widgets_values` is a **non-empty positional array** and the
+pinned catalog has **no `widget_order` for its class at all**, the array is
+stored WHOLE as one plain value under the reserved per-node key
+`__widgets_opaque`, and `project()` emits it back verbatim. No catalog lookup,
+no re-keying, no padding.
+
+Guarded narrowly — these three keep their existing behavior:
+
+| Case | Behavior |
+|---|---|
+| `widget_order` present but SHORTER than `widgets_values` | still throws — a genuine catalog/workflow mismatch, never swallowed |
+| empty `widgets_values` (`[]`) | unchanged: an empty name-keyed map, so key presence still round-trips |
+| `applyOps` called with NO catalog at all | unchanged: `add_node` with positional values is still rejected `catalog_required`. A host with no catalog cannot tell an unknown class from an unseen one, so it does not guess |
+
+### Why this does not reopen §1.2
+
+§1.2 bans **element-wise merging of a positional array**. The spike measured
+two writers editing the same index of a 7-element `widgets_values`, exchanged
+as Yjs structs: the merge produced a **length-8 array**, every downstream
+widget shifted, and `cfg` read the steps value. That corruption requires the
+array to be a mergeable sequence with per-element identity.
+
+An opaque value is a single plain value under a single key. It is never merged
+element-wise; concurrent writes resolve as **whole-value LWW**. For an
+annotation node whose content is one logical value, whole-value LWW is the
+correct semantics rather than a compromise: two people editing one sticky note
+should end with one of the two texts, not an interleaving of both.
+
+What is genuinely given up is **name addressing**: an opaque array has no
+name→position mapping, so a `set_widget` naming a widget on such a node cannot
+be expressed. It is **rejected** (`opaque_widgets`), never silently dropped —
+delete-wins silence is justified because the target no longer exists, whereas
+here the target exists and the op is unsatisfiable, which §3 pin 4 puts in the
+"reject loudly" bucket. Writing anyway would be worse than a lie: it would
+create a name-keyed `widgets` map beside the opaque key and make **every**
+later `project()` throw for the uncatalogued class. The same refusal covers the
+§8.3 `inputcount` count-widget write, checked before the slot append so a
+refused `connect` leaves the doc untouched.
+
+### Rejected alternative: catalog entries for the frontend-only classes
+
+Adding `Note: {widget_order: ["text"]}` (and one per frontend-only class) to
+the catalog export would also make sticky notes mint. It was rejected: it is a
+hand-maintained list that must track a frontend the catalog pipeline does not
+read, and the next frontend-only node breaks production identically, in the
+same silent way. `test/roundtrip.test.ts` guards the decision — it asserts the
+corpus still carries `Note`/`MarkdownNote` **and** that the pinned catalog
+still does not describe them, so adding those entries turns the regression
+tests red instead of quietly vacuous.
+
+### `SCHEMA_VERSION` is NOT bumped — the reasoning, for review
+
+The layout gains a per-node key, which §10 would normally call a layout change.
+It is not bumped because the change is **additive and unreachable in existing
+documents**: `__widgets_opaque` can only appear on a node whose class is absent
+from the catalog, and such a node could not be minted at all before this
+change, so no live v1 document can contain the key and there is nothing to
+migrate. Forward-compat holds (a new reader reads old docs unchanged);
+backward-compat does not (an older reader projecting a newer doc would emit
+`__widgets_opaque` as an unknown passthrough key and drop `widgets_values`),
+which is the ordinary consequence of a SHA-pinned consumer moving its pin —
+the same situation Amendment A1 documented.
+
+### Consumer impact
+
+`services/agent/dochost` pins this package by commit SHA. Repinning is a
+deliberate, coordinated step across the branches that carry the pin; it is not
+part of this change.
