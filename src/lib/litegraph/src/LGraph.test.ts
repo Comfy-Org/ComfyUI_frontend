@@ -434,6 +434,18 @@ describe('node:before-removed event', () => {
       'onNodeRemoved(graph=null)'
     ])
   })
+
+  it('fires node:before-removed for every node cleared', () => {
+    const graph = new LGraph()
+    graph.add(new LGraphNode('a'))
+    graph.add(new LGraphNode('b'))
+    const removed = vi.fn()
+    graph.events.addEventListener('node:before-removed', removed)
+
+    graph.clear()
+
+    expect(removed).toHaveBeenCalledTimes(2)
+  })
 })
 
 describe('Subgraph Definition Garbage Collection', () => {
