@@ -1,4 +1,3 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -37,10 +36,10 @@ const {
   mockIsPersonal: { value: true },
   mockBillingRail: { value: undefined as BillingRail | undefined },
   mockPlans: { value: [] as Plan[] },
-  mockFetchPlans: vi.fn().mockResolvedValue(undefined),
-  mockLegacyFetchStatus: vi.fn().mockResolvedValue(undefined),
-  mockLegacyFetchBalance: vi.fn().mockResolvedValue(undefined),
-  mockLegacySubscribe: vi.fn().mockResolvedValue(undefined),
+  mockFetchPlans: vi.fn(async () => undefined),
+  mockLegacyFetchStatus: vi.fn(async () => undefined),
+  mockLegacyFetchBalance: vi.fn(async () => undefined),
+  mockLegacySubscribe: vi.fn(async () => undefined),
   mockPurchaseCredits: vi.fn(),
   mockUpdateActiveWorkspace: vi.fn(),
   mockSetWorkspaceBillingRail: vi.fn(),
@@ -115,7 +114,7 @@ vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
       }
     },
     fetchStatus: mockLegacyFetchStatus,
-    manageSubscription: vi.fn().mockResolvedValue(undefined),
+    manageSubscription: vi.fn(async () => undefined),
     subscribe: mockLegacySubscribe,
     showSubscriptionDialog: vi.fn()
   })
@@ -153,7 +152,7 @@ vi.mock('@/platform/cloud/subscription/composables/useBillingPlans', () => ({
     isLoading: { value: false },
     error: { value: null },
     fetchPlans: mockFetchPlans,
-    getPlanBySlug: vi.fn().mockReturnValue(null)
+    getPlanBySlug: vi.fn(() => null)
   })
 }))
 
@@ -162,19 +161,17 @@ vi.mock('@/platform/workspace/api/workspaceApi', () => ({
     getBillingStatus: vi.fn(() =>
       Promise.resolve({ ...DEFAULT_BILLING_STATUS, ...mockBillingStatus.value })
     ),
-    getBillingBalance: vi.fn().mockResolvedValue({
+    getBillingBalance: vi.fn(async () => ({
       amount_micros: 10000000,
       currency: 'usd'
-    }),
-    subscribe: vi.fn().mockResolvedValue({ status: 'subscribed' }),
-    previewSubscribe: vi.fn().mockResolvedValue({ allowed: true })
+    })),
+    subscribe: vi.fn(async () => ({ status: 'subscribed' })),
+    previewSubscribe: vi.fn(async () => ({ allowed: true }))
   }
 }))
 
 describe('useBillingContext', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
-    vi.clearAllMocks()
     mockIsPersonal.value = true
     mockBillingRail.value = undefined
     mockSetWorkspaceBillingRail.mockImplementation(
@@ -528,12 +525,11 @@ describe('useBillingContext', () => {
 
     it('is false for a new credit-slider team subscriber', async () => {
       mockIsPersonal.value = false
-      // Real BE shape: underscore slug + populated credit stop. (subscription_tier
-      // is 'TEAM' on the wire, not yet in the FE SubscriptionTier union, so it is
-      // omitted here — the predicate does not depend on it.)
+      // Real BE shape: underscore slug, populated credit stop, tier 'TEAM'.
       mockBillingStatus.value = {
         is_active: true,
         has_funds: true,
+        subscription_tier: 'TEAM',
         subscription_status: 'active',
         subscription_duration: 'ANNUAL',
         plan_slug: 'team_per_credit_annual',
@@ -640,16 +636,12 @@ describe('useBillingContext', () => {
       expect(isTeamPlan.value).toBe(false)
     })
 
-    // subscription_tier is omitted throughout: the backend sends 'TEAM' here, but
-    // the FE's SubscriptionTier resolves to the registry spec, which has no TEAM
-    // (tierPricing.ts imports comfyRegistryTypes for what is an ingest field).
-    // isTeamPlan reads the credit stop and the slug, never the tier — which is
-    // what keeps it working despite that divergence.
     it('is true for a credit-slider team sub, which carries a credit stop', async () => {
       mockIsPersonal.value = false
       mockBillingStatus.value = {
         is_active: true,
         has_funds: true,
+        subscription_tier: 'TEAM',
         plan_slug: 'team_per_credit_monthly',
         team_credit_stop: {
           id: 'team_700',

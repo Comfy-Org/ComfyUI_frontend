@@ -210,7 +210,10 @@ import Button from '@/components/ui/button/Button.vue'
 import MediaAssetContextMenu from '@/platform/assets/components/MediaAssetContextMenu.vue'
 import MediaAssetFilterBar from '@/platform/assets/components/MediaAssetFilterBar.vue'
 import MediaAssetSelectionBar from '@/platform/assets/components/MediaAssetSelectionBar.vue'
-import { getMediaAssetGridColumns } from '@/platform/assets/components/mediaAssetViewOptions'
+import {
+  getMediaAssetGridColumns,
+  MEDIA_ASSET_VIEW_MODE
+} from '@/platform/assets/components/mediaAssetViewOptions'
 import type {
   MediaAssetGridMode,
   MediaAssetViewMode
@@ -253,11 +256,13 @@ const expectedFolderCount = ref(0)
 const isInFolderView = computed(() => folderJobId.value !== null)
 const viewMode = useStorage<MediaAssetViewMode>(
   'Comfy.Assets.Sidebar.ViewMode',
-  'grid'
+  MEDIA_ASSET_VIEW_MODE.grid
 )
-const isListView = computed(() => viewMode.value === 'list')
+const isListView = computed(() => viewMode.value === MEDIA_ASSET_VIEW_MODE.list)
 const gridMode = computed<MediaAssetGridMode>(() =>
-  viewMode.value === 'grid-small' ? 'grid-small' : 'grid'
+  viewMode.value === MEDIA_ASSET_VIEW_MODE.gridSmall
+    ? MEDIA_ASSET_VIEW_MODE.gridSmall
+    : MEDIA_ASSET_VIEW_MODE.grid
 )
 const skeletonGridStyle = computed(() => ({
   gridTemplateColumns: getMediaAssetGridColumns(gridMode.value)

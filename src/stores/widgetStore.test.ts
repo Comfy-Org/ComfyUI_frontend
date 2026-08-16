@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { ComfyWidgets } from '@/scripts/widgets'
 import { useWidgetStore } from '@/stores/widgetStore'
@@ -20,10 +18,6 @@ vi.mock('@/schemas/nodeDefSchema', () => ({
 }))
 
 describe('widgetStore', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   describe('widgets getter', () => {
     it('includes custom widgets after registration', () => {
       const store = useWidgetStore()

@@ -182,7 +182,6 @@ global.fetch = vi.fn()
 
 describe('useSubscription', () => {
   afterEach(() => {
-    vi.useRealTimers()
     scope?.stop()
     scope = undefined
     setDistribution('localhost')
@@ -194,14 +193,8 @@ describe('useSubscription', () => {
     scope = effectScope()
     setDistribution('cloud')
 
-    vi.clearAllMocks()
     mockLocalStorage.__reset()
     mockIsLoggedIn.value = false
-    mockTelemetry.trackSubscription.mockReset()
-    mockTelemetry.trackMonthlySubscriptionSucceeded.mockReset()
-    mockTelemetry.trackMonthlySubscriptionCancelled.mockReset()
-    mockTelemetry.trackBillingEvent.mockReset()
-    mockAccessBillingPortal.mockReset()
     mockAccessBillingPortal.mockResolvedValue(true)
     mockUserId.value = 'user-123'
     mockIsCloud.value = true
@@ -367,29 +360,50 @@ describe('useSubscription', () => {
       )
     })
 
-    it('does not apply status after the active workspace changes', async () => {
-      let resolveStatus: (value: {
+    it('does not apply the previous account response after an identity switch', async () => {
+      let resolvePreviousAccount!: (value: {
         is_active: boolean
         has_funds: boolean
         billing_rail: 'stripe'
-      }) => void = () => {}
-      mockGetBillingStatus.mockReturnValue(
-        new Promise((resolve) => {
-          resolveStatus = resolve
+      }) => void
+      mockGetBillingStatus
+        .mockReturnValueOnce(
+          new Promise((resolve) => {
+            resolvePreviousAccount = resolve
+          })
+        )
+        .mockResolvedValueOnce({
+          is_active: false,
+          has_funds: false,
+          billing_rail: 'legacy_stripe'
         })
-      )
 
-      const { fetchStatus } = useSubscriptionWithScope()
-      const statusRequest = fetchStatus()
+      const { subscriptionStatus, fetchStatus } = useSubscriptionWithScope()
+      const previousAccountRequest = fetchStatus()
+
+      mockUserId.value = 'user-456'
       mockActiveWorkspaceId.value = 'workspace-456'
-      resolveStatus({
+      const currentAccountRequest = fetchStatus()
+      await currentAccountRequest
+
+      resolvePreviousAccount({
         is_active: true,
         has_funds: true,
         billing_rail: 'stripe'
       })
-      await statusRequest
+      await previousAccountRequest
 
-      expect(mockSetWorkspaceBillingRail).not.toHaveBeenCalled()
+      expect(mockGetBillingStatus).toHaveBeenCalledTimes(2)
+      expect(subscriptionStatus.value).toEqual({
+        is_active: false,
+        has_funds: false,
+        billing_rail: 'legacy_stripe'
+      })
+      expect(mockSetWorkspaceBillingRail).toHaveBeenCalledOnce()
+      expect(mockSetWorkspaceBillingRail).toHaveBeenCalledWith(
+        'workspace-456',
+        'legacy_stripe'
+      )
     })
 
     it('coalesces concurrent callers into one fetch', async () => {
@@ -923,7 +937,6 @@ describe('useSubscription', () => {
     })
 
     it('does not start cancellation watching when the billing portal does not open', async () => {
-      vi.useFakeTimers()
       mockIsLoggedIn.value = true
       mockAccessBillingPortal.mockResolvedValueOnce(false)
 
@@ -933,26 +946,21 @@ describe('useSubscription', () => {
         renewal_date: '2025-11-16'
       })
 
-      try {
-        const { fetchStatus, manageSubscription } = useSubscriptionWithScope()
+      const { fetchStatus, manageSubscription } = useSubscriptionWithScope()
 
-        await fetchStatus()
-        mockGetBillingStatus.mockClear()
+      await fetchStatus()
+      mockGetBillingStatus.mockClear()
 
-        await manageSubscription()
-        await vi.advanceTimersByTimeAsync(5000)
+      await manageSubscription()
+      await vi.advanceTimersByTimeAsync(5000)
 
-        expect(mockGetBillingStatus).not.toHaveBeenCalled()
-        expect(
-          mockTelemetry.trackMonthlySubscriptionCancelled
-        ).not.toHaveBeenCalled()
-      } finally {
-        vi.useRealTimers()
-      }
+      expect(mockGetBillingStatus).not.toHaveBeenCalled()
+      expect(
+        mockTelemetry.trackMonthlySubscriptionCancelled
+      ).not.toHaveBeenCalled()
     })
 
     it('tracks cancellation after manage subscription when status flips', async () => {
-      vi.useFakeTimers()
       mockIsLoggedIn.value = true
 
       const activeStatus = {
@@ -972,24 +980,19 @@ describe('useSubscription', () => {
         .mockResolvedValueOnce(activeStatus)
         .mockResolvedValueOnce(cancelledStatus)
 
-      try {
-        const { fetchStatus, manageSubscription } = useSubscriptionWithScope()
+      const { fetchStatus, manageSubscription } = useSubscriptionWithScope()
 
-        await fetchStatus()
-        await manageSubscription()
+      await fetchStatus()
+      await manageSubscription()
 
-        await vi.advanceTimersByTimeAsync(5000)
+      await vi.advanceTimersByTimeAsync(5000)
 
-        expect(
-          mockTelemetry.trackMonthlySubscriptionCancelled
-        ).toHaveBeenCalledTimes(1)
-      } finally {
-        vi.useRealTimers()
-      }
+      expect(
+        mockTelemetry.trackMonthlySubscriptionCancelled
+      ).toHaveBeenCalledTimes(1)
     })
 
     it('handles rapid focus events during cancellation polling', async () => {
-      vi.useFakeTimers()
       mockIsLoggedIn.value = true
 
       const activeStatus = {
@@ -1009,21 +1012,17 @@ describe('useSubscription', () => {
         .mockResolvedValueOnce(activeStatus)
         .mockResolvedValueOnce(cancelledStatus)
 
-      try {
-        const { fetchStatus, manageSubscription } = useSubscriptionWithScope()
+      const { fetchStatus, manageSubscription } = useSubscriptionWithScope()
 
-        await fetchStatus()
-        await manageSubscription()
+      await fetchStatus()
+      await manageSubscription()
 
-        window.dispatchEvent(new Event('focus'))
-        await vi.waitFor(() => {
-          expect(
-            mockTelemetry.trackMonthlySubscriptionCancelled
-          ).toHaveBeenCalledTimes(1)
-        })
-      } finally {
-        vi.useRealTimers()
-      }
+      window.dispatchEvent(new Event('focus'))
+      await vi.waitFor(() => {
+        expect(
+          mockTelemetry.trackMonthlySubscriptionCancelled
+        ).toHaveBeenCalledTimes(1)
+      })
     })
   })
 })

@@ -24,11 +24,12 @@ jobs:
       has-coverage: ${{ steps.coverage-shards.outputs.has-coverage }}
 
     steps:
-      - name: Checkout repository
+      - name: Checkout sources for genhtml
         uses: actions/checkout@v7
-
-      - name: Setup frontend
-        uses: ./.github/actions/setup-frontend
+        with:
+          sparse-checkout: |
+            src
+            packages
 
       - name: Download all shard coverage data
         uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12

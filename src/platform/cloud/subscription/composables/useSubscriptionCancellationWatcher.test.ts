@@ -47,8 +47,6 @@ describe('useSubscriptionCancellationWatcher', () => {
   }
 
   beforeEach(() => {
-    vi.useFakeTimers()
-    trackMonthlySubscriptionCancelled.mockReset()
     subscriptionStatus.value = { ...baseStatus }
     isActive.value = true
     shouldWatch = true
@@ -57,7 +55,6 @@ describe('useSubscriptionCancellationWatcher', () => {
   afterEach(() => {
     activeScopes.forEach((scope) => scope.stop())
     activeScopes.length = 0
-    vi.useRealTimers()
   })
 
   it('polls with exponential backoff and fires telemetry once cancellation detected', async () => {
