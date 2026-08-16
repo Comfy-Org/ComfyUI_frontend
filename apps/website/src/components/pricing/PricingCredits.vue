@@ -29,14 +29,14 @@ const estimate = computed(() => {
   <div class="mt-6">
     <div class="flex items-center gap-2">
       <ComponentIcon class="text-primary-comfy-orange size-4 shrink-0" />
-      <span class="text-primary-warm-white ppformula-text-center text-sm">
+      <span class="ppformula-text-center text-sm text-primary-warm-white">
         <span class="font-extrabold">
           {{ credits }}
         </span>
         {{ label }}
       </span>
     </div>
-    <p v-if="estimate" class="text-primary-warm-gray mt-1.5 text-xs">
+    <p v-if="estimate" class="mt-1.5 text-xs text-primary-warm-gray">
       {{ estimate }}
     </p>
   </div>

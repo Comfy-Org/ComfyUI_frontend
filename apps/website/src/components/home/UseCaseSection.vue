@@ -143,7 +143,7 @@ useParallax([leftImgRef], {
 <template>
   <section
     ref="sectionRef"
-    class="bg-primary-comfy-ink relative isolate overflow-x-clip pt-20 lg:h-[calc(100vh+60px)] lg:py-24"
+    class="relative isolate overflow-x-clip bg-primary-comfy-ink pt-20 lg:h-[calc(100vh+60px)] lg:py-24"
   >
     <svg class="absolute size-0" width="0" height="0" aria-hidden="true">
       <defs>
@@ -166,7 +166,7 @@ useParallax([leftImgRef], {
       <!-- Label row -->
       <div class="relative z-20 col-span-full flex justify-center py-4">
         <p
-          class="text-primary-comfy-yellow from-primary-comfy-ink to-primary-comfy-ink/10 shrink grow-0 bg-linear-to-b text-center text-sm font-bold tracking-widest uppercase lg:text-base"
+          class="text-primary-comfy-yellow shrink grow-0 bg-linear-to-b from-primary-comfy-ink to-primary-comfy-ink/10 text-center text-sm font-bold tracking-widest uppercase lg:text-base"
         >
           {{ t('useCase.label', locale) }}
         </p>
@@ -227,7 +227,7 @@ useParallax([leftImgRef], {
       <div
         class="col-span-full mt-8 flex flex-col items-center gap-8 px-4 lg:mt-[clamp(0.25rem,1vh,2rem)] lg:gap-[clamp(0.25rem,1vh,2rem)]"
       >
-        <p class="text-primary-warm-gray max-w-md text-center text-base">
+        <p class="max-w-md text-center text-base text-primary-warm-gray">
           {{ t('useCase.body', locale) }}
         </p>
 

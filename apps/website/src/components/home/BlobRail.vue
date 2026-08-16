@@ -14,7 +14,7 @@ const { side } = defineProps<{
       :class="
         cn(
           'aspect-2/3 w-40 lg:aspect-auto lg:h-[72vh] lg:max-h-240 lg:w-[115%]',
-          side === 'left' ? 'ml-auto lg:-ml-[12%]' : 'mr-auto lg:-mr-[12%]'
+          side === 'left' ? 'ml-auto lg:ml-[-12%]' : 'mr-auto lg:mr-[-12%]'
         )
       "
     >

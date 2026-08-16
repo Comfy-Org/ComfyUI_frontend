@@ -101,7 +101,7 @@ onMounted(() => {
   <div class="min-h-[640px] w-full">
     <p
       v-if="hasEmbedLoadError"
-      class="text-primary-comfy-canvas text-sm/6"
+      class="text-sm/6 text-primary-comfy-canvas"
       role="status"
     >
       {{ t('contact.form.embedLoadErrorPrefix', locale) }}

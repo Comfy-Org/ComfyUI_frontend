@@ -62,10 +62,10 @@ watch(activeIndex, (current, previous) => {
     <!-- Section header -->
     <div class="flex flex-col items-center text-center">
       <NodeBadge :segments="badgeSegments" segment-class="" />
-      <p class="text-primary-comfy-canvas mt-12 max-w-xl text-sm/relaxed">
+      <p class="mt-12 max-w-xl text-sm/relaxed text-primary-comfy-canvas">
         {{ t('showcase.subtitle1', locale) }}
       </p>
-      <p class="text-primary-comfy-canvas mt-4 max-w-xl text-sm/relaxed">
+      <p class="mt-4 max-w-xl text-sm/relaxed text-primary-comfy-canvas">
         {{ t('showcase.subtitle2', locale) }}
       </p>
     </div>
@@ -83,7 +83,7 @@ watch(activeIndex, (current, previous) => {
           "
         >
           <div
-            class="bg-primary-comfy-ink relative size-full overflow-hidden rounded-[calc(2.5rem-2px)]"
+            class="relative size-full overflow-hidden rounded-[calc(2.5rem-2px)] bg-primary-comfy-ink"
           >
             <video
               v-for="(feature, i) in features"
@@ -118,7 +118,7 @@ watch(activeIndex, (current, previous) => {
               class="animate-border-spin size-full overflow-hidden rounded-4xl p-0.5"
             >
               <div
-                class="bg-primary-comfy-ink size-full overflow-hidden rounded-[calc(2rem-2px)]"
+                class="size-full overflow-hidden rounded-[calc(2rem-2px)] bg-primary-comfy-ink"
               >
                 <video
                   :src="feature.video"

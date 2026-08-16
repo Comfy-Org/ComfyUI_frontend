@@ -92,11 +92,11 @@ function isTickFilled(
 
     <SliderTrack
       data-slot="slider-track"
-      class="bg-primary-warm-gray relative grow overflow-hidden rounded-full data-[orientation=horizontal]:h-1.5 data-[orientation=horizontal]:w-full"
+      class="relative grow overflow-hidden rounded-full bg-primary-warm-gray data-[orientation=horizontal]:h-1.5 data-[orientation=horizontal]:w-full"
     >
       <SliderRange
         data-slot="slider-range"
-        class="bg-primary-warm-white absolute data-[orientation=horizontal]:h-full"
+        class="absolute bg-primary-warm-white data-[orientation=horizontal]:h-full"
       />
     </SliderTrack>
 
@@ -106,7 +106,7 @@ function isTickFilled(
       data-slot="slider-thumb"
       :aria-label="thumbLabel"
       :aria-valuetext="thumbValueText"
-      class="bg-primary-warm-white border-primary-comfy-yellow ring-primary-comfy-yellow/50 block size-4 shrink-0 rounded-full border shadow-sm transition-[color,box-shadow] hover:ring-4 focus-visible:ring-4 focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50"
+      class="border-primary-comfy-yellow ring-primary-comfy-yellow/50 block size-4 shrink-0 rounded-full border bg-primary-warm-white shadow-sm transition-[color,box-shadow] hover:ring-4 focus-visible:ring-4 focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50"
     />
   </SliderRoot>
 

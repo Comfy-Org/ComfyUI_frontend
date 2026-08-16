@@ -56,7 +56,7 @@ const rows = computed(() =>
           >
             {{ heading }}
           </component>
-          <p class="text-primary-warm-gray mt-3 text-sm/relaxed">
+          <p class="mt-3 text-sm/relaxed text-primary-warm-gray">
             {{ description }}
           </p>
 

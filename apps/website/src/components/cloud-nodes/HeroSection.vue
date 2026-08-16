@@ -17,12 +17,12 @@ const { locale = 'en' } = defineProps<{
       </SectionLabel>
 
       <h1
-        class="text-primary-comfy-canvas max-w-4xl text-4xl/tight md:text-6xl"
+        class="max-w-4xl text-4xl/tight text-primary-comfy-canvas md:text-6xl"
       >
         {{ t('cloudNodes.hero.heading', locale) }}
       </h1>
 
-      <p class="text-primary-warm-gray max-w-3xl text-base/relaxed md:text-lg">
+      <p class="max-w-3xl text-base/relaxed text-primary-warm-gray md:text-lg">
         {{ t('cloudNodes.hero.body', locale) }}
       </p>
     </div>
