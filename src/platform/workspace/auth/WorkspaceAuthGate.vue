@@ -43,16 +43,15 @@
 
 <script setup lang="ts">
 /**
- * WorkspaceAuthGate - Conditional auth checkpoint for workspace mode.
+ * WorkspaceAuthGate - Cloud workspace auth checkpoint.
  *
  * This gate ensures proper initialization order for workspace-scoped auth:
  * 1. Wait for Firebase auth to resolve
- * 2. Check if teamWorkspacesEnabled feature flag is on
- * 3. If YES: Initialize workspace token and store before rendering
- * 4. If NO: Render immediately using existing Firebase auth
+ * 2. Load authenticated remote configuration
+ * 3. Initialize the workspace token and store before rendering
  *
  * This prevents race conditions where API calls use Firebase tokens
- * instead of workspace tokens when the workspace feature is enabled.
+ * instead of workspace tokens.
  *
  * The splash loader in index.html (z-9999) covers the screen during this
  * phase, so no separate loading indicator is needed here.
@@ -125,7 +124,6 @@ async function initialize(): Promise<void> {
     }
 
     // Step 3: Refresh feature flags with auth context
-    // This ensures teamWorkspacesEnabled reflects the authenticated user's state
     // Timeout prevents hanging if server is slow/unresponsive
     let timeoutId: ReturnType<typeof setTimeout>
     await Promise.race([
@@ -142,7 +140,6 @@ async function initialize(): Promise<void> {
       throw new Error('Failed to load authenticated remote config')
     }
 
-    // Step 4: THE CHECKPOINT - Are we in workspace mode?
     const { flags } = useFeatureFlags()
     const workspaceAuthStore = useWorkspaceAuthStore()
     if (flags.unifiedCloudAuthEnabled) {
@@ -153,14 +150,6 @@ async function initialize(): Promise<void> {
       }
     }
 
-    if (!flags.teamWorkspacesEnabled) {
-      // Not in workspace mode - use existing Firebase auth flow
-      // No additional initialization needed
-      initializationState.value = 'ready'
-      return
-    }
-
-    // Step 5: WORKSPACE MODE - Full initialization
     await initializeWorkspaceMode()
     if (generation !== initializationGeneration) return
     if (
@@ -170,7 +159,7 @@ async function initialize(): Promise<void> {
       throw new Error('Unified cloud auth was cleared during workspace setup')
     }
 
-    // Step 6: Resume any pending pricing flow from team workspace creation
+    // Resume any pending pricing flow from team workspace creation
     // Only safe after workspace store initialized successfully — the pricing
     // dialog reads workspace state to decide which variant to show.
     const workspaceStore = useTeamWorkspaceStore()
