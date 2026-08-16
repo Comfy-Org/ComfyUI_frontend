@@ -76,7 +76,7 @@ test.describe(
     test('should keep a resized width across a save and reload', async ({
       comfyPage
     }) => {
-      test.setTimeout(30000)
+      test.slow()
 
       const measureWidth = async (title: string) => {
         const node = await comfyPage.vueNodes.getFixtureByTitle(title)
