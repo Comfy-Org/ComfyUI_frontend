@@ -28,25 +28,23 @@
 import Toast from 'primevue/toast'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
-import { computed, onScopeDispose, ref, watch } from 'vue'
+import { watch } from 'vue'
 
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 
-/** Paired with the `.p-toast` rule in `src/assets/css/style.css`. */
-const NODE_SELECTION_CLASS = 'node-selection-active'
-
 const toast = useToast()
 const toastStore = useToastStore()
 const agentNodeSelectionStore = useAgentNodeSelectionStore()
-const isNodeSelectionActive = computed(() => agentNodeSelectionStore.isActive)
 
 /**
- * Messages raised while node selection mode is active. Adding them straight to
- * a hidden toast layer would let anything carrying a `life` expire unseen, so
- * they are held here and replayed once the mode exits.
+ * Messages raised while node selection mode is active. The mode hides the whole
+ * toast layer, and adding to a hidden layer would let anything carrying a `life`
+ * expire unseen - so they are held here and replayed on exit. Messages without a
+ * `life` are sticky in PrimeVue, so errors already on screen survive the hide
+ * untouched. Deliberately a plain array: nothing renders it.
  */
-const deferredMessages = ref<ToastMessageOptions[]>([])
+let deferredMessages: ToastMessageOptions[] = []
 
 watch(
   () => toastStore.messagesToAdd,
@@ -56,8 +54,8 @@ watch(
     }
 
     newMessages.forEach((message) => {
-      if (isNodeSelectionActive.value) {
-        deferredMessages.value.push(message)
+      if (agentNodeSelectionStore.isActive) {
+        deferredMessages.push(message)
       } else {
         toast.add(message)
       }
@@ -67,36 +65,15 @@ watch(
   { deep: true }
 )
 
-/**
- * PrimeVue teleports every `<Toast>` container to `<body>`, so no wrapper here
- * can hide them - and other components mount their own `<Toast>` groups too.
- * The whole layer is hidden from the root instead (see `style.css`). Messages
- * without a `life` are sticky in PrimeVue, so errors already on screen survive
- * the hide and are still there on exit.
- */
 watch(
-  isNodeSelectionActive,
+  () => agentNodeSelectionStore.isActive,
   (active) => {
-    document.body.classList.toggle(NODE_SELECTION_CLASS, active)
-  },
-  { immediate: true }
-)
-
-onScopeDispose(() => {
-  document.body.classList.remove(NODE_SELECTION_CLASS)
-})
-
-watch(isNodeSelectionActive, (active) => {
-  if (active || deferredMessages.value.length === 0) {
-    return
+    if (active) return
+    deferredMessages.splice(0).forEach((message) => {
+      toast.add(message)
+    })
   }
-
-  const pending = deferredMessages.value
-  deferredMessages.value = []
-  pending.forEach((message) => {
-    toast.add(message)
-  })
-})
+)
 
 watch(
   () => toastStore.messagesToRemove,
@@ -118,6 +95,9 @@ watch(
   (requested) => {
     if (requested) {
       toast.removeAllGroups()
+      // Held messages were cleared too - replaying them on exit would resurrect
+      // exactly what the caller just dismissed.
+      deferredMessages = []
       toastStore.removeAllRequested = false
     }
   }

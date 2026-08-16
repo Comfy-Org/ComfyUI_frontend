@@ -395,21 +395,22 @@ defineExpose({
              remove button sits outside that trigger deliberately: nesting it
              inside would surface both tooltips at once on hover. The hover fill
              sits on the whole chip so the pill lights as one shape rather than
-             painting only the label's inline box. -->
+             painting only the label's inline box.
+
+             `p-0` is load-bearing: this app loads Tailwind's theme and utilities
+             but not its preflight, so a bare <button> keeps the browser's own
+             1px 6px padding. -->
         <span
           v-for="tag in selectionTags"
           :key="tag.id"
           class="bg-agent-surface-hover text-agent-fg inline-flex h-7 items-center gap-1 rounded-lg border border-border-default px-2.5 text-xs/4 font-medium transition-colors hover:bg-tertiary-background-hover"
         >
-          <span
+          <button
             v-tooltip.top="buildAgentTooltipConfig(t('agent.focusNode'))"
-            role="button"
-            tabindex="0"
+            type="button"
             :aria-label="t('agent.focusNode')"
-            class="flex cursor-pointer items-center gap-1 transition-colors"
+            class="flex cursor-pointer items-center gap-1 p-0 transition-colors"
             @click="emit('focusTag', tag.id)"
-            @keydown.enter="emit('focusTag', tag.id)"
-            @keydown.space.prevent="emit('focusTag', tag.id)"
           >
             <span class="text-agent-fg-muted icon-[comfy--node] size-3.5" />
             <span class="max-w-40 truncate">{{ tag.title }}</span>
@@ -418,7 +419,7 @@ defineExpose({
               :class="duplicateIdClass"
               >#{{ tag.id }}</span
             >
-          </span>
+          </button>
           <button
             v-tooltip.top="buildAgentTooltipConfig(t('agent.remove'))"
             type="button"

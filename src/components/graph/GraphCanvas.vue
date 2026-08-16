@@ -52,18 +52,15 @@
         v-if="canvasMenuEnabled && !isBuilderMode"
         class="pointer-events-auto"
       />
-      <!-- Fades with the rest of the chrome during node selection rather than
-           popping. Gated on `isActionBarsHidden` so it leaves and returns on the
-           same beat as the top bars and side toolbar. -->
+      <!-- No node-selection condition here on purpose: entering the mode turns
+           the minimap setting off, so this reacts the same way it does to the
+           user's own toggle - and leaves them free to switch it back on while
+           they pick. -->
       <MiniMap
         v-if="
           comfyAppReady && minimapEnabled && betaMenuEnabled && !isBuilderMode
         "
-        :class="[
-          'pointer-events-auto transition-opacity duration-300 ease-in-out',
-          agentNodeSelectionStore.isActionBarsHidden &&
-            'pointer-events-none opacity-0'
-        ]"
+        class="pointer-events-auto"
       />
       <NodeSelectionModeBanner />
     </template>

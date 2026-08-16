@@ -2,6 +2,7 @@ import { useEventListener } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
 
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
@@ -9,12 +10,24 @@ import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 const ACTION_BARS_TRANSITION_MS = 300
 const BANNER_TRANSITION_MS = 150
 const SIDEBAR_PANEL_TRANSITION_MS = 200
+
+/**
+ * Hides the whole toast layer for the duration of the mode. PrimeVue teleports
+ * every `<Toast>` container to `<body>`, and several components mount their own
+ * groups, so the layer can only be reached from the root - see the `.p-toast`
+ * rule in `src/assets/css/style.css`. The mode owns the class rather than any
+ * one toast component, since no single component renders all of those groups.
+ */
+const NODE_SELECTION_CLASS = 'node-selection-active'
+
+const MINIMAP_SETTING = 'Comfy.Minimap.Visible'
 export const useAgentNodeSelectionStore = defineStore(
   'agentNodeSelection',
   () => {
     const dialogStore = useDialogStore()
     const sidebarTabStore = useSidebarTabStore()
     const canvasStore = useCanvasStore()
+    const settingStore = useSettingStore()
     const isActive = ref(false)
     const isActionBarsHidden = ref(false)
     const isBannerVisible = ref(false)
@@ -24,10 +37,16 @@ export const useAgentNodeSelectionStore = defineStore(
     let transitionTimeoutId: ReturnType<typeof setTimeout> | undefined
     let sidebarTimeoutId: ReturnType<typeof setTimeout> | undefined
     let restoreSidebarTabId: string | null = null
+    let restoreMinimap = false
 
     watch(isActive, (active) => {
       clearTimeout(transitionTimeoutId)
       clearTimeout(sidebarTimeoutId)
+
+      // This watcher is created with the store, so it runs before any watcher a
+      // component registers on `isActive`. That is what lets GlobalToast replay
+      // its deferred messages onto an already-visible layer.
+      document.body.classList.toggle(NODE_SELECTION_CLASS, active)
 
       if (active) {
         isActionBarsHidden.value = true
@@ -41,6 +60,13 @@ export const useAgentNodeSelectionStore = defineStore(
             sidebarTabStore.activeSidebarTabId = null
           }, SIDEBAR_PANEL_TRANSITION_MS)
         }
+
+        // Flipping the user's own setting rather than overriding the minimap
+        // leaves the normal toggle working: anyone who wants the map back while
+        // picking can just switch it on, and only what we turned off is
+        // restored on exit.
+        restoreMinimap = settingStore.get(MINIMAP_SETTING)
+        if (restoreMinimap) void settingStore.set(MINIMAP_SETTING, false)
         return
       }
 
@@ -58,6 +84,11 @@ export const useAgentNodeSelectionStore = defineStore(
         sidebarTimeoutId = setTimeout(() => {
           sidebarTabStore.activeSidebarTabId = tabId
         }, BANNER_TRANSITION_MS)
+      }
+
+      if (restoreMinimap) {
+        restoreMinimap = false
+        void settingStore.set(MINIMAP_SETTING, true)
       }
     })
 

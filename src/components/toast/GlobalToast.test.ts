@@ -67,40 +67,6 @@ describe('GlobalToast', () => {
     expect(toastStore.removeAllRequested).toBe(false)
   })
 
-  // PrimeVue teleports each `<Toast>` container to `<body>`, so the layer is
-  // hidden by a root class rather than by a wrapper element - asserting on a
-  // wrapper would pass against the stub while proving nothing about the real
-  // toasts.
-  it('marks the root while node selection mode is active', async () => {
-    renderToast()
-    const nodeSelectionStore = useAgentNodeSelectionStore()
-
-    expect(document.body).not.toHaveClass('node-selection-active')
-
-    nodeSelectionStore.isActive = true
-    await nextTick()
-
-    expect(document.body).toHaveClass('node-selection-active')
-
-    nodeSelectionStore.isActive = false
-    await nextTick()
-
-    expect(document.body).not.toHaveClass('node-selection-active')
-  })
-
-  it('clears the root marker when unmounted mid-mode', async () => {
-    const { unmount } = renderToast()
-    const nodeSelectionStore = useAgentNodeSelectionStore()
-
-    nodeSelectionStore.isActive = true
-    await nextTick()
-    expect(document.body).toHaveClass('node-selection-active')
-
-    unmount()
-
-    expect(document.body).not.toHaveClass('node-selection-active')
-  })
-
   it('holds messages raised during node selection mode until it exits', async () => {
     renderToast()
     const toastStore = useToastStore()
@@ -151,6 +117,28 @@ describe('GlobalToast', () => {
 
     nodeSelectionStore.isActive = true
     await nextTick()
+    nodeSelectionStore.isActive = false
+    await nextTick()
+
+    expect(toastService.add).not.toHaveBeenCalled()
+  })
+
+  it('drops held messages when everything is dismissed mid-mode', async () => {
+    renderToast()
+    const toastStore = useToastStore()
+    const nodeSelectionStore = useAgentNodeSelectionStore()
+
+    nodeSelectionStore.isActive = true
+    await nextTick()
+
+    toastStore.messagesToAdd = [{ severity: 'error' as const, summary: 'Old' }]
+    await nextTick()
+
+    // A dismiss-everything clears the hidden queue too, or exiting would
+    // resurrect exactly what the caller just cleared.
+    toastStore.removeAllRequested = true
+    await nextTick()
+
     nodeSelectionStore.isActive = false
     await nextTick()
 

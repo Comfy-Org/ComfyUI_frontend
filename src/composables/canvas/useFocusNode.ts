@@ -51,7 +51,7 @@ export function useFocusNode() {
     const graphNode = executionIdMap
       ? executionIdMap.get(nodeId)
       : getNodeByExecutionId(app.rootGraph, nodeId)
-    if (!graphNode?.graph) return
+    if (!graphNode) return
 
     await focusNodeInstance(graphNode)
   }

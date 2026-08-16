@@ -912,8 +912,13 @@ function onSelectNodes(): void {
       .filter(isLGraphNode)
       .map((node) => [String(node.id), node] as const)
   )
+  // Index the graph once: resolving each chip with its own scan is
+  // O(chips x nodes), and this runs immediately before the entry animation.
+  const graphNodes = new Map(
+    viewedGraphNodes().map((node) => [String(node.id), node] as const)
+  )
   for (const tag of selectionTags.value) {
-    const node = graphNodeById(tag.id)
+    const node = graphNodes.get(tag.id)
     if (node) merged.set(tag.id, node)
   }
   selectedGraphNodes = merged
@@ -988,9 +993,7 @@ function onMentionPick(node: SelectedNode): void {
     canvas.select(graphNode)
     canvasStore.updateSelectedItems()
   }
-  if (!selectionTags.value.some((tag) => tag.id === node.id)) {
-    addSelectionTag(node)
-  }
+  addSelectionTag(node)
 
   if (selectionTags.value.length > stagedBefore)
     useTelemetry()?.trackAgentNodeTagged({ source: 'mention_picker' })

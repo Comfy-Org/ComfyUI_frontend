@@ -12,6 +12,22 @@ vi.mock('@/stores/dialogStore', () => ({
   useDialogStore: () => ({ dialogStack })
 }))
 
+const settings = vi.hoisted(() => {
+  const values = new Map<string, unknown>()
+  return {
+    values,
+    get: (key: string) => values.get(key),
+    set: vi.fn((key: string, value: unknown) => {
+      values.set(key, value)
+      return Promise.resolve()
+    })
+  }
+})
+
+vi.mock('@/platform/settings/settingStore', () => ({
+  useSettingStore: () => settings
+}))
+
 /**
  * Real nodes carry `pos`/`size`; `boundingRect` is litegraph-renderer cache that
  * stays zeroed under Vue nodes, so the fit deliberately ignores it.
@@ -43,11 +59,58 @@ describe('agentNodeSelectionStore', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     dialogStack.length = 0
+    settings.values.clear()
+    settings.set.mockClear()
     setActivePinia(createPinia())
   })
 
   afterEach(() => {
     vi.useRealTimers()
+    document.body.classList.remove('node-selection-active')
+  })
+
+  // PrimeVue teleports every `<Toast>` container to `<body>` and several
+  // components mount their own groups, so the layer can only be hidden from the
+  // root. The mode owns the marker because no one toast component renders them
+  // all - and because it must outlive any component that might unmount mid-mode.
+  it('hides the toast layer for the duration of the mode', async () => {
+    const store = useAgentNodeSelectionStore()
+
+    store.enter()
+    await nextTick()
+    expect(document.body).toHaveClass('node-selection-active')
+
+    store.exit()
+    await nextTick()
+    expect(document.body).not.toHaveClass('node-selection-active')
+  })
+
+  // Flipping the setting rather than overriding the minimap is what keeps the
+  // user's own toggle working while they pick.
+  it('turns a visible minimap off on entry and back on when leaving', async () => {
+    settings.values.set('Comfy.Minimap.Visible', true)
+    const store = useAgentNodeSelectionStore()
+
+    store.enter()
+    await nextTick()
+    expect(settings.values.get('Comfy.Minimap.Visible')).toBe(false)
+
+    store.exit()
+    await nextTick()
+    expect(settings.values.get('Comfy.Minimap.Visible')).toBe(true)
+  })
+
+  it('leaves the minimap setting alone when it was already off', async () => {
+    settings.values.set('Comfy.Minimap.Visible', false)
+    const store = useAgentNodeSelectionStore()
+
+    store.enter()
+    await nextTick()
+    store.exit()
+    await nextTick()
+
+    expect(settings.set).not.toHaveBeenCalled()
+    expect(settings.values.get('Comfy.Minimap.Visible')).toBe(false)
   })
 
   it('clears the canvas selection on exit', () => {
