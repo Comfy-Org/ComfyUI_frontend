@@ -1,3 +1,5 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+
 import { describe, expect, it, vi } from 'vitest'
 
 import { fireEvent, render } from '@testing-library/vue'
@@ -10,15 +12,14 @@ function createVideoAsset(
   src: string,
   mimeType: AssetMeta['mime_type'] = 'video/mp4'
 ): AssetMeta {
-  return {
+  return fromPartial({
     id: 'video-1',
     name: 'clip.mp4',
-    hash: null,
     mime_type: mimeType,
     tags: [],
     kind: 'video',
     src
-  }
+  })
 }
 
 describe('MediaVideoTop', () => {
@@ -102,5 +103,66 @@ describe('MediaVideoTop', () => {
     await user.click(video)
 
     expect(playSpy).toHaveBeenCalledTimes(1)
+  })
+
+  it.for([
+    { modifier: 'Shift', keyDown: '{Shift>}', keyUp: '{/Shift}' },
+    { modifier: 'Ctrl', keyDown: '{Control>}', keyUp: '{/Control}' },
+    { modifier: 'Meta', keyDown: '{Meta>}', keyUp: '{/Meta}' }
+  ])(
+    'does not start playback from a $modifier-click',
+    async ({ keyDown, keyUp }) => {
+      const user = userEvent.setup()
+      const { container } = render(MediaVideoTop, {
+        props: {
+          asset: createVideoAsset('https://example.com/thumb.jpg')
+        }
+      })
+
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
+      const video = container.querySelector('video')!
+      const playSpy = vi
+        .spyOn(video, 'play')
+        .mockImplementation(() => Promise.resolve())
+
+      Object.defineProperty(video, 'paused', {
+        value: true,
+        configurable: true
+      })
+
+      await user.keyboard(keyDown)
+      await user.click(video)
+      await user.keyboard(keyUp)
+
+      expect(playSpy).not.toHaveBeenCalled()
+    }
+  )
+
+  it('pauses playback from a subsequent click when native controls are disabled', async () => {
+    const user = userEvent.setup()
+    const { container } = render(MediaVideoTop, {
+      props: {
+        asset: createVideoAsset('https://example.com/thumb.jpg'),
+        showNativeControls: false
+      }
+    })
+
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
+    const video = container.querySelector('video')!
+    const pauseSpy = vi.spyOn(video, 'pause').mockImplementation(() => {})
+
+    Object.defineProperty(video, 'paused', {
+      value: false,
+      configurable: true
+    })
+
+    await fireEvent.play(video)
+    // eslint-disable-next-line testing-library/no-node-access -- root wrapper has no role
+    await user.hover(container.firstElementChild!)
+    expect(video.controls).toBe(false)
+
+    await user.click(video)
+
+    expect(pauseSpy).toHaveBeenCalledTimes(1)
   })
 })

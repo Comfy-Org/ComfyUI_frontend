@@ -4,7 +4,7 @@
  * max-width × 80vh, expanding at 3000px). Catches accidental reverts of the
  * Phase 4 renderer flip.
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 const showDialog = vi.hoisted(() => vi.fn())
 const closeDialog = vi.hoisted(() => vi.fn())
@@ -17,11 +17,6 @@ import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTyp
 import { useManagerDialog } from '@/workbench/extensions/manager/composables/useManagerDialog'
 
 describe('useManagerDialog', () => {
-  beforeEach(() => {
-    showDialog.mockReset()
-    closeDialog.mockReset()
-  })
-
   it("show() opens the Reka renderer with size 'full' and Manager content sizing", () => {
     useManagerDialog().show()
     const [args] = showDialog.mock.calls[0]

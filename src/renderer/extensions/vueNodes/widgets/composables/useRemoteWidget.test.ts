@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { IWidget } from '@/lib/litegraph/src/litegraph'
 import { api } from '@/scripts/api'
@@ -106,20 +106,6 @@ async function getResolvedValue(hook: ReturnType<typeof useRemoteWidget>) {
 }
 
 describe('useRemoteWidget', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-    // Reset mocks
-    vi.mocked(axios.get).mockReset()
-    // Reset cache between tests
-    vi.spyOn(Map.prototype, 'get').mockClear()
-    vi.spyOn(Map.prototype, 'set').mockClear()
-    vi.spyOn(Map.prototype, 'delete').mockClear()
-  })
-
-  afterEach(() => {
-    vi.clearAllMocks()
-  })
-
   describe('initialization', () => {
     it('should create hook with default values', () => {
       const hook = useRemoteWidget(createMockOptions())
@@ -212,15 +198,6 @@ describe('useRemoteWidget', () => {
   })
 
   describe('refresh behavior', () => {
-    beforeEach(() => {
-      vi.useFakeTimers()
-    })
-
-    afterEach(() => {
-      vi.useRealTimers()
-      vi.clearAllMocks()
-    })
-
     describe('permanent widgets (no refresh)', () => {
       it('permanent widgets should not attempt fetch after initialization', async () => {
         const mockData = ['data that is permanent after initialization']
@@ -259,7 +236,7 @@ describe('useRemoteWidget', () => {
         await getResolvedValue(hook)
         expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(1)
 
-        vi.setSystemTime(Date.now() + FIRST_BACKOFF)
+        vi.advanceTimersByTime(FIRST_BACKOFF)
         const secondData = await getResolvedValue(hook)
         expect(secondData).toBe('Loading...')
         expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(2)
@@ -283,7 +260,7 @@ describe('useRemoteWidget', () => {
       const { hook } = await setupHookWithResponse(mockData1, { refresh })
       mockAxiosResponse(mockData2)
 
-      vi.setSystemTime(Date.now() + refresh)
+      vi.advanceTimersByTime(refresh)
       const newData = await getResolvedValue(hook)
 
       expect(newData).toEqual(mockData2)
@@ -295,7 +272,7 @@ describe('useRemoteWidget', () => {
         refresh: 512
       })
 
-      vi.setSystemTime(Date.now() + 128)
+      vi.advanceTimersByTime(128)
       await getResolvedValue(hook)
 
       expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(1)
@@ -308,12 +285,12 @@ describe('useRemoteWidget', () => {
       })
 
       mockAxiosError('Network error')
-      vi.setSystemTime(Date.now() + refresh)
+      vi.advanceTimersByTime(refresh)
       await getResolvedValue(hook)
       expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(2)
 
       mockAxiosResponse(['second success'])
-      vi.setSystemTime(Date.now() + FIRST_BACKOFF)
+      vi.advanceTimersByTime(FIRST_BACKOFF)
       const thirdData = await getResolvedValue(hook)
       expect(thirdData).toEqual(['second success'])
       expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(3)
@@ -326,7 +303,7 @@ describe('useRemoteWidget', () => {
       })
 
       mockAxiosError('Network error')
-      vi.setSystemTime(Date.now() + refresh)
+      vi.advanceTimersByTime(refresh)
       const secondData = await getResolvedValue(hook)
 
       expect(secondData).toEqual(['a valid value'])
@@ -335,14 +312,6 @@ describe('useRemoteWidget', () => {
   })
 
   describe('error handling and backoff', () => {
-    beforeEach(() => {
-      vi.useFakeTimers()
-    })
-
-    afterEach(() => {
-      vi.useRealTimers()
-    })
-
     it('should implement exponential backoff on errors', async () => {
       mockAxiosError('Network error')
 
@@ -354,11 +323,11 @@ describe('useRemoteWidget', () => {
       await getResolvedValue(hook)
       expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(1)
 
-      vi.setSystemTime(Date.now() + 500)
+      vi.advanceTimersByTime(500)
       await getResolvedValue(hook)
       expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(1) // Still backing off
 
-      vi.setSystemTime(Date.now() + 3000)
+      vi.advanceTimersByTime(3000)
       await getResolvedValue(hook)
       expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(2)
       expect(entry1?.data).toBeDefined()
@@ -370,7 +339,7 @@ describe('useRemoteWidget', () => {
       const firstData = await getResolvedValue(hook)
       expect(firstData).toBe('Loading...')
 
-      vi.setSystemTime(Date.now() + 3000)
+      vi.advanceTimersByTime(3000)
       mockAxiosResponse(['option1'])
       const secondData = await getResolvedValue(hook)
       expect(secondData).toEqual(['option1'])
@@ -387,7 +356,7 @@ describe('useRemoteWidget', () => {
       const entry1 = hook.getCacheEntry()
       expect(entry1?.error).toBeTruthy()
 
-      vi.setSystemTime(Date.now() + 3000)
+      vi.advanceTimersByTime(3000)
       mockAxiosResponse(['success after backoff'])
       const secondData = await getResolvedValue(hook)
       expect(secondData).toEqual(['success after backoff'])
@@ -406,17 +375,17 @@ describe('useRemoteWidget', () => {
       const entry1 = hook.getCacheEntry()
       expect(entry1?.error).toBeTruthy()
 
-      vi.setSystemTime(Date.now() + 3000)
+      vi.advanceTimersByTime(3000)
       const secondData = await getResolvedValue(hook)
       expect(secondData).toBe('Loading...')
       expect(entry1?.error).toBeDefined()
 
-      vi.setSystemTime(Date.now() + 9000)
+      vi.advanceTimersByTime(9000)
       const thirdData = await getResolvedValue(hook)
       expect(thirdData).toBe('Loading...')
       expect(entry1?.error).toBeDefined()
 
-      vi.setSystemTime(Date.now() + 120_000)
+      vi.advanceTimersByTime(120_000)
       mockAxiosResponse(['success after multiple backoffs'])
       const fourthData = await getResolvedValue(hook)
       expect(fourthData).toEqual(['success after multiple backoffs'])

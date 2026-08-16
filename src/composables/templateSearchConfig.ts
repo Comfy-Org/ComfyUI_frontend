@@ -2,6 +2,7 @@ import MiniSearch from 'minisearch'
 import type { SearchResult } from 'minisearch'
 
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
+import { searchRankBoost } from '@/platform/workflow/templates/utils/templateRanking'
 
 // MiniSearch serializes the index but not the search options, so the tokenizer
 // and field list live here and are used at both index and query time.
@@ -17,6 +18,10 @@ const SEARCH_FIELDS = [
 // Usage only reorders hits within this fraction of the top score, so popularity
 // never overrides a clearly-better text match. 5% tuned empirically.
 const USAGE_TIEBREAK_BAND = 0.05
+
+// ~6 tiebreak bands of headroom: enough to lift a near-equal match, never
+// enough to surface a weak one.
+const SEARCH_RANK_RELEVANCE_WEIGHT = 0.3
 
 // Script-matched so spaced neighbors like Korean fall to the word tokenizer.
 const CJK = /[\p{scx=Han}\p{scx=Hiragana}\p{scx=Katakana}]/u
@@ -137,8 +142,9 @@ export function createTemplateSearchIndex(
   const index = new MiniSearch<TemplateInfo>({
     idField: 'name',
     fields: [...SEARCH_FIELDS],
-    // Returned on each hit so the tiebreak can read usage without a second lookup.
-    storeFields: ['usage'],
+    // Returned on each hit so ranking can read usage and curation without a
+    // second lookup.
+    storeFields: ['usage', 'searchRank'],
     // Index the localized strings the card actually shows, so a match explains
     // a visible result.
     extractField: (template, field) => {
@@ -156,18 +162,32 @@ export function createTemplateSearchIndex(
   return index
 }
 
-// Rank by relevance, with usage breaking ties inside a score band. Scores are
-// bucketed so the ordering is a stable total order (a pairwise relative-band
-// compare is intransitive). log1p dampens heavy-tailed usage.
+function searchRankMultiplier(searchRank: number | undefined): number {
+  return 1 + searchRankBoost(searchRank) * SEARCH_RANK_RELEVANCE_WEIGHT
+}
+
+// Rank by curated relevance, with usage breaking ties inside a score band.
+// Scores are bucketed so the ordering is a stable total order (a pairwise
+// relative-band compare is intransitive). log1p dampens heavy-tailed usage.
 export function rankByRelevanceThenUsage(hits: SearchResult[]): SearchResult[] {
+  const ranked = hits.map((hit) => ({
+    hit,
+    score: hit.score * searchRankMultiplier(Number(hit.searchRank ?? 0))
+  }))
   const bandSize =
-    hits.reduce((max, hit) => Math.max(max, hit.score), 0) * USAGE_TIEBREAK_BAND
+    ranked.reduce((max, entry) => Math.max(max, entry.score), 0) *
+    USAGE_TIEBREAK_BAND
   const bucket = (score: number) =>
     bandSize > 0 ? Math.round(score / bandSize) : 0
-  return [...hits].sort((a, b) => {
-    if (bucket(a.score) !== bucket(b.score)) return b.score - a.score
-    return Math.log1p(Number(b.usage ?? 0)) - Math.log1p(Number(a.usage ?? 0))
-  })
+  return ranked
+    .sort((a, b) => {
+      if (bucket(a.score) !== bucket(b.score)) return b.score - a.score
+      return (
+        Math.log1p(Number(b.hit.usage ?? 0)) -
+        Math.log1p(Number(a.hit.usage ?? 0))
+      )
+    })
+    .map((entry) => entry.hit)
 }
 
 /** Ordered template names for a query: literal matches first, then dedup'd expansion matches. */

@@ -3,10 +3,10 @@ import { computed } from 'vue'
 import type { SubscriptionInfo } from '@/composables/billing/types'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import type {
-  CurrentTeamCreditStop,
   Plan,
   SubscriptionDuration,
-  TeamCreditStops
+  TeamCreditStops,
+  TeamCreditStopSummary
 } from '@/platform/workspace/api/workspaceApi'
 
 export interface NextInvoiceInputs {
@@ -14,7 +14,7 @@ export interface NextInvoiceInputs {
   planSlug: string | null
   plans: Plan[]
   teamCreditStops: TeamCreditStops | null
-  currentTeamCreditStop: CurrentTeamCreditStop | null
+  currentTeamCreditStop: TeamCreditStopSummary | null
 }
 
 export interface NextInvoice {

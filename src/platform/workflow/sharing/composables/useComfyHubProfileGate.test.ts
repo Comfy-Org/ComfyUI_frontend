@@ -57,7 +57,6 @@ describe('useComfyHubProfileGate', () => {
   let gate: ReturnType<typeof useComfyHubProfileGate>
 
   beforeEach(() => {
-    vi.clearAllMocks()
     mockResolvedUserInfo.value = { id: 'user-a' }
     setCurrentWorkspace('workspace-1')
     mockGetMyProfile.mockResolvedValue(mockProfile)

@@ -29,9 +29,13 @@ const {
     :as
     :as-child
     :disabled="disabled || loading"
+    :aria-busy="loading || undefined"
     :class="cn(buttonVariants({ variant, size }), customClass)"
   >
-    <i v-if="loading" class="pi pi-spin pi-spinner" />
-    <slot v-if="!loading" />
+    <i v-if="loading" class="pi pi-spin pi-spinner" aria-hidden="true" />
+    <template v-if="loading">
+      <span class="sr-only"><slot /></span>
+    </template>
+    <slot v-else />
   </Primitive>
 </template>

@@ -27,6 +27,7 @@
     "vue-router": "catalog:"
   },
   "devDependencies": {
+    "@storybook/vue3-vite": "catalog:",
     "@tailwindcss/vite": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
     "dotenv": "catalog:",

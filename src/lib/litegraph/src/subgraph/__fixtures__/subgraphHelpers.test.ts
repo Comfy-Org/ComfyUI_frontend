@@ -1,6 +1,4 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 
@@ -24,8 +22,6 @@ describe('setupComplexPromotionFixture', () => {
   })
 
   it('can clean up the globally registered fixture node type', () => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-
     setupComplexPromotionFixture()
     expect(
       LiteGraph.registered_node_types[FIXTURE_STRING_CONCAT_TYPE]
@@ -38,8 +34,6 @@ describe('setupComplexPromotionFixture', () => {
   })
 
   it('builds a promotion fixture bound to a deterministic root graph', () => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-
     const { graph, subgraph, hostNode } = setupComplexPromotionFixture()
 
     expect(graph.id).toBe('00000000-0000-4000-8000-000000000001')

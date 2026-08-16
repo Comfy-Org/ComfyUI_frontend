@@ -1,112 +1,17 @@
 import { expect } from '@playwright/test'
 
-import type { RemoteConfig } from '@/platform/remoteConfig/types'
-import type { WorkspaceWithRole } from '@/platform/workspace/api/workspaceApi'
-import type { WorkspaceTokenResponse } from '@/platform/workspace/stores/workspaceAuthStore'
-import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
-
-const PERSONAL_WORKSPACE_NAME = 'Personal Workspace'
-const LONG_WORKSPACE_NAME =
-  'Quantum Renaissance Collective for Hyperdimensional Latent Diffusion Research and Experimental Workflow Engineering'
-const TEAM_WORKSPACE_NAME = 'Team Workspace'
+import {
+  LONG_WORKSPACE_NAME,
+  OFF_SCREEN_WORKSPACE_NAME,
+  PERSONAL_WORKSPACE_NAME,
+  TEAM_WORKSPACE_NAME,
+  createManyWorkspacesResponse
+} from '@e2e/fixtures/data/workspaceSwitcher'
+import { mockWorkspaceList } from '@e2e/fixtures/utils/workspaceMocks'
+import { workspaceSwitcherTest as test } from '@e2e/fixtures/workspaceSwitcherFixture'
 
 // text-sm rows render a single 20px line; a wrapped name is 40px+.
 const SINGLE_LINE_MAX_HEIGHT_PX = 28
-
-const mockRemoteConfig: RemoteConfig = {
-  team_workspaces_enabled: true,
-  unified_cloud_auth: true
-}
-
-const mockListWorkspacesResponse: { workspaces: WorkspaceWithRole[] } = {
-  workspaces: [
-    {
-      id: 'ws-personal',
-      name: PERSONAL_WORKSPACE_NAME,
-      type: 'personal',
-      created_at: '2026-01-01T00:00:00Z',
-      joined_at: '2026-01-01T00:00:00Z',
-      role: 'owner'
-    },
-    {
-      id: 'ws-team-long',
-      name: LONG_WORKSPACE_NAME,
-      type: 'team',
-      created_at: '2026-01-02T00:00:00Z',
-      joined_at: '2026-01-02T00:00:00Z',
-      role: 'member'
-    },
-    {
-      id: 'ws-team',
-      name: TEAM_WORKSPACE_NAME,
-      type: 'team',
-      created_at: '2026-01-03T00:00:00Z',
-      joined_at: '2026-01-03T00:00:00Z',
-      role: 'owner'
-    }
-  ]
-}
-
-const test = comfyPageFixture.extend({
-  page: async ({ page }, use) => {
-    await page.route('**/api/features', (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(mockRemoteConfig)
-      })
-    )
-
-    await page.route('**/api/workspaces', async (route) => {
-      if (route.request().method() !== 'GET') {
-        await route.fallback()
-        return
-      }
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(mockListWorkspacesResponse)
-      })
-    })
-
-    await page.route('**/api/auth/token', async (route) => {
-      const requestBody = route.request().postDataJSON() as {
-        workspace_id?: string
-      }
-      const workspaceId = requestBody.workspace_id ?? 'ws-personal'
-      const workspace = mockListWorkspacesResponse.workspaces.find(
-        ({ id }) => id === workspaceId
-      )
-      if (!workspace) {
-        await route.fulfill({ status: 404 })
-        return
-      }
-
-      const response: WorkspaceTokenResponse = {
-        token: `mock-workspace-token-${workspace.id}`,
-        expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
-        workspace: {
-          id: workspace.id,
-          name: workspace.name,
-          type: workspace.type
-        },
-        role: workspace.role,
-        permissions: []
-      }
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(response)
-      })
-    })
-
-    await page.route('**/api/auth/session', (route) =>
-      route.fulfill({ status: 204 })
-    )
-
-    await use(page)
-  }
-})
 
 test.describe('Workspace switcher', { tag: '@cloud' }, () => {
   test('renders a long team workspace name on a single line', async ({
@@ -145,6 +50,44 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
     expect(profileBox).not.toBeNull()
     expect(panelBox!.x + panelBox!.width).toBeLessThanOrEqual(profileBox!.x)
   })
+
+  test(
+    'scrolls the list to reveal workspaces past the visible area',
+    { tag: '@screenshot' },
+    async ({ comfyPage }) => {
+      const page = comfyPage.page
+
+      await mockWorkspaceList(page, createManyWorkspacesResponse())
+
+      // Workspace list is fetched once on boot; reload to pick up the override.
+      await comfyPage.workflow.reloadAndWaitForApp()
+
+      await comfyPage.toast.closeToasts()
+      await page.getByRole('button', { name: 'Current user' }).click()
+      await page.getByTestId('workspace-switcher-trigger').click()
+
+      const list = page.getByTestId('workspace-switcher-list')
+      await expect(list).toBeVisible()
+      const offScreenRow = list.getByText(OFF_SCREEN_WORKSPACE_NAME)
+
+      // toBeInViewport() passes via window scroll too, so drive a real wheel
+      // scroll to assert the list itself scrolls.
+      await expect(offScreenRow).not.toBeInViewport()
+
+      await list.hover()
+      await page.mouse.wheel(0, 2000)
+
+      await expect
+        .poll(() => list.evaluate((el) => el.scrollTop))
+        .toBeGreaterThan(0)
+      await expect
+        .poll(() => page.evaluate(() => document.scrollingElement?.scrollTop))
+        .toBe(0)
+      await expect(offScreenRow).toBeInViewport()
+
+      await comfyPage.expectScreenshot(list, 'workspace-switcher-scrolled.png')
+    }
+  )
 
   test('opens the create-workspace dialog with DES-246 copy', async ({
     comfyPage

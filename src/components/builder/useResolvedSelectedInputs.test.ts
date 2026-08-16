@@ -1,7 +1,5 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
@@ -61,12 +59,7 @@ function dispatchRootGraphEvent(type: string) {
 
 describe('useResolvedSelectedInputs', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     setRootGraphNodes([])
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   it('re-resolves selections after a convert-to-subgraph event removes nodes from the root graph', () => {

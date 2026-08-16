@@ -1,5 +1,5 @@
 import { fromAny } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { LGraph, LGraphExtra } from '@/lib/litegraph/src/LGraph'
 import type { Point, Rect } from '@/lib/litegraph/src/interfaces'
@@ -65,10 +65,6 @@ function snapshotGeometry(nodes: MockNode[]) {
 }
 
 describe('ensureCorrectLayoutScale (legacy normalizer)', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('normalizes legacy Vue-scaled graph once', () => {
     const nodes = twoNodeLayout()
     const graph = createMockGraph(nodes, {

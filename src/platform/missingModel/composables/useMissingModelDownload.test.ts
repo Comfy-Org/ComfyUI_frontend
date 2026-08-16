@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type * as MissingModelDownload from '@/platform/missingModel/missingModelDownload'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
@@ -28,8 +26,6 @@ const repoUrl = 'https://huggingface.co/org/model'
 
 describe('useMissingModelDownload', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
     delete window.__comfyDesktop2
     mocks.isTrustedHuggingFaceUrl.mockImplementation((url) => url === repoUrl)
     mocks.fetchModelMetadata.mockResolvedValue({
@@ -38,30 +34,28 @@ describe('useMissingModelDownload', () => {
     })
   })
 
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
-  it('stores fetched file metadata', async () => {
+  it('exposes fetched file metadata to components', async () => {
     mocks.fetchModelMetadata.mockResolvedValueOnce({
       fileSize: 1024,
       gatedRepoUrl: null
     })
 
-    await useMissingModelDownload().prefetchModelMetadata(downloadUrl)
+    const { fileSizeFor, prefetchModelMetadata } = useMissingModelDownload()
+    await prefetchModelMetadata(downloadUrl)
 
-    expect(useMissingModelStore().fileSizes[downloadUrl]).toBe(1024)
+    expect(fileSizeFor(downloadUrl)).toBe(1024)
   })
 
-  it('stores fetched gated repository metadata', async () => {
+  it('exposes fetched gated repository metadata to components', async () => {
     mocks.fetchModelMetadata.mockResolvedValueOnce({
       fileSize: null,
       gatedRepoUrl: repoUrl
     })
 
-    await useMissingModelDownload().prefetchModelMetadata(downloadUrl)
+    const { gatedRepoUrlFor, prefetchModelMetadata } = useMissingModelDownload()
+    await prefetchModelMetadata(downloadUrl)
 
-    expect(useMissingModelStore().gatedRepoUrls[downloadUrl]).toBe(repoUrl)
+    expect(gatedRepoUrlFor(downloadUrl)).toBe(repoUrl)
   })
 
   it('skips metadata already classified by the store', async () => {

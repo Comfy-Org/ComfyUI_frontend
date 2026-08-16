@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { resolveModelNodeFromAsset } from '@/platform/assets/utils/resolveModelNodeFromAsset'
@@ -26,6 +26,7 @@ function createMockAsset(overrides: Partial<AssetItem> = {}): AssetItem {
     name: 'test-model.safetensors',
     size: 1024,
     created_at: '2025-10-01T00:00:00Z',
+    updated_at: '2025-10-01T00:00:00Z',
     tags: ['models', 'checkpoints'],
     user_metadata: {
       filename: 'models/checkpoints/test-model.safetensors'
@@ -58,13 +59,8 @@ function mockProvider(
 
 describe('resolveModelNodeFromAsset', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     vi.spyOn(console, 'error').mockImplementation(() => {})
     mockSupportsModelTypeTags.value = false
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   describe('valid assets', () => {

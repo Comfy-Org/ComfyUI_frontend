@@ -30,8 +30,6 @@ vi.mock('@/platform/support/feedbackDialog', () => ({
 describe('cloudFeedbackTopbarButton', () => {
   beforeEach(() => {
     vi.resetModules()
-    registerExtension.mockReset()
-    openFeedbackDialog.mockReset()
   })
 
   function getRegisteredButtons(): ActionBarButton[] {

@@ -152,8 +152,8 @@ export const useAuthActions = () => {
    * resolves instead of re-throwing on failure.
    */
   const purchaseCreditsDirect = async (amount: number): Promise<void> => {
-    const { isActiveSubscription } = useBillingContext()
-    if (!isActiveSubscription.value) return
+    const { canAccessSubscriptionFeatures } = useBillingContext()
+    if (!canAccessSubscriptionFeatures.value) return
 
     const response = await authStore.initiateCreditPurchase({
       amount_micros: usdToMicros(amount),

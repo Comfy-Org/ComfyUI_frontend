@@ -138,7 +138,6 @@ function createMockInputSpec(overrides: Partial<InputSpec> = {}): InputSpec {
 
 describe('useComboWidget', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockSettingStoreGet.mockReturnValue(false)
     mockGetInputName.mockImplementation((hash: string) => hash)
     mockGetAssets.mockImplementation(() => [])

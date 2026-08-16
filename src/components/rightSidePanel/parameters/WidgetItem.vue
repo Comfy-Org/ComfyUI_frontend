@@ -5,7 +5,6 @@ import { useI18n } from 'vue-i18n'
 import EditableText from '@/components/common/EditableText.vue'
 import { getControlWidget } from '@/composables/graph/useGraphNodeManager'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
-import { st } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -106,8 +105,7 @@ const displayNodeName = computed((): string | null => {
   const fallbackNodeTitle = t('rightSidePanel.fallbackNodeTitle')
   return resolveNodeDisplayName(node, {
     emptyLabel: fallbackNodeTitle,
-    untitledLabel: fallbackNodeTitle,
-    st
+    untitledLabel: fallbackNodeTitle
   })
 })
 

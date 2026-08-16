@@ -1,7 +1,5 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { api } from '@/scripts/api'
@@ -120,9 +118,6 @@ describe('useMaskEditorSaver', () => {
   const originalCreateElement = document.createElement.bind(document)
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
-
     app.nodeOutputs = {}
     app.nodePreviewImages = {}
 
@@ -187,10 +182,6 @@ describe('useMaskEditorSaver', () => {
         }
       }
     )
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   it('registers node outputs in store after save for node without prior execution outputs', async () => {

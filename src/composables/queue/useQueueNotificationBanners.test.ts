@@ -119,14 +119,11 @@ describe(useQueueNotificationBanners, () => {
   }
 
   beforeEach(() => {
-    vi.useFakeTimers()
-    vi.setSystemTime(0)
     resetState()
   })
 
   afterEach(() => {
     vi.runOnlyPendingTimers()
-    vi.useRealTimers()
     resetState()
   })
 
@@ -206,14 +203,15 @@ describe(useQueueNotificationBanners, () => {
 
   it('shows a completed notification from a finished batch', async () => {
     const { unmount, composable } = mountComposable()
+    const now = Date.now()
 
     try {
       await runBatch({
-        start: 1_000,
-        finish: 1_200,
+        start: now + 1_000,
+        finish: now + 1_200,
         tasks: [
           createTask({
-            ts: 1_050,
+            ts: now + 1_050,
             previewUrl: 'https://example.com/preview.png'
           })
         ]
@@ -231,13 +229,14 @@ describe(useQueueNotificationBanners, () => {
 
   it('shows one completion notification when history updates after queue becomes idle', async () => {
     const { unmount, composable } = mountComposable()
+    const now = Date.now()
 
     try {
-      vi.setSystemTime(4_000)
+      vi.setSystemTime(now + 4_000)
       executionStore().isIdle = false
       await nextTick()
 
-      vi.setSystemTime(4_100)
+      vi.setSystemTime(now + 4_100)
       executionStore().isIdle = true
       queueStore().historyTasks = []
       await nextTick()
@@ -246,7 +245,7 @@ describe(useQueueNotificationBanners, () => {
 
       queueStore().historyTasks = [
         createTask({
-          ts: 4_050,
+          ts: now + 4_050,
           previewUrl: 'https://example.com/race-preview.png'
         })
       ]
@@ -272,19 +271,20 @@ describe(useQueueNotificationBanners, () => {
 
   it('queues both completed and failed notifications for mixed batches', async () => {
     const { unmount, composable } = mountComposable()
+    const now = Date.now()
 
     try {
       await runBatch({
-        start: 2_000,
-        finish: 2_200,
+        start: now + 2_000,
+        finish: now + 2_200,
         tasks: [
           createTask({
-            ts: 2_050,
+            ts: now + 2_050,
             previewUrl: 'https://example.com/result.png'
           }),
-          createTask({ ts: 2_060 }),
-          createTask({ ts: 2_070 }),
-          createTask({ state: 'Failed', ts: 2_080 })
+          createTask({ ts: now + 2_060 }),
+          createTask({ ts: now + 2_070 }),
+          createTask({ state: 'Failed', ts: now + 2_080 })
         ]
       })
 
@@ -308,26 +308,27 @@ describe(useQueueNotificationBanners, () => {
 
   it('uses up to two completion thumbnails for notification icon previews', async () => {
     const { unmount, composable } = mountComposable()
+    const now = Date.now()
 
     try {
       await runBatch({
-        start: 3_000,
-        finish: 3_300,
+        start: now + 3_000,
+        finish: now + 3_300,
         tasks: [
           createTask({
-            ts: 3_050,
+            ts: now + 3_050,
             previewUrl: 'https://example.com/preview-1.png'
           }),
           createTask({
-            ts: 3_060,
+            ts: now + 3_060,
             previewUrl: 'https://example.com/preview-2.png'
           }),
           createTask({
-            ts: 3_070,
+            ts: now + 3_070,
             previewUrl: 'https://example.com/preview-3.png'
           }),
           createTask({
-            ts: 3_080,
+            ts: now + 3_080,
             previewUrl: 'https://example.com/preview-4.png'
           })
         ]

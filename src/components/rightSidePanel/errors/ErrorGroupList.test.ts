@@ -123,7 +123,6 @@ function isSectionExpanded(section: HTMLElement) {
 
 describe('ErrorGroupList selection emphasis', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     vi.mocked(isLGraphNode).mockReturnValue(true)
     vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
       fromAny<LGraphNode, unknown>(

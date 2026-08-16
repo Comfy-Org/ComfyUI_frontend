@@ -3,7 +3,7 @@
  * Reka-migrated dialog, the dialog stack item must carry `renderer: 'reka'`.
  * Catches accidental reverts of the Reka renderer flip.
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 const showDialog = vi.hoisted(() => vi.fn())
 
@@ -25,8 +25,9 @@ vi.mock('@/platform/distribution/types', () => ({
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
-    isActiveSubscription: { value: true },
-    isFreeTier: { value: false },
+    canAccessSubscriptionFeatures: { value: true },
+    isTeamPlan: { value: false },
+    tier: { value: 'STANDARD' },
     type: { value: 'legacy' }
   })
 }))
@@ -34,10 +35,6 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
 import { useDialogService } from '@/services/dialogService'
 
 describe('dialogService Reka renderer opt-in', () => {
-  beforeEach(() => {
-    showDialog.mockReset()
-  })
-
   it("prompt() sets renderer 'reka' and size 'md'", () => {
     void useDialogService().prompt({ title: 'T', message: 'M' })
     const [args] = showDialog.mock.calls[0]

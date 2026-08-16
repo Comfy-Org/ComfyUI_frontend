@@ -10,7 +10,6 @@ vi.mock('@/scripts/api', () => ({
 describe('useWorkflowTabState', () => {
   beforeEach(() => {
     vi.resetModules()
-    sessionStorage.clear()
   })
 
   describe('activePath', () => {

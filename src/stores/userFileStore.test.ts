@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
@@ -20,9 +18,7 @@ describe('useUserFileStore', () => {
   let store: ReturnType<typeof useUserFileStore>
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useUserFileStore()
-    vi.resetAllMocks()
   })
 
   it('should initialize with empty files', () => {

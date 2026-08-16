@@ -42,7 +42,6 @@ describe('CameraManager', () => {
   let manager: CameraManager
 
   beforeEach(() => {
-    vi.clearAllMocks()
     events = makeMockEventManager()
     manager = new CameraManager(makeRenderer(), events)
   })

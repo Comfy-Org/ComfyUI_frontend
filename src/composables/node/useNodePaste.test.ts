@@ -1,5 +1,5 @@
 import { fromAny } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useNodePaste } from './useNodePaste'
@@ -15,10 +15,6 @@ function createFile(name: string, type = 'image/png'): File {
 }
 
 describe('useNodePaste', () => {
-  beforeEach(() => {
-    vi.restoreAllMocks()
-  })
-
   it('pasteFiles calls onPaste with filtered files', () => {
     const onPaste = vi.fn().mockResolvedValue('ok')
     const node = createNode()

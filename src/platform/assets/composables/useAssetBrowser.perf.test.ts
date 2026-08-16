@@ -1,5 +1,4 @@
-import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
 import { useAssetBrowser } from '@/platform/assets/composables/useAssetBrowser'
@@ -38,11 +37,6 @@ function makeAsset(index: number): AssetItem {
 }
 
 describe('useAssetBrowser - filter tab switching perf (FE-229)', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-    vi.restoreAllMocks()
-  })
-
   it('does not re-transform every asset on each filter tab switch', async () => {
     const assets = Array.from({ length: ASSET_COUNT }, (_, i) => makeAsset(i))
     const filenameSpy = vi.spyOn(assetMetadataUtils, 'getAssetFilename')

@@ -56,7 +56,7 @@ const events = computed(() =>
           >
             <div class="min-w-0">
               <h3
-                class="text-primary-warm-white text-lg font-medium md:text-xl"
+                class="text-lg font-medium text-primary-warm-white md:text-xl"
               >
                 {{ event.title[locale] }}
               </h3>

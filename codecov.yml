@@ -1,8 +1,37 @@
 coverage:
   status:
+    project:
+      # Keep website coverage from lowering the existing frontend status.
+      default:
+        target: auto
+        flags:
+          - unit
+          - e2e
+
+      website:
+        target: auto
+        threshold: '1%'
+        informational: true
+        flags:
+          - website-unit
+        paths:
+          - apps/website/src/**
+        flag_coverage_not_uploaded_behavior: pass
+
     patch:
       default:
         informational: true
+
+      # Require 80% coverage on changed website lines.
+      website:
+        target: '80%'
+        threshold: '0%'
+        informational: false
+        flags:
+          - website-unit
+        paths:
+          - apps/website/src/**
+        flag_coverage_not_uploaded_behavior: pass
 
 comment:
   layout: 'header, diff, flags, files'
@@ -21,3 +50,8 @@ flags:
     carryforward: true
   e2e:
     carryforward: true
+  # Do not hide missing website coverage with stale data.
+  website-unit:
+    paths:
+      - apps/website/src/**
+    carryforward: false

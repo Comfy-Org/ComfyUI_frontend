@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import {
   dateKey,
@@ -150,15 +150,6 @@ describe('dateKey', () => {
 })
 
 describe('isToday', () => {
-  beforeEach(() => {
-    vi.useFakeTimers()
-    vi.setSystemTime(new Date(2024, 5, 15, 14, 0, 0))
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
-  })
-
   it('returns true for a timestamp on the same day', () => {
     const ts = new Date(2024, 5, 15, 8, 0, 0).getTime()
     expect(isToday(ts)).toBe(true)
@@ -176,15 +167,6 @@ describe('isToday', () => {
 })
 
 describe('isYesterday', () => {
-  beforeEach(() => {
-    vi.useFakeTimers()
-    vi.setSystemTime(new Date(2024, 5, 15, 14, 0, 0))
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
-  })
-
   it('returns true for a timestamp yesterday', () => {
     const ts = new Date(2024, 5, 14, 10, 0, 0).getTime()
     expect(isYesterday(ts)).toBe(true)

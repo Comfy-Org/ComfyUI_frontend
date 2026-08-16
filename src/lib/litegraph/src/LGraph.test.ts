@@ -437,10 +437,6 @@ describe('node:before-removed event', () => {
 })
 
 describe('Subgraph Definition Garbage Collection', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   function createSubgraphWithNodes(rootGraph: LGraph, nodeCount: number) {
     const subgraph = rootGraph.createSubgraph(createTestSubgraphData())
 
@@ -1099,7 +1095,6 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
   const SHARED_NODE_IDS = [3, 8, 37]
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     LiteGraph.registerNodeType('dummy', DummyNode)
   })
 

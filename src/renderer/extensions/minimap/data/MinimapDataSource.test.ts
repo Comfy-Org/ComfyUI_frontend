@@ -11,18 +11,23 @@ import type {
 import { toNodeId as layoutNodeId } from '@/types/nodeId'
 import { MinimapDataSourceFactory } from '@/renderer/extensions/minimap/data/MinimapDataSourceFactory'
 
-// Mock layoutStore
-vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
-  layoutStore: {
-    getAllNodes: vi.fn()
+// Mock layoutStore. `nodeCount` mirrors the mocked getAllNodes() result so
+// tests only need to stub one accessor.
+vi.mock('@/renderer/core/layout/store/layoutStore', () => {
+  const layoutStore = {
+    getAllNodes: vi.fn(),
+    get nodeCount(): number {
+      return layoutStore.getAllNodes()?.value?.size ?? 0
+    }
   }
-}))
+  return { layoutStore }
+})
 
 // Mock useExecutionStore
 vi.mock('@/stores/executionStore', () => ({
-  useExecutionStore: vi.fn().mockReturnValue({
+  useExecutionStore: vi.fn(() => ({
     nodeProgressStates: {}
-  })
+  }))
 }))
 
 // Helper to create mock links that satisfy LGraph['links'] type

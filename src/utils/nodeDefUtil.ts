@@ -1,4 +1,4 @@
-import _ from 'es-toolkit/compat'
+import { intersection, isNil, keys, union } from 'es-toolkit/compat'
 
 import type {
   ComboInputSpec,
@@ -76,16 +76,16 @@ const mergeComboInputSpec = <T extends ComboInputSpec | ComboInputSpecV2>(
   const comboOptions1 = getComboSpecComboOptions(spec1)
   const comboOptions2 = getComboSpecComboOptions(spec2)
 
-  const intersection = _.intersection(comboOptions1, comboOptions2)
+  const commonOptions = intersection(comboOptions1, comboOptions2)
 
   // If the intersection is empty, return null
-  if (intersection.length === 0) {
+  if (commonOptions.length === 0) {
     return null
   }
 
   return mergeCommonInputSpec(
-    ['COMBO', { ...options1, options: intersection }] as T,
-    ['COMBO', { ...options2, options: intersection }] as T
+    ['COMBO', { ...options1, options: commonOptions }] as T,
+    ['COMBO', { ...options2, options: commonOptions }] as T
   )
 }
 
@@ -97,14 +97,14 @@ const mergeCommonInputSpec = <T extends InputSpec>(
   const options1 = spec1[1] ?? {}
   const options2 = spec2[1] ?? {}
 
-  const compareKeys = _.union(_.keys(options1), _.keys(options2)).filter(
+  const compareKeys = union(keys(options1), keys(options2)).filter(
     (key) => !IGNORE_KEYS.has(key)
   )
 
   const mergeIsValid = compareKeys.every((key) => {
     const value1 = options1[key]
     const value2 = options2[key]
-    return value1 === value2 || (_.isNil(value1) && _.isNil(value2))
+    return value1 === value2 || (isNil(value1) && isNil(value2))
   })
 
   return mergeIsValid ? ([type, { ...options1, ...options2 }] as T) : null

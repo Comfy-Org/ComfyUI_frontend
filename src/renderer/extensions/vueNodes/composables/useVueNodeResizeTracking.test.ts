@@ -160,13 +160,6 @@ describe('useVueNodeResizeTracking', () => {
   beforeEach(() => {
     testState.linearMode = false
     testState.nodeLayouts.clear()
-    testState.batchUpdateNodeBounds.mockReset()
-    testState.setSource.mockReset()
-    testState.syncNodeSlotLayoutsFromDOM.mockReset()
-    testState.scheduleSlotLayoutSync.mockReset()
-    resizeObserverState.observe.mockReset()
-    resizeObserverState.unobserve.mockReset()
-    resizeObserverState.disconnect.mockReset()
   })
 
   it('skips repeated no-op resize entries after first measurement', () => {

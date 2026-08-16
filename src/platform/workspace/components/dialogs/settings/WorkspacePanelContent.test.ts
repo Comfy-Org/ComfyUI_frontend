@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { WorkspaceMember } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -10,13 +11,13 @@ import WorkspacePanelContent from './WorkspacePanelContent.vue'
 const mockFetchMembers = vi.fn()
 const mockFetchPendingInvites = vi.fn()
 
-const { mockHasTeamPlan, mockIsPlanLoading, mockMembers, mockWorkspaceType } =
+const { mockMaxSeats, mockIsPlanLoading, mockMembers, mockWorkspaceType } =
   vi.hoisted(() => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/consistent-type-imports
     const { ref } = require('vue') as typeof import('vue')
 
     return {
-      mockHasTeamPlan: ref(true),
+      mockMaxSeats: ref<number | null>(20),
       mockIsPlanLoading: ref(false),
       mockMembers: ref<WorkspaceMember[]>([]),
       mockWorkspaceType: ref<'personal' | 'team'>('team')
@@ -25,7 +26,10 @@ const { mockHasTeamPlan, mockIsPlanLoading, mockMembers, mockWorkspaceType } =
 
 vi.mock('@/platform/workspace/composables/useTeamPlan', () => ({
   useTeamPlan: () => ({
-    hasTeamPlan: mockHasTeamPlan,
+    maxSeats: mockMaxSeats,
+    hasMemberSeats: computed(
+      () => mockMaxSeats.value === 0 || (mockMaxSeats.value ?? 0) > 1
+    ),
     isPlanLoading: mockIsPlanLoading
   })
 }))
@@ -40,10 +44,13 @@ vi.mock('pinia', async (importOriginal) => {
 
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/consistent-type-imports
-  const { ref } = require('vue') as typeof import('vue')
+  const { computed, ref } = require('vue') as typeof import('vue')
   return {
     useTeamWorkspaceStore: () => ({
       workspaceName: ref('Acme Team'),
+      isInPersonalWorkspace: computed(
+        () => mockWorkspaceType.value === 'personal'
+      ),
       members: mockMembers,
       fetchMembers: mockFetchMembers,
       fetchPendingInvites: mockFetchPendingInvites
@@ -116,7 +123,6 @@ function renderComponent() {
 
 describe('WorkspacePanelContent billing banner', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockMembers.value = []
     mockWorkspaceType.value = 'team'
   })
@@ -151,8 +157,7 @@ describe('WorkspacePanelContent billing banner', () => {
 
 describe('WorkspacePanelContent members tab label', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-    mockHasTeamPlan.value = true
+    mockMaxSeats.value = 20
     mockIsPlanLoading.value = false
     mockMembers.value = []
     mockWorkspaceType.value = 'team'
@@ -173,7 +178,7 @@ describe('WorkspacePanelContent members tab label', () => {
 
   it('shows the plain Members label for a personal plan', () => {
     mockWorkspaceType.value = 'personal'
-    mockHasTeamPlan.value = false
+    mockMaxSeats.value = 1
     mockMembers.value = [createMember('1'), createMember('2')]
     renderComponent()
     expect(screen.getByText('workspacePanel.members.header')).toBeTruthy()
@@ -181,15 +186,15 @@ describe('WorkspacePanelContent members tab label', () => {
   })
 
   it('fetches members and pending invites for a Team plan', () => {
-    mockWorkspaceType.value = 'personal'
+    mockWorkspaceType.value = 'team'
     renderComponent()
     expect(mockFetchMembers).toHaveBeenCalled()
     expect(mockFetchPendingInvites).toHaveBeenCalled()
   })
 
   it('does not fetch member data for a personal plan', () => {
-    mockWorkspaceType.value = 'team'
-    mockHasTeamPlan.value = false
+    mockWorkspaceType.value = 'personal'
+    mockMaxSeats.value = 1
     renderComponent()
     expect(mockFetchMembers).not.toHaveBeenCalled()
     expect(mockFetchPendingInvites).not.toHaveBeenCalled()
@@ -200,5 +205,21 @@ describe('WorkspacePanelContent members tab label', () => {
     renderComponent()
     expect(mockFetchMembers).not.toHaveBeenCalled()
     expect(mockFetchPendingInvites).not.toHaveBeenCalled()
+  })
+
+  it('fetches team member data while seat capacity is unresolved', () => {
+    mockWorkspaceType.value = 'team'
+    mockMaxSeats.value = null
+    renderComponent()
+    expect(mockFetchMembers).toHaveBeenCalled()
+    expect(mockFetchPendingInvites).toHaveBeenCalled()
+  })
+
+  it('fetches personal member data while seat capacity is unresolved', () => {
+    mockWorkspaceType.value = 'personal'
+    mockMaxSeats.value = null
+    renderComponent()
+    expect(mockFetchMembers).toHaveBeenCalled()
+    expect(mockFetchPendingInvites).toHaveBeenCalled()
   })
 })

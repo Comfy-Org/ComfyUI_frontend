@@ -18,7 +18,6 @@ describe('LightingManager', () => {
   let manager: LightingManager
 
   beforeEach(() => {
-    vi.clearAllMocks()
     scene = new THREE.Scene()
     events = makeMockEventManager()
     manager = new LightingManager(scene, events)

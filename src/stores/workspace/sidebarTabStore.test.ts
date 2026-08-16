@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -107,11 +105,6 @@ vi.mock('@/platform/workflow/management/composables/useAppsSidebarTab', () => ({
 
 describe('useSidebarTabStore', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    mockGetSetting.mockReset()
-    mockRegisterCommand.mockClear()
-    mockRegisterCommands.mockClear()
-    mockBrowseModelAssets.mockClear()
     registeredCommands.length = 0
     commandStoreCommands.length = 0
   })

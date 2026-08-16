@@ -120,8 +120,6 @@ describe('useCanvasTransform', () => {
   let mockImgCtx: IMockContext
 
   beforeEach(() => {
-    vi.clearAllMocks()
-
     const createMockImageData = (width: number, height: number) => {
       const data = new Uint8ClampedArray(width * height * 4)
       for (let i = 0; i < data.length; i += 4) {

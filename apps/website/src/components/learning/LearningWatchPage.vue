@@ -106,7 +106,7 @@ const recommended = recommendedFor(tutorial).map((item) => ({
     </template>
 
     <template v-if="recommended.length" #sidebar>
-      <h2 class="text-primary-warm-gray font-medium">
+      <h2 class="font-medium text-primary-warm-gray">
         {{ t('learning.watch.recommended', locale) }}
       </h2>
       <div class="mt-4 flex flex-col gap-10">

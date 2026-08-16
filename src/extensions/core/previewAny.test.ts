@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { ComfyExtension } from '@/types/comfy'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -11,6 +11,10 @@ const { addTextPreviewWidgets, updateTextPreviewWidgets } = vi.hoisted(() => ({
 vi.mock('@/extensions/core/textPreviewWidgets', () => ({
   addTextPreviewWidgets,
   updateTextPreviewWidgets
+}))
+
+vi.mock('@/scripts/app', () => ({
+  app: { rootGraph: {} }
 }))
 
 const capturedExtensions: ComfyExtension[] = []
@@ -45,15 +49,15 @@ async function setupNode() {
   return { node, proto }
 }
 
-describe('PreviewAny extension', () => {
-  beforeEach(async () => {
-    capturedExtensions.length = 0
-    addTextPreviewWidgets.mockClear()
-    updateTextPreviewWidgets.mockClear()
-    vi.resetModules()
-    await import('./previewAny')
-  })
+// Registering the extension is a module side effect, so importing once at
+// module scope is enough. Re-importing it per test behind `vi.resetModules()`
+// re-evaluated the whole graph every time - ~8s against the 10s `hookTimeout`
+// once the suite is competing for the transform pipeline. Collection is
+// untimed, so the cost belongs here. Each test still builds its own nodeType,
+// so they stay independent.
+await import('./previewAny')
 
+describe('PreviewAny extension', () => {
   it('adds the shared text preview widgets on node creation', async () => {
     const { node, proto } = await setupNode()
 

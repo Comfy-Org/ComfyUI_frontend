@@ -1,6 +1,5 @@
 import { fromAny } from '@total-typescript/shoehorn'
-import { createPinia, setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, reactive, ref, shallowRef } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
@@ -24,6 +23,7 @@ const mockRendererFactory = vi.hoisted(() => {
   const bindCurveTexture = vi.fn()
   const bindInputImage = vi.fn()
   const clearInputImage = vi.fn()
+  const isContextLost = vi.fn(() => false)
   const render = vi.fn()
   const toBlob = vi.fn(() => Promise.resolve(new Blob(['test'])))
   const dispose = vi.fn()
@@ -42,6 +42,7 @@ const mockRendererFactory = vi.hoisted(() => {
         bindCurveTexture,
         bindInputImage,
         clearInputImage,
+        isContextLost,
         render,
         toBlob,
         dispose
@@ -57,6 +58,7 @@ const mockRendererFactory = vi.hoisted(() => {
     bindCurveTexture,
     bindInputImage,
     clearInputImage,
+    isContextLost,
     render,
     toBlob,
     dispose
@@ -126,8 +128,6 @@ function wrapNode(
 
 describe('useGLSLPreview', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
-    vi.clearAllMocks()
     mockRendererFactory.lastConfig.value = undefined
     globalThis.URL.createObjectURL = vi.fn(() => 'blob:test')
     globalThis.URL.revokeObjectURL = vi.fn()
@@ -175,14 +175,6 @@ describe('useGLSLPreview', () => {
   })
 
   describe('autogrow config extraction', () => {
-    beforeEach(() => {
-      vi.useFakeTimers()
-    })
-
-    afterEach(() => {
-      vi.useRealTimers()
-    })
-
     async function triggerRender(node: LGraphNode) {
       mockNodeOutputs[String(node.id)] = {
         images: [{ filename: 'test.png', subfolder: '', type: 'temp' }]
@@ -242,14 +234,6 @@ describe('useGLSLPreview', () => {
   })
 
   describe('render pipeline', () => {
-    beforeEach(() => {
-      vi.useFakeTimers()
-    })
-
-    afterEach(() => {
-      vi.useRealTimers()
-    })
-
     async function setupAndRender(node: LGraphNode) {
       mockNodeOutputs[String(node.id)] = {
         images: [{ filename: 'test.png', subfolder: '', type: 'temp' }]
@@ -293,6 +277,25 @@ describe('useGLSLPreview', () => {
       const toBlobOrder = mockRendererFactory.toBlob.mock.invocationCallOrder[0]
       expect(compileOrder).toBeLessThan(renderOrder)
       expect(renderOrder).toBeLessThan(toBlobOrder)
+    })
+
+    it('recreates the renderer when its context was lost', async () => {
+      const node = createMockNode()
+      await setupAndRender(node)
+      expect(mockRendererFactory.init).toHaveBeenCalledTimes(1)
+
+      mockRendererFactory.isContextLost.mockReturnValueOnce(true)
+      delete mockNodeOutputs['1']
+      await nextTick()
+      mockNodeOutputs['1'] = {
+        images: [{ filename: 'test.png', subfolder: '', type: 'temp' }]
+      }
+      await nextTick()
+      vi.advanceTimersByTime(100)
+      for (let i = 0; i < 5; i++) await nextTick()
+
+      expect(mockRendererFactory.dispose).toHaveBeenCalledTimes(1)
+      expect(mockRendererFactory.init).toHaveBeenCalledTimes(2)
     })
 
     it('binds a resolved image to its original slot when an earlier slot is unresolved', async () => {

@@ -146,6 +146,7 @@ Look for:
 - Proper abstraction levels
 - Interface design and API clarity
 - Leftover debug code (console.log, commented code, TODO comments)
+- Hand-declared/inlined server or API response types that duplicate a type already generated from an OpenAPI spec (`@comfyorg/ingest-types`, `@comfyorg/registry-types` under `packages/`) instead of importing it — these silently drift from the real contract and caused real bugs in PR #14771
 
 ### 3.3 Library Usage Enforcement
 

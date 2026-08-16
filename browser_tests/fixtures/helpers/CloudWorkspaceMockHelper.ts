@@ -1,4 +1,4 @@
-import type { Page, Route } from '@playwright/test'
+import type { Locator, Page, Route } from '@playwright/test'
 import type { BillingStatusResponse } from '@comfyorg/ingest-types'
 
 import type {
@@ -9,13 +9,14 @@ import type {
 
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import {
+  CLOUD_REMOTE_CONFIG,
   DEFAULT_TEAM_MEMBERS,
   TEAM_BILLING_STATUS,
   TEAM_PRO_PLAN,
-  TEAM_WORKSPACE,
-  WORKSPACE_FEATURE_FLAG
+  TEAM_WORKSPACE
 } from '@e2e/fixtures/data/cloudWorkspace'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
+import { TestIds } from '@e2e/fixtures/selectors'
 import { mockWorkspaceTokenMint } from '@e2e/fixtures/utils/workspaceMocks'
 
 interface RoleChangeRequest {
@@ -45,6 +46,30 @@ const jsonRoute = (body: unknown) => ({
 export class CloudWorkspaceMockHelper {
   constructor(private readonly page: Page) {}
 
+  async openWorkspaceSettings(): Promise<Locator> {
+    await this.page.goto(
+      process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
+    )
+    await this.page.waitForFunction(
+      () => !!window.app?.extensionManager,
+      null,
+      {
+        timeout: 45_000
+      }
+    )
+    await this.page
+      .getByRole('button', { name: /^Settings/ })
+      .first()
+      .click()
+    const dialog = this.page.getByTestId(TestIds.dialogs.settings)
+    await dialog.waitFor({ state: 'visible' })
+    await dialog
+      .locator('nav')
+      .getByRole('button', { name: 'Workspace', exact: true })
+      .click()
+    return dialog.getByRole('main')
+  }
+
   async setup(
     members: Member[] = DEFAULT_TEAM_MEMBERS,
     activeWorkspace: WorkspaceWithRole = TEAM_WORKSPACE,
@@ -71,7 +96,7 @@ export class CloudWorkspaceMockHelper {
     const { page } = this
 
     await page.route('**/api/features', (r) =>
-      r.fulfill(jsonRoute(WORKSPACE_FEATURE_FLAG))
+      r.fulfill(jsonRoute(CLOUD_REMOTE_CONFIG))
     )
     await page.route('**/api/system_stats', (r) =>
       r.fulfill(jsonRoute(mockSystemStats))
@@ -137,6 +162,9 @@ export class CloudWorkspaceMockHelper {
 
     await page.route('**/api/billing/status', (r) =>
       r.fulfill(jsonRoute(billingStatus))
+    )
+    await page.route('**/api/billing/payment-portal', (r) =>
+      r.fulfill(jsonRoute({ url: 'https://billing.example/portal' }))
     )
     await page.route('**/api/billing/balance', (r) =>
       r.fulfill(

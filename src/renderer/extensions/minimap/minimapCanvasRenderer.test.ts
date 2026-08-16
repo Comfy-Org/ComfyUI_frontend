@@ -25,9 +25,9 @@ vi.mock('@/utils/colorUtil', () => ({
 }))
 
 vi.mock('@/stores/executionStore', () => ({
-  useExecutionStore: vi.fn().mockReturnValue({
+  useExecutionStore: vi.fn(() => ({
     nodeProgressStates: {}
-  })
+  }))
 }))
 
 describe('minimapCanvasRenderer', () => {
@@ -36,8 +36,6 @@ describe('minimapCanvasRenderer', () => {
   let mockGraph: LGraph
 
   beforeEach(() => {
-    vi.clearAllMocks()
-
     mockContext = {
       clearRect: vi.fn(),
       fillRect: vi.fn(),

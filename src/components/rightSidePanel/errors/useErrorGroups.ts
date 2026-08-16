@@ -20,7 +20,6 @@ import {
 } from '@/utils/graphTraversalUtil'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { isLGraphNode } from '@/utils/litegraphUtil'
-import { st } from '@/i18n'
 import type { MissingNodeType } from '@/types/comfy'
 import type { ErrorCardData, ErrorGroup, ErrorItem } from './types'
 import { shouldRenderExecutionItemList } from './executionItemList'
@@ -89,8 +88,7 @@ function resolveNodeInfo(nodeId: NodeExecutionId) {
   return {
     title: resolveNodeDisplayName(graphNode, {
       emptyLabel: '',
-      untitledLabel: '',
-      st
+      untitledLabel: ''
     }),
     graphNodeId: graphNode ? String(graphNode.id) : undefined
   }
@@ -273,8 +271,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     return (
       resolveNodeDisplayName(node, {
         emptyLabel: '',
-        untitledLabel: '',
-        st
+        untitledLabel: ''
       }) || null
     )
   })

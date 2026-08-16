@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import {
@@ -101,11 +101,6 @@ vi.mock('@/stores/nodeDefStore', async (importOriginal) => {
 })
 
 describe('useModelToNodeStore', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
-  })
-
   describe('modelToNodeMap', () => {
     it('should initialize as empty', () => {
       const modelToNodeStore = useModelToNodeStore()

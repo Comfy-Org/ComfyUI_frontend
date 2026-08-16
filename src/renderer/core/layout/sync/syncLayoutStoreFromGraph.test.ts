@@ -16,7 +16,6 @@ function createGraph(nodes: LGraphNode[]): LGraph {
 
 describe('syncLayoutStoreNodeBoundsFromGraph', () => {
   beforeEach(() => {
-    vi.restoreAllMocks()
     LiteGraph.vueNodesMode = false
   })
 

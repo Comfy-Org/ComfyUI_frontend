@@ -50,7 +50,6 @@ describe('useGroupContextMenu', () => {
   let stubCanvas: StubCanvas
 
   beforeEach(() => {
-    vi.clearAllMocks()
     LiteGraph.vueNodesMode = true
     group = { id: 1, recomputeInsideNodes: vi.fn() }
     mockGetCanvasContextMenuTarget.mockReturnValue({ group })

@@ -40,8 +40,6 @@ describe('ColorWidget', () => {
   let LGraphNode: typeof LGraphNodeType
 
   beforeEach(async () => {
-    vi.clearAllMocks()
-    vi.useFakeTimers()
     // Reset modules to get fresh globalColorInput state
     vi.resetModules()
 
@@ -58,7 +56,6 @@ describe('ColorWidget', () => {
   })
 
   afterEach(() => {
-    vi.useRealTimers()
     document
       .querySelectorAll('input[type="color"]')
       .forEach((el) => el.remove())

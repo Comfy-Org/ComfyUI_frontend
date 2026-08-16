@@ -1,4 +1,4 @@
-import _ from 'es-toolkit/compat'
+import { truncate } from 'es-toolkit/compat'
 import { computed, onMounted, watch } from 'vue'
 
 import { useNodePricing } from '@/composables/node/useNodePricing'
@@ -92,7 +92,7 @@ export const useNodeBadge = () => {
         const badge = computed(() => {
           const nodeDef = nodeDefStore.fromLGraphNode(node)
           return new LGraphBadge({
-            text: _.truncate(
+            text: truncate(
               [
                 badgeTextVisible(nodeDef, nodeIdBadgeMode.value)
                   ? `#${node.id}`

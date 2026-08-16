@@ -1,4 +1,4 @@
-import _ from 'es-toolkit/compat'
+import { pick, zip } from 'es-toolkit/compat'
 
 import { downloadFile, openFileInNewTab } from '@/base/common/downloadUtil'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
@@ -439,7 +439,7 @@ export const useLitegraphService = () => {
                 ...inputData,
                 // Whether the input has associated widget follows the
                 // original node definition.
-                ..._.pick(input, RESERVED_KEYS.concat('widget'))
+                ...pick(input, RESERVED_KEYS.concat('widget'))
               }
             : input
         })
@@ -451,7 +451,7 @@ export const useLitegraphService = () => {
 
         // Note: output name is not unique, so we cannot lookup output by name.
         // Use index instead.
-        data.outputs = _.zip(this.outputs, data.outputs).map(
+        data.outputs = zip(this.outputs, data.outputs).map(
           ([output, outputData]) => {
             // If there are extra outputs in the serialised node, use them directly.
             // There are currently custom nodes that dynamically add outputs via
@@ -461,7 +461,7 @@ export const useLitegraphService = () => {
             return outputData
               ? {
                   ...outputData,
-                  ..._.pick(output, RESERVED_KEYS)
+                  ...pick(output, RESERVED_KEYS)
                 }
               : output
           }
@@ -542,7 +542,7 @@ export const useLitegraphService = () => {
                 ...inputData,
                 // Whether the input has associated widget follows the
                 // original node definition.
-                ..._.pick(input, RESERVED_KEYS.concat('widget'))
+                ...pick(input, RESERVED_KEYS.concat('widget'))
               }
             : input
         })
@@ -554,7 +554,7 @@ export const useLitegraphService = () => {
 
         // Note: output name is not unique, so we cannot lookup output by name.
         // Use index instead.
-        data.outputs = _.zip(this.outputs, data.outputs).map(
+        data.outputs = zip(this.outputs, data.outputs).map(
           ([output, outputData]) => {
             // If there are extra outputs in the serialised node, use them directly.
             // There are currently custom nodes that dynamically add outputs via
@@ -564,7 +564,7 @@ export const useLitegraphService = () => {
             return outputData
               ? {
                   ...outputData,
-                  ..._.pick(output, RESERVED_KEYS)
+                  ...pick(output, RESERVED_KEYS)
                 }
               : output
           }

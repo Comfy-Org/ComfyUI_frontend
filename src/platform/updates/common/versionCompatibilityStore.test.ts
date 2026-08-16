@@ -1,7 +1,5 @@
 import { until } from '@vueuse/core'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
@@ -41,8 +39,6 @@ describe('useVersionCompatibilityStore', () => {
   let mockSettingStore: { get: ReturnType<typeof vi.fn> }
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-
     // Clear the mock dismissal storage
     mockDismissalStorage.value = {}
 
@@ -60,11 +56,6 @@ describe('useVersionCompatibilityStore', () => {
     mockUseSettingStore.mockReturnValue(mockSettingStore)
 
     store = useVersionCompatibilityStore()
-  })
-
-  afterEach(() => {
-    vi.clearAllMocks()
-    vi.useRealTimers()
   })
 
   describe('version compatibility detection', () => {
@@ -279,9 +270,7 @@ describe('useVersionCompatibilityStore', () => {
 
   describe('dismissal persistence', () => {
     it('should save dismissal to reactive storage with expiration', async () => {
-      const mockNow = 1000000
-      vi.useFakeTimers()
-      vi.setSystemTime(mockNow)
+      const now = Date.now()
 
       mockSystemStatsStore.systemStats = {
         system: {
@@ -296,7 +285,7 @@ describe('useVersionCompatibilityStore', () => {
 
       // Check that the dismissal was added to reactive storage
       expect(mockDismissalStorage.value).toEqual({
-        '1.24.0-1.25.0-1.25.0': mockNow + 7 * 24 * 60 * 60 * 1000
+        '1.24.0-1.25.0-1.25.0': now + 7 * 24 * 60 * 60 * 1000
       })
     })
 
@@ -487,9 +476,7 @@ describe('useVersionCompatibilityStore', () => {
     })
 
     it('should include outdated packages in dismissal key', async () => {
-      const mockNow = 1000000
-      vi.useFakeTimers()
-      vi.setSystemTime(mockNow)
+      const now = Date.now()
 
       mockSystemStatsStore.systemStats = {
         system: {
@@ -511,15 +498,11 @@ describe('useVersionCompatibilityStore', () => {
 
       expect(mockDismissalStorage.value).toEqual({
         '1.24.0-1.24.0-1.24.0-comfyui-workflow-templates@0.9.0->0.9.5':
-          mockNow + 7 * 24 * 60 * 60 * 1000
+          now + 7 * 24 * 60 * 60 * 1000
       })
     })
 
     it('should produce the same dismissal key regardless of package order', async () => {
-      const mockNow = 1000000
-      vi.useFakeTimers()
-      vi.setSystemTime(mockNow)
-
       const packageA = {
         name: 'comfy-aimdo',
         installed: '0.1.0',
@@ -559,13 +542,11 @@ describe('useVersionCompatibilityStore', () => {
     })
 
     it('should prune expired dismissals when writing a new one', async () => {
-      const mockNow = 10_000_000
-      vi.useFakeTimers()
-      vi.setSystemTime(mockNow)
+      const now = Date.now()
 
       mockDismissalStorage.value = {
-        'expired-key': mockNow - 1,
-        'still-valid-key': mockNow + 5000
+        'expired-key': now - 1,
+        'still-valid-key': now + 5000
       }
 
       mockSystemStatsStore.systemStats = {
@@ -584,10 +565,6 @@ describe('useVersionCompatibilityStore', () => {
     })
 
     it('should allow dismissal when only package warnings are present', async () => {
-      const mockNow = 1000000
-      vi.useFakeTimers()
-      vi.setSystemTime(mockNow)
-
       mockSystemStatsStore.systemStats = {
         system: {
           comfyui_version: '',

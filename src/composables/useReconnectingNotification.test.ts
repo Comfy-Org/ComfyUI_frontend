@@ -1,7 +1,5 @@
-import { createTestingPinia } from '@pinia/testing'
 import { render } from '@testing-library/vue'
-import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -57,14 +55,7 @@ vi.mock('@/platform/settings/settingStore', () => ({
 
 describe('useReconnectingNotification', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.useFakeTimers()
-    vi.clearAllMocks()
     settingMocks.disableToast = false
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
   })
 
   it('does not show toast immediately on reconnecting', () => {

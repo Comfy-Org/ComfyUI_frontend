@@ -46,7 +46,6 @@ function createFilter(
 describe('NodeSearchInput', () => {
   beforeEach(() => {
     setupTestPinia()
-    vi.restoreAllMocks()
   })
 
   function createRender(

@@ -5,27 +5,39 @@ import { createI18n } from 'vue-i18n'
 
 import InviteMemberDialogContent from './InviteMemberDialogContent.vue'
 
-import type { PendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
+import type { WorkspacePendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 const {
   mockCreateInvite,
   mockCloseDialog,
   mockToastAdd,
   mockTrackInviteSent,
-  mockTrackInviteFailed
+  mockTrackInviteFailed,
+  mockFetchStatus,
+  mockMaxSeats,
+  mockOccupiedSeats
 } = vi.hoisted(() => ({
   mockCreateInvite: vi.fn(),
   mockCloseDialog: vi.fn(),
   mockToastAdd: vi.fn(),
   mockTrackInviteSent: vi.fn(),
-  mockTrackInviteFailed: vi.fn()
+  mockTrackInviteFailed: vi.fn(),
+  mockFetchStatus: vi.fn(),
+  mockMaxSeats: { value: 73 as number | null },
+  mockOccupiedSeats: { value: 0 as number | null }
+}))
+
+vi.mock('@/composables/billing/useBillingContext', () => ({
+  useBillingContext: () => ({
+    fetchStatus: mockFetchStatus,
+    maxSeats: mockMaxSeats,
+    occupiedSeats: mockOccupiedSeats
+  })
 }))
 
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  MAX_WORKSPACE_MEMBERS: 30,
   useTeamWorkspaceStore: () => ({
-    createInvite: mockCreateInvite,
-    totalMemberSlots: 0
+    createInvite: mockCreateInvite
   })
 }))
 
@@ -56,7 +68,7 @@ const i18n = createI18n({
   fallbackWarn: false
 })
 
-function pendingInviteFor(email: string): PendingInvite {
+function pendingInviteFor(email: string): WorkspacePendingInvite {
   return {
     id: `inv-${email}`,
     email,
@@ -83,7 +95,9 @@ function inviteButton() {
 
 describe('InviteMemberDialogContent', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    mockFetchStatus.mockResolvedValue(undefined)
+    mockMaxSeats.value = 73
+    mockOccupiedSeats.value = 0
     mockCreateInvite.mockImplementation(async (email: string) =>
       pendingInviteFor(email)
     )
@@ -115,6 +129,47 @@ describe('InviteMemberDialogContent', () => {
     renderDialog()
 
     expect(inviteButton()).toBeDisabled()
+  })
+
+  it('fails closed while the workspace limit is unresolved', async () => {
+    mockMaxSeats.value = null
+    const { user } = renderDialog()
+
+    await user.type(emailInput(), 'a@b.com ')
+
+    expect(screen.getByText('a@b.com')).toBeInTheDocument()
+    expect(inviteButton()).toBeDisabled()
+  })
+
+  it('fails closed while workspace occupancy is unresolved', async () => {
+    mockOccupiedSeats.value = null
+    const { user } = renderDialog()
+
+    await user.type(emailInput(), 'a@b.com ')
+
+    expect(screen.getByText('a@b.com')).toBeInTheDocument()
+    expect(inviteButton()).toBeDisabled()
+  })
+
+  it('allows unlimited invitations when the backend max is zero', async () => {
+    mockMaxSeats.value = 0
+    mockOccupiedSeats.value = 100
+    const { user } = renderDialog()
+
+    await user.type(emailInput(), 'a@b.com b@c.com ')
+
+    expect(screen.getByText('a@b.com')).toBeInTheDocument()
+    expect(screen.getByText('b@c.com')).toBeInTheDocument()
+  })
+
+  it('uses the backend workspace override to calculate available seats', async () => {
+    mockOccupiedSeats.value = 72
+    const { user } = renderDialog()
+
+    await user.type(emailInput(), 'a@b.com b@c.com ')
+
+    expect(screen.getByText('a@b.com')).toBeInTheDocument()
+    expect(screen.queryByText('b@c.com')).not.toBeInTheDocument()
   })
 
   it('flags invalid emails and keeps Invite disabled', async () => {

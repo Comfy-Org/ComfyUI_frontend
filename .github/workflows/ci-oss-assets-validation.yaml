@@ -21,7 +21,7 @@ jobs:
     outputs:
       should-run: ${{ steps.changes.outputs.should-run }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - id: changes
         uses: ./.github/actions/changes-filter
 
@@ -30,10 +30,10 @@ jobs:
     if: ${{ needs.changes.outputs.should-run == 'true' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Install pnpm
-        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
 
       - name: Use Node.js
         uses: actions/setup-node@v6
@@ -52,24 +52,24 @@ jobs:
       - name: Check for proprietary fonts in dist
         run: |
           set -euo pipefail
-          echo '🔍 Checking dist for proprietary ABCROM fonts...'
+          echo '🔍 Checking dist for proprietary fonts...'
 
           if [ ! -d "dist" ] || [ -z "$(ls -A dist)" ]; then
             echo '❌ ERROR: dist/ directory missing or empty!'
             exit 1
           fi
 
-          # Check for ABCROM font files
-          if find dist/ -type f -iname '*abcrom*' \
+          # Check for ABCROM and PP Formula font files
+          if find dist/ -type f \( -iname '*abcrom*' -o -iname '*ppformula*' \) \
             \( -name '*.woff' -o -name '*.woff2' -o -name '*.ttf' -o -name '*.otf' \) \
             -print -quit | grep -q .; then
             echo ''
-            echo '❌ ERROR: Found proprietary ABCROM font files in dist!'
+            echo '❌ ERROR: Found proprietary font files in dist!'
             echo ''
-            find dist/ -type f -iname '*abcrom*' \
+            find dist/ -type f \( -iname '*abcrom*' -o -iname '*ppformula*' \) \
               \( -name '*.woff' -o -name '*.woff2' -o -name '*.ttf' -o -name '*.otf' \)
             echo ''
-            echo 'ABCROM fonts are proprietary and should not ship to OSS builds.'
+            echo 'ABCROM and PP Formula fonts are proprietary and should not ship to OSS builds.'
             echo ''
             echo 'To fix this:'
             echo '1. Use conditional font loading based on isCloud'
@@ -85,10 +85,10 @@ jobs:
     if: ${{ needs.changes.outputs.should-run == 'true' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Install pnpm
-        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
 
       - name: Use Node.js
         uses: actions/setup-node@v6
