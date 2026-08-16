@@ -162,6 +162,10 @@ function useBillingContextInternal(): BillingContext {
         freeTierQuota.freeTierExecutionPermitted.value)
   )
 
+  const showsSubscribeToRunPrompt = computed(
+    () => isInitialized.value && !canRunWorkflows.value
+  )
+
   const isLegacyTeamPlan = computed(
     () =>
       type.value === 'workspace' &&
@@ -308,8 +312,10 @@ function useBillingContextInternal(): BillingContext {
     return activeContext.value.cancelSubscription()
   }
 
-  async function resubscribe() {
-    return activeContext.value.resubscribe()
+  async function resubscribe(
+    options?: Parameters<BillingActions['resubscribe']>[0]
+  ) {
+    return activeContext.value.resubscribe(options)
   }
 
   async function topup(amountCents: number) {
@@ -352,6 +358,7 @@ function useBillingContextInternal(): BillingContext {
     error,
     isActiveSubscription,
     canRunWorkflows,
+    showsSubscribeToRunPrompt,
     canAccessSubscriptionFeatures,
     isFreeTier,
     isLegacyTeamPlan,

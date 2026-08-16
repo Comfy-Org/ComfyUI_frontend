@@ -34,7 +34,20 @@
       <!-- Form -->
       <SignInForm v-if="isSignIn" @submit="signInWithEmail" />
       <template v-else>
-        <Message v-if="userIsInChina" severity="warn" class="mb-4">
+        <div
+          v-if="regionStatus === 'pending'"
+          data-testid="region-check-pending"
+          class="flex flex-col gap-6"
+        >
+          <Skeleton class="h-10 w-full" />
+          <Skeleton class="h-10 w-full" />
+          <Skeleton class="h-10 w-full" />
+        </div>
+        <Message
+          v-else-if="regionStatus === 'blocked'"
+          severity="warn"
+          class="mb-4"
+        >
           {{ t('auth.signup.regionRestrictionChina') }}
         </Message>
         <SignUpForm v-else ref="signUpForm" @submit="signUpWithEmail" />
@@ -151,12 +164,14 @@
 <script setup lang="ts">
 import Divider from 'primevue/divider'
 import Message from 'primevue/message'
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { isEmbeddedWebView } from '@/base/webviewDetection'
 import Button from '@/components/ui/button/Button.vue'
+import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useRegionGate } from '@/composables/auth/useRegionGate'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import {
   configValueOrDefault,
@@ -165,7 +180,6 @@ import {
 import type { SignInData, SignUpData } from '@/schemas/signInSchema'
 import { isCloud } from '@/platform/distribution/types'
 import { isHostWhitelisted, normalizeHost } from '@/utils/hostWhitelist'
-import { isInChina } from '@/utils/networkUtil'
 
 import ApiKeyForm from './signin/ApiKeyForm.vue'
 import SignInForm from './signin/SignInForm.vue'
@@ -231,10 +245,7 @@ const signUpWithEmail = async (values: SignUpData, turnstileToken?: string) => {
   }
 }
 
-const userIsInChina = ref(false)
-onMounted(async () => {
-  userIsInChina.value = await isInChina()
-})
+const { status: regionStatus } = useRegionGate()
 
 onUnmounted(() => {
   authActions.accessError.value = false

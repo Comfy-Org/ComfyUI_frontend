@@ -1,7 +1,5 @@
-import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -137,12 +135,6 @@ function createHostWithPromotedModel(): {
 
 describe('SectionWidgets', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    setDirty.mockClear()
-    getNodeById.mockReset()
-    animateToBounds.mockClear()
-    mockGetInputSpecForWidget.mockReset()
-    mockTrackUiButtonClicked.mockClear()
     selectedItems.length = 0
   })
 
