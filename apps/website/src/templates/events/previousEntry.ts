@@ -19,6 +19,7 @@ export function previousEntryUrl(
   return referrer || null
 }
 
+/** Matches the prefix itself or a path below it, never a sibling like `/events-archive`. */
 export function isWithin(
   previousUrl: string | null,
   origin: string,
@@ -26,8 +27,9 @@ export function isWithin(
 ): boolean {
   if (!previousUrl) return false
   try {
-    const url = new URL(previousUrl)
-    return url.origin === origin && url.pathname.startsWith(pathPrefix)
+    const { origin: urlOrigin, pathname } = new URL(previousUrl)
+    if (urlOrigin !== origin) return false
+    return pathname === pathPrefix || pathname.startsWith(`${pathPrefix}/`)
   } catch {
     return false
   }
