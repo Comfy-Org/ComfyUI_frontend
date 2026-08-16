@@ -66,6 +66,7 @@ const zRawJobListItem = z
     // Sourced from the generated `@comfyorg/ingest-types` JobEntry schema
     // (outputs_count/previewable_outputs_count), widened to nullable since
     // local ComfyUI's /api/jobs sends explicit nulls where Cloud omits.
+    // .int() inherited from zJobEntry; intentionally stricter than the previous z.number()
     outputs_count: zJobEntry.shape.outputs_count.nullable(),
     previewable_outputs_count:
       zJobEntry.shape.previewable_outputs_count.nullable(),

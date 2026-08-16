@@ -120,12 +120,12 @@ vi.mock('@/stores/queueStore', () => ({
       | undefined
     public jobId: string
     public outputsCount: number | null
-    public previewableOutputsCount: number | null
+    public previewableOutputsCount: number | undefined
 
     constructor(public job: JobListItem) {
       this.jobId = job.id
       this.outputsCount = job.outputs_count ?? null
-      this.previewableOutputsCount = job.previewable_outputs_count ?? null
+      this.previewableOutputsCount = job.previewable_outputs_count ?? undefined
       if (mockOutputOverrides.value) {
         this.flatOutputs = mockOutputOverrides.value
         const previewable = mockOutputOverrides.value.filter(

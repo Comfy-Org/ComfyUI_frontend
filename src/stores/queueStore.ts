@@ -585,7 +585,11 @@ export const useQueueStore = defineStore('queue', () => {
           const existing = existingByJobId.get(job.id)
           if (!existing) return new TaskItemImpl(job)
           // Recreate if outputs_count changed to ensure lazy loading works
-          if (existing.outputsCount !== (job.outputs_count ?? undefined)) {
+          if (
+            existing.outputsCount !== (job.outputs_count ?? undefined) ||
+            existing.previewableOutputsCount !==
+              (job.previewable_outputs_count ?? undefined)
+          ) {
             return new TaskItemImpl(job)
           }
           return existing

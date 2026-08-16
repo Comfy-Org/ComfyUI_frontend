@@ -298,6 +298,24 @@ describe('TaskItemImpl', () => {
       const taskItem = new TaskItemImpl(job)
       expect(taskItem.previewableOutputsCount).toBe(2)
     })
+
+    it('returns 0 when previewable_outputs_count is 0', () => {
+      const job: JobListItem = {
+        ...createHistoryJob(0, 'job-id'),
+        previewable_outputs_count: 0
+      }
+      const taskItem = new TaskItemImpl(job)
+      expect(taskItem.previewableOutputsCount).toBe(0)
+    })
+
+    it('normalizes an explicit null previewable_outputs_count to undefined', () => {
+      const job: JobListItem = {
+        ...createHistoryJob(0, 'job-id'),
+        previewable_outputs_count: null
+      }
+      const taskItem = new TaskItemImpl(job)
+      expect(taskItem.previewableOutputsCount).toBeUndefined()
+    })
   })
 })
 
