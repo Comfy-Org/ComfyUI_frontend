@@ -53,7 +53,6 @@ const AUTH_HEADER = { Authorization: 'Bearer test-token' }
 
 describe('workspaceApi', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockGetAuthHeaderOrThrow.mockResolvedValue(AUTH_HEADER)
     mockGetFirebaseAuthHeaderOrThrow.mockResolvedValue(AUTH_HEADER)
   })
@@ -344,7 +343,7 @@ describe('workspaceApi', () => {
   })
 
   describe('billing', () => {
-    it('getBillingStatus() sends GET /billing/status', async () => {
+    it('getBillingStatus() sends GET /billing/status and returns the body unchanged', async () => {
       const data = { is_active: true, has_funds: true }
       mockAxiosInstance.get.mockResolvedValue({ data })
 

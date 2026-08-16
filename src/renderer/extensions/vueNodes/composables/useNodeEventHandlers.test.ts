@@ -78,7 +78,6 @@ describe('useNodeEventHandlers', () => {
   const testNodeId = toNodeId('node-1')
 
   beforeEach(async () => {
-    vi.resetAllMocks()
     canvasSelectedItems.length = 0
   })
 
