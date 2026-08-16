@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 const mockDialogService = vi.hoisted(() => ({
   showLayoutDialog: vi.fn()
@@ -42,10 +42,6 @@ vi.mock(
 import { useWorkflowTemplateSelectorDialog } from './useWorkflowTemplateSelectorDialog'
 
 describe('useWorkflowTemplateSelectorDialog', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   describe('show', () => {
     it('defaults to "all" category for non-new users', () => {
       mockNewUserService.isNewUser.mockReturnValue(false)
@@ -62,7 +58,7 @@ describe('useWorkflowTemplateSelectorDialog', () => {
       )
     })
 
-    it('defaults to "basics-getting-started" category for new users', () => {
+    it('defaults to "popular" category for new users', () => {
       mockNewUserService.isNewUser.mockReturnValue(true)
 
       const dialog = useWorkflowTemplateSelectorDialog()
@@ -70,9 +66,7 @@ describe('useWorkflowTemplateSelectorDialog', () => {
 
       expect(mockDialogService.showLayoutDialog).toHaveBeenCalledWith(
         expect.objectContaining({
-          props: expect.objectContaining({
-            initialCategory: 'basics-getting-started'
-          })
+          props: expect.objectContaining({ initialCategory: 'popular' })
         })
       )
     })

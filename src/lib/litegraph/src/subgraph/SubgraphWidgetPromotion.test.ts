@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromAny } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import type {
@@ -125,7 +123,6 @@ function writePromotedWidgetValue(
 }
 
 beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
   resetSubgraphFixtureState()
 })
 
