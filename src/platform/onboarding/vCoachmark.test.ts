@@ -1,5 +1,5 @@
-import { cleanup, render } from '@testing-library/vue'
-import { afterEach, describe, expect, it } from 'vitest'
+import { render } from '@testing-library/vue'
+import { describe, expect, it } from 'vitest'
 import { defineComponent, h, nextTick, ref, withDirectives } from 'vue'
 
 import { coachmarkElements } from './coachmarkRegistry'
@@ -31,8 +31,6 @@ function mountHost(initial: CoachId | null) {
 }
 
 describe('vCoachmark', () => {
-  afterEach(cleanup)
-
   it('registers the element and mirrors the id to data-coach-id on mount', () => {
     const { getByTestId } = mountHost('app-run-button')
     const host = getByTestId('host')

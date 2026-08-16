@@ -1,6 +1,6 @@
 import { fromAny } from '@total-typescript/shoehorn'
 import { createPinia, setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 import type { MissingNodeType } from '@/types/comfy'
@@ -53,14 +53,6 @@ function mockGraphReady(rootGraph: typeof app.rootGraph) {
 }
 
 describe('executionErrorStore — node error operations', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
   describe('clearSimpleNodeErrors', () => {
     it('does nothing if lastNodeErrors is null', () => {
       const store = useExecutionErrorStore()
@@ -632,7 +624,6 @@ describe('executionErrorStore — node error operations', () => {
 
 describe('surfaceMissingModels — silent option', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     mockShowErrorsTab.value = true
   })
 
@@ -700,7 +691,6 @@ describe('surfaceMissingModels — silent option', () => {
 
 describe('surfaceMissingMedia — silent option', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     mockShowErrorsTab.value = true
   })
 
@@ -767,10 +757,6 @@ describe('surfaceMissingMedia — silent option', () => {
 })
 
 describe('recordNodeErrors', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-  })
-
   it('normalizes an empty error record to null', () => {
     const store = useExecutionErrorStore()
 
@@ -789,10 +775,6 @@ describe('recordNodeErrors', () => {
 })
 
 describe('hasMissingError', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-  })
-
   it.for([
     {
       type: 'nodes',
@@ -886,5 +868,36 @@ describe('clearAllErrors', () => {
     expect(missingNodesStore.missingNodesError).toBeNull()
     expect(executionErrorStore.isErrorOverlayOpen).toBe(false)
     expect(executionErrorStore.hasAnyError).toBe(false)
+  })
+})
+
+describe('added-node error scan coordination', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('keeps overlapping scans isolated by graph until every scan finishes', () => {
+    const store = useExecutionErrorStore()
+    const graphA = createTestRootGraph()
+    const graphB = createTestRootGraph()
+    const executionId = createNodeExecutionId([toNodeId(1)])
+
+    const finishFirst = store.beginAddedNodeErrorScan(graphA, executionId)
+    const finishSecond = store.beginAddedNodeErrorScan(graphA, executionId)
+    const finishOtherGraph = store.beginAddedNodeErrorScan(graphB, executionId)
+
+    expect(store.hasPendingAddedNodeErrorScan(graphA, executionId)).toBe(true)
+    expect(store.hasPendingAddedNodeErrorScan(graphB, executionId)).toBe(true)
+
+    finishFirst()
+    finishFirst()
+    expect(store.hasPendingAddedNodeErrorScan(graphA, executionId)).toBe(true)
+
+    finishSecond()
+    expect(store.hasPendingAddedNodeErrorScan(graphA, executionId)).toBe(false)
+    expect(store.hasPendingAddedNodeErrorScan(graphB, executionId)).toBe(true)
+
+    finishOtherGraph()
+    expect(store.hasPendingAddedNodeErrorScan(graphB, executionId)).toBe(false)
   })
 })

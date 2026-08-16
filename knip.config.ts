@@ -70,7 +70,7 @@ const config: KnipConfig = {
     config: ['vitest?(.*).config.ts'],
     entry: [
       '**/*.{bench,test,test-d,spec}.?(c|m)[jt]s?(x)',
-      '**/__mocks__/**/*.[jt]s?(x)'
+      '**/__mocks__/**/*.{js,ts,vue}'
     ]
   },
   playwright: {
