@@ -307,6 +307,18 @@ describe('auth token priority chain', () => {
       expect(mockApiKeyGetAuthHeader).not.toHaveBeenCalled()
     })
 
+    it('getAuthHeader falls back to the Firebase token when the unified mint rejects outright', async () => {
+      mockMintAtLogin.mockRejectedValueOnce(new Error('mint request failed'))
+      authStateCallback({ ...mockUser, uid: 'header-reject-user' })
+      mockUnifiedToken = null
+      mockApiKeyGetAuthHeader.mockReturnValue({ 'X-API-KEY': 'test-key' })
+
+      const header = await store.getAuthHeader()
+
+      expect(header).toEqual({ Authorization: 'Bearer firebase-token' })
+      expect(mockApiKeyGetAuthHeader).not.toHaveBeenCalled()
+    })
+
     it('getAuthToken returns the unified Cloud JWT, never the Firebase token', async () => {
       mockUnifiedToken = 'unified-jwt'
       mockGetWorkspaceToken.mockReturnValue('workspace-raw-token')
@@ -324,6 +336,14 @@ describe('auth token priority chain', () => {
 
       expect(token).toBeUndefined()
       expect(mockUser.getIdToken).not.toHaveBeenCalled()
+    })
+
+    it('getAuthToken resolves instead of throwing when the unified mint rejects outright', async () => {
+      mockMintAtLogin.mockRejectedValueOnce(new Error('mint request failed'))
+      authStateCallback({ ...mockUser, uid: 'token-reject-user' })
+      mockUnifiedToken = null
+
+      await expect(store.getAuthToken()).resolves.toBeUndefined()
     })
 
     it('getAuthHeader awaits an in-flight unified mint instead of racing it', async () => {
