@@ -64,4 +64,16 @@ test.describe('Toast Notifications', { tag: '@ui' }, () => {
 
     await expect(comfyPage.toast.toastErrors).not.toHaveCount(0)
   })
+
+  test(
+    'Toast fits within the mobile viewport',
+    { tag: '@mobile' },
+    async ({ comfyPage }) => {
+      await triggerErrorToast(comfyPage)
+
+      await expect(comfyPage.toast.visibleToasts.first()).toBeInViewport({
+        ratio: 1
+      })
+    }
+  )
 })

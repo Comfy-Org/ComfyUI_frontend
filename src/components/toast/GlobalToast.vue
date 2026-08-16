@@ -84,8 +84,16 @@ function updateToastPosition() {
   styleElement.textContent = `
     .p-toast.p-component.p-toast-top-right {
       top: ${rect.top + 100}px !important;
-      right: ${window.innerWidth - (rect.left + rect.width) + 20}px !important;
+      --toast-right: ${window.innerWidth - (rect.left + rect.width) + 20}px;
+      right: var(--toast-right) !important;
        z-index: 10000 !important;
+    }
+
+    @media (max-width: 640px) {
+      .p-toast.p-component.p-toast-top-right {
+        --toast-right: 1rem;
+        max-width: calc(100vw - 2rem);
+      }
     }
   `
 }
