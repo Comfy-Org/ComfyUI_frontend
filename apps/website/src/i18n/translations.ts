@@ -5431,6 +5431,7 @@ const translations = {
       '你的 AI 助手可以接入整个生态、构建工作流，并生成图像、视频、音频或 3D 内容。'
   },
   'flux3.reviews.highlightCta': { en: 'GET STARTED', 'zh-CN': '开始使用' },
+  'footer.flux3': { en: 'Flux 3', 'zh-CN': 'Flux 3' },
   // Wan Animate 2 model page (/wan-animate-2)
   'wanAnimate2.meta.title': {
     en: 'Wan Animate 2 on Comfy — Open-Source Character Animation',
