@@ -5,8 +5,8 @@ Verified: 2026-08-16 against PR 14246
 
 This audit records the lifecycle that exists now. It does not restate the
 target architecture. The governing records are
-[ADR 0003](../adr/0003-crdt-based-layout-system.md) and
-[ADR 0008](../adr/0008-entity-component-system.md). See also the
+[ADR 0003](../../adr/0003-crdt-based-layout-system.md) and
+[ADR 0008](../../adr/0008-entity-component-system.md). See also the
 [decision traceability matrix](ecs-decision-traceability.md).
 
 ## Scope and ownership model

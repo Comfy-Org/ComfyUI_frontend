@@ -58,7 +58,7 @@ extracting more systems or removing legacy facades.
 | Which existing architecture documents are stale or contradictory? | [Documentation audit](ecs-documentation-audit.md)                     |
 
 The ADRs remain the decision records:
-[ADR 0003](../adr/0003-crdt-based-layout-system.md) governs centralized CRDT
-layout, and [ADR 0008](../adr/0008-entity-component-system.md) governs the ECS
-direction. These audits report implementation status without modifying those
-decisions.
+[ADR 0003](../../adr/0003-crdt-based-layout-system.md) governs centralized
+CRDT layout, and [ADR 0008](../../adr/0008-entity-component-system.md) governs
+the ECS direction. These audits report implementation status without
+modifying those decisions.

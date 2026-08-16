@@ -4,8 +4,8 @@ Status: Current implementation audit
 Verified: 2026-08-16 against PR 14246
 
 This audit classifies the writes that make up graph-domain mutation today and
-tests the result against [ADR 0003](../adr/0003-crdt-based-layout-system.md)
-and [ADR 0008](../adr/0008-entity-component-system.md). The related
+tests the result against [ADR 0003](../../adr/0003-crdt-based-layout-system.md)
+and [ADR 0008](../../adr/0008-entity-component-system.md). The related
 [decision traceability matrix](ecs-decision-traceability.md) maps each claim to
 the wider design set.
 

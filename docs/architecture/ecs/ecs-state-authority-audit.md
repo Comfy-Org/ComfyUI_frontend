@@ -9,10 +9,11 @@ projection, or transient renderer cache. Dual sources are called out rather
 than presented as completed migration.
 
 The governing decisions remain
-[ADR 0003](../adr/0003-crdt-based-layout-system.md) and
-[ADR 0008](../adr/0008-entity-component-system.md). See
+[ADR 0003](../../adr/0003-crdt-based-layout-system.md) and
+[ADR 0008](../../adr/0008-entity-component-system.md). See
 [ECS Decision Traceability](ecs-decision-traceability.md) for principle-level
-status and [ECS Target Architecture](ecs-target-architecture.md) for the target.
+status and [ECS Target Architecture](../ecs-target-architecture.md) for the
+target.
 
 ## Node shell
 
@@ -188,7 +189,7 @@ status and [ECS Target Architecture](ecs-target-architecture.md) for the target.
 5. Durable entity geometry is Yjs-backed; link/slot/hit-test geometry is a
    separate transient cache, not durable authority.
 
-Design details: [Node Data Store](node-data-store.md),
-[Link Topology Store](link-topology-store.md),
-[Reroute Chain Store](reroute-chain-store.md), and
-[Output Slot Connectivity](output-slot-connectivity.md).
+Design details: [Node Data Store](../node-data-store.md),
+[Link Topology Store](../link-topology-store.md),
+[Reroute Chain Store](../reroute-chain-store.md), and
+[Output Slot Connectivity](../output-slot-connectivity.md).

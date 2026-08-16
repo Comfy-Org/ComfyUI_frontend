@@ -8,8 +8,8 @@ It is a roadmap, not a design history. Detailed evidence and unresolved risks
 live in the focused audits linked under [References](#references).
 
 The governing decisions remain
-[ADR 0003](../adr/0003-crdt-based-layout-system.md) and
-[ADR 0008](../adr/0008-entity-component-system.md). This plan does not amend
+[ADR 0003](../../adr/0003-crdt-based-layout-system.md) and
+[ADR 0008](../../adr/0008-entity-component-system.md). This plan does not amend
 them.
 
 ## Direction
@@ -135,7 +135,9 @@ large final phase.
 - Creating a store for derived badge rows.
 - Making transient renderer geometry persistent or CRDT-backed.
 - Making every store Yjs-backed without a collaboration requirement.
-- Restoring an operation log or transport API before there is a consumer.
+- Adding a frontend-owned operation log or transport to `layoutStore`;
+  collaboration belongs at the integration boundary with
+  `@comfyorg/comfy-multi-player`.
 - Creating slot IDs or component stores solely to match an abstract ECS model.
 - Removing extension facades before migration evidence exists.
 
@@ -165,5 +167,5 @@ The migration is complete when, for every durable graph-domain concern:
 - [Extension compatibility audit](ecs-extension-compatibility-audit.md)
 - [Verification audit](ecs-verification-audit.md)
 - [Documentation audit](ecs-documentation-audit.md)
-- [ECS target architecture](ecs-target-architecture.md)
-- [Link registration migration](../extensions/link-registration-migration.md)
+- [ECS target architecture](../ecs-target-architecture.md)
+- [Link registration migration](../../extensions/link-registration-migration.md)

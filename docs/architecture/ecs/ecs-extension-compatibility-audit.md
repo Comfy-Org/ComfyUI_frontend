@@ -84,7 +84,8 @@ reactive object where applicable), or use graph connection APIs.
 `addFloatingLink()` now returns `LLink | undefined`: the stored link for success
 or idempotent re-registration, and `undefined` for collision. Never retain or
 render the incoming object before checking. Full examples and import-boundary
-rules are in [Link registration migration](../extensions/link-registration-migration.md).
+rules are in
+[Link registration migration](../../extensions/link-registration-migration.md).
 
 ### Store-derived connectivity
 

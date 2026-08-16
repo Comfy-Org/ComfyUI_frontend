@@ -150,7 +150,7 @@ history promised above is struck, and the Yjs document runs with the default
 `gc: true`, so it is a mergeable state record rather than a replayable one.
 Transmission stays a capability of the document rather than of the store:
 `applyUpdate` / `getStateAsUpdate` were removed as callerless (see
-[Removed CRDT sync seam](../architecture/ecs-migration-plan.md)) and are a few
+[Removed CRDT sync seam](../architecture/ecs/ecs-migration-plan.md)) and are a few
 lines against `this.ydoc` to reinstate. `LayoutOperation` is still the
 serializable command shape every mutation goes through. Producers supply the
 operation source; the store stamps its session actor at submission.

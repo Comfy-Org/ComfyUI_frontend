@@ -386,6 +386,6 @@ keep the substrate at storage + identity and let Vue own scheduling.
   for the full target taxonomy and migration strategy.
 - [ECS Target Architecture](./ecs-target-architecture.md) for the full
   end-state shape.
-- [ECS Migration Plan](./ecs-migration-plan.md) for shipping milestones.
+- [ECS Migration Plan](./ecs/ecs-migration-plan.md) for shipping milestones.
 - [Appendix: Critical Analysis](./appendix-critical-analysis.md) for the
   independent verification of the architecture documents.

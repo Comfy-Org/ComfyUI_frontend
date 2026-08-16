@@ -108,7 +108,8 @@ Runtime registration is deliberately not a repair boundary: `linkStore` and
    Per-instance concurrent output retention would require execution-path keys.
 7. Direct extension insertion that bypasses import normalization can be
    rejected after partial surrounding work. Use graph APIs and handle failure;
-   see [Link registration migration](../extensions/link-registration-migration.md).
+   see
+   [Link registration migration](../../extensions/link-registration-migration.md).
 
 ## Evidence and follow-up
 
