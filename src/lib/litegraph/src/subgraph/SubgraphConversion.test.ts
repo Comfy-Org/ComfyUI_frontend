@@ -216,6 +216,7 @@ describe('SubgraphConversion', () => {
       class PromotedTextNode extends LGraphNode {
         constructor() {
           super('PromotedText')
+          this.serialize_widgets = true
           const input = this.addInput('text', 'STRING')
           input.widget = { name: 'text' }
           this.addWidget('text', 'text', 'stale interior value', () => {})
