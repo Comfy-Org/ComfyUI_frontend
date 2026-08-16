@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { externalLinks, getRoutes } from '../src/config/routes'
+import { flux3Page } from '../src/data/flux3'
 import { t } from '../src/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
 
@@ -8,14 +9,17 @@ const PATH = '/flux-3'
 const HERO_TITLE = t('flux3.hero.title', 'en')
 const HERO_CTA = t('flux3.hero.primaryCta', 'en')
 const RUN_OPTIONS_HEADING = t('flux3.runOptions.heading', 'en')
+const CTA_HEADING = t('flux3.cta.heading', 'en')
+const FAQ_COUNT = flux3Page.faq?.items.length ?? 0
+const CARD_COUNT = flux3Page.gallery?.cards.length ?? 0
 const MODELS_ROUTE = getRoutes('en').models
 
-test.describe('Flux 3 announcement page @smoke', () => {
+test.describe('Flux 3 page @smoke', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto(PATH)
   })
 
-  test('renders the coming-soon hero and is indexable', async ({ page }) => {
+  test('renders the hero and is indexable', async ({ page }) => {
     await expect(
       page.getByRole('heading', { level: 1, name: HERO_TITLE })
     ).toBeVisible()
@@ -25,7 +29,10 @@ test.describe('Flux 3 announcement page @smoke', () => {
   test('hero CTA sends visitors to the cloud in a new tab', async ({
     page
   }) => {
-    const cta = page.getByRole('link', { name: HERO_CTA })
+    const heroSection = page.locator('section').filter({
+      has: page.getByRole('heading', { level: 1, name: HERO_TITLE })
+    })
+    const cta = heroSection.getByRole('link', { name: HERO_CTA })
     await expect(cta).toHaveAttribute('href', externalLinks.cloud)
     await expect(cta).toHaveAttribute('target', '_blank')
   })
@@ -37,17 +44,62 @@ test.describe('Flux 3 announcement page @smoke', () => {
     await expect(modelsCrumb).toHaveAttribute('href', MODELS_ROUTE)
   })
 
-  test('omits the sections the model cannot back yet', async ({ page }) => {
-    await expect(
-      page.getByRole('heading', { level: 2, name: RUN_OPTIONS_HEADING })
-    ).toBeVisible()
-
-    // No gallery, pricing or FAQ until Flux 3 ships.
-    await expect(page.getByText(t('pricing.title', 'en'))).toHaveCount(0)
-    await expect(page.locator('[id^="faq-trigger-"]')).toHaveCount(0)
+  test('footer links back to this page', async ({ page }) => {
+    const footerLink = page
+      .locator('footer')
+      .getByRole('link', { name: t('footer.flux3', 'en') })
+    await expect(footerLink).toHaveAttribute('href', getRoutes('en').flux3)
   })
 
-  test('emits no FAQ structured data while the page has no FAQ', async ({
+  test('renders pricing and run options', async ({ page }) => {
+    const runOptions = page.getByRole('heading', {
+      level: 2,
+      name: RUN_OPTIONS_HEADING
+    })
+    await runOptions.scrollIntoViewIfNeeded()
+    await expect(runOptions).toBeVisible()
+
+    await expect(
+      page.getByRole('heading', { level: 2, name: t('pricing.title', 'en') })
+    ).toBeVisible()
+  })
+
+  test('renders one gallery card per configured clip', async ({ page }) => {
+    const heading = page.getByRole('heading', {
+      level: 2,
+      name: t('flux3.models.heading', 'en')
+    })
+    await heading.scrollIntoViewIfNeeded()
+    await expect(heading).toBeVisible()
+
+    const gallery = page.locator('section').filter({ has: heading })
+    await expect(gallery.locator('video')).toHaveCount(CARD_COUNT)
+  })
+
+  test('renders one FAQ entry per configured question', async ({ page }) => {
+    const triggers = page.locator('[id^="faq-trigger-"]')
+    await triggers.first().scrollIntoViewIfNeeded()
+    await expect(triggers).toHaveCount(FAQ_COUNT)
+  })
+
+  test('closing CTA keeps visitors on Flux 3', async ({ page }) => {
+    const ctaSection = page.locator('section').filter({
+      has: page.getByRole('heading', { level: 2, name: CTA_HEADING })
+    })
+
+    const primary = ctaSection.getByRole('link', {
+      name: t('flux3.cta.primaryCta', 'en')
+    })
+    await primary.scrollIntoViewIfNeeded()
+    await expect(primary).toHaveAttribute('href', externalLinks.cloud)
+
+    const secondary = ctaSection.getByRole('link', {
+      name: t('flux3.cta.secondaryCta', 'en')
+    })
+    await expect(secondary).toHaveAttribute('href', externalLinks.workflows)
+  })
+
+  test('emits FAQ structured data for the configured questions', async ({
     page
   }) => {
     const types = await page.evaluate(() =>
@@ -63,6 +115,6 @@ test.describe('Flux 3 announcement page @smoke', () => {
       })
     )
     expect(types).toContain('WebPage')
-    expect(types).not.toContain('FAQPage')
+    expect(types).toContain('FAQPage')
   })
 })

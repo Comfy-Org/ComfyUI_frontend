@@ -10,10 +10,7 @@ import { LiteGraphDataSource } from './LiteGraphDataSource'
  */
 export class MinimapDataSourceFactory {
   static create(graph: LGraph | null): IMinimapDataSource {
-    // Check if LayoutStore has data
-    const layoutStoreHasData = layoutStore.getAllNodes().value.size > 0
-
-    if (layoutStoreHasData) {
+    if (layoutStore.nodeCount > 0) {
       return new LayoutStoreDataSource(graph)
     }
 

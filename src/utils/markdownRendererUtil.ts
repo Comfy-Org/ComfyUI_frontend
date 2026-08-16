@@ -18,7 +18,7 @@ const MEDIA_SRC_REGEX =
   /(<(?:img|source|video)[^>]*\ssrc=['"])(?!(?:\/|https?:\/\/))([^'"\s>]+)(['"])/gi
 
 // Create a marked Renderer that prefixes relative URLs with base
-export function createMarkdownRenderer(baseUrl?: string): Renderer {
+function createMarkdownRenderer(baseUrl?: string): Renderer {
   const normalizedBase = baseUrl ? baseUrl.replace(/\/+$/, '') : ''
   const renderer = new Renderer()
   renderer.image = ({ href, title, text }) => {

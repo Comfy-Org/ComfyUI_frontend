@@ -1,7 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { cleanup, render, screen } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, reactive, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -74,8 +74,6 @@ describe('TourOverlay', () => {
     s = makeTourState()
     vi.mocked(useOnboardingTourStore).mockReturnValue(fromPartial(reactive(s)))
   })
-
-  afterEach(cleanup)
 
   it('renders nothing when no tour step is active', () => {
     renderOverlay()

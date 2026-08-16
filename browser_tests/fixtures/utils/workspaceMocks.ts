@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test'
+import type { BrowserContext, Page } from '@playwright/test'
 
 import type {
   Member,
@@ -38,10 +38,10 @@ export function member(
  * this the mint fails and auth cannot resolve the active workspace.
  */
 export async function mockWorkspaceTokenMint(
-  page: Page,
+  routeTarget: Page | BrowserContext,
   ws: Pick<WorkspaceWithRole, 'id' | 'name' | 'type' | 'role'>
 ) {
-  await page.route('**/api/auth/token', (r) =>
+  await routeTarget.route('**/api/auth/token', (r) =>
     r.fulfill(
       jsonRoute({
         token: 'mock-workspace-token',
@@ -60,10 +60,10 @@ export async function mockWorkspaceTokenMint(
  * reload.
  */
 export async function mockWorkspaceList(
-  page: Page,
+  routeTarget: Page | BrowserContext,
   workspaces: WorkspaceWithRole[]
 ): Promise<void> {
-  await page.route('**/api/workspaces', async (route) => {
+  await routeTarget.route('**/api/workspaces', async (route) => {
     if (route.request().method() !== 'GET') return route.fallback()
     await route.fulfill(jsonRoute({ workspaces }))
   })
@@ -74,13 +74,13 @@ export async function mockWorkspaceList(
  * given workspace with the given roster (drives the original-owner gate).
  */
 export async function mockWorkspace(
-  page: Page,
+  routeTarget: Page | BrowserContext,
   ws: WorkspaceWithRole,
   members: Member[]
 ) {
-  await mockWorkspaceList(page, [ws])
-  await mockWorkspaceTokenMint(page, ws)
-  await page.route('**/api/workspace/members**', (r) =>
+  await mockWorkspaceList(routeTarget, [ws])
+  await mockWorkspaceTokenMint(routeTarget, ws)
+  await routeTarget.route('**/api/workspace/members**', (r) =>
     r.fulfill(
       jsonRoute({
         members,

@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
@@ -38,28 +36,12 @@ function mergeOutputTooltipMessage(tooltip: string | null) {
   })
 }
 
-function mergeBundledMessages(messages: {
-  description: string | null
-  inputTooltip: string | null
-  outputTooltip: string | null
-}) {
-  i18n.global.mergeLocaleMessage('en', {
-    nodeDefs: {
-      SAM3_Detect: {
-        description: messages.description,
-        inputs: { positive_coords: { tooltip: messages.inputTooltip } },
-        outputs: { 0: { tooltip: messages.outputTooltip } }
-      }
-    }
-  })
-}
-
 const sam3DetectNodeDef: ComfyNodeDef = {
   name: 'SAM3_Detect',
   display_name: 'SAM3 Detect',
   category: 'detection/',
   python_module: 'comfy_extras.nodes_sam3',
-  description: 'Live SAM3 description',
+  description: '',
   input: {
     required: {},
     optional: {
@@ -82,8 +64,6 @@ const sam3DetectNodeDef: ComfyNodeDef = {
 
 describe('useNodeTooltips', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-
     vi.spyOn(useSettingStore(), 'get').mockImplementation(
       <K extends keyof Settings>(key: K): Settings[K] => {
         switch (key) {
@@ -103,7 +83,6 @@ describe('useNodeTooltips', () => {
 
   afterEach(() => {
     mergeOutputTooltipMessage(null)
-    vi.restoreAllMocks()
   })
 
   it('reads JSON examples in node metadata without i18n placeholder errors', () => {
@@ -145,37 +124,5 @@ describe('useNodeTooltips', () => {
     const textClass = pt?.text?.class ?? ''
     expect(textClass).toContain('whitespace-pre-line')
     expect(config.value).toContain('\n\n')
-  })
-
-  describe('when the bundled snapshot has gone stale', () => {
-    beforeEach(() => {
-      mergeBundledMessages({
-        description: 'stale bundled description',
-        inputTooltip: 'stale bundled input tooltip',
-        outputTooltip: 'stale bundled output tooltip'
-      })
-    })
-
-    afterEach(() => {
-      mergeBundledMessages({
-        description: null,
-        inputTooltip: jsonTooltip,
-        outputTooltip: null
-      })
-    })
-
-    it('prefers the live backend text over the snapshot', () => {
-      const {
-        getNodeDescription,
-        getInputSlotTooltip,
-        getOutputSlotTooltip,
-        getWidgetTooltip
-      } = useNodeTooltips('SAM3_Detect')
-
-      expect(getNodeDescription.value).toBe('Live SAM3 description')
-      expect(getInputSlotTooltip('positive_coords')).toBe(jsonTooltip)
-      expect(getOutputSlotTooltip(0)).toBe(jsonTooltip)
-      expect(getWidgetTooltip(positiveCoordsWidget)).toBe(jsonTooltip)
-    })
   })
 })

@@ -2,41 +2,14 @@ import { expect } from '@playwright/test'
 
 import type { ComfyApp } from '@/scripts/app'
 import { NodeBadgeMode } from '@/types/nodeSource'
-import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
-import {
-  routeObjectInfoFromSetupApi,
-  setNodeDisplayName
-} from '@e2e/fixtures/utils/objectInfo'
-
-const DEPRECATED_NODE_TYPE = 'ImageBatch'
-const DEPRECATED_NODE_DISPLAY_NAME = 'Batch Images'
-const API_NODE_TYPE = 'FluxProUltraImageNode'
-
-// English node titles come from the backend, so any golden containing a node
-// header would otherwise track whatever ComfyUI build the CI container ships.
-// Pinning the name before the app boots keeps those baselines stable.
-const test = comfyPageFixture.extend({
-  page: async ({ page }, use) => {
-    const unrouteObjectInfo = await routeObjectInfoFromSetupApi(
-      page,
-      (objectInfo) =>
-        setNodeDisplayName(
-          objectInfo,
-          DEPRECATED_NODE_TYPE,
-          DEPRECATED_NODE_DISPLAY_NAME
-        )
-    )
-    try {
-      await use(page)
-    } finally {
-      await unrouteObjectInfo()
-    }
-  }
-})
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
+
+const DEPRECATED_NODE_TYPE = 'ImageBatch'
+const API_NODE_TYPE = 'FluxProUltraImageNode'
 
 test.describe('Node Badge', { tag: ['@screenshot', '@smoke', '@node'] }, () => {
   test('Can add badge', async ({ comfyPage }) => {
