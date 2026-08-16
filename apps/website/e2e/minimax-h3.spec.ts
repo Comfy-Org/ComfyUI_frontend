@@ -1,5 +1,6 @@
 import { expect } from '@playwright/test'
 
+import { SHOW_FREE_TIER } from '../src/config/features'
 import { externalLinks, getRoutes } from '../src/config/routes'
 import { creatorReviews } from '../src/data/creatorReviews'
 import { minimaxLinks, minimaxPage } from '../src/data/minimax'
@@ -21,6 +22,8 @@ const FAQS = minimaxPage.faq?.items ?? []
 const FAQ_COUNT = FAQS.length
 const FIRST_FAQ = FAQS[0]
 const PRICING_HEADING = t('pricing.title', 'en')
+const BANNER_TITLE = t('minimax.pricing.banner.title', 'en')
+const BANNER_CTA = t('minimax.pricing.banner.cta', 'en')
 const REVIEWS_HEADING = t('minimax.reviews.heading', 'en')
 const HIGHLIGHT_CTA = t('minimax.reviews.highlightCta', 'en')
 const MCP_ROUTE = getRoutes('en').mcp
@@ -126,14 +129,28 @@ test.describe('MiniMax H3 page — pricing section', () => {
   })
 
   test('renders the free banner with a cloud signup CTA', async ({ page }) => {
-    const banner = page.getByText(t('minimax.pricing.banner.title', 'en'))
+    test.skip(!SHOW_FREE_TIER, 'free tier is closed to new sign-ups')
+
+    const banner = page.getByText(BANNER_TITLE)
     await banner.scrollIntoViewIfNeeded()
     await expect(banner).toBeVisible()
 
-    const tryFree = page.getByRole('link', {
-      name: t('minimax.pricing.banner.cta', 'en')
-    })
+    const tryFree = page.getByRole('link', { name: BANNER_CTA })
     await expect(tryFree).toHaveAttribute('href', CLOUD_URL)
+  })
+
+  test('drops the free banner while the free tier is closed', async ({
+    page
+  }) => {
+    test.skip(SHOW_FREE_TIER, 'free tier is open to new sign-ups')
+
+    const pricingSection = page.locator('section').filter({
+      has: page.getByRole('heading', { level: 2, name: PRICING_HEADING })
+    })
+    await pricingSection.scrollIntoViewIfNeeded()
+
+    await expect(page.getByText(BANNER_TITLE)).toHaveCount(0)
+    await expect(page.getByRole('link', { name: BANNER_CTA })).toHaveCount(0)
   })
 
   test('renders the shared pricing plans, team card and enterprise band', async ({
