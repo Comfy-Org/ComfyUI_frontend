@@ -59,6 +59,7 @@ import {
   getAllNonIoNodesInSubgraph,
   getExecutionIdsForSelectedNodes
 } from '@/utils/graphTraversalUtil'
+import { isSelectOnly } from '@/utils/litegraphUtil'
 import { filterOutputNodes } from '@/utils/nodeFilterUtil'
 import {
   ManagerUIState,
@@ -934,6 +935,9 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Delete Selected Items',
       versionAdded: '1.10.5',
       function: () => {
+        // Picking nodes for the agent is not editing: deleting stays off until
+        // the mode ends.
+        if (isSelectOnly(app.canvas)) return
         if (app.canvas.selectedItems.size === 0) {
           app.canvas.canvas.dispatchEvent(
             new CustomEvent('litegraph:no-items-selected', { bubbles: true })

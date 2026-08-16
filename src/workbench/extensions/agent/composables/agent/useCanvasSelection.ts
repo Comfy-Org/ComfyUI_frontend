@@ -37,7 +37,11 @@ export function useCanvasSelection(options: UseCanvasSelectionOptions) {
     ([isLive, isPaused, scope, nodes]) => {
       if (isPaused) return
       if (!isLive) {
-        staged.value = []
+        // Staged chips outlive the picking session. The basket is an explicit
+        // reference list the user built, not a mirror of the live canvas
+        // selection - so leaving the mode (which also clears the selection)
+        // must not empty it. Only the bookkeeping resets, so the next session
+        // starts clean.
         consumedSig.value = null
         stagedSig.value = null
         lastLiveSig = null

@@ -2,6 +2,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
@@ -11,17 +12,131 @@ vi.mock('@/stores/dialogStore', () => ({
   useDialogStore: () => ({ dialogStack })
 }))
 
+const settings = vi.hoisted(() => {
+  const values = new Map<string, unknown>()
+  return {
+    values,
+    get: (key: string) => values.get(key),
+    set: vi.fn((key: string, value: unknown) => {
+      values.set(key, value)
+      return Promise.resolve()
+    })
+  }
+})
+
+vi.mock('@/platform/settings/settingStore', () => ({
+  useSettingStore: () => settings
+}))
+
+/**
+ * Real nodes carry `pos`/`size`; `boundingRect` is litegraph-renderer cache that
+ * stays zeroed under Vue nodes, so the fit deliberately ignores it.
+ */
+function graphNode(
+  id: number,
+  pos?: [number, number],
+  size?: [number, number]
+) {
+  return { id, pos, size, boundingRect: new Float64Array(4) }
+}
+
+/** The minimum canvas surface entering and leaving the mode touches. */
+function stubCanvas(nodes: unknown[], selected: unknown[] = []) {
+  const animateToBounds = vi.fn()
+  const selectedItems = new Set(selected)
+  const deselectAll = vi.fn(() => selectedItems.clear())
+  useCanvasStore().canvas = {
+    graph: { nodes },
+    selectedItems,
+    deselectAll,
+    animateToBounds,
+    canvas: { width: 1600, height: 900 }
+  } as never
+  return { animateToBounds, deselectAll, selectedItems }
+}
+
 describe('agentNodeSelectionStore', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     dialogStack.length = 0
+    settings.values.clear()
+    settings.set.mockClear()
     setActivePinia(createPinia())
   })
 
   afterEach(() => {
     vi.useRealTimers()
+    document.body.classList.remove('node-selection-active')
   })
 
+  // PrimeVue teleports every `<Toast>` container to `<body>` and several
+  // components mount their own groups, so the layer can only be hidden from the
+  // root. The mode owns the marker because no one toast component renders them
+  // all - and because it must outlive any component that might unmount mid-mode.
+  it('hides the toast layer for the duration of the mode', async () => {
+    const store = useAgentNodeSelectionStore()
+
+    store.enter()
+    await nextTick()
+    expect(document.body).toHaveClass('node-selection-active')
+
+    store.exit()
+    await nextTick()
+    expect(document.body).not.toHaveClass('node-selection-active')
+  })
+
+  // Flipping the setting rather than overriding the minimap is what keeps the
+  // user's own toggle working while they pick.
+  it('turns a visible minimap off on entry and back on when leaving', async () => {
+    settings.values.set('Comfy.Minimap.Visible', true)
+    const store = useAgentNodeSelectionStore()
+
+    store.enter()
+    await nextTick()
+    expect(settings.values.get('Comfy.Minimap.Visible')).toBe(false)
+
+    store.exit()
+    await nextTick()
+    expect(settings.values.get('Comfy.Minimap.Visible')).toBe(true)
+  })
+
+  it('leaves the minimap setting alone when it was already off', async () => {
+    settings.values.set('Comfy.Minimap.Visible', false)
+    const store = useAgentNodeSelectionStore()
+
+    store.enter()
+    await nextTick()
+    store.exit()
+    await nextTick()
+
+    expect(settings.set).not.toHaveBeenCalled()
+    expect(settings.values.get('Comfy.Minimap.Visible')).toBe(false)
+  })
+
+  it('clears the canvas selection on exit', () => {
+    const node = graphNode(1, [0, 0], [100, 100])
+    const { deselectAll, selectedItems } = stubCanvas([node], [node])
+    const store = useAgentNodeSelectionStore()
+
+    store.enter()
+    store.exit()
+
+    expect(deselectAll).toHaveBeenCalledOnce()
+    expect(selectedItems.size).toBe(0)
+  })
+
+  it('leaves the canvas alone on exit when nothing was selected', () => {
+    const { deselectAll } = stubCanvas([graphNode(1, [0, 0], [100, 100])])
+    const store = useAgentNodeSelectionStore()
+
+    store.enter()
+    store.exit()
+
+    expect(deselectAll).not.toHaveBeenCalled()
+  })
+
+  // Entering with a selection means the user already knows which nodes they
+  // care about; framing the whole graph would zoom away from them.
   it('sequences selection chrome and restores the open sidebar', async () => {
     const sidebar = useSidebarTabStore()
     sidebar.activeSidebarTabId = 'assets'
@@ -47,10 +162,25 @@ describe('agentNodeSelectionStore', () => {
     expect(store.isActive).toBe(false)
     expect(store.isBannerVisible).toBe(false)
     expect(store.isActionBarsHidden).toBe(true)
-    expect(sidebar.activeSidebarTabId).toBe('assets')
+    // Staged like the entry side: still closed while the banner retracts.
+    expect(sidebar.activeSidebarTabId).toBeNull()
 
     vi.advanceTimersByTime(150)
     expect(store.isActionBarsHidden).toBe(false)
+    expect(sidebar.activeSidebarTabId).toBe('assets')
+  })
+
+  it('does not reopen a sidebar the user never had open', () => {
+    const sidebar = useSidebarTabStore()
+    sidebar.activeSidebarTabId = null
+    const store = useAgentNodeSelectionStore()
+
+    store.enter()
+    vi.advanceTimersByTime(200)
+    store.exit()
+    vi.advanceTimersByTime(150)
+
+    expect(sidebar.activeSidebarTabId).toBeNull()
   })
 
   it('exits on Escape unless a dialog is open', async () => {
