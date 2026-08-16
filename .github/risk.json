@@ -125,7 +125,6 @@
       "tier": "R3",
       "why": "entity callbacks, node.widgets, serialize and the app/api surface are consumed by 40+ custom-node repos — consumers break out of band (ADR 0003/0008)",
       "paths": [
-        "packages/comfyui-desktop-bridge-types/**",
         "packages/*/src/schemas/**",
         "src/core/schemas/**",
         "src/schemas/**",
