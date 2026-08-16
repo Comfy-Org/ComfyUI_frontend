@@ -4,8 +4,6 @@
  * Tests for SubgraphNode instances including construction,
  * IO synchronization, and edge cases.
  */
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fromPartial } from '@total-typescript/shoehorn'
 
@@ -29,7 +27,6 @@ import {
 } from './__fixtures__/subgraphHelpers'
 
 beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
   resetSubgraphFixtureState()
 })
 
@@ -955,8 +952,6 @@ describe('SubgraphNode Cleanup', () => {
 
 describe('SubgraphNode duplicate input pruning (#9977)', () => {
   it('should prune inputs that have no matching subgraph slot after configure', () => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-
     const subgraph = createTestSubgraph({
       inputs: [
         { name: 'a', type: 'STRING' },
@@ -990,8 +985,6 @@ describe('SubgraphNode duplicate input pruning (#9977)', () => {
   })
 
   it('should not accumulate duplicate inputs on reconfigure', () => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-
     const subgraph = createTestSubgraph({
       inputs: [
         { name: 'a', type: 'STRING' },
@@ -1012,8 +1005,6 @@ describe('SubgraphNode duplicate input pruning (#9977)', () => {
   })
 
   it('should serialize with exactly the subgraph-defined inputs', () => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-
     const subgraph = createTestSubgraph({
       inputs: [
         { name: 'x', type: 'IMAGE' },
@@ -1031,8 +1022,6 @@ describe('SubgraphNode duplicate input pruning (#9977)', () => {
 
 describe('Nested SubgraphNode duplicate input prevention', () => {
   it('should not duplicate inputs when the referenced subgraph is reconfigured', () => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-
     const subgraph = createTestSubgraph({
       inputs: [
         { name: 'a', type: 'STRING' },
@@ -1056,8 +1045,6 @@ describe('Nested SubgraphNode duplicate input prevention', () => {
   })
 
   it('should not accumulate inputs across multiple reconfigure cycles', () => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-
     const subgraph = createTestSubgraph({
       inputs: [
         { name: 'x', type: 'IMAGE' },

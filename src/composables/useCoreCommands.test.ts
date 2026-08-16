@@ -1,4 +1,3 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
@@ -104,10 +103,6 @@ vi.mock('@/stores/authStore', () => ({
   useAuthStore: vi.fn(() => ({}))
 }))
 
-vi.mock('@/composables/auth/useFirebaseAuth', () => ({
-  useFirebaseAuth: vi.fn(() => null)
-}))
-
 vi.mock('firebase/auth', () => ({
   setPersistence: vi.fn(),
   browserLocalPersistence: {},
@@ -150,10 +145,6 @@ vi.mock('@/platform/settings/composables/useSettingsDialog', () => ({
 
 vi.mock('@/stores/executionStore', () => ({
   useExecutionStore: vi.fn(() => ({}))
-}))
-
-vi.mock('@/stores/toastStore', () => ({
-  useToastStore: vi.fn(() => ({}))
 }))
 
 const mockToastAdd = vi.hoisted(() => vi.fn())
@@ -209,14 +200,14 @@ vi.mock('@/composables/auth/useAuthActions', () => ({
 
 vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
   useSubscription: vi.fn(() => ({
-    isActiveSubscription: vi.fn().mockReturnValue(true),
+    canAccessSubscriptionFeatures: vi.fn().mockReturnValue(true),
     showSubscriptionDialog: vi.fn()
   }))
 }))
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: vi.fn(() => ({
-    isActiveSubscription: { value: true },
+    canAccessSubscriptionFeatures: { value: true },
     showSubscriptionDialog: vi.fn()
   }))
 }))
@@ -310,14 +301,10 @@ describe('useCoreCommands', () => {
   }
 
   beforeEach(() => {
-    vi.clearAllMocks()
     mockDistributionState.isCloud = false
     vi.mocked(app.refreshComboInNodes).mockResolvedValue(undefined)
     mockModelStoreRefresh.mockResolvedValue(undefined)
     mockMissingModelStoreRefresh.mockResolvedValue(undefined)
-
-    // Set up Pinia
-    setActivePinia(createPinia())
 
     // Reset app state
     app.canvas.subgraph = undefined
@@ -398,9 +385,6 @@ describe('useCoreCommands', () => {
 
     beforeEach(() => {
       app.canvas.selectedItems = new Set()
-      vi.mocked(app.canvas.copyToClipboard).mockClear()
-      vi.mocked(app.canvas.pasteFromClipboard).mockClear()
-      vi.mocked(app.canvas.selectItems).mockClear()
     })
 
     it('should copy selected items when selection exists', async () => {
@@ -436,7 +420,6 @@ describe('useCoreCommands', () => {
   describe('Subgraph metadata commands', () => {
     beforeEach(() => {
       mockSubgraph.extra = {}
-      vi.clearAllMocks()
     })
 
     describe('SetDescription command', () => {

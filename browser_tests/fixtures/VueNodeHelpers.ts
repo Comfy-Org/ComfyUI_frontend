@@ -192,6 +192,16 @@ export class VueNodeHelpers {
     })
   }
 
+  getWidgetRowByLabel(nodeTitle: string, widgetName: string): Locator {
+    const widgetLabel = this.page
+      .getByTestId(TestIds.widgets.layoutFieldLabel)
+      .and(this.page.getByText(widgetName, { exact: true }))
+
+    return this.getNodeByTitle(nodeTitle)
+      .getByTestId(TestIds.widgets.widget)
+      .filter({ has: widgetLabel })
+  }
+
   /**
    * Get the visible widget tooltip text element (PrimeVue tooltip portal).
    */

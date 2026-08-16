@@ -209,6 +209,30 @@ const showdownStreamHref: LocalizedText = {
 // zh-CN copy is a first pass and pending native review.
 const events: readonly ComfyEvent[] = [
   {
+    id: 'beyond-the-models',
+    category: 'livestream',
+    title: {
+      en: 'Using Comfy to Go Beyond the Models: Custom Workflows for Commercial and Film Production',
+      'zh-CN': '善用 Comfy，超越模型本身：面向商业与影视制作的自定义工作流'
+    },
+    description: {
+      en: 'Go beyond off-the-shelf models: a live walkthrough of building custom ComfyUI workflows for commercial and film production.',
+      'zh-CN':
+        '超越开箱即用的模型：现场演示如何为商业与影视制作构建自定义 ComfyUI 工作流。'
+    },
+    location: { en: 'Online', 'zh-CN': '线上' },
+    dateLabel: {
+      en: 'August 19, 2026 · 10AM PT',
+      'zh-CN': '2026年8月19日 · 上午10点（PT）'
+    },
+    startDateTime: '2026-08-19T10:00:00-07:00',
+    liveVideoId: 'IzTI8oK_Wg4',
+    media: eventImage('livestream-aug-19.jpg', {
+      en: 'Using Comfy to Go Beyond the Models livestream',
+      'zh-CN': '善用 Comfy，超越模型本身直播'
+    })
+  },
+  {
     id: 'future-ai-post-production',
     category: 'livestream',
     title: {
@@ -272,6 +296,27 @@ const events: readonly ComfyEvent[] = [
       ),
       autoplayMs: 5000
     }
+  },
+  {
+    id: 'comfy-creatives-model-jam',
+    category: 'livestream',
+    title: {
+      en: 'Comfy Creatives Model Jam: MiniMax H3, Seedance 2.5, Wan Animate 2 & More',
+      'zh-CN':
+        'Comfy Creatives 模型大乱斗：MiniMax H3、Seedance 2.5、Wan Animate 2 等'
+    },
+    description: {
+      en: 'The Comfy Creatives community jams on the latest models — MiniMax H3, Seedance 2.5, Wan Animate 2, and more — in a hands-on livestream.',
+      'zh-CN':
+        'Comfy Creatives 社区在这场实战直播中集中体验最新模型——MiniMax H3、Seedance 2.5、Wan Animate 2 等。'
+    },
+    location: { en: 'Online', 'zh-CN': '线上' },
+    media: eventImage('livestream_aug-10.jpg', {
+      en: 'Comfy Creatives Model Jam livestream recording',
+      'zh-CN': 'Comfy Creatives 模型大乱斗直播回放'
+    }),
+    startDateTime: '2026-08-10T10:00:00-07:00',
+    recordingVideoId: 'BCqp2xnUeKk'
   },
   {
     id: 'july-launches',

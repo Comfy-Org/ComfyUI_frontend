@@ -1,7 +1,5 @@
 <template>
-  <footer
-    class="mx-auto flex h-[5%] max-h-[60px] w-5/6 items-start justify-center gap-2.5"
-  >
+  <footer class="mt-10 flex w-full shrink-0 items-start justify-center gap-2.5">
     <a
       href="https://www.comfy.org/terms-of-service"
       target="_blank"
