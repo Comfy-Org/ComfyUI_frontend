@@ -1,8 +1,21 @@
+import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
+
+import type { RemoteConfig } from '@/platform/remoteConfig/types'
+
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 const SHARE_AUTH_STORAGE_KEY = 'Comfy.PreservedQuery.share_auth'
+
+async function pinFreeTierFlag(page: Page, enabled: boolean) {
+  await page.route('**/api/features', (route) =>
+    route.fulfill(
+      jsonRoute({ new_free_tier_subscriptions: enabled } satisfies RemoteConfig)
+    )
+  )
+}
 
 /**
  * Cloud distribution E2E tests.
@@ -45,6 +58,30 @@ test.describe('Cloud distribution UI', { tag: '@cloud' }, () => {
     await expect(page).toHaveURL(/\/cloud\/login/, { timeout: 10_000 })
     // Verify cloud-specific login UI is rendered
     await expect(page.getByRole('button', { name: /google/i })).toBeVisible()
+  })
+
+  test('cloud login page advertises free runs while the free tier takes sign-ups', async ({
+    page
+  }) => {
+    await pinFreeTierFlag(page, true)
+
+    await page.goto(APP_URL)
+    await expect(page).toHaveURL(/\/cloud\/login/, { timeout: 10_000 })
+
+    await expect(page.getByRole('link', { name: /sign up/i })).toBeVisible()
+    await expect(page.getByText(/free run/i)).toBeVisible()
+  })
+
+  test('cloud login page withholds the free-run claim once the free tier stops taking sign-ups', async ({
+    page
+  }) => {
+    await pinFreeTierFlag(page, false)
+
+    await page.goto(APP_URL)
+    await expect(page).toHaveURL(/\/cloud\/login/, { timeout: 10_000 })
+
+    await expect(page.getByRole('link', { name: /sign up/i })).toBeVisible()
+    await expect(page.getByText(/free run/i)).toHaveCount(0)
   })
 
   test('unknown paths redirect to cloud login instead of hanging on splash screen', async ({

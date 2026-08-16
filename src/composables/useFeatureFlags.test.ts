@@ -207,6 +207,38 @@ describe('useFeatureFlags', () => {
     })
   })
 
+  describe('freeTierSubscriptionsEnabled', () => {
+    afterEach(() => {
+      remoteConfig.value = {}
+    })
+
+    it('follows the remote flag when the free tier is taking sign-ups', () => {
+      remoteConfig.value = { new_free_tier_subscriptions: true }
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.freeTierSubscriptionsEnabled).toBe(true)
+    })
+
+    it('is off when the remote flag says the free tier is closed', () => {
+      remoteConfig.value = { new_free_tier_subscriptions: false }
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.freeTierSubscriptionsEnabled).toBe(false)
+    })
+
+    it('fails closed when the remote flag is absent, so no free tier is promised', () => {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (_path, defaultValue) => defaultValue
+      )
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.freeTierSubscriptionsEnabled).toBe(false)
+    })
+  })
+
   describe('onboardingTourEnabled', () => {
     afterEach(() => {
       remoteConfig.value = {}

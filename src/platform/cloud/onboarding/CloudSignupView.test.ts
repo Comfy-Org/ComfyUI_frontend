@@ -44,14 +44,11 @@ vi.mock('@/utils/networkUtil', () => ({
 }))
 
 const freeTier = vi.hoisted(() => ({ value: false }))
-vi.mock(
-  '@/platform/cloud/onboarding/composables/useFreeTierOnboarding',
-  () => ({
-    useFreeTierOnboarding: () => ({
-      isFreeTierEnabled: { value: freeTier.value }
-    })
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({
+    flags: { freeTierSubscriptionsEnabled: freeTier.value }
   })
-)
+}))
 
 const MESSAGES = {
   auth: {

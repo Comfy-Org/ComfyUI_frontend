@@ -36,6 +36,7 @@ export enum ServerFeatureFlag {
   BILLING_CONTROL_ENABLED = 'billing_control_enabled',
   V1_PAYMENT_RECOVERY = 'v1_payment_recovery',
   FREE_TIER_JOB_ALLOWANCE_ENABLED = 'free_tier_job_allowance_enabled',
+  NEW_FREE_TIER_SUBSCRIPTIONS = 'new_free_tier_subscriptions',
   CHURNKEY_APP_ID = 'churnkey_app_id',
   SIGNUP_TURNSTILE = 'signup_turnstile',
   SUPPORTS_MODEL_TYPE_TAGS = 'supports_model_type_tags',
@@ -218,6 +219,21 @@ export function useFeatureFlags() {
       return resolveFlag(
         ServerFeatureFlag.FREE_TIER_JOB_ALLOWANCE_ENABLED,
         config.free_tier_job_allowance_enabled,
+        false
+      )
+    },
+    /**
+     * Whether the free tier is open to new sign-ups. Gate every Cloud app
+     * surface that *advertises* the free tier on this. Two neighbours are easy
+     * to confuse it with: `freeTierJobAllowanceEnabled` governs run quota for
+     * users already on the free tier, and the marketing site has its own
+     * build-time `SHOW_FREE_TIER` constant, since it ships statically and
+     * cannot read this at runtime.
+     */
+    get freeTierSubscriptionsEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.NEW_FREE_TIER_SUBSCRIPTIONS,
+        remoteConfig.value.new_free_tier_subscriptions,
         false
       )
     },

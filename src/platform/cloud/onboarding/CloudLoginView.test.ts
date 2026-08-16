@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import CloudLoginView from '@/platform/cloud/onboarding/CloudLoginView.vue'
 
 vi.mock('@/composables/auth/useAuthActions', () => ({
@@ -22,19 +23,18 @@ vi.mock('@/base/webviewDetection', () => ({
   isEmbeddedWebView: () => isEmbeddedWebView.value
 }))
 
-const FREE_RUN_MESSAGES = {
-  auth: {
-    login: {
-      cloudNewUser: 'New to Comfy?',
-      cloudSignUp: 'Sign up here',
-      freeRunsSuffix: 'to get {count} free run. | to get {count} free runs.'
-    }
-  }
-}
+const freeTierOpen = vi.hoisted(() => ({ value: false }))
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({
+    flags: { freeTierSubscriptionsEnabled: freeTierOpen.value }
+  })
+}))
+
+const EN_MESSAGES = { auth: { login: enMessages.auth.login } }
 
 async function renderLoginView(
   url = '/cloud/login',
-  messages: Partial<typeof FREE_RUN_MESSAGES> = {}
+  messages: Partial<typeof EN_MESSAGES> = {}
 ) {
   const router = createRouter({
     history: createMemoryHistory(),
@@ -65,13 +65,26 @@ async function renderLoginView(
 
 afterEach(() => {
   isEmbeddedWebView.value = false
+  freeTierOpen.value = false
 })
 
 describe('CloudLoginView', () => {
-  it('advertises the free runs offered on sign-up', async () => {
-    await renderLoginView('/cloud/login', FREE_RUN_MESSAGES)
+  it('advertises the free runs offered on sign-up while the free tier is open', async () => {
+    freeTierOpen.value = true
 
-    expect(screen.getByText(/to get 5 free runs\./)).toBeInTheDocument()
+    const { container } = await renderLoginView('/cloud/login', EN_MESSAGES)
+
+    expect(container.textContent).toMatch(/to get 5 free runs\./)
+  })
+
+  it('drops the free-run claim once the free tier stops taking sign-ups', async () => {
+    const { container } = await renderLoginView('/cloud/login', EN_MESSAGES)
+
+    expect(container.textContent).toContain(enMessages.auth.login.cloudNewUser)
+    expect(
+      screen.getByRole('link', { name: enMessages.auth.login.cloudSignUp })
+    ).toBeInTheDocument()
+    expect(container.textContent).not.toMatch(/free/i)
   })
 
   it('carries the incoming query onto the sign-up link', async () => {

@@ -2,6 +2,7 @@
 import type { Locale } from '../../i18n/translations'
 import type { ModelLaunchPricing } from './types'
 
+import { SHOW_FREE_TIER } from '../../config/features'
 import PricingFreeBanner from '../../components/pricing/PricingFreeBanner.vue'
 import PricingSection from '../../components/pricing/PricingSection.vue'
 
@@ -17,7 +18,7 @@ const { locale = 'en', pricing } = defineProps<{
     :default-billing-cycle="pricing.defaultBillingCycle"
     :locale
   >
-    <template v-if="pricing.banner" #banner>
+    <template v-if="SHOW_FREE_TIER && pricing.banner" #banner>
       <PricingFreeBanner
         :title-key="pricing.banner.titleKey"
         :subtitle-key="pricing.banner.subtitleKey"

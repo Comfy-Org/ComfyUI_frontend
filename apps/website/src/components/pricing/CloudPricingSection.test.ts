@@ -1,8 +1,19 @@
 // @vitest-environment happy-dom
 import { render, screen } from '@testing-library/vue'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import CloudPricingSection from './CloudPricingSection.vue'
+
+const showFreeTier = vi.hoisted(() => ({ value: true }))
+vi.mock('../../config/features', () => ({
+  get SHOW_FREE_TIER() {
+    return showFreeTier.value
+  }
+}))
+
+afterEach(() => {
+  showFreeTier.value = true
+})
 
 function isBefore(first: Element, second: Element) {
   return Boolean(
@@ -36,5 +47,15 @@ describe('CloudPricingSection', () => {
     expect(screen.getByText('免费开始，准备好了再升级。')).toBeTruthy()
     expect(screen.getByRole('link', { name: '免费试用' })).toBeTruthy()
     expect(screen.queryByText(/Start free/)).toBeNull()
+  })
+
+  it('keeps the plan cards but drops the banner while SHOW_FREE_TIER is off', () => {
+    showFreeTier.value = false
+
+    render(CloudPricingSection)
+
+    expect(screen.queryByText(/Start free/)).toBeNull()
+    expect(screen.queryByRole('link', { name: 'TRY FREE' })).toBeNull()
+    expect(screen.getByText('MOST POPULAR')).toBeTruthy()
   })
 })
