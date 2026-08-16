@@ -151,14 +151,10 @@ export function useFeatureFlags() {
       return api.getServerFeature(ServerFeatureFlag.NODE_REPLACEMENTS, false)
     },
     get nodeLibraryEssentialsEnabled() {
-      if (isNightly || import.meta.env.DEV) return true
-
-      return (
-        remoteConfig.value.node_library_essentials_enabled ??
-        api.getServerFeature(
-          ServerFeatureFlag.NODE_LIBRARY_ESSENTIALS_ENABLED,
-          false
-        )
+      return resolveFlag(
+        ServerFeatureFlag.NODE_LIBRARY_ESSENTIALS_ENABLED,
+        remoteConfig.value.node_library_essentials_enabled,
+        isNightly || import.meta.env.DEV
       )
     },
     get workflowSharingEnabled() {
