@@ -2333,12 +2333,8 @@ describe('assetsStore - Flat Output Assets (cloud-only)', () => {
 })
 
 describe('assetsStore - reset() on identity change', () => {
-  const makeAsset = (id: string, name: string): AssetItem => ({
-    id,
-    name,
-    size: 0,
-    tags: ['output']
-  })
+  const makeAsset = (id: string, name: string): AssetItem =>
+    fromPartial({ id, name, size: 0, tags: ['output'] })
 
   const makePage = (assets: AssetItem[]): AssetResponse => ({
     assets,
@@ -2482,7 +2478,7 @@ describe('assetsStore - reset() on identity change', () => {
       const store = useAssetsStore()
 
       vi.mocked(assetService.getAssetsByTag).mockResolvedValue([
-        { id: 'input-1', name: 'account-a.png', tags: ['input'] }
+        fromPartial({ id: 'input-1', name: 'account-a.png', tags: ['input'] })
       ])
       vi.mocked(assetService.getAssetsPageForNodeType).mockResolvedValue(
         makePage([makeAsset('model-1', 'account-a.safetensors')])
@@ -2520,7 +2516,9 @@ describe('assetsStore - reset() on identity change', () => {
       const inFlightUpdate = store.updateInputs()
 
       store.reset()
-      resolveInputs([{ id: 'input-1', name: 'account-a.png', tags: ['input'] }])
+      resolveInputs([
+        fromPartial({ id: 'input-1', name: 'account-a.png', tags: ['input'] })
+      ])
       await inFlightUpdate
 
       expect(store.inputAssets).toEqual([])
