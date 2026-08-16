@@ -92,7 +92,7 @@ function toCoachStep(
     coachId: COACH_ID[step.kind],
     deferTarget: true,
     cursor: true,
-    interactive: step.kind === 'prompt' || step.kind === 'run'
+    interactive: step.kind !== 'result'
   }
 
   if (step.kind === 'run')

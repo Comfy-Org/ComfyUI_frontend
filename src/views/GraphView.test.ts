@@ -1,7 +1,5 @@
-import { createTestingPinia } from '@pinia/testing'
 import { render } from '@testing-library/vue'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import type * as VueUseCore from '@vueuse/core'
@@ -193,23 +191,25 @@ vi.mock('@/components/MenuHamburger.vue', () => stubModule)
 vi.mock('@/components/dialog/UnloadWindowConfirmDialog.vue', () => stubModule)
 vi.mock('@/renderer/extensions/firstRunTour/FirstRunTour.vue', () => stubModule)
 
-describe('GraphView - reconnect wiring', () => {
-  beforeEach(() => {
-    vi.restoreAllMocks()
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
+// Imported at module scope, not inside the test. `vi.mock` is hoisted above
+// every import, so the stubs above still apply — but compiling GraphView.vue
+// and its import graph costs seconds, and awaited inside a test body that is
+// billed against the 5 s test timeout. That is what failed this test under a
+// loaded worker pool while it passed in isolation (#14666).
+const { default: GraphView } = await import('./GraphView.vue')
 
-  it('wires the reconnected event to the toast and queue refresh', async () => {
-    const GraphView = (await import('./GraphView.vue')).default
+describe('GraphView - reconnect wiring', () => {
+  it('wires the reconnected event to the toast and queue refresh', () => {
     render(GraphView)
 
     apiMock.dispatchEvent(new Event('reconnected'))
 
+    // `handleReconnected` calls both before its first `await`, so dispatching
+    // the event is enough — there is nothing to wait for, and waiting for it
+    // only hid how long the import above was taking.
     const { onReconnected } = useReconnectingNotification()
     const refreshOnReconnect = useReconnectQueueRefresh()
-    await vi.waitFor(() => {
-      expect(onReconnected).toHaveBeenCalledTimes(1)
-      expect(refreshOnReconnect).toHaveBeenCalledTimes(1)
-    })
+    expect(onReconnected).toHaveBeenCalledTimes(1)
+    expect(refreshOnReconnect).toHaveBeenCalledTimes(1)
   })
 })
