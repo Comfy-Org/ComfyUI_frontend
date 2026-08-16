@@ -45,6 +45,7 @@
     "@astrojs/mdx": "catalog:",
     "@astrojs/vue": "catalog:",
     "@playwright/test": "catalog:",
+    "@storybook/vue3-vite": "catalog:",
     "@tailwindcss/vite": "catalog:",
     "@testing-library/user-event": "catalog:",
     "@testing-library/vue": "catalog:",

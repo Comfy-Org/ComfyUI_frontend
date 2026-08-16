@@ -17,10 +17,16 @@ import WidgetVideoEdit from './WidgetVideoEdit.vue'
 const hostNode = { id: 'host' }
 const locatorNode = { id: 'inner' }
 
-const mocks = vi.hoisted(() => ({
-  getNodeByLocatorId: vi.fn(),
-  resolvedSource: undefined as unknown
-}))
+const mocks = vi.hoisted(() => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { ref: createRef } = require('vue')
+  return {
+    getNodeByLocatorId: vi.fn(),
+    resolvedSource: undefined as unknown,
+    filmstripError: createRef(null) as { value: string | null },
+    filmstripRetry: vi.fn()
+  }
+})
 
 vi.mock('@/scripts/app', () => ({
   app: {
@@ -50,14 +56,16 @@ vi.mock('@/composables/video/useVideoFilmstrip', () => {
   return {
     DEFAULT_VIDEO_FPS: 20,
     useVideoFilmstrip: () => ({
-      thumbnails: createRef([]),
+      thumbnail: createRef(''),
       duration: createRef(10),
       totalFrames: createRef(100),
       width: createRef(1920),
       height: createRef(1080),
       fps: createRef(10),
       fileSize: createRef(1024),
-      loading: createRef(false)
+      loading: createRef(false),
+      error: mocks.filmstripError,
+      retry: mocks.filmstripRetry
     })
   }
 })
@@ -68,7 +76,7 @@ const PanelStub = defineComponent({
   props: {
     features: { type: Array as PropType<VideoEditFeature[]>, required: true },
     videoUrl: { type: String, required: false },
-    thumbnails: { type: Array as PropType<string[]>, required: true },
+    thumbnail: { type: String, required: true },
     totalFrames: { type: Number, required: true },
     duration: { type: Number, required: true },
     fps: { type: Number, required: true },
@@ -76,26 +84,24 @@ const PanelStub = defineComponent({
     width: { type: Number, required: true },
     height: { type: Number, required: true },
     loading: { type: Boolean, required: false },
+    error: { type: String, required: false },
     startFrame: { type: Number, required: true },
     endFrame: { type: Number, required: true },
-    cropBounds: { type: Object as PropType<Bounds>, required: true },
-    trimEnabled: { type: Boolean, required: true },
-    cropEnabled: { type: Boolean, required: true }
+    cropBounds: { type: Object as PropType<Bounds>, required: true }
   },
-  emits: [
-    'update:startFrame',
-    'update:endFrame',
-    'update:cropBounds',
-    'update:trimEnabled',
-    'update:cropEnabled'
-  ],
+  emits: ['update:startFrame', 'update:endFrame', 'update:cropBounds', 'retry'],
   setup(props, { emit }) {
     recorded.props = props
-    return () =>
+    return () => [
       h('button', {
         'data-testid': 'emit-start-frame',
         onClick: () => emit('update:startFrame', 10)
+      }),
+      h('button', {
+        'data-testid': 'emit-retry',
+        onClick: () => emit('retry')
       })
+    ]
   }
 })
 
@@ -139,7 +145,7 @@ describe('WidgetVideoEdit', () => {
   beforeEach(() => {
     recorded.props = undefined
     mocks.resolvedSource = undefined
-    mocks.getNodeByLocatorId.mockReset()
+    mocks.filmstripError.value = null
   })
 
   it('resolves the source from the host node when no locator is present', () => {
@@ -184,6 +190,22 @@ describe('WidgetVideoEdit', () => {
     expect(recorded.props?.videoUrl).toBe('/api/view?filename=clip.mp4')
     expect(recorded.props?.duration).toBe(10)
     expect(recorded.props?.totalFrames).toBe(100)
+  })
+
+  it('forwards filmstrip errors to the panel', () => {
+    mocks.filmstripError.value = 'load-failed'
+
+    renderWidget()
+
+    expect(recorded.props?.error).toBe('load-failed')
+  })
+
+  it('retries the filmstrip load when the panel asks for it', async () => {
+    renderWidget()
+
+    await userEvent.click(screen.getByTestId('emit-retry'))
+
+    expect(mocks.filmstripRetry).toHaveBeenCalledTimes(1)
   })
 
   it('writes trim seconds into the model when the panel moves a frame handle', async () => {

@@ -6,24 +6,7 @@ import { createI18n } from 'vue-i18n'
 
 import AnimationControls from '@/components/load3d/controls/AnimationControls.vue'
 
-vi.mock('@/components/ui/slider/Slider.vue', () => ({
-  default: {
-    name: 'UiSlider',
-    props: ['modelValue', 'min', 'max', 'step'],
-    emits: ['update:modelValue'],
-    template: `
-      <input
-        type="range"
-        role="slider"
-        :value="Array.isArray(modelValue) ? modelValue[0] : modelValue"
-        :min="min"
-        :max="max"
-        :step="step"
-        @input="$emit('update:modelValue', [Number($event.target.value)])"
-      />
-    `
-  }
-}))
+vi.mock('@/components/ui/slider/Slider.vue')
 
 const i18n = createI18n({
   legacy: false,
