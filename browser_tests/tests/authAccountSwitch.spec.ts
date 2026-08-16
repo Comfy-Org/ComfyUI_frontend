@@ -6,9 +6,9 @@ import type { WorkspaceTokenResponse } from '@/platform/workspace/stores/workspa
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { AssetsSidebarTab } from '@e2e/fixtures/components/SidebarTab'
 import {
+  CLOUD_REMOTE_CONFIG,
   DEFAULT_TEAM_MEMBERS,
-  TEAM_WORKSPACE,
-  WORKSPACE_FEATURE_FLAG
+  TEAM_WORKSPACE
 } from '@e2e/fixtures/data/cloudWorkspace'
 import { AssetsHelper, createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
 import { CloudWorkspaceMockHelper } from '@e2e/fixtures/helpers/CloudWorkspaceMockHelper'
@@ -141,7 +141,7 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
     await page.unroute('**/securetoken.googleapis.com/**')
 
     const features = {
-      ...WORKSPACE_FEATURE_FLAG,
+      ...CLOUD_REMOTE_CONFIG,
       onboarding_survey_enabled: false,
       unified_cloud_auth: false
     } satisfies RemoteConfig
