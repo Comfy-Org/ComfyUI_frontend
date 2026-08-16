@@ -2317,6 +2317,14 @@ export type JobDetailResponse = {
    */
   workflow_id?: string
   /**
+   * UUID of the cloud workflow version this job is pinned to, if the
+   * submission carried one (see PromptRequest's workflow_version_id).
+   * Absent for jobs submitted without that association, including
+   * every job submitted through the public API v2 today.
+   *
+   */
+  workflow_version_id?: string
+  /**
    * ID of the workspace that owns this job. A successful (200)
    * response from this operation is only ever returned for the
    * caller's own job (see this operation's ownership-scoped
@@ -2460,6 +2468,10 @@ export type HubWorkflowTemplateEntry = {
     }>
   }
   /**
+   * Whether App Mode is this workflow's default view.
+   */
+  isApp: boolean
+  /**
    * Whether the template belongs to a module marked as essential.
    */
   isEssential?: boolean
@@ -2546,6 +2558,10 @@ export type HubProfileSummary = {
 export type HubWorkflowSummary = {
   custom_nodes?: Array<LabelRef>
   description?: string
+  /**
+   * Whether App Mode is this workflow's default view.
+   */
+  is_app: boolean
   metadata?: {
     [key: string]: unknown
   }
@@ -2587,6 +2603,10 @@ export type HubWorkflowDetail = {
   assets: Array<AssetInfo>
   custom_nodes?: Array<LabelRef>
   description?: string
+  /**
+   * Whether App Mode is this workflow's default view.
+   */
+  is_app: boolean
   metadata?: {
     [key: string]: unknown
   }
@@ -4600,13 +4620,55 @@ export type ListAssetsData = {
   path?: never
   query?: {
     /**
-     * Filter assets that have ALL of these tags
+     * Deprecated alias for `tags_all`, kept permanently for existing
+     * callers. Filter assets that have ALL of these tags. Combining it
+     * with `tags_all`, or exceeding 100 tags (counted after removing
+     * empty values and duplicates), returns 400 `INVALID_TAG_FILTER`.
+     *
+     *
+     * @deprecated
      */
     include_tags?: Array<string>
     /**
-     * Exclude assets that have ANY of these tags
+     * Deprecated alias for `tags_none`, kept permanently for existing
+     * callers. Exclude assets that have ANY of these tags. Combining it
+     * with `tags_none`, or exceeding 100 tags (counted after removing
+     * empty values and duplicates), returns 400 `INVALID_TAG_FILTER`.
+     *
+     *
+     * @deprecated
      */
     exclude_tags?: Array<string>
+    /**
+     * Filter assets that have ALL of these tags. Tag values are opaque
+     * byte-strings compared exactly and case-sensitively; unknown tags
+     * are not an error — they simply match nothing. Replaces the
+     * deprecated `include_tags`. Sending both spellings, listing the
+     * same tag here and in `tags_none`, or exceeding 100 tags per list
+     * (counted after removing empty values and duplicates) returns 400
+     * `INVALID_TAG_FILTER`.
+     *
+     */
+    tags_all?: Array<string>
+    /**
+     * Filter assets that have AT LEAST ONE of these tags. Combines with
+     * `tags_all`/`tags_none` by intersection (`tags_none` always wins;
+     * overlap with `tags_none` is allowed and leaves a dead term).
+     * Supplying a positive tag filter (`tags_any`, `tags_all`, or
+     * `include_tags`) replaces the default category filter that is
+     * otherwise applied. Lists over 100 tags (counted after removing
+     * empty values and duplicates) return 400 `INVALID_TAG_FILTER`.
+     *
+     */
+    tags_any?: Array<string>
+    /**
+     * Exclude assets that have ANY of these tags. Replaces the
+     * deprecated `exclude_tags`. Sending both spellings, or exceeding
+     * 100 tags per list (counted after removing empty values and
+     * duplicates), returns 400 `INVALID_TAG_FILTER`.
+     *
+     */
+    tags_none?: Array<string>
     /**
      * Filter assets where name contains this substring (case-insensitive)
      */
@@ -5564,13 +5626,47 @@ export type GetAssetTagHistogramData = {
   path?: never
   query?: {
     /**
-     * Filter assets that have ALL of these tags
+     * Deprecated alias for `tags_all`, kept permanently for existing
+     * callers. Filter assets that have ALL of these tags. The same
+     * combination and list-size rules as on `/api/assets` apply
+     * (400 `INVALID_TAG_FILTER`).
+     *
+     *
+     * @deprecated
      */
     include_tags?: Array<string>
     /**
-     * Exclude assets that have ANY of these tags
+     * Deprecated alias for `tags_none`, kept permanently for existing
+     * callers. Exclude assets that have ANY of these tags. The same
+     * combination and list-size rules as on `/api/assets` apply
+     * (400 `INVALID_TAG_FILTER`).
+     *
+     *
+     * @deprecated
      */
     exclude_tags?: Array<string>
+    /**
+     * Filter assets that have ALL of these tags. Replaces the deprecated
+     * `include_tags`. The same combination and list-size rules as on
+     * `/api/assets` apply (400 `INVALID_TAG_FILTER`).
+     *
+     */
+    tags_all?: Array<string>
+    /**
+     * Filter assets that have AT LEAST ONE of these tags. Combines with
+     * `tags_all`/`tags_none` by intersection (`tags_none` always wins).
+     * The same combination and list-size rules as on `/api/assets` apply
+     * (400 `INVALID_TAG_FILTER`).
+     *
+     */
+    tags_any?: Array<string>
+    /**
+     * Exclude assets that have ANY of these tags. Replaces the deprecated
+     * `exclude_tags`. The same combination and list-size rules as on
+     * `/api/assets` apply (400 `INVALID_TAG_FILTER`).
+     *
+     */
+    tags_none?: Array<string>
     /**
      * Filter assets where name contains this substring (case-insensitive)
      */
@@ -7996,7 +8092,7 @@ export type GetProvidersErrors = {
    */
   401: ErrorResponse
   /**
-   * Governance not available (personal workspace or ineligible team)
+   * Governance not available (no governance entitlement)
    */
   403: ErrorResponse
   /**
@@ -10527,11 +10623,11 @@ export type GetProviderPolicyErrors = {
    */
   401: ErrorResponse
   /**
-   * Governance not available (personal workspace or ineligible team)
+   * Governance not available (no governance entitlement)
    */
   403: ErrorResponse
   /**
-   * Eligible workspace with no policy document yet
+   * Entitled workspace with no policy document yet
    */
   404: ErrorResponse
   /**
@@ -10570,7 +10666,7 @@ export type PutProviderPolicyErrors = {
    */
   401: ErrorResponse
   /**
-   * Not a workspace owner, or governance not available (personal workspace or ineligible team creating a new document)
+   * Not a workspace owner, or governance not available (no governance entitlement)
    */
   403: ErrorResponse
   /**

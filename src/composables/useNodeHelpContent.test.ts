@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
 import { useNodeHelpContent } from '@/composables/useNodeHelpContent'
@@ -70,12 +70,7 @@ describe('useNodeHelpContent', () => {
   const mockFetch = vi.fn()
 
   beforeEach(() => {
-    mockFetch.mockReset()
     vi.stubGlobal('fetch', mockFetch)
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
   })
 
   it('should generate correct baseUrl for core nodes', async () => {

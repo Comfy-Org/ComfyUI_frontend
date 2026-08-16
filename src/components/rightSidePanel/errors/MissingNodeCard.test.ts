@@ -143,8 +143,6 @@ function renderCard(
 
 describe('MissingNodeCard', () => {
   beforeEach(() => {
-    mockApplyChanges.mockClear()
-    mockIsPackInstalled.mockReset()
     mockIsPackInstalled.mockReturnValue(false)
     mockIsCloud.value = false
     mockShouldShowManagerButtons.value = false

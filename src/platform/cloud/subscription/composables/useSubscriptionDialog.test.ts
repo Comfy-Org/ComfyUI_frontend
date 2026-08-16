@@ -107,7 +107,6 @@ function expectRekaPricingDialogProps(
 
 describe('useSubscriptionDialog', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockIsCloud.value = true
     mockIsInPersonalWorkspace.value = true
     mockIsFreeTier.value = false
@@ -118,12 +117,6 @@ describe('useSubscriptionDialog', () => {
     mockIsTeamPlan.value = false
     mockCurrentPlanSlug.value = null
     mockCanManageSubscription.value = true
-
-    try {
-      sessionStorage.clear()
-    } catch {
-      // noop
-    }
   })
 
   describe('showPricingTable', () => {
