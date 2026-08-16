@@ -117,7 +117,6 @@ function expectRenderedBefore(first: HTMLElement, second: HTMLElement) {
 
 describe('LinearView', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     setViewport(DESKTOP_WIDTH)
     Object.assign(state, {
       sidebarLocation: 'left',

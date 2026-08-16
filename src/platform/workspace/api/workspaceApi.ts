@@ -3,7 +3,7 @@ import type {
   BillingBalanceResponse,
   BillingEventsResponse,
   BillingOpStatusResponse,
-  BillingPlansResponse as GeneratedBillingPlansResponse,
+  BillingPlansResponse,
   BillingStatus,
   BillingStatusResponse as GeneratedBillingStatusResponse,
   CancelSubscriptionRequest,
@@ -15,12 +15,12 @@ import type {
   CreateWorkspaceRequest,
   ListInvitesResponse,
   ListMembersResponse,
-  ListWorkspacesResponse as GeneratedListWorkspacesResponse,
+  ListWorkspacesResponse,
   Member as GeneratedMember,
   PaymentPortalRequest,
   PaymentPortalResponse,
   PendingInvite,
-  Plan as GeneratedPlan,
+  Plan,
   PreviewSubscribeRequest as GeneratedPreviewSubscribeRequest,
   PreviewSubscribeResponse,
   ResubscribeRequest,
@@ -28,16 +28,20 @@ import type {
   SubscribeRequest,
   SubscribeResponse,
   SubscriptionDuration,
+  SubscriptionTier,
   TeamCreditStops,
   TeamCreditStopSummary,
   UpdateWorkspaceRequest,
-  WorkspaceWithRole as GeneratedWorkspaceWithRole
+  WorkspaceWithRole
 } from '@comfyorg/ingest-types'
 import axios from 'axios'
 
 import { attachUnifiedRemintInterceptor } from '@/platform/auth/unified/remintRetry'
 import { churnkeyAuthResponseSchema } from '@/platform/cloud/churnkey/churnkeyAuthSchema'
-import type { SubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
+import {
+  UNKNOWN_ERROR_CODE,
+  errorResponseFromBody
+} from '@/platform/remote/comfyui/errors'
 import type {
   WorkspaceId,
   WorkspaceInviteId
@@ -52,20 +56,9 @@ export type BillingRail = NonNullable<
   GeneratedBillingStatusResponse['billing_rail']
 >
 
-export type WorkspaceWithRole = Omit<
-  GeneratedWorkspaceWithRole,
-  'subscription_tier'
-> & {
-  // Uses the registry's SubscriptionTier (no TEAM) to match how the rest of
-  // the app threads subscription_tier through personal-plan pricing;
-  // workspace.type distinguishes team workspaces instead.
-  subscription_tier?: SubscriptionTier
-}
+export type { WorkspaceWithRole }
 
-export type ListWorkspacesResponse = Omit<
-  GeneratedListWorkspacesResponse,
-  'workspaces'
-> & { workspaces: WorkspaceWithRole[] }
+export type { ListWorkspacesResponse }
 
 export type Member = GeneratedMember & {
   // Per-member monthly credit limit UI (FE-1277). The cloud OpenAPI carries
@@ -84,13 +77,8 @@ export type { PendingInvite }
 export type { SubscriptionTier }
 export type { SubscriptionDuration }
 
-// Uses the registry's SubscriptionTier (no TEAM); the personal plan catalog
-// never lists team plans.
-export type Plan = Omit<GeneratedPlan, 'tier'> & { tier: SubscriptionTier }
-export type BillingPlansResponse = Omit<
-  GeneratedBillingPlansResponse,
-  'plans'
-> & { plans: Plan[] }
+export type { Plan }
+export type { BillingPlansResponse }
 export type { TeamCreditStops }
 export type { TeamCreditStopSummary }
 
@@ -124,24 +112,26 @@ export type BillingSubscriptionStatus = NonNullable<
 
 export type { BillingStatus }
 
+type SpecRequiredButOmittedByOlderDeployments =
+  | 'max_seats'
+  | 'occupied_seats'
+  | 'team_credit_stop'
+
 export type BillingStatusResponse = Omit<
   GeneratedBillingStatusResponse,
-  'max_seats' | 'occupied_seats' | 'subscription_tier' | 'team_credit_stop'
-> & {
-  // The spec marks these required, but older/billing-disabled deployments
-  // can omit them; getBillingStatus() normalizes a missing value to null.
-  max_seats?: number | null
-  occupied_seats?: number | null
-  // Uses the registry's SubscriptionTier (no TEAM), matching WorkspaceWithRole.
-  subscription_tier?: SubscriptionTier
-  // The spec marks this required (always present, nullable); kept optional
-  // here to match how existing callers already read it defensively.
-  team_credit_stop?: TeamCreditStopSummary | null
-  // Not yet part of the ingest OpenAPI spec; scheduled-plan-change display
-  // ships ahead of the backend documenting these fields.
-  scheduled_plan_slug?: string
-  change_at?: string
-}
+  SpecRequiredButOmittedByOlderDeployments
+> &
+  Partial<
+    Pick<
+      GeneratedBillingStatusResponse,
+      SpecRequiredButOmittedByOlderDeployments
+    >
+  > & {
+    // Not yet part of the ingest OpenAPI spec; scheduled-plan-change display
+    // ships ahead of the backend documenting these fields.
+    scheduled_plan_slug?: string
+    change_at?: string
+  }
 
 export type { BillingBalanceResponse }
 export type { CreateTopupResponse }
@@ -179,12 +169,17 @@ async function getAuthHeaderOrThrow() {
 function handleAxiosError(err: unknown): never {
   if (axios.isAxiosError(err)) {
     const status = err.response?.status
-    const message = err.response?.data?.message ?? err.message
-    // Response data is untyped: keep a non-string code out of the string
-    // contract, so callers comparing against it cannot match on a surprise.
-    const rawCode: unknown = err.response?.data?.code
-    const code = typeof rawCode === 'string' ? rawCode : undefined
-    throw new WorkspaceApiError(message, status, code)
+    const { code, message } = errorResponseFromBody(
+      err.response?.data,
+      err.message
+    )
+    // Callers compare `code` against server-defined values, so the parser's
+    // "no code reported" sentinel must stay out of that contract.
+    throw new WorkspaceApiError(
+      message,
+      status,
+      code === UNKNOWN_ERROR_CODE ? undefined : code
+    )
   }
   throw err
 }
@@ -425,11 +420,7 @@ export const workspaceApi = {
         api.apiURL('/billing/status'),
         { headers }
       )
-      return {
-        ...response.data,
-        max_seats: response.data.max_seats ?? null,
-        occupied_seats: response.data.occupied_seats ?? null
-      }
+      return response.data
     } catch (err) {
       handleAxiosError(err)
     }

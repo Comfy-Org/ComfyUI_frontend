@@ -108,7 +108,10 @@
               </div>
               <div class="flex flex-wrap gap-2 md:ml-auto">
                 <Button
-                  v-if="showInactiveTeamSubscription"
+                  v-if="
+                    permissions.canManageSubscription &&
+                    (isCloud || showInactiveTeamSubscription)
+                  "
                   size="lg"
                   variant="secondary"
                   class="rounded-lg bg-interface-menu-component-surface-selected px-4 text-sm font-normal text-text-primary"
@@ -174,6 +177,15 @@
               </div>
               <div class="flex flex-wrap gap-2 md:ml-auto">
                 <Button
+                  v-if="isCloud && permissions.canManageSubscription"
+                  size="lg"
+                  variant="secondary"
+                  class="rounded-lg bg-interface-menu-component-surface-selected px-4 text-sm font-normal text-text-primary"
+                  @click="manageSubscription"
+                >
+                  {{ $t('subscription.billingAndInvoices') }}
+                </Button>
+                <Button
                   variant="primary"
                   size="lg"
                   class="rounded-lg px-4 text-sm font-normal"
@@ -223,17 +235,29 @@
               </div>
 
               <div
-                v-if="canAccessSubscriptionFeatures"
+                v-if="
+                  canAccessSubscriptionFeatures ||
+                  (isCloud && permissions.canManageSubscription)
+                "
                 class="flex flex-wrap gap-2 md:ml-auto"
               >
                 <Button
-                  v-if="!isFreeTierPlan && permissions.canManageSubscription"
+                  v-if="
+                    permissions.canManageSubscription &&
+                    (isCloud || !isFreeTierPlan)
+                  "
                   size="lg"
                   variant="secondary"
                   class="rounded-lg bg-interface-menu-component-surface-selected px-4 text-sm font-normal text-text-primary"
                   @click="manageSubscription"
                 >
-                  {{ $t('subscription.manageBilling') }}
+                  {{
+                    $t(
+                      isCloud
+                        ? 'subscription.billingAndInvoices'
+                        : 'subscription.manageBilling'
+                    )
+                  }}
                 </Button>
                 <Button
                   v-if="
@@ -251,6 +275,7 @@
                 <Button
                   v-else-if="
                     !isSubscriptionCancelled &&
+                    canAccessSubscriptionFeatures &&
                     permissions.canManageSubscription
                   "
                   size="lg"
@@ -371,6 +396,7 @@
       <SubscriptionFooterLinks
         class="mt-auto pt-6"
         :show-invoice-history="permissions.canManageSubscription"
+        :show-usage-activity="workspaceRole === 'owner'"
       />
     </template>
   </div>
@@ -392,6 +418,7 @@ import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables
 import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
 import type { TierBenefit } from '@/platform/cloud/subscription/utils/tierBenefits'
 import { getCommonTierBenefits } from '@/platform/cloud/subscription/utils/tierBenefits'
+import { isCloud } from '@/platform/distribution/types'
 import { useResubscribe } from '@/platform/workspace/composables/useResubscribe'
 import { useWorkspaceMenuItems } from '@/platform/workspace/composables/useWorkspaceMenuItems'
 import { useWorkspacePlanPricing } from '@/platform/workspace/composables/useWorkspacePlanPricing'
@@ -406,7 +433,7 @@ import {
 const workspaceStore = useTeamWorkspaceStore()
 const { isWorkspaceSubscribed, isInPersonalWorkspace } =
   storeToRefs(workspaceStore)
-const { permissions, isSubscriptionCancelled } = useWorkspaceUI()
+const { permissions, isSubscriptionCancelled, workspaceRole } = useWorkspaceUI()
 const { maxAvailable: freeRunsAllowance, quotaEnabled: freeRunsQuotaEnabled } =
   useFreeTierQuota()
 const { t, n, locale } = useI18n()
