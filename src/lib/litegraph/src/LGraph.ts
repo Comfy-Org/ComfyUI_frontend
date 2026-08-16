@@ -1,5 +1,6 @@
 import { toString } from 'es-toolkit/compat'
 
+import { adoptPromotedWidgetValue } from '@/core/graph/subgraph/adoptPromotedWidgetValue'
 import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
@@ -2083,9 +2084,17 @@ export class LGraph
     for (const [, link] of subgraphNode.subgraph._links) {
       let externalParentId: RerouteId | undefined
       if (link.origin_id === SUBGRAPH_INPUT_ID) {
-        const outerLinkId = subgraphNode.inputs[link.origin_slot].link
-        if (!outerLinkId) {
+        const hostInput = subgraphNode.inputs.at(link.origin_slot)
+        if (!hostInput) {
           console.error('Missing Link ID when unpacking')
+          continue
+        }
+        const outerLinkId = hostInput.link
+        if (outerLinkId == null) {
+          const interiorNode = this.getNodeById(nodeIdMap.get(link.target_id))
+          if (interiorNode) {
+            adoptPromotedWidgetValue(hostInput, interiorNode, link.target_slot)
+          }
           continue
         }
         const outerLink = this.links[outerLinkId]

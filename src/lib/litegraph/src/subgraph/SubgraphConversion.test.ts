@@ -1,4 +1,12 @@
-import { assert, beforeEach, describe, expect, it } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 
 import {
   LGraphGroup,
@@ -6,6 +14,7 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import type { LGraph, ISlotType } from '@/lib/litegraph/src/litegraph'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 import {
   createTestSubgraph,
@@ -199,6 +208,93 @@ describe('SubgraphConversion', () => {
         linkRefCount += reroute.linkIds.size
       }
       expect(linkRefCount).toBe(4)
+    })
+
+    describe('Unconnected boundary inputs', () => {
+      const PROMOTED_TEXT_TYPE = 'Fixture/PromotedText'
+
+      class PromotedTextNode extends LGraphNode {
+        constructor() {
+          super('PromotedText')
+          const input = this.addInput('text', 'STRING')
+          input.widget = { name: 'text' }
+          this.addWidget('text', 'text', 'stale interior value', () => {})
+        }
+      }
+
+      function createPromotedTextSubgraph() {
+        LiteGraph.registered_node_types[PROMOTED_TEXT_TYPE] = PromotedTextNode
+        onTestFinished(() => {
+          delete LiteGraph.registered_node_types[PROMOTED_TEXT_TYPE]
+        })
+
+        const subgraph = createTestSubgraph({
+          inputs: [{ name: 'text', type: 'STRING' }]
+        })
+        const subgraphNode = createTestSubgraphNode(subgraph)
+        const graph = subgraphNode.graph!
+        graph.add(subgraphNode)
+
+        const inner = LiteGraph.createNode(PROMOTED_TEXT_TYPE)
+        assert(inner)
+        subgraph.add(inner)
+        subgraph.inputNode.slots[0].connect(inner.inputs[0], inner)
+
+        const { widgetId } = subgraphNode.inputs[0]
+        assert(widgetId)
+        return { graph, subgraphNode, hostWidgetId: widgetId }
+      }
+
+      it('Should not report a missing link for a promoted widget input', () => {
+        const { graph, subgraphNode } = createPromotedTextSubgraph()
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+        graph.unpackSubgraph(subgraphNode)
+
+        expect(errorSpy).not.toHaveBeenCalled()
+      })
+
+      it('Should hand the promoted host value to the interior widget', () => {
+        const { graph, subgraphNode, hostWidgetId } =
+          createPromotedTextSubgraph()
+        useWidgetValueStore().setValue(hostWidgetId, 'host edit')
+
+        graph.unpackSubgraph(subgraphNode)
+
+        const unpacked = graph.nodes.find(
+          (node) => node.type === PROMOTED_TEXT_TYPE
+        )
+        expect(unpacked?.widgets?.[0].value).toBe('host edit')
+      })
+
+      it('Should leave the interior value alone when the host has no value', () => {
+        const { graph, subgraphNode } = createPromotedTextSubgraph()
+
+        graph.unpackSubgraph(subgraphNode)
+
+        const unpacked = graph.nodes.find(
+          (node) => node.type === PROMOTED_TEXT_TYPE
+        )
+        expect(unpacked?.widgets?.[0].value).toBe('stale interior value')
+      })
+
+      it('Should not report a missing link for an unconnected plain input', () => {
+        const subgraph = createTestSubgraph({
+          inputs: [{ name: 'value', type: 'number' }]
+        })
+        const subgraphNode = createTestSubgraphNode(subgraph)
+        const graph = subgraphNode.graph!
+        graph.add(subgraphNode)
+
+        const inner = createNode(subgraph, ['number'])
+        subgraph.inputNode.slots[0].connect(inner.inputs[0], inner)
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+        graph.unpackSubgraph(subgraphNode)
+
+        expect(errorSpy).not.toHaveBeenCalled()
+        expect(graph.nodes.length).toBe(1)
+      })
     })
   })
 })
