@@ -25,17 +25,13 @@ const ALWAYS_DISABLED_EXTENSIONS: readonly string[] = [
 
 export const useExtensionStore = defineStore('extension', () => {
   // For legacy reasons, the name uniquely identifies an extension.
-  // Null-prototype so extension names cannot collide with Object.prototype keys.
-  const extensionByName = ref<Record<string, ComfyExtension>>(
-    Object.create(null)
-  )
-  const extensions = computed(() => Object.values(extensionByName.value))
+  const extensionByName = ref<Map<string, ComfyExtension>>(new Map())
+  const extensions = computed(() => [...extensionByName.value.values()])
   // Not using computed because disable extension requires reloading of the page.
   // Dynamically update this list won't affect extensions that are already loaded.
   const disabledExtensionNames = ref<Set<string>>(new Set())
 
-  const isExtensionInstalled = (name: string) =>
-    Object.hasOwn(extensionByName.value, name)
+  const isExtensionInstalled = (name: string) => extensionByName.value.has(name)
 
   // Disabled extension names that are currently not in the extension list.
   // If a node pack is disabled in the backend, we shouldn't remove the configuration
@@ -69,7 +65,7 @@ export const useExtensionStore = defineStore('extension', () => {
       throw new Error("Extensions must have a 'name' property.")
     }
 
-    if (Object.hasOwn(extensionByName.value, extension.name)) {
+    if (isExtensionInstalled(extension.name)) {
       console.warn(
         `Extension named '${extension.name}' already registered - skipping`
       )
@@ -80,7 +76,7 @@ export const useExtensionStore = defineStore('extension', () => {
       console.warn(`Extension ${extension.name} is disabled.`)
     }
 
-    extensionByName.value[extension.name] = markRaw(extension)
+    extensionByName.value.set(extension.name, markRaw(extension))
     return true
   }
 
