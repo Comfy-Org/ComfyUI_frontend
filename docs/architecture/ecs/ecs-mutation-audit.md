@@ -1,10 +1,10 @@
-# ECS Mutation Audit
+# ECS mutation audit
 
 Status: Current implementation audit
 Verified: 2026-08-16 against PR 14246
 
-This audit classifies the writes that make up graph-domain mutation today and
-tests the result against [ADR 0003](../../adr/0003-crdt-based-layout-system.md)
+This audit classifies current graph-domain writes and compares them with
+[ADR 0003](../../adr/0003-crdt-based-layout-system.md)
 and [ADR 0008](../../adr/0008-entity-component-system.md). The related
 [decision traceability matrix](ecs-decision-traceability.md) maps each claim to
 the wider design set.
@@ -89,8 +89,8 @@ rendering, but it does not make those writes atomic. Examples:
 - Replacement transfers layout ownership and node-state ownership before
   swapping legacy indexes and rebuilding widgets and connections.
 
-Cross-store consistency therefore rests on orchestration order and tests, not
-on an atomic commit protocol.
+Cross-store consistency depends on orchestration order and tests, not an atomic
+commit protocol.
 
 ## Replay and undo today
 
@@ -99,10 +99,10 @@ Workflow undo remains snapshot-based through the change tracker. Legacy
 captures the graph, and undo configures a prior snapshot. Layout commands do
 not independently drive undo, and Pinia store actions do not emit inverses.
 
-This has two consequences. First, command replay cannot reconstruct the whole
-workflow because only layout has command values. Second, replaying a snapshot
-can invoke configure and lifecycle callbacks whose external effects are not in
-the snapshot. Equal serialized state does not imply equal callback history.
+Command replay cannot reconstruct the whole workflow because only layout has
+command values. Replaying a snapshot can also invoke configure and lifecycle
+callbacks whose external effects are absent from the snapshot. Equal
+serialized state does not imply equal callback history.
 
 ## What must remain before "command-driven" is accurate system-wide
 
@@ -141,12 +141,11 @@ authoritative graph-domain mutation, including extensions:
     inverse or snapshot parity, failed-batch rollback, nested subgraph scope,
     and cross-store observer visibility.
 
-Until then, the accurate description is: entity state is increasingly held in
-dedicated reactive stores; layout mutation is operation-driven; topology has
-validated actions; graph mutation as a whole remains legacy-orchestrated and
-snapshot-undone.
+Until then, dedicated reactive stores hold an increasing share of entity state.
+Layout mutation is operation-driven, topology has validated actions, and graph
+mutation as a whole remains legacy-orchestrated and snapshot-undone.
 
-## Stable implementation and test references
+## Implementation and test references
 
 - `src/renderer/core/layout/store/layoutStore.ts`: `applyOperation`,
   `applyOperations`, `applyOperationInTransaction`, operation handlers,

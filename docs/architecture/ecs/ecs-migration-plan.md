@@ -1,11 +1,11 @@
-# ECS Migration Plan
+# ECS migration plan
 
 Status: Partial
 Verified: 2026-08-16 against PR 14246
 
-This document records what the ECS migration has delivered and what remains.
-It is a roadmap, not a design history. Detailed evidence and unresolved risks
-live in the focused audits linked under [References](#references).
+This plan records completed ECS migration work and the work that remains.
+Detailed evidence and unresolved risks are in the focused audits under
+[References](#references).
 
 The governing decisions remain
 [ADR 0003](../../adr/0003-crdt-based-layout-system.md) and
@@ -19,9 +19,9 @@ dedicated stores, one store per concern. Legacy classes remain compatibility
 facades while extensions and renderers migrate. Behavior moves into systems
 only when there is a concrete consumer and a tested replacement path.
 
-The implemented model is not a central ECS `World`. Identity, scope, storage,
-and cleanup are concern-specific. Layout uses Yjs; the other migrated stores
-use reactive Pinia state.
+The implementation has no central ECS `World`. Each concern defines its own
+identity, scope, storage, and cleanup. Layout uses Yjs. The other migrated
+stores use reactive Pinia state.
 
 ## Work completed
 
@@ -42,7 +42,7 @@ use reactive Pinia state.
 
 ## Current boundaries
 
-The migration is substantial but incomplete:
+The following boundaries remain:
 
 - `LGraph`, `LGraphNode`, `LLink`, `Reroute`, slot classes, and widget classes
   still contain behavior and coordinate mutations.

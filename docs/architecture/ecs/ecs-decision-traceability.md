@@ -1,23 +1,21 @@
-# ECS Decision Traceability
+# ECS decision traceability
 
 Status: Current implementation audit
 Verified: 2026-08-16 against PR 14246
 
-This document traces the implementation on `feature/ecs-migration` to the
-principles recorded in
+This audit maps the implementation on `feature/ecs-migration` to the principles in
 [ADR 0003](../../adr/0003-crdt-based-layout-system.md) and
 [ADR 0008](../../adr/0008-entity-component-system.md). The ADRs remain the
-decision records; this is an implementation audit, not a replacement decision
-or a proposal.
+decision records; this audit neither replaces nor amends them.
 
 Status meanings:
 
-- **Implemented** — the observed implementation satisfies the principle for
+- `Implemented`: the observed implementation satisfies the principle for
   its stated scope.
-- **Partial** — an authoritative path exists, but legacy or uncovered concerns
+- `Partial`: an authoritative path exists, but legacy or uncovered concerns
   remain.
-- **Remaining** — the decision is not materially implemented.
-- **Superseded** — an ADR detail was replaced by a documented amendment.
+- `Remaining`: the decision is not materially implemented.
+- `Superseded`: a documented amendment replaced an ADR detail.
 
 For ownership by state concern, see the
 [ECS State Authority Audit](ecs-state-authority-audit.md). Target descriptions
@@ -40,7 +38,7 @@ sequencing is recorded in [ECS Migration Plan](ecs-migration-plan.md).
 
 ## Observed boundaries
 
-- “Single source of truth” is per concern and workflow instance. It does not
+- "Single source of truth" is per concern and workflow instance. It does not
   mean one global store.
 - The proxy-returning registration pattern avoids a second copy for node shell,
   link topology, reroute chain, and widget state. A class accessor over the
@@ -54,11 +52,11 @@ sequencing is recorded in [ECS Migration Plan](ecs-migration-plan.md).
 - [`@comfyorg/comfy-multi-player`](https://github.com/Comfy-Org/comfy-multi-player)
   separately implements a Yjs workflow document, stamped operation applier,
   and canonical workflow projection for a server-host/browser-follower model.
-  Its contract deliberately leaves node positions, camera state, and other
+  Its contract leaves node positions, camera state, and other
   layout concerns in the frontend layout document. This frontend branch does
   not yet depend on or integrate that package, and its server document host is
   still described as unmerged.
-- Badges intentionally have no authoritative store. `badgeSystem` derives
+- Badges have no authoritative store. `badgeSystem` derives
   transient `BadgeData` from authoritative settings, definitions, topology,
   pricing, widget, and graph state.
 - The migration preserves extension-facing object surfaces, but compatibility

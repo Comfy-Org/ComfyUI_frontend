@@ -1,12 +1,12 @@
-# ECS Migration Executive Summary
+# ECS migration summary
 
 Status: Partial
 Verified: 2026-08-16 against PR 14246
 
-The graph architecture is moving from state and behavior concentrated in
-LiteGraph classes to dedicated Pinia stores and focused systems. PR 14246
-establishes the main state-ownership bridge while preserving the existing
-workflow format, renderers, and extension-facing classes.
+The graph architecture is moving state and behavior out of LiteGraph classes
+and into dedicated Pinia stores and focused systems. PR 14246 establishes the
+main state-ownership bridge while preserving the existing workflow format,
+renderers, and extension-facing classes.
 
 ## Current result
 
@@ -21,13 +21,13 @@ workflow format, renderers, and extension-facing classes.
 - Identity normalization protects store ownership during load, copy/paste,
   insertion, conversion, and replacement.
 
-Legacy classes remain compatibility facades. For node, link, reroute, and
-widget state, they generally share the store's reactive object rather than
-maintaining a second copy.
+Legacy classes remain compatibility facades. Node, link, reroute, and widget
+state generally share the store's reactive object instead of maintaining a
+second copy.
 
 ## What remains
 
-This is not yet a fully command-driven ECS:
+The ECS is only partly command-driven:
 
 - Serializable operations currently cover layout, not all graph mutations.
 - Cross-store changes have no workflow-wide transaction or rollback boundary.

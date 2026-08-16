@@ -1,10 +1,10 @@
-# ECS Identity and Scope Audit
+# ECS identity and scope audit
 
 Status: Current implementation audit
 Verified: 2026-08-16 against PR 14246
 
-This document records the identity contract implemented by the migration; it
-does not broaden the accepted ADRs.
+This document records the migration's implemented identity contract. It does
+not broaden the accepted ADRs.
 
 ## Scope model
 
@@ -71,21 +71,21 @@ and proxy-widget metadata.
 `deduplicateLinks()` in `src/lib/litegraph/src/linkDeduplication.ts` separately
 enforces one live link per target slot, removes duplicate topology, remaps
 references, and realigns serialized slot mirrors after nodes are configured.
-Runtime registration is deliberately not a repair boundary: `linkStore` and
+Runtime registration is deliberately not a repair boundary. `linkStore` and
 `rerouteStore` preserve the incumbent and reject colliding arrivals.
 
 ## Persistence and transfer boundaries
 
-- **Serialization:** `LGraph.asSerialisable()` writes each owning graph's local
+- `LGraph.asSerialisable()` writes each owning graph's local
   entities and topology while retaining definition UUIDs and allocated IDs.
-- **Deserialization/import:** reserve and normalize the complete recursive set
+- Deserialization and import reserve and normalize the complete recursive set
   before registration. This is the authoritative persisted-ID repair boundary.
-- **Clipboard:** `LGraphCanvas.copyToClipboard()` serializes selected entities;
-  paste regenerates copied subgraph UUIDs and remaps cloned entity IDs before
+- `LGraphCanvas.copyToClipboard()` serializes selected entities. Paste
+  regenerates copied subgraph UUIDs and remaps cloned entity IDs before
   recursive insertion.
-- **Insertion:** `workflowToClipboardItems()` and `workflowService` flatten and
+- `workflowToClipboardItems()` and `workflowService` flatten and
   normalize recursively imported definitions before adding them to the root.
-- **Replacement:** `replaceWithMapping()` preserves the node ID and transfers
+- `replaceWithMapping()` preserves the node ID and transfers
   registered shell and layout ownership. New widgets register under the same
   IDs and can adopt retained widget state; links continue to address the same
   node identity.
@@ -111,7 +111,7 @@ Runtime registration is deliberately not a repair boundary: `linkStore` and
    see
    [Link registration migration](../../extensions/link-registration-migration.md).
 
-## Evidence and follow-up
+## Evidence and remaining tests
 
 Current regression evidence includes `subgraphDeduplication.test.ts`,
 `idAllocation.test.ts`, `linkStore.test.ts`, `rerouteStore.test.ts`,

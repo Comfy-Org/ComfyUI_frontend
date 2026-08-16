@@ -1,10 +1,10 @@
-# ECS Lifecycle Audit
+# ECS lifecycle audit
 
 Status: Current implementation audit
 Verified: 2026-08-16 against PR 14246
 
-This audit records the lifecycle that exists now. It does not restate the
-target architecture. The governing records are
+This audit records the current lifecycle rather than restating the target
+architecture. The governing records are
 [ADR 0003](../../adr/0003-crdt-based-layout-system.md) and
 [ADR 0008](../../adr/0008-entity-component-system.md). See also the
 [decision traceability matrix](ecs-decision-traceability.md).
@@ -56,10 +56,10 @@ graph's shared allocation state bind nested definitions to one workflow.
 7. It runs proxy-widget migration, preview exposure, `onConfigure`, and canvas
    restoration. The `configured` event and shadow-load cleanup run in `finally`.
 
-This ordering is compatibility behavior. In particular, links before nodes,
-all nodes before node configure, and layout attachment before configure-time
-position writes are contracts pinned by serialization, registration, and
-subgraph tests.
+This ordering is part of the compatibility contract. Serialization,
+registration, and subgraph tests require links before nodes, all nodes before
+node configuration, and layout attachment before configure-time position
+writes.
 
 ### Node removal
 
@@ -88,8 +88,8 @@ references, register new widgets, restore data, reconnect mappings, and issue
 the replacement callbacks. The old node receives a detached copy of state.
 
 The preflight and second ownership check prevent a callback from silently
-stealing the slot. They do not roll back arbitrary callback side effects or a
-failure after ownership transfer.
+stealing the slot. Neither check rolls back arbitrary callback side effects or
+a failure after ownership transfer.
 
 ### Clear and subgraph release
 
@@ -130,7 +130,7 @@ do not run, but structural teardown completes before the error escapes.
   weak-set guard covers repeated node removal only, not arbitrary cross-entity
   mutation or callback compensation.
 
-## Stable implementation and test references
+## Implementation and test references
 
 - `src/lib/litegraph/src/LGraph.ts`: `add`, `remove`, `removeNode`, `clear`,
   `teardownOwnedGraphs`, `configure`, `asSerialisable`, `_addLink`,

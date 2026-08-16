@@ -1,12 +1,12 @@
-# ECS State Authority Audit
+# ECS state authority audit
 
 Status: Current implementation audit
 Verified: 2026-08-16 against PR 14246
 
-This is an audit of observed state ownership on `feature/ecs-migration`. It
-distinguishes an authoritative record from a compatibility accessor, derived
-projection, or transient renderer cache. Dual sources are called out rather
-than presented as completed migration.
+This audit records state ownership on `feature/ecs-migration`. It distinguishes
+authoritative records from compatibility accessors, derived projections, and
+transient renderer caches. It identifies dual sources where the migration is
+not complete.
 
 The governing decisions remain
 [ADR 0003](../../adr/0003-crdt-based-layout-system.md) and
@@ -176,7 +176,7 @@ target.
 - **Desired endpoint:** derive and invalidate transient geometry from durable
   layout/topology plus viewport state; never serialize or CRDT-replicate caches.
 
-## Summary of dual-source boundaries
+## Dual-source boundaries
 
 1. Node, link, and reroute class fields generally share store proxies and are
    compatibility views, not duplicate state.
@@ -189,7 +189,7 @@ target.
 5. Durable entity geometry is Yjs-backed; link/slot/hit-test geometry is a
    separate transient cache, not durable authority.
 
-Design details: [Node Data Store](../node-data-store.md),
+Related design documents are [Node Data Store](../node-data-store.md),
 [Link Topology Store](../link-topology-store.md),
 [Reroute Chain Store](../reroute-chain-store.md), and
 [Output Slot Connectivity](../output-slot-connectivity.md).

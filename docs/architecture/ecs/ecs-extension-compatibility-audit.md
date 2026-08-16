@@ -1,10 +1,10 @@
-# ECS Extension Compatibility Audit
+# ECS extension compatibility audit
 
 Status: Current implementation audit
 Verified: 2026-08-16 against PR 14246
 
-The categories below describe the implemented extension-facing contract, not
-every internal refactor.
+This audit describes the implemented extension-facing contract. It does not
+catalog every internal refactor.
 
 ## Preserved behavior
 
@@ -36,7 +36,7 @@ reach into `layoutStore` or depend on its scoped key format.
 typed observation surface. Connection veto hooks (`onConnectInput`,
 `onConnectOutput`) and normal connection callbacks remain in `LGraphNode.ts`.
 
-Removal ordering is intentional: `node:before-removed` and `onRemoved` occur
+Removal ordering is intentional. `node:before-removed` and `onRemoved` occur
 while the departing node can still identify its graph-owned state; cleanup is
 completed before `node:removed`. Input replacement registers the new link
 before old-link disconnect callbacks, so callback queries observe the
@@ -77,14 +77,14 @@ revision, so acquire a new iterator after topology changes. Do not call
 
 `LinkMap.set(id, link)` still returns the view, as `Map.set()` does. It rejects a
 mismatched key (`id !== link.id`). Registration also rejects an occupied link ID
-or complete target input and preserves the incumbent. Therefore `set()` is not
-proof of registration: verify `get(id) === link` (allowing for the store-held
-reactive object where applicable), or use graph connection APIs.
+or complete target input and preserves the incumbent. Therefore `set()` does
+not prove registration. Verify `get(id) === link`, allowing for the store-held
+reactive object where applicable, or use graph connection APIs.
 
-`addFloatingLink()` now returns `LLink | undefined`: the stored link for success
-or idempotent re-registration, and `undefined` for collision. Never retain or
-render the incoming object before checking. Full examples and import-boundary
-rules are in
+`addFloatingLink()` now returns `LLink | undefined`. It returns the stored link
+for success or idempotent re-registration, and `undefined` for collision. Never
+retain or render the incoming object before checking. Full examples and
+import-boundary rules are in
 [Link registration migration](../../extensions/link-registration-migration.md).
 
 ### Store-derived connectivity

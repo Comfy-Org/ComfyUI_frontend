@@ -1,20 +1,19 @@
-# ECS Migration Verification Audit (PR 14246)
+# ECS migration verification audit (PR 14246)
 
 Status: Current implementation audit
 Verified: 2026-08-16 against PR 14246
 Scope: Behavioral evidence added or materially changed by PR 14246
 
-This audit groups evidence by invariant rather than implementation unit. Grades
-measure behavioral confidence: **Strong** includes integration/browser
-evidence, **Good** covers meaningful boundaries, and **Partial** has a material
-gap.
+Evidence is grouped by invariant rather than implementation unit. A `Strong`
+grade includes integration or browser evidence. `Good` covers meaningful
+boundaries, while `Partial` indicates a material gap.
 
 For the accuracy and status audit of the accompanying design records, see
 [ecs-documentation-audit.md](ecs-documentation-audit.md).
 
 ## Evidence by invariant
 
-### Store collisions — Strong
+### Store collisions: Strong
 
 Invariant: IDs cannot overwrite an incumbent entity, owner scopes remain
 isolated, and persisted collisions are normalized before registration.
@@ -31,7 +30,7 @@ Representative evidence:
 - `browser_tests/tests/vueNodes/nodeStates/registration.spec.ts`: duplicate node
   IDs remain visible in separate graph scopes.
 
-### Lifecycle teardown — Strong
+### Lifecycle teardown: Strong
 
 Invariant: add/remove/clear transfers or releases store ownership exactly once,
 including reentrant and failing callbacks, without clearing sibling scopes.
@@ -48,7 +47,7 @@ Representative evidence:
 - `src/renderer/extensions/vueNodes/layout/useNodeLayout.test.ts`: workflow
   replacement releases the originally retained graph.
 
-### Subgraph identity — Strong
+### Subgraph identity: Strong
 
 Invariant: one root allocates a unique runtime identity space while graph
 ownership partitions queries; shared definitions retain ownership until their
@@ -66,7 +65,7 @@ Representative evidence:
 - `browser_tests/tests/subgraph/subgraphLinkIdentity.spec.ts`: link identity and
   reroute chains survive a real workflow load.
 
-### Serialization — Strong
+### Serialization: Strong
 
 Invariant: store-backed runtime state emits the existing wire contract,
 round-trips deterministically, and does not mutate caller-owned input while
@@ -86,7 +85,7 @@ Representative evidence:
   `browser_tests/tests/subgraph/subgraphSerialization.spec.ts`: browser-level
   persistence checks.
 
-### Layout renderer toggle — Good
+### Layout renderer toggle: Good
 
 Invariant: canonical node, slot, group, and reroute geometry remains coherent
 across renderer changes and subgraph navigation.
@@ -104,7 +103,7 @@ Representative evidence:
   `src/lib/litegraph/src/Reroute.store.test.ts`: legacy geometry views write
   through and refresh from the store.
 
-### Widgets and promotions — Good
+### Widgets and promotions: Good
 
 Invariant: widget value identity is graph/host scoped, `null` is data rather
 than absence, promotions preserve the interior/host mapping, and connectivity
@@ -125,7 +124,7 @@ Representative evidence:
   `browser_tests/tests/vueNodes/widgets/widgetReactivity.spec.ts`: builder and
   renderer integration.
 
-### Replacement — Good
+### Replacement: Good
 
 Invariant: replacing a same-ID node transfers registered shell/layout state and
 live connectivity without allowing stale ownership to delete the replacement.
@@ -141,7 +140,7 @@ Representative evidence:
 - `browser_tests/tests/nodeReplacement.spec.ts`: replacement behavior through
   the UI.
 
-### Clipboard and insertion — Good
+### Clipboard and insertion: Good
 
 Invariant: copy/paste and insertion mint identities, retain geometry and
 topology, and cannot hijack registrations owned by live entities.
@@ -158,7 +157,7 @@ Representative evidence:
 - `browser_tests/tests/vueNodes/interactions/links/linkInteraction.spec.ts`:
   floating-reroute interaction.
 
-### Badges — Good
+### Badges: Good
 
 Invariant: badges are derived, reactive presentation data; pricing and source
 rows update without a second authoritative store.
@@ -174,7 +173,7 @@ Representative evidence:
 - `src/renderer/extensions/vueNodes/composables/usePartitionedBadges.test.ts`
   and `src/lib/litegraph/src/nodeBadgeDraw.test.ts`: Vue and legacy projections.
 
-### Performance — Partial
+### Performance: Partial
 
 Invariant: central stores and compatibility views do not introduce observable
 hot-path regressions or reactive invalidation churn.
@@ -189,7 +188,7 @@ Representative evidence:
 - `src/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking.test.ts`:
   unchanged measurements avoid writes.
 
-### Extension behavior — Good
+### Extension behavior: Good
 
 Invariant: supported extension callbacks retain ordering and state visibility;
 deprecated slot mirrors warn, remain derived, and cannot mutate authority.
@@ -209,41 +208,41 @@ Representative evidence:
 
 ## Prioritized missing behavioral scenarios
 
-1. **P0 — undo/redo across a mixed transaction.** Replace or remove a node with
+1. P0, undo/redo across a mixed transaction. Replace or remove a node with
    links, reroutes, promoted widgets, and layout; undo and redo; assert every
    store, callback-visible state, renderer, and serialization agree. Current
    tests validate each concern but not transactional restoration across them.
-2. **P0 — failed or interrupted workflow load.** Force a configure callback to
+2. P0, failed or interrupted workflow load. Force a configure callback to
    throw after some nested definitions register, then load another workflow.
    Assert no node/link/reroute/layout/widget ownership leaks from the failed
    graph.
-3. **P1 — deep mixed collision fixture.** Load at least three nested/shared
+3. P1, deep mixed collision fixture. Load at least three nested/shared
    definitions containing simultaneous node, link, reroute, group, and floating
    link collisions; save/reload and verify reference remapping and byte-stable
    second serialization.
-4. **P1 — browser copy/paste of a connected subgraph.** Paste a shared subgraph
+4. P1, browser copy/paste of a connected subgraph. Paste a shared subgraph
    with promoted widgets and rerouted external links, then delete original and
    pasted instances in both orders. Verify ownership, values, and topology.
-5. **P1 — renderer toggle plus navigation and history.** Edit geometry in Vue,
+5. P1, renderer toggle plus navigation and history. Edit geometry in Vue,
    navigate into/out of a subgraph, toggle legacy, undo/redo, and verify node,
    slot, group, and reroute hit targets before saving.
-6. **P1 — real extension compatibility corpus.** Run representative extensions
+6. P1, real extension compatibility corpus. Run representative extensions
    that enumerate/spread slots, mutate deprecated `link`/`links`, use duck-typed
    slots, and inspect callback state. Assert warnings and graceful behavior,
    not merely type compatibility.
-7. **P2 — promotion lifecycle after replacement.** Replace a host node or remove
+7. P2, promotion lifecycle after replacement. Replace a host node or remove
    and recreate a shared definition while a nested promoted widget has a `null`
    value and an external link; verify locator identity and cleanup.
-8. **P2 — quantified renderer parity.** Measure p50/p95 drag, toggle, and link
+8. P2, quantified renderer parity. Measure p50/p95 drag, toggle, and link
    interaction frame time for representative 200- and 500-node workflows under
    both renderers, with a checked threshold and warm-up policy.
-9. **P2 — badge end-to-end settings parity.** Toggle badge and pricing settings
+9. P2, badge end-to-end settings parity. Toggle badge and pricing settings
    in both renderers for root and subgraph nodes; verify updates after connect,
    disconnect, replacement, and definition registration.
 
-## Conclusion
+## Assessment
 
 PR 14246 has strong behavioral coverage for identity, lifecycle, and wire
-compatibility. Its principal verification risks are cross-store undo/load
+compatibility. The remaining verification risks are cross-store undo/load
 failure atomicity, realistic extension execution, and quantified performance;
 these matter more than adding further implementation-level store tests.
