@@ -890,7 +890,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Maksimum kalite için Seedance 2.0; hız optimizasyonu için Seedance 2.0 Fast."
+        "tooltip": "En yeni model, 30 saniyeye kadar videolar ve mp4/mov çıktısı için Seedance 2.5; maksimum kalite ve 1080p/4k için Seedance 2.0; hız optimizasyonu için Fast; en hızlı, en düşük maliyetli üretim için Mini."
       },
       "model_duration": {
         "name": "süre"
@@ -931,7 +931,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Maksimum kalite için Seedance 2.0; hız optimizasyonu için Seedance 2.0 Fast."
+        "tooltip": "En yeni model, 30 saniyeye kadar videolar ve mp4/mov çıktısı için Seedance 2.5; maksimum kalite ve 1080p/4k için Seedance 2.0; hız optimizasyonu için Fast; en hızlı, en düşük maliyetli üretim için Mini."
       },
       "model_auto_downscale": {
         "name": "otomatik_küçültme"
@@ -984,7 +984,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Maksimum kalite için Seedance 2.0; hız optimizasyonu için Seedance 2.0 Fast."
+        "tooltip": "En yeni model, 30 saniyeye kadar videolar ve mp4/mov çıktısı için Seedance 2.5; maksimum kalite ve 1080p/4k için Seedance 2.0; hız optimizasyonu için Fast; en hızlı, en düşük maliyetli üretim için Mini."
       },
       "model_duration": {
         "name": "süre"
@@ -5963,19 +5963,19 @@
       },
       "image": {
         "name": "görüntü",
-        "tooltip": "grok-imagine-video için isteğe bağlı başlangıç görseli. grok-imagine-video-1.5 için gereklidir."
+        "tooltip": "İsteğe bağlı başlangıç görseli. Atlanırsa video yalnızca metin isteminden oluşturulur."
       },
       "model": {
         "name": "model",
-        "tooltip": "grok-imagine-video-1.5 şu anda her zaman bir giriş görseli gerektirir."
+        "tooltip": "Video oluşturmak için kullanılacak model."
       },
       "prompt": {
         "name": "istem",
-        "tooltip": "İstenen videonun metin açıklaması."
+        "tooltip": "İstenen videonun metin açıklaması. Bir giriş görseli sağlandığında grok-imagine-video-1.5 için isteğe bağlıdır."
       },
       "resolution": {
         "name": "çözünürlük",
-        "tooltip": "Çıktı videonun çözünürlüğü."
+        "tooltip": "Çıktı videosunun çözünürlüğü. 1080p yalnızca grok-imagine-video-1.5 için kullanılabilir."
       },
       "seed": {
         "name": "tohum",
@@ -5989,7 +5989,7 @@
     }
   },
   "GrokVideoReferenceNode": {
-    "description": "Stil ve içerik referansı olarak referans görsellerle yönlendirilen video oluşturun.",
+    "description": "Referans görsellerle yönlendirilen ve isteğe bağlı hazır ses referansları içeren video oluşturun.",
     "display_name": "Grok Referans-Video",
     "inputs": {
       "control_after_generate": {
@@ -8816,7 +8816,7 @@
   },
   "LTXVConcatAVLatent": {
     "description": "Bir video latent ve bir ses latentini birleşik bir AV latentine birleştirir (herhangi bir AV modeli, örn. LTXV veya MiniMax H3).",
-    "display_name": "LTXVConcatAVLatent",
+    "display_name": "AV Latent Birleştir",
     "inputs": {
       "audio_latent": {
         "name": "audio_latent"
@@ -9235,8 +9235,8 @@
     }
   },
   "LTXVSeparateAVLatent": {
-    "description": "LTXV Ayrık AV Latent",
-    "display_name": "LTXVSeparateAVLatent",
+    "description": "Birleşik AV latenti video ve ses latentlerine ayırır (herhangi bir AV modeli, örn. LTXV veya MiniMax H3).",
+    "display_name": "AV Latent Ayır",
     "inputs": {
       "av_latent": {
         "name": "av_latent"
@@ -15609,7 +15609,7 @@
     "description": "Herhangi bir giriş değerini metin olarak önizleyin.",
     "display_name": "Herhangi Bir Şeyi Önizle",
     "inputs": {
-      "preview_mode": "Önizleme modu",
+      "preview_mode": {},
       "preview_text": {},
       "source": {
         "name": "kaynak"

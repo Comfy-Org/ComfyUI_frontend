@@ -14,6 +14,13 @@ export class KeyboardHelper {
     await nextFrame(this.page)
   }
 
+  async hold(key: string): Promise<AsyncDisposableStack> {
+    await this.page.keyboard.down(key)
+    const release = new AsyncDisposableStack()
+    release.defer(() => this.page.keyboard.up(key))
+    return release
+  }
+
   async delete(locator?: Locator | null): Promise<void> {
     await this.press('Delete', locator)
   }

@@ -1,7 +1,7 @@
 import type { AxiosResponse } from 'axios'
 import { AxiosError } from 'axios'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, ref } from 'vue'
+import { ref } from 'vue'
 
 import { mergeCustomNodesI18n } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -65,6 +65,16 @@ const mockDistributionTypes = vi.hoisted(() => ({
   isCloud: false
 }))
 vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
+
+const mockCaptureException = vi.hoisted(() => vi.fn())
+vi.mock('@sentry/vue', () => ({
+  captureException: mockCaptureException
+}))
+
+const mockAddError = vi.hoisted(() => vi.fn())
+vi.mock('@datadog/browser-rum', () => ({
+  datadogRum: { addError: mockAddError }
+}))
 
 function requestFailure(status: number) {
   const error = new AxiosError(`Request failed with status code ${status}`)
@@ -131,9 +141,11 @@ describe('bootstrapStore', () => {
   describe('cloud mode', () => {
     beforeEach(() => {
       mockDistributionTypes.isCloud = true
+      mockCaptureException.mockReset()
+      mockAddError.mockReset()
     })
 
-    it('waits for Firebase auth before loading stores', async () => {
+    it('waits for Firebase init before loading stores, then proceeds regardless of auth state', async () => {
       const store = useBootstrapStore()
       const settingStore = useSettingStore()
       const bootstrapPromise = store.startStoreBootstrap()
@@ -141,21 +153,65 @@ describe('bootstrapStore', () => {
       expect(store.isI18nReady).toBe(false)
       expect(settingStore.isReady).toBe(false)
 
-      // Firebase initialized but user not yet authenticated
+      // Firebase resolves with no user (signed-out) — bootstrap must unblock.
+      // Previously it also waited for isAuthenticated, which made every
+      // signed-out load wait 35s and fire a false Sentry timeout.
       mockIsAuthInitialized.value = true
-      await nextTick()
-
-      expect(store.isI18nReady).toBe(false)
-      expect(settingStore.isReady).toBe(false)
-
-      // User authenticates (e.g. signs in on login page)
-      mockIsAuthAuthenticated.value = true
       await bootstrapPromise
 
       await vi.waitFor(() => {
         expect(store.isI18nReady).toBe(true)
         expect(settingStore.isReady).toBe(true)
       })
+    })
+
+    it('retries once and proceeds if Firebase init resolves during the backoff', async () => {
+      vi.useFakeTimers()
+      try {
+        const store = useBootstrapStore()
+        const settingStore = useSettingStore()
+        const bootstrapPromise = store.startStoreBootstrap()
+
+        // First wait times out with Firebase still not initialized.
+        await vi.advanceTimersByTimeAsync(16_001)
+        expect(settingStore.isReady).toBe(false)
+
+        // Firebase resolves during the retry backoff.
+        mockIsAuthInitialized.value = true
+        await vi.advanceTimersByTimeAsync(3_001)
+        await bootstrapPromise
+
+        expect(settingStore.isReady).toBe(true)
+        expect(mockCaptureException).not.toHaveBeenCalled()
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('gives up after a second timeout, reports it, and continues bootstrap unauthenticated', async () => {
+      vi.useFakeTimers()
+      try {
+        const store = useBootstrapStore()
+        const settingStore = useSettingStore()
+        const bootstrapPromise = store.startStoreBootstrap()
+
+        // Firebase never resolves through the initial wait, the backoff, or the retry.
+        await vi.advanceTimersByTimeAsync(16_000 + 3_000 + 16_001)
+        await bootstrapPromise
+
+        expect(mockCaptureException).toHaveBeenCalledOnce()
+        expect(mockCaptureException).toHaveBeenCalledWith(expect.any(Error), {
+          tags: { error_type: 'bootstrap_auth_wait_timeout' }
+        })
+        expect(mockAddError).toHaveBeenCalledOnce()
+        expect(mockAddError).toHaveBeenCalledWith(expect.any(Error), {
+          error_type: 'bootstrap_auth_wait_timeout'
+        })
+        // Bootstrap must not stay stuck: stores load even when Firebase never fires.
+        expect(settingStore.isReady).toBe(true)
+      } finally {
+        vi.useRealTimers()
+      }
     })
   })
 })
