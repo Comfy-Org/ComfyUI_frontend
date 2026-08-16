@@ -2516,6 +2516,8 @@ describe('assetsStore - reset() on identity change', () => {
       const inFlightUpdate = store.updateInputs()
 
       store.reset()
+      expect(store.inputLoading).toBe(false)
+
       resolveInputs([
         fromPartial({ id: 'input-1', name: 'account-a.png', tags: ['input'] })
       ])

@@ -1002,6 +1002,7 @@ export const useAssetsStore = defineStore('assets', () => {
 
     inputAssets.value = []
     inputError.value = undefined
+    inputLoading.value = false
     assetService.invalidateInputAssetsIncludingPublic()
 
     invalidateAllCategories()

@@ -1734,6 +1734,16 @@ describe('useAuthStore', () => {
       expect(assetsReset).toHaveBeenCalledTimes(1)
     })
 
+    it('does not clear them when the callback repeats with the same account', () => {
+      const queueReset = vi.spyOn(useQueueStore(), 'reset')
+      const assetsReset = vi.spyOn(useAssetsStore(), 'reset')
+
+      authStateCallback(mockUser)
+
+      expect(queueReset).not.toHaveBeenCalled()
+      expect(assetsReset).not.toHaveBeenCalled()
+    })
+
     it('does not clear them when transitioning from signed-out to signed-in', () => {
       const queueReset = vi.spyOn(useQueueStore(), 'reset')
       const assetsReset = vi.spyOn(useAssetsStore(), 'reset')
