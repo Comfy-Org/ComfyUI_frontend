@@ -60,7 +60,7 @@ export const useExtensionStore = defineStore('extension', () => {
    * first registration.
    * @returns whether the extension was registered
    */
-  function registerExtension(extension: ComfyExtension) {
+  function registerExtension(extension: ComfyExtension): boolean {
     if (!extension.name) {
       throw new Error("Extensions must have a 'name' property.")
     }
