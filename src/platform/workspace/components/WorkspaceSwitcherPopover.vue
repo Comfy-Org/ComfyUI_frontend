@@ -71,7 +71,7 @@
     </div>
 
     <!-- Create workspace button -->
-    <div class="shrink-0 border-t border-border-default p-2">
+    <div v-if="isCloud" class="shrink-0 border-t border-border-default p-2">
       <div
         :class="
           cn(
@@ -113,6 +113,7 @@ import { useI18n } from 'vue-i18n'
 
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { isCloud } from '@/platform/distribution/types'
 import { useWorkspaceSwitch } from '@/platform/workspace/composables/useWorkspaceSwitch'
 import { useWorkspaceTierLabel } from '@/platform/workspace/composables/useWorkspaceTierLabel'
 import type {

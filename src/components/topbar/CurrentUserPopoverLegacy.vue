@@ -30,9 +30,40 @@
       </span>
     </div>
 
+    <!-- Workspace Selector -->
+    <div v-if="showWorkspaceSwitcher" class="relative">
+      <Button
+        v-tooltip="{ value: workspaceName, showDelay: 300 }"
+        variant="muted-textonly"
+        class="flex h-auto w-full items-center justify-between rounded-lg px-4 py-2 hover:bg-secondary-background-hover"
+        :aria-expanded="isWorkspaceSwitcherOpen"
+        data-testid="workspace-switcher-trigger"
+        @click="isWorkspaceSwitcherOpen = !isWorkspaceSwitcherOpen"
+      >
+        <div class="flex w-0 flex-1 items-center gap-2">
+          <WorkspaceProfilePic
+            class="size-6 shrink-0 text-xs"
+            :workspace-name="workspaceName"
+          />
+          <span class="truncate text-sm text-base-foreground">
+            {{ workspaceName }}
+          </span>
+        </div>
+        <i class="pi pi-chevron-down shrink-0 text-sm text-muted-foreground" />
+      </Button>
+
+      <div
+        v-if="isWorkspaceSwitcherOpen"
+        class="absolute top-0 right-full z-10 mr-4 rounded-lg border border-border-default bg-base-background shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
+        data-testid="workspace-switcher-panel"
+      >
+        <WorkspaceSwitcherPopover @select="isWorkspaceSwitcherOpen = false" />
+      </div>
+    </div>
+
     <!-- Credits Section -->
     <div
-      v-if="canAccessSubscriptionFeatures"
+      v-if="canAccessSubscriptionFeatures || showWorkspaceSwitcher"
       class="flex items-center gap-2 px-4 py-2"
     >
       <i class="icon-[lucide--component] text-sm text-credit" />
@@ -60,7 +91,7 @@
         {{ $t('subscription.upgradeToAddCredits') }}
       </Button>
       <Button
-        v-else
+        v-else-if="showAddCredits"
         variant="secondary"
         size="sm"
         class="text-base-foreground"
@@ -114,7 +145,7 @@
     </div>
 
     <div
-      v-if="canAccessSubscriptionFeatures"
+      v-if="canAccessSubscriptionFeatures || showWorkspaceSwitcher"
       class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
       data-testid="manage-plan-menu-item"
       @click="handleOpenPlanAndCreditsSettings"
@@ -160,9 +191,10 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+import { storeToRefs } from 'pinia'
 import Divider from 'primevue/divider'
 import Skeleton from 'primevue/skeleton'
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
@@ -176,7 +208,11 @@ import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
+import WorkspaceSwitcherPopover from '@/platform/workspace/components/WorkspaceSwitcherPopover.vue'
 import { useWorkspaceTierLabel } from '@/platform/workspace/composables/useWorkspaceTierLabel'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
 
 const emit = defineEmits<{
@@ -202,6 +238,23 @@ const {
 const { formatTierName } = useWorkspaceTierLabel()
 const subscriptionDialog = useSubscriptionDialog()
 const { locale, t } = useI18n()
+
+const { initState, workspaces, workspaceName } = storeToRefs(
+  useTeamWorkspaceStore()
+)
+const isWorkspaceSwitcherOpen = ref(false)
+const showWorkspaceSwitcher = computed(
+  () => initState.value === 'ready' && workspaces.value.length > 0
+)
+
+// Local keeps its top-up-and-go model: with a workspace context, top-up needs
+// only billing rights, not an active subscription (unlike cloud's rail).
+const { permissions } = useWorkspaceUI()
+const showAddCredits = computed(() =>
+  showWorkspaceSwitcher.value
+    ? permissions.value.canTopUp
+    : canAccessSubscriptionFeatures.value
+)
 
 const subscriptionTierName = computed(() =>
   formatTierName(tier.value, subscription.value?.duration === 'ANNUAL')

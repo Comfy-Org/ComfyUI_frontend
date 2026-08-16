@@ -101,7 +101,7 @@ const showWorkspaceSkeleton = computed(
   () => isCloud && initState.value === 'loading'
 )
 const showWorkspaceIcon = computed(
-  () => isCloud && initState.value === 'ready' && !isInPersonalWorkspace.value
+  () => initState.value === 'ready' && !isInPersonalWorkspace.value
 )
 
 const workspaceName = computed(() => {

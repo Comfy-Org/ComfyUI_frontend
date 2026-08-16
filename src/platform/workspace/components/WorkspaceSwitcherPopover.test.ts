@@ -19,6 +19,10 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({ subscription: billingMocks.subscription })
 }))
 
+const distributionMocks = vi.hoisted(() => ({ isCloud: true }))
+
+vi.mock('@/platform/distribution/types', () => distributionMocks)
+
 const LONG_WORKSPACE_NAME =
   'Quantum Renaissance Collective for Hyperdimensional Latent Diffusion Research and Experimental Workflow Engineering'
 
@@ -101,6 +105,7 @@ function renderComponent(
 describe('WorkspaceSwitcherPopover', () => {
   beforeEach(() => {
     billingMocks.subscription.value = null
+    distributionMocks.isCloud = true
   })
 
   it.for([
@@ -238,5 +243,14 @@ describe('WorkspaceSwitcherPopover', () => {
 
     const createWorkspaceButton = screen.getByText('Create a team workspace')
     expect(list).not.toContainElement(createWorkspaceButton)
+  })
+
+  it('hides the create-workspace footer on non-cloud distributions', () => {
+    distributionMocks.isCloud = false
+
+    renderComponent()
+
+    expect(screen.queryByText('Create a team workspace')).toBeNull()
+    expect(screen.queryByText(/You can only own 10 workspaces/)).toBeNull()
   })
 })
