@@ -48,7 +48,6 @@ describe('useAudioRecorder', () => {
     vi.stubGlobal('navigator', {
       mediaDevices: { getUserMedia: mockGetUserMedia }
     })
-    MockMediaRecorder.mockClear()
     mockGetUserMedia.mockResolvedValue(createMockStream())
   })
 

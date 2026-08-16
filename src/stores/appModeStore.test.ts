@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -157,7 +155,6 @@ describe('appModeStore', () => {
   let store: ReturnType<typeof useAppModeStore>
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     vi.mocked(app.rootGraph).extra = {}
     ChangeTracker.isLoadingGraph = false
     mockResolveNode.mockReturnValue(undefined)

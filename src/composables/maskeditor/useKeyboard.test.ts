@@ -44,7 +44,6 @@ describe('useKeyboard', () => {
   let keyboard: ReturnType<typeof useKeyboard>
 
   beforeEach(() => {
-    document.body.innerHTML = ''
     keyboard = useKeyboard()
     keyboard.addListeners()
   })

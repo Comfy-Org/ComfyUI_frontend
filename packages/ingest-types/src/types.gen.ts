@@ -2317,6 +2317,14 @@ export type JobDetailResponse = {
    */
   workflow_id?: string
   /**
+   * UUID of the cloud workflow version this job is pinned to, if the
+   * submission carried one (see PromptRequest's workflow_version_id).
+   * Absent for jobs submitted without that association, including
+   * every job submitted through the public API v2 today.
+   *
+   */
+  workflow_version_id?: string
+  /**
    * ID of the workspace that owns this job. A successful (200)
    * response from this operation is only ever returned for the
    * caller's own job (see this operation's ownership-scoped
@@ -2460,6 +2468,10 @@ export type HubWorkflowTemplateEntry = {
     }>
   }
   /**
+   * Whether App Mode is this workflow's default view.
+   */
+  isApp: boolean
+  /**
    * Whether the template belongs to a module marked as essential.
    */
   isEssential?: boolean
@@ -2546,6 +2558,10 @@ export type HubProfileSummary = {
 export type HubWorkflowSummary = {
   custom_nodes?: Array<LabelRef>
   description?: string
+  /**
+   * Whether App Mode is this workflow's default view.
+   */
+  is_app: boolean
   metadata?: {
     [key: string]: unknown
   }
@@ -2587,6 +2603,10 @@ export type HubWorkflowDetail = {
   assets: Array<AssetInfo>
   custom_nodes?: Array<LabelRef>
   description?: string
+  /**
+   * Whether App Mode is this workflow's default view.
+   */
+  is_app: boolean
   metadata?: {
     [key: string]: unknown
   }
@@ -8072,7 +8092,7 @@ export type GetProvidersErrors = {
    */
   401: ErrorResponse
   /**
-   * Governance not available (personal workspace or ineligible team)
+   * Governance not available (no governance entitlement)
    */
   403: ErrorResponse
   /**
@@ -10603,11 +10623,11 @@ export type GetProviderPolicyErrors = {
    */
   401: ErrorResponse
   /**
-   * Governance not available (personal workspace or ineligible team)
+   * Governance not available (no governance entitlement)
    */
   403: ErrorResponse
   /**
-   * Eligible workspace with no policy document yet
+   * Entitled workspace with no policy document yet
    */
   404: ErrorResponse
   /**
@@ -10646,7 +10666,7 @@ export type PutProviderPolicyErrors = {
    */
   401: ErrorResponse
   /**
-   * Not a workspace owner, or governance not available (personal workspace or ineligible team creating a new document)
+   * Not a workspace owner, or governance not available (no governance entitlement)
    */
   403: ErrorResponse
   /**

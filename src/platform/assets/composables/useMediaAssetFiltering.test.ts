@@ -1,7 +1,6 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 
-import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { effectScope, ref } from 'vue'
 
 import { useMediaAssetFiltering } from '@/platform/assets/composables/useMediaAssetFiltering'
@@ -43,10 +42,6 @@ function ids(assets: AssetItem[]): string[] {
 }
 
 describe('useMediaAssetFiltering', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-  })
-
   describe('media-type filter', () => {
     it('returns all assets when no filters are selected', () => {
       const assets = ref<AssetItem[]>([
@@ -380,8 +375,7 @@ describe('useMediaAssetFiltering', () => {
     })
 
     it('combines media type and date before sorting', () => {
-      const now = new Date(2026, 6, 27, 12).getTime()
-      vi.setSystemTime(now)
+      const now = Date.now()
 
       const assets = ref<AssetItem[]>([
         makeAsset({
