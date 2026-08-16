@@ -1,6 +1,6 @@
 {
   "name": "@comfyorg/comfyui-frontend",
-  "version": "1.51.3",
+  "version": "1.51.6",
   "private": true,
   "description": "Official front-end implementation of ComfyUI",
   "homepage": "https://comfy.org",
@@ -61,6 +61,7 @@
     "typecheck": "vue-tsc --noEmit",
     "typecheck:browser": "vue-tsc --project browser_tests/tsconfig.json",
     "typecheck:desktop": "pnpm --filter @comfyorg/desktop-ui run typecheck",
+    "typecheck:scripts": "vue-tsc --project scripts/tsconfig.json",
     "typecheck:website": "pnpm --filter @comfyorg/website run typecheck",
     "zipdist": "node scripts/zipdist.js"
   },

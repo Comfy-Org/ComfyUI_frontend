@@ -177,14 +177,7 @@
               </div>
               <div class="flex flex-wrap gap-2 md:ml-auto">
                 <Button
-                  v-if="
-                    isCloud &&
-                    permissions.canManageSubscription &&
-                    (billingType === 'workspace' ||
-                      (isSubscriptionEnded &&
-                        !isFreeTierPlan &&
-                        subscription !== null))
-                  "
+                  v-if="isCloud && permissions.canManageSubscription"
                   size="lg"
                   variant="secondary"
                   class="rounded-lg bg-interface-menu-component-surface-selected px-4 text-sm font-normal text-text-primary"
@@ -242,7 +235,10 @@
               </div>
 
               <div
-                v-if="canAccessSubscriptionFeatures"
+                v-if="
+                  canAccessSubscriptionFeatures ||
+                  (isCloud && permissions.canManageSubscription)
+                "
                 class="flex flex-wrap gap-2 md:ml-auto"
               >
                 <Button
@@ -279,6 +275,7 @@
                 <Button
                   v-else-if="
                     !isSubscriptionCancelled &&
+                    canAccessSubscriptionFeatures &&
                     permissions.canManageSubscription
                   "
                   size="lg"
@@ -452,7 +449,6 @@ function openSubscriptionVerification() {
 }
 
 const {
-  type: billingType,
   canAccessSubscriptionFeatures,
   isFreeTier: isFreeTierPlan,
   isTeamPlan,
