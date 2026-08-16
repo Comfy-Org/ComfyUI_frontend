@@ -2,12 +2,16 @@ import { describe, expect, it } from 'vitest'
 
 import { isWithin, previousEntryUrl } from './previousEntry'
 
-const nav = (index: number | null | undefined, urls: (string | undefined)[]) =>
-  ({
+function nav(
+  index: number | null | undefined,
+  urls: (string | undefined)[]
+): NonNullable<Parameters<typeof previousEntryUrl>[0]> {
+  return {
     currentEntry:
       index === undefined ? undefined : index === null ? null : { index },
     entries: () => urls.map((url) => ({ url }))
-  }) as Parameters<typeof previousEntryUrl>[0]
+  }
+}
 
 describe('previousEntryUrl', () => {
   it('returns the entry before the current one', () => {
@@ -47,10 +51,20 @@ describe('isWithin', () => {
     ).toBe(true)
   })
 
+  it('accepts the prefix itself', () => {
+    expect(isWithin('https://a.test/events', 'https://a.test', '/events')).toBe(
+      true
+    )
+  })
+
   it.for([
     { label: 'null', url: null },
     { label: 'a different origin', url: 'https://b.test/events' },
     { label: 'a different path', url: 'https://a.test/blog' },
+    {
+      label: 'a sibling path sharing the prefix',
+      url: 'https://a.test/events-archive'
+    },
     { label: 'an unparseable url', url: 'not a url' }
   ])('rejects $label', ({ url }) => {
     expect(isWithin(url, 'https://a.test', '/events')).toBe(false)
