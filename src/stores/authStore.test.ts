@@ -12,7 +12,6 @@ import {
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useDialogService } from '@/services/dialogService'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import type * as ApiModule from '@/scripts/api'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
@@ -35,6 +34,15 @@ const { mockFeatureFlags } = vi.hoisted(() => ({
 
 const { mockResetSocket } = vi.hoisted(() => ({
   mockResetSocket: vi.fn()
+}))
+
+const mockTeamWorkspaceStore = vi.hoisted(() => ({
+  activeWorkspaceId: null as string | null,
+  resetForIdentityChange: vi.fn()
+}))
+
+vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
+  useTeamWorkspaceStore: () => mockTeamWorkspaceStore
 }))
 
 type MockUser = Omit<User, 'getIdToken' | 'delete'> & {
@@ -225,6 +233,8 @@ describe('useAuthStore', () => {
 
     // Default: no API key auth
     mockApiKeyGetAuthHeader.mockReturnValue(null)
+    mockTeamWorkspaceStore.activeWorkspaceId = null
+    mockTeamWorkspaceStore.resetForIdentityChange.mockReset()
   })
 
   describe('token refresh events', () => {
@@ -699,8 +709,7 @@ describe('useAuthStore', () => {
 
     it('recovers the workspace token instead of downgrading to personal auth', async () => {
       const workspaceAuth = useWorkspaceAuthStore()
-      const teamStore = useTeamWorkspaceStore()
-      teamStore.activeWorkspaceId = 'workspace-123'
+      mockTeamWorkspaceStore.activeWorkspaceId = 'workspace-123'
       vi.spyOn(workspaceAuth, 'getWorkspaceAuthHeader').mockReturnValue(null)
       const ensureSpy = vi
         .spyOn(workspaceAuth, 'ensureWorkspaceAuthHeader')
@@ -715,8 +724,7 @@ describe('useAuthStore', () => {
 
     it('fails closed (no personal Firebase downgrade) when recovery yields no token', async () => {
       const workspaceAuth = useWorkspaceAuthStore()
-      const teamStore = useTeamWorkspaceStore()
-      teamStore.activeWorkspaceId = 'workspace-123'
+      mockTeamWorkspaceStore.activeWorkspaceId = 'workspace-123'
       vi.spyOn(workspaceAuth, 'getWorkspaceAuthHeader').mockReturnValue(null)
       vi.spyOn(workspaceAuth, 'ensureWorkspaceAuthHeader').mockResolvedValue(
         null
@@ -730,8 +738,7 @@ describe('useAuthStore', () => {
 
     it('falls back to Firebase when workspace mode is not yet initialized', async () => {
       const workspaceAuth = useWorkspaceAuthStore()
-      const teamStore = useTeamWorkspaceStore()
-      teamStore.activeWorkspaceId = null
+      mockTeamWorkspaceStore.activeWorkspaceId = null
       vi.spyOn(workspaceAuth, 'getWorkspaceAuthHeader').mockReturnValue(null)
       const ensureSpy = vi.spyOn(workspaceAuth, 'ensureWorkspaceAuthHeader')
 
@@ -745,8 +752,7 @@ describe('useAuthStore', () => {
   describe('getAuthToken workspace recovery', () => {
     it('recovers the workspace token instead of downgrading to personal auth', async () => {
       const workspaceAuth = useWorkspaceAuthStore()
-      const teamStore = useTeamWorkspaceStore()
-      teamStore.activeWorkspaceId = 'workspace-123'
+      mockTeamWorkspaceStore.activeWorkspaceId = 'workspace-123'
       const ensureSpy = vi
         .spyOn(workspaceAuth, 'ensureWorkspaceToken')
         .mockResolvedValue('recovered-ws-token')
@@ -760,8 +766,7 @@ describe('useAuthStore', () => {
 
     it('fails closed (no personal Firebase downgrade) when recovery yields no token', async () => {
       const workspaceAuth = useWorkspaceAuthStore()
-      const teamStore = useTeamWorkspaceStore()
-      teamStore.activeWorkspaceId = 'workspace-123'
+      mockTeamWorkspaceStore.activeWorkspaceId = 'workspace-123'
       vi.spyOn(workspaceAuth, 'ensureWorkspaceToken').mockResolvedValue(null)
 
       const token = await store.getAuthToken()
@@ -772,8 +777,7 @@ describe('useAuthStore', () => {
 
     it('falls back to Firebase when workspace mode is not yet initialized', async () => {
       const workspaceAuth = useWorkspaceAuthStore()
-      const teamStore = useTeamWorkspaceStore()
-      teamStore.activeWorkspaceId = null
+      mockTeamWorkspaceStore.activeWorkspaceId = null
       vi.spyOn(workspaceAuth, 'getWorkspaceToken').mockReturnValue(undefined)
       const ensureSpy = vi.spyOn(workspaceAuth, 'ensureWorkspaceToken')
 
