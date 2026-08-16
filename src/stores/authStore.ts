@@ -1,3 +1,4 @@
+import { useMemoize } from '@vueuse/core'
 import { FirebaseError } from 'firebase/app'
 import {
   AuthErrorCodes,
@@ -88,11 +89,9 @@ export const useAuthStore = defineStore('auth', () => {
   let customerRecovery: Promise<void> | null = null
   let customerRecoveryUid: string | undefined
   const isFetchingBalance = ref(false)
-  /**
-   * The in-flight `mintAtLogin()` call, if any, so `getAuthHeader` can await
-   * it instead of racing it (see onAuthStateChanged below).
-   */
-  let pendingUnifiedMint: Promise<boolean> | null = null
+  const mintUnifiedToken = useMemoize((_uid: string) =>
+    useWorkspaceAuthStore().mintAtLogin()
+  )
 
   // Balance state
   const balance = ref<GetCustomerBalanceResponse | null>(null)
@@ -149,6 +148,7 @@ export const useAuthStore = defineStore('auth', () => {
 
     if (user === null || identityChanged) {
       useWorkspaceAuthStore().clearWorkspaceContext()
+      mintUnifiedToken.clear()
     }
     if (identityChanged) {
       useTeamWorkspaceStore().resetForIdentityChange()
@@ -166,16 +166,10 @@ export const useAuthStore = defineStore('auth', () => {
     isInitialized.value = true
     if (user === null) {
       lastTokenUserId.value = null
-      pendingUnifiedMint = null
     } else if (isCloud) {
       // Mint the single Cloud JWT at login (flag-guarded inside the store; a
-      // no-op when unified_cloud_auth is off). Tracked so getAuthHeader can
-      // await it rather than observing a torn pre-mint state.
-      const mintPromise = useWorkspaceAuthStore().mintAtLogin()
-      pendingUnifiedMint = mintPromise
-      void mintPromise.finally(() => {
-        if (pendingUnifiedMint === mintPromise) pendingUnifiedMint = null
-      })
+      // no-op when unified_cloud_auth is off).
+      void mintUnifiedToken(user.uid)
     }
 
     // Reset balance when auth state changes
@@ -261,13 +255,10 @@ export const useAuthStore = defineStore('auth', () => {
    */
   const getAuthHeader = async (): Promise<AuthHeader | null> => {
     if (flags.unifiedCloudAuthEnabled) {
-      if (pendingUnifiedMint) {
-        await pendingUnifiedMint.catch(() => false)
-      }
+      const uid = currentUser.value?.uid
+      if (uid) await mintUnifiedToken(uid).catch(() => false)
       const token = useWorkspaceAuthStore().getUnifiedToken()
       if (token) return { Authorization: `Bearer ${token}` }
-      // Mint failed to produce a token; fall back to Firebase rather than
-      // reporting a genuinely authenticated user as logged out.
       return await getFirebaseAuthHeader()
     }
 
@@ -306,12 +297,15 @@ export const useAuthStore = defineStore('auth', () => {
 
   /**
    * Returns the raw auth token (not wrapped in a header object).
-   * When unified_cloud_auth is enabled, returns the single Cloud JWT; otherwise
-   * priority is workspace token > Firebase token.
+   * When unified_cloud_auth is enabled, awaits any in-flight login mint and
+   * returns the single Cloud JWT; otherwise priority is workspace token >
+   * Firebase token.
    * Use this for WebSocket connections and backend node auth.
    */
   const getAuthToken = async (): Promise<string | undefined> => {
     if (flags.unifiedCloudAuthEnabled) {
+      const uid = currentUser.value?.uid
+      if (uid) await mintUnifiedToken(uid).catch(() => false)
       return useWorkspaceAuthStore().getUnifiedToken()
     }
 

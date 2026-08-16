@@ -326,21 +326,14 @@ describe('auth token priority chain', () => {
       expect(mockUser.getIdToken).not.toHaveBeenCalled()
     })
 
-    // Regression test for the unified-auth login race: onAuthStateChanged
-    // used to fire workspaceAuthStore.mintAtLogin() without awaiting it
-    // (authStore.ts ~L167), in the same callback that flips `isInitialized`
-    // to true. router.beforeEach (router.ts:177-189) waits only for
-    // `isInitialized` and then reads getAuthHeader() to decide `isLoggedIn`,
-    // so it could observe a real, authenticated user with no unified token
-    // minted yet and redirect them to /cloud/login.
     it('getAuthHeader awaits an in-flight unified mint instead of racing it', async () => {
       let resolveMint: (minted: boolean) => void = () => {}
-      mockMintAtLogin.mockReturnValue(
+      mockMintAtLogin.mockReturnValueOnce(
         new Promise<boolean>((resolve) => {
           resolveMint = resolve
         })
       )
-      authStateCallback({ ...mockUser })
+      authStateCallback({ ...mockUser, uid: 'header-race-user' })
       mockUnifiedToken = null
 
       let settled = false
@@ -356,6 +349,113 @@ describe('auth token priority chain', () => {
 
       expect(settled).toBe(true)
       expect(header).toEqual({ Authorization: 'Bearer firebase-token' })
+    })
+
+    it('getAuthToken awaits an in-flight unified mint instead of racing it', async () => {
+      let resolveMint: (minted: boolean) => void = () => {}
+      mockMintAtLogin.mockReturnValueOnce(
+        new Promise<boolean>((resolve) => {
+          resolveMint = resolve
+        })
+      )
+      authStateCallback({ ...mockUser, uid: 'token-race-user' })
+      mockUnifiedToken = null
+
+      let settled = false
+      const tokenPromise = store.getAuthToken().then((token) => {
+        settled = true
+        return token
+      })
+      await Promise.resolve()
+      expect(settled).toBe(false)
+
+      resolveMint(false)
+      const token = await tokenPromise
+
+      expect(settled).toBe(true)
+      expect(token).toBeUndefined()
+    })
+
+    it('shares a single in-flight mint across concurrent getAuthHeader callers', async () => {
+      mockMintAtLogin.mockClear()
+      let resolveMint: (minted: boolean) => void = () => {}
+      mockMintAtLogin.mockReturnValueOnce(
+        new Promise<boolean>((resolve) => {
+          resolveMint = resolve
+        })
+      )
+      authStateCallback({ ...mockUser, uid: 'concurrent-user' })
+      mockUnifiedToken = null
+      expect(mockMintAtLogin).toHaveBeenCalledTimes(1)
+
+      const header1Promise = store.getAuthHeader()
+      const header2Promise = store.getAuthHeader()
+      expect(mockMintAtLogin).toHaveBeenCalledTimes(1)
+
+      resolveMint(false)
+      const [header1, header2] = await Promise.all([
+        header1Promise,
+        header2Promise
+      ])
+
+      expect(header1).toEqual({ Authorization: 'Bearer firebase-token' })
+      expect(header2).toEqual({ Authorization: 'Bearer firebase-token' })
+    })
+
+    it('does not let a stale mint from a previous identity clobber the new identity', async () => {
+      let resolveA: (minted: boolean) => void = () => {}
+      mockMintAtLogin.mockReturnValueOnce(
+        new Promise<boolean>((resolve) => {
+          resolveA = resolve
+        })
+      )
+      authStateCallback({ ...mockUser, uid: 'user-a' })
+
+      let resolveB: (minted: boolean) => void = () => {}
+      mockMintAtLogin.mockReturnValueOnce(
+        new Promise<boolean>((resolve) => {
+          resolveB = resolve
+        })
+      )
+      authStateCallback({
+        ...mockUser,
+        uid: 'user-b',
+        email: 'b@example.com'
+      })
+      mockUnifiedToken = null
+
+      const headerPromise = store.getAuthHeader()
+
+      resolveA(true)
+      await Promise.resolve()
+
+      mockUnifiedToken = 'b-token'
+      resolveB(true)
+      const header = await headerPromise
+
+      expect(header).toEqual({ Authorization: 'Bearer b-token' })
+      expect(mockClearWorkspaceContext).toHaveBeenCalledTimes(2)
+    })
+
+    it('returns immediately on sign-out instead of waiting on an abandoned mint', async () => {
+      let resolveMint: (minted: boolean) => void = () => {}
+      mockMintAtLogin.mockReturnValueOnce(
+        new Promise<boolean>((resolve) => {
+          resolveMint = resolve
+        })
+      )
+      authStateCallback({ ...mockUser, uid: 'signing-out-user' })
+      mockUnifiedToken = null
+
+      authStateCallback(null)
+
+      const header = await store.getAuthHeader()
+      const token = await store.getAuthToken()
+
+      expect(header).toBeNull()
+      expect(token).toBeUndefined()
+
+      resolveMint(false)
     })
   })
 })
