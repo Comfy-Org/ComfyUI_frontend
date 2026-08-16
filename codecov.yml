@@ -2,12 +2,8 @@ coverage:
   status:
     project:
       # Keep website coverage from lowering the existing frontend status.
-      # informational: total-project coverage swings with file churn across
-      # the whole monorepo report, not with what a given PR's diff covers;
-      # codecov/patch (below) is what actually enforces new-line coverage.
       default:
         target: auto
-        informational: true
         flags:
           - unit
           - e2e
