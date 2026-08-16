@@ -4929,13 +4929,13 @@ const translations = {
   },
 
   'ltx.meta.title': {
-    en: 'LTX 2.5 on Comfy — Open-Source AI Video Model',
-    'zh-CN': 'Comfy 上的 LTX 2.5 — 开源 AI 视频模型'
+    en: 'LTX 2.5 on Comfy: Open-Source AI Video Model',
+    'zh-CN': 'Comfy 上的 LTX 2.5：开源 AI 视频模型'
   },
   'ltx.meta.description': {
-    en: 'Run LTX 2.5 on Comfy. Open weights, directed on the canvas alongside every other model, on Comfy Cloud or your own GPU.',
+    en: 'Run LTX 2.5 on Comfy. Open weights, free to run on your own GPU, or directed on the canvas alongside every other model on Comfy Cloud.',
     'zh-CN':
-      '在 Comfy 上运行 LTX 2.5。开放权重，可在画布上与其他所有模型一同执导，支持 Comfy Cloud 或你自己的 GPU。'
+      '在 Comfy 上运行 LTX 2.5。开放权重，可在你自己的 GPU 上免费运行，也可以在画布上与其他所有模型一同执导，支持 Comfy Cloud。'
   },
   'ltx.breadcrumb.model': { en: 'LTX 2.5', 'zh-CN': 'LTX 2.5' },
   'ltx.breadcrumb.updated': {
