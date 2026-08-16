@@ -76,52 +76,99 @@ onBeforeUnmount(() => {
 whenever(() => !canvasStore.linearMode, bindWidget)
 watch(() => canvasStore.currentGraph, bindWidget)
 
-function draw() {
-  if (!widgetInstance || !node) return
-  const width = canvasEl.value.parentElement.clientWidth
-  // Priority: computedHeight (from litegraph) > computeLayoutSize > computeSize
-  let height = 20
-  if (widgetInstance.computedHeight) {
-    height = widgetInstance.computedHeight
-  } else if (widgetInstance.computeLayoutSize) {
-    height = widgetInstance.computeLayoutSize(node).minHeight
-  } else if (widgetInstance.computeSize) {
-    height = widgetInstance.computeSize(width)[1]
+function withHostWidgetGeometry<T>(
+  widget: IBaseWidget,
+  callback: (width: number) => T
+): T | undefined {
+  const parent = canvasEl.value?.parentElement
+  if (!parent) return
+
+  const previousWidth = widget.width
+  const previousY = widget.y
+  const width = parent.clientWidth
+
+  widget.width = width
+  widget.y = 0
+  try {
+    return callback(width)
+  } finally {
+    widget.width = previousWidth
+    widget.y = previousY
   }
-  containerHeight.value = height
-  // Set node.canvasHeight for legacy widgets that use it (e.g., Impact Pack)
-  // @ts-expect-error canvasHeight is a custom property used by some extensions
-  node.canvasHeight = height
-  widgetInstance.y = 0
-  widgetInstance.width = width
-  canvasEl.value.height = (height + 2) * scaleFactor
-  canvasEl.value.width = width * scaleFactor
-  const ctx = canvasEl.value?.getContext('2d')
-  if (!ctx) return
-  ctx.scale(scaleFactor, scaleFactor)
-  widgetInstance.draw?.(ctx, node, width, 1, height)
+}
+
+function draw() {
+  const currentWidget = widgetInstance
+  const currentNode = node
+  if (!currentWidget || !currentNode) return
+
+  withHostWidgetGeometry(currentWidget, (width) => {
+    // Priority: computedHeight (from litegraph) > computeLayoutSize > computeSize
+    let height = 20
+    if (currentWidget.computedHeight) {
+      height = currentWidget.computedHeight
+    } else if (currentWidget.computeLayoutSize) {
+      height = currentWidget.computeLayoutSize(currentNode).minHeight
+    } else if (currentWidget.computeSize) {
+      height = currentWidget.computeSize(width)[1]
+    }
+    containerHeight.value = height
+    // Set node.canvasHeight for legacy widgets that use it (e.g., Impact Pack)
+    // @ts-expect-error canvasHeight is a custom property used by some extensions
+    currentNode.canvasHeight = height
+    canvasEl.value.height = (height + 2) * scaleFactor
+    canvasEl.value.width = width * scaleFactor
+    const ctx = canvasEl.value?.getContext('2d')
+    if (!ctx) return
+    ctx.scale(scaleFactor, scaleFactor)
+    currentWidget.draw?.(ctx, currentNode, width, 1, height)
+  })
 }
 //See LGraphCanvas.processWidgetClick
 function handleDown(e: PointerEvent) {
-  if (!node || !widgetInstance || !pointer) return
-  augmentToCanvasPointerEvent(e, node, canvas)
-  pointer.down(e)
-  if (widgetInstance.mouse)
-    pointer.onDrag = (e) =>
-      widgetInstance!.mouse?.(e, [e.offsetX, e.offsetY], node!)
-  //NOTE: a mouseUp event is already registed under pointer.finally
-  canvas.processWidgetClick(e, node, widgetInstance, pointer)
+  const currentNode = node
+  const currentWidget = widgetInstance
+  const currentPointer = pointer
+  if (!currentNode || !currentWidget || !currentPointer) return
+
+  withHostWidgetGeometry(currentWidget, () => {
+    augmentToCanvasPointerEvent(e, currentNode, canvas)
+    currentPointer.down(e)
+    if (currentWidget.mouse)
+      currentPointer.onDrag = (e) =>
+        withHostWidgetGeometry(currentWidget, () =>
+          currentWidget.mouse?.(e, [e.offsetX, e.offsetY], currentNode)
+        )
+    //NOTE: a mouseUp event is already registed under pointer.finally
+    canvas.processWidgetClick(e, currentNode, currentWidget, currentPointer)
+  })
 }
 function handleUp(e: PointerEvent) {
-  if (!pointer || !node) return
-  augmentToCanvasPointerEvent(e, node, canvas)
-  e.click_time = e.timeStamp - (pointer?.eDown?.timeStamp ?? 0)
-  pointer.up(e)
+  const currentPointer = pointer
+  const currentNode = node
+  const currentWidget = widgetInstance
+  if (!currentPointer || !currentNode) return
+
+  augmentToCanvasPointerEvent(e, currentNode, canvas)
+  e.click_time = e.timeStamp - (currentPointer.eDown?.timeStamp ?? 0)
+  if (currentWidget) {
+    withHostWidgetGeometry(currentWidget, () => currentPointer.up(e))
+  } else {
+    currentPointer.up(e)
+  }
 }
 function handleMove(e: PointerEvent) {
-  if (!pointer || !node) return
-  augmentToCanvasPointerEvent(e, node, canvas)
-  pointer.move(e)
+  const currentPointer = pointer
+  const currentNode = node
+  const currentWidget = widgetInstance
+  if (!currentPointer || !currentNode) return
+
+  augmentToCanvasPointerEvent(e, currentNode, canvas)
+  if (currentWidget) {
+    withHostWidgetGeometry(currentWidget, () => currentPointer.move(e))
+  } else {
+    currentPointer.move(e)
+  }
 }
 </script>
 <template>
