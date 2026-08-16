@@ -54,5 +54,27 @@ test.describe(
         comfyPage.vueNodes.getWidgetByName(CLIP_TEXT_ENCODE_TITLE, 'text')
       ).toHaveValue(PROMPT_TEXT)
     })
+
+    test('restores the promoted widget value when the unpack is undone', async ({
+      comfyPage
+    }) => {
+      const promotedText = comfyPage.vueNodes.getWidgetByName(
+        SUBGRAPH_NODE_TITLE,
+        'text'
+      )
+      await promotedText.fill(PROMPT_TEXT)
+      await promotedText.blur()
+      await expect(promotedText).toHaveValue(PROMPT_TEXT)
+
+      await comfyPage.subgraph.unpackViaContextMenu(SUBGRAPH_NODE_TITLE)
+      await comfyPage.keyboard.undo()
+
+      await expect(
+        comfyPage.vueNodes.getNodeByTitle(SUBGRAPH_NODE_TITLE)
+      ).toBeVisible()
+      await expect(
+        comfyPage.vueNodes.getWidgetByName(SUBGRAPH_NODE_TITLE, 'text')
+      ).toHaveValue(PROMPT_TEXT)
+    })
   }
 )
