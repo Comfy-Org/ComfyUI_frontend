@@ -129,7 +129,7 @@ vi.mock('@/platform/navigation/preservedQueryNamespaces', () => ({
 }))
 
 vi.mock('@/platform/distribution/types', () => ({
-  isCloud: false
+  isCloud: true
 }))
 
 vi.mock('../migration/migrateV1toV2', () => ({
