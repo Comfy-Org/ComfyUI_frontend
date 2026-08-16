@@ -15,7 +15,6 @@ describe('getCheckoutAttribution', () => {
     window.ire = undefined
     window.rewardful = undefined
     window.Rewardful = undefined
-    window.history.pushState({}, '', '/')
   })
 
   it('reads GA identity and URL attribution, and prefers generated click id', async () => {

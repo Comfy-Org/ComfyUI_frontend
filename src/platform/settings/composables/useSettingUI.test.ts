@@ -22,7 +22,15 @@ const env = vi.hoisted(() => {
     userSecretsEnabled: false,
     isActiveSubscription: false,
     billingType: 'legacy' as 'legacy' | 'workspace',
-    workspaceRole: 'owner' as 'owner' | 'member'
+    workspaceRole: 'owner' as 'owner' | 'member',
+    partnerNodeGovernanceStatus: 'inactive' as
+      | 'inactive'
+      | 'loading'
+      | 'unconfigured'
+      | 'configured'
+      | 'ineligible'
+      | 'error',
+    partnerNodeGovernanceProviders: [] as { id: string }[]
   }
   const fakeRef = <K extends keyof typeof state>(key: K) => ({
     get value() {
@@ -91,6 +99,17 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
   })
 }))
 
+vi.mock('@/platform/workspace/stores/partnerNodeGovernanceStore', () => ({
+  usePartnerNodeGovernanceStore: () => ({
+    get status() {
+      return env.state.partnerNodeGovernanceStatus
+    },
+    get providers() {
+      return env.state.partnerNodeGovernanceProviders
+    }
+  })
+}))
+
 interface MockSettingParams {
   id: string
   name: string
@@ -134,7 +153,9 @@ describe('useSettingUI', () => {
       userSecretsEnabled: false,
       isActiveSubscription: false,
       billingType: 'legacy',
-      workspaceRole: 'owner'
+      workspaceRole: 'owner',
+      partnerNodeGovernanceStatus: 'inactive',
+      partnerNodeGovernanceProviders: []
     })
 
     vi.mocked(useSettingStore).mockReturnValue({
@@ -337,6 +358,30 @@ describe('useSettingUI', () => {
       const { navGroups } = useSettingUI()
 
       expect(navKeys(navGroups.value)).not.toContain('workspace-allowlist')
+    })
+
+    it('shows the crown when ineligible with providers present (policy-restricted)', () => {
+      env.state.partnerNodeGovernanceStatus = 'ineligible'
+      env.state.partnerNodeGovernanceProviders = [{ id: 'provider-a' }]
+
+      const { navGroups } = useSettingUI()
+      const allowlistItem = navGroups.value
+        .flatMap((group) => group.items)
+        .find((item) => item.id === 'workspace-allowlist')
+
+      expect(allowlistItem?.suffixIcon).toBe('icon-[lucide--crown]')
+    })
+
+    it('does not show the crown when ineligible with no providers (catalog 403)', () => {
+      env.state.partnerNodeGovernanceStatus = 'ineligible'
+      env.state.partnerNodeGovernanceProviders = []
+
+      const { navGroups } = useSettingUI()
+      const allowlistItem = navGroups.value
+        .flatMap((group) => group.items)
+        .find((item) => item.id === 'workspace-allowlist')
+
+      expect(allowlistItem?.suffixIcon).toBeUndefined()
     })
 
     it('keeps OSS account navigation on the legacy layout', () => {
