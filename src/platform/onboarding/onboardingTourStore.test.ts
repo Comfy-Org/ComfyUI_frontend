@@ -121,7 +121,6 @@ describe('onboardingTourStore', () => {
     if (appModeMock.mode) appModeMock.mode.value = 'graph'
     if (appModeMock.hasOutputs) appModeMock.hasOutputs.value = false
     telemetry.track.mockClear()
-    vi.useRealTimers()
   })
 
   /** Register one laid-out element for a coach id, so its step resolves at once. */
@@ -247,8 +246,104 @@ describe('onboardingTourStore', () => {
     expect(skipped?.[1]).toMatchObject({ skip_reason: 'user' })
   })
 
+  describe('the ending it hands on', () => {
+    it('has none to report before a tour has ended', async () => {
+      const store = mountStore()
+      store.replayTour('appMode')
+      await nextTick()
+
+      expect(
+        store.lastEnding,
+        'a running tour has not ended, so nothing may act on how it did'
+      ).toBeNull()
+    })
+
+    it('records a deliberate dismissal as the user’s own', async () => {
+      const store = mountStore()
+      store.replayTour('appMode')
+      await nextTick()
+
+      store.skip()
+
+      expect(store.lastEnding).toEqual({
+        tour: 'appMode',
+        outcome: 'skipped',
+        skipReason: 'user'
+      })
+    })
+
+    it('records a tour torn down by a target that never mounted', async () => {
+      const store = mountStore()
+      store.replayTour('appMode')
+      await vi.advanceTimersByTimeAsync(0)
+      store.next()
+      // The deferred target (inputs list) is never registered; exhaust the wait.
+      await vi.advanceTimersByTimeAsync(8000)
+
+      expect(
+        store.lastEnding,
+        'whatever follows the tour has to tell this apart from a finished one'
+      ).toEqual({
+        tour: 'appMode',
+        outcome: 'skipped',
+        skipReason: 'target_timeout'
+      })
+    })
+
+    it('records a tour that lost the context its steps point at', async () => {
+      settings.store.set(TOUR_SEEN_SETTING, ['appMode'])
+      const store = mountStore()
+      enterApp('app', false)
+      await nextTick()
+      store.replayTour('appMode')
+      await nextTick()
+
+      enterApp('graph', false)
+      await nextTick()
+
+      expect(store.lastEnding).toEqual({
+        tour: 'appMode',
+        outcome: 'skipped',
+        skipReason: 'trigger_lost'
+      })
+    })
+
+    it('records a walked-to-the-end tour with no skip reason', async () => {
+      registerAppModeTargets()
+      const store = mountStore()
+      store.replayTour('appMode')
+      await nextTick()
+
+      // Capped so a stuck tour fails instead of hanging.
+      for (let i = 0; i < 12 && !seenTours().includes('appMode'); i++) {
+        store.next()
+        await nextTick()
+      }
+
+      expect(store.lastEnding).toEqual({
+        tour: 'appMode',
+        outcome: 'completed'
+      })
+    })
+
+    it('drops the last ending as soon as a new run is requested', async () => {
+      const store = mountStore()
+      store.replayTour('appMode')
+      await nextTick()
+      store.skip()
+      expect(store.lastEnding).not.toBeNull()
+
+      store.replayTour('appMode')
+      await nextTick()
+
+      expect(
+        store.lastEnding,
+        'a run still going has no ending, and the last one does not speak for it'
+      ).toBeNull()
+    })
+  })
+
   it('holds the card on its step while a deferred target is awaited', async () => {
-    vi.useFakeTimers()
     const store = mountStore()
     store.replayTour('appMode')
     await vi.advanceTimersByTimeAsync(0)
@@ -265,7 +360,6 @@ describe('onboardingTourStore', () => {
   })
 
   it('skips without the seen-flag and toasts when a deferred target never appears', async () => {
-    vi.useFakeTimers()
     const store = mountStore()
     store.replayTour('appMode')
     await vi.advanceTimersByTimeAsync(0)
@@ -309,7 +403,6 @@ describe('onboardingTourStore', () => {
   })
 
   it('keeps the original deadline when advance is requested again mid-wait', async () => {
-    vi.useFakeTimers()
     const store = mountStore()
     store.replayTour('appMode')
     await vi.advanceTimersByTimeAsync(0)
@@ -324,7 +417,6 @@ describe('onboardingTourStore', () => {
   })
 
   it('does not toast or double-report when the user skips during a deferred wait', async () => {
-    vi.useFakeTimers()
     const store = mountStore()
     store.replayTour('appMode')
     await vi.advanceTimersByTimeAsync(0)
@@ -365,7 +457,6 @@ describe('onboardingTourStore', () => {
   })
 
   it('aborts a pending deferred wait without a toast when the trigger stops holding', async () => {
-    vi.useFakeTimers()
     const store = mountStore()
     enterApp('app', true)
     await vi.advanceTimersByTimeAsync(0)

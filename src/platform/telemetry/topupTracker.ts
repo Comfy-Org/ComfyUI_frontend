@@ -4,6 +4,20 @@ import type { AuditLog } from '@/services/customerEventsService'
 const STORAGE_KEY = 'pending_topup_timestamp'
 const MAX_AGE_MS = 24 * 60 * 60 * 1000 // 24 hours
 
+function getPendingTopupTimestamp(): number | null {
+  const timestampStr = localStorage.getItem(STORAGE_KEY)
+  if (!timestampStr) return null
+
+  const timestamp = Number(timestampStr)
+  const age = Date.now() - timestamp
+  if (Number.isSafeInteger(timestamp) && age >= 0 && age <= MAX_AGE_MS) {
+    return timestamp
+  }
+
+  localStorage.removeItem(STORAGE_KEY)
+  return null
+}
+
 /**
  * Start tracking a credit top-up purchase.
  * Call this before opening the Stripe checkout window.
@@ -22,25 +36,14 @@ export function startTopupTracking(): void {
 export function checkForCompletedTopup(
   events: AuditLog[] | undefined | null
 ): boolean {
-  const timestampStr = localStorage.getItem(STORAGE_KEY)
-  if (!timestampStr) return false
-
-  const timestamp = parseInt(timestampStr, 10)
-
-  // Auto-cleanup if expired (older than 24 hours)
-  if (Date.now() - timestamp > MAX_AGE_MS) {
-    localStorage.removeItem(STORAGE_KEY)
-    return false
-  }
+  const timestamp = getPendingTopupTimestamp()
+  if (timestamp === null) return false
 
   if (!events || events.length === 0) return false
 
-  // Find a credit top-up event that occurred after our timestamp.
-  // Legacy /customers/events emits `credit_added`; the unified
-  // /api/billing/events feed emits `topup_completed`.
   const completedTopup = events.find(
     (e) =>
-      (e.event_type === 'credit_added' || e.event_type === 'topup_completed') &&
+      e.event_type === 'credit_added' &&
       e.createdAt &&
       new Date(e.createdAt).getTime() > timestamp
   )
@@ -62,15 +65,6 @@ export function clearTopupTracking(): void {
   localStorage.removeItem(STORAGE_KEY)
 }
 
-/**
- * Consume a pending top-up marker on window focus. Clears the marker and
- * reports whether a non-expired purchase was awaiting a balance refresh.
- */
-export function consumePendingTopup(): boolean {
-  const timestampStr = localStorage.getItem(STORAGE_KEY)
-  if (!timestampStr) return false
-
-  localStorage.removeItem(STORAGE_KEY)
-  const timestamp = parseInt(timestampStr, 10)
-  return Date.now() - timestamp <= MAX_AGE_MS
+export function pendingTopupNeedsRefresh(): boolean {
+  return getPendingTopupTimestamp() !== null
 }

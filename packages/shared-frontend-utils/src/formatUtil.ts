@@ -1,4 +1,3 @@
-import { default as DOMPurify } from 'dompurify'
 import type { operations } from '@comfyorg/registry-types'
 
 export function formatCamelCase(str: string): string {
@@ -64,15 +63,16 @@ export function ensureWorkflowSuffix(
   return name + '.' + suffix
 }
 
+interface HighlightQueryPart {
+  text: string
+  highlighted: boolean
+}
+
 export function highlightQuery(
   text: string,
-  query: string,
-  sanitize: boolean = true
-) {
-  if (!query) return text
-  if (sanitize) {
-    text = DOMPurify.sanitize(text)
-  }
+  query: string
+): HighlightQueryPart[] {
+  if (!query) return [{ text, highlighted: false }]
 
   // Escape special regex characters, then join with an optional single
   // space so cross-word matches (e.g. "geto" → "imaGE TO") are
@@ -81,8 +81,26 @@ export function highlightQuery(
     .map((ch) => ch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
     .join('[ ]?')
 
-  const regex = new RegExp(`(${pattern})`, 'gi')
-  return text.replace(regex, '<span class="highlight">$1</span>')
+  const regex = new RegExp(pattern, 'gi')
+  const parts: HighlightQueryPart[] = []
+  let lastIndex = 0
+
+  for (const match of text.matchAll(regex)) {
+    if (match.index > lastIndex) {
+      parts.push({
+        text: text.slice(lastIndex, match.index),
+        highlighted: false
+      })
+    }
+    parts.push({ text: match[0], highlighted: true })
+    lastIndex = match.index + match[0].length
+  }
+
+  if (lastIndex < text.length || parts.length === 0) {
+    parts.push({ text: text.slice(lastIndex), highlighted: false })
+  }
+
+  return parts
 }
 
 export function formatNumberWithSuffix(
