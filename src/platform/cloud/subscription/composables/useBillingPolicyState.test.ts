@@ -24,7 +24,8 @@ describe('deriveBillingPolicyState', () => {
     ['STANDARD', 'LocalAndStandard', 'CloudAndStandard'],
     ['CREATOR', 'LocalAndCreator', 'CloudAndCreator'],
     ['PRO', 'LocalAndPro', 'CloudAndPro'],
-    ['FOUNDERS_EDITION', 'LocalAndFounders', 'CloudAndFounders']
+    ['FOUNDERS_EDITION', 'LocalAndFounders', 'CloudAndFounders'],
+    ['TEAM', 'LocalAndTeam', 'CloudAndTeam']
   ])(
     'maps an active subscription tier %s to %s off Cloud and %s on Cloud',
     ([tier, localKind, cloudKind]) => {
@@ -92,6 +93,26 @@ describe('deriveBillingPolicyState', () => {
           tier: 'STANDARD'
         })
       ).toEqual({ kind })
+    }
+  )
+
+  it.for<[boolean, string]>([
+    [false, 'LocalAndUnrecognizedTier'],
+    [true, 'CloudAndUnrecognizedTier']
+  ])(
+    'falls back to a real state for an unrecognised tier (isCloud=%s)',
+    ([isCloud, kind]) => {
+      const state = deriveBillingPolicyState({
+        isCloud,
+        canAccessSubscriptionFeatures: true,
+        isTeamPlan: false,
+        tier: 'TIER_ADDED_AFTER_THIS_BUILD' as unknown as Parameters<
+          typeof deriveBillingPolicyState
+        >[0]['tier']
+      })
+
+      expect(state).toEqual({ kind })
+      expect(typeof state).toBe('object')
     }
   )
 })
