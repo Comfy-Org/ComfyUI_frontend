@@ -143,8 +143,9 @@
       }}</span>
     </div>
 
-    <div
+    <button
       v-if="!accountActionsOnly && showManagePlan"
+      type="button"
       class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
       data-testid="manage-plan-menu-item"
       @click="handleOpenPlanAndCreditsSettings"
@@ -153,7 +154,7 @@
       <span class="flex-1 text-sm text-base-foreground">{{
         $t('subscription.managePlan')
       }}</span>
-    </div>
+    </button>
 
     <!-- Partner Nodes Pricing (always shown) -->
     <div
@@ -271,6 +272,7 @@ const { userDisplayName, userEmail, userPhotoUrl, handleSignOut } =
 const settingsDialog = useSettingsDialog()
 const dialogService = useDialogService()
 const {
+  billingStatus,
   canAccessSubscriptionFeatures,
   isFreeTier,
   subscription,
@@ -304,15 +306,22 @@ const displayedCredits = computed(() => {
 const showPlansAndPricing = computed(
   () => permissions.value.canManageSubscription
 )
+const hasDelinquentSubscription = computed(
+  () =>
+    (billingStatus.value === 'payment_failed' ||
+      billingStatus.value === 'paused') &&
+    Boolean(subscription.value?.planSlug)
+)
 const showManagePlan = computed(
   () =>
     permissions.value.canManageSubscription &&
-    canAccessSubscriptionFeatures.value
+    (canAccessSubscriptionFeatures.value || hasDelinquentSubscription.value)
 )
 const showSubscribeAction = computed(
   () =>
     (isCancelled.value && permissions.value.canManageSubscriptionLifecycle) ||
     (!canAccessSubscriptionFeatures.value &&
+      !hasDelinquentSubscription.value &&
       permissions.value.canManageSubscription)
 )
 
