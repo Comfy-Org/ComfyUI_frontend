@@ -85,6 +85,13 @@ const endedPersonalBillingStatus: BillingStatusResponse = {
   has_funds: true
 }
 
+const pastDueBillingStatus: BillingStatusResponse = {
+  ...mockBillingStatus,
+  is_active: false,
+  plan_slug: 'pro-monthly',
+  billing_status: 'payment_failed'
+}
+
 async function mockCloudBoot(
   page: Page,
   billingControlEnabled = true,
@@ -95,7 +102,6 @@ async function mockCloudBoot(
   await page.route('**/api/features', (r) =>
     r.fulfill(
       jsonRoute({
-        consolidated_billing_enabled: true,
         billing_control_enabled: billingControlEnabled
       } satisfies RemoteConfig)
     )
@@ -147,18 +153,6 @@ async function mockCloudBoot(
     )
   )
 
-  // Legacy billing (flag-off path, api.comfy.org/customers/*).
-  await page.route('**/customers/cloud-subscription-status', (r) =>
-    r.fulfill(
-      jsonRoute({
-        is_active: true,
-        subscription_tier: 'PRO',
-        subscription_duration: 'MONTHLY',
-        renewal_date: '2099-02-20T12:00:00Z',
-        end_date: null
-      })
-    )
-  )
   await page.route('**/customers/balance', (r) =>
     r.fulfill(balanceRoute(DEFAULT_BALANCE))
   )
@@ -287,6 +281,25 @@ test.describe('Credits tile (Plan & Credits)', { tag: '@cloud' }, () => {
     await expect
       .poll(() => page.locator('html').getAttribute('data-opened-url'))
       .toBe('https://billing.example/portal')
+  })
+
+  test('keeps billing management available for a past-due subscription', async ({
+    page
+  }) => {
+    test.setTimeout(60_000)
+
+    await mockCloudBoot(page, true, pastDueBillingStatus)
+
+    const content = await openPlanAndCredits(page)
+    await expect(
+      content.getByRole('button', { name: 'Billing & invoices' })
+    ).toBeVisible()
+    await expect(
+      content.getByRole('button', { name: 'Change plan' })
+    ).toHaveCount(0)
+
+    await content.getByRole('button', { name: 'More Options' }).click()
+    await expect(page.getByText('Cancel plan', { exact: true })).toBeVisible()
   })
 
   test('keeps the legacy Workspace UX when billing controls are disabled', async ({

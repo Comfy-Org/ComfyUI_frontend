@@ -88,7 +88,6 @@ function renderComponent(props: Record<string, unknown> = {}) {
 
 describe('SubscriptionRequiredDialogContentUnified team-plan subscribe', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockIsInPersonalWorkspace.value = false
   })
 
