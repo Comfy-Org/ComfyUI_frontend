@@ -87,6 +87,8 @@ function withHostWidgetGeometry<T>(
   const previousY = widget.y
   const width = parent.clientWidth
 
+  // Host geometry is ephemeral renderer-local state, not authoritative graph
+  // layout. Borrow it only for this synchronous operation and restore it below.
   widget.width = width
   widget.y = 0
   try {
@@ -114,7 +116,6 @@ function draw() {
     }
     containerHeight.value = height
     // Set node.canvasHeight for legacy widgets that use it (e.g., Impact Pack)
-    // @ts-expect-error canvasHeight is a custom property used by some extensions
     currentNode.canvasHeight = height
     canvasEl.value.height = (height + 2) * scaleFactor
     canvasEl.value.width = width * scaleFactor

@@ -77,6 +77,14 @@ declare module '@/lib/litegraph/src/interfaces' {
   }
 }
 
+/** Legacy extension compatibility fields on the concrete LiteGraph node type. */
+declare module '@/lib/litegraph/src/LGraphNode' {
+  interface LGraphNode {
+    /** Canvas height exposed for legacy custom widgets such as Impact Pack. */
+    canvasHeight?: number
+  }
+}
+
 /**
  *  ComfyUI extensions of litegraph
  */
