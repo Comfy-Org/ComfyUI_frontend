@@ -1,8 +1,8 @@
 ---
 name: Backport Auto-Merge
 
-# Completes the merge of backport PRs once they are approved and their required
-# checks pass.
+# Completes the merge of backport and version-bump PRs once they are approved
+# and their required checks pass.
 #
 # Background: pr-backport.yaml opens each backport PR (labelled `backport`) and
 # calls `gh pr merge --auto`, which relies on the repo-level "Allow auto-merge"
@@ -58,7 +58,7 @@ jobs:
     # spending any API call. Schedule sweeps always proceed. The per-PR
     # eligibility checks in the job still re-verify the label and decision from
     # live state.
-    if: github.event_name != 'pull_request_review' || (github.event.review.state == 'approved' && contains(github.event.pull_request.labels.*.name, 'backport'))
+    if: github.event_name != 'pull_request_review' || (github.event.review.state == 'approved' && (contains(github.event.pull_request.labels.*.name, 'backport') || contains(github.event.pull_request.labels.*.name, 'Release')))
     runs-on: ubuntu-latest
     permissions:
       contents: read # read-only PR/commit lookups via the default token
@@ -79,9 +79,14 @@ jobs:
               numbers="$PR_FROM_REVIEW"
               ;;
             schedule)
-              # Sweep every open backport PR.
-              numbers=$(gh pr list --repo "$GH_REPO" --state open --label backport \
-                --limit 100 --json number --jq '.[].number')
+              # Sweep every open backport and version-bump PR. Separate queries:
+              # repeating --label is AND, which would match neither set.
+              numbers=$(
+                gh pr list --repo "$GH_REPO" --state open --label backport \
+                  --limit 100 --json number --jq '.[].number'
+                gh pr list --repo "$GH_REPO" --state open --label Release \
+                  --limit 100 --json number --jq '.[].number'
+              )
               ;;
           esac
           # De-duplicate and emit space-separated, digit-only tokens.
@@ -116,15 +121,18 @@ jobs:
 
             state=$(echo "$info" | jq -r '.state')
             is_draft=$(echo "$info" | jq -r '.isDraft')
-            is_backport=$(echo "$info" | jq -r '[.labels[].name] | any(. == "backport")')
+            has_supported_label=$(echo "$info" | jq -r '[.labels[].name] | any(. == "backport" or . == "Release")')
             base=$(echo "$info" | jq -r '.baseRefName')
             review=$(echo "$info" | jq -r '.reviewDecision')
             merge_state=$(echo "$info" | jq -r '.mergeStateStatus')
 
-            # Only ever act on open, non-draft, backport-labelled PRs targeting a
-            # protected release branch.
-            if [ "$state" != "OPEN" ] || [ "$is_draft" != "false" ] || [ "$is_backport" != "true" ]; then
-              echo "Not an actionable backport PR (state=$state draft=$is_draft backport=$is_backport) — skipping."
+            # Only ever act on open, non-draft, backport- or Release-labelled PRs
+            # targeting a protected release branch. Release-labelled PRs are the
+            # bot-authored version bumps: leaving those for a human to click is
+            # what stalled the 1.47.10 and 07-27 runs, and a stalled bump PR also
+            # silently skips the downstream ComfyUI pin PR.
+            if [ "$state" != "OPEN" ] || [ "$is_draft" != "false" ] || [ "$has_supported_label" != "true" ]; then
+              echo "Not an actionable backport or Release PR (state=$state draft=$is_draft eligible=$has_supported_label) — skipping."
               echo "::endgroup::"; continue
             fi
             case "$base" in

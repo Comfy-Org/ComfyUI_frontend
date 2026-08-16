@@ -125,9 +125,7 @@ const banner = computed<BannerView | null>(() => {
       return {
         muted: false,
         title: t(`${bs}.warning.title`),
-        body: cycleResetDate.value
-          ? t(`${bs}.warning.body`, { date: cycleResetDate.value })
-          : t(`${bs}.warning.bodyNoDate`),
+        body: t(`${bs}.warning.bodyNoDate`),
         action: 'updatePayment',
         dismissible: false
       }
