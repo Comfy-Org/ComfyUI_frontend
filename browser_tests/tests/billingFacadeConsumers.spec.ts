@@ -54,6 +54,15 @@ async function mockCloudBoot(
   remoteConfig: RemoteConfig = {},
   billingRail?: BillingStatusResponse['billing_rail']
 ) {
+  const resolvedSubscriptionStatus: BillingStatusResponse = {
+    is_active: false,
+    has_funds: false,
+    max_seats: 0,
+    occupied_seats: 0,
+    team_credit_stop: null,
+    ...subscriptionStatus,
+    billing_rail: billingRail
+  }
   const billingRequests = {
     legacyStatus: 0,
     legacyBalance: 0,
@@ -111,21 +120,13 @@ async function mockCloudBoot(
   })
   await page.route('**/customers/cloud-subscription-status', (r) => {
     billingRequests.legacyStatus++
-    return r.fulfill(jsonRoute(subscriptionStatus))
+    return r.fulfill(jsonRoute(resolvedSubscriptionStatus))
   })
 
   // Cloud personal workspaces route through `/api/billing/*`.
   await page.route('**/api/billing/status', (r) => {
     billingRequests.workspaceStatus++
-    return r.fulfill(
-      jsonRoute({
-        max_seats: 0,
-        occupied_seats: 0,
-        team_credit_stop: null,
-        ...subscriptionStatus,
-        billing_rail: billingRail
-      })
-    )
+    return r.fulfill(jsonRoute(resolvedSubscriptionStatus))
   })
   await page.route('**/api/billing/balance', (r) => {
     return r.fulfill(jsonRoute(mockWorkspaceBalance))

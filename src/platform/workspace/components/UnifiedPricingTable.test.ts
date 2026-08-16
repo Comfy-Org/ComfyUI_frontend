@@ -1,3 +1,4 @@
+import type { SubscriptionTier } from '@comfyorg/ingest-types'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -10,7 +11,7 @@ import type { BillingSubscriptionStatus } from '@/platform/workspace/api/workspa
 import UnifiedPricingTable from '@/platform/workspace/components/UnifiedPricingTable.vue'
 
 interface MockSubscription {
-  tier: string | null
+  tier: SubscriptionTier | null
   isCancelled?: boolean
   duration?: string
 }
