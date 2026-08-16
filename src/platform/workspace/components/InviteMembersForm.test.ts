@@ -271,6 +271,17 @@ describe('InviteMembersForm', () => {
     expect(submitButton()).toBeDisabled()
   })
 
+  it('blocks submission while workspace occupancy is unresolved', async () => {
+    const { user } = renderForm({ maxSeats: 1, occupiedSeats: null })
+
+    await user.type(emailInput(), 'a@b.com{Enter}')
+
+    expect(submitButton()).toBeDisabled()
+    expect(
+      screen.queryByText('workspacePanel.inviteMemberDialog.seatLimitExceeded')
+    ).not.toBeInTheDocument()
+  })
+
   it('disables submit when every email has a pending invite', async () => {
     const pendingInvite = pendingInviteFor('ALREADY@EXAMPLE.COM')
     mockPendingInvites.value.push(pendingInvite)

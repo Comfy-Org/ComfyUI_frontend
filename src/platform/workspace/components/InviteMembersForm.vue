@@ -105,8 +105,9 @@
 </template>
 
 <script setup lang="ts">
+import { useAsyncState } from '@vueuse/core'
 import { useToast } from 'primevue/usetoast'
-import { computed, onMounted, onUnmounted, ref, useId } from 'vue'
+import { computed, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
@@ -145,8 +146,8 @@ const {
   placeholder: string
   source: WorkspaceInviteMetadata['source']
   cancelLabel?: string
-  maxSeats?: number
-  occupiedSeats?: number
+  maxSeats?: number | null
+  occupiedSeats?: number | null
   /** Hide the built-in submit row so a parent can place the action elsewhere
    *  (e.g. the team-upgrade success footer); drive it via the exposed submit. */
   showSubmit?: boolean
@@ -170,9 +171,22 @@ const { fetchStatus } = useBillingContext()
 const emails = ref<string[]>([])
 const invitedEmails = ref<string[]>([])
 const loading = ref(false)
-const pendingInvites = ref<PendingInvite[]>(workspaceStore.pendingInvites)
-let pendingInvitesRequest: Promise<void> | undefined
-let mounted = false
+
+const { state: pendingInvites, execute: refreshPendingInvites } = useAsyncState<
+  PendingInvite[]
+>(
+  async () => {
+    try {
+      return await workspaceStore.fetchPendingInvites()
+    } catch (error) {
+      console.error(error)
+      return []
+    }
+  },
+  workspaceStore.pendingInvites,
+  { immediate: false }
+)
+const pendingInvitesRequest = refreshPendingInvites()
 
 const invalidEmailsHintId = useId()
 const pendingInvitesHintId = useId()
@@ -191,14 +205,19 @@ const alreadyInvitedEmails = computed(() =>
 const newInviteEmails = computed(() =>
   emails.value.filter((email) => !pendingInviteEmailSet.value.has(email))
 )
-const remainingSeats = computed(() =>
-  maxSeats === 0 ? MAX_INVITES_PER_BATCH : Math.max(0, maxSeats - occupiedSeats)
-)
-const seatOverage = computed(() =>
-  Math.max(0, newInviteEmails.value.length - remainingSeats.value)
-)
+const remainingSeats = computed(() => {
+  if (maxSeats === null || occupiedSeats === null) return null
+  return maxSeats === 0
+    ? MAX_INVITES_PER_BATCH
+    : Math.max(0, maxSeats - occupiedSeats)
+})
+const seatOverage = computed(() => {
+  if (remainingSeats.value === null) return 0
+  return Math.max(0, newInviteEmails.value.length - remainingSeats.value)
+})
 const canSubmit = computed(
   () =>
+    remainingSeats.value !== null &&
     emails.value.length > 0 &&
     newInviteEmails.value.length > 0 &&
     invalidEmails.value.length === 0 &&
@@ -272,25 +291,6 @@ async function onSubmit() {
     loading.value = false
   }
 }
-
-onMounted(() => {
-  mounted = true
-  pendingInvitesRequest = workspaceStore
-    .fetchPendingInvites()
-    .then((invites) => {
-      if (!mounted) return
-      pendingInvites.value = invites
-    })
-    .catch((error: unknown) => {
-      console.error(error)
-      if (!mounted) return
-      pendingInvites.value = []
-    })
-})
-
-onUnmounted(() => {
-  mounted = false
-})
 
 defineExpose({
   submit: onSubmit,

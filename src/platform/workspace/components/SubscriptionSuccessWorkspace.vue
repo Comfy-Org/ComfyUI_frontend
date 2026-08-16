@@ -168,8 +168,8 @@ const creditsUnitLabel = computed(() =>
   isYearly.value ? t('subscription.perYear') : t('subscription.perMonth')
 )
 
-const inviteFormMaxSeats = computed(() => maxSeats.value ?? undefined)
-const inviteFormOccupiedSeats = computed(() => occupiedSeats.value ?? 0)
+const inviteFormMaxSeats = computed(() => maxSeats.value)
+const inviteFormOccupiedSeats = computed(() => occupiedSeats.value)
 const showInviteBlock = computed(
   () => maxSeats.value === 0 || (maxSeats.value ?? 0) > 1
 )

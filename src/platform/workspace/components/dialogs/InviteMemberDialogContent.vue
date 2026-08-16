@@ -86,8 +86,8 @@ const step = ref<'form' | 'invited'>('form')
 const invitedEmails = ref<string[]>([])
 const inviteForm = ref<InstanceType<typeof InviteMembersForm>>()
 
-const inviteFormMaxSeats = computed(() => maxSeats.value ?? undefined)
-const inviteFormOccupiedSeats = computed(() => occupiedSeats.value ?? 0)
+const inviteFormMaxSeats = computed(() => maxSeats.value)
+const inviteFormOccupiedSeats = computed(() => occupiedSeats.value)
 const canSubmit = computed(
   () =>
     maxSeats.value !== null &&
