@@ -35,6 +35,9 @@ jobs:
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
 
+      - name: Typecheck website
+        run: pnpm --filter @comfyorg/website typecheck
+
       - name: Build website
         env:
           WEBSITE_ASHBY_API_KEY: ${{ secrets.WEBSITE_ASHBY_API_KEY }}
