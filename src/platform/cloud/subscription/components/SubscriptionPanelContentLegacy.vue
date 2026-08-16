@@ -126,8 +126,8 @@ import { useSubscriptionActions } from '@/platform/cloud/subscription/composable
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import {
   DEFAULT_TIER_KEY,
-  TIER_TO_KEY,
-  getTierPrice
+  getTierPrice,
+  toTierKey
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { TierBenefit } from '@/platform/cloud/subscription/utils/tierBenefits'
 import { getCommonTierBenefits } from '@/platform/cloud/subscription/utils/tierBenefits'
@@ -151,7 +151,7 @@ const { show: showSubscriptionDialog } = useSubscriptionDialog()
 const tierKey = computed(() => {
   const tier = subscriptionTier.value
   if (!tier) return DEFAULT_TIER_KEY
-  return TIER_TO_KEY[tier] ?? DEFAULT_TIER_KEY
+  return toTierKey(tier) ?? DEFAULT_TIER_KEY
 })
 const tierPrice = computed(() =>
   getTierPrice(tierKey.value, isYearlySubscription.value)

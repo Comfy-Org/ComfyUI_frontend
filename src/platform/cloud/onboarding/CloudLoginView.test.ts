@@ -107,6 +107,17 @@ describe('CloudLoginView', () => {
     ).not.toBeInTheDocument()
   })
 
+  it('does not region-gate sign-in, because an existing account already completed sign-up', async () => {
+    const user = (await import('@testing-library/user-event')).default.setup()
+    await renderLoginView()
+
+    await user.click(
+      screen.getByRole('button', { name: 'auth.login.useEmailInstead' })
+    )
+
+    expect(screen.getByTestId('signin-form')).toBeInTheDocument()
+  })
+
   it('shows the in-app browser notice only inside an embedded webview', async () => {
     const { unmount } = await renderLoginView()
     expect(
