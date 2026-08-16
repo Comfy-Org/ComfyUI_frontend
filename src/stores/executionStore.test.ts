@@ -936,6 +936,28 @@ describe('useExecutionStore - workflowStatus', () => {
     }
   })
 
+  it('clears running when an account precondition error ends the run', () => {
+    callStoreJob('job-1', workflowA)
+    fireExecutionStart('job-1')
+    expect(store.getWorkflowStatus(workflowA)).toBe('running')
+
+    apiEventHandlers.get('execution_error')!(
+      new CustomEvent('execution_error', {
+        detail: {
+          prompt_id: 'job-1',
+          node_id: '1',
+          node_type: 'TestNode',
+          exception_message:
+            'Payment Required: Please add credits to your account to use this node.',
+          exception_type: 'InsufficientFundsError',
+          traceback: []
+        }
+      })
+    )
+
+    expect(store.getWorkflowStatus(workflowA)).toBeUndefined()
+  })
+
   it('drops pending failed when service-level error fires before storeJob', () => {
     apiEventHandlers.get('execution_error')!(
       new CustomEvent('execution_error', {
