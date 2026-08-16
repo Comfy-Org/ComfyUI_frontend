@@ -6,7 +6,6 @@ import type {
   BillingStatus,
   BillingSubscriptionStatus,
   CreateTopupResponse,
-  CurrentTeamCreditStop,
   Plan,
   PreviewSubscribeOptions,
   PreviewSubscribeResponse,
@@ -14,7 +13,8 @@ import type {
   SubscribeResponse,
   SubscriptionDuration,
   SubscriptionTier,
-  TeamCreditStops
+  TeamCreditStops,
+  TeamCreditStopSummary
 } from '@/platform/workspace/api/workspaceApi'
 
 export type BillingType = 'legacy' | 'workspace'
@@ -61,8 +61,16 @@ export interface BillingActions {
    * Reactivates a cancelled-but-still-active subscription. Legacy has no
    * dedicated endpoint, so the legacy adapter re-runs the checkout flow.
    * The workspace adapter refreshes status and balance internally on success.
+   *
+   * `source` identifies the click-time UI surface. The workspace adapter
+   * ignores it (its resubscribe call is itself terminal); the legacy adapter
+   * carries it through to the pending-checkout-recovery terminal event, since
+   * that recovery path is shared with plain subscribes and has no other way
+   * to attribute a later-confirmed success back to a resubscribe click.
    */
-  resubscribe: () => Promise<void>
+  resubscribe: (options?: {
+    source?: 'pricing_dialog' | 'settings_billing_panel'
+  }) => Promise<void>
   /**
    * Purchases additional credits. Standardized on **whole-dollar cents**
    * (multiples of 100); the legacy adapter divides by 100 for the
@@ -94,15 +102,19 @@ export interface BillingState {
   /** Team per-credit pricing ladder; null for personal/legacy. */
   teamCreditStops: ComputedRef<TeamCreditStops | null>
   /** The team's currently-subscribed credit stop; null for personal/legacy. */
-  currentTeamCreditStop: ComputedRef<CurrentTeamCreditStop | null>
+  currentTeamCreditStop: ComputedRef<TeamCreditStopSummary | null>
+  /** Effective member limit for the current workspace; zero is unlimited. */
+  maxSeats: ComputedRef<number | null>
+  /** Seats occupied in the current workspace. */
+  occupiedSeats: ComputedRef<number | null>
   isLoading: Ref<boolean>
   error: Ref<string | null>
-  isActiveSubscription: ComputedRef<boolean>
+  canAccessSubscriptionFeatures: ComputedRef<boolean>
   /** Reflects the active workspace's tier, not the user's personal tier. */
   isFreeTier: ComputedRef<boolean>
-  /** Coarse funding state (`billing_status`); legacy reports null. */
+  /** Coarse funding state (`billing_status`). */
   billingStatus: ComputedRef<BillingStatus | null>
-  /** Lifecycle state; legacy synthesizes it from active/cancelled flags. */
+  /** Subscription lifecycle state. */
   subscriptionStatus: ComputedRef<BillingSubscriptionStatus | null>
   tier: ComputedRef<SubscriptionTier | null>
   renewalDate: ComputedRef<string | null>
@@ -125,4 +137,7 @@ export interface BillingContext extends BillingState, BillingActions {
   isTeamPlan: ComputedRef<boolean>
   getMaxSeats: (tierKey: TierKey) => number
   canRunWorkflows: ComputedRef<boolean>
+  showsSubscribeToRunPrompt: ComputedRef<boolean>
+  /** @deprecated Use canAccessSubscriptionFeatures instead */
+  isActiveSubscription: ComputedRef<boolean>
 }

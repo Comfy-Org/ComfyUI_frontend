@@ -32,7 +32,6 @@ describe('LinkConnector SubgraphInput connection validation', () => {
 
   beforeEach(() => {
     connector = new LinkConnector(mockSetConnectingLinks)
-    vi.clearAllMocks()
   })
   describe('Link disconnection validation', () => {
     it('should properly cleanup a moved input link', () => {

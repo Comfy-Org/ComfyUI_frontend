@@ -1,15 +1,29 @@
 import { describe, expect, it } from 'vitest'
 
-import { resolveSteps } from './onboardingTours'
-import type { CoachStep } from './onboardingTours'
+import { COACH_IDS, resolveSteps } from './onboardingTours'
+import type { CoachStep, SpotlightStep } from './onboardingTours'
 
-function step(overrides: Partial<CoachStep> = {}): CoachStep {
+function step(overrides: Partial<SpotlightStep> = {}): SpotlightStep {
   return {
+    kind: 'spotlight',
     name: 'step',
     placement: 'center',
     ...overrides
   }
 }
+
+describe('CoachStep', () => {
+  it('refuses a landing step that also spotlights a target', () => {
+    const landing: CoachStep = {
+      kind: 'landing',
+      name: 'landing',
+      // @ts-expect-error a landing renders no spotlight, so it has no target
+      coachId: COACH_IDS.inputsList
+    }
+
+    expect(landing.kind).toBe('landing')
+  })
+})
 
 describe('resolveSteps', () => {
   const isMounted = (mounted: boolean) => () => mounted
