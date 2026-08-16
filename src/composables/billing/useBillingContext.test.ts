@@ -525,12 +525,11 @@ describe('useBillingContext', () => {
 
     it('is false for a new credit-slider team subscriber', async () => {
       mockIsPersonal.value = false
-      // Real BE shape: underscore slug + populated credit stop. (subscription_tier
-      // is 'TEAM' on the wire, not yet in the FE SubscriptionTier union, so it is
-      // omitted here — the predicate does not depend on it.)
+      // Real BE shape: underscore slug, populated credit stop, tier 'TEAM'.
       mockBillingStatus.value = {
         is_active: true,
         has_funds: true,
+        subscription_tier: 'TEAM',
         subscription_status: 'active',
         subscription_duration: 'ANNUAL',
         plan_slug: 'team_per_credit_annual',
@@ -637,16 +636,12 @@ describe('useBillingContext', () => {
       expect(isTeamPlan.value).toBe(false)
     })
 
-    // subscription_tier is omitted throughout: the backend sends 'TEAM' here, but
-    // the FE's SubscriptionTier resolves to the registry spec, which has no TEAM
-    // (tierPricing.ts imports comfyRegistryTypes for what is an ingest field).
-    // isTeamPlan reads the credit stop and the slug, never the tier — which is
-    // what keeps it working despite that divergence.
     it('is true for a credit-slider team sub, which carries a credit stop', async () => {
       mockIsPersonal.value = false
       mockBillingStatus.value = {
         is_active: true,
         has_funds: true,
+        subscription_tier: 'TEAM',
         plan_slug: 'team_per_credit_monthly',
         team_credit_stop: {
           id: 'team_700',
