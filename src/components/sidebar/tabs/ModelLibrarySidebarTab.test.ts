@@ -227,7 +227,6 @@ const i18n = createI18n({
 
 describe('ModelLibrarySidebarTab', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     resetRoot()
     downloadStoreState.setLastCompleted(null)
     settingState.useAssetAPI = false
