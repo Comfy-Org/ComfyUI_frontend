@@ -38,7 +38,7 @@ const { groupedNodes } = useNodesByCategory(() => pack.nodes)
       </a>
 
       <div
-        class="bg-transparency-white-t5 border-primary-warm-gray/20 overflow-hidden rounded-3xl border"
+        class="bg-transparency-white-t5 overflow-hidden rounded-3xl border border-primary-warm-gray/20"
       >
         <PackBanner
           :banner-url="pack.bannerUrl"
@@ -49,12 +49,12 @@ const { groupedNodes } = useNodesByCategory(() => pack.nodes)
         <div class="flex flex-col gap-7 p-5 md:p-6">
           <header class="flex flex-col gap-2">
             <h1
-              class="text-primary-comfy-canvas text-3xl/tight font-semibold md:text-4xl"
+              class="text-3xl/tight font-semibold text-primary-comfy-canvas md:text-4xl"
             >
               {{ pack.displayName }}
             </h1>
             <p
-              class="text-primary-warm-gray text-sm/relaxed md:text-base/relaxed"
+              class="text-sm/relaxed text-primary-warm-gray md:text-base/relaxed"
             >
               {{
                 pack.description ||
@@ -139,7 +139,7 @@ const { groupedNodes } = useNodesByCategory(() => pack.nodes)
 
           <section class="flex flex-col gap-4">
             <h2
-              class="text-primary-comfy-canvas text-xl font-semibold md:text-2xl"
+              class="text-xl font-semibold text-primary-comfy-canvas md:text-2xl"
             >
               {{ t('cloudNodes.detail.nodesHeading', locale) }}
             </h2>
@@ -147,21 +147,21 @@ const { groupedNodes } = useNodesByCategory(() => pack.nodes)
             <section
               v-for="group in groupedNodes"
               :key="group.category"
-              class="border-primary-warm-gray/20 rounded-2xl border p-4"
+              class="rounded-2xl border border-primary-warm-gray/20 p-4"
             >
-              <h3 class="text-primary-comfy-canvas text-base font-semibold">
+              <h3 class="text-base font-semibold text-primary-comfy-canvas">
                 {{ group.category }}
               </h3>
               <ul class="mt-3 flex flex-col gap-3">
                 <li
                   v-for="node in group.nodes"
                   :key="node.name"
-                  class="border-primary-warm-gray/20 rounded-xl border p-3"
+                  class="rounded-xl border border-primary-warm-gray/20 p-3"
                   data-testid="cloud-node-pack-detail-node"
                 >
                   <div class="flex flex-wrap items-center gap-2">
                     <span
-                      class="text-primary-comfy-canvas text-sm font-semibold"
+                      class="text-sm font-semibold text-primary-comfy-canvas"
                     >
                       {{ node.displayName }}
                     </span>
@@ -169,7 +169,7 @@ const { groupedNodes } = useNodesByCategory(() => pack.nodes)
                       v-if="node.experimental"
                       :class="
                         cn(
-                          'bg-primary-comfy-yellow/20 text-primary-comfy-canvas rounded-full px-2 py-0.5 text-xs font-semibold'
+                          'bg-primary-comfy-yellow/20 rounded-full px-2 py-0.5 text-xs font-semibold text-primary-comfy-canvas'
                         )
                       "
                     >
@@ -179,7 +179,7 @@ const { groupedNodes } = useNodesByCategory(() => pack.nodes)
                       v-if="node.deprecated"
                       :class="
                         cn(
-                          'text-primary-comfy-canvas rounded-full bg-red-500/15 px-2 py-0.5 text-xs font-semibold'
+                          'rounded-full bg-red-500/15 px-2 py-0.5 text-xs font-semibold text-primary-comfy-canvas'
                         )
                       "
                     >
@@ -188,7 +188,7 @@ const { groupedNodes } = useNodesByCategory(() => pack.nodes)
                   </div>
                   <p
                     v-if="node.description"
-                    class="text-primary-warm-gray mt-2 text-sm/relaxed"
+                    class="mt-2 text-sm/relaxed text-primary-warm-gray"
                   >
                     {{ node.description }}
                   </p>

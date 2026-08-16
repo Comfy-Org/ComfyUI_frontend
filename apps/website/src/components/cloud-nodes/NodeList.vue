@@ -15,10 +15,10 @@ const { groupedNodes } = useNodesByCategory(() => nodes)
 
 <template>
   <details
-    class="group border-primary-warm-gray/20 rounded-2xl border px-4 py-3"
+    class="group rounded-2xl border border-primary-warm-gray/20 px-4 py-3"
   >
     <summary
-      class="text-primary-comfy-canvas cursor-pointer list-none text-sm font-semibold"
+      class="cursor-pointer list-none text-sm font-semibold text-primary-comfy-canvas"
     >
       {{ t('cloudNodes.card.nodesHeading', locale) }}
     </summary>
@@ -30,7 +30,7 @@ const { groupedNodes } = useNodesByCategory(() => nodes)
         class="flex flex-col gap-2"
       >
         <h4
-          class="text-primary-warm-gray text-xs font-semibold tracking-widest uppercase"
+          class="text-xs font-semibold tracking-widest text-primary-warm-gray uppercase"
         >
           {{ group.category }}
         </h4>
@@ -38,7 +38,7 @@ const { groupedNodes } = useNodesByCategory(() => nodes)
           <li
             v-for="node in group.nodes"
             :key="node.name"
-            class="text-primary-comfy-canvas text-sm/relaxed"
+            class="text-sm/relaxed text-primary-comfy-canvas"
           >
             {{ node.displayName }}
           </li>

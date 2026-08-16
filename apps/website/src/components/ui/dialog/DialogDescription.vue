@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable vue/no-unused-properties -- props forwarded via v-bind */
 import type { DialogDescriptionProps } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
 import { reactiveOmit } from '@vueuse/core'
@@ -16,7 +15,7 @@ const delegatedProps = reactiveOmit(props, 'class')
 <template>
   <DialogDescription
     data-slot="dialog-description"
-    :class="cn('text-sm leading-[1.35] text-primary-comfy-canvas', props.class)"
+    :class="cn('text-sm/[1.35] text-primary-comfy-canvas', props.class)"
     v-bind="delegatedProps"
   >
     <slot />

@@ -155,7 +155,7 @@ const cardClass =
               </div>
 
               <p
-                class="text-primary-warm-white absolute right-20 bottom-6 left-6 text-2xl/tight font-light whitespace-pre-line drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] lg:top-6 lg:right-auto lg:bottom-auto lg:text-3xl"
+                class="absolute right-20 bottom-6 left-6 text-2xl/tight font-light whitespace-pre-line text-primary-warm-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] lg:top-6 lg:right-auto lg:bottom-auto lg:text-3xl"
               >
                 {{ t(card.titleKey, locale) }}
               </p>

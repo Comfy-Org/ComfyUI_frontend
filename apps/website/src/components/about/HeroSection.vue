@@ -52,13 +52,13 @@ useHeroAnimation({
         </SectionLabel>
         <h1
           ref="headingRef"
-          class="text-primary-comfy-canvas mt-4 text-4xl/tight font-light lg:text-6xl"
+          class="mt-4 text-4xl/tight font-light text-primary-comfy-canvas lg:text-6xl"
         >
           {{ t('about.hero.heading', locale) }}
         </h1>
         <p
           ref="bodyRef"
-          class="text-primary-comfy-canvas mt-6 max-w-sm text-base"
+          class="mt-6 max-w-sm text-base text-primary-comfy-canvas"
         >
           {{ t('about.hero.body', locale) }}
         </p>

@@ -84,7 +84,7 @@ const ctaHref = computed(() =>
           class="flex flex-col items-start gap-2 lg:flex-row lg:items-center lg:gap-4"
         >
           <PricingPlanLabel :label="t('pricing.plan.team.label', locale)" />
-          <p class="text-primary-warm-gray text-sm">
+          <p class="text-sm text-primary-warm-gray">
             {{ t('pricing.team.description', locale) }}
           </p>
         </div>

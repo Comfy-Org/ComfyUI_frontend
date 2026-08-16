@@ -88,14 +88,14 @@ useParallax([bottomLeftRef, bottomRightRef], { ...parallaxOpts, y: 400 })
       class="relative z-10 mx-auto flex max-w-3xl flex-col items-center py-16 text-center lg:py-24"
     >
       <h2
-        class="text-primary-comfy-canvas flex flex-col gap-6 text-5xl font-light lg:gap-10 lg:text-8xl"
+        class="flex flex-col gap-6 text-5xl font-light text-primary-comfy-canvas lg:gap-10 lg:text-8xl"
       >
         <span>{{ t('enterprise.ownership.line1', locale) }}</span>
         <span>{{ t('enterprise.ownership.line2', locale) }}</span>
         <span>{{ t('enterprise.ownership.line3', locale) }}</span>
       </h2>
       <p
-        class="text-primary-comfy-canvas mt-12 max-w-xl text-sm lg:mt-16 lg:text-base"
+        class="mt-12 max-w-xl text-sm text-primary-comfy-canvas lg:mt-16 lg:text-base"
       >
         {{ t('enterprise.ownership.subtitle', locale) }}
       </p>
