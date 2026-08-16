@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
@@ -35,10 +33,6 @@ describe('shouldLoadExtension', () => {
 })
 
 describe('registerExtension', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('does not re-run registration side effects for a duplicate name', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     try {
