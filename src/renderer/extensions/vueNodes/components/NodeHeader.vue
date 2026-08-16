@@ -21,8 +21,9 @@
           <Button
             size="icon-sm"
             variant="textonly"
-            class="hover:bg-transparent"
+            class="z-10 hover:bg-transparent"
             data-testid="node-collapse-button"
+            @pointerdown.stop
             @click.stop="handleCollapse"
             @dblclick.stop
           >
