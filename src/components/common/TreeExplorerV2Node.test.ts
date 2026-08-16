@@ -219,10 +219,6 @@ describe('TreeExplorerV2Node', () => {
   })
 
   describe('blueprint actions', () => {
-    beforeEach(() => {
-      vi.clearAllMocks()
-    })
-
     it('shows delete button for user blueprints', () => {
       mockIsUserBlueprint.mockReturnValue(true)
       renderComponent({
@@ -324,10 +320,6 @@ describe('TreeExplorerV2Node', () => {
   })
 
   describe('drag and drop', () => {
-    beforeEach(() => {
-      vi.clearAllMocks()
-    })
-
     it('sets draggable attribute on node items', () => {
       const { container } = renderComponent({
         item: createMockItem('node')

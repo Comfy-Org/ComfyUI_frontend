@@ -22,7 +22,6 @@ function fakeNode(type: string): LGraphNode {
 
 describe('installNodeAddedTelemetry', () => {
   beforeEach(() => {
-    trackNodeAdded.mockClear()
     ChangeTracker.isLoadingGraph = false
   })
 
