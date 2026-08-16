@@ -1,4 +1,8 @@
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import {
+  comfyExpect as expect,
+  comfyPageFixture as test
+} from '@e2e/fixtures/ComfyPage'
+import { toNodeId } from '@/types/nodeId'
 import { toRerouteId } from '@/types/rerouteId'
 
 test.describe('Native reroute geometry', { tag: '@vue-nodes' }, () => {
@@ -11,7 +15,11 @@ test.describe('Native reroute geometry', { tag: '@vue-nodes' }, () => {
     })
 
     const ksampler = await comfyPage.nodeOps.getNodeRefById('3')
+    await comfyPage.command.executeCommand('Comfy.Canvas.FitView')
     await ksampler.click('title')
+    await expect
+      .poll(() => comfyPage.nodeOps.getSelectedNodeIds())
+      .toContain(toNodeId('3'))
     const subgraphNode = await ksampler.convertToSubgraph()
 
     await comfyPage.vueNodes.enterSubgraph(subgraphNode.id)

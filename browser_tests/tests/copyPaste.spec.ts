@@ -7,39 +7,49 @@ test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
 
-test(
-  'Pasted copy of a pinned node lands at the cursor',
+test.describe(
+  'Pinned node copy and paste',
   { tag: ['@node', '@workflow'] },
-  async ({ comfyPage }) => {
-    const node = await comfyPage.nodeOps.getFirstNodeRef()
-    if (!node) throw new Error('Workflow has no nodes')
-    await node.centerOnNode()
-    await node.clickContextMenuOption('Pin')
-    await comfyPage.contextMenu.waitForHidden()
-    await expect.poll(() => node.isPinned()).toBe(true)
+  () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
+    })
 
-    const nodeType = await node.getType()
-    const originalNodes = await comfyPage.nodeOps.getNodeRefsByType(nodeType)
-    const originalIds = new Set(originalNodes.map(({ id }) => id))
-    await comfyPage.page.mouse.move(400, 300)
-    await comfyPage.nextFrame()
-    await comfyPage.clipboard.copy(comfyPage.canvas)
-    await comfyPage.clipboard.paste(comfyPage.canvas)
+    test.afterEach(async ({ comfyPage }) => {
+      await comfyPage.canvasOps.resetView()
+    })
 
-    await expect
-      .poll(
-        async () => (await comfyPage.nodeOps.getNodeRefsByType(nodeType)).length
-      )
-      .toBe(originalNodes.length + 1)
-    const nodes = await comfyPage.nodeOps.getNodeRefsByType(nodeType)
-    const pasted = nodes.find(({ id }) => !originalIds.has(id))
-    if (!pasted) throw new Error('Pasted node not found')
-    await expect
-      .poll(async () => {
-        const { x, y } = await pasted.getPosition()
-        return Math.hypot(x - 400, y - 300)
-      })
-      .toBeLessThanOrEqual(2)
+    test('lands at the cursor', async ({ comfyPage }) => {
+      const [node] = await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
+      if (!node) throw new Error('KSampler node not found')
+      await node.centerOnNode()
+      await node.clickContextMenuOption('Pin')
+      await comfyPage.contextMenu.waitForHidden()
+      await expect.poll(() => node.isPinned()).toBe(true)
+
+      const nodeType = await node.getType()
+      const originalNodes = await comfyPage.nodeOps.getNodeRefsByType(nodeType)
+      const originalIds = new Set(originalNodes.map(({ id }) => id))
+      const originalGraphNodeCount =
+        await comfyPage.nodeOps.getGraphNodesCount()
+      await comfyPage.page.mouse.move(400, 300)
+      await comfyPage.nextFrame()
+      await comfyPage.clipboard.copy(comfyPage.canvas)
+      await comfyPage.clipboard.paste(comfyPage.canvas)
+
+      await expect
+        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+        .toBe(originalGraphNodeCount + 1)
+      const nodes = await comfyPage.nodeOps.getNodeRefsByType(nodeType)
+      const pasted = nodes.find(({ id }) => !originalIds.has(id))
+      if (!pasted) throw new Error('Pasted node not found')
+      await expect
+        .poll(async () => {
+          const { x, y } = await pasted.getPosition()
+          return Math.hypot(x - 400, y - 300)
+        })
+        .toBeLessThanOrEqual(2)
+    })
   }
 )
 

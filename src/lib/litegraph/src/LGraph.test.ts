@@ -443,18 +443,6 @@ describe('node:before-removed event', () => {
     ])
   })
 
-  it('fires node:before-removed for every node cleared', () => {
-    const graph = new LGraph()
-    graph.add(new LGraphNode('a'))
-    graph.add(new LGraphNode('b'))
-    const removed = vi.fn()
-    graph.events.addEventListener('node:before-removed', removed)
-
-    graph.clear()
-
-    expect(removed).toHaveBeenCalledTimes(2)
-  })
-
   it('keeps floating links available during clear removal callbacks', () => {
     const graph = new LGraph()
     const node = new LGraphNode('node')

@@ -36,6 +36,7 @@ test.describe('Renderer toggle geometry', { tag: ['@vue-nodes'] }, () => {
 
     await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
     await comfyPage.nextFrame()
+    await expect(comfyPage.vueNodes.nodes).toHaveCount(0)
 
     const legacyGeometry = await comfyPage.canvasOps.getNodeGeometry(nodeId)
     expect(legacyGeometry.pos[0], 'legacy x').toBeCloseTo(moved.pos[0], 0)
@@ -63,6 +64,7 @@ test.describe('Renderer toggle geometry', { tag: ['@vue-nodes'] }, () => {
       await comfyPage.workflow.loadWorkflow('vueNodes/simple-triple')
       await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
       await comfyPage.nextFrame()
+      await expect(comfyPage.vueNodes.nodes).toHaveCount(0)
       await fitToViewInstant(comfyPage)
 
       const [ksampler] = await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
@@ -77,6 +79,15 @@ test.describe('Renderer toggle geometry', { tag: ['@vue-nodes'] }, () => {
         y: clipPosition.y - ksamplerPosition.y
       })
       await comfyPage.nextFrame()
+      await expect
+        .poll(async () => {
+          const draggedPosition = await ksampler.getPosition()
+          return Math.max(
+            Math.abs(draggedPosition.x - clipPosition.x),
+            Math.abs(draggedPosition.y - clipPosition.y)
+          )
+        })
+        .toBeLessThanOrEqual(5)
 
       await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
       await comfyPage.vueNodes.waitForNodes()

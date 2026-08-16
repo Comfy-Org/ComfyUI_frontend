@@ -95,7 +95,8 @@ describe('Dynamic Combos', () => {
       expect(graph.getLink(link.id)).toBeUndefined()
     }
     for (const source of removedSources) {
-      expect(source?.outputs[0].links).toEqual([])
+      if (!source) throw new Error('Removed link source node not found')
+      expect(source.outputs[0].links).toEqual([])
     }
     const disconnectedLinks = onConnectionsChange.mock.calls
       .filter(([, , connected]) => !connected)

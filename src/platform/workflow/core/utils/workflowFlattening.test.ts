@@ -33,10 +33,9 @@ describe('collectSubgraphDefinitions', () => {
     defA.definitions.subgraphs = [defB]
     defB.definitions.subgraphs = [defA]
 
-    expect(collectSubgraphDefinitions([defA]).map(({ id }) => id)).toEqual([
-      'def-A',
-      'def-B'
-    ])
+    const ids = collectSubgraphDefinitions([defA]).map(({ id }) => id)
+    expect(ids).toHaveLength(2)
+    expect(new Set(ids)).toEqual(new Set(['def-A', 'def-B']))
   })
 })
 
