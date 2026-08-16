@@ -80,8 +80,6 @@ describe('useCustomerEventsService', () => {
   }
 
   beforeEach(() => {
-    vi.clearAllMocks()
-
     // Setup default mocks
     mockAuthStore.getAuthHeader.mockResolvedValue(mockAuthHeaders)
     mockI18n.d.mockImplementation((date, options) => {
