@@ -7,6 +7,10 @@ import type {
   BillingStatusResponse,
   Plan
 } from '@/platform/workspace/api/workspaceApi'
+import {
+  remoteConfig,
+  remoteConfigState
+} from '@/platform/remoteConfig/remoteConfig'
 
 import { useBillingContext } from './useBillingContext'
 
@@ -166,12 +170,15 @@ vi.mock('@/platform/workspace/api/workspaceApi', () => ({
       currency: 'usd'
     })),
     subscribe: vi.fn(async () => ({ status: 'subscribed' })),
-    previewSubscribe: vi.fn(async () => ({ allowed: true }))
+    previewSubscribe: vi.fn(async () => ({ allowed: true })),
+    createTopup: vi.fn(async () => undefined)
   }
 }))
 
 describe('useBillingContext', () => {
   beforeEach(() => {
+    remoteConfig.value = {}
+    remoteConfigState.value = 'unloaded'
     mockIsPersonal.value = true
     mockBillingRail.value = undefined
     mockSetWorkspaceBillingRail.mockImplementation(
@@ -338,6 +345,22 @@ describe('useBillingContext', () => {
     )
     expect(mockLegacySubscribe).not.toHaveBeenCalled()
     expect(mockPurchaseCredits).toHaveBeenCalledWith(5)
+  })
+
+  it('routes migrated legacy Stripe topups through workspace billing', async () => {
+    remoteConfig.value = { legacy_billing_migration_enabled: true }
+    remoteConfigState.value = 'authenticated'
+    mockBillingRail.value = 'legacy_stripe'
+
+    const context = useBillingContext()
+    await nextTick()
+    vi.clearAllMocks()
+
+    expect(context.type.value).toBe('workspace')
+    await context.topup(500)
+
+    expect(workspaceApi.createTopup).toHaveBeenCalledWith(500)
+    expect(mockPurchaseCredits).not.toHaveBeenCalled()
   })
 
   it('switches billing adapters before refreshing a migrated balance', async () => {
