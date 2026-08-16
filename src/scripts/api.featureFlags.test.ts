@@ -426,16 +426,6 @@ describe('API Feature Flags', () => {
    * how server values, falsy values, nested paths or defaults resolve.
    */
   describe('characterization: resolution with no override present', () => {
-    beforeEach(() => {
-      sessionStorage.clear()
-      window.history.replaceState({}, '', '/')
-    })
-
-    afterEach(() => {
-      sessionStorage.clear()
-      window.history.replaceState({}, '', '/')
-    })
-
     it('returns the server value verbatim', () => {
       api.serverFeatureFlags.value = { some_flag: 'server_value' }
 

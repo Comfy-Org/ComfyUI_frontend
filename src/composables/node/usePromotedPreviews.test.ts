@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { reactive } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -122,7 +120,6 @@ function arrangePromotedPreview(options: ArrangeOptions = {}) {
 
 describe(usePromotedPreviews, () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     clearMockNodeOutputStore()
   })
 

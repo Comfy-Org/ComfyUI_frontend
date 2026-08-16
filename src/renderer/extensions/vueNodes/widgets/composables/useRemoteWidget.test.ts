@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { IWidget } from '@/lib/litegraph/src/litegraph'
 import { api } from '@/scripts/api'
@@ -106,15 +106,6 @@ async function getResolvedValue(hook: ReturnType<typeof useRemoteWidget>) {
 }
 
 describe('useRemoteWidget', () => {
-  beforeEach(() => {
-    // Reset mocks
-    vi.mocked(axios.get).mockReset()
-    // Reset cache between tests
-    vi.spyOn(Map.prototype, 'get').mockClear()
-    vi.spyOn(Map.prototype, 'set').mockClear()
-    vi.spyOn(Map.prototype, 'delete').mockClear()
-  })
-
   describe('initialization', () => {
     it('should create hook with default values', () => {
       const hook = useRemoteWidget(createMockOptions())

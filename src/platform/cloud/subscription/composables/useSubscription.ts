@@ -23,7 +23,7 @@ import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import { useDialogService } from '@/services/dialogService'
-import { TIER_TO_KEY } from '@/platform/cloud/subscription/constants/tierPricing'
+import { toTierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { operations } from '@/types/comfyRegistryTypes'
 import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 import {
@@ -107,7 +107,7 @@ function useSubscriptionInternal() {
   const subscriptionTierName = computed(() => {
     const tier = subscriptionTier.value
     if (!tier) return ''
-    const key = TIER_TO_KEY[tier] ?? 'standard'
+    const key = toTierKey(tier) ?? 'standard'
     const baseName = t(`subscription.tiers.${key}.name`)
     return isYearlySubscription.value
       ? t('subscription.tierNameYearly', { name: baseName })
@@ -253,13 +253,15 @@ function useSubscriptionInternal() {
       return
     }
 
+    const previousTierKey = subscriptionTier.value
+      ? toTierKey(subscriptionTier.value)
+      : null
+
     recordPendingSubscriptionCheckoutAttempt({
       tier: 'standard',
       cycle: 'monthly',
       checkout_type: canAccessSubscriptionFeatures.value ? 'change' : 'new',
-      ...(subscriptionTier.value
-        ? { previous_tier: TIER_TO_KEY[subscriptionTier.value] }
-        : {}),
+      ...(previousTierKey ? { previous_tier: previousTierKey } : {}),
       ...(subscriptionDuration.value === 'ANNUAL'
         ? { previous_cycle: 'yearly' as const }
         : subscriptionDuration.value === 'MONTHLY'
@@ -350,21 +352,42 @@ function useSubscriptionInternal() {
 
   // Coalesce concurrent callers so an auth/session-rotation burst mints one fetch.
   let inFlightStatusFetch: Promise<BillingStatusResponse | null> | null = null
-  let latestStatusRequestId = 0
+  let inFlightStatusOwnerId: string | null = null
+  let inFlightStatusWorkspaceId: string | null = null
 
   async function fetchSubscriptionStatus(): Promise<BillingStatusResponse | null> {
-    if (inFlightStatusFetch) return inFlightStatusFetch
-    inFlightStatusFetch = performFetchSubscriptionStatus().finally(() => {
-      inFlightStatusFetch = null
-    })
-    return inFlightStatusFetch
+    const ownerId = authStore.userId ?? null
+    const workspaceId = workspaceStore.activeWorkspaceId
+    if (
+      inFlightStatusFetch &&
+      inFlightStatusOwnerId === ownerId &&
+      inFlightStatusWorkspaceId === workspaceId
+    ) {
+      return inFlightStatusFetch
+    }
+
+    const fetchPromise = performFetchSubscriptionStatus(ownerId, workspaceId)
+    inFlightStatusFetch = fetchPromise
+    inFlightStatusOwnerId = ownerId
+    inFlightStatusWorkspaceId = workspaceId
+    void fetchPromise
+      .catch(() => undefined)
+      .finally(() => {
+        if (inFlightStatusFetch === fetchPromise) {
+          inFlightStatusFetch = null
+          inFlightStatusOwnerId = null
+          inFlightStatusWorkspaceId = null
+        }
+      })
+    return fetchPromise
   }
 
-  async function performFetchSubscriptionStatus(): Promise<BillingStatusResponse | null> {
+  async function performFetchSubscriptionStatus(
+    ownerId: string | null,
+    workspaceId: string | null
+  ): Promise<BillingStatusResponse | null> {
     if (!isCloud) return null
 
-    const requestId = ++latestStatusRequestId
-    const workspaceId = workspaceStore.activeWorkspaceId
     let statusData: BillingStatusResponse
     try {
       statusData = await workspaceApi.getBillingStatus()
@@ -376,8 +399,8 @@ function useSubscriptionInternal() {
       )
     }
     if (
-      requestId !== latestStatusRequestId ||
-      workspaceId !== workspaceStore.activeWorkspaceId
+      (authStore.userId ?? null) !== ownerId ||
+      workspaceStore.activeWorkspaceId !== workspaceId
     ) {
       return null
     }
@@ -424,7 +447,8 @@ function useSubscriptionInternal() {
   })
 
   watch(
-    () => [authStore.isInitialized, isLoggedIn.value] as const,
+    () =>
+      [authStore.isInitialized, isLoggedIn.value, authStore.userId] as const,
     async ([authInitialized, loggedIn]) => {
       if (!authInitialized) {
         return
