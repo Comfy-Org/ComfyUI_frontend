@@ -422,6 +422,30 @@ describe('auth token priority chain', () => {
       expect(header2).toEqual({ Authorization: 'Bearer firebase-token' })
     })
 
+    it('retries the unified mint after a failed attempt but dedupes once it succeeds', async () => {
+      mockMintAtLogin.mockClear()
+      mockMintAtLogin.mockResolvedValueOnce(false)
+      authStateCallback({ ...mockUser, uid: 'retry-user' })
+      mockUnifiedToken = null
+
+      const header1 = await store.getAuthHeader()
+
+      expect(header1).toEqual({ Authorization: 'Bearer firebase-token' })
+      expect(mockMintAtLogin).toHaveBeenCalledTimes(1)
+
+      mockMintAtLogin.mockResolvedValueOnce(true)
+      mockUnifiedToken = 'retry-jwt'
+      const header2 = await store.getAuthHeader()
+
+      expect(header2).toEqual({ Authorization: 'Bearer retry-jwt' })
+      expect(mockMintAtLogin).toHaveBeenCalledTimes(2)
+
+      const header3 = await store.getAuthHeader()
+
+      expect(header3).toEqual({ Authorization: 'Bearer retry-jwt' })
+      expect(mockMintAtLogin).toHaveBeenCalledTimes(2)
+    })
+
     it('does not let a stale mint from a previous identity clobber the new identity', async () => {
       let resolveA: (minted: boolean) => void = () => {}
       mockMintAtLogin.mockReturnValueOnce(

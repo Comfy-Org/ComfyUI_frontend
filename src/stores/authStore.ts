@@ -89,8 +89,13 @@ export const useAuthStore = defineStore('auth', () => {
   let customerRecovery: Promise<void> | null = null
   let customerRecoveryUid: string | undefined
   const isFetchingBalance = ref(false)
-  const mintUnifiedToken = useMemoize((_uid: string) =>
-    useWorkspaceAuthStore().mintAtLogin()
+  const mintUnifiedToken = useMemoize((uid: string) =>
+    useWorkspaceAuthStore()
+      .mintAtLogin()
+      .then((success) => {
+        if (!success) mintUnifiedToken.delete(uid)
+        return success
+      })
   )
 
   // Balance state
