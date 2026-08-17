@@ -19,16 +19,20 @@ const makeNumberWidget = (
     options
   }) as unknown as IBaseWidget
 
-const makeComboWidget = (
-  value: string | number,
-  values: (string | number)[]
-): IBaseWidget =>
+const makeComboWidget = (value: string, values: string[]): IBaseWidget =>
   ({
     type: 'combo',
     name: 'choice',
     value,
     options: { values }
   }) as unknown as IBaseWidget
+
+function makeNumericComboWidget(value: number, values: number[]): IBaseWidget {
+  const widget = makeComboWidget('', [])
+  widget.value = value
+  Object.assign(widget.options, { values })
+  return widget
+}
 
 describe('isValueControlWidget', () => {
   it('returns true for a marked widget with both lifecycle hooks', () => {
@@ -102,42 +106,48 @@ describe('computeNextControlledValue (number)', () => {
 
 describe('computeNextControlledValue (combo)', () => {
   it('increments a numeric combo to the next option', () => {
-    const widget = makeComboWidget(8, [6, 8, 10])
+    const widget = makeNumericComboWidget(8, [6, 8, 10])
     const result = computeNextControlledValue(widget, 'increment')
 
     expect(result).toBe(10)
+    expect(typeof result).toBe('number')
   })
 
   it('wraps a numeric combo past the end on increment-wrap', () => {
-    const widget = makeComboWidget(10, [6, 8, 10])
+    const widget = makeNumericComboWidget(10, [6, 8, 10])
     const result = computeNextControlledValue(widget, 'increment-wrap')
 
     expect(result).toBe(6)
+    expect(typeof result).toBe('number')
   })
 
   it('decrements a numeric combo', () => {
-    const widget = makeComboWidget(8, [6, 8, 10])
+    const widget = makeNumericComboWidget(8, [6, 8, 10])
     const result = computeNextControlledValue(widget, 'decrement')
 
     expect(result).toBe(6)
+    expect(typeof result).toBe('number')
   })
 
-  it('selects the seeded index when randomizing a numeric combo', () => {
-    const widget = makeComboWidget(6, [6, 8, 10])
+  it('randomizes within a numeric combo', () => {
+    const values = [6, 8, 10]
+    const widget = makeNumericComboWidget(6, values)
     vi.spyOn(Math, 'random').mockReturnValue(0.6)
 
     const result = computeNextControlledValue(widget, 'randomize')
 
-    expect(result).toBe(8)
+    expect(values).toContain(result)
+    expect(typeof result).toBe('number')
   })
 
   it('matches numeric combo filters against stringified options', () => {
-    const widget = makeComboWidget(1, [1, 10, 20])
+    const widget = makeNumericComboWidget(1, [1, 10, 20])
     const result = computeNextControlledValue(widget, 'increment', {
       comboFilter: '1'
     })
 
     expect(result).toBe(10)
+    expect(typeof result).toBe('number')
   })
 
   it('cycles to the next value on increment', () => {

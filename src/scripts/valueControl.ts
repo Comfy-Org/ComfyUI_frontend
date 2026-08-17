@@ -93,13 +93,10 @@ function computeNextComboValue(
   if (!Array.isArray(rawValues)) return undefined
 
   const allValues = rawValues.filter(
-    (value): value is string | number =>
-      typeof value === 'string' || typeof value === 'number'
+    (value): value is string => typeof value === 'string'
   )
   const check = buildComboFilter(comboFilter, nodeId)
-  const values = check
-    ? allValues.filter((value) => check(String(value)))
-    : allValues
+  const values = check ? allValues.filter(check) : allValues
 
   if (!values.length) {
     if (allValues.length) {
@@ -111,7 +108,7 @@ function computeNextComboValue(
     return undefined
   }
 
-  let currentIndex = values.findIndex((value) => value === target.value)
+  let currentIndex = values.indexOf(target.value as string)
   const length = values.length
 
   switch (mode) {

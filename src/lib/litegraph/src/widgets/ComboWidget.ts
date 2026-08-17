@@ -1,10 +1,8 @@
 import { clamp } from 'es-toolkit/compat'
 
-import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
-  ComboWidgetValues,
   IComboWidget,
   IStringComboWidget
 } from '@/lib/litegraph/src/types/widgets'
@@ -20,21 +18,12 @@ import type { WidgetEventOptions } from './BaseWidget'
  * https://github.com/kijai/ComfyUI-KJNodes/blob/c3dc82108a2a86c17094107ead61d63f8c76200e/web/js/setgetnodes.js#L401-L404
  */
 type Values =
-  | Exclude<
-      ComboWidgetValues,
-      (widget?: IComboWidget, node?: LGraphNode) => string[]
-    >
+  | string[]
+  | Record<string, string>
   | ((widget?: ComboWidget, node?: LGraphNode) => string[])
 
-function toArray(values: Values): (string | number)[] {
+function toArray(values: Values): string[] {
   return Array.isArray(values) ? values : Object.keys(values)
-}
-
-function toContextMenuValue(
-  value: string | number,
-  label: string
-): string | IContextMenuValue<number> {
-  return typeof value === 'number' ? { content: label, value } : value
 }
 
 export class ComboWidget
@@ -48,13 +37,11 @@ export class ComboWidget
 
     const getOptionLabel = this.options.getOptionLabel
     if (getOptionLabel) {
-      const stringValue =
-        typeof this.value === 'number' ? String(this.value) : this.value
       try {
-        return getOptionLabel(stringValue || null)
+        return getOptionLabel(this.value ? String(this.value) : null)
       } catch (e) {
         console.error('Failed to map value:', e)
-        return stringValue
+        return this.value ? String(this.value) : ''
       }
     }
 
@@ -94,8 +81,7 @@ export class ComboWidget
     const lastValue = valuesArray.at(-1)
     if (firstValue === lastValue) return true
 
-    const currentValue = Array.isArray(values) ? this.value : String(this.value)
-    return currentValue !== (increment ? lastValue : firstValue)
+    return this.value !== (increment ? lastValue : firstValue)
   }
 
   /**
@@ -125,11 +111,11 @@ export class ComboWidget
     // avoids double click event
     options.canvas.last_mouseclick = 0
 
-    const foundIndex = Array.isArray(values)
-      ? indexedValues.findIndex(
-          (value) => String(value) === String(this.value)
-        ) + delta
-      : indexedValues.indexOf(String(this.value)) + delta
+    const foundIndex =
+      typeof values === 'object'
+        ? indexedValues.indexOf(String(this.value)) + delta
+        : // @ts-expect-error handle non-string values
+          indexedValues.indexOf(this.value) + delta
 
     const index = clamp(foundIndex, 0, indexedValues.length - 1)
 
@@ -162,14 +148,11 @@ export class ComboWidget
         scale: Math.max(1, canvas.ds.scale),
         event: e,
         className: 'dark',
-        callback: (value?: string | IContextMenuValue<number>) => {
-          const selectedValue = typeof value === 'string' ? value : value?.value
-          if (selectedValue !== undefined) {
-            this.setValue(selectedValue, { e, node, canvas })
-          }
+        callback: (value: string) => {
+          this.setValue(value, { e, node, canvas })
         }
       }
-      const menu = new LiteGraph.ContextMenu<number>([], menuOptions)
+      const menu = new LiteGraph.ContextMenu([], menuOptions)
 
       const getOptionLabel = this.options.getOptionLabel
       for (const value of values_list) {
@@ -177,11 +160,10 @@ export class ComboWidget
           const label = getOptionLabel
             ? getOptionLabel(String(value))
             : String(value)
-          menu.addItem(label, toContextMenuValue(value, label), menuOptions)
+          menu.addItem(label, value, menuOptions)
         } catch (err) {
           console.error('Failed to map value:', err)
-          const label = String(value)
-          menu.addItem(label, toContextMenuValue(value, label), menuOptions)
+          menu.addItem(String(value), value, menuOptions)
         }
       }
       return
@@ -193,8 +175,7 @@ export class ComboWidget
       scale: Math.max(1, canvas.ds.scale),
       event: e,
       className: 'dark',
-      callback: (value?: string | number | IContextMenuValue<unknown>) => {
-        if (value === undefined || typeof value === 'object') return
+      callback: (value: string) => {
         this.setValue(
           values != values_list ? text_values.indexOf(value) : value,
           { e, node, canvas }

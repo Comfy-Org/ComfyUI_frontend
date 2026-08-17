@@ -115,7 +115,7 @@ export function isAudioNode(node: LGraphNode | undefined): boolean {
   return !!node && node.previewMediaType === 'audio'
 }
 
-export function resolveComboValues(widget: IComboWidget): (string | number)[] {
+export function resolveComboValues(widget: IComboWidget): string[] {
   const values = widget.options?.values
   if (!values) return []
   if (typeof values === 'function') return values(widget)
