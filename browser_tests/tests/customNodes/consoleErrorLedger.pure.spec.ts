@@ -192,7 +192,7 @@ test.describe('consoleErrorLedger', () => {
     ).toEqual(kjErrors)
   })
 
-  test('connectivity mechanisms are pack-scoped and required', () => {
+  test('filters the conditional KJ error and requires the deterministic VHS error', () => {
     const points =
       'Error parsing stored points: SyntaxError: Unexpected end of JSON input\n    at new PointsEditor (http://localhost/extensions/ComfyUI-KJNodes/js/editors/point_editor_canvas.js:77:26)'
     const vhs =
@@ -216,7 +216,16 @@ test.describe('consoleErrorLedger', () => {
         ['ComfyUI-KJNodes', 'ComfyUI-VideoHelperSuite'],
         []
       )
-    ).toEqual(['kj-points-empty-bbox-json', 'core-vhs-removed-link-target-id'])
+    ).toEqual(['core-vhs-removed-link-target-id'])
+    expect(consoleErrorExclusionsForPacks(['ComfyUI-KJNodes'])).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          label:
+            'ComfyUI-KJNodes connectivity console kj-points-empty-bbox-json',
+          mode: 'conditional-console'
+        })
+      ])
+    )
   })
 
   test('requires the exact LTX sparse-editor initialization failure', () => {

@@ -318,15 +318,10 @@ test('harness self-check: captures a real execution error @custom-nodes', async 
     Object.keys(objectInfo).length,
     'object_info sanity floor'
   ).toBeGreaterThan(OBJECT_INFO_SANITY_FLOOR)
-  // Deferred, not skipped: the gating job forbids skips outright, and not
-  // every backend installs the harness pack. The backend that ships the node
-  // runs the real check, which is where this positive control has to hold.
-  if (!('DevToolsErrorRaiseNode' in objectInfo)) {
-    console.log(
-      'harness self-check deferred: ComfyUI_devtools not installed on this backend'
-    )
-    return
-  }
+  expect(
+    'DevToolsErrorRaiseNode' in objectInfo,
+    'harness self-check requires ComfyUI_devtools'
+  ).toBe(true)
 
   await comfyPage.workflow.loadGraphData(
     readWorkflow(assetPath('nodes/execution_error.json'))

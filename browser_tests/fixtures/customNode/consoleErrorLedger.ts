@@ -221,7 +221,6 @@ const CONNECTIVITY_ERROR_ALLOWLIST: Record<string, ConnectivityRule[]> = {
         /Error parsing stored points: SyntaxError: Unexpected end of JSON input[\s\S]*\/extensions\/ComfyUI-KJNodes\/js\/editors\/point_editor_canvas\.js/,
       reason:
         'PointsEditor parses an empty bbox widget when the sweep configures the node',
-      requiredConnectivityId: 'kj-points-empty-bbox-json',
       restore:
         'treat an empty bbox widget as an empty point set and remove this entry'
     }
