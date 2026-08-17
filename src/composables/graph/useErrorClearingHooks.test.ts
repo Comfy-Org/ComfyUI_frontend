@@ -543,7 +543,7 @@ describe('installErrorClearingHooks lifecycle', () => {
 
   it('keeps an added-node scan pending until async verification settles', async () => {
     const graph = new LGraph()
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    stubRootGraph(graph)
     const candidate = fromAny<MissingModelCandidate, unknown>({
       nodeId: '1',
       nodeType: 'CheckpointLoaderSimple',
@@ -598,7 +598,7 @@ describe('installErrorClearingHooks lifecycle', () => {
 
   it('waits for started verification when a later scan stage fails', async () => {
     const graph = new LGraph()
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    stubRootGraph(graph)
     const candidate = fromAny<MissingModelCandidate, unknown>({
       nodeId: '1',
       nodeType: 'CheckpointLoaderSimple',
@@ -673,7 +673,7 @@ describe('installErrorClearingHooks lifecycle', () => {
 
   it('continues async verification after hooks are disposed', async () => {
     const graph = new LGraph()
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    stubRootGraph(graph)
     const candidate = fromAny<MissingModelCandidate, unknown>({
       nodeId: '1',
       nodeType: 'CheckpointLoaderSimple',
@@ -749,7 +749,7 @@ describe('installErrorClearingHooks lifecycle', () => {
 
   it('does not surface verification from replaced nodes in the same root graph', async () => {
     const graph = new LGraph()
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    stubRootGraph(graph)
     const candidate = fromAny<MissingModelCandidate, unknown>({
       nodeId: '1',
       nodeType: 'CheckpointLoaderSimple',
@@ -803,7 +803,7 @@ describe('installErrorClearingHooks lifecycle', () => {
 
   it('does not surface a model value changed during verification', async () => {
     const graph = new LGraph()
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    stubRootGraph(graph)
     const node = new LGraphNode('CheckpointLoaderSimple')
     node.id = toNodeId(1)
     const widget = node.addWidget(
@@ -846,7 +846,7 @@ describe('installErrorClearingHooks lifecycle', () => {
 
   it('cancels an added-node model scan when its node is removed', async () => {
     const graph = new LGraph()
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    stubRootGraph(graph)
     const node = new LGraphNode('CheckpointLoaderSimple')
     node.id = toNodeId(1)
     const candidate = fromAny<MissingModelCandidate, unknown>({
@@ -887,7 +887,7 @@ describe('installErrorClearingHooks lifecycle', () => {
 
   it('cancels an added-node media scan when its node is removed', async () => {
     const graph = new LGraph()
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    stubRootGraph(graph)
     const node = new LGraphNode('LoadImage')
     node.id = toNodeId(1)
     const candidate = createMissingMediaCandidate([node.id], {
@@ -1071,7 +1071,7 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
     const rootGraph = subgraphNode.graph as LGraph
     rootGraph.add(subgraphNode)
 
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
+    stubRootGraph(rootGraph)
     installErrorClearingHooks(subgraph)
 
     const mediaStore = useMissingMediaStore()
