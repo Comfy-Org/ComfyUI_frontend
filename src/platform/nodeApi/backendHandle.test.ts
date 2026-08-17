@@ -28,6 +28,18 @@ describe('backend access', () => {
     expect(() => backend.url('view?f=a')).toThrow(ComfyApiError)
   })
 
+  it('reports the current backend session identity', () => {
+    const previous = api.clientId
+    try {
+      api.clientId = 'client-7'
+      expect(backend.sessionId()).toBe('client-7')
+      api.clientId = undefined
+      expect(backend.sessionId()).toBeUndefined()
+    } finally {
+      api.clientId = previous
+    }
+  })
+
   it('delivers a pack-defined event, unparsed', () => {
     const seen: unknown[] = []
     const stop = backend.on('KJNodes.custom', (detail) => seen.push(detail))
