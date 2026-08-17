@@ -326,7 +326,7 @@ const viewportStyle = computed<CSSProperties>(() => ({
 }))
 
 const normalizedModelValue = computed(() =>
-  modelValue.value === undefined ? undefined : String(modelValue.value)
+  modelValue.value == null ? undefined : String(modelValue.value)
 )
 
 const selectedOption = computed(() =>
@@ -339,9 +339,7 @@ const comboboxValue = computed(() => selectedOption.value?.comboboxValue ?? '')
 
 const isInvalid = computed(
   () =>
-    modelValue.value !== undefined &&
-    modelValue.value !== '' &&
-    !selectedOption.value
+    modelValue.value != null && modelValue.value !== '' && !selectedOption.value
 )
 
 const selectedLabel = computed(() => {
