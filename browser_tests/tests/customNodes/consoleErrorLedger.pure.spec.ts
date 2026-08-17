@@ -3,6 +3,7 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import {
+  consoleErrorExclusionsForPacks,
   customExtensionStartupErrors,
   isForeignExecutionNoise,
   staleRequiredConnectivityErrorRulesForPacks,
@@ -12,6 +13,7 @@ import {
   unallowlistedGlobalExtensionErrorsForPacks,
   unallowlistedErrorsForPacks
 } from '@e2e/fixtures/customNode/consoleErrorLedger'
+import { loadAllManifestPackNames } from '@e2e/fixtures/customNode/manifest'
 
 // unallowlistedErrors is the sole enforcement point of the curated load and
 // run console gates (pack startup/load and curated workflow execution): a degradation
@@ -53,6 +55,32 @@ test.describe('consoleErrorLedger', () => {
         [error, 'different failure']
       )
     ).toEqual(['different failure'])
+  })
+
+  test('reports every console acceptance with unique removal metadata', () => {
+    const exclusions = consoleErrorExclusionsForPacks([
+      ...new Map(
+        loadAllManifestPackNames().map((pack) => [pack.toLowerCase(), pack])
+      ).values()
+    ])
+    expect(new Set(exclusions.map(({ label }) => label)).size).toBe(
+      exclusions.length
+    )
+    expect(exclusions.every(({ reason }) => reason.length > 0)).toBe(true)
+    expect(exclusions.every(({ restore }) => restore.length > 0)).toBe(true)
+    expect(exclusions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          label: 'WhatDreamsCost-ComfyUI console ltx-director-guide-syntax',
+          mode: 'expected-failure'
+        }),
+        expect.objectContaining({
+          label:
+            'WhatDreamsCost-ComfyUI console whatdreams-set-value-probe-preview',
+          mode: 'conditional-console'
+        })
+      ])
+    )
   })
 
   test('filters only errors matching the pack own patterns', () => {

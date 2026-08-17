@@ -25,7 +25,7 @@ import {
   packIdentity,
   staleLocalExpectations
 } from '../browser_tests/fixtures/customNode/manifest'
-import { startupErrorExclusionsForPacks } from '../browser_tests/fixtures/customNode/consoleErrorLedger'
+import { consoleErrorExclusionsForPacks } from '../browser_tests/fixtures/customNode/consoleErrorLedger'
 import { ROUNDTRIP_NODE_LOSS_EXPECTATIONS_LITEGRAPH } from '../browser_tests/fixtures/customNode/valueDrift'
 
 const run = promisify(execFile)
@@ -187,10 +187,7 @@ const nodeExclusions = [
     restore: exclusion.restore,
     mode: 'expected-failure' as const
   })),
-  ...startupErrorExclusionsForPacks([...manifest.keys()]).map((exclusion) => ({
-    ...exclusion,
-    mode: 'expected-failure' as const
-  })),
+  ...consoleErrorExclusionsForPacks([...manifest.keys()]),
   ...Object.entries(CLOUD_RUN_EXCLUSIONS).flatMap(([ledgerPack, nodes]) => {
     const pack = manifestPackByFoldedName.get(ledgerPack.toLowerCase())
     return pack
@@ -209,14 +206,16 @@ note('')
 note(`## Temporary accepted gaps - **${nodeExclusions.length}**`)
 note('')
 note(
-  'Every entry is a **SKIP** from the passing contract. Expected failures are still exercised and must reproduce their exact known defect; not-exercised behavior receives no coverage.'
+  'Every entry is a **SKIP** from the passing contract. Expected failures are still exercised and must reproduce their exact known defect. Conditional console signatures are pack-scoped but are not required to occur. Not-exercised behavior receives no coverage.'
 )
 note('')
 for (const exclusion of nodeExclusions) {
   const status =
     exclusion.mode === 'not-exercised'
       ? 'SKIP - NOT EXERCISED'
-      : 'SKIP - EXACT EXPECTED FAILURE'
+      : exclusion.mode === 'conditional-console'
+        ? 'SKIP - CONDITIONAL EXACT CONSOLE SIGNATURE'
+        : 'SKIP - EXACT EXPECTED FAILURE'
   note(`- **${exclusion.label} - ${status}**`)
   note(`  - ${exclusion.reason}`)
   note(`  - to remove: ${exclusion.restore}`)
