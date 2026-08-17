@@ -56,11 +56,17 @@ export const useFirstRunEntry = createSharedComposable(() => {
    * Candidacy is read once, here: a later breakpoint, flag or subscription
    * change must not unmount the screen out from under the user.
    * Only a boot that opened a blank canvas can be onboarded over. `isNewUser()`
-   * cannot carry that alone — it reads `Comfy.TutorialCompleted`, which is
-   * exactly what a user predating the setting is missing.
-   * A `defer` never writes that flag, on either path: a link opened while the
-   * viewport, the tour flag or remote config says no would otherwise burn the
-   * one tour the account ever gets without showing it.
+   * cannot carry that alone — it is decided from `Comfy.TutorialCompleted` once
+   * per boot, by `initializeIfNewUser()`, and that setting is exactly what a
+   * user predating it is missing. Because the answer is cached for the rest of
+   * the boot rather than re-read per call, writing the flag below cannot flip
+   * the candidacy `handleUrlWorkflow` goes on to read.
+   *
+   * A `url-intent` boot leaves the flag to `handleUrlWorkflow`: this is too
+   * early to know whether anything arrived to tour, and the flag is write-once
+   * and server-side, so spending it here on a link that loaded nothing — or on
+   * a boot that only defers — burns the one tour the account ever gets without
+   * showing it.
    */
   async function handleStartupOutcome(outcome: StartupOutcome) {
     if (outcome === 'restored') return
@@ -69,7 +75,7 @@ export const useFirstRunEntry = createSharedComposable(() => {
     const decision = decideFirstRun()
 
     if (outcome === 'url-intent') {
-      if (decision !== 'defer') await markTutorialCompleted()
+      if (decision === 'complete') await markTutorialCompleted()
       return
     }
 
@@ -86,6 +92,11 @@ export const useFirstRunEntry = createSharedComposable(() => {
    * A share or template link loads its workflow instead of the Getting Started
    * screen, so the tour is offered over whatever arrived. The engine declines
    * to repeat a tour the user has already seen.
+   *
+   * A tour that actually started is what `Comfy.TutorialCompleted` pays for, so
+   * only that writes it. A link that loaded nothing, or a start the engine
+   * refused, leaves the account eligible: the next boot has no URL to honour and
+   * offers Getting Started, which is the onboarding this one failed to deliver.
    */
   async function handleUrlWorkflow(
     outcome: StartupOutcome | undefined,
@@ -96,9 +107,10 @@ export const useFirstRunEntry = createSharedComposable(() => {
     const shareLoaded =
       sharedStatus === 'loaded' || sharedStatus === 'loaded-without-assets'
     if (templateId === undefined && !shareLoaded) return
-    await useFirstRunTourController().beginTour(
+    const started = await useFirstRunTourController().beginTour(
       shareLoaded ? undefined : templateId
     )
+    if (started) await markTutorialCompleted()
   }
 
   // Applied locally before the request, so a failed write is next launch's problem.
