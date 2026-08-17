@@ -63,6 +63,7 @@ describe('slot handles', () => {
         RenderShape.HollowCircle
       )
       expect(saved.find((i) => i.name === 'plain')?.shape).toBeUndefined()
+      expect(inputs.byName('trigger_words')!.snapshot().shape).toBe('optional')
     })
 
     it('shapes a slot the pack introduces, and clears it again', () => {
@@ -285,6 +286,33 @@ describe('slot handles', () => {
       inputs.byName('image')!.modify({ name: 'picture', label: 'Picture' })
       expect(inputs.at(0)!.name).toBe('picture')
       expect(inputs.at(0)!.label).toBe('Picture')
+    })
+
+    it('retargets a widget input without accepting a missing widget', () => {
+      target.addWidget('number', 'seed', 0, () => {})
+      target.addWidget('number', 'next_seed', 0, () => {})
+      const input = inputs.add('seed', 'INT', { widget: 'seed' })
+
+      expect(() =>
+        input.modify({ name: 'missing', widget: 'missing' })
+      ).toThrow(/No widget named 'missing'/)
+      expect(input.name).toBe('seed')
+
+      input.modify({ name: 'next_seed', widget: 'next_seed' })
+
+      const saved = target
+        .serialize()
+        .inputs!.find((slot) => slot.name === 'next_seed')!
+      expect(saved.widget).toEqual({ name: 'next_seed' })
+      expect(input.isWidgetInput).toBe(true)
+
+      input.modify({ widget: null })
+
+      expect(input.isWidgetInput).toBe(false)
+      expect(
+        target.serialize().inputs!.find((slot) => slot.name === 'next_seed')!
+          .widget
+      ).toBeUndefined()
     })
 
     it('retypes a slot', () => {
