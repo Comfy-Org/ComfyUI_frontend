@@ -8,11 +8,25 @@ import enMessages from '@/locales/en/main.json'
 
 import PlanCreditsPanelContent from './PlanCreditsPanelContent.vue'
 
+const mockDistribution = vi.hoisted(() => ({ cloud: true }))
+vi.mock('@/platform/distribution/types', () => ({
+  get isCloud() {
+    return mockDistribution.cloud
+  }
+}))
+
 const refreshSpy = vi.hoisted(() => vi.fn(() => Promise.resolve()))
 
 const stubs = {
   SubscriptionPanelContentWorkspace: {
     template: '<section aria-label="Plan and credits overview" />'
+  },
+  CreditsPanel: {
+    props: ['embedded'],
+    template: '<section aria-label="Local credits overview" />'
+  },
+  SubscriptionFooterLinks: {
+    template: '<footer aria-label="Subscription links" />'
   },
   UsageLogsTable: {
     template: '<section aria-label="Usage logs" />',
@@ -22,7 +36,8 @@ const stubs = {
   }
 }
 
-function renderPanel() {
+function renderPanel({ cloud = true } = {}) {
+  mockDistribution.cloud = cloud
   const i18n = createI18n({
     legacy: false,
     locale: 'en',
@@ -40,6 +55,20 @@ describe('PlanCreditsPanelContent', () => {
       screen.getByRole('region', { name: 'Plan and credits overview' })
     ).toBeTruthy()
     expect(screen.queryByRole('region', { name: 'Usage logs' })).toBeNull()
+  })
+
+  it('shows the existing credits UI instead of subscription plans on local', () => {
+    renderPanel({ cloud: false })
+
+    expect(
+      screen.getByRole('region', { name: 'Local credits overview' })
+    ).toBeTruthy()
+    expect(
+      screen.getByRole('contentinfo', { name: 'Subscription links' })
+    ).toBeTruthy()
+    expect(
+      screen.queryByRole('region', { name: 'Plan and credits overview' })
+    ).toBeNull()
   })
 
   it('loads the usage log on the Activity tab', async () => {
