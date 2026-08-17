@@ -518,6 +518,98 @@ describe('useAlgoliaSearchProvider', () => {
         'fallback-1'
       ])
     })
+
+    it('should fire owner-stripped and tokenized fallback queries for a pasted repo slug', async () => {
+      mockSearchClient.search.mockResolvedValue({
+        results: [{ hits: [] }, { hits: [] }, { hits: [] }, { hits: [] }]
+      })
+
+      const provider = useAlgoliaSearchProvider()
+      await provider.searchPacks('kijai/comfyui-KJNodes', {
+        pageSize: 10,
+        pageNumber: 0
+      })
+
+      expect(mockSearchClient.search).toHaveBeenCalledWith({
+        requests: [
+          expect.objectContaining({
+            query: 'kijai/comfyui-KJNodes',
+            indexName: 'nodes_index'
+          }),
+          expect.objectContaining({
+            query: 'comfyui-KJNodes',
+            indexName: 'nodes_index'
+          }),
+          expect.objectContaining({
+            query: 'comfyui KJ Nodes',
+            indexName: 'nodes_index'
+          }),
+          expect.objectContaining({
+            indexName: 'nodes_index_query_suggestions'
+          })
+        ],
+        strategy: 'none'
+      })
+    })
+
+    it('should merge hits from every fallback query in order, deduped', async () => {
+      const hit = (id: string) => ({
+        objectID: id,
+        id,
+        name: id,
+        publisher_id: 'pub',
+        total_install: 0,
+        comfy_nodes: []
+      })
+
+      mockSearchClient.search.mockResolvedValue({
+        results: [
+          { hits: [hit('primary')] },
+          { hits: [hit('primary'), hit('owner-stripped')] },
+          { hits: [hit('owner-stripped'), hit('tokenized')] },
+          { hits: [] }
+        ]
+      })
+
+      const provider = useAlgoliaSearchProvider()
+      const result = await provider.searchPacks('kijai/comfyui-KJNodes', {
+        pageSize: 10,
+        pageNumber: 0
+      })
+
+      expect(result.nodePacks.map((pack) => pack.id)).toEqual([
+        'primary',
+        'owner-stripped',
+        'tokenized'
+      ])
+    })
+
+    // Pages are concatenated into one list by useRegistrySearch, so re-running
+    // the fallback per page would re-append hits already shown on page 0.
+    it('should not fire fallback queries beyond the first page', async () => {
+      mockSearchClient.search.mockResolvedValue({
+        results: [{ hits: [] }, { hits: [] }]
+      })
+
+      const provider = useAlgoliaSearchProvider()
+      await provider.searchPacks('kijai/comfyui-KJNodes', {
+        pageSize: 10,
+        pageNumber: 1
+      })
+
+      expect(mockSearchClient.search).toHaveBeenCalledWith({
+        requests: [
+          expect.objectContaining({
+            query: 'kijai/comfyui-KJNodes',
+            indexName: 'nodes_index'
+          }),
+          expect.objectContaining({
+            indexName: 'nodes_index_query_suggestions'
+          })
+        ],
+        strategy: 'none'
+      })
+    })
   })
 
   describe('clearSearchCache', () => {

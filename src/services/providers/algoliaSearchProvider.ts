@@ -22,8 +22,8 @@ import type {
   SearchPacksResult,
   SortableField
 } from '@/types/searchServiceTypes'
-import { tokenizeCompoundWords } from '@/utils/compoundWordUtil'
 import { paramsToCacheKey } from '@/utils/formatUtil'
+import { buildPackSearchFallbacks } from '@/utils/searchQueryUtil'
 import { SortableAlgoliaField } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
 type RegistryNodePack = components['schemas']['Node']
@@ -139,18 +139,15 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
 
     const requests: SearchQuery[] = [packQuery(query)]
 
-    // Algolia doesn't segment camelCase/PascalCase compound names (e.g.
-    // `EulerDiscreteScheduler`), so a query fired as one unsegmented word can
-    // fall outside typo-tolerance and return zero hits. Fire a second query
-    // with the compound query split into words as a fallback, but only when
-    // that actually changes the query -- most queries are already
-    // space-separated words and this would just be a wasted duplicate call.
-    const tokenizedQuery = tokenizeCompoundWords(query)
-    const shouldQueryTokenizedFallback =
-      tokenizedQuery.length > 0 && tokenizedQuery !== query
-    if (shouldQueryTokenizedFallback) {
-      requests.push(packQuery(tokenizedQuery))
-    }
+    // Pasted `owner/repo` slugs and unsegmented compound names return zero
+    // hits against an index that indexes neither, so retry the query in
+    // rewritten forms and use them to fill slots the raw query left empty.
+    // Only on the first page: the fallback is capped to the space the raw
+    // query didn't fill, so it only ever runs once the raw query is exhausted,
+    // and running it again per page would re-append hits already listed above.
+    const fallbackQueries =
+      pageNumber === 0 ? buildPackSearchFallbacks(query) : []
+    requests.push(...fallbackQueries.map(packQuery))
 
     const shouldQuerySuggestions =
       query.length >= MIN_CHARS_FOR_SUGGESTIONS_ALGOLIA
@@ -171,27 +168,31 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
     })
 
     const nodePacks = results[0] as SearchResponse<AlgoliaNodePack>
-    const tokenizedFallback = shouldQueryTokenizedFallback
-      ? (results[1] as SearchResponse<AlgoliaNodePack>)
-      : undefined
-    const suggestionsIndex = shouldQueryTokenizedFallback ? 2 : 1
+    const fallbackResults = results.slice(
+      1,
+      1 + fallbackQueries.length
+    ) as SearchResponse<AlgoliaNodePack>[]
     const querySuggestions = shouldQuerySuggestions
-      ? (results[suggestionsIndex] as SearchResponse<NodesIndexSuggestion>)
+      ? (results[
+          1 + fallbackQueries.length
+        ] as SearchResponse<NodesIndexSuggestion>)
       : { hits: [] }
 
-    // The primary query's ranking is authoritative, so the fallback only
-    // fills in hits the primary query missed -- it never reorders or
-    // displaces a primary hit -- and is capped so a rescued search still
-    // returns at most a page's worth of packs.
-    const primaryHitKeys = new Set(nodePacks.hits.map(getHitKey))
-    const fallbackHits = (tokenizedFallback?.hits ?? [])
-      .filter((hit) => !primaryHitKeys.has(getHitKey(hit)))
-      .slice(0, Math.max(pageSize - nodePacks.hits.length, 0))
+    // The raw query's ranking is authoritative, so fallbacks only fill in hits
+    // it missed -- they never reorder or displace a raw hit -- and are capped
+    // so a rescued search still returns at most a page's worth of packs.
+    const mergedHits = [...nodePacks.hits]
+    const seenHitKeys = new Set(nodePacks.hits.map(getHitKey))
+    for (const hit of fallbackResults.flatMap((result) => result.hits)) {
+      if (mergedHits.length >= pageSize) break
+      const hitKey = getHitKey(hit)
+      if (seenHitKeys.has(hitKey)) continue
+      seenHitKeys.add(hitKey)
+      mergedHits.push(hit)
+    }
 
     // Convert Algolia hits to RegistryNodePack format
-    const registryPacks = [...nodePacks.hits, ...fallbackHits].map(
-      toRegistryPack
-    )
+    const registryPacks = mergedHits.map(toRegistryPack)
 
     // Extract query suggestions from search results
     const suggestions = querySuggestions.hits.map((suggestion) => ({
