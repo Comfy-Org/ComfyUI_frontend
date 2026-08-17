@@ -6,25 +6,8 @@ export class FeatureFlagHelper {
   constructor(private readonly page: Page) {}
 
   /**
-   * Seed feature flags via `addInitScript` so they are available in
-   * localStorage before the app JS executes on first load.
-   * Must be called before `comfyPage.setup()` / `page.goto()`.
-   *
-   * Note: Playwright init scripts persist for the page lifetime and
-   * cannot be removed. Call this once per test, before navigation.
-   */
-  async seedFlags(flags: Record<string, unknown>): Promise<void> {
-    await this.page.addInitScript((flagMap: Record<string, unknown>) => {
-      for (const [key, value] of Object.entries(flagMap)) {
-        localStorage.setItem(`ff:${key}`, JSON.stringify(value))
-      }
-    }, flags)
-  }
-
-  /**
    * Set feature flags at runtime via localStorage. Uses the `ff:` prefix
    * that devFeatureFlagOverride.ts reads in dev mode.
-   * For flags needed before page init, use `seedFlags()` instead.
    */
   async setFlags(flags: Record<string, unknown>): Promise<void> {
     await this.page.evaluate((flagMap: Record<string, unknown>) => {
