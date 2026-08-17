@@ -1,6 +1,6 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { createPinia, setActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
@@ -351,6 +351,17 @@ describe('Composer', () => {
       expect(emitted().send).toBeUndefined()
     })
 
+    it('excludes only the referenced id when node titles match', async () => {
+      mount({ selectionTags: [NODES[0]], getMentionNodes: () => NODES })
+
+      await userEvent.type(screen.getByRole('textbox'), '@')
+      const listbox = screen.getByRole('listbox')
+
+      expect(within(listbox).queryByText('#5')).not.toBeInTheDocument()
+      expect(within(listbox).getByText('#7')).toBeInTheDocument()
+      expect(within(listbox).getByText('VAE Decode')).toBeInTheDocument()
+    })
+
     it('filters assets, stages a keyboard pick, removes its token, and sends its ref', async () => {
       const { emitted } = mount({
         getMentionNodes: () => NODES,
@@ -528,7 +539,9 @@ describe('Composer', () => {
       selectionTags: [{ id: '5', title: 'KSampler' }]
     })
 
-    await userEvent.click(screen.getByRole('button', { name: 'Remove' }))
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Remove KSampler #5 reference' })
+    )
 
     expect(emitted().removeTag).toEqual([['5']])
   })
@@ -536,7 +549,9 @@ describe('Composer', () => {
   it('shows the remove tooltip for a selection chip', async () => {
     mount({ selectionTags: [{ id: '5', title: 'KSampler' }] })
 
-    await userEvent.hover(screen.getByRole('button', { name: 'Remove' }))
+    await userEvent.hover(
+      screen.getByRole('button', { name: 'Remove KSampler #5 reference' })
+    )
 
     expect(
       await screen.findByRole('tooltip', { hidden: true })

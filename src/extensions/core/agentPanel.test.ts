@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   capturedExtensions: [] as ComfyExtension[],
   agentStore: { enabled: false, isOpen: true, close: vi.fn() },
   canvasStore: { updateSelectedItems: vi.fn() },
+  getNodeByLocatorId: vi.fn(),
   flagEnabled: undefined as boolean | undefined,
   flagListener: null as (() => void) | null,
   nodeSelectionStore: {
@@ -17,7 +18,12 @@ const mocks = vi.hoisted(() => ({
     saveNodeIds: vi.fn()
   },
   registerTracker: vi.fn(() => () => {}),
-  workflowStore: { activeWorkflow: { path: 'workflows/first.json' } }
+  workflowStore: {
+    activeWorkflow: { path: 'workflows/first.json' },
+    nodeToNodeLocatorId: vi.fn((node: { locatorId?: string; id: number }) =>
+      node.locatorId ? node.locatorId : String(node.id)
+    )
+  }
 }))
 
 vi.mock('@/services/extensionService', () => ({
@@ -47,6 +53,10 @@ vi.mock('@/stores/agentNodeSelectionStore', () => ({
 vi.mock('@/utils/litegraphUtil', () => ({
   isLGraphNode: (node: unknown): node is { id: number } =>
     typeof node === 'object' && node !== null && 'id' in node
+}))
+
+vi.mock('@/utils/graphTraversalUtil', () => ({
+  getNodeByLocatorId: mocks.getNodeByLocatorId
 }))
 
 vi.mock(
@@ -89,6 +99,7 @@ describe('AgentPanel extension flag gate', () => {
     mocks.flagListener = null
     mocks.registerTracker.mockClear()
     mocks.canvasStore.updateSelectedItems.mockClear()
+    mocks.getNodeByLocatorId.mockReset()
     mocks.nodeSelectionStore.beginWorkflowLoad.mockClear()
     mocks.nodeSelectionStore.finishWorkflowLoad.mockClear()
     mocks.nodeSelectionStore.nodeIds.mockReset()
@@ -148,6 +159,7 @@ describe('AgentPanel extension flag gate', () => {
       (item) => item.name === 'Comfy.AgentPanel'
     )
     const secondNode = { id: 12 }
+    const rootGraph = {}
     const selectItems = vi.fn()
 
     extension!.beforeLoadGraph!({} as never)
@@ -156,18 +168,58 @@ describe('AgentPanel extension flag gate', () => {
 
     mocks.nodeSelectionStore.isLoadingWorkflow = true
     mocks.nodeSelectionStore.nodeIds.mockReturnValue(['12'])
+    mocks.getNodeByLocatorId.mockReturnValue(secondNode)
     mocks.workflowStore.activeWorkflow = { path: 'workflows/second.json' }
 
     extension!.afterLoadGraph!({
+      rootGraph,
       canvas: {
-        graph: { getNodeById: () => secondNode },
         selectItems
       }
     } as never)
 
+    expect(mocks.getNodeByLocatorId).toHaveBeenCalledWith(rootGraph, '12')
     expect(selectItems).toHaveBeenCalledWith([secondNode])
     expect(mocks.nodeSelectionStore.restoreNodeIds).toHaveBeenCalledWith(['12'])
     expect(mocks.canvasStore.updateSelectedItems).toHaveBeenCalledOnce()
     expect(mocks.nodeSelectionStore.finishWorkflowLoad).not.toHaveBeenCalled()
+  })
+
+  it('restores a subgraph reference by its locator after graph load', async () => {
+    await import('./agentPanel')
+    const extension = mocks.capturedExtensions.find(
+      (item) => item.name === 'Comfy.AgentPanel'
+    )
+    const locator = '12345678-1234-1234-1234-123456789abc:shared'
+    const subgraphNode = { id: 'shared', locatorId: locator }
+    const rootGraph = {}
+    const selectItems = vi.fn()
+
+    mocks.nodeSelectionStore.isLoadingWorkflow = true
+    mocks.nodeSelectionStore.nodeIds.mockReturnValue([locator])
+    mocks.getNodeByLocatorId.mockReturnValue(subgraphNode)
+
+    extension!.afterLoadGraph!({ rootGraph, canvas: { selectItems } } as never)
+
+    expect(mocks.getNodeByLocatorId).toHaveBeenCalledWith(rootGraph, locator)
+    expect(selectItems).toHaveBeenCalledWith([subgraphNode])
+    expect(mocks.nodeSelectionStore.restoreNodeIds).toHaveBeenCalledWith([
+      locator
+    ])
+  })
+
+  it('finishes restoration when the panel closes during graph load', async () => {
+    await import('./agentPanel')
+    const extension = mocks.capturedExtensions.find(
+      (item) => item.name === 'Comfy.AgentPanel'
+    )
+    mocks.agentStore.isOpen = false
+    mocks.nodeSelectionStore.isLoadingWorkflow = true
+
+    extension!.afterLoadGraph!({} as never)
+
+    expect(mocks.nodeSelectionStore.finishWorkflowLoad).toHaveBeenCalledOnce()
+    expect(mocks.getNodeByLocatorId).not.toHaveBeenCalled()
+    expect(mocks.canvasStore.updateSelectedItems).not.toHaveBeenCalled()
   })
 })

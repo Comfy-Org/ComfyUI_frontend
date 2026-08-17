@@ -22,6 +22,7 @@ import Textarea from '@/components/ui/textarea/Textarea.vue'
 import type { ComposerAttachment } from '../../composables/agent/useComposer'
 import { useComposer } from '../../composables/agent/useComposer'
 import type { SelectedNode } from '../../composables/agent/useCanvasSelection'
+import { selectedNodeKey } from '../../composables/agent/useCanvasSelection'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import AttachmentChip from './composer/AttachmentChip.vue'
@@ -52,6 +53,7 @@ const emit = defineEmits<{
   openAssets: []
   selectNodes: []
   removeTag: [id: string]
+  focusTag: [id: string]
   mentionPick: [node: SelectedNode]
 }>()
 
@@ -63,10 +65,16 @@ const assetDragActive = inject<Readonly<Ref<boolean>>>(
 const duplicateIdClass =
   'shrink-0 rounded-[26px] bg-charcoal-400 px-1 py-0.5 font-mono text-xs/4 font-medium text-smoke-800'
 
-const mentionNodes = ref<SelectedNode[]>([])
+const graphNodes = ref<SelectedNode[]>([])
+const mentionNodes = computed(() => {
+  const referenced = new Set(selectionTags.map(selectedNodeKey))
+  return graphNodes.value.filter(
+    (node) => !referenced.has(selectedNodeKey(node))
+  )
+})
 const mentionAssets = ref<AssetItem[]>([])
 function loadMentionNodes(): void {
-  mentionNodes.value = getMentionNodes().toSorted((a, b) =>
+  graphNodes.value = getMentionNodes().toSorted((a, b) =>
     a.title.localeCompare(b.title)
   )
 }
@@ -102,7 +110,7 @@ const mentionMatches = computed<MentionMatch[]>(() => {
       .map(
         (node): MentionMatch => ({
           kind: 'node',
-          id: node.id,
+          id: selectedNodeKey(node),
           label: node.title,
           node
         })
@@ -135,7 +143,7 @@ function duplicatedTitles(nodes: SelectedNode[]): Set<string> {
   return dupes
 }
 
-const graphDupes = computed(() => duplicatedTitles(mentionNodes.value))
+const graphDupes = computed(() => duplicatedTitles(graphNodes.value))
 const tagDupes = computed(() => duplicatedTitles(selectionTags))
 
 watch(
@@ -378,22 +386,34 @@ defineExpose({
       <div v-if="selectionTags.length" class="flex flex-wrap gap-2 p-3">
         <span
           v-for="tag in selectionTags"
-          :key="tag.id"
+          :key="selectedNodeKey(tag)"
           class="bg-agent-surface-hover text-agent-fg inline-flex h-7 items-center gap-1 rounded-lg border border-neutral-200 px-2.5 text-xs/4 font-medium"
         >
-          <span class="icon-[comfy--node] size-3.5" />
-          <span class="max-w-40 truncate">{{ tag.title }}</span>
-          <span
-            v-if="graphDupes.has(tag.title) || tagDupes.has(tag.title)"
-            :class="duplicateIdClass"
-            >#{{ tag.id }}</span
+          <button
+            v-tooltip.top="buildAgentTooltipConfig(t('agent.focusNode'))"
+            type="button"
+            :aria-label="
+              t('agent.focusNodeLabel', { node: `${tag.title} #${tag.id}` })
+            "
+            class="flex cursor-pointer items-center gap-1"
+            @click="emit('focusTag', selectedNodeKey(tag))"
           >
+            <span class="icon-[comfy--node] size-3.5" />
+            <span class="max-w-40 truncate">{{ tag.title }}</span>
+            <span
+              v-if="graphDupes.has(tag.title) || tagDupes.has(tag.title)"
+              :class="duplicateIdClass"
+              >#{{ tag.id }}</span
+            >
+          </button>
           <button
             v-tooltip.top="buildAgentTooltipConfig(t('agent.remove'))"
             type="button"
-            :aria-label="t('agent.remove')"
+            :aria-label="
+              t('agent.removeNodeLabel', { node: `${tag.title} #${tag.id}` })
+            "
             class="text-agent-fg-muted hover:text-agent-fg flex size-3.5 cursor-pointer items-center justify-center transition-colors"
-            @click="emit('removeTag', tag.id)"
+            @click.stop="emit('removeTag', selectedNodeKey(tag))"
           >
             <span class="icon-[lucide--x] size-3.5 shrink-0" />
           </button>

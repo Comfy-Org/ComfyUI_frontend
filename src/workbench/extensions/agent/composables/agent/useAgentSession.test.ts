@@ -1,6 +1,9 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { createNodeLocatorId } from '@/types/nodeIdentification'
+import { toNodeId } from '@/types/nodeId'
+
 import type {
   AgentCancelAccepted,
   AgentDraftSnapshot,
@@ -19,6 +22,7 @@ import type {
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
 import { useAgentDraftStore } from '../../stores/agent/agentDraftStore'
 
+import type { SelectedNode } from './useCanvasSelection'
 import type { AgentEventSource } from './useAgentSession'
 import { useAgentSession } from './useAgentSession'
 
@@ -529,11 +533,23 @@ describe('useAgentSession (v1 composition root)', () => {
   it('(h2) tags ride as node_ids on the POST selection', async () => {
     const rest = fakeRest()
     const session = useAgentSession({ rest, events: fakeEvents().source })
+    const tags: SelectedNode[] = [
+      {
+        id: '5',
+        locatorId: createNodeLocatorId(null, toNodeId('5')),
+        title: 'K'
+      },
+      {
+        id: '6',
+        locatorId: createNodeLocatorId(
+          '00000000-0000-0000-0000-000000000001',
+          toNodeId('6')
+        ),
+        title: 'Decode'
+      }
+    ]
     session.start()
-    await session.sendMessage('explain', undefined, [
-      { id: '5', title: 'K' },
-      { id: '6', title: 'Decode' }
-    ])
+    await session.sendMessage('explain', undefined, tags)
     const body = vi.mocked(rest.postMessage).mock.calls[0][1]
     expect(body.selection).toEqual({ node_ids: ['5', '6'] })
   })
