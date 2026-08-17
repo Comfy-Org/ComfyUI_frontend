@@ -6,7 +6,6 @@ import { api } from '@/scripts/api'
 const zVideoMetadata = z.object({
   fps: z.number().positive().finite().nullable(),
   duration: z.number().nonnegative().finite().nullable(),
-  frame_count: z.number().int().nonnegative().nullable(),
   width: z.number().int().positive(),
   height: z.number().int().positive(),
   size: z.number().nonnegative().finite().nullable()
@@ -108,6 +107,11 @@ function raceWithAbort<T>(
   })
 }
 
+export function clearVideoMetadataCache(): void {
+  metadataCache.clear()
+  inflightProbes.clear()
+}
+
 function rememberMetadata(key: string, metadata: VideoMetadata): void {
   metadataCache.delete(key)
   metadataCache.set(key, metadata)
@@ -149,7 +153,6 @@ export async function extractVideoMetadata(
         fps:
           Number.isFinite(fps) && fps > 0 ? snapToStandardFrameRate(fps) : null,
         duration: Number.isFinite(duration) && duration >= 0 ? duration : null,
-        frame_count: null,
         width,
         height,
         size

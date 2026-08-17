@@ -1,9 +1,10 @@
 ﻿import { BufferSource } from 'mediabunny'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
+  clearVideoMetadataCache,
   extractVideoMetadata,
   fetchVideoMetadata,
   snapToStandardFrameRate
@@ -98,6 +99,10 @@ describe('snapToStandardFrameRate', () => {
 })
 
 describe('fetchVideoMetadata url gating', () => {
+  beforeEach(() => {
+    clearVideoMetadataCache()
+  })
+
   afterEach(() => {
     vi.unstubAllGlobals()
   })
