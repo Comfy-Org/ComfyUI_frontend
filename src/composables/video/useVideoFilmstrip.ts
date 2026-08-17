@@ -267,7 +267,7 @@ export function useVideoFilmstrip(
       width.value = metadata?.width ?? video.videoWidth
       height.value = metadata?.height ?? video.videoHeight
       fps.value = metadata?.fps ?? options.fps ?? DEFAULT_VIDEO_FPS
-      fileSize.value = metadata?.size
+      fileSize.value = metadata?.size ?? undefined
       totalFrames.value =
         metadata?.frame_count ??
         Math.max(Math.round(effectiveDuration * fps.value), 1)
