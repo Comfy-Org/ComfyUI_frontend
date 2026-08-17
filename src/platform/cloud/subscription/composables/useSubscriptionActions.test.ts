@@ -100,7 +100,9 @@ describe('useSubscriptionActions', () => {
       expect(isLoadingSupport.value).toBe(true)
 
       await promise
-      expect(mockExecute).toHaveBeenCalledWith('Comfy.ContactSupport')
+      expect(mockExecute).toHaveBeenCalledWith('Comfy.ContactSupport', {
+        errorHandler: expect.any(Function)
+      })
       expect(isLoadingSupport.value).toBe(false)
     })
 
@@ -125,8 +127,22 @@ describe('useSubscriptionActions', () => {
       expect(mockTrackHelpResourceClicked).not.toHaveBeenCalled()
     })
 
-    it('tells the user when contacting support fails, and stops loading', async () => {
-      mockExecute.mockRejectedValueOnce(new Error('Command failed'))
+    // commandStore.execute runs the command inside its own error handling and
+    // resolves either way, handing the failure to the errorHandler it was
+    // given. Rejecting from execute() would test a contract it does not have.
+    const failCommandVia =
+      (thrown: unknown) =>
+      async (
+        _id: string,
+        options?: { errorHandler?: (error: unknown) => void }
+      ) => {
+        options?.errorHandler?.(thrown)
+      }
+
+    it('tells the user when the support command fails, and stops loading', async () => {
+      mockExecute.mockImplementationOnce(
+        failCommandVia(new Error('Command failed'))
+      )
       const { handleMessageSupport, isLoadingSupport } =
         useSubscriptionActions()
 
@@ -141,9 +157,9 @@ describe('useSubscriptionActions', () => {
       )
     })
 
-    it('reports a failed support request so it is visible without the user', async () => {
+    it('reports a failed support command so it is visible without the user', async () => {
       const failure = new Error('Command failed')
-      mockExecute.mockRejectedValueOnce(failure)
+      mockExecute.mockImplementationOnce(failCommandVia(failure))
       const { handleMessageSupport } = useSubscriptionActions()
 
       await handleMessageSupport()
@@ -153,10 +169,24 @@ describe('useSubscriptionActions', () => {
       })
     })
 
+    it('reports the support command being unregistered, which does reject', async () => {
+      const failure = new Error('Command Comfy.ContactSupport not found')
+      mockExecute.mockRejectedValueOnce(failure)
+      const { handleMessageSupport, isLoadingSupport } =
+        useSubscriptionActions()
+
+      await handleMessageSupport()
+
+      expect(isLoadingSupport.value).toBe(false)
+      expect(mockCaptureException).toHaveBeenCalledWith(failure, {
+        tags: { error_type: 'contact_support_failed' }
+      })
+    })
+
     // Commands run arbitrary registered functions, including ones contributed
-    // by extensions, so the rejected value is not guaranteed to be an Error.
+    // by extensions, so the thrown value is not guaranteed to be an Error.
     it('reports a thrown non-Error as an Error so it carries a stack', async () => {
-      mockExecute.mockRejectedValueOnce('Command failed')
+      mockExecute.mockImplementationOnce(failCommandVia('Command failed'))
       const { handleMessageSupport } = useSubscriptionActions()
 
       await handleMessageSupport()

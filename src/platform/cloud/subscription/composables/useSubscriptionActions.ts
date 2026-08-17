@@ -50,7 +50,12 @@ export function useSubscriptionActions() {
         is_external: true,
         source: 'subscription'
       })
-      await commandStore.execute('Comfy.ContactSupport')
+      // execute() runs the command inside its own error handling and resolves
+      // either way, so a failure of the command itself only arrives here via
+      // this handler. The outer one below catches the command being missing.
+      await commandStore.execute('Comfy.ContactSupport', {
+        errorHandler: reportSupportFailure
+      })
     },
     reportSupportFailure,
     () => {
