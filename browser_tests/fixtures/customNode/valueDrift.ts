@@ -9,7 +9,7 @@ export const ROUNDTRIP_VALUE_ALLOWED_INDICES_LITEGRAPH: Record<
     FL_ReplaceColor: '5,6,7,8,9,10,11,12'
   },
   'WhatDreamsCost-ComfyUI': {
-    LoadAudioUI: '5',
+    LoadAudioUI: '2,3,5',
     LTXDirector: '3,4,5,7'
   }
 }
@@ -23,12 +23,29 @@ export const ROUNDTRIP_VALUE_ALLOWED_INDICES_VUE: Record<
     FL_ReplaceColor: '5,6,7,8,9,10,11,12'
   },
   'WhatDreamsCost-ComfyUI': {
-    LoadAudioUI: '5',
+    LoadAudioUI: '2,3,5',
     LTXDirector: '3,4,5,7'
   },
   'comfyui-itools': {
     iToolsRegexNode: '0'
   }
+}
+
+const VHS_ROUNDTRIP_VALUE_KEYS = {
+  VHS_LoadAudioUpload: 'choose audio to upload',
+  VHS_LoadImages: 'choose folder to upload',
+  VHS_LoadVideo: 'choose video to upload',
+  VHS_LoadVideoFFmpeg: 'choose video to upload',
+  VHS_VAEDecodeBatched: 'per_batch',
+  VHS_VAEEncodeBatched: 'per_batch'
+}
+
+export const ROUNDTRIP_VALUE_ALLOWED_KEYS_LITEGRAPH = {
+  'ComfyUI-VideoHelperSuite': VHS_ROUNDTRIP_VALUE_KEYS
+}
+
+export const ROUNDTRIP_VALUE_ALLOWED_KEYS_VUE = {
+  'ComfyUI-VideoHelperSuite': VHS_ROUNDTRIP_VALUE_KEYS
 }
 
 export type RoundtripInitializationSignal =
@@ -158,20 +175,6 @@ export function rendererLedgerFor<T>(
   return vueNodesEnabled ? vue : litegraph
 }
 
-export function partitionValueDriftNodes(
-  mechanisms: Record<string, unknown>,
-  indexedLedgers: Array<Record<string, unknown>>
-): { exact: string[]; legacy: string[] } {
-  const exact = [
-    ...new Set(indexedLedgers.flatMap((ledger) => Object.keys(ledger)))
-  ]
-  const exactSet = new Set(exact)
-  return {
-    exact,
-    legacy: Object.keys(mechanisms).filter((node) => !exactSet.has(node))
-  }
-}
-
 export function staleValueDriftIndices(
   allowed: Record<string, number[]>,
   observed: Record<string, number[]>
@@ -180,5 +183,16 @@ export function staleValueDriftIndices(
     indices
       .filter((index) => !observed[node]?.includes(index))
       .map((index) => `${node}[${index}]`)
+  )
+}
+
+export function staleValueDriftKeys(
+  allowed: Record<string, string[]>,
+  observed: Record<string, string[]>
+): string[] {
+  return Object.entries(allowed).flatMap(([node, keys]) =>
+    keys
+      .filter((key) => !observed[node]?.includes(key))
+      .map((key) => `${node}.${key}`)
   )
 }

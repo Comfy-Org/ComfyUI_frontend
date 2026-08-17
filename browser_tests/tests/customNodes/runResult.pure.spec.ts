@@ -48,6 +48,32 @@ test.describe('classifyRun', () => {
     expect(result.executedNodes).toEqual(['1'])
   })
 
+  test('PASS when a missing execution event has a non-null downstream output', () => {
+    const result = classifyRun({
+      events: [
+        { type: 'executed', node: 'sink', output: { text: ['value'] } },
+        { type: 'execution_success' }
+      ],
+      expectedNodeIds: ['source'],
+      proofOutputNodeByExpectedNode: { source: 'sink' }
+    })
+    expect(result.outcome).toBe('PASS')
+  })
+
+  test('PARTIAL when a downstream output is missing or null', () => {
+    for (const output of [undefined, null]) {
+      const result = classifyRun({
+        events: [
+          { type: 'executed', node: 'sink', output },
+          { type: 'execution_success' }
+        ],
+        expectedNodeIds: ['source'],
+        proofOutputNodeByExpectedNode: { source: 'sink' }
+      })
+      expect(result.outcome).toBe('PARTIAL')
+    }
+  })
+
   test('a node named by both streams is counted once', () => {
     const result = classifyRun({
       events: [

@@ -6,14 +6,16 @@ import {
   matchesTopologyExpectation,
   OUTPUT_TOPOLOGY_EXPECTATIONS_LITEGRAPH,
   OUTPUT_TOPOLOGY_EXPECTATIONS_VUE,
-  partitionValueDriftNodes,
   pendingRoundtripInitializations,
   rendererLedgerFor,
   ROUNDTRIP_NODE_LOSS_EXPECTATIONS_LITEGRAPH,
   ROUNDTRIP_NODE_LOSS_EXPECTATIONS_VUE,
   ROUNDTRIP_VALUE_ALLOWED_INDICES_LITEGRAPH,
   ROUNDTRIP_VALUE_ALLOWED_INDICES_VUE,
-  staleValueDriftIndices
+  ROUNDTRIP_VALUE_ALLOWED_KEYS_LITEGRAPH,
+  ROUNDTRIP_VALUE_ALLOWED_KEYS_VUE,
+  staleValueDriftIndices,
+  staleValueDriftKeys
 } from '@e2e/fixtures/customNode/valueDrift'
 
 test.describe('rendererLedgerFor', () => {
@@ -23,18 +25,6 @@ test.describe('rendererLedgerFor', () => {
 
     expect(rendererLedgerFor(false, litegraph, vue)).toBe(litegraph)
     expect(rendererLedgerFor(true, litegraph, vue)).toBe(vue)
-  })
-
-  test('never downgrades an opposite-renderer exact node to a broad exception', () => {
-    expect(
-      partitionValueDriftNodes(
-        { LegacyNode: 'reason', LitegraphNode: 'reason', VueNode: 'reason' },
-        [{ LitegraphNode: '3' }, { VueNode: '5' }]
-      )
-    ).toEqual({
-      exact: ['LitegraphNode', 'VueNode'],
-      legacy: ['LegacyNode']
-    })
   })
 })
 
@@ -115,6 +105,26 @@ test.describe('staleValueDriftIndices', () => {
   })
 })
 
+test.describe('staleValueDriftKeys', () => {
+  test('requires every allowed node/key pair to be observed', () => {
+    expect(
+      staleValueDriftKeys(
+        { ExampleNode: ['button', 'preview'] },
+        { ExampleNode: ['button'] }
+      )
+    ).toEqual(['ExampleNode.preview'])
+  })
+
+  test('ignores unrelated observations', () => {
+    expect(
+      staleValueDriftKeys(
+        { ExampleNode: ['button'] },
+        { ExampleNode: ['button'], OtherNode: ['preview'] }
+      )
+    ).toEqual([])
+  })
+})
+
 test.describe('cloud roundtrip expectations', () => {
   test('pins only the observed widget indices', () => {
     expect(ROUNDTRIP_VALUE_ALLOWED_INDICES_LITEGRAPH).toMatchObject({
@@ -123,7 +133,7 @@ test.describe('cloud roundtrip expectations', () => {
         FL_ReplaceColor: '5,6,7,8,9,10,11,12'
       },
       'WhatDreamsCost-ComfyUI': {
-        LoadAudioUI: '5',
+        LoadAudioUI: '2,3,5',
         LTXDirector: '3,4,5,7'
       }
     })
@@ -131,11 +141,24 @@ test.describe('cloud roundtrip expectations', () => {
       'ComfyUI_Fill-Nodes':
         ROUNDTRIP_VALUE_ALLOWED_INDICES_LITEGRAPH['ComfyUI_Fill-Nodes'],
       'WhatDreamsCost-ComfyUI': {
-        LoadAudioUI: '5',
+        LoadAudioUI: '2,3,5',
         LTXDirector: '3,4,5,7'
       },
       'comfyui-itools': { iToolsRegexNode: '0' }
     })
+    expect(ROUNDTRIP_VALUE_ALLOWED_KEYS_LITEGRAPH).toEqual({
+      'ComfyUI-VideoHelperSuite': {
+        VHS_LoadAudioUpload: 'choose audio to upload',
+        VHS_LoadImages: 'choose folder to upload',
+        VHS_LoadVideo: 'choose video to upload',
+        VHS_LoadVideoFFmpeg: 'choose video to upload',
+        VHS_VAEDecodeBatched: 'per_batch',
+        VHS_VAEEncodeBatched: 'per_batch'
+      }
+    })
+    expect(ROUNDTRIP_VALUE_ALLOWED_KEYS_VUE).toEqual(
+      ROUNDTRIP_VALUE_ALLOWED_KEYS_LITEGRAPH
+    )
   })
 
   test('keeps the FL_TimeLine loss temporary and renderer-explicit', () => {

@@ -129,16 +129,9 @@
     "reason": "Cloud disables 13 node(s) this backend serves; the delta is exactly that count"
   },
   "comfyui-videohelpersuite": {
-    "cannotRunAlone": [
-      "VHS_LoadAudio",
-      "VHS_LoadImagePath",
-      "VHS_LoadImages",
-      "VHS_LoadImagesPath",
-      "VHS_LoadVideoFFmpegPath",
-      "VHS_LoadVideoPath"
-    ],
+    "cannotRunAlone": [],
     "expectedNodeCount": 40,
-    "reason": "Cloud disables 8 node(s) this backend serves; the delta is exactly that count; six local-only file loaders cannot execute without input files"
+    "reason": "Cloud disables 8 node(s) this backend serves; the delta is exactly that count"
   },
   "comfyui_ipadapter_plus": {
     "expectedNodeCount": 30,

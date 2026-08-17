@@ -40,7 +40,7 @@ test.describe('customNode manifest', () => {
     }
   })
 
-  test('local-only nodes use the local execution baseline', () => {
+  test('a local execution baseline replaces the cloud baseline', () => {
     const priorBackend = process.env.CUSTOM_NODES_BACKEND
     const priorManifest = process.env.CUSTOM_NODES_MANIFEST
     const entry = {
@@ -51,8 +51,7 @@ test.describe('customNode manifest', () => {
     try {
       process.env.CUSTOM_NODES_BACKEND = 'local'
       process.env.CUSTOM_NODES_MANIFEST = 'cloud'
-      expect(cannotRunAloneFor(entry)).toContain('VHS_LoadVideoPath')
-      expect(cannotRunAloneFor(entry)).not.toContain('CloudBaseline')
+      expect(cannotRunAloneFor(entry)).toEqual([])
       process.env.CUSTOM_NODES_BACKEND = 'cloud'
       expect(cannotRunAloneFor(entry)).toEqual(['CloudBaseline'])
       process.env.CUSTOM_NODES_BACKEND = 'local'

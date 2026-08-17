@@ -79,13 +79,20 @@ function outputsFrom(events: PromptEvent[]): Record<string, unknown> {
 export function classifyRun(input: {
   events: PromptEvent[]
   expectedNodeIds: string[]
+  proofOutputNodeByExpectedNode?: Record<string, string>
   // All node ids in the queued graph. An error naming a node outside it is a
   // stray from another prompt (late websocket delivery, or a duplicate queue
   // from the client-flap retry) and must not be pinned on this run.
   graphNodeIds?: string[]
   timedOut?: boolean
 }): RunResult {
-  const { events, expectedNodeIds, graphNodeIds, timedOut = false } = input
+  const {
+    events,
+    expectedNodeIds,
+    proofOutputNodeByExpectedNode = {},
+    graphNodeIds,
+    timedOut = false
+  } = input
   const executedNodes = executedNodesFrom(events)
   const outputsByNode = outputsFrom(events)
 
@@ -115,9 +122,15 @@ export function classifyRun(input: {
   if (!events.some((event) => event.type === 'execution_success'))
     return { outcome: 'TIMEOUT', executedNodes, outputsByNode }
 
-  const ranEveryExpected = expectedNodeIds.every((node) =>
-    executedNodes.includes(node)
-  )
+  const ranEveryExpected = expectedNodeIds.every((node) => {
+    if (executedNodes.includes(node)) return true
+    const proofNode = proofOutputNodeByExpectedNode[node]
+    return (
+      proofNode !== undefined &&
+      Object.hasOwn(outputsByNode, proofNode) &&
+      outputsByNode[proofNode] != null
+    )
+  })
   return {
     outcome: ranEveryExpected ? 'PASS' : 'PARTIAL',
     executedNodes,

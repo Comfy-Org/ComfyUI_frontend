@@ -1244,7 +1244,7 @@
       "workflow": "assets/customNodes/vhs_video_pipeline_cloud_run.json",
       "expectedNodes": ["VHS_LoadVideo", "VHS_VideoInfo"],
       "expectedNodeCount": 32,
-      "expectedRunnableCount": 29,
+      "expectedRunnableCount": 31,
       "expectedExtensions": ["VideoHelperSuite.Core"],
       "disabledNodes": {
         "VHS_BatchManager": ["DisabledOnCloud"],

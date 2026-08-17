@@ -463,9 +463,20 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p ComfyUI/input
+          mkdir -p ComfyUI/input/images
           cp browser_tests/assets/plain_video.mp4 ComfyUI/input/plain_video.mp4 \
             || { echo "::error::could not stage plain_video.mp4 - the VHS run tier has no input to execute on"; exit 1; }
+          cp browser_tests/assets/test_upload_image.png ComfyUI/input/test_upload_image.png
+          cp browser_tests/assets/test_upload_image.png ComfyUI/input/images/test_upload_image.png
+          python - <<'PY'
+          import wave
+
+          with wave.open('ComfyUI/input/plain_audio.wav', 'wb') as audio:
+              audio.setnchannels(1)
+              audio.setsampwidth(2)
+              audio.setframerate(8000)
+              audio.writeframes(b'\0\0' * 8000)
+          PY
 
       # --cache-none so retried run-tier tests re-execute every node (a cached
       # node emits no `executing` event and would false-fail PARTIAL).

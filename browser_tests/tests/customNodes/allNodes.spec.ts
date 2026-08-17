@@ -11,9 +11,9 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import type { RequiredSocket } from '@e2e/fixtures/customNode/autoRun'
 import {
-  AUTO_RUN_ALLOWED_FAILURES,
+  AUTO_RUN_WIDGET_INPUTS,
   batchAutoRunnable,
-  matchesAllowedAutoRunOutcome,
+  CLOUD_RUN_EXCLUSIONS,
   planAutoRuns,
   SYNTH_PRODUCERS
 } from '@e2e/fixtures/customNode/autoRun'
@@ -45,7 +45,6 @@ import {
   matchesTopologyExpectation,
   OUTPUT_TOPOLOGY_EXPECTATIONS_LITEGRAPH,
   OUTPUT_TOPOLOGY_EXPECTATIONS_VUE,
-  partitionValueDriftNodes,
   pendingRoundtripInitializations,
   rendererLedgerFor,
   ROUNDTRIP_INITIALIZATION_SIGNALS,
@@ -53,7 +52,10 @@ import {
   ROUNDTRIP_NODE_LOSS_EXPECTATIONS_VUE,
   ROUNDTRIP_VALUE_ALLOWED_INDICES_LITEGRAPH,
   ROUNDTRIP_VALUE_ALLOWED_INDICES_VUE,
-  staleValueDriftIndices
+  ROUNDTRIP_VALUE_ALLOWED_KEYS_LITEGRAPH,
+  ROUNDTRIP_VALUE_ALLOWED_KEYS_VUE,
+  staleValueDriftIndices,
+  staleValueDriftKeys
 } from '@e2e/fixtures/customNode/valueDrift'
 import {
   attachPageDiagnosticEvidence,
@@ -117,14 +119,6 @@ const AUTO_RUN_EXCLUDE: Record<string, Record<string, string>> = {
     StringToFloatList:
       'requires its pack JS to normalize the list string at queue time; raw defaults ValueError. Excluded unconditionally - curated-workflow candidate'
   },
-  'ComfyUI-VideoHelperSuite': {
-    VHS_LoadAudioUpload:
-      'environment-variable execution: upload combo state differs between hosts (clean locally, Exception on CI)',
-    VHS_BatchManager:
-      'iteration-coordinator node; its executing signal flip-flops between PASS and PARTIAL run-to-run (same class as essentials TransitionMask+)',
-    VHS_SelectLatest:
-      'pack JS applyToGraph copies latest_file into downstream widget inputs and throws TypeError when its output feeds a pure socket (our PreviewAny sink) while the input dir has matching files - content-variable, crashes graphToPrompt; upstream-report candidate'
-  },
   'was-node-suite-comfyui': {
     'BLIP Model Loader':
       'downloads BLIP weights at execution; hangs non-interruptibly without them and would pull large models on a networked runner',
@@ -183,16 +177,6 @@ const AUTO_RUN_EXCLUDE: Record<string, Record<string, string>> = {
   }
 }
 
-// Auto-run OUTCOME not asserted for these nodes; they still execute every
-// run, so crashes and console errors surface - only the PASS/PARTIAL verdict
-// is ledgered. Un-ledger when the executing signal covers list-expanded runs.
-const AUTO_RUN_UNSTABLE_NODES: Record<string, Record<string, string>> = {
-  'ComfyUI-VideoHelperSuite': {
-    VHS_AudioToVHSAudio:
-      'the node executes on every run; list expansion intermittently omits its per-node executing event, so only PARTIAL is accepted'
-  }
-}
-
 // Plain-typed widgets whose value is owned by pack JS: a programmatic write
 // is legitimately rewritten, so set-and-stick does not apply. Keyed
 // `NodeType.widgetName`; every entry names the mechanism.
@@ -218,13 +202,40 @@ const WIDGET_SET_ALLOWLIST: Record<string, Record<string, string>> = {
       'pack JS canonicalizes the value to its internal $nodeId-slot reference on every write',
     'PreviewBridgeLatent.image':
       'pack JS canonicalizes the value to its internal $nodeId-slot reference on every write'
+  },
+  'ComfyUI-KJNodes': {
+    'Ideogram4PromptBuilderKJ.style_palette_data':
+      'hidden serialized palette owned by the Ideogram editor',
+    'Ideogram4PromptBuilderKJ.elements_data':
+      'hidden serialized regions owned by the Ideogram editor',
+    'Ideogram4PromptBuilderKJ.bg_brightness':
+      'hidden value owned by the Ideogram editor slider',
+    'ImageTransformKJ.bboxes':
+      'serialized crop state owned by the image-transform editor',
+    'PointsEditor.points_store':
+      'serialized point state owned by the points editor',
+    'PointsEditor.coordinates':
+      'derived coordinates owned by the points editor',
+    'PointsEditor.neg_coordinates':
+      'derived negative coordinates owned by the points editor',
+    'PointsEditor.bbox_store':
+      'serialized bounding boxes owned by the points editor',
+    'PointsEditor.bboxes': 'derived bounding boxes owned by the points editor',
+    'SplineEditor.points_store':
+      'serialized path state owned by the spline editor',
+    'SplineEditor.coordinates':
+      'derived sampled coordinates owned by the spline editor'
+  },
+  'ComfyUI-LTXVideo': {
+    'LTXVSparseTrackEditor.points_store':
+      'serialized track state owned by the sparse-track editor',
+    'LTXVSparseTrackEditor.coordinates':
+      'derived coordinates owned by the sparse-track editor'
   }
 }
 
-// Nodes whose serialized widgets_values legitimately change across
-// serialize -> configure because pack JS owns them. The shrink check still
-// applies; only the value comparison is skipped. Every entry names the
-// mechanism.
+// Exact pack-owned serialization changes. Every node must also appear in a
+// renderer-specific index or key ledger.
 const ROUNDTRIP_VALUE_ALLOWLIST: Record<string, Record<string, string>> = {
   'ComfyUI-VideoHelperSuite': {
     VHS_LoadVideo:
@@ -239,24 +250,6 @@ const ROUNDTRIP_VALUE_ALLOWLIST: Record<string, Record<string, string>> = {
       'per_batch serializes null after configure (VHS ANNOTATED widget deserialization gap) - upstream-report candidate',
     VHS_VAEEncodeBatched:
       'per_batch serializes null after configure (VHS ANNOTATED widget deserialization gap) - upstream-report candidate'
-  },
-  'ComfyUI-KJNodes': {
-    PointsEditor:
-      'editor JSON widgets initialize their state on configure; a fresh create serializes empty strings',
-    SplineEditor:
-      'editor JSON widgets initialize their state on configure; a fresh create serializes empty strings',
-    Ideogram4PromptBuilderKJ:
-      'pack JS validates and resets its aspect/format text widgets on configure',
-    ImageTransformKJ:
-      'pack JS initializes its fill-options JSON widget on configure; a fresh create serializes an empty string'
-  },
-  'ComfyUI-Custom-Scripts': {
-    'LoadText|pysssss':
-      'file combo re-resolves against backend contents on configure; state-dependent (same class as its auto-run exclusion)'
-  },
-  'ComfyUI-LTXVideo': {
-    LTXVSparseTrackEditor:
-      'track editor normalizes its control points and derived interpolation JSON on configure'
   },
   'ComfyUI_Fill-Nodes': {
     FL_ColorPicker:
@@ -309,9 +302,9 @@ const CORE_ONLY_MOUNT_WIDGET_ALLOWLIST: Record<
 // exceptions; this spec reads it through the shared filtering helpers above.
 
 const PACK_LEDGERS: Record<string, Record<string, Record<string, unknown>>> = {
-  AUTO_RUN_ALLOWED_FAILURES,
+  AUTO_RUN_WIDGET_INPUTS,
   AUTO_RUN_EXCLUDE,
-  AUTO_RUN_UNSTABLE_NODES,
+  CLOUD_RUN_EXCLUSIONS,
   CORE_ONLY_MOUNT_WIDGET_ALLOWLIST,
   MOUNT_WIDGET_ALLOWLIST,
   OUTPUT_TOPOLOGY_EXPECTATIONS_LITEGRAPH,
@@ -322,6 +315,8 @@ const PACK_LEDGERS: Record<string, Record<string, Record<string, unknown>>> = {
   ROUNDTRIP_VALUE_ALLOWLIST,
   ROUNDTRIP_VALUE_ALLOWED_INDICES_LITEGRAPH,
   ROUNDTRIP_VALUE_ALLOWED_INDICES_VUE,
+  ROUNDTRIP_VALUE_ALLOWED_KEYS_LITEGRAPH,
+  ROUNDTRIP_VALUE_ALLOWED_KEYS_VUE,
   WIDGET_SET_ALLOWLIST
 }
 
@@ -373,7 +368,7 @@ declare global {
           label: string
         }>
         valueDrifts: Record<string, number[]>
-        broadValueDriftInventories: Record<string, string[]>
+        keyDrifts: Record<string, string[]>
       }
     }
   }
@@ -715,16 +710,17 @@ for (const entry of manifestEntries) {
                           // Vue renders the seed-control combo inside its
                           // parent widget row, not as its own row.
                           widget.name !== 'control_after_generate'
-                      ).length
+                      )
                       const domWidgets = root.querySelectorAll(
                         '[data-testid="node-widget"]'
                       ).length
-                      if (
-                        domWidgets < widgets &&
-                        !customWidgetNodes.includes(node.type!)
-                      )
+                      if (customWidgetNodes.includes(node.type!))
                         problems.push(
-                          `${node.type}: Vue mounts ${domWidgets} of ${widgets} widgets`
+                          `${node.type}: broad Vue-widget exclusion must become exact; instance ${widgets.length} [${widgets.map((widget) => `${widget.name}:${widget.type}`).join(',')}], DOM ${domWidgets}`
+                        )
+                      else if (domWidgets < widgets.length)
+                        problems.push(
+                          `${node.type}: Vue mounts ${domWidgets} of ${widgets.length} widgets`
                         )
                       const slots =
                         (node.inputs ?? []).filter(
@@ -795,10 +791,17 @@ for (const entry of manifestEntries) {
             keys,
             `stale ROUNDTRIP_VALUE_ALLOWLIST entry: ${ledgered} is not registered by ${entry.pack}`
           ).toContain(ledgered)
-        const valueDriftNodes = partitionValueDriftNodes(allowedValueDrift, [
-          packLedgerFor(ROUNDTRIP_VALUE_ALLOWED_INDICES_LITEGRAPH, entry.pack),
-          packLedgerFor(ROUNDTRIP_VALUE_ALLOWED_INDICES_VUE, entry.pack)
-        ])
+        const exactValueDriftNodes = new Set(
+          [
+            packLedgerFor(
+              ROUNDTRIP_VALUE_ALLOWED_INDICES_LITEGRAPH,
+              entry.pack
+            ),
+            packLedgerFor(ROUNDTRIP_VALUE_ALLOWED_INDICES_VUE, entry.pack),
+            packLedgerFor(ROUNDTRIP_VALUE_ALLOWED_KEYS_LITEGRAPH, entry.pack),
+            packLedgerFor(ROUNDTRIP_VALUE_ALLOWED_KEYS_VUE, entry.pack)
+          ].flatMap((ledger) => Object.keys(ledger))
+        )
         const initializationSignals = packLedgerFor(
           ROUNDTRIP_INITIALIZATION_SIGNALS,
           entry.pack
@@ -808,11 +811,16 @@ for (const entry of manifestEntries) {
             keys,
             `stale ROUNDTRIP_INITIALIZATION_SIGNALS entry: ${node} is not registered by ${entry.pack}`
           ).toContain(node)
-        for (const ledgered of valueDriftNodes.exact)
+        for (const ledgered of exactValueDriftNodes)
           expect(
             allowedValueDrift,
-            `ROUNDTRIP_VALUE_ALLOWED_INDICES entry ${ledgered} has no matching mechanism in ROUNDTRIP_VALUE_ALLOWLIST`
+            `exact roundtrip value entry ${ledgered} has no matching mechanism in ROUNDTRIP_VALUE_ALLOWLIST`
           ).toHaveProperty(ledgered)
+        for (const ledgered of Object.keys(allowedValueDrift))
+          expect(
+            [...exactValueDriftNodes],
+            `ROUNDTRIP_VALUE_ALLOWLIST entry ${ledgered} has no exact renderer contract`
+          ).toContain(ledgered)
         // Widget values flow through the same store in both renderers, but
         // only the Vue pass runs component mount/configure effects that can
         // write back into that store - so the round-trip must hold under
@@ -820,6 +828,7 @@ for (const entry of manifestEntries) {
         // before the next serialize (a single evaluate would serialize before
         // any Vue component reacted).
         const roundtripRenderers = [false, true]
+        const rendererMismatches: string[] = []
         for (const vueNodesEnabled of roundtripRenderers) {
           const rawValueIndices = packLedgerFor(
             rendererLedgerFor(
@@ -835,7 +844,22 @@ for (const entry of manifestEntries) {
               rawValueIndices[node].split(',').map(Number)
             ])
           )
+          const rawValueKeys = packLedgerFor(
+            rendererLedgerFor(
+              vueNodesEnabled,
+              ROUNDTRIP_VALUE_ALLOWED_KEYS_LITEGRAPH,
+              ROUNDTRIP_VALUE_ALLOWED_KEYS_VUE
+            ),
+            entry.pack
+          )
+          const allowedValueKeys = Object.fromEntries(
+            Object.keys(rawValueKeys).map((node) => [
+              node,
+              rawValueKeys[node].split(',')
+            ])
+          )
           const observedValueDrift = new Map<string, Set<number>>()
+          const observedKeyDrift = new Map<string, Set<string>>()
           const expectedNodeLosses = packLedgerFor(
             rendererLedgerFor(
               vueNodesEnabled,
@@ -864,8 +888,8 @@ for (const entry of manifestEntries) {
               ([
                 types,
                 packManaged,
-                legacyValueDriftNodes,
                 exactValueDriftIndices,
+                exactValueDriftKeys,
                 allowedNodeLosses
               ]) => {
                 window.app!.graph.clear()
@@ -894,7 +918,7 @@ for (const entry of manifestEntries) {
                   label: string
                 }> = []
                 const valueDrifts = new Map<string, Set<number>>()
-                const broadValueDriftInventories = new Map<string, string[]>()
+                const keyDrifts = new Map<string, Set<string>>()
                 const nodeLosses = new Set<string>()
                 // Serialized widgets_values can be an array or a named object;
                 // reload may legitimately APPEND entries (control_after_generate
@@ -1050,6 +1074,38 @@ for (const entry of manifestEntries) {
                         )
                           continue
                       }
+                      const allowedKeys = exactValueDriftKeys[expected.type]
+                      const beforeWidgetValues: unknown = before.widgets_values
+                      const afterWidgetValues: unknown = after.widgets_values
+                      if (
+                        allowedKeys &&
+                        typeof beforeWidgetValues === 'object' &&
+                        beforeWidgetValues !== null &&
+                        !Array.isArray(beforeWidgetValues) &&
+                        typeof afterWidgetValues === 'object' &&
+                        afterWidgetValues !== null &&
+                        !Array.isArray(afterWidgetValues)
+                      ) {
+                        const changed = Object.entries(
+                          beforeWidgetValues
+                        ).flatMap(([key, value]) =>
+                          JSON.stringify(value) ===
+                          JSON.stringify(
+                            (afterWidgetValues as Record<string, unknown>)[key]
+                          )
+                            ? []
+                            : [key]
+                        )
+                        for (const key of changed)
+                          if (allowedKeys.includes(key)) {
+                            const observed =
+                              keyDrifts.get(expected.type) ?? new Set<string>()
+                            observed.add(key)
+                            keyDrifts.set(expected.type, observed)
+                          }
+                        if (changed.every((key) => allowedKeys.includes(key)))
+                          continue
+                      }
                       if (
                         !preserves(before.widgets_values, after.widgets_values)
                       )
@@ -1075,18 +1131,6 @@ for (const entry of manifestEntries) {
                     for (const node of window.app!.graph.nodes) {
                       const nodeType = created.get(String(node.id))?.type
                       if (!nodeType) continue
-                      // Value-drift-ledgered nodes own their values wholesale;
-                      // writing probe values into them just makes pack JS choke
-                      // on our markers (e.g. editors parsing `..._cn` as JSON).
-                      if (legacyValueDriftNodes.includes(nodeType)) {
-                        broadValueDriftInventories.set(
-                          nodeType,
-                          (node.widgets ?? []).map(
-                            (widget) => `${widget.name}:${String(widget.type)}`
-                          )
-                        )
-                        continue
-                      }
                       for (const widget of node.widgets ?? []) {
                         if (!SETTABLE.has(String(widget.type))) continue
                         if (`${nodeType}.${widget.name}` in packManaged)
@@ -1148,8 +1192,8 @@ for (const entry of manifestEntries) {
                           [...indices]
                         ])
                       ),
-                      broadValueDriftInventories: Object.fromEntries(
-                        broadValueDriftInventories
+                      keyDrifts: Object.fromEntries(
+                        [...keyDrifts].map(([node, keys]) => [node, [...keys]])
                       )
                     }
                     window.app!.graph.clear()
@@ -1160,8 +1204,8 @@ for (const entry of manifestEntries) {
               [
                 chunk,
                 allowedWidgets,
-                valueDriftNodes.legacy,
                 allowedValueIndices,
+                allowedValueKeys,
                 Object.keys(expectedNodeLosses)
               ] as const
             )
@@ -1226,12 +1270,11 @@ for (const entry of manifestEntries) {
               for (const index of indices) observed.add(index)
               observedValueDrift.set(node, observed)
             }
-            for (const [node, inventory] of Object.entries(
-              result.broadValueDriftInventories
-            ))
-              mismatches.push(
-                `${node}: broad roundtrip value exclusion must be replaced with exact widget contracts; settable widgets [${inventory.join(',')}]`
-              )
+            for (const [node, keys] of Object.entries(result.keyDrifts)) {
+              const observed = observedKeyDrift.get(node) ?? new Set<string>()
+              for (const key of keys) observed.add(key)
+              observedKeyDrift.set(node, observed)
+            }
           }
           consoleErrors.stop()
           expect(
@@ -1241,10 +1284,11 @@ for (const entry of manifestEntries) {
             ).filter((error) => !isForeignExecutionNoise(error)),
             `console errors during save/reload with VueNodes=${vueNodesEnabled}`
           ).toEqual([])
-          expect(
-            mismatches,
-            `VueNodes=${vueNodesEnabled}: ${JSON.stringify(mismatches, null, 1)}`
-          ).toEqual([])
+          rendererMismatches.push(
+            ...mismatches.map(
+              (mismatch) => `VueNodes=${vueNodesEnabled}: ${mismatch}`
+            )
+          )
           for (const ledgered of Object.keys(expectedNodeLosses))
             expect(
               [...observedNodeLosses],
@@ -1263,7 +1307,18 @@ for (const entry of manifestEntries) {
             staleValueIndices,
             `stale ROUNDTRIP_VALUE_ALLOWED_INDICES entries with VueNodes=${vueNodesEnabled}: ${staleValueIndices.join(', ')}`
           ).toEqual([])
+          const staleValueKeys = staleValueDriftKeys(
+            allowedValueKeys,
+            Object.fromEntries(
+              [...observedKeyDrift].map(([node, keys]) => [node, [...keys]])
+            )
+          )
+          expect(
+            staleValueKeys,
+            `stale ROUNDTRIP_VALUE_ALLOWED_KEYS entries with VueNodes=${vueNodesEnabled}: ${staleValueKeys.join(', ')}`
+          ).toEqual([])
         }
+        expect(rendererMismatches).toEqual([])
         await expectNoVisibleErrors(comfyPage.page, 'after save/reload sweep')
       })
 
@@ -1284,7 +1339,19 @@ for (const entry of manifestEntries) {
           'the backend still has a running prompt after a 150s wait - a genuinely wedged (non-interruptible) execution; restart the test backend'
         ).toBe(0)
 
-        const excluded = packLedgerFor(AUTO_RUN_EXCLUDE, entry.pack)
+        const explicitRunExclusions = packLedgerFor(
+          CLOUD_RUN_EXCLUSIONS,
+          entry.pack
+        )
+        const excluded = {
+          ...packLedgerFor(AUTO_RUN_EXCLUDE, entry.pack),
+          ...Object.fromEntries(
+            Object.entries(explicitRunExclusions).map(([node, exclusion]) => [
+              node,
+              exclusion.reason
+            ])
+          )
+        }
         for (const key of Object.keys(excluded))
           expect(
             keys,
@@ -1326,7 +1393,7 @@ for (const entry of manifestEntries) {
         batchLoop: for (const batch of batches) {
           let outcome: string
           try {
-            outcome = await runBatch(comfyPage.page, batch)
+            outcome = await runBatch(comfyPage.page, entry.pack, batch)
           } catch (error) {
             if (!isServerSideFault(error)) throw error
             environmentAbort = `[${batch.map((verdict) => verdict.key).join(', ')}]: ${error.message} - remaining auto-runs skipped`
@@ -1350,6 +1417,7 @@ for (const entry of manifestEntries) {
             try {
               single = await runBatch(
                 comfyPage.page,
+                entry.pack,
                 [verdict],
                 SINGLE_RERUN_TIMEOUT
               )
@@ -1370,47 +1438,13 @@ for (const entry of manifestEntries) {
         // Two-way reconciliation: unlisted failure = regression; listed node
         // that runs clean (or is not auto-runnable) = stale entry.
         const baseline = new Set(cannotRunAloneFor(entry))
-        const unstable = packLedgerFor(AUTO_RUN_UNSTABLE_NODES, entry.pack)
-        for (const ledgered of Object.keys(unstable))
-          expect(
-            keys,
-            `stale AUTO_RUN_UNSTABLE_NODES entry: ${ledgered} is not registered by ${entry.pack}`
-          ).toContain(ledgered)
-        const allowedFailures = packLedgerFor(
-          AUTO_RUN_ALLOWED_FAILURES,
-          entry.pack
-        )
-        const allowedFailureKeys = Object.keys(allowedFailures)
-        for (const ledgered of allowedFailureKeys)
-          expect(
-            keys,
-            `stale AUTO_RUN_ALLOWED_FAILURES entry: ${ledgered} is not registered by ${entry.pack}`
-          ).toContain(ledgered)
         const runnable = new Set(
           batches.flatMap((batch) => batch.map((verdict) => verdict.key))
         )
-        for (const ledgered of allowedFailureKeys)
-          expect(
-            [...runnable],
-            `stale AUTO_RUN_ALLOWED_FAILURES entry: ${ledgered} is no longer auto-runnable for ${entry.pack}`
-          ).toContain(ledgered)
         for (const [key, detail] of cannotRun) {
-          const allowedFailure = allowedFailures[key]
-          const allowedOutcome =
-            allowedFailure !== undefined &&
-            matchesAllowedAutoRunOutcome(detail, allowedFailure.outcomes)
-          const allowedUnstableOutcome = key in unstable && detail === 'PARTIAL'
-          if (!baseline.has(key) && !allowedUnstableOutcome && !allowedOutcome)
+          if (!baseline.has(key))
             hardFailures.push(
               `${key}: ${detail} - not in cannotRunAlone; a regression, or a new baseline entry (attach the run log)`
-            )
-          else if (allowedUnstableOutcome)
-            console.log(
-              `${entry.pack}: ${key} produced allowed PARTIAL (${unstable[key]})`
-            )
-          else if (allowedOutcome)
-            console.log(
-              `${entry.pack}: ${key} produced allowed ${detail} (${allowedFailure.reason})`
             )
         }
         for (const key of baseline) {
@@ -1560,6 +1594,7 @@ test.describe('all nodes by tier @custom-nodes', () => {
 
 async function runBatch(
   page: Page,
+  pack: string,
   batch: Array<{
     key: string
     needsPreviewSink?: boolean
@@ -1567,12 +1602,17 @@ async function runBatch(
   }>,
   timeoutMs: number = 20_000
 ): Promise<string> {
-  const { ids, allIds, sinkIdByKey } = await page.evaluate(
+  const batchWithInputs = batch.map((spec) => ({
+    ...spec,
+    widgetInputs: packLedgerFor(AUTO_RUN_WIDGET_INPUTS, pack)[spec.key]
+  }))
+  const { ids, allIds, nodeIdByKey, sinkIdByKey } = await page.evaluate(
     ([nodes, producers, spacingY]) => {
       window.app!.graph.clear()
       window.app!.graph.last_node_id = window.__cnIdBase ?? 0
       const ids: string[] = []
       const allIds: string[] = []
+      const nodeIdByKey: Record<string, string> = {}
       const sinkIdByKey: Record<string, string> = {}
       for (const [index, spec] of nodes.entries()) {
         const node = window.LiteGraph!.createNode(spec.key)
@@ -1581,6 +1621,17 @@ async function runBatch(
         window.app!.graph.add(node)
         ids.push(String(node.id))
         allIds.push(String(node.id))
+        nodeIdByKey[spec.key] = String(node.id)
+        for (const [name, value] of Object.entries(spec.widgetInputs ?? {})) {
+          const widget = node.widgets?.find(
+            (candidate) => candidate.name === name
+          )
+          if (!widget)
+            throw new Error(
+              `${spec.key}: required fixture widget ${name} is missing`
+            )
+          widget.value = value
+        }
         for (const [socketIndex, socket] of (
           spec.requiredSockets ?? []
         ).entries()) {
@@ -1611,15 +1662,21 @@ async function runBatch(
         }
       }
       window.__cnIdBase = window.app!.graph.last_node_id
-      return { ids, allIds, sinkIdByKey }
+      return { ids, allIds, nodeIdByKey, sinkIdByKey }
     },
-    [batch, SYNTH_PRODUCERS, GRID_SPACING.y] as const
+    [batchWithInputs, SYNTH_PRODUCERS, GRID_SPACING.y] as const
   )
   // Batch default 20s = hung; the single re-run pass raises it (see caller)
   // so a node that is merely slow under load is not misread as a regression.
   const result = await target.runWorkflow(page, {
     expectedNodeIds: ids,
     graphNodeIds: allIds,
+    proofOutputNodeByExpectedNode: Object.fromEntries(
+      Object.entries(sinkIdByKey).map(([key, sinkId]) => [
+        nodeIdByKey[key],
+        sinkId
+      ])
+    ),
     timeoutMs
   })
   if (result.outcome === 'TIMEOUT') {

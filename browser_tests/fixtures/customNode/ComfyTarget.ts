@@ -145,6 +145,7 @@ export class LocalDesktopTarget {
     opts: {
       expectedNodeIds: string[]
       graphNodeIds?: string[]
+      proofOutputNodeByExpectedNode?: Record<string, string>
       timeoutMs: number
     }
   ): Promise<RunResult> {
@@ -355,6 +356,7 @@ export class LocalDesktopTarget {
     return classifyRun({
       events: raw.map(toPromptEvent),
       expectedNodeIds: opts.expectedNodeIds,
+      proofOutputNodeByExpectedNode: opts.proofOutputNodeByExpectedNode,
       graphNodeIds: opts.graphNodeIds,
       timedOut
     })

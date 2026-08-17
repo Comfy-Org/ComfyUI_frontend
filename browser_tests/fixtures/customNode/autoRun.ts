@@ -171,26 +171,31 @@ export function batchAutoRunnable(
   return chunk(runnable, batchSize)
 }
 
-// Exact non-pass outcomes proven to vary with backend environment state.
-// These nodes still execute on every run; every other outcome remains red.
-export const AUTO_RUN_ALLOWED_FAILURES: Record<
+export const AUTO_RUN_WIDGET_INPUTS: Record<
   string,
-  Record<string, { outcomes: Array<string | RegExp>; reason: string }>
+  Record<string, Record<string, string>>
 > = {
-  'ComfyUI-Impact-Pack': {
-    ImpactSelectNthItemOfAnyList: {
-      outcomes: ['VALIDATION_FAIL'],
-      reason:
-        'victim, not cause: a background impact-add-queue app.queuePrompt from a queue-control node holds app.processingQueue and the harness submission returns bare false (failed run 31545300324, passed run 31537458068 on the identical commit); tolerated while the emitters sit in AUTO_RUN_EXCLUDE'
-    }
+  'ComfyUI-VideoHelperSuite': {
+    VHS_LoadAudio: { audio_file: 'input/plain_audio.wav' },
+    VHS_LoadAudioUpload: { audio: 'plain_audio.wav' },
+    VHS_LoadImagePath: { image: 'input/test_upload_image.png' },
+    VHS_LoadImages: { directory: 'images' },
+    VHS_LoadImagesPath: { directory: 'input/images' },
+    VHS_LoadVideoFFmpegPath: { video: 'input/plain_video.mp4' },
+    VHS_LoadVideoPath: { video: 'input/plain_video.mp4' }
   }
 }
 
-export function matchesAllowedAutoRunOutcome(
-  detail: string,
-  outcomes: Array<string | RegExp>
-): boolean {
-  return outcomes.some((outcome) =>
-    typeof outcome === 'string' ? outcome === detail : outcome.test(detail)
-  )
+export const CLOUD_RUN_EXCLUSIONS: Record<
+  string,
+  Record<string, { reason: string; restore: string }>
+> = {
+  'ComfyUI-VideoHelperSuite': {
+    VHS_SelectLatest: {
+      reason:
+        'its Python execute method is deliberately unreachable and requires pack JS to replace the node during prompt conversion',
+      restore:
+        'add a curated prompt-conversion fixture for VHS_SelectLatest and remove this entry when the transformed workflow executes'
+    }
+  }
 }
