@@ -13,7 +13,7 @@ import {
   createBannerVersion,
   evaluateBannerVisibility
 } from '../utils/banner'
-import { localizeHref } from '../config/routes'
+import { LOCALE_INVARIANT_PATHS, localizeHref } from '../config/routes'
 import { fetchGitHubStars, formatStarCount } from '../utils/github'
 import { buildPageGraph, pageContext } from '../utils/jsonLd'
 import type { Crumb, JsonLdNode, WebPageType } from '../utils/jsonLd'
@@ -53,7 +53,7 @@ const { siteUrl, locale, url } = pageContext(
 const canonicalURL = new URL(url)
 
 let basePath = canonicalURL.pathname
-const knownPrefixes = ['/zh-CN', '/ja', '/ko']
+const knownPrefixes = ['/zh-CN']
 for (const prefix of knownPrefixes) {
   if (basePath === prefix || basePath.startsWith(prefix + '/')) {
     basePath = basePath.slice(prefix.length) || '/'
@@ -65,12 +65,15 @@ const cleanBasePath = basePath === '/' ? '' : basePath
 
 const hreflangLinks = [
   { hreflang: 'x-default', href: new URL(localizeHref(cleanBasePath || '/', 'en'), canonicalURL.origin).href },
-  { hreflang: 'en', href: new URL(localizeHref(cleanBasePath || '/', 'en'), canonicalURL.origin).href },
-  { hreflang: 'ja', href: new URL(localizeHref(cleanBasePath || '/', 'ja'), canonicalURL.origin).href },
-  { hreflang: 'ko', href: new URL(localizeHref(cleanBasePath || '/', 'ko'), canonicalURL.origin).href },
-  { hreflang: 'zh-CN', href: new URL(localizeHref(cleanBasePath || '/', 'zh-CN'), canonicalURL.origin).href },
-  { hreflang: 'zh', href: new URL(localizeHref(cleanBasePath || '/', 'zh-CN'), canonicalURL.origin).href }
+  { hreflang: 'en', href: new URL(localizeHref(cleanBasePath || '/', 'en'), canonicalURL.origin).href }
 ]
+
+if (!LOCALE_INVARIANT_PATHS.has(cleanBasePath || '/')) {
+  hreflangLinks.push(
+    { hreflang: 'zh-CN', href: new URL(localizeHref(cleanBasePath || '/', 'zh-CN'), canonicalURL.origin).href },
+    { hreflang: 'zh', href: new URL(localizeHref(cleanBasePath || '/', 'zh-CN'), canonicalURL.origin).href }
+  )
+}
 
 const ogImageURL = new URL(ogImage, Astro.site ?? 'https://comfy.org')
 const rawStars = await fetchGitHubStars('Comfy-Org', 'ComfyUI')

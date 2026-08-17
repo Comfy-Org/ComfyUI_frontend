@@ -161,15 +161,12 @@ test.describe('Launches landing — desktop @smoke', () => {
 
       for (const [i, drop] of drops.entries()) {
         const card = cards.nth(i)
-        await expect(card).toContainText(drop.title[locale] ?? drop.title.en)
+        await expect(card).toContainText(drop.title[locale])
         const explore = card.getByRole('link', {
-          name: drop.cta.label[locale] ?? drop.cta.label.en
+          name: drop.cta.label[locale]
         })
         await expect(explore).toBeVisible()
-        await expect(explore).toHaveAttribute(
-          'href',
-          drop.cta.href[locale] ?? drop.cta.href.en
-        )
+        await expect(explore).toHaveAttribute('href', drop.cta.href[locale])
       }
     }
   })

@@ -4,7 +4,7 @@ import type { Locale } from '../i18n/translations'
 import { t, translationKeys } from '../i18n/translations'
 import { seedancePage } from './seedance'
 
-const LOCALES = ['en', 'zh-CN', 'ja', 'ko'] as const satisfies readonly Locale[]
+const LOCALES = ['en', 'zh-CN'] as const satisfies readonly Locale[]
 
 // Seedance 2.5 tops out below 4K, so nothing this page renders may advertise
 // it — the gallery prompts included, since they are reproduced verbatim and the
@@ -16,36 +16,36 @@ function pageCopy(locale: Locale): { label: string; text: string }[] {
     ...(seedancePage.gallery?.cards ?? []).flatMap((card) => [
       {
         label: `card ${card.id} name`,
-        text: card.name[locale] ?? card.name.en
+        text: card.name[locale]
       },
       {
         label: `card ${card.id} note`,
-        text: card.note[locale] ?? card.note.en
+        text: card.note[locale]
       },
       {
         label: `card ${card.id} description`,
-        text: card.description[locale] ?? card.description.en
+        text: card.description[locale]
       },
       { label: `card ${card.id} prompt`, text: card.prompt?.[locale] ?? '' }
     ]),
     ...(seedancePage.faq?.items ?? []).flatMap((faq) => [
       {
         label: `faq ${faq.id} question`,
-        text: faq.question[locale] ?? faq.question.en
+        text: faq.question[locale]
       },
       {
         label: `faq ${faq.id} answer`,
-        text: faq.answer[locale] ?? faq.answer.en
+        text: faq.answer[locale]
       }
     ]),
     ...(seedancePage.steps?.items ?? []).flatMap((step) => [
       {
         label: `step ${step.id} title`,
-        text: step.title[locale] ?? step.title.en
+        text: step.title[locale]
       },
       {
         label: `step ${step.id} description`,
-        text: step.description[locale] ?? step.description.en
+        text: step.description[locale]
       }
     ])
   ]

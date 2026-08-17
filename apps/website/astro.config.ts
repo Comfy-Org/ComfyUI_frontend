@@ -3,9 +3,9 @@ import mdx from '@astrojs/mdx'
 import sitemap from '@astrojs/sitemap'
 import vue from '@astrojs/vue'
 import tailwindcss from '@tailwindcss/vite'
-import { localizeHref } from './src/config/routes'
+import { LOCALE_INVARIANT_PATHS, localizeHref } from './src/config/routes'
 
-const LOCALES = ['en', 'zh-CN', 'ja', 'ko'] as const
+const LOCALES = ['en', 'zh-CN'] as const
 const DEFAULT_LOCALE = 'en'
 const PAYMENT_STATUSES = ['success', 'failed'] as const
 const LOCALE_PREFIXES = LOCALES.map((locale) =>
@@ -52,7 +52,7 @@ export default defineConfig({
       serialize(item) {
         const urlObj = new URL(item.url)
         let basePath = urlObj.pathname
-        const knownPrefixes = ['/zh-CN', '/ja', '/ko']
+        const knownPrefixes = ['/zh-CN']
         for (const prefix of knownPrefixes) {
           if (basePath === prefix || basePath.startsWith(prefix + '/')) {
             basePath = basePath.slice(prefix.length) || '/'
@@ -76,36 +76,27 @@ export default defineConfig({
               localizeHref(cleanBasePath || '/', 'en'),
               urlObj.origin
             ).href
-          },
-          {
-            lang: 'ja',
-            url: new URL(
-              localizeHref(cleanBasePath || '/', 'ja'),
-              urlObj.origin
-            ).href
-          },
-          {
-            lang: 'ko',
-            url: new URL(
-              localizeHref(cleanBasePath || '/', 'ko'),
-              urlObj.origin
-            ).href
-          },
-          {
-            lang: 'zh-CN',
-            url: new URL(
-              localizeHref(cleanBasePath || '/', 'zh-CN'),
-              urlObj.origin
-            ).href
-          },
-          {
-            lang: 'zh',
-            url: new URL(
-              localizeHref(cleanBasePath || '/', 'zh-CN'),
-              urlObj.origin
-            ).href
           }
         ]
+
+        if (!LOCALE_INVARIANT_PATHS.has(cleanBasePath || '/')) {
+          item.links.push(
+            {
+              lang: 'zh-CN',
+              url: new URL(
+                localizeHref(cleanBasePath || '/', 'zh-CN'),
+                urlObj.origin
+              ).href
+            },
+            {
+              lang: 'zh',
+              url: new URL(
+                localizeHref(cleanBasePath || '/', 'zh-CN'),
+                urlObj.origin
+              ).href
+            }
+          )
+        }
         return item
       }
     })
