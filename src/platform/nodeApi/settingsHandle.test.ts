@@ -181,4 +181,18 @@ describe('setting control types', () => {
 
     expect(useSettingStore().settingsById['MyPack.logo']?.type).toBe('image')
   })
+
+  it('declares a secret as a masked password control', () => {
+    setActivePinia(createPinia())
+    createSettingsApi().declare({
+      id: 'MyPack.apiKey',
+      name: 'API key',
+      type: 'password',
+      defaultValue: ''
+    })
+
+    expect(useSettingStore().settingsById['MyPack.apiKey']?.type).toBe(
+      'password'
+    )
+  })
 })
