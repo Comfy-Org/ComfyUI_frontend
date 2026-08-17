@@ -101,7 +101,8 @@ describe('UnifiedStripePaymentSelector', () => {
         defaultCollapsed: false,
         radios: 'always',
         spacedAccordionItems: true
-      }
+      },
+      terms: { card: 'never' }
     })
     expect(stripeMocks.mount).toHaveBeenCalledTimes(1)
 

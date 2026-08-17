@@ -20,7 +20,7 @@ import {
   workspace
 } from '@e2e/fixtures/utils/workspaceMocks'
 
-const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:5173'
+const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 const SELF_EMAIL = 'e2e@test.comfy.org'
 const BOOT_FEATURES = {
   team_workspaces_enabled: true,
