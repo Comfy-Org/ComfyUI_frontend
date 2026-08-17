@@ -69,6 +69,7 @@ const emit = defineEmits<{
   openAssets: []
   selectNodes: []
   removeTag: [id: string]
+  focusTag: [id: string]
   mentionPick: [node: SelectedNode]
   feedback: [turnId: string, vote: 'up' | 'down' | null]
   selectTab: [path: string]
@@ -298,6 +299,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             @open-assets="emit('openAssets')"
             @select-nodes="emit('selectNodes')"
             @remove-tag="emit('removeTag', $event)"
+            @focus-tag="emit('focusTag', $event)"
             @mention-pick="emit('mentionPick', $event)"
           >
             <template #header>

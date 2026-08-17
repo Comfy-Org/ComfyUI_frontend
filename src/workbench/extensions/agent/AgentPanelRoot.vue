@@ -15,6 +15,7 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useFocusNode } from '@/composables/canvas/useFocusNode'
 import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
@@ -31,6 +32,7 @@ import {
   hasVideoType
 } from '@/utils/eventUtils'
 import { appendWorkflowJsonExt } from '@/utils/formatUtil'
+import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { api } from '@/scripts/api'
@@ -50,7 +52,10 @@ import {
 } from './composables/agent/useAttachment'
 import type { ActiveTab } from './types/activeTab'
 import type { SelectedNode } from './composables/agent/useCanvasSelection'
-import { useCanvasSelection } from './composables/agent/useCanvasSelection'
+import {
+  selectedNodeKey,
+  useCanvasSelection
+} from './composables/agent/useCanvasSelection'
 import type { CoachStep } from './composables/agent/useOnboarding'
 import type { ComposerAttachment } from './composables/agent/useComposer'
 import type {
@@ -101,11 +106,18 @@ const tabActivity = useWorkflowTabActivityStore()
 const CREATING_TAB_MIN_DURATION_MS = 500
 
 const canvasStore = useCanvasStore()
-const selectedNodes = computed<SelectedNode[]>(() =>
-  canvasStore.selectedItems.filter(isLGraphNode).map((node) => ({
+const { focusNodeInstance } = useFocusNode()
+
+function toSelectedNode(node: LGraphNode): SelectedNode {
+  return {
     id: String(node.id),
+    locatorId: workflowStore.nodeToNodeLocatorId(node),
     title: node.title || node.type
-  }))
+  }
+}
+
+const selectedNodes = computed<SelectedNode[]>(() =>
+  canvasStore.selectedItems.filter(isLGraphNode).map(toSelectedNode)
 )
 const {
   staged: selectionTags,
@@ -127,10 +139,7 @@ function viewedGraphNodes() {
 }
 
 function mentionableNodes(): SelectedNode[] {
-  return viewedGraphNodes().map((node) => ({
-    id: String(node.id),
-    title: node.title || node.type
-  }))
+  return viewedGraphNodes().map(toSelectedNode)
 }
 
 watch(
@@ -140,7 +149,7 @@ watch(
       return
     agentNodeSelectionStore.saveNodeIds(
       workflowStore.activeWorkflow?.path,
-      tags.map((node) => node.id)
+      tags.map(selectedNodeKey)
     )
   },
   { deep: true }
@@ -150,16 +159,14 @@ watch(
   () => agentPanelStore.isOpen,
   (open) => {
     if (!open) return
-    const ids = new Set(
+    const locatorIds = new Set(
       agentNodeSelectionStore.nodeIds(workflowStore.activeWorkflow?.path)
     )
     replaceSelectionTags(
-      viewedGraphNodes()
-        .filter((node) => ids.has(String(node.id)))
-        .map((node) => ({
-          id: String(node.id),
-          title: node.title || node.type
-        }))
+      [...locatorIds]
+        .map((locatorId) => getNodeByLocatorId(app.rootGraph, locatorId))
+        .filter((node): node is LGraphNode => node !== null)
+        .map(toSelectedNode)
     )
   },
   { immediate: true }
@@ -843,40 +850,23 @@ watch(
     const nodes = items.filter(isLGraphNode)
     if (agentNodeSelectionStore.restoredNodeIds !== null) {
       selectedGraphNodes = new Map(
-        nodes.map((node) => [String(node.id), node] as const)
+        nodes.map(
+          (node) => [workflowStore.nodeToNodeLocatorId(node), node] as const
+        )
       )
-      replaceSelectionTags(
-        nodes.map((node) => ({
-          id: String(node.id),
-          title: node.title || node.type
-        }))
-      )
+      replaceSelectionTags(nodes.map(toSelectedNode))
       agentNodeSelectionStore.finishWorkflowLoad()
       return
     }
     if (!selectingNodes || agentNodeSelectionStore.isLoadingWorkflow) return
-    const currentNodes = new Map(
-      nodes.map((node) => [String(node.id), node] as const)
+    const currentNodes = new Map<string, LGraphNode>(
+      nodes.map(
+        (node) => [workflowStore.nodeToNodeLocatorId(node), node] as const
+      )
     )
-    const added = nodes.some((node) => !selectedGraphNodes.has(String(node.id)))
-    const removed = [...selectedGraphNodes.keys()].some(
-      (id) => !currentNodes.has(id)
-    )
-    if (!added || !removed) {
-      selectedGraphNodes = currentNodes
-      return
-    }
-
-    for (const node of nodes) {
-      const key = String(node.id)
-      selectedGraphNodes.set(key, node)
-    }
-
-    const canvas = app.canvas
-    if (!canvas) return
-    canvas.selectItems([...selectedGraphNodes.values()])
-    canvasStore.updateSelectedItems()
-  }
+    selectedGraphNodes = currentNodes
+  },
+  { immediate: true }
 )
 
 function exitNodeSelectionMode(): void {
@@ -892,6 +882,10 @@ function exitNodeSelectionMode(): void {
   selectedGraphNodes.clear()
   selectingNodes = false
   if (agentNodeSelectionStore.isActive) agentNodeSelectionStore.exit()
+  if (canvas) {
+    canvas.deselectAll()
+    canvasStore.updateSelectedItems()
+  }
 }
 
 watch(
@@ -908,7 +902,7 @@ watch(
     selectedGraphNodes = new Map(
       [...(app.canvas?.selectedItems ?? [])]
         .filter(isLGraphNode)
-        .map((node) => [String(node.id), node] as const)
+        .map((node) => [workflowStore.nodeToNodeLocatorId(node), node] as const)
     )
   }
 )
@@ -924,18 +918,22 @@ function onSelectNodes(): void {
   if (selectingNodes) return
   const canvas = app.canvas
   if (!canvas) return
-  if (selectionTags.value.length) {
-    const ids = new Set(selectionTags.value.map((node) => node.id))
-    canvas.selectItems(
-      viewedGraphNodes().filter((node) => ids.has(String(node.id)))
-    )
-    canvasStore.updateSelectedItems()
-  }
-  selectedGraphNodes = new Map(
+
+  const merged = new Map<string, LGraphNode>(
     [...canvas.selectedItems]
       .filter(isLGraphNode)
-      .map((node) => [String(node.id), node] as const)
+      .map((node) => [workflowStore.nodeToNodeLocatorId(node), node] as const)
   )
+  for (const tag of selectionTags.value) {
+    const key = selectedNodeKey(tag)
+    const node = getNodeByLocatorId(app.rootGraph, key)
+    if (node) merged.set(key, node)
+  }
+  selectedGraphNodes = merged
+  if (merged.size) {
+    canvas.selectItems([...merged.values()])
+    canvasStore.updateSelectedItems()
+  }
   restoreAllowDragNodes = canvas.allow_dragnodes
   restoreSelectOnly = canvas.selectOnly
   canvas.allow_dragnodes = false
@@ -987,7 +985,8 @@ function onMentionPick(node: SelectedNode): void {
   addSelectionTag(node)
   const canvas = app.canvas
   const graphNode = viewedGraphNodes().find(
-    (candidate) => String(candidate.id) === node.id
+    (candidate) =>
+      workflowStore.nodeToNodeLocatorId(candidate) === selectedNodeKey(node)
   )
   if (canvas && graphNode) {
     canvas.selectItems([graphNode], true)
@@ -999,14 +998,17 @@ function onMentionPick(node: SelectedNode): void {
 
 function onRemoveSelectionTag(id: string): void {
   const canvas = app.canvas
-  const node = [...(canvas?.selectedItems ?? [])].find(
-    (item) => isLGraphNode(item) && String(item.id) === id
-  )
-  if (canvas && node) {
+  const node = getNodeByLocatorId(app.rootGraph, id)
+  if (canvas && node && canvas.selectedItems.has(node)) {
     canvas.deselect(node)
     canvasStore.updateSelectedItems()
   }
   removeSelectionTag(id)
+}
+
+function onFocusSelectionTag(id: string): void {
+  const node = getNodeByLocatorId(app.rootGraph, id)
+  if (node) void focusNodeInstance(node)
 }
 
 function onClosePanel(): void {
@@ -1152,6 +1154,7 @@ function onPanelDrop(event: DragEvent): void {
       @open-assets="onOpenAssets"
       @select-nodes="onSelectNodes"
       @remove-tag="onRemoveSelectionTag"
+      @focus-tag="onFocusSelectionTag"
       @mention-pick="onMentionPick"
       @feedback="onFeedback"
       @new-chat="onNewChat"
