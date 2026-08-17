@@ -301,8 +301,12 @@
                     </span>
                   </div>
                 </template>
-                <template v-if="template.tutorialUrl" #top-right>
+                <template
+                  v-if="template.isPartnerNode || template.tutorialUrl"
+                  #top-right
+                >
                   <Button
+                    v-if="template.tutorialUrl"
                     v-tooltip.bottom="$t('g.seeTutorial')"
                     :aria-label="$t('g.seeTutorial')"
                     variant="inverted"
@@ -312,6 +316,7 @@
                   >
                     <i class="icon-[lucide--info] size-4" />
                   </Button>
+                  <PaidTemplateBadge v-if="template.isPartnerNode" />
                 </template>
               </CardTop>
             </template>
@@ -428,6 +433,7 @@ import CardBottom from '@/components/card/CardBottom.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
 import CardTop from '@/components/card/CardTop.vue'
 import Tag from '@/components/chip/Tag.vue'
+import PaidTemplateBadge from '@/components/custom/widget/PaidTemplateBadge.vue'
 import TemplateFilterControls from '@/components/custom/widget/TemplateFilterControls.vue'
 import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import AudioThumbnail from '@/components/templates/thumbnails/AudioThumbnail.vue'
@@ -637,6 +643,8 @@ watch(searchQuery, (value) => {
  * @param source The origin of the change ('nav' or 'sort').
  */
 const coordinateNavAndSort = (source: 'nav' | 'sort') => {
+  if (hasActiveQuery.value) return
+
   const isPopularNav = selectedNavItem.value === 'popular'
   const isPopularSort = sortSelection.value === 'popular'
 
@@ -656,7 +664,9 @@ const coordinateNavAndSort = (source: 'nav' | 'sort') => {
 }
 
 // Watch for changes from the two sources ('nav' and 'sort') and trigger the coordinator.
-watch(selectedNavItem, () => coordinateNavAndSort('nav'))
+watch(selectedNavItem, () => coordinateNavAndSort('nav'), {
+  immediate: selectedNavItem.value === 'popular'
+})
 watch(sortSelection, () => coordinateNavAndSort('sort'))
 
 // Convert between string array and object array for MultiSelect component

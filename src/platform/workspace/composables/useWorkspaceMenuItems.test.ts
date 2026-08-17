@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useWorkspaceMenuItems } from './useWorkspaceMenuItems'
 
 const state = vi.hoisted(() => ({
+  billingStatus: 'paid',
   canLeaveWorkspace: false,
   canManageSubscription: false,
   canManageSubscriptionLifecycle: false,
@@ -11,11 +12,12 @@ const state = vi.hoisted(() => ({
   isDeleteDisabled: false,
   isFreeTier: false,
   isInPersonalWorkspace: false,
+  planSlug: 'pro-monthly' as string | null,
   isSubscriptionCancelled: false
 }))
 
 const dialogMocks = vi.hoisted(() => ({
-  showCancelSubscriptionDialog: vi.fn(),
+  showCancelSubscriptionFlow: vi.fn(),
   showEditWorkspaceDialog: vi.fn(),
   showDeleteWorkspaceDialog: vi.fn(),
   showLeaveWorkspaceDialog: vi.fn()
@@ -27,8 +29,12 @@ vi.mock('vue-i18n', () => ({
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
+    billingStatus: computed(() => state.billingStatus),
     isFreeTier: computed(() => state.isFreeTier),
-    subscription: computed(() => ({ endDate: '2026-08-01T00:00:00Z' }))
+    subscription: computed(() => ({
+      endDate: '2026-08-01T00:00:00Z',
+      planSlug: state.planSlug
+    }))
   })
 }))
 
@@ -66,7 +72,7 @@ vi.mock('@/services/dialogService', () => ({
 
 describe('useWorkspaceMenuItems', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    state.billingStatus = 'paid'
     state.canLeaveWorkspace = false
     state.canManageSubscription = false
     state.canManageSubscriptionLifecycle = false
@@ -74,6 +80,7 @@ describe('useWorkspaceMenuItems', () => {
     state.isDeleteDisabled = false
     state.isFreeTier = false
     state.isInPersonalWorkspace = false
+    state.planSlug = 'pro-monthly'
     state.isSubscriptionCancelled = false
   })
 
@@ -81,9 +88,17 @@ describe('useWorkspaceMenuItems', () => {
     state.canManageSubscriptionLifecycle = true
 
     const { menuItems } = useWorkspaceMenuItems()
+    const cancelItem = menuItems.value.find(
+      (item) => item.label === 'subscription.cancelPlan'
+    )
 
-    expect(menuItems.value.map((item) => item.label)).toContain(
-      'subscription.cancelPlan'
+    cancelItem?.command?.({
+      originalEvent: new Event('click'),
+      item: cancelItem
+    })
+
+    expect(dialogMocks.showCancelSubscriptionFlow).toHaveBeenCalledWith(
+      '2026-08-01T00:00:00Z'
     )
   })
 
@@ -106,6 +121,55 @@ describe('useWorkspaceMenuItems', () => {
     )
   })
 
+  it('allows cancellation while a payment_failed plan needs payment recovery', () => {
+    state.billingStatus = 'payment_failed'
+    state.canManageSubscriptionLifecycle = true
+    state.isActiveSubscription = false
+
+    const { menuItems } = useWorkspaceMenuItems()
+
+    expect(menuItems.value.map((item) => item.label)).toContain(
+      'subscription.cancelPlan'
+    )
+  })
+
+  it('allows cancellation while an existing plan is paused', () => {
+    state.billingStatus = 'paused'
+    state.canManageSubscriptionLifecycle = true
+    state.isActiveSubscription = false
+
+    const { menuItems } = useWorkspaceMenuItems()
+
+    expect(menuItems.value.map((item) => item.label)).toContain(
+      'subscription.cancelPlan'
+    )
+  })
+
+  it('withholds cancellation when payment_failed has no subscription plan', () => {
+    state.billingStatus = 'payment_failed'
+    state.canManageSubscriptionLifecycle = true
+    state.isActiveSubscription = false
+    state.planSlug = null
+
+    const { menuItems } = useWorkspaceMenuItems()
+
+    expect(menuItems.value.map((item) => item.label)).not.toContain(
+      'subscription.cancelPlan'
+    )
+  })
+
+  it('withholds cancellation for payment_failed without lifecycle permission', () => {
+    state.billingStatus = 'payment_failed'
+    state.canManageSubscriptionLifecycle = false
+    state.isActiveSubscription = false
+
+    const { menuItems } = useWorkspaceMenuItems()
+
+    expect(menuItems.value.map((item) => item.label)).not.toContain(
+      'subscription.cancelPlan'
+    )
+  })
+
   it('rechecks eligibility before opening the cancellation dialog', () => {
     state.canManageSubscriptionLifecycle = true
     const { menuItems } = useWorkspaceMenuItems()
@@ -119,7 +183,7 @@ describe('useWorkspaceMenuItems', () => {
       item: cancelItem
     })
 
-    expect(dialogMocks.showCancelSubscriptionDialog).not.toHaveBeenCalled()
+    expect(dialogMocks.showCancelSubscriptionFlow).not.toHaveBeenCalled()
   })
 
   it('shows Leave only when workspace permission grants it', () => {

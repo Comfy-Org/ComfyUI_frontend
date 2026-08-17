@@ -55,10 +55,8 @@ describe('useLayoutSync', () => {
   beforeEach(() => {
     testState.listener = null
     testState.layoutByNodeId.clear()
-    testState.unsubscribe.mockReset()
     testState.rafCallback = null
     testState.microtaskCallback = null
-    testState.cancelAnimationFrame.mockReset()
 
     vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
       testState.rafCallback = cb

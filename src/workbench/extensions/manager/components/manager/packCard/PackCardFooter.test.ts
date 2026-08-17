@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import { createTestingPinia } from '@pinia/testing'
 import PrimeVue from 'primevue/config'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -51,12 +51,6 @@ const mockNodePack = {
 }
 
 describe('PackCardFooter', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-    mockIsPackInstalled.mockReset()
-    mockCheckNodeCompatibility.mockReset()
-  })
-
   function renderComponent(props = {}) {
     const i18n = createI18n({
       legacy: false,

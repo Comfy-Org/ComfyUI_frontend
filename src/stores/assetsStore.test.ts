@@ -1,3 +1,5 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -120,10 +122,12 @@ vi.mock('@/stores/queueStore', () => ({
       | undefined
     public jobId: string
     public outputsCount: number | null
+    public previewableOutputsCount: number | undefined
 
     constructor(public job: JobListItem) {
       this.jobId = job.id
       this.outputsCount = job.outputs_count ?? null
+      this.previewableOutputsCount = job.previewable_outputs_count ?? undefined
       if (mockOutputOverrides.value) {
         this.flatOutputs = mockOutputOverrides.value
         const previewable = mockOutputOverrides.value.filter(
@@ -203,9 +207,7 @@ describe('assetsStore - Refactored (Option A)', () => {
   })
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useAssetsStore()
-    vi.clearAllMocks()
   })
 
   describe('Initial Load', () => {
@@ -648,6 +650,33 @@ describe('assetsStore - Refactored (Option A)', () => {
       expect(asset.user_metadata).toHaveProperty('allOutputs')
       expect(Array.isArray(asset.user_metadata!.allOutputs)).toBe(true)
     })
+
+    it('prefers previewable_outputs_count over outputs_count for the group badge', async () => {
+      const job: JobListItem = {
+        ...createMockJobItem(0),
+        outputs_count: 3,
+        previewable_outputs_count: 2
+      }
+      vi.mocked(api.getHistory).mockResolvedValue([job])
+
+      await store.updateHistory()
+
+      const asset = store.historyAssets[0]
+      expect(asset.user_metadata!.outputCount).toBe(2)
+    })
+
+    it('falls back to outputs_count when previewable_outputs_count is absent', async () => {
+      const job: JobListItem = {
+        ...createMockJobItem(0),
+        outputs_count: 3
+      }
+      vi.mocked(api.getHistory).mockResolvedValue([job])
+
+      await store.updateHistory()
+
+      const asset = store.historyAssets[0]
+      expect(asset.user_metadata!.outputCount).toBe(3)
+    })
   })
 
   describe('Cover Image Selection', () => {
@@ -777,23 +806,22 @@ describe('assetsStore - Refactored (Option A)', () => {
 
 describe('assetsStore - Model Assets Cache (Cloud)', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     mockIsCloud.value = true
-    vi.clearAllMocks()
   })
 
   afterEach(() => {
     mockIsCloud.value = false
   })
 
-  const createMockAsset = (id: string, tags: string[] = ['models']) => ({
-    id,
-    name: `asset-${id}`,
-    size: 100,
-    created_at: new Date().toISOString(),
-    tags,
-    preview_url: `http://test.com/${id}`
-  })
+  const createMockAsset = (id: string, tags: string[] = ['models']) =>
+    fromPartial<AssetItem>({
+      id,
+      name: `asset-${id}`,
+      size: 100,
+      created_at: new Date().toISOString(),
+      tags,
+      preview_url: `http://test.com/${id}`
+    })
 
   /** Wraps assets in the paginated response envelope the asset API returns. */
   const makePage = (
@@ -989,6 +1017,27 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
     })
   })
 
+  describe('refresh error surfacing', () => {
+    it('surfaces a failed refresh on the committed state consumers read', async () => {
+      const store = useAssetsStore()
+      const nodeType = 'CheckpointLoaderSimple'
+
+      vi.mocked(assetService.getAssetsPageForNodeType).mockResolvedValueOnce(
+        makePage([createMockAsset('existing')])
+      )
+      await store.updateModelsForNodeType(nodeType)
+      expect(store.getError(nodeType)).toBeUndefined()
+
+      vi.mocked(assetService.getAssetsPageForNodeType).mockRejectedValueOnce(
+        new Error('backend down')
+      )
+      await store.updateModelsForNodeType(nodeType)
+
+      expect(store.getAssets(nodeType).map((a) => a.id)).toEqual(['existing'])
+      expect(store.getError(nodeType)?.message).toBe('backend down')
+    })
+  })
+
   describe('concurrent request handling', () => {
     it('should short-circuit concurrent calls to prevent duplicate work', async () => {
       const store = useAssetsStore()
@@ -1036,6 +1085,34 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       await store.updateModelsForNodeType(nodeType)
 
       expect(store.getAssets(nodeType)).toHaveLength(2)
+      expect(
+        vi.mocked(assetService.getAssetsPageForNodeType)
+      ).toHaveBeenCalledTimes(2)
+    })
+
+    it('keeps a newer request single-flighted when a stale request finishes after invalidation', async () => {
+      const store = useAssetsStore()
+      const nodeType = 'CheckpointLoaderSimple'
+
+      let resolveFirst!: (response: AssetResponse) => void
+      const firstFetch = new Promise<AssetResponse>((resolve) => {
+        resolveFirst = resolve
+      })
+      vi.mocked(assetService.getAssetsPageForNodeType)
+        .mockReturnValueOnce(firstFetch)
+        .mockReturnValue(new Promise<AssetResponse>(() => {}))
+
+      const staleRequest = store.updateModelsForNodeType(nodeType)
+      store.invalidateCategory('checkpoints')
+      void store.updateModelsForNodeType(nodeType)
+
+      resolveFirst(makePage([createMockAsset('stale')]))
+      await staleRequest
+
+      // The stale request's teardown must not evict the newer request's
+      // single-flight entry: a third call short-circuits instead of starting
+      // a duplicate walk.
+      void store.updateModelsForNodeType(nodeType)
       expect(
         vi.mocked(assetService.getAssetsPageForNodeType)
       ).toHaveBeenCalledTimes(2)
@@ -1875,12 +1952,42 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
   })
 })
 
-describe('assetsStore - Deletion State and Input Mapping', () => {
+describe('assetsStore - Model Assets Cache (non-cloud)', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
+    mockIsCloud.value = false
   })
 
+  it('caches model assets fetched by tag on non-cloud builds', async () => {
+    const store = useAssetsStore()
+    vi.mocked(assetService.getAssetsPageByTag).mockResolvedValue({
+      assets: [
+        fromPartial({
+          id: 'm1',
+          name: 'sd_xl_base_1.0.safetensors',
+          tags: ['checkpoints', 'models']
+        }),
+        fromPartial({
+          id: 'm2',
+          name: 'lora.safetensors',
+          tags: ['loras', 'models']
+        })
+      ],
+      total: 2,
+      has_more: false
+    })
+
+    await store.updateModelsForTag('models')
+
+    expect(assetService.getAssetsPageByTag).toHaveBeenCalledWith(
+      'models',
+      true,
+      expect.anything()
+    )
+    expect(store.getAssets('tag:models')).toHaveLength(2)
+  })
+})
+
+describe('assetsStore - Deletion State and Input Mapping', () => {
   describe('setAssetDeleting / isAssetDeleting', () => {
     it('tracks per-asset deletion state and clears it on flip', () => {
       const store = useAssetsStore()
@@ -1904,12 +2011,12 @@ describe('assetsStore - Deletion State and Input Mapping', () => {
         const store = useAssetsStore()
 
         vi.mocked(assetService.getAssetsByTag).mockResolvedValueOnce([
-          {
+          fromPartial({
             id: 'input-1',
             name: 'cute-puppy.png',
             hash: 'abc123def.png',
             tags: ['input']
-          }
+          })
         ])
         await store.updateInputs()
 
@@ -1953,13 +2060,8 @@ describe('assetsStore - Deletion State and Input Mapping', () => {
 describe('assetsStore - Flat Output Assets (cloud-only)', () => {
   const FLAT_OUTPUT_PAGE_SIZE = 200
 
-  const makeAsset = (id: string, name: string, hash?: string): AssetItem => ({
-    id,
-    name,
-    hash,
-    size: 0,
-    tags: ['output']
-  })
+  const makeAsset = (id: string, name: string, hash?: string): AssetItem =>
+    fromPartial({ id, name, hash, size: 0, tags: ['output'] })
 
   const makePage = (
     assets: AssetItem[],
@@ -1972,11 +2074,6 @@ describe('assetsStore - Flat Output Assets (cloud-only)', () => {
     total: assets.length,
     has_more: hasMore,
     ...(nextCursor === undefined ? {} : { next_cursor: nextCursor })
-  })
-
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.resetAllMocks()
   })
 
   it('fetches the first page via getAssetsPageByTag with the output tag and page size', async () => {

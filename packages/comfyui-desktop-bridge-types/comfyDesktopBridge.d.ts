@@ -69,7 +69,12 @@ export interface ComfyDesktop2TelemetryBridge {
 }
 
 export interface ComfyDesktop2Bridge {
+  /** Reports whether the backend server is cloud/remote, not the user's location. */
   isRemote(): boolean
+  /** Opens a model provider access page in the hosted frontend's browser session.
+   *  Resolves `true` when the host has taken ownership of the request.
+   *  On `false` or rejection the frontend falls back to opening a new tab. */
+  openModelAccessPage?: (url: string) => Promise<boolean>
   downloadModel?: (
     url: string,
     filename: string,
@@ -92,6 +97,12 @@ export interface ComfyDesktop2Bridge {
   Telemetry?: ComfyDesktop2TelemetryBridge
 }
 
+/**
+ * The `-?` mapper intentionally requires every top-level bridge member.
+ * Adding an optional top-level member to `ComfyDesktop2Bridge` is therefore a
+ * breaking change for implementations of this type. Optional members of nested
+ * bridge types remain optional because the mapper is not recursive.
+ */
 export type ComfyDesktop2BridgeImplementation = {
   [K in keyof ComfyDesktop2Bridge]-?: NonNullable<ComfyDesktop2Bridge[K]>
 }

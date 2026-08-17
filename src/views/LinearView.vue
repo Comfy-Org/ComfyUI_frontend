@@ -13,6 +13,8 @@ import SideToolbar from '@/components/sidebar/SideToolbar.vue'
 import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
 import TopbarSubscribeButton from '@/components/topbar/TopbarSubscribeButton.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
+import { COACH_IDS } from '@/platform/onboarding/onboardingTours'
+import { vCoachmark } from '@/platform/onboarding/vCoachmark'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import LinearControls from '@/renderer/extensions/linearMode/LinearControls.vue'
 import LinearPreview from '@/renderer/extensions/linearMode/LinearPreview.vue'
@@ -38,6 +40,9 @@ const { hasOutputs } = storeToRefs(appModeStore)
 const mobileDisplay = useBreakpoints(breakpointsTailwind).smaller('md')
 
 const activeTab = computed(() => workspaceStore.sidebarTab.activeSidebarTab)
+const assetsPanelCoach = computed(() =>
+  activeTab.value?.id === 'assets' ? COACH_IDS.assetsPanel : undefined
+)
 const sidebarOnLeft = computed(
   () => settingStore.get('Comfy.Sidebar.Location') === 'left'
 )
@@ -137,6 +142,7 @@ function dragDrop(e: DragEvent) {
           <AppBuilder v-if="showLeftBuilder" />
           <div
             v-else-if="sidebarOnLeft && activeTab"
+            v-coachmark="assetsPanelCoach"
             class="size-full overflow-x-hidden border-r border-border-subtle"
           >
             <ExtensionSlot :extension="activeTab" />
@@ -149,6 +155,7 @@ function dragDrop(e: DragEvent) {
         </SplitterPanel>
         <SplitterPanel
           id="linearCenterPanel"
+          v-coachmark="COACH_IDS.outputs"
           data-testid="linear-center-panel"
           :size="CENTER_PANEL_SIZE"
           class="relative flex min-w-[20vw] flex-col gap-4 text-muted-foreground outline-none"
@@ -187,6 +194,7 @@ function dragDrop(e: DragEvent) {
           />
           <div
             v-else-if="activeTab"
+            v-coachmark="assetsPanelCoach"
             class="h-full overflow-x-hidden border-l border-border-subtle"
           >
             <ExtensionSlot :extension="activeTab" />

@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
@@ -23,7 +21,6 @@ import {
 } from './__fixtures__/subgraphHelpers'
 
 beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
   resetSubgraphFixtureState()
 })
 
@@ -264,10 +261,6 @@ describe('ExecutableNodeDTO Output Resolution', () => {
 })
 
 describe('Muted node output resolution', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('should return undefined for NEVER mode nodes', () => {
     const graph = new LGraph()
     const node = new LGraphNode('Muted Node')
@@ -394,10 +387,6 @@ describe('ALWAYS mode node output resolution', () => {
 })
 
 describe('Virtual node resolveVirtualOutput', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('should resolve through resolveVirtualOutput when implemented', () => {
     const graph = new LGraph()
 

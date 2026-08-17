@@ -908,20 +908,30 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
         .getByTestId(TestIds.dialogs.errorOverlayDismiss)
         .click()
 
+      const queueButtonIcon = comfyPage.page.getByTestId(
+        TestIds.topbar.queueButtonIcon
+      )
       const missingNodeGroup = comfyPage.page.getByTestId(
         TestIds.dialogs.missingNodePacksGroup
       )
 
       await openErrorsTab(comfyPage)
       await expect(missingNodeGroup).toBeVisible()
+      await expect(queueButtonIcon).toHaveClass(
+        /icon-\[lucide--triangle-alert\]/
+      )
 
       await comfyPage.menu.workflowsTab.open()
       await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
       await expect(missingNodeGroup).toBeHidden()
+      await expect(queueButtonIcon).toHaveClass(/icon-\[lucide--play\]/)
 
       await comfyPage.menu.workflowsTab.switchToWorkflow('missing_nodes')
       await openErrorsTab(comfyPage)
       await expect(missingNodeGroup).toBeVisible()
+      await expect(queueButtonIcon).toHaveClass(
+        /icon-\[lucide--triangle-alert\]/
+      )
     })
   })
 })

@@ -26,6 +26,8 @@ type TemplateBrowseSort =
 
 export type TemplateSortMode = TemplateBrowseSort | 'relevance'
 
+const SEARCH_DEFAULT_SORT: TemplateSortMode = 'popular'
+
 /** The title shown on the card, trimmed for stable sorting. */
 function displayTitle(template: TemplateInfo): string {
   return (
@@ -61,8 +63,8 @@ function isTemplateVisibleForDistributions(
   return distributions.some((d) => template.includeOnDistributions!.includes(d))
 }
 
-export function useTemplateFiltering(
-  templates: Ref<TemplateInfo[]> | TemplateInfo[]
+export function useTemplateFiltering<T extends TemplateInfo>(
+  templates: Ref<T[]> | T[]
 ) {
   const settingStore = useSettingStore()
   const systemStatsStore = useSystemStatsStore()
@@ -168,9 +170,9 @@ export function useTemplateFiltering(
   )
 
   const hasActiveQuery = computed(() => searchQuery.value.trim().length > 0)
-  const searchSort = ref<TemplateSortMode>('relevance')
+  const searchSort = ref<TemplateSortMode>(SEARCH_DEFAULT_SORT)
   watch(hasActiveQuery, (searching) => {
-    if (searching) searchSort.value = 'relevance'
+    if (searching) searchSort.value = SEARCH_DEFAULT_SORT
   })
   const activeSort = computed(() =>
     hasActiveQuery.value ? searchSort.value : sortBy.value
@@ -196,7 +198,7 @@ export function useTemplateFiltering(
     )
     return searchTemplates(searchIndex.value, searchQuery.value)
       .map((name) => templatesByName.get(name))
-      .filter((template): template is TemplateInfo => template !== undefined)
+      .filter((template): template is T => template !== undefined)
   })
 
   const filteredByModels = computed(() => {
@@ -320,7 +322,7 @@ export function useTemplateFiltering(
     selectedUseCases.value = []
     selectedRunsOn.value = []
     sortBy.value = 'default'
-    searchSort.value = 'relevance'
+    searchSort.value = SEARCH_DEFAULT_SORT
   }
 
   const removeModelFilter = (model: string) => {

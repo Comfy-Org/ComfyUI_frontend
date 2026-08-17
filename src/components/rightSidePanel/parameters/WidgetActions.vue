@@ -15,6 +15,7 @@ import {
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -111,6 +112,14 @@ function handleShowInput() {
 }
 
 function handleToggleFavorite() {
+  const willBeFavorited = !isFavorited.value
+  useTelemetry()?.trackWidgetFavoriteToggled({
+    node_type: favoriteNode.value.type,
+    widget_name: widget.name,
+    widget_type: widget.type,
+    is_favorited: willBeFavorited,
+    source: 'right_side_panel'
+  })
   favoritedWidgetsStore.toggleFavorite(favoriteNode.value, widget.name)
 }
 
