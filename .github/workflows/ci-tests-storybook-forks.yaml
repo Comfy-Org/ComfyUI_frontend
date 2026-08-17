@@ -77,7 +77,7 @@ jobs:
       - name: Read storybook section
         id: section
         if: steps.pr.outputs.skip != 'true' && github.event.action == 'completed' && hashFiles('storybook-section.md') != ''
-        uses: juliangruber/read-file-action@b549046febe0fe86f8cb4f93c24e284433f9ab58 # v1.1.7
+        uses: juliangruber/read-file-action@271ff311a4947af354c6abcd696a306553b9ec18 # v1.1.8
         with:
           path: storybook-section.md
 

@@ -396,6 +396,7 @@
       <SubscriptionFooterLinks
         class="mt-auto pt-6"
         :show-invoice-history="permissions.canManageSubscription"
+        :show-usage-activity="workspaceRole === 'owner'"
       />
     </template>
   </div>
@@ -432,7 +433,7 @@ import {
 const workspaceStore = useTeamWorkspaceStore()
 const { isWorkspaceSubscribed, isInPersonalWorkspace } =
   storeToRefs(workspaceStore)
-const { permissions, isSubscriptionCancelled } = useWorkspaceUI()
+const { permissions, isSubscriptionCancelled, workspaceRole } = useWorkspaceUI()
 const { maxAvailable: freeRunsAllowance, quotaEnabled: freeRunsQuotaEnabled } =
   useFreeTierQuota()
 const { t, n, locale } = useI18n()

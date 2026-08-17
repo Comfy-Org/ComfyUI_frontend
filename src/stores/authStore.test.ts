@@ -11,9 +11,16 @@ import {
   clearPreservedQuery
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+import {
+  cachedLegacyBillingMigrationEnabled,
+  remoteConfig,
+  remoteConfigState
+} from '@/platform/remoteConfig/remoteConfig'
+import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { useDialogService } from '@/services/dialogService'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import type * as ApiModule from '@/scripts/api'
+import { api } from '@/scripts/api'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import { createTestingPinia } from '@pinia/testing'
 
@@ -1627,6 +1634,45 @@ describe('useAuthStore', () => {
       authStateCallback(accountB)
 
       expect(mockResetSocket).toHaveBeenCalledTimes(1)
+    })
+
+    it('discards a remote config response from the previous account', async () => {
+      let resolveAccountA: ((response: Response) => void) | undefined
+      let accountASignal: AbortSignal | undefined
+      vi.spyOn(api, 'fetchApi')
+        .mockImplementationOnce(
+          (_route, options) =>
+            new Promise<Response>((resolve) => {
+              accountASignal = options?.signal ?? undefined
+              resolveAccountA = resolve
+            })
+        )
+        .mockResolvedValueOnce(
+          new Response(
+            JSON.stringify({ legacy_billing_migration_enabled: false }),
+            { status: 200 }
+          )
+        )
+
+      const accountARefresh = refreshRemoteConfig()
+      await vi.waitFor(() => expect(api.fetchApi).toHaveBeenCalledTimes(1))
+
+      authStateCallback(accountB)
+      expect(accountASignal?.aborted).toBe(true)
+      expect(remoteConfigState.value).toBe('unloaded')
+      expect(cachedLegacyBillingMigrationEnabled.value).toBeUndefined()
+
+      await refreshRemoteConfig()
+      resolveAccountA?.(
+        new Response(
+          JSON.stringify({ legacy_billing_migration_enabled: true }),
+          { status: 200 }
+        )
+      )
+      await accountARefresh
+
+      expect(remoteConfig.value.legacy_billing_migration_enabled).toBe(false)
+      expect(cachedLegacyBillingMigrationEnabled.value).toBe(false)
     })
 
     it('does not reconnect on a same-account token refresh', () => {

@@ -1,5 +1,6 @@
 import {
   cachedBillingControlEnabled,
+  cachedLegacyBillingMigrationEnabled,
   cachedV1PaymentRecovery,
   remoteConfig,
   remoteConfigErrorStatus,
@@ -21,6 +22,18 @@ interface RefreshRemoteConfigOptions {
 }
 
 let refreshGeneration = 0
+const activeRefreshControllers = new Set<AbortController>()
+
+export function invalidateRemoteConfig(): void {
+  refreshGeneration++
+  for (const controller of activeRefreshControllers) controller.abort()
+  activeRefreshControllers.clear()
+  window.__CONFIG__ = {}
+  remoteConfig.value = {}
+  remoteConfigErrorStatus.value = null
+  remoteConfigState.value = 'unloaded'
+  cachedLegacyBillingMigrationEnabled.value = undefined
+}
 
 async function fetchRemoteConfig(
   useAuth: boolean,
@@ -48,6 +61,7 @@ export async function refreshRemoteConfig(
   const { useAuth = true, signal } = options
   const generation = ++refreshGeneration
   const controller = new AbortController()
+  activeRefreshControllers.add(controller)
   const abort = () => controller.abort()
   signal?.addEventListener('abort', abort, { once: true })
   if (signal?.aborted) abort()
@@ -74,6 +88,9 @@ export async function refreshRemoteConfig(
         cachedBillingControlEnabled.value = Boolean(
           config.billing_control_enabled
         )
+        cachedLegacyBillingMigrationEnabled.value = Boolean(
+          config.legacy_billing_migration_enabled
+        )
         cachedV1PaymentRecovery.value = Boolean(config.v1_payment_recovery)
       }
       return
@@ -87,6 +104,7 @@ export async function refreshRemoteConfig(
     } else {
       remoteConfigErrorStatus.value = null
     }
+    if (useAuth) cachedLegacyBillingMigrationEnabled.value = undefined
     remoteConfigState.value = 'error'
   } catch (error) {
     if (generation !== refreshGeneration) return
@@ -95,9 +113,11 @@ export async function refreshRemoteConfig(
     window.__CONFIG__ = {}
     remoteConfig.value = {}
     remoteConfigErrorStatus.value = null
+    if (useAuth) cachedLegacyBillingMigrationEnabled.value = undefined
     remoteConfigState.value = 'error'
   } finally {
     clearTimeout(timeoutId)
     signal?.removeEventListener('abort', abort)
+    activeRefreshControllers.delete(controller)
   }
 }
