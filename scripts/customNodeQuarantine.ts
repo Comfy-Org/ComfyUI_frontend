@@ -17,6 +17,7 @@ import { promisify } from 'node:util'
 
 import type { QuarantinedPack } from '../browser_tests/fixtures/customNode/manifest'
 import { CLOUD_RUN_EXCLUSIONS } from '../browser_tests/fixtures/customNode/autoRun'
+import { connectivityExpectations } from '../browser_tests/fixtures/customNode/connectivityExpectations'
 import {
   FRONTEND_ASSET_EXCLUSIONS,
   loadFullManifest,
@@ -112,6 +113,24 @@ const manifestPackByFoldedName = new Map(
   [...manifest.keys()].map((pack) => [pack.toLowerCase(), pack])
 )
 const entries = Object.entries(quarantine)
+const connectivityExclusions = [
+  ...connectivityExpectations.connectRejected,
+  ...connectivityExpectations.deterministicSlotContractMismatch,
+  ...connectivityExpectations.roundtripLost
+].flatMap((group) => {
+  const pack = manifestPackByFoldedName.get(group.pack.toLowerCase())
+  return pack
+    ? [
+        {
+          label: `${pack} connectivity ${group.id} (${group.pairs.length} pair${group.pairs.length === 1 ? '' : 's'})`,
+          pack,
+          reason: group.reason,
+          restore: group.restore,
+          mode: 'expected-failure' as const
+        }
+      ]
+    : []
+})
 
 const summary: string[] = []
 const note = (line: string) => {
@@ -157,35 +176,48 @@ const nodeExclusions = [
       Object.entries(nodes).map(([nodeType, exclusion]) => ({
         label: `${nodeType} save/reload`,
         pack,
-        ...exclusion
+        ...exclusion,
+        mode: 'expected-failure' as const
       }))
   ),
   ...Object.entries(FRONTEND_ASSET_EXCLUSIONS).map(([pack, exclusion]) => ({
     label: `${pack} frontend assets`,
     pack,
     reason: exclusion.reason,
-    restore: exclusion.restore
+    restore: exclusion.restore,
+    mode: 'expected-failure' as const
   })),
-  ...startupErrorExclusionsForPacks([...manifest.keys()]),
+  ...startupErrorExclusionsForPacks([...manifest.keys()]).map((exclusion) => ({
+    ...exclusion,
+    mode: 'expected-failure' as const
+  })),
   ...Object.entries(CLOUD_RUN_EXCLUSIONS).flatMap(([ledgerPack, nodes]) => {
     const pack = manifestPackByFoldedName.get(ledgerPack.toLowerCase())
     return pack
       ? Object.entries(nodes).map(([node, exclusion]) => ({
           label: `${pack} / ${node} execution`,
           pack,
-          ...exclusion
+          ...exclusion,
+          mode: 'not-exercised' as const
         }))
       : []
-  })
+  }),
+  ...connectivityExclusions
 ]
 const unknownNodeExclusions: string[] = []
 note('')
-note(`## Temporary node-check exclusions - **${nodeExclusions.length}**`)
+note(`## Temporary accepted gaps - **${nodeExclusions.length}**`)
 note('')
-note('Every entry below is coverage this run did NOT measure.')
+note(
+  'Every entry is a **SKIP** from the passing contract. Expected failures are still exercised and must reproduce their exact known defect; not-exercised behavior receives no coverage.'
+)
 note('')
 for (const exclusion of nodeExclusions) {
-  note(`- **${exclusion.label} - SKIP**`)
+  const status =
+    exclusion.mode === 'not-exercised'
+      ? 'SKIP - NOT EXERCISED'
+      : 'SKIP - EXACT EXPECTED FAILURE'
+  note(`- **${exclusion.label} - ${status}**`)
   note(`  - ${exclusion.reason}`)
   note(`  - to remove: ${exclusion.restore}`)
   process.stdout.write(

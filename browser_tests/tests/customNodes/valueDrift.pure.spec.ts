@@ -132,16 +132,20 @@ test.describe('cloud roundtrip expectations', () => {
         FL_ColorPicker: '3,4,5,6',
         FL_ReplaceColor: '5,6,7,8,9,10,11,12'
       },
+      'ComfyUI-KJNodes': { SplineEditor: '1' },
+      'ComfyUI-LTXVideo': { LTXVSparseTrackEditor: '1' },
       'WhatDreamsCost-ComfyUI': {
-        LoadAudioUI: '2,3,5',
+        LoadAudioUI: '5',
         LTXDirector: '3,4,5,7'
       }
     })
     expect(ROUNDTRIP_VALUE_ALLOWED_INDICES_VUE).toMatchObject({
       'ComfyUI_Fill-Nodes':
         ROUNDTRIP_VALUE_ALLOWED_INDICES_LITEGRAPH['ComfyUI_Fill-Nodes'],
+      'ComfyUI-KJNodes': { SplineEditor: '1' },
+      'ComfyUI-LTXVideo': { LTXVSparseTrackEditor: '1' },
       'WhatDreamsCost-ComfyUI': {
-        LoadAudioUI: '2,3,5',
+        LoadAudioUI: '5',
         LTXDirector: '3,4,5,7'
       },
       'comfyui-itools': { iToolsRegexNode: '0' }

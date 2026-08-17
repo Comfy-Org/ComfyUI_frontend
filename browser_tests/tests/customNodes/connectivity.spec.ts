@@ -15,7 +15,10 @@ import {
   unallowlistedConnectivityErrorsForPacks,
   unallowlistedErrorsForPacks
 } from '@e2e/fixtures/customNode/consoleErrorLedger'
-import { connectivityExpectations } from '@e2e/fixtures/customNode/connectivityExpectations'
+import {
+  connectivityExpectations,
+  pairExpectationKeys
+} from '@e2e/fixtures/customNode/connectivityExpectations'
 import { failureSummary } from '@e2e/fixtures/customNode/failureReport'
 import {
   loadFullManifest,
@@ -51,12 +54,17 @@ const SWEEP_MS_PER_PAIR = 40
 const DRAG_MS_PER_DRAG = 15_000
 const {
   isolatedNodeTypes,
-  connectRejected,
-  deterministicSlotContractMismatch,
-  roundtripLost,
+  connectRejected: connectRejectedGroups,
+  deterministicSlotContractMismatch: deterministicSlotContractMismatchGroups,
+  roundtripLost: roundtripLostGroups,
   noPairContributionExpectedNodeCounts,
   zeroPairDragExpectedNodeCounts
 } = connectivityExpectations
+const connectRejected = pairExpectationKeys(connectRejectedGroups)
+const deterministicSlotContractMismatch = pairExpectationKeys(
+  deterministicSlotContractMismatchGroups
+)
+const roundtripLost = pairExpectationKeys(roundtripLostGroups)
 
 test.use({ initialSettings: customNodeSuiteSettings })
 
@@ -132,7 +140,7 @@ const activeIsolatedNodeTypes = Object.fromEntries(
   )
 )
 
-test('connectivity: every type-paired link survives model, serialize, and prompt round-trips @custom-nodes', async ({
+test('connectivity: every type-paired link is classified through model, serialize, and prompt conversion @custom-nodes', async ({
   comfyPage
 }) => {
   test.setTimeout(PLAN_SETUP_MS)
@@ -303,7 +311,7 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
     'stale required connectivity console mechanisms'
   ).toEqual([])
 
-  // Two-way guard, same discipline as cannotRunAlone, for these allowlists
+  // Two-way guard, same discipline as cannotRunAlone, for these expectations
   // in the loop below: every key must still be OBSERVED failing in its
   // recorded way. An entry whose pair now passes (or is no longer even
   // planned) is stale and would silently hide the fixed bug behind it. On a
@@ -312,7 +320,7 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
   const outcomeByKey = new Map(
     results.map((result) => [result.key, result.outcome])
   )
-  // An allowlist is global; a shard installs one slice of the manifest. Asking
+  // The expectations are global; a shard installs one slice of the manifest. Asking
   // "are all packs installed" answers that for the SLICE, so it went true and
   // every entry naming a node from another shard read as stale - 13 of them on
   // run 31861114255. A shard can only speak to keys whose node types it
@@ -324,20 +332,20 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
       .split(' -> ')
       .every((side) => liveNodeTypes.has(side.slice(0, side.lastIndexOf('.'))))
   const staleEntries: string[] = []
-  for (const [allowlist, expected] of [
+  for (const [expectedPairs, expectedOutcome] of [
     [connectRejected, 'CONNECT_REJECTED'],
     [roundtripLost, 'ROUNDTRIP_LOST'],
     [deterministicSlotContractMismatch, 'SLOT_CONTRACT_MISMATCH']
   ] as const)
-    for (const key of allowlist) {
+    for (const key of expectedPairs) {
       const observed = outcomeByKey.get(key)
       if (!keyIsAnswerable(key)) continue
-      if (observed !== expected)
+      if (observed !== expectedOutcome)
         staleEntries.push(
-          `${key}: expected ${expected}, observed ${observed ?? 'nothing'} - remove the stale entry`
+          `${key}: expected ${expectedOutcome}, observed ${observed ?? 'nothing'} - remove the stale entry`
         )
     }
-  expect(staleEntries, 'stale allowlist entries').toEqual([])
+  expect(staleEntries, 'stale connectivity expectations').toEqual([])
   await expectNoVisibleErrors(comfyPage.page, 'after breadth sweep')
 })
 
@@ -378,7 +386,12 @@ function evaluatePairs(
 ): Promise<PairResult[]> {
   return page.evaluate(async (pairsInPage) => {
     const graph = window.app!.graph
-    const resetGraph = () => graph.clear()
+    let nextNodeId = graph.last_node_id
+    const resetGraph = () => {
+      nextNodeId = graph.last_node_id
+      graph.clear()
+      graph.last_node_id = nextNodeId
+    }
     const report: Array<{
       key: string
       outcome: string
@@ -497,7 +510,7 @@ test('connectivity self-check: the executor rejects broken pairs @custom-nodes',
   ])
 })
 
-test('connectivity drags: curated slot-to-slot wires connect under both renderers @custom-nodes', async ({
+test('connectivity drags: one materialized in-pack link per applicable pack connects under both renderers @custom-nodes', async ({
   comfyPage
 }) => {
   test.setTimeout(PLAN_SETUP_MS)

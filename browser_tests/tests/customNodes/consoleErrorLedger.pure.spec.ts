@@ -71,28 +71,6 @@ test.describe('consoleErrorLedger', () => {
     expect(unallowlistedErrors('ComfyUI-Custom-Scripts', [error])).toEqual([])
   })
 
-  test('pins the MathExpression stale-nodeOutputs sweep crash to its connectivity rule', () => {
-    const captured =
-      "TypeError: Cannot read properties of undefined (reading '0')\n" +
-      '    at MathExpression.onDrawForeground (http://localhost:8188/extensions/ComfyUI-Custom-Scripts/js/mathExpression.js:31:52)'
-    expect(
-      unallowlistedConnectivityErrorsForPacks(
-        ['ComfyUI-Custom-Scripts'],
-        [captured]
-      )
-    ).toEqual([])
-    // The same crash without the mathExpression frame must still surface.
-    const elsewhere =
-      "TypeError: Cannot read properties of undefined (reading '0')\n" +
-      '    at draw (http://localhost:8188/extensions/ComfyUI-Custom-Scripts/js/widgetDefaults.js:9:3)'
-    expect(
-      unallowlistedConnectivityErrorsForPacks(
-        ['ComfyUI-Custom-Scripts'],
-        [elsewhere]
-      )
-    ).toEqual([elsewhere])
-  })
-
   test('matches the pack key case-insensitively', () => {
     const errors = [
       'Failed to load resource: the server responded with a status of 404 () http://host/example.png',

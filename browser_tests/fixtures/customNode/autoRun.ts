@@ -178,7 +178,7 @@ export const AUTO_RUN_WIDGET_INPUTS: Record<
   'ComfyUI-VideoHelperSuite': {
     VHS_LoadAudio: { audio_file: 'input/plain_audio.wav' },
     VHS_LoadAudioUpload: { audio: 'plain_audio.wav' },
-    VHS_LoadImagePath: { image: 'input/test_upload_image.png' },
+    VHS_LoadImagePath: { image: 'input/test_upload_image.webp' },
     VHS_LoadImages: { directory: 'images' },
     VHS_LoadImagesPath: { directory: 'input/images' },
     VHS_LoadVideoFFmpegPath: { video: 'input/plain_video.mp4' },

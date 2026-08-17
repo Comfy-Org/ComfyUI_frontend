@@ -251,6 +251,14 @@ const ROUNDTRIP_VALUE_ALLOWLIST: Record<string, Record<string, string>> = {
     VHS_VAEEncodeBatched:
       'per_batch serializes null after configure (VHS ANNOTATED widget deserialization gap) - upstream-report candidate'
   },
+  'ComfyUI-KJNodes': {
+    SplineEditor:
+      'the spline editor regenerates its derived sampled coordinates from the preserved source points on configure'
+  },
+  'ComfyUI-LTXVideo': {
+    LTXVSparseTrackEditor:
+      'the sparse-track editor regenerates its derived integer coordinates from the preserved source points on configure'
+  },
   'ComfyUI_Fill-Nodes': {
     FL_ColorPicker:
       'color widget canonicalizes the probe color and derived RGB channels on configure',
@@ -269,31 +277,31 @@ const ROUNDTRIP_VALUE_ALLOWLIST: Record<string, Record<string, string>> = {
   }
 }
 
-// Nodes whose pack JS renders custom editor/preview widgets outside the
-// [data-testid="node-widget"] rows, so the DOM widget count legitimately
-// undershoots the instance count. Slot fidelity still applies.
-const MOUNT_WIDGET_ALLOWLIST: Record<string, Record<string, string>> = {
-  'ComfyUI-KJNodes': {
-    LoadAndResizeImage:
-      'image preview widget renders as a custom element, not a node-widget row',
-    PointsEditor:
-      'points editor renders as a custom canvas overlay, not node-widget rows',
-    SplineEditor:
-      'spline editor renders as a custom canvas overlay, not node-widget rows'
-  },
-  'ComfyUI_Fill-Nodes': {
-    FL_TimeLine:
-      'timeline controls include canvas-only and file widgets outside Vue node-widget rows'
-  }
+interface DuplicateWidgetExpectation {
+  counts: Record<string, number>
+  reason: string
+  restore: string
 }
 
-const CORE_ONLY_MOUNT_WIDGET_ALLOWLIST: Record<
+const MOUNT_WIDGET_DUPLICATE_EXPECTATIONS: Record<
   string,
-  Record<string, string>
+  Record<string, DuplicateWidgetExpectation>
 > = {
-  'ComfyUI-KJNodes': {
-    ContextWindowsVisualizerKJ:
-      'visualizer widgets render as a custom canvas overlay, not node-widget rows'
+  'ComfyUI_Fill-Nodes': {
+    FL_TimeLine: {
+      counts: {
+        frames_per_second: 2,
+        interpolation_mode: 2,
+        ipadapter_preset: 2,
+        number_animation_frames: 2,
+        video_height: 2,
+        video_width: 2
+      },
+      reason:
+        'the pinned pack JS adds six widgets already supplied by the Python node definition; Vue renders one row per unique widget identity',
+      restore:
+        'remove this expectation when the pack stops creating the duplicate widgets'
+    }
   }
 }
 
@@ -305,8 +313,7 @@ const PACK_LEDGERS: Record<string, Record<string, Record<string, unknown>>> = {
   AUTO_RUN_WIDGET_INPUTS,
   AUTO_RUN_EXCLUDE,
   CLOUD_RUN_EXCLUSIONS,
-  CORE_ONLY_MOUNT_WIDGET_ALLOWLIST,
-  MOUNT_WIDGET_ALLOWLIST,
+  MOUNT_WIDGET_DUPLICATE_EXPECTATIONS,
   OUTPUT_TOPOLOGY_EXPECTATIONS_LITEGRAPH,
   OUTPUT_TOPOLOGY_EXPECTATIONS_VUE,
   ROUNDTRIP_NODE_LOSS_EXPECTATIONS_LITEGRAPH,
@@ -574,16 +581,14 @@ for (const entry of manifestEntries) {
         const declaredByKey = new Map(
           keys.map((key) => [key, declaredShape(defs[key])])
         )
-        const mountWidgetAllowlist = {
-          ...packLedgerFor(MOUNT_WIDGET_ALLOWLIST, entry.pack),
-          ...('pin' in entry
-            ? packLedgerFor(CORE_ONLY_MOUNT_WIDGET_ALLOWLIST, entry.pack)
-            : {})
-        }
-        for (const ledgered of Object.keys(mountWidgetAllowlist))
+        const duplicateWidgetExpectations = packLedgerFor(
+          MOUNT_WIDGET_DUPLICATE_EXPECTATIONS,
+          entry.pack
+        )
+        for (const ledgered of Object.keys(duplicateWidgetExpectations))
           expect(
             keys,
-            `stale MOUNT_WIDGET_ALLOWLIST entry: ${ledgered} is not registered by ${entry.pack}`
+            `stale MOUNT_WIDGET_DUPLICATE_EXPECTATIONS entry: ${ledgered} is not registered by ${entry.pack}`
           ).toContain(ledgered)
 
         const rendererPasses =
@@ -678,7 +683,7 @@ for (const entry of manifestEntries) {
             if (vueNodesEnabled)
               failures.push(
                 ...(await comfyPage.page.evaluate(
-                  ([chunkIds, customWidgetNodes]) => {
+                  ([chunkIds, expectedDuplicatesByNode]) => {
                     const problems: string[] = []
                     for (const id of chunkIds) {
                       if (id === null) continue
@@ -714,11 +719,40 @@ for (const entry of manifestEntries) {
                       const domWidgets = root.querySelectorAll(
                         '[data-testid="node-widget"]'
                       ).length
-                      if (customWidgetNodes.includes(node.type!))
-                        problems.push(
-                          `${node.type}: broad Vue-widget exclusion must become exact; instance ${widgets.length} [${widgets.map((widget) => `${widget.name}:${widget.type}`).join(',')}], DOM ${domWidgets}`
+                      const expectedDuplicates =
+                        expectedDuplicatesByNode[node.type!]
+                      if (expectedDuplicates) {
+                        const widgetNameCounts: Record<string, number> = {}
+                        for (const widget of widgets)
+                          widgetNameCounts[widget.name ?? ''] =
+                            (widgetNameCounts[widget.name ?? ''] ?? 0) + 1
+                        const observedDuplicates = Object.fromEntries(
+                          Object.entries(widgetNameCounts)
+                            .filter(([, count]) => count > 1)
+                            .sort(([left], [right]) =>
+                              left.localeCompare(right)
+                            )
                         )
-                      else if (domWidgets < widgets.length)
+                        const expectedDuplicateCounts = Object.fromEntries(
+                          Object.entries(expectedDuplicates.counts).sort(
+                            ([left], [right]) => left.localeCompare(right)
+                          )
+                        )
+                        if (
+                          JSON.stringify(observedDuplicates) !==
+                          JSON.stringify(expectedDuplicateCounts)
+                        )
+                          problems.push(
+                            `${node.type}: duplicate widget identities ${JSON.stringify(observedDuplicates)} do not match ${JSON.stringify(expectedDuplicateCounts)}; ${expectedDuplicates.reason}; ${expectedDuplicates.restore}`
+                          )
+                        const uniqueWidgetCount = new Set(
+                          widgets.map((widget) => widget.name)
+                        ).size
+                        if (domWidgets !== uniqueWidgetCount)
+                          problems.push(
+                            `${node.type}: Vue mounts ${domWidgets} rows for ${uniqueWidgetCount} unique widget identities; ${expectedDuplicates.reason}; ${expectedDuplicates.restore}`
+                          )
+                      } else if (domWidgets < widgets.length)
                         problems.push(
                           `${node.type}: Vue mounts ${domWidgets} of ${widgets.length} widgets`
                         )
@@ -738,7 +772,7 @@ for (const entry of manifestEntries) {
                   },
                   [
                     shapes.map((shape) => shape?.id ?? null),
-                    Object.keys(mountWidgetAllowlist)
+                    duplicateWidgetExpectations
                   ] as const
                 ))
               )
@@ -1488,7 +1522,7 @@ for (const entry of manifestEntries) {
 const tiers: Array<[AllNodesTier, string]> = [
   ['S1', 'every registered node mounts on the canvas renderer'],
   ['S2', 'every registered node mounts on the DOM renderer'],
-  ['S3', 'every registered node survives save and reload'],
+  ['S3', 'registered-node save/reload outcomes match exact contracts'],
   ['S9', 'calibrated model-free node corpus executes']
 ]
 

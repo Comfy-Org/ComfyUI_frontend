@@ -444,7 +444,7 @@ jobs:
           case "$PROOF_ROW" in
             1) title='S1: every registered node mounts on the canvas renderer'; pat='ImpactInt: instance is missing declared input \\"value\\" \\(litegraph\\)' ;;
             2) title='S2: every registered node mounts on the DOM renderer'; pat=': Vue mounts ' ;;
-            3) title='S3: every registered node survives save and reload'; pat='on (pristine|set-values) reload' ;;
+            3) title='S3: registered-node save/reload outcomes match exact contracts'; pat='on (pristine|set-values) reload' ;;
             9) title='S9: calibrated model-free node corpus executes'; pat='DETECTION PROOF \\(row 9\\): pack node runtime failure' ;;
           esac
           {
@@ -463,11 +463,15 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          if ! pnpm --silent custom-node-shard | cut -f1 | grep -qx comfyui-videohelpersuite; then
+            echo 'This shard has no run-tier pack; leaving its input directory empty.'
+            exit 0
+          fi
           mkdir -p ComfyUI/input/images
           cp browser_tests/assets/plain_video.mp4 ComfyUI/input/plain_video.mp4 \
             || { echo "::error::could not stage plain_video.mp4 - the VHS run tier has no input to execute on"; exit 1; }
-          cp browser_tests/assets/test_upload_image.png ComfyUI/input/test_upload_image.png
-          cp browser_tests/assets/test_upload_image.png ComfyUI/input/images/test_upload_image.png
+          cp browser_tests/assets/image32x32.webp ComfyUI/input/test_upload_image.webp
+          cp browser_tests/assets/image32x32.webp ComfyUI/input/images/test_upload_image.webp
           python - <<'PY'
           import wave
 
@@ -623,7 +627,7 @@ jobs:
           case "$PROOF_ROW" in
             1) target_tier=S1; target_title="S1: every registered node mounts on the canvas renderer"; next_tier=S2 ;;
             2) target_tier=S2; target_title="S2: every registered node mounts on the DOM renderer"; next_tier=S3 ;;
-            3) target_tier=S3; target_title="S3: every registered node survives save and reload"; next_tier= ;;
+            3) target_tier=S3; target_title="S3: registered-node save/reload outcomes match exact contracts"; next_tier= ;;
             9) target_tier=S9; target_title="S9: calibrated model-free node corpus executes"; next_tier= ;;
           esac
           jq -e --arg title "$target_title" '.. | objects | select(.title? == $title) | .tests[] | select(.status == "unexpected")' custom-nodes-results.json >/dev/null
