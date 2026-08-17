@@ -263,8 +263,7 @@ import type { CompassCorners } from '@/lib/litegraph/src/interfaces'
 import {
   LGraphCanvas,
   LGraphEventMode,
-  LiteGraph,
-  RenderShape
+  LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
@@ -290,7 +289,10 @@ import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
 import { useNodePreviewState } from '@/renderer/extensions/vueNodes/preview/useNodePreviewState'
 import { nonWidgetedInputs } from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
-import { applyLightThemeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
+import {
+  applyLightThemeColor,
+  shapeVariantClass
+} from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { app } from '@/scripts/app'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -581,27 +583,21 @@ const cursorClass = computed(() => {
     : 'cursor-grab'
 })
 
-const bodyRoundingClass = computed(() => {
-  switch (nodeData.shape) {
-    case RenderShape.BOX:
-      return ''
-    case RenderShape.CARD:
-      return 'rounded-br-xl'
-    default:
-      return 'rounded-b-xl'
-  }
-})
+const bodyRoundingClass = computed(() =>
+  shapeVariantClass(nodeData.shape, {
+    box: '',
+    card: 'rounded-br-xl',
+    default: 'rounded-b-xl'
+  })
+)
 
-const shapeClass = computed(() => {
-  switch (nodeData.shape) {
-    case RenderShape.BOX:
-      return ''
-    case RenderShape.CARD:
-      return 'rounded-tl-xl rounded-br-xl'
-    default:
-      return 'rounded-xl'
-  }
-})
+const shapeClass = computed(() =>
+  shapeVariantClass(nodeData.shape, {
+    box: '',
+    card: 'rounded-tl-xl rounded-br-xl',
+    default: 'rounded-xl'
+  })
+)
 
 const isTransparentHeaderless = computed(
   () =>
@@ -614,42 +610,33 @@ const selectionShapeClass = computed(() => {
   if (isTransparentHeaderless.value) return 'border-0'
 
   const isExpanded = hasAnyError.value
-  switch (nodeData.shape) {
-    case RenderShape.BOX:
-      return ''
-    case RenderShape.CARD:
-      return isExpanded
-        ? 'rounded-tl-[23px] rounded-br-[23px]'
-        : 'rounded-tl-[19px] rounded-br-[19px]'
-    default:
-      return isExpanded ? 'rounded-[19px]' : 'rounded-[15px]'
-  }
+  return shapeVariantClass(nodeData.shape, {
+    box: '',
+    card: isExpanded
+      ? 'rounded-tl-[23px] rounded-br-[23px]'
+      : 'rounded-tl-[19px] rounded-br-[19px]',
+    default: isExpanded ? 'rounded-[19px]' : 'rounded-[15px]'
+  })
 })
 
 const BEFORE_OVERLAY_BASE =
   'before:pointer-events-none before:absolute before:inset-0'
 
-const bypassOverlayClass = computed(() => {
-  switch (nodeData.shape) {
-    case RenderShape.BOX:
-      return `${BEFORE_OVERLAY_BASE} before:bg-bypass/60`
-    case RenderShape.CARD:
-      return `before:rounded-tl-xl before:rounded-br-xl ${BEFORE_OVERLAY_BASE} before:bg-bypass/60`
-    default:
-      return `before:rounded-xl ${BEFORE_OVERLAY_BASE} before:bg-bypass/60`
-  }
-})
+const bypassOverlayClass = computed(() =>
+  shapeVariantClass(nodeData.shape, {
+    box: `${BEFORE_OVERLAY_BASE} before:bg-bypass/60`,
+    card: `before:rounded-tl-xl before:rounded-br-xl ${BEFORE_OVERLAY_BASE} before:bg-bypass/60`,
+    default: `before:rounded-xl ${BEFORE_OVERLAY_BASE} before:bg-bypass/60`
+  })
+)
 
-const mutedOverlayClass = computed(() => {
-  switch (nodeData.shape) {
-    case RenderShape.BOX:
-      return BEFORE_OVERLAY_BASE
-    case RenderShape.CARD:
-      return `before:rounded-tl-xl before:rounded-br-xl ${BEFORE_OVERLAY_BASE}`
-    default:
-      return `before:rounded-xl ${BEFORE_OVERLAY_BASE}`
-  }
-})
+const mutedOverlayClass = computed(() =>
+  shapeVariantClass(nodeData.shape, {
+    box: BEFORE_OVERLAY_BASE,
+    card: `before:rounded-tl-xl before:rounded-br-xl ${BEFORE_OVERLAY_BASE}`,
+    default: `before:rounded-xl ${BEFORE_OVERLAY_BASE}`
+  })
+)
 
 // Event handlers
 const handleCollapse = () => {
