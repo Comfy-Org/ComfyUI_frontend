@@ -26,7 +26,9 @@
     "vitest",
     "vue"
   ],
+  "jsPlugins": ["./tools/oxlint-plugins/comfyIngestTypes.ts"],
   "rules": {
+    "comfy/no-duplicate-ingest-type": "error",
     "no-async-promise-executor": "off",
     "no-console": [
       "error",
