@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { useTemplateRankingStore } from '@/stores/templateRankingStore'
 
@@ -12,10 +10,6 @@ vi.mock('axios', () => ({
 }))
 
 describe('templateRankingStore', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   describe('computeFreshness', () => {
     it('returns 1.0 for brand new template (today)', () => {
       const store = useTemplateRankingStore()

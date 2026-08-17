@@ -27,12 +27,29 @@ export const useFirstRunEntry = createSharedComposable(() => {
   const isDesktopWidth =
     useBreakpoints(breakpointsTailwind).greaterOrEqual('md')
 
+  /**
+   * `defer` is ineligibility a later boot can lift — the tour flag, the
+   * viewport, remote config that has not arrived. `Comfy.TutorialCompleted` is
+   * write-once and server-side, so only `complete` may set it.
+   */
+  type FirstRunDecision = 'getting-started' | 'defer' | 'complete'
+
+  function decideFirstRun(): FirstRunDecision {
+    if (!isCloud) return 'complete'
+
+    const isNewUser = useNewUserService().isNewUser()
+    if (isNewUser === false) return 'complete'
+
+    if (!useFeatureFlags().flags.onboardingTourEnabled) return 'defer'
+    if (!isDesktopWidth.value) return 'defer'
+    if (!useSubscription().isSubscriptionEnabled()) return 'defer'
+    if (isNewUser === null) return 'defer'
+
+    return 'getting-started'
+  }
+
   function isFirstRunCandidate(): boolean {
-    if (!useFeatureFlags().flags.onboardingTourEnabled) return false
-    if (!isCloud) return false
-    if (!isDesktopWidth.value) return false
-    if (!useSubscription().isSubscriptionEnabled()) return false
-    return useNewUserService().isNewUser() === true
+    return decideFirstRun() === 'getting-started'
   }
 
   /**
@@ -51,12 +68,13 @@ export const useFirstRunEntry = createSharedComposable(() => {
       return
     }
 
-    if (isFirstRunCandidate()) {
+    const decision = decideFirstRun()
+    if (decision === 'getting-started') {
       gettingStartedVisible.value = true
       return
     }
 
-    await markTutorialCompleted()
+    if (decision === 'complete') await markTutorialCompleted()
     await useCommandStore().execute('Comfy.BrowseTemplates')
   }
 

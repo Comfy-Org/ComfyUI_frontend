@@ -32,7 +32,6 @@ describe('useCompositorEditor', () => {
   const node = { id: toNodeId(1) } as unknown as LGraphNode
 
   beforeEach(() => {
-    vi.clearAllMocks()
     clearCompositorLayers(node)
   })
 

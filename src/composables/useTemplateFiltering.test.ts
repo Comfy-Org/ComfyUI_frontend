@@ -1,4 +1,3 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
@@ -64,7 +63,6 @@ vi.mock('@/platform/telemetry/searchQuery/useSearchQueryTracking', () => ({
 
 describe('useTemplateFiltering', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     vi.stubGlobal('__DISTRIBUTION__', 'localhost')
     mockSystemStatsStore.systemStats.system.os = 'linux'
   })
