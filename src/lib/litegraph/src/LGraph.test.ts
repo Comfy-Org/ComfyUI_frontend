@@ -446,6 +446,7 @@ describe('node:before-removed event', () => {
   it('keeps floating links available during clear removal callbacks', () => {
     const graph = new LGraph()
     const node = new LGraphNode('node')
+    node.addOutput('output', '*')
     graph.add(node)
     const link = new LLink(toLinkId(1), '*', node.id, 0, UNASSIGNED_NODE_ID, -1)
     graph.addFloatingLink(link)
