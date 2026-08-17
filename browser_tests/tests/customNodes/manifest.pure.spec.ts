@@ -9,6 +9,7 @@ import {
   loadApplicableAutogrowCases,
   loadFullManifest,
   rendererPassesFor,
+  servesFrontendAssetsForPack,
   shardOf
 } from '@e2e/fixtures/customNode/manifest'
 
@@ -166,6 +167,15 @@ test.describe('customNode manifest', () => {
         0
       )
     ).toThrow(/expectedRunnableCount/)
+    expect(() =>
+      assertCoreEntry({ ...validEntry(), requiresGpu: true }, 0)
+    ).toThrow(/model-free CPU gate/)
+    expect(() =>
+      assertCoreEntry(
+        { ...validEntry(), requiresModels: ['model.safetensors'] },
+        0
+      )
+    ).toThrow(/model-free CPU gate/)
   })
 
   test('pack must be a plain path segment (it becomes the install dirname)', () => {
@@ -193,6 +203,18 @@ test.describe('customNode manifest', () => {
         producerSlot: 'IMAGE'
       }
     ])
+    expect(
+      servesFrontendAssetsForPack(
+        ['/extensions/ComfyUI-Impact-Pack/js/impact.js'],
+        'comfyui-impact-pack'
+      )
+    ).toBe(true)
+    expect(
+      servesFrontendAssetsForPack(
+        ['/extensions/another-pack/main.js'],
+        'comfyui-impact-pack'
+      )
+    ).toBe(false)
   })
 
   test('a pack keeps its shard when another pack is excluded', () => {

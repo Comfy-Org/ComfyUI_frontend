@@ -1,4 +1,6 @@
 # Comfy Complete - Supported Custom Nodes
+# Source: https://github.com/Comfy-Org/cloud/blob/299167cff712d50d659b8e44d1efa60f4d4102bb/comfy-complete/supported_nodes.yaml
+# Imported: 2026-08-14
 # This file defines the custom node packs that are part of the Comfy Complete distribution.
 # Each node pack is pinned to a specific version to ensure compatibility.
 

@@ -1,8 +1,17 @@
+import { readFileSync, writeFileSync } from 'node:fs'
+import { fileURLToPath, pathToFileURL } from 'node:url'
+
+import { parse } from 'yaml'
+
 import type {
   CloudManifest,
-  CloudManifestEntry
+  CloudManifestEntry,
+  CloudManifestSource
 } from '../browser_tests/fixtures/customNode/manifest'
-import { assertCloudEntry } from '../browser_tests/fixtures/customNode/manifest'
+import {
+  assertCloudEntry,
+  assertCloudManifestShape
+} from '../browser_tests/fixtures/customNode/manifest'
 import type { RawNodeDef } from '../browser_tests/fixtures/customNode/typePairing'
 import { packOf } from '../browser_tests/fixtures/customNode/typePairing'
 
@@ -10,6 +19,7 @@ export interface SupportedNodesPack {
   name: string
   version?: string
   node_labels?: Record<string, string[]>
+  web_directory?: string
 }
 
 export interface SupportedNodesDoc {
@@ -20,6 +30,9 @@ export interface SupportedNodesDoc {
 export type ObjectInfoSnapshot = Record<string, RawNodeDef>
 
 const URL_PIN = /@[0-9a-f]{40}$/
+const SOURCE_LINE =
+  /^# Source: (https:\/\/github\.com\/[^/]+\/[^/]+)\/blob\/([0-9a-f]{40})\/(\S+)$/m
+const IMPORTED_LINE = /^# Imported: (\d{4}-\d{2}-\d{2})$/m
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -50,6 +63,16 @@ export function validateSupportedNodesDoc(value: unknown): SupportedNodesDoc {
       )
     if (pack.version !== undefined && typeof pack.version !== 'string')
       throw new Error(`supported_nodes.yaml: ${name} version must be a string`)
+    if (
+      pack.web_directory !== undefined &&
+      (typeof pack.web_directory !== 'string' ||
+        !/^(?!.*(?:^|\/)\.\.(?:\/|$))[^/][A-Za-z0-9._/-]*$/.test(
+          pack.web_directory
+        ))
+    )
+      throw new Error(
+        `supported_nodes.yaml: ${name} web_directory must be a safe relative path`
+      )
     if (
       name !== 'core' &&
       !name.startsWith('http') &&
@@ -85,12 +108,38 @@ export function validateSupportedNodesDoc(value: unknown): SupportedNodesDoc {
     return {
       name,
       version: typeof pack.version === 'string' ? pack.version : undefined,
-      node_labels: nodeLabels
+      node_labels: nodeLabels,
+      web_directory:
+        typeof pack.web_directory === 'string' ? pack.web_directory : undefined
     }
   })
   if (packs.filter((pack) => pack.name === 'core').length > 1)
     throw new Error('supported_nodes.yaml: more than one core entry')
   return { labels: value.labels, node_packs: packs }
+}
+
+export function sourceFromSupportedNodesHeader(
+  contents: string
+): CloudManifestSource {
+  const source = SOURCE_LINE.exec(contents)
+  const imported = IMPORTED_LINE.exec(contents)
+  if (!source || !imported)
+    throw new Error(
+      'supported_nodes.yaml: expected pinned # Source and # Imported headers'
+    )
+  const importedAt = imported[1]
+  const timestamp = Date.parse(`${importedAt}T00:00:00Z`)
+  if (
+    Number.isNaN(timestamp) ||
+    new Date(timestamp).toISOString().slice(0, 10) !== importedAt
+  )
+    throw new Error('supported_nodes.yaml: # Imported must be a real ISO date')
+  return {
+    repository: source[1],
+    ref: source[2],
+    path: source[3],
+    importedAt
+  }
 }
 
 export function validateObjectInfoSnapshot(value: unknown): ObjectInfoSnapshot {
@@ -269,6 +318,7 @@ export function validateCloudCannotRunAlone(
 export function buildCloudManifest(
   doc: SupportedNodesDoc,
   snapshot: ObjectInfoSnapshot,
+  source: CloudManifestSource,
   overlay: CuratedCloudOverlay = {},
   sentinels: CloudExtensionSentinels = {},
   cannotRunAlone: CloudCannotRunAlone = {}
@@ -338,6 +388,9 @@ export function buildCloudManifest(
       expectedNodeCount: enabled.length,
       expectedExtensions: sentinels[dirname] ?? [],
       disabledNodes: sortedRecordOf(pack.node_labels ?? {}),
+      ...(pack.web_directory !== undefined
+        ? { webDirectory: pack.web_directory }
+        : {}),
       timeoutMs: curated?.timeoutMs ?? 30_000,
       ...(curated && cannotRunAlone[dirname]
         ? { cannotRunAlone: cannotRunAlone[dirname] }
@@ -381,6 +434,7 @@ export function buildCloudManifest(
 
   const core = doc.node_packs.find((pack) => pack.name === 'core')
   return {
+    source,
     coreDisabledNodes: sortedRecordOf(core?.node_labels ?? {}),
     packs,
     unjoinedYamlPacks: unmatched.sort()
@@ -389,4 +443,81 @@ export function buildCloudManifest(
 
 export function renderCloudManifest(manifest: CloudManifest): string {
   return `${JSON.stringify(manifest, null, 2)}\n`
+}
+
+function dataPath(name: string): string {
+  return fileURLToPath(
+    new URL(`../browser_tests/fixtures/data/${name}`, import.meta.url)
+  )
+}
+
+function regenerationSidecars(manifest: CloudManifest): {
+  overlay: CuratedCloudOverlay
+  sentinels: CloudExtensionSentinels
+  cannotRunAlone: CloudCannotRunAlone
+} {
+  const runEntries = manifest.packs.filter((entry) =>
+    entry.tiers.includes('run')
+  )
+  return {
+    overlay: Object.fromEntries(
+      runEntries.map((entry) => [
+        entry.pack,
+        {
+          workflow: entry.workflow,
+          tiers: entry.tiers,
+          expectedNodes: entry.expectedNodes,
+          expectedRunnableCount: entry.expectedRunnableCount,
+          timeoutMs: entry.timeoutMs
+        }
+      ])
+    ),
+    sentinels: Object.fromEntries(
+      manifest.packs
+        .filter((entry) => entry.expectedExtensions.length > 0)
+        .map((entry) => [entry.pack, entry.expectedExtensions])
+    ),
+    cannotRunAlone: Object.fromEntries(
+      runEntries.flatMap((entry) =>
+        entry.cannotRunAlone === undefined
+          ? []
+          : [[entry.pack, entry.cannotRunAlone]]
+      )
+    )
+  }
+}
+
+function generate(snapshotPath: string): void {
+  const yamlPath = dataPath('cloud/supported_nodes.yaml')
+  const manifestPath = dataPath('customNodeManifest.cloud.json')
+  const yamlContents = readFileSync(yamlPath, 'utf8')
+  const currentValue: unknown = JSON.parse(readFileSync(manifestPath, 'utf8'))
+  const current = assertCloudManifestShape(currentValue, manifestPath)
+  const snapshotValue: unknown = JSON.parse(readFileSync(snapshotPath, 'utf8'))
+  const { overlay, sentinels, cannotRunAlone } = regenerationSidecars(current)
+  const manifest = buildCloudManifest(
+    validateSupportedNodesDoc(parse(yamlContents)),
+    validateObjectInfoSnapshot(snapshotValue),
+    sourceFromSupportedNodesHeader(yamlContents),
+    validateCuratedCloudOverlay(overlay),
+    sentinels,
+    validateCloudCannotRunAlone(cannotRunAlone)
+  )
+  writeFileSync(manifestPath, renderCloudManifest(manifest))
+}
+
+const invokedDirectly =
+  process.argv[1] !== undefined &&
+  import.meta.url === pathToFileURL(process.argv[1]).href
+
+if (invokedDirectly) {
+  const snapshotPath = process.argv[2]
+  if (snapshotPath === undefined) {
+    process.stderr.write(
+      'usage: pnpm gen:cloud-manifest <object-info-snapshot.json>\n'
+    )
+    process.exitCode = 1
+  } else {
+    generate(snapshotPath)
+  }
 }

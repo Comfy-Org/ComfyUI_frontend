@@ -1,4 +1,10 @@
 {
+  "source": {
+    "repository": "https://github.com/Comfy-Org/cloud",
+    "ref": "299167cff712d50d659b8e44d1efa60f4d4102bb",
+    "path": "comfy-complete/supported_nodes.yaml",
+    "importedAt": "2026-08-14"
+  },
   "coreDisabledNodes": {
     "CLIPSave": ["WritesToDisk"],
     "CheckpointSave": ["CreatesLargeOutputs"],
@@ -71,7 +77,8 @@
         "DepthAnythingV3_Streaming": ["WritesToDisk"],
         "LoadSALADModel": ["DisabledOnCloud"]
       },
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "webDirectory": "web"
     },
     {
       "pack": "ComfyUI-DynamiCrafterWrapper",
@@ -375,7 +382,8 @@
       "expectedNodeCount": 2,
       "expectedExtensions": ["UpscalerTensorrt.CustomResize"],
       "disabledNodes": {},
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "webDirectory": "js"
     },
     {
       "pack": "ComfyUI-WanAnimatePreprocess",
@@ -445,7 +453,8 @@
       "expectedNodeCount": 5,
       "expectedExtensions": [],
       "disabledNodes": {},
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "webDirectory": "web"
     },
     {
       "pack": "ComfyUI_Fill-Nodes",
@@ -659,7 +668,8 @@
         "FL_ZipDirectory": ["ReadsArbitraryFile"],
         "FL_ZipSave": ["ReadsArbitraryFile", "WritesToDisk"]
       },
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "webDirectory": "web"
     },
     {
       "pack": "ComfyUI_LayerStyle_Advance",
@@ -703,7 +713,8 @@
         "LayerUtility: ZhipuGLM4": ["RequiresExternalAPI"],
         "LayerUtility: ZhipuGLM4V": ["RequiresExternalAPI"]
       },
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "webDirectory": "js"
     },
     {
       "pack": "ComfyUI_SchemaNodes",
@@ -714,7 +725,8 @@
       "expectedNodeCount": 8,
       "expectedExtensions": [],
       "disabledNodes": {},
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "webDirectory": "js"
     },
     {
       "pack": "Comfyui-SecNodes",
@@ -810,7 +822,8 @@
         "LoadVideoUI": ["HasCustomEndpoints", "ReadsArbitraryFile"],
         "MultiImageLoader": ["ReadsArbitraryFile"]
       },
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "webDirectory": "js"
     },
     {
       "pack": "audio-separation-nodes-comfyui",
@@ -896,7 +909,8 @@
         "PlyPreviewLoadGaussianPLYEnhance": ["ReadsArbitraryFile"],
         "PlyPreviewLoadGaussianPLYPathEnhance": ["ReadsArbitraryFile"]
       },
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "webDirectory": "web"
     },
     {
       "pack": "comfyui-advanced-controlnet",
@@ -1037,7 +1051,8 @@
       "expectedNodeCount": 6,
       "expectedExtensions": ["inpaint-cropandstitch.showcontrol"],
       "disabledNodes": {},
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "webDirectory": "js"
     },
     {
       "pack": "comfyui-inpaint-nodes",
@@ -1068,7 +1083,8 @@
         "iToolsPromptStyler": ["DisabledOnCloud", "HasCustomEndpoints"],
         "iToolsPromptStylerExtra": ["DisabledOnCloud", "HasCustomEndpoints"]
       },
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "webDirectory": "web"
     },
     {
       "pack": "comfyui-layerdiffuse",
@@ -1106,7 +1122,8 @@
       "expectedNodeCount": 2,
       "expectedExtensions": ["ComfyUI.QwenMultiangle"],
       "disabledNodes": {},
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "webDirectory": "js"
     },
     {
       "pack": "comfyui-rmbg",
@@ -1126,7 +1143,8 @@
         "Segment": ["DisabledOnCloud"],
         "SegmentV2": ["DisabledOnCloud"]
       },
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "webDirectory": "web"
     },
     {
       "pack": "comfyui-sam3",
@@ -1226,7 +1244,7 @@
       "workflow": "assets/customNodes/vhs_video_pipeline_cloud_run.json",
       "expectedNodes": ["VHS_LoadVideo", "VHS_VideoInfo"],
       "expectedNodeCount": 32,
-      "expectedRunnableCount": 28,
+      "expectedRunnableCount": 29,
       "expectedExtensions": ["VideoHelperSuite.Core"],
       "disabledNodes": {
         "VHS_BatchManager": ["DisabledOnCloud"],
@@ -1249,7 +1267,8 @@
       "expectedNodeCount": 1,
       "expectedExtensions": ["comfyui.workflow.prettier"],
       "disabledNodes": {},
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "webDirectory": "web"
     },
     {
       "pack": "comfyui_controlnet_aux",
@@ -1319,7 +1338,8 @@
         "LayerUtility: PurgeVRAM V2": ["DisabledOnCloud", "Stateful"],
         "LayerUtility: QueueStop": ["DisabledOnCloud"]
       },
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "webDirectory": "js"
     },
     {
       "pack": "comfyui_nvidia_rtx_nodes",
@@ -1407,7 +1427,8 @@
         "◎ RadianceNukeBridge": ["NetworkAccess", "WritesToDisk"],
         "◎ RadianceQCExport": ["WritesToDisk"]
       },
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "webDirectory": "js"
     },
     {
       "pack": "sd-dynamic-thresholding",
