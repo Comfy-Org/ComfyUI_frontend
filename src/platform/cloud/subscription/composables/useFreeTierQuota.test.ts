@@ -45,6 +45,7 @@ describe('useFreeTierQuota', () => {
     const quota = await loadQuota()
 
     expect(quota.quotaEnabled.value).toBe(true)
+    expect(quota.freeTierExecutionPermitted.value).toBe(true)
   })
 
   it('keeps the quota disabled off Cloud even when the flag and an allowance are present', async () => {
