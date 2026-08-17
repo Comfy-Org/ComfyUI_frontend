@@ -17,8 +17,9 @@ target.
 
 ## Node shell
 
-- **Authority:** `useNodeDataStore`; one plain `NodeState` in a root-flat,
-  owner-indexed bucket.
+- **Authority:** `useNodeDataStore`; one store-backed `NodeState` in a root-flat,
+  owner-indexed bucket. As a transitional exception, its `inputs` and `outputs`
+  still contain `NodeInputSlot` and `NodeOutputSlot` instances.
 - **Compatibility view/mirror:** `LGraphNode` fields are accessors over
   `_state`, the store-returned reactive proxy. This is one object, not a copy.
 - **Reads:** renderer components consume `NodeState`; legacy code reads

@@ -16,8 +16,9 @@ renderers, and extension-facing classes.
 - `widgetValueStore` owns widget values, render metadata, and order.
 - Yjs-backed `layoutStore` owns persistent node, group, and reroute geometry.
 - `badgeSystem` derives transient badge rows instead of storing them.
-- Graph lifecycle registers, transfers, and tears down migrated state across
-  root graphs and nested subgraph definitions.
+- Graph lifecycle registers and transfers migrated state across root graphs and
+  nested subgraph definitions. Clear paths tear it down; normal node removal
+  can retain widget entries until explicit deletion or root clear.
 - Identity normalization protects store ownership during load, copy/paste,
   insertion, conversion, and replacement.
 
