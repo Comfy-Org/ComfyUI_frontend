@@ -73,18 +73,33 @@
     @pointermove.capture="forwardPointerMovePanEvent"
     @keydown.space="forwardSpaceKeyEvent"
   >
-    <!-- Vue nodes rendered based on graph nodes -->
-    <LGraphNode
-      v-for="nodeData in allNodes"
-      :key="nodeData.id"
-      :node-data="nodeData"
-      :error="
-        executionErrorStore.lastExecutionErrorNodeId === nodeData.id
-          ? 'Execution error'
-          : null
-      "
-      :data-node-id="nodeData.id"
-    />
+    <template v-if="keepCulledNodesAlive">
+      <KeepAlive v-for="nodeData in rawNodes" :key="nodeData.id">
+        <LGraphNode
+          v-if="mountedNodeIds.has(nodeData.id)"
+          :node-data="nodeData"
+          :error="
+            executionErrorStore.lastExecutionErrorNodeId === nodeData.id
+              ? 'Execution error'
+              : null
+          "
+          :data-node-id="nodeData.id"
+        />
+      </KeepAlive>
+    </template>
+    <template v-else>
+      <LGraphNode
+        v-for="nodeData in visibleNodes"
+        :key="nodeData.id"
+        :node-data="nodeData"
+        :error="
+          executionErrorStore.lastExecutionErrorNodeId === nodeData.id
+            ? 'Execution error'
+            : null
+        "
+        :data-node-id="nodeData.id"
+      />
+    </template>
   </TransformPane>
 
   <LinkOverlayCanvas
@@ -308,8 +323,8 @@ const rawNodes = computed((): VueNodeData[] =>
   Array.from(vueNodeLifecycle.nodeManager.value?.vueNodeData?.values() ?? [])
 )
 
-const cullingEnabled = computed(() =>
-  settingStore.get('Comfy.VueNodes.ViewportCulling')
+const keepCulledNodesAlive = computed(
+  () => !settingStore.get('Comfy.VueNodes.ViewportCulling')
 )
 
 const nodeMembership = computed(() =>
@@ -335,14 +350,7 @@ const { pinnedNodeIds, refreshLiveState } = useViewportCullingPins({
 const { mountedNodeIds } = useViewportCulling({
   nodes: rawNodes,
   membership: nodeMembership,
-  // A getter, so the composable has a reactive dependency on the setting. The
-  // callbacks below are plain functions, so reading it inside them alone would
-  // leave nothing to recompute the mounted set when the switch is turned back
-  // on - it would stay at the empty value it converged to while disabled, and
-  // `allNodes` would filter every node against it.
-  isEnabled: () => cullingEnabled.value,
   queryNodesInBounds: (bounds) => {
-    if (!cullingEnabled.value) return []
     const nodeIds = new Set(
       layoutStore.queryNodesInBounds({
         ...bounds,
@@ -373,21 +381,15 @@ watch(
 )
 
 watch(
-  [mountedNodeIds, nodeMembership, cullingEnabled],
+  [mountedNodeIds, nodeMembership],
   () => {
-    setExpectedRenderedNodeIds(
-      cullingEnabled.value
-        ? mountedNodeIds.value
-        : new Set(rawNodes.value.map((node) => node.id))
-    )
+    setExpectedRenderedNodeIds(mountedNodeIds.value)
   },
   { immediate: true, flush: 'post' }
 )
 
-const allNodes = computed((): VueNodeData[] =>
-  cullingEnabled.value
-    ? rawNodes.value.filter((node) => mountedNodeIds.value.has(node.id))
-    : rawNodes.value
+const visibleNodes = computed((): VueNodeData[] =>
+  rawNodes.value.filter((node) => mountedNodeIds.value.has(node.id))
 )
 watch(
   () => linearMode.value,
@@ -403,7 +405,9 @@ watch(
     }
 
     beginVueNodeSlotSync()
-    setExpectedRenderedNodeIds(new Set(allNodes.value.map((node) => node.id)))
+    setExpectedRenderedNodeIds(
+      new Set(visibleNodes.value.map((node) => node.id))
+    )
   }
 )
 

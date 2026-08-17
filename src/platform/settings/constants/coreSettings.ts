@@ -1209,10 +1209,10 @@ export const CORE_SETTINGS: SettingParams[] = [
   {
     id: 'Comfy.VueNodes.ViewportCulling',
     category: ['Comfy', 'Nodes 2.0', 'ViewportCulling'],
-    name: 'Only render nodes near the viewport',
+    name: 'Unmount nodes outside the viewport',
     type: 'boolean',
     tooltip:
-      'Keeps only nodes in or near the visible area mounted in the DOM, which makes large workflows much faster. Disable if nodes or links misbehave when scrolled off screen.',
+      'Enabled: offscreen nodes are removed and recreated when they return, minimizing memory use. Disabled: offscreen nodes are still removed from the page, but their component state is preserved. Viewport virtualization remains active in both modes.',
     defaultValue: true,
     sortOrder: 101,
     experimental: true,
