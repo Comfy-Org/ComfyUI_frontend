@@ -297,36 +297,39 @@ describe('WidgetItem', () => {
       expect(getStubWidget(upload.container).options.disabled).toBe(true)
     })
 
-    it('uses the linked presentation for an exact core media selector', () => {
-      mockGetInputSpecForWidget.mockReturnValue({
-        type: 'COMBO',
-        name: 'image',
-        image_upload: true
-      })
-      mockFromLGraphNode.mockReturnValue({
-        name: 'LoadImage',
-        isCoreNode: true
-      })
-      const widget = createMockWidget({ name: 'image', type: 'asset' })
-      const node = createMockNode({
-        type: 'LoadImage',
-        inputs: [
-          {
-            name: 'image',
-            type: 'COMBO',
-            link: toLinkId(1),
-            boundingRect: [0, 0, 0, 0],
-            widget: { name: 'image' }
-          }
-        ]
-      })
+    it.for(['LoadImage', 'LoadImageMask', 'LoadImageOutput'])(
+      'uses the linked presentation for the exact core %s selector',
+      (nodeType) => {
+        mockGetInputSpecForWidget.mockReturnValue({
+          type: 'COMBO',
+          name: 'image',
+          image_upload: true
+        })
+        mockFromLGraphNode.mockReturnValue({
+          name: nodeType,
+          isCoreNode: true
+        })
+        const widget = createMockWidget({ name: 'image', type: 'asset' })
+        const node = createMockNode({
+          type: nodeType,
+          inputs: [
+            {
+              name: 'image',
+              type: 'COMBO',
+              link: toLinkId(1),
+              boundingRect: [0, 0, 0, 0],
+              widget: { name: 'image' }
+            }
+          ]
+        })
 
-      const { container } = renderWidgetItem(widget, node)
-      const stub = getStubWidget(container)
+        const { container } = renderWidgetItem(widget, node)
+        const stub = getStubWidget(container)
 
-      expect(stub.linkedDisplay).toBe('control')
-      expect(stub.options.disabled).toBe(true)
-    })
+        expect(stub.linkedDisplay).toBe('control')
+        expect(stub.options.disabled).toBe(true)
+      }
+    )
 
     it('does not add linked presentation to a special widget', () => {
       const widget = createMockWidget({

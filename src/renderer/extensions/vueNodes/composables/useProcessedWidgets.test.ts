@@ -904,19 +904,22 @@ describe('computeProcessedWidgets linked presentation', () => {
     expect(processed.simplified.options?.disabled).toBe(true)
   })
 
-  it('hides and disables a linked core media selector', () => {
-    const widget = createMockWidget({
-      name: 'image',
-      type: 'asset',
-      spec: { type: 'COMBO', name: 'image', image_upload: true },
-      slotMetadata: linkedSlot
-    })
+  it.for(['LoadImage', 'LoadImageMask', 'LoadImageOutput'])(
+    'hides and disables a linked core %s selector',
+    (nodeType) => {
+      const widget = createMockWidget({
+        name: 'image',
+        type: 'asset',
+        spec: { type: 'COMBO', name: 'image', image_upload: true },
+        slotMetadata: linkedSlot
+      })
 
-    const [processed] = processNodeWidgets([widget], 'LoadImage', true)
+      const [processed] = processNodeWidgets([widget], nodeType, true)
 
-    expect(processed.linkedDisplay).toBe('control')
-    expect(processed.simplified.options?.disabled).toBe(true)
-  })
+      expect(processed.linkedDisplay).toBe('control')
+      expect(processed.simplified.options?.disabled).toBe(true)
+    }
+  )
 
   it('keeps an asset-browser combo rendered while hiding an ordinary combo', () => {
     shouldUseAssetBrowser.mockReturnValue(true)

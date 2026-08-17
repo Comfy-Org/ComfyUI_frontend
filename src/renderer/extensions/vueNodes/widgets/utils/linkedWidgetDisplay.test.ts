@@ -102,6 +102,18 @@ describe('resolveLinkedWidgetDisplay', () => {
       spec: { type: 'COMBO', name: 'image', image_upload: true }
     },
     {
+      nodeType: 'LoadImageMask',
+      name: 'image',
+      type: 'COMBO',
+      spec: { type: 'COMBO', name: 'image', image_upload: true }
+    },
+    {
+      nodeType: 'LoadImageOutput',
+      name: 'image',
+      type: 'asset',
+      spec: { type: 'COMBO', name: 'image', image_upload: true }
+    },
+    {
       nodeType: 'LoadVideo',
       name: 'file',
       type: 'COMBO',
@@ -163,6 +175,15 @@ describe('resolveLinkedWidgetDisplay', () => {
         spec: { type: 'COMBO', name: 'image', image_upload: true }
       },
       coreNodeType: 'LoadImage'
+    },
+    {
+      label: 'out-of-scope core 3D loader',
+      widget: {
+        name: 'model_file',
+        type: 'load3D',
+        spec: { type: 'COMBO', name: 'model_file' }
+      },
+      coreNodeType: 'Load3D'
     }
   ] satisfies Array<{
     label: string

@@ -19,6 +19,8 @@ interface LinkedWidgetDisplayContext {
 
 const CORE_MEDIA_SELECTOR_WIDGETS = new Map([
   ['LoadImage', 'image'],
+  ['LoadImageMask', 'image'],
+  ['LoadImageOutput', 'image'],
   ['LoadVideo', 'file'],
   ['LoadAudio', 'audio']
 ])
