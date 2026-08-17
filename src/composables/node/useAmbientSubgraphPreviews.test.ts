@@ -135,6 +135,31 @@ describe(useAmbientSubgraphPreviews, () => {
     ])
   })
 
+  it.for([
+    ['video', '/view?filename=output.webm'],
+    ['audio', '/view?filename=output.mp3']
+  ] as const)(
+    'derives %s type from previewMediaType, same as the promoted path',
+    ([mediaType, url]) => {
+      const setup = createSetup()
+      const node = addInteriorNode(setup, {
+        id: 10,
+        previewMediaType: mediaType
+      })
+      seedOutputs(setup.subgraph.id, [10])
+      vi.mocked(useNodeOutputStore().getNodeImageUrls).mockImplementation(
+        (n) => (n === node ? [url] : undefined)
+      )
+
+      const { ambientPreviews } = useAmbientSubgraphPreviews(
+        () => setup.subgraphNode
+      )
+      expect(ambientPreviews.value).toEqual([
+        expect.objectContaining({ sourceNodeId: '10', type: mediaType })
+      ])
+    }
+  )
+
   it('returns separate entries for two concurrently-executing interior nodes', () => {
     const setup = createSetup()
     const node10 = addInteriorNode(setup, {

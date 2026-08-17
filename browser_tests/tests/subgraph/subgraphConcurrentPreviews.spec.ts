@@ -74,5 +74,41 @@ test.describe(
         )
       })
     })
+
+    // Regression coverage for `mergeSubgraphPreviews`: it excludes an
+    // ambient preview only while its source node is in the host's *current*
+    // exposure set, not permanently at merge time. Un-promoting a still-live
+    // sampler's `$$canvas-image-preview` must not blank it — the ambient
+    // rollup immediately takes back over for any interior node that's still
+    // producing preview frames.
+    test('un-promoting a still-live sampler falls back to its ambient preview instead of disappearing', async ({
+      comfyPage,
+      getWebSocket
+    }) => {
+      const ws = await getWebSocket()
+      const exec = new ExecutionHelper(comfyPage, ws)
+      const subgraphNode =
+        comfyPage.vueNodes.getNodeByTitle(SUBGRAPH_NODE_TITLE)
+      const previewImages = subgraphNode.locator('img[src^="blob:"]')
+
+      const jobId = await exec.run()
+      await comfyPage.nextFrame()
+      exec.executionStart(jobId)
+
+      await test.step('the exposed sampler shows its live preview', async () => {
+        exec.latentPreview(jobId, FIRST_SAMPLER_EXECUTION_ID)
+        await expect(previewImages).toHaveCount(1)
+      })
+
+      await test.step('un-promoting its canvas image preview keeps it visible via the ambient rollup', async () => {
+        await comfyPage.subgraph.editor.togglePromotion(subgraphNode, {
+          nodeId: FIRST_SAMPLER_ID,
+          widgetName: '$$canvas-image-preview',
+          toState: false
+        })
+
+        await expect(previewImages).toHaveCount(1)
+      })
+    })
   }
 )
