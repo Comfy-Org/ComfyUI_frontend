@@ -36,6 +36,7 @@ import type {
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { setNodeTypeDisabledPredicate } from '@/lib/litegraph/src/nodeTypeAvailability'
 import { useNodeDisabledState } from '@/platform/nodeDisabled/nodeDisabledState'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -179,6 +180,16 @@ function getMinSize(node: LGraphNode) {
 export const useLitegraphService = () => {
   const extensionService = useExtensionService()
   const { isNodeDisabled } = useNodeDisabledState()
+  setNodeTypeDisabledPredicate((nodeType) => {
+    const nodeData = nodeType.nodeData
+    return (
+      nodeData?.api_node === true &&
+      isNodeDisabled({
+        api_node: nodeData.api_node,
+        category: nodeData.category ?? ''
+      })
+    )
+  })
   const toastStore = useToastStore()
   const widgetStore = useWidgetStore()
   const canvasStore = useCanvasStore()
@@ -603,9 +614,7 @@ export const useLitegraphService = () => {
     node.category = nodeDef.category
     node.title = nodeDef.display_name || nodeDef.name
 
-    if (isNodeDisabled(nodeDef)) {
-      node.skip_list = true
-    } else if (nodeDef.dev_only) {
+    if (nodeDef.dev_only) {
       const settingStore = useSettingStore()
       node.skip_list = !settingStore.get('Comfy.DevMode')
     }
@@ -881,6 +890,20 @@ export const useLitegraphService = () => {
     options: CreateNodeOptions = {},
     addOptions?: GraphAddOptions
   ): LGraphNode | null {
+    if (isNodeDisabled(nodeDef)) {
+      toastStore.add({
+        severity: 'warn',
+        summary: t(
+          'errorCatalog.validationErrors.PARTNER_NODE_DISABLED.toastTitle'
+        ),
+        detail: t(
+          'errorCatalog.validationErrors.PARTNER_NODE_DISABLED.toastMessage'
+        ),
+        life: 3000
+      })
+      return null
+    }
+
     options.pos ??= getCanvasCenter()
 
     if (isBlueprintType(nodeDef.name)) {

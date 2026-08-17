@@ -1,6 +1,11 @@
 <template>
   <div
-    class="option-container flex w-full cursor-pointer items-center justify-between overflow-hidden px-2 py-0"
+    :class="
+      cn(
+        'option-container flex w-full cursor-pointer items-center justify-between overflow-hidden px-2 py-0',
+        isDisabled && 'opacity-60'
+      )
+    "
   >
     <div class="option-display-name flex flex-col font-semibold">
       <div>
@@ -21,6 +26,11 @@
       </div>
     </div>
     <div class="option-badges">
+      <Tag
+        v-if="isDisabled"
+        :value="$t('workspacePanel.partnerNodes.disabledBadge')"
+        severity="warn"
+      />
       <Tag
         v-if="nodeDef.deprecated"
         :value="$t('g.deprecated')"
@@ -52,12 +62,14 @@ import Chip from 'primevue/chip'
 import Tag from 'primevue/tag'
 import { computed } from 'vue'
 
+import { useNodeDisabledState } from '@/platform/nodeDisabled/nodeDisabledState'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeFrequencyStore } from '@/stores/nodeDefStore'
 import { NodeSourceType } from '@/types/nodeSource'
 import { formatNumberWithSuffix, highlightQuery } from '@/utils/formatUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const settingStore = useSettingStore()
 const showCategory = computed(() =>
@@ -78,6 +90,9 @@ const nodeBookmarkStore = useNodeBookmarkStore()
 const isBookmarked = computed(() =>
   nodeBookmarkStore.isBookmarked(props.nodeDef)
 )
+
+const { isNodeDisabled } = useNodeDisabledState()
+const isDisabled = computed(() => isNodeDisabled(props.nodeDef))
 
 const props = defineProps<{
   nodeDef: ComfyNodeDefImpl

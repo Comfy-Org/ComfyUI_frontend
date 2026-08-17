@@ -8,7 +8,8 @@ const {
   mockConvertEventToCanvasOffset,
   mockSelectItems,
   mockCanvas,
-  mockToastAdd
+  mockToastAdd,
+  mockIsNodeDisabled
 } = vi.hoisted(() => {
   const mockConvertEventToCanvasOffset = vi.fn()
   const mockSelectItems = vi.fn()
@@ -17,6 +18,7 @@ const {
     mockConvertEventToCanvasOffset,
     mockSelectItems,
     mockToastAdd: vi.fn(),
+    mockIsNodeDisabled: vi.fn(),
     mockCanvas: {
       canvas: {
         getBoundingClientRect: vi.fn()
@@ -43,6 +45,10 @@ vi.mock('@/platform/updates/common/toastStore', () => ({
   useToastStore: vi.fn(() => ({ add: mockToastAdd }))
 }))
 
+vi.mock('@/platform/nodeDisabled/nodeDisabledState', () => ({
+  useNodeDisabledState: vi.fn(() => ({ isNodeDisabled: mockIsNodeDisabled }))
+}))
+
 vi.mock('@/i18n', () => ({ t: (key: string) => key }))
 
 describe('useNodeDragToCanvas', () => {
@@ -56,6 +62,7 @@ describe('useNodeDragToCanvas', () => {
   beforeEach(async () => {
     vi.resetModules()
     vi.resetAllMocks()
+    mockIsNodeDisabled.mockReturnValue(false)
 
     const module = await import('./useNodeDragToCanvas')
     useNodeDragToCanvas = module.useNodeDragToCanvas
@@ -78,6 +85,51 @@ describe('useNodeDragToCanvas', () => {
 
       expect(isDragging.value).toBe(true)
       expect(draggedNode.value).toBe(mockNodeDef)
+    })
+  })
+
+  describe('policy-disabled nodes', () => {
+    it('should refuse to start dragging a disabled node and show the policy toast', () => {
+      mockIsNodeDisabled.mockReturnValue(true)
+
+      const { isDragging, draggedNode, startDrag } = useNodeDragToCanvas()
+      startDrag(mockNodeDef)
+
+      expect(isDragging.value).toBe(false)
+      expect(draggedNode.value).toBeNull()
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: 'warn',
+          detail:
+            'errorCatalog.validationErrors.PARTNER_NODE_DISABLED.toastMessage'
+        })
+      )
+    })
+
+    it('should not show a creation-failure toast when the node is disabled mid-drag', () => {
+      mockCanvas.canvas.getBoundingClientRect.mockReturnValue({
+        left: 0,
+        right: 500,
+        top: 0,
+        bottom: 500
+      })
+      mockConvertEventToCanvasOffset.mockReturnValue([150, 150])
+      mockAddNodeOnGraph.mockReturnValue(null)
+
+      const { startDrag } = useNodeDragToCanvas()
+      startDrag(mockNodeDef)
+      mockIsNodeDisabled.mockReturnValue(true)
+
+      document.dispatchEvent(
+        new PointerEvent('pointerup', {
+          clientX: 250,
+          clientY: 250,
+          bubbles: true
+        })
+      )
+
+      expect(mockToastAdd).not.toHaveBeenCalled()
+      expect(mockSelectItems).not.toHaveBeenCalled()
     })
   })
 

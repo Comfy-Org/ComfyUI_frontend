@@ -326,7 +326,6 @@ export interface NodeDefFilter {
 
 export const useNodeDefStore = defineStore('nodeDef', () => {
   const settingStore = useSettingStore()
-  const { isNodeDisabled } = useNodeDisabledState()
 
   const nodeDefsByName = ref<Record<string, ComfyNodeDefImpl>>({})
   const nodeDefsByDisplayName = ref<Record<string, ComfyNodeDefImpl>>({})
@@ -341,9 +340,7 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     for (const nodeType of Object.values(LiteGraph.registered_node_types)) {
       const nodeData =
         registeredNodeDefs[nodeType.nodeData?.name ?? ''] ?? nodeType.nodeData
-      if (nodeData && isNodeDisabled(nodeData)) {
-        nodeType.skip_list = true
-      } else if (nodeData?.dev_only) {
+      if (nodeData?.dev_only) {
         nodeType.skip_list = !devModeEnabled
       } else if (nodeData?.api_node) {
         nodeType.skip_list = false
@@ -383,10 +380,8 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
   })
 
   const visibleNodeDefs = computed(() => {
-    return nodeDefs.value.filter(
-      (nodeDef) =>
-        nodeDefFilters.value.every((filter) => filter.predicate(nodeDef)) &&
-        !isNodeDisabled(nodeDef)
+    return nodeDefs.value.filter((nodeDef) =>
+      nodeDefFilters.value.every((filter) => filter.predicate(nodeDef))
     )
   })
   const nodeSearchService = computed(
@@ -567,6 +562,7 @@ export const useNodeFrequencyStore = defineStore('nodeFrequency', () => {
   }
 
   const nodeDefStore = useNodeDefStore()
+  const { isNodeDisabled } = useNodeDisabledState()
   const topNodeDefs = computed<ComfyNodeDefImpl[]>(() => {
     const visibleNodeNames = new Set(
       nodeDefStore.visibleNodeDefs.map((nodeDef) => nodeDef.name)
@@ -575,7 +571,9 @@ export const useNodeFrequencyStore = defineStore('nodeFrequency', () => {
       .map((nodeName: string) => nodeDefStore.nodeDefsByName[nodeName])
       .filter(
         (nodeDef): nodeDef is ComfyNodeDefImpl =>
-          nodeDef !== undefined && visibleNodeNames.has(nodeDef.name)
+          nodeDef !== undefined &&
+          visibleNodeNames.has(nodeDef.name) &&
+          !isNodeDisabled(nodeDef)
       )
       .slice(0, topNodeDefLimit.value)
   })

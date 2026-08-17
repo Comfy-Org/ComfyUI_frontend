@@ -1,7 +1,7 @@
 <template>
   <div
     ref="container"
-    class="node-lib-node-container size-full"
+    :class="cn('node-lib-node-container size-full', isDisabled && 'opacity-60')"
     data-testid="node-tree-leaf"
     :data-node-name="nodeDef.display_name"
   >
@@ -68,6 +68,17 @@
 
     <teleport v-if="isHovered" to="#node-library-node-preview-container">
       <div class="node-lib-node-preview" :style="nodePreviewStyle">
+        <div
+          v-if="isDisabled"
+          data-testid="node-preview-disabled-note"
+          class="mb-1 rounded-sm bg-amber-500/20 px-2 py-1 text-xs text-amber-400"
+        >
+          {{
+            $t(
+              'errorCatalog.validationErrors.PARTNER_NODE_DISABLED.toastMessage'
+            )
+          }}
+        </div>
         <NodePreview :node-def="nodeDef" />
       </div>
     </teleport>
@@ -86,6 +97,7 @@ import { useI18n } from 'vue-i18n'
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import NodePreview from '@/components/node/NodePreview.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { useNodeDisabledState } from '@/platform/nodeDisabled/nodeDisabledState'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
@@ -108,6 +120,8 @@ const nodeBookmarkStore = useNodeBookmarkStore()
 const isBookmarked = computed(() =>
   nodeBookmarkStore.isBookmarked(nodeDef.value)
 )
+const { isNodeDisabled } = useNodeDisabledState()
+const isDisabled = computed(() => isNodeDisabled(nodeDef.value))
 const settingStore = useSettingStore()
 const sidebarLocation = computed<'left' | 'right'>(() =>
   settingStore.get('Comfy.Sidebar.Location')

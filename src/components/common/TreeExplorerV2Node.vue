@@ -9,7 +9,13 @@
     <div
       v-if="item.value.type === 'node'"
       v-bind="$attrs"
-      :class="cn(ROW_CLASS, isSelected && 'bg-comfy-input')"
+      :class="
+        cn(
+          ROW_CLASS,
+          isSelected && 'bg-comfy-input',
+          isDisabled && 'opacity-60'
+        )
+      "
       :style="rowStyle"
       draggable="true"
       @click.stop="handleClick($event, handleToggle, handleSelect)"
@@ -104,6 +110,7 @@ import { computed, inject, useTemplateRef } from 'vue'
 
 import NodePreviewCard from '@/components/node/NodePreviewCard.vue'
 import { useNodePreviewAndDrag } from '@/composables/node/useNodePreviewAndDrag'
+import { useNodeDisabledState } from '@/platform/nodeDisabled/nodeDisabledState'
 import Button from '@/components/ui/button/Button.vue'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
@@ -136,6 +143,11 @@ const subgraphStore = useSubgraphStore()
 const previewRef = useTemplateRef('previewRef')
 
 const nodeDef = computed(() => item.value.data)
+
+const { isNodeDisabled } = useNodeDisabledState()
+const isDisabled = computed(
+  () => nodeDef.value !== undefined && isNodeDisabled(nodeDef.value)
+)
 
 const isBookmarked = computed(() => {
   if (!nodeDef.value) return false

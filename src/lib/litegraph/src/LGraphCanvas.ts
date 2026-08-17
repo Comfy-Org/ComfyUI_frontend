@@ -3,6 +3,7 @@ import { toValue } from 'vue'
 
 import { isMiddleButtonEvent } from '@/base/pointerUtils'
 import { MovingInputLink } from '@/lib/litegraph/src/canvas/MovingInputLink'
+import { isNodeTypeDisabled } from '@/lib/litegraph/src/nodeTypeAvailability'
 import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
 import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
 import { LitegraphLinkAdapter } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
@@ -1203,6 +1204,25 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       ).filter((category) => category.startsWith(base_category))
       const categoryEntries: AddNodeMenu[] = []
 
+      const categoriesWithNodes = new Set<string>()
+      const categoriesWithEnabledNodes = new Set<string>()
+      for (const nodeType of Object.values(LiteGraph.registered_node_types)) {
+        if (nodeType.skip_list || !nodeType.category) continue
+        categoriesWithNodes.add(nodeType.category)
+        if (!isNodeTypeDisabled(nodeType)) {
+          categoriesWithEnabledNodes.add(nodeType.category)
+        }
+      }
+      function isCategoryFullyDisabled(categoryPath: string): boolean {
+        let sawAny = false
+        for (const category of categoriesWithNodes) {
+          if (!`${category}/`.startsWith(categoryPath)) continue
+          if (categoriesWithEnabledNodes.has(category)) return false
+          sawAny = true
+        }
+        return sawAny
+      }
+
       for (const category of categories) {
         if (!category) continue
 
@@ -1227,6 +1247,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
             value: category_path,
             content: name,
             has_submenu: true,
+            className: isCategoryFullyDisabled(category_path)
+              ? 'dimmed'
+              : undefined,
             callback: function (value, _event, _mouseEvent, contextMenu) {
               inner_onMenuAdded(value.value, contextMenu)
             }
@@ -1254,6 +1277,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           value: node.type,
           content: node.title,
           has_submenu: false,
+          disabled: isNodeTypeDisabled(node),
           callback: function (value, _event, _mouseEvent, contextMenu) {
             if (!canvas.graph) throw new NullGraphError()
 

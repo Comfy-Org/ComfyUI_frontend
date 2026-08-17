@@ -4,6 +4,15 @@
     :style="{ width: `${BASE_WIDTH_PX * (scaleFactor / BASE_SCALE)}px` }"
     data-testid="node-preview-card"
   >
+    <div
+      v-if="isDisabled"
+      data-testid="node-preview-disabled-note"
+      class="mx-3 mt-3 rounded-sm bg-amber-500/20 px-2 py-1 text-2xs/normal text-amber-400"
+    >
+      {{
+        $t('errorCatalog.validationErrors.PARTNER_NODE_DISABLED.toastMessage')
+      }}
+    </div>
     <div ref="previewContainerRef" class="overflow-hidden p-3">
       <div
         ref="previewWrapperRef"
@@ -102,6 +111,7 @@ import { computed, ref } from 'vue'
 
 import NodePricingBadge from '@/components/node/NodePricingBadge.vue'
 import NodeProviderBadge from '@/components/node/NodeProviderBadge.vue'
+import { useNodeDisabledState } from '@/platform/nodeDisabled/nodeDisabledState'
 import LGraphNodePreview from '@/renderer/extensions/vueNodes/components/LGraphNodePreview.vue'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
@@ -131,6 +141,9 @@ useResizeObserver(previewWrapperRef, (entries) => {
     previewContainerRef.value.style.height = `${scaledHeight + PREVIEW_CONTAINER_PADDING_PX}px`
   }
 })
+
+const { isNodeDisabled } = useNodeDisabledState()
+const isDisabled = computed(() => isNodeDisabled(nodeDef))
 
 const categoryPath = computed(() => nodeDef.category?.replaceAll('/', ' / '))
 
