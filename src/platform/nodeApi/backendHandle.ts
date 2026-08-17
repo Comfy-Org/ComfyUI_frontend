@@ -40,6 +40,11 @@ export interface BackendHandle {
    */
   assetUrl(route: string): string
   /**
+   * Identifies this frontend connection to a pack's own backend route.
+   * Undefined until the backend establishes the connection; do not persist it.
+   */
+  sessionId(): string | undefined
+  /**
    * Subscribes to a backend message. The name is whatever the backend emits;
    * `detail` is its payload, unparsed.
    */
@@ -75,6 +80,10 @@ export function createBackendApi(): BackendHandle {
         )
       }
       return api.fileURL(route)
+    },
+
+    sessionId() {
+      return api.clientId
     },
 
     fetch(route: string, init?: RequestInit) {
