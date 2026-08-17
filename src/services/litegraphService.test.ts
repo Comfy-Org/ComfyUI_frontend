@@ -9,7 +9,9 @@ vi.mock('@/scripts/app', () => ({
 }))
 
 import { app } from '@/scripts/app'
-import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { isNodeTypeDisabled } from '@/lib/litegraph/src/nodeTypeAvailability'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { usePartnerNodeGovernanceStore } from '@/platform/workspace/stores/partnerNodeGovernanceStore'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -89,7 +91,7 @@ describe('useLitegraphService().registerNodeDef', () => {
     try {
       const nodeType = LiteGraph.registered_node_types[nodeDef.name]
       expect(LiteGraph.getNodeTypesCategories()).toContain(nodeDef.category)
-      expect(LGraphCanvas.isNodeTypeDisabled?.(nodeType)).toBe(false)
+      expect(isNodeTypeDisabled(nodeType)).toBe(false)
 
       governanceStore.policy = {
         enforcementEnabled: true,
@@ -97,16 +99,47 @@ describe('useLitegraphService().registerNodeDef', () => {
       }
       await nextTick()
       expect(LiteGraph.getNodeTypesCategories()).toContain(nodeDef.category)
-      expect(LGraphCanvas.isNodeTypeDisabled?.(nodeType)).toBe(true)
+      expect(isNodeTypeDisabled(nodeType)).toBe(true)
 
       governanceStore.policy = {
         enforcementEnabled: true,
         providers: [{ providerId: 'openai', enabled: true }]
       }
       await nextTick()
-      expect(LGraphCanvas.isNodeTypeDisabled?.(nodeType)).toBe(false)
+      expect(isNodeTypeDisabled(nodeType)).toBe(false)
     } finally {
       LiteGraph.unregisterNodeType(nodeDef.name)
     }
+  })
+
+  it('rejects placing a policy-disabled node with the policy toast', async () => {
+    const governanceStore = usePartnerNodeGovernanceStore()
+    governanceStore.providers = [
+      { id: 'openai', displayName: 'OpenAI', nodeCategories: ['OpenAI'] }
+    ]
+    governanceStore.policy = {
+      enforcementEnabled: true,
+      providers: [{ providerId: 'openai', enabled: false }]
+    }
+    const nodeDef: ComfyNodeDef = {
+      name: 'RejectedTestNode',
+      display_name: 'Rejected Test Node',
+      category: '_for_testing/partner-governance/OpenAI',
+      python_module: 'test',
+      description: '',
+      input: {},
+      output: [],
+      output_node: false,
+      api_node: true
+    }
+    const service = useLitegraphService()
+    const toastAdd = vi.spyOn(useToastStore(), 'add')
+
+    const node = service.addNodeOnGraph(nodeDef)
+
+    expect(node).toBeNull()
+    expect(toastAdd).toHaveBeenCalledWith(
+      expect.objectContaining({ severity: 'warn' })
+    )
   })
 })

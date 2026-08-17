@@ -3,6 +3,7 @@ import { toValue } from 'vue'
 
 import { isMiddleButtonEvent } from '@/base/pointerUtils'
 import { MovingInputLink } from '@/lib/litegraph/src/canvas/MovingInputLink'
+import { isNodeTypeDisabled } from '@/lib/litegraph/src/nodeTypeAvailability'
 import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
 import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
 import { LitegraphLinkAdapter } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
@@ -296,7 +297,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   static gradients: Record<string, CanvasGradient> = {}
 
   static search_limit = -1
-  static isNodeTypeDisabled?: (nodeType: typeof LGraphNode) => boolean
   static node_colors: Record<string, ColorOption> = {
     red: { color: '#322', bgcolor: '#533', groupcolor: '#A88' },
     brown: { color: '#332922', bgcolor: '#593930', groupcolor: '#b06634' },
@@ -1206,13 +1206,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
       const categoriesWithNodes = new Set<string>()
       const categoriesWithEnabledNodes = new Set<string>()
-      if (LGraphCanvas.isNodeTypeDisabled) {
-        for (const nodeType of Object.values(LiteGraph.registered_node_types)) {
-          if (nodeType.skip_list || !nodeType.category) continue
-          categoriesWithNodes.add(nodeType.category)
-          if (LGraphCanvas.isNodeTypeDisabled(nodeType) !== true) {
-            categoriesWithEnabledNodes.add(nodeType.category)
-          }
+      for (const nodeType of Object.values(LiteGraph.registered_node_types)) {
+        if (nodeType.skip_list || !nodeType.category) continue
+        categoriesWithNodes.add(nodeType.category)
+        if (!isNodeTypeDisabled(nodeType)) {
+          categoriesWithEnabledNodes.add(nodeType.category)
         }
       }
       function isCategoryFullyDisabled(categoryPath: string): boolean {
@@ -1279,7 +1277,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           value: node.type,
           content: node.title,
           has_submenu: false,
-          disabled: LGraphCanvas.isNodeTypeDisabled?.(node) === true,
+          disabled: isNodeTypeDisabled(node),
           callback: function (value, _event, _mouseEvent, contextMenu) {
             if (!canvas.graph) throw new NullGraphError()
 

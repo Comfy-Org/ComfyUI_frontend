@@ -36,6 +36,7 @@ import type {
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { setNodeTypeDisabledPredicate } from '@/lib/litegraph/src/nodeTypeAvailability'
 import { useNodeDisabledState } from '@/platform/nodeDisabled/nodeDisabledState'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -179,7 +180,7 @@ function getMinSize(node: LGraphNode) {
 export const useLitegraphService = () => {
   const extensionService = useExtensionService()
   const { isNodeDisabled } = useNodeDisabledState()
-  LGraphCanvas.isNodeTypeDisabled = (nodeType) => {
+  setNodeTypeDisabledPredicate((nodeType) => {
     const nodeData = nodeType.nodeData
     return (
       nodeData?.api_node === true &&
@@ -188,7 +189,7 @@ export const useLitegraphService = () => {
         category: nodeData.category ?? ''
       })
     )
-  }
+  })
   const toastStore = useToastStore()
   const widgetStore = useWidgetStore()
   const canvasStore = useCanvasStore()
