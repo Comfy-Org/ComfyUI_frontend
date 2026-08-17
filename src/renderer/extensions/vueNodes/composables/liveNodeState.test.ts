@@ -59,6 +59,15 @@ describe('findNodesWithLiveState', () => {
     expect(findNodesWithLiveState(root)).toEqual(new Set())
   })
 
+  it('ignores media that has finished playing', () => {
+    const root = mountNode('finished', '<video></video>')
+    const video = root.querySelector('video') as HTMLVideoElement
+    Object.defineProperty(video, 'paused', { value: false })
+    Object.defineProperty(video, 'ended', { value: true })
+
+    expect(findNodesWithLiveState(root)).toEqual(new Set())
+  })
+
   it('does not report a plain prompt textarea', () => {
     // The rule this replaces pinned every node with a legacy DOM widget, which
     // is 40% of a standard workflow - all of them prompt textareas. Their value

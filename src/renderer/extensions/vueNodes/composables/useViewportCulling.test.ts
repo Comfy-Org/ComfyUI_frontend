@@ -173,8 +173,8 @@ describe('useViewportCulling', () => {
   })
 
   it('holds the current set while the viewport is unmeasurable', async () => {
-    // Canvas absent or display:none must not default open and mount the graph.
     const nodes = ref([nodeData('a'), nodeData('b')])
+    const viewport = reactive({ width: 1000, height: 1000 })
     const scope = effectScope()
     activeScopes.push(scope)
     const mountedNodeIds = scope.run(
@@ -182,13 +182,19 @@ describe('useViewportCulling', () => {
         useViewportCulling({
           nodes: computed(() => nodes.value),
           queryNodesInBounds: () => ['a' as NodeId],
-          getViewportSize: () => ({ width: 0, height: 0 }),
+          getViewportSize: () => viewport,
           minNodesForCulling: 0
         }).mountedNodeIds
     )!
 
     await vi.advanceTimersByTimeAsync(600)
-    expect(mountedNodeIds.value.size).toBe(0)
+    expect(mountedNodeIds.value).toEqual(new Set(['a' as NodeId]))
+
+    Object.assign(viewport, { width: 0, height: 0 })
+    await nextTick()
+    await vi.advanceTimersByTimeAsync(600)
+
+    expect(mountedNodeIds.value).toEqual(new Set(['a' as NodeId]))
   })
 
   /** 600 nodes parked outside the initial viewport, brought in by panning. */

@@ -29,8 +29,8 @@ function isLiveElement(element: Element): boolean {
   // its src, and pinning every node that has one would creep back towards the
   // over-broad rule this replaces. No currentTime check: playback starts at
   // zero, and a seek to zero is still playback.
-  const media = element as HTMLMediaElement
-  return !media.paused && !media.ended
+  if (!(element instanceof HTMLMediaElement)) return false
+  return !element.paused && !element.ended
 }
 
 /**

@@ -1,6 +1,6 @@
 import { setActivePinia } from 'pinia'
 import { fromAny } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { effectScope, nextTick, ref } from 'vue'
 
@@ -141,6 +141,12 @@ describe('useNodePointerInteractions', () => {
     setActivePinia(createTestingPinia())
   })
 
+  afterEach(() => {
+    fromAny<{ isDraggingVueNodes: { value: boolean } }, unknown>(
+      layoutStore
+    ).isDraggingVueNodes.value = false
+  })
+
   it("a bystander unmount does not end another node's drag", () => {
     // Viewport culling unmounts nodes mid-drag; only the node that started
     // the drag may clear the global flag on dispose.
@@ -186,9 +192,6 @@ describe('useNodePointerInteractions', () => {
     scope.stop()
 
     expect(store.isDraggingVueNodes.value).toBe(true)
-
-    // Shared module-level flag; leaving it set would break later cases.
-    store.isDraggingVueNodes.value = false
   })
 
   it('cancelling before the move threshold also releases drag ownership', () => {
@@ -215,9 +218,6 @@ describe('useNodePointerInteractions', () => {
     scope.stop()
 
     expect(store.isDraggingVueNodes.value).toBe(true)
-
-    // Shared module-level flag; leaving it set would break later cases.
-    store.isDraggingVueNodes.value = false
   })
 
   it('should only start drag on left-click', async () => {
