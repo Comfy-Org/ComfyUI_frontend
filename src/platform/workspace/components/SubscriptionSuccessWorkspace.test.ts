@@ -12,10 +12,13 @@ vi.mock('vue-i18n', () => ({
   })
 }))
 
-const { mockMaxSeats, mockOccupiedSeats } = vi.hoisted(() => ({
-  mockMaxSeats: { value: 73 as number | null },
-  mockOccupiedSeats: { value: 1 as number | null }
-}))
+const { mockInviteSubmit, mockMaxSeats, mockOccupiedSeats } = vi.hoisted(
+  () => ({
+    mockInviteSubmit: vi.fn(),
+    mockMaxSeats: { value: 73 as number | null },
+    mockOccupiedSeats: { value: 1 as number | null }
+  })
+)
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
@@ -35,6 +38,21 @@ vi.mock('./InviteMembersForm.vue', () => ({
       'placeholder'
     ],
     emits: ['submitted'],
+    setup(
+      _: unknown,
+      {
+        emit,
+        expose
+      }: {
+        emit: (event: string, emails: string[]) => void
+        expose: (exposed: Record<string, unknown>) => void
+      }
+    ) {
+      mockInviteSubmit.mockImplementation(async () => {
+        emit('submitted', ['a@b.com'])
+      })
+      expose({ canSubmit: true, loading: false, submit: mockInviteSubmit })
+    },
     template:
       '<div data-testid="invite-form">max:{{ maxSeats }} occupied:{{ occupiedSeats }}<button data-testid="stub-submit" @click="$emit(\'submitted\', [\'a@b.com\'])">submit</button></div>'
   }
@@ -75,6 +93,11 @@ const TEAM_STOP = {
   discountedUsd: 630
 }
 
+const ButtonStub = {
+  emits: ['click'],
+  template: '<button @click="$emit(\'click\')"><slot /></button>'
+}
+
 function renderCard(props: Record<string, unknown> = {}) {
   return render(SubscriptionSuccessWorkspace, {
     props: {
@@ -87,9 +110,7 @@ function renderCard(props: Record<string, unknown> = {}) {
     global: {
       mocks: { $t: (key: string) => key },
       stubs: {
-        Button: {
-          template: '<button @click="$emit(\'click\')"><slot /></button>'
-        }
+        Button: ButtonStub
       }
     }
   })
@@ -106,6 +127,7 @@ function renderTeamCard(props: Record<string, unknown> = {}) {
 
 describe('SubscriptionSuccessWorkspace', () => {
   beforeEach(() => {
+    mockInviteSubmit.mockReset()
     mockMaxSeats.value = 73
     mockOccupiedSeats.value = 1
   })
@@ -114,6 +136,13 @@ describe('SubscriptionSuccessWorkspace', () => {
     renderCard()
     expect(screen.getByText('subscription.success.allSet')).toBeTruthy()
     expect(screen.getByText('$16')).toBeTruthy()
+  })
+
+  it('renders a zero price when subscription pricing is unavailable', () => {
+    renderCard({ tierKey: null, previewData: null })
+
+    expect(screen.getByText('$0')).toBeTruthy()
+    expect(screen.getByText('subscription.usdPerMonth')).toBeTruthy()
   })
 
   it('renders the team plan summary from the selected stop', () => {
@@ -132,9 +161,7 @@ describe('SubscriptionSuccessWorkspace', () => {
       global: {
         mocks: { $t: (key: string) => key },
         stubs: {
-          Button: {
-            template: '<button @click="$emit(\'click\')"><slot /></button>'
-          }
+          Button: ButtonStub
         }
       }
     })
@@ -199,6 +226,22 @@ describe('SubscriptionSuccessWorkspace', () => {
   it('places the Send invites action in the footer for a team upgrade', () => {
     renderTeamCard()
     expect(screen.getByText('subscription.success.sendInvites')).toBeTruthy()
+  })
+
+  it('submits the invite form from the footer action', async () => {
+    renderTeamCard()
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: 'subscription.success.sendInvites'
+      })
+    )
+
+    expect(mockInviteSubmit).toHaveBeenCalledOnce()
+    expect(screen.queryByTestId('invite-form')).toBeNull()
+    expect(
+      screen.getByText('workspacePanel.inviteMemberDialog.invitedMessage')
+    ).toBeTruthy()
   })
 
   it('shows no Send invites action for a personal upgrade', () => {
