@@ -1,10 +1,10 @@
 # Output Slot Connectivity
 
 Date: 2026-07-06
-Status: Accepted (follow-up to the
+Status: Accepted; follow-up to the
 [link topology store](link-topology-store.md); the minimal, non-breaking
 slice of the deferred `SlotConnection` component work in the
-[ECS migration plan](ecs-migration-plan.md))
+[ECS migration plan](ecs/ecs-migration-plan.md)
 
 Design record for answering "is this output slot connected, and by what
 links?" from `linkStore` instead of the `output.links[]` mirror. It is

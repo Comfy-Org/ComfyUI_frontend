@@ -604,4 +604,4 @@ behavior layer"]
 
 This diagram is intentionally high level. The operational Phase 4 -> 5 entry
 criteria (compatibility matrix, bridge fallback usage, rollback requirements)
-are defined in [ecs-migration-plan.md](ecs-migration-plan.md).
+are defined in [ecs-migration-plan.md](ecs/ecs-migration-plan.md).

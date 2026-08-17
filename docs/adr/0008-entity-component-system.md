@@ -272,7 +272,7 @@ System design is deferred to a future ADR. For detailed before/after walkthrough
 4. **Incremental extraction** — migrate one component at a time from classes into its dedicated store, using the bridge layer for backward compatibility
 5. **Deprecate class properties** — once all consumers read from the store, mark class properties as deprecated
 
-For the phased migration roadmap with shipping milestones, see [ECS Migration Plan](../architecture/ecs-migration-plan.md). For the full target architecture, see [ECS Target Architecture](../architecture/ecs-target-architecture.md). For an inventory of existing stores that already partially implement ECS patterns, see [Proto-ECS Stores](../architecture/proto-ecs-stores.md).
+For the phased migration roadmap with shipping milestones, see [ECS Migration Plan](../architecture/ecs/ecs-migration-plan.md). For the full target architecture, see [ECS Target Architecture](../architecture/ecs-target-architecture.md). For an inventory of existing stores that already partially implement ECS patterns, see [Proto-ECS Stores](../architecture/proto-ecs-stores.md).
 
 ### Relationship to ADR 0003 (Command Pattern / CRDT)
 
@@ -331,7 +331,7 @@ Companion architecture documents that expand on the design in this ADR:
 | [Entity System Structural Problems](../architecture/entity-problems.md)                          | Detailed problem catalog with line-level code references motivating the ECS migration                    |
 | [Proto-ECS Stores](../architecture/proto-ecs-stores.md)                                          | Inventory of existing Pinia stores that already partially implement ECS patterns                         |
 | [ECS Target Architecture](../architecture/ecs-target-architecture.md)                            | Full target architecture showing how entities and interactions transform under ECS                       |
-| [ECS Migration Plan](../architecture/ecs-migration-plan.md)                                      | Phased migration roadmap with shipping milestones and go/no-go criteria                                  |
+| [ECS Migration Plan](../architecture/ecs/ecs-migration-plan.md)                                  | Phased migration roadmap with shipping milestones and go/no-go criteria                                  |
 | [ECS Lifecycle Scenarios](../architecture/ecs-lifecycle-scenarios.md)                            | Before/after walkthroughs of lifecycle operations (node removal, link creation, etc.)                    |
 | [Subgraph Boundaries and Widget Promotion](../architecture/subgraph-boundaries-and-promotion.md) | Design rationale for modeling subgraphs as node components, not separate entities                        |
 | [Link Topology Store](../architecture/link-topology-store.md)                                    | Design record for the `linkStore` — target-input-slot keying, root-scoped buckets, registration protocol |
