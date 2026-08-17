@@ -271,6 +271,10 @@ const ROUNDTRIP_VALUE_ALLOWLIST: Record<string, Record<string, string>> = {
       'custom audio UI normalizes absent player state from an empty string to null on configure',
     LTXDirector:
       'director UI canonicalizes timeline JSON and its derived prompt fields on configure'
+  },
+  'comfyui-itools': {
+    iToolsRegexNode:
+      'pattern-picker reload replaces the regex field with the selected built-in pattern'
   }
 }
 

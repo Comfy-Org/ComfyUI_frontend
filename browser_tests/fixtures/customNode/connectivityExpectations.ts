@@ -12,15 +12,7 @@ export interface ConnectivityExpectations {
 }
 
 export const connectivityExpectations: ConnectivityExpectations = {
-  excludedNodeTypes: {
-    FL_CodeNode: {
-      pack: 'ComfyUI_Fill-Nodes',
-      reason:
-        'its frontend hook freezes the browser main thread during the graph round-trip',
-      restore:
-        'fix the FL_CodeNode frontend hook upstream, then remove this entry when the isolated sentinel completes'
-    }
-  },
+  excludedNodeTypes: {},
   connectRejected: [
     'AddTextPrefix.texts -> MathExpression|pysssss.expression',
     'FL_NodeLoader.TRIGGER -> FL_NodeLoader.trigger',

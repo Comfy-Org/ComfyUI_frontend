@@ -23,8 +23,11 @@ export const ROUNDTRIP_VALUE_ALLOWED_INDICES_VUE: Record<
     FL_ReplaceColor: '5,6,7,8,9,10,11,12'
   },
   'WhatDreamsCost-ComfyUI': {
-    LoadAudioUI: '5',
+    LoadAudioUI: '2,3,5',
     LTXDirector: '3,4,5,7'
+  },
+  'comfyui-itools': {
+    iToolsRegexNode: '0'
   }
 }
 

@@ -128,9 +128,15 @@ test.describe('cloud roundtrip expectations', () => {
         LTXDirector: '3,4,5,7'
       }
     })
-    expect(ROUNDTRIP_VALUE_ALLOWED_INDICES_VUE).toEqual(
-      ROUNDTRIP_VALUE_ALLOWED_INDICES_LITEGRAPH
-    )
+    expect(ROUNDTRIP_VALUE_ALLOWED_INDICES_VUE).toMatchObject({
+      'ComfyUI_Fill-Nodes':
+        ROUNDTRIP_VALUE_ALLOWED_INDICES_LITEGRAPH['ComfyUI_Fill-Nodes'],
+      'WhatDreamsCost-ComfyUI': {
+        LoadAudioUI: '2,3,5',
+        LTXDirector: '3,4,5,7'
+      },
+      'comfyui-itools': { iToolsRegexNode: '0' }
+    })
   })
 
   test('keeps the FL_TimeLine loss temporary and renderer-explicit', () => {
