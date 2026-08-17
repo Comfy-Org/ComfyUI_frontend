@@ -4,6 +4,7 @@ import type { CurveData } from '@/components/curve/types'
 import { t } from '@/i18n'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
@@ -1619,6 +1620,90 @@ describe('ComfyApp', () => {
 
       expect(missingNodesStore.missingNodesError).toBeNull()
       expect(executionErrorStore.lastExecutionError).toBeNull()
+    })
+  })
+
+  describe('workflow tab switching', () => {
+    const workflowAId = '11111111-1111-4111-8111-111111111111'
+    const workflowBId = '22222222-2222-4222-8222-222222222222'
+
+    const failedKSamplerErrors: Record<string, NodeError> = {
+      '1': {
+        errors: [
+          {
+            type: 'value_bigger_than_max',
+            message: 'Value 200 bigger than max of 100',
+            details: 'steps',
+            extra_info: { input_name: 'steps' }
+          }
+        ],
+        dependent_outputs: [],
+        class_type: 'KSampler'
+      }
+    }
+
+    function workflowGraphData(id: string): ComfyWorkflowJSON {
+      return { ...createWorkflowGraphData(), id }
+    }
+
+    function serialisedGraph(id: string): SerialisableGraph {
+      return {
+        id,
+        revision: 0,
+        version: 1,
+        state: {
+          lastGroupId: 0,
+          lastNodeId: 0,
+          lastLinkId: 0,
+          lastRerouteId: 0
+        },
+        nodes: [],
+        links: []
+      }
+    }
+
+    async function switchToWorkflow(
+      workflowService: WorkflowService,
+      graph: LGraph,
+      workflow: ComfyWorkflow,
+      workflowId: string
+    ) {
+      workflowService.beforeLoadNewGraph()
+      app.clean()
+      graph.configure(serialisedGraph(workflowId))
+      await workflowService.afterLoadNewGraph(
+        workflow,
+        workflowGraphData(workflowId)
+      )
+    }
+
+    it('restores the failed run state when returning to a workflow tab', async () => {
+      const workflowService = await useRealWorkflowService()
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+
+      const workflowA = markLoaded(
+        new ComfyWorkflow({ path: 'workflows/a.json', modified: 0, size: 0 })
+      )
+      const workflowB = markLoaded(
+        new ComfyWorkflow({ path: 'workflows/b.json', modified: 0, size: 0 })
+      )
+      await switchToWorkflow(workflowService, graph, workflowA, workflowAId)
+
+      const executionErrorStore = useExecutionErrorStore()
+      executionErrorStore.recordNodeErrors(failedKSamplerErrors)
+      expect(executionErrorStore.totalErrorCount).toBe(1)
+
+      await switchToWorkflow(workflowService, graph, workflowB, workflowBId)
+
+      expect(executionErrorStore.lastNodeErrors).toBeNull()
+      expect(executionErrorStore.totalErrorCount).toBe(0)
+
+      await switchToWorkflow(workflowService, graph, workflowA, workflowAId)
+
+      expect(executionErrorStore.lastNodeErrors).toEqual(failedKSamplerErrors)
+      expect(executionErrorStore.totalErrorCount).toBe(1)
     })
   })
 
