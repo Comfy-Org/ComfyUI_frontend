@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { MAX_DRAFTS } from '../base/draftTypes'
 import { StorageKeys } from '../base/storageKeys'
@@ -20,15 +18,6 @@ vi.mock('@/scripts/app', () => ({
 }))
 
 describe('workflowDraftStoreV2', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    sessionStorage.clear()
-  })
-
-  afterEach(() => {
-    sessionStorage.clear()
-  })
-
   describe('saveDraft', () => {
     it('saves draft to localStorage with separate payload', () => {
       const store = useWorkflowDraftStoreV2()

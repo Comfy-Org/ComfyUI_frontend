@@ -128,10 +128,8 @@ async function setup(
 describe('installDesktopLoginRedemption', () => {
   beforeEach(() => {
     vi.resetModules()
-    sessionStorage.clear()
     vi.stubGlobal('fetch', mockFetch)
     vi.spyOn(console, 'warn').mockImplementation(() => {})
-    mockFetch.mockReset()
     mockConfirm.mockResolvedValue(true)
     mockUserGetIdToken.mockResolvedValue('firebase-id-token')
     mockAuthStore = reactive({

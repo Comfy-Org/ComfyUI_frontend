@@ -29,8 +29,6 @@ describe('useNewUserService', () => {
 
   beforeEach(() => {
     mockSettingStore.settingValues = {}
-    mockSettingStore.get.mockReset()
-    mockSettingStore.set.mockReset()
 
     service = useNewUserService()
     service.reset()

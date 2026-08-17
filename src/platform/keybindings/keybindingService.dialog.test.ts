@@ -1,4 +1,3 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { markRaw, reactive } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -46,8 +45,6 @@ describe('keybindingService - dialog gate', () => {
   let mockCommandExecute: ReturnType<typeof useCommandStore>['execute']
 
   beforeEach(() => {
-    setActivePinia(createPinia())
-
     const commandStore = useCommandStore()
     mockCommandExecute = vi.fn()
     commandStore.execute = mockCommandExecute

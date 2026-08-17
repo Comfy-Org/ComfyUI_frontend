@@ -15,7 +15,7 @@ import type { LocalizedText, TranslationKey } from '../../i18n/translations'
 // omit gallery/pricing/faq/closingCta, and swap in the full config on launch
 // day.
 
-interface ModelLaunchCta {
+export interface ModelLaunchCta {
   labelKey: TranslationKey
   href: string
   target?: AnchorHTMLAttributes['target']
@@ -34,6 +34,10 @@ export interface ModelLaunchHero {
   // Still stand-in for the hero frame, for pages announcing a model whose
   // launch footage does not exist yet. Ignored once videoSrc is set.
   placeholderImageSrc?: string
+  // Still shown instead of the video below the 768px breakpoint, so phones
+  // never fetch videoSrc. Opt-in: pages that omit it keep playing the video
+  // at every viewport size, as they did before this field existed.
+  mobileFallbackImageSrc?: string
   // 'content-first' puts the badges, heading, CTAs and prompt bar above the
   // video. 'media-first' leads with the video, which is how /minimax reads.
   // 'overlay' centres the eyebrow, heading and CTAs on top of the media behind
@@ -48,7 +52,8 @@ export interface ModelLaunchHero {
   // Rendered muted directly after `titleKey`, for the two-tone Figma heading.
   titleRestKey?: TranslationKey
   descriptionKey?: TranslationKey
-  primaryCta: ModelLaunchCta
+  // Optional so a hero can render as title + description + badges only.
+  primaryCta?: ModelLaunchCta
   secondaryCta?: ModelLaunchCta
   badgeKeys?: readonly TranslationKey[]
 }
@@ -84,6 +89,22 @@ export interface ModelLaunchGallery {
   // treatment /minimax ships, so opting in cannot restyle a live page.
   ctaVariant?: 'muted' | 'accent'
   cards: readonly ModelLaunchGalleryCard[]
+}
+
+// Audio launches (e.g. MiniMax Music 3) swap the video gallery for listening
+// cards: a still poster with an AudioPlayer over it, the track description, and
+// the prompt that produced it. Each track lists its sources MP3-first so the
+// page stays light; the browser plays the first it supports.
+export interface ModelLaunchAudioCard {
+  id: string
+  description: LocalizedText
+  prompt: LocalizedText
+  audioSources: readonly { src: string; type: string }[]
+  posterSrc: string
+}
+
+export interface ModelLaunchAudioGallery {
+  cards: readonly ModelLaunchAudioCard[]
 }
 
 interface ModelLaunchPricingBanner {
@@ -147,6 +168,29 @@ export interface ModelLaunchReviews {
   }
 }
 
+// The optional body sections, in the order they render between the hero and the
+// run-options footer. hero/runOptions/reviews are fixed and are not listed here.
+export type ModelLaunchSection =
+  | 'gallery'
+  | 'audioGallery'
+  | 'steps'
+  | 'pricing'
+  | 'faq'
+  | 'closingCta'
+
+// The order the video launch pages shipped with; audioGallery slots in beside
+// the video gallery so audio-first pages get a sensible default too. A page
+// reorders its sections with `sectionOrder` rather than editing the template,
+// so one page's layout never moves another's.
+export const DEFAULT_SECTION_ORDER: readonly ModelLaunchSection[] = [
+  'gallery',
+  'audioGallery',
+  'pricing',
+  'faq',
+  'steps',
+  'closingCta'
+]
+
 export interface ModelLaunchPage {
   metaTitleKey: TranslationKey
   metaDescriptionKey: TranslationKey
@@ -156,11 +200,17 @@ export interface ModelLaunchPage {
   // Absent on announcement pages, which render hero, run options and reviews
   // only until the model ships.
   gallery?: ModelLaunchGallery
+  audioGallery?: ModelLaunchAudioGallery
   pricing?: ModelLaunchPricing
   faq?: ModelLaunchFaqSection
   steps?: ModelLaunchSteps
   // Pages that end on a steps CTA row do not need a separate closing CTA.
   closingCta?: ModelLaunchClosingCta
+  // Reorders the optional body sections for this page only. Defaults to
+  // DEFAULT_SECTION_ORDER. Only sections the page defines render, so listing an
+  // absent one is a harmless no-op; a defined section left off the list will
+  // not render, which the modelLaunchPages test guards against.
+  sectionOrder?: readonly ModelLaunchSection[]
   runOptions: ModelLaunchRunOptions
   reviews: ModelLaunchReviews
 }
