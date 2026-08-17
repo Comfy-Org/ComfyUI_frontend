@@ -593,12 +593,13 @@ export default defineConfig([
             img: ['alt']
           },
           // Ignore strings that are:
-          // 1. Only symbols/numbers/whitespace (no letters)
+          // 1. Only symbols/numbers/whitespace — \P{L} covers every script, so
+          //    hardcoded Chinese still fails (the rule compiles this with /u)
           // 2. Less than 2 characters
           // 3. Email addresses
           // 4. Product names and standard abbreviations, which are never translated
           ignorePattern:
-            '^[^a-zA-Z]*$|^.{0,1}$|^[\\w._%+-]+@[\\w.-]+\\.[A-Za-z]{2,}$|^(Comfy|Comfy Org|ComfyUI|CC)$'
+            '^\\P{L}*$|^.{0,1}$|^[\\w._%+-]+@[\\w.-]+\\.[A-Za-z]{2,}$|^(Comfy|Comfy Org|ComfyUI|CC)$'
         }
       ]
     }
