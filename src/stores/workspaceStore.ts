@@ -15,7 +15,7 @@ import { useApiKeyAuthStore } from './apiKeyAuthStore'
 import { useCommandStore } from './commandStore'
 import { useExecutionErrorStore } from './executionErrorStore'
 import { useAuthStore } from './authStore'
-import { useQueueSettingsStore } from './queueStore'
+import { useQueueSettingsStore } from './queueSettingsStore'
 import { useBottomPanelStore } from './workspace/bottomPanelStore'
 import { useSidebarTabStore } from './workspace/sidebarTabStore'
 

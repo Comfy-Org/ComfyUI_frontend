@@ -10,6 +10,7 @@ import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscript
 import type {
   BeginCheckoutMetadata,
   PaymentIntentSource,
+  ResubscribeClickMetadata,
   SubscriptionCheckoutType,
   SubscriptionSuccessMetadata
 } from '@/platform/telemetry/types'
@@ -45,6 +46,10 @@ export interface PendingSubscriptionCheckoutAttempt {
   previous_tier?: TierKey
   previous_cycle?: BillingCycle
   payment_intent_source?: PaymentIntentSource
+  /** Set when this attempt was initiated from the resubscribe flow, not a plain subscribe. */
+  operation?: 'resubscribe'
+  /** Click-time source for a resubscribe attempt; carried through to the terminal event. */
+  resubscribe_source?: ResubscribeClickMetadata['source']
 }
 
 interface PendingSubscriptionCheckoutAttemptInput {
@@ -54,6 +59,8 @@ interface PendingSubscriptionCheckoutAttemptInput {
   previous_tier?: TierKey
   previous_cycle?: BillingCycle
   payment_intent_source?: PaymentIntentSource
+  operation?: 'resubscribe'
+  resubscribe_source?: ResubscribeClickMetadata['source']
 }
 
 const dispatchPendingCheckoutChangeEvent = () => {
@@ -177,6 +184,13 @@ const normalizeAttempt = (
       : {}),
     ...(typeof candidate.payment_intent_source === 'string'
       ? { payment_intent_source: candidate.payment_intent_source }
+      : {}),
+    ...(candidate.operation === 'resubscribe'
+      ? { operation: 'resubscribe' }
+      : {}),
+    ...(candidate.resubscribe_source === 'pricing_dialog' ||
+    candidate.resubscribe_source === 'settings_billing_panel'
+      ? { resubscribe_source: candidate.resubscribe_source }
       : {})
   }
 }
@@ -246,6 +260,10 @@ export const createPendingSubscriptionCheckoutAttempt = (
     ...(input.previous_cycle ? { previous_cycle: input.previous_cycle } : {}),
     ...(input.payment_intent_source
       ? { payment_intent_source: input.payment_intent_source }
+      : {}),
+    ...(input.operation ? { operation: input.operation } : {}),
+    ...(input.resubscribe_source
+      ? { resubscribe_source: input.resubscribe_source }
       : {})
   }
 }
@@ -320,6 +338,10 @@ export const consumePendingSubscriptionCheckoutSuccess = (
     ...(attempt.previous_tier ? { previous_tier: attempt.previous_tier } : {}),
     ...(attempt.payment_intent_source
       ? { payment_intent_source: attempt.payment_intent_source }
+      : {}),
+    ...(attempt.operation ? { operation: attempt.operation } : {}),
+    ...(attempt.resubscribe_source
+      ? { resubscribe_source: attempt.resubscribe_source }
       : {}),
     value,
     currency: 'USD',

@@ -75,7 +75,6 @@ const useVirtualListRestriction = {
 export default defineConfig([
   {
     ignores: [
-      '.i18nrc.cjs',
       '**/vite.config.*.timestamp*',
       '**/vitest.config.*.timestamp*',
       'components.d.ts',
@@ -101,8 +100,10 @@ export default defineConfig([
         ...commonParserOptions,
         projectService: {
           allowDefaultProject: [
+            'packages/object-info-parser/vitest.config.ts',
             'vite.electron.config.mts',
-            'vite.types.config.mts'
+            'vite.types.config.mts',
+            'vitest.timer.setup.ts'
           ]
         }
       }
@@ -337,6 +338,15 @@ export default defineConfig([
     }
   },
   {
+    // Devtools extension scripts are loaded by ComfyUI in the browser.
+    files: ['tools/devtools/web/**/*.js'],
+    languageOptions: {
+      globals: {
+        ...globals.browser
+      }
+    }
+  },
+  {
     files: ['scripts/**/*.js'],
     languageOptions: {
       globals: {
@@ -346,6 +356,14 @@ export default defineConfig([
     rules: {
       '@typescript-eslint/no-floating-promises': 'off',
       'no-console': 'off'
+    }
+  },
+  {
+    files: ['tools/devtools/web/**/*.js'],
+    languageOptions: {
+      globals: {
+        ...globals.browser
+      }
     }
   },
 
@@ -497,6 +515,12 @@ export default defineConfig([
           ]
         }
       ]
+    }
+  },
+  {
+    files: ['src/components/searchbox/**/*.vue'],
+    rules: {
+      'vue/no-v-html': 'error'
     }
   },
   // Browser tests must use comfyPageFixture, not raw @playwright/test test

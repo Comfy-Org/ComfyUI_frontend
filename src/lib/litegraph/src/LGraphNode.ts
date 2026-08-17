@@ -98,6 +98,11 @@ import type {
 } from './types/widgets'
 import { findFreeSlotOfType } from './utils/collections'
 import { warnDeprecated } from './utils/feedback'
+import {
+  computeLegacyWidgetShadow,
+  diffNamedValuesShadow
+} from './utils/namedValuesShadowDiff'
+import { reportNamedValuesShadowDiff } from './utils/namedValuesShadowDiffTelemetry'
 import { distributeSpace } from './utils/spaceDistribution'
 import { truncateText } from './utils/textUtils'
 import { BaseWidget } from './widgets/BaseWidget'
@@ -995,6 +1000,18 @@ export class LGraphNode
       }
 
       const namedValues = getNamedValues()
+      if (namedValues) {
+        const legacyShadow = computeLegacyWidgetShadow(
+          this.widgets,
+          info.widgets_values
+        )
+        reportNamedValuesShadowDiff(
+          this,
+          diffNamedValuesShadow(namedValues, legacyShadow),
+          Boolean(info.widgets_values_named)
+        )
+      }
+
       if (namedValues && LiteGraph.namedValuesRestore) {
         for (const widget of this.widgets) {
           if (widget.serialize === false || !(widget.name in namedValues))
