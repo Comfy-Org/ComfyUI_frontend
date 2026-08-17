@@ -34,7 +34,7 @@ test.describe('Homepage @smoke', () => {
 
   test('ModelReleaseSection is visible', async ({ page }) => {
     await expect(page.getByText('New Model Release')).toBeVisible()
-    const cta = page.getByRole('link', { name: 'View Model Feature' })
+    const cta = page.getByRole('link', { name: 'View Model Features' })
     await expect(cta).toBeVisible()
     await expect(cta).toHaveAttribute('href', '/minimax-h3')
   })

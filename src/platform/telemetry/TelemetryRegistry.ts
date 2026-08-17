@@ -14,11 +14,17 @@ import type {
   HelpCenterClosedMetadata,
   HelpCenterOpenedMetadata,
   HelpResourceClickedMetadata,
+  NamedValuesShadowDiffMismatchMetadata,
+  NamedValuesShadowDiffSummaryMetadata,
   NodeAddedMetadata,
   NodeSearchMetadata,
   NodeSearchResultMetadata,
   OnboardingTourMetadata,
+  OnboardingTourNudgeMetadata,
+  OnboardingTourNudgeStage,
   OnboardingTourStage,
+  OnboardingTourStepMetadata,
+  OnboardingTourStepStage,
   SearchQueryMetadata,
   PageViewMetadata,
   PageVisibilityMetadata,
@@ -41,6 +47,7 @@ import type {
   TemplateLibraryMetadata,
   TemplateMetadata,
   UiButtonClickMetadata,
+  UnifiedAuthRetryMetadata,
   WidgetFavoriteToggledMetadata,
   WorkflowCreatedMetadata,
   WorkflowImportMetadata,
@@ -84,6 +91,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackAuthFailed(metadata: AuthErrorMetadata): void {
     this.dispatch((provider) => provider.trackAuthFailed?.(metadata))
+  }
+
+  trackUnifiedAuthRetry(metadata: UnifiedAuthRetryMetadata): void {
+    this.dispatch((provider) => provider.trackUnifiedAuthRetry?.(metadata))
   }
 
   trackUserLoggedIn(): void {
@@ -185,10 +196,23 @@ export class TelemetryRegistry implements TelemetryDispatcher {
   }
 
   trackOnboardingTour(
+    stage: OnboardingTourStepStage,
+    metadata: OnboardingTourStepMetadata
+  ): void
+  trackOnboardingTour(
+    stage: OnboardingTourNudgeStage,
+    metadata: OnboardingTourNudgeMetadata
+  ): void
+  trackOnboardingTour(
     stage: OnboardingTourStage,
     metadata: OnboardingTourMetadata
   ): void {
-    this.dispatch((provider) => provider.trackOnboardingTour?.(stage, metadata))
+    this.dispatch((provider) => {
+      const track = provider.trackOnboardingTour as
+        | ((s: OnboardingTourStage, m: OnboardingTourMetadata) => void)
+        | undefined
+      track?.call(provider, stage, metadata)
+    })
   }
 
   trackEmailVerification(stage: 'opened' | 'requested' | 'completed'): void {
@@ -315,6 +339,22 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackWidgetFavoriteToggled(metadata: WidgetFavoriteToggledMetadata): void {
     this.dispatch((provider) => provider.trackWidgetFavoriteToggled?.(metadata))
+  }
+
+  trackNamedValuesShadowDiffMismatch(
+    metadata: NamedValuesShadowDiffMismatchMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackNamedValuesShadowDiffMismatch?.(metadata)
+    )
+  }
+
+  trackNamedValuesShadowDiffSummary(
+    metadata: NamedValuesShadowDiffSummaryMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackNamedValuesShadowDiffSummary?.(metadata)
+    )
   }
 
   trackPageView(pageName: string, properties?: PageViewMetadata): void {

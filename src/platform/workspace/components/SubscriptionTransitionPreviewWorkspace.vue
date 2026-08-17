@@ -136,20 +136,30 @@
         </span>
         <div class="flex items-center justify-between">
           <span class="text-base-foreground">
-            {{ $t('subscription.preview.creditsRefillMonthlyTo') }}
+            {{
+              $t(
+                newIsYearly
+                  ? 'subscription.preview.eachYearCreditsRefill'
+                  : 'subscription.preview.creditsRefillMonthlyTo'
+              )
+            }}
           </span>
           <div class="flex items-center gap-1">
             <i class="icon-[comfy--credits] size-4 shrink-0 bg-credit" />
             <span class="font-bold text-base-foreground">{{
-              monthlyRefillCredits
+              refillCredits
             }}</span>
           </div>
         </div>
         <span class="text-sm text-muted-foreground">
           {{
-            $t('subscription.preview.billedEachMonth', {
-              amount: moneyShort(newMonthlyChargeUsd)
-            })
+            newIsYearly
+              ? $t('subscription.billedYearly', {
+                  total: annualTotalFormatted
+                })
+              : $t('subscription.preview.billedEachMonth', {
+                  amount: moneyShort(newMonthlyChargeUsd)
+                })
           }}
         </span>
       </div>
@@ -461,9 +471,6 @@ const refillCredits = computed(() => {
     : tierMonthlyCredits(previewData.new_plan.tier)
   return n(newIsYearly.value ? monthly * 12 : monthly)
 })
-const monthlyRefillCredits = computed(() =>
-  n(teamPlan ? teamPlan.credits : tierMonthlyCredits(previewData.new_plan.tier))
-)
 const refillLabel = computed(() =>
   newIsYearly.value
     ? t('subscription.preview.creditsYoullGetToday')
