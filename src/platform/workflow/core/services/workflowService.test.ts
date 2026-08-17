@@ -560,6 +560,20 @@ describe('useWorkflowService', () => {
       expect(closed).toBe(false)
       expect(workflowStore.closeWorkflow).not.toHaveBeenCalled()
     })
+
+    it('should release the closed workflow node previews', async () => {
+      const workflow = createModeTestWorkflow({
+        path: 'workflows/closing.json'
+      })
+      const discardPreviews = vi.spyOn(
+        useNodeOutputStore(),
+        'discardPreviewsForWorkflow'
+      )
+
+      await service.closeWorkflow(workflow, { warnIfUnsaved: false })
+
+      expect(discardPreviews).toHaveBeenCalledWith(workflow.path)
+    })
   })
 
   describe('afterLoadNewGraph', () => {

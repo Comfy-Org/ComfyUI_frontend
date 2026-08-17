@@ -349,6 +349,7 @@ export const useWorkflowService = () => {
     }
 
     await workflowStore.closeWorkflow(workflow)
+    useNodeOutputStore().discardPreviewsForWorkflow(workflow.path)
     return true
   }
 

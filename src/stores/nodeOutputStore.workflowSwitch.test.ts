@@ -136,7 +136,18 @@ describe('nodeOutputStore preview lifecycle across workflow tab switches', () =>
     expect(store.nodePreviewImages).toEqual({})
   })
 
-  it('releases stashed previews once the workflow is closed', () => {
+  it('releases stashed previews when the workflow is closed', () => {
+    const store = useNodeOutputStore()
+    const previewUrl = createBlobUrl()
+
+    store.setNodePreviewsByNodeId(createMockNode(5).id, [previewUrl])
+    switchToWorkflow(WORKFLOW_B)
+    store.discardPreviewsForWorkflow(WORKFLOW_A)
+
+    expect(revokeObjectURL).toHaveBeenCalledWith(previewUrl)
+  })
+
+  it('releases stashed previews of a workflow closed without a discard', () => {
     const store = useNodeOutputStore()
     const previewUrl = createBlobUrl()
 
@@ -147,6 +158,41 @@ describe('nodeOutputStore preview lifecycle across workflow tab switches', () =>
     switchToWorkflow(WORKFLOW_B)
 
     expect(revokeObjectURL).toHaveBeenCalledWith(previewUrl)
+  })
+
+  it('keeps a preview that arrived while the graph was loading', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode(5)
+    const stashedUrl = createBlobUrl()
+    const arrivedUrl = createBlobUrl()
+
+    store.setNodePreviewsByNodeId(node.id, [stashedUrl])
+    switchToWorkflow(WORKFLOW_B)
+
+    // Back to A: a frame lands between app.clean() and afterLoadNewGraph().
+    store.stashPreviewsForWorkflow(WORKFLOW_B)
+    store.resetAllOutputsAndPreviews()
+    mocks.workflowStore.activeWorkflow = { path: WORKFLOW_A }
+    store.setNodePreviewsByNodeId(node.id, [arrivedUrl])
+    store.restorePreviewsForWorkflow(WORKFLOW_A)
+
+    expect(store.getNodePreviews(node)).toEqual([arrivedUrl])
+    expect(revokeObjectURL).toHaveBeenCalledWith(stashedUrl)
+    expect(revokeObjectURL).not.toHaveBeenCalledWith(arrivedUrl)
+  })
+
+  it('restores previews when the same workflow is reloaded in place', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode(5)
+    const previewUrl = createBlobUrl()
+
+    store.setNodePreviewsByNodeId(node.id, [previewUrl])
+    // Undo/redo reloads the active workflow via loadGraphData(clean = false).
+    store.stashPreviewsForWorkflow(WORKFLOW_A)
+    store.restorePreviewsForWorkflow(WORKFLOW_A)
+
+    expect(store.getNodePreviews(node)).toEqual([previewUrl])
+    expect(revokeObjectURL).not.toHaveBeenCalledWith(previewUrl)
   })
 
   it('still revokes previews when the workflow is cleared in place', () => {

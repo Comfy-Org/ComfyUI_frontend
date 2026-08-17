@@ -320,7 +320,8 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     nodePreviewImages.value = {}
   }
 
-  function discardStashedPreviews(workflowPath: string) {
+  /** Release the previews held for a workflow that is going away. */
+  function discardPreviewsForWorkflow(workflowPath: string) {
     const stashed = stashedPreviews.get(workflowPath)
     if (!stashed) return
 
@@ -331,7 +332,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   function discardClosedWorkflowPreviews() {
     const openPaths = new Set(workflowStore.openWorkflows.map((wf) => wf.path))
     for (const path of [...stashedPreviews.keys()]) {
-      if (!openPaths.has(path)) discardStashedPreviews(path)
+      if (!openPaths.has(path)) discardPreviewsForWorkflow(path)
     }
   }
 
@@ -343,7 +344,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
    */
   function stashPreviewsForWorkflow(workflowPath: string) {
     discardClosedWorkflowPreviews()
-    discardStashedPreviews(workflowPath)
+    discardPreviewsForWorkflow(workflowPath)
 
     const previews = app.nodePreviewImages
     if (Object.keys(previews).length) {
@@ -507,6 +508,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     revokeSubgraphPreviews,
     stashPreviewsForWorkflow,
     restorePreviewsForWorkflow,
+    discardPreviewsForWorkflow,
     removeNodeOutputs,
     removeNodeOutputsForNode,
     snapshotOutputs,
