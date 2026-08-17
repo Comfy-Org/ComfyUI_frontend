@@ -406,8 +406,6 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
       onboarding
     }) => {
       const { page } = comfyPage
-      // The tour only spotlights once the linked template has rendered.
-      await comfyPage.vueNodes.waitForNodes()
       await expect(onboarding.spotlight).toBeVisible()
 
       const nodeId = await spotlitNodeId(page, onboarding.spotlight)
