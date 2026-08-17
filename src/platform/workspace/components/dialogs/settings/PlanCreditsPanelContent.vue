@@ -33,8 +33,6 @@ type View = 'overview' | 'activity'
 
 const { t } = useI18n()
 
-// The owner-only Invoices tab is added by FE-1245, which owns the
-// next-invoice banner + Stripe portal link that fill it.
 const tabs = computed<{ key: View; label: string }[]>(() => [
   { key: 'overview', label: t('workspacePanel.planCredits.tabs.overview') },
   { key: 'activity', label: t('workspacePanel.planCredits.tabs.activity') }
@@ -44,8 +42,8 @@ const activeView = ref<View>('overview')
 
 const usageLogsTable = useTemplateRef('usageLogsTable')
 watch(usageLogsTable, (table) => {
-  table?.refresh().catch((error) => {
-    console.error('Error refreshing usage logs:', error)
+  table?.refresh().catch(() => {
+    console.error('Error refreshing usage logs')
   })
 })
 </script>

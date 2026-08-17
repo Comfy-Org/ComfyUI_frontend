@@ -218,42 +218,80 @@ describe('useSettingUI', () => {
       })
     })
 
+    it('shows Plan & Credits and Members on cloud', () => {
+      env.state.isCloud = true
+      const { defaultCategory, findPanelByKey, navGroups } =
+        useSettingUI('workspace')
+      const workspaceItems = navGroups.value
+        .find((group) => group.title === 'Workspace')
+        ?.items.map(({ id, label }) => ({ id, label }))
+      const planCreditsPanel = findPanelByKey('workspace')
+      const membersPanel = findPanelByKey('workspace-members')
+
+      expect(workspaceItems).toEqual([
+        { id: 'workspace', label: 'PlanCredits' },
+        { id: 'workspace-members', label: 'Members' }
+      ])
+      expect(planCreditsPanel?.component).toBe(membersPanel?.component)
+      expect(planCreditsPanel?.props).toEqual({ section: 'planCredits' })
+      expect(membersPanel?.props).toEqual({ section: 'members' })
+      expect(defaultCategory.value).toMatchObject({
+        key: 'workspace',
+        label: 'PlanCredits'
+      })
+    })
+
+    it('shows only Plan & Credits in the local Workspace group', () => {
+      const { findPanelByKey, navGroups } = useSettingUI()
+      const workspaceItems = navGroups.value
+        .find((group) => group.title === 'Workspace')
+        ?.items.map(({ id, label }) => ({ id, label }))
+
+      expect(workspaceItems).toEqual([
+        { id: 'workspace', label: 'PlanCredits' }
+      ])
+      expect(findPanelByKey('workspace-members')).toBeNull()
+      expect(findPanelByKey('workspace-allowlist')).toBeNull()
+    })
+
     it.for([false, true])(
-      'shows Plan & Credits and Members when isCloud is %s',
+      'uses Workspace and General groups when isCloud is %s',
       (isCloud) => {
         env.state.isCloud = isCloud
-        const { defaultCategory, findPanelByKey, navGroups } =
-          useSettingUI('workspace')
-        const workspaceItems = navGroups.value
-          .find((group) => group.title === 'Workspace')
-          ?.items.map(({ id, label }) => ({ id, label }))
-        const planCreditsPanel = findPanelByKey('workspace')
-        const membersPanel = findPanelByKey('workspace-members')
+        const { navGroups } = useSettingUI()
 
-        expect(workspaceItems).toEqual([
-          { id: 'workspace', label: 'PlanCredits' },
-          { id: 'workspace-members', label: 'Members' }
+        expect(navGroups.value.map(({ title }) => title)).toEqual([
+          'Workspace',
+          'General'
         ])
-        expect(planCreditsPanel?.component).toBe(membersPanel?.component)
-        expect(planCreditsPanel?.props).toEqual({ section: 'planCredits' })
-        expect(membersPanel?.props).toEqual({ section: 'members' })
-        expect(defaultCategory.value).toMatchObject({
-          key: 'workspace',
-          label: 'PlanCredits'
-        })
-
-        const accountItems = navGroups.value.find(
-          (group) => group.title === 'Account'
-        )?.items
-        const generalItems = navGroups.value.find(
-          (group) => group.title === 'General'
-        )?.items
-        expect(accountItems?.map(({ id }) => id)).toEqual(
-          isCloud ? ['user'] : ['user', 'credits']
-        )
-        expect(generalItems?.map(({ id }) => id)).toContain('secrets')
+        expect(
+          navGroups.value
+            .find((group) => group.title === 'General')
+            ?.items.map(({ id }) => id)
+        ).toEqual([
+          'user',
+          'root/Comfy',
+          'secrets',
+          'root/LiteGraph',
+          'root/Appearance',
+          'keybinding',
+          'extension',
+          'about'
+        ])
       }
     )
+
+    it('keeps the hidden legacy Credits panel reachable by deep link', () => {
+      const { defaultCategory, navGroups } = useSettingUI('credits')
+
+      expect(
+        navGroups.value.flatMap((group) => group.items.map(({ id }) => id))
+      ).not.toContain('credits')
+      expect(defaultCategory.value).toMatchObject({
+        key: 'credits',
+        label: 'Credits'
+      })
+    })
   })
 
   describe('plan and credits navigation', () => {
@@ -325,9 +363,10 @@ describe('useSettingUI', () => {
       env.state.isCloud = false
       const { navGroups } = useSettingUI()
 
-      expect(navKeys(navGroups.value)).toContain('credits')
       expect(navKeys(navGroups.value)).toContain('workspace')
-      expect(navKeys(navGroups.value)).toContain('workspace-members')
+      expect(navKeys(navGroups.value)).not.toContain('credits')
+      expect(navKeys(navGroups.value)).not.toContain('workspace-members')
+      expect(navKeys(navGroups.value)).not.toContain('workspace-allowlist')
     })
   })
 })

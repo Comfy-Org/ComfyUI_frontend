@@ -12,10 +12,10 @@ const refreshSpy = vi.hoisted(() => vi.fn(() => Promise.resolve()))
 
 const stubs = {
   SubscriptionPanelContentWorkspace: {
-    template: '<div data-testid="credits-body" />'
+    template: '<section aria-label="Plan and credits overview" />'
   },
   UsageLogsTable: {
-    template: '<div data-testid="usage-logs" />',
+    template: '<section aria-label="Usage logs" />',
     methods: {
       refresh: refreshSpy
     }
@@ -36,22 +36,25 @@ describe('PlanCreditsPanelContent', () => {
     renderPanel()
     expect(screen.getByRole('button', { name: 'Credits' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Activity' })).toBeTruthy()
-    expect(screen.getByTestId('credits-body')).toBeTruthy()
-    expect(screen.queryByTestId('usage-logs')).toBeNull()
+    expect(
+      screen.getByRole('region', { name: 'Plan and credits overview' })
+    ).toBeTruthy()
+    expect(screen.queryByRole('region', { name: 'Usage logs' })).toBeNull()
   })
 
   it('loads the usage log on the Activity tab', async () => {
     renderPanel()
 
     await userEvent.click(screen.getByRole('button', { name: 'Activity' }))
-    expect(screen.getByTestId('usage-logs')).toBeTruthy()
-    expect(screen.queryByTestId('credits-body')).toBeNull()
+    expect(screen.getByRole('region', { name: 'Usage logs' })).toBeTruthy()
+    expect(
+      screen.queryByRole('region', { name: 'Plan and credits overview' })
+    ).toBeNull()
     await waitFor(() => expect(refreshSpy).toHaveBeenCalledOnce())
   })
 
   it('reports usage-log refresh failures', async () => {
-    const error = new Error('refresh failed')
-    refreshSpy.mockRejectedValueOnce(error)
+    refreshSpy.mockRejectedValueOnce(new Error('refresh failed'))
     const consoleError = vi
       .spyOn(console, 'error')
       .mockImplementation(() => undefined)
@@ -60,10 +63,7 @@ describe('PlanCreditsPanelContent', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Activity' }))
 
     await waitFor(() =>
-      expect(consoleError).toHaveBeenCalledWith(
-        'Error refreshing usage logs:',
-        error
-      )
+      expect(consoleError).toHaveBeenCalledWith('Error refreshing usage logs')
     )
   })
 })

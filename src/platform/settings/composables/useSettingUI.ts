@@ -33,7 +33,6 @@ const CATEGORY_ICONS: Record<string, string> = {
   PlanCredits: 'icon-[lucide--receipt-text]',
   secrets: 'icon-[lucide--key-round]',
   'server-config': 'icon-[lucide--server]',
-  subscription: 'icon-[lucide--credit-card]',
   user: 'icon-[lucide--user]',
   workspace: 'icon-[lucide--building-2]',
   'workspace-allowlist': 'icon-[comfy--ai-model]',
@@ -187,6 +186,7 @@ export function useSettingUI(
   const shouldShowWorkspacePanel = computed(() => isLoggedIn.value)
   const shouldShowWorkspaceAllowlist = computed(
     () =>
+      isCloud &&
       shouldShowWorkspacePanel.value &&
       flags.partnerNodeGovernanceEnabled &&
       workspaceRole.value === 'owner'
@@ -194,7 +194,9 @@ export function useSettingUI(
 
   const visibleWorkspacePanels = computed<SettingPanelItem[]>(() => {
     if (!shouldShowWorkspacePanel.value) return []
-    const workspacePanels = [planCreditsPanel, membersPanel]
+    const workspacePanels = isCloud
+      ? [planCreditsPanel, membersPanel]
+      : [planCreditsPanel]
     return shouldShowWorkspaceAllowlist.value
       ? [...workspacePanels, allowlistPanel]
       : workspacePanels
@@ -270,6 +272,10 @@ export function useSettingUI(
         const found = group.children?.find((node) => node.key === defaultPanel)
         if (found) return found
       }
+      const hiddenPanel = panels.value.find(
+        (panel) => panel.node.key === defaultPanel
+      )
+      if (hiddenPanel) return translateCategory(hiddenPanel.node)
       return settingCategories.value[0]
     }
 
@@ -302,19 +308,10 @@ export function useSettingUI(
         .map(translateCategory)
     }),
     translateCategory({
-      key: 'account',
-      label: 'Account',
-      children: [
-        translateCategory(userPanel.node),
-        ...(!isCloud && isLoggedIn.value
-          ? [translateCategory(creditsPanel.node)]
-          : [])
-      ]
-    }),
-    translateCategory({
       key: 'general',
       label: 'General',
       children: [
+        translateCategory(userPanel.node),
         ...coreSettingCategories.value.slice(0, 1).map(translateCategory),
         ...(shouldShowSecretsPanel.value
           ? [translateCategory(secretsPanel.node)]
