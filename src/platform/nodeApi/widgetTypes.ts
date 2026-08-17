@@ -23,6 +23,7 @@ import type { ComfyWidgetConstructor } from '@/scripts/widgets'
 import { useWidgetStore } from '@/stores/widgetStore'
 
 import { ComfyApiError } from './errors'
+import type { NodeHandle } from './nodeHandle'
 import type { Unsubscribe } from './widgetHandle'
 
 /**
@@ -44,6 +45,17 @@ export interface WidgetTypeValue {
   set(value: WidgetTypeData): void
   /** Notified when the value changes for any other reason — a workflow load. */
   onChange(listener: (value: WidgetTypeData) => void): Unsubscribe
+}
+
+export interface WidgetTypeContext {
+  /**
+   * Runs while the widget's owning node belongs to a graph.
+   *
+   * Widget constructors run before a node has an id or graph, so a node handle
+   * cannot be supplied directly to `render`. The listener runs after the node
+   * joins a graph and tears down when it leaves.
+   */
+  onNodeReady(listener: (node: NodeHandle) => Unsubscribe | void): Unsubscribe
 }
 
 export interface WidgetTypeDef {
@@ -70,7 +82,8 @@ export interface WidgetTypeDef {
   render(
     container: HTMLElement,
     value: WidgetTypeValue,
-    name: string
+    name: string,
+    context: WidgetTypeContext
   ): Unsubscribe | void
 }
 
@@ -81,7 +94,53 @@ function copyDefault(value: WidgetTypeData | undefined): WidgetTypeData {
   return structuredClone(value)
 }
 
-export function createWidgetTypeRegistrar() {
+function createWidgetTypeContext(
+  node: LGraphNode,
+  handleFor: (node: LGraphNode) => NodeHandle
+): WidgetTypeContext {
+  type Subscription = {
+    listener: (node: NodeHandle) => Unsubscribe | void
+    teardown?: Unsubscribe
+  }
+
+  const subscriptions = new Set<Subscription>()
+  const deactivate = (subscription: Subscription) => {
+    subscription.teardown?.()
+    subscription.teardown = undefined
+  }
+  const activate = (subscription: Subscription) => {
+    deactivate(subscription)
+    subscription.teardown = subscription.listener(handleFor(node)) ?? undefined
+  }
+
+  const onAdded = node.onAdded
+  node.onAdded = function (graph) {
+    onAdded?.call(this, graph)
+    for (const subscription of subscriptions) activate(subscription)
+  }
+
+  const onRemoved = node.onRemoved
+  node.onRemoved = function () {
+    for (const subscription of subscriptions) deactivate(subscription)
+    onRemoved?.call(this)
+  }
+
+  return Object.freeze({
+    onNodeReady(listener: (node: NodeHandle) => Unsubscribe | void) {
+      const subscription = { listener }
+      subscriptions.add(subscription)
+      if (node.graph) activate(subscription)
+      return () => {
+        subscriptions.delete(subscription)
+        deactivate(subscription)
+      }
+    }
+  })
+}
+
+export function createWidgetTypeRegistrar(
+  handleFor: (node: LGraphNode) => NodeHandle
+) {
   return (type: string, def: WidgetTypeDef): Unsubscribe => {
     if (!type.trim()) {
       throw new ComfyApiError('A widget type name cannot be empty.')
@@ -141,7 +200,8 @@ export function createWidgetTypeRegistrar() {
             return () => listeners.delete(listener)
           }
         },
-        inputName
+        inputName,
+        createWidgetTypeContext(node, handleFor)
       )
 
       if (teardown) {

@@ -846,7 +846,10 @@ export function deliverPreview(
 
 export function createDefRegistry(): {
   /** The per-major public face. Handles come from that major's graph. */
-  forMajor(handleFor: (nodeId: string) => NodeHandle): DefRegistry
+  forMajor(
+    handleFor: (nodeId: string) => NodeHandle,
+    handleForNode?: (node: LGraphNode) => NodeHandle
+  ): DefRegistry
   /**
    * Applies every matching extension to a node class being registered.
    *
@@ -857,7 +860,6 @@ export function createDefRegistry(): {
 } {
   const registrations = new Set<Registration>()
   const known = new Map<string, NodeDef>()
-  const registerWidgetType = createWidgetTypeRegistrar()
 
   const defineType = (
     definition: NodeDefinition,
@@ -953,9 +955,12 @@ export function createDefRegistry(): {
   }
 
   const registry = {
-    forMajor: (handleFor: (nodeId: string) => NodeHandle): DefRegistry => ({
+    forMajor: (
+      handleFor: (nodeId: string) => NodeHandle,
+      handleForNode = (node: LGraphNode) => handleFor(String(node.id))
+    ): DefRegistry => ({
       define: (definition: NodeDefinition) => defineType(definition, handleFor),
-      defineWidgetType: registerWidgetType,
+      defineWidgetType: createWidgetTypeRegistrar(handleForNode),
       get: (type) => known.get(type),
       all: () => Object.freeze([...known.values()]),
       has: (type) => known.has(type),

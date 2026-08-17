@@ -11,6 +11,7 @@ import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import '@/scripts/domWidget'
 import { useWidgetStore } from '@/stores/widgetStore'
 
+import { createGraphApi } from './graphHandle'
 import { createWidgetTypeRegistrar } from './widgetTypes'
 
 describe('pack-declared widget types', () => {
@@ -23,7 +24,10 @@ describe('pack-declared widget types', () => {
     graph = new LGraph()
     node = new LGraphNode('T', 'TestNode')
     graph.add(node)
-    defineWidgetType = createWidgetTypeRegistrar()
+    const graphApi = createGraphApi(() => graph)
+    defineWidgetType = createWidgetTypeRegistrar((owner) =>
+      graphApi.node(String(owner.id))!
+    )
   })
 
   const build = (type: string, spec: unknown = ['MTB_COLOR', {}]) =>
@@ -123,6 +127,35 @@ describe('pack-declared widget types', () => {
     build('MTB_COLOR')
 
     expect(given).toBe('colour')
+  })
+
+  it('hands the renderer its owning node after the node joins a graph', () => {
+    graph.remove(node)
+    const seen = vi.fn()
+    defineWidgetType('MTB_COLOR', {
+      render: (_container, _value, _name, context) => context.onNodeReady(seen)
+    })
+
+    build('MTB_COLOR')
+
+    expect(seen).not.toHaveBeenCalled()
+    graph.add(node)
+    expect(seen).toHaveBeenCalledOnce()
+    expect(seen.mock.calls[0][0].id).toBe(String(node.id))
+  })
+
+  it('tears down node-bound rendering when the owning node is removed', () => {
+    const teardown = vi.fn()
+    const ready = vi.fn(() => teardown)
+    defineWidgetType('MTB_COLOR', {
+      render: (_container, _value, _name, context) => context.onNodeReady(ready)
+    })
+
+    build('MTB_COLOR')
+    graph.remove(node)
+
+    expect(ready).toHaveBeenCalledOnce()
+    expect(teardown).toHaveBeenCalledOnce()
   })
 
   it('passes the size hints through to the host', () => {
