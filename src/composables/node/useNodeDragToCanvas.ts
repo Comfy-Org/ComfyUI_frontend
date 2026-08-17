@@ -82,6 +82,7 @@ function addNodeAtPosition(clientX: number, clientY: number): boolean {
     useLitegraphService().addNodeOnGraph(nodeDef, { pos })
   )
   if (!node) {
+    if (useNodeDisabledState().isNodeDisabled(nodeDef)) return true
     console.error(`Failed to add node to graph: ${nodeDef.name}`)
     useToastStore().add({
       severity: 'error',
