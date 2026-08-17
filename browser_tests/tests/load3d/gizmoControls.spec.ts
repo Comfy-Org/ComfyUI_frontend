@@ -31,31 +31,24 @@ test.describe('Load3D Gizmo Controls', () => {
       await load3d.openGizmoCategory()
 
       await expect(load3d.gizmoToggleButton).toBeVisible()
-      await expect(load3d.gizmoTranslateButton).toBeHidden()
-      await expect(load3d.gizmoRotateButton).toBeHidden()
-      await expect(load3d.gizmoScaleButton).toBeHidden()
-      await expect(load3d.gizmoResetButton).toBeHidden()
+      await expect(load3d.gizmoModeMenuButton).toBeHidden()
     }
   )
 
   test(
-    'Toggling gizmo reveals mode buttons and updates node state',
+    'Toggling gizmo reveals the mode menu and updates node state',
     { tag: '@smoke' },
     async ({ comfyPage, load3d }) => {
       await load3d.openGizmoCategory()
       await load3d.gizmoToggleButton.click()
 
-      await expect(load3d.gizmoTranslateButton).toBeVisible()
-      await expect(load3d.gizmoRotateButton).toBeVisible()
-      await expect(load3d.gizmoScaleButton).toBeVisible()
-      await expect(load3d.gizmoResetButton).toBeVisible()
-
+      await expect(load3d.gizmoModeMenuButton).toBeVisible()
       await expect
         .poll(() => getGizmoConfig(comfyPage.page).then((g) => g?.enabled))
         .toBe(true)
 
       await load3d.gizmoToggleButton.click()
-      await expect(load3d.gizmoTranslateButton).toBeHidden()
+      await expect(load3d.gizmoModeMenuButton).toBeHidden()
       await expect
         .poll(() => getGizmoConfig(comfyPage.page).then((g) => g?.enabled))
         .toBe(false)
@@ -69,17 +62,17 @@ test.describe('Load3D Gizmo Controls', () => {
       await load3d.openGizmoCategory()
       await load3d.gizmoToggleButton.click()
 
-      await load3d.gizmoRotateButton.click()
+      await load3d.selectGizmoMode('Rotate')
       await expect
         .poll(() => getGizmoConfig(comfyPage.page).then((g) => g?.mode))
         .toBe('rotate')
 
-      await load3d.gizmoScaleButton.click()
+      await load3d.selectGizmoMode('Scale')
       await expect
         .poll(() => getGizmoConfig(comfyPage.page).then((g) => g?.mode))
         .toBe('scale')
 
-      await load3d.gizmoTranslateButton.click()
+      await load3d.selectGizmoMode('Translate')
       await expect
         .poll(() => getGizmoConfig(comfyPage.page).then((g) => g?.mode))
         .toBe('translate')
