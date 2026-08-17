@@ -235,7 +235,7 @@ export async function expectResolvedPromotedModelSuppressesStaleInteriorErrors(
     const node = comfyPage.vueNodes.getNodeByTitle(step.nodeTitle)
     await expect(node).toBeVisible()
 
-    const linkedStatus = node.getByRole('status', {
+    const linkedStatus = node.getByRole('img', {
       name: `${PROMOTED_MODEL_WIDGET_NAME}: Linked input`,
       exact: true
     })
