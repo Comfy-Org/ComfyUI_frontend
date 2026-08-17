@@ -110,12 +110,14 @@ export function toCalendarEvent(
 ): CalendarEvent {
   const target = eventVideoId(event)
     ? eventPageHref(event.id)[locale]
-    : (event.link?.href[locale] ?? eventPageHref(event.id)[locale])
+    : (event.link?.href[locale] ??
+      event.link?.href.en ??
+      eventPageHref(event.id)[locale])
   const href = new URL(target!, SITE_ORIGIN).href
   const start = new Date(event.startDateTime)
   return {
     title: event.title[locale] ?? event.title.en,
-    description: `${event.description[locale]}\n\n${href}`,
+    description: `${event.description[locale] ?? event.description.en}\n\n${href}`,
     location: event.location?.[locale] ?? '',
     start,
     end: eventEnd(event)
@@ -133,13 +135,15 @@ export function eventJsonLdNode(
 ): JsonLdNode {
   const { siteUrl, site, pageUrl, locale } = input
   const href =
-    event.link?.href[locale] ?? localizeHref(eventPath(event), locale)
+    event.link?.href[locale] ??
+    event.link?.href.en ??
+    localizeHref(eventPath(event), locale)
   const online = event.location?.en === 'Online'
   return eventNode({
     siteUrl,
     id: jsonLdId(pageUrl, `event-${event.id}`),
     name: event.title[locale] ?? event.title.en,
-    description: event.description[locale],
+    description: event.description[locale] ?? event.description.en,
     startDate: event.startDateTime,
     ...(online
       ? { virtualUrl: href.startsWith('/') ? absoluteUrl(site, href) : href }

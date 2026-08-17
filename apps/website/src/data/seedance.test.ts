@@ -4,7 +4,7 @@ import type { Locale } from '../i18n/translations'
 import { t, translationKeys } from '../i18n/translations'
 import { seedancePage } from './seedance'
 
-const LOCALES = ['en', 'zh-CN'] as const satisfies readonly Locale[]
+const LOCALES = ['en', 'zh-CN', 'ja', 'ko'] as const satisfies readonly Locale[]
 
 // Seedance 2.5 tops out below 4K, so nothing this page renders may advertise
 // it — the gallery prompts included, since they are reproduced verbatim and the
