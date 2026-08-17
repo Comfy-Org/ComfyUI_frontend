@@ -15,6 +15,7 @@ import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
 
 const enMessages = cloneDeep(i18n.global.getLocaleMessage('en'))
+const zhMessages = cloneDeep(i18n.global.getLocaleMessage('zh'))
 
 describe('useLitegraphService().getCanvasCenter', () => {
   it('returns origin when canvas is not yet initialised', () => {
@@ -106,6 +107,66 @@ describe('useLitegraphService().registerNodeDef slot text', () => {
     expect(mask?.label || mask?.localized_name || mask?.name).toBe(
       'Translated Mask Label'
     )
+    expect(node?.outputs[0]?.localized_name).toBe('Live Latent Name')
+  })
+})
+
+describe('useLitegraphService().registerNodeDef slot text (non-en)', () => {
+  const nodeName = 'TestNonEnSlotText'
+
+  const nodeDef: ComfyNodeDefV1 = {
+    name: nodeName,
+    display_name: 'Test Non En Slot Text',
+    category: 'testing',
+    python_module: 'nodes',
+    description: '',
+    input: {
+      required: {
+        seed: ['INT', { display_name: 'Live Seed Label', default: 0 }],
+        mask: ['MASK', { display_name: 'Live Mask Label' }]
+      }
+    },
+    output: ['LATENT'],
+    output_name: ['Live Latent Name'],
+    output_node: false
+  }
+
+  beforeEach(async () => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    i18n.global.mergeLocaleMessage('en', {
+      nodeDefs: {
+        [nodeName]: {
+          inputs: { seed: { name: 'stale en snapshot' } },
+          outputs: { 0: { name: 'stale en snapshot' } }
+        }
+      }
+    })
+    i18n.global.mergeLocaleMessage('zh', {
+      nodeDefs: { [nodeName]: { inputs: { mask: { name: '翻译遮罩' } } } }
+    })
+    i18n.global.locale.value = 'zh'
+    await useLitegraphService().registerNodeDef(nodeName, nodeDef)
+  })
+
+  afterEach(() => {
+    i18n.global.locale.value = 'en'
+    i18n.global.setLocaleMessage('zh', cloneDeep(zhMessages))
+    i18n.global.setLocaleMessage('en', cloneDeep(enMessages))
+  })
+
+  it('prefers the translation over the live backend value', () => {
+    const node = LiteGraph.createNode(nodeName)
+    const mask = node?.inputs.find((input) => input.name === 'mask')
+
+    expect(mask?.localized_name).toBe('翻译遮罩')
+  })
+
+  it('falls back to the live backend value, not the en snapshot', () => {
+    const node = LiteGraph.createNode(nodeName)
+    const seed = node?.inputs.find((input) => input.name === 'seed')
+
+    expect(node?.widgets?.[0]?.label).toBe('Live Seed Label')
+    expect(seed?.localized_name).toBe('Live Seed Label')
     expect(node?.outputs[0]?.localized_name).toBe('Live Latent Name')
   })
 })
