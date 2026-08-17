@@ -1,7 +1,6 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import type {
@@ -143,16 +142,14 @@ export function useTemplateWorkflows() {
         openSource: 'template'
       })
 
-      if (!isCloud) {
-        const template = workflowTemplatesStore.enhancedTemplates.find(
-          (tpl) => tpl.name === id && tpl.sourceModule === sourceModule
-        )
-        const educationStore = usePartnerNodesEducationStore()
-        // A free template can still contain partner nodes, so retire any
-        // earlier request rather than let the card describe this one.
-        if (template?.isPartnerNode) educationStore.requestCard()
-        else educationStore.dismissCard()
-      }
+      const template = workflowTemplatesStore.enhancedTemplates.find(
+        (tpl) => tpl.name === id && tpl.sourceModule === sourceModule
+      )
+      const educationStore = usePartnerNodesEducationStore()
+      // A free template can still contain partner nodes, so retire any
+      // earlier request rather than let the card describe this one.
+      if (template?.isPartnerNode) educationStore.requestCard()
+      else educationStore.dismissCard()
 
       return true
     } catch (error) {

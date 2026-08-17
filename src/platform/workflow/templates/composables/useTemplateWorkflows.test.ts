@@ -394,17 +394,6 @@ describe('useTemplateWorkflows', () => {
     expect(mockDismissCard).toHaveBeenCalledTimes(1)
   })
 
-  it('does not request the education card on cloud', async () => {
-    mockDistributionIsCloud.value = true
-    const { loadWorkflowTemplate } = useTemplateWorkflows()
-    mockWorkflowTemplatesStore.isLoaded = true
-    mockWorkflowTemplatesStore.enhancedTemplates.push(enhancedTemplate(true))
-
-    await loadWorkflowTemplate('template1', 'default')
-
-    expect(mockRequestCard).not.toHaveBeenCalled()
-  })
-
   it('should handle errors when loading templates', async () => {
     const { loadWorkflowTemplate, loadingTemplateId } = useTemplateWorkflows()
 
