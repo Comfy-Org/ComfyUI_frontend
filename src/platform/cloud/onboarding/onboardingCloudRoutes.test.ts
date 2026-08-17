@@ -291,11 +291,13 @@ const cloudLayout = cloudOnboardingRoutes.find((r) => r.path === '/cloud')
 
 const guardedRoutes = ['cloud-login', 'cloud-signup'].map((name) => {
   const route = cloudLayout?.children?.find((c) => c.name === name)
-  if (
-    typeof route?.beforeEnter !== 'function' ||
-    Array.isArray(route.beforeEnter)
-  ) {
-    throw new Error(`${name} has no single beforeEnter guard`)
+  if (Array.isArray(route?.beforeEnter)) {
+    throw new Error(
+      `${name} now has an array of beforeEnter guards; runGuard drives only one`
+    )
+  }
+  if (typeof route?.beforeEnter !== 'function') {
+    throw new Error(`${name} has no beforeEnter guard`)
   }
   return [name, route.beforeEnter, `/cloud/${route.path}`] as const
 })
