@@ -20,6 +20,7 @@ import json
 import os
 import sys
 from datetime import date, datetime
+from functools import cache
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PINS = os.path.join(HERE, 'corpus.pins.json')
@@ -34,6 +35,7 @@ UPDATE_LOCAL = (
 )
 
 
+@cache
 def load() -> dict:
     try:
         with open(PINS, encoding='utf-8') as fh:

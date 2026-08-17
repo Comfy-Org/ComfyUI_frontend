@@ -33,6 +33,7 @@ def row(pack: str, **over: object) -> dict:
         'loadedOk': 2,
         'registerNodeDef': 'OK',
         'registerCustomNodes': 'OK',
+        'storeReadErrors': 0,
         'newTypes': [],
         'driveTypes': {},
         'hookErrors': [],
@@ -251,6 +252,38 @@ class Population(unittest.TestCase):
         rows = population()
         self.assertEqual(sm.evaluate(rows[:40], manifests_for(rows)).code, 0)
 
+    def test_indeterminate_packs_leave_rate_denominators(self) -> None:
+        rows = population()
+        manifests = manifests_for(rows)
+        for shard in manifests.values():
+            for pack, entry in shard.items():
+                if pack in ('pack-000', 'pack-001'):
+                    entry['indeterminate'] = 'entrypoint unresolved'
+        for r in rows[:2]:
+            break_both_entries(r)
+
+        verdict = sm.evaluate(rows, manifests, expect_shards=4)
+
+        self.assertEqual(verdict.code, 0, verdict.lines)
+        self.assertEqual(verdict.metrics['packs'], 98)
+        report = '\n'.join(verdict.lines)
+        self.assertIn('indeterminate, excluded: 2', report)
+        self.assertRegex(
+            report, r'rows complete \(no hang or crash\)\s+100\.0%'
+        )
+
+    def test_all_indeterminate_is_withheld(self) -> None:
+        rows = population()
+        manifests = manifests_for(rows)
+        for shard in manifests.values():
+            for entry in shard.values():
+                entry['indeterminate'] = 'entrypoint unresolved'
+
+        verdict = sm.evaluate(rows, manifests)
+
+        self.assertEqual(verdict.code, 2)
+        self.assertIsNone(verdict.metrics)
+
 
 class DeltaGate(unittest.TestCase):
     def eroded(self) -> list[dict]:
@@ -300,7 +333,9 @@ class StaleRegistry(unittest.TestCase):
 
 
 class MainIO(unittest.TestCase):
-    def run_main(self, rows, manifests=None, **env) -> tuple[int, str, str]:
+    def run_main(
+        self, rows, manifests=None, malformed_rows=(), **env
+    ) -> tuple[int, str, str]:
         with tempfile.TemporaryDirectory() as tmp:
             out = os.path.join(tmp, 'rows')
             os.makedirs(out)
@@ -311,6 +346,9 @@ class MainIO(unittest.TestCase):
             for name, m in (manifests or {}).items():
                 with open(f'{out}/{name}', 'w', encoding='utf-8') as fh:
                     json.dump(m, fh)
+            for name in malformed_rows:
+                with open(f'{out}/{name}', 'w', encoding='utf-8') as fh:
+                    fh.write('{')
             metrics = os.path.join(tmp, 'metrics', 'metrics.json')
             summary = os.path.join(tmp, 'summary.md')
             environ = {
@@ -344,6 +382,13 @@ class MainIO(unittest.TestCase):
 
     def test_empty_directory_is_withheld(self) -> None:
         code, metrics, _ = self.run_main([])
+        self.assertEqual(code, 2)
+        self.assertEqual(metrics, '')
+
+    def test_unreadable_row_is_withheld(self) -> None:
+        code, metrics, _ = self.run_main(
+            population(), malformed_rows=('truncated.json',)
+        )
         self.assertEqual(code, 2)
         self.assertEqual(metrics, '')
 

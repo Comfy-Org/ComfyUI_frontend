@@ -54,6 +54,7 @@ GATES = {
     'poison-op-break': (CRITERION_LABELS['op_clean'],),
     'poison-serialize-throw': (CRITERION_LABELS['op_clean'],),
     'poison-desync': (CRITERION_LABELS['op_clean'],),
+    'poison-store-read-throw': (CRITERION_LABELS['op_clean'],),
 }
 
 PROOF_EXEMPTIONS = {
@@ -104,7 +105,8 @@ def main() -> int:
         if not name.endswith('.json') or name.startswith('_'):
             continue
         try:
-            r = json.load(open(os.path.join(out, name)))
+            with open(os.path.join(out, name), encoding='utf-8') as fh:
+                r = json.load(fh)
             rows[r['pack']] = r
         except (OSError, ValueError, KeyError, TypeError):
             # The harness-integrity check below reports the shortfall; a
@@ -220,8 +222,19 @@ def main() -> int:
     check(
         'desync: the store comparator stays silent on the clean control',
         rows.get('clean-control', {}).get('storeMeasured') is True
+        and rows.get('clean-control', {}).get('storeReadErrors') == 0
         and not any(
             v.get('desync') for v in ops('clean-control').values()
+        ),
+    )
+    check(
+        'store-read: a thrown store read is counted',
+        rows.get('poison-store-read-throw', {}).get('storeReadErrors', 0) > 0,
+    )
+    check(
+        'store-read: a thrown store read makes its operation unclean',
+        bool(
+            (ops('poison-store-read-throw').get('load') or {}).get('desync')
         ),
     )
 

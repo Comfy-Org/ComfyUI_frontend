@@ -253,6 +253,7 @@ export async function runPack(
   // lets the verdict job cross-check filename against row identity.
   const row: Record<string, unknown> = { pack, safe }
   const ops: Record<string, OpRecord> = {}
+  let storeReadErrors = 0
   const { lg, app } = await installGlobals()
   const { LGraph, LiteGraph } = lg
 
@@ -414,7 +415,9 @@ export async function runPack(
     let desync = ''
     try {
       const d = JSON.parse(sig) as { nodes?: SigNode[] }
+      storeReadErrors += (d.nodes ?? []).filter((n) => n.r === 'err').length
       const bad = (d.nodes ?? []).filter((n) => {
+        if (n.r === 'err') return true
         if (typeof n.r !== 'number') return false
         const rows = (csv: unknown) =>
           String(csv ?? '')
@@ -632,6 +635,7 @@ export async function runPack(
   })
 
   row.ops = ops
+  row.storeReadErrors = storeReadErrors
   row.hookErrors = [...new Set(hookErrors)].slice(0, 20)
 
   fs.writeFileSync(rowPath, JSON.stringify(row))

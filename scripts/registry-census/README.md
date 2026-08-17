@@ -77,7 +77,7 @@ python3 scripts/registry-census/fetch_corpus.py --write-pins    # bump the pins
 python3 -m unittest discover -s scripts/registry-census         # verdict unit tests
 ```
 
-Pure stdlib; needs `curl` and `tar` on PATH.
+Pure stdlib; needs `curl` and `tar` on PATH, plus `git` for `--write-pins`.
 
 ## In CI
 
@@ -252,7 +252,7 @@ workflow never reports.
 
 ## Detection proof (counter-evidence)
 
-`detection-proof/corpus/` is a synthetic corpus of six poison packs, each
+`detection-proof/corpus/` is a synthetic corpus of seven poison packs, each
 broken in exactly one measured way, plus three clean controls. The
 `matrix-detection-proof` job runs the real matrix over it and passes only if
 `verify_detection.py` sees every channel fire with its exact poison message
@@ -273,6 +273,7 @@ delta criteria are exempted there and covered by verdict unit tests.
 | poison-op-break          | `onNodeCreated` throws         | `load`/`addNode` op errs (gated) |
 | poison-serialize-throw   | `onSerialize` throws           | `serialize` op err (gated)       |
 | poison-desync            | pushes an unregistered widget  | signature drift (`wn`, counts)   |
+| poison-store-read-throw  | widget-store read throws       | operation desync (gated)         |
 | clean-control            | nothing                        | fully clean row (specificity)    |
 | clean-mjs-control        | nothing                        | `.mjs` entry loads (glob cover)  |
 | clean-asset-control      | nothing                        | css/json import resolves         |

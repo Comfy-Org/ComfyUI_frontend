@@ -43,8 +43,6 @@ jobs:
       # git ls-remote, not the REST API: ~5,100 packs would exhaust the
       # authenticated 5,000/hour REST budget in a single run.
       - name: Resolve every pack to a commit
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python3 scripts/registry-census/fetch_corpus.py --write-pins --workers 32
 
       - name: Summarize the bump

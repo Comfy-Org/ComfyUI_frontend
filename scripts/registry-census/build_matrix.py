@@ -87,6 +87,18 @@ def is_served(rel: str) -> bool:
     )
 
 
+def packroot_anchor(src: str, dst: str, fp: str) -> str:
+    probe = os.path.dirname(fp)
+    while probe == src or probe.startswith(src + os.sep):
+        if os.path.isdir(os.path.join(probe, 'web')):
+            return os.path.join(dst, os.path.relpath(probe, src))
+        parent = os.path.dirname(probe)
+        if parent == probe:
+            break
+        probe = parent
+    return dst
+
+
 def assert_runner_copy_depth(text: str) -> None:
     """The runner is copied out of HERE into DEST, so every relative import it
     carries has to name the same file from both directories."""
@@ -199,16 +211,7 @@ def build(limit: int = 0, shard: str = ''):
                     if hits:
                         assisted.add(label)
                 if '__PACKROOT__' in t:
-                    anchor = dst
-                    probe = os.path.dirname(out)
-                    while probe.startswith(dst):
-                        if os.path.isdir(os.path.join(probe, 'web')):
-                            anchor = probe
-                            break
-                        parent = os.path.dirname(probe)
-                        if parent == probe:
-                            break
-                        probe = parent
+                    anchor = packroot_anchor(src, dst, fp)
                     up = os.path.relpath(anchor, os.path.dirname(out)) or '.'
                     up = up if up.startswith('.') else './' + up
                     t = t.replace('__PACKROOT__', up)

@@ -120,8 +120,13 @@ def main() -> int:
 
     dest = registry_snapshot()
     if os.path.exists(dest):
-        prev_count = len(json.load(open(dest)))
-        if len(out) < 0.9 * prev_count:
+        try:
+            with open(dest, encoding='utf-8') as fh:
+                previous = json.load(fh)
+            prev_count = len(previous) if isinstance(previous, list) else 0
+        except (OSError, ValueError, TypeError):
+            prev_count = 0
+        if prev_count and len(out) < 0.9 * prev_count:
             return keep_cached(
                 f'registry returned {len(out)} packs vs {prev_count} cached -'
                 ' likely API shape drift, not mass unpublishing'

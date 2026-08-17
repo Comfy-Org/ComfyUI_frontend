@@ -77,6 +77,7 @@ EXPECTED_ROW_KEYS = (
     'hookErrors',
     'registerNodeDef',
     'registerCustomNodes',
+    'storeReadErrors',
     'newTypes',
     'driveTypes',
 )
@@ -452,6 +453,7 @@ def main() -> int:
     out_dir = os.environ.get('MATRIX_OUT', '/tmp/matrix')
     rows: list[dict] = []
     manifests: dict[str, dict] = {}
+    unreadable_rows: list[str] = []
     for name in sorted(os.listdir(out_dir) if os.path.isdir(out_dir) else []):
         if not name.endswith('.json'):
             continue
@@ -463,11 +465,21 @@ def main() -> int:
         if not isinstance(data, dict):
             if data is not None:
                 print(f'malformed {label}: {name}', file=sys.stderr)
+            if not manifest:
+                unreadable_rows.append(name)
             continue
         if manifest:
             manifests[name] = data
         else:
             rows.append(data)
+    if unreadable_rows:
+        print(
+            f'{len(unreadable_rows)} row file(s) unreadable, so every rate'
+            ' would be measured over a short denominator:'
+            f' {unreadable_rows[:10]}',
+            file=sys.stderr,
+        )
+        return 2
     if not rows:
         print(f'no matrix rows in {out_dir}', file=sys.stderr)
         return 2
