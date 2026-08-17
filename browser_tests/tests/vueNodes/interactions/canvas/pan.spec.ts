@@ -212,26 +212,12 @@ test.describe('Vue Nodes Canvas Pan', { tag: '@vue-nodes' }, () => {
         { x: 256, y: 256 }
       )
 
-      // Assert the pan actually landed before comparing pixels, so a pan that
-      // never applied fails here with a readable error instead of surfacing as
-      // a screenshot diff.
+      // Fail on a pan that never landed here, not as a screenshot diff.
       await expect
         .poll(() => comfyPage.canvasOps.getOffset())
         .not.toEqual(offsetBefore)
 
-      // The scene is fully settled at this point: every pixel outside the
-      // `ckpt_name` widget's value text is byte-identical between passing and
-      // failing CI runs, including the panned node's own transform and border.
-      // The residual diff is ~40 pixels of text anti-aliasing inside the glyphs
-      // of "v1-5-pruned-emaonly-fp16.sa…" — identical glyph positions (per-glyph
-      // centroid drift < 0.09px), ~5% less ink. It is a text-rasterization
-      // difference that no readiness signal can wait out: Playwright already
-      // captures a stable screenshot and re-fails all 3 retries with the exact
-      // same 40 pixels.
-      //
-      // The bound stays far below any real regression. A 1px pan error moves
-      // 3615 pixels, and the one genuine rendering change observed on this test
-      // in CI moved 3146.
+      // Tolerates text anti-aliasing noise in the widget value text.
       await expect(comfyPage.canvas).toHaveScreenshot(
         'vue-nodes-paned-with-touch.png',
         { maxDiffPixels: 100 }
