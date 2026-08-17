@@ -1,6 +1,9 @@
 import { ref } from 'vue'
 import { describe, expect, it } from 'vitest'
 
+import { createNodeLocatorId } from '@/types/nodeIdentification'
+import { toNodeId } from '@/types/nodeId'
+
 import type { SelectedNode } from './useCanvasSelection'
 import { useCanvasSelection } from './useCanvasSelection'
 
@@ -71,6 +74,32 @@ describe('useCanvasSelection', () => {
     replace([nodeB])
 
     expect(staged.value).toEqual([nodeB])
+  })
+
+  it('deduplicates locators while retaining same-id nodes from other graphs', () => {
+    const rootNode: SelectedNode = {
+      id: 'shared',
+      locatorId: createNodeLocatorId(null, toNodeId('shared')),
+      title: 'Root twin'
+    }
+    const subgraphNode: SelectedNode = {
+      id: 'shared',
+      locatorId: createNodeLocatorId(
+        '00000000-0000-0000-0000-000000000001',
+        toNodeId('shared')
+      ),
+      title: 'Subgraph twin'
+    }
+    const { staged, add } = useCanvasSelection({
+      selection: ref<SelectedNode[]>([]),
+      isLive: ref(true)
+    })
+
+    add(rootNode)
+    add(rootNode)
+    add(subgraphNode)
+
+    expect(staged.value).toEqual([rootNode, subgraphNode])
   })
 
   it('drops a tag on remove but keeps the rest', () => {
