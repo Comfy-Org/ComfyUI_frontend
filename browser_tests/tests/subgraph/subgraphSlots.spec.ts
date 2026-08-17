@@ -419,7 +419,7 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
       const subgraphNode = comfyPage.vueNodes.getNodeLocator('19')
       await expect(subgraphNode).toBeVisible()
 
-      const seedStatus = subgraphNode.getByRole('status', {
+      const seedStatus = subgraphNode.getByRole('img', {
         name: 'renamed_seed: Linked input',
         exact: true
       })
@@ -478,7 +478,7 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
         )
         .toBe(RENAMED_LABEL)
 
-      const seedStatusAfter = subgraphNodeAfter.getByRole('status', {
+      const seedStatusAfter = subgraphNodeAfter.getByRole('img', {
         name: `${RENAMED_LABEL}: Linked input`,
         exact: true
       })

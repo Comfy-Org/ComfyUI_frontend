@@ -183,7 +183,7 @@ describe('WidgetInputText Value Binding', () => {
         'inert'
       )
       expect(
-        screen.getByRole('status', { name: 'test_input: Linked input' })
+        screen.getByRole('img', { name: 'test_input: Linked input' })
       ).toBeVisible()
 
       await rerender({
@@ -191,7 +191,7 @@ describe('WidgetInputText Value Binding', () => {
         modelValue: 'stale prompt'
       })
 
-      expect(screen.queryByRole('status')).toBeNull()
+      expect(screen.queryByRole('img')).toBeNull()
       expect(screen.getByRole('textbox')).toBeVisible()
       expect(screen.getByRole('textbox')).toBeEnabled()
       expect(screen.getByRole('textbox')).toHaveValue('stale prompt')

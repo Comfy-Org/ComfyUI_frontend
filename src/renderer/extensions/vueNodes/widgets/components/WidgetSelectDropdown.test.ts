@@ -258,7 +258,7 @@ describe('WidgetSelectDropdown', () => {
       screen.queryByRole('button', { name: 'stale.png' })
     ).not.toBeInTheDocument()
     expect(
-      screen.getByRole('status', { name: 'image: Linked input' })
+      screen.getByRole('img', { name: 'image: Linked input' })
     ).toBeVisible()
     for (const button of within(content).getAllByRole('button', {
       hidden: true

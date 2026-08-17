@@ -342,7 +342,7 @@ describe('WidgetToggleSwitch Value Binding', () => {
       control.focus()
       expect(control).not.toHaveFocus()
       expect(
-        screen.getByRole('status', {
+        screen.getByRole('img', {
           name: 'test_toggle: Linked input'
         })
       ).toHaveAttribute('data-linked-display', 'switch')
@@ -364,7 +364,7 @@ describe('WidgetToggleSwitch Value Binding', () => {
       expect(screen.queryByRole('button')).toBeNull()
       for (const control of controls) expect(control).toBeDisabled()
       expect(
-        screen.getByRole('status', {
+        screen.getByRole('img', {
           name: 'test_toggle: Linked input'
         })
       ).toHaveAttribute('data-linked-display', 'control')

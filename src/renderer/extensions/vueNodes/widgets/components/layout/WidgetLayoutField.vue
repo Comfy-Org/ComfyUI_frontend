@@ -69,8 +69,7 @@ const linkedDisplay = computed(() =>
         @pointerup.stop
       >
         <div
-          class="contents"
-          :class="linkedDisplay && 'invisible'"
+          :class="cn('contents', linkedDisplay && 'invisible')"
           :aria-hidden="linkedDisplay ? 'true' : undefined"
           :inert="linkedDisplay ? true : undefined"
           :data-testid="linkedDisplay ? 'linked-widget-content' : undefined"

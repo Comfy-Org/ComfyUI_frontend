@@ -264,7 +264,7 @@ describe('WidgetItem', () => {
       expect(input).toBeDisabled()
       expect(screen.queryByRole('textbox')).toBeNull()
       expect(
-        screen.getByRole('status', { name: 'prompt: Linked input' })
+        screen.getByRole('img', { name: 'prompt: Linked input' })
       ).toBeVisible()
     })
 
@@ -349,7 +349,7 @@ describe('WidgetItem', () => {
 
       expect(stub.linkedDisplay).toBeNull()
       expect(stub.options.disabled).toBe(true)
-      expect(screen.queryByRole('status')).toBeNull()
+      expect(screen.queryByTestId('linked-widget-placeholder')).toBeNull()
     })
   })
 })

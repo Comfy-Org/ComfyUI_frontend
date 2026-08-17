@@ -734,7 +734,7 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
         await expect(outerNode).toBeVisible()
 
         await expect(
-          outerNode.getByRole('status', {
+          outerNode.getByRole('img', {
             name: 'string_a: Linked input',
             exact: true
           })

@@ -174,7 +174,7 @@ describe('WidgetTextarea Value Binding', () => {
       expect(textarea.value).toBe('initial content')
     })
 
-    it('keeps an unlinked disabled textarea readonly without disabling it', () => {
+    it('keeps an unlinked disabled textarea disabled and readonly', () => {
       const widget = createTextareaWidget('readable content', {
         disabled: true
       })
@@ -182,7 +182,7 @@ describe('WidgetTextarea Value Binding', () => {
 
       const textarea = screen.getByRole('textbox')
       expect(textarea).toHaveAttribute('readonly')
-      expect(textarea).toBeEnabled()
+      expect(textarea).toBeDisabled()
     })
 
     it('restores the textarea after a link is removed', async () => {
@@ -200,7 +200,7 @@ describe('WidgetTextarea Value Binding', () => {
       textarea.focus()
       expect(textarea).not.toHaveFocus()
       expect(
-        screen.getByRole('status', {
+        screen.getByRole('img', {
           name: 'test_textarea: Linked input'
         })
       ).toBeVisible()
@@ -211,7 +211,7 @@ describe('WidgetTextarea Value Binding', () => {
         modelValue: 'stale multiline'
       })
 
-      expect(screen.queryByRole('status')).toBeNull()
+      expect(screen.queryByRole('img')).toBeNull()
       expect(screen.getByRole('textbox')).toBeVisible()
       expect(screen.getByRole('textbox')).toBeEnabled()
       expect(screen.getByRole('textbox')).toHaveValue('stale multiline')

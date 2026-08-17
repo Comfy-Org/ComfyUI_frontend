@@ -49,7 +49,7 @@ test.describe(
 
         for (const name of WIDGET_NAMES) {
           await expect(
-            targetNode.getByRole('status', {
+            targetNode.getByRole('img', {
               name: `${name}: Linked input`
             })
           ).toBeVisible()
@@ -150,18 +150,18 @@ test.describe(
       )
 
       await targetNode
-        .getByRole('status', { name: 'switch: Linked input' })
+        .getByRole('img', { name: 'switch: Linked input' })
         .click()
       await comfyPage.page.keyboard.press('Space')
 
       await targetNode
-        .getByRole('status', { name: 'select: Linked input' })
+        .getByRole('img', { name: 'select: Linked input' })
         .click()
       await comfyPage.page.keyboard.press('ArrowUp')
       await comfyPage.page.keyboard.press('Enter')
 
       await targetNode
-        .getByRole('status', { name: 'textarea: Linked input' })
+        .getByRole('img', { name: 'textarea: Linked input' })
         .click()
       await comfyPage.page.keyboard.type('ignored input')
       await expect(focusedLinkedContent).toHaveCount(0)

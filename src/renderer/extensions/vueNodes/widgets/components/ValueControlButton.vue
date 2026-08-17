@@ -4,14 +4,9 @@ import { useI18n } from 'vue-i18n'
 import type { ControlOptions } from '@/types/simplifiedWidget'
 import { cn } from '@comfyorg/tailwind-utils'
 
-const {
-  mode,
-  variant = 'badge',
-  disabled = false
-} = defineProps<{
+const { mode, variant = 'badge' } = defineProps<{
   mode: ControlOptions
   variant?: 'badge' | 'button'
-  disabled?: boolean
 }>()
 
 const { t } = useI18n()
@@ -35,7 +30,6 @@ const textMap: Record<ControlOptions, string | null> = {
   <button
     data-testid="value-control"
     type="button"
-    :disabled
     :aria-label="t('widgets.valueControl.' + mode)"
     :class="
       cn(

@@ -378,7 +378,7 @@ test.describe(
 
           const subgraphNode = comfyPage.vueNodes.getNodeLocator('5')
           await expect(
-            subgraphNode.getByRole('status', {
+            subgraphNode.getByRole('img', {
               name: 'string_a: Linked input',
               exact: true
             })

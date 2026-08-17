@@ -41,7 +41,7 @@ const WidgetStub = {
   name: 'WidgetStub',
   props: ['widget', 'nodeId', 'nodeType', 'modelValue'],
   template:
-    '<button class="widget-stub" :data-linked-display="widget.linkedDisplay" :data-node-type="nodeType" :disabled="widget.options?.disabled">{{ modelValue }}</button>'
+    '<button class="widget-stub" :data-linked-display="widget.linkedDisplay" :data-node-type="nodeType" :disabled="widget.options?.disabled" :inert="widget.linkedDisplay ? true : undefined">{{ modelValue }}</button>'
 }
 
 vi.mock(
@@ -388,7 +388,7 @@ describe('NodeWidgets', () => {
     expect(screen.queryByTestId('linked-widget-placeholder')).toBeNull()
   })
 
-  it('dispatches context menu actions from a mounted linked widget', async () => {
+  it('dispatches context menu actions around an inert linked widget', async () => {
     const linkedWidgetId = widgetId(GRAPH_ID, toNodeId('test_node'), 'prompt')
     const nodeData = createMockNodeData('TestNode', [
       createMockWidget({
@@ -414,7 +414,13 @@ describe('NodeWidgets', () => {
 
     const control = container.querySelector('.widget-stub')
     expect(control).not.toBeNull()
-    await fireEvent.contextMenu(control!)
+    expect(control).toHaveAttribute('inert')
+
+    const contextMenuSurface = container.querySelector(
+      '.lg-node-widget > .contents'
+    )
+    expect(contextMenuSurface).not.toBeNull()
+    await fireEvent.contextMenu(contextMenuSurface!)
 
     expect(mockShowNodeOptions).toHaveBeenCalledWith(
       expect.any(MouseEvent),

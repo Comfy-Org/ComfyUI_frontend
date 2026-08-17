@@ -115,12 +115,12 @@ describe('WidgetLayoutField', () => {
       expect(control).toBeDisabled()
       expect(screen.queryByRole('button')).toBeNull()
       expect(
-        screen.getByRole('status', { name: 'prompt: Linked input' })
+        screen.getByRole('img', { name: 'prompt: Linked input' })
       ).toBeVisible()
 
       await rerender({ widget: { name: 'prompt' } })
 
-      expect(screen.queryByRole('status')).toBeNull()
+      expect(screen.queryByRole('img')).toBeNull()
       expect(screen.getByRole('button', { name: 'stale prompt' })).toBeVisible()
     })
   })

@@ -34,7 +34,7 @@
       "
       :placeholder
       :readonly="isReadOnly"
-      :disabled="isLinked || undefined"
+      :disabled="isLinked || filteredProps.disabled"
       :aria-hidden="isLinked ? 'true' : undefined"
       :inert="isLinked ? true : undefined"
       :tabindex="isLinked ? -1 : undefined"

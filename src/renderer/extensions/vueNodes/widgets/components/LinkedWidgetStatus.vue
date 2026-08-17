@@ -18,9 +18,9 @@ const {
   rounded?: 'md' | 'lg'
 }>()
 
-const linkedLabel = st('widgets.linkedInput', 'Linked input')
+const linkedLabel = computed(() => st('widgets.linkedInput', 'Linked input'))
 const accessibleName = computed(
-  () => `${widget.label || widget.name}: ${linkedLabel}`
+  () => `${widget.label || widget.name}: ${linkedLabel.value}`
 )
 </script>
 
@@ -28,12 +28,12 @@ const accessibleName = computed(
   <div
     data-testid="linked-widget-placeholder"
     :data-linked-display="display"
-    role="status"
+    role="img"
     :aria-label="accessibleName"
     :title="linkedLabel"
     :class="
       cn(
-        'pointer-events-auto absolute z-20 flex cursor-default items-center overflow-hidden bg-component-node-widget-background/40 select-none',
+        'absolute z-20 flex cursor-default items-center overflow-hidden bg-component-node-widget-background/40 select-none',
         display === 'switch'
           ? 'top-1 right-1 h-6 w-10 justify-center rounded-full'
           : display === 'expanding'
@@ -44,9 +44,6 @@ const accessibleName = computed(
               )
       )
     "
-    @pointerdown.stop.prevent
-    @pointermove.stop
-    @pointerup.stop
   >
     <i
       class="icon-[lucide--link] size-4 text-component-node-foreground-secondary opacity-40"

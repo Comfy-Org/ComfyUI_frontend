@@ -83,20 +83,5 @@ describe('ValueControlButton', () => {
       await user.click(screen.getByRole('button'))
       expect(onClick).toHaveBeenCalledTimes(1)
     })
-
-    it('cannot be activated when disabled', async () => {
-      const onClick = vi.fn()
-      render(ValueControlButton, {
-        global: { plugins: [i18n] },
-        props: { mode: 'randomize', disabled: true },
-        attrs: { onClick }
-      })
-      const user = userEvent.setup()
-      const button = screen.getByRole('button')
-
-      expect(button).toBeDisabled()
-      await user.click(button)
-      expect(onClick).not.toHaveBeenCalled()
-    })
   })
 })

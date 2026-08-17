@@ -37,8 +37,7 @@
       "
     >
       <div
-        class="contents"
-        :class="isLinkedSwitch && 'invisible'"
+        :class="cn('contents', isLinkedSwitch && 'invisible')"
         :aria-hidden="isLinkedSwitch ? 'true' : undefined"
         :inert="isLinkedSwitch ? true : undefined"
         :data-testid="isLinkedSwitch ? 'linked-widget-content' : undefined"
