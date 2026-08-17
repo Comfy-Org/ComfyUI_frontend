@@ -11,7 +11,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { handleToken, isSameEntity } from './closedProxy'
 import { createDefRegistry } from './defsRegistry'
 import type { DefRegistry } from './defsRegistry'
-import { ComfyUnsupportedError } from './errors'
+import { ComfyApiError, ComfyUnsupportedError } from './errors'
 import { createBackendApi } from './backendHandle'
 import type { BackendHandle } from './backendHandle'
 import { createCommandsApi } from './commandsHandle'
@@ -107,6 +107,7 @@ const CAPABILITIES: ReadonlyMap<string, string> = new Map([
   ['widgets.create', '1.0'],
   ['serialization.control', '1.0'],
   ['widgets.mount', '1.0'],
+  ['widgets.typeContext', '1.0'],
   ['widgets.canvas', '1.0'],
   ['node.onPreview', '1.0'],
   ['node.sizeConstraints', '1.0'],
@@ -317,6 +318,31 @@ function buildMajor(
   const commands = createCommandsApi()
   const backend = createBackendApi()
   const workflow = createWorkflowApi(openWorkflow)
+  const definitionScopes = new WeakMap<LGraph, GraphHandle>()
+
+  function handleForDefinitionNode(node: LGraphNode): NodeHandle {
+    const owner = node.graph
+    if (!owner) {
+      throw new ComfyApiError(
+        `Cannot expose widget context for node '${String(node.id)}': it has not joined a graph.`
+      )
+    }
+    let scope = definitionScopes.get(owner)
+    if (!scope) {
+      scope = createGraphApi(
+        () => owner,
+        `v${major}:definition:${String(owner.id)}`
+      )
+      definitionScopes.set(owner, scope)
+    }
+    const handle = scope.node(String(node.id))
+    if (!handle) {
+      throw new ComfyApiError(
+        `Cannot expose widget context for node '${String(node.id)}': its graph cannot resolve it.`
+      )
+    }
+    return handle
+  }
 
   /**
    * The node an event names, resolved inside the graph that owns it. Ids repeat
@@ -382,7 +408,10 @@ function buildMajor(
       )
     },
     onWorkflowLoaded,
-    defs: defs.forMajor((nodeId) => graph.node(nodeId)!)
+    defs: defs.forMajor(
+      (nodeId) => graph.node(nodeId)!,
+      handleForDefinitionNode
+    )
   })
 }
 
