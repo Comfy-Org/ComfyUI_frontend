@@ -209,8 +209,15 @@ test.describe('Vue Nodes Canvas Pan', { tag: '@vue-nodes' }, () => {
         { x: 64, y: 64 },
         { x: 256, y: 256 }
       )
+      // The touch pan lands the camera on a sub-pixel offset, so the canvas
+      // antialiases the node edges slightly differently between runs. Observed
+      // drift is 40 of 400k pixels, and it ejected two unrelated PRs from the
+      // merge queue on 2026-08-17 while the same base passed for a third.
+      // Same tolerance, and same reason, as the sibling canvas assertion in
+      // `interaction.spec.ts`.
       await expect(comfyPage.canvas).toHaveScreenshot(
-        'vue-nodes-paned-with-touch.png'
+        'vue-nodes-paned-with-touch.png',
+        { maxDiffPixels: 50 }
       )
     }
   )
