@@ -75,41 +75,6 @@ async function tourLength(card: Locator): Promise<number> {
   return Number(/Step \d+ of (\d+)/.exec(label ?? '')?.[1])
 }
 
-/**
- * What a step points at has to be what the pointer reaches. The canvas runs the
- * full height of the window, underneath the workflow tabs, so a step that
- * frames its node against the whole viewport spotlights a title bar the tabs
- * are painted over — unclickable, and undraggable by the only handle it has.
- */
-async function expectSpotlightReachable(page: Page) {
-  await expect(async () => {
-    const reaches = await page.evaluate(async () => {
-      const spotlight = () =>
-        document
-          .querySelector('[data-testid="coach-spotlight"]')
-          ?.getBoundingClientRect()
-
-      const flying = spotlight()
-      await new Promise((resolve) => setTimeout(resolve, 100))
-      const landed = spotlight()
-      if (!landed?.height || flying?.top !== landed.top) return 'still flying'
-
-      const [topmost] = document.elementsFromPoint(
-        landed.x + landed.width / 2,
-        landed.top + 8
-      )
-      return topmost?.closest('.workflow-tabs-container')
-        ? 'the workflow tabs'
-        : 'its target'
-    })
-
-    expect(
-      reaches,
-      'a pointer aimed at the spotlight lands on this instead'
-    ).toBe('its target')
-  }).toPass({ timeout: 10_000 })
-}
-
 async function clearWorkflowHistory(page: Page) {
   await page.evaluate(() => {
     for (const key of Object.keys(localStorage))
@@ -183,6 +148,7 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
   async function tourToRunStep(page: Page) {
     const screen = page.getByRole('dialog', { name: GETTING_STARTED_TITLE })
     const spotlight = page.getByTestId('coach-spotlight')
+    const workflowTabs = page.getByTestId('topbar-workflow-tabs')
     const card = page.getByTestId('coach-card')
 
     await page.route('**/api/prompt', (route) =>
@@ -206,7 +172,22 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
 
     for (let step = 1; step < totalSteps; step++) {
       await expect(card).toContainText(`Step ${step} of ${totalSteps}`)
-      await expectSpotlightReachable(page)
+      await expect
+        .poll(
+          async () => {
+            const [spotlightBox, tabsBox] = await Promise.all([
+              spotlight.boundingBox(),
+              workflowTabs.boundingBox()
+            ])
+            return (
+              !!spotlightBox &&
+              !!tabsBox &&
+              spotlightBox.y >= tabsBox.y + tabsBox.height
+            )
+          },
+          { message: 'the workflow tabs must not cover the spotlight' }
+        )
+        .toBe(true)
       if (await runTitle.isVisible()) break
       await next.click()
     }
