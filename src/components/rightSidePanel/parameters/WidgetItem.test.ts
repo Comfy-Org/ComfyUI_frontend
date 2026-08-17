@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { fireEvent, render, screen } from '@testing-library/vue'
 import { fromAny } from '@total-typescript/shoehorn'
 import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -238,7 +238,7 @@ describe('WidgetItem', () => {
       expect(stub.value).toBe('model_a.safetensors')
     })
 
-    it('renders a supported linked text status in Parameters', () => {
+    it('restores a linked text control in Parameters after disconnect', async () => {
       const widget = createMockWidget({
         name: 'prompt',
         type: 'text',
@@ -256,7 +256,7 @@ describe('WidgetItem', () => {
         ]
       })
 
-      renderWidgetItem(widget, node)
+      const view = renderWidgetItem(widget, node)
 
       const content = screen.getByTestId('linked-widget-content')
       const input = screen.getByRole('textbox', { hidden: true })
@@ -267,6 +267,20 @@ describe('WidgetItem', () => {
       expect(
         screen.getByRole('img', { name: 'prompt: Linked input' })
       ).toBeVisible()
+
+      await view.rerender({ widget, node: createMockNode({ inputs: [] }) })
+
+      expect(screen.queryByRole('img')).toBeNull()
+      const restoredInput = screen.getByRole('textbox', { name: 'prompt' })
+      expect(restoredInput).toBeVisible()
+      expect(restoredInput).toBeEnabled()
+      expect(restoredInput).toHaveValue('STALE PARAMETER TEXT')
+
+      await fireEvent.update(restoredInput, 'restored parameter text')
+
+      expect(view.emitted()['update:widgetValue']).toContainEqual([
+        'restored parameter text'
+      ])
     })
 
     it('uses the bounded linked resolver for ordinary and upload combos', () => {
