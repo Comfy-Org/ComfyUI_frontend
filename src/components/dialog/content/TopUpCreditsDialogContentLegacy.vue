@@ -261,12 +261,9 @@ async function handleBuy() {
     // Close top-up dialog (keep tracking) and open credits panel to show updated balance
     handleClose(false)
 
-    // On the consolidated (workspace) billing flow, show the workspace settings
-    // panel; otherwise show the legacy subscription/credits panel.
-    const settingsPanel = shouldUseWorkspaceBilling.value
-      ? 'workspace'
-      : isSubscriptionEnabled()
-        ? 'subscription'
+    const settingsPanel =
+      shouldUseWorkspaceBilling.value || isSubscriptionEnabled()
+        ? 'workspace'
         : 'credits'
     settingsDialog.show(settingsPanel)
   } catch (error) {
