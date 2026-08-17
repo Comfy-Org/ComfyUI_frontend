@@ -58,6 +58,17 @@ FLOORS = {
     'rows_complete': 98.0,
 }
 
+CRITERION_LABELS = {
+    'any_loaded': 'entry JS loads (any entry per pack)',
+    'entry_clean': 'entry files load clean',
+    'register_node_def': 'registerNodeDef OK',
+    'register_custom_nodes': 'registerCustomNodes OK',
+    'hook_free': 'packs free of contained hook errors',
+    'op_clean': 'every operation clean',
+    'rows_complete': 'rows complete (no hang or crash)',
+}
+DELTA_CRITERION_LABEL = 'entry-clean delta vs previous run'
+
 EXPECTED_ROW_KEYS = (
     'selfCheck',
     'load',
@@ -124,6 +135,13 @@ def evaluate(
     stubs = [r for r in rows if r.get('incomplete')]
     done = [r for r in rows if not r.get('incomplete')]
 
+    if not done:
+        lines.append(
+            f'all {len(stubs)} rows are incomplete stubs - every pack hung'
+            ' or crashed before measuring'
+        )
+        return Verdict(2, lines)
+
     absent = [k for k in EXPECTED_ROW_KEYS if not any(k in r for r in done)]
     if absent:
         lines.append(
@@ -132,12 +150,6 @@ def evaluate(
             ' every rate over it is vacuous rather than clean.'
         )
         lines.append('')
-
-    if not done:
-        lines.append(
-            f'all {len(stubs)} rows are incomplete stubs - every pack hung'
-            ' or crashed before measuring'
-        )
         return Verdict(2, lines)
 
     # build_matrix.py marks a pack indeterminate when it cannot tell which
@@ -287,7 +299,8 @@ def evaluate(
         )
         return Verdict(2, lines)
 
-    worst_op, worst_pct = '-', 100.0
+    worst_op = '-'
+    worst_pct = 100.0 if op_total else 0.0
     for op in op_total:
         pct = (op_total[op] - op_bad[op]) / op_total[op] * 100
         if pct < worst_pct:
@@ -295,33 +308,37 @@ def evaluate(
 
     criteria = (
         (
-            'entry JS loads (any entry per pack)',
+            CRITERION_LABELS['any_loaded'],
             any_pct,
             FLOORS['any_loaded'],
         ),
-        ('entry files load clean', entry_pct, FLOORS['entry_clean']),
         (
-            'registerNodeDef OK',
+            CRITERION_LABELS['entry_clean'],
+            entry_pct,
+            FLOORS['entry_clean'],
+        ),
+        (
+            CRITERION_LABELS['register_node_def'],
             stage_pct['registerNodeDef'],
             FLOORS['register_node_def'],
         ),
         (
-            'registerCustomNodes OK',
+            CRITERION_LABELS['register_custom_nodes'],
             stage_pct['registerCustomNodes'],
             FLOORS['register_custom_nodes'],
         ),
         (
-            'packs free of contained hook errors',
+            CRITERION_LABELS['hook_free'],
             hook_free_pct,
             FLOORS['hook_free'],
         ),
         (
-            f'every operation clean (worst: {worst_op})',
+            f'{CRITERION_LABELS["op_clean"]} (worst: {worst_op})',
             worst_pct,
             FLOORS['op_clean'],
         ),
         (
-            'rows complete (no hang or crash)',
+            CRITERION_LABELS['rows_complete'],
             complete_pct,
             FLOORS['rows_complete'],
         ),
@@ -341,7 +358,7 @@ def evaluate(
     prev_entry = prev.get('entryPct') if isinstance(prev, dict) else None
     if prev is None:
         lines.append(
-            f'  {"entry-clean delta vs previous run":42s}   n/a'
+            f'  {DELTA_CRITERION_LABEL:42s}   n/a'
             '  (no previous metrics)'
         )
     elif isinstance(prev, dict) and run_id and prev.get('runId') == run_id:
@@ -349,14 +366,14 @@ def evaluate(
         # run against itself would blind the gate exactly when someone
         # is re-running a red verdict.
         lines.append(
-            f'  {"entry-clean delta vs previous run":42s}   n/a'
+            f'  {DELTA_CRITERION_LABEL:42s}   n/a'
             '  (previous metrics are from this run)'
         )
     elif isinstance(prev_entry, (int, float)):
         delta = entry_pct - prev_entry
         held = delta >= -DELTA_TOLERANCE
         lines.append(
-            f'  {"entry-clean delta vs previous run":42s} {delta:+5.1f}pp'
+            f'  {DELTA_CRITERION_LABEL:42s} {delta:+5.1f}pp'
             f'  (floor -{DELTA_TOLERANCE}pp)  {"OK" if held else "BREACH"}'
         )
         if not held:
@@ -366,7 +383,7 @@ def evaluate(
             )
     else:
         lines.append(
-            f'  {"entry-clean delta vs previous run":42s}   n/a'
+            f'  {DELTA_CRITERION_LABEL:42s}   n/a'
             '  (previous metrics malformed)'
         )
 

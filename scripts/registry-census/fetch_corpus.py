@@ -45,7 +45,7 @@ from typing import NamedTuple
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import pins  # noqa: E402
-from paths import CORPUS, LOCKFILE, registry_snapshot  # noqa: E402
+from paths import CORPUS, LOCKFILE, READY_MARKER, registry_snapshot  # noqa: E402
 
 # ComfyUI serves plain browser ES modules out of a pack's web directory, so
 # .js/.mjs is the entire executable surface - .ts/.jsx/.tsx/.vue are build
@@ -66,6 +66,9 @@ MAX_TEXT_ASSET_BYTES = 262_144
 # bounds decompression before the per-file caps can apply.
 MAX_PACK_BYTES = 33_554_432
 MAX_ARCHIVE_BYTES = 134_217_728
+CORPUS_COVERAGE_FLOOR = 0.95
+MIN_MASS_FAILURE_COUNT = 5
+AVAILABLE_STATUSES = frozenset(('ok', 'empty', 'cached'))
 
 _TREE_RE = re.compile(
     r'^(?P<owner>[^/]+)/(?P<repo>[^/]+)'
@@ -173,6 +176,39 @@ class Fetched(NamedTuple):
     etag: str | None
     detail: str
     ref: str = ''
+
+
+def corpus_coverage(results: list[Fetched]) -> tuple[int, float]:
+    available = sum(
+        1 for result in results if result.status in AVAILABLE_STATUSES
+    )
+    coverage = available / len(results) if results else 0.0
+    return available, coverage
+
+
+def corpus_is_too_small(results: list[Fetched]) -> bool:
+    if not results:
+        return True
+    available, coverage = corpus_coverage(results)
+    missing = len(results) - available
+    return (
+        missing >= MIN_MASS_FAILURE_COUNT
+        and coverage < CORPUS_COVERAGE_FLOOR
+    )
+
+
+def write_ready_marker(available: int, total: int) -> None:
+    with open(READY_MARKER, 'w', encoding='utf-8') as fh:
+        json.dump(
+            {
+                'available': available,
+                'coverageFloor': CORPUS_COVERAGE_FLOOR,
+                'targets': total,
+            },
+            fh,
+            indent=1,
+            sort_keys=True,
+        )
 
 
 def _archive_root(extracted: str) -> str:
@@ -453,6 +489,9 @@ def main() -> int:
     # The mass-failure gate compares against what was known BEFORE this run;
     # `lock` is mutated in place below.
     prior = {k: dict(v) for k, v in lock.items() if isinstance(v, dict)}
+    full_run = not args.limit
+    if full_run and os.path.exists(READY_MARKER):
+        os.remove(READY_MARKER)
 
     os.makedirs(CORPUS, exist_ok=True)
     print(f'{len(targets)} packs -> {CORPUS}', file=sys.stderr, flush=True)
@@ -502,6 +541,16 @@ def main() -> int:
         print(f'\n{drifted} packs drifted from the lockfile', file=sys.stderr)
         return 1
 
+    available, coverage = corpus_coverage(results)
+    if corpus_is_too_small(results):
+        print(
+            f'\n{available}/{len(results)} registry targets are available'
+            f' ({coverage:.1%}); below the {CORPUS_COVERAGE_FLOOR:.0%}'
+            ' corpus floor - refusing to cache or measure a partial corpus',
+            file=sys.stderr,
+        )
+        return 1
+
     # What this gate exists to catch is an OUTAGE - rate limiting, a host down -
     # silently shrinking every downstream denominator. What it must not catch is
     # the permanently unfetchable tail: at pinned commits, a deleted or private
@@ -523,6 +572,8 @@ def main() -> int:
             file=sys.stderr,
         )
     if not regressed:
+        if full_run:
+            write_ready_marker(available, len(results))
         return 0
 
     previously_ok = sum(1 for v in prior.values() if v.get('status')) or len(targets)
@@ -538,6 +589,8 @@ def main() -> int:
             file=sys.stderr,
         )
         return 1
+    if full_run:
+        write_ready_marker(available, len(results))
     return 0
 
 

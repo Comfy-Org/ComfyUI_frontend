@@ -191,9 +191,20 @@ class HarnessGates(unittest.TestCase):
         rows = [row(f'pack-{i}') for i in range(10)]
         for r in rows:
             r['driveTypes2'] = r.pop('driveTypes')
-        report = '\n'.join(sm.evaluate(rows, {}).lines)
+        verdict = sm.evaluate(rows, {})
+        report = '\n'.join(verdict.lines)
+        self.assertEqual(verdict.code, 2)
         self.assertIn('ROW SCHEMA DRIFT', report)
         self.assertIn('driveTypes', report)
+        self.assertIsNone(verdict.metrics)
+
+    def test_empty_operation_maps_fail_closed(self) -> None:
+        rows = population()
+        for r in rows:
+            r['ops'] = {}
+        verdict = sm.evaluate(rows, {})
+        self.assertEqual(verdict.code, 1)
+        self.assertIn('every operation clean', verdict.breaches[0])
 
 
 class Population(unittest.TestCase):

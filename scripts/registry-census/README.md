@@ -1,7 +1,7 @@
 # Registry corpus & ecosystem matrix
 
-A PR gate that executes the frontend JS of every registry pack (~5,100 packs)
-against the commit under review and gates on the population result.
+A PR advisory that executes the frontend JS of every registry pack (~5,100
+packs) against the commit under review and reports a population verdict.
 
 Vendored from `Comfy-Org/ComfyUI_ECS_Compat_Check` (`compat/paths.py`,
 `fetch_corpus.py`, `refresh_registry.py`), a private migration-phase
@@ -29,13 +29,13 @@ all.
 
 ## Pins — read this before wondering why a pack looks stale
 
-`corpus.pins.json` is **checked in** and names the exact commit of every pack
-the matrix measures. The fetch uses those commits, not `HEAD`.
+`corpus.pins.json` is **checked in** and names the exact commit of each pinned
+pack the matrix measures. The fetch uses those commits, not `HEAD`.
 
-This is the difference between a PR gate and a liability. Tracking pack HEADs
-makes every one of ~5,100 pack authors a committer to this repo's CI: one of
-them pushes a bug at 3am and the next unrelated PR goes red for it, and the
-person who has to work that out is whoever opened it. Pinned, a pack can only
+This is the difference between a useful PR signal and a liability. Tracking
+pack HEADs makes every pack author a committer to this repo's CI: one of them
+pushes a bug at 3am and the next unrelated PR goes red for it, and the person
+who has to work that out is whoever opened it. Once pinned, a pack can only
 change through a reviewed bump.
 
 **Bumping is manual, and currently the only thing keeping the pins honest.**
@@ -45,8 +45,9 @@ change through a reviewed bump.
 - Locally: `python3 scripts/registry-census/fetch_corpus.py --write-pins`
 
 **A red `CI: Ecosystem Matrix` on a pin-bump PR means the ecosystem moved, not
-that the diff broke something.** That is what the bump PR is for. Anywhere
-else, a red means the diff. Keeping those two apart is the whole point.
+that the diff broke something.** That is what the bump PR is for. Outside a
+pin bump or a cold rebuild of the unpinned tail, a red means the diff. Keeping
+those causes apart is the whole point.
 
 Every matrix run opens with a `pin-status` job printing the pin date, the age,
 and the bump URL, and raises a `::warning::` annotation once the pins are more
@@ -57,7 +58,8 @@ detect from the inside. Everything stays green while the ecosystem it claims
 to measure moves on without it.
 
 Packs registered since the last bump have no pin and track their registry ref
-until the next one, rather than dropping out of the population.
+when a cache is built, rather than dropping out of the population. They then
+stay fixed with that cache until the next cache build.
 
 Each pack's tarball ETag and the ref actually fetched are recorded in
 `corpus.lock.json`, which ships as a run artifact — that is the identity a
@@ -79,19 +81,16 @@ Pure stdlib; needs `curl` and `tar` on PATH.
 
 ## In CI
 
-`.github/workflows/ci-ecosystem-matrix.yaml`. **Corpus freshness is a
-push-to-main concern, not a PR concern:**
+`.github/workflows/ci-ecosystem-matrix.yaml`. An exact cache hit restores the
+snapshot and corpus as-is, with no registry crawl or pack refetch. On a miss,
+the workflow rebuilds the corpus and refuses to cache or measure it unless at
+least 95% of registry targets are available. The minimum count of five failed
+targets keeps a small local `--limit` smoke run from acting like a census.
 
-| event          | corpus                                         | metrics              |
-| -------------- | ---------------------------------------------- | -------------------- |
-| `push` to main | fetched at the pinned commits, cache **saved** | baseline **written** |
-| `pull_request` | main's cached corpus, restored as-is           | baseline **read**    |
-
-Both sides measure the same packs — the pins guarantee it across cache
-evictions, the restore-without-refetch guarantees it within a run — so a red
-delta is attributable to the diff rather than to a pack that moved. Actions
-cache scoping also means only a default-branch run can produce an entry other
-branches restore, so a PR never writes one.
+The cache key is the pin set, and Actions caches are immutable. Main normally
+provides the shared entry that PRs restore; a PR with no visible main cache can
+build a branch-scoped entry for its own shards. Baseline metrics are still
+written only by a passing main run and read by PRs.
 
 ## The ecosystem matrix (execution rung)
 
@@ -143,7 +142,7 @@ Applied once by the `matrix-verdict` job over all four shards combined
 | entry-clean delta vs baseline             | >= -1.5pp | carried by cache  |
 
 All must hold. Each floor sits under the baseline so a handful of broken pack
-HEADs cannot flip the verdict, while a frontend regression that breaks pack
+refs cannot flip the verdict, while a frontend regression that breaks pack
 integration craters them all at once; the delta gate catches gradual erosion
 the absolute floors ignore.
 
@@ -221,11 +220,11 @@ the runner is ephemeral and tokenless.
 
 ## Runbook
 
-The gate is red. In order:
+The advisory is red. In order:
 
 1. **Exit 2 — verdict withheld.** This is a harness failure, not an ecosystem
    result. Read the banner: short population (a shard died — check the
-   `vitest-shard.log` in that shard's artifact), self-check floor (the default
+   `_vitest-shard.log` in that shard's artifact), self-check floor (the default
    workflow stopped materializing — usually `browser_tests/assets/default.json`
    changed), or stub majority. Nothing about the ecosystem has been measured.
    Re-run; if it reproduces, it is a harness bug and blocks nothing else.
@@ -234,19 +233,22 @@ The gate is red. In order:
    - **The diff.** Compare against the baseline run on main. Same corpus by
      construction, so a criterion that moved is attributable to the diff.
      Fix or justify.
-   - **Pack churn.** Only possible if the corpus was refetched — i.e. on a
-     main run. `corpus.lock.json` in the run artifact records each pack's
-     ETag and tree; diff it against the last green run's to get the list of
-     packs that moved.
+   - **Pack churn.** Expected on a pin-bump PR. On any other run it requires a
+     cache rebuild and is limited to the not-yet-pinned tail; it is not caused
+     merely by running on main. `corpus.lock.json` in the run artifact records
+     each pack's ETag and ref; diff it against the last green run's to find what
+     moved.
 3. **`matrix-detection-proof` is red.** Treat this as more serious than a
    FAIL. It means a measurement channel stopped firing, so every _green_
    matrix run since the change is worth less than it appeared. Do not
    silence it.
 
-**Blast radius:** the matrix is a PR gate but is **not currently a required
-check** — `ProtectMain` requires `test`, `lint-and-format`, `e2e-status` and
-`website-e2e`. Until it is added there, a red matrix informs but does not
-block.
+**Blast radius:** the matrix is an advisory PR check, not a required check.
+`ProtectMain` requires `test`, `lint-and-format`, `e2e-status` and
+`website-e2e`, so a red matrix informs but does not block. Promotion requires
+both adding `matrix-verdict` to required checks and adding a `merge_group`
+trigger; doing only the first leaves merge groups waiting for a check this
+workflow never reports.
 
 ## Detection proof (counter-evidence)
 
@@ -258,9 +260,14 @@ broken in exactly one measured way, plus three clean controls. The
 FAIL. Asserting only that the combined verdict went red would certify a
 channel as "fired" while it contributed nothing to the gate.
 
+The verifier also checks the reverse mapping: every verdict criterion must
+have poison counter-evidence or an explicit exemption explaining why it
+cannot be driven safely end to end. The service-status, timeout, and baseline
+delta criteria are exempted there and covered by verdict unit tests.
+
 | pack                     | breaks                         | detected as                      |
 | ------------------------ | ------------------------------ | -------------------------------- |
-| poison-load-throw        | throws at import               | `loadedOk` 0 + message (gated)   |
+| poison-load-throw        | throws at import               | pack + entry load gates breach   |
 | poison-regdef-throw      | `beforeRegisterNodeDef` throws | `hookErrors` (app containment)   |
 | poison-customnodes-throw | `registerCustomNodes` throws   | `hookErrors` (app containment)   |
 | poison-op-break          | `onNodeCreated` throws         | `load`/`addNode` op errs (gated) |
@@ -277,9 +284,10 @@ row data instead, and that is now gated.
 
 ## Read before citing any number
 
-- **The corpus tracks pack HEADs.** Two runs weeks apart are not the same
-  corpus; `corpus.lock.json` (in the run artifact) records the exact ETags
-  and trees a run measured. Snapshot it alongside any published figure.
+- **Pinned packs stay at their recorded commits.** The not-yet-pinned tail
+  tracks registry refs when a cache is built, so two reconstructions of the
+  same pin set can still differ there. `corpus.lock.json` records the exact
+  ETags and refs a run measured; snapshot it with any published figure.
 - **The scope is the hook table above**, not "extension compatibility".
 - **A green run is evidence about the population, not about a pack.**
 - The deep-execution complements are the custom-node core gate (6 packs,

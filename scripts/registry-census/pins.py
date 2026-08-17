@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Corpus pins: which commit of each pack the matrix measures.
 
-The matrix is a PR gate, so the corpus has to be a constant. Tracking pack
-HEADs makes every pack author a committer to this repo's CI: one of them
-pushes a bug and the next unrelated PR goes red for it.
+The matrix is a PR advisory, so the corpus has to be a constant. Tracking pack
+HEADs makes every pack author a committer to this repo's CI: one of them pushes
+a bug and the next unrelated PR goes red for it.
 
 `corpus.pins.json` is checked in, so a pack only changes when someone bumps
 the pins in a reviewed PR - and that PR is the one place ecosystem churn is
@@ -73,7 +73,7 @@ def banner(today: date | None = None) -> list[str]:
     if pinned is None:
         head = 'CORPUS PINS: MISSING OR UNREADABLE - measuring pack HEADs'
         detail = (
-            'every pack author is currently a committer to this gate;'
+            'every pack author is currently a committer to this check;'
             ' a bug pushed to any pack reds the next unrelated PR'
         )
     elif age is not None and age > MAX_AGE_DAYS:
@@ -82,7 +82,7 @@ def banner(today: date | None = None) -> list[str]:
             f' (pinned {pinned.isoformat()}, limit {MAX_AGE_DAYS} days)'
         )
         detail = (
-            'the gate is measuring an ecosystem snapshot older than a month;'
+            'the check is measuring an ecosystem snapshot older than a month;'
             ' real pack breakage is invisible until the pins are bumped'
         )
     else:

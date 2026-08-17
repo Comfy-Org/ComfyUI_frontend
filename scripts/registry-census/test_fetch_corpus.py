@@ -1,0 +1,43 @@
+#!/usr/bin/env python3
+
+from __future__ import annotations
+
+import os
+import sys
+import unittest
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+import fetch_corpus as fc
+
+
+def results(*statuses: str) -> list[fc.Fetched]:
+    return [
+        fc.Fetched(f'pack-{index}', status, None, '')
+        for index, status in enumerate(statuses)
+    ]
+
+
+class CorpusCoverage(unittest.TestCase):
+    def test_empty_target_list_fails_closed(self) -> None:
+        self.assertTrue(fc.corpus_is_too_small([]))
+
+    def test_successful_and_cached_packs_are_available(self) -> None:
+        fetched = results('ok', 'empty', 'cached', 'failed')
+        self.assertEqual(fc.corpus_coverage(fetched), (3, 0.75))
+
+    def test_cold_fetch_fails_below_the_population_floor(self) -> None:
+        fetched = results(*(['ok'] * 94), *(['failed'] * 6))
+        self.assertTrue(fc.corpus_is_too_small(fetched))
+
+    def test_population_at_the_floor_is_accepted(self) -> None:
+        fetched = results(*(['ok'] * 95), *(['failed'] * 5))
+        self.assertFalse(fc.corpus_is_too_small(fetched))
+
+    def test_small_smoke_run_keeps_the_mass_failure_minimum(self) -> None:
+        fetched = results(*(['ok'] * 46), *(['failed'] * 4))
+        self.assertFalse(fc.corpus_is_too_small(fetched))
+
+
+if __name__ == '__main__':
+    unittest.main()

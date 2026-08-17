@@ -8,6 +8,7 @@ unit and the whole tree stays gitignored:
       data/registry.json    pinned registry snapshot (refresh_registry.py)
       corpus/registry_js/   per-pack frontend JS (fetch_corpus.py, ~0.9GB)
       corpus.lock.json      per-pack tarball ETag + tree - the identity record
+      corpus.ready.json     written only after the corpus meets its size floor
       registry-stale.json   present only when the snapshot is a fallback
       results/              scan outputs
 
@@ -26,6 +27,7 @@ CORPUS_ROOT = os.path.join(ROOT, 'corpus')
 CORPUS = os.path.join(CORPUS_ROOT, 'registry_js')
 
 LOCKFILE = os.path.join(ROOT, 'corpus.lock.json')
+READY_MARKER = os.path.join(ROOT, 'corpus.ready.json')
 STALE_MARKER = os.path.join(ROOT, 'registry-stale.json')
 
 

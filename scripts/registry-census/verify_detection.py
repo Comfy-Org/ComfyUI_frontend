@@ -26,7 +26,12 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-from summarize_matrix import Verdict, evaluate  # noqa: E402
+from summarize_matrix import (  # noqa: E402
+    CRITERION_LABELS,
+    DELTA_CRITERION_LABEL,
+    Verdict,
+    evaluate,
+)
 
 FIXTURE_CORPUS = os.path.join(HERE, 'detection-proof', 'corpus', 'registry_js')
 
@@ -40,12 +45,34 @@ CONTROLS = ('clean-control', 'clean-mjs-control', 'clean-asset-control')
 # still test different dispatch points, since a dispatch that stopped firing
 # would empty hookErrors and stop the breach.
 GATES = {
-    'poison-load-throw': 'entry JS loads (any entry per pack)',
-    'poison-regdef-throw': 'packs free of contained hook errors',
-    'poison-customnodes-throw': 'packs free of contained hook errors',
-    'poison-op-break': 'every operation clean',
-    'poison-serialize-throw': 'every operation clean',
-    'poison-desync': 'every operation clean',
+    'poison-load-throw': (
+        CRITERION_LABELS['any_loaded'],
+        CRITERION_LABELS['entry_clean'],
+    ),
+    'poison-regdef-throw': (CRITERION_LABELS['hook_free'],),
+    'poison-customnodes-throw': (CRITERION_LABELS['hook_free'],),
+    'poison-op-break': (CRITERION_LABELS['op_clean'],),
+    'poison-serialize-throw': (CRITERION_LABELS['op_clean'],),
+    'poison-desync': (CRITERION_LABELS['op_clean'],),
+}
+
+PROOF_EXEMPTIONS = {
+    CRITERION_LABELS['register_node_def']: (
+        'pack hook failures are contained before this service status; verdict'
+        ' sensitivity is unit-tested'
+    ),
+    CRITERION_LABELS['register_custom_nodes']: (
+        'pack hook failures are contained before this service status; verdict'
+        ' sensitivity is unit-tested'
+    ),
+    CRITERION_LABELS['rows_complete']: (
+        'a deliberately hung pack would consume the worker timeout; stub'
+        ' sensitivity is unit-tested'
+    ),
+    DELTA_CRITERION_LABEL: (
+        'requires a prior baseline rather than a poison pack; baseline'
+        ' sensitivity is unit-tested'
+    ),
 }
 
 
@@ -216,6 +243,29 @@ def main() -> int:
         not unmapped,
         'unmapped: ' + ', '.join(unmapped) if unmapped else '',
     )
+    all_criteria = set(CRITERION_LABELS.values()) | {DELTA_CRITERION_LABEL}
+    poison_criteria = {
+        label for labels in GATES.values() for label in labels
+    }
+    uncovered = sorted(
+        all_criteria - poison_criteria - set(PROOF_EXEMPTIONS)
+    )
+    unknown_exemptions = sorted(set(PROOF_EXEMPTIONS) - all_criteria)
+    coverage_detail = []
+    if uncovered:
+        coverage_detail.append('uncovered: ' + ', '.join(uncovered))
+    if unknown_exemptions:
+        coverage_detail.append(
+            'unknown exemptions: ' + ', '.join(unknown_exemptions)
+        )
+    check(
+        'coverage: every gated criterion has poison counter-evidence or an'
+        ' explicit exemption',
+        not coverage_detail,
+        '; '.join(coverage_detail),
+    )
+    for label, reason in PROOF_EXEMPTIONS.items():
+        print(f'  EXEMPT  {label}   [{reason}]')
 
     # Each poison is judged over its own row plus the clean controls: a
     # one-row population trips the self-check harness gate, which withholds
@@ -229,20 +279,24 @@ def main() -> int:
         '' if baseline.code == 0 else outcome(baseline),
     )
 
-    for poison, label in sorted(GATES.items()):
+    for poison, labels in sorted(GATES.items()):
         if poison not in rows:
-            check(f'gating: {poison} breaches "{label}"', False, 'no row')
+            for label in labels:
+                check(f'gating: {poison} breaches "{label}"', False, 'no row')
             continue
         verdict = evaluate([*controls, rows[poison]], {})
-        breach = next((b for b in verdict.breaches if b.startswith(label)), '')
-        # Attribution: the criterion has to be clean without the poison, or
-        # the breach says nothing about the channel this pack injects.
-        if any(b.startswith(label) for b in baseline.breaches):
-            breach = ''
-            detail = 'the clean controls already breach this criterion'
-        else:
-            detail = breach or outcome(verdict)
-        check(f'gating: {poison} breaches "{label}"', bool(breach), detail)
+        for label in labels:
+            breach = next(
+                (b for b in verdict.breaches if b.startswith(label)), ''
+            )
+            # Attribution: the criterion has to be clean without the poison, or
+            # the breach says nothing about the channel this pack injects.
+            if any(b.startswith(label) for b in baseline.breaches):
+                breach = ''
+                detail = 'the clean controls already breach this criterion'
+            else:
+                detail = breach or outcome(verdict)
+            check(f'gating: {poison} breaches "{label}"', bool(breach), detail)
 
     print()
     if failures:

@@ -1,5 +1,5 @@
-# PR gate: execute every registry pack's frontend JS against this commit's
-# frontend runtime and gate on the population result.
+# PR advisory: execute every registry pack's frontend JS against this commit's
+# frontend runtime and report the population result.
 #
 # The corpus is a mirror of the frontend JS of EVERY registry pack (~5,100
 # packs). Only the executable surface is kept - .js/.mjs plus the text assets
@@ -9,11 +9,11 @@
 # put it at 6.0GB, which evicted itself mid-run (run 31753242605: three of
 # four shards found no corpus at all).
 #
-# Every pack is fetched at the commit named in corpus.pins.json, which is
-# checked in and bumped by hand. Both sides of a comparison therefore measure
-# the same packs, so a red delta is attributable to the diff rather than to a
-# pack that moved overnight - and no pack author can red an unrelated PR. The
-# pin-status job below leads every run with how old that snapshot is.
+# Every pinned pack is fetched at the commit named in corpus.pins.json, which is
+# checked in and bumped by hand. Within one exact cache, both sides of a
+# comparison measure the same bytes, so a red delta is attributable to the diff.
+# Packs added since the last pin bump track their registry ref when a cache is
+# built. The pin-status job below leads every run with how old that snapshot is.
 #
 # The upstream static idiom scan (L1) is deliberately absent: its
 # false-positive/negative rate was judged too high to act on. Packs are
@@ -25,7 +25,7 @@
 name: 'CI: Ecosystem Matrix'
 
 on:
-  # A frontend change is the thing this gate exists to catch, so src/** runs
+  # A frontend change is the thing this advisory exists to catch, so src/** runs
   # it. The corpus is restored, not refetched, so a PR run is bounded by
   # execution rather than by the network.
   pull_request:
@@ -55,7 +55,7 @@ concurrency:
 
 env:
   PYTHON_VERSION: '3.11'
-  CORPUS_CACHE_PREFIX: registry-corpus-v3-
+  CORPUS_CACHE_PREFIX: registry-corpus-v4-
 
 jobs:
   # First job in the run, and deliberately dependency-free so its annotation
@@ -63,6 +63,7 @@ jobs:
   # instrument cannot detect from the inside: everything stays green while the
   # ecosystem it claims to measure moves on without it.
   pin-status:
+    if: github.repository == 'Comfy-Org/ComfyUI_frontend'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -78,6 +79,7 @@ jobs:
         run: python3 scripts/registry-census/pins.py
 
   corpus:
+    if: github.repository == 'Comfy-Org/ComfyUI_frontend'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     # contents: read only. The fetch step below holds a token (for the
@@ -108,9 +110,11 @@ jobs:
           path: .census
           key: ${{ env.CORPUS_CACHE_PREFIX }}${{ hashFiles('scripts/registry-census/corpus.pins.json') }}
 
-      # Re-pin the registry snapshot every run: it is the corpus's target
-      # list, and new packs only enter the corpus through it.
+      # A cache hit already carries the snapshot and exact corpus consumed by
+      # the shards. Repeating the registry crawl and missing-pack retries would
+      # take five minutes and be discarded because Actions caches are immutable.
       - name: Refresh registry snapshot
+        if: steps.restore.outputs.cache-hit != 'true'
         run: python3 scripts/registry-census/refresh_registry.py
 
       # Authenticated codeload: anonymous fetches are rate-limited per IP, and
@@ -124,6 +128,7 @@ jobs:
       # real work on a cold cache or a pin bump. Prints the pin banner first.
       - name: Fetch corpus
         id: fetch
+        if: steps.restore.outputs.cache-hit != 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python3 scripts/registry-census/fetch_corpus.py
@@ -151,13 +156,14 @@ jobs:
       # at all, which is what reddened run 31827717441. Affordable now that
       # the corpus is ~0.32GB rather than the 6.0GB that evicted itself.
       #
-      # Gated on the FETCH step and a present lockfile: an early failure must
-      # not save a partial .census.
+      # corpus.ready.json is written only after the fetch meets its population
+      # floor. A lockfile alone is not enough: it is written even when most
+      # targets failed so the provenance of that failure can be inspected.
       - name: Save corpus cache
         if: |
           steps.restore.outputs.cache-hit != 'true'
           && steps.fetch.outcome == 'success'
-          && hashFiles('.census/corpus.lock.json') != ''
+          && hashFiles('.census/corpus.ready.json') != ''
         uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           path: .census
@@ -328,7 +334,7 @@ jobs:
           if-no-files-found: warn
 
   # The single combined result: all four shards' rows merge into one table
-  # and one gating verdict - this job's exit code IS the ecosystem verdict
+  # and one combined verdict - this job's exit code IS the ecosystem verdict
   # (0 PASS, 1 FAIL, 2 harness failure / no rows / short population).
   #
   # MATRIX_EXPECT_SHARDS makes a dead shard withhold rather than PASS. Every
@@ -341,7 +347,9 @@ jobs:
     # that exist, not to a skipped check that reads as nothing happened. Not
     # always(): a cancelled run would find no rows, exit 2, and manufacture a
     # red out of someone pressing the stop button.
-    if: '!cancelled()'
+    if: |
+      !cancelled()
+      && github.repository == 'Comfy-Org/ComfyUI_frontend'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -430,10 +438,11 @@ jobs:
   # message AND that each poison pack breaches the criterion it targets
   # (verify_detection.py). A green matrix is only meaningful while this stays
   # green: a runner or frontend change that blinds a channel reds THIS job
-  # instead of silently hollowing out the gate. No corpus/cache dependency -
+  # instead of silently hollowing out the check. No corpus/cache dependency -
   # the poison fixture is checked in, so this runs on every PR that touches
   # src/** even when the corpus is cold.
   matrix-detection-proof:
+    if: github.repository == 'Comfy-Org/ComfyUI_frontend'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
