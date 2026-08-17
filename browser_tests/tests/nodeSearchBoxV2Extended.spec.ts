@@ -468,6 +468,18 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
       )
     }
 
+    /** Whether the node has a connected socket of `type`, whatever its index. */
+    async function hasConnectedInputOfType(
+      node: Awaited<ReturnType<typeof dynamicComboNode>>,
+      type: string
+    ) {
+      const inputs =
+        await node.getProperty<{ type: string; link: number | null }[]>(
+          'inputs'
+        )
+      return inputs.some((input) => input.type === type && input.link != null)
+    }
+
     async function dynamicComboNode(comfyPage: ComfyPage) {
       const [node] = await comfyPage.nodeOps.getNodeRefsByType(
         'DevToolsNodeWithDynamicCombo'
@@ -494,7 +506,7 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
       // IMAGE lives under option3, which is not the default selection, so the
       // node only has an IMAGE socket if the reveal ran.
       expect(await combo.getValue()).toBe('option3')
-      expect(await (await target.getInput(0)).getLinkCount()).toBe(1)
+      expect(await hasConnectedInputOfType(target, 'IMAGE')).toBe(true)
     })
 
     test('Link release via the context menu connects through a combo option', async ({
@@ -510,13 +522,13 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
 
       await releaseImageLinkOnCanvas(comfyPage)
 
-      await comfyPage.contextMenu.clickMenuItem('Node With Dynamic Combo')
+      await comfyPage.contextMenu.clickMenuItem('DevToolsNodeWithDynamicCombo')
 
       const target = await dynamicComboNode(comfyPage)
       const combo = await target.getWidgetByName('combo')
 
       expect(await combo.getValue()).toBe('option3')
-      expect(await (await target.getInput(0)).getLinkCount()).toBe(1)
+      expect(await hasConnectedInputOfType(target, 'IMAGE')).toBe(true)
     })
   })
 })
