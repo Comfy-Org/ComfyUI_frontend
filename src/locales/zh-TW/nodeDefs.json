@@ -890,7 +890,7 @@
       },
       "model": {
         "name": "模型",
-        "tooltip": "Seedance 2.0 提供最佳品質；Seedance 2.0 Fast 提供速度優化。"
+        "tooltip": "Seedance 2.5 適用於最新模型，支援最長 30 秒影片及 mp4/mov 輸出；Seedance 2.0 提供最高品質與 1080p/4k；Fast 針對速度最佳化；Mini 提供最快速、最低成本的生成。"
       },
       "model_duration": {
         "name": "時長"
@@ -931,7 +931,7 @@
       },
       "model": {
         "name": "模型",
-        "tooltip": "Seedance 2.0 提供最佳品質；Seedance 2.0 Fast 提供速度優化。"
+        "tooltip": "Seedance 2.5 適用於最新模型，支援最長 30 秒影片及 mp4/mov 輸出；Seedance 2.0 提供最高品質與 1080p/4k；Fast 針對速度最佳化；Mini 提供最快速、最低成本的生成。"
       },
       "model_auto_downscale": {
         "name": "自動縮小"
@@ -984,7 +984,7 @@
       },
       "model": {
         "name": "模型",
-        "tooltip": "Seedance 2.0 提供最佳品質；Seedance 2.0 Fast 提供速度優化。"
+        "tooltip": "Seedance 2.5 適用於最新模型，支援最長 30 秒影片及 mp4/mov 輸出；Seedance 2.0 提供最高品質與 1080p/4k；Fast 針對速度最佳化；Mini 提供最快速、最低成本的生成。"
       },
       "model_duration": {
         "name": "時長"
@@ -5963,19 +5963,19 @@
       },
       "image": {
         "name": "image",
-        "tooltip": "grok-imagine-video 的可選起始圖像。grok-imagine-video-1.5 則為必填。"
+        "tooltip": "可選的起始圖像。省略時，僅根據文字提示詞生成影片。"
       },
       "model": {
         "name": "model",
-        "tooltip": "grok-imagine-video-1.5 目前必須要有輸入圖像。"
+        "tooltip": "用於影片生成的模型。"
       },
       "prompt": {
         "name": "prompt",
-        "tooltip": "所需影片的文字描述。"
+        "tooltip": "所需影片的文字描述。提供輸入圖像時，grok-imagine-video-1.5 可不填。"
       },
       "resolution": {
         "name": "resolution",
-        "tooltip": "輸出影片的解析度。"
+        "tooltip": "輸出影片的解析度。1080p 僅適用於 grok-imagine-video-1.5。"
       },
       "seed": {
         "name": "seed",
@@ -5989,7 +5989,7 @@
     }
   },
   "GrokVideoReferenceNode": {
-    "description": "根據參考圖像作為風格與內容指引生成影片。",
+    "description": "根據參考圖像生成影片，可選擇使用預設語音參考。",
     "display_name": "Grok 參考生成影片",
     "inputs": {
       "control_after_generate": {
@@ -8816,7 +8816,7 @@
   },
   "LTXVConcatAVLatent": {
     "description": "將視訊潛空間與音訊潛空間合併為聯合 AV 潛空間（適用於任何 AV 模型，如 LTXV 或 MiniMax H3）。",
-    "display_name": "LTXVConcatAVLatent",
+    "display_name": "串接 AV 潛空間",
     "inputs": {
       "audio_latent": {
         "name": "audio_latent"
@@ -9235,8 +9235,8 @@
     }
   },
   "LTXVSeparateAVLatent": {
-    "description": "LTXV 分離 AV latent",
-    "display_name": "LTXVSeparateAVLatent",
+    "description": "將聯合 AV 潛空間拆分為影片和音訊潛空間（適用於任意 AV 模型，如 LTXV 或 MiniMax H3）。",
+    "display_name": "分離 AV 潛空間",
     "inputs": {
       "av_latent": {
         "name": "av_latent"
@@ -11810,7 +11810,7 @@
     }
   },
   "MiniMaxH3ReferenceToVideo": {
-    "description": "<圖片 i> / <影片 k> / <音訊 j> 參考條件設定，適用於 MiniMax H3。提示時請使用相同標籤。",
+    "description": "<Picture i> / <Video k> / <Audio j> 參考條件設定，適用於 MiniMax H3。提示時請使用相同標籤。",
     "display_name": "MiniMax H3 參考轉影片",
     "inputs": {
       "audio_vae": {
@@ -15609,7 +15609,7 @@
     "description": "將任意輸入值以文字預覽。",
     "display_name": "預覽任意",
     "inputs": {
-      "preview_mode": "預覽模式",
+      "preview_mode": {},
       "preview_text": {},
       "source": {
         "name": "來源"
