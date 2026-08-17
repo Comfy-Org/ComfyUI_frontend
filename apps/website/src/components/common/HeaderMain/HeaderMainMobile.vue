@@ -97,7 +97,7 @@ onUnmounted(() => {
                   :href="item.columns ? undefined : item.href"
                   @click="item.columns && (activeSection = item.label)"
                 >
-                  {{ item.label }}
+                  <span>{{ item.label }}</span>
                   <NewBadge v-if="item.badge" :locale="locale" size="xxs" />
                   <template #append>
                     <ChevronRight class="size-7" />
@@ -137,7 +137,7 @@ onUnmounted(() => {
                   class="flex flex-col gap-y-3"
                 >
                   <p
-                    class="text-primary-warm-gray text-base font-bold tracking-wider uppercase"
+                    class="text-base font-bold tracking-wider text-primary-warm-gray uppercase"
                   >
                     {{ column.header }}
                   </p>
