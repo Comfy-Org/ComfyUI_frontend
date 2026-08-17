@@ -140,7 +140,7 @@ const activeIsolatedNodeTypes = Object.fromEntries(
   )
 )
 
-test('connectivity: every type-paired link is classified through model, serialize, and prompt conversion @custom-nodes', async ({
+test('connectivity: representative edges cover every pairable slot through model, serialize, and prompt conversion @custom-nodes', async ({
   comfyPage
 }) => {
   test.setTimeout(PLAN_SETUP_MS)
