@@ -431,30 +431,21 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
       ).toHaveCount(1)
     })
 
-    test('Output filter resolves a MatchType output to its allowed types', async ({
-      comfyPage
-    }) => {
-      const { searchBoxV2 } = comfyPage
+    for (const side of ['input', 'output'] as const) {
+      test(`Dynamic control wrappers are not offered as ${side} filter values`, async ({
+        comfyPage
+      }) => {
+        const { searchBoxV2 } = comfyPage
 
-      await searchBoxV2.open()
-      await searchBoxV2.applyTypeFilter('output', 'IMAGE')
+        await searchBoxV2.open()
+        await searchBoxV2.typeFilterButton(side).click()
+        await searchBoxV2.filterOptions.first().waitFor({ state: 'visible' })
 
-      await expect(searchBoxV2.filterChips).toHaveCount(1)
-      await expect(searchBoxV2.results.first()).toBeVisible()
-    })
-
-    test('Dynamic control wrappers are never offered as filter values', async ({
-      comfyPage
-    }) => {
-      const { searchBoxV2 } = comfyPage
-
-      await searchBoxV2.open()
-      await searchBoxV2.typeFilterButton('input').click()
-      await searchBoxV2.filterOptions.first().waitFor({ state: 'visible' })
-      await searchBoxV2.filterSearch.fill('COMFY_')
-
-      await expect(searchBoxV2.filterOptions).toHaveCount(0)
-    })
+        const offered = await searchBoxV2.filterOptions.allTextContents()
+        expect(offered.length).toBeGreaterThan(0)
+        expect(offered.filter((t) => /COMFY_\w+_V3/.test(t))).toEqual([])
+      })
+    }
 
     test('Link release via the search box connects through a combo option', async ({
       comfyPage

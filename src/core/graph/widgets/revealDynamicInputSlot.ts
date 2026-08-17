@@ -1,6 +1,7 @@
 import { isEqual } from 'es-toolkit'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import {
   dynamicComboOptionTypes,
@@ -31,11 +32,25 @@ export function revealDynamicInputSlot(
   const defInputs = node.constructor.nodeData?.inputs
   if (!defInputs) return false
 
+  // Each root input is attempted independently so a root that fails cannot
+  // leave a combo selected on the way to a different root that succeeds.
+  for (const rootSpec of Object.values(defInputs)) {
+    if (revealWithin(node, rootSpec, wantedType)) return true
+  }
+
+  return false
+}
+
+function revealWithin(
+  node: LGraphNode,
+  rootSpec: InputSpecV2,
+  wantedType: string
+): boolean {
   const rollback: { widget: IBaseWidget; value: IBaseWidget['value'] }[] = []
 
   // Outermost first: selecting an outer option is what materializes the
   // widgets of any combo nested inside it.
-  for (const spec of Object.values(defInputs).flatMap(inputSpecTree)) {
+  for (const spec of inputSpecTree(rootSpec)) {
     if (spec.type !== 'COMFY_DYNAMICCOMBO_V3') continue
 
     const options = dynamicComboOptionTypes(spec)
