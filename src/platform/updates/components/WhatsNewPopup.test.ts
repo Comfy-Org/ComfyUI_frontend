@@ -1,12 +1,6 @@
 // @vitest-environment jsdom
-// dompurify >= 3.4.8 is inert under happy-dom: happy-dom's NodeIterator
-// lacks the spec's node-removal reference adjustment, so after DOMPurify's
-// first removal the walk descends into the detached subtree and everything
-// after it is returned UNSANITIZED — wrappers get dropped AND <script>/
-// javascript: payloads survive (one bug, both directions). jsdom is
-// spec-conformant and byte-identical to real-browser output. See
-// capricorn86/happy-dom#2182 / FE-1189; vitest.setup.ts trips on any
-// happy-dom test that calls sanitize.
+// dompurify is inert under happy-dom — see the tripwire note in
+// vitest.setup.ts (capricorn86/happy-dom#2182, FE-1189).
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import Button from '@/components/ui/button/Button.vue'

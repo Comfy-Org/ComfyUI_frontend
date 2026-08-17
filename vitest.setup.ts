@@ -148,14 +148,19 @@ globalThis.Worker = vi.fn(function () {
   }
 })
 
-// Tripwire: dompurify >= 3.4.8 is inert under happy-dom — its NodeIterator
-// lacks the spec's node-removal reference adjustment, so after DOMPurify's
-// first removal the walk descends into the detached subtree and everything
-// after it is returned UNSANITIZED (dropped wrappers and surviving <script>
-// are the same bug). jsdom is spec-conformant; real browsers are unaffected.
-// See capricorn86/happy-dom#2182 / FE-1189. Throwing on call (not on load)
-// keeps the ~16k tests that never sanitize unaffected while making it
-// impossible to assert against an inert sanitizer silently.
+// Tripwire: dompurify >= 3.4.8 is inert under happy-dom.
+// Root cause (capricorn86/happy-dom#2182, FE-1189): happy-dom's
+// Node.prototype.nodeName getter returns '' when invoked directly on an
+// element. dompurify 3.4.8 started reading tag names through that
+// prototype getter as a DOM-clobbering defense, so under happy-dom every
+// node gets an empty tag name and the ALLOWED_TAGS logic misfires in both
+// directions: allowed wrappers are dropped and disallowed content
+// (<script>, javascript: URLs) survives. jsdom implements the getter
+// correctly; dompurify output there matches the pre-3.4.8 control.
+// Sanitizer tests therefore run under jsdom (per-file pragma), and this
+// wrapper makes it impossible to assert against the inert sanitizer
+// silently: throwing on call (not on load) leaves the ~16k tests that
+// never sanitize unaffected.
 if (
   typeof DOMPurify?.sanitize === 'function' &&
   DOMPurify.sanitize('<h1>x</h1>') !== '<h1>x</h1>'
@@ -163,7 +168,7 @@ if (
   DOMPurify.sanitize = (() => {
     throw new Error(
       'DOMPurify.sanitize is inert in this test environment (happy-dom ' +
-        'NodeIterator bug — see vitest.setup.ts). Add ' +
+        'Node.prototype.nodeName bug — see vitest.setup.ts). Add ' +
         '`// @vitest-environment jsdom` to this test file.'
     )
   }) as typeof DOMPurify.sanitize
