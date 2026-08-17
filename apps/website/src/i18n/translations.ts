@@ -6046,7 +6046,10 @@ Enterprise`
     en: 'Build your custom workflows with Comfy experts.',
     'zh-CN': '与 Comfy 专家一起构建你的定制工作流。'
   }
-} as const
+} as const satisfies Record<
+  string,
+  { en: string; 'zh-CN': string } & Partial<Record<Locale, string>>
+>
 
 type TranslationKey = keyof typeof translations
 
