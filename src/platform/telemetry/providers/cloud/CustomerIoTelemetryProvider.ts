@@ -70,19 +70,26 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
     void import('@customerio/cdp-analytics-browser')
       .then(async ({ AnalyticsBrowser, InAppPlugin }) => {
         const analytics = AnalyticsBrowser.load({ writeKey })
-        const inAppRegistration = analytics.register(
-          InAppPlugin({
-            siteId,
-            events: null,
-            anonymousInApp: false,
-            _env: undefined,
-            _logging: undefined,
-            colorScheme: 'system'
+        const inAppRegistration = analytics
+          .register(
+            InAppPlugin({
+              siteId,
+              events: null,
+              anonymousInApp: false,
+              _env: undefined,
+              _logging: undefined,
+              colorScheme: 'system'
+            })
+          )
+          .catch((error) => {
+            console.error(
+              'Failed to initialize Customer.io in-app plugin:',
+              error
+            )
           })
-        )
-        this.analytics = analytics
 
         await whenStoresReady()
+        this.analytics = analytics
         const currentUser = useCurrentUser()
         const identifyResolvedUser = (user: AuthUserInfo) => {
           const identity = {
@@ -119,17 +126,10 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
         })
 
         void this.flushQueue()
-        void inAppRegistration
-          .catch((error) => {
-            console.error(
-              'Failed to initialize Customer.io in-app plugin:',
-              error
-            )
-          })
-          .finally(() => {
-            this.isPageViewTrackingReady = true
-            this.flushPageView()
-          })
+        void inAppRegistration.finally(() => {
+          this.isPageViewTrackingReady = true
+          this.flushPageView()
+        })
       })
       .catch((error) => {
         console.error('Failed to load Customer.io:', error)
