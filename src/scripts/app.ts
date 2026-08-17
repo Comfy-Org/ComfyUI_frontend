@@ -986,7 +986,9 @@ export class ComfyApp {
     installNodeChangeBridge()
     // Which the API cannot see for itself: ChangeTracker lives up here.
     provideGraphLoadingState(() => ChangeTracker.isLoadingGraph)
-    installComfyApi(() => useCanvasStore().currentGraph)
+    installComfyApi(() => useCanvasStore().currentGraph, {
+      openWorkflow: (data) => this.loadGraphData(data as ComfyWorkflowJSON)
+    })
     await useExtensionService().loadExtensions()
 
     this.addProcessKeyHandler()

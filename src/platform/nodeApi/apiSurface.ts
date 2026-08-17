@@ -200,6 +200,7 @@ export const API_MEMBERS: ReadonlySet<string> = new Set([
   'onUnplacedLink',
   'onViewportChanged',
   'onWorkflowLoaded',
+  'open',
   'optional',
   'options',
   'order',
@@ -322,6 +323,7 @@ export const API_MEMBERS: ReadonlySet<string> = new Set([
   'widgetValue',
   'widgets',
   'width',
+  'workflow',
   'x',
   'y'
 ])
