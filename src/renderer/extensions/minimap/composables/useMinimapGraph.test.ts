@@ -253,6 +253,25 @@ describe('useMinimapGraph', () => {
     expect(graphManager.updateFlags.value.nodes).toBe(true)
   })
 
+  it('detects a rendered size change without a requested size change', () => {
+    const node = mockGraph._nodes[0]
+    let renderedSize = node.size
+    Object.defineProperty(node, 'renderingSize', {
+      get: () => renderedSize
+    })
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
+    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
+
+    graphManager.checkForChanges()
+    expect(graphManager.checkForChanges()).toBe(false)
+
+    renderedSize = [240, 180]
+
+    expect(graphManager.checkForChanges()).toBe(true)
+    expect(graphManager.updateFlags.value.bounds).toBe(true)
+    expect(graphManager.updateFlags.value.nodes).toBe(true)
+  })
+
   it('recomputes bounds after a reload that leaves node geometry identical', () => {
     const graphRef = ref(mockGraph) as Ref<LGraph | null>
     const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
@@ -277,11 +296,9 @@ describe('useMinimapGraph', () => {
     graphManager.checkForChanges()
 
     // Add a node
-    mockGraph._nodes.push({
-      id: '3',
-      pos: [400, 300],
-      size: [100, 50]
-    } as Partial<LGraphNode> as LGraphNode)
+    mockGraph._nodes.push(
+      createMockLGraphNode({ id: '3', pos: [400, 300], size: [100, 50] })
+    )
 
     const hasChanges = graphManager.checkForChanges()
     expect(hasChanges).toBe(true)

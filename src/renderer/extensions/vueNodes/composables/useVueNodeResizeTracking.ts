@@ -18,7 +18,6 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { Bounds, NodeId } from '@/renderer/core/layout/types'
 import { toNodeId } from '@/types/nodeId'
-import { LayoutSource } from '@/renderer/core/layout/types'
 import {
   isBoundsEqual,
   isSizeEqual
@@ -66,14 +65,12 @@ const trackingConfigs = new Map<string, ElementTrackingConfig>([
         const { rootGraphId } = useCanvasStore()
         if (!rootGraphId) return
 
-        const nodeUpdates = updates.map(({ id, bounds }) => ({
-          nodeId: id,
-          bounds
-        }))
-        layoutStore.batchUpdateNodeBounds(rootGraphId, nodeUpdates, {
-          source: LayoutSource.Vue,
-          boundsIncludeTitleHeight: true
-        })
+        for (const { id, bounds } of updates) {
+          layoutStore.reportContentSize(rootGraphId, id, {
+            width: bounds.width,
+            height: removeNodeTitleHeight(bounds.height)
+          })
+        }
       }
     }
   ],
@@ -233,10 +230,6 @@ const resizeObserver = new ResizeObserver((entries) => {
         nodeId,
         bounds: normalizedBounds
       })
-    }
-
-    if (nodeLayout && isBoundsEqual(nodeLayout.bounds, normalizedBounds)) {
-      continue
     }
 
     let updates = updatesByType.get(elementType)

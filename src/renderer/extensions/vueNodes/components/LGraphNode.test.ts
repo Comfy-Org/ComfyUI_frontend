@@ -254,10 +254,11 @@ describe('LGraphNode', () => {
   it('should widen the selection outline rounding when the node has an error', () => {
     const canvasStore = useCanvasStore()
     canvasStore.selectedNodeIds.add(mockNodeData.id)
+    vi.mocked(useExecutionErrorStore().getNodeErrors).mockReturnValue(
+      fromAny<NodeError, unknown>({ errors: [], class_type: 'TestNode' })
+    )
 
-    renderLGraphNode({
-      nodeData: { ...mockNodeData, hasErrors: true }
-    })
+    renderLGraphNode({ nodeData: mockNodeData })
 
     const overlay = screen.getByTestId('node-state-outline-overlay')
     expect(overlay).toHaveClass('rounded-[19px]')
@@ -283,17 +284,22 @@ describe('LGraphNode', () => {
     expect(wrapper).not.toHaveClass('before:bg-bypass/60')
   })
 
-  it('should initialize height CSS vars for collapsed nodes', () => {
-    const { container } = renderLGraphNode({
-      nodeData: {
-        ...mockNodeData,
-        flags: { collapsed: true }
-      }
+  it('drops the height var while collapsed and restores the size on expand', async () => {
+    const { container, rerender } = renderLGraphNode({
+      nodeData: { ...mockNodeData, flags: { collapsed: false } }
     })
     const root = getNodeRoot(container)
+    expect(root.style.getPropertyValue('--node-height')).toBe('130px')
 
+    await rerender({
+      nodeData: { ...mockNodeData, flags: { collapsed: true } }
+    })
     expect(root.style.getPropertyValue('--node-height')).toBe('')
-    expect(root.style.getPropertyValue('--node-height-x')).toBe('130px')
+
+    await rerender({
+      nodeData: { ...mockNodeData, flags: { collapsed: false } }
+    })
+    expect(root.style.getPropertyValue('--node-height')).toBe('130px')
   })
 
   it('should initialize height CSS vars for expanded nodes', () => {

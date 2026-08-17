@@ -4,7 +4,6 @@
   </div>
   <div
     v-else
-    ref="nodeContainerRef"
     tabindex="0"
     :data-node-id="nodeData.id"
     :data-collapsed="isCollapsed || undefined"
@@ -30,6 +29,7 @@
       )
     "
     :style="{
+      ...nodeSizeStyle,
       '--min-node-width': `${MIN_NODE_WIDTH}px`,
       transform: `translate(${position.x ?? 0}px, ${(position.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
       zIndex: zIndex,
@@ -237,15 +237,7 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import {
-  computed,
-  nextTick,
-  onErrorCaptured,
-  onMounted,
-  onUnmounted,
-  ref,
-  watch
-} from 'vue'
+import { computed, nextTick, onErrorCaptured, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { NodeState } from '@/types/nodeState'
@@ -271,7 +263,7 @@ import { useGLSLPreview } from '@/renderer/glsl/useGLSLPreview'
 import { usePromotedPreviews } from '@/composables/node/usePromotedPreviews'
 import NodeBadges from '@/renderer/extensions/vueNodes/components/NodeBadges.vue'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import type { LayoutChange } from '@/renderer/core/layout/types'
+import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
 import AppOutput from '@/renderer/extensions/linearMode/AppOutput.vue'
 import SlotConnectionDot from '@/renderer/extensions/vueNodes/components/SlotConnectionDot.vue'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
@@ -307,7 +299,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { toNodeId } from '@/types/nodeId'
 import { isTransparent } from '@/utils/colorUtil'
 
-import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
+import { resizeNodeLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
 
 import { RESIZE_HANDLES } from '../interactions/resize/resizeHandleConfig'
@@ -398,14 +390,25 @@ onErrorCaptured((error) => {
 })
 
 const { position, size, zIndex } = useNodeLayout(() => nodeData.id)
+
+const nodeSizeStyle = computed(() =>
+  isCollapsed.value
+    ? {}
+    : {
+        '--node-width': `${size.value.width}px`,
+        '--node-height': `${size.value.height + LiteGraph.NODE_TITLE_HEIGHT}px`
+      }
+)
+
 const { pointerHandlers } = useNodePointerInteractions(() => nodeData)
 const { onPointerdown, ...remainingPointerHandlers } = pointerHandlers
 const { startDrag } = useNodeDrag()
 const badges = usePartitionedBadges(nodeData)
 
 async function nodeOnPointerdown(event: PointerEvent) {
-  if (event.altKey && lgraphNode.value) {
-    const result = LGraphCanvas.cloneNodes([lgraphNode.value])
+  const node = resolveLGraphNode()
+  if (event.altKey && node) {
+    const result = LGraphCanvas.cloneNodes([node])
     if (result?.created?.length) {
       const [newNode] = result.created
       const newNodeId =
@@ -432,76 +435,25 @@ const handleContextMenu = (event: MouseEvent) => {
   showNodeOptions(event)
 }
 
-/**
- * Set initial DOM size from layout store.
- */
-function initSizeStyles() {
-  const el = nodeContainerRef.value
-  const { width, height } = size.value
-  if (!el) return
-
-  const suffix = isCollapsed.value ? '-x' : ''
-  const fullHeight = height + LiteGraph.NODE_TITLE_HEIGHT
-
-  el.style.setProperty(`--node-width${suffix}`, `${width}px`)
-  el.style.setProperty(`--node-height${suffix}`, `${fullHeight}px`)
-}
-
-/**
- * Updates CSS variables when the layout store changes from the canvas side.
- */
-function handleLayoutChange(change: LayoutChange) {
-  if (change.source !== LayoutSource.Canvas) return
-  if (layoutStore.isResizingVueNodes.value) return
-  if (isCollapsed.value) return
-
-  const el = nodeContainerRef.value
-  if (!el) return
-
-  const newSize = size.value
-  const fullHeight = newSize.height + LiteGraph.NODE_TITLE_HEIGHT
-  el.style.setProperty('--node-width', `${newSize.width}px`)
-  el.style.setProperty('--node-height', `${fullHeight}px`)
-}
-
-let unsubscribeLayoutChange: (() => void) | null = null
-
-onMounted(() => {
-  initSizeStyles()
-  const { rootGraphId } = canvasStore
-  if (!rootGraphId) return
-
-  unsubscribeLayoutChange = layoutStore.onNodeChange(
-    rootGraphId,
-    nodeData.id,
-    handleLayoutChange
-  )
-})
-
-onUnmounted(() => {
-  unsubscribeLayoutChange?.()
-})
-
 const baseResizeHandleClasses =
   'absolute h-5 w-5 opacity-0 pointer-events-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40 touch-none'
 
-const mutations = useLayoutMutations(LayoutSource.Vue)
-
-const { startResize } = useNodeResize((result, element) => {
+const { startResize } = useNodeResize((result) => {
   if (isCollapsed.value) return
+  const node = resolveLGraphNode()
+  if (!node) return
 
-  // Clamp width to minimum to avoid conflicts with CSS min-width
-  const clampedWidth = Math.max(result.size.width, MIN_NODE_WIDTH)
-
-  // Apply size directly to DOM element - ResizeObserver will pick this up
-  element.style.setProperty('--node-width', `${clampedWidth}px`)
-  element.style.setProperty('--node-height', `${result.size.height}px`)
-
-  // Update position for non-SE corner resizing
-  const { rootGraphId } = canvasStore
-  if (result.position && rootGraphId) {
-    mutations.moveNode(rootGraphId, nodeData.id, result.position)
-  }
+  resizeNodeLayout(
+    node,
+    {
+      width: Math.max(result.size.width, MIN_NODE_WIDTH),
+      height: removeNodeTitleHeight(result.size.height)
+    },
+    {
+      position: result.position,
+      source: LayoutSource.Vue
+    }
+  )
 })
 
 const handleResizePointerDown = (
@@ -514,19 +466,6 @@ const handleResizePointerDown = (
   if (nodeData.resizable === false) return
   startResize(event, corner)
 }
-
-watch(isCollapsed, (collapsed) => {
-  const element = nodeContainerRef.value
-  if (!element) return
-  const [from, to] = collapsed ? ['', '-x'] : ['-x', '']
-  const currentWidth = element.style.getPropertyValue(`--node-width${from}`)
-  element.style.setProperty(`--node-width${to}`, currentWidth)
-  element.style.setProperty(`--node-width${from}`, '')
-
-  const currentHeight = element.style.getPropertyValue(`--node-height${from}`)
-  element.style.setProperty(`--node-height${to}`, currentHeight)
-  element.style.setProperty(`--node-height${from}`, '')
-})
 
 // Check if node has custom content (like image/video outputs)
 const hasCustomContent = computed(() => {
@@ -622,7 +561,7 @@ const handleOpenErrors = () => {
 }
 
 const handleToggleAdvanced = () => {
-  const node = lgraphNode.value
+  const node = resolveLGraphNode()
   if (!node) return
 
   // A subgraph node has no advanced section of its own; the side panel hosts it.
@@ -671,12 +610,14 @@ const nodeOutputLocatorId = computed(() => {
   return subgraphId ? `${subgraphId}:${nodeData.id}` : nodeData.id
 })
 
-const lgraphNode = computed(() => {
+function resolveLGraphNode() {
   const locatorId = nodeLocatorId.value
   if (!locatorId) return null
 
   return getNodeByLocatorId(app.rootGraph, locatorId)
-})
+}
+
+const lgraphNode = computed(resolveLGraphNode)
 
 // TODO: Surface subgraph info more cleanly in NodeState instead of
 // reaching through lgraphNode for promoted preview resolution.
@@ -753,13 +694,11 @@ const nodeMedia = computed(() => {
   return { type, urls } as const
 })
 
-const nodeContainerRef = ref<HTMLDivElement>()
-
 // Drag and drop support
 const isDraggingOver = ref(false)
 
 function handleDragOver(event: DragEvent) {
-  const node = lgraphNode.value
+  const node = resolveLGraphNode()
   if (!node || !node.onDragOver) {
     isDraggingOver.value = false
     return
@@ -776,6 +715,6 @@ function handleDragLeave() {
 
 function handleDrop() {
   isDraggingOver.value = false
-  app.dragOverNode = lgraphNode.value
+  app.dragOverNode = resolveLGraphNode()
 }
 </script>

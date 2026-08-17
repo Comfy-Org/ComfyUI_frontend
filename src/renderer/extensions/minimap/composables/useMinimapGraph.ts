@@ -72,7 +72,7 @@ function computeGraphDigests(graph: LGraph): GraphDigests {
 
   for (const node of graph._nodes) {
     const [x, y] = node.pos
-    const [width, height] = node.size
+    const [width, height] = node.renderingSize
     geometry = mixIn(geometry, quantise(x))
     geometry = mixIn(geometry, quantise(y))
     geometry = mixIn(geometry, quantise(width))

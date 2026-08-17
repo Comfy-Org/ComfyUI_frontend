@@ -9,6 +9,7 @@ import type {
   ISerialisedNode
 } from '@/lib/litegraph/src/litegraph'
 import type { Rect } from '@/lib/litegraph/src/interfaces'
+import { resizeNodeLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
@@ -768,13 +769,19 @@ describe('LGraphNode', () => {
       expect(out[3]).toBe(LiteGraph.NODE_TITLE_HEIGHT)
     })
 
-    test('Vue mode uses this.size directly for collapsed nodes', () => {
+    test('Vue mode measures collapsed content without replacing requested size', () => {
+      const graph = new LGraph()
+      graph.add(node)
+      layoutStore.reportContentSize(graph.rootGraph.id, node.id, {
+        width: 90,
+        height: 12
+      })
       LiteGraph.vueNodesMode = true
       node.measure(out)
 
-      // Vue mode collapsed takes the expanded-style branch
-      expect(out[2]).toBe(150)
-      expect(out[3]).toBe(10 + LiteGraph.NODE_TITLE_HEIGHT)
+      expect(out[2]).toBe(90)
+      expect(out[3]).toBe(LiteGraph.NODE_TITLE_HEIGHT + 12)
+      expect(node.serialize().size).toEqual([150, 10])
     })
 
     test('Vue mode expanded behaves identically to legacy expanded', () => {
@@ -875,6 +882,54 @@ describe('layout geometry projection', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     layoutStore.resetForTests()
+  })
+
+  test('applies a resize and position change through one attached update', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    const batchUpdateNodeBounds = vi.spyOn(layoutStore, 'batchUpdateNodeBounds')
+
+    resizeNodeLayout(
+      node,
+      { width: 300, height: 120 },
+      {
+        position: { x: 40, y: 60 },
+        source: LayoutSource.Vue
+      }
+    )
+
+    expect(batchUpdateNodeBounds).toHaveBeenCalledOnce()
+    expect(batchUpdateNodeBounds).toHaveBeenCalledWith(
+      graph.rootGraph.id,
+      [
+        {
+          nodeId: node.id,
+          bounds: { x: 40, y: 60, width: 300, height: 120 }
+        }
+      ],
+      { source: LayoutSource.Vue }
+    )
+    expect(
+      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value
+    ).toMatchObject({
+      position: { x: 40, y: 60 },
+      size: { width: 300, height: 120 }
+    })
+  })
+
+  test('uses measured collapsed width for node and connection geometry', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    node.flags.collapsed = true
+    layoutStore.reportContentSize(graph.rootGraph.id, node.id, {
+      width: 123,
+      height: 30
+    })
+
+    expect(node.width).toBe(123)
+    expect(node.getConnectionPos(false, 0)[0]).toBe(node.pos[0] + 123)
   })
 
   test('moves from the latest stored position', () => {
@@ -1051,6 +1106,33 @@ describe('layout geometry projection', () => {
       position: { x: 50, y: 60 },
       size: { width: 200, height: 120 }
     })
+  })
+
+  test('keeps measured geometry separate from requested size', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.size = [100, 50]
+    graph.add(node)
+    layoutStore.reportContentSize(graph.rootGraph.id, node.id, {
+      width: 225,
+      height: 80
+    })
+
+    expect([...node.size]).toEqual([100, 50])
+    expect(node.serialize().size).toEqual([100, 50])
+
+    node.setSize([node.size[0] + 90, node.size[1] + 100])
+
+    expect([...node.renderingSize]).toEqual([225, 150])
+    const bounds: Rect = [0, 0, 0, 0]
+    node.measure(bounds)
+    expect(bounds).toEqual([
+      node.pos[0],
+      node.pos[1] - LiteGraph.NODE_TITLE_HEIGHT,
+      225,
+      150 + LiteGraph.NODE_TITLE_HEIGHT
+    ])
+    expect(node.serialize().size).toEqual([190, 150])
   })
 })
 

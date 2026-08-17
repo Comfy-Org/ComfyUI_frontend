@@ -35,6 +35,7 @@ import type {
   ResizeNodeOperation,
   SetGroupBoundsOperation,
   SetNodeZIndexOperation,
+  Size,
   SlotId,
   SlotLayout
 } from '@/renderer/core/layout/types'
@@ -176,6 +177,7 @@ class LayoutStoreImpl {
   private linkLayouts = new Map<LinkId, LinkLayout>()
   private linkSegmentLayouts = new Map<string, LinkSegmentLayout>() // Internal string key: ${linkId}:${rerouteId ?? 'final'}
   private slotLayouts = new Map<SlotId, SlotLayout>()
+  private contentSizes = new Map<ScopedLayoutKey, Size>()
   private rerouteLayouts = new Map<ScopedLayoutKey, RerouteLayout>()
 
   // Spatial index managers
@@ -388,6 +390,14 @@ class LayoutStoreImpl {
     out[2] = rect[2]
     out[3] = rect[3]
     return true
+  }
+
+  contentSizeOf(rootGraphId: UUID, nodeId: NodeId): Size | undefined {
+    return this.contentSizes.get(makeScopedLayoutKey(rootGraphId, nodeId))
+  }
+
+  reportContentSize(rootGraphId: UUID, nodeId: NodeId, size: Size): void {
+    this.contentSizes.set(makeScopedLayoutKey(rootGraphId, nodeId), size)
   }
 
   /**
@@ -869,6 +879,9 @@ class LayoutStoreImpl {
       change.nodeIds.push(toNodeId(parseLayoutKey(key).localId))
       deleted = true
     }
+    for (const key of this.contentSizes.keys()) {
+      if (key.startsWith(prefix)) this.contentSizes.delete(key)
+    }
     for (const key of [...this.ygroups.keys()]) {
       if (!key.startsWith(prefix)) continue
       this.ygroups.delete(key)
@@ -997,6 +1010,7 @@ class LayoutStoreImpl {
       this.linkLayouts.clear()
       this.linkSegmentLayouts.clear()
       this.slotLayouts.clear()
+      this.contentSizes.clear()
       // Reroute layouts outlive active-graph switches.
       this.pendingGlobalChanges = []
       this.isGlobalDispatchQueued = false
@@ -1109,6 +1123,7 @@ class LayoutStoreImpl {
     if (!this.ynodes.has(nodeKey)) return false
 
     this.ynodes.delete(nodeKey)
+    this.contentSizes.delete(nodeKey)
     // Note: We intentionally do NOT delete nodeRefs and nodeTriggers here.
     // During undo/redo, Vue components may still hold references to the old ref.
     // If we delete the trigger, Vue won't be notified when the node is re-created.

@@ -20,6 +20,7 @@ interface MockNode {
   id: string
   pos: number[]
   size: number[]
+  renderingSize: number[]
   color?: string
   constructor?: { color: string }
   outputs?: { links: string[] }[] | null
@@ -27,6 +28,7 @@ interface MockNode {
 
 interface MockGraph {
   _nodes: MockNode[]
+  _groups: []
   events: CustomEventTarget<LGraphEventMap>
   id: UUID
   rootGraph: { id: UUID }
@@ -155,6 +157,7 @@ const setupMocks = () => {
       id: 'node1',
       pos: [0, 0],
       size: [100, 50],
+      renderingSize: [100, 50],
       color: '#ff0000',
       constructor: { color: '#666' },
       outputs: [
@@ -167,6 +170,7 @@ const setupMocks = () => {
       id: 'node2',
       pos: [200, 100],
       size: [150, 75],
+      renderingSize: [150, 75],
       constructor: { color: '#666' },
       outputs: []
     }
@@ -174,6 +178,7 @@ const setupMocks = () => {
 
   moduleMockGraph = {
     _nodes: mockNodes,
+    _groups: [],
     id: GRAPH_ID,
     rootGraph: { id: GRAPH_ID },
     links: new Map([
@@ -264,7 +269,7 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
 
 vi.mock('@/stores/executionStore', () => ({
   useExecutionStore: vi.fn(() => ({
-    nodeProgressStates: {}
+    nodeLocationProgressStates: {}
   }))
 }))
 
@@ -327,6 +332,7 @@ describe('useMinimap', () => {
         id: 'node1',
         pos: [0, 0],
         size: [100, 50],
+        renderingSize: [100, 50],
         color: '#ff0000',
         constructor: { color: '#666' },
         outputs: [
@@ -339,6 +345,7 @@ describe('useMinimap', () => {
         id: 'node2',
         pos: [200, 100],
         size: [150, 75],
+        renderingSize: [150, 75],
         constructor: { color: '#666' },
         outputs: []
       }
@@ -346,6 +353,7 @@ describe('useMinimap', () => {
 
     moduleMockGraph = {
       _nodes: mockNodes,
+      _groups: [],
       id: GRAPH_ID,
       rootGraph: { id: GRAPH_ID },
       links: new Map([
@@ -544,6 +552,7 @@ describe('useMinimap', () => {
         id: 'new-node',
         pos: [150, 150],
         size: [100, 50],
+        renderingSize: [100, 50],
         constructor: { color: '#666' },
         outputs: []
       })
@@ -945,6 +954,7 @@ describe('useMinimap', () => {
         id: 'node3',
         pos: [300, 200],
         size: [100, 100],
+        renderingSize: [100, 100],
         constructor: { color: '#666' },
         outputs: []
       }

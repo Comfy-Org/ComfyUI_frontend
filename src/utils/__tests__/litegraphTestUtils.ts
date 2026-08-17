@@ -48,13 +48,16 @@ export function createNodeState(overrides: Partial<NodeState> = {}): NodeState {
 export function createMockLGraphNode(
   overrides: Partial<LGraphNode> | Record<string, unknown> = {}
 ): LGraphNode {
+  const nodeOverrides = overrides as Partial<LGraphNode>
+  const size = nodeOverrides.size ?? [100, 100]
   return fromPartial<LGraphNode>({
     id: toNodeId(1),
     pos: [0, 0],
-    size: [100, 100],
+    size,
+    renderingSize: size,
     title: 'Test Node',
     mode: LGraphEventMode.ALWAYS,
-    ...(overrides as Partial<LGraphNode>)
+    ...nodeOverrides
   })
 }
 
