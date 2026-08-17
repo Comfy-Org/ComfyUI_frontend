@@ -7,6 +7,7 @@ import {
   findNodesOptedOutOfCulling,
   findNodesWithLiveState
 } from '@/renderer/extensions/vueNodes/composables/liveNodeState'
+import * as liveNodeState from '@/renderer/extensions/vueNodes/composables/liveNodeState'
 
 function mountNode(id: string, inner: string): HTMLElement {
   const root = document.createElement('div')
@@ -109,5 +110,25 @@ describe('findNodesOptedOutOfCulling', () => {
     expect(findNodesOptedOutOfCulling([node('a'), node('b')])).toEqual(
       new Set()
     )
+  })
+
+  it('registers a node-type opt-out with lifecycle cleanup', () => {
+    type RegisterOptOut = (nodeType: string) => () => void
+    const candidate = Reflect.get(
+      liveNodeState,
+      'registerNodeTypeCullingOptOut'
+    )
+    expect(candidate).toBeTypeOf('function')
+    if (typeof candidate !== 'function') return
+
+    const cleanup = (candidate as RegisterOptOut)('stateful')
+    const statefulNode = { ...node('stateful'), type: 'stateful' }
+
+    expect(findNodesOptedOutOfCulling([statefulNode])).toEqual(
+      new Set(['stateful'])
+    )
+
+    cleanup()
+    expect(findNodesOptedOutOfCulling([statefulNode])).toEqual(new Set())
   })
 })

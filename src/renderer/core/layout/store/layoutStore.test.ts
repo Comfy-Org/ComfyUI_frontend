@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import * as Y from 'yjs'
 
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
@@ -14,6 +15,8 @@ import type {
   NodeLayout,
   SlotLayout
 } from '@/renderer/core/layout/types'
+import { layoutToYNode } from '@/renderer/core/layout/utils/mappers'
+import type { NodeLayoutMap } from '@/renderer/core/layout/utils/mappers'
 
 function getOperationsAddedBy(action: () => void): LayoutOperation[] {
   const operationCount = layoutStore.getOperationsSince(0).length
@@ -528,6 +531,73 @@ describe('layoutStore CRDT operations', () => {
     expect(nodesInBounds).toContain('node-a')
     expect(nodesInBounds).toContain('node-b')
     expect(nodesInBounds).toContain('node-c')
+  })
+
+  it('synchronizes the spatial index after remote geometry changes', () => {
+    const remote = new Y.Doc()
+    const remoteNodes = remote.getMap<NodeLayoutMap>('nodes')
+    const nodeId = toNodeId('remote-node')
+    const layout: NodeLayout = {
+      ...createTestNode(nodeId),
+      position: { x: 0, y: 0 },
+      bounds: { x: 0, y: 0, width: 200, height: 100 }
+    }
+
+    remoteNodes.set(nodeId, layoutToYNode(layout))
+    layoutStore.applyUpdate(Y.encodeStateAsUpdate(remote))
+
+    expect(
+      layoutStore.queryNodesInBounds({
+        x: -10,
+        y: -10,
+        width: 300,
+        height: 200
+      })
+    ).toContain(nodeId)
+
+    const remoteNode = remoteNodes.get(nodeId)
+    expect(remoteNode).toBeDefined()
+    remoteNode?.set('position', { x: 50_000, y: 40_000 })
+    remoteNode?.set('bounds', {
+      x: 50_000,
+      y: 40_000,
+      width: 200,
+      height: 100
+    })
+    layoutStore.applyUpdate(
+      Y.encodeStateAsUpdate(remote, Y.encodeStateVector(layoutStore.getYDoc()))
+    )
+
+    expect(
+      layoutStore.queryNodesInBounds({
+        x: -10,
+        y: -10,
+        width: 300,
+        height: 200
+      })
+    ).not.toContain(nodeId)
+    expect(
+      layoutStore.queryNodesInBounds({
+        x: 49_900,
+        y: 39_900,
+        width: 400,
+        height: 300
+      })
+    ).toContain(nodeId)
+
+    remoteNodes.delete(nodeId)
+    layoutStore.applyUpdate(
+      Y.encodeStateAsUpdate(remote, Y.encodeStateVector(layoutStore.getYDoc()))
+    )
+
+    expect(
+      layoutStore.queryNodesInBounds({
+        x: 49_900,
+        y: 39_900,
+        width: 400,
+        height: 300
+      })
+    ).not.toContain(nodeId)
   })
 
   it('should maintain operation history', () => {

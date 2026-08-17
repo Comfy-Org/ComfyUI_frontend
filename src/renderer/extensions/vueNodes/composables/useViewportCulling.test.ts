@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, effectScope, nextTick, reactive, ref, watch } from 'vue'
+import type { Ref } from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import {
@@ -33,7 +34,7 @@ const activeScopes: ReturnType<typeof effectScope>[] = []
 /** Runs the culling composable inside a scope and exposes its reactive result. */
 function setup(
   bounds: Record<string, Bounds | null>,
-  pinned: Set<NodeId> = new Set()
+  pinned: Ref<ReadonlySet<NodeId>> = ref(new Set())
 ) {
   const nodes = ref(Object.keys(bounds).map(nodeData))
   const scope = effectScope()
@@ -55,7 +56,7 @@ function setup(
         queryNodesInBounds,
         getViewportSize: () => VIEWPORT,
         minNodesForCulling: 0,
-        getPinnedIds: () => pinned
+        getPinnedIds: () => pinned.value
       }).mountedNodeIds
   )!
 
@@ -118,7 +119,7 @@ describe('useViewportCulling', () => {
   })
 
   it('retains a mounted pinned node when it leaves the viewport', async () => {
-    const pinned = new Set<NodeId>()
+    const pinned = ref<ReadonlySet<NodeId>>(new Set())
     const { mountedNodeIds } = setup(
       { dragged: { x: 100, y: 0, width: 100, height: 100 } },
       pinned
@@ -126,7 +127,7 @@ describe('useViewportCulling', () => {
     expect(mountedNodeIds.value.has('dragged' as NodeId)).toBe(true)
 
     // Pin (select) it, then pan far away: it must survive the prune.
-    pinned.add('dragged' as NodeId)
+    pinned.value = new Set(['dragged' as NodeId])
     camera.x = 50_000
     await nextTick()
     await vi.advanceTimersByTimeAsync(600)
@@ -136,7 +137,7 @@ describe('useViewportCulling', () => {
 
   it('does not mount unmounted nodes just because they are pinned', async () => {
     // Select-all pins every node; admission on pin would mount the graph.
-    const pinned = new Set<NodeId>(['far' as NodeId])
+    const pinned = ref<ReadonlySet<NodeId>>(new Set(['far' as NodeId]))
     const { mountedNodeIds } = setup(
       {
         near: { x: 0, y: 0, width: 100, height: 100 },
@@ -147,6 +148,28 @@ describe('useViewportCulling', () => {
 
     await vi.advanceTimersByTimeAsync(600)
     expect(mountedNodeIds.value.has('far' as NodeId)).toBe(false)
+  })
+
+  it('reacts when same-size pinned sets have colliding string hashes', async () => {
+    const pinned = ref<ReadonlySet<NodeId>>(new Set(['Aa' as NodeId]))
+    const { mountedNodeIds } = setup(
+      {
+        Aa: { x: 0, y: 0, width: 100, height: 100 },
+        BB: { x: 100, y: 0, width: 100, height: 100 }
+      },
+      pinned
+    )
+
+    camera.x = 50_000
+    await nextTick()
+    await vi.advanceTimersByTimeAsync(600)
+    expect(mountedNodeIds.value).toEqual(new Set(['Aa' as NodeId]))
+
+    pinned.value = new Set(['BB' as NodeId])
+    await nextTick()
+    await vi.advanceTimersByTimeAsync(600)
+
+    expect(mountedNodeIds.value.size).toBe(0)
   })
 
   it('holds the current set while the viewport is unmeasurable', async () => {

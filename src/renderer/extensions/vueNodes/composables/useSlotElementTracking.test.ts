@@ -2,6 +2,7 @@ import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import { defineComponent, nextTick, ref } from 'vue'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -17,6 +18,7 @@ import {
   requestSlotLayoutSyncForAllNodes,
   useSlotElementTracking
 } from './useSlotElementTracking'
+import * as slotTracking from './useSlotElementTracking'
 
 const mockGraph = vi.hoisted(() => ({ _nodes: [] as unknown[] }))
 const mockCanvasState = vi.hoisted(() => ({
@@ -179,6 +181,46 @@ describe('useSlotElementTracking', () => {
 
     // Should remain pending — waiting for Vue components to mount
     expect(layoutStore.pendingSlotSync).toBe(true)
+  })
+
+  it('completes only for a resolved empty rendered-node set', () => {
+    type BeginSync = () => void
+    type IsPending = () => boolean
+    type SetExpected = (nodeIds: ReadonlySet<NodeId> | null) => void
+
+    const beginCandidate = Reflect.get(slotTracking, 'beginVueNodeSlotSync')
+    const pendingCandidate = Reflect.get(
+      slotTracking,
+      'isVueNodeSlotSyncPending'
+    )
+    const expectedCandidate = Reflect.get(
+      slotTracking,
+      'setExpectedRenderedNodeIds'
+    )
+
+    expect(beginCandidate).toBeTypeOf('function')
+    expect(pendingCandidate).toBeTypeOf('function')
+    expect(expectedCandidate).toBeTypeOf('function')
+    if (
+      typeof beginCandidate !== 'function' ||
+      typeof pendingCandidate !== 'function' ||
+      typeof expectedCandidate !== 'function'
+    ) {
+      return
+    }
+
+    const beginSync = beginCandidate as BeginSync
+    const isPending = pendingCandidate as IsPending
+    const setExpected = expectedCandidate as SetExpected
+
+    beginSync()
+    setExpected(null)
+    flushScheduledSlotLayoutSync()
+    expect(isPending()).toBe(true)
+
+    setExpected(new Set())
+    flushScheduledSlotLayoutSync()
+    expect(isPending()).toBe(false)
   })
 
   it('keeps pendingSlotSync when all registered slots are hidden', () => {
