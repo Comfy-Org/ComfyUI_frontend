@@ -10,11 +10,10 @@ import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetT
 import type { PreviewExposure } from '@/core/schemas/previewExposureSchema'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
 import { toNodeId } from '@/types/nodeId'
-import type { NodeId, SerializedNodeId } from '@/types/nodeId'
+import type { SerializedNodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
 
 const EMPTY_EXPOSURES: readonly PreviewExposure[] = Object.freeze([])
-const EMPTY_SUPPRESSED_IDS: ReadonlySet<NodeId> = new Set()
 
 type ResolveNestedHostFn = NonNullable<
   PreviewExposureChainContext['resolveNestedHost']
@@ -35,15 +34,6 @@ function normalizePreviewExposure(
 
 export const usePreviewExposureStore = defineStore('previewExposure', () => {
   const exposures = ref(new Map<UUID, Map<string, PreviewExposure[]>>())
-  /**
-   * Tombstones for ambient-preview suppression: nodes whose exposure was
-   * explicitly removed, so `useAmbientSubgraphPreviews` can tell "removed by
-   * the user" apart from "never promoted" and keep it hidden even though the
-   * node is still producing live output.
-   */
-  const suppressedAmbientNodeIds = ref(
-    new Map<UUID, Map<string, Set<NodeId>>>()
-  )
 
   function _getHostsForGraph(
     rootGraphId: UUID
@@ -54,52 +44,6 @@ export const usePreviewExposureStore = defineStore('previewExposure', () => {
     const nextHosts = new Map<string, PreviewExposure[]>()
     exposures.value.set(rootGraphId, nextHosts)
     return nextHosts
-  }
-
-  function _getSuppressedHostsForGraph(
-    rootGraphId: UUID
-  ): Map<string, Set<NodeId>> {
-    const hosts = suppressedAmbientNodeIds.value.get(rootGraphId)
-    if (hosts) return hosts
-
-    const nextHosts = new Map<string, Set<NodeId>>()
-    suppressedAmbientNodeIds.value.set(rootGraphId, nextHosts)
-    return nextHosts
-  }
-
-  function getSuppressedAmbientNodeIds(
-    rootGraphId: UUID,
-    hostNodeLocator: string
-  ): ReadonlySet<NodeId> {
-    return (
-      suppressedAmbientNodeIds.value.get(rootGraphId)?.get(hostNodeLocator) ??
-      EMPTY_SUPPRESSED_IDS
-    )
-  }
-
-  function _suppressAmbientPreview(
-    rootGraphId: UUID,
-    hostNodeLocator: string,
-    sourceNodeId: NodeId
-  ): void {
-    const hosts = _getSuppressedHostsForGraph(rootGraphId)
-    const existing = hosts.get(hostNodeLocator)
-    if (existing) {
-      existing.add(sourceNodeId)
-    } else {
-      hosts.set(hostNodeLocator, new Set([sourceNodeId]))
-    }
-  }
-
-  function _unsuppressAmbientPreview(
-    rootGraphId: UUID,
-    hostNodeLocator: string,
-    sourceNodeId: NodeId
-  ): void {
-    suppressedAmbientNodeIds.value
-      .get(rootGraphId)
-      ?.get(hostNodeLocator)
-      ?.delete(sourceNodeId)
   }
 
   function _getExposuresRef(
@@ -145,7 +89,6 @@ export const usePreviewExposureStore = defineStore('previewExposure', () => {
       sourcePreviewName: source.sourcePreviewName
     }
     hosts.set(hostNodeLocator, [...current, entry])
-    _unsuppressAmbientPreview(rootGraphId, hostNodeLocator, entry.sourceNodeId)
     return entry
   }
 
@@ -156,22 +99,13 @@ export const usePreviewExposureStore = defineStore('previewExposure', () => {
   ): void {
     const current = _getExposuresRef(rootGraphId, hostNodeLocator)
     if (!current?.length) return
-    const removed = current.find((e) => e.name === name)
     const next = current.filter((e) => e.name !== name)
     if (next.length === current.length) return
     setExposures(rootGraphId, hostNodeLocator, next)
-    if (removed) {
-      _suppressAmbientPreview(
-        rootGraphId,
-        hostNodeLocator,
-        removed.sourceNodeId
-      )
-    }
   }
 
   function clearGraph(rootGraphId: UUID): void {
     exposures.value.delete(rootGraphId)
-    suppressedAmbientNodeIds.value.delete(rootGraphId)
   }
 
   function getExposuresAsPromotionShape(
@@ -204,7 +138,6 @@ export const usePreviewExposureStore = defineStore('previewExposure', () => {
   return {
     getExposures,
     getExposuresAsPromotionShape,
-    getSuppressedAmbientNodeIds,
     setExposures,
     addExposure,
     removeExposure,
