@@ -58,6 +58,8 @@ test.describe('Numeric combo stepping', { tag: ['@widget', '@canvas'] }, () => {
       [node.id, 0] as const
     )
 
+    await expect.poll(() => widget.getValue()).toBe(8)
+
     await comfyPage.canvas.click({ position: { x, y } })
 
     await expect.poll(() => widget.getValue()).toBe(10)
