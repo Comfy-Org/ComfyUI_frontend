@@ -527,9 +527,14 @@ describe('useFirstRunTourController', () => {
     })
 
     it('stops promising a result when a running job is dropped mid-run', async () => {
-      // An API node that charges credits mid-run lands in
-      // `handleAccountPreconditionError`, which drops the job but leaves the
-      // stale `running` status behind, so no status change reports the end.
+      // `handleServiceLevelError` ("Job has stagnated") is the live path: it
+      // drops the job and records a prompt error but never touches
+      // `workflowStatus`, so the `running` from `handleExecutionStart`
+      // outlives the run and no status change reports the end.
+      //
+      // Deliberately not the mid-run credits path — #15161 made
+      // `handleAccountPreconditionError` clear the status, so that one ends
+      // via the `undefined`-after-`running` branch without this watcher.
       await tourOnRunStep()
       mountRunButton('queue-button', () => {}).click()
       await acceptRun(TOUR_WORKFLOW)
@@ -570,6 +575,45 @@ describe('useFirstRunTourController', () => {
       expect(
         mocks.runState.value,
         'a reported outcome is the last word; losing the job afterwards says nothing new'
+      ).toBe('failed')
+    })
+
+    // Pins the transition gate on the status watcher. The stagnation path
+    // leaves `running` in `workflowStatus` forever, and that source
+    // re-evaluates whenever the map is replaced for *any* workflow. Without
+    // the gate the stale `running` is re-read and the card goes back to
+    // promising a result it has already given up on.
+    it('stays failed when an unrelated workflow churns the status map', async () => {
+      await tourOnRunStep()
+      mountRunButton('queue-button', () => {}).click()
+      await acceptRun(TOUR_WORKFLOW)
+      await finishRun(TOUR_WORKFLOW, 'running')
+
+      await removeRun()
+      expect(mocks.runState.value).toBe('failed')
+
+      await finishRun(OTHER_WORKFLOW, 'running')
+
+      expect(
+        mocks.runState.value,
+        'another workflow starting is not this run coming back from the dead'
+      ).toBe('failed')
+    })
+
+    // The other half of the stagnation path: the prompt error it records must
+    // still be able to end the run while the stale `running` sits there.
+    it('gives up on a stagnated job that leaves an error and a stale status', async () => {
+      await tourOnRunStep()
+      mountRunButton('queue-button', () => {}).click()
+      await acceptRun(TOUR_WORKFLOW)
+      await finishRun(TOUR_WORKFLOW, 'running')
+
+      mocks.executionErrors.hasPromptError = true
+      await removeRun()
+
+      expect(
+        mocks.runState.value,
+        'a stagnated run reports an error and abandons the job; the status it leaves behind is not news'
       ).toBe('failed')
     })
   })
