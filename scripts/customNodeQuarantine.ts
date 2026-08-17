@@ -16,6 +16,8 @@ import { join } from 'node:path'
 import { promisify } from 'node:util'
 
 import type { QuarantinedPack } from '../browser_tests/fixtures/customNode/manifest'
+import { FRONTEND_ASSET_EXCLUSIONS } from '../browser_tests/fixtures/customNode/manifest'
+import { startupErrorExclusionsForPacks } from '../browser_tests/fixtures/customNode/consoleErrorLedger'
 import { ROUNDTRIP_NODE_LOSS_EXPECTATIONS_LITEGRAPH } from '../browser_tests/fixtures/customNode/valueDrift'
 import {
   loadFullManifest,
@@ -153,7 +155,14 @@ const nodeExclusions = [
         pack,
         ...exclusion
       }))
-  )
+  ),
+  ...Object.entries(FRONTEND_ASSET_EXCLUSIONS).map(([pack, exclusion]) => ({
+    label: `${pack} frontend assets`,
+    pack,
+    reason: exclusion.reason,
+    restore: exclusion.restore
+  })),
+  ...startupErrorExclusionsForPacks([...manifest.keys()])
 ]
 const unknownNodeExclusions: string[] = []
 note('')

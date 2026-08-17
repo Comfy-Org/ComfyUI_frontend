@@ -15,24 +15,22 @@ import {
 } from '@e2e/fixtures/utils/customNodeSuite'
 import { LocalDesktopTarget } from '@e2e/fixtures/customNode/ComfyTarget'
 import {
+  customExtensionStartupErrors,
   isForeignExecutionNoise,
+  staleRequiredStartupErrorRulesForPacks,
   unallowlistedGlobalExtensionErrorsForPacks,
   unallowlistedErrors
 } from '@e2e/fixtures/customNode/consoleErrorLedger'
 import {
   AUTOGROW_CASES,
-  loadManifest,
   expectedExtensionsFor,
-  loadAllManifestPackNames,
-  rendererPassesFor,
+  FRONTEND_ASSET_EXCLUSIONS,
+  loadManifest,
+  packIdentity,
   servesFrontendAssetsForPack,
   staleAutogrowApplicabilityIssues
 } from '@e2e/fixtures/customNode/manifest'
 import { missingExpectedNodes } from '@e2e/fixtures/customNode/objectInfoValidator'
-import {
-  assertPackLedgerKeys,
-  packLedgerFor
-} from '@e2e/fixtures/customNode/packLedger'
 import {
   collectConsoleErrors,
   startupConsoleErrors
@@ -52,14 +50,6 @@ const OBJECT_INFO_SANITY_FLOOR = 50
 // pack whose only sink prints to console gets execution-completed proof
 // only.
 const CURATED_SINK_TYPES = ['PreviewAny', 'DisplayAny', 'ShowText|pysssss']
-
-const KNOWN_BROKEN_EXTENSIONS: Record<string, Record<string, string>> = {}
-
-assertPackLedgerKeys(
-  'KNOWN_BROKEN_EXTENSIONS',
-  KNOWN_BROKEN_EXTENSIONS,
-  loadAllManifestPackNames()
-)
 
 test.use({ initialSettings: customNodeSuiteSettings })
 
@@ -102,11 +92,22 @@ const installedManifestPacks = manifestEntries.map((entry) => entry.pack)
 test('Pack startup/load: custom extensions import without unallowlisted errors @custom-nodes', async ({
   comfyPage
 }) => {
+  const startupErrors = customExtensionStartupErrors(
+    startupConsoleErrors(comfyPage.page)
+  )
   expect(
-    unallowlistedGlobalExtensionErrorsForPacks(installedManifestPacks, [
-      ...startupConsoleErrors(comfyPage.page)
-    ]),
+    unallowlistedGlobalExtensionErrorsForPacks(
+      installedManifestPacks,
+      startupErrors
+    ),
     'custom extension failed while the application loaded it'
+  ).toEqual([])
+  expect(
+    staleRequiredStartupErrorRulesForPacks(
+      installedManifestPacks,
+      startupErrors
+    ),
+    'stale required startup extension errors'
   ).toEqual([])
 })
 
@@ -135,7 +136,6 @@ for (const entry of manifestEntries) {
       // in object_info while every JS-driven behavior silently vanishes
       // (and this suite would then be testing vanilla nodes). Assert the
       // pack's boot-registered extensions actually arrived in the browser.
-      const knownBroken = packLedgerFor(KNOWN_BROKEN_EXTENSIONS, entry.pack)
       const ownedAutogrowCases = AUTOGROW_CASES.filter(
         ({ pack }) => pack.toLowerCase() === entry.pack.toLowerCase()
       )
@@ -143,7 +143,6 @@ for (const entry of manifestEntries) {
         'webDirectory' in entry ? entry.webDirectory : undefined
       if (
         expectedExtensionsFor(entry).length > 0 ||
-        Object.keys(knownBroken).length > 0 ||
         ownedAutogrowCases.length > 0 ||
         webDirectory !== undefined
       ) {
@@ -165,16 +164,25 @@ for (const entry of manifestEntries) {
             registered,
             `${entry.pack}: frontend extension "${name}" not registered - pack JS did not load`
           ).toContain(name)
-        for (const [name, reason] of Object.entries(knownBroken))
-          expect(
-            registered,
-            `${entry.pack}: known-broken frontend extension "${name}" registered despite its ledgered mechanism (${reason}) - remove the stale entry and restore it to expectedExtensions`
-          ).not.toContain(name)
-        if (webDirectory !== undefined)
-          expect(
-            servesFrontendAssetsForPack(servedExtensionPaths, entry.pack),
-            `${entry.pack}: supported_nodes.yaml declares web_directory=${webDirectory}, but the backend serves no extension path for this pack`
-          ).toBe(true)
+        if (webDirectory !== undefined) {
+          const servesAssets = servesFrontendAssetsForPack(
+            servedExtensionPaths,
+            entry.pack
+          )
+          const exclusion = FRONTEND_ASSET_EXCLUSIONS[entry.pack]
+          if (exclusion) {
+            expect(packIdentity(entry)).toBe(exclusion.deployRef)
+            expect(webDirectory).toBe(exclusion.webDirectory)
+            expect(
+              servesAssets,
+              `${entry.pack}: frontend assets are now served - remove the stale exclusion`
+            ).toBe(false)
+          } else
+            expect(
+              servesAssets,
+              `${entry.pack}: supported_nodes.yaml declares web_directory=${webDirectory}, but the backend serves no extension path for this pack`
+            ).toBe(true)
+        }
         const staleAutogrowApplicability = staleAutogrowApplicabilityIssues(
           {
             pack: entry.pack,
@@ -189,13 +197,7 @@ for (const entry of manifestEntries) {
         ).toEqual([])
       }
 
-      // vueNodesCompatible: false = canvas-only assertions; still runs, no skip.
-      const rendererPasses = rendererPassesFor(entry)
-      if (entry.vueNodesCompatible === false)
-        console.log(
-          `${entry.pack} declares vueNodesCompatible=false; Vue Nodes pass not applicable`
-        )
-      for (const vueNodesEnabled of rendererPasses) {
+      for (const vueNodesEnabled of [false, true]) {
         const consoleErrors = collectConsoleErrors(comfyPage.page)
         await comfyPage.settings.setSetting(
           'Comfy.VueNodes.Enabled',

@@ -3,8 +3,10 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import {
+  customExtensionStartupErrors,
   isForeignExecutionNoise,
   staleRequiredConnectivityErrorRulesForPacks,
+  staleRequiredStartupErrorRulesForPacks,
   unallowlistedErrors,
   unallowlistedConnectivityErrorsForPacks,
   unallowlistedGlobalExtensionErrorsForPacks,
@@ -16,6 +18,43 @@ import {
 // to "always empty" would turn those gates vacuously green, so the filter's
 // three behaviors are pinned here directly.
 test.describe('consoleErrorLedger', () => {
+  test('startup attribution excludes core boot noise and keeps extension failures', () => {
+    expect(
+      customExtensionStartupErrors([
+        'Failed to load resource: 404 [http://localhost:8188/user.css]',
+        'ComfyApp graph accessed before initialization [http://localhost:8188/assets/app.js]',
+        'Failed to load resource: 404 [http://localhost:8188/extensions/core/clipspace.js]',
+        'Failed to load resource: 404 [http://localhost:8188/extensions/Pack/widget.js]',
+        "Error calling extension 'Pack.feature' method 'setup'",
+        "[vite:preloadError] {message: Unexpected token '}'} [http://localhost:8188/assets/main.js]"
+      ])
+    ).toEqual([
+      'Failed to load resource: 404 [http://localhost:8188/extensions/Pack/widget.js]',
+      "Error calling extension 'Pack.feature' method 'setup'",
+      "[vite:preloadError] {message: Unexpected token '}'} [http://localhost:8188/assets/main.js]"
+    ])
+  })
+
+  test('required startup errors fail stale and filter only their exact signatures', () => {
+    const error =
+      "[vite:preloadError] {url: null, message: Unexpected token '}'} [http://localhost:8188/assets/main-abc.js]"
+    expect(
+      staleRequiredStartupErrorRulesForPacks(['WhatDreamsCost-ComfyUI'], [])
+    ).toEqual(['WhatDreamsCost-ComfyUI/ltx-director-guide-syntax'])
+    expect(
+      staleRequiredStartupErrorRulesForPacks(
+        ['WhatDreamsCost-ComfyUI'],
+        [error]
+      )
+    ).toEqual([])
+    expect(
+      unallowlistedGlobalExtensionErrorsForPacks(
+        ['WhatDreamsCost-ComfyUI'],
+        [error, 'different failure']
+      )
+    ).toEqual(['different failure'])
+  })
+
   test('filters only errors matching the pack own patterns', () => {
     const errors = [
       'Failed to load resource: the server responded with a status of 404 () http://host/example.png',

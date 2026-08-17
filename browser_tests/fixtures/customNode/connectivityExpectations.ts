@@ -1,7 +1,6 @@
 export interface ConnectivityExpectations {
   isolatedNodeTypes: Record<string, { pack: string; reason: string }>
   connectRejected: string[]
-  conditionalSlotContractMismatch: string[]
   deterministicSlotContractMismatch: string[]
   roundtripLost: string[]
   zeroPairDragExpectedNodeCounts: Partial<Record<string, number>>
@@ -14,6 +13,11 @@ export const connectivityExpectations: ConnectivityExpectations = {
       pack: 'ComfyUI_Fill-Nodes',
       reason:
         'its deferred dynamic-slot cleanup is context-sensitive after repeated same-page graph resets'
+    },
+    TimerNodeKJ: {
+      pack: 'ComfyUI-KJNodes',
+      reason:
+        'an earlier KJNodes creation race can corrupt shared editor state before this node mounts'
     }
   },
   connectRejected: [
@@ -21,12 +25,6 @@ export const connectivityExpectations: ConnectivityExpectations = {
     'FL_NodeLoader.TRIGGER -> FL_NodeLoader.trigger',
     'FL_NodeLoader.TRIGGER -> FL_NodePackLoader.trigger',
     'FL_NodePackLoader.TRIGGER -> FL_NodeLoader.trigger'
-  ],
-  // TimerNodeKJ throws only when an earlier KJNodes creation race corrupts
-  // shared editor state, so these pairs must stay planned but need not fire.
-  conditionalSlotContractMismatch: [
-    'TimerNodeKJ.timer -> TimerNodeKJ.timer',
-    'TimerNodeKJ.time -> AddLabel.text_x'
   ],
   deterministicSlotContractMismatch: [
     // MultiImageLoader trims its 50 declared image outputs to the loaded count.

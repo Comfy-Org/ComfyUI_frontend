@@ -58,16 +58,15 @@ export interface PairingPlan {
   // Combos whose option lists match exactly ARE paired like any other type.
   combos: Array<SlotRef & { dir: 'in' | 'out' }>
   // Slots dropped at normalize time because their raw spec had no
-  // recognizable type or name - surfaced here (and logged by the sweep) so a
-  // backend or pack schema change cannot silently shrink the corpus.
+  // recognizable type or name. The sweep fails if this is non-empty.
   unknownShapes: string[]
 }
 
 // Extends the shared outcome taxonomy (runResult.ts); ORPHAN_TYPE is a
 // plan-time skip so it never reaches the executor.
 // WIDGET_ONLY_ON_INSTANCE: the pack's own frontend JS rebuilt a declared
-// input as a widget-only control, so there is no socket to wire - excluded
-// like wildcards, never a failure and never a silent pass.
+// input as a widget-only control, so there is no socket to wire. The sweep
+// fails unless applicability is made explicit at its call site.
 export type ConnectivityOutcome =
   | 'PASS'
   | 'CONNECT_REJECTED'
@@ -81,7 +80,7 @@ export function packOf(pythonModule: string | undefined): string {
   return 'core'
 }
 
-export function isWildcard(type: string): boolean {
+function isWildcard(type: string): boolean {
   return type === '' || type === '*'
 }
 
@@ -237,12 +236,13 @@ export function planPairs(
       .map((slot) => ({ ref: slotRef(node, slot), vocab: vocabOf(slot) }))
   )
 
+  const corpus = all.filter((node) => corpusTypes.includes(node.type))
   const plan: PairingPlan = {
     pairs: [],
     orphans: [],
     wildcards: [],
     combos: [],
-    unknownShapes: all.flatMap((node) =>
+    unknownShapes: corpus.flatMap((node) =>
       (node.unknownSlots ?? []).map((slot) => `${node.type}.${slot}`)
     )
   }
@@ -254,7 +254,6 @@ export function planPairs(
     plan.pairs.push({ producer, consumer })
   }
 
-  const corpus = all.filter((node) => corpusTypes.includes(node.type))
   for (const node of corpus) {
     for (const slot of node.inputs) {
       if (isWildcard(slot.type)) {

@@ -1,4 +1,3 @@
-/* oxlint-disable playwright/no-skipped-test -- skips only when the target backend lacks the pack; environment gating, not a disabled test */
 import type { Page } from '@playwright/test'
 
 import {
@@ -9,10 +8,7 @@ import { LocalDesktopTarget } from '@e2e/fixtures/customNode/ComfyTarget'
 import { isForeignExecutionNoise } from '@e2e/fixtures/customNode/consoleErrorLedger'
 import { missingExpectedNodes } from '@e2e/fixtures/customNode/objectInfoValidator'
 import { collectConsoleErrors } from '@e2e/fixtures/utils/consoleErrorCollector'
-import {
-  loadApplicableAutogrowCases,
-  rendererPassesFor
-} from '@e2e/fixtures/customNode/manifest'
+import { loadApplicableAutogrowCases } from '@e2e/fixtures/customNode/manifest'
 import { customNodeSuiteSettings } from '@e2e/fixtures/utils/customNodeSuite'
 import { errorSurfaces } from '@e2e/fixtures/utils/errorSurfaces'
 
@@ -63,7 +59,7 @@ async function consumerShape(
   }, consumerId)
 }
 
-for (const { autogrowCase, manifestEntry } of applicableAutogrowCases) {
+for (const { autogrowCase } of applicableAutogrowCases) {
   test.describe(`dynamic inputs: ${autogrowCase.pack} @custom-nodes`, () => {
     test(`${autogrowCase.consumerType} grows on connect and shrinks on disconnect (drag + programmatic, both renderers)`, async ({
       comfyPage
@@ -82,9 +78,6 @@ for (const { autogrowCase, manifestEntry } of applicableAutogrowCases) {
         missing,
         `${autogrowCase.pack} not installed on this backend (missing: ${missing.join(', ')})`
       ).toEqual([])
-      // The pack row owns renderer compatibility (vueNodesCompatible), so a
-      // pack that ever declares itself Vue-incompatible keeps its canvas
-      // coverage here instead of failing the Vue pass.
       expect(
         await comfyPage.page.evaluate(
           (extensionName) =>
@@ -96,7 +89,7 @@ for (const { autogrowCase, manifestEntry } of applicableAutogrowCases) {
         `${autogrowCase.pack} autogrow extension ${autogrowCase.extensionName} is registered before S12`
       ).toBe(true)
 
-      for (const vueNodesEnabled of rendererPassesFor(manifestEntry)) {
+      for (const vueNodesEnabled of [false, true]) {
         const consoleErrors = collectConsoleErrors(comfyPage.page)
         await comfyPage.settings.setSetting(
           'Comfy.VueNodes.Enabled',

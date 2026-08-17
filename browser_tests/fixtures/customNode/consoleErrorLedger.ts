@@ -2,7 +2,8 @@ interface AllowlistRule {
   global?: boolean
   pattern: RegExp
   reason: string
-  requiredRoundtripId?: string
+  requiredStartupId?: string
+  restore?: string
 }
 
 interface ConnectivityRule extends AllowlistRule {
@@ -13,8 +14,7 @@ interface ConnectivityRule extends AllowlistRule {
 // the all-nodes tiers and the curated run tier so one ledger covers every
 // surface a pack's script can emit on. Filter-guarded: a pattern suppresses
 // matching errors for its pack only. Most entries are environment-conditional
-// and remain review-stale; deterministic roundtrip rules opt into observation
-// with requiredRoundtripId.
+// and remain review-stale.
 const CONSOLE_ERROR_ALLOWLIST: Record<string, AllowlistRule[]> = {
   'comfyui-itools': [
     {
@@ -40,6 +40,16 @@ const CONSOLE_ERROR_ALLOWLIST: Record<string, AllowlistRule[]> = {
     }
   ],
   'ComfyUI-Impact-Pack': [
+    {
+      pattern:
+        /\[vite:preloadError\].*\/extensions\/ComfyUI-Impact-Pack\/impact-sam-editor\.js.*Failed to fetch dynamically imported module/,
+      global: true,
+      requiredStartupId: 'impact-sam-editor-legacy-clipspace-import',
+      reason:
+        'impact-sam-editor.js imports the removed extensions/core/clipspace.js module',
+      restore:
+        'replace the legacy ClipspaceDialog import and remove this entry when impact-sam-editor.js imports successfully'
+    },
     {
       // Media/text widgets preview their value via root-relative URLs at
       // creation; 404s on a backend whose root does not serve the file.
@@ -102,11 +112,22 @@ const CONSOLE_ERROR_ALLOWLIST: Record<string, AllowlistRule[]> = {
     {
       pattern:
         /Failed to load resource.*404.*api\/view\?type=input&filename=%28upload\+a\+mesh\+file%29&subfolder=&rand=/,
+      global: true,
       reason:
         'mesh preview requests the literal upload-placeholder value on a backend with no mesh input'
     }
   ],
   'WhatDreamsCost-ComfyUI': [
+    {
+      pattern:
+        /\[vite:preloadError\].*Unexpected token '\}'\} \[http:\/\/localhost:8188\/assets\//,
+      global: true,
+      requiredStartupId: 'ltx-director-guide-syntax',
+      reason:
+        'js/ltx_director_guide.js at the pinned commit has an extra closing brace and cannot parse',
+      restore:
+        'fix js/ltx_director_guide.js and remove this entry when startup imports it without a preload error'
+    },
     {
       pattern:
         /Failed to load resource.*404.*api\/view\?filename=_cn&type=input/,
@@ -118,6 +139,30 @@ const CONSOLE_ERROR_ALLOWLIST: Record<string, AllowlistRule[]> = {
       pattern:
         /Failed to load resource.*404.*https:\/\/api\.comfy\.org\/comfy-nodes\/\/node/,
       reason: 'pack metadata lookup requests an empty node name on creation'
+    }
+  ],
+  ComfyUI_LayerStyle_Advance: [
+    {
+      pattern:
+        /\[vite:preloadError\].*Extension named 'ColorOverlay' already registered\./,
+      global: true,
+      requiredStartupId: 'duplicate-color-overlay',
+      reason:
+        'this pack and comfyui_layerstyle both register the ColorOverlay extension in their pinned dz_node_palette.js',
+      restore:
+        'give the extensions distinct names and remove this entry when both packs load without a duplicate-registration error'
+    }
+  ],
+  'comfyui-sam3': [
+    {
+      pattern:
+        /\[vite:preloadError\].*\/extensions\/comfyui-sam3\/sam3-editor\.js.*Failed to fetch dynamically imported module/,
+      global: true,
+      requiredStartupId: 'sam3-editor-legacy-clipspace-import',
+      reason:
+        'sam3-editor.js imports the removed extensions/core/clipspace.js module',
+      restore:
+        'replace the legacy ClipspaceDialog import and remove this entry when sam3-editor.js imports successfully'
     }
   ]
 }
@@ -241,17 +286,47 @@ export function unallowlistedGlobalExtensionErrorsForPacks(
   return withoutMatches(rules, errors)
 }
 
-export function staleRequiredRoundtripErrorRules(
-  pack: string,
+export function customExtensionStartupErrors(
+  errors: readonly string[]
+): string[] {
+  return errors.filter(
+    (error) =>
+      /\/extensions\/(?!core\/)/i.test(error) ||
+      /(?:error (?:loading|calling)|failed to load) extension\b/i.test(error) ||
+      /\[vite:preloadError\]/.test(error)
+  )
+}
+
+export function staleRequiredStartupErrorRulesForPacks(
+  packs: string[],
   errors: string[]
 ): string[] {
-  return allowlistRulesFor(pack)
-    .filter(
-      (rule) =>
-        rule.requiredRoundtripId !== undefined &&
-        !errors.some((error) => ruleMatches(rule, error))
+  return packs.flatMap((pack) =>
+    allowlistRulesFor(pack)
+      .filter(
+        (rule) =>
+          rule.requiredStartupId !== undefined &&
+          !errors.some((error) => ruleMatches(rule, error))
+      )
+      .map((rule) => `${pack}/${rule.requiredStartupId}`)
+  )
+}
+
+export function startupErrorExclusionsForPacks(packs: string[]) {
+  return packs.flatMap((pack) =>
+    allowlistRulesFor(pack).flatMap((rule) =>
+      rule.requiredStartupId && rule.restore
+        ? [
+            {
+              label: `${pack} startup extension ${rule.requiredStartupId}`,
+              pack,
+              reason: rule.reason,
+              restore: rule.restore
+            }
+          ]
+        : []
     )
-    .map((rule) => rule.requiredRoundtripId!)
+  )
 }
 
 // For the cross-pack wiring sweep, where an error's owning pack cannot be

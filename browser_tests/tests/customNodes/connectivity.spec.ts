@@ -27,7 +27,6 @@ import type {
   RawNodeDef
 } from '@e2e/fixtures/customNode/typePairing'
 import {
-  isWildcard,
   normalizeNodeDefs,
   planPairs
 } from '@e2e/fixtures/customNode/typePairing'
@@ -38,7 +37,6 @@ import {
 import { expectNoVisibleErrors } from '@e2e/fixtures/utils/errorSurfaces'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 
-const CORE_PROOF_NODE_COUNT = 16
 // Budget the sweep per pair instead of flat: the corpus grows with every pack
 // added, and a flat cap silently becomes a hang the day it stops fitting. Run
 // 30961895204 swept 16832 pairs and did not finish inside a flat 120s cap, so
@@ -54,7 +52,6 @@ const DRAG_MS_PER_DRAG = 15_000
 const {
   isolatedNodeTypes,
   connectRejected,
-  conditionalSlotContractMismatch,
   deterministicSlotContractMismatch,
   roundtripLost,
   noPairContributionExpectedNodeCounts,
@@ -76,10 +73,6 @@ test.afterEach(async ({ comfyPage }) => {
     'connectivity probe left test-owned backend work running'
   ).toBe(0)
 })
-
-function concrete(slot: { type: string }): boolean {
-  return !isWildcard(slot.type)
-}
 
 function isEntryInstalled(
   nodeTypes: Set<string>,
@@ -171,17 +164,7 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
   const packTypes = nodes
     .filter((node) => installedPacks.has(node.pack))
     .map((node) => node.type)
-  const coreProof = nodes
-    .filter(
-      (node) =>
-        node.pack === 'core' &&
-        node.inputs.some(concrete) &&
-        node.outputs.some(concrete)
-    )
-    .map((node) => node.type)
-    .sort()
-    .slice(0, CORE_PROOF_NODE_COUNT)
-  const plan = planPairs(nodes, [...packTypes, ...coreProof])
+  const plan = planPairs(nodes, packTypes)
   const isolatedTypes = new Set(Object.keys(activeIsolatedNodeTypes))
   const isolatedPairs = plan.pairs.filter(
     (pair) =>
@@ -195,6 +178,10 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
   )
 
   expect(plan.pairs.length, 'pairing produced no edges').toBeGreaterThan(0)
+  expect(
+    plan.unknownShapes,
+    'installed-pack slots with unrecognized object_info shapes'
+  ).toEqual([])
   for (const nodeType of isolatedTypes)
     expect(
       isolatedPairs.some(
@@ -251,20 +238,9 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
   console.log(
     `connectivity sweep: ${plan.pairs.length} pairs in ${sweepMs}ms (${(sweepMs / plan.pairs.length).toFixed(1)}ms/pair)`
   )
-  const widgetOnly = results.filter(
-    (result) =>
-      result.outcome ===
-      ('WIDGET_ONLY_ON_INSTANCE' satisfies ConnectivityOutcome)
-  )
-  if (widgetOnly.length > 0)
-    console.log(
-      `connectivity sweep: ${widgetOnly.length} pair(s) excluded - pack JS made the declared input widget-only: ${widgetOnly.map((result) => result.key).join('; ')}`
-    )
   const failures = results.filter(
     (result) =>
       result.outcome !== ('PASS' satisfies ConnectivityOutcome) &&
-      result.outcome !==
-        ('WIDGET_ONLY_ON_INSTANCE' satisfies ConnectivityOutcome) &&
       !(
         result.outcome === ('CONNECT_REJECTED' satisfies ConnectivityOutcome) &&
         connectRejected.includes(result.key)
@@ -276,8 +252,7 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
       !(
         result.outcome ===
           ('SLOT_CONTRACT_MISMATCH' satisfies ConnectivityOutcome) &&
-        (conditionalSlotContractMismatch.includes(result.key) ||
-          deterministicSlotContractMismatch.includes(result.key))
+        deterministicSlotContractMismatch.includes(result.key)
       )
   )
   const passed = results.filter((result) => result.outcome === 'PASS').length
@@ -349,9 +324,6 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
       .split(' -> ')
       .every((side) => liveNodeTypes.has(side.slice(0, side.lastIndexOf('.'))))
   const staleEntries: string[] = []
-  // conditionalSlotContractMismatch is deliberately not in this loop: its
-  // failures are timing-conditional (see its comment), so demanding they
-  // FIRE every run false-fails on fast runners.
   for (const [allowlist, expected] of [
     [connectRejected, 'CONNECT_REJECTED'],
     [roundtripLost, 'ROUNDTRIP_LOST'],
@@ -365,18 +337,6 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
           `${key}: expected ${expected}, observed ${observed ?? 'nothing'} - remove the stale entry`
         )
     }
-  // Registration guard for the timing-racy list (ARCHITECTURE section 10's
-  // floor): the key's pair must still be PLANNED by the sweep - any outcome
-  // is fine, absence means the pack renamed or removed the node and the
-  // entry is stale. Deterministic given pinned defs, so no false-fail.
-  for (const key of conditionalSlotContractMismatch) {
-    if (!outcomeByKey.has(key)) {
-      if (!keyIsAnswerable(key)) continue
-      staleEntries.push(
-        `${key}: pair no longer planned by the sweep - remove the stale entry, or (on floating canary defs) the pair plan reshuffled under core/pack drift`
-      )
-    }
-  }
   expect(staleEntries, 'stale allowlist entries').toEqual([])
   await expectNoVisibleErrors(comfyPage.page, 'after breadth sweep')
 })
@@ -613,12 +573,10 @@ test('connectivity drags: curated slot-to-slot wires connect under both renderer
     // Drag the first pair whose slots actually materialize; a pack whose
     // every planned pair is customized away has no socket contract to drag.
     const inPack = await firstMaterializedPair(comfyPage.page, packPlan.pairs)
-    if (!inPack) {
-      console.log(
-        `connectivity drag: ${entry.pack} planned pairs are widget-only on instances; drag not applicable`
+    if (!inPack)
+      throw new Error(
+        `${entry.pack} has planned pairs but every declared socket is widget-only on instances - add an exact reviewed applicability expectation`
       )
-      continue
-    }
     dragEdges.push(inPack)
   }
   for (const pack of Object.keys(zeroPairDragExpectedNodeCounts)) {
@@ -637,11 +595,6 @@ test('connectivity drags: curated slot-to-slot wires connect under both renderer
     ).toBe(true)
   }
 
-  const vueIncompatiblePacks = new Set(
-    connectivityEntries
-      .filter((entry) => entry.vueNodesCompatible === false)
-      .map((entry) => entry.pack)
-  )
   const rendererPasses = [false, true]
   test.setTimeout(
     PLAN_SETUP_MS + dragEdges.length * rendererPasses.length * DRAG_MS_PER_DRAG
@@ -654,12 +607,6 @@ test('connectivity drags: curated slot-to-slot wires connect under both renderer
     )
 
     for (const edge of dragEdges) {
-      if (vueNodesEnabled && vueIncompatiblePacks.has(edge.producer.pack)) {
-        console.log(
-          `connectivity drag: ${edge.producer.pack} declares vueNodesCompatible=false; Vue drag not applicable`
-        )
-        continue
-      }
       await comfyPage.nodeOps.clearGraph()
       const producer = await comfyPage.nodeOps.addNode(
         edge.producer.nodeType,

@@ -34,15 +34,6 @@ interface SharedNodeExpectations {
   expectedNodes: string[]
   expectedRunnableCount?: number
   timeoutMs: number
-  // Optional; absent means true. Set false ONLY with evidence that the pack's
-  // nodes fail to mount under Vue Nodes 2.0 (probe it - a README grumble is
-  // not evidence). When false, renderer-specific Vue assertions are not
-  // applied to this pack: its tests still run and pass their LiteGraph-canvas
-  // assertions, so the zero-skip gate is preserved.
-  vueNodesCompatible?: boolean
-  // Node key -> evidenced reason it cannot mount under Vue Nodes 2.0; only
-  // the Vue mount assertion is withheld. Stale keys fail the suite.
-  vueIncompatibleNodes?: Record<string, string>
 }
 
 export interface CoreManifestEntry extends SharedNodeExpectations {
@@ -109,6 +100,25 @@ export const AUTOGROW_CASES = [
     producerSlot: 'IMAGE'
   }
 ] as const
+
+export const FRONTEND_ASSET_EXCLUSIONS: Record<
+  string,
+  {
+    deployRef: string
+    reason: string
+    restore: string
+    webDirectory: string
+  }
+> = {
+  'ComfyUI-DepthAnythingV3': {
+    deployRef: 'ComfyUI-DepthAnythingV3@0.1.2',
+    webDirectory: 'web',
+    reason:
+      'the registry artifact declares WEB_DIRECTORY="./web" but contains no web/ directory',
+    restore:
+      'publish an artifact containing web/ and remove this entry when the served extension path appears'
+  }
+}
 
 function extensionPathPack(value: string): string | undefined {
   try {
@@ -220,16 +230,6 @@ function sharedIssues(entry: SharedNodeExpectations): string[] {
     missing.push('expectedRunnableCount (only valid for run tier)')
   if (!Number.isFinite(entry.timeoutMs) || entry.timeoutMs <= 0)
     missing.push('timeoutMs')
-  if (
-    entry.vueNodesCompatible !== undefined &&
-    typeof entry.vueNodesCompatible !== 'boolean'
-  )
-    missing.push('vueNodesCompatible')
-  if (
-    entry.vueIncompatibleNodes !== undefined &&
-    invalidRecordOf(entry.vueIncompatibleNodes, isNonEmptyString)
-  )
-    missing.push('vueIncompatibleNodes (node key -> non-empty reason string)')
   return missing
 }
 
@@ -362,15 +362,6 @@ export function assertCloudEntry(
   throwIfIncomplete('custom-node cloud manifest', entry.pack, index, missing)
 }
 
-// Renderer passes for the load tier: LiteGraph canvas always, Vue Nodes 2.0
-// unless the pack declares itself incompatible. Conditional coverage, never a
-// test.skip - the caller still runs and gates on the returned passes.
-export function rendererPassesFor(
-  entry: Pick<SharedNodeExpectations, 'vueNodesCompatible'>
-): boolean[] {
-  return entry.vueNodesCompatible === false ? [false] : [false, true]
-}
-
 function readEnum<T extends readonly string[]>(
   name: string,
   allowed: T,
@@ -401,13 +392,39 @@ interface LocalExpectation {
 }
 
 function loadLocalExpectations(): Record<string, LocalExpectation> {
-  if (customNodesBackend() !== 'local') return {}
+  if (customNodesBackend() !== 'local' || customNodesManifest() !== 'cloud')
+    return {}
   const path = dataPath('cloud/localExpectations.json')
   if (!existsSync(path)) return {}
   const parsed: unknown = JSON.parse(readFileSync(path, 'utf-8'))
   if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed))
     throw new Error(`${path} must be a JSON object keyed by pack name`)
-  return parsed as Record<string, LocalExpectation>
+  const entries = parsed as Record<string, LocalExpectation>
+  const manifestPacks = new Set(
+    readCloudManifest().packs.map(({ pack }) => pack)
+  )
+  for (const [pack, entry] of Object.entries(entries)) {
+    if (!manifestPacks.has(pack))
+      throw new Error(`${path}: ${pack} is not in the cloud manifest`)
+    if (
+      typeof entry !== 'object' ||
+      entry === null ||
+      !Number.isInteger(entry.expectedNodeCount) ||
+      entry.expectedNodeCount <= 0 ||
+      !isNonEmptyString(entry.reason) ||
+      (entry.expectedExtensions !== undefined &&
+        (!Array.isArray(entry.expectedExtensions) ||
+          entry.expectedExtensions.length !==
+            new Set(entry.expectedExtensions).size ||
+          !entry.expectedExtensions.every(isNonEmptyString))) ||
+      (entry.cannotRunAlone !== undefined &&
+        (!Array.isArray(entry.cannotRunAlone) ||
+          entry.cannotRunAlone.length !== new Set(entry.cannotRunAlone).size ||
+          !entry.cannotRunAlone.every(isNonEmptyString)))
+    )
+      throw new Error(`${path}: ${pack} has an invalid local expectation`)
+  }
+  return entries
 }
 
 /**
@@ -544,6 +561,15 @@ export function assertCloudManifestShape(
   return manifest
 }
 
+function isIsoDate(value: unknown): value is string {
+  if (typeof value !== 'string') return false
+  const timestamp = Date.parse(`${value}T00:00:00Z`)
+  return (
+    !Number.isNaN(timestamp) &&
+    new Date(timestamp).toISOString().slice(0, 10) === value
+  )
+}
+
 function isCloudManifestSource(value: unknown): value is CloudManifestSource {
   if (typeof value !== 'object' || value === null || Array.isArray(value))
     return false
@@ -555,14 +581,10 @@ function isCloudManifestSource(value: unknown): value is CloudManifestSource {
     !/^[0-9a-f]{40}$/.test(source.ref) ||
     typeof source.path !== 'string' ||
     source.path.length === 0 ||
-    typeof source.importedAt !== 'string'
+    !isIsoDate(source.importedAt)
   )
     return false
-  const timestamp = Date.parse(`${source.importedAt}T00:00:00Z`)
-  return (
-    !Number.isNaN(timestamp) &&
-    new Date(timestamp).toISOString().slice(0, 10) === source.importedAt
-  )
+  return true
 }
 
 function readCloudManifest(): CloudManifest {
@@ -633,7 +655,30 @@ export function loadPackQuarantine(): Record<string, QuarantinedPack> {
   const parsed: unknown = JSON.parse(readFileSync(path, 'utf-8'))
   if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed))
     throw new Error(`${path} must be a JSON object keyed by pack name`)
-  return parsed as Record<string, QuarantinedPack>
+  const entries = parsed as Record<string, QuarantinedPack>
+  const manifestPacks = new Set(
+    readCloudManifest().packs.map(({ pack }) => pack)
+  )
+  const classes = new Set([
+    'unfetchable-ref',
+    'unsatisfiable-requirement',
+    'requires-gpu-runner'
+  ])
+  for (const [pack, entry] of Object.entries(entries)) {
+    if (!manifestPacks.has(pack))
+      throw new Error(`${path}: ${pack} is not in the cloud manifest`)
+    if (
+      typeof entry !== 'object' ||
+      entry === null ||
+      !classes.has(entry.class) ||
+      !isNonEmptyString(entry.reason) ||
+      !isNonEmptyString(entry.evidence) ||
+      !isNonEmptyString(entry.upstreamFix) ||
+      !isIsoDate(entry.since)
+    )
+      throw new Error(`${path}: ${pack} has an invalid quarantine entry`)
+  }
+  return entries
 }
 
 export function loadManifest(): (CoreManifestEntry | CloudManifestEntry)[] {
@@ -645,7 +690,8 @@ export function loadManifest(): (CoreManifestEntry | CloudManifestEntry)[] {
   // many node classes it registers - WanVideoWrapper measured 141, 142 and 146
   // across three runs without its own pin changing. Composition now moves only
   // when the manifest does.
-  const quarantined = loadPackQuarantine()
+  const quarantined =
+    customNodesManifest() === 'cloud' ? loadPackQuarantine() : {}
   return shardOf(loadFullManifest(), (entry) => entry.expectedNodeCount).filter(
     (entry) => !(entry.pack in quarantined)
   )

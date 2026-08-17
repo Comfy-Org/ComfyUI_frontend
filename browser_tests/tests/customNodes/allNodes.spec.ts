@@ -1,4 +1,3 @@
-/* oxlint-disable playwright/no-skipped-test -- tiers conditionally skip when the target backend lacks the required packs; environment gating, not a disabled test */
 // Every-node coverage: the suite's core contract (mounts, survives
 // save/reload, calibrated model-free execution) applied to ALL eligible nodes a pack
 // registers - not just the curated expectedNodes sentinels. Node lists come
@@ -24,17 +23,15 @@ import {
 } from '@e2e/fixtures/customNode/ComfyTarget'
 import {
   isForeignExecutionNoise,
-  staleRequiredRoundtripErrorRules,
   unallowlistedErrors,
   unallowlistedGlobalExtensionErrorsForPacks
 } from '@e2e/fixtures/customNode/consoleErrorLedger'
 import { failureSummary } from '@e2e/fixtures/customNode/failureReport'
 import {
   cannotRunAloneFor,
-  loadManifest,
   expectedNodeCountFor,
   loadAllManifestPackNames,
-  rendererPassesFor
+  loadManifest
 } from '@e2e/fixtures/customNode/manifest'
 import { describeRunOutcome } from '@e2e/fixtures/customNode/runResult'
 import {
@@ -49,15 +46,13 @@ import {
   OUTPUT_TOPOLOGY_EXPECTATIONS_LITEGRAPH,
   OUTPUT_TOPOLOGY_EXPECTATIONS_VUE,
   partitionValueDriftNodes,
-  pendingWidgetInitializations,
+  pendingRoundtripInitializations,
   rendererLedgerFor,
+  ROUNDTRIP_INITIALIZATION_SIGNALS,
   ROUNDTRIP_NODE_LOSS_EXPECTATIONS_LITEGRAPH,
   ROUNDTRIP_NODE_LOSS_EXPECTATIONS_VUE,
   ROUNDTRIP_VALUE_ALLOWED_INDICES_LITEGRAPH,
   ROUNDTRIP_VALUE_ALLOWED_INDICES_VUE,
-  ROUNDTRIP_WIDGET_INITIALIZATION_SIGNALS,
-  ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS_LITEGRAPH,
-  ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS_VUE,
   staleValueDriftIndices
 } from '@e2e/fixtures/customNode/valueDrift'
 import {
@@ -323,12 +318,10 @@ const PACK_LEDGERS: Record<string, Record<string, Record<string, unknown>>> = {
   OUTPUT_TOPOLOGY_EXPECTATIONS_VUE,
   ROUNDTRIP_NODE_LOSS_EXPECTATIONS_LITEGRAPH,
   ROUNDTRIP_NODE_LOSS_EXPECTATIONS_VUE,
+  ROUNDTRIP_INITIALIZATION_SIGNALS,
   ROUNDTRIP_VALUE_ALLOWLIST,
   ROUNDTRIP_VALUE_ALLOWED_INDICES_LITEGRAPH,
   ROUNDTRIP_VALUE_ALLOWED_INDICES_VUE,
-  ROUNDTRIP_WIDGET_INITIALIZATION_SIGNALS,
-  ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS_LITEGRAPH,
-  ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS_VUE,
   WIDGET_SET_ALLOWLIST
 }
 
@@ -366,7 +359,6 @@ declare global {
       problems: string[]
       captureInitialWidgetCounts: () => void
       snapshotAndConfigure: () => void
-      currentWidgetCounts: (types: string[]) => Record<string, number | null>
       compare: (label: string, strict: boolean) => void
       setAndStick: () => void
       finish: () => {
@@ -376,9 +368,12 @@ declare global {
           node: string
           before: number
           after: number
+          beforeNames: string
+          afterNames: string
           label: string
         }>
         valueDrifts: Record<string, number[]>
+        broadValueDriftInventories: Record<string, string[]>
       }
     }
   }
@@ -584,18 +579,12 @@ for (const entry of manifestEntries) {
         const declaredByKey = new Map(
           keys.map((key) => [key, declaredShape(defs[key])])
         )
-        const ledger = entry.vueIncompatibleNodes ?? {}
         const mountWidgetAllowlist = {
           ...packLedgerFor(MOUNT_WIDGET_ALLOWLIST, entry.pack),
           ...('pin' in entry
             ? packLedgerFor(CORE_ONLY_MOUNT_WIDGET_ALLOWLIST, entry.pack)
             : {})
         }
-        for (const ledgered of Object.keys(ledger))
-          expect(
-            keys,
-            `stale ledger entry: ${ledgered} is not registered by ${entry.pack}`
-          ).toContain(ledgered)
         for (const ledgered of Object.keys(mountWidgetAllowlist))
           expect(
             keys,
@@ -607,7 +596,7 @@ for (const entry of manifestEntries) {
             ? [false]
             : selectedTier === 'S2'
               ? [true]
-              : rendererPassesFor(entry)
+              : [false, true]
         for (const vueNodesEnabled of rendererPasses) {
           const rawOutputTopologyExpectations = packLedgerFor(
             rendererLedgerFor(
@@ -682,7 +671,6 @@ for (const entry of manifestEntries) {
                   )
               }
               if (!vueNodesEnabled) continue
-              if (key in ledger) continue
               const visible = await comfyPage.page
                 .locator(`[data-node-id="${shape.id}"]`)
                 .waitFor({ state: 'visible', timeout: 2_000 })
@@ -695,7 +683,7 @@ for (const entry of manifestEntries) {
             if (vueNodesEnabled)
               failures.push(
                 ...(await comfyPage.page.evaluate(
-                  ([chunkIds, ledgered, customWidgetNodes]) => {
+                  ([chunkIds, customWidgetNodes]) => {
                     const problems: string[] = []
                     for (const id of chunkIds) {
                       if (id === null) continue
@@ -705,8 +693,7 @@ for (const entry of manifestEntries) {
                       const root = document.querySelector(
                         `[data-node-id="${id}"]`
                       )
-                      if (!node || !root || ledgered.includes(node.type!))
-                        continue
+                      if (!node || !root) continue
                       const widgets = (
                         (node.widgets ?? []) as Array<{
                           advanced?: boolean
@@ -755,16 +742,11 @@ for (const entry of manifestEntries) {
                   },
                   [
                     shapes.map((shape) => shape?.id ?? null),
-                    Object.keys(ledger),
                     Object.keys(mountWidgetAllowlist)
                   ] as const
                 ))
               )
           }
-          if (vueNodesEnabled && Object.keys(ledger).length > 0)
-            console.log(
-              `${entry.pack}: ${Object.keys(ledger).length} node(s) ledgered Vue-incompatible; Vue mount not asserted for them`
-            )
           consoleErrors.stop()
           expect(
             failures,
@@ -798,7 +780,6 @@ for (const entry of manifestEntries) {
       })
 
       await runTier(['S3'], async () => {
-        const roundtripConsoleErrors: string[] = []
         const allowedWidgets = packLedgerFor(WIDGET_SET_ALLOWLIST, entry.pack)
         for (const ledgered of Object.keys(allowedWidgets))
           expect(
@@ -818,6 +799,15 @@ for (const entry of manifestEntries) {
           packLedgerFor(ROUNDTRIP_VALUE_ALLOWED_INDICES_LITEGRAPH, entry.pack),
           packLedgerFor(ROUNDTRIP_VALUE_ALLOWED_INDICES_VUE, entry.pack)
         ])
+        const initializationSignals = packLedgerFor(
+          ROUNDTRIP_INITIALIZATION_SIGNALS,
+          entry.pack
+        )
+        for (const node of Object.keys(initializationSignals))
+          expect(
+            keys,
+            `stale ROUNDTRIP_INITIALIZATION_SIGNALS entry: ${node} is not registered by ${entry.pack}`
+          ).toContain(node)
         for (const ledgered of valueDriftNodes.exact)
           expect(
             allowedValueDrift,
@@ -829,11 +819,8 @@ for (const entry of manifestEntries) {
         // both. Each stage yields a frame so those effects actually flush
         // before the next serialize (a single evaluate would serialize before
         // any Vue component reacted).
-        const roundtripRenderers = rendererPassesFor(entry)
-        for (const [
-          rendererIndex,
-          vueNodesEnabled
-        ] of roundtripRenderers.entries()) {
+        const roundtripRenderers = [false, true]
+        for (const vueNodesEnabled of roundtripRenderers) {
           const rawValueIndices = packLedgerFor(
             rendererLedgerFor(
               vueNodesEnabled,
@@ -862,30 +849,6 @@ for (const entry of manifestEntries) {
             expect(
               keys,
               `stale ROUNDTRIP_NODE_LOSS_EXPECTATIONS entry: ${ledgered} is not registered by ${entry.pack}`
-            ).toContain(ledgered)
-          const rawTopologyExpectations = packLedgerFor(
-            rendererLedgerFor(
-              vueNodesEnabled,
-              ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS_LITEGRAPH,
-              ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS_VUE
-            ),
-            entry.pack
-          )
-          const topologyExpectations = Object.fromEntries(
-            Object.keys(rawTopologyExpectations).map((node) => [
-              node,
-              rawTopologyExpectations[node]
-            ])
-          )
-          const observedTopologyDrift = new Set<string>()
-          const initializationSignals = packLedgerFor(
-            ROUNDTRIP_WIDGET_INITIALIZATION_SIGNALS,
-            entry.pack
-          )
-          for (const ledgered of Object.keys(topologyExpectations))
-            expect(
-              keys,
-              `stale ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS entry: ${ledgered} is not registered by ${entry.pack}`
             ).toContain(ledgered)
           await comfyPage.settings.setSetting(
             'Comfy.VueNodes.Enabled',
@@ -926,9 +889,12 @@ for (const entry of manifestEntries) {
                   node: string
                   before: number
                   after: number
+                  beforeNames: string
+                  afterNames: string
                   label: string
                 }> = []
                 const valueDrifts = new Map<string, Set<number>>()
+                const broadValueDriftInventories = new Map<string, string[]>()
                 const nodeLosses = new Set<string>()
                 // Serialized widgets_values can be an array or a named object;
                 // reload may legitimately APPEND entries (control_after_generate
@@ -997,17 +963,6 @@ for (const entry of manifestEntries) {
                     firstPass = window.app!.graph.serialize()
                     window.app!.graph.configure(firstPass)
                   },
-                  currentWidgetCounts(types: string[]) {
-                    const counts = Object.fromEntries(
-                      types.map((type) => [type, null])
-                    ) as Record<string, number | null>
-                    for (const node of window.app!.graph.nodes) {
-                      const type = created.get(String(node.id))?.type
-                      if (type && type in counts)
-                        counts[type] = (node.widgets ?? []).length
-                    }
-                    return counts
-                  },
                   // strict = pristine pass: reload may add dynamic widgets but
                   // must never shrink a node (the "widgets disappear after
                   // save/reload" bug class) and must preserve every value. The
@@ -1058,6 +1013,8 @@ for (const entry of manifestEntries) {
                           node: expected.type,
                           before: expected.widgetCount,
                           after: widgets,
+                          beforeNames: namesBefore.get(id) ?? '',
+                          afterNames: namesAfter.get(id) ?? '',
                           label
                         })
                       if (!strict && namesBefore.get(id) !== namesAfter.get(id))
@@ -1093,8 +1050,6 @@ for (const entry of manifestEntries) {
                         )
                           continue
                       }
-                      if (legacyValueDriftNodes.includes(expected.type))
-                        continue
                       if (
                         !preserves(before.widgets_values, after.widgets_values)
                       )
@@ -1123,7 +1078,15 @@ for (const entry of manifestEntries) {
                       // Value-drift-ledgered nodes own their values wholesale;
                       // writing probe values into them just makes pack JS choke
                       // on our markers (e.g. editors parsing `..._cn` as JSON).
-                      if (legacyValueDriftNodes.includes(nodeType)) continue
+                      if (legacyValueDriftNodes.includes(nodeType)) {
+                        broadValueDriftInventories.set(
+                          nodeType,
+                          (node.widgets ?? []).map(
+                            (widget) => `${widget.name}:${String(widget.type)}`
+                          )
+                        )
+                        continue
+                      }
                       for (const widget of node.widgets ?? []) {
                         if (!SETTABLE.has(String(widget.type))) continue
                         if (`${nodeType}.${widget.name}` in packManaged)
@@ -1184,6 +1147,9 @@ for (const entry of manifestEntries) {
                           node,
                           [...indices]
                         ])
+                      ),
+                      broadValueDriftInventories: Object.fromEntries(
+                        broadValueDriftInventories
                       )
                     }
                     window.app!.graph.clear()
@@ -1200,34 +1166,28 @@ for (const entry of manifestEntries) {
               ] as const
             )
             await comfyPage.nextFrame()
-            const waitForWidgetInitialization = async () => {
+            const waitForInitialization = async () => {
               if (Object.keys(initializationSignals).length === 0) return
               await expect
-                .poll(
-                  async () => {
-                    const values = await comfyPage.page.evaluate((signals) => {
-                      const values: Record<string, unknown> = {}
-                      for (const [type, signal] of Object.entries(signals)) {
-                        const node = window.app!.graph.nodes.find(
-                          (candidate) => candidate.type === type
-                        ) as unknown as Record<string, unknown> | undefined
-                        values[type] = node?.[signal]
-                      }
-                      return values
-                    }, initializationSignals)
-                    return pendingWidgetInitializations(
-                      initializationSignals,
-                      values
-                    )
-                  },
-                  {
-                    message:
-                      'pack-owned dynamic widget initialization completes before the roundtrip baseline'
-                  }
-                )
+                .poll(async () => {
+                  const values = await comfyPage.page.evaluate((signals) => {
+                    const values: Record<string, unknown> = {}
+                    for (const [type, signal] of Object.entries(signals)) {
+                      const node = window.app!.graph.nodes.find(
+                        (candidate) => candidate.type === type
+                      ) as unknown as Record<string, unknown> | undefined
+                      values[type] = node?.[signal.property]
+                    }
+                    return values
+                  }, initializationSignals)
+                  return pendingRoundtripInitializations(
+                    initializationSignals,
+                    values
+                  )
+                })
                 .toEqual([])
             }
-            await waitForWidgetInitialization()
+            await waitForInitialization()
             await comfyPage.page.evaluate(() =>
               window.__cnRt!.captureInitialWidgetCounts()
             )
@@ -1236,43 +1196,7 @@ for (const entry of manifestEntries) {
               window.__cnRt!.snapshotAndConfigure()
             )
             await comfyPage.nextFrame()
-            await waitForWidgetInitialization()
-            const settledTopology = Object.fromEntries(
-              Object.entries(topologyExpectations)
-                .filter(([node]) => chunk.includes(node))
-                .map(([node, topology]) => [node, topology.after])
-            )
-            const waitForSettledTopology = async () => {
-              if (Object.keys(settledTopology).length === 0) return
-              await expect
-                .poll(
-                  async () => {
-                    const current = await comfyPage.page.evaluate(
-                      (types) => window.__cnRt!.currentWidgetCounts(types),
-                      Object.keys(settledTopology)
-                    )
-                    return Object.entries(settledTopology).flatMap(
-                      ([node, expected]) => {
-                        const actual = current[node]
-                        const allowed = Array.isArray(expected)
-                          ? expected
-                          : [expected]
-                        return actual !== null && allowed.includes(actual)
-                          ? []
-                          : [
-                              `${node}: expected ${allowed.join(' or ')}, got ${String(actual)}`
-                            ]
-                      }
-                    )
-                  },
-                  {
-                    message:
-                      'ledgered dynamic widgets reach their source-defined restored topology'
-                  }
-                )
-                .toEqual([])
-            }
-            await waitForSettledTopology()
+            await waitForInitialization()
             // Stage 3 - pristine verdict, then write non-default values.
             await comfyPage.page.evaluate(() => {
               window.__cnRt!.compare('pristine', true)
@@ -1284,8 +1208,7 @@ for (const entry of manifestEntries) {
               window.__cnRt!.snapshotAndConfigure()
             )
             await comfyPage.nextFrame()
-            await waitForWidgetInitialization()
-            await waitForSettledTopology()
+            await waitForInitialization()
             // Stage 5 - set-values verdict; collect and reset.
             const result = await comfyPage.page.evaluate(() => {
               window.__cnRt!.compare('set-values', false)
@@ -1294,41 +1217,23 @@ for (const entry of manifestEntries) {
             mismatches.push(...result.problems)
             for (const node of result.nodeLosses) observedNodeLosses.add(node)
             for (const drift of result.topologyDrifts) {
-              if (
-                matchesTopologyExpectation(
-                  topologyExpectations[drift.node],
-                  drift.before,
-                  drift.after
-                )
+              mismatches.push(
+                `${drift.node}: widgets ${drift.before} [${drift.beforeNames}] -> ${drift.after} [${drift.afterNames}] on ${drift.label} reload`
               )
-                observedTopologyDrift.add(drift.node)
-              else
-                mismatches.push(
-                  `${drift.node}: widgets ${drift.before} -> ${drift.after} on ${drift.label} reload`
-                )
             }
             for (const [node, indices] of Object.entries(result.valueDrifts)) {
               const observed = observedValueDrift.get(node) ?? new Set<number>()
               for (const index of indices) observed.add(index)
               observedValueDrift.set(node, observed)
             }
-          }
-          if (rendererIndex === roundtripRenderers.length - 1)
-            await expect
-              .poll(
-                () =>
-                  staleRequiredRoundtripErrorRules(entry.pack, [
-                    ...roundtripConsoleErrors,
-                    ...consoleErrors.errors
-                  ]),
-                {
-                  message:
-                    'required save/reload console errors arrive before the collector stops'
-                }
+            for (const [node, inventory] of Object.entries(
+              result.broadValueDriftInventories
+            ))
+              mismatches.push(
+                `${node}: broad roundtrip value exclusion must be replaced with exact widget contracts; settable widgets [${inventory.join(',')}]`
               )
-              .toEqual([])
+          }
           consoleErrors.stop()
-          roundtripConsoleErrors.push(...consoleErrors.errors)
           expect(
             unallowlistedGlobalExtensionErrorsForPacks(
               installedManifestPacks,
@@ -1345,11 +1250,6 @@ for (const entry of manifestEntries) {
               [...observedNodeLosses],
               `stale ROUNDTRIP_NODE_LOSS_EXPECTATIONS entry: ${ledgered} now survives save/reload with VueNodes=${vueNodesEnabled}`
             ).toContain(ledgered)
-          for (const ledgered of Object.keys(topologyExpectations))
-            expect(
-              [...observedTopologyDrift],
-              `stale ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS entry: ${ledgered} no longer has its exact before-to-after widget topology with VueNodes=${vueNodesEnabled}`
-            ).toContain(ledgered)
           const staleValueIndices = staleValueDriftIndices(
             allowedValueIndices,
             Object.fromEntries(
@@ -1364,14 +1264,6 @@ for (const entry of manifestEntries) {
             `stale ROUNDTRIP_VALUE_ALLOWED_INDICES entries with VueNodes=${vueNodesEnabled}: ${staleValueIndices.join(', ')}`
           ).toEqual([])
         }
-        const staleConsoleRules = staleRequiredRoundtripErrorRules(
-          entry.pack,
-          roundtripConsoleErrors
-        )
-        expect(
-          staleConsoleRules,
-          `stale required save/reload console-error rules: ${staleConsoleRules.join(', ')}`
-        ).toEqual([])
         await expectNoVisibleErrors(comfyPage.page, 'after save/reload sweep')
       })
 
@@ -1586,13 +1478,34 @@ const runnersForTier = (tier: AllNodesTier): AllNodesTierRunner[] =>
 
 test.describe('all nodes by tier @custom-nodes', () => {
   for (const [tier, title] of tiers) {
+    const tierRunners = runnersForTier(tier)
     // Registered only when a pack in this slice asks for it: a tier with no
     // packs would otherwise be a skip, and the gate forbids skips because a
     // skip is how lost coverage reads as a pass.
-    if (runnersForTier(tier).length === 0) continue
+    if (tierRunners.length === 0) continue
 
     test(`${tier}: ${title}`, async ({ comfyPage }) => {
-      test.setTimeout(1_620_000 * runnersForTier(tier).length)
+      // Run 32066027848 measured shard maxima of 14s/48s/74s for S1/S2/S3.
+      // Scale with the exact corpus and retain at least 4x observed headroom;
+      // S9 instead budgets each possible single-node diagnostic rerun.
+      const nodeCount = tierRunners.reduce(
+        (sum, runner) => sum + expectedNodeCountFor(runner.entry),
+        0
+      )
+      const timeoutMs =
+        tier === 'S1'
+          ? 30_000 + nodeCount * 120
+          : tier === 'S2'
+            ? 30_000 + nodeCount * 350
+            : tier === 'S3'
+              ? 30_000 + nodeCount * 500
+              : 60_000 +
+                tierRunners.reduce(
+                  (sum, runner) =>
+                    sum + (runner.entry.expectedRunnableCount ?? 0) * 30_000,
+                  0
+                )
+      test.setTimeout(timeoutMs)
       await comfyPage.page.evaluate((activeTier) => {
         Object.assign(globalThis, {
           __COMFY_CUSTOM_NODE_DETECTION_PROOF_TIER__: activeTier
@@ -1614,9 +1527,7 @@ test.describe('all nodes by tier @custom-nodes', () => {
         window.app!.api.getNodeDefs()
       )) as unknown as Record<string, RawNodeDef>
       const failures: string[] = []
-      for (const runner of runnersForTier(tier)) {
-        if (tier === 'S2' && !rendererPassesFor(runner.entry).includes(true))
-          continue
+      for (const runner of tierRunners) {
         let result = 'pass'
         try {
           await runner.run(comfyPage, tier, defs)

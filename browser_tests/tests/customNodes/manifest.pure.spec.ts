@@ -8,7 +8,6 @@ import {
   cannotRunAloneFor,
   loadApplicableAutogrowCases,
   loadFullManifest,
-  rendererPassesFor,
   servesFrontendAssetsForPack,
   shardOf
 } from '@e2e/fixtures/customNode/manifest'
@@ -41,17 +40,9 @@ test.describe('customNode manifest', () => {
     }
   })
 
-  test('rendererPassesFor drops only the Vue pass, only on an explicit false', () => {
-    expect(rendererPassesFor({})).toEqual([false, true])
-    expect(rendererPassesFor({ vueNodesCompatible: true })).toEqual([
-      false,
-      true
-    ])
-    expect(rendererPassesFor({ vueNodesCompatible: false })).toEqual([false])
-  })
-
   test('local-only nodes use the local execution baseline', () => {
-    const prior = process.env.CUSTOM_NODES_BACKEND
+    const priorBackend = process.env.CUSTOM_NODES_BACKEND
+    const priorManifest = process.env.CUSTOM_NODES_MANIFEST
     const entry = {
       ...validEntry(),
       pack: 'comfyui-videohelpersuite',
@@ -59,13 +50,19 @@ test.describe('customNode manifest', () => {
     }
     try {
       process.env.CUSTOM_NODES_BACKEND = 'local'
+      process.env.CUSTOM_NODES_MANIFEST = 'cloud'
       expect(cannotRunAloneFor(entry)).toContain('VHS_LoadVideoPath')
       expect(cannotRunAloneFor(entry)).not.toContain('CloudBaseline')
       process.env.CUSTOM_NODES_BACKEND = 'cloud'
       expect(cannotRunAloneFor(entry)).toEqual(['CloudBaseline'])
+      process.env.CUSTOM_NODES_BACKEND = 'local'
+      process.env.CUSTOM_NODES_MANIFEST = 'core'
+      expect(cannotRunAloneFor(entry)).toEqual(['CloudBaseline'])
     } finally {
-      if (prior === undefined) delete process.env.CUSTOM_NODES_BACKEND
-      else process.env.CUSTOM_NODES_BACKEND = prior
+      if (priorBackend === undefined) delete process.env.CUSTOM_NODES_BACKEND
+      else process.env.CUSTOM_NODES_BACKEND = priorBackend
+      if (priorManifest === undefined) delete process.env.CUSTOM_NODES_MANIFEST
+      else process.env.CUSTOM_NODES_MANIFEST = priorManifest
     }
   })
 

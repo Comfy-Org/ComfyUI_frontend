@@ -7,7 +7,7 @@ import {
   OUTPUT_TOPOLOGY_EXPECTATIONS_LITEGRAPH,
   OUTPUT_TOPOLOGY_EXPECTATIONS_VUE,
   partitionValueDriftNodes,
-  pendingWidgetInitializations,
+  pendingRoundtripInitializations,
   rendererLedgerFor,
   ROUNDTRIP_NODE_LOSS_EXPECTATIONS_LITEGRAPH,
   ROUNDTRIP_NODE_LOSS_EXPECTATIONS_VUE,
@@ -38,27 +38,7 @@ test.describe('rendererLedgerFor', () => {
   })
 })
 
-test.describe('widget topology', () => {
-  test('waits for each pack-owned initialization signal', () => {
-    const signals = {
-      ExampleKeyframer: '_currentImageCount',
-      ExampleSequencer: '_currentImageCount'
-    }
-
-    expect(
-      pendingWidgetInitializations(signals, {
-        ExampleKeyframer: -1,
-        ExampleSequencer: undefined
-      })
-    ).toEqual(['ExampleKeyframer', 'ExampleSequencer'])
-    expect(
-      pendingWidgetInitializations(signals, {
-        ExampleKeyframer: 0,
-        ExampleSequencer: 1
-      })
-    ).toEqual([])
-  })
-
+test.describe('output topology', () => {
   test('accepts only the exact expected output transition', () => {
     const expectation = {
       before: 20,
@@ -69,13 +49,6 @@ test.describe('widget topology', () => {
     expect(matchesTopologyExpectation(expectation, 20, 4)).toBe(true)
     expect(matchesTopologyExpectation(expectation, 20, 3)).toBe(false)
     expect(matchesTopologyExpectation(expectation, 19, 4)).toBe(false)
-    const rangeExpectation = {
-      before: 20,
-      after: [3, 4] as const,
-      reason: 'pack JS restores either default'
-    }
-    expect(matchesTopologyExpectation(rangeExpectation, 20, 3)).toBe(true)
-    expect(matchesTopologyExpectation(rangeExpectation, 20, 5)).toBe(false)
   })
 
   test('rejects an unledgered transition as a roundtrip exception', () => {
@@ -97,6 +70,32 @@ test.describe('widget topology', () => {
       })
     }
   })
+})
+
+test('roundtrip initialization waits for the exact pack-owned ready value', () => {
+  const signals = {
+    LoadAudioUI: {
+      property: '_initializing',
+      predicate: 'equals' as const,
+      value: false
+    },
+    SAM3VideoSegmentation: {
+      property: '_hiddenInputs',
+      predicate: 'defined' as const
+    }
+  }
+  expect(
+    pendingRoundtripInitializations(signals, {
+      LoadAudioUI: true,
+      SAM3VideoSegmentation: undefined
+    })
+  ).toEqual(['LoadAudioUI', 'SAM3VideoSegmentation'])
+  expect(
+    pendingRoundtripInitializations(signals, {
+      LoadAudioUI: false,
+      SAM3VideoSegmentation: {}
+    })
+  ).toEqual([])
 })
 
 test.describe('staleValueDriftIndices', () => {
@@ -132,7 +131,7 @@ test.describe('cloud roundtrip expectations', () => {
       'ComfyUI_Fill-Nodes':
         ROUNDTRIP_VALUE_ALLOWED_INDICES_LITEGRAPH['ComfyUI_Fill-Nodes'],
       'WhatDreamsCost-ComfyUI': {
-        LoadAudioUI: '2,3,5',
+        LoadAudioUI: '5',
         LTXDirector: '3,4,5,7'
       },
       'comfyui-itools': { iToolsRegexNode: '0' }

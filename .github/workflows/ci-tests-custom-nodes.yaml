@@ -96,18 +96,30 @@ jobs:
         proof_row: >-
           ${{ fromJSON(github.event_name == 'workflow_dispatch' && inputs.detection_proof_row == 'all' && '["1","2","3","9"]' || format('["{0}"]', inputs.detection_proof_row || '0')) }}
         exclude:
-          - { shard: '1/4', proof_row: '1' }
-          - { shard: '2/4', proof_row: '1' }
-          - { shard: '3/4', proof_row: '1' }
-          - { shard: '1/4', proof_row: '2' }
-          - { shard: '2/4', proof_row: '2' }
-          - { shard: '3/4', proof_row: '2' }
-          - { shard: '1/4', proof_row: '3' }
-          - { shard: '2/4', proof_row: '3' }
-          - { shard: '3/4', proof_row: '3' }
-          - { shard: '1/4', proof_row: '9' }
-          - { shard: '3/4', proof_row: '9' }
-          - { shard: '4/4', proof_row: '9' }
+          - shard: '1/4'
+            proof_row: '1'
+          - shard: '2/4'
+            proof_row: '1'
+          - shard: '3/4'
+            proof_row: '1'
+          - shard: '1/4'
+            proof_row: '2'
+          - shard: '2/4'
+            proof_row: '2'
+          - shard: '3/4'
+            proof_row: '2'
+          - shard: '1/4'
+            proof_row: '3'
+          - shard: '2/4'
+            proof_row: '3'
+          - shard: '3/4'
+            proof_row: '3'
+          - shard: '1/4'
+            proof_row: '9'
+          - shard: '3/4'
+            proof_row: '9'
+          - shard: '4/4'
+            proof_row: '9'
     # Run only when non-docs code changed AND the PR is same-repo. Fork PRs can
     # edit the manifest's deployRefs, and this job fetches and pip-installs
     # whatever they point at (setup.py runs at install time), so an untrusted

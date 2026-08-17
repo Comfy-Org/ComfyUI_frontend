@@ -23,12 +23,48 @@ export const ROUNDTRIP_VALUE_ALLOWED_INDICES_VUE: Record<
     FL_ReplaceColor: '5,6,7,8,9,10,11,12'
   },
   'WhatDreamsCost-ComfyUI': {
-    LoadAudioUI: '2,3,5',
+    LoadAudioUI: '5',
     LTXDirector: '3,4,5,7'
   },
   'comfyui-itools': {
     iToolsRegexNode: '0'
   }
+}
+
+export type RoundtripInitializationSignal =
+  | { property: string; predicate: 'defined' }
+  | { property: string; predicate: 'equals'; value: unknown }
+
+export const ROUNDTRIP_INITIALIZATION_SIGNALS: Record<
+  string,
+  Record<string, RoundtripInitializationSignal>
+> = {
+  'WhatDreamsCost-ComfyUI': {
+    LoadAudioUI: {
+      property: '_initializing',
+      predicate: 'equals',
+      value: false
+    }
+  },
+  'comfyui-sam3': {
+    SAM3VideoSegmentation: {
+      property: '_hiddenInputs',
+      predicate: 'defined'
+    }
+  }
+}
+
+export function pendingRoundtripInitializations(
+  signals: Record<string, RoundtripInitializationSignal>,
+  values: Record<string, unknown>
+): string[] {
+  return Object.entries(signals)
+    .filter(([node, signal]) =>
+      signal.predicate === 'defined'
+        ? values[node] === undefined
+        : !Object.is(values[node], signal.value)
+    )
+    .map(([node]) => node)
 }
 
 export interface RoundtripNodeLossExpectation {
@@ -61,27 +97,6 @@ export interface TopologyExpectation {
   before: number
   after: number
   reason: string
-}
-
-export interface RoundtripWidgetTopologyExpectation {
-  before: number
-  after: number | readonly number[]
-  reason: string
-}
-
-export const ROUNDTRIP_WIDGET_INITIALIZATION_SIGNALS: Record<
-  string,
-  Record<string, string>
-> = {}
-
-export function pendingWidgetInitializations(
-  signals: Record<string, string>,
-  values: Record<string, unknown>
-): string[] {
-  return Object.keys(signals).filter((node) => {
-    const value = values[node]
-    return typeof value !== 'number' || value < 0
-  })
 }
 
 export const OUTPUT_TOPOLOGY_EXPECTATIONS_LITEGRAPH: Record<
@@ -124,21 +139,8 @@ export const OUTPUT_TOPOLOGY_EXPECTATIONS_VUE: Record<
   }
 }
 
-export const ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS_LITEGRAPH: Record<
-  string,
-  Record<string, RoundtripWidgetTopologyExpectation>
-> = {}
-
-export const ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS_VUE: Record<
-  string,
-  Record<string, RoundtripWidgetTopologyExpectation>
-> = {}
-
 export function matchesTopologyExpectation(
-  expectation:
-    | TopologyExpectation
-    | RoundtripWidgetTopologyExpectation
-    | undefined,
+  expectation: TopologyExpectation | undefined,
   before: number,
   after: number
 ): boolean {
