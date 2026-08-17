@@ -21,6 +21,9 @@ coverage:
     patch:
       default:
         informational: true
+    project:
+      default:
+        informational: true
 
       # Require 80% coverage on changed website lines.
       website:
