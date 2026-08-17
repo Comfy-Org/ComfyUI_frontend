@@ -69,7 +69,10 @@ function importMediabunny() {
 }
 
 function loadMediabunny() {
-  mediabunnyModulePromise ??= importMediabunny()
+  mediabunnyModulePromise ??= importMediabunny().catch((error) => {
+    mediabunnyModulePromise = undefined
+    throw error
+  })
   return mediabunnyModulePromise
 }
 
@@ -120,38 +123,40 @@ export async function extractVideoMetadata(
 ): Promise<VideoMetadata | undefined> {
   if (signal?.aborted) return undefined
 
-  const { ALL_FORMATS, Input } = await loadMediabunny()
-  const input = new Input({ source, formats: ALL_FORMATS })
-  const disposeOnAbort = () => input.dispose()
-  signal?.addEventListener('abort', disposeOnAbort, { once: true })
   try {
-    const videoTrack = await input.getPrimaryVideoTrack()
-    if (!videoTrack) return undefined
+    const { ALL_FORMATS, Input } = await loadMediabunny()
+    const input = new Input({ source, formats: ALL_FORMATS })
+    const disposeOnAbort = () => input.dispose()
+    signal?.addEventListener('abort', disposeOnAbort, { once: true })
+    try {
+      const videoTrack = await input.getPrimaryVideoTrack()
+      if (!videoTrack) return undefined
 
-    const [duration, packetStats, size, width, height] = await Promise.all([
-      input.computeDuration(),
-      videoTrack.computePacketStats(PACKET_STATS_SAMPLE_SIZE),
-      source.getSizeOrNull(),
-      videoTrack.getDisplayWidth(),
-      videoTrack.getDisplayHeight()
-    ])
+      const [duration, packetStats, size, width, height] = await Promise.all([
+        input.computeDuration(),
+        videoTrack.computePacketStats(PACKET_STATS_SAMPLE_SIZE),
+        source.getSizeOrNull(),
+        videoTrack.getDisplayWidth(),
+        videoTrack.getDisplayHeight()
+      ])
 
-    const fps = packetStats.averagePacketRate
-    const parsed = zVideoMetadata.safeParse({
-      fps:
-        Number.isFinite(fps) && fps > 0 ? snapToStandardFrameRate(fps) : null,
-      duration: Number.isFinite(duration) && duration >= 0 ? duration : null,
-      frame_count: null,
-      width,
-      height,
-      size
-    })
-    return parsed.success ? parsed.data : undefined
+      const fps = packetStats.averagePacketRate
+      const parsed = zVideoMetadata.safeParse({
+        fps:
+          Number.isFinite(fps) && fps > 0 ? snapToStandardFrameRate(fps) : null,
+        duration: Number.isFinite(duration) && duration >= 0 ? duration : null,
+        frame_count: null,
+        width,
+        height,
+        size
+      })
+      return parsed.success ? parsed.data : undefined
+    } finally {
+      signal?.removeEventListener('abort', disposeOnAbort)
+      input.dispose()
+    }
   } catch {
     return undefined
-  } finally {
-    signal?.removeEventListener('abort', disposeOnAbort)
-    input.dispose()
   }
 }
 
