@@ -2,9 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, effectScope, ref } from 'vue'
 import type { EffectScope } from 'vue'
 
-import type { CloudSubscriptionStatusResponse } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useSubscriptionCancellationWatcher } from '@/platform/cloud/subscription/composables/useSubscriptionCancellationWatcher'
 import type { TelemetryDispatcher } from '@/platform/telemetry/types'
+import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
 
 describe('useSubscriptionCancellationWatcher', () => {
   const trackMonthlySubscriptionCancelled = vi.fn()
@@ -15,15 +15,13 @@ describe('useSubscriptionCancellationWatcher', () => {
     trackMonthlySubscriptionCancelled
   }
 
-  const baseStatus: CloudSubscriptionStatusResponse = {
+  const baseStatus: BillingStatusResponse = {
     is_active: true,
-    subscription_id: 'sub_123',
+    has_funds: true,
     renewal_date: '2025-11-16'
   }
 
-  const subscriptionStatus = ref<CloudSubscriptionStatusResponse | null>(
-    baseStatus
-  )
+  const subscriptionStatus = ref<BillingStatusResponse | null>(baseStatus)
   const isActive = ref(true)
   const canAccessSubscriptionFeatures = computed(() => isActive.value)
 
@@ -49,8 +47,6 @@ describe('useSubscriptionCancellationWatcher', () => {
   }
 
   beforeEach(() => {
-    vi.useFakeTimers()
-    trackMonthlySubscriptionCancelled.mockReset()
     subscriptionStatus.value = { ...baseStatus }
     isActive.value = true
     shouldWatch = true
@@ -59,7 +55,6 @@ describe('useSubscriptionCancellationWatcher', () => {
   afterEach(() => {
     activeScopes.forEach((scope) => scope.stop())
     activeScopes.length = 0
-    vi.useRealTimers()
   })
 
   it('polls with exponential backoff and fires telemetry once cancellation detected', async () => {
@@ -68,9 +63,9 @@ describe('useSubscriptionCancellationWatcher', () => {
         isActive.value = false
         subscriptionStatus.value = {
           is_active: false,
-          subscription_id: 'sub_cancelled',
+          has_funds: true,
           renewal_date: '2025-11-16',
-          end_date: '2025-12-01'
+          cancel_at: '2025-12-01'
         }
       }
     })
@@ -101,7 +96,7 @@ describe('useSubscriptionCancellationWatcher', () => {
       subscriptionStatus.value = {
         ...baseStatus,
         is_active: false,
-        end_date: '2025-12-01'
+        cancel_at: '2025-12-01'
       }
     })
 

@@ -25,5 +25,14 @@ export function useVideoEditFormats() {
     })
   }
 
-  return { formatDuration, formatFileSize }
+  function formatTimecode(seconds: number) {
+    const totalSeconds = Number.isFinite(seconds)
+      ? Math.max(0, Math.round(seconds))
+      : 0
+    const minutes = Math.floor(totalSeconds / 60)
+    const remainder = String(totalSeconds % 60).padStart(2, '0')
+    return `${minutes}:${remainder}`
+  }
+
+  return { formatDuration, formatFileSize, formatTimecode }
 }

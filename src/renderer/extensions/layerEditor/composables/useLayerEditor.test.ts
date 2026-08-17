@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 
@@ -17,10 +17,6 @@ vi.mock('@/stores/nodeOutputStore', () => ({
 }))
 
 describe('useLayerEditor', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('does nothing without a node', () => {
     useLayerEditor().openLayerEditor(null as unknown as LGraphNode)
     expect(showDialog).not.toHaveBeenCalled()
