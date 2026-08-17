@@ -9,6 +9,7 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 
@@ -268,6 +269,33 @@ describe(useAmbientSubgraphPreviews, () => {
     vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([
       '/view?filename=output.png'
     ])
+
+    const { ambientPreviews } = useAmbientSubgraphPreviews(
+      () => setup.subgraphNode
+    )
+    expect(ambientPreviews.value).toEqual([])
+  })
+
+  it('does not resurface an ambient preview after its exposure is explicitly removed', () => {
+    const setup = createSetup()
+    const node = addInteriorNode(setup, { id: 10, previewMediaType: 'image' })
+    seedOutputs(setup.subgraph.id, [10])
+    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockImplementation((n) =>
+      n === node ? ['/view?filename=output.png'] : undefined
+    )
+
+    const previewExposureStore = usePreviewExposureStore()
+    const rootGraphId = setup.subgraphNode.rootGraph.id
+    const hostLocator = String(setup.subgraphNode.id)
+    const exposure = previewExposureStore.addExposure(
+      rootGraphId,
+      hostLocator,
+      {
+        sourceNodeId: node.id,
+        sourcePreviewName: 'preview'
+      }
+    )
+    previewExposureStore.removeExposure(rootGraphId, hostLocator, exposure.name)
 
     const { ambientPreviews } = useAmbientSubgraphPreviews(
       () => setup.subgraphNode
