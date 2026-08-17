@@ -7,6 +7,7 @@ const REDUNDANT_CLEANUP_METHODS = new Set([
 ])
 
 const MODULE_SCOPE_MOCK_METHODS = new Set(['spyOn', 'stubGlobal'])
+const BEFORE_ALL_IMPORTS = new Set(['beforeAll'])
 const HOOK_IMPORTS = new Set([
   'afterAll',
   'afterEach',
@@ -14,7 +15,7 @@ const HOOK_IMPORTS = new Set([
   'beforeEach'
 ])
 const VI_IMPORTS = new Set(['vi'])
-const VITEST_GLOBALS = new Set(['afterEach', 'beforeEach', 'vi'])
+const VITEST_GLOBALS = new Set([...HOOK_IMPORTS, 'vi'])
 
 interface Node {
   readonly type: string
@@ -212,19 +213,21 @@ function enclosingExecutionBoundaryIndex(ancestors: readonly Node[]): number {
 
 function isHookCall(
   context: RuleContext,
-  node: Node | undefined
+  node: Node | undefined,
+  hookImports: ReadonlySet<string> = HOOK_IMPORTS
 ): node is CallExpression {
   if (node?.type !== 'CallExpression') return false
   const call = node as CallExpression
-  if (isVitestImport(context, call.callee, HOOK_IMPORTS)) return true
-  return [...HOOK_IMPORTS].some((hook) =>
+  if (isVitestImport(context, call.callee, hookImports)) return true
+  return [...hookImports].some((hook) =>
     isVitestNamespaceMember(context, call.callee, hook)
   )
 }
 
 function runsDirectlyInHook(
   context: RuleContext,
-  node: CallExpression
+  node: CallExpression,
+  hookImports: ReadonlySet<string> = HOOK_IMPORTS
 ): boolean {
   const ancestors = context.sourceCode.getAncestors(node)
   const boundaryIndex = enclosingExecutionBoundaryIndex(ancestors)
@@ -234,7 +237,7 @@ function runsDirectlyInHook(
   if (!isFunction(callback)) return false
   const parent = ancestors[boundaryIndex - 1]
   return (
-    isHookCall(context, parent) &&
+    isHookCall(context, parent, hookImports) &&
     parent.arguments.includes(callback as Expression)
   )
 }
@@ -245,6 +248,13 @@ function runsAtModuleScope(
 ): boolean {
   return (
     enclosingExecutionBoundaryIndex(context.sourceCode.getAncestors(node)) < 0
+  )
+}
+
+function runsBeforeTests(context: RuleContext, node: CallExpression): boolean {
+  return (
+    runsAtModuleScope(context, node) ||
+    runsDirectlyInHook(context, node, BEFORE_ALL_IMPORTS)
   )
 }
 
@@ -277,13 +287,13 @@ export const noModuleScopeVitestMocks = {
         if (
           !methodName ||
           !MODULE_SCOPE_MOCK_METHODS.has(methodName) ||
-          !runsAtModuleScope(context, node)
+          !runsBeforeTests(context, node)
         ) {
           return
         }
         context.report({
           node,
-          message: `Install vi.${methodName}() in beforeEach or a test because automatic Vitest cleanup removes module-scope mocks before the first test.`
+          message: `Install vi.${methodName}() in beforeEach or a test because automatic Vitest cleanup removes earlier mock installations before assertions run.`
         })
       }
     }

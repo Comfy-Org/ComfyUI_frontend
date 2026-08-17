@@ -145,6 +145,12 @@ it('allows cleanup and mock installation in tests', () => {
 lateSetup(() => lateVi.clearAllMocks())
 lateVi.stubGlobal('late', true)
 import { beforeEach as lateSetup, vi as lateVi } from 'vitest'
+
+beforeAll(() => vi.restoreAllMocks())
+afterAll(() => vi.unstubAllGlobals())
+suiteSetup(() => vitest.stubGlobal('suite', true))
+beforeAll(() => vi.spyOn(console, 'log'))
+Vitest.beforeAll(() => Vitest.vi.stubGlobal('suite', true))
 `
 
 const unrelatedFixture = `const vi = {
@@ -237,13 +243,13 @@ describe('Vitest cleanup rules', () => {
       output,
       [
         13, 14, 15, 16, 17, 21, 22, 23, 24, 25, 28, 29, 30, 31, 32, 33, 36, 40,
-        43, 47, 51, 52, 130
+        43, 47, 51, 52, 130, 134, 135
       ]
     )
   })
 
-  it('reports module-scope stubs and spies', () => {
-    expectReportsAt(output, [73, 74, 75, 76, 77, 80, 131])
+  it('reports stubs and spies installed at module scope or in beforeAll', () => {
+    expectReportsAt(output, [73, 74, 75, 76, 77, 80, 131, 136, 137, 138])
   })
 
   it('ignores unrelated names, nested helpers, test bodies, and Playwright specs', () => {
