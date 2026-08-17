@@ -9,7 +9,8 @@ const stripeMocks = vi.hoisted(() => {
   const mount = vi.fn()
   const destroy = vi.fn()
   const submit = vi.fn()
-  const create = vi.fn(() => ({ mount, destroy }))
+  const on = vi.fn()
+  const create = vi.fn(() => ({ mount, destroy, on }))
   const elements = { submit, create }
   const createConfirmationToken = vi.fn()
   const stripe = {
@@ -20,6 +21,7 @@ const stripeMocks = vi.hoisted(() => {
     mount,
     destroy,
     submit,
+    on,
     create,
     elements,
     createConfirmationToken,
@@ -70,7 +72,8 @@ describe('UnifiedStripePaymentSelector', () => {
     stripeMocks.stripe.elements.mockReturnValue(stripeMocks.elements)
     stripeMocks.create.mockReturnValue({
       mount: stripeMocks.mount,
-      destroy: stripeMocks.destroy
+      destroy: stripeMocks.destroy,
+      on: stripeMocks.on
     })
     stripeMocks.submit.mockResolvedValue({})
     stripeMocks.createConfirmationToken.mockResolvedValue({
