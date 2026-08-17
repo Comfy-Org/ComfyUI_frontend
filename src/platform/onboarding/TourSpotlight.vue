@@ -65,15 +65,36 @@
     >
       <div
         ref="cardRef"
+        data-testid="coach-card"
         role="dialog"
         :aria-modal="!step.interactive"
         :aria-labelledby="titleId"
         :aria-describedby="`${subtitleId} ${bodyId}`"
         tabindex="-1"
-        class="pointer-events-auto absolute max-h-[calc(100vh-var(--comfy-topbar-height)-2rem)] overflow-y-auto motion-safe:transition-[left,top] motion-safe:duration-300"
+        :class="
+          cn(
+            'absolute motion-safe:duration-300',
+            glides
+              ? 'motion-safe:transition-[left,top,opacity]'
+              : 'motion-safe:transition-opacity',
+            cardVisible ? 'pointer-events-auto' : 'pointer-events-none'
+          )
+        "
         :style="cardStyle"
       >
+        <i
+          v-if="cursorEdgeClass"
+          data-testid="coach-cursor"
+          :class="
+            cn(
+              'absolute icon-[lucide--mouse-pointer-2] size-4 text-base-foreground drop-shadow-md',
+              cursorEdgeClass
+            )
+          "
+          aria-hidden="true"
+        />
         <CoachmarkCard
+          class="max-h-[calc(100vh-var(--comfy-topbar-height)-2rem)] overflow-y-auto"
           :subtitle="
             t('onboardingCoachmarks.stepLabel', {
               current: countedStepIdx + 1,
@@ -108,6 +129,7 @@
                 {{ backLabel }}
               </Button>
               <Button
+                v-if="!step.selfAdvancing"
                 ref="primaryButton"
                 variant="inverted"
                 size="md"
@@ -149,7 +171,7 @@ import {
   CARD_WIDTH,
   SPOTLIGHT_PAD,
   VIEWPORT_MARGIN,
-  clampSpotlight,
+  CARD_GLIDE_MS,
   clampSpotlightRect,
   hitRegionPath,
   noTargetCardLeft
@@ -198,8 +220,14 @@ const overlayRef = ref<HTMLElement | null>(null)
 const cardRef = ref<HTMLElement | null>(null)
 const { width: windowWidth, height: windowHeight } = useWindowSize()
 
-const { targetRect, targetMoves, floatingStyles, isPositioned } =
-  useCoachmarkTarget(() => step, cardRef)
+const {
+  targetRect,
+  hasTarget,
+  targetMoves,
+  floatingStyles,
+  isPositioned,
+  placement
+} = useCoachmarkTarget(() => step, cardRef)
 
 // Last step's "Done" already dismisses, so hide Skip there.
 const showSkip = computed(() => !isLast)
@@ -260,12 +288,6 @@ function viewport() {
   return { width: windowWidth.value, height: windowHeight.value }
 }
 
-const spotlightStyle = computed(() => {
-  const r = targetRect.value
-  if (!r) return { opacity: '0' }
-  return { ...clampSpotlight(r, SPOTLIGHT_PAD, viewport()), opacity: '1' }
-})
-
 const maskId = useId()
 
 const useMaskScrim = computed(() => !!step.interactive)
@@ -276,25 +298,69 @@ const scrimHole = computed(() =>
     : null
 )
 
+const spotlightStyle = computed(() => {
+  const hole = scrimHole.value
+  if (!hole?.width || !hole.height) return { opacity: '0' }
+  return {
+    left: `${hole.x}px`,
+    top: `${hole.y}px`,
+    width: `${hole.width}px`,
+    height: `${hole.height}px`,
+    opacity: '1'
+  }
+})
+
 const hitRegion = computed(() => hitRegionPath(viewport(), scrimHole.value))
+
+/**
+ * The card travels to a new target, then rides it — a transition lags a target
+ * that moves every frame. Only a change arms travel; the first card makes none.
+ */
+const glides = ref(false)
+watch([() => step, targetMoves], ([, moves], _previous, onCleanup) => {
+  glides.value = true
+  if (!moves) return
+  const timer = setTimeout(() => (glides.value = false), CARD_GLIDE_MS)
+  onCleanup(() => clearTimeout(timer))
+})
+
+/** Hidden until Floating UI has placed it, so it fades in already sited. */
+const cardVisible = computed(() => !hasTarget.value || isPositioned.value)
 
 const cardStyle = computed(() => {
   const width = `${CARD_WIDTH}px`
   const maxWidth = `calc(100vw - ${VIEWPORT_MARGIN * 2}px)`
-  if (!targetRect.value) {
+  const opacity = cardVisible.value ? '1' : '0'
+  if (!hasTarget.value) {
     return {
       width,
       maxWidth,
       left: `${noTargetCardLeft(windowWidth.value)}px`,
-      top: '30%'
+      top: '30%',
+      opacity
     }
   }
-  // Hidden until Floating UI positions it, avoiding a first-frame jump.
-  return {
-    ...floatingStyles.value,
-    width,
-    maxWidth,
-    opacity: isPositioned.value ? '1' : '0'
-  }
+  return { ...floatingStyles.value, width, maxWidth, opacity }
+})
+
+/** Floats the cursor in the gap on the card edge facing the target. */
+const CURSOR_EDGE_CLASS = {
+  top: '-top-7 left-1/2 -translate-x-1/2 rotate-45',
+  bottom: '-bottom-7 left-1/2 -translate-x-1/2 -rotate-[135deg]',
+  left: '-left-7 top-1/2 -translate-y-1/2 -rotate-45',
+  right: '-right-7 top-1/2 -translate-y-1/2 rotate-[135deg]'
+} as const
+
+const TARGET_FACING_EDGE = {
+  top: 'bottom',
+  bottom: 'top',
+  left: 'right',
+  right: 'left'
+} as const
+
+const cursorEdgeClass = computed(() => {
+  if (!step.cursor || !hasTarget.value) return ''
+  const side = placement.value.split('-')[0] as keyof typeof TARGET_FACING_EDGE
+  return CURSOR_EDGE_CLASS[TARGET_FACING_EDGE[side]]
 })
 </script>

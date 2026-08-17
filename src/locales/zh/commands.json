@@ -176,6 +176,9 @@
   "Comfy_Interrupt": {
     "label": "中断"
   },
+  "Comfy_LayerEditor_OpenLayerEditor": {
+    "label": "为选中节点打开图层编辑器"
+  },
   "Comfy_LoadDefaultWorkflow": {
     "label": "加载默认工作流"
   },

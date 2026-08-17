@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type * as VueUseCoreModule from '@vueuse/core'
@@ -16,7 +14,8 @@ const mocks = vi.hoisted(() => ({
   tourFlag: true,
   execute: vi.fn(),
   settings: {} as Record<string, unknown>,
-  setSetting: vi.fn()
+  setSetting: vi.fn(),
+  beginTour: vi.fn()
 }))
 
 vi.mock('@/platform/distribution/types', () => ({
@@ -67,6 +66,10 @@ vi.mock('@/platform/settings/settingStore', () => ({
   })
 }))
 
+vi.mock('../tour/useFirstRunTourController', () => ({
+  useFirstRunTourController: () => ({ beginTour: mocks.beginTour })
+}))
+
 // createSharedComposable caches across calls; each test needs its own instance.
 async function freshEntry() {
   vi.resetModules()
@@ -76,14 +79,15 @@ async function freshEntry() {
 
 describe('useFirstRunEntry', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
     mocks.isCloud = true
     mocks.isDesktopWidth = true
     mocks.subscriptionEnabled = true
     mocks.isNewUser = true
     mocks.tourFlag = true
     mocks.settings = {}
+    mocks.setSetting.mockImplementation((key: string, value: unknown) => {
+      mocks.settings[key] = value
+    })
   })
 
   describe('what a fresh user sees', () => {
@@ -96,16 +100,19 @@ describe('useFirstRunEntry', () => {
       expect(mocks.execute).not.toHaveBeenCalled()
     })
 
-    const disqualifiers: [string, () => void][] = [
+    const permanentDisqualifiers: [string, () => void][] = [
       ['not on cloud', () => void (mocks.isCloud = false)],
+      ['a returning user', () => void (mocks.isNewUser = false)]
+    ]
+
+    const transientDisqualifiers: [string, () => void][] = [
       ['below the md breakpoint', () => void (mocks.isDesktopWidth = false)],
       ['subscription disabled', () => void (mocks.subscriptionEnabled = false)],
-      ['a returning user', () => void (mocks.isNewUser = false)],
       ['new-user state undetermined', () => void (mocks.isNewUser = null)],
       ['the tour flag off', () => void (mocks.tourFlag = false)]
     ]
 
-    it.for(disqualifiers)(
+    it.for([...permanentDisqualifiers, ...transientDisqualifiers])(
       'opens the template browser instead, with %s',
       async ([, disqualify]) => {
         disqualify()
@@ -118,12 +125,53 @@ describe('useFirstRunEntry', () => {
           'A non-candidate must keep the existing template-browser flow'
         ).toBe(false)
         expect(mocks.execute).toHaveBeenCalledWith('Comfy.BrowseTemplates')
+      }
+    )
+
+    it.for(permanentDisqualifiers)(
+      'marks the tutorial completed for %s, which no later boot can lift',
+      async ([, disqualify]) => {
+        disqualify()
+        const entry = await freshEntry()
+
+        await entry.handleStartupOutcome('fresh')
+
         expect(
           mocks.setSetting,
           'Without this the browser reopens on every launch, forever'
         ).toHaveBeenCalledWith('Comfy.TutorialCompleted', true)
       }
     )
+
+    it.for(transientDisqualifiers)(
+      'leaves the tutorial unmarked for %s, so a later boot can still onboard',
+      async ([, disqualify]) => {
+        disqualify()
+        const entry = await freshEntry()
+
+        await entry.handleStartupOutcome('fresh')
+
+        expect(
+          mocks.setSetting,
+          'Comfy.TutorialCompleted is write-once and server-side; setting it here burns the tour for an account that was only ineligible this boot'
+        ).not.toHaveBeenCalled()
+      }
+    )
+
+    it('onboards a user whose earlier boot was only transiently ineligible', async () => {
+      mocks.isDesktopWidth = false
+      const phone = await freshEntry()
+      await phone.handleStartupOutcome('fresh')
+
+      mocks.isDesktopWidth = true
+      const laptop = await freshEntry()
+      await laptop.handleStartupOutcome('fresh')
+
+      expect(
+        laptop.gettingStartedVisible.value,
+        'signing up on a phone and returning on a laptop is ordinary behaviour'
+      ).toBe(true)
+    })
   })
 
   it('marks a url-intent startup completed without taking over the screen', async () => {
@@ -166,11 +214,105 @@ describe('useFirstRunEntry', () => {
 
       expect(
         entry.gettingStartedVisible.value ||
-          mocks.setSetting.mock.calls.length > 0,
-        'a startup that opened a blank canvas must either offer onboarding or record that it is done; anything else strands the user with no screen and no flag'
+          mocks.setSetting.mock.calls.length > 0 ||
+          mocks.execute.mock.calls.length > 0,
+        'a startup that opened a blank canvas must offer onboarding, record that it is done, or open the template browser; anything else strands the user with an empty screen'
       ).toBe(true)
     }
   )
+
+  describe('a workflow that arrived by URL', () => {
+    it.for(['loaded', 'loaded-without-assets'] as const)(
+      'offers the tour over a shared workflow that %s, which has no template id',
+      async (sharedStatus) => {
+        const entry = await freshEntry()
+
+        await entry.handleUrlWorkflow('url-intent', undefined, sharedStatus)
+
+        expect(
+          mocks.beginTour,
+          'a share link is the case no pin can ever cover'
+        ).toHaveBeenCalledWith(undefined)
+      }
+    )
+
+    it('passes a template id through so its pins beat the heuristic', async () => {
+      const entry = await freshEntry()
+
+      await entry.handleUrlWorkflow('url-intent', 'image_z_image_turbo')
+
+      expect(mocks.beginTour).toHaveBeenCalledWith('image_z_image_turbo')
+    })
+
+    it('drops the template pins when a share link replaced the graph', async () => {
+      const entry = await freshEntry()
+
+      await entry.handleUrlWorkflow(
+        'url-intent',
+        'image_z_image_turbo',
+        'loaded'
+      )
+
+      expect(
+        mocks.beginTour,
+        'pinned ids are graph-local, so validating them against a stranger workflow spotlights whichever node happens to share the id'
+      ).toHaveBeenCalledWith(undefined)
+    })
+
+    it('leaves the completion flag to the startup handler that already settled it', async () => {
+      const entry = await freshEntry()
+      await entry.handleStartupOutcome('url-intent')
+      mocks.setSetting.mockClear()
+      mocks.beginTour.mockResolvedValue(false)
+
+      await entry.handleUrlWorkflow('url-intent', 'image_z_image_turbo')
+
+      expect(
+        mocks.setSetting,
+        'writing it again here would mark onboarding done for a user whose tour never started, and postpone() exists to offer that user the tour again'
+      ).not.toHaveBeenCalled()
+    })
+
+    it.for(['failed', 'cancelled', 'not-present'] as const)(
+      'offers no tour when nothing the user asked for arrived (%s)',
+      async (sharedStatus) => {
+        const entry = await freshEntry()
+
+        await entry.handleUrlWorkflow('url-intent', undefined, sharedStatus)
+
+        expect(
+          mocks.beginTour,
+          'touring a graph the user never asked for is worse than no tour'
+        ).not.toHaveBeenCalled()
+      }
+    )
+
+    it('leaves a non-candidate alone', async () => {
+      mocks.isNewUser = false
+      const entry = await freshEntry()
+
+      await entry.handleUrlWorkflow('url-intent', 'image_z_image_turbo')
+
+      expect(
+        mocks.beginTour,
+        'a returning user opening a share link must not be toured'
+      ).not.toHaveBeenCalled()
+    })
+
+    it.for(['fresh', 'restored'] as const)(
+      'does not fire on a %s startup',
+      async (outcome: StartupOutcome) => {
+        const entry = await freshEntry()
+
+        await entry.handleUrlWorkflow(outcome, 'image_z_image_turbo')
+
+        expect(
+          mocks.beginTour,
+          'only a URL intent has a workflow on the canvas to tour'
+        ).not.toHaveBeenCalled()
+      }
+    )
+  })
 
   it('leaves a completed user alone', async () => {
     mocks.settings['Comfy.TutorialCompleted'] = true

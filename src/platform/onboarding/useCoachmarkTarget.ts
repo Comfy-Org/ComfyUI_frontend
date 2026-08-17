@@ -9,7 +9,12 @@ import { refDebounced, useEventListener } from '@vueuse/core'
 import { computed, ref, toValue, watchEffect } from 'vue'
 import type { MaybeRefOrGetter, Ref } from 'vue'
 
-import { CARD_GAP, VIEWPORT_MARGIN, topSafeInset } from './coachmarkLayout'
+import {
+  CARD_GAP,
+  CURSOR_GAP,
+  VIEWPORT_MARGIN,
+  topSafeInset
+} from './coachmarkLayout'
 import {
   coachmarkElements,
   isRectTarget,
@@ -49,7 +54,7 @@ function floatingMiddleware(
   step: SpotlightStep | null,
   topInset: number
 ): Middleware[] {
-  const list: Middleware[] = [offset(CARD_GAP)]
+  const list: Middleware[] = [offset(step?.cursor ? CURSOR_GAP : CARD_GAP)]
   if (!step?.placement || step.placement === 'auto') list.push(flip())
   // shift only guards the main axis by default; crossAxis keeps vertically-
   // centred placements (leftCenter) on-screen too.
@@ -120,16 +125,13 @@ export function useCoachmarkTarget(
     topInset.value = topSafeInset()
   })
 
-  const { floatingStyles, middlewareData, isPositioned, update } = useFloating(
-    reference,
-    cardRef,
-    {
+  const { floatingStyles, middlewareData, isPositioned, placement, update } =
+    useFloating(reference, cardRef, {
       strategy: 'fixed',
       transform: false,
       placement: () => floatingPlacement(toValue(step)),
       middleware: () => floatingMiddleware(toValue(step), topInset.value)
-    }
-  )
+    })
 
   watchEffect((onCleanup) => {
     const candidate = movingAnchor.value
@@ -162,5 +164,15 @@ export function useCoachmarkTarget(
     )
   })
 
-  return { targetRect, targetMoves, floatingStyles, isPositioned }
+  /** Whether a candidate is anchored — a rect target holds no element. */
+  const hasTarget = computed(() => !!anchor.value)
+
+  return {
+    hasTarget,
+    targetRect,
+    targetMoves,
+    floatingStyles,
+    isPositioned,
+    placement
+  }
 }

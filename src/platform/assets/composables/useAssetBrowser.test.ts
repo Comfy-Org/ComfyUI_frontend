@@ -1,4 +1,3 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
@@ -38,8 +37,6 @@ vi.mock('@/composables/useFeatureFlags', () => ({
 
 describe('useAssetBrowser', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
-    vi.restoreAllMocks()
     mockSupportsModelTypeTags.value = false
   })
 

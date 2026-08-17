@@ -58,7 +58,10 @@ describe('useTrimPlayback', () => {
     scope = undefined
   })
 
-  function createPlayback({ hasTrimTimeline = true } = {}) {
+  function createPlayback({
+    frameToTime = (frame: number) => frame / 10,
+    frameMax = 100
+  } = {}) {
     const video = new MockVideoElement()
     const startFrame = ref(0)
     const endFrame = ref(100)
@@ -68,12 +71,11 @@ describe('useTrimPlayback', () => {
     const playback = scope.run(() =>
       useTrimPlayback({
         videoRef: ref(video) as unknown as Ref<HTMLVideoElement | null>,
-        frameMax: ref(100),
+        frameMax: ref(frameMax),
         startFrame,
         endFrame,
         playheadFrame,
-        hasTrimTimeline: ref(hasTrimTimeline),
-        frameToTime: (frame) => frame / 10,
+        frameToTime,
         timeToFrame: (time) => Math.round(time * 10)
       })
     )!
@@ -117,6 +119,51 @@ describe('useTrimPlayback', () => {
 
     expect(playheadFrame.value).toBe(20)
     expect(video.currentTime).toBe(2)
+  })
+
+  it('ignores seeks to a non-finite frame', async () => {
+    const { video, isPlaying, playheadFrame } = createPlayback()
+    video.currentTime = 4
+    await flushSeek()
+    playheadFrame.value = Number.NaN
+
+    isPlaying.value = true
+    await flushSeek()
+
+    expect(video.currentTime).toBe(4)
+    expect(video.play).toHaveBeenCalled()
+  })
+
+  it.for([Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY])(
+    'skips seeking when the frame maps to the non-finite time %s',
+    async (mappedTime) => {
+      const { video, isPlaying } = createPlayback({
+        frameToTime: () => mappedTime
+      })
+      video.currentTime = 4
+      await flushSeek()
+
+      isPlaying.value = true
+      await flushSeek()
+
+      expect(video.currentTime).toBe(4)
+      expect(video.paused).toBe(false)
+    }
+  )
+
+  it('leaves the playhead untouched when the frame maps to a non-finite time', async () => {
+    const { video, playheadFrame, handleScrub } = createPlayback({
+      frameToTime: () => Number.NaN
+    })
+    video.currentTime = 4
+    await flushSeek()
+    playheadFrame.value = 30
+
+    handleScrub(50)
+    await flushSeek()
+
+    expect(playheadFrame.value).toBe(30)
+    expect(video.currentTime).toBe(4)
   })
 
   it('stops playing when the video refuses to play', async () => {
@@ -176,41 +223,40 @@ describe('useTrimPlayback', () => {
     expect(isPlaying.value).toBe(false)
   })
 
-  it('ignores timeupdate when trim is not the active feature', async () => {
-    const { video, playheadFrame, isPlaying, handleTimeUpdate } =
-      createPlayback({ hasTrimTimeline: false })
+  it('keeps playing through timeupdates when the video has no frame model', async () => {
+    const { video, endFrame, isPlaying, handleTimeUpdate } = createPlayback({
+      frameMax: 0
+    })
+    endFrame.value = 0
+    await nextTick()
+
     isPlaying.value = true
     await flushSeek()
 
-    video.currentTime = 4
+    video.currentTime = 0.5
     handleTimeUpdate()
 
-    expect(playheadFrame.value).toBe(0)
+    expect(isPlaying.value).toBe(true)
   })
 
   it('releases the seek lock when no seeked event ever arrives', async () => {
-    vi.useFakeTimers()
-    try {
-      const { video, playheadFrame, isPlaying, handleTimeUpdate } =
-        createPlayback()
-      video.emitSeeked = false
-      playheadFrame.value = 30
+    const { video, playheadFrame, isPlaying, handleTimeUpdate } =
+      createPlayback()
+    video.emitSeeked = false
+    playheadFrame.value = 30
 
-      isPlaying.value = true
-      await nextTick()
+    isPlaying.value = true
+    await nextTick()
 
-      video.currentTime = 4
-      handleTimeUpdate()
-      expect(playheadFrame.value).toBe(30)
+    video.currentTime = 4
+    handleTimeUpdate()
+    expect(playheadFrame.value).toBe(30)
 
-      await vi.advanceTimersByTimeAsync(5000)
+    await vi.advanceTimersByTimeAsync(5000)
 
-      video.currentTime = 4.5
-      handleTimeUpdate()
-      expect(playheadFrame.value).toBe(45)
-    } finally {
-      vi.useRealTimers()
-    }
+    video.currentTime = 4.5
+    handleTimeUpdate()
+    expect(playheadFrame.value).toBe(45)
   })
 
   it('clamps the playhead when the trim handles move past it', async () => {

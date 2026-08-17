@@ -30,7 +30,7 @@
     />
     <div
       aria-hidden="true"
-      class="pointer-events-none absolute inset-0 bg-linear-to-b from-black/40 via-transparent via-50% to-black/40 transition-opacity duration-300 ease-out group-hover/card:opacity-60"
+      class="pointer-events-none absolute inset-0 bg-linear-to-b from-black/60 via-black/20 via-50% to-black/70 transition-opacity duration-300 ease-out group-hover/card:opacity-0"
     />
     <div
       v-if="badgeIcon"

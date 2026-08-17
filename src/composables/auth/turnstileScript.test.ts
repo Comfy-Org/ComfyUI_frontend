@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { TurnstileApi } from '@/composables/auth/turnstileScript'
 
@@ -77,11 +77,6 @@ describe('loadTurnstile', () => {
     })
   })
 
-  afterEach(() => {
-    vi.restoreAllMocks()
-    vi.useRealTimers()
-  })
-
   it('resolves immediately with the existing global and appends no script', async () => {
     const api = fakeApi()
     window.turnstile = api
@@ -118,7 +113,6 @@ describe('loadTurnstile', () => {
   })
 
   it('polls for the global when it is published asynchronously after the load event', async () => {
-    vi.useFakeTimers()
     const loadTurnstile = await freshLoadTurnstile()
 
     const promise = loadTurnstile()
@@ -134,16 +128,15 @@ describe('loadTurnstile', () => {
   })
 
   it('rejects and clears the cache when the global never appears after load (poll timeout)', async () => {
-    vi.useFakeTimers()
     const loadTurnstile = await freshLoadTurnstile()
 
     const promise = loadTurnstile()
+    promise.catch(() => {})
     scriptEl()!.dispatchEvent(new Event('load'))
     // global never published; deadline elapses
-    const assertion = expect(promise).rejects.toThrow(/timed out/i)
     await vi.advanceTimersByTimeAsync(10_000)
 
-    await assertion
+    await expect(promise).rejects.toThrow(/timed out/i)
     // dead tag is removed so a later retry starts clean
     expect(scriptEl()).toBeNull()
     // cache was reset → a later call starts a brand-new load
@@ -173,19 +166,16 @@ describe('loadTurnstile', () => {
   })
 
   it('rejects, removes the script, and clears the cache on timeout', async () => {
-    vi.useFakeTimers()
     const loadTurnstile = await freshLoadTurnstile()
 
     const promise = loadTurnstile()
-    const assertion = expect(promise).rejects.toThrow(/timed out/i)
     vi.advanceTimersByTime(10_000)
 
-    await assertion
+    await expect(promise).rejects.toThrow(/timed out/i)
     expect(scriptEl()).toBeNull()
   })
 
   it('reuses a pre-existing script tag and resolves promptly once the global appears (no duplicate, tag left in place)', async () => {
-    vi.useFakeTimers()
     const existing = new FakeScript()
     existing.src = TURNSTILE_SRC
     inserted.push(existing)
@@ -209,17 +199,16 @@ describe('loadTurnstile', () => {
   })
 
   it('reuses a pre-existing script tag and times out (clearing the cache) if the global never appears, leaving the tag in place', async () => {
-    vi.useFakeTimers()
     const existing = new FakeScript()
     existing.src = TURNSTILE_SRC
     inserted.push(existing)
 
     const loadTurnstile = await freshLoadTurnstile()
     const promise = loadTurnstile()
-    const assertion = expect(promise).rejects.toThrow(/timed out/i)
+    promise.catch(() => {})
     await vi.advanceTimersByTimeAsync(10_000)
 
-    await assertion
+    await expect(promise).rejects.toThrow(/timed out/i)
     // pre-existing tag is never removed by the loader
     expect(scriptEl()).not.toBeNull()
     // cache was reset → a later call starts a brand-new load

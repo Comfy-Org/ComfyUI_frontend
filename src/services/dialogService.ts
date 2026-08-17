@@ -13,6 +13,7 @@ import { t } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
 import { isCloud } from '@/platform/distribution/types'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingPolicyCapabilities } from '@/platform/cloud/subscription/composables/useBillingPolicyCapabilities'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import type {
@@ -333,10 +334,11 @@ export const useDialogService = () => {
   async function showTopUpCreditsDialog(options?: {
     isInsufficientCredits?: boolean
   }) {
-    const { isActiveSubscription, isFreeTier, type } = useBillingContext()
-    // Subscribing to unlock top-ups is a Cloud-only concept; local/desktop
-    // users always keep the purchase flow regardless of tier.
-    if (isCloud && (!isActiveSubscription.value || isFreeTier.value)) {
+    const { type } = useBillingContext()
+    const { billingPolicyCapabilities } = useBillingPolicyCapabilities()
+    if (
+      billingPolicyCapabilities.value.topUpAccess === 'subscription-required'
+    ) {
       await showSubscriptionRequiredDialog({
         reason: options?.isInsufficientCredits
           ? 'out_of_credits'

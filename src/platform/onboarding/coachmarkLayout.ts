@@ -15,6 +15,10 @@ const SPOTLIGHT_EDGE_INSET = 2
 export const CARD_WIDTH = 300
 export const VIEWPORT_MARGIN = 12
 export const CARD_GAP = 16
+/** Wide enough for the cursor glyph to sit centred between card and target. */
+export const CURSOR_GAP = 40
+/** The card's travel to a new target; whatever moves that target waits it out. */
+export const CARD_GLIDE_MS = 300
 // Kept tight so the spotlight glow doesn't spill onto an adjacent clickable control.
 export const SPOTLIGHT_PAD = 4
 
