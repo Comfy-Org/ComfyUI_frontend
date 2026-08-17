@@ -106,6 +106,7 @@ describe('updateTextPreviewWidgets', () => {
     ['undefined message', undefined],
     ['message without text', {}],
     ['null text', { text: null }],
+    ['empty array', { text: [] }],
     ['array of only nulls', { text: [null, null] }]
   ])('renders empty and does not throw for %s', (_label, message) => {
     expect(() =>
@@ -122,12 +123,12 @@ describe('updateTextPreviewWidgets', () => {
     expect(node.widgets[0].value).toBe('first\n\nsecond')
   })
 
-  it('renders non-string values rather than blanking the node', () => {
-    updateTextPreviewWidgets(node, { text: [30.0, 23.976] } as unknown as {
-      text: string[]
-    })
+  it('renders non-string entries rather than blanking the node', () => {
+    updateTextPreviewWidgets(node, {
+      text: ['first', 23.976, null, 'second']
+    } as unknown as { text: string[] })
 
-    expect(node.widgets[0].value).toBe('30\n\n23.976')
+    expect(node.widgets[0].value).toBe('first\n\n23.976\n\nsecond')
   })
 
   it('stringifies a bare non-string scalar payload', () => {
