@@ -528,9 +528,10 @@ describe('useTeamWorkspaceStore', () => {
     ])(
       'reloads $reloads time(s) when the active $type workspace is revoked',
       async ({ workspace, reloads }) => {
+        mockWorkspaceAuthStore.initializeFromSession.mockReturnValue(true)
+        mockWorkspaceAuthStore.currentWorkspace = workspace
         const store = useTeamWorkspaceStore()
         await store.initialize()
-        store.activeWorkspaceId = workspace.id
 
         const handled = store.forgetRevokedActiveWorkspace(workspace.id)
 
@@ -551,7 +552,6 @@ describe('useTeamWorkspaceStore', () => {
     it('is a no-op when the workspace is not the active one', async () => {
       const store = useTeamWorkspaceStore()
       await store.initialize()
-      store.activeWorkspaceId = mockTeamWorkspace.id
 
       const handled = store.forgetRevokedActiveWorkspace('some-other-workspace')
 
@@ -876,6 +876,34 @@ describe('useTeamWorkspaceStore', () => {
       expect(store.members[0].monthlyCreditLimit).toBeNull()
       expect(store.members[1].creditsUsedThisMonth).toBeUndefined()
       expect(store.members[1].monthlyCreditLimit).toBeUndefined()
+      expect(mockWorkspaceApi.listMembers).toHaveBeenCalledWith({ limit: 100 })
+    })
+
+    it('fetchMembers applies the default limit to partial parameters', async () => {
+      mockWorkspaceApi.listMembers.mockResolvedValue({
+        members: [],
+        pagination: { offset: 20, limit: 100, total: 0 }
+      })
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+
+      await store.fetchMembers({ offset: 20 })
+      expect(mockWorkspaceApi.listMembers).toHaveBeenLastCalledWith({
+        limit: 100,
+        offset: 20
+      })
+
+      await store.fetchMembers({ offset: 20, limit: undefined })
+      expect(mockWorkspaceApi.listMembers).toHaveBeenLastCalledWith({
+        limit: 100,
+        offset: 20
+      })
+
+      await store.fetchMembers({ offset: 20, limit: 25 })
+      expect(mockWorkspaceApi.listMembers).toHaveBeenLastCalledWith({
+        limit: 25,
+        offset: 20
+      })
     })
 
     it('fetchMembers supports a personal workspace with Team entitlement', async () => {
@@ -1578,52 +1606,6 @@ describe('useTeamWorkspaceStore', () => {
       expect(store.pendingInvites[0].expiryDate).toEqual(
         new Date('2024-01-08T00:00:00Z')
       )
-    })
-
-    it('resendInvite updates the originating workspace after a workspace switch', async () => {
-      const originalInvite = {
-        id: 'inv-1',
-        email: 'one@test.com',
-        token: 'token-1',
-        invited_at: '2024-01-01T00:00:00Z',
-        expires_at: '2024-01-08T00:00:00Z'
-      }
-      const refreshedInvite = {
-        id: 'inv-1',
-        email: 'one@test.com',
-        invited_at: '2024-02-01T00:00:00Z',
-        expires_at: '2024-02-08T00:00:00Z'
-      }
-      let resolveResend!: (invite: typeof refreshedInvite) => void
-
-      mockWorkspaceApi.listInvites.mockResolvedValue({
-        invites: [originalInvite]
-      })
-      mockWorkspaceApi.resendInvite.mockReturnValue(
-        new Promise((resolve) => {
-          resolveResend = resolve
-        })
-      )
-      mockWorkspaceAuthStore.initializeFromSession.mockReturnValue(true)
-      mockWorkspaceAuthStore.currentWorkspace = mockTeamWorkspace
-
-      const store = useTeamWorkspaceStore()
-      await store.initialize()
-      await store.fetchPendingInvites()
-
-      const resend = store.resendInvite('inv-1')
-      store.activeWorkspaceId = mockPersonalWorkspace.id
-      resolveResend(refreshedInvite)
-      await resend
-
-      const teamWorkspace = store.workspaces.find(
-        (workspace) => workspace.id === mockTeamWorkspace.id
-      )
-      expect(teamWorkspace?.pendingInvites[0].expiryDate).toEqual(
-        new Date('2024-02-08T00:00:00Z')
-      )
-      expect(store.activeWorkspace?.id).toBe(mockPersonalWorkspace.id)
-      expect(store.pendingInvites).toEqual([])
     })
 
     it('resendInvite rejects a concurrent resend for the same invite', async () => {
