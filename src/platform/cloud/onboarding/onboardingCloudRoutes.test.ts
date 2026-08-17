@@ -1,4 +1,7 @@
+import { mapValues } from 'es-toolkit'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createMemoryHistory, createRouter } from 'vue-router'
+import type { RouteLocationNormalized, RouteRecordRaw } from 'vue-router'
 
 import {
   cloudOnboardingRoutes,
@@ -17,10 +20,18 @@ vi.mock('@/platform/auth/session/useSessionCookie', () => ({
   useSessionCookie: () => ({ createSessionOrThrow })
 }))
 
-const loggedIn = vi.hoisted(() => ({ value: false }))
-vi.mock('@/composables/auth/useCurrentUser', () => ({
-  useCurrentUser: () => ({ isLoggedIn: { value: loggedIn.value } })
-}))
+// The `cloud-login` guard reads only `isLoggedIn.value`, so a plain box stands
+// in for the ref and keeps the factory hoistable.
+const { useCurrentUser, isLoggedIn } = vi.hoisted(() => {
+  const isLoggedIn = { value: false }
+  return { isLoggedIn, useCurrentUser: vi.fn(() => ({ isLoggedIn })) }
+})
+
+vi.mock('@/composables/auth/useCurrentUser', () => ({ useCurrentUser }))
+
+beforeEach(() => {
+  isLoggedIn.value = false
+})
 
 const oauthLayout = cloudOnboardingRoutes.find((r) => r.path === '/oauth')
 const consentRoute = oauthLayout?.children?.find(
@@ -42,7 +53,114 @@ const resolvedComponents = await Promise.all(
   )
 )
 
+/**
+ * Aborts in a global guard so the assertions see the fully resolved target
+ * without loading the real onboarding views. Record-level redirects are applied
+ * before guards run, so the guard observes the final destination and its
+ * `redirectedFrom` says where the navigation started.
+ */
+async function attemptNavigation(target: string) {
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: cloudOnboardingRoutes
+  })
+  const attempts: RouteLocationNormalized[] = []
+  router.beforeEach((to) => {
+    attempts.push(to)
+    return false
+  })
+
+  await router.push(target)
+  return attempts[0]
+}
+
+/**
+ * Swaps every view component — single or named — for a render-null stub while
+ * leaving names, paths, meta, redirects and `beforeEnter` guards untouched.
+ * `render` rather than `template` so the stubs need no runtime template
+ * compiler.
+ */
+function stubViews(routes: readonly RouteRecordRaw[]): RouteRecordRaw[] {
+  const stub = { render: () => null }
+  return routes.map((route) => ({
+    ...route,
+    ...('component' in route && route.component ? { component: stub } : {}),
+    ...('components' in route && route.components
+      ? { components: mapValues(route.components, () => stub) }
+      : {}),
+    ...('children' in route && route.children
+      ? { children: stubViews(route.children) }
+      : {})
+  })) as RouteRecordRaw[]
+}
+
+/**
+ * Lets navigation run to completion, unlike `attemptNavigation`, which aborts in
+ * a global guard and so never reaches a per-route `beforeEnter`. Use this when
+ * the guard itself is the thing under test.
+ *
+ * A guard that aborts or redirects unexpectedly makes `push` resolve with a
+ * `NavigationFailure` rather than throw, so the failure is asserted here instead
+ * of surfacing as a puzzling `currentRoute` mismatch in the caller.
+ */
+async function completeNavigation(target: string) {
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: stubViews(cloudOnboardingRoutes)
+  })
+
+  expect(await router.push(target)).toBeUndefined()
+
+  return router.currentRoute.value
+}
+
 describe('cloudOnboardingRoutes', () => {
+  it('redirects the legacy /login path to the cloud login route', async () => {
+    const to = await attemptNavigation('/login')
+
+    expect(to.name).toBe('cloud-login')
+    expect(to.path).toBe('/cloud/login')
+    expect(to.redirectedFrom?.path).toBe('/login')
+  })
+
+  it('preserves the query and hash through the legacy /login redirect', async () => {
+    const to = await attemptNavigation(
+      '/login?previousFullPath=%2Ffoo&campaign=one&campaign=two#section'
+    )
+
+    expect(to.name).toBe('cloud-login')
+    expect(to.query.previousFullPath).toBe('/foo')
+    expect(to.query.campaign).toEqual(['one', 'two'])
+    expect(to.hash).toBe('#section')
+  })
+
+  /**
+   * A repeated key arrives as an array, which a redirect that rebuilt the query
+   * value by value would flatten to whichever copy it saw last. Marketing links
+   * are the ones most likely to carry repeated UTM-style keys, and they are also
+   * the traffic this redirect exists to catch. Case contributed by @dante01yoon
+   * from the parallel fix in #15022.
+   */
+  it('preserves repeated query keys through the legacy /login redirect', async () => {
+    const to = await attemptNavigation(
+      '/login?source=legacy&campaign=one&campaign=two'
+    )
+
+    expect(to.name).toBe('cloud-login')
+    expect(to.query).toEqual({
+      source: 'legacy',
+      campaign: ['one', 'two']
+    })
+  })
+
+  it('resolves /cloud/login without redirecting', async () => {
+    const to = await attemptNavigation('/cloud/login')
+
+    expect(to.name).toBe('cloud-login')
+    expect(to.fullPath).toBe('/cloud/login')
+    expect(to.redirectedFrom).toBeUndefined()
+  })
+
   it('consent route is not a child of the /cloud layout', () => {
     const cloudLayout = cloudOnboardingRoutes.find((r) => r.path === '/cloud')
     const childPaths = (cloudLayout?.children ?? []).map((c) => c.path)
@@ -76,6 +194,46 @@ describe('cloudOnboardingRoutes', () => {
     const [layoutModule, consentModule] = resolvedComponents
     expect(layoutModule).toHaveProperty('default')
     expect(consentModule).toHaveProperty('default')
+  })
+})
+
+/**
+ * The redirect tests above abort before any per-route guard runs, so they prove
+ * the route table resolves `/login` but not that the destination still works
+ * once it is entered. These drive the real `cloud-login` `beforeEnter` through
+ * the redirect, which is the journey the reported bug actually took.
+ */
+describe('legacy /login through the cloud-login guard', () => {
+  beforeEach(() => {
+    clearOAuthRequestId()
+    useCurrentUser.mockClear()
+  })
+
+  it('lands a signed-out visitor on the login view', async () => {
+    const to = await completeNavigation('/login')
+
+    expect(useCurrentUser).toHaveBeenCalled()
+    expect(to.name).toBe('cloud-login')
+    expect(to.path).toBe('/cloud/login')
+  })
+
+  it('forwards a signed-in visitor past the login view', async () => {
+    isLoggedIn.value = true
+
+    const to = await completeNavigation('/login')
+
+    expect(useCurrentUser).toHaveBeenCalled()
+    expect(to.name).toBe('cloud-user-check')
+  })
+
+  it('honours switchAccount through the redirect, leaving the guard inert', async () => {
+    isLoggedIn.value = true
+
+    const to = await completeNavigation('/login?switchAccount=true')
+
+    expect(useCurrentUser).not.toHaveBeenCalled()
+    expect(to.name).toBe('cloud-login')
+    expect(to.query.switchAccount).toBe('true')
   })
 })
 
@@ -159,7 +317,7 @@ async function runGuard(
 
 describe.for(guardedRoutes)('%s beforeEnter', (route) => {
   beforeEach(() => {
-    loggedIn.value = false
+    isLoggedIn.value = false
     clearOAuthRequestId()
     createSessionOrThrow.mockReset().mockResolvedValue(undefined)
   })
@@ -169,13 +327,13 @@ describe.for(guardedRoutes)('%s beforeEnter', (route) => {
   })
 
   it('redirects a signed-in visitor away from the auth page', async () => {
-    loggedIn.value = true
+    isLoggedIn.value = true
 
     expect(await runGuard(route, {})).toEqual({ name: 'cloud-user-check' })
   })
 
   it('sends a signed-in visitor straight to consent mid-OAuth', async () => {
-    loggedIn.value = true
+    isLoggedIn.value = true
     captureOAuthRequestId({ oauth_request_id: VALID_REQUEST_ID })
 
     expect(await runGuard(route, {})).toEqual({
@@ -185,7 +343,7 @@ describe.for(guardedRoutes)('%s beforeEnter', (route) => {
   })
 
   it('honours ?switchAccount for a signed-in visitor', async () => {
-    loggedIn.value = true
+    isLoggedIn.value = true
 
     expect(
       await runGuard(route, { switchAccount: '1' }),
@@ -194,7 +352,7 @@ describe.for(guardedRoutes)('%s beforeEnter', (route) => {
   })
 
   it('does not mint a session cookie when it lets the visitor through', async () => {
-    loggedIn.value = true
+    isLoggedIn.value = true
 
     await runGuard(route, { switchAccount: '1' })
 
