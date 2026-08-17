@@ -453,10 +453,10 @@ describe('Virtual node resolveVirtualOutput', () => {
     )
   })
 
-  it('should return the primary widget value for virtual nodes', () => {
+  it('should return the primary widget value for PrimitiveNode', () => {
     const graph = new LGraph()
 
-    const primitiveNode = new LGraphNode('PrimitiveNode')
+    const primitiveNode = new LGraphNode('PrimitiveNode', 'PrimitiveNode')
     primitiveNode.addOutput('connect to widget input', '*')
     primitiveNode.isVirtualNode = true
     primitiveNode.addWidget('number', 'value', 42, null)
@@ -487,10 +487,10 @@ describe('Virtual node resolveVirtualOutput', () => {
     expect(resolved?.node).toBe(primitiveDto)
   })
 
-  it('should return string widget value for virtual nodes', () => {
+  it('should return a string widget value for PrimitiveNode', () => {
     const graph = new LGraph()
 
-    const primitiveNode = new LGraphNode('PrimitiveNode')
+    const primitiveNode = new LGraphNode('PrimitiveNode', 'PrimitiveNode')
     primitiveNode.addOutput('connect to widget input', '*')
     primitiveNode.isVirtualNode = true
     primitiveNode.addWidget('text', 'value', 'hello world', null)
@@ -531,10 +531,33 @@ describe('Virtual node resolveVirtualOutput', () => {
     expect(resolved).toBeUndefined()
   })
 
+  it('should discard non-Primitive virtual nodes with widget values', () => {
+    const graph = new LGraph()
+
+    const virtualNode = new LGraphNode('Virtual Widget', 'CustomVirtualNode')
+    virtualNode.addOutput('out', 'INT')
+    virtualNode.isVirtualNode = true
+    virtualNode.addWidget('number', 'value', 42, null)
+    graph.add(virtualNode)
+
+    const nodeDtoMap = new Map<ExecutionId, ExecutableLGraphNode>()
+    const virtualDto = new ExecutableNodeDTO(
+      virtualNode,
+      [],
+      nodeDtoMap,
+      undefined
+    )
+    nodeDtoMap.set(virtualDto.id, virtualDto)
+
+    const resolved = virtualDto.resolveOutput(0, 'INT', new Set())
+
+    expect(resolved).toBeUndefined()
+  })
+
   it('should return undefined for virtual nodes with an undefined primary widget value', () => {
     const graph = new LGraph()
 
-    const virtualNode = new LGraphNode('Virtual Empty Value')
+    const virtualNode = new LGraphNode('PrimitiveNode', 'PrimitiveNode')
     virtualNode.addOutput('out', 'IMAGE')
     virtualNode.isVirtualNode = true
     const primaryWidget = virtualNode.addWidget('text', 'value', '', null)

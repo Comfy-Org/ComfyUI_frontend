@@ -1,14 +1,8 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 import { graphToPrompt } from './executionUtil'
-
-beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
-})
 
 describe('graphToPrompt', () => {
   it('should preserve virtual node widget value when linked to a forceInput slot', async () => {
@@ -20,7 +14,7 @@ describe('graphToPrompt', () => {
     targetNode.addOutput('out', 'IMAGE')
     graph.add(targetNode)
 
-    const primitiveNode = new LGraphNode('PrimitiveNode')
+    const primitiveNode = new LGraphNode('PrimitiveNode', 'PrimitiveNode')
     primitiveNode.isVirtualNode = true
     primitiveNode.addOutput('connect to widget input', '*')
     primitiveNode.addWidget('number', 'value', 12345, null)
@@ -44,7 +38,7 @@ describe('graphToPrompt', () => {
     targetNode.addOutput('CONDITIONING', 'CONDITIONING')
     graph.add(targetNode)
 
-    const primitiveNode = new LGraphNode('PrimitiveNode')
+    const primitiveNode = new LGraphNode('PrimitiveNode', 'PrimitiveNode')
     primitiveNode.isVirtualNode = true
     primitiveNode.addOutput('connect to widget input', '*')
     primitiveNode.addWidget('text', 'value', 'a beautiful landscape', null)
@@ -67,7 +61,7 @@ describe('graphToPrompt', () => {
     targetNode.addInput('seed', 'INT')
     graph.add(targetNode)
 
-    const primitiveNode = new LGraphNode('PrimitiveNode')
+    const primitiveNode = new LGraphNode('PrimitiveNode', 'PrimitiveNode')
     primitiveNode.isVirtualNode = true
     primitiveNode.addOutput('connect to widget input', '*')
     primitiveNode.addWidget('number', 'value', 42, null)
@@ -79,5 +73,27 @@ describe('graphToPrompt', () => {
 
     expect(output[String(primitiveNode.id)]).toBeUndefined()
     expect(Object.keys(output)).toHaveLength(1)
+  })
+
+  it('should not export widget values from non-Primitive virtual nodes', async () => {
+    const graph = new LGraph()
+
+    const targetNode = new LGraphNode('TargetNode', 'TargetNode')
+    targetNode.comfyClass = 'TargetNode'
+    targetNode.addInput('payload', 'STRING')
+    graph.add(targetNode)
+
+    const virtualNode = new LGraphNode('Custom Virtual', 'CustomVirtualNode')
+    virtualNode.isVirtualNode = true
+    virtualNode.addOutput('out', 'STRING')
+    virtualNode.addWidget('text', 'status', 'ui-only value', null)
+    graph.add(virtualNode)
+
+    virtualNode.connect(0, targetNode, 0)
+
+    const { output } = await graphToPrompt(graph)
+
+    expect(output[String(targetNode.id)].inputs).not.toHaveProperty('payload')
+    expect(output[String(virtualNode.id)]).toBeUndefined()
   })
 })

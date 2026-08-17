@@ -328,9 +328,12 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
         return inputNodeDto.resolveInput(virtualLink.target_slot, visited, type)
       }
 
-      // Only the primary widget is exported; later widgets are auxiliary controls.
+      // PrimitiveNode exports its primary widget; later widgets are auxiliary controls.
       const [primaryWidget] = this.node.widgets ?? []
-      if (primaryWidget?.value !== undefined) {
+      if (
+        this.node.type === 'PrimitiveNode' &&
+        primaryWidget?.value !== undefined
+      ) {
         return {
           node: this,
           origin_id: this.id,
