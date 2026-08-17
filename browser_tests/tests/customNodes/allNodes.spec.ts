@@ -51,6 +51,8 @@ import {
   partitionValueDriftNodes,
   pendingWidgetInitializations,
   rendererLedgerFor,
+  ROUNDTRIP_NODE_LOSS_EXPECTATIONS_LITEGRAPH,
+  ROUNDTRIP_NODE_LOSS_EXPECTATIONS_VUE,
   ROUNDTRIP_VALUE_ALLOWED_INDICES_LITEGRAPH,
   ROUNDTRIP_VALUE_ALLOWED_INDICES_VUE,
   ROUNDTRIP_WIDGET_INITIALIZATION_SIGNALS,
@@ -257,6 +259,18 @@ const ROUNDTRIP_VALUE_ALLOWLIST: Record<string, Record<string, string>> = {
   'ComfyUI-LTXVideo': {
     LTXVSparseTrackEditor:
       'track editor normalizes its control points and derived interpolation JSON on configure'
+  },
+  'ComfyUI_Fill-Nodes': {
+    FL_ColorPicker:
+      'color widget canonicalizes the probe color and derived RGB channels on configure',
+    FL_ReplaceColor:
+      'color widgets canonicalize the probe colors and derived RGB channels on configure'
+  },
+  'WhatDreamsCost-ComfyUI': {
+    LoadAudioUI:
+      'custom audio UI normalizes absent player state from an empty string to null on configure',
+    LTXDirector:
+      'director UI canonicalizes timeline JSON and its derived prompt fields on configure'
   }
 }
 
@@ -300,6 +314,8 @@ const PACK_LEDGERS: Record<string, Record<string, Record<string, unknown>>> = {
   MOUNT_WIDGET_ALLOWLIST,
   OUTPUT_TOPOLOGY_EXPECTATIONS_LITEGRAPH,
   OUTPUT_TOPOLOGY_EXPECTATIONS_VUE,
+  ROUNDTRIP_NODE_LOSS_EXPECTATIONS_LITEGRAPH,
+  ROUNDTRIP_NODE_LOSS_EXPECTATIONS_VUE,
   ROUNDTRIP_VALUE_ALLOWLIST,
   ROUNDTRIP_VALUE_ALLOWED_INDICES_LITEGRAPH,
   ROUNDTRIP_VALUE_ALLOWED_INDICES_VUE,
@@ -349,6 +365,7 @@ declare global {
       setAndStick: () => void
       finish: () => {
         problems: string[]
+        nodeLosses: string[]
         topologyDrifts: Array<{
           node: string
           before: number
@@ -823,6 +840,20 @@ for (const entry of manifestEntries) {
             ])
           )
           const observedValueDrift = new Map<string, Set<number>>()
+          const expectedNodeLosses = packLedgerFor(
+            rendererLedgerFor(
+              vueNodesEnabled,
+              ROUNDTRIP_NODE_LOSS_EXPECTATIONS_LITEGRAPH,
+              ROUNDTRIP_NODE_LOSS_EXPECTATIONS_VUE
+            ),
+            entry.pack
+          )
+          const observedNodeLosses = new Set<string>()
+          for (const ledgered of Object.keys(expectedNodeLosses))
+            expect(
+              keys,
+              `stale ROUNDTRIP_NODE_LOSS_EXPECTATIONS entry: ${ledgered} is not registered by ${entry.pack}`
+            ).toContain(ledgered)
           const rawTopologyExpectations = packLedgerFor(
             rendererLedgerFor(
               vueNodesEnabled,
@@ -862,7 +893,8 @@ for (const entry of manifestEntries) {
                 types,
                 packManaged,
                 legacyValueDriftNodes,
-                exactValueDriftIndices
+                exactValueDriftIndices,
+                allowedNodeLosses
               ]) => {
                 window.app!.graph.clear()
                 window.app!.graph.last_node_id = window.__cnIdBase ?? 0
@@ -888,6 +920,7 @@ for (const entry of manifestEntries) {
                   label: string
                 }> = []
                 const valueDrifts = new Map<string, Set<number>>()
+                const nodeLosses = new Set<string>()
                 // Serialized widgets_values can be an array or a named object;
                 // reload may legitimately APPEND entries (control_after_generate
                 // materializes, packs add value-driven dynamic widgets) but must
@@ -991,9 +1024,12 @@ for (const entry of manifestEntries) {
                         (node) => String(node.id) === id
                       )
                       if (!before || !after || !restored) {
-                        problems.push(
-                          `${expected.type}: lost on ${label} reload`
-                        )
+                        if (allowedNodeLosses.includes(expected.type))
+                          nodeLosses.add(expected.type)
+                        else
+                          problems.push(
+                            `${expected.type}: lost on ${label} reload`
+                          )
                         continue
                       }
                       if (after.type !== before.type)
@@ -1132,6 +1168,7 @@ for (const entry of manifestEntries) {
                   finish() {
                     const out = {
                       problems: [...problems],
+                      nodeLosses: [...nodeLosses],
                       topologyDrifts,
                       valueDrifts: Object.fromEntries(
                         [...valueDrifts].map(([node, indices]) => [
@@ -1149,7 +1186,8 @@ for (const entry of manifestEntries) {
                 chunk,
                 allowedWidgets,
                 valueDriftNodes.legacy,
-                allowedValueIndices
+                allowedValueIndices,
+                Object.keys(expectedNodeLosses)
               ] as const
             )
             await comfyPage.nextFrame()
@@ -1245,6 +1283,7 @@ for (const entry of manifestEntries) {
               return window.__cnRt!.finish()
             })
             mismatches.push(...result.problems)
+            for (const node of result.nodeLosses) observedNodeLosses.add(node)
             for (const drift of result.topologyDrifts) {
               if (
                 matchesTopologyExpectation(
@@ -1292,6 +1331,11 @@ for (const entry of manifestEntries) {
             mismatches,
             `VueNodes=${vueNodesEnabled}: ${JSON.stringify(mismatches, null, 1)}`
           ).toEqual([])
+          for (const ledgered of Object.keys(expectedNodeLosses))
+            expect(
+              [...observedNodeLosses],
+              `stale ROUNDTRIP_NODE_LOSS_EXPECTATIONS entry: ${ledgered} now survives save/reload with VueNodes=${vueNodesEnabled}`
+            ).toContain(ledgered)
           for (const ledgered of Object.keys(topologyExpectations))
             expect(
               [...observedTopologyDrift],

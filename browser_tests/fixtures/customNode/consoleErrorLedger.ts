@@ -19,6 +19,13 @@ const CONSOLE_ERROR_ALLOWLIST: Record<string, AllowlistRule[]> = {
   'comfyui-itools': [
     {
       pattern:
+        /Error: File not found.*\/extensions\/comfyui-itools\/makadi\/SmartPaintArea\.js/,
+      global: true,
+      reason:
+        'the paint widget logs the API no-saved-drawing response from SmartPaintArea.js'
+    },
+    {
+      pattern:
         /Failed to load resource.*404.*api\/itools\/request_the_paint_file/,
       global: true,
       reason:
@@ -142,6 +149,15 @@ const CONNECTIVITY_ERROR_ALLOWLIST: Record<string, ConnectivityRule[]> = {
       reason:
         'PointsEditor parses an empty bbox widget when the sweep configures the node',
       requiredConnectivityId: 'kj-points-empty-bbox-json'
+    }
+  ],
+  'ComfyUI-LTXVideo': [
+    {
+      pattern:
+        /Cannot read properties of null \(reading 'imgH'\)[\s\S]*\/extensions\/ComfyUI-LTXVideo\/js\/sparse_track_editor\.js/,
+      reason:
+        'the sparse track editor computes its size before image state initializes',
+      requiredConnectivityId: 'ltx-sparse-track-null-image-size'
     }
   ],
   'ComfyUI-Custom-Scripts': [

@@ -3,12 +3,56 @@
 export const ROUNDTRIP_VALUE_ALLOWED_INDICES_LITEGRAPH: Record<
   string,
   Record<string, string>
-> = {}
+> = {
+  'ComfyUI_Fill-Nodes': {
+    FL_ColorPicker: '3,4,5,6',
+    FL_ReplaceColor: '5,6,7,8,9,10,11,12'
+  },
+  'WhatDreamsCost-ComfyUI': {
+    LoadAudioUI: '5',
+    LTXDirector: '3,4,5,7'
+  }
+}
 
 export const ROUNDTRIP_VALUE_ALLOWED_INDICES_VUE: Record<
   string,
   Record<string, string>
-> = {}
+> = {
+  'ComfyUI_Fill-Nodes': {
+    FL_ColorPicker: '3,4,5,6',
+    FL_ReplaceColor: '5,6,7,8,9,10,11,12'
+  },
+  'WhatDreamsCost-ComfyUI': {
+    LoadAudioUI: '5',
+    LTXDirector: '3,4,5,7'
+  }
+}
+
+export interface RoundtripNodeLossExpectation {
+  reason: string
+  restore: string
+}
+
+const FL_TIMELINE_NODE_LOSS: RoundtripNodeLossExpectation = {
+  reason:
+    'the pack replaces node.serialize with a timeline-data serializer, so graph reload drops the node',
+  restore:
+    'fix FL_TimeLine to preserve LiteGraph node serialization, then remove this entry when both renderer passes retain it'
+}
+
+export const ROUNDTRIP_NODE_LOSS_EXPECTATIONS_LITEGRAPH: Record<
+  string,
+  Record<string, RoundtripNodeLossExpectation>
+> = {
+  'ComfyUI_Fill-Nodes': { FL_TimeLine: FL_TIMELINE_NODE_LOSS }
+}
+
+export const ROUNDTRIP_NODE_LOSS_EXPECTATIONS_VUE: Record<
+  string,
+  Record<string, RoundtripNodeLossExpectation>
+> = {
+  'ComfyUI_Fill-Nodes': { FL_TimeLine: FL_TIMELINE_NODE_LOSS }
+}
 
 export interface TopologyExpectation {
   before: number

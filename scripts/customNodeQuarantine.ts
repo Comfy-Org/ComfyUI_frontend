@@ -18,6 +18,7 @@ import { promisify } from 'node:util'
 
 import { connectivityExpectations } from '../browser_tests/fixtures/customNode/connectivityExpectations'
 import type { QuarantinedPack } from '../browser_tests/fixtures/customNode/manifest'
+import { ROUNDTRIP_NODE_LOSS_EXPECTATIONS_LITEGRAPH } from '../browser_tests/fixtures/customNode/valueDrift'
 import {
   MAX_QUARANTINED_PACKS,
   loadFullManifest,
@@ -146,25 +147,36 @@ for (const [pack, entry] of entries) {
   if (!broken) stale.push(pack)
 }
 
-const nodeExclusions = Object.entries(
-  connectivityExpectations.excludedNodeTypes
-)
+const nodeExclusions = [
+  ...Object.entries(connectivityExpectations.excludedNodeTypes).map(
+    ([nodeType, exclusion]) => ({
+      label: `${nodeType} connectivity`,
+      ...exclusion
+    })
+  ),
+  ...Object.entries(ROUNDTRIP_NODE_LOSS_EXPECTATIONS_LITEGRAPH).flatMap(
+    ([pack, nodes]) =>
+      Object.entries(nodes).map(([nodeType, exclusion]) => ({
+        label: `${nodeType} save/reload`,
+        pack,
+        ...exclusion
+      }))
+  )
+]
 const unknownNodeExclusions: string[] = []
 note('')
 note(`## Temporary node-check exclusions - **${nodeExclusions.length}**`)
 note('')
-note(
-  'Every entry below is coverage this run did NOT measure in the breadth sweep.'
-)
+note('Every entry below is coverage this run did NOT measure.')
 note('')
-for (const [nodeType, exclusion] of nodeExclusions) {
-  note(`- **${nodeType} connectivity - SKIP**`)
+for (const exclusion of nodeExclusions) {
+  note(`- **${exclusion.label} - SKIP**`)
   note(`  - ${exclusion.reason}`)
   note(`  - to remove: ${exclusion.restore}`)
   process.stdout.write(
-    `::warning title=Custom-node check excluded::${nodeType} - ${exclusion.reason}\n`
+    `::warning title=Custom-node check excluded::${exclusion.label} - ${exclusion.reason}\n`
   )
-  if (!manifest.has(exclusion.pack)) unknownNodeExclusions.push(nodeType)
+  if (!manifest.has(exclusion.pack)) unknownNodeExclusions.push(exclusion.label)
 }
 
 say('')

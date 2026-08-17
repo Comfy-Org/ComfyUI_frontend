@@ -99,12 +99,19 @@ test.describe('consoleErrorLedger', () => {
     }
   })
 
-  test('keeps a missing iTools frontend module visible', () => {
-    const missingModule =
+  test('attributes iTools no-saved-drawing log only to an installed iTools pack', () => {
+    const paintFileLog =
       'Error: File not found [http://localhost:8188/extensions/comfyui-itools/makadi/SmartPaintArea.js]'
-    expect(unallowlistedErrors('comfyui-itools', [missingModule])).toEqual([
-      missingModule
+    expect(unallowlistedErrors('comfyui-itools', [paintFileLog])).toEqual([])
+    expect(unallowlistedErrors('Some-Future-Pack', [paintFileLog])).toEqual([
+      paintFileLog
     ])
+    expect(
+      unallowlistedGlobalExtensionErrorsForPacks(
+        ['comfyui-itools'],
+        [paintFileLog]
+      )
+    ).toEqual([])
   })
 
   test('attributes delayed extension errors only when the owning pack is installed', () => {
@@ -165,6 +172,24 @@ test.describe('consoleErrorLedger', () => {
         []
       )
     ).toEqual(['kj-points-empty-bbox-json', 'core-vhs-removed-link-target-id'])
+  })
+
+  test('requires the exact LTX sparse-editor initialization failure', () => {
+    const ltx =
+      "Uncaught page error: TypeError: Cannot read properties of null (reading 'imgH')\n" +
+      '    at widget.computeSize (http://localhost:8188/extensions/ComfyUI-LTXVideo/js/sparse_track_editor.js:224:29)'
+    expect(
+      unallowlistedConnectivityErrorsForPacks(['ComfyUI-LTXVideo'], [ltx])
+    ).toEqual([])
+    expect(
+      unallowlistedConnectivityErrorsForPacks(['Some-Future-Pack'], [ltx])
+    ).toEqual([ltx])
+    expect(
+      staleRequiredConnectivityErrorRulesForPacks(['ComfyUI-LTXVideo'], [ltx])
+    ).toEqual([])
+    expect(
+      staleRequiredConnectivityErrorRulesForPacks(['ComfyUI-LTXVideo'], [])
+    ).toEqual(['ltx-sparse-track-null-image-size'])
   })
 
   test('matches lower-cased VHS paths and the iTools async hook failure', () => {

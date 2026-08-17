@@ -21,22 +21,33 @@ export const connectivityExpectations: ConnectivityExpectations = {
         'fix the FL_CodeNode frontend hook upstream, then remove this entry when the isolated sentinel completes'
     }
   },
-  // MathExpression vetoes text-list producers for numeric expression inputs.
-  connectRejected: ['AddTextPrefix.texts -> MathExpression|pysssss.expression'],
+  connectRejected: [
+    'AddTextPrefix.texts -> MathExpression|pysssss.expression',
+    'FL_NodeLoader.TRIGGER -> FL_NodeLoader.trigger',
+    'FL_NodeLoader.TRIGGER -> FL_NodePackLoader.trigger',
+    'FL_NodePackLoader.TRIGGER -> FL_NodeLoader.trigger'
+  ],
   // TimerNodeKJ throws only when an earlier KJNodes creation race corrupts
   // shared editor state, so these pairs must stay planned but need not fire.
   conditionalSlotContractMismatch: [
     'TimerNodeKJ.timer -> TimerNodeKJ.timer',
     'TimerNodeKJ.time -> AddLabel.text_x'
   ],
-  // MultiImageLoader's def declares 51 outputs (RETURN_TYPES = ("IMAGE",) * 51:
-  // multi_output plus image_1..image_50) and the pack's own JS trims them to
-  // the loaded image count on creation, so every declared image_N past the live
-  // ones is missing on the instance. Pack behaviour, not a frontend drop.
-  deterministicSlotContractMismatch: Array.from(
-    { length: 50 },
-    (_, index) => `MultiImageLoader.image_${index + 1} -> AddLabel.image`
-  ),
+  deterministicSlotContractMismatch: [
+    // MultiImageLoader trims its 50 declared image outputs to the loaded count.
+    ...Array.from(
+      { length: 50 },
+      (_, index) => `MultiImageLoader.image_${index + 1} -> AddLabel.image`
+    ),
+    // FL_VideoBatchSplitter exposes only the default 4 of 20 outputs.
+    ...Array.from(
+      { length: 16 },
+      (_, index) =>
+        `FL_VideoBatchSplitter.batch_${index + 5} -> ACN_AdvancedControlNetApply.image`
+    ),
+    // FL_TimeLine replaces node.serialize and loses graph identity on reload.
+    'FL_TimeLine.MODEL -> ACN_AdvancedControlNetApply.model_optional'
+  ],
   // VHS_SelectLatest rebuilds its dynamic slots during configure.
   roundtripLost: [
     // Vewd rebuilds its dynamic slots during configure, same mechanism as
@@ -48,7 +59,14 @@ export const connectivityExpectations: ConnectivityExpectations = {
     'VHS_SelectLatest.Filename -> AddTextPrefix.texts',
     'AddTextPrefix.texts -> VHS_SelectLatest.filename_prefix',
     'AddTextPrefix.texts -> VHS_SelectLatest.filename_postfix',
-    'VHS_SelectLatest.Filename -> AddLabel.font_color'
+    'VHS_SelectLatest.Filename -> AddLabel.font_color',
+    'ACN_AdvancedControlNetApply.model_opt -> FL_TimeLine.model',
+    'AddTextPrefix.texts -> FL_TimeLine.timeline_data',
+    'AudioReactiveTransform.frame_count -> FL_TimeLine.video_width',
+    'AudioReactiveTransform.frame_count -> FL_TimeLine.video_height',
+    'AudioReactiveTransform.frame_count -> FL_TimeLine.number_animation_frames',
+    'AudioReactiveTransform.frame_count -> FL_TimeLine.frames_per_second',
+    'CompositorTools3.tools -> ACN_SparseCtrlLoaderAdvanced.use_motion'
   ],
   // Packs that contribute no pair at all, in-pack or cross-pack: their one
   // node's slot types have no counterpart anywhere in the corpus. The count is

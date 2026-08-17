@@ -9,6 +9,10 @@ import {
   partitionValueDriftNodes,
   pendingWidgetInitializations,
   rendererLedgerFor,
+  ROUNDTRIP_NODE_LOSS_EXPECTATIONS_LITEGRAPH,
+  ROUNDTRIP_NODE_LOSS_EXPECTATIONS_VUE,
+  ROUNDTRIP_VALUE_ALLOWED_INDICES_LITEGRAPH,
+  ROUNDTRIP_VALUE_ALLOWED_INDICES_VUE,
   staleValueDriftIndices
 } from '@e2e/fixtures/customNode/valueDrift'
 
@@ -109,5 +113,36 @@ test.describe('staleValueDriftIndices', () => {
         { ExampleNode: [1, 5], OtherNode: [0] }
       )
     ).toEqual(['MissingNode[0]'])
+  })
+})
+
+test.describe('cloud roundtrip expectations', () => {
+  test('pins only the observed widget indices', () => {
+    expect(ROUNDTRIP_VALUE_ALLOWED_INDICES_LITEGRAPH).toMatchObject({
+      'ComfyUI_Fill-Nodes': {
+        FL_ColorPicker: '3,4,5,6',
+        FL_ReplaceColor: '5,6,7,8,9,10,11,12'
+      },
+      'WhatDreamsCost-ComfyUI': {
+        LoadAudioUI: '5',
+        LTXDirector: '3,4,5,7'
+      }
+    })
+    expect(ROUNDTRIP_VALUE_ALLOWED_INDICES_VUE).toEqual(
+      ROUNDTRIP_VALUE_ALLOWED_INDICES_LITEGRAPH
+    )
+  })
+
+  test('keeps the FL_TimeLine loss temporary and renderer-explicit', () => {
+    expect(
+      ROUNDTRIP_NODE_LOSS_EXPECTATIONS_LITEGRAPH['ComfyUI_Fill-Nodes']
+        .FL_TimeLine
+    ).toMatchObject({
+      reason: expect.stringContaining('node.serialize'),
+      restore: expect.stringContaining('remove this entry')
+    })
+    expect(ROUNDTRIP_NODE_LOSS_EXPECTATIONS_VUE).toEqual(
+      ROUNDTRIP_NODE_LOSS_EXPECTATIONS_LITEGRAPH
+    )
   })
 })
