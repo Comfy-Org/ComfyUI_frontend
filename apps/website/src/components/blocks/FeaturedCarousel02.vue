@@ -5,7 +5,7 @@ import {
   useFocusWithin,
   useIntersectionObserver
 } from '@vueuse/core'
-import { computed, ref, useTemplateRef } from 'vue'
+import { computed, ref, shallowRef, useTemplateRef, watch } from 'vue'
 
 import type { HTMLAttributes } from 'vue'
 
@@ -16,6 +16,8 @@ import { resolveRel } from '../../utils/cta'
 import VideoPlayer from '../common/VideoPlayer.vue'
 import Badge from '../ui/badge/Badge.vue'
 import Button from '../ui/button/Button.vue'
+import { Carousel, CarouselContent, CarouselItem } from '../ui/carousel'
+import type { CarouselApi } from '../ui/carousel'
 
 type FeaturedSlideMedia = {
   type: 'image' | 'video'
@@ -56,20 +58,36 @@ const {
   class?: HTMLAttributes['class']
 }>()
 
-const activeIndex = ref(0)
+// Respect prefers-reduced-motion (WCAG 2.2.2): no auto-advance and instant
+// (duration 0) programmatic scrolls; VideoPlayer suppresses its own autoplay.
+// Drag scrolling stays enabled — direct manipulation isn't motion.
+const reduceMotion = computed(() => prefersReducedMotion())
 
-function goTo(index: number): void {
-  const count = slides.length
-  activeIndex.value = (index + count) % count
+const api = shallowRef<CarouselApi>()
+const activeIndex = ref(0)
+const isDragging = ref(false)
+
+function onInitApi(emblaApi: CarouselApi) {
+  api.value = emblaApi
+  if (!emblaApi) return
+  emblaApi.on('select', () => {
+    activeIndex.value = emblaApi.selectedScrollSnap()
+  })
+  emblaApi.on('pointerDown', () => (isDragging.value = true))
+  emblaApi.on('pointerUp', () => (isDragging.value = false))
 }
+
+watch(
+  [reduceMotion, api],
+  () => {
+    api.value?.reInit({ duration: reduceMotion.value ? 0 : 25 })
+  },
+  { immediate: true }
+)
 
 const autoplayDelay = computed(
   () => slides[activeIndex.value]?.autoplayMs ?? DEFAULT_AUTOPLAY_MS
 )
-
-// Respect prefers-reduced-motion (WCAG 2.2.2): no auto-advance and no slide
-// animation; VideoPlayer suppresses its own autoplay.
-const reduceMotion = computed(() => prefersReducedMotion())
 
 const rootEl = useTemplateRef<HTMLElement>('rootEl')
 const isVisible = ref(false)
@@ -77,12 +95,14 @@ useIntersectionObserver(rootEl, ([entry]) => {
   isVisible.value = entry?.isIntersecting ?? false
 })
 
-// Pause the auto-advance while the user hovers or has keyboard focus inside
-// the carousel (WCAG 2.2.2), so it never moves under the pointer or pulls
-// focus into a now-hidden slide.
+// Pause the auto-advance while the user hovers, drags, or has keyboard focus
+// inside the carousel (WCAG 2.2.2), so it never moves under the pointer or
+// pulls focus into a now-hidden slide.
 const isHovered = useElementHover(rootEl)
 const { focused: isFocusWithin } = useFocusWithin(rootEl)
-const autoplayPaused = computed(() => isHovered.value || isFocusWithin.value)
+const autoplayPaused = computed(
+  () => isHovered.value || isFocusWithin.value || isDragging.value
+)
 
 // Every slide advances on its own timer; video durations arrive as
 // `autoplayMs` in the data. Only the active slide mounts a VideoPlayer, so
@@ -95,136 +115,133 @@ useCarouselAutoplay({
     slides.length > 1 &&
     !autoplayPaused.value,
   resetKey: activeIndex,
-  advance: () => goTo(activeIndex.value + 1)
+  advance: () => api.value?.scrollNext()
 })
 </script>
 
 <template>
   <section :class="cn('w-full px-6 lg:px-12', className)">
     <div ref="rootEl" class="max-w-9xl mx-auto">
-      <div class="overflow-clip">
-        <div
-          class="flex gap-4"
-          :class="
-            prefersReducedMotion()
-              ? undefined
-              : 'transition-transform duration-500 ease-out'
-          "
-          :style="{
-            transform: `translateX(calc(${-activeIndex} * (100% + 1rem)))`
-          }"
-        >
-          <article
+      <Carousel
+        :opts="{ loop: true }"
+        class="focus-visible:ring-primary-comfy-yellow/50 focus-visible:ring-3 focus-visible:outline-none"
+        @init-api="onInitApi"
+      >
+        <CarouselContent>
+          <CarouselItem
             v-for="(slide, index) in slides"
             :key="slide.id"
-            class="bg-transparency-white-t4 lg:rounded-5xl flex w-full shrink-0 flex-col gap-4 rounded-4xl p-2 lg:flex-row lg:gap-8"
             :aria-hidden="index !== activeIndex"
             :inert="index !== activeIndex"
           >
-            <div class="relative aspect-video w-full lg:flex-1">
-              <VideoPlayer
-                v-if="slide.media.type === 'video' && index === activeIndex"
-                :locale
-                :src="slide.media.src"
-                :poster="slide.media.poster"
-                :aria-label="slide.media.alt"
-                autoplay
-                loop
-                mute-only
-                class="lg:rounded-4.5xl absolute inset-0 aspect-auto h-full rounded-3xl border-0"
-              />
-              <img
-                v-else-if="
-                  slide.media.type === 'image'
-                    ? slide.media.src
-                    : slide.media.poster
-                "
-                :src="
-                  slide.media.type === 'image'
-                    ? slide.media.src
-                    : slide.media.poster
-                "
-                :alt="slide.media.alt"
-                :loading="index === 0 ? 'eager' : 'lazy'"
-                decoding="async"
-                class="lg:rounded-4.5xl absolute inset-0 size-full rounded-3xl object-cover object-center"
-              />
-              <div
-                v-else
-                class="lg:rounded-4.5xl absolute inset-0 rounded-3xl bg-black"
-              />
-            </div>
-
-            <div
-              class="flex w-full flex-col justify-center p-4 lg:flex-1 lg:p-6"
+            <article
+              class="bg-transparency-white-t4 lg:rounded-5xl flex h-full flex-col gap-4 rounded-4xl p-2 lg:flex-row lg:gap-8"
             >
-              <p
-                v-if="slide.eyebrow"
-                class="text-primary-comfy-yellow text-sm font-bold tracking-[0.7px] uppercase"
-              >
-                {{ slide.eyebrow }}
-              </p>
-              <h2
-                class="mt-7 max-w-200 text-3xl leading-[135%] font-medium text-primary-comfy-canvas"
-              >
-                {{ slide.title }}
-              </h2>
-              <p
-                v-if="slide.body"
-                class="mt-5 max-w-160 text-[17px] leading-[160%] font-light text-primary-comfy-canvas"
-              >
-                {{ slide.body }}
-              </p>
-
-              <div
-                v-if="slide.primaryCta || slide.secondaryCta"
-                class="mt-10 flex flex-wrap gap-3 lg:mt-16 lg:gap-4"
-              >
-                <Button
-                  v-if="slide.primaryCta"
-                  :href="slide.primaryCta.href"
-                  :target="slide.primaryCta.newTab ? '_blank' : undefined"
-                  :rel="
-                    resolveRel({
-                      target: slide.primaryCta.newTab ? '_blank' : undefined
-                    })
+              <div class="relative aspect-video w-full lg:flex-1">
+                <VideoPlayer
+                  v-if="slide.media.type === 'video' && index === activeIndex"
+                  :locale
+                  :src="slide.media.src"
+                  :poster="slide.media.poster"
+                  :aria-label="slide.media.alt"
+                  autoplay
+                  loop
+                  mute-only
+                  class="lg:rounded-4.5xl absolute inset-0 aspect-auto h-full rounded-3xl border-0"
+                />
+                <img
+                  v-else-if="
+                    slide.media.type === 'image'
+                      ? slide.media.src
+                      : slide.media.poster
                   "
-                >
-                  {{ slide.primaryCta.label }}
-                </Button>
-                <Button
-                  v-if="slide.secondaryCta"
-                  variant="outline"
-                  :href="slide.secondaryCta.href"
-                  :target="slide.secondaryCta.newTab ? '_blank' : undefined"
-                  :rel="
-                    resolveRel({
-                      target: slide.secondaryCta.newTab ? '_blank' : undefined
-                    })
+                  :src="
+                    slide.media.type === 'image'
+                      ? slide.media.src
+                      : slide.media.poster
                   "
-                >
-                  {{ slide.secondaryCta.label }}
-                </Button>
+                  :alt="slide.media.alt"
+                  :loading="index === 0 ? 'eager' : 'lazy'"
+                  decoding="async"
+                  class="lg:rounded-4.5xl absolute inset-0 size-full rounded-3xl object-cover object-center"
+                />
+                <div
+                  v-else
+                  class="lg:rounded-4.5xl absolute inset-0 rounded-3xl bg-black"
+                />
               </div>
 
               <div
-                v-if="slide.tags?.length"
-                class="mt-10 flex flex-wrap gap-2 lg:mt-14"
+                class="flex w-full flex-col justify-center p-4 lg:flex-1 lg:p-6"
               >
-                <Badge
-                  v-for="tag in slide.tags"
-                  :key="tag"
-                  variant="subtle"
-                  size="md"
-                  class="py-2 text-primary-comfy-canvas"
+                <p
+                  v-if="slide.eyebrow"
+                  class="text-primary-comfy-yellow text-sm font-bold tracking-[0.7px] uppercase"
                 >
-                  {{ tag }}
-                </Badge>
+                  {{ slide.eyebrow }}
+                </p>
+                <h2
+                  class="mt-7 max-w-200 text-3xl leading-[135%] font-medium text-primary-comfy-canvas"
+                >
+                  {{ slide.title }}
+                </h2>
+                <p
+                  v-if="slide.body"
+                  class="mt-5 max-w-160 text-[17px] leading-[160%] font-light text-primary-comfy-canvas"
+                >
+                  {{ slide.body }}
+                </p>
+
+                <div
+                  v-if="slide.primaryCta || slide.secondaryCta"
+                  class="mt-10 flex flex-wrap gap-3 lg:mt-16 lg:gap-4"
+                >
+                  <Button
+                    v-if="slide.primaryCta"
+                    :href="slide.primaryCta.href"
+                    :target="slide.primaryCta.newTab ? '_blank' : undefined"
+                    :rel="
+                      resolveRel({
+                        target: slide.primaryCta.newTab ? '_blank' : undefined
+                      })
+                    "
+                  >
+                    {{ slide.primaryCta.label }}
+                  </Button>
+                  <Button
+                    v-if="slide.secondaryCta"
+                    variant="outline"
+                    :href="slide.secondaryCta.href"
+                    :target="slide.secondaryCta.newTab ? '_blank' : undefined"
+                    :rel="
+                      resolveRel({
+                        target: slide.secondaryCta.newTab ? '_blank' : undefined
+                      })
+                    "
+                  >
+                    {{ slide.secondaryCta.label }}
+                  </Button>
+                </div>
+
+                <div
+                  v-if="slide.tags?.length"
+                  class="mt-10 flex flex-wrap gap-2 lg:mt-14"
+                >
+                  <Badge
+                    v-for="tag in slide.tags"
+                    :key="tag"
+                    variant="subtle"
+                    size="md"
+                    class="py-2 text-primary-comfy-canvas"
+                  >
+                    {{ tag }}
+                  </Badge>
+                </div>
               </div>
-            </div>
-          </article>
-        </div>
-      </div>
+            </article>
+          </CarouselItem>
+        </CarouselContent>
+      </Carousel>
 
       <div
         v-if="slides.length > 1"
@@ -242,7 +259,7 @@ useCarouselAutoplay({
           "
           :aria-label="slide.title"
           :aria-current="index === activeIndex ? 'true' : undefined"
-          @click="goTo(index)"
+          @click="api?.scrollTo(index)"
         />
       </div>
     </div>
