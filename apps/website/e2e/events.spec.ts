@@ -3,10 +3,12 @@ import { expect } from '@playwright/test'
 
 import { localizeHref } from '../src/config/routes'
 import {
+  eventJsonLdNode,
   eventPath,
   eventVideoId,
   featuredEvents,
   pastEvents,
+  toCalendarEvent,
   upcomingEvents
 } from '../src/data/events'
 import type { Locale } from '../src/i18n/translations'
@@ -120,6 +122,25 @@ test.describe('Events page — desktop @smoke', () => {
         slideTitle(featuredEvents.length - 1)
       )
     }
+  })
+
+  test('fallbacks to English content for missing localized keys (locale: ja)', () => {
+    // Pick an event that doesn't have a Japanese translation
+    const event = pastEvents[0]
+
+    // toCalendarEvent fallback test
+    const calendarEvent = toCalendarEvent(event, 'ja')
+    expect(calendarEvent.title).toBe(event.title.en)
+    expect(calendarEvent.description).toBe(event.description.en)
+
+    const jsonLd = eventJsonLdNode(event, {
+      siteUrl: 'https://comfy.org',
+      site: undefined,
+      pageUrl: 'https://comfy.org/ja/events',
+      locale: 'ja'
+    })
+    expect(jsonLd.name).toBe(event.title.en)
+    expect(jsonLd.description).toBe(event.description.en)
   })
 
   test('a video slide that ends while hovered advances once the pointer leaves', async ({

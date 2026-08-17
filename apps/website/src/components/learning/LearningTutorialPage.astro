@@ -9,7 +9,8 @@ import { externalLinks, localizeHref } from '../../config/routes'
 import type { LearningTutorial } from '../../data/learningTutorials'
 import {
   learningCrumbs,
-  tutorialDescription
+  tutorialDescription,
+  tutorialTitle
 } from '../../data/learningTutorials'
 import type { JsonLdNode } from '../../utils/jsonLd'
 import {
@@ -31,7 +32,7 @@ const { siteUrl, locale, url } = pageContext(
   Astro.currentLocale
 )
 
-const title = tutorial.title[locale] ?? tutorial.title.en
+const title = tutorialTitle(tutorial, locale)
 const description = tutorialDescription(tutorial, locale)
 const videoId = jsonLdId(url, 'video')
 
