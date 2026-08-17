@@ -105,6 +105,7 @@ export const API_MEMBERS: ReadonlySet<string> = new Set([
   'has',
   'height',
   'hidden',
+  'hideOnZoom',
   'hideWidget',
   'icon',
   'id',

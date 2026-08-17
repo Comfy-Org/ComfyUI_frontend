@@ -539,6 +539,17 @@ describe('mounted and canvas widgets', () => {
     expect(widgets.names()).toContain('panel')
   })
 
+  it('lets a mounted widget remain rendered at low zoom', () => {
+    widgets.mount({ name: 'default', render: () => {} })
+    widgets.mount({ name: 'always', hideOnZoom: false, render: () => {} })
+
+    const mounted = node.widgets as unknown as {
+      options: { hideOnZoom?: boolean }
+    }[]
+    expect(mounted[0].options.hideOnZoom).toBe(true)
+    expect(mounted[1].options.hideOnZoom).toBe(false)
+  })
+
   it('keeps a mounted widget out of the saved workflow by default', () => {
     // A pack drawing something must not change what the workflow contains.
     widgets.mount({ name: 'panel', render: () => {} })

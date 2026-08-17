@@ -494,6 +494,8 @@ export interface MountDef {
   destroy?(): void
   /** Reserved height in graph units. Omit to size to content. */
   readonly height?: number
+  /** Set false to keep the element rendered at low zoom. Defaults to true. */
+  readonly hideOnZoom?: boolean
   readonly hidden?: boolean
   /**
    * Whether the value is written into the saved workflow.
@@ -926,6 +928,7 @@ export function createWidgetCollection(
         // A control that holds a value is saved and sent by default; a
         // drawing is not. Either way the pack's own choice wins.
         serialize: def.sendToPrompt ?? def.serialize ?? holdsValue,
+        hideOnZoom: def.hideOnZoom ?? true,
         ...(holdsValue
           ? {
               getValue: () => current,
