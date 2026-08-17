@@ -1,4 +1,3 @@
-/* oxlint-disable playwright/no-skipped-test -- tiers conditionally skip when the target backend lacks the required packs (installed custom nodes or devtools); this is the framework's designed environment gating, not a disabled test */
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
@@ -17,6 +16,7 @@ import {
 import { LocalDesktopTarget } from '@e2e/fixtures/customNode/ComfyTarget'
 import {
   isForeignExecutionNoise,
+  unallowlistedGlobalExtensionErrorsForPacks,
   unallowlistedErrors
 } from '@e2e/fixtures/customNode/consoleErrorLedger'
 import {
@@ -25,6 +25,7 @@ import {
   expectedExtensionsFor,
   loadAllManifestPackNames,
   rendererPassesFor,
+  servesFrontendAssetsForPack,
   staleAutogrowApplicabilityIssues
 } from '@e2e/fixtures/customNode/manifest'
 import { missingExpectedNodes } from '@e2e/fixtures/customNode/objectInfoValidator'
@@ -32,7 +33,10 @@ import {
   assertPackLedgerKeys,
   packLedgerFor
 } from '@e2e/fixtures/customNode/packLedger'
-import { collectConsoleErrors } from '@e2e/fixtures/utils/consoleErrorCollector'
+import {
+  collectConsoleErrors,
+  startupConsoleErrors
+} from '@e2e/fixtures/utils/consoleErrorCollector'
 import {
   errorSurfaces,
   expectNoVisibleErrors
@@ -92,11 +96,25 @@ async function nodeIdsByType(
   }, classTypes)
 }
 
-for (const entry of loadManifest()) {
+const manifestEntries = loadManifest()
+const installedManifestPacks = manifestEntries.map((entry) => entry.pack)
+
+test('Pack startup/load: custom extensions import without unallowlisted errors @custom-nodes', async ({
+  comfyPage
+}) => {
+  expect(
+    unallowlistedGlobalExtensionErrorsForPacks(installedManifestPacks, [
+      ...startupConsoleErrors(comfyPage.page)
+    ]),
+    'custom extension failed while the application loaded it'
+  ).toEqual([])
+})
+
+for (const entry of manifestEntries) {
   const workflowRelative = `browser_tests/${entry.workflow}`
 
   test.describe(`custom node: ${entry.pack} @custom-nodes`, () => {
-    test('Pack startup/load: expected nodes register, render in both renderers, and frontend extensions load', async ({
+    test('Pack startup/load: expected nodes register, render in both renderers, and frontend integration is present', async ({
       comfyPage
     }) => {
       test.setTimeout(entry.timeoutMs)
@@ -106,10 +124,10 @@ for (const entry of loadManifest()) {
         'object_info sanity floor'
       ).toBeGreaterThan(OBJECT_INFO_SANITY_FLOOR)
       const missing = missingExpectedNodes(objectInfo, entry.expectedNodes)
-      test.skip(
-        missing.length > 0,
+      expect(
+        missing,
         `${entry.pack} not installed on this backend (missing: ${missing.join(', ')})`
-      )
+      ).toEqual([])
       await expectNoVisibleErrors(comfyPage.page, 'at startup')
 
       // Backend registration alone does not prove the pack's FRONTEND JS
@@ -121,20 +139,27 @@ for (const entry of loadManifest()) {
       const ownedAutogrowCases = AUTOGROW_CASES.filter(
         ({ pack }) => pack.toLowerCase() === entry.pack.toLowerCase()
       )
+      const webDirectory =
+        'webDirectory' in entry ? entry.webDirectory : undefined
       if (
         expectedExtensionsFor(entry).length > 0 ||
         Object.keys(knownBroken).length > 0 ||
-        ownedAutogrowCases.length > 0
+        ownedAutogrowCases.length > 0 ||
+        webDirectory !== undefined
       ) {
         const registered = await comfyPage.page.evaluate(() =>
           window.app!.extensions.map((extension) => extension.name)
         )
-        const servedExtensionPaths = ownedAutogrowCases.some(
-          ({ extensionName }) =>
-            !expectedExtensionsFor(entry).includes(extensionName)
-        )
-          ? await comfyPage.page.evaluate(() => window.app!.api.getExtensions())
-          : []
+        const servedExtensionPaths =
+          webDirectory !== undefined ||
+          ownedAutogrowCases.some(
+            ({ extensionName }) =>
+              !expectedExtensionsFor(entry).includes(extensionName)
+          )
+            ? await comfyPage.page.evaluate(() =>
+                window.app!.api.getExtensions()
+              )
+            : []
         for (const name of expectedExtensionsFor(entry))
           expect(
             registered,
@@ -145,6 +170,11 @@ for (const entry of loadManifest()) {
             registered,
             `${entry.pack}: known-broken frontend extension "${name}" registered despite its ledgered mechanism (${reason}) - remove the stale entry and restore it to expectedExtensions`
           ).not.toContain(name)
+        if (webDirectory !== undefined)
+          expect(
+            servesFrontendAssetsForPack(servedExtensionPaths, entry.pack),
+            `${entry.pack}: supported_nodes.yaml declares web_directory=${webDirectory}, but the backend serves no extension path for this pack`
+          ).toBe(true)
         const staleAutogrowApplicability = staleAutogrowApplicabilityIssues(
           {
             pack: entry.pack,
@@ -212,11 +242,6 @@ for (const entry of loadManifest()) {
       }
     })
 
-    // Registration-gated, not runtime-skipped: a row not enrolled in the run
-    // tier generates no curated workflow test, so the gates' zero-skip check
-    // keeps meaning "every enrolled tier ran". The runtime skip below covers
-    // only conditions of the ENVIRONMENT an enrolled row meets (pack not
-    // installed on this backend or GPU/models the runner lacks).
     if (entry.tiers.includes('run'))
       test('Curated workflow execution: completes without error', async ({
         comfyPage
@@ -224,12 +249,10 @@ for (const entry of loadManifest()) {
         test.setTimeout(entry.timeoutMs + 15_000)
         const objectInfo = await target.getObjectInfo(comfyPage.page)
         const missing = missingExpectedNodes(objectInfo, entry.expectedNodes)
-        test.skip(
-          missing.length > 0 ||
-            ('requiresGpu' in entry &&
-              (entry.requiresGpu || entry.requiresModels.length > 0)),
-          `run tier unavailable for ${entry.pack}`
-        )
+        expect(
+          missing,
+          `run-tier nodes unavailable for ${entry.pack}: ${missing.join(', ')}`
+        ).toEqual([])
         await expectNoVisibleErrors(comfyPage.page, 'at startup')
 
         // Pack scripts can throw during workflow load or execution without
@@ -353,10 +376,10 @@ test('attribution self-check: a foreign-prompt terminal event cannot fail this r
 }) => {
   test.setTimeout(30_000)
   const objectInfo = await target.getObjectInfo(comfyPage.page)
-  test.skip(
-    !('PrimitiveInt' in objectInfo) || !('PreviewAny' in objectInfo),
-    'core Primitive/PreviewAny nodes unavailable on this backend'
-  )
+  expect(
+    ['PrimitiveInt', 'PreviewAny'].filter((node) => !(node in objectInfo)),
+    'attribution self-check requires core PrimitiveInt and PreviewAny'
+  ).toEqual([])
   await comfyPage.workflow.loadGraphData(
     readWorkflow(assetPath('customNodes/core_primitive_preview_run.json'))
   )

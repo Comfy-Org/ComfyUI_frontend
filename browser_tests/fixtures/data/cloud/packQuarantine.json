@@ -7,18 +7,18 @@
     "upstreamFix": "correct the sha in supported_nodes.yaml to 4d9dc6205b793ffd0fb319816136d9b8c0dbfdff"
   },
   "ComfyUI-SeedVR2_VideoUpscaler": {
-    "class": "registers-no-nodes",
+    "class": "requires-gpu-runner",
     "evidence": "The suite reports \"not installed on this backend\": the files are on disk and pip succeeded, but ComfyUI never registers the pack because its import does not resolve without the hardware. A pack contributing zero nodes cannot be expressed as a node-count baseline.",
     "reason": "installs cleanly but registers zero nodes on a CPU runner - the pack imports ensure_triton_compat, and Triton is GPU-only",
     "since": "2026-08-15",
-    "upstreamFix": "nothing upstream to fix - restore this pack by running the suite on a GPU runner"
+    "upstreamFix": "add a GPU-backed shard and restore this pack to the tested population"
   },
   "comfyui_nvidia_rtx_nodes": {
-    "class": "registers-no-nodes",
+    "class": "requires-gpu-runner",
     "evidence": "The suite reports \"not installed on this backend\": the files are on disk and pip succeeded, but ComfyUI never registers the pack because its import does not resolve without the hardware. A pack contributing zero nodes cannot be expressed as a node-count baseline.",
     "reason": "installs cleanly but registers zero nodes on a CPU runner - the pack targets NVIDIA RTX hardware",
     "since": "2026-08-15",
-    "upstreamFix": "nothing upstream to fix - restore this pack by running the suite on a GPU runner"
+    "upstreamFix": "add a GPU-backed shard and restore this pack to the tested population"
   },
   "radiance": {
     "class": "unsatisfiable-requirement",

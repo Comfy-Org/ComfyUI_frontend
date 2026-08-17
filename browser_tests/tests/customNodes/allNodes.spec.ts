@@ -1,6 +1,6 @@
 /* oxlint-disable playwright/no-skipped-test -- tiers conditionally skip when the target backend lacks the required packs; environment gating, not a disabled test */
 // Every-node coverage: the suite's core contract (mounts, survives
-// save/reload, executes when self-sufficient) applied to ALL nodes a pack
+// save/reload, calibrated model-free execution) applied to ALL eligible nodes a pack
 // registers - not just the curated expectedNodes sentinels. Node lists come
 // from the live backend, so a pack update is covered the moment it installs.
 import type { Page } from '@playwright/test'
@@ -125,8 +125,6 @@ const AUTO_RUN_EXCLUDE: Record<string, Record<string, string>> = {
   'ComfyUI-VideoHelperSuite': {
     VHS_LoadAudioUpload:
       'environment-variable execution: upload combo state differs between hosts (clean locally, Exception on CI)',
-    VHS_AudioToVHSAudio:
-      'list-expanded execution emits no per-node executing event on some runs, so the executed-set signal flip-flops between PASS and PARTIAL (same class as essentials TransitionMask+)',
     VHS_BatchManager:
       'iteration-coordinator node; its executing signal flip-flops between PASS and PARTIAL run-to-run (same class as essentials TransitionMask+)',
     VHS_SelectLatest:
@@ -193,7 +191,12 @@ const AUTO_RUN_EXCLUDE: Record<string, Record<string, string>> = {
 // Auto-run OUTCOME not asserted for these nodes; they still execute every
 // run, so crashes and console errors surface - only the PASS/PARTIAL verdict
 // is ledgered. Un-ledger when the executing signal covers list-expanded runs.
-const AUTO_RUN_UNSTABLE_NODES: Record<string, Record<string, string>> = {}
+const AUTO_RUN_UNSTABLE_NODES: Record<string, Record<string, string>> = {
+  'ComfyUI-VideoHelperSuite': {
+    VHS_AudioToVHSAudio:
+      'the node executes on every run; list expansion intermittently omits its per-node executing event, so only PARTIAL is accepted'
+  }
+}
 
 // Plain-typed widgets whose value is owned by pack JS: a programmatic write
 // is legitimately rewritten, so set-and-stick does not apply. Keyed
@@ -1504,9 +1507,14 @@ for (const entry of manifestEntries) {
           const allowedOutcome =
             allowedFailure !== undefined &&
             matchesAllowedAutoRunOutcome(detail, allowedFailure.outcomes)
-          if (!baseline.has(key) && !(key in unstable) && !allowedOutcome)
+          const allowedUnstableOutcome = key in unstable && detail === 'PARTIAL'
+          if (!baseline.has(key) && !allowedUnstableOutcome && !allowedOutcome)
             hardFailures.push(
               `${key}: ${detail} - not in cannotRunAlone; a regression, or a new baseline entry (attach the run log)`
+            )
+          else if (allowedUnstableOutcome)
+            console.log(
+              `${entry.pack}: ${key} produced allowed PARTIAL (${unstable[key]})`
             )
           else if (allowedOutcome)
             console.log(
@@ -1555,7 +1563,7 @@ const tiers: Array<[AllNodesTier, string]> = [
   ['S1', 'every registered node mounts on the canvas renderer'],
   ['S2', 'every registered node mounts on the DOM renderer'],
   ['S3', 'every registered node survives save and reload'],
-  ['S9', 'every self-sufficient node executes']
+  ['S9', 'calibrated model-free node corpus executes']
 ]
 
 // The capability each tier needs from a pack's manifest row. Mounting and

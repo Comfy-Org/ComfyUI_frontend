@@ -14,7 +14,7 @@ import json, os, re, subprocess
 
 RESULT_FILE = 'custom-nodes-results.json'
 LOG_FILE = 'custom-nodes.log'
-SUITE_TITLE = 'Custom-node core suite'
+SUITE_TITLE = 'Custom-node cloud snapshot suite'
 
 def out(md, log=None):
     with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as f:
@@ -41,11 +41,12 @@ stats = data.get('stats', {})
 
 TIERS = ['startup/load', 'S1', 'S2', 'S3', 'S9', 'curated run', 'dynamic inputs']
 packs, wide = {}, {}
+auto_run_exclusions = []
 
 def bucket(file, path):
     title = ' > '.join(path)
     pack = None
-    m = re.search(r'(?:custom node|all nodes|dynamic inputs|interaction profiles): ([^@>]+?)(?:\s*@|\s*>|$)', title)
+    m = re.search(r'(?:custom node|all nodes|dynamic inputs): ([^@>]+?)(?:\s*@|\s*>|$)', title)
     if m:
         pack = m.group(1).strip()
     if 'allNodes' in file:
@@ -99,6 +100,10 @@ for s in data.get('suites', []):
 
 if os.path.exists(LOG_FILE):
     for line in open(LOG_FILE):
+        excluded = re.fullmatch(r'(.+): (.+) excluded from auto-run \((.+)\)\n?', line)
+        if excluded:
+            auto_run_exclusions.append(excluded.groups())
+            continue
         m = re.fullmatch(r'\[tier-pack\] tier=(S(?:1|2|3|9)) pack=(.+) result=(pass|fail)\n?', line)
         if not m:
             continue
@@ -139,3 +144,9 @@ if failed:
     out('\n### Failed tests')
     for title, err in failed[:20]:
         out(f'- `{title}`\n  - {err}', f'FAILED: {title}\n        {err}')
+if auto_run_exclusions:
+    out('\n### Execution coverage exclusions')
+    out('Every entry below was classified as model-free but was not executed.')
+    for pack, node, reason in sorted(set(auto_run_exclusions)):
+        out(f'- **{pack} / {node} - SKIP**\n  - {reason}')
+        print(f'::warning title=Custom-node execution excluded::{pack} / {node} - {reason}')

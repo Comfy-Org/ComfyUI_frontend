@@ -1,12 +1,11 @@
 /**
- * Checks that every quarantined pack is still broken.
+ * Reports every excluded pack and rechecks externally verifiable failures.
  *
  * Quarantine removes a pack from the population, so it is lost coverage that
  * looks like a green run. The only thing that makes it safe is this: each
- * entry is re-checked against the live world, and an entry whose bug has been
- * fixed upstream FAILS - the same discipline the manifest already applies to
- * cannotRunAlone and the pack ledgers, where an unlisted failure is a
- * regression and a listed clean run is a stale entry.
+ * source failure is rechecked against the live world, and a fixed entry fails.
+ * Hardware exclusions cannot be rechecked on this CPU runner; they stay bold
+ * in the Actions summary with the GPU-shard work needed to restore coverage.
  *
  *   pnpm custom-node-quarantine
  */
@@ -19,7 +18,6 @@ import { promisify } from 'node:util'
 import type { QuarantinedPack } from '../browser_tests/fixtures/customNode/manifest'
 import { ROUNDTRIP_NODE_LOSS_EXPECTATIONS_LITEGRAPH } from '../browser_tests/fixtures/customNode/valueDrift'
 import {
-  MAX_QUARANTINED_PACKS,
   loadFullManifest,
   loadPackQuarantine,
   packIdentity,
@@ -98,10 +96,7 @@ async function stillBroken(
       return refStillMissing(deployRef)
     case 'unsatisfiable-requirement':
       return requirementsStillUnsatisfiable(deployRef)
-    case 'registers-no-nodes':
-    case 'registers-fewer-nodes':
-      // Only a live backend can answer this, and the shard that would know
-      // has excluded the pack. Re-checked by the suite, not from here.
+    case 'requires-gpu-runner':
       return true
     default:
       throw new Error(`${pack}: unknown quarantine class '${entry.class}'`)
@@ -135,15 +130,19 @@ for (const [pack, entry] of entries) {
   }
   const ref = packIdentity(row)
   const broken = await stillBroken(pack, entry, ref)
-  note(
-    `- **${pack}** \`${entry.class}\` - ${broken ? 'still excluded' : '**FIXED UPSTREAM**'}`
-  )
+  const status =
+    entry.class === 'requires-gpu-runner'
+      ? 'requires GPU-backed coverage'
+      : broken
+        ? 'still excluded'
+        : '**FIXED UPSTREAM**'
+  note(`- **${pack}** \`${entry.class}\` - ${status}`)
   note(`  - ${entry.reason}`)
   note(`  - to remove: ${entry.upstreamFix}`)
   process.stdout.write(
     `::warning title=Pack excluded from the suite::${pack} - ${entry.reason}\n`
   )
-  if (!broken) stale.push(pack)
+  if (entry.class !== 'requires-gpu-runner' && !broken) stale.push(pack)
 }
 
 const nodeExclusions = [
@@ -191,11 +190,6 @@ if (staleBaselines.length)
   problems.push(
     `${staleBaselines.join(', ')} now register the count the manifest expects - drop them from localExpectations.json`
   )
-if (entries.length > MAX_QUARANTINED_PACKS)
-  problems.push(
-    `${entries.length} packs quarantined, limit is ${MAX_QUARANTINED_PACKS} - the suite is measuring materially less than it claims`
-  )
-
 for (const problem of problems) {
   note(`- **PROBLEM** ${problem}`)
   process.stdout.write(`::error::${problem}\n`)

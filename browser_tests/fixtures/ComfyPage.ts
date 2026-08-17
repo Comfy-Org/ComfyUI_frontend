@@ -27,6 +27,10 @@ import {
   installCustomNodeBlankStartup,
   runWithCollectedCleanup
 } from '@e2e/fixtures/utils/customNodeSuite'
+import {
+  collectConsoleErrors,
+  recordStartupConsoleErrors
+} from '@e2e/fixtures/utils/consoleErrorCollector'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { nextFrame, sleep } from '@e2e/fixtures/utils/timing'
 import { mockWorkspace, workspace } from '@e2e/fixtures/utils/workspaceMocks'
@@ -594,14 +598,17 @@ export const comfyPageFixture = base.extend<{
     const isCustomNodes = testInfo.project.name === 'custom-nodes'
     const needsPerf =
       testInfo.tags.includes('@perf') || testInfo.tags.includes('@audit')
+    const startupErrorCollector = isCustomNodes
+      ? collectConsoleErrors(page)
+      : undefined
     let perfStarted = false
-    const cleanups: (() => Promise<void>)[] = needsPerf
-      ? [
-          async () => {
-            if (perfStarted) await comfyPage.perf.dispose()
-          }
-        ]
-      : []
+    const cleanups: (() => Promise<void>)[] = []
+    if (needsPerf)
+      cleanups.push(async () => {
+        if (perfStarted) await comfyPage.perf.dispose()
+      })
+    if (startupErrorCollector)
+      cleanups.push(async () => startupErrorCollector.stop())
 
     const run = async () => {
       const userId = await comfyPage.setupUser(username)
@@ -675,6 +682,11 @@ export const comfyPageFixture = base.extend<{
       }
 
       await comfyPage.setup()
+
+      if (startupErrorCollector) {
+        startupErrorCollector.stop()
+        recordStartupConsoleErrors(page, startupErrorCollector.errors)
+      }
 
       if (isCustomNodes) {
         await comfyExpect

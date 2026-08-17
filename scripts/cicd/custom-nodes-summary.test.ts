@@ -19,7 +19,8 @@ it('reports each all-node tier result separately for each pack', () => {
         '[tier-pack] tier=S1 pack=Pack-A result=pass',
         '[tier-pack] tier=S2 pack=Pack-A result=fail',
         '[tier-pack] tier=S1 pack=Pack-B result=pass',
-        '[tier-pack] tier=S2 pack=Pack-B result=pass'
+        '[tier-pack] tier=S2 pack=Pack-B result=pass',
+        'Pack-B: ExampleNode excluded from auto-run (requires a model)'
       ].join('\n')
     )
 
@@ -34,8 +35,9 @@ it('reports each all-node tier result separately for each pack', () => {
 
     expect(result.status).toBe(0)
     const summary = fs.readFileSync(path.join(dir, 'summary.md'), 'utf8')
-    expect(summary).toContain('## Custom-node core suite')
+    expect(summary).toContain('## Custom-node cloud snapshot suite')
     expect(summary).toContain('| Pack | startup/load | S1 | S2 | S3 | S9 |')
+    expect(summary).toContain('**Pack-B / ExampleNode - SKIP**')
     expect(result.stdout).toMatch(/^Pack-A\s+-\s+PASS\s+FAIL 1\/1\s+-/m)
     expect(result.stdout).toMatch(/^Pack-B\s+-\s+PASS\s+PASS\s+-/m)
   } finally {

@@ -1,5 +1,18 @@
 import type { ConsoleMessage, Page, TestInfo } from '@playwright/test'
 
+const startupErrors = new WeakMap<Page, readonly string[]>()
+
+export function recordStartupConsoleErrors(
+  page: Page,
+  errors: readonly string[]
+): void {
+  startupErrors.set(page, [...errors])
+}
+
+export function startupConsoleErrors(page: Page): readonly string[] {
+  return startupErrors.get(page) ?? []
+}
+
 export async function attachPageDiagnosticEvidence(
   testInfo: Pick<TestInfo, 'attach'>,
   name: string,

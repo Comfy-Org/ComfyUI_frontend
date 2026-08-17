@@ -78,10 +78,10 @@ for (const { autogrowCase, manifestEntry } of applicableAutogrowCases) {
         autogrowCase.consumerType,
         autogrowCase.producerType
       ])
-      test.skip(
-        missing.length > 0,
+      expect(
+        missing,
         `${autogrowCase.pack} not installed on this backend (missing: ${missing.join(', ')})`
-      )
+      ).toEqual([])
       // The pack row owns renderer compatibility (vueNodesCompatible), so a
       // pack that ever declares itself Vue-incompatible keeps its canvas
       // coverage here instead of failing the Vue pass.
