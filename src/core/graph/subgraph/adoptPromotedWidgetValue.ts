@@ -20,7 +20,7 @@ export function adoptPromotedWidgetValue(
   const value = useWidgetValueStore().getWidget(widgetId)?.value
   if (value === undefined || !isWidgetValue(value)) return
 
-  const targetInput = targetNode.inputs.at(targetSlot)
+  const targetInput: INodeInputSlot | undefined = targetNode.inputs[targetSlot]
   if (!targetInput) return
 
   const widget = targetNode.getWidgetFromSlot(targetInput)

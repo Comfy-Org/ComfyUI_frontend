@@ -2084,9 +2084,10 @@ export class LGraph
     for (const [, link] of subgraphNode.subgraph._links) {
       let externalParentId: RerouteId | undefined
       if (link.origin_id === SUBGRAPH_INPUT_ID) {
-        const hostInput = subgraphNode.inputs.at(link.origin_slot)
+        const hostInput: INodeInputSlot | undefined =
+          subgraphNode.inputs[link.origin_slot]
         if (!hostInput) {
-          console.error('Missing Link ID when unpacking')
+          console.error('Missing host input when unpacking subgraph')
           continue
         }
         const outerLinkId = hostInput.link
