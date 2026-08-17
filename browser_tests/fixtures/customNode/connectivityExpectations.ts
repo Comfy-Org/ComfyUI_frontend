@@ -55,6 +55,11 @@ export const connectivityExpectations: ConnectivityExpectations = {
     'AddTextPrefix.texts -> VHS_SelectLatest.filename_prefix',
     'AddTextPrefix.texts -> VHS_SelectLatest.filename_postfix',
     'VHS_SelectLatest.Filename -> AddLabel.font_color',
+    // FL_CodeNode's dynamic-slot hook treats all four declared inputs as removable.
+    'AddTextPrefix.texts -> FL_CodeNode.code_input',
+    'AddTextPrefix.texts -> FL_CodeNode.file',
+    'BooleanBasic.BOOLEAN -> FL_CodeNode.use_file',
+    'BooleanBasic.BOOLEAN -> FL_CodeNode.run_always',
     'ACN_AdvancedControlNetApply.model_opt -> FL_TimeLine.model',
     'AddTextPrefix.texts -> FL_TimeLine.timeline_data',
     'AudioReactiveTransform.frame_count -> FL_TimeLine.video_width',

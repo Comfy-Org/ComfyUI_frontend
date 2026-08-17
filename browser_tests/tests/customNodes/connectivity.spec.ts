@@ -110,11 +110,11 @@ async function runPairsInIsolatedPages(
         [pair.producer.nodeType, pair.consumer.nodeType],
         { timeout: 60_000 }
       )
-      results.push(...(await evaluatePairs(probe, [pair])))
       await expectNoVisibleErrors(
         probe,
-        `after isolated pair ${pair.producer.nodeType} -> ${pair.consumer.nodeType}`
+        `before isolated pair ${pair.producer.nodeType} -> ${pair.consumer.nodeType}`
       )
+      results.push(...(await evaluatePairs(probe, [pair])))
     } finally {
       consoleErrors.stop()
       errors.push(...consoleErrors.errors)
