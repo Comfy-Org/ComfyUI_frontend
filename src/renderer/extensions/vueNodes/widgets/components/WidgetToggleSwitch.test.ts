@@ -329,7 +329,7 @@ describe('WidgetToggleSwitch Value Binding', () => {
     })
 
     it('exposes a linked status on the implicit switch surface', () => {
-      const widget = createToggleWidget(false, { disabled: true })
+      const widget = createToggleWidget(false)
       widget.linkedDisplay = 'switch'
       mountComponent(widget, false)
 
@@ -350,7 +350,6 @@ describe('WidgetToggleSwitch Value Binding', () => {
 
     it('keeps labeled linked toggles disabled behind one control status', () => {
       const widget = createToggleWidget(false, {
-        disabled: true,
         on: 'enabled',
         off: 'disabled'
       })

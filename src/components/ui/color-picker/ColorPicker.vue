@@ -70,6 +70,10 @@ const displayHex = computed(() => rgbToHex(baseRgb.value).toLowerCase())
 const isOpen = ref(false)
 const contentStyle = useModalLiftedZIndex(isOpen)
 
+function updateOpen(open: boolean) {
+  isOpen.value = open && !disabled
+}
+
 watch(
   () => disabled,
   (isDisabled) => {
@@ -79,7 +83,7 @@ watch(
 </script>
 
 <template>
-  <PopoverRoot v-model:open="isOpen">
+  <PopoverRoot :open="isOpen" @update:open="updateOpen">
     <PopoverTrigger as-child>
       <slot name="trigger">
         <button

@@ -9,9 +9,10 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type * as WidgetRegistry from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toLinkId } from '@/types/linkId'
-import { widgetId } from '@/types/widgetId'
-import WidgetItem from './WidgetItem.vue'
 import { toNodeId } from '@/types/nodeId'
+import { widgetId } from '@/types/widgetId'
+
+import WidgetItem from './WidgetItem.vue'
 
 const {
   mockFromLGraphNode,

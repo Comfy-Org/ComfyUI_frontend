@@ -65,6 +65,7 @@ test.describe('Vue Multiline String Widget', { tag: '@vue-nodes' }, () => {
     await expect(placeholder).toHaveAccessibleName('text: Linked input')
     await expect(linkedContent).toHaveAttribute('inert', '')
     await expect(linkedContent).toHaveAttribute('aria-hidden', 'true')
+    await expect(hiddenTextarea).toBeHidden()
     await expect(hiddenTextarea).toBeDisabled()
     await expect(clipNode.getByRole('textbox', { name: 'text' })).toHaveCount(0)
     await expect(hiddenTextarea).toHaveValue('stale local prompt')

@@ -44,4 +44,34 @@ describe('ColorPicker', () => {
     })
     expect(trigger).toBeDisabled()
   })
+
+  it('does not reopen from a custom trigger when disabled', async () => {
+    const user = userEvent.setup()
+    const { rerender } = render(ColorPicker, {
+      global: { plugins: [i18n] },
+      props: { modelValue: '#112233' },
+      slots: {
+        trigger: '<button type="button">Custom trigger</button>'
+      }
+    })
+    const trigger = screen.getByRole('button', { name: 'Custom trigger' })
+
+    await user.click(trigger)
+    expect(
+      await screen.findByRole('textbox', { name: 'Hex' })
+    ).toBeInTheDocument()
+
+    await rerender({ disabled: true, modelValue: '#112233' })
+    await waitFor(() => {
+      expect(
+        screen.queryByRole('textbox', { name: 'Hex' })
+      ).not.toBeInTheDocument()
+    })
+
+    await user.click(trigger)
+
+    expect(
+      screen.queryByRole('textbox', { name: 'Hex' })
+    ).not.toBeInTheDocument()
+  })
 })

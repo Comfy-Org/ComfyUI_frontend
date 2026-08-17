@@ -9,7 +9,13 @@
       v-if="hasLabels"
       type="single"
       :model-value="modelValue ? 'on' : 'off'"
-      :disabled="Boolean(widget.options?.read_only || widget.options?.disabled)"
+      :disabled="
+        Boolean(
+          widget.linkedDisplay ||
+          widget.options?.read_only ||
+          widget.options?.disabled
+        )
+      "
       :class="
         cn(
           WidgetInputBaseClass,
@@ -44,7 +50,7 @@
       >
         <Switch
           v-model="modelValue"
-          :disabled="Boolean(widget.options?.disabled)"
+          :disabled="isLinkedSwitch || Boolean(widget.options?.disabled)"
           :readonly="Boolean(widget.options?.read_only)"
           :aria-label="widget.name"
         />
