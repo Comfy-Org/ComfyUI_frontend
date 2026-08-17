@@ -1,4 +1,5 @@
 interface AllowlistRule {
+  global?: boolean
   pattern: RegExp
   reason: string
   requiredRoundtripId?: string
@@ -15,12 +16,28 @@ interface ConnectivityRule extends AllowlistRule {
 // and remain review-stale; deterministic roundtrip rules opt into observation
 // with requiredRoundtripId.
 const CONSOLE_ERROR_ALLOWLIST: Record<string, AllowlistRule[]> = {
+  'comfyui-itools': [
+    {
+      pattern:
+        /Failed to load resource.*404.*api\/itools\/request_the_paint_file/,
+      global: true,
+      reason:
+        'the paint widget requests its backing file on creation and the route 404s until one is saved'
+    },
+    {
+      pattern:
+        /Error calling extension 'iTools\.cropImage' method 'nodeCreated'.*Cannot read properties of undefined \(reading 'draw'\)/,
+      global: true,
+      reason:
+        'cropImage assumes its custom preview widget exists when its async nodeCreated hook resumes'
+    }
+  ],
   'ComfyUI-Impact-Pack': [
     {
       // Media/text widgets preview their value via root-relative URLs at
       // creation; 404s on a backend whose root does not serve the file.
       pattern:
-        /Failed to load resource.*404.*(example\.png|plain_video\.mp4|file\.txt)/,
+        /Failed to load resource.*404.*(beach\.jpg|example\.png|plain_video\.mp4|file\.txt)/,
       reason: 'media widget previews its value via a root-relative URL'
     },
     {
@@ -73,6 +90,28 @@ const CONSOLE_ERROR_ALLOWLIST: Record<string, AllowlistRule[]> = {
       pattern: /Cannot use 'in' operator to search for 'content' in null/,
       reason: 'betterCombos.js missing null check throws during save/reload'
     }
+  ],
+  'ComfyUI-UltraShape1': [
+    {
+      pattern:
+        /Failed to load resource.*404.*api\/view\?type=input&filename=%28upload\+a\+mesh\+file%29&subfolder=&rand=/,
+      reason:
+        'mesh preview requests the literal upload-placeholder value on a backend with no mesh input'
+    }
+  ],
+  'WhatDreamsCost-ComfyUI': [
+    {
+      pattern:
+        /Failed to load resource.*404.*api\/view\?filename=_cn&type=input/,
+      reason: 'set-and-stick probe value previewed by the media loader'
+    }
+  ],
+  'ComfyUI_Fill-Nodes': [
+    {
+      pattern:
+        /Failed to load resource.*404.*https:\/\/api\.comfy\.org\/comfy-nodes\/\/node/,
+      reason: 'pack metadata lookup requests an empty node name on creation'
+    }
   ]
 }
 
@@ -82,6 +121,20 @@ const CONSOLE_ERROR_ALLOWLIST: Record<string, AllowlistRule[]> = {
 // fixed or renamed mechanism immediately makes the ledger stale instead of
 // staying hidden; environment-state mechanisms remain exact but conditional.
 const CONNECTIVITY_ERROR_ALLOWLIST: Record<string, ConnectivityRule[]> = {
+  'comfyui-itools': [
+    {
+      pattern:
+        /Failed to load resource.*404.*api\/itools\/request_the_paint_file/,
+      reason:
+        'the paint widget requests its backing file on creation and the route 404s until one is saved'
+    },
+    {
+      pattern:
+        /Error calling extension 'iTools\.cropImage' method 'nodeCreated'.*Cannot read properties of undefined \(reading 'draw'\)/,
+      reason:
+        'cropImage assumes its custom preview widget exists when its async nodeCreated hook resumes'
+    }
+  ],
   'ComfyUI-KJNodes': [
     {
       pattern:
@@ -115,7 +168,7 @@ const CONNECTIVITY_ERROR_ALLOWLIST: Record<string, ConnectivityRule[]> = {
   'ComfyUI-VideoHelperSuite': [
     {
       pattern:
-        /Cannot read properties of undefined \(reading 'target_id'\)[\s\S]*\/extensions\/ComfyUI-VideoHelperSuite\/js\/VHS\.core\.js/,
+        /Cannot read properties of undefined \(reading 'target_id'\)[\s\S]*\/extensions\/comfyui-videohelpersuite\/js\/VHS\.core\.js/i,
       reason:
         'VHS file refresh reads a removed link while the sweep repeatedly clears the graph',
       requiredConnectivityId: 'core-vhs-removed-link-target-id'
@@ -138,7 +191,7 @@ function foldedRulesFor<T extends AllowlistRule>(
 // ledgers nothing there and the pack's known noise reds the run. Fold the
 // key so one entry covers both targets; fold-equal keys merge rather than
 // shadow each other.
-export function allowlistRulesFor(pack: string): AllowlistRule[] {
+function allowlistRulesFor(pack: string): AllowlistRule[] {
   return foldedRulesFor(CONSOLE_ERROR_ALLOWLIST, pack)
 }
 
@@ -160,6 +213,16 @@ function ruleMatches(rule: AllowlistRule, error: string): boolean {
 
 export function unallowlistedErrors(pack: string, errors: string[]): string[] {
   return withoutMatches(allowlistRulesFor(pack), errors)
+}
+
+export function unallowlistedGlobalExtensionErrorsForPacks(
+  packs: string[],
+  errors: string[]
+): string[] {
+  const rules = packs.flatMap((pack) =>
+    allowlistRulesFor(pack).filter((rule) => rule.global)
+  )
+  return withoutMatches(rules, errors)
 }
 
 export function staleRequiredRoundtripErrorRules(

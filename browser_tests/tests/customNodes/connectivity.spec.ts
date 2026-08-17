@@ -52,6 +52,7 @@ const SWEEP_MS_PER_PAIR = 40
 // surface uncapped it, so 15s per drag is that budget with margin.
 const DRAG_MS_PER_DRAG = 15_000
 const {
+  excludedNodeTypes,
   connectRejected,
   conditionalSlotContractMismatch,
   deterministicSlotContractMismatch,
@@ -84,8 +85,69 @@ function isEntryInstalled(
   return entry.expectedNodes.every((type) => nodeTypes.has(type))
 }
 
+async function probeExcludedNodeTypes(
+  page: Page,
+  exclusions: typeof excludedNodeTypes
+): Promise<string[]> {
+  const stale: string[] = []
+  for (const [nodeType, exclusion] of Object.entries(exclusions)) {
+    const probe = await page.context().newPage()
+    try {
+      await probe.goto(page.url())
+      await probe.waitForFunction(
+        (type) =>
+          window.app?.extensionManager !== undefined &&
+          window.LiteGraph?.registered_node_types[type] !== undefined,
+        nodeType,
+        { timeout: 60_000 }
+      )
+      const evaluation = probe.evaluate(async (type) => {
+        const graph = window.app!.graph
+        graph.clear()
+        const producer = window.LiteGraph!.createNode('AddTextPrefix')!
+        const consumer = window.LiteGraph!.createNode(type)!
+        graph.add(producer)
+        graph.add(consumer)
+        await new Promise((resolve) => setTimeout(resolve, 0))
+        const output = producer.outputs.findIndex(
+          (slot) => slot.name === 'texts'
+        )
+        const input = consumer.inputs.findIndex(
+          (slot) => slot.name === 'code_input'
+        )
+        producer.connect(output, consumer, input)
+        const serialized = graph.serialize()
+        graph.configure(serialized)
+        await window.app!.graphToPrompt()
+      }, nodeType)
+      const outcome = await Promise.race([
+        evaluation.then(() => 'completed' as const),
+        new Promise<'blocked'>((resolve) =>
+          setTimeout(() => resolve('blocked'), 7_000)
+        )
+      ])
+      if (outcome === 'completed') stale.push(nodeType)
+      else {
+        await probe.close()
+        await evaluation.catch(() => undefined)
+        console.log(
+          `connectivity exclusion confirmed: ${nodeType} - ${exclusion.reason}`
+        )
+      }
+    } finally {
+      if (!probe.isClosed()) await probe.close()
+    }
+  }
+  return stale
+}
+
 const connectivityEntries = loadManifest().filter((entry) =>
   entry.tiers.includes('connectivity')
+)
+const activeExcludedNodeTypes = Object.fromEntries(
+  Object.entries(excludedNodeTypes).filter(([, exclusion]) =>
+    connectivityEntries.some((entry) => entry.pack === exclusion.pack)
+  )
 )
 
 test('connectivity: every type-paired link survives model, serialize, and prompt round-trips @custom-nodes', async ({
@@ -96,6 +158,19 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
     window.app!.api.getNodeDefs()
   )) as unknown as Record<string, RawNodeDef>
   const nodes = normalizeNodeDefs(defs)
+  for (const [nodeType, exclusion] of Object.entries(activeExcludedNodeTypes)) {
+    const node = nodes.find((candidate) => candidate.type === nodeType)
+    expect(
+      node?.pack,
+      `${nodeType} exclusion is stale because the node is not registered`
+    ).toBe(exclusion.pack)
+    console.log(
+      `connectivity: **SKIP** ${nodeType} - ${exclusion.reason}; to restore: ${exclusion.restore}`
+    )
+  }
+  const sweepNodes = nodes.filter(
+    (node) => !(node.type in activeExcludedNodeTypes)
+  )
 
   // Pack-specific expectations apply only where the pack is installed; on a
   // backend without it (e.g. a generic CI runner) the core sweep still runs
@@ -109,10 +184,10 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
       console.log(`connectivity: ${entry.pack} not installed on this backend`)
   // Corpus = every node the installed packs register, from the live backend.
   const installedPacks = new Set(installedEntries.map((entry) => entry.pack))
-  const packTypes = nodes
+  const packTypes = sweepNodes
     .filter((node) => installedPacks.has(node.pack))
     .map((node) => node.type)
-  const coreProof = nodes
+  const coreProof = sweepNodes
     .filter(
       (node) =>
         node.pack === 'core' &&
@@ -122,7 +197,7 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
     .map((node) => node.type)
     .sort()
     .slice(0, CORE_PROOF_NODE_COUNT)
-  const plan = planPairs(nodes, [...packTypes, ...coreProof])
+  const plan = planPairs(sweepNodes, [...packTypes, ...coreProof])
 
   expect(plan.pairs.length, 'pairing produced no edges').toBeGreaterThan(0)
   console.log(
@@ -256,8 +331,17 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
   const outcomeByKey = new Map(
     results.map((result) => [result.key, result.outcome])
   )
-  const allPacksInstalled =
-    installedEntries.length === connectivityEntries.length
+  // An allowlist is global; a shard installs one slice of the manifest. Asking
+  // "are all packs installed" answers that for the SLICE, so it went true and
+  // every entry naming a node from another shard read as stale - 13 of them on
+  // run 31861114255. A shard can only speak to keys whose node types it
+  // actually has. Node types contain dots (MathExpression|pysssss.expression),
+  // so the slot name is split from the right.
+  const liveNodeTypes = new Set(nodes.map((node) => node.type))
+  const keyIsAnswerable = (key: string) =>
+    key
+      .split(' -> ')
+      .every((side) => liveNodeTypes.has(side.slice(0, side.lastIndexOf('.'))))
   const staleEntries: string[] = []
   // conditionalSlotContractMismatch is deliberately not in this loop: its
   // failures are timing-conditional (see its comment), so demanding they
@@ -269,12 +353,7 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
   ] as const)
     for (const key of allowlist) {
       const observed = outcomeByKey.get(key)
-      if (observed === undefined && !allPacksInstalled) {
-        console.log(
-          `allowlist entry not observed (pack not installed here): ${key}`
-        )
-        continue
-      }
+      if (!keyIsAnswerable(key)) continue
       if (observed !== expected)
         staleEntries.push(
           `${key}: expected ${expected}, observed ${observed ?? 'nothing'} - remove the stale entry`
@@ -286,18 +365,17 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
   // entry is stale. Deterministic given pinned defs, so no false-fail.
   for (const key of conditionalSlotContractMismatch) {
     if (!outcomeByKey.has(key)) {
-      if (!allPacksInstalled) {
-        console.log(
-          `allowlist entry not observed (pack not installed here): ${key}`
-        )
-        continue
-      }
+      if (!keyIsAnswerable(key)) continue
       staleEntries.push(
         `${key}: pair no longer planned by the sweep - remove the stale entry, or (on floating canary defs) the pair plan reshuffled under core/pack drift`
       )
     }
   }
   expect(staleEntries, 'stale allowlist entries').toEqual([])
+  expect(
+    await probeExcludedNodeTypes(comfyPage.page, activeExcludedNodeTypes),
+    'excluded node no longer blocks the graph round-trip; remove its temporary exclusion'
+  ).toEqual([])
   await expectNoVisibleErrors(comfyPage.page, 'after breadth sweep')
 })
 

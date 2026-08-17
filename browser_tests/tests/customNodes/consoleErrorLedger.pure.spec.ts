@@ -7,6 +7,7 @@ import {
   staleRequiredConnectivityErrorRulesForPacks,
   unallowlistedErrors,
   unallowlistedConnectivityErrorsForPacks,
+  unallowlistedGlobalExtensionErrorsForPacks,
   unallowlistedErrorsForPacks
 } from '@e2e/fixtures/customNode/consoleErrorLedger'
 
@@ -73,6 +74,53 @@ test.describe('consoleErrorLedger', () => {
     expect(unallowlistedErrors('Some-Future-Pack', errors)).toEqual(errors)
   })
 
+  test('matches only the observed bare-backend resource requests', () => {
+    const cases = [
+      [
+        'ComfyUI-UltraShape1',
+        'Failed to load resource: 404 [http://localhost:8188/api/view?type=input&filename=%28upload+a+mesh+file%29&subfolder=&rand=0.5]'
+      ],
+      [
+        'WhatDreamsCost-ComfyUI',
+        'Failed to load resource: 404 [http://localhost:8188/api/view?filename=_cn&type=input]'
+      ],
+      [
+        'ComfyUI_Fill-Nodes',
+        'Failed to load resource: 404 [https://api.comfy.org/comfy-nodes//node]'
+      ],
+      [
+        'comfyui-impact-pack',
+        'Failed to load resource: 404 [http://localhost:8188/beach.jpg]'
+      ]
+    ] as const
+    for (const [pack, error] of cases) {
+      expect(unallowlistedErrors(pack, [error])).toEqual([])
+      expect(unallowlistedErrors('Some-Future-Pack', [error])).toEqual([error])
+    }
+  })
+
+  test('keeps a missing iTools frontend module visible', () => {
+    const missingModule =
+      'Error: File not found [http://localhost:8188/extensions/comfyui-itools/makadi/SmartPaintArea.js]'
+    expect(unallowlistedErrors('comfyui-itools', [missingModule])).toEqual([
+      missingModule
+    ])
+  })
+
+  test('attributes delayed extension errors only when the owning pack is installed', () => {
+    const error =
+      "Error calling extension 'iTools.cropImage' method 'nodeCreated' {error: TypeError: Cannot read properties of undefined (reading 'draw')}"
+    expect(
+      unallowlistedGlobalExtensionErrorsForPacks(
+        ['comfyui-itools', 'Skimmed_CFG'],
+        [error]
+      )
+    ).toEqual([])
+    expect(
+      unallowlistedGlobalExtensionErrorsForPacks(['Skimmed_CFG'], [error])
+    ).toEqual([error])
+  })
+
   test('cross-pack variant filters only via packs in scope', () => {
     // Both observed editor_base subclasses match the mechanism pattern.
     const kjErrors = [
@@ -117,6 +165,20 @@ test.describe('consoleErrorLedger', () => {
         []
       )
     ).toEqual(['kj-points-empty-bbox-json', 'core-vhs-removed-link-target-id'])
+  })
+
+  test('matches lower-cased VHS paths and the iTools async hook failure', () => {
+    const vhs =
+      "TypeError: Cannot read properties of undefined (reading 'target_id')\n" +
+      'at get_links (http://localhost:8188/extensions/comfyui-videohelpersuite/js/VHS.core.js:2088:71)'
+    const itools =
+      "Error calling extension 'iTools.cropImage' method 'nodeCreated' {error: TypeError: Cannot read properties of undefined (reading 'draw')}"
+    expect(
+      unallowlistedConnectivityErrorsForPacks(
+        ['comfyui-videohelpersuite', 'comfyui-itools'],
+        [vhs, itools]
+      )
+    ).toEqual([])
   })
 
   test('allows only the exact pysssss None-default 404 without requiring it', () => {

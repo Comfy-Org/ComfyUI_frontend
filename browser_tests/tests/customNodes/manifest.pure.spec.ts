@@ -5,6 +5,7 @@ import {
 import type { CoreManifestEntry } from '@e2e/fixtures/customNode/manifest'
 import {
   assertCoreEntry,
+  cannotRunAloneFor,
   loadApplicableAutogrowCases,
   loadFullManifest,
   rendererPassesFor,
@@ -45,6 +46,25 @@ test.describe('customNode manifest', () => {
       true
     ])
     expect(rendererPassesFor({ vueNodesCompatible: false })).toEqual([false])
+  })
+
+  test('local-only nodes use the local execution baseline', () => {
+    const prior = process.env.CUSTOM_NODES_BACKEND
+    const entry = {
+      ...validEntry(),
+      pack: 'comfyui-videohelpersuite',
+      cannotRunAlone: ['CloudBaseline']
+    }
+    try {
+      process.env.CUSTOM_NODES_BACKEND = 'local'
+      expect(cannotRunAloneFor(entry)).toContain('VHS_LoadVideoPath')
+      expect(cannotRunAloneFor(entry)).not.toContain('CloudBaseline')
+      process.env.CUSTOM_NODES_BACKEND = 'cloud'
+      expect(cannotRunAloneFor(entry)).toEqual(['CloudBaseline'])
+    } finally {
+      if (prior === undefined) delete process.env.CUSTOM_NODES_BACKEND
+      else process.env.CUSTOM_NODES_BACKEND = prior
+    }
   })
 
   test('pin must be a full commit SHA; only the loader escape hatch admits an empty one', () => {

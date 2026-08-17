@@ -214,8 +214,8 @@ jobs:
         uses: actions/cache/restore@v5
         with:
           path: ~/.cache/cn-packs
-          key: cn-packs-v3-${{ env.SHARD_SLUG }}-${{ hashFiles('browser_tests/fixtures/data/customNodeManifest.cloud.json') }}
-          restore-keys: cn-packs-v3-${{ env.SHARD_SLUG }}-
+          key: cn-packs-v4-${{ env.SHARD_SLUG }}-${{ hashFiles('browser_tests/fixtures/data/customNodeManifest.cloud.json') }}
+          restore-keys: cn-packs-v4-${{ env.SHARD_SLUG }}-
 
       # Install exactly the packs this shard owns (DRY: a new pack row installs
       # itself here, no workflow change). The slice comes from the same loader
@@ -376,7 +376,7 @@ jobs:
         uses: actions/cache/save@v5
         with:
           path: ~/.cache/cn-packs
-          key: cn-packs-v3-${{ env.SHARD_SLUG }}-${{ hashFiles('browser_tests/fixtures/data/customNodeManifest.cloud.json') }}
+          key: cn-packs-v4-${{ env.SHARD_SLUG }}-${{ hashFiles('browser_tests/fixtures/data/customNodeManifest.cloud.json') }}
 
       - name: Apply Detection Proof execution break
         id: execution-mutation

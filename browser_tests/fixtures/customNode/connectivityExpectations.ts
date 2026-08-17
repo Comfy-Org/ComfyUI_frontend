@@ -1,4 +1,8 @@
 export interface ConnectivityExpectations {
+  excludedNodeTypes: Record<
+    string,
+    { pack: string; reason: string; restore: string }
+  >
   connectRejected: string[]
   conditionalSlotContractMismatch: string[]
   deterministicSlotContractMismatch: string[]
@@ -8,6 +12,15 @@ export interface ConnectivityExpectations {
 }
 
 export const connectivityExpectations: ConnectivityExpectations = {
+  excludedNodeTypes: {
+    FL_CodeNode: {
+      pack: 'ComfyUI_Fill-Nodes',
+      reason:
+        'its frontend hook freezes the browser main thread during the graph round-trip',
+      restore:
+        'fix the FL_CodeNode frontend hook upstream, then remove this entry when the isolated sentinel completes'
+    }
+  },
   // MathExpression vetoes text-list producers for numeric expression inputs.
   connectRejected: ['AddTextPrefix.texts -> MathExpression|pysssss.expression'],
   // TimerNodeKJ throws only when an earlier KJNodes creation race corrupts
@@ -16,7 +29,14 @@ export const connectivityExpectations: ConnectivityExpectations = {
     'TimerNodeKJ.timer -> TimerNodeKJ.timer',
     'TimerNodeKJ.time -> AddLabel.text_x'
   ],
-  deterministicSlotContractMismatch: [],
+  // MultiImageLoader's def declares 51 outputs (RETURN_TYPES = ("IMAGE",) * 51:
+  // multi_output plus image_1..image_50) and the pack's own JS trims them to
+  // the loaded image count on creation, so every declared image_N past the live
+  // ones is missing on the instance. Pack behaviour, not a frontend drop.
+  deterministicSlotContractMismatch: Array.from(
+    { length: 50 },
+    (_, index) => `MultiImageLoader.image_${index + 1} -> AddLabel.image`
+  ),
   // VHS_SelectLatest rebuilds its dynamic slots during configure.
   roundtripLost: [
     // Vewd rebuilds its dynamic slots during configure, same mechanism as

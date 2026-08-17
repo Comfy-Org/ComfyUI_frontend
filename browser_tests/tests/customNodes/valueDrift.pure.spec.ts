@@ -4,6 +4,8 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import {
   matchesTopologyExpectation,
+  OUTPUT_TOPOLOGY_EXPECTATIONS_LITEGRAPH,
+  OUTPUT_TOPOLOGY_EXPECTATIONS_VUE,
   partitionValueDriftNodes,
   pendingWidgetInitializations,
   rendererLedgerFor,
@@ -74,6 +76,22 @@ test.describe('widget topology', () => {
 
   test('rejects an unledgered transition as a roundtrip exception', () => {
     expect(matchesTopologyExpectation(undefined, 154, 8)).toBe(false)
+  })
+
+  test('pins pack-owned output trimming under both renderers', () => {
+    for (const ledger of [
+      OUTPUT_TOPOLOGY_EXPECTATIONS_LITEGRAPH,
+      OUTPUT_TOPOLOGY_EXPECTATIONS_VUE
+    ]) {
+      expect(ledger['ComfyUI_Fill-Nodes'].FL_VideoBatchSplitter).toMatchObject({
+        before: 20,
+        after: 4
+      })
+      expect(ledger['WhatDreamsCost-ComfyUI'].MultiImageLoader).toMatchObject({
+        before: 51,
+        after: 1
+      })
+    }
   })
 })
 

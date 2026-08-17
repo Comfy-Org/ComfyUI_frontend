@@ -40,12 +40,42 @@ export function pendingWidgetInitializations(
 export const OUTPUT_TOPOLOGY_EXPECTATIONS_LITEGRAPH: Record<
   string,
   Record<string, TopologyExpectation>
-> = {}
+> = {
+  'ComfyUI_Fill-Nodes': {
+    FL_VideoBatchSplitter: {
+      before: 20,
+      after: 4,
+      reason: 'pack JS trims the declared outputs to output_count on creation'
+    }
+  },
+  'WhatDreamsCost-ComfyUI': {
+    MultiImageLoader: {
+      before: 51,
+      after: 1,
+      reason: 'pack JS trims unloaded image outputs on creation'
+    }
+  }
+}
 
 export const OUTPUT_TOPOLOGY_EXPECTATIONS_VUE: Record<
   string,
   Record<string, TopologyExpectation>
-> = {}
+> = {
+  'ComfyUI_Fill-Nodes': {
+    FL_VideoBatchSplitter: {
+      before: 20,
+      after: 4,
+      reason: 'pack JS trims the declared outputs to output_count on creation'
+    }
+  },
+  'WhatDreamsCost-ComfyUI': {
+    MultiImageLoader: {
+      before: 51,
+      after: 1,
+      reason: 'pack JS trims unloaded image outputs on creation'
+    }
+  }
+}
 
 export const ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS_LITEGRAPH: Record<
   string,

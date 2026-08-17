@@ -23,13 +23,14 @@ import {
   isServerSideFault
 } from '@e2e/fixtures/customNode/ComfyTarget'
 import {
-  allowlistRulesFor,
   isForeignExecutionNoise,
   staleRequiredRoundtripErrorRules,
-  unallowlistedErrors
+  unallowlistedErrors,
+  unallowlistedGlobalExtensionErrorsForPacks
 } from '@e2e/fixtures/customNode/consoleErrorLedger'
 import { failureSummary } from '@e2e/fixtures/customNode/failureReport'
 import {
+  cannotRunAloneFor,
   loadManifest,
   expectedNodeCountFor,
   loadAllManifestPackNames,
@@ -252,6 +253,10 @@ const ROUNDTRIP_VALUE_ALLOWLIST: Record<string, Record<string, string>> = {
   'ComfyUI-Custom-Scripts': {
     'LoadText|pysssss':
       'file combo re-resolves against backend contents on configure; state-dependent (same class as its auto-run exclusion)'
+  },
+  'ComfyUI-LTXVideo': {
+    LTXVSparseTrackEditor:
+      'track editor normalizes its control points and derived interpolation JSON on configure'
   }
 }
 
@@ -260,25 +265,38 @@ const ROUNDTRIP_VALUE_ALLOWLIST: Record<string, Record<string, string>> = {
 // undershoots the instance count. Slot fidelity still applies.
 const MOUNT_WIDGET_ALLOWLIST: Record<string, Record<string, string>> = {
   'ComfyUI-KJNodes': {
-    ContextWindowsVisualizerKJ:
-      'visualizer widgets render as a custom canvas overlay, not node-widget rows',
     LoadAndResizeImage:
       'image preview widget renders as a custom element, not a node-widget row',
     PointsEditor:
       'points editor renders as a custom canvas overlay, not node-widget rows',
     SplineEditor:
       'spline editor renders as a custom canvas overlay, not node-widget rows'
+  },
+  'ComfyUI_Fill-Nodes': {
+    FL_TimeLine:
+      'timeline controls include canvas-only and file widgets outside Vue node-widget rows'
+  }
+}
+
+const CORE_ONLY_MOUNT_WIDGET_ALLOWLIST: Record<
+  string,
+  Record<string, string>
+> = {
+  'ComfyUI-KJNodes': {
+    ContextWindowsVisualizerKJ:
+      'visualizer widgets render as a custom canvas overlay, not node-widget rows'
   }
 }
 
 // The pack-attributed console-noise ledger moved to a shared fixture module
 // (consoleErrorLedger.ts) so the curated run tier applies the same
-// exceptions; this spec reads it through allowlistRulesFor above.
+// exceptions; this spec reads it through the shared filtering helpers above.
 
 const PACK_LEDGERS: Record<string, Record<string, Record<string, unknown>>> = {
   AUTO_RUN_ALLOWED_FAILURES,
   AUTO_RUN_EXCLUDE,
   AUTO_RUN_UNSTABLE_NODES,
+  CORE_ONLY_MOUNT_WIDGET_ALLOWLIST,
   MOUNT_WIDGET_ALLOWLIST,
   OUTPUT_TOPOLOGY_EXPECTATIONS_LITEGRAPH,
   OUTPUT_TOPOLOGY_EXPECTATIONS_VUE,
@@ -465,6 +483,9 @@ const INFRASTRUCTURE_PACKS: Record<string, string> = {
 // suite only iterates rows - a newly deployed pack would land with zero
 // coverage and every existing assertion would stay green. Close the set both
 // ways: the live custom-node pack set must equal the manifest's.
+const manifestEntries = loadManifest()
+const installedManifestPacks = manifestEntries.map((entry) => entry.pack)
+
 test.describe('manifest covers every registered pack @custom-nodes', () => {
   test('no pack registers on the backend without a manifest row', async ({
     comfyPage
@@ -477,7 +498,7 @@ test.describe('manifest covers every registered pack @custom-nodes', () => {
         .map((node) => node.pack)
         .filter((pack) => pack !== 'core' && !(pack in INFRASTRUCTURE_PACKS))
     )
-    const covered = new Set(loadManifest().map((entry) => entry.pack))
+    const covered = new Set(manifestEntries.map((entry) => entry.pack))
     const uncovered = [...live].filter((pack) => !covered.has(pack)).sort()
     expect(
       uncovered,
@@ -497,7 +518,7 @@ type AllNodesTierRunner = {
 
 const allNodesTierRunners: AllNodesTierRunner[] = []
 
-for (const entry of loadManifest()) {
+for (const entry of manifestEntries) {
   const registerAllNodesTests = () => {
     const expectAllNodesTier = async (
       comfyPage: ComfyPage,
@@ -538,14 +559,18 @@ for (const entry of loadManifest()) {
           keys.map((key) => [key, declaredShape(defs[key])])
         )
         const ledger = entry.vueIncompatibleNodes ?? {}
+        const mountWidgetAllowlist = {
+          ...packLedgerFor(MOUNT_WIDGET_ALLOWLIST, entry.pack),
+          ...('pin' in entry
+            ? packLedgerFor(CORE_ONLY_MOUNT_WIDGET_ALLOWLIST, entry.pack)
+            : {})
+        }
         for (const ledgered of Object.keys(ledger))
           expect(
             keys,
             `stale ledger entry: ${ledgered} is not registered by ${entry.pack}`
           ).toContain(ledgered)
-        for (const ledgered of Object.keys(
-          packLedgerFor(MOUNT_WIDGET_ALLOWLIST, entry.pack)
-        ))
+        for (const ledgered of Object.keys(mountWidgetAllowlist))
           expect(
             keys,
             `stale MOUNT_WIDGET_ALLOWLIST entry: ${ledgered} is not registered by ${entry.pack}`
@@ -705,9 +730,7 @@ for (const entry of loadManifest()) {
                   [
                     shapes.map((shape) => shape?.id ?? null),
                     Object.keys(ledger),
-                    Object.keys(
-                      packLedgerFor(MOUNT_WIDGET_ALLOWLIST, entry.pack)
-                    )
+                    Object.keys(mountWidgetAllowlist)
                   ] as const
                 ))
               )
@@ -726,17 +749,16 @@ for (const entry of loadManifest()) {
               [...observedOutputTopologies],
               `stale OUTPUT_TOPOLOGY_EXPECTATIONS entry: ${ledgered} no longer has its exact declared-to-instance output topology with VueNodes=${vueNodesEnabled}`
             ).toContain(ledgered)
-          const allowlist = allowlistRulesFor(entry.pack)
-          const unallowlisted = unallowlistedErrors(
-            entry.pack,
-            consoleErrors.errors
+          const unallowlisted = unallowlistedGlobalExtensionErrorsForPacks(
+            installedManifestPacks,
+            unallowlistedErrors(entry.pack, consoleErrors.errors)
           )
           const allowed = consoleErrors.errors.filter(
             (error) => !unallowlisted.includes(error)
           )
           if (allowed.length > 0)
             console.log(
-              `${entry.pack}: ${allowed.length} console error(s) matched the pack's allowlist (${allowlist.map((rule) => rule.reason).join('; ')})`
+              `${entry.pack}: ${allowed.length} console error(s) matched a pack-scoped extension allowlist`
             )
           expect(
             unallowlisted.filter((error) => !isForeignExecutionNoise(error)),
@@ -1260,9 +1282,10 @@ for (const entry of loadManifest()) {
           consoleErrors.stop()
           roundtripConsoleErrors.push(...consoleErrors.errors)
           expect(
-            unallowlistedErrors(entry.pack, consoleErrors.errors).filter(
-              (error) => !isForeignExecutionNoise(error)
-            ),
+            unallowlistedGlobalExtensionErrorsForPacks(
+              installedManifestPacks,
+              unallowlistedErrors(entry.pack, consoleErrors.errors)
+            ).filter((error) => !isForeignExecutionNoise(error)),
             `console errors during save/reload with VueNodes=${vueNodesEnabled}`
           ).toEqual([])
           expect(
@@ -1394,7 +1417,7 @@ for (const entry of loadManifest()) {
         }
         // Two-way reconciliation: unlisted failure = regression; listed node
         // that runs clean (or is not auto-runnable) = stale entry.
-        const baseline = new Set(entry.cannotRunAlone ?? [])
+        const baseline = new Set(cannotRunAloneFor(entry))
         const unstable = packLedgerFor(AUTO_RUN_UNSTABLE_NODES, entry.pack)
         for (const ledgered of Object.keys(unstable))
           expect(

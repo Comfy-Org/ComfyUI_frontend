@@ -341,6 +341,7 @@ function customNodesBackend(): (typeof VALID_BACKENDS)[number] {
 }
 
 interface LocalExpectation {
+  cannotRunAlone?: string[]
   expectedNodeCount: number
   expectedExtensions?: string[]
   reason: string
@@ -386,6 +387,16 @@ export function expectedExtensionsFor(
   return (
     loadLocalExpectations()[entry.pack]?.expectedExtensions ??
     entry.expectedExtensions
+  )
+}
+
+export function cannotRunAloneFor(
+  entry: CoreManifestEntry | CloudManifestEntry
+): string[] {
+  return (
+    loadLocalExpectations()[entry.pack]?.cannotRunAlone ??
+    entry.cannotRunAlone ??
+    []
   )
 }
 

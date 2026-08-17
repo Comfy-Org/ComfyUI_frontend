@@ -16,6 +16,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
 
+import { connectivityExpectations } from '../browser_tests/fixtures/customNode/connectivityExpectations'
 import type { QuarantinedPack } from '../browser_tests/fixtures/customNode/manifest'
 import {
   MAX_QUARANTINED_PACKS,
@@ -145,6 +146,27 @@ for (const [pack, entry] of entries) {
   if (!broken) stale.push(pack)
 }
 
+const nodeExclusions = Object.entries(
+  connectivityExpectations.excludedNodeTypes
+)
+const unknownNodeExclusions: string[] = []
+note('')
+note(`## Temporary node-check exclusions - **${nodeExclusions.length}**`)
+note('')
+note(
+  'Every entry below is coverage this run did NOT measure in the breadth sweep.'
+)
+note('')
+for (const [nodeType, exclusion] of nodeExclusions) {
+  note(`- **${nodeType} connectivity - SKIP**`)
+  note(`  - ${exclusion.reason}`)
+  note(`  - to remove: ${exclusion.restore}`)
+  process.stdout.write(
+    `::warning title=Custom-node check excluded::${nodeType} - ${exclusion.reason}\n`
+  )
+  if (!manifest.has(exclusion.pack)) unknownNodeExclusions.push(nodeType)
+}
+
 say('')
 const problems: string[] = []
 if (stale.length)
@@ -154,6 +176,10 @@ if (stale.length)
 if (unknown.length)
   problems.push(
     `${unknown.join(', ')} are quarantined but not in the manifest - drop the entries`
+  )
+if (unknownNodeExclusions.length)
+  problems.push(
+    `${unknownNodeExclusions.join(', ')} exclude node checks for packs outside the manifest`
   )
 const staleBaselines = staleLocalExpectations()
 if (staleBaselines.length)
