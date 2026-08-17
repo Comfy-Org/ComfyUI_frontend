@@ -237,17 +237,9 @@ export function useDowngradeToPersonal() {
       await fetchStatus()
       if (requiresReactivationConfirmation(preview)) {
         if (!confirmReactivation) {
-          telemetryFailure = {
-            failure_category: 'validation',
-            error_code: 'reactivation_not_confirmed'
-          }
           throw new ReactivationConfirmationRequiredError(preview)
         }
         if (preview.cost_today_cents !== confirmedChargeCents) {
-          telemetryFailure = {
-            failure_category: 'validation',
-            error_code: 'reactivation_amount_changed'
-          }
           throw new ReactivationAmountChangedError(preview)
         }
       }
@@ -305,10 +297,6 @@ export function useDowngradeToPersonal() {
           !confirmReactivation &&
           hasErrorCode(error, 'REACTIVATION_CONFIRMATION_REQUIRED')
         ) {
-          telemetryFailure = {
-            failure_category: 'validation',
-            error_code: 'reactivation_not_confirmed'
-          }
           throw new ReactivationConfirmationRequiredError(preview)
         }
         throw error
@@ -319,7 +307,7 @@ export function useDowngradeToPersonal() {
           error_code: 'missing_checkout_response'
         }
         throw new Error(
-          membersToRemove.length > 0
+          telemetryAttempt.memberRemovalCount > 0
             ? t('subscription.downgrade.failedAfterMemberRemoval')
             : t('subscription.downgrade.failed')
         )
@@ -386,7 +374,10 @@ export function useDowngradeToPersonal() {
       activeTelemetryAttempt = undefined
       return { preview, response }
     } catch (error) {
-      if (error instanceof ReactivationConfirmationRequiredError) {
+      if (
+        error instanceof ReactivationConfirmationRequiredError ||
+        error instanceof ReactivationAmountChangedError
+      ) {
         throw error
       }
       const failure = telemetryFailure ?? {
