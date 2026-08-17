@@ -21,14 +21,14 @@ const {
   description,
   youtubeVideoId,
   calendarEvent,
-  locale = 'en'
+  locale
 } = defineProps<{
   title: string
   description: string
   youtubeVideoId: string
   /** Future events: offer adding the stream to the visitor's calendar. */
   calendarEvent?: CalendarEvent
-  locale?: Locale
+  locale: Locale
 }>()
 
 const dialogEl = useTemplateRef<HTMLDialogElement>('dialogEl')

@@ -19,9 +19,9 @@ import PricingPlanFeatureList from './PricingPlanFeatureList.vue'
 import PricingPlanLabel from './PricingPlanLabel.vue'
 import PricingPrice from './PricingPrice.vue'
 
-const { locale = 'en', billingPeriod } = defineProps<{
+const { locale, billingPeriod } = defineProps<{
   billingPeriod: 'monthly' | 'yearly'
-  locale?: Locale
+  locale: Locale
 }>()
 
 const teamCreditTierIndex = ref<number[]>([2])

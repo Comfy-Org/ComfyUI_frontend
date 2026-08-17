@@ -5,7 +5,7 @@ import type { Reason } from '../shared/ReasonSection.vue'
 
 import ReasonSection from '../shared/ReasonSection.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale } = defineProps<{ locale: Locale }>()
 
 const reasons: Reason[] = [
   {

@@ -36,7 +36,7 @@ function inferBlockType(
   if (hasKey(`${bp}.heading`)) return 'heading'
   if (hasKey(`${bp}.ol`)) return 'ordered-list'
 
-  const value = hasKey(bp) ? t(bp as never) : ''
+  const value = hasKey(bp) ? t(bp as never, 'en') : ''
   if (value.includes('\n')) return 'list'
   return 'paragraph'
 }

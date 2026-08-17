@@ -18,13 +18,13 @@ type AudioSource = {
 }
 
 const {
-  locale = 'en',
+  locale,
   sources,
   poster,
   ariaLabel,
   class: className
 } = defineProps<{
-  locale?: Locale
+  locale: Locale
   sources: readonly AudioSource[]
   poster: string
   ariaLabel?: string

@@ -24,14 +24,14 @@ export const getStaticPaths: GetStaticPaths = () => {
 const { slug } = Astro.params
 const demo = getDemoBySlug(slug as string)!
 const nextDemo = getNextDemo(slug as string)
-const title = t(demo.title)
-const description = t(demo.description)
 
 const { siteUrl, locale, url } = pageContext(
   Astro.site,
   Astro.url.pathname,
   Astro.currentLocale,
 )
+const title = t(demo.title, locale)
+const description = t(demo.description, locale)
 const educationalLevel =
   demo.difficulty === 'beginner'
     ? 'Beginner'
@@ -78,15 +78,15 @@ const learningResource: JsonLdNode = {
     <link rel="preconnect" href="https://demo.arcade.software" />
   </Fragment>
 
-  <DemoHeroSection
-    label={t(demo.category)}
+  <DemoHeroSection locale={locale}
+    label={t(demo.category, locale)}
     title={title}
     description={description}
     difficulty={demo.difficulty}
     estimatedTime={demo.estimatedTime}
   />
 
-  <ArcadeEmbed
+  <ArcadeEmbed locale={locale}
     arcadeId={demo.arcadeId}
     title={title}
     aspectRatio={demo.aspectRatio}
@@ -94,14 +94,14 @@ const learningResource: JsonLdNode = {
   />
 
   {demo.transcript && (
-    <DemoTranscript
-      transcript={t(demo.transcript)}
+    <DemoTranscript locale={locale}
+      transcript={t(demo.transcript, locale)}
       client:visible
     />
   )}
 
-  <DemoNavSection
-    nextTitle={t(nextDemo.title)}
+  <DemoNavSection locale={locale}
+    nextTitle={t(nextDemo.title, locale)}
     nextSlug={nextDemo.slug}
     nextThumbnail={nextDemo.thumbnail}
   />

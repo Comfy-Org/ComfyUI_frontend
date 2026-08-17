@@ -6,8 +6,8 @@ import { t } from '../../i18n/translations'
 import NodeList from './NodeList.vue'
 import PackBanner from './PackBanner.vue'
 
-const { locale = 'en', pack } = defineProps<{
-  locale?: Locale
+const { locale, pack } = defineProps<{
+  locale: Locale
   pack: GridPack
 }>()
 

@@ -3,7 +3,7 @@ import FAQSplit01 from '../../components/blocks/FAQSplit01.vue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale } = defineProps<{ locale: Locale }>()
 
 const faqNumbers = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const
 

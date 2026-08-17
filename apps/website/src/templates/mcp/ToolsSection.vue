@@ -5,7 +5,7 @@ import VideoPlayer from '../../components/common/VideoPlayer.vue'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale } = defineProps<{ locale: Locale }>()
 
 type ToolMedia =
   | { type: 'image'; src: string; fit?: 'cover' | 'contain' }

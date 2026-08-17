@@ -6,16 +6,12 @@ import { Coins as CreditsIcon } from '@lucide/vue'
 
 import { t } from '../../i18n/translations'
 
-const {
-  locale = 'en',
-  estimateKey,
-  estimateCount
-} = defineProps<{
+const { locale, estimateKey, estimateCount } = defineProps<{
   credits: string
   label: string
   estimateKey?: TranslationKey
   estimateCount?: string
-  locale?: Locale
+  locale: Locale
 }>()
 
 const estimate = computed(() => {

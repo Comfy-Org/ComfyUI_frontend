@@ -3,7 +3,7 @@ import type { Locale } from '../../../i18n/translations'
 
 import FAQSection from '../../common/FAQSection.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale } = defineProps<{ locale: Locale }>()
 </script>
 
 <template>

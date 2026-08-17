@@ -5,12 +5,14 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import { scrollTo } from '../../scripts/smoothScroll'
+import type { Locale } from '../../i18n/translations'
 import CategoryNav from '../common/CategoryNav.vue'
 
 type Category = ComponentProps<typeof CategoryNav>['categories'][number]
 
-const { categories } = defineProps<{
+const { categories, locale } = defineProps<{
   categories: Category[]
+  locale: Locale
 }>()
 
 const activeSection = ref(categories[0]?.value ?? '')
@@ -91,6 +93,7 @@ useEventListener('scroll', activateLastIfAtBottom, { passive: true })
 
 <template>
   <CategoryNav
+    :locale
     :categories
     :model-value="activeSection"
     @update:model-value="scrollToSection"

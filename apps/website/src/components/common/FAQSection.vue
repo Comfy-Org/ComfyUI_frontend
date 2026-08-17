@@ -6,14 +6,8 @@ import type { Locale, TranslationKey } from '../../i18n/translations'
 
 import { t } from '../../i18n/translations'
 
-const {
-  locale = 'en',
-  headingKey,
-  faqPrefix,
-  faqCount,
-  footerKey
-} = defineProps<{
-  locale?: Locale
+const { locale, headingKey, faqPrefix, faqCount, footerKey } = defineProps<{
+  locale: Locale
   headingKey: TranslationKey
   faqPrefix: string
   faqCount: number

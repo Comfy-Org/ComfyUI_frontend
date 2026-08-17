@@ -17,13 +17,9 @@ import CategoryNav from './CategoryNav.vue'
 import SectionLabel from './SectionLabel.vue'
 import { deriveSections } from '../../config/contentSections'
 
-const {
-  prefix,
-  locale = 'en',
-  readMoreHref
-} = defineProps<{
+const { prefix, locale, readMoreHref } = defineProps<{
   prefix: string
-  locale?: Locale
+  locale: Locale
   readMoreHref?: string
 }>()
 
@@ -117,6 +113,7 @@ function scrollToSection(id: string) {
       <aside class="hidden scrollbar-none lg:block lg:w-48 lg:shrink-0">
         <div class="sticky top-32">
           <CategoryNav
+            :locale
             :categories="categories"
             :model-value="activeSection"
             @update:model-value="scrollToSection"

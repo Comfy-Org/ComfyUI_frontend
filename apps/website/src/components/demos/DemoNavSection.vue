@@ -4,16 +4,11 @@ import type { Locale, TranslationKey } from '../../i18n/translations'
 import { localizeHref } from '../../config/routes'
 import { t } from '../../i18n/translations'
 
-const {
-  nextTitle,
-  nextSlug,
-  nextThumbnail,
-  locale = 'en'
-} = defineProps<{
+const { nextTitle, nextSlug, nextThumbnail, locale } = defineProps<{
   nextTitle: string
   nextSlug: string
   nextThumbnail: string
-  locale?: Locale
+  locale: Locale
 }>()
 
 const nextHref = localizeHref(`/demos/${nextSlug}`, locale)

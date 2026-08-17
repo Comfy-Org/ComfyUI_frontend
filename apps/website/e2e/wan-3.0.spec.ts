@@ -8,12 +8,12 @@ import { waitForIsland } from './fixtures/islands'
 
 const PATH = '/wan-3.0'
 const ZH_PATH = '/zh-CN/wan-3.0'
-const HERO_TITLE = t('wan3.hero.title')
-const HERO_CTA = t('wan3.hero.primaryCta')
-const HERO_SECONDARY_CTA = t('wan3.hero.secondaryCta')
-const FAQ_HEADING = t('wan3.faq.heading')
-const RUN_OPTIONS_HEADING = t('wan3.runOptions.heading')
-const REVIEWS_HEADING = t('wan3.reviews.heading')
+const HERO_TITLE = t('wan3.hero.title', 'en')
+const HERO_CTA = t('wan3.hero.primaryCta', 'en')
+const HERO_SECONDARY_CTA = t('wan3.hero.secondaryCta', 'en')
+const FAQ_HEADING = t('wan3.faq.heading', 'en')
+const RUN_OPTIONS_HEADING = t('wan3.runOptions.heading', 'en')
+const REVIEWS_HEADING = t('wan3.reviews.heading', 'en')
 const MODELS_ROUTE = getRoutes('en').models
 const WAN3_TEMPLATE = 'https://cloud.comfy.org/?template=api_wan3_0_t2v'
 
@@ -26,9 +26,9 @@ const REQUIRED_FAQS = 6
 // exactly means a duplicate, dropped or off-brief badge (e.g. an open-weights
 // claim) fails rather than slipping past a bare count.
 const REQUIRED_BADGE_LABELS = [
-  t('wan3.hero.tagImageToVideo'),
-  t('wan3.hero.tagTextToVideo'),
-  t('wan3.hero.tagReferenceToVideo')
+  t('wan3.hero.tagImageToVideo', 'en'),
+  t('wan3.hero.tagTextToVideo', 'en'),
+  t('wan3.hero.tagReferenceToVideo', 'en')
 ]
 
 const FAQ_SECTION = wan3Page.faq
@@ -44,7 +44,7 @@ test.describe('Wan 3.0 launch page @smoke', () => {
     await expect(
       page.getByRole('heading', { level: 1, name: HERO_TITLE })
     ).toBeVisible()
-    await expect(page.getByText(t('wan3.hero.description'))).toBeVisible()
+    await expect(page.getByText(t('wan3.hero.description', 'en'))).toBeVisible()
     await expect(page.locator('meta[name="robots"]')).toHaveCount(0)
   })
 
@@ -81,15 +81,15 @@ test.describe('Wan 3.0 launch page @smoke', () => {
 
   test('breadcrumb trail links to the models catalog', async ({ page }) => {
     const modelsCrumb = page
-      .getByRole('navigation', { name: t('ui.breadcrumb') })
-      .getByRole('link', { name: t('models.breadcrumb.models') })
+      .getByRole('navigation', { name: t('ui.breadcrumb', 'en') })
+      .getByRole('link', { name: t('models.breadcrumb.models', 'en') })
     await expect(modelsCrumb).toHaveAttribute('href', MODELS_ROUTE)
   })
 
   test('footer links back to this page', async ({ page }) => {
     const footerLink = page
       .locator('footer')
-      .getByRole('link', { name: t('footer.wan3') })
+      .getByRole('link', { name: t('footer.wan3', 'en') })
     await expect(footerLink).toHaveAttribute('href', getRoutes('en').wan3)
   })
 

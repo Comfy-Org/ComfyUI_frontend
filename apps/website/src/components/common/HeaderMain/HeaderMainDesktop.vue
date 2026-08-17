@@ -18,7 +18,7 @@ import NavColumn from './NavColumn.vue'
 import NavFeaturedCard from './NavFeaturedCard.vue'
 import NewBadge from './NewBadge.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale } = defineProps<{ locale: Locale }>()
 const mainNavigation = getMainNavigation(locale)
 const currentPath = useCurrentPath()
 

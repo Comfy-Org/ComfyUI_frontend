@@ -11,7 +11,7 @@ import ProductHeroBadge from '../../common/ProductHeroBadge.vue'
 import DownloadLocalButton from './DownloadLocalButton.vue'
 import MobileDownloadEmailForm from './MobileDownloadEmailForm.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale } = defineProps<{ locale: Locale }>()
 
 const svgRef = ref<SVGSVGElement>()
 let animationId: number | null = null

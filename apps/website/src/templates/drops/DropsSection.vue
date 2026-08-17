@@ -8,7 +8,7 @@ import type { CardArticleGalleryItem } from '../../components/blocks/CardArticle
 import { drops } from '../../data/drops'
 import { t } from '../../i18n/translations'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale } = defineProps<{ locale: Locale }>()
 
 const items = computed<CardArticleGalleryItem[]>(() =>
   drops.map((drop) => ({

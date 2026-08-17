@@ -6,7 +6,7 @@ import Button from '../../components/ui/button/Button.vue'
 import { externalLinks } from '../../config/routes.ts'
 import { t } from '../../i18n/translations'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale } = defineProps<{ locale: Locale }>()
 </script>
 
 <template>

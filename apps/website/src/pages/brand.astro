@@ -18,11 +18,11 @@ const locale = 'en' as const
 >
   <div class="relative">
     <BrandBackground client:idle />
-    <BrandHeroSection />
-    <BrandLogosSection />
-    <BrandColorSection client:visible />
-    <BrandVoiceSection />
-    <BrandTrademarkSection />
-    <BrandQuestionsSection />
+    <BrandHeroSection locale={locale} />
+    <BrandLogosSection locale={locale} />
+    <BrandColorSection locale={locale} client:visible />
+    <BrandVoiceSection locale={locale} />
+    <BrandTrademarkSection locale={locale} />
+    <BrandQuestionsSection locale={locale} />
   </div>
 </BaseLayout>

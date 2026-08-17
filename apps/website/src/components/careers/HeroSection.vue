@@ -5,7 +5,7 @@ import { t } from '../../i18n/translations'
 import GlassCard from '../common/GlassCard.vue'
 import SectionLabel from '../common/SectionLabel.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale } = defineProps<{ locale: Locale }>()
 </script>
 
 <template>
@@ -24,7 +24,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
     <GlassCard class="mx-auto mt-12 max-w-3xl md:mt-16">
       <img
         src="https://media.comfy.org/website/careers/hero.webp"
-        alt="Comfy team"
+        :alt="t('ui.alt.comfyTeam', locale)"
         class="w-full rounded-4xl object-cover"
       />
       <div class="text-primary-comfy-canvas space-y-6 p-8 text-base/relaxed">

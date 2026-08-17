@@ -4,16 +4,11 @@ import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import GlassCard from '../common/GlassCard.vue'
 
-const {
-  title,
-  image,
-  href,
-  locale = 'en'
-} = defineProps<{
+const { title, image, href, locale } = defineProps<{
   title: string
   image: string
   href: string
-  locale?: Locale
+  locale: Locale
 }>()
 </script>
 

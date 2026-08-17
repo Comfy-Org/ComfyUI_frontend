@@ -7,9 +7,9 @@ import type { ModelLaunchSteps } from './types'
 import BrandButton from '../../components/common/BrandButton.vue'
 import { t } from '../../i18n/translations'
 
-const { locale = 'en', steps } = defineProps<{
+const { locale, steps } = defineProps<{
   steps: ModelLaunchSteps
-  locale?: Locale
+  locale: Locale
 }>()
 
 const stepNumber = (index: number) => String(index + 1).padStart(2, '0')

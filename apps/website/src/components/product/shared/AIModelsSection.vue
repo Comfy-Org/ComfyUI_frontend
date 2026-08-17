@@ -10,8 +10,8 @@ import CardArrow from '../../common/CardArrow.vue'
 import type { AiModelCard } from './aiModelCards'
 import { defaultAiModelCards } from './aiModelCards'
 
-const { locale = 'en', cards = defaultAiModelCards } = defineProps<{
-  locale?: Locale
+const { locale, cards = defaultAiModelCards } = defineProps<{
+  locale: Locale
   cards?: AiModelCard[]
 }>()
 

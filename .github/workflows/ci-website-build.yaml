@@ -36,7 +36,10 @@ jobs:
         uses: ./.github/actions/setup-frontend
 
       - name: Typecheck website
-        run: pnpm --filter @comfyorg/website typecheck
+        run: pnpm typecheck:website
+
+      - name: Validate locale props
+        run: pnpm --filter @comfyorg/website validate:locale
 
       - name: Build website
         env:

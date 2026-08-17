@@ -1,5 +1,6 @@
 import { externalLinks } from '../config/routes'
 import type { Locale } from '../i18n/translations'
+import { resolveLocale } from '../i18n/translations'
 
 export type JsonLdNode = Record<string, unknown> & { '@type': string }
 
@@ -57,10 +58,7 @@ export function pageContext(
 ): PageContext & { url: string } {
   return {
     siteUrl: siteUrlFrom(site),
-    locale:
-      currentLocale === 'zh-CN' || currentLocale === 'ja'
-        ? currentLocale
-        : 'en',
+    locale: resolveLocale(currentLocale),
     url: absoluteUrl(site, pathname)
   }
 }

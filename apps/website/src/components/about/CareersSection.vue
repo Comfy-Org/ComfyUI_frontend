@@ -6,7 +6,7 @@ import BrandButton from '../common/BrandButton.vue'
 import GlassCard from '../common/GlassCard.vue'
 import SectionLabel from '../common/SectionLabel.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale } = defineProps<{ locale: Locale }>()
 </script>
 
 <template>
@@ -18,7 +18,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
       <div class="aspect-video w-full overflow-hidden rounded-4xl lg:w-1/2">
         <img
           src="https://media.comfy.org/website/about/team.webp"
-          alt="Comfy team"
+          :alt="t('ui.alt.comfyTeam', locale)"
           class="size-full object-cover"
           loading="lazy"
           decoding="async"

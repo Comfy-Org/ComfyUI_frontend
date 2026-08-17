@@ -19,7 +19,7 @@ const {
   titleAfterKey = 'about.careers.whyTitleAfter',
   labelKey = 'about.careers.whyLabel',
   variant = 'split',
-  locale = 'en'
+  locale
 } = defineProps<{
   reasons: TranslationKey[]
   rightCardPadding?: string
@@ -32,7 +32,7 @@ const {
    * wired to the reasons only (/forward-deployed-creatives).
    */
   variant?: 'split' | 'node'
-  locale?: Locale
+  locale: Locale
 }>()
 
 const slots = useSlots()

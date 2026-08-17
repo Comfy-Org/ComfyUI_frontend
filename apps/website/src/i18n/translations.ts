@@ -8213,7 +8213,7 @@ export type LocalizedText = { en: string; 'zh-CN': string } & Partial<
   Record<Locale, string>
 >
 
-export function t(key: TranslationKey, locale: Locale = 'en'): string {
+export function t(key: TranslationKey, locale: Locale): string {
   const entry = translations[key] as LocalizedText
   return entry[locale] ?? entry.en
 }

@@ -6,7 +6,7 @@ import { resolveRel } from '../../utils/cta'
 import Button from '../ui/button/Button.vue'
 
 const {
-  locale = 'en',
+  locale,
   headingKey,
   primaryLabelKey,
   primaryHref,
@@ -15,7 +15,7 @@ const {
   secondaryHref,
   secondaryTarget
 } = defineProps<{
-  locale?: Locale
+  locale: Locale
   headingKey: TranslationKey
   primaryLabelKey: TranslationKey
   primaryHref?: string

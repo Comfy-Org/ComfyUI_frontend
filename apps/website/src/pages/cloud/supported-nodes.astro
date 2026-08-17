@@ -44,6 +44,6 @@ const packList = itemListNode(
   ]}
   extraJsonLd={[packList]}
 >
-  <HeroSection client:visible />
-  <PackGridSection packs={gridPacks} client:visible />
+  <HeroSection locale={locale} client:visible />
+  <PackGridSection locale={locale} packs={gridPacks} client:visible />
 </BaseLayout>

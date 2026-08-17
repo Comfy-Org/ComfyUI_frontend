@@ -9,7 +9,7 @@ import { localizeHref } from '../../config/routes'
 import { eventPath, eventVideoId, pastEvents } from '../../data/events'
 import { t } from '../../i18n/translations'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale } = defineProps<{ locale: Locale }>()
 
 const items = computed<CardArticleGalleryItem[]>(() =>
   pastEvents.flatMap((event) => {

@@ -39,9 +39,9 @@ const storyList = itemListNode(
   ]}
   extraJsonLd={[storyList]}
 >
-  <HeroSection client:load />
-  <StorySection stories={stories} />
-  <FeedbackSection client:load />
-  <VideoSection client:load />
-  <ContactSection />
+  <HeroSection locale={locale} client:load />
+  <StorySection locale={locale} stories={stories} />
+  <FeedbackSection locale={locale} client:load />
+  <VideoSection locale={locale} client:load />
+  <ContactSection locale={locale} />
 </BaseLayout>

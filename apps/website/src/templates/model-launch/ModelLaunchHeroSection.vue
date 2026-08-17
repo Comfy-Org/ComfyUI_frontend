@@ -14,12 +14,12 @@ import ModelLaunchHeroCtaButtons from './ModelLaunchHeroCtaButtons.vue'
 
 const {
   headingTag = 'h1',
-  locale = 'en',
+  locale,
   hero
 } = defineProps<{
   headingTag?: 'h1' | 'h2'
   hero: ModelLaunchHero
-  locale?: Locale
+  locale: Locale
 }>()
 
 // SSR (and the first client tick, before onMounted) has no reliable viewport

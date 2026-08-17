@@ -3,21 +3,15 @@ import type { Locale, TranslationKey } from '../../i18n/translations'
 
 import { t } from '../../i18n/translations'
 
-const {
-  label,
-  title,
-  description,
-  difficulty,
-  estimatedTime,
-  locale = 'en'
-} = defineProps<{
-  label: string
-  title: string
-  description: string
-  difficulty: 'beginner' | 'intermediate' | 'advanced'
-  estimatedTime: string
-  locale?: Locale
-}>()
+const { label, title, description, difficulty, estimatedTime, locale } =
+  defineProps<{
+    label: string
+    title: string
+    description: string
+    difficulty: 'beginner' | 'intermediate' | 'advanced'
+    estimatedTime: string
+    locale: Locale
+  }>()
 
 const difficultyKey = `demos.difficulty.${difficulty}` as TranslationKey
 </script>

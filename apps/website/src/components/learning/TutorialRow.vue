@@ -11,9 +11,9 @@ import Badge from '../ui/badge/Badge.vue'
 import ButtonPill from '../ui/button-pill/ButtonPill.vue'
 import PlayOverlay from '../blocks/PlayOverlay.vue'
 
-const { tutorial, locale = 'en' } = defineProps<{
+const { tutorial, locale } = defineProps<{
   tutorial: LearningTutorial
-  locale?: Locale
+  locale: Locale
 }>()
 </script>
 

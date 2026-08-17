@@ -40,7 +40,7 @@ const faqPage = faqPageNode(
   ]}
   extraJsonLd={[faqPage]}
 >
-  <FormSection client:load />
+  <FormSection locale={locale} client:load />
   <FAQSplit01
     client:visible
     heading={t('contact.faq.heading', locale)}

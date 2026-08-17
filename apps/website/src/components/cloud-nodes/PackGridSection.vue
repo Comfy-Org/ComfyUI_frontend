@@ -12,8 +12,8 @@ import { t } from '../../i18n/translations'
 import SectionLabel from '../common/SectionLabel.vue'
 import PackCard from './PackCard.vue'
 
-const { locale = 'en', packs } = defineProps<{
-  locale?: Locale
+const { locale, packs } = defineProps<{
+  locale: Locale
   packs: readonly GridPack[]
 }>()
 

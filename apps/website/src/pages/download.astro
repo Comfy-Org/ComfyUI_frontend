@@ -34,11 +34,11 @@ const { siteUrl, locale } = pageContext(
   extraJsonLd={[comfyUiApplicationNode(siteUrl), comfyUiSourceCodeNode(siteUrl)]}
   keywords={['comfyui app', 'comfyui desktop app', 'comfyui desktop', 'comfy ui application', 'comfyui download', 'download comfyui', 'comfyui windows', 'comfyui mac', 'comfyui linux']}
 >
-  <CloudBannerSection />
-  <HeroSection client:load />
-  <ReasonSection />
-  <EcoSystemSection client:visible />
-  <AIModelsSection />
-  <ProductCardsSection />
-  <FAQSection client:visible />
+  <CloudBannerSection locale={locale} />
+  <HeroSection locale={locale} client:load />
+  <ReasonSection locale={locale} />
+  <EcoSystemSection locale={locale} client:visible />
+  <AIModelsSection locale={locale} />
+  <ProductCardsSection locale={locale} />
+  <FAQSection locale={locale} client:visible />
 </BaseLayout>

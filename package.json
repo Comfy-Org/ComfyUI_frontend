@@ -72,7 +72,7 @@
     "typecheck:browser": "vue-tsc --project browser_tests/tsconfig.json",
     "typecheck:scripts": "vue-tsc --project scripts/tsconfig.json",
     "typecheck:tools": "vue-tsc --project tools/tsconfig.json",
-    "typecheck:website": "pnpm --filter @comfyorg/website run typecheck",
+    "typecheck:website": "pnpm --filter @comfyorg/website run typecheck && vue-tsc --noEmit --project apps/website/tsconfig.json",
     "zipdist": "node scripts/zipdist.js",
     "test:custom-nodes:local": "start-server-and-test backend:custom-nodes http-get://127.0.0.1:8288/system_stats dev:custom-nodes http-get://localhost:5173 test:custom-nodes",
     "backend:custom-nodes": "sh -c 'cd \"${TEST_COMFYUI_DIR:?point at your ComfyUI checkout (README Prerequisites)}\"; cp \"$OLDPWD/browser_tests/assets/plain_video.mp4\" input/ || { echo \"could not stage plain_video.mp4 into $PWD/input - the curated VHS workflow cannot run without it\" >&2; exit 1; }; PY=python3; [ -x venv/bin/python ] && PY=venv/bin/python; [ -x .venv/bin/python ] && PY=.venv/bin/python; \"$PY\" main.py --port 8288 --multi-user --cache-none'",

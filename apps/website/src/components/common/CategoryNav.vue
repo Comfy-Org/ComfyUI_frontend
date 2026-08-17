@@ -1,14 +1,18 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
+import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
+
 interface CategoryItem {
   label: string
   value: string
 }
 
-const { categories, modelValue } = defineProps<{
+const { categories, modelValue, locale } = defineProps<{
   categories: CategoryItem[]
   modelValue: string
+  locale: Locale
 }>()
 
 const emit = defineEmits<{
@@ -19,7 +23,7 @@ const emit = defineEmits<{
 <template>
   <nav
     class="flex w-full scrollbar-none items-center gap-3 overflow-x-auto lg:flex-col lg:overflow-x-hidden"
-    aria-label="Category filter"
+    :aria-label="t('ui.nav.categoryFilter', locale)"
   >
     <button
       v-for="category in categories"

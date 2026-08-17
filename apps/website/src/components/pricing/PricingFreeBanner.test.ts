@@ -14,7 +14,8 @@ const defaultProps = {
     labelKey: 'pricing.banner.cta',
     href: 'https://cloud.comfy.org',
     target: '_blank'
-  }
+  },
+  locale: 'en'
 } satisfies BannerProps
 
 function renderBanner(props: Partial<BannerProps> = {}) {

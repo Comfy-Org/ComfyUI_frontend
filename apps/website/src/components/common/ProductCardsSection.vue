@@ -12,13 +12,13 @@ import SectionLabel from './SectionLabel.vue'
 type Product = 'local' | 'cloud' | 'platform' | 'enterprise'
 
 const {
-  locale = 'en',
+  locale,
   excludeProduct,
   labelKey = '',
   ctaKey,
   ctaVariant
 } = defineProps<{
-  locale?: Locale
+  locale: Locale
   excludeProduct?: Product
   labelKey?: TranslationKey
   ctaKey?: TranslationKey

@@ -5,7 +5,7 @@ import SectionHeader from '../../components/common/SectionHeader.vue'
 import WireNodeLayout from '../../components/common/WireNodeLayout.vue'
 import { t } from '../../i18n/translations'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale } = defineProps<{ locale: Locale }>()
 
 const reasons: TranslationKey[] = [
   'fdct.builders.reason1',

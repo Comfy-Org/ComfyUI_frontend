@@ -9,14 +9,10 @@ import Button from '@/components/ui/button/Button.vue'
 import IconButton from '@/components/ui/icon-button/IconButton.vue'
 import { useBannerDismissal } from '../../composables/useBannerDismissal'
 
-const {
-  data,
-  version,
-  locale = 'en'
-} = defineProps<{
+const { data, version, locale } = defineProps<{
   data: BannerData
   version: string
-  locale?: Locale
+  locale: Locale
 }>()
 
 const { isVisible, close, persistHidden } = useBannerDismissal(version)

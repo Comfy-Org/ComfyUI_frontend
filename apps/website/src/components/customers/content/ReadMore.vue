@@ -3,9 +3,9 @@ import type { Locale } from '../../../i18n/translations'
 import { t } from '../../../i18n/translations'
 import Button from '../../ui/button/Button.vue'
 
-const { href, locale = 'en' } = defineProps<{
+const { href, locale } = defineProps<{
   href: string
-  locale?: Locale
+  locale: Locale
 }>()
 </script>
 

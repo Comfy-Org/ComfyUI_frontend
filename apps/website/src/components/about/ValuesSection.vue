@@ -19,7 +19,7 @@ const reasons: TranslationKey[] = [
       <template #right-card>
         <img
           src="https://media.comfy.org/website/about/c-logo.webp"
-          alt="Comfy logo"
+          :alt="t('ui.alt.comfyLogo', locale)"
           loading="lazy"
           decoding="async"
           class="mt-6 aspect-square w-full object-contain"
@@ -28,7 +28,7 @@ const reasons: TranslationKey[] = [
       <template #right-card-mobile>
         <img
           src="https://media.comfy.org/website/about/c-logo.webp"
-          alt="Comfy logo"
+          :alt="t('ui.alt.comfyLogo', locale)"
           loading="lazy"
           decoding="async"
           class="mt-6 aspect-square w-full max-w-xs object-contain"
