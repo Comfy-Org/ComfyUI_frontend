@@ -799,9 +799,10 @@ export const CORE_SETTINGS: SettingParams[] = [
   {
     id: 'Comfy.Pointer.ClickBufferTime',
     category: ['LiteGraph', 'Pointer', 'ClickBufferTime'],
-    name: 'Pointer click drift delay',
+    name: 'Pointer click drift delay (deprecated)',
     tooltip:
-      'After pressing a pointer button down, this is the maximum time (in milliseconds) that pointer movement can be ignored for.\n\nHelps prevent objects from being unintentionally nudged if the pointer is moved whilst clicking.\n\nThe distance threshold (Pointer click drift) already disambiguates clicks from drags; this time threshold only matters when the pointer is held still then released. A long delay here forces every pointerdown to wait before drag begins, which feels laggy when click+dragging an unselected node. ~2 frames at 60fps is plenty.',
+      'No longer used. Clicks and drags are disambiguated by distance alone (Pointer click drift).',
+    deprecated: true,
     experimental: true,
     type: 'slider',
     attrs: {
