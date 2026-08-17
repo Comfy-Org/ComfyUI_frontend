@@ -293,7 +293,6 @@ import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
 import { useNodePreviewState } from '@/renderer/extensions/vueNodes/preview/useNodePreviewState'
 import {
-  getLinkedCoreMediaLoaderClass,
   shouldHideLinkedCoreLoadAudioPlayer,
   shouldHideLinkedCoreMediaInputPreview
 } from '@/renderer/extensions/vueNodes/utils/linkedCoreMediaUtils'
@@ -483,15 +482,6 @@ function initSizeStyles() {
   el.style.setProperty(`--node-height${suffix}`, `${fullHeight}px`)
 }
 
-async function fitNodeToVisibleContent() {
-  await nextTick()
-  const element = nodeContainerRef.value
-  if (!element || isCollapsed.value) return
-
-  element.style.setProperty('--node-height', '0px')
-  element.style.setProperty('--node-height', `${element.offsetHeight}px`)
-}
-
 /**
  * Handle external size changes (e.g., from extensions calling node.setSize()).
  * Updates CSS variables when layoutStore changes from Canvas/External source.
@@ -519,7 +509,6 @@ let unsubscribeLayoutChange: (() => void) | null = null
 
 onMounted(() => {
   initSizeStyles()
-  if (linkedCoreMediaLoaderClass.value) void fitNodeToVisibleContent()
   unsubscribeLayoutChange = layoutStore.onNodeChange(
     nodeData.id,
     handleLayoutChange
@@ -574,9 +563,6 @@ watch(isCollapsed, (collapsed) => {
   const currentHeight = element.style.getPropertyValue(`--node-height${from}`)
   element.style.setProperty(`--node-height${to}`, currentHeight)
   element.style.setProperty(`--node-height${from}`, '')
-
-  if (!collapsed && linkedCoreMediaLoaderClass.value)
-    void fitNodeToVisibleContent()
 })
 
 // Check if node has custom content (like image/video outputs)
@@ -732,17 +718,6 @@ const lgraphNode = computed(() => {
   if (!locatorId) return null
 
   return getNodeByLocatorId(app.rootGraph, locatorId)
-})
-
-const linkedCoreMediaLoaderClass = computed(() => {
-  const node = lgraphNode.value
-  return node
-    ? getLinkedCoreMediaLoaderClass(node, nodeData.widgets ?? [])
-    : undefined
-})
-
-watch(linkedCoreMediaLoaderClass, (nodeClass) => {
-  if (nodeClass) void fitNodeToVisibleContent()
 })
 
 const renderedNodeData = computed(() => {

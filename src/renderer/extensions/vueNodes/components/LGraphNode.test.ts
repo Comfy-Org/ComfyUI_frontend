@@ -4,7 +4,7 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { toNodeId } from '@/types/nodeId'
-import { computed, nextTick } from 'vue'
+import { computed } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
@@ -139,13 +139,6 @@ function getNodeRoot(container: Element): HTMLElement {
   return container.firstElementChild as HTMLElement
 }
 
-function mockOffsetHeight(element: HTMLElement, height: number) {
-  Object.defineProperty(element, 'offsetHeight', {
-    configurable: true,
-    value: height
-  })
-}
-
 function renderLGraphNode(props: ComponentProps<typeof LGraphNode>) {
   return render(LGraphNode, {
     props,
@@ -263,7 +256,7 @@ describe('LGraphNode', () => {
     expect(overlay).toHaveClass('border-node-stroke-executing')
   })
 
-  it('hides and fits a linked core LoadImage input preview on mount', async () => {
+  it('hides a linked core LoadImage input preview', () => {
     mockData.mockLgraphNode = {
       constructor: {
         comfyClass: 'LoadImage',
@@ -278,7 +271,7 @@ describe('LGraphNode', () => {
     }
     vi.mocked(nodeOutputStore.getNodeImageUrls).mockReturnValue(['/input.png'])
 
-    const { container } = renderLGraphNode({
+    renderLGraphNode({
       nodeData: {
         ...mockNodeData,
         type: 'LoadImage',
@@ -292,55 +285,7 @@ describe('LGraphNode', () => {
       }
     })
 
-    const root = getNodeRoot(container)
-    mockOffsetHeight(root, 84)
-    await nextTick()
-
     expect(screen.queryByTestId('node-content')).not.toBeInTheDocument()
-    expect(root.style.getPropertyValue('--node-height')).toBe('84px')
-  })
-
-  it('fits a core LoadVideo after its selector is linked', async () => {
-    mockData.mockLgraphNode = {
-      constructor: {
-        comfyClass: 'LoadVideo',
-        nodeData: { isCoreNode: true }
-      },
-      inputs: [{ link: null, widget: { name: 'file' } }],
-      isSubgraphNode: () => false
-    }
-    const fileWidget = {
-      name: 'file',
-      type: 'combo',
-      slotMetadata: { index: 0, linked: false, type: 'STRING' }
-    }
-    const { container, rerender } = renderLGraphNode({
-      nodeData: {
-        ...mockNodeData,
-        type: 'LoadVideo',
-        widgets: [fileWidget]
-      }
-    })
-    const root = getNodeRoot(container)
-    mockOffsetHeight(root, 78)
-
-    expect(root.style.getPropertyValue('--node-height')).toBe('130px')
-
-    await rerender({
-      nodeData: {
-        ...mockNodeData,
-        type: 'LoadVideo',
-        widgets: [
-          {
-            ...fileWidget,
-            slotMetadata: { ...fileWidget.slotMetadata, linked: true }
-          }
-        ]
-      }
-    })
-    await nextTick()
-
-    expect(root.style.getPropertyValue('--node-height')).toBe('78px')
   })
 
   it('keeps an executed output preview when the LoadImage selector is linked', () => {
@@ -427,47 +372,6 @@ describe('LGraphNode', () => {
     expect(screen.getByTestId('node-widgets')).toHaveTextContent(
       'audioUI:audioUI'
     )
-  })
-
-  it('fits a linked core LoadAudio after uncollapse', async () => {
-    mockData.mockLgraphNode = {
-      constructor: {
-        comfyClass: 'LoadAudio',
-        nodeData: { isCoreNode: true }
-      },
-      inputs: [{ link: 1, widget: { name: 'audio' } }],
-      isSubgraphNode: () => false
-    }
-    const linkedAudioWidget = {
-      name: 'audio',
-      type: 'combo',
-      slotMetadata: { index: 0, linked: true, type: 'STRING' }
-    }
-    const { container, rerender } = renderLGraphNode({
-      nodeData: {
-        ...mockNodeData,
-        type: 'LoadAudio',
-        flags: { collapsed: true },
-        widgets: [linkedAudioWidget]
-      }
-    })
-    const root = getNodeRoot(container)
-    mockOffsetHeight(root, 72)
-    await nextTick()
-
-    expect(root.style.getPropertyValue('--node-height')).toBe('')
-
-    await rerender({
-      nodeData: {
-        ...mockNodeData,
-        type: 'LoadAudio',
-        flags: { collapsed: false },
-        widgets: [linkedAudioWidget]
-      }
-    })
-    await nextTick()
-
-    expect(root.style.getPropertyValue('--node-height')).toBe('72px')
   })
 
   it('should initialize height CSS vars for collapsed nodes', () => {

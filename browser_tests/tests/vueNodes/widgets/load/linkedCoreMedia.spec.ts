@@ -43,21 +43,11 @@ test.describe('linked core media selectors', { tag: '@vue-nodes' }, () => {
       )
 
     const contextMenu = comfyPage.page.locator('.p-contextmenu')
-    const mediaNodes = [loadImage.root, loadVideo, loadAudio]
-    let linkedHeights: number[] = []
 
     await test.step('hide local media for all linked core loaders', async () => {
       await expect(loadImage.imagePreview).toHaveCount(0)
       await expect(videoPreview.preview).toHaveCount(0)
       await expect(audioPreview.audio).toHaveCount(0)
-
-      linkedHeights = await Promise.all(
-        mediaNodes.map(async (node) => (await node.boundingBox())?.height ?? 0)
-      )
-      expect(
-        linkedHeights,
-        'Linked media nodes should have measurable fitted heights'
-      ).not.toContain(0)
     })
 
     await test.step('hide linked Load Image actions', async () => {
@@ -83,14 +73,6 @@ test.describe('linked core media selectors', { tag: '@vue-nodes' }, () => {
       await expect(videoPreview.preview).toBeVisible()
       await expect(videoPreview.video).toBeVisible()
       await expect(audioPreview.play).toBeVisible()
-
-      for (const [index, node] of mediaNodes.entries()) {
-        await expect
-          .poll(() => node.boundingBox().then((box) => box?.height ?? 0), {
-            message: 'Restored local media should grow the fitted node'
-          })
-          .toBeGreaterThan(linkedHeights[index])
-      }
     })
 
     await test.step('restore disconnected Load Image actions', async () => {
