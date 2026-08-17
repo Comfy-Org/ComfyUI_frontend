@@ -15,20 +15,22 @@ permissions:
 
 jobs:
   merge:
+    # Not gated on full success: fail-fast:false means one flaky shard flips the whole run to failure, which would skip merging every other shard's real coverage.
     if: >
       github.repository == 'Comfy-Org/ComfyUI_frontend' &&
-      github.event.workflow_run.conclusion == 'success'
+      github.event.workflow_run.conclusion != 'cancelled'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     outputs:
       has-coverage: ${{ steps.coverage-shards.outputs.has-coverage }}
 
     steps:
-      - name: Checkout repository
+      - name: Checkout sources for genhtml
         uses: actions/checkout@v7
-
-      - name: Setup frontend
-        uses: ./.github/actions/setup-frontend
+        with:
+          sparse-checkout: |
+            src
+            packages
 
       - name: Download all shard coverage data
         uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12
@@ -116,7 +118,7 @@ jobs:
 
       - name: Upload E2E coverage to Codecov
         if: steps.coverage-shards.outputs.has-coverage == 'true'
-        uses: codecov/codecov-action@1af58845a975a7985b0beb0cbe6fbbb71a41dbad # v5.5.3
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
           files: coverage/playwright/coverage.lcov
           flags: e2e

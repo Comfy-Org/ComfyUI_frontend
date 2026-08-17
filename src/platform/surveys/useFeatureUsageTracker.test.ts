@@ -1,19 +1,10 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { useFeatureUsageTracker } from './useFeatureUsageTracker'
 
 const STORAGE_KEY = 'Comfy.FeatureUsage'
 
 describe('useFeatureUsageTracker', () => {
-  beforeEach(() => {
-    localStorage.clear()
-    vi.clearAllMocks()
-  })
-
-  afterEach(() => {
-    localStorage.clear()
-  })
-
   it('initializes with zero count for new feature', () => {
     const { useCount } = useFeatureUsageTracker('test-feature-1')
 
@@ -33,38 +24,27 @@ describe('useFeatureUsageTracker', () => {
   })
 
   it('sets firstUsed only on first use', () => {
-    vi.useFakeTimers()
-    const firstTs = 1000000
-    vi.setSystemTime(firstTs)
-    try {
-      const { usage, trackUsage } = useFeatureUsageTracker('test-feature-3')
+    const firstTs = Date.now()
+    const { usage, trackUsage } = useFeatureUsageTracker('test-feature-3')
 
-      trackUsage()
-      expect(usage.value?.firstUsed).toBe(firstTs)
+    trackUsage()
+    expect(usage.value?.firstUsed).toBe(firstTs)
 
-      vi.setSystemTime(firstTs + 5000)
-      trackUsage()
-      expect(usage.value?.firstUsed).toBe(firstTs)
-    } finally {
-      vi.useRealTimers()
-    }
+    vi.advanceTimersByTime(5_000)
+    trackUsage()
+    expect(usage.value?.firstUsed).toBe(firstTs)
   })
 
   it('updates lastUsed on each use', () => {
-    vi.useFakeTimers()
-    try {
-      const { usage, trackUsage } = useFeatureUsageTracker('test-feature-4')
+    const { usage, trackUsage } = useFeatureUsageTracker('test-feature-4')
 
-      trackUsage()
-      const firstLastUsed = usage.value?.lastUsed ?? 0
+    trackUsage()
+    const firstLastUsed = usage.value?.lastUsed ?? 0
 
-      vi.advanceTimersByTime(10)
-      trackUsage()
+    vi.advanceTimersByTime(10)
+    trackUsage()
 
-      expect(usage.value?.lastUsed).toBeGreaterThan(firstLastUsed)
-    } finally {
-      vi.useRealTimers()
-    }
+    expect(usage.value?.lastUsed).toBeGreaterThan(firstLastUsed)
   })
 
   it('reset clears feature data', () => {
@@ -92,18 +72,13 @@ describe('useFeatureUsageTracker', () => {
   })
 
   it('persists to localStorage', async () => {
-    vi.useFakeTimers()
-    try {
-      const { trackUsage } = useFeatureUsageTracker('persisted-feature')
+    const { trackUsage } = useFeatureUsageTracker('persisted-feature')
 
-      trackUsage()
-      await vi.runAllTimersAsync()
+    trackUsage()
+    await vi.runAllTimersAsync()
 
-      const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
-      expect(stored['persisted-feature']?.useCount).toBe(1)
-    } finally {
-      vi.useRealTimers()
-    }
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored['persisted-feature']?.useCount).toBe(1)
   })
 
   it('loads existing data from localStorage', () => {

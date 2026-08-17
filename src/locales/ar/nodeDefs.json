@@ -890,7 +890,7 @@
       },
       "model": {
         "name": "النموذج",
-        "tooltip": "Seedance 2.0 لأعلى جودة؛ Seedance 2.0 Fast لتحسين السرعة."
+        "tooltip": "Seedance 2.5 لأحدث نموذج، وفيديوهات تصل مدتها إلى 30 ثانية وإخراج mp4/mov؛ Seedance 2.0 لأقصى جودة ودقة 1080p/4k؛ Fast لتحسين السرعة؛ Mini للتوليد الأسرع والأقل تكلفة."
       },
       "model_duration": {
         "name": "المدة"
@@ -931,7 +931,7 @@
       },
       "model": {
         "name": "النموذج",
-        "tooltip": "Seedance 2.0 لأعلى جودة؛ Seedance 2.0 Fast لتحسين السرعة."
+        "tooltip": "Seedance 2.5 لأحدث نموذج، وفيديوهات تصل مدتها إلى 30 ثانية وإخراج mp4/mov؛ Seedance 2.0 لأقصى جودة ودقة 1080p/4k؛ Fast لتحسين السرعة؛ Mini للتوليد الأسرع والأقل تكلفة."
       },
       "model_auto_downscale": {
         "name": "التقليل التلقائي للحجم"
@@ -984,7 +984,7 @@
       },
       "model": {
         "name": "النموذج",
-        "tooltip": "Seedance 2.0 لأعلى جودة؛ Seedance 2.0 Fast لتحسين السرعة."
+        "tooltip": "Seedance 2.5 لأحدث نموذج، وفيديوهات تصل مدتها إلى 30 ثانية وإخراج mp4/mov؛ Seedance 2.0 لأقصى جودة ودقة 1080p/4k؛ Fast لتحسين السرعة؛ Mini للتوليد الأسرع والأقل تكلفة."
       },
       "model_duration": {
         "name": "المدة"
@@ -5824,6 +5824,9 @@
       "model_number_of_images": {
         "name": "عدد الصور"
       },
+      "model_quality": {
+        "name": "الجودة"
+      },
       "model_resolution": {
         "name": "الدقة"
       },
@@ -5862,6 +5865,10 @@
       "prompt": {
         "name": "المطالبة",
         "tooltip": "المطالبة النصية المستخدمة لتوليد الصورة"
+      },
+      "quality": {
+        "name": "الجودة",
+        "tooltip": "مستوى الجودة، مدعوم فقط من نموذج grok-imagine-image-2.0."
       },
       "resolution": {
         "name": "الدقة"
@@ -5956,19 +5963,19 @@
       },
       "image": {
         "name": "الصورة",
-        "tooltip": "صورة بداية اختيارية لـ grok-imagine-video. مطلوبة لـ grok-imagine-video-1.5."
+        "tooltip": "صورة بداية اختيارية. إذا تم حذفها، يتم توليد الفيديو من الموجّه النصي فقط."
       },
       "model": {
         "name": "النموذج",
-        "tooltip": "يتطلب grok-imagine-video-1.5 دائماً صورة إدخال."
+        "tooltip": "النموذج المستخدم لتوليد الفيديو."
       },
       "prompt": {
         "name": "المطالبة",
-        "tooltip": "وصف نصي للفيديو المطلوب."
+        "tooltip": "وصف نصي للفيديو المطلوب. اختياري لـ grok-imagine-video-1.5 عند توفير صورة إدخال."
       },
       "resolution": {
         "name": "الدقة",
-        "tooltip": "دقة الفيديو الناتج."
+        "tooltip": "دقة فيديو الإخراج. تتوفر 1080p فقط لـ grok-imagine-video-1.5."
       },
       "seed": {
         "name": "البذرة",
@@ -5982,7 +5989,7 @@
     }
   },
   "GrokVideoReferenceNode": {
-    "description": "توليد فيديو موجه بواسطة صور مرجعية كمرجع للأسلوب والمحتوى.",
+    "description": "توليد فيديو موجّه بالصور المرجعية، مع مراجع صوتية مسبقة الضبط اختيارية.",
     "display_name": "Grok من مرجع إلى فيديو",
     "inputs": {
       "control_after_generate": {
@@ -8809,7 +8816,7 @@
   },
   "LTXVConcatAVLatent": {
     "description": "دمج كامن فيديو وكامن صوت في كامن AV مشترك (أي نموذج AV مثل LTXV أو MiniMax H3).",
-    "display_name": "LTXVConcatAVLatent",
+    "display_name": "دمج AV Latent",
     "inputs": {
       "audio_latent": {
         "name": "audio_latent"
@@ -8925,6 +8932,67 @@
       "2": {
         "name": "كامن",
         "tooltip": null
+      }
+    }
+  },
+  "LTXVDualCFGGuider": {
+    "description": "مقاييس CFG منفصلة لأنماط الفيديو والصوت في latent LTXV-AV المعبأ.",
+    "display_name": "موجه LTXV Dual CFG",
+    "inputs": {
+      "audio_cfg": {
+        "name": "audio_cfg"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "negative": {
+        "name": "سلبي"
+      },
+      "positive": {
+        "name": "إيجابي"
+      },
+      "video_cfg": {
+        "name": "video_cfg"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVDurationPredictor": {
+    "description": "يتنبأ بالمدة الطبيعية للّقطة بناءً على البرومبت باستخدام رأس المدة LTX 2.4 (يتم تحميله عبر ModelPatchLoader)، ويضبطها على شبكة إطارات VAE ذات ٨٠٠٠+١ إطار.",
+    "display_name": "متنبئ مدة LTXV",
+    "inputs": {
+      "duration_head": {
+        "name": "duration_head",
+        "tooltip": "رأس المدة LTX 2.4 محمّل عبر ModelPatchLoader."
+      },
+      "frame_rate": {
+        "name": "معدل الإطارات"
+      },
+      "max_seconds": {
+        "name": "الحد الأقصى للثواني"
+      },
+      "min_seconds": {
+        "name": "الحد الأدنى للثواني"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "positive": {
+        "name": "إيجابي"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "عدد الإطارات",
+        "tooltip": null
+      },
+      "1": {
+        "name": "الثواني",
+        "tooltip": "المدة المتوقعة الخام (غير مقيدة)."
       }
     }
   },
@@ -9047,6 +9115,29 @@
       }
     }
   },
+  "LTXVModalityGuidance": {
+    "description": "توجيه عبر الأنماط (صوت-فيديو) لـ LTXV-AV. ينفذ تمريرة إضافية واحدة في كل خطوة مع قطع انتباه a2v/v2a، ثم يدفع النتيجة نحو التنبؤ المترابط - مما يعزز تزامن الصوت والصورة (مثل تزامن الشفاه). القيمة الافتراضية المرجعية لـ modality_scale هي ٣.٠. يتراكم مع dual-CFG guider وSTG. اضبط على ١.٠ لتعطيل (بدون تمريرة إضافية).",
+    "display_name": "توجيه النمط LTXV (الربط بين الصوت/الفيديو)",
+    "inputs": {
+      "end_percent": {
+        "name": "نسبة النهاية"
+      },
+      "modality_scale": {
+        "name": "modality_scale"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "start_percent": {
+        "name": "نسبة البداية"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LTXVPreprocess": {
     "display_name": "LTXV المعالجة المسبقة",
     "inputs": {
@@ -9144,8 +9235,8 @@
     }
   },
   "LTXVSeparateAVLatent": {
-    "description": "LTXV فصل الكامنة الصوتية والمرئية",
-    "display_name": "LTXVSeparateAVLatent",
+    "description": "تقسيم AV latent مشترك إلى latent الفيديو والصوت الخاصين به (لأي نموذج AV، مثل LTXV أو MiniMax H3).",
+    "display_name": "فصل AV Latent",
     "inputs": {
       "av_latent": {
         "name": "كامنة صوتية ومرئية"
@@ -9158,6 +9249,33 @@
       },
       "1": {
         "name": "كامنة الصوت",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVSpatioTemporalGuidance": {
+    "description": "ينفذ تمريرة إضافية واحدة في كل خطوة مع تقليل انتباه الذات في الكتل المحددة إلى تمرير القيم فقط، ثم يوجه بعيدًا عنها - مما يحسن التفاصيل المكانية وتماسك الحركة.",
+    "display_name": "توجيه الزمان والمكان LTXV (STG)",
+    "inputs": {
+      "blocks": {
+        "name": "الكتل",
+        "tooltip": "فهرس كتل المحول مفصولة بفواصل."
+      },
+      "end_percent": {
+        "name": "نسبة النهاية"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "scale": {
+        "name": "المقياس"
+      },
+      "start_percent": {
+        "name": "نسبة البداية"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -9648,7 +9766,7 @@
   "Load3D": {
     "display_name": "تحميل ثلاثي الأبعاد",
     "inputs": {
-      "clear": "مسح",
+      "clear": {},
       "height": {
         "name": "الارتفاع"
       },
@@ -9658,8 +9776,8 @@
       "model_file": {
         "name": "ملف النموذج"
       },
-      "upload 3d model": "رفع نموذج ثلاثي الأبعاد",
-      "upload extra resources": "رفع موارد إضافية",
+      "upload 3d model": {},
+      "upload extra resources": {},
       "width": {
         "name": "العرض"
       }
@@ -10148,6 +10266,121 @@
     "outputs": {
       "0": {
         "name": "تهيئة",
+        "tooltip": null
+      }
+    }
+  },
+  "LtxApi25AudioToVideo": {
+    "description": "إنشاء فيديو مدفوع بمسار صوتي، مع إمكانية إضافة صورة للإطار الأول.",
+    "display_name": "LTX 2.5 تحويل الصوت إلى فيديو",
+    "inputs": {
+      "audio": {
+        "name": "الصوت",
+        "tooltip": "المسار الصوتي الذي يقود الفيديو. طوله (من ٢ إلى ٢٠ ثانية) يحدد مدة الفيديو."
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "image": {
+        "name": "الصورة",
+        "tooltip": "إطار أول اختياري ليتم استخدامه للفيديو."
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "prompt": {
+        "name": "المطالبة"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "بذرة لتحديد ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج الفعلية غير حتمية بغض النظر عن البذرة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LtxApi25ImageToVideo": {
+    "description": "فيديوهات بجودة احترافية مع إمكانية تخصيص المدة والدقة بناءً على صورة البداية.",
+    "display_name": "LTX 2.5 تحويل الصورة إلى فيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "image": {
+        "name": "الصورة",
+        "tooltip": "الإطار الأول ليتم استخدامه للفيديو."
+      },
+      "last_frame": {
+        "name": "الإطار الأخير",
+        "tooltip": "الإطار الأخير ليتم استخدامه للفيديو."
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_fps": {
+        "name": "معدل الإطارات"
+      },
+      "model_generate_audio": {
+        "name": "توليد الصوت"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "prompt": {
+        "name": "المطالبة"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "بذرة لتحديد ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج الفعلية غير حتمية بغض النظر عن البذرة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LtxApi25TextToVideo": {
+    "description": "فيديوهات بجودة احترافية مع إمكانية تخصيص المدة والدقة.",
+    "display_name": "LTX 2.5 تحويل النص إلى فيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_fps": {
+        "name": "معدل الإطارات"
+      },
+      "model_generate_audio": {
+        "name": "توليد الصوت"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "prompt": {
+        "name": "المطالبة"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "بذرة لتحديد ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج الفعلية غير حتمية بغض النظر عن البذرة."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -11577,7 +11810,7 @@
     }
   },
   "MiniMaxH3ReferenceToVideo": {
-    "description": "<صورة i> / <فيديو k> / <صوت j> تكييف مرجعي لـ MiniMax H3. استخدم نفس العلامات عند كتابة البرومبت.",
+    "description": "<Picture i> / <Video k> / <Audio j> تكييف مرجعي لـ MiniMax H3. استخدم نفس العلامات عند كتابة البرومبت.",
     "display_name": "تحويل مرجع MiniMax H3 إلى فيديو",
     "inputs": {
       "audio_vae": {
@@ -11979,6 +12212,17 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "ModelAttentionBackend": {
+    "display_name": "ModelAttentionBackend",
+    "inputs": {
+      "attention": {
+        "name": "الانتباه"
+      },
+      "model": {
+        "name": "النموذج"
       }
     }
   },
@@ -15365,7 +15609,7 @@
     "description": "معاينة أي قيمة مدخلة كنص.",
     "display_name": "معاينة أي",
     "inputs": {
-      "preview_mode": "وضع المعاينة",
+      "preview_mode": {},
       "preview_text": {},
       "source": {
         "name": "المصدر"
@@ -15716,6 +15960,96 @@
       },
       "vae": {
         "name": "vae"
+      }
+    }
+  },
+  "QwenImageEditApi": {
+    "description": "يعدل أو يدمج حتى ٣ صور مرجعية موجهة بنص باستخدام نماذج Qwen-Image 3.0.",
+    "display_name": "تحرير Qwen Image 3",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المستخدم."
+      },
+      "model_negative_prompt": {
+        "name": "توجيه سلبي"
+      },
+      "model_prompt": {
+        "name": "توجيه"
+      },
+      "n": {
+        "name": "عدد الصور",
+        "tooltip": "عدد الصور المراد توليدها، تُرجع كمجموعة."
+      },
+      "prompt_extend": {
+        "name": "تعزيز التوجيه",
+        "tooltip": "ما إذا كان سيتم تعزيز التوجيه بمساعدة الذكاء الاصطناعي."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة المستخدمة للتوليد."
+      },
+      "size": {
+        "name": "الحجم",
+        "tooltip": "دقة الإخراج. 'مطابقة الإدخال' تعيد استخدام حجم الصورة المرجعية الأولى، 'تلقائي' يسمح للنموذج باختيار حجم بنفس نسبة العرض إلى الارتفاع، 'مخصص' يحدد عرض وارتفاع صريحين."
+      },
+      "watermark": {
+        "name": "علامة مائية",
+        "tooltip": "ما إذا كان سيتم إضافة علامة مائية مولدة بالذكاء الاصطناعي إلى النتيجة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QwenImageTextToImageApi": {
+    "description": "ينتج صورًا من توجيه نصي باستخدام نماذج Qwen-Image 3.0.",
+    "display_name": "تحويل النص إلى صورة Qwen Image 3",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المستخدم."
+      },
+      "model_height": {
+        "name": "الارتفاع"
+      },
+      "model_negative_prompt": {
+        "name": "توجيه سلبي"
+      },
+      "model_prompt": {
+        "name": "توجيه"
+      },
+      "model_width": {
+        "name": "العرض"
+      },
+      "n": {
+        "name": "عدد الصور",
+        "tooltip": "عدد الصور المراد توليدها، تُرجع كمجموعة."
+      },
+      "prompt_extend": {
+        "name": "تعزيز التوجيه",
+        "tooltip": "ما إذا كان سيتم تعزيز التوجيه بمساعدة الذكاء الاصطناعي."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة المستخدمة للتوليد."
+      },
+      "watermark": {
+        "name": "علامة مائية",
+        "tooltip": "ما إذا كان سيتم إضافة علامة مائية مولدة بالذكاء الاصطناعي إلى النتيجة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
