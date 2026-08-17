@@ -18,7 +18,7 @@ function validEntry(): CoreManifestEntry {
     repo: 'https://github.com/example/Example-Pack',
     pin: 'a1'.repeat(20),
     tiers: ['load', 'connectivity', 'run'],
-    workflow: 'assets/customNodes/example_run.json',
+    workflow: 'assets/customNodes/vhs_video_pipeline_run.json',
     expectedNodes: ['ExampleNode'],
     expectedNodeCount: 1,
     expectedExtensions: ['Example.Extension'],
@@ -76,6 +76,15 @@ test.describe('customNode manifest', () => {
       expect(() => assertCoreEntry(validEntry(), 0)).not.toThrow()
       expect(() =>
         assertCoreEntry({ ...validEntry(), workflow: '' }, 0)
+      ).toThrow(/workflow/)
+      expect(() =>
+        assertCoreEntry(
+          {
+            ...validEntry(),
+            workflow: 'assets/customNodes/not_committed.json'
+          },
+          0
+        )
       ).toThrow(/workflow/)
       expect(() => assertCoreEntry({ ...validEntry(), pin: '' }, 0)).toThrow(
         /pin/

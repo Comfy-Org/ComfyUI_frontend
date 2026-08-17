@@ -1,8 +1,5 @@
 export interface ConnectivityExpectations {
-  excludedNodeTypes: Record<
-    string,
-    { pack: string; reason: string; restore: string }
-  >
+  isolatedNodeTypes: Record<string, { pack: string; reason: string }>
   connectRejected: string[]
   conditionalSlotContractMismatch: string[]
   deterministicSlotContractMismatch: string[]
@@ -12,7 +9,13 @@ export interface ConnectivityExpectations {
 }
 
 export const connectivityExpectations: ConnectivityExpectations = {
-  excludedNodeTypes: {},
+  isolatedNodeTypes: {
+    FL_CodeNode: {
+      pack: 'ComfyUI_Fill-Nodes',
+      reason:
+        'its deferred dynamic-slot cleanup is context-sensitive after repeated same-page graph resets'
+    }
+  },
   connectRejected: [
     'AddTextPrefix.texts -> MathExpression|pysssss.expression',
     'FL_NodeLoader.TRIGGER -> FL_NodeLoader.trigger',

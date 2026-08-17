@@ -16,7 +16,6 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
 
-import { connectivityExpectations } from '../browser_tests/fixtures/customNode/connectivityExpectations'
 import type { QuarantinedPack } from '../browser_tests/fixtures/customNode/manifest'
 import { ROUNDTRIP_NODE_LOSS_EXPECTATIONS_LITEGRAPH } from '../browser_tests/fixtures/customNode/valueDrift'
 import {
@@ -148,12 +147,6 @@ for (const [pack, entry] of entries) {
 }
 
 const nodeExclusions = [
-  ...Object.entries(connectivityExpectations.excludedNodeTypes).map(
-    ([nodeType, exclusion]) => ({
-      label: `${nodeType} connectivity`,
-      ...exclusion
-    })
-  ),
   ...Object.entries(ROUNDTRIP_NODE_LOSS_EXPECTATIONS_LITEGRAPH).flatMap(
     ([pack, nodes]) =>
       Object.entries(nodes).map(([nodeType, exclusion]) => ({

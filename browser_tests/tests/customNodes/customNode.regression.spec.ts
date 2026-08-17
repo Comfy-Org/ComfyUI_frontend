@@ -1,5 +1,5 @@
 /* oxlint-disable playwright/no-skipped-test -- tiers conditionally skip when the target backend lacks the required packs (installed custom nodes or devtools); this is the framework's designed environment gating, not a disabled test */
-import { existsSync, readFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 import type { Page } from '@playwright/test'
@@ -217,8 +217,7 @@ for (const entry of loadManifest()) {
     // tier generates no curated workflow test, so the gates' zero-skip check
     // keeps meaning "every enrolled tier ran". The runtime skip below covers
     // only conditions of the ENVIRONMENT an enrolled row meets (pack not
-    // installed on this backend, GPU/models the runner lacks, workflow file
-    // absent locally).
+    // installed on this backend or GPU/models the runner lacks).
     if (entry.tiers.includes('run'))
       test('Curated workflow execution: completes without error', async ({
         comfyPage
@@ -229,8 +228,7 @@ for (const entry of loadManifest()) {
         test.skip(
           missing.length > 0 ||
             ('requiresGpu' in entry &&
-              (entry.requiresGpu || entry.requiresModels.length > 0)) ||
-            !existsSync(resolve(workflowRelative)),
+              (entry.requiresGpu || entry.requiresModels.length > 0)),
           `run tier unavailable for ${entry.pack}`
         )
         await expectNoVisibleErrors(comfyPage.page, 'at startup')

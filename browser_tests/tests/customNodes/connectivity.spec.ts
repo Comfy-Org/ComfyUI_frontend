@@ -52,7 +52,7 @@ const SWEEP_MS_PER_PAIR = 40
 // surface uncapped it, so 15s per drag is that budget with margin.
 const DRAG_MS_PER_DRAG = 15_000
 const {
-  excludedNodeTypes,
+  isolatedNodeTypes,
   connectRejected,
   conditionalSlotContractMismatch,
   deterministicSlotContractMismatch,
@@ -85,68 +85,51 @@ function isEntryInstalled(
   return entry.expectedNodes.every((type) => nodeTypes.has(type))
 }
 
-async function probeExcludedNodeTypes(
+interface PairResult {
+  key: string
+  outcome: string
+  detail?: string
+}
+
+async function runPairsInIsolatedPages(
   page: Page,
-  exclusions: typeof excludedNodeTypes
-): Promise<string[]> {
-  const stale: string[] = []
-  for (const [nodeType, exclusion] of Object.entries(exclusions)) {
+  pairs: PlannedPair[]
+): Promise<{ results: PairResult[]; errors: string[] }> {
+  const results: PairResult[] = []
+  const errors: string[] = []
+  for (const pair of pairs) {
     const probe = await page.context().newPage()
+    const consoleErrors = collectConsoleErrors(probe)
     try {
       await probe.goto(page.url())
       await probe.waitForFunction(
-        (type) =>
+        ([producerType, consumerType]) =>
           window.app?.extensionManager !== undefined &&
-          window.LiteGraph?.registered_node_types[type] !== undefined,
-        nodeType,
+          window.LiteGraph?.registered_node_types[producerType] !== undefined &&
+          window.LiteGraph.registered_node_types[consumerType] !== undefined,
+        [pair.producer.nodeType, pair.consumer.nodeType],
         { timeout: 60_000 }
       )
-      const evaluation = probe.evaluate(async (type) => {
-        const graph = window.app!.graph
-        graph.clear()
-        const producer = window.LiteGraph!.createNode('AddTextPrefix')!
-        const consumer = window.LiteGraph!.createNode(type)!
-        graph.add(producer)
-        graph.add(consumer)
-        await new Promise((resolve) => setTimeout(resolve, 0))
-        const output = producer.outputs.findIndex(
-          (slot) => slot.name === 'texts'
-        )
-        const input = consumer.inputs.findIndex(
-          (slot) => slot.name === 'code_input'
-        )
-        producer.connect(output, consumer, input)
-        const serialized = graph.serialize()
-        graph.configure(serialized)
-        await window.app!.graphToPrompt()
-      }, nodeType)
-      const outcome = await Promise.race([
-        evaluation.then(() => 'completed' as const),
-        new Promise<'blocked'>((resolve) =>
-          setTimeout(() => resolve('blocked'), 7_000)
-        )
-      ])
-      if (outcome === 'completed') stale.push(nodeType)
-      else {
-        await probe.close()
-        await evaluation.catch(() => undefined)
-        console.log(
-          `connectivity exclusion confirmed: ${nodeType} - ${exclusion.reason}`
-        )
-      }
+      results.push(...(await evaluatePairs(probe, [pair])))
+      await expectNoVisibleErrors(
+        probe,
+        `after isolated pair ${pair.producer.nodeType} -> ${pair.consumer.nodeType}`
+      )
     } finally {
+      consoleErrors.stop()
+      errors.push(...consoleErrors.errors)
       if (!probe.isClosed()) await probe.close()
     }
   }
-  return stale
+  return { results, errors }
 }
 
 const connectivityEntries = loadManifest().filter((entry) =>
   entry.tiers.includes('connectivity')
 )
-const activeExcludedNodeTypes = Object.fromEntries(
-  Object.entries(excludedNodeTypes).filter(([, exclusion]) =>
-    connectivityEntries.some((entry) => entry.pack === exclusion.pack)
+const activeIsolatedNodeTypes = Object.fromEntries(
+  Object.entries(isolatedNodeTypes).filter(([, isolation]) =>
+    connectivityEntries.some((entry) => entry.pack === isolation.pack)
   )
 )
 
@@ -158,19 +141,14 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
     window.app!.api.getNodeDefs()
   )) as unknown as Record<string, RawNodeDef>
   const nodes = normalizeNodeDefs(defs)
-  for (const [nodeType, exclusion] of Object.entries(activeExcludedNodeTypes)) {
+  for (const [nodeType, isolation] of Object.entries(activeIsolatedNodeTypes)) {
     const node = nodes.find((candidate) => candidate.type === nodeType)
     expect(
       node?.pack,
-      `${nodeType} exclusion is stale because the node is not registered`
-    ).toBe(exclusion.pack)
-    console.log(
-      `connectivity: **SKIP** ${nodeType} - ${exclusion.reason}; to restore: ${exclusion.restore}`
-    )
+      `${nodeType} isolation is stale because the node is not registered`
+    ).toBe(isolation.pack)
+    console.log(`connectivity: isolating ${nodeType} - ${isolation.reason}`)
   }
-  const sweepNodes = nodes.filter(
-    (node) => !(node.type in activeExcludedNodeTypes)
-  )
 
   // Pack-specific expectations apply only where the pack is installed; on a
   // backend without it (e.g. a generic CI runner) the core sweep still runs
@@ -184,10 +162,10 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
       console.log(`connectivity: ${entry.pack} not installed on this backend`)
   // Corpus = every node the installed packs register, from the live backend.
   const installedPacks = new Set(installedEntries.map((entry) => entry.pack))
-  const packTypes = sweepNodes
+  const packTypes = nodes
     .filter((node) => installedPacks.has(node.pack))
     .map((node) => node.type)
-  const coreProof = sweepNodes
+  const coreProof = nodes
     .filter(
       (node) =>
         node.pack === 'core' &&
@@ -197,11 +175,31 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
     .map((node) => node.type)
     .sort()
     .slice(0, CORE_PROOF_NODE_COUNT)
-  const plan = planPairs(sweepNodes, [...packTypes, ...coreProof])
+  const plan = planPairs(nodes, [...packTypes, ...coreProof])
+  const isolatedTypes = new Set(Object.keys(activeIsolatedNodeTypes))
+  const isolatedPairs = plan.pairs.filter(
+    (pair) =>
+      isolatedTypes.has(pair.producer.nodeType) ||
+      isolatedTypes.has(pair.consumer.nodeType)
+  )
+  const sharedPairs = plan.pairs.filter(
+    (pair) =>
+      !isolatedTypes.has(pair.producer.nodeType) &&
+      !isolatedTypes.has(pair.consumer.nodeType)
+  )
 
   expect(plan.pairs.length, 'pairing produced no edges').toBeGreaterThan(0)
+  for (const nodeType of isolatedTypes)
+    expect(
+      isolatedPairs.some(
+        (pair) =>
+          pair.producer.nodeType === nodeType ||
+          pair.consumer.nodeType === nodeType
+      ),
+      `${nodeType} has no isolated pairs - remove its stale isolation entry`
+    ).toBe(true)
   console.log(
-    `connectivity plan: ${plan.pairs.length} pairs, ${plan.orphans.length} orphan slots, ${plan.wildcards.length} wildcard + ${plan.combos.length} combo slots (excluded by design), ${plan.unknownShapes.length} unknown-shape slots (recorded: ${plan.unknownShapes.join('; ') || 'none'})`
+    `connectivity plan: ${plan.pairs.length} pairs (${isolatedPairs.length} isolated), ${plan.orphans.length} orphan slots, ${plan.wildcards.length} wildcard + ${plan.combos.length} combo slots (excluded by design), ${plan.unknownShapes.length} unknown-shape slots (recorded: ${plan.unknownShapes.join('; ') || 'none'})`
   )
 
   const observedNoPairPacks = new Set<string>()
@@ -239,7 +237,9 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
   const consoleErrors = collectConsoleErrors(comfyPage.page)
   test.setTimeout(PLAN_SETUP_MS + plan.pairs.length * SWEEP_MS_PER_PAIR)
   const sweepStart = Date.now()
-  const results = await runPairsInPage(comfyPage.page, plan.pairs)
+  const sharedResults = await runPairsInPage(comfyPage.page, sharedPairs)
+  const isolated = await runPairsInIsolatedPages(comfyPage.page, isolatedPairs)
+  const results = [...sharedResults, ...isolated.results]
   const sweepMs = Date.now() - sweepStart
   consoleErrors.stop()
   console.log(
@@ -289,7 +289,7 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
   // wiring sweep queues no prompts, so a prompt-execution error here is a
   // prior tier's async stray, not this test's (isForeignExecutionNoise;
   // ARCHITECTURE section 9 principle).
-  const sweepErrors = consoleErrors.errors.filter(
+  const sweepErrors = [...consoleErrors.errors, ...isolated.errors].filter(
     (error) => !isForeignExecutionNoise(error)
   )
   const unledgered = unallowlistedConnectivityErrorsForPacks(
@@ -372,10 +372,6 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
     }
   }
   expect(staleEntries, 'stale allowlist entries').toEqual([])
-  expect(
-    await probeExcludedNodeTypes(comfyPage.page, activeExcludedNodeTypes),
-    'excluded node no longer blocks the graph round-trip; remove its temporary exclusion'
-  ).toEqual([])
   await expectNoVisibleErrors(comfyPage.page, 'after breadth sweep')
 })
 
@@ -406,14 +402,14 @@ function firstMaterializedPair(
 async function runPairsInPage(
   page: Page,
   pairs: PlannedPair[]
-): Promise<Array<{ key: string; outcome: string; detail?: string }>> {
+): Promise<PairResult[]> {
   return await evaluatePairs(page, pairs)
 }
 
 function evaluatePairs(
   page: Page,
   pairs: PlannedPair[]
-): Promise<Array<{ key: string; outcome: string; detail?: string }>> {
+): Promise<PairResult[]> {
   return page.evaluate(async (pairsInPage) => {
     const graph = window.app!.graph
     const resetGraph = () => graph.clear()

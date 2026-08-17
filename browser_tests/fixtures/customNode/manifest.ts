@@ -26,8 +26,8 @@ interface SharedNodeExpectations {
   pack: string
   tiers: CustomNodeTier[]
   // Frontend-format workflow (path relative to browser_tests/) loaded and queued
-  // by the run tier; empty or absent file = tier skips. Run the backend with
-  // --cache-none, or repeat runs classify PARTIAL when cached nodes skip executing.
+  // by the run tier. Run the backend with --cache-none, or repeat runs classify
+  // PARTIAL when cached nodes skip executing.
   workflow: string
   // Runtime class_type / object_info keys, NOT Python class names (e.g. rgthree
   // registers "Power Primitive (rgthree)", not RgthreePowerPrimitive).
@@ -151,6 +151,16 @@ export function staleAutogrowApplicabilityIssues(
   })
 }
 
+function workflowFileExists(workflow: string): boolean {
+  try {
+    return existsSync(
+      fileURLToPath(new URL(`../../${workflow}`, import.meta.url))
+    )
+  } catch {
+    return false
+  }
+}
+
 function sharedIssues(entry: SharedNodeExpectations): string[] {
   const missing: string[] = []
   // CI installs the pack into custom_nodes/<pack>, and node attribution keys
@@ -163,14 +173,12 @@ function sharedIssues(entry: SharedNodeExpectations): string[] {
     missing.push('pack (must be a plain path segment)')
   // workflow may be an empty string until the pack gains a run-tier fixture.
   if (typeof entry.workflow !== 'string') missing.push('workflow')
-  // A run-tier row with no workflow would otherwise skip locally, leaving
-  // only CI's skip gate to notice the lost coverage. Fail at load instead.
   else if (
-    entry.workflow === '' &&
     Array.isArray(entry.tiers) &&
-    entry.tiers.includes('run')
+    entry.tiers.includes('run') &&
+    (entry.workflow === '' || !workflowFileExists(entry.workflow))
   )
-    missing.push('workflow (required when tiers includes "run")')
+    missing.push('workflow (committed file required when tiers includes "run")')
   if (!Array.isArray(entry.expectedNodes) || entry.expectedNodes.length === 0)
     missing.push('expectedNodes')
   if (!Array.isArray(entry.tiers) || entry.tiers.length === 0)
