@@ -283,16 +283,16 @@ jobs:
         run: |
           FILES=$(echo "$NEW_SPEC_FILES" | tr '\n' ' ')
           LIST_EXIT=0
-          LIST_OUTPUT=$(pnpm exec playwright test --project=chromium --list $FILES 2>&1) || LIST_EXIT=$?
+          LIST_OUTPUT=$(pnpm exec playwright test --project=chromium --list --pass-with-no-tests $FILES 2>&1) || LIST_EXIT=$?
           echo "$LIST_OUTPUT"
 
-          if [ "$LIST_EXIT" -eq 0 ]; then
-            echo "has-tests=true" >> "$GITHUB_OUTPUT"
-            exit 0
+          if [ "$LIST_EXIT" -ne 0 ]; then
+            exit "$LIST_EXIT"
           fi
 
-          if ! echo "$LIST_OUTPUT" | grep -q 'Total: 0 tests in 0 files'; then
-            exit "$LIST_EXIT"
+          if ! echo "$LIST_OUTPUT" | grep -Fxq 'Total: 0 tests in 0 files'; then
+            echo "has-tests=true" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
 
           echo "has-tests=false" >> "$GITHUB_OUTPUT"
