@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
-import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('@comfyorg/shared-frontend-utils/networkUtil', () => ({
   checkUrlReachable: vi.fn()
@@ -49,10 +49,6 @@ function renderUrlInput(
 }
 
 describe('UrlInput', () => {
-  beforeEach(() => {
-    vi.resetAllMocks()
-  })
-
   describe('initial validation on mount', () => {
     it('stays IDLE when modelValue is empty on mount', async () => {
       renderUrlInput('')

@@ -36,7 +36,6 @@ import { getShellLayoutSnapshot } from './getShellLayoutSnapshot'
 
 describe('getShellLayoutSnapshot', () => {
   beforeEach(() => {
-    localStorage.clear()
     state.settings = { 'Comfy.UseNewMenu': 'Top' }
     state.activeSidebarTabId = null
     state.rightSidePanelOpen = false

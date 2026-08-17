@@ -11728,16 +11728,16 @@ export interface components {
         };
         LTXImage2VideoRequest: {
             /**
-             * @description Video duration in seconds
+             * @description Video duration in seconds (maximum depends on resolution and frame rate)
              * @enum {integer}
              */
-            duration: 6 | 8 | 10;
+            duration: 2 | 3 | 4 | 5 | 6 | 8 | 10 | 12 | 14 | 16 | 18 | 20;
             /**
              * @description Frame rate in frames per second
              * @default 25
              * @enum {integer}
              */
-            fps: 25 | 50;
+            fps: 24 | 25 | 48 | 50;
             /**
              * @description Generate audio for the video
              * @default true
@@ -11745,31 +11745,33 @@ export interface components {
             generate_audio: boolean;
             /** @description Image to be used as the first frame of the video (HTTPS URL or base64 data URI) */
             image_uri: string;
+            /** @description Image to be used as the last frame of the video (HTTPS URL or base64 data URI) */
+            last_frame_uri?: string;
             /**
              * @description Model to use for generation
              * @enum {string}
              */
-            model: "ltx-2-fast" | "ltx-2-pro";
+            model: "ltx-2-fast" | "ltx-2-pro" | "ltx-2-5-fast" | "ltx-2-5-pro";
             /** @description Text description of how the image should be animated */
             prompt: string;
             /**
              * @description Output video resolution
              * @enum {string}
              */
-            resolution: "1920x1080" | "2560x1440" | "3840x2160";
+            resolution: "1280x720" | "720x1280" | "1920x1080" | "1080x1920" | "2560x1440" | "1440x2560" | "3840x2160" | "2160x3840";
         };
         LTXText2VideoRequest: {
             /**
-             * @description Video duration in seconds
+             * @description Video duration in seconds (maximum depends on resolution and frame rate)
              * @enum {integer}
              */
-            duration: 6 | 8 | 10;
+            duration: 2 | 3 | 4 | 5 | 6 | 8 | 10 | 12 | 14 | 16 | 18 | 20;
             /**
              * @description Frame rate in frames per second
              * @default 25
              * @enum {integer}
              */
-            fps: 25 | 50;
+            fps: 24 | 25 | 48 | 50;
             /**
              * @description Generate audio for the video
              * @default true
@@ -11779,14 +11781,14 @@ export interface components {
              * @description Model to use for generation
              * @enum {string}
              */
-            model: "ltx-2-fast" | "ltx-2-pro";
+            model: "ltx-2-fast" | "ltx-2-pro" | "ltx-2-5-fast" | "ltx-2-5-pro";
             /** @description Text prompt describing the desired video content */
             prompt: string;
             /**
              * @description Output video resolution
              * @enum {string}
              */
-            resolution: "1920x1080" | "2560x1440" | "3840x2160";
+            resolution: "1280x720" | "720x1280" | "1920x1080" | "1080x1920" | "2560x1440" | "1440x2560" | "3840x2160" | "2160x3840";
         };
         /**
          * @description Output aspect ratio. The ray-3.2 video models support the subset 9:16, 3:4, 1:1, 4:3, 16:9, 21:9.
@@ -12867,7 +12869,7 @@ export interface components {
                 /** @description A publicly reachable URL, an mm_file://{file_id} reference, or a data URI. */
                 url?: string;
             };
-            /** @description Role of a media item. Options: first_frame, last_frame, reference_image, reference_video, reference_audio. Keyframe roles and reference_* roles are mutually exclusive within a request. */
+            /** @description Role of a media item. Options: first_frame, last_frame, reference_image, reference_video, reference_audio, base_video. Keyframe roles and reference_* roles are mutually exclusive within a request; base_video marks the source video of a video regeneration request. */
             role?: string;
             /** @description The prompt text. Exactly one non-empty text item is required per request. */
             text?: string;
@@ -12883,6 +12885,8 @@ export interface components {
         MinimaxV2TaskResult: {
             /** @description Generated output; present when status is succeeded. */
             content?: {
+                /** @description The enhanced video prompt produced by a succeeded h3_context_ir task. */
+                prompt?: string;
                 /** @description Time-limited URL of the generated MP4. Query again for a refreshed URL. */
                 url?: string;
             };
@@ -12906,9 +12910,13 @@ export interface components {
             task_type?: string;
             /** @description Usage recorded for the task. */
             usage?: {
+                completion_tokens?: number;
+                input_image_count?: number;
                 input_seconds?: number;
                 output_seconds?: number;
+                prompt_tokens?: number;
                 total_seconds?: number;
+                total_tokens?: number;
             };
         };
         /** @description Response from querying a Minimax V2 video generation task status. */
