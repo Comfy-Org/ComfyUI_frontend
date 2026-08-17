@@ -67,6 +67,9 @@ function getFormAttrs(item: FormItem) {
       )
   }
   switch (item.type) {
+    case 'password':
+      attrs['type'] = 'password'
+      break
     case 'combo':
     case 'radio':
       attrs['options'] =
