@@ -181,6 +181,41 @@ describe('WorkspaceAuthGate', () => {
 
       expect(mockWorkspaceStoreInitialize).toHaveBeenCalledOnce()
     })
+
+    it('deduplicates mount and auth-hydration initialization', async () => {
+      mockIsCloud.value = false
+
+      mountComponent()
+      mockCurrentUser.value = { uid: 'user-123' }
+      mockIsInitialized.value = true
+      await flushPromises()
+
+      expect(mockWorkspaceStoreInitialize).toHaveBeenCalledOnce()
+    })
+
+    it('cancels pending initialization when unmounted', async () => {
+      mockIsCloud.value = false
+
+      const { unmount } = mountComponent()
+      unmount()
+      mockCurrentUser.value = { uid: 'user-123' }
+      mockIsInitialized.value = true
+      await flushPromises()
+
+      expect(mockWorkspaceStoreInitialize).not.toHaveBeenCalled()
+    })
+
+    it('cancels pending initialization on logout', async () => {
+      mockIsCloud.value = false
+      mockCurrentUser.value = { uid: 'user-123' }
+
+      mountComponent()
+      mockCurrentUser.value = null
+      mockIsInitialized.value = true
+      await flushPromises()
+
+      expect(mockWorkspaceStoreInitialize).not.toHaveBeenCalled()
+    })
   })
 
   describe('cloud builds - unauthenticated user', () => {

@@ -7,6 +7,7 @@ vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
   layoutStore: {
     querySlotAtPoint: vi.fn(),
     queryRerouteAtPoint: vi.fn(),
+    queryLinkSegmentAtPoint: vi.fn(),
     getNodeLayoutRef: vi.fn(() => ({ value: null })),
     getSlotLayout: vi.fn()
   }
@@ -56,6 +57,44 @@ describe('LGraphCanvas link drag auto-pan', () => {
     canvas.mouse[1] = 300
     startLinkDrag()
     expect(canvas['_autoPan']).not.toBeNull()
+  })
+
+  it('resumes auto-pan after Space panning during a link drag', () => {
+    canvas.processMouseDown(
+      new PointerEvent('pointerdown', {
+        button: 0,
+        buttons: 1,
+        clientX: 400,
+        clientY: 300,
+        isPrimary: true
+      })
+    )
+    canvas.linkConnector.state.connectingTo = 'output'
+    startLinkDrag()
+    canvas.processMouseMove(
+      new PointerEvent('pointermove', {
+        buttons: 1,
+        clientX: 5,
+        clientY: 300,
+        isPrimary: true
+      })
+    )
+    const keydown = new KeyboardEvent('keydown', { key: ' ' })
+    const keyup = new KeyboardEvent('keyup', { key: ' ' })
+    Object.defineProperty(keydown, 'target', { value: canvasElement })
+    Object.defineProperty(keyup, 'target', { value: canvasElement })
+
+    canvas.processKey(keydown)
+    const offsetWhileSpacePanning = [...canvas.ds.offset]
+
+    vi.advanceTimersByTime(16)
+
+    expect([...canvas.ds.offset]).toEqual(offsetWhileSpacePanning)
+
+    canvas.processKey(keyup)
+    vi.advanceTimersByTime(16)
+
+    expect([...canvas.ds.offset]).not.toEqual(offsetWhileSpacePanning)
   })
 
   it('keeps graph_mouse consistent with offset after auto-pan', () => {

@@ -33,7 +33,7 @@ export interface WorkspaceMember {
   monthlyCreditLimit?: number | null
 }
 
-export interface PendingInvite {
+export interface WorkspacePendingInvite {
   id: string
   email: string
   inviteDate: Date
@@ -47,7 +47,7 @@ interface WorkspaceState extends WorkspaceWithRole {
   subscriptionPlan: SubscriptionPlan
   subscriptionTier: SubscriptionTier | null
   members: WorkspaceMember[]
-  pendingInvites: PendingInvite[]
+  pendingInvites: WorkspacePendingInvite[]
 }
 
 type InitState = 'uninitialized' | 'loading' | 'ready' | 'error'
@@ -65,7 +65,9 @@ function mapApiMemberToWorkspaceMember(member: Member): WorkspaceMember {
   }
 }
 
-function mapApiInviteToPendingInvite(invite: ApiPendingInvite): PendingInvite {
+function mapApiInviteToPendingInvite(
+  invite: ApiPendingInvite
+): WorkspacePendingInvite {
   return {
     id: invite.id,
     email: invite.email,
@@ -128,7 +130,8 @@ const BASE_RETRY_DELAY_MS = 1000
 export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
   const initState = ref<InitState>('uninitialized')
   const workspaces = shallowRef<WorkspaceState[]>([])
-  const activeWorkspaceId = ref<string | null>(null)
+  const mutableActiveWorkspaceId = ref<string | null>(null)
+  const activeWorkspaceId = computed(() => mutableActiveWorkspaceId.value)
   const billingRailByWorkspaceId = shallowRef<Record<string, BillingRail>>({})
   const error = ref<Error | null>(null)
 
@@ -208,7 +211,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     return !!selfRow && selfRow.id === originalOwnerId.value
   })
 
-  const pendingInvites = computed<PendingInvite[]>(
+  const pendingInvites = computed<WorkspacePendingInvite[]>(
     () => activeWorkspace.value?.pendingInvites ?? []
   )
 
@@ -299,7 +302,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
           )
 
           if (sessionWorkspaceExists) {
-            activeWorkspaceId.value = sessionWorkspaceId
+            mutableActiveWorkspaceId.value = sessionWorkspaceId
             initState.value = 'ready'
             isFetchingWorkspaces.value = false
             return
@@ -316,7 +319,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
 
           if (isStaleIdentity(generation)) return
 
-          activeWorkspaceId.value = fallbackWorkspaceId
+          mutableActiveWorkspaceId.value = fallbackWorkspaceId
           setLastWorkspaceId(fallbackWorkspaceId)
           initState.value = 'ready'
           isFetchingWorkspaces.value = false
@@ -353,7 +356,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
         if (isStaleIdentity(generation)) return
 
         // 5. Set active workspace
-        activeWorkspaceId.value = targetWorkspaceId
+        mutableActiveWorkspaceId.value = targetWorkspaceId
         setLastWorkspaceId(targetWorkspaceId)
 
         initState.value = 'ready'
@@ -435,7 +438,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     if (!isCloud) {
       const personal = workspaces.value.find((w) => w.type === 'personal')
       workspaces.value = workspaces.value.filter((w) => w.id !== workspaceId)
-      activeWorkspaceId.value = personal?.id ?? null
+      mutableActiveWorkspaceId.value = personal?.id ?? null
       if (personal) {
         setLastWorkspaceId(personal.id)
       } else {
@@ -487,7 +490,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
         if (workspaceAuthStore.currentWorkspace?.id !== workspaceId) {
           throw new Error('Workspace authentication did not switch')
         }
-        activeWorkspaceId.value = workspaceId
+        mutableActiveWorkspaceId.value = workspaceId
         setLastWorkspaceId(workspaceId)
         isSwitching.value = false
         return
@@ -642,13 +645,16 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
    * Fetch members for the current workspace.
    */
   async function fetchMembers(
-    params?: ListMembersParams
+    params: ListMembersParams = {}
   ): Promise<WorkspaceMember[]> {
     const generation = identityGeneration
     const workspaceId = activeWorkspaceId.value
     if (!workspaceId) return []
 
-    const response = await workspaceApi.listMembers(params)
+    const response = await workspaceApi.listMembers({
+      ...params,
+      limit: params.limit ?? 100
+    })
     const members = response.members.map(mapApiMemberToWorkspaceMember)
     if (!isStaleWorkspace(generation, workspaceId)) {
       updateWorkspace(workspaceId, { members })
@@ -769,7 +775,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
   /**
    * Fetch pending invites for the current workspace.
    */
-  async function fetchPendingInvites(): Promise<PendingInvite[]> {
+  async function fetchPendingInvites(): Promise<WorkspacePendingInvite[]> {
     const generation = identityGeneration
     const workspaceId = activeWorkspaceId.value
     if (!workspaceId) return []
@@ -785,7 +791,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
   /**
    * Create an invite for the current workspace.
    */
-  async function createInvite(email: string): Promise<PendingInvite> {
+  async function createInvite(email: string): Promise<WorkspacePendingInvite> {
     const generation = identityGeneration
     const workspaceId = activeWorkspaceId.value
     const response = await workspaceApi.createInvite({ email })
@@ -824,7 +830,9 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
 
   const resendingInviteIds = new Set<string>()
 
-  async function resendInvite(inviteId: string): Promise<PendingInvite> {
+  async function resendInvite(
+    inviteId: string
+  ): Promise<WorkspacePendingInvite> {
     const generation = identityGeneration
     const resendKey = `${generation}:${inviteId}`
     if (resendingInviteIds.has(resendKey)) {
@@ -896,7 +904,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     initializationPromise = null
     initState.value = 'uninitialized'
     workspaces.value = []
-    activeWorkspaceId.value = null
+    mutableActiveWorkspaceId.value = null
     error.value = null
     isCreating.value = false
     isDeleting.value = false

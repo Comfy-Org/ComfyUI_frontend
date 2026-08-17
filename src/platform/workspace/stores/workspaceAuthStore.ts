@@ -1,3 +1,4 @@
+import { zWorkspaceWithRole } from '@comfyorg/ingest-types/zod'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 import { z } from 'zod'
@@ -14,27 +15,25 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAuthStore } from '@/stores/authStore'
 import type { AuthHeader } from '@/types/authTypes'
 import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
-import type { WorkspaceWithRole } from '@/platform/workspace/workspaceTypes'
+import type { WorkspaceIdentity } from '@/platform/workspace/workspaceTypes'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
 import { workspaceApiUrl } from '@/platform/workspace/api/workspaceApiUrl'
 
-const WorkspaceWithRoleSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  type: z.enum(['personal', 'team']),
-  role: z.enum(['owner', 'member'])
+// Picked off the generated schema: a hand-written enum that lags the spec would
+// reject a valid persisted identity and silently clear the session.
+const WorkspaceIdentitySchema = zWorkspaceWithRole.pick({
+  id: true,
+  name: true,
+  type: true,
+  role: true
 })
 
 const WorkspaceTokenResponseSchema = z.object({
   token: z.string(),
   expires_at: z.string(),
-  workspace: z.object({
-    id: z.string(),
-    name: z.string(),
-    type: z.enum(['personal', 'team'])
-  }),
-  role: z.enum(['owner', 'member']),
+  workspace: zWorkspaceWithRole.pick({ id: true, name: true, type: true }),
+  role: zWorkspaceWithRole.shape.role,
   permissions: z.array(z.string())
 })
 
@@ -64,7 +63,7 @@ export class WorkspaceAuthError extends Error {
 interface MintedToken {
   token: string
   expiresAt: number
-  workspace: WorkspaceWithRole
+  workspace: WorkspaceIdentity
   ownerUid: string
 }
 
@@ -109,7 +108,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   const { flags } = useFeatureFlags()
 
   // State
-  const currentWorkspace = shallowRef<WorkspaceWithRole | null>(null)
+  const currentWorkspace = shallowRef<WorkspaceIdentity | null>(null)
   const workspaceToken = ref<string | null>(null)
   const workspaceTokenExpiresAt = ref<number | null>(null)
   const workspaceTokenOwnerUid = ref<string | null>(null)
@@ -232,7 +231,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     )
   }
 
-  function persistWorkspaceIdentity(workspace: WorkspaceWithRole): void {
+  function persistWorkspaceIdentity(workspace: WorkspaceIdentity): void {
     try {
       sessionStorage.setItem(
         WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE,
@@ -244,7 +243,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   }
 
   function persistToSession(
-    workspace: WorkspaceWithRole,
+    workspace: WorkspaceIdentity,
     token: string,
     expiresAt: number,
     ownerUid: string
@@ -310,7 +309,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
         return false
       }
 
-      const parseResult = WorkspaceWithRoleSchema.safeParse(
+      const parseResult = WorkspaceIdentitySchema.safeParse(
         JSON.parse(workspaceJson)
       )
 

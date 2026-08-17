@@ -316,7 +316,8 @@ describe('auth token priority chain', () => {
 
     it('fails queue authentication closed after workspace initialization errors', async () => {
       mockDistributionTypes.isCloud = false
-      mockTeamWorkspaceInitState = 'error'
+      mockTeamWorkspaceInitState = 'uninitialized'
+      mockInitializeWorkspaces.mockRejectedValue(new Error('Network error'))
 
       await expect(store.getWorkspaceAuthToken()).resolves.toBeUndefined()
       expect(mockUser.getIdToken).not.toHaveBeenCalled()

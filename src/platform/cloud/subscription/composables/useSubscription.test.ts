@@ -360,29 +360,50 @@ describe('useSubscription', () => {
       )
     })
 
-    it('does not apply status after the active workspace changes', async () => {
-      let resolveStatus: (value: {
+    it('does not apply the previous account response after an identity switch', async () => {
+      let resolvePreviousAccount!: (value: {
         is_active: boolean
         has_funds: boolean
         billing_rail: 'stripe'
-      }) => void = () => {}
-      mockGetBillingStatus.mockReturnValue(
-        new Promise((resolve) => {
-          resolveStatus = resolve
+      }) => void
+      mockGetBillingStatus
+        .mockReturnValueOnce(
+          new Promise((resolve) => {
+            resolvePreviousAccount = resolve
+          })
+        )
+        .mockResolvedValueOnce({
+          is_active: false,
+          has_funds: false,
+          billing_rail: 'legacy_stripe'
         })
-      )
 
-      const { fetchStatus } = useSubscriptionWithScope()
-      const statusRequest = fetchStatus()
+      const { subscriptionStatus, fetchStatus } = useSubscriptionWithScope()
+      const previousAccountRequest = fetchStatus()
+
+      mockUserId.value = 'user-456'
       mockActiveWorkspaceId.value = 'workspace-456'
-      resolveStatus({
+      const currentAccountRequest = fetchStatus()
+      await currentAccountRequest
+
+      resolvePreviousAccount({
         is_active: true,
         has_funds: true,
         billing_rail: 'stripe'
       })
-      await statusRequest
+      await previousAccountRequest
 
-      expect(mockSetWorkspaceBillingRail).not.toHaveBeenCalled()
+      expect(mockGetBillingStatus).toHaveBeenCalledTimes(2)
+      expect(subscriptionStatus.value).toEqual({
+        is_active: false,
+        has_funds: false,
+        billing_rail: 'legacy_stripe'
+      })
+      expect(mockSetWorkspaceBillingRail).toHaveBeenCalledOnce()
+      expect(mockSetWorkspaceBillingRail).toHaveBeenCalledWith(
+        'workspace-456',
+        'legacy_stripe'
+      )
     })
 
     it('coalesces concurrent callers into one fetch', async () => {

@@ -93,11 +93,15 @@ const errorPanel = useTemplateRef<HTMLElement>('errorPanel')
 const subscriptionDialog = useSubscriptionDialog()
 let initializationGeneration = 0
 let initializationController: AbortController | null = null
+let backgroundInitialization: Promise<void> | null = null
+let backgroundInitializationUserId: string | null | undefined
 
 function cancelInitialization(): void {
   initializationGeneration++
   initializationController?.abort()
   initializationController = null
+  backgroundInitialization = null
+  backgroundInitializationUserId = undefined
 }
 
 async function initialize(): Promise<void> {
@@ -240,23 +244,48 @@ async function initializeWorkspaceMode(): Promise<void> {
   }
 }
 
-async function initializeWorkspacesInBackground(): Promise<void> {
+function initializeWorkspacesInBackground(): Promise<void> {
   const { isInitialized, currentUser } = storeToRefs(useAuthStore())
-  try {
+  const userId = currentUser.value?.uid ?? null
+  if (backgroundInitialization && backgroundInitializationUserId === userId) {
+    return backgroundInitialization
+  }
+
+  cancelInitialization()
+  const generation = initializationGeneration
+  backgroundInitializationUserId = userId
+
+  const operation = (async () => {
     if (!isInitialized.value) {
       await until(isInitialized).toBe(true, {
         timeout: FIREBASE_INIT_TIMEOUT_MS,
         throwOnTimeout: true
       })
     }
-    if (!currentUser.value) return
+    if (
+      generation !== initializationGeneration ||
+      currentUser.value?.uid !== userId
+    ) {
+      return
+    }
     await initializeWorkspaceMode()
-  } catch (error) {
-    console.warn(
-      '[WorkspaceAuthGate] Background workspace initialization failed:',
-      error
-    )
-  }
+  })().catch((error: unknown) => {
+    if (generation === initializationGeneration) {
+      console.warn(
+        '[WorkspaceAuthGate] Background workspace initialization failed:',
+        error
+      )
+    }
+  })
+
+  backgroundInitialization = operation
+  void operation.finally(() => {
+    if (backgroundInitialization === operation) {
+      backgroundInitialization = null
+      backgroundInitializationUserId = undefined
+    }
+  })
+  return operation
 }
 
 // Initialize on mount. This gate should be placed on the authenticated layout
@@ -269,7 +298,11 @@ onMounted(() => {
 if (!isCloud) {
   const { currentUser } = storeToRefs(useAuthStore())
   watch(currentUser, (user) => {
-    if (user) void initializeWorkspacesInBackground()
+    if (user) {
+      void initializeWorkspacesInBackground()
+    } else {
+      cancelInitialization()
+    }
   })
 }
 onUnmounted(cancelInitialization)
