@@ -1,0 +1,51 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import ProductCardsSection from '../../components/home/ProductCardsSection.vue'
+import HeroSection from '../../components/home/HeroSection.vue'
+import ModelReleaseSection from '../../components/home/ModelReleaseSection.vue'
+import SocialProofBarSection from '../../components/common/SocialProofBarSection.vue'
+import ProductShowcaseSection from '../../components/home/ProductShowcaseSection.vue'
+import UseCaseSection from '../../components/home/UseCaseSection.vue'
+import CaseStudySpotlightSection from '../../components/home/CaseStudySpotlightSection.vue'
+import GetStartedSection from '../../components/home/GetStartedSection.vue'
+import BuildWhatSection from '../../components/home/BuildWhatSection.vue'
+import {
+  comfyUiApplicationNode,
+  comfyUiSoftwareId,
+  comfyUiSourceCodeNode,
+  pageContext,
+} from '../../utils/jsonLd'
+
+const { siteUrl } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
+---
+
+<BaseLayout
+  title="ComfyUI日本語 - ビジュアルAIのプロフェッショナル制御 | 最強の画像・動画生成エンジン"
+  description="ComfyUIは日本語完全対応のAI画像・動画・3D生成エンジン。60,000以上のノード、Krea2、Minimax H3、Anima、Z-Image Turboなど最新モデルに対応。デスクトップ、クラウド、APIでプロのクリエイティブを完全制御。"
+  mainEntityId={comfyUiSoftwareId(siteUrl)}
+  extraJsonLd={[comfyUiApplicationNode(siteUrl), comfyUiSourceCodeNode(siteUrl)]}
+  keywords={['comfyui app', 'comfyui web app', 'comfyui application', 'ComfyUI アプリ', 'ComfyUI ウェブ版', 'ComfyUI デスクトップ', 'ComfyUI ダウンロード', 'ビジュアル AI', 'ノードベース AI', '生成 AI ワークフロー']}
+>
+  <!-- BEGIN Hreflang Block - Paste in <head> of https://comfy.org/ and all localized versions -->
+  <link rel="alternate" hreflang="x-default" href="https://comfy.org/" slot="head" />
+  <link rel="alternate" hreflang="en" href="https://comfy.org/" slot="head" />
+  <link rel="alternate" hreflang="ja" href="https://comfy.org/ja/" slot="head" />
+  <link rel="alternate" hreflang="ko" href="https://comfy.org/ko/" slot="head" />
+  <link rel="alternate" hreflang="zh-CN" href="https://comfy.org/zh-CN/" slot="head" />
+  <link rel="alternate" hreflang="zh" href="https://comfy.org/zh-CN/" slot="head" />
+  <!-- END Hreflang Block -->
+
+  <HeroSection locale="ja" client:load />
+  <SocialProofBarSection />
+  <ModelReleaseSection locale="ja" client:visible />
+  <ProductShowcaseSection locale="ja" client:load />
+  <UseCaseSection locale="ja" client:load />
+  <GetStartedSection locale="ja" />
+  <ProductCardsSection locale="ja" />
+  <CaseStudySpotlightSection locale="ja" client:load />
+  <BuildWhatSection locale="ja" />
+</BaseLayout>

@@ -100,7 +100,8 @@ test.describe('Events page — desktop @smoke', () => {
       const prevSlide = hero.getByRole('button', {
         name: t('events.hero.prevSlide', locale)
       })
-      const slideTitle = (index: number) => featuredEvents[index].title[locale]
+      const slideTitle = (index: number) =>
+        featuredEvents[index].title[locale] ?? featuredEvents[index].title.en
 
       await expect(activeSlide).toHaveAccessibleName(slideTitle(0))
 
@@ -170,9 +171,13 @@ test.describe('Events page — desktop @smoke', () => {
 
       for (const [i, event] of upcomingEvents.entries()) {
         const row = rows.nth(i)
-        await expect(row).toContainText(event.title[locale])
-        await expect(row).toContainText(event.location![locale])
-        await expect(row).toContainText(event.dateLabel![locale])
+        await expect(row).toContainText(event.title[locale] ?? event.title.en)
+        await expect(row).toContainText(
+          event.location![locale] ?? event.location!.en
+        )
+        await expect(row).toContainText(
+          event.dateLabel![locale] ?? event.dateLabel!.en
+        )
 
         const livestreamLink = row.getByRole('link', {
           name: new RegExp(t('events.upcoming.livestream', locale))
@@ -181,7 +186,7 @@ test.describe('Events page — desktop @smoke', () => {
         // directory); the rest link to the event's page.
         const expectedHref = eventVideoId(event)
           ? localizeHref(eventPath(event), locale)
-          : event.link!.href[locale]
+          : (event.link!.href[locale] ?? event.link!.href.en)
         await expect(livestreamLink).toHaveAttribute('href', expectedHref)
       }
     }
@@ -200,17 +205,22 @@ test.describe('Events page — desktop @smoke', () => {
 
       await section
         .getByRole('link', {
-          name: `${event!.title[locale]} — ${t('events.upcoming.livestream', locale)}`
+          name: `${event!.title[locale] ?? event!.title.en} — ${t('events.upcoming.livestream', locale)}`
         })
         .click()
 
       await expect(page).toHaveURL(
         new RegExp(`${localizeHref(eventPath(event!), locale)}/?$`)
       )
-      const dialog = page.getByRole('dialog', { name: event!.title[locale] })
+      const dialog = page.getByRole('dialog', {
+        name: event!.title[locale] ?? event!.title.en
+      })
       await expect(dialog).toBeVisible()
       await expect(
-        dialog.getByRole('heading', { level: 1, name: event!.title[locale] })
+        dialog.getByRole('heading', {
+          level: 1,
+          name: event!.title[locale] ?? event!.title.en
+        })
       ).toBeVisible()
       await expect(dialog.locator('iframe')).toHaveAttribute(
         'src',
@@ -266,7 +276,7 @@ test.describe('Events page — desktop @smoke', () => {
 
       for (const [i, event] of pastEvents.entries()) {
         const card = cards.nth(i)
-        await expect(card).toContainText(event.title[locale])
+        await expect(card).toContainText(event.title[locale] ?? event.title.en)
         const watch = card.getByRole('link', {
           name: new RegExp(t('events.past.watchNow', locale))
         })
@@ -274,7 +284,7 @@ test.describe('Events page — desktop @smoke', () => {
         // event's external page.
         const expectedHref = eventVideoId(event)
           ? localizeHref(eventPath(event), locale)
-          : event.link!.href[locale]
+          : (event.link!.href[locale] ?? event.link!.href.en)
         await expect(watch).toHaveAttribute('href', expectedHref)
       }
     }
