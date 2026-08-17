@@ -473,6 +473,10 @@ export const useWorkflowService = () => {
     const { isAppMode } = useAppMode()
     const wasAppMode = isAppMode.value
 
+    useExecutionErrorStore().setActiveGraph(
+      app.isGraphReady ? app.rootGraph.id : null
+    )
+
     // Determine the initial app mode for fresh loads from serialized state.
     // null means linearMode was never explicitly set (not builder-saved).
     const freshLoadMode = linearModeToAppMode(workflowData.extra?.linearMode)

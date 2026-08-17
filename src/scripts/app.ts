@@ -2526,7 +2526,7 @@ export class ComfyApp {
     const nodeOutputStore = useNodeOutputStore()
     nodeOutputStore.resetAllOutputsAndPreviews()
     const executionErrorStore = useExecutionErrorStore()
-    executionErrorStore.clearRunErrors()
+    executionErrorStore.setActiveGraph(null)
     useMissingNodesErrorStore().setMissingNodeTypes([])
 
     useDomWidgetStore().clear()
