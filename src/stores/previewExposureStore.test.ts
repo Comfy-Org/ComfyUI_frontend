@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
+import { toNodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
 
 import { usePreviewExposureStore } from './previewExposureStore'
@@ -121,6 +122,65 @@ describe(usePreviewExposureStore, () => {
     })
   })
 
+  describe('getSuppressedAmbientNodeIds', () => {
+    it('returns an empty set for a host with no removed exposures', () => {
+      expect(store.getSuppressedAmbientNodeIds(rootGraphA, hostA).size).toBe(0)
+    })
+
+    it('suppresses a node whose exposure was explicitly removed', () => {
+      const entry = store.addExposure(rootGraphA, hostA, {
+        sourceNodeId: '42',
+        sourcePreviewName: 'preview'
+      })
+      store.removeExposure(rootGraphA, hostA, entry.name)
+
+      expect(
+        store.getSuppressedAmbientNodeIds(rootGraphA, hostA).has(toNodeId('42'))
+      ).toBe(true)
+    })
+
+    it('does not suppress when removeExposure is a no-op', () => {
+      store.addExposure(rootGraphA, hostA, {
+        sourceNodeId: '42',
+        sourcePreviewName: 'preview'
+      })
+      store.removeExposure(rootGraphA, hostA, 'does-not-exist')
+
+      expect(store.getSuppressedAmbientNodeIds(rootGraphA, hostA).size).toBe(0)
+    })
+
+    it('clears the suppression once the node is exposed again', () => {
+      const entry = store.addExposure(rootGraphA, hostA, {
+        sourceNodeId: '42',
+        sourcePreviewName: 'preview'
+      })
+      store.removeExposure(rootGraphA, hostA, entry.name)
+      expect(
+        store.getSuppressedAmbientNodeIds(rootGraphA, hostA).has(toNodeId('42'))
+      ).toBe(true)
+
+      store.addExposure(rootGraphA, hostA, {
+        sourceNodeId: '42',
+        sourcePreviewName: 'preview'
+      })
+
+      expect(
+        store.getSuppressedAmbientNodeIds(rootGraphA, hostA).has(toNodeId('42'))
+      ).toBe(false)
+    })
+
+    it('keeps suppressions isolated per (rootGraphId, hostNodeLocator) pair', () => {
+      const entryA = store.addExposure(rootGraphA, hostA, {
+        sourceNodeId: '42',
+        sourcePreviewName: 'preview'
+      })
+      store.removeExposure(rootGraphA, hostA, entryA.name)
+
+      expect(store.getSuppressedAmbientNodeIds(rootGraphA, hostB).size).toBe(0)
+      expect(store.getSuppressedAmbientNodeIds(rootGraphB, hostA).size).toBe(0)
+    })
+  })
+
   describe('getExposuresAsPromotionShape', () => {
     it('returns an empty array for unknown host', () => {
       expect(store.getExposuresAsPromotionShape(rootGraphA, hostA)).toEqual([])
@@ -164,6 +224,21 @@ describe(usePreviewExposureStore, () => {
       expect(store.getExposures(rootGraphA, hostA)).toEqual([])
       expect(store.getExposures(rootGraphA, hostB)).toEqual([])
       expect(store.getExposures(rootGraphB, hostInB)).toHaveLength(1)
+    })
+
+    it('also clears ambient-preview suppressions under the rootGraphId', () => {
+      const entry = store.addExposure(rootGraphA, hostA, {
+        sourceNodeId: '42',
+        sourcePreviewName: 'preview'
+      })
+      store.removeExposure(rootGraphA, hostA, entry.name)
+      expect(
+        store.getSuppressedAmbientNodeIds(rootGraphA, hostA).has(toNodeId('42'))
+      ).toBe(true)
+
+      store.clearGraph(rootGraphA)
+
+      expect(store.getSuppressedAmbientNodeIds(rootGraphA, hostA).size).toBe(0)
     })
   })
 
