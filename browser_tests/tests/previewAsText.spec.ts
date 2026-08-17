@@ -92,6 +92,7 @@ test.describe('Preview as Text node', () => {
         'preview_text'
       )
       const id = await comfyPage.vueNodes.getNodeIdByTitle('Preview as Text')
+      const jobId = ''
 
       const payloads = [
         ['compact JSON from an LLM node', '{"name":"Comfy","emoji":"🌟"}'],
@@ -103,31 +104,31 @@ test.describe('Preview as Text node', () => {
 
       for (const [label, text] of payloads) {
         await test.step(label, async () => {
-          execution.executed('', id, { text: [text] })
+          execution.executed(jobId, id, { text: [text] })
           await expect(preview).toHaveValue(text)
         })
       }
 
       await test.step('numeric output from Get Video Components', async () => {
-        execution.executed('', id, { text: 23.976 })
+        execution.executed(jobId, id, { text: 23.976 })
         await expect(preview).toHaveValue('23.976')
       })
 
       await test.step('null text does not wedge the widget', async () => {
         // The shape the Cloud backend produced when it misclassified the text
         // as a filename and dropped it from the payload (BE-3601).
-        execution.executed('', id, { text: [null] })
+        execution.executed(jobId, id, { text: [null] })
         await expect(preview).toHaveValue('')
 
-        execution.executed('', id, { text: ['recovered'] })
+        execution.executed(jobId, id, { text: ['recovered'] })
         await expect(preview).toHaveValue('recovered')
       })
 
       await test.step('output with no text key does not wedge the widget', async () => {
-        execution.executed('', id, {})
+        execution.executed(jobId, id, {})
         await expect(preview).toHaveValue('')
 
-        execution.executed('', id, { text: ['recovered again'] })
+        execution.executed(jobId, id, { text: ['recovered again'] })
         await expect(preview).toHaveValue('recovered again')
       })
     }
