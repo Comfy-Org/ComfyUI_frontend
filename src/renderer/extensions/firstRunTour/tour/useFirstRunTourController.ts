@@ -75,7 +75,16 @@ function useFirstRunTourControllerInternal() {
     ],
     ([status, refused], previous) => {
       if (status !== undefined) stopAcceptDeadline()
-      if (status === 'running') runState.value = 'generating'
+      // Only an actual transition into `running` starts the wait. This source
+      // re-evaluates whenever the `workflowStatus` map is replaced — which
+      // `mutateStatus` does for *any* workflow — or whenever an error flag
+      // flips. Paths that drop a job without clearing its status leave
+      // `running` behind forever (`handleServiceLevelError` is the live one),
+      // so an unconditional branch here would re-read that stale value and put
+      // the card back on "your result lands right here" after the watcher
+      // below has already failed the run.
+      if (status === 'running' && previous?.[0] !== 'running')
+        runState.value = 'generating'
       else if (status === 'completed') runState.value = 'succeeded'
       else if (status === 'failed') runState.value = 'failed'
       // A refused run never queues; a stopped one drops its status rather than
@@ -118,9 +127,27 @@ function useFirstRunTourControllerInternal() {
    * Acceptance is not the only disarm. `resetExecutionState` drops a job from
    * `queuedJobs` without clearing its status, so a run can report a status
    * while this reads false. A refusal produces neither signal.
+   *
+   * Losing acceptance is itself a signal, not a re-armed deadline. Two paths
+   * drop the job without ever writing an outcome:
+   *
+   * - an accepted job that disappears with **no status written at all** — the
+   *   cloud "waiting for a machine" job that is cancelled or reconciled away
+   * - `handleServiceLevelError` ("Job has stagnated"), which drops the job and
+   *   records a prompt error but never touches `workflowStatus`, so the
+   *   `running` written by `handleExecutionStart` outlives the run
+   *
+   * Not the mid-run credits path: #15161 made
+   * `handleAccountPreconditionError` clear the status, so that one already
+   * ends via the `undefined`-after-`running` branch above.
+   *
+   * A finished run leaves the queue too, but reports a terminal status in the
+   * same flush, and the terminal branches above overwrite unconditionally — so
+   * the outcome wins whichever watcher runs first.
    */
   watch(tourRunAccepted, (accepted) => {
     if (accepted) stopAcceptDeadline()
+    else if (runState.value === 'generating') runState.value = 'failed'
   })
 
   let acceptTimer: ReturnType<typeof setTimeout> | undefined
