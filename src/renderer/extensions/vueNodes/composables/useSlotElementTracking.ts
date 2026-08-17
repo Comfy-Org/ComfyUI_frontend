@@ -30,6 +30,10 @@ import {
   isSizeEqual
 } from '@/renderer/core/layout/utils/geometry'
 import { useNodeSlotRegistryStore } from '@/renderer/extensions/vueNodes/stores/nodeSlotRegistryStore'
+import {
+  linkedWidgetedInputs,
+  nonWidgetedInputs
+} from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
 import { createRafBatch } from '@/utils/rafBatch'
 
 // RAF batching
@@ -60,7 +64,11 @@ function shouldWaitForSlotLayouts(): boolean {
       const graphNode = graph?.getNodeById?.(nodeId)
       if (!graphNode) continue
       const slotCount =
-        (graphNode.inputs?.length ?? 0) + (graphNode.outputs?.length ?? 0)
+        nonWidgetedInputs(graphNode).length +
+        (graphNode.flags.collapsed
+          ? linkedWidgetedInputs(graphNode).length
+          : 0) +
+        (graphNode.outputs?.length ?? 0)
       if (slotCount === 0) continue
 
       const registeredNode = nodeSlotRegistryStore.getNode(nodeId)

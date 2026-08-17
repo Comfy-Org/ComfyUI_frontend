@@ -13,6 +13,9 @@ import type { SlotLayout } from '@/renderer/core/layout/types'
 import { useNodeSlotRegistryStore } from '@/renderer/extensions/vueNodes/stores/nodeSlotRegistryStore'
 
 import {
+  beginVueNodeSlotSync,
+  isVueNodeSlotSyncPending,
+  setExpectedRenderedNodeIds,
   syncNodeSlotLayoutsFromDOM,
   flushScheduledSlotLayoutSync,
   requestSlotLayoutSyncForAllNodes,
@@ -20,7 +23,21 @@ import {
 } from './useSlotElementTracking'
 import * as slotTracking from './useSlotElementTracking'
 
-const mockGraph = vi.hoisted(() => ({ _nodes: [] as unknown[] }))
+interface MockGraphNode {
+  inputs?: Array<{
+    name: string
+    type: string
+    boundingRect: [number, number, number, number]
+    widget?: { name: string }
+  }>
+  outputs?: unknown[]
+  flags?: { collapsed?: boolean }
+}
+
+const mockGraph = vi.hoisted(() => ({
+  _nodes: [] as unknown[],
+  getNodeById: vi.fn((_nodeId: NodeId): MockGraphNode | undefined => undefined)
+}))
 const mockCanvasState = vi.hoisted(() => ({
   canvas: {} as object | null
 }))
@@ -221,6 +238,34 @@ describe('useSlotElementTracking', () => {
     setExpected(new Set())
     flushScheduledSlotLayoutSync()
     expect(isPending()).toBe(false)
+  })
+
+  it('does not wait for widget-backed inputs that Vue does not render', async () => {
+    mockGraph.getNodeById.mockReturnValue({
+      inputs: [
+        {
+          name: 'images',
+          type: 'IMAGE',
+          boundingRect: [0, 0, 0, 0]
+        },
+        {
+          name: 'filename_prefix',
+          type: 'STRING',
+          boundingRect: [0, 0, 0, 0],
+          widget: { name: 'filename_prefix' }
+        }
+      ],
+      outputs: [],
+      flags: {}
+    })
+    const { unmount } = await mountAndRegisterSlot('input')
+
+    beginVueNodeSlotSync()
+    setExpectedRenderedNodeIds(new Set([NODE_ID]))
+    flushScheduledSlotLayoutSync()
+
+    expect(isVueNodeSlotSyncPending()).toBe(false)
+    unmount()
   })
 
   it('keeps pendingSlotSync when all registered slots are hidden', () => {
