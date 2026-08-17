@@ -33,7 +33,10 @@ test.beforeEach(async ({ comfyPage }) => {
 // round-trip; it stays as the guard for pack JS that queues one behind our
 // back, which would otherwise run on into the next test.
 test.afterEach(async ({ comfyPage }) => {
-  await drainBackendToIdle(comfyPage.page, 10_000)
+  expect(
+    await drainBackendToIdle(comfyPage.page, 10_000),
+    'smoke test left test-owned backend work running'
+  ).toBe(0)
 })
 
 test.describe('smoke: core workflow @custom-nodes', () => {

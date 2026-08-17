@@ -65,11 +65,10 @@ test.beforeEach(async ({ comfyPage }) => {
 
 // Leave the shared backend idle so the next test starts clean (drainBackendToIdle).
 test.afterEach(async ({ comfyPage }) => {
-  // The drain is a no-op when the queue is already idle, so it costs
-  // ~nothing in the common path; the 10s ceiling only bounds a genuinely
-  // busy backend. A backend still busy past it is wedged, and the auto-run
-  // tier's 150s guard surfaces that with the restart diagnostic.
-  await drainBackendToIdle(comfyPage.page, 10_000)
+  expect(
+    await drainBackendToIdle(comfyPage.page, 10_000),
+    'test-owned backend work did not reach idle during cleanup'
+  ).toBe(0)
 })
 
 function readWorkflow(relativePath: string): ComfyWorkflowJSON {

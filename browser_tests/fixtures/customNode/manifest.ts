@@ -32,6 +32,7 @@ interface SharedNodeExpectations {
   // Runtime class_type / object_info keys, NOT Python class names (e.g. rgthree
   // registers "Power Primitive (rgthree)", not RgthreePowerPrimitive).
   expectedNodes: string[]
+  expectedRunnableCount?: number
   timeoutMs: number
   // Optional; absent means true. Set false ONLY with evidence that the pack's
   // nodes fail to mount under Vue Nodes 2.0 (probe it - a README grumble is
@@ -187,6 +188,17 @@ function sharedIssues(entry: SharedNodeExpectations): string[] {
   // tier's coverage - the exact drift this manifest exists to catch.
   else if (entry.tiers.some((tier) => !VALID_TIERS.includes(tier)))
     missing.push(`tiers (unknown value; allowed: ${VALID_TIERS.join(', ')})`)
+  else if (
+    entry.tiers.includes('run') &&
+    (!Number.isInteger(entry.expectedRunnableCount) ||
+      (entry.expectedRunnableCount ?? 0) <= 0)
+  )
+    missing.push('expectedRunnableCount (positive integer for run tier)')
+  else if (
+    !entry.tiers.includes('run') &&
+    entry.expectedRunnableCount !== undefined
+  )
+    missing.push('expectedRunnableCount (only valid for run tier)')
   if (!Number.isFinite(entry.timeoutMs) || entry.timeoutMs <= 0)
     missing.push('timeoutMs')
   if (

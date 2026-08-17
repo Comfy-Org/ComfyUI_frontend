@@ -116,12 +116,19 @@ interface CuratedCloudWorkflow {
   workflow: string
   tiers: CloudManifestEntry['tiers']
   expectedNodes?: string[]
+  expectedRunnableCount?: number
   timeoutMs?: number
 }
 
 export type CuratedCloudOverlay = Record<string, CuratedCloudWorkflow>
 
-const OVERLAY_KEYS = ['workflow', 'tiers', 'expectedNodes', 'timeoutMs']
+const OVERLAY_KEYS = [
+  'workflow',
+  'tiers',
+  'expectedNodes',
+  'expectedRunnableCount',
+  'timeoutMs'
+]
 
 export function validateCuratedCloudOverlay(
   value: unknown
@@ -161,6 +168,13 @@ export function validateCuratedCloudOverlay(
         `curated overlay: ${pack} expectedNodes must be a non-empty array of unique non-empty node keys`
       )
     if (
+      !Number.isInteger(entry.expectedRunnableCount) ||
+      (entry.expectedRunnableCount as number) <= 0
+    )
+      throw new Error(
+        `curated overlay: ${pack} expectedRunnableCount must be a positive integer`
+      )
+    if (
       entry.timeoutMs !== undefined &&
       (typeof entry.timeoutMs !== 'number' ||
         !Number.isFinite(entry.timeoutMs) ||
@@ -175,6 +189,7 @@ export function validateCuratedCloudOverlay(
       ...(entry.expectedNodes !== undefined
         ? { expectedNodes: entry.expectedNodes }
         : {}),
+      expectedRunnableCount: entry.expectedRunnableCount as number,
       ...(entry.timeoutMs !== undefined ? { timeoutMs: entry.timeoutMs } : {})
     }
   }
@@ -317,11 +332,14 @@ export function buildCloudManifest(
       tiers: curated?.tiers ?? ['load', 'connectivity'],
       workflow: curated?.workflow ?? '',
       expectedNodes: curated?.expectedNodes ?? enabled.slice(0, 2),
+      ...(curated
+        ? { expectedRunnableCount: curated.expectedRunnableCount }
+        : {}),
       expectedNodeCount: enabled.length,
       expectedExtensions: sentinels[dirname] ?? [],
       disabledNodes: sortedRecordOf(pack.node_labels ?? {}),
       timeoutMs: curated?.timeoutMs ?? 30_000,
-      ...(cannotRunAlone[dirname]
+      ...(curated && cannotRunAlone[dirname]
         ? { cannotRunAlone: cannotRunAlone[dirname] }
         : {})
     })

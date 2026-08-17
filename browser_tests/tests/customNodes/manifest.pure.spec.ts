@@ -20,6 +20,7 @@ function validEntry(): CoreManifestEntry {
     tiers: ['load', 'connectivity', 'run'],
     workflow: 'assets/customNodes/vhs_video_pipeline_run.json',
     expectedNodes: ['ExampleNode'],
+    expectedRunnableCount: 1,
     expectedNodeCount: 1,
     expectedExtensions: ['Example.Extension'],
     requiresGpu: false,
@@ -143,6 +144,28 @@ test.describe('customNode manifest', () => {
     expect(() =>
       assertCoreEntry({ ...validEntry(), expectedNodeCount: 197 }, 0)
     ).not.toThrow()
+  })
+
+  test('run tiers require an exact nonzero runnable corpus', () => {
+    const { expectedRunnableCount: _omitted, ...withoutField } = validEntry()
+    expect(() => assertCoreEntry(withoutField as CoreManifestEntry, 0)).toThrow(
+      /expectedRunnableCount/
+    )
+    for (const bad of [0, -1, 1.5, Number.NaN])
+      expect(() =>
+        assertCoreEntry({ ...validEntry(), expectedRunnableCount: bad }, 0)
+      ).toThrow(/expectedRunnableCount/)
+    expect(() =>
+      assertCoreEntry(
+        {
+          ...validEntry(),
+          tiers: ['load'],
+          workflow: '',
+          expectedRunnableCount: 1
+        },
+        0
+      )
+    ).toThrow(/expectedRunnableCount/)
   })
 
   test('pack must be a plain path segment (it becomes the install dirname)', () => {

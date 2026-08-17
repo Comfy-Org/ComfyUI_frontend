@@ -343,11 +343,10 @@ test.beforeEach(async ({ comfyPage }) => {
 // errors (see drainBackendToIdle). This is what makes the tiers order- and
 // run-independent on one shared backend.
 test.afterEach(async ({ comfyPage }) => {
-  // The drain is a no-op when the queue is already idle, so it costs
-  // ~nothing in the common path; the 10s ceiling only bounds a genuinely
-  // busy backend. A backend still busy past it is wedged, and the auto-run
-  // tier's 150s guard surfaces that with the restart diagnostic.
-  await drainBackendToIdle(comfyPage.page, 10_000)
+  expect(
+    await drainBackendToIdle(comfyPage.page, 10_000),
+    'test-owned backend work did not reach idle during cleanup'
+  ).toBe(0)
 })
 
 // The widgetValueStore keys state by node id and survives graph.clear(), so
@@ -559,7 +558,10 @@ for (const entry of manifestEntries) {
         await runWithCollectedCleanup(tier, [
           () => comfyPage.nodeOps.clearGraph(),
           async () => {
-            await drainBackendToIdle(comfyPage.page, 10_000)
+            expect(
+              await drainBackendToIdle(comfyPage.page, 10_000),
+              `${entry.pack} left test-owned backend work running`
+            ).toBe(0)
           }
         ])
       }
@@ -1411,6 +1413,13 @@ for (const entry of manifestEntries) {
         )
 
         const batches = batchAutoRunnable(verdicts, AUTO_RUN_BATCH)
+        const expectedRunnableCount = entry.expectedRunnableCount
+        if (expectedRunnableCount === undefined)
+          throw new Error(`${entry.pack} run tier has no runnable corpus`)
+        expect(
+          batches.flat(),
+          `${entry.pack} runnable corpus changed - inspect classifier or object_info drift before recalibrating`
+        ).toHaveLength(expectedRunnableCount)
         const hardFailures: string[] = []
         const cannotRun = new Map<string, string>()
         const ranClean = new Set<string>()
