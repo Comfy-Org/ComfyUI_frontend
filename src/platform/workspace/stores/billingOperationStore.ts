@@ -538,6 +538,27 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     terminalPromises.delete(opId)
   }
 
+  /**
+   * Void a pending charge before it settles. Canceled is not failed: the
+   * operation is removed outright — no toast, no failure state — so every
+   * surface watching it (dialog steps, the verify banner) clears at once.
+   * 'unavailable' means the charge is already processing and the backend
+   * refused the cancel; callers surface that in place and keep polling.
+   */
+  async function cancelOperation(
+    opId: string
+  ): Promise<'canceled' | 'unavailable'> {
+    const operation = operations.value.get(opId)
+    if (!operation || operation.status !== 'pending') return 'unavailable'
+    try {
+      await workspaceApi.cancelBillingOp(opId)
+    } catch {
+      return 'unavailable'
+    }
+    clearOperation(opId)
+    return 'canceled'
+  }
+
   return {
     operations,
     hasPendingOperations,
@@ -546,6 +567,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     subscriptionActionOperation,
     getOperation,
     startOperation,
-    clearOperation
+    clearOperation,
+    cancelOperation
   }
 })
