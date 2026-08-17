@@ -4,7 +4,6 @@ import { watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { whenStoresReady } from '@/platform/telemetry/storeReadiness'
-import { reportThirdPartyLoadFailure } from '@/platform/telemetry/thirdPartyLoadFailure'
 import {
   checkForCompletedTopup as checkTopupUtil,
   clearTopupTracking as clearTopupUtil,
@@ -108,13 +107,7 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
       try {
         // Dynamic import to avoid bundling mixpanel in OSS builds
         void import('mixpanel-browser')
-          .catch((error) => {
-            reportThirdPartyLoadFailure('Mixpanel', error)
-            this.isEnabled = false
-            return null
-          })
           .then((mixpanelModule) => {
-            if (!mixpanelModule) return
             this.mixpanel = mixpanelModule.default
             this.mixpanel.init(token, {
               debug: import.meta.env.DEV,
@@ -140,7 +133,7 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
             })
           })
           .catch((error) => {
-            console.error('Failed to initialize Mixpanel:', error)
+            console.error('Failed to load Mixpanel:', error)
             this.isEnabled = false
           })
       } catch (error) {
