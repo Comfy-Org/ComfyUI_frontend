@@ -201,13 +201,27 @@ test.describe('Vue Nodes Canvas Pan', { tag: '@vue-nodes' }, () => {
     }
   )
 
-  test('@mobile Can pan with touch', async ({ comfyPage }) => {
-    const offsetBefore = await comfyPage.canvasOps.getOffset()
+  test(
+    '@mobile Can pan with touch',
+    { tag: '@screenshot' },
+    async ({ comfyPage }) => {
+      const offsetBefore = await comfyPage.canvasOps.getOffset()
 
-    await comfyPage.canvasOps.panWithTouch({ x: 64, y: 64 }, { x: 256, y: 256 })
+      await comfyPage.canvasOps.panWithTouch(
+        { x: 64, y: 64 },
+        { x: 256, y: 256 }
+      )
 
-    await expect
-      .poll(() => comfyPage.canvasOps.getOffset())
-      .not.toEqual(offsetBefore)
-  })
+      // Fail on a pan that never landed here, not as a screenshot diff.
+      await expect
+        .poll(() => comfyPage.canvasOps.getOffset())
+        .not.toEqual(offsetBefore)
+
+      // Tolerates text anti-aliasing noise in the widget value text.
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'vue-nodes-paned-with-touch.png',
+        { maxDiffPixels: 100 }
+      )
+    }
+  )
 })
