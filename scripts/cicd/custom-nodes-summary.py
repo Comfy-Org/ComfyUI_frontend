@@ -39,7 +39,7 @@ if not os.path.exists(RESULT_FILE):
 data = json.load(open(RESULT_FILE))
 stats = data.get('stats', {})
 
-TIERS = ['startup/load', 'S1', 'S2', 'S3', 'S9', 'curated run', 'dynamic inputs', 'interaction']
+TIERS = ['startup/load', 'S1', 'S2', 'S3', 'S9', 'curated run', 'dynamic inputs']
 packs, wide = {}, {}
 
 def bucket(file, path):
@@ -60,8 +60,6 @@ def bucket(file, path):
         return (pack, tier)
     if 'dynamicInputs' in file:
         return (pack, 'dynamic inputs')
-    if 'interactionProfiles' in file:
-        return (pack, 'interaction')
     if 'connectivity' in file:
         return (None, 'connectivity')
     if 'coreSmoke' in file:

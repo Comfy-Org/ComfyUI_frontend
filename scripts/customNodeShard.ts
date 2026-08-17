@@ -9,11 +9,12 @@
  *
  *   pnpm custom-node-shard                   pack<TAB>deployRef, one per line
  *   pnpm custom-node-shard --expected-tests  how many tests that slice registers
+ *   pnpm custom-node-shard --expected-tier-tests
+ *                                             how many S1/S2/S3/S9 tests register
  *
  * Reads CUSTOM_NODES_MANIFEST / CUSTOM_NODES_BACKEND / CUSTOM_NODES_SHARD,
  * exactly as the specs do.
  */
-import { hasCommittedProfile } from '../browser_tests/fixtures/customNode/interactionProfiles'
 import {
   loadApplicableAutogrowCases,
   loadManifest,
@@ -30,25 +31,24 @@ const SLICE_INDEPENDENT_TESTS = 9
 // registers neither.
 const LOAD_TIERS = 3
 const RUN_TIERS = 1
-// Per pack in the slice: the regression spec's load test. The interaction
-// profile is counted separately - S13 only covers packs with a baseline
-// recorded at the ref this manifest declares, which is the six core packs.
+// Per pack in the slice: the regression spec's load test.
 const TESTS_PER_PACK = 1
 
 function expectedTestCount(): number {
   const entries = loadManifest()
-  const runPacks = entries.filter((entry) => entry.tiers.includes('run'))
-  const loadPacks = entries.filter((entry) => entry.tiers.includes('load'))
   return (
     SLICE_INDEPENDENT_TESTS +
-    (loadPacks.length > 0 ? LOAD_TIERS : 0) +
-    (runPacks.length > 0 ? RUN_TIERS : 0) +
+    expectedTierTestCount(entries) +
     TESTS_PER_PACK * entries.length +
-    entries.filter((entry) =>
-      hasCommittedProfile(entry.pack, packIdentity(entry))
-    ).length +
-    runPacks.length +
+    entries.filter((entry) => entry.tiers.includes('run')).length +
     loadApplicableAutogrowCases().length
+  )
+}
+
+function expectedTierTestCount(entries = loadManifest()): number {
+  return (
+    (entries.some((entry) => entry.tiers.includes('load')) ? LOAD_TIERS : 0) +
+    (entries.some((entry) => entry.tiers.includes('run')) ? RUN_TIERS : 0)
   )
 }
 
@@ -58,6 +58,8 @@ function packRows(): string[] {
 
 const lines = process.argv.includes('--expected-tests')
   ? [String(expectedTestCount())]
-  : packRows()
+  : process.argv.includes('--expected-tier-tests')
+    ? [String(expectedTierTestCount())]
+    : packRows()
 
 process.stdout.write(`${lines.join('\n')}\n`)
