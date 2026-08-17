@@ -38,7 +38,7 @@ const productId = jsonLdId(url, 'product')
     }),
   ]}
 >
-  <CloudPricingSection client:load />
-  <WhatsIncludedSection />
+  <CloudPricingSection locale={locale} client:load />
+  <WhatsIncludedSection locale={locale} />
   <PricingFaq locale={locale} />
 </BaseLayout>

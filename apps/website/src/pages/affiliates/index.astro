@@ -40,11 +40,11 @@ const faqPage: JsonLdNode = {
   extraJsonLd={[faqPage]}
 >
 
-  <HeroSection />
-  <HowItWorksSection />
-  <AudienceSection />
-  <BenefitsSection />
-  <BrandAssetsSection />
-  <FAQSection client:visible />
-  <CtaSection />
+  <HeroSection locale={locale} />
+  <HowItWorksSection locale={locale} />
+  <AudienceSection locale={locale} />
+  <BenefitsSection locale={locale} />
+  <BrandAssetsSection locale={locale} />
+  <FAQSection locale={locale} client:visible />
+  <CtaSection locale={locale} />
 </BaseLayout>

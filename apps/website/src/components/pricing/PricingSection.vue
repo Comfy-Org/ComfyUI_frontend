@@ -20,11 +20,11 @@ import PricingPrice from './PricingPrice.vue'
 import PricingTeamCard from './PricingTeamCard.vue'
 
 const {
-  locale = 'en',
+  locale,
   headingLevel = 'h1',
   defaultBillingCycle = 'yearly'
 } = defineProps<{
-  locale?: Locale
+  locale: Locale
   headingLevel?: 'h1' | 'h2'
   defaultBillingCycle?: BillingCycle
 }>()

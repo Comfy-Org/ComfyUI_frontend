@@ -77,6 +77,12 @@ const translations = {
     'zh-CN': '复制'
   },
   'ui.breadcrumb': { en: 'Breadcrumb', 'zh-CN': '面包屑导航' },
+  'ui.alt.comfyLogo': { en: 'Comfy logo', 'zh-CN': 'Comfy 标志' },
+  'ui.alt.comfy3dLogo': { en: 'Comfy 3D logo', 'zh-CN': 'Comfy 3D 标志' },
+  'ui.alt.comfyTeam': { en: 'Comfy team', 'zh-CN': 'Comfy 团队' },
+  'ui.nav.main': { en: 'Main navigation', 'zh-CN': '主导航' },
+  'ui.nav.home': { en: 'Comfy home', 'zh-CN': 'Comfy 主页' },
+  'ui.nav.categoryFilter': { en: 'Category filter', 'zh-CN': '分类筛选' },
   'ui.readMore': { en: 'Read more', 'zh-CN': '展开' },
   'ui.readLess': { en: 'Read less', 'zh-CN': '收起' },
   'ui.copied': {
@@ -1790,10 +1796,8 @@ const translations = {
     'zh-CN':
       '2023 年 1 月，市场上没有任何工具能将两个 AI 模型串联成可重复的工作流。一位魁北克市的开发者用两周时间自己构建了一个，并将其开源。'
   },
-  'about.story.investorsLabel': {
-    en: 'OUR INVESTORS',
-    'zh-CN': '我们的投资者'
-  },
+  'about.story.investorsLabelPrefix': { en: 'OUR', 'zh-CN': '我们的' },
+  'about.story.investorsLabelNoun': { en: 'INVESTORS', 'zh-CN': '投资者' },
   'about.story.investorsBody': {
     en: 'If it can be open, it should be open. That\u2019s how we build an ecosystem that moves faster than any company could think for, and it\u2019s how we think about code, content, and skins. We make money by building things worth paying for, not by controlling what we believe should be free.',
     'zh-CN':
@@ -4588,6 +4592,7 @@ const translations = {
   },
 
   // Models – UI keys
+  'models.hero.inComfyUI': { en: 'in ComfyUI', 'zh-CN': '在 ComfyUI 中' },
   'models.hero.eyebrow': {
     en: 'AI Model',
     'zh-CN': 'AI 模型'
@@ -6110,8 +6115,17 @@ type TranslationKey = keyof typeof translations
 
 type LocalizedText = Record<Locale, string>
 
-export function t(key: TranslationKey, locale: Locale = 'en'): string {
+export function t(key: TranslationKey, locale: Locale): string {
   return translations[key][locale] ?? translations[key].en
+}
+
+/**
+ * Narrows `Astro.currentLocale` to a supported locale. Only `.astro`
+ * components can call this — Vue islands render as isolated app roots with no
+ * access to the page's render context, so they must receive `locale` as a prop.
+ */
+export function resolveLocale(currentLocale: string | undefined): Locale {
+  return currentLocale === 'zh-CN' ? 'zh-CN' : 'en'
 }
 
 export const translationKeys = Object.keys(translations) as TranslationKey[]

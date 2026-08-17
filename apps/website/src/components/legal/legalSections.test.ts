@@ -44,7 +44,7 @@ describe('affiliate terms i18n', () => {
 
   it('section titles follow the "N. Section Name" pattern', () => {
     for (const id of EXPECTED_SECTION_IDS) {
-      const title = t(`${PREFIX}.${id}.title` as never)
+      const title = t(`${PREFIX}.${id}.title` as never, 'en')
       const numberPrefix = id.split('-')[0]
       expect(title).toMatch(new RegExp(`^${numberPrefix}\\. `))
     }

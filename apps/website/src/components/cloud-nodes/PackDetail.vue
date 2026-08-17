@@ -13,9 +13,9 @@ import { useNodesByCategory } from '../../composables/useNodesByCategory'
 import { t } from '../../i18n/translations'
 import PackBanner from './PackBanner.vue'
 
-const { pack, locale = 'en' } = defineProps<{
+const { pack, locale } = defineProps<{
   pack: Pack
-  locale?: Locale
+  locale: Locale
 }>()
 
 const backHref =

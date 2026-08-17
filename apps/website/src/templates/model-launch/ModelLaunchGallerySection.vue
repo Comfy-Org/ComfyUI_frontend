@@ -12,9 +12,9 @@ import CopyTextButton from '../../components/ui/copy-text-button/CopyTextButton.
 import IconButton from '../../components/ui/icon-button/IconButton.vue'
 import { t } from '../../i18n/translations'
 
-const { locale = 'en', gallery } = defineProps<{
+const { locale, gallery } = defineProps<{
   gallery: ModelLaunchGallery
-  locale?: Locale
+  locale: Locale
 }>()
 
 // The cards sit well below the fold; defer their videos until the section

@@ -6,7 +6,7 @@ import { t } from '../../../i18n/translations'
 import CardArrow from '../../common/CardArrow.vue'
 import GlassCard from '../../common/GlassCard.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale } = defineProps<{ locale: Locale }>()
 
 const headingParts = t('cloud.audience.heading', locale).split('{creators}')
 

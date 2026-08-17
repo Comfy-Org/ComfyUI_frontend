@@ -16,7 +16,7 @@ import {
 import { t } from '../../i18n/translations'
 import { resolveRel } from '../../utils/cta'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale } = defineProps<{ locale: Locale }>()
 
 // Events with a stream open their own /events/[slug] page (dialog over the
 // directory); the rest link out to the event's page.

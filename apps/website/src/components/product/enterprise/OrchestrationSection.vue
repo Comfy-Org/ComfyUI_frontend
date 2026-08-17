@@ -7,7 +7,7 @@ import { t } from '../../../i18n/translations'
 import BrandButton from '../../common/BrandButton.vue'
 import GlassCard from '../../common/GlassCard.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale } = defineProps<{ locale: Locale }>()
 
 type Tile = {
   cx: number

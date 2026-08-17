@@ -5,7 +5,7 @@ import CtaCenter01 from '../../components/blocks/CtaCenter01.vue'
 import { externalLinks } from '../../config/routes'
 import { t } from '../../i18n/translations'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale } = defineProps<{ locale: Locale }>()
 </script>
 
 <template>

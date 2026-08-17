@@ -1,22 +1,24 @@
 <script setup lang="ts">
+import type { CSSProperties } from 'vue'
+
 import type { GalleryItem } from '../../data/gallery'
 import type { Locale } from '../../i18n/translations'
 import GalleryItemAttribution from './GalleryItemAttribution.vue'
 
 const {
   item,
-  locale = 'en',
+  locale,
   aspect = 'var(--aspect-ratio-gallery-card)',
   mobile = false,
   objectPosition = 'center',
   objectFit = 'cover'
 } = defineProps<{
   item: GalleryItem
-  locale?: Locale
+  locale: Locale
   aspect?: string
   mobile?: boolean
-  objectPosition?: string
-  objectFit?: string
+  objectPosition?: CSSProperties['objectPosition']
+  objectFit?: CSSProperties['objectFit']
 }>()
 
 defineEmits<{ click: [] }>()

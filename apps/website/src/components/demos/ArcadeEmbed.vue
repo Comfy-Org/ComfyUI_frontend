@@ -9,12 +9,12 @@ const {
   arcadeId,
   title,
   aspectRatio = 16 / 9,
-  locale = 'en'
+  locale
 } = defineProps<{
   arcadeId: string
   title: string
   aspectRatio?: number
-  locale?: Locale
+  locale: Locale
 }>()
 
 const loaded = ref(false)
@@ -53,6 +53,9 @@ const loaded = ref(false)
       />
     </div>
 
+    <!-- vue-eslint-parser reports noscript children as one raw text node, so
+      the t() interpolations below are flagged as literals. -->
+    <!-- eslint-disable @intlify/vue-i18n/no-raw-text -->
     <noscript>
       <p class="text-primary-warm-gray mt-4 text-sm">
         {{ t('demos.noscript', locale) }}
@@ -66,5 +69,6 @@ const loaded = ref(false)
         </a>
       </p>
     </noscript>
+    <!-- eslint-enable @intlify/vue-i18n/no-raw-text -->
   </section>
 </template>

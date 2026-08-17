@@ -6,11 +6,11 @@ import { t } from '../../i18n/translations'
 import FaqLink from './FaqLink.astro'
 
 interface Props {
-  locale?: Locale
+  locale: Locale
   category?: 'pricing' | 'enterprise'
 }
 
-const { locale = 'en', category = 'pricing' } = Astro.props
+const { locale, category = 'pricing' } = Astro.props
 
 const entries = await getCollection('faq', (entry) =>
   entry.id.startsWith(`${category}/${locale}/`)

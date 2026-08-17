@@ -9,8 +9,8 @@ import {
   pageContext,
 } from '../../../utils/jsonLd'
 
-const title = t('models.index.title')
-const subtitle = t('models.index.subtitle')
+const title = t('models.index.title', 'en')
+const subtitle = t('models.index.subtitle', 'en')
 
 const { url, locale } = pageContext(
   Astro.site,
@@ -58,7 +58,7 @@ const dirLabel: Record<string, string> = {
       <p
         class="mb-2 text-sm font-medium uppercase tracking-widest text-primary-comfy-yellow"
       >
-        {t('models.hero.eyebrow')}
+        {t('models.hero.eyebrow', 'en')}
       </p>
       <h1 class="text-4xl font-bold text-primary-comfy-canvas lg:text-6xl">
         {title}

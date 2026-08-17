@@ -4,7 +4,7 @@ import type { Locale } from '../../../i18n/translations'
 import { t } from '../../../i18n/translations'
 import FeatureShowcaseSection from '../shared/FeatureShowcaseSection.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale } = defineProps<{ locale: Locale }>()
 
 const features = [
   {

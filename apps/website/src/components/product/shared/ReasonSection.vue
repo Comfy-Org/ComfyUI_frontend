@@ -9,7 +9,7 @@ export interface Reason {
 }
 
 const {
-  locale = 'en',
+  locale,
   headingKey,
   headingHighlightKey,
   headingSuffixKey,
@@ -17,7 +17,7 @@ const {
   highlightClass = 'text-white',
   reasons
 } = defineProps<{
-  locale?: Locale
+  locale: Locale
   headingKey: TranslationKey
   headingHighlightKey?: TranslationKey
   headingSuffixKey?: TranslationKey

@@ -13,14 +13,14 @@ import PricingFaq from '../../components/pricing/PricingFaq.astro'
 ---
 
 <BaseLayout title="Comfy Enterprise">
-  <CloudBannerSection />
-  <HeroSection client:load />
+  <CloudBannerSection locale="en" />
+  <HeroSection locale="en" client:load />
   <SocialProofBarSection />
-  <ReasonSection />
-  <TeamSection />
-  <DataOwnershipSection client:visible />
-  <BYOKeySection />
-  <OrchestrationSection client:visible />
-  <PricingFaq category="enterprise" />
-  <ProductCardsSection exclude-product="enterprise" label-key="products.labelProducts" />
+  <ReasonSection locale="en" />
+  <TeamSection locale="en" />
+  <DataOwnershipSection locale="en" client:visible />
+  <BYOKeySection locale="en" />
+  <OrchestrationSection locale="en" client:visible />
+  <PricingFaq locale="en" category="enterprise" />
+  <ProductCardsSection locale="en" exclude-product="enterprise" label-key="products.labelProducts" />
 </BaseLayout>

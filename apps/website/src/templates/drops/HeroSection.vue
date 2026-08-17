@@ -7,7 +7,7 @@ import { externalLinks, getRoutes } from '../../config/routes'
 import { t } from '../../i18n/translations'
 import { livestream } from './livestream'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale } = defineProps<{ locale: Locale }>()
 
 const routes = getRoutes(locale)
 </script>

@@ -4,9 +4,9 @@ import type { ModelLaunchAudioGallery } from './types'
 
 import ModelLaunchAudioSampleCard from './ModelLaunchAudioSampleCard.vue'
 
-const { locale = 'en', audioGallery } = defineProps<{
+const { locale, audioGallery } = defineProps<{
   audioGallery: ModelLaunchAudioGallery
-  locale?: Locale
+  locale: Locale
 }>()
 </script>
 

@@ -23,12 +23,12 @@ import Button from '../ui/button/Button.vue'
 
 const {
   event,
-  locale = 'en',
+  locale,
   size = 'lg',
   portalDisabled = false
 } = defineProps<{
   event: CalendarEvent
-  locale?: Locale
+  locale: Locale
   size?: ButtonVariants['size']
   /** Render the menu in place, e.g. inside a top-layer `<dialog>` that would
    * cover a body teleport. */

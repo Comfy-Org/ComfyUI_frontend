@@ -63,7 +63,7 @@
     "typecheck:desktop": "pnpm --filter @comfyorg/desktop-ui run typecheck",
     "typecheck:scripts": "vue-tsc --project scripts/tsconfig.json",
     "typecheck:tools": "vue-tsc --project tools/tsconfig.json",
-    "typecheck:website": "pnpm --filter @comfyorg/website run typecheck",
+    "typecheck:website": "pnpm --filter @comfyorg/website run typecheck && vue-tsc --noEmit --project apps/website/tsconfig.json",
     "zipdist": "node scripts/zipdist.js"
   },
   "dependencies": {

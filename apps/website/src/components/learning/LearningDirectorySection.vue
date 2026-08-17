@@ -22,11 +22,11 @@ import LearningCategoryNav from './LearningCategoryNav.vue'
 import TutorialRow from './TutorialRow.vue'
 
 const {
-  locale = 'en',
+  locale,
   category,
   headingTag = 'h1'
 } = defineProps<{
-  locale?: Locale
+  locale: Locale
   category?: LearningCategory
   /** Demote the sidebar heading on pages whose h1 lives elsewhere
    * (the tutorial dialog). */

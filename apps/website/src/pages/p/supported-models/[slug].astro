@@ -118,7 +118,7 @@ const faqPage: JsonLdNode = {
   extraJsonLd={[software, faqPage]}
 >
 
-  <ModelHeroSection
+  <ModelHeroSection locale="en"
     displayName={displayName}
     huggingFaceUrl={model.huggingFaceUrl}
     docsUrl={model.docsUrl}
@@ -130,7 +130,7 @@ const faqPage: JsonLdNode = {
 
   <section class="mx-auto max-w-7xl px-6 py-16 lg:px-8">
     <h2 class="text-2xl font-bold text-primary-comfy-canvas lg:text-3xl">
-      {t('models.whatIs.heading').replace('{name}', displayName)}
+      {t('models.whatIs.heading', 'en').replace('{name}', displayName)}
     </h2>
     <p class="mt-4 max-w-3xl text-base/relaxed text-primary-comfy-canvas/70 lg:text-lg/relaxed">
       {whatIsDescription}
@@ -142,7 +142,7 @@ const faqPage: JsonLdNode = {
         rel="noopener noreferrer"
         class="mt-6 inline-block text-primary-comfy-yellow hover:underline"
       >
-        {t('models.whatIs.tutorialLink')}
+        {t('models.whatIs.tutorialLink', 'en')}
       </a>
     )}
   </section>

@@ -5,8 +5,8 @@ import { externalLinks } from '../../config/routes'
 import PricingFreeBanner from './PricingFreeBanner.vue'
 import PricingSection from './PricingSection.vue'
 
-const { locale = 'en' } = defineProps<{
-  locale?: Locale
+const { locale } = defineProps<{
+  locale: Locale
 }>()
 </script>
 

@@ -8,9 +8,9 @@ import { getRoutes } from '../../config/routes'
 import { creatorReviews } from '../../data/creatorReviews'
 import { t } from '../../i18n/translations'
 
-const { locale = 'en', reviews } = defineProps<{
+const { locale, reviews } = defineProps<{
   reviews: ModelLaunchReviews
-  locale?: Locale
+  locale: Locale
 }>()
 
 const routes = getRoutes(locale)

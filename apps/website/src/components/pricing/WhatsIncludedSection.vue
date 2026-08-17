@@ -5,7 +5,7 @@ import { Clock } from '@lucide/vue'
 import { t } from '../../i18n/translations'
 import CheckIcon from '../icons/CheckIcon.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale } = defineProps<{ locale: Locale }>()
 
 interface IncludedFeature {
   titleKey: TranslationKey

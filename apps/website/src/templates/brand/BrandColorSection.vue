@@ -9,7 +9,7 @@ import SectionHeader from '../../components/common/SectionHeader.vue'
 import { brandColors } from '../../data/brandColors'
 import { t } from '../../i18n/translations'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale } = defineProps<{ locale: Locale }>()
 
 const specRows = ['hex', 'rgb', 'hsl', 'cmyk'] as const
 

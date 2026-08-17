@@ -26,7 +26,7 @@ export type VideoTrack = {
 }
 
 const {
-  locale = 'en',
+  locale,
   src,
   poster,
   tracks = [],
@@ -42,7 +42,7 @@ const {
   ariaLabel,
   class: className
 } = defineProps<{
-  locale?: Locale
+  locale: Locale
   src?: string
   poster?: string
   tracks?: readonly VideoTrack[]

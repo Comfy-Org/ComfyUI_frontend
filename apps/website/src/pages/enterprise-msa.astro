@@ -13,19 +13,19 @@ import { t } from '../i18n/translations'
 ---
 
 <BaseLayout
-  title={t('enterprise-msa.page.title')}
-  description={t('enterprise-msa.page.description')}
+  title={t('enterprise-msa.page.title', 'en')}
+  description={t('enterprise-msa.page.description', 'en')}
 >
-  <HeroSection title={t('enterprise-msa.page.heading')} />
+  <HeroSection title={t('enterprise-msa.page.heading', 'en')} />
   <p class="text-primary-warm-gray mt-2 text-center text-sm">
-    {t('enterprise-msa.page.effectiveDateLabel')}: {
-      t('enterprise-msa.effective-date')
+    {t('enterprise-msa.page.effectiveDateLabel', 'en')}: {
+      t('enterprise-msa.effective-date', 'en')
     }
   </p>
   <p
     class="text-primary-comfy-canvas mx-auto mt-8 max-w-3xl px-4 text-center text-sm/relaxed lg:px-0"
   >
-    {t('enterprise-msa.page.parties')}
+    {t('enterprise-msa.page.parties', 'en')}
   </p>
   <LegalContentSection
     prefix="enterprise-msa"

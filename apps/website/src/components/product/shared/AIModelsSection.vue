@@ -21,7 +21,7 @@ type ModelCard = {
   badgeClass: string
 }
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale } = defineProps<{ locale: Locale }>()
 
 const badgeBase =
   'bg-white/20 text-white backdrop-blur-sm group-hover:bg-primary-comfy-yellow group-hover:text-primary-comfy-ink'

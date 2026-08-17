@@ -7,8 +7,8 @@ import HeaderMainDesktop from './HeaderMainDesktop.vue'
 import HeaderMainMobile from './HeaderMainMobile.vue'
 import Button from '@/components/ui/button/Button.vue'
 
-const { locale = 'en', githubStars = '' } = defineProps<{
-  locale?: Locale
+const { locale, githubStars = '' } = defineProps<{
+  locale: Locale
   githubStars?: string
 }>()
 const routes = getRoutes(locale)
@@ -34,12 +34,12 @@ const ctaButtons = [
 <template>
   <nav
     class="sticky top-0 z-50 flex items-center justify-between gap-4 bg-primary-comfy-ink px-6 py-5 lg:gap-4 lg:px-[clamp(0.25rem,4vw,5rem)] lg:py-8"
-    aria-label="Main navigation"
+    :aria-label="t('ui.nav.main', locale)"
   >
     <a
       :href="routes.home"
       class="inline-grid h-10 shrink-0 grid-cols-1 grid-rows-1 transition-[width]"
-      aria-label="Comfy home"
+      :aria-label="t('ui.nav.home', locale)"
     >
       <img
         src="/icons/logomark.svg"

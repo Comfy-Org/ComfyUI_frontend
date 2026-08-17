@@ -4,7 +4,7 @@ import type { Locale } from '../../i18n/translations'
 import BenefitsGrid01 from '../../components/blocks/BenefitsGrid01.vue'
 import { t } from '../../i18n/translations'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale } = defineProps<{ locale: Locale }>()
 
 const steps = (['step1', 'step2', 'step3', 'step4'] as const).map((step) => ({
   id: step,

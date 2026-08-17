@@ -6,9 +6,9 @@ import AudioPlayer from '../../components/common/AudioPlayer.vue'
 import CopyTextButton from '../../components/ui/copy-text-button/CopyTextButton.vue'
 import { t } from '../../i18n/translations'
 
-const { locale = 'en', card } = defineProps<{
+const { locale, card } = defineProps<{
   card: ModelLaunchAudioCard
-  locale?: Locale
+  locale: Locale
 }>()
 </script>
 

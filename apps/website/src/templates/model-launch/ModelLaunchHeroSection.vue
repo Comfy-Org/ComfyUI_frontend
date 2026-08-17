@@ -12,9 +12,9 @@ import Badge from '../../components/ui/badge/Badge.vue'
 import { t } from '../../i18n/translations'
 import ModelLaunchHeroCtaButtons from './ModelLaunchHeroCtaButtons.vue'
 
-const { locale = 'en', hero } = defineProps<{
+const { locale, hero } = defineProps<{
   hero: ModelLaunchHero
-  locale?: Locale
+  locale: Locale
 }>()
 
 // SSR (and the first client tick, before onMounted) has no reliable viewport

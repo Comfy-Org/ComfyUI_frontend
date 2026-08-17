@@ -11,8 +11,8 @@ import { scrollTo } from '../../scripts/smoothScroll'
 import CategoryNav from '../common/CategoryNav.vue'
 import SectionLabel from '../common/SectionLabel.vue'
 
-const { locale = 'en', departments = [] } = defineProps<{
-  locale?: Locale
+const { locale, departments = [] } = defineProps<{
+  locale: Locale
   departments?: readonly Department[]
 }>()
 
@@ -99,6 +99,7 @@ function scrollToDepartment(deptKey: string) {
             </h2>
             <CategoryNav
               v-if="hasRoles"
+              :locale
               :categories="categories"
               :model-value="activeCategory"
               class="mt-4"
