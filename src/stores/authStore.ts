@@ -29,6 +29,7 @@ import {
   getPreservedQueryParam
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+import { invalidateRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { useTelemetry } from '@/platform/telemetry'
 import { api } from '@/scripts/api'
 import { useDialogService } from '@/services/dialogService'
@@ -147,6 +148,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
     if (identityChanged) {
       useTeamWorkspaceStore().resetForIdentityChange()
+      invalidateRemoteConfig()
     }
 
     // A direct account switch (A -> B, or sign-out) must re-handshake the

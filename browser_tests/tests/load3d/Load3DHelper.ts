@@ -86,20 +86,13 @@ export class Load3DHelper {
       .and(this.node.locator('[aria-pressed]'))
   }
 
-  get gizmoTranslateButton(): Locator {
-    return this.node.getByRole('button', { name: 'Translate' })
+  get gizmoModeMenuButton(): Locator {
+    return this.node.getByTestId(TestIds.load3d.gizmoModeMenu)
   }
 
-  get gizmoRotateButton(): Locator {
-    return this.node.getByRole('button', { name: 'Rotate' })
-  }
-
-  get gizmoScaleButton(): Locator {
-    return this.node.getByRole('button', { name: 'Scale' })
-  }
-
-  get gizmoResetButton(): Locator {
-    return this.node.getByRole('button', { name: 'Reset', exact: true })
+  async selectGizmoMode(name: string): Promise<void> {
+    await this.gizmoModeMenuButton.click()
+    await this.menuPanel.getByRole('button', { name, exact: true }).click()
   }
 
   async openMenu(): Promise<void> {
