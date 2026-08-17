@@ -10,34 +10,25 @@ Doc: [docs/custom-node-regression-suite.md](../../../docs/custom-node-regression
 
 Quick start: `pnpm test:custom-nodes:local`.
 
-## Pack pins
+## Pinned inputs and refresh
 
-Every pack is installed at a fixed commit, checked in as `pin` in
-[`customNodeManifest.core.json`](../../fixtures/data/customNodeManifest.core.json)
-alongside `pinnedAt`, the date it was last verified. ComfyUI core is pinned
-the same way, via `comfyui_ref` in `ci-tests-custom-nodes.yaml`.
+The gating workflow loads
+[`customNodeManifest.cloud.json`](../../fixtures/data/customNodeManifest.cloud.json).
+It records the exact private Cloud repository commit and YAML path used to
+build the population. Git packs use full commit SHAs; registry packs use exact
+published versions; ComfyUI core is pinned in `ci-tests-custom-nodes.yaml`.
 
-This is what stops a pack author's push from redding an unrelated PR.
-Unpinned, all six pack maintainers are effectively committers to this repo's
-CI. The cost is the mirror image - pack breakage is invisible between bumps -
-so bumping is a deliberate, reviewed act rather than something that happens to
-you.
+Refreshing the Cloud population is deliberate because the generated node
+counts and sentinels must come from the same deployment as the source YAML:
 
-```bash
-pnpm custom-node-pins          # age of each pin, and whether upstream moved
-pnpm custom-node-pins:update   # rewrite every pin to upstream HEAD
-```
+1. Replace `data/cloud/supported_nodes.yaml` from the reviewed Cloud commit and
+   update its `# Source` and `# Imported` headers.
+2. Capture `/object_info` from that Cloud deployment.
+3. Run `pnpm gen:cloud-manifest <object-info-snapshot.json>`.
+4. Run the local CPU gate and review every count, extension, applicability, and
+   exact-failure delta before merging.
 
-Or run [`update-custom-node-pins.yaml`](https://github.com/Comfy-Org/ComfyUI_frontend/actions/workflows/update-custom-node-pins.yaml)
-(`workflow_dispatch`), which does the same thing and opens the PR.
-
-Every suite run reports pin age and warns past **30 days**. It never fails on
-staleness alone: blocking every PR over a pin nobody's diff touched is how a
-gate gets routed around.
-
-**A bump is expected to red the suite, and that is the point.**
-`expectedNodeCount` and `expectedExtensions` are calibrated against the pinned
-source, and the manifest is deliberate that any delta - either direction -
-fails until it is recalibrated. A red on a bump PR is the suite telling you
-what changed in the ecosystem since the last one. A red anywhere else means
-the diff did it. Keeping those two apart is the entire reason to pin.
+The generator validates source provenance and deploy refs, joins YAML packs to
+their runtime directory identities, and preserves the reviewed run-tier
+workflow, runnable count, extension sentinels, and cannot-run calibration. It
+does not claim to monitor the private Cloud repository automatically.

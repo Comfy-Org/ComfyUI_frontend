@@ -57,8 +57,6 @@
     "test:browser:coverage": "cross-env COLLECT_COVERAGE=true pnpm test:browser",
     "test:browser:local": "cross-env PLAYWRIGHT_LOCAL=1 PLAYWRIGHT_TEST_URL=http://localhost:5173 pnpm test:browser",
     "custom-node-quarantine": "tsx scripts/customNodeQuarantine.ts",
-    "custom-node-pins": "tsx scripts/customNodePins.ts",
-    "custom-node-pins:update": "tsx scripts/customNodePins.ts --write",
     "custom-node-shard": "tsx scripts/customNodeShard.ts",
     "gen:cloud-manifest": "tsx scripts/cloud-manifest.ts",
     "test:custom-nodes": "cross-env PLAYWRIGHT_TEST_URL=http://localhost:5173 pnpm exec playwright test browser_tests/tests/customNodes/ --config playwright.chrome.config.ts --workers=1",
