@@ -275,13 +275,43 @@ jobs:
         if: steps.detect.outputs.has-new-tests == 'true'
         run: pnpm install --frozen-lockfile
 
-      - name: Find Chromium-eligible new tests
+      - name: Find safely recordable new tests
         if: steps.detect.outputs.has-new-tests == 'true'
         id: recordable
         env:
           NEW_SPEC_FILES: ${{ steps.detect.outputs.files }}
         run: |
           FILES=$(echo "$NEW_SPEC_FILES" | tr '\n' ' ')
+          AUDIT_EXIT=0
+          AUDIT_OUTPUT=$(pnpm exec playwright test --project=audit --list --pass-with-no-tests $FILES 2>&1) || AUDIT_EXIT=$?
+          echo "$AUDIT_OUTPUT"
+
+          if [ "$AUDIT_EXIT" -ne 0 ]; then
+            exit "$AUDIT_EXIT"
+          fi
+
+          if ! echo "$AUDIT_OUTPUT" | grep -Fxq 'Total: 0 tests in 0 files'; then
+            {
+              echo '## New-test video walkthrough'
+              echo
+              echo '### Cannot skip safely: audit tests have no regular CI coverage'
+              echo
+              echo 'At least one newly added test is routed to the `audit` project. Unlike the other projects excluded by Chromium, no regular CI job executes audit tests.'
+              echo 'This video job only records the `chromium` project, so it fails rather than allowing the PR to pass without executing the new audit test.'
+              echo
+              echo 'Detected files:'
+              echo '```text'
+              echo "$NEW_SPEC_FILES"
+              echo '```'
+              echo
+              echo 'Audit discovery output:'
+              echo '```text'
+              echo "$AUDIT_OUTPUT"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
           LIST_EXIT=0
           LIST_OUTPUT=$(pnpm exec playwright test --project=chromium --list --pass-with-no-tests $FILES 2>&1) || LIST_EXIT=$?
           echo "$LIST_OUTPUT"
@@ -302,7 +332,7 @@ jobs:
             echo '### Skipped safely: no Chromium-eligible tests'
             echo
             echo 'The workflow detected newly added Playwright spec files, but none of their tests are eligible for the `chromium` project used to record walkthroughs.'
-            echo 'This commonly happens when every test uses a project-routing tag excluded by Chromium: `@perf`, `@audit`, `@cloud`, or `@mobile`.'
+            echo 'This commonly happens when every test uses a project-routing tag excluded by Chromium: `@perf`, `@cloud`, or `@mobile`.'
             echo 'The regular project-specific E2E jobs still run these tests. This video job succeeds without creating an empty report or video artifact.'
             echo
             echo 'Detected files:'
