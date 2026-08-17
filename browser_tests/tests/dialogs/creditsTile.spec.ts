@@ -92,6 +92,13 @@ const endedPersonalBillingStatus: BillingStatusResponse = {
   has_funds: true
 }
 
+const pastDueBillingStatus: BillingStatusResponse = {
+  ...mockBillingStatus,
+  is_active: false,
+  plan_slug: 'pro-monthly',
+  billing_status: 'payment_failed'
+}
+
 async function mockCloudBoot(
   page: Page,
   billingControlEnabled = true,
@@ -283,6 +290,25 @@ test.describe('Credits tile (Plan & Credits)', { tag: '@cloud' }, () => {
       .toBe('https://billing.example/portal')
   })
 
+  test('keeps billing management available for a past-due subscription', async ({
+    page
+  }) => {
+    test.setTimeout(60_000)
+
+    await mockCloudBoot(page, true, pastDueBillingStatus)
+
+    const content = await openPlanAndCredits(page)
+    await expect(
+      content.getByRole('button', { name: 'Billing & invoices' })
+    ).toBeVisible()
+    await expect(
+      content.getByRole('button', { name: 'Change plan' })
+    ).toHaveCount(0)
+
+    await content.getByRole('button', { name: 'More Options' }).click()
+    await expect(page.getByText('Cancel plan', { exact: true })).toBeVisible()
+  })
+
   test('keeps the legacy Workspace UX when billing controls are disabled', async ({
     page
   }) => {
@@ -308,9 +334,9 @@ test.describe('Credits tile (Plan & Credits)', { tag: '@cloud' }, () => {
       content.getByRole('tab', { name: 'Plan & Credits' })
     ).toBeVisible()
     await expect(content.getByRole('tab', { name: 'Members' })).toBeVisible()
-    await expect(content.getByRole('button', { name: 'Activity' })).toHaveCount(
-      0
-    )
+    await expect(
+      content.getByRole('button', { name: 'Activity', exact: true })
+    ).toHaveCount(0)
   })
 
   test('renders the unified tile with breakdown and add-credits', async ({

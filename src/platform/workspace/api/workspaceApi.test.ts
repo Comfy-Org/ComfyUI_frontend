@@ -343,7 +343,7 @@ describe('workspaceApi', () => {
   })
 
   describe('billing', () => {
-    it('getBillingStatus() sends GET /billing/status', async () => {
+    it('getBillingStatus() sends GET /billing/status and returns the body unchanged', async () => {
       const data = { is_active: true, has_funds: true }
       mockAxiosInstance.get.mockResolvedValue({ data })
 

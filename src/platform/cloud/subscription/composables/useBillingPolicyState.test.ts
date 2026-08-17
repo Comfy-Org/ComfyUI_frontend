@@ -24,8 +24,7 @@ describe('deriveBillingPolicyState', () => {
     ['STANDARD', 'LocalAndStandard', 'CloudAndStandard'],
     ['CREATOR', 'LocalAndCreator', 'CloudAndCreator'],
     ['PRO', 'LocalAndPro', 'CloudAndPro'],
-    ['FOUNDERS_EDITION', 'LocalAndFounders', 'CloudAndFounders'],
-    ['TEAM', 'LocalAndTeam', 'CloudAndTeam']
+    ['FOUNDERS_EDITION', 'LocalAndFounders', 'CloudAndFounders']
   ])(
     'maps an active subscription tier %s to %s off Cloud and %s on Cloud',
     ([tier, localKind, cloudKind]) => {
@@ -97,10 +96,27 @@ describe('deriveBillingPolicyState', () => {
   )
 
   it.for<[string, boolean]>([
+    ['LocalAndTeam', false],
+    ['CloudAndTeam', true]
+  ])(
+    'resolves a TEAM tier as %s without the isTeamPlan signal (isCloud=%s)',
+    ([kind, isCloud]) => {
+      expect(
+        deriveBillingPolicyState({
+          isCloud,
+          canAccessSubscriptionFeatures: true,
+          isTeamPlan: false,
+          tier: 'TEAM'
+        })
+      ).toEqual({ kind })
+    }
+  )
+
+  it.for<[string, boolean]>([
     ['LocalTeamWithoutActiveSubscription', false],
     ['CloudTeamWithoutActiveSubscription', true]
   ])(
-    'uses the TEAM tier when plan metadata is unavailable for %s (isCloud=%s)',
+    'preserves an inactive TEAM tier as %s without the isTeamPlan signal (isCloud=%s)',
     ([kind, isCloud]) => {
       expect(
         deriveBillingPolicyState({

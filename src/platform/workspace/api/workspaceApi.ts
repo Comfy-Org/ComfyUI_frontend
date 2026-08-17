@@ -71,7 +71,9 @@ export type { PendingInvite }
 export type { SubscriptionTier }
 export type { SubscriptionDuration }
 export type { WorkspaceWithRole }
+export type { ListWorkspacesResponse }
 export type { Plan }
+export type { BillingPlansResponse }
 export type { TeamCreditStops }
 export type { TeamCreditStopSummary }
 
