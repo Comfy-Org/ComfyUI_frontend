@@ -48,6 +48,7 @@ export interface SettingDef {
     | 'combo'
     | 'radio'
     | 'text'
+    | 'password'
     | 'color'
     | 'image'
     | 'url'
