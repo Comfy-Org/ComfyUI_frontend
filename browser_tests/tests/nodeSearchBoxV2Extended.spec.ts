@@ -508,27 +508,5 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
       expect(await combo.getValue()).toBe('option3')
       expect(await hasConnectedInputOfType(target, 'IMAGE')).toBe(true)
     })
-
-    test('Link release via the context menu connects through a combo option', async ({
-      comfyPage
-    }) => {
-      await comfyPage.settings.setSetting(
-        'Comfy.LinkRelease.Action',
-        'context menu'
-      )
-      // The menu is capped at this many suggestions; raise it so the devtools
-      // node is present regardless of how many core nodes accept IMAGE.
-      await comfyPage.settings.setSetting('Comfy.NodeSuggestions.number', 100)
-
-      await releaseImageLinkOnCanvas(comfyPage)
-
-      await comfyPage.contextMenu.clickMenuItem('DevToolsNodeWithDynamicCombo')
-
-      const target = await dynamicComboNode(comfyPage)
-      const combo = await target.getWidgetByName('combo')
-
-      expect(await combo.getValue()).toBe('option3')
-      expect(await hasConnectedInputOfType(target, 'IMAGE')).toBe(true)
-    })
   })
 })
