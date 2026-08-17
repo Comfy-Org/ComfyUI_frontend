@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
@@ -34,6 +34,7 @@ describe('comfy API root', () => {
       expect(api().supports('widgets.reorder')).toBe(true)
       expect(api().supports('widgets.hidden')).toBe(true)
       expect(api().supports('slots.identity')).toBe(true)
+      expect(api().supports('workflow.open')).toBe(true)
     })
 
     it('returns false for unknown capabilities instead of throwing', () => {
@@ -105,6 +106,33 @@ describe('comfy API root', () => {
       current = graph
       graph.add(new LGraphNode('A', 'Alpha'))
       expect(comfy.graph.nodes()).toHaveLength(1)
+    })
+  })
+
+  describe('workflow access', () => {
+    it('opens workflow data through the host document service', async () => {
+      const openWorkflow = vi.fn(() => Promise.resolve())
+      const comfy = createComfyApi(() => graph, LATEST_MAJOR, {
+        openWorkflow
+      })
+      const workflow = { version: 0, nodes: [] }
+
+      await comfy.workflow.open(workflow)
+
+      expect(openWorkflow).toHaveBeenCalledOnce()
+      expect(openWorkflow).toHaveBeenCalledWith(workflow)
+    })
+
+    it('rejects non-object workflow data before reaching the host', async () => {
+      const openWorkflow = vi.fn(() => Promise.resolve())
+      const comfy = createComfyApi(() => graph, LATEST_MAJOR, {
+        openWorkflow
+      })
+
+      await expect(
+        Reflect.apply(comfy.workflow.open, comfy.workflow, [null])
+      ).rejects.toThrow(/workflow data must be an object/i)
+      expect(openWorkflow).not.toHaveBeenCalled()
     })
   })
 

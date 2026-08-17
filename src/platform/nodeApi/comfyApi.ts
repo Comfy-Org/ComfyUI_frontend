@@ -42,6 +42,12 @@ import type { SettingsHandle } from './settingsHandle'
 import type { StorageHandle } from './storageHandle'
 import type { UiHandle } from './uiHandle'
 import type { NodeHandle } from './nodeHandle'
+import { createWorkflowApi } from './workflowHandle'
+import type { WorkflowData, WorkflowHandle } from './workflowHandle'
+
+type ComfyApiHost = {
+  openWorkflow?: (data: WorkflowData) => Promise<void>
+}
 
 /**
  * Version of this surface, independent of the app version.
@@ -120,7 +126,8 @@ const CAPABILITIES: ReadonlyMap<string, string> = new Map([
   ['interaction.state', '1.0'],
   ['interaction.nodeMoved', '1.0'],
   ['interaction.nodeDragEnd', '1.0'],
-  ['node.changeScope', '1.0']
+  ['node.changeScope', '1.0'],
+  ['workflow.open', '1.0']
 ])
 
 /**
@@ -195,6 +202,8 @@ export interface Comfy {
   readonly commands: CommandsHandle
   /** Backend URLs and messages, including a pack's own events. */
   readonly backend: BackendHandle
+  /** Loading a parsed workflow into a new active document. */
+  readonly workflow: WorkflowHandle
   /**
    * The editor is already mid-gesture — dragging a link, resizing a node,
    * dragging a widget. A pack running its own pointer gesture must stand down
@@ -294,7 +303,8 @@ function buildMajor(
   major: number,
   getGraph: () => LGraph | null | undefined,
   forMajor: (m: number) => Comfy,
-  defs: ReturnType<typeof createDefRegistry>
+  defs: ReturnType<typeof createDefRegistry>,
+  openWorkflow?: (data: WorkflowData) => Promise<void>
 ): Comfy {
   const graph = createGraphApi(getGraph, `v${major}`)
   const rootGraph = createGraphApi(
@@ -306,6 +316,7 @@ function buildMajor(
   const ui = createUiHandle()
   const commands = createCommandsApi()
   const backend = createBackendApi()
+  const workflow = createWorkflowApi(openWorkflow)
 
   /**
    * The node an event names, resolved inside the graph that owns it. Ids repeat
@@ -349,6 +360,7 @@ function buildMajor(
     ui,
     commands,
     backend,
+    workflow,
     isInteracting,
     onNodeMoved: createNodeMoveObserver((id) => graph.node(id)),
     onNodeDragEnd: createNodeDragEndObserver((id) => graph.node(id)),
@@ -376,7 +388,8 @@ function buildMajor(
 
 export function createComfyApi(
   getGraph: () => LGraph | null | undefined,
-  major: number = LATEST_MAJOR
+  major: number = LATEST_MAJOR,
+  host: ComfyApiHost = {}
 ): Comfy {
   const byMajor = new Map<number, Comfy>()
   // One registry across all majors: a def is registered once, so every major's
@@ -392,7 +405,13 @@ export function createComfyApi(
     }
     let instance = byMajor.get(requested)
     if (!instance) {
-      instance = buildMajor(requested, getGraph, forMajor, defs)
+      instance = buildMajor(
+        requested,
+        getGraph,
+        forMajor,
+        defs,
+        host.openWorkflow
+      )
       byMajor.set(requested, instance)
     }
     return instance
@@ -433,8 +452,11 @@ let singleton: Comfy | undefined
  * than imported here, so this module stays a leaf: it depends on litegraph
  * types only, never on stores or the app.
  */
-export function useComfyApi(getGraph: () => LGraph | null | undefined): Comfy {
-  singleton ??= createComfyApi(getGraph)
+export function useComfyApi(
+  getGraph: () => LGraph | null | undefined,
+  host?: ComfyApiHost
+): Comfy {
+  singleton ??= createComfyApi(getGraph, LATEST_MAJOR, host)
   return singleton
 }
 
@@ -453,9 +475,10 @@ export function resetComfyApi(): void {
  * from the first line of an extension.
  */
 export function installComfyApi(
-  getGraph: () => LGraph | null | undefined
+  getGraph: () => LGraph | null | undefined,
+  host?: ComfyApiHost
 ): Comfy {
-  const comfy = useComfyApi(getGraph)
+  const comfy = useComfyApi(getGraph, host)
   window.comfy = comfy
   return comfy
 }
