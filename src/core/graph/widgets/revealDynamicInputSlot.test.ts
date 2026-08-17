@@ -57,6 +57,41 @@ describe('revealDynamicInputSlot', () => {
     expect(node.widgets[0].value).toBe('text_to_image')
   })
 
+  it('selects through a nested combo so the socket actually appears', () => {
+    const node = nodeWithCombo([
+      { key: 'plain', inputs: { required: { prompt: ['STRING', {}] } } },
+      {
+        key: 'advanced',
+        inputs: {
+          required: {
+            sub: [
+              'COMFY_DYNAMICCOMBO_V3',
+              {
+                options: [
+                  { key: 'a', inputs: { required: { n: ['INT', {}] } } },
+                  { key: 'b', inputs: { required: { m: ['MASK', {}] } } }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    ])
+
+    expect(revealDynamicInputSlot(node, 'MASK')).toBe(true)
+    expect(node.findInputByType('MASK')).toBeDefined()
+  })
+
+  it('leaves every widget value untouched when the reveal fails', () => {
+    const node = nodeWithCombo()
+    const before = node.widgets.map((w) => w.value)
+
+    expect(revealDynamicInputSlot(node, 'CONDITIONING')).toBe(false)
+
+    expect(node.widgets.map((w) => w.value)).toEqual(before)
+    expect(node.findInputByType('CONDITIONING')).toBeUndefined()
+  })
+
   it('selects an option whose type is nested inside an Autogrow', () => {
     const node = nodeWithCombo([
       { key: 'plain', inputs: { required: { prompt: ['STRING', {}] } } },

@@ -142,11 +142,7 @@ function addNode(nodeDef: ComfyNodeDefImpl, dragEvent?: MouseEvent) {
   if (!node) return
 
   if (disconnectOnReset && triggerEvent) {
-    const droppedLink = getFirstLink()
-    const droppedType = droppedLink?.fromSlot.type?.toString()
-    if (droppedLink?.toType === 'input' && droppedType) {
-      revealDynamicInputSlot(node, droppedType)
-    }
+    revealSlotForDroppedLink(node)
     canvasStore.getCanvas().linkConnector.connectToNode(node, triggerEvent)
   } else if (!triggerEvent) {
     console.warn('The trigger event was undefined when addNode was called.')
@@ -175,6 +171,20 @@ function showSearchBox(e: CanvasPointerEvent | null) {
 
 function getFirstLink() {
   return canvasStore.getCanvas().linkConnector.renderLinks.at(0)
+}
+
+/**
+ * Node search offers nodes whose socket for the dragged type only exists under
+ * an unselected DynamicCombo option. Both link-release paths -- the search box
+ * and the context menu -- must ask for that option before connecting, or the
+ * link is dropped with only a console warning.
+ */
+function revealSlotForDroppedLink(node: LGraphNode) {
+  const link = getFirstLink()
+  const droppedType = link?.fromSlot.type?.toString()
+  if (link?.toType === 'input' && droppedType) {
+    revealDynamicInputSlot(node, droppedType)
+  }
 }
 
 const nodeDefStore = useNodeDefStore()
@@ -252,6 +262,7 @@ function showContextMenu(e: CanvasPointerEvent) {
 
       disconnectOnReset = false
       createEvent.preventDefault()
+      revealSlotForDroppedLink(node)
       canvas.linkConnector.connectToNode(node, e)
     },
     options

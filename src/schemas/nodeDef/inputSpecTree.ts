@@ -42,7 +42,17 @@ function warnSpecDrift(
   )
 }
 
-export function splitSlotTypes(type: string): string[] {
+/**
+ * Split a possibly comma-composite slot type into its parts.
+ *
+ * Accepts `unknown` on purpose: node defs are never validated on the way in
+ * (`validateComfyNodeDef` has no callers), so a custom node can put anything
+ * in an output type. This runs inside the `ComfyNodeDefImpl` constructor, and
+ * throwing there aborts the whole node-def update and empties the library.
+ */
+export function splitSlotTypes(type: unknown): string[] {
+  if (typeof type !== 'string') return []
+
   return type
     .split(',')
     .map((part) => part.trim())
@@ -152,6 +162,19 @@ export function ownSlotTypes(spec: InputSpecV2): string[] {
 }
 
 /**
+ * The option keys of a DynamicCombo, in declaration order.
+ *
+ * Callers that only need the choices should use this rather than
+ * {@link dynamicComboOptionTypes}, which walks each option's whole nested
+ * input tree.
+ */
+export function dynamicComboOptionKeys(spec: InputSpecV2): string[] {
+  if (spec.type !== 'COMFY_DYNAMICCOMBO_V3') return []
+
+  return parseDynamicComboOptions(spec).map(({ key }) => key)
+}
+
+/**
  * The slot types each DynamicCombo option would expose if selected.
  *
  * Unlike {@link collectSearchableInputTypes}, which unions every option, this
@@ -184,7 +207,10 @@ export function matchTypeTemplate(
   if (spec.type !== 'COMFY_MATCHTYPE_V3') return undefined
 
   const parsed = zMatchTypeOptions.safeParse(spec)
-  if (!parsed.success) return undefined
+  if (!parsed.success) {
+    warnSpecDrift(spec, parsed.error)
+    return undefined
+  }
 
   return {
     templateId: parsed.data.template.template_id,

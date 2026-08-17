@@ -1,3 +1,5 @@
+import { uniq } from 'es-toolkit/compat'
+
 import {
   inputSpecTree,
   matchTypeTemplate,
@@ -39,9 +41,15 @@ export function collectSearchableOutputTypes(
   for (const input of Object.values(inputs)) {
     for (const spec of inputSpecTree(input)) {
       const template = matchTypeTemplate(spec)
-      if (template) {
-        allowedTypesByTemplate.set(template.templateId, template.allowedTypes)
-      }
+      if (!template) continue
+
+      // A template group is several inputs sharing one template_id; the output
+      // resolves across the whole group, so union rather than overwrite.
+      const seen = allowedTypesByTemplate.get(template.templateId) ?? []
+      allowedTypesByTemplate.set(
+        template.templateId,
+        uniq([...seen, ...template.allowedTypes])
+      )
     }
   }
 

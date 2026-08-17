@@ -41,7 +41,7 @@ import { RenderShape } from '@/lib/litegraph/src/litegraph'
 import NodeHeader from '@/renderer/extensions/vueNodes/components/NodeHeader.vue'
 import NodeSlots from '@/renderer/extensions/vueNodes/components/NodeSlots.vue'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
-import { dynamicComboOptionTypes } from '@/schemas/nodeDef/inputSpecTree'
+import { dynamicComboOptionKeys } from '@/schemas/nodeDef/inputSpecTree'
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { toNodeId } from '@/types/nodeId'
@@ -66,7 +66,7 @@ const nodeData = computed<VueNodeData>(() => {
     .map(([name, input]) => {
       const isDynamicCombo = input.type === 'COMFY_DYNAMICCOMBO_V3'
       const comboValues = isDynamicCombo
-        ? dynamicComboOptionTypes(input).map(({ key }) => key)
+        ? dynamicComboOptionKeys(input)
         : input.type === 'COMBO' && Array.isArray(input.options)
           ? input.options
           : undefined
