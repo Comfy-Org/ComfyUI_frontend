@@ -154,19 +154,20 @@ function pageLocale(file: string): Locale | undefined {
 }
 
 function main(): void {
-  const files = sourceFiles()
-  const sources = new Map(
-    files.map((file) => [file, readFileSync(file, 'utf8')])
-  )
+  const sources = sourceFiles().map((file) => ({
+    file,
+    source: readFileSync(file, 'utf8')
+  }))
 
   const localeAware = new Set(
-    files.filter((file) => declaresLocaleProp(sources.get(file)!, file))
+    sources
+      .filter(({ file, source }) => declaresLocaleProp(source, file))
+      .map(({ file }) => file)
   )
 
   const violations: Violation[] = []
 
-  for (const file of files) {
-    const source = sources.get(file)!
+  for (const { file, source } of sources) {
     const expected = pageLocale(file)
     const usages = componentUsages(
       source,
@@ -179,11 +180,15 @@ function main(): void {
 
       const { attributes } = usage
       if (!LOCALE_ATTRIBUTE.test(attributes)) {
-        if (SPREAD_ATTRIBUTE.test(attributes)) continue
+        // A spread may carry `locale`, but then it is invisible to this check
+        // and to a reader. Require it to be named.
+        const via = SPREAD_ATTRIBUTE.test(attributes)
+          ? 'receives `locale` only via a spread, which hides it from review'
+          : 'receives no `locale` prop'
         violations.push({
           file,
           line: usage.line,
-          message: `<${usage.name}> renders localized text but receives no \`locale\` prop`
+          message: `<${usage.name}> renders localized text but ${via}`
         })
         continue
       }
@@ -222,8 +227,8 @@ function main(): void {
     process.exit(1)
   }
 
-  console.log(
-    `Locale props valid: ${localeAware.size} locale-aware components, ${files.length} files scanned.`
+  process.stdout.write(
+    `Locale props valid: ${localeAware.size} locale-aware components, ${sources.length} files scanned.\n`
   )
 }
 
