@@ -2,21 +2,34 @@ import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as VueModule from 'vue'
 
-const hoisted = vi.hoisted(() => ({
-  onUserResolved: vi.fn(),
-  onUserLogout: vi.fn(),
-  userEmail: { value: null as string | null },
-  resolvedUserInfo: { value: null as { id: string } | null },
-  posthogInit: vi.fn(),
-  mixpanelInit: vi.fn(),
-  customerIoLoad: vi.fn(() => ({
-    identify: vi.fn().mockResolvedValue(undefined),
-    page: vi.fn(),
-    track: vi.fn().mockResolvedValue(undefined),
-    reset: vi.fn(),
-    register: vi.fn().mockResolvedValue(undefined)
-  }))
-}))
+const hoisted = vi.hoisted(() => {
+  const customerIoTrack = vi.fn(
+    (_event: string, _properties?: Record<string, unknown>) => Promise.resolve()
+  )
+  const customerIoRegistration = { rejection: null as Error | null }
+
+  return {
+    onUserResolved: vi.fn(),
+    onUserLogout: vi.fn(),
+    userEmail: { value: null as string | null },
+    resolvedUserInfo: { value: null as { id: string } | null },
+    posthogInit: vi.fn(),
+    mixpanelInit: vi.fn(),
+    customerIoTrack,
+    customerIoRegistration,
+    customerIoLoad: vi.fn(() => ({
+      identify: vi.fn(() => Promise.resolve()),
+      page: vi.fn(),
+      track: customerIoTrack,
+      reset: vi.fn(),
+      register: vi.fn(() =>
+        customerIoRegistration.rejection
+          ? Promise.reject(customerIoRegistration.rejection)
+          : Promise.resolve()
+      )
+    }))
+  }
+})
 
 vi.mock('@/composables/auth/useCurrentUser', () => ({
   useCurrentUser: () => ({
@@ -67,6 +80,7 @@ import {
   markStoresPending,
   markStoresReady
 } from '@/platform/telemetry/storeReadiness'
+import { TelemetryEvents } from '@/platform/telemetry/types'
 
 import { CustomerIoTelemetryProvider } from './CustomerIoTelemetryProvider'
 import { MixpanelTelemetryProvider } from './MixpanelTelemetryProvider'
@@ -92,8 +106,15 @@ describe('telemetry providers wait for Pinia before touching stores', () => {
 
   afterEach(() => {
     markStoresReady()
+    hoisted.customerIoRegistration.rejection = null
     delete (window as { __CONFIG__?: unknown }).__CONFIG__
   })
+
+  function configureCustomerIo(): void {
+    window.__CONFIG__ = {
+      customer_io: { write_key: 'cdp_test_write_key', site_id: 'site_test' }
+    } as typeof window.__CONFIG__
+  }
 
   it('gates PostHog user identification', async () => {
     window.__CONFIG__ = {
@@ -129,9 +150,7 @@ describe('telemetry providers wait for Pinia before touching stores', () => {
   })
 
   it('gates Customer.io user identification', async () => {
-    window.__CONFIG__ = {
-      customer_io: { write_key: 'cdp_test_write_key', site_id: 'site_test' }
-    } as typeof window.__CONFIG__
+    configureCustomerIo()
 
     new CustomerIoTelemetryProvider()
     await vi.waitFor(() => expect(hoisted.customerIoLoad).toHaveBeenCalled())
@@ -140,5 +159,42 @@ describe('telemetry providers wait for Pinia before touching stores', () => {
 
     markStoresReady()
     await vi.waitFor(() => expect(hoisted.onUserResolved).toHaveBeenCalled())
+  })
+
+  it('handles a Customer.io in-app registration failure raised while the gate is still closed', async () => {
+    const registrationError = new Error('in-app registration failed')
+    hoisted.customerIoRegistration.rejection = registrationError
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    configureCustomerIo()
+
+    new CustomerIoTelemetryProvider()
+    await vi.waitFor(() => expect(hoisted.customerIoLoad).toHaveBeenCalled())
+    await flushMicrotasks()
+
+    expect(hoisted.onUserResolved).not.toHaveBeenCalled()
+    expect(consoleError).toHaveBeenCalledWith(
+      'Failed to initialize Customer.io in-app plugin:',
+      registrationError
+    )
+  })
+
+  it('keeps Customer.io startup events in order across the gate', async () => {
+    configureCustomerIo()
+
+    const provider = new CustomerIoTelemetryProvider()
+    provider.trackWorkflowExecution()
+
+    await vi.waitFor(() => expect(hoisted.customerIoLoad).toHaveBeenCalled())
+    await flushMicrotasks()
+    provider.trackAddApiCreditButtonClicked()
+
+    markStoresReady()
+    await vi.waitFor(() =>
+      expect(hoisted.customerIoTrack).toHaveBeenCalledTimes(2)
+    )
+    expect(hoisted.customerIoTrack.mock.calls.map(([event]) => event)).toEqual([
+      TelemetryEvents.EXECUTION_START,
+      TelemetryEvents.ADD_API_CREDIT_BUTTON_CLICKED
+    ])
   })
 })
