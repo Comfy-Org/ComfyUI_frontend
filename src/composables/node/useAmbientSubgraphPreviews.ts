@@ -4,7 +4,6 @@ import { computed, toValue } from 'vue'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 
 import type { PromotedPreview } from './usePromotedPreviews'
@@ -33,7 +32,6 @@ export function useAmbientSubgraphPreviews(
   lgraphNode: MaybeRefOrGetter<LGraphNode | null | undefined>
 ) {
   const nodeOutputStore = useNodeOutputStore()
-  const previewExposureStore = usePreviewExposureStore()
 
   const ambientPreviews = computed((): PromotedPreview[] => {
     const node = toValue(lgraphNode)
@@ -41,25 +39,15 @@ export function useAmbientSubgraphPreviews(
     if (node.isDetached) return []
 
     const { subgraph } = node
-    const suppressedNodeIds = previewExposureStore.getSuppressedAmbientNodeIds(
-      node.rootGraph.id,
-      String(node.id)
-    )
 
-    // `subgraph.nodes` (`LGraph._nodes`) is a plain, non-reactive array, so
-    // interior node add/remove while collapsed isn't tracked here; the next
-    // WS preview frame (nodeOutputs/nodePreviewImages change) self-heals it.
     return subgraph.nodes.flatMap((interiorNode): PromotedPreview[] => {
       // Nested subgraph hosts derive their own previews independently.
       if (interiorNode instanceof SubgraphNode) return []
       if (interiorNode.hideOutputImages) return []
-      if (suppressedNodeIds.has(interiorNode.id)) return []
 
       const locatorId = createNodeLocatorId(subgraph.id, interiorNode.id)
       if (!locatorId) return []
 
-      // Only ever populated by live execution/streaming frames, never by
-      // static input data, so no isInputPreviewOutput-style guard is needed.
       if (!nodeOutputStore.nodePreviewImages[locatorId]?.length) return []
 
       const urls = nodeOutputStore.getNodeImageUrls(interiorNode)
