@@ -1,8 +1,8 @@
 {
   "id": "6db64321-d1c9-4bb5-b6d4-e08b60531fc6",
   "revision": 0,
-  "last_node_id": 6,
-  "last_link_id": 3,
+  "last_node_id": 10,
+  "last_link_id": 5,
   "nodes": [
     {
       "id": 1,
@@ -27,7 +27,7 @@
       "properties": {
         "Run widget replace on values": false
       },
-      "widgets_values": ["linked-image.webp", "fixed"]
+      "widgets_values": ["linked-image.webp [output]", "fixed"]
     },
     {
       "id": 2,
@@ -173,12 +173,134 @@
         "Node name for S&R": "LoadAudio"
       },
       "widgets_values": ["linked-audio.wav", null, ""]
+    },
+    {
+      "id": 7,
+      "type": "PrimitiveNode",
+      "pos": [720, 20],
+      "size": [250, 82],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "COMBO",
+          "type": "COMBO",
+          "widget": {
+            "name": "image"
+          },
+          "links": [4]
+        }
+      ],
+      "title": "mask image",
+      "properties": {
+        "Run widget replace on values": false
+      },
+      "widgets_values": ["linked-image.webp", "fixed"]
+    },
+    {
+      "id": 8,
+      "type": "PrimitiveNode",
+      "pos": [720, 380],
+      "size": [250, 82],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "COMBO",
+          "type": "COMBO",
+          "widget": {
+            "name": "image"
+          },
+          "links": [5]
+        }
+      ],
+      "title": "output image",
+      "properties": {
+        "Run widget replace on values": false
+      },
+      "widgets_values": ["linked-image.webp", "fixed"]
+    },
+    {
+      "id": 9,
+      "type": "LoadImageMask",
+      "pos": [1060, 20],
+      "size": [315, 314],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "COMBO",
+          "widget": {
+            "name": "image"
+          },
+          "link": 4
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImageMask"
+      },
+      "widgets_values": ["linked-image.webp", "alpha", "image"]
+    },
+    {
+      "id": 10,
+      "type": "LoadImageOutput",
+      "pos": [1060, 380],
+      "size": [315, 314],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "COMBO",
+          "widget": {
+            "name": "image"
+          },
+          "link": 5
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImageOutput"
+      },
+      "widgets_values": [
+        "linked-image.webp [output]",
+        false,
+        "refresh",
+        "image"
+      ]
     }
   ],
   "links": [
     [1, 1, 0, 4, 0, "COMBO"],
     [2, 2, 0, 5, 0, "COMBO"],
-    [3, 3, 0, 6, 0, "COMBO"]
+    [3, 3, 0, 6, 0, "COMBO"],
+    [4, 7, 0, 9, 0, "COMBO"],
+    [5, 8, 0, 10, 0, "COMBO"]
   ],
   "groups": [],
   "config": {},

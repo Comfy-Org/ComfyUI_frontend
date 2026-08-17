@@ -7,8 +7,8 @@ import {
 } from '@/utils/__tests__/litegraphTestUtils'
 
 import {
-  getLinkedCoreMediaLoaderClass,
   shouldHideLinkedCoreLoadAudioPlayer,
+  shouldHideLinkedCoreMediaInputActions,
   shouldHideLinkedCoreMediaInputPreview
 } from './linkedCoreMediaUtils'
 
@@ -50,21 +50,30 @@ function linkedWidget(name: string) {
   return { name, slotMetadata: { index: 0, linked: true, type: 'STRING' } }
 }
 
-describe(getLinkedCoreMediaLoaderClass, () => {
+describe('linked core media loader matching', () => {
   it.for([
     { nodeClass: 'LoadImage', selector: 'image' },
-    { nodeClass: 'LoadVideo', selector: 'file' },
-    { nodeClass: 'LoadAudio', selector: 'audio' }
+    { nodeClass: 'LoadImageMask', selector: 'image' },
+    { nodeClass: 'LoadImageOutput', selector: 'image' },
+    { nodeClass: 'LoadVideo', selector: 'file' }
   ] as const)(
     'matches core $nodeClass by its exact selector',
     ({ nodeClass, selector }) => {
       const node = mediaNode({ nodeClass })
 
       expect(
-        getLinkedCoreMediaLoaderClass(node, [linkedWidget(selector)])
-      ).toBe(nodeClass)
+        shouldHideLinkedCoreMediaInputActions(node, [linkedWidget(selector)])
+      ).toBe(true)
     }
   )
+
+  it('matches core LoadAudio by its exact selector', () => {
+    const node = mediaNode({ nodeClass: 'LoadAudio' })
+
+    expect(
+      shouldHideLinkedCoreLoadAudioPlayer(node, [linkedWidget('audio')])
+    ).toBe(true)
+  })
 
   it('excludes a custom node with a core class name', () => {
     const node = mediaNode({
@@ -73,14 +82,15 @@ describe(getLinkedCoreMediaLoaderClass, () => {
       nodeClass: 'LoadImage'
     })
 
-    expect(getLinkedCoreMediaLoaderClass(node)).toBeUndefined()
+    expect(shouldHideLinkedCoreMediaInputActions(node)).toBe(false)
+    expect(shouldHideLinkedCoreLoadAudioPlayer(node)).toBe(false)
   })
 
   it.for([
     { nodeClass: 'PreviewImage', selector: 'image' },
     { nodeClass: 'SaveImage', selector: 'image' },
-    { nodeClass: 'LoadImageMask', selector: 'image' },
-    { nodeClass: 'LoadImageOutput', selector: 'image' },
+    { nodeClass: 'Load3D', selector: 'model_file' },
+    { nodeClass: 'Load3DAdvanced', selector: 'model_file' },
     { nodeClass: 'PreviewAudio', selector: 'audio' },
     { nodeClass: 'SaveAudio', selector: 'audio' },
     { nodeClass: 'RecordAudio', selector: 'audio' }
@@ -89,14 +99,16 @@ describe(getLinkedCoreMediaLoaderClass, () => {
     ({ nodeClass, selector }) => {
       const node = mediaNode({ linkedInputName: selector, nodeClass })
 
-      expect(getLinkedCoreMediaLoaderClass(node)).toBeUndefined()
+      expect(shouldHideLinkedCoreMediaInputActions(node)).toBe(false)
+      expect(shouldHideLinkedCoreLoadAudioPlayer(node)).toBe(false)
     }
   )
 
   it('ignores an unrelated linked widget', () => {
     const node = mediaNode({ linkedInputName: 'mask', nodeClass: 'LoadImage' })
 
-    expect(getLinkedCoreMediaLoaderClass(node)).toBeUndefined()
+    expect(shouldHideLinkedCoreMediaInputActions(node)).toBe(false)
+    expect(shouldHideLinkedCoreLoadAudioPlayer(node)).toBe(false)
   })
 
   it('reads the live selector input and restores availability on disconnect', () => {
@@ -114,9 +126,36 @@ describe(getLinkedCoreMediaLoaderClass, () => {
   })
 })
 
+describe(shouldHideLinkedCoreMediaInputActions, () => {
+  it.for([
+    { nodeClass: 'LoadImage', selector: 'image' },
+    { nodeClass: 'LoadImageMask', selector: 'image' },
+    { nodeClass: 'LoadImageOutput', selector: 'image' },
+    { nodeClass: 'LoadVideo', selector: 'file' }
+  ] as const)(
+    'hides input actions for a linked core $nodeClass selector',
+    ({ nodeClass, selector }) => {
+      const node = mediaNode({ linkedInputName: selector, nodeClass })
+
+      expect(shouldHideLinkedCoreMediaInputActions(node)).toBe(true)
+    }
+  )
+
+  it('does not hide image actions for a linked LoadAudio selector', () => {
+    const node = mediaNode({
+      linkedInputName: 'audio',
+      nodeClass: 'LoadAudio'
+    })
+
+    expect(shouldHideLinkedCoreMediaInputActions(node)).toBe(false)
+  })
+})
+
 describe(shouldHideLinkedCoreMediaInputPreview, () => {
   it.for([
     { nodeClass: 'LoadImage', selector: 'image' },
+    { nodeClass: 'LoadImageMask', selector: 'image' },
+    { nodeClass: 'LoadImageOutput', selector: 'image' },
     { nodeClass: 'LoadVideo', selector: 'file' }
   ] as const)(
     'hides only an input preview on core $nodeClass',

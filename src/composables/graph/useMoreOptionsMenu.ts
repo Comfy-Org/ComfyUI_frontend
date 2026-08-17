@@ -4,7 +4,7 @@ import type { Ref } from 'vue'
 import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import {
-  getLinkedCoreMediaLoaderClass,
+  shouldHideLinkedCoreMediaInputActions,
   shouldHideLinkedCoreMediaInputPreview
 } from '@/renderer/extensions/vueNodes/utils/linkedCoreMediaUtils'
 import { getExtraOptionsForWidget } from '@/services/litegraphService'
@@ -185,9 +185,9 @@ export function useMoreOptionsMenu() {
     // For single node selection, also get LiteGraph menu items to merge
     const litegraphOptions: MenuOption[] = []
     const node: LGraphNode | undefined = selectedNodes.value[0]
-    const linkedCoreMediaLoaderClass = node
-      ? getLinkedCoreMediaLoaderClass(node)
-      : undefined
+    const hideLinkedInputActions = node
+      ? shouldHideLinkedCoreMediaInputActions(node)
+      : false
     const hideLinkedInputPreview = node
       ? shouldHideLinkedCoreMediaInputPreview(
           node,
@@ -195,11 +195,7 @@ export function useMoreOptionsMenu() {
         )
       : false
     const unavailableCoreMediaActionKinds = new Set<CoreMediaMenuActionKind>()
-    if (
-      linkedCoreMediaLoaderClass === 'LoadImage' ||
-      linkedCoreMediaLoaderClass === 'LoadVideo'
-    )
-      unavailableCoreMediaActionKinds.add('input')
+    if (hideLinkedInputActions) unavailableCoreMediaActionKinds.add('input')
     if (hideLinkedInputPreview) unavailableCoreMediaActionKinds.add('preview')
     if (
       selectedNodes.value.length === 1 &&
@@ -291,9 +287,7 @@ export function useMoreOptionsMenu() {
     if (hasImageNode.value && selectedNodes.value.length > 0) {
       options.push(
         ...getImageMenuOptions(selectedNodes.value[0], {
-          input:
-            linkedCoreMediaLoaderClass !== 'LoadImage' &&
-            linkedCoreMediaLoaderClass !== 'LoadVideo',
+          input: !hideLinkedInputActions,
           preview: !hideLinkedInputPreview
         })
       )

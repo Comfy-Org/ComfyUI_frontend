@@ -6,22 +6,6 @@
 
 import { getMediaTypeFromFilename } from '@comfyorg/shared-frontend-utils/formatUtil'
 
-export const CORE_MEDIA_LOADER_WIDGET_NAMES = {
-  LoadAudio: 'audio',
-  LoadImage: 'image',
-  LoadVideo: 'file'
-} as const
-
-export type CoreMediaLoaderClass = keyof typeof CORE_MEDIA_LOADER_WIDGET_NAMES
-type CoreMediaLoaderWidgetName =
-  (typeof CORE_MEDIA_LOADER_WIDGET_NAMES)[CoreMediaLoaderClass]
-
-export function isCoreMediaLoaderClass(
-  value: string
-): value is CoreMediaLoaderClass {
-  return Object.hasOwn(CORE_MEDIA_LOADER_WIDGET_NAMES, value)
-}
-
 /**
  * Detect loader node type from filename extension
  * Uses shared formatUtil for consistent file type detection across the codebase
@@ -35,27 +19,18 @@ export function isCoreMediaLoaderClass(
  * detectNodeTypeFromFilename('audio.mp3') // { nodeType: 'LoadAudio', widgetName: 'audio' }
  */
 export function detectNodeTypeFromFilename(filename: string): {
-  nodeType: CoreMediaLoaderClass | null
-  widgetName: CoreMediaLoaderWidgetName | null
+  nodeType: 'LoadImage' | 'LoadVideo' | 'LoadAudio' | null
+  widgetName: 'image' | 'file' | 'audio' | null
 } {
   const mediaType = getMediaTypeFromFilename(filename)
 
   switch (mediaType) {
     case 'image':
-      return {
-        nodeType: 'LoadImage',
-        widgetName: CORE_MEDIA_LOADER_WIDGET_NAMES.LoadImage
-      }
+      return { nodeType: 'LoadImage', widgetName: 'image' }
     case 'video':
-      return {
-        nodeType: 'LoadVideo',
-        widgetName: CORE_MEDIA_LOADER_WIDGET_NAMES.LoadVideo
-      }
+      return { nodeType: 'LoadVideo', widgetName: 'file' }
     case 'audio':
-      return {
-        nodeType: 'LoadAudio',
-        widgetName: CORE_MEDIA_LOADER_WIDGET_NAMES.LoadAudio
-      }
+      return { nodeType: 'LoadAudio', widgetName: 'audio' }
     default:
       // 3D and other types don't have loader nodes
       return { nodeType: null, widgetName: null }
