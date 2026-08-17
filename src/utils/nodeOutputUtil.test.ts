@@ -25,4 +25,13 @@ describe(isInputPreviewOutput, () => {
   it.for(cases)('classifies input preview provenance $expected', (testCase) => {
     expect(isInputPreviewOutput(testCase.output)).toBe(testCase.expected)
   })
+
+  it('rejects a non-array images payload', () => {
+    const malformedOutput = { images: { length: 1 } } as unknown as Pick<
+      NodeExecutionOutput,
+      'images'
+    >
+
+    expect(isInputPreviewOutput(malformedOutput)).toBe(false)
+  })
 })

@@ -3,8 +3,10 @@ import type { NodeExecutionOutput } from '@/schemas/apiSchema'
 export function isInputPreviewOutput(
   output: Pick<NodeExecutionOutput, 'images'> | undefined
 ): boolean {
-  return Boolean(
-    output?.images?.length &&
-    output.images.every((image) => image?.type === 'input')
+  const images = output?.images
+  return (
+    Array.isArray(images) &&
+    images.length > 0 &&
+    images.every((image) => image?.type === 'input')
   )
 }

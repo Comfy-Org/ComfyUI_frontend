@@ -182,4 +182,16 @@ describe(shouldHideLinkedCoreMediaInputPreview, () => {
       )
     }
   )
+
+  it('keeps the preview for a linked non-selector widget', () => {
+    const node = mediaNode({ nodeClass: 'LoadImage' })
+
+    expect(
+      shouldHideLinkedCoreMediaInputPreview(
+        node,
+        { images: [{ type: 'input' }] },
+        [linkedWidget('seed')]
+      )
+    ).toBe(false)
+  })
 })
