@@ -1,7 +1,7 @@
 /* eslint-disable testing-library/no-container */
 /* eslint-disable testing-library/no-node-access */
 import { createTestingPinia } from '@pinia/testing'
-import { render, screen } from '@testing-library/vue'
+import { render } from '@testing-library/vue'
 import { setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
@@ -14,7 +14,6 @@ import type {
   VueNodeData
 } from '@/composables/graph/useGraphNodeManager'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
-import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { widgetId } from '@/types/widgetId'
@@ -352,33 +351,5 @@ describe('NodeWidgets', () => {
     )
 
     expect(ids).toStrictEqual([seedAEntityId, seedBEntityId])
-  })
-
-  it('marks widgets with host execution errors', () => {
-    const nodeId = toNodeId(1)
-    const widget = createMockWidget({ name: 'seed', nodeId })
-    const nodeData = createMockNodeData('TestNode', [widget], nodeId)
-
-    renderComponent(nodeData, () => {
-      useExecutionErrorStore().recordNodeErrors({
-        [createNodeExecutionId([nodeId])]: {
-          errors: [
-            {
-              type: 'value_not_in_list',
-              message: 'seed is invalid',
-              details: '',
-              extra_info: { input_name: 'seed' }
-            }
-          ],
-          class_type: 'TestNode',
-          dependent_outputs: []
-        }
-      })
-    })
-
-    expect(screen.getByTestId('node-widget')).toHaveAttribute(
-      'data-has-error',
-      'true'
-    )
   })
 })

@@ -1,12 +1,15 @@
 /**
  * Vue Node Test Helpers
  */
+import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
 import { TestIds } from '@e2e/fixtures/selectors'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { toNodeId } from '@/types/nodeId'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
+
+const GRAPH_SIZE_GROWTH: [number, number] = [90, 100]
 
 export class VueNodeHelpers {
   /**
@@ -82,6 +85,40 @@ export class VueNodeHelpers {
         .map((n) => n.getAttribute('data-node-id'))
         .filter((id): id is string => id !== null)
     )
+  }
+
+  async expectGraphSizeGrowth(nodeId: string, label: string): Promise<void> {
+    const node = this.getNodeLocator(nodeId)
+    const before = await node.evaluate((element) => [
+      element instanceof HTMLElement ? element.offsetWidth : 0,
+      element instanceof HTMLElement ? element.offsetHeight : 0
+    ])
+    expect(before[0], `${label}: node has a rendered width`).toBeGreaterThan(0)
+    expect(before[1], `${label}: node has a rendered height`).toBeGreaterThan(0)
+
+    await this.page.evaluate(
+      ({ id, growth }) => {
+        const node = window.app?.canvas.graph?.getNodeById(id)
+        if (!node) throw new Error(`Node ${id} not found`)
+
+        node.setSize([node.size[0] + growth[0], node.size[1] + growth[1]])
+      },
+      { id: toNodeId(nodeId), growth: GRAPH_SIZE_GROWTH }
+    )
+
+    await expect
+      .poll(
+        () =>
+          node.evaluate((element) => [
+            element instanceof HTMLElement ? element.offsetWidth : 0,
+            element instanceof HTMLElement ? element.offsetHeight : 0
+          ]),
+        { message: label }
+      )
+      .toEqual([
+        before[0] + GRAPH_SIZE_GROWTH[0],
+        before[1] + GRAPH_SIZE_GROWTH[1]
+      ])
   }
 
   /**
