@@ -4,16 +4,31 @@ import type { BillingRail } from '@/platform/workspace/api/workspaceApi'
 
 import { useBillingRouting } from './useBillingRouting'
 
-const { mockIsCloud, mockActiveWorkspace, mockActiveWorkspaceBillingRail } =
-  vi.hoisted(() => ({
-    mockIsCloud: { value: true },
-    mockActiveWorkspace: {
-      value: null as { id: string; type: 'personal' | 'team' } | null
-    },
-    mockActiveWorkspaceBillingRail: {
-      value: null as BillingRail | null
+const {
+  mockIsCloud,
+  mockLegacyBillingMigrationEnabled,
+  mockActiveWorkspace,
+  mockActiveWorkspaceBillingRail
+} = vi.hoisted(() => ({
+  mockIsCloud: { value: true },
+  mockLegacyBillingMigrationEnabled: { value: false },
+  mockActiveWorkspace: {
+    value: null as { id: string; type: 'personal' | 'team' } | null
+  },
+  mockActiveWorkspaceBillingRail: {
+    value: null as BillingRail | null
+  }
+}))
+
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({
+    flags: {
+      get legacyBillingMigrationEnabled() {
+        return mockLegacyBillingMigrationEnabled.value
+      }
     }
-  }))
+  })
+}))
 
 vi.mock('@/platform/distribution/types', () => ({
   get isCloud() {
@@ -38,6 +53,7 @@ const team = { id: 'w-team', type: 'team' as const }
 describe('useBillingRouting', () => {
   beforeEach(() => {
     mockIsCloud.value = true
+    mockLegacyBillingMigrationEnabled.value = false
     mockActiveWorkspace.value = personal
     mockActiveWorkspaceBillingRail.value = null
   })
@@ -69,6 +85,16 @@ describe('useBillingRouting', () => {
     expect(type.value).toBe('legacy')
     expect(shouldUseWorkspaceBilling.value).toBe(false)
     expect(shouldUseUnifiedPricing.value).toBe(true)
+  })
+
+  it('migrates legacy Stripe personal workspaces behind the rollout flag', () => {
+    mockLegacyBillingMigrationEnabled.value = true
+    mockActiveWorkspaceBillingRail.value = 'legacy_stripe'
+
+    const { type, shouldUseWorkspaceBilling } = useBillingRouting()
+
+    expect(type.value).toBe('workspace')
+    expect(shouldUseWorkspaceBilling.value).toBe(true)
   })
 
   it('uses workspace billing for migrated Stripe personal workspaces', () => {
