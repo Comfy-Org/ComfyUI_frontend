@@ -1,4 +1,6 @@
+import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 import {
   comfyExpect as expect,
   comfyPageFixture as test
@@ -451,15 +453,19 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
     /** Drag the default graph's existing IMAGE link (VAE Decode -> Save Image)
      * off its input and release it on empty canvas. */
     async function releaseImageLinkOnCanvas(comfyPage: ComfyPage) {
+      // The default graph is wider than the viewport; fit it so the Save Image
+      // input is actually on screen before dragging from it.
+      await fitToViewInstant(comfyPage)
+
       const saveImage = (
         await comfyPage.nodeOps.getNodeRefsByTitle('Save Image')
       )[0]
       const imageInput = await saveImage.getInput(0)
 
-      await comfyPage.canvasOps.dragAndDrop(await imageInput.getPosition(), {
-        x: 20,
-        y: 20
-      })
+      await comfyPage.canvasOps.dragAndDrop(
+        await imageInput.getPosition(),
+        DefaultGraphPositions.emptySpace
+      )
     }
 
     async function dynamicComboNode(comfyPage: ComfyPage) {
