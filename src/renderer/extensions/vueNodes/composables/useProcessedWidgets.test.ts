@@ -409,10 +409,6 @@ describe('computeProcessedWidgets missing media', () => {
 })
 
 describe('computeProcessedWidgets visibility', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('keeps a promoted advanced widget visible without source metadata', () => {
     const widget = createMockWidget({
       name: 'max_shift',
