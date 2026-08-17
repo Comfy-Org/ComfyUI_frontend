@@ -5,7 +5,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExtensionService } from '@/services/extensionService'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
-import { toNodeId } from '@/types/nodeId'
+import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 
 useExtensionService().registerExtension({
@@ -20,15 +20,22 @@ useExtensionService().registerExtension({
   afterLoadGraph(app) {
     const agentPanelStore = useAgentPanelStore()
     const nodeSelectionStore = useAgentNodeSelectionStore()
-    if (!agentPanelStore.isOpen || !nodeSelectionStore.isLoadingWorkflow) return
+    if (!nodeSelectionStore.isLoadingWorkflow) return
+    if (!agentPanelStore.isOpen) {
+      nodeSelectionStore.finishWorkflowLoad()
+      return
+    }
 
     const canvas = app.canvas
-    const workflowPath = useWorkflowStore().activeWorkflow?.path
+    const workflowStore = useWorkflowStore()
+    const workflowPath = workflowStore.activeWorkflow?.path
     const nodes = nodeSelectionStore
       .nodeIds(workflowPath)
-      .map((id) => canvas?.graph?.getNodeById(toNodeId(id)))
+      .map((locatorId) => getNodeByLocatorId(app.rootGraph, locatorId))
       .filter(isLGraphNode)
-    nodeSelectionStore.restoreNodeIds(nodes.map((node) => String(node.id)))
+    nodeSelectionStore.restoreNodeIds(
+      nodes.map((node) => workflowStore.nodeToNodeLocatorId(node))
+    )
     canvas?.selectItems(nodes)
     useCanvasStore().updateSelectedItems()
   },

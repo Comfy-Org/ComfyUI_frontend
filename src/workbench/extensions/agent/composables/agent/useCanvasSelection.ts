@@ -1,10 +1,16 @@
 import { ref, toValue, watch } from 'vue'
 
 import type { MaybeRefOrGetter, Ref } from 'vue'
+import type { NodeLocatorId } from '@/types/nodeIdentification'
 
 export interface SelectedNode {
   id: string
+  locatorId?: NodeLocatorId
   title: string
+}
+
+export function selectedNodeKey(node: SelectedNode): string {
+  return node.locatorId ?? node.id
 }
 
 export interface UseCanvasSelectionOptions {
@@ -17,7 +23,7 @@ export interface UseCanvasSelectionOptions {
 }
 
 function signature(scope: string | null, nodes: SelectedNode[]): string {
-  return JSON.stringify([scope, nodes.map((node) => node.id).sort()])
+  return JSON.stringify([scope, nodes.map(selectedNodeKey).sort()])
 }
 
 export function useCanvasSelection(options: UseCanvasSelectionOptions) {
@@ -84,12 +90,15 @@ export function useCanvasSelection(options: UseCanvasSelectionOptions) {
   }
 
   function remove(id: string): void {
-    staged.value = staged.value.filter((node) => node.id !== id)
+    staged.value = staged.value.filter((node) => selectedNodeKey(node) !== id)
     if (staged.value.length === 0) dismissedSig.value = currentSignature()
   }
 
   function add(node: SelectedNode): void {
-    if (staged.value.some((tag) => tag.id === node.id)) return
+    if (
+      staged.value.some((tag) => selectedNodeKey(tag) === selectedNodeKey(node))
+    )
+      return
     staged.value = [...staged.value, node]
   }
 
