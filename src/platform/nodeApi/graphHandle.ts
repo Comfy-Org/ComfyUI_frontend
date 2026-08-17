@@ -6,7 +6,7 @@
  * below it is independently testable.
  */
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { LGraph, Subgraph } from '@/lib/litegraph/src/LGraph'
+import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 import { toNodeId } from '@/types/nodeId'
@@ -97,6 +97,11 @@ export interface GraphHandle {
    */
   pointerPosition(): Point | undefined
   /**
+   * The document's root graph, even while the user is viewing a subgraph.
+   * Undefined before a document exists.
+   */
+  root(): GraphScopeHandle | undefined
+  /**
    * The subgraph definitions in the document, each scoped to its own nodes.
    *
    * `nodes()` and `node()` address the graph on screen only, so a pack that
@@ -115,7 +120,7 @@ export interface GraphHandle {
    * one entry, and its nodes appear once — which is what a pack acting on
    * "each of my nodes" wants.
    */
-  subgraphs(): readonly SubgraphHandle[]
+  subgraphs(): readonly GraphScopeHandle[]
   /**
    * Runs several mutations as one undo step.
    *
@@ -258,7 +263,7 @@ export function createGraphApi(
     nodeHandles.handleFor(nodeId) as NodeHandle
 
   const groupHandle = createGroupHandles(handleFor)
-  const subgraphHandle = createSubgraphHandles()
+  const graphScopeHandle = createGraphScopeHandles()
 
   const requireGraph = (action: string): LGraph => {
     const graph = getGraph()
@@ -461,8 +466,13 @@ export function createGraphApi(
       const definitions = graph?.rootGraph?.subgraphs
       if (!definitions) return Object.freeze([])
       return Object.freeze(
-        [...definitions.values()].map((subgraph) => subgraphHandle(subgraph))
+        [...definitions.values()].map((subgraph) => graphScopeHandle(subgraph))
       )
+    },
+
+    root() {
+      const root = getGraph()?.rootGraph
+      return root ? graphScopeHandle(root) : undefined
     },
 
     pointerPosition() {
@@ -538,10 +548,11 @@ export function createGraphApi(
  * and zooming all address what the user is looking at, and a subgraph
  * definition is not that. This is for reading and reaching nodes.
  */
-interface SubgraphHandle {
+/** @knipIgnoreUnusedButUsedByCustomNodes */
+export interface GraphScopeHandle {
   /** Stable across every instance of this subgraph. */
   readonly id: string
-  readonly name: string
+  readonly name: string | undefined
   nodes(): readonly NodeHandle[]
   node(nodeId: string): NodeHandle | undefined
   /**
@@ -558,25 +569,26 @@ interface SubgraphHandle {
  * resolved against the graph it belongs to — and one cache cannot return a
  * handle for the wrong graph's node of the same id.
  */
-function createSubgraphHandles() {
-  const byId = new Map<string, SubgraphHandle>()
+function createGraphScopeHandles() {
+  const byGraph = new WeakMap<LGraph, GraphScopeHandle>()
 
-  return function subgraphHandle(subgraph: Subgraph): SubgraphHandle {
-    const id = String(subgraph.id)
-    const existing = byId.get(id)
+  return function graphScopeHandle(graph: LGraph): GraphScopeHandle {
+    const id = String(graph.id)
+    const existing = byGraph.get(graph)
     if (existing) return existing
 
-    const scoped = createGraphApi(() => subgraph, `subgraph:${id}`)
-    const handle: SubgraphHandle = Object.freeze({
+    const scoped = createGraphApi(() => graph, `graph:${id}`)
+    const handle: GraphScopeHandle = Object.freeze({
       id,
       get name() {
-        return subgraph.name
+        const name = 'name' in graph ? graph.name : undefined
+        return typeof name === 'string' ? name : undefined
       },
       nodes: () => scoped.nodes(),
       node: (nodeId: string) => scoped.node(nodeId),
       groups: () => scoped.groups()
     })
-    byId.set(id, handle)
+    byGraph.set(graph, handle)
     return handle
   }
 }

@@ -677,6 +677,16 @@ describe('subgraphs', () => {
     expect(nested.node(String(inner.id))?.id).toBe(String(inner.id))
   })
 
+  it('reaches the root while a subgraph is active', () => {
+    const { root, top, subgraph, inner } = documentWithSubgraph()
+    const api = createGraphApi(() => subgraph)
+
+    expect(api.nodes().map((node) => node.getTitle())).toEqual(['Inner'])
+    expect(api.root()?.id).toBe(String(root.id))
+    expect(api.root()?.node(String(top.id))?.getTitle()).toBe('Top')
+    expect(api.root()?.node(String(inner.id))).toBeUndefined()
+  })
+
   it('reports the groups drawn inside a subgraph', () => {
     // A group muter that skipped these reported nothing for a subgraph's
     // contents while appearing to work.
