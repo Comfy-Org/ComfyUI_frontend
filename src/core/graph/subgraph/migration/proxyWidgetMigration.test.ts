@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -32,7 +30,6 @@ vi.mock('@/services/litegraphService', () => ({
 }))
 
 beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
   resetSubgraphFixtureState()
   LGraph.proxyWidgetMigrationFlush = undefined
 })

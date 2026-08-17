@@ -28,13 +28,13 @@ const {
     />
     <div class="flex flex-col gap-2">
       <p
-        class="text-primary-warm-white text-sm font-extrabold tracking-wider uppercase"
+        class="text-sm font-extrabold tracking-wider text-primary-warm-white uppercase"
       >
         {{ name }}
       </p>
       <p
         v-if="detail"
-        class="text-primary-warm-gray text-sm font-extrabold tracking-wider uppercase"
+        class="text-sm font-extrabold tracking-wider text-primary-warm-gray uppercase"
       >
         {{ detail }}
       </p>

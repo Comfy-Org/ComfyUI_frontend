@@ -72,10 +72,37 @@ const useVirtualListRestriction = {
     'useVirtualList requires uniform item heights. Use TanStack Virtual (via Reka UI virtualizer or @tanstack/vue-virtual) instead.'
 } as const
 
+const errorAssertionRestrictions = [
+  {
+    // Bans `value as Error` and `value as Error & { ... }`.
+    // Use `error instanceof Error` narrowing or `toError()` from
+    // @/utils/errorUtil instead — see issue #11429.
+    selector: "TSAsExpression TSTypeReference[typeName.name='Error']",
+    message:
+      'Do not use Error type assertions. Use `instanceof Error` narrowing or `toError()` from @/utils/errorUtil instead. See issue #11429.'
+  },
+  {
+    // Bans `<Error>value` and `<Error & { ... }>value`.
+    selector: "TSTypeAssertion TSTypeReference[typeName.name='Error']",
+    message:
+      'Do not use Error type assertions. Use `instanceof Error` narrowing or `toError()` from @/utils/errorUtil instead. See issue #11429.'
+  }
+] as const
+
+// Bans hand-written Zod schemas for remote (Cloud) API types. Remote API
+// types should come from generated packages (packages/ingest-types, driven
+// by packages/ingest-types/openapi-ts.config.ts) instead of hand-authored
+// Zod. This only blocks *new* usage — existing files are grandfathered via
+// `ignores` where this selector is used below.
+const noZodForRemoteApiTypes = {
+  selector: "ImportDeclaration[source.value='zod']",
+  message:
+    'Do not hand-write new Zod schemas for remote API types. Use generated types from packages/ingest-types (@comfyorg/ingest-types) instead. See browser_tests/README.md "Sources of truth for mock types".'
+} as const
+
 export default defineConfig([
   {
     ignores: [
-      '.i18nrc.cjs',
       '**/vite.config.*.timestamp*',
       '**/vitest.config.*.timestamp*',
       'components.d.ts',
@@ -101,8 +128,10 @@ export default defineConfig([
         ...commonParserOptions,
         projectService: {
           allowDefaultProject: [
+            'packages/object-info-parser/vitest.config.ts',
             'vite.electron.config.mts',
-            'vite.types.config.mts'
+            'vite.types.config.mts',
+            'vitest.timer.setup.ts'
           ]
         }
       }
@@ -238,24 +267,38 @@ export default defineConfig([
       'apps/*/src/**/*.tsx',
       'apps/*/src/**/*.vue'
     ],
-    ignores: ['**/*.test.ts', '**/*.spec.ts'],
+    ignores: [
+      '**/*.test.ts',
+      '**/*.spec.ts',
+      // Re-declared, combined with the Zod restriction, in
+      // comfy/no-new-zod-for-remote-api-types below — flat config replaces
+      // (rather than merges) a rule's options when multiple config objects
+      // matching the same file set it, so this block must not also match
+      // remote files.
+      'src/platform/remote/**/*.ts',
+      'src/platform/remote/**/*.vue'
+    ],
+    rules: {
+      'no-restricted-syntax': ['error', ...errorAssertionRestrictions]
+    }
+  },
+  // Ban new hand-written Zod schemas for remote (Cloud) API types.
+  // Includes the Error-assertion restrictions above since flat config
+  // replaces a rule's options entirely (last matching config wins) rather
+  // than merging arrays across config objects for the same rule.
+  {
+    name: 'comfy/no-new-zod-for-remote-api-types',
+    files: ['src/platform/remote/**/*.ts', 'src/platform/remote/**/*.vue'],
+    ignores: [
+      '**/*.test.ts',
+      '**/*.spec.ts',
+      'src/platform/remote/comfyui/jobs/jobTypes.ts'
+    ],
     rules: {
       'no-restricted-syntax': [
         'error',
-        {
-          // Bans `value as Error` and `value as Error & { ... }`.
-          // Use `error instanceof Error` narrowing or `toError()` from
-          // @/utils/errorUtil instead — see issue #11429.
-          selector: "TSAsExpression TSTypeReference[typeName.name='Error']",
-          message:
-            'Do not use Error type assertions. Use `instanceof Error` narrowing or `toError()` from @/utils/errorUtil instead. See issue #11429.'
-        },
-        {
-          // Bans `<Error>value` and `<Error & { ... }>value`.
-          selector: "TSTypeAssertion TSTypeReference[typeName.name='Error']",
-          message:
-            'Do not use Error type assertions. Use `instanceof Error` narrowing or `toError()` from @/utils/errorUtil instead. See issue #11429.'
-        }
+        ...errorAssertionRestrictions,
+        noZodForRemoteApiTypes
       ]
     }
   },
@@ -445,6 +488,20 @@ export default defineConfig([
       'import-x/no-unresolved': ['error', { ignore: ['^astro:'] }]
     }
   },
+  // reka-ui wrappers forward props via v-bind, which the rule cannot trace.
+  {
+    files: [
+      'apps/website/src/components/ui/accordion/*.vue',
+      'apps/website/src/components/ui/dialog/*.vue',
+      'apps/website/src/components/ui/navigation-menu/*.vue',
+      'apps/website/src/components/ui/sheet/*.vue',
+      'apps/website/src/components/ui/slider/*.vue',
+      'apps/website/src/components/ui/toggle-group/*.vue'
+    ],
+    rules: {
+      'vue/no-unused-properties': 'off'
+    }
+  },
   // i18n import enforcement
   // Vue components must use the useI18n() composable, not the global t/d/st/te
   {
@@ -514,6 +571,12 @@ export default defineConfig([
           ]
         }
       ]
+    }
+  },
+  {
+    files: ['src/components/searchbox/**/*.vue'],
+    rules: {
+      'vue/no-v-html': 'error'
     }
   },
   // Browser tests must use comfyPageFixture, not raw @playwright/test test

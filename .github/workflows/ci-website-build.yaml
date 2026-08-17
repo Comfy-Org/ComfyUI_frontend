@@ -35,6 +35,9 @@ jobs:
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
 
+      - name: Run website unit tests
+        run: pnpm --filter @comfyorg/website test:unit
+
       - name: Build website
         env:
           WEBSITE_ASHBY_API_KEY: ${{ secrets.WEBSITE_ASHBY_API_KEY }}

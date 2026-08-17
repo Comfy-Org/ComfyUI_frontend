@@ -22,7 +22,7 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Install pnpm
-        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
 
       - uses: actions/setup-node@v6
         with:
@@ -81,9 +81,10 @@ jobs:
       - name: Create release
         id: create_release
         uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
+          # GITHUB_TOKEN is refused on core/* lines — 403 "Resource not
+          # accessible by integration" with contents: write granted.
+          token: ${{ secrets.PR_GH_TOKEN }}
           files: |
             dist.zip
             dist-desktop.zip
