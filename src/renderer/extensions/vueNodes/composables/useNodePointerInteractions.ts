@@ -144,6 +144,9 @@ export function useNodePointerInteractions(
     const canHandlePointer = shouldHandleNodePointerEvents.value
     if (!canHandlePointer) {
       forwardEventToCanvas(event)
+      if (hasDraggingStarted || layoutStore.isDraggingVueNodes.value) {
+        safeDragEnd(event)
+      }
       return
     }
     const wasDragging = layoutStore.isDraggingVueNodes.value

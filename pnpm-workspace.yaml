@@ -11,10 +11,10 @@ publicHoistPattern:
 
 catalog:
   '@alloc/quick-lru': ^5.2.0
-  '@astrojs/check': ^0.9.9
-  '@astrojs/mdx': ^6.0.3
+  '@astrojs/check': ^0.9.10
+  '@astrojs/mdx': ^7.0.5
   '@astrojs/sitemap': ^3.7.3
-  '@astrojs/vue': ^6.0.1
+  '@astrojs/vue': ^7.0.2
   '@comfyorg/comfyui-electron-types': 0.6.2
   '@customerio/cdp-analytics-browser': ^0.5.3
   '@datadog/browser-rum': ^6.33.0
@@ -27,7 +27,6 @@ catalog:
   '@iconify/tools': ^5.0.3
   '@iconify/utils': ^3.1.0
   '@intlify/eslint-plugin-vue-i18n': ^4.5.1
-  '@lobehub/i18n-cli': ^1.26.1
   '@lucide/vue': ^1.17.0
   '@pinia/testing': ^2.0.1
   '@playwright/test': ^1.61.1
@@ -71,21 +70,21 @@ catalog:
   '@webgpu/types': ^0.1.66
   ag-psd: ^31.0.2
   algoliasearch: ^5.21.0
-  astro: ^6.4.2
+  astro: ^7.2.1
   axios: ^1.15.2
   class-variance-authority: ^0.7.1
   cross-env: ^10.1.0
   cva: 1.0.0-beta.4
   dompurify: 3.4.7
   dotenv: ^16.4.5
-  eslint: ^10.8.0
+  eslint: ^10.8.1
   eslint-config-prettier: ^10.1.8
   eslint-import-resolver-typescript: ^4.4.5
   eslint-plugin-better-tailwindcss: ^4.7.0
   eslint-plugin-import-x: ^4.17.1
-  eslint-plugin-oxlint: 1.77.0
+  eslint-plugin-oxlint: 1.78.0
   eslint-plugin-playwright: ^2.11.0
-  eslint-plugin-storybook: ^10.5.6
+  eslint-plugin-storybook: ^10.5.7
   eslint-plugin-testing-library: ^7.16.2
   eslint-plugin-unused-imports: ^4.4.1
   eslint-plugin-vue: ^10.10.0
@@ -106,6 +105,7 @@ catalog:
   minisearch: ^7.2.0
   mixpanel-browser: ^2.71.0
   monocart-coverage-reports: ^2.12.9
+  openai: ^7.4.0
   oxfmt: ^0.59.0
   oxlint: ^1.77.0
   oxlint-tsgolint: ^7.0.2001
@@ -128,7 +128,7 @@ catalog:
   tw-animate-css: ^1.3.8
   typegpu: ^0.8.2
   typescript: ^6.0.3
-  typescript-eslint: ^8.66.0
+  typescript-eslint: ^8.67.0
   unplugin-icons: ^23.0.1
   unplugin-typegpu: 0.8.0
   unplugin-vue-components: ^32.1.0
