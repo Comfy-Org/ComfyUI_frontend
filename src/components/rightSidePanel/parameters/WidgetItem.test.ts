@@ -1,8 +1,6 @@
-import { createTestingPinia } from '@pinia/testing'
 import { render } from '@testing-library/vue'
 import { fromAny } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -124,10 +122,6 @@ function getStubWidget(container: Element) {
 }
 
 describe('WidgetItem', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   describe('widget state rendering', () => {
     it('passes options from a regular widget to the widget component', () => {
       const widget = createMockWidget({

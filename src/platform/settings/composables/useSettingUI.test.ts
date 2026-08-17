@@ -20,9 +20,15 @@ const env = vi.hoisted(() => {
     authenticatedConfigLoaded: false,
     partnerNodeGovernanceEnabled: false,
     userSecretsEnabled: false,
-    isActiveSubscription: false,
-    billingType: 'legacy' as 'legacy' | 'workspace',
-    workspaceRole: 'owner' as 'owner' | 'member'
+    workspaceRole: 'owner' as 'owner' | 'member',
+    partnerNodeGovernanceStatus: 'inactive' as
+      | 'inactive'
+      | 'loading'
+      | 'unconfigured'
+      | 'configured'
+      | 'ineligible'
+      | 'error',
+    partnerNodeGovernanceProviders: [] as { id: string }[]
   }
   const fakeRef = <K extends keyof typeof state>(key: K) => ({
     get value() {
@@ -38,13 +44,6 @@ vi.mock('vue-i18n', () => ({
 
 vi.mock('@/composables/auth/useCurrentUser', () => ({
   useCurrentUser: () => ({ isLoggedIn: env.fakeRef('isLoggedIn') })
-}))
-
-vi.mock('@/composables/billing/useBillingContext', () => ({
-  useBillingContext: () => ({
-    canAccessSubscriptionFeatures: env.fakeRef('isActiveSubscription'),
-    type: env.fakeRef('billingType')
-  })
 }))
 
 vi.mock('@/composables/useFeatureFlags', () => ({
@@ -91,6 +90,17 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
   })
 }))
 
+vi.mock('@/platform/workspace/stores/partnerNodeGovernanceStore', () => ({
+  usePartnerNodeGovernanceStore: () => ({
+    get status() {
+      return env.state.partnerNodeGovernanceStatus
+    },
+    get providers() {
+      return env.state.partnerNodeGovernanceProviders
+    }
+  })
+}))
+
 interface MockSettingParams {
   id: string
   name: string
@@ -132,9 +142,9 @@ describe('useSettingUI', () => {
       authenticatedConfigLoaded: false,
       partnerNodeGovernanceEnabled: false,
       userSecretsEnabled: false,
-      isActiveSubscription: false,
-      billingType: 'legacy',
-      workspaceRole: 'owner'
+      workspaceRole: 'owner',
+      partnerNodeGovernanceStatus: 'inactive',
+      partnerNodeGovernanceProviders: []
     })
 
     vi.mocked(useSettingStore).mockReturnValue({
@@ -212,9 +222,7 @@ describe('useSettingUI', () => {
       Object.assign(env.state, {
         isCloud: true,
         isLoggedIn: true,
-        authenticatedConfigLoaded: true,
-        isActiveSubscription: true,
-        billingType: 'workspace'
+        authenticatedConfigLoaded: true
       })
       window.__CONFIG__ = {
         subscription_required: false
@@ -291,24 +299,18 @@ describe('useSettingUI', () => {
         isLoggedIn: true,
         billingControlEnabled: true,
         authenticatedConfigLoaded: true,
-        partnerNodeGovernanceEnabled: true,
-        isActiveSubscription: true
+        partnerNodeGovernanceEnabled: true
       })
       window.__CONFIG__ = {
         subscription_required: true
       } as typeof window.__CONFIG__
     })
 
-    it.for(['legacy', 'workspace'] as const)(
-      'uses only the Workspace panel for %s billing in the workspace layout',
-      (billingType) => {
-        env.state.billingType = billingType
-        const { navGroups } = useSettingUI()
+    it('uses the Workspace panel for Cloud billing navigation', () => {
+      const { navGroups } = useSettingUI()
 
-        expect(navKeys(navGroups.value)).not.toContain('subscription')
-        expect(navKeys(navGroups.value)).toContain('workspace')
-      }
-    )
+      expect(navKeys(navGroups.value)).toContain('workspace')
+    })
 
     it('exposes workspace sections as Plan & Credits, Members, and Allowlist', () => {
       const { navGroups } = useSettingUI()
@@ -337,6 +339,30 @@ describe('useSettingUI', () => {
       const { navGroups } = useSettingUI()
 
       expect(navKeys(navGroups.value)).not.toContain('workspace-allowlist')
+    })
+
+    it('shows the crown when ineligible with providers present (policy-restricted)', () => {
+      env.state.partnerNodeGovernanceStatus = 'ineligible'
+      env.state.partnerNodeGovernanceProviders = [{ id: 'provider-a' }]
+
+      const { navGroups } = useSettingUI()
+      const allowlistItem = navGroups.value
+        .flatMap((group) => group.items)
+        .find((item) => item.id === 'workspace-allowlist')
+
+      expect(allowlistItem?.suffixIcon).toBe('icon-[lucide--crown]')
+    })
+
+    it('does not show the crown when ineligible with no providers (catalog 403)', () => {
+      env.state.partnerNodeGovernanceStatus = 'ineligible'
+      env.state.partnerNodeGovernanceProviders = []
+
+      const { navGroups } = useSettingUI()
+      const allowlistItem = navGroups.value
+        .flatMap((group) => group.items)
+        .find((item) => item.id === 'workspace-allowlist')
+
+      expect(allowlistItem?.suffixIcon).toBeUndefined()
     })
 
     it('keeps OSS account navigation on the legacy layout', () => {

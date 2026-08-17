@@ -1,11 +1,7 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 describe('useConflictAcknowledgment', () => {
   beforeEach(() => {
-    // Set up Pinia for each test
-    setActivePinia(createTestingPinia({ stubActions: false }))
     // Reset modules to ensure fresh state
     vi.resetModules()
   })

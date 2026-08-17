@@ -83,7 +83,6 @@ describe('ErrorPanelSurveyCta', () => {
 
   beforeEach(() => {
     vi.resetModules()
-    mockOpen.mockReset()
 
     mockIsNightly.value = true
     mockIsCloud.value = false
