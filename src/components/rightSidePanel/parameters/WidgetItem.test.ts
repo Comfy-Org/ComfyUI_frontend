@@ -1,5 +1,6 @@
-import { fireEvent, render, screen } from '@testing-library/vue'
 import { fromAny } from '@total-typescript/shoehorn'
+import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
@@ -244,16 +245,15 @@ describe('WidgetItem', () => {
         type: 'text',
         value: 'STALE PARAMETER TEXT'
       })
+      const promptInput = {
+        name: 'prompt',
+        type: 'STRING',
+        link: toLinkId(1),
+        boundingRect: [0, 0, 0, 0],
+        widget: { name: 'prompt' }
+      }
       const node = createMockNode({
-        inputs: [
-          {
-            name: 'prompt',
-            type: 'STRING',
-            link: toLinkId(1),
-            boundingRect: [0, 0, 0, 0],
-            widget: { name: 'prompt' }
-          }
-        ]
+        inputs: [promptInput]
       })
 
       const view = renderWidgetItem(widget, node)
@@ -268,7 +268,12 @@ describe('WidgetItem', () => {
         screen.getByRole('img', { name: 'prompt: Linked input' })
       ).toBeVisible()
 
-      await view.rerender({ widget, node: createMockNode({ inputs: [] }) })
+      await view.rerender({
+        widget,
+        node: createMockNode({
+          inputs: [{ ...promptInput, link: null }]
+        })
+      })
 
       expect(screen.queryByRole('img')).toBeNull()
       const restoredInput = screen.getByRole('textbox', { name: 'prompt' })
@@ -276,7 +281,9 @@ describe('WidgetItem', () => {
       expect(restoredInput).toBeEnabled()
       expect(restoredInput).toHaveValue('STALE PARAMETER TEXT')
 
-      await fireEvent.update(restoredInput, 'restored parameter text')
+      const user = userEvent.setup()
+      await user.clear(restoredInput)
+      await user.type(restoredInput, 'restored parameter text')
 
       expect(view.emitted()['update:widgetValue']).toContainEqual([
         'restored parameter text'
