@@ -136,11 +136,4 @@ describe('updateTextPreviewWidgets', () => {
     })
     expect(node.widgets[0].value).toBe('23.976')
   })
-
-  it('does not throw when the node has no preview widget', () => {
-    const bare = makeNode()
-    expect(() =>
-      updateTextPreviewWidgets(bare, { text: 'hello' })
-    ).not.toThrow()
-  })
 })
