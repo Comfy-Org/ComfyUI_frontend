@@ -126,7 +126,11 @@ export async function extractVideoMetadata(
   try {
     const { ALL_FORMATS, Input } = await loadMediabunny()
     const input = new Input({ source, formats: ALL_FORMATS })
-    const disposeOnAbort = () => input.dispose()
+    let disposed = false
+    const disposeOnAbort = () => {
+      disposed = true
+      input.dispose()
+    }
     signal?.addEventListener('abort', disposeOnAbort, { once: true })
     try {
       const videoTrack = await input.getPrimaryVideoTrack()
@@ -153,7 +157,7 @@ export async function extractVideoMetadata(
       return parsed.success ? parsed.data : undefined
     } finally {
       signal?.removeEventListener('abort', disposeOnAbort)
-      input.dispose()
+      if (!disposed) input.dispose()
     }
   } catch {
     return undefined
