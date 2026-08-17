@@ -186,6 +186,7 @@ export const API_MEMBERS: ReadonlySet<string> = new Set([
   'onNodeChanged',
   'onNodeDragEnd',
   'onNodeMoved',
+  'onNodeReady',
   'onPendingChanged',
   'onPointerDown',
   'onPointerMove',
