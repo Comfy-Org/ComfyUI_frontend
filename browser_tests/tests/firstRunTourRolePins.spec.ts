@@ -73,11 +73,7 @@ test.describe('first-run tour role pins', { tag: '@workflow' }, () => {
         `${templateId} pins a ${pins.sink.type} sink but claims mediaKind '${pins.mediaKind}', so the result step would preview the wrong medium`
       ).toBe(pins.mediaKind)
     }
-    // Two ways to land here: the template was renamed or dropped upstream, in
-    // which case fix the pin; or this backend's workflow_templates package
-    // predates it, in which case its Getting Started card silently falls back
-    // and these pins go unverified — which is the drift this guard exists to
-    // catch, not something to widen the assertion around.
+    // On failure fix the pin, do not widen this.
     expect(
       unserved,
       'every pinned template must be served, or its card vanishes from the Getting Started grid and its pins go unchecked'
