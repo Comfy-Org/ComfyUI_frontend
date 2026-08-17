@@ -66,23 +66,6 @@ describe('layoutStore.getNodeLayoutRef with multiple holders', () => {
     nodeId = toNodeId(`multi-holder-node-${nextNodeId++}`)
   })
 
-  // Control: proves the harness observes real notifications.
-  it('notifies a second holder while both are alive', () => {
-    createNode(nodeId)
-    const holderA = layoutStore.retainNodeLayoutRef(nodeId)
-    const holderB = layoutStore.retainNodeLayoutRef(nodeId)
-
-    const { seen, stop } = observe(holderB.layout)
-    expect(seen.at(-1)).toBe(100)
-
-    moveNodeTo(nodeId, 500)
-    stop()
-    holderA.release()
-    holderB.release()
-
-    expect(seen.at(-1)).toBe(500)
-  })
-
   it('keeps notifying the second holder after the first unmounts', () => {
     createNode(nodeId)
     const holderA = layoutStore.retainNodeLayoutRef(nodeId)

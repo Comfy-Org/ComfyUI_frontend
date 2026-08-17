@@ -36,6 +36,7 @@ import type {
   NodeBoundsUpdate,
   NodeId,
   NodeLayout,
+  NodeLayoutLease,
   Point,
   RerouteId,
   RerouteLayout,
@@ -1026,10 +1027,7 @@ class LayoutStoreImpl implements LayoutStore {
    * the returned release when it is done. Transient `getNodeLayoutRef(id).value`
    * reads do not retain.
    */
-  retainNodeLayoutRef(nodeId: NodeId): {
-    layout: Ref<NodeLayout | null>
-    release: () => void
-  } {
+  retainNodeLayoutRef(nodeId: NodeId): NodeLayoutLease {
     const layout = this.getNodeLayoutRef(nodeId)
     this.nodeRefHolders.set(nodeId, (this.nodeRefHolders.get(nodeId) ?? 0) + 1)
 
