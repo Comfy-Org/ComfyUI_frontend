@@ -84,7 +84,7 @@ function story(
 export const PausedOwner: Story = story(
   {
     subscription: funded,
-    isActiveSubscription: false,
+    canAccessSubscriptionFeatures: false,
     billingStatus: 'paused',
     subscriptionStatus: 'active'
   },
@@ -95,7 +95,7 @@ export const PausedOwner: Story = story(
 export const PausedMember: Story = story(
   {
     subscription: funded,
-    isActiveSubscription: false,
+    canAccessSubscriptionFeatures: false,
     billingStatus: 'paused',
     subscriptionStatus: 'active'
   },
@@ -109,7 +109,7 @@ export const PausedMember: Story = story(
 export const PaymentDeclined: Story = story(
   {
     subscription: funded,
-    isActiveSubscription: false,
+    canAccessSubscriptionFeatures: false,
     billingStatus: 'payment_failed',
     subscriptionStatus: 'active',
     renewalDate: RENEWAL_DATE
@@ -121,7 +121,7 @@ export const PaymentDeclined: Story = story(
 export const PaymentDeclinedNoDate: Story = story(
   {
     subscription: funded,
-    isActiveSubscription: false,
+    canAccessSubscriptionFeatures: false,
     billingStatus: 'payment_failed',
     subscriptionStatus: 'active'
   },
@@ -132,7 +132,7 @@ export const PaymentDeclinedNoDate: Story = story(
 export const OutOfCreditsOwner: Story = story(
   {
     subscription: exhausted,
-    isActiveSubscription: true,
+    canAccessSubscriptionFeatures: true,
     billingStatus: 'paid',
     subscriptionStatus: 'active',
     renewalDate: RENEWAL_DATE
@@ -144,7 +144,7 @@ export const OutOfCreditsOwner: Story = story(
 export const OutOfCreditsMember: Story = story(
   {
     subscription: exhausted,
-    isActiveSubscription: true,
+    canAccessSubscriptionFeatures: true,
     billingStatus: 'paid',
     subscriptionStatus: 'active',
     renewalDate: RENEWAL_DATE
@@ -156,7 +156,7 @@ export const OutOfCreditsMember: Story = story(
 export const EndingOwner: Story = story(
   {
     subscription: cancelled,
-    isActiveSubscription: true,
+    canAccessSubscriptionFeatures: true,
     billingStatus: 'paid',
     subscriptionStatus: 'canceled'
   },
@@ -166,7 +166,7 @@ export const EndingOwner: Story = story(
 export const EndingPromotedOwner: Story = story(
   {
     subscription: cancelled,
-    isActiveSubscription: true,
+    canAccessSubscriptionFeatures: true,
     billingStatus: 'paid',
     subscriptionStatus: 'canceled'
   },

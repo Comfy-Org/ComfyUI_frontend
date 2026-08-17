@@ -59,7 +59,7 @@ export function useTopUpUrlLoader() {
     // resolves before the app mounts, so it is readable synchronously here.
     if (!permissions.value.canTopUp) return
 
-    // showTopUpCreditsDialog reads isActiveSubscription synchronously to pick
+    // showTopUpCreditsDialog reads canAccessSubscriptionFeatures synchronously to pick
     // between the top-up dialog and the paywall; billing init on boot is
     // fire-and-forget, so await a status fetch to make that read reflect the
     // server before deciding.

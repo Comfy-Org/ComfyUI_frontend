@@ -116,7 +116,7 @@ describe('useTopUpUrlLoader', () => {
 
   it('awaits the status fetch before opening the dialog', async () => {
     mockRouteQuery.value = { topup: '1' }
-    // The dialog picks top-up vs paywall from isActiveSubscription; holding
+    // The dialog picks top-up vs paywall from canAccessSubscriptionFeatures; holding
     // the fetch promise open proves the loader truly awaits it (a dropped
     // await would open the dialog before resolveStatus runs).
     let resolveStatus!: () => void

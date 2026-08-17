@@ -147,16 +147,13 @@ function useBillingContextInternal(): BillingContext {
     toValue(activeContext.value.canAccessSubscriptionFeatures)
   )
 
-  // Alias kept for backward compatibility; equals canAccessSubscriptionFeatures.
-  const isActiveSubscription = canAccessSubscriptionFeatures
-
   const isFreeTier = computed(() => subscription.value?.tier === 'FREE')
 
   const freeTierQuota = useFreeTierQuota()
 
   const canRunWorkflows = computed(
     () =>
-      isActiveSubscription.value &&
+      canAccessSubscriptionFeatures.value &&
       (!isFreeTier.value ||
         !freeTierQuota.quotaEnabled.value ||
         freeTierQuota.freeTierExecutionPermitted.value)
@@ -180,7 +177,7 @@ function useBillingContextInternal(): BillingContext {
 
   // Plan identity, independent of subscription health: the per-credit Team plan
   // carries a credit stop, the retired seat-based ones a `team-` slug. Kept off
-  // isActiveSubscription on purpose — paused and payment_failed both force
+  // canAccessSubscriptionFeatures on purpose — paused and payment_failed both force
   // is_active=false, which is exactly when callers still need to know this is a
   // team plan.
   const isTeamPlan = computed(
@@ -356,10 +353,9 @@ function useBillingContextInternal(): BillingContext {
     occupiedSeats,
     isLoading,
     error,
-    isActiveSubscription,
-    canRunWorkflows,
     showsSubscribeToRunPrompt,
     canAccessSubscriptionFeatures,
+    canRunWorkflows,
     isFreeTier,
     isLegacyTeamPlan,
     isTeamPlan,

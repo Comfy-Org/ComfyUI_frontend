@@ -20,7 +20,7 @@ export function useWorkspaceMenuItems() {
     permissions,
     uiConfig,
     isInPersonalWorkspace,
-    isActiveSubscription,
+    canAccessSubscriptionFeatures,
     isSubscriptionCancelled,
     isDeleteDisabled,
     deleteDisabledTooltipKey
@@ -65,7 +65,7 @@ export function useWorkspaceMenuItems() {
   const canCancelPlan = computed(
     () =>
       permissions.value.canManageSubscriptionLifecycle &&
-      (isActiveSubscription.value ||
+      (canAccessSubscriptionFeatures.value ||
         ((billingStatus.value === 'payment_failed' ||
           billingStatus.value === 'paused') &&
           Boolean(subscription.value?.planSlug))) &&
