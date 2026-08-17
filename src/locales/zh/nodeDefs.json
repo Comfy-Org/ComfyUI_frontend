@@ -890,7 +890,7 @@
       },
       "model": {
         "name": "模型",
-        "tooltip": "Seedance 2.0 提供最高质量；Seedance 2.0 Fast 优化速度。"
+        "tooltip": "Seedance 2.5 使用最新模型，支持最长 30 秒视频及 mp4/mov 输出；Seedance 2.0 提供最高质量和 1080p/4k；Fast 用于速度优化；Mini 用于最快、成本最低的生成。"
       },
       "model_duration": {
         "name": "时长"
@@ -931,7 +931,7 @@
       },
       "model": {
         "name": "模型",
-        "tooltip": "Seedance 2.0 提供最高质量；Seedance 2.0 Fast 优化速度。"
+        "tooltip": "Seedance 2.5 使用最新模型，支持最长 30 秒视频及 mp4/mov 输出；Seedance 2.0 提供最高质量和 1080p/4k；Fast 用于速度优化；Mini 用于最快、成本最低的生成。"
       },
       "model_auto_downscale": {
         "name": "自动降采样"
@@ -984,7 +984,7 @@
       },
       "model": {
         "name": "模型",
-        "tooltip": "Seedance 2.0 提供最高质量；Seedance 2.0 Fast 优化速度。"
+        "tooltip": "Seedance 2.5 使用最新模型，支持最长 30 秒视频及 mp4/mov 输出；Seedance 2.0 提供最高质量和 1080p/4k；Fast 用于速度优化；Mini 用于最快、成本最低的生成。"
       },
       "model_duration": {
         "name": "时长"
@@ -5963,19 +5963,19 @@
       },
       "image": {
         "name": "image",
-        "tooltip": "grok-imagine-video 的可选起始图像。grok-imagine-video-1.5 必须提供。"
+        "tooltip": "可选的起始图像。省略时，仅根据文本提示词生成视频。"
       },
       "model": {
         "name": "model",
-        "tooltip": "grok-imagine-video-1.5 当前始终需要输入图像。"
+        "tooltip": "用于视频生成的模型。"
       },
       "prompt": {
         "name": "prompt",
-        "tooltip": "所需视频的文本描述。"
+        "tooltip": "所需视频的文本描述。提供输入图像时，grok-imagine-video-1.5 可不填。"
       },
       "resolution": {
         "name": "resolution",
-        "tooltip": "输出视频的分辨率。"
+        "tooltip": "输出视频的分辨率。1080p 仅适用于 grok-imagine-video-1.5。"
       },
       "seed": {
         "name": "seed",
@@ -5989,7 +5989,7 @@
     }
   },
   "GrokVideoReferenceNode": {
-    "description": "根据参考图像的风格和内容生成视频。",
+    "description": "根据参考图像生成视频，可选择使用预设语音参考。",
     "display_name": "Grok 参考生成视频",
     "inputs": {
       "control_after_generate": {
@@ -8816,7 +8816,7 @@
   },
   "LTXVConcatAVLatent": {
     "description": "将视频潜空间和音频潜空间合并为联合 AV 潜空间（适用于任意 AV 模型，如 LTXV 或 MiniMax H3）。",
-    "display_name": "LTXVConcatAVLatent",
+    "display_name": "拼接 AV 潜空间",
     "inputs": {
       "audio_latent": {
         "name": "audio_latent"
@@ -9235,8 +9235,8 @@
     }
   },
   "LTXVSeparateAVLatent": {
-    "description": "LTXV分离音视频潜空间",
-    "display_name": "LTXV分离音视频潜空间",
+    "description": "将联合 AV 潜空间拆分为视频和音频潜空间（适用于任意 AV 模型，如 LTXV 或 MiniMax H3）。",
+    "display_name": "分离 AV 潜空间",
     "inputs": {
       "av_latent": {
         "name": "音视频潜空间"
@@ -9766,7 +9766,7 @@
   "Load3D": {
     "display_name": "加载3D",
     "inputs": {
-      "clear": "清除",
+      "clear": {},
       "height": {
         "name": "高度"
       },
@@ -9776,8 +9776,8 @@
       "model_file": {
         "name": "模型文件"
       },
-      "upload 3d model": "上传3D模型",
-      "upload extra resources": "上传额外资源",
+      "upload 3d model": {},
+      "upload extra resources": {},
       "width": {
         "name": "宽度"
       }
@@ -11810,7 +11810,7 @@
     }
   },
   "MiniMaxH3ReferenceToVideo": {
-    "description": "<图片 i> / <视频 k> / <音频 j> 参考条件输入，适用于 MiniMax H3。提示时请使用相同标签。",
+    "description": "<Picture i> / <Video k> / <Audio j> 参考条件输入，适用于 MiniMax H3。提示时请使用相同标签。",
     "display_name": "MiniMax H3 参考转视频",
     "inputs": {
       "audio_vae": {
@@ -15609,7 +15609,7 @@
     "description": "将任意输入值以文本形式预览。",
     "display_name": "预览任意",
     "inputs": {
-      "preview_mode": "预览模式",
+      "preview_mode": {},
       "preview_text": {},
       "source": {
         "name": "源"
