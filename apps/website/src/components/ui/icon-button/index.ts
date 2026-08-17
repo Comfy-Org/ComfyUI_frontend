@@ -9,9 +9,10 @@ export const iconButtonVariants = cva(
     variants: {
       variant: {
         ghost:
-          'text-primary-warm-white hover:text-primary-comfy-yellow bg-transparent',
+          'hover:text-primary-comfy-yellow bg-transparent text-primary-warm-white',
         outline:
-          'text-primary-comfy-yellow hover:bg-primary-comfy-yellow border-primary-comfy-yellow border-2 bg-primary-comfy-ink hover:text-primary-comfy-ink'
+          'text-primary-comfy-yellow hover:bg-primary-comfy-yellow border-primary-comfy-yellow border-2 bg-primary-comfy-ink hover:text-primary-comfy-ink',
+        solid: 'bg-primary-comfy-yellow text-primary-comfy-ink hover:opacity-90'
       },
       size: {
         sm: 'size-8',

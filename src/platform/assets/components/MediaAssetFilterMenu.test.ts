@@ -80,6 +80,171 @@ const dateLabels = [
 ]
 
 describe('MediaAssetFilterMenu', () => {
+  it('focuses the filter search when the menu opens', async () => {
+    const { user } = renderMenu()
+    await openMenu(user)
+
+    const searchInput = screen.getByRole('textbox', { name: 'Filter by' })
+    expect(searchInput).toHaveAttribute('placeholder', 'Filter by...')
+    expect(searchInput).toHaveFocus()
+  })
+
+  it('finds and toggles a media type without closing the menu', async () => {
+    const { onMediaTypeUpdate, user } = renderMenu()
+    await openMenu(user)
+
+    await user.type(screen.getByRole('textbox', { name: 'Filter by' }), 'VIDEO')
+
+    expect(screen.queryByRole('menuitem', { name: /Media type/ })).toBeNull()
+    const videoResult = screen.getByRole('menuitemcheckbox', {
+      name: 'Video'
+    })
+    expect(screen.queryByRole('menuitemcheckbox', { name: 'Image' })).toBeNull()
+
+    await user.click(videoResult)
+
+    expect(onMediaTypeUpdate).toHaveBeenCalledWith(['video'])
+    expect(screen.getByRole('menu', { name: 'Filter by' })).toBeVisible()
+    expect(screen.getByRole('textbox', { name: 'Filter by' })).toBeVisible()
+  })
+
+  it('finds and selects date options without closing the menu', async () => {
+    const { onDateUpdate, user } = renderMenu()
+    await openMenu(user)
+
+    await user.type(screen.getByRole('textbox', { name: 'Filter by' }), 'past')
+
+    expect(
+      screen.getByRole('menuitemradio', { name: 'Past 7 days' })
+    ).toBeVisible()
+    expect(
+      screen.getByRole('menuitemradio', { name: 'Past 30 days' })
+    ).toBeVisible()
+
+    await user.click(screen.getByRole('menuitemradio', { name: 'Past 7 days' }))
+
+    expect(onDateUpdate).toHaveBeenCalledWith('week')
+    expect(screen.getByRole('menu', { name: 'Filter by' })).toBeVisible()
+  })
+
+  it('keeps the selected date active and clears it with All time', async () => {
+    const { onDateUpdate, user } = renderMenu({ dateFilter: 'week' })
+    await openMenu(user)
+
+    const searchInput = screen.getByRole('textbox', { name: 'Filter by' })
+    await user.type(searchInput, 'past')
+
+    const pastWeek = screen.getByRole('menuitemradio', {
+      name: 'Past 7 days'
+    })
+    expect(pastWeek).toHaveAttribute('aria-checked', 'true')
+
+    await user.click(pastWeek)
+    expect(onDateUpdate).not.toHaveBeenCalled()
+
+    await user.clear(searchInput)
+    await user.type(searchInput, 'all')
+    await user.click(screen.getByRole('menuitemradio', { name: 'All time' }))
+
+    expect(onDateUpdate).toHaveBeenLastCalledWith('')
+  })
+
+  it('navigates matching options and toggles the focused result', async () => {
+    const { onDateUpdate, user } = renderMenu()
+    await openMenu(user)
+
+    const searchInput = screen.getByRole('textbox', { name: 'Filter by' })
+    await user.type(searchInput, 'past')
+
+    const pastWeek = screen.getByRole('menuitemradio', {
+      name: 'Past 7 days'
+    })
+    const pastMonth = screen.getByRole('menuitemradio', {
+      name: 'Past 30 days'
+    })
+
+    await user.keyboard('{ArrowDown}')
+    expect(pastWeek).toHaveFocus()
+
+    await user.keyboard('{ArrowDown}')
+    expect(pastMonth).toHaveFocus()
+
+    await user.keyboard('{ArrowUp}')
+    expect(pastWeek).toHaveFocus()
+
+    await user.keyboard('{Enter}')
+
+    expect(onDateUpdate).toHaveBeenCalledWith('week')
+    expect(screen.getByRole('menu', { name: 'Filter by' })).toBeVisible()
+
+    await user.keyboard('{Escape}')
+
+    expect(screen.queryByRole('menu', { name: 'Filter by' })).toBeNull()
+  })
+
+  it('loops focus between the search input and matching options', async () => {
+    const { user } = renderMenu()
+    await openMenu(user)
+
+    const searchInput = screen.getByRole('textbox', { name: 'Filter by' })
+    await user.type(searchInput, 'past')
+
+    const pastWeek = screen.getByRole('menuitemradio', {
+      name: 'Past 7 days'
+    })
+    const pastMonth = screen.getByRole('menuitemradio', {
+      name: 'Past 30 days'
+    })
+
+    await user.keyboard('{ArrowDown}')
+    expect(pastWeek).toHaveFocus()
+    await user.keyboard('{ArrowDown}')
+    expect(pastMonth).toHaveFocus()
+    await user.keyboard('{ArrowDown}')
+    expect(searchInput).toHaveFocus()
+
+    await user.keyboard('{ArrowUp}')
+    expect(pastMonth).toHaveFocus()
+    await user.keyboard('{ArrowUp}')
+    expect(pastWeek).toHaveFocus()
+    await user.keyboard('{ArrowUp}')
+    expect(searchInput).toHaveFocus()
+  })
+
+  it('loops focus when search has one matching option', async () => {
+    const { user } = renderMenu()
+    await openMenu(user)
+
+    const searchInput = screen.getByRole('textbox', { name: 'Filter by' })
+    await user.type(searchInput, 'video')
+
+    const video = screen.getByRole('menuitemcheckbox', { name: 'Video' })
+
+    await user.keyboard('{ArrowDown}')
+    expect(video).toHaveFocus()
+    await user.keyboard('{ArrowDown}')
+    expect(searchInput).toHaveFocus()
+
+    await user.keyboard('{ArrowUp}')
+    expect(video).toHaveFocus()
+    await user.keyboard('{ArrowUp}')
+    expect(searchInput).toHaveFocus()
+  })
+
+  it('shows an empty state when no filter options match', async () => {
+    const { user } = renderMenu()
+    await openMenu(user)
+
+    await user.type(
+      screen.getByRole('textbox', { name: 'Filter by' }),
+      'not-a-filter'
+    )
+
+    expect(screen.getByText('No matches')).toBeVisible()
+    expect(screen.queryAllByRole('menuitemcheckbox')).toHaveLength(0)
+    expect(screen.queryAllByRole('menuitemradio')).toHaveLength(0)
+  })
+
   it('groups media type and date under the Attribute section', async () => {
     const { user } = renderMenu()
     await openMenu(user)

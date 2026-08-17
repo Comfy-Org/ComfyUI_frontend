@@ -11,13 +11,18 @@ import {
   assetRequestIncludesTag,
   createCloudAssetsFixture
 } from '@e2e/fixtures/assetApiFixture'
-import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import type { WorkspaceStore } from '@e2e/types/globals'
 import {
   routeObjectInfoFromSetupApi,
   setComboInputOptions
 } from '@e2e/fixtures/utils/objectInfo'
+import { loadWorkflowAndOpenErrorsTab } from '@e2e/fixtures/helpers/ErrorsTabHelper'
+import {
+  selectVuePromotedMediaByTitle,
+  setPromotedMediaHostOptionsAndValue
+} from '@e2e/fixtures/utils/promotedMissingMedia'
 import {
   createRouteMockJob,
   jobsRouteFixture
@@ -25,8 +30,9 @@ import {
 import { TestIds } from '@e2e/fixtures/selectors'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
 import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+import { toNodeId } from '@/types/nodeId'
 
-const ossTest = mergeTests(comfyPageFixture, jobsRouteFixture)
+const ossTest = mergeTests(test, jobsRouteFixture)
 const outputHash =
   '147257c95a3e957e0deee73a077cfec89da2d906dd086ca70a2b0c897a9591d6e.png'
 const outputVideoHash = 'cloud-video-hash.mp4'
@@ -34,6 +40,14 @@ const plainVideoFileName = 'plain_video.mp4'
 const graphDropPosition = { x: 500, y: 300 }
 const missingMediaObservationMs = 1_000
 const missingMediaPollMs = 100
+const promotedMediaWorkflow = 'missing/missing_media_promoted_widget'
+const promotedMediaHostTitle = 'Subgraph with Promoted Missing Media'
+const promotedMediaHostNodeId = toNodeId(2)
+const promotedMediaLeafNodeId = toNodeId(1)
+const promotedMediaHostWidgetName = 'outer_image'
+const promotedMediaLeafWidgetName = 'image'
+const validPromotedMedia = 'example.png'
+const hostOnlyPromotedMedia = 'host-only-promoted-image.png'
 const emptyMediaLoaderNodes = [
   {
     nodeType: 'LoadImage',
@@ -142,13 +156,6 @@ async function routeCloudBootstrapApis(page: Page) {
       body: JSON.stringify({})
     })
   })
-  await page.route('**/customers/cloud-subscription-status', async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ is_active: true })
-    })
-  })
 }
 
 const cloudOutputTest = createCloudAssetsFixture([
@@ -190,7 +197,7 @@ const cloudEmptyMediaInputsTest = createCloudAssetsFixture([]).extend({
   }
 })
 const cloudUploadAssetStateByPage = new WeakMap<Page, CloudUploadAssetState>()
-const cloudUploadRaceTest = comfyPageFixture.extend<{
+const cloudUploadRaceTest = test.extend<{
   markUploadedCloudAssetAvailable: () => void
 }>({
   page: async ({ page }, use) => {
@@ -496,6 +503,105 @@ ossTest.describe(
         await expect(getErrorOverlay(comfyPage)).toBeHidden()
       }
     )
+  }
+)
+
+test.describe(
+  'Errors tab - promoted missing media',
+  { tag: ['@ui', '@vue-nodes', '@widget', '@subgraph'] },
+  () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await enableErrorsTab(comfyPage)
+    })
+
+    test('shows missing media on the promoted host and not the interior widget', async ({
+      comfyPage
+    }) => {
+      await loadWorkflowAndOpenErrorsTab(comfyPage, promotedMediaWorkflow)
+
+      const missingMediaRow = comfyPage.page.getByTestId(
+        TestIds.dialogs.missingMediaRow
+      )
+      await expect(missingMediaRow).toHaveCount(1)
+      await expect(missingMediaRow).toContainText(
+        `${promotedMediaHostTitle} - ${promotedMediaHostWidgetName}`
+      )
+
+      const panel = new PropertiesPanelHelper(comfyPage.page)
+      await panel.close()
+      await comfyPage.subgraph.enterSubgraphWithFallback(
+        String(promotedMediaHostNodeId)
+      )
+      await panel.open(comfyPage.actionbar.propertiesButton)
+      await expect(missingMediaRow).toHaveCount(1)
+      await expect(missingMediaRow).toContainText(
+        `${promotedMediaHostTitle} - ${promotedMediaHostWidgetName}`
+      )
+    })
+
+    test('clears promoted missing media after selecting a valid host image', async ({
+      comfyPage
+    }) => {
+      await loadWorkflowAndOpenErrorsTab(comfyPage, promotedMediaWorkflow)
+      const missingMediaRow = comfyPage.page.getByTestId(
+        TestIds.dialogs.missingMediaRow
+      )
+      await expect(missingMediaRow).toHaveCount(1)
+
+      await selectVuePromotedMediaByTitle(
+        comfyPage,
+        promotedMediaHostTitle,
+        promotedMediaHostWidgetName,
+        validPromotedMedia
+      )
+
+      await expectNoErrorsTab(comfyPage)
+      await expect(missingMediaRow).toHaveCount(0)
+
+      const panel = new PropertiesPanelHelper(comfyPage.page)
+      await panel.close()
+      await comfyPage.subgraph.enterSubgraphWithFallback(
+        String(promotedMediaHostNodeId)
+      )
+      await expectNoErrorsTab(comfyPage)
+      await expect(missingMediaRow).toHaveCount(0)
+    })
+
+    test('keeps a host-only option value resolved after a promoted media rescan', async ({
+      comfyPage
+    }) => {
+      await loadWorkflowAndOpenErrorsTab(comfyPage, promotedMediaWorkflow)
+
+      const optionState = await setPromotedMediaHostOptionsAndValue(
+        comfyPage,
+        promotedMediaHostNodeId,
+        promotedMediaLeafNodeId,
+        promotedMediaHostWidgetName,
+        promotedMediaLeafWidgetName,
+        hostOnlyPromotedMedia
+      )
+      expect(
+        optionState,
+        'Expected the uploaded value only in the promoted host options'
+      ).toEqual({
+        hostValue: hostOnlyPromotedMedia,
+        leafIncludesValue: false
+      })
+
+      await expectNoErrorsTab(comfyPage)
+
+      const host = comfyPage.vueNodes.getNodeByTitle(promotedMediaHostTitle)
+      await comfyPage.vueNodes.selectNode(String(promotedMediaHostNodeId))
+      await comfyPage.keyboard.bypass()
+      await expect(host.getByText('Bypassed', { exact: true })).toBeVisible()
+
+      await comfyPage.keyboard.bypass()
+      await expect(host.getByText('Bypassed', { exact: true })).toBeHidden()
+      const panel = new PropertiesPanelHelper(comfyPage.page)
+      await panel.open(comfyPage.actionbar.propertiesButton)
+      await expect(panel.errorsTab).toBeHidden()
+      await expect(getErrorOverlay(comfyPage)).toBeHidden()
+    })
   }
 )
 

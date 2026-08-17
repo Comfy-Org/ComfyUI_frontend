@@ -109,7 +109,7 @@
       :tier-key="selectedTierKey"
       :team-plan="selectedTeamStop"
       :preview-data="previewData"
-      :is-team="isTeamCheckout"
+      :billing-cycle="selectedBillingCycle"
       @close="handleSuccessClose"
     />
   </div>
