@@ -2852,6 +2852,7 @@
     "tierNameYearly": "{name} Yearly",
     "messageSupport": "Message support",
     "invoiceHistory": "Invoice history",
+    "fullUsageActivity": "Full usage activity",
     "refreshCredits": "Refresh credits",
     "benefits": {
       "benefit1": "Monthly credits for Partner Nodes — top up when needed",

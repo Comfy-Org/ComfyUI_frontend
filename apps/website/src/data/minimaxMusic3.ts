@@ -118,17 +118,28 @@ const howToPromptAnswerZh = `该模型接受两种互补的输入：
 const TUTORIAL_HREF =
   'https://docs.comfy.org/tutorials/audio/minimax/minimax-music-3#minimax-music-3-in-comfyui-ai-music-generation'
 
+const CLOUD_RUN_HREF = 'https://cloud.comfy.org/?template=audio_minimax_music_3'
+
 export const minimaxMusic3Page: ModelLaunchPage = {
   metaTitleKey: 'minimaxMusic3.meta.title',
   metaDescriptionKey: 'minimaxMusic3.meta.description',
   breadcrumbLabelKey: 'minimaxMusic3.breadcrumb.model',
   breadcrumbUpdatedKey: 'minimaxMusic3.breadcrumb.updated',
   hero: {
+    videoSrc:
+      'https://media.comfy.org/website/minimax-music-3/16x9-option-01_v2.mp4',
+    posterSrc:
+      'https://media.comfy.org/website/minimax-music-3/16x9-thumb-01.jpeg',
     titleKey: 'minimaxMusic3.hero.titleModel',
     titleRestKey: 'minimaxMusic3.hero.titleRest',
     descriptionKey: 'minimaxMusic3.hero.description',
     primaryCta: {
       labelKey: 'minimaxMusic3.hero.primaryCta',
+      href: CLOUD_RUN_HREF,
+      target: '_blank'
+    },
+    secondaryCta: {
+      labelKey: 'minimaxMusic3.hero.secondaryCta',
       href: TUTORIAL_HREF,
       target: '_blank'
     },
@@ -295,6 +306,11 @@ export const minimaxMusic3Page: ModelLaunchPage = {
     stepLabelKey: 'minimaxMusic3.steps.step',
     primaryCta: {
       labelKey: 'minimaxMusic3.steps.primaryCta',
+      href: CLOUD_RUN_HREF,
+      target: '_blank'
+    },
+    secondaryCta: {
+      labelKey: 'minimaxMusic3.steps.secondaryCta',
       href: TUTORIAL_HREF,
       target: '_blank'
     },

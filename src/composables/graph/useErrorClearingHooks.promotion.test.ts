@@ -152,6 +152,10 @@ describe('promotion listener lifecycle', () => {
     vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(false)
   })
 
+  /** Lets a removal's own deferred reconcile land before the test seeds. */
+  const flushRemovalReconcile = () =>
+    new Promise((resolve) => setTimeout(resolve, 0))
+
   /** A candidate for a node that does not exist, so any reconcile drops it. */
   function seedStaleCandidate() {
     const mediaStore = useMissingMediaStore()
@@ -181,6 +185,7 @@ describe('promotion listener lifecycle', () => {
     } = createSharedDefinitionGraph([65])
     installErrorClearingHooks(rootGraph)
     rootGraph.remove(host)
+    await flushRemovalReconcile()
 
     const mediaStore = seedStaleCandidate()
     subgraph.events.dispatch('widget-promoted', {
@@ -206,6 +211,7 @@ describe('promotion listener lifecycle', () => {
     // already in the graph, so hosts counted at install time arrive again.
     rootGraph.onNodeAdded?.(host)
     rootGraph.remove(host)
+    await flushRemovalReconcile()
 
     const mediaStore = seedStaleCandidate()
     subgraph.events.dispatch('widget-promoted', {
@@ -225,6 +231,7 @@ describe('promotion listener lifecycle', () => {
     } = createSharedDefinitionGraph([65, 66])
     installErrorClearingHooks(rootGraph)
     rootGraph.remove(first)
+    await flushRemovalReconcile()
 
     const mediaStore = seedStaleCandidate()
     subgraph.events.dispatch('widget-promoted', {

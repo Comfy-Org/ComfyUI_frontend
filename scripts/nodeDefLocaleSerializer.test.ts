@@ -49,17 +49,30 @@ describe('serializeNodeDefLocales', () => {
         }
       })
     const serializedNode = nodeDefinitions.Test_Node
+    if (
+      !serializedNode.inputs ||
+      !serializedNode.outputs ||
+      !serializedNode.description
+    ) {
+      throw new Error('Expected serialized node labels')
+    }
     const serializedInput =
       serializedNode.inputs['Input @ $ {value} | 50%{done}']
     const serializedOutput = serializedNode.outputs['0']
+    const serializedWidget = serializedNode.inputs.Runtime_Widget
+    if (
+      !serializedInput.name ||
+      !serializedOutput.name ||
+      !serializedWidget.name
+    ) {
+      throw new Error('Expected serialized field names')
+    }
 
     expect(render(serializedNode.display_name)).toBe(nodeDef.display_name)
     expect(render(serializedNode.description)).toBe(nodeDef.description)
     expect(render(serializedInput.name)).toBe(inputName)
     expect(render(serializedOutput.name)).toBe(outputName)
-    expect(render(serializedNode.inputs.Runtime_Widget.name)).toBe(
-      `Widget ${syntax}`
-    )
+    expect(render(serializedWidget.name)).toBe(`Widget ${syntax}`)
     expect(render(dataTypes[dataType])).toBe(dataType)
     expect(render(nodeCategories[category])).toBe(category)
     expect(serializedInput.tooltip).toBe(nodeDef.inputs.input.tooltip)

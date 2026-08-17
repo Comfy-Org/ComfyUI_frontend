@@ -8,6 +8,7 @@ import {
 import * as distributionTypes from '@/platform/distribution/types'
 import {
   cachedBillingControlEnabled,
+  cachedLegacyBillingMigrationEnabled,
   cachedV1PaymentRecovery,
   remoteConfig,
   remoteConfigState
@@ -183,6 +184,48 @@ describe('useFeatureFlags', () => {
     })
   })
 
+  describe('nodeLibraryEssentialsEnabled', () => {
+    beforeEach(() => {
+      vi.mocked(distributionTypes).isNightly = true
+    })
+
+    afterEach(() => {
+      vi.mocked(distributionTypes).isNightly = false
+      remoteConfig.value = {}
+    })
+
+    it('defaults on when nightly serves no value for the flag', () => {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (_path, defaultValue) => defaultValue
+      )
+
+      const { flags } = useFeatureFlags()
+      expect(flags.nodeLibraryEssentialsEnabled).toBe(true)
+    })
+
+    it('lets a remote config false turn off the nightly default', () => {
+      remoteConfig.value = { node_library_essentials_enabled: false }
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (_path, defaultValue) => defaultValue
+      )
+
+      const { flags } = useFeatureFlags()
+      expect(flags.nodeLibraryEssentialsEnabled).toBe(false)
+    })
+
+    it('lets a served server false turn off the nightly default', () => {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (path, defaultValue) =>
+          path === ServerFeatureFlag.NODE_LIBRARY_ESSENTIALS_ENABLED
+            ? false
+            : defaultValue
+      )
+
+      const { flags } = useFeatureFlags()
+      expect(flags.nodeLibraryEssentialsEnabled).toBe(false)
+    })
+  })
+
   describe('partnerNodeGovernanceEnabled', () => {
     afterEach(() => {
       remoteConfig.value = {}
@@ -204,6 +247,64 @@ describe('useFeatureFlags', () => {
       const { flags } = useFeatureFlags()
 
       expect(flags.partnerNodeGovernanceEnabled).toBe(false)
+    })
+  })
+
+  describe('legacyBillingMigrationEnabled', () => {
+    beforeEach(() => {
+      vi.mocked(distributionTypes).isCloud = true
+      remoteConfigState.value = 'authenticated'
+    })
+
+    afterEach(() => {
+      vi.mocked(distributionTypes).isCloud = false
+      remoteConfigState.value = 'unloaded'
+      remoteConfig.value = {}
+      cachedLegacyBillingMigrationEnabled.value = undefined
+    })
+
+    it('migrates legacy billing when enabled by remote config', () => {
+      remoteConfig.value = { legacy_billing_migration_enabled: true }
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.legacyBillingMigrationEnabled).toBe(true)
+    })
+
+    it('keeps migration off when remote config explicitly disables it', () => {
+      remoteConfig.value = { legacy_billing_migration_enabled: false }
+      vi.mocked(api.getServerFeature).mockReturnValue(true)
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.legacyBillingMigrationEnabled).toBe(false)
+    })
+
+    it('uses the server feature when authenticated config leaves it unset', () => {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (path, defaultValue) =>
+          path === ServerFeatureFlag.LEGACY_BILLING_MIGRATION_ENABLED
+            ? true
+            : defaultValue
+      )
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.legacyBillingMigrationEnabled).toBe(true)
+      expect(api.getServerFeature).toHaveBeenCalledWith(
+        ServerFeatureFlag.LEGACY_BILLING_MIGRATION_ENABLED,
+        false
+      )
+    })
+
+    it('keeps legacy billing when the rollout flag is unset', () => {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (_path, defaultValue) => defaultValue
+      )
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.legacyBillingMigrationEnabled).toBe(false)
     })
   })
 
@@ -296,6 +397,7 @@ describe('useFeatureFlags', () => {
       remoteConfigState.value = 'unloaded'
       remoteConfig.value = {}
       cachedBillingControlEnabled.value = undefined
+      cachedLegacyBillingMigrationEnabled.value = undefined
       cachedV1PaymentRecovery.value = undefined
     })
 
@@ -304,21 +406,25 @@ describe('useFeatureFlags', () => {
       remoteConfigState.value = 'unloaded'
       remoteConfig.value = {}
       cachedBillingControlEnabled.value = undefined
+      cachedLegacyBillingMigrationEnabled.value = undefined
       cachedV1PaymentRecovery.value = undefined
     })
 
     it('returns the cached session value during the auth window', () => {
       cachedBillingControlEnabled.value = true
+      cachedLegacyBillingMigrationEnabled.value = true
       cachedV1PaymentRecovery.value = true
 
       const { flags } = useFeatureFlags()
       expect(flags.billingControlEnabled).toBe(true)
+      expect(flags.legacyBillingMigrationEnabled).toBe(true)
       expect(flags.v1PaymentRecovery).toBe(true)
     })
 
     it('defaults to false during the auth window when nothing is cached', () => {
       const { flags } = useFeatureFlags()
       expect(flags.billingControlEnabled).toBe(false)
+      expect(flags.legacyBillingMigrationEnabled).toBe(false)
       expect(flags.v1PaymentRecovery).toBe(false)
     })
 
@@ -510,6 +616,19 @@ describe('useFeatureFlags', () => {
 
       const { flags } = useFeatureFlags()
       expect(flags.workflowSharingEnabled).toBe(false)
+    })
+
+    it('turns the node library essentials tab off against an enabled remote config', () => {
+      vi.mocked(getSessionOverride).mockImplementation((flagKey) =>
+        flagKey === ServerFeatureFlag.NODE_LIBRARY_ESSENTIALS_ENABLED
+          ? false
+          : undefined
+      )
+      remoteConfig.value = { node_library_essentials_enabled: true }
+      vi.mocked(api.getServerFeature).mockReturnValue(true)
+
+      const { flags } = useFeatureFlags()
+      expect(flags.nodeLibraryEssentialsEnabled).toBe(false)
     })
 
     it('beats the auth-window fallback on auth-gated flags', () => {

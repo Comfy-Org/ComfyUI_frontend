@@ -24,7 +24,7 @@ const pages: { name: string; page: ModelLaunchPage }[] = [
 ]
 
 const VIDEO_URL = /^https:\/\/media\.comfy\.org\/.+\.(webm|mp4)$/
-const IMAGE_URL = /^https:\/\/media\.comfy\.org\/.+\.(webp|png|jpg)$/
+const IMAGE_URL = /^https:\/\/media\.comfy\.org\/.+\.(webp|png|jpe?g)$/
 const AUDIO_URL = /^https:\/\/media\.comfy\.org\/.+\.(mp3|flac|m4a|ogg)$/
 
 describe.for(pages)('$name launch page config', ({ page }) => {

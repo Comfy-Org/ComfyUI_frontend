@@ -6,7 +6,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
-import { TIER_TO_KEY } from '@/platform/cloud/subscription/constants/tierPricing'
+import { toTierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import { useTelemetry } from '@/platform/telemetry'
 import type { BillingFailure } from '@/platform/telemetry/types'
@@ -207,10 +207,9 @@ export function useDowngradeToPersonal() {
         )
       }
       ensureCanDowngrade()
-      targetTier =
-        preview.new_plan?.tier && preview.new_plan.tier !== 'TEAM'
-          ? TIER_TO_KEY[preview.new_plan.tier]
-          : undefined
+      targetTier = preview.new_plan?.tier
+        ? (toTierKey(preview.new_plan.tier) ?? undefined)
+        : undefined
       targetCycle = preview.new_plan
         ? preview.new_plan.duration === 'ANNUAL'
           ? 'yearly'

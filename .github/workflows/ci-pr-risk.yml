@@ -43,12 +43,17 @@ jobs:
       contents: read # the .github/risk.json override, read from the BASE ref
       issues: write # create the risk:* labels repo-side on first use
       pull-requests: write # the label write rides pull-requests, not issues
-      checks: read # the check rollup the reversibility axis reads
+      # write, not read: newer upstream pins declare `checks: write` on their
+      # opt-in publish-check job, and GitHub validates every nested job's
+      # declaration against this block at startup — even jobs an `if:` skips.
+      # A read grant startup-fails every run the moment the pin moves forward.
+      checks: write # the rollup read + the opt-in Check Run publish
       actions: read # CheckRun -> checkSuite -> workflowRun for self-exclusion
       statuses: read
     # Pinned to github-workflows main (e4a8f7c); keep workflows_ref in
     # lock-step so the grader + risk map schema load from the same commit.
-    # This permissions block must stay a superset of the reusable job's.
+    # This permissions block must stay a superset of the UNION of every job
+    # the reusable workflow declares, including jobs whose `if:` skips them.
     uses: Comfy-Org/github-workflows/.github/workflows/pr-risk.yml@e4a8f7cd4a073da082b03950136530d4df50738f # github-workflows main (e4a8f7c)
     with:
       workflows_ref: e4a8f7cd4a073da082b03950136530d4df50738f

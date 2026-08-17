@@ -12,9 +12,11 @@ import enMessages from '@/locales/en/main.json'
 import CurrentUserPopoverWorkspace from './CurrentUserPopoverWorkspace.vue'
 
 const state = vi.hoisted(() => ({
+  billingStatus: 'paid',
   canAccessSubscriptionFeatures: true,
   isFreeTier: false,
   isCancelled: false,
+  planSlug: 'pro-monthly' as string | null,
   canTopUp: false,
   canManageSubscription: false,
   canManageSubscriptionLifecycle: false,
@@ -23,6 +25,24 @@ const state = vi.hoisted(() => ({
   showPricingTable: vi.fn(),
   showSettingsDialog: vi.fn()
 }))
+
+const workspaceStoreMock = vi.hoisted(() => ({
+  store: null as null | {
+    initState: string
+    workspaceName: string
+    isInPersonalWorkspace: boolean
+  }
+}))
+
+vi.mock('@/platform/workspace/stores/teamWorkspaceStore', async () => {
+  const { reactive, ref } = await import('vue')
+  workspaceStoreMock.store = reactive({
+    initState: ref('ready'),
+    workspaceName: ref('Personal Workspace'),
+    isInPersonalWorkspace: ref(true)
+  })
+  return { useTeamWorkspaceStore: () => workspaceStoreMock.store }
+})
 
 vi.mock('@/composables/auth/useCurrentUser', () => ({
   useCurrentUser: () => ({
@@ -35,12 +55,14 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
+    billingStatus: computed(() => state.billingStatus),
     canAccessSubscriptionFeatures: computed(
       () => state.canAccessSubscriptionFeatures
     ),
     isFreeTier: computed(() => state.isFreeTier),
     subscription: computed(() => ({
-      isCancelled: state.isCancelled
+      isCancelled: state.isCancelled,
+      planSlug: state.planSlug
     })),
     balance: ref({ amountMicros: 100 }),
     isLoading: ref(false),
@@ -105,43 +127,19 @@ const i18n = createI18n({
   messages: { en: enMessages }
 })
 
-function createWorkspaceState(
-  type: 'personal' | 'team',
-  role: 'owner' | 'member'
-) {
-  return {
-    id: `ws-${type}`,
-    name: `${type === 'personal' ? 'Personal' : 'Team'} Workspace`,
-    type,
-    role,
-    created_at: '2026-01-01T00:00:00Z',
-    joined_at: '2026-01-01T00:00:00Z',
-    isSubscribed: true,
-    subscriptionPlan: 'team-pro-monthly',
-    subscriptionTier: 'PRO',
-    members: [],
-    pendingInvites: []
-  }
-}
-
 function renderComponent(
   type: 'personal' | 'team' = 'personal',
-  role: 'owner' | 'member' = 'member',
   accountActionsOnly = false
 ) {
+  if (!workspaceStoreMock.store) throw new Error('Workspace store not ready')
+  workspaceStoreMock.store.workspaceName = `${type === 'personal' ? 'Personal' : 'Team'} Workspace`
+  workspaceStoreMock.store.isInPersonalWorkspace = type === 'personal'
   return render(CurrentUserPopoverWorkspace, {
     props: { accountActionsOnly },
     global: {
       plugins: [
         createTestingPinia({
-          createSpy: vi.fn,
-          initialState: {
-            teamWorkspace: {
-              initState: 'ready',
-              activeWorkspaceId: `ws-${type}`,
-              workspaces: [createWorkspaceState(type, role)]
-            }
-          }
+          createSpy: vi.fn
         }),
         PrimeVue,
         i18n
@@ -163,9 +161,11 @@ function renderComponent(
 
 describe('CurrentUserPopoverWorkspace', () => {
   beforeEach(() => {
+    state.billingStatus = 'paid'
     state.canAccessSubscriptionFeatures = true
     state.isFreeTier = false
     state.isCancelled = false
+    state.planSlug = 'pro-monthly'
     state.canTopUp = false
     state.canManageSubscription = false
     state.canManageSubscriptionLifecycle = false
@@ -189,7 +189,7 @@ describe('CurrentUserPopoverWorkspace', () => {
   })
 
   it('keeps account actions available without workspace context', () => {
-    renderComponent('personal', 'member', true)
+    renderComponent('personal', true)
 
     expect(screen.getByTestId('user-settings-menu-item')).toBeInTheDocument()
     expect(screen.getByTestId('logout-menu-item')).toBeInTheDocument()
@@ -204,7 +204,7 @@ describe('CurrentUserPopoverWorkspace', () => {
 
   it('exposes the full workspace name on hover', async () => {
     const user = userEvent.setup()
-    renderComponent('team', 'member')
+    renderComponent('team')
 
     await user.hover(screen.getByTestId('workspace-switcher-trigger'))
 
@@ -240,7 +240,7 @@ describe('CurrentUserPopoverWorkspace', () => {
   })
 
   it('keeps a team workspace member read-only', () => {
-    renderComponent('team', 'member')
+    renderComponent('team')
 
     expect(screen.getByText('211')).toBeInTheDocument()
     expect(screen.queryByTestId('add-credits-button')).not.toBeInTheDocument()
@@ -253,6 +253,38 @@ describe('CurrentUserPopoverWorkspace', () => {
     expect(
       screen.queryByTestId('manage-plan-menu-item')
     ).not.toBeInTheDocument()
+  })
+
+  it.for(['payment_failed', 'paused'])(
+    'keeps Manage plan available for an existing %s subscription',
+    (billingStatus) => {
+      state.billingStatus = billingStatus
+      state.canAccessSubscriptionFeatures = false
+      state.canManageSubscription = true
+
+      renderComponent('team')
+
+      expect(screen.getByTestId('manage-plan-menu-item')).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'Subscribe' })
+      ).not.toBeInTheDocument()
+    }
+  )
+
+  it('shows Subscribe instead of Manage plan when payment_failed has no plan', () => {
+    state.billingStatus = 'payment_failed'
+    state.canAccessSubscriptionFeatures = false
+    state.canManageSubscription = true
+    state.planSlug = null
+
+    renderComponent('team')
+
+    expect(
+      screen.queryByTestId('manage-plan-menu-item')
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Subscribe' })
+    ).toBeInTheDocument()
   })
 
   it.for([
@@ -307,7 +339,7 @@ describe('CurrentUserPopoverWorkspace', () => {
       state.canManageSubscription = canManageSubscription
       state.canManageSubscriptionLifecycle = canManageSubscriptionLifecycle
 
-      renderComponent('team', 'owner')
+      renderComponent('team')
 
       const subscribeAction = screen.queryByRole('button', { name: action })
       if (visible) {
@@ -324,7 +356,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     state.canTopUp = true
     state.canManageSubscription = true
     state.canManageSubscriptionLifecycle = true
-    renderComponent('team', 'owner')
+    renderComponent('team')
 
     expect(screen.getByTestId('add-credits-button')).toBeInTheDocument()
     expect(screen.getByTestId('plans-pricing-menu-item')).toBeInTheDocument()
@@ -339,12 +371,15 @@ describe('CurrentUserPopoverWorkspace', () => {
     it(`opens workspace plan management for a ${workspaceType} owner`, async () => {
       const user = userEvent.setup()
       state.canManageSubscription = true
-      const { emitted } = renderComponent(workspaceType, 'owner')
+      const { emitted } = renderComponent(workspaceType)
 
-      const menuItem = screen.getByTestId('manage-plan-menu-item')
+      const menuItem = screen.getByRole('button', {
+        name: enMessages.subscription.managePlan
+      })
       expect(menuItem).toHaveTextContent(enMessages.subscription.managePlan)
 
-      await user.click(menuItem)
+      menuItem.focus()
+      await user.keyboard('{Enter}')
 
       expect(state.showSettingsDialog).toHaveBeenCalledWith('workspace')
       expect(emitted('close')).toHaveLength(1)

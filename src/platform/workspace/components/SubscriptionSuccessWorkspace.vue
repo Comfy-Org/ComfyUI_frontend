@@ -28,7 +28,7 @@
           </span>
         </div>
         <div class="flex items-center gap-1 text-sm text-muted-foreground">
-          <i class="icon-[comfy--credits] size-4 shrink-0 bg-credit" />
+          <i class="icon-[lucide--coins] size-4 shrink-0 bg-credit" />
           <span>{{ displayCredits }} {{ creditsUnitLabel }}</span>
         </div>
       </div>

@@ -36,6 +36,12 @@ export type QueueNotificationBanner =
   | QueueCompletedNotification
   | QueueFailedNotification
 
+const isRunAcknowledgement = (notification: QueueNotificationBanner) =>
+  notification.type === 'queuedPending' || notification.type === 'queued'
+
+const isOutcome = (notification: QueueNotificationBanner) =>
+  notification.type === 'completed' || notification.type === 'failed'
+
 const sanitizeCount = (value: number | undefined) => {
   if (!(typeof value === 'number' && value > 0)) {
     return 1
@@ -101,8 +107,36 @@ export const useQueueNotificationBanners = () => {
     )
   }
 
+  const queuePositionFor = (notification: QueueNotificationBanner) => {
+    if (!isRunAcknowledgement(notification)) {
+      return pendingNotifications.value.length
+    }
+    const firstOutcome = pendingNotifications.value.findIndex(isOutcome)
+    return firstOutcome === -1
+      ? pendingNotifications.value.length
+      : firstOutcome
+  }
+
   const queueNotification = (notification: QueueNotificationBanner) => {
-    pendingNotifications.value = [...pendingNotifications.value, notification]
+    if (isRunAcknowledgement(notification)) {
+      const active = activeNotification.value
+      if (active === null || isOutcome(active)) {
+        clearDismissTimer()
+        activeNotification.value = null
+        pendingNotifications.value = [
+          notification,
+          ...pendingNotifications.value
+        ]
+        showNextNotification()
+        return
+      }
+    }
+
+    pendingNotifications.value = pendingNotifications.value.toSpliced(
+      queuePositionFor(notification),
+      0,
+      notification
+    )
     showNextNotification()
   }
 

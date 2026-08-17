@@ -93,6 +93,46 @@ describe('isBackportBranchForBase', () => {
       isBackportBranchForBase('backport-abc-to-cloud-1.47', 'cloud/1.47')
     ).toBe(false)
   })
+
+  it('recognises the user-prefixed form a human finishing a cherry-pick creates', () => {
+    // #15102 and #15103 are the worked example: opened by hand after the
+    // workflow's cherry-pick conflicted, and labelled by hand because this
+    // returned false for them.
+    expect(
+      isBackportBranchForBase(
+        'jaeone94/backport-14984-to-core-1.49',
+        'core/1.49'
+      )
+    ).toBe(true)
+    expect(
+      isBackportBranchForBase(
+        'deepme987/infra/backport-123-to-cloud-1.49',
+        'cloud/1.49'
+      )
+    ).toBe(true)
+  })
+
+  it('still checks the encoded target against the base when prefixed', () => {
+    expect(
+      isBackportBranchForBase(
+        'jaeone94/backport-14984-to-core-1.49',
+        'cloud/1.49'
+      )
+    ).toBe(false)
+  })
+
+  it('rejects a prefixed branch that only mentions backport', () => {
+    // Real branches in this repo. A prefix must not turn them into backports.
+    expect(
+      isBackportBranchForBase(
+        'glary/backport-resilient-partial-failure',
+        'core/1.49'
+      )
+    ).toBe(false)
+    expect(
+      isBackportBranchForBase('deepme987/infra/backport-assign-author', 'main')
+    ).toBe(false)
+  })
 })
 
 describe('planBackportLabels', () => {

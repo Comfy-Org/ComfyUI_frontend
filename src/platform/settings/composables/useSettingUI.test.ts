@@ -20,8 +20,6 @@ const env = vi.hoisted(() => {
     authenticatedConfigLoaded: false,
     partnerNodeGovernanceEnabled: false,
     userSecretsEnabled: false,
-    isActiveSubscription: false,
-    billingType: 'legacy' as 'legacy' | 'workspace',
     workspaceRole: 'owner' as 'owner' | 'member',
     partnerNodeGovernanceStatus: 'inactive' as
       | 'inactive'
@@ -46,13 +44,6 @@ vi.mock('vue-i18n', () => ({
 
 vi.mock('@/composables/auth/useCurrentUser', () => ({
   useCurrentUser: () => ({ isLoggedIn: env.fakeRef('isLoggedIn') })
-}))
-
-vi.mock('@/composables/billing/useBillingContext', () => ({
-  useBillingContext: () => ({
-    canAccessSubscriptionFeatures: env.fakeRef('isActiveSubscription'),
-    type: env.fakeRef('billingType')
-  })
 }))
 
 vi.mock('@/composables/useFeatureFlags', () => ({
@@ -151,8 +142,6 @@ describe('useSettingUI', () => {
       authenticatedConfigLoaded: false,
       partnerNodeGovernanceEnabled: false,
       userSecretsEnabled: false,
-      isActiveSubscription: false,
-      billingType: 'legacy',
       workspaceRole: 'owner',
       partnerNodeGovernanceStatus: 'inactive',
       partnerNodeGovernanceProviders: []
@@ -233,9 +222,7 @@ describe('useSettingUI', () => {
       Object.assign(env.state, {
         isCloud: true,
         isLoggedIn: true,
-        authenticatedConfigLoaded: true,
-        isActiveSubscription: true,
-        billingType: 'workspace'
+        authenticatedConfigLoaded: true
       })
       window.__CONFIG__ = {
         subscription_required: false
@@ -312,24 +299,18 @@ describe('useSettingUI', () => {
         isLoggedIn: true,
         billingControlEnabled: true,
         authenticatedConfigLoaded: true,
-        partnerNodeGovernanceEnabled: true,
-        isActiveSubscription: true
+        partnerNodeGovernanceEnabled: true
       })
       window.__CONFIG__ = {
         subscription_required: true
       } as typeof window.__CONFIG__
     })
 
-    it.for(['legacy', 'workspace'] as const)(
-      'uses only the Workspace panel for %s billing in the workspace layout',
-      (billingType) => {
-        env.state.billingType = billingType
-        const { navGroups } = useSettingUI()
+    it('uses the Workspace panel for Cloud billing navigation', () => {
+      const { navGroups } = useSettingUI()
 
-        expect(navKeys(navGroups.value)).not.toContain('subscription')
-        expect(navKeys(navGroups.value)).toContain('workspace')
-      }
-    )
+      expect(navKeys(navGroups.value)).toContain('workspace')
+    })
 
     it('exposes workspace sections as Plan & Credits, Members, and Allowlist', () => {
       const { navGroups } = useSettingUI()

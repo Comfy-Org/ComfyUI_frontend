@@ -10,11 +10,6 @@ import { serializeNodeDefLocales } from './nodeDefLocaleSerializer'
 const localePath = './src/locales/en/main.json'
 const nodeDefsPath = './src/locales/en/nodeDefs.json'
 
-interface WidgetInfo {
-  name?: string
-  label?: string
-}
-
 test('collect-i18n-node-defs', async ({ comfyPage }) => {
   // Mock view route
   await comfyPage.page.route('**/view**', async (route) => {
@@ -27,9 +22,10 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
 
   const nodeDefs: ComfyNodeDefImpl[] = await comfyPage.page.evaluate(
     async () => {
-      // @ts-expect-error - app is dynamically added to window
-      const api = window['app'].api
-      const rawNodeDefs = await api.getNodeDefs()
+      const app = window.app
+      if (!app) throw new Error('ComfyUI app is not initialized')
+
+      const rawNodeDefs = await app.api.getNodeDefs()
       const { ComfyNodeDefImpl } = await import('../src/stores/nodeDefStore')
 
       return (
@@ -45,28 +41,35 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
     const nodeLabels: WidgetLabels = {}
 
     for (const nodeDef of nodeDefs) {
-      const inputNames = Object.values(nodeDef.inputs).map(
-        (input) => input.name
+      const inputNames = Object.values(nodeDef.inputs).flatMap(
+        (input): string[] =>
+          typeof input.name === 'string' ? [input.name] : input.name
       )
 
       if (!inputNames.length) continue
 
       try {
         const widgetsMappings = await comfyPage.page.evaluate(
-          (args) => {
-            const [nodeName, displayName, inputNames] = args
-            // @ts-expect-error - LiteGraph is dynamically added to window
-            const node = window['LiteGraph'].createNode(nodeName, displayName)
-            if (!node.widgets?.length) return {}
+          (args): Record<string, string | undefined> => {
+            const { nodeName, displayName, inputNames } = args
+            const liteGraph = window.LiteGraph
+            if (!liteGraph) throw new Error('LiteGraph is not initialized')
+
+            const node = liteGraph.createNode(nodeName, displayName)
+            if (!node?.widgets?.length) return {}
             return Object.fromEntries(
               node.widgets
                 .filter(
-                  (w: WidgetInfo) => w?.name && !inputNames.includes(w.name)
+                  (widget) => widget?.name && !inputNames.includes(widget.name)
                 )
-                .map((w: WidgetInfo) => [w.name, w.label])
+                .map((widget) => [widget.name, widget.label])
             )
           },
-          [nodeDef.name, nodeDef.display_name, inputNames]
+          {
+            nodeName: nodeDef.name,
+            displayName: nodeDef.display_name,
+            inputNames
+          }
         )
 
         const runtimeWidgets = Object.fromEntries(

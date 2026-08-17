@@ -348,8 +348,16 @@ function withComfyMatchType(node: LGraphNode): asserts node is MatchTypeNode {
 function applyMatchType(node: LGraphNode, inputSpec: InputSpecV2) {
   const { addNodeInput } = useLitegraphService()
   const name = inputSpec.name
-  const matchTypeSpec = zMatchTypeOptions.safeParse(inputSpec).data
-  if (!matchTypeSpec) return
+  const parseResult = zMatchTypeOptions.safeParse(inputSpec)
+  if (!parseResult.success) {
+    console.warn(
+      `Unparseable COMFY_MATCHTYPE_V3 spec for input "${name}"; falling back to a wildcard socket.`,
+      parseResult.error.issues
+    )
+    addNodeInput(node, { ...inputSpec, type: '*' })
+    return
+  }
+  const matchTypeSpec = parseResult.data
 
   const { allowed_types, template_id } = matchTypeSpec.template
   const typedSpec = { ...inputSpec, type: allowed_types }

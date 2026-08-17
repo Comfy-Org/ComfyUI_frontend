@@ -687,6 +687,57 @@ describe('useWorkflowPersistenceV2', () => {
     )
   })
 
+  it('flushes a pending workflow edit when the page is unloaded', async () => {
+    const workflowStore = useWorkflowStore()
+    const workflow = await workflowStore.createTemporary('Draft.json').load()
+    workflowStore.activeWorkflow = workflow
+    mountWorkflowPersistence()
+    await nextTick()
+
+    mocks.state.currentGraph = {
+      nodes: [],
+      extra: { marker: 'final-edit' }
+    }
+    mocks.state.graphChangedHandler?.()
+
+    const payloadKey = StorageKeys.draftPayload(workflow.path, 'personal')
+    expect(localStorage.getItem(payloadKey)).toBeNull()
+
+    window.dispatchEvent(new PageTransitionEvent('pagehide'))
+
+    const payload = JSON.parse(localStorage.getItem(payloadKey)!)
+    expect(JSON.parse(payload.data)).toEqual({
+      nodes: [],
+      extra: { marker: 'final-edit' }
+    })
+  })
+
+  it('does not flush a pending workflow edit after disposal', async () => {
+    const workflowStore = useWorkflowStore()
+    const workflow = await workflowStore.createTemporary('Draft.json').load()
+    workflowStore.activeWorkflow = workflow
+    mountWorkflowPersistence()
+
+    mocks.state.currentGraph = { nodes: [] }
+    const graphChangedHandler = mocks.state.graphChangedHandler
+    if (!graphChangedHandler) {
+      throw new Error('Graph change handler was not registered')
+    }
+    graphChangedHandler()
+
+    const mounted = mountedApps.pop()
+    if (!mounted) throw new Error('Failed to find mounted persistence app')
+    mounted.app.unmount()
+    mounted.container.remove()
+
+    window.dispatchEvent(new PageTransitionEvent('pagehide'))
+    await vi.runAllTimersAsync()
+
+    expect(
+      localStorage.getItem(StorageKeys.draftPayload(workflow.path, 'personal'))
+    ).toBeNull()
+  })
+
   it('flushes the final source-workspace edit before blocking transition writes', async () => {
     const sourceWorkspaceId = 'workspace-a'
     const destinationWorkspaceId = 'workspace-b'

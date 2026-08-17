@@ -1,5 +1,6 @@
 import { computed } from 'vue'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
@@ -9,10 +10,11 @@ import type { BillingType } from './types'
  * Selects the billing backend for the active workspace: legacy user-scoped
  * (`/customers/*`) or workspace-scoped (`/api/billing/*`). Personal workspaces
  * use workspace billing unless an explicit legacy Stripe rail selects legacy
- * account operations. An unloaded workspace remains legacy during bootstrap,
- * and OSS always uses legacy billing.
+ * account operations and its migration flag is off. An unloaded workspace
+ * remains legacy during bootstrap, and OSS always uses legacy billing.
  */
 export function useBillingRouting() {
+  const { flags } = useFeatureFlags()
   const workspaceStore = useTeamWorkspaceStore()
 
   const shouldUseUnifiedPricing = computed(() => {
@@ -29,7 +31,8 @@ export function useBillingRouting() {
 
     if (
       workspaceType === 'personal' &&
-      workspaceStore.activeWorkspaceBillingRail === 'legacy_stripe'
+      workspaceStore.activeWorkspaceBillingRail === 'legacy_stripe' &&
+      !flags.legacyBillingMigrationEnabled
     ) {
       return 'legacy'
     }

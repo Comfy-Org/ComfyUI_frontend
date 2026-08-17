@@ -5,6 +5,7 @@ import { creatorReviews } from '../src/data/creatorReviews'
 import { ltxPage } from '../src/data/ltx'
 import { t } from '../src/i18n/translations'
 import type { ModelLaunchCta } from '../src/templates/model-launch/types'
+import { faqAnswerPlainText } from '../src/utils/faqAnswer'
 import { test } from './fixtures/blockExternalMedia'
 import { waitForIsland } from './fixtures/islands'
 
@@ -24,7 +25,7 @@ const LTX_HUB_MODEL = 'https://comfy.org/workflows/model/ltx'
 // would let a dropped badge, card or Q&A entry pass.
 const REQUIRED_BADGES = 4
 const REQUIRED_CARDS = 6
-const REQUIRED_FAQS = 9
+const REQUIRED_FAQS = 10
 
 const BADGE_KEYS = ltxPage.hero.badgeKeys ?? []
 
@@ -213,7 +214,12 @@ test.describe('LTX 2.5 Q&A', () => {
 
     await firstQuestion.click()
     await expect(firstQuestion).toHaveAttribute('aria-expanded', 'true')
-    await expect(page.getByText(FIRST_FAQ.answer.en)).toBeVisible()
+    // The answer is authored as markdown (`[label](url)`); rendering flattens
+    // that to its anchor text, so assert against the same flattening the page
+    // itself uses for structured data rather than the raw markdown string.
+    await expect(
+      page.getByText(faqAnswerPlainText(FIRST_FAQ.answer.en))
+    ).toBeVisible()
 
     await firstQuestion.click()
     await expect(firstQuestion).toHaveAttribute('aria-expanded', 'false')
@@ -231,7 +237,7 @@ test.describe('LTX 2.5 Q&A', () => {
     await waitForIsland(page, question)
     await question.click()
 
-    const link = page.getByRole('link', { name: 'LTX 2.5 weights' })
+    const link = page.getByRole('link', { name: 'the LTX-2.5 weights' })
     await expect(link).toHaveAttribute(
       'href',
       'https://huggingface.co/Lightricks/LTX-2.5'

@@ -34,7 +34,6 @@ const CATEGORY_ICONS: Record<string, string> = {
   PlanCredits: 'icon-[lucide--receipt-text]',
   secrets: 'icon-[lucide--key-round]',
   'server-config': 'icon-[lucide--server]',
-  subscription: 'icon-[lucide--credit-card]',
   user: 'icon-[lucide--user]',
   workspace: 'icon-[lucide--building-2]',
   'workspace-allowlist': 'icon-[comfy--ai-model]',

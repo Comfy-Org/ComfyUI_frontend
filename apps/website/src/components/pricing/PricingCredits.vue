@@ -2,7 +2,7 @@
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { computed } from 'vue'
 
-import { Component as ComponentIcon } from '@lucide/vue'
+import { Coins as CreditsIcon } from '@lucide/vue'
 
 import { t } from '../../i18n/translations'
 
@@ -28,15 +28,18 @@ const estimate = computed(() => {
 <template>
   <div class="mt-6">
     <div class="flex items-center gap-2">
-      <ComponentIcon class="text-primary-comfy-orange size-4 shrink-0" />
-      <span class="text-primary-warm-white ppformula-text-center text-sm">
+      <CreditsIcon
+        class="text-primary-comfy-orange size-4 shrink-0"
+        aria-hidden="true"
+      />
+      <span class="ppformula-text-center text-sm text-primary-warm-white">
         <span class="font-extrabold">
           {{ credits }}
         </span>
         {{ label }}
       </span>
     </div>
-    <p v-if="estimate" class="text-primary-warm-gray mt-1.5 text-xs">
+    <p v-if="estimate" class="mt-1.5 text-xs text-primary-warm-gray">
       {{ estimate }}
     </p>
   </div>

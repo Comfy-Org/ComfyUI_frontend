@@ -35,7 +35,7 @@
       v-if="canAccessSubscriptionFeatures"
       class="flex items-center gap-2 px-4 py-2"
     >
-      <i class="icon-[lucide--component] text-sm text-credit" />
+      <i class="icon-[lucide--coins] text-sm text-credit" />
       <Skeleton v-if="isLoading" width="4rem" height="1.25rem" class="w-full" />
       <span v-else class="text-base font-semibold text-base-foreground">{{
         formattedBalance
@@ -51,16 +51,6 @@
         <i class="icon-[lucide--circle-help]" />
       </Button>
       <Button
-        v-if="isCloud && isFreeTier"
-        variant="subscribe"
-        size="sm"
-        data-testid="upgrade-to-add-credits-button"
-        @click="handleUpgradeToAddCredits"
-      >
-        {{ $t('subscription.upgradeToAddCredits') }}
-      </Button>
-      <Button
-        v-else
         variant="secondary"
         size="sm"
         class="text-base-foreground"
@@ -69,16 +59,6 @@
       >
         {{ $t('subscription.addCredits') }}
       </Button>
-    </div>
-
-    <div v-else-if="isCloud" class="flex justify-center px-4">
-      <SubscribeButton
-        :fluid="false"
-        :label="$t('subscription.subscribeToComfyCloud')"
-        size="sm"
-        button-variant="subscribe"
-        @subscribed="handleSubscribed"
-      />
     </div>
 
     <Divider class="mx-0 my-2" />
@@ -96,39 +76,14 @@
     </div>
 
     <div
-      v-if="isCloud"
-      class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
-      data-testid="plans-pricing-menu-item"
-      @click="handleOpenPlansAndPricing"
-    >
-      <i class="icon-[lucide--receipt-text] text-sm text-muted-foreground" />
-      <span class="flex-1 text-sm text-base-foreground">{{
-        $t('subscription.plansAndPricing')
-      }}</span>
-      <span
-        v-if="canUpgrade"
-        class="rounded-full bg-base-foreground px-1.5 py-0.5 text-xs font-bold text-base-background"
-      >
-        {{ $t('subscription.upgrade') }}
-      </span>
-    </div>
-
-    <div
       v-if="canAccessSubscriptionFeatures"
       class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
       data-testid="manage-plan-menu-item"
       @click="handleOpenPlanAndCreditsSettings"
     >
-      <i
-        :class="
-          cn(
-            'size-4 text-muted-foreground',
-            isCloud ? 'icon-[lucide--credit-card]' : 'icon-[lucide--coins]'
-          )
-        "
-      />
+      <i class="icon-[lucide--coins] size-4 text-muted-foreground" />
       <span class="flex-1 text-sm text-base-foreground">{{
-        planAndCreditsLabel
+        $t('credits.credits')
       }}</span>
     </div>
 
@@ -159,7 +114,6 @@
 </template>
 
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
 import Divider from 'primevue/divider'
 import Skeleton from 'primevue/skeleton'
 import { computed, onMounted } from 'vue'
@@ -171,9 +125,6 @@ import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useExternalLink } from '@/composables/useExternalLink'
-import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'
-import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
-import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useWorkspaceTierLabel } from '@/platform/workspace/composables/useWorkspaceTierLabel'
@@ -191,17 +142,14 @@ const settingsDialog = useSettingsDialog()
 const dialogService = useDialogService()
 const {
   canAccessSubscriptionFeatures,
-  isFreeTier,
   tier,
   subscription,
   balance,
   isLoading,
-  fetchStatus,
   fetchBalance
 } = useBillingContext()
 const { formatTierName } = useWorkspaceTierLabel()
-const subscriptionDialog = useSubscriptionDialog()
-const { locale, t } = useI18n()
+const { locale } = useI18n()
 
 const subscriptionTierName = computed(() =>
   formatTierName(tier.value, subscription.value?.duration === 'ANNUAL')
@@ -220,37 +168,13 @@ const formattedBalance = computed(() => {
   })
 })
 
-const canUpgrade = computed(() => {
-  const currentTier = tier.value
-  return (
-    currentTier === 'FREE' ||
-    currentTier === 'FOUNDERS_EDITION' ||
-    currentTier === 'STANDARD' ||
-    currentTier === 'CREATOR'
-  )
-})
-
-const planAndCreditsLabel = computed(() =>
-  isCloud ? t('subscription.managePlan') : t('credits.credits')
-)
-
 const handleOpenUserSettings = () => {
   settingsDialog.show('user')
   emit('close')
 }
 
-const handleOpenPlansAndPricing = () => {
-  subscriptionDialog.showPricingTable({ reason: 'avatar_menu_plans' })
-  emit('close')
-}
-
 const handleOpenPlanAndCreditsSettings = () => {
-  if (isCloud) {
-    settingsDialog.show('subscription')
-  } else {
-    settingsDialog.show('credits')
-  }
-
+  settingsDialog.show('credits')
   emit('close')
 }
 
@@ -268,18 +192,9 @@ const handleOpenPartnerNodesInfo = () => {
   emit('close')
 }
 
-const handleUpgradeToAddCredits = () => {
-  subscriptionDialog.showPricingTable({ reason: 'upgrade_to_add_credits' })
-  emit('close')
-}
-
 const handleLogout = async () => {
   await handleSignOut()
   emit('close')
-}
-
-const handleSubscribed = async () => {
-  await fetchStatus()
 }
 
 onMounted(() => {

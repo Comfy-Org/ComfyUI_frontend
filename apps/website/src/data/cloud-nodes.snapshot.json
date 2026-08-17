@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-08-07T01:02:21.625Z",
+  "fetchedAt": "2026-08-15T00:35:53.352Z",
   "packs": [
     {
       "id": "basic_data_handling",
@@ -12,7 +12,7 @@
         "id": "stablellama",
         "name": "StableLlama"
       },
-      "downloads": 214918,
+      "downloads": 220203,
       "githubStars": 47,
       "latestVersion": "1.6.0",
       "license": "{\"file\": \"LICENSE\"}",
@@ -1752,8 +1752,8 @@
         "id": "matteo",
         "name": "Matteo"
       },
-      "downloads": 2804633,
-      "githubStars": 1149,
+      "downloads": 2843350,
+      "githubStars": 1158,
       "latestVersion": "1.1.0",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2024-08-07T19:06:12.812021Z",
@@ -2206,8 +2206,8 @@
         "id": "ryuukeisyou",
         "name": "Ryuukeisyou"
       },
-      "downloads": 82000,
-      "githubStars": 193,
+      "downloads": 82781,
+      "githubStars": 194,
       "latestVersion": "1.0.5",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2025-02-04T15:58:27.82363Z",
@@ -2663,8 +2663,8 @@
         "id": "matteo",
         "name": "Matteo"
       },
-      "downloads": 1438618,
-      "githubStars": 6082,
+      "downloads": 1457662,
+      "githubStars": 6097,
       "latestVersion": "2.0.0",
       "license": "GPL-3.0 license",
       "lastUpdated": "2024-06-05T06:57:13.485481Z",
@@ -2892,8 +2892,8 @@
         "id": "chflame163",
         "name": "chflame163"
       },
-      "downloads": 1995338,
-      "githubStars": 3114,
+      "downloads": 2027873,
+      "githubStars": 3123,
       "latestVersion": "2.0.40",
       "license": "{\"text\": \"MIT License\"}",
       "lastUpdated": "2026-08-01T03:16:40.664133Z",
@@ -3008,8 +3008,8 @@
         "id": "chflame163",
         "name": "chflame163"
       },
-      "downloads": 167561,
-      "githubStars": 696,
+      "downloads": 173135,
+      "githubStars": 697,
       "latestVersion": "2.0.38",
       "license": "{\"text\": \"MIT License\"}",
       "lastUpdated": "2026-04-08T04:28:28.060712Z",
@@ -3614,7 +3614,7 @@
         "id": "steudio",
         "name": ""
       },
-      "downloads": 69391,
+      "downloads": 71415,
       "githubStars": 147,
       "latestVersion": "2.0.5",
       "license": "{\"file\": \"LICENSE.txt\"}",
@@ -3706,7 +3706,7 @@
         "id": "ssit",
         "name": "ssit"
       },
-      "downloads": 1709485,
+      "downloads": 1732848,
       "githubStars": 1534,
       "latestVersion": "1.7.2",
       "license": "{\"file\": \"LICENSE\"}",
@@ -3750,8 +3750,8 @@
         "id": "kosinkadink",
         "name": "Kosinkadink"
       },
-      "downloads": 677285,
-      "githubStars": 993,
+      "downloads": 685104,
+      "githubStars": 994,
       "latestVersion": "1.6.0",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2026-07-28T11:39:49.072754Z",
@@ -3780,8 +3780,8 @@
         "id": "kosinkadink",
         "name": "Kosinkadink"
       },
-      "downloads": 583150,
-      "githubStars": 3518,
+      "downloads": 590572,
+      "githubStars": 3519,
       "latestVersion": "1.5.7",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2026-03-30T01:39:45.498846Z",
@@ -3857,7 +3857,7 @@
         "id": "kijai",
         "name": "Kijai"
       },
-      "downloads": 131586,
+      "downloads": 132541,
       "githubStars": 1548,
       "latestVersion": "1.5.1",
       "license": "{\"file\": \"LICENSE\"}",
@@ -4049,7 +4049,7 @@
           "name": "DownloadAndLoadDepthAnythingV2Model",
           "displayName": "DownloadAndLoadDepthAnythingV2Model",
           "category": "DepthAnythingV2",
-          "description": "\nModels autodownload to `ComfyUI\\models\\depthanything` from   \nhttps://huggingface.co/Kijai/DepthAnythingV2-safetensors/tree/main   \n   \nfp16 reduces quality by a LOT, not recommended.\n"
+          "description": "\nModels autodownload to `ComfyUI/models/depthanything` from   \nhttps://huggingface.co/Kijai/DepthAnythingV2-safetensors/tree/main   \n   \nfp16 reduces quality by a LOT, not recommended.\n"
         }
       ]
     },
@@ -4105,8 +4105,8 @@
         "id": "erosdiffusion",
         "name": "ErosDiffusion"
       },
-      "downloads": 143776,
-      "githubStars": 635,
+      "downloads": 146074,
+      "githubStars": 634,
       "latestVersion": "4.0.3",
       "license": "{\"text\": \"MIT License\"}",
       "lastUpdated": "2026-07-15T20:30:49.389351Z",
@@ -4205,8 +4205,8 @@
         "id": "fannovel16",
         "name": "Fannovel16"
       },
-      "downloads": 1757301,
-      "githubStars": 1056,
+      "downloads": 1785410,
+      "githubStars": 1061,
       "latestVersion": "1.0.11",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2026-03-22T18:01:45.009428Z",
@@ -4358,8 +4358,8 @@
         "id": "drltdata",
         "name": "Dr.Lt.Data"
       },
-      "downloads": 3154575,
-      "githubStars": 3242,
+      "downloads": 3203657,
+      "githubStars": 3252,
       "latestVersion": "8.28.3",
       "license": "{\"file\": \"LICENSE.txt\"}",
       "lastUpdated": "2026-04-19T17:08:04.993918Z",
@@ -5757,8 +5757,8 @@
         "id": "makadi",
         "name": "Makadi"
       },
-      "downloads": 105540,
-      "githubStars": 236,
+      "downloads": 107498,
+      "githubStars": 237,
       "latestVersion": "0.6.5",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2025-10-10T14:25:31.328991Z",
@@ -6129,7 +6129,7 @@
         "id": "theupsider",
         "name": "theupsider"
       },
-      "downloads": 309297,
+      "downloads": 313055,
       "githubStars": 234,
       "latestVersion": "1.0.0",
       "license": "MIT",
@@ -6313,8 +6313,8 @@
         "id": "kijai",
         "name": "Kijai"
       },
-      "downloads": 392541,
-      "githubStars": 239,
+      "downloads": 401637,
+      "githubStars": 242,
       "latestVersion": "1.0.2",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2026-01-30T22:11:43.194459Z",
@@ -6347,7 +6347,7 @@
         "id": "xuanyu",
         "name": "XuanYu"
       },
-      "downloads": 2299,
+      "downloads": 2517,
       "githubStars": 6,
       "latestVersion": "1.1.0",
       "license": "{\"file\": \"LICENSE\"}",
@@ -6406,7 +6406,7 @@
         "id": "meet-ai",
         "name": "遇见AI"
       },
-      "downloads": 5011,
+      "downloads": 5105,
       "githubStars": 5,
       "latestVersion": "1.0.4",
       "license": "{\"file\": \"LICENSE\"}",
@@ -6447,8 +6447,8 @@
         "id": "ailab",
         "name": "AILab"
       },
-      "downloads": 386054,
-      "githubStars": 824,
+      "downloads": 397100,
+      "githubStars": 834,
       "latestVersion": "2.1.1",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2026-02-08T22:53:46.099968Z",
@@ -6502,8 +6502,8 @@
         "id": "ailab",
         "name": "AILab"
       },
-      "downloads": 813924,
-      "githubStars": 2050,
+      "downloads": 830015,
+      "githubStars": 2066,
       "latestVersion": "3.1.0",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2026-07-21T22:33:58.273141Z",
@@ -6568,8 +6568,8 @@
         "id": "pznodes",
         "name": "pozzettiandrea"
       },
-      "downloads": 63557,
-      "githubStars": 561,
+      "downloads": 65558,
+      "githubStars": 563,
       "latestVersion": "0.1.21",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2026-05-19T10:39:52.517642Z",
@@ -6658,7 +6658,7 @@
         "id": "kijai",
         "name": "Kijai"
       },
-      "downloads": 77861,
+      "downloads": 79835,
       "githubStars": 322,
       "latestVersion": "1.0.2",
       "license": "{\"file\": \"LICENSE\"}",
@@ -6765,7 +6765,7 @@
         "id": "systms-ai",
         "name": "systms"
       },
-      "downloads": 1031,
+      "downloads": 1225,
       "githubStars": 0,
       "latestVersion": "1.0.0",
       "license": "{\"file\": \"LICENSE\"}",
@@ -6966,8 +6966,8 @@
         "id": "kosinkadink",
         "name": "Kosinkadink"
       },
-      "downloads": 3190871,
-      "githubStars": 1721,
+      "downloads": 3260051,
+      "githubStars": 1760,
       "latestVersion": "1.7.9",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2025-12-17T22:23:57.624918Z",
@@ -7306,8 +7306,8 @@
         "id": "kijai",
         "name": "Kijai"
       },
-      "downloads": 233766,
-      "githubStars": 544,
+      "downloads": 237949,
+      "githubStars": 545,
       "latestVersion": "1.0.3",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2026-05-27T16:01:00.024325Z",
@@ -7332,8 +7332,8 @@
         "id": "kijai",
         "name": "Kijai"
       },
-      "downloads": 1881071,
-      "githubStars": 6653,
+      "downloads": 1900814,
+      "githubStars": 6660,
       "latestVersion": "1.4.7",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2026-02-01T23:44:07.720927Z",
@@ -7776,7 +7776,7 @@
         "id": "hellorob",
         "name": "hellorob"
       },
-      "downloads": 1436,
+      "downloads": 1628,
       "githubStars": 1,
       "latestVersion": "1.0.1",
       "license": "{\"file\": \"LICENSE\"}",
@@ -7871,8 +7871,8 @@
         "id": "fxtdstudios",
         "name": "FXTD STUDIOS"
       },
-      "downloads": 5629,
-      "githubStars": 238,
+      "downloads": 5814,
+      "githubStars": 240,
       "latestVersion": "2.3.3",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2026-04-01T21:53:16.986121Z",
@@ -8923,8 +8923,8 @@
         "id": "drozbay",
         "name": "drozbay"
       },
-      "downloads": 26335,
-      "githubStars": 92,
+      "downloads": 27062,
+      "githubStars": 93,
       "latestVersion": "1.5.1",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2026-02-10T15:55:08.222036Z",
@@ -8953,8 +8953,8 @@
         "id": "was",
         "name": "WAS"
       },
-      "downloads": 1095598,
-      "githubStars": 1811,
+      "downloads": 1106665,
+      "githubStars": 1814,
       "latestVersion": "1.0.1",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2024-08-01T05:28:23.655235Z",
@@ -10491,8 +10491,8 @@
         "id": "whatdreamscost",
         "name": "WhatDreamsCost"
       },
-      "downloads": 70454,
-      "githubStars": 1910,
+      "downloads": 77280,
+      "githubStars": 1951,
       "latestVersion": "2.0.5",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2026-07-13T01:47:52.785041Z",

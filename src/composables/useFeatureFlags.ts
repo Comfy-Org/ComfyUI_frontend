@@ -4,6 +4,7 @@ import type { Ref } from 'vue'
 import { isCloud, isNightly } from '@/platform/distribution/types'
 import {
   cachedBillingControlEnabled,
+  cachedLegacyBillingMigrationEnabled,
   cachedV1PaymentRecovery,
   isAuthenticatedConfigLoaded,
   remoteConfig
@@ -34,6 +35,7 @@ export enum ServerFeatureFlag {
   SHOW_SIGNIN_BUTTON = 'show_signin_button',
   UNIFIED_CLOUD_AUTH = 'unified_cloud_auth',
   BILLING_CONTROL_ENABLED = 'billing_control_enabled',
+  LEGACY_BILLING_MIGRATION_ENABLED = 'legacy_billing_migration_enabled',
   V1_PAYMENT_RECOVERY = 'v1_payment_recovery',
   FREE_TIER_JOB_ALLOWANCE_ENABLED = 'free_tier_job_allowance_enabled',
   CHURNKEY_APP_ID = 'churnkey_app_id',
@@ -151,14 +153,10 @@ export function useFeatureFlags() {
       return api.getServerFeature(ServerFeatureFlag.NODE_REPLACEMENTS, false)
     },
     get nodeLibraryEssentialsEnabled() {
-      if (isNightly || import.meta.env.DEV) return true
-
-      return (
-        remoteConfig.value.node_library_essentials_enabled ??
-        api.getServerFeature(
-          ServerFeatureFlag.NODE_LIBRARY_ESSENTIALS_ENABLED,
-          false
-        )
+      return resolveFlag(
+        ServerFeatureFlag.NODE_LIBRARY_ESSENTIALS_ENABLED,
+        remoteConfig.value.node_library_essentials_enabled,
+        isNightly || import.meta.env.DEV
       )
     },
     get workflowSharingEnabled() {
@@ -202,6 +200,13 @@ export function useFeatureFlags() {
         ServerFeatureFlag.BILLING_CONTROL_ENABLED,
         remoteConfig.value.billing_control_enabled,
         cachedBillingControlEnabled
+      )
+    },
+    get legacyBillingMigrationEnabled() {
+      return resolveAuthGatedFlag(
+        ServerFeatureFlag.LEGACY_BILLING_MIGRATION_ENABLED,
+        remoteConfig.value.legacy_billing_migration_enabled,
+        cachedLegacyBillingMigrationEnabled
       )
     },
     get v1PaymentRecovery() {

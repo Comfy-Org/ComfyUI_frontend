@@ -63,4 +63,20 @@ describe('unit test network guard', () => {
       /Blocked a real network request/
     )
   })
+
+  it('errors a <script src> synchronously instead of fetching it', () => {
+    // Subresource loads bypass the fetch guard: happy-dom fetches them
+    // through its own pipeline. Disabled loading errors the element
+    // synchronously; anything async means scripts reach the network again.
+    const script = document.createElement('script')
+    const events: string[] = []
+    script.addEventListener('error', () => events.push('error'))
+    script.addEventListener('load', () => events.push('load'))
+    script.async = true
+    script.src = 'https://example.com/external.js'
+    document.head.appendChild(script)
+    script.remove()
+
+    expect(events).toEqual(['error'])
+  })
 })
