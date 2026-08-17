@@ -118,19 +118,21 @@ globalThis.__USE_PROD_CONFIG__ = false
 globalThis.__DISTRIBUTION__ = 'localhost'
 globalThis.__IS_NIGHTLY__ = false
 
-// Define runtime config for tests
-window.__CONFIG__ = {
-  subscription_required: true,
-  mixpanel_token: 'test-token',
-  comfy_api_base_url: 'https://stagingapi.comfy.org',
-  comfy_platform_base_url: 'https://stagingplatform.comfy.org',
-  firebase_config: {
-    apiKey: 'test',
-    authDomain: 'test.firebaseapp.com',
-    projectId: 'test',
-    storageBucket: 'test.appspot.com',
-    messagingSenderId: '123',
-    appId: '123'
+// Define runtime config for tests (absent in @vitest-environment node files)
+if (globalThis.window) {
+  window.__CONFIG__ = {
+    subscription_required: true,
+    mixpanel_token: 'test-token',
+    comfy_api_base_url: 'https://stagingapi.comfy.org',
+    comfy_platform_base_url: 'https://stagingplatform.comfy.org',
+    firebase_config: {
+      apiKey: 'test',
+      authDomain: 'test.firebaseapp.com',
+      projectId: 'test',
+      storageBucket: 'test.appspot.com',
+      messagingSenderId: '123',
+      appId: '123'
+    }
   }
 }
 
