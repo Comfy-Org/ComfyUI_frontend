@@ -8,7 +8,6 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { whenStoresReady } from '@/platform/telemetry/storeReadiness'
-import { reportThirdPartyLoadFailure } from '@/platform/telemetry/thirdPartyLoadFailure'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionContext'
 
@@ -145,13 +144,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     if (apiKey) {
       try {
         void import('posthog-js')
-          .catch((error) => {
-            reportThirdPartyLoadFailure('PostHog', error)
-            this.isEnabled = false
-            return null
-          })
           .then(async (posthogModule) => {
-            if (!posthogModule) return
             this.posthog = posthogModule.default
             const serverConfig = remoteConfig.value?.posthog_config ?? {}
             this.posthog!.init(apiKey, {
@@ -201,7 +194,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
             })
           })
           .catch((error) => {
-            console.error('Failed to initialize PostHog:', error)
+            console.error('Failed to load PostHog:', error)
             this.isEnabled = false
           })
       } catch (error) {
