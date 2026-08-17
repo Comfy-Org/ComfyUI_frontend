@@ -99,7 +99,6 @@ async function runPairsInIsolatedPages(
   const errors: string[] = []
   for (const pair of pairs) {
     const probe = await page.context().newPage()
-    const consoleErrors = collectConsoleErrors(probe)
     try {
       await probe.goto(page.url())
       await probe.waitForFunction(
@@ -114,10 +113,14 @@ async function runPairsInIsolatedPages(
         probe,
         `before isolated pair ${pair.producer.nodeType} -> ${pair.consumer.nodeType}`
       )
-      results.push(...(await evaluatePairs(probe, [pair])))
+      const consoleErrors = collectConsoleErrors(probe)
+      try {
+        results.push(...(await evaluatePairs(probe, [pair])))
+      } finally {
+        consoleErrors.stop()
+        errors.push(...consoleErrors.errors)
+      }
     } finally {
-      consoleErrors.stop()
-      errors.push(...consoleErrors.errors)
       if (!probe.isClosed()) await probe.close()
     }
   }
