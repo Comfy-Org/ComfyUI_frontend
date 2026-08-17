@@ -5,7 +5,7 @@ import { createI18n } from 'vue-i18n'
 
 import InviteMembersForm from './InviteMembersForm.vue'
 
-import type { PendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
+import type { WorkspacePendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 const {
   mockCreateInvite,
@@ -19,7 +19,7 @@ const {
   mockCreateInvite: vi.fn(),
   mockFetchPendingInvites: vi.fn(),
   mockFetchStatus: vi.fn(),
-  mockPendingInvites: { value: [] as PendingInvite[] },
+  mockPendingInvites: { value: [] as WorkspacePendingInvite[] },
   mockToastAdd: vi.fn(),
   mockTrackInviteSent: vi.fn(),
   mockTrackInviteFailed: vi.fn()
@@ -31,7 +31,9 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
 
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
   useTeamWorkspaceStore: () => ({
-    createInvite: mockCreateInvite as (email: string) => Promise<PendingInvite>,
+    createInvite: mockCreateInvite as (
+      email: string
+    ) => Promise<WorkspacePendingInvite>,
     fetchPendingInvites: mockFetchPendingInvites,
     get pendingInvites() {
       return [...mockPendingInvites.value]
@@ -60,7 +62,7 @@ const i18n = createI18n({
   fallbackWarn: false
 })
 
-function pendingInviteFor(email: string): PendingInvite {
+function pendingInviteFor(email: string): WorkspacePendingInvite {
   return {
     id: `inv-${email}`,
     email,
@@ -182,7 +184,9 @@ describe('InviteMembersForm', () => {
   })
 
   it('revalidates emails after pending invites finish loading', async () => {
-    let resolvePendingInvites: (invites: PendingInvite[]) => void = () => {}
+    let resolvePendingInvites: (
+      invites: WorkspacePendingInvite[]
+    ) => void = () => {}
     mockFetchPendingInvites.mockImplementationOnce(
       () =>
         new Promise((resolve) => {

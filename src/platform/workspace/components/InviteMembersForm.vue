@@ -7,7 +7,7 @@
       :delimiter="EMAIL_DELIMITER"
       :convert-value="normalizeEmail"
       :model-value="emails"
-      :class="tagsInputClass"
+      :class="cn('max-h-48 overflow-y-auto', tagsInputClass)"
       @update:model-value="onEmailsUpdate"
     >
       <TagsInputItem
@@ -119,7 +119,7 @@ import TagsInputItemDelete from '@/components/ui/tags-input/TagsInputItemDelete.
 import TagsInputItemText from '@/components/ui/tags-input/TagsInputItemText.vue'
 import { useTelemetry } from '@/platform/telemetry'
 import type { WorkspaceInviteMetadata } from '@/platform/telemetry/types'
-import type { PendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
+import type { WorkspacePendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
   EMAIL_DELIMITER,
@@ -173,7 +173,7 @@ const invitedEmails = ref<string[]>([])
 const loading = ref(false)
 
 const { state: pendingInvites, execute: refreshPendingInvites } = useAsyncState<
-  PendingInvite[]
+  WorkspacePendingInvite[]
 >(
   async () => {
     try {
