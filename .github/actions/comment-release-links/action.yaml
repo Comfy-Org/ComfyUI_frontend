@@ -67,7 +67,7 @@ runs:
             LINKS_VALUE='npm desktop UI|https://www.npmjs.com/package/@comfyorg/desktop-ui/v/{{version}}'
             ;;
           packages/design-system/package.json)
-            MARKER='design-system-release-summary'
+            SECTION_NAME='design-system-release'
             LINKS_VALUE='npm design-system|https://www.npmjs.com/package/@comfyorg/design-system/v/{{version}}'
             ;;
         esac
