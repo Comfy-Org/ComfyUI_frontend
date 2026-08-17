@@ -90,6 +90,18 @@ describe('useFirstRunEntry', () => {
     })
   })
 
+  const permanentDisqualifiers: [string, () => void][] = [
+    ['not on cloud', () => void (mocks.isCloud = false)],
+    ['a returning user', () => void (mocks.isNewUser = false)]
+  ]
+
+  const transientDisqualifiers: [string, () => void][] = [
+    ['below the md breakpoint', () => void (mocks.isDesktopWidth = false)],
+    ['subscription disabled', () => void (mocks.subscriptionEnabled = false)],
+    ['new-user state undetermined', () => void (mocks.isNewUser = null)],
+    ['the tour flag off', () => void (mocks.tourFlag = false)]
+  ]
+
   describe('what a fresh user sees', () => {
     it('shows Getting Started to a candidate', async () => {
       const entry = await freshEntry()
@@ -99,18 +111,6 @@ describe('useFirstRunEntry', () => {
       expect(entry.gettingStartedVisible.value).toBe(true)
       expect(mocks.execute).not.toHaveBeenCalled()
     })
-
-    const permanentDisqualifiers: [string, () => void][] = [
-      ['not on cloud', () => void (mocks.isCloud = false)],
-      ['a returning user', () => void (mocks.isNewUser = false)]
-    ]
-
-    const transientDisqualifiers: [string, () => void][] = [
-      ['below the md breakpoint', () => void (mocks.isDesktopWidth = false)],
-      ['subscription disabled', () => void (mocks.subscriptionEnabled = false)],
-      ['new-user state undetermined', () => void (mocks.isNewUser = null)],
-      ['the tour flag off', () => void (mocks.tourFlag = false)]
-    ]
 
     it.for([...permanentDisqualifiers, ...transientDisqualifiers])(
       'opens the template browser instead, with %s',
@@ -188,6 +188,42 @@ describe('useFirstRunEntry', () => {
       mocks.setSetting,
       'Without this the template browser reopens on every launch, as it did before this flow existed'
     ).toHaveBeenCalledWith('Comfy.TutorialCompleted', true)
+  })
+
+  it.for(transientDisqualifiers)(
+    'leaves a url-intent startup unmarked for %s, so a later boot can still tour',
+    async ([, disqualify]) => {
+      disqualify()
+      const entry = await freshEntry()
+
+      await entry.handleStartupOutcome('url-intent')
+
+      expect(
+        mocks.setSetting,
+        'handleUrlWorkflow declines to tour a deferred boot, so marking here spends the one tour the account gets on a tour it never saw'
+      ).not.toHaveBeenCalled()
+    }
+  )
+
+  it('tours a template link on the boot after one that only deferred', async () => {
+    mocks.isDesktopWidth = false
+    const phone = await freshEntry()
+    await phone.handleStartupOutcome('url-intent')
+    await phone.handleUrlWorkflow('url-intent', 'image_z_image_turbo')
+
+    expect(mocks.beginTour).not.toHaveBeenCalled()
+
+    mocks.isDesktopWidth = true
+    // What `checkIsNewUser()` reads on the next launch.
+    mocks.isNewUser = !mocks.settings['Comfy.TutorialCompleted']
+    const laptop = await freshEntry()
+    await laptop.handleStartupOutcome('url-intent')
+    await laptop.handleUrlWorkflow('url-intent', 'image_z_image_turbo')
+
+    expect(
+      mocks.beginTour,
+      'opening a template link on a phone and returning on a laptop is ordinary behaviour'
+    ).toHaveBeenCalledWith('image_z_image_turbo')
   })
 
   it('never onboards over restored work, even for an apparent new user', async () => {
