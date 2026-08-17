@@ -16,7 +16,7 @@ test.describe('Native reroute geometry', { tag: '@vue-nodes' }, () => {
 
     const ksampler = await comfyPage.nodeOps.getNodeRefById('3')
     await comfyPage.command.executeCommand('Comfy.Canvas.FitView')
-    await ksampler.click('title')
+    await comfyPage.vueNodes.selectNode(String(ksampler.id))
     await expect
       .poll(() => comfyPage.nodeOps.getSelectedNodeIds())
       .toContain(toNodeId('3'))
