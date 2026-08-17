@@ -143,7 +143,7 @@ const indicatorTag = computed(() =>
             />
             <audio
               v-else
-              class="w-full"
+              class="h-10 w-full"
               data-testid="drop-zone-media"
               :aria-label="dropIndicator.label ?? ''"
               :src="dropIndicator.mediaUrl"
