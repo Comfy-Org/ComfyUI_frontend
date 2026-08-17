@@ -1,20 +1,24 @@
+// @vitest-environment node
+
 import { execFileSync } from 'node:child_process'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
+import { fileURLToPath, URL } from 'node:url'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
-const pluginPath = path.resolve('tools/oxlint-plugins/comfy.ts')
-const oxlintEntry = path.resolve('node_modules/oxlint/bin/oxlint')
+const pluginPath = fileURLToPath(new URL('./comfy.ts', import.meta.url))
+const oxlintEntry = fileURLToPath(
+  new URL('../../node_modules/oxlint/bin/oxlint', import.meta.url)
+)
 
 const invalidFixture = `import {
-  afterEach,
   afterEach as cleanup,
-  beforeEach,
+  afterAll as suiteCleanup,
+  beforeAll as suiteSetup,
   beforeEach as setup,
   describe,
   it,
-  vi,
   vi as vitest
 } from 'vitest'
 import * as Vitest from 'vitest'
@@ -37,6 +41,8 @@ afterEach(() => {
 
 setup(() => vitest.clearAllMocks())
 cleanup(() => vitest.resetAllMocks())
+suiteSetup(() => vitest.restoreAllMocks())
+suiteCleanup(() => vitest.unstubAllGlobals())
 Vitest.beforeEach(() => Vitest.vi.restoreAllMocks())
 Vitest.afterEach(() => Vitest.vi.unstubAllGlobals())
 
@@ -155,6 +161,12 @@ vi.spyOn()
 vi.stubGlobal()
 `
 
+function expectReportsAt(output: string, lines: readonly number[]) {
+  for (const line of lines) {
+    expect(output).toContain(`[invalid.test.ts:${line}:`)
+  }
+}
+
 describe('Vitest cleanup rules', () => {
   let workDir: string
   let output: string
@@ -190,7 +202,12 @@ describe('Vitest cleanup rules', () => {
         'unrelated.test.ts',
         'playwright.spec.ts'
       ],
-      { cwd: workDir, encoding: 'utf8' }
+      {
+        cwd: workDir,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+        timeout: 30_000
+      }
     )
   })
 
@@ -198,7 +215,7 @@ describe('Vitest cleanup rules', () => {
     rmSync(workDir, { recursive: true, force: true })
   })
 
-  it('reports every suite-wide cleanup API in beforeEach and afterEach', () => {
+  it('reports every suite-wide cleanup API in Vitest hooks', () => {
     for (const method of [
       'clearAllMocks',
       'resetAllMocks',
@@ -214,13 +231,17 @@ describe('Vitest cleanup rules', () => {
   })
 
   it('handles aliases, namespaces, concise callbacks, and nested control flow', () => {
-    expect(output.match(/is redundant in beforeEach\/afterEach/g)).toHaveLength(
-      21
+    expectReportsAt(
+      output,
+      [
+        13, 14, 15, 16, 17, 21, 22, 23, 24, 25, 28, 29, 30, 31, 32, 33, 36, 40,
+        43, 47, 51, 52, 130
+      ]
     )
   })
 
   it('reports module-scope stubs and spies', () => {
-    expect(output.match(/removes module-scope mocks/g)).toHaveLength(7)
+    expectReportsAt(output, [73, 74, 75, 76, 77, 80, 131])
   })
 
   it('ignores unrelated names, nested helpers, test bodies, and Playwright specs', () => {

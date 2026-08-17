@@ -7,8 +7,14 @@ const REDUNDANT_CLEANUP_METHODS = new Set([
 ])
 
 const MODULE_SCOPE_MOCK_METHODS = new Set(['spyOn', 'stubGlobal'])
-const HOOK_IMPORTS = new Set(['afterEach', 'beforeEach'])
+const HOOK_IMPORTS = new Set([
+  'afterAll',
+  'afterEach',
+  'beforeAll',
+  'beforeEach'
+])
 const VI_IMPORTS = new Set(['vi'])
+const VITEST_GLOBALS = new Set(['afterEach', 'beforeEach', 'vi'])
 
 interface Node {
   readonly type: string
@@ -136,21 +142,25 @@ function isVitestImport(
   const identifier = asIdentifier(expression)
   if (!identifier) return false
   const variable = resolvedVariable(context, identifier)
-  return (
-    variable?.defs.some((definition) => {
-      if (
-        definition.type !== 'ImportBinding' ||
-        definition.parent.source?.value !== 'vitest'
-      ) {
-        return false
-      }
-      if (definition.node.type === 'ImportNamespaceSpecifier') {
-        return importedNames === undefined
-      }
-      const importedName = definition.node.imported?.name
-      return importedName !== undefined && importedNames?.has(importedName)
-    }) ?? false
-  )
+  if (!variable) {
+    return (
+      importedNames?.has(identifier.name) === true &&
+      VITEST_GLOBALS.has(identifier.name)
+    )
+  }
+  return variable.defs.some((definition) => {
+    if (
+      definition.type !== 'ImportBinding' ||
+      definition.parent.source?.value !== 'vitest'
+    ) {
+      return false
+    }
+    if (definition.node.type === 'ImportNamespaceSpecifier') {
+      return importedNames === undefined
+    }
+    const importedName = definition.node.imported?.name
+    return importedName !== undefined && importedNames?.has(importedName)
+  })
 }
 
 function isVitestNamespaceMember(
@@ -252,7 +262,7 @@ export const noRedundantVitestCleanup = {
         }
         context.report({
           node,
-          message: `vi.${methodName}() is redundant in beforeEach/afterEach because Vitest performs this cleanup automatically.`
+          message: `vi.${methodName}() is redundant in a Vitest hook because Vitest performs this cleanup automatically.`
         })
       }
     }
