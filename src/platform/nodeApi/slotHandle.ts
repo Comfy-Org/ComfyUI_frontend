@@ -97,12 +97,19 @@ export interface SlotPatch {
 }
 
 /** @knipIgnoreUnusedButUsedByCustomNodes */
+export interface InputSlotPatch extends SlotPatch {
+  /** Retargets the widget this input is the socket form of. Null clears it. */
+  widget?: string | null
+}
+
+/** @knipIgnoreUnusedButUsedByCustomNodes */
 export interface SlotSnapshot {
   readonly id: SlotId
   readonly index: number
   readonly name: string
   readonly type: string
   readonly label: string | undefined
+  readonly shape: SlotShape
   readonly isConnected: boolean
 }
 
@@ -119,7 +126,7 @@ export interface InputSlotHandle {
   link(): LinkInfo | undefined
   source(): { nodeId: string; outputIndex: number } | undefined
   disconnect(): boolean
-  modify(patch: SlotPatch): void
+  modify(patch: InputSlotPatch): void
   /** Replaces `{...input}`, which now yields nothing useful. */
   snapshot(): Readonly<SlotSnapshot>
 }
@@ -258,6 +265,7 @@ function snapshotSlot(
     name: slot.name,
     type: typeOf(slot),
     label: slot.label,
+    shape: slotShapeNameOf(slot),
     isConnected
   })
 }
@@ -321,7 +329,22 @@ function createInputHandle(
       return node && i !== -1 ? node.disconnectInput(i) : false
     },
     modify(patch) {
-      applyPatch(slotAt(), patch)
+      const node = getNode()
+      if (
+        patch.widget !== undefined &&
+        patch.widget !== null &&
+        !node?.widgets?.some((widget) => widget.name === patch.widget)
+      ) {
+        throw new ComfyApiError(
+          `No widget named '${patch.widget}' on this node, so the slot cannot be its socket form.`
+        )
+      }
+      const slot = slotAt()
+      applyPatch(slot, patch)
+      if (slot && patch.widget !== undefined) {
+        if (patch.widget === null) delete slot.widget
+        else slot.widget = { name: patch.widget }
+      }
     },
     snapshot() {
       const s = slotAt()
@@ -334,6 +357,7 @@ function createInputHandle(
             name: '',
             type: '',
             label: undefined,
+            shape: 'default',
             isConnected: false
           })
     }
@@ -474,6 +498,7 @@ function createOutputHandle(
             name: '',
             type: '',
             label: undefined,
+            shape: 'default',
             isConnected: false
           })
     }
@@ -493,6 +518,13 @@ const SLOT_SHAPES: Record<Exclude<SlotShape, 'default'>, RenderShape> = {
   optional: RenderShape.HollowCircle,
   list: RenderShape.GRID,
   directional: RenderShape.ARROW
+}
+
+function slotShapeNameOf(slot: INodeInputSlot | INodeOutputSlot): SlotShape {
+  if (slot.shape === SLOT_SHAPES.optional) return 'optional'
+  if (slot.shape === SLOT_SHAPES.list) return 'list'
+  if (slot.shape === SLOT_SHAPES.directional) return 'directional'
+  return 'default'
 }
 
 interface SlotOptions {
