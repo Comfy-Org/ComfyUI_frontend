@@ -7,7 +7,7 @@ import {
   liftNodeErrorsToBoundary,
   resolveLiftChain
 } from '@/core/graph/subgraph/liftNodeErrorsToBoundary'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode, LGraph } from '@/lib/litegraph/src/litegraph'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
@@ -60,6 +60,41 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   const lastPromptError = ref<PromptError | null>(null)
 
   const isErrorOverlayOpen = ref(false)
+  const pendingAddedNodeScans = new WeakMap<
+    LGraph,
+    Map<NodeExecutionId, number>
+  >()
+  const pendingAddedNodeScanRevision = ref(0)
+
+  function beginAddedNodeErrorScan(
+    rootGraph: LGraph,
+    executionId: NodeExecutionId
+  ): () => void {
+    const scansForGraph = pendingAddedNodeScans.get(rootGraph) ?? new Map()
+    scansForGraph.set(executionId, (scansForGraph.get(executionId) ?? 0) + 1)
+    pendingAddedNodeScans.set(rootGraph, scansForGraph)
+    pendingAddedNodeScanRevision.value++
+
+    let finished = false
+    return () => {
+      if (finished) return
+      finished = true
+
+      const remaining = (scansForGraph.get(executionId) ?? 1) - 1
+      if (remaining > 0) scansForGraph.set(executionId, remaining)
+      else scansForGraph.delete(executionId)
+      pendingAddedNodeScanRevision.value++
+    }
+  }
+
+  function hasPendingAddedNodeErrorScan(
+    rootGraph: LGraph,
+    executionId: NodeExecutionId
+  ): boolean {
+    // Subscribe callers to changes in the non-reactive WeakMap.
+    void pendingAddedNodeScanRevision.value
+    return (pendingAddedNodeScans.get(rootGraph)?.get(executionId) ?? 0) > 0
+  }
 
   /** Replaces the full record; empty or null means the run produced no errors. */
   function recordNodeErrors(nodeErrors: Record<string, NodeError> | null) {
@@ -83,15 +118,13 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     isErrorOverlayOpen.value = false
   }
 
-  /** Clear all error state.
-   *  Missing model state is intentionally preserved here to avoid wiping
-   *  in-progress model repairs (importTaskIds, URL inputs, etc.).
-   *  Missing models are cleared separately during workflow load/clean paths. */
-  function clearAllErrors() {
+  /** Clear error state produced by a run. Missing-resource state describes the
+   *  loaded graph rather than the run, so only replacing or discarding the
+   *  graph invalidates it. */
+  function clearRunErrors() {
     lastExecutionError.value = null
     lastPromptError.value = null
     lastNodeErrors.value = null
-    missingNodesStore.setMissingNodeTypes([])
     isErrorOverlayOpen.value = false
   }
 
@@ -550,7 +583,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     recordPromptError,
 
     // Clearing
-    clearAllErrors,
+    clearRunErrors,
     clearExecutionStartErrors,
     clearPromptError,
 
@@ -570,6 +603,10 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     totalErrorCount,
     lastExecutionErrorNodeId,
     activeGraphErrorNodeIds,
+
+    // Added-node scan coordination
+    beginAddedNodeErrorScan,
+    hasPendingAddedNodeErrorScan,
 
     // Clearing (targeted)
     clearSimpleNodeErrors,

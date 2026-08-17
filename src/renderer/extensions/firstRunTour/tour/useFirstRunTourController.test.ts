@@ -245,7 +245,6 @@ describe('useFirstRunTourController', () => {
   afterEach(() => {
     controllerScope?.stop()
     controllerScope = undefined
-    document.body.innerHTML = ''
     setViewportWidth(1280)
   })
 

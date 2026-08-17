@@ -3,7 +3,9 @@
     :class="
       cn(
         'group relative rounded-lg transition-all focus-within:ring focus-within:ring-component-node-widget-background-highlighted',
-        !isLinked && 'hover:bg-component-node-widget-background-hovered',
+        !isReadOnly &&
+          !isLinked &&
+          'hover:bg-component-node-widget-background-hovered',
         widget.borderStyle
       )
     "

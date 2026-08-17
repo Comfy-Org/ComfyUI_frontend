@@ -11,10 +11,16 @@ import {
   clearPreservedQuery
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+import {
+  cachedLegacyBillingMigrationEnabled,
+  remoteConfig,
+  remoteConfigState
+} from '@/platform/remoteConfig/remoteConfig'
+import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { useDialogService } from '@/services/dialogService'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import type * as ApiModule from '@/scripts/api'
+import { api } from '@/scripts/api'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import { createTestingPinia } from '@pinia/testing'
 
@@ -35,6 +41,15 @@ const { mockFeatureFlags } = vi.hoisted(() => ({
 
 const { mockResetSocket } = vi.hoisted(() => ({
   mockResetSocket: vi.fn()
+}))
+
+const mockTeamWorkspaceStore = vi.hoisted(() => ({
+  activeWorkspaceId: null as string | null,
+  resetForIdentityChange: vi.fn()
+}))
+
+vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
+  useTeamWorkspaceStore: () => mockTeamWorkspaceStore
 }))
 
 type MockUser = Omit<User, 'getIdToken' | 'delete'> & {
@@ -174,7 +189,6 @@ describe('useAuthStore', () => {
 
   beforeEach(() => {
     vi.stubGlobal('fetch', mockFetch)
-    sessionStorage.clear()
     clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.SHARE_AUTH)
 
     mockFeatureFlags.unifiedCloudAuthEnabled = false
@@ -222,11 +236,12 @@ describe('useAuthStore', () => {
     store = useAuthStore()
 
     // Reset and set up getIdToken mock
-    mockUser.getIdToken.mockReset()
     mockUser.getIdToken.mockResolvedValue('mock-id-token')
 
     // Default: no API key auth
     mockApiKeyGetAuthHeader.mockReturnValue(null)
+    mockTeamWorkspaceStore.activeWorkspaceId = null
+    mockTeamWorkspaceStore.resetForIdentityChange.mockReset()
   })
 
   describe('token refresh events', () => {
@@ -701,8 +716,7 @@ describe('useAuthStore', () => {
 
     it('recovers the workspace token instead of downgrading to personal auth', async () => {
       const workspaceAuth = useWorkspaceAuthStore()
-      const teamStore = useTeamWorkspaceStore()
-      teamStore.activeWorkspaceId = 'workspace-123'
+      mockTeamWorkspaceStore.activeWorkspaceId = 'workspace-123'
       vi.spyOn(workspaceAuth, 'getWorkspaceAuthHeader').mockReturnValue(null)
       const ensureSpy = vi
         .spyOn(workspaceAuth, 'ensureWorkspaceAuthHeader')
@@ -717,8 +731,7 @@ describe('useAuthStore', () => {
 
     it('fails closed (no personal Firebase downgrade) when recovery yields no token', async () => {
       const workspaceAuth = useWorkspaceAuthStore()
-      const teamStore = useTeamWorkspaceStore()
-      teamStore.activeWorkspaceId = 'workspace-123'
+      mockTeamWorkspaceStore.activeWorkspaceId = 'workspace-123'
       vi.spyOn(workspaceAuth, 'getWorkspaceAuthHeader').mockReturnValue(null)
       vi.spyOn(workspaceAuth, 'ensureWorkspaceAuthHeader').mockResolvedValue(
         null
@@ -732,8 +745,7 @@ describe('useAuthStore', () => {
 
     it('falls back to Firebase when workspace mode is not yet initialized', async () => {
       const workspaceAuth = useWorkspaceAuthStore()
-      const teamStore = useTeamWorkspaceStore()
-      teamStore.activeWorkspaceId = null
+      mockTeamWorkspaceStore.activeWorkspaceId = null
       vi.spyOn(workspaceAuth, 'getWorkspaceAuthHeader').mockReturnValue(null)
       const ensureSpy = vi.spyOn(workspaceAuth, 'ensureWorkspaceAuthHeader')
 
@@ -747,8 +759,7 @@ describe('useAuthStore', () => {
   describe('getAuthToken workspace recovery', () => {
     it('recovers the workspace token instead of downgrading to personal auth', async () => {
       const workspaceAuth = useWorkspaceAuthStore()
-      const teamStore = useTeamWorkspaceStore()
-      teamStore.activeWorkspaceId = 'workspace-123'
+      mockTeamWorkspaceStore.activeWorkspaceId = 'workspace-123'
       const ensureSpy = vi
         .spyOn(workspaceAuth, 'ensureWorkspaceToken')
         .mockResolvedValue('recovered-ws-token')
@@ -762,8 +773,7 @@ describe('useAuthStore', () => {
 
     it('fails closed (no personal Firebase downgrade) when recovery yields no token', async () => {
       const workspaceAuth = useWorkspaceAuthStore()
-      const teamStore = useTeamWorkspaceStore()
-      teamStore.activeWorkspaceId = 'workspace-123'
+      mockTeamWorkspaceStore.activeWorkspaceId = 'workspace-123'
       vi.spyOn(workspaceAuth, 'ensureWorkspaceToken').mockResolvedValue(null)
 
       const token = await store.getAuthToken()
@@ -774,8 +784,7 @@ describe('useAuthStore', () => {
 
     it('falls back to Firebase when workspace mode is not yet initialized', async () => {
       const workspaceAuth = useWorkspaceAuthStore()
-      const teamStore = useTeamWorkspaceStore()
-      teamStore.activeWorkspaceId = null
+      mockTeamWorkspaceStore.activeWorkspaceId = null
       vi.spyOn(workspaceAuth, 'getWorkspaceToken').mockReturnValue(undefined)
       const ensureSpy = vi.spyOn(workspaceAuth, 'ensureWorkspaceToken')
 
@@ -1625,6 +1634,45 @@ describe('useAuthStore', () => {
       authStateCallback(accountB)
 
       expect(mockResetSocket).toHaveBeenCalledTimes(1)
+    })
+
+    it('discards a remote config response from the previous account', async () => {
+      let resolveAccountA: ((response: Response) => void) | undefined
+      let accountASignal: AbortSignal | undefined
+      vi.spyOn(api, 'fetchApi')
+        .mockImplementationOnce(
+          (_route, options) =>
+            new Promise<Response>((resolve) => {
+              accountASignal = options?.signal ?? undefined
+              resolveAccountA = resolve
+            })
+        )
+        .mockResolvedValueOnce(
+          new Response(
+            JSON.stringify({ legacy_billing_migration_enabled: false }),
+            { status: 200 }
+          )
+        )
+
+      const accountARefresh = refreshRemoteConfig()
+      await vi.waitFor(() => expect(api.fetchApi).toHaveBeenCalledTimes(1))
+
+      authStateCallback(accountB)
+      expect(accountASignal?.aborted).toBe(true)
+      expect(remoteConfigState.value).toBe('unloaded')
+      expect(cachedLegacyBillingMigrationEnabled.value).toBeUndefined()
+
+      await refreshRemoteConfig()
+      resolveAccountA?.(
+        new Response(
+          JSON.stringify({ legacy_billing_migration_enabled: true }),
+          { status: 200 }
+        )
+      )
+      await accountARefresh
+
+      expect(remoteConfig.value.legacy_billing_migration_enabled).toBe(false)
+      expect(cachedLegacyBillingMigrationEnabled.value).toBe(false)
     })
 
     it('does not reconnect on a same-account token refresh', () => {

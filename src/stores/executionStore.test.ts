@@ -187,9 +187,6 @@ describe('useExecutionStore - NodeLocatorId conversions', () => {
 
   beforeEach(() => {
     // Reset mock implementations
-    mockNodeIdToNodeLocatorId.mockReset()
-    mockNodeLocatorIdToNodeExecutionId.mockReset()
-    mockExecutionIdToCurrentId.mockReset()
 
     store = useExecutionStore()
   })
@@ -272,10 +269,6 @@ describe('useExecutionStore - nodeLocationProgressStates caching', () => {
   let store: ReturnType<typeof useExecutionStore>
 
   beforeEach(() => {
-    mockNodeIdToNodeLocatorId.mockReset()
-    mockNodeLocatorIdToNodeExecutionId.mockReset()
-    mockExecutionIdToCurrentId.mockReset()
-
     store = useExecutionStore()
   })
 
@@ -943,6 +936,28 @@ describe('useExecutionStore - workflowStatus', () => {
     }
   })
 
+  it('clears running when an account precondition error ends the run', () => {
+    callStoreJob('job-1', workflowA)
+    fireExecutionStart('job-1')
+    expect(store.getWorkflowStatus(workflowA)).toBe('running')
+
+    apiEventHandlers.get('execution_error')!(
+      new CustomEvent('execution_error', {
+        detail: {
+          prompt_id: 'job-1',
+          node_id: '1',
+          node_type: 'TestNode',
+          exception_message:
+            'Payment Required: Please add credits to your account to use this node.',
+          exception_type: 'InsufficientFundsError',
+          traceback: []
+        }
+      })
+    )
+
+    expect(store.getWorkflowStatus(workflowA)).toBeUndefined()
+  })
+
   it('drops pending failed when service-level error fires before storeJob', () => {
     apiEventHandlers.get('execution_error')!(
       new CustomEvent('execution_error', {
@@ -1469,7 +1484,6 @@ describe('useExecutionStore - RAF batching', () => {
   }
 
   beforeEach(() => {
-    vi.clearAllMocks()
     store = useExecutionStore()
     store.bindExecutionEvents()
   })

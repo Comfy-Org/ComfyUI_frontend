@@ -45,7 +45,6 @@ import {
 
 describe('useRunButtonTelemetry', () => {
   beforeEach(() => {
-    state.telemetry.trackRunButton.mockClear()
     state.mode.value = 'graph'
     state.isAppMode.value = false
     state.executionContextError = null

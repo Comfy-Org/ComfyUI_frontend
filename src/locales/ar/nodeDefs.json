@@ -890,7 +890,7 @@
       },
       "model": {
         "name": "النموذج",
-        "tooltip": "Seedance 2.0 لأعلى جودة؛ Seedance 2.0 Fast لتحسين السرعة."
+        "tooltip": "Seedance 2.5 لأحدث نموذج، وفيديوهات تصل مدتها إلى 30 ثانية وإخراج mp4/mov؛ Seedance 2.0 لأقصى جودة ودقة 1080p/4k؛ Fast لتحسين السرعة؛ Mini للتوليد الأسرع والأقل تكلفة."
       },
       "model_duration": {
         "name": "المدة"
@@ -931,7 +931,7 @@
       },
       "model": {
         "name": "النموذج",
-        "tooltip": "Seedance 2.0 لأعلى جودة؛ Seedance 2.0 Fast لتحسين السرعة."
+        "tooltip": "Seedance 2.5 لأحدث نموذج، وفيديوهات تصل مدتها إلى 30 ثانية وإخراج mp4/mov؛ Seedance 2.0 لأقصى جودة ودقة 1080p/4k؛ Fast لتحسين السرعة؛ Mini للتوليد الأسرع والأقل تكلفة."
       },
       "model_auto_downscale": {
         "name": "التقليل التلقائي للحجم"
@@ -984,7 +984,7 @@
       },
       "model": {
         "name": "النموذج",
-        "tooltip": "Seedance 2.0 لأعلى جودة؛ Seedance 2.0 Fast لتحسين السرعة."
+        "tooltip": "Seedance 2.5 لأحدث نموذج، وفيديوهات تصل مدتها إلى 30 ثانية وإخراج mp4/mov؛ Seedance 2.0 لأقصى جودة ودقة 1080p/4k؛ Fast لتحسين السرعة؛ Mini للتوليد الأسرع والأقل تكلفة."
       },
       "model_duration": {
         "name": "المدة"
@@ -5963,19 +5963,19 @@
       },
       "image": {
         "name": "الصورة",
-        "tooltip": "صورة بداية اختيارية لـ grok-imagine-video. مطلوبة لـ grok-imagine-video-1.5."
+        "tooltip": "صورة بداية اختيارية. إذا تم حذفها، يتم توليد الفيديو من الموجّه النصي فقط."
       },
       "model": {
         "name": "النموذج",
-        "tooltip": "يتطلب grok-imagine-video-1.5 دائماً صورة إدخال."
+        "tooltip": "النموذج المستخدم لتوليد الفيديو."
       },
       "prompt": {
         "name": "المطالبة",
-        "tooltip": "وصف نصي للفيديو المطلوب."
+        "tooltip": "وصف نصي للفيديو المطلوب. اختياري لـ grok-imagine-video-1.5 عند توفير صورة إدخال."
       },
       "resolution": {
         "name": "الدقة",
-        "tooltip": "دقة الفيديو الناتج."
+        "tooltip": "دقة فيديو الإخراج. تتوفر 1080p فقط لـ grok-imagine-video-1.5."
       },
       "seed": {
         "name": "البذرة",
@@ -5989,7 +5989,7 @@
     }
   },
   "GrokVideoReferenceNode": {
-    "description": "توليد فيديو موجه بواسطة صور مرجعية كمرجع للأسلوب والمحتوى.",
+    "description": "توليد فيديو موجّه بالصور المرجعية، مع مراجع صوتية مسبقة الضبط اختيارية.",
     "display_name": "Grok من مرجع إلى فيديو",
     "inputs": {
       "control_after_generate": {
@@ -8816,7 +8816,7 @@
   },
   "LTXVConcatAVLatent": {
     "description": "دمج كامن فيديو وكامن صوت في كامن AV مشترك (أي نموذج AV مثل LTXV أو MiniMax H3).",
-    "display_name": "LTXVConcatAVLatent",
+    "display_name": "دمج AV Latent",
     "inputs": {
       "audio_latent": {
         "name": "audio_latent"
@@ -9235,8 +9235,8 @@
     }
   },
   "LTXVSeparateAVLatent": {
-    "description": "LTXV فصل الكامنة الصوتية والمرئية",
-    "display_name": "LTXVSeparateAVLatent",
+    "description": "تقسيم AV latent مشترك إلى latent الفيديو والصوت الخاصين به (لأي نموذج AV، مثل LTXV أو MiniMax H3).",
+    "display_name": "فصل AV Latent",
     "inputs": {
       "av_latent": {
         "name": "كامنة صوتية ومرئية"
@@ -9766,7 +9766,7 @@
   "Load3D": {
     "display_name": "تحميل ثلاثي الأبعاد",
     "inputs": {
-      "clear": "مسح",
+      "clear": {},
       "height": {
         "name": "الارتفاع"
       },
@@ -9776,8 +9776,8 @@
       "model_file": {
         "name": "ملف النموذج"
       },
-      "upload 3d model": "رفع نموذج ثلاثي الأبعاد",
-      "upload extra resources": "رفع موارد إضافية",
+      "upload 3d model": {},
+      "upload extra resources": {},
       "width": {
         "name": "العرض"
       }
@@ -11810,7 +11810,7 @@
     }
   },
   "MiniMaxH3ReferenceToVideo": {
-    "description": "<صورة i> / <فيديو k> / <صوت j> تكييف مرجعي لـ MiniMax H3. استخدم نفس العلامات عند كتابة البرومبت.",
+    "description": "<Picture i> / <Video k> / <Audio j> تكييف مرجعي لـ MiniMax H3. استخدم نفس العلامات عند كتابة البرومبت.",
     "display_name": "تحويل مرجع MiniMax H3 إلى فيديو",
     "inputs": {
       "audio_vae": {
@@ -15609,7 +15609,7 @@
     "description": "معاينة أي قيمة مدخلة كنص.",
     "display_name": "معاينة أي",
     "inputs": {
-      "preview_mode": "وضع المعاينة",
+      "preview_mode": {},
       "preview_text": {},
       "source": {
         "name": "المصدر"

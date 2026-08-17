@@ -105,10 +105,6 @@ vi.mock('@/platform/workflow/management/composables/useAppsSidebarTab', () => ({
 
 describe('useSidebarTabStore', () => {
   beforeEach(() => {
-    mockGetSetting.mockReset()
-    mockRegisterCommand.mockClear()
-    mockRegisterCommands.mockClear()
-    mockBrowseModelAssets.mockClear()
     registeredCommands.length = 0
     commandStoreCommands.length = 0
   })
