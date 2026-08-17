@@ -289,7 +289,10 @@ describe('DomWidgets reactive-write budget', () => {
 
     // Count reactive writes via a setter proxy on pos.
     let writeCount = 0
-    const originalDescriptor = Object.getOwnPropertyDescriptor(widgetState, 'pos')
+    const originalDescriptor = Object.getOwnPropertyDescriptor(
+      widgetState,
+      'pos'
+    )
     let _pos = widgetState.pos
     Object.defineProperty(widgetState, 'pos', {
       get: () => _pos,
@@ -304,7 +307,8 @@ describe('DomWidgets reactive-write budget', () => {
     for (let i = 0; i < 20; i++) drawFrame(canvas)
 
     // Restore original descriptor to avoid polluting other tests.
-    if (originalDescriptor) Object.defineProperty(widgetState, 'pos', originalDescriptor)
+    if (originalDescriptor)
+      Object.defineProperty(widgetState, 'pos', originalDescriptor)
 
     expect(writeCount).toBe(0)
   })
