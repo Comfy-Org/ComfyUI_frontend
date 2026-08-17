@@ -7,7 +7,6 @@ import {
 
 describe('getCheckoutAttribution', () => {
   beforeEach(() => {
-    window.localStorage.clear()
     window.__CONFIG__ = {
       ...window.__CONFIG__,
       ga_measurement_id: undefined
@@ -16,7 +15,6 @@ describe('getCheckoutAttribution', () => {
     window.ire = undefined
     window.rewardful = undefined
     window.Rewardful = undefined
-    window.history.pushState({}, '', '/')
   })
 
   it('reads GA identity and URL attribution, and prefers generated click id', async () => {

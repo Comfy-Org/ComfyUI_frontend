@@ -1,14 +1,12 @@
-import type {
-  SubscriptionTier,
-  TierKey
-} from '@/platform/cloud/subscription/constants/tierPricing'
-import { TIER_TO_KEY } from '@/platform/cloud/subscription/constants/tierPricing'
+import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
+import { toTierKey } from '@/platform/cloud/subscription/constants/tierPricing'
+import type { SubscriptionTier } from '@/platform/workspace/api/workspaceApi'
 
 export function resolveSubscriptionTierKey(
   tier: SubscriptionTier | null | undefined
 ): TierKey {
   if (!tier) return 'free'
-  return TIER_TO_KEY[tier] ?? 'standard'
+  return toTierKey(tier) ?? 'standard'
 }
 
 export function formatSubscriptionDate(

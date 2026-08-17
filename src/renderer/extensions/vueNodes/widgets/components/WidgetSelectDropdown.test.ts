@@ -139,13 +139,10 @@ const i18n = createI18n({
 describe('WidgetSelectDropdown', () => {
   beforeEach(() => {
     mockMediaAssets.media.value = []
-    mockCheckState.mockClear()
     mockAssetsData.items = []
     mockItemsRef.value = []
     mockSelectedSetRef.value = new Set()
     mockFilterSelectedRef.value = 'all'
-    mockUpdateSelectedItems.mockClear()
-    mockHandleFilesUpdate.mockClear()
   })
 
   function renderComponent(

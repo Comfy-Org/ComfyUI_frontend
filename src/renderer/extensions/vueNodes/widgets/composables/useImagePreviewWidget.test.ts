@@ -197,8 +197,6 @@ describe('useImagePreviewWidget', () => {
 
   describe('drawWidget — upload spinner', () => {
     it('renders spinner when node.isUploading is true', () => {
-      vi.setSystemTime(500)
-
       const constructor = useImagePreviewWidget()
       const node = createMockNode({ isUploading: true })
       constructor(node, defaultInputSpec)
@@ -217,8 +215,6 @@ describe('useImagePreviewWidget', () => {
     })
 
     it('uses LiteGraph.NODE_TEXT_COLOR for spinner stroke', () => {
-      vi.setSystemTime(0)
-
       const constructor = useImagePreviewWidget()
       const node = createMockNode({ isUploading: true })
       constructor(node, defaultInputSpec)
