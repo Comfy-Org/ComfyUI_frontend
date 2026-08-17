@@ -42,15 +42,16 @@ export function revealDynamicInputSlot(
     const match = options.find(({ types }) => types.includes(wantedType))
     if (!match) continue
 
-    // Match the widget by its option keys rather than by name: nested combos
-    // are named after their position in the tree, and autogrow prefixes an
-    // ordinal, neither of which is derivable from the spec alone.
+    // Prefer an exact name match; fall back to the option keys, because a
+    // nested combo is named after its position in the tree and an autogrow
+    // child carries an ordinal, neither of which the spec alone yields.
     const keys = options.map(({ key }) => key)
-    const widget = node.widgets?.find(
-      (candidate) =>
-        isEqual(candidate.options?.values, keys) &&
-        candidate.value !== match.key
+    const selectable = node.widgets?.filter(
+      (candidate) => candidate.value !== match.key
     )
+    const widget =
+      selectable?.find((candidate) => candidate.name === spec.name) ??
+      selectable?.find((candidate) => isEqual(candidate.options?.values, keys))
     if (!widget) continue
 
     rollback.push({ widget, value: widget.value })

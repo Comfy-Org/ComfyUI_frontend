@@ -430,5 +430,93 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
         searchBoxV2.results.filter({ hasText: 'Node With Dynamic Combo' })
       ).toHaveCount(1)
     })
+
+    test('Output filter resolves a MatchType output to its allowed types', async ({
+      comfyPage
+    }) => {
+      const { searchBoxV2 } = comfyPage
+
+      await searchBoxV2.open()
+      await searchBoxV2.applyTypeFilter('output', 'IMAGE')
+
+      await expect(searchBoxV2.filterChips).toHaveCount(1)
+      await expect(searchBoxV2.results.first()).toBeVisible()
+    })
+
+    test('Dynamic control wrappers are never offered as filter values', async ({
+      comfyPage
+    }) => {
+      const { searchBoxV2 } = comfyPage
+
+      await searchBoxV2.open()
+      await searchBoxV2.typeFilterButton('input').click()
+      await searchBoxV2.filterOptions.first().waitFor({ state: 'visible' })
+      await searchBoxV2.filterSearch.fill('COMFY_')
+
+      await expect(searchBoxV2.filterOptions).toHaveCount(0)
+    })
+
+    test('Link release via the search box connects through a combo option', async ({
+      comfyPage
+    }) => {
+      const { searchBoxV2 } = comfyPage
+      const source = await comfyPage.nodeOps.addNode(
+        'LoadImage',
+        {},
+        { x: 120, y: 120 }
+      )
+      const imageOut = await source.getOutput(0)
+
+      await comfyPage.canvasOps.dragAndDrop(await imageOut.getPosition(), {
+        x: 700,
+        y: 520
+      })
+
+      await expect(searchBoxV2.dialog).toBeVisible()
+      await searchBoxV2.input.fill('Dynamic Combo')
+      await expect(searchBoxV2.results.first()).toBeVisible()
+      await searchBoxV2.results.first().click()
+      await expect(searchBoxV2.dialog).toBeHidden()
+
+      const [target] = await comfyPage.nodeOps.getNodeRefsByType(
+        'DevToolsNodeWithDynamicCombo'
+      )
+      const combo = await target.getWidgetByName('combo')
+
+      // IMAGE lives under option3, which is not the default selection.
+      expect(await combo.getValue()).toBe('option3')
+      expect(await imageOut.getLinkCount()).toBe(1)
+    })
+
+    test('Link release via the context menu connects through a combo option', async ({
+      comfyPage
+    }) => {
+      await comfyPage.settings.setSetting(
+        'Comfy.LinkRelease.Action',
+        'context menu'
+      )
+
+      const source = await comfyPage.nodeOps.addNode(
+        'LoadImage',
+        {},
+        { x: 120, y: 120 }
+      )
+      const imageOut = await source.getOutput(0)
+
+      await comfyPage.canvasOps.dragAndDrop(await imageOut.getPosition(), {
+        x: 700,
+        y: 520
+      })
+
+      await comfyPage.contextMenu.clickMenuItem('Node With Dynamic Combo')
+
+      const [target] = await comfyPage.nodeOps.getNodeRefsByType(
+        'DevToolsNodeWithDynamicCombo'
+      )
+      const combo = await target.getWidgetByName('combo')
+
+      expect(await combo.getValue()).toBe('option3')
+      expect(await imageOut.getLinkCount()).toBe(1)
+    })
   })
 })
