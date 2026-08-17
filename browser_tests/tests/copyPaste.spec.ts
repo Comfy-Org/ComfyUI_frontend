@@ -1,6 +1,7 @@
-import { expect } from '@playwright/test'
-
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import {
+  comfyExpect as expect,
+  comfyPageFixture as test
+} from '@e2e/fixtures/ComfyPage'
 import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
 
 test.beforeEach(async ({ comfyPage }) => {
@@ -25,7 +26,7 @@ test.describe(
       await node.centerOnNode()
       await node.clickContextMenuOption('Pin')
       await comfyPage.contextMenu.waitForHidden()
-      await expect.poll(() => node.isPinned()).toBe(true)
+      await expect(node).toBePinned()
 
       const nodeType = await node.getType()
       const originalNodes = await comfyPage.nodeOps.getNodeRefsByType(nodeType)
