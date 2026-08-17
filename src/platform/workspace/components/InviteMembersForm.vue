@@ -7,7 +7,7 @@
       :delimiter="EMAIL_DELIMITER"
       :convert-value="normalizeEmail"
       :model-value="emails"
-      :class="tagsInputClass"
+      :class="cn('max-h-48 overflow-y-auto', tagsInputClass)"
       @update:model-value="onEmailsUpdate"
     >
       <TagsInputItem
