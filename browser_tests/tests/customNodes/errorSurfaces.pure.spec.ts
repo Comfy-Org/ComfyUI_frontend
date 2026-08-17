@@ -42,14 +42,17 @@ test('a closed page fails immediately with the real reason, not the sentinel', a
   expect(String(failure)).not.toContain('unreadable mid-poll')
 })
 
-test('a transient toast that clears within the window still passes', async ({
+test('a visible error toast fails even if it clears during the assertion', async ({
   page
 }) => {
   await page.setContent(
     '<div id="t" class="p-toast-message-error">momentary</div>' +
       '<script>setTimeout(() => document.getElementById("t").remove(), 800)</script>'
   )
-  await expect(
-    expectNoVisibleErrors(page, 'transient')
-  ).resolves.toBeUndefined()
+  const failure = await expectNoVisibleErrors(page, 'transient').then(
+    () => undefined,
+    (error: unknown) => error
+  )
+  expect(failure).toBeInstanceOf(Error)
+  expect(String(failure)).toContain('momentary')
 })
