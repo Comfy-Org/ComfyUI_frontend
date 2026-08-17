@@ -8,7 +8,20 @@ import type {
 } from '@/platform/workspace/api/partnerNodePolicyApi'
 import { PartnerNodePolicyApiError } from '@/platform/workspace/api/partnerNodePolicyApi'
 import { usePartnerNodeGovernanceStore } from '@/platform/workspace/stores/partnerNodeGovernanceStore'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+
+const mockTeamWorkspaceStore = vi.hoisted(() => ({
+  store: null as null | {
+    activeWorkspace: null | { id: string; type: 'personal' | 'team' }
+  }
+}))
+
+vi.mock('@/platform/workspace/stores/teamWorkspaceStore', async () => {
+  const { reactive } = await import('vue')
+  mockTeamWorkspaceStore.store = reactive({ activeWorkspace: null })
+  return {
+    useTeamWorkspaceStore: () => mockTeamWorkspaceStore.store
+  }
+})
 
 const mockGetPartnerNodePolicy = vi.hoisted(() => vi.fn())
 const mockGetPartnerProviders = vi.hoisted(() => vi.fn())
@@ -48,23 +61,9 @@ const providers: PartnerProvider[] = [
 ]
 
 function activateWorkspace(id: string, type: 'personal' | 'team' = 'team') {
-  const store = useTeamWorkspaceStore()
-  store.workspaces = [
-    {
-      id,
-      name: id,
-      type,
-      role: 'owner',
-      created_at: '2026-01-01T00:00:00Z',
-      joined_at: '2026-01-01T00:00:00Z',
-      isSubscribed: false,
-      subscriptionPlan: null,
-      subscriptionTier: null,
-      members: [],
-      pendingInvites: []
-    }
-  ]
-  store.activeWorkspaceId = id
+  if (!mockTeamWorkspaceStore.store)
+    throw new Error('Workspace store not ready')
+  mockTeamWorkspaceStore.store.activeWorkspace = { id, type }
 }
 
 async function createLoadedStore() {
