@@ -403,8 +403,8 @@ function setupNodeSelectionCanvas() {
     { isNodeFake: true, id: 12, title: 'KSampler' }
   ]
   const selectedItems = new Set<unknown>()
-  const selectItems = vi.fn((items: unknown[]) => {
-    selectedItems.clear()
+  const selectItems = vi.fn((items: unknown[], add = false) => {
+    if (!add) selectedItems.clear()
     for (const item of items) selectedItems.add(item)
   })
   const deselect = vi.fn((node: unknown) => selectedItems.delete(node))
@@ -3585,14 +3585,17 @@ describe('AgentPanelRoot workflow binding', () => {
   it('stages a mention pick once and reports the tag gesture', async () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
-    appMock.graph.nodes = [{ id: 7, title: 'KSampler' }]
+    const state = setupNodeSelectionCanvas()
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentPanelStore().isOpen = true
 
     await openMentionPicker()
     await userEvent.click(await screen.findByText('KSampler'))
 
     expect(await screen.findByText('KSampler')).toBeInTheDocument()
+    expect([...state.selectedItems]).toEqual([state.nodes[1]])
+    expect(state.selectItems).toHaveBeenCalledWith([state.nodes[1]], true)
     expect(telemetry.trackAgentNodeTagged).toHaveBeenCalledTimes(1)
     expect(telemetry.trackAgentNodeTagged).toHaveBeenCalledWith({
       source: 'mention_picker'
@@ -3670,11 +3673,9 @@ describe('AgentPanelRoot workflow binding', () => {
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
-    useAgentPanelStore().isOpen = true
-    hostStores.canvas.selectedItems = [
-      { isNodeFake: true, id: 7, title: 'KSampler' }
-    ]
-    expect(await screen.findByText('KSampler')).toBeInTheDocument()
+    await openMentionPicker()
+    await userEvent.click(await screen.findByText('KSampler'))
+    telemetry.trackAgentNodeTagged.mockClear()
 
     await openMentionPicker()
     const matches = await screen.findAllByText('KSampler')
@@ -3800,14 +3801,18 @@ describe('AgentPanelRoot workflow binding', () => {
   it('sends only the remaining chip after one is dismissed', async () => {
     makeTab()
     const bodies = mockMessagesEndpoint('wf-42')
+    appMock.graph.nodes = [
+      { id: 5, title: 'KSampler' },
+      { id: 7, title: 'VAEDecode' }
+    ]
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentPanelStore().isOpen = true
 
-    hostStores.canvas.selectedItems = [
-      { isNodeFake: true, id: 5, title: 'KSampler' },
-      { isNodeFake: true, id: 7, title: 'VAEDecode' }
-    ]
+    await openMentionPicker()
+    await userEvent.click(await screen.findByText('KSampler'))
+    await openMentionPicker()
+    await userEvent.click(await screen.findByText('VAEDecode'))
     expect(await screen.findByText('KSampler')).toBeInTheDocument()
     expect(screen.getByText('VAEDecode')).toBeInTheDocument()
 
@@ -3830,12 +3835,15 @@ describe('AgentPanelRoot workflow binding', () => {
   it('deselects the graph node when its reference chip is removed', async () => {
     makeTab()
     const state = setupNodeSelectionCanvas()
-    state.selectedItems.add(state.nodes[0])
-    state.selectedItems.add(state.nodes[1])
-    hostStores.canvas.updateSelectedItems()
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentPanelStore().isOpen = true
+
+    await openMentionPicker()
+    await userEvent.click(await screen.findByText('VAE Decode'))
+    await openMentionPicker()
+    const matches = await screen.findAllByText('KSampler')
+    await userEvent.click(matches[matches.length - 1])
 
     expect(await screen.findByText('VAE Decode')).toBeInTheDocument()
     expect(screen.getByText('KSampler')).toBeInTheDocument()
@@ -3850,61 +3858,82 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(hostStores.canvas.selectedItems).toEqual([state.nodes[1]])
   })
 
-  it('stages selected nodes as chips and sends their ids once', async () => {
+  it('keeps reference chips unchanged after normal graph selection', async () => {
     makeTab()
-    const bodies = mockMessagesEndpoint('wf-42')
+    mockMessagesEndpoint('wf-42')
+    const state = setupNodeSelectionCanvas()
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentPanelStore().isOpen = true
 
-    hostStores.canvas.selectedItems = [
-      { isNodeFake: true, id: 5, title: 'KSampler' }
-    ]
+    await openMentionPicker()
+    await userEvent.click(await screen.findByText('KSampler'))
     expect(await screen.findByText('KSampler')).toBeInTheDocument()
 
-    await sendFromComposer('tweak the sampler')
+    state.selectedItems.clear()
+    state.selectedItems.add(state.nodes[0])
+    hostStores.canvas.updateSelectedItems()
+    await nextTick()
 
-    expect(bodies[0]).toMatchObject({ selection: { node_ids: ['5'] } })
-    expect(
-      screen.queryByRole('button', { name: i18n.global.t('agent.remove') })
-    ).not.toBeInTheDocument()
-    expect(screen.getByText('KSampler #5')).toBeInTheDocument()
+    expect(screen.getByText('KSampler')).toBeInTheDocument()
+    expect(screen.queryByText('VAE Decode')).not.toBeInTheDocument()
   })
-  it('keeps sending the live selection after the chips were consumed', async () => {
+
+  it('selects every referenced node when node-selection mode starts', async () => {
     makeTab()
-    const bodies = mockMessagesEndpoint('wf-42')
+    mockMessagesEndpoint('wf-42')
+    const state = setupNodeSelectionCanvas()
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentPanelStore().isOpen = true
 
-    hostStores.canvas.selectedItems = [
-      { isNodeFake: true, id: 7, title: 'KSampler' }
-    ]
+    await openMentionPicker()
+    await userEvent.click(await screen.findByText('KSampler'))
+    state.selectedItems.clear()
+    state.selectedItems.add(state.nodes[0])
+    hostStores.canvas.updateSelectedItems()
+    state.selectItems.mockClear()
+
+    await enterNodeSelectionMode()
+
+    expect(state.selectItems).toHaveBeenCalledWith([state.nodes[1]])
+    expect([...state.selectedItems]).toEqual([state.nodes[1]])
+    expect(screen.getByText('KSampler')).toBeInTheDocument()
+  })
+  it('does not resend a canvas selection after its chip was consumed', async () => {
+    makeTab()
+    const bodies = mockMessagesEndpoint('wf-42')
+    const state = setupNodeSelectionCanvas()
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentPanelStore().isOpen = true
+
+    await openMentionPicker()
+    await userEvent.click(await screen.findByText('KSampler'))
     expect(await screen.findByText('KSampler')).toBeInTheDocument()
 
     await sendFromComposer('first ask')
-    expect(bodies[0]).toMatchObject({ selection: { node_ids: ['7'] } })
+    expect(bodies[0]).toMatchObject({ selection: { node_ids: ['12'] } })
 
     ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
     await screen.findByRole('button', { name: 'Send' })
 
-    // The node is still selected on canvas, so the second turn carries it
-    // even though no fresh chip was staged.
+    expect([...state.selectedItems]).toEqual([state.nodes[1]])
     await sendFromComposer('second ask')
-    expect(bodies[1]).toMatchObject({ selection: { node_ids: ['7'] } })
+    expect(bodies[1]).not.toHaveProperty('selection')
   })
 
-  it('keeps a cleared selection dismissed across a panel remount until the selection changes', async () => {
+  it('keeps normal graph selections out of the composer across a panel remount', async () => {
     makeTab()
     const bodies = mockMessagesEndpoint('wf-42')
+    appMock.graph.nodes = [{ id: 7, title: 'KSampler' }]
 
     const panelStore = useAgentPanelStore()
     const first = render(AgentPanelRoot, { global: { plugins: [i18n] } })
     panelStore.isOpen = true
 
-    hostStores.canvas.selectedItems = [
-      { isNodeFake: true, id: 7, title: 'KSampler' }
-    ]
+    await openMentionPicker()
+    await userEvent.click(await screen.findByText('KSampler'))
     expect(await screen.findByText('KSampler')).toBeInTheDocument()
 
     await userEvent.click(
@@ -3937,9 +3966,10 @@ describe('AgentPanelRoot workflow binding', () => {
     hostStores.canvas.selectedItems = [
       { isNodeFake: true, id: 8, title: 'VAEDecode' }
     ]
-    expect(await screen.findByText('VAEDecode')).toBeInTheDocument()
+    await nextTick()
+    expect(screen.queryByText('VAEDecode')).not.toBeInTheDocument()
     await sendFromComposer('use the new selection')
-    expect(bodies[2]).toMatchObject({ selection: { node_ids: ['8'] } })
+    expect(bodies[2]).not.toHaveProperty('selection')
   })
 
   it('stages the same node id in another unsaved workflow after a panel remount', async () => {
@@ -3949,12 +3979,12 @@ describe('AgentPanelRoot workflow binding', () => {
     )
     const bodies = mockMessagesEndpoint('wf-42')
     const panelStore = useAgentPanelStore()
+    appMock.graph.nodes = [{ id: 7, title: 'First KSampler' }]
     const first = render(AgentPanelRoot, { global: { plugins: [i18n] } })
     panelStore.isOpen = true
 
-    hostStores.canvas.selectedItems = [
-      { isNodeFake: true, id: 7, title: 'First KSampler' }
-    ]
+    await openMentionPicker()
+    await userEvent.click(await screen.findByText('First KSampler'))
     expect(await screen.findByText('First KSampler')).toBeInTheDocument()
     await userEvent.click(
       screen.getByRole('button', { name: i18n.global.t('agent.remove') })
@@ -3967,13 +3997,12 @@ describe('AgentPanelRoot workflow binding', () => {
       'workflows/Unsaved Workflow (2).json',
       { isTemporary: true }
     )
-    hostStores.canvas.selectedItems = [
-      { isNodeFake: true, id: 7, title: 'Second KSampler' }
-    ]
+    appMock.graph.nodes = [{ id: 7, title: 'Second KSampler' }]
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     panelStore.isOpen = true
 
-    expect(await screen.findByText('Second KSampler')).toBeInTheDocument()
+    await openMentionPicker()
+    await userEvent.click(await screen.findByText('Second KSampler'))
     await sendFromComposer('use this workflow')
     expect(bodies[0]).toMatchObject({ selection: { node_ids: ['7'] } })
   })
@@ -4168,6 +4197,8 @@ describe('AgentPanelRoot workflow binding', () => {
 
     expect(nodeSelectionStore.isLoadingWorkflow).toBe(false)
     expect([...selection.selectedItems]).toEqual([secondNode])
+    expect(screen.getByText('Save Image')).toBeInTheDocument()
+    expect(screen.queryByText('VAE Decode')).not.toBeInTheDocument()
   })
 
   it('resolves picker nodes from the viewed subgraph, not the root graph', async () => {

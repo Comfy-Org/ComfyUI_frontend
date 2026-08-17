@@ -142,23 +142,16 @@ describe('AgentPanel extension flag gate', () => {
     expect(mocks.agentStore.isOpen).toBe(true)
   })
 
-  it('restores each workflow selection after the shared graph load', async () => {
+  it('restores each workflow reference after the shared graph load', async () => {
     await import('./agentPanel')
     const extension = mocks.capturedExtensions.find(
       (item) => item.name === 'Comfy.AgentPanel'
     )
-    const firstNode = { id: 9 }
     const secondNode = { id: 12 }
     const selectItems = vi.fn()
 
-    extension!.beforeLoadGraph!({
-      canvas: { selectedItems: new Set([firstNode]) }
-    } as never)
+    extension!.beforeLoadGraph!({} as never)
 
-    expect(mocks.nodeSelectionStore.saveNodeIds).toHaveBeenCalledWith(
-      'workflows/first.json',
-      ['9']
-    )
     expect(mocks.nodeSelectionStore.beginWorkflowLoad).toHaveBeenCalledOnce()
 
     mocks.nodeSelectionStore.isLoadingWorkflow = true

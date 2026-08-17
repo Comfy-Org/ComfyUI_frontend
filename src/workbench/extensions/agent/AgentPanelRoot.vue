@@ -110,12 +110,13 @@ const selectedNodes = computed<SelectedNode[]>(() =>
 const {
   staged: selectionTags,
   consume: consumeSelection,
-  dismissed: selectionDismissed,
   remove: removeSelectionTag,
-  add: addSelectionTag
+  add: addSelectionTag,
+  replace: replaceSelectionTags
 } = useCanvasSelection({
   selection: selectedNodes,
   isLive: () => agentPanelStore.isOpen,
+  isTracking: () => agentNodeSelectionStore.isActive,
   isPaused: () => agentNodeSelectionStore.isLoadingWorkflow,
   scope: () => workflowStore.activeWorkflow?.path ?? null,
   dismissedSignature: dismissedSelectionSignature
@@ -131,6 +132,38 @@ function mentionableNodes(): SelectedNode[] {
     title: node.title || node.type
   }))
 }
+
+watch(
+  selectionTags,
+  (tags) => {
+    if (!agentPanelStore.isOpen || agentNodeSelectionStore.isLoadingWorkflow)
+      return
+    agentNodeSelectionStore.saveNodeIds(
+      workflowStore.activeWorkflow?.path,
+      tags.map((node) => node.id)
+    )
+  },
+  { deep: true }
+)
+
+watch(
+  () => agentPanelStore.isOpen,
+  (open) => {
+    if (!open) return
+    const ids = new Set(
+      agentNodeSelectionStore.nodeIds(workflowStore.activeWorkflow?.path)
+    )
+    replaceSelectionTags(
+      viewedGraphNodes()
+        .filter((node) => ids.has(String(node.id)))
+        .map((node) => ({
+          id: String(node.id),
+          title: node.title || node.type
+        }))
+    )
+  },
+  { immediate: true }
+)
 
 function mentionableAssets() {
   return assetService.getInputAssetsIncludingPublic()
@@ -755,9 +788,7 @@ const coachStep: CoachStep = {
 function onSend(text: string, attachments: ComposerAttachment[]): void {
   exitNodeSelectionMode()
   void applyDraft()
-  const consumed = consumeSelection()
-  const nodeTags =
-    consumed.length > 0 || selectionDismissed() ? consumed : selectedNodes.value
+  const nodeTags = consumeSelection()
   useTelemetry()?.trackAgentMessageSent({
     attachment_count: attachments.length,
     node_tag_count: nodeTags.length
@@ -811,14 +842,14 @@ watch(
       selectedGraphNodes = new Map(
         nodes.map((node) => [String(node.id), node] as const)
       )
+      replaceSelectionTags(
+        nodes.map((node) => ({
+          id: String(node.id),
+          title: node.title || node.type
+        }))
+      )
       agentNodeSelectionStore.finishWorkflowLoad()
       return
-    }
-    if (!agentNodeSelectionStore.isLoadingWorkflow) {
-      agentNodeSelectionStore.saveNodeIds(
-        workflowStore.activeWorkflow?.path,
-        nodes.map((node) => String(node.id))
-      )
     }
     if (!selectingNodes || agentNodeSelectionStore.isLoadingWorkflow) return
     const currentNodes = new Map(
@@ -890,6 +921,13 @@ function onSelectNodes(): void {
   if (selectingNodes) return
   const canvas = app.canvas
   if (!canvas) return
+  if (selectionTags.value.length) {
+    const ids = new Set(selectionTags.value.map((node) => node.id))
+    canvas.selectItems(
+      viewedGraphNodes().filter((node) => ids.has(String(node.id)))
+    )
+    canvasStore.updateSelectedItems()
+  }
   selectedGraphNodes = new Map(
     [...canvas.selectedItems]
       .filter(isLGraphNode)
@@ -944,6 +982,14 @@ function onOpenAssets(): void {
 function onMentionPick(node: SelectedNode): void {
   const stagedBefore = selectionTags.value.length
   addSelectionTag(node)
+  const canvas = app.canvas
+  const graphNode = viewedGraphNodes().find(
+    (candidate) => String(candidate.id) === node.id
+  )
+  if (canvas && graphNode) {
+    canvas.selectItems([graphNode], true)
+    canvasStore.updateSelectedItems()
+  }
   if (selectionTags.value.length > stagedBefore)
     useTelemetry()?.trackAgentNodeTagged({ source: 'mention_picker' })
 }
