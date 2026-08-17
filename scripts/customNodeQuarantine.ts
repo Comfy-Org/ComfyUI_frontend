@@ -17,11 +17,13 @@ import { promisify } from 'node:util'
 
 import type { QuarantinedPack } from '../browser_tests/fixtures/customNode/manifest'
 import { CLOUD_RUN_EXCLUSIONS } from '../browser_tests/fixtures/customNode/autoRun'
-import { FRONTEND_ASSET_EXCLUSIONS,
+import {
+  FRONTEND_ASSET_EXCLUSIONS,
   loadFullManifest,
   loadPackQuarantine,
   packIdentity,
-  staleLocalExpectations } from '../browser_tests/fixtures/customNode/manifest'
+  staleLocalExpectations
+} from '../browser_tests/fixtures/customNode/manifest'
 import { startupErrorExclusionsForPacks } from '../browser_tests/fixtures/customNode/consoleErrorLedger'
 import { ROUNDTRIP_NODE_LOSS_EXPECTATIONS_LITEGRAPH } from '../browser_tests/fixtures/customNode/valueDrift'
 
