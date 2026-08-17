@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import type { Locale } from '../i18n/translations'
 import type { ComfyEvent } from './events'
 import {
   deriveFeaturedEvents,
@@ -65,6 +66,24 @@ describe('toCalendarEvent', () => {
     expect(toCalendarEvent(event, 'en').description).toBe(
       'A livestream.\n\nhttps://www.youtube.com/live/abc'
     )
+  })
+
+  it('falls back to the English url when an event is missing the requested locale', () => {
+    const event: ComfyEvent = { ...baseEvent, liveVideoId: 'abc123' }
+    const externalEvent: ComfyEvent = {
+      ...baseEvent,
+      link: { href: { en: 'https://comfy.org/en-link' } }
+    }
+
+    expect(toCalendarEvent(event, 'ja' as unknown as Locale).description).toBe(
+      'A livestream.\n\nhttps://comfy.org/events/test-event'
+    )
+    expect(toCalendarEvent(event, 'ko' as unknown as Locale).description).toBe(
+      'A livestream.\n\nhttps://comfy.org/events/test-event'
+    )
+    expect(
+      toCalendarEvent(externalEvent, 'ja' as unknown as Locale).description
+    ).toBe('A livestream.\n\nhttps://comfy.org/en-link')
   })
 
   it('schedules a one-hour slot starting at the event start', () => {
