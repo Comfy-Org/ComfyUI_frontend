@@ -315,6 +315,8 @@ export interface BeforeConnectEvent {
   readonly index: number
   /** The node at the other end, when one is known. */
   readonly peerNodeId: string | undefined
+  /** The slot at the other end, when one is known. */
+  readonly peerIndex: number | undefined
   readonly peerType: string | undefined
 }
 
@@ -1368,20 +1370,25 @@ export function createDefRegistry(): {
           }
           return true
         }
-        const peerOf = (candidate: unknown) => {
+        const peerOf = (candidate: unknown, peerIndex: number | undefined) => {
           const peer = candidate as { id?: unknown; type?: string } | undefined
           return {
             peerNodeId: peer?.id === undefined ? undefined : String(peer.id),
+            peerIndex,
             peerType: peer?.type
           }
         }
 
-        install<[number, unknown, unknown, unknown]>(
+        install<[number, unknown, unknown, unknown, number]>(
           'onConnectInput',
-          (node, index, _type, _output, sourceNode) =>
+          (node, index, _type, _output, sourceNode, sourceIndex) =>
             mayConnect(
               node,
-              Object.freeze({ side: 'input', index, ...peerOf(sourceNode) })
+              Object.freeze({
+                side: 'input',
+                index,
+                ...peerOf(sourceNode, sourceIndex)
+              })
             ),
           { veto: true }
         )
@@ -1393,10 +1400,14 @@ export function createDefRegistry(): {
         // nothing.
         install<[number, unknown, unknown, unknown, number]>(
           'onConnectOutput',
-          (node, index, _type, _input, targetNode) =>
+          (node, index, _type, _input, targetNode, targetIndex) =>
             mayConnect(
               node,
-              Object.freeze({ side: 'output', index, ...peerOf(targetNode) })
+              Object.freeze({
+                side: 'output',
+                index,
+                ...peerOf(targetNode, targetIndex)
+              })
             ),
           { veto: true }
         )

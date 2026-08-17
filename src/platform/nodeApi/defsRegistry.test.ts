@@ -1157,17 +1157,25 @@ describe('connection veto and menu items', () => {
     expect(seen).toEqual(['output', 'input'])
   })
 
-  it('names the node at the other end of an output connection', () => {
-    let peer: string | undefined
+  it('names the node and slot at the other end of each connection', () => {
+    const peers: { side: string; nodeId?: string; index?: number }[] = []
     const node = build((b) =>
       b.onBeforeConnect((_n, e) => {
-        peer = e.peerNodeId
+        peers.push({
+          side: e.side,
+          nodeId: e.peerNodeId,
+          index: e.peerIndex
+        })
       })
     )
 
-    node.onConnectOutput?.(0, 'IMAGE', inputSlot, peerNode, 0)
+    node.onConnectOutput?.(0, 'IMAGE', inputSlot, peerNode, 7)
+    node.onConnectInput?.(0, 'IMAGE', outputSlot, peerNode, 3)
 
-    expect(peer).toBe(String(peerNode.id))
+    expect(peers).toEqual([
+      { side: 'output', nodeId: String(peerNode.id), index: 7 },
+      { side: 'input', nodeId: String(peerNode.id), index: 3 }
+    ])
   })
 
   it('lets any listener refuse, not just the last', () => {
