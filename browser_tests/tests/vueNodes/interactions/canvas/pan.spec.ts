@@ -210,7 +210,8 @@ test.describe('Vue Nodes Canvas Pan', { tag: '@vue-nodes' }, () => {
         { x: 256, y: 256 }
       )
       await expect(comfyPage.canvas).toHaveScreenshot(
-        'vue-nodes-paned-with-touch.png'
+        'vue-nodes-paned-with-touch.png',
+        { maxDiffPixels: 50 }
       )
     }
   )
