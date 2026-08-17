@@ -3,7 +3,13 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
+
 import DropZone from './DropZone.vue'
+
+vi.mock('primevue/usetoast', () => ({
+  useToast: () => ({ add: vi.fn() })
+}))
 
 const i18n = createI18n({
   legacy: false,
@@ -11,7 +17,8 @@ const i18n = createI18n({
   messages: {
     en: {
       maskEditor: { openMaskEditor: 'Open mask editor' },
-      mediaAsset: { actions: { zoom: 'Zoom' } }
+      mediaAsset: { actions: { zoom: 'Zoom' } },
+      g: { playPause: 'Play/Pause' }
     }
   }
 })
@@ -27,7 +34,8 @@ function renderDropZone(dropIndicator: DropIndicator) {
     },
     global: {
       plugins: [i18n],
-      stubs: { ImageLightbox: true }
+      components: { Button },
+      stubs: { ImageLightbox: true, TieredMenu: true, Slider: true }
     }
   })
 }
@@ -68,17 +76,20 @@ describe('DropZone', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('renders a native audio player for an audio indicator', () => {
+  it('renders the audio player for an audio indicator, without the image-only actions', () => {
     renderDropZone({
       mediaType: 'audio',
       mediaUrl: 'http://localhost/voice.mp3',
       label: 'Selected audio'
     })
 
-    const audio = screen.getByTestId('drop-zone-media')
-    expect(audio.tagName).toBe('AUDIO')
-    expect(audio).toHaveAttribute('src', 'http://localhost/voice.mp3')
-    expect(audio).toHaveAttribute('controls')
+    expect(screen.getByTestId('drop-zone-media')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Play/Pause' })
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Zoom' })
+    ).not.toBeInTheDocument()
   })
 
   it('does not nest the video preview inside a <button>', () => {
@@ -86,6 +97,17 @@ describe('DropZone', () => {
     renderDropZone({
       mediaType: 'video',
       mediaUrl: 'http://localhost/clip.mp4',
+      onClick
+    })
+
+    expect(screen.getByTestId('drop-zone-indicator').tagName).toBe('DIV')
+  })
+
+  it('does not nest the audio preview inside a <button>', () => {
+    const onClick = vi.fn()
+    renderDropZone({
+      mediaType: 'audio',
+      mediaUrl: 'http://localhost/voice.mp3',
       onClick
     })
 

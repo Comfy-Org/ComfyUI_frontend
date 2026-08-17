@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 
 import ImageLightbox from '@/components/common/ImageLightbox.vue'
 import { useClickDragGuard } from '@/composables/useClickDragGuard'
+import AudioPreviewPlayer from '@/renderer/extensions/vueNodes/widgets/components/audio/AudioPreviewPlayer.vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 defineOptions({ inheritAttrs: false })
@@ -31,7 +32,7 @@ const {
 }>()
 
 const mediaType = computed(() => dropIndicator?.mediaType ?? 'image')
-// Video/audio elements carry their own native controls, which are invalid
+// Video's native controls and AudioPreviewPlayer's buttons are invalid
 // markup nested inside a <button> — render a <div> instead once one is shown.
 const hasPlayableMedia = computed(
   () => mediaType.value !== 'image' && !!dropIndicator?.mediaUrl
@@ -141,13 +142,11 @@ const indicatorTag = computed(() =>
               preload="metadata"
               @click.stop
             />
-            <audio
+            <AudioPreviewPlayer
               v-else
-              class="h-10 w-full"
               data-testid="drop-zone-media"
-              :aria-label="dropIndicator.label ?? ''"
-              :src="dropIndicator.mediaUrl"
-              controls
+              :model-value="dropIndicator.mediaUrl"
+              :hide-when-empty="false"
               @click.stop
             />
           </div>

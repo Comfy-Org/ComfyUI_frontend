@@ -3,7 +3,7 @@ import {
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import { getWav } from '@e2e/fixtures/components/AudioPreview'
+import { AudioPreview, getWav } from '@e2e/fixtures/components/AudioPreview'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 
 /**
@@ -118,10 +118,15 @@ test.describe(
       const widgetItem = comfyPage.appMode.widgets.getWidgetItem(
         `${nodeRef.id}:audio`
       )
-      const audio = widgetItem.locator('audio')
-      await expect(audio).toBeVisible()
-      await expect(audio).toHaveAttribute('controls', '')
-      await expect.poll(() => audio.getAttribute('src')).toContain(filename)
+      const audioPreview = new AudioPreview(widgetItem)
+      await expect(audioPreview.play).toBeVisible()
+      await expect
+        .poll(() => audioPreview.audio.getAttribute('src'))
+        .toContain(filename)
+
+      expect(await audioPreview.isPlaying()).toBe(false)
+      await audioPreview.play.click()
+      await expect.poll(() => audioPreview.isPlaying()).toBe(true)
     })
 
     test('Load Image keeps its inline image preview (regression guard)', async ({
