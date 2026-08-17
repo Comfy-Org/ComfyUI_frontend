@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { createApp, defineComponent, ref } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import { usePostAuthRedirect } from '@/platform/cloud/onboarding/composables/usePostAuthRedirect'
 
@@ -10,8 +11,6 @@ vi.mock('vue-router', () => ({
   useRouter: () => ({ replace, push }),
   useRoute: () => ({ query: query.value })
 }))
-
-vi.mock('vue-i18n', () => ({ useI18n: () => ({ t: (key: string) => key }) }))
 
 const resumeOAuthIfNeeded = vi.hoisted(() =>
   vi.fn().mockResolvedValue({ kind: 'no-oauth' })
@@ -29,20 +28,31 @@ const DEFAULT_REDIRECT = { name: 'cloud-user-check' }
 
 function setup() {
   const authError = ref('')
-  const { onAuthSuccess } = usePostAuthRedirect({
-    authError,
-    successSummary: 'Login Completed',
-    defaultRedirect: () => DEFAULT_REDIRECT
-  })
-  return { authError, onAuthSuccess }
+  let onAuthSuccess: (() => Promise<void>) | undefined
+
+  const app = createApp(
+    defineComponent({
+      setup() {
+        ;({ onAuthSuccess } = usePostAuthRedirect({
+          authError,
+          successSummary: 'Login Completed',
+          defaultRedirect: () => DEFAULT_REDIRECT
+        }))
+        return () => null
+      }
+    })
+  )
+  app.use(createI18n({ legacy: false, locale: 'en', messages: { en: {} } }))
+  app.mount(document.createElement('div'))
+
+  if (!onAuthSuccess) throw new Error('post-auth redirect not initialized')
+
+  return { authError, onAuthSuccess, unmount: () => app.unmount() }
 }
 
 beforeEach(() => {
   query.value = {}
-  replace.mockReset()
-  push.mockReset()
-  toasts.add.mockReset()
-  resumeOAuthIfNeeded.mockReset().mockResolvedValue({ kind: 'no-oauth' })
+  resumeOAuthIfNeeded.mockResolvedValue({ kind: 'no-oauth' })
 })
 
 describe('usePostAuthRedirect', () => {
@@ -53,6 +63,19 @@ describe('usePostAuthRedirect', () => {
 
     expect(push).toHaveBeenCalledWith(DEFAULT_REDIRECT)
     expect(replace).not.toHaveBeenCalled()
+  })
+
+  it('confirms the sign-in with a success toast', async () => {
+    const { onAuthSuccess } = setup()
+
+    await onAuthSuccess()
+
+    expect(toasts.add).toHaveBeenCalledWith(
+      expect.objectContaining({
+        severity: 'success',
+        summary: 'Login Completed'
+      })
+    )
   })
 
   it('returns a deep-linked user to where they were headed', async () => {
@@ -120,7 +143,11 @@ describe('usePostAuthRedirect', () => {
       toasts.add,
       'authError only renders in email-form mode, so a Google/GitHub user would see the failure nowhere at all'
     ).toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'error', detail: 'Session expired' })
+      expect.objectContaining({
+        severity: 'error',
+        summary: 'oauth.consent.sessionErrorToastSummary',
+        detail: 'Session expired'
+      })
     )
   })
 

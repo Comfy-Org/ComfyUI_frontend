@@ -291,8 +291,11 @@ const cloudLayout = cloudOnboardingRoutes.find((r) => r.path === '/cloud')
 
 const guardedRoutes = ['cloud-login', 'cloud-signup'].map((name) => {
   const route = cloudLayout?.children?.find((c) => c.name === name)
-  if (typeof route?.beforeEnter !== 'function') {
-    throw new Error(`${name} has no beforeEnter guard`)
+  if (
+    typeof route?.beforeEnter !== 'function' ||
+    Array.isArray(route.beforeEnter)
+  ) {
+    throw new Error(`${name} has no single beforeEnter guard`)
   }
   return [name, route.beforeEnter, `/cloud/${route.path}`] as const
 })
@@ -340,6 +343,10 @@ describe.for(guardedRoutes)('%s beforeEnter', (route) => {
       name: 'cloud-oauth-consent',
       query: { oauth_request_id: VALID_REQUEST_ID }
     })
+    expect(
+      createSessionOrThrow,
+      'routing to consent without the session cookie leaves the view making an unauthenticated request'
+    ).toHaveBeenCalledOnce()
   })
 
   it('honours ?switchAccount for a signed-in visitor', async () => {

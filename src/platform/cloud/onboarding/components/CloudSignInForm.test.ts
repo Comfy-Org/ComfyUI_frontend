@@ -1,6 +1,5 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
-import { createPinia, setActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
@@ -56,7 +55,6 @@ const submitButton = () =>
   screen.getByRole('button', { name: LOGIN_COPY.loginButton })
 
 beforeEach(() => {
-  setActivePinia(createPinia())
   loading.value = false
 })
 
