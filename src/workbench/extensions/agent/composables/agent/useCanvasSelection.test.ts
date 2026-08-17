@@ -45,6 +45,34 @@ describe('useCanvasSelection', () => {
     expect(staged.value).toEqual([nodeA, nodeB])
   })
 
+  it('keeps staged references unchanged while canvas tracking is inactive', () => {
+    const selection = ref<SelectedNode[]>([nodeA])
+    const isTracking = ref(false)
+    const { staged, add } = useCanvasSelection({
+      selection,
+      isLive: ref(true),
+      isTracking
+    })
+    add(nodeB)
+
+    selection.value = [nodeA]
+    expect(staged.value).toEqual([nodeB])
+
+    isTracking.value = true
+    expect(staged.value).toEqual([nodeA])
+  })
+
+  it('replaces staged references during an explicit restore', () => {
+    const { staged, replace } = useCanvasSelection({
+      selection: ref<SelectedNode[]>([nodeA]),
+      isLive: ref(true)
+    })
+
+    replace([nodeB])
+
+    expect(staged.value).toEqual([nodeB])
+  })
+
   it('drops a tag on remove but keeps the rest', () => {
     const selection = ref<SelectedNode[]>([nodeA, nodeB])
     const { staged, remove } = useCanvasSelection({

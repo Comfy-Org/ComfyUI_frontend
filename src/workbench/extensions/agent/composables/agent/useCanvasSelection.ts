@@ -10,6 +10,7 @@ export interface SelectedNode {
 export interface UseCanvasSelectionOptions {
   selection: MaybeRefOrGetter<SelectedNode[]>
   isLive: MaybeRefOrGetter<boolean>
+  isTracking?: MaybeRefOrGetter<boolean>
   isPaused?: MaybeRefOrGetter<boolean>
   scope?: MaybeRefOrGetter<string | null>
   dismissedSignature?: Ref<string | null>
@@ -30,11 +31,12 @@ export function useCanvasSelection(options: UseCanvasSelectionOptions) {
     () =>
       [
         toValue(options.isLive),
+        toValue(options.isTracking ?? true),
         toValue(options.isPaused ?? false),
         toValue(options.scope ?? null),
         toValue(options.selection)
       ] as const,
-    ([isLive, isPaused, scope, nodes]) => {
+    ([isLive, isTracking, isPaused, scope, nodes]) => {
       if (isPaused) return
       if (!isLive) {
         staged.value = []
@@ -43,6 +45,7 @@ export function useCanvasSelection(options: UseCanvasSelectionOptions) {
         lastLiveSig = null
         return
       }
+      if (!isTracking) return
       if (nodes.length === 0) {
         staged.value = []
         consumedSig.value = null
@@ -90,5 +93,14 @@ export function useCanvasSelection(options: UseCanvasSelectionOptions) {
     staged.value = [...staged.value, node]
   }
 
-  return { staged, consume, dismissed, remove, add }
+  function replace(nodes: SelectedNode[]): void {
+    staged.value = [...nodes]
+    consumedSig.value = null
+    stagedSig.value = nodes.length
+      ? signature(toValue(options.scope ?? null), nodes)
+      : null
+    if (nodes.length) dismissedSig.value = null
+  }
+
+  return { staged, consume, dismissed, remove, add, replace }
 }
