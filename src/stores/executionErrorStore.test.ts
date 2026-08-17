@@ -902,3 +902,76 @@ describe('added-node error scan coordination', () => {
     expect(store.hasPendingAddedNodeErrorScan(graphB, executionId)).toBe(false)
   })
 })
+
+describe('setActiveGraph', () => {
+  const graphAId = '11111111-1111-4111-8111-111111111111'
+  const graphBId = '22222222-2222-4222-8222-222222222222'
+
+  const nodeErrors = {
+    '1': nodeError(
+      [validationError('value_bigger_than_max', 'steps', {}, 'Too big', '')],
+      'KSampler'
+    )
+  }
+
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('keeps each graph run errors separate and restores them on return', () => {
+    const store = useExecutionErrorStore()
+
+    store.setActiveGraph(graphAId)
+    store.recordNodeErrors(nodeErrors)
+
+    store.setActiveGraph(graphBId)
+    expect(store.lastNodeErrors).toBeNull()
+    expect(store.totalErrorCount).toBe(0)
+
+    store.setActiveGraph(graphAId)
+    expect(store.lastNodeErrors).toEqual(nodeErrors)
+    expect(store.totalErrorCount).toBe(1)
+  })
+
+  it('hides run errors while detached from a graph', () => {
+    const store = useExecutionErrorStore()
+
+    store.setActiveGraph(graphAId)
+    store.recordNodeErrors(nodeErrors)
+
+    store.setActiveGraph(null)
+    expect(store.lastNodeErrors).toBeNull()
+    expect(store.hasAnyError).toBe(false)
+
+    store.setActiveGraph(graphAId)
+    expect(store.lastNodeErrors).toEqual(nodeErrors)
+  })
+
+  it('drops run errors on new runs without touching other graphs', () => {
+    const store = useExecutionErrorStore()
+
+    store.setActiveGraph(graphAId)
+    store.recordNodeErrors(nodeErrors)
+
+    store.setActiveGraph(graphBId)
+    store.clearRunErrors()
+
+    store.setActiveGraph(graphAId)
+    expect(store.lastNodeErrors).toEqual(nodeErrors)
+
+    store.clearRunErrors()
+    expect(store.lastNodeErrors).toBeNull()
+  })
+
+  it('ignores errors recorded while no graph is active', () => {
+    const store = useExecutionErrorStore()
+
+    store.setActiveGraph(null)
+    store.recordNodeErrors(nodeErrors)
+
+    expect(store.lastNodeErrors).toBeNull()
+
+    store.setActiveGraph(graphAId)
+    expect(store.lastNodeErrors).toBeNull()
+  })
+})
