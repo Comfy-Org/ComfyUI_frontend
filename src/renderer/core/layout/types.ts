@@ -274,8 +274,8 @@ export interface LayoutStore {
   /**
    * Cache key for derived structures; see the implementation for its scope.
    *
-   * Plain numbers on a non-reactive class instance: reading either inside a
-   * `computed` or `watch` tracks nothing and never re-evaluates. Poll them.
+   * These plain numbers are not reactive. Use the store's explicit change
+   * subscriptions to drive UI updates rather than polling them.
    */
   readonly layoutVersion: number
   /** Cache key for geometry-derived state; moves only when nodes move. */
@@ -335,6 +335,7 @@ export interface LayoutStore {
 
   // Change subscription
   onChange(callback: (change: LayoutChange) => void): () => void
+  onNodeGeometryChange(callback: () => void): () => void
   onNodeChange(
     nodeId: NodeId,
     callback: (change: LayoutChange) => void

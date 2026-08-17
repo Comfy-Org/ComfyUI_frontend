@@ -1,19 +1,11 @@
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import type { NodeId } from '@/renderer/core/layout/types'
+import {
+  isNodeTypeExcludedFromCulling,
+  registerNodeTypeCullingOptOut
+} from '@/services/vueNodeCullingService'
 
-/**
- * Node types kept out of viewport culling entirely, for state this module
- * cannot detect from the DOM.
- *
- * A registry rather than a node property. `LGraphNode.serialize` clones
- * `properties` wholesale, so an opt-out stored there becomes permanent
- * workflow JSON the first time anyone sets it - a renderer-internal hint
- * travelling to other users and other frontend versions, on a path graded R3
- * `workflow-serialization`. Nothing consumes the opt-out yet, so this is the
- * cheap moment to keep it internal; publishing it later is additive, and
- * un-publishing it would not be.
- */
-const NODE_TYPES_EXCLUDED_FROM_CULLING = new Set<string>()
+export { registerNodeTypeCullingOptOut }
 
 /**
  * Elements whose live state a re-render cannot reproduce.
@@ -96,10 +88,9 @@ export function findNodesOptedOutOfCulling(
   nodes: readonly VueNodeData[]
 ): Set<NodeId> {
   const ids = new Set<NodeId>()
-  if (NODE_TYPES_EXCLUDED_FROM_CULLING.size === 0) return ids
 
   for (const node of nodes) {
-    if (NODE_TYPES_EXCLUDED_FROM_CULLING.has(node.type)) ids.add(node.id)
+    if (isNodeTypeExcludedFromCulling(node.type)) ids.add(node.id)
   }
 
   return ids

@@ -5,9 +5,11 @@ import { reactive, unref } from 'vue'
 import { shallowRef } from 'vue'
 
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { syncLayoutStoreNodeBoundsFromGraph } from '@/renderer/core/layout/sync/syncLayoutStoreFromGraph'
-import { flushScheduledSlotLayoutSync } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
+import {
+  beginVueNodeSlotSync,
+  flushScheduledSlotLayoutSync
+} from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 
 import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
@@ -892,7 +894,7 @@ export class ComfyApp {
     graph.onConfigure = function (...args) {
       // Set pending sync flag to suppress link rendering until slots are synced
       if (LiteGraph.vueNodesMode) {
-        layoutStore.setPendingSlotSync(true)
+        beginVueNodeSlotSync()
       }
 
       try {

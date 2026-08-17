@@ -14,6 +14,11 @@ import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import { toRerouteId } from '@/types/rerouteId'
 
+import {
+  beginVueNodeSlotSync,
+  completeVueNodeSlotSync,
+  isVueNodeSlotSyncPending
+} from '@/renderer/core/canvas/vueNodeSlotSync'
 import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type {
@@ -133,6 +138,8 @@ class LayoutStoreImpl implements LayoutStore {
   >()
   private pendingGlobalChanges: LayoutChange[] = []
   private isGlobalDispatchQueued = false
+  private nodeGeometryListeners = new Set<() => void>()
+  private indexedNodeTransactionDepth = 0
 
   // CustomRef cache and trigger functions
   private nodeRefs = new Map<NodeId, Ref<NodeLayout | null>>()
@@ -155,14 +162,8 @@ class LayoutStoreImpl implements LayoutStore {
   // Vue resizing state to prevent drag from activating during resize
   public isResizingVueNodes = ref(false)
 
-  /**
-   * Flag indicating slot positions are pending sync after graph reconfiguration.
-   * When true, link rendering should be skipped to avoid drawing with stale positions.
-   */
-  private _pendingSlotSync = false
-
   get pendingSlotSync(): boolean {
-    return this._pendingSlotSync
+    return isVueNodeSlotSyncPending()
   }
 
   get hasSlotLayouts(): boolean {
@@ -215,7 +216,8 @@ class LayoutStoreImpl implements LayoutStore {
   }
 
   setPendingSlotSync(value: boolean): void {
-    this._pendingSlotSync = value
+    if (value) beginVueNodeSlotSync()
+    else completeVueNodeSlotSync()
   }
 
   constructor() {
@@ -235,6 +237,9 @@ class LayoutStoreImpl implements LayoutStore {
     // node's own map rather than a top-level key, so `observe` never sees it,
     // and because remote updates run no local operation handler.
     this.ynodes.observeDeep((events) => {
+      let geometryChanged = false
+      const changedNodeIds = new Set<NodeId>()
+
       for (const event of events) {
         const changedKeys =
           event.target === this.ynodes
@@ -242,11 +247,26 @@ class LayoutStoreImpl implements LayoutStore {
               ['position']
             : [...event.changes.keys.keys()]
 
-        if (changedKeys.some((key) => NODE_GEOMETRY_KEYS.has(key))) {
-          this._nodeGeometryVersion++
-          return
+        if (!changedKeys.some((key) => NODE_GEOMETRY_KEYS.has(key))) continue
+        geometryChanged = true
+
+        if (event.target === this.ynodes) {
+          for (const nodeId of event.changes.keys.keys()) {
+            changedNodeIds.add(toNodeId(nodeId))
+          }
+        } else {
+          const nodeId = event.path[0]
+          if (nodeId != null) changedNodeIds.add(toNodeId(String(nodeId)))
         }
       }
+
+      if (!geometryChanged) return
+      this._nodeGeometryVersion++
+      if (this.indexedNodeTransactionDepth === 0) {
+        this.synchronizeNodeSpatialIndex()
+        for (const nodeId of changedNodeIds) this.nodeTriggers.get(nodeId)?.()
+      }
+      this.nodeGeometryListeners.forEach((listener) => listener())
     })
 
     // Listen for Yjs changes and trigger Vue reactivity
@@ -883,14 +903,15 @@ class LayoutStoreImpl implements LayoutStore {
       operation
     }
 
-    // Use Yjs transaction for atomic updates
-    this.ydoc.transact(() => {
-      // Add operation to log
-      this.yoperations.push([operation])
-
-      // Apply the operation
-      this.applyOperationInTransaction(operation, change)
-    }, this.currentActor)
+    this.indexedNodeTransactionDepth++
+    try {
+      this.ydoc.transact(() => {
+        this.yoperations.push([operation])
+        this.applyOperationInTransaction(operation, change)
+      }, this.currentActor)
+    } finally {
+      this.indexedNodeTransactionDepth--
+    }
 
     // Post-transaction updates
     this.finalizeOperation(change)
@@ -970,6 +991,11 @@ class LayoutStoreImpl implements LayoutStore {
     return () => this.changeListeners.delete(callback)
   }
 
+  onNodeGeometryChange(callback: () => void): () => void {
+    this.nodeGeometryListeners.add(callback)
+    return () => this.nodeGeometryListeners.delete(callback)
+  }
+
   onNodeChange(
     nodeId: NodeId,
     callback: (change: LayoutChange) => void
@@ -1036,50 +1062,66 @@ class LayoutStoreImpl implements LayoutStore {
       size: [number, number]
     }>
   ): void {
-    this.ydoc.transact(() => {
-      this.ynodes.clear()
-      // Note: We intentionally do NOT clear nodeRefs and nodeTriggers here.
-      // Vue components may already hold references to these refs, and clearing
-      // them would break the reactivity chain. The refs will be reused when
-      // nodes are recreated, and stale refs will be cleaned up over time.
-      this.nodeChangeListeners.clear()
-      this.spatialIndex.clear()
-      this.linkSegmentSpatialIndex.clear()
-      this.slotSpatialIndex.clear()
-      this.rerouteSpatialIndex.clear()
-      this.linkLayouts.clear()
-      this.linkSegmentLayouts.clear()
-      this.slotLayouts.clear()
-      this.rerouteLayouts.clear()
-      this.pendingGlobalChanges = []
-      this.isGlobalDispatchQueued = false
+    this.indexedNodeTransactionDepth++
+    try {
+      this.ydoc.transact(() => {
+        this.ynodes.clear()
+        // Note: We intentionally do NOT clear nodeRefs and nodeTriggers here.
+        // Vue components may already hold references to these refs, and clearing
+        // them would break the reactivity chain. The refs will be reused when
+        // nodes are recreated, and stale refs will be cleaned up over time.
+        this.nodeChangeListeners.clear()
+        this.spatialIndex.clear()
+        this.linkSegmentSpatialIndex.clear()
+        this.slotSpatialIndex.clear()
+        this.rerouteSpatialIndex.clear()
+        this.linkLayouts.clear()
+        this.linkSegmentLayouts.clear()
+        this.slotLayouts.clear()
+        this.rerouteLayouts.clear()
+        this.pendingGlobalChanges = []
+        this.isGlobalDispatchQueued = false
 
-      nodes.forEach((node, index) => {
-        const nodeId = node.id
-        const nodeKey = String(nodeId)
-        const layout: NodeLayout = {
-          id: nodeId,
-          position: { x: node.pos[0], y: node.pos[1] },
-          size: { width: node.size[0], height: node.size[1] },
-          zIndex: index,
-          visible: true,
-          bounds: {
-            x: node.pos[0],
-            y: node.pos[1],
-            width: node.size[0],
-            height: node.size[1]
+        nodes.forEach((node, index) => {
+          const nodeId = node.id
+          const nodeKey = String(nodeId)
+          const layout: NodeLayout = {
+            id: nodeId,
+            position: { x: node.pos[0], y: node.pos[1] },
+            size: { width: node.size[0], height: node.size[1] },
+            zIndex: index,
+            visible: true,
+            bounds: {
+              x: node.pos[0],
+              y: node.pos[1],
+              width: node.size[0],
+              height: node.size[1]
+            }
           }
-        }
 
-        this.ynodes.set(nodeKey, layoutToYNode(layout))
+          this.ynodes.set(nodeKey, layoutToYNode(layout))
 
-        // Add to spatial index
-        this.spatialIndex.insert(nodeId, layout.bounds)
+          // Add to spatial index
+          this.spatialIndex.insert(nodeId, layout.bounds)
+        })
+
+        // Trigger all existing refs to notify Vue of the new data
+        this.nodeTriggers.forEach((trigger) => trigger())
+      }, 'initialization')
+    } finally {
+      this.indexedNodeTransactionDepth--
+    }
+  }
+
+  private synchronizeNodeSpatialIndex(): void {
+    const entries: Array<{ nodeId: NodeId; bounds: Bounds }> = []
+    for (const [rawNodeId, ynode] of this.ynodes) {
+      entries.push({
+        nodeId: toNodeId(rawNodeId),
+        bounds: yNodeToLayout(ynode).bounds
       })
-
-      // Trigger all existing refs to notify Vue of the new data
-      this.nodeTriggers.forEach((trigger) => trigger())
-    }, 'initialization')
+    }
+    this.spatialIndex.replaceAll(entries)
   }
 
   // Operation handlers

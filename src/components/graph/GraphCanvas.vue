@@ -65,6 +65,7 @@
   <!-- TransformPane for Vue node rendering -->
   <TransformPane
     v-if="shouldRenderVueNodes && comfyApp.canvas && comfyAppReady"
+    ref="transformPaneRef"
     :canvas="comfyApp.canvas"
     @wheel.capture="canvasInteractions.forwardEventToCanvas"
     @pointerdown.capture="forwardPointerDownPanEvent"
@@ -116,7 +117,7 @@
 </template>
 
 <script setup lang="ts">
-import { until, useEventListener } from '@vueuse/core'
+import { until, useElementSize, useEventListener } from '@vueuse/core'
 import {
   computed,
   nextTick,
@@ -159,12 +160,9 @@ import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { useGroupContextMenu } from '@/composables/graph/useGroupContextMenu'
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
-import {
-  findLinkDragSourceIds,
-  findNodesOptedOutOfCulling,
-  findNodesWithLiveState
-} from '@/renderer/extensions/vueNodes/composables/liveNodeState'
+import { findNodesOptedOutOfCulling } from '@/renderer/extensions/vueNodes/composables/liveNodeState'
 import { useViewportCulling } from '@/renderer/extensions/vueNodes/composables/useViewportCulling'
+import { useViewportCullingPins } from '@/renderer/extensions/vueNodes/composables/useViewportCullingPins'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useNodeBadge } from '@/composables/node/useNodeBadge'
 import { useCanvasDrop } from '@/composables/useCanvasDrop'
@@ -185,14 +183,16 @@ import { useWorkflowPersistenceV2 as useWorkflowPersistence } from '@/platform/w
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { toNodeId } from '@/types/nodeId'
-import { createNodeCullingIndex } from '@/renderer/core/spatial/nodeCullingIndex'
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
 import { useFirstRunEntry } from '@/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry'
 import MiniMap from '@/renderer/extensions/minimap/MiniMap.vue'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
-import { requestSlotLayoutSyncForAllNodes } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
+import {
+  beginVueNodeSlotSync,
+  requestSlotLayoutSyncForAllNodes,
+  setExpectedRenderedNodeIds
+} from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 import { UnauthorizedError } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
@@ -221,6 +221,9 @@ const emit = defineEmits<{
   ready: []
 }>()
 const canvasRef = ref<HTMLCanvasElement | null>(null)
+const { width: canvasWidth, height: canvasHeight } = useElementSize(canvasRef)
+const transformPaneRef =
+  useTemplateRef<InstanceType<typeof TransformPane>>('transformPaneRef')
 const canvasPanelBoundsRef = useTemplateRef('canvasPanelBoundsRef')
 const nodeSearchboxPopoverRef = shallowRef<InstanceType<
   typeof NodeSearchboxPopover
@@ -305,61 +308,29 @@ const rawNodes = computed((): VueNodeData[] =>
   Array.from(vueNodeLifecycle.nodeManager.value?.vueNodeData?.values() ?? [])
 )
 
-// Bounds come from layoutStore rather than the litegraph nodes so they share a
-// source with the version; keying the cache on one and reading the other
-// would let it hold stale bounds indefinitely. Geometry version, not
-// layoutVersion: the latter counts operations, so zIndex writes (one per
-// widget pointerdown) would rebuild the tree for changes that move nothing.
-// Kill switch: culling ships default-on wherever Vue nodes are on, so field
-// issues need a way out that does not mean abandoning Nodes 2.0 entirely.
 const cullingEnabled = computed(() =>
   settingStore.get('Comfy.VueNodes.ViewportCulling')
 )
 
-// Declared once: getAllNodes() builds a fresh ComputedRef per call, so calling
-// it inside getEntries would discard the cache and decode the whole ynodes map
-// on every rebuild - and rebuilds now happen on every geometry change.
-const allNodeLayouts = layoutStore.getAllNodes()
-
-const cullingIndex = createNodeCullingIndex({
-  getVersion: () => layoutStore.nodeGeometryVersion,
-  getEntries: () => {
-    const layouts = allNodeLayouts.value
-    return rawNodes.value.map((node) => {
-      const layout = layouts.get(node.id)
-      if (!layout) return { id: node.id, bounds: null }
-
-      // Vue nodes render their title above the stored position.
-      return {
-        id: node.id,
-        bounds: {
-          x: layout.position.x,
-          y: layout.position.y - LiteGraph.NODE_TITLE_HEIGHT,
-          width: layout.size.width,
-          height: layout.size.height + LiteGraph.NODE_TITLE_HEIGHT
-        }
-      }
-    })
-  }
-})
-
-// Membership, not identity: rawNodes is replaced wholesale whenever any entry
-// of the reactive map is replaced (title, colour, badges, progress), and those
-// cannot add or move a node. Computed once and shared - the index invalidation
-// and the culling composable both key off it.
 const nodeMembership = computed(() =>
-  rawNodes.value.map((node) => node.id).join(',')
+  JSON.stringify(rawNodes.value.map((node) => node.id))
 )
 
-// Adds and removes are what the geometry version does not cover for nodes that
-// never reached the layout store.
-watch(nodeMembership, () => cullingIndex.invalidate())
+const nodesWithoutLayout = computed(() =>
+  rawNodes.value
+    .filter((node) => !layoutStore.getNodeLayoutRef(node.id).value)
+    .map((node) => node.id)
+)
 
-// Opt-out is static per node, so it only needs recomputing when the node list
-// changes. Live state is dynamic and handled in getPinnedIds instead.
 const nodesOptedOutOfCulling = computed(() =>
   findNodesOptedOutOfCulling(rawNodes.value)
 )
+
+const { pinnedNodeIds, refreshLiveState } = useViewportCullingPins({
+  selectedNodeIds: computed(() => canvasStore.selectedNodeIds),
+  getRoot: () => transformPaneRef.value?.element ?? null,
+  getLinkConnector: () => comfyApp.canvas?.linkConnector
+})
 
 const { mountedNodeIds } = useViewportCulling({
   nodes: rawNodes,
@@ -370,63 +341,48 @@ const { mountedNodeIds } = useViewportCulling({
   // on - it would stay at the empty value it converged to while disabled, and
   // `allNodes` would filter every node against it.
   isEnabled: () => cullingEnabled.value,
-  // Disabled means no work, not just no effect: an empty query short-circuits
-  // the index rebuild and the layout decode behind it, so the setting is a
-  // true bypass if the fault ever turns out to be in that path.
-  queryNodesInBounds: (bounds) =>
-    cullingEnabled.value ? cullingIndex.query(bounds) : [],
+  queryNodesInBounds: (bounds) => {
+    if (!cullingEnabled.value) return []
+    const nodeIds = new Set(
+      layoutStore.queryNodesInBounds({
+        ...bounds,
+        height: bounds.height + LiteGraph.NODE_TITLE_HEIGHT
+      })
+    )
+    for (const nodeId of nodesWithoutLayout.value) nodeIds.add(nodeId)
+    return nodeIds
+  },
   getViewportSize: () => {
-    const element = comfyApp.canvas?.canvas
     return {
-      width: element?.clientWidth ?? 0,
-      height: element?.clientHeight ?? 0
+      width: canvasWidth.value,
+      height: canvasHeight.value
     }
   },
   getAlwaysMountedIds: () => nodesOptedOutOfCulling.value,
-  getPinnedIds: () => {
-    const pinned = new Set(canvasStore.selectedNodeIds)
-
-    // Retain the node being typed in. Focus does not imply selection, and
-    // unmounting it destroys IME composition and caret position. This is what
-    // covers prompt textareas, rather than pinning every node that has one.
-    const focusedNode = document.activeElement?.closest?.('[data-node-id]')
-    const rawFocusedId = focusedNode?.getAttribute('data-node-id')
-    if (rawFocusedId) pinned.add(toNodeId(rawFocusedId))
-
-    // Media mid-playback, live capture streams and iframes: state a remount
-    // cannot rebuild. Scans mounted nodes only, so it is bounded by the
-    // mounted count rather than by graph size.
-    // Scoped to the pane the nodes live in. Passing no root scans the whole
-    // document, which makes this bounded by page size rather than by mounted
-    // count, on a path that runs on every backstop tick.
-    const pane = document.querySelector('[data-testid="transform-pane"]')
-    if (pane) for (const id of findNodesWithLiveState(pane)) pinned.add(id)
-
-    // Source of a link drag in flight; unmounting it cancels the gesture.
-    for (const id of findLinkDragSourceIds(comfyApp.canvas?.linkConnector)) {
-      pinned.add(id)
-    }
-
-    return pinned
-  }
+  getPinnedIds: () => pinnedNodeIds.value,
+  onNodeGeometryChange: (callback) => layoutStore.onNodeGeometryChange(callback)
 })
 
-// Culling can leave zero nodes mounted (empty viewport region). Slot layouts
-// only exist for mounted nodes, so the wait-for-slot-measurement latch would
-// otherwise never release and every link on the canvas would stay hidden.
-// pendingSlotSync itself is non-reactive, so the check runs whenever either
-// signal that can create the condition changes: the mounted set, or the node
-// membership a graph reconfigure replaces.
-// Only meaningful while culling owns the mounted set. With the setting off it
-// is permanently empty and every node is rendered anyway, so reading empty as
-// "nothing is visible" would release the latch while measurement is still in
-// flight and draw every link from fallback geometry.
-watch([mountedNodeIds, () => rawNodes.value.length, cullingEnabled], () => {
-  if (!cullingEnabled.value) return
-  if (mountedNodeIds.value.size === 0 && layoutStore.pendingSlotSync) {
-    layoutStore.setPendingSlotSync(false)
-  }
-})
+watch(
+  mountedNodeIds,
+  async () => {
+    await nextTick()
+    refreshLiveState()
+  },
+  { flush: 'post' }
+)
+
+watch(
+  [mountedNodeIds, nodeMembership, cullingEnabled],
+  () => {
+    setExpectedRenderedNodeIds(
+      cullingEnabled.value
+        ? mountedNodeIds.value
+        : new Set(rawNodes.value.map((node) => node.id))
+    )
+  },
+  { immediate: true, flush: 'post' }
+)
 
 const allNodes = computed((): VueNodeData[] =>
   cullingEnabled.value
@@ -446,7 +402,8 @@ watch(
       requestSlotLayoutSyncForAllNodes()
     }
 
-    layoutStore.setPendingSlotSync(true)
+    beginVueNodeSlotSync()
+    setExpectedRenderedNodeIds(new Set(allNodes.value.map((node) => node.id)))
   }
 )
 

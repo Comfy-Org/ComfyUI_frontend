@@ -114,6 +114,9 @@ export interface ExtensionManager {
     set: <T = unknown>(id: string, value: T) => void
   }
   workflow: ReturnType<typeof useWorkflowStore>
+  vueNodes: {
+    registerCullingOptOut(nodeType: string): () => void
+  }
 
   // Execution error state (read-only)
   lastNodeErrors: Record<string, NodeError> | null

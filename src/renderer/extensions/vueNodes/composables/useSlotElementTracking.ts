@@ -11,6 +11,13 @@ import type { Ref } from 'vue'
 import { useSharedCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import {
+  beginVueNodeSlotSync,
+  completeVueNodeSlotSync,
+  getExpectedRenderedNodeIds,
+  isVueNodeSlotSyncPending,
+  setExpectedRenderedNodeIdsState
+} from '@/renderer/core/canvas/vueNodeSlotSync'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { app } from '@/scripts/app'
@@ -31,6 +38,8 @@ const raf = createRafBatch(() => {
   flushScheduledSlotLayoutSync()
 })
 
+export { beginVueNodeSlotSync, isVueNodeSlotSyncPending }
+
 export function scheduleSlotLayoutSync(nodeId: NodeId) {
   // Drop signals for unregistered nodes (e.g. preview nodes with synthetic
   // ids from LGraphNodePreview) - they'd otherwise pump setDirty per RAF.
@@ -40,14 +49,43 @@ export function scheduleSlotLayoutSync(nodeId: NodeId) {
 }
 
 function shouldWaitForSlotLayouts(): boolean {
+  if (!isVueNodeSlotSyncPending()) return false
+
   const graph = app.canvas?.graph
+  const expectedNodeIds = getExpectedRenderedNodeIds()
+  if (expectedNodeIds === null) return true
+  if (expectedNodeIds) {
+    const nodeSlotRegistryStore = useNodeSlotRegistryStore()
+    for (const nodeId of expectedNodeIds) {
+      const graphNode = graph?.getNodeById?.(nodeId)
+      if (!graphNode) continue
+      const slotCount =
+        (graphNode.inputs?.length ?? 0) + (graphNode.outputs?.length ?? 0)
+      if (slotCount === 0) continue
+
+      const registeredNode = nodeSlotRegistryStore.getNode(nodeId)
+      if (!registeredNode || registeredNode.slots.size < slotCount) return true
+      for (const slotKey of registeredNode.slots.keys()) {
+        if (!layoutStore.getSlotLayout(slotKey)) return true
+      }
+    }
+    return false
+  }
+
   const hasNodes = Boolean(graph && graph._nodes && graph._nodes.length > 0)
   return hasNodes && !layoutStore.hasSlotLayouts
 }
 
 function completePendingSlotSync(): void {
-  layoutStore.setPendingSlotSync(false)
+  completeVueNodeSlotSync()
   app.canvas?.setDirty(true, true)
+}
+
+export function setExpectedRenderedNodeIds(
+  nodeIds: ReadonlySet<NodeId> | null
+): void {
+  setExpectedRenderedNodeIdsState(nodeIds)
+  if (isVueNodeSlotSyncPending()) flushScheduledSlotLayoutSync()
 }
 
 function getSlotElementRect(el: HTMLElement): DOMRect | null {

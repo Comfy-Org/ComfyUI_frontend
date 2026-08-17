@@ -6,9 +6,13 @@ import { isMiddleButtonEvent } from '@/base/pointerUtils'
 import { MovingInputLink } from '@/lib/litegraph/src/canvas/MovingInputLink'
 import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
 import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
+import { isVueNodeSlotSyncPending } from '@/renderer/core/canvas/vueNodeSlotSync'
 import { LitegraphLinkAdapter } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
 import type { LinkRenderContext } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
-import { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculations'
+import {
+  getSlotPosition,
+  isSlotPositionNodeContained
+} from '@/renderer/core/canvas/litegraph/slotCalculations'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
@@ -6042,9 +6046,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   drawConnections(ctx: CanvasRenderingContext2D): void {
     this.renderedPaths.clear()
     if (this.links_render_mode === LinkRenderType.HIDDEN_LINK) return
+    this.ds.computeVisibleArea(this.viewport)
 
     // Skip link rendering while waiting for slot positions to sync after reconfigure
-    if (LiteGraph.vueNodesMode && layoutStore.pendingSlotSync) {
+    if (LiteGraph.vueNodesMode && isVueNodeSlotSyncPending()) {
       this._visibleReroutes.clear()
       return
     }
@@ -6101,14 +6106,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         // Reject links that cannot reach the screen before computing either
         // slot position, which is the most expensive part of this loop.
         //
-        // Only valid while both endpoints are known to sit inside their node's
-        // bounding rect. Reroute waypoints are placed independently of either
-        // node, and a hard-coded `INodeSlot.pos` is applied unclamped by
-        // `calculateInputSlotPosFromSlot`, so both take the exact path.
+        // Only valid while both measured endpoints are known to sit inside
+        // their node's bounding rect. Everything else takes the exact path.
         if (
           link.parentId === undefined &&
-          !input.pos &&
-          !start_node.outputs?.[link.origin_slot]?.pos &&
+          isSlotPositionNodeContained(node, i, true) &&
+          isSlotPositionNodeContained(start_node, link.origin_slot, false) &&
           !couldLinkBeVisible(
             start_node.boundingRect,
             node.boundingRect,
@@ -6545,6 +6548,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       disabled?: boolean
     } = {}
   ): void {
+    if (typeof Path2D === 'undefined') return
     if (this.linkRenderer) {
       const context = this.buildLinkRenderContext()
       this.linkRenderer.renderLinkDirect(

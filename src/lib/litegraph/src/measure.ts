@@ -125,10 +125,9 @@ export function isInsideRectangle(
  * regardless. It never reports a visible link as hidden, *provided* that
  * premise holds.
  *
- * Two things break it, and callers must route both down the exact path:
- * - reroutes, whose waypoints are placed independently of either node
- * - a hard-coded slot `pos`, which `calculateInputSlotPosFromSlot` applies
- *   unclamped, letting an extension put a connection point outside its own node
+ * Callers must route links through the exact path unless they can prove both
+ * endpoint positions are contained by their node bounds. Reroutes, custom or
+ * absolute slot positions, and unmeasured DOM slots do not satisfy that proof.
  *
  * @param startBounds Bounding rect of the originating node
  * @param endBounds Bounding rect of the terminating node
