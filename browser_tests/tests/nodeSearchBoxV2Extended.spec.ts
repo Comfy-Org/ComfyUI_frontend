@@ -1,3 +1,4 @@
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import {
   comfyExpect as expect,
   comfyPageFixture as test
@@ -447,21 +448,33 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
       })
     }
 
+    /** Drag the default graph's existing IMAGE link (VAE Decode -> Save Image)
+     * off its input and release it on empty canvas. */
+    async function releaseImageLinkOnCanvas(comfyPage: ComfyPage) {
+      const saveImage = (
+        await comfyPage.nodeOps.getNodeRefsByTitle('Save Image')
+      )[0]
+      const imageInput = await saveImage.getInput(0)
+
+      await comfyPage.canvasOps.dragAndDrop(await imageInput.getPosition(), {
+        x: 20,
+        y: 20
+      })
+    }
+
+    async function dynamicComboNode(comfyPage: ComfyPage) {
+      const [node] = await comfyPage.nodeOps.getNodeRefsByType(
+        'DevToolsNodeWithDynamicCombo'
+      )
+      return node
+    }
+
     test('Link release via the search box connects through a combo option', async ({
       comfyPage
     }) => {
       const { searchBoxV2 } = comfyPage
-      const source = await comfyPage.nodeOps.addNode(
-        'LoadImage',
-        {},
-        { x: 120, y: 120 }
-      )
-      const imageOut = await source.getOutput(0)
 
-      await comfyPage.canvasOps.dragAndDrop(await imageOut.getPosition(), {
-        x: 700,
-        y: 520
-      })
+      await releaseImageLinkOnCanvas(comfyPage)
 
       await expect(searchBoxV2.dialog).toBeVisible()
       await searchBoxV2.input.fill('Dynamic Combo')
@@ -469,14 +482,13 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
       await searchBoxV2.results.first().click()
       await expect(searchBoxV2.dialog).toBeHidden()
 
-      const [target] = await comfyPage.nodeOps.getNodeRefsByType(
-        'DevToolsNodeWithDynamicCombo'
-      )
+      const target = await dynamicComboNode(comfyPage)
       const combo = await target.getWidgetByName('combo')
 
-      // IMAGE lives under option3, which is not the default selection.
+      // IMAGE lives under option3, which is not the default selection, so the
+      // node only has an IMAGE socket if the reveal ran.
       expect(await combo.getValue()).toBe('option3')
-      expect(await imageOut.getLinkCount()).toBe(1)
+      expect(await (await target.getInput(0)).getLinkCount()).toBe(1)
     })
 
     test('Link release via the context menu connects through a combo option', async ({
@@ -486,28 +498,19 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
         'Comfy.LinkRelease.Action',
         'context menu'
       )
+      // The menu is capped at this many suggestions; raise it so the devtools
+      // node is present regardless of how many core nodes accept IMAGE.
+      await comfyPage.settings.setSetting('Comfy.NodeSuggestions.number', 100)
 
-      const source = await comfyPage.nodeOps.addNode(
-        'LoadImage',
-        {},
-        { x: 120, y: 120 }
-      )
-      const imageOut = await source.getOutput(0)
-
-      await comfyPage.canvasOps.dragAndDrop(await imageOut.getPosition(), {
-        x: 700,
-        y: 520
-      })
+      await releaseImageLinkOnCanvas(comfyPage)
 
       await comfyPage.contextMenu.clickMenuItem('Node With Dynamic Combo')
 
-      const [target] = await comfyPage.nodeOps.getNodeRefsByType(
-        'DevToolsNodeWithDynamicCombo'
-      )
+      const target = await dynamicComboNode(comfyPage)
       const combo = await target.getWidgetByName('combo')
 
       expect(await combo.getValue()).toBe('option3')
-      expect(await imageOut.getLinkCount()).toBe(1)
+      expect(await (await target.getInput(0)).getLinkCount()).toBe(1)
     })
   })
 })
