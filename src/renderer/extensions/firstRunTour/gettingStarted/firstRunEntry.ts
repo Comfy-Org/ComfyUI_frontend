@@ -58,17 +58,21 @@ export const useFirstRunEntry = createSharedComposable(() => {
    * Only a boot that opened a blank canvas can be onboarded over. `isNewUser()`
    * cannot carry that alone — it reads `Comfy.TutorialCompleted`, which is
    * exactly what a user predating the setting is missing.
+   * A `defer` never writes that flag, on either path: a link opened while the
+   * viewport, the tour flag or remote config says no would otherwise burn the
+   * one tour the account ever gets without showing it.
    */
   async function handleStartupOutcome(outcome: StartupOutcome) {
     if (outcome === 'restored') return
     if (settingStore.get('Comfy.TutorialCompleted')) return
 
+    const decision = decideFirstRun()
+
     if (outcome === 'url-intent') {
-      await markTutorialCompleted()
+      if (decision !== 'defer') await markTutorialCompleted()
       return
     }
 
-    const decision = decideFirstRun()
     if (decision === 'getting-started') {
       gettingStartedVisible.value = true
       return
