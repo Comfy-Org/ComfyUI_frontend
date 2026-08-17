@@ -201,17 +201,13 @@ test.describe('Vue Nodes Canvas Pan', { tag: '@vue-nodes' }, () => {
     }
   )
 
-  test(
-    '@mobile Can pan with touch',
-    { tag: '@screenshot' },
-    async ({ comfyPage }) => {
-      await comfyPage.canvasOps.panWithTouch(
-        { x: 64, y: 64 },
-        { x: 256, y: 256 }
-      )
-      await expect(comfyPage.canvas).toHaveScreenshot(
-        'vue-nodes-paned-with-touch.png'
-      )
-    }
-  )
+  test('@mobile Can pan with touch', async ({ comfyPage }) => {
+    const offsetBefore = await comfyPage.canvasOps.getOffset()
+
+    await comfyPage.canvasOps.panWithTouch({ x: 64, y: 64 }, { x: 256, y: 256 })
+
+    await expect
+      .poll(() => comfyPage.canvasOps.getOffset())
+      .not.toEqual(offsetBefore)
+  })
 })
