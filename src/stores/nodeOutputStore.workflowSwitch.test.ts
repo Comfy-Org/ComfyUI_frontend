@@ -14,7 +14,7 @@ const { WORKFLOW_A, WORKFLOW_B } = vi.hoisted(() => ({
 const mocks = vi.hoisted(() => ({
   workflowStore: null as unknown as {
     activeWorkflow: { path: string } | null
-    openWorkflowPaths: string[]
+    openWorkflows: { path: string }[]
     nodeIdToNodeLocatorId: (id: string | number) => string
     nodeToNodeLocatorId: (node: { id: string | number }) => string
   }
@@ -44,7 +44,7 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
   const { reactive } = await import('vue')
   mocks.workflowStore = reactive({
     activeWorkflow: { path: WORKFLOW_A } as { path: string } | null,
-    openWorkflowPaths: [WORKFLOW_A, WORKFLOW_B],
+    openWorkflows: [{ path: WORKFLOW_A }, { path: WORKFLOW_B }],
     nodeIdToNodeLocatorId: (id: string | number) => String(id),
     nodeToNodeLocatorId: (node: { id: string | number }) => String(node.id)
   })
@@ -55,42 +55,42 @@ const createMockNode = (id: number): LGraphNode =>
   fromAny<LGraphNode, unknown>({ id: toNodeId(id), type: 'KSampler' })
 
 /**
- * Mirrors `app.clean()`, which is what `loadGraphData` runs before it
- * configures the incoming workflow's graph.
+ * Mirrors `workflowService.beforeLoadNewGraph()` -> `app.clean()` ->
+ * `workflowService.afterLoadNewGraph()`, the sequence every workflow load and
+ * tab switch runs.
  */
-function appClean() {
-  useNodeOutputStore().resetAllOutputsAndPreviews()
-}
-
-/** Mirrors `workflowService.afterLoadNewGraph` moving the active pointer. */
-function activateWorkflow(path: string | null) {
-  mocks.workflowStore.activeWorkflow = path ? { path } : null
-}
-
-/** Mirrors `loadGraphData` + `afterLoadNewGraph` for a tab switch. */
 function switchToWorkflow(path: string) {
-  appClean()
-  activateWorkflow(path)
+  const store = useNodeOutputStore()
+  const leaving = mocks.workflowStore.activeWorkflow
+  if (leaving) store.stashPreviewsForWorkflow(leaving.path)
+  store.resetAllOutputsAndPreviews()
+  mocks.workflowStore.activeWorkflow = { path }
+  store.restorePreviewsForWorkflow(path)
 }
+
+// Object URL retain counts live in a module-level map in objectUrlUtil, so
+// every test needs its own URLs or the counts leak between them.
+let urlCounter = 0
 
 describe('nodeOutputStore preview lifecycle across workflow tab switches', () => {
-  let revokeObjectURL: ReturnType<typeof vi.fn>
-  let urlCounter: number
+  let revokeObjectURL: ReturnType<typeof vi.spyOn>
 
   const createBlobUrl = () => URL.createObjectURL(new Blob(['x']))
 
   beforeEach(() => {
-    urlCounter = 0
-    revokeObjectURL = vi.fn()
-    vi.stubGlobal('URL', {
-      ...URL,
-      createObjectURL: vi.fn(() => `blob:mock/${++urlCounter}`),
-      revokeObjectURL
-    })
+    vi.spyOn(URL, 'createObjectURL').mockImplementation(
+      () => `blob:mock/${++urlCounter}`
+    )
+    revokeObjectURL = vi
+      .spyOn(URL, 'revokeObjectURL')
+      .mockImplementation(() => {})
     app.nodeOutputs = {}
     app.nodePreviewImages = {}
     mocks.workflowStore.activeWorkflow = { path: WORKFLOW_A }
-    mocks.workflowStore.openWorkflowPaths = [WORKFLOW_A, WORKFLOW_B]
+    mocks.workflowStore.openWorkflows = [
+      { path: WORKFLOW_A },
+      { path: WORKFLOW_B }
+    ]
   })
 
   it('keeps a finished run preview when the user switches tabs and comes back', () => {
@@ -123,5 +123,42 @@ describe('nodeOutputStore preview lifecycle across workflow tab switches', () =>
     // Revoking makes the loss permanent: there is no source to re-derive a
     // websocket preview frame from once the object URL is gone.
     expect(revokeObjectURL).not.toHaveBeenCalledWith(previewUrl)
+  })
+
+  it('does not show one workflow preview on another workflow same-id node', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode(5)
+
+    store.setNodePreviewsByNodeId(node.id, [createBlobUrl()])
+    switchToWorkflow(WORKFLOW_B)
+
+    expect(store.getNodePreviews(node)).toBeUndefined()
+    expect(store.nodePreviewImages).toEqual({})
+  })
+
+  it('releases stashed previews once the workflow is closed', () => {
+    const store = useNodeOutputStore()
+    const previewUrl = createBlobUrl()
+
+    store.setNodePreviewsByNodeId(createMockNode(5).id, [previewUrl])
+    switchToWorkflow(WORKFLOW_B)
+
+    mocks.workflowStore.openWorkflows = [{ path: WORKFLOW_B }]
+    switchToWorkflow(WORKFLOW_B)
+
+    expect(revokeObjectURL).toHaveBeenCalledWith(previewUrl)
+  })
+
+  it('still revokes previews when the workflow is cleared in place', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode(5)
+    const previewUrl = createBlobUrl()
+
+    store.setNodePreviewsByNodeId(node.id, [previewUrl])
+    // "Clear Workflow" calls app.clean() without loading another graph.
+    store.resetAllOutputsAndPreviews()
+
+    expect(store.getNodePreviews(node)).toBeUndefined()
+    expect(revokeObjectURL).toHaveBeenCalledWith(previewUrl)
   })
 })
