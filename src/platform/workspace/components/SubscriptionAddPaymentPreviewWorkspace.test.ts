@@ -273,7 +273,8 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
       props: {
         tierKey: 'creator',
         previewData: previewFixture('MONTHLY', 3500),
-        quoteIsCurrent: true
+        quoteIsCurrent: true,
+        embeddedCheckoutEnabled: true
       },
       global: globalOptions
     })
@@ -297,6 +298,7 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
         tierKey: 'creator',
         previewData: previewFixture('MONTHLY', 3500),
         quoteIsCurrent: true,
+        embeddedCheckoutEnabled: true,
         selectedSavedMethodId: 'pm_default',
         savedMethods: [
           {
@@ -356,6 +358,7 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
     const { emitted } = render(SubscriptionAddPaymentPreviewWorkspace, {
       props: {
         tierKey: 'creator',
+        embeddedCheckoutEnabled: true,
         authenticationState: 'failed_retryable',
         authenticationError: 'Challenge was closed',
         canRetryAuthentication: true
@@ -376,6 +379,7 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
     render(SubscriptionAddPaymentPreviewWorkspace, {
       props: {
         tierKey: 'creator',
+        embeddedCheckoutEnabled: true,
         reconciliationOperationId: 'op-reconcile-123'
       },
       global: globalOptions
