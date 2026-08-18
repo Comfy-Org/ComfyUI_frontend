@@ -15,7 +15,10 @@ type Release = {
 
 // Drives the real script with `gh` stubbed on PATH, so the semver-selection and
 // reassignment logic runs for real without touching the network or a live repo.
-function runReconcile(releases: Release[], options: { repo?: string | null } = {}) {
+function runReconcile(
+  releases: Release[],
+  options: { repo?: string | null } = {}
+) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'reconcile-latest-'))
   const binDir = path.join(dir, 'bin')
   fs.mkdirSync(binDir)
