@@ -57,7 +57,7 @@ function dispatch(error: Error, options: ReportErrorOptions): boolean {
       ...context,
       ...tags,
       error_type: errorType,
-      level
+      ...(level ? { level } : {})
     })
   }
 
@@ -67,6 +67,10 @@ function dispatch(error: Error, options: ReportErrorOptions): boolean {
 /**
  * Drains reports buffered before a sink came up. Safe to call repeatedly;
  * a no-op while every sink is still inert.
+ *
+ * Callers are `main.ts` and `bootstrap.ts` on the boot path, so this must
+ * never throw: a sink that explodes here would take the whole app down
+ * instead of the one report it failed to deliver.
  */
 export function flushErrorReports(): void {
   if (!pendingReports.length) return
@@ -74,7 +78,11 @@ export function flushErrorReports(): void {
 
   const drained = pendingReports.splice(0, pendingReports.length)
   for (const { error, options } of drained) {
-    dispatch(error, options)
+    try {
+      dispatch(error, options)
+    } catch (reporterFailure) {
+      console.error('[reportError] failed to flush', reporterFailure, error)
+    }
   }
 }
 

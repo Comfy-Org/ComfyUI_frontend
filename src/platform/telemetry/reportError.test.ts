@@ -137,6 +137,21 @@ describe('reportError', () => {
     expect(context).toMatchObject({ api_endpoint: '/settings/{key}' })
   })
 
+  it('does not throw out of flushErrorReports when a sink throws', async () => {
+    sentryLive(false)
+    datadogLive(false)
+    const { reportError, flushErrorReports } = await loadReportError()
+
+    reportError(new Error('early'), { errorType: 'resource_load_error' })
+
+    datadogLive(true)
+    addError.mockImplementation(() => {
+      throw new Error('datadog exploded')
+    })
+
+    expect(() => flushErrorReports()).not.toThrow()
+  })
+
   it('does not throw when a sink throws', async () => {
     captureException.mockImplementation(() => {
       throw new Error('sentry exploded')
