@@ -147,6 +147,57 @@ describe('LGraphNode', () => {
   })
 
   describe('Disconnect I/O Slots', () => {
+    function createConnectedPair() {
+      const graph = new LGraph()
+      const sourceNode = new LGraphNode('source')
+      const targetNode = new LGraphNode('target')
+      sourceNode.addOutput('output', '*')
+      targetNode.addInput('input', '*')
+      graph.add(sourceNode)
+      graph.add(targetNode)
+      expect(sourceNode.connect(0, targetNode, 0)).not.toBeNull()
+      return { graph, sourceNode, targetNode }
+    }
+
+    function observeDisconnectedInput(targetNode: LGraphNode) {
+      const onConnectionsChange = vi.fn<
+        NonNullable<LGraphNode['onConnectionsChange']>
+      >(function (_type, slot, isConnected) {
+        expect(isConnected).toBe(false)
+        expect(this.isInputConnected(slot)).toBe(false)
+        expect(this.getInputLink(slot)).toBeNull()
+      })
+      targetNode.onConnectionsChange = onConnectionsChange
+      return onConnectionsChange
+    }
+
+    test('exposes disconnected state in callbacks when an output is disconnected', () => {
+      const { sourceNode, targetNode } = createConnectedPair()
+      const onConnectionsChange = observeDisconnectedInput(targetNode)
+
+      expect(sourceNode.disconnectOutput(0)).toBe(true)
+
+      expect(onConnectionsChange).toHaveBeenCalledOnce()
+    })
+
+    test('exposes disconnected state in callbacks when an input is disconnected', () => {
+      const { targetNode } = createConnectedPair()
+      const onConnectionsChange = observeDisconnectedInput(targetNode)
+
+      expect(targetNode.disconnectInput(0)).toBe(true)
+
+      expect(onConnectionsChange).toHaveBeenCalledOnce()
+    })
+
+    test('exposes disconnected state in callbacks when the source is removed', () => {
+      const { graph, sourceNode, targetNode } = createConnectedPair()
+      const onConnectionsChange = observeDisconnectedInput(targetNode)
+
+      graph.remove(sourceNode)
+
+      expect(onConnectionsChange).toHaveBeenCalledOnce()
+    })
+
     test('should disconnect input correctly', () => {
       const node1 = new LGraphNode('SourceNode')
       const node2 = new LGraphNode('TargetNode')
