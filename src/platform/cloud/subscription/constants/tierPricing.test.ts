@@ -26,7 +26,7 @@ describe('toTierKey', () => {
 
   // hasOwnProperty rather than `in`: these are inherited from Object.prototype,
   // so `in` would return a function or object where a TierKey is expected.
-  it.each(['constructor', 'toString', '__proto__', 'valueOf'])(
+  it.for(['constructor', 'toString', '__proto__', 'valueOf'])(
     'returns null for the inherited property %s',
     (key) => {
       expect(toTierKey(key as IngestSubscriptionTier)).toBeNull()
