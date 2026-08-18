@@ -50,6 +50,12 @@ const HANDLES = [
   /defs\.define\(\s*\{[^}]*?type:\s*['"]([^'"]+)['"]/gs
 ]
 const HANDLES_ARRAY = /defs\.extend\(\s*\[([\s\S]*?)\]\s*,/g
+const HANDLES_CONSTANT = [
+  /defs\.extend\(\s*([A-Za-z_$][\w$]*)\s*,/g,
+  /defs\.define\(\s*\{[^}]*?type:\s*([A-Za-z_$][\w$]*)/gs
+]
+const STRING_CONSTANT =
+  /\bconst\s+([A-Za-z_$][\w$]*)\s*=\s*(['"])([^'"\r\n]*)\2/g
 
 /**
  * A type named through a constant — `NodeTypesString.CONTEXT` — which this
@@ -88,11 +94,24 @@ const matchAll = (text, patterns) =>
   patterns.flatMap((pattern) => [...text.matchAll(pattern)].map(([, n]) => n))
 
 export function handledTypes(source) {
+  const constants = new Map(
+    [...source.matchAll(STRING_CONSTANT)].map(([, name, , value]) => [
+      name,
+      value
+    ])
+  )
+  const resolvedConstants = matchAll(source, HANDLES_CONSTANT)
+    .map((name) => constants.get(name))
+    .filter(Boolean)
+
   return [
-    ...matchAll(source, HANDLES),
-    ...[...source.matchAll(HANDLES_ARRAY)].flatMap(([, body]) =>
-      [...body.matchAll(/['"]([^'"]+)['"]/g)].map(([, type]) => type)
-    )
+    ...new Set([
+      ...matchAll(source, HANDLES),
+      ...[...source.matchAll(HANDLES_ARRAY)].flatMap(([, body]) =>
+        [...body.matchAll(/['"]([^'"]+)['"]/g)].map(([, type]) => type)
+      ),
+      ...resolvedConstants
+    ])
   ]
 }
 
@@ -242,7 +261,8 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     `\nCounts are node TYPES this can see in JS, never a pack's node list — ` +
       `that lives in NODE_CLASS_MAPPINGS, which this database does not hold. ` +
       `A node with no frontend JS is untouched by the migration and needs no ` +
-      `grade; one named only through a constant is invisible here and does.`
+      `grade; one named only through an imported or computed constant is ` +
+      `invisible here and does.`
   )
   console.error(
     `\nA grade below FULL is provisional until a human has declared what broke. ` +
