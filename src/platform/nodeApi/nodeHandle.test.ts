@@ -147,6 +147,19 @@ describe('NodeHandle', () => {
       expect(node.getTitle()).toBe('Renamed')
     })
 
+    it('commits properties through the node property path', () => {
+      node.properties['amount'] = 1
+      const widget = node.addWidget('number', 'amount', 1, () => {}, {
+        property: 'amount'
+      })
+      node.onPropertyChanged = vi.fn()
+
+      handle().setProperty('amount', 7)
+
+      expect(node.onPropertyChanged).toHaveBeenCalledWith('amount', 7, 1)
+      expect(widget.value).toBe(7)
+    })
+
     it('maps public mode strings back to the internal enum', () => {
       handle().setMode('never')
       expect(node.mode).toBe(LGraphEventMode.NEVER)
