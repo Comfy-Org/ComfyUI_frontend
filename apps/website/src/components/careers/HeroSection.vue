@@ -4,6 +4,7 @@ import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import GlassCard from '../common/GlassCard.vue'
 import SectionLabel from '../common/SectionLabel.vue'
+import VideoPlayer from '../common/VideoPlayer.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 </script>
@@ -22,16 +23,14 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
     </div>
 
     <GlassCard class="mx-auto mt-12 max-w-3xl md:mt-16">
-      <video
-        src="https://media.comfy.org/website/careers/hero.mp4"
+      <VideoPlayer
+        :locale
+        src="https://media.comfy.org/website/careers/hero-audio.mp4"
         poster="https://media.comfy.org/website/careers/hero.webp"
         autoplay
         loop
-        muted
-        playsinline
-        preload="metadata"
+        mute-only
         aria-label="Comfy team"
-        class="w-full rounded-4xl object-cover"
       />
       <div class="space-y-6 p-8 text-base/relaxed text-primary-comfy-canvas">
         <p>{{ t('careers.hero.body1', locale) }}</p>
