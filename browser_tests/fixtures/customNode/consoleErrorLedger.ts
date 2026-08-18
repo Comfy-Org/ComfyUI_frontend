@@ -388,6 +388,8 @@ export function consoleErrorExclusionsForPacks(packs: string[]) {
       pack,
       reason: rule.reason,
       restore: rule.restore,
+      scope: 'startup and pack operations',
+      tier: 'S8' as const,
       mode: rule.requiredStartupId
         ? ('expected-failure' as const)
         : ('conditional-console' as const)
@@ -397,6 +399,8 @@ export function consoleErrorExclusionsForPacks(packs: string[]) {
       pack,
       reason: rule.reason,
       restore: rule.restore,
+      scope: 'S4 connectivity sweep',
+      tier: 'S8' as const,
       mode: rule.requiredConnectivityId
         ? ('expected-failure' as const)
         : ('conditional-console' as const)
@@ -406,6 +410,8 @@ export function consoleErrorExclusionsForPacks(packs: string[]) {
       pack,
       reason: rule.reason,
       restore: rule.restore,
+      scope: `${rule.tiers.join('/')} node lifecycle`,
+      tier: 'S8' as const,
       mode: 'expected-failure' as const
     }))
   ])

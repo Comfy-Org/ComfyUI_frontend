@@ -38,7 +38,13 @@ it('reports each all-node tier result separately for each pack', () => {
     const summary = fs.readFileSync(path.join(dir, 'summary.md'), 'utf8')
     expect(summary).toContain('## Custom-node Cloud breadth suite')
     expect(summary).toContain('| Pack | startup/load | S1 | S2 | S3 | S9 |')
-    expect(summary).toContain('**Pack-B / ExampleNode - SKIP**')
+    expect(summary).toContain('### S9 node execution skips')
+    expect(summary).toContain(
+      '**S9 - SKIP - NODE NOT EXECUTED - Pack-B / ExampleNode**'
+    )
+    expect(summary).toContain(
+      'this is node-level execution coverage debt, not a whole-pack skip'
+    )
     expect(result.stdout).toMatch(/^Pack-A\s+-\s+PASS\s+FAIL 1\/1\s+-/m)
     expect(result.stdout).toMatch(/^Pack-B\s+-\s+PASS\s+PASS\s+-/m)
   } finally {

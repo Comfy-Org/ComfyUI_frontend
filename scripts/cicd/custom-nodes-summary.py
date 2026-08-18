@@ -149,8 +149,8 @@ if failed:
     for title, err in failed[:20]:
         out(f'- `{title}`\n  - {err}', f'FAILED: {title}\n        {err}')
 if auto_run_exclusions:
-    out('\n### Execution coverage exclusions')
-    out('Every entry below was classified as model-free but was not executed.')
+    out('\n### S9 node execution skips')
+    out('These nodes were registered, but S9 did not queue them. Other applicable tiers still ran for their pack; this is node-level execution coverage debt, not a whole-pack skip.')
     for pack, node, reason in sorted(set(auto_run_exclusions)):
-        out(f'- **{pack} / {node} - SKIP**\n  - {reason}')
-        print(f'::warning title=Custom-node execution excluded::{pack} / {node} - {reason}')
+        out(f'- **S9 - SKIP - NODE NOT EXECUTED - {pack} / {node}**\n  - reason: {reason}\n  - to remove: make this node deterministic and safe on the bare CPU backend, then remove its S9 exclusion')
+        print(f'::warning title=S9 node execution skipped::{pack} / {node} - {reason}')

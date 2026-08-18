@@ -16,7 +16,6 @@ import { join } from 'node:path'
 import { promisify } from 'node:util'
 
 import type { QuarantinedPack } from '../browser_tests/fixtures/customNode/manifest'
-import { CLOUD_RUN_EXCLUSIONS } from '../browser_tests/fixtures/customNode/autoRun'
 import { connectivityExpectations } from '../browser_tests/fixtures/customNode/connectivityExpectations'
 import {
   FRONTEND_ASSET_EXCLUSIONS,
@@ -181,6 +180,8 @@ const connectivityExclusions = [
           pack,
           reason: group.reason,
           restore: group.restore,
+          scope: 'connectivity breadth sweep',
+          tier: 'S4' as const,
           mode: 'expected-failure' as const
         }
       ]
@@ -194,10 +195,12 @@ const note = (line: string) => {
 }
 
 note(
-  `## Excluded packs - **${entries.length + unjoinedYamlPacks.length} of ${manifest.size + unjoinedYamlPacks.length}**`
+  `## Pack-level coverage exclusions - **${entries.length + unjoinedYamlPacks.length} of ${manifest.size + unjoinedYamlPacks.length} packs**`
 )
 note('')
-note('Every entry below is coverage this run did NOT measure.')
+note(
+  'These are whole-pack skips: the pack was not installed, so **no S-tier ran** for it.'
+)
 note('')
 
 const stale: string[] = []
@@ -205,7 +208,8 @@ const unknown: string[] = []
 const inconclusive: string[] = []
 
 for (const pack of unjoinedYamlPacks) {
-  note(`- **${pack} - SKIP - PACK NOT EXERCISED** \`unjoined-object-info\``)
+  note(`- **PACK - SKIP - NO S-TIER RAN - ${pack}** \`unjoined-object-info\``)
+  note('  - meaning: no test surface exercised this pack')
   note(
     '  - the pinned Cloud YAML names the pack, but its object_info snapshot has no nodes attributable to it'
   )
@@ -232,8 +236,9 @@ for (const [pack, entry] of entries) {
     const detail = error instanceof Error ? error.message : String(error)
     inconclusive.push(`${pack}: ${detail}`)
     note(
-      `- **${pack} - SKIP - PACK NOT EXERCISED - PROBE INCONCLUSIVE** \`${entry.class}\``
+      `- **PACK - SKIP - NO S-TIER RAN - ${pack} - PROBE INCONCLUSIVE** \`${entry.class}\``
     )
+    note('  - meaning: no test surface exercised this pack')
     note(`  - ${entry.reason}`)
     note(`  - gate failure: ${detail}`)
     process.stdout.write(
@@ -248,8 +253,9 @@ for (const [pack, entry] of entries) {
         ? 'still excluded'
         : '**FIXED UPSTREAM**'
   note(
-    `- **${pack} - SKIP - PACK NOT EXERCISED** \`${entry.class}\` - ${status}`
+    `- **PACK - SKIP - NO S-TIER RAN - ${pack}** \`${entry.class}\` - ${status}`
   )
+  note('  - meaning: no test surface exercised this pack')
   note(`  - ${entry.reason}`)
   note(`  - to remove: ${entry.upstreamFix}`)
   process.stdout.write(
@@ -265,6 +271,8 @@ const nodeExclusions = [
         label: `${nodeType} save/reload`,
         pack,
         ...exclusion,
+        scope: 'save/reload sweep',
+        tier: 'S3' as const,
         mode: 'expected-failure' as const
       }))
   ),
@@ -273,42 +281,42 @@ const nodeExclusions = [
     pack,
     reason: exclusion.reason,
     restore: exclusion.restore,
+    scope: 'frontend asset registration',
+    tier: 'S11' as const,
     mode: 'expected-failure' as const
   })),
   ...consoleErrorExclusionsForPacks([...manifest.keys()]),
-  ...Object.entries(CLOUD_RUN_EXCLUSIONS).flatMap(([ledgerPack, nodes]) => {
-    const pack = manifestPackByFoldedName.get(ledgerPack.toLowerCase())
-    return pack
-      ? Object.entries(nodes).map(([node, exclusion]) => ({
-          label: `${pack} / ${node} execution`,
-          pack,
-          ...exclusion,
-          mode: 'not-exercised' as const
-        }))
-      : []
-  }),
   ...connectivityExclusions
-]
+].sort(
+  (left, right) =>
+    left.tier.localeCompare(right.tier, undefined, { numeric: true }) ||
+    left.label.localeCompare(right.label)
+)
 const unknownNodeExclusions: string[] = []
-note('')
-note(`## Temporary accepted gaps - **${nodeExclusions.length}**`)
+const exactDefects = nodeExclusions.filter(
+  (exclusion) => exclusion.mode === 'expected-failure'
+).length
+const conditionalAllowances = nodeExclusions.length - exactDefects
 note('')
 note(
-  'Every entry is a **SKIP** from the passing contract. Expected failures are still exercised and must reproduce their exact known defect. Conditional console signatures are pack-scoped but are not required to occur. Not-exercised behavior receives no coverage.'
+  `## Tier-scoped acceptance ledger - **${exactDefects} exact defects, ${conditionalAllowances} conditional allowances**`
+)
+note('')
+note(
+  'These are assertion exceptions, not skipped tests. The named S-tier still ran. An exact defect must reproduce its recorded outcome; a conditional S8 allowance accepts only the named error signature if environmental state triggers it.'
 )
 note('')
 for (const exclusion of nodeExclusions) {
   const status =
-    exclusion.mode === 'not-exercised'
-      ? 'SKIP - NOT EXERCISED'
-      : exclusion.mode === 'conditional-console'
-        ? 'SKIP - CONDITIONAL EXACT CONSOLE SIGNATURE'
-        : 'SKIP - EXACT EXPECTED FAILURE'
-  note(`- **${exclusion.label} - ${status}**`)
+    exclusion.mode === 'conditional-console'
+      ? 'CONDITIONAL ERROR ALLOWANCE - TEST RAN'
+      : 'EXACT KNOWN DEFECT - TEST RAN'
+  note(`- **${exclusion.tier} - ${status} - ${exclusion.label}**`)
+  note(`  - exercised in: ${exclusion.scope}`)
   note(`  - ${exclusion.reason}`)
   note(`  - to remove: ${exclusion.restore}`)
   process.stdout.write(
-    `::warning title=Custom-node check excluded::${exclusion.label} - ${exclusion.reason}\n`
+    `::warning title=${exclusion.tier} accepted defect::${exclusion.label} - ${exclusion.reason}\n`
   )
   if (!manifest.has(exclusion.pack)) unknownNodeExclusions.push(exclusion.label)
 }

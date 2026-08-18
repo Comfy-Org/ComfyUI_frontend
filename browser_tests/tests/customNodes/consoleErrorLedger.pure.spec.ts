@@ -289,7 +289,9 @@ test.describe('consoleErrorLedger', () => {
         expect.objectContaining({
           label:
             'ComfyUI-KJNodes connectivity console kj-points-empty-bbox-json',
-          mode: 'conditional-console'
+          mode: 'conditional-console',
+          scope: 'S4 connectivity sweep',
+          tier: 'S8'
         })
       ])
     )
