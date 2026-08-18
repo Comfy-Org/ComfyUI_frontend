@@ -49,7 +49,14 @@ export const dirLabels: Record<string, string> = {
   partner_nodes: 'Partner node'
 }
 
+export function isPartnerModel(model: Model): boolean {
+  return model.directory === 'partner_nodes'
+}
+
 export function buildWhatIsDescription(model: Model): string {
   const dirDesc = dirDescriptions[model.directory] ?? 'an AI model'
-  return `${model.displayName} is ${dirDesc}. You can run it locally in ComfyUI with full control over every parameter, or access it through Comfy Cloud. ComfyUI's node-based workflow editor lets you connect ${model.displayName} with ControlNets, LoRAs, upscalers, and custom nodes to build any pipeline you need. There are ${model.workflowCount} community workflow templates using ${model.displayName} on Comfy Workflows, ready to load and customize.`
+  const access = isPartnerModel(model)
+    ? `You can run it in ComfyUI through partner nodes — inference runs on the provider's API, so no local weights or GPU are required.`
+    : `You can run it locally in ComfyUI with full control over every parameter, or access it through Comfy Cloud.`
+  return `${model.displayName} is ${dirDesc}. ${access} ComfyUI's node-based workflow editor lets you connect ${model.displayName} with ControlNets, LoRAs, upscalers, and custom nodes to build any pipeline you need. There are ${model.workflowCount} community workflow templates using ${model.displayName} on Comfy Workflows, ready to load and customize.`
 }

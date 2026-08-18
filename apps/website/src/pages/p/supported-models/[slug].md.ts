@@ -5,7 +5,8 @@ import type { APIRoute } from 'astro'
 
 import {
   buildWhatIsDescription,
-  dirLabels
+  dirLabels,
+  isPartnerModel
 } from '../../../config/model-descriptions'
 import { models } from '../../../config/models'
 
@@ -41,8 +42,15 @@ export const GET: APIRoute = ({ props, site }) => {
     '',
     `## How to run ${model.displayName}`,
     '',
-    '1. Locally in ComfyUI — open source, free on your own hardware: https://comfy.org/download',
-    '2. On Comfy Cloud — hosted GPUs, every parameter still exposed: https://cloud.comfy.org',
+    ...(isPartnerModel(model)
+      ? [
+          "1. In ComfyUI through partner nodes — inference runs on the provider's API, no local weights or GPU required: https://comfy.org/download",
+          '2. On Comfy Cloud — the same graph, hosted end to end: https://cloud.comfy.org'
+        ]
+      : [
+          '1. Locally in ComfyUI — open source, free on your own hardware: https://comfy.org/download',
+          '2. On Comfy Cloud — hosted GPUs, every parameter still exposed: https://cloud.comfy.org'
+        ]),
     `3. Start from a community workflow template and adjust it node by node: ${workflowsUrl}`,
     '',
     `This page as HTML: ${pageUrl}`,
