@@ -125,6 +125,7 @@ export interface NodeHandle extends HandleCommon {
   getPosition(): Point
   setPosition(pos: Point): void
   getSize(): Size
+  /** Changes size through the host's resize protocol, including `onResized`. */
   setSize(size: Size): void
   /**
    * The node's rectangle in graph space, title bar included.
@@ -484,7 +485,7 @@ export function createNodeHandles(
         },
         setSize: (n, ...args) => {
           const { width, height } = args[0] as Size
-          n.size = [width, height]
+          n.setSize([width, height])
         },
         snapshot: (n) => snapshotOf(n),
         remove: (n) => {
