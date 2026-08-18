@@ -1,0 +1,55 @@
+// Shared model-page prose: one source for the HTML page and its markdown twin
+// (/p/supported-models/[slug] and /p/supported-models/[slug].md), so the two
+// surfaces cannot drift.
+import type { models } from './models'
+
+type Model = (typeof models)[number]
+
+const dirDescriptions: Record<string, string> = {
+  diffusion_models:
+    'a diffusion model that generates images or video from text and image prompts',
+  checkpoints:
+    'an all-in-one checkpoint model that bundles a diffusion model, text encoder, and VAE',
+  loras:
+    'a LoRA (Low-Rank Adaptation) that fine-tunes an existing model for a specific style or subject',
+  controlnet:
+    'a ControlNet that steers image generation using structural guides like depth maps, edges, or poses',
+  clip_vision:
+    'a CLIP Vision encoder that converts images into embeddings for conditioning or style transfer',
+  vae: 'a VAE (Variational Autoencoder) that encodes and decodes latent representations',
+  text_encoders:
+    'a text encoder that converts prompts into embeddings used to guide generation',
+  audio_encoders:
+    'an audio encoder that converts audio into embeddings for audio-conditioned generation',
+  upscale_models:
+    'an upscale model that increases image resolution while preserving or enhancing detail',
+  latent_upscale_models:
+    'a latent upscale model that refines latents at higher resolution before decoding',
+  style_models:
+    'a style model that transfers artistic style onto generated images',
+  model_patches:
+    'a model patch that modifies or extends the behavior of an existing base model',
+  partner_nodes:
+    'a cloud API model accessible through ComfyUI partner nodes without local hardware requirements'
+}
+
+export const dirLabels: Record<string, string> = {
+  diffusion_models: 'Diffusion model',
+  checkpoints: 'Checkpoint',
+  loras: 'LoRA',
+  controlnet: 'ControlNet',
+  clip_vision: 'CLIP Vision encoder',
+  model_patches: 'Model patch',
+  vae: 'VAE',
+  text_encoders: 'Text encoder',
+  audio_encoders: 'Audio encoder',
+  latent_upscale_models: 'Latent upscale model',
+  upscale_models: 'Upscale model',
+  style_models: 'Style model',
+  partner_nodes: 'Partner node'
+}
+
+export function buildWhatIsDescription(model: Model): string {
+  const dirDesc = dirDescriptions[model.directory] ?? 'an AI model'
+  return `${model.displayName} is ${dirDesc}. You can run it locally in ComfyUI with full control over every parameter, or access it through Comfy Cloud. ComfyUI's node-based workflow editor lets you connect ${model.displayName} with ControlNets, LoRAs, upscalers, and custom nodes to build any pipeline you need. There are ${model.workflowCount} community workflow templates using ${model.displayName} on Comfy Workflows, ready to load and customize.`
+}
