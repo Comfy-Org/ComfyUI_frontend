@@ -42,10 +42,34 @@ function assetsQueryInternal(
   let next_cursor: string | undefined
   const hasMore = ref(true)
   const items = ref<AssetItem[]>([])
-  const { loading: loadingMorePromise, fn: loadMore } =
-    singletonInvocation(doLoadMore)
-  const { loading: loadingNewPromise, fn: loadNew } =
-    singletonInvocation(doLoadNew)
+  const { loading: loadingMorePromise, fn: loadMore } = singletonInvocation(
+    async function () {
+      if (!hasMore.value) return
+      const assetResponse = await doQuery({
+        after: next_cursor ?? params.after
+      })
+      if (!assetResponse) return
+      next_cursor = assetResponse.next_cursor
+      hasMore.value = assetResponse.has_more
+      items.value.push(...assetResponse.assets)
+    }
+  )
+  const { loading: loadingNewPromise, fn: loadNew } = singletonInvocation(
+    async function () {
+      const knownIds = new Set(items.value.map((item) => item.id))
+      let headCursor: string | undefined
+      while (true) {
+        const assetResponse = await doQuery({ after: headCursor })
+        if (!assetResponse) return
+
+        const { assets, has_more, next_cursor } = assetResponse
+        headCursor = next_cursor
+        const newItems = assets.filter(({ id }) => !knownIds.has(id))
+        items.value.splice(0, 0, ...newItems)
+        if (newItems.length !== assets.length || !has_more) break
+      }
+    }
+  )
   const isLoading = computed(
     () => !!loadingMorePromise.value || !!loadingNewPromise.value
   )
@@ -75,15 +99,6 @@ function assetsQueryInternal(
     return parseResult.data
   }
 
-  async function doLoadMore() {
-    if (!hasMore.value) return
-    const assetResponse = await doQuery({ after: next_cursor ?? params.after })
-    if (!assetResponse) return
-    next_cursor = assetResponse.next_cursor
-    hasMore.value = assetResponse.has_more
-    items.value.push(...assetResponse.assets)
-  }
-
   async function invalidate(stale?: Readonly<AssetItem[]>) {
     if (stale) {
       const ids = new Set(stale.map((item) => item.id))
@@ -102,20 +117,6 @@ function assetsQueryInternal(
     })
   }
 
-  async function doLoadNew() {
-    const knownIds = new Set(items.value.map((item) => item.id))
-    let headCursor: string | undefined
-    while (true) {
-      const assetResponse = await doQuery({ after: headCursor })
-      if (!assetResponse) return
-
-      const { assets, has_more, next_cursor } = assetResponse
-      headCursor = next_cursor
-      const newItems = assets.filter(({ id }) => !knownIds.has(id))
-      items.value.splice(0, 0, ...newItems)
-      if (newItems.length !== assets.length || !has_more) break
-    }
-  }
   void loadMore()
 
   return { hasMore, invalidate, isLoading, items, loadMore, loadNew }
