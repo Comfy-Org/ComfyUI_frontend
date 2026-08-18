@@ -631,6 +631,29 @@ describe('a defined node type', () => {
     }
   })
 
+  it('keeps declared widget values when duplicated', () => {
+    const defs = createDefRegistry().forMajor((id) => comfy.graph.node(id)!)
+    const stop = defs.define({
+      type: 'DefinedPrompt',
+      widgets: [{ type: 'string', name: 'prompt', value: '' }]
+    })
+
+    try {
+      const original = LiteGraph.createNode('DefinedPrompt')!
+      graph.add(original)
+      comfy.graph
+        .node(String(original.id))!
+        .widgets.get('prompt')!
+        .setValue('keep me')
+
+      const copy = comfy.graph.duplicate(String(original.id))!
+
+      expect(copy.widgets.get('prompt')!.getValue()).toBe('keep me')
+    } finally {
+      stop()
+    }
+  })
+
   it('shapes a declared output, because the shape is saved with it', () => {
     // rgthree's relay draws an arrow on the one output that may only reach a
     // repeater. Declaring the output without it saved one field fewer than the
