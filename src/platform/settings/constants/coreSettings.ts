@@ -1213,7 +1213,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'boolean',
     tooltip:
       'Enabled: offscreen nodes are removed and recreated when they return, minimizing memory use. Disabled: offscreen nodes are still removed from the page, but their component state is preserved. Viewport virtualization remains active in both modes.',
-    defaultValue: true,
+    defaultValue: false,
     sortOrder: 101,
     experimental: true,
     versionAdded: '1.63.0'

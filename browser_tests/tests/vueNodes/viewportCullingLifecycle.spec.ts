@@ -28,7 +28,7 @@ test.describe(
     test.afterEach(async ({ comfyPage }) => {
       await comfyPage.settings.setSetting(
         'Comfy.VueNodes.ViewportCulling',
-        true
+        false
       )
       await comfyPage.canvasOps.resetView()
     })
