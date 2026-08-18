@@ -249,7 +249,8 @@ jobs:
           fi
 
           if [ "$error_count" -gt 0 ]; then
-            echo "::warning::Shard ${SHARD}: Playwright reported ${error_count} top-level error(s); the regenerated baselines for this shard may be incomplete."
+            echo "::error::Shard ${SHARD}: Playwright reported ${error_count} top-level error(s); the regenerated baselines may be incomplete."
+            exit 1
           fi
 
           # Snapshot rewrites appear as unexpected or flaky tests.
