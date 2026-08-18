@@ -512,8 +512,8 @@ function manifestShard(): { index: number; total: number } | null {
  * matrix costs its slowest shard, that one straggler was the whole run.
  *
  * Greedy longest-processing-time: heaviest pack first, always into the
- * lightest shard. Deterministic given the manifest, and ties break on pack
- * name so a reordered manifest cannot silently reshuffle the slices.
+ * lightest shard. Deterministic for the pinned manifest; ties preserve its
+ * reviewed order.
  */
 export function shardOf<T>(
   entries: readonly T[],
