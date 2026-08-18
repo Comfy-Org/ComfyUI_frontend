@@ -135,7 +135,8 @@ const CAPABILITIES: ReadonlyMap<string, string> = new Map([
   ['workflow.open', '1.0'],
   ['workflow.textReplacements', '1.0'],
   ['execution.node', '1.0'],
-  ['defs.typeCompatibility', '1.0']
+  ['defs.typeCompatibility', '1.0'],
+  ['queue.disableAutoQueue', '1.0']
 ])
 
 /**
