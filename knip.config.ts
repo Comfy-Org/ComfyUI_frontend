@@ -11,7 +11,9 @@ const config: KnipConfig = {
         'src/assets/css/style.css',
         'src/scripts/ui/menu/index.ts',
         'src/types/index.ts',
-        'src/storybook/mocks/**/*.ts'
+        'src/storybook/mocks/**/*.ts',
+        'tools/oxlint-plugins/comfyIngestTypes.ts',
+        'tools/oxlint-plugins/vitestCleanup.ts'
       ],
       project: [
         '**/*.{js,ts,vue}',
