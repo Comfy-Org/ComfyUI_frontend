@@ -66,11 +66,11 @@ for pattern in "${AGENT_PATTERNS[@]}"; do
     fi
 done
 
-violations="$(
+commit_trailers="$(
     git log --format='  %h: %(trailers:key=Co-authored-by,separator=%x09)' \
-        "${base_sha}..${head_sha}" |
-        grep -iE "$regex" || true
+        "${base_sha}..${head_sha}"
 )"
+violations="$(grep -iE "$regex" <<<"$commit_trailers" || true)"
 
 if [[ -n "$violations" ]]; then
     echo "::error::AI agent Co-authored-by trailers detected in PR commits."
