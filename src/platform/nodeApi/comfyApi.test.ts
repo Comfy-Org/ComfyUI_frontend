@@ -48,6 +48,7 @@ describe('comfy API root', () => {
       expect(api().supports('execution.node')).toBe(true)
       expect(api().supports('defs.typeCompatibility')).toBe(true)
       expect(api().supports('defs.inputValues')).toBe(true)
+      expect(api().supports('node.fileDrop')).toBe(true)
       expect(api().supports('queue.disableAutoQueue')).toBe(true)
     })
 

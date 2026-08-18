@@ -36,6 +36,7 @@
       @pointermove.capture.stop
       @pointerup.capture.stop="handleSelection"
       @input="handleInput"
+      @keydown="handleKeyDown"
       @wheel="handleWheel"
       @contextmenu.capture="handleContextMenu"
     />
@@ -101,7 +102,10 @@ function hostWidget() {
   return resolveWidgetFromHostNode(node, widget.name)?.widget
 }
 
-function dispatch(kind: 'input' | 'selection' | 'wheel', event: Event): void {
+function dispatch(
+  kind: 'input' | 'selection' | 'wheel' | 'keydown',
+  event: Event
+): void {
   const element = textArea()
   const source = hostWidget()
   if (!element || !source) return
@@ -109,7 +113,11 @@ function dispatch(kind: 'input' | 'selection' | 'wheel', event: Event): void {
     dispatchWidgetTextInteraction(source, element, kind, event)
     return
   }
-  if (kind !== 'wheel') {
+  if (kind === 'keydown' && event instanceof KeyboardEvent) {
+    dispatchWidgetTextInteraction(source, element, kind, event)
+    return
+  }
+  if (kind === 'input' || kind === 'selection') {
     dispatchWidgetTextInteraction(source, element, kind, event)
   }
 }
@@ -120,6 +128,10 @@ function handleInput(event: Event) {
 
 function handleSelection(event: PointerEvent) {
   dispatch('selection', event)
+}
+
+function handleKeyDown(event: KeyboardEvent) {
+  dispatch('keydown', event)
 }
 
 function handleWheel(event: WheelEvent) {

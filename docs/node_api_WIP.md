@@ -35,8 +35,8 @@ widget instance, not a Pinia store, not a Vue reactive proxy, not a constructor.
 > `defs.extend`, `defs.inputValues`, `defs.typeCompatibility`,
 > `execution.node`, `graph.nodes`, `graph.selection`,
 > `interaction.nodeDragEnd`, `interaction.nodeMoved`, `interaction.state`,
-> `node.changeScope`, `node.connectVeto`, `node.geometry`, `node.menu`,
-> `node.onPreview`, `node.onSerialize`, `node.resolve`,
+> `node.changeScope`, `node.connectVeto`, `node.fileDrop`, `node.geometry`,
+> `node.menu`, `node.onPreview`, `node.onSerialize`, `node.resolve`,
 > `node.sizeConstraints`, `queue.disableAutoQueue`, `serialization.control`,
 > `settings`, `slots.connect`, `slots.dynamic`, `slots.identity`,
 > `slots.layout`, `slots.localizedName`, `slots.moveLinks`, `slots.retype`,
@@ -1643,6 +1643,38 @@ a pack duplicating a _configured_ node â€” a prompt box the user has filled in â
 lost its contents; pysssss's "Add 2nd Pass" dropped a menu entry rather than
 lose the user's text. Links are deliberately not copied: a duplicate wired into
 the same places is a different operation.
+
+### Keyboard events and focus on `widgets.textInteraction`
+
+**Forced by** rgthree Power Prompt. Ctrl/Cmd+Arrow adjusts the weight of the
+LoRA expression under the caret, and inserting an expression returns focus and
+the selection to the host-owned prompt editor.
+
+**Alternative rejected.** A document key listener plus a query for the host's
+textarea would couple the pack to renderer markup. Mounting a second editor
+would duplicate the host widget and create two competing value owners.
+`textInteraction` already owns the mode-independent input, selection, wheel,
+and context-menu event stream; keyboard events and `focus()` are the same
+interaction boundary.
+
+**Cost to reverse.** Moderate. The prompt still serializes correctly, but its
+keyboard weight adjustment and post-insertion editing flow are lost.
+
+### `NodeDefBuilder.onDragOver()` and `onDrop()`
+
+**Forced by** rgthree's individual-node importer. Dropping a workflow or image
+onto a node finds the saved node with the same id and type and restores that
+node's widget values without loading the whole workflow.
+
+**Alternative rejected.** A mounted drop target cannot cover arbitrary nodes
+and would disappear when the renderer changes. A menu command with a file
+picker is a different gesture and cannot participate in the host's existing
+drop routing. These hooks expose the browser `DragEvent` and a handled result,
+not canvas or renderer state. Host behavior is offered the event first; an
+extension may accept it only when the host does not claim it.
+
+**Cost to reverse.** Low today: one pack and one feature. It would become
+unconvertible again rather than degrade to a safe partial implementation.
 
 ### The pattern worth noticing
 

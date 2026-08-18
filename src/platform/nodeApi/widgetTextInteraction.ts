@@ -14,6 +14,7 @@ export interface WidgetTextEventBase {
   readonly menuEvent: MouseEvent
   /** Commits through the widget protocol and optionally restores the caret. */
   setValue(value: string, selection?: WidgetTextSelection): void
+  focus(): void
 }
 
 /** @knipIgnoreUnusedButUsedByCustomNodes */
@@ -30,6 +31,19 @@ export interface WidgetTextWheelEvent extends WidgetTextEventBase {
   preventDefault(): void
 }
 
+/** @knipIgnoreUnusedButUsedByCustomNodes */
+export interface WidgetTextKeyEvent extends WidgetTextEventBase {
+  readonly kind: 'keydown'
+  readonly key: string
+  readonly ctrlKey: boolean
+  readonly altKey: boolean
+  readonly shiftKey: boolean
+  readonly metaKey: boolean
+  readonly repeat: boolean
+  preventDefault(): void
+  stopPropagation(): void
+}
+
 /**
  * An interaction with a host-owned multiline text editor.
  *
@@ -41,6 +55,7 @@ export interface WidgetTextWheelEvent extends WidgetTextEventBase {
 export type WidgetTextInteractionEvent =
   | WidgetTextInputEvent
   | WidgetTextWheelEvent
+  | WidgetTextKeyEvent
 
 type Subscription = {
   readonly listener: (event: WidgetTextInteractionEvent) => void
@@ -100,7 +115,13 @@ export function dispatchWidgetTextInteraction(
 export function dispatchWidgetTextInteraction(
   widget: IBaseWidget,
   element: HTMLTextAreaElement,
-  kind: 'input' | 'selection' | 'wheel',
+  kind: 'keydown',
+  sourceEvent: KeyboardEvent
+): void
+export function dispatchWidgetTextInteraction(
+  widget: IBaseWidget,
+  element: HTMLTextAreaElement,
+  kind: 'input' | 'selection' | 'wheel' | 'keydown',
   sourceEvent: Event
 ): void {
   const entries = subscriptions.get(widget)
@@ -113,7 +134,8 @@ export function dispatchWidgetTextInteraction(
   const common = {
     value: element.value,
     selection,
-    menuEvent: menuEventFor(element)
+    menuEvent: menuEventFor(element),
+    focus: () => element.focus()
   }
 
   for (const subscription of entries) {
@@ -131,6 +153,25 @@ export function dispatchWidgetTextInteraction(
           ctrlKey: sourceEvent.ctrlKey,
           setValue,
           preventDefault: () => sourceEvent.preventDefault()
+        })
+      )
+      continue
+    }
+    if (kind === 'keydown') {
+      if (!(sourceEvent instanceof KeyboardEvent)) return
+      subscription.listener(
+        Object.freeze({
+          ...common,
+          kind,
+          key: sourceEvent.key,
+          ctrlKey: sourceEvent.ctrlKey,
+          altKey: sourceEvent.altKey,
+          shiftKey: sourceEvent.shiftKey,
+          metaKey: sourceEvent.metaKey,
+          repeat: sourceEvent.repeat,
+          setValue,
+          preventDefault: () => sourceEvent.preventDefault(),
+          stopPropagation: () => sourceEvent.stopPropagation()
         })
       )
       continue

@@ -58,6 +58,12 @@ export function bindMultilineTextareaWidget(
   )
 
   element.addEventListener(
+    'keydown',
+    (event) => dispatchWidgetTextInteraction(widget, element, 'keydown', event),
+    { signal }
+  )
+
+  element.addEventListener(
     'wheel',
     (event: WheelEvent) => {
       dispatchWidgetTextInteraction(widget, element, 'wheel', event)

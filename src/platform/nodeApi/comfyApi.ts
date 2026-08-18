@@ -134,6 +134,7 @@ const CAPABILITIES: ReadonlyMap<string, string> = new Map([
   ['interaction.nodeMoved', '1.0'],
   ['interaction.nodeDragEnd', '1.0'],
   ['node.changeScope', '1.0'],
+  ['node.fileDrop', '1.0'],
   ['workflow.open', '1.0'],
   ['workflow.textReplacements', '1.0'],
   ['execution.node', '1.0'],
