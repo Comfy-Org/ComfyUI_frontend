@@ -23,8 +23,10 @@ import {
 } from '@e2e/fixtures/customNode/ComfyTarget'
 import {
   isForeignExecutionNoise,
+  staleRequiredRoundtripErrorRules,
   unallowlistedErrors,
-  unallowlistedGlobalExtensionErrorsForPacks
+  unallowlistedGlobalExtensionErrorsForPacks,
+  unallowlistedRoundtripErrors
 } from '@e2e/fixtures/customNode/consoleErrorLedger'
 import { failureSummary } from '@e2e/fixtures/customNode/failureReport'
 import {
@@ -1249,41 +1251,62 @@ for (const entry of manifestEntries) {
               ] as const
             )
             await comfyPage.nextFrame()
+            let completedRoundtripStages = 0
             const waitForInitialization = async () => {
-              if (Object.keys(initializationSignals).length === 0) return
+              if (Object.keys(initializationSignals).length > 0)
+                await expect
+                  .poll(
+                    async () => {
+                      const values = await comfyPage.page.evaluate(
+                        (signals) => {
+                          const values: Record<string, unknown> = {}
+                          for (const [type, signal] of Object.entries(
+                            signals
+                          )) {
+                            const node = window.app!.graph.nodes.find(
+                              (candidate) => candidate.type === type
+                            ) as unknown as Record<string, unknown> | undefined
+                            if (
+                              signal.predicate === 'widget-count' ||
+                              signal.predicate === 'minimum-widget-count'
+                            ) {
+                              const widgets = (
+                                node as unknown as
+                                  | {
+                                      widgets?: unknown[]
+                                    }
+                                  | undefined
+                              )?.widgets
+                              values[type] = (widgets ?? []).length
+                            } else {
+                              values[type] = node?.[signal.property]
+                            }
+                          }
+                          return values
+                        },
+                        initializationSignals
+                      )
+                      return pendingRoundtripInitializations(
+                        initializationSignals,
+                        values,
+                        vueNodesEnabled
+                      )
+                    },
+                    { timeout: 10_000 }
+                  )
+                  .toEqual([])
+              completedRoundtripStages += 1
               await expect
                 .poll(
-                  async () => {
-                    const values = await comfyPage.page.evaluate((signals) => {
-                      const values: Record<string, unknown> = {}
-                      for (const [type, signal] of Object.entries(signals)) {
-                        const node = window.app!.graph.nodes.find(
-                          (candidate) => candidate.type === type
-                        ) as unknown as Record<string, unknown> | undefined
-                        if (
-                          signal.predicate === 'widget-count' ||
-                          signal.predicate === 'minimum-widget-count'
-                        ) {
-                          const widgets = (
-                            node as unknown as
-                              | {
-                                  widgets?: unknown[]
-                                }
-                              | undefined
-                          )?.widgets
-                          values[type] = (widgets ?? []).length
-                        } else {
-                          values[type] = node?.[signal.property]
-                        }
-                      }
-                      return values
-                    }, initializationSignals)
-                    return pendingRoundtripInitializations(
-                      initializationSignals,
-                      values
-                    )
-                  },
-                  { timeout: 10_000 }
+                  () =>
+                    staleRequiredRoundtripErrorRules(
+                      entry.pack,
+                      vueNodesEnabled,
+                      consoleErrors.errors,
+                      completedRoundtripStages,
+                      chunk
+                    ),
+                  { timeout: 5_000 }
                 )
                 .toEqual([])
             }
@@ -1332,11 +1355,29 @@ for (const entry of manifestEntries) {
               observedKeyDrift.set(node, observed)
             }
           }
+          await expect
+            .poll(
+              () =>
+                staleRequiredRoundtripErrorRules(
+                  entry.pack,
+                  vueNodesEnabled,
+                  consoleErrors.errors
+                ),
+              { timeout: 5_000 }
+            )
+            .toEqual([])
           consoleErrors.stop()
           expect(
             unallowlistedGlobalExtensionErrorsForPacks(
               installedManifestPacks,
-              unallowlistedErrors(entry.pack, consoleErrors.errors)
+              unallowlistedErrors(
+                entry.pack,
+                unallowlistedRoundtripErrors(
+                  entry.pack,
+                  vueNodesEnabled,
+                  consoleErrors.errors
+                )
+              )
             ).filter((error) => !isForeignExecutionNoise(error)),
             `console errors during save/reload with VueNodes=${vueNodesEnabled}`
           ).toEqual([])

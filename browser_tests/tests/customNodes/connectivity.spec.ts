@@ -68,6 +68,11 @@ const deterministicSlotContractMismatch = pairExpectationKeys(
   deterministicSlotContractMismatchGroups
 )
 const roundtripLost = pairExpectationKeys(roundtripLostGroups)
+const requiredPairKeys = [
+  ...connectRejected,
+  ...deterministicSlotContractMismatch,
+  ...roundtripLost
+]
 
 test.use({ initialSettings: customNodeSuiteSettings })
 
@@ -188,7 +193,7 @@ test('connectivity: representative edges cover every pairable slot through model
   const packTypes = nodes
     .filter((node) => installedPacks.has(node.pack))
     .map((node) => node.type)
-  const plan = planPairs(nodes, packTypes)
+  const plan = planPairs(nodes, packTypes, requiredPairKeys)
   const isolatedTypes = new Set(Object.keys(activeIsolatedNodeTypes))
   const isolatedPairs = plan.pairs.filter(
     (pair) =>
@@ -205,6 +210,10 @@ test('connectivity: representative edges cover every pairable slot through model
   expect(
     plan.unknownShapes,
     'installed-pack slots with unrecognized object_info shapes'
+  ).toEqual([])
+  expect(
+    plan.requiredPairIssues,
+    'ledgered connectivity pair can no longer be planned exactly'
   ).toEqual([])
   for (const nodeType of isolatedTypes)
     expect(

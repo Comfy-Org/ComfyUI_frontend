@@ -47,6 +47,7 @@ export interface PlannedPair {
 
 export interface PairingPlan {
   pairs: PlannedPair[]
+  requiredPairIssues: string[]
   // No compatible partner in the loaded corpus: a health signal, not a failure.
   orphans: Array<SlotRef & { dir: 'in' | 'out' }>
   // `*` / empty-typed slots, excluded by design (false confidence).
@@ -197,7 +198,8 @@ function slotRef(node: NormalizedNode, slot: NormalizedSlot): SlotRef {
 // does NOT prove every pair; a full cross-product is an opt-in deep mode.
 export function planPairs(
   all: NormalizedNode[],
-  corpusTypes: string[]
+  corpusTypes: string[],
+  requiredPairKeys: string[] = []
 ): PairingPlan {
   const sorted = [...all].sort((a, b) => a.type.localeCompare(b.type))
   const pairable = (slot: NormalizedSlot) =>
@@ -239,6 +241,7 @@ export function planPairs(
   const corpus = all.filter((node) => corpusTypes.includes(node.type))
   const plan: PairingPlan = {
     pairs: [],
+    requiredPairIssues: [],
     orphans: [],
     wildcards: [],
     combos: [],
@@ -297,6 +300,63 @@ export function planPairs(
       if (consumer) addPair(slotRef(node, slot), consumer)
       else plan.orphans.push({ ...slotRef(node, slot), dir: 'out' })
     }
+  }
+
+  const corpusTypeSet = new Set(corpusTypes)
+  for (const key of requiredPairKeys) {
+    const sides = key.split(' -> ')
+    if (sides.length !== 2) {
+      plan.requiredPairIssues.push(`${key}: invalid pair key`)
+      continue
+    }
+    const splitSide = (side: string) => {
+      const separator = side.lastIndexOf('.')
+      return separator > 0 && separator < side.length - 1
+        ? [side.slice(0, separator), side.slice(separator + 1)]
+        : null
+    }
+    const producerSide = splitSide(sides[0])
+    const consumerSide = splitSide(sides[1])
+    if (!producerSide || !consumerSide) {
+      plan.requiredPairIssues.push(`${key}: invalid pair endpoint`)
+      continue
+    }
+    const producerNode = all.find((node) => node.type === producerSide[0])
+    const consumerNode = all.find((node) => node.type === consumerSide[0])
+    if (!producerNode || !consumerNode) continue
+    if (
+      !corpusTypeSet.has(producerNode.type) &&
+      !corpusTypeSet.has(consumerNode.type)
+    )
+      continue
+    const producerSlot = producerNode.outputs.find(
+      (slot) => slot.name === producerSide[1]
+    )
+    const consumerSlot = consumerNode.inputs.find(
+      (slot) => slot.name === consumerSide[1]
+    )
+    if (!producerSlot || !consumerSlot) {
+      plan.requiredPairIssues.push(`${key}: declared slot is no longer present`)
+      continue
+    }
+    const compatible =
+      producerSlot.type === 'COMBO' || consumerSlot.type === 'COMBO'
+        ? producerSlot.type === 'COMBO' &&
+          consumerSlot.type === 'COMBO' &&
+          Array.isArray(producerSlot.comboOptions) &&
+          Array.isArray(consumerSlot.comboOptions) &&
+          vocabOf(producerSlot) === vocabOf(consumerSlot)
+        : isTypeCompatible(producerSlot.type, consumerSlot.type)
+    if (!compatible) {
+      plan.requiredPairIssues.push(
+        `${key}: declared slot types are incompatible`
+      )
+      continue
+    }
+    addPair(
+      slotRef(producerNode, producerSlot),
+      slotRef(consumerNode, consumerSlot)
+    )
   }
   return plan
 }

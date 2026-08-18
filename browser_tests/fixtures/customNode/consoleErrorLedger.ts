@@ -11,6 +11,12 @@ interface ConnectivityRule extends AllowlistRule {
   requiredConnectivityId?: string
 }
 
+interface RoundtripRule extends AllowlistRule {
+  nodeType: string
+  occurrencesPerStage: number
+  vueNodesEnabled: boolean
+}
+
 // Pack-attributed console noise with no visible error surface. Shared by
 // the all-nodes tiers and the curated run tier so one ledger covers every
 // surface a pack's script can emit on. Filter-guarded: a pattern suppresses
@@ -204,6 +210,18 @@ const CONSOLE_ERROR_ALLOWLIST: Record<string, AllowlistRule[]> = {
 // fixed or renamed mechanism immediately makes the ledger stale instead of
 // staying hidden; environment-state mechanisms remain exact but conditional.
 const CONNECTIVITY_ERROR_ALLOWLIST: Record<string, ConnectivityRule[]> = {
+  'comfyui-itools': [
+    {
+      id: 'itools-vue-crop-missing-preview',
+      pattern:
+        /Error calling extension 'iTools\.cropImage' method 'nodeCreated'[\s\S]*TypeError: Cannot read properties of undefined \(reading 'draw'\)/,
+      reason:
+        'the crop extension requires a canvas preview widget that VueNodes does not add to node.widgets',
+      requiredConnectivityId: 'itools-vue-crop-missing-preview',
+      restore:
+        'make the crop extension tolerate VueNodes without a canvas preview widget and remove this entry'
+    }
+  ],
   'ComfyUI-KJNodes': [
     {
       id: 'kj-points-empty-bbox-json',
@@ -251,6 +269,23 @@ const CONNECTIVITY_ERROR_ALLOWLIST: Record<string, ConnectivityRule[]> = {
   ]
 }
 
+const ROUNDTRIP_ERROR_EXPECTATIONS: Record<string, RoundtripRule[]> = {
+  'comfyui-itools': [
+    {
+      id: 'itools-vue-crop-missing-preview',
+      pattern:
+        /Error calling extension 'iTools\.cropImage' method 'nodeCreated'[\s\S]*TypeError: Cannot read properties of undefined \(reading 'draw'\)/,
+      nodeType: 'iToolsCropImage',
+      occurrencesPerStage: 1,
+      reason:
+        'S3 creates the crop node once and reloads it twice; each hook requires a canvas preview widget that VueNodes does not add to node.widgets',
+      restore:
+        'make the crop extension tolerate VueNodes without a canvas preview widget and remove this entry',
+      vueNodesEnabled: true
+    }
+  ]
+}
+
 function foldedRulesFor<T extends AllowlistRule>(
   ledger: Record<string, T[]>,
   pack: string
@@ -273,6 +308,18 @@ function allowlistRulesFor(pack: string): AllowlistRule[] {
 function connectivityRulesForPacks(packs: string[]): ConnectivityRule[] {
   return packs.flatMap((pack) =>
     foldedRulesFor(CONNECTIVITY_ERROR_ALLOWLIST, pack)
+  )
+}
+
+function roundtripRulesForPack(
+  pack: string,
+  vueNodesEnabled: boolean,
+  nodeTypes?: readonly string[]
+): RoundtripRule[] {
+  return foldedRulesFor(ROUNDTRIP_ERROR_EXPECTATIONS, pack).filter(
+    (rule) =>
+      rule.vueNodesEnabled === vueNodesEnabled &&
+      (nodeTypes === undefined || nodeTypes.includes(rule.nodeType))
   )
 }
 
@@ -345,6 +392,13 @@ export function consoleErrorExclusionsForPacks(packs: string[]) {
       mode: rule.requiredConnectivityId
         ? ('expected-failure' as const)
         : ('conditional-console' as const)
+    })),
+    ...foldedRulesFor(ROUNDTRIP_ERROR_EXPECTATIONS, pack).map((rule) => ({
+      label: `${pack} roundtrip console ${rule.id}`,
+      pack,
+      reason: rule.reason,
+      restore: rule.restore,
+      mode: 'expected-failure' as const
     }))
   ])
 }
@@ -384,6 +438,32 @@ export function staleRequiredConnectivityErrorRulesForPacks(
         !errors.some((error) => ruleMatches(rule, error))
     )
     .map((rule) => rule.requiredConnectivityId!)
+}
+
+export function unallowlistedRoundtripErrors(
+  pack: string,
+  vueNodesEnabled: boolean,
+  errors: string[]
+): string[] {
+  return withoutMatches(roundtripRulesForPack(pack, vueNodesEnabled), errors)
+}
+
+export function staleRequiredRoundtripErrorRules(
+  pack: string,
+  vueNodesEnabled: boolean,
+  errors: string[],
+  completedStages = 3,
+  nodeTypes?: readonly string[]
+): string[] {
+  return roundtripRulesForPack(pack, vueNodesEnabled, nodeTypes).flatMap(
+    (rule) => {
+      const observed = errors.filter((error) => ruleMatches(rule, error)).length
+      const expected = rule.occurrencesPerStage * completedStages
+      return observed === expected
+        ? []
+        : [`${rule.id}: expected ${expected}, observed ${observed}`]
+    }
+  )
 }
 
 // Execution errors surface on the tiers that actually queue prompts (the

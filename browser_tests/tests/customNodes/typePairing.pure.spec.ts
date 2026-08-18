@@ -193,6 +193,58 @@ test.describe('typePairing', () => {
     expect(plan.unknownShapes).toEqual([])
   })
 
+  test('ledgered pairs are planned exactly in addition to representatives', () => {
+    const nodes = normalizeNodeDefs({
+      ImageSource: {
+        input: { required: {} },
+        output: ['IMAGE'],
+        output_name: ['image'],
+        python_module: 'custom_nodes.ExamplePack'
+      },
+      AlphaSink: {
+        input: { required: { image: ['IMAGE', {}] } },
+        output: [],
+        python_module: 'nodes'
+      },
+      ExpectedSink: {
+        input: { required: { image: ['IMAGE', {}] } },
+        output: [],
+        python_module: 'nodes'
+      }
+    })
+    const plan = planPairs(
+      nodes,
+      ['ImageSource'],
+      ['ImageSource.image -> ExpectedSink.image']
+    )
+    const keys = plan.pairs.map(
+      (pair) =>
+        `${pair.producer.nodeType}.${pair.producer.slotName} -> ${pair.consumer.nodeType}.${pair.consumer.slotName}`
+    )
+
+    expect(keys).toEqual([
+      'ImageSource.image -> AlphaSink.image',
+      'ImageSource.image -> ExpectedSink.image'
+    ])
+    expect(plan.requiredPairIssues).toEqual([])
+  })
+
+  test('ledgered pairs fail closed when a live slot contract changes', () => {
+    const nodes = normalizeNodeDefs(DEFS)
+    const plan = planPairs(
+      nodes,
+      ['LatentSink'],
+      [
+        'LatentSource.missing -> LatentSink.latent',
+        'AbsentSource.output -> LatentSink.latent'
+      ]
+    )
+
+    expect(plan.requiredPairIssues).toEqual([
+      'LatentSource.missing -> LatentSink.latent: declared slot is no longer present'
+    ])
+  })
+
   test('COMBO slots with different vocabularies stay excluded', () => {
     const nodes = normalizeNodeDefs({
       ComboSource: {

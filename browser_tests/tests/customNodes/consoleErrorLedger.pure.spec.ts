@@ -7,11 +7,13 @@ import {
   customExtensionStartupErrors,
   isForeignExecutionNoise,
   staleRequiredConnectivityErrorRulesForPacks,
+  staleRequiredRoundtripErrorRules,
   staleRequiredStartupErrorRulesForPacks,
   unallowlistedErrors,
   unallowlistedConnectivityErrorsForPacks,
   unallowlistedGlobalExtensionErrorsForPacks,
-  unallowlistedErrorsForPacks
+  unallowlistedErrorsForPacks,
+  unallowlistedRoundtripErrors
 } from '@e2e/fixtures/customNode/consoleErrorLedger'
 import { loadAllManifestPackNames } from '@e2e/fixtures/customNode/manifest'
 
@@ -161,7 +163,7 @@ test.describe('consoleErrorLedger', () => {
     ).toEqual([])
   })
 
-  test('does not allow the iTools crop hook to initialize without its preview', () => {
+  test('requires the iTools Vue crop failure only in roundtrip coverage', () => {
     const error =
       "Error calling extension 'iTools.cropImage' method 'nodeCreated' {error: TypeError: Cannot read properties of undefined (reading 'draw')}"
     expect(
@@ -173,6 +175,41 @@ test.describe('consoleErrorLedger', () => {
     expect(
       unallowlistedGlobalExtensionErrorsForPacks(['Skimmed_CFG'], [error])
     ).toEqual([error])
+    expect(
+      unallowlistedRoundtripErrors('comfyui-itools', false, [error])
+    ).toEqual([error])
+    expect(
+      unallowlistedRoundtripErrors('comfyui-itools', true, [error])
+    ).toEqual([])
+    expect(unallowlistedRoundtripErrors('Skimmed_CFG', true, [error])).toEqual([
+      error
+    ])
+    expect(
+      staleRequiredRoundtripErrorRules('comfyui-itools', true, [
+        error,
+        error,
+        error
+      ])
+    ).toEqual([])
+    expect(
+      staleRequiredRoundtripErrorRules('comfyui-itools', true, [])
+    ).toEqual(['itools-vue-crop-missing-preview: expected 3, observed 0'])
+    expect(
+      staleRequiredRoundtripErrorRules('comfyui-itools', true, [error])
+    ).toEqual(['itools-vue-crop-missing-preview: expected 3, observed 1'])
+    expect(
+      staleRequiredRoundtripErrorRules('comfyui-itools', true, [error], 1, [
+        'iToolsCropImage'
+      ])
+    ).toEqual([])
+    expect(
+      staleRequiredRoundtripErrorRules('comfyui-itools', true, [], 1, [
+        'OtherNode'
+      ])
+    ).toEqual([])
+    expect(
+      staleRequiredRoundtripErrorRules('comfyui-itools', false, [])
+    ).toEqual([])
   })
 
   test('cross-pack variant filters only via packs in scope', () => {
@@ -248,7 +285,7 @@ test.describe('consoleErrorLedger', () => {
     ).toEqual(['ltx-sparse-track-null-image-size'])
   })
 
-  test('matches lower-cased VHS paths without hiding iTools hook failures', () => {
+  test('matches lower-cased VHS paths and requires the iTools hook failure', () => {
     const vhs =
       "TypeError: Cannot read properties of undefined (reading 'target_id')\n" +
       'at get_links (http://localhost:8188/extensions/comfyui-videohelpersuite/js/VHS.core.js:2088:71)'
@@ -259,7 +296,19 @@ test.describe('consoleErrorLedger', () => {
         ['comfyui-videohelpersuite', 'comfyui-itools'],
         [vhs, itools]
       )
-    ).toEqual([itools])
+    ).toEqual([])
+    expect(
+      staleRequiredConnectivityErrorRulesForPacks(
+        ['comfyui-videohelpersuite', 'comfyui-itools'],
+        [vhs, itools]
+      )
+    ).toEqual([])
+    expect(
+      staleRequiredConnectivityErrorRulesForPacks(
+        ['comfyui-videohelpersuite', 'comfyui-itools'],
+        [vhs]
+      )
+    ).toEqual(['itools-vue-crop-missing-preview'])
   })
 
   test('allows only the exact pysssss None-default 404 without requiring it', () => {
