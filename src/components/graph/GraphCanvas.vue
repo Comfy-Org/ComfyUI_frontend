@@ -75,7 +75,7 @@
   >
     <KeepAlive v-for="nodeData in rawNodes" :key="nodeData.id">
       <LGraphNode
-        v-if="activeNodeIds.has(nodeData.id)"
+        v-if="renderedNodeIds.has(nodeData.id)"
         :node-data="nodeData"
         :error="
           executionErrorStore.lastExecutionErrorNodeId === nodeData.id
@@ -86,6 +86,12 @@
       />
     </KeepAlive>
   </TransformPane>
+
+  <NodeBoxOverlay
+    v-if="shouldRenderVueNodes && comfyAppReady && isLowQuality"
+    :get-boxes="getNodeBoxes"
+    :content-version="boxContentVersion"
+  />
 
   <LinkOverlayCanvas
     v-if="shouldRenderVueNodes && comfyApp.canvas && comfyAppReady"
@@ -178,19 +184,33 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useWorkflowAutoSave } from '@/platform/workflow/persistence/composables/useWorkflowAutoSave'
 import { useWorkflowPersistenceV2 as useWorkflowPersistence } from '@/platform/workflow/persistence/composables/useWorkflowPersistenceV2'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculations'
+import { includeNodeTitleInBounds } from '@/renderer/core/canvas/nodeBoxRenderer'
+import type {
+  NodeBox,
+  NodeBoxSlot,
+  NodeBoxWidget
+} from '@/renderer/core/canvas/nodeBoxRenderer'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import type { Bounds, NodeId } from '@/renderer/core/layout/types'
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
 import { useFirstRunEntry } from '@/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry'
 import MiniMap from '@/renderer/extensions/minimap/MiniMap.vue'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
+import NodeBoxOverlay from '@/renderer/extensions/vueNodes/components/NodeBoxOverlay.vue'
+import { useLowQualityRendering } from '@/renderer/extensions/vueNodes/composables/useLowQualityRendering'
 import {
   requestSlotLayoutSyncForAllNodes,
   setExpectedRenderedNodeIds
 } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 import { useViewportKeepAlive } from '@/renderer/extensions/vueNodes/composables/useViewportKeepAlive'
 import { useViewportKeepAlivePins } from '@/renderer/extensions/vueNodes/composables/useViewportKeepAlivePins'
+import {
+  applyLightThemeColor,
+  isRenderableColor
+} from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { UnauthorizedError } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
@@ -308,6 +328,25 @@ const rawNodes = computed((): VueNodeData[] =>
 const nodeIds = computed(() =>
   Array.from(vueNodeLifecycle.nodeManager.value?.vueNodeData?.keys() ?? [])
 )
+const WIDGET_MARGIN = 15
+const nodeColors = computed(() => {
+  const colors = new Map<
+    NodeId,
+    { body?: string; title?: string } | undefined
+  >()
+  for (const node of rawNodes.value) {
+    const body = applyLightThemeColor(node.bgcolor)
+    const title = applyLightThemeColor(node.color)
+    colors.set(node.id, {
+      body: isRenderableColor(body) ? body : undefined,
+      title: isRenderableColor(title) ? title : undefined
+    })
+  }
+  return colors
+})
+const boxContentVersion = ref(0)
+watch(nodeColors, () => boxContentVersion.value++)
+
 const { pinnedNodeIds } = useViewportKeepAlivePins({
   getRoot: () => transformPaneRef.value?.element ?? null,
   getLinkConnector: () => canvasStore.canvas?.linkConnector
@@ -326,10 +365,110 @@ const { activeNodeIds } = useViewportKeepAlive({
   }),
   getNodeGeometryVersion: () => layoutStore.nodeGeometryVersion
 })
-watch(activeNodeIds, () => setExpectedRenderedNodeIds(activeNodeIds.value), {
-  immediate: true,
-  flush: 'post'
+const { isLowQuality } = useLowQualityRendering(
+  computed(() => canvasStore.canvas ?? undefined)
+)
+const lodPinnedNodeIds = shallowRef<ReadonlySet<NodeId>>(new Set())
+watch(isLowQuality, (lowQuality) => {
+  lodPinnedNodeIds.value = lowQuality
+    ? new Set(
+        [...pinnedNodeIds.value].filter((nodeId) =>
+          activeNodeIds.value.has(nodeId)
+        )
+      )
+    : new Set()
 })
+const renderedNodeIds = computed(() =>
+  isLowQuality.value ? lodPinnedNodeIds.value : activeNodeIds.value
+)
+watch(
+  renderedNodeIds,
+  () => setExpectedRenderedNodeIds(renderedNodeIds.value),
+  {
+    immediate: true,
+    flush: 'post'
+  }
+)
+
+function getNodeBoxes(viewport: Bounds): NodeBox[] {
+  const colors = nodeColors.value
+  const titleHeight = LiteGraph.NODE_TITLE_HEIGHT
+  const widgetHeight = LiteGraph.NODE_WIDGET_HEIGHT
+  const nodeManager = vueNodeLifecycle.nodeManager.value
+  const colourGetter = canvasStore.canvas?.colourGetter
+
+  return layoutStore
+    .queryNodesInBounds({
+      ...viewport,
+      height: viewport.height + titleHeight
+    })
+    .filter((nodeId) => !renderedNodeIds.value.has(nodeId))
+    .flatMap((nodeId): NodeBox[] => {
+      const layout = layoutStore.getNodeLayoutRef(nodeId).value
+      if (!layout) return []
+
+      const nodeBounds = layout.bounds
+      const bounds = includeNodeTitleInBounds(nodeBounds, titleHeight)
+      const nodeColor = colors.get(nodeId)
+      const node = nodeManager?.getNode(nodeId)
+      if (!node || node.flags?.collapsed) {
+        return [
+          {
+            bounds,
+            color: nodeColor?.body,
+            titleColor: nodeColor?.title,
+            titleHeight
+          }
+        ]
+      }
+
+      const slots: NodeBoxSlot[] = []
+      const addSlot = (
+        slot: { type?: unknown; link?: unknown; links?: unknown },
+        index: number,
+        isInput: boolean
+      ) => {
+        const [x, y] = getSlotPosition(node, index, isInput)
+        const type = String(slot.type ?? '')
+        const connected = isInput
+          ? slot.link != null
+          : Array.isArray(slot.links) && slot.links.length > 0
+        const slotColor = connected
+          ? colourGetter?.getConnectedColor(type)
+          : colourGetter?.getDisconnectedColor(type)
+        slots.push({
+          x,
+          y,
+          color: typeof slotColor === 'string' ? slotColor : undefined
+        })
+      }
+      node.inputs?.forEach((slot, index) => addSlot(slot, index, true))
+      node.outputs?.forEach((slot, index) => addSlot(slot, index, false))
+
+      const widgets: NodeBoxWidget[] = []
+      for (const widget of node.widgets ?? []) {
+        if (!node.isWidgetVisible(widget)) continue
+        widgets.push({
+          x: nodeBounds.x + WIDGET_MARGIN,
+          y: nodeBounds.y + widget.y,
+          width: nodeBounds.width - WIDGET_MARGIN * 2,
+          height: widgetHeight
+        })
+      }
+
+      return [
+        {
+          bounds,
+          color: nodeColor?.body,
+          titleColor: nodeColor?.title,
+          titleHeight,
+          slots,
+          widgets
+        }
+      ]
+    })
+}
+
 watch(
   () => linearMode.value,
   (isLinearMode) => {
@@ -344,6 +483,7 @@ watch(
     }
 
     layoutStore.setPendingSlotSync(true)
+    setExpectedRenderedNodeIds(renderedNodeIds.value)
   }
 )
 

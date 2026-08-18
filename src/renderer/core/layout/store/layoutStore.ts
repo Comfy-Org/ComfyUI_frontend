@@ -162,10 +162,10 @@ class LayoutStoreImpl implements LayoutStore {
    * Flag indicating slot positions are pending sync after graph reconfiguration.
    * When true, link rendering should be skipped to avoid drawing with stale positions.
    */
-  private _pendingSlotSync = false
+  private _pendingSlotSync = ref(false)
 
   get pendingSlotSync(): boolean {
-    return this._pendingSlotSync
+    return this._pendingSlotSync.value
   }
 
   get hasSlotLayouts(): boolean {
@@ -218,7 +218,7 @@ class LayoutStoreImpl implements LayoutStore {
   }
 
   setPendingSlotSync(value: boolean): void {
-    this._pendingSlotSync = value
+    this._pendingSlotSync.value = value
   }
 
   constructor() {

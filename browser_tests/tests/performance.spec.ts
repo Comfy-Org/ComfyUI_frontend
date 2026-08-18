@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { ensureNodesAddressable } from '@e2e/fixtures/utils/lodZoom'
 import {
   logMeasurement,
   recordMeasurement
@@ -328,6 +329,10 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
       await comfyPage.workflow.loadWorkflow('large-graph-workflow')
+      // The fixture pins extra.ds.scale to 0.5, below the 0.571 LOD threshold,
+      // so nothing mounts and waitForNodes below would time out on every test
+      // in this describe.
+      await ensureNodesAddressable(comfyPage)
       await comfyPage.vueNodes.waitForNodes()
     })
 
@@ -370,27 +375,37 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
     })
 
     test('zoom out culling', async ({ comfyPage }) => {
+      const canvasBox = await comfyPage.canvas.boundingBox()
+      if (!canvasBox) throw new Error('Canvas bounding box not available')
+
+      const centerX = canvasBox.x + canvasBox.width / 2
+      const centerY = canvasBox.y + canvasBox.height / 2
+      const lodThreshold = await comfyPage.page.evaluate(() => {
+        const canvas = window.app!.canvas
+        const textSize = window.LiteGraph!.NODE_TEXT_SIZE
+        const dprAdjustment = Math.sqrt(window.devicePixelRatio || 1)
+        return canvas.min_font_size_for_lod / (textSize * dprAdjustment)
+      })
+
       await comfyPage.perf.startMeasuring()
 
-      // Zoom out far enough that nodes become < 4px screen size
-      // (triggers size-based culling in isNodeInViewport)
+      await comfyPage.page.mouse.move(centerX, centerY)
       for (let i = 0; i < 20; i++) {
-        await comfyPage.canvasOps.zoom(100)
+        await comfyPage.page.mouse.wheel(0, 100)
+        await comfyPage.nextFrame()
       }
 
-      // Verify we actually entered the culling regime.
-      // isNodeTooSmall triggers when max(width, height) * scale < 4px.
-      // Typical nodes are ~200px wide, so scale must be < 0.02.
-      await expect.poll(() => comfyPage.canvasOps.getScale()).toBeLessThan(0.02)
+      await expect
+        .poll(() => comfyPage.canvasOps.getScale())
+        .toBeLessThan(lodThreshold)
 
-      // Idle at extreme zoom-out — most nodes should be culled
       for (let i = 0; i < 60; i++) {
         await comfyPage.nextFrame()
       }
 
-      // Zoom back in
       for (let i = 0; i < 20; i++) {
-        await comfyPage.canvasOps.zoom(-100)
+        await comfyPage.page.mouse.wheel(0, -100)
+        await comfyPage.nextFrame()
       }
 
       const m = await comfyPage.perf.stopMeasuring('vue-zoom-culling')
