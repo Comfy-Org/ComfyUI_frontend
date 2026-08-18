@@ -172,6 +172,8 @@ interface FrontendApiCalls {
     requestId?: number
     /** Ids the backend accepted, in submission order. Empty if all were rejected. */
     promptIds?: string[]
+    /** Accepted prompts and the exact executable-node count built for each. */
+    submissions?: { promptId: string; nodeCount: number }[]
     /** How many submissions the backend refused outright. */
     rejectedCount?: number
   }
