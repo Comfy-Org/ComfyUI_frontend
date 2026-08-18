@@ -149,6 +149,7 @@ jobs:
             .census/data/registry.json
           retention-days: 30
           if-no-files-found: error
+          include-hidden-files: true
 
       # Same key as the restore, which is the PIN SET - so there is exactly
       # one entry per pin bump rather than one per run that saw drift, and
