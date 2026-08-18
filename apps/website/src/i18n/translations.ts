@@ -2666,6 +2666,7 @@ const translations = {
   'nav.reddit': { en: 'Reddit', 'zh-CN': 'Reddit' },
   'nav.x': { en: 'X', 'zh-CN': 'X' },
   'nav.instagram': { en: 'Instagram', 'zh-CN': 'Instagram' },
+  'nav.linkedin': { en: 'LinkedIn', 'zh-CN': 'LinkedIn' },
   'nav.affiliates': { en: 'Affiliates', 'zh-CN': '联盟计划' },
   'nav.contact': { en: 'Contact', 'zh-CN': '联系我们' },
   // Featured dropdown cards — keys are keyed by parent nav item, not card content,
@@ -4825,8 +4826,9 @@ const translations = {
     'zh-CN': '可用于您内容的品牌 Logo'
   },
   'affiliate.assets.subheading': {
-    en: 'Banners, screenshots, and talking points are in your affiliate dashboard after approval.',
-    'zh-CN': '横幅图、截图和宣传文案将在获批后于联盟仪表盘中提供。'
+    en: 'Banners, screenshots, and talking points are in your affiliate dashboard after approval. Get the <a href="https://comfy.org/brand" class="text-primary-comfy-yellow underline">full brand assets here</a>.',
+    'zh-CN':
+      '横幅图、截图和宣传文案将在获批后于联盟仪表盘中提供。点击<a href="https://comfy.org/brand" class="text-primary-comfy-yellow underline">此处获取完整品牌素材</a>。'
   },
   'affiliate.assets.ctaLabel': {
     en: 'Go to brand portal',
@@ -4929,13 +4931,13 @@ const translations = {
   },
 
   'ltx.meta.title': {
-    en: 'LTX 2.5 on Comfy — Open-Source AI Video Model',
-    'zh-CN': 'Comfy 上的 LTX 2.5 — 开源 AI 视频模型'
+    en: 'LTX 2.5 on Comfy: Open-Source AI Video Model',
+    'zh-CN': 'Comfy 上的 LTX 2.5：开源 AI 视频模型'
   },
   'ltx.meta.description': {
-    en: 'Run LTX 2.5 on Comfy. Open weights, directed on the canvas alongside every other model, on Comfy Cloud or your own GPU.',
+    en: 'Run LTX 2.5 on Comfy. Open weights, free to run on your own GPU, or directed on the canvas alongside every other model on Comfy Cloud.',
     'zh-CN':
-      '在 Comfy 上运行 LTX 2.5。开放权重，可在画布上与其他所有模型一同执导，支持 Comfy Cloud 或你自己的 GPU。'
+      '在 Comfy 上运行 LTX 2.5。开放权重，可在你自己的 GPU 上免费运行，也可以在画布上与其他所有模型一同执导，支持 Comfy Cloud。'
   },
   'ltx.breadcrumb.model': { en: 'LTX 2.5', 'zh-CN': 'LTX 2.5' },
   'ltx.breadcrumb.updated': {
@@ -5431,6 +5433,7 @@ const translations = {
       '你的 AI 助手可以接入整个生态、构建工作流，并生成图像、视频、音频或 3D 内容。'
   },
   'flux3.reviews.highlightCta': { en: 'GET STARTED', 'zh-CN': '开始使用' },
+  'footer.flux3': { en: 'Flux 3', 'zh-CN': 'Flux 3' },
   // Wan Animate 2 model page (/wan-animate-2)
   'wanAnimate2.meta.title': {
     en: 'Wan Animate 2 on Comfy — Open-Source Character Animation',

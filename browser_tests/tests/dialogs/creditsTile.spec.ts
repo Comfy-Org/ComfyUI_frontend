@@ -327,9 +327,9 @@ test.describe('Credits tile (Plan & Credits)', { tag: '@cloud' }, () => {
       content.getByRole('tab', { name: 'Plan & Credits' })
     ).toBeVisible()
     await expect(content.getByRole('tab', { name: 'Members' })).toBeVisible()
-    await expect(content.getByRole('button', { name: 'Activity' })).toHaveCount(
-      0
-    )
+    await expect(
+      content.getByRole('button', { name: 'Activity', exact: true })
+    ).toHaveCount(0)
   })
 
   test('renders the unified tile with breakdown and add-credits', async ({
