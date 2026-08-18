@@ -24,7 +24,7 @@
     "vitest",
     "vue"
   ],
-  "jsPlugins": ["./tools/oxlint-plugins/comfyIngestTypes.ts"],
+  "jsPlugins": ["./tools/oxlint-plugins/comfy.ts"],
   "rules": {
     "comfy/no-duplicate-ingest-type": "error",
     "no-async-promise-executor": "off",
@@ -127,6 +127,13 @@
       "files": ["**/*.{stories,test,spec}.ts", "**/*.stories.vue"],
       "rules": {
         "no-console": "allow"
+      }
+    },
+    {
+      "files": ["**/*.test.{ts,tsx}"],
+      "rules": {
+        "comfy/no-module-scope-vitest-mocks": "warn",
+        "comfy/no-redundant-vitest-cleanup": "warn"
       }
     },
     {

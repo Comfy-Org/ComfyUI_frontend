@@ -787,7 +787,10 @@ the other browser report links in the PR comment. It's scoped to added
 files only — the existing suite always runs without video — to keep CI cost
 and time bounded. Recording is opt-in via `RECORD_VIDEO=true` (set only by
 that CI job; see `playwright.config.ts`) and slowed down with `SLOW_MO` so
-the result is legible for reviewers.
+the result is legible for reviewers. Files containing no tests eligible for
+the `chromium` project, such as `@perf`-only specs, are skipped with an
+explanation in the workflow summary. Newly added `@audit` tests fail this
+job instead because the audit project has no regular CI coverage.
 
 ## After Making Changes
 
