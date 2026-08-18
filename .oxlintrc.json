@@ -124,6 +124,13 @@
   },
   "overrides": [
     {
+      "files": ["src/**/*.ts", "src/**/*.vue"],
+      "excludeFiles": ["**/*.test.ts", "**/*.spec.ts"],
+      "rules": {
+        "comfy/no-dom-in-computed": "warn"
+      }
+    },
+    {
       "files": ["**/*.{stories,test,spec}.ts", "**/*.stories.vue"],
       "rules": {
         "no-console": "allow"
