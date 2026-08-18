@@ -1,3 +1,6 @@
+import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import { applyTextReplacements } from '@/utils/searchAndReplace'
+
 import { ComfyApiError } from './errors'
 
 /** Parsed ComfyUI workflow JSON. */
@@ -6,9 +9,12 @@ export type WorkflowData = Readonly<Record<string, unknown>>
 export interface WorkflowHandle {
   /** Replaces the active document with parsed ComfyUI workflow JSON. */
   open(data: WorkflowData): Promise<void>
+  /** Expands the active document's `%date:...%` and `%Node.widget%` tokens. */
+  applyTextReplacements(value: string): string
 }
 
 export function createWorkflowApi(
+  getGraph: () => LGraph | null | undefined,
   openWorkflow?: (data: WorkflowData) => Promise<void>
 ): WorkflowHandle {
   return Object.freeze({
@@ -22,6 +28,15 @@ export function createWorkflowApi(
         )
       }
       await openWorkflow(data)
+    },
+    applyTextReplacements(value: string) {
+      const graph = getGraph()?.rootGraph
+      if (!graph) {
+        throw new ComfyApiError(
+          'Cannot apply workflow text replacements: no graph is active.'
+        )
+      }
+      return applyTextReplacements(graph, value)
     }
   })
 }

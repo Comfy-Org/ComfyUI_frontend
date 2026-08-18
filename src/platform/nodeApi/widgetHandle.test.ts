@@ -9,9 +9,11 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { parseWidgetId } from '@/types/widgetId'
 
 import { ComfyApiError, ComfyReadonlyError } from './errors'
+import { createGraphApi } from './graphHandle'
 import { whileEmbeddingWorkflow } from './serializeContext'
 import { createWidgetCollection, createWidgetHandles } from './widgetHandle'
 import type { WidgetCollection } from './widgetHandle'
+import { createWidgetTypeRegistrar } from './widgetTypes'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 
 describe('widget surface', () => {
@@ -281,12 +283,13 @@ describe('widget surface', () => {
 })
 
 describe('widget listeners', () => {
+  let graph: LGraph
   let node: LGraphNode
   let widgets: WidgetCollection
 
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    const graph = new LGraph()
+    graph = new LGraph()
     node = new LGraphNode('t')
     node.addWidget('number', 'seed', 1, null, {})
     graph.add(node)
@@ -363,6 +366,29 @@ describe('widget listeners', () => {
     // it changes the saved workflow.
     widgets.add({ type: 'button', name: 'go', value: null })
     expect(node.widgets!.find((w) => w.name === 'go')!.value).toBeNull()
+  })
+
+  it('constructs a dynamically added pack-declared widget type', () => {
+    const render = vi.fn()
+    const graphApi = createGraphApi(() => graph)
+    node.serialize_widgets = true
+    createWidgetTypeRegistrar((owner) => graphApi.node(String(owner.id))!)(
+      'VHSINT',
+      { render }
+    )
+
+    const added = widgets.add({
+      type: 'VHSINT',
+      name: 'frame_load_cap',
+      value: 12,
+      options: { step: 4 }
+    })
+
+    expect(render).toHaveBeenCalledOnce()
+    expect(added.widgetType).toBe('VHSINT')
+    expect(added.getValue()).toBe(12)
+    expect(added.getOptions()).toMatchObject({ step: 4, default: 12 })
+    expect(node.serialize().widgets_values).toContain(12)
   })
 
   it('still calls a callback the pack already had', () => {

@@ -26,14 +26,8 @@ import { ComfyApiError } from './errors'
 import type { NodeHandle } from './nodeHandle'
 import type { Unsubscribe } from './widgetHandle'
 
-/**
- * What a pack-declared widget can hold.
- *
- * Narrower than `WidgetValue` because these are DOM-backed, and that is what a
- * DOM widget carries — a colour string, a curve object. Saying so here is
- * better than accepting a number and dropping it at the boundary.
- */
-export type WidgetTypeData = string | object
+/** What a pack-declared widget can hold. */
+export type WidgetTypeData = string | number | boolean | object | null
 
 /**
  * Reading and writing the widget's value, for the renderer to bind to.
@@ -48,6 +42,8 @@ export interface WidgetTypeValue {
 }
 
 export interface WidgetTypeContext {
+  /** A frozen snapshot of the input declaration's current options. */
+  getOptions(): Readonly<Record<string, unknown>>
   /**
    * Runs while the widget's owning node belongs to a graph.
    *
@@ -96,7 +92,8 @@ function copyDefault(value: WidgetTypeData | undefined): WidgetTypeData {
 
 function createWidgetTypeContext(
   node: LGraphNode,
-  handleFor: (node: LGraphNode) => NodeHandle
+  handleFor: (node: LGraphNode) => NodeHandle,
+  getOptions: () => object
 ): WidgetTypeContext {
   type Subscription = {
     listener: (node: NodeHandle) => Unsubscribe | void
@@ -126,6 +123,7 @@ function createWidgetTypeContext(
   }
 
   return Object.freeze({
+    getOptions: () => Object.freeze({ ...getOptions() }),
     onNodeReady(listener: (node: NodeHandle) => Unsubscribe | void) {
       const subscription = { listener }
       subscriptions.add(subscription)
@@ -136,6 +134,24 @@ function createWidgetTypeContext(
       }
     }
   })
+}
+
+const declaredWidgetTypes = new Map<string, ComfyWidgetConstructor>()
+
+export function constructDeclaredWidget(
+  node: LGraphNode,
+  type: string,
+  name: string,
+  options: object,
+  value: unknown
+): ReturnType<ComfyWidgetConstructor> | undefined {
+  const constructor = declaredWidgetTypes.get(type)
+  if (!constructor) return undefined
+  const inputData = [
+    type,
+    { ...options, default: value }
+  ] as Parameters<ComfyWidgetConstructor>[2]
+  return constructor(node, name, inputData, undefined as never)
 }
 
 export function createWidgetTypeRegistrar(
@@ -157,9 +173,14 @@ export function createWidgetTypeRegistrar(
 
       // The definition's own default wins over the type's, so a node can
       // declare a starting colour and still be drawn by the pack's control.
-      const declared = Array.isArray(inputData)
-        ? (inputData[1] as { default?: WidgetTypeData } | undefined)?.default
-        : undefined
+      const declaredOptions =
+        Array.isArray(inputData) &&
+        inputData[1] !== null &&
+        typeof inputData[1] === 'object' &&
+        !Array.isArray(inputData[1])
+          ? (inputData[1] as Record<string, unknown>)
+          : {}
+      const declared = declaredOptions.default as WidgetTypeData | undefined
       // A DOM widget's `value` is backed by these accessors, not a field, so
       // the cell has to exist before the widget does — assigning `.value`
       // without them is silently a no-op.
@@ -171,12 +192,13 @@ export function createWidgetTypeRegistrar(
       let current: WidgetTypeData = copyDefault(declared ?? def.defaultValue)
 
       const widget = node.addDOMWidget(inputName, type, container, {
+        ...declaredOptions,
         serialize: def.serialize ?? true,
         getValue: () => current,
         setValue: (value: unknown) => {
           current = value as WidgetTypeData
         }
-      })
+      } as never)
       widget.serialize = def.serialize ?? true
 
       const listeners = new Set<(value: WidgetTypeData) => void>()
@@ -201,7 +223,7 @@ export function createWidgetTypeRegistrar(
           }
         },
         inputName,
-        createWidgetTypeContext(node, handleFor)
+        createWidgetTypeContext(node, handleFor, () => widget.options)
       )
 
       if (teardown) {
@@ -215,7 +237,12 @@ export function createWidgetTypeRegistrar(
       return { widget, minWidth: def.minWidth, minHeight: def.minHeight }
     }
 
+    declaredWidgetTypes.set(type, constructor)
     useWidgetStore().registerCustomWidgets({ [type]: constructor })
-    return () => useWidgetStore().unregisterCustomWidget(type)
+    return () => {
+      if (declaredWidgetTypes.get(type) !== constructor) return
+      declaredWidgetTypes.delete(type)
+      useWidgetStore().unregisterCustomWidget(type)
+    }
   }
 }

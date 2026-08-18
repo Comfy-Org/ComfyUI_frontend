@@ -984,6 +984,20 @@ describe('type colours', () => {
   })
 })
 
+describe('slot type compatibility', () => {
+  it.for([
+    ['IMAGE', 'IMAGE', true],
+    ['IMAGE', '*', true],
+    ['IMAGE,LATENT', 'LATENT', true],
+    ['IMAGE', 'LATENT', false]
+  ] as const)('$0 -> $1 is $2', ([output, input, compatible]) => {
+    setActivePinia(createPinia())
+    const api = createComfyApi(() => new LGraph())
+
+    expect(api.defs.isTypeCompatible(output, input)).toBe(compatible)
+  })
+})
+
 describe('preview frames', () => {
   beforeEach(() => setActivePinia(createPinia()))
 

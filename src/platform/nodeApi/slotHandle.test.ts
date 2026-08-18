@@ -1,9 +1,10 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
+import { GET_CONFIG } from '@/services/litegraphService'
 
 import { ComfyApiError } from './errors'
 import { createInputCollection, createOutputCollection } from './slotHandle'
@@ -104,6 +105,57 @@ describe('slot handles', () => {
       const saved = target.serialize().inputs!.find((i) => i.name === 'seed')!
       expect(saved.widget).toEqual({ name: 'seed' })
       expect(saved.pos).toBeUndefined()
+    })
+
+    it('updates a widget input definition without dropping its link', () => {
+      const recreateWidget = vi.fn()
+      const primitive = Object.assign(
+        new LGraphNode('Primitive', 'PrimitiveNode'),
+        { recreateWidget }
+      )
+      primitive.addOutput('value', 'IMAGE')
+      graph.add(primitive)
+      target.addWidget('number', 'image', 0, () => undefined, {})
+      primitive.connect(0, target, 0)
+
+      inputs.byName('image')!.modify({
+        widget: 'image',
+        widgetConfig: {
+          type: 'INT',
+          options: { min: 0, max: 100, step: 4 }
+        }
+      })
+
+      expect(inputs.byName('image')!.isConnected).toBe(true)
+      expect(recreateWidget).toHaveBeenCalledOnce()
+      const getConfig = target.inputs[0].widget?.[GET_CONFIG] as
+        | (() => unknown)
+        | undefined
+      expect(getConfig?.()).toEqual(['INT', { min: 0, max: 100, step: 4 }])
+
+      inputs.byName('image')!.modify({ widget: 'image' })
+
+      expect(target.inputs[0].widget?.[GET_CONFIG]).toBe(getConfig)
+      expect(getConfig?.()).toEqual(['INT', { min: 0, max: 100, step: 4 }])
+    })
+
+    it('adds a widget input with COMBO choices', () => {
+      target.addWidget('combo', 'model', 'one', () => undefined, {
+        values: ['one', 'two']
+      })
+
+      inputs.add('model', '*', {
+        widget: 'model',
+        widgetConfig: {
+          type: ['one', 'two'],
+          options: { default: 'one' }
+        }
+      })
+
+      const getConfig = target.inputs[2].widget?.[GET_CONFIG] as
+        | (() => unknown)
+        | undefined
+      expect(getConfig?.()).toEqual([['one', 'two'], { default: 'one' }])
     })
 
     it('refuses to name a widget the node does not have', () => {
