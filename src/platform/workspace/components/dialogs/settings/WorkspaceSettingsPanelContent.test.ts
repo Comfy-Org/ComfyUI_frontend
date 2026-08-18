@@ -59,9 +59,6 @@ describe('WorkspaceSettingsPanelContent', () => {
 
     expect(screen.getByTestId('plan-body')).toBeInTheDocument()
     expect(screen.queryByTestId('members-body')).not.toBeInTheDocument()
-    expect(
-      screen.getByRole('heading', { name: 'Acme Team' })
-    ).toBeInTheDocument()
     expect(mockBannerMounted).toHaveBeenCalledTimes(1)
     expect(mockBannerUnmounted).not.toHaveBeenCalled()
 

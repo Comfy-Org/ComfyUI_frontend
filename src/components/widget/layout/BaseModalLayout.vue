@@ -33,9 +33,9 @@
       <div class="flex flex-col overflow-hidden bg-base-background">
         <header
           v-if="$slots.header"
-          class="flex h-18 w-full items-center justify-between gap-2 px-6"
+          class="flex min-h-11 w-full items-center justify-between gap-2 p-6"
         >
-          <div class="flex min-w-0 flex-1 gap-2">
+          <div class="flex min-h-11 min-w-0 flex-1 items-center gap-2">
             <Button
               v-if="!notMobile && !showLeftPanel"
               size="lg"
