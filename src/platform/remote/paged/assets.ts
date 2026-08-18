@@ -46,7 +46,7 @@ function assetsQueryInternal(
   const { loading: loadingNewPromise, fn: loadNew } =
     singletonInvocation(doLoadNew)
   const isLoading = computed(
-    () => !!loadingMorePromise.value && !!loadingNewPromise.value
+    () => !!loadingMorePromise.value || !!loadingNewPromise.value
   )
 
   async function doQuery(overrideParams: Record<string, unknown>) {
