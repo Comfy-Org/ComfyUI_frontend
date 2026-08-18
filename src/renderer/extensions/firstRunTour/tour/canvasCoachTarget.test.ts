@@ -13,7 +13,8 @@ const state = vi.hoisted(() => ({
   collapsed: new Set<string>(),
   layout: null as { value: unknown } | null,
   canvasOffset: { left: 0, top: 0 },
-  releaseBounds: vi.fn()
+  releaseBounds: vi.fn(),
+  releaseLayout: vi.fn()
 }))
 
 function graph(id: string) {
@@ -44,7 +45,14 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
 vi.mock('@/renderer/core/layout/store/layoutStore', async () => {
   const { shallowRef } = await import('vue')
   state.layout = shallowRef<unknown>(null)
-  return { layoutStore: { getNodeLayoutRef: () => state.layout } }
+  return {
+    layoutStore: {
+      retainNodeLayoutRef: () => ({
+        layout: state.layout,
+        release: state.releaseLayout
+      })
+    }
+  }
 })
 vi.mock('@vueuse/core', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>()
@@ -85,6 +93,7 @@ describe('canvasNodeTarget', () => {
       state.releaseBounds,
       'nothing here runs from a component, so unreleased observers outlive every tour'
     ).toHaveBeenCalledTimes(1)
+    expect(state.releaseLayout).toHaveBeenCalledTimes(1)
   })
 
   it('places the rect over the node, title bar included', () => {
