@@ -1,5 +1,6 @@
+import { render, screen } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { defineComponent, nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -80,7 +81,7 @@ vi.mock('./useSlotElementTracking', () => ({
   syncNodeSlotLayoutsFromDOM: testState.syncNodeSlotLayoutsFromDOM
 }))
 
-import './useVueNodeResizeTracking'
+import { useVueElementTracking } from './useVueNodeResizeTracking'
 
 function createResizeEntry(options?: {
   nodeId?: NodeId
@@ -184,6 +185,34 @@ describe('useVueNodeResizeTracking', () => {
     expect(testState.setSource).not.toHaveBeenCalled()
     expect(testState.batchUpdateNodeBounds).not.toHaveBeenCalled()
     expect(testState.syncNodeSlotLayoutsFromDOM).not.toHaveBeenCalled()
+  })
+
+  it('observes only while a KeepAlive node is active', async () => {
+    const active = ref(true)
+    const TrackedNode = defineComponent({
+      setup() {
+        useVueElementTracking('tracked-node', 'node')
+      },
+      template: '<div data-testid="tracked-node" />'
+    })
+    const Parent = defineComponent({
+      components: { TrackedNode },
+      setup: () => ({ active }),
+      template: '<KeepAlive><TrackedNode v-if="active" /></KeepAlive>'
+    })
+    render(Parent)
+    const element = screen.getByTestId('tracked-node')
+    await nextTick()
+
+    expect(resizeObserverState.observe).toHaveBeenCalledWith(element)
+
+    active.value = false
+    await nextTick()
+    expect(resizeObserverState.unobserve).toHaveBeenCalledWith(element)
+
+    active.value = true
+    await nextTick()
+    expect(resizeObserverState.observe).toHaveBeenCalledTimes(2)
   })
 
   it('skips repeated no-op resize entries after first measurement', () => {

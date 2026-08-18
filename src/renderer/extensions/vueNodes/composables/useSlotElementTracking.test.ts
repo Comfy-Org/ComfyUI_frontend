@@ -224,6 +224,28 @@ describe('useSlotElementTracking', () => {
     unmount()
   })
 
+  it('completes after a rendered node reports slot registration settled', () => {
+    mockGraph.getNodeById.mockReturnValue({
+      inputs: [
+        {
+          name: 'input',
+          type: 'IMAGE',
+          boundingRect: [0, 0, 0, 0]
+        }
+      ],
+      outputs: [{}],
+      flags: {}
+    })
+    const node = useNodeSlotRegistryStore().ensureNode(NODE_ID)
+    Object.assign(node, { active: true, registrationComplete: true })
+
+    layoutStore.setPendingSlotSync(true)
+    setExpectedRenderedNodeIds(new Set([NODE_ID]))
+    flushScheduledSlotLayoutSync()
+
+    expect(layoutStore.pendingSlotSync).toBe(false)
+  })
+
   it('keeps pendingSlotSync when all registered slots are hidden', () => {
     const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
     const hiddenSlot = document.createElement('div')
@@ -258,15 +280,42 @@ describe('useSlotElementTracking', () => {
 
     const registryStore = useNodeSlotRegistryStore()
     const node = registryStore.ensureNode(NODE_ID)
+    Object.assign(node, { active: true, registrationComplete: true })
     node.slots.set(slotKey, {
       el: hiddenSlot,
+      index: SLOT_INDEX,
+      type: 'input'
+    })
+    document.body.appendChild(hiddenSlot)
+
+    syncNodeSlotLayoutsFromDOM(NODE_ID)
+
+    expect(layoutStore.getSlotLayout(slotKey)).toBeNull()
+  })
+
+  it('preserves slot layouts while their KeepAlive node is inactive', () => {
+    const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
+    const slotEl = document.createElement('div')
+    const staleLayout: SlotLayout = {
+      nodeId: NODE_ID,
+      index: SLOT_INDEX,
+      type: 'input',
+      position: { x: 10, y: 20 },
+      bounds: { x: 6, y: 16, width: 8, height: 8 }
+    }
+    layoutStore.batchUpdateSlotLayouts([{ key: slotKey, layout: staleLayout }])
+
+    const node = useNodeSlotRegistryStore().ensureNode(NODE_ID)
+    Object.assign(node, { active: false, registrationComplete: true })
+    node.slots.set(slotKey, {
+      el: slotEl,
       index: SLOT_INDEX,
       type: 'input'
     })
 
     syncNodeSlotLayoutsFromDOM(NODE_ID)
 
-    expect(layoutStore.getSlotLayout(slotKey)).toBeNull()
+    expect(layoutStore.getSlotLayout(slotKey)).toEqual(staleLayout)
   })
 
   it('skips slot layout writeback when measured slot geometry is unchanged', () => {
