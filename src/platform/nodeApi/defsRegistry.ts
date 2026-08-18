@@ -1004,11 +1004,11 @@ export function createDefRegistry(): {
         if (definition.onDrop) builder.onDrop(definition.onDrop)
         if (definition.onRemoved) builder.onRemoved(definition.onRemoved)
         if (definition.onSerialize) builder.onSerialize(definition.onSerialize)
+        if (definition.supply) builder.setSupply(definition.supply)
       }
     }
     registrations.add(registration)
     if (definition.resolve) frontendResolvers.set(type, definition.resolve)
-    if (definition.supply) frontendSuppliers.set(type, definition.supply)
 
     registry.applyTo(Defined, raw)
     definedTypes.add(type)
@@ -1130,7 +1130,7 @@ export function createDefRegistry(): {
       }[] = []
       let frontendOnly = false
       let declaredResolver: Resolver | undefined
-      let declaredSupplier: Supplier | undefined
+      const declaredSuppliers: Supplier[] = []
       const menuItems: {
         item: NodeMenuItem
         handleFor: (nodeId: string) => NodeHandle
@@ -1167,7 +1167,7 @@ export function createDefRegistry(): {
             if (resolve) declaredResolver = resolve
           },
           setSupply: (supply) => {
-            declaredSupplier = supply
+            declaredSuppliers.push(supply)
           },
           addWidget: (def) => widgets.push({ def, handleFor }),
           hideWidget: (name) => hidden.push({ name, handleFor }),
@@ -1219,7 +1219,13 @@ export function createDefRegistry(): {
 
       // Outside the `frontendOnly` branch deliberately: broadcasting is about
       // what this node gives others, not about whether it executes.
-      if (declaredSupplier) frontendSuppliers.set(def.type, declaredSupplier)
+      if (declaredSuppliers.length === 1) {
+        frontendSuppliers.set(def.type, declaredSuppliers[0])
+      } else if (declaredSuppliers.length > 1) {
+        frontendSuppliers.set(def.type, (view) =>
+          declaredSuppliers.flatMap((supplier) => supplier(view))
+        )
+      }
 
       const rawDef = raw as RawNodeDef
       if (def.title !== original.title) rawDef.display_name = def.title
