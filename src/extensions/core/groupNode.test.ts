@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
@@ -135,13 +136,13 @@ describe('GroupNodeConfig.processInputSlots', () => {
 
 describe('GroupNodeConfig.registerFromWorkflow', () => {
   function groupWithMissingInnerNode(): Record<string, GroupNodeWorkflowData> {
-    return {
+    return fromPartial({
       MyGroup: {
         nodes: [{ index: 0, type: 'NotInstalledNode' }],
         links: [],
         external: []
-      } as unknown as GroupNodeWorkflowData
-    }
+      }
+    })
   }
 
   it('backs each report with a canvas instance id when the map is provided', async () => {
@@ -165,6 +166,18 @@ describe('GroupNodeConfig.registerFromWorkflow', () => {
         hint: ' (missing: NotInstalledNode)'
       })
     ])
+  })
+
+  it('emits nothing for a missing group with no canvas instances when the map is provided', async () => {
+    const missing: MissingNodeType[] = []
+
+    await GroupNodeConfig.registerFromWorkflow(
+      groupWithMissingInnerNode(),
+      missing,
+      new Map()
+    )
+
+    expect(missing).toStrictEqual([])
   })
 
   it('keeps the legacy unbacked entries when no instance map is given', async () => {

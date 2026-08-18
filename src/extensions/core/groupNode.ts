@@ -10,7 +10,7 @@ import type {
 import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetStore } from '@/stores/widgetStore'
-import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
+import type { ComfyExtension } from '@/types/comfy'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 
 import { app } from '../../scripts/app'
@@ -763,7 +763,15 @@ export class GroupNodeConfig {
 
   static async registerFromWorkflow(
     groupNodes: Record<string, GroupNodeWorkflowData>,
-    missingNodeTypes: MissingNodeType[],
+    missingNodeTypes: (
+      | string
+      | {
+          type: string
+          nodeId?: string | number
+          hint?: string
+          action?: unknown
+        }
+    )[],
     instanceIdsByGroup?: Map<string, (string | number)[]>
   ) {
     for (const g in groupNodes) {
@@ -792,11 +800,12 @@ export class GroupNodeConfig {
             target.style.opacity = '0.7'
           }
         }
-        const instanceIds = instanceIdsByGroup?.get(g) ?? []
-        if (instanceIds.length) {
+        if (instanceIdsByGroup) {
           // One report per canvas instance so every entry is backed by a
-          // real node and can be retired when that node goes away.
-          for (const id of instanceIds) {
+          // real node and can be retired when that node goes away. A group
+          // definition with no instances gets no report: there is no node
+          // to locate, and nothing that could ever retire the row.
+          for (const id of instanceIdsByGroup.get(g) ?? []) {
             missingNodeTypes.push({
               type: groupType,
               nodeId: String(id),
