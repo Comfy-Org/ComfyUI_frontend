@@ -32,7 +32,8 @@ widget instance, not a Pinia store, not a Vue reactive proxy, not a constructor.
 > | ⛔  | Specified only — a pack needing it is an `api-gap` punt |
 >
 > **Implemented (v1.0):** `backend`, `commands`, `defs.define`,
-> `defs.extend`, `defs.inputValues`, `defs.typeCompatibility`,
+> `defs.extend`, `defs.inputValues`, `defs.localizedInputNames`,
+> `defs.typeCompatibility`,
 > `execution.node`, `graph.nodes`, `graph.selection`,
 > `interaction.nodeDragEnd`, `interaction.nodeMoved`, `interaction.state`,
 > `node.changeScope`, `node.connectVeto`, `node.fileDrop`, `node.geometry`,
@@ -1644,6 +1645,20 @@ a pack duplicating a _configured_ node — a prompt box the user has filled in �
 lost its contents; pysssss's "Add 2nd Pass" dropped a menu entry rather than
 lose the user's text. Links are deliberately not copied: a duplicate wired into
 the same places is a different operation.
+
+### `NodeDef.inputs[].localizedName`
+
+**Forced by** cg-use-everywhere. Its Seed and Prompts broadcasters match the
+captions the user sees, so an English-only definition silently stops supplying
+inputs after the UI switches locale.
+
+**Alternative rejected.** Creating a throwaway KSampler solely to read its live
+slot captions. That couples definition inspection to node construction and was
+the unpublished mechanism being retired. The registry already has the same
+translation key core uses when constructing the slot.
+
+**Cost to reverse.** Low today: one pack. Its broadcasts still work in English,
+but locale changes make the affected nodes stop matching without an error.
 
 ### Keyboard events and focus on `widgets.textInteraction`
 

@@ -21,6 +21,8 @@ import type { Size } from '@/lib/litegraph/src/interfaces'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { getLinkTypeColor } from '@/utils/litegraphUtil'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
+import { st } from '@/i18n'
+import { normalizeI18nKey } from '@/utils/formatUtil'
 
 import { ComfyApiError } from './errors'
 import type { NodeHandle } from './nodeHandle'
@@ -45,6 +47,8 @@ export interface NodeDef {
   readonly inputs: readonly Readonly<{
     name: string
     type: string
+    /** The translated caption core renders for this input, when it differs. */
+    localizedName?: string
     /** The declared choices for a COMBO input, in backend order. */
     values?: readonly (string | number)[]
     /**
@@ -647,6 +651,7 @@ interface RawNodeDef {
 }
 
 function toNodeDef(raw: RawNodeDef): NodeDef {
+  const nodeType = raw.name ?? ''
   const slotType = (spec: unknown) => {
     const first = Array.isArray(spec) ? spec[0] : undefined
     return Array.isArray(first) ? 'COMBO' : String(first ?? '*')
@@ -682,9 +687,14 @@ function toNodeDef(raw: RawNodeDef): NodeDef {
     ...(raw.input?.optional ?? {})
   }).map(([name, spec]) => {
     const values = comboValues(spec)
+    const localizedName = st(
+      `nodeDefs.${normalizeI18nKey(nodeType)}.inputs.${normalizeI18nKey(name)}.name`,
+      name
+    )
     return Object.freeze({
       name,
       type: slotType(spec),
+      ...(localizedName !== name ? { localizedName } : {}),
       ...(values ? { values } : {}),
       options: slotOptions(spec)
     })
@@ -698,7 +708,7 @@ function toNodeDef(raw: RawNodeDef): NodeDef {
   )
 
   return Object.freeze({
-    type: raw.name ?? '',
+    type: nodeType,
     title: raw.display_name ?? raw.name ?? '',
     category: raw.category ?? '',
     description: raw.description ?? '',
