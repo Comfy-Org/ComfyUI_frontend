@@ -70,6 +70,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
    */
   const runErrorsByGraphId = ref(new Map<UUID, RunErrorState>())
   const activeGraphId = ref<UUID | null>(zeroUuid)
+  const isErrorOverlayOpen = ref(false)
 
   const activeRunErrors = computed<RunErrorState | undefined>(() =>
     activeGraphId.value === null
@@ -108,13 +109,15 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
   /**
    * Point the store at the run errors of `graphId`. `null` detaches it, so a
-   * discarded graph shows nothing until the next one is loaded.
+   * discarded graph shows nothing until the next one is loaded. The overlay is
+   * dismissed on every move so it only ever reopens for the graph in front.
    */
   function setActiveGraph(graphId: UUID | null) {
+    if (graphId === activeGraphId.value) return
     activeGraphId.value = graphId
+    isErrorOverlayOpen.value = false
   }
 
-  const isErrorOverlayOpen = ref(false)
   const pendingAddedNodeScans = new WeakMap<
     LGraph,
     Map<NodeExecutionId, number>

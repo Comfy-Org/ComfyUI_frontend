@@ -963,6 +963,20 @@ describe('setActiveGraph', () => {
     expect(store.lastNodeErrors).toBeNull()
   })
 
+  it('closes the error overlay when the active graph changes', () => {
+    const store = useExecutionErrorStore()
+
+    store.setActiveGraph(graphAId)
+    store.recordNodeErrors(nodeErrors)
+    store.showErrorOverlay()
+
+    store.setActiveGraph(null)
+    expect(store.isErrorOverlayOpen).toBe(false)
+
+    store.setActiveGraph(graphAId)
+    expect(store.isErrorOverlayOpen).toBe(false)
+  })
+
   it('ignores errors recorded while no graph is active', () => {
     const store = useExecutionErrorStore()
 
