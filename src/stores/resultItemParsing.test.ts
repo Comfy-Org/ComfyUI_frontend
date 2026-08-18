@@ -1,5 +1,10 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+
+vi.mock('@/platform/assets/composables/media/assetMappers', () => ({
+  mapInputFileToAssetItem: vi.fn(),
+  mapTaskOutputToAssetItem: vi.fn()
+}))
 
 import type { NodeExecutionOutput } from '@/schemas/apiSchema'
 import { parseNodeOutput, parseTaskOutput } from '@/stores/resultItemParsing'

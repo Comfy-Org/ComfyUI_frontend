@@ -117,15 +117,11 @@ export const useAssetsStore = defineStore('assets', () => {
     }
   })
 
-  const updateInputs = async () => {
-    const result = await executeUpdateInputs()
-    assetService.invalidateInputAssetsIncludingPublic()
-    return result
-  }
   const historyInputs: PagedList<AssetItem> = {
     hasMore: false,
     invalidate: async () => {
-      await updateInputs()
+      await executeUpdateInputs()
+      assetService.invalidateInputAssetsIncludingPublic()
     },
     isLoading: inputLoading,
     items: rawInputAssets,

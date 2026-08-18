@@ -3,20 +3,27 @@ import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import type * as OutputAssetUtil from '@/platform/assets/utils/outputAssetUtil'
 import { useOutputStacks } from '@/platform/assets/composables/useOutputStacks'
 
 const mocks = vi.hoisted(() => ({
   resolveOutputAssetItems: vi.fn()
 }))
 
-vi.mock('@/platform/assets/utils/outputAssetUtil', async (importOriginal) => {
-  const actual = await importOriginal<typeof OutputAssetUtil>()
-  return {
-    ...actual,
-    resolveOutputAssetItems: mocks.resolveOutputAssetItems
-  }
-})
+vi.mock('@/platform/assets/utils/outputAssetUtil', () => ({
+  getOutputKey: ({
+    nodeId,
+    subfolder,
+    filename
+  }: {
+    nodeId?: string | null
+    subfolder?: string | null
+    filename?: string | null
+  }) =>
+    nodeId == null || subfolder == null || !filename
+      ? null
+      : `${nodeId}-${subfolder}-${filename}`,
+  resolveOutputAssetItems: mocks.resolveOutputAssetItems
+}))
 
 type Deferred<T> = {
   promise: Promise<T>

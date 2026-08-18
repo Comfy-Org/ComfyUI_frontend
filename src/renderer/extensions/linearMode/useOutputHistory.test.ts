@@ -25,14 +25,16 @@ const selectAsLatestFn = vi.fn()
 const resolveIfReadyFn = vi.fn()
 const resolvedOutputsCacheRef = new Map<string, ResultItemImpl[]>()
 
-vi.mock('@/platform/assets/composables/media/useAssetsApi', () => ({
-  useAssetsApi: () => ({
-    hasMore: ref(false),
-    invalidate: vi.fn(),
-    isLoading: ref(false),
-    items: mediaRef,
-    loadMore: vi.fn(),
-    loadNew: vi.fn()
+vi.mock('@/stores/assetsStore', () => ({
+  useAssetsStore: () => ({
+    outputAssets: {
+      hasMore: ref(false),
+      invalidate: vi.fn(),
+      isLoading: ref(false),
+      items: mediaRef,
+      loadMore: vi.fn(),
+      loadNew: vi.fn()
+    }
   })
 }))
 

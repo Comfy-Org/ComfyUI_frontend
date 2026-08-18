@@ -54,14 +54,14 @@ vi.mock('@/stores/dialogStore', () => ({
 
 const mockInvalidateModelsForCategory = vi.hoisted(() => vi.fn())
 const mockSetAssetDeleting = vi.hoisted(() => vi.fn())
-const mockUpdateHistory = vi.hoisted(() => vi.fn())
-const mockUpdateInputs = vi.hoisted(() => vi.fn())
+const mockOutputLoadNew = vi.hoisted(() => vi.fn())
+const mockInputLoadNew = vi.hoisted(() => vi.fn())
 const mockHasCategory = vi.hoisted(() => vi.fn())
 vi.mock('@/stores/assetsStore', () => ({
   useAssetsStore: () => ({
     setAssetDeleting: mockSetAssetDeleting,
-    updateHistory: mockUpdateHistory,
-    updateInputs: mockUpdateInputs,
+    outputAssets: { loadNew: mockOutputLoadNew },
+    inputAssets: { loadNew: mockInputLoadNew },
     invalidateModelsForCategory: mockInvalidateModelsForCategory,
     hasCategory: mockHasCategory
   })
@@ -1299,7 +1299,7 @@ describe('useMediaAssetActions', () => {
         )
       })
       expect(mockDeleteAsset).not.toHaveBeenCalled()
-      expect(mockUpdateHistory).toHaveBeenCalled()
+      expect(mockOutputLoadNew).toHaveBeenCalled()
     })
   })
 
