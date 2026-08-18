@@ -43,7 +43,7 @@ export function useWorkspaceTierLabel() {
 
     if (!workspace.subscriptionPlan) return null
 
-    const planSlug = workspace.subscriptionPlan
+    const planSlug = workspace.subscriptionPlan.toUpperCase()
     const tierMatch = Object.keys(tierKeyMap)
       .sort((a, b) => b.length - a.length)
       .find((tier) => planSlug === tier || planSlug.startsWith(`${tier}_`))

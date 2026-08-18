@@ -265,7 +265,8 @@
                 <Button
                   v-if="
                     isSubscriptionCancelled &&
-                    permissions.canManageSubscriptionLifecycle
+                    permissions.canManageSubscriptionLifecycle &&
+                    !isEnterprisePlan
                   "
                   size="lg"
                   variant="primary"

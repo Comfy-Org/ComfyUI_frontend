@@ -104,6 +104,15 @@ describe('useWorkspaceTierLabel', () => {
       expect(result).toBeNull()
     })
 
+    it('labels lowercase enterprise plan slugs', () => {
+      const result = getTierLabel({
+        isSubscribed: true,
+        subscriptionPlan: 'enterprise_monthly',
+        subscriptionTier: null
+      })
+      expect(result).toBe('Enterprise')
+    })
+
     it('labels enterprise plan slugs', () => {
       const result = getTierLabel({
         isSubscribed: true,

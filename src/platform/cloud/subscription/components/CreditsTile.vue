@@ -231,6 +231,7 @@ import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables
 import { useBillingPolicyCapabilities } from '@/platform/cloud/subscription/composables/useBillingPolicyCapabilities'
 import {
   DEFAULT_TIER_KEY,
+  isEnterprisePlanSlug,
   isEnterpriseTier,
   toTierKey,
   getTierCredits
@@ -284,7 +285,8 @@ const tierKey = computed(() => {
 const creditPoolTotalCredits = computed<number | null>(() => {
   const monthlyCredits =
     currentTeamCreditStop.value?.credits_monthly ??
-    (isEnterpriseTier(subscription.value?.tier)
+    (isEnterpriseTier(subscription.value?.tier) ||
+    isEnterprisePlanSlug(subscription.value?.planSlug)
       ? null
       : getTierCredits(tierKey.value))
   if (monthlyCredits === null) return null

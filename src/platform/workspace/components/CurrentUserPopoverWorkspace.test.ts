@@ -367,6 +367,18 @@ describe('CurrentUserPopoverWorkspace', () => {
     expect(state.showPricingTable).toHaveBeenCalledOnce()
   })
 
+  it('hides Resubscribe for a cancelled enterprise workspace', () => {
+    state.planSlug = 'enterprise_monthly'
+    state.isCancelled = true
+    state.canManageSubscription = true
+    state.canManageSubscriptionLifecycle = true
+    renderComponent('team')
+
+    expect(
+      screen.queryByRole('button', { name: 'Resubscribe' })
+    ).not.toBeInTheDocument()
+  })
+
   it('hides Plans & pricing for an enterprise workspace but keeps Manage plan', () => {
     state.planSlug = 'enterprise_monthly'
     state.canManageSubscription = true

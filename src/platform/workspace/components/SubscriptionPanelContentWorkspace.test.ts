@@ -408,6 +408,18 @@ describe('SubscriptionPanelContentWorkspace', () => {
     ).toBeInTheDocument()
   })
 
+  it('hides Reactivate for a cancelled enterprise plan', () => {
+    mockHasTeamPlan.value = false
+    mockPlanSlug.value = 'enterprise_monthly'
+    mockCurrentTeamCreditStop.value = null
+    mockSubscriptionStatus.value = 'canceled'
+    renderComponent()
+
+    expect(
+      screen.queryByRole('button', { name: /reactivate/i })
+    ).not.toBeInTheDocument()
+  })
+
   it('labels a scheduled change to Enterprise', () => {
     const basePlans = mockPlans.value
     mockScheduledPlanSlug.value = 'enterprise_monthly'
