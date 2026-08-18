@@ -90,13 +90,18 @@ export interface MountedSidebarTab extends SidebarTabBase {
  */
 /** @knipIgnoreUnusedButUsedByCustomNodes */
 export interface VueSidebarTab extends SidebarTabBase {
-  readonly component: Component
+  readonly component: VueComponent
 }
 
 /** @knipIgnoreUnusedButUsedByCustomNodes */
 export type SidebarTabDef = MountedSidebarTab | VueSidebarTab
 
-interface DialogBase {
+/** A Vue component bundled by the pack. */
+/** @knipIgnoreUnusedButUsedByCustomNodes */
+export type VueComponent = object
+
+/** @knipIgnoreUnusedButUsedByCustomNodes */
+export interface DialogBase {
   /**
    * Unique across every pack, so namespace it. The host prefixes it with
    * `extension-`, which keeps packs out of the internal dialog keyspace.
@@ -115,7 +120,7 @@ export interface MountedDialog extends DialogBase {
 /** A dialog that is a Vue component, mounted and torn down by the host. */
 /** @knipIgnoreUnusedButUsedByCustomNodes */
 export interface VueDialog extends DialogBase {
-  readonly component: Component
+  readonly component: VueComponent
   readonly props?: Readonly<Record<string, unknown>>
 }
 
@@ -149,6 +154,10 @@ function mountedDialogComponent(def: MountedDialog): Component {
       }
     })
   )
+}
+
+function hostComponent(component: VueComponent): Component {
+  return component as Component
 }
 
 export interface UiHandle {
@@ -294,7 +303,11 @@ export function createUiHandle(): UiHandle {
             // it unmarked is wrapped in a Proxy — which Vue warns about and
             // which costs a deep traversal of the whole definition for no
             // benefit. A component is data to be rendered, never observed.
-            { ...common, type: 'vue', component: markRaw(def.component) }
+            {
+              ...common,
+              type: 'vue',
+              component: markRaw(hostComponent(def.component))
+            }
           : {
               ...common,
               type: 'custom',
@@ -343,7 +356,7 @@ export function createUiHandle(): UiHandle {
       const store = useDialogStore()
       const component =
         'component' in def
-          ? markRaw(def.component)
+          ? markRaw(hostComponent(def.component))
           : mountedDialogComponent(def)
 
       store.showExtensionDialog({

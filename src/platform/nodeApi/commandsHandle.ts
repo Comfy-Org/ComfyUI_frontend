@@ -12,11 +12,19 @@
  */
 import { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
-import type { KeyCombo } from '@/platform/keybindings/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useCommandStore } from '@/stores/commandStore'
 
 import { ComfyApiError } from './errors'
+
+/** @knipIgnoreUnusedButUsedByCustomNodes */
+export interface KeyCombo {
+  readonly key: string
+  readonly ctrl?: boolean
+  readonly alt?: boolean
+  readonly shift?: boolean
+  readonly meta?: boolean
+}
 
 /** @knipIgnoreUnusedButUsedByCustomNodes */
 export interface CommandDef {

@@ -267,7 +267,8 @@ export function resolveFrontendNodes(
 
 /** An input in the graph that no link feeds. */
 /** One of a node's own inputs, as its supplier sees it. */
-interface OwnInput {
+/** @knipIgnoreUnusedButUsedByCustomNodes */
+export interface OwnInput {
   readonly index: number
   readonly name: string
   /** What the user sees — `label`, else `localized_name`, else `name`. */
@@ -281,7 +282,8 @@ interface OwnInput {
 }
 
 /** A group a node sits inside. */
-interface GroupMembership {
+/** @knipIgnoreUnusedButUsedByCustomNodes */
+export interface GroupMembership {
   readonly id: string
   readonly title: string
 }

@@ -549,7 +549,8 @@ export interface DefRegistry {
   onRefreshed(listener: () => void): Unsubscribe
 }
 
-interface PropertyChangeEvent {
+/** @knipIgnoreUnusedButUsedByCustomNodes */
+export interface PropertyChangeEvent {
   readonly name: string
   readonly value: unknown
   readonly previous: unknown
