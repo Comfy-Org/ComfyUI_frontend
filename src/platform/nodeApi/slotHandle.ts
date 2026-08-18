@@ -15,11 +15,15 @@ import type {
 import { inputLink, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 import { useLinkStore } from '@/stores/linkStore'
 import type { EndpointUpdate } from '@/stores/linkStore'
-import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
+import {
+  LinkDirection,
+  RenderShape
+} from '@/lib/litegraph/src/types/globalEnums'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
-import { GET_CONFIG } from '@/services/litegraphService'
+import { CONFIG, GET_CONFIG } from '@/services/litegraphService'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
+import { mergeInputSpec } from '@/utils/nodeDefUtil'
 
 import { ComfyApiError } from './errors'
 import { describeSlotRef, resolveSlotRef, slotIdOf } from './slotRef'
@@ -67,6 +71,35 @@ export interface LinkInfo {
  */
 export type SlotType = string | string[]
 
+/** @knipIgnoreUnusedButUsedByCustomNodes */
+export type SlotDirection = 'none' | 'up' | 'down' | 'left' | 'right' | 'center'
+
+/** @knipIgnoreUnusedButUsedByCustomNodes */
+export interface SlotPosition {
+  readonly x: number
+  readonly y: number
+}
+
+const SLOT_DIRECTIONS: Readonly<Record<SlotDirection, LinkDirection>> = {
+  none: LinkDirection.NONE,
+  up: LinkDirection.UP,
+  down: LinkDirection.DOWN,
+  left: LinkDirection.LEFT,
+  right: LinkDirection.RIGHT,
+  center: LinkDirection.CENTER
+}
+
+const PUBLIC_DIRECTIONS: Readonly<
+  Partial<Record<LinkDirection, SlotDirection>>
+> = {
+  [LinkDirection.NONE]: 'none',
+  [LinkDirection.UP]: 'up',
+  [LinkDirection.DOWN]: 'down',
+  [LinkDirection.LEFT]: 'left',
+  [LinkDirection.RIGHT]: 'right',
+  [LinkDirection.CENTER]: 'center'
+}
+
 /** Both spellings mean one thing to litegraph; store the one it compares. */
 const normaliseType = (type: SlotType) =>
   Array.isArray(type) ? type.join(',') : type
@@ -75,7 +108,13 @@ const normaliseType = (type: SlotType) =>
 export interface SlotPatch {
   name?: string
   label?: string | undefined
+  /** The backend-provided translated caption. Null clears it. */
+  localizedName?: string | null
   type?: SlotType
+  /** Slot centre relative to the node body. Null restores automatic layout. */
+  position?: SlotPosition | null
+  /** Direction in which links leave the slot. Null restores the default. */
+  direction?: SlotDirection | null
   /**
    * The dot's colour when connected and when not.
    *
@@ -109,7 +148,7 @@ export interface InputSlotPatch extends SlotPatch {
 /** @knipIgnoreUnusedButUsedByCustomNodes */
 export interface InputWidgetConfig {
   /** Backend input type, or the choices for a COMBO input. */
-  readonly type: string | readonly string[]
+  readonly type: string | readonly (string | number)[]
   readonly options?: Readonly<Record<string, unknown>>
 }
 
@@ -120,6 +159,9 @@ export interface SlotSnapshot {
   readonly name: string
   readonly type: string
   readonly label: string | undefined
+  readonly localizedName: string | undefined
+  readonly position: SlotPosition | undefined
+  readonly direction: SlotDirection | undefined
   readonly shape: SlotShape
   readonly isConnected: boolean
 }
@@ -134,6 +176,12 @@ export interface InputSlotHandle {
   readonly isConnected: boolean
   /** Whether this input is the socket form of a widget. */
   readonly isWidgetInput: boolean
+  /** The declaration a connected Primitive node renders. */
+  widgetConfig(): Readonly<InputWidgetConfig> | undefined
+  /** Intersects this input's declaration with another compatible one. */
+  mergeWidgetConfig(
+    config: InputWidgetConfig
+  ): Readonly<InputWidgetConfig> | undefined
   link(): LinkInfo | undefined
   source(): { nodeId: string; outputIndex: number } | undefined
   disconnect(): boolean
@@ -254,7 +302,19 @@ function applyPatch(
   if (!slot) return
   if (patch.name !== undefined) slot.name = patch.name
   if ('label' in patch) slot.label = patch.label
+  if ('localizedName' in patch) {
+    slot.localized_name = patch.localizedName ?? undefined
+  }
   if (patch.type !== undefined) slot.type = normaliseType(patch.type)
+  if ('position' in patch) {
+    slot.pos = patch.position ? [patch.position.x, patch.position.y] : undefined
+  }
+  if ('direction' in patch) {
+    slot.dir =
+      patch.direction === null || patch.direction === undefined
+        ? undefined
+        : SLOT_DIRECTIONS[patch.direction]
+  }
   if ('color' in patch) slot.color_on = patch.color ?? undefined
   if ('colorWhenUnconnected' in patch) {
     slot.color_off = patch.colorWhenUnconnected ?? undefined
@@ -270,6 +330,53 @@ function toInputSpec(config: InputWidgetConfig): InputSpec {
   return [type, { ...config.options }] as InputSpec
 }
 
+function fromInputSpec(spec: InputSpec): Readonly<InputWidgetConfig> {
+  const type = Array.isArray(spec[0]) ? Object.freeze([...spec[0]]) : spec[0]
+  return Object.freeze({
+    type,
+    ...(spec[1] ? { options: Object.freeze({ ...spec[1] }) } : {})
+  })
+}
+
+function inputWidgetSpec(slot: INodeInputSlot): InputSpec | undefined {
+  const custom = slot.widget?.[CONFIG]
+  if (custom) return custom as InputSpec
+  const getConfig = slot.widget?.[GET_CONFIG]
+  return typeof getConfig === 'function'
+    ? (getConfig() as InputSpec)
+    : undefined
+}
+
+function recreateConnectedPrimitive(
+  graph: LGraph | null | undefined,
+  node: LGraphNode,
+  slot: INodeInputSlot
+): void {
+  if (!graph) return
+  const index = node.inputs.indexOf(slot)
+  const link = inputLink(graph, node.id, index)
+  const origin = link ? graph.getNodeById(link.origin_id) : undefined
+  if (origin?.type !== 'PrimitiveNode') return
+  const recreate = (origin as LGraphNode & { recreateWidget?: () => unknown })
+    .recreateWidget
+  recreate?.call(origin)
+}
+
+function clearInputWidget(
+  graph: LGraph | null | undefined,
+  node: LGraphNode,
+  slot: INodeInputSlot
+): void {
+  const index = node.inputs.indexOf(slot)
+  const link = graph ? inputLink(graph, node.id, index) : undefined
+  const origin = link && graph ? graph.getNodeById(link.origin_id) : undefined
+  delete slot.widget
+  if (origin?.type !== 'PrimitiveNode') return
+  const primitive = origin as LGraphNode & { onLastDisconnect?: () => void }
+  primitive.disconnectOutput(0)
+  primitive.onLastDisconnect?.call(primitive)
+}
+
 function setInputWidgetConfig(
   graph: LGraph | null | undefined,
   node: LGraphNode,
@@ -283,14 +390,7 @@ function setInputWidgetConfig(
   }
   const inputSpec = toInputSpec(config)
   slot.widget[GET_CONFIG] = () => inputSpec
-  if (!graph) return
-  const index = node.inputs.indexOf(slot)
-  const link = inputLink(graph, node.id, index)
-  const origin = link ? graph.getNodeById(link.origin_id) : undefined
-  if (origin?.type !== 'PrimitiveNode') return
-  const recreate = (origin as LGraphNode & { recreateWidget?: () => unknown })
-    .recreateWidget
-  recreate?.call(origin)
+  recreateConnectedPrimitive(graph, node, slot)
 }
 
 function snapshotSlot(
@@ -304,6 +404,11 @@ function snapshotSlot(
     name: slot.name,
     type: typeOf(slot),
     label: slot.label,
+    localizedName: slot.localized_name,
+    position: slot.pos
+      ? Object.freeze({ x: slot.pos[0], y: slot.pos[1] })
+      : undefined,
+    direction: slot.dir === undefined ? undefined : PUBLIC_DIRECTIONS[slot.dir],
     shape: slotShapeNameOf(slot),
     isConnected
   })
@@ -348,6 +453,24 @@ function createInputHandle(
     get isWidgetInput() {
       return slotAt()?.widget !== undefined
     },
+    widgetConfig() {
+      const slot = slotAt()
+      const spec = slot && inputWidgetSpec(slot)
+      return spec ? fromInputSpec(spec) : undefined
+    },
+    mergeWidgetConfig(config) {
+      const graph = getGraph()
+      const node = getNode()
+      const slot = slotAt()
+      if (!node || !slot?.widget) return undefined
+      const current = inputWidgetSpec(slot)
+      if (!current) return undefined
+      const merged = mergeInputSpec(current, toInputSpec(config))
+      if (!merged) return undefined
+      slot.widget[CONFIG] = merged
+      recreateConnectedPrimitive(graph, node, slot)
+      return fromInputSpec(merged)
+    },
     link() {
       const graph = getGraph()
       const node = getNode()
@@ -382,6 +505,7 @@ function createInputHandle(
       if (
         patch.widget !== undefined &&
         patch.widget !== null &&
+        !patch.widgetConfig &&
         !node?.widgets?.some((widget) => widget.name === patch.widget)
       ) {
         throw new ComfyApiError(
@@ -391,8 +515,9 @@ function createInputHandle(
       const slot = slotAt()
       applyPatch(slot, patch)
       if (slot && patch.widget !== undefined) {
-        if (patch.widget === null) delete slot.widget
-        else if (slot.widget?.name !== patch.widget) {
+        if (patch.widget === null) {
+          if (node) clearInputWidget(getGraph(), node, slot)
+        } else if (slot.widget?.name !== patch.widget) {
           slot.widget = { name: patch.widget }
         }
       }
@@ -411,6 +536,9 @@ function createInputHandle(
             name: '',
             type: '',
             label: undefined,
+            localizedName: undefined,
+            position: undefined,
+            direction: undefined,
             shape: 'default',
             isConnected: false
           })
@@ -552,6 +680,9 @@ function createOutputHandle(
             name: '',
             type: '',
             label: undefined,
+            localizedName: undefined,
+            position: undefined,
+            direction: undefined,
             shape: 'default',
             isConnected: false
           })
@@ -581,7 +712,8 @@ function slotShapeNameOf(slot: INodeInputSlot | INodeOutputSlot): SlotShape {
   return 'default'
 }
 
-interface SlotOptions {
+/** @knipIgnoreUnusedButUsedByCustomNodes */
+export interface SlotOptions {
   /**
    * `'optional'` is the hollow circle for an input that need not be connected,
    * `'list'` the grid ComfyUI draws for an output that yields many values, and
@@ -589,6 +721,9 @@ interface SlotOptions {
    * particular kind of node.
    */
   shape?: SlotShape
+  localizedName?: string
+  position?: SlotPosition
+  direction?: SlotDirection
   /**
    * Names the widget this slot is the socket form of — the "convert widget to
    * input" shape.
@@ -618,6 +753,15 @@ function slotProperties(options?: SlotOptions) {
   const properties: Partial<INodeInputSlot> = {}
   if (options.shape && options.shape !== 'default') {
     properties.shape = SLOT_SHAPES[options.shape]
+  }
+  if (options.localizedName !== undefined) {
+    properties.localized_name = options.localizedName
+  }
+  if (options.position) {
+    properties.pos = [options.position.x, options.position.y]
+  }
+  if (options.direction) {
+    properties.dir = SLOT_DIRECTIONS[options.direction]
   }
   if (options.widget) {
     const widget: NonNullable<INodeInputSlot['widget']> = {
@@ -774,6 +918,7 @@ export function createInputCollection(
         }
         if (
           options?.widget &&
+          !options.widgetConfig &&
           !node?.widgets?.some((w) => w.name === options.widget)
         ) {
           // A misspelled name would produce a slot that serialises as a widget
