@@ -893,14 +893,21 @@ describe('ComfyApp', () => {
               class_type: 'UninstalledInnerNode',
               inputs: {},
               _meta: { title: 'Missing inner' }
+            },
+            '194_45': {
+              class_type: targetType,
+              inputs: { samples: ['194:45', 0] },
+              _meta: { title: 'Occupies the remap target' }
             }
           },
           ''
         )
 
         expect(graph.nodes.every((n) => !String(n.id).includes(':'))).toBe(true)
-        expect(graph.getNodeById(toNodeId('194_45'))).toBeTruthy()
-        expect(graph.links.size).toBe(1)
+        // "194_45" was already taken by a literal id, so the remap suffixes.
+        expect(graph.getNodeById(toNodeId('194_45'))?.type).toBe(targetType)
+        expect(graph.getNodeById(toNodeId('194_45_'))?.type).toBe(sourceType)
+        expect(graph.links.size).toBe(2)
         expect(missingNodesStore.missingNodesError?.nodeTypes).toEqual([
           expect.objectContaining({
             type: 'UninstalledInnerNode',
