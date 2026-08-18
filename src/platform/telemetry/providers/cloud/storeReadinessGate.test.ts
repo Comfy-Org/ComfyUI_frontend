@@ -99,7 +99,6 @@ async function flushMicrotasks(): Promise<void> {
  */
 describe('telemetry providers wait for Pinia before touching stores', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     setActivePinia(undefined)
     markStoresPending()
   })
