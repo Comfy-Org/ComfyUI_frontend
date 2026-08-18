@@ -189,6 +189,71 @@ describe('comfy.queue', () => {
     expect(seen).toEqual([{ promptIds: ['abc'], rejected: 1 }])
   })
 
+  it('publishes a frozen prompt rejection with node validation details', () => {
+    const comfy = createComfyApi(() => graphWith('A'))
+    const seen: unknown[] = []
+    const onRejected = Reflect.get(comfy.queue, 'onRejected') as
+      | ((listener: (event: unknown) => void) => () => void)
+      | undefined
+
+    expect(onRejected).toBeTypeOf('function')
+    onRejected!((event) => seen.push(event))
+    Reflect.apply(api.dispatchCustomEvent, api, [
+      'promptRejected',
+      {
+        status: 400,
+        response: {
+          error: {
+            type: 'prompt_outputs_failed_validation',
+            message: 'Prompt outputs failed validation',
+            details: 'See node errors'
+          },
+          node_errors: {
+            '12': {
+              class_type: 'KSampler',
+              dependent_outputs: [],
+              errors: [
+                {
+                  type: 'required_input_missing',
+                  message: 'Required input is missing: positive',
+                  details: '',
+                  extra_info: { input_name: 'positive' }
+                }
+              ]
+            }
+          }
+        }
+      }
+    ])
+
+    expect(seen).toEqual([
+      {
+        status: 400,
+        error: {
+          type: 'prompt_outputs_failed_validation',
+          message: 'Prompt outputs failed validation',
+          details: 'See node errors'
+        },
+        nodeErrors: [
+          {
+            nodeId: '12',
+            nodeType: 'KSampler',
+            errors: [
+              {
+                type: 'required_input_missing',
+                message: 'Required input is missing: positive',
+                details: '',
+                inputName: 'positive'
+              }
+            ]
+          }
+        ]
+      }
+    ])
+    expect(Object.isFrozen(seen[0])).toBe(true)
+    expect(Object.isFrozen(Reflect.get(seen[0]!, 'nodeErrors'))).toBe(true)
+  })
+
   it('runs the cleanup a listener returns when the attempt ends', () => {
     // The motivating case: unmute a branch to build the prompt, put it back
     // afterwards. It must fire on a refused attempt too, or the graph is left
