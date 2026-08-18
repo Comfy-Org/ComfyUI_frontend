@@ -399,6 +399,29 @@ describe('supply-side resolution', () => {
     expect(own[0]?.connectedType).toBeUndefined()
   })
 
+  it('lets a supplier inspect the outputs it broadcasts', () => {
+    const broadcaster = spawn('Broadcaster')
+    broadcaster.outputs[0].label = 'Model output'
+    broadcaster.setOutputDataType(0, 'MODEL')
+    let own: unknown
+
+    supply(
+      new Map<string, Supplier>([
+        [
+          'Broadcaster',
+          (view) => {
+            own = Reflect.get(view.self, 'outputs')
+            return []
+          }
+        ]
+      ])
+    )
+
+    expect(own).toEqual([
+      { index: 0, name: 'out', label: 'Model output', type: 'MODEL' }
+    ])
+  })
+
   it('can supply a literal instead of a connection', () => {
     const sink = spawn('Sink')
     spawn('Broadcaster')
