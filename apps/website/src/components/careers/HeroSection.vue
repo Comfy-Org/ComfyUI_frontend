@@ -30,7 +30,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
         autoplay
         loop
         mute-only
-        aria-label="Comfy team"
+        :aria-label="t('careers.hero.videoLabel', locale)"
       />
       <div class="space-y-6 p-8 text-base/relaxed text-primary-comfy-canvas">
         <p>{{ t('careers.hero.body1', locale) }}</p>
