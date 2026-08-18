@@ -4,7 +4,6 @@ export interface ConnectivityExpectations {
   deterministicSlotContractMismatch: PairExpectationGroup[]
   roundtripLost: PairExpectationGroup[]
   zeroPairDragExpectedNodeCounts: Partial<Record<string, number>>
-  noPairContributionExpectedNodeCounts: Partial<Record<string, number>>
 }
 
 export interface PairExpectationGroup {
@@ -75,7 +74,7 @@ export const connectivityExpectations: ConnectivityExpectations = {
       pairs: Array.from(
         { length: 16 },
         (_, index) =>
-          `FL_VideoBatchSplitter.batch_${index + 5} -> ACN_AdvancedControlNetApply.image`
+          `FL_VideoBatchSplitter.batch_${index + 5} -> AdjustBrightness.images`
       ),
       reason:
         'FL_VideoBatchSplitter exposes only the default 4 of 20 declared outputs',
@@ -85,9 +84,7 @@ export const connectivityExpectations: ConnectivityExpectations = {
     {
       id: 'timeline-node-loss',
       pack: 'ComfyUI_Fill-Nodes',
-      pairs: [
-        'FL_TimeLine.MODEL -> ACN_AdvancedControlNetApply.model_optional'
-      ],
+      pairs: ['FL_TimeLine.MODEL -> AddNoise.model'],
       reason:
         'FL_TimeLine replaces node.serialize and loses graph identity on reload',
       restore:
@@ -127,8 +124,8 @@ export const connectivityExpectations: ConnectivityExpectations = {
       pairs: [
         'AddTextPrefix.texts -> FL_CodeNode.code_input',
         'AddTextPrefix.texts -> FL_CodeNode.file',
-        'BooleanBasic.BOOLEAN -> FL_CodeNode.use_file',
-        'BooleanBasic.BOOLEAN -> FL_CodeNode.run_always'
+        'Basic data handling: Boolean And.BOOLEAN -> FL_CodeNode.use_file',
+        'Basic data handling: Boolean And.BOOLEAN -> FL_CodeNode.run_always'
       ],
       reason:
         'FL_CodeNode treats its four declared dynamic inputs as removable during configure',
@@ -139,12 +136,12 @@ export const connectivityExpectations: ConnectivityExpectations = {
       id: 'fill-timeline-dynamic-reload',
       pack: 'ComfyUI_Fill-Nodes',
       pairs: [
-        'ACN_AdvancedControlNetApply.model_opt -> FL_TimeLine.model',
+        'AnimaLLLiteApply.MODEL -> FL_TimeLine.model',
         'AddTextPrefix.texts -> FL_TimeLine.timeline_data',
-        'AudioReactiveTransform.frame_count -> FL_TimeLine.video_width',
-        'AudioReactiveTransform.frame_count -> FL_TimeLine.video_height',
-        'AudioReactiveTransform.frame_count -> FL_TimeLine.number_animation_frames',
-        'AudioReactiveTransform.frame_count -> FL_TimeLine.frames_per_second'
+        'Basic data handling: CastToInt.INT -> FL_TimeLine.video_width',
+        'Basic data handling: CastToInt.INT -> FL_TimeLine.video_height',
+        'Basic data handling: CastToInt.INT -> FL_TimeLine.number_animation_frames',
+        'Basic data handling: CastToInt.INT -> FL_TimeLine.frames_per_second'
       ],
       reason:
         'FL_TimeLine replaces node.serialize and drops its declared inputs during configure',
@@ -162,12 +159,6 @@ export const connectivityExpectations: ConnectivityExpectations = {
         'preserve the use_motion link during configure and remove this entry'
     }
   ],
-  // Packs that contribute no pair at all, in-pack or cross-pack: their one
-  // node's slot types have no counterpart anywhere in the corpus. The count is
-  // the assertion, as above.
-  noPairContributionExpectedNodeCounts: {
-    'comfyui-impact-subpack': 1
-  },
   // Packs too small to wire to themselves: the drag sweep needs a producer and
   // a consumer inside one pack, and these register one or two nodes. The count
   // is the assertion - a pack that grows past it has pairs to find and the

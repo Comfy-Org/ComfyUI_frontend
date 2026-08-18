@@ -247,9 +247,7 @@ jobs:
       # manifest: cache the fetched trees (sans .git) and restore by manifest
       # hash, with a prefix fallback so a single-pack deployRef bump still
       # reuses every other pack. The per-pack .ref marker is the integrity
-      # check - a stale or partial entry re-fetches. Keyed per shard: shards
-      # own disjoint slices, so one shared entry would have every shard prune
-      # the other nine's packs on every run.
+      # check - a stale or partial entry re-fetches.
       - name: Restore manifest pack cache
         id: pack-cache
         uses: actions/cache/restore@v5
@@ -268,11 +266,7 @@ jobs:
       # hides failures in a subshell, so read into an array and loop with
       # `set -e`.
       # Quarantined packs are excluded from the population, which is lost
-      # coverage that looks like a green run. This is what keeps that honest:
-      # each entry is re-checked against the live world and an entry whose bug
-      # was fixed upstream fails, so a quarantine cannot outlive its reason.
-      # Shard 1 only - the ledger is global, and checking it four times over
-      # would just be three duplicate reds.
+      # coverage that looks like a green run.
       # Runs before install so the excluded-pack block is at the TOP of the
       # summary, and `always()` so a red suite still reports what it never
       # measured - the case where that block matters most.
@@ -488,6 +482,7 @@ jobs:
               audio.setframerate(8000)
               audio.writeframes(b'\0\0' * 8000)
           PY
+          cp ComfyUI/input/000_custom_node_probe.wav ComfyUI/input/001_custom_node_probe.wav
           if ! pnpm --silent custom-node-shard | cut -f1 | grep -qx comfyui-videohelpersuite; then
             echo 'This shard has no run-tier pack; staged only the deterministic audio probe.'
             exit 0

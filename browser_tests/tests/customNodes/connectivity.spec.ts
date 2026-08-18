@@ -57,7 +57,6 @@ const {
   connectRejected: connectRejectedGroups,
   deterministicSlotContractMismatch: deterministicSlotContractMismatchGroups,
   roundtripLost: roundtripLostGroups,
-  noPairContributionExpectedNodeCounts,
   zeroPairDragExpectedNodeCounts
 } = connectivityExpectations
 const connectRejected = pairExpectationKeys(connectRejectedGroups)
@@ -203,30 +202,14 @@ test('connectivity: representative edges cover every pairable slot through model
     `connectivity plan: ${plan.pairs.length} pairs (${isolatedPairs.length} isolated), ${plan.orphans.length} orphan slots, ${plan.wildcards.length} wildcard + ${plan.combos.length} combo slots (excluded by design), ${plan.unknownShapes.length} unknown-shape slots (recorded: ${plan.unknownShapes.join('; ') || 'none'})`
   )
 
-  const observedNoPairPacks = new Set<string>()
   for (const entry of installedEntries) {
     const contributes = plan.pairs.some(
       (pair) =>
         pair.producer.pack === entry.pack || pair.consumer.pack === entry.pack
     )
-    if (contributes) continue
-    const packNodes = nodes.filter((node) => node.pack === entry.pack)
     expect(
-      noPairContributionExpectedNodeCounts[entry.pack],
+      contributes,
       `${entry.pack} contributes no pairs - corpus or pack attribution broke`
-    ).toBe(packNodes.length)
-    observedNoPairPacks.add(entry.pack)
-  }
-  for (const pack of Object.keys(noPairContributionExpectedNodeCounts)) {
-    expect(
-      loadFullManifest().some((entry) => entry.pack === pack),
-      `${pack} has a no-pair expectation but is not a manifest entry`
-    ).toBe(true)
-    const entry = installedEntries.find((entry) => entry.pack === pack)
-    if (!entry) continue
-    expect(
-      observedNoPairPacks.has(pack),
-      `${pack} now contributes a pair - remove the stale no-pair expectation`
     ).toBe(true)
   }
 
@@ -318,9 +301,7 @@ test('connectivity: representative edges cover every pairable slot through model
   // Two-way guard, same discipline as cannotRunAlone, for these expectations
   // in the loop below: every key must still be OBSERVED failing in its
   // recorded way. An entry whose pair now passes (or is no longer even
-  // planned) is stale and would silently hide the fixed bug behind it. On a
-  // partially-installed local backend an absent key only logs; CI installs
-  // every pack, so it always enforces.
+  // planned) is stale and would silently hide the fixed bug behind it.
   const outcomeByKey = new Map(
     results.map((result) => [result.key, result.outcome])
   )

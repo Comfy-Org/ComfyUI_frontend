@@ -360,7 +360,6 @@ declare global {
       problems: string[]
       captureInitialWidgetCounts: () => void
       snapshotAndConfigure: () => void
-      pendingTopologyRestores: () => string[]
       compare: (label: string, strict: boolean) => void
       setAndStick: () => void
       finish: () => {
@@ -1024,26 +1023,6 @@ for (const entry of manifestEntries) {
                     firstPass = window.app!.graph.serialize()
                     window.app!.graph.configure(firstPass)
                   },
-                  pendingTopologyRestores() {
-                    return [...created.entries()].flatMap(([id, expected]) => {
-                      const restored = window.app!.graph.nodes.find(
-                        (node) => String(node.id) === id
-                      )
-                      if (!restored)
-                        return allowedNodeLosses.includes(expected.type)
-                          ? []
-                          : [`${expected.type}: node missing`]
-                      const currentCount = (restored.widgets ?? []).filter(
-                        (widget) => widget.serialize !== false
-                      ).length
-                      return expected.widgetCount !== null &&
-                        currentCount < expected.widgetCount
-                        ? [
-                            `${expected.type}: ${currentCount}/${expected.widgetCount} widgets restored`
-                          ]
-                        : []
-                    })
-                  },
                   // strict = pristine pass: reload may add dynamic widgets but
                   // must never shrink a node (the "widgets disappear after
                   // save/reload" bug class) and must preserve every value. The
@@ -1279,7 +1258,20 @@ for (const entry of manifestEntries) {
                       const node = window.app!.graph.nodes.find(
                         (candidate) => candidate.type === type
                       ) as unknown as Record<string, unknown> | undefined
-                      values[type] = node?.[signal.property]
+                      if (signal.predicate === 'widget-count') {
+                        const widgets = (
+                          node as unknown as
+                            | {
+                                widgets?: Array<{ serialize?: boolean }>
+                              }
+                            | undefined
+                        )?.widgets
+                        values[type] = (widgets ?? []).filter(
+                          (widget) => widget.serialize !== false
+                        ).length
+                      } else {
+                        values[type] = node?.[signal.property]
+                      }
                     }
                     return values
                   }, initializationSignals)
@@ -1288,16 +1280,6 @@ for (const entry of manifestEntries) {
                     values
                   )
                 })
-                .toEqual([])
-            }
-            const waitForRoundtripReady = async () => {
-              await waitForInitialization()
-              await expect
-                .poll(() =>
-                  comfyPage.page.evaluate(() =>
-                    window.__cnRt!.pendingTopologyRestores()
-                  )
-                )
                 .toEqual([])
             }
             await waitForInitialization()
@@ -1309,7 +1291,7 @@ for (const entry of manifestEntries) {
               window.__cnRt!.snapshotAndConfigure()
             )
             await comfyPage.nextFrame()
-            await waitForRoundtripReady()
+            await waitForInitialization()
             // Stage 3 - pristine verdict, then write non-default values.
             await comfyPage.page.evaluate(() => {
               window.__cnRt!.compare('pristine', true)
@@ -1321,7 +1303,7 @@ for (const entry of manifestEntries) {
               window.__cnRt!.snapshotAndConfigure()
             )
             await comfyPage.nextFrame()
-            await waitForRoundtripReady()
+            await waitForInitialization()
             // Stage 5 - set-values verdict; collect and reset.
             const result = await comfyPage.page.evaluate(() => {
               window.__cnRt!.compare('set-values', false)

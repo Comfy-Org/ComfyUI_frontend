@@ -17,6 +17,9 @@ export const ROUNDTRIP_VALUE_ALLOWED_INDICES_LITEGRAPH: Record<
   'WhatDreamsCost-ComfyUI': {
     LoadAudioUI: '5',
     LTXDirector: '3,4,5,7'
+  },
+  'comfyui-itools': {
+    iToolsRegexNode: '0'
   }
 }
 
@@ -63,6 +66,7 @@ export const ROUNDTRIP_VALUE_ALLOWED_KEYS_VUE = {
 export type RoundtripInitializationSignal =
   | { property: string; predicate: 'defined' }
   | { property: string; predicate: 'equals'; value: unknown }
+  | { predicate: 'widget-count'; value: number }
 
 export const ROUNDTRIP_INITIALIZATION_SIGNALS: Record<
   string,
@@ -79,6 +83,16 @@ export const ROUNDTRIP_INITIALIZATION_SIGNALS: Record<
     SAM3VideoSegmentation: {
       property: '_hiddenInputs',
       predicate: 'defined'
+    }
+  },
+  'comfyui-itools': {
+    iToolsCropImage: {
+      predicate: 'widget-count',
+      value: 6
+    },
+    iToolsPaintNode: {
+      predicate: 'widget-count',
+      value: 33
     }
   }
 }

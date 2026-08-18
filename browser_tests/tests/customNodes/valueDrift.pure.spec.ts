@@ -72,18 +72,24 @@ test('roundtrip initialization waits for the exact pack-owned ready value', () =
     SAM3VideoSegmentation: {
       property: '_hiddenInputs',
       predicate: 'defined' as const
+    },
+    iToolsPaintNode: {
+      predicate: 'widget-count' as const,
+      value: 33
     }
   }
   expect(
     pendingRoundtripInitializations(signals, {
       LoadAudioUI: true,
-      SAM3VideoSegmentation: undefined
+      SAM3VideoSegmentation: undefined,
+      iToolsPaintNode: 32
     })
-  ).toEqual(['LoadAudioUI', 'SAM3VideoSegmentation'])
+  ).toEqual(['LoadAudioUI', 'SAM3VideoSegmentation', 'iToolsPaintNode'])
   expect(
     pendingRoundtripInitializations(signals, {
       LoadAudioUI: false,
-      SAM3VideoSegmentation: {}
+      SAM3VideoSegmentation: {},
+      iToolsPaintNode: 33
     })
   ).toEqual([])
 })
@@ -137,7 +143,8 @@ test.describe('cloud roundtrip expectations', () => {
       'WhatDreamsCost-ComfyUI': {
         LoadAudioUI: '5',
         LTXDirector: '3,4,5,7'
-      }
+      },
+      'comfyui-itools': { iToolsRegexNode: '0' }
     })
     expect(ROUNDTRIP_VALUE_ALLOWED_INDICES_VUE).toMatchObject({
       'ComfyUI_Fill-Nodes':
