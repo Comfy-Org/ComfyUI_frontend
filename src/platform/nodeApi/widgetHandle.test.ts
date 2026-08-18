@@ -1219,6 +1219,16 @@ describe('setHeight', () => {
     expect(node.widgets![0].computeSize!(200)).toEqual([200, 48])
   })
 
+  it('reads the height the host allocated during layout', () => {
+    const seed = widgets.get('seed')!
+    expect(seed.getHeight()).toBeUndefined()
+
+    node.arrange()
+
+    expect(seed.getHeight()).toBe(node.widgets![0].computedHeight)
+    expect(seed.getHeight()).toBeGreaterThan(0)
+  })
+
   it('refuses a height that is not a usable number', () => {
     expect(() => widgets.get('seed')!.setHeight(Number.NaN)).toThrow()
     expect(() => widgets.get('seed')!.setHeight(-1)).toThrow()

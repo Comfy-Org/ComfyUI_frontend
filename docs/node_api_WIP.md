@@ -41,9 +41,10 @@ widget instance, not a Pinia store, not a Vue reactive proxy, not a constructor.
 > `settings`, `slots.connect`, `slots.dynamic`, `slots.identity`,
 > `slots.layout`, `slots.localizedName`, `slots.moveLinks`, `slots.retype`,
 > `slots.widgetConfig`, `storage`, `ui.sidebarTab`, `viewport.changed`,
-> `widgets.canvas`, `widgets.create`, `widgets.hidden`, `widgets.linked`,
-> `widgets.mount`, `widgets.reorder`, `widgets.textInteraction`,
-> `widgets.typeContext`, `workflow.open`, `workflow.textReplacements`.
+> `widgets.canvas`, `widgets.create`, `widgets.height`, `widgets.hidden`,
+> `widgets.linked`, `widgets.mount`, `widgets.reorder`,
+> `widgets.textInteraction`, `widgets.typeContext`, `workflow.open`,
+> `workflow.textReplacements`.
 >
 > **Specified only:** §4a declarative decorations (badges/anchors — note
 > `setSizeConstraints` and `widgets.canvas` DID ship), §4b chrome, §4c
@@ -1747,10 +1748,21 @@ bundle their own per ADR 0005, and handing a component across two runtimes
 breaks lifecycle hooks and reactivity. **Open question: export the host's Vue**,
 which would make the component arm real for packs and answers Q1.
 
-**`widget.setHeight(px)`** — named by two agents independently. `MountDef.height`
-only sets CSS _inside_ an allocation the renderer already chose, so fixed strips
-still drifted; presence of `computeSize` is what makes the node treat a widget
-as fixed.
+**`widget.setHeight(px)` / `getHeight()`** — the write was named by two agents
+independently. `MountDef.height` only sets CSS _inside_ an allocation the
+renderer already chose, so fixed strips still drifted; presence of
+`computeSize` is what makes the node treat a widget as fixed. The read was
+forced later by deno's Bernini and LTX prompt guides: hiding and reopening a
+negative prompt must preserve the height the renderer actually allocated, and
+a user resize assigns the remaining body height to the positive prompt.
+
+**Alternative rejected.** Publishing `computedHeight`, `computeSize`, or the
+widget layout object. The pack needs one answer after layout, not the renderer's
+sizing mechanism.
+
+**Cost to reverse.** Moderate. Both nodes still queue the right prompt text,
+but resizing or toggling their negative prompt loses the user's chosen editor
+sizes.
 
 ## 5. Why the hooks are rewritten too
 
