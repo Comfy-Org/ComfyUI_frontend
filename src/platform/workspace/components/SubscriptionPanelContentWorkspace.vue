@@ -324,9 +324,10 @@
 
           <div
             v-if="
-              canAccessSubscriptionFeatures ||
-              isPersonalFree ||
-              showInactiveTeamSubscription
+              !isEnterprisePlan &&
+              (canAccessSubscriptionFeatures ||
+                isPersonalFree ||
+                showInactiveTeamSubscription)
             "
             class="flex flex-col gap-2"
           >

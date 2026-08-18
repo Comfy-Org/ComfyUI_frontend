@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
+import type { IngestSubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
+
 import { deriveBillingPolicyState } from './useBillingPolicyState'
+
+const runtimeTier = (tier: string) => tier as unknown as IngestSubscriptionTier
 
 describe('deriveBillingPolicyState', () => {
   it.for<[string, boolean]>([
@@ -59,6 +63,40 @@ describe('deriveBillingPolicyState', () => {
           canAccessSubscriptionFeatures: true,
           isTeamPlan: false,
           tier: null
+        })
+      ).toEqual({ kind })
+    }
+  )
+
+  it.for<[string, boolean]>([
+    ['LocalAndTeam', false],
+    ['CloudAndTeam', true]
+  ])(
+    'maps an active Enterprise plan to the team policy state %s (isCloud=%s)',
+    ([kind, isCloud]) => {
+      expect(
+        deriveBillingPolicyState({
+          isCloud,
+          canAccessSubscriptionFeatures: true,
+          isTeamPlan: false,
+          tier: runtimeTier('ENTERPRISE')
+        })
+      ).toEqual({ kind })
+    }
+  )
+
+  it.for<[string, boolean]>([
+    ['LocalAndUnknown', false],
+    ['CloudAndUnknown', true]
+  ])(
+    'degrades a tier outside the generated enum to %s instead of crashing (isCloud=%s)',
+    ([kind, isCloud]) => {
+      expect(
+        deriveBillingPolicyState({
+          isCloud,
+          canAccessSubscriptionFeatures: true,
+          isTeamPlan: false,
+          tier: runtimeTier('ULTRA')
         })
       ).toEqual({ kind })
     }

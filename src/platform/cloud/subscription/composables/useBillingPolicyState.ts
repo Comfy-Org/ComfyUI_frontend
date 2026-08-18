@@ -2,6 +2,7 @@ import { computed } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import type { IngestSubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
+import { isEnterpriseTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import { isCloud } from '@/platform/distribution/types'
 
 import type { BillingPolicyState } from '../billingPolicyState'
@@ -30,6 +31,12 @@ export function deriveBillingPolicyState(input: {
     return { kind: `${distribution}WithoutActiveSubscription` }
   }
 
+  // ENTERPRISE arrives as a runtime string before the generated enum carries
+  // it; it is a workspace-level plan, so it takes the team policy state.
+  if (isEnterpriseTier(input.tier)) {
+    return { kind: `${distribution}AndTeam` }
+  }
+
   switch (input.tier) {
     case 'FREE':
       return { kind: `${distribution}AndFree` }
@@ -45,8 +52,10 @@ export function deriveBillingPolicyState(input: {
       return { kind: `${distribution}AndTeam` }
     case null:
       return { kind: `${distribution}AndUnknown` }
-    default:
-      return input.tier satisfies never
+    default: {
+      input.tier satisfies never
+      return { kind: `${distribution}AndUnknown` }
+    }
   }
 }
 
