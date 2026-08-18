@@ -144,9 +144,6 @@ describe('useImageUploadWidget', () => {
   })
 
   it('does not preview a combo whose value is still unset', () => {
-    // The graph binds the combo value after the widget is constructed, so the
-    // initial frame can find it undefined; String() would turn that into a
-    // request for a file literally named "undefined".
     const { fileComboWidget, node } = createUploadNode()
     Object.assign(fileComboWidget, { value: undefined })
     const frame = vi.fn()
