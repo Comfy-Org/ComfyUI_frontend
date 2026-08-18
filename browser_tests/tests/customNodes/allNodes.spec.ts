@@ -28,7 +28,6 @@ import {
 } from '@e2e/fixtures/customNode/consoleErrorLedger'
 import { failureSummary } from '@e2e/fixtures/customNode/failureReport'
 import {
-  cannotRunAloneFor,
   expectedNodeCountFor,
   loadAllManifestPackNames,
   loadManifest
@@ -1471,7 +1470,7 @@ for (const entry of manifestEntries) {
         }
         // Two-way reconciliation: unlisted failure = regression; listed node
         // that runs clean (or is not auto-runnable) = stale entry.
-        const baseline = new Set(cannotRunAloneFor(entry))
+        const baseline = new Set(entry.cannotRunAlone ?? [])
         const runnable = new Set(
           batches.flatMap((batch) => batch.map((verdict) => verdict.key))
         )

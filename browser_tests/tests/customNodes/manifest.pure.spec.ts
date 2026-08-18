@@ -5,7 +5,7 @@ import {
 import type { CoreManifestEntry } from '@e2e/fixtures/customNode/manifest'
 import {
   assertCoreEntry,
-  cannotRunAloneFor,
+  expectedNodeCountFor,
   loadApplicableAutogrowCases,
   loadFullManifest,
   servesFrontendAssetsForPack,
@@ -40,23 +40,23 @@ test.describe('customNode manifest', () => {
     }
   })
 
-  test('a local execution baseline replaces the cloud baseline', () => {
+  test('a local node-count baseline applies only to a local cloud-pack run', () => {
     const priorBackend = process.env.CUSTOM_NODES_BACKEND
     const priorManifest = process.env.CUSTOM_NODES_MANIFEST
     const entry = {
       ...validEntry(),
       pack: 'comfyui-videohelpersuite',
-      cannotRunAlone: ['CloudBaseline']
+      expectedNodeCount: 32
     }
     try {
       process.env.CUSTOM_NODES_BACKEND = 'local'
       process.env.CUSTOM_NODES_MANIFEST = 'cloud'
-      expect(cannotRunAloneFor(entry)).toEqual([])
+      expect(expectedNodeCountFor(entry)).toBe(40)
       process.env.CUSTOM_NODES_BACKEND = 'cloud'
-      expect(cannotRunAloneFor(entry)).toEqual(['CloudBaseline'])
+      expect(expectedNodeCountFor(entry)).toBe(32)
       process.env.CUSTOM_NODES_BACKEND = 'local'
       process.env.CUSTOM_NODES_MANIFEST = 'core'
-      expect(cannotRunAloneFor(entry)).toEqual(['CloudBaseline'])
+      expect(expectedNodeCountFor(entry)).toBe(32)
     } finally {
       if (priorBackend === undefined) delete process.env.CUSTOM_NODES_BACKEND
       else process.env.CUSTOM_NODES_BACKEND = priorBackend

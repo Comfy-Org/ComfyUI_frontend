@@ -385,7 +385,6 @@ function customNodesBackend(): (typeof VALID_BACKENDS)[number] {
 }
 
 interface LocalExpectation {
-  cannotRunAlone?: string[]
   expectedNodeCount: number
   expectedExtensions?: string[]
   reason: string
@@ -416,11 +415,7 @@ function loadLocalExpectations(): Record<string, LocalExpectation> {
         (!Array.isArray(entry.expectedExtensions) ||
           entry.expectedExtensions.length !==
             new Set(entry.expectedExtensions).size ||
-          !entry.expectedExtensions.every(isNonEmptyString))) ||
-      (entry.cannotRunAlone !== undefined &&
-        (!Array.isArray(entry.cannotRunAlone) ||
-          entry.cannotRunAlone.length !== new Set(entry.cannotRunAlone).size ||
-          !entry.cannotRunAlone.every(isNonEmptyString)))
+          !entry.expectedExtensions.every(isNonEmptyString)))
     )
       throw new Error(`${path}: ${pack} has an invalid local expectation`)
   }
@@ -457,16 +452,6 @@ export function expectedExtensionsFor(
   return (
     loadLocalExpectations()[entry.pack]?.expectedExtensions ??
     entry.expectedExtensions
-  )
-}
-
-export function cannotRunAloneFor(
-  entry: CoreManifestEntry | CloudManifestEntry
-): string[] {
-  return (
-    loadLocalExpectations()[entry.pack]?.cannotRunAlone ??
-    entry.cannotRunAlone ??
-    []
   )
 }
 
