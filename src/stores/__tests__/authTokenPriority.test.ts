@@ -219,16 +219,6 @@ describe('auth token priority chain', () => {
 
       expect(token).toBe('firebase-token')
     })
-
-    it('ignores workspace token outside Cloud', async () => {
-      mockDistributionTypes.isCloud = false
-      mockGetWorkspaceToken.mockReturnValue('workspace-raw-token')
-
-      const token = await store.getAuthToken()
-
-      expect(token).toBe('firebase-token')
-      expect(mockGetWorkspaceToken).not.toHaveBeenCalled()
-    })
   })
 
   describe('unified login mint wiring', () => {

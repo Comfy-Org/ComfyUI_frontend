@@ -98,5 +98,4 @@ vitest.config.*.timestamp*
 # Weekly docs check output
 /output.txt
 
-.amp/*
-!.amp/services.yaml
+.amp
