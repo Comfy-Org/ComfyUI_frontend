@@ -4,6 +4,10 @@ import { useI18n } from 'vue-i18n'
 import type { MenuItem } from 'primevue/menuitem'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import {
+  isEnterprisePlanSlug,
+  isEnterpriseTier
+} from '@/platform/cloud/subscription/constants/tierPricing'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useDialogService } from '@/services/dialogService'
 
@@ -70,7 +74,10 @@ export function useWorkspaceMenuItems() {
           billingStatus.value === 'paused') &&
           Boolean(subscription.value?.planSlug))) &&
       !isSubscriptionCancelled.value &&
-      !isFreeTier.value
+      !isFreeTier.value &&
+      // Enterprise cancellation goes through sales, never self-serve.
+      !isEnterpriseTier(subscription.value?.tier) &&
+      !isEnterprisePlanSlug(subscription.value?.planSlug)
   )
 
   const canDeleteWorkspace = computed(

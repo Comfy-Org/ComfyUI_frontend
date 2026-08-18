@@ -110,6 +110,17 @@ describe('useWorkspaceMenuItems', () => {
     )
   })
 
+  it('withholds cancellation from an enterprise plan', () => {
+    state.canManageSubscriptionLifecycle = true
+    state.planSlug = 'enterprise_monthly'
+
+    const { menuItems } = useWorkspaceMenuItems()
+
+    expect(menuItems.value.map((item) => item.label)).not.toContain(
+      'subscription.cancelPlan'
+    )
+  })
+
   it('withholds cancellation for an already-cancelled plan', () => {
     state.canManageSubscriptionLifecycle = true
     state.isSubscriptionCancelled = true
