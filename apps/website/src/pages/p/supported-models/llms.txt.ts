@@ -11,7 +11,7 @@ export const GET: APIRoute = ({ site }) => {
   const lines = [
     '# Supported models in ComfyUI',
     '',
-    '> Every model on this list runs in ComfyUI — locally on your own hardware or on Comfy Cloud, with every parameter exposed. Each page has a markdown twin at the same URL plus `.md`.',
+    "> Every model on this list runs in ComfyUI. Open models run locally on your own hardware or on Comfy Cloud; partner models run through partner nodes with inference on the provider's API. Each page has a markdown twin at the same URL plus `.md`.",
     '',
     '## Models',
     ''
@@ -30,7 +30,7 @@ export const GET: APIRoute = ({ site }) => {
     '',
     '## Run them',
     '',
-    '- [ComfyUI, open source](https://comfy.org/download): free on your own hardware',
+    '- [ComfyUI, open source](https://comfy.org/download): free on your own hardware (open models; partner models call the provider API)',
     '- [Comfy Cloud](https://cloud.comfy.org): hosted GPUs, same graph, every parameter',
     '- [Workflow templates](https://www.comfy.org/workflows): community workflows, ready to load'
   )
