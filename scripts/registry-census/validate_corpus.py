@@ -7,11 +7,24 @@ import json
 import os
 from pathlib import Path
 
-AVAILABLE_STATUSES = {'empty', 'ok'}
+import fetch_corpus
+import pins
+
+AVAILABLE_STATUSES = fetch_corpus.AVAILABLE_STATUSES - {'cached'}
+RECORDED_STATUSES = (
+    AVAILABLE_STATUSES
+    | fetch_corpus.STRUCTURAL_EXCLUSION_STATUSES
+    | {'failed'}
+)
 
 
 class CorpusValidationError(RuntimeError):
     pass
+
+
+def _named(values: list[str], limit: int = 10) -> str:
+    shown = ', '.join(values[:limit])
+    return shown + (f' (+{len(values) - limit} more)' if len(values) > limit else '')
 
 
 def read_object(path: Path) -> dict:
@@ -40,7 +53,9 @@ def require_int(value: object, name: str) -> int:
     return value
 
 
-def validate(root: Path) -> tuple[int, int]:
+def validate(
+    root: Path, pinned_ids: set[str] | None = None
+) -> tuple[int, int]:
     snapshot = read_snapshot(root / 'data' / 'registry.json')
     lock = read_object(root / 'corpus.lock.json')
     ready = read_object(root / 'corpus.ready.json')
@@ -68,31 +83,85 @@ def validate(root: Path) -> tuple[int, int]:
         raise CorpusValidationError(
             f'corpus.ready.json has invalid population {available}/{targets}'
         )
-    if not 0 < floor <= 1:
+    if floor != fetch_corpus.CORPUS_COVERAGE_FLOOR:
         raise CorpusValidationError(
-            f'corpus.ready.json has invalid coverage floor {floor}'
-        )
-    if targets - available >= 5 and available / targets < floor:
-        raise CorpusValidationError(
-            f'corpus population {available}/{targets} is below the {floor:.0%} floor'
+            f'corpus.ready.json records coverage floor {floor}; code requires '
+            f'{fetch_corpus.CORPUS_COVERAGE_FLOOR}'
         )
 
     target_set = set(target_ids)
+    lock_set = set(packs)
+    if lock_set != target_set:
+        missing = sorted(target_set - lock_set)
+        extra = sorted(lock_set - target_set)
+        detail = []
+        if missing:
+            detail.append(f'missing {_named(missing)}')
+        if extra:
+            detail.append(f'extra {_named(extra)}')
+        raise CorpusValidationError(
+            'corpus lock does not match registry snapshot: ' + '; '.join(detail)
+        )
+
+    invalid_statuses = {
+        pack_id: identity.get('status') if isinstance(identity, dict) else None
+        for pack_id, identity in packs.items()
+        if not isinstance(identity, dict)
+        or identity.get('status') not in RECORDED_STATUSES
+    }
+    if invalid_statuses:
+        raise CorpusValidationError(
+            'corpus lock has invalid statuses: '
+            + ', '.join(
+                f'{pack_id}={status!r}'
+                for pack_id, status in sorted(invalid_statuses.items())[:10]
+            )
+        )
+
     available_ids = {
         pack_id
         for pack_id, identity in packs.items()
         if isinstance(identity, dict)
         and identity.get('status') in AVAILABLE_STATUSES
     }
-    extra_ids = available_ids - target_set
-    if extra_ids:
-        raise CorpusValidationError(
-            f'corpus lock contains {len(extra_ids)} available packs outside the snapshot'
-        )
     if len(available_ids) != available:
         raise CorpusValidationError(
             f'corpus.ready.json records {available} available packs; lock has '
             f'{len(available_ids)}'
+        )
+
+    pinned = pinned_ids if pinned_ids is not None else set(pins.packs())
+    coverage_ids = {
+        pack_id
+        for pack_id, identity in packs.items()
+        if pack_id in pinned
+        and identity['status']
+        not in fetch_corpus.STRUCTURAL_EXCLUSION_STATUSES
+    }
+    coverage_available = len(coverage_ids & available_ids)
+    recorded_coverage_available = require_int(
+        ready.get('coverageAvailable'),
+        'corpus.ready.json: coverageAvailable',
+    )
+    recorded_coverage_targets = require_int(
+        ready.get('coverageTargets'),
+        'corpus.ready.json: coverageTargets',
+    )
+    if (
+        recorded_coverage_available != coverage_available
+        or recorded_coverage_targets != len(coverage_ids)
+    ):
+        raise CorpusValidationError(
+            'corpus.ready.json records coverage population '
+            f'{recorded_coverage_available}/{recorded_coverage_targets}; '
+            f'lock and pins have {coverage_available}/{len(coverage_ids)}'
+        )
+    if fetch_corpus.population_is_too_small(
+        coverage_available, len(coverage_ids)
+    ):
+        raise CorpusValidationError(
+            f'eligible corpus population {coverage_available}/{len(coverage_ids)} '
+            f'is below the {fetch_corpus.CORPUS_COVERAGE_FLOOR:.0%} floor'
         )
 
     corpus = root / 'corpus' / 'registry_js'

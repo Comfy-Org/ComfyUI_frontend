@@ -21,7 +21,7 @@ an image import resolves to a URL that is never read, so the path is all the
 matrix needs. `.ts` / `.jsx` / `.tsx` / `.vue` are build inputs ComfyUI never
 serves and the matrix never globs, so they are not fetched at all.
 
-That is what makes the corpus cacheable: **~0.9GB on disk, ~0.32GB
+That is what makes the corpus cacheable: **~0.9GB on disk, ~0.16GB
 compressed**. Keeping every asset byte put it at 6.0GB against the repo's
 shared 10GB Actions budget, which evicted itself mid-run — run 31753242605
 saved the entry, shard 2 restored it, and shards 1/3/4 found no corpus at
@@ -85,13 +85,18 @@ Pure stdlib; needs `curl` and `tar` on PATH, plus `git` for `--write-pins`.
 `.github/workflows/ci-ecosystem-matrix.yaml`. An exact cache hit restores the
 snapshot and corpus as-is, with no registry crawl or pack refetch. On a miss,
 the workflow rebuilds the corpus and refuses to cache or measure it unless at
-least 95% of registry targets are available. The minimum count of five failed
-targets keeps a small local `--limit` smoke run from acting like a census.
+least 95% of pin-resolved, structurally eligible registry targets are
+available. Targets the pin bump could not resolve, unsupported hosts, invalid
+URLs or subdirectories, and packs outside the archive/staging budget are
+recorded but do not consume that outage floor. The minimum count of five
+failed targets keeps a small local `--limit` smoke run from acting like a
+census.
 
-The cache key is the pin set, and Actions caches are immutable. Main normally
-provides the shared entry that PRs restore; a PR with no visible main cache can
-build a branch-scoped entry for its own shards. Baseline metrics are still
-written only by a passing main run and read by PRs.
+The cache key covers the pin set plus the fetch and validation code, and
+Actions caches are immutable. Main normally provides the shared entry that
+PRs restore; a PR with no visible main cache can build a branch-scoped entry
+for its own shards. Baseline metrics are still written only by a passing main
+run and read by PRs.
 
 Before any shard runs, `validate_corpus.py` requires the restored snapshot,
 ready marker, lockfile, staged pack identities, and available-pack count to

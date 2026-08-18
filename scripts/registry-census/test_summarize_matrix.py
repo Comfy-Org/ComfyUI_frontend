@@ -199,9 +199,27 @@ class HarnessGates(unittest.TestCase):
         self.assertIn('driveTypes', report)
         self.assertIsNone(verdict.metrics)
 
+    def test_partially_missing_producer_key_is_withheld(self) -> None:
+        rows = population()
+        for r in rows[:99]:
+            del r['selfCheck']
+        verdict = sm.evaluate(rows, {})
+        report = '\n'.join(verdict.lines)
+        self.assertEqual(verdict.code, 2)
+        self.assertIn('selfCheck: 99 row(s)', report)
+        self.assertIsNone(verdict.metrics)
+
     def test_empty_operation_maps_fail_closed(self) -> None:
         rows = population()
         for r in rows:
+            r['ops'] = {}
+        verdict = sm.evaluate(rows, {})
+        self.assertEqual(verdict.code, 1)
+        self.assertIn('every operation clean', verdict.breaches[0])
+
+    def test_partially_missing_operations_fail_closed(self) -> None:
+        rows = population()
+        for r in rows[:99]:
             r['ops'] = {}
         verdict = sm.evaluate(rows, {})
         self.assertEqual(verdict.code, 1)

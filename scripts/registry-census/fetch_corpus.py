@@ -69,6 +69,9 @@ MAX_ARCHIVE_BYTES = 134_217_728
 CORPUS_COVERAGE_FLOOR = 0.95
 MIN_MASS_FAILURE_COUNT = 5
 AVAILABLE_STATUSES = frozenset(('ok', 'empty', 'cached'))
+STRUCTURAL_EXCLUSION_STATUSES = frozenset(
+    ('bad-id', 'bad-url', 'no-subdir', 'oversize', 'unsupported-host')
+)
 
 _TREE_RE = re.compile(
     r'^(?P<owner>[^/]+)/(?P<repo>[^/]+)'
@@ -178,31 +181,50 @@ class Fetched(NamedTuple):
     ref: str = ''
 
 
-def corpus_coverage(results: list[Fetched]) -> tuple[int, float]:
+def corpus_coverage(
+    results: list[Fetched], pinned_ids: set[str]
+) -> tuple[int, int, float]:
+    eligible = [
+        result
+        for result in results
+        if result.pack_id in pinned_ids
+        and result.status not in STRUCTURAL_EXCLUSION_STATUSES
+    ]
     available = sum(
-        1 for result in results if result.status in AVAILABLE_STATUSES
+        1 for result in eligible if result.status in AVAILABLE_STATUSES
     )
-    coverage = available / len(results) if results else 0.0
-    return available, coverage
+    coverage = available / len(eligible) if eligible else 0.0
+    return available, len(eligible), coverage
 
 
-def corpus_is_too_small(results: list[Fetched]) -> bool:
-    if not results:
+def population_is_too_small(available: int, targets: int) -> bool:
+    if not targets:
         return True
-    available, coverage = corpus_coverage(results)
-    missing = len(results) - available
+    missing = targets - available
     return (
         missing >= MIN_MASS_FAILURE_COUNT
-        and coverage < CORPUS_COVERAGE_FLOOR
+        and available / targets < CORPUS_COVERAGE_FLOOR
     )
 
 
-def write_ready_marker(available: int, total: int) -> None:
+def corpus_is_too_small(results: list[Fetched], pinned_ids: set[str]) -> bool:
+    available, targets, _coverage = corpus_coverage(results, pinned_ids)
+    return population_is_too_small(available, targets)
+
+
+def write_ready_marker(
+    available: int,
+    total: int,
+    coverage_available: int,
+    coverage_targets: int,
+) -> None:
     with open(READY_MARKER, 'w', encoding='utf-8') as fh:
         json.dump(
             {
                 'available': available,
+                'coverageAvailable': coverage_available,
                 'coverageFloor': CORPUS_COVERAGE_FLOOR,
+                'coverageTargets': coverage_targets,
                 'targets': total,
             },
             fh,
@@ -429,7 +451,7 @@ def fetch_one(
         staged = os.path.join(tmp, 'staged')
         os.makedirs(staged)
         if not _stage(scoped, staged):
-            return Fetched(pack_id, 'failed', None, 'pack budget')
+            return Fetched(pack_id, 'oversize', None, 'pack budget')
         if os.path.isdir(dest):
             shutil.rmtree(dest)
         shutil.move(staged, dest)
@@ -479,6 +501,7 @@ def main() -> int:
     if args.write_pins:
         return write_pins(targets, args.workers)
 
+    pinned_ids = set(pins.packs())
     for line in pins.banner():
         print(line, file=sys.stderr)
 
@@ -512,16 +535,17 @@ def main() -> int:
 
     counts = Counter(r.status for r in results)
     for r in results:
-        if r.status in ('ok', 'cached', 'empty'):
-            entry = lock.setdefault(r.pack_id, {})
-            if r.etag:
-                entry['etag'] = r.etag
-            if r.ref:
-                entry['ref'] = r.ref
-            # 'cached' is a fact about this run, not about the pack — keep the
-            # ok/empty distinction the original fetch established.
-            if r.status != 'cached':
-                entry['status'] = r.status
+        entry = lock.setdefault(r.pack_id, {})
+        if r.etag:
+            entry['etag'] = r.etag
+        if r.ref:
+            entry['ref'] = r.ref
+        if r.status not in ('cached', 'drifted'):
+            entry['status'] = r.status
+            if r.detail:
+                entry['detail'] = r.detail
+            else:
+                entry.pop('detail', None)
 
     with open(LOCKFILE, 'w', encoding='utf-8') as fh:
         json.dump({'packs': lock}, fh, indent=1, sort_keys=True)
@@ -541,10 +565,14 @@ def main() -> int:
         print(f'\n{drifted} packs drifted from the lockfile', file=sys.stderr)
         return 1
 
-    available, coverage = corpus_coverage(results)
-    if corpus_is_too_small(results):
+    available = sum(1 for r in results if r.status in AVAILABLE_STATUSES)
+    coverage_available, coverage_targets, coverage = corpus_coverage(
+        results, pinned_ids
+    )
+    if corpus_is_too_small(results, pinned_ids):
         print(
-            f'\n{available}/{len(results)} registry targets are available'
+            f'\n{coverage_available}/{coverage_targets} pin-resolved,'
+            ' structurally eligible registry targets are available'
             f' ({coverage:.1%}); below the {CORPUS_COVERAGE_FLOOR:.0%}'
             ' corpus floor - refusing to cache or measure a partial corpus',
             file=sys.stderr,
@@ -562,21 +590,37 @@ def main() -> int:
     # run (run 31835130531, 166 of 166). The signal is a REGRESSION - a pack the
     # lockfile records as previously fetched that will not fetch now.
     failed = [r for r in results if r.status == 'failed']
-    known_bad = [r for r in failed if not prior.get(r.pack_id, {}).get('status')]
-    regressed = [r for r in failed if prior.get(r.pack_id, {}).get('status')]
+    known_bad = [
+        r
+        for r in failed
+        if prior.get(r.pack_id, {}).get('status') not in ('ok', 'empty')
+    ]
+    regressed = [
+        r
+        for r in failed
+        if prior.get(r.pack_id, {}).get('status') in ('ok', 'empty')
+    ]
     if known_bad:
         print(
-            f'\n{len(known_bad)} packs have never fetched at their pinned'
-            ' commit (deleted, private, or gone); excluded from the corpus'
-            ' and from this gate',
+            f'\n{len(known_bad)} packs had no previously available corpus'
+            ' entry (unresolved, deleted, private, or gone); excluded from'
+            ' the corpus and from the regression gate',
             file=sys.stderr,
         )
     if not regressed:
         if full_run:
-            write_ready_marker(available, len(results))
+            write_ready_marker(
+                available,
+                len(results),
+                coverage_available,
+                coverage_targets,
+            )
         return 0
 
-    previously_ok = sum(1 for v in prior.values() if v.get('status')) or len(targets)
+    previously_ok = (
+        sum(1 for v in prior.values() if v.get('status') in ('ok', 'empty'))
+        or len(targets)
+    )
     print(
         f'\n{len(regressed)} packs that fetched before will not fetch now,'
         f' out of {previously_ok} previously fetched',
@@ -590,7 +634,12 @@ def main() -> int:
         )
         return 1
     if full_run:
-        write_ready_marker(available, len(results))
+        write_ready_marker(
+            available,
+            len(results),
+            coverage_available,
+            coverage_targets,
+        )
     return 0
 
 

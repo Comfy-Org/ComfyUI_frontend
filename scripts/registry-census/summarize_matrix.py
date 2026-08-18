@@ -124,12 +124,13 @@ def evaluate(
     lines: list[str] = []
     if stale:
         lines.append(
-            'STALE REGISTRY: the target list is a cached snapshot, not this'
-            ' run\'s - ' + str(stale.get('reason', 'reason not recorded'))
+            'STALE REGISTRY AT CACHE BUILD: the corpus target list came from'
+            ' the prior cached snapshot - '
+            + str(stale.get('reason', 'reason not recorded'))
         )
         lines.append(
-            '  every rate below is measured over a different denominator'
-            ' than a healthy run, and would become the delta baseline.'
+            '  every warm run over this corpus intentionally retains that'
+            ' cache-build provenance and denominator.'
         )
         lines.append('')
 
@@ -143,13 +144,20 @@ def evaluate(
         )
         return Verdict(2, lines)
 
-    absent = [k for k in EXPECTED_ROW_KEYS if not any(k in r for r in done)]
-    if absent:
+    missing_by_key = {
+        key: [str(row.get('pack', '?')) for row in done if key not in row]
+        for key in EXPECTED_ROW_KEYS
+    }
+    missing_by_key = {
+        key: packs for key, packs in missing_by_key.items() if packs
+    }
+    if missing_by_key:
         lines.append(
-            'ROW SCHEMA DRIFT: no row carries ' + ', '.join(absent) + ' -'
-            ' the runner renamed or dropped a field this verdict reads, so'
-            ' every rate over it is vacuous rather than clean.'
+            'ROW SCHEMA DRIFT: completed rows are missing fields this verdict'
+            ' reads, so their rates would be vacuous rather than clean.'
         )
+        for key, packs in missing_by_key.items():
+            lines.append(f'  {key}: {len(packs)} row(s): {_named(packs)}')
         lines.append('')
         return Verdict(2, lines)
 
@@ -178,7 +186,7 @@ def evaluate(
         + (f' (needed a pack-specific rewrite: {assisted})' if assisted else '')
     )
 
-    self_ok = sum(1 for r in done if r.get('selfCheck', 'OK') == 'OK')
+    self_ok = sum(1 for r in done if r.get('selfCheck') == 'OK')
     any_loaded = sum(1 for r in done if r.get('loadedOk'))
     total_entries = sum(len(r.get('load') or {}) for r in done)
     ok_entries = sum(
@@ -220,11 +228,24 @@ def evaluate(
     op_static: Counter = Counter()
     err_msgs: Counter = Counter()
     sig_hashes: dict[str, str] = {}
+    op_names = sorted(
+        {
+            op
+            for row in done
+            for op in (row['ops'] if isinstance(row['ops'], dict) else {})
+        }
+    )
     for r in done:
         digest = hashlib.sha1()
-        for op, info in sorted((r.get('ops') or {}).items()):
-            digest.update(f'{op}={info.get("sig", "")}'.encode())
+        ops = r['ops'] if isinstance(r['ops'], dict) else {}
+        for op in op_names:
+            info = ops.get(op)
             op_total[op] += 1
+            if not isinstance(info, dict):
+                digest.update(f'{op}=<missing>'.encode())
+                op_bad[op] += 1
+                continue
+            digest.update(f'{op}={info.get("sig", "")}'.encode())
             # A bare property write calls nothing into the app, so its error
             # arm cannot fail and must not be read as evidence of health. Its
             # desync arm still can - widget-array surgery shows up there.

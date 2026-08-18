@@ -55,7 +55,8 @@ concurrency:
 
 env:
   PYTHON_VERSION: '3.11'
-  CORPUS_CACHE_PREFIX: registry-corpus-v5-
+  CORPUS_CACHE_FAMILY: registry-corpus-
+  CORPUS_CACHE_PREFIX: registry-corpus-v6-
 
 jobs:
   # First job in the run, and deliberately dependency-free so its annotation
@@ -98,17 +99,15 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      # Exact key only, deliberately no restore-keys. The key IS the pin set,
-      # so a prefix fallback would hand back a corpus pinned to different
-      # commits - and since a pinned fetch treats an already-present pack as
-      # done, nothing downstream would correct it. Better a 4-minute cold
-      # fetch than a green verdict over the wrong packs.
+      # Exact key only, deliberately no restore-keys. The key covers the pin
+      # set and the code that defines corpus readiness, so neither changed
+      # commits nor changed validation rules can restore an older cache.
       - name: Restore corpus cache
         id: restore
         uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           path: .census
-          key: ${{ env.CORPUS_CACHE_PREFIX }}${{ hashFiles('scripts/registry-census/corpus.pins.json') }}
+          key: ${{ env.CORPUS_CACHE_PREFIX }}${{ hashFiles('scripts/registry-census/corpus.pins.json', 'scripts/registry-census/fetch_corpus.py', 'scripts/registry-census/validate_corpus.py') }}
 
       # A cache hit already carries the snapshot and exact corpus consumed by
       # the shards. Repeating the registry crawl and missing-pack retries would
@@ -151,16 +150,14 @@ jobs:
           if-no-files-found: error
           include-hidden-files: true
 
-      # Same key as the restore, which is the PIN SET - so there is exactly
-      # one entry per pin bump rather than one per run that saw drift, and
-      # concurrent runs on the same pins race for one key with the loser
-      # rejected as a duplicate.
+      # Same key as the restore, so concurrent runs on the same pins and
+      # readiness code race for one key with the loser rejected as a duplicate.
       #
       # Saved on any event, not just main. The shards are separate jobs and
       # this cache is the only thing that carries the corpus to them: gating
       # the save to the default branch meant a PR could never run the matrix
       # at all, which is what reddened run 31827717441. Affordable now that
-      # the corpus is ~0.32GB rather than the 6.0GB that evicted itself.
+      # the corpus is ~0.16GB rather than the 6.0GB that evicted itself.
       #
       # corpus.ready.json is written only after the fetch meets its population
       # floor. A lockfile alone is not enough: it is written even when most
@@ -173,12 +170,12 @@ jobs:
         uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           path: .census
-          key: ${{ env.CORPUS_CACHE_PREFIX }}${{ hashFiles('scripts/registry-census/corpus.pins.json') }}
+          key: ${{ env.CORPUS_CACHE_PREFIX }}${{ hashFiles('scripts/registry-census/corpus.pins.json', 'scripts/registry-census/fetch_corpus.py', 'scripts/registry-census/validate_corpus.py') }}
 
-  # One entry per pin bump against the repo's shared 10GB budget; keep the
-  # newest only. Branch-scoped, so a PR's entry is never deleted out from
-  # under it - those expire with the PR. Its own job so `corpus`, which holds
-  # a token while extracting untrusted archives, stays at contents: read.
+  # Keep only the newest corpus generation against the repo's shared 10GB
+  # budget. Branch-scoped, so a PR's entry is never deleted out from under it
+  # - those expire with the PR. Its own job so `corpus`, which holds a token
+  # while extracting untrusted archives, stays at contents: read.
   prune-corpus-cache:
     needs: corpus
     if: |
@@ -203,7 +200,7 @@ jobs:
         run: |
           set -euo pipefail
           gh cache list --repo "$GITHUB_REPOSITORY" \
-            --key "$CORPUS_CACHE_PREFIX" \
+            --key "$CORPUS_CACHE_FAMILY" \
             --ref "refs/heads/${GITHUB_REF_NAME}" \
             --limit 100 --sort created_at --order desc \
             --json id --jq '.[1:][].id' > ids.txt
@@ -224,6 +221,7 @@ jobs:
   # once, over all shards combined, by matrix-verdict below.
   ecosystem-matrix:
     needs: corpus
+    if: github.repository == 'Comfy-Org/ComfyUI_frontend'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
@@ -252,7 +250,7 @@ jobs:
         uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           path: .census
-          key: ${{ env.CORPUS_CACHE_PREFIX }}${{ hashFiles('scripts/registry-census/corpus.pins.json') }}
+          key: ${{ env.CORPUS_CACHE_PREFIX }}${{ hashFiles('scripts/registry-census/corpus.pins.json', 'scripts/registry-census/fetch_corpus.py', 'scripts/registry-census/validate_corpus.py') }}
           fail-on-cache-miss: true
 
       # node_cache: false - setup-node's post step writes the pnpm store
