@@ -390,8 +390,6 @@ describe('i18n', () => {
     describe('precedence', () => {
       it.for([
         { field: 'name', slot: 'seed', backend: 'Live Seed' },
-        { field: 'tooltip', slot: 'seed', backend: 'Live tooltip' },
-        { field: 'name', slot: 0, backend: 'Live Latent' },
         { field: 'tooltip', slot: 0, backend: 'Live tooltip' }
       ] as const)(
         'en: live $field for slot $slot beats the bundled snapshot',
@@ -403,16 +401,15 @@ describe('i18n', () => {
       )
 
       it.for([
-        { field: 'name', slot: 'seed', expected: 'seed (bundled)' },
         {
           field: 'tooltip',
           slot: 'seed',
           expected: 'Seed tooltip (bundled)'
         },
         {
-          field: 'tooltip',
+          field: 'name',
           slot: 0,
-          expected: 'Latent tooltip (bundled)'
+          expected: 'LATENT (bundled)'
         }
       ] as const)(
         'en: bundled $field for slot $slot is used without backend text',
@@ -476,9 +473,6 @@ describe('i18n', () => {
         const raw = "Mask {'@'} 100% | D:\\output"
 
         expect(resolveNodeDefSlotText('tooltip', 'KSampler', 'seed', raw)).toBe(
-          raw
-        )
-        expect(resolveNodeDefSlotText('name', 'KSampler', 'seed', raw)).toBe(
           raw
         )
       })

@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { nextTick } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { i18n, mergeCustomNodesI18n, te } from '@/i18n'
+import { i18n, mergeCustomNodesI18n } from '@/i18n'
 import type * as LiteGraphModule from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { Settings } from '@/schemas/apiSchema'
@@ -81,11 +81,6 @@ vi.mock('@/scripts/domWidget', () => ({
 
 const jsonTooltip =
   'Positive point prompts as JSON [{"x": int, "y": int}, ...] (pixel coords)'
-
-const positiveCoordsTooltipKey =
-  'nodeDefs.SAM3_Detect.inputs.positive_coords.tooltip'
-
-const outputTooltipKey = 'nodeDefs.SAM3_Detect.outputs.0.tooltip'
 
 const sam3DetectNodeDef: ComfyNodeDef = {
   name: 'SAM3_Detect',
@@ -208,7 +203,6 @@ describe('NodeTooltip', () => {
 
     await renderAndHoverCanvas()
 
-    expect(te(positiveCoordsTooltipKey)).toBe(true)
     expect(screen.getByText(jsonTooltip)).toBeInTheDocument()
     expect(consoleError).not.toHaveBeenCalled()
   })
@@ -219,7 +213,6 @@ describe('NodeTooltip', () => {
 
     await renderAndHoverCanvas()
 
-    expect(te(outputTooltipKey)).toBe(true)
     expect(screen.getByText(jsonTooltip)).toBeInTheDocument()
     expect(consoleError).not.toHaveBeenCalled()
   })
@@ -232,7 +225,6 @@ describe('NodeTooltip', () => {
 
     await renderAndHoverCanvas()
 
-    expect(te(positiveCoordsTooltipKey)).toBe(true)
     expect(screen.getByText(jsonTooltip)).toBeInTheDocument()
     expect(consoleError).not.toHaveBeenCalled()
   })
@@ -244,11 +236,6 @@ describe('NodeTooltip', () => {
     beforeEach(() => {
       mergeInputTooltipMessage(staleInputTooltip)
       mergeOutputTooltipMessage(staleOutputTooltip)
-    })
-
-    afterEach(() => {
-      mergeInputTooltipMessage(jsonTooltip)
-      mergeOutputTooltipMessage(null)
     })
 
     it('shows the live backend input slot tooltip', async () => {

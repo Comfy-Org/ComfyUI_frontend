@@ -92,6 +92,7 @@ describe('useLitegraphService().registerNodeDef slot text', () => {
   })
 
   afterEach(() => {
+    LiteGraph.unregisterNodeType(nodeName)
     mergeCustomNodesI18n({})
     i18n.global.setLocaleMessage('en', cloneDeep(enMessages))
   })
@@ -149,6 +150,7 @@ describe('useLitegraphService().registerNodeDef slot text (non-en)', () => {
   })
 
   afterEach(() => {
+    LiteGraph.unregisterNodeType(nodeName)
     i18n.global.locale.value = 'en'
     i18n.global.setLocaleMessage('zh', cloneDeep(zhMessages))
     i18n.global.setLocaleMessage('en', cloneDeep(enMessages))

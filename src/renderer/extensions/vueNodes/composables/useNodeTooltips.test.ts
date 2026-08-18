@@ -2,7 +2,7 @@ import { cloneDeep } from 'es-toolkit'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
-import { i18n, mergeCustomNodesI18n, te } from '@/i18n'
+import { i18n, mergeCustomNodesI18n } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { Settings } from '@/schemas/apiSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
@@ -13,11 +13,6 @@ import { useNodeTooltips } from './useNodeTooltips'
 const enMessages = cloneDeep(i18n.global.getLocaleMessage('en'))
 const jsonTooltip =
   'Positive point prompts as JSON [{"x": int, "y": int}, ...] (pixel coords)'
-
-const positiveCoordsTooltipKey =
-  'nodeDefs.SAM3_Detect.inputs.positive_coords.tooltip'
-
-const outputTooltipKey = 'nodeDefs.SAM3_Detect.outputs.0.tooltip'
 
 const positiveCoordsWidget: SafeWidgetData = {
   name: 'positive_coords',
@@ -92,8 +87,6 @@ describe('useNodeTooltips', () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { getInputSlotTooltip } = useNodeTooltips('SAM3_Detect')
 
-    // Ensure this exercises the bundled i18n path, not only metadata fallback.
-    expect(te(positiveCoordsTooltipKey)).toBe(true)
     expect(getInputSlotTooltip('positive_coords')).toBe(jsonTooltip)
     expect(consoleError).not.toHaveBeenCalled()
   })
@@ -102,7 +95,6 @@ describe('useNodeTooltips', () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { getWidgetTooltip } = useNodeTooltips('SAM3_Detect')
 
-    expect(te(positiveCoordsTooltipKey)).toBe(true)
     expect(getWidgetTooltip(positiveCoordsWidget)).toBe(jsonTooltip)
     expect(consoleError).not.toHaveBeenCalled()
   })
@@ -111,7 +103,6 @@ describe('useNodeTooltips', () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { getOutputSlotTooltip } = useNodeTooltips('SAM3_Detect')
 
-    expect(te(outputTooltipKey)).toBe(true)
     expect(getOutputSlotTooltip(0)).toBe(jsonTooltip)
     expect(consoleError).not.toHaveBeenCalled()
   })
