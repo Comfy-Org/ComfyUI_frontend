@@ -95,6 +95,8 @@ const GUTTED_CODE_LINES = 2
 
 /** A decision was taken: this will not be supported. */
 const REFUSAL = /^\s*\/\/\s*(?:REFUSED|UNSUPPORTED)\b/m
+const INOPERABLE = /^\s*\/\/\s*INOPERABLE:/m
+const NOTHING_INOPERABLE = /^\s*\/\/\s*INOPERABLE:\s*nothing\b/im
 
 /**
  * Something wanted that nothing published serves yet.
@@ -173,6 +175,8 @@ export function packStatus(dbDir) {
           stats.todo.push({ file, why: gutted ? 'gap' : 'partial' })
         else if (!gutted) stats.converted++
         else if (REFUSAL.test(result)) stats.refused++
+        else if (NOTHING_INOPERABLE.test(result)) stats.converted++
+        else if (INOPERABLE.test(result)) stats.refused++
         // Gutted, and saying neither. Not a decision, so it is work.
         else stats.todo.push({ file, why: 'silent' })
         stats.outstanding = stats.todo.length
