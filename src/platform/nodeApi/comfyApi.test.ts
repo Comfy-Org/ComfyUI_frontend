@@ -37,6 +37,7 @@ describe('comfy API root', () => {
       expect(api().supports('widgets.reorder')).toBe(true)
       expect(api().supports('widgets.hidden')).toBe(true)
       expect(api().supports('widgets.linked')).toBe(true)
+      expect(api().supports('widgets.textInteraction')).toBe(true)
       expect(api().supports('slots.identity')).toBe(true)
       expect(api().supports('widgets.typeContext')).toBe(true)
       expect(api().supports('workflow.open')).toBe(true)
