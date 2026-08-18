@@ -6,6 +6,7 @@ import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { toNodeId } from '@/types/nodeId'
 import { api } from '@/scripts/api'
 import { useQueuePendingTaskCountStore } from '@/stores/queueStore'
+import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 
 import { createComfyApi } from './comfyApi'
 import { mayRun } from './queueHandle'
@@ -111,6 +112,15 @@ describe('comfy.queue', () => {
       executed: []
     })
     expect(interrupted).toHaveBeenCalledTimes(1)
+  })
+
+  it('disables auto-queue without reaching into host controls', () => {
+    const comfy = createComfyApi(() => graphWith('A'))
+    useQueueSettingsStore().mode = 'instant-running'
+
+    comfy.queue.disableAutoQueue()
+
+    expect(useQueueSettingsStore().mode).toBe('disabled')
   })
 
   it('lets a guard cancel a run, and every guard is asked', async () => {

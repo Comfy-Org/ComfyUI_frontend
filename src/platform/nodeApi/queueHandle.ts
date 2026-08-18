@@ -17,6 +17,7 @@ import { watch } from 'vue'
 import { api } from '@/scripts/api'
 import type { PromptQueuedEventPayload } from '@/scripts/api'
 import { useQueuePendingTaskCountStore } from '@/stores/queueStore'
+import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 import { toNodeId } from '@/types/nodeId'
 import { getExecutionIdsForSelectedNodes } from '@/utils/graphTraversalUtil'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
@@ -102,6 +103,13 @@ export interface QueueHandle {
   interrupt(): Promise<void>
   /** Execution was interrupted, by this pack, another, or the user. */
   onInterrupted(listener: () => void): Unsubscribe
+  /**
+   * Turns off automatic queuing without cancelling the current run.
+   *
+   * A conditional workflow can use this before interrupting itself so the
+   * stopped iteration does not immediately start again.
+   */
+  disableAutoQueue(): void
   /**
    * Holds a run until a check finishes, and can cancel it.
    *
@@ -251,6 +259,10 @@ export function createQueueApi(
     },
 
     onInterrupted: subscribe('execution_interrupted'),
+
+    disableAutoQueue() {
+      useQueueSettingsStore().mode = 'disabled'
+    },
 
     guard(check: () => boolean | Promise<boolean>) {
       guards.add(check)
