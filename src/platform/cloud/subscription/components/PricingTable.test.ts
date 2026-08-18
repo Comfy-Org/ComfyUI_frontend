@@ -7,7 +7,7 @@ import { createI18n } from 'vue-i18n'
 
 import PricingTable from '@/platform/cloud/subscription/components/PricingTable.vue'
 import Button from '@/components/ui/button/Button.vue'
-import type { SubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
+import type { IngestSubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import { PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 
 async function flushPromises() {
@@ -24,7 +24,7 @@ function createDeferredPromise<T>() {
 }
 
 const mockCanAccessSubscriptionFeatures = ref(false)
-const mockSubscriptionTier = ref<SubscriptionTier | null>(null)
+const mockSubscriptionTier = ref<IngestSubscriptionTier | null>(null)
 const mockSubscriptionDuration = ref<'MONTHLY' | 'ANNUAL'>('MONTHLY')
 const mockAccessBillingPortal = vi.fn()
 const mockReportError = vi.fn()
