@@ -52,22 +52,8 @@ export const useFirstRunEntry = createSharedComposable(() => {
     return decideFirstRun() === 'getting-started'
   }
 
-  /**
-   * Candidacy is read once, here: a later breakpoint, flag or subscription
-   * change must not unmount the screen out from under the user.
-   * Only a boot that opened a blank canvas can be onboarded over. `isNewUser()`
-   * cannot carry that alone — it is decided from `Comfy.TutorialCompleted` once
-   * per boot, by `initializeIfNewUser()`, and that setting is exactly what a
-   * user predating it is missing. Because the answer is cached for the rest of
-   * the boot rather than re-read per call, writing the flag below cannot flip
-   * the candidacy `handleUrlWorkflow` goes on to read.
-   *
-   * A `url-intent` boot leaves the flag to `handleUrlWorkflow`: this is too
-   * early to know whether anything arrived to tour, and the flag is write-once
-   * and server-side, so spending it here on a link that loaded nothing — or on
-   * a boot that only defers — burns the one tour the account ever gets without
-   * showing it.
-   */
+  // `url-intent` defers to handleUrlWorkflow: we don't know yet whether
+  // anything arrived to tour, and TutorialCompleted is write-once.
   async function handleStartupOutcome(outcome: StartupOutcome) {
     if (outcome === 'restored') return
     if (settingStore.get('Comfy.TutorialCompleted')) return
