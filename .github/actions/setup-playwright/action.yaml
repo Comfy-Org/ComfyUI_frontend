@@ -17,12 +17,29 @@ runs:
         path: '~/.cache/ms-playwright'
         key: ${{ runner.os }}-playwright-browsers-${{ steps.detect-version.outputs.playwright-version }}
 
-    - name: Install Playwright Browsers
-      if: steps.cache-playwright-browsers.outputs.cache-hit != 'true'
+    - name: Bound Playwright dependency downloads
       shell: bash
-      run: pnpm exec playwright install chromium --with-deps
+      run: |
+        set -euo pipefail
+        printf '%s\n' \
+          'Acquire::Retries "3";' \
+          'Acquire::http::Timeout "60";' \
+          'Acquire::https::Timeout "60";' \
+          | sudo tee /etc/apt/apt.conf.d/80-playwright-ci >/dev/null
 
-    - name: Install Playwright Browsers (operating system dependencies)
-      if: steps.cache-playwright-browsers.outputs.cache-hit == 'true'
+    - name: Install Playwright browser and dependencies
       shell: bash
-      run: pnpm exec playwright install-deps
+      env:
+        BROWSER_CACHE_HIT: ${{ steps.cache-playwright-browsers.outputs.cache-hit }}
+      run: |
+        set -euo pipefail
+        if [ "$BROWSER_CACHE_HIT" = true ]; then
+          playwright_args=(install-deps chromium)
+        else
+          playwright_args=(install chromium --with-deps)
+        fi
+        for attempt in 1 2; do
+          pnpm exec playwright "${playwright_args[@]}" && exit 0
+          [ "$attempt" -lt 2 ] || exit 1
+          sleep 2
+        done
