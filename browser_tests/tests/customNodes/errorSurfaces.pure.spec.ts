@@ -11,8 +11,6 @@ test.beforeEach(async ({ page }) => {
   await trackVisibleErrors(page)
 })
 
-// expectNoVisibleErrors is the single enforcement point for every
-// user-visible error surface in the suite.
 test('a clean page passes every surface', async ({ page }) => {
   await page.setContent('<main>no errors here</main>')
   await expect(expectNoVisibleErrors(page, 'clean')).resolves.toBeUndefined()
