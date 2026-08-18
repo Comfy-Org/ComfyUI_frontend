@@ -67,11 +67,12 @@ All consumers must obtain rail classification from a single shared decision
 site (`getBillingRailPolicy` in `src/composables/billing/billingRailPolicy.ts`)
 rather than comparing `billing_rail` inline. That site handles the
 `BillingRail` union exhaustively (`satisfies never` on the default branch), so
-a widened union from the backend fails `pnpm typecheck` instead of silently
-routing to workspace billing. The generated union is compile-time only, so the
-same site also handles the runtime states explicitly: an absent rail (`null` —
-not yet fetched, omitted, or fetch failed) and a rail value this build does
-not recognize both return the fail-open policy.
+adding a literal to the generated union fails `pnpm typecheck` at this one
+site until the new rail is classified. The generated union is compile-time
+only — a new runtime value cannot break an already-built bundle — so the same
+site also handles the runtime states explicitly: an absent rail (`null` — not
+yet fetched, omitted, or fetch failed) and a rail value this build does not
+recognize both return the fail-open policy.
 
 ### 2. Unknown rail fails open to workspace billing, deliberately
 
@@ -133,8 +134,10 @@ durable record of that contract now that it no longer lives only in PR bodies.
 
 - A rail value cannot be classified two different ways: routing and
   cancellation both read one decision site.
-- A fourth `billing_rail` value from the backend breaks the build instead of
-  silently draining a customer's operations to workspace billing.
+- A fourth `billing_rail` literal added to the generated union breaks the
+  build until it is classified; a runtime value unknown to an already-built
+  bundle follows the documented fail-open policy rather than being read two
+  different ways.
 - The fail-open default, its rationale, and its recovery model are recorded
   where reviewers and incident responders can find them.
 
