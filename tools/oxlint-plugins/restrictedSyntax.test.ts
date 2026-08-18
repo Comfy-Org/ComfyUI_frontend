@@ -27,6 +27,29 @@ const fixtureDataProbeDir = path.resolve(
 const browserUnitTestProbe = path.resolve(
   'browser_tests/tests/__restricted_syntax_probes__/misplaced.test.ts'
 )
+const computedProbeDir = path.resolve('src/__computed_dom_probes__')
+
+const computedSource = `import { computed } from 'vue'
+
+const measured = computed(() => element.getBoundingClientRect())
+const styled = computed(() => window.getComputedStyle(element))
+const selected = computed(() => element.querySelector('.item'))
+const selectedAll = computed(() => element.querySelectorAll('.item'))
+const nested = computed(() => () => element.getBoundingClientRect())
+
+const rect = element.getBoundingClientRect()
+const dynamic = computed(() => element['querySelector']('.item'))
+const unrelated = other(() => element.querySelector('.item'))
+
+void measured
+void styled
+void selected
+void selectedAll
+void nested
+void rect
+void dynamic
+void unrelated
+`
 
 const probes = [
   {
@@ -61,6 +84,15 @@ const probes = [
   {
     file: browserUnitTestProbe,
     source: "test('misplaced', () => {})\n"
+  },
+  {
+    file: path.join(computedProbeDir, 'reported.ts'),
+    source: computedSource
+  },
+  {
+    file: path.join(computedProbeDir, 'ignored.test.ts'),
+    source:
+      "import { computed } from 'vue'\ncomputed(() => element.getBoundingClientRect())\n"
   }
 ]
 
@@ -80,7 +112,8 @@ describe('restricted syntax rules', () => {
         sourceProbeDir,
         remoteProbeDir,
         fixtureDataProbeDir,
-        browserUnitTestProbe
+        browserUnitTestProbe,
+        computedProbeDir
       ]),
       ...runOxlint([
         '--format=json',
@@ -98,6 +131,7 @@ describe('restricted syntax rules', () => {
       appProbeDir,
       remoteProbeDir,
       fixtureDataProbeDir,
+      computedProbeDir,
       path.dirname(browserUnitTestProbe)
     ]) {
       rmSync(dir, { recursive: true, force: true })
@@ -126,7 +160,7 @@ describe('restricted syntax rules', () => {
   })
 
   it('reports spec files outside the browser and app e2e directories', () => {
-    expect(findingsFor('no-misplaced-spec-files')).toHaveLength(1)
+    expect(findingsFor('no-misplaced-spec-files')).toHaveLength(2)
   })
 
   it('reports Playwright imports in static fixture data', () => {
@@ -135,5 +169,27 @@ describe('restricted syntax rules', () => {
 
   it('reports unit-test filenames in the Playwright test directory', () => {
     expect(findingsFor('no-unit-test-files-in-browser-tests')).toHaveLength(1)
+  })
+
+  it('reports DOM measurement and inspection in computed calls', () => {
+    expect(
+      findingsFor('no-dom-in-computed').map(({ message }) => message)
+    ).toEqual([
+      expect.stringContaining('Do not measure the DOM'),
+      expect.stringContaining('Do not inspect the DOM'),
+      expect.stringContaining('Do not inspect the DOM'),
+      expect.stringContaining('Do not inspect the DOM'),
+      expect.stringContaining('Do not measure the DOM')
+    ])
+  })
+
+  it('preserves computed-rule warning severity and test exclusions', () => {
+    const computedFindings = findingsFor('no-dom-in-computed')
+    expect(
+      computedFindings.every(({ severity }) => severity === 'warning')
+    ).toBe(true)
+    expect(
+      computedFindings.every(({ filename }) => filename.endsWith('reported.ts'))
+    ).toBe(true)
   })
 })

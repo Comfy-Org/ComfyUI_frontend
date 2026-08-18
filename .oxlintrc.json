@@ -172,6 +172,16 @@
       }
     },
     {
+      "files": ["**/*.spec.ts"],
+      "excludeFiles": [
+        "browser_tests/tests/**/*.spec.ts",
+        "apps/*/e2e/**/*.spec.ts"
+      ],
+      "rules": {
+        "comfy/no-misplaced-spec-files": "error"
+      }
+    },
+    {
       "files": ["**/*.{stories,test,spec}.ts", "**/*.stories.vue"],
       "rules": {
         "no-console": "allow"

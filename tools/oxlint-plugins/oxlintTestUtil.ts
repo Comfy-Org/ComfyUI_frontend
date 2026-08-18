@@ -1,4 +1,4 @@
-import { execFileSync } from 'node:child_process'
+import { spawnSync } from 'node:child_process'
 import path from 'node:path'
 
 const oxlintEntry = path.resolve('node_modules/oxlint/bin/oxlint')
@@ -24,11 +24,6 @@ function isOxlintDiagnostic(value: unknown): value is OxlintDiagnostic {
   )
 }
 
-function stdoutFrom(error: unknown): string {
-  if (isRecord(error) && typeof error.stdout === 'string') return error.stdout
-  throw error
-}
-
 function parseDiagnostics(output: string): OxlintDiagnostic[] {
   const report: unknown = JSON.parse(output)
   if (!isRecord(report) || !Array.isArray(report.diagnostics)) {
@@ -44,14 +39,10 @@ function parseDiagnostics(output: string): OxlintDiagnostic[] {
 }
 
 export function runOxlint(args: readonly string[]): OxlintDiagnostic[] {
-  let output: string
-  try {
-    output = execFileSync(process.execPath, [oxlintEntry, ...args], {
-      cwd: path.resolve('.'),
-      encoding: 'utf8'
-    })
-  } catch (error) {
-    output = stdoutFrom(error)
-  }
-  return parseDiagnostics(output)
+  const result = spawnSync(process.execPath, [oxlintEntry, ...args], {
+    cwd: path.resolve('.'),
+    encoding: 'utf8'
+  })
+  if (result.error) throw result.error
+  return parseDiagnostics(result.stdout)
 }
