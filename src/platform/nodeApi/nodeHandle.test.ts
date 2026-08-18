@@ -227,6 +227,15 @@ describe('NodeHandle', () => {
       expect([node.pos[0], node.pos[1]]).toEqual([100, 200])
       expect([node.size[0], node.size[1]]).toEqual([300, 400])
     })
+
+    it('runs the node resize protocol when setting its size', () => {
+      const onResize = vi.fn()
+      node.onResize = onResize
+
+      handle().setSize({ width: 300, height: 400 })
+
+      expect([...onResize.mock.calls[0][0]]).toEqual([300, 400])
+    })
   })
 
   describe('the real node is not reachable', () => {
