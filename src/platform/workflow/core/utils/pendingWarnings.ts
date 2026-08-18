@@ -1,3 +1,5 @@
+import { uniqBy } from 'es-toolkit'
+
 import type {
   ComfyWorkflow,
   PendingWarnings
@@ -16,13 +18,7 @@ function getMissingNodeKey(node: MissingNodeType): string {
 export function dedupeMissingNodeTypes(
   types: readonly MissingNodeType[]
 ): MissingNodeType[] {
-  const seen = new Set<string>()
-  return types.filter((node) => {
-    const key = getMissingNodeKey(node)
-    if (seen.has(key)) return false
-    seen.add(key)
-    return true
-  })
+  return uniqBy(types, getMissingNodeKey)
 }
 
 export function removePendingMissingNodeTypesByType(

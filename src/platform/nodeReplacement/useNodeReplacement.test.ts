@@ -45,20 +45,22 @@ vi.mock('@/i18n', () => ({
     params ? `${key}:${JSON.stringify(params)}` : key
 }))
 
+interface ActiveWorkflowMock {
+  pendingWarnings: PendingWarnings | null
+  changeTracker: {
+    beforeChange: () => void
+    afterChange: () => void
+  }
+}
+
 const workflowMocks = vi.hoisted(() => ({
   activeWorkflow: {
-    pendingWarnings: null as PendingWarnings | null,
+    pendingWarnings: null,
     changeTracker: {
       beforeChange: vi.fn(),
       afterChange: vi.fn()
     }
-  } as {
-    pendingWarnings: PendingWarnings | null
-    changeTracker: {
-      beforeChange: () => void
-      afterChange: () => void
-    }
-  } | null
+  } as ActiveWorkflowMock | null
 }))
 
 import { app } from '@/scripts/app'
@@ -904,6 +906,35 @@ describe('useNodeReplacement', () => {
       expect(
         useMissingNodesErrorStore().missingNodesError?.nodeTypes
       ).toStrictEqual(['OtherNode'])
+    })
+
+    it('clears the cache and rendered state when the last missing type is replaced', () => {
+      const placeholder = createPlaceholderNode(1, 'OldNode')
+      const graph = createMockGraph([placeholder])
+      placeholder.graph = graph
+      Object.assign(app, { rootGraph: graph })
+
+      const newNode = createNewNode()
+      vi.mocked(collectAllNodes).mockReturnValue([placeholder])
+      vi.mocked(LiteGraph.createNode).mockReturnValue(newNode)
+
+      const oldNodeType = makeMissingNodeType('OldNode', {
+        new_node_id: 'NewNode',
+        old_node_id: 'OldNode',
+        old_widget_ids: null,
+        input_mapping: null,
+        output_mapping: null
+      })
+      seedMissingNodeTypes([oldNodeType])
+
+      const { replaceGroup } = useNodeReplacement()
+      replaceGroup({
+        type: 'OldNode',
+        nodeTypes: [oldNodeType]
+      })
+
+      expect(getActiveWorkflowMock().pendingWarnings).toBeNull()
+      expect(useMissingNodesErrorStore().missingNodesError).toBeNull()
     })
 
     it('keeps missing node state when no nodes are replaced', () => {
