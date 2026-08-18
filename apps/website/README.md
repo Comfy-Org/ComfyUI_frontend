@@ -5,11 +5,15 @@ Marketing/brand website built with Astro + Vue.
 ## Gallery CMS integration
 
 `/gallery` and `/zh-CN/gallery` are built from the Payload CMS
-(`apps/cms`) at build time via `src/utils/galleryCms.ts`. The build
-**requires** `WEBSITE_CMS_URL` (build-time only, never `PUBLIC_`-prefixed)
-and fails if it is unset or the CMS is unreachable — there is no static
-fallback. For local dev: `cp .env.example .env`, then start the CMS
-first (see `apps/cms/README.md`).
+(`apps/cms`) at build time via `src/utils/galleryCms.ts`, over the shared
+`src/utils/cmsContent.ts` loader. The published gallery is public, so the
+build fetches it from the committed default CMS URL (`DEFAULT_CMS_URL`) with
+no secret required — an open-source clone builds without any CMS access.
+`WEBSITE_CMS_URL` (build-time only, never `PUBLIC_`-prefixed) is **optional**
+and overrides that default (e.g. to point at a local CMS). The build still
+fails if a _configured_ CMS is unreachable — so Vercel keeps the last good
+deploy rather than shipping a degraded gallery. For local dev against a local
+CMS: `cp .env.example .env`, then start the CMS first (see `apps/cms/README.md`).
 
 ## Ashby careers integration
 

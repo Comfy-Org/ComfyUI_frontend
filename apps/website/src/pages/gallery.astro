@@ -3,9 +3,13 @@ import BaseLayout from '../layouts/BaseLayout.astro'
 import HeroSection from '../components/gallery/HeroSection.vue'
 import GallerySection from '../components/gallery/GallerySection.vue'
 import ContactSection from '../components/gallery/ContactSection.vue'
-import { loadGalleryItemsForBuild } from '../utils/galleryCms'
+import { loadList } from '../utils/cmsContent'
+import { galleryCollection } from '../utils/galleryCms'
 
-const galleryItems = await loadGalleryItemsForBuild()
+const galleryItems = await loadList(galleryCollection, {
+  draft: import.meta.env.PREVIEW_MODE === 'true',
+  apiKey: import.meta.env.PAYLOAD_API_KEY
+})
 ---
 
 <BaseLayout title="Gallery - Comfy">

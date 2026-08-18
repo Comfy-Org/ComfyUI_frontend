@@ -1,0 +1,88 @@
+import type { z } from 'zod'
+
+/**
+ * Public production CMS URL, committed as a non-secret default so an open-source
+ * clone or offline `pnpm build` fetches the same published content the real
+ * deploy does (published CMS content is public). Overridable per environment via
+ * `WEBSITE_CMS_URL`.
+ *
+ * TODO(build): confirm this is the real production CMS domain before release —
+ * it is a placeholder (see `build-spec.md` → "Facts to supply at build time").
+ */
+export const DEFAULT_CMS_URL = 'https://cms.comfy.org'
+
+/** One CMS-backed collection's list view: how to query, validate, and flatten it. */
+interface CmsListView<TDoc, TItem> {
+  /** Payload REST query string (the `select`/`populate`/`sort` params). */
+  query: string
+  /** Zod schema for the `{ docs }` response. */
+  schema: z.ZodType<{ docs: TDoc[] }>
+  /** Flatten a CMS doc into the shape the Astro template consumes. */
+  toItem: (doc: TDoc, cmsBase: string) => TItem
+}
+
+/** A CMS-backed content collection's list descriptor (e.g. gallery). */
+export interface CmsCollection<TDoc, TItem> {
+  /** CMS collection slug → `/api/<slug>`. */
+  slug: string
+  list: CmsListView<TDoc, TItem>
+}
+
+export interface LoadContentOptions {
+  /** Override the CMS base URL (else `WEBSITE_CMS_URL`, else `DEFAULT_CMS_URL`). */
+  cmsUrl?: string
+  /** Fetch unpublished drafts. Callers supply this (preview builds pass `true`). */
+  draft?: boolean
+  /** Payload API key for authenticated draft reads (used only with `draft`). */
+  apiKey?: string
+  /** Injectable fetch, for tests. */
+  fetchImpl?: typeof fetch
+}
+
+function resolveCmsBase(cmsUrl?: string): string {
+  const url =
+    cmsUrl ??
+    import.meta.env.WEBSITE_CMS_URL ??
+    process.env.WEBSITE_CMS_URL ??
+    DEFAULT_CMS_URL
+  return url.replace(/\/$/, '')
+}
+
+/**
+ * Fetch and flatten a collection's list from the CMS. Shared by every collection
+ * and by both production (published) and preview (`draft`) builds.
+ *
+ * Throws when the CMS is configured but unreachable, responds non-OK, or returns
+ * a payload that fails schema validation — failing the build so the last good
+ * deploy is kept, rather than shipping degraded content.
+ */
+export async function loadList<TDoc, TItem>(
+  collection: CmsCollection<TDoc, TItem>,
+  options: LoadContentOptions = {}
+): Promise<TItem[]> {
+  const base = resolveCmsBase(options.cmsUrl)
+  const { draft = false, apiKey } = options
+  const fetchImpl = options.fetchImpl ?? fetch
+
+  const query = draft
+    ? `${collection.list.query}&draft=true`
+    : collection.list.query
+  const headers =
+    draft && apiKey ? { Authorization: `users API-Key ${apiKey}` } : undefined
+
+  const response = await fetchImpl(`${base}/api/${collection.slug}?${query}`, {
+    headers
+  })
+  if (!response.ok) {
+    throw new Error(`[${collection.slug}] CMS responded ${response.status}`)
+  }
+
+  const parsed = collection.list.schema.safeParse(await response.json())
+  if (!parsed.success) {
+    throw new Error(
+      `[${collection.slug}] CMS response failed schema validation: ${parsed.error.message}`
+    )
+  }
+
+  return parsed.data.docs.map((doc) => collection.list.toItem(doc, base))
+}
