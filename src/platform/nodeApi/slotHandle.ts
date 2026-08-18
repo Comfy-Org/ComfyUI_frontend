@@ -679,6 +679,11 @@ function createOutputHandle(
       return node.disconnectOutput(i, target)
     },
     modify(patch) {
+      const node = getNode()
+      const index = indexOf()
+      if (node && index !== -1 && patch.type !== undefined) {
+        node.setOutputDataType(index, normaliseType(patch.type))
+      }
       applyPatch(slotAt(), patch)
     },
     moveLinksTo(target) {
