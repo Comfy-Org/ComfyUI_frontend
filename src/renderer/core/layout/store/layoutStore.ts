@@ -134,7 +134,6 @@ class LayoutStoreImpl implements LayoutStore {
   >()
   private pendingGlobalChanges: LayoutChange[] = []
   private isGlobalDispatchQueued = false
-  private nodeGeometryListeners = new Set<() => void>()
 
   // CustomRef cache and trigger functions
   private nodeRefs = new Map<NodeId, Ref<NodeLayout | null>>()
@@ -248,7 +247,6 @@ class LayoutStoreImpl implements LayoutStore {
 
         if (changedKeys.some((key) => NODE_GEOMETRY_KEYS.has(key))) {
           this._nodeGeometryVersion.value++
-          this.nodeGeometryListeners.forEach((listener) => listener())
           return
         }
       }
@@ -975,11 +973,6 @@ class LayoutStoreImpl implements LayoutStore {
     return () => this.changeListeners.delete(callback)
   }
 
-  onNodeGeometryChange(callback: () => void): () => void {
-    this.nodeGeometryListeners.add(callback)
-    return () => this.nodeGeometryListeners.delete(callback)
-  }
-
   onNodeChange(
     nodeId: NodeId,
     callback: (change: LayoutChange) => void
@@ -1602,8 +1595,6 @@ class LayoutStoreImpl implements LayoutStore {
             height: removeNodeTitleHeight(bounds.height)
           }
         : bounds
-
-      if (isBoundsEqual(normalizedBounds, currentLayout.bounds)) continue
 
       boundsRecord[nodeId] = {
         bounds: normalizedBounds,

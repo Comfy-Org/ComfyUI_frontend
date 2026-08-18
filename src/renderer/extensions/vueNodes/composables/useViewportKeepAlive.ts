@@ -1,8 +1,7 @@
-import { tryOnScopeDispose, useThrottleFn } from '@vueuse/core'
-import { computed, shallowRef, watch } from 'vue'
+import { useThrottleFn } from '@vueuse/core'
+import { shallowRef, watch } from 'vue'
 import type { ComputedRef } from 'vue'
 
-import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { Bounds, NodeId } from '@/renderer/core/layout/types'
 import { boundsIntersect } from '@/renderer/core/layout/utils/layoutMath'
@@ -30,7 +29,8 @@ interface Camera {
 }
 
 interface UseViewportKeepAliveOptions {
-  nodes: ComputedRef<VueNodeData[]>
+  nodeIds: ComputedRef<NodeId[]>
+  getNodeType: (nodeId: NodeId) => string | undefined
   pinnedNodeIds: ComputedRef<ReadonlySet<NodeId>>
   /**
    * Support escape hatch. A getter so the composable has a reactive dependency
@@ -41,7 +41,7 @@ interface UseViewportKeepAliveOptions {
   isEnabled?: () => boolean
   getNodeBounds: (nodeId: NodeId) => Bounds | null
   getViewportSize: () => Size
-  onNodeGeometryChange: (callback: () => void) => () => void
+  getNodeGeometryVersion: () => number
 }
 
 export function getKeepAliveBounds(camera: Camera, viewport: Size): Bounds {
@@ -81,43 +81,28 @@ function setsEqual<T>(left: ReadonlySet<T>, right: ReadonlySet<T>): boolean {
 }
 
 export function useViewportKeepAlive({
-  nodes,
+  nodeIds,
+  getNodeType,
   pinnedNodeIds,
   isEnabled = () => true,
   getNodeBounds,
   getViewportSize,
-  onNodeGeometryChange
+  getNodeGeometryVersion
 }: UseViewportKeepAliveOptions) {
   const { camera } = useTransformState()
   const activeNodeIds = shallowRef<Set<NodeId>>(new Set())
-  // Order-independent membership digest. Watched to catch adds and removes
-  // without building a graph-sized string, or treating every cosmetic entry
-  // replacement (title, badge, progress) as a membership change - which is
-  // what watching `nodes` identity would do.
-  const membership = computed(() => {
-    let digest = 0
-    for (const node of nodes.value) {
-      const text = String(node.id)
-      let hash = 0
-      for (let i = 0; i < text.length; i++) {
-        hash = (Math.imul(hash, 31) + text.charCodeAt(i)) | 0
-      }
-      digest = (digest + hash) | 0
-    }
-    return `${nodes.value.length}:${digest}`
-  })
   let keepAliveActive = false
 
   function refresh(): void {
-    const nodeIds = nodes.value.map((node) => node.id)
+    const ids = nodeIds.value
     keepAliveActive =
       isEnabled() &&
       (keepAliveActive
-        ? nodeIds.length >= MIN_NODES_FOR_KEEP_ALIVE * KEEP_ALIVE_EXIT_RATIO
-        : nodeIds.length >= MIN_NODES_FOR_KEEP_ALIVE)
+        ? ids.length >= MIN_NODES_FOR_KEEP_ALIVE * KEEP_ALIVE_EXIT_RATIO
+        : ids.length >= MIN_NODES_FOR_KEEP_ALIVE)
 
     if (!keepAliveActive) {
-      const next = new Set(nodeIds)
+      const next = new Set(ids)
       if (!setsEqual(next, activeNodeIds.value)) activeNodeIds.value = next
       return
     }
@@ -127,23 +112,24 @@ export function useViewportKeepAlive({
 
     const viewportBounds = getKeepAliveBounds(camera, viewport)
     const next = new Set<NodeId>()
-    for (const node of nodes.value) {
+    for (const nodeId of ids) {
       // Admission for registered types: an extension has said detaching this
       // node from the document destroys state its component cannot keep - a
       // canvas context, an uncontrolled editor. Always attached, wherever it
       // is. Bounded by the registrant, not the graph, so unlike the pins below
       // it is safe to admit.
-      if (isNodeTypeExcludedFromCulling(node.type)) {
-        next.add(node.id)
+      const nodeType = getNodeType(nodeId)
+      if (nodeType && isNodeTypeExcludedFromCulling(nodeType)) {
+        next.add(nodeId)
         continue
       }
-      const bounds = getNodeBounds(node.id)
+      const bounds = getNodeBounds(nodeId)
       if (
         !bounds ||
         !isUsableBounds(bounds) ||
         boundsIntersect(bounds, viewportBounds)
       ) {
-        next.add(node.id)
+        next.add(nodeId)
       }
     }
 
@@ -162,7 +148,7 @@ export function useViewportKeepAlive({
 
   const refreshThrottled = useThrottleFn(refresh, REFRESH_THROTTLE_MS, true)
 
-  watch(membership, refresh, { immediate: true })
+  watch(nodeIds, refresh, { immediate: true })
   watch(
     () => [camera.x, camera.y, camera.z],
     () => void refreshThrottled()
@@ -180,10 +166,7 @@ export function useViewportKeepAlive({
   // registered nodes must attach on registration, not on the next pan.
   watch(getCullingOptOutVersion, () => void refreshThrottled())
 
-  const stopGeometryListener = onNodeGeometryChange(() => {
-    void refreshThrottled()
-  })
-  tryOnScopeDispose(stopGeometryListener)
+  watch(getNodeGeometryVersion, () => void refreshThrottled())
 
   return { activeNodeIds }
 }

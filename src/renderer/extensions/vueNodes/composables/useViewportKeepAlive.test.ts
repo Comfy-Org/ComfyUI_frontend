@@ -32,25 +32,24 @@ function nodeData(id: string, type = 'test'): VueNodeData {
 function setup(bounds: Record<string, Bounds | null>) {
   const nodes = ref(Object.keys(bounds).map((id) => nodeData(id)))
   const pinned = ref<ReadonlySet<NodeId>>(new Set())
-  const geometryListeners = new Set<() => void>()
+  const geometryVersion = ref(0)
   const scope = effectScope()
   activeScopes.push(scope)
 
   const activeNodeIds = scope.run(
     () =>
       useViewportKeepAlive({
-        nodes: computed(() => nodes.value),
+        nodeIds: computed(() => nodes.value.map((node) => node.id)),
+        getNodeType: (nodeId) =>
+          nodes.value.find((node) => node.id === nodeId)?.type,
         pinnedNodeIds: computed(() => pinned.value),
         getNodeBounds: (nodeId) => bounds[nodeId],
         getViewportSize: () => ({ width: 1000, height: 1000 }),
-        onNodeGeometryChange: (listener) => {
-          geometryListeners.add(listener)
-          return () => geometryListeners.delete(listener)
-        }
+        getNodeGeometryVersion: () => geometryVersion.value
       }).activeNodeIds
   )!
 
-  return { activeNodeIds, geometryListeners, nodes, pinned }
+  return { activeNodeIds, geometryVersion, nodes, pinned }
 }
 
 beforeEach(() => {
@@ -203,11 +202,13 @@ describe('useViewportKeepAlive', () => {
     const activeNodeIds = scope.run(
       () =>
         useViewportKeepAlive({
-          nodes: computed(() => nodes.value),
+          nodeIds: computed(() => nodes.value.map((node) => node.id)),
+          getNodeType: (nodeId) =>
+            nodes.value.find((node) => node.id === nodeId)?.type,
           pinnedNodeIds: computed(() => pinned.value),
           getNodeBounds: (nodeId) => bounds[nodeId],
           getViewportSize: () => ({ width: 1000, height: 1000 }),
-          onNodeGeometryChange: () => () => {}
+          getNodeGeometryVersion: () => 0
         }).activeNodeIds
     )!
 
@@ -244,12 +245,14 @@ describe('useViewportKeepAlive', () => {
     const activeNodeIds = scope.run(
       () =>
         useViewportKeepAlive({
-          nodes: computed(() => nodes.value),
+          nodeIds: computed(() => nodes.value.map((node) => node.id)),
+          getNodeType: (nodeId) =>
+            nodes.value.find((node) => node.id === nodeId)?.type,
           pinnedNodeIds: computed(() => new Set<NodeId>()),
           isEnabled: () => enabled.value,
           getNodeBounds: (nodeId) => bounds[nodeId],
           getViewportSize: () => ({ width: 1000, height: 1000 }),
-          onNodeGeometryChange: () => () => {}
+          getNodeGeometryVersion: () => 0
         }).activeNodeIds
     )!
     await vi.advanceTimersByTimeAsync(150)
@@ -271,9 +274,9 @@ describe('useViewportKeepAlive', () => {
         { x: 50_000, y: 0, width: 100, height: 100 }
       ])
     )
-    const { activeNodeIds, geometryListeners } = setup(bounds)
+    const { activeNodeIds, geometryVersion } = setup(bounds)
     bounds['node-0'] = { x: 0, y: 0, width: 100, height: 100 }
-    geometryListeners.forEach((listener) => listener())
+    geometryVersion.value++
 
     await vi.advanceTimersByTimeAsync(150)
 

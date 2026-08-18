@@ -305,12 +305,17 @@ watch(
 const rawNodes = computed((): VueNodeData[] =>
   Array.from(vueNodeLifecycle.nodeManager.value?.vueNodeData?.values() ?? [])
 )
+const nodeIds = computed(() =>
+  Array.from(vueNodeLifecycle.nodeManager.value?.vueNodeData?.keys() ?? [])
+)
 const { pinnedNodeIds } = useViewportKeepAlivePins({
   getRoot: () => transformPaneRef.value?.element ?? null,
   getLinkConnector: () => canvasStore.canvas?.linkConnector
 })
 const { activeNodeIds } = useViewportKeepAlive({
-  nodes: rawNodes,
+  nodeIds,
+  getNodeType: (nodeId) =>
+    vueNodeLifecycle.nodeManager.value?.vueNodeData.get(nodeId)?.type,
   pinnedNodeIds,
   isEnabled: () => settingStore.get('Comfy.VueNodes.ViewportKeepAlive'),
   getNodeBounds: (nodeId) =>
@@ -319,7 +324,7 @@ const { activeNodeIds } = useViewportKeepAlive({
     width: canvasWidth.value,
     height: canvasHeight.value
   }),
-  onNodeGeometryChange: (callback) => layoutStore.onNodeGeometryChange(callback)
+  getNodeGeometryVersion: () => layoutStore.nodeGeometryVersion
 })
 watch(activeNodeIds, () => setExpectedRenderedNodeIds(activeNodeIds.value), {
   immediate: true,

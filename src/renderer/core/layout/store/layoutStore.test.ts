@@ -65,55 +65,6 @@ describe('layoutStore CRDT operations', () => {
     stop()
   })
 
-  it('does not record unchanged bounds reported after activation', () => {
-    const nodeId = toNodeId('unchanged-bounds')
-    layoutStore.applyOperation({
-      type: 'createNode',
-      entity: 'node',
-      nodeId,
-      layout: createTestNode(nodeId),
-      timestamp: Date.now(),
-      source: LayoutSource.External,
-      actor: 'test'
-    })
-    const version = layoutStore.layoutVersion
-
-    layoutStore.batchUpdateNodeBounds([
-      { nodeId, bounds: { x: 100, y: 100, width: 200, height: 100 } }
-    ])
-
-    expect(layoutStore.layoutVersion).toBe(version)
-  })
-
-  it('normalizes DOM height before detecting unchanged bounds', () => {
-    const nodeId = toNodeId('unchanged-dom-bounds')
-    layoutStore.applyOperation({
-      type: 'createNode',
-      entity: 'node',
-      nodeId,
-      layout: createTestNode(nodeId),
-      timestamp: Date.now(),
-      source: LayoutSource.External,
-      actor: 'test'
-    })
-    const version = layoutStore.layoutVersion
-
-    layoutStore.setSource(LayoutSource.DOM)
-    layoutStore.batchUpdateNodeBounds([
-      {
-        nodeId,
-        bounds: {
-          x: 100,
-          y: 100,
-          width: 200,
-          height: 100 + LiteGraph.NODE_TITLE_HEIGHT
-        }
-      }
-    ])
-
-    expect(layoutStore.layoutVersion).toBe(version)
-  })
-
   it('should create and retrieve nodes', () => {
     const nodeId = toNodeId('test-node-1')
     const layout = createTestNode(nodeId)

@@ -348,7 +348,6 @@ export interface LayoutStore {
 
   // Change subscription
   onChange(callback: (change: LayoutChange) => void): () => void
-  onNodeGeometryChange(callback: () => void): () => void
   onNodeChange(
     nodeId: NodeId,
     callback: (change: LayoutChange) => void

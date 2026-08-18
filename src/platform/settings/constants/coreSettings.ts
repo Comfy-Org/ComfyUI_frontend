@@ -1212,7 +1212,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Detach offscreen nodes in large graphs',
     type: 'boolean',
     tooltip:
-      'On graphs of 150 or more nodes, nodes outside the viewport are detached from the page and reattached when they return, keeping their state. Turn off to keep every node attached, at the cost of large-graph performance.',
+      'On large graphs, nodes outside the viewport are detached from the page and reattached when they return, keeping their state. Turn off to keep every node attached, at the cost of large-graph performance.',
     defaultValue: true,
     sortOrder: 101,
     experimental: true,
