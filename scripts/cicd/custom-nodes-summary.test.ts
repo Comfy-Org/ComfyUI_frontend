@@ -29,13 +29,14 @@ it('reports each all-node tier result separately for each pack', () => {
       encoding: 'utf8',
       env: {
         ...process.env,
+        CUSTOM_NODES_MANIFEST: 'cloud',
         GITHUB_STEP_SUMMARY: path.join(dir, 'summary.md')
       }
     })
 
     expect(result.status).toBe(0)
     const summary = fs.readFileSync(path.join(dir, 'summary.md'), 'utf8')
-    expect(summary).toContain('## Custom-node cloud snapshot suite')
+    expect(summary).toContain('## Custom-node Cloud breadth suite')
     expect(summary).toContain('| Pack | startup/load | S1 | S2 | S3 | S9 |')
     expect(summary).toContain('**Pack-B / ExampleNode - SKIP**')
     expect(result.stdout).toMatch(/^Pack-A\s+-\s+PASS\s+FAIL 1\/1\s+-/m)
