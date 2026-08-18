@@ -1,15 +1,27 @@
 <script setup lang="ts">
 import { marked } from 'marked'
-import { computed } from 'vue'
+import { computed, defineAsyncComponent, ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 import { api } from '@/scripts/api'
-import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
+import type { ResultItemImpl } from '@/stores/queueStore'
+import {
+  renderMarkdownToHtml,
+  resolveMarkdownUrl
+} from '@/utils/markdownRendererUtil'
 
+import type { ReplyAsset } from '../../../utils/replyAssets'
+import {
+  classifyAssetUrl,
+  replyAssetResultItem,
+  tokenReplyAssets
+} from '../../../utils/replyAssets'
 import CodeBlock from './CodeBlock.vue'
+import ReplyAssetGroup from './ReplyAssetGroup.vue'
 
 const { text } = defineProps<{ text: string }>()
 const apiBaseUrl = new URL(api.apiURL(''), window.location.origin).href
+const normalizedBase = apiBaseUrl.replace(/\/+$/, '')
 
 interface ProseSegment {
   type: 'prose'
@@ -20,7 +32,11 @@ interface CodeSegment {
   code: string
   lang: string
 }
-type Segment = ProseSegment | CodeSegment
+interface AssetsSegment {
+  type: 'assets'
+  assets: ReplyAsset[]
+}
+type Segment = ProseSegment | CodeSegment | AssetsSegment
 
 const segments = computed<Segment[]>(() => {
   const out: Segment[] = []
@@ -41,6 +57,18 @@ const segments = computed<Segment[]>(() => {
         code: token.text,
         lang: token.lang?.split(/\s+/)[0] || 'text'
       })
+      continue
+    }
+    const assets = tokenReplyAssets(token)
+    if (assets) {
+      flushProse()
+      const resolved = assets.map((asset) => ({
+        ...asset,
+        url: resolveMarkdownUrl(asset.url, normalizedBase)
+      }))
+      const prev = out.at(-1)
+      if (prev?.type === 'assets') prev.assets.push(...resolved)
+      else out.push({ type: 'assets', assets: resolved })
     } else {
       prose += token.raw
     }
@@ -48,6 +76,25 @@ const segments = computed<Segment[]>(() => {
   flushProse()
   return out
 })
+
+const MediaLightbox = defineAsyncComponent(
+  () => import('@/components/sidebar/tabs/queue/MediaLightbox.vue')
+)
+
+const proseItems = ref<ResultItemImpl[]>([])
+const proseIndex = ref(-1)
+
+function onProseClick(event: MouseEvent): void {
+  const image = event.target
+  if (!(image instanceof HTMLImageElement)) return
+  const asset = classifyAssetUrl(image.src) ?? {
+    url: image.src,
+    filename: image.alt || 'image',
+    kind: 'image' as const
+  }
+  proseItems.value = [replyAssetResultItem({ ...asset, kind: 'image' })]
+  proseIndex.value = 0
+}
 
 const proseClass = cn(
   'text-agent-fg text-sm wrap-break-word',
@@ -68,7 +115,7 @@ const proseClass = cn(
 <template>
   <div
     data-testid="markdown-stream"
-    class="max-w-full min-w-0 [&_img]:mt-2 [&_img]:block [&_img]:h-auto [&_img]:max-w-full [&_img]:object-contain"
+    class="max-w-full min-w-0 [&_img]:mt-2 [&_img]:block [&_img]:h-auto [&_img]:max-w-full [&_img]:cursor-pointer [&_img]:object-contain"
   >
     <template v-for="(segment, index) in segments" :key="index">
       <CodeBlock
@@ -76,7 +123,22 @@ const proseClass = cn(
         :code="segment.code"
         :lang="segment.lang"
       />
-      <div v-else :class="proseClass" v-html="segment.html" />
+      <ReplyAssetGroup
+        v-else-if="segment.type === 'assets'"
+        :assets="segment.assets"
+      />
+      <div
+        v-else
+        :class="proseClass"
+        @click="onProseClick"
+        v-html="segment.html"
+      />
     </template>
+    <MediaLightbox
+      v-if="proseIndex !== -1"
+      :all-gallery-items="proseItems"
+      :active-index="proseIndex"
+      @update:active-index="proseIndex = $event"
+    />
   </div>
 </template>

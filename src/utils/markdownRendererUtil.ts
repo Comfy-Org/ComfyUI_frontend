@@ -22,7 +22,7 @@ const MEDIA_SRC_REGEX =
 const NON_REBASEABLE_HREF = /^(?:[/#?]|[a-z][a-z0-9+.-]*:)/i
 const COMFY_ORG_HOST = /(?:^|\.)comfy\.org$/
 
-function resolveMarkdownUrl(href: string, baseUrl: string): string {
+export function resolveMarkdownUrl(href: string, baseUrl: string): string {
   if (!baseUrl) return href
   if (!NON_REBASEABLE_HREF.test(href)) return `${baseUrl}/${href}`
 
