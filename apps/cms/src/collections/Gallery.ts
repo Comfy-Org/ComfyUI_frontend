@@ -15,6 +15,13 @@ export const Gallery: CollectionConfig = {
   admin: {
     useAsTitle: 'title',
     defaultColumns: ['title', 'slug', '_status'],
+    // Preview drafts on the always-SSR preview deployment (WEBSITE_PREVIEW_URL);
+    // it renders drafts because PREVIEW_MODE is set there. Points at the list page
+    // for now — switch to `/gallery/<slug>` once a detail page exists. Build-spec B4.
+    preview: () => {
+      const base = process.env.WEBSITE_PREVIEW_URL
+      return base ? `${base.replace(/\/$/, '')}/gallery` : null
+    },
   },
   versions: {
     drafts: true,
