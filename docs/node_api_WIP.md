@@ -42,7 +42,8 @@ widget instance, not a Pinia store, not a Vue reactive proxy, not a constructor.
 > `slots.connect`, `slots.connectedType`, `slots.dynamic`, `slots.identity`,
 > `slots.layout`, `slots.localizedName`, `slots.moveLinks`,
 > `slots.resolvedSource`, `slots.retype`, `slots.widgetConfig`, `storage`,
-> `supply.outputs`, `ui.sidebarTab`, `viewport.changed`, `widgets.canvas`,
+> `supply.outputs`, `supply.resolved`, `ui.sidebarTab`, `viewport.changed`,
+> `widgets.canvas`,
 > `widgets.create`, `widgets.height`, `widgets.hidden`, `widgets.linked`,
 > `widgets.mount`, `widgets.reorder`, `widgets.textInteraction`,
 > `widgets.typeContext`, `workflow.open`, `workflow.textReplacements`.
@@ -1756,12 +1757,12 @@ outright. Three constraints, all deliberate and all arguable:
 - `from` is the supplier's own output, its own input (`forwardInput`), or a
   literal — never an arbitrary node. A node may only offer what it has, so a
   buggy pack cannot rewire two bystanders to each other.
-- First supplier in graph order wins a contested input. cg-use-everywhere
-  instead sorts by `priority` and on a tie connects _nothing_ and reports an
-  ambiguity; first-wins turns a reported clash into a silent arbitrary choice.
-  **Known shortfall, not a decision I am confident in.**
-- The pass walks top-level nodes only; subgraph inner nodes are keyed by
-  execution id and are out of scope.
+- The highest-priority supplier wins a contested input. An exact tie feeds
+  nothing and reports the ambiguity; picking either would make execution depend
+  on graph order.
+- Resolution runs once per graph scope the prompt draws from. A supplier inside
+  a subgraph feeds inputs inside that subgraph, but never crosses its boundary;
+  otherwise a subgraph's behavior would depend on invisible outside state.
 
 `UnconnectedInput` carries `label`, `isWidgetInput`, `nodeTitle`, `nodeMode`,
 `nodeColor` and frozen `nodeProperties` because matching on `type` alone would
@@ -1777,6 +1778,31 @@ Closing over the backend definition was rejected because it is stale after a
 runtime slot change; letting the last extension win was rejected because one
 pack would silently disable another. Reversing either decision makes arbitrary
 output broadcasting inexpressible and restores load-order-dependent behavior.
+
+**Resolved supply snapshots.** `graph.resolvedSupplies()` exposes the winning
+edges from the same pure resolver and priority arbitration the prompt builder
+uses. Each frozen record carries the supplier node, target input, and final
+output, literal, or omission. Ids are local to that graph scope, so an editor
+action can pass them directly to `output.connectTo` without decoding execution
+ids. `GraphScopeHandle` exposes the same read for document-wide tools.
+
+**Forced by** cg-use-everywhere's “Convert to real links.” That command is a
+permanent user edit, unlike the old queue-time modify/serialize/restore bracket.
+It must materialize exactly the virtual edges execution would use, including
+priority winners and the rule that equal winners feed nothing. The supplier id
+is required because the node-menu action converts one broadcaster while the
+document command converts all of them.
+
+**Alternative rejected.** Re-running `broadcast_matches()` in the pack creates
+a second arbitration engine that can wire an edge the queued prompt omits.
+Publishing the execution DTO or caching the most recent prompt pass couples the
+action to serialization timing and execution ids. This read recomputes from the
+current graph through the host-owned pure pass, so it cannot be stale and does
+not expose its internals.
+
+**Cost to reverse.** High for the editor feature: prompt execution still works,
+but converting broadcasts into visible, durable links becomes unverifiable.
+The safe fallback is to remove the action, not to guess which edges won.
 
 **`input.resolvedSource()` — exposes the result, not the resolver.** Deno's LTX
 sequencer derives its row count from the image loader feeding it. A physical
