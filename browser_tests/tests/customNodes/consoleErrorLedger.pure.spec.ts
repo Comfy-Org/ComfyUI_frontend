@@ -160,7 +160,7 @@ test.describe('consoleErrorLedger', () => {
     ).toEqual([])
   })
 
-  test('attributes delayed extension errors only when the owning pack is installed', () => {
+  test('does not allow the iTools crop hook to initialize without its preview', () => {
     const error =
       "Error calling extension 'iTools.cropImage' method 'nodeCreated' {error: TypeError: Cannot read properties of undefined (reading 'draw')}"
     expect(
@@ -168,7 +168,7 @@ test.describe('consoleErrorLedger', () => {
         ['comfyui-itools', 'Skimmed_CFG'],
         [error]
       )
-    ).toEqual([])
+    ).toEqual([error])
     expect(
       unallowlistedGlobalExtensionErrorsForPacks(['Skimmed_CFG'], [error])
     ).toEqual([error])
@@ -193,7 +193,7 @@ test.describe('consoleErrorLedger', () => {
     ).toEqual(kjErrors)
   })
 
-  test('filters the conditional KJ error and requires the deterministic VHS error', () => {
+  test('filters the conditional KJ and VHS connectivity errors', () => {
     const points =
       'Error parsing stored points: SyntaxError: Unexpected end of JSON input\n    at new PointsEditor (http://localhost/extensions/ComfyUI-KJNodes/js/editors/point_editor_canvas.js:77:26)'
     const vhs =
@@ -217,7 +217,7 @@ test.describe('consoleErrorLedger', () => {
         ['ComfyUI-KJNodes', 'ComfyUI-VideoHelperSuite'],
         []
       )
-    ).toEqual(['core-vhs-removed-link-target-id'])
+    ).toEqual([])
     expect(consoleErrorExclusionsForPacks(['ComfyUI-KJNodes'])).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -247,7 +247,7 @@ test.describe('consoleErrorLedger', () => {
     ).toEqual(['ltx-sparse-track-null-image-size'])
   })
 
-  test('matches lower-cased VHS paths and the iTools async hook failure', () => {
+  test('matches lower-cased VHS paths without hiding iTools hook failures', () => {
     const vhs =
       "TypeError: Cannot read properties of undefined (reading 'target_id')\n" +
       'at get_links (http://localhost:8188/extensions/comfyui-videohelpersuite/js/VHS.core.js:2088:71)'
@@ -258,7 +258,7 @@ test.describe('consoleErrorLedger', () => {
         ['comfyui-videohelpersuite', 'comfyui-itools'],
         [vhs, itools]
       )
-    ).toEqual([])
+    ).toEqual([itools])
   })
 
   test('allows only the exact pysssss None-default 404 without requiring it', () => {

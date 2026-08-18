@@ -32,19 +32,11 @@
     "workflow": "assets/customNodes/vhs_video_pipeline_run.json",
     "expectedNodes": ["VHS_LoadVideoPath", "VHS_VideoInfo"],
     "expectedNodeCount": 40,
-    "expectedRunnableCount": 29,
+    "expectedRunnableCount": 31,
     "expectedExtensions": ["VideoHelperSuite.Core"],
     "requiresGpu": false,
     "requiresModels": [],
-    "timeoutMs": 90000,
-    "cannotRunAlone": [
-      "VHS_LoadAudio",
-      "VHS_LoadImagePath",
-      "VHS_LoadImages",
-      "VHS_LoadImagesPath",
-      "VHS_LoadVideoFFmpegPath",
-      "VHS_LoadVideoPath"
-    ]
+    "timeoutMs": 90000
   },
   {
     "pack": "ComfyUI_essentials",

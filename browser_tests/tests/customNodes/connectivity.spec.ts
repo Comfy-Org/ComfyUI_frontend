@@ -21,7 +21,7 @@ import {
 } from '@e2e/fixtures/customNode/connectivityExpectations'
 import { failureSummary } from '@e2e/fixtures/customNode/failureReport'
 import {
-  loadFullManifest,
+  loadAllManifestPackNames,
   loadManifest
 } from '@e2e/fixtures/customNode/manifest'
 import type {
@@ -122,7 +122,9 @@ async function runPairsInIsolatedPages(
       )
       const consoleErrors = collectConsoleErrors(probe)
       try {
-        results.push(...(await evaluatePairs(probe, [pair])))
+        results.push(
+          ...(await evaluatePairs(probe, [pair], { resetAfter: false }))
+        )
         await expectNoVisibleErrors(
           probe,
           `after isolated pair ${pair.producer.nodeType} -> ${pair.consumer.nodeType}`
@@ -375,9 +377,11 @@ async function runPairsInPage(
 
 function evaluatePairs(
   page: Page,
-  pairs: PlannedPair[]
+  pairs: PlannedPair[],
+  { resetAfter = true }: { resetAfter?: boolean } = {}
 ): Promise<PairResult[]> {
-  return page.evaluate(async (pairsInPage) => {
+  const payload = [pairs, resetAfter] as const
+  return page.evaluate(async ([pairsInPage, resetAfter]) => {
     const graph = window.app!.graph
     let nextNodeId = graph.last_node_id
     const resetGraph = () => {
@@ -473,9 +477,9 @@ function evaluatePairs(
         })
       }
     }
-    resetGraph()
+    if (resetAfter) resetGraph()
     return report
-  }, pairs)
+  }, payload)
 }
 
 test('connectivity self-check: the executor rejects broken pairs @custom-nodes', async ({
@@ -590,7 +594,7 @@ test('connectivity drags: one materialized in-pack link per applicable pack conn
     // a separate question. Checking both against the slice made every shard
     // that does not own a listed pack report it as stale.
     expect(
-      loadFullManifest().some((entry) => entry.pack === pack),
+      loadAllManifestPackNames().includes(pack),
       `${pack} has a zero-pair expectation but is not a manifest entry`
     ).toBe(true)
     const entry = connectivityEntries.find((entry) => entry.pack === pack)

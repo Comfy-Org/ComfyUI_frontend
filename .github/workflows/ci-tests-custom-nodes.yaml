@@ -497,6 +497,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p ComfyUI/input
+          cp browser_tests/assets/test_upload_image.png ComfyUI/input/000_custom_node_probe.png
           python - <<'PY'
           import wave
 
@@ -508,7 +509,7 @@ jobs:
           PY
           cp ComfyUI/input/000_custom_node_probe.wav ComfyUI/input/001_custom_node_probe.wav
           if ! pnpm --silent custom-node-shard | cut -f1 | grep -qix comfyui-videohelpersuite; then
-            echo 'This shard has no run-tier pack; staged only the deterministic audio probe.'
+            echo 'This shard has no run-tier pack; staged only deterministic media probes.'
             exit 0
           fi
           mkdir -p ComfyUI/input/images

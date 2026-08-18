@@ -209,6 +209,12 @@ const WIDGET_SET_ALLOWLIST: Record<string, Record<string, string>> = {
       'hidden serialized regions owned by the Ideogram editor',
     'Ideogram4PromptBuilderKJ.bg_brightness':
       'hidden value owned by the Ideogram editor slider',
+    'Ideogram4PromptBuilderKJ.output_format':
+      'hidden value owned by the Ideogram editor output menu',
+    'Ideogram4PromptBuilderKJ.coord_mode':
+      'hidden value owned by the Ideogram editor output menu',
+    'Ideogram4PromptBuilderKJ.bbox_order':
+      'hidden value owned by the Ideogram editor output menu',
     'ImageTransformKJ.bboxes':
       'serialized crop state owned by the image-transform editor',
     'PointsEditor.points_store':

@@ -158,7 +158,7 @@ test.describe('S15 output hashes', () => {
     expect(written.recordedAt.run).toBeTruthy()
   })
 
-  test('empty observed vs empty committed entry passes (console-sink state)', () => {
+  test('an empty committed entry fails because it proves no output content', () => {
     const committed = {
       recordedAt: { core: 'abc', run: '1' },
       schema: 1 as const,
@@ -170,7 +170,9 @@ test.describe('S15 output hashes', () => {
         observed: {},
         committed
       })
-    ).toEqual([])
+    ).toEqual([
+      "S15: 'was/wf.json' has no committed output hashes - add an observable sink before recording its baseline"
+    ])
   })
 
   test('a truncated PNG chunk throws instead of hashing', () => {

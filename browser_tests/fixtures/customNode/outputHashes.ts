@@ -179,6 +179,11 @@ export function compareOutputHashes(input: {
         `must enroll its outputs (RECORD_OUTPUT_HASHES=1 run, commit the ` +
         `fixture) or carry a ledger entry with a mechanism`
     ]
+  if (Object.keys(expected).length === 0)
+    return [
+      `S15: '${workflowKey}' has no committed output hashes - add an observable ` +
+        `sink before recording its baseline`
+    ]
   const problems: string[] = []
   for (const [key, digest] of Object.entries(expected)) {
     const actual = observed[key]

@@ -1,6 +1,6 @@
 {
-  "last_node_id": 3,
-  "last_link_id": 2,
+  "last_node_id": 4,
+  "last_link_id": 3,
   "nodes": [
     {
       "id": 1,
@@ -55,7 +55,7 @@
         {
           "name": "STRING",
           "type": "STRING",
-          "links": [2],
+          "links": [2, 3],
           "slot_index": 0
         }
       ],
@@ -90,11 +90,32 @@
         "Node name for S&R": "Text to Console"
       },
       "widgets_values": ["Text Output"]
+    },
+    {
+      "id": 4,
+      "type": "PreviewAny",
+      "pos": { "0": 640, "1": 200 },
+      "size": { "0": 220, "1": 60 },
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 3
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "PreviewAny"
+      }
     }
   ],
   "links": [
     [1, 1, 0, 2, 0, "NUMBER"],
-    [2, 2, 0, 3, 0, "STRING"]
+    [2, 2, 0, 3, 0, "STRING"],
+    [3, 2, 0, 4, 0, "STRING"]
   ],
   "groups": [],
   "config": {},

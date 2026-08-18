@@ -37,16 +37,6 @@ const CONSOLE_ERROR_ALLOWLIST: Record<string, AllowlistRule[]> = {
         'the paint widget requests its backing file on creation and the route 404s until one is saved',
       restore:
         'return an empty successful response before a paint file exists and remove this entry'
-    },
-    {
-      id: 'itools-crop-preview-not-ready',
-      pattern:
-        /Error calling extension 'iTools\.cropImage' method 'nodeCreated'.*Cannot read properties of undefined \(reading 'draw'\)/,
-      global: true,
-      reason:
-        'cropImage assumes its custom preview widget exists when its async nodeCreated hook resumes',
-      restore:
-        'guard the async crop preview initialization and remove this entry'
     }
   ],
   'ComfyUI-Impact-Pack': [
@@ -254,8 +244,7 @@ const CONNECTIVITY_ERROR_ALLOWLIST: Record<string, ConnectivityRule[]> = {
       pattern:
         /Cannot read properties of undefined \(reading 'target_id'\)[\s\S]*\/extensions\/comfyui-videohelpersuite\/js\/VHS\.core\.js/i,
       reason:
-        'VHS file refresh reads a removed link while the sweep repeatedly clears the graph',
-      requiredConnectivityId: 'core-vhs-removed-link-target-id',
+        'VHS_SelectLatest can read a link before graph configure restores it; the exact ROUNDTRIP_LOST contract remains mandatory',
       restore:
         'guard removed links during VHS file refresh and remove this entry'
     }
