@@ -8,6 +8,7 @@ import {
   dirLabels,
   isPartnerModel
 } from '../../../config/model-descriptions'
+import { buildPricingFact } from '../../../config/model-pricing'
 import { models } from '../../../config/models'
 
 export function getStaticPaths() {
@@ -35,6 +36,7 @@ export const GET: APIRoute = ({ props, site }) => {
     '## Facts',
     '',
     `- Type: ${dirLabels[model.directory] ?? model.directory}`,
+    `- ${buildPricingFact(model.slug, isPartnerModel(model))}`,
     `- Community workflow templates: ${model.workflowCount}`,
     ...(model.huggingFaceUrl ? [`- Weights: ${model.huggingFaceUrl}`] : []),
     ...(model.docsUrl ? [`- Tutorial: ${model.docsUrl}`] : []),
