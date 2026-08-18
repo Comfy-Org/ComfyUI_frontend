@@ -12,7 +12,7 @@ export const GET: APIRoute = ({ site }) => {
   const lines = [
     '# Supported models in ComfyUI',
     '',
-    "> Every model on this list runs in ComfyUI. Open models run locally on your own hardware or on Comfy Cloud; partner models run through partner nodes with inference on the provider's API. Each page has a markdown twin at the same URL plus `.md`.",
+    "> Every model on this list runs in ComfyUI. Open models run locally on your own hardware or on Comfy Cloud; partner models run through partner nodes with inference on the provider's API. Pages under Models have a markdown twin at the same URL plus `.md`; the Latest model launches links are HTML launch pages without twins.",
     '',
     '## Models',
     ''

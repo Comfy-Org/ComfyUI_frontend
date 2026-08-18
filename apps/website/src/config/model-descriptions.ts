@@ -29,6 +29,16 @@ const dirDescriptions: Record<string, string> = {
     'a style model that transfers artistic style onto generated images',
   model_patches:
     'a model patch that modifies or extends the behavior of an existing base model',
+  geometry_estimation:
+    'a geometry estimation model that predicts depth, normals, or 3D structure from images',
+  background_removal:
+    'a background removal model that separates subjects from their backgrounds',
+  detection:
+    'a detection model that locates faces, objects, or landmarks in images',
+  frame_interpolation:
+    'a frame interpolation model that synthesizes intermediate frames for smoother video',
+  optical_flow:
+    'an optical flow model that estimates per-pixel motion between video frames',
   partner_nodes:
     'a cloud API model accessible through ComfyUI partner nodes without local hardware requirements'
 }
@@ -46,6 +56,11 @@ export const dirLabels: Record<string, string> = {
   latent_upscale_models: 'Latent upscale model',
   upscale_models: 'Upscale model',
   style_models: 'Style model',
+  geometry_estimation: 'Geometry estimation model',
+  background_removal: 'Background removal model',
+  detection: 'Detection model',
+  frame_interpolation: 'Frame interpolation model',
+  optical_flow: 'Optical flow model',
   partner_nodes: 'Partner node'
 }
 
