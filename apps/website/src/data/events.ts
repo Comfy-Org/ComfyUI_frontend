@@ -201,11 +201,6 @@ export function deriveFeaturedEvents(
     }))
 }
 
-const showdownStreamHref: LocalizedText = {
-  en: 'https://www.youtube.com/live/VeG1bveKZco',
-  'zh-CN': 'https://www.youtube.com/live/VeG1bveKZco'
-}
-
 // zh-CN copy is a first pass and pending native review.
 const events: readonly ComfyEvent[] = [
   {
@@ -285,13 +280,12 @@ const events: readonly ComfyEvent[] = [
       'zh-CN': 'Purz 与 Allyson 现场对决开源与付费 AI 视频模型，实测效果对比。'
     },
     location: { en: 'Online', 'zh-CN': '线上' },
-    dateLabel: {
-      en: 'August 12, 2026 · 10AM PT',
-      'zh-CN': '2026年8月12日 · 上午10点（PT）'
-    },
+    media: eventImage('august-12-livestream_v2.png', {
+      en: 'Video Model Showdown livestream recording',
+      'zh-CN': '视频模型对决直播回放'
+    }),
     startDateTime: '2026-08-12T10:00:00-07:00',
-    link: { href: showdownStreamHref, newTab: true },
-    liveVideoId: 'VeG1bveKZco'
+    recordingVideoId: 'VeG1bveKZco'
   },
   {
     id: 'comfy-creatives-model-jam',
