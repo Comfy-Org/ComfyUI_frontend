@@ -10,7 +10,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 
 import { handleToken, isSameEntity } from './closedProxy'
-import { createDefRegistry } from './defsRegistry'
+import { createDefRegistry, frontendResolverMap } from './defsRegistry'
 import type { DefRegistry } from './defsRegistry'
 import { ComfyApiError, ComfyUnsupportedError } from './errors'
 import { createBackendApi } from './backendHandle'
@@ -100,6 +100,7 @@ const CAPABILITIES: ReadonlyMap<string, string> = new Map([
   ['node.geometry', '1.0'],
   ['slots.connect', '1.0'],
   ['slots.identity', '1.0'],
+  ['slots.resolvedSource', '1.0'],
   ['widgets.reorder', '1.0'],
   ['widgets.hidden', '1.0'],
   ['widgets.height', '1.0'],
@@ -322,10 +323,11 @@ function buildMajor(
   defs: ReturnType<typeof createDefRegistry>,
   openWorkflow?: (data: WorkflowData) => Promise<void>
 ): Comfy {
-  const graph = createGraphApi(getGraph, `v${major}`)
+  const graph = createGraphApi(getGraph, `v${major}`, frontendResolverMap)
   const rootGraph = createGraphApi(
     () => getGraph()?.rootGraph,
-    `v${major}:root`
+    `v${major}:root`,
+    frontendResolverMap
   )
   const settings = createSettingsApi()
   const storage = createStorageApi()
@@ -346,7 +348,8 @@ function buildMajor(
     if (!scope) {
       scope = createGraphApi(
         () => owner,
-        `v${major}:definition:${String(owner.id)}`
+        `v${major}:definition:${String(owner.id)}`,
+        frontendResolverMap
       )
       definitionScopes.set(owner, scope)
     }

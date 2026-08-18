@@ -265,6 +265,26 @@ export function resolveFrontendNodes(
   return resolved
 }
 
+export function resolveInputSource(
+  graph: LGraph,
+  nodeId: string,
+  input: number,
+  resolvers: ReadonlyMap<string, Resolver>
+): ResolvedSource | undefined {
+  const link = inputLink(graph, toNodeId(nodeId), input)
+  if (!link) return undefined
+
+  return (
+    resolveFrontendNodes(graph, resolvers).get(
+      key(String(link.origin_id), link.origin_slot)
+    ) ?? {
+      kind: 'output',
+      nodeId: String(link.origin_id),
+      output: link.origin_slot
+    }
+  )
+}
+
 /** An input in the graph that no link feeds. */
 /** One of a node's own inputs, as its supplier sees it. */
 /** @knipIgnoreUnusedButUsedByCustomNodes */

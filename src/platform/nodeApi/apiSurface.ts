@@ -272,6 +272,7 @@ export const API_MEMBERS: ReadonlySet<string> = new Set([
   'require',
   'required',
   'resolve',
+  'resolvedSource',
   'restored',
   'root',
   'run',

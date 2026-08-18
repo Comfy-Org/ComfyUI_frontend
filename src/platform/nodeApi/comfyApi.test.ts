@@ -2,7 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import {
   createTestSubgraph,
   createTestSubgraphNode
@@ -37,6 +37,7 @@ describe('comfy API root', () => {
       expect(api().supports('widgets.reorder')).toBe(true)
       expect(api().supports('widgets.hidden')).toBe(true)
       expect(api().supports('widgets.height')).toBe(true)
+      expect(api().supports('slots.resolvedSource')).toBe(true)
       expect(api().supports('widgets.linked')).toBe(true)
       expect(api().supports('widgets.textInteraction')).toBe(true)
       expect(api().supports('slots.identity')).toBe(true)
@@ -122,6 +123,46 @@ describe('comfy API root', () => {
       current = graph
       graph.add(new LGraphNode('A', 'Alpha'))
       expect(comfy.graph.nodes()).toHaveLength(1)
+    })
+
+    it('resolves an input through definitions registered on the public API', () => {
+      const comfy = api()
+      const dispose = comfy.defs.define({
+        type: 'ResolvedRelay',
+        execution: 'frontend',
+        inputs: [{ name: 'in', type: 'IMAGE' }],
+        outputs: [{ name: 'out', type: 'IMAGE' }],
+        resolve: ({ self }) => ({
+          out: { forwardTo: self.input('in')! }
+        })
+      })
+
+      try {
+        const source = new LGraphNode('Source', 'Source')
+        source.addOutput('image', 'IMAGE')
+        graph.add(source)
+        const relay = LiteGraph.createNode('ResolvedRelay')!
+        graph.add(relay)
+        const target = new LGraphNode('Target', 'Target')
+        target.addInput('image', 'IMAGE')
+        graph.add(target)
+        source.connect(0, relay, 0)
+        relay.connect(0, target, 0)
+
+        expect(
+          comfy.graph
+            .node(String(target.id))!
+            .inputs.byName('image')!
+            .resolvedSource()
+        ).toEqual({
+          kind: 'output',
+          graphId: String(graph.id),
+          nodeId: String(source.id),
+          outputIndex: 0
+        })
+      } finally {
+        dispose()
+      }
     })
   })
 
