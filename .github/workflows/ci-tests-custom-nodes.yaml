@@ -422,11 +422,11 @@ jobs:
         run: |
           set -euo pipefail
           f=ComfyUI/custom_nodes/comfyui-videohelpersuite/videohelpersuite/nodes.py
-          perl -0pi -e 's/(class VideoInfo:.*?def get_video_info\(self, video_info\):)/$1\n        raise ValueError("DETECTION PROOF (row 9): pack node runtime failure")/s' "$f"
-          grep -q 'DETECTION PROOF (row 9)' "$f"
-          mutation='raise ValueError("DETECTION PROOF (row 9): pack node runtime failure")'
+          perl -0pi -e 's/(class LoadAudioUpload:.*?def load_audio\(self, start_time=0, duration=0, \*\*kwargs\):)/$1\n        raise ValueError("DETECTION PROOF (row 9): pack node runtime failure")/s' "$f"
+          [ "$(grep -c 'DETECTION PROOF (row 9)' "$f")" = 1 ]
+          grep -q '"VHS_LoadAudioUpload": LoadAudioUpload' "$f"
           echo "path=$f" >> "$GITHUB_OUTPUT"
-          echo "digest=$(printf '%s' "$mutation" | shasum -a 256 | awk '{print $1}')" >> "$GITHUB_OUTPUT"
+          echo "digest=$(shasum -a 256 "$f" | awk '{print $1}')" >> "$GITHUB_OUTPUT"
 
       - name: Bind Detection Proof identity
         if: >-
