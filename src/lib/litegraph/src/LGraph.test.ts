@@ -276,6 +276,12 @@ describe('Graph Clearing and Callbacks', () => {
     // Track callback invocations
     const nodeRemovedCallbacks = new Set<string>()
     const graphRemovedCallbacks = new Set<string>()
+    const beforeRemovedNodes: LGraphNode[] = []
+
+    graph.events.addEventListener('node:before-removed', (event) => {
+      expect(event.detail.node.graph).toBe(graph)
+      beforeRemovedNodes.push(event.detail.node)
+    })
 
     // Set up node.onRemoved() callbacks
     node1.onRemoved = () => {
@@ -301,6 +307,8 @@ describe('Graph Clearing and Callbacks', () => {
     expect(nodeRemovedCallbacks).toContain(String(node2.id))
     expect(graphRemovedCallbacks).toContain(String(node1.id))
     expect(graphRemovedCallbacks).toContain(String(node2.id))
+    expect(beforeRemovedNodes).toHaveLength(2)
+    expect(new Set(beforeRemovedNodes)).toEqual(new Set([node1, node2]))
 
     // Verify nodes were actually removed
     expect(graph.nodes.length).toBe(0)
@@ -433,6 +441,23 @@ describe('node:before-removed event', () => {
       'onRemoved(graph=set)',
       'onNodeRemoved(graph=null)'
     ])
+  })
+
+  it('keeps floating links available during clear removal callbacks', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('node')
+    node.addOutput('output', '*')
+    graph.add(node)
+    const link = new LLink(toLinkId(1), '*', node.id, 0, UNASSIGNED_NODE_ID, -1)
+    graph.addFloatingLink(link)
+    node.onRemoved = vi.fn(() => {
+      expect(graph.floatingLinks.get(link.id)).toBe(link)
+    })
+
+    graph.clear()
+
+    expect(node.onRemoved).toHaveBeenCalledOnce()
+    expect(graph.floatingLinks.size).toBe(0)
   })
 })
 
