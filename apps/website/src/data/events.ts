@@ -230,7 +230,15 @@ const events: readonly ComfyEvent[] = [
     media: eventImage('livestream-aug-19.jpg', {
       en: 'Using Comfy to Go Beyond the Models livestream',
       'zh-CN': '善用 Comfy，超越模型本身直播'
-    })
+    }),
+    featured: {
+      order: 0,
+      media: eventImage('livestream-aug-19.jpg', {
+        en: 'Using Comfy to Go Beyond the Models livestream',
+        'zh-CN': '善用 Comfy，超越模型本身直播'
+      }),
+      showTitle: true
+    }
   },
   {
     id: 'future-ai-post-production',
@@ -283,19 +291,7 @@ const events: readonly ComfyEvent[] = [
     },
     startDateTime: '2026-08-12T10:00:00-07:00',
     link: { href: showdownStreamHref, newTab: true },
-    liveVideoId: 'VeG1bveKZco',
-    featured: {
-      order: 3,
-      media: eventVideo(
-        'august-12-livestream.mp4',
-        {
-          en: 'Video Model Showdown livestream',
-          'zh-CN': '视频模型对决直播'
-        },
-        'august-12-livestream.jpg'
-      ),
-      autoplayMs: 5000
-    }
+    liveVideoId: 'VeG1bveKZco'
   },
   {
     id: 'comfy-creatives-model-jam',
