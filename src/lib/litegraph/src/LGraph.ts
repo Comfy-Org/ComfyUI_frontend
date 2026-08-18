@@ -5,11 +5,11 @@ import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
-import { attachNodeToStores } from '@/core/graph/nodeShell/nodeShellLifecycle'
 import {
-  unregisterAllNodeStates,
-  unregisterNodeState
-} from '@/core/graph/nodeShell/nodeShellState'
+  attachNodeToStores,
+  detachAllNodesFromStores,
+  detachNodeFromStores
+} from '@/core/graph/nodeShell/nodeShellLifecycle'
 import type { UUID } from '@/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/utils/uuid'
 import {
@@ -24,7 +24,9 @@ import {
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
+import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toLinkId } from '@/types/linkId'
 import { isFloatingTopology } from '@/types/linkTopology'
 import { toRerouteId } from '@/types/rerouteId'
@@ -48,8 +50,6 @@ import {
   outputLinks
 } from './node/slotLinks'
 import { normalizeWidgetsView } from './node/widgetsView'
-import { usePreviewExposureStore } from '@/stores/previewExposureStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { UNASSIGNED_NODE_ID, parseNodeId, toNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import { forEachNode, visitGraphNodes } from '@/utils/graphTraversalUtil'
@@ -251,7 +251,7 @@ function teardownOwnedGraphs(owner: LGraph): void {
       for (const node of graph._nodes) nodes.add(node)
     }
     for (const node of nodes) {
-      unregisterNodeState(node)
+      detachNodeFromStores(owner, node, 'discard-values')
       node.graph = null
     }
     detachGraphLayouts([owner], { removeLayouts: !owner.isRootGraph })
@@ -1284,7 +1284,7 @@ export class LGraph
       for (const subgraph of releasedSubgraphs) {
         unregisterAllLinkTopologies(subgraph)
         unregisterAllRerouteChains(subgraph)
-        unregisterAllNodeStates(subgraph)
+        detachAllNodesFromStores(subgraph)
         this.rootGraph.subgraphs.delete(subgraph.id)
       }
       detachGraphLayouts(releasedSubgraphs)
@@ -1293,7 +1293,7 @@ export class LGraph
     // callback
     node.onRemoved?.()
 
-    unregisterNodeState(node)
+    detachNodeFromStores(this, node)
     detachNodeLayout(node)
 
     node.graph = null
