@@ -607,6 +607,51 @@ describe('setValue commits like a user edit', () => {
     )
     expect(node.graph!._version).toBe(version + 1)
   })
+
+  it('contributes keyboard behavior to a host text editor', () => {
+    const raw = node.addWidget(
+      'custom',
+      'text',
+      '<lora:foo:1.0>',
+      () => undefined,
+      {}
+    )
+    const text = widgets.get('text')!
+    const textarea = document.createElement('textarea')
+    textarea.value = '<lora:foo:1.0>'
+    textarea.setSelectionRange(0, textarea.value.length)
+    const stopped = vi.fn()
+    const focused = vi.spyOn(textarea, 'focus')
+    const nextValue = '<lora:foo:1.01>'
+
+    text.on('textInteraction', (event) => {
+      if (event.kind !== 'keydown') return
+      expect(event.key).toBe('ArrowUp')
+      expect(event.ctrlKey).toBe(true)
+      expect(event.shiftKey).toBe(true)
+      expect(event.metaKey).toBe(false)
+      event.setValue(nextValue, { start: 0, end: nextValue.length })
+      event.focus()
+      event.preventDefault()
+      event.stopPropagation()
+    })
+
+    const sourceEvent = new KeyboardEvent('keydown', {
+      key: 'ArrowUp',
+      ctrlKey: true,
+      shiftKey: true,
+      cancelable: true
+    })
+    sourceEvent.stopPropagation = stopped
+    dispatchWidgetTextInteraction(raw, textarea, 'keydown', sourceEvent)
+
+    expect(raw.value).toBe(nextValue)
+    expect(textarea.selectionStart).toBe(0)
+    expect(textarea.selectionEnd).toBe(nextValue.length)
+    expect(sourceEvent.defaultPrevented).toBe(true)
+    expect(stopped).toHaveBeenCalledOnce()
+    expect(focused).toHaveBeenCalledOnce()
+  })
 })
 
 describe('mounted and canvas widgets', () => {

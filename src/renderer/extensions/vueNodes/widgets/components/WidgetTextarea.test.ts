@@ -380,4 +380,30 @@ describe('WidgetTextarea text interactions', () => {
     expect(textarea.selectionStart).toBe(13)
     expect(textarea.selectionEnd).toBe(13)
   })
+
+  it('publishes keyboard gestures from the Vue textarea', async () => {
+    const raw: IBaseWidget = {
+      name: 'test_textarea',
+      type: 'customtext',
+      value: '<lora:foo:1.0>',
+      y: 0,
+      options: {}
+    }
+    mockGetNodeById.mockReturnValue({ widgets: [raw] })
+    const listener = vi.fn()
+    subscribeWidgetTextInteraction(raw, listener, vi.fn())
+    renderComponent(createTextareaWidget(), '<lora:foo:1.0>')
+
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.keyboard('{Control>}{Shift>}{ArrowUp}{/Shift}{/Control}')
+
+    expect(listener).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'keydown',
+        key: 'ArrowUp',
+        ctrlKey: true,
+        shiftKey: true
+      })
+    )
+  })
 })

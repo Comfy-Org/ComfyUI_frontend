@@ -7,6 +7,7 @@ vi.mock('@/scripts/app', () => ({
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { subscribeWidgetTextInteraction } from '@/platform/nodeApi/widgetTextInteraction'
 import type { DOMWidget } from '@/scripts/domWidget'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -84,6 +85,27 @@ describe('createPromotedMultilineWidget', () => {
     element.dispatchEvent(new Event('input'))
 
     expect(useWidgetValueStore().getWidget(WIDGET_ID)?.value).toBe('edited')
+  })
+
+  it('publishes keyboard gestures from the promoted textarea', () => {
+    const widget = promote()!
+    const listener = vi.fn()
+    subscribeWidgetTextInteraction(widget, listener, vi.fn())
+    const element = (
+      widget as unknown as DOMWidget<HTMLTextAreaElement, string>
+    ).element
+
+    element.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowDown', metaKey: true })
+    )
+
+    expect(listener).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'keydown',
+        key: 'ArrowDown',
+        metaKey: true
+      })
+    )
   })
 
   it('falls back to the canvas projection for non-DOM widgets', () => {

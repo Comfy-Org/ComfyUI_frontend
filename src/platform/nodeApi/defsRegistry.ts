@@ -215,6 +215,22 @@ export interface NodeDefBuilder {
    */
   onDoubleClick(callback: (node: NodeHandle) => void): void
   /**
+   * Whether this node can accept the current browser drag.
+   *
+   * The event is the browser's data-transfer surface, not a renderer object.
+   * Returning `true` makes both node renderers present and route the drop.
+   */
+  onDragOver(
+    callback: (node: NodeHandle, event: DragEvent) => boolean | void
+  ): void
+  /** Handles a drop the node accepted. Returning `true` claims it. */
+  onDrop(
+    callback: (
+      node: NodeHandle,
+      event: DragEvent
+    ) => boolean | void | Promise<boolean | void>
+  ): void
+  /**
    * A property the user edited in the node's properties panel.
    *
    * Packs used `onPropertyChanged` to keep a hand-entered value sane — rgthree
@@ -455,6 +471,11 @@ export interface NodeDefinition {
   onConfigured?(node: NodeHandle, data: Record<string, unknown>): void
   onConnectionsChanged?(node: NodeHandle, event: ConnectionChangeEvent): void
   onPropertyChanged?(node: NodeHandle, event: PropertyChangeEvent): void
+  onDragOver?(node: NodeHandle, event: DragEvent): boolean | void
+  onDrop?(
+    node: NodeHandle,
+    event: DragEvent
+  ): boolean | void | Promise<boolean | void>
   onRemoved?(node: NodeHandle): void
   onSerialize?(node: NodeHandle): Record<string, unknown>
 }
@@ -966,6 +987,8 @@ export function createDefRegistry(): {
         if (definition.onPropertyChanged) {
           builder.onPropertyChanged(definition.onPropertyChanged)
         }
+        if (definition.onDragOver) builder.onDragOver(definition.onDragOver)
+        if (definition.onDrop) builder.onDrop(definition.onDrop)
         if (definition.onRemoved) builder.onRemoved(definition.onRemoved)
         if (definition.onSerialize) builder.onSerialize(definition.onSerialize)
       }
@@ -1070,6 +1093,17 @@ export function createDefRegistry(): {
       const resized: Bound<[Size]>[] = []
       const hovered: Bound<[boolean]>[] = []
       const doubleClicked: Bound<[]>[] = []
+      const dragOver: {
+        run: (node: NodeHandle, event: DragEvent) => boolean | void
+        handleFor: (nodeId: string) => NodeHandle
+      }[] = []
+      const dropped: {
+        run: (
+          node: NodeHandle,
+          event: DragEvent
+        ) => boolean | void | Promise<boolean | void>
+        handleFor: (nodeId: string) => NodeHandle
+      }[] = []
       const connections: Bound<[ConnectionChangeEvent]>[] = []
       const removed: Bound<[]>[] = []
       const previewed: Bound<[PreviewFrame]>[] = []
@@ -1131,6 +1165,8 @@ export function createDefRegistry(): {
           onResized: (run) => resized.push({ run, handleFor }),
           onHover: (run) => hovered.push({ run, handleFor }),
           onDoubleClick: (run) => doubleClicked.push({ run, handleFor }),
+          onDragOver: (run) => dragOver.push({ run, handleFor }),
+          onDrop: (run) => dropped.push({ run, handleFor }),
           onConnectionsChanged: (run) => connections.push({ run, handleFor }),
           onRemoved: (run) => removed.push({ run, handleFor }),
           onPreview: (run) => previewed.push({ run, handleFor }),
@@ -1347,6 +1383,29 @@ export function createDefRegistry(): {
           const id = String(node.id)
           for (const { run, handleFor } of doubleClicked) run(handleFor(id))
         })
+      }
+
+      if (dragOver.length) {
+        const previous = nodeType.prototype.onDragOver
+        nodeType.prototype.onDragOver = function (event: DragEvent) {
+          if (previous?.call(this, event) === true) return true
+          const id = String(this.id)
+          return dragOver.some(
+            ({ run, handleFor }) => run(handleFor(id), event) === true
+          )
+        }
+      }
+
+      if (dropped.length) {
+        const previous = nodeType.prototype.onDragDrop
+        nodeType.prototype.onDragDrop = async function (event: DragEvent) {
+          if ((await previous?.call(this, event)) === true) return true
+          const id = String(this.id)
+          for (const { run, handleFor } of dropped) {
+            if ((await run(handleFor(id), event)) === true) return true
+          }
+          return false
+        }
       }
 
       if (connections.length) {

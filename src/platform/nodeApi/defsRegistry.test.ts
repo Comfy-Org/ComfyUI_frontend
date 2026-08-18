@@ -1227,6 +1227,73 @@ describe('connection veto and menu items', () => {
     )
   })
 
+  it('offers a browser drag to extensions when the host does not accept it', () => {
+    const registry = createDefRegistry()
+    const extension = vi.fn(() => true)
+    registry
+      .forMajor((id) => comfy.graph.node(id)!)
+      .extend('KSampler', (b) => b.onDragOver(extension))
+    const Generated = nodeClass('KSampler')
+    const host = vi.fn(() => false)
+    Generated.prototype.onDragOver = host
+    registry.applyTo(Generated, RAW_DEF)
+    const node = new Generated()
+    graph.add(node)
+    const event = new Event('dragover') as DragEvent
+
+    expect(node.onDragOver?.(event)).toBe(true)
+    expect(host).toHaveBeenCalledWith(event)
+    expect(extension).toHaveBeenCalledWith(
+      comfy.graph.node(String(node.id)),
+      event
+    )
+  })
+
+  it('leaves a drop with the first handler that claims it', async () => {
+    const registry = createDefRegistry()
+    const first = vi.fn(async () => false)
+    const second = vi.fn(async () => true)
+    const skipped = vi.fn(async () => true)
+    registry
+      .forMajor((id) => comfy.graph.node(id)!)
+      .extend('KSampler', (b) => {
+        b.onDrop(first)
+        b.onDrop(second)
+        b.onDrop(skipped)
+      })
+    const Generated = nodeClass('KSampler')
+    const host = vi.fn(async () => false)
+    Generated.prototype.onDragDrop = host
+    registry.applyTo(Generated, RAW_DEF)
+    const node = new Generated()
+    graph.add(node)
+    const event = new Event('drop') as DragEvent
+
+    await expect(node.onDragDrop?.(event)).resolves.toBe(true)
+    expect(host).toHaveBeenCalledWith(event)
+    expect(first).toHaveBeenCalled()
+    expect(second).toHaveBeenCalled()
+    expect(skipped).not.toHaveBeenCalled()
+  })
+
+  it('does not replay a drop the host already handled', async () => {
+    const registry = createDefRegistry()
+    const extension = vi.fn(async () => true)
+    registry
+      .forMajor((id) => comfy.graph.node(id)!)
+      .extend('KSampler', (b) => b.onDrop(extension))
+    const Generated = nodeClass('KSampler')
+    Generated.prototype.onDragDrop = vi.fn(async () => true)
+    registry.applyTo(Generated, RAW_DEF)
+    const node = new Generated()
+    graph.add(node)
+
+    await expect(
+      node.onDragDrop?.(new Event('drop') as DragEvent)
+    ).resolves.toBe(true)
+    expect(extension).not.toHaveBeenCalled()
+  })
+
   it('adds a context menu entry that reaches the node', () => {
     const seen: string[] = []
     const node = build((b) =>
