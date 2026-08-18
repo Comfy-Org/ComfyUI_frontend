@@ -72,4 +72,16 @@ export function supply(view) {
       totals: { converted: 1, refused: 0, outstanding: 0 }
     })
   })
+
+  it('counts an imported installer invocation as converted code', () => {
+    const root = writeConversion(`import { install } from './extension.js'
+
+install()
+`)
+
+    expect(packStatus(root)).toMatchObject({
+      totals: { converted: 1, refused: 0, outstanding: 0 },
+      settled: 1
+    })
+  })
 })
