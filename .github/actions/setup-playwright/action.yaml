@@ -1,5 +1,10 @@
 name: Setup Playwright
 description: Cache and install Playwright browsers with dependencies
+inputs:
+  install_deps:
+    description: Install Playwright operating-system dependencies
+    required: false
+    default: 'true'
 runs:
   using: composite
   steps:
@@ -18,6 +23,7 @@ runs:
         key: ${{ runner.os }}-playwright-browsers-${{ steps.detect-version.outputs.playwright-version }}
 
     - name: Bound Playwright dependency downloads
+      if: inputs.install_deps == 'true'
       shell: bash
       run: |
         set -euo pipefail
@@ -31,9 +37,12 @@ runs:
       shell: bash
       env:
         BROWSER_CACHE_HIT: ${{ steps.cache-playwright-browsers.outputs.cache-hit }}
+        INSTALL_DEPS: ${{ inputs.install_deps }}
       run: |
         set -euo pipefail
-        if [ "$BROWSER_CACHE_HIT" = true ]; then
+        if [ "$INSTALL_DEPS" != true ]; then
+          playwright_args=(install chromium)
+        elif [ "$BROWSER_CACHE_HIT" = true ]; then
           playwright_args=(install-deps chromium)
         else
           playwright_args=(install chromium --with-deps)

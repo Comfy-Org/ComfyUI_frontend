@@ -66,7 +66,7 @@ const CONSOLE_ERROR_ALLOWLIST: Record<string, AllowlistRule[]> = {
       // Media/text widgets preview their value via root-relative URLs at
       // creation; 404s on a backend whose root does not serve the file.
       pattern:
-        /Failed to load resource.*404.*(beach\.jpg|example\.png|plain_video\.mp4|file\.txt)/,
+        /Failed to load resource.*404.*(000_custom_node_probe\.wav|beach\.jpg|example\.png|plain_video\.mp4|file\.txt)/,
       reason: 'media widget previews its value via a root-relative URL',
       restore:
         'resolve media previews through the backend view endpoint and remove this entry'

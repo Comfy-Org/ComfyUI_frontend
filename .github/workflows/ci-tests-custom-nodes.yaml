@@ -224,6 +224,8 @@ jobs:
 
       - name: Setup Playwright
         uses: ./.github/actions/setup-playwright
+        with:
+          install_deps: 'false'
 
       # Checks out ComfyUI, installs Python/torch/requirements and ComfyUI_devtools.
       # launch_server:false so we can add the manifest packs before booting.
@@ -472,29 +474,30 @@ jobs:
             echo 'retries=0'
           } | tee tier-isolation-proof-identity.txt
 
-      # The VHS run-tier workflow reads input/plain_video.mp4.
-      - name: Stage run-tier assets
+      - name: Stage deterministic inputs
         shell: bash
         run: |
           set -euo pipefail
-          if ! pnpm --silent custom-node-shard | cut -f1 | grep -qx comfyui-videohelpersuite; then
-            echo 'This shard has no run-tier pack; leaving its input directory empty.'
-            exit 0
-          fi
-          mkdir -p ComfyUI/input/images
-          cp browser_tests/assets/plain_video.mp4 ComfyUI/input/plain_video.mp4 \
-            || { echo "::error::could not stage plain_video.mp4 - the VHS run tier has no input to execute on"; exit 1; }
-          cp browser_tests/assets/image32x32.webp ComfyUI/input/test_upload_image.webp
-          cp browser_tests/assets/image32x32.webp ComfyUI/input/images/test_upload_image.webp
+          mkdir -p ComfyUI/input
           python - <<'PY'
           import wave
 
-          with wave.open('ComfyUI/input/plain_audio.wav', 'wb') as audio:
+          with wave.open('ComfyUI/input/000_custom_node_probe.wav', 'wb') as audio:
               audio.setnchannels(1)
               audio.setsampwidth(2)
               audio.setframerate(8000)
               audio.writeframes(b'\0\0' * 8000)
           PY
+          if ! pnpm --silent custom-node-shard | cut -f1 | grep -qx comfyui-videohelpersuite; then
+            echo 'This shard has no run-tier pack; staged only the deterministic audio probe.'
+            exit 0
+          fi
+          mkdir -p ComfyUI/input/images
+          cp ComfyUI/input/000_custom_node_probe.wav ComfyUI/input/plain_audio.wav
+          cp browser_tests/assets/plain_video.mp4 ComfyUI/input/plain_video.mp4 \
+            || { echo "::error::could not stage plain_video.mp4 - the VHS run tier has no input to execute on"; exit 1; }
+          cp browser_tests/assets/image32x32.webp ComfyUI/input/test_upload_image.webp
+          cp browser_tests/assets/image32x32.webp ComfyUI/input/images/test_upload_image.webp
 
       # --cache-none so retried run-tier tests re-execute every node (a cached
       # node emits no `executing` event and would false-fail PARTIAL).

@@ -48,8 +48,8 @@
     "reason": "the pinned commit's get_node_list returns exactly 9 classes; stable-shard CI run 32082609026 registered all 9 vs Cloud's 17"
   },
   "ComfyUI_AudioTools": {
-    "expectedNodeCount": 30,
-    "reason": "the pinned commit declares exactly 30 NODE_CLASS_MAPPINGS entries; stable-shard CI run 32082609026 registered all 30 vs Cloud's 29"
+    "expectedNodeCount": 31,
+    "reason": "the pinned commit declares exactly 31 NODE_CLASS_MAPPINGS entries; the fixed five-shard CPU environment registers all 31 vs Cloud's 29"
   },
   "ComfyUI_Fill-Nodes": {
     "expectedNodeCount": 188,
@@ -121,8 +121,8 @@
     "reason": "the pinned registry artifact's get_node_list returns exactly 1 class; stable-shard CI run 32082609026 registered it vs Cloud's 2"
   },
   "comfyui-rmbg": {
-    "expectedNodeCount": 43,
-    "reason": "stable-shard CI run 32082609026 registered 43 nodes vs Cloud's 35; the manifest's 8 disabled node IDs exactly match the delta"
+    "expectedNodeCount": 42,
+    "reason": "the pinned artifact declares 43 nodes, but its SAM3Segment module requires unavailable Triton on this CPU shard; the other 42 register exactly vs Cloud's 35"
   },
   "comfyui-various": {
     "expectedNodeCount": 68,

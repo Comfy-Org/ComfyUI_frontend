@@ -85,7 +85,7 @@ test.describe('consoleErrorLedger', () => {
 
   test('filters only errors matching the pack own patterns', () => {
     const errors = [
-      'Failed to load resource: the server responded with a status of 404 () http://host/example.png',
+      'Failed to load resource: the server responded with a status of 404 () http://host/000_custom_node_probe.wav',
       'TypeError: something real broke'
     ]
     expect(unallowlistedErrors('ComfyUI-Impact-Pack', errors)).toEqual([
