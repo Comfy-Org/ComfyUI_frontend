@@ -99,6 +99,20 @@ export function useCachedRequest<TParams, TResult>(
   }
 
   /**
+   * Drop cached results: only the entry matching `params` when given, every
+   * cached entry otherwise. In-flight requests are left alone and will still
+   * cache their result, so `cancel` first to fully invalidate a key.
+   */
+  const clear = (...params: [] | [TParams]) => {
+    if (params.length === 0) {
+      cache.clear()
+      return
+    }
+
+    cache.delete(cacheKeyFn(params[0]))
+  }
+
+  /**
    * Cached version of the request function
    */
   const call = async (params: TParams): Promise<TResult | null> => {
@@ -116,6 +130,6 @@ export function useCachedRequest<TParams, TResult>(
   return {
     call,
     cancel,
-    clear: () => cache.clear()
+    clear
   }
 }

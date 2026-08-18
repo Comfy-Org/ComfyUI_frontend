@@ -19,6 +19,15 @@
         {{ node }}
       </div>
     </template>
+    <template v-else-if="fetchFailed">
+      <NoResultsPlaceholder
+        icon="pi pi-exclamation-circle"
+        :title="$t('manager.nodesFetchFailed')"
+        :message="$t('manager.nodesFetchFailedDescription')"
+        :button-label="$t('manager.retry')"
+        @action="retryFetch"
+      />
+    </template>
     <template v-else>
       <NoResultsPlaceholder
         :title="$t('manager.noNodesFound')"
@@ -49,6 +58,7 @@ const { nodePack, nodeNames } = defineProps<{
 const { getNodeDefs } = useComfyRegistryStore()
 
 const isLoading = ref(false)
+const fetchFailed = ref(false)
 const registryNodeDefs = shallowRef<ListComfyNodesResponse | null>(null)
 
 const nodeDefsParams = computed(() => {
@@ -64,12 +74,17 @@ const packIdentity = computed(() => {
 })
 
 let inFlightParams: NonNullable<typeof nodeDefsParams.value> | null = null
+// Overlapping fetches for one pack share a params identity, so only an id
+// distinguishes a superseded response from the current one.
+let latestRequestId = 0
 
 const fetchNodeDefs = async () => {
   if (inFlightParams) getNodeDefs.cancel(inFlightParams)
 
+  const requestId = ++latestRequestId
   const params = nodeDefsParams.value
   inFlightParams = params
+  fetchFailed.value = false
 
   if (!params) {
     registryNodeDefs.value = null
@@ -79,11 +94,18 @@ const fetchNodeDefs = async () => {
 
   isLoading.value = true
   const response = await getNodeDefs.call(params)
-  if (inFlightParams !== params) return
+  if (requestId !== latestRequestId) return
 
   inFlightParams = null
-  registryNodeDefs.value = response?.comfy_nodes ?? null
+  fetchFailed.value = response == null
+  registryNodeDefs.value = response ? (response.comfy_nodes ?? []) : null
   isLoading.value = false
+}
+
+const retryFetch = async () => {
+  const params = nodeDefsParams.value
+  if (params) getNodeDefs.clear(params)
+  await fetchNodeDefs()
 }
 
 watch(packIdentity, fetchNodeDefs, { immediate: true })
