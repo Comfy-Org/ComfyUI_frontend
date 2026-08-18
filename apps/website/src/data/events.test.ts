@@ -84,6 +84,26 @@ describe('toCalendarEvent', () => {
       '2026-08-05T23:00:00.000Z'
     )
   })
+
+  it('falls back to English content when localized keys are missing', () => {
+    const partialEvent = eventAt('partial', {
+      title: { en: 'English Title', 'zh-CN': '中文标题' },
+      description: { en: 'English Description', 'zh-CN': '中文描述' },
+      location: { en: 'Online', 'zh-CN': '线上' },
+      link: {
+        href: { en: 'https://comfy.org/en', 'zh-CN': 'https://comfy.org/zh' }
+      }
+    })
+
+    const calendarEvent = toCalendarEvent(partialEvent, 'ja')
+
+    expect(calendarEvent.title).toBe('English Title')
+    // The description assertion includes the generated URL appended after two newlines
+    expect(calendarEvent.description).toBe(
+      'English Description\n\nhttps://comfy.org/en'
+    )
+    expect(calendarEvent.location).toBe('Online')
+  })
 })
 
 describe('eventStatus', () => {
@@ -227,6 +247,19 @@ describe('eventJsonLdNode', () => {
       eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
       location: { '@type': 'Place', name: 'San Francisco' }
     })
+  })
+
+  it('falls back to English content when localized keys are missing', () => {
+    const partialEvent = eventAt('partial', {
+      title: { en: 'English Title', 'zh-CN': '中文标题' },
+      description: { en: 'English Description', 'zh-CN': '中文描述' },
+      location: { en: 'Online', 'zh-CN': '线上' }
+    })
+
+    const jsonLd = eventJsonLdNode(partialEvent, { ...input, locale: 'ja' })
+
+    expect(jsonLd.name).toBe('English Title')
+    expect(jsonLd.description).toBe('English Description')
   })
 })
 
