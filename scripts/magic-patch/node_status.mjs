@@ -21,6 +21,9 @@
  *   // COSMETIC: <what was lost>
  *       A loss that changes appearance and not behaviour. Lets a pack grade as
  *       fully supported for everything that functions.
+ *   // HANDLED: <node type>
+ *       The conversion handles a type named through a computed pack constant
+ *       that this static scan cannot resolve.
  *
  * Usage: node scripts/magic-patch/node_status.mjs <db-dir> [--pack NAME] [--undecided]
  */
@@ -56,6 +59,7 @@ const HANDLES_CONSTANT = [
 ]
 const STRING_CONSTANT =
   /\bconst\s+([A-Za-z_$][\w$]*)\s*=\s*(['"])([^'"\r\n]*)\2/g
+const HANDLED_MARKER = /^\s*\/\/\s*HANDLED:\s*(.+?)\s*$/gm
 
 /**
  * A type named through a constant — `NodeTypesString.CONTEXT` — which this
@@ -94,26 +98,30 @@ const matchAll = (text, patterns) =>
   patterns.flatMap((pattern) => [...text.matchAll(pattern)].map(([, n]) => n))
 
 export function handledTypes(source) {
+  const code = stripComments(source)
   const constants = new Map(
-    [...source.matchAll(STRING_CONSTANT)].map(([, name, , value]) => [
+    [...code.matchAll(STRING_CONSTANT)].map(([, name, , value]) => [
       name,
       value
     ])
   )
-  const resolvedConstants = matchAll(source, HANDLES_CONSTANT)
+  const resolvedConstants = matchAll(code, HANDLES_CONSTANT)
     .map((name) => constants.get(name))
     .filter(Boolean)
 
   return [
     ...new Set([
-      ...matchAll(source, HANDLES),
-      ...[...source.matchAll(HANDLES_ARRAY)].flatMap(([, body]) =>
+      ...matchAll(code, HANDLES),
+      ...[...code.matchAll(HANDLES_ARRAY)].flatMap(([, body]) =>
         [...body.matchAll(/['"]([^'"]+)['"]/g)].map(([, type]) => type)
       ),
-      ...resolvedConstants
+      ...resolvedConstants,
+      ...[...source.matchAll(HANDLED_MARKER)].map(([, type]) => type)
     ])
   ]
 }
+
+export const isNodeTypeName = (name) => !/^__.*__$/.test(name)
 
 function jsFiles(dir, depth = 0) {
   if (depth > 10) return []
@@ -167,12 +175,12 @@ export function nodeStatus(dbDir) {
         }
 
         for (const type of matchAll(stripComments(original), DECLARES)) {
-          declared.add(type)
+          if (isNodeTypeName(type)) declared.add(type)
         }
         indirect += [...stripComments(original).matchAll(INDIRECT)].length
 
         if (original === converted) continue
-        for (const type of handledTypes(stripComments(converted))) {
+        for (const type of handledTypes(converted)) {
           handled.add(type)
         }
         for (const [, subject] of converted.matchAll(UNSUPPORTED)) {
