@@ -4624,6 +4624,30 @@ const translations = {
     en: 'Read the full tutorial →',
     'zh-CN': '阅读完整教程 →'
   },
+  'models.llms.button': {
+    en: 'LLMs',
+    'zh-CN': 'LLMs'
+  },
+  'models.llms.copy': {
+    en: 'Copy page as Markdown',
+    'zh-CN': '复制本页 Markdown'
+  },
+  'models.llms.view': {
+    en: 'View as Markdown',
+    'zh-CN': '查看 Markdown 版'
+  },
+  'models.llms.catalog': {
+    en: 'llms.txt — model catalog',
+    'zh-CN': 'llms.txt — 模型目录'
+  },
+  'models.llms.openClaude': {
+    en: 'Open in Claude',
+    'zh-CN': '在 Claude 中打开'
+  },
+  'models.llms.openChatgpt': {
+    en: 'Open in ChatGPT',
+    'zh-CN': '在 ChatGPT 中打开'
+  },
   'models.index.title': {
     en: 'Supported Models',
     'zh-CN': '支持的模型'

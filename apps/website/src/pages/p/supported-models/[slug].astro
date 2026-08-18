@@ -3,6 +3,7 @@ import type { GetStaticPaths } from 'astro'
 import BaseLayout from '../../../layouts/BaseLayout.astro'
 import ModelHeroSection from '../../../components/models/ModelHeroSection.vue'
 import { models, getModelBySlug } from '../../../config/models'
+import { buildWhatIsDescription } from '../../../config/model-descriptions'
 import { t } from '../../../i18n/translations'
 import type { JsonLdNode } from '../../../utils/jsonLd'
 import {
@@ -27,24 +28,14 @@ if (model.canonicalSlug) {
 
 const { displayName } = model
 
-const dirDescriptions: Record<string, string> = {
-  diffusion_models: 'a diffusion model that generates images or video from text and image prompts',
-  checkpoints: 'an all-in-one checkpoint model that bundles a diffusion model, text encoder, and VAE',
-  loras: 'a LoRA (Low-Rank Adaptation) that fine-tunes an existing model for a specific style or subject',
-  controlnet: 'a ControlNet that steers image generation using structural guides like depth maps, edges, or poses',
-  clip_vision: 'a CLIP Vision encoder that converts images into embeddings for conditioning or style transfer',
-  vae: 'a VAE (Variational Autoencoder) that encodes and decodes latent representations',
-  text_encoders: 'a text encoder that converts prompts into embeddings used to guide generation',
-  audio_encoders: 'an audio encoder that converts audio into embeddings for audio-conditioned generation',
-  upscale_models: 'an upscale model that increases image resolution while preserving or enhancing detail',
-  latent_upscale_models: 'a latent upscale model that refines latents at higher resolution before decoding',
-  style_models: 'a style model that transfers artistic style onto generated images',
-  model_patches: 'a model patch that modifies or extends the behavior of an existing base model',
-  partner_nodes: 'a cloud API model accessible through ComfyUI partner nodes without local hardware requirements'
-}
+const whatIsDescription = buildWhatIsDescription(model)
 
-const dirDesc = dirDescriptions[model.directory] ?? 'an AI model'
-const whatIsDescription = `${displayName} is ${dirDesc}. You can run it locally in ComfyUI with full control over every parameter, or access it through Comfy Cloud. ComfyUI's node-based workflow editor lets you connect ${displayName} with ControlNets, LoRAs, upscalers, and custom nodes to build any pipeline you need. There are ${model.workflowCount} community workflow templates using ${displayName} on Comfy Workflows, ready to load and customize.`
+// fal-style LLMs surface: markdown twin + agent handoff links.
+const mdUrl = `/p/supported-models/${model.slug}.md`
+const canonicalMdUrl = new URL(mdUrl, Astro.site ?? 'https://comfy.org').href
+const llmPrompt = encodeURIComponent(
+  `Read ${canonicalMdUrl} and help me run ${displayName} in ComfyUI. I want to understand the inputs and get my first output.`
+)
 
 const pageTitle = `${displayName} in ComfyUI`
 const pageDescription = `Run ${displayName} in ComfyUI with full parameter control. ${model.workflowCount} community workflow templates, step-by-step tutorials, and free local inference.`
@@ -118,6 +109,56 @@ const faqPage: JsonLdNode = {
   extraJsonLd={[software, faqPage]}
 >
 
+  <div class="mx-auto flex max-w-7xl justify-end px-6 pt-6 lg:px-8">
+    <div class="relative" id="llms-wrap" data-md={mdUrl}>
+      <button
+        id="llms-btn"
+        aria-haspopup="true"
+        aria-expanded="false"
+        class="cursor-pointer rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-[11px] font-extrabold tracking-widest text-primary-comfy-canvas hover:bg-white/10"
+      >
+        {t('models.llms.button')} ▾
+      </button>
+      <div
+        id="llms-menu"
+        class="absolute right-0 top-full z-40 mt-1.5 hidden w-60 overflow-hidden rounded-xl border border-white/15 bg-primary-comfy-ink py-1.5 shadow-2xl"
+      >
+        <button
+          id="llms-copy"
+          class="block w-full cursor-pointer px-4 py-2.5 text-left text-xs text-primary-comfy-canvas hover:bg-white/5"
+        >
+          {t('models.llms.copy')}<span id="llms-copied" class="hidden pl-2 text-primary-comfy-yellow">✓</span>
+        </button>
+        <a href={mdUrl} class="block px-4 py-2.5 text-xs text-primary-comfy-canvas hover:bg-white/5">
+          {t('models.llms.view')}
+        </a>
+        <a
+          href="/p/supported-models/llms.txt"
+          class="block px-4 py-2.5 text-xs text-primary-comfy-canvas hover:bg-white/5"
+        >
+          {t('models.llms.catalog')}
+        </a>
+        <div class="my-1 border-t border-white/10"></div>
+        <a
+          href={`https://claude.ai/new?q=${llmPrompt}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="block px-4 py-2.5 text-xs text-primary-comfy-canvas hover:bg-white/5"
+        >
+          {t('models.llms.openClaude')} ↗
+        </a>
+        <a
+          href={`https://chatgpt.com/?q=${llmPrompt}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="block px-4 py-2.5 text-xs text-primary-comfy-canvas hover:bg-white/5"
+        >
+          {t('models.llms.openChatgpt')} ↗
+        </a>
+      </div>
+    </div>
+  </div>
+
   <ModelHeroSection
     displayName={displayName}
     huggingFaceUrl={model.huggingFaceUrl}
@@ -155,3 +196,47 @@ const faqPage: JsonLdNode = {
     {/* TODO: shared HowComfyWorks component */}
   </section>
 </BaseLayout>
+
+<script>
+  // ClientRouter swaps the DOM on client-side nav, so bind on astro:page-load
+  // and guard with data-bound to survive repeat visits.
+  function bindLlmsMenu() {
+    const wrap = document.getElementById('llms-wrap')
+    if (!(wrap instanceof HTMLElement) || wrap.dataset.bound === '1') return
+    wrap.dataset.bound = '1'
+    const btn = document.getElementById('llms-btn')
+    const menu = document.getElementById('llms-menu')
+    btn?.addEventListener('click', (e) => {
+      e.stopPropagation()
+      menu?.classList.toggle('hidden')
+      btn.setAttribute(
+        'aria-expanded',
+        String(!menu?.classList.contains('hidden'))
+      )
+    })
+    document.addEventListener('click', (e) => {
+      if (!menu || menu.classList.contains('hidden')) return
+      if (!(e.target instanceof Element) || !e.target.closest('#llms-wrap')) {
+        menu.classList.add('hidden')
+      }
+    })
+    document.getElementById('llms-copy')?.addEventListener('click', async () => {
+      const mdUrl = wrap.dataset.md
+      if (!mdUrl) return
+      try {
+        const md = await (await fetch(mdUrl)).text()
+        await navigator.clipboard.writeText(md)
+        const check = document.getElementById('llms-copied')
+        check?.classList.remove('hidden')
+        window.setTimeout(() => {
+          check?.classList.add('hidden')
+          menu?.classList.add('hidden')
+        }, 1200)
+      } catch {
+        /* fetch or clipboard unavailable */
+      }
+    })
+  }
+  bindLlmsMenu()
+  document.addEventListener('astro:page-load', bindLlmsMenu)
+</script>
