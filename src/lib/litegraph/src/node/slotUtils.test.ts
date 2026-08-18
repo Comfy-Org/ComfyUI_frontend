@@ -110,4 +110,17 @@ describe('outputAsSerialisable', () => {
     )
     expect(serialised.links).toBeNull()
   })
+
+  it('ignores a malformed output widget marker', () => {
+    const { source } = createConnectedGraph([])
+    Object.assign(source.outputs[0], { widget: true })
+
+    const serialised = outputAsSerialisable(
+      source.outputs[0] as OutputSlotParam,
+      source,
+      0
+    )
+
+    expect(serialised).not.toHaveProperty('widget')
+  })
 })
