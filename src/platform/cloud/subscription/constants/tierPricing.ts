@@ -57,11 +57,13 @@ const TIER_FEATURES: Record<TierKey, TierFeatures> = {
 export const DEFAULT_TIER_KEY: TierKey = 'standard'
 
 // Workspace-level tiers (TEAM, and any added later) map to no key in this
-// personal plan catalog. Membership is tested rather than listing the
-// exclusions, so a tier added to the ingest enum returns null instead of
-// failing the build.
+// personal plan catalog. Own-property membership is tested rather than listing
+// the exclusions, so a tier added to the ingest enum returns null instead of
+// failing the build. `in` would be wrong here: it walks the prototype chain, so
+// a runtime value of 'constructor' or 'toString' would return an inherited
+// function instead of null.
 export function toTierKey(tier: IngestSubscriptionTier): TierKey | null {
-  return tier in TIER_TO_KEY
+  return Object.prototype.hasOwnProperty.call(TIER_TO_KEY, tier)
     ? TIER_TO_KEY[tier as RegistrySubscriptionTier]
     : null
 }
