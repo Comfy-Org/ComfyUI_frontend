@@ -17,6 +17,9 @@ const appProbeDir = path.resolve(
 const remoteProbeDir = path.resolve(
   'src/platform/remote/__restricted_syntax_probes__'
 )
+const misplacedSpecProbe = path.resolve(
+  'src/__restricted_syntax_probes__/misplaced.spec.ts'
+)
 
 interface OxlintDiagnostic {
   readonly code?: string
@@ -109,5 +112,23 @@ describe('comfy/no-new-zod-for-remote-api-types', () => {
   it('reports Zod imports in remote source but not tests', () => {
     expect(findings).toHaveLength(1)
     expect(findings[0]?.filename).toMatch(/reported\.ts$/)
+  })
+})
+
+describe('comfy/no-misplaced-spec-files', () => {
+  beforeAll(() => {
+    mkdirSync(path.dirname(misplacedSpecProbe), { recursive: true })
+    writeFileSync(misplacedSpecProbe, "test('misplaced', () => {})\n")
+  })
+
+  afterAll(() => {
+    rmSync(path.dirname(misplacedSpecProbe), { recursive: true, force: true })
+  })
+
+  it('reports spec files outside the browser and app e2e directories', () => {
+    const findings = lint(restrictedConfig, [misplacedSpecProbe]).filter(
+      ({ code }) => code === 'comfy(no-misplaced-spec-files)'
+    )
+    expect(findings).toHaveLength(1)
   })
 })

@@ -229,20 +229,6 @@ export default defineConfig([
       ]
     }
   },
-  {
-    files: ['**/*.spec.ts'],
-    ignores: ['browser_tests/tests/**/*.spec.ts', 'apps/*/e2e/**/*.spec.ts'],
-    rules: {
-      'no-restricted-syntax': [
-        'error',
-        {
-          selector: 'Program',
-          message:
-            '.spec.ts files are only allowed under browser_tests/tests/ or apps/*/e2e/'
-        }
-      ]
-    }
-  },
   // fixtures/data/ must contain only static data — no executable code or
   // Playwright imports. This enforces the architectural separation documented
   // in browser_tests/AGENTS.md.

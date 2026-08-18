@@ -64,3 +64,17 @@ export const noNewZodForRemoteApiTypes = {
     }
   }
 }
+
+export const noMisplacedSpecFiles = {
+  create(context: RuleContext) {
+    return {
+      Program(node: Node) {
+        context.report({
+          node,
+          message:
+            '.spec.ts files are only allowed under browser_tests/tests/ or apps/*/e2e/'
+        })
+      }
+    }
+  }
+}
