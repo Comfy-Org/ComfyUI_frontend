@@ -108,6 +108,8 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import WorkflowTabPopover from './WorkflowTabPopover.vue'
 
+defineOptions({ inheritAttrs: false })
+
 interface WorkflowOption {
   value: string
   workflow: ComfyWorkflow
