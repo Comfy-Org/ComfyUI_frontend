@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import type { IngestSubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import { deriveBillingPolicyState } from './useBillingPolicyState'
 
 describe('deriveBillingPolicyState', () => {
@@ -107,6 +108,27 @@ describe('deriveBillingPolicyState', () => {
           canAccessSubscriptionFeatures: true,
           isTeamPlan: false,
           tier: 'TEAM'
+        })
+      ).toEqual({ kind })
+    }
+  )
+
+  // The tier union is generated from the backend spec, so a value outside it is
+  // reachable at runtime even though the type forbids it. Treating it as unknown
+  // is what keeps a backend-side tier addition from breaking this build; this
+  // pins that behaviour rather than leaving the default branch untested.
+  it.for([
+    ['CloudAndUnknown', true],
+    ['LocalAndUnknown', false]
+  ] as const)(
+    'resolves an unrecognised tier as %s (isCloud=%s)',
+    ([kind, isCloud]) => {
+      expect(
+        deriveBillingPolicyState({
+          isCloud,
+          canAccessSubscriptionFeatures: true,
+          isTeamPlan: false,
+          tier: 'ENTERPRISE' as IngestSubscriptionTier
         })
       ).toEqual({ kind })
     }
