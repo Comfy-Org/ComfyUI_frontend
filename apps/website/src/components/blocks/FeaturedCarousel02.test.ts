@@ -173,4 +173,87 @@ describe('FeaturedCarousel02', () => {
     expect(screen.queryByRole('heading')).toBeNull()
     expect(screen.queryByRole('button')).toBeNull()
   })
+
+  it('renders eyebrow, body, CTAs, and tags for a fully populated slide', () => {
+    render(FeaturedCarousel02, {
+      props: {
+        slides: [
+          {
+            id: 'full',
+            media: {
+              type: 'image',
+              src: 'https://example.com/full.png',
+              alt: 'Full'
+            },
+            eyebrow: 'New release',
+            title: 'Full slide',
+            body: 'Body copy for the slide.',
+            primaryCta: { label: 'Explore it', href: '/explore' },
+            secondaryCta: {
+              label: 'Read docs',
+              href: 'https://docs.example.com/',
+              newTab: true
+            },
+            tags: ['Tag One', 'Tag Two']
+          }
+        ]
+      }
+    })
+
+    expect(screen.getByText('New release')).toBeTruthy()
+    expect(screen.getByText('Body copy for the slide.')).toBeTruthy()
+
+    const primary = screen.getByRole('link', { name: 'Explore it' })
+    expect(primary.getAttribute('href')).toBe('/explore')
+    expect(primary.getAttribute('target')).toBeNull()
+    expect(primary.getAttribute('rel')).toBeNull()
+
+    const secondary = screen.getByRole('link', { name: 'Read docs' })
+    expect(secondary.getAttribute('href')).toBe('https://docs.example.com/')
+    expect(secondary.getAttribute('target')).toBe('_blank')
+    expect(secondary.getAttribute('rel')).toBe('noopener noreferrer')
+
+    expect(screen.getByText('Tag One')).toBeTruthy()
+    expect(screen.getByText('Tag Two')).toBeTruthy()
+  })
+
+  it('mounts the video only on the active slide and shows posters elsewhere', async () => {
+    const slides: FeaturedSplitSlide[] = [
+      {
+        id: 'v1',
+        media: {
+          type: 'video',
+          src: 'https://example.com/one.mp4',
+          poster: 'https://example.com/one.webp',
+          alt: 'First clip'
+        },
+        title: 'First video',
+        autoplayMs: 1000
+      },
+      {
+        id: 'v2',
+        media: {
+          type: 'video',
+          src: 'https://example.com/two.mp4',
+          poster: 'https://example.com/two.webp',
+          alt: 'Second clip'
+        },
+        title: 'Second video'
+      }
+    ]
+    render(FeaturedCarousel02, { props: { slides } })
+    await nextTick()
+
+    // Active slide mounts the player; the inactive one shows its poster.
+    expect(screen.getByLabelText('First clip')).toBeTruthy()
+    expect(screen.queryByLabelText('Second clip')).toBeNull()
+    expect(screen.getByAltText('Second clip')).toBeTruthy()
+
+    await advance(1000)
+
+    // Advancing swaps the mounted player, so audio can't leak across slides.
+    expect(screen.queryByLabelText('First clip')).toBeNull()
+    expect(screen.getByAltText('First clip')).toBeTruthy()
+    expect(screen.getByLabelText('Second clip')).toBeTruthy()
+  })
 })
