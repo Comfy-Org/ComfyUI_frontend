@@ -73,6 +73,8 @@ export interface ResolvedNodeView {
    * connected.
    */
   readonly inputs: readonly OwnInput[]
+  /** This node's own outputs, in slot order. */
+  readonly outputs: readonly OwnOutput[]
   widgetValue(name: string): WidgetValue | undefined
   input(ref: string | number): InputRef | undefined
 }
@@ -151,6 +153,17 @@ function viewOf(
           sourceNodeId: link ? String(link.origin_id) : undefined
         })
       })
+    ),
+    outputs: Object.freeze(
+      (node.outputs ?? []).map((slot, index) =>
+        Object.freeze({
+          index,
+          name: slot.name ?? '',
+          label: slot.label ?? slot.localized_name ?? slot.name ?? '',
+          type:
+            typeof slot.type === 'string' ? slot.type : String(slot.type ?? '')
+        })
+      )
     ),
     widgetValue: (name) =>
       node.widgets?.find((w) => w.name === name)?.value as
@@ -299,6 +312,16 @@ export interface OwnInput {
   readonly connectedType: string | undefined
   /** The node feeding this input, if any. */
   readonly sourceNodeId: string | undefined
+}
+
+/** One of a node's own outputs, as its supplier sees it. */
+/** @knipIgnoreUnusedButUsedByCustomNodes */
+export interface OwnOutput {
+  readonly index: number
+  readonly name: string
+  /** What the user sees — `label`, else `localized_name`, else `name`. */
+  readonly label: string
+  readonly type: string
 }
 
 /** A group a node sits inside. */
