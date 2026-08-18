@@ -141,16 +141,20 @@ function viewOf(
     color: node.color,
     inputs: Object.freeze(
       (node.inputs ?? []).map((slot, index) => {
-        const link = slot.link != null ? graph.links?.get(slot.link) : undefined
+        const link = inputLink(graph, node.id, index)
+        const connectedType =
+          link?.resolve(graph).subgraphInput?.type ?? link?.type
         return Object.freeze({
           index,
           name: slot.name ?? '',
           label: slot.label ?? slot.localized_name ?? slot.name ?? '',
           type:
             typeof slot.type === 'string' ? slot.type : String(slot.type ?? ''),
-          connected: slot.link != null,
-          connectedType: link?.type != null ? String(link.type) : undefined,
-          sourceNodeId: link ? String(link.origin_id) : undefined
+          connected: link !== undefined,
+          connectedType:
+            connectedType != null ? String(connectedType) : undefined,
+          sourceNodeId:
+            link && !link.originIsIoNode ? String(link.origin_id) : undefined
         })
       })
     ),

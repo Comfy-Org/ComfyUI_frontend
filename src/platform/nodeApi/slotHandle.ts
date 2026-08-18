@@ -188,6 +188,8 @@ export interface InputSlotHandle {
   readonly type: string
   readonly label: string | undefined
   readonly isConnected: boolean
+  /** The type arriving through the link, including across a subgraph input. */
+  readonly connectedType: string | undefined
   /** Whether this input is the socket form of a widget. */
   readonly isWidgetInput: boolean
   /** The declaration a connected Primitive node renders. */
@@ -473,6 +475,19 @@ function createInputHandle(
       const node = getNode()
       const i = indexOf()
       return node && i !== -1 ? node.isInputConnected(i) : false
+    },
+    get connectedType() {
+      const graph = getGraph()
+      const node = getNode()
+      const i = indexOf()
+      if (!graph || !node || i === -1) return undefined
+      const link = inputLink(graph, node.id, i)
+      const type = link?.resolve(graph).subgraphInput?.type ?? link?.type
+      return type === undefined
+        ? undefined
+        : typeof type === 'string'
+          ? type
+          : String(type)
     },
     get isWidgetInput() {
       return slotAt()?.widget !== undefined
