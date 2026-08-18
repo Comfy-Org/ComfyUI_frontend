@@ -146,7 +146,10 @@ useCarouselAutoplay({
             :aria-hidden="index !== activeIndex"
             :inert="index !== activeIndex"
           >
-            <div class="relative aspect-video w-full lg:flex-1">
+            <!-- lg:min-w-0 stops aspect-video's transferred min-width from
+                 blowing the row out horizontally when the content column is
+                 taller than the media's natural 16:9 height. -->
+            <div class="relative aspect-video w-full lg:min-w-0 lg:flex-1">
               <VideoPlayer
                 v-if="slide.media.type === 'video' && index === activeIndex"
                 :locale
@@ -180,7 +183,7 @@ useCarouselAutoplay({
             </div>
 
             <div
-              class="flex w-full flex-col justify-center p-4 lg:flex-1 lg:p-6"
+              class="flex w-full flex-col justify-center p-4 lg:min-w-0 lg:flex-1 lg:p-6"
             >
               <p
                 v-if="slide.eyebrow"
@@ -202,7 +205,7 @@ useCarouselAutoplay({
 
               <div
                 v-if="slide.primaryCta || slide.secondaryCta"
-                class="mt-10 flex flex-wrap gap-3 lg:mt-16 lg:gap-4"
+                class="mt-10 flex flex-wrap gap-3 lg:gap-4 xl:mt-16"
               >
                 <Button
                   v-if="slide.primaryCta"
@@ -233,7 +236,7 @@ useCarouselAutoplay({
 
               <div
                 v-if="slide.tags?.length"
-                class="mt-10 flex flex-wrap gap-2 lg:mt-14"
+                class="mt-10 flex flex-wrap gap-2 xl:mt-14"
               >
                 <Badge
                   v-for="tag in slide.tags"
