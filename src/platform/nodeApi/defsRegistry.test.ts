@@ -78,9 +78,10 @@ describe('defs.extend', () => {
       expect(def.source).toBe('custom_nodes.demo')
       expect(def.inputs).toEqual([
         { name: 'seed', type: 'INT', options: {} },
-        { name: 'mode', type: 'COMBO', options: {} },
+        { name: 'mode', type: 'COMBO', values: ['a', 'b'], options: {} },
         { name: 'model', type: 'MODEL', options: {} }
       ])
+      expect(Object.isFrozen(def.inputs[1].values)).toBe(true)
       expect(def.outputs).toEqual([{ name: 'LATENT', type: 'LATENT' }])
     })
 
@@ -129,6 +130,27 @@ describe('defs.extend', () => {
         { source: 'root_dir' }
       ])
       expect(def.inputs[1].options).toEqual({ default: 4, min: 1 })
+    })
+
+    it('publishes choices from both COMBO declaration formats', () => {
+      const registry = createDefRegistry()
+      const seen = vi.fn<(builder: NodeDefBuilder) => void>()
+      registry.forMajor(() => comfy.graph.node('1')!).extend('Choices', seen)
+      registry.applyTo(nodeClass('Choices'), {
+        name: 'Choices',
+        input: {
+          required: {
+            legacy: [['fast', 'quality'], {}],
+            current: ['COMBO', { options: [1, 2] }]
+          }
+        }
+      })
+
+      const { def } = seen.mock.calls[0][0]
+      expect(def.inputs.map(({ values }) => values)).toEqual([
+        ['fast', 'quality'],
+        [1, 2]
+      ])
     })
 
     it('is frozen, so an extension cannot mutate what the next one sees', () => {
@@ -571,6 +593,7 @@ describe('defs.extend', () => {
 
   it('is advertised as a capability', () => {
     expect(comfy.supports('defs.extend')).toBe(true)
+    expect(comfy.supports('defs.inputValues')).toBe(true)
     expect(comfy.supports('widgets.create')).toBe(true)
     expect(comfy.supports('serialization.control')).toBe(true)
     expect(() => comfy.require('defs.extend')).not.toThrow()

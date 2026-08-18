@@ -44,6 +44,8 @@ export interface NodeDef {
   readonly inputs: readonly Readonly<{
     name: string
     type: string
+    /** The declared choices for a COMBO input, in backend order. */
+    values?: readonly (string | number)[]
     /**
      * The input's declaration dict, verbatim from the backend.
      *
@@ -633,12 +635,37 @@ function toNodeDef(raw: RawNodeDef): NodeDef {
     return Object.freeze({ ...(declared as Record<string, unknown>) })
   }
 
+  const comboValues = (spec: unknown) => {
+    if (!Array.isArray(spec)) return undefined
+    const declared: readonly unknown[] | undefined = Array.isArray(spec[0])
+      ? spec[0]
+      : spec[0] === 'COMBO' &&
+          spec[1] !== null &&
+          typeof spec[1] === 'object' &&
+          Array.isArray(spec[1].options)
+        ? spec[1].options
+        : undefined
+    if (!declared) return undefined
+    return Object.freeze(
+      declared.filter(
+        (value): value is string | number =>
+          typeof value === 'string' || typeof value === 'number'
+      )
+    )
+  }
+
   const inputs = Object.entries({
     ...(raw.input?.required ?? {}),
     ...(raw.input?.optional ?? {})
-  }).map(([name, spec]) =>
-    Object.freeze({ name, type: slotType(spec), options: slotOptions(spec) })
-  )
+  }).map(([name, spec]) => {
+    const values = comboValues(spec)
+    return Object.freeze({
+      name,
+      type: slotType(spec),
+      ...(values ? { values } : {}),
+      options: slotOptions(spec)
+    })
+  })
 
   const outputs = (raw.output ?? []).map((type, index) =>
     Object.freeze({
