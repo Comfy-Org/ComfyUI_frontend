@@ -1311,7 +1311,8 @@ for (const entry of manifestEntries) {
                       )
                       return pendingRoundtripInitializations(
                         initializationSignals,
-                        values
+                        values,
+                        vueNodesEnabled
                       )
                     },
                     { timeout: 10_000 }

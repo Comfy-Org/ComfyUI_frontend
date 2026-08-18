@@ -67,6 +67,10 @@ export type RoundtripInitializationSignal =
   | { property: string; predicate: 'defined' }
   | { property: string; predicate: 'equals'; value: unknown }
   | { predicate: 'widget-count'; value: number }
+  | {
+      predicate: 'widget-count'
+      valueByRenderer: { litegraph: number; vue: number }
+    }
   | { predicate: 'minimum-widget-count'; value: number }
 
 export const ROUNDTRIP_INITIALIZATION_SIGNALS: Record<
@@ -89,7 +93,7 @@ export const ROUNDTRIP_INITIALIZATION_SIGNALS: Record<
   'comfyui-itools': {
     iToolsCropImage: {
       predicate: 'widget-count',
-      value: 5
+      valueByRenderer: { litegraph: 5, vue: 4 }
     },
     iToolsPaintNode: {
       predicate: 'widget-count',
@@ -100,15 +104,23 @@ export const ROUNDTRIP_INITIALIZATION_SIGNALS: Record<
 
 export function pendingRoundtripInitializations(
   signals: Record<string, RoundtripInitializationSignal>,
-  values: Record<string, unknown>
+  values: Record<string, unknown>,
+  vueNodesEnabled: boolean
 ): string[] {
   return Object.entries(signals)
     .filter(([node, signal]) => {
       if (signal.predicate === 'defined') return values[node] === undefined
       if (signal.predicate === 'minimum-widget-count')
         return typeof values[node] !== 'number' || values[node] < signal.value
-      if (signal.predicate === 'widget-count')
-        return !Object.is(values[node], signal.value)
+      if (signal.predicate === 'widget-count') {
+        const expected =
+          'valueByRenderer' in signal
+            ? vueNodesEnabled
+              ? signal.valueByRenderer.vue
+              : signal.valueByRenderer.litegraph
+            : signal.value
+        return !Object.is(values[node], expected)
+      }
       return !Object.is(values[node], signal.value)
     })
     .map(([node]) => node)
