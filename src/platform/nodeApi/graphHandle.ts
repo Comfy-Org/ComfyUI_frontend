@@ -16,7 +16,8 @@ import { createGroupHandles } from './groupHandle'
 import type { GroupHandle } from './groupHandle'
 import type { Point, NodeHandle } from './nodeHandle'
 import { createNodeHandles } from './nodeHandle'
-import type { Resolver } from './resolution'
+import { resolveFrontendNodes, resolveSupplies } from './resolution'
+import type { ResolvedSupply, Resolver, Supplier } from './resolution'
 import {
   createInputCollection,
   createOutputCollection,
@@ -45,6 +46,15 @@ export interface GraphHandle {
   add(type: string, init?: NodeInit): NodeHandle
   remove(id: string): boolean
   links(): readonly LinkInfo[]
+  /**
+   * The supply edges prompt execution would use in this graph right now.
+   *
+   * Re-runs the registered pure suppliers and the host's priority arbitration,
+   * returning graph-local ids suitable for {@link OutputSlotHandle.connectTo}.
+   * Exact priority ties are absent, just as they are from the prompt. The
+   * frozen snapshot never mutates the graph.
+   */
+  resolvedSupplies(): readonly ResolvedSupply[]
   /**
    * The nodes the user currently has selected.
    *
@@ -238,7 +248,8 @@ export function createGraphApi(
   getGraph: () => LGraph | null | undefined,
   /** API major, so handle caches never mix shapes across majors. */
   namespace = '',
-  getResolvers: () => ReadonlyMap<string, Resolver> = () => new Map()
+  getResolvers: () => ReadonlyMap<string, Resolver> = () => new Map(),
+  getSuppliers: () => ReadonlyMap<string, Supplier> = () => new Map()
 ): GraphHandle {
   const nodeById = (nodeId: string) =>
     getGraph()?.getNodeById(toNodeId(nodeId)) ?? undefined
@@ -265,7 +276,7 @@ export function createGraphApi(
     nodeHandles.handleFor(nodeId) as NodeHandle
 
   const groupHandle = createGroupHandles(handleFor)
-  const graphScopeHandle = createGraphScopeHandles(getResolvers)
+  const graphScopeHandle = createGraphScopeHandles(getResolvers, getSuppliers)
 
   const requireGraph = (action: string): LGraph => {
     const graph = getGraph()
@@ -531,6 +542,16 @@ export function createGraphApi(
       return Object.freeze(infos)
     },
 
+    resolvedSupplies() {
+      const graph = getGraph()
+      if (!graph) return Object.freeze([])
+      return resolveSupplies(
+        graph,
+        getSuppliers(),
+        resolveFrontendNodes(graph, getResolvers())
+      )
+    },
+
     get version() {
       return getGraph()?._version ?? 0
     },
@@ -564,6 +585,8 @@ export interface GraphScopeHandle {
    * subgraph's contents while appearing to work.
    */
   groups(): readonly GroupHandle[]
+  /** The supply edges prompt execution would use inside this graph. */
+  resolvedSupplies(): readonly ResolvedSupply[]
 }
 
 /**
@@ -572,7 +595,8 @@ export interface GraphScopeHandle {
  * handle for the wrong graph's node of the same id.
  */
 function createGraphScopeHandles(
-  getResolvers: () => ReadonlyMap<string, Resolver>
+  getResolvers: () => ReadonlyMap<string, Resolver>,
+  getSuppliers: () => ReadonlyMap<string, Supplier>
 ) {
   const byGraph = new WeakMap<LGraph, GraphScopeHandle>()
 
@@ -581,7 +605,12 @@ function createGraphScopeHandles(
     const existing = byGraph.get(graph)
     if (existing) return existing
 
-    const scoped = createGraphApi(() => graph, `graph:${id}`, getResolvers)
+    const scoped = createGraphApi(
+      () => graph,
+      `graph:${id}`,
+      getResolvers,
+      getSuppliers
+    )
     const handle: GraphScopeHandle = Object.freeze({
       id,
       get name() {
@@ -590,7 +619,8 @@ function createGraphScopeHandles(
       },
       nodes: () => scoped.nodes(),
       node: (nodeId: string) => scoped.node(nodeId),
-      groups: () => scoped.groups()
+      groups: () => scoped.groups(),
+      resolvedSupplies: () => scoped.resolvedSupplies()
     })
     byGraph.set(graph, handle)
     return handle

@@ -10,7 +10,11 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 
 import { handleToken, isSameEntity } from './closedProxy'
-import { createDefRegistry, frontendResolverMap } from './defsRegistry'
+import {
+  createDefRegistry,
+  frontendResolverMap,
+  frontendSupplierMap
+} from './defsRegistry'
 import type { DefRegistry } from './defsRegistry'
 import { ComfyApiError, ComfyUnsupportedError } from './errors'
 import { createBackendApi } from './backendHandle'
@@ -326,11 +330,17 @@ function buildMajor(
   defs: ReturnType<typeof createDefRegistry>,
   openWorkflow?: (data: WorkflowData) => Promise<void>
 ): Comfy {
-  const graph = createGraphApi(getGraph, `v${major}`, frontendResolverMap)
+  const graph = createGraphApi(
+    getGraph,
+    `v${major}`,
+    frontendResolverMap,
+    frontendSupplierMap
+  )
   const rootGraph = createGraphApi(
     () => getGraph()?.rootGraph,
     `v${major}:root`,
-    frontendResolverMap
+    frontendResolverMap,
+    frontendSupplierMap
   )
   const settings = createSettingsApi()
   const storage = createStorageApi()
@@ -352,7 +362,8 @@ function buildMajor(
       scope = createGraphApi(
         () => owner,
         `v${major}:definition:${String(owner.id)}`,
-        frontendResolverMap
+        frontendResolverMap,
+        frontendSupplierMap
       )
       definitionScopes.set(owner, scope)
     }

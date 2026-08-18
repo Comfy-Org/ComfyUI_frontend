@@ -434,14 +434,25 @@ export interface SupplyView {
 export type Supplier = (view: SupplyView) => readonly SuppliedEdge[]
 
 /**
+ * One winning supply after priority arbitration and source resolution.
+ */
+export interface ResolvedSupply {
+  /** The node whose supplier offered this edge. */
+  readonly supplierNodeId: string
+  /** The unconnected input the supplier won. */
+  readonly to: InputRef
+  /** The final source the prompt builder will use. */
+  readonly from: ResolvedSource
+}
+
+/**
  * Resolves the inputs that suppliers feed, keyed `nodeId:inputIndex`.
  *
  * Runs after `resolveFrontendNodes` and takes its result, so a supplier whose
  * own output is fed by a reroute chain still lands on the real source.
  *
- * Two suppliers claiming one input is a conflict with no correct answer, so
- * the first in graph order wins and the rest are ignored. Deterministic beats
- * clever: the alternative is a prompt that changes when nodes are reordered.
+ * The highest-priority claim wins. An exact tie feeds nothing because choosing
+ * either would make execution depend on graph order.
  */
 /** What a supplier's `from` finally points at. */
 function sourceFor(
@@ -482,13 +493,13 @@ function sourceFor(
   )
 }
 
-export function resolveSuppliedInputs(
+export function resolveSupplies(
   graph: LGraph,
   suppliers: ReadonlyMap<string, Supplier>,
   resolved: ReadonlyMap<string, ResolvedSource>
-): ReadonlyMap<string, ResolvedSource> {
-  const supplied = new Map<string, ResolvedSource>()
-  if (!suppliers.size) return supplied
+): readonly ResolvedSupply[] {
+  const supplied: ResolvedSupply[] = []
+  if (!suppliers.size) return Object.freeze(supplied)
 
   const groups = groupsByNodeId(graph)
   /** Every claim on an input, so a conflict can be seen rather than raced. */
@@ -555,8 +566,30 @@ export function resolveSuppliedInputs(
       )
       continue
     }
-    supplied.set(target, sourceFor(graph, best.from, best.edge.from, resolved))
+    const from = Object.freeze({
+      ...sourceFor(graph, best.from, best.edge.from, resolved)
+    }) as ResolvedSource
+    supplied.push(
+      Object.freeze({
+        supplierNodeId: String(best.from),
+        to: Object.freeze({ ...best.edge.to }),
+        from
+      })
+    )
   }
 
-  return supplied
+  return Object.freeze(supplied)
+}
+
+export function resolveSuppliedInputs(
+  graph: LGraph,
+  suppliers: ReadonlyMap<string, Supplier>,
+  resolved: ReadonlyMap<string, ResolvedSource>
+): ReadonlyMap<string, ResolvedSource> {
+  return new Map(
+    resolveSupplies(graph, suppliers, resolved).map(({ to, from }) => [
+      key(to.nodeId, to.input),
+      from
+    ])
+  )
 }
