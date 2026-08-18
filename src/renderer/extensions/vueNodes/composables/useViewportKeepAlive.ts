@@ -7,6 +7,10 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { Bounds, NodeId } from '@/renderer/core/layout/types'
 import { boundsIntersect } from '@/renderer/core/layout/utils/layoutMath'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
+import {
+  getCullingOptOutVersion,
+  isNodeTypeExcludedFromCulling
+} from '@/services/vueNodeCullingService'
 
 const MIN_NODES_FOR_KEEP_ALIVE = 150
 const KEEP_ALIVE_EXIT_RATIO = 0.9
@@ -28,6 +32,13 @@ interface Camera {
 interface UseViewportKeepAliveOptions {
   nodes: ComputedRef<VueNodeData[]>
   pinnedNodeIds: ComputedRef<ReadonlySet<NodeId>>
+  /**
+   * Support escape hatch. A getter so the composable has a reactive dependency
+   * on it: read inside plain callbacks alone, turning it back on would not
+   * recompute the set, and turning it off would leave whatever was last
+   * computed in place rather than attaching everything.
+   */
+  isEnabled?: () => boolean
   getNodeBounds: (nodeId: NodeId) => Bounds | null
   getViewportSize: () => Size
   onNodeGeometryChange: (callback: () => void) => () => void
@@ -72,22 +83,38 @@ function setsEqual<T>(left: ReadonlySet<T>, right: ReadonlySet<T>): boolean {
 export function useViewportKeepAlive({
   nodes,
   pinnedNodeIds,
+  isEnabled = () => true,
   getNodeBounds,
   getViewportSize,
   onNodeGeometryChange
 }: UseViewportKeepAliveOptions) {
   const { camera } = useTransformState()
   const activeNodeIds = shallowRef<Set<NodeId>>(new Set())
-  const membership = computed(() =>
-    JSON.stringify(nodes.value.map((node) => node.id))
-  )
+  // Order-independent membership digest. Watched to catch adds and removes
+  // without building a graph-sized string, or treating every cosmetic entry
+  // replacement (title, badge, progress) as a membership change - which is
+  // what watching `nodes` identity would do.
+  const membership = computed(() => {
+    let digest = 0
+    for (const node of nodes.value) {
+      const text = String(node.id)
+      let hash = 0
+      for (let i = 0; i < text.length; i++) {
+        hash = (Math.imul(hash, 31) + text.charCodeAt(i)) | 0
+      }
+      digest = (digest + hash) | 0
+    }
+    return `${nodes.value.length}:${digest}`
+  })
   let keepAliveActive = false
 
   function refresh(): void {
     const nodeIds = nodes.value.map((node) => node.id)
-    keepAliveActive = keepAliveActive
-      ? nodeIds.length >= MIN_NODES_FOR_KEEP_ALIVE * KEEP_ALIVE_EXIT_RATIO
-      : nodeIds.length >= MIN_NODES_FOR_KEEP_ALIVE
+    keepAliveActive =
+      isEnabled() &&
+      (keepAliveActive
+        ? nodeIds.length >= MIN_NODES_FOR_KEEP_ALIVE * KEEP_ALIVE_EXIT_RATIO
+        : nodeIds.length >= MIN_NODES_FOR_KEEP_ALIVE)
 
     if (!keepAliveActive) {
       const next = new Set(nodeIds)
@@ -100,17 +127,32 @@ export function useViewportKeepAlive({
 
     const viewportBounds = getKeepAliveBounds(camera, viewport)
     const next = new Set<NodeId>()
-    for (const nodeId of nodeIds) {
-      const bounds = getNodeBounds(nodeId)
+    for (const node of nodes.value) {
+      // Admission for registered types: an extension has said detaching this
+      // node from the document destroys state its component cannot keep - a
+      // canvas context, an uncontrolled editor. Always attached, wherever it
+      // is. Bounded by the registrant, not the graph, so unlike the pins below
+      // it is safe to admit.
+      if (isNodeTypeExcludedFromCulling(node.type)) {
+        next.add(node.id)
+        continue
+      }
+      const bounds = getNodeBounds(node.id)
       if (
         !bounds ||
         !isUsableBounds(bounds) ||
         boundsIntersect(bounds, viewportBounds)
       ) {
-        next.add(nodeId)
+        next.add(node.id)
       }
     }
 
+    // Retention, not admission: a pin keeps an attached node attached while
+    // the pin holds, and nothing more. A pinned node that is already detached
+    // stays detached - focus, playing media and a link drag can only exist on
+    // an attached node, so admission would never be needed, and it is what
+    // would let a graph-sized pin mount the graph. Retention expires with the
+    // pin because this set is rebuilt from the viewport on every refresh.
     for (const nodeId of pinnedNodeIds.value) {
       if (activeNodeIds.value.has(nodeId)) next.add(nodeId)
     }
@@ -133,6 +175,10 @@ export function useViewportKeepAlive({
     () => void refreshThrottled()
   )
   watch(pinnedNodeIds, () => void refreshThrottled())
+  watch(isEnabled, refresh)
+  // An extension can register an opt-out at any time, typically at load. The
+  // registered nodes must attach on registration, not on the next pan.
+  watch(getCullingOptOutVersion, () => void refreshThrottled())
 
   const stopGeometryListener = onNodeGeometryChange(() => {
     void refreshThrottled()

@@ -306,13 +306,13 @@ const rawNodes = computed((): VueNodeData[] =>
   Array.from(vueNodeLifecycle.nodeManager.value?.vueNodeData?.values() ?? [])
 )
 const { pinnedNodeIds } = useViewportKeepAlivePins({
-  selectedNodeIds: computed(() => canvasStore.selectedNodeIds),
   getRoot: () => transformPaneRef.value?.element ?? null,
   getLinkConnector: () => canvasStore.canvas?.linkConnector
 })
 const { activeNodeIds } = useViewportKeepAlive({
   nodes: rawNodes,
   pinnedNodeIds,
+  isEnabled: () => settingStore.get('Comfy.VueNodes.ViewportKeepAlive'),
   getNodeBounds: (nodeId) =>
     layoutStore.getNodeLayoutRef(nodeId).value?.bounds ?? null,
   getViewportSize: () => ({

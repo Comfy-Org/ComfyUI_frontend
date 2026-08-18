@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { computed, effectScope, nextTick, ref } from 'vue'
+import { effectScope, nextTick } from 'vue'
 
 import { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
 import {
@@ -7,8 +7,6 @@ import {
   findLiveStateNodeIds,
   useViewportKeepAlivePins
 } from '@/renderer/extensions/vueNodes/composables/useViewportKeepAlivePins'
-import { toNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
 
 function nodeWith(id: string, contents: string): HTMLElement {
   const root = document.createElement('div')
@@ -67,13 +65,9 @@ describe('useViewportKeepAlivePins', () => {
       value: [{ node: { id: 'link-source' } }]
     })
 
-    const selectedNodeIds = ref<ReadonlySet<NodeId>>(
-      new Set([toNodeId('selected')])
-    )
     const scope = effectScope()
     const { pinnedNodeIds } = scope.run(() =>
       useViewportKeepAlivePins({
-        selectedNodeIds: computed(() => selectedNodeIds.value),
         getRoot: () => root,
         getLinkConnector: () => connector
       })
@@ -85,7 +79,7 @@ describe('useViewportKeepAlivePins', () => {
     await nextTick()
 
     expect(pinnedNodeIds.value).toEqual(
-      new Set(['selected', 'focused', 'playing', 'link-source'])
+      new Set(['focused', 'playing', 'link-source'])
     )
 
     input.blur()
@@ -94,7 +88,10 @@ describe('useViewportKeepAlivePins', () => {
     connector.events.dispatch('reset', true)
     await nextTick()
 
-    expect(pinnedNodeIds.value).toEqual(new Set(['selected']))
+    // Every pin is transient by construction, so with all three released the
+    // set is empty. Selection is deliberately not a pin: it is the one input
+    // that can be graph-sized, and a detached node keeps its selection state.
+    expect(pinnedNodeIds.value).toEqual(new Set())
 
     scope.stop()
     root.remove()

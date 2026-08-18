@@ -1,12 +1,24 @@
-import { useEventListener, useMutationObserver } from '@vueuse/core'
+import {
+  useEventListener,
+  useMutationObserver,
+  useThrottleFn
+} from '@vueuse/core'
 import { computed, nextTick, shallowRef, watchEffect } from 'vue'
-import type { ComputedRef } from 'vue'
 
 import type { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 
 const LIVE_STATE_SELECTOR = 'iframe, video, audio'
+
+/**
+ * Matches the sibling viewport composable's refresh cadence. The subtree scan
+ * below runs against every attached node, and it fires on precisely the churn
+ * KeepAlive generates - each activate and deactivate is a childList mutation
+ * under the root - so unthrottled it would rescan on every batch of exactly
+ * the work it exists to bound.
+ */
+const LIVE_STATE_SCAN_THROTTLE_MS = 100
 
 interface LinkDragSource {
   isConnecting: boolean
@@ -45,13 +57,24 @@ export function findLinkDragSourceIds(
 }
 
 interface UseViewportKeepAlivePinsOptions {
-  selectedNodeIds: ComputedRef<ReadonlySet<NodeId>>
   getRoot: () => HTMLElement | null
   getLinkConnector: () => LinkConnector | null | undefined
 }
 
+/**
+ * Nodes that must stay attached while they hold state a detach would destroy:
+ * the node being typed in (caret, IME composition), media mid-playback, an
+ * iframe's document, and the source of a link drag in flight.
+ *
+ * Selection is deliberately not a pin. Under KeepAlive a detached node keeps
+ * its component instance and its graph state, so selecting it costs nothing to
+ * detach - and selection is the one input that can be graph-sized. Retaining
+ * on selection lets select-all followed by a pan accumulate every node the
+ * viewport ever touched, silently disabling the feature. Every pin here is
+ * bounded by construction: one focus, one drag, and media that is actually
+ * playing.
+ */
 export function useViewportKeepAlivePins({
-  selectedNodeIds,
   getRoot,
   getLinkConnector
 }: UseViewportKeepAlivePinsOptions) {
@@ -76,6 +99,11 @@ export function useViewportKeepAlivePins({
     const root = getRoot()
     liveStateNodeIds.value = root ? findLiveStateNodeIds(root) : new Set()
   }
+  const refreshLiveStateThrottled = useThrottleFn(
+    refreshLiveState,
+    LIVE_STATE_SCAN_THROTTLE_MS,
+    true
+  )
 
   function refreshLinkDragSources(): void {
     linkDragSourceIds.value = findLinkDragSourceIds(getLinkConnector())
@@ -86,10 +114,16 @@ export function useViewportKeepAlivePins({
   useEventListener(document, 'play', refreshLiveState, { capture: true })
   useEventListener(document, 'pause', refreshLiveState, { capture: true })
   useEventListener(document, 'ended', refreshLiveState, { capture: true })
-  useMutationObserver(() => getRoot(), refreshLiveState, {
-    childList: true,
-    subtree: true
-  })
+  // Not re-entrant: the scan reads the DOM and writes a shallowRef; it adds
+  // and removes nothing under the root, so it cannot re-trigger itself.
+  useMutationObserver(
+    () => getRoot(),
+    () => void refreshLiveStateThrottled(),
+    {
+      childList: true,
+      subtree: true
+    }
+  )
 
   watchEffect((onCleanup) => {
     const connector = getLinkConnector()
@@ -112,7 +146,7 @@ export function useViewportKeepAlivePins({
   void nextTick(refreshLiveState)
 
   const pinnedNodeIds = computed(() => {
-    const nodeIds = new Set(selectedNodeIds.value)
+    const nodeIds = new Set<NodeId>()
     if (focusedNodeId.value) nodeIds.add(focusedNodeId.value)
     for (const nodeId of liveStateNodeIds.value) nodeIds.add(nodeId)
     for (const nodeId of linkDragSourceIds.value) nodeIds.add(nodeId)

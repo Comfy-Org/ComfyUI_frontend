@@ -127,6 +127,16 @@ const resizeObserver = new ResizeObserver((entries) => {
     if (!(entry.target instanceof HTMLElement)) continue
     const element = entry.target
 
+    // KeepAlive deactivation detaches the subtree without unmounting it, and
+    // the observer keeps watching. A detached element measures 0x0, which is
+    // not equal to any real size, so it would pass every isBoundsEqual guard
+    // and reach canonical layout - and from there node.serialize(). Treat the
+    // entry as stale and require a fresh measurement once reattached.
+    if (!element.isConnected) {
+      markElementForFreshMeasurement(element)
+      continue
+    }
+
     // Signal-only widgets-grid resize - route the parent node through the
     // slot-layout pipeline and skip bounds processing entirely.
     const widgetsGridParentNodeId = element.dataset.widgetsGridNodeId

@@ -114,6 +114,16 @@ export interface ExtensionManager {
     set: <T = unknown>(id: string, value: T) => void
   }
   workflow: ReturnType<typeof useWorkflowStore>
+  vueNodes: {
+    /**
+     * Keep every node of a type attached to the DOM regardless of viewport
+     * position. For nodes whose widgets hold state that detaching from the
+     * document destroys and a component instance cannot preserve - a WebGL or
+     * 2D canvas context, an uncontrolled third-party editor, a self-measuring
+     * widget. Ref-counted; the returned function releases this registration.
+     */
+    registerCullingOptOut(nodeType: string): () => void
+  }
 
   // Execution error state (read-only)
   lastNodeErrors: Record<string, NodeError> | null
