@@ -77,7 +77,6 @@ catalog:
   cva: 1.0.0-beta.4
   dompurify: 3.4.7
   dotenv: ^16.4.5
-  embla-carousel-vue: ^8.6.0
   eslint: ^10.8.1
   eslint-config-prettier: ^10.1.8
   eslint-import-resolver-typescript: ^4.4.5
