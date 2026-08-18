@@ -2,7 +2,14 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import { expectNoVisibleErrors } from '@e2e/fixtures/utils/errorSurfaces'
+import {
+  expectNoVisibleErrors,
+  trackVisibleErrors
+} from '@e2e/fixtures/utils/errorSurfaces'
+
+test.beforeEach(async ({ page }) => {
+  await trackVisibleErrors(page)
+})
 
 // expectNoVisibleErrors is the single enforcement point for every
 // user-visible error surface in the suite.
@@ -42,13 +49,14 @@ test('a closed page fails immediately with the real reason, not the sentinel', a
   expect(String(failure)).not.toContain('unreadable mid-poll')
 })
 
-test('a visible error toast fails even if it clears during the assertion', async ({
+test('a visible error toast fails after it clears before the assertion', async ({
   page
 }) => {
-  await page.setContent(
+  const html =
     '<div id="t" class="p-toast-message-error">momentary</div>' +
-      '<script>setTimeout(() => document.getElementById("t").remove(), 800)</script>'
-  )
+    '<script>setTimeout(() => document.getElementById("t").remove(), 800)</script>'
+  await page.goto(`data:text/html,${encodeURIComponent(html)}`)
+  await expect(page.locator('#t')).toHaveCount(0)
   const failure = await expectNoVisibleErrors(page, 'transient').then(
     () => undefined,
     (error: unknown) => error

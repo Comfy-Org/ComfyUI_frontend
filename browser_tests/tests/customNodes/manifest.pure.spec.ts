@@ -8,6 +8,7 @@ import {
   expectedNodeCountFor,
   loadApplicableAutogrowCases,
   loadFullManifest,
+  loadManifest,
   servesFrontendAssetsForPack,
   shardOf
 } from '@e2e/fixtures/customNode/manifest'
@@ -239,6 +240,27 @@ test.describe('customNode manifest', () => {
     } finally {
       if (original === undefined) delete process.env.CUSTOM_NODES_SHARD
       else process.env.CUSTOM_NODES_SHARD = original
+    }
+  })
+
+  test('cloud local calibration rejects an unreviewed shard count', () => {
+    const priorManifest = process.env.CUSTOM_NODES_MANIFEST
+    const priorBackend = process.env.CUSTOM_NODES_BACKEND
+    const priorShard = process.env.CUSTOM_NODES_SHARD
+    try {
+      process.env.CUSTOM_NODES_MANIFEST = 'cloud'
+      process.env.CUSTOM_NODES_BACKEND = 'local'
+      process.env.CUSTOM_NODES_SHARD = '1/4'
+      expect(() => loadManifest()).toThrow(/calibrated for 5 shards, got 4/)
+      process.env.CUSTOM_NODES_SHARD = '1/5'
+      expect(() => loadManifest()).not.toThrow()
+    } finally {
+      if (priorManifest === undefined) delete process.env.CUSTOM_NODES_MANIFEST
+      else process.env.CUSTOM_NODES_MANIFEST = priorManifest
+      if (priorBackend === undefined) delete process.env.CUSTOM_NODES_BACKEND
+      else process.env.CUSTOM_NODES_BACKEND = priorBackend
+      if (priorShard === undefined) delete process.env.CUSTOM_NODES_SHARD
+      else process.env.CUSTOM_NODES_SHARD = priorShard
     }
   })
 

@@ -1,9 +1,10 @@
-import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { existsSync, readFileSync } from 'node:fs'
+import { basename, resolve } from 'node:path'
 
 import type { Page } from '@playwright/test'
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { CuratedOutputHashes } from '@e2e/fixtures/customNode/outputHashes'
 import {
   comfyExpect as expect,
   comfyPageFixture as test
@@ -23,6 +24,7 @@ import {
 } from '@e2e/fixtures/customNode/consoleErrorLedger'
 import {
   AUTOGROW_CASES,
+  customNodesManifest,
   expectedExtensionsFor,
   FRONTEND_ASSET_EXCLUSIONS,
   loadManifest,
@@ -31,6 +33,11 @@ import {
   staleAutogrowApplicabilityIssues
 } from '@e2e/fixtures/customNode/manifest'
 import { missingExpectedNodes } from '@e2e/fixtures/customNode/objectInfoValidator'
+import {
+  compareOutputHashes,
+  hashSinkPayloads,
+  recordObservedHashes
+} from '@e2e/fixtures/customNode/outputHashes'
 import {
   collectConsoleErrors,
   startupConsoleErrors
@@ -302,6 +309,92 @@ for (const entry of manifestEntries) {
             result.outputsByNode[sinkId],
             `sink node ${sinkId} produced no ui payload`
           ).toBeTruthy()
+
+        const recordMode = process.env.RECORD_OUTPUT_HASHES
+        if (recordMode !== undefined && recordMode !== '1')
+          throw new Error(
+            `unrecognized RECORD_OUTPUT_HASHES value '${recordMode}' - the only mode is '1'`
+          )
+        const compareMode = process.env.CN_ENABLE_S15
+        if (
+          compareMode !== undefined &&
+          compareMode !== '0' &&
+          compareMode !== '1'
+        )
+          throw new Error(
+            `unrecognized CN_ENABLE_S15 value '${compareMode}' - expected '0' or '1'`
+          )
+        if (recordMode === '1' || compareMode === '1') {
+          expect(
+            customNodesManifest(),
+            'S15 is calibrated only for the six-pack Core manifest'
+          ).toBe('core')
+          const outputHashesPath = resolve(
+            'browser_tests/fixtures/data/curatedOutputHashes.core.json'
+          )
+          const curatedOutputHashes: CuratedOutputHashes | null = existsSync(
+            outputHashesPath
+          )
+            ? (JSON.parse(
+                readFileSync(outputHashesPath, 'utf-8')
+              ) as CuratedOutputHashes)
+            : null
+          const observed = await hashSinkPayloads(
+            result.outputsByNode as Record<string, unknown>,
+            async (ref) => {
+              const encoded = await comfyPage.page.evaluate(async (file) => {
+                const query = new URLSearchParams({
+                  filename: file.filename,
+                  subfolder: file.subfolder,
+                  type: file.type
+                })
+                const response = await window.app!.api.fetchApi(
+                  `/view?${query}`
+                )
+                if (!response.ok) return { status: response.status, body: '' }
+                const bytes = new Uint8Array(await response.arrayBuffer())
+                let binary = ''
+                for (const byte of bytes) binary += String.fromCharCode(byte)
+                return { status: response.status, body: btoa(binary) }
+              }, ref)
+              expect(encoded.status, `S15: /api/view ${ref.filename}`).toBe(200)
+              return Buffer.from(encoded.body, 'base64')
+            }
+          )
+          const workflowKey = `${entry.pack}/${basename(entry.workflow)}`
+          if (recordMode === '1') {
+            recordObservedHashes(
+              'test-results/curatedOutputHashes.recorded.json',
+              workflowKey,
+              observed
+            )
+            expect(
+              null,
+              `RECORD_OUTPUT_HASHES: wrote ${Object.keys(observed).length} hash(es) for ${workflowKey} - the artifact is the product, this is not a pass`
+            ).not.toBeNull()
+          } else if (!process.env.CI) {
+            console.log(
+              `S15 compare skipped off-CI for ${workflowKey} - baselines encode the CI recording environment; CI enforces`
+            )
+          } else {
+            expect(
+              curatedOutputHashes,
+              `S15: no committed hashes for Core (${outputHashesPath}) - record them with RECORD_OUTPUT_HASHES=1`
+            ).not.toBeNull()
+            expect(
+              curatedOutputHashes!.recordedAt.core,
+              'S15 baseline must match the pinned ComfyUI core under test'
+            ).toBe(process.env.CN_OUTPUT_HASHES_CORE)
+            expect(
+              compareOutputHashes({
+                workflowKey,
+                observed,
+                committed: curatedOutputHashes!
+              }),
+              'S15 output regression'
+            ).toEqual([])
+          }
+        }
 
         await expectNoVisibleErrors(comfyPage.page, 'after run')
         consoleErrors.stop()

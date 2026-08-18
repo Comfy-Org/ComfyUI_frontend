@@ -266,7 +266,7 @@ const ROUNDTRIP_VALUE_ALLOWLIST: Record<string, Record<string, string>> = {
   },
   'WhatDreamsCost-ComfyUI': {
     LoadAudioUI:
-      'custom audio UI normalizes absent player state from an empty string to null on configure',
+      'custom audio UI clamps end and duration to the loaded file duration and normalizes absent player state on configure',
     LTXDirector:
       'director UI canonicalizes timeline JSON and its derived prompt fields on configure'
   },
@@ -993,12 +993,11 @@ for (const entry of manifestEntries) {
                     JSON.stringify(afterNormalized)
                   )
                 }
-                const serializableWidgetNamesById = () =>
+                const widgetNamesById = () =>
                   new Map(
                     window.app!.graph.nodes.map((node) => [
                       String(node.id),
                       (node.widgets ?? [])
-                        .filter((widget) => widget.serialize !== false)
                         .map((widget) => widget.name)
                         .join(',')
                     ])
@@ -1013,13 +1012,11 @@ for (const entry of manifestEntries) {
                     for (const node of window.app!.graph.nodes) {
                       const expected = created.get(String(node.id))
                       if (expected)
-                        expected.widgetCount = (node.widgets ?? []).filter(
-                          (widget) => widget.serialize !== false
-                        ).length
+                        expected.widgetCount = (node.widgets ?? []).length
                     }
                   },
                   snapshotAndConfigure() {
-                    namesBefore = serializableWidgetNamesById()
+                    namesBefore = widgetNamesById()
                     firstPass = window.app!.graph.serialize()
                     window.app!.graph.configure(firstPass)
                   },
@@ -1031,7 +1028,7 @@ for (const entry of manifestEntries) {
                   // values are only compared where the topology stayed put.
                   compare(label: string, strict: boolean) {
                     const secondPass = window.app!.graph.serialize()
-                    const namesAfter = serializableWidgetNamesById()
+                    const namesAfter = widgetNamesById()
                     const byId = (pass: NonNullable<typeof firstPass>) =>
                       new Map(
                         (pass.nodes ?? []).map((node) => [
@@ -1060,9 +1057,7 @@ for (const entry of manifestEntries) {
                         problems.push(
                           `${expected.type}: type became ${String(after.type)} on ${label} reload`
                         )
-                      const widgets = (restored.widgets ?? []).filter(
-                        (widget) => widget.serialize !== false
-                      ).length
+                      const widgets = (restored.widgets ?? []).length
                       if (expected.widgetCount === null) {
                         problems.push(
                           `${expected.type}: initial widget topology was not captured`
@@ -1251,35 +1246,36 @@ for (const entry of manifestEntries) {
             const waitForInitialization = async () => {
               if (Object.keys(initializationSignals).length === 0) return
               await expect
-                .poll(async () => {
-                  const values = await comfyPage.page.evaluate((signals) => {
-                    const values: Record<string, unknown> = {}
-                    for (const [type, signal] of Object.entries(signals)) {
-                      const node = window.app!.graph.nodes.find(
-                        (candidate) => candidate.type === type
-                      ) as unknown as Record<string, unknown> | undefined
-                      if (signal.predicate === 'widget-count') {
-                        const widgets = (
-                          node as unknown as
-                            | {
-                                widgets?: Array<{ serialize?: boolean }>
-                              }
-                            | undefined
-                        )?.widgets
-                        values[type] = (widgets ?? []).filter(
-                          (widget) => widget.serialize !== false
-                        ).length
-                      } else {
-                        values[type] = node?.[signal.property]
+                .poll(
+                  async () => {
+                    const values = await comfyPage.page.evaluate((signals) => {
+                      const values: Record<string, unknown> = {}
+                      for (const [type, signal] of Object.entries(signals)) {
+                        const node = window.app!.graph.nodes.find(
+                          (candidate) => candidate.type === type
+                        ) as unknown as Record<string, unknown> | undefined
+                        if (signal.predicate === 'widget-count') {
+                          const widgets = (
+                            node as unknown as
+                              | {
+                                  widgets?: unknown[]
+                                }
+                              | undefined
+                          )?.widgets
+                          values[type] = (widgets ?? []).length
+                        } else {
+                          values[type] = node?.[signal.property]
+                        }
                       }
-                    }
-                    return values
-                  }, initializationSignals)
-                  return pendingRoundtripInitializations(
-                    initializationSignals,
-                    values
-                  )
-                })
+                      return values
+                    }, initializationSignals)
+                    return pendingRoundtripInitializations(
+                      initializationSignals,
+                      values
+                    )
+                  },
+                  { timeout: 10_000 }
+                )
                 .toEqual([])
             }
             await waitForInitialization()

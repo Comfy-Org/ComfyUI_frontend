@@ -15,7 +15,7 @@ export const ROUNDTRIP_VALUE_ALLOWED_INDICES_LITEGRAPH: Record<
     LTXVSparseTrackEditor: '1'
   },
   'WhatDreamsCost-ComfyUI': {
-    LoadAudioUI: '5',
+    LoadAudioUI: '2,3,5',
     LTXDirector: '3,4,5,7'
   },
   'comfyui-itools': {
@@ -38,7 +38,7 @@ export const ROUNDTRIP_VALUE_ALLOWED_INDICES_VUE: Record<
     LTXVSparseTrackEditor: '1'
   },
   'WhatDreamsCost-ComfyUI': {
-    LoadAudioUI: '5',
+    LoadAudioUI: '2,3,5',
     LTXDirector: '3,4,5,7'
   },
   'comfyui-itools': {

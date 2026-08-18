@@ -20,6 +20,7 @@ import {
   loadManifest,
   packIdentity
 } from '../browser_tests/fixtures/customNode/manifest'
+import { hasCommittedProfile } from '../browser_tests/fixtures/customNode/interactionProfiles'
 
 // Tests every run registers whatever the slice holds: allNodes's
 // manifest-coverage test, connectivity (three), coreSmoke (two), and the
@@ -40,6 +41,9 @@ function expectedTestCount(): number {
     SLICE_INDEPENDENT_TESTS +
     expectedTierTestCount(entries) +
     TESTS_PER_PACK * entries.length +
+    entries.filter((entry) =>
+      hasCommittedProfile(entry.pack, packIdentity(entry))
+    ).length +
     entries.filter((entry) => entry.tiers.includes('run')).length +
     loadApplicableAutogrowCases().length
   )
@@ -53,7 +57,11 @@ function expectedTierTestCount(entries = loadManifest()): number {
 }
 
 function packRows(): string[] {
-  return loadManifest().map((entry) => `${entry.pack}\t${packIdentity(entry)}`)
+  return loadManifest().map((entry) => {
+    const installRef =
+      'repo' in entry ? `${entry.repo}@${entry.pin}` : entry.deployRef
+    return `${entry.pack}\t${installRef}`
+  })
 }
 
 const lines = process.argv.includes('--expected-tests')

@@ -3,6 +3,65 @@ import { expect } from '@playwright/test'
 
 import { TestIds } from '@e2e/fixtures/selectors'
 
+interface VisibleError {
+  surface: string
+  text: string
+}
+
+type VisibleErrorWindow = Window &
+  typeof globalThis & {
+    __cnVisibleErrors?: VisibleError[]
+  }
+
+const trackedPages = new WeakSet<Page>()
+
+const surfaceSelectors = [
+  {
+    surface: 'errorOverlay',
+    selector: `[data-testid="${TestIds.dialogs.errorOverlay}"]`
+  },
+  {
+    surface: 'errorDialog',
+    selector: `[data-testid="${TestIds.dialogs.errorDialog}"]`
+  },
+  { surface: 'nodeRenderErrors', selector: '.node-error' },
+  { surface: 'errorToasts', selector: '.p-toast-message-error' }
+]
+
+export async function trackVisibleErrors(page: Page): Promise<void> {
+  if (trackedPages.has(page)) return
+  await page.addInitScript((selectors) => {
+    const target = window as VisibleErrorWindow
+    const seen = new Set<string>()
+    target.__cnVisibleErrors = []
+    const sample = () => {
+      for (const { surface, selector } of selectors) {
+        for (const element of document.querySelectorAll(selector)) {
+          if (
+            !(element instanceof HTMLElement) ||
+            !element.checkVisibility({
+              checkOpacity: true,
+              checkVisibilityCSS: true
+            })
+          )
+            continue
+          const text = (element.innerText || element.textContent || '')
+            .replace(/\s+/g, ' ')
+            .trim()
+            .slice(0, 300)
+          const key = `${surface}\u0000${text}`
+          if (seen.has(key)) continue
+          seen.add(key)
+          target.__cnVisibleErrors!.push({ surface, text })
+        }
+      }
+      requestAnimationFrame(sample)
+    }
+    requestAnimationFrame(sample)
+  }, surfaceSelectors)
+  trackedPages.add(page)
+}
+
 // The app's user-visible error surfaces. A regression run is green only if a
 // human looking at the screen would see zero errors - not merely a clean
 // console. The harness self-check asserts the overlay IS visible after a
@@ -37,6 +96,14 @@ export async function expectNoVisibleErrors(
   page: Page,
   context: string
 ): Promise<void> {
+  expect(
+    trackedPages.has(page),
+    `${context}: visible-error recorder was not installed before navigation`
+  ).toBe(true)
+  const history = await page.evaluate(
+    () => (window as VisibleErrorWindow).__cnVisibleErrors ?? []
+  )
+  expect(history, `${context}: transient visible errors`).toEqual([])
   for (const [surface, locator] of Object.entries(errorSurfaces(page)))
     expect(
       await surfaceTexts(page, surface, locator),

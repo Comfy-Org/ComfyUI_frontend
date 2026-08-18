@@ -37,7 +37,10 @@ import {
   attachPageDiagnosticEvidence,
   collectConsoleErrors
 } from '@e2e/fixtures/utils/consoleErrorCollector'
-import { expectNoVisibleErrors } from '@e2e/fixtures/utils/errorSurfaces'
+import {
+  expectNoVisibleErrors,
+  trackVisibleErrors
+} from '@e2e/fixtures/utils/errorSurfaces'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 
 // Budget the sweep per pair instead of flat: the corpus grows with every pack
@@ -103,6 +106,7 @@ async function runPairsInIsolatedPages(
   for (const pair of pairs) {
     const probe = await page.context().newPage()
     try {
+      await trackVisibleErrors(probe)
       await probe.goto(page.url())
       await probe.waitForFunction(
         ([producerType, consumerType]) =>
@@ -119,6 +123,10 @@ async function runPairsInIsolatedPages(
       const consoleErrors = collectConsoleErrors(probe)
       try {
         results.push(...(await evaluatePairs(probe, [pair])))
+        await expectNoVisibleErrors(
+          probe,
+          `after isolated pair ${pair.producer.nodeType} -> ${pair.consumer.nodeType}`
+        )
       } finally {
         consoleErrors.stop()
         errors.push(...consoleErrors.errors)

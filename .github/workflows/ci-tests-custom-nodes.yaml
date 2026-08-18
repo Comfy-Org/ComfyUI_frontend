@@ -6,11 +6,11 @@
 # branch protection; it fails closed if path detection or any matrix shard
 # fails.
 #
-# The pinned Cloud snapshot produces 87 manifest rows and one unjoined YAML
-# pack; the unjoined pack and four reviewed quarantine entries are reported as
-# excluded coverage. The backend is a LOCAL ComfyUI - a separate axis, see
-# manifest.ts. Each matrix entry owns a stable weight-balanced slice, installs
-# only that slice, and runs the tests those rows register.
+# The matrix keeps the six-pack Core depth suite intact and adds the pinned
+# Cloud snapshot as five breadth shards. The Cloud snapshot produces 87
+# manifest rows and one unjoined YAML pack; the unjoined pack and four reviewed
+# quarantine entries are reported as excluded coverage. Every entry owns an
+# isolated LOCAL ComfyUI backend and installs only its manifest slice.
 #
 # The gate is deterministic at the SOURCE level: ComfyUI core is pinned at a
 # verified commit and every pack is installed at the exact deployRef the pinned
@@ -31,7 +31,7 @@ on:
         description: 'Clean run or deliberate independent-tier break'
         required: false
         type: choice
-        options: ['0', 'all', '1', '2', '3', '9']
+        options: ['0', 'all', '1', '2', '3', '9', '15']
         default: '0'
       branch:
         description: 'Frontend branch/ref to test (empty = the ref this workflow runs from)'
@@ -88,10 +88,12 @@ jobs:
         # cannot drift out of step with a separate total. Slices are balanced
         # by expectedNodeCount (see shardOf), not by pack count: node counts
         # run 1..285 with a median of 6, and a matrix costs its slowest shard.
-        shard: ['1/5', '2/5', '3/5', '4/5', '5/5']
+        shard: ['core', '1/5', '2/5', '3/5', '4/5', '5/5']
         proof_row: >-
-          ${{ fromJSON(github.event_name == 'workflow_dispatch' && inputs.detection_proof_row == 'all' && '["1","2","3","9"]' || format('["{0}"]', inputs.detection_proof_row || '0')) }}
+          ${{ fromJSON(github.event_name == 'workflow_dispatch' && inputs.detection_proof_row == 'all' && '["1","2","3","9","15"]' || format('["{0}"]', inputs.detection_proof_row || '0')) }}
         exclude:
+          - shard: 'core'
+            proof_row: '1'
           - shard: '1/5'
             proof_row: '1'
           - shard: '2/5'
@@ -100,6 +102,8 @@ jobs:
             proof_row: '1'
           - shard: '5/5'
             proof_row: '1'
+          - shard: 'core'
+            proof_row: '2'
           - shard: '1/5'
             proof_row: '2'
           - shard: '2/5'
@@ -108,6 +112,8 @@ jobs:
             proof_row: '2'
           - shard: '5/5'
             proof_row: '2'
+          - shard: 'core'
+            proof_row: '3'
           - shard: '1/5'
             proof_row: '3'
           - shard: '2/5'
@@ -116,6 +122,8 @@ jobs:
             proof_row: '3'
           - shard: '5/5'
             proof_row: '3'
+          - shard: 'core'
+            proof_row: '9'
           - shard: '1/5'
             proof_row: '9'
           - shard: '3/5'
@@ -124,6 +132,16 @@ jobs:
             proof_row: '9'
           - shard: '5/5'
             proof_row: '9'
+          - shard: '1/5'
+            proof_row: '15'
+          - shard: '2/5'
+            proof_row: '15'
+          - shard: '3/5'
+            proof_row: '15'
+          - shard: '4/5'
+            proof_row: '15'
+          - shard: '5/5'
+            proof_row: '15'
     # Run only when non-docs code changed AND the PR is same-repo. Fork PRs can
     # edit the manifest's deployRefs, and this job fetches and pip-installs
     # whatever they point at (setup.py runs at install time), so an untrusted
@@ -145,8 +163,8 @@ jobs:
     # results reads the same slice. The specs and the install loop both derive
     # their pack list from these three (see scripts/customNodeShard.ts).
     env:
-      CUSTOM_NODES_MANIFEST: cloud
-      CUSTOM_NODES_SHARD: ${{ matrix.shard }}
+      CUSTOM_NODES_MANIFEST: ${{ matrix.shard == 'core' && 'core' || 'cloud' }}
+      CUSTOM_NODES_SHARD: ${{ matrix.shard == 'core' && '1/1' || matrix.shard }}
     steps:
       # Artifact and cache names cannot contain `/`, which the shard id does.
       - name: Resolve shard identity
@@ -156,7 +174,7 @@ jobs:
           if ! [[ "$CUSTOM_NODES_SHARD" =~ ^[0-9]+/[0-9]+$ ]]; then
             echo "::error::matrix shard '$CUSTOM_NODES_SHARD' is not index/total"; exit 1
           fi
-          echo "SHARD_SLUG=${CUSTOM_NODES_SHARD/\//-of-}" >> "$GITHUB_ENV"
+          echo "SHARD_SLUG=${CUSTOM_NODES_MANIFEST}-${CUSTOM_NODES_SHARD/\//-of-}" >> "$GITHUB_ENV"
 
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -183,7 +201,10 @@ jobs:
           [ -n "$p" ] || { echo "::error::no patch file for S$ROW"; exit 1; }
           git apply --check "$p"
           git apply "$p"
-          grep -rq "DETECTION PROOF (row $ROW" src/
+          if git diff --quiet -- src/; then
+            echo "::error::S$ROW patch did not change src/"
+            exit 1
+          fi
           echo "path=$p" >> "$GITHUB_OUTPUT"
           echo "digest=$(shasum -a 256 "$p" | awk '{print $1}')" >> "$GITHUB_OUTPUT"
 
@@ -204,6 +225,7 @@ jobs:
           case "$PROOF_ROW" in
             1|2|3) witness=comfyui-impact-pack ;;
             9) witness=comfyui-videohelpersuite ;;
+            15) witness=ComfyUI-Impact-Pack ;;
           esac
           pnpm --silent custom-node-shard | cut -f1 | grep -qxF "$witness" || {
             echo "::error::S$PROOF_ROW proof ran on a shard that does not own $witness"
@@ -211,6 +233,7 @@ jobs:
           }
 
       - name: Report cloud-manifest provenance
+        if: env.CUSTOM_NODES_MANIFEST == 'cloud'
         shell: bash
         run: |
           set -euo pipefail
@@ -253,7 +276,7 @@ jobs:
         uses: actions/cache/restore@v5
         with:
           path: ~/.cache/cn-packs
-          key: cn-packs-v3-${{ env.SHARD_SLUG }}-${{ hashFiles('browser_tests/fixtures/data/customNodeManifest.cloud.json') }}
+          key: cn-packs-v3-${{ env.SHARD_SLUG }}-${{ hashFiles('browser_tests/fixtures/data/customNodeManifest.*.json') }}
           restore-keys: cn-packs-v3-${{ env.SHARD_SLUG }}-
 
       # Install exactly the packs this shard owns (DRY: a new pack row installs
@@ -271,7 +294,7 @@ jobs:
       # summary, and `always()` so a red suite still reports what it never
       # measured - the case where that block matters most.
       - name: Report excluded packs
-        if: always() && matrix.shard == '1/5'
+        if: always() && env.CUSTOM_NODES_MANIFEST == 'cloud' && matrix.shard == '1/5'
         run: pnpm custom-node-quarantine
 
       - name: Install manifest custom nodes
@@ -421,7 +444,7 @@ jobs:
         uses: actions/cache/save@v5
         with:
           path: ~/.cache/cn-packs
-          key: cn-packs-v3-${{ env.SHARD_SLUG }}-${{ hashFiles('browser_tests/fixtures/data/customNodeManifest.cloud.json') }}
+          key: cn-packs-v3-${{ env.SHARD_SLUG }}-${{ hashFiles('browser_tests/fixtures/data/customNodeManifest.*.json') }}
 
       - name: Apply Detection Proof execution break
         id: execution-mutation
@@ -456,6 +479,7 @@ jobs:
             2) title='S2: every registered node mounts on the DOM renderer'; pat='ImpactInt: Vue mounts 0 of 1 widgets' ;;
             3) title='S3: registered-node save/reload outcomes match exact contracts'; pat='ImpactInt: widgets_values \[1\] -> \[0\] on set-values reload' ;;
             9) title='S9: calibrated model-free node corpus executes'; pat='DETECTION PROOF \\(row 9\\): pack node runtime failure' ;;
+            15) title='Curated workflow execution: completes without error'; pat='ComfyUI-Impact-Pack/impact_primitives_run\\.json 2: output hash changed' ;;
           esac
           {
             echo "proof_sha=$PROOF_SHA"
@@ -483,7 +507,7 @@ jobs:
               audio.writeframes(b'\0\0' * 8000)
           PY
           cp ComfyUI/input/000_custom_node_probe.wav ComfyUI/input/001_custom_node_probe.wav
-          if ! pnpm --silent custom-node-shard | cut -f1 | grep -qx comfyui-videohelpersuite; then
+          if ! pnpm --silent custom-node-shard | cut -f1 | grep -qix comfyui-videohelpersuite; then
             echo 'This shard has no run-tier pack; staged only the deterministic audio probe.'
             exit 0
           fi
@@ -508,6 +532,8 @@ jobs:
         continue-on-error: >-
           ${{ github.event_name == 'workflow_dispatch' && matrix.proof_row != '0' }}
         env:
+          CN_ENABLE_S15: ${{ env.CUSTOM_NODES_MANIFEST == 'core' && '1' || '0' }}
+          CN_OUTPUT_HASHES_CORE: ${{ env.COMFYUI_PIN }}
           PLAYWRIGHT_JSON_OUTPUT_NAME: custom-nodes-results.json
           PROOF_ROW: ${{ matrix.proof_row }}
           # Through env, not inline interpolation: dispatch input must never
@@ -527,6 +553,9 @@ jobs:
             0) [ -n "${GREP_FILTER:-}" ] && grep_args=(--grep "$GREP_FILTER") ;;
             1|2|3|9)
               grep_args=(--grep 'all nodes by tier @custom-nodes.*S(1|2|3|9):')
+              ;;
+            15)
+              grep_args=(--grep 'custom node: ComfyUI-Impact-Pack @custom-nodes.*Curated workflow execution: completes without error')
               ;;
           esac
           pnpm exec playwright test browser_tests/tests/customNodes/ \
@@ -616,6 +645,9 @@ jobs:
           skipped=$(jq -er '.stats.skipped' custom-nodes-results.json)
           flaky=$(jq -er '.stats.flaky' custom-nodes-results.json)
           expected_collected=$(pnpm --silent custom-node-shard --expected-tier-tests)
+          if [ "$PROOF_ROW" = 15 ]; then
+            expected_collected=1
+          fi
           expected_passed=$((expected_collected - 1))
           expected_failed=1
           [ "$collected" = "$expected_collected" ] || { echo "::error::S$PROOF_ROW collected $collected tests, expected $expected_collected"; exit 1; }
@@ -628,6 +660,14 @@ jobs:
             jq -r '.. | objects | select(.status? == "unexpected") | .results[]? | .error?.message? // empty' custom-nodes-results.json
             jq -r '.. | objects | select(.status? == "unexpected") | .results[]?.attachments[]? | select(.contentType? == "application/json" and has("body")) | (.body | @base64d | fromjson) | if type == "array" then .[] else . end' custom-nodes-results.json
           } > tier-isolation-proof-evidence.txt
+          if [ "$PROOF_ROW" = 15 ]; then
+            grep -Eq -- 'ComfyUI-Impact-Pack/impact_primitives_run\.json 2: output hash changed' tier-isolation-proof-evidence.txt || {
+              echo '::error::S15 failure was not attributable to the serialized-value break'
+              exit 1
+            }
+            echo 'S15: serialized value drift changed a sink output hash while execution completed'
+            exit 0
+          fi
           pack_failures=$(jq -er --arg name "s${PROOF_ROW}-failures.json" '
             [.. | objects
               | select(.status? == "unexpected")

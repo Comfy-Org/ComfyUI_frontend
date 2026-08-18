@@ -20,6 +20,7 @@ const VALID_MANIFESTS = ['core', 'cloud'] as const
 // disables some. localExpectations records that difference; it must not apply
 // when these same specs run against Cloud.
 const VALID_BACKENDS = ['local', 'cloud'] as const
+const CLOUD_LOCAL_CALIBRATION_SHARDS = 5
 
 interface SharedNodeExpectations {
   pack: string
@@ -364,7 +365,7 @@ function readEnum<T extends readonly string[]>(
   return hit
 }
 
-function customNodesManifest(): (typeof VALID_MANIFESTS)[number] {
+export function customNodesManifest(): (typeof VALID_MANIFESTS)[number] {
   return readEnum('CUSTOM_NODES_MANIFEST', VALID_MANIFESTS, 'core')
 }
 
@@ -669,6 +670,16 @@ export function loadPackQuarantine(): Record<string, QuarantinedPack> {
 }
 
 export function loadManifest(): (CoreManifestEntry | CloudManifestEntry)[] {
+  const shard = manifestShard()
+  if (
+    customNodesManifest() === 'cloud' &&
+    customNodesBackend() === 'local' &&
+    shard !== null &&
+    shard.total !== CLOUD_LOCAL_CALIBRATION_SHARDS
+  )
+    throw new Error(
+      `cloud/local expectations are calibrated for ${CLOUD_LOCAL_CALIBRATION_SHARDS} shards, got ${shard.total}; recalibrate the exact node, persistence, and connectivity contracts before changing the matrix`
+    )
   // Assign over the FULL manifest, then drop the excluded packs. Packing the
   // filtered list instead made shard composition depend on the exclusion
   // ledgers: moving four packs out of quarantine moved 26 of 81 packs to a

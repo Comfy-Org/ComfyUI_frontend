@@ -31,6 +31,7 @@ import {
   collectConsoleErrors,
   recordStartupConsoleErrors
 } from '@e2e/fixtures/utils/consoleErrorCollector'
+import { trackVisibleErrors } from '@e2e/fixtures/utils/errorSurfaces'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { nextFrame, sleep } from '@e2e/fixtures/utils/timing'
 import { mockWorkspace, workspace } from '@e2e/fixtures/utils/workspaceMocks'
@@ -676,6 +677,7 @@ export const comfyPageFixture = base.extend<{
       }
 
       if (isCustomNodes) await installCustomNodeBlankStartup(page)
+      if (isCustomNodes) await trackVisibleErrors(page)
 
       if (Object.keys(initialFeatureFlags).length > 0) {
         await comfyPage.featureFlags.seedFlags(initialFeatureFlags)

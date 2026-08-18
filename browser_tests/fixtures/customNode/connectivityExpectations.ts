@@ -61,7 +61,8 @@ export const connectivityExpectations: ConnectivityExpectations = {
       pack: 'WhatDreamsCost-ComfyUI',
       pairs: Array.from(
         { length: 50 },
-        (_, index) => `MultiImageLoader.image_${index + 1} -> AddLabel.image`
+        (_, index) =>
+          `MultiImageLoader.image_${index + 1} -> ADE_AnimateDiffCombine.images`
       ),
       reason:
         'MultiImageLoader trims its 50 declared image outputs to the loaded count',
@@ -99,7 +100,7 @@ export const connectivityExpectations: ConnectivityExpectations = {
         'AddTextPrefix.texts -> Vewd.folder',
         'AddTextPrefix.texts -> Vewd.filename_prefix',
         'AddTextPrefix.texts -> Vewd.selected_media',
-        'BatchCount+.INT -> Vewd.max_frames'
+        'ADE_ValueScheduling.INT -> Vewd.max_frames'
       ],
       reason: 'Vewd rebuilds its dynamic inputs during configure',
       restore:

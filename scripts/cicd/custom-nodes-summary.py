@@ -14,7 +14,9 @@ import json, os, re, subprocess
 
 RESULT_FILE = 'custom-nodes-results.json'
 LOG_FILE = 'custom-nodes.log'
-SUITE_TITLE = 'Custom-node cloud snapshot suite'
+MANIFEST = os.environ.get('CUSTOM_NODES_MANIFEST', 'core')
+SUITE_TITLE = f"Custom-node {'Core depth' if MANIFEST == 'core' else 'Cloud breadth'} suite"
+CURATED_TIER = 'curated run + S15' if MANIFEST == 'core' else 'curated run'
 
 def out(md, log=None):
     with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as f:
@@ -39,7 +41,7 @@ if not os.path.exists(RESULT_FILE):
 data = json.load(open(RESULT_FILE))
 stats = data.get('stats', {})
 
-TIERS = ['startup/load', 'S1', 'S2', 'S3', 'S9', 'curated run', 'dynamic inputs']
+TIERS = ['startup/load', 'S1', 'S2', 'S3', 'S9', CURATED_TIER, 'S12', 'S13']
 packs, wide = {}, {}
 auto_run_exclusions = []
 
@@ -57,10 +59,12 @@ def bucket(file, path):
     if 'customNode.regression' in file:
         if pack is None:
             return (None, 'harness self-checks')
-        tier = 'startup/load' if 'startup/load' in title else 'curated run'
+        tier = 'startup/load' if 'startup/load' in title else CURATED_TIER
         return (pack, tier)
     if 'dynamicInputs' in file:
-        return (pack, 'dynamic inputs')
+        return (pack, 'S12')
+    if 'interactionProfiles' in file:
+        return (pack, 'S13')
     if 'connectivity' in file:
         return (None, 'connectivity')
     if 'coreSmoke' in file:

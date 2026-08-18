@@ -141,7 +141,7 @@ test.describe('cloud roundtrip expectations', () => {
       'ComfyUI-KJNodes': { SplineEditor: '1' },
       'ComfyUI-LTXVideo': { LTXVSparseTrackEditor: '1' },
       'WhatDreamsCost-ComfyUI': {
-        LoadAudioUI: '5',
+        LoadAudioUI: '2,3,5',
         LTXDirector: '3,4,5,7'
       },
       'comfyui-itools': { iToolsRegexNode: '0' }
@@ -152,7 +152,7 @@ test.describe('cloud roundtrip expectations', () => {
       'ComfyUI-KJNodes': { SplineEditor: '1' },
       'ComfyUI-LTXVideo': { LTXVSparseTrackEditor: '1' },
       'WhatDreamsCost-ComfyUI': {
-        LoadAudioUI: '5',
+        LoadAudioUI: '2,3,5',
         LTXDirector: '3,4,5,7'
       },
       'comfyui-itools': { iToolsRegexNode: '0' }
