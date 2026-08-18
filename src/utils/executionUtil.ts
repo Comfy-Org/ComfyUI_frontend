@@ -25,7 +25,8 @@ export function unwrapExportedWidgetValue(value: unknown): unknown {
     typeof value === 'object' &&
     value !== null &&
     !Array.isArray(value) &&
-    '__value__' in value
+    '__value__' in value &&
+    Array.isArray((value as { __value__: unknown }).__value__)
   ) {
     return (value as { __value__: unknown }).__value__
   }

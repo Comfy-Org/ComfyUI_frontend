@@ -896,6 +896,24 @@ describe('ComfyApp', () => {
         expect(placeholder?.last_serialization?.widgets_values).toEqual([
           points
         ])
+
+        // An object value whose __value__ is not an array is a legitimate
+        // widget value, not the export wrapper - it must pass through as-is.
+        const passthrough = { __value__: 'not-the-wrapper', other: 1 }
+        await app.loadApiJson(
+          {
+            '1': {
+              class_type: widgetNodeType,
+              inputs: { points: passthrough },
+              _meta: { title: 'Curve' }
+            }
+          },
+          ''
+        )
+        const [passthroughNode] = graph.nodes.filter(
+          (n) => n.type === widgetNodeType
+        )
+        expect(passthroughNode?.widgets?.[0].value).toEqual(passthrough)
       } finally {
         LiteGraph.unregisterNodeType(widgetNodeType)
       }
