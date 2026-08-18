@@ -6,7 +6,7 @@ import {
 } from '@/renderer/core/canvas/nodeBoxRenderer'
 import type { NodeBox } from '@/renderer/core/canvas/nodeBoxRenderer'
 
-function fakeContext() {
+function fakeContext(rejectedColor?: string) {
   const fills: Array<{ rect: number[]; color: string }> = []
   let fillStyle = ''
   const ctx = {
@@ -19,7 +19,7 @@ function fakeContext() {
       return fillStyle
     },
     set fillStyle(value: string) {
-      fillStyle = value
+      if (value !== rejectedColor) fillStyle = value
     }
   }
   return { ctx: ctx as unknown as CanvasRenderingContext2D, fills }
@@ -115,6 +115,20 @@ describe('drawNodeBoxes', () => {
     )
 
     expect(fills.map((f) => f.color)).toEqual(['#abcdef', '#333'])
+  })
+
+  it('falls back when the canvas rejects a node colour', () => {
+    const { ctx, fills } = fakeContext('not-a-color')
+
+    drawNodeBoxes(
+      ctx,
+      [box(0, 0, '#abcdef'), box(200, 0, 'not-a-color')],
+      CAMERA,
+      VIEWPORT,
+      STYLE
+    )
+
+    expect(fills.map((fill) => fill.color)).toEqual(['#abcdef', '#333'])
   })
 
   it('applies the camera to the context rather than to each box', () => {

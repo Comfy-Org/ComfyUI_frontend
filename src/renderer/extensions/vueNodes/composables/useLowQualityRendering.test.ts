@@ -202,6 +202,34 @@ describe('useLowQualityRendering', () => {
     layoutStore.setPendingSlotSync(false)
   })
 
+  it('keeps the slot-sync wait armed after an inline empty-registry flush', async () => {
+    run()
+    camera.z = THRESHOLD * 0.5
+    await nextTick()
+
+    vi.mocked(requestSlotLayoutSyncForAllNodes).mockImplementationOnce(() => {
+      layoutStore.setPendingSlotSync(false)
+    })
+    camera.z = 1
+    await nextTick()
+
+    expect(layoutStore.pendingSlotSync).toBe(true)
+    layoutStore.setPendingSlotSync(false)
+  })
+
+  it('leaves simplified mode when display density makes text readable', async () => {
+    const { isLowQuality } = run()
+    camera.z = THRESHOLD * 0.9
+    await nextTick()
+    expect(isLowQuality.value).toBe(true)
+
+    setDpr(4)
+    window.dispatchEvent(new Event('resize'))
+    await nextTick()
+
+    expect(isLowQuality.value).toBe(false)
+  })
+
   it('repaints the canvas when the mode flips', async () => {
     // The two layers swap wholesale at the threshold; without a repaint the
     // stale one stays on screen until something else dirties the canvas.

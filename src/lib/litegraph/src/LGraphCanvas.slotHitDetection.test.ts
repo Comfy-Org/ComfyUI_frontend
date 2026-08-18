@@ -248,6 +248,16 @@ describe('LGraphCanvas slot hit detection', () => {
       expect(processWidgetClick).not.toHaveBeenCalled()
     })
 
+    it('measures cold collapsed nodes at their collapsed size while suspended', () => {
+      LiteGraph.vueNodesSuspended = true
+      node.flags.collapsed = true
+
+      node.updateArea()
+
+      expect(node.boundingRect[2]).toBe(LiteGraph.NODE_COLLAPSED_WIDTH)
+      expect(node.boundingRect[3]).toBe(LiteGraph.NODE_TITLE_HEIGHT)
+    })
+
     it('updates the LOD threshold after the display DPR changes', () => {
       const originalDpr = window.devicePixelRatio
       try {
