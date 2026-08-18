@@ -43,6 +43,14 @@ const {
   extraJsonLd,
 } = Astro.props
 
+// The preview deployment (PREVIEW_MODE=true) is noindexed in full — defense in
+// depth on top of Vercel Deployment Protection. See build-spec Part B / ticket 10.
+const isPreviewDeploy = import.meta.env.PREVIEW_MODE === 'true'
+const isNoindexed = noindex || isPreviewDeploy
+if (isPreviewDeploy) {
+  Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow')
+}
+
 const keywordsContent = keywords && keywords.length > 0 ? keywords.join(', ') : undefined
 
 const { siteUrl, locale, url } = pageContext(
@@ -70,7 +78,7 @@ const bannerVersion = createBannerVersion(bannerData, locale)
 const gtmId = 'GTM-NP9JM6K7'
 const gtmEnabled = import.meta.env.PROD
 
-const structuredData = noindex
+const structuredData = isNoindexed
   ? undefined
   : buildPageGraph(
       { siteUrl, locale },
@@ -94,7 +102,7 @@ const structuredData = noindex
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
     {keywordsContent && <meta name="keywords" content={keywordsContent} />}
-    {noindex && <meta name="robots" content="noindex, nofollow" />}
+    {isNoindexed && <meta name="robots" content="noindex, nofollow" />}
     <title>{title}</title>
 
     <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />

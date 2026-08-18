@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "@astrojs/sitemap": "catalog:",
+    "@astrojs/vercel": "catalog:",
     "@comfyorg/design-system": "workspace:*",
     "@comfyorg/object-info-parser": "workspace:*",
     "@comfyorg/shared-frontend-utils": "workspace:*",

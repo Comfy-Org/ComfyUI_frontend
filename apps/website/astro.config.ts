@@ -3,6 +3,11 @@ import mdx from '@astrojs/mdx'
 import sitemap from '@astrojs/sitemap'
 import vue from '@astrojs/vue'
 import tailwindcss from '@tailwindcss/vite'
+import vercel from '@astrojs/vercel'
+
+// The preview deployment (PREVIEW_MODE=true) builds always-SSR so it can fetch
+// authenticated CMS drafts; production stays a static build. See build-spec Part B.
+const IS_PREVIEW = process.env.PREVIEW_MODE === 'true'
 
 const LOCALES = ['en', 'zh-CN'] as const
 const DEFAULT_LOCALE = 'en'
@@ -25,7 +30,8 @@ function isExcludedFromSitemap(page: string): boolean {
 
 export default defineConfig({
   site: 'https://comfy.org',
-  output: 'static',
+  output: IS_PREVIEW ? 'server' : 'static',
+  adapter: IS_PREVIEW ? vercel() : undefined,
   prefetch: { prefetchAll: true },
   // Keep MDX punctuation verbatim; SmartyPants would turn the source's straight
   // quotes into curly ones and drift from the rest of the site's copy.

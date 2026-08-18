@@ -1,4 +1,11 @@
-# robots.txt for comfy.org
+import type { APIRoute } from 'astro'
+
+// The preview deployment (PREVIEW_MODE=true) must never be indexed, so it serves
+// a disallow-all robots.txt. Production serves the real, crawler-open file. This
+// endpoint replaces a static `public/robots.txt` so the two builds can differ.
+// (Belt-and-suspenders with the PREVIEW_MODE `X-Robots-Tag` + meta in BaseLayout.)
+
+const PRODUCTION_ROBOTS = `# robots.txt for comfy.org
 # Open to all crawlers — including AI/LLM bots — for maximum visibility
 # in AI-powered search, chat-based answer engines, and traditional search.
 # Granular UAs are listed explicitly to signal intent; rules are shared
@@ -31,3 +38,17 @@ Disallow: /_website/
 Disallow: /_vercel/
 
 Sitemap: https://comfy.org/sitemap-index.xml
+`
+
+const PREVIEW_ROBOTS = `# Preview deployment — never index.
+User-agent: *
+Disallow: /
+`
+
+export const GET: APIRoute = () => {
+  const body =
+    import.meta.env.PREVIEW_MODE === 'true' ? PREVIEW_ROBOTS : PRODUCTION_ROBOTS
+  return new Response(body, {
+    headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+  })
+}
