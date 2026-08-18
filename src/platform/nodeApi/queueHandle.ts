@@ -15,7 +15,10 @@
 import { watch } from 'vue'
 
 import { api } from '@/scripts/api'
-import type { PromptQueuedEventPayload } from '@/scripts/api'
+import type {
+  PromptQueuedEventPayload,
+  PromptRejectedEventPayload
+} from '@/scripts/api'
 import { useQueuePendingTaskCountStore } from '@/stores/queueStore'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 import { toNodeId } from '@/types/nodeId'
@@ -44,6 +47,28 @@ export interface RunSubmittedEvent {
   readonly promptIds: readonly string[]
   /** How many submissions the backend refused. */
   readonly rejected: number
+}
+
+/** @knipIgnoreUnusedButUsedByCustomNodes */
+export interface RunRejectionError {
+  readonly type: string
+  readonly message: string
+  readonly details: string
+  readonly inputName?: string
+}
+
+/** @knipIgnoreUnusedButUsedByCustomNodes */
+export interface RunRejectedNode {
+  readonly nodeId: string
+  readonly nodeType: string
+  readonly errors: readonly RunRejectionError[]
+}
+
+/** @knipIgnoreUnusedButUsedByCustomNodes */
+export interface RunRejectedEvent {
+  readonly status?: number
+  readonly error: RunRejectionError
+  readonly nodeErrors: readonly RunRejectedNode[]
 }
 
 export interface QueueHandle {
@@ -85,6 +110,14 @@ export interface QueueHandle {
    * cannot tell a run that started from one that never did.
    */
   onAfterRun(listener: (event: RunSubmittedEvent) => void): Unsubscribe
+  /**
+   * The backend refused a submitted prompt before execution began.
+   *
+   * This exposes prompt and per-node validation details without coupling a
+   * pack to host notifications. It does not fire for transport failures or an
+   * error raised after execution starts.
+   */
+  onRejected(listener: (event: RunRejectedEvent) => void): Unsubscribe
   /**
    * How many runs are waiting, including the one executing.
    *
@@ -193,6 +226,52 @@ function executionIds(
   return ids
 }
 
+function normalizeRejectionError(
+  error: PromptRejectedEventPayload['response']['error']
+): RunRejectionError {
+  if (typeof error === 'string') {
+    return Object.freeze({
+      type: 'prompt_rejected',
+      message: error,
+      details: ''
+    })
+  }
+  return Object.freeze({
+    type: error.type,
+    message: error.message,
+    details: error.details
+  })
+}
+
+function normalizeRejection(
+  detail: PromptRejectedEventPayload
+): RunRejectedEvent {
+  const nodeErrors = Object.entries(detail.response.node_errors ?? {}).map(
+    ([nodeId, nodeError]) =>
+      Object.freeze({
+        nodeId,
+        nodeType: nodeError.class_type,
+        errors: Object.freeze(
+          nodeError.errors.map((error) =>
+            Object.freeze({
+              type: error.type,
+              message: error.message,
+              details: error.details,
+              ...(error.extra_info?.input_name === undefined
+                ? {}
+                : { inputName: error.extra_info.input_name })
+            })
+          )
+        )
+      })
+  )
+  return Object.freeze({
+    ...(detail.status === undefined ? {} : { status: detail.status }),
+    error: normalizeRejectionError(detail.response.error),
+    nodeErrors: Object.freeze(nodeErrors)
+  })
+}
+
 export function createQueueApi(
   getGraph: () => LGraph | null | undefined
 ): QueueHandle {
@@ -242,6 +321,14 @@ export function createQueueApi(
       }
       api.addEventListener('promptQueued', wrapped)
       return () => api.removeEventListener('promptQueued', wrapped)
+    },
+    onRejected(listener: (event: RunRejectedEvent) => void) {
+      const wrapped = (event: Event) => {
+        const detail = (event as CustomEvent<PromptRejectedEventPayload>).detail
+        listener(normalizeRejection(detail))
+      }
+      api.addEventListener('promptRejected', wrapped)
+      return () => api.removeEventListener('promptRejected', wrapped)
     },
 
     pending: () => useQueuePendingTaskCountStore().count,
