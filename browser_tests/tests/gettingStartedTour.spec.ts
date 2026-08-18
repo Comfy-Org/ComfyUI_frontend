@@ -14,6 +14,7 @@ import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceAp
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import { onboardingFixture } from '@e2e/fixtures/tourFixture'
+import type { Position } from '@e2e/fixtures/types'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
@@ -165,8 +166,7 @@ async function settled(element: Locator) {
 
 /** Where the spotlight sits relative to the node it frames. */
 async function framing(node: Locator, spotlight: Locator) {
-  type Coords = { x: number; y: number }
-  let seen: { node: Coords; offset: Coords } | null = null
+  let seen: { node: Position; offset: Position } | null = null
 
   await expect
     .poll(
