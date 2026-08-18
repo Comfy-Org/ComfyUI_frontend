@@ -36,6 +36,7 @@ describe('comfy API root', () => {
     it('reports shipped capabilities', () => {
       expect(api().supports('widgets.reorder')).toBe(true)
       expect(api().supports('widgets.hidden')).toBe(true)
+      expect(api().supports('widgets.linked')).toBe(true)
       expect(api().supports('slots.identity')).toBe(true)
       expect(api().supports('widgets.typeContext')).toBe(true)
       expect(api().supports('workflow.open')).toBe(true)
@@ -45,6 +46,7 @@ describe('comfy API root', () => {
       expect(api().supports('workflow.textReplacements')).toBe(true)
       expect(api().supports('execution.node')).toBe(true)
       expect(api().supports('defs.typeCompatibility')).toBe(true)
+      expect(api().supports('defs.inputValues')).toBe(true)
       expect(api().supports('queue.disableAutoQueue')).toBe(true)
     })
 
