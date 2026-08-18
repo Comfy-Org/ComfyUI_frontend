@@ -57,6 +57,7 @@ vi.mock('@/scripts/api', () => ({
 const appMock = vi.hoisted(() => {
   const graph = {
     nodes: [] as unknown[],
+    arrange: vi.fn(),
     serialize: () => ({ version: 0.4, nodes: graph.nodes }),
     getNodeById: (id: string | number) =>
       graph.nodes.find(
@@ -280,6 +281,7 @@ beforeEach(() => {
   hostStores.canvas.selectedItems = []
   hostStores.canvas.currentGraph = null
   appMock.graph.nodes = []
+  appMock.graph.arrange.mockClear()
   Object.assign(appMock.rootGraph, { subgraphs: new Map() })
   appMock.canvas = undefined
   workflowService.saveWorkflow.mockClear()
@@ -1488,6 +1490,88 @@ describe('AgentPanelRoot auto fit after generation', () => {
     })
 
     await vi.waitFor(() => expect(animateToBounds).toHaveBeenCalledTimes(1))
+  })
+})
+
+describe('AgentPanelRoot agent auto-layout', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    ws.clear()
+    vi.mocked(app.loadGraphData).mockClear()
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllGlobals()
+  })
+
+  function mockAck(): void {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url.includes('/messages')) return json(202, ack('wf-42', 'm-1'))
+        return json(200, {})
+      })
+    )
+  }
+
+  it('arranges the layered layout when a draft adds nodes', async () => {
+    mockAck()
+    await renderAndSend('build a graph')
+
+    ws.emit('draft_patch', {
+      workflow_id: 'wf-42',
+      base_version: 0,
+      version: 1,
+      content: { version: 0.4, nodes: [{ id: 1 }, { id: 2 }] }
+    })
+
+    await vi.waitFor(() => expect(app.loadGraphData).toHaveBeenCalledTimes(1))
+    expect(appMock.graph.arrange).toHaveBeenCalledTimes(1)
+  })
+
+  it('skips the arrange when a later draft brings no new nodes', async () => {
+    const tab: FakeTab = {
+      path: 'workflows/current.json',
+      directory: 'workflows',
+      filename: 'current',
+      isTemporary: false,
+      isModified: false,
+      activeState: { id: 'wf-42' }
+    }
+    hostStores.workflow.tabs.set(tab.path, tab)
+    hostStores.workflow.activeWorkflow = tab
+    mockAck()
+    await renderAndSend('build a graph')
+    useAgentWorkflowTabBindingStore().bind('wf-42', tab.path)
+
+    ws.emit('draft_patch', {
+      workflow_id: 'wf-42',
+      base_version: 0,
+      version: 1,
+      content: { version: 0.4, nodes: [{ id: 1 }] }
+    })
+    await vi.waitFor(() => expect(app.loadGraphData).toHaveBeenCalledTimes(1))
+    expect(appMock.graph.arrange).toHaveBeenCalledTimes(1)
+
+    appMock.graph.nodes = [{ id: 1 }]
+    ws.emit('draft_patch', {
+      workflow_id: 'wf-42',
+      base_version: 1,
+      version: 2,
+      content: { version: 0.4, nodes: [{ id: 1 }] }
+    })
+    await vi.waitFor(() => expect(app.loadGraphData).toHaveBeenCalledTimes(2))
+    expect(appMock.graph.arrange).toHaveBeenCalledTimes(1)
+
+    ws.emit('draft_patch', {
+      workflow_id: 'wf-42',
+      base_version: 2,
+      version: 3,
+      content: { version: 0.4, nodes: [{ id: 1 }, { id: 2 }] }
+    })
+    await vi.waitFor(() => expect(app.loadGraphData).toHaveBeenCalledTimes(3))
+    expect(appMock.graph.arrange).toHaveBeenCalledTimes(2)
   })
 })
 
