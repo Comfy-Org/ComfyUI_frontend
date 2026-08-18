@@ -209,7 +209,8 @@ export interface UiHandle {
    * directly, which pins them to a renderer we intend to replace.
    *
    * Positioned from the event so the menu lands under the pointer, which is the
-   * only placement that reads as a context menu.
+   * only placement that reads as a context menu. Arrow keys traverse nested
+   * items, Enter or Tab selects one, and Escape closes the menu.
    */
   showMenu(def: MenuDef): MenuHandle
   /**
@@ -271,6 +272,84 @@ function toMenuValue(item: MenuItemDef): IContextMenuValue {
         }
       : { callback: () => item.run?.() })
   }
+}
+
+const selectedMenuEntry = new WeakMap<ContextMenu, HTMLElement>()
+
+function menuEntries(menu: ContextMenu): HTMLElement[] {
+  return Array.from(menu.root.children).filter(
+    (element): element is HTMLElement =>
+      element instanceof HTMLElement &&
+      element.getAttribute('role') === 'menuitem' &&
+      element.getAttribute('aria-disabled') !== 'true'
+  )
+}
+
+function deepestMenu(menu: ContextMenu): ContextMenu {
+  return menu.current_submenu ? deepestMenu(menu.current_submenu) : menu
+}
+
+function focusMenuEntry(menu: ContextMenu, index: number): void {
+  const entries = menuEntries(menu)
+  const entry = entries[index]
+  if (!entry) return
+  entry.tabIndex = -1
+  entry.focus()
+  selectedMenuEntry.set(menu, entry)
+}
+
+function selectedIndex(menu: ContextMenu): number {
+  const selected = selectedMenuEntry.get(menu)
+  return selected ? menuEntries(menu).indexOf(selected) : -1
+}
+
+function enableMenuKeyboard(root: ContextMenu): void {
+  document.addEventListener(
+    'keydown',
+    (event) => {
+      const menu = deepestMenu(root)
+      const entries = menuEntries(menu)
+      const index = selectedIndex(menu)
+
+      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        event.preventDefault()
+        const offset = event.key === 'ArrowDown' ? 1 : -1
+        const next =
+          index < 0
+            ? 0
+            : Math.max(0, Math.min(index + offset, entries.length - 1))
+        focusMenuEntry(menu, next)
+        return
+      }
+      if (event.key === 'ArrowRight' && index >= 0) {
+        event.preventDefault()
+        if (entries[index].getAttribute('aria-haspopup') !== 'true') return
+        entries[index].click()
+        const submenu = deepestMenu(root)
+        if (submenu !== menu) focusMenuEntry(submenu, 0)
+        return
+      }
+      if (event.key === 'ArrowLeft' && menu.parentMenu) {
+        event.preventDefault()
+        const parent = menu.parentMenu
+        menu.close(new MouseEvent('pointermove'))
+        focusMenuEntry(parent, selectedIndex(parent))
+        return
+      }
+      if ((event.key === 'Enter' || event.key === 'Tab') && index >= 0) {
+        event.preventDefault()
+        entries[index].click()
+        const submenu = deepestMenu(root)
+        if (submenu !== menu) focusMenuEntry(submenu, 0)
+        return
+      }
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        root.close()
+      }
+    },
+    { signal: root.controller.signal }
+  )
 }
 
 export function createUiHandle(): UiHandle {
@@ -346,6 +425,7 @@ export function createUiHandle(): UiHandle {
         title: def.title,
         event: def.event
       })
+      enableMenuKeyboard(menu)
       return Object.freeze({ close: () => menu.close() })
     },
 

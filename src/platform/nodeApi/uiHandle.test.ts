@@ -228,6 +228,33 @@ describe('comfy.ui.showMenu', () => {
     expect(screen.queryByText('Suggestion')).not.toBeInTheDocument()
   })
 
+  it('selects flat and nested items from the keyboard', async () => {
+    const flat = vi.fn()
+    open([
+      { label: 'Disabled', disabled: true },
+      { label: 'Second', run: flat }
+    ])
+
+    await userEvent.keyboard('{ArrowDown}{ArrowRight}')
+    expect(flat).not.toHaveBeenCalled()
+    await userEvent.keyboard('{Enter}')
+    expect(flat).toHaveBeenCalledOnce()
+
+    const nested = vi.fn()
+    open([{ label: 'Folder', submenu: [{ label: 'Leaf', run: nested }] }])
+
+    await userEvent.keyboard('{ArrowDown}{ArrowRight}{ArrowLeft}{Tab}{Tab}')
+    expect(nested).toHaveBeenCalledOnce()
+  })
+
+  it('closes from the keyboard', async () => {
+    open([{ label: 'Suggestion' }])
+
+    await userEvent.keyboard('{Escape}')
+
+    expect(screen.queryByText('Suggestion')).not.toBeInTheDocument()
+  })
+
   it('refuses an empty menu', () => {
     expect(() =>
       ui.showMenu({ items: [], event: new MouseEvent('contextmenu') })
