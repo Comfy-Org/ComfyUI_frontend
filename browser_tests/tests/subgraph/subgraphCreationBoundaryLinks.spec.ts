@@ -2,24 +2,24 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
+const SUBGRAPH_LINKS_EXPECTED = {
+  rootLinks: [
+    '4:0->HOST:0',
+    '4:1->6:0',
+    '4:1->7:0',
+    '4:2->HOST:4',
+    '5:0->HOST:3',
+    '6:0->HOST:1',
+    '7:0->HOST:2',
+    'HOST:0->9:0'
+  ],
+  incompatibleHostInputLinks: []
+} as const
+
 test(
   'Subgraph creation rewires boundary links to compatible slots across reload',
   { tag: ['@slow', '@subgraph', '@vue-nodes'] },
   async ({ comfyPage }) => {
-    const expectedSnapshot = {
-      rootLinks: [
-        '4:0->HOST:0',
-        '4:1->6:0',
-        '4:1->7:0',
-        '4:2->HOST:4',
-        '5:0->HOST:3',
-        '6:0->HOST:1',
-        '7:0->HOST:2',
-        'HOST:0->9:0'
-      ],
-      incompatibleHostInputLinks: []
-    }
-
     await test.step('Select both nodes in the default workflow', async () => {
       await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
       await comfyPage.workflow.loadWorkflow('default')
@@ -29,16 +29,7 @@ test(
       // holding KSampler alone.
       await comfyPage.command.executeCommand('Comfy.Canvas.FitView')
       const vaeDecode = await comfyPage.nodeOps.getNodeRefById('8')
-      const canvasWidth = (await comfyPage.canvas.boundingBox())!.width
-      let previousX = Number.NaN
-      await expect
-        .poll(async () => {
-          const { x } = await vaeDecode.getTitlePosition()
-          const settledInView = x === previousX && x < canvasWidth
-          previousX = x
-          return settledInView
-        })
-        .toBe(true)
+      await vaeDecode.waitForTitleInView()
 
       await comfyPage.nodeOps.selectNodes(['KSampler', 'VAE Decode'])
       expect(
@@ -53,7 +44,7 @@ test(
 
       await expect
         .poll(() => comfyPage.subgraph.getBoundaryLinkSnapshot())
-        .toEqual(expectedSnapshot)
+        .toEqual(SUBGRAPH_LINKS_EXPECTED)
     })
 
     await test.step('Reload and verify the boundary links', async () => {
@@ -61,7 +52,7 @@ test(
 
       await expect
         .poll(() => comfyPage.subgraph.getBoundaryLinkSnapshot())
-        .toEqual(expectedSnapshot)
+        .toEqual(SUBGRAPH_LINKS_EXPECTED)
     })
   }
 )
