@@ -6,7 +6,10 @@ on:
   release:
     types: [published, edited, unpublished, deleted]
   workflow_dispatch: {}
-  workflow_call: {}
+  workflow_call:
+    secrets:
+      PR_GH_TOKEN:
+        required: true
   schedule:
     - cron: '0 4 * * *'
 

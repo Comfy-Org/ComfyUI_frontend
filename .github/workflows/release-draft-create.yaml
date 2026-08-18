@@ -113,6 +113,8 @@ jobs:
     permissions:
       contents: write
     uses: ./.github/workflows/release-enforce-latest.yaml
+    secrets:
+      PR_GH_TOKEN: ${{ secrets.PR_GH_TOKEN }}
 
   comment_release_summary:
     name: Comment Release Summary
