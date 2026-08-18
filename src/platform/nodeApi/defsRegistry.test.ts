@@ -889,6 +889,21 @@ describe('setSupply', () => {
     expect(frontendSupplierMap().has('KSampler')).toBe(true)
     expect(Generated.prototype.isVirtualNode).toBeUndefined()
   })
+
+  it('composes suppliers registered by different extensions', () => {
+    const registry = createDefRegistry()
+    const first = vi.fn(() => [])
+    const second = vi.fn(() => [])
+    const api = registry.forMajor((id) => comfy.graph.node(id)!)
+    api.extend('KSampler', (b) => b.setSupply(first))
+    api.extend('KSampler', (b) => b.setSupply(second))
+    registry.applyTo(nodeClass('KSampler'), RAW_DEF)
+
+    frontendSupplierMap().get('KSampler')!(undefined as never)
+
+    expect(first).toHaveBeenCalledOnce()
+    expect(second).toHaveBeenCalledOnce()
+  })
 })
 
 describe('defs.refresh', () => {
