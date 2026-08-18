@@ -528,6 +528,27 @@ describe('slot handles', () => {
       expect(inputs.byName('image')!.isConnected).toBe(true)
     })
 
+    it('retypes existing links with their output', () => {
+      const link = outputs
+        .byName('IMAGE')!
+        .connectTo(String(target.id), 'image')!
+
+      outputs.at(0)!.modify({ type: 'LATENT' })
+
+      expect(outputs.at(0)!.links()).toContainEqual({
+        ...link,
+        type: 'LATENT'
+      })
+      expect(graph.serialize().links).toContainEqual([
+        Number(link.id),
+        Number(link.sourceNodeId),
+        link.sourceIndex,
+        Number(link.targetNodeId),
+        link.targetIndex,
+        'LATENT'
+      ])
+    })
+
     it('leaves unspecified fields alone', () => {
       outputs.at(0)!.modify({ type: 'LATENT' })
       expect(outputs.at(0)!.name).toBe('IMAGE')
