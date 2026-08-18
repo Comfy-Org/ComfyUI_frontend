@@ -16,6 +16,7 @@ import { createGroupHandles } from './groupHandle'
 import type { GroupHandle } from './groupHandle'
 import type { Point, NodeHandle } from './nodeHandle'
 import { createNodeHandles } from './nodeHandle'
+import type { Resolver } from './resolution'
 import {
   createInputCollection,
   createOutputCollection,
@@ -236,7 +237,8 @@ function weakCache<T extends object>(make: (nodeId: string) => T) {
 export function createGraphApi(
   getGraph: () => LGraph | null | undefined,
   /** API major, so handle caches never mix shapes across majors. */
-  namespace = ''
+  namespace = '',
+  getResolvers: () => ReadonlyMap<string, Resolver> = () => new Map()
 ): GraphHandle {
   const nodeById = (nodeId: string) =>
     getGraph()?.getNodeById(toNodeId(nodeId)) ?? undefined
@@ -244,7 +246,7 @@ export function createGraphApi(
   const widgetHandles = createWidgetHandles(getGraph, namespace)
 
   const inputsFor = weakCache<SlotCollection<InputSlotHandle>>((nodeId) =>
-    createInputCollection(getGraph, () => nodeById(nodeId))
+    createInputCollection(getGraph, () => nodeById(nodeId), getResolvers)
   )
   const outputsFor = weakCache<SlotCollection<OutputSlotHandle>>((nodeId) =>
     createOutputCollection(getGraph, () => nodeById(nodeId))
@@ -263,7 +265,7 @@ export function createGraphApi(
     nodeHandles.handleFor(nodeId) as NodeHandle
 
   const groupHandle = createGroupHandles(handleFor)
-  const graphScopeHandle = createGraphScopeHandles()
+  const graphScopeHandle = createGraphScopeHandles(getResolvers)
 
   const requireGraph = (action: string): LGraph => {
     const graph = getGraph()
@@ -569,7 +571,9 @@ export interface GraphScopeHandle {
  * resolved against the graph it belongs to — and one cache cannot return a
  * handle for the wrong graph's node of the same id.
  */
-function createGraphScopeHandles() {
+function createGraphScopeHandles(
+  getResolvers: () => ReadonlyMap<string, Resolver>
+) {
   const byGraph = new WeakMap<LGraph, GraphScopeHandle>()
 
   return function graphScopeHandle(graph: LGraph): GraphScopeHandle {
@@ -577,7 +581,7 @@ function createGraphScopeHandles() {
     const existing = byGraph.get(graph)
     if (existing) return existing
 
-    const scoped = createGraphApi(() => graph, `graph:${id}`)
+    const scoped = createGraphApi(() => graph, `graph:${id}`, getResolvers)
     const handle: GraphScopeHandle = Object.freeze({
       id,
       get name() {
