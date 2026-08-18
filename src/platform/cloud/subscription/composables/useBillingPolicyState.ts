@@ -46,7 +46,10 @@ export function deriveBillingPolicyState(input: {
     case null:
       return { kind: `${distribution}AndUnknown` }
     default:
-      return input.tier satisfies never
+      // The tier union comes from the backend spec and can gain values without
+      // a frontend change. Treating an unrecognised tier as unknown keeps that
+      // additive, at the cost of the compile-time exhaustiveness check.
+      return { kind: `${distribution}AndUnknown` }
   }
 }
 

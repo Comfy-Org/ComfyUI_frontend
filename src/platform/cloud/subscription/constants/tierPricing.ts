@@ -56,9 +56,14 @@ const TIER_FEATURES: Record<TierKey, TierFeatures> = {
 
 export const DEFAULT_TIER_KEY: TierKey = 'standard'
 
-// TEAM is workspace-level, so it maps to no key in this personal plan catalog.
+// Workspace-level tiers (TEAM, and any added later) map to no key in this
+// personal plan catalog. Membership is tested rather than listing the
+// exclusions, so a tier added to the ingest enum returns null instead of
+// failing the build.
 export function toTierKey(tier: IngestSubscriptionTier): TierKey | null {
-  return tier === 'TEAM' ? null : TIER_TO_KEY[tier]
+  return tier in TIER_TO_KEY
+    ? TIER_TO_KEY[tier as RegistrySubscriptionTier]
+    : null
 }
 
 // Includes the workspace-level TEAM, which toTierKey maps to null: a catalog
