@@ -85,6 +85,9 @@ if [[ -n "$violations" ]]; then
     echo ""
     echo "and remove the Co-authored-by lines, then force-push your branch."
     echo ""
+    echo "To prevent future attribution, use the disabling-ai-attribution skill:"
+    echo "  https://github.com/Comfy-Org/ComfyUI_frontend/tree/main/.agents/skills/disabling-ai-attribution"
+    echo ""
     echo "If you believe this is a false positive, please open an issue."
     exit 1
 fi
