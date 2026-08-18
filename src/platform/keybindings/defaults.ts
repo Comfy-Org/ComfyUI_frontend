@@ -38,6 +38,13 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
   },
   {
     combo: {
+      key: 'Tab'
+    },
+    commandId: 'Workspace.SearchBox.Toggle',
+    targetElementId: 'graph-canvas-container'
+  },
+  {
+    combo: {
       key: 'n'
     },
     commandId: 'Workspace.ToggleSidebarTab.node-library'
