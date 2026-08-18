@@ -2666,6 +2666,7 @@ const translations = {
   'nav.reddit': { en: 'Reddit', 'zh-CN': 'Reddit' },
   'nav.x': { en: 'X', 'zh-CN': 'X' },
   'nav.instagram': { en: 'Instagram', 'zh-CN': 'Instagram' },
+  'nav.linkedin': { en: 'LinkedIn', 'zh-CN': 'LinkedIn' },
   'nav.affiliates': { en: 'Affiliates', 'zh-CN': '联盟计划' },
   'nav.contact': { en: 'Contact', 'zh-CN': '联系我们' },
   // Featured dropdown cards — keys are keyed by parent nav item, not card content,
@@ -4825,8 +4826,9 @@ const translations = {
     'zh-CN': '可用于您内容的品牌 Logo'
   },
   'affiliate.assets.subheading': {
-    en: 'Banners, screenshots, and talking points are in your affiliate dashboard after approval.',
-    'zh-CN': '横幅图、截图和宣传文案将在获批后于联盟仪表盘中提供。'
+    en: 'Banners, screenshots, and talking points are in your affiliate dashboard after approval. Get the <a href="https://comfy.org/brand" class="text-primary-comfy-yellow underline">full brand assets here</a>.',
+    'zh-CN':
+      '横幅图、截图和宣传文案将在获批后于联盟仪表盘中提供。点击<a href="https://comfy.org/brand" class="text-primary-comfy-yellow underline">此处获取完整品牌素材</a>。'
   },
   'affiliate.assets.ctaLabel': {
     en: 'Go to brand portal',
@@ -4929,13 +4931,13 @@ const translations = {
   },
 
   'ltx.meta.title': {
-    en: 'LTX 2.5 on Comfy — Open-Source AI Video Model',
-    'zh-CN': 'Comfy 上的 LTX 2.5 — 开源 AI 视频模型'
+    en: 'LTX 2.5 on Comfy: Open-Source AI Video Model',
+    'zh-CN': 'Comfy 上的 LTX 2.5：开源 AI 视频模型'
   },
   'ltx.meta.description': {
-    en: 'Run LTX 2.5 on Comfy. Open weights, directed on the canvas alongside every other model, on Comfy Cloud or your own GPU.',
+    en: 'Run LTX 2.5 on Comfy. Open weights, free to run on your own GPU, or directed on the canvas alongside every other model on Comfy Cloud.',
     'zh-CN':
-      '在 Comfy 上运行 LTX 2.5。开放权重，可在画布上与其他所有模型一同执导，支持 Comfy Cloud 或你自己的 GPU。'
+      '在 Comfy 上运行 LTX 2.5。开放权重，可在你自己的 GPU 上免费运行，也可以在画布上与其他所有模型一同执导，支持 Comfy Cloud。'
   },
   'ltx.breadcrumb.model': { en: 'LTX 2.5', 'zh-CN': 'LTX 2.5' },
   'ltx.breadcrumb.updated': {
@@ -5025,9 +5027,9 @@ const translations = {
     'zh-CN': 'Seedance 2.5 已上线'
   },
   'seedance.hero.description': {
-    en: "ByteDance's cinematic video model — multi-shot sequences with native audio, text or image in. You direct on the canvas; Seedance renders the cut.",
+    en: "ByteDance's cinematic video model — multi-shot sequences with native audio, text or image in. You direct on the canvas; Seedance renders the cut. Now available in 1080p with video extension.",
     'zh-CN':
-      '字节跳动的电影级视频模型：多镜头序列，原生音频，支持文本或图像输入。你在画布上执导，Seedance 负责渲染成片。'
+      '字节跳动的电影级视频模型：多镜头序列，原生音频，支持文本或图像输入。你在画布上执导，Seedance 负责渲染成片。现已支持 1080p 及视频扩展。'
   },
   'seedance.hero.primaryCta': {
     en: 'RUN SEEDANCE 2.5',

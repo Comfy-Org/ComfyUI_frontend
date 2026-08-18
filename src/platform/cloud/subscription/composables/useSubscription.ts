@@ -280,7 +280,6 @@ function useSubscriptionInternal() {
 
   /**
    * Whether cloud subscription mode is enabled (cloud distribution with subscription_required config).
-   * Use to determine which UI to show (SubscriptionPanel vs CreditsPanel).
    */
   const isSubscriptionEnabled = (): boolean =>
     Boolean(isCloud && window.__CONFIG__?.subscription_required)
