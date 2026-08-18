@@ -166,7 +166,7 @@ describe('useNodeDrag', () => {
     const { startDrag, handleDrag } = useNodeDrag()
 
     startDrag(pointerEvent(10, 20), node1)
-    handleDrag(pointerEvent(30, 40), node1)
+    handleDrag(pointerEvent(30, 40))
     testState.requestAnimationFrameCallback?.(0)
 
     expect(testState.mutationFns.batchMoveNodes).toHaveBeenCalledTimes(1)
@@ -187,7 +187,7 @@ describe('useNodeDrag', () => {
     const { startDrag, handleDrag } = useNodeDrag()
 
     startDrag(pointerEvent(5, 10), node1)
-    handleDrag(pointerEvent(25, 30), node1)
+    handleDrag(pointerEvent(25, 30))
     testState.requestAnimationFrameCallback?.(0)
 
     expect(testState.mutationFns.batchMoveNodes).toHaveBeenCalledTimes(1)
@@ -212,8 +212,8 @@ describe('useNodeDrag', () => {
     const { startDrag, handleDrag, endDrag } = useNodeDrag()
 
     startDrag(pointerEvent(5, 10), node1)
-    handleDrag(pointerEvent(25, 30), node1)
-    endDrag({} as PointerEvent, node1)
+    handleDrag(pointerEvent(25, 30))
+    endDrag({} as PointerEvent)
 
     expect(testState.cancelAnimationFrame).toHaveBeenCalledTimes(1)
     expect(testState.cancelAnimationFrame).toHaveBeenCalledWith(1)
@@ -228,6 +228,26 @@ describe('useNodeDrag', () => {
           height: 110
         }
       }
+    ])
+  })
+
+  it('moves active node even when drag event targets a different node', () => {
+    const node2 = toNodeId('2')
+    testState.selectedNodeIds.value = new Set([node2])
+    testState.nodeLayouts.set('2', {
+      position: { x: 50, y: 80 },
+      size: { width: 180, height: 110 }
+    })
+
+    const { startDrag, handleDrag } = useNodeDrag()
+
+    startDrag(pointerEvent(5, 10), node2)
+    handleDrag(pointerEvent(25, 30))
+    testState.requestAnimationFrameCallback?.(0)
+
+    expect(testState.mutationFns.batchMoveNodes).toHaveBeenCalledTimes(1)
+    expect(testState.mutationFns.batchMoveNodes).toHaveBeenCalledWith([
+      { nodeId: '2', position: { x: 70, y: 100 } }
     ])
   })
 })
@@ -266,7 +286,7 @@ describe('useNodeDrag auto-pan', () => {
     const drag = useNodeDrag()
     drag.startDrag(pointerEvent(750, 300), node1)
 
-    drag.handleDrag(pointerEvent(760, 300), node1)
+    drag.handleDrag(pointerEvent(760, 300))
     testState.requestAnimationFrameCallback?.(0)
 
     expect(testState.mutationFns.batchMoveNodes).toHaveBeenLastCalledWith([
@@ -288,7 +308,7 @@ describe('useNodeDrag auto-pan', () => {
     const drag = useNodeDrag()
 
     drag.startDrag(pointerEvent(750, 300), node1)
-    drag.handleDrag(pointerEvent(760, 300), node1)
+    drag.handleDrag(pointerEvent(760, 300))
     testState.mutationFns.batchMoveNodes.mockClear()
 
     testState.mockDs.offset[0] -= 5
@@ -305,7 +325,7 @@ describe('useNodeDrag auto-pan', () => {
     const drag = useNodeDrag()
     drag.startDrag(pointerEvent(400, 300), node1)
 
-    drag.handleDrag(pointerEvent(790, 300), node1)
+    drag.handleDrag(pointerEvent(790, 300))
 
     const autoPan = testState.capturedAutoPanInstance.current
     if (!autoPan) throw new Error('Auto-pan controller was not created')
@@ -317,12 +337,12 @@ describe('useNodeDrag auto-pan', () => {
     const drag = useNodeDrag()
     drag.startDrag(pointerEvent(400, 300), node1)
 
-    drag.handleDrag(pointerEvent(790, 300), node1)
+    drag.handleDrag(pointerEvent(790, 300))
     const autoPan = testState.capturedAutoPanInstance.current
     if (!autoPan) throw new Error('Auto-pan controller was not created')
 
     testState.requestAnimationFrameCallback?.(0)
-    drag.handleDrag(pointerEvent(795, 305), node1)
+    drag.handleDrag(pointerEvent(795, 305))
 
     expect(testState.capturedAutoPanInstance.current).toBe(autoPan)
     expect(autoPan.start).toHaveBeenCalledTimes(1)
@@ -340,10 +360,10 @@ describe('useNodeDrag auto-pan', () => {
   it('stops auto-pan on endDrag', () => {
     const drag = useNodeDrag()
     drag.startDrag(pointerEvent(400, 300), node1)
-    drag.handleDrag(pointerEvent(400, 300), node1)
+    drag.handleDrag(pointerEvent(400, 300))
     expect(testState.capturedAutoPanInstance.current).not.toBeNull()
 
-    drag.endDrag(pointerEvent(400, 300), node1)
+    drag.endDrag(pointerEvent(400, 300))
 
     expect(testState.capturedAutoPanInstance.current!.stop).toHaveBeenCalled()
   })
@@ -351,10 +371,10 @@ describe('useNodeDrag auto-pan', () => {
   it('does not move nodes if onPan fires after endDrag', () => {
     const drag = useNodeDrag()
     drag.startDrag(pointerEvent(400, 300), node1)
-    drag.handleDrag(pointerEvent(400, 300), node1)
+    drag.handleDrag(pointerEvent(400, 300))
     const onPan = testState.capturedOnPan.current!
 
-    drag.endDrag(pointerEvent(400, 300), node1)
+    drag.endDrag(pointerEvent(400, 300))
     testState.mutationFns.batchMoveNodes.mockClear()
 
     onPan(5, 0)
