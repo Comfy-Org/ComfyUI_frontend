@@ -26,8 +26,11 @@ import { toNodeId } from '@/types/nodeId'
 import { mergeInputSpec } from '@/utils/nodeDefUtil'
 
 import { ComfyApiError } from './errors'
+import { resolveInputSource } from './resolution'
+import type { Resolver } from './resolution'
 import { describeSlotRef, resolveSlotRef, slotIdOf } from './slotRef'
 import type { SlotId, SlotRef } from './slotRef'
+import type { WidgetValue } from './widgetHandle'
 
 export interface LinkInfo {
   readonly id: string
@@ -166,6 +169,17 @@ export interface SlotSnapshot {
   readonly isConnected: boolean
 }
 
+/** @knipIgnoreUnusedButUsedByCustomNodes */
+export type ResolvedInputSource =
+  | {
+      readonly kind: 'output'
+      readonly graphId: string
+      readonly nodeId: string
+      readonly outputIndex: number
+    }
+  | { readonly kind: 'literal'; readonly value: WidgetValue }
+  | { readonly kind: 'omitted'; readonly reason: string }
+
 export interface InputSlotHandle {
   readonly id: SlotId
   /** Volatile — shifts when other slots are added or removed. */
@@ -184,6 +198,15 @@ export interface InputSlotHandle {
   ): Readonly<InputWidgetConfig> | undefined
   link(): LinkInfo | undefined
   source(): { nodeId: string; outputIndex: number } | undefined
+  /**
+   * What ultimately feeds this input after frontend nodes resolve.
+   *
+   * `source()` reports the physical link, which is right for editing topology.
+   * This reports the executable source through reroutes, Get/Set nodes and any
+   * other frontend node declared with `defs.define({ resolve })`. Resolution is
+   * read-only and leaves the graph untouched.
+   */
+  resolvedSource(): ResolvedInputSource | undefined
   disconnect(): boolean
   modify(patch: InputSlotPatch): void
   /** Replaces `{...input}`, which now yields nothing useful. */
@@ -417,7 +440,8 @@ function snapshotSlot(
 function createInputHandle(
   getGraph: () => LGraph | null | undefined,
   getNode: () => LGraphNode | undefined,
-  slotId: SlotId
+  slotId: SlotId,
+  getResolvers: () => ReadonlyMap<string, Resolver>
 ): InputSlotHandle {
   const indexOf = () => {
     const inputs = getNode()?.inputs ?? []
@@ -484,6 +508,29 @@ function createInputHandle(
       return info
         ? { nodeId: info.sourceNodeId, outputIndex: info.sourceIndex }
         : undefined
+    },
+    resolvedSource() {
+      const graph = getGraph()
+      const node = getNode()
+      const input = indexOf()
+      if (!graph || !node || input === -1) return undefined
+
+      const source = resolveInputSource(
+        graph,
+        String(node.id),
+        input,
+        getResolvers()
+      )
+      if (!source) return undefined
+      if (source.kind === 'output') {
+        return Object.freeze({
+          kind: 'output',
+          graphId: String(graph.id),
+          nodeId: source.nodeId,
+          outputIndex: source.output
+        })
+      }
+      return Object.freeze({ ...source })
     },
     disconnect() {
       const node = getNode()
@@ -903,11 +950,12 @@ function createCollection<THandle>(
 
 export function createInputCollection(
   getGraph: () => LGraph | null | undefined,
-  getNode: () => LGraphNode | undefined
+  getNode: () => LGraphNode | undefined,
+  getResolvers: () => ReadonlyMap<string, Resolver> = () => new Map()
 ): SlotCollection<InputSlotHandle> {
   return createCollection(
     () => getNode()?.inputs ?? [],
-    (slotId) => createInputHandle(getGraph, getNode, slotId),
+    (slotId) => createInputHandle(getGraph, getNode, slotId, getResolvers),
     {
       add: (name, type, options) => {
         const node = getNode()

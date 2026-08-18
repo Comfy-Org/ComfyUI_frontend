@@ -39,12 +39,12 @@ widget instance, not a Pinia store, not a Vue reactive proxy, not a constructor.
 > `node.menu`, `node.onPreview`, `node.onSerialize`, `node.resolve`,
 > `node.sizeConstraints`, `queue.disableAutoQueue`, `serialization.control`,
 > `settings`, `slots.connect`, `slots.dynamic`, `slots.identity`,
-> `slots.layout`, `slots.localizedName`, `slots.moveLinks`, `slots.retype`,
-> `slots.widgetConfig`, `storage`, `ui.sidebarTab`, `viewport.changed`,
-> `widgets.canvas`, `widgets.create`, `widgets.height`, `widgets.hidden`,
-> `widgets.linked`, `widgets.mount`, `widgets.reorder`,
-> `widgets.textInteraction`, `widgets.typeContext`, `workflow.open`,
-> `workflow.textReplacements`.
+> `slots.layout`, `slots.localizedName`, `slots.moveLinks`,
+> `slots.resolvedSource`, `slots.retype`, `slots.widgetConfig`, `storage`,
+> `ui.sidebarTab`, `viewport.changed`, `widgets.canvas`, `widgets.create`,
+> `widgets.height`, `widgets.hidden`, `widgets.linked`, `widgets.mount`,
+> `widgets.reorder`, `widgets.textInteraction`, `widgets.typeContext`,
+> `workflow.open`, `workflow.textReplacements`.
 >
 > **Specified only:** §4a declarative decorations (badges/anchors — note
 > `setSizeConstraints` and `widgets.canvas` DID ship), §4b chrome, §4c
@@ -1737,6 +1737,22 @@ outright. Three constraints, all deliberate and all arguable:
 feed _every_ unconnected input of that type — the packs gate on a per-node
 opt-in kept in properties, and omitting it produces a silent wrong broadcast
 rather than a visible failure.
+
+**`input.resolvedSource()` — exposes the result, not the resolver.** Deno's LTX
+sequencer derives its row count from the image loader feeding it. A physical
+`input.source()` stops at a reroute or Get node, while the execution system
+already follows `defs.define({ resolve })` to the loader. The new read returns
+that same final output, literal, or omission and does not mutate the graph.
+
+**Alternative rejected.** Publishing `resolveVirtualOutput`, `getInputLink`, or
+the execution DTO would make each pack rerun host traversal and would preserve
+the legacy virtual-node protocol the resolution system replaces. Returning a
+`NodeHandle` was also rejected: the source can be a literal, and output sources
+need both graph and slot identity.
+
+**Cost to reverse.** High for the sequencer. It would still run if its count were
+entered manually, but connecting it through a supported frontend node would
+silently leave the wrong number of image rows visible and queued.
 
 **`comfy.ui.addSidebarTab` — narrows §7's "no app chrome".** Sidebar tabs are
 not decoration for Crystools' monitor or mtb's browser; they are the entire

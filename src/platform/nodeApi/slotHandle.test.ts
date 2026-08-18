@@ -7,6 +7,7 @@ import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
 import { GET_CONFIG } from '@/services/litegraphService'
 
 import { ComfyApiError } from './errors'
+import type { Resolver } from './resolution'
 import { createInputCollection, createOutputCollection } from './slotHandle'
 import type {
   InputSlotHandle,
@@ -340,6 +341,54 @@ describe('slot handles', () => {
       expect(inputs.byName('image')!.source()).toEqual({
         nodeId: String(source.id),
         outputIndex: 0
+      })
+    })
+
+    it('resolves the source through frontend nodes without changing the graph', () => {
+      const relay = new LGraphNode('Relay', 'TestRelay')
+      relay.addInput('in', 'IMAGE')
+      relay.addOutput('out', 'IMAGE')
+      graph.add(relay)
+      source.connect(0, relay, 0)
+      relay.connect(0, target, 0)
+
+      const resolvers = new Map<string, Resolver>([
+        ['TestRelay', ({ self }) => ({ out: { forwardTo: self.input('in')! } })]
+      ])
+      const resolvedInputs = createInputCollection(
+        () => graph,
+        () => graph.getNodeById(target.id) ?? undefined,
+        () => resolvers
+      )
+      const before = graph.serialize()
+
+      expect(resolvedInputs.byName('image')!.resolvedSource()).toEqual({
+        kind: 'output',
+        graphId: String(graph.id),
+        nodeId: String(source.id),
+        outputIndex: 0
+      })
+      expect(graph.serialize()).toEqual(before)
+    })
+
+    it('reports a literal supplied by a frontend node', () => {
+      const relay = new LGraphNode('Relay', 'LiteralRelay')
+      relay.addOutput('out', 'IMAGE')
+      graph.add(relay)
+      relay.connect(0, target, 0)
+
+      const resolvers = new Map<string, Resolver>([
+        ['LiteralRelay', () => ({ out: { literal: 7 } })]
+      ])
+      const resolvedInputs = createInputCollection(
+        () => graph,
+        () => graph.getNodeById(target.id) ?? undefined,
+        () => resolvers
+      )
+
+      expect(resolvedInputs.byName('image')!.resolvedSource()).toEqual({
+        kind: 'literal',
+        value: 7
       })
     })
 
