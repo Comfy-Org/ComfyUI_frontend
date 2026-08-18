@@ -443,8 +443,8 @@ jobs:
           [ -n "$MUTATION_PATH" ] && [ -n "$MUTATION_DIGEST" ] || { echo '::error::mutation identity is incomplete'; exit 1; }
           case "$PROOF_ROW" in
             1) title='S1: every registered node mounts on the canvas renderer'; pat='ImpactInt: instance is missing declared input \\"value\\" \\(litegraph\\)' ;;
-            2) title='S2: every registered node mounts on the DOM renderer'; pat=': Vue mounts ' ;;
-            3) title='S3: registered-node save/reload outcomes match exact contracts'; pat='on (pristine|set-values) reload' ;;
+            2) title='S2: every registered node mounts on the DOM renderer'; pat='ImpactInt: Vue mounts 0 of 1 widgets' ;;
+            3) title='S3: registered-node save/reload outcomes match exact contracts'; pat='ImpactInt: widgets_values \[1\] -> \[0\] on set-values reload' ;;
             9) title='S9: calibrated model-free node corpus executes'; pat='DETECTION PROOF \\(row 9\\): pack node runtime failure' ;;
           esac
           {
@@ -616,12 +616,25 @@ jobs:
             jq -r '.. | objects | select(.status? == "unexpected") | .results[]? | .error?.message? // empty' custom-nodes-results.json
             jq -r '.. | objects | select(.status? == "unexpected") | .results[]?.attachments[]? | select(.contentType? == "application/json" and has("body")) | (.body | @base64d | fromjson) | if type == "array" then .[] else . end' custom-nodes-results.json
           } > tier-isolation-proof-evidence.txt
+          pack_failures=$(jq -er --arg name "s${PROOF_ROW}-failures.json" '
+            [.. | objects
+              | select(.status? == "unexpected")
+              | .results[]?.attachments[]?
+              | select(.name == $name and has("body"))
+              | (.body | @base64d | fromjson)]
+            | if length == 1 and (.[0] | type) == "array"
+              then .[0] | length
+              else -1
+              end
+          ' custom-nodes-results.json)
+          [ "$pack_failures" = 1 ] || { echo "::error::S$PROOF_ROW produced $pack_failures pack failures, expected exactly one witness"; exit 1; }
           case "$PROOF_ROW" in
-            1) pat='ImpactInt: instance is missing declared input \\"value\\" \(litegraph\)' ;;
-            2) pat=': Vue mounts ' ;;
-            3) pat='on (pristine|set-values) reload' ;;
-            9) pat='DETECTION PROOF \(row 9\): pack node runtime failure' ;;
+            1) witness=comfyui-impact-pack; pat='ImpactInt: instance is missing declared input \\"value\\" \(litegraph\)' ;;
+            2) witness=comfyui-impact-pack; pat='ImpactInt: Vue mounts 0 of 1 widgets' ;;
+            3) witness=comfyui-impact-pack; pat='ImpactInt: widgets_values \[1\] -> \[0\] on set-values reload' ;;
+            9) witness=comfyui-videohelpersuite; pat='DETECTION PROOF \(row 9\): pack node runtime failure' ;;
           esac
+          grep -Fq -- "[$witness]" tier-isolation-proof-evidence.txt || { echo "::error::S$PROOF_ROW failure did not belong to $witness"; exit 1; }
           grep -Eq -- "$pat" tier-isolation-proof-evidence.txt || { echo "::error::S$PROOF_ROW failure was not attributable to its Detection Proof break"; exit 1; }
 
           case "$PROOF_ROW" in
