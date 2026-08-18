@@ -85,13 +85,9 @@ jobs:
       matrix:
         # THE shard-count knob. Each value is the `index/total` the manifest
         # loader wants, so the count lives in exactly one place and the list
-        # cannot drift out of step with a separate total. Rebalancing is
-        # rewriting this list. Measured on run 31842166428: 3.8 min fixed plus
-        # 0.39 min per pack once S9 is scoped to run-tier rows, so 22 packs
-        # lands near 12 - the shard holding the one run-tier pack costs more.
-        # Slices are balanced by expectedNodeCount (see shardOf), not by pack
-        # count: node counts run 1..285 with a median of 6, and a matrix costs
-        # its slowest shard.
+        # cannot drift out of step with a separate total. Slices are balanced
+        # by expectedNodeCount (see shardOf), not by pack count: node counts
+        # run 1..285 with a median of 6, and a matrix costs its slowest shard.
         shard: ['1/4', '2/4', '3/4', '4/4']
         proof_row: >-
           ${{ fromJSON(github.event_name == 'workflow_dispatch' && inputs.detection_proof_row == 'all' && '["1","2","3","9"]' || format('["{0}"]', inputs.detection_proof_row || '0')) }}
@@ -132,7 +128,7 @@ jobs:
       (github.event_name != 'pull_request' ||
       github.event.pull_request.head.repo.full_name == github.repository))
     runs-on: ubuntu-latest
-    # Green runs complete in 11-16 minutes per shard. 35 leaves headroom for a
+    # Recent green runs complete in 10-19 minutes per shard. 35 leaves room for a
     # slow dependency resolve without letting a wedged backend run indefinitely.
     timeout-minutes: 35
     permissions:
