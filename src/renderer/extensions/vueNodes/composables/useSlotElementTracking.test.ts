@@ -112,9 +112,6 @@ function createSlotElement(collapsed = false): HTMLElement {
   return el
 }
 
-/**
- * Mount the wrapper, set the element ref, and wait for slot registration.
- */
 async function mountAndRegisterSlot(type: 'input' | 'output') {
   const { el, TestComponent } = createTestSetup(type)
   const { unmount } = render(TestComponent)

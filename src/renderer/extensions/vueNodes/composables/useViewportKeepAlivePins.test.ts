@@ -1,9 +1,14 @@
 import { describe, expect, it } from 'vitest'
+import { computed, effectScope, nextTick, ref } from 'vue'
 
+import { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
 import {
   findLinkDragSourceIds,
-  findLiveStateNodeIds
+  findLiveStateNodeIds,
+  useViewportKeepAlivePins
 } from '@/renderer/extensions/vueNodes/composables/useViewportKeepAlivePins'
+import { toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 
 function nodeWith(id: string, contents: string): HTMLElement {
   const root = document.createElement('div')
@@ -41,5 +46,57 @@ describe('findLinkDragSourceIds', () => {
     expect(
       findLinkDragSourceIds({ ...connector, isConnecting: false })
     ).toEqual(new Set())
+  })
+})
+
+describe('useViewportKeepAlivePins', () => {
+  it('retains and releases nodes with transient browser state', async () => {
+    const root = document.createElement('div')
+    root.innerHTML = `
+      <div data-node-id="focused"><input /></div>
+      <div data-node-id="playing"><video /></div>
+    `
+    document.body.appendChild(root)
+
+    const video = root.querySelector('video') as HTMLVideoElement
+    Object.defineProperty(video, 'paused', { configurable: true, value: false })
+
+    const connector = new LinkConnector(() => {})
+    connector.state.connectingTo = 'input'
+    Object.defineProperty(connector, 'renderLinks', {
+      value: [{ node: { id: 'link-source' } }]
+    })
+
+    const selectedNodeIds = ref<ReadonlySet<NodeId>>(
+      new Set([toNodeId('selected')])
+    )
+    const scope = effectScope()
+    const { pinnedNodeIds } = scope.run(() =>
+      useViewportKeepAlivePins({
+        selectedNodeIds: computed(() => selectedNodeIds.value),
+        getRoot: () => root,
+        getLinkConnector: () => connector
+      })
+    )!
+
+    const input = root.querySelector('input')!
+    input.focus()
+    connector.events.dispatch('drag-started', undefined)
+    await nextTick()
+
+    expect(pinnedNodeIds.value).toEqual(
+      new Set(['selected', 'focused', 'playing', 'link-source'])
+    )
+
+    input.blur()
+    video.remove()
+    connector.state.connectingTo = undefined
+    connector.events.dispatch('reset', true)
+    await nextTick()
+
+    expect(pinnedNodeIds.value).toEqual(new Set(['selected']))
+
+    scope.stop()
+    root.remove()
   })
 })
