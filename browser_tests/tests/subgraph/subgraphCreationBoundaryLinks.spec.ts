@@ -13,7 +13,8 @@ const SUBGRAPH_LINKS_EXPECTED = {
     '7:0->HOST:2',
     'HOST:0->9:0'
   ],
-  incompatibleHostInputLinks: []
+  incompatibleHostInputLinks: [],
+  incompatibleHostOutputLinks: []
 } as const
 
 test(

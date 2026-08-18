@@ -535,7 +535,8 @@ export class SubgraphHelper {
       if (!host) {
         return {
           rootLinks: ['no subgraph node'],
-          incompatibleHostInputLinks: ['no subgraph node']
+          incompatibleHostInputLinks: ['no subgraph node'],
+          incompatibleHostOutputLinks: ['no subgraph node']
         }
       }
 
@@ -558,6 +559,13 @@ export class SubgraphHelper {
           .map(
             (link) =>
               `${link.type} link landed on slot ${link.target_slot} typed ${host.inputs[link.target_slot]?.type}`
+          ),
+        incompatibleHostOutputLinks: links
+          .filter((link) => link.origin_id === host.id)
+          .filter((link) => host.outputs[link.origin_slot]?.type !== link.type)
+          .map(
+            (link) =>
+              `${link.type} link left slot ${link.origin_slot} typed ${host.outputs[link.origin_slot]?.type}`
           )
       }
     })
