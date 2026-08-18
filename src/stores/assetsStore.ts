@@ -124,7 +124,6 @@ export const useAssetsStore = defineStore('assets', () => {
     hasMore: false,
     invalidate: async () => {
       await executeUpdateInputs()
-      assetService.invalidateInputAssetsIncludingPublic()
     },
     isLoading: inputLoading,
     items: rawInputAssets,

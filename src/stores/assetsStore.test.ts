@@ -30,7 +30,6 @@ vi.mock('@/platform/assets/services/assetService', () => ({
     getAllAssetsByTag: vi.fn(),
     getAssetsForNodeType: vi.fn(),
     getAssetsPageForNodeType: vi.fn(),
-    invalidateInputAssetsIncludingPublic: vi.fn(),
     updateAsset: vi.fn(),
     addAssetTags: vi.fn(),
     removeAssetTags: vi.fn()

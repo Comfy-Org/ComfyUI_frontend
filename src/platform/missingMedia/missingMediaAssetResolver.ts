@@ -1,8 +1,11 @@
+import { toValue } from 'vue'
+
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import { fetchHistoryPage } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { api } from '@/scripts/api'
+import { useAssetsStore } from '@/stores/assetsStore'
 import { getFilePathSeparatorVariants, joinFilePath } from '@/utils/formatUtil'
 import { getMediaPathDetectionNames } from './mediaPathDetectionUtil'
 
@@ -14,8 +17,8 @@ interface MediaPathDetectionOptions {
 }
 
 export interface MissingMediaAssetSources {
-  inputAssets: AssetItem[]
-  generatedAssets: AssetItem[]
+  inputAssets: readonly AssetItem[]
+  generatedAssets: readonly AssetItem[]
 }
 
 export interface ResolveMissingMediaAssetSourcesOptions {
@@ -52,9 +55,9 @@ export async function resolveMissingMediaAssetSources({
   try {
     const [inputAssets, generatedAssets] = await Promise.all([
       abortSiblingsOnFailure(
-        isCloud
-          ? assetService.getInputAssetsIncludingPublic(controller.signal)
-          : Promise.resolve<AssetItem[]>([]),
+        Promise.resolve(
+          isCloud ? toValue(useAssetsStore().inputAssets.items) : []
+        ),
         controller
       ),
       abortSiblingsOnFailure(
