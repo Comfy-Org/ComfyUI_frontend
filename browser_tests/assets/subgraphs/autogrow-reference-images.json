@@ -1,0 +1,163 @@
+{
+  "id": "9f2daf30-9829-45d2-9614-393d2bc035da",
+  "revision": 0,
+  "last_node_id": 26,
+  "last_link_id": 52,
+  "nodes": [
+    {
+      "id": 18,
+      "type": "LoadImage",
+      "pos": [40, 120],
+      "size": [282.796875, 346],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [51]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": ["example.png", "image"],
+      "widgets_values_named": {
+        "image": "example.png",
+        "upload": "image"
+      }
+    },
+    {
+      "id": 19,
+      "type": "LoadImage",
+      "pos": [360, 120],
+      "size": [282.796875, 346],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [52]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": ["example.png", "image"],
+      "widgets_values_named": {
+        "image": "example.png",
+        "upload": "image"
+      }
+    },
+    {
+      "id": 26,
+      "type": "ByteDance2ReferenceNode",
+      "pos": [700, 120],
+      "size": [400, 463],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "image_1",
+          "name": "model.reference_images.image_1",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 51
+        },
+        {
+          "label": "image_2",
+          "name": "model.reference_images.image_2",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 52
+        },
+        {
+          "label": "video_1",
+          "name": "model.reference_videos.video_1",
+          "shape": 7,
+          "type": "VIDEO",
+          "link": null
+        },
+        {
+          "label": "audio_1",
+          "name": "model.reference_audios.audio_1",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": null
+        },
+        {
+          "label": "asset_1",
+          "name": "model.reference_assets.asset_1",
+          "shape": 7,
+          "type": "STRING",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ByteDance2ReferenceNode"
+      },
+      "widgets_values": [
+        "Seedance 2.5",
+        "",
+        "720p",
+        "16:9",
+        5,
+        true,
+        false,
+        "mp4",
+        0,
+        "randomize",
+        false
+      ],
+      "widgets_values_named": {
+        "model": "Seedance 2.5",
+        "model.prompt": "",
+        "model.resolution": "720p",
+        "model.ratio": "16:9",
+        "model.duration": 5,
+        "model.generate_audio": true,
+        "model.video_editing": false,
+        "model.output_format": "mp4",
+        "seed": 0,
+        "control_after_generate": "randomize",
+        "watermark": false
+      }
+    }
+  ],
+  "links": [
+    [51, 18, 0, 26, 0, "IMAGE"],
+    [52, 19, 0, 26, 1, "IMAGE"]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 1,
+      "offset": [0, 0]
+    }
+  },
+  "version": 0.4
+}
