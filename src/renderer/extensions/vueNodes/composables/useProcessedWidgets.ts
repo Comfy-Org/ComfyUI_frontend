@@ -70,7 +70,6 @@ interface ProcessedWidget {
   id?: string
   widgetId?: WidgetId
   name: string
-  slotName?: string
   renderKey: string
   simplified: SimplifiedWidget
   tooltipConfig: TooltipOptions
@@ -397,8 +396,7 @@ export function computeProcessedWidgets({
       )
     }
 
-    const widgetKey = widget.slotName ?? widget.name
-    const hasGridOverride = !!nodeData.gridOverrides?.[widgetKey]
+    const hasGridOverride = !!nodeData.gridOverrides?.[widget.name]
 
     result.push({
       advanced: mergedOptions.advanced ?? false,
@@ -416,7 +414,6 @@ export function computeProcessedWidgets({
       hidden: mergedOptions.hidden ?? false,
       widgetId: widget.widgetId,
       name: widget.name,
-      slotName: widget.slotName,
       renderKey,
       type: widget.type,
       vueComponent,
@@ -487,7 +484,7 @@ export function useProcessedWidgets(
     const overrides = nodeDataGetter()?.gridOverrides
     return visibleWidgets.value
       .map((w) => {
-        const override = overrides?.[w.slotName ?? w.name]
+        const override = overrides?.[w.name]
         if (override && isValidGridTrack(override)) return override
         return shouldExpand(w.type) || w.hasLayoutSize ? 'auto' : 'min-content'
       })

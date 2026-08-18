@@ -35,9 +35,7 @@
       >
         <div
           class="absolute inset-x-0 bottom-0 h-1 cursor-ns-resize opacity-0 transition-opacity hover:bg-node-stroke hover:opacity-50"
-          @pointerdown="
-            handleResizePointerDown($event, widget.slotName ?? widget.name)
-          "
+          @pointerdown="handleResizePointerDown($event, widget.name)"
         />
         <!-- Widget Input Slot Dot -->
         <div
@@ -159,6 +157,6 @@ function handleResizePointerDown(
     "[data-testid='node-widget']"
   ) as HTMLElement
   if (!rowElement || nodeData?.id == null) return
-  startResize(event, String(nodeData.id), widgetOverrideKey, rowElement)
+  startResize(event, nodeData.id, widgetOverrideKey, rowElement)
 }
 </script>

@@ -15,9 +15,8 @@ import {
 
 const DEFAULT_SIZE = '200px'
 
-function refreshVueNode(nodeId: string): void {
-  const manager = useVueNodeLifecycle().nodeManager.value
-  manager?.refreshNode(nodeId)
+function refreshVueNode(node: LGraphNode): void {
+  useVueNodeLifecycle().nodeManager.value?.refreshNode(node.id)
 }
 
 function applyOverrideAndRefresh(
@@ -26,19 +25,19 @@ function applyOverrideAndRefresh(
   value: string
 ): void {
   setGridOverride(node, widgetName, value)
-  refreshVueNode(String(node.id))
+  refreshVueNode(node)
   app.canvas?.setDirty(true, true)
 }
 
 function removeOverrideAndRefresh(node: LGraphNode, widgetName: string): void {
   clearGridOverride(node, widgetName)
-  refreshVueNode(String(node.id))
+  refreshVueNode(node)
   app.canvas?.setDirty(true, true)
 }
 
 function removeAllOverridesAndRefresh(node: LGraphNode): void {
   clearAllGridOverrides(node)
-  refreshVueNode(String(node.id))
+  refreshVueNode(node)
   app.canvas?.setDirty(true, true)
 }
 
