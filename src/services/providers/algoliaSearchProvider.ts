@@ -139,12 +139,11 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
 
     const requests: SearchQuery[] = [packQuery(query)]
 
-    // Pasted `owner/repo` slugs and unsegmented compound names return zero
-    // hits against an index that indexes neither, so retry the query in
-    // rewritten forms and use them to fill slots the raw query left empty.
-    // Only on the first page: the fallback is capped to the space the raw
-    // query didn't fill, so it only ever runs once the raw query is exhausted,
-    // and running it again per page would re-append hits already listed above.
+    // Pasted `owner/repo` slugs and unsegmented compound names return zero hits
+    // against an index that segments neither, so retry the query in rewritten
+    // forms to fill slots the raw query left empty. First page only: pages are
+    // concatenated by the caller, so re-running this per page would re-append
+    // hits already listed above.
     const fallbackQueries =
       pageNumber === 0 ? buildPackSearchFallbacks(query) : []
     requests.push(...fallbackQueries.map(packQuery))
@@ -172,11 +171,11 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
       1,
       1 + fallbackQueries.length
     ) as SearchResponse<AlgoliaNodePack>[]
-    const querySuggestions = shouldQuerySuggestions
-      ? (results[
-          1 + fallbackQueries.length
-        ] as SearchResponse<NodesIndexSuggestion>)
-      : { hits: [] }
+    const querySuggestions = (shouldQuerySuggestions
+      ? (results[1 + fallbackQueries.length] as
+          | SearchResponse<NodesIndexSuggestion>
+          | undefined)
+      : undefined) ?? { hits: [] }
 
     // The raw query's ranking is authoritative, so fallbacks only fill in hits
     // it missed -- they never reorder or displace a raw hit -- and are capped
