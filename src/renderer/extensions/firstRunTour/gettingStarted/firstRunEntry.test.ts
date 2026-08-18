@@ -96,17 +96,17 @@ describe('useFirstRunEntry', () => {
     mocks.beginTour.mockResolvedValue(true)
   })
 
-  const permanentDisqualifiers: [string, () => void][] = [
+  const permanentDisqualifiers = [
     ['not on cloud', () => void (mocks.isCloud = false)],
     ['a returning user', () => void (mocks.isNewUser = false)]
-  ]
+  ] as const
 
-  const transientDisqualifiers: [string, () => void][] = [
+  const transientDisqualifiers = [
     ['below the md breakpoint', () => void (mocks.isDesktopWidth = false)],
     ['subscription disabled', () => void (mocks.subscriptionEnabled = false)],
     ['new-user state undetermined', () => void (mocks.isNewUser = null)],
     ['the tour flag off', () => void (mocks.tourFlag = false)]
-  ]
+  ] as const
 
   describe('what a fresh user sees', () => {
     it('shows Getting Started to a candidate', async () => {
