@@ -3,6 +3,8 @@ import { describe, expect, it, vi } from 'vitest'
 import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
 import type { ComfyNode } from '@/platform/workflow/validation/schemas/workflowSchema'
 
+import type { MissingNodeType } from '@/types/comfy'
+
 import type { GroupNodeWorkflowData } from './groupNode'
 
 vi.mock('@/scripts/app', () => ({
@@ -128,5 +130,60 @@ describe('GroupNodeConfig.processInputSlots', () => {
     )
 
     expect(inputMap).toEqual({ model: 0, latent_image: 1 })
+  })
+})
+
+describe('GroupNodeConfig.registerFromWorkflow', () => {
+  function groupWithMissingInnerNode(): Record<string, GroupNodeWorkflowData> {
+    return {
+      MyGroup: {
+        nodes: [{ index: 0, type: 'NotInstalledNode' }],
+        links: [],
+        external: []
+      } as unknown as GroupNodeWorkflowData
+    }
+  }
+
+  it('backs each report with a canvas instance id when the map is provided', async () => {
+    const missing: MissingNodeType[] = []
+
+    await GroupNodeConfig.registerFromWorkflow(
+      groupWithMissingInnerNode(),
+      missing,
+      new Map([['MyGroup', [7, 9]]])
+    )
+
+    expect(missing).toStrictEqual([
+      expect.objectContaining({
+        type: 'workflow>MyGroup',
+        nodeId: '7',
+        hint: ' (missing: NotInstalledNode)'
+      }),
+      expect.objectContaining({
+        type: 'workflow>MyGroup',
+        nodeId: '9',
+        hint: ' (missing: NotInstalledNode)'
+      })
+    ])
+  })
+
+  it('keeps the legacy unbacked entries when no instance map is given', async () => {
+    const missing: MissingNodeType[] = []
+
+    await GroupNodeConfig.registerFromWorkflow(
+      groupWithMissingInnerNode(),
+      missing
+    )
+
+    expect(missing).toStrictEqual([
+      expect.objectContaining({
+        type: 'NotInstalledNode',
+        hint: " (In group node 'workflow>MyGroup')"
+      }),
+      expect.objectContaining({ type: 'workflow>MyGroup' })
+    ])
+    expect(
+      missing.every((entry) => typeof entry === 'string' || !entry.nodeId)
+    ).toBe(true)
   })
 })
