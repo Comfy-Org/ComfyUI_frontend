@@ -64,7 +64,8 @@ stay fixed with that cache until the next cache build.
 Each pack's tarball ETag and the ref actually fetched are recorded in
 `corpus.lock.json`, which ships as a run artifact — that is the identity a
 published figure has to be cited with, and diffing two runs' lockfiles gives
-you the packs that moved between them.
+you the packs that moved between them. The artifact also carries the registry
+snapshot that defines the attempted population.
 
 ## Running locally
 
@@ -91,6 +92,10 @@ The cache key is the pin set, and Actions caches are immutable. Main normally
 provides the shared entry that PRs restore; a PR with no visible main cache can
 build a branch-scoped entry for its own shards. Baseline metrics are still
 written only by a passing main run and read by PRs.
+
+Before any shard runs, `validate_corpus.py` requires the restored snapshot,
+ready marker, lockfile, staged pack identities, and available-pack count to
+agree. A cache without its provenance cannot produce a verdict.
 
 ## The ecosystem matrix (execution rung)
 

@@ -55,7 +55,7 @@ concurrency:
 
 env:
   PYTHON_VERSION: '3.11'
-  CORPUS_CACHE_PREFIX: registry-corpus-v4-
+  CORPUS_CACHE_PREFIX: registry-corpus-v5-
 
 jobs:
   # First job in the run, and deliberately dependency-free so its annotation
@@ -133,6 +133,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python3 scripts/registry-census/fetch_corpus.py
 
+      - name: Validate corpus cache
+        run: python3 scripts/registry-census/validate_corpus.py
+
       # corpus.lock.json records the ETag and resolved tree of every pack this
       # run measured - the identity a published figure has to be cited with.
       # registry-stale.json is present only when the snapshot is a fallback.
@@ -141,9 +144,11 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: corpus-lock
-          path: .census/*.json
+          path: |
+            .census/*.json
+            .census/data/registry.json
           retention-days: 30
-          if-no-files-found: warn
+          if-no-files-found: error
 
       # Same key as the restore, which is the PIN SET - so there is exactly
       # one entry per pin bump rather than one per run that saw drift, and
@@ -342,7 +347,7 @@ jobs:
   # number, and on PASS that partial population would be saved as the
   # baseline the next run is measured against.
   matrix-verdict:
-    needs: ecosystem-matrix
+    needs: [corpus, ecosystem-matrix]
     # A single failed shard must degrade to a withheld verdict over the rows
     # that exist, not to a skipped check that reads as nothing happened. Not
     # always(): a cancelled run would find no rows, exit 2, and manufacture a
@@ -378,7 +383,7 @@ jobs:
       # registry-stale.json; the summarizer surfaces it in the report and
       # stores it in metrics.json rather than leaving it in a job log.
       - name: Fetch corpus provenance
-        continue-on-error: true
+        if: needs.corpus.result == 'success'
         uses: actions/download-artifact@v8
         with:
           name: corpus-lock
