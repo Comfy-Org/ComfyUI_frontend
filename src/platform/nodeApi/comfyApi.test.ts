@@ -3,7 +3,10 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import {
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 
 import {
   LATEST_MAJOR,
@@ -36,6 +39,10 @@ describe('comfy API root', () => {
       expect(api().supports('slots.identity')).toBe(true)
       expect(api().supports('widgets.typeContext')).toBe(true)
       expect(api().supports('workflow.open')).toBe(true)
+      expect(api().supports('slots.widgetConfig')).toBe(true)
+      expect(api().supports('workflow.textReplacements')).toBe(true)
+      expect(api().supports('execution.node')).toBe(true)
+      expect(api().supports('defs.typeCompatibility')).toBe(true)
     })
 
     it('returns false for unknown capabilities instead of throwing', () => {
@@ -134,6 +141,35 @@ describe('comfy API root', () => {
         Reflect.apply(comfy.workflow.open, comfy.workflow, [null])
       ).rejects.toThrow(/workflow data must be an object/i)
       expect(openWorkflow).not.toHaveBeenCalled()
+    })
+
+    it('applies the host text-replacement grammar to the active document', () => {
+      const source = new LGraphNode('Source', 'TextSource')
+      source.title = 'Prompt source'
+      source.addWidget('text', 'text', 'cats/dogs', () => undefined, {})
+      graph.add(source)
+
+      expect(api().workflow.applyTextReplacements('%Prompt source.text%')).toBe(
+        'cats_dogs'
+      )
+    })
+  })
+
+  describe('execution nodes', () => {
+    it('resolves a node inside a subgraph from its backend execution id', () => {
+      const subgraph = createTestSubgraph({ rootGraph: graph })
+      graph.subgraphs.set(subgraph.id, subgraph)
+      const host = createTestSubgraphNode(subgraph, { parentGraph: graph })
+      graph.add(host)
+      const inner = new LGraphNode('Inner', 'TestNode')
+      subgraph.add(inner)
+
+      const found = api().executionNode(
+        `${String(host.id)}:${String(inner.id)}`
+      )
+
+      expect(found?.id).toBe(String(inner.id))
+      expect(found?.graphId).toBe(String(subgraph.id))
     })
   })
 

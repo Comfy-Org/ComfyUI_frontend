@@ -21,6 +21,7 @@ import { createHandleFactory } from './closedProxy'
 import type { HandleCommon } from './closedProxy'
 import { ComfyApiError } from './errors'
 import { isEmbeddingWorkflow } from './serializeContext'
+import { constructDeclaredWidget } from './widgetTypes'
 
 // `null` is included because core's own `WidgetValue` has it and
 // `addWidget('button', name, null, cb)` produced exactly that. Omitting it made
@@ -530,15 +531,8 @@ export interface MountDef {
   readonly defaultValue?: MountedData
 }
 
-/**
- * What a mounted control can hold.
- *
- * Narrower than `WidgetValue` because a mounted widget is DOM-backed, and that
- * is what one carries — a colour string, a vector object. Saying so is better
- * than accepting a number and dropping it at the boundary.
- * @knipIgnoreUnusedButUsedByCustomNodes
- */
-export type MountedData = string | object
+/** What a mounted control can hold. @knipIgnoreUnusedButUsedByCustomNodes */
+export type MountedData = string | number | boolean | object | null
 
 /**
  * Reading and writing a mounted widget's value.
@@ -861,23 +855,22 @@ export function createWidgetCollection(
         )
       }
 
-      const widget = node.addWidget(
-        def.type as never,
-        def.name,
-        // `'value' in def` rather than `??`: a widget whose value is genuinely
-        // null - which is what `addWidget('button', name, null, cb)` produced -
-        // must stay null, or its `widgets_values` entry changes and the saved
-        // workflow differs.
-        ('value' in def ? def.value : '') as never,
-        // A no-op rather than `null`. Listeners attach afterwards through
-        // `on('activate')` / `on('change')`, which is the published way, but
-        // `addWidget` warns when it sees neither a callback nor a `property` —
-        // so every converted button logged three warnings it could do nothing
-        // about. The bridge in `ensureCallbackBridge` wraps this and fans out
-        // to the real listeners.
-        () => {},
-        (def.options ?? {}) as never
-      )
+      const value = 'value' in def ? def.value : ''
+      const widget =
+        constructDeclaredWidget(
+          node,
+          def.type,
+          def.name,
+          def.options ?? {},
+          value
+        )?.widget ??
+        node.addWidget(
+          def.type as never,
+          def.name,
+          value as never,
+          () => {},
+          (def.options ?? {}) as never
+        )
       if (def.disabled !== undefined) widget.disabled = def.disabled
       if (def.hidden !== undefined) widget.hidden = def.hidden
       if (def.serialize !== undefined) widget.serialize = def.serialize
@@ -937,7 +930,7 @@ export function createWidgetCollection(
               }
             }
           : {})
-      })
+      } as never)
       // Also on the widget: `options.serialize` gates the API prompt, while
       // the widget's own flag gates workflow persistence, and a drawing must
       // stay out of both.
@@ -972,7 +965,7 @@ export function createWidgetCollection(
         // The widget's own setter stores through `setValue` and then fires the
         // callback, so notifying here as well would report twice.
         set: (value) => {
-          widget.value = value
+          widget.value = value as never
         },
         onChange: (listener) => {
           changeListeners.add(listener)

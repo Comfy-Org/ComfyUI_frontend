@@ -517,6 +517,11 @@ export interface DefRegistry {
    */
   nodeColor(name: string): NodeColor | undefined
   /**
+   * Tests an output type against an input type using the host's connection
+   * rules, including wildcards and comma-delimited unions.
+   */
+  isTypeCompatible(outputType: string, inputType: string): boolean
+  /**
    * Declares the colour for a data type this pack introduces.
    *
    * Packs shipping their own types — `PIPE_LINE`, `LORA_STACK`, `XYPLOT` —
@@ -976,6 +981,9 @@ export function createDefRegistry(): {
           groupColor: entry.groupcolor
         })
       },
+
+      isTypeCompatible: (outputType, inputType) =>
+        LiteGraph.isValidConnection(outputType, inputType),
 
       setTypeColor(type, color) {
         // Loading a palette seeds every backend-registered type to '' — so the

@@ -98,6 +98,26 @@ describe('pack-declared widget types', () => {
     expect(api!.get()).toBe('#123456')
   })
 
+  it('supports numeric controls and exposes their declared options', () => {
+    let options: Readonly<Record<string, unknown>> | undefined
+    defineWidgetType('VHSINT', {
+      defaultValue: 0,
+      render: (_container, value, _name, context) => {
+        options = context.getOptions()
+        value.set(24)
+      }
+    })
+
+    const built = build('VHSINT', [
+      'INT',
+      { default: 12, step: 4, unit: 'frames' }
+    ])
+
+    expect(built?.widget.value).toBe(24)
+    expect(options).toMatchObject({ default: 12, step: 4, unit: 'frames' })
+    expect(Object.isFrozen(options)).toBe(true)
+  })
+
   it('tells the renderer when the value changed elsewhere', () => {
     const seen = vi.fn()
     defineWidgetType('MTB_COLOR', {
@@ -212,6 +232,21 @@ describe('pack-declared widget types', () => {
 
     stop()
 
+    expect(
+      useWidgetStore().inputIsWidget({ name: 'c', type: 'MTB_COLOR' })
+    ).toBe(false)
+  })
+
+  it('does not let an older registration retire its replacement', () => {
+    const stopFirst = defineWidgetType('MTB_COLOR', { render: () => {} })
+    const stopSecond = defineWidgetType('MTB_COLOR', { render: () => {} })
+
+    stopFirst()
+    expect(
+      useWidgetStore().inputIsWidget({ name: 'c', type: 'MTB_COLOR' })
+    ).toBe(true)
+
+    stopSecond()
     expect(
       useWidgetStore().inputIsWidget({ name: 'c', type: 'MTB_COLOR' })
     ).toBe(false)

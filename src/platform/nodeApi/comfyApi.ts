@@ -7,6 +7,7 @@
  */
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 
 import { handleToken, isSameEntity } from './closedProxy'
 import { createDefRegistry } from './defsRegistry'
@@ -115,6 +116,7 @@ const CAPABILITIES: ReadonlyMap<string, string> = new Map([
   ['defs.define', '1.0'],
   ['node.resolve', '1.0'],
   ['slots.dynamic', '1.0'],
+  ['slots.widgetConfig', '1.0'],
   ['graph.selection', '1.0'],
   ['node.connectVeto', '1.0'],
   ['node.menu', '1.0'],
@@ -128,7 +130,10 @@ const CAPABILITIES: ReadonlyMap<string, string> = new Map([
   ['interaction.nodeMoved', '1.0'],
   ['interaction.nodeDragEnd', '1.0'],
   ['node.changeScope', '1.0'],
-  ['workflow.open', '1.0']
+  ['workflow.open', '1.0'],
+  ['workflow.textReplacements', '1.0'],
+  ['execution.node', '1.0'],
+  ['defs.typeCompatibility', '1.0']
 ])
 
 /**
@@ -285,6 +290,8 @@ export interface Comfy {
    * node or follow it with the view.
    */
   executingNode(): NodeHandle | undefined
+  /** Resolves a backend execution id, including a nested subgraph path. */
+  executionNode(id: string): NodeHandle | undefined
   /** Fires when {@link executingNode} changes, including to nothing. */
   onExecutingNodeChanged(
     listener: (node: NodeHandle | undefined) => void
@@ -317,7 +324,7 @@ function buildMajor(
   const ui = createUiHandle()
   const commands = createCommandsApi()
   const backend = createBackendApi()
-  const workflow = createWorkflowApi(openWorkflow)
+  const workflow = createWorkflowApi(getGraph, openWorkflow)
   const definitionScopes = new WeakMap<LGraph, GraphHandle>()
 
   function handleForDefinitionNode(node: LGraphNode): NodeHandle {
@@ -358,6 +365,14 @@ function buildMajor(
     return graphId === rootGraph.id ? rootGraph.node(nodeId) : undefined
   }
 
+  function executionNode(id: string): NodeHandle | undefined {
+    const root = getGraph()?.rootGraph
+    if (!root) return undefined
+    const node = getNodeByExecutionId(root, id)
+    if (!node?.graph) return undefined
+    return nodeIn(String(node.graph.id), String(node.id))
+  }
+
   return Object.freeze({
     version: major === LATEST_MAJOR ? NODE_API_VERSION : `${major}.0`,
     major,
@@ -396,15 +411,16 @@ function buildMajor(
     queue: createQueueApi(getGraph),
     executingNode: () => {
       const id = useExecutionStore().executingNodeId
-      return id ? graph.node(id) : undefined
+      return id ? executionNode(id) : undefined
     },
+    executionNode,
     onExecutingNodeChanged: (
       listener: (node: NodeHandle | undefined) => void
     ) => {
       const store = useExecutionStore()
       return watch(
         () => store.executingNodeId,
-        (id) => listener(id ? graph.node(id) : undefined)
+        (id) => listener(id ? executionNode(id) : undefined)
       )
     },
     onWorkflowLoaded,
