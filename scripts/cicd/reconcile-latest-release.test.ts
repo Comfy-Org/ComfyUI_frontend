@@ -15,7 +15,7 @@ type Release = {
 
 // Drives the real script with `gh` stubbed on PATH, so the semver-selection and
 // reassignment logic runs for real without touching the network or a live repo.
-function runReconcile(releases: Release[]) {
+function runReconcile(releases: Release[], options: { repo?: string | null } = {}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'reconcile-latest-'))
   const binDir = path.join(dir, 'bin')
   fs.mkdirSync(binDir)
@@ -38,7 +38,7 @@ function runReconcile(releases: Release[]) {
     '  exit 0',
     'fi',
     'if [[ "$1" == "release" && "$2" == "edit" ]]; then',
-    '  printf "%s\\n" "$3" >> "$STUB_EDIT_LOG"',
+    '  printf "%s\\n" "$*" >> "$STUB_EDIT_LOG"',
     '  exit 0',
     'fi',
     'echo "unexpected gh invocation: $*" >&2',
@@ -47,17 +47,23 @@ function runReconcile(releases: Release[]) {
   ].join('\n')
   fs.writeFileSync(path.join(binDir, 'gh'), ghStub, { mode: 0o755 })
 
+  const env: NodeJS.ProcessEnv = {
+    ...process.env,
+    PATH: `${binDir}:${process.env.PATH ?? ''}`,
+    STUB_RELEASES_JSON: releasesJson,
+    STUB_EDIT_LOG: editLog,
+    GITHUB_STEP_SUMMARY: ''
+  }
+  if (options.repo === null) {
+    delete env.REPO
+  } else {
+    env.REPO = options.repo ?? 'Comfy-Org/ComfyUI_frontend'
+  }
+
   const result = spawnSync('bash', [SCRIPT], {
     cwd: dir,
     encoding: 'utf8',
-    env: {
-      ...process.env,
-      PATH: `${binDir}:${process.env.PATH ?? ''}`,
-      REPO: 'Comfy-Org/ComfyUI_frontend',
-      STUB_RELEASES_JSON: releasesJson,
-      STUB_EDIT_LOG: editLog,
-      GITHUB_STEP_SUMMARY: ''
-    }
+    env
   })
 
   const edits = fs.existsSync(editLog)
@@ -83,7 +89,9 @@ describe('reconcile-latest-release.sh', () => {
     ])
 
     expect(status).toBe(0)
-    expect(edits).toEqual(['v1.48.0'])
+    expect(edits).toEqual([
+      'release edit v1.48.0 --repo Comfy-Org/ComfyUI_frontend --latest'
+    ])
   })
 
   it('is a no-op when latest already matches the highest release', () => {
@@ -105,7 +113,9 @@ describe('reconcile-latest-release.sh', () => {
     ])
 
     expect(status).toBe(0)
-    expect(edits).toEqual(['v1.47.10'])
+    expect(edits).toEqual([
+      'release edit v1.47.10 --repo Comfy-Org/ComfyUI_frontend --latest'
+    ])
   })
 
   it('ignores drafts, prereleases, and other packages’ tags', () => {
@@ -121,7 +131,9 @@ describe('reconcile-latest-release.sh', () => {
 
     expect(status).toBe(0)
     // Highest *stable frontend* semver is v1.48.1, not the draft v2.0.0.
-    expect(edits).toEqual(['v1.48.1'])
+    expect(edits).toEqual([
+      'release edit v1.48.1 --repo Comfy-Org/ComfyUI_frontend --latest'
+    ])
   })
 
   it('exits cleanly with a warning when no stable semver release exists', () => {
@@ -133,5 +145,15 @@ describe('reconcile-latest-release.sh', () => {
     expect(status).toBe(0)
     expect(edits).toEqual([])
     expect(output).toContain('No stable semver releases found')
+  })
+
+  it('exits non-zero with a clear error when REPO is unset', () => {
+    const { status, output, edits } = runReconcile([{ tagName: 'v1.48.0' }], {
+      repo: null
+    })
+
+    expect(status).not.toBe(0)
+    expect(output).toContain('REPO is required')
+    expect(edits).toEqual([])
   })
 })

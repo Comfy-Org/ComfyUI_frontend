@@ -43,7 +43,7 @@ assert_nothing_stranded_past_the_tag() {
 
 assert_version_on_pypi() {
   local http_code
-  http_code=$(curl -s --connect-timeout 10 --max-time 30 -o /dev/null -w '%{http_code}' \
+  http_code=$(curl -s --connect-timeout 10 --max-time 30 --retry 3 --retry-all-errors -o /dev/null -w '%{http_code}' \
     "https://pypi.org/pypi/${PACKAGE}/${TARGET_VERSION}/json") || http_code="000"
   if [[ "$http_code" == "200" ]]; then
     summary "- OK: PyPI has \`${PACKAGE}==${TARGET_VERSION}\`"
@@ -55,7 +55,7 @@ assert_version_on_pypi() {
 # A core/* patch must not steal PyPI's `latest` from a higher minor.
 assert_pypi_latest_only_for_main() {
   local pypi_latest
-  pypi_latest=$(curl -sf --connect-timeout 10 --max-time 30 "https://pypi.org/pypi/${PACKAGE}/json" |
+  pypi_latest=$(curl -sf --connect-timeout 10 --max-time 30 --retry 3 --retry-all-errors "https://pypi.org/pypi/${PACKAGE}/json" |
     jq -r '.info.version // empty') || pypi_latest=""
 
   if [[ -z "$pypi_latest" ]]; then
