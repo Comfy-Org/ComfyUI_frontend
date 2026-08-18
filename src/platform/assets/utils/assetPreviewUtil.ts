@@ -1,5 +1,6 @@
 import { assetService } from '@/platform/assets/services/assetService'
 import { api } from '@/scripts/api'
+import { useAssetsStore } from '@/stores/assetsStore'
 
 interface AssetRecord {
   id: string
@@ -80,10 +81,7 @@ export async function persistThumbnail(
     await assetService.updateAsset(asset.id, {
       preview_id: uploaded.id
     })
-
-    //FIXME: reimplement asset updates
-    //const previewUrl = api.apiURL(`/assets/${uploaded.id}/content`)
-    //useAssetsStore().setAssetPreview(asset.name, uploaded.id, previewUrl)
+    await useAssetsStore().outputAssets.invalidate()
   } catch {
     // Non-critical — client still shows the rendered thumbnail
   }
