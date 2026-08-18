@@ -79,10 +79,14 @@ const mockWorkspaceStore = {
   shiftDown: false
 }
 
+const eventListenerCleanups = vi.hoisted(() => new Set<() => void>())
+
 vi.mock('@vueuse/core', () => ({
   useEventListener: vi.fn((target, event, handler) => {
     target.addEventListener(event, handler)
-    return () => target.removeEventListener(event, handler)
+    const cleanup = () => target.removeEventListener(event, handler)
+    eventListenerCleanups.add(cleanup)
+    return cleanup
   })
 }))
 
@@ -176,6 +180,17 @@ describe('pasteImageNode', () => {
     const imageFile = createImageFile()
     const textFile = new File([''], 'test.txt', { type: 'text/plain' })
     const dataTransfer = createDataTransfer([textFile, imageFile])
+
+    await pasteImageNode(mockCanvas, dataTransfer.items, mockNode)
+
+    expect(mockNode.pasteFile).toHaveBeenCalledWith(imageFile)
+    expect(mockNode.pasteFiles).toHaveBeenCalledWith([imageFile])
+  })
+
+  it('should accept image files with empty MIME type when extension is recognized', async () => {
+    const mockNode = createMockNode()
+    const imageFile = createImageFile('test.jpg', '')
+    const dataTransfer = createDataTransfer([imageFile])
 
     await pasteImageNode(mockCanvas, dataTransfer.items, mockNode)
 
@@ -391,11 +406,30 @@ describe('pasteVideoNodes', () => {
 
 describe('usePaste', () => {
   beforeEach(() => {
+    for (const cleanup of eventListenerCleanups) cleanup()
+    eventListenerCleanups.clear()
+
+    vi.clearAllMocks()
+    vi.mocked(isAudioNode).mockReturnValue(false)
+    vi.mocked(isImageNode).mockReturnValue(false)
+    vi.mocked(isVideoNode).mockReturnValue(false)
+
     mockCanvas.current_node = null
     mockWorkspaceStore.shiftDown = false
     vi.mocked(mockCanvas.graph!.add).mockImplementation(
       (node: LGraphNode | LGraphGroup | null) => node as LGraphNode
     )
+  })
+
+  it('should ignore paste events without clipboard data', async () => {
+    usePaste()
+
+    document.dispatchEvent(new ClipboardEvent('paste'))
+
+    await Promise.resolve()
+    expect(createNode).not.toHaveBeenCalled()
+    expect(app.loadGraphData).not.toHaveBeenCalled()
+    expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
   })
 
   it('should handle image paste', async () => {
@@ -405,6 +439,23 @@ describe('usePaste', () => {
     usePaste()
 
     const file = createImageFile()
+    const dataTransfer = createDataTransfer([file])
+    const event = new ClipboardEvent('paste', { clipboardData: dataTransfer })
+    document.dispatchEvent(event)
+
+    await vi.waitFor(() => {
+      expect(createNode).toHaveBeenCalledWith(mockCanvas, 'LoadImage')
+      expect(mockNode.pasteFile).toHaveBeenCalledWith(file)
+    })
+  })
+
+  it('should handle image paste with empty MIME type by extension', async () => {
+    const mockNode = createMockNode()
+    vi.mocked(createNode).mockResolvedValue(mockNode)
+
+    usePaste()
+
+    const file = createImageFile('test.jpg', '')
     const dataTransfer = createDataTransfer([file])
     const event = new ClipboardEvent('paste', { clipboardData: dataTransfer })
     document.dispatchEvent(event)
@@ -539,6 +590,30 @@ describe('usePaste', () => {
     document.dispatchEvent(event)
 
     expect(mockNode.pasteFile).toHaveBeenCalledWith(file)
+  })
+
+  it('should prefer the selected image node when mixed media is pasted', async () => {
+    const mockNode = createMockLGraphNode({
+      is_selected: true,
+      pasteFile: vi.fn(),
+      pasteFiles: vi.fn()
+    })
+    mockCanvas.current_node = mockNode
+    vi.mocked(isImageNode).mockReturnValue(true)
+
+    usePaste()
+
+    const audioFile = createAudioFile()
+    const imageFile = createImageFile()
+    const dataTransfer = createDataTransfer([audioFile, imageFile])
+    const event = new ClipboardEvent('paste', { clipboardData: dataTransfer })
+    document.dispatchEvent(event)
+
+    await vi.waitFor(() => {
+      expect(mockNode.pasteFile).toHaveBeenCalledWith(imageFile)
+    })
+    expect(mockNode.pasteFiles).toHaveBeenCalledWith([imageFile])
+    expect(createNode).not.toHaveBeenCalled()
   })
 
   it('should call canvas pasteFromClipboard for non-workflow text', () => {
