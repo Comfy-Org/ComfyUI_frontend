@@ -1,16 +1,24 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
+import { t } from '@/i18n'
+
 import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
 import type { ComfyNode } from '@/platform/workflow/validation/schemas/workflowSchema'
 
-import type { MissingNodeType } from '@/types/comfy'
+import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
 
 import type { GroupNodeWorkflowData } from './groupNode'
 
+const extensionHolder = vi.hoisted(() => ({
+  ext: undefined as ComfyExtension | undefined
+}))
+
 vi.mock('@/scripts/app', () => ({
   app: {
-    registerExtension: vi.fn()
+    registerExtension: (ext: ComfyExtension) => {
+      extensionHolder.ext = ext
+    }
   }
 }))
 
@@ -158,12 +166,12 @@ describe('GroupNodeConfig.registerFromWorkflow', () => {
       expect.objectContaining({
         type: 'workflow>MyGroup',
         nodeId: '7',
-        hint: ' (missing: NotInstalledNode)'
+        hint: t('g.missingNodeTypesInGroup', { types: 'NotInstalledNode' })
       }),
       expect.objectContaining({
         type: 'workflow>MyGroup',
         nodeId: '9',
-        hint: ' (missing: NotInstalledNode)'
+        hint: t('g.missingNodeTypesInGroup', { types: 'NotInstalledNode' })
       })
     ])
   })
@@ -198,5 +206,44 @@ describe('GroupNodeConfig.registerFromWorkflow', () => {
     expect(
       missing.every((entry) => typeof entry === 'string' || !entry.nodeId)
     ).toBe(true)
+  })
+})
+
+describe('group node extension beforeConfigureGraph', () => {
+  it('wires canvas instance ids per group into registerFromWorkflow', async () => {
+    const ext = extensionHolder.ext
+    if (!ext?.beforeConfigureGraph) throw new Error('extension not registered')
+    const spy = vi
+      .spyOn(GroupNodeConfig, 'registerFromWorkflow')
+      .mockResolvedValue()
+    const groupNodes = {
+      MyGroup: fromPartial<GroupNodeWorkflowData>({
+        nodes: [{ index: 0, type: 'NotInstalledNode' }],
+        links: [],
+        external: []
+      })
+    }
+    const graphData = fromPartial<
+      Parameters<typeof ext.beforeConfigureGraph>[0]
+    >({
+      nodes: [
+        { id: 7, type: 'workflow>MyGroup' },
+        { id: 9, type: 'workflow>MyGroup' },
+        { id: 3, type: 'KSampler' }
+      ],
+      extra: { groupNodes }
+    })
+
+    try {
+      await ext.beforeConfigureGraph(graphData, [], fromPartial({}))
+
+      expect(spy).toHaveBeenCalledWith(
+        groupNodes,
+        [],
+        new Map([['MyGroup', [7, 9]]])
+      )
+    } finally {
+      spy.mockRestore()
+    }
   })
 })

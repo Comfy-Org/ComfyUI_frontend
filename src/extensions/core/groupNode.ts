@@ -1,4 +1,5 @@
 import { PREFIX, SEPARATOR } from '@/constants/groupNodeConstants'
+import { t } from '@/i18n'
 import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
 import type { LGraphNodeConstructor } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -809,7 +810,9 @@ export class GroupNodeConfig {
             missingNodeTypes.push({
               type: groupType,
               nodeId: String(id),
-              hint: ` (missing: ${missingInnerTypes.join(', ')})`,
+              hint: t('g.missingNodeTypesInGroup', {
+                types: missingInnerTypes.join(', ')
+              }),
               action: removeAction
             })
           }
