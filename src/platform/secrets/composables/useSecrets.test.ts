@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { SecretMetadata } from '../types'
 import { useSecrets } from './useSecrets'
@@ -47,10 +47,6 @@ function createMockSecret(
 }
 
 describe('useSecrets', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   describe('fetchSecrets', () => {
     it('fetches and populates secrets list', async () => {
       const mockSecrets = [
@@ -138,7 +134,10 @@ describe('useSecrets', () => {
 
   describe('fetchProviders', () => {
     it('populates availableProviders from the API', async () => {
-      mockListSecretProviders.mockResolvedValue(['huggingface', 'civitai'])
+      mockListSecretProviders.mockResolvedValue([
+        { id: 'huggingface' },
+        { id: 'civitai' }
+      ])
 
       const { availableProviders, fetchProviders } = useSecrets()
 
@@ -146,7 +145,10 @@ describe('useSecrets', () => {
 
       await fetchProviders()
 
-      expect(availableProviders.value).toEqual(['huggingface', 'civitai'])
+      expect(availableProviders.value).toEqual([
+        { id: 'huggingface' },
+        { id: 'civitai' }
+      ])
     })
 
     it('distinguishes a server-returned empty allowlist from not-loaded', async () => {

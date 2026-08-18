@@ -1,13 +1,8 @@
 <template>
   <Dialog v-model:open="visible">
     <DialogPortal>
-      <DialogOverlay v-reka-z-index />
-      <DialogContent
-        v-reka-z-index
-        size="md"
-        :aria-labelledby="titleId"
-        @pointer-down-outside.prevent
-      >
+      <DialogOverlay v-reka-z-index data-reka-nested-dialog-overlay />
+      <DialogContent v-reka-z-index size="md" :aria-labelledby="titleId">
         <DialogHeader>
           <DialogTitle :id="titleId">
             {{
@@ -57,6 +52,32 @@
             </small>
           </div>
 
+          <div
+            v-if="mode === 'create' && credentialOptions.length > 1"
+            class="flex flex-col gap-1"
+          >
+            <label for="secret-credential-type" class="text-sm font-medium">
+              {{ $t('secrets.credentialType') }}
+            </label>
+            <Select v-model="credentialType">
+              <SelectTrigger id="secret-credential-type" class="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent disable-portal>
+                <SelectItem
+                  v-for="option in credentialOptions"
+                  :key="option.credential_type"
+                  :value="option.credential_type"
+                >
+                  {{ option.label }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <small class="text-muted">
+              {{ $t('secrets.credentialTypeHint') }}
+            </small>
+          </div>
+
           <div class="flex flex-col gap-1">
             <label for="secret-name" class="text-sm font-medium">
               {{ $t('secrets.name') }}
@@ -76,7 +97,37 @@
             <label for="secret-value" class="text-sm font-medium">
               {{ $t('secrets.secretValue') }}
             </label>
+            <template v-if="selectedInputType === 'json_file'">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                class="w-fit"
+                @click="fileInput?.click()"
+              >
+                <i class="pi pi-upload" />
+                {{ $t('secrets.uploadJsonFile') }}
+              </Button>
+              <input
+                ref="fileInput"
+                type="file"
+                accept="application/json,.json"
+                class="hidden"
+                @change="onFileChange"
+              />
+              <span v-if="fileName" class="text-sm text-muted">
+                {{ fileName }}
+              </span>
+              <Textarea
+                id="secret-value"
+                v-model="form.secretValue"
+                :placeholder="$t('secrets.jsonFilePlaceholder')"
+                class="min-h-32 font-mono"
+                :class="{ 'p-invalid': errors.secretValue }"
+              />
+            </template>
             <Password
+              v-else
               id="secret-value"
               v-model="form.secretValue"
               :placeholder="
@@ -93,11 +144,7 @@
               {{ errors.secretValue }}
             </small>
             <small v-else class="text-muted">
-              {{
-                mode === 'edit'
-                  ? $t('secrets.secretValueHintEdit')
-                  : $t('secrets.secretValueHint')
-              }}
+              {{ secretValueHint }}
             </small>
           </div>
 
@@ -127,7 +174,8 @@
 <script setup lang="ts">
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
-import { useId } from 'vue'
+import { computed, useId, useTemplateRef } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import Dialog from '@/components/ui/dialog/Dialog.vue'
@@ -143,9 +191,10 @@ import SelectContent from '@/components/ui/select/SelectContent.vue'
 import SelectItem from '@/components/ui/select/SelectItem.vue'
 import SelectTrigger from '@/components/ui/select/SelectTrigger.vue'
 import SelectValue from '@/components/ui/select/SelectValue.vue'
+import Textarea from '@/components/ui/textarea/Textarea.vue'
 
 import { useSecretForm } from '../composables/useSecretForm'
-import type { SecretMetadata } from '../types'
+import type { SecretMetadata, SecretProviderInfo } from '../types'
 
 const {
   secret,
@@ -155,7 +204,7 @@ const {
 } = defineProps<{
   secret?: SecretMetadata
   existingProviders?: string[]
-  availableProviders?: string[] | null
+  availableProviders?: SecretProviderInfo[] | null
   mode?: 'create' | 'edit'
 }>()
 
@@ -165,7 +214,9 @@ const emit = defineEmits<{
   saved: []
 }>()
 
+const { t } = useI18n()
 const titleId = useId()
+const fileInput = useTemplateRef<HTMLInputElement>('fileInput')
 
 const {
   form,
@@ -174,6 +225,11 @@ const {
   apiError,
   providerOptions,
   providerHelp,
+  selectedInputType,
+  credentialOptions,
+  credentialType,
+  fileName,
+  loadSecretFromFile,
   handleSubmit
 } = useSecretForm({
   mode,
@@ -183,4 +239,21 @@ const {
   visible,
   onSaved: () => emit('saved')
 })
+
+const secretValueHint = computed(() => {
+  if (selectedInputType.value === 'json_file') {
+    return mode === 'edit'
+      ? t('secrets.jsonFileHintEdit')
+      : t('secrets.jsonFileHint')
+  }
+  return mode === 'edit'
+    ? t('secrets.secretValueHintEdit')
+    : t('secrets.secretValueHint')
+})
+
+async function onFileChange(event: Event) {
+  const input = event.target as HTMLInputElement
+  await loadSecretFromFile(input.files?.[0] ?? null)
+  input.value = ''
+}
 </script>

@@ -44,7 +44,6 @@ export function useNodeResize(
   const { trackShiftKey } = useShiftKeySync()
 
   const startResize = (event: PointerEvent, corner: CompassCorners = 'SE') => {
-    event.preventDefault()
     event.stopPropagation()
 
     const target = event.currentTarget

@@ -15,6 +15,7 @@ import {
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -111,6 +112,14 @@ function handleShowInput() {
 }
 
 function handleToggleFavorite() {
+  const willBeFavorited = !isFavorited.value
+  useTelemetry()?.trackWidgetFavoriteToggled({
+    node_type: favoriteNode.value.type,
+    widget_name: widget.name,
+    widget_type: widget.type,
+    is_favorited: willBeFavorited,
+    source: 'right_side_panel'
+  })
   favoritedWidgetsStore.toggleFavorite(favoriteNode.value, widget.name)
 }
 
@@ -130,7 +139,7 @@ function handleResetToDefault() {
       <Button
         variant="textonly"
         size="unset"
-        class="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm transition-all active:scale-95"
+        class="flex w-full items-center justify-start gap-2 rounded-sm px-3 py-2 text-sm transition-all active:scale-95"
         @click="
           () => {
             handleRename()
@@ -146,7 +155,7 @@ function handleResetToDefault() {
         v-if="canToggleVisibility"
         variant="textonly"
         size="unset"
-        class="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm transition-all active:scale-95"
+        class="flex w-full items-center justify-start gap-2 rounded-sm px-3 py-2 text-sm transition-all active:scale-95"
         @click="
           () => {
             if (isShownOnParents) handleHideInput()
@@ -168,7 +177,7 @@ function handleResetToDefault() {
       <Button
         variant="textonly"
         size="unset"
-        class="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm transition-all active:scale-95"
+        class="flex w-full items-center justify-start gap-2 rounded-sm px-3 py-2 text-sm transition-all active:scale-95"
         @click="
           () => {
             handleToggleFavorite()
@@ -190,7 +199,7 @@ function handleResetToDefault() {
         v-if="hasDefault"
         variant="textonly"
         size="unset"
-        class="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm transition-all active:scale-95"
+        class="flex w-full items-center justify-start gap-2 rounded-sm px-3 py-2 text-sm transition-all active:scale-95"
         :disabled="isCurrentValueDefault"
         @click="
           () => {

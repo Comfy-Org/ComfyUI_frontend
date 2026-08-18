@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, watch } from 'vue'
 
 import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
@@ -18,10 +16,6 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 describe('Node Reactivity', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   function createTestGraph() {
     const graph = new LGraph()
     const node = new LGraphNode('test')
@@ -88,10 +82,6 @@ describe('Node Reactivity', () => {
 })
 
 describe('Widget slotMetadata reactivity on link disconnect', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   function createWidgetInputGraph() {
     const graph = new LGraph()
     const node = new LGraphNode('test')
@@ -266,10 +256,6 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
 })
 
 describe('Subgraph output slot label reactivity', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('updates output slot labels when node:slot-label:changed is triggered', async () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')
@@ -338,10 +324,6 @@ describe('Subgraph output slot label reactivity', () => {
 })
 
 describe('Nested promoted widget mapping', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('maps store identity to deepest concrete widget for two-layer promotions', () => {
     const subgraphA = createTestSubgraph({
       inputs: [{ name: 'a_input', type: '*' }]
@@ -421,10 +403,6 @@ describe('Nested promoted widget mapping', () => {
 })
 
 describe('Promoted widget sourceExecutionId', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('sets sourceExecutionId to the interior node execution ID for promoted widgets', () => {
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'ckpt_input', type: '*' }]
@@ -484,10 +462,6 @@ describe('Promoted widget sourceExecutionId', () => {
 })
 
 describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   function setupGraphWithStore() {
     const graph = new LGraph()
     const nodeA = new LGraphNode('KSampler')
@@ -514,7 +488,7 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
   it('sets has_errors on nodes referenced in lastNodeErrors', async () => {
     const { nodeA, nodeB, store } = setupGraphWithStore()
 
-    store.lastNodeErrors = {
+    store.recordNodeErrors({
       [String(nodeA.id)]: {
         errors: [
           {
@@ -527,7 +501,7 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
         dependent_outputs: [],
         class_type: 'KSampler'
       }
-    }
+    })
     await nextTick()
 
     expect(nodeA.has_errors).toBe(true)
@@ -537,7 +511,7 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
   it('sets slot hasErrors for inputs matching error input_name', async () => {
     const { nodeA, store } = setupGraphWithStore()
 
-    store.lastNodeErrors = {
+    store.recordNodeErrors({
       [String(nodeA.id)]: {
         errors: [
           {
@@ -550,7 +524,7 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
         dependent_outputs: [],
         class_type: 'KSampler'
       }
-    }
+    })
     await nextTick()
 
     expect(nodeA.inputs[0].hasErrors).toBe(true)
@@ -560,7 +534,7 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
   it('clears has_errors and slot hasErrors when errors are removed', async () => {
     const { nodeA, store } = setupGraphWithStore()
 
-    store.lastNodeErrors = {
+    store.recordNodeErrors({
       [String(nodeA.id)]: {
         errors: [
           {
@@ -573,12 +547,12 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
         dependent_outputs: [],
         class_type: 'KSampler'
       }
-    }
+    })
     await nextTick()
     expect(nodeA.has_errors).toBe(true)
     expect(nodeA.inputs[1].hasErrors).toBe(true)
 
-    store.lastNodeErrors = null
+    store.recordNodeErrors(null)
     await nextTick()
 
     expect(nodeA.has_errors).toBeFalsy()
@@ -603,7 +577,7 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
 
     // Error on interior node: execution ID = "50:<interiorNodeId>"
     const interiorExecId = `${subgraphNode.id}:${interiorNode.id}`
-    store.lastNodeErrors = {
+    store.recordNodeErrors({
       [interiorExecId]: {
         errors: [
           {
@@ -616,7 +590,7 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
         dependent_outputs: [],
         class_type: 'InnerNode'
       }
-    }
+    })
     await nextTick()
 
     // Interior node should have the error
@@ -624,6 +598,56 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
     expect(interiorNode.inputs[0].hasErrors).toBe(true)
     // Parent subgraph node should also be flagged
     expect(subgraphNode.has_errors).toBe(true)
+  })
+
+  it('merges slot errors when execution IDs resolve to the same node', async () => {
+    const subgraph = createTestSubgraph()
+    const interiorNode = new LGraphNode('InnerNode')
+    interiorNode.addInput('first', 'INT')
+    interiorNode.addInput('second', 'INT')
+    subgraph.add(interiorNode)
+
+    const firstInstance = createTestSubgraphNode(subgraph, { id: 50 })
+    const secondInstance = createTestSubgraphNode(subgraph, { id: 51 })
+    const graph = firstInstance.graph as LGraph
+    graph.add(firstInstance)
+    graph.add(secondInstance)
+
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(true)
+
+    useGraphNodeManager(graph)
+    const store = useExecutionErrorStore()
+    store.recordNodeErrors({
+      [`${firstInstance.id}:${interiorNode.id}`]: {
+        errors: [
+          {
+            type: 'required_input_missing',
+            message: 'Missing first',
+            details: '',
+            extra_info: { input_name: 'first' }
+          }
+        ],
+        dependent_outputs: [],
+        class_type: 'InnerNode'
+      },
+      [`${secondInstance.id}:${interiorNode.id}`]: {
+        errors: [
+          {
+            type: 'required_input_missing',
+            message: 'Missing second',
+            details: '',
+            extra_info: { input_name: 'second' }
+          }
+        ],
+        dependent_outputs: [],
+        class_type: 'InnerNode'
+      }
+    })
+    await nextTick()
+
+    expect(interiorNode.inputs[0].hasErrors).toBe(true)
+    expect(interiorNode.inputs[1].hasErrors).toBe(true)
   })
 
   it('sets has_errors on nodes with missing models', async () => {
@@ -705,10 +729,6 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
 })
 
 describe('Pre-remove vueNodeData drain', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('drops vueNodeData entry before node.onRemoved fires', () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')

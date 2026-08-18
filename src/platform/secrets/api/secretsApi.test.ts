@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { listSecretProviders } from './secretsApi'
 
@@ -16,16 +16,13 @@ function jsonResponse(body: unknown, init: Partial<Response> = {}): Response {
     status: 200,
     statusText: 'OK',
     json: () => Promise.resolve(body),
+    text: () => Promise.resolve(JSON.stringify(body)),
     ...init
   } as Response
 }
 
 describe('listSecretProviders', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
-  it('requests the providers endpoint and maps ids', async () => {
+  it('requests the providers endpoint and returns the provider list', async () => {
     mockFetchApi.mockResolvedValue(
       jsonResponse({ data: [{ id: 'huggingface' }, { id: 'civitai' }] })
     )
@@ -33,7 +30,43 @@ describe('listSecretProviders', () => {
     const providers = await listSecretProviders()
 
     expect(mockFetchApi).toHaveBeenCalledWith('/secrets/providers')
-    expect(providers).toEqual(['huggingface', 'civitai'])
+    expect(providers).toEqual([{ id: 'huggingface' }, { id: 'civitai' }])
+  })
+
+  it('passes through per-provider credential options and label metadata', async () => {
+    mockFetchApi.mockResolvedValue(
+      jsonResponse({
+        data: [
+          {
+            id: 'gemini',
+            label: 'Gemini',
+            credential_options: [
+              {
+                credential_type: 'gcp_service_account',
+                input_type: 'json_file',
+                label: 'Service account (Vertex AI)'
+              }
+            ]
+          }
+        ]
+      })
+    )
+
+    const providers = await listSecretProviders()
+
+    expect(providers).toEqual([
+      {
+        id: 'gemini',
+        label: 'Gemini',
+        credential_options: [
+          {
+            credential_type: 'gcp_service_account',
+            input_type: 'json_file',
+            label: 'Service account (Vertex AI)'
+          }
+        ]
+      }
+    ])
   })
 
   it('returns an empty list when data is missing', async () => {
@@ -56,6 +89,22 @@ describe('listSecretProviders', () => {
       name: 'SecretsApiError',
       status: 503,
       message: 'unavailable'
+    })
+  })
+
+  it('preserves a recognized error code on SecretsApiError', async () => {
+    mockFetchApi.mockResolvedValue(
+      jsonResponse(
+        { code: 'DUPLICATE_NAME', message: 'exists' },
+        { ok: false, status: 409, statusText: 'Conflict' }
+      )
+    )
+
+    await expect(listSecretProviders()).rejects.toMatchObject({
+      name: 'SecretsApiError',
+      status: 409,
+      code: 'DUPLICATE_NAME',
+      message: 'exists'
     })
   })
 })

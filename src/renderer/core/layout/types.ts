@@ -267,13 +267,39 @@ export interface LayoutChange {
   operation: LayoutOperation
 }
 
+/**
+ * A retained node layout ref. The ref is shared by every holder of the same
+ * node id, so the store keeps it alive until the last lease is released.
+ */
+export interface NodeLayoutLease {
+  layout: Ref<NodeLayout | null>
+  release: () => void
+}
+
 // Store interfaces
 export interface LayoutStore {
+  /** Node count, without materialising layouts as `getAllNodes()` does. */
+  readonly nodeCount: number
+  /**
+   * Cache key for derived structures; see the implementation for its scope.
+   *
+   * Plain numbers on a non-reactive class instance: reading either inside a
+   * `computed` or `watch` tracks nothing and never re-evaluates. Poll them.
+   */
+  readonly layoutVersion: number
+  /** Cache key for geometry-derived state; moves only when nodes move. */
+  readonly nodeGeometryVersion: number
+
   // CustomRef accessors for shared write access
   getNodeLayoutRef(nodeId: NodeId): Ref<NodeLayout | null>
+  /**
+   * Retain `getNodeLayoutRef` beyond the current tick. Anything that keeps the
+   * ref -- a node component, a coachmark, slot tracking -- must retain it and
+   * release when done; transient `.value` reads do not.
+   */
+  retainNodeLayoutRef(nodeId: NodeId): NodeLayoutLease
   getNodesInBounds(bounds: Bounds): ComputedRef<NodeId[]>
   getAllNodes(): ComputedRef<ReadonlyMap<NodeId, NodeLayout>>
-  getVersion(): ComputedRef<number>
 
   // Spatial queries (non-reactive)
   queryNodeAtPoint(point: Point): NodeId | null

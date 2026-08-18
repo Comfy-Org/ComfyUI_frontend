@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
@@ -66,8 +64,6 @@ const sam3DetectNodeDef: ComfyNodeDef = {
 
 describe('useNodeTooltips', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-
     vi.spyOn(useSettingStore(), 'get').mockImplementation(
       <K extends keyof Settings>(key: K): Settings[K] => {
         switch (key) {
@@ -87,7 +83,6 @@ describe('useNodeTooltips', () => {
 
   afterEach(() => {
     mergeOutputTooltipMessage(null)
-    vi.restoreAllMocks()
   })
 
   it('reads JSON examples in node metadata without i18n placeholder errors', () => {
@@ -116,5 +111,18 @@ describe('useNodeTooltips', () => {
     expect(te(outputTooltipKey)).toBe(true)
     expect(getOutputSlotTooltip(0)).toBe(jsonTooltip)
     expect(consoleError).not.toHaveBeenCalled()
+  })
+
+  it('preserves the newline separating a widget label from its long value', () => {
+    const { createTooltipConfig } = useNodeTooltips('SAM3_Detect')
+
+    const config = createTooltipConfig(`${jsonTooltip}\n\na-long-value`)
+
+    // Without a whitespace-preserving rule the \n\n separator collapses to a
+    // space and the label runs into the value (BUG-020).
+    const pt = config.pt as { text?: { class?: string } } | undefined
+    const textClass = pt?.text?.class ?? ''
+    expect(textClass).toContain('whitespace-pre-line')
+    expect(config.value).toContain('\n\n')
   })
 })

@@ -4,6 +4,8 @@ import {
   SUPPORTED_LOCALE_OPTIONS
 } from '@/locales/localeConfig'
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
+import { TOUR_SEEN_SETTING } from '@/platform/onboarding/onboardingTours'
+import { CANVAS_NAVIGATION_PRESETS } from '@/platform/settings/constants/canvasNavigation'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingParams } from '@/platform/settings/types'
 import type { ColorPalettes } from '@/schemas/colorPaletteSchema'
@@ -164,6 +166,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: false
   },
   {
+    id: 'Comfy.Workflow.NamedValuesRestore',
+    name: 'Restore widget values by name',
+    type: 'boolean',
+    defaultValue: false,
+    experimental: true
+  },
+  {
     id: 'Comfy.Canvas.NavigationMode',
     category: ['LiteGraph', 'Canvas Navigation', 'NavigationMode'],
     name: 'Navigation Mode',
@@ -180,22 +189,11 @@ export const CORE_SETTINGS: SettingParams[] = [
       '1.25.0': 'legacy'
     },
     onChange: async (val: unknown, old?: unknown) => {
-      const newValue = val as string
-      const oldValue = old as string | undefined
-      if (!oldValue) return
-      const settingStore = useSettingStore()
+      if (!old || typeof val !== 'string') return
+      const preset = CANVAS_NAVIGATION_PRESETS[val]
+      if (!preset) return
 
-      if (newValue === 'standard') {
-        await settingStore.setMany({
-          'Comfy.Canvas.LeftMouseClickBehavior': 'select',
-          'Comfy.Canvas.MouseWheelScroll': 'panning'
-        })
-      } else if (newValue === 'legacy') {
-        await settingStore.setMany({
-          'Comfy.Canvas.LeftMouseClickBehavior': 'panning',
-          'Comfy.Canvas.MouseWheelScroll': 'zoom'
-        })
-      }
+      await useSettingStore().setMany(preset)
     }
   },
   {
@@ -779,7 +777,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip:
       'When enabled, nodes are selected/deselected in real-time as you drag the selection rectangle, similar to other design tools.',
     type: 'boolean',
-    defaultValue: false,
+    defaultValue: true,
     versionAdded: '1.36.1'
   },
   {
@@ -976,6 +974,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'hidden',
     defaultValue: false,
     versionAdded: '1.8.7'
+  },
+  {
+    id: TOUR_SEEN_SETTING,
+    name: 'Onboarding coachmark tours the user has already seen',
+    type: 'hidden',
+    defaultValue: [],
+    versionAdded: '1.48.0'
   },
   {
     id: 'Comfy.InstalledVersion',
@@ -1212,6 +1217,15 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Use Asset API for model library',
     type: 'hidden',
     tooltip: 'Use new Asset API for model browsing',
+    defaultValue: isCloud ? true : false,
+    experimental: true
+  },
+  {
+    id: 'Comfy.ModelLibrary.UseAssetBrowser',
+    name: 'Use the asset browser for the model library',
+    type: 'hidden',
+    tooltip:
+      'When enabled alongside the asset API, the model library opens the asset browser. Otherwise it opens the sidebar tree.',
     defaultValue: isCloud ? true : false,
     experimental: true
   },
