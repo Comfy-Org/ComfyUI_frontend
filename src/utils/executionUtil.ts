@@ -12,6 +12,8 @@ import type {
   ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 
+import { getCnrIdFromProperties } from '@/platform/nodeReplacement/cnrIdUtil'
+
 import { compressWidgetInputSlots } from './litegraphUtil'
 
 /**
@@ -136,14 +138,20 @@ export const graphToPrompt = async (
       ]
     }
 
+    const cnrId = getCnrIdFromProperties(node.properties)
+    const packVersion =
+      typeof node.properties?.ver === 'string' ? node.properties.ver : undefined
     output[String(node.id)] = {
       inputs,
       // TODO(huchenlei): Filter out all nodes that cannot be mapped to a
       // comfyClass.
       class_type: node.comfyClass!,
-      // Ignored by the backend.
+      // Ignored by the backend. Pack identity rides along so a re-imported
+      // prompt can offer install/locate for missing types.
       _meta: {
-        title: node.title
+        title: node.title,
+        ...(cnrId && { cnr_id: cnrId }),
+        ...(packVersion && { ver: packVersion })
       }
     }
   }
