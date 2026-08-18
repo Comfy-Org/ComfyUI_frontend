@@ -448,7 +448,7 @@ jobs:
 
   release-done:
     name: Verify release reached users
-    needs: [resolve-version, publish-pypi, create-comfyui-pr]
+    needs: [resolve-version, publish-pypi]
     if: always() && needs.publish-pypi.result == 'success'
     runs-on: ubuntu-latest
     steps:

@@ -110,11 +110,9 @@ jobs:
   enforce_latest:
     name: Enforce Latest Release
     needs: draft_release
-    if: success()
     permissions:
       contents: write
     uses: ./.github/workflows/release-enforce-latest.yaml
-    secrets: inherit
 
   comment_release_summary:
     name: Comment Release Summary

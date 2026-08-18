@@ -67,27 +67,11 @@ assert_pypi_latest_only_for_main() {
   fi
 }
 
-warn_if_comfyui_pin_stale() {
-  local reqs pin=""
-  if reqs=$(curl -sf --connect-timeout 10 --max-time 30 \
-    "https://raw.githubusercontent.com/Comfy-Org/ComfyUI/master/requirements.txt"); then
-    pin=$(grep -oE "${PACKAGE}==[0-9.]+" <<<"$reqs" | head -1 | cut -d= -f3) || pin=""
-  fi
-
-  if [[ "$pin" == "$TARGET_VERSION" ]]; then
-    summary "- OK: ComfyUI \`master\` pins \`${TARGET_VERSION}\`"
-  else
-    echo "::warning title=ComfyUI pin not yet updated::ComfyUI master pins ${pin:-<none>}, target ${TARGET_VERSION}."
-    summary "- Warn: ComfyUI \`master\` pins \`${pin:-<none>}\`, target \`${TARGET_VERSION}\`"
-  fi
-}
-
 summary "## Release-done assertion" "" "Target: \`${TAG}\` on \`${TARGET_BRANCH}\`" ""
 
 assert_nothing_stranded_past_the_tag
 assert_version_on_pypi
 assert_pypi_latest_only_for_main
-warn_if_comfyui_pin_stale
 
 if ((failed != 0)); then
   echo "release-done assertion FAILED — see annotations above."

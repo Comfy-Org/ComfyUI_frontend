@@ -17,7 +17,7 @@ if [[ "$(jq 'length' <<<"$releases_json")" -ge 1000 ]]; then
 fi
 
 # design-system, desktop-ui and npm-types cut their own tags in this repo.
-readonly FRONTEND_TAG='^v?[0-9]+\.[0-9]+\.[0-9]+$'
+readonly FRONTEND_TAG='^v[0-9]+\.[0-9]+\.[0-9]+$'
 
 mapfile -t stable_tags < <(
   jq -r '.[] | select(.isDraft == false and .isPrerelease == false) | .tagName' \
@@ -29,18 +29,7 @@ if [[ ${#stable_tags[@]} -eq 0 ]]; then
   exit 0
 fi
 
-highest_version=$(printf '%s\n' "${stable_tags[@]}" | sed 's/^v//' | sort -V | tail -1)
-highest_tag=""
-for tag in "${stable_tags[@]}"; do
-  if [[ "${tag#v}" == "$highest_version" ]]; then
-    highest_tag="$tag"
-    break
-  fi
-done
-[[ -n "$highest_tag" ]] || {
-  echo "::error::BUG: could not resolve a tag for version $highest_version"
-  exit 1
-}
+highest_tag=$(printf '%s\n' "${stable_tags[@]}" | sort -V | tail -1)
 
 current_tag=$(jq -r '[.[] | select(.isLatest)][0].tagName // empty' <<<"$releases_json")
 echo "Highest stable semver: $highest_tag — GitHub's latest: ${current_tag:-<none>}"

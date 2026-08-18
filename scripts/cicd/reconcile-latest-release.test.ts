@@ -15,14 +15,14 @@ type Release = {
 
 // Drives the real script with `gh` stubbed on PATH, so the semver-selection and
 // reassignment logic runs for real without touching the network or a live repo.
-function runReconcile(options: { releases: Release[]; repo?: string }) {
+function runReconcile(releases: Release[]) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'reconcile-latest-'))
   const binDir = path.join(dir, 'bin')
   fs.mkdirSync(binDir)
   const editLog = path.join(dir, 'edits.log')
 
   const releasesJson = JSON.stringify(
-    options.releases.map((r) => ({
+    releases.map((r) => ({
       tagName: r.tagName,
       isDraft: r.isDraft ?? false,
       isPrerelease: r.isPrerelease ?? false,
@@ -53,7 +53,7 @@ function runReconcile(options: { releases: Release[]; repo?: string }) {
     env: {
       ...process.env,
       PATH: `${binDir}:${process.env.PATH ?? ''}`,
-      REPO: options.repo ?? 'Comfy-Org/ComfyUI_frontend',
+      REPO: 'Comfy-Org/ComfyUI_frontend',
       STUB_RELEASES_JSON: releasesJson,
       STUB_EDIT_LOG: editLog,
       GITHUB_STEP_SUMMARY: ''
@@ -77,18 +77,20 @@ function runReconcile(options: { releases: Release[]; repo?: string }) {
 
 describe('reconcile-latest-release.sh', () => {
   it('reassigns latest to the highest stable semver when it lags', () => {
-    const { status, edits } = runReconcile({
-      releases: [{ tagName: 'v1.47.9', isLatest: true }, { tagName: 'v1.48.0' }]
-    })
+    const { status, edits } = runReconcile([
+      { tagName: 'v1.47.9', isLatest: true },
+      { tagName: 'v1.48.0' }
+    ])
 
     expect(status).toBe(0)
     expect(edits).toEqual(['v1.48.0'])
   })
 
   it('is a no-op when latest already matches the highest release', () => {
-    const { status, output, edits } = runReconcile({
-      releases: [{ tagName: 'v1.47.9' }, { tagName: 'v1.48.0', isLatest: true }]
-    })
+    const { status, output, edits } = runReconcile([
+      { tagName: 'v1.47.9' },
+      { tagName: 'v1.48.0', isLatest: true }
+    ])
 
     expect(status).toBe(0)
     expect(edits).toEqual([])
@@ -97,28 +99,25 @@ describe('reconcile-latest-release.sh', () => {
 
   it('orders versions numerically, not lexically (v1.47.10 > v1.47.9)', () => {
     // A plain string sort would pick v1.47.9; sort -V must win here.
-    const { status, edits } = runReconcile({
-      releases: [
-        { tagName: 'v1.47.9', isLatest: true },
-        { tagName: 'v1.47.10' }
-      ]
-    })
+    const { status, edits } = runReconcile([
+      { tagName: 'v1.47.9', isLatest: true },
+      { tagName: 'v1.47.10' }
+    ])
 
     expect(status).toBe(0)
     expect(edits).toEqual(['v1.47.10'])
   })
 
   it('ignores drafts, prereleases, and other packages’ tags', () => {
-    const { status, edits } = runReconcile({
-      releases: [
-        { tagName: 'v1.48.0', isLatest: true },
-        { tagName: 'v2.0.0', isDraft: true },
-        { tagName: 'v1.49.0-rc.1', isPrerelease: true },
-        { tagName: 'design-system@3.1.0' },
-        { tagName: 'desktop-ui@1.0.0' },
-        { tagName: 'v1.48.1' }
-      ]
-    })
+    const { status, edits } = runReconcile([
+      { tagName: 'v1.48.0', isLatest: true },
+      { tagName: 'v2.0.0', isDraft: true },
+      { tagName: 'v1.49.0-rc.1', isPrerelease: true },
+      { tagName: 'design-system@3.1.0' },
+      { tagName: 'desktop-ui@1.0.0' },
+      { tagName: '1.99.0' },
+      { tagName: 'v1.48.1' }
+    ])
 
     expect(status).toBe(0)
     // Highest *stable frontend* semver is v1.48.1, not the draft v2.0.0.
@@ -126,12 +125,10 @@ describe('reconcile-latest-release.sh', () => {
   })
 
   it('exits cleanly with a warning when no stable semver release exists', () => {
-    const { status, output, edits } = runReconcile({
-      releases: [
-        { tagName: 'v2.0.0', isDraft: true },
-        { tagName: 'design-system@3.1.0' }
-      ]
-    })
+    const { status, output, edits } = runReconcile([
+      { tagName: 'v2.0.0', isDraft: true },
+      { tagName: 'design-system@3.1.0' }
+    ])
 
     expect(status).toBe(0)
     expect(edits).toEqual([])

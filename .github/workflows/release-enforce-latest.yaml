@@ -12,7 +12,6 @@ on:
 
 concurrency:
   group: enforce-latest-release
-  cancel-in-progress: false
 
 jobs:
   enforce-latest:

@@ -17,17 +17,13 @@ installable() {
     grep -qF "${DIST_NAME}-${TARGET_VERSION}" || return 1
 }
 
-report_confirmed() {
-  echo "confirmed=$1" >>"${GITHUB_OUTPUT:-/dev/null}"
-}
-
 echo "Waiting up to $((timeout_seconds / 60))m for ${PACKAGE}==${TARGET_VERSION}..."
 
 deadline=$((SECONDS + timeout_seconds))
 while ((SECONDS < deadline)); do
   if installable; then
     echo "${PACKAGE}==${TARGET_VERSION} is installable."
-    report_confirmed true
+    echo "confirmed=true" >>"${GITHUB_OUTPUT:-/dev/null}"
     exit 0
   fi
   remaining=$((deadline - SECONDS))
@@ -36,4 +32,4 @@ while ((SECONDS < deadline)); do
 done
 
 echo "::warning::${PACKAGE}==${TARGET_VERSION} still not installable after $((timeout_seconds / 60))m."
-report_confirmed false
+echo "confirmed=false" >>"${GITHUB_OUTPUT:-/dev/null}"
