@@ -124,6 +124,24 @@
   },
   "overrides": [
     {
+      "files": [
+        "src/**/*.ts",
+        "src/**/*.tsx",
+        "src/**/*.vue",
+        "apps/*/src/**/*.ts",
+        "apps/*/src/**/*.tsx",
+        "apps/*/src/**/*.vue"
+      ],
+      "excludeFiles": [
+        "**/*.test.ts",
+        "**/*.spec.ts",
+        "src/platform/remote/comfyui/jobs/jobTypes.ts"
+      ],
+      "rules": {
+        "comfy/no-unsafe-error-assertion": "error"
+      }
+    },
+    {
       "files": ["src/**/*.ts", "src/**/*.vue"],
       "excludeFiles": ["**/*.test.ts", "**/*.spec.ts"],
       "rules": {

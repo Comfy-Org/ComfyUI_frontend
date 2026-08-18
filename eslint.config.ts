@@ -72,23 +72,6 @@ const useVirtualListRestriction = {
     'useVirtualList requires uniform item heights. Use TanStack Virtual (via Reka UI virtualizer or @tanstack/vue-virtual) instead.'
 } as const
 
-const errorAssertionRestrictions = [
-  {
-    // Bans `value as Error` and `value as Error & { ... }`.
-    // Use `error instanceof Error` narrowing or `toError()` from
-    // @/utils/errorUtil instead — see issue #11429.
-    selector: "TSAsExpression TSTypeReference[typeName.name='Error']",
-    message:
-      'Do not use Error type assertions. Use `instanceof Error` narrowing or `toError()` from @/utils/errorUtil instead. See issue #11429.'
-  },
-  {
-    // Bans `<Error>value` and `<Error & { ... }>value`.
-    selector: "TSTypeAssertion TSTypeReference[typeName.name='Error']",
-    message:
-      'Do not use Error type assertions. Use `instanceof Error` narrowing or `toError()` from @/utils/errorUtil instead. See issue #11429.'
-  }
-] as const
-
 // Bans hand-written Zod schemas for remote (Cloud) API types. Remote API
 // types should come from generated packages (packages/ingest-types, driven
 // by packages/ingest-types/openapi-ts.config.ts) instead of hand-authored
@@ -257,35 +240,7 @@ export default defineConfig([
       ]
     }
   },
-  {
-    name: 'comfy/no-unsafe-error-assertion',
-    files: [
-      'src/**/*.ts',
-      'src/**/*.tsx',
-      'src/**/*.vue',
-      'apps/*/src/**/*.ts',
-      'apps/*/src/**/*.tsx',
-      'apps/*/src/**/*.vue'
-    ],
-    ignores: [
-      '**/*.test.ts',
-      '**/*.spec.ts',
-      // Re-declared, combined with the Zod restriction, in
-      // comfy/no-new-zod-for-remote-api-types below — flat config replaces
-      // (rather than merges) a rule's options when multiple config objects
-      // matching the same file set it, so this block must not also match
-      // remote files.
-      'src/platform/remote/**/*.ts',
-      'src/platform/remote/**/*.vue'
-    ],
-    rules: {
-      'no-restricted-syntax': ['error', ...errorAssertionRestrictions]
-    }
-  },
   // Ban new hand-written Zod schemas for remote (Cloud) API types.
-  // Includes the Error-assertion restrictions above since flat config
-  // replaces a rule's options entirely (last matching config wins) rather
-  // than merging arrays across config objects for the same rule.
   {
     name: 'comfy/no-new-zod-for-remote-api-types',
     files: ['src/platform/remote/**/*.ts', 'src/platform/remote/**/*.vue'],
@@ -295,11 +250,7 @@ export default defineConfig([
       'src/platform/remote/comfyui/jobs/jobTypes.ts'
     ],
     rules: {
-      'no-restricted-syntax': [
-        'error',
-        ...errorAssertionRestrictions,
-        noZodForRemoteApiTypes
-      ]
+      'no-restricted-syntax': ['error', noZodForRemoteApiTypes]
     }
   },
   {

@@ -1,0 +1,16 @@
+{
+  "$schema": "../../node_modules/oxlint/configuration_schema.json",
+  "categories": {
+    "correctness": "off"
+  },
+  "jsPlugins": ["./comfy.ts"],
+  "overrides": [
+    {
+      "files": ["**/apps/*/src/**/*.{ts,tsx,vue}"],
+      "excludeFiles": ["**/*.test.ts", "**/*.spec.ts"],
+      "rules": {
+        "comfy/no-unsafe-error-assertion": "error"
+      }
+    }
+  ]
+}
