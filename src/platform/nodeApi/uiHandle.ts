@@ -202,7 +202,7 @@ export interface UiHandle {
    * Positioned from the event so the menu lands under the pointer, which is the
    * only placement that reads as a context menu.
    */
-  showMenu(def: MenuDef): void
+  showMenu(def: MenuDef): MenuHandle
   /**
    * Asks the user for a value. Resolves `undefined` if they cancel.
    *
@@ -239,6 +239,11 @@ export interface MenuDef {
   readonly title?: string
   /** The event that asked for the menu; it decides where the menu appears. */
   readonly event: MouseEvent
+}
+
+/** @knipIgnoreUnusedButUsedByCustomNodes */
+export interface MenuHandle {
+  close(): void
 }
 
 /**
@@ -324,10 +329,11 @@ export function createUiHandle(): UiHandle {
       // Built against the renderer's own menu because the host still raises
       // its menus that way — see useLoad3d and exportMenuHelper. Packs get the
       // intent, so replacing it underneath costs them nothing.
-      new ContextMenu(def.items.map(toMenuValue), {
+      const menu = new ContextMenu(def.items.map(toMenuValue), {
         title: def.title,
         event: def.event
       })
+      return Object.freeze({ close: () => menu.close() })
     },
 
     showDialog(def) {

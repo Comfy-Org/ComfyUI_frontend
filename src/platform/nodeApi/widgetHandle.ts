@@ -22,6 +22,8 @@ import type { HandleCommon } from './closedProxy'
 import { ComfyApiError } from './errors'
 import { isEmbeddingWorkflow } from './serializeContext'
 import { constructDeclaredWidget } from './widgetTypes'
+import { subscribeWidgetTextInteraction } from './widgetTextInteraction'
+import type { WidgetTextInteractionEvent } from './widgetTextInteraction'
 
 // `null` is included because core's own `WidgetValue` has it and
 // `addWidget('button', name, null, cb)` produced exactly that. Omitting it made
@@ -132,6 +134,16 @@ export interface WidgetHandle extends HandleCommon {
    */
   on(event: 'activate', listener: (value: WidgetValue) => void): Unsubscribe
   /**
+   * Contributes behavior to a host-owned multiline text editor without exposing
+   * its DOM. The event reports the live value and caret on each input,
+   * selection change, or wheel gesture; its write method preserves both the
+   * widget commit protocol and the requested selection.
+   */
+  on(
+    event: 'textInteraction',
+    listener: (event: WidgetTextInteractionEvent) => void
+  ): Unsubscribe
+  /**
    * The value is about to be written out, and may be replaced for this
    * destination only.
    *
@@ -193,6 +205,19 @@ export function createWidgetHandles(
   const resolveNode = (nodeId: string) =>
     getGraph()?.getNodeById(toNodeId(nodeId)) ?? undefined
 
+  const commit = (
+    widget: IBaseWidget,
+    node: LGraphNode,
+    value: WidgetValue
+  ) => {
+    programmaticWrites++
+    try {
+      commitWidgetValue(widget, value as IBaseWidget['value'], { node })
+    } finally {
+      programmaticWrites--
+    }
+  }
+
   const factory = createHandleFactory<IBaseWidget>(
     {
       kind: 'widget',
@@ -236,15 +261,41 @@ export function createWidgetHandles(
           const [nodeId] = id.split(SEP)
           const node = resolveNode(nodeId)
           if (!node) return
-          // Change listeners are notified by the callback bridge, which the
-          // commit's chain invocation reaches — the same path a user edit
-          // takes, so `previous` bookkeeping cannot diverge between the two.
-          programmaticWrites++
-          try {
-            commitWidgetValue(w, args[0] as IBaseWidget['value'], { node })
-          } finally {
-            programmaticWrites--
+          commit(w, node, args[0] as WidgetValue)
+        },
+        on: (w, id, ...args) => {
+          const [event, listener] = args as unknown as [
+            (
+              | 'change'
+              | 'removed'
+              | 'activate'
+              | 'beforeSerialize'
+              | 'textInteraction'
+            ),
+            (...a: unknown[]) => void
+          ]
+          if (event === 'textInteraction') {
+            const [nodeId] = id.split(SEP)
+            const node = resolveNode(nodeId)
+            if (!node) return () => false
+            return subscribeWidgetTextInteraction(
+              w,
+              listener as (event: WidgetTextInteractionEvent) => void,
+              (value) => commit(w, node, value)
+            )
           }
+          if (event === 'beforeSerialize') ensureSerializeBridge(w)
+          else if (event !== 'removed') ensureCallbackBridge(w)
+          const set =
+            event === 'change'
+              ? slots(w).change
+              : event === 'activate'
+                ? slots(w).activate
+                : event === 'beforeSerialize'
+                  ? slots(w).beforeSerialize
+                  : slots(w).removed
+          ;(set as Set<unknown>).add(listener)
+          return () => (set as Set<unknown>).delete(listener)
         }
       },
       methods: {
@@ -280,24 +331,6 @@ export function createWidgetHandles(
           // widget that has one as fixed and every other widget as growable
           // (`LGraphNode._arrangeWidgets`).
           w.computeSize = (width?: number) => [width ?? 0, px]
-        },
-        on: (w, ...args) => {
-          const [event, listener] = args as unknown as [
-            'change' | 'removed' | 'activate' | 'beforeSerialize',
-            (...a: unknown[]) => void
-          ]
-          if (event === 'beforeSerialize') ensureSerializeBridge(w)
-          else if (event !== 'removed') ensureCallbackBridge(w)
-          const set =
-            event === 'change'
-              ? slots(w).change
-              : event === 'activate'
-                ? slots(w).activate
-                : event === 'beforeSerialize'
-                  ? slots(w).beforeSerialize
-                  : slots(w).removed
-          ;(set as Set<unknown>).add(listener)
-          return () => (set as Set<unknown>).delete(listener)
         },
         // Reads snapshot accessor values by design — a frozen copy must be
         // inert. Use `setOptions` to preserve live getters when writing.

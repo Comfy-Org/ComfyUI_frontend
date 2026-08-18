@@ -103,6 +103,7 @@ const CAPABILITIES: ReadonlyMap<string, string> = new Map([
   ['widgets.reorder', '1.0'],
   ['widgets.hidden', '1.0'],
   ['widgets.linked', '1.0'],
+  ['widgets.textInteraction', '1.0'],
   ['slots.retype', '1.0'],
   ['slots.moveLinks', '1.0'],
   ['defs.extend', '1.0'],
