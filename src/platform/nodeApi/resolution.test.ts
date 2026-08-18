@@ -12,6 +12,7 @@ import {
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
+import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 
 import { createComfyApi } from './comfyApi'
 import type { Comfy } from './comfyApi'
@@ -378,6 +379,33 @@ describe('supply-side resolution', () => {
       sourceNodeId: String(source.id)
     })
     expect(own[0].connectedType).toBeDefined()
+  })
+
+  it('reads the type arriving from a subgraph input panel', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'model', type: 'MODEL' }]
+    })
+    const broadcaster = LiteGraph.createNode('Broadcaster')!
+    const input = broadcaster.addInput('anything', '*')
+    subgraph.add(broadcaster)
+    subgraph.inputNode.slots[0].connect(input, broadcaster)
+    let connectedType: string | undefined
+
+    resolveSuppliedInputs(
+      subgraph,
+      new Map<string, Supplier>([
+        [
+          'Broadcaster',
+          (view) => {
+            connectedType = view.self.inputs[0]?.connectedType
+            return []
+          }
+        ]
+      ]),
+      new Map()
+    )
+
+    expect(connectedType).toBe('MODEL')
   })
 
   it('reports an unconnected input of its own as unconnected', () => {
