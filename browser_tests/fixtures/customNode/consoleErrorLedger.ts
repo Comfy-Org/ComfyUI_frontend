@@ -11,9 +11,12 @@ interface ConnectivityRule extends AllowlistRule {
   requiredConnectivityId?: string
 }
 
-interface RoundtripRule extends AllowlistRule {
+type LifecycleTier = 'S2' | 'S3'
+
+interface LifecycleRule extends AllowlistRule {
   nodeType: string
   occurrencesPerStage: number
+  tiers: LifecycleTier[]
   vueNodesEnabled: boolean
 }
 
@@ -269,7 +272,7 @@ const CONNECTIVITY_ERROR_ALLOWLIST: Record<string, ConnectivityRule[]> = {
   ]
 }
 
-const ROUNDTRIP_ERROR_EXPECTATIONS: Record<string, RoundtripRule[]> = {
+const NODE_LIFECYCLE_ERROR_EXPECTATIONS: Record<string, LifecycleRule[]> = {
   'comfyui-itools': [
     {
       id: 'itools-vue-crop-missing-preview',
@@ -278,9 +281,10 @@ const ROUNDTRIP_ERROR_EXPECTATIONS: Record<string, RoundtripRule[]> = {
       nodeType: 'iToolsCropImage',
       occurrencesPerStage: 1,
       reason:
-        'S3 creates the crop node once and reloads it twice; each hook requires a canvas preview widget that VueNodes does not add to node.widgets',
+        'S2 creates the crop node once and S3 creates it once then reloads it twice; each hook requires a canvas preview widget that VueNodes does not add to node.widgets',
       restore:
         'make the crop extension tolerate VueNodes without a canvas preview widget and remove this entry',
+      tiers: ['S2', 'S3'],
       vueNodesEnabled: true
     }
   ]
@@ -311,13 +315,15 @@ function connectivityRulesForPacks(packs: string[]): ConnectivityRule[] {
   )
 }
 
-function roundtripRulesForPack(
+function lifecycleRulesForPack(
   pack: string,
+  tier: LifecycleTier,
   vueNodesEnabled: boolean,
   nodeTypes?: readonly string[]
-): RoundtripRule[] {
-  return foldedRulesFor(ROUNDTRIP_ERROR_EXPECTATIONS, pack).filter(
+): LifecycleRule[] {
+  return foldedRulesFor(NODE_LIFECYCLE_ERROR_EXPECTATIONS, pack).filter(
     (rule) =>
+      rule.tiers.includes(tier) &&
       rule.vueNodesEnabled === vueNodesEnabled &&
       (nodeTypes === undefined || nodeTypes.includes(rule.nodeType))
   )
@@ -393,8 +399,8 @@ export function consoleErrorExclusionsForPacks(packs: string[]) {
         ? ('expected-failure' as const)
         : ('conditional-console' as const)
     })),
-    ...foldedRulesFor(ROUNDTRIP_ERROR_EXPECTATIONS, pack).map((rule) => ({
-      label: `${pack} roundtrip console ${rule.id}`,
+    ...foldedRulesFor(NODE_LIFECYCLE_ERROR_EXPECTATIONS, pack).map((rule) => ({
+      label: `${pack} node lifecycle console ${rule.id}`,
       pack,
       reason: rule.reason,
       restore: rule.restore,
@@ -440,22 +446,28 @@ export function staleRequiredConnectivityErrorRulesForPacks(
     .map((rule) => rule.requiredConnectivityId!)
 }
 
-export function unallowlistedRoundtripErrors(
+export function unallowlistedLifecycleErrors(
   pack: string,
-  vueNodesEnabled: boolean,
-  errors: string[]
-): string[] {
-  return withoutMatches(roundtripRulesForPack(pack, vueNodesEnabled), errors)
-}
-
-export function staleRequiredRoundtripErrorRules(
-  pack: string,
+  tier: LifecycleTier,
   vueNodesEnabled: boolean,
   errors: string[],
-  completedStages = 3,
   nodeTypes?: readonly string[]
 ): string[] {
-  return roundtripRulesForPack(pack, vueNodesEnabled, nodeTypes).flatMap(
+  return withoutMatches(
+    lifecycleRulesForPack(pack, tier, vueNodesEnabled, nodeTypes),
+    errors
+  )
+}
+
+export function staleRequiredLifecycleErrorRules(
+  pack: string,
+  tier: LifecycleTier,
+  vueNodesEnabled: boolean,
+  errors: string[],
+  completedStages: number,
+  nodeTypes?: readonly string[]
+): string[] {
+  return lifecycleRulesForPack(pack, tier, vueNodesEnabled, nodeTypes).flatMap(
     (rule) => {
       const observed = errors.filter((error) => ruleMatches(rule, error)).length
       const expected = rule.occurrencesPerStage * completedStages

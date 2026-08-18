@@ -23,10 +23,10 @@ import {
 } from '@e2e/fixtures/customNode/ComfyTarget'
 import {
   isForeignExecutionNoise,
-  staleRequiredRoundtripErrorRules,
+  staleRequiredLifecycleErrorRules,
   unallowlistedErrors,
   unallowlistedGlobalExtensionErrorsForPacks,
-  unallowlistedRoundtripErrors
+  unallowlistedLifecycleErrors
 } from '@e2e/fixtures/customNode/consoleErrorLedger'
 import { failureSummary } from '@e2e/fixtures/customNode/failureReport'
 import {
@@ -784,6 +784,20 @@ for (const entry of manifestEntries) {
                 ))
               )
           }
+          await expect
+            .poll(
+              () =>
+                staleRequiredLifecycleErrorRules(
+                  entry.pack,
+                  'S2',
+                  vueNodesEnabled,
+                  consoleErrors.errors,
+                  1,
+                  keys
+                ),
+              { timeout: 5_000 }
+            )
+            .toEqual([])
           consoleErrors.stop()
           expect(
             failures,
@@ -796,7 +810,16 @@ for (const entry of manifestEntries) {
             ).toContain(ledgered)
           const unallowlisted = unallowlistedGlobalExtensionErrorsForPacks(
             installedManifestPacks,
-            unallowlistedErrors(entry.pack, consoleErrors.errors)
+            unallowlistedErrors(
+              entry.pack,
+              unallowlistedLifecycleErrors(
+                entry.pack,
+                'S2',
+                vueNodesEnabled,
+                consoleErrors.errors,
+                keys
+              )
+            )
           )
           const allowed = consoleErrors.errors.filter(
             (error) => !unallowlisted.includes(error)
@@ -1299,8 +1322,9 @@ for (const entry of manifestEntries) {
               await expect
                 .poll(
                   () =>
-                    staleRequiredRoundtripErrorRules(
+                    staleRequiredLifecycleErrorRules(
                       entry.pack,
+                      'S3',
                       vueNodesEnabled,
                       consoleErrors.errors,
                       completedRoundtripStages,
@@ -1358,10 +1382,12 @@ for (const entry of manifestEntries) {
           await expect
             .poll(
               () =>
-                staleRequiredRoundtripErrorRules(
+                staleRequiredLifecycleErrorRules(
                   entry.pack,
+                  'S3',
                   vueNodesEnabled,
-                  consoleErrors.errors
+                  consoleErrors.errors,
+                  3
                 ),
               { timeout: 5_000 }
             )
@@ -1372,8 +1398,9 @@ for (const entry of manifestEntries) {
               installedManifestPacks,
               unallowlistedErrors(
                 entry.pack,
-                unallowlistedRoundtripErrors(
+                unallowlistedLifecycleErrors(
                   entry.pack,
+                  'S3',
                   vueNodesEnabled,
                   consoleErrors.errors
                 )

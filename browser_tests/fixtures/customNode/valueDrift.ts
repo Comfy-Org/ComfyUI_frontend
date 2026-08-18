@@ -93,7 +93,7 @@ export const ROUNDTRIP_INITIALIZATION_SIGNALS: Record<
   'comfyui-itools': {
     iToolsCropImage: {
       predicate: 'widget-count',
-      valueByRenderer: { litegraph: 6, vue: 4 }
+      valueByRenderer: { litegraph: 6, vue: 5 }
     },
     iToolsPaintNode: {
       predicate: 'widget-count',

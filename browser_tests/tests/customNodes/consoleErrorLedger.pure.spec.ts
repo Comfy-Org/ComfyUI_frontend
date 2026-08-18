@@ -7,13 +7,13 @@ import {
   customExtensionStartupErrors,
   isForeignExecutionNoise,
   staleRequiredConnectivityErrorRulesForPacks,
-  staleRequiredRoundtripErrorRules,
+  staleRequiredLifecycleErrorRules,
   staleRequiredStartupErrorRulesForPacks,
   unallowlistedErrors,
   unallowlistedConnectivityErrorsForPacks,
   unallowlistedGlobalExtensionErrorsForPacks,
   unallowlistedErrorsForPacks,
-  unallowlistedRoundtripErrors
+  unallowlistedLifecycleErrors
 } from '@e2e/fixtures/customNode/consoleErrorLedger'
 import { loadAllManifestPackNames } from '@e2e/fixtures/customNode/manifest'
 
@@ -163,7 +163,7 @@ test.describe('consoleErrorLedger', () => {
     ).toEqual([])
   })
 
-  test('requires the iTools Vue crop failure only in roundtrip coverage', () => {
+  test('requires the iTools Vue crop failure in its exact lifecycle tiers', () => {
     const error =
       "Error calling extension 'iTools.cropImage' method 'nodeCreated' {error: TypeError: Cannot read properties of undefined (reading 'draw')}"
     expect(
@@ -176,39 +176,61 @@ test.describe('consoleErrorLedger', () => {
       unallowlistedGlobalExtensionErrorsForPacks(['Skimmed_CFG'], [error])
     ).toEqual([error])
     expect(
-      unallowlistedRoundtripErrors('comfyui-itools', false, [error])
+      unallowlistedLifecycleErrors('comfyui-itools', 'S2', false, [error])
     ).toEqual([error])
     expect(
-      unallowlistedRoundtripErrors('comfyui-itools', true, [error])
-    ).toEqual([])
-    expect(unallowlistedRoundtripErrors('Skimmed_CFG', true, [error])).toEqual([
-      error
-    ])
-    expect(
-      staleRequiredRoundtripErrorRules('comfyui-itools', true, [
-        error,
-        error,
-        error
-      ])
+      unallowlistedLifecycleErrors('comfyui-itools', 'S2', true, [error])
     ).toEqual([])
     expect(
-      staleRequiredRoundtripErrorRules('comfyui-itools', true, [])
+      unallowlistedLifecycleErrors('Skimmed_CFG', 'S2', true, [error])
+    ).toEqual([error])
+    expect(
+      staleRequiredLifecycleErrorRules('comfyui-itools', 'S2', true, [error], 1)
+    ).toEqual([])
+    expect(
+      staleRequiredLifecycleErrorRules('comfyui-itools', 'S2', true, [], 1)
+    ).toEqual(['itools-vue-crop-missing-preview: expected 1, observed 0'])
+    expect(
+      staleRequiredLifecycleErrorRules(
+        'comfyui-itools',
+        'S2',
+        true,
+        [error, error],
+        1
+      )
+    ).toEqual(['itools-vue-crop-missing-preview: expected 1, observed 2'])
+    expect(
+      staleRequiredLifecycleErrorRules(
+        'comfyui-itools',
+        'S3',
+        true,
+        [error, error, error],
+        3
+      )
+    ).toEqual([])
+    expect(
+      staleRequiredLifecycleErrorRules('comfyui-itools', 'S3', true, [], 3)
     ).toEqual(['itools-vue-crop-missing-preview: expected 3, observed 0'])
     expect(
-      staleRequiredRoundtripErrorRules('comfyui-itools', true, [error])
+      staleRequiredLifecycleErrorRules('comfyui-itools', 'S3', true, [error], 3)
     ).toEqual(['itools-vue-crop-missing-preview: expected 3, observed 1'])
     expect(
-      staleRequiredRoundtripErrorRules('comfyui-itools', true, [error], 1, [
-        'iToolsCropImage'
-      ])
+      staleRequiredLifecycleErrorRules(
+        'comfyui-itools',
+        'S3',
+        true,
+        [error],
+        1,
+        ['iToolsCropImage']
+      )
     ).toEqual([])
     expect(
-      staleRequiredRoundtripErrorRules('comfyui-itools', true, [], 1, [
+      staleRequiredLifecycleErrorRules('comfyui-itools', 'S3', true, [], 1, [
         'OtherNode'
       ])
     ).toEqual([])
     expect(
-      staleRequiredRoundtripErrorRules('comfyui-itools', false, [])
+      staleRequiredLifecycleErrorRules('comfyui-itools', 'S3', false, [], 3)
     ).toEqual([])
   })
 

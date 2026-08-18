@@ -79,7 +79,7 @@ test('roundtrip initialization waits for pack-owned ready values', () => {
     },
     iToolsCropImage: {
       predicate: 'widget-count' as const,
-      valueByRenderer: { litegraph: 6, vue: 4 }
+      valueByRenderer: { litegraph: 6, vue: 5 }
     }
   }
   expect(
@@ -118,7 +118,7 @@ test('roundtrip initialization waits for pack-owned ready values', () => {
         LoadAudioUI: false,
         SAM3VideoSegmentation: {},
         iToolsPaintNode: 33,
-        iToolsCropImage: 4
+        iToolsCropImage: 5
       },
       true
     )
