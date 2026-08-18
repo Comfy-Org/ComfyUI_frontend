@@ -851,6 +851,56 @@ describe('ComfyApp', () => {
       }
     })
 
+    it('unwraps exported array widget values on API JSON import', async () => {
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      const widgetNodeType = 'test/ApiCurveNode'
+      class ApiCurveNode extends LGraphNode {
+        constructor(title = 'ApiCurveNode') {
+          super(title)
+          this.addWidget('text', 'points', '', null)
+        }
+      }
+      LiteGraph.registerNodeType(widgetNodeType, ApiCurveNode)
+      const points = [
+        [0, 0],
+        [0.5, 1]
+      ]
+
+      try {
+        await app.loadApiJson(
+          {
+            '1': {
+              class_type: widgetNodeType,
+              inputs: { points: { __type__: 'CURVE', __value__: points } },
+              _meta: { title: 'Curve' }
+            },
+            '2': {
+              class_type: 'Uninstalled/CurveNode',
+              inputs: { points: { __value__: points } },
+              _meta: { title: 'Missing Curve' }
+            }
+          },
+          ''
+        )
+
+        const [widgetNode] = graph.nodes.filter(
+          (n) => n.type === widgetNodeType
+        )
+        expect(widgetNode?.widgets?.[0].value).toEqual(points)
+
+        const [placeholder] = graph.nodes.filter(
+          (n) => n.type === 'Uninstalled/CurveNode'
+        )
+        expect(placeholder?.last_serialization?.widgets_values).toEqual([
+          points
+        ])
+      } finally {
+        LiteGraph.unregisterNodeType(widgetNodeType)
+      }
+    })
+
     it('creates a removable placeholder for an API JSON missing node', async () => {
       const graph = new LGraph()
       Reflect.set(app, 'rootGraphInternal', graph)

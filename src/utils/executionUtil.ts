@@ -15,6 +15,24 @@ import type {
 import { compressWidgetInputSlots } from './litegraphUtil'
 
 /**
+ * Inverse of the array wrapping applied during Export (API): array widget
+ * values are wrapped as `{ __value__: [...] }` (optionally with `__type__`)
+ * so they are not read as node links. The backend unwraps them during
+ * execution; import must unwrap them the same way.
+ */
+export function unwrapExportedWidgetValue(value: unknown): unknown {
+  if (
+    typeof value === 'object' &&
+    value !== null &&
+    !Array.isArray(value) &&
+    '__value__' in value
+  ) {
+    return (value as { __value__: unknown }).__value__
+  }
+  return value
+}
+
+/**
  * Converts the current graph workflow for sending to the API.
  * @note Node widgets are updated before serialization to prepare queueing.
  *
