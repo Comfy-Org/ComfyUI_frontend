@@ -124,6 +124,7 @@ const hostStores = vi.hoisted(() => ({
     selectedItems: unknown[]
     updateSelectedItems: () => void
     currentGraph: unknown | null
+    canvas: unknown
   }
 }))
 
@@ -169,7 +170,8 @@ vi.mock('@/renderer/core/canvas/canvasStore', async () => {
   const store = reactive({
     selectedItems: [] as unknown[],
     updateSelectedItems,
-    currentGraph: null as unknown | null
+    currentGraph: null as unknown | null,
+    canvas: undefined as unknown
   })
   updateSelectedItems.mockImplementation(() => {
     store.selectedItems = [...(appMock.canvas?.selectedItems ?? [])]
@@ -1393,6 +1395,99 @@ describe('AgentPanelRoot draft binding', () => {
       type: 'agent_draft_apply_failed',
       details: 'graph configure exploded'
     })
+  })
+})
+
+describe('AgentPanelRoot auto fit after generation', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    ws.clear()
+    vi.mocked(app.loadGraphData).mockClear()
+    vi.stubGlobal('devicePixelRatio', 1)
+    const panel = useAgentPanelStore()
+    panel.enabled = true
+    panel.isOpen = true
+    panel.setWidth(500)
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllGlobals()
+    hostStores.canvas.canvas = undefined
+  })
+
+  function stageFitCanvas() {
+    const animateToBounds = vi.fn()
+    hostStores.canvas.canvas = {
+      canvas: { width: 2000, height: 1000 },
+      positionableItems: [
+        { boundingRect: [0, 0, 100, 100] },
+        { boundingRect: [300, 200, 100, 100] }
+      ],
+      animateToBounds
+    }
+    return animateToBounds
+  }
+
+  function mockAck(): void {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url.includes('/messages')) return json(202, ack('wf-42', 'm-1'))
+        return json(200, {})
+      })
+    )
+  }
+
+  it('frames the whole graph in the visible canvas when the turn finishes', async () => {
+    const animateToBounds = stageFitCanvas()
+    mockAck()
+
+    await renderAndSend('build a graph')
+    ws.emit('draft_patch', {
+      workflow_id: 'wf-42',
+      base_version: 0,
+      version: 1,
+      content: { version: 0.4, nodes: [{ id: 1 }] }
+    })
+    await vi.waitFor(() => expect(app.loadGraphData).toHaveBeenCalledTimes(1))
+    expect(animateToBounds).not.toHaveBeenCalled()
+
+    ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
+
+    await vi.waitFor(() => expect(animateToBounds).toHaveBeenCalledTimes(1))
+    expect(animateToBounds).toHaveBeenCalledWith([-10, -10, 420, 320], {
+      viewport: [0, 0, 1500, 1000]
+    })
+  })
+
+  it('does not move the view when the turn finishes without a draft', async () => {
+    const animateToBounds = stageFitCanvas()
+    mockAck()
+
+    await renderAndSend('just chat')
+    ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
+    await screen.findByRole('button', { name: 'Send' })
+
+    expect(animateToBounds).not.toHaveBeenCalled()
+  })
+
+  it('fits immediately when the draft lands after the turn already finished', async () => {
+    const animateToBounds = stageFitCanvas()
+    mockAck()
+
+    await renderAndSend('build a graph')
+    ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
+    await screen.findByRole('button', { name: 'Send' })
+
+    ws.emit('draft_patch', {
+      workflow_id: 'wf-42',
+      base_version: 0,
+      version: 1,
+      content: { version: 0.4, nodes: [{ id: 1 }] }
+    })
+
+    await vi.waitFor(() => expect(animateToBounds).toHaveBeenCalledTimes(1))
   })
 })
 
