@@ -62,7 +62,7 @@ test.describe('output topology', () => {
   })
 })
 
-test('roundtrip initialization waits for the exact pack-owned ready value', () => {
+test('roundtrip initialization waits for pack-owned ready values', () => {
   const signals = {
     LoadAudioUI: {
       property: '_initializing',
@@ -76,20 +76,31 @@ test('roundtrip initialization waits for the exact pack-owned ready value', () =
     iToolsPaintNode: {
       predicate: 'widget-count' as const,
       value: 33
+    },
+    iToolsCropImage: {
+      predicate: 'minimum-widget-count' as const,
+      value: 6
     }
   }
   expect(
     pendingRoundtripInitializations(signals, {
       LoadAudioUI: true,
       SAM3VideoSegmentation: undefined,
-      iToolsPaintNode: 32
+      iToolsPaintNode: 32,
+      iToolsCropImage: 5
     })
-  ).toEqual(['LoadAudioUI', 'SAM3VideoSegmentation', 'iToolsPaintNode'])
+  ).toEqual([
+    'LoadAudioUI',
+    'SAM3VideoSegmentation',
+    'iToolsPaintNode',
+    'iToolsCropImage'
+  ])
   expect(
     pendingRoundtripInitializations(signals, {
       LoadAudioUI: false,
       SAM3VideoSegmentation: {},
-      iToolsPaintNode: 33
+      iToolsPaintNode: 33,
+      iToolsCropImage: 7
     })
   ).toEqual([])
 })

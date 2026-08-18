@@ -1260,7 +1260,10 @@ for (const entry of manifestEntries) {
                         const node = window.app!.graph.nodes.find(
                           (candidate) => candidate.type === type
                         ) as unknown as Record<string, unknown> | undefined
-                        if (signal.predicate === 'widget-count') {
+                        if (
+                          signal.predicate === 'widget-count' ||
+                          signal.predicate === 'minimum-widget-count'
+                        ) {
                           const widgets = (
                             node as unknown as
                               | {

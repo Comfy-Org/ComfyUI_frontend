@@ -39,7 +39,8 @@ import {
 } from '@e2e/fixtures/utils/consoleErrorCollector'
 import {
   expectNoVisibleErrors,
-  trackVisibleErrors
+  trackVisibleErrors,
+  visibleErrorSurfaceSelectors
 } from '@e2e/fixtures/utils/errorSurfaces'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 
@@ -97,6 +98,11 @@ interface PairResult {
   detail?: string
 }
 
+interface PairEvaluation {
+  results: PairResult[]
+  visibleErrors: Array<{ surface: string; text: string }>
+}
+
 async function runPairsInIsolatedPages(
   page: Page,
   pairs: PlannedPair[]
@@ -122,13 +128,14 @@ async function runPairsInIsolatedPages(
       )
       const consoleErrors = collectConsoleErrors(probe)
       try {
-        results.push(
-          ...(await evaluatePairs(probe, [pair], { resetAfter: false }))
-        )
-        await expectNoVisibleErrors(
-          probe,
-          `after isolated pair ${pair.producer.nodeType} -> ${pair.consumer.nodeType}`
-        )
+        const evaluation = await evaluatePairs(probe, [pair], {
+          resetAfter: false
+        })
+        results.push(...evaluation.results)
+        expect(
+          evaluation.visibleErrors,
+          `after isolated pair ${pair.producer.nodeType} -> ${pair.consumer.nodeType}: transient visible errors`
+        ).toEqual([])
       } finally {
         consoleErrors.stop()
         errors.push(...consoleErrors.errors)
@@ -372,16 +379,16 @@ async function runPairsInPage(
   page: Page,
   pairs: PlannedPair[]
 ): Promise<PairResult[]> {
-  return await evaluatePairs(page, pairs)
+  return (await evaluatePairs(page, pairs)).results
 }
 
 function evaluatePairs(
   page: Page,
   pairs: PlannedPair[],
   { resetAfter = true }: { resetAfter?: boolean } = {}
-): Promise<PairResult[]> {
-  const payload = [pairs, resetAfter] as const
-  return page.evaluate(async ([pairsInPage, resetAfter]) => {
+): Promise<PairEvaluation> {
+  const payload = [pairs, resetAfter, visibleErrorSurfaceSelectors] as const
+  return page.evaluate(async ([pairsInPage, resetAfter, errorSelectors]) => {
     const graph = window.app!.graph
     let nextNodeId = graph.last_node_id
     const resetGraph = () => {
@@ -478,7 +485,38 @@ function evaluatePairs(
       }
     }
     if (resetAfter) resetGraph()
-    return report
+    const visibleErrors =
+      (
+        window as Window & {
+          __cnVisibleErrors?: Array<{ surface: string; text: string }>
+        }
+      ).__cnVisibleErrors ?? []
+    const currentVisibleErrors = errorSelectors.flatMap(
+      ({ surface, selector }) =>
+        [...document.querySelectorAll(selector)].flatMap((element) => {
+          if (
+            !(element instanceof HTMLElement) ||
+            !element.checkVisibility({
+              checkOpacity: true,
+              checkVisibilityCSS: true
+            })
+          )
+            return []
+          return [
+            {
+              surface,
+              text: (element.innerText || element.textContent || '')
+                .replace(/\s+/g, ' ')
+                .trim()
+                .slice(0, 300)
+            }
+          ]
+        })
+    )
+    return {
+      results: report,
+      visibleErrors: [...visibleErrors, ...currentVisibleErrors]
+    }
   }, payload)
 }
 

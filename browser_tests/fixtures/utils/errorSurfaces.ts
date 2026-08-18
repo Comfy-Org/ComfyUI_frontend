@@ -15,7 +15,7 @@ type VisibleErrorWindow = Window &
 
 const trackedPages = new WeakSet<Page>()
 
-const surfaceSelectors = [
+export const visibleErrorSurfaceSelectors = [
   {
     surface: 'errorOverlay',
     selector: `[data-testid="${TestIds.dialogs.errorOverlay}"]`
@@ -58,7 +58,7 @@ export async function trackVisibleErrors(page: Page): Promise<void> {
       requestAnimationFrame(sample)
     }
     requestAnimationFrame(sample)
-  }, surfaceSelectors)
+  }, visibleErrorSurfaceSelectors)
   trackedPages.add(page)
 }
 

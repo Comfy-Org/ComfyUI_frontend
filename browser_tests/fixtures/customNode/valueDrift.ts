@@ -67,6 +67,7 @@ export type RoundtripInitializationSignal =
   | { property: string; predicate: 'defined' }
   | { property: string; predicate: 'equals'; value: unknown }
   | { predicate: 'widget-count'; value: number }
+  | { predicate: 'minimum-widget-count'; value: number }
 
 export const ROUNDTRIP_INITIALIZATION_SIGNALS: Record<
   string,
@@ -87,7 +88,7 @@ export const ROUNDTRIP_INITIALIZATION_SIGNALS: Record<
   },
   'comfyui-itools': {
     iToolsCropImage: {
-      predicate: 'widget-count',
+      predicate: 'minimum-widget-count',
       value: 6
     },
     iToolsPaintNode: {
@@ -102,11 +103,12 @@ export function pendingRoundtripInitializations(
   values: Record<string, unknown>
 ): string[] {
   return Object.entries(signals)
-    .filter(([node, signal]) =>
-      signal.predicate === 'defined'
-        ? values[node] === undefined
-        : !Object.is(values[node], signal.value)
-    )
+    .filter(([node, signal]) => {
+      if (signal.predicate === 'defined') return values[node] === undefined
+      if (signal.predicate === 'minimum-widget-count')
+        return typeof values[node] !== 'number' || values[node] < signal.value
+      return !Object.is(values[node], signal.value)
+    })
     .map(([node]) => node)
 }
 
