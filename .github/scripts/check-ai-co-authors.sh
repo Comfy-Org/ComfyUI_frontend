@@ -66,22 +66,11 @@ for pattern in "${AGENT_PATTERNS[@]}"; do
     fi
 done
 
-# Collect Co-authored-by lines from every commit in the PR range.
-violations=""
-while IFS= read -r sha; do
-    message="$(git log -1 --format='%B' "$sha")"
-    matched_lines="$(echo "$message" | grep -iE "^Co-authored-by:" || true)"
-    if [[ -z "$matched_lines" ]]; then
-        continue
-    fi
-
-    while IFS= read -r line; do
-        if echo "$line" | grep -iqE "$regex"; then
-            short="$(git log -1 --format='%h' "$sha")"
-            violations="${violations}  ${short}: ${line}"$'\n'
-        fi
-    done <<< "$matched_lines"
-done < <(git rev-list "${base_sha}..${head_sha}")
+violations="$(
+    git log --format='  %h: %(trailers:key=Co-authored-by,separator=%x09)' \
+        "${base_sha}..${head_sha}" |
+        grep -iE "$regex" || true
+)"
 
 if [[ -n "$violations" ]]; then
     echo "::error::AI agent Co-authored-by trailers detected in PR commits."
