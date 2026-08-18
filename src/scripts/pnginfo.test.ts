@@ -344,4 +344,24 @@ describe('importA1111', () => {
         .map((node) => node?.widgets?.[0].value)
     ).toEqual(['positive', expectedNegativePrompt])
   })
+
+  it('prefixes known embedding names in prompts', async () => {
+    const graph = new LGraph()
+    vi.mocked(api.getEmbeddings).mockResolvedValue(['easynegative'])
+    mockAvailableCoreNodes(graph)
+
+    const imported = await importA1111(
+      graph,
+      'masterpiece\nNegative prompt: EasyNegative, blurry\nSteps: 20'
+    )
+
+    expect(imported).toBe('imported')
+    expect(
+      vi
+        .mocked(LiteGraph.createNode)
+        .mock.results.map(({ value }) => value)
+        .filter((node) => node?.type === 'CLIPTextEncode')
+        .map((node) => node?.widgets?.[0].value)
+    ).toEqual(['masterpiece', 'embedding:EasyNegative, blurry'])
+  })
 })
