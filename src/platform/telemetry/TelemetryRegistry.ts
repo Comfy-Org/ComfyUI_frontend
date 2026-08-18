@@ -8,6 +8,7 @@ import type {
   BillingTelemetryEvent,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
+  ErrorReportMetadata,
   ExecutionErrorMetadata,
   ExecutionOutcomeMetadata,
   ExecutionSuccessMetadata,
@@ -319,6 +320,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackExecutionError(metadata: ExecutionErrorMetadata): void {
     this.dispatch((provider) => provider.trackExecutionError?.(metadata))
+  }
+
+  reportError(error: Error, metadata: ErrorReportMetadata): void {
+    this.dispatch((provider) => provider.reportError?.(error, metadata))
   }
 
   trackExecutionSuccess(metadata: ExecutionSuccessMetadata): void {

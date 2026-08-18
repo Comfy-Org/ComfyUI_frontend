@@ -5,6 +5,7 @@ import { SentryTelemetryProvider } from './SentryTelemetryProvider'
 
 const mocks = vi.hoisted(() => ({
   addBreadcrumb: vi.fn(),
+  captureException: vi.fn(),
   setContext: vi.fn(),
   setUser: vi.fn(),
   onUserLogout: vi.fn(),
@@ -27,6 +28,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('@sentry/vue', () => ({
   addBreadcrumb: mocks.addBreadcrumb,
+  captureException: mocks.captureException,
   setContext: mocks.setContext,
   setUser: mocks.setUser
 }))
@@ -71,6 +73,35 @@ describe('SentryTelemetryProvider', () => {
   beforeEach(() => {
     mocks.resolvedUserId = 'existing-user'
     mocks.workflowIsModified = true
+  })
+
+  it('captures error-level reports as exceptions', () => {
+    const error = new Error('boom')
+
+    new SentryTelemetryProvider().reportError(error, {
+      error_type: 'bootstrap_auth_wait_timeout'
+    })
+
+    expect(mocks.captureException).toHaveBeenCalledExactlyOnceWith(error, {
+      tags: { error_type: 'bootstrap_auth_wait_timeout' },
+      extra: undefined
+    })
+  })
+
+  it('downgrades warnings to breadcrumbs so routine anomalies do not page', () => {
+    new SentryTelemetryProvider().reportError(new Error('Unmatched route'), {
+      error_type: 'unmatched_route',
+      level: 'warning',
+      context: { path: '/woiadawd' }
+    })
+
+    expect(mocks.captureException).not.toHaveBeenCalled()
+    expect(mocks.addBreadcrumb).toHaveBeenCalledExactlyOnceWith({
+      category: 'diagnostic',
+      message: 'unmatched_route',
+      level: 'warning',
+      data: { path: '/woiadawd' }
+    })
   })
 
   it('identifies resolved and newly authenticated users and clears logout', () => {

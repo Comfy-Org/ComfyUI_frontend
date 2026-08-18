@@ -896,6 +896,29 @@ export function getBillingTelemetryEventPayload(event: BillingTelemetryEvent) {
 }
 
 /**
+ * Stable identifiers for diagnostic error sites.
+ *
+ * Kept as a closed union so reports stay low-cardinality and groupable in
+ * Datadog Error Tracking and Sentry.
+ */
+type ErrorReportType =
+  | 'bootstrap_auth_wait_timeout'
+  | 'invariant_assert'
+  | 'unmatched_route'
+
+export interface ErrorReportMetadata {
+  error_type: ErrorReportType
+  /**
+   * `warning` is for anomalies worth alerting on spikes of but not worth an
+   * exception per occurrence — those reach Datadog and become a Sentry
+   * breadcrumb rather than a captured exception.
+   */
+  level?: 'warning' | 'error'
+  /** Additional context. Never secrets, credentials, or free-form user text. */
+  context?: Record<string, string | number | boolean | undefined>
+}
+
+/**
  * Telemetry provider interface for individual providers.
  * All methods are optional - providers only implement what they need.
  */
@@ -1022,6 +1045,9 @@ export interface TelemetryProvider {
 
   // Page view tracking
   trackPageView?(pageName: string, properties?: PageViewMetadata): void
+
+  // Diagnostic error reporting
+  reportError?(error: Error, metadata: ErrorReportMetadata): void
 }
 
 /**

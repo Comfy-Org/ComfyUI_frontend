@@ -5,6 +5,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 
 import type {
   AuthMetadata,
+  ErrorReportMetadata,
   ExecutionErrorMetadata,
   ExecutionSuccessMetadata,
   NodeAddedMetadata,
@@ -16,6 +17,26 @@ import { getExecutionContext } from '../../utils/getExecutionContext'
 export class SentryTelemetryProvider implements TelemetryProvider {
   private shellLayout: ShellLayoutMetadata | null = null
   private isWatchingLogout = false
+
+  reportError(
+    error: Error,
+    { error_type, level = 'error', context }: ErrorReportMetadata
+  ): void {
+    if (level === 'warning') {
+      Sentry.addBreadcrumb({
+        category: 'diagnostic',
+        message: error_type,
+        level: 'warning',
+        data: context
+      })
+      return
+    }
+
+    Sentry.captureException(error, {
+      tags: { error_type },
+      extra: context
+    })
+  }
 
   trackAuth({ user_id }: AuthMetadata): void {
     this.setUser(user_id)
