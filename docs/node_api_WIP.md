@@ -39,13 +39,13 @@ widget instance, not a Pinia store, not a Vue reactive proxy, not a constructor.
 > `node.fileDrop`, `node.geometry`, `node.menu`, `node.onPreview`,
 > `node.onSerialize`, `node.resolve`, `node.sizeConstraints`,
 > `queue.disableAutoQueue`, `serialization.control`, `settings`,
-> `slots.connect`, `slots.dynamic`, `slots.identity`, `slots.layout`,
-> `slots.localizedName`, `slots.moveLinks`, `slots.resolvedSource`,
-> `slots.retype`, `slots.widgetConfig`, `storage`, `supply.outputs`,
-> `ui.sidebarTab`, `viewport.changed`, `widgets.canvas`, `widgets.create`,
-> `widgets.height`, `widgets.hidden`, `widgets.linked`, `widgets.mount`,
-> `widgets.reorder`, `widgets.textInteraction`, `widgets.typeContext`,
-> `workflow.open`, `workflow.textReplacements`.
+> `slots.connect`, `slots.connectedType`, `slots.dynamic`, `slots.identity`,
+> `slots.layout`, `slots.localizedName`, `slots.moveLinks`,
+> `slots.resolvedSource`, `slots.retype`, `slots.widgetConfig`, `storage`,
+> `supply.outputs`, `ui.sidebarTab`, `viewport.changed`, `widgets.canvas`,
+> `widgets.create`, `widgets.height`, `widgets.hidden`, `widgets.linked`,
+> `widgets.mount`, `widgets.reorder`, `widgets.textInteraction`,
+> `widgets.typeContext`, `workflow.open`, `workflow.textReplacements`.
 >
 > **Specified only:** §4a declarative decorations (badges/anchors — note
 > `setSizeConstraints` and `widgets.canvas` DID ship), §4b chrome, §4c
@@ -1659,6 +1659,22 @@ translation key core uses when constructing the slot.
 
 **Cost to reverse.** Low today: one pack. Its broadcasts still work in English,
 but locale changes make the affected nodes stop matching without an error.
+
+### `InputSlotHandle.connectedType`
+
+**Forced by** cg-use-everywhere inside a subgraph. A link from the subgraph
+input panel stores the receiving slot's `*`, while the panel declares the
+actual `MODEL` or `INT`; the broadcaster must know the latter before it can
+forward the value safely.
+
+**Alternative rejected.** Publishing the panel or its sentinel node id. A pack
+needs the resolved type, not the renderer/editor object that happens to carry
+it. The same answer is exposed on `SupplyView.self.inputs` so prompt resolution
+and interactive node behavior cannot disagree.
+
+**Cost to reverse.** Moderate. Use Everywhere becomes type-blind for values
+entering a subgraph and must refuse those broadcasts rather than risk feeding
+an incompatible input.
 
 ### Keyboard events and focus on `widgets.textInteraction`
 
