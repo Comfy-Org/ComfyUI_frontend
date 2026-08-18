@@ -143,6 +143,7 @@ const CAPABILITIES: ReadonlyMap<string, string> = new Map([
   ['defs.typeCompatibility', '1.0'],
   ['defs.inputValues', '1.0'],
   ['defs.localizedInputNames', '1.0'],
+  ['supply.outputs', '1.0'],
   ['queue.disableAutoQueue', '1.0']
 ])
 

@@ -41,11 +41,11 @@ widget instance, not a Pinia store, not a Vue reactive proxy, not a constructor.
 > `queue.disableAutoQueue`, `serialization.control`, `settings`,
 > `slots.connect`, `slots.dynamic`, `slots.identity`, `slots.layout`,
 > `slots.localizedName`, `slots.moveLinks`, `slots.resolvedSource`,
-> `slots.retype`, `slots.widgetConfig`, `storage`, `ui.sidebarTab`,
-> `viewport.changed`, `widgets.canvas`, `widgets.create`, `widgets.height`,
-> `widgets.hidden`, `widgets.linked`, `widgets.mount`, `widgets.reorder`,
-> `widgets.textInteraction`, `widgets.typeContext`, `workflow.open`,
-> `workflow.textReplacements`.
+> `slots.retype`, `slots.widgetConfig`, `storage`, `supply.outputs`,
+> `ui.sidebarTab`, `viewport.changed`, `widgets.canvas`, `widgets.create`,
+> `widgets.height`, `widgets.hidden`, `widgets.linked`, `widgets.mount`,
+> `widgets.reorder`, `widgets.textInteraction`, `widgets.typeContext`,
+> `workflow.open`, `workflow.textReplacements`.
 >
 > **Specified only:** §4a declarative decorations (badges/anchors — note
 > `setSizeConstraints` and `widgets.canvas` DID ship), §4b chrome, §4c
@@ -1752,6 +1752,15 @@ outright. Three constraints, all deliberate and all arguable:
 feed _every_ unconnected input of that type — the packs gate on a per-node
 opt-in kept in properties, and omitting it produces a silent wrong broadcast
 rather than a visible failure.
+
+**Supplier-visible outputs and composition.** cg-use-everywhere can turn any
+ordinary node output into a broadcaster, including dynamic and retyped outputs.
+That forced `SupplyView.self.outputs` to expose the live index, name, label and
+type, and forced multiple `setSupply` registrations on one type to compose.
+Closing over the backend definition was rejected because it is stale after a
+runtime slot change; letting the last extension win was rejected because one
+pack would silently disable another. Reversing either decision makes arbitrary
+output broadcasting inexpressible and restores load-order-dependent behavior.
 
 **`input.resolvedSource()` — exposes the result, not the resolver.** Deno's LTX
 sequencer derives its row count from the image loader feeding it. A physical
