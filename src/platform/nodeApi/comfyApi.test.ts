@@ -36,6 +36,7 @@ describe('comfy API root', () => {
     it('reports shipped capabilities', () => {
       expect(api().supports('widgets.reorder')).toBe(true)
       expect(api().supports('widgets.hidden')).toBe(true)
+      expect(api().supports('widgets.height')).toBe(true)
       expect(api().supports('widgets.linked')).toBe(true)
       expect(api().supports('widgets.textInteraction')).toBe(true)
       expect(api().supports('slots.identity')).toBe(true)

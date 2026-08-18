@@ -96,6 +96,7 @@ export const API_MEMBERS: ReadonlySet<string> = new Set([
   'getBounds',
   'getColor',
   'getDisplayedImageIndex',
+  'getHeight',
   'getMode',
   'getOptions',
   'getOutputImages',

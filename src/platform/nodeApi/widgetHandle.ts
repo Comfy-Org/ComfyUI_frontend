@@ -127,6 +127,8 @@ export interface WidgetHandle extends HandleCommon {
   isDisabled(): boolean
   setDisabled(disabled: boolean): void
   isSerialized(): boolean
+  /** The height the host most recently allocated, or undefined before layout. */
+  getHeight(): number | undefined
   /**
    * Pins the widget's height in graph units, instead of letting it share
    * whatever space the node has spare.
@@ -349,6 +351,7 @@ export function createWidgetHandles(
           w.label = args[0] === undefined ? undefined : String(args[0])
         },
         isSerialized: (w) => w.serialize ?? true,
+        getHeight: (w) => w.computedHeight,
         setHeight: (w, ...args) => {
           const px = Number(args[0])
           if (!Number.isFinite(px) || px < 0) {
