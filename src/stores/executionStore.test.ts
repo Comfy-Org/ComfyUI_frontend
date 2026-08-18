@@ -1063,7 +1063,7 @@ describe('useExecutionStore - background workflow error routing', () => {
     errorStore = useExecutionErrorStore()
     store.bindExecutionEvents()
     // Workflow A is the one on screen; workflow B runs in the background.
-    errorStore.setActiveGraph(graphAId)
+    errorStore.setActiveGraph(graphAId, workflowA.path)
   })
 
   it('keeps a background run failure off the visible workflow', () => {
@@ -1078,7 +1078,7 @@ describe('useExecutionStore - background workflow error routing', () => {
     callStoreJob('job-b', workflowB)
     fireExecutionError('job-b')
 
-    errorStore.setActiveGraph(graphBId)
+    errorStore.setActiveGraph(graphBId, workflowB.path)
 
     expect(errorStore.lastExecutionError?.prompt_id).toBe('job-b')
     expect(errorStore.totalErrorCount).toBe(1)
@@ -1101,7 +1101,7 @@ describe('useExecutionStore - background workflow error routing', () => {
 
     expect(errorStore.lastNodeErrors).toBeNull()
 
-    errorStore.setActiveGraph(graphBId)
+    errorStore.setActiveGraph(graphBId, workflowB.path)
     expect(Object.keys(errorStore.lastNodeErrors ?? {})).toEqual(['1'])
   })
 
@@ -1115,7 +1115,7 @@ describe('useExecutionStore - background workflow error routing', () => {
 
     expect(errorStore.lastPromptError).toBeNull()
 
-    errorStore.setActiveGraph(graphBId)
+    errorStore.setActiveGraph(graphBId, workflowB.path)
     expect(errorStore.lastPromptError?.message).toContain('Job has stagnated')
   })
 
@@ -1127,7 +1127,7 @@ describe('useExecutionStore - background workflow error routing', () => {
 
     expect(errorStore.lastExecutionError).toBeNull()
 
-    errorStore.setActiveGraph(graphBId)
+    errorStore.setActiveGraph(graphBId, workflowB.path)
     expect(errorStore.lastExecutionError?.prompt_id).toBe('job-b')
   })
 
