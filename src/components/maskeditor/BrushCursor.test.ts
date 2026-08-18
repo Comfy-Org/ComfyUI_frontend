@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/vue'
-import { reactive } from 'vue'
+import { nextTick, reactive } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import BrushCursor from '@/components/maskeditor/BrushCursor.vue'
@@ -141,7 +141,7 @@ describe('BrushCursor', () => {
       expect(style).toContain('top: 220px')
     })
 
-    it('should read the container rect once per position, not once per axis', () => {
+    it('should read the container rect once per position, not once per axis', async () => {
       mockStore.cursorPoint = { x: 200, y: 300 }
       mockStore.panOffset = { x: 0, y: 0 }
       mockStore.brushSettings.size = 20
@@ -172,6 +172,18 @@ describe('BrushCursor', () => {
         readRect,
         'left and top come from the same rect; reading it twice is two forced layouts per mousemove'
       ).toHaveBeenCalledTimes(1)
+
+      mockStore.cursorPoint = { x: 201, y: 301 }
+      await nextTick()
+
+      // The other half of the guarantee, and the one that keeps the offset
+      // correct while the dialog is dragged: a DOMRect is not reactive, so
+      // caching it across moves would pass the assertion above and silently
+      // stop tracking the container.
+      expect(
+        readRect,
+        'a moved cursor must re-read the rect; a cached one goes stale the moment the dialog moves'
+      ).toHaveBeenCalledTimes(2)
     })
   })
 
