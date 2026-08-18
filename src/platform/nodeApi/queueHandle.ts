@@ -20,7 +20,10 @@ import type {
   PromptRejectedEventPayload
 } from '@/scripts/api'
 import { useQueuePendingTaskCountStore } from '@/stores/queueStore'
-import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
+import {
+  isInstantMode,
+  useQueueSettingsStore
+} from '@/stores/queueSettingsStore'
 import { toNodeId } from '@/types/nodeId'
 import { getExecutionIdsForSelectedNodes } from '@/utils/graphTraversalUtil'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
@@ -78,6 +81,9 @@ export interface RunRejectedEvent {
   readonly error: RunRejectionError
   readonly nodeErrors: readonly RunRejectedNode[]
 }
+
+/** @knipIgnoreUnusedButUsedByCustomNodes */
+export type AutoQueueMode = 'disabled' | 'change' | 'instant'
 
 export interface QueueHandle {
   /**
@@ -148,6 +154,14 @@ export interface QueueHandle {
   interrupt(): Promise<void>
   /** Execution was interrupted, by this pack, another, or the user. */
   onInterrupted(listener: () => void): Unsubscribe
+  /** The user-facing automatic queue mode. Both internal instant states read as `instant`. */
+  autoQueueMode(): AutoQueueMode
+  /** Changes automatic queuing. `instant` arms continuous execution. */
+  setAutoQueueMode(mode: AutoQueueMode): void
+  /** The batch count the host's own Run action will use. */
+  batchCount(): number
+  /** Changes the host Run action's batch count. */
+  setBatchCount(count: number): void
   /**
    * Turns off automatic queuing without cancelling the current run.
    *
@@ -367,6 +381,27 @@ export function createQueueApi(
     },
 
     onInterrupted: subscribe('execution_interrupted'),
+
+    autoQueueMode() {
+      const { mode } = useQueueSettingsStore()
+      return isInstantMode(mode) ? 'instant' : mode
+    },
+
+    setAutoQueueMode(mode: AutoQueueMode) {
+      useQueueSettingsStore().mode =
+        mode === 'instant' ? 'instant-running' : mode
+    },
+
+    batchCount() {
+      return useQueueSettingsStore().batchCount
+    },
+
+    setBatchCount(count: number) {
+      if (!Number.isSafeInteger(count) || count < 1) {
+        throw new ComfyApiError('Batch count must be a positive integer.')
+      }
+      useQueueSettingsStore().batchCount = count
+    },
 
     disableAutoQueue() {
       useQueueSettingsStore().mode = 'disabled'
