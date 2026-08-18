@@ -112,6 +112,5 @@ export interface IMinimapDataSource {
   getLinks(): MinimapLinkData[]
   getGroups(): MinimapGroupData[]
   getBounds(): MinimapBounds
-  getNodeCount(): number
   hasData(): boolean
 }

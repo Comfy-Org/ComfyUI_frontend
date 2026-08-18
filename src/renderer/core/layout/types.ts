@@ -271,13 +271,6 @@ export interface LayoutChange {
 export interface LayoutStore {
   /** Node count, without materialising layouts as `getAllNodes()` does. */
   readonly nodeCount: number
-  /**
-   * Cache key for derived structures; see the implementation for its scope.
-   *
-   * Plain numbers on a non-reactive class instance: reading either inside a
-   * `computed` or `watch` tracks nothing and never re-evaluates. Poll them.
-   */
-  readonly layoutVersion: number
   /** Cache key for geometry-derived state; moves only when nodes move. */
   readonly nodeGeometryVersion: number
 
@@ -285,6 +278,7 @@ export interface LayoutStore {
   getNodeLayoutRef(nodeId: NodeId): Ref<NodeLayout | null>
   getNodesInBounds(bounds: Bounds): ComputedRef<NodeId[]>
   getAllNodes(): ComputedRef<ReadonlyMap<NodeId, NodeLayout>>
+  getVersion(): ComputedRef<number>
 
   // Spatial queries (non-reactive)
   queryNodeAtPoint(point: Point): NodeId | null

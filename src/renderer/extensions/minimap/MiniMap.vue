@@ -1,7 +1,6 @@
 <template>
   <div
     v-if="visible && initialized"
-    ref="minimapRef"
     :class="
       cn(
         'minimap-main-container absolute right-0 bottom-[54px] z-1000 flex',
@@ -84,7 +83,7 @@
 
 <script setup lang="ts">
 import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
-import { onMounted, onUnmounted, ref, useTemplateRef } from 'vue'
+import { onUnmounted, ref, useTemplateRef } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
@@ -96,7 +95,6 @@ import MiniMapPanel from './MiniMapPanel.vue'
 const isMobile = useBreakpoints(breakpointsTailwind).smaller('md')
 
 const commandStore = useCommandStore()
-const minimapRef = ref<HTMLDivElement>()
 const containerRef = useTemplateRef<HTMLDivElement>('containerRef')
 const canvasRef = useTemplateRef<HTMLCanvasElement>('canvasRef')
 
@@ -119,8 +117,7 @@ const {
   handlePointerMove,
   handlePointerUp,
   handlePointerCancel,
-  handleWheel,
-  setMinimapRef
+  handleWheel
 } = useMinimap({
   containerRefMaybe: containerRef,
   canvasRefMaybe: canvasRef
@@ -131,12 +128,6 @@ const showOptionsPanel = ref(false)
 const toggleOptionsPanel = () => {
   showOptionsPanel.value = !showOptionsPanel.value
 }
-
-onMounted(() => {
-  if (minimapRef.value) {
-    setMinimapRef(minimapRef.value)
-  }
-})
 
 onUnmounted(() => {
   destroy()

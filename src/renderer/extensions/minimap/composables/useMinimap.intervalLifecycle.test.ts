@@ -22,14 +22,7 @@ const mockGraph = {
   _nodes: mockNodes,
   links: createMockLinks([]),
   getNodeById: vi.fn((id: string) => mockNodes.find((n) => n.id === id)),
-  setDirtyCanvas: vi.fn(),
-  onNodeAdded: null,
-  onNodeRemoved: null,
-  onConnectionChange: null,
-  events: {
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn()
-  }
+  setDirtyCanvas: vi.fn()
 }
 
 const mockCanvas = {
@@ -54,14 +47,6 @@ vi.mock('@/stores/workspace/colorPaletteStore', () => ({
   useColorPaletteStore: vi.fn(() => ({
     completedActivePalette: { light_theme: false }
   }))
-}))
-
-vi.mock('@/scripts/api', () => ({
-  api: {
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    apiURL: vi.fn().mockReturnValue('http://localhost:8188')
-  }
 }))
 
 vi.mock('@/scripts/app', () => ({
@@ -127,8 +112,6 @@ describe('useMinimap change-detection interval', () => {
   })
 
   afterEach(() => {
-    // The graph is module scope and each init() layers another set of wrappers
-    // onto its callbacks, so tear down before the next test builds its own.
     active?.destroy()
     active = null
     vi.useRealTimers()
@@ -202,31 +185,6 @@ describe('useMinimap change-detection interval', () => {
     } finally {
       visibility.mockRestore()
     }
-  })
-
-  it('a graphChanged event with nothing drawn changed does not repaint', async () => {
-    // graphChanged fires for zIndex (every widget pointerdown), widget values
-    // and title edits. The event is a hint to compare digests, not a command
-    // to repaint.
-    const { api } = await import('@/scripts/api')
-    await initMinimap()
-    await vi.advanceTimersByTimeAsync(POLL_MS + 10)
-    const settled = drawCalls()
-
-    const graphChangedHandler = vi
-      .mocked(api.addEventListener)
-      .mock.calls.find(([name]) => name === 'graphChanged')?.[1] as () => void
-    expect(graphChangedHandler).toBeTypeOf('function')
-
-    graphChangedHandler()
-    await vi.advanceTimersByTimeAsync(POLL_MS * 6)
-    expect(drawCalls()).toBe(settled)
-
-    // The same path must still repaint when the picture did change.
-    moveNode()
-    graphChangedHandler()
-    await vi.advanceTimersByTimeAsync(POLL_MS + 10)
-    expect(drawCalls()).toBeGreaterThan(settled)
   })
 
   it('starts polling when the canvas mounts after init', async () => {

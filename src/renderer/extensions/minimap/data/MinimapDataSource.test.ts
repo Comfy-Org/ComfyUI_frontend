@@ -71,7 +71,6 @@ describe('MinimapDataSource', () => {
       // Assert
       expect(dataSource).toBeDefined()
       expect(dataSource.hasData()).toBe(true)
-      expect(dataSource.getNodeCount()).toBe(1)
     })
 
     it('should create LiteGraphDataSource when LayoutStore is empty', () => {
@@ -106,7 +105,6 @@ describe('MinimapDataSource', () => {
       // Assert
       expect(dataSource).toBeDefined()
       expect(dataSource.hasData()).toBe(true)
-      expect(dataSource.getNodeCount()).toBe(1)
 
       const nodes = dataSource.getNodes()
       expect(nodes).toHaveLength(1)
@@ -137,7 +135,6 @@ describe('MinimapDataSource', () => {
 
       // Assert
       expect(dataSource.hasData()).toBe(false)
-      expect(dataSource.getNodeCount()).toBe(0)
       expect(dataSource.getNodes()).toEqual([])
       expect(dataSource.getLinks()).toEqual([])
       expect(dataSource.getGroups()).toEqual([])

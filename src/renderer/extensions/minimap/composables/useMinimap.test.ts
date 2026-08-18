@@ -18,16 +18,18 @@ interface MockNode {
 
 interface MockGraph {
   _nodes: MockNode[]
-  links: Map<string, { id: string; target_id: string }>
+  links: Map<
+    string,
+    {
+      id: string
+      origin_id: string
+      target_id: string
+      origin_slot: number
+      target_slot: number
+    }
+  >
   getNodeById: Mock
   setDirtyCanvas: Mock
-  onNodeAdded: ((node: MockNode) => void) | null
-  onNodeRemoved: ((node: MockNode) => void) | null
-  onConnectionChange: ((node: MockNode) => void) | null
-  events: {
-    addEventListener: Mock
-    removeEventListener: Mock
-  }
 }
 
 interface MockCanvas {
@@ -115,11 +117,6 @@ vi.mock('@vueuse/core', () => {
           callback()
         })
       }
-    }),
-    useThrottleFn: vi.fn((callback) => {
-      return (...args: unknown[]) => {
-        return callback(...args)
-      }
     })
   }
 })
@@ -152,16 +149,20 @@ const setupMocks = () => {
 
   moduleMockGraph = {
     _nodes: mockNodes,
-    links: new Map([['link1', { id: 'link1', target_id: 'node2' }]]),
+    links: new Map([
+      [
+        'link1',
+        {
+          id: 'link1',
+          origin_id: 'node1',
+          target_id: 'node2',
+          origin_slot: 0,
+          target_slot: 0
+        }
+      ]
+    ]),
     getNodeById: vi.fn((id) => mockNodes.find((n) => n.id === id)),
-    setDirtyCanvas: vi.fn(),
-    onNodeAdded: null,
-    onNodeRemoved: null,
-    onConnectionChange: null,
-    events: {
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn()
-    }
+    setDirtyCanvas: vi.fn()
   }
 
   moduleMockCanvas = {
@@ -211,14 +212,6 @@ vi.mock('@/stores/workspace/colorPaletteStore', () => ({
   }))
 }))
 
-vi.mock('@/scripts/api', () => ({
-  api: {
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    apiURL: vi.fn().mockReturnValue('http://localhost:8188')
-  }
-}))
-
 vi.mock('@/scripts/app', () => ({
   app: {
     canvas: {
@@ -240,7 +233,6 @@ vi.mock('@/stores/executionStore', () => ({
 }))
 
 import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
-import { api } from '@/scripts/api'
 
 describe('useMinimap', () => {
   let moduleMockCanvasElement: HTMLCanvasElement
@@ -310,16 +302,20 @@ describe('useMinimap', () => {
 
     moduleMockGraph = {
       _nodes: mockNodes,
-      links: new Map([['link1', { id: 'link1', target_id: 'node2' }]]),
+      links: new Map([
+        [
+          'link1',
+          {
+            id: 'link1',
+            origin_id: 'node1',
+            target_id: 'node2',
+            origin_slot: 0,
+            target_slot: 0
+          }
+        ]
+      ]),
       getNodeById: vi.fn((id) => mockNodes.find((n) => n.id === id)),
-      setDirtyCanvas: vi.fn(),
-      onNodeAdded: null,
-      onNodeRemoved: null,
-      onConnectionChange: null,
-      events: {
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn()
-      }
+      setDirtyCanvas: vi.fn()
     }
 
     moduleMockCanvas = {
@@ -376,10 +372,6 @@ describe('useMinimap', () => {
       expect(defaultSettingStore.get).toHaveBeenCalledWith(
         'Comfy.Minimap.Visible'
       )
-      expect(api.addEventListener).toHaveBeenCalledWith(
-        'graphChanged',
-        expect.any(Function)
-      )
 
       if (minimap.visible.value) {
         expect(mockResume).toHaveBeenCalled()
@@ -394,19 +386,8 @@ describe('useMinimap', () => {
       await minimap.init()
 
       expect(minimap.initialized.value).toBe(false)
-      expect(api.addEventListener).not.toHaveBeenCalled()
 
       defaultCanvasStore.canvas = originalCanvas
-    })
-
-    it('should setup event listeners on graph', async () => {
-      const minimap = await createAndInitializeMinimap()
-
-      await minimap.init()
-
-      expect(moduleMockGraph.onNodeAdded).toBeDefined()
-      expect(moduleMockGraph.onNodeRemoved).toBeDefined()
-      expect(moduleMockGraph.onConnectionChange).toBeDefined()
     })
 
     it('should handle visibility from settings', async () => {
@@ -431,37 +412,8 @@ describe('useMinimap', () => {
       // detection. One spy each, or deleting either pause here goes unnoticed.
       expect(mockPause).toHaveBeenCalled()
       expect(mockIntervalPause).toHaveBeenCalled()
-      expect(api.removeEventListener).toHaveBeenCalledWith(
-        'graphChanged',
-        expect.any(Function)
-      )
       expect(window.removeEventListener).toHaveBeenCalled()
       expect(minimap.initialized.value).toBe(false)
-    })
-
-    it('should restore original graph callbacks', async () => {
-      const originalCallbacks = {
-        onNodeAdded: vi.fn(),
-        onNodeRemoved: vi.fn(),
-        onConnectionChange: vi.fn()
-      }
-
-      moduleMockGraph.onNodeAdded = originalCallbacks.onNodeAdded
-      moduleMockGraph.onNodeRemoved = originalCallbacks.onNodeRemoved
-      moduleMockGraph.onConnectionChange = originalCallbacks.onConnectionChange
-
-      const minimap = await createAndInitializeMinimap()
-
-      await minimap.init()
-      minimap.destroy()
-
-      expect(moduleMockGraph.onNodeAdded).toBe(originalCallbacks.onNodeAdded)
-      expect(moduleMockGraph.onNodeRemoved).toBe(
-        originalCallbacks.onNodeRemoved
-      )
-      expect(moduleMockGraph.onConnectionChange).toBe(
-        originalCallbacks.onConnectionChange
-      )
     })
   })
 
@@ -895,56 +847,6 @@ describe('useMinimap', () => {
     })
   })
 
-  describe('graph change handling', () => {
-    it('should handle node addition', async () => {
-      const minimap = await createAndInitializeMinimap()
-
-      await minimap.init()
-
-      const newNode = {
-        id: 'node3',
-        pos: [300, 200],
-        size: [100, 100],
-        constructor: { color: '#666' },
-        outputs: []
-      }
-
-      moduleMockGraph._nodes.push(newNode)
-      if (moduleMockGraph.onNodeAdded) {
-        moduleMockGraph.onNodeAdded(newNode)
-      }
-
-      await new Promise((resolve) => setTimeout(resolve, 600))
-    })
-
-    it('should handle node removal', async () => {
-      const minimap = await createAndInitializeMinimap()
-
-      await minimap.init()
-
-      const removedNode = moduleMockGraph._nodes[0]
-      moduleMockGraph._nodes.splice(0, 1)
-
-      if (moduleMockGraph.onNodeRemoved) {
-        moduleMockGraph.onNodeRemoved(removedNode)
-      }
-
-      await new Promise((resolve) => setTimeout(resolve, 600))
-    })
-
-    it('should handle connection changes', async () => {
-      const minimap = await createAndInitializeMinimap()
-
-      await minimap.init()
-
-      if (moduleMockGraph.onConnectionChange) {
-        moduleMockGraph.onConnectionChange(moduleMockGraph._nodes[0])
-      }
-
-      await new Promise((resolve) => setTimeout(resolve, 600))
-    })
-  })
-
   describe('container styles', () => {
     it('should provide correct container styles for dark theme', () => {
       const minimap = useMinimap()
@@ -997,17 +899,6 @@ describe('useMinimap', () => {
 
       expect(mockContext2D.fillRect).toHaveBeenCalled()
       expect(mockContext2D.fillStyle).toBeDefined()
-    })
-  })
-
-  describe('setMinimapRef', () => {
-    it('should set minimap reference', () => {
-      const minimap = useMinimap()
-      const ref = document.createElement('div')
-
-      minimap.setMinimapRef(ref)
-
-      expect(() => minimap.setMinimapRef(ref)).not.toThrow()
     })
   })
 })

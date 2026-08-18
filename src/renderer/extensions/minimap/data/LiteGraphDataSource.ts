@@ -31,11 +31,7 @@ export class LiteGraphDataSource extends AbstractMinimapDataSource {
     })
   }
 
-  getNodeCount(): number {
-    return this.graph?._nodes?.length ?? 0
-  }
-
   hasData(): boolean {
-    return this.getNodeCount() > 0
+    return !!this.graph?._nodes.length
   }
 }

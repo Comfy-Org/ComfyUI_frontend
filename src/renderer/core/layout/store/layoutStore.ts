@@ -179,31 +179,12 @@ class LayoutStoreImpl implements LayoutStore {
   }
 
   /**
-   * Counter bumped when the Yjs-backed node, link and reroute maps change, for
-   * use as a cache key.
-   *
-   * Scope is exactly those maps. Slot, link and reroute *geometry* live in
-   * plain Maps that are mutated without bumping this, so a cache over
-   * `updateSlotLayout`/`clearAllSlotLayouts` output cannot be keyed on it.
-   * Anything deriving node geometry from this should also read that geometry
-   * from this store, so key and data stay consistent.
-   *
-   * Local per-peer counter, not a CRDT document version: two peers holding
-   * identical layouts will hold different values, so it is not meaningful to
-   * compare across peers.
-   */
-  get layoutVersion(): number {
-    return this.version
-  }
-
-  /**
    * Counter bumped only when node geometry changes: a node is added or
    * removed, or an existing node's position, size or bounds is written.
    *
-   * `layoutVersion` counts operations, so it also moves for changes nothing
-   * renders from geometry - `setNodeZIndex` alone fires on every widget
-   * pointerdown. Consumers that rebuild geometry-derived state should key on
-   * this instead, or they repaint for edits that cannot move a pixel.
+   * The general store version also moves for changes nothing renders from
+   * geometry. Consumers that rebuild geometry-derived state should key on this
+   * instead, or they repaint for edits that cannot move a pixel.
    *
    * Backed by `observeDeep`, so it covers writes that never touch a top-level
    * key - a move mutates fields inside a node's own map - and therefore also
@@ -231,18 +212,16 @@ class LayoutStoreImpl implements LayoutStore {
     this.slotSpatialIndex = new SpatialIndexManager<SlotId>()
     this.rerouteSpatialIndex = new SpatialIndexManager<string>()
 
-    // Geometry-only counter. observeDeep because a move writes fields inside a
-    // node's own map rather than a top-level key, so `observe` never sees it,
-    // and because remote updates run no local operation handler.
+    // observeDeep covers nested node fields and remote Yjs updates.
     this.ynodes.observeDeep((events) => {
       for (const event of events) {
-        const changedKeys =
-          event.target === this.ynodes
-            ? // Whole nodes added or removed.
-              ['position']
-            : [...event.changes.keys.keys()]
+        if (event.target === this.ynodes) {
+          this._nodeGeometryVersion++
+          return
+        }
 
-        if (changedKeys.some((key) => NODE_GEOMETRY_KEYS.has(key))) {
+        for (const key of event.changes.keys.keys()) {
+          if (!NODE_GEOMETRY_KEYS.has(key)) continue
           this._nodeGeometryVersion++
           return
         }
@@ -439,6 +418,13 @@ class LayoutStoreImpl implements LayoutStore {
       }
       return result
     })
+  }
+
+  /**
+   * Get current version for reactive change detection.
+   */
+  getVersion(): ComputedRef<number> {
+    return computed(() => this.version)
   }
 
   /**

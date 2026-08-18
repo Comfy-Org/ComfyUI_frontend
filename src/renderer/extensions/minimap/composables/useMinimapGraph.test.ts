@@ -1,26 +1,17 @@
-import { useThrottleFn } from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
-import type { Ref } from 'vue'
+import { shallowRef } from 'vue'
 
-import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
-import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { useMinimapGraph } from '@/renderer/extensions/minimap/composables/useMinimapGraph'
-import { api } from '@/scripts/api'
 import {
   createMockLGraph,
   createMockLGraphNode,
   createMockLLink,
   createMockLinks
 } from '@/utils/__tests__/litegraphTestUtils'
-
-vi.mock('@vueuse/core', () => ({
-  useThrottleFn: vi.fn((fn) => fn)
-}))
 
 const { mockProgressStates } = vi.hoisted(() => ({
   mockProgressStates: {} as Record<string, { state: string }>
@@ -32,16 +23,8 @@ vi.mock('@/stores/executionStore', () => ({
   }))
 }))
 
-vi.mock('@/scripts/api', () => ({
-  api: {
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn()
-  }
-}))
-
 describe('useMinimapGraph', () => {
   let mockGraph: LGraph
-  let onGraphChangedMock: () => void
 
   beforeEach(() => {
     mockGraph = createMockLGraph({
@@ -50,212 +33,20 @@ describe('useMinimapGraph', () => {
         createMockLGraphNode({ id: '1', pos: [100, 100], size: [150, 80] }),
         createMockLGraphNode({ id: '2', pos: [300, 200], size: [120, 60] })
       ],
-      links: createMockLinks([createMockLLink({ id: toLinkId(1) })]),
-      events: new CustomEventTarget<LGraphEventMap>(),
-      onNodeAdded: vi.fn(),
-      onNodeRemoved: vi.fn(),
-      onConnectionChange: vi.fn()
+      links: createMockLinks([createMockLLink({ id: toLinkId(1) })])
     })
 
-    onGraphChangedMock = vi.fn()
     for (const key of Object.keys(mockProgressStates)) {
       delete mockProgressStates[key]
     }
   })
 
-  it('should initialize with empty state', () => {
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
-
-    expect(graphManager.updateFlags.value).toEqual({
-      bounds: false,
-      nodes: false,
-      connections: false,
-      viewport: false
-    })
-  })
-
-  it('should setup event listeners on init', () => {
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
-
-    graphManager.init()
-
-    expect(api.addEventListener).toHaveBeenCalledWith(
-      'graphChanged',
-      expect.any(Function)
-    )
-  })
-
-  it('should wrap graph callbacks on setup', () => {
-    const originalOnNodeAdded = vi.fn()
-    const originalOnNodeRemoved = vi.fn()
-    const originalOnConnectionChange = vi.fn()
-
-    mockGraph.onNodeAdded = originalOnNodeAdded
-    mockGraph.onNodeRemoved = originalOnNodeRemoved
-    mockGraph.onConnectionChange = originalOnConnectionChange
-
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
-
-    graphManager.setupEventListeners()
-
-    // Should wrap the callbacks
-    expect(mockGraph.onNodeAdded).not.toBe(originalOnNodeAdded)
-    expect(mockGraph.onNodeRemoved).not.toBe(originalOnNodeRemoved)
-    expect(mockGraph.onConnectionChange).not.toBe(originalOnConnectionChange)
-
-    // Test wrapped callbacks
-    const testNode = { id: '3' } as LGraphNode
-    mockGraph.onNodeAdded!(testNode)
-
-    expect(originalOnNodeAdded).toHaveBeenCalledWith(testNode)
-    expect(onGraphChangedMock).toHaveBeenCalled()
-  })
-
-  it('should prevent duplicate event listener setup', () => {
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
-
-    graphManager.setupEventListeners()
-    const wrappedCallbacks = {
-      onNodeAdded: mockGraph.onNodeAdded,
-      onNodeRemoved: mockGraph.onNodeRemoved,
-      onConnectionChange: mockGraph.onConnectionChange
-    }
-
-    // Setup again - should not re-wrap
-    graphManager.setupEventListeners()
-
-    expect(mockGraph.onNodeAdded).toBe(wrappedCallbacks.onNodeAdded)
-    expect(mockGraph.onNodeRemoved).toBe(wrappedCallbacks.onNodeRemoved)
-    expect(mockGraph.onConnectionChange).toBe(
-      wrappedCallbacks.onConnectionChange
-    )
-  })
-
-  it('should cleanup event listeners properly', () => {
-    const originalOnNodeAdded = vi.fn()
-    const originalOnNodeRemoved = vi.fn()
-    const originalOnConnectionChange = vi.fn()
-
-    mockGraph.onNodeAdded = originalOnNodeAdded
-    mockGraph.onNodeRemoved = originalOnNodeRemoved
-    mockGraph.onConnectionChange = originalOnConnectionChange
-
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
-
-    graphManager.setupEventListeners()
-    graphManager.cleanupEventListeners()
-
-    // Should restore original callbacks
-    expect(mockGraph.onNodeAdded).toBe(originalOnNodeAdded)
-    expect(mockGraph.onNodeRemoved).toBe(originalOnNodeRemoved)
-    expect(mockGraph.onConnectionChange).toBe(originalOnConnectionChange)
-  })
-
-  it('should handle cleanup for never-setup graph', () => {
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
-
-    expect(() => graphManager.cleanupEventListeners()).not.toThrow()
-  })
-
-  it('cleanup leaves a later wrapper alone when one is layered on top', () => {
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
-
-    graphManager.setupEventListeners()
-    const minimapWrapper = mockGraph.onNodeAdded
-
-    // Simulate another system adding its own wrapper on top
-    const downstream = vi.fn()
-    const layeredWrapper = vi.fn(function (this: unknown, node: LGraphNode) {
-      minimapWrapper?.call(this, node)
-      downstream(node)
-    })
-    mockGraph.onNodeAdded = layeredWrapper
-
-    graphManager.cleanupEventListeners()
-
-    // The newer wrapper must survive cleanup
-    expect(mockGraph.onNodeAdded).toBe(layeredWrapper)
-  })
-
-  it('a buried wrapper becomes inert after cleanup', () => {
-    const originalOnNodeAdded = vi.fn()
-    mockGraph.onNodeAdded = originalOnNodeAdded
-
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
-
-    graphManager.setupEventListeners()
-    const buriedWrapper = mockGraph.onNodeAdded
-
-    // Layer something on top so cleanup can't restore.
-    mockGraph.onNodeAdded = vi.fn()
-    graphManager.cleanupEventListeners()
-    vi.mocked(onGraphChangedMock).mockClear()
-
-    // Call the method directly and ensure it is a no-op
-    const testNode = { id: '9' } as LGraphNode
-    buriedWrapper!(testNode)
-
-    expect(originalOnNodeAdded).toHaveBeenCalledWith(testNode)
-    expect(onGraphChangedMock).not.toHaveBeenCalled()
-  })
-
-  it('invalidates cache and fires update on visual property changes', () => {
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
-    graphManager.setupEventListeners()
-
-    mockGraph.events.dispatch('node:property:changed', {
-      nodeId: '1',
-      property: 'color',
-      oldValue: '',
-      newValue: '#fff'
-    })
-
-    expect(onGraphChangedMock).toHaveBeenCalled()
-  })
-
-  it('ignores unrelated property changes', () => {
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
-    graphManager.setupEventListeners()
-
-    mockGraph.events.dispatch('node:property:changed', {
-      nodeId: '1',
-      property: 'title',
-      oldValue: 'a',
-      newValue: 'b'
-    })
-
-    expect(onGraphChangedMock).not.toHaveBeenCalled()
-  })
-
-  it('detaches the property listener on cleanup', () => {
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
-    graphManager.setupEventListeners()
-    graphManager.cleanupEventListeners()
-
-    mockGraph.events.dispatch('node:property:changed', {
-      nodeId: '1',
-      property: 'mode',
-      oldValue: 0,
-      newValue: 1
-    })
-
-    expect(onGraphChangedMock).not.toHaveBeenCalled()
-  })
+  function createChangeDetector(graph: LGraph | null = mockGraph) {
+    return useMinimapGraph(shallowRef<LGraph | null>(graph))
+  }
 
   it('should detect node position changes', () => {
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
+    const graphManager = createChangeDetector()
 
     // First check - cache initial state
     let hasChanges = graphManager.checkForChanges()
@@ -274,8 +65,7 @@ describe('useMinimapGraph', () => {
   })
 
   it('should detect node count changes', () => {
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
+    const graphManager = createChangeDetector()
 
     // Cache initial state
     graphManager.checkForChanges()
@@ -294,8 +84,7 @@ describe('useMinimapGraph', () => {
   })
 
   it('should detect connection changes', () => {
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
+    const graphManager = createChangeDetector()
 
     // Cache initial state
     graphManager.checkForChanges()
@@ -320,8 +109,7 @@ describe('useMinimapGraph', () => {
       })
     ])
 
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
+    const graphManager = createChangeDetector()
 
     graphManager.checkForChanges()
     expect(graphManager.checkForChanges()).toBe(false)
@@ -339,9 +127,33 @@ describe('useMinimapGraph', () => {
     expect(graphManager.updateFlags.value.connections).toBe(true)
   })
 
+  it('detects a rewire between nonnumeric node IDs', () => {
+    mockGraph.links = createMockLinks([
+      createMockLLink({
+        id: toLinkId(1),
+        origin_id: toNodeId('source'),
+        target_id: toNodeId('target-a')
+      })
+    ])
+
+    const graphManager = createChangeDetector()
+
+    graphManager.checkForChanges()
+    expect(graphManager.checkForChanges()).toBe(false)
+
+    mockGraph.links = createMockLinks([
+      createMockLLink({
+        id: toLinkId(1),
+        origin_id: toNodeId('source'),
+        target_id: toNodeId('target-b')
+      })
+    ])
+
+    expect(graphManager.checkForChanges()).toBe(true)
+  })
+
   it('keeps reporting no change while the graph is untouched', () => {
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
+    const graphManager = createChangeDetector()
 
     graphManager.checkForChanges()
 
@@ -357,8 +169,7 @@ describe('useMinimapGraph', () => {
       createMockLGraphNode({ id: '3', pos: [Number.NaN, 0], size: [10, 10] })
     )
 
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
+    const graphManager = createChangeDetector()
 
     graphManager.checkForChanges()
     expect(graphManager.checkForChanges()).toBe(false)
@@ -374,8 +185,7 @@ describe('useMinimapGraph', () => {
       size: { width: 150, height: 80 }
     })
 
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
+    const graphManager = createChangeDetector()
 
     graphManager.checkForChanges()
     expect(graphManager.checkForChanges()).toBe(false)
@@ -393,8 +203,7 @@ describe('useMinimapGraph', () => {
       size: { width: 120, height: 60 }
     })
 
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
+    const graphManager = createChangeDetector()
 
     graphManager.checkForChanges()
     expect(graphManager.checkForChanges()).toBe(false)
@@ -407,8 +216,7 @@ describe('useMinimapGraph', () => {
   })
 
   it('should detect a background colour change', () => {
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
+    const graphManager = createChangeDetector()
 
     graphManager.checkForChanges()
     expect(graphManager.checkForChanges()).toBe(false)
@@ -423,8 +231,7 @@ describe('useMinimapGraph', () => {
       { pos: [0, 0], size: [400, 300], color: '#111111' }
     ] as LGraph['_groups']
 
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
+    const graphManager = createChangeDetector()
 
     graphManager.checkForChanges()
     expect(graphManager.checkForChanges()).toBe(false)
@@ -435,8 +242,7 @@ describe('useMinimapGraph', () => {
   })
 
   it('should detect an execution-state transition', () => {
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
+    const graphManager = createChangeDetector()
 
     graphManager.checkForChanges()
     expect(graphManager.checkForChanges()).toBe(false)
@@ -450,8 +256,7 @@ describe('useMinimapGraph', () => {
   })
 
   it('a visual-only change repaints without recomputing bounds', () => {
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
+    const graphManager = createChangeDetector()
 
     graphManager.checkForChanges()
     graphManager.updateFlags.value.bounds = false
@@ -465,8 +270,7 @@ describe('useMinimapGraph', () => {
   })
 
   it('should detect an error-state change', () => {
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
+    const graphManager = createChangeDetector()
 
     graphManager.checkForChanges()
     expect(graphManager.checkForChanges()).toBe(false)
@@ -477,8 +281,7 @@ describe('useMinimapGraph', () => {
   })
 
   it('should detect a mode change', () => {
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
+    const graphManager = createChangeDetector()
 
     graphManager.checkForChanges()
     expect(graphManager.checkForChanges()).toBe(false)
@@ -489,8 +292,7 @@ describe('useMinimapGraph', () => {
   })
 
   it('should detect a fractional-only position change', () => {
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
+    const graphManager = createChangeDetector()
 
     graphManager.checkForChanges()
     expect(graphManager.checkForChanges()).toBe(false)
@@ -505,8 +307,7 @@ describe('useMinimapGraph', () => {
       createMockLLink({ id: toLinkId(1), origin_slot: 0, target_slot: 0 })
     ])
 
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
+    const graphManager = createChangeDetector()
 
     graphManager.checkForChanges()
     expect(graphManager.checkForChanges()).toBe(false)
@@ -520,90 +321,29 @@ describe('useMinimapGraph', () => {
     expect(graphManager.updateFlags.value.connections).toBe(true)
   })
 
-  it('should handle node removal in callbacks', () => {
-    const originalOnNodeRemoved = vi.fn()
-    mockGraph.onNodeRemoved = originalOnNodeRemoved
+  it('detects the current graph again after reset', () => {
+    const graphManager = createChangeDetector()
 
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
-
-    graphManager.setupEventListeners()
-
-    const removedNode = { id: '2' } as LGraphNode
-    mockGraph.onNodeRemoved!(removedNode)
-
-    expect(originalOnNodeRemoved).toHaveBeenCalledWith(removedNode)
-    expect(onGraphChangedMock).toHaveBeenCalled()
-  })
-
-  it('should destroy properly', () => {
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
-
-    graphManager.init()
-    graphManager.setupEventListeners()
-    graphManager.destroy()
-
-    expect(api.removeEventListener).toHaveBeenCalledWith(
-      'graphChanged',
-      expect.any(Function)
-    )
-  })
-
-  it('should clear cache', () => {
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
-
-    // Populate cache
     graphManager.checkForChanges()
+    graphManager.reset()
 
-    // Clear cache
-    graphManager.clearCache()
-
-    // Should detect changes again after clear
-    const hasChanges = graphManager.checkForChanges()
-    expect(hasChanges).toBe(true)
+    expect(graphManager.checkForChanges()).toBe(true)
   })
 
-  it('should handle null graph gracefully', () => {
-    const graphRef = ref(null) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
+  it('reports no changes without a graph', () => {
+    const graphManager = createChangeDetector(null)
 
-    expect(() => graphManager.setupEventListeners()).not.toThrow()
-    expect(() => graphManager.cleanupEventListeners()).not.toThrow()
     expect(graphManager.checkForChanges()).toBe(false)
   })
 
-  it('should clean up removed nodes from cache', () => {
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
+  it('detects node removal', () => {
+    const graphManager = createChangeDetector()
 
-    // Cache initial state
     graphManager.checkForChanges()
-
-    // Remove a node
     mockGraph._nodes = mockGraph._nodes.filter((n) => n.id !== '2')
 
     const hasChanges = graphManager.checkForChanges()
     expect(hasChanges).toBe(true)
     expect(graphManager.updateFlags.value.bounds).toBe(true)
-  })
-
-  it('should throttle graph changed callback', () => {
-    const throttledFn = vi.fn()
-    vi.mocked(useThrottleFn).mockReturnValue(throttledFn)
-
-    const graphRef = ref(mockGraph) as Ref<LGraph | null>
-    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
-
-    graphManager.setupEventListeners()
-
-    // Trigger multiple changes rapidly
-    mockGraph.onNodeAdded!({ id: '3' } as LGraphNode)
-    mockGraph.onNodeAdded!({ id: '4' } as LGraphNode)
-    mockGraph.onNodeAdded!({ id: '5' } as LGraphNode)
-
-    // Should be throttled
-    expect(throttledFn).toHaveBeenCalledTimes(3)
   })
 })

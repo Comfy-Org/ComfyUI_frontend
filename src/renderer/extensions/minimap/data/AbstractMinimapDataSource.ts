@@ -22,7 +22,6 @@ export abstract class AbstractMinimapDataSource implements IMinimapDataSource {
   /** Builds the node list. Called at most once per data source instance. */
   protected abstract buildNodes(): MinimapNodeData[]
 
-  abstract getNodeCount(): number
   abstract hasData(): boolean
 
   /**

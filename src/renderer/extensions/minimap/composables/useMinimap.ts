@@ -28,7 +28,6 @@ export function useMinimap({
   const workflowStore = useWorkflowStore()
   const settingStore = useSettingStore()
 
-  const minimapRef = ref<HTMLElement | null>(null)
   const canvasRef = canvasRefMaybe ?? shallowRef(null)
   const containerRef = containerRefMaybe ?? shallowRef(null)
 
@@ -57,12 +56,6 @@ export function useMinimap({
     panelStyles
   } = settings
 
-  const updateOption = async (key: MinimapSettingsKey, value: boolean) => {
-    await settingStore.set(key, value)
-    renderer.forceFullRedraw()
-    renderer.updateMinimap(viewport.updateBounds, viewport.updateViewport)
-  }
-
   // Viewport management
   const viewport = useMinimapViewport(canvas, graph, width, height)
 
@@ -82,18 +75,7 @@ export function useMinimap({
   // a full layout-map rebuild, so every path that redraws checks this first.
   const canDraw = computed(() => visible.value && !!canvasRef.value)
 
-  // Graph events are hints to compare the digests, not commands to repaint:
-  // graphChanged fires for plenty the minimap does not draw (zIndex from every
-  // widget pointerdown, widget values, title edits), and the digest is the one
-  // place that knows whether the picture moved.
-  const checkAndRepaint = () => {
-    if (!canDraw.value) return
-    if (graphManager.checkForChanges()) {
-      renderer.updateMinimap(viewport.updateBounds, viewport.updateViewport)
-    }
-  }
-
-  const graphManager = useMinimapGraph(graph, () => checkAndRepaint())
+  const changeDetector = useMinimapGraph(graph)
 
   // Rendering
   const renderer = useMinimapRenderer(
@@ -101,34 +83,35 @@ export function useMinimap({
     graph,
     viewport.bounds,
     viewport.scale,
-    graphManager.updateFlags,
+    changeDetector.updateFlags,
     settings,
     width,
     height
   )
 
-  // Most edits reach the digest comparison through useMinimapGraph's event
-  // hooks. This loop is the backstop for state that emits no event at all:
-  // snapPoint mutating `_pos` elements in place, extensions assigning
-  // `node.pos[0]` directly (only `size` is Proxy-wrapped against that),
-  // `has_errors`, group drags, and execution-state transitions, which arrive
-  // in executionStore rather than as graph events. Repaints happen only when
-  // the digests move, so idle ticks cost one O(n) comparison and nothing else.
+  const checkAndRepaint = () => {
+    if (!canDraw.value) return
+    if (changeDetector.checkForChanges()) {
+      renderer.updateMinimap(viewport.updateBounds, viewport.updateViewport)
+    }
+  }
+
+  const updateOption = async (key: MinimapSettingsKey, value: boolean) => {
+    await settingStore.set(key, value)
+    if (!canDraw.value) return
+    renderer.forceFullRedraw()
+    renderer.updateMinimap(viewport.updateBounds, viewport.updateViewport)
+  }
+
+  // Some rendered state is mutated directly and emits no reliable event. A
+  // single digest poll covers every source while avoiding work on idle ticks.
   const { pause: pauseChangeDetection, resume: resumeChangeDetection } =
     useIntervalFn(checkAndRepaint, CHANGE_DETECTION_INTERVAL_MS, {
       immediate: false
     })
 
-  // Polling is derived state, not something init() decides once. init() runs
-  // synchronously from the immediate canvas watcher - before the template ref
-  // has mounted - so any start decision taken there sees canvasRef as null and
-  // the poll never starts. Deriving from the refs means the loop starts the
-  // moment the canvas mounts and stops the moment any condition lapses.
-  //
-  // Document visibility is part of the condition because rAF was suspended
-  // entirely on a hidden tab while setInterval is only clamped, and a tab that
-  // is hidden at mount (middle-click, session restore) never fires a
-  // visibilitychange to a transition-only watcher.
+  // Derive polling from current lifecycle state because init can run before the
+  // template canvas mounts. Hidden documents pause the O(n) digest scan.
   const documentVisibility = useDocumentVisibility()
   const shouldPoll = computed(
     () =>
@@ -152,8 +135,6 @@ export function useMinimap({
     visible.value = settingStore.get('Comfy.Minimap.Visible')
 
     if (canvas.value && graph.value) {
-      graphManager.init()
-
       if (containerRef.value) {
         interaction.updateContainerRect()
       }
@@ -163,6 +144,7 @@ export function useMinimap({
       window.addEventListener('scroll', interaction.updateContainerRect)
       window.addEventListener('resize', viewport.updateCanvasDimensions)
 
+      if (canDraw.value) changeDetector.checkForChanges()
       renderer.forceFullRedraw()
       renderer.updateMinimap(viewport.updateBounds, viewport.updateViewport)
       viewport.updateViewport()
@@ -175,7 +157,7 @@ export function useMinimap({
   const destroy = () => {
     pauseChangeDetection()
     viewport.stopViewportSync()
-    graphManager.destroy()
+    changeDetector.reset()
 
     window.removeEventListener('resize', interaction.updateContainerRect)
     window.removeEventListener('scroll', interaction.updateContainerRect)
@@ -188,13 +170,7 @@ export function useMinimap({
     canvas,
     async (newCanvas, oldCanvas) => {
       if (oldCanvas) {
-        graphManager.cleanupEventListeners()
-        pauseChangeDetection()
-        viewport.stopViewportSync()
-        graphManager.destroy()
-        window.removeEventListener('resize', interaction.updateContainerRect)
-        window.removeEventListener('scroll', interaction.updateContainerRect)
-        window.removeEventListener('resize', viewport.updateCanvasDimensions)
+        destroy()
       }
       if (newCanvas && !initialized.value) {
         await init()
@@ -205,13 +181,12 @@ export function useMinimap({
 
   // Watch for graph changes (e.g., when navigating to/from subgraphs)
   watch(graph, (newGraph, oldGraph) => {
-    if (newGraph && newGraph !== oldGraph) {
-      graphManager.cleanupEventListeners(oldGraph || undefined)
-      graphManager.setupEventListeners()
-      if (!canDraw.value) return
-      renderer.forceFullRedraw()
-      renderer.updateMinimap(viewport.updateBounds, viewport.updateViewport)
-    }
+    if (!newGraph || newGraph === oldGraph) return
+    changeDetector.reset()
+    if (!canDraw.value) return
+    changeDetector.checkForChanges()
+    renderer.forceFullRedraw()
+    renderer.updateMinimap(viewport.updateBounds, viewport.updateViewport)
   })
 
   watch(visible, async (isVisible) => {
@@ -221,6 +196,7 @@ export function useMinimap({
       }
       viewport.updateCanvasDimensions()
 
+      changeDetector.checkForChanges()
       renderer.forceFullRedraw()
 
       await nextTick()
@@ -237,10 +213,6 @@ export function useMinimap({
   const toggle = async () => {
     visible.value = !visible.value
     await settingStore.set('Comfy.Minimap.Visible', visible.value)
-  }
-
-  const setMinimapRef = (ref: HTMLElement | null) => {
-    minimapRef.value = ref
   }
 
   // Dynamic viewport styles based on actual viewport transform
@@ -284,7 +256,6 @@ export function useMinimap({
     handlePointerUp: interaction.handlePointerUp,
     handlePointerCancel: interaction.handlePointerCancel,
     handleWheel: interaction.handleWheel,
-    setMinimapRef,
     updateOption
   }
 }

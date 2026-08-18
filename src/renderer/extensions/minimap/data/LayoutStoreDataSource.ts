@@ -44,11 +44,7 @@ export class LayoutStoreDataSource extends AbstractMinimapDataSource {
     return nodes
   }
 
-  getNodeCount(): number {
-    return layoutStore.nodeCount
-  }
-
   hasData(): boolean {
-    return this.getNodeCount() > 0
+    return layoutStore.nodeCount > 0
   }
 }
