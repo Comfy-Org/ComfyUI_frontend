@@ -34,11 +34,9 @@ export function declarations(source) {
     )
     if (!kind || !exported) return []
 
-    const name = statement.name.text
-    if (/^(Raw|Registration|Bound)/.test(name)) return []
     return [
       {
-        name,
+        name: statement.name.text,
         kind,
         text: statement.getFullText(sourceFile).trim()
       }
@@ -46,14 +44,14 @@ export function declarations(source) {
   })
 }
 
-export function buildApiDts() {
-  const files = readdirSync(DIR)
+export function buildApiDts(directory = DIR) {
+  const files = readdirSync(directory)
     .filter((f) => f.endsWith('.ts') && !f.endsWith('.test.ts'))
     .sort()
 
   const sections = []
   for (const file of files) {
-    const found = declarations(readFileSync(join(DIR, file), 'utf8'))
+    const found = declarations(readFileSync(join(directory, file), 'utf8'))
     if (!found.length) continue
     sections.push(
       `// ─── ${file} ${'─'.repeat(Math.max(0, 60 - file.length))}\n\n` +
