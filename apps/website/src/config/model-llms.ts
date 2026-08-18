@@ -19,7 +19,7 @@ export function buildModelLlmsLinks(
   const mdPath = `/p/supported-models/${slug}.md`
   const canonicalMdUrl = new URL(mdPath, site ?? 'https://comfy.org').href
   const prompt = encodeURIComponent(
-    `Read ${canonicalMdUrl} and help me run ${displayName} in ComfyUI. I want to understand the inputs and get my first output.`
+    `Read ${canonicalMdUrl} and help me run ${displayName} in ComfyUI: explain the inputs, get me to a first output, and show how to call it from my own code with the Comfy SDK (Python: pip install comfy-sdk, TypeScript: npm i @comfyorg/sdk — docs: https://docs.comfy.org/development/api-development/sdks).`
   )
   return {
     mdPath,

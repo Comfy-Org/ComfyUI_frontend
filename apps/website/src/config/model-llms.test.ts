@@ -28,6 +28,8 @@ describe('buildModelLlmsLinks', () => {
       const q = new URL(url).searchParams.get('q')
       expect(q).toContain('https://comfy.org/p/supported-models/kling-ai.md')
       expect(q).toContain('Kling AI')
+      expect(q).toContain('pip install comfy-sdk')
+      expect(q).toContain('npm i @comfyorg/sdk')
     }
     expect(links.claudeUrl.startsWith('https://claude.ai/new?q=')).toBe(true)
     expect(links.chatgptUrl.startsWith('https://chatgpt.com/?q=')).toBe(true)
