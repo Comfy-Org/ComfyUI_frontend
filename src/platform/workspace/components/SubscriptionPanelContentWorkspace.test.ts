@@ -420,6 +420,20 @@ describe('SubscriptionPanelContentWorkspace', () => {
     ).not.toBeInTheDocument()
   })
 
+  it('offers no subscribe or reactivate path for an ended enterprise plan', () => {
+    mockHasTeamPlan.value = false
+    mockPlanSlug.value = 'enterprise_monthly'
+    mockCurrentTeamCreditStop.value = null
+    mockSubscriptionStatus.value = 'ended'
+    mockIsActiveSubscription.value = false
+    renderComponent()
+
+    expect(screen.getByText('Enterprise')).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: /subscribe|reactivate/i })
+    ).not.toBeInTheDocument()
+  })
+
   it('labels a scheduled change to Enterprise', () => {
     const basePlans = mockPlans.value
     mockScheduledPlanSlug.value = 'enterprise_monthly'

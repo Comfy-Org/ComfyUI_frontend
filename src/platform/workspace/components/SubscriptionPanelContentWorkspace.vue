@@ -493,6 +493,8 @@ const isSubscriptionEnded = computed(() => {
 // stays active until its end date, so it keeps the subscribed treatment.
 const showSubscribePrompt = computed(() => {
   if (!permissions.value.canManageSubscription) return false
+  // An ended enterprise plan is reinstated by sales, never self-serve.
+  if (isEnterprisePlan.value) return false
   if (isSubscriptionEnded.value) return true
   if (isSubscriptionCancelled.value) return false
   if (
