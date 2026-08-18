@@ -367,6 +367,14 @@ function fitDraftIntoView(): void {
   if (canvas) fitGraphToView(canvas)
 }
 
+// The agent's drafts often stack new nodes at one spot, so an added node
+// triggers the layered arrange; running it after loadGraphData keeps the
+// undo capture outside the loader's suppression window.
+function arrangeAgentNodes(): void {
+  app.graph?.arrange()
+  workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
+}
+
 watch(isStreaming, (streaming) => {
   if (streaming || !autoFitPending) return
   autoFitPending = false
@@ -646,10 +654,16 @@ async function loadDraft(
   })
   if (!workflow) return
   const openBefore = new Set(workflowStore.openWorkflows.map((w) => w.path))
+  const knownIds =
+    tab === null
+      ? new Set<string>()
+      : new Set((app.graph?.nodes ?? []).map((node) => String(node.id)))
   try {
     await app.loadGraphData(workflow, true, true, tab)
     draftRejectionNotified = false
     lastApplied = { workflowId, version }
+    if (workflow.nodes.some((node) => !knownIds.has(String(node.id))))
+      arrangeAgentNodes()
     if (isStreaming.value) autoFitPending = true
     else fitDraftIntoView()
     const rendered = app.graph?.serialize()
