@@ -12,4 +12,16 @@ describe('node status', () => {
       `)
     ).toEqual(['ImageList', 'MaskList', 'AnyList'])
   })
+
+  it('recognizes a node type named through a local string constant', () => {
+    expect(
+      handledTypes(`
+        const NODE_TYPE = 'Note Plus (mtb)'
+        comfy.defs.extend(NODE_TYPE, (builder) => {
+          builder.onCreated(() => {})
+        })
+        comfy.defs.define({ type: NODE_TYPE, execution: 'frontend' })
+      `)
+    ).toEqual(['Note Plus (mtb)'])
+  })
 })
