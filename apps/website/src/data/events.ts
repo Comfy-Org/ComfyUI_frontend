@@ -117,9 +117,9 @@ export function toCalendarEvent(
   const href = new URL(target, SITE_ORIGIN).href
   const start = new Date(event.startDateTime)
   return {
-    title: event.title[locale] ?? event.title.en,
-    description: `${event.description[locale] ?? event.description.en}\n\n${href}`,
-    location: event.location?.[locale] ?? event.location?.en ?? '',
+    title: event.title[locale] || event.title.en,
+    description: `${event.description[locale] || event.description.en}\n\n${href}`,
+    location: event.location?.[locale] || event.location?.en || '',
     start,
     end: eventEnd(event)
   }
@@ -136,20 +136,20 @@ export function eventJsonLdNode(
 ): JsonLdNode {
   const { siteUrl, site, pageUrl, locale } = input
   const href =
-    event.link?.href[locale] ??
-    event.link?.href?.en ??
-    (localizeHref(eventPath(event), locale) ||
-      localizeHref(eventPath(event), 'en'))
+    event.link?.href[locale] ||
+    event.link?.href?.en ||
+    localizeHref(eventPath(event), locale) ||
+    localizeHref(eventPath(event), 'en')
   const online = event.location?.en === 'Online'
   return eventNode({
     siteUrl,
     id: jsonLdId(pageUrl, `event-${event.id}`),
-    name: event.title[locale] ?? event.title.en,
-    description: event.description[locale] ?? event.description.en,
+    name: event.title[locale] || event.title.en,
+    description: event.description[locale] || event.description.en,
     startDate: event.startDateTime,
     ...(online
       ? { virtualUrl: href.startsWith('/') ? absoluteUrl(site, href) : href }
-      : { placeName: event.location?.[locale] ?? event.location?.en }),
+      : { placeName: event.location?.[locale] || event.location?.en }),
     locale
   })
 }

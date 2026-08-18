@@ -104,6 +104,29 @@ describe('toCalendarEvent', () => {
     )
     expect(calendarEvent.location).toBe('Online')
   })
+
+  it('falls back to English content when localized keys are empty strings', () => {
+    const emptyEvent = eventAt('empty', {
+      title: { en: 'English Title', 'zh-CN': '中文标题', ja: '' },
+      description: { en: 'English Description', 'zh-CN': '中文描述', ja: '' },
+      location: { en: 'Online', 'zh-CN': '线上', ja: '' },
+      link: {
+        href: {
+          en: 'https://comfy.org/en',
+          'zh-CN': 'https://comfy.org/zh',
+          ja: ''
+        }
+      }
+    })
+
+    const calendarEvent = toCalendarEvent(emptyEvent, 'ja')
+
+    expect(calendarEvent.title).toBe('English Title')
+    expect(calendarEvent.description).toBe(
+      'English Description\n\nhttps://comfy.org/en'
+    )
+    expect(calendarEvent.location).toBe('Online')
+  })
 })
 
 describe('eventStatus', () => {
@@ -257,6 +280,19 @@ describe('eventJsonLdNode', () => {
     })
 
     const jsonLd = eventJsonLdNode(partialEvent, { ...input, locale: 'ja' })
+
+    expect(jsonLd.name).toBe('English Title')
+    expect(jsonLd.description).toBe('English Description')
+  })
+
+  it('falls back to English content when localized keys are empty strings', () => {
+    const emptyEvent = eventAt('empty', {
+      title: { en: 'English Title', 'zh-CN': '中文标题', ja: '' },
+      description: { en: 'English Description', 'zh-CN': '中文描述', ja: '' },
+      location: { en: 'Online', 'zh-CN': '线上', ja: '' }
+    })
+
+    const jsonLd = eventJsonLdNode(emptyEvent, { ...input, locale: 'ja' })
 
     expect(jsonLd.name).toBe('English Title')
     expect(jsonLd.description).toBe('English Description')
