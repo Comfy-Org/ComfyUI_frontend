@@ -993,11 +993,12 @@ for (const entry of manifestEntries) {
                     JSON.stringify(afterNormalized)
                   )
                 }
-                const widgetNamesById = () =>
+                const serializableWidgetNamesById = () =>
                   new Map(
                     window.app!.graph.nodes.map((node) => [
                       String(node.id),
                       (node.widgets ?? [])
+                        .filter((widget) => widget.serialize !== false)
                         .map((widget) => widget.name)
                         .join(',')
                     ])
@@ -1012,11 +1013,13 @@ for (const entry of manifestEntries) {
                     for (const node of window.app!.graph.nodes) {
                       const expected = created.get(String(node.id))
                       if (expected)
-                        expected.widgetCount = (node.widgets ?? []).length
+                        expected.widgetCount = (node.widgets ?? []).filter(
+                          (widget) => widget.serialize !== false
+                        ).length
                     }
                   },
                   snapshotAndConfigure() {
-                    namesBefore = widgetNamesById()
+                    namesBefore = serializableWidgetNamesById()
                     firstPass = window.app!.graph.serialize()
                     window.app!.graph.configure(firstPass)
                   },
@@ -1028,7 +1031,7 @@ for (const entry of manifestEntries) {
                   // values are only compared where the topology stayed put.
                   compare(label: string, strict: boolean) {
                     const secondPass = window.app!.graph.serialize()
-                    const namesAfter = widgetNamesById()
+                    const namesAfter = serializableWidgetNamesById()
                     const byId = (pass: NonNullable<typeof firstPass>) =>
                       new Map(
                         (pass.nodes ?? []).map((node) => [
@@ -1057,7 +1060,9 @@ for (const entry of manifestEntries) {
                         problems.push(
                           `${expected.type}: type became ${String(after.type)} on ${label} reload`
                         )
-                      const widgets = (restored.widgets ?? []).length
+                      const widgets = (restored.widgets ?? []).filter(
+                        (widget) => widget.serialize !== false
+                      ).length
                       if (expected.widgetCount === null) {
                         problems.push(
                           `${expected.type}: initial widget topology was not captured`
