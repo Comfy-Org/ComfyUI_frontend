@@ -7,6 +7,7 @@ import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
+import { setActiveLocale } from '@/i18n'
 
 import { createComfyApi } from './comfyApi'
 import {
@@ -83,6 +84,23 @@ describe('defs.extend', () => {
       ])
       expect(Object.isFrozen(def.inputs[1].values)).toBe(true)
       expect(def.outputs).toEqual([{ name: 'LATENT', type: 'LATENT' }])
+    })
+
+    it('exposes the input caption rendered in the active locale', async () => {
+      await setActiveLocale('zh')
+      try {
+        const registry = createDefRegistry()
+        const seen = vi.fn<(builder: NodeDefBuilder) => void>()
+        registry.forMajor(() => comfy.graph.node('1')!).extend('KSampler', seen)
+        registry.applyTo(nodeClass('KSampler'), RAW_DEF)
+
+        const { def } = seen.mock.calls[0][0]
+        expect(def.inputs.find(({ name }) => name === 'seed')).toMatchObject({
+          localizedName: '种子'
+        })
+      } finally {
+        await setActiveLocale('en')
+      }
     })
 
     it('carries hidden declarations without turning them into slots', () => {
