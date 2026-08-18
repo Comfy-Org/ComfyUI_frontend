@@ -33,9 +33,9 @@ import { join, relative } from 'node:path'
  * A partial view on purpose, and the report says so rather than dividing by it.
  * Packs name types through wrapped constants — rgthree's
  * `CONTEXT: addRgthree("Context")` yields "Context (rgthree)" only if you run
- * the function — through arrays, and through `NODE_CLASS_MAPPINGS` in Python,
- * which this database does not contain at all. A denominator built from these
- * patterns reported rgthree as having four nodes. It has dozens.
+ * the function — through computed arrays, and through `NODE_CLASS_MAPPINGS` in
+ * Python, which this database does not contain at all. A denominator built
+ * from these patterns reported rgthree as having four nodes. It has dozens.
  */
 const DECLARES = [
   /nodeData\.name\s*===?\s*['"]([^'"]+)['"]/g,
@@ -49,6 +49,7 @@ const HANDLES = [
   /defs\.extend\(\s*['"]([^'"]+)['"]/g,
   /defs\.define\(\s*\{[^}]*?type:\s*['"]([^'"]+)['"]/gs
 ]
+const HANDLES_ARRAY = /defs\.extend\(\s*\[([\s\S]*?)\]\s*,/g
 
 /**
  * A type named through a constant — `NodeTypesString.CONTEXT` — which this
@@ -85,6 +86,15 @@ const stripComments = (source) =>
 
 const matchAll = (text, patterns) =>
   patterns.flatMap((pattern) => [...text.matchAll(pattern)].map(([, n]) => n))
+
+export function handledTypes(source) {
+  return [
+    ...matchAll(source, HANDLES),
+    ...[...source.matchAll(HANDLES_ARRAY)].flatMap(([, body]) =>
+      [...body.matchAll(/['"]([^'"]+)['"]/g)].map(([, type]) => type)
+    )
+  ]
+}
 
 function jsFiles(dir, depth = 0) {
   if (depth > 10) return []
@@ -143,7 +153,7 @@ export function nodeStatus(dbDir) {
         indirect += [...stripComments(original).matchAll(INDIRECT)].length
 
         if (original === converted) continue
-        for (const type of matchAll(stripComments(converted), HANDLES)) {
+        for (const type of handledTypes(stripComments(converted))) {
           handled.add(type)
         }
         for (const [, subject] of converted.matchAll(UNSUPPORTED)) {
