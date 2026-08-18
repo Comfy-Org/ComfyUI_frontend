@@ -162,6 +162,10 @@ interface FrontendApiCalls {
    */
   autoQueueGraphChanged: never
   promptQueueing: { requestId: number; batchCount: number; number?: number }
+  promptRejected: {
+    response: PromptResponse
+    status?: number
+  }
   promptQueued: {
     number: number
     batchCount: number
@@ -192,6 +196,7 @@ interface FrontendApiCalls {
 }
 
 export type PromptQueueingEventPayload = FrontendApiCalls['promptQueueing']
+export type PromptRejectedEventPayload = FrontendApiCalls['promptRejected']
 export type PromptQueuedEventPayload = FrontendApiCalls['promptQueued']
 export type PromptQueueAttemptEndedPayload =
   FrontendApiCalls['promptQueueAttemptEnded']

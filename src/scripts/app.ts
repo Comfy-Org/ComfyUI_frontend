@@ -1856,6 +1856,7 @@ export class ComfyApp {
                 ...workflowExecutionIntent,
                 ...(workflowContext && { workflowContext })
               })
+              api.dispatchCustomEvent('promptRejected', { response: res })
             }
             if (res.prompt_id) promptIds.push(res.prompt_id)
             else rejectedCount++
@@ -1886,6 +1887,7 @@ export class ComfyApp {
               }
               this.canvas.draw(true, true)
             }
+            if (!res.prompt_id) break
           } catch (error: unknown) {
             telemetry?.trackExecutionOutcome({
               startTime,
@@ -1898,6 +1900,13 @@ export class ComfyApp {
               ...workflowExecutionIntent,
               ...(workflowContext && { workflowContext })
             })
+            if (error instanceof PromptExecutionError) {
+              rejectedCount++
+              api.dispatchCustomEvent('promptRejected', {
+                response: error.response,
+                ...(error.status === undefined ? {} : { status: error.status })
+              })
+            }
             const hasPromptNodeErrors =
               error instanceof PromptExecutionError &&
               Object.keys(error.response.node_errors ?? {}).length > 0
