@@ -35,4 +35,15 @@ describe('buildModelLlmsLinks', () => {
     expect(links.chatgptUrl.startsWith('https://chatgpt.com/?q=')).toBe(true)
     expect(links.claudeUrl).not.toContain(' ')
   })
+
+  it('round-trips reserved and non-ASCII characters through one intact q param', () => {
+    const displayName = 'R&D #1 + 模型'
+    const links = buildModelLlmsLinks('rd-1', displayName, undefined)
+    for (const url of [links.claudeUrl, links.chatgptUrl]) {
+      const parsed = new URL(url)
+      expect([...parsed.searchParams.keys()]).toEqual(['q'])
+      expect(parsed.searchParams.getAll('q')).toHaveLength(1)
+      expect(parsed.searchParams.get('q')).toContain(displayName)
+    }
+  })
 })
