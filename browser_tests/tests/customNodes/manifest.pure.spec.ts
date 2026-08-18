@@ -65,43 +65,26 @@ test.describe('customNode manifest', () => {
     }
   })
 
-  test('pin must be a full commit SHA; only the loader escape hatch admits an empty one', () => {
-    // Deterministic regardless of ambient env: pin the var for the test,
-    // restore the prior value.
-    const prior = process.env.CUSTOM_NODES_ALLOW_UNPINNED
-    delete process.env.CUSTOM_NODES_ALLOW_UNPINNED
-    try {
-      expect(() => assertCoreEntry(validEntry(), 0)).not.toThrow()
-      expect(() =>
-        assertCoreEntry({ ...validEntry(), workflow: '' }, 0)
-      ).toThrow(/workflow/)
-      expect(() =>
-        assertCoreEntry(
-          {
-            ...validEntry(),
-            workflow: 'assets/customNodes/not_committed.json'
-          },
-          0
-        )
-      ).toThrow(/workflow/)
-      expect(() => assertCoreEntry({ ...validEntry(), pin: '' }, 0)).toThrow(
-        /pin/
+  test('pin must be a full commit SHA', () => {
+    expect(() => assertCoreEntry(validEntry(), 0)).not.toThrow()
+    expect(() => assertCoreEntry({ ...validEntry(), workflow: '' }, 0)).toThrow(
+      /workflow/
+    )
+    expect(() =>
+      assertCoreEntry(
+        {
+          ...validEntry(),
+          workflow: 'assets/customNodes/not_committed.json'
+        },
+        0
       )
-      expect(() =>
-        assertCoreEntry({ ...validEntry(), pin: 'abc123' }, 0)
-      ).toThrow(/pin/)
-      process.env.CUSTOM_NODES_ALLOW_UNPINNED = '1'
-      expect(() =>
-        assertCoreEntry({ ...validEntry(), pin: '' }, 0)
-      ).not.toThrow()
-      // the override admits only EMPTY pins; a malformed pin still fails
-      expect(() =>
-        assertCoreEntry({ ...validEntry(), pin: 'abc123' }, 0)
-      ).toThrow(/pin/)
-    } finally {
-      if (prior === undefined) delete process.env.CUSTOM_NODES_ALLOW_UNPINNED
-      else process.env.CUSTOM_NODES_ALLOW_UNPINNED = prior
-    }
+    ).toThrow(/workflow/)
+    expect(() => assertCoreEntry({ ...validEntry(), pin: '' }, 0)).toThrow(
+      /pin/
+    )
+    expect(() =>
+      assertCoreEntry({ ...validEntry(), pin: 'abc123' }, 0)
+    ).toThrow(/pin/)
   })
 
   test('expectedExtensions is required; empty explicitly expects no healthy registration', () => {
@@ -183,22 +166,36 @@ test.describe('customNode manifest', () => {
   })
 
   test('matches Impact frontend applicability to what the target serves', () => {
-    const impactExtensions = loadFullManifest().find(
-      (entry) => entry.pack.toLowerCase() === 'comfyui-impact-pack'
-    )?.expectedExtensions
-    expect(impactExtensions).toContain('Comfy.Impack')
-    expect(
-      loadApplicableAutogrowCases().map(({ autogrowCase }) => autogrowCase)
-    ).toEqual([
-      {
-        pack: 'ComfyUI-Impact-Pack',
-        extensionName: 'Comfy.Impack',
-        extensionPathPack: 'comfyui-impact-pack',
-        consumerType: 'ImpactMakeImageList',
-        producerType: 'EmptyImage',
-        producerSlot: 'IMAGE'
-      }
-    ])
+    const priorBackend = process.env.CUSTOM_NODES_BACKEND
+    const priorManifest = process.env.CUSTOM_NODES_MANIFEST
+    const expectedCase = {
+      pack: 'ComfyUI-Impact-Pack',
+      extensionName: 'Comfy.Impack',
+      extensionPathPack: 'comfyui-impact-pack',
+      consumerType: 'ImpactMakeImageList',
+      producerType: 'EmptyImage',
+      producerSlot: 'IMAGE'
+    }
+    try {
+      process.env.CUSTOM_NODES_MANIFEST = 'core'
+      process.env.CUSTOM_NODES_BACKEND = 'local'
+      expect(
+        loadApplicableAutogrowCases().map(({ autogrowCase }) => autogrowCase)
+      ).toEqual([expectedCase])
+
+      process.env.CUSTOM_NODES_MANIFEST = 'cloud'
+      expect(
+        loadApplicableAutogrowCases().map(({ autogrowCase }) => autogrowCase)
+      ).toEqual([expectedCase])
+
+      process.env.CUSTOM_NODES_BACKEND = 'cloud'
+      expect(loadApplicableAutogrowCases()).toEqual([])
+    } finally {
+      if (priorBackend === undefined) delete process.env.CUSTOM_NODES_BACKEND
+      else process.env.CUSTOM_NODES_BACKEND = priorBackend
+      if (priorManifest === undefined) delete process.env.CUSTOM_NODES_MANIFEST
+      else process.env.CUSTOM_NODES_MANIFEST = priorManifest
+    }
     expect(
       servesFrontendAssetsForPack(
         ['/extensions/ComfyUI-Impact-Pack/js/impact.js'],

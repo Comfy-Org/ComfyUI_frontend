@@ -6,15 +6,14 @@ function dataPath(basename: string): string {
   return fileURLToPath(new URL(`../data/${basename}`, import.meta.url))
 }
 
-const VALID_TIERS = ['load', 'run', 'connectivity', 'io'] as const
+const VALID_TIERS = ['load', 'run', 'connectivity'] as const
 
 export type CustomNodeTier = (typeof VALID_TIERS)[number]
 
 // Which pack list to test. The local gate tests the CLOUD pack list against a
-// LOCAL backend, so this must NOT also select backend behaviour: cloud's
-// coreDisabledNodes/unjoinedYamlPacks describe Cloud, and applying them here
-// would expect nodes to be absent that this backend serves. When the cloud
-// assertions land, they need their own backend flag, not this one.
+// LOCAL backend, so this must NOT also select backend behaviour: Cloud's
+// coreDisabledNodes describe Cloud, and applying them here would expect nodes
+// to be absent that this backend serves.
 const VALID_MANIFESTS = ['core', 'cloud'] as const
 // Separate from the manifest: the local gate runs CLOUD's pack list against a
 // LOCAL backend, and the two disagree about which nodes exist because Cloud
@@ -307,18 +306,7 @@ export function assertCoreEntry(entry: CoreManifestEntry, index: number): void {
   const missing = sharedIssues(entry)
   // CI clones from repo, so an empty value must fail here, not mid-clone.
   if (!isNonEmptyString(entry.repo)) missing.push('repo')
-  // The gate tests exactly what was verified, so pin is a required full
-  // commit SHA. CUSTOM_NODES_ALLOW_UNPINNED=1 is a loader escape hatch
-  // currently exercised only by the pure spec - the nightly pack-drift
-  // canary ignores pin fields in its own install step instead, and the
-  // PR gate never unpins.
-  if (
-    !/^[0-9a-f]{40}$/.test(entry.pin ?? '') &&
-    !(
-      process.env.CUSTOM_NODES_ALLOW_UNPINNED === '1' &&
-      (entry.pin ?? '') === ''
-    )
-  )
+  if (!/^[0-9a-f]{40}$/.test(entry.pin ?? ''))
     missing.push('pin (full 40-char commit SHA required)')
   missing.push(...calibrationIssues(entry))
   if (!Array.isArray(entry.requiresModels)) missing.push('requiresModels')
@@ -609,6 +597,12 @@ export function loadAllManifestPackNames(): string[] {
   ]
 }
 
+export function loadUnjoinedYamlPacks(): string[] {
+  return customNodesManifest() === 'cloud'
+    ? readCloudManifest().unjoinedYamlPacks
+    : []
+}
+
 /**
  * What this pack is pinned to, whatever form its manifest uses.
  *
@@ -702,7 +696,9 @@ export function loadApplicableAutogrowCases() {
         `${autogrowCase.pack} is not a manifest pack - fix AUTOGROW_CASES`
       )
     if (!shard.has(manifestEntry.pack)) return []
-    return manifestEntry.expectedExtensions.includes(autogrowCase.extensionName)
+    return expectedExtensionsFor(manifestEntry).includes(
+      autogrowCase.extensionName
+    )
       ? [{ autogrowCase, manifestEntry }]
       : []
   })

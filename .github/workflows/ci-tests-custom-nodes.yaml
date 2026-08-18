@@ -6,11 +6,11 @@
 # branch protection; it fails closed if path detection or any matrix shard
 # fails.
 #
-# The pack list is the 87-row Cloud snapshot identified in the manifest; four
-# reviewed quarantine entries are reported as excluded coverage. The backend
-# is a LOCAL ComfyUI - a separate axis, see manifest.ts. Each matrix entry owns
-# a stable weight-balanced slice, installs only that slice, and runs the tests
-# those rows register.
+# The pinned Cloud snapshot produces 87 manifest rows and one unjoined YAML
+# pack; the unjoined pack and four reviewed quarantine entries are reported as
+# excluded coverage. The backend is a LOCAL ComfyUI - a separate axis, see
+# manifest.ts. Each matrix entry owns a stable weight-balanced slice, installs
+# only that slice, and runs the tests those rows register.
 #
 # The gate is deterministic at the SOURCE level: ComfyUI core is pinned at a
 # verified commit and every pack is installed at the exact deployRef the pinned

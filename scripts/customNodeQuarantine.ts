@@ -22,6 +22,7 @@ import {
   FRONTEND_ASSET_EXCLUSIONS,
   loadFullManifest,
   loadPackQuarantine,
+  loadUnjoinedYamlPacks,
   packIdentity,
   staleLocalExpectations
 } from '../browser_tests/fixtures/customNode/manifest'
@@ -109,6 +110,7 @@ async function stillBroken(
 
 const quarantine = loadPackQuarantine()
 const manifest = new Map(loadFullManifest().map((e) => [e.pack, e]))
+const unjoinedYamlPacks = loadUnjoinedYamlPacks()
 const manifestPackByFoldedName = new Map(
   [...manifest.keys()].map((pack) => [pack.toLowerCase(), pack])
 )
@@ -138,13 +140,28 @@ const note = (line: string) => {
   summary.push(line)
 }
 
-note(`## Excluded packs - **${entries.length} of ${manifest.size}**`)
+note(
+  `## Excluded packs - **${entries.length + unjoinedYamlPacks.length} of ${manifest.size + unjoinedYamlPacks.length}**`
+)
 note('')
 note('Every entry below is coverage this run did NOT measure.')
 note('')
 
 const stale: string[] = []
 const unknown: string[] = []
+
+for (const pack of unjoinedYamlPacks) {
+  note(`- **${pack}** \`unjoined-object-info\` - not exercised`)
+  note(
+    '  - the pinned Cloud YAML names the pack, but its object_info snapshot has no nodes attributable to it'
+  )
+  note(
+    '  - to remove: fix the pack attribution or registration, then regenerate the cloud manifest'
+  )
+  process.stdout.write(
+    `::warning title=Pack excluded from the suite::${pack} - no nodes joined from the pinned object_info snapshot\n`
+  )
+}
 
 for (const [pack, entry] of entries) {
   const row = manifest.get(pack)
