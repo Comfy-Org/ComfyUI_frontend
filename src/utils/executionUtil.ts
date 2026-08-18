@@ -7,6 +7,7 @@ import {
   resolveFrontendNodes,
   resolveSuppliedInputs
 } from '@/platform/nodeApi/resolution'
+import type { ResolvedSource } from '@/platform/nodeApi/resolution'
 
 import type {
   ExecutableLGraphNode,
@@ -53,6 +54,42 @@ export function unwrapExportedWidgetValue(value: unknown): unknown {
     return value.__value__
   }
   return value
+}
+
+/**
+ * Every graph the prompt draws from, keyed by the prefix its nodes carry.
+ *
+ * A node's execution id is its owning scope's prefix followed by its local id,
+ * so the root is `''` and the interior of subgraph node `3` is `'3:'`. Built
+ * from the graph rather than from the DTOs because `ExecutableLGraphNode`
+ * deliberately omits `graph` and `node`.
+ *
+ * `visited` guards the same placement being walked twice, matching what
+ * `SubgraphNode.getInnerNodes` does for the node list itself.
+ */
+function executionScopes(
+  graph: LGraph,
+  prefix = '',
+  into = new Map<string, LGraph>(),
+  visited = new Set<LGraph>()
+): Map<string, LGraph> {
+  if (visited.has(graph)) return into
+  visited.add(graph)
+  into.set(prefix, graph)
+
+  for (const node of graph.nodes ?? []) {
+    if (node.isSubgraphNode()) {
+      executionScopes(node.subgraph, `${prefix}${node.id}:`, into, visited)
+    }
+  }
+  return into
+}
+
+/** Re-homes a resolved source into the scope its consumers name it from. */
+function inScope(prefix: string, source: ResolvedSource): ResolvedSource {
+  return source.kind === 'output'
+    ? { ...source, nodeId: prefix + source.nodeId }
+    : source
 }
 
 /**
@@ -124,16 +161,34 @@ export const graphToPrompt = async (
 
   // What each frontend node's outputs actually stand for. This replaces
   // `applyToGraph`, which mutated the live graph mid-serialize; resolution is
-  // pure and leaves the graph untouched. Computed once for the whole prompt.
-  const resolutions = resolveFrontendNodes(graph, frontendResolverMap())
-  // The broadcast direction: nodes that feed somebody else's *unconnected*
-  // input. Runs after the demand-side pass and takes its result, so a
-  // broadcaster fed through a reroute still lands on the real source.
-  const supplied = resolveSuppliedInputs(
-    graph,
-    frontendSupplierMap(),
-    resolutions
-  )
+  // pure and leaves the graph untouched.
+  //
+  // Once per graph the prompt draws from, not once for the document. Both
+  // passes answer within the graph they are handed, so running only the root
+  // never asked a resolver or supplier living inside a subgraph — and the keys
+  // could not have matched anyway, since resolution keys by local id while an
+  // inner node looks itself up by execution id. Resolving each scope and
+  // re-keying by that scope's prefix is what makes the two meet.
+  //
+  // Deliberately per scope rather than across them: a broadcast that reached
+  // into a subgraph would make its interior depend on invisible outside state,
+  // and the subgraph would stop meaning the same thing wherever it is placed.
+  const resolutions = new Map<string, ResolvedSource>()
+  const supplied = new Map<string, ResolvedSource>()
+  for (const [prefix, scope] of executionScopes(graph)) {
+    const scopeResolutions = resolveFrontendNodes(scope, frontendResolverMap())
+    const scopeSupplied = resolveSuppliedInputs(
+      scope,
+      frontendSupplierMap(),
+      scopeResolutions
+    )
+    for (const [slot, source] of scopeResolutions) {
+      resolutions.set(prefix + slot, inScope(prefix, source))
+    }
+    for (const [slot, source] of scopeSupplied) {
+      supplied.set(prefix + slot, inScope(prefix, source))
+    }
+  }
 
   const output: ComfyApiWorkflow = {}
   // Process nodes in order of execution
