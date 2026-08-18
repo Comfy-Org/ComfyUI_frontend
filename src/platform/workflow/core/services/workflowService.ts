@@ -43,10 +43,29 @@ import {
   generateUUID
 } from '@/utils/formatUtil'
 import type { AppMode } from '@/utils/appMode'
+import type { UUID } from '@/utils/uuid'
+import { createUuidv4, zeroUuid } from '@/utils/uuid'
 
 function linearModeToAppMode(linearMode: unknown): AppMode | null {
   if (typeof linearMode !== 'boolean') return null
   return linearMode ? 'app' : 'graph'
+}
+
+/**
+ * Returns the root graph id to scope run errors by, minting one when the graph
+ * carries the zero id. `loadApiJson` and `importA1111` populate the root graph
+ * without `configure()`, so every such import would otherwise share the zero
+ * id's bucket and lose it once a reload generated a real id. The id is written
+ * back into `workflowData` so the state this load persists reloads under the
+ * same key.
+ */
+function adoptRootGraphId(workflowData: ComfyWorkflowJSON): UUID | null {
+  if (!app.isGraphReady) return null
+
+  const rootGraph = app.rootGraph
+  if (rootGraph.id === zeroUuid) rootGraph.id = createUuidv4()
+  workflowData.id = rootGraph.id
+  return rootGraph.id
 }
 
 export const useWorkflowService = () => {
@@ -473,9 +492,7 @@ export const useWorkflowService = () => {
     const { isAppMode } = useAppMode()
     const wasAppMode = isAppMode.value
 
-    useExecutionErrorStore().setActiveGraph(
-      app.isGraphReady ? app.rootGraph.id : null
-    )
+    useExecutionErrorStore().setActiveGraph(adoptRootGraphId(workflowData))
 
     // Determine the initial app mode for fresh loads from serialized state.
     // null means linearMode was never explicitly set (not builder-saved).

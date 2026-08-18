@@ -53,6 +53,7 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { extractFilesFromDragEvent } from '@/utils/eventUtils'
+import { zeroUuid } from '@/utils/uuid'
 import type { importA1111 } from './pnginfo'
 
 type WorkflowService = ReturnType<typeof useWorkflowService>
@@ -1677,6 +1678,20 @@ describe('ComfyApp', () => {
       )
     }
 
+    /** Mirrors `loadApiJson`/`importA1111`: the root graph is populated in
+     *  place and never configured, so it still carries the zero id. */
+    async function importWorkflow(
+      workflowService: WorkflowService,
+      graph: LGraph,
+      workflow: ComfyWorkflow
+    ): Promise<ComfyWorkflowJSON> {
+      workflowService.beforeLoadNewGraph()
+      app.clean()
+      const workflowData = { ...createWorkflowGraphData(), id: graph.id }
+      await workflowService.afterLoadNewGraph(workflow, workflowData)
+      return workflowData
+    }
+
     it('restores the failed run state when returning to a workflow tab', async () => {
       const workflowService = await useRealWorkflowService()
       const graph = new LGraph()
@@ -1704,6 +1719,52 @@ describe('ComfyApp', () => {
 
       expect(executionErrorStore.lastNodeErrors).toEqual(failedKSamplerErrors)
       expect(executionErrorStore.totalErrorCount).toBe(1)
+    })
+
+    it('gives each imported workflow its own restorable run errors', async () => {
+      const workflowService = await useRealWorkflowService()
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+
+      const importedA = markLoaded(
+        new ComfyWorkflow({
+          path: 'workflows/api-a.json',
+          modified: 0,
+          size: 0
+        })
+      )
+      const importedB = markLoaded(
+        new ComfyWorkflow({
+          path: 'workflows/api-b.json',
+          modified: 0,
+          size: 0
+        })
+      )
+
+      const firstImport = await importWorkflow(
+        workflowService,
+        graph,
+        importedA
+      )
+      expect(firstImport.id).not.toBe(zeroUuid)
+      expect(firstImport.id).toBe(graph.id)
+
+      const executionErrorStore = useExecutionErrorStore()
+      executionErrorStore.recordNodeErrors(failedKSamplerErrors)
+
+      const secondImport = await importWorkflow(
+        workflowService,
+        graph,
+        importedB
+      )
+      expect(secondImport.id).not.toBe(firstImport.id)
+      expect(executionErrorStore.lastNodeErrors).toBeNull()
+
+      // Reopening the first import replays the state it persisted.
+      await switchToWorkflow(workflowService, graph, importedA, firstImport.id!)
+
+      expect(executionErrorStore.lastNodeErrors).toEqual(failedKSamplerErrors)
     })
   })
 
