@@ -45,8 +45,15 @@ it('reports each all-node tier result separately for each pack', () => {
     expect(summary).toContain(
       'this is node-level execution coverage debt, not a whole-pack skip'
     )
-    expect(result.stdout).toMatch(/^Pack-A\s+-\s+PASS\s+FAIL 1\/1\s+-/m)
-    expect(result.stdout).toMatch(/^Pack-B\s+-\s+PASS\s+PASS\s+-/m)
+    expect(summary).toContain(
+      "`not enrolled` this pack's manifest row does not declare this tier"
+    )
+    expect(result.stdout).toMatch(
+      /^Pack-A\s+not enrolled\s+PASS\s+FAIL 1\/1\s+not enrolled/m
+    )
+    expect(result.stdout).toMatch(
+      /^Pack-B\s+not enrolled\s+PASS\s+PASS\s+not enrolled/m
+    )
   } finally {
     fs.rmSync(dir, { recursive: true, force: true })
   }

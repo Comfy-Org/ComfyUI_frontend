@@ -122,7 +122,7 @@ if os.path.exists(LOG_FILE):
 
 def cell(v):
     if v is None:
-        return '-'
+        return 'not enrolled'
     worst, total, fails = v
     return SYM[worst] if fails == 0 else f'FAIL {fails}/{total}'
 
@@ -141,6 +141,8 @@ out('|---|' + '---|' * len(TIERS), '-' * 100)
 for pack in sorted(packs):
     row = [cell(packs[pack].get(t)) for t in TIERS]
     out(f'| {pack} | ' + ' | '.join(row) + ' |', f'{pack:34}' + ''.join(f'{c:>16}' for c in row))
+out('')
+out('`PASS` the tier ran for this pack and passed. `FAIL n/m` the tier ran and n of m checks failed. `not enrolled` this pack\'s manifest row does not declare this tier, so it never ran for this pack - that is population scope, not a skipped test.')
 out('')
 for name in sorted(wide):
     out(f'- **{name}**: {cell(wide[name])}', f'{name:34}{cell(wide[name])}')

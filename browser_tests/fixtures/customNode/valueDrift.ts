@@ -102,6 +102,29 @@ export const ROUNDTRIP_INITIALIZATION_SIGNALS: Record<
   }
 }
 
+function expectedInitializationValue(
+  signal: RoundtripInitializationSignal,
+  vueNodesEnabled: boolean
+): string {
+  if (signal.predicate === 'defined') return 'defined'
+  if (signal.predicate === 'minimum-widget-count')
+    return `>= ${signal.value} widgets`
+  if (signal.predicate === 'widget-count') {
+    const expected =
+      'valueByRenderer' in signal
+        ? vueNodesEnabled
+          ? signal.valueByRenderer.vue
+          : signal.valueByRenderer.litegraph
+        : signal.value
+    return `${expected} widgets`
+  }
+  return JSON.stringify(signal.value)
+}
+
+// Each pending entry carries what it wanted and what it saw. The poll that
+// consumes this reports only the returned strings on timeout, so a bare node
+// name costs a CI round trip to learn the one number that identifies whether
+// the pack is slow or the contract is wrong.
 export function pendingRoundtripInitializations(
   signals: Record<string, RoundtripInitializationSignal>,
   values: Record<string, unknown>,
@@ -123,7 +146,10 @@ export function pendingRoundtripInitializations(
       }
       return !Object.is(values[node], signal.value)
     })
-    .map(([node]) => node)
+    .map(
+      ([node, signal]) =>
+        `${node} (${vueNodesEnabled ? 'vue' : 'litegraph'}: expected ${expectedInitializationValue(signal, vueNodesEnabled)}, observed ${JSON.stringify(values[node])})`
+    )
 }
 
 export interface RoundtripNodeLossExpectation {

@@ -94,10 +94,10 @@ test('roundtrip initialization waits for pack-owned ready values', () => {
       false
     )
   ).toEqual([
-    'LoadAudioUI',
-    'SAM3VideoSegmentation',
-    'iToolsPaintNode',
-    'iToolsCropImage'
+    'LoadAudioUI (litegraph: expected false, observed true)',
+    'SAM3VideoSegmentation (litegraph: expected defined, observed undefined)',
+    'iToolsPaintNode (litegraph: expected 33 widgets, observed 32)',
+    'iToolsCropImage (litegraph: expected 5 widgets, observed 4)'
   ])
   expect(
     pendingRoundtripInitializations(
@@ -134,7 +134,7 @@ test('roundtrip initialization waits for pack-owned ready values', () => {
       },
       true
     )
-  ).toEqual(['iToolsCropImage'])
+  ).toEqual(['iToolsCropImage (vue: expected 4 widgets, observed 5)'])
 })
 
 test.describe('staleValueDriftIndices', () => {

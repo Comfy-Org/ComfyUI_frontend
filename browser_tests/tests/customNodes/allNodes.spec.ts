@@ -81,6 +81,11 @@ const AUTO_RUN_BATCH = 10
 // distinguish "slow under load" from "genuinely hung" instead of misreading a
 // slow CPU run as a regression.
 const SINGLE_RERUN_TIMEOUT = 60_000
+// iTools' three deferred nodeCreated hooks measured ~9s to settle, so the
+// previous 10s left ~1s of margin and CI flipped red on a loaded runner with
+// the same code that passed the run before. The pinned counts stay exact - a
+// wrong count still fails, it just takes longer to say so.
+const ROUNDTRIP_INITIALIZATION_TIMEOUT_MS = 30_000
 const GRID_SPACING = { x: 420, y: 360 }
 
 type AllNodesTier = 'S1' | 'S2' | 'S3' | 'S9'
@@ -1315,7 +1320,7 @@ for (const entry of manifestEntries) {
                         vueNodesEnabled
                       )
                     },
-                    { timeout: 10_000 }
+                    { timeout: ROUNDTRIP_INITIALIZATION_TIMEOUT_MS }
                   )
                   .toEqual([])
               completedRoundtripStages += 1
