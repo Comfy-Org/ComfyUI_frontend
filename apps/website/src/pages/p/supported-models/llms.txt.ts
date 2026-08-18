@@ -49,7 +49,8 @@ export const GET: APIRoute = ({ site }) => {
     '',
     '- [ComfyUI, open source](https://comfy.org/download): free on your own hardware (open models; partner models call the provider API)',
     '- [Comfy Cloud](https://cloud.comfy.org): hosted GPUs, same graph, every parameter',
-    '- [Workflow templates](https://www.comfy.org/workflows): community workflows, ready to load'
+    '- [Workflow templates](https://www.comfy.org/workflows): community workflows, ready to load',
+    '- [Comfy SDKs](https://docs.comfy.org/development/api-development/sdks): run workflows from Python or TypeScript (beta)'
   )
 
   return new Response(lines.join('\n') + '\n', {

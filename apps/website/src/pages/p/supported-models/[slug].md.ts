@@ -52,6 +52,7 @@ export const GET: APIRoute = ({ props, site }) => {
           '2. On Comfy Cloud — hosted GPUs, every parameter still exposed: https://cloud.comfy.org'
         ]),
     `3. Start from a community workflow template and adjust it node by node: ${workflowsUrl}`,
+    '4. From your own application with the Comfy SDKs (Python and TypeScript, beta): https://docs.comfy.org/development/api-development/sdks',
     '',
     `This page as HTML: ${pageUrl}`,
     `Full model catalog: ${new URL('/p/supported-models/llms.txt', base).href}`
