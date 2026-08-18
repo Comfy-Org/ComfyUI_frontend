@@ -36,13 +36,25 @@ export type SafeRichTextNode =
       children: SafeRichTextNode[]
     }
 
+// URL parsing strips tabs and newlines, so "/\t//evil.example" survives a raw
+// prefix check and still resolves off-origin. Reject them, then confirm the
+// resolved origin rather than trusting the prefix.
+const RELATIVE_HREF_BASE = 'https://comfy.org'
+
 function isAllowedHref(value: string): boolean {
+  if (/[\t\n\r]/.test(value)) return false
+
   const href = value.toLowerCase()
-  return (
-    href.startsWith('https://') ||
-    href.startsWith('mailto:') ||
-    (href.startsWith('/') && !href.startsWith('//') && !href.includes('\\'))
-  )
+  if (href.startsWith('https://') || href.startsWith('mailto:')) return true
+  if (!href.startsWith('/') || href.startsWith('//') || href.includes('\\')) {
+    return false
+  }
+
+  try {
+    return new URL(value, RELATIVE_HREF_BASE).origin === RELATIVE_HREF_BASE
+  } catch {
+    return false
+  }
 }
 
 function sanitizeClass(value: string): string | undefined {

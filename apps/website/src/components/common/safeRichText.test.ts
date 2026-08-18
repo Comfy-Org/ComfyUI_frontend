@@ -93,14 +93,50 @@ describe('parseSafeRichText', () => {
       '<a href="https://comfy.org">HTTPS</a><a href="mailto:support@comfy.org">Mail</a><a href="/docs">Relative</a><a href="//evil.example">Protocol relative</a><a href="/\\evil.example">Backslash</a><a href="http://evil.example">HTTP</a>'
     )
 
-    expect(links).toMatchObject([
-      { attrs: { href: 'https://comfy.org' } },
-      { attrs: { href: 'mailto:support@comfy.org' } },
-      { attrs: { href: '/docs' } },
-      { attrs: {} },
-      { attrs: {} },
-      { attrs: {} }
+    // Assert on the collected hrefs, not toMatchObject with `attrs: {}` — an
+    // empty object is a subset of every object, so that form asserts nothing
+    // about the links that are supposed to be rejected.
+    expect(collectAttr(links, 'href')).toEqual([
+      'https://comfy.org',
+      'mailto:support@comfy.org',
+      '/docs'
     ])
+    expect(links).toHaveLength(6)
+  })
+
+  it.for([
+    ['tab', '/\t//evil.example'],
+    ['newline', '/\n//evil.example'],
+    ['carriage return', '/\r//evil.example'],
+    ['tab inside the host', '/\t/\t/evil.example'],
+    ['protocol relative', '//evil.example'],
+    ['backslash', '/\\evil.example'],
+    ['plain HTTP', 'http://evil.example']
+  ] as const)('drops an off-origin href smuggled past a %s', ([, href]) => {
+    expect(
+      collectAttr(parseSafeRichText(`<a href="${href}">x</a>`), 'href')
+    ).toEqual([])
+  })
+
+  it.for([
+    ['tab', '/\t//evil.example'],
+    ['newline', '/\n//evil.example'],
+    ['carriage return', '/\r//evil.example']
+  ] as const)(
+    'resolves off-origin once a %s is stripped by URL parsing',
+    ([, href]) => {
+      expect(new URL(href, 'https://comfy.org').origin).toBe(
+        'https://evil.example'
+      )
+    }
+  )
+
+  it('drops aria and data attributes, which are not on the allowlist', () => {
+    expect(
+      parseSafeRichText(
+        '<a href="/docs" aria-label="label" aria-hidden="true" data-x="1" id="anchor">x</a>'
+      )
+    ).toMatchObject([{ attrs: { href: '/docs' } }])
   })
 
   it('handles empty and malformed input', () => {
