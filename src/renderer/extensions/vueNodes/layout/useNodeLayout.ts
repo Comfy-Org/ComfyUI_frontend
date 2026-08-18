@@ -1,11 +1,11 @@
-import { computed, onUnmounted, toValue } from 'vue'
-import type { MaybeRefOrGetter } from 'vue'
+import { computed, shallowRef, toValue, watch } from 'vue'
+import type { ComputedRef, MaybeRefOrGetter } from 'vue'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import type { Point } from '@/renderer/core/layout/types'
+import type { NodeLayout, Point } from '@/renderer/core/layout/types'
 import type { NodeId } from '@/types/nodeId'
 
 /**
@@ -17,19 +17,23 @@ export function useNodeLayout(nodeIdMaybe: MaybeRefOrGetter<NodeId>) {
   const mutations = useLayoutMutations(LayoutSource.Vue)
   const canvasStore = useCanvasStore()
 
-  const rootGraphIdAtMount = canvasStore.rootGraphId
-  const retained = rootGraphIdAtMount
-    ? layoutStore.retainNodeLayoutRef(rootGraphIdAtMount, nodeId)
-    : null
+  const retainedLayout = shallowRef<ComputedRef<NodeLayout | null> | null>(null)
+  watch(
+    () => canvasStore.rootGraphId,
+    (rootGraphId, _, onCleanup) => {
+      if (!rootGraphId) {
+        retainedLayout.value = null
+        return
+      }
 
-  const layout = computed(() => {
-    const { rootGraphId } = canvasStore
-    return rootGraphId
-      ? layoutStore.getNodeLayoutRef(rootGraphId, nodeId).value
-      : null
-  })
+      const retained = layoutStore.retainNodeLayoutRef(rootGraphId, nodeId)
+      retainedLayout.value = retained.layout
+      onCleanup(retained.release)
+    },
+    { immediate: true }
+  )
 
-  onUnmounted(() => retained?.release())
+  const layout = computed(() => retainedLayout.value?.value ?? null)
 
   // Computed properties for easy access
   const position = computed(() => layout.value?.position ?? { x: 0, y: 0 })

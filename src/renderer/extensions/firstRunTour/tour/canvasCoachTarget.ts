@@ -1,5 +1,5 @@
 import { useElementBounding, useEventListener } from '@vueuse/core'
-import { computed, effectScope, watch } from 'vue'
+import { effectScope, watch } from 'vue'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { RectTarget } from '@/platform/onboarding/coachmarkRegistry'
@@ -13,11 +13,9 @@ export function canvasNodeTarget(nodeId: NodeId): RectTarget {
   const { camera } = useTransformState()
   const canvasStore = useCanvasStore()
   const resolvedGraph = canvasStore.currentGraph
-  const layout = computed(() =>
-    resolvedGraph
-      ? layoutStore.getNodeLayoutRef(resolvedGraph.rootGraph.id, nodeId).value
-      : null
-  )
+  const retained = resolvedGraph
+    ? layoutStore.retainNodeLayoutRef(resolvedGraph.rootGraph.id, nodeId)
+    : null
   const scope = effectScope(true)
   const canvasBounds = scope.run(() =>
     useElementBounding(() => canvasStore.canvas?.canvas)
@@ -30,7 +28,7 @@ export function canvasNodeTarget(nodeId: NodeId): RectTarget {
       // A collapsed node renders no widget for a step to point at.
       if (canvasStore.currentGraph?.getNodeById(nodeId)?.collapsed) return null
 
-      const bounds = layout.value?.bounds
+      const bounds = retained?.layout.value?.bounds
       if (!bounds) return null
 
       // Bounds are the body box; the node renders a title height above it.
@@ -45,7 +43,7 @@ export function canvasNodeTarget(nodeId: NodeId): RectTarget {
     },
     onMove: (notify) => {
       const stopWatch = watch(
-        () => [camera.x, camera.y, camera.z, layout.value],
+        () => [camera.x, camera.y, camera.z, retained?.layout.value],
         notify,
         { flush: 'post' }
       )
@@ -55,6 +53,9 @@ export function canvasNodeTarget(nodeId: NodeId): RectTarget {
         stopResize()
       }
     },
-    dispose: () => scope.stop()
+    dispose: () => {
+      scope.stop()
+      retained?.release()
+    }
   }
 }
