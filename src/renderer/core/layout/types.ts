@@ -282,12 +282,10 @@ export interface LayoutStore {
   readonly nodeCount: number
   /**
    * Cache key for derived structures; see the implementation for its scope.
-   *
-   * Plain numbers on a non-reactive class instance: reading either inside a
-   * `computed` or `watch` tracks nothing and never re-evaluates. Poll them.
+   * This is a plain number on a non-reactive class instance; poll it.
    */
   readonly layoutVersion: number
-  /** Cache key for geometry-derived state; moves only when nodes move. */
+  /** Reactive cache key for geometry-derived state; moves only with nodes. */
   readonly nodeGeometryVersion: number
 
   // CustomRef accessors for shared write access

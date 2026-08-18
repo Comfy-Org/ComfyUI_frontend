@@ -5,7 +5,7 @@
  * positions in a single batched pass, and caches offsets so that node moves
  * update slot positions without DOM reads.
  */
-import { onActivated, onMounted, onUnmounted, watch } from 'vue'
+import { onActivated, onDeactivated, onMounted, onUnmounted, watch } from 'vue'
 import type { Ref } from 'vue'
 
 import { useSharedCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
@@ -23,10 +23,6 @@ import {
   isSizeEqual
 } from '@/renderer/core/layout/utils/geometry'
 import { useNodeSlotRegistryStore } from '@/renderer/extensions/vueNodes/stores/nodeSlotRegistryStore'
-import {
-  linkedWidgetedInputs,
-  nonWidgetedInputs
-} from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
 import { createRafBatch } from '@/utils/rafBatch'
 
 // RAF batching
@@ -39,7 +35,8 @@ const raf = createRafBatch(() => {
 export function scheduleSlotLayoutSync(nodeId: NodeId) {
   // Drop signals for unregistered nodes (e.g. preview nodes with synthetic
   // ids from LGraphNodePreview) - they'd otherwise pump setDirty per RAF.
-  if (!useNodeSlotRegistryStore().getNode(nodeId)) return
+  const node = useNodeSlotRegistryStore().getNode(nodeId)
+  if (!node?.active) return
   pendingNodes.add(nodeId)
   raf.schedule()
 }
@@ -49,19 +46,8 @@ function shouldWaitForSlotLayouts(): boolean {
   if (expectedRenderedNodeIds) {
     const registry = useNodeSlotRegistryStore()
     for (const nodeId of expectedRenderedNodeIds) {
-      const graphNode = graph?.getNodeById?.(nodeId)
-      if (!graphNode) continue
-
-      const expectedSlotCount =
-        nonWidgetedInputs(graphNode).length +
-        (graphNode.flags.collapsed
-          ? linkedWidgetedInputs(graphNode).length
-          : 0) +
-        (graphNode.outputs?.length ?? 0)
-      if (expectedSlotCount === 0) continue
-
       const registeredNode = registry.getNode(nodeId)
-      if (!registeredNode || registeredNode.slots.size < expectedSlotCount) {
+      if (!registeredNode?.active || !registeredNode.registrationComplete) {
         return true
       }
       for (const slotKey of registeredNode.slots.keys()) {
@@ -160,7 +146,7 @@ export function flushScheduledSlotLayoutSync() {
 export function syncNodeSlotLayoutsFromDOM(nodeId: NodeId) {
   const nodeSlotRegistryStore = useNodeSlotRegistryStore()
   const node = nodeSlotRegistryStore.getNode(nodeId)
-  if (!node) return
+  if (!node?.active) return
   const nodeLayout = layoutStore.getNodeLayoutRef(nodeId).value
   if (!nodeLayout) return
 
@@ -266,7 +252,7 @@ export function syncNodeSlotLayoutsFromDOM(nodeId: NodeId) {
 function updateNodeSlotsFromCache(nodeId: NodeId) {
   const nodeSlotRegistryStore = useNodeSlotRegistryStore()
   const node = nodeSlotRegistryStore.getNode(nodeId)
-  if (!node) return
+  if (!node?.active) return
   const nodeLayout = layoutStore.getNodeLayoutRef(nodeId).value
   if (!nodeLayout) return
 
@@ -389,7 +375,8 @@ export function useSlotElementTracking(options: {
     // If node has no more slots, clean up
     if (node.slots.size === 0) {
       if (node.stopWatch) node.stopWatch()
-      nodeSlotRegistryStore.deleteNode(nodeId)
+      node.stopWatch = undefined
+      if (!node.hasNodeOwner) nodeSlotRegistryStore.deleteNode(nodeId)
     }
   })
 
@@ -398,4 +385,40 @@ export function useSlotElementTracking(options: {
       if (nodeId) scheduleSlotLayoutSync(nodeId)
     }
   }
+}
+
+export function useNodeSlotRegistration(nodeId: NodeId): void {
+  const registry = useNodeSlotRegistryStore()
+  const node = registry.ensureNode(nodeId)
+  node.active = true
+  node.registrationComplete = false
+  node.hasNodeOwner = true
+
+  onMounted(() => {
+    const mountedNode = registry.getNode(nodeId)
+    if (!mountedNode) return
+    mountedNode.registrationComplete = true
+    flushScheduledSlotLayoutSync()
+  })
+
+  onDeactivated(() => {
+    const deactivatedNode = registry.getNode(nodeId)
+    if (!deactivatedNode) return
+    deactivatedNode.active = false
+    pendingNodes.delete(nodeId)
+  })
+
+  onActivated(() => {
+    const activatedNode = registry.getNode(nodeId)
+    if (!activatedNode) return
+    activatedNode.active = true
+    scheduleSlotLayoutSync(nodeId)
+  })
+
+  onUnmounted(() => {
+    const unmountedNode = registry.getNode(nodeId)
+    unmountedNode?.stopWatch?.()
+    pendingNodes.delete(nodeId)
+    registry.deleteNode(nodeId)
+  })
 }
