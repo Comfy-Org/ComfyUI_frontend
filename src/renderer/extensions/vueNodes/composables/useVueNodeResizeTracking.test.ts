@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import type { Ref } from 'vue'
 
@@ -101,6 +101,7 @@ function createResizeEntry(options?: {
 
   const element = document.createElement('div')
   element.dataset.nodeId = String(nodeId)
+  document.body.appendChild(element)
   if (collapsed) {
     element.dataset.collapsed = ''
   }
@@ -160,6 +161,29 @@ describe('useVueNodeResizeTracking', () => {
   beforeEach(() => {
     testState.linearMode = false
     testState.nodeLayouts.clear()
+  })
+
+  afterEach(() => {
+    document.body.replaceChildren()
+  })
+
+  it('ignores resize entries emitted after a node is detached', () => {
+    const nodeId = toNodeId('test-node')
+    const { entry } = createResizeEntry({ nodeId, width: 0, height: 0 })
+    seedNodeLayout({
+      nodeId,
+      left: 100,
+      top: 200,
+      width: 240,
+      height: 180
+    })
+    entry.target.remove()
+
+    resizeObserverState.callback?.([entry], createObserverMock())
+
+    expect(testState.setSource).not.toHaveBeenCalled()
+    expect(testState.batchUpdateNodeBounds).not.toHaveBeenCalled()
+    expect(testState.syncNodeSlotLayoutsFromDOM).not.toHaveBeenCalled()
   })
 
   it('skips repeated no-op resize entries after first measurement', () => {
@@ -320,6 +344,7 @@ describe('useVueNodeResizeTracking', () => {
     const parentNodeId = toNodeId('parent-node')
     const element = document.createElement('div')
     element.dataset.widgetsGridNodeId = parentNodeId
+    document.body.appendChild(element)
     const boxSizes = [{ inlineSize: 200, blockSize: 80 }]
     const entry = {
       target: element,
