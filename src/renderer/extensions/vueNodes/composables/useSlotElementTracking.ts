@@ -23,10 +23,15 @@ import {
   isSizeEqual
 } from '@/renderer/core/layout/utils/geometry'
 import { useNodeSlotRegistryStore } from '@/renderer/extensions/vueNodes/stores/nodeSlotRegistryStore'
+import {
+  linkedWidgetedInputs,
+  nonWidgetedInputs
+} from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
 import { createRafBatch } from '@/utils/rafBatch'
 
 // RAF batching
 const pendingNodes = new Set<NodeId>()
+let expectedRenderedNodeIds: ReadonlySet<NodeId> | undefined
 const raf = createRafBatch(() => {
   flushScheduledSlotLayoutSync()
 })
@@ -41,6 +46,31 @@ export function scheduleSlotLayoutSync(nodeId: NodeId) {
 
 function shouldWaitForSlotLayouts(): boolean {
   const graph = app.canvas?.graph
+  if (expectedRenderedNodeIds) {
+    const registry = useNodeSlotRegistryStore()
+    for (const nodeId of expectedRenderedNodeIds) {
+      const graphNode = graph?.getNodeById?.(nodeId)
+      if (!graphNode) continue
+
+      const expectedSlotCount =
+        nonWidgetedInputs(graphNode).length +
+        (graphNode.flags.collapsed
+          ? linkedWidgetedInputs(graphNode).length
+          : 0) +
+        (graphNode.outputs?.length ?? 0)
+      if (expectedSlotCount === 0) continue
+
+      const registeredNode = registry.getNode(nodeId)
+      if (!registeredNode || registeredNode.slots.size < expectedSlotCount) {
+        return true
+      }
+      for (const slotKey of registeredNode.slots.keys()) {
+        if (!layoutStore.getSlotLayout(slotKey)) return true
+      }
+    }
+    return false
+  }
+
   const hasNodes = Boolean(graph && graph._nodes && graph._nodes.length > 0)
   return hasNodes && !layoutStore.hasSlotLayouts
 }
@@ -69,6 +99,13 @@ export function requestSlotLayoutSyncForAllNodes(): void {
   if (pendingNodes.size === 0) {
     flushScheduledSlotLayoutSync()
   }
+}
+
+export function setExpectedRenderedNodeIds(
+  nodeIds: ReadonlySet<NodeId> | undefined
+): void {
+  expectedRenderedNodeIds = nodeIds ? new Set(nodeIds) : undefined
+  if (layoutStore.pendingSlotSync) flushScheduledSlotLayoutSync()
 }
 
 function createSlotLayout(options: {
