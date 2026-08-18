@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue'
 import { fromZodError } from 'zod-validation-error'
 import type { ListAssetsData } from '@comfyorg/ingest-types'
+import { whenever } from '@vueuse/core'
 
 import { unflattenOutputAssets } from '@/platform/assets/composables/media/assetMappers'
 import { assetResponseSchema } from '@/platform/assets/schemas/assetSchema'
@@ -91,10 +92,14 @@ function assetsQueryInternal(
     }
     pendingFetchController.abort()
     pendingFetchController = new AbortController()
+
     hasMore.value = true
     next_cursor = undefined
     items.value = []
-    await loadMore()
+    whenever(() => !loadingMorePromise.value, loadMore, {
+      once: true,
+      immediate: true
+    })
   }
 
   async function doLoadNew() {
@@ -111,6 +116,7 @@ function assetsQueryInternal(
       if (newItems.length !== assets.length || !has_more) break
     }
   }
+  void loadMore()
 
   return { hasMore, invalidate, isLoading, items, loadMore, loadNew }
 }
