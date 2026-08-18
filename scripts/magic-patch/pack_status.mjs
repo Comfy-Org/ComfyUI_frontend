@@ -84,7 +84,8 @@ function withoutComments(text) {
 /**
  * A gutted file is one whose whole body was replaced by a comment block. Two
  * lines of slack covers a lone `export {}` or an import the block still refers
- * to.
+ * to. An imported function that is invoked is executable registration, not
+ * slack.
  *
  * Being gutted says nothing about WHY, and that distinction is the whole point:
  * counting shape rather than decision reported 86 files as "refused" when 5 of
@@ -121,6 +122,17 @@ const codeLines = (text) =>
   text
     .split('\n')
     .filter((line) => line.trim() && !/^\s*(?:\/\/|\/\*|\*)/.test(line)).length
+
+function invokesNamedImport(text) {
+  const code = withoutComments(text)
+  const bindings = [...code.matchAll(/^\s*import\s*\{([^}]+)\}\s*from\b/gm)]
+    .flatMap((match) => match[1].split(','))
+    .map((binding) => binding.trim().split(/\s+as\s+/).at(-1))
+    .filter(Boolean)
+  return bindings.some((binding) =>
+    new RegExp(`^\\s*${binding}\\s*\\(`, 'm').test(code)
+  )
+}
 
 function jsFiles(dir, depth = 0) {
   if (depth > 10) return []
@@ -175,7 +187,8 @@ export function packStatus(dbDir) {
           outstanding: 0,
           todo: []
         }
-        const gutted = codeLines(result) <= GUTTED_CODE_LINES
+        const gutted =
+          codeLines(result) <= GUTTED_CODE_LINES && !invokesNamedImport(result)
         if (original === result) stats.todo.push({ file, why: 'untouched' })
         else if (OUTSTANDING.test(result))
           stats.todo.push({ file, why: gutted ? 'gap' : 'partial' })
