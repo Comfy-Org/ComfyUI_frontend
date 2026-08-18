@@ -47,9 +47,13 @@ export function deriveBillingPolicyState(input: {
       return { kind: `${distribution}AndUnknown` }
     default:
       // The tier union comes from the backend spec and can gain values without
-      // a frontend change. Treating an unrecognised tier as unknown keeps that
-      // additive, at the cost of the compile-time exhaustiveness check.
-      return { kind: `${distribution}AndUnknown` }
+      // a frontend change, so this must not be a compile error. It resolves to
+      // the restrictive state rather than Unknown: Unknown grants topUpAccess
+      // 'allowed', so an unrecognised tier would be handed paid-plan access on
+      // the strength of not being recognised. It also keeps "tier not loaded
+      // yet" (case null, above) distinguishable from "tier this build does not
+      // know", which would otherwise be the same state downstream.
+      return { kind: `${distribution}WithoutActiveSubscription` }
   }
 }
 

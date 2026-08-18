@@ -114,12 +114,12 @@ describe('deriveBillingPolicyState', () => {
   )
 
   // The tier union is generated from the backend spec, so a value outside it is
-  // reachable at runtime even though the type forbids it. Treating it as unknown
-  // is what keeps a backend-side tier addition from breaking this build; this
-  // pins that behaviour rather than leaving the default branch untested.
+  // reachable at runtime even though the type forbids it. It must resolve to the
+  // restrictive state, not Unknown: Unknown grants topUpAccess 'allowed', which
+  // would hand paid-plan access to a tier purely for being unrecognised.
   it.for([
-    ['CloudAndUnknown', true],
-    ['LocalAndUnknown', false]
+    ['CloudWithoutActiveSubscription', true],
+    ['LocalWithoutActiveSubscription', false]
   ] as const)(
     'resolves an unrecognised tier as %s (isCloud=%s)',
     ([kind, isCloud]) => {

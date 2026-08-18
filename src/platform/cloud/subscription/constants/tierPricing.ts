@@ -63,7 +63,12 @@ export const DEFAULT_TIER_KEY: TierKey = 'standard'
 // a runtime value of 'constructor' or 'toString' would return an inherited
 // function instead of null.
 export function toTierKey(tier: IngestSubscriptionTier): TierKey | null {
-  return Object.prototype.hasOwnProperty.call(TIER_TO_KEY, tier)
+  // typeof guard first: tier is unvalidated backend JSON, so it is not
+  // necessarily a string. hasOwnProperty coerces its argument to a property
+  // key, which would accept ['FREE'] as FREE and throw on an object with a
+  // null toString.
+  return typeof tier === 'string' &&
+    Object.prototype.hasOwnProperty.call(TIER_TO_KEY, tier)
     ? TIER_TO_KEY[tier as RegistrySubscriptionTier]
     : null
 }

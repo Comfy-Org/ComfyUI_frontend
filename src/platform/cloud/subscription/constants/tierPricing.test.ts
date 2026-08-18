@@ -32,4 +32,13 @@ describe('toTierKey', () => {
       expect(toTierKey(key as IngestSubscriptionTier)).toBeNull()
     }
   )
+
+  // tier is unvalidated backend JSON, so a non-string is reachable. These must
+  // return null rather than coercing to a property key or throwing.
+  it.for([[['FREE']], [{}], [null], [undefined], [42]])(
+    'returns null for the non-string value %s',
+    ([value]) => {
+      expect(toTierKey(value as unknown as IngestSubscriptionTier)).toBeNull()
+    }
+  )
 })
