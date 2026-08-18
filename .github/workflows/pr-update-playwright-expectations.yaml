@@ -7,11 +7,8 @@ on:
   issue_comment:
     types: [created]
 
-# Key on the PR number, not github.ref: for issue_comment events github.ref is
-# always the default branch, so a ref-keyed group makes a comment on any issue
-# or PR cancel an in-flight regeneration on every other PR. Both triggers yield
-# the same number for a given PR, so its label and comment runs share a group -
-# they push snapshots to the same branch and must not run concurrently.
+# github.ref is the default branch for issue_comment events. Both triggers use
+# the PR number because they push snapshots to the same branch.
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.issue.number || github.event.number || github.ref }}
   cancel-in-progress: true
@@ -66,11 +63,8 @@ jobs:
         with:
           ref: ${{ steps.pr-info.outputs.branch }}
 
-      # issue_comment runs execute the DEFAULT BRANCH's copy of this workflow
-      # file, so a literal container image here would be main's tag even when
-      # the PR under test is the one bumping it. Read the tag out of the PR's
-      # checked-out ci-tests-e2e.yaml instead: that is the workflow which will
-      # verify these snapshots, so it defines the environment they must match.
+      # issue_comment loads this workflow from the default branch. Resolve the
+      # image from the checked-out PR so regenerated snapshots match its CI.
       - name: Resolve CI container image from PR branch
         id: container-image
         shell: bash
@@ -83,9 +77,7 @@ jobs:
             exit 1
           fi
 
-          # Anchor on `image:` value lines so prose in a comment cannot match.
-          # Every containerized job in that workflow must agree on the tag; if
-          # they ever diverge this fails loudly rather than picking one.
+          # Require every E2E container to use the same static image.
           mapfile -t images < <(
             grep -oE "^[[:space:]]*image:[[:space:]]*['\"]?ghcr\.io/comfy-org/comfyui-ci-container:[A-Za-z0-9._-]+" "$e2e_workflow" |
               grep -oE 'ghcr\.io/comfy-org/comfyui-ci-container:[A-Za-z0-9._-]+' |
@@ -99,9 +91,7 @@ jobs:
           echo "Regenerating snapshots with ${images[0]} (resolved from the PR branch)"
           echo "image=${images[0]}" >> "$GITHUB_OUTPUT"
 
-      # The container image is resolved from the PR above, but the rest of this
-      # workflow's definition still comes from the default branch on the comment
-      # path. Surface that so a stale regeneration is visible rather than silent.
+      # Other workflow changes still come from the default branch on this path.
       - name: Warn when this workflow differs from the default branch
         if: github.event_name == 'issue_comment'
         shell: bash
@@ -111,15 +101,14 @@ jobs:
           set -euo pipefail
 
           workflow='.github/workflows/pr-update-playwright-expectations.yaml'
-          default_branch="$DEFAULT_BRANCH"
 
-          if ! git fetch --depth=1 origin "$default_branch"; then
-            echo "::notice::Could not fetch ${default_branch}; skipping workflow drift check"
+          if ! git fetch --depth=1 origin "$DEFAULT_BRANCH"; then
+            echo "::notice::Could not fetch ${DEFAULT_BRANCH}; skipping workflow drift check"
             exit 0
           fi
 
           if ! git diff --quiet FETCH_HEAD -- "$workflow"; then
-            echo "::warning::This PR modifies ${workflow}, but /update-playwright runs the ${default_branch} copy of it. Only the container image is taken from the PR; other changes to this workflow are NOT in effect for this run. Use the 'New Browser Test Expectations' label instead to run the PR's own copy."
+            echo "::warning::This PR modifies ${workflow}, but /update-playwright runs the ${DEFAULT_BRANCH} copy of it. Only the container image is taken from the PR; other changes to this workflow are NOT in effect for this run. Use the 'New Browser Test Expectations' label instead to run the PR's own copy."
           fi
 
       - name: Setup frontend
@@ -144,7 +133,6 @@ jobs:
     needs: setup
     runs-on: ubuntu-latest
     container:
-      # Resolved from the PR branch by the setup job - see the note there.
       image: ${{ needs.setup.outputs.container-image }}
       credentials:
         username: ${{ github.actor }}
@@ -173,10 +161,7 @@ jobs:
       - name: Install frontend deps
         run: pnpm install --frozen-lockfile
 
-      # Run tests with snapshot updates (browsers pre-installed in container)
-      # continue-on-error is required: --update-snapshots reports a rewritten
-      # baseline as a test failure. It also swallows genuine breakage, so the
-      # JSON report is kept and checked by the next step.
+      # Snapshot rewrites fail the test command, so validate its JSON report.
       - name: Update snapshots (${{ matrix.shard == 'cloud' && 'cloud' || format('Shard {0}/4', matrix.shard) }})
         id: playwright-tests
         env:
@@ -219,11 +204,7 @@ jobs:
             cp "$file" "/tmp/changed_snapshots_shard/$file_without_prefix"
           done <<< "$changed_files"
 
-      # A shard that reported test failures but rewrote nothing did not
-      # "find no drift" - it broke (server never came up, container wrong,
-      # Playwright died). Without this the shard is green, merge-and-commit
-      # logs "No changes to commit", and the whole run reports success having
-      # done nothing.
+      # Reject test failures that produced no rewritten snapshots.
       - name: Verify shard did the work it claims
         shell: bash
         env:
@@ -234,15 +215,13 @@ jobs:
 
           results='/tmp/playwright-results.json'
 
-          # No JSON at all means the process died before reporting. Playwright
-          # still writes the report when zero tests match, so absence is fatal.
+          # Playwright still writes a report when zero tests match.
           if [ ! -f "$results" ]; then
             echo "::error::Shard ${SHARD}: Playwright wrote no JSON report, so it never completed a run. Refusing to report success."
             exit 1
           fi
 
-          # Parsed with node, not jq: this step runs inside the CI container,
-          # where node is guaranteed (it just ran pnpm/playwright) but jq is not.
+          # Node is available in the CI container; jq may not be.
           if ! summary=$(node -e '
             const fs = require("fs");
             const r = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
@@ -263,9 +242,7 @@ jobs:
           read -r ran not_passing error_count <<< "$(printf '%s\n' "$summary" | head -1)"
           echo "Shard ${SHARD} stats: $(printf '%s\n' "$summary" | tail -1)"
 
-          # Zero tests matched is legitimate for a leg whose grep selects
-          # nothing (Playwright exits non-zero AND records a top-level error
-          # for it, which is why neither signal can be trusted on its own).
+          # An empty grep result is valid despite Playwright's non-zero exit.
           if [ "$ran" -eq 0 ]; then
             echo "::notice::Shard ${SHARD}: no tests matched this shard's filters; nothing to regenerate."
             exit 0
@@ -275,8 +252,7 @@ jobs:
             echo "::warning::Shard ${SHARD}: Playwright reported ${error_count} top-level error(s); the regenerated baselines for this shard may be incomplete."
           fi
 
-          # A rewritten baseline surfaces as unexpected/flaky, so failures with
-          # zero rewritten files is the broken-run signature.
+          # Snapshot rewrites appear as unexpected or flaky tests.
           if [ "$not_passing" -gt 0 ] && [ "${HAS_CHANGES:-false}" != 'true' ]; then
             echo "::error::Shard ${SHARD}: ${not_passing} test(s) did not pass yet no snapshot was rewritten. That is a broken run, not an absence of drift. Refusing to report success."
             exit 1
@@ -404,13 +380,8 @@ jobs:
             echo "$CHANGES" | wc -l
           fi
 
-      # Regeneration has no notion of *whether* a baseline drifted: it rewrites
-      # whatever it captured. Screenshot capture is not bit-deterministic (text
-      # glyph rasterization varies run to run), so a baseline that never
-      # actually changed can be rewritten, and a baseline failing from a real
-      # visual regression can be laundered into an accepted one. Reviewing that
-      # means eyeballing binary diffs, which is exactly the review binary files
-      # defeat. Publish a per-file magnitude so there is a number to review.
+      # Flag small rewrites that are likely text-rasterization noise rather than
+      # intentional visual changes.
       - name: Report snapshot diff magnitudes
         id: diff-report
         shell: bash
@@ -462,8 +433,7 @@ jobs:
 
             if [ -n "$px" ]; then
               echo "| \`${name}\` | modified | ${px} |" >> "$report"
-              # Sub-threshold rewrites match the glyph-rasterization signature
-              # rather than an intended visual change. Advisory only.
+              # The threshold is advisory because small changes can be valid.
               if [ "$px" -gt 0 ] && [ "$px" -le 2000 ]; then
                 small=$((small + 1))
               fi
@@ -506,10 +476,7 @@ jobs:
 
           git add browser_tests/
 
-          # Carry the magnitude table into the commit body so the numbers live
-          # with the binary diff a reviewer would otherwise have to eyeball.
-          # Built with cat, never a heredoc: the table contains backticks and
-          # arbitrary file names that must not be evaluated by the shell.
+          # Use cat so backticks and file names remain literal.
           {
             echo '[automated] Update test expectations'
             if [ -s /tmp/diff-report.md ]; then
