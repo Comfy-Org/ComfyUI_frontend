@@ -1604,6 +1604,8 @@ describe('ComfyApp', () => {
       )
       if (testCase.outcome === 'imported-without-embeddings') {
         expect(mockWorkflowService.afterLoadNewGraph).toHaveBeenCalledOnce()
+      } else {
+        expect(mockWorkflowService.afterLoadNewGraph).not.toHaveBeenCalled()
       }
     })
 
