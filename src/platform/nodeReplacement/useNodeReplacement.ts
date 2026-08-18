@@ -7,7 +7,6 @@ import { t } from '@/i18n'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import type { NodeReplacement } from '@/platform/nodeReplacement/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import {
   removePendingMissingNodeTypesByType,
   updatePendingWarnings
@@ -232,11 +231,14 @@ function replaceWithMapping(
 }
 
 function removeReplacedMissingNodeTypes(types: string[]): void {
+  // Remove from the rendered store directly rather than re-projecting the
+  // cache into it: entries surfaced outside the load path (e.g. the
+  // missing_node_type rescan) exist only in the store, and a projection from
+  // a cache that never saw them would wipe them.
+  useMissingNodesErrorStore().removeMissingNodesByType(types)
+
   const activeWorkflow = useWorkflowStore().activeWorkflow
-  if (!activeWorkflow) {
-    useMissingNodesErrorStore().removeMissingNodesByType(types)
-    return
-  }
+  if (!activeWorkflow) return
 
   updatePendingWarnings(activeWorkflow, {
     missingNodeTypes: removePendingMissingNodeTypesByType(
@@ -244,7 +246,6 @@ function removeReplacedMissingNodeTypes(types: string[]): void {
       types
     )
   })
-  useWorkflowService().showPendingWarnings(activeWorkflow, { silent: true })
 }
 
 export function useNodeReplacement() {

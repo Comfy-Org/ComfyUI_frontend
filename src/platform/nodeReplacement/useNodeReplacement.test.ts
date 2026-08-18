@@ -937,6 +937,42 @@ describe('useNodeReplacement', () => {
       expect(useMissingNodesErrorStore().missingNodesError).toBeNull()
     })
 
+    it('keeps store-only missing types that never reached the cache', () => {
+      const placeholder = createPlaceholderNode(1, 'OldNode')
+      const graph = createMockGraph([placeholder])
+      placeholder.graph = graph
+      Object.assign(app, { rootGraph: graph })
+
+      const newNode = createNewNode()
+      vi.mocked(collectAllNodes).mockReturnValue([placeholder])
+      vi.mocked(LiteGraph.createNode).mockReturnValue(newNode)
+
+      const oldNodeType = makeMissingNodeType('OldNode', {
+        new_node_id: 'NewNode',
+        old_node_id: 'OldNode',
+        old_widget_ids: null,
+        input_mapping: null,
+        output_mapping: null
+      })
+      // Surfaced by a rescan (e.g. missing_node_type prompt failure): the
+      // rendered store has both types but the workflow cache saw neither.
+      useMissingNodesErrorStore().setMissingNodeTypes([
+        oldNodeType,
+        'RescanOnly'
+      ])
+
+      const { replaceGroup } = useNodeReplacement()
+      replaceGroup({
+        type: 'OldNode',
+        nodeTypes: [oldNodeType]
+      })
+
+      expect(
+        useMissingNodesErrorStore().missingNodesError?.nodeTypes
+      ).toStrictEqual(['RescanOnly'])
+      expect(getActiveWorkflowMock().pendingWarnings).toBeNull()
+    })
+
     it('keeps missing node state when no nodes are replaced', () => {
       const graph = createMockGraph([])
       Object.assign(app, { rootGraph: graph })
