@@ -140,6 +140,39 @@ describe('BrushCursor', () => {
       expect(style).toContain('left: 150px')
       expect(style).toContain('top: 220px')
     })
+
+    it('should read the container rect once per position, not once per axis', () => {
+      mockStore.cursorPoint = { x: 200, y: 300 }
+      mockStore.panOffset = { x: 0, y: 0 }
+      mockStore.brushSettings.size = 20
+      mockStore.brushSettings.hardness = 1
+      mockStore.zoomRatio = 1
+
+      const container = document.createElement('div')
+      const readRect = vi
+        .spyOn(container, 'getBoundingClientRect')
+        .mockReturnValue({
+          left: 30,
+          top: 60,
+          right: 0,
+          bottom: 0,
+          width: 0,
+          height: 0,
+          x: 0,
+          y: 0,
+          toJSON: () => ({})
+        } as DOMRect)
+
+      renderCursor(container)
+
+      // `getBoundingClientRect` forces a synchronous layout and the cursor
+      // moves on every mousemove, so reading it per axis doubled the cost for
+      // one rect.
+      expect(
+        readRect,
+        'left and top come from the same rect; reading it twice is two forced layouts per mousemove'
+      ).toHaveBeenCalledTimes(1)
+    })
   })
 
   describe('gradient preview', () => {
