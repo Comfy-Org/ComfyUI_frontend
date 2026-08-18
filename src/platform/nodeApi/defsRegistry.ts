@@ -27,6 +27,7 @@ import type { NodeHandle } from './nodeHandle'
 import { slotShapeOf } from './slotHandle'
 import type { SlotShape } from './slotHandle'
 import type { Resolver, Supplier } from './resolution'
+import { addDeclaredWidget } from './widgetHandle'
 import type { Unsubscribe, WidgetDef } from './widgetHandle'
 import { createWidgetTypeRegistrar } from './widgetTypes'
 import type { WidgetTypeDef } from './widgetTypes'
@@ -957,6 +958,9 @@ export function createDefRegistry(): {
         for (const output of definition.outputs ?? []) {
           this.addOutput(output.name, output.type, slotShapeOf(output.shape))
         }
+        for (const widget of definition.widgets ?? []) {
+          addDeclaredWidget(this, widget)
+        }
       }
     }
     Defined.title = definition.title ?? type
@@ -975,7 +979,6 @@ export function createDefRegistry(): {
       selector: type,
       handleFor,
       apply: (builder) => {
-        for (const widget of definition.widgets ?? []) builder.addWidget(widget)
         if (definition.onCreated) builder.onCreated(definition.onCreated)
         if (definition.onExecuted) builder.onExecuted(definition.onExecuted)
         if (definition.onConfigured) {

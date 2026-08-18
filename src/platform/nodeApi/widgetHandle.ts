@@ -804,6 +804,27 @@ export interface WidgetDef {
   readonly serialize?: boolean
 }
 
+export function addDeclaredWidget(
+  node: LGraphNode,
+  def: WidgetDef
+): IBaseWidget {
+  const value = 'value' in def ? def.value : ''
+  const widget =
+    constructDeclaredWidget(node, def.type, def.name, def.options ?? {}, value)
+      ?.widget ??
+    node.addWidget(
+      def.type as never,
+      def.name,
+      value as never,
+      () => {},
+      (def.options ?? {}) as never
+    )
+  if (def.disabled !== undefined) widget.disabled = def.disabled
+  if (def.hidden !== undefined) widget.hidden = def.hidden
+  if (def.serialize !== undefined) widget.serialize = def.serialize
+  return widget
+}
+
 export interface WidgetCollection {
   readonly length: number
   get(name: string): WidgetHandle | undefined
@@ -950,25 +971,7 @@ export function createWidgetCollection(
         )
       }
 
-      const value = 'value' in def ? def.value : ''
-      const widget =
-        constructDeclaredWidget(
-          node,
-          def.type,
-          def.name,
-          def.options ?? {},
-          value
-        )?.widget ??
-        node.addWidget(
-          def.type as never,
-          def.name,
-          value as never,
-          () => {},
-          (def.options ?? {}) as never
-        )
-      if (def.disabled !== undefined) widget.disabled = def.disabled
-      if (def.hidden !== undefined) widget.hidden = def.hidden
-      if (def.serialize !== undefined) widget.serialize = def.serialize
+      addDeclaredWidget(node, def)
 
       syncWidgetOrder(node)
       return handles.handleFor(nodeId, def.name)
