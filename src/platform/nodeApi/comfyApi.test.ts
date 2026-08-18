@@ -45,6 +45,7 @@ describe('comfy API root', () => {
       expect(api().supports('workflow.textReplacements')).toBe(true)
       expect(api().supports('execution.node')).toBe(true)
       expect(api().supports('defs.typeCompatibility')).toBe(true)
+      expect(api().supports('queue.disableAutoQueue')).toBe(true)
     })
 
     it('returns false for unknown capabilities instead of throwing', () => {

@@ -36,12 +36,12 @@ widget instance, not a Pinia store, not a Vue reactive proxy, not a constructor.
 > `graph.selection`, `interaction.nodeDragEnd`, `interaction.nodeMoved`,
 > `interaction.state`, `node.changeScope`, `node.connectVeto`,
 > `node.geometry`, `node.menu`, `node.onPreview`, `node.onSerialize`,
-> `node.resolve`, `node.sizeConstraints`, `serialization.control`,
-> `settings`, `slots.connect`, `slots.dynamic`, `slots.identity`,
-> `slots.layout`, `slots.localizedName`, `slots.moveLinks`, `slots.retype`,
-> `slots.widgetConfig`, `storage`, `ui.sidebarTab`, `viewport.changed`,
-> `widgets.canvas`, `widgets.create`, `widgets.hidden`, `widgets.mount`,
-> `widgets.reorder`, `widgets.typeContext`, `workflow.open`,
+> `node.resolve`, `node.sizeConstraints`, `queue.disableAutoQueue`,
+> `serialization.control`, `settings`, `slots.connect`, `slots.dynamic`,
+> `slots.identity`, `slots.layout`, `slots.localizedName`, `slots.moveLinks`,
+> `slots.retype`, `slots.widgetConfig`, `storage`, `ui.sidebarTab`,
+> `viewport.changed`, `widgets.canvas`, `widgets.create`, `widgets.hidden`,
+> `widgets.mount`, `widgets.reorder`, `widgets.typeContext`, `workflow.open`,
 > `workflow.textReplacements`.
 >
 > **Specified only:** §4a declarative decorations (badges/anchors — note

@@ -69,6 +69,7 @@ export const API_MEMBERS: ReadonlySet<string> = new Set([
   'destroy',
   'detail',
   'direction',
+  'disableAutoQueue',
   'disabled',
   'disconnect',
   'display_name',
