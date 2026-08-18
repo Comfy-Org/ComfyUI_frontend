@@ -232,7 +232,7 @@ const events: readonly ComfyEvent[] = [
         en: 'Using Comfy to Go Beyond the Models livestream',
         'zh-CN': '善用 Comfy，超越模型本身直播'
       }),
-      showTitle: true
+      showTitle: false
     }
   },
   {
