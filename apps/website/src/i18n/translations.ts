@@ -5027,9 +5027,9 @@ const translations = {
     'zh-CN': 'Seedance 2.5 已上线'
   },
   'seedance.hero.description': {
-    en: "ByteDance's cinematic video model — multi-shot sequences with native audio, text or image in. You direct on the canvas; Seedance renders the cut.",
+    en: "ByteDance's cinematic video model — multi-shot sequences with native audio, text or image in. You direct on the canvas; Seedance renders the cut. Now available in 1080p with video extension.",
     'zh-CN':
-      '字节跳动的电影级视频模型：多镜头序列，原生音频，支持文本或图像输入。你在画布上执导，Seedance 负责渲染成片。'
+      '字节跳动的电影级视频模型：多镜头序列，原生音频，支持文本或图像输入。你在画布上执导，Seedance 负责渲染成片。现已支持 1080p 及视频扩展。'
   },
   'seedance.hero.primaryCta': {
     en: 'RUN SEEDANCE 2.5',
