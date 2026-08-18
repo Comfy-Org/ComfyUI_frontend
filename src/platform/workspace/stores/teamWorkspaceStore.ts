@@ -905,6 +905,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     initState.value = 'uninitialized'
     workspaces.value = []
     mutableActiveWorkspaceId.value = null
+    billingRailByWorkspaceId.value = {}
     error.value = null
     isCreating.value = false
     isDeleting.value = false

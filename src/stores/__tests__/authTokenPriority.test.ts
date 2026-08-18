@@ -323,6 +323,22 @@ describe('auth token priority chain', () => {
       expect(mockUser.getIdToken).not.toHaveBeenCalled()
       expect(mockEnsureWorkspaceToken).not.toHaveBeenCalled()
     })
+
+    it('retries queue authentication after a previous initialization error', async () => {
+      mockDistributionTypes.isCloud = false
+      mockTeamWorkspaceInitState = 'error'
+      mockInitializeWorkspaces.mockImplementation(async () => {
+        mockActiveWorkspaceId = 'workspace-123'
+        mockTeamWorkspaceInitState = 'ready'
+      })
+      mockEnsureWorkspaceToken.mockResolvedValue('workspace-raw-token')
+
+      await expect(store.getWorkspaceAuthToken()).resolves.toBe(
+        'workspace-raw-token'
+      )
+      expect(mockInitializeWorkspaces).toHaveBeenCalledOnce()
+      expect(mockEnsureWorkspaceToken).toHaveBeenCalledWith('workspace-123')
+    })
   })
 
   describe('unified login mint wiring', () => {

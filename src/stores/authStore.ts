@@ -337,7 +337,8 @@ export const useAuthStore = defineStore('auth', () => {
       currentUser.value &&
       !teamWorkspaceStore.activeWorkspaceId &&
       (teamWorkspaceStore.initState === 'uninitialized' ||
-        teamWorkspaceStore.initState === 'loading')
+        teamWorkspaceStore.initState === 'loading' ||
+        teamWorkspaceStore.initState === 'error')
     ) {
       try {
         await teamWorkspaceStore.initialize()

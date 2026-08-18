@@ -370,6 +370,19 @@ describe('useTeamWorkspaceStore', () => {
       expect(store.activeWorkspaceId).toBe(mockMemberWorkspace.id)
     })
 
+    it('clears cached billing rails when identity state is reset', async () => {
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+      store.setWorkspaceBillingRail(mockPersonalWorkspace.id, 'legacy_stripe')
+      expect(store.activeWorkspaceBillingRail).toBe('legacy_stripe')
+
+      store.resetForIdentityChange()
+      await store.initialize()
+
+      expect(store.activeWorkspaceId).toBe(mockPersonalWorkspace.id)
+      expect(store.activeWorkspaceBillingRail).toBeNull()
+    })
+
     it('does not let a previous user initialization overwrite the next user', async () => {
       let resolveFirstList: (value: unknown) => void = () => {}
       mockWorkspaceApi.list
@@ -475,6 +488,8 @@ describe('useTeamWorkspaceStore', () => {
       )
       const store = useTeamWorkspaceStore()
       await store.initialize()
+      store.setWorkspaceBillingRail(mockPersonalWorkspace.id, 'legacy_stripe')
+      expect(store.activeWorkspaceBillingRail).toBe('legacy_stripe')
 
       await store.switchWorkspace(mockTeamWorkspace.id)
 
@@ -488,6 +503,10 @@ describe('useTeamWorkspaceStore', () => {
       ).not.toHaveBeenCalled()
       expect(mockReload).not.toHaveBeenCalled()
       expect(store.isSwitching).toBe(false)
+      expect(store.activeWorkspaceBillingRail).toBeNull()
+
+      store.setWorkspaceBillingRail(mockTeamWorkspace.id, 'metronome')
+      expect(store.activeWorkspaceBillingRail).toBe('metronome')
     })
 
     it('rejects an overlapping local switch', async () => {

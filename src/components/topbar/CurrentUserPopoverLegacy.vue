@@ -32,12 +32,16 @@
 
     <div v-if="showWorkspaceSwitcher" class="relative">
       <Button
+        ref="workspaceSwitcherTrigger"
         v-tooltip="{ value: workspaceName, showDelay: 300 }"
         variant="muted-textonly"
         class="flex h-auto w-full items-center justify-between rounded-lg px-4 py-2 hover:bg-secondary-background-hover"
         :aria-expanded="isWorkspaceSwitcherOpen"
+        aria-haspopup="menu"
+        aria-controls="workspace-switcher-panel"
         data-testid="workspace-switcher-trigger"
         @click="isWorkspaceSwitcherOpen = !isWorkspaceSwitcherOpen"
+        @keydown.escape.stop="isWorkspaceSwitcherOpen = false"
       >
         <div class="flex w-0 flex-1 items-center gap-2">
           <WorkspaceProfilePic
@@ -53,6 +57,9 @@
 
       <div
         v-if="isWorkspaceSwitcherOpen"
+        id="workspace-switcher-panel"
+        ref="workspaceSwitcherPanel"
+        role="menu"
         class="absolute top-0 right-full z-10 mr-4 rounded-lg border border-border-default bg-base-background shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
         data-testid="workspace-switcher-panel"
       >
@@ -145,10 +152,11 @@
 </template>
 
 <script setup lang="ts">
+import { onClickOutside } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import Divider from 'primevue/divider'
 import Skeleton from 'primevue/skeleton'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
@@ -191,6 +199,17 @@ const { initState, workspaces, workspaceName } = storeToRefs(
   useTeamWorkspaceStore()
 )
 const isWorkspaceSwitcherOpen = ref(false)
+const workspaceSwitcherTrigger = useTemplateRef('workspaceSwitcherTrigger')
+const workspaceSwitcherPanel = useTemplateRef('workspaceSwitcherPanel')
+
+onClickOutside(
+  workspaceSwitcherPanel,
+  () => {
+    isWorkspaceSwitcherOpen.value = false
+  },
+  { ignore: [workspaceSwitcherTrigger] }
+)
+
 const showWorkspaceSwitcher = computed(
   () => initState.value === 'ready' && workspaces.value.length > 0
 )
