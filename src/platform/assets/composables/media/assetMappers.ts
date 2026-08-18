@@ -95,13 +95,14 @@ const byCreatedAtDesc = (a: AssetItem, b: AssetItem): number =>
 function flatAssetToResultItem(asset: AssetItem): ResultItemImpl {
   const metadata = getOutputAssetMetadata(asset.user_metadata)
   return new AssetResultItem(asset, {
-    filename: asset.name,
-    subfolder: metadata?.subfolder ?? '',
-    type: 'output',
-    nodeId: metadata?.nodeId ?? '',
-    mediaType: getMediaTypeFromFilename(asset.name),
+    assetId: asset.id,
     display_name: asset.display_name ?? undefined,
-    format: metadata?.format
+    filename: asset.name,
+    format: metadata?.format,
+    mediaType: getMediaTypeFromFilename(asset.name),
+    nodeId: metadata?.nodeId ?? '',
+    subfolder: metadata?.subfolder ?? '',
+    type: 'output'
   })
 }
 
