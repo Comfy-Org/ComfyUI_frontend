@@ -45,8 +45,16 @@ export interface RunOptions {
 export interface RunSubmittedEvent {
   /** Ids the backend accepted, in submission order. */
   readonly promptIds: readonly string[]
+  /** The accepted prompts and how many backend nodes each will execute. */
+  readonly submissions?: readonly RunSubmission[]
   /** How many submissions the backend refused. */
   readonly rejected: number
+}
+
+/** @knipIgnoreUnusedButUsedByCustomNodes */
+export interface RunSubmission {
+  readonly promptId: string
+  readonly nodeCount: number
 }
 
 /** @knipIgnoreUnusedButUsedByCustomNodes */
@@ -105,9 +113,11 @@ export interface QueueHandle {
    *
    * The event names what the backend accepted, so a pack can tie its own
    * progress tracking to the run it started rather than guessing that the next
-   * execution message belongs to it. `rejected` is how many submissions the
-   * backend refused: `onBeforeRun` fires either way, so without this a pack
-   * cannot tell a run that started from one that never did.
+   * execution message belongs to it. Each submission includes the exact count
+   * of executable backend nodes without exposing the built prompt. `rejected`
+   * is how many submissions the backend refused: `onBeforeRun` fires either
+   * way, so without this a pack cannot tell a run that started from one that
+   * never did.
    */
   onAfterRun(listener: (event: RunSubmittedEvent) => void): Unsubscribe
   /**
@@ -315,6 +325,15 @@ export function createQueueApi(
         listener(
           Object.freeze({
             promptIds: Object.freeze([...(detail?.promptIds ?? [])]),
+            ...(detail?.submissions
+              ? {
+                  submissions: Object.freeze(
+                    detail.submissions.map((submission) =>
+                      Object.freeze({ ...submission })
+                    )
+                  )
+                }
+              : {}),
             rejected: detail?.rejectedCount ?? 0
           })
         )
