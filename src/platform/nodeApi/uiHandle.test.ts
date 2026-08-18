@@ -217,6 +217,17 @@ describe('comfy.ui.showMenu', () => {
     expect(run).not.toHaveBeenCalled()
   })
 
+  it('returns a handle that closes the menu', () => {
+    const menu = ui.showMenu({
+      items: [{ label: 'Suggestion' }],
+      event: new MouseEvent('contextmenu')
+    })
+
+    expect(screen.getByText('Suggestion')).toBeInTheDocument()
+    menu.close()
+    expect(screen.queryByText('Suggestion')).not.toBeInTheDocument()
+  })
+
   it('refuses an empty menu', () => {
     expect(() =>
       ui.showMenu({ items: [], event: new MouseEvent('contextmenu') })

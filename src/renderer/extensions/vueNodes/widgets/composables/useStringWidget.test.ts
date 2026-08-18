@@ -4,6 +4,7 @@ import type * as Litegraph from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { DOMWidget } from '@/scripts/domWidget'
+import { subscribeWidgetTextInteraction } from '@/platform/nodeApi/widgetTextInteraction'
 import { useStringWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useStringWidget'
 import { createMockDOMWidgetNode } from '@/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils'
 
@@ -102,6 +103,39 @@ describe('useStringWidget (multiline)', () => {
     inputEl.value = 'hello'
     inputEl.dispatchEvent(new Event('input', { bubbles: true }))
     expect(callback).toHaveBeenCalledTimes(1)
+  })
+
+  it('publishes input, selection, and claimed wheel interactions', () => {
+    const { widget, inputEl } = setup()
+    const listener = vi.fn((event) => {
+      if (event.kind === 'wheel') event.preventDefault()
+    })
+    const unsubscribe = subscribeWidgetTextInteraction(
+      widget,
+      listener,
+      vi.fn()
+    )
+    onTestFinished(unsubscribe)
+    inputEl.value = 'embedding:foo'
+    inputEl.setSelectionRange(9, 12)
+
+    inputEl.dispatchEvent(new Event('input', { bubbles: true }))
+    inputEl.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }))
+    const wheel = new WheelEvent('wheel', {
+      bubbles: true,
+      cancelable: true,
+      deltaY: 100
+    })
+    inputEl.dispatchEvent(wheel)
+
+    expect(listener.mock.calls.map(([event]) => event.kind)).toEqual([
+      'input',
+      'selection',
+      'wheel'
+    ])
+    expect(listener.mock.calls[0][0].selection).toEqual({ start: 9, end: 12 })
+    expect(wheel.defaultPrevented).toBe(true)
+    expect(canvasMock.processMouseWheel).not.toHaveBeenCalled()
   })
 
   it('forwards middle-click pointer events and ctrl+wheel to the canvas while alive', () => {

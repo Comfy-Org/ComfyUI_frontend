@@ -2,6 +2,9 @@ import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { subscribeWidgetTextInteraction } from '@/platform/nodeApi/widgetTextInteraction'
+import { toNodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetTextarea from './WidgetTextarea.vue'
@@ -9,6 +12,7 @@ import { createMockWidget } from './widgetTestUtils'
 
 const mockCopyToClipboard = vi.hoisted(() => vi.fn())
 const mockIsNodeOptionsOpen = vi.hoisted(() => vi.fn(() => false))
+const mockGetNodeById = vi.hoisted(() => vi.fn())
 
 vi.mock('@/composables/useCopyToClipboard', () => ({
   useCopyToClipboard: vi.fn(() => ({
@@ -18,6 +22,11 @@ vi.mock('@/composables/useCopyToClipboard', () => ({
 
 vi.mock('@/composables/graph/useMoreOptionsMenu', () => ({
   isNodeOptionsOpen: mockIsNodeOptionsOpen
+}))
+vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+  useCanvasStore: () => ({
+    canvas: { graph: { getNodeById: mockGetNodeById } }
+  })
 }))
 
 function createTextareaWidget(
@@ -43,6 +52,7 @@ function renderComponent(
     props: {
       widget,
       modelValue,
+      nodeId: toNodeId('node-1'),
       placeholder,
       ...(onUpdateModelValue
         ? { 'onUpdate:modelValue': onUpdateModelValue }
@@ -331,5 +341,43 @@ describe('WidgetTextarea contextmenu', () => {
 
     expect(preventDefaultSpy).not.toHaveBeenCalled()
     expect(stopPropagationSpy).toHaveBeenCalled()
+  })
+})
+
+describe('WidgetTextarea text interactions', () => {
+  it('publishes the caret and applies a contributed edit', async () => {
+    const raw: IBaseWidget = {
+      name: 'test_textarea',
+      type: 'customtext',
+      value: 'embedding:foo',
+      y: 0,
+      options: {}
+    }
+    mockGetNodeById.mockReturnValue({ widgets: [raw] })
+    const commit = vi.fn((value) => {
+      raw.value = value
+    })
+    const listener = vi.fn((event) => {
+      if (event.kind === 'input') {
+        event.setValue('embedding:bar', { start: 13, end: 13 })
+      }
+    })
+    subscribeWidgetTextInteraction(raw, listener, commit)
+    renderComponent(createTextareaWidget(), 'embedding:foo')
+    const textarea = screen.getByRole('textbox') as HTMLTextAreaElement
+
+    await userEvent.type(textarea, 'x', {
+      initialSelectionStart: 9,
+      initialSelectionEnd: 12
+    })
+
+    const inputEvent = listener.mock.calls.find(
+      ([event]) => event.kind === 'input'
+    )?.[0]
+    expect(inputEvent?.selection).toEqual({ start: 10, end: 10 })
+    expect(commit).toHaveBeenCalledWith('embedding:bar')
+    expect(textarea.value).toBe('embedding:bar')
+    expect(textarea.selectionStart).toBe(13)
+    expect(textarea.selectionEnd).toBe(13)
   })
 })

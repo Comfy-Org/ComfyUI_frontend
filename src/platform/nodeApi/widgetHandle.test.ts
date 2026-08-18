@@ -13,6 +13,7 @@ import { createGraphApi } from './graphHandle'
 import { whileEmbeddingWorkflow } from './serializeContext'
 import { createWidgetCollection, createWidgetHandles } from './widgetHandle'
 import type { WidgetCollection } from './widgetHandle'
+import { dispatchWidgetTextInteraction } from './widgetTextInteraction'
 import { createWidgetTypeRegistrar } from './widgetTypes'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 
@@ -555,6 +556,56 @@ describe('setValue commits like a user edit', () => {
     node.widgets![0].callback = hostCallback
     widgets.get('seed')!.setValue(1)
     expect(hostCallback).not.toHaveBeenCalled()
+  })
+
+  it('contributes caret-aware behavior without exposing the text element', () => {
+    const raw = node.addWidget('custom', 'text', 'emb', () => undefined, {})
+    const text = widgets.get('text')!
+    const onWidgetChanged = vi.fn()
+    const callback = vi.fn()
+    const seen = vi.fn((event) => {
+      expect(event).not.toHaveProperty('element')
+      expect(event.value).toBe('embedding:foo')
+      expect(event.selection).toEqual({ start: 9, end: 12 })
+      expect(event.menuEvent.clientX).toBe(30)
+      expect(event.menuEvent.clientY).toBe(60)
+      event.setValue('embedding:bar', { start: 13, end: 13 })
+    })
+    raw.callback = callback
+    node.onWidgetChanged = onWidgetChanged
+    text.on('textInteraction', seen)
+    const textarea = document.createElement('textarea')
+    textarea.value = 'embedding:foo'
+    textarea.setSelectionRange(9, 12)
+    textarea.getBoundingClientRect = () => ({ left: 20, bottom: 50 }) as DOMRect
+    const version = node.graph!._version
+
+    dispatchWidgetTextInteraction(
+      raw,
+      textarea,
+      'input',
+      new InputEvent('input')
+    )
+
+    expect(seen).toHaveBeenCalledOnce()
+    expect(raw.value).toBe('embedding:bar')
+    expect(textarea.value).toBe('embedding:bar')
+    expect(textarea.selectionStart).toBe(13)
+    expect(textarea.selectionEnd).toBe(13)
+    expect(callback).toHaveBeenCalledWith(
+      'embedding:bar',
+      undefined,
+      node,
+      undefined,
+      undefined
+    )
+    expect(onWidgetChanged).toHaveBeenCalledWith(
+      'text',
+      'embedding:bar',
+      'emb',
+      raw
+    )
+    expect(node.graph!._version).toBe(version + 1)
   })
 })
 

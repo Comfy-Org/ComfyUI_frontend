@@ -42,8 +42,8 @@ widget instance, not a Pinia store, not a Vue reactive proxy, not a constructor.
 > `slots.layout`, `slots.localizedName`, `slots.moveLinks`, `slots.retype`,
 > `slots.widgetConfig`, `storage`, `ui.sidebarTab`, `viewport.changed`,
 > `widgets.canvas`, `widgets.create`, `widgets.hidden`, `widgets.linked`,
-> `widgets.mount`, `widgets.reorder`, `widgets.typeContext`, `workflow.open`,
-> `workflow.textReplacements`.
+> `widgets.mount`, `widgets.reorder`, `widgets.textInteraction`,
+> `widgets.typeContext`, `workflow.open`, `workflow.textReplacements`.
 >
 > **Specified only:** §4a declarative decorations (badges/anchors — note
 > `setSizeConstraints` and `widgets.canvas` DID ship), §4b chrome, §4c
