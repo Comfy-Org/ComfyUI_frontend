@@ -4,9 +4,12 @@
 import type { Locator, Page } from '@playwright/test'
 
 import { TestIds } from '@e2e/fixtures/selectors'
+import { comfyExpect as expect } from '@e2e/fixtures/utils/customMatchers'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { toNodeId } from '@/types/nodeId'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
+
+const GRAPH_SIZE_GROWTH: [number, number] = [90, 100]
 
 export class VueNodeHelpers {
   /**
@@ -82,6 +85,29 @@ export class VueNodeHelpers {
         .map((n) => n.getAttribute('data-node-id'))
         .filter((id): id is string => id !== null)
     )
+  }
+
+  async expectGraphSizeGrowth(nodeId: string, label: string): Promise<void> {
+    const node = this.getNodeLocator(nodeId)
+    const before = await node.boundingBox()
+    if (!before) throw new Error(`${label}: node is not rendered`)
+
+    const scale = await this.page.evaluate(
+      ({ id, growth }) => {
+        const node = window.app?.canvas.graph?.getNodeById(id)
+        if (!node) throw new Error(`Node ${id} not found`)
+
+        node.setSize([node.size[0] + growth[0], node.size[1] + growth[1]])
+        return window.app!.canvas.ds.scale
+      },
+      { id: toNodeId(nodeId), growth: GRAPH_SIZE_GROWTH }
+    )
+
+    await expect(node, label).toHaveBounds({
+      ...before,
+      width: before.width + GRAPH_SIZE_GROWTH[0] * scale,
+      height: before.height + GRAPH_SIZE_GROWTH[1] * scale
+    })
   }
 
   /**
