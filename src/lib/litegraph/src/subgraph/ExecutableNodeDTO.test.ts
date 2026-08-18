@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type {
+  ExecutableLGraphNode,
+  ExecutionId
+} from '@/lib/litegraph/src/litegraph'
 import {
   ExecutableNodeDTO,
   LGraph,
@@ -447,6 +451,140 @@ describe('Virtual node resolveVirtualOutput', () => {
     expect(() => virtualDto.resolveOutput(0, 'IMAGE', new Set())).toThrow(
       'No DTO found for virtual source node'
     )
+  })
+
+  it('should return the primary widget value for PrimitiveNode', () => {
+    const graph = new LGraph()
+
+    const primitiveNode = new LGraphNode('PrimitiveNode', 'PrimitiveNode')
+    primitiveNode.addOutput('connect to widget input', '*')
+    primitiveNode.isVirtualNode = true
+    primitiveNode.addWidget('number', 'value', 42, null)
+    primitiveNode.addWidget(
+      'combo',
+      'control_after_generate',
+      'increment',
+      null,
+      {
+        values: ['fixed', 'increment']
+      }
+    )
+    graph.add(primitiveNode)
+
+    const nodeDtoMap = new Map<ExecutionId, ExecutableLGraphNode>()
+    const primitiveDto = new ExecutableNodeDTO(
+      primitiveNode,
+      [],
+      nodeDtoMap,
+      undefined
+    )
+    nodeDtoMap.set(primitiveDto.id, primitiveDto)
+
+    const resolved = primitiveDto.resolveOutput(0, 'INT', new Set())
+    expect(resolved).toBeDefined()
+    expect(resolved?.widgetInfo).toEqual({ value: 42 })
+    expect(resolved?.origin_slot).toBe(-1)
+    expect(resolved?.node).toBe(primitiveDto)
+  })
+
+  it('should return a string widget value for PrimitiveNode', () => {
+    const graph = new LGraph()
+
+    const primitiveNode = new LGraphNode('PrimitiveNode', 'PrimitiveNode')
+    primitiveNode.addOutput('connect to widget input', '*')
+    primitiveNode.isVirtualNode = true
+    primitiveNode.addWidget('text', 'value', 'hello world', null)
+    graph.add(primitiveNode)
+
+    const nodeDtoMap = new Map<ExecutionId, ExecutableLGraphNode>()
+    const primitiveDto = new ExecutableNodeDTO(
+      primitiveNode,
+      [],
+      nodeDtoMap,
+      undefined
+    )
+    nodeDtoMap.set(primitiveDto.id, primitiveDto)
+
+    const resolved = primitiveDto.resolveOutput(0, 'STRING', new Set())
+    expect(resolved).toBeDefined()
+    expect(resolved?.widgetInfo).toEqual({ value: 'hello world' })
+  })
+
+  it('should still return undefined for virtual nodes without widgets', () => {
+    const graph = new LGraph()
+
+    const virtualNode = new LGraphNode('Virtual Empty')
+    virtualNode.addOutput('out', 'IMAGE')
+    virtualNode.isVirtualNode = true
+    graph.add(virtualNode)
+
+    const nodeDtoMap = new Map<ExecutionId, ExecutableLGraphNode>()
+    const virtualDto = new ExecutableNodeDTO(
+      virtualNode,
+      [],
+      nodeDtoMap,
+      undefined
+    )
+    nodeDtoMap.set(virtualDto.id, virtualDto)
+
+    const resolved = virtualDto.resolveOutput(0, 'IMAGE', new Set())
+    expect(resolved).toBeUndefined()
+  })
+
+  it('should discard non-Primitive virtual nodes with widget values', () => {
+    const graph = new LGraph()
+
+    const virtualNode = new LGraphNode('Virtual Widget', 'CustomVirtualNode')
+    virtualNode.addOutput('out', 'INT')
+    virtualNode.isVirtualNode = true
+    virtualNode.addWidget('number', 'value', 42, null)
+    graph.add(virtualNode)
+
+    const nodeDtoMap = new Map<ExecutionId, ExecutableLGraphNode>()
+    const virtualDto = new ExecutableNodeDTO(
+      virtualNode,
+      [],
+      nodeDtoMap,
+      undefined
+    )
+    nodeDtoMap.set(virtualDto.id, virtualDto)
+
+    const resolved = virtualDto.resolveOutput(0, 'INT', new Set())
+
+    expect(resolved).toBeUndefined()
+  })
+
+  it('should return undefined for virtual nodes with an undefined primary widget value', () => {
+    const graph = new LGraph()
+
+    const virtualNode = new LGraphNode('PrimitiveNode', 'PrimitiveNode')
+    virtualNode.addOutput('out', 'IMAGE')
+    virtualNode.isVirtualNode = true
+    const primaryWidget = virtualNode.addWidget('text', 'value', '', null)
+    Reflect.set(primaryWidget, 'value', undefined)
+    virtualNode.addWidget(
+      'combo',
+      'control_after_generate',
+      'increment',
+      null,
+      {
+        values: ['fixed', 'increment']
+      }
+    )
+    graph.add(virtualNode)
+
+    const nodeDtoMap = new Map<ExecutionId, ExecutableLGraphNode>()
+    const virtualDto = new ExecutableNodeDTO(
+      virtualNode,
+      [],
+      nodeDtoMap,
+      undefined
+    )
+    nodeDtoMap.set(virtualDto.id, virtualDto)
+
+    const resolved = virtualDto.resolveOutput(0, 'IMAGE', new Set())
+
+    expect(resolved).toBeUndefined()
   })
 
   it('should fall through to getInputLink when resolveVirtualOutput returns undefined', () => {
