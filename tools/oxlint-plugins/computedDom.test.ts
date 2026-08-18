@@ -70,7 +70,7 @@ describe('comfy/no-dom-in-computed', () => {
   it('preserves warning severity and excludes test files', () => {
     expect(findings.every(({ severity }) => severity === 'warning')).toBe(true)
     expect(
-      findings.every(({ filename }) => filename?.endsWith('reported.ts'))
+      findings.every(({ filename }) => filename.endsWith('reported.ts'))
     ).toBe(true)
   })
 })

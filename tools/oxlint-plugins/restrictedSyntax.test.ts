@@ -8,8 +8,8 @@ import { runOxlint } from './oxlintTestUtil'
 import type { OxlintDiagnostic } from './oxlintTestUtil'
 
 const repoConfig = path.resolve('.oxlintrc.json')
-const restrictedConfig = path.resolve(
-  'tools/oxlint-plugins/restrictedSyntax.config.json'
+const customRulesConfig = path.resolve(
+  'tools/oxlint-plugins/customRules.config.json'
 )
 const sourceProbeDir = path.resolve('src/__restricted_syntax_probes__')
 const appProbeDir = path.resolve(
@@ -28,141 +28,112 @@ const browserUnitTestProbe = path.resolve(
   'browser_tests/tests/__restricted_syntax_probes__/misplaced.test.ts'
 )
 
-function lint(config: string, targets: readonly string[]): OxlintDiagnostic[] {
-  return runOxlint(['--format=json', '--config', config, ...targets])
-}
+const probes = [
+  {
+    file: path.join(sourceProbeDir, 'assertion.ts'),
+    source:
+      'const asserted = value as Error & { code: string }\nvoid asserted\n'
+  },
+  {
+    file: path.join(sourceProbeDir, 'ignored.test.ts'),
+    source: 'const asserted = value as Error\nvoid asserted\n'
+  },
+  {
+    file: path.join(appProbeDir, 'assertion.ts'),
+    source: 'const asserted = <Error>value\nvoid asserted\n'
+  },
+  {
+    file: path.join(remoteProbeDir, 'zod.ts'),
+    source: "import { z } from 'zod'\nexport const schema = z.string()\n"
+  },
+  {
+    file: path.join(remoteProbeDir, 'ignored.test.ts'),
+    source: "import { z } from 'zod'\nexport const schema = z.string()\n"
+  },
+  {
+    file: misplacedSpecProbe,
+    source: "test('misplaced', () => {})\n"
+  },
+  {
+    file: path.join(fixtureDataProbeDir, 'playwright.ts'),
+    source: "import { expect } from '@playwright/test'\nvoid expect\n"
+  },
+  {
+    file: browserUnitTestProbe,
+    source: "test('misplaced', () => {})\n"
+  }
+]
 
-describe('comfy/no-unsafe-error-assertion', () => {
+describe('restricted syntax rules', () => {
   let findings: readonly OxlintDiagnostic[]
 
   beforeAll(() => {
-    mkdirSync(sourceProbeDir, { recursive: true })
-    mkdirSync(appProbeDir, { recursive: true })
-    writeFileSync(
-      path.join(sourceProbeDir, 'reported.ts'),
-      'const asserted = value as Error & { code: string }\nvoid asserted\n'
-    )
-    writeFileSync(
-      path.join(sourceProbeDir, 'ignored.test.ts'),
-      'const asserted = value as Error\nvoid asserted\n'
-    )
-    writeFileSync(
-      path.join(appProbeDir, 'reported.ts'),
-      'const asserted = <Error>value\nvoid asserted\n'
-    )
-
+    for (const { file, source } of probes) {
+      mkdirSync(path.dirname(file), { recursive: true })
+      writeFileSync(file, source)
+    }
     findings = [
-      ...lint(repoConfig, [sourceProbeDir]),
-      ...lint(restrictedConfig, [appProbeDir])
-    ].filter(({ code }) => code === 'comfy(no-unsafe-error-assertion)')
+      ...runOxlint([
+        '--format=json',
+        '--config',
+        repoConfig,
+        sourceProbeDir,
+        remoteProbeDir,
+        fixtureDataProbeDir,
+        browserUnitTestProbe
+      ]),
+      ...runOxlint([
+        '--format=json',
+        '--config',
+        customRulesConfig,
+        appProbeDir,
+        misplacedSpecProbe
+      ])
+    ]
   })
 
   afterAll(() => {
-    rmSync(sourceProbeDir, { recursive: true, force: true })
-    rmSync(appProbeDir, { recursive: true, force: true })
+    for (const dir of [
+      sourceProbeDir,
+      appProbeDir,
+      remoteProbeDir,
+      fixtureDataProbeDir,
+      path.dirname(browserUnitTestProbe)
+    ]) {
+      rmSync(dir, { recursive: true, force: true })
+    }
   })
+
+  function findingsFor(rule: string) {
+    return findings.filter(({ code }) => code === `comfy(${rule})`)
+  }
 
   it('reports both TypeScript assertion forms in source and app files', () => {
-    expect(findings).toHaveLength(2)
+    const assertionFindings = findingsFor('no-unsafe-error-assertion')
+    expect(assertionFindings).toHaveLength(2)
     expect(
-      findings.some(({ filename }) => filename?.endsWith('reported.ts'))
+      assertionFindings.some(({ filename }) => filename.includes('apps/'))
     ).toBe(true)
-    expect(findings.some(({ filename }) => filename?.includes('apps/'))).toBe(
-      true
-    )
-  })
-
-  it('excludes test files', () => {
     expect(
-      findings.some(({ filename }) => filename?.endsWith('.test.ts'))
+      assertionFindings.some(({ filename }) => filename.endsWith('.test.ts'))
     ).toBe(false)
-  })
-})
-
-describe('comfy/no-new-zod-for-remote-api-types', () => {
-  let findings: readonly OxlintDiagnostic[]
-
-  beforeAll(() => {
-    mkdirSync(remoteProbeDir, { recursive: true })
-    writeFileSync(
-      path.join(remoteProbeDir, 'reported.ts'),
-      "import { z } from 'zod'\nexport const schema = z.string()\n"
-    )
-    writeFileSync(
-      path.join(remoteProbeDir, 'ignored.test.ts'),
-      "import { z } from 'zod'\nexport const schema = z.string()\n"
-    )
-    findings = lint(repoConfig, [remoteProbeDir]).filter(
-      ({ code }) => code === 'comfy(no-new-zod-for-remote-api-types)'
-    )
-  })
-
-  afterAll(() => {
-    rmSync(remoteProbeDir, { recursive: true, force: true })
   })
 
   it('reports Zod imports in remote source but not tests', () => {
-    expect(findings).toHaveLength(1)
-    expect(findings[0]?.filename).toMatch(/reported\.ts$/)
-  })
-})
-
-describe('comfy/no-misplaced-spec-files', () => {
-  beforeAll(() => {
-    mkdirSync(path.dirname(misplacedSpecProbe), { recursive: true })
-    writeFileSync(misplacedSpecProbe, "test('misplaced', () => {})\n")
-  })
-
-  afterAll(() => {
-    rmSync(path.dirname(misplacedSpecProbe), { recursive: true, force: true })
+    expect(findingsFor('no-new-zod-for-remote-api-types')).toEqual([
+      expect.objectContaining({ filename: expect.stringMatching(/zod\.ts$/) })
+    ])
   })
 
   it('reports spec files outside the browser and app e2e directories', () => {
-    const findings = lint(restrictedConfig, [misplacedSpecProbe]).filter(
-      ({ code }) => code === 'comfy(no-misplaced-spec-files)'
-    )
-    expect(findings).toHaveLength(1)
-  })
-})
-
-describe('comfy/no-playwright-imports-in-fixture-data', () => {
-  beforeAll(() => {
-    mkdirSync(fixtureDataProbeDir, { recursive: true })
-    writeFileSync(
-      path.join(fixtureDataProbeDir, 'reported.ts'),
-      "import { expect } from '@playwright/test'\nvoid expect\n"
-    )
-  })
-
-  afterAll(() => {
-    rmSync(fixtureDataProbeDir, { recursive: true, force: true })
+    expect(findingsFor('no-misplaced-spec-files')).toHaveLength(1)
   })
 
   it('reports Playwright imports in static fixture data', () => {
-    const findings = lint(repoConfig, [fixtureDataProbeDir]).filter(
-      ({ code }) => code === 'comfy(no-playwright-imports-in-fixture-data)'
-    )
-    expect(findings).toHaveLength(1)
-  })
-})
-
-describe('comfy/no-unit-test-files-in-browser-tests', () => {
-  beforeAll(() => {
-    mkdirSync(path.dirname(browserUnitTestProbe), { recursive: true })
-    writeFileSync(browserUnitTestProbe, "test('misplaced', () => {})\n")
-  })
-
-  afterAll(() => {
-    rmSync(path.dirname(browserUnitTestProbe), {
-      recursive: true,
-      force: true
-    })
+    expect(findingsFor('no-playwright-imports-in-fixture-data')).toHaveLength(1)
   })
 
   it('reports unit-test filenames in the Playwright test directory', () => {
-    const findings = lint(repoConfig, [browserUnitTestProbe]).filter(
-      ({ code }) => code === 'comfy(no-unit-test-files-in-browser-tests)'
-    )
-    expect(findings).toHaveLength(1)
+    expect(findingsFor('no-unit-test-files-in-browser-tests')).toHaveLength(1)
   })
 })

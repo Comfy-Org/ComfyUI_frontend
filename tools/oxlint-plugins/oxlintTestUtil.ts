@@ -4,10 +4,10 @@ import path from 'node:path'
 const oxlintEntry = path.resolve('node_modules/oxlint/bin/oxlint')
 
 export interface OxlintDiagnostic {
-  readonly code?: string
-  readonly severity?: string
-  readonly filename?: string
-  readonly message?: string
+  readonly code: string
+  readonly severity: string
+  readonly filename: string
+  readonly message: string
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -17,10 +17,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function isOxlintDiagnostic(value: unknown): value is OxlintDiagnostic {
   return (
     isRecord(value) &&
-    (value.code === undefined || typeof value.code === 'string') &&
-    (value.severity === undefined || typeof value.severity === 'string') &&
-    (value.filename === undefined || typeof value.filename === 'string') &&
-    (value.message === undefined || typeof value.message === 'string')
+    typeof value.code === 'string' &&
+    typeof value.severity === 'string' &&
+    typeof value.filename === 'string' &&
+    typeof value.message === 'string'
   )
 }
 

@@ -1,38 +1,46 @@
-interface Node {
-  readonly type: string
-}
-
-interface Identifier extends Node {
-  readonly type: 'Identifier'
-  readonly name: string
-}
-
-interface TypeReference extends Node {
-  readonly type: 'TSTypeReference'
-  readonly typeName: Node
-}
-
-interface ImportDeclaration extends Node {
-  readonly type: 'ImportDeclaration'
-  readonly source: { readonly value: string }
-}
-
-interface RuleContext {
-  readonly sourceCode: {
-    getAncestors(node: Node): readonly Node[]
-  }
-  report(descriptor: { node: Node; message: string }): void
-}
+import type {
+  ImportDeclaration,
+  Node,
+  RuleContext,
+  TypeReference
+} from './oxlintPluginTypes'
 
 const ERROR_ASSERTION_MESSAGE =
   'Do not use Error type assertions. Use `instanceof Error` narrowing or `toError()` from @/utils/errorUtil instead. See issue #11429.'
 
-function isIdentifier(node: Node): node is Identifier {
-  return (
-    node.type === 'Identifier' &&
-    'name' in node &&
-    typeof node.name === 'string'
-  )
+function restrictImports(
+  isRestricted: (source: string) => boolean,
+  message: string
+) {
+  return {
+    create(context: RuleContext) {
+      return {
+        ImportDeclaration(node: ImportDeclaration) {
+          if (isRestricted(node.source.value)) context.report({ node, message })
+        }
+      }
+    }
+  }
+}
+
+function reportProgram(message: string) {
+  return {
+    create(context: RuleContext) {
+      return {
+        Program(node: Node) {
+          context.report({ node, message })
+        }
+      }
+    }
+  }
+}
+
+function isZodImport(source: string): boolean {
+  return source === 'zod'
+}
+
+function isPlaywrightImport(source: string): boolean {
+  return source.startsWith('@playwright')
 }
 
 export const noUnsafeErrorAssertion = {
@@ -40,7 +48,7 @@ export const noUnsafeErrorAssertion = {
     return {
       TSTypeReference(node: TypeReference) {
         if (
-          !isIdentifier(node.typeName) ||
+          node.typeName.type !== 'Identifier' ||
           node.typeName.name !== 'Error' ||
           !context.sourceCode
             .getAncestors(node)
@@ -58,60 +66,20 @@ export const noUnsafeErrorAssertion = {
   }
 }
 
-export const noNewZodForRemoteApiTypes = {
-  create(context: RuleContext) {
-    return {
-      ImportDeclaration(node: ImportDeclaration) {
-        if (node.source.value !== 'zod') return
-        context.report({
-          node,
-          message:
-            'Do not hand-write new Zod schemas for remote API types. Use generated types from packages/ingest-types (@comfyorg/ingest-types) instead. See browser_tests/README.md "Sources of truth for mock types".'
-        })
-      }
-    }
-  }
-}
+export const noNewZodForRemoteApiTypes = restrictImports(
+  isZodImport,
+  'Do not hand-write new Zod schemas for remote API types. Use generated types from packages/ingest-types (@comfyorg/ingest-types) instead. See browser_tests/README.md "Sources of truth for mock types".'
+)
 
-export const noMisplacedSpecFiles = {
-  create(context: RuleContext) {
-    return {
-      Program(node: Node) {
-        context.report({
-          node,
-          message:
-            '.spec.ts files are only allowed under browser_tests/tests/ or apps/*/e2e/'
-        })
-      }
-    }
-  }
-}
+export const noMisplacedSpecFiles = reportProgram(
+  '.spec.ts files are only allowed under browser_tests/tests/ or apps/*/e2e/'
+)
 
-export const noPlaywrightImportsInFixtureData = {
-  create(context: RuleContext) {
-    return {
-      ImportDeclaration(node: ImportDeclaration) {
-        if (!node.source.value.startsWith('@playwright')) return
-        context.report({
-          node,
-          message:
-            'fixtures/data/ must contain only static data. No Playwright imports allowed.'
-        })
-      }
-    }
-  }
-}
+export const noPlaywrightImportsInFixtureData = restrictImports(
+  isPlaywrightImport,
+  'fixtures/data/ must contain only static data. No Playwright imports allowed.'
+)
 
-export const noUnitTestFilesInBrowserTests = {
-  create(context: RuleContext) {
-    return {
-      Program(node: Node) {
-        context.report({
-          node,
-          message:
-            '.test.ts files are not allowed in browser_tests/tests/; use .spec.ts instead'
-        })
-      }
-    }
-  }
-}
+export const noUnitTestFilesInBrowserTests = reportProgram(
+  '.test.ts files are not allowed in browser_tests/tests/; use .spec.ts instead'
+)
