@@ -219,6 +219,24 @@ in `resolve`; `resolve` cannot write anything, by design.
 If the node's `applyToGraph` does something none of the three resolution shapes
 can express, that is an `api-gap` punt — name what it rewrites.
 
+### Resolution runs once per graph, and does not cross a subgraph
+
+Both passes — `resolve` and `setSupply` — are invoked separately for every
+graph the prompt draws from: the root, and each subgraph interior. So a
+resolver or supplier inside a subgraph works exactly as it does at the top
+level, and you do not need to do anything to opt in.
+
+What you cannot do is reach across the boundary. `nodesOfType` and
+`unconnectedInputs()` see the scope the node lives in and nothing outside it,
+so a broadcaster in the root does not feed an input inside a subgraph, and one
+inside a subgraph does not feed the root. That is deliberate: a subgraph whose
+interior depended on invisible outside state would resolve differently
+depending on where it was placed, and the workflow would not show why.
+
+If the original walked every graph in the document and wired across the cut,
+convert the within-scope half — it is the part that still means something —
+and refuse the crossing half by naming the mechanism, not the absence.
+
 ## Node handles are accessors, not properties
 
 Every read and write on a `NodeHandle` is a method — the contract in
