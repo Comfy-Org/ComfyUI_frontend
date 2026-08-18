@@ -1,19 +1,13 @@
 // @vitest-environment node
 
-import { execFileSync } from 'node:child_process'
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
-const oxlintEntry = path.resolve('node_modules/oxlint/bin/oxlint')
-const probeDir = path.resolve('src/__computed_dom_probes__')
+import { runOxlint } from './oxlintTestUtil'
+import type { OxlintDiagnostic } from './oxlintTestUtil'
 
-interface OxlintDiagnostic {
-  readonly code?: string
-  readonly severity?: string
-  readonly filename?: string
-  readonly message?: string
-}
+const probeDir = path.resolve('src/__computed_dom_probes__')
 
 const source = `import { computed } from 'vue'
 
@@ -50,22 +44,12 @@ describe('comfy/no-dom-in-computed', () => {
     writeFileSync(path.join(probeDir, 'reported.ts'), source)
     writeFileSync(path.join(probeDir, 'ignored.test.ts'), testSource)
 
-    const output = execFileSync(
-      process.execPath,
-      [
-        oxlintEntry,
-        '--format=json',
-        '--config',
-        path.resolve('.oxlintrc.json'),
-        probeDir
-      ],
-      { cwd: path.resolve('.'), encoding: 'utf8' }
-    )
-    findings = (
-      JSON.parse(output) as { diagnostics: OxlintDiagnostic[] }
-    ).diagnostics.filter(
-      (diagnostic) => diagnostic.code === 'comfy(no-dom-in-computed)'
-    )
+    findings = runOxlint([
+      '--format=json',
+      '--config',
+      path.resolve('.oxlintrc.json'),
+      probeDir
+    ]).filter((diagnostic) => diagnostic.code === 'comfy(no-dom-in-computed)')
   })
 
   afterAll(() => {

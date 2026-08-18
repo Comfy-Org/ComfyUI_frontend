@@ -30,25 +30,49 @@ interface RuleContext {
   report(descriptor: { node: Node; message: string }): void
 }
 
+function isIdentifier(node: Node): node is Identifier {
+  return (
+    node.type === 'Identifier' &&
+    'name' in node &&
+    typeof node.name === 'string'
+  )
+}
+
+function isMemberExpression(node: Node): node is MemberExpression {
+  return (
+    node.type === 'MemberExpression' &&
+    'property' in node &&
+    typeof node.property === 'object' &&
+    node.property !== null &&
+    'type' in node.property &&
+    typeof node.property.type === 'string'
+  )
+}
+
+function isCallExpression(node: Node): node is CallExpression {
+  return (
+    node.type === 'CallExpression' &&
+    'callee' in node &&
+    typeof node.callee === 'object' &&
+    node.callee !== null &&
+    'type' in node.callee &&
+    typeof node.callee.type === 'string'
+  )
+}
+
 function calledIdentifier(node: CallExpression): string | undefined {
-  return node.callee.type === 'Identifier'
-    ? (node.callee as Identifier).name
-    : undefined
+  return isIdentifier(node.callee) ? node.callee.name : undefined
 }
 
 function calledMethod(node: CallExpression): string | undefined {
-  if (node.callee.type !== 'MemberExpression') return
-  const property = (node.callee as MemberExpression).property
-  return property.type === 'Identifier'
-    ? (property as Identifier).name
+  if (!isMemberExpression(node.callee)) return
+  return isIdentifier(node.callee.property)
+    ? node.callee.property.name
     : undefined
 }
 
 function isComputedCall(node: Node): boolean {
-  return (
-    node.type === 'CallExpression' &&
-    calledIdentifier(node as CallExpression) === 'computed'
-  )
+  return isCallExpression(node) && calledIdentifier(node) === 'computed'
 }
 
 export const noDomInComputed = {

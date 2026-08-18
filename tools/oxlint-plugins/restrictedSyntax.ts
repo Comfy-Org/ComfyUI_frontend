@@ -27,13 +27,21 @@ interface RuleContext {
 const ERROR_ASSERTION_MESSAGE =
   'Do not use Error type assertions. Use `instanceof Error` narrowing or `toError()` from @/utils/errorUtil instead. See issue #11429.'
 
+function isIdentifier(node: Node): node is Identifier {
+  return (
+    node.type === 'Identifier' &&
+    'name' in node &&
+    typeof node.name === 'string'
+  )
+}
+
 export const noUnsafeErrorAssertion = {
   create(context: RuleContext) {
     return {
       TSTypeReference(node: TypeReference) {
         if (
-          node.typeName.type !== 'Identifier' ||
-          (node.typeName as Identifier).name !== 'Error' ||
+          !isIdentifier(node.typeName) ||
+          node.typeName.name !== 'Error' ||
           !context.sourceCode
             .getAncestors(node)
             .some(

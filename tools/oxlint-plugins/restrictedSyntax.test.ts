@@ -1,11 +1,12 @@
 // @vitest-environment node
 
-import { execFileSync } from 'node:child_process'
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
-const oxlintEntry = path.resolve('node_modules/oxlint/bin/oxlint')
+import { runOxlint } from './oxlintTestUtil'
+import type { OxlintDiagnostic } from './oxlintTestUtil'
+
 const repoConfig = path.resolve('.oxlintrc.json')
 const restrictedConfig = path.resolve(
   'tools/oxlint-plugins/restrictedSyntax.config.json'
@@ -27,23 +28,8 @@ const browserUnitTestProbe = path.resolve(
   'browser_tests/tests/__restricted_syntax_probes__/misplaced.test.ts'
 )
 
-interface OxlintDiagnostic {
-  readonly code?: string
-  readonly filename?: string
-}
-
 function lint(config: string, targets: readonly string[]): OxlintDiagnostic[] {
-  let output: string
-  try {
-    output = execFileSync(
-      process.execPath,
-      [oxlintEntry, '--format=json', '--config', config, ...targets],
-      { cwd: path.resolve('.'), encoding: 'utf8' }
-    )
-  } catch (error) {
-    output = (error as { stdout?: string }).stdout ?? ''
-  }
-  return (JSON.parse(output) as { diagnostics: OxlintDiagnostic[] }).diagnostics
+  return runOxlint(['--format=json', '--config', config, ...targets])
 }
 
 describe('comfy/no-unsafe-error-assertion', () => {
