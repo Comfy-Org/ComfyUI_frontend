@@ -91,11 +91,18 @@ useEventListener('keydown', () => (lastInputKeyboard.value = true), {
   capture: true,
   passive: true
 })
-useEventListener('pointerdown', () => (lastInputKeyboard.value = false), {
-  capture: true,
-  passive: true
-})
 const keyboardFocusWithin = ref(false)
+// Any pointer interaction also lifts an active keyboard pause: clicking an
+// already-focused control fires no focusin, so the flag would otherwise
+// stay stuck. A later keyboard focus re-engages it via focusin.
+useEventListener(
+  'pointerdown',
+  () => {
+    lastInputKeyboard.value = false
+    keyboardFocusWithin.value = false
+  },
+  { capture: true, passive: true }
+)
 useEventListener(rootEl, 'focusin', () => {
   keyboardFocusWithin.value = lastInputKeyboard.value
 })

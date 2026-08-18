@@ -168,6 +168,24 @@ describe('FeaturedCarousel02', () => {
     expect(activeDotTitle()).toBe('Slide C')
   })
 
+  it('lifts the keyboard pause when the focused control is clicked', async () => {
+    const user = setupUser()
+    render(FeaturedCarousel02, { props: { slides: makeSlides() } })
+    await nextTick()
+
+    // Keyboard focus on the first dot holds the carousel...
+    await user.tab()
+    await advance(20000)
+    expect(activeDotTitle()).toBe('Slide A')
+
+    // ...and clicking that same, already-focused dot fires no focusin, but
+    // the pointer interaction must still lift the keyboard pause.
+    await user.click(dot('Slide A'))
+    await user.unhover(dot('Slide A'))
+    await advance(5000)
+    expect(activeDotTitle()).toBe('Slide B')
+  })
+
   it('renders nothing to navigate for an empty slides array', () => {
     render(FeaturedCarousel02, { props: { slides: [] } })
     expect(screen.queryByRole('heading')).toBeNull()
