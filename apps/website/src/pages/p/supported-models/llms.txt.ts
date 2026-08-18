@@ -4,6 +4,7 @@ import type { APIRoute } from 'astro'
 
 import { dirLabels } from '../../../config/model-descriptions'
 import { models } from '../../../config/models'
+import { getRoutes } from '../../../config/routes'
 
 export const GET: APIRoute = ({ site }) => {
   const base = site ?? 'https://comfy.org'
@@ -21,9 +22,25 @@ export const GET: APIRoute = ({ site }) => {
     if (model.canonicalSlug) continue
     const mdUrl = new URL(`/p/supported-models/${model.slug}.md`, base).href
     const label = dirLabels[model.directory] ?? model.directory
-    lines.push(
-      `- [${model.displayName}](${mdUrl}): ${label}, ${model.workflowCount} workflow templates`
-    )
+    const templates = `${model.workflowCount} workflow template${model.workflowCount === 1 ? '' : 's'}`
+    lines.push(`- [${model.displayName}](${mdUrl}): ${label}, ${templates}`)
+  }
+
+  // Recent releases live on dedicated launch pages before their file-level
+  // registry entries exist — list them so the catalog covers the newest models.
+  const routes = getRoutes('en')
+  const launchPages: Array<[string, string]> = [
+    ['FLUX 3', routes.flux3],
+    ['MiniMax H3', routes.minimax],
+    ['MiniMax Music 3', routes.minimaxMusic3],
+    ['Seedance 2.5', routes.seedance],
+    ['Wan 3.0', routes.wan3],
+    ['Wan Animate 2', routes.wanAnimate2],
+    ['LTX 2.5', routes.ltx]
+  ]
+  lines.push('', '## Latest model launches', '')
+  for (const [name, path] of launchPages) {
+    lines.push(`- [${name}](${new URL(path, base).href}): launch page`)
   }
 
   lines.push(

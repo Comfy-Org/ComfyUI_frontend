@@ -58,5 +58,9 @@ export function buildWhatIsDescription(model: Model): string {
   const access = isPartnerModel(model)
     ? `You can run it in ComfyUI through partner nodes — inference runs on the provider's API, so no local weights or GPU are required.`
     : `You can run it locally in ComfyUI with full control over every parameter, or access it through Comfy Cloud.`
-  return `${model.displayName} is ${dirDesc}. ${access} ComfyUI's node-based workflow editor lets you connect ${model.displayName} with ControlNets, LoRAs, upscalers, and custom nodes to build any pipeline you need. There are ${model.workflowCount} community workflow templates using ${model.displayName} on Comfy Workflows, ready to load and customize.`
+  const templateCount =
+    model.workflowCount === 1
+      ? 'There is 1 community workflow template'
+      : `There are ${model.workflowCount} community workflow templates`
+  return `${model.displayName} is ${dirDesc}. ${access} ComfyUI's node-based workflow editor lets you connect ${model.displayName} with ControlNets, LoRAs, upscalers, and custom nodes to build any pipeline you need. ${templateCount} using ${model.displayName} on Comfy Workflows, ready to load and customize.`
 }
