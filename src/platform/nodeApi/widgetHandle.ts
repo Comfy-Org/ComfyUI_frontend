@@ -64,6 +64,19 @@ export interface WidgetHandle extends HandleCommon {
    * says `fixed` or `randomize` to know what the node will do next.
    */
   linked(): readonly WidgetHandle[]
+  /**
+   * Replaces the controls attached to this widget.
+   *
+   * Core uses this relationship for compound inputs: hiding a seed also hides
+   * its `control_after_generate` picker. Packs build the same compound control
+   * when they add a random-seed button or an index policy, and assigning
+   * `linkedWidgets` directly was the only way to make conversion-to-input hide
+   * the whole unit.
+   *
+   * Every name must identify another widget on this node. Pass an empty array
+   * to clear the relationship.
+   */
+  setLinked(names: readonly string[]): void
 
   isHidden(): boolean
   /**
@@ -202,6 +215,22 @@ export function createWidgetHandles(
                 ) as WidgetHandle
             )
           )
+        },
+        setLinked: (w, id, ...args) => {
+          const [nodeId] = id.split(SEP)
+          const node = resolveNode(nodeId)
+          if (!node) return
+          const names = args[0] as readonly string[]
+          const linked = names.map((name) => {
+            const widget = findWidget(node, name)
+            if (!widget) {
+              throw new ComfyApiError(
+                `No widget named '${name}' on this node, so it cannot be linked to '${w.name}'.`
+              )
+            }
+            return widget
+          })
+          w.linkedWidgets = linked
         },
         setValue: (w, id, ...args) => {
           const [nodeId] = id.split(SEP)

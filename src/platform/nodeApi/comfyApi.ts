@@ -102,6 +102,7 @@ const CAPABILITIES: ReadonlyMap<string, string> = new Map([
   ['slots.identity', '1.0'],
   ['widgets.reorder', '1.0'],
   ['widgets.hidden', '1.0'],
+  ['widgets.linked', '1.0'],
   ['slots.retype', '1.0'],
   ['slots.moveLinks', '1.0'],
   ['defs.extend', '1.0'],
@@ -136,6 +137,7 @@ const CAPABILITIES: ReadonlyMap<string, string> = new Map([
   ['workflow.textReplacements', '1.0'],
   ['execution.node', '1.0'],
   ['defs.typeCompatibility', '1.0'],
+  ['defs.inputValues', '1.0'],
   ['queue.disableAutoQueue', '1.0']
 ])
 

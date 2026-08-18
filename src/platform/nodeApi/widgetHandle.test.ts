@@ -179,6 +179,29 @@ describe('widget surface', () => {
       expect(widgets.get('seed')!.linked()).toEqual([])
     })
 
+    it('lets a pack declare controls that hide with its widget', () => {
+      const seed = widgets.get('seed')!
+
+      seed.setLinked(['steps', 'prompt'])
+      seed.setHidden(true)
+
+      expect(seed.linked().map((widget) => widget.name)).toEqual([
+        'steps',
+        'prompt'
+      ])
+      expect(node.widgets!.map((widget) => widget.hidden)).toEqual([
+        true,
+        true,
+        true
+      ])
+    })
+
+    it('refuses to link a widget that is not on the same node', () => {
+      expect(() => widgets.get('seed')!.setLinked(['missing'])).toThrow(
+        /No widget named 'missing'/
+      )
+    })
+
     it('retains the value while hidden', () => {
       const seed = widgets.get('seed')!
       seed.setValue(7)

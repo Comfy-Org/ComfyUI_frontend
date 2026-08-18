@@ -32,15 +32,16 @@ widget instance, not a Pinia store, not a Vue reactive proxy, not a constructor.
 > | ⛔  | Specified only — a pack needing it is an `api-gap` punt |
 >
 > **Implemented (v1.0):** `backend`, `commands`, `defs.define`,
-> `defs.extend`, `defs.typeCompatibility`, `execution.node`, `graph.nodes`,
-> `graph.selection`, `interaction.nodeDragEnd`, `interaction.nodeMoved`,
-> `interaction.state`, `node.changeScope`, `node.connectVeto`,
-> `node.geometry`, `node.menu`, `node.onPreview`, `node.onSerialize`,
-> `node.resolve`, `node.sizeConstraints`, `queue.disableAutoQueue`,
-> `serialization.control`, `settings`, `slots.connect`, `slots.dynamic`,
-> `slots.identity`, `slots.layout`, `slots.localizedName`, `slots.moveLinks`,
-> `slots.retype`, `slots.widgetConfig`, `storage`, `ui.sidebarTab`,
-> `viewport.changed`, `widgets.canvas`, `widgets.create`, `widgets.hidden`,
+> `defs.extend`, `defs.inputValues`, `defs.typeCompatibility`,
+> `execution.node`, `graph.nodes`, `graph.selection`,
+> `interaction.nodeDragEnd`, `interaction.nodeMoved`, `interaction.state`,
+> `node.changeScope`, `node.connectVeto`, `node.geometry`, `node.menu`,
+> `node.onPreview`, `node.onSerialize`, `node.resolve`,
+> `node.sizeConstraints`, `queue.disableAutoQueue`, `serialization.control`,
+> `settings`, `slots.connect`, `slots.dynamic`, `slots.identity`,
+> `slots.layout`, `slots.localizedName`, `slots.moveLinks`, `slots.retype`,
+> `slots.widgetConfig`, `storage`, `ui.sidebarTab`, `viewport.changed`,
+> `widgets.canvas`, `widgets.create`, `widgets.hidden`, `widgets.linked`,
 > `widgets.mount`, `widgets.reorder`, `widgets.typeContext`, `workflow.open`,
 > `workflow.textReplacements`.
 >
