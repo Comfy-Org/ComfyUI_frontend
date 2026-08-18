@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { t } from '@/i18n'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import type {
@@ -1563,14 +1564,15 @@ describe('ComfyApp', () => {
         outcome: 'core-nodes-unavailable' as const,
         fileName: 'a1111.png',
         toastMethod: 'addAlert' as const,
-        expectedToast:
-          'Could not load the workflow because this ComfyUI installation is missing core nodes. Check that the backend started correctly.'
+        expectedToast: t('toastMessages.a1111CoreNodesUnavailable')
       },
       {
         outcome: 'not-a1111' as const,
         fileName: 'parameters.png',
         toastMethod: 'addAlert' as const,
-        expectedToast: 'Unable to find workflow in parameters.png'
+        expectedToast: t('toastMessages.fileLoadError', {
+          fileName: 'parameters.png'
+        })
       },
       {
         outcome: 'imported-without-embeddings' as const,
@@ -1578,9 +1580,8 @@ describe('ComfyApp', () => {
         toastMethod: 'add' as const,
         expectedToast: {
           severity: 'warn',
-          summary: 'Warning',
-          detail:
-            'Embeddings could not be loaded from the server. The workflow was imported, but embedding names were left as plain text.'
+          summary: t('g.warning'),
+          detail: t('toastMessages.a1111EmbeddingsUnavailable')
         }
       }
     ])('maps $outcome to its message', async (testCase) => {
