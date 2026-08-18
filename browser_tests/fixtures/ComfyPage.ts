@@ -538,9 +538,6 @@ export const comfyPageFixture = base.extend<{
     const isVueNodes = testInfo.tags.includes('@vue-nodes')
     comfyPage.isVueNodes = isVueNodes
 
-    // Not caught: a seed that silently failed leaves every `initialSettings`
-    // value at whatever the shared per-worker user last persisted, which
-    // surfaces as an unrelated assertion failing on some runs and not others.
     await comfyPage.setupSettings({
       'Comfy.UseNewMenu': 'Top',
       // Hide canvas menu/info/selection toolbox by default.
