@@ -896,6 +896,9 @@ describe('ComfyApp', () => {
         expect(placeholder?.last_serialization?.widgets_values).toEqual([
           points
         ])
+        expect(
+          placeholder?.last_serialization?.widgets_values_named
+        ).toMatchObject({ points })
 
         // An object value whose __value__ is not an array is a legitimate
         // widget value, not the export wrapper - it must pass through as-is.
