@@ -664,6 +664,15 @@ export function useMediaAssetActions() {
     const assetArray = Array.isArray(assets) ? assets : [assets]
     if (assetArray.length === 0) return false
 
+    if (flags.assetsEnabled && !flags.assetDeletionEnabled) {
+      toast.add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: t('mediaAsset.deletionUnsupported')
+      })
+      return false
+    }
+
     const assetsStore = useAssetsStore()
     const isSingle = assetArray.length === 1
 

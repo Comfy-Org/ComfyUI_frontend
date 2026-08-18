@@ -847,6 +847,7 @@ function createAssetService() {
       )
     }
 
+    //FIXME: deleted asset is not necessarily input
     invalidateInputAssetsIncludingPublic()
   }
 
