@@ -1,4 +1,4 @@
-import { render } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { toNodeId } from '@/types/nodeId'
@@ -312,6 +312,62 @@ describe('useSlotElementTracking', () => {
     syncNodeSlotLayoutsFromDOM(NODE_ID)
 
     expect(batchUpdateSpy).not.toHaveBeenCalled()
+  })
+
+  it('remeasures a cached slot after KeepAlive activation', async () => {
+    let slotLeft = 10
+    const active = ref(true)
+    const TrackedSlot = defineComponent({
+      setup() {
+        const element = ref<HTMLElement | null>(null)
+        useSlotElementTracking({
+          nodeId: NODE_ID,
+          index: SLOT_INDEX,
+          type: 'input',
+          element
+        })
+        return { element }
+      },
+      template:
+        '<div data-testid="tracked-node" data-node-id="test-node"><div ref="element" data-testid="tracked-slot" /></div>'
+    })
+    const Parent = defineComponent({
+      components: { TrackedSlot },
+      setup: () => ({ active }),
+      template: '<KeepAlive><TrackedSlot v-if="active" /></KeepAlive>'
+    })
+    const { unmount } = render(Parent)
+    const nodeElement = screen.getByTestId('tracked-node')
+    const slotElement = screen.getByTestId('tracked-slot')
+    nodeElement.getBoundingClientRect = () =>
+      ({
+        left: 0,
+        top: 0,
+        width: 200,
+        height: 100
+      }) as DOMRect
+    slotElement.getBoundingClientRect = () =>
+      ({
+        left: slotLeft,
+        top: 30,
+        width: 10,
+        height: 10
+      }) as DOMRect
+
+    await nextTick()
+    flushScheduledSlotLayoutSync()
+    const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
+    expect(layoutStore.getSlotLayout(slotKey)?.position.x).toBe(15)
+
+    active.value = false
+    await nextTick()
+    slotLeft = 110
+    active.value = true
+    await nextTick()
+    flushScheduledSlotLayoutSync()
+
+    expect(layoutStore.getSlotLayout(slotKey)?.position.x).toBe(115)
+    unmount()
   })
 
   describe('collapsed node slot sync', () => {

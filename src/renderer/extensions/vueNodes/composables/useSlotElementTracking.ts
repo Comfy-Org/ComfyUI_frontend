@@ -5,7 +5,7 @@
  * positions in a single batched pass, and caches offsets so that node moves
  * update slot positions without DOM reads.
  */
-import { onMounted, onUnmounted, watch } from 'vue'
+import { onActivated, onMounted, onUnmounted, watch } from 'vue'
 import type { Ref } from 'vue'
 
 import { useSharedCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
@@ -309,7 +309,7 @@ export function useSlotElementTracking(options: {
 
   onMounted(() => {
     if (!nodeId) return
-    const stop = watch(
+    watch(
       element,
       (el) => {
         if (!el) return
@@ -363,12 +363,13 @@ export function useSlotElementTracking(options: {
 
         // Seed initial sync from DOM
         scheduleSlotLayoutSync(nodeId)
-
-        // Stop watching once registered
-        stop()
       },
       { immediate: true, flush: 'post' }
     )
+  })
+
+  onActivated(() => {
+    if (nodeId) scheduleSlotLayoutSync(nodeId)
   })
 
   onUnmounted(() => {
