@@ -3,6 +3,7 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
 import { GET_CONFIG } from '@/services/litegraphService'
 
@@ -342,6 +343,25 @@ describe('slot handles', () => {
         nodeId: String(source.id),
         outputIndex: 0
       })
+    })
+
+    it('reports the type arriving from a subgraph input panel', () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'seed', type: 'INT' }]
+      })
+      const interior = new LGraphNode('Interior', 'InteriorNode')
+      const input = interior.addInput('seed', '*')
+      subgraph.add(interior)
+      subgraph.inputNode.slots[0].connect(input, interior)
+      const interiorInputs = createInputCollection(
+        () => subgraph,
+        () => subgraph.getNodeById(interior.id) ?? undefined
+      )
+
+      const handle = interiorInputs.byName('seed')! as InputSlotHandle & {
+        readonly connectedType?: string
+      }
+      expect(handle.connectedType).toBe('INT')
     })
 
     it('resolves the source through frontend nodes without changing the graph', () => {
