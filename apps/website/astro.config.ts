@@ -63,7 +63,10 @@ export default defineConfig({
           }
         }
         if (!basePath.startsWith('/')) basePath = '/' + basePath
-        const cleanBasePath = basePath === '/' ? '' : basePath
+        let cleanBasePath = basePath === '/' ? '' : basePath
+        if (cleanBasePath.length > 1 && cleanBasePath.endsWith('/')) {
+          cleanBasePath = cleanBasePath.slice(0, -1)
+        }
 
         item.links = [
           {

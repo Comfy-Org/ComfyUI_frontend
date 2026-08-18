@@ -61,7 +61,10 @@ for (const prefix of knownPrefixes) {
   }
 }
 if (!basePath.startsWith('/')) basePath = '/' + basePath
-const cleanBasePath = basePath === '/' ? '' : basePath
+let cleanBasePath = basePath === '/' ? '' : basePath
+if (cleanBasePath.length > 1 && cleanBasePath.endsWith('/')) {
+  cleanBasePath = cleanBasePath.slice(0, -1)
+}
 
 const hreflangLinks = [
   { hreflang: 'x-default', href: new URL(localizeHref(cleanBasePath || '/', 'en'), canonicalURL.origin).href },
