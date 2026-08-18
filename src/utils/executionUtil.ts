@@ -1,3 +1,5 @@
+import { cloneDeep } from 'es-toolkit'
+
 import type {
   ExecutableLGraphNode,
   ExecutionId,
@@ -13,6 +15,32 @@ import type {
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 import { compressWidgetInputSlots } from './litegraphUtil'
+
+function cloneWorkflowWidgetValue(value: unknown): unknown {
+  return value != null && typeof value === 'object'
+    ? cloneDeep(value)
+    : (value ?? null)
+}
+
+function isWidgetValueRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+}
+
+function syncWorkflowWidgetValue(
+  widgetValues: unknown,
+  widgetName: string,
+  widgetIndex: number,
+  value: unknown
+): void {
+  if (Array.isArray(widgetValues)) {
+    widgetValues[widgetIndex] = cloneWorkflowWidgetValue(value)
+  } else if (
+    isWidgetValueRecord(widgetValues) &&
+    Object.hasOwn(widgetValues, widgetName)
+  ) {
+    widgetValues[widgetName] = cloneWorkflowWidgetValue(value)
+  }
+}
 
 /**
  * Converts the current graph workflow for sending to the API.
@@ -56,6 +84,12 @@ export const graphToPrompt = async (
   workflow.extra ??= {}
   workflow.extra.frontendVersion = __COMFYUI_FRONTEND_VERSION__
 
+  // DTO IDs are strings, while workflow node IDs may be numbers.
+  const workflowNodeById = new Map<string, { widgets_values?: unknown }>()
+  for (const workflowNode of workflow.nodes) {
+    workflowNodeById.set(String(workflowNode.id), workflowNode)
+  }
+
   const nodeDtoMap = new Map<ExecutionId, ExecutableLGraphNode>()
   for (const node of graph.computeExecutionOrder(false)) {
     const dto: ExecutableLGraphNode = new ExecutableNodeDTO(
@@ -97,12 +131,32 @@ export const graphToPrompt = async (
     // Note: widget.options.serialize controls prompt inclusion (checked here).
     // widget.serialize controls workflow persistence (checked by LGraphNode).
     if (widgets) {
+      // Inner subgraph DTO IDs are absent from the root workflow snapshot.
+      const wfNode = workflowNodeById.get(String(node.id))
+
       for (const [i, widget] of widgets.entries()) {
         if (!widget.name || widget.options?.serialize === false) continue
 
         const widgetValue = widget.serializeValue
           ? await widget.serializeValue(node, i)
           : widget.value
+        const workflowWidgetValues = wfNode?.widgets_values
+
+        // graph.serialize() precedes DTO creation and value resolution, so
+        // patch its snapshot in place.
+        if (
+          widget.serializeValue &&
+          widget.serialize !== false &&
+          widget.syncToWorkflow !== false
+        ) {
+          syncWorkflowWidgetValue(
+            workflowWidgetValues,
+            widget.name,
+            i,
+            widgetValue
+          )
+        }
+
         // By default, Array values are reserved to represent node connections.
         // We need to wrap the array as an object to avoid the misinterpretation
         // of the array as a node connection.
