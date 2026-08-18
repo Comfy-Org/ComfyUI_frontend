@@ -16,6 +16,8 @@ import { inputLink, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 import { useLinkStore } from '@/stores/linkStore'
 import type { EndpointUpdate } from '@/stores/linkStore'
 import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
+import type { InputSpec } from '@/schemas/nodeDefSchema'
+import { GET_CONFIG } from '@/services/litegraphService'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
 
@@ -100,6 +102,15 @@ export interface SlotPatch {
 export interface InputSlotPatch extends SlotPatch {
   /** Retargets the widget this input is the socket form of. Null clears it. */
   widget?: string | null
+  /** Replaces the input declaration used by connected Primitive nodes. */
+  widgetConfig?: InputWidgetConfig
+}
+
+/** @knipIgnoreUnusedButUsedByCustomNodes */
+export interface InputWidgetConfig {
+  /** Backend input type, or the choices for a COMBO input. */
+  readonly type: string | readonly string[]
+  readonly options?: Readonly<Record<string, unknown>>
 }
 
 /** @knipIgnoreUnusedButUsedByCustomNodes */
@@ -254,6 +265,34 @@ function applyPatch(
   }
 }
 
+function toInputSpec(config: InputWidgetConfig): InputSpec {
+  const type = Array.isArray(config.type) ? [...config.type] : config.type
+  return [type, { ...config.options }] as InputSpec
+}
+
+function setInputWidgetConfig(
+  graph: LGraph | null | undefined,
+  node: LGraphNode,
+  slot: INodeInputSlot,
+  config: InputWidgetConfig
+): void {
+  if (!slot.widget) {
+    throw new ComfyApiError(
+      `Input '${slot.name}' is not the socket form of a widget.`
+    )
+  }
+  const inputSpec = toInputSpec(config)
+  slot.widget[GET_CONFIG] = () => inputSpec
+  if (!graph) return
+  const index = node.inputs.indexOf(slot)
+  const link = inputLink(graph, node.id, index)
+  const origin = link ? graph.getNodeById(link.origin_id) : undefined
+  if (origin?.type !== 'PrimitiveNode') return
+  const recreate = (origin as LGraphNode & { recreateWidget?: () => unknown })
+    .recreateWidget
+  recreate?.call(origin)
+}
+
 function snapshotSlot(
   slot: INodeInputSlot | INodeOutputSlot,
   index: number,
@@ -330,6 +369,16 @@ function createInputHandle(
     },
     modify(patch) {
       const node = getNode()
+      const current = slotAt()
+      if (
+        patch.widgetConfig &&
+        (patch.widget === null ||
+          (!current?.widget && patch.widget === undefined))
+      ) {
+        throw new ComfyApiError(
+          `Input '${current?.name ?? ''}' needs a widget before it can receive widgetConfig.`
+        )
+      }
       if (
         patch.widget !== undefined &&
         patch.widget !== null &&
@@ -343,7 +392,12 @@ function createInputHandle(
       applyPatch(slot, patch)
       if (slot && patch.widget !== undefined) {
         if (patch.widget === null) delete slot.widget
-        else slot.widget = { name: patch.widget }
+        else if (slot.widget?.name !== patch.widget) {
+          slot.widget = { name: patch.widget }
+        }
+      }
+      if (slot && node && patch.widgetConfig) {
+        setInputWidgetConfig(getGraph(), node, slot, patch.widgetConfig)
       }
     },
     snapshot() {
@@ -545,6 +599,8 @@ interface SlotOptions {
    * without it changes the saved file.
    */
   widget?: string
+  /** The declaration a connected Primitive node should render. */
+  widgetConfig?: InputWidgetConfig
 }
 
 /**
@@ -563,7 +619,16 @@ function slotProperties(options?: SlotOptions) {
   if (options.shape && options.shape !== 'default') {
     properties.shape = SLOT_SHAPES[options.shape]
   }
-  if (options.widget) properties.widget = { name: options.widget }
+  if (options.widget) {
+    const widget: NonNullable<INodeInputSlot['widget']> = {
+      name: options.widget
+    }
+    if (options.widgetConfig) {
+      const inputSpec = toInputSpec(options.widgetConfig)
+      widget[GET_CONFIG] = () => inputSpec
+    }
+    properties.widget = widget
+  }
   return Object.keys(properties).length ? properties : undefined
 }
 
@@ -702,6 +767,11 @@ export function createInputCollection(
     {
       add: (name, type, options) => {
         const node = getNode()
+        if (options?.widgetConfig && !options.widget) {
+          throw new ComfyApiError(
+            `Input '${name}' needs a widget before it can receive widgetConfig.`
+          )
+        }
         if (
           options?.widget &&
           !node?.widgets?.some((w) => w.name === options.widget)
