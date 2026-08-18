@@ -851,6 +851,69 @@ describe('ComfyApp', () => {
       }
     })
 
+    it('remaps flattened subgraph ids to colon-free local ids', async () => {
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      const cleanupErrorHooks = installErrorClearingHooks(graph)
+      const missingNodesStore = useMissingNodesErrorStore()
+      const nodeReplacementStore = useNodeReplacementStore()
+      vi.spyOn(nodeReplacementStore, 'load').mockResolvedValue()
+      const sourceType = 'test/FlattenedSourceNode'
+      const targetType = 'test/FlattenedTargetNode'
+      class FlattenedSourceNode extends LGraphNode {
+        constructor(title = 'FlattenedSourceNode') {
+          super(title)
+          this.addOutput('out', 'LATENT')
+        }
+      }
+      class FlattenedTargetNode extends LGraphNode {
+        constructor(title = 'FlattenedTargetNode') {
+          super(title)
+          this.addInput('samples', 'LATENT')
+        }
+      }
+      LiteGraph.registerNodeType(sourceType, FlattenedSourceNode)
+      LiteGraph.registerNodeType(targetType, FlattenedTargetNode)
+
+      try {
+        await app.loadApiJson(
+          {
+            '194:45': {
+              class_type: sourceType,
+              inputs: {},
+              _meta: { title: 'Inner source' }
+            },
+            '7': {
+              class_type: targetType,
+              inputs: { samples: ['194:45', 0] },
+              _meta: { title: 'Root target' }
+            },
+            '194:46': {
+              class_type: 'UninstalledInnerNode',
+              inputs: {},
+              _meta: { title: 'Missing inner' }
+            }
+          },
+          ''
+        )
+
+        expect(graph.nodes.every((n) => !String(n.id).includes(':'))).toBe(true)
+        expect(graph.getNodeById(toNodeId('194_45'))).toBeTruthy()
+        expect(graph.links.size).toBe(1)
+        expect(missingNodesStore.missingNodesError?.nodeTypes).toEqual([
+          expect.objectContaining({
+            type: 'UninstalledInnerNode',
+            nodeId: '194_46'
+          })
+        ])
+      } finally {
+        cleanupErrorHooks()
+        LiteGraph.unregisterNodeType(sourceType)
+        LiteGraph.unregisterNodeType(targetType)
+      }
+    })
+
     it('creates a removable placeholder for an API JSON missing node', async () => {
       const graph = new LGraph()
       Reflect.set(app, 'rootGraphInternal', graph)
