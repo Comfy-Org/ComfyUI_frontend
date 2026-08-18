@@ -132,11 +132,16 @@ describe('parseSafeRichText', () => {
   )
 
   it('drops aria and data attributes, which are not on the allowlist', () => {
-    expect(
-      parseSafeRichText(
-        '<a href="/docs" aria-label="label" aria-hidden="true" data-x="1" id="anchor">x</a>'
-      )
-    ).toMatchObject([{ attrs: { href: '/docs' } }])
+    const [link] = parseSafeRichText(
+      '<a href="/docs" aria-label="label" aria-hidden="true" data-x="1" id="anchor">x</a>'
+    )
+
+    expect(link).toEqual({
+      type: 'element',
+      tag: 'a',
+      attrs: { href: '/docs' },
+      children: [{ type: 'text', value: 'x' }]
+    })
   })
 
   it('handles empty and malformed input', () => {
