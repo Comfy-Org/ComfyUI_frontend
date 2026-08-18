@@ -470,19 +470,14 @@ const { isResubscribing, handleResubscribe } = useResubscribe()
 const { displayPrice, priceUnitLabel } = useWorkspacePlanPricing()
 const { menuEntries } = useWorkspaceMenuItems()
 
-const isTerminalPersonalSubscription = computed(
-  () =>
-    isInPersonalWorkspace.value &&
-    !canAccessSubscriptionFeatures.value &&
-    billingStatus.value === 'inactive'
-)
-
-const isSubscriptionEnded = computed(
-  () =>
-    subscriptionStatus.value === 'ended' ||
-    (isSubscriptionCancelled.value && !canAccessSubscriptionFeatures.value) ||
-    isTerminalPersonalSubscription.value
-)
+const isSubscriptionEnded = computed(() => {
+  if (subscriptionStatus.value === 'ended') return true
+  if (canAccessSubscriptionFeatures.value) return false
+  return (
+    isSubscriptionCancelled.value ||
+    (isInPersonalWorkspace.value && billingStatus.value === 'inactive')
+  )
+})
 
 // Show subscribe prompt to owners without active subscription. A cancelled plan
 // stays active until its end date, so it keeps the subscribed treatment.
