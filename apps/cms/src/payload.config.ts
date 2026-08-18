@@ -11,6 +11,7 @@ import { Gallery } from './collections/Gallery'
 import { Creators } from './collections/Creators'
 import { Teams } from './collections/Teams'
 import { Tools } from './collections/Tools'
+import { rebuildWebsiteEndpoint } from './endpoints/rebuildWebsite'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -21,8 +22,12 @@ export default buildConfig({
     importMap: {
       baseDir: path.resolve(dirname),
     },
+    components: {
+      beforeDashboard: ['/components/RebuildSiteButton#RebuildSiteButton'],
+    },
   },
   collections: [Gallery, Media, Creators, Teams, Tools, Users],
+  endpoints: [rebuildWebsiteEndpoint],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
