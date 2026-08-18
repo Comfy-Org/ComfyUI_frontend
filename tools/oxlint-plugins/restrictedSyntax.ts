@@ -78,3 +78,18 @@ export const noMisplacedSpecFiles = {
     }
   }
 }
+
+export const noPlaywrightImportsInFixtureData = {
+  create(context: RuleContext) {
+    return {
+      ImportDeclaration(node: ImportDeclaration) {
+        if (!node.source.value.startsWith('@playwright')) return
+        context.report({
+          node,
+          message:
+            'fixtures/data/ must contain only static data. No Playwright imports allowed.'
+        })
+      }
+    }
+  }
+}

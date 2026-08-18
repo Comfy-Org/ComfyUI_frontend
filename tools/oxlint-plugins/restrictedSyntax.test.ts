@@ -20,6 +20,9 @@ const remoteProbeDir = path.resolve(
 const misplacedSpecProbe = path.resolve(
   'src/__restricted_syntax_probes__/misplaced.spec.ts'
 )
+const fixtureDataProbeDir = path.resolve(
+  'browser_tests/fixtures/data/__restricted_syntax_probes__'
+)
 
 interface OxlintDiagnostic {
   readonly code?: string
@@ -128,6 +131,27 @@ describe('comfy/no-misplaced-spec-files', () => {
   it('reports spec files outside the browser and app e2e directories', () => {
     const findings = lint(restrictedConfig, [misplacedSpecProbe]).filter(
       ({ code }) => code === 'comfy(no-misplaced-spec-files)'
+    )
+    expect(findings).toHaveLength(1)
+  })
+})
+
+describe('comfy/no-playwright-imports-in-fixture-data', () => {
+  beforeAll(() => {
+    mkdirSync(fixtureDataProbeDir, { recursive: true })
+    writeFileSync(
+      path.join(fixtureDataProbeDir, 'reported.ts'),
+      "import { expect } from '@playwright/test'\nvoid expect\n"
+    )
+  })
+
+  afterAll(() => {
+    rmSync(fixtureDataProbeDir, { recursive: true, force: true })
+  })
+
+  it('reports Playwright imports in static fixture data', () => {
+    const findings = lint(repoConfig, [fixtureDataProbeDir]).filter(
+      ({ code }) => code === 'comfy(no-playwright-imports-in-fixture-data)'
     )
     expect(findings).toHaveLength(1)
   })
