@@ -15,6 +15,7 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { fitGraphToView } from '@/composables/canvas/fitGraphToView'
 import { useFocusNode } from '@/composables/canvas/useFocusNode'
 import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -359,6 +360,19 @@ const {
   }
 })
 
+let autoFitPending = false
+
+function fitDraftIntoView(): void {
+  const canvas = canvasStore.canvas
+  if (canvas) fitGraphToView(canvas)
+}
+
+watch(isStreaming, (streaming) => {
+  if (streaming || !autoFitPending) return
+  autoFitPending = false
+  fitDraftIntoView()
+})
+
 // The resumed turn's own workflow outlives a panel remount (draftStore
 // binds it at ack; only newChat/loadThread reset it), while the active tab
 // may have changed since - prefer the bound tab over active-tab derivation.
@@ -636,6 +650,8 @@ async function loadDraft(
     await app.loadGraphData(workflow, true, true, tab)
     draftRejectionNotified = false
     lastApplied = { workflowId, version }
+    if (isStreaming.value) autoFitPending = true
+    else fitDraftIntoView()
     const rendered = app.graph?.serialize()
     if (rendered)
       lastKnownGraph = { serialized: JSON.stringify(rendered), workflowId }
