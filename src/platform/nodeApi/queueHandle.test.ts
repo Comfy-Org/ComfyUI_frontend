@@ -16,13 +16,6 @@ const { queuePrompt } = vi.hoisted(() => ({
 }))
 vi.mock('@/scripts/app', () => ({ app: { queuePrompt } }))
 
-type QueueWithSettings = ReturnType<typeof createComfyApi>['queue'] & {
-  autoQueueMode(): 'disabled' | 'change' | 'instant'
-  setAutoQueueMode(mode: 'disabled' | 'change' | 'instant'): void
-  batchCount(): number
-  setBatchCount(count: number): void
-}
-
 function graphWith(...titles: string[]) {
   const graph = new LGraph()
   for (const title of titles) {
@@ -132,31 +125,29 @@ describe('comfy.queue', () => {
 
   it('reads and changes automatic queue modes', () => {
     const comfy = createComfyApi(() => graphWith('A'))
-    const queue = comfy.queue as QueueWithSettings
     const settings = useQueueSettingsStore()
     settings.mode = 'instant-idle'
 
-    expect(queue.autoQueueMode()).toBe('instant')
+    expect(comfy.queue.autoQueueMode()).toBe('instant')
 
-    queue.setAutoQueueMode('change')
+    comfy.queue.setAutoQueueMode('change')
     expect(settings.mode).toBe('change')
 
-    queue.setAutoQueueMode('instant')
+    comfy.queue.setAutoQueueMode('instant')
     expect(settings.mode).toBe('instant-running')
   })
 
   it('reads and changes the default batch count', () => {
     const comfy = createComfyApi(() => graphWith('A'))
-    const queue = comfy.queue as QueueWithSettings
     const settings = useQueueSettingsStore()
     settings.batchCount = 3
 
-    expect(queue.batchCount()).toBe(3)
+    expect(comfy.queue.batchCount()).toBe(3)
 
-    queue.setBatchCount(5)
+    comfy.queue.setBatchCount(5)
     expect(settings.batchCount).toBe(5)
 
-    expect(() => queue.setBatchCount(0)).toThrow(/positive integer/)
+    expect(() => comfy.queue.setBatchCount(0)).toThrow(/positive integer/)
     expect(settings.batchCount).toBe(5)
   })
 
