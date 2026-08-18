@@ -16,6 +16,7 @@ const {
   noMisplacedSpecFiles,
   noNewZodForRemoteApiTypes,
   noPlaywrightImportsInFixtureData,
+  noUnitTestFilesInBrowserTests,
   noUnsafeErrorAssertion
 } = requireFrom('./restrictedSyntax.ts') as typeof restrictedSyntax
 const { noModuleScopeVitestMocks, noRedundantVitestCleanup } = requireFrom(
@@ -32,6 +33,7 @@ export default {
     'no-new-zod-for-remote-api-types': noNewZodForRemoteApiTypes,
     'no-playwright-imports-in-fixture-data': noPlaywrightImportsInFixtureData,
     'no-redundant-vitest-cleanup': noRedundantVitestCleanup,
+    'no-unit-test-files-in-browser-tests': noUnitTestFilesInBrowserTests,
     'no-unsafe-error-assertion': noUnsafeErrorAssertion
   }
 }

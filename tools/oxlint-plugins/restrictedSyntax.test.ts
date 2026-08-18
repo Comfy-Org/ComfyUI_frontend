@@ -23,6 +23,9 @@ const misplacedSpecProbe = path.resolve(
 const fixtureDataProbeDir = path.resolve(
   'browser_tests/fixtures/data/__restricted_syntax_probes__'
 )
+const browserUnitTestProbe = path.resolve(
+  'browser_tests/tests/__restricted_syntax_probes__/misplaced.test.ts'
+)
 
 interface OxlintDiagnostic {
   readonly code?: string
@@ -152,6 +155,27 @@ describe('comfy/no-playwright-imports-in-fixture-data', () => {
   it('reports Playwright imports in static fixture data', () => {
     const findings = lint(repoConfig, [fixtureDataProbeDir]).filter(
       ({ code }) => code === 'comfy(no-playwright-imports-in-fixture-data)'
+    )
+    expect(findings).toHaveLength(1)
+  })
+})
+
+describe('comfy/no-unit-test-files-in-browser-tests', () => {
+  beforeAll(() => {
+    mkdirSync(path.dirname(browserUnitTestProbe), { recursive: true })
+    writeFileSync(browserUnitTestProbe, "test('misplaced', () => {})\n")
+  })
+
+  afterAll(() => {
+    rmSync(path.dirname(browserUnitTestProbe), {
+      recursive: true,
+      force: true
+    })
+  })
+
+  it('reports unit-test filenames in the Playwright test directory', () => {
+    const findings = lint(repoConfig, [browserUnitTestProbe]).filter(
+      ({ code }) => code === 'comfy(no-unit-test-files-in-browser-tests)'
     )
     expect(findings).toHaveLength(1)
   })

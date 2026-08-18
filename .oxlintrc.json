@@ -166,6 +166,12 @@
       }
     },
     {
+      "files": ["browser_tests/tests/**/*.test.ts"],
+      "rules": {
+        "comfy/no-unit-test-files-in-browser-tests": "error"
+      }
+    },
+    {
       "files": ["**/*.{stories,test,spec}.ts", "**/*.stories.vue"],
       "rules": {
         "no-console": "allow"

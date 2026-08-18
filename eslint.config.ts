@@ -230,19 +230,6 @@ export default defineConfig([
     }
   },
   {
-    files: ['browser_tests/tests/**/*.test.ts'],
-    rules: {
-      'no-restricted-syntax': [
-        'error',
-        {
-          selector: 'Program',
-          message:
-            '.test.ts files are not allowed in browser_tests/tests/; use .spec.ts instead'
-        }
-      ]
-    }
-  },
-  {
     files: ['**/*.test.ts'],
     rules: {
       'no-restricted-properties': [

@@ -93,3 +93,17 @@ export const noPlaywrightImportsInFixtureData = {
     }
   }
 }
+
+export const noUnitTestFilesInBrowserTests = {
+  create(context: RuleContext) {
+    return {
+      Program(node: Node) {
+        context.report({
+          node,
+          message:
+            '.test.ts files are not allowed in browser_tests/tests/; use .spec.ts instead'
+        })
+      }
+    }
+  }
+}
