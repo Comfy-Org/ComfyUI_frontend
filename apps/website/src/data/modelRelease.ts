@@ -49,7 +49,7 @@ export const modelReleaseSlides: ModelReleaseSlide[] = [
       href: 'https://cloud.comfy.org/?template=api_seedance2_5_r2v'
     },
     tagKeys: ['tags.partnerNodes'],
-    autoplayMs: 17000
+    autoplayMs: 17500
   },
   {
     id: 'ltx-2-5',
@@ -68,7 +68,7 @@ export const modelReleaseSlides: ModelReleaseSlide[] = [
       href: 'https://cloud.comfy.org/?template=video_ltx2_5_i2v'
     },
     tagKeys: ['tags.openSource', 'tags.partnerNodes'],
-    autoplayMs: 20000
+    autoplayMs: 20500
   },
   {
     id: 'wan-animate-2',
@@ -87,7 +87,7 @@ export const modelReleaseSlides: ModelReleaseSlide[] = [
       href: 'https://cloud.comfy.org/?template=video_wan_animate2'
     },
     tagKeys: ['tags.openWeights'],
-    autoplayMs: 18400
+    autoplayMs: 18000
   },
   {
     id: 'minimax-h3',
@@ -106,6 +106,6 @@ export const modelReleaseSlides: ModelReleaseSlide[] = [
       href: 'https://cloud.comfy.org/?share=a781503cf508'
     },
     tagKeys: ['tags.openWeights', 'tags.partnerNodes'],
-    autoplayMs: 8000
+    autoplayMs: 8500
   }
 ]
