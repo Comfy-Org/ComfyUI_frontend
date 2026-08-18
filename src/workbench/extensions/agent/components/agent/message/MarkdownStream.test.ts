@@ -1,6 +1,16 @@
 // @vitest-environment jsdom
 import { render, screen } from '@testing-library/vue'
-import { describe, expect, it } from 'vitest'
+import userEvent from '@testing-library/user-event'
+import { describe, expect, it, vi } from 'vitest'
+
+// jsdom lacks ResizeObserver, which the asset-preview import chain references.
+vi.hoisted(() => {
+  globalThis.ResizeObserver = class {
+    observe(): void {}
+    unobserve(): void {}
+    disconnect(): void {}
+  }
+})
 
 import { i18n } from '@/i18n'
 
@@ -48,7 +58,9 @@ describe('MarkdownStream', () => {
     )
   })
 
-  it('renders multiple asset links as separate list items', () => {
+  // FE-1326 superseded the FE-1328 list rendering for multiple assets: the
+  // DES-530 per-count clickable grid replaces the list of links.
+  it('groups multiple asset links into the clickable preview grid', () => {
     const contactUrl = 'https://cloud.comfy.org/api/view?filename=contact.png'
     const fluxUrl = 'https://cloud.comfy.org/api/view?filename=flux.png'
     render(MarkdownStream, {
@@ -57,34 +69,57 @@ describe('MarkdownStream', () => {
           `- [${contactUrl}](${contactUrl})`,
           `- [${fluxUrl}](${fluxUrl})`
         ].join('\n')
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.queryByRole('listitem')).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'contact.png' })
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'flux.png' })).toBeInTheDocument()
+  })
+
+  it('keeps asset previews when the message re-renders', () => {
+    const assetUrl = 'https://cloud.comfy.org/api/view?filename=a.png'
+    const text = `![gen](${assetUrl})`
+    const first = render(MarkdownStream, {
+      props: { text },
+      global: { plugins: [i18n] }
+    })
+    expect(screen.getByRole('img', { name: 'gen' })).toBeInTheDocument()
+    first.unmount()
+
+    render(MarkdownStream, { props: { text }, global: { plugins: [i18n] } })
+    expect(screen.getByRole('img', { name: 'gen' })).toBeInTheDocument()
+  })
+
+  it('opens the inspect view when a prose image is clicked', async () => {
+    const assetUrl = 'https://cloud.comfy.org/api/view?filename=a.png'
+    render(MarkdownStream, {
+      props: { text: `Look at ![gen](${assetUrl}) closely` },
+      global: {
+        stubs: {
+          MediaLightbox: {
+            props: ['allGalleryItems', 'activeIndex'],
+            template:
+              '<div data-testid="lightbox" :data-active="activeIndex" />'
+          }
+        }
       }
     })
 
-    const items = screen.getAllByRole('listitem')
-    const localContactUrl = contactUrl.replace(
-      'https://cloud.comfy.org',
-      window.location.origin
-    )
-    const localFluxUrl = fluxUrl.replace(
-      'https://cloud.comfy.org',
-      window.location.origin
-    )
-    expect(items).toHaveLength(2)
-    expect(screen.getByRole('link', { name: localContactUrl })).toHaveAttribute(
-      'href',
-      localContactUrl
-    )
-    expect(screen.getByRole('link', { name: localFluxUrl })).toHaveAttribute(
-      'href',
-      localFluxUrl
-    )
+    await userEvent.click(screen.getByRole('img', { name: 'gen' }))
+
+    expect(screen.getByTestId('lightbox').dataset.active).toBe('0')
   })
 
   it('preserves the asset preview when the response uses markdown image syntax', () => {
     const assetUrl =
       'https://cloud.comfy.org/api/view?filename=ComfyUI_00001_32f6b8c7.png&subfolder=agent%2Foutputs&type=output'
     render(MarkdownStream, {
-      props: { text: `![Generated asset](${assetUrl})` }
+      props: { text: `![Generated asset](${assetUrl})` },
+      global: { plugins: [i18n] }
     })
 
     const image = screen.getByRole('img', { name: 'Generated asset' })

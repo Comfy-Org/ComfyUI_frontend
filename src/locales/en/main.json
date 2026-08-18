@@ -5070,7 +5070,9 @@
     "toolForgotPreference": "Forgot a preference",
     "openWorkflowTab": "Open {name}",
     "runModeTriggerAutoLimit": "Auto (limited)",
-    "runModeTriggerAutoLimitTooltip": "Ask when credit limit is reached"
+    "runModeTriggerAutoLimitTooltip": "Ask when credit limit is reached",
+    "showMore": "Show more",
+    "showLess": "Show less"
   },
   "onboardingCoachmarks": {
     "stepLabel": "Step {current} of {total}",
