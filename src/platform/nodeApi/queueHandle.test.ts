@@ -189,6 +189,30 @@ describe('comfy.queue', () => {
     expect(seen).toEqual([{ promptIds: ['abc'], rejected: 1 }])
   })
 
+  it('reports the executable node count for each accepted submission', () => {
+    const comfy = createComfyApi(() => graphWith('A'))
+    const seen: unknown[] = []
+    comfy.queue.onAfterRun((event) => seen.push(event))
+
+    Reflect.apply(api.dispatchCustomEvent, api, [
+      'promptQueued',
+      {
+        number: 0,
+        batchCount: 1,
+        promptIds: ['abc'],
+        submissions: [{ promptId: 'abc', nodeCount: 3 }]
+      }
+    ])
+
+    expect(seen).toEqual([
+      {
+        promptIds: ['abc'],
+        submissions: [{ promptId: 'abc', nodeCount: 3 }],
+        rejected: 0
+      }
+    ])
+  })
+
   it('publishes a frozen prompt rejection with node validation details', () => {
     const comfy = createComfyApi(() => graphWith('A'))
     const seen: unknown[] = []

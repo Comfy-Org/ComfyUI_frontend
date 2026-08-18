@@ -782,6 +782,38 @@ describe('ComfyApp', () => {
       }
     })
 
+    it('reports executable node counts for accepted submissions', async () => {
+      prepareEmptyPromptQueue()
+      vi.mocked(app.graphToPrompt).mockResolvedValue({
+        output: {
+          '1': {
+            class_type: 'LoadImage',
+            inputs: {},
+            _meta: { title: 'Load Image' }
+          },
+          '2': {
+            class_type: 'PreviewImage',
+            inputs: { images: ['1', 0] },
+            _meta: { title: 'Preview Image' }
+          }
+        },
+        workflow: createWorkflowGraphData()
+      })
+      vi.spyOn(api, 'queuePrompt').mockResolvedValue({
+        prompt_id: 'job-1',
+        error: ''
+      })
+
+      await app.queuePrompt(0)
+
+      expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+        'promptQueued',
+        expect.objectContaining({
+          submissions: [{ promptId: 'job-1', nodeCount: 2 }]
+        })
+      )
+    })
+
     it('tracks a resolved prompt rejection at the submission stage', async () => {
       prepareEmptyPromptQueue()
       const trackExecutionOutcome = vi.fn()
