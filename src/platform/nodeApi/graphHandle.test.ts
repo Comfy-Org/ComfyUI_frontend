@@ -17,6 +17,7 @@ import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphT
 import { ComfyApiError } from './errors'
 import { createGraphApi } from './graphHandle'
 import type { GraphHandle } from './graphHandle'
+import type { Supplier } from './resolution'
 
 describe('graph API (composed)', () => {
   let graph: LGraph
@@ -756,5 +757,87 @@ describe('batching mutations into one undo step', () => {
     ).toThrow('pack blew up')
 
     expect(calls).toEqual(['before', 'after'])
+  })
+})
+
+describe('resolved supplies', () => {
+  function apiWithSuppliers(
+    graph: LGraph,
+    suppliers: ReadonlyMap<string, Supplier>
+  ): GraphHandle {
+    return Reflect.apply(createGraphApi, undefined, [
+      () => graph,
+      '',
+      () => new Map(),
+      () => suppliers
+    ]) as GraphHandle
+  }
+
+  function addBroadcaster(graph: LGraph) {
+    const node = new LGraphNode('Broadcaster', 'Broadcaster')
+    node.addOutput('model', 'MODEL')
+    graph.add(node)
+    return node
+  }
+
+  it('exposes the winning supplier and its final graph-local edge', () => {
+    const graph = new LGraph()
+    const quiet = addBroadcaster(graph)
+    const loud = addBroadcaster(graph)
+    const sink = new LGraphNode('Sink', 'Sink')
+    sink.addInput('model', 'MODEL')
+    graph.add(sink)
+    const supplier: Supplier = (view) =>
+      view.unconnectedInputs().map((input) => ({
+        to: { nodeId: input.nodeId, input: input.input },
+        from: { output: 0 },
+        priority: view.self.id === String(loud.id) ? 10 : 1
+      }))
+    const api = apiWithSuppliers(graph, new Map([['Broadcaster', supplier]]))
+
+    const read = Reflect.get(api, 'resolvedSupplies')
+    expect(read).toBeTypeOf('function')
+    if (typeof read !== 'function') return
+
+    const supplies = Reflect.apply(read, api, []) as readonly {
+      supplierNodeId: string
+      to: { nodeId: string; input: number }
+      from: { kind: 'output'; nodeId: string; output: number }
+    }[]
+    expect(supplies).toEqual([
+      {
+        supplierNodeId: String(loud.id),
+        to: { nodeId: String(sink.id), input: 0 },
+        from: { kind: 'output', nodeId: String(loud.id), output: 0 }
+      }
+    ])
+    expect(String(quiet.id)).not.toBe(String(loud.id))
+    expect(Object.isFrozen(supplies)).toBe(true)
+    expect(Object.isFrozen(supplies[0])).toBe(true)
+    expect(Object.isFrozen(supplies[0].to)).toBe(true)
+    expect(Object.isFrozen(supplies[0].from)).toBe(true)
+  })
+
+  it('reports no edge when the winning priority is tied', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const graph = new LGraph()
+    addBroadcaster(graph)
+    addBroadcaster(graph)
+    const sink = new LGraphNode('Sink', 'Sink')
+    sink.addInput('model', 'MODEL')
+    graph.add(sink)
+    const supplier: Supplier = (view) =>
+      view.unconnectedInputs().map((input) => ({
+        to: { nodeId: input.nodeId, input: input.input },
+        from: { output: 0 }
+      }))
+    const api = apiWithSuppliers(graph, new Map([['Broadcaster', supplier]]))
+
+    const read = Reflect.get(api, 'resolvedSupplies')
+    expect(read).toBeTypeOf('function')
+    if (typeof read !== 'function') return
+
+    expect(Reflect.apply(read, api, [])).toEqual([])
+    expect(warn).toHaveBeenCalledOnce()
   })
 })
