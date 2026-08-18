@@ -24,7 +24,7 @@ import type {
   OutputSlotHandle,
   SlotCollection
 } from './slotHandle'
-import type { Unsubscribe, WidgetCollection } from './widgetHandle'
+import type { Unsubscribe, WidgetCollection, WidgetValue } from './widgetHandle'
 
 /** @knipIgnoreUnusedButUsedByCustomNodes */
 export type NodeMode = 'always' | 'never' | 'bypass' | 'on-event' | 'on-trigger'
@@ -111,7 +111,7 @@ export interface NodeHandle extends HandleCommon {
   setShape(shape: NodeShape): void
   getProperty<T = unknown>(key: string): T | undefined
   getProperties(): Readonly<Record<string, unknown>>
-  setProperty(key: string, value: unknown): void
+  setProperty(key: string, value: WidgetValue): void
   /**
    * Whether this node emits `widgets_values` when the workflow is serialized.
    *
@@ -406,7 +406,7 @@ export function createNodeHandles(
         getProperty: (n, ...args) => n.properties?.[String(args[0])],
         getProperties: (n) => Object.freeze({ ...n.properties }),
         setProperty: (n, ...args) => {
-          n.properties = { ...n.properties, [String(args[0])]: args[1] }
+          n.setProperty(String(args[0]), args[1])
         },
         getPosition: (n) => freezePoint(n.pos[0], n.pos[1]),
         setPosition: (n, ...args) => {

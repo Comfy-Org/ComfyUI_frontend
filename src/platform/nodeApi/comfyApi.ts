@@ -117,6 +117,8 @@ const CAPABILITIES: ReadonlyMap<string, string> = new Map([
   ['node.resolve', '1.0'],
   ['slots.dynamic', '1.0'],
   ['slots.widgetConfig', '1.0'],
+  ['slots.layout', '1.0'],
+  ['slots.localizedName', '1.0'],
   ['graph.selection', '1.0'],
   ['node.connectVeto', '1.0'],
   ['node.menu', '1.0'],

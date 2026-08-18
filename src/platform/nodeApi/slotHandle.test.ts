@@ -139,6 +139,28 @@ describe('slot handles', () => {
       expect(getConfig?.()).toEqual(['INT', { min: 0, max: 100, step: 4 }])
     })
 
+    it('releases a connected Primitive when widget config is cleared', () => {
+      const onLastDisconnect = vi.fn()
+      const primitive = Object.assign(
+        new LGraphNode('Primitive', 'PrimitiveNode'),
+        { onLastDisconnect }
+      )
+      primitive.addOutput('value', 'IMAGE')
+      graph.add(primitive)
+      target.addWidget('number', 'image', 0, () => undefined, {})
+      const input = inputs.byName('image')!
+      input.modify({
+        widget: 'image',
+        widgetConfig: { type: 'INT', options: { min: 0, max: 10 } }
+      })
+      primitive.connect(0, target, input.index)
+
+      input.modify({ widget: null })
+
+      expect(input.isConnected).toBe(false)
+      expect(onLastDisconnect).toHaveBeenCalledOnce()
+    })
+
     it('adds a widget input with COMBO choices', () => {
       target.addWidget('combo', 'model', 'one', () => undefined, {
         values: ['one', 'two']
@@ -156,6 +178,53 @@ describe('slot handles', () => {
         | (() => unknown)
         | undefined
       expect(getConfig?.()).toEqual([['one', 'two'], { default: 'one' }])
+    })
+
+    it('lets a relay carry widget config without owning a widget', () => {
+      const relay = inputs.add('value', '*', {
+        widget: 'value',
+        widgetConfig: {
+          type: 'INT',
+          options: { min: 0, max: 100, step: 2 }
+        }
+      })
+
+      expect(relay.isWidgetInput).toBe(true)
+      expect(relay.widgetConfig()).toEqual({
+        type: 'INT',
+        options: { min: 0, max: 100, step: 2 }
+      })
+    })
+
+    it('merges compatible widget declarations and rejects incompatible ones', () => {
+      target.addWidget('number', 'image', 0, () => undefined, {})
+      const input = inputs.byName('image')!
+      input.modify({
+        widget: 'image',
+        widgetConfig: {
+          type: 'INT',
+          options: { min: 0, max: 100, step: 2 }
+        }
+      })
+
+      expect(
+        input.mergeWidgetConfig({
+          type: 'INT',
+          options: { min: 10, max: 80, step: 4 }
+        })
+      ).toEqual({
+        type: 'INT',
+        options: { min: 10, max: 80, step: 4 }
+      })
+      expect(input.widgetConfig()).toEqual({
+        type: 'INT',
+        options: { min: 10, max: 80, step: 4 }
+      })
+
+      expect(
+        input.mergeWidgetConfig({ type: 'FLOAT', options: { min: 0 } })
+      ).toBeUndefined()
+      expect(input.widgetConfig()?.type).toBe('INT')
     })
 
     it('refuses to name a widget the node does not have', () => {
@@ -338,6 +407,37 @@ describe('slot handles', () => {
       inputs.byName('image')!.modify({ name: 'picture', label: 'Picture' })
       expect(inputs.at(0)!.name).toBe('picture')
       expect(inputs.at(0)!.label).toBe('Picture')
+    })
+
+    it('writes localized names, positions and link directions', () => {
+      const input = inputs.byName('image')!
+      input.modify({
+        localizedName: '',
+        position: { x: 12, y: 34 },
+        direction: 'up'
+      })
+
+      expect(input.snapshot()).toMatchObject({
+        localizedName: '',
+        position: { x: 12, y: 34 },
+        direction: 'up'
+      })
+      expect(target.serialize().inputs?.[0]).toMatchObject({
+        localized_name: '',
+        pos: [12, 34],
+        dir: 1
+      })
+
+      input.modify({
+        localizedName: null,
+        position: null,
+        direction: null
+      })
+      expect(input.snapshot()).toMatchObject({
+        localizedName: undefined,
+        position: undefined,
+        direction: undefined
+      })
     })
 
     it('retargets a widget input without accepting a missing widget', () => {

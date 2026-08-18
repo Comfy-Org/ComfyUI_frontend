@@ -40,6 +40,8 @@ describe('comfy API root', () => {
       expect(api().supports('widgets.typeContext')).toBe(true)
       expect(api().supports('workflow.open')).toBe(true)
       expect(api().supports('slots.widgetConfig')).toBe(true)
+      expect(api().supports('slots.layout')).toBe(true)
+      expect(api().supports('slots.localizedName')).toBe(true)
       expect(api().supports('workflow.textReplacements')).toBe(true)
       expect(api().supports('execution.node')).toBe(true)
       expect(api().supports('defs.typeCompatibility')).toBe(true)

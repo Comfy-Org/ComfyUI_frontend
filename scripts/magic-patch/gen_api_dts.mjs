@@ -9,28 +9,41 @@
  */
 import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
+import ts from 'typescript'
 
 const DIR = new URL('../../src/platform/nodeApi/', import.meta.url).pathname
 
 /** Exported interfaces and type aliases, with their doc comments. */
-function declarations(source) {
-  const out = []
-  // Interfaces run to the closing brace at column 0. They must NOT stop at a
-  // blank line: members are grouped with blank lines between them, and treating
-  // one as the end silently truncated the declaration — NodeHandle lost
-  // getProperty/setProperty and everything after, so agents refused files as
-  // "no destination" against API that exists.
-  const patterns = [
-    /(\/\*\*[\s\S]*?\*\/\n)?export (interface) (\w+)[\s\S]*?\n\}/g,
-    /(\/\*\*[\s\S]*?\*\/\n)?export (type) (\w+)[\s\S]*?(?:\n(?=\n)|$)/g
-  ]
-  for (const match of patterns.flatMap((p) => [...source.matchAll(p)])) {
-    const [text, , kind, name] = match
-    // Internal plumbing the pack never names.
-    if (/^(Raw|Registration|Bound)/.test(name)) continue
-    out.push({ name, kind, text: text.trimEnd() })
-  }
-  return out
+export function declarations(source) {
+  const sourceFile = ts.createSourceFile(
+    'nodeApi.ts',
+    source,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS
+  )
+
+  return sourceFile.statements.flatMap((statement) => {
+    const kind = ts.isInterfaceDeclaration(statement)
+      ? 'interface'
+      : ts.isTypeAliasDeclaration(statement)
+        ? 'type'
+        : undefined
+    const exported = statement.modifiers?.some(
+      (modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword
+    )
+    if (!kind || !exported) return []
+
+    const name = statement.name.text
+    if (/^(Raw|Registration|Bound)/.test(name)) return []
+    return [
+      {
+        name,
+        kind,
+        text: statement.getFullText(sourceFile).trim()
+      }
+    ]
+  })
 }
 
 export function buildApiDts() {
