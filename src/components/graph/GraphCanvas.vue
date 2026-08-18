@@ -185,7 +185,6 @@ import { useWorkflowAutoSave } from '@/platform/workflow/persistence/composables
 import { useWorkflowPersistenceV2 as useWorkflowPersistence } from '@/platform/workflow/persistence/composables/useWorkflowPersistenceV2'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculations'
-import { includeNodeTitleInBounds } from '@/renderer/core/canvas/nodeBoxRenderer'
 import type {
   NodeBox,
   NodeBoxSlot,
@@ -347,6 +346,30 @@ const nodeColors = computed(() => {
 const boxContentVersion = ref(0)
 watch(nodeColors, () => boxContentVersion.value++)
 
+const nodeBoxCache = new Map<NodeId, NodeBox>()
+let cachedLayoutVersion = -1
+let cachedGeometryVersion = -1
+let cachedContentVersion = -1
+let cachedNodeManager = vueNodeLifecycle.nodeManager.value
+
+function invalidateNodeBoxCache(): void {
+  const nodeManager = vueNodeLifecycle.nodeManager.value
+  if (
+    cachedLayoutVersion === layoutStore.layoutVersion &&
+    cachedGeometryVersion === layoutStore.nodeGeometryVersion &&
+    cachedContentVersion === boxContentVersion.value &&
+    cachedNodeManager === nodeManager
+  ) {
+    return
+  }
+
+  nodeBoxCache.clear()
+  cachedLayoutVersion = layoutStore.layoutVersion
+  cachedGeometryVersion = layoutStore.nodeGeometryVersion
+  cachedContentVersion = boxContentVersion.value
+  cachedNodeManager = nodeManager
+}
+
 const { pinnedNodeIds } = useViewportKeepAlivePins({
   getRoot: () => transformPaneRef.value?.element ?? null,
   getLinkConnector: () => canvasStore.canvas?.linkConnector
@@ -390,83 +413,96 @@ watch(
   }
 )
 
-function getNodeBoxes(viewport: Bounds): NodeBox[] {
+function* getNodeBoxes(viewport: Bounds): Generator<NodeBox> {
+  invalidateNodeBoxCache()
+
   const colors = nodeColors.value
   const titleHeight = LiteGraph.NODE_TITLE_HEIGHT
   const widgetHeight = LiteGraph.NODE_WIDGET_HEIGHT
   const nodeManager = vueNodeLifecycle.nodeManager.value
   const colourGetter = canvasStore.canvas?.colourGetter
 
-  return layoutStore
-    .queryNodesInBounds({
-      ...viewport,
-      height: viewport.height + titleHeight
-    })
-    .filter((nodeId) => !renderedNodeIds.value.has(nodeId))
-    .flatMap((nodeId): NodeBox[] => {
-      const layout = layoutStore.getNodeLayoutRef(nodeId).value
-      if (!layout) return []
+  const nodeIds = layoutStore.queryNodesInBounds({
+    ...viewport,
+    height: viewport.height + titleHeight
+  })
 
-      const nodeBounds = layout.bounds
-      const bounds = includeNodeTitleInBounds(nodeBounds, titleHeight)
-      const nodeColor = colors.get(nodeId)
-      const node = nodeManager?.getNode(nodeId)
-      if (!node || node.flags?.collapsed) {
-        return [
-          {
-            bounds,
-            color: nodeColor?.body,
-            titleColor: nodeColor?.title,
-            titleHeight
-          }
-        ]
+  for (const nodeId of nodeIds) {
+    if (renderedNodeIds.value.has(nodeId)) continue
+
+    const cached = nodeBoxCache.get(nodeId)
+    if (cached) {
+      yield cached
+      continue
+    }
+
+    const node = nodeManager?.getNode(nodeId)
+    if (!node) continue
+
+    const [x, y, width, height] = node.boundingRect
+    const bounds = { x, y, width, height }
+    const renderedTitleHeight = Math.max(0, node.pos[1] - y)
+    const nodeColor = colors.get(nodeId)
+    if (node.flags?.collapsed) {
+      const box = {
+        bounds,
+        color: nodeColor?.body,
+        titleColor: nodeColor?.title,
+        titleHeight: renderedTitleHeight
       }
+      nodeBoxCache.set(nodeId, box)
+      yield box
+      continue
+    }
 
-      const slots: NodeBoxSlot[] = []
-      const addSlot = (
-        slot: { type?: unknown; link?: unknown; links?: unknown },
-        index: number,
-        isInput: boolean
-      ) => {
-        const [x, y] = getSlotPosition(node, index, isInput)
-        const type = String(slot.type ?? '')
-        const connected = isInput
-          ? slot.link != null
-          : Array.isArray(slot.links) && slot.links.length > 0
-        const slotColor = connected
-          ? colourGetter?.getConnectedColor(type)
-          : colourGetter?.getDisconnectedColor(type)
-        slots.push({
-          x,
-          y,
-          color: typeof slotColor === 'string' ? slotColor : undefined
-        })
-      }
-      node.inputs?.forEach((slot, index) => addSlot(slot, index, true))
-      node.outputs?.forEach((slot, index) => addSlot(slot, index, false))
+    const slots: NodeBoxSlot[] = []
+    const addSlot = (
+      slot: { type?: unknown; link?: unknown; links?: unknown },
+      index: number,
+      isInput: boolean
+    ) => {
+      const [slotX, slotY] = getSlotPosition(node, index, isInput)
+      const type = String(slot.type ?? '')
+      const connected = isInput
+        ? slot.link != null
+        : Array.isArray(slot.links) && slot.links.length > 0
+      const slotColor = connected
+        ? colourGetter?.getConnectedColor(type)
+        : colourGetter?.getDisconnectedColor(type)
+      slots.push({
+        x: slotX,
+        y: slotY,
+        color:
+          typeof slotColor === 'string' && isRenderableColor(slotColor)
+            ? slotColor
+            : undefined
+      })
+    }
+    node.inputs?.forEach((slot, index) => addSlot(slot, index, true))
+    node.outputs?.forEach((slot, index) => addSlot(slot, index, false))
 
-      const widgets: NodeBoxWidget[] = []
-      for (const widget of node.widgets ?? []) {
-        if (!node.isWidgetVisible(widget)) continue
-        widgets.push({
-          x: nodeBounds.x + WIDGET_MARGIN,
-          y: nodeBounds.y + widget.y,
-          width: nodeBounds.width - WIDGET_MARGIN * 2,
-          height: widgetHeight
-        })
-      }
+    const widgets: NodeBoxWidget[] = []
+    for (const widget of node.widgets ?? []) {
+      if (!node.isWidgetVisible(widget)) continue
+      widgets.push({
+        x: node.pos[0] + WIDGET_MARGIN,
+        y: node.pos[1] + widget.y,
+        width: node.size[0] - WIDGET_MARGIN * 2,
+        height: widgetHeight
+      })
+    }
 
-      return [
-        {
-          bounds,
-          color: nodeColor?.body,
-          titleColor: nodeColor?.title,
-          titleHeight,
-          slots,
-          widgets
-        }
-      ]
-    })
+    const box = {
+      bounds,
+      color: nodeColor?.body,
+      titleColor: nodeColor?.title,
+      titleHeight: renderedTitleHeight,
+      slots,
+      widgets
+    }
+    nodeBoxCache.set(nodeId, box)
+    yield box
+  }
 }
 
 watch(

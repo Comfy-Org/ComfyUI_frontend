@@ -108,7 +108,7 @@ useRafFn(() => {
   const height = elementHeight
   if (!width || !height) return
 
-  const signature = `${camera.x},${camera.y},${camera.z},${layoutStore.nodeGeometryVersion},${width}x${height},${dpr},${measureVersion.value},${contentVersion}`
+  const signature = `${camera.x},${camera.y},${camera.z},${layoutStore.layoutVersion},${layoutStore.nodeGeometryVersion},${width}x${height},${dpr},${measureVersion.value},${contentVersion}`
   if (signature === lastSignature) return
   lastSignature = signature
 

@@ -26,9 +26,9 @@ intersect an expanded viewport. The renderer scans canonical bounds from
 bounds attached. A 90% exit threshold prevents mode churn near 150 nodes.
 
 Each node is wrapped in Vue `KeepAlive`. Leaving the active set removes its DOM
-tree from layout and paint while retaining the component instance. Selected,
-focused, live-media, iframe, and active link-drag source nodes remain attached
-when they leave the viewport.
+tree from layout and paint while retaining the component instance. Focused,
+live-media, iframe, and active link-drag source nodes remain attached when they
+leave the viewport.
 
 Below LiteGraph's existing minimum-font-size threshold, a renderer-owned canvas
 draws node boxes, title bars, slots, and widget rectangles. Pinned nodes remain

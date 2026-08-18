@@ -1,11 +1,11 @@
 /**
  * Level-of-detail switch for Vue node rendering.
  *
- * Mirrors the threshold litegraph uses for its own low-quality pass
- * (`LGraphCanvas.updateLowQualityThreshold`), so both renderers simplify at
- * exactly the same zoom and the same setting controls both.
+ * Uses the threshold calculation and setting from litegraph's low-quality
+ * pass. Vue adds hysteresis because switching modes mounts or detaches the
+ * full node set rather than changing how an existing canvas pass is painted.
  */
-import { useDevicePixelRatio } from '@vueuse/core'
+import { useDevicePixelRatio, useEventListener } from '@vueuse/core'
 import { computed, onScopeDispose, ref, watch, watchEffect } from 'vue'
 import type { Ref } from 'vue'
 
@@ -46,7 +46,13 @@ export function getLowQualityThreshold(
 export function useLowQualityRendering(canvas: Ref<LGraphCanvas | undefined>) {
   const { camera } = useTransformState()
   const { pixelRatio } = useDevicePixelRatio()
+  const devicePixelRatio = ref(pixelRatio.value)
   const settingStore = useSettingStore()
+
+  watch(pixelRatio, (value) => (devicePixelRatio.value = value))
+  useEventListener(window, 'resize', () => {
+    devicePixelRatio.value = window.devicePixelRatio || 1
+  })
 
   // Read from the setting rather than the canvas instance: the instance field
   // is a plain getter, so a settings change would not re-evaluate this until
@@ -56,7 +62,7 @@ export function useLowQualityRendering(canvas: Ref<LGraphCanvas | undefined>) {
       settingStore.get('LiteGraph.Canvas.MinFontSizeForLOD') ??
         canvas.value?.min_font_size_for_lod ??
         0,
-      pixelRatio.value
+      devicePixelRatio.value
     )
   )
 
@@ -113,8 +119,8 @@ export function useLowQualityRendering(canvas: Ref<LGraphCanvas | undefined>) {
       // It cannot latch: the empty-mounted-set watcher and slot measurement
       // arrival both clear it.
       if (wasLow && !low) {
-        layoutStore.setPendingSlotSync(true)
         requestSlotLayoutSyncForAllNodes()
+        layoutStore.setPendingSlotSync(true)
       }
       canvas.value?.setDirty(true, true)
     },

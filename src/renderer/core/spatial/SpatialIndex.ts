@@ -20,30 +20,51 @@ interface CacheEntry<TId> {
   timestamp: number
 }
 
+interface SpatialEntry<TId> {
+  bounds: Bounds
+  data: TId
+}
+
+const ROOT_PADDING = 1000
+
 /**
  * Spatial index manager using QuadTree
  */
 export class SpatialIndexManager<TId extends string | number = NodeId> {
   private quadTree: QuadTree<TId>
-  private queryCache: Map<string, CacheEntry<TId>>
+  private readonly initialBounds: Bounds
+  private readonly entries = new Map<string, SpatialEntry<TId>>()
+  private readonly unindexableEntries = new Map<string, TId>()
+  private readonly queryCache = new Map<string, CacheEntry<TId>>()
   private cacheSize = 0
 
   constructor(bounds?: Bounds) {
-    this.quadTree = new QuadTree<TId>(
-      bounds ?? QUADTREE_CONFIG.DEFAULT_BOUNDS,
-      {
-        maxDepth: QUADTREE_CONFIG.MAX_DEPTH,
-        maxItemsPerNode: QUADTREE_CONFIG.MAX_ITEMS_PER_NODE
-      }
-    )
-    this.queryCache = new Map()
+    this.initialBounds = bounds ?? QUADTREE_CONFIG.DEFAULT_BOUNDS
+    this.quadTree = this.createQuadTree(this.initialBounds)
   }
 
   /**
    * Insert a node into the spatial index
    */
   insert(nodeId: TId, bounds: Bounds): void {
-    this.quadTree.insert(String(nodeId), bounds, nodeId)
+    const key = this.getEntryKey(nodeId)
+    const existing = this.entries.get(key)
+    this.entries.set(key, { bounds, data: nodeId })
+
+    if (!this.isIndexable(bounds)) {
+      if (existing && this.isIndexable(existing.bounds)) {
+        this.quadTree.remove(key)
+      }
+      this.unindexableEntries.set(key, nodeId)
+      this.invalidateCache()
+      return
+    }
+
+    this.unindexableEntries.delete(key)
+    const indexed = existing
+      ? this.quadTree.update(key, bounds)
+      : this.quadTree.insert(key, bounds, nodeId)
+    if (!indexed) this.rebuild()
     this.invalidateCache()
   }
 
@@ -51,8 +72,7 @@ export class SpatialIndexManager<TId extends string | number = NodeId> {
    * Update a node's bounds in the spatial index
    */
   update(nodeId: TId, bounds: Bounds): void {
-    this.quadTree.update(String(nodeId), bounds)
-    this.invalidateCache()
+    this.insert(nodeId, bounds)
   }
 
   /**
@@ -60,9 +80,29 @@ export class SpatialIndexManager<TId extends string | number = NodeId> {
    * More efficient than calling update() multiple times as it only invalidates cache once
    */
   batchUpdate(updates: Array<{ nodeId: TId; bounds: Bounds }>): void {
+    let rebuildRequired = false
+
     for (const { nodeId, bounds } of updates) {
-      this.quadTree.update(String(nodeId), bounds)
+      const key = this.getEntryKey(nodeId)
+      const existing = this.entries.get(key)
+      this.entries.set(key, { bounds, data: nodeId })
+
+      if (!this.isIndexable(bounds)) {
+        if (existing && this.isIndexable(existing.bounds)) {
+          this.quadTree.remove(key)
+        }
+        this.unindexableEntries.set(key, nodeId)
+        continue
+      }
+
+      this.unindexableEntries.delete(key)
+      const indexed = existing
+        ? this.quadTree.update(key, bounds)
+        : this.quadTree.insert(key, bounds, nodeId)
+      rebuildRequired ||= !indexed
     }
+
+    if (rebuildRequired) this.rebuild()
     this.invalidateCache()
   }
 
@@ -70,7 +110,10 @@ export class SpatialIndexManager<TId extends string | number = NodeId> {
    * Remove a node from the spatial index
    */
   remove(nodeId: TId): void {
-    this.quadTree.remove(String(nodeId))
+    const key = this.getEntryKey(nodeId)
+    this.entries.delete(key)
+    this.unindexableEntries.delete(key)
+    this.quadTree.remove(key)
     this.invalidateCache()
   }
 
@@ -93,7 +136,10 @@ export class SpatialIndexManager<TId extends string | number = NodeId> {
     }
 
     // Perform query
-    const result = this.quadTree.query(bounds)
+    const indexed = this.quadTree.query(bounds)
+    const result = this.unindexableEntries.size
+      ? indexed.concat(Array.from(this.unindexableEntries.values()))
+      : indexed
 
     // Cache result
     this.addToCache(cacheKey, result)
@@ -105,7 +151,9 @@ export class SpatialIndexManager<TId extends string | number = NodeId> {
    * Clear all nodes from the spatial index
    */
   clear(): void {
-    this.quadTree.clear()
+    this.entries.clear()
+    this.unindexableEntries.clear()
+    this.quadTree = this.createQuadTree(this.initialBounds)
     this.invalidateCache()
   }
 
@@ -113,7 +161,7 @@ export class SpatialIndexManager<TId extends string | number = NodeId> {
    * Get the current size of the index
    */
   get size(): number {
-    return this.quadTree.size
+    return this.entries.size
   }
 
   /**
@@ -122,9 +170,79 @@ export class SpatialIndexManager<TId extends string | number = NodeId> {
   getDebugInfo() {
     return {
       quadTreeInfo: this.quadTree.getDebugInfo(),
+      unindexableEntries: this.unindexableEntries.size,
       cacheSize: this.cacheSize,
       cacheEntries: this.queryCache.size
     }
+  }
+
+  private createQuadTree(bounds: Bounds): QuadTree<TId> {
+    return new QuadTree<TId>(bounds, {
+      maxDepth: QUADTREE_CONFIG.MAX_DEPTH,
+      maxItemsPerNode: QUADTREE_CONFIG.MAX_ITEMS_PER_NODE
+    })
+  }
+
+  private rebuild(): void {
+    const indexableEntries = [...this.entries.entries()].filter(([, entry]) =>
+      this.isIndexable(entry.bounds)
+    )
+    const rootBounds = this.getRootBounds(indexableEntries)
+    this.quadTree = this.createQuadTree(rootBounds ?? this.initialBounds)
+    this.unindexableEntries.clear()
+
+    for (const [key, entry] of this.entries) {
+      if (
+        !this.isIndexable(entry.bounds) ||
+        !rootBounds ||
+        !this.quadTree.insert(key, entry.bounds, entry.data)
+      ) {
+        this.unindexableEntries.set(key, entry.data)
+      }
+    }
+  }
+
+  private getRootBounds(
+    entries: Array<[string, SpatialEntry<TId>]>
+  ): Bounds | null {
+    if (entries.length === 0) return this.initialBounds
+
+    let minX = Infinity
+    let minY = Infinity
+    let maxX = -Infinity
+    let maxY = -Infinity
+
+    for (const [, { bounds }] of entries) {
+      minX = Math.min(minX, bounds.x)
+      minY = Math.min(minY, bounds.y)
+      maxX = Math.max(maxX, bounds.x + bounds.width)
+      maxY = Math.max(maxY, bounds.y + bounds.height)
+    }
+
+    const root = {
+      x: minX - ROOT_PADDING,
+      y: minY - ROOT_PADDING,
+      width: maxX - minX + ROOT_PADDING * 2,
+      height: maxY - minY + ROOT_PADDING * 2
+    }
+    return this.isIndexable(root) ? root : null
+  }
+
+  private isIndexable(bounds: Bounds): boolean {
+    return (
+      Number.isFinite(bounds.x) &&
+      Number.isFinite(bounds.y) &&
+      Number.isFinite(bounds.width) &&
+      Number.isFinite(bounds.height) &&
+      Number.isFinite(bounds.x + bounds.width) &&
+      Number.isFinite(bounds.y + bounds.height) &&
+      bounds.width >= 0 &&
+      bounds.height >= 0
+    )
+  }
+
+  private getEntryKey(nodeId: TId): string {
+    return `${typeof nodeId}:${String(nodeId)}`
   }
 
   /**

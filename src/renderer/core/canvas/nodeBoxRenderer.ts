@@ -97,31 +97,33 @@ export function drawNodeBoxes(
   }
 
   let currentColor = ''
-  const setFill = (fill: string) => {
-    if (fill !== currentColor) {
-      ctx.fillStyle = fill
-      currentColor = fill
-    }
+  const setFill = (fill: string | undefined, fallback: string) => {
+    const desired = fill || fallback
+    if (desired === currentColor) return
+
+    ctx.fillStyle = fallback
+    if (desired !== fallback) ctx.fillStyle = desired
+    currentColor = String(ctx.fillStyle)
   }
 
   for (const { bounds, color } of visible) {
-    setFill(color || style.defaultColor)
+    setFill(color, style.defaultColor)
     ctx.fillRect(bounds.x, bounds.y, bounds.width, bounds.height)
   }
 
   for (const { bounds, titleColor, titleHeight } of visible) {
     if (!titleHeight) continue
-    setFill(titleColor || style.defaultTitleColor)
+    setFill(titleColor, style.defaultTitleColor)
     ctx.fillRect(bounds.x, bounds.y, bounds.width, titleHeight)
   }
 
-  setFill(SEPARATOR_COLOR)
+  setFill(SEPARATOR_COLOR, SEPARATOR_COLOR)
   for (const { bounds, titleHeight } of visible) {
     if (!titleHeight) continue
     ctx.fillRect(bounds.x, bounds.y + titleHeight - 1, bounds.width, 2)
   }
 
-  setFill(style.widgetColor)
+  setFill(style.widgetColor, style.widgetColor)
   for (const { widgets } of visible) {
     if (!widgets) continue
     for (const widget of widgets) {
@@ -132,7 +134,7 @@ export function drawNodeBoxes(
   for (const { slots } of visible) {
     if (!slots) continue
     for (const slot of slots) {
-      setFill(slot.color || style.defaultSlotColor)
+      setFill(slot.color, style.defaultSlotColor)
       ctx.fillRect(
         slot.x - SLOT_SIZE / 2,
         slot.y - SLOT_SIZE / 2,
