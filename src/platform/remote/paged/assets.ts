@@ -111,10 +111,13 @@ function assetsQueryInternal(
     hasMore.value = true
     next_cursor = undefined
     items.value = []
-    whenever(() => !loadingMorePromise.value, loadMore, {
-      once: true,
-      immediate: true
-    })
+    const { promise, resolve, reject } = Promise.withResolvers<void>()
+    whenever(
+      () => !loadingMorePromise.value,
+      () => loadMore().then(resolve, reject),
+      { once: true, immediate: true }
+    )
+    await promise
   }
 
   void loadMore()
