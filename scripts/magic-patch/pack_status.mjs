@@ -108,8 +108,14 @@ const NOTHING_INOPERABLE = /^\s*\/\/\s*INOPERABLE:\s*nothing\b/im
  * of ten across the line and left nine of these behind is not finished either,
  * and counting it beside the finished ones hid 459 open markers in 208 files
  * that the headline was calling converted.
+ *
+ * The comment style is not part of the declaration. Conversions that write
+ * their reasoning as one `/* *\/` header state the gap on a bare line inside
+ * it, and demanding `//` counted four such files as converted while they were
+ * still asking for API. What marks a declaration is that it opens the line —
+ * prose naming the vocabulary mid-sentence is not one.
  */
-const OUTSTANDING = /^\s*\/\/\s*(?:API-GAP|PUNTED IN FULL)\b/m
+const OUTSTANDING = /^\s*(?:\/\/|\*)?\s*(?:API-GAP|PUNTED IN FULL)\b/m
 
 const codeLines = (text) =>
   text
