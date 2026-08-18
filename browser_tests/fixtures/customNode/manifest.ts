@@ -617,13 +617,19 @@ export function packIdentity(
   return 'deployRef' in entry ? entry.deployRef : entry.pin
 }
 
-export interface QuarantinedPack {
-  class: 'unfetchable-ref' | 'unsatisfiable-requirement' | 'requires-gpu-runner'
+interface QuarantineDetails {
   reason: string
   evidence: string
   upstreamFix: string
   since: string
 }
+
+export type QuarantinedPack = QuarantineDetails &
+  (
+    | { class: 'unfetchable-ref'; failurePattern?: never }
+    | { class: 'unsatisfiable-requirement'; failurePattern: string }
+    | { class: 'requires-gpu-runner'; failurePattern?: never }
+  )
 
 // Packs this local CPU gate cannot exercise. Network-verifiable source failures
 // are rechecked by the workflow; hardware exclusions remain visible in every
@@ -652,6 +658,8 @@ export function loadPackQuarantine(): Record<string, QuarantinedPack> {
       !classes.has(entry.class) ||
       !isNonEmptyString(entry.reason) ||
       !isNonEmptyString(entry.evidence) ||
+      (entry.class === 'unsatisfiable-requirement' &&
+        !isNonEmptyString(entry.failurePattern)) ||
       !isNonEmptyString(entry.upstreamFix) ||
       !isIsoDate(entry.since)
     )

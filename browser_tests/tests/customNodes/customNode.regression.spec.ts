@@ -293,6 +293,10 @@ for (const entry of manifestEntries) {
         // Every display sink in the curated workflow must have emitted a ui
         // payload through its executed event.
         const sinkIds = await nodeIdsByType(comfyPage.page, CURATED_SINK_TYPES)
+        expect(
+          sinkIds.length,
+          `curated workflow ${entry.workflow} has no observable display sink`
+        ).toBeGreaterThan(0)
         for (const sinkId of sinkIds)
           expect(
             result.outputsByNode[sinkId],

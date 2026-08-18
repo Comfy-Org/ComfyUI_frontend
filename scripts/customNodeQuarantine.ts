@@ -28,66 +28,119 @@ import {
 } from '../browser_tests/fixtures/customNode/manifest'
 import { consoleErrorExclusionsForPacks } from '../browser_tests/fixtures/customNode/consoleErrorLedger'
 import { ROUNDTRIP_NODE_LOSS_EXPECTATIONS_LITEGRAPH } from '../browser_tests/fixtures/customNode/valueDrift'
+import {
+  provesRefIsMissing,
+  provesRequirementIsUnsatisfiable
+} from './customNodeQuarantineProbe'
 
 const run = promisify(execFile)
 
 const say = (line: string) => process.stdout.write(`${line}\n`)
 
+async function dryRunPython(): Promise<string> {
+  const candidates = [
+    process.env.CUSTOM_NODE_PYTHON,
+    'python3',
+    'python3.13',
+    'python3.12',
+    'python3.11',
+    'python'
+  ].filter((candidate): candidate is string => candidate !== undefined)
+  for (const candidate of new Set(candidates)) {
+    try {
+      const { stdout } = await run(
+        candidate,
+        ['-m', 'pip', 'install', '--help'],
+        { timeout: 30_000 }
+      )
+      if (stdout.includes('--dry-run')) return candidate
+    } catch {
+      continue
+    }
+  }
+  throw new Error('no Python interpreter provides pip install --dry-run')
+}
+
 async function refStillMissing(deployRef: string): Promise<boolean> {
   const [url, sha] = deployRef.split(/@(?=[^@]*$)/)
-  if (!url || !sha) return true
-  try {
-    const { stdout } = await run('git', ['ls-remote', url, sha], {
-      timeout: 60_000
-    })
-    if (stdout.trim()) return false
-  } catch {
-    // ls-remote only matches advertised refs; a reachable commit still needs
-    // the fetch probe below before concluding anything.
-  }
+  if (!url || !sha) throw new Error(`invalid git deployRef: ${deployRef}`)
   const dir = mkdtempSync(join(tmpdir(), 'cnq-'))
-  try {
-    await run('git', ['init', '-q', dir], { timeout: 30_000 })
-    await run('git', ['-C', dir, 'remote', 'add', 'origin', url])
-    await run('git', ['-C', dir, 'fetch', '--depth', '1', 'origin', sha], {
-      timeout: 90_000
-    })
-    return false
-  } catch {
-    return true
+  await run('git', ['init', '-q', dir], { timeout: 30_000 })
+  await run('git', ['-C', dir, 'remote', 'add', 'origin', url])
+  let lastError: unknown
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      await run('git', ['-C', dir, 'fetch', '--depth', '1', 'origin', sha], {
+        timeout: 90_000
+      })
+      return false
+    } catch (error) {
+      if (provesRefIsMissing(error)) return true
+      lastError = error
+      if (attempt < 2)
+        await new Promise((resolve) =>
+          setTimeout(resolve, (attempt + 1) * 1000)
+        )
+    }
   }
+  throw new Error(`could not conclusively recheck ${deployRef}`, {
+    cause: lastError
+  })
 }
 
 async function requirementsStillUnsatisfiable(
-  deployRef: string
+  deployRef: string,
+  failurePattern: string
 ): Promise<boolean> {
   const [url, sha] = deployRef.split(/@(?=[^@]*$)/)
   const slug = url?.split('github.com/')[1]
-  if (!slug || !sha) return true
+  if (!slug || !sha) throw new Error(`invalid git deployRef: ${deployRef}`)
   let body: string
   try {
     const { stdout } = await run('curl', [
       '-sfL',
+      '--retry',
+      '3',
+      '--retry-delay',
+      '1',
+      '--retry-connrefused',
       '--max-time',
       '30',
       `https://raw.githubusercontent.com/${slug}/${sha}/requirements.txt`
     ])
     body = stdout
-  } catch {
-    return true
+  } catch (error) {
+    throw new Error(`could not fetch requirements for ${deployRef}`, {
+      cause: error
+    })
   }
   const dir = mkdtempSync(join(tmpdir(), 'cnq-'))
   const file = join(dir, 'requirements.txt')
   writeFileSync(file, body)
+  const python = await dryRunPython()
   try {
     await run(
-      'python3',
-      ['-m', 'pip', 'install', '--dry-run', '--quiet', '-r', file],
+      python,
+      [
+        '-m',
+        'pip',
+        'install',
+        '--dry-run',
+        '--quiet',
+        '--target',
+        join(dir, 'target'),
+        '-r',
+        file
+      ],
       { timeout: 300_000 }
     )
     return false
-  } catch {
-    return true
+  } catch (error) {
+    if (provesRequirementIsUnsatisfiable(error, failurePattern)) return true
+    throw new Error(
+      `could not conclusively resolve requirements for ${deployRef}`,
+      { cause: error }
+    )
   }
 }
 
@@ -100,11 +153,11 @@ async function stillBroken(
     case 'unfetchable-ref':
       return refStillMissing(deployRef)
     case 'unsatisfiable-requirement':
-      return requirementsStillUnsatisfiable(deployRef)
+      return requirementsStillUnsatisfiable(deployRef, entry.failurePattern)
     case 'requires-gpu-runner':
       return true
     default:
-      throw new Error(`${pack}: unknown quarantine class '${entry.class}'`)
+      throw new Error(`${pack}: unknown quarantine class`)
   }
 }
 
@@ -149,9 +202,10 @@ note('')
 
 const stale: string[] = []
 const unknown: string[] = []
+const inconclusive: string[] = []
 
 for (const pack of unjoinedYamlPacks) {
-  note(`- **${pack}** \`unjoined-object-info\` - not exercised`)
+  note(`- **${pack} - SKIP - PACK NOT EXERCISED** \`unjoined-object-info\``)
   note(
     '  - the pinned Cloud YAML names the pack, but its object_info snapshot has no nodes attributable to it'
   )
@@ -171,14 +225,31 @@ for (const [pack, entry] of entries) {
     continue
   }
   const ref = packIdentity(row)
-  const broken = await stillBroken(pack, entry, ref)
+  let broken: boolean
+  try {
+    broken = await stillBroken(pack, entry, ref)
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error)
+    inconclusive.push(`${pack}: ${detail}`)
+    note(
+      `- **${pack} - SKIP - PACK NOT EXERCISED - PROBE INCONCLUSIVE** \`${entry.class}\``
+    )
+    note(`  - ${entry.reason}`)
+    note(`  - gate failure: ${detail}`)
+    process.stdout.write(
+      `::error title=Pack exclusion probe inconclusive::${pack} - ${detail}\n`
+    )
+    continue
+  }
   const status =
     entry.class === 'requires-gpu-runner'
       ? 'requires GPU-backed coverage'
       : broken
         ? 'still excluded'
         : '**FIXED UPSTREAM**'
-  note(`- **${pack}** \`${entry.class}\` - ${status}`)
+  note(
+    `- **${pack} - SKIP - PACK NOT EXERCISED** \`${entry.class}\` - ${status}`
+  )
   note(`  - ${entry.reason}`)
   note(`  - to remove: ${entry.upstreamFix}`)
   process.stdout.write(
@@ -243,7 +314,7 @@ for (const exclusion of nodeExclusions) {
 }
 
 say('')
-const problems: string[] = []
+const problems: string[] = [...inconclusive]
 if (stale.length)
   problems.push(
     `${stale.join(', ')} now install cleanly - remove them from packQuarantine.json and let them back into the population`

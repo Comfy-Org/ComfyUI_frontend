@@ -23,6 +23,7 @@
   "radiance": {
     "class": "unsatisfiable-requirement",
     "evidence": "PyPI's Imath package tops out at 0.0.2, so pip cannot resolve it. The pin appears to name the C++ Imath library version. OpenEXR>=3.2.0, which this pack already requires on the line above, ships Imath.py inside its wheel - so the requirement is redundant, not merely unsatisfiable.",
+    "failurePattern": "Imath>=3.1.0",
     "reason": "requirements.txt pins Imath>=3.1.0, which does not exist on PyPI",
     "since": "2026-08-14",
     "upstreamFix": "remove the Imath line from fxtdstudios/radiance requirements.txt"

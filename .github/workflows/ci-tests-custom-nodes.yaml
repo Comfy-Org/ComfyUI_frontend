@@ -286,6 +286,16 @@ jobs:
           if [ "${#rows[@]}" -eq 0 ]; then
             echo "::error::shard $CUSTOM_NODES_SHARD owns no packs"; exit 1
           fi
+          fetch_commit() {
+            local target=$1 commit=$2
+            for attempt in 1 2 3; do
+              if git -C "$target" fetch --depth 1 origin "$commit"; then
+                return 0
+              fi
+              if [ "$attempt" -lt 3 ]; then sleep $((attempt * 2)); fi
+            done
+            return 1
+          }
           echo "shard $CUSTOM_NODES_SHARD owns ${#rows[@]} pack(s)"
           uninstallable=()
           for row in "${rows[@]}"; do
@@ -326,7 +336,7 @@ jobs:
                   # deployRef commit frequently is not one.
                   git init -q -b main "$dir"
                   git -C "$dir" remote add origin "$url"
-                  git -C "$dir" fetch --depth 1 origin "$sha" || {
+                  fetch_commit "$dir" "$sha" || {
                     echo "::error::$pack: deployRef '$ref' is unfetchable - the pinned commit does not exist upstream. Falling back to HEAD would test something the manifest does not declare, so fix the ref in cloud's supported_nodes.yaml"; exit 1
                   }
                   git -C "$dir" checkout -q FETCH_HEAD
@@ -340,13 +350,13 @@ jobs:
                   # A registry version record carries no commit - it points at
                   # the CDN zip, and that artifact is what Cloud deploys, so
                   # installing from it is the faithful path.
-                  download=$(curl -sfL "https://api.comfy.org/nodes/$id/versions/$version" | jq -er '.downloadUrl') || {
+                  download=$(curl --retry 3 --retry-delay 2 --retry-connrefused -sfL "https://api.comfy.org/nodes/$id/versions/$version" | jq -er '.downloadUrl') || {
                     echo "::error::$pack: deployRef '$ref' is unfetchable - the registry has no downloadUrl for that version"; exit 1
                   }
                   if ! [[ "$download" =~ ^https://cdn\.comfy\.org/ ]]; then
                     echo "::error::$pack: registry downloadUrl is not on cdn.comfy.org (got '$download')"; exit 1
                   fi
-                  curl -sfL "$download" -o /tmp/pack.zip || {
+                  curl --retry 3 --retry-delay 2 --retry-connrefused -sfL "$download" -o /tmp/pack.zip || {
                     echo "::error::$pack: deployRef '$ref' is unfetchable - the registry artifact $download did not download"; exit 1
                   }
                   # Registry zips are the pack root, with no wrapper directory
@@ -694,7 +704,7 @@ jobs:
             tier-isolation-proof-evidence.txt
             tier-isolation-proof-identity.txt
           retention-days: 7
-          if-no-files-found: warn
+          if-no-files-found: error
 
   custom-nodes-e2e-status:
     name: custom-nodes-e2e-status

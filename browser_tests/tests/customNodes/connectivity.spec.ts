@@ -243,6 +243,10 @@ test('connectivity: representative edges cover every pairable slot through model
   const results = [...sharedResults, ...isolated.results]
   const sweepMs = Date.now() - sweepStart
   consoleErrors.stop()
+  expect(
+    results,
+    'the executor must return one outcome for every planned pair'
+  ).toHaveLength(plan.pairs.length)
   console.log(
     `connectivity sweep: ${plan.pairs.length} pairs in ${sweepMs}ms (${(sweepMs / plan.pairs.length).toFixed(1)}ms/pair)`
   )
