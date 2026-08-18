@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
 
 const nodeSlotSchema = z.object({
   CLIP: z.string(),
@@ -32,9 +32,9 @@ const litegraphBaseSchema = z.object({
   NODE_DEFAULT_BGCOLOR: z.string(),
   NODE_DEFAULT_BOXCOLOR: z.string(),
   NODE_DEFAULT_SHAPE: z.union([
-    z.literal(LiteGraph.BOX_SHAPE),
-    z.literal(LiteGraph.ROUND_SHAPE),
-    z.literal(LiteGraph.CARD_SHAPE),
+    z.literal(RenderShape.BOX),
+    z.literal(RenderShape.ROUND),
+    z.literal(RenderShape.CARD),
     // Legacy palettes have string field for NODE_DEFAULT_SHAPE.
     z.string()
   ]),

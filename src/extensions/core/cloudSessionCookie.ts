@@ -1,3 +1,4 @@
+import { clearOAuthRequestId } from '@/platform/cloud/oauth/oauthState'
 import { useSessionCookie } from '@/platform/auth/session/useSessionCookie'
 import { useExtensionService } from '@/services/extensionService'
 
@@ -19,6 +20,7 @@ useExtensionService().registerExtension({
   },
 
   onAuthUserLogout: async () => {
+    clearOAuthRequestId()
     const { deleteSession } = useSessionCookie()
     await deleteSession()
   }

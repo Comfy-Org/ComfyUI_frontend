@@ -1,7 +1,7 @@
 <template>
   <WidgetLayoutField :widget>
     <ComboboxRoot
-      v-model:open="isOpen"
+      :open="isOpen"
       :model-value="comboboxValue"
       :disabled
       ignore-filter
@@ -11,56 +11,64 @@
       @update:open="handleOpenChange"
     >
       <ComboboxAnchor as-child>
-        <ComboboxTrigger as-child>
+        <div
+          data-capture-wheel="true"
+          :class="
+            cn(
+              WidgetInputBaseClass,
+              'flex w-full min-w-0 items-center overflow-hidden',
+              useWidgetHeight(),
+              !disabled && 'hover:bg-component-node-widget-background-hovered',
+              disabled && 'opacity-50',
+              isInvalid && 'ring-1 ring-destructive-background'
+            )
+          "
+        >
+          <ComboboxTrigger as-child>
+            <button
+              type="button"
+              role="combobox"
+              aria-haspopup="listbox"
+              :aria-label="widget.label || widget.name"
+              :aria-invalid="isInvalid || undefined"
+              :aria-expanded="isOpen"
+              :disabled
+              tabindex="0"
+              data-testid="widget-select-default-trigger"
+              class="flex min-w-0 flex-1 cursor-pointer items-center overflow-hidden border-none bg-transparent p-0 outline-none disabled:cursor-default"
+            >
+              <span
+                class="min-w-[4ch] flex-1 truncate pr-1 pl-2 text-left text-xs"
+              >
+                {{ selectedLabel || placeholder || '\u00a0' }}
+              </span>
+            </button>
+          </ComboboxTrigger>
+          <slot />
           <button
             type="button"
-            role="combobox"
-            aria-haspopup="listbox"
-            :aria-label="widget.label || widget.name"
-            :aria-invalid="isInvalid || undefined"
-            :aria-expanded="isOpen"
+            tabindex="-1"
+            aria-hidden="true"
             :disabled
-            tabindex="0"
-            data-capture-wheel="true"
-            data-testid="widget-select-default-trigger"
-            :class="
-              cn(
-                WidgetInputBaseClass,
-                'flex h-7 w-full min-w-0 cursor-pointer items-center overflow-hidden outline-none hover:bg-component-node-widget-background-hovered disabled:cursor-default disabled:opacity-50 disabled:hover:bg-component-node-widget-background',
-                isInvalid && 'ring-1 ring-destructive-background'
-              )
-            "
+            class="flex h-full w-6 shrink-0 cursor-pointer items-center justify-center border-none bg-transparent outline-none disabled:cursor-default"
+            @click="handleOpenChange(true)"
           >
-            <span
+            <i
               :class="
                 cn(
-                  'min-w-[4ch] flex-1 truncate pr-3 pl-1 text-left',
-                  $slots.default && 'mr-5'
+                  'icon-[lucide--chevron-down] size-4',
+                  disabled
+                    ? 'bg-component-node-foreground-secondary'
+                    : 'bg-muted-foreground'
                 )
               "
-            >
-              {{ selectedLabel || placeholder || '\u00a0' }}
-            </span>
-            <span
-              class="flex h-full w-8 shrink-0 items-center justify-center rounded-r-lg"
-            >
-              <i
-                :class="
-                  cn(
-                    'icon-[lucide--chevron-down] size-4 translate-x-1.5',
-                    disabled
-                      ? 'bg-component-node-foreground-secondary'
-                      : 'bg-muted-foreground'
-                  )
-                "
-                aria-hidden="true"
-              />
-            </span>
+              aria-hidden="true"
+            />
           </button>
-        </ComboboxTrigger>
+        </div>
       </ComboboxAnchor>
 
-      <ComboboxPortal :to="portalTarget" :disabled="isPortalDisabled">
+      <ComboboxPortal>
         <ComboboxContent
           data-capture-wheel="true"
           data-testid="widget-select-default-overlay"
@@ -140,10 +148,6 @@
         </ComboboxContent>
       </ComboboxPortal>
     </ComboboxRoot>
-
-    <div class="absolute top-5 right-8 flex h-4 w-7 -translate-y-4/5">
-      <slot />
-    </div>
   </WidgetLayoutField>
 </template>
 
@@ -161,9 +165,9 @@ import {
 import { computed, ref } from 'vue'
 import type { CSSProperties } from 'vue'
 
-import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
 import { useRestoreFocusOnViewportPointer } from '@/renderer/extensions/vueNodes/widgets/composables/useRestoreFocusOnViewportPointer'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
+import { useWidgetHeight } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import { WidgetInputBaseClass } from './layout'
@@ -177,6 +181,7 @@ interface SelectOption {
   comboboxValue: string
   key: string
   label: string
+  rawValue: NonNullable<WidgetValue>
   value: string
 }
 
@@ -213,21 +218,38 @@ function resolveRawValues(values: unknown): unknown[] {
   }
 }
 
-function resolveValues(values: unknown): string[] {
-  return resolveRawValues(values)
-    .filter((value) => value !== null && value !== undefined)
-    .map((value) => String(value))
+function toWidgetValue(value: unknown): NonNullable<WidgetValue> {
+  if (
+    typeof value === 'string' ||
+    typeof value === 'number' ||
+    typeof value === 'boolean' ||
+    (typeof value === 'object' && value !== null)
+  ) {
+    return value
+  }
+
+  return String(value)
 }
 
-const modelValue = defineModel<string | undefined>({
-  default(modelProps: Props) {
+function resolveValues(values: unknown) {
+  return resolveRawValues(values)
+    .filter((value) => value !== null && value !== undefined)
+    .map((rawValue) => ({
+      rawValue: toWidgetValue(rawValue),
+      value: String(rawValue)
+    }))
+}
+
+const modelValue = defineModel<WidgetValue>({
+  default(modelProps: Record<string, unknown>) {
     try {
-      const values = modelProps.widget.options?.values
+      const modelWidget = modelProps.widget as Props['widget'] | undefined
+      const values = modelWidget?.options?.values
       const resolved = typeof values === 'function' ? values() : values
       const firstValue = Array.isArray(resolved)
         ? resolved.find((value) => value !== null && value !== undefined)
         : undefined
-      return firstValue === undefined ? '' : String(firstValue)
+      return firstValue === undefined ? '' : firstValue
     } catch (error) {
       console.error('[WidgetSelectDefault] Failed to resolve options', error)
       return ''
@@ -242,18 +264,9 @@ const searchInputContainerRef = ref<HTMLElement>()
 const { handleFocusOutside, handleViewportPointerDown } =
   useRestoreFocusOnViewportPointer(focusSearchInput)
 
-const transformCompatProps = useTransformCompatOverlayProps()
-
 const widgetOptions = computed(
   () => widget.options as SelectWidgetOptions | undefined
 )
-
-const portalTarget = computed(() => {
-  const appendTo = transformCompatProps.value.appendTo
-  return appendTo === 'self' ? undefined : appendTo
-})
-
-const isPortalDisabled = computed(() => !portalTarget.value)
 
 const disabled = computed(() => Boolean(widgetOptions.value?.disabled))
 const placeholder = computed(() => widgetOptions.value?.placeholder ?? '')
@@ -280,17 +293,16 @@ function getOptionLabel(value: string) {
 const normalizedOptions = computed<SelectOption[]>(() => {
   void optionsRefreshKey.value
 
-  return resolveValues(widgetOptions.value?.values).map((value, index) => ({
-    comboboxValue: toComboboxValue(value),
-    key: `${value}-${index}`,
-    label: getOptionLabel(value),
-    value
-  }))
+  return resolveValues(widgetOptions.value?.values).map(
+    ({ rawValue, value }, index) => ({
+      comboboxValue: toComboboxValue(value),
+      key: `${value}-${index}`,
+      label: getOptionLabel(value),
+      rawValue,
+      value
+    })
+  )
 })
-
-const knownOptionValues = computed(
-  () => new Set(normalizedOptions.value.map((option) => option.value))
-)
 
 const isFilterable = computed(() => normalizedOptions.value.length > 4)
 
@@ -313,22 +325,21 @@ const viewportStyle = computed<CSSProperties>(() => ({
   scrollbarGutter: 'stable'
 }))
 
-const selectedOption = computed(() =>
-  normalizedOptions.value.find((option) => option.value === modelValue.value)
+const normalizedModelValue = computed(() =>
+  modelValue.value == null ? undefined : String(modelValue.value)
 )
 
-const comboboxValue = computed(() => {
-  const value = modelValue.value
-  if (value === undefined || !knownOptionValues.value.has(value)) return ''
+const selectedOption = computed(() =>
+  normalizedOptions.value.find(
+    (option) => option.value === normalizedModelValue.value
+  )
+)
 
-  return toComboboxValue(value)
-})
+const comboboxValue = computed(() => selectedOption.value?.comboboxValue ?? '')
 
 const isInvalid = computed(
   () =>
-    modelValue.value !== undefined &&
-    modelValue.value !== '' &&
-    !selectedOption.value
+    modelValue.value != null && modelValue.value !== '' && !selectedOption.value
 )
 
 const selectedLabel = computed(() => {
@@ -339,9 +350,12 @@ const selectedLabel = computed(() => {
 
 function selectOption(rekaValue: string | undefined) {
   const value = fromComboboxValue(rekaValue)
-  if (value === undefined || !knownOptionValues.value.has(value)) return
+  const option = normalizedOptions.value.find(
+    (option) => option.value === value
+  )
+  if (!option) return
 
-  modelValue.value = value
+  modelValue.value = option.rawValue
   searchQuery.value = ''
   isOpen.value = false
 }

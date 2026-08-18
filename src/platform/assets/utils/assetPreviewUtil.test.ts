@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import {
   findOutputAsset,
@@ -56,7 +56,7 @@ function mockFetchError() {
 const cloudAsset = {
   id: '72d169cc-7f9a-40d2-9382-35eadcba0a6a',
   name: 'mesh/ComfyUI_00003_.glb',
-  asset_hash: 'c6cadcee57dd.glb',
+  hash: 'c6cadcee57dd.glb',
   preview_id: null,
   preview_url: undefined
 }
@@ -82,8 +82,6 @@ const localAssetWithPreview = {
 }
 
 describe('isAssetPreviewSupported', () => {
-  beforeEach(() => vi.clearAllMocks())
-
   it('returns true when asset API is enabled (cloud)', () => {
     mockIsAssetAPIEnabled.mockReturnValue(true)
     expect(isAssetPreviewSupported()).toBe(true)
@@ -102,17 +100,13 @@ describe('isAssetPreviewSupported', () => {
 })
 
 describe('findOutputAsset', () => {
-  beforeEach(() => vi.clearAllMocks())
-
   it('finds asset by hash (cloud)', async () => {
     mockFetchResponse([cloudAsset])
 
     const result = await findOutputAsset('c6cadcee57dd.glb')
 
     expect(mockFetchApi).toHaveBeenCalledOnce()
-    expect(mockFetchApi.mock.calls[0][0]).toContain(
-      'asset_hash=c6cadcee57dd.glb'
-    )
+    expect(mockFetchApi.mock.calls[0][0]).toContain('hash=c6cadcee57dd.glb')
     expect(result).toEqual(cloudAsset)
   })
 
@@ -123,7 +117,7 @@ describe('findOutputAsset', () => {
     const result = await findOutputAsset('ComfyUI_00081_.glb')
 
     expect(mockFetchApi).toHaveBeenCalledTimes(2)
-    expect(mockFetchApi.mock.calls[0][0]).toContain('asset_hash=')
+    expect(mockFetchApi.mock.calls[0][0]).toContain('hash=')
     expect(mockFetchApi.mock.calls[1][0]).toContain('name_contains=')
     expect(result).toEqual(localAsset)
   })
@@ -157,8 +151,6 @@ describe('findOutputAsset', () => {
 })
 
 describe('findServerPreviewUrl', () => {
-  beforeEach(() => vi.clearAllMocks())
-
   it('returns null when asset has no preview_id', async () => {
     mockFetchResponse([cloudAsset])
 
@@ -202,8 +194,6 @@ describe('findServerPreviewUrl', () => {
 })
 
 describe('persistThumbnail', () => {
-  beforeEach(() => vi.clearAllMocks())
-
   it('uploads thumbnail and links preview_id', async () => {
     mockFetchEmpty()
     mockFetchResponse([localAsset])

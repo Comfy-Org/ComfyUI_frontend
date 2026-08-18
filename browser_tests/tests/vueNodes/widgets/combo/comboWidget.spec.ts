@@ -1,10 +1,12 @@
+import type { Locator } from '@playwright/test'
+
 import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import type { Locator } from '@playwright/test'
+import { intersection } from '@e2e/fixtures/utils/boundsUtils'
 
 test.describe('Vue Combo Widget', { tag: ['@vue-nodes', '@widget'] }, () => {
   async function openSamplerDropdown(comfyPage: ComfyPage) {
@@ -277,5 +279,32 @@ test.describe('Vue Combo Widget', { tag: ['@vue-nodes', '@widget'] }, () => {
       .getNodeByTitle('KSampler')
       .getByRole('combobox', { name: 'scheduler', exact: true })
     await expect(schedulerComboAfterReload).toContainText('karras')
+  })
+
+  test('Dropdown displays over Selection Toolbox', async ({ comfyPage }) => {
+    await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
+
+    const nodeName = 'Resize Image/Mask'
+    await comfyPage.searchBoxV2.addNode(nodeName, {
+      position: { x: 200, y: 630 }
+    })
+    const node = await comfyPage.vueNodes.getFixtureByTitle(nodeName)
+    await node.select()
+    await expect(comfyPage.selectionToolbox).toBeVisible()
+
+    const combo = comfyPage.vueNodes.getWidgetByName(nodeName, 'resize_type')
+    await combo.click()
+    const dropdown = comfyPage.page.getByTestId(
+      TestIds.widgets.selectDefaultViewport
+    )
+    await expect(dropdown).toBeVisible()
+
+    const bounds = (await intersection(dropdown, comfyPage.selectionToolbox))!
+    expect(bounds, 'toolbox and dropdown overlap').toBeDefined()
+    const cX = bounds.x + bounds.width / 2
+    const cY = bounds.y + bounds.height / 2
+    const dropdownBounds = (await dropdown.boundingBox())!
+    const position = { x: cX - dropdownBounds.x, y: cY - dropdownBounds.y }
+    await dropdown.click({ position, trial: true })
   })
 })

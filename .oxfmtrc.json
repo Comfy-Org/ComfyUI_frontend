@@ -9,6 +9,8 @@
     "packages/registry-types/src/comfyRegistryTypes.ts",
     "public/materialdesignicons.min.css",
     "src/types/generatedManagerTypes.ts",
-    "**/__fixtures__/**/*.json"
+    "src/locales/**/*.json",
+    "**/__fixtures__/**/*.json",
+    "apps/website/src/content/**/*.mdx"
   ]
 }

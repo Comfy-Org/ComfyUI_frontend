@@ -66,16 +66,41 @@ export class ComfyMouse implements Omit<Mouse, 'move'> {
     await this.drop(options)
   }
 
+  async middleDrag(
+    from: Position,
+    to: Position,
+    options: Omit<DragOptions, 'button'> = {}
+  ) {
+    await this.dragAndDrop(from, to, { ...options, button: 'middle' })
+  }
+
+  async middleDragFromCenter(
+    locator: Locator,
+    delta: { x: number; y: number },
+    options: Omit<DragOptions, 'button'> = {}
+  ) {
+    await locator.waitFor({ state: 'visible' })
+    const box = await locator.boundingBox()
+    if (!box) throw new Error('middleDragFromCenter: bounding box not found')
+
+    const start = {
+      x: box.x + box.width / 2,
+      y: box.y + box.height / 2
+    }
+    await this.middleDrag(
+      start,
+      { x: start.x + delta.x, y: start.y + delta.y },
+      options
+    )
+  }
+
   /** @see {@link Mouse.move} */
   async move(to: Position, options = ComfyMouse.defaultOptions) {
     await this.mouse.move(to.x, to.y, options)
     await this.nextFrame()
   }
 
-  async resizeByDragging(
-    element: Locator,
-    { x, y }: { x?: number; y?: number }
-  ) {
+  async dragElementBy(element: Locator, { x, y }: { x?: number; y?: number }) {
     const elementBox = await element.boundingBox()
     if (!elementBox) throw new Error('element should have layout')
 
@@ -86,6 +111,13 @@ export class ComfyMouse implements Omit<Mouse, 'move'> {
       { x: cx, y: cy },
       { x: cx + (x ?? 0), y: cy + (y ?? 0) }
     )
+  }
+
+  async hold(...args: Parameters<Mouse['down']>) {
+    await this.mouse.down(...args)
+    const release = new AsyncDisposableStack()
+    release.defer(() => this.mouse.up(...args))
+    return release
   }
 
   //#region Pass-through

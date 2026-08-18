@@ -4,7 +4,6 @@ import { computed, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useQueueProgress } from '@/composables/queue/useQueueProgress'
-import { st } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -190,8 +189,7 @@ export function useJobList() {
   const currentNodeName = computed(() => {
     return resolveNodeDisplayName(executionStore.executingNode, {
       emptyLabel: t('g.emDash'),
-      untitledLabel: t('g.untitled'),
-      st
+      untitledLabel: t('g.untitled')
     })
   })
 
@@ -341,7 +339,7 @@ export function useJobList() {
     for (const { task, state } of searchableTaskEntries.value) {
       let ts: number | undefined
       if (state === 'completed' || state === 'failed') {
-        ts = task.executionEndTimestamp
+        ts = task.executionEndTimestamp ?? task.createTime
       } else {
         ts = task.createTime
       }

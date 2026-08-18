@@ -1,6 +1,6 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
-import type { UUID } from '@/lib/litegraph/src/utils/uuid'
+import type { UUID } from '@/utils/uuid'
 
 import { evaluateMathExpression } from '@/lib/litegraph/src/utils/mathParser'
 

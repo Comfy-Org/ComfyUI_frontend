@@ -97,11 +97,12 @@ export function createMockAssets(count: number = 20): AssetItem[] {
     const lastAccessTime = getRandomISODate()
 
     const fakeFileName = `${fakeFunnyModelNames[index]}${extension}`
+    const fakeAssetHash = generateFakeAssetHash()
 
     return {
       id: `mock-asset-uuid-${(index + 1).toString().padStart(3, '0')}-fake`,
       name: fakeFileName,
-      asset_hash: generateFakeAssetHash(),
+      hash: fakeAssetHash,
       size: sizeInBytes,
       mime_type: mimeType,
       tags: [

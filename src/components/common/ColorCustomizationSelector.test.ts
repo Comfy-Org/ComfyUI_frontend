@@ -1,10 +1,10 @@
 import { render } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import ColorPicker from 'primevue/colorpicker'
 import PrimeVue from 'primevue/config'
 import SelectButton from 'primevue/selectbutton'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp, nextTick } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import ColorCustomizationSelector from './ColorCustomizationSelector.vue'
 
@@ -13,6 +13,12 @@ describe('ColorCustomizationSelector', () => {
     { name: 'Blue', value: '#0d6efd' },
     { name: 'Green', value: '#28a745' }
   ]
+
+  const i18n = createI18n({
+    legacy: false,
+    locale: 'en',
+    messages: { en: { color: { hex: 'Hex', rgba: 'RGBA' } } }
+  })
 
   beforeEach(() => {
     const app = createApp({})
@@ -27,8 +33,8 @@ describe('ColorCustomizationSelector', () => {
 
     const result = render(ColorCustomizationSelector, {
       global: {
-        plugins: [PrimeVue],
-        components: { SelectButton, ColorPicker }
+        plugins: [PrimeVue, i18n],
+        components: { SelectButton }
       },
       props: {
         modelValue: null,
@@ -68,24 +74,21 @@ describe('ColorCustomizationSelector', () => {
     const buttons = getToggleButtons(container)
     const customButton = buttons[buttons.length - 1]
     expect(customButton).toHaveAttribute('aria-pressed', 'true')
-
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeVue ColorPicker uses readonly input preview with no ARIA role
-    const colorPreview = container.querySelector(
-      '.p-colorpicker-preview'
-    ) as HTMLInputElement | null
-    expect(colorPreview).not.toBeNull()
   })
 
   it('shows color picker when custom option is selected', async () => {
-    const { container, user } = renderComponent()
+    const { container, user } = renderComponent({ modelValue: '#0d6efd' })
+    await nextTick()
 
-    const buttons = getToggleButtons(container)
-    await user.click(buttons[buttons.length - 1])
+    // eslint-disable-next-line testing-library/no-node-access, testing-library/no-container -- count buttons to detect the ColorPicker popover trigger appearing
+    const initialButtonCount = container.querySelectorAll('button').length
+    const toggleButtons = getToggleButtons(container)
+    await user.click(toggleButtons[toggleButtons.length - 1])
+    await nextTick()
 
-    expect(
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeVue ColorPicker internal DOM
-      container.querySelector('[data-pc-name="colorpicker"]')
-    ).not.toBeNull()
+    // eslint-disable-next-line testing-library/no-node-access, testing-library/no-container -- count buttons to detect the ColorPicker popover trigger appearing
+    const afterButtonCount = container.querySelectorAll('button').length
+    expect(afterButtonCount).toBe(initialButtonCount + 1)
   })
 
   it('emits update when predefined color is selected', async () => {
@@ -117,7 +120,7 @@ describe('ColorCustomizationSelector', () => {
     onUpdate.mockClear()
     await user.click(buttons[buttons.length - 1]) // Switch to custom
 
-    // When switching to custom, the custom color value inherits from Blue ('0d6efd')
+    // When switching to custom, the custom color value inherits from Blue
     // and the watcher on customColorValue emits the update
     expect(onUpdate).toHaveBeenCalledWith('#0d6efd')
   })

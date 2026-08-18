@@ -14,6 +14,7 @@ vi.mock('three/examples/jsm/controls/OrbitControls', () => {
     object: THREE.Camera
     domElement: HTMLElement
     enableDamping = false
+    enabled = true
     target = new THREE.Vector3()
     update = vi.fn()
     dispose = vi.fn()
@@ -42,13 +43,8 @@ function makeMockEventManager() {
   } satisfies EventManagerInterface
 }
 
-function makeRenderer(opts: { withParent?: boolean } = {}) {
-  const canvas = document.createElement('canvas')
-  if (opts.withParent) {
-    const parent = document.createElement('div')
-    parent.appendChild(canvas)
-  }
-  return { domElement: canvas } as unknown as THREE.WebGLRenderer
+function makeElement() {
+  return document.createElement('div')
 }
 
 describe('ControlsManager', () => {
@@ -57,39 +53,24 @@ describe('ControlsManager', () => {
   let manager: ControlsManager
 
   beforeEach(() => {
-    vi.clearAllMocks()
     events = makeMockEventManager()
     camera = new THREE.PerspectiveCamera()
   })
 
   describe('construction', () => {
-    it('attaches OrbitControls to the canvas parent when one exists', () => {
-      const renderer = makeRenderer({ withParent: true })
+    it('attaches OrbitControls to the interaction element', () => {
+      const element = makeElement()
 
-      manager = new ControlsManager(renderer, camera, events)
+      manager = new ControlsManager(element, camera, events)
 
-      expect(mockOrbitControls).toHaveBeenCalledWith(
-        camera,
-        renderer.domElement.parentElement
-      )
+      expect(mockOrbitControls).toHaveBeenCalledWith(camera, element)
       expect(manager.controls.enableDamping).toBe(true)
-    })
-
-    it('falls back to the canvas itself when there is no parent', () => {
-      const renderer = makeRenderer({ withParent: false })
-
-      manager = new ControlsManager(renderer, camera, events)
-
-      expect(mockOrbitControls).toHaveBeenCalledWith(
-        camera,
-        renderer.domElement
-      )
     })
   })
 
   describe('init', () => {
     it('emits cameraChanged with a perspective state when the controls fire end', () => {
-      manager = new ControlsManager(makeRenderer(), camera, events)
+      manager = new ControlsManager(makeElement(), camera, events)
       camera.position.set(1, 2, 3)
       camera.zoom = 1.25
       manager.controls.target.set(4, 5, 6)
@@ -108,7 +89,7 @@ describe('ControlsManager', () => {
     it('reports orthographic camera type when initialized with one', () => {
       const ortho = new THREE.OrthographicCamera()
       ortho.zoom = 0.5
-      manager = new ControlsManager(makeRenderer(), ortho, events)
+      manager = new ControlsManager(makeElement(), ortho, events)
       manager.init()
 
       ;(manager.controls as unknown as { fire(e: string): void }).fire('end')
@@ -122,7 +103,7 @@ describe('ControlsManager', () => {
 
   describe('updateCamera', () => {
     it('rebinds controls to the new camera, copies position from the previous one, and preserves the target', () => {
-      manager = new ControlsManager(makeRenderer(), camera, events)
+      manager = new ControlsManager(makeElement(), camera, events)
       camera.position.set(7, 8, 9)
       manager.controls.target.set(1, 1, 1)
 
@@ -138,7 +119,7 @@ describe('ControlsManager', () => {
 
   describe('update / reset', () => {
     it('update delegates to controls.update', () => {
-      manager = new ControlsManager(makeRenderer(), camera, events)
+      manager = new ControlsManager(makeElement(), camera, events)
 
       manager.update()
 
@@ -146,7 +127,7 @@ describe('ControlsManager', () => {
     })
 
     it('reset clears the target back to the origin and refreshes', () => {
-      manager = new ControlsManager(makeRenderer(), camera, events)
+      manager = new ControlsManager(makeElement(), camera, events)
       manager.controls.target.set(5, 6, 7)
 
       manager.reset()
@@ -158,11 +139,31 @@ describe('ControlsManager', () => {
 
   describe('dispose', () => {
     it('disposes the underlying OrbitControls', () => {
-      manager = new ControlsManager(makeRenderer(), camera, events)
+      manager = new ControlsManager(makeElement(), camera, events)
 
       manager.dispose()
 
       expect(manager.controls.dispose).toHaveBeenCalled()
+    })
+  })
+
+  describe('detach / attach', () => {
+    it('detach disables OrbitControls interaction', () => {
+      manager = new ControlsManager(makeElement(), camera, events)
+      expect(manager.controls.enabled).toBe(true)
+
+      manager.detach()
+
+      expect(manager.controls.enabled).toBe(false)
+    })
+
+    it('attach re-enables OrbitControls interaction', () => {
+      manager = new ControlsManager(makeElement(), camera, events)
+      manager.detach()
+
+      manager.attach()
+
+      expect(manager.controls.enabled).toBe(true)
     })
   })
 })

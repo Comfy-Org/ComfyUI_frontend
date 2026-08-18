@@ -1,0 +1,115 @@
+{
+  "id": "test-missing-model-promoted-widget",
+  "revision": 0,
+  "last_node_id": 2,
+  "last_link_id": 0,
+  "nodes": [
+    {
+      "id": 2,
+      "type": "subgraph-with-promoted-missing-model",
+      "pos": [450, 250],
+      "size": [400, 200],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": ["fake_model.safetensors"]
+    }
+  ],
+  "links": [],
+  "groups": [],
+  "definitions": {
+    "subgraphs": [
+      {
+        "id": "subgraph-with-promoted-missing-model",
+        "version": 1,
+        "state": {
+          "lastGroupId": 0,
+          "lastNodeId": 1,
+          "lastLinkId": 1,
+          "lastRerouteId": 0
+        },
+        "revision": 0,
+        "config": {},
+        "name": "Subgraph with Promoted Missing Model",
+        "inputNode": {
+          "id": -10,
+          "bounding": [100, 200, 120, 60]
+        },
+        "outputNode": {
+          "id": -20,
+          "bounding": [500, 200, 120, 60]
+        },
+        "inputs": [
+          {
+            "id": "ckpt-name-input-id",
+            "name": "ckpt_name",
+            "type": "COMBO",
+            "linkIds": [1],
+            "pos": { "0": 150, "1": 220 }
+          }
+        ],
+        "outputs": [],
+        "widgets": [],
+        "nodes": [
+          {
+            "id": 1,
+            "type": "CheckpointLoaderSimple",
+            "pos": [250, 180],
+            "size": [315, 98],
+            "flags": {},
+            "order": 0,
+            "mode": 0,
+            "inputs": [
+              {
+                "localized_name": "ckpt_name",
+                "name": "ckpt_name",
+                "type": "COMBO",
+                "widget": {
+                  "name": "ckpt_name"
+                },
+                "link": 1
+              }
+            ],
+            "outputs": [
+              { "name": "MODEL", "type": "MODEL", "links": null },
+              { "name": "CLIP", "type": "CLIP", "links": null },
+              { "name": "VAE", "type": "VAE", "links": null }
+            ],
+            "properties": {
+              "Node name for S&R": "CheckpointLoaderSimple"
+            },
+            "widgets_values": ["fake_model.safetensors"]
+          }
+        ],
+        "links": [
+          {
+            "id": 1,
+            "origin_id": -10,
+            "origin_slot": 0,
+            "target_id": 1,
+            "target_slot": 0,
+            "type": "COMBO"
+          }
+        ]
+      }
+    ]
+  },
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 1,
+      "offset": [0, 0]
+    }
+  },
+  "models": [
+    {
+      "name": "fake_model.safetensors",
+      "url": "http://localhost:8188/api/devtools/fake_model.safetensors",
+      "directory": "checkpoints"
+    }
+  ],
+  "version": 0.4
+}

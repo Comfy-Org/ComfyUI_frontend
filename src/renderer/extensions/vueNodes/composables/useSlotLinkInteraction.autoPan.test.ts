@@ -1,5 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fromPartial } from '@total-typescript/shoehorn'
+
+import { toNodeId } from '@/types/nodeId'
 
 const {
   capturedOnPan,
@@ -50,6 +52,10 @@ vi.mock('@/renderer/core/canvas/useAutoPan', () => ({
       capturedAutoPan.current = this as typeof capturedAutoPan.current
     }
   }
+}))
+
+vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+  useCanvasStore: () => ({ isReadOnly: false })
 }))
 
 vi.mock('@/scripts/app', () => ({
@@ -223,7 +229,7 @@ function pointerEvent(
 
 function startDrag() {
   const { onPointerDown } = useSlotLinkInteraction({
-    nodeId: 'node1',
+    nodeId: toNodeId('node1'),
     index: 0,
     type: 'output'
   })
@@ -239,13 +245,7 @@ describe('useSlotLinkInteraction auto-pan', () => {
     }
     mockDs.offset = [0, 0]
     mockDs.scale = 1
-    mockSetDirty.mockClear()
-    mockAdapter.beginFromOutput.mockClear()
     mockLinkConnector.state.snapLinksPos = null
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   it('starts auto-pan when link drag begins', () => {

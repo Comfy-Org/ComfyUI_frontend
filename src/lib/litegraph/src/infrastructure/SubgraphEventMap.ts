@@ -1,3 +1,4 @@
+import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
@@ -29,6 +30,12 @@ export interface SubgraphEventMap extends LGraphEventMap {
   'removing-output': {
     output: SubgraphOutput
     index: number
+  }
+
+  'inputs-reordered': {
+    subgraph: Subgraph
+    oldOrder: readonly string[]
+    newOrder: readonly string[]
   }
 
   'renaming-input': {

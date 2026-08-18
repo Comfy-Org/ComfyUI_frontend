@@ -1,3 +1,5 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+
 import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
 import PrimeVue from 'primevue/config'
@@ -69,8 +71,8 @@ const { mockMediaAssets } = vi.hoisted(() => {
   }
 })
 
-vi.mock('@/platform/assets/composables/media/useMediaAssets', () => ({
-  useMediaAssets: () => mockMediaAssets
+vi.mock('@/platform/assets/composables/media/useAssetsApi', () => ({
+  useAssetsApi: () => mockMediaAssets
 }))
 
 vi.mock('@/platform/assets/utils/outputAssetUtil', () => ({
@@ -137,13 +139,10 @@ const i18n = createI18n({
 describe('WidgetSelectDropdown', () => {
   beforeEach(() => {
     mockMediaAssets.media.value = []
-    mockCheckState.mockClear()
     mockAssetsData.items = []
     mockItemsRef.value = []
     mockSelectedSetRef.value = new Set()
     mockFilterSelectedRef.value = 'all'
-    mockUpdateSelectedItems.mockClear()
-    mockHandleFilesUpdate.mockClear()
   })
 
   function renderComponent(
@@ -186,12 +185,12 @@ describe('WidgetSelectDropdown', () => {
 
   it('renders in cloud asset mode', () => {
     mockAssetsData.items = [
-      {
+      fromPartial({
         id: 'asset-1',
         name: 'model_a.safetensors',
         preview_url: 'https://example.com/a.jpg',
         tags: []
-      }
+      })
     ]
     mockItemsRef.value = [{ id: 'asset-1', name: 'model_a.safetensors' }]
     mockSelectedSetRef.value = new Set(['asset-1'])

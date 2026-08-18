@@ -69,11 +69,7 @@ const updateDomClipping = () => {
     return
   }
 
-  const override = widgetState.positionOverride
-  const overrideInGraph =
-    override && lgCanvas.graph?.getNodeById(override.node.id)
-  const ownerNode = overrideInGraph ? override.node : widgetState.widget.node
-  const isSelected = selectedNode === ownerNode
+  const isSelected = selectedNode === widgetState.widget.node
   const renderArea = selectedNode?.renderArea
   const offset = lgCanvas.ds.offset
   const scale = lgCanvas.ds.scale
@@ -104,10 +100,7 @@ const updateDomClipping = () => {
 const { left, top } = useElementBounding(canvasStore.getCanvas().canvas)
 
 function composeStyle() {
-  const override = widgetState.positionOverride
-  const isDisabled = override
-    ? (override.widget.computedDisabled ?? widget.computedDisabled)
-    : widget.computedDisabled
+  const isDisabled = widget.computedDisabled
 
   style.value = {
     ...positionStyle.value,
@@ -167,13 +160,7 @@ onMounted(() => {
       const lgCanvas = canvasStore.canvas
       if (!lgCanvas) return
 
-      const override = widgetState.positionOverride
-      const overrideInGraph =
-        override && lgCanvas.graph?.getNodeById(override.node.id)
-      const ownerNode = overrideInGraph
-        ? override.node
-        : widgetState.widget.node
-
+      const ownerNode = widgetState.widget.node
       lgCanvas.selectNode(ownerNode)
       lgCanvas.bringToFront(ownerNode)
     }

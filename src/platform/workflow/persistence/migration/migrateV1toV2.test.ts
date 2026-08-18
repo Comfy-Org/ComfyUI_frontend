@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { hashPath } from '../base/hashUtil'
 import { readOpenPaths } from '../base/storageIO'
@@ -14,13 +14,6 @@ describe('migrateV1toV2', () => {
 
   beforeEach(() => {
     vi.resetModules()
-    localStorage.clear()
-    sessionStorage.clear()
-  })
-
-  afterEach(() => {
-    localStorage.clear()
-    sessionStorage.clear()
   })
 
   function setV1Data(
@@ -261,7 +254,7 @@ describe('migrateV1toV2', () => {
       // V2 tab state should be readable via the V2 API
       const openPaths = readOpenPaths(clientId, workspaceId)
 
-      // This is the bug: V1 tab state is NOT migrated, so openPaths is null
+      // V2 tab state should be reconstructed from V1 localStorage keys
       expect(openPaths).not.toBeNull()
       expect(openPaths!.paths).toEqual([
         'workflows/a.json',

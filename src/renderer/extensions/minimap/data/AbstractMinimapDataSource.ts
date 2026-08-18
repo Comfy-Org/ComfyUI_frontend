@@ -17,10 +17,23 @@ import type {
 export abstract class AbstractMinimapDataSource implements IMinimapDataSource {
   constructor(protected graph: LGraph | null) {}
 
-  // Abstract methods that must be implemented by subclasses
-  abstract getNodes(): MinimapNodeData[]
+  private cachedNodes: MinimapNodeData[] | null = null
+
+  /** Builds the node list. Called at most once per data source instance. */
+  protected abstract buildNodes(): MinimapNodeData[]
+
   abstract getNodeCount(): number
   abstract hasData(): boolean
+
+  /**
+   * A single render pass reads nodes several times (bounds, node rects, link
+   * endpoints). Data sources are constructed per pass, so memoising here keeps
+   * one pass to one build instead of rebuilding the whole graph each time.
+   */
+  getNodes(): MinimapNodeData[] {
+    this.cachedNodes ??= this.buildNodes()
+    return this.cachedNodes
+  }
 
   // Shared implementation using calculateNodeBounds
   getBounds(): MinimapBounds {
@@ -70,7 +83,7 @@ export abstract class AbstractMinimapDataSource implements IMinimapDataSource {
     for (const node of graph._nodes) {
       if (!node.outputs) continue
 
-      const sourceNodeData = nodeMap.get(String(node.id))
+      const sourceNodeData = nodeMap.get(node.id)
       if (!sourceNodeData) continue
 
       for (const output of node.outputs) {
@@ -80,7 +93,7 @@ export abstract class AbstractMinimapDataSource implements IMinimapDataSource {
           const link = graph.links[linkId]
           if (!link) continue
 
-          const targetNodeData = nodeMap.get(String(link.target_id))
+          const targetNodeData = nodeMap.get(link.target_id)
           if (!targetNodeData) continue
 
           links.push({

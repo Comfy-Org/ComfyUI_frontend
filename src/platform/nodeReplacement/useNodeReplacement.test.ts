@@ -1,6 +1,5 @@
 import { fromAny } from '@total-typescript/shoehorn'
-import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -169,11 +168,6 @@ function makeMissingNodeType(
 }
 
 describe('useNodeReplacement', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-    setActivePinia(createPinia())
-  })
-
   describe('replaceNodesInPlace', () => {
     it('should return empty array when no placeholders exist', () => {
       const graph = createMockGraph([])
@@ -355,8 +349,13 @@ describe('useNodeReplacement', () => {
           { name: 'largest_size', link: null }
         ],
         [{ name: 'IMAGE', links: null }],
-        [{ name: 'largest_size', value: 0 }]
+        [
+          { name: 'largest_size', value: 0 },
+          { name: 'face_point_size', value: 1 }
+        ]
       )
+      const setNodeId = vi.fn()
+      Object.assign(newNode.widgets![1], { setNodeId })
       vi.mocked(LiteGraph.createNode).mockReturnValue(newNode)
 
       const { replaceNodesInPlace } = useNodeReplacement()
@@ -374,8 +373,8 @@ describe('useNodeReplacement', () => {
         })
       ])
 
-      // Widget value should be transferred: old "longer_edge" (idx 0, value 512) → new "largest_size"
       expect(newNode.widgets![0].value).toBe(512)
+      expect(setNodeId).toHaveBeenCalledWith(1)
     })
 
     it('should skip replacement when new node type is not registered', () => {

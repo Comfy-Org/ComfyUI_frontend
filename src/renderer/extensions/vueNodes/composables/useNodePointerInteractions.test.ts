@@ -1,5 +1,7 @@
 import { setActivePinia } from 'pinia'
+import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 import { nextTick, ref } from 'vue'
 
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
@@ -74,8 +76,8 @@ vi.mock('@/composables/graph/useVueNodeLifecycle', () => ({
 }))
 
 const mockData = vi.hoisted(() => {
-  const fakeNodeLayout: NodeLayout = {
-    id: '',
+  const fakeNodeLayout = {
+    id: 'test-node-123',
     position: { x: 0, y: 0 },
     size: { width: 100, height: 100 },
     zIndex: 1,
@@ -106,6 +108,8 @@ vi.mock('@/renderer/core/layout/store/layoutStore', () => {
   }
 })
 
+const testNodeId = fromAny<NodeLayout, unknown>(mockData.fakeNodeLayout).id
+
 const createPointerEvent = (
   eventType: string,
   overrides: Partial<PointerEventInit> = {}
@@ -133,7 +137,6 @@ const createMouseEvent = (
 
 describe('useNodePointerInteractions', () => {
   beforeEach(async () => {
-    vi.resetAllMocks()
     selectedItemsState.items = []
     setActivePinia(createTestingPinia())
   })
@@ -142,7 +145,7 @@ describe('useNodePointerInteractions', () => {
     const { handleNodeSelect } = useNodeEventHandlers()
     const { startDrag } = useNodeDrag()
 
-    const { pointerHandlers } = useNodePointerInteractions('test-node-123')
+    const { pointerHandlers } = useNodePointerInteractions(testNodeId)
 
     // Right-click should not trigger selection
     const rightClickEvent = createPointerEvent('pointerdown', { button: 2 })
@@ -154,13 +157,13 @@ describe('useNodePointerInteractions', () => {
     const leftClickEvent = createPointerEvent('pointerdown', { button: 0 })
     pointerHandlers.onPointerdown(leftClickEvent)
 
-    expect(startDrag).toHaveBeenCalledWith(leftClickEvent, 'test-node-123')
+    expect(startDrag).toHaveBeenCalledWith(leftClickEvent, testNodeId)
   })
 
   it('should handle drag termination via cancel and context menu', async () => {
     const { handleNodeSelect } = useNodeEventHandlers()
 
-    const { pointerHandlers } = useNodePointerInteractions('test-node-123')
+    const { pointerHandlers } = useNodePointerInteractions(testNodeId)
 
     // Test pointer cancel - selection happens on pointer down
     pointerHandlers.onPointerdown(
@@ -207,7 +210,7 @@ describe('useNodePointerInteractions', () => {
   })
 
   it('should integrate with layout store dragging state', async () => {
-    const { pointerHandlers } = useNodePointerInteractions('test-node-123')
+    const { pointerHandlers } = useNodePointerInteractions(testNodeId)
 
     // Pointer down alone shouldn't set dragging state
     pointerHandlers.onPointerdown(
@@ -233,7 +236,7 @@ describe('useNodePointerInteractions', () => {
   })
 
   it('should select node immediately when drag starts', async () => {
-    const { pointerHandlers } = useNodePointerInteractions('test-node-123')
+    const { pointerHandlers } = useNodePointerInteractions(testNodeId)
 
     // Pointer down should select node immediately
     const downEvent = createPointerEvent('pointerdown', {
@@ -258,7 +261,7 @@ describe('useNodePointerInteractions', () => {
     expect(layoutStore.isDraggingVueNodes.value).toBe(true)
 
     // Selection should happen on pointer down (before move)
-    expect(handleNodeSelect).toHaveBeenCalledWith(pointerMove, 'test-node-123')
+    expect(handleNodeSelect).toHaveBeenCalledWith(pointerMove, testNodeId)
     expect(handleNodeSelect).toHaveBeenCalledTimes(1)
 
     // End drag
@@ -270,8 +273,29 @@ describe('useNodePointerInteractions', () => {
     expect(handleNodeSelect).toHaveBeenCalledTimes(1)
   })
 
+  it('should not start drag on shift+move when pointerdown was stopped by a child', async () => {
+    const { handleNodeSelect } = useNodeEventHandlers()
+    const { startDrag } = useNodeDrag()
+
+    const { pointerHandlers } = useNodePointerInteractions(testNodeId)
+
+    pointerHandlers.onPointermove(
+      createPointerEvent('pointermove', {
+        shiftKey: true,
+        buttons: 1,
+        clientX: 200,
+        clientY: 200
+      })
+    )
+
+    await nextTick()
+    expect(layoutStore.isDraggingVueNodes.value).toBe(false)
+    expect(startDrag).not.toHaveBeenCalled()
+    expect(handleNodeSelect).not.toHaveBeenCalled()
+  })
+
   it('on ctrl+click: calls toggleNodeSelectionAfterPointerUp on pointer up (not pointer down)', async () => {
-    const { pointerHandlers } = useNodePointerInteractions('test-node-123')
+    const { pointerHandlers } = useNodePointerInteractions(testNodeId)
     const { toggleNodeSelectionAfterPointerUp } = useNodeEventHandlers()
 
     // Pointer down with ctrl
@@ -295,7 +319,7 @@ describe('useNodePointerInteractions', () => {
 
     // On pointer up: toggle handler IS called with correct params
     expect(toggleNodeSelectionAfterPointerUp).toHaveBeenCalledWith(
-      'test-node-123',
+      testNodeId,
       true
     )
   })

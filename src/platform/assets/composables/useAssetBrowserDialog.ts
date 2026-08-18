@@ -1,6 +1,7 @@
 import AssetBrowserModal from '@/platform/assets/components/AssetBrowserModal.vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useDialogService } from '@/services/dialogService'
+import type { DialogComponentProps } from '@/stores/dialogStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
 interface ShowOptions {
@@ -23,6 +24,10 @@ interface BrowseOptions {
 }
 
 const DIALOG_KEY = 'global-asset-browser'
+const ASSET_BROWSER_DIALOG_PROPS = {
+  contentClass:
+    'w-fit max-w-[calc(100vw-1rem)] sm:max-w-[calc(100vw-1rem)] border-none bg-transparent shadow-none'
+} satisfies DialogComponentProps
 
 export const useAssetBrowserDialog = () => {
   const dialogService = useDialogService()
@@ -47,7 +52,8 @@ export const useAssetBrowserDialog = () => {
         currentValue: props.currentValue,
         onSelect: handleAssetSelected,
         onClose: hide
-      }
+      },
+      dialogComponentProps: ASSET_BROWSER_DIALOG_PROPS
     })
   }
 
@@ -66,7 +72,8 @@ export const useAssetBrowserDialog = () => {
         title: options.title,
         onSelect: handleAssetSelected,
         onClose: hide
-      }
+      },
+      dialogComponentProps: ASSET_BROWSER_DIALOG_PROPS
     })
   }
 

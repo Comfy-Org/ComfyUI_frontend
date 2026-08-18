@@ -10,10 +10,12 @@ import { Markdown as TiptapMarkdown } from 'tiptap-markdown'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { resolveNodeRootGraphId } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { forwardMiddleButtonToCanvas } from '@/renderer/extensions/vueNodes/widgets/utils/forwardMiddleButtonToCanvas'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { app } from '@/scripts/app'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { widgetId } from '@/types/widgetId'
 
 // TODO: This widget manually syncs with widgetValueStore via getValue/setValue.
 // Consolidate with useStringWidget into shared helpers (domWidgetHelpers.ts).
@@ -51,14 +53,18 @@ function addMarkdownWidget(
   const widget = node.addDOMWidget(name, 'MARKDOWN', inputEl, {
     getValue(): string {
       const graphId = resolveNodeRootGraphId(node, app.rootGraph.id)
-      const storedValue = widgetStore.getWidget(graphId, node.id, name)?.value
+      const storedValue = widgetStore.getWidget(
+        widgetId(graphId, node.id, name)
+      )?.value
       return typeof storedValue === 'string' ? storedValue : textarea.value
     },
     setValue(v: string) {
       textarea.value = v
       editor.commands.setContent(v)
       const graphId = resolveNodeRootGraphId(node, app.rootGraph.id)
-      const widgetState = widgetStore.getWidget(graphId, node.id, name)
+      const widgetState = widgetStore.getWidget(
+        widgetId(graphId, node.id, name)
+      )
       if (widgetState) widgetState.value = v
     }
   })
@@ -105,29 +111,7 @@ function addMarkdownWidget(
     signal
   })
 
-  inputEl.addEventListener(
-    'pointerdown',
-    (event) => {
-      if (event.button === 1) app.canvas.processMouseDown(event)
-    },
-    { signal }
-  )
-
-  inputEl.addEventListener(
-    'pointermove',
-    (event) => {
-      if ((event.buttons & 4) === 4) app.canvas.processMouseMove(event)
-    },
-    { signal }
-  )
-
-  inputEl.addEventListener(
-    'pointerup',
-    (event) => {
-      if (event.button === 1) app.canvas.processMouseUp(event)
-    },
-    { signal }
-  )
+  forwardMiddleButtonToCanvas(inputEl, signal)
 
   widget.onRemove = useChainCallback(widget.onRemove, () => {
     controller.abort()

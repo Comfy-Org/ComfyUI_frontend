@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
+import Loader from '@/components/loader/Loader.vue'
 import { WidgetInputBaseClass } from '../../layout'
 import type { FormDropdownInputProps } from './types'
 
@@ -40,6 +41,31 @@ const theButtonStyle = computed(() =>
     selectedItems.value.length > 0 && 'text-text-primary'
   )
 )
+
+const buttonRef = ref<HTMLButtonElement>()
+const fileInputRef = useTemplateRef<HTMLInputElement>('fileInputRef')
+
+function focus() {
+  buttonRef.value?.focus()
+}
+
+/**
+ * Open the native file picker without a user click on the input itself.
+ * Must be invoked synchronously from a user-initiated event handler so the
+ * browser's transient activation requirement is satisfied. Falls back to
+ * `click()` on browsers that predate showPicker (Chrome <99, Firefox <101,
+ * Safari <16).
+ */
+function showPicker() {
+  const input = fileInputRef.value!
+  if (typeof input.showPicker === 'function') {
+    input.showPicker()
+  } else {
+    input.click()
+  }
+}
+
+defineExpose({ focus, showPicker })
 </script>
 
 <template>
@@ -51,6 +77,7 @@ const theButtonStyle = computed(() =>
     "
   >
     <button
+      ref="buttonRef"
       :class="
         cn(
           theButtonStyle,
@@ -91,8 +118,14 @@ const theButtonStyle = computed(() =>
         )
       "
     >
-      <i class="icon-[lucide--folder-search] size-4" aria-hidden="true" />
+      <Loader v-if="isUploading" size="sm" />
+      <i
+        v-else
+        class="icon-[lucide--folder-search] size-4"
+        aria-hidden="true"
+      />
       <input
+        ref="fileInputRef"
         type="file"
         class="absolute inset-0 -z-1 opacity-0"
         :aria-label="t('g.upload')"

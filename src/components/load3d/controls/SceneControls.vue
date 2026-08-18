@@ -37,7 +37,7 @@
         </Button>
       </div>
 
-      <div v-if="!hasBackgroundImage">
+      <div v-if="showBackgroundImage && !hasBackgroundImage">
         <Button
           v-tooltip.right="{
             value: $t('load3d.uploadBackgroundImage'),
@@ -61,7 +61,7 @@
       </div>
     </template>
 
-    <div v-if="hasBackgroundImage">
+    <div v-if="showBackgroundImage && hasBackgroundImage">
       <Button
         v-tooltip.right="{
           value: $t('load3d.panoramaMode'),
@@ -83,12 +83,16 @@
     </div>
 
     <PopupSlider
-      v-if="hasBackgroundImage && backgroundRenderMode === 'panorama'"
+      v-if="
+        showBackgroundImage &&
+        hasBackgroundImage &&
+        backgroundRenderMode === 'panorama'
+      "
       v-model="fov"
       :tooltip-text="$t('load3d.fov')"
     />
 
-    <div v-if="hasBackgroundImage">
+    <div v-if="showBackgroundImage && hasBackgroundImage">
       <Button
         v-tooltip.right="{
           value: $t('load3d.removeBackgroundImage'),
@@ -114,8 +118,9 @@ import Button from '@/components/ui/button/Button.vue'
 import type { BackgroundRenderModeType } from '@/extensions/core/load3d/interfaces'
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { hdriActive = false } = defineProps<{
+const { hdriActive = false, showBackgroundImage = true } = defineProps<{
   hdriActive?: boolean
+  showBackgroundImage?: boolean
 }>()
 
 const emit = defineEmits<{

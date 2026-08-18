@@ -3,7 +3,7 @@ import type { ComputedRef } from 'vue'
 import { computed, ref, watchEffect } from 'vue'
 
 import type { IAssetsProvider } from '@/platform/assets/composables/media/IAssetsProvider'
-import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAssets'
+import { useAssetsApi } from '@/platform/assets/composables/media/useAssetsApi'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -25,7 +25,7 @@ export function useOutputHistory(): {
   isWorkflowActive: ComputedRef<boolean>
   cancelActiveWorkflowJobs: () => Promise<void>
 } {
-  const backingOutputs = useMediaAssets('output')
+  const backingOutputs = useAssetsApi('output')
   void backingOutputs.fetchMediaList()
   const linearStore = useLinearOutputStore()
   const workflowStore = useWorkflowStore()

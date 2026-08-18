@@ -12,7 +12,7 @@
         :key="`input-${input.name}-${getActualInputIndex(input, index)}`"
         :slot-data="input"
         :node-type="nodeData?.type || ''"
-        :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
+        :node-id="nodeData.id"
         :has-error="inputHasError(input)"
         :index="getActualInputIndex(input, index)"
       />
@@ -27,7 +27,7 @@
         :key="`output-${output.name}-${index}`"
         :slot-data="output"
         :node-type="nodeData?.type || ''"
-        :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
+        :node-id="nodeData.id"
         :index="index"
       />
     </div>
@@ -71,7 +71,10 @@ const filteredInputs = computed(() => [
 ])
 
 function inputHasError(input: INodeSlot): boolean {
-  return executionErrorStore.slotHasError(nodeLocatorId.value, input.name)
+  const locatorId = nodeLocatorId.value
+  if (!locatorId) return false
+
+  return executionErrorStore.slotHasError(locatorId, input.name)
 }
 
 const unifiedWrapperClass = computed((): string =>

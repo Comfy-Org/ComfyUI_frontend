@@ -39,7 +39,7 @@ vi.mock('@/composables/useErrorHandling', () => ({
 }))
 
 const subscriptionMocks = vi.hoisted(() => ({
-  isActiveSubscription: { value: false },
+  canAccessSubscriptionFeatures: { value: false },
   isInitialized: { value: true },
   subscriptionStatus: { value: null }
 }))
@@ -59,6 +59,15 @@ vi.mock('@/platform/cloud/subscription/utils/subscriptionCheckoutUtil', () => ({
     mockPerformSubscriptionCheckout(...args)
 }))
 
+const mockPerformTeamSubscriptionCheckout = vi.fn()
+vi.mock(
+  '@/platform/cloud/subscription/utils/teamSubscriptionCheckoutUtil',
+  () => ({
+    performTeamSubscriptionCheckout: (...args: unknown[]) =>
+      mockPerformTeamSubscriptionCheckout(...args)
+  })
+)
+
 const createI18nInstance = () =>
   createI18n({
     legacy: false,
@@ -73,6 +82,7 @@ const createI18nInstance = () =>
         },
         subscription: {
           subscribeTo: 'Subscribe to {plan}',
+          teamPlan: { name: 'Team Plan' },
           tiers: {
             standard: { name: 'Standard' },
             creator: { name: 'Creator' },
@@ -99,9 +109,8 @@ const mountView = async (query: Record<string, unknown>) => {
 
 describe('CloudSubscriptionRedirectView', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockQuery = {}
-    subscriptionMocks.isActiveSubscription.value = false
+    subscriptionMocks.canAccessSubscriptionFeatures.value = false
     subscriptionMocks.isInitialized.value = true
   })
 
@@ -130,7 +139,10 @@ describe('CloudSubscriptionRedirectView', () => {
     expect(mockPerformSubscriptionCheckout).toHaveBeenCalledWith(
       'creator',
       'monthly',
-      false
+      {
+        openInNewTab: false,
+        paymentIntentSource: 'deep_link'
+      }
     )
 
     // Shows loading affordances
@@ -140,7 +152,7 @@ describe('CloudSubscriptionRedirectView', () => {
   })
 
   test('opens billing portal when subscription is already active', async () => {
-    subscriptionMocks.isActiveSubscription.value = true
+    subscriptionMocks.canAccessSubscriptionFeatures.value = true
 
     await mountView({ tier: 'creator' })
 
@@ -159,7 +171,31 @@ describe('CloudSubscriptionRedirectView', () => {
     expect(mockPerformSubscriptionCheckout).toHaveBeenCalledWith(
       'creator',
       'monthly',
-      false
+      {
+        openInNewTab: false,
+        paymentIntentSource: 'deep_link'
+      }
     )
+  })
+
+  test('checks out the team plan via the workspace path with the chosen stop and cycle', async () => {
+    await mountView({ tier: 'team', stop: 'team_700', cycle: 'yearly' })
+
+    expect(mockRouterPush).not.toHaveBeenCalledWith('/')
+    expect(screen.getByText('Subscribe to Team Plan')).toBeInTheDocument()
+    expect(mockPerformTeamSubscriptionCheckout).toHaveBeenCalledWith(
+      'team_700',
+      'yearly',
+      { paymentIntentSource: 'deep_link' }
+    )
+    // Team never goes through the personal checkout path
+    expect(mockPerformSubscriptionCheckout).not.toHaveBeenCalled()
+  })
+
+  test('redirects to home for a team link with no stop', async () => {
+    await mountView({ tier: 'team', cycle: 'yearly' })
+
+    expect(mockRouterPush).toHaveBeenCalledWith('/')
+    expect(mockPerformTeamSubscriptionCheckout).not.toHaveBeenCalled()
   })
 })

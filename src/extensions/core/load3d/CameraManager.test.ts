@@ -42,7 +42,6 @@ describe('CameraManager', () => {
   let manager: CameraManager
 
   beforeEach(() => {
-    vi.clearAllMocks()
     events = makeMockEventManager()
     manager = new CameraManager(makeRenderer(), events)
   })
@@ -161,6 +160,42 @@ describe('CameraManager', () => {
     it('returns a default target when no controls are attached', () => {
       const snapshot = manager.getCameraState()
       expect(snapshot.target.toArray()).toEqual([0, 0, 0])
+    })
+
+    it('captures the active camera orientation as a serializable quaternion', () => {
+      manager.perspectiveCamera.position.set(5, 0, 0)
+      manager.perspectiveCamera.lookAt(0, 0, 0)
+
+      const { quaternion } = manager.getCameraState()
+
+      expect(quaternion).toEqual({
+        x: manager.perspectiveCamera.quaternion.x,
+        y: manager.perspectiveCamera.quaternion.y,
+        z: manager.perspectiveCamera.quaternion.z,
+        w: manager.perspectiveCamera.quaternion.w
+      })
+      expect(Object.keys(quaternion ?? {})).not.toContain('_x')
+    })
+
+    it('captures the configured perspective fov regardless of active camera', () => {
+      manager.perspectiveCamera.fov = 42
+      manager.toggleCamera('orthographic')
+
+      expect(manager.getCameraState().fov).toBe(42)
+    })
+
+    it('reflects the perspective aspect after a resize', () => {
+      manager.handleResize(800, 400)
+
+      expect(manager.getCameraState().aspect).toBe(2)
+    })
+
+    it('reflects the orthographic frustum bounds after a resize', () => {
+      manager.toggleCamera('orthographic')
+      manager.handleResize(800, 400)
+
+      const { frustum } = manager.getCameraState()
+      expect(frustum).toEqual({ left: -10, right: 10, top: 5, bottom: -5 })
     })
   })
 

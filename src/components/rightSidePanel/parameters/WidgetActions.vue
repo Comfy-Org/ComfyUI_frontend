@@ -5,9 +5,9 @@ import { useI18n } from 'vue-i18n'
 
 import MoreButton from '@/components/button/MoreButton.vue'
 import Button from '@/components/ui/button/Button.vue'
-import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
+import { widgetPromotedSource } from '@/core/graph/subgraph/promotedInputWidget'
 import {
+  demotePromotedInput,
   demoteWidget,
   isLinkedPromotion,
   promoteWidget
@@ -15,9 +15,10 @@ import {
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { usePromotionStore } from '@/stores/promotionStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
 import { getWidgetDefaultValue, promptWidgetLabel } from '@/utils/widgetUtil'
 import type { WidgetValue } from '@/utils/widgetUtil'
@@ -43,13 +44,14 @@ const label = defineModel<string>('label', { required: true })
 const canvasStore = useCanvasStore()
 const favoritedWidgetsStore = useFavoritedWidgetsStore()
 const nodeDefStore = useNodeDefStore()
-const promotionStore = usePromotionStore()
 const { t } = useI18n()
 
 const hasParents = computed(() => parents?.length > 0)
 const isLinked = computed(() => {
-  if (!node.isSubgraphNode() || !isPromotedWidgetView(widget)) return false
-  return isLinkedPromotion(node, widget.sourceNodeId, widget.sourceWidgetName)
+  if (!node.isSubgraphNode()) return false
+  const source = widgetPromotedSource(node, widget)
+  if (!source) return false
+  return isLinkedPromotion(node, source.nodeId, source.widgetName)
 })
 const canToggleVisibility = computed(() => hasParents.value && !isLinked.value)
 const favoriteNode = computed(() =>
@@ -67,9 +69,16 @@ const defaultValue = computed(() => getWidgetDefaultValue(inputSpec.value))
 
 const hasDefault = computed(() => defaultValue.value !== undefined)
 
+const currentValue = computed(
+  () =>
+    (widget.widgetId &&
+      useWidgetValueStore().getWidget(widget.widgetId)?.value) ??
+    widget.value
+)
+
 const isCurrentValueDefault = computed(() => {
   if (!hasDefault.value) return true
-  return isEqual(widget.value, defaultValue.value)
+  return isEqual(currentValue.value, defaultValue.value)
 })
 
 async function handleRename() {
@@ -80,18 +89,16 @@ async function handleRename() {
 function handleHideInput() {
   if (!parents?.length) return
 
-  if (isPromotedWidgetView(widget)) {
+  const source = widgetPromotedSource(node, widget)
+  if (source) {
+    const currentNodeId = node.id
     for (const parent of parents) {
-      const source: PromotedWidgetSource = {
-        sourceNodeId:
-          String(node.id) === String(parent.id)
-            ? widget.sourceNodeId
-            : String(node.id),
-        sourceWidgetName: widget.sourceWidgetName,
-        disambiguatingSourceNodeId: widget.disambiguatingSourceNodeId
-      }
-      promotionStore.demote(parent.rootGraph.id, parent.id, source)
-      parent.computeSize(parent.size)
+      const sourceNodeId =
+        String(node.id) === String(parent.id) ? source.nodeId : currentNodeId
+      demotePromotedInput(parent, {
+        sourceNodeId,
+        sourceWidgetName: source.widgetName
+      })
     }
     canvasStore.canvas?.setDirty(true, true)
   } else {
@@ -105,6 +112,14 @@ function handleShowInput() {
 }
 
 function handleToggleFavorite() {
+  const willBeFavorited = !isFavorited.value
+  useTelemetry()?.trackWidgetFavoriteToggled({
+    node_type: favoriteNode.value.type,
+    widget_name: widget.name,
+    widget_type: widget.type,
+    is_favorited: willBeFavorited,
+    source: 'right_side_panel'
+  })
   favoritedWidgetsStore.toggleFavorite(favoriteNode.value, widget.name)
 }
 
@@ -124,7 +139,7 @@ function handleResetToDefault() {
       <Button
         variant="textonly"
         size="unset"
-        class="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm transition-all active:scale-95"
+        class="flex w-full items-center justify-start gap-2 rounded-sm px-3 py-2 text-sm transition-all active:scale-95"
         @click="
           () => {
             handleRename()
@@ -140,7 +155,7 @@ function handleResetToDefault() {
         v-if="canToggleVisibility"
         variant="textonly"
         size="unset"
-        class="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm transition-all active:scale-95"
+        class="flex w-full items-center justify-start gap-2 rounded-sm px-3 py-2 text-sm transition-all active:scale-95"
         @click="
           () => {
             if (isShownOnParents) handleHideInput()
@@ -162,7 +177,7 @@ function handleResetToDefault() {
       <Button
         variant="textonly"
         size="unset"
-        class="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm transition-all active:scale-95"
+        class="flex w-full items-center justify-start gap-2 rounded-sm px-3 py-2 text-sm transition-all active:scale-95"
         @click="
           () => {
             handleToggleFavorite()
@@ -184,7 +199,7 @@ function handleResetToDefault() {
         v-if="hasDefault"
         variant="textonly"
         size="unset"
-        class="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm transition-all active:scale-95"
+        class="flex w-full items-center justify-start gap-2 rounded-sm px-3 py-2 text-sm transition-all active:scale-95"
         :disabled="isCurrentValueDefault"
         @click="
           () => {

@@ -152,7 +152,6 @@ async function loadAudioUploadWidget() {
 
 describe('Comfy.UploadAudio AUDIOUPLOAD widget', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     capturedDragDrop = undefined
     capturedFileSelect = undefined
     capturedPaste = undefined
@@ -244,5 +243,39 @@ describe('Comfy.UploadAudio AUDIOUPLOAD widget', () => {
     expect(result).toEqual([])
     expect(node.isUploading).toBe(false)
     expect(mockFetchApi).not.toHaveBeenCalled()
+  })
+})
+
+type AudioUIWidget = (node: LGraphNode, inputName: string) => unknown
+
+async function loadAudioUIWidget() {
+  vi.resetModules()
+  mockRegisterExtension.mockClear()
+  await import('./uploadAudio')
+  const extension = mockRegisterExtension.mock.calls
+    .map(([extension]) => extension as ComfyExtension)
+    .find((extension) => extension.name === 'Comfy.AudioWidget')
+  if (!extension)
+    throw new Error('Comfy.AudioWidget extension was not registered')
+  const widgets = await extension.getCustomWidgets!(fromAny({}))
+  return (widgets as Record<string, AudioUIWidget>).AUDIO_UI
+}
+
+describe('Comfy.AudioWidget AUDIO_UI widget', () => {
+  it('excludes the audio player from workflow and prompt serialization', async () => {
+    const AUDIO_UI = await loadAudioUIWidget()
+    const domWidget = {
+      serialize: true,
+      options: {} as Record<string, unknown>
+    }
+    const node = fromAny<LGraphNode, unknown>({
+      addDOMWidget: vi.fn(() => domWidget),
+      constructor: { nodeData: { output_node: false } }
+    })
+
+    AUDIO_UI(node, 'audioUI')
+
+    expect(domWidget.serialize).toBe(false)
+    expect(domWidget.options.serialize).toBe(false)
   })
 })

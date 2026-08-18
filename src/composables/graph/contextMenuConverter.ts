@@ -1,6 +1,6 @@
 import { default as DOMPurify } from 'dompurify'
 
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   IContextMenuValue,
   LGraphNode,
@@ -21,7 +21,21 @@ const HARD_BLACKLIST = new Set([
   'Title',
   'Mode',
   'Properties Panel',
-  'Copy (Clipspace)'
+  'Copy (Clipspace)',
+  // Vue getBypassOption supplies the single state-aware Bypass/Remove Bypass item
+  'Bypass',
+  'Remove Bypass'
+])
+
+/**
+ * Callbacks of built-in LiteGraph node menu items that are superseded by
+ * the Vue node menu (Minimize Node / Expand Node) or have no working
+ * Vue-side equivalent. Matched by callback identity so that extensions
+ * providing their own items with the same labels are not affected.
+ */
+const SUPPRESSED_LITEGRAPH_CALLBACKS = new Set<unknown>([
+  LGraphCanvas.onMenuResizeNode,
+  LGraphCanvas.onMenuNodeCollapse
 ])
 
 /**
@@ -46,11 +60,9 @@ const CORE_MENU_ITEMS = new Set([
   'Frame selection',
   'Frame Nodes',
   'Minimize Node',
-  'Expand',
-  'Collapse',
+  'Expand Node',
   // Info and adjustments
   'Node Info',
-  'Resize',
   'Title',
   'Properties Panel',
   'Adjust Size',
@@ -215,6 +227,12 @@ function removeDuplicateMenuOptions(options: MenuOption[]): MenuOption[] {
  * Order groups for menu items - defines the display order of sections
  */
 const MENU_ORDER: string[] = [
+  // Section 0: Media operations (surfaced at the top for media nodes)
+  'Open Image',
+  'Open in Mask Editor',
+  'Copy Image',
+  'Paste Image',
+  'Save Image',
   // Section 1: Basic operations
   'Rename',
   'Copy',
@@ -231,23 +249,14 @@ const MENU_ORDER: string[] = [
   'Frame selection',
   'Frame Nodes',
   'Minimize Node',
-  'Expand',
-  'Collapse',
-  'Resize',
+  'Expand Node',
   'Clone',
   // Section 4: Node properties
   'Node Info',
   'Color',
-  // Section 5: Node-specific operations
-  'Open in Mask Editor',
-  'Open Image',
-  'Copy Image',
-  'Paste Image',
-  'Save Image',
+  // Section 5: Clipspace operations
   'Copy (Clipspace)',
-  'Paste (Clipspace)',
-  // Fallback for other core items
-  'Convert to Group Node (Deprecated)'
+  'Paste (Clipspace)'
 ]
 
 /**
@@ -301,27 +310,29 @@ export function buildStructuredMenu(options: MenuOption[]): MenuOption[] {
   coreLabels.sort((a, b) => getMenuItemOrder(a) - getMenuItemOrder(b))
 
   // Section boundaries based on MENU_ORDER indices
-  // Section 1: 0-2 (Rename, Copy, Duplicate)
-  // Section 2: 3-8 (Run Branch, Pin, Unpin, Bypass, Remove Bypass, Mute)
-  // Section 3: 9-15 (Convert to Subgraph, Frame selection, Minimize Node, Expand, Collapse, Resize, Clone)
-  // Section 4: 16-17 (Node Info, Color)
-  // Section 5: 18+ (Image operations and fallback items)
+  // Section 0: 0-4 (Open Image, Open in Mask Editor, Copy Image, Paste Image, Save Image)
+  // Section 1: 5-7 (Rename, Copy, Duplicate)
+  // Section 2: 8-13 (Run Branch, Pin, Unpin, Bypass, Remove Bypass, Mute)
+  // Section 3: 14-19 (Convert to Subgraph, Frame selection, Frame Nodes, Minimize Node, Expand Node, Clone)
+  // Section 4: 20-21 (Node Info, Color)
+  // Section 5: 22+ (Clipspace and fallback items)
   const getSectionNumber = (index: number): number => {
-    if (index <= 2) return 1
-    if (index <= 8) return 2
-    if (index <= 15) return 3
-    if (index <= 17) return 4
+    if (index <= 4) return 0
+    if (index <= 7) return 1
+    if (index <= 13) return 2
+    if (index <= 19) return 3
+    if (index <= 21) return 4
     return 5
   }
 
-  let lastSection = 0
+  let lastSection = -1
   for (const label of coreLabels) {
     const item = coreItemsMap.get(label)!
     const itemIndex = getMenuItemOrder(label)
     const currentSection = getSectionNumber(itemIndex)
 
     // Add divider when moving to a new section
-    if (lastSection > 0 && currentSection !== lastSection) {
+    if (lastSection !== -1 && currentSection !== lastSection) {
       orderedCoreItems.push({ type: 'divider' })
     }
 
@@ -388,6 +399,13 @@ export function convertContextMenuToOptions(
 
     // Skip hard blacklisted items
     if (HARD_BLACKLIST.has(item.content)) {
+      continue
+    }
+
+    // Skip built-in LiteGraph items that the Vue menu replaces.
+    // Matched by callback identity, not label, to avoid suppressing
+    // extension-provided items that happen to share a label.
+    if (item.callback && SUPPRESSED_LITEGRAPH_CALLBACKS.has(item.callback)) {
       continue
     }
 

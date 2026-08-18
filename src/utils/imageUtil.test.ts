@@ -1,6 +1,34 @@
 import { describe, expect, it } from 'vitest'
 
-import { parseImageWidgetValue } from './imageUtil'
+import { getGridThumbnailUrl, parseImageWidgetValue } from './imageUtil'
+
+describe('getGridThumbnailUrl', () => {
+  it('adds a compact preview format to a full-resolution view URL', () => {
+    const result = getGridThumbnailUrl(
+      '/api/view?filename=image.png&type=output&subfolder='
+    )
+    expect(result).toMatch(/[?&]preview=webp(%3B|;)75/)
+    expect(result).toContain('filename=image.png')
+  })
+
+  it('preserves an existing preview param (user-configured format)', () => {
+    const result = getGridThumbnailUrl(
+      '/api/view?filename=image.png&type=output&preview=jpeg;50'
+    )
+    expect(result).toContain('preview=jpeg')
+    expect(result).not.toMatch(/preview=webp/)
+  })
+
+  it('leaves SVGs untouched since the server cannot rasterize them', () => {
+    const url = '/api/view?filename=diagram.svg&type=output'
+    expect(getGridThumbnailUrl(url)).toBe(url)
+  })
+
+  it('leaves non-view URLs (e.g. blob previews) untouched', () => {
+    const blob = 'blob:http://localhost/abc-123'
+    expect(getGridThumbnailUrl(blob)).toBe(blob)
+  })
+})
 
 describe('parseImageWidgetValue', () => {
   it('parses a plain filename', () => {

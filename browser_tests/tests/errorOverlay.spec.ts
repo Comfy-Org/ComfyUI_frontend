@@ -19,63 +19,24 @@ test.describe('Error overlay', { tag: '@ui' }, () => {
     return page.getByTestId(TestIds.dialogs.errorOverlay)
   }
 
-  function getSeeErrorsButton(page: Page) {
+  function getDetailsButton(page: Page) {
     return getOverlay(page).getByTestId(TestIds.dialogs.errorOverlaySeeErrors)
   }
 
   test.describe('Labels', () => {
-    test('Should display singular error count label for single error', async ({
+    test('Should display single error copy and View details action', async ({
       comfyPage
     }) => {
       await comfyPage.workflow.loadWorkflow('missing/missing_nodes')
 
-      await expect(getOverlay(comfyPage.page)).toBeVisible()
-      await expect(getOverlay(comfyPage.page)).toContainText(/1 ERROR/i)
-    })
-
-    test('Should display "Show missing nodes" button for missing node errors', async ({
-      comfyPage
-    }) => {
-      await comfyPage.workflow.loadWorkflow('missing/missing_nodes')
-
-      await expect(getOverlay(comfyPage.page)).toBeVisible()
-      await expect(getSeeErrorsButton(comfyPage.page)).toContainText(
-        /Show missing nodes/i
-      )
-    })
-
-    test('Should display "Show missing models" button for missing model errors', async ({
-      comfyPage
-    }) => {
-      await cleanupFakeModel(comfyPage)
-
-      await comfyPage.workflow.loadWorkflow('missing/missing_models')
-
-      await expect(getOverlay(comfyPage.page)).toBeVisible()
-      await expect(getSeeErrorsButton(comfyPage.page)).toContainText(
-        /Show missing models/i
-      )
-    })
-
-    test('Should display "Show missing inputs" button for missing media errors', async ({
-      comfyPage
-    }) => {
-      await comfyPage.workflow.loadWorkflow('missing/missing_media_single')
-
-      await expect(getOverlay(comfyPage.page)).toBeVisible()
-      await expect(getSeeErrorsButton(comfyPage.page)).toContainText(
-        /Show missing inputs/i
-      )
-    })
-
-    test('Should display generic "See Errors" button for multiple error types', async ({
-      comfyPage
-    }) => {
-      await comfyPage.workflow.loadWorkflow('missing/missing_nodes_and_media')
-
-      await expect(getOverlay(comfyPage.page)).toBeVisible()
-      await expect(getSeeErrorsButton(comfyPage.page)).toContainText(
-        /See Errors/i
+      const overlay = getOverlay(comfyPage.page)
+      await expect(overlay).toBeVisible()
+      await expect(overlay).not.toContainText(/1 ERROR/i)
+      await expect(
+        overlay.getByTestId(TestIds.dialogs.errorOverlayMessages)
+      ).toHaveText(/\S/)
+      await expect(getDetailsButton(comfyPage.page)).toContainText(
+        /View details/i
       )
     })
   })
@@ -137,7 +98,7 @@ test.describe('Error overlay', { tag: '@ui' }, () => {
     })
   })
 
-  test.describe('See Errors flow', () => {
+  test.describe('View details flow', () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.setup()
     })
@@ -166,7 +127,7 @@ test.describe('Error overlay', { tag: '@ui' }, () => {
       await expect(overlay).toHaveText(/\S/)
     })
 
-    test('"See Errors" opens right side panel', async ({ comfyPage }) => {
+    test('"View details" opens right side panel', async ({ comfyPage }) => {
       await triggerExecutionError(comfyPage)
 
       const overlay = getOverlay(comfyPage.page)
@@ -178,7 +139,7 @@ test.describe('Error overlay', { tag: '@ui' }, () => {
       await expect(comfyPage.page.getByTestId('properties-panel')).toBeVisible()
     })
 
-    test('"See Errors" dismisses the overlay', async ({ comfyPage }) => {
+    test('"View details" dismisses the overlay', async ({ comfyPage }) => {
       await triggerExecutionError(comfyPage)
 
       const overlay = getOverlay(comfyPage.page)
@@ -229,19 +190,24 @@ test.describe('Error overlay', { tag: '@ui' }, () => {
     }) => {
       // Regression: ErrorOverlay previously read the selection-filtered
       // missingModelGroups from useErrorGroups, so selecting one of two
-      // missing-model nodes would shrink the overlay label from
-      // "2 required models are missing" to "1". The overlay must show
-      // the workflow total regardless of canvas selection.
+      // missing-model nodes could shrink the overlay count. The overlay must
+      // show the workflow total regardless of canvas selection.
       await comfyPage.workflow.loadWorkflow('missing/missing_models_distinct')
 
       const overlay = getOverlay(comfyPage.page)
       await expect(overlay).toBeVisible()
-      await expect(overlay).toContainText(/2 required models are missing/i)
+      await expect(overlay).toContainText(/2 errors found/i)
+      await expect(
+        overlay.getByTestId(TestIds.dialogs.errorOverlayMessages)
+      ).toHaveText(/Resolve them before running the workflow\./i)
 
       const node = await comfyPage.nodeOps.getNodeRefById('1')
       await node.click('title')
 
-      await expect(overlay).toContainText(/2 required models are missing/i)
+      await expect(overlay).toContainText(/2 errors found/i)
+      await expect(
+        overlay.getByTestId(TestIds.dialogs.errorOverlayMessages)
+      ).toHaveText(/Resolve them before running the workflow\./i)
     })
   })
 })

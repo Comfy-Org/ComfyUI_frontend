@@ -292,6 +292,6 @@ app.registerExtension({
       })
     )
 
-    RerouteNode.category = 'utils'
+    RerouteNode.category = 'utilities'
   }
 })

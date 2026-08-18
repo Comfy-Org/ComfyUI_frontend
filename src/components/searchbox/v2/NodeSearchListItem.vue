@@ -12,26 +12,22 @@
         >
           <i aria-hidden="true" class="pi pi-bookmark-fill mr-1 text-sm" />
         </span>
-        <span
-          class="truncate"
-          v-html="highlightQuery(nodeDef.display_name, currentQuery)"
-        />
+        <span class="truncate">
+          <HighlightedText :text="nodeDef.display_name" :query="currentQuery" />
+        </span>
         <span
           v-if="showIdName"
           data-testid="node-id-badge"
           class="shrink-0 rounded-sm bg-secondary-background px-1.5 py-0.5 text-xs text-muted-foreground"
-          v-html="highlightQuery(nodeDef.name, currentQuery)"
-        />
+        >
+          <HighlightedText :text="nodeDef.name" :query="currentQuery" />
+        </span>
 
         <template v-if="showDescription">
           <div class="flex-1" />
           <div class="flex shrink-0 items-center gap-1">
-            <span
-              v-if="showSourceBadge && isCore"
-              aria-hidden="true"
-              class="flex size-[18px] shrink-0 items-center justify-center rounded-full bg-secondary-background-hover/80"
-            >
-              <ComfyLogo :size="10" mode="fill" color="currentColor" />
+            <span v-if="showSourceBadge && isCore" :class="badgePillClass">
+              <span class="truncate text-2xs">{{ $t('g.comfy') }}</span>
             </span>
             <span
               v-else-if="
@@ -45,13 +41,17 @@
               </span>
             </span>
 
+            <span v-if="isEssential" :class="badgePillClass">
+              <span class="truncate text-2xs">{{ $t('g.essentials') }}</span>
+            </span>
+
             <span
               v-if="nodeDef.api_node && providerName"
               :class="badgePillClass"
             >
               <i
                 aria-hidden="true"
-                class="icon-[lucide--component] size-3 text-amber-400"
+                class="icon-[lucide--coins] size-3 text-amber-400"
               />
               <i
                 aria-hidden="true"
@@ -122,16 +122,17 @@
 import { computed } from 'vue'
 
 import TextTicker from '@/components/common/TextTicker.vue'
-import ComfyLogo from '@/components/icons/ComfyLogo.vue'
 import NodePricingBadge from '@/components/node/NodePricingBadge.vue'
 import NodeProviderBadge from '@/components/node/NodeProviderBadge.vue'
+import HighlightedText from '@/components/searchbox/HighlightedText.vue'
+import { NODE_TO_ESSENTIALS_CATEGORY } from '@/constants/essentialsNodes'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeFrequencyStore } from '@/stores/nodeDefStore'
 import { CORE_NODE_MODULES, NodeSourceType } from '@/types/nodeSource'
 import { getProviderIcon, getProviderName } from '@/utils/categoryUtil'
-import { formatNumberWithSuffix, highlightQuery } from '@/utils/formatUtil'
+import { formatNumberWithSuffix } from '@/utils/formatUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const {
@@ -174,4 +175,5 @@ const providerName = computed(() => getProviderName(nodeDef.category))
 const isCore = computed(() =>
   CORE_NODE_MODULES.includes(nodeDef.python_module.split('.')[0])
 )
+const isEssential = computed(() => !!NODE_TO_ESSENTIALS_CATEGORY[nodeDef.name])
 </script>

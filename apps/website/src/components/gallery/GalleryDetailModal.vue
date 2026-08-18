@@ -10,13 +10,13 @@ import {
   watch
 } from 'vue'
 
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
 import { lockScroll, unlockScroll } from '../../composables/scrollLock'
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
+import type { GalleryItem } from '../../data/gallery'
+import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 import BrandButton from '../common/BrandButton.vue'
 import GalleryItemAttribution from './GalleryItemAttribution.vue'
-import type { GalleryItem } from './GallerySection.vue'
 
 const {
   items,
@@ -251,7 +251,7 @@ onUnmounted(() => {
 
       <!-- Thumbnail strip -->
       <div
-        class="scrollbar-none mx-auto mt-6 h-16 max-w-full overflow-x-auto px-6 lg:h-30"
+        class="mx-auto mt-6 h-16 max-w-full scrollbar-none overflow-x-auto px-6 lg:h-30"
       >
         <div class="flex items-end gap-3">
           <button

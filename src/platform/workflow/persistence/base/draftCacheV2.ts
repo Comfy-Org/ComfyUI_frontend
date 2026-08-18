@@ -106,6 +106,7 @@ export function removeEntry(
 
 /**
  * Moves a draft from one path to another (rename operation).
+ * Updates index recency only; callers keep the payload timestamp unchanged.
  *
  * @returns Object with updated index and keys involved
  */

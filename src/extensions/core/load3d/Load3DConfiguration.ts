@@ -23,6 +23,14 @@ type Load3DConfigurationSettings = {
   height?: IBaseWidget
   bgImagePath?: string
   silentOnNotFound?: boolean
+  /**
+   * Called when a user-driven change to one of the wired widgets
+   * (model_file, width, height) makes the previously captured scene stale.
+   * Backend caching covers these inputs by themselves; this hook lets the
+   * caller invalidate any frontend-side capture cache so the next serialize
+   * re-renders at the new state.
+   */
+  onSceneInvalidated?: () => void
 }
 
 const ANNOTATED_FILENAME_PATTERN = / \[(input|output|temp)\]$/
@@ -46,7 +54,7 @@ class Load3DConfiguration {
   ) {}
 
   configureForSaveMesh(
-    loadFolder: 'input' | 'output',
+    loadFolder: 'input' | 'output' | 'temp',
     filePath: string,
     options?: { silentOnNotFound?: boolean }
   ) {
@@ -63,22 +71,33 @@ class Load3DConfiguration {
       setting.modelWidget,
       setting.loadFolder,
       setting.cameraState,
-      setting.silentOnNotFound ?? false
+      setting.silentOnNotFound ?? false,
+      setting.onSceneInvalidated
     )
-    this.setupTargetSize(setting.width, setting.height)
+    this.setupTargetSize(
+      setting.width,
+      setting.height,
+      setting.onSceneInvalidated
+    )
     this.setupDefaultProperties(setting.bgImagePath)
   }
 
-  private setupTargetSize(width?: IBaseWidget, height?: IBaseWidget) {
+  private setupTargetSize(
+    width?: IBaseWidget,
+    height?: IBaseWidget,
+    onSceneInvalidated?: () => void
+  ) {
     if (width && height) {
       this.load3d.setTargetSize(width.value as number, height.value as number)
 
       width.callback = (value: number) => {
         this.load3d.setTargetSize(value, height.value as number)
+        onSceneInvalidated?.()
       }
 
       height.callback = (value: number) => {
         this.load3d.setTargetSize(width.value as number, value)
+        onSceneInvalidated?.()
       }
     }
   }
@@ -103,7 +122,8 @@ class Load3DConfiguration {
     modelWidget: IBaseWidget,
     loadFolder: string,
     cameraState?: CameraState,
-    silentOnNotFound: boolean = false
+    silentOnNotFound: boolean = false,
+    onSceneInvalidated?: () => void
   ) {
     const onModelWidgetUpdate = this.createModelUpdateHandler(
       loadFolder,
@@ -137,6 +157,8 @@ class Load3DConfiguration {
       if (originalCallback) {
         originalCallback(value)
       }
+
+      onSceneInvalidated?.()
     }
   }
 

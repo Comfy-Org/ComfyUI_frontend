@@ -1,10 +1,20 @@
 import type { Asset } from '@comfyorg/ingest-types'
-function createModelAsset(overrides: Partial<Asset> = {}): Asset {
+
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+
+/**
+ * Core-native asset shape: the ingest Asset plus the `loader_path` contract
+ * field that `supports_model_type_tags` backends emit (see
+ * `src/platform/assets/schemas/assetSchema.ts`).
+ */
+type CoreModelAsset = Asset & Pick<AssetItem, 'loader_path'>
+function createModelAsset(
+  overrides: Partial<Asset> = {}
+): Asset & { hash?: string } {
   return {
     id: 'test-model-001',
     name: 'model.safetensors',
-    asset_hash:
-      'blake3:0000000000000000000000000000000000000000000000000000000000000000',
+    hash: 'blake3:0000000000000000000000000000000000000000000000000000000000000000',
     size: 2_147_483_648,
     mime_type: 'application/octet-stream',
     tags: ['models', 'checkpoints'],
@@ -16,12 +26,13 @@ function createModelAsset(overrides: Partial<Asset> = {}): Asset {
   }
 }
 
-function createInputAsset(overrides: Partial<Asset> = {}): Asset {
+function createInputAsset(
+  overrides: Partial<Asset> = {}
+): Asset & { hash?: string } {
   return {
     id: 'test-input-001',
     name: 'input.png',
-    asset_hash:
-      'blake3:1111111111111111111111111111111111111111111111111111111111111111',
+    hash: 'blake3:1111111111111111111111111111111111111111111111111111111111111111',
     size: 2_048_576,
     mime_type: 'image/png',
     tags: ['input'],
@@ -32,12 +43,13 @@ function createInputAsset(overrides: Partial<Asset> = {}): Asset {
   }
 }
 
-function createOutputAsset(overrides: Partial<Asset> = {}): Asset {
+function createOutputAsset(
+  overrides: Partial<Asset> = {}
+): Asset & { hash?: string } {
   return {
     id: 'test-output-001',
     name: 'output_00001.png',
-    asset_hash:
-      'blake3:2222222222222222222222222222222222222222222222222222222222222222',
+    hash: 'blake3:2222222222222222222222222222222222222222222222222222222222222222',
     size: 4_194_304,
     mime_type: 'image/png',
     tags: ['output'],
@@ -86,44 +98,127 @@ export const STABLE_LORA: Asset = createModelAsset({
   updated_at: '2025-02-20T14:00:00Z'
 })
 
-export const STABLE_LORA_2: Asset = createModelAsset({
-  id: 'test-lora-002',
-  name: 'add_detail_v2.safetensors',
-  size: 226_492_416,
-  tags: ['models', 'loras'],
-  user_metadata: {
-    base_model: 'sd15',
-    description: 'Add Detail LoRA v2'
-  },
-  created_at: '2025-02-25T11:00:00Z',
-  updated_at: '2025-02-25T11:00:00Z'
+function createCoreModelAsset(
+  overrides: Partial<CoreModelAsset> = {}
+): CoreModelAsset {
+  return { ...createModelAsset(), ...overrides }
+}
+
+export const MODEL_TYPE_CHECKPOINT_NESTED: CoreModelAsset =
+  createCoreModelAsset({
+    id: 'mt-checkpoint-001',
+    name: 'sd_xl_base_1.0.safetensors',
+    tags: ['models', 'model_type:checkpoints'],
+    loader_path: 'SDXL/sd_xl_base_1.0.safetensors',
+    created_at: '2025-01-15T10:30:00Z',
+    updated_at: '2025-01-15T10:30:00Z'
+  })
+
+export const MODEL_TYPE_CHECKPOINT_ROOT: CoreModelAsset = createCoreModelAsset({
+  id: 'mt-checkpoint-002',
+  name: 'v1-5-pruned-emaonly.safetensors',
+  tags: ['models', 'model_type:checkpoints'],
+  loader_path: 'v1-5-pruned-emaonly.safetensors',
+  created_at: '2025-01-20T08:00:00Z',
+  updated_at: '2025-01-20T08:00:00Z'
 })
 
-export const STABLE_VAE: Asset = createModelAsset({
-  id: 'test-vae-001',
-  name: 'sdxl_vae.safetensors',
-  size: 334_641_152,
-  tags: ['models', 'vae'],
-  user_metadata: {
-    base_model: 'sdxl',
-    description: 'SDXL VAE'
-  },
-  created_at: '2025-01-18T16:00:00Z',
-  updated_at: '2025-01-18T16:00:00Z'
+export const MODEL_TYPE_CHECKPOINT_GGUF: CoreModelAsset = createCoreModelAsset({
+  id: 'mt-checkpoint-003',
+  name: 'flux_quantized.gguf',
+  tags: ['models', 'model_type:checkpoints'],
+  loader_path: 'flux_quantized.gguf',
+  created_at: '2025-02-01T09:00:00Z',
+  updated_at: '2025-02-01T09:00:00Z'
 })
 
-export const STABLE_EMBEDDING: Asset = createModelAsset({
-  id: 'test-embedding-001',
-  name: 'bad_prompt_v2.pt',
-  size: 32_768,
-  mime_type: 'application/x-pytorch',
-  tags: ['models', 'embeddings'],
-  user_metadata: {
-    base_model: 'sd15',
-    description: 'Negative Embedding: Bad Prompt v2'
-  },
-  created_at: '2025-02-01T09:30:00Z',
-  updated_at: '2025-02-01T09:30:00Z'
+export const MODEL_TYPE_CHECKPOINT_SCANNED: CoreModelAsset =
+  createCoreModelAsset({
+    id: 'mt-checkpoint-004',
+    name: 'freshly_scanned.safetensors',
+    tags: ['models', 'model_type:checkpoints'],
+    loader_path: 'freshly_scanned.safetensors',
+    created_at: '2025-02-10T09:00:00Z',
+    updated_at: '2025-02-10T09:00:00Z'
+  })
+
+/** An orphan: tagged and categorized, but unloadable (`loader_path: null`). */
+export const MODEL_TYPE_CHECKPOINT_ORPHAN: CoreModelAsset =
+  createCoreModelAsset({
+    id: 'mt-checkpoint-005',
+    name: 'orphaned_checkpoint.safetensors',
+    tags: ['models', 'model_type:checkpoints'],
+    loader_path: null,
+    created_at: '2025-02-15T09:00:00Z',
+    updated_at: '2025-02-15T09:00:00Z'
+  })
+
+/**
+ * The loader_path cutover window: a backend that already reports
+ * `supports_model_type_tags` but whose loader_path writer has not run yet,
+ * so walked assets carry the namespaced tag with no loader_path at all.
+ */
+export const MODEL_TYPE_CHECKPOINT_PRE_CUTOVER: CoreModelAsset =
+  createCoreModelAsset({
+    id: 'mt-checkpoint-006',
+    name: 'pre_cutover_checkpoint.safetensors',
+    tags: ['models', 'model_type:checkpoints'],
+    created_at: '2025-02-18T09:00:00Z',
+    updated_at: '2025-02-18T09:00:00Z'
+  })
+
+/**
+ * A legacy bare-tagged asset (no `model_type:` prefix) that still carries a
+ * `loader_path`, mimicking a `model_type:`-capable backend that has not
+ * finished re-tagging every asset. Asset grouping must fall back to bare-tag
+ * grouping for it instead of dropping it from the sidebar.
+ */
+export const MODEL_TYPE_CHECKPOINT_LEGACY_TAG: CoreModelAsset =
+  createCoreModelAsset({
+    id: 'mt-checkpoint-007',
+    name: 'legacy_tagged_checkpoint.safetensors',
+    tags: ['models', 'checkpoints'],
+    loader_path: 'legacy_tagged_checkpoint.safetensors',
+    created_at: '2025-02-22T09:00:00Z',
+    updated_at: '2025-02-22T09:00:00Z'
+  })
+
+/**
+ * An asset caught mid-migration: it already carries the authoritative
+ * `model_type:checkpoints` tag alongside its pre-migration bare-tag twin
+ * (`checkpoints`), plus an unrelated leftover bare tag (`loras`) that happens
+ * to match another real folder. A `model_type:`-covered asset must group by
+ * its `model_type:` tags alone, so it lands in `checkpoints` exactly once and
+ * never cross-lists into `loras`.
+ */
+export const MODEL_TYPE_CHECKPOINT_MID_RETAG: CoreModelAsset =
+  createCoreModelAsset({
+    id: 'mt-checkpoint-008',
+    name: 'mid_retag_checkpoint.safetensors',
+    tags: ['models', 'model_type:checkpoints', 'checkpoints', 'loras'],
+    loader_path: 'mid_retag_checkpoint.safetensors',
+    created_at: '2025-02-23T09:00:00Z',
+    updated_at: '2025-02-23T09:00:00Z'
+  })
+
+export const MODEL_TYPE_LORA: CoreModelAsset = createCoreModelAsset({
+  id: 'mt-lora-001',
+  name: 'detail_enhancer_v1.2.safetensors',
+  tags: ['models', 'model_type:loras'],
+  loader_path: 'detail_enhancer_v1.2.safetensors',
+  created_at: '2025-02-20T14:00:00Z',
+  updated_at: '2025-02-20T14:00:00Z'
+})
+
+export const MODEL_TYPE_LORA_README: CoreModelAsset = createCoreModelAsset({
+  id: 'mt-lora-002',
+  name: 'README.txt',
+  mime_type: 'text/plain',
+  size: 2_048,
+  tags: ['models', 'model_type:loras'],
+  loader_path: 'README.txt',
+  created_at: '2025-02-20T14:00:00Z',
+  updated_at: '2025-02-20T14:00:00Z'
 })
 
 export const STABLE_INPUT_IMAGE: Asset = createInputAsset({
@@ -136,26 +231,6 @@ export const STABLE_INPUT_IMAGE: Asset = createInputAsset({
   updated_at: '2025-03-01T09:00:00Z'
 })
 
-export const STABLE_INPUT_IMAGE_2: Asset = createInputAsset({
-  id: 'test-input-002',
-  name: 'mask_layer.png',
-  size: 1_048_576,
-  mime_type: 'image/png',
-  tags: ['input'],
-  created_at: '2025-03-05T10:00:00Z',
-  updated_at: '2025-03-05T10:00:00Z'
-})
-
-export const STABLE_INPUT_VIDEO: Asset = createInputAsset({
-  id: 'test-input-003',
-  name: 'clip_720p.mp4',
-  size: 15_728_640,
-  mime_type: 'video/mp4',
-  tags: ['input'],
-  created_at: '2025-03-08T14:30:00Z',
-  updated_at: '2025-03-08T14:30:00Z'
-})
-
 export const STABLE_OUTPUT: Asset = createOutputAsset({
   id: 'test-output-001',
   name: 'ComfyUI_00001_.png',
@@ -166,31 +241,6 @@ export const STABLE_OUTPUT: Asset = createOutputAsset({
   updated_at: '2025-03-10T12:00:00Z'
 })
 
-export const STABLE_OUTPUT_2: Asset = createOutputAsset({
-  id: 'test-output-002',
-  name: 'ComfyUI_00002_.png',
-  size: 3_670_016,
-  mime_type: 'image/png',
-  tags: ['output'],
-  created_at: '2025-03-10T12:05:00Z',
-  updated_at: '2025-03-10T12:05:00Z'
-})
-export const ALL_MODEL_FIXTURES: Asset[] = [
-  STABLE_CHECKPOINT,
-  STABLE_CHECKPOINT_2,
-  STABLE_LORA,
-  STABLE_LORA_2,
-  STABLE_VAE,
-  STABLE_EMBEDDING
-]
-
-export const ALL_INPUT_FIXTURES: Asset[] = [
-  STABLE_INPUT_IMAGE,
-  STABLE_INPUT_IMAGE_2,
-  STABLE_INPUT_VIDEO
-]
-
-export const ALL_OUTPUT_FIXTURES: Asset[] = [STABLE_OUTPUT, STABLE_OUTPUT_2]
 const CHECKPOINT_NAMES = [
   'sd_xl_base_1.0.safetensors',
   'v1-5-pruned-emaonly.safetensors',

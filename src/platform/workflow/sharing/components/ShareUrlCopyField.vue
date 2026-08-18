@@ -26,16 +26,17 @@ import { refAutoReset } from '@vueuse/core'
 
 import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
-import { useAppMode } from '@/composables/useAppMode'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useTelemetry } from '@/platform/telemetry'
+import { useShareFlowContext } from '@/platform/workflow/sharing/composables/useShareFlowContext'
 
-const { url } = defineProps<{
+const { url, shareId } = defineProps<{
   url: string
+  shareId: string
 }>()
 
 const { copyToClipboard } = useCopyToClipboard()
-const { isAppMode } = useAppMode()
+const shareFlowContext = useShareFlowContext()
 const copied = refAutoReset(false, 2000)
 
 async function handleCopy() {
@@ -43,7 +44,8 @@ async function handleCopy() {
   copied.value = true
   useTelemetry()?.trackShareFlow({
     step: 'link_copied',
-    source: isAppMode.value ? 'app_mode' : 'graph_mode'
+    ...shareFlowContext.value,
+    share_id: shareId
   })
 }
 </script>

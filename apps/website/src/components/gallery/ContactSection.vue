@@ -7,7 +7,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 <template>
   <section
-    class="flex flex-col items-center px-4 pt-16 pb-24 text-center lg:px-20 lg:pt-20 lg:pb-40"
+    class="max-w-9xl mx-auto flex flex-col items-center px-4 pt-16 pb-24 text-center lg:px-20 lg:pt-20 lg:pb-40"
   >
     <span
       class="text-primary-comfy-yellow text-sm font-bold tracking-widest uppercase"

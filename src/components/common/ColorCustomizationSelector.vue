@@ -30,9 +30,10 @@
 </template>
 
 <script setup lang="ts">
-import ColorPicker from 'primevue/colorpicker'
 import SelectButton from 'primevue/selectbutton'
 import { computed, onMounted, ref, watch } from 'vue'
+
+import ColorPicker from '@/components/ui/color-picker/ColorPicker.vue'
 
 const {
   modelValue,
@@ -65,7 +66,7 @@ onMounted(() => {
       selectedColorOption.value = predefinedColor
     } else {
       selectedColorOption.value = customColorOption
-      customColorValue.value = modelValue.replace('#', '')
+      customColorValue.value = modelValue
     }
   }
 })
@@ -74,7 +75,7 @@ onMounted(() => {
 watch(selectedColorOption, (newOption, oldOption) => {
   if (newOption.name === '_custom') {
     // Inherit the color from previous selection
-    customColorValue.value = oldOption.value.replace('#', '')
+    customColorValue.value = oldOption.value
   } else {
     emit('update:modelValue', newOption.value)
   }
@@ -82,7 +83,7 @@ watch(selectedColorOption, (newOption, oldOption) => {
 
 watch(customColorValue, (newValue) => {
   if (selectedColorOption.value.name === '_custom') {
-    emit('update:modelValue', newValue ? `#${newValue}` : null)
+    emit('update:modelValue', newValue || null)
   }
 })
 </script>

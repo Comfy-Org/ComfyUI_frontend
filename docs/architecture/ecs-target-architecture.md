@@ -2,30 +2,29 @@
 
 This document describes the target ECS architecture for the litegraph entity system. It shows how the entities and interactions from the [current system](entity-interactions.md) transform under ECS, and how the [structural problems](entity-problems.md) are resolved. For the full design rationale, see [ADR 0008](../adr/0008-entity-component-system.md).
 
-## 1. World Overview
+## 1. Store Overview
 
-The World is the single source of truth for runtime entity state in one
-workflow instance. Entities are just branded IDs. Components are plain data
-objects. Systems are functions that query the World.
+The source of truth for runtime entity state in one workflow instance is the set
+of dedicated Pinia stores. Each store is keyed by per-store string IDs.
+Components are plain data objects. Systems are functions that query the relevant
+store(s).
 
 ```mermaid
 graph TD
-    subgraph World["World (Central Registry)"]
+    subgraph Stores["Dedicated Stores (source of truth)"]
         direction TB
-        NodeStore["Nodes
-Map&lt;NodeEntityId, NodeComponents&gt;"]
-        LinkStore["Links
-Map&lt;LinkEntityId, LinkComponents&gt;"]
-        ScopeRegistry["Graph Scopes
-Map&lt;GraphId, ParentGraphId | null&gt;"]
-        WidgetStore["Widgets
-Map&lt;WidgetEntityId, WidgetComponents&gt;"]
-        SlotStore["Slots
-Map&lt;SlotEntityId, SlotComponents&gt;"]
-        RerouteStore["Reroutes
-Map&lt;RerouteEntityId, RerouteComponents&gt;"]
-        GroupStore["Groups
-Map&lt;GroupEntityId, GroupComponents&gt;"]
+        WidgetValueStore["widgetValueStore
+Map&lt;WidgetId, WidgetValue&gt;"]
+        DomWidgetStore["domWidgetStore
+Map&lt;WidgetId, DomWidgetState&gt;"]
+        LayoutStore["layoutStore (Y.js CRDT)
+nodeId / linkId / rerouteId → layout"]
+        NodeOutputStore["nodeOutputStore
+Map&lt;nodeLocatorId, outputs&gt;"]
+        SubgraphNavStore["subgraphNavigationStore
+active subgraph path"]
+        PreviewExposureStore["previewExposureStore
+preview exposure state"]
     end
 
     subgraph Systems["Systems (Behavior)"]
@@ -38,53 +37,50 @@ Map&lt;GroupEntityId, GroupComponents&gt;"]
         VS["VersionSystem"]
     end
 
-    RS -->|reads| World
-    SS -->|reads/writes| World
-    CS -->|reads/writes| World
-    LS -->|reads/writes| World
-    ES -->|reads| World
-    VS -->|reads/writes| World
+    RS -->|reads| Stores
+    SS -->|reads/writes| Stores
+    CS -->|reads/writes| LayoutStore
+    LS -->|reads/writes| LayoutStore
+    ES -->|reads| NodeOutputStore
+    VS -->|reads/writes| LayoutStore
 
-    style World fill:#1a1a2e,stroke:#16213e,color:#e0e0e0
+    style Stores fill:#1a1a2e,stroke:#16213e,color:#e0e0e0
     style Systems fill:#0f3460,stroke:#16213e,color:#e0e0e0
 ```
 
-### Entity IDs
+### Entity Keys
+
+Each store addresses entities by its own string-key convention.
 
 ```mermaid
 graph LR
-    subgraph "Branded IDs (compile-time distinct)"
-        NID["NodeEntityId
-number & { __brand: 'NodeEntityId' }"]
-        LID["LinkEntityId
-number & { __brand: 'LinkEntityId' }"]
-        WID["WidgetEntityId
-number & { __brand: 'WidgetEntityId' }"]
-        SLID["SlotEntityId
-number & { __brand: 'SlotEntityId' }"]
-        RID["RerouteEntityId
-number & { __brand: 'RerouteEntityId' }"]
-        GID["GroupEntityId
-number & { __brand: 'GroupEntityId' }"]
+    subgraph "Per-store string keys"
+        WID["WidgetId
+graphId:nodeId:name
+(branded string, src/types/widgetId.ts)"]
+        NLID["nodeLocatorId
+subgraphId:nodeId"]
+        NID["nodeId (raw)"]
+        LID["linkId (raw)"]
+        RID["rerouteId (raw)"]
     end
 
-    GRID["GraphId
-string & { __brand: 'GraphId' }"]:::scopeId
-
-    NID -.-x LID
-    LID -.-x WID
-    WID -.-x SLID
-
-    classDef scopeId fill:#2a2a4a,stroke:#4a4a6a,color:#e0e0e0,stroke-dasharray:5
-
-    linkStyle 0 stroke:red,stroke-dasharray:5
-    linkStyle 1 stroke:red,stroke-dasharray:5
-    linkStyle 2 stroke:red,stroke-dasharray:5
+    WID -->|widgetValueStore, domWidgetStore| W["keyed lookups"]
+    NLID -->|nodeOutputStore| W
+    NID -->|layoutStore| W
+    LID -->|layoutStore| W
+    RID -->|layoutStore| W
 ```
 
-Red dashed lines = compile-time errors if mixed. No more accidentally passing a `LinkId` where a `NodeId` is expected.
+`WidgetId = graphId:nodeId:name` is itself a branded string (see
+`src/types/widgetId.ts`). `nodeLocatorId = subgraphId:nodeId` addresses node
+outputs. `layoutStore` keys layout records by raw `nodeId` / `linkId` /
+`rerouteId`. Each store enforces its own key shape; there is no single shared
+entity-ID type across stores.
 
-Note: `GraphId` is a scope identifier, not an entity ID. It identifies which graph an entity belongs to. Subgraphs are nodes with a `SubgraphStructure` component — see [Subgraph Boundaries](subgraph-boundaries-and-promotion.md).
+Note: `graphId` is a scope identifier. It identifies which graph an entity
+belongs to and forms the prefix of `WidgetId`. Subgraphs are nodes with a
+`SubgraphStructure` component — see [Subgraph Boundaries](subgraph-boundaries-and-promotion.md).
 
 ### Linked subgraphs and instance-varying state
 
@@ -94,9 +90,10 @@ instance-scoped.
 - Shared definition-level data (interface shape, default metadata) can be reused
   across instances.
 - Runtime state (`WidgetValue`, execution/transient state, selection) is scoped
-  to the containing `graphId` chain inside one World instance.
-- "Single source of truth" therefore means one source per workflow instance,
-  not one global source across all linked instances.
+  to the containing `graphId` chain inside one workflow instance.
+- "Single source of truth" therefore means one source per workflow instance
+  across the dedicated stores, with no global source shared across all linked
+  instances.
 
 ### Recursive subgraphs without inheritance
 
@@ -130,7 +127,7 @@ graph LR
         B12["connect(), disconnect()"]
     end
 
-    subgraph After["NodeEntityId + Components"]
+    subgraph After["nodeId-keyed components (across stores)"]
         direction TB
         A1["Position
 { pos, size, bounding }"]
@@ -180,7 +177,7 @@ target_id, target_slot, type"]
         B5["resolve()"]
     end
 
-    subgraph After["LinkEntityId + Components"]
+    subgraph After["linkId-keyed components (layoutStore)"]
         direction TB
         A1["LinkEndpoints
 { originId, originSlot,
@@ -212,10 +209,9 @@ graph LR
         B3["computedHeight, margin"]
         B4["drawWidget(), onClick()"]
         B5["useWidgetValueStore()"]
-        B6["usePromotionStore()"]
     end
 
-    subgraph After["WidgetEntityId + Components"]
+    subgraph After["WidgetId + components"]
         direction TB
         A1["WidgetIdentity
 { name, widgetType, parentNodeId }"]
@@ -229,8 +225,7 @@ graph LR
     B2 -.-> A2
     B3 -.-> A3
     B4 -.->|"moves to"| SYS1["RenderSystem"]
-    B5 -.->|"absorbed by"| SYS2["World (is the store)"]
-    B6 -.->|"moves to"| SYS3["PromotionSystem"]
+    B5 -.->|"absorbed by"| SYS2["widgetValueStore"]
 
     style Before fill:#4a1a1a,stroke:#6a2a2a,color:#e0e0e0
     style After fill:#1a4a1a,stroke:#2a6a2a,color:#e0e0e0
@@ -238,7 +233,7 @@ graph LR
 
 ## 3. System Architecture
 
-Systems are pure functions that query the World for entities with specific component combinations. Each system owns exactly one concern.
+Systems are pure functions that query the relevant store(s) for entities with specific component combinations. Each system owns exactly one concern.
 
 ```mermaid
 graph TD
@@ -367,7 +362,6 @@ graph TD
     Canvas["LGraphCanvas"] -->|"node.graph._version++"| Graph
     Canvas -->|"node.graph.remove(node)"| Graph
     Widget["BaseWidget"] -->|"useWidgetValueStore()"| Store1["Pinia Store"]
-    Widget -->|"usePromotionStore()"| Store2["Pinia Store"]
     Node -->|"useLayoutMutations()"| Store3["Layout Store"]
     Graph -->|"useLayoutMutations()"| Store3
     LLink["LLink"] -->|"useLayoutMutations()"| Store3
@@ -391,30 +385,25 @@ graph TD
         VS["VersionSystem"]
     end
 
-    World["World
-(instance-scoped source of truth)"]
-
-    subgraph Components["Component Stores"]
-        Pos["Position"]
-        Vis["*Visual"]
-        Con["Connectivity"]
-        Val["*Value"]
+    subgraph Stores["Dedicated Stores (instance-scoped source of truth)"]
+        LayoutStore["layoutStore"]
+        WidgetValueStore["widgetValueStore"]
+        DomWidgetStore["domWidgetStore"]
+        NodeOutputStore["nodeOutputStore"]
     end
 
-    Systems -->|"query/mutate"| World
-    World -->|"contains"| Components
+    Systems -->|"query/mutate"| Stores
 
     style Systems fill:#1a4a1a,stroke:#2a6a2a,color:#e0e0e0
-    style World fill:#1a1a4a,stroke:#2a2a6a,color:#e0e0e0
-    style Components fill:#1a3a3a,stroke:#2a4a4a,color:#e0e0e0
+    style Stores fill:#1a3a3a,stroke:#2a4a4a,color:#e0e0e0
 ```
 
 Key differences:
 
 - **No circular dependencies**: entities are IDs, not class instances
-- **No Demeter violations**: systems query the World directly, never reach through entities
-- **No scattered store access**: the World _is_ the store; systems are the only writers
-- **Unidirectional**: Input → Systems → World → Render (no back-edges)
+- **No Demeter violations**: systems query stores directly, never reach through entities
+- **Data lives in dedicated stores**: systems are the only writers
+- **Unidirectional**: Input → Systems → Stores → Render (no back-edges)
 - **Instance safety**: linked definitions can be reused without forcing shared
   mutable widget/execution state across instances
 
@@ -449,9 +438,10 @@ No inheritance hierarchy.
 Subgraph = node + component."]
         S3["One system per concern.
 Systems don't overlap."]
-        S4["Branded per-kind IDs.
-Compile-time type errors."]
-        S5["Systems query World.
+        S4["Consistent per-store
+string-key conventions
+(WidgetId, nodeLocatorId, raw ids)."]
+        S5["Systems query stores.
 No entity→entity refs."]
         S6["VersionSystem owns
 all change tracking."]
@@ -481,30 +471,30 @@ sequenceDiagram
     participant Legacy as Legacy Code
     participant Class as LGraphNode (class)
     participant Bridge as Bridge Adapter
-    participant World as World (ECS)
+    participant Store as layoutStore (ECS)
     participant New as New Code / Systems
 
-    Note over Legacy,New: Phase 1: Bridge reads from class, writes to World
+    Note over Legacy,New: Phase 1: Bridge reads from class, writes to store
 
     Legacy->>Class: node.pos = [100, 200]
     Class->>Bridge: pos setter intercepted
-    Bridge->>World: world.setComponent(nodeId, Position, { pos: [100, 200] })
+    Bridge->>Store: useLayoutMutations().moveNode(nodeId, { pos: [100, 200] })
 
-    New->>World: world.getComponent(nodeId, Position)
-    World-->>New: { pos: [100, 200], size: [...] }
+    New->>Store: layoutStore read for nodeId
+    Store-->>New: { pos: [100, 200], size: [...] }
 
     Note over Legacy,New: Phase 2: New features build on ECS directly
 
-    New->>World: world.setComponent(nodeId, Position, { pos: [150, 250] })
-    World->>Bridge: change detected
+    New->>Store: useLayoutMutations().moveNode(nodeId, { pos: [150, 250] })
+    Store->>Bridge: change detected
     Bridge->>Class: node._pos = [150, 250]
     Legacy->>Class: node.pos
     Class-->>Legacy: [150, 250]
 
     Note over Legacy,New: Phase 3: Legacy code migrated, bridge removed
 
-    New->>World: world.getComponent(nodeId, Position)
-    World-->>New: { pos: [150, 250] }
+    New->>Store: layoutStore read for nodeId
+    Store-->>New: { pos: [150, 250] }
 ```
 
 ### Incremental layout/render separation
@@ -526,16 +516,17 @@ incremental rollout safety.
 ```mermaid
 graph LR
     subgraph Phase1["Phase 1: Types Only"]
-        T1["Define branded IDs"]
+        T1["Define string-key types
+(WidgetId, nodeLocatorId)"]
         T2["Define component interfaces"]
-        T3["Define World type"]
+        T3["Define store shapes"]
     end
 
     subgraph Phase2["Phase 2: Bridge"]
         B1["Bridge adapters
-class ↔ World sync"]
+class ↔ store sync"]
         B2["New features use
-World as source"]
+stores as source"]
         B3["Old code unchanged"]
     end
 

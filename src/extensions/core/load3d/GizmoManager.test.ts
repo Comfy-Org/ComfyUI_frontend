@@ -1,25 +1,44 @@
 import * as THREE from 'three'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { GizmoManager } from './GizmoManager'
 
-const { mockSetMode, mockAttach, mockDetach, mockGetHelper, mockDispose } =
-  vi.hoisted(() => ({
-    mockSetMode: vi.fn(),
-    mockAttach: vi.fn(),
-    mockDetach: vi.fn(),
-    mockGetHelper: vi.fn(),
-    mockDispose: vi.fn()
-  }))
+const {
+  mockSetMode,
+  mockAttach,
+  mockDetach,
+  mockGetHelper,
+  mockDispose,
+  transformControlsInstances,
+  omitGetPointer
+} = vi.hoisted(() => ({
+  mockSetMode: vi.fn(),
+  mockAttach: vi.fn(),
+  mockDetach: vi.fn(),
+  mockGetHelper: vi.fn(),
+  mockDispose: vi.fn(),
+  transformControlsInstances: [] as unknown[],
+  omitGetPointer: { value: false }
+}))
 
 vi.mock('three/examples/jsm/controls/TransformControls', () => {
   class TransformControls {
     enabled = true
+    dragging = false
     camera: THREE.Camera
+    _getPointer?: (event: PointerEvent) => {
+      x: number
+      y: number
+      button: number
+    }
     private listeners = new Map<string, ((e: unknown) => void)[]>()
 
     constructor(camera: THREE.Camera) {
       this.camera = camera
+      if (!omitGetPointer.value) {
+        this._getPointer = (event) => ({ x: 0, y: 0, button: event.button })
+      }
+      transformControlsInstances.push(this)
     }
 
     addEventListener(event: string, cb: (e: unknown) => void) {
@@ -55,7 +74,7 @@ function makeMockOrbitControls() {
 
 describe('GizmoManager', () => {
   let scene: THREE.Scene
-  let renderer: THREE.WebGLRenderer
+  let interactionElement: HTMLElement
   let camera: THREE.PerspectiveCamera
   let orbitControls: ReturnType<typeof makeMockOrbitControls>
   let manager: GizmoManager
@@ -63,12 +82,11 @@ describe('GizmoManager', () => {
   let mockHelper: THREE.Object3D
 
   beforeEach(() => {
-    vi.clearAllMocks()
+    transformControlsInstances.length = 0
+    omitGetPointer.value = false
 
     scene = new THREE.Scene()
-    renderer = {
-      domElement: document.createElement('canvas')
-    } as unknown as THREE.WebGLRenderer
+    interactionElement = document.createElement('div')
     camera = new THREE.PerspectiveCamera()
     orbitControls = makeMockOrbitControls()
     onTransformChange = vi.fn()
@@ -80,15 +98,125 @@ describe('GizmoManager', () => {
 
     manager = new GizmoManager(
       scene,
-      renderer,
+      interactionElement,
       orbitControls,
       () => camera,
       onTransformChange
     )
   })
 
-  afterEach(() => {
-    vi.restoreAllMocks()
+  describe('setPointerNdcSource', () => {
+    type PointerNdc = { x: number; y: number; button: number }
+    function lastControls() {
+      return transformControlsInstances.at(-1) as {
+        dragging: boolean
+        _getPointer?: (event: PointerEvent) => PointerNdc
+      }
+    }
+    function getPointerOverride() {
+      return lastControls()._getPointer
+    }
+
+    it('routes TransformControls pointer NDC through the injected source', () => {
+      manager.init()
+      manager.setPointerNdcSource((clientX, clientY) => ({
+        x: clientX / 100,
+        y: clientY / 100,
+        inside: true
+      }))
+
+      const pointer = getPointerOverride()!({
+        clientX: 50,
+        clientY: -25,
+        button: 2
+      } as PointerEvent)
+
+      expect(pointer).toEqual({ x: 0.5, y: -0.25, button: 2 })
+    })
+
+    it('maps unmappable points to an off-screen pointer', () => {
+      manager.init()
+      manager.setPointerNdcSource(() => null)
+
+      const pointer = getPointerOverride()!({
+        clientX: 0,
+        clientY: 0,
+        button: 0
+      } as PointerEvent)
+
+      expect(pointer).toEqual({ x: 10, y: 10, button: 0 })
+    })
+
+    it('maps points outside the viewport to an off-screen pointer while not dragging', () => {
+      manager.init()
+      manager.setPointerNdcSource(() => ({ x: -1.2, y: 0.4, inside: false }))
+
+      const pointer = getPointerOverride()!({
+        clientX: 0,
+        clientY: 0,
+        button: 0
+      } as PointerEvent)
+
+      expect(pointer).toEqual({ x: 10, y: 10, button: 0 })
+    })
+
+    it('keeps the unclamped NDC for points outside the viewport mid-drag', () => {
+      manager.init()
+      manager.setPointerNdcSource(() => ({ x: -1.2, y: 0.4, inside: false }))
+      lastControls().dragging = true
+
+      const pointer = getPointerOverride()!({
+        clientX: 0,
+        clientY: 0,
+        button: -1
+      } as PointerEvent)
+
+      expect(pointer).toEqual({ x: -1.2, y: 0.4, button: -1 })
+    })
+
+    it('applies a source registered before init once init runs', () => {
+      manager.setPointerNdcSource(() => ({ x: 0.5, y: 0.5, inside: true }))
+      manager.init()
+
+      const pointer = getPointerOverride()!({
+        clientX: 0,
+        clientY: 0,
+        button: 1
+      } as PointerEvent)
+
+      expect(pointer).toEqual({ x: 0.5, y: 0.5, button: 1 })
+    })
+
+    it('delegates to the stock mapping until a source is registered', () => {
+      manager.init()
+
+      const stock = getPointerOverride()!({
+        clientX: 40,
+        clientY: 60,
+        button: 2
+      } as PointerEvent)
+      expect(stock).toEqual({ x: 0, y: 0, button: 2 })
+
+      manager.setPointerNdcSource(() => ({ x: 0.5, y: -0.25, inside: true }))
+
+      const mapped = getPointerOverride()!({
+        clientX: 40,
+        clientY: 60,
+        button: 2
+      } as PointerEvent)
+      expect(mapped).toEqual({ x: 0.5, y: -0.25, button: 2 })
+    })
+
+    it('warns and skips the override when _getPointer is missing at init', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      omitGetPointer.value = true
+      manager.setPointerNdcSource(() => ({ x: 0.5, y: 0.5, inside: true }))
+
+      manager.init()
+
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining('_getPointer'))
+      expect(lastControls()._getPointer).toBeUndefined()
+    })
   })
 
   describe('init', () => {
@@ -287,6 +415,41 @@ describe('GizmoManager', () => {
     })
   })
 
+  describe('applyModelTransform', () => {
+    it('sets position, quaternion, and scale on target and notifies', () => {
+      manager.init()
+      const model = new THREE.Object3D()
+      manager.setupForModel(model)
+
+      manager.applyModelTransform({
+        position: { x: 1, y: 2, z: 3 },
+        quaternion: { x: 0.1, y: 0.2, z: 0.3, w: 0.92 },
+        scale: { x: 2, y: 2, z: 2 }
+      })
+
+      expect(model.position.x).toBeCloseTo(1)
+      expect(model.position.y).toBeCloseTo(2)
+      expect(model.position.z).toBeCloseTo(3)
+      expect(model.quaternion.x).toBeCloseTo(0.1)
+      expect(model.quaternion.y).toBeCloseTo(0.2)
+      expect(model.quaternion.z).toBeCloseTo(0.3)
+      expect(model.quaternion.w).toBeCloseTo(0.92)
+      expect(model.scale.x).toBeCloseTo(2)
+      expect(onTransformChange).toHaveBeenCalledOnce()
+    })
+
+    it('does nothing without a target', () => {
+      manager.init()
+      expect(() =>
+        manager.applyModelTransform({
+          position: { x: 0, y: 0, z: 0 },
+          quaternion: { x: 0, y: 0, z: 0, w: 1 },
+          scale: { x: 1, y: 1, z: 1 }
+        })
+      ).not.toThrow()
+    })
+  })
+
   describe('getTransform', () => {
     it('returns current target transform', () => {
       manager.init()
@@ -311,6 +474,30 @@ describe('GizmoManager', () => {
       expect(transform.position).toEqual({ x: 0, y: 0, z: 0 })
       expect(transform.rotation).toEqual({ x: 0, y: 0, z: 0 })
       expect(transform.scale).toEqual({ x: 1, y: 1, z: 1 })
+    })
+  })
+
+  describe('getModelInfo', () => {
+    it('returns the full transform payload for the target object', () => {
+      manager.init()
+      const model = new THREE.Object3D()
+      model.name = 'my-model'
+      model.position.set(1, 2, 3)
+      model.rotation.set(0.1, 0.2, 0.3)
+      model.scale.set(4, 5, 6)
+      manager.setupForModel(model)
+
+      const info = manager.getModelInfo()
+
+      expect(info).not.toBeNull()
+      expect(info!.position).toEqual({ x: 1, y: 2, z: 3 })
+      expect(info!.quaternion.w).toBeCloseTo(model.quaternion.w)
+      expect(info!.scale).toEqual({ x: 4, y: 5, z: 6 })
+    })
+
+    it('returns null when there is no target', () => {
+      manager.init()
+      expect(manager.getModelInfo()).toBeNull()
     })
   })
 

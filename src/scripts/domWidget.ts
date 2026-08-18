@@ -2,18 +2,18 @@ import _ from 'es-toolkit/compat'
 import { type Component, toRaw } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import {
-  LGraphNode,
-  LegacyWidget,
-  LiteGraph
-} from '@/lib/litegraph/src/litegraph'
+// LegacyWidget is imported from its own module, not the barrel: the barrel
+// exports it after SubgraphNode, so a litegraph-internal importer of this file
+// would hit its TDZ. LGraphNode/LiteGraph must stay barrel-sourced — a direct
+// LGraphNode import re-triggers the LGraph<->Subgraph cycle.
+import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   IBaseWidget,
   IWidgetOptions
 } from '@/lib/litegraph/src/types/widgets'
+import { LegacyWidget } from '@/lib/litegraph/src/widgets/LegacyWidget'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
-import { usePromotionStore } from '@/stores/promotionStore'
 import { generateUUID } from '@/utils/formatUtil'
 
 export interface BaseDOMWidget<
@@ -125,7 +125,6 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
   declare readonly name: string
   declare readonly options: DOMWidgetOptions<V>
   declare callback?: (value: V) => void
-  readonly promotionStore = usePromotionStore()
 
   readonly id: string
 
@@ -155,7 +154,9 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
   }
 
   isVisible(): boolean {
-    return !this.hidden && this.node.isWidgetVisible(this)
+    return (
+      !this.hidden && !this.computedDisabled && this.node.isWidgetVisible(this)
+    )
   }
 
   override draw(
@@ -186,30 +187,6 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
         this.options.onDraw?.(this)
         return
       }
-
-      const graphId = this.node.graph?.rootGraph.id
-      const isPromoted =
-        graphId &&
-        this.promotionStore.isPromotedByAny(graphId, {
-          sourceNodeId: String(this.node.id),
-          sourceWidgetName: this.name
-        })
-      if (!isPromoted) {
-        this.options.onDraw?.(this)
-        return
-      }
-
-      ctx.save()
-      const adjustedMargin = this.margin - 1
-      ctx.beginPath()
-      ctx.strokeStyle = LiteGraph.WIDGET_PROMOTED_OUTLINE_COLOR
-      ctx.strokeRect(
-        adjustedMargin,
-        y + adjustedMargin,
-        widget_width - adjustedMargin * 2,
-        (this.computedHeight ?? widget_height) - 2 * adjustedMargin
-      )
-      ctx.restore()
     }
     this.options.onDraw?.(this)
   }

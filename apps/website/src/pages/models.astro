@@ -1,0 +1,22 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro'
+import ModelsHeroSection from '../components/models/ModelsHeroSection.vue'
+import ModelCreationsSection from '../components/models/ModelCreationsSection.vue'
+import AIModelsSection from '../components/product/shared/AIModelsSection.vue'
+import ProductShowcaseSection from '../components/home/ProductShowcaseSection.vue' 
+---
+
+<BaseLayout
+  title="Models - Comfy"
+  description="Run the world's leading AI models in ComfyUI. Browse every supported model with community workflow templates ready to run."
+>
+  <ModelsHeroSection
+    modelName="Grok Imagine"
+    ctaHref="/p/supported-models/grok-imagine"
+    videoSrc="https://media.comfy.org/website/models/video_ComfdyUI_00001_.mp4"
+    videoAriaLabel="Grok Imagine output created with ComfyUI"
+  />
+  <ModelCreationsSection client:load />
+  <AIModelsSection client:load />
+  <ProductShowcaseSection client:load />
+</BaseLayout>

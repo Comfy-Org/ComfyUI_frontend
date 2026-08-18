@@ -1,5 +1,5 @@
 import { useMediaControls, whenever } from '@vueuse/core'
-import { computed, onUnmounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import { api } from '@/scripts/api'
@@ -19,7 +19,6 @@ export function useWaveAudioPlayer(options: UseWaveAudioPlayerOptions) {
 
   const audioRef = ref<HTMLAudioElement>()
   const waveformRef = ref<HTMLElement>()
-  const blobUrl = ref<string>()
   const loading = ref(false)
   let decodeRequestId = 0
   const bars = ref<WaveformBar[]>(generatePlaceholderBars())
@@ -34,10 +33,6 @@ export function useWaveAudioPlayer(options: UseWaveAudioPlayerOptions) {
 
   const formattedCurrentTime = computed(() => formatTime(currentTime.value))
   const formattedDuration = computed(() => formatTime(duration.value))
-
-  const audioSrc = computed(() =>
-    src.value ? (blobUrl.value ?? src.value) : ''
-  )
 
   function generatePlaceholderBars(): WaveformBar[] {
     return Array.from({ length: barCount }, () => ({
@@ -90,22 +85,12 @@ export function useWaveAudioPlayer(options: UseWaveAudioPlayerOptions) {
 
       if (requestId !== decodeRequestId) return
 
-      const blob = new Blob([arrayBuffer.slice(0)], {
-        type: response.headers.get('content-type') ?? 'audio/wav'
-      })
-      if (blobUrl.value) URL.revokeObjectURL(blobUrl.value)
-      blobUrl.value = URL.createObjectURL(blob)
-
       ctx = new AudioContext()
       const audioBuffer = await ctx.decodeAudioData(arrayBuffer)
       if (requestId !== decodeRequestId) return
       generateBarsFromBuffer(audioBuffer)
     } catch {
       if (requestId === decodeRequestId) {
-        if (blobUrl.value) {
-          URL.revokeObjectURL(blobUrl.value)
-          blobUrl.value = undefined
-        }
         bars.value = generatePlaceholderBars()
       }
     } finally {
@@ -173,19 +158,9 @@ export function useWaveAudioPlayer(options: UseWaveAudioPlayerOptions) {
     { immediate: true }
   )
 
-  onUnmounted(() => {
-    decodeRequestId += 1
-    audioRef.value?.pause()
-    if (blobUrl.value) {
-      URL.revokeObjectURL(blobUrl.value)
-      blobUrl.value = undefined
-    }
-  })
-
   return {
     audioRef,
     waveformRef,
-    audioSrc,
     bars,
     loading,
     isPlaying: playing,

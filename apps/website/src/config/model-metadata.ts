@@ -90,7 +90,7 @@ export const modelMetadata: Record<string, ModelOverride> = {
     hubSlug: 'seedance',
     featured: true
   },
-  'grok-image': {
+  'grok-imagine': {
     hubSlug: 'grok',
     featured: false
   },

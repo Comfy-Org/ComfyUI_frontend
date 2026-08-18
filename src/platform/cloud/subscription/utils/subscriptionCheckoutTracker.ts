@@ -1,13 +1,20 @@
+import type { SubscriptionDuration } from '@comfyorg/ingest-types'
 import {
-  TIER_TO_KEY,
-  getTierPrice
+  getTierPrice,
+  toTierKey
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
-  SubscriptionTier,
+  IngestSubscriptionTier,
   TierKey
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
-import type { SubscriptionSuccessMetadata } from '@/platform/telemetry/types'
+import type {
+  BeginCheckoutMetadata,
+  PaymentIntentSource,
+  ResubscribeClickMetadata,
+  SubscriptionCheckoutType,
+  SubscriptionSuccessMetadata
+} from '@/platform/telemetry/types'
 
 const PENDING_SUBSCRIPTION_CHECKOUT_MAX_AGE_MS = 6 * 60 * 60 * 1000
 const VALID_TIER_KEYS = new Set<TierKey>([
@@ -23,31 +30,36 @@ export const PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY =
 export const PENDING_SUBSCRIPTION_CHECKOUT_EVENT =
   'comfy:subscription-checkout-attempt-changed'
 
-type CheckoutType = 'new' | 'change'
-type SubscriptionDuration = 'MONTHLY' | 'ANNUAL'
-
 interface SubscriptionStatusSnapshot {
   is_active?: boolean
-  subscription_tier?: SubscriptionTier | null
+  subscription_tier?: IngestSubscriptionTier | null
   subscription_duration?: SubscriptionDuration | null
 }
 
-interface PendingSubscriptionCheckoutAttempt {
+export interface PendingSubscriptionCheckoutAttempt {
   attempt_id: string
   started_at_ms: number
   tier: TierKey
   cycle: BillingCycle
-  checkout_type: CheckoutType
+  checkout_type: SubscriptionCheckoutType
   previous_tier?: TierKey
   previous_cycle?: BillingCycle
+  payment_intent_source?: PaymentIntentSource
+  /** Set when this attempt was initiated from the resubscribe flow, not a plain subscribe. */
+  operation?: 'resubscribe'
+  /** Click-time source for a resubscribe attempt; carried through to the terminal event. */
+  resubscribe_source?: ResubscribeClickMetadata['source']
 }
 
-interface RecordPendingSubscriptionCheckoutAttemptInput {
+interface PendingSubscriptionCheckoutAttemptInput {
   tier: TierKey
   cycle: BillingCycle
-  checkout_type: CheckoutType
+  checkout_type: SubscriptionCheckoutType
   previous_tier?: TierKey
   previous_cycle?: BillingCycle
+  payment_intent_source?: PaymentIntentSource
+  operation?: 'resubscribe'
+  resubscribe_source?: ResubscribeClickMetadata['source']
 }
 
 const dispatchPendingCheckoutChangeEvent = () => {
@@ -67,7 +79,7 @@ const createAttemptId = (): string => {
 }
 
 const getStorage = (): Storage | null => {
-  let storage: Storage | null = null
+  let storage: Storage | null
 
   try {
     storage = globalThis.localStorage
@@ -108,7 +120,7 @@ const getTierFromStatus = (
     return null
   }
 
-  return TIER_TO_KEY[subscriptionTier] ?? null
+  return toTierKey(subscriptionTier)
 }
 
 const getCycleFromStatus = (
@@ -168,6 +180,16 @@ const normalizeAttempt = (
     ...(candidate.previous_cycle === 'monthly' ||
     candidate.previous_cycle === 'yearly'
       ? { previous_cycle: candidate.previous_cycle }
+      : {}),
+    ...(typeof candidate.payment_intent_source === 'string'
+      ? { payment_intent_source: candidate.payment_intent_source }
+      : {}),
+    ...(candidate.operation === 'resubscribe'
+      ? { operation: 'resubscribe' }
+      : {}),
+    ...(candidate.resubscribe_source === 'pricing_dialog' ||
+    candidate.resubscribe_source === 'settings_billing_panel'
+      ? { resubscribe_source: candidate.resubscribe_source }
       : {})
   }
 }
@@ -224,20 +246,31 @@ const getPendingSubscriptionCheckoutAttempt =
 export const hasPendingSubscriptionCheckoutAttempt = (): boolean =>
   getPendingSubscriptionCheckoutAttempt() !== null
 
-export const recordPendingSubscriptionCheckoutAttempt = (
-  input: RecordPendingSubscriptionCheckoutAttemptInput
+export const createPendingSubscriptionCheckoutAttempt = (
+  input: PendingSubscriptionCheckoutAttemptInput
 ): PendingSubscriptionCheckoutAttempt => {
-  const storage = getStorage()
-  const attempt: PendingSubscriptionCheckoutAttempt = {
+  return {
     attempt_id: createAttemptId(),
     started_at_ms: Date.now(),
     tier: input.tier,
     cycle: input.cycle,
     checkout_type: input.checkout_type,
     ...(input.previous_tier ? { previous_tier: input.previous_tier } : {}),
-    ...(input.previous_cycle ? { previous_cycle: input.previous_cycle } : {})
+    ...(input.previous_cycle ? { previous_cycle: input.previous_cycle } : {}),
+    ...(input.payment_intent_source
+      ? { payment_intent_source: input.payment_intent_source }
+      : {}),
+    ...(input.operation ? { operation: input.operation } : {}),
+    ...(input.resubscribe_source
+      ? { resubscribe_source: input.resubscribe_source }
+      : {})
   }
+}
 
+export const persistPendingSubscriptionCheckoutAttempt = (
+  attempt: PendingSubscriptionCheckoutAttempt
+): PendingSubscriptionCheckoutAttempt => {
+  const storage = getStorage()
   if (!storage) {
     return attempt
   }
@@ -254,6 +287,21 @@ export const recordPendingSubscriptionCheckoutAttempt = (
 
   return attempt
 }
+
+export const recordPendingSubscriptionCheckoutAttempt = (
+  input: PendingSubscriptionCheckoutAttemptInput
+): PendingSubscriptionCheckoutAttempt =>
+  persistPendingSubscriptionCheckoutAttempt(
+    createPendingSubscriptionCheckoutAttempt(input)
+  )
+
+export const withPendingCheckoutAttemptId = (
+  metadata: BeginCheckoutMetadata,
+  attempt: PendingSubscriptionCheckoutAttempt
+): BeginCheckoutMetadata => ({
+  ...metadata,
+  checkout_attempt_id: attempt.attempt_id
+})
 
 const didAttemptSucceed = (
   attempt: PendingSubscriptionCheckoutAttempt,
@@ -287,6 +335,13 @@ export const consumePendingSubscriptionCheckoutSuccess = (
     cycle: attempt.cycle,
     checkout_type: attempt.checkout_type,
     ...(attempt.previous_tier ? { previous_tier: attempt.previous_tier } : {}),
+    ...(attempt.payment_intent_source
+      ? { payment_intent_source: attempt.payment_intent_source }
+      : {}),
+    ...(attempt.operation ? { operation: attempt.operation } : {}),
+    ...(attempt.resubscribe_source
+      ? { resubscribe_source: attempt.resubscribe_source }
+      : {}),
     value,
     currency: 'USD',
     ecommerce: {

@@ -1,40 +1,32 @@
-/**
- * Slot identifier utilities for consistent slot key generation and parsing
- *
- * Provides a centralized interface for slot identification across the layout system
- *
- * @TODO Replace this concatenated string with root cause fix
- */
+import { slotId } from '@/types/slotId'
+import type { NodeId } from '@/types/nodeId'
+import type { SlotId, SlotIndex } from '@/types/slotId'
 
 interface SlotIdentifier {
-  nodeId: string
-  index: number
+  nodeId: NodeId
+  index: SlotIndex
   isInput: boolean
 }
 
-/**
- * Generate a unique key for a slot
- * Format: "{nodeId}-{in|out}-{index}"
- */
-export function getSlotKey(identifier: SlotIdentifier): string
+export function getSlotKey(identifier: SlotIdentifier): SlotId
 export function getSlotKey(
-  nodeId: string,
-  index: number,
+  nodeId: NodeId,
+  index: SlotIndex,
   isInput: boolean
-): string
+): SlotId
 export function getSlotKey(
-  nodeIdOrIdentifier: string | SlotIdentifier,
-  index?: number,
+  nodeIdOrIdentifier: NodeId | SlotIdentifier,
+  index?: SlotIndex,
   isInput?: boolean
-): string {
+): SlotId {
   if (typeof nodeIdOrIdentifier === 'object') {
     const { nodeId, index, isInput } = nodeIdOrIdentifier
-    return `${nodeId}-${isInput ? 'in' : 'out'}-${index}`
+    return slotId(nodeId, isInput ? 'input' : 'output', index)
   }
 
   if (index === undefined || isInput === undefined) {
     throw new Error('Missing required parameters for slot key generation')
   }
 
-  return `${nodeIdOrIdentifier}-${isInput ? 'in' : 'out'}-${index}`
+  return slotId(nodeIdOrIdentifier, isInput ? 'input' : 'output', index)
 }

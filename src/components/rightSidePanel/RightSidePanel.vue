@@ -8,12 +8,15 @@ import Tab from '@/components/tab/Tab.vue'
 import TabList from '@/components/tab/TabList.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useGraphHierarchy } from '@/composables/graph/useGraphHierarchy'
-import { st } from '@/i18n'
 import { app } from '@/scripts/app'
-import { getActiveGraphNodeIds } from '@/utils/graphTraversalUtil'
+import {
+  getActiveGraphNodeIds,
+  getExecutionIdByNode
+} from '@/utils/graphTraversalUtil'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
@@ -23,13 +26,13 @@ import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import type { RightSidePanelTab } from '@/stores/workspace/rightSidePanelStore'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { cn } from '@comfyorg/tailwind-utils'
-import { isGroupNode } from '@/utils/executableGroupNodeDto'
 
 import TabInfo from './info/TabInfo.vue'
 import TabGlobalParameters from './parameters/TabGlobalParameters.vue'
 import TabNodes from './parameters/TabNodes.vue'
 import TabNormalInputs from './parameters/TabNormalInputs.vue'
 import TabSubgraphInputs from './parameters/TabSubgraphInputs.vue'
+import { trackRightSidePanelTabOpened } from './rightSidePanelTabTelemetry'
 import TabGlobalSettings from './settings/TabGlobalSettings.vue'
 import TabSettings from './settings/TabSettings.vue'
 import {
@@ -106,7 +109,16 @@ const isSingleSubgraphNode = computed(() => {
 })
 
 function closePanel() {
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'right_side_panel_closed',
+    element_group: 'right_side_panel'
+  })
   rightSidePanelStore.closePanel()
+}
+
+function handleTabChange(newTab: RightSidePanelTab) {
+  trackRightSidePanelTabOpened(newTab)
+  rightSidePanelStore.openPanel(newTab)
 }
 
 type RightSidePanelTabList = Array<{
@@ -124,7 +136,7 @@ const hasDirectNodeError = computed(() =>
 const hasContainerInternalError = computed(() => {
   if (allErrorExecutionIds.value.length === 0) return false
   return selectedNodes.value.some((node) => {
-    if (!(node instanceof SubgraphNode || isGroupNode(node))) return false
+    if (!(node instanceof SubgraphNode)) return false
     return executionErrorStore.isContainerWithInternalError(node)
   })
 })
@@ -164,12 +176,26 @@ const hasRelevantErrors = computed(() => {
   )
 })
 
+const hasPendingErrorScanSelected = computed(() => {
+  const nodes = selectedNodes.value
+  if (!app.isGraphReady) return false
+  const rootGraph = app.rootGraph
+  return nodes.some((node) => {
+    const executionId = getExecutionIdByNode(rootGraph, node)
+    return (
+      executionId !== null &&
+      executionErrorStore.hasPendingAddedNodeErrorScan(rootGraph, executionId)
+    )
+  })
+})
+
 const tabs = computed<RightSidePanelTabList>(() => {
   const list: RightSidePanelTabList = []
 
   if (
     settingStore.get('Comfy.RightSidePanel.ShowErrorsTab') &&
-    hasRelevantErrors.value
+    (hasRelevantErrors.value ||
+      (activeTab.value === 'errors' && hasPendingErrorScanSelected.value))
   ) {
     list.push({
       label: () => t('rightSidePanel.errors'),
@@ -213,12 +239,15 @@ const tabs = computed<RightSidePanelTabList>(() => {
   return list
 })
 
-// Use global state for activeTab and ensure it's valid
+function isActiveTabAvailable() {
+  return (
+    tabs.value.some((tab) => tab.value === activeTab.value) ||
+    (activeTab.value === 'subgraph' && isSingleSubgraphNode.value)
+  )
+}
+
 watchEffect(() => {
-  if (
-    !tabs.value.some((tab) => tab.value === activeTab.value) &&
-    !(activeTab.value === 'subgraph' && isSingleSubgraphNode.value)
-  ) {
+  if (!isActiveTabAvailable()) {
     rightSidePanelStore.openPanel(tabs.value[0].value)
   }
 })
@@ -239,8 +268,7 @@ function resolveTitle() {
       const fallbackNodeTitle = t('rightSidePanel.fallbackNodeTitle')
       return resolveNodeDisplayName(nodes[0], {
         emptyLabel: fallbackNodeTitle,
-        untitledLabel: fallbackNodeTitle,
-        st
+        untitledLabel: fallbackNodeTitle
       })
     }
   }
@@ -343,14 +371,7 @@ function handleTitleCancel() {
         </div>
       </div>
       <nav class="overflow-x-auto px-4 pt-1 pb-2">
-        <TabList
-          :model-value="activeTab"
-          @update:model-value="
-            (newTab: RightSidePanelTab) => {
-              rightSidePanelStore.openPanel(newTab)
-            }
-          "
-        >
+        <TabList :model-value="activeTab" @update:model-value="handleTabChange">
           <Tab
             v-for="tab in tabs"
             :key="tab.value"

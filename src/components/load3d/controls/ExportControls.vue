@@ -35,9 +35,14 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
+import { getExportFormatOptions } from '@/extensions/core/load3d/constants'
+
+const { sourceFormat = null } = defineProps<{
+  sourceFormat?: string | null
+}>()
 
 const emit = defineEmits<{
   (e: 'exportModel', format: string): void
@@ -45,11 +50,7 @@ const emit = defineEmits<{
 
 const showExportFormats = ref(false)
 
-const exportFormats = [
-  { label: 'GLB', value: 'glb' },
-  { label: 'OBJ', value: 'obj' },
-  { label: 'STL', value: 'stl' }
-]
+const exportFormats = computed(() => getExportFormatOptions(sourceFormat))
 
 function toggleExportFormats() {
   showExportFormats.value = !showExportFormats.value

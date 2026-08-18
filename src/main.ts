@@ -5,7 +5,6 @@ import { initializeApp } from 'firebase/app'
 import { createPinia } from 'pinia'
 import 'primeicons/primeicons.css'
 import PrimeVue from 'primevue/config'
-import ConfirmationService from 'primevue/confirmationservice'
 import ToastService from 'primevue/toastservice'
 import Tooltip from 'primevue/tooltip'
 import { createApp } from 'vue'
@@ -13,10 +12,14 @@ import { VueFire, VueFireAuth } from 'vuefire'
 
 import { setAssertReporter } from '@/base/assert'
 import { getFirebaseConfig } from '@/config/firebase'
+import { flushProxyWidgetMigration } from '@/core/graph/subgraph/migration/proxyWidgetMigration'
+import { autoExposeKnownPreviewNodes } from '@/core/graph/subgraph/promotionUtils'
+import { LGraph } from '@/lib/litegraph/src/litegraph'
 import {
   configValueOrDefault,
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
+import { syncHostUserIdWithFirebaseAuth } from '@/platform/telemetry/hostUserIdSync'
 import '@/lib/litegraph/public/css/litegraph.css'
 import router from '@/router'
 import { isDesktop, isNightly } from '@/platform/distribution/types'
@@ -28,19 +31,24 @@ import App from './App.vue'
 import './assets/css/style.css'
 import { i18n } from './i18n'
 
-/**
- * CRITICAL: Load remote config FIRST for cloud builds to ensure
- * window.__CONFIG__is available for all modules during initialization
- */
 const isCloud = __DISTRIBUTION__ === 'cloud'
+const hasHostTelemetryBridge = Boolean(window.__comfyDesktop2?.Telemetry)
+
+// Load remote config before initializeApp() below, so getFirebaseConfig() resolves
+// against the server's runtime values instead of the build-time defaults.
+const { refreshRemoteConfig } =
+  await import('@/platform/remoteConfig/refreshRemoteConfig')
+await refreshRemoteConfig({ useAuth: false })
 
 if (isCloud) {
-  const { refreshRemoteConfig } =
-    await import('@/platform/remoteConfig/refreshRemoteConfig')
-  await refreshRemoteConfig({ useAuth: false })
-
   const { initTelemetry } = await import('@/platform/telemetry/initTelemetry')
   await initTelemetry()
+}
+
+if (hasHostTelemetryBridge) {
+  const { initHostTelemetry } =
+    await import('@/platform/telemetry/initHostTelemetry')
+  initHostTelemetry()
 }
 
 const ComfyUIPreset = definePreset(Aura, {
@@ -104,6 +112,14 @@ app.directive('tooltip', Tooltip)
 app
   .use(router)
   .use(PrimeVue, {
+    zIndex: {
+      modal: 1800,
+      overlay: 1800,
+      menu: 1800,
+      // Tooltips sit above modals/menus so a menu-item tooltip isn't hidden
+      // behind a body-portaled dropdown that lifts itself to modal + 1.
+      tooltip: 2000
+    },
     theme: {
       preset: ComfyUIPreset,
       options: {
@@ -118,7 +134,6 @@ app
       }
     }
   })
-  .use(ConfirmationService)
   .use(ToastService)
   .use(pinia)
   .use(i18n)
@@ -126,6 +141,19 @@ app
     firebaseApp,
     modules: [VueFireAuth()]
   })
+
+if (isCloud && hasHostTelemetryBridge) {
+  syncHostUserIdWithFirebaseAuth()
+}
+
+LGraph.proxyWidgetMigrationFlush = (hostNode, nodeData) =>
+  flushProxyWidgetMigration({
+    hostNode,
+    hostWidgetValues: nodeData?.widgets_values
+  })
+
+LGraph.autoExposePreviewNodes = (hostNode) =>
+  autoExposeKnownPreviewNodes(hostNode)
 
 const bootstrapStore = useBootstrapStore(pinia)
 void bootstrapStore.startStoreBootstrap()

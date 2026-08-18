@@ -1,6 +1,4 @@
 import { assert, beforeEach, describe, expect, it } from 'vitest'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 
 import {
   LGraphGroup,
@@ -9,8 +7,6 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import type { LGraph, ISlotType } from '@/lib/litegraph/src/litegraph'
 
-import { usePromotionStore } from '@/stores/promotionStore'
-
 import {
   createTestSubgraph,
   createTestSubgraphNode,
@@ -18,7 +14,6 @@ import {
 } from './__fixtures__/subgraphHelpers'
 
 beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
   resetSubgraphFixtureState()
 })
 
@@ -204,41 +199,6 @@ describe('SubgraphConversion', () => {
         linkRefCount += reroute.linkIds.size
       }
       expect(linkRefCount).toBe(4)
-    })
-  })
-
-  describe('Promotion cleanup on unpack', () => {
-    it('Should clear promotions for the unpacked subgraph node', () => {
-      const subgraph = createTestSubgraph()
-      const subgraphNode = createTestSubgraphNode(subgraph)
-      const graph = subgraphNode.graph!
-      graph.add(subgraphNode)
-
-      const innerNode = createNode(subgraph, [], ['number'])
-      innerNode.addWidget('text', 'myWidget', 'default', () => {})
-
-      const promotionStore = usePromotionStore()
-      const graphId = graph.id
-      const subgraphNodeId = subgraphNode.id
-
-      promotionStore.promote(graphId, subgraphNodeId, {
-        sourceNodeId: String(innerNode.id),
-        sourceWidgetName: 'myWidget'
-      })
-
-      expect(
-        promotionStore.isPromoted(graphId, subgraphNodeId, {
-          sourceNodeId: String(innerNode.id),
-          sourceWidgetName: 'myWidget'
-        })
-      ).toBe(true)
-
-      graph.unpackSubgraph(subgraphNode)
-
-      expect(graph.getNodeById(subgraphNodeId)).toBeUndefined()
-      expect(
-        promotionStore.getPromotions(graphId, subgraphNodeId)
-      ).toHaveLength(0)
     })
   })
 })

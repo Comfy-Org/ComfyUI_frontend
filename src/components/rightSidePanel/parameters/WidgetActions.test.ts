@@ -1,21 +1,31 @@
-import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { fromAny } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
 import type { Slots } from 'vue'
 import { h } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { usePromotionStore } from '@/stores/promotionStore'
 import WidgetActions from './WidgetActions.vue'
 
-const { mockGetInputSpecForWidget } = vi.hoisted(() => ({
-  mockGetInputSpecForWidget: vi.fn()
+const {
+  mockGetInputSpecForWidget,
+  mockIsFavorited,
+  mockToggleFavorite,
+  mockTrackWidgetFavoriteToggled
+} = vi.hoisted(() => ({
+  mockGetInputSpecForWidget: vi.fn(),
+  mockIsFavorited: vi.fn().mockReturnValue(false),
+  mockToggleFavorite: vi.fn(),
+  mockTrackWidgetFavoriteToggled: vi.fn()
+}))
+
+vi.mock('@/core/graph/subgraph/promotionUtils', () => ({
+  demoteWidget: vi.fn(),
+  promoteWidget: vi.fn(),
+  isLinkedPromotion: vi.fn(() => false)
 }))
 
 vi.mock('@/stores/nodeDefStore', () => ({
@@ -32,8 +42,14 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
 
 vi.mock('@/stores/workspace/favoritedWidgetsStore', () => ({
   useFavoritedWidgetsStore: () => ({
-    isFavorited: vi.fn().mockReturnValue(false),
-    toggleFavorite: vi.fn()
+    isFavorited: mockIsFavorited,
+    toggleFavorite: mockToggleFavorite
+  })
+}))
+
+vi.mock('@/platform/telemetry', () => ({
+  useTelemetry: () => ({
+    trackWidgetFavoriteToggled: mockTrackWidgetFavoriteToggled
   })
 }))
 
@@ -70,12 +86,11 @@ const i18n = createI18n({
 
 describe('WidgetActions', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.resetAllMocks()
     mockGetInputSpecForWidget.mockReturnValue({
       type: 'INT',
       default: 42
     })
+    mockIsFavorited.mockReturnValue(false)
   })
 
   function createMockWidget(
@@ -202,63 +217,45 @@ describe('WidgetActions', () => {
     expect(onResetToDefault).toHaveBeenCalledWith('option1')
   })
 
-  it('demotes promoted widgets by immediate interior node identity when shown from parent context', async () => {
-    mockGetInputSpecForWidget.mockReturnValue({
-      type: 'CUSTOM'
-    })
-    const parentSubgraphNode = fromAny<SubgraphNode, unknown>({
-      id: 4,
-      rootGraph: { id: 'graph-test' },
-      computeSize: vi.fn(),
-      size: [300, 150]
-    })
-    const node = fromAny<LGraphNode, unknown>({
-      id: 4,
-      type: 'SubgraphNode',
-      rootGraph: { id: 'graph-test' },
-      isSubgraphNode: () => false
-    })
-    const widget = {
-      name: 'text',
-      type: 'text',
-      value: 'value',
-      label: 'Text',
-      options: {},
-      y: 0,
-      sourceNodeId: '3',
-      sourceWidgetName: 'text',
-      disambiguatingSourceNodeId: '1'
-    } as IBaseWidget
+  it('tracks widget favorite toggled with is_favorited true when favoriting', async () => {
+    mockIsFavorited.mockReturnValue(false)
 
-    const promotionStore = usePromotionStore()
-    promotionStore.promote('graph-test', 4, {
-      sourceNodeId: '3',
-      sourceWidgetName: 'text',
-      disambiguatingSourceNodeId: '1'
+    const widget = createMockWidget()
+    const node = createMockNode()
+
+    const { user } = renderWidgetActions(widget, node)
+
+    await user.click(screen.getByRole('button', { name: /Favorite/ }))
+
+    expect(mockTrackWidgetFavoriteToggled).toHaveBeenCalledExactlyOnceWith({
+      node_type: 'TestNode',
+      widget_name: 'test_widget',
+      widget_type: 'number',
+      is_favorited: true,
+      source: 'right_side_panel'
     })
+    expect(mockToggleFavorite).toHaveBeenCalledExactlyOnceWith(
+      node,
+      'test_widget'
+    )
+  })
 
-    const user = userEvent.setup()
-    render(WidgetActions, {
-      props: {
-        widget,
-        node,
-        label: 'Text',
-        parents: [parentSubgraphNode],
-        isShownOnParents: true
-      },
-      global: {
-        plugins: [i18n]
-      }
+  it('tracks widget favorite toggled with is_favorited false when unfavoriting', async () => {
+    mockIsFavorited.mockReturnValue(true)
+
+    const widget = createMockWidget()
+    const node = createMockNode()
+
+    const { user } = renderWidgetActions(widget, node)
+
+    await user.click(screen.getByRole('button', { name: /Unfavorite/ }))
+
+    expect(mockTrackWidgetFavoriteToggled).toHaveBeenCalledExactlyOnceWith({
+      node_type: 'TestNode',
+      widget_name: 'test_widget',
+      widget_type: 'number',
+      is_favorited: false,
+      source: 'right_side_panel'
     })
-
-    await user.click(screen.getByRole('button', { name: /Hide input/ }))
-
-    expect(
-      promotionStore.isPromoted('graph-test', 4, {
-        sourceNodeId: '3',
-        sourceWidgetName: 'text',
-        disambiguatingSourceNodeId: '1'
-      })
-    ).toBe(false)
   })
 })
