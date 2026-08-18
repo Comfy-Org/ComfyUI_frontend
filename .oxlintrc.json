@@ -149,6 +149,17 @@
       }
     },
     {
+      "files": ["src/platform/remote/**/*.ts", "src/platform/remote/**/*.vue"],
+      "excludeFiles": [
+        "**/*.test.ts",
+        "**/*.spec.ts",
+        "src/platform/remote/comfyui/jobs/jobTypes.ts"
+      ],
+      "rules": {
+        "comfy/no-new-zod-for-remote-api-types": "error"
+      }
+    },
+    {
       "files": ["**/*.{stories,test,spec}.ts", "**/*.stories.vue"],
       "rules": {
         "no-console": "allow"

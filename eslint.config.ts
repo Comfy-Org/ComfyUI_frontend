@@ -72,17 +72,6 @@ const useVirtualListRestriction = {
     'useVirtualList requires uniform item heights. Use TanStack Virtual (via Reka UI virtualizer or @tanstack/vue-virtual) instead.'
 } as const
 
-// Bans hand-written Zod schemas for remote (Cloud) API types. Remote API
-// types should come from generated packages (packages/ingest-types, driven
-// by packages/ingest-types/openapi-ts.config.ts) instead of hand-authored
-// Zod. This only blocks *new* usage — existing files are grandfathered via
-// `ignores` where this selector is used below.
-const noZodForRemoteApiTypes = {
-  selector: "ImportDeclaration[source.value='zod']",
-  message:
-    'Do not hand-write new Zod schemas for remote API types. Use generated types from packages/ingest-types (@comfyorg/ingest-types) instead. See browser_tests/README.md "Sources of truth for mock types".'
-} as const
-
 export default defineConfig([
   {
     ignores: [
@@ -238,19 +227,6 @@ export default defineConfig([
           ]
         }
       ]
-    }
-  },
-  // Ban new hand-written Zod schemas for remote (Cloud) API types.
-  {
-    name: 'comfy/no-new-zod-for-remote-api-types',
-    files: ['src/platform/remote/**/*.ts', 'src/platform/remote/**/*.vue'],
-    ignores: [
-      '**/*.test.ts',
-      '**/*.spec.ts',
-      'src/platform/remote/comfyui/jobs/jobTypes.ts'
-    ],
-    rules: {
-      'no-restricted-syntax': ['error', noZodForRemoteApiTypes]
     }
   },
   {

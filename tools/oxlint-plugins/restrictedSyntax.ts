@@ -12,6 +12,11 @@ interface TypeReference extends Node {
   readonly typeName: Node
 }
 
+interface ImportDeclaration extends Node {
+  readonly type: 'ImportDeclaration'
+  readonly source: { readonly value: string }
+}
+
 interface RuleContext {
   readonly sourceCode: {
     getAncestors(node: Node): readonly Node[]
@@ -40,6 +45,21 @@ export const noUnsafeErrorAssertion = {
           return
         }
         context.report({ node, message: ERROR_ASSERTION_MESSAGE })
+      }
+    }
+  }
+}
+
+export const noNewZodForRemoteApiTypes = {
+  create(context: RuleContext) {
+    return {
+      ImportDeclaration(node: ImportDeclaration) {
+        if (node.source.value !== 'zod') return
+        context.report({
+          node,
+          message:
+            'Do not hand-write new Zod schemas for remote API types. Use generated types from packages/ingest-types (@comfyorg/ingest-types) instead. See browser_tests/README.md "Sources of truth for mock types".'
+        })
       }
     }
   }

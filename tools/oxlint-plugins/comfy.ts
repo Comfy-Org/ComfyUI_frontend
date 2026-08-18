@@ -12,7 +12,7 @@ const { noDomInComputed } = requireFrom(
 const { noDuplicateIngestType } = requireFrom(
   './comfyIngestTypes.ts'
 ) as typeof comfyIngestTypes
-const { noUnsafeErrorAssertion } = requireFrom(
+const { noNewZodForRemoteApiTypes, noUnsafeErrorAssertion } = requireFrom(
   './restrictedSyntax.ts'
 ) as typeof restrictedSyntax
 const { noModuleScopeVitestMocks, noRedundantVitestCleanup } = requireFrom(
@@ -25,6 +25,7 @@ export default {
     'no-dom-in-computed': noDomInComputed,
     'no-duplicate-ingest-type': noDuplicateIngestType,
     'no-module-scope-vitest-mocks': noModuleScopeVitestMocks,
+    'no-new-zod-for-remote-api-types': noNewZodForRemoteApiTypes,
     'no-redundant-vitest-cleanup': noRedundantVitestCleanup,
     'no-unsafe-error-assertion': noUnsafeErrorAssertion
   }

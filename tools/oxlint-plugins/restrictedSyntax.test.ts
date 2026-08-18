@@ -14,6 +14,9 @@ const sourceProbeDir = path.resolve('src/__restricted_syntax_probes__')
 const appProbeDir = path.resolve(
   'apps/desktop-ui/src/__restricted_syntax_probes__'
 )
+const remoteProbeDir = path.resolve(
+  'src/platform/remote/__restricted_syntax_probes__'
+)
 
 interface OxlintDiagnostic {
   readonly code?: string
@@ -78,5 +81,33 @@ describe('comfy/no-unsafe-error-assertion', () => {
     expect(
       findings.some(({ filename }) => filename?.endsWith('.test.ts'))
     ).toBe(false)
+  })
+})
+
+describe('comfy/no-new-zod-for-remote-api-types', () => {
+  let findings: readonly OxlintDiagnostic[]
+
+  beforeAll(() => {
+    mkdirSync(remoteProbeDir, { recursive: true })
+    writeFileSync(
+      path.join(remoteProbeDir, 'reported.ts'),
+      "import { z } from 'zod'\nexport const schema = z.string()\n"
+    )
+    writeFileSync(
+      path.join(remoteProbeDir, 'ignored.test.ts'),
+      "import { z } from 'zod'\nexport const schema = z.string()\n"
+    )
+    findings = lint(repoConfig, [remoteProbeDir]).filter(
+      ({ code }) => code === 'comfy(no-new-zod-for-remote-api-types)'
+    )
+  })
+
+  afterAll(() => {
+    rmSync(remoteProbeDir, { recursive: true, force: true })
+  })
+
+  it('reports Zod imports in remote source but not tests', () => {
+    expect(findings).toHaveLength(1)
+    expect(findings[0]?.filename).toMatch(/reported\.ts$/)
   })
 })
