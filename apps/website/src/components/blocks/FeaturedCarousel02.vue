@@ -2,7 +2,7 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import {
   useElementHover,
-  useFocusWithin,
+  useEventListener,
   useIntersectionObserver
 } from '@vueuse/core'
 import { computed, ref, useTemplateRef } from 'vue'
@@ -77,12 +77,36 @@ useIntersectionObserver(rootEl, ([entry]) => {
   isVisible.value = entry?.isIntersecting ?? false
 })
 
-// Pause the auto-advance while the user hovers or has keyboard focus inside
+// Pause the auto-advance while the user hovers or keyboard-navigates inside
 // the carousel (WCAG 2.2.2), so it never moves under the pointer or pulls
-// focus into a now-hidden slide.
+// focus into a now-hidden slide. Clicking a control (mute, pause, a dot)
+// also focuses it, but that focus lingers after the pointer leaves and would
+// stall the carousel indefinitely — so only keyboard-driven focus pauses;
+// pointer presence is already covered by hover. Modality comes from the last
+// input event, since :focus-visible can't be observed reactively.
 const isHovered = useElementHover(rootEl)
-const { focused: isFocusWithin } = useFocusWithin(rootEl)
-const autoplayPaused = computed(() => isHovered.value || isFocusWithin.value)
+const lastInputKeyboard = ref(false)
+useEventListener('keydown', () => (lastInputKeyboard.value = true), {
+  capture: true,
+  passive: true
+})
+useEventListener('pointerdown', () => (lastInputKeyboard.value = false), {
+  capture: true,
+  passive: true
+})
+const keyboardFocusWithin = ref(false)
+useEventListener(rootEl, 'focusin', () => {
+  keyboardFocusWithin.value = lastInputKeyboard.value
+})
+useEventListener(rootEl, 'focusout', (event: FocusEvent) => {
+  const next = event.relatedTarget
+  if (!(next instanceof Node) || !rootEl.value?.contains(next)) {
+    keyboardFocusWithin.value = false
+  }
+})
+const autoplayPaused = computed(
+  () => isHovered.value || keyboardFocusWithin.value
+)
 
 // Every slide advances on its own timer; video durations arrive as
 // `autoplayMs` in the data. Only the active slide mounts a VideoPlayer, so
