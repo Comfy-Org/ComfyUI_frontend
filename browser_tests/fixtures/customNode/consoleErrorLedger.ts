@@ -12,12 +12,13 @@ interface ConnectivityRule extends AllowlistRule {
 }
 
 type LifecycleTier = 'S2' | 'S3'
+type LifecycleRenderer = 'litegraph' | 'vue'
 
 interface LifecycleRule extends AllowlistRule {
   nodeType: string
   occurrencesPerStage: number
+  renderers: LifecycleRenderer[]
   tiers: LifecycleTier[]
-  vueNodesEnabled: boolean
 }
 
 // Pack-attributed console noise with no visible error surface. Shared by
@@ -275,17 +276,17 @@ const CONNECTIVITY_ERROR_ALLOWLIST: Record<string, ConnectivityRule[]> = {
 const NODE_LIFECYCLE_ERROR_EXPECTATIONS: Record<string, LifecycleRule[]> = {
   'comfyui-itools': [
     {
-      id: 'itools-vue-crop-missing-preview',
+      id: 'itools-crop-missing-preview',
       pattern:
         /Error calling extension 'iTools\.cropImage' method 'nodeCreated'[\s\S]*TypeError: Cannot read properties of undefined \(reading 'draw'\)/,
       nodeType: 'iToolsCropImage',
       occurrencesPerStage: 1,
       reason:
-        'S2 creates the crop node once and S3 creates it once then reloads it twice; each hook requires a canvas preview widget that VueNodes does not add to node.widgets',
+        'S2 creates the crop node once and S3 creates it once then reloads it twice; each hook dereferences a preview widget absent from node.widgets',
+      renderers: ['litegraph', 'vue'],
       restore:
-        'make the crop extension tolerate VueNodes without a canvas preview widget and remove this entry',
-      tiers: ['S2', 'S3'],
-      vueNodesEnabled: true
+        'make the crop extension tolerate a missing canvas preview widget and remove this entry',
+      tiers: ['S2', 'S3']
     }
   ]
 }
@@ -321,10 +322,11 @@ function lifecycleRulesForPack(
   vueNodesEnabled: boolean,
   nodeTypes?: readonly string[]
 ): LifecycleRule[] {
+  const renderer = vueNodesEnabled ? 'vue' : 'litegraph'
   return foldedRulesFor(NODE_LIFECYCLE_ERROR_EXPECTATIONS, pack).filter(
     (rule) =>
       rule.tiers.includes(tier) &&
-      rule.vueNodesEnabled === vueNodesEnabled &&
+      rule.renderers.includes(renderer) &&
       (nodeTypes === undefined || nodeTypes.includes(rule.nodeType))
   )
 }

@@ -163,7 +163,7 @@ test.describe('consoleErrorLedger', () => {
     ).toEqual([])
   })
 
-  test('requires the iTools Vue crop failure in its exact lifecycle tiers', () => {
+  test('requires the iTools crop failure in both renderer lifecycle tiers', () => {
     const error =
       "Error calling extension 'iTools.cropImage' method 'nodeCreated' {error: TypeError: Cannot read properties of undefined (reading 'draw')}"
     expect(
@@ -177,7 +177,7 @@ test.describe('consoleErrorLedger', () => {
     ).toEqual([error])
     expect(
       unallowlistedLifecycleErrors('comfyui-itools', 'S2', false, [error])
-    ).toEqual([error])
+    ).toEqual([])
     expect(
       unallowlistedLifecycleErrors('comfyui-itools', 'S2', true, [error])
     ).toEqual([])
@@ -189,7 +189,7 @@ test.describe('consoleErrorLedger', () => {
     ).toEqual([])
     expect(
       staleRequiredLifecycleErrorRules('comfyui-itools', 'S2', true, [], 1)
-    ).toEqual(['itools-vue-crop-missing-preview: expected 1, observed 0'])
+    ).toEqual(['itools-crop-missing-preview: expected 1, observed 0'])
     expect(
       staleRequiredLifecycleErrorRules(
         'comfyui-itools',
@@ -198,7 +198,7 @@ test.describe('consoleErrorLedger', () => {
         [error, error],
         1
       )
-    ).toEqual(['itools-vue-crop-missing-preview: expected 1, observed 2'])
+    ).toEqual(['itools-crop-missing-preview: expected 1, observed 2'])
     expect(
       staleRequiredLifecycleErrorRules(
         'comfyui-itools',
@@ -210,10 +210,10 @@ test.describe('consoleErrorLedger', () => {
     ).toEqual([])
     expect(
       staleRequiredLifecycleErrorRules('comfyui-itools', 'S3', true, [], 3)
-    ).toEqual(['itools-vue-crop-missing-preview: expected 3, observed 0'])
+    ).toEqual(['itools-crop-missing-preview: expected 3, observed 0'])
     expect(
       staleRequiredLifecycleErrorRules('comfyui-itools', 'S3', true, [error], 3)
-    ).toEqual(['itools-vue-crop-missing-preview: expected 3, observed 1'])
+    ).toEqual(['itools-crop-missing-preview: expected 3, observed 1'])
     expect(
       staleRequiredLifecycleErrorRules(
         'comfyui-itools',
@@ -230,7 +230,13 @@ test.describe('consoleErrorLedger', () => {
       ])
     ).toEqual([])
     expect(
-      staleRequiredLifecycleErrorRules('comfyui-itools', 'S3', false, [], 3)
+      staleRequiredLifecycleErrorRules(
+        'comfyui-itools',
+        'S3',
+        false,
+        [error, error, error],
+        3
+      )
     ).toEqual([])
   })
 
