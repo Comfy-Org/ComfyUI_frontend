@@ -26,7 +26,8 @@ import { ComfyApiError } from './errors'
 import type { NodeHandle } from './nodeHandle'
 import type { Unsubscribe } from './widgetHandle'
 
-interface RunOptions {
+/** @knipIgnoreUnusedButUsedByCustomNodes */
+export interface RunOptions {
   /**
    * Run only these nodes and whatever feeds them, instead of the whole
    * workflow. Empty is rejected rather than treated as "everything": a filter
@@ -37,7 +38,8 @@ interface RunOptions {
   batch?: number
 }
 
-interface RunSubmittedEvent {
+/** @knipIgnoreUnusedButUsedByCustomNodes */
+export interface RunSubmittedEvent {
   /** Ids the backend accepted, in submission order. */
   readonly promptIds: readonly string[]
   /** How many submissions the backend refused. */

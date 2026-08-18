@@ -31,6 +31,35 @@ import type { WidgetTextInteractionEvent } from './widgetTextInteraction'
 // `widgets_values` entry changed and the saved workflow differed.
 export type WidgetValue = string | number | boolean | object | undefined | null
 
+/** Options understood by core or by a widget type declared by the pack. */
+/** @knipIgnoreUnusedButUsedByCustomNodes */
+export interface WidgetOptions {
+  readonly [key: string]: unknown
+  readonly on?: string
+  readonly off?: string
+  readonly max?: number
+  readonly min?: number
+  readonly precision?: number
+  readonly read_only?: boolean
+  readonly step?: number
+  readonly step2?: number
+  readonly multiline?: boolean
+  readonly property?: string
+  readonly socketless?: boolean
+  readonly canvasOnly?: boolean
+  readonly hideInPanel?: boolean
+  readonly nodeType?: string
+  readonly serialize?: boolean
+  readonly values?: unknown
+  readonly iconClass?: string
+  readonly disabled?: boolean
+  readonly useGrouping?: boolean
+  readonly placeholder?: string
+  readonly showThumbnails?: boolean
+  readonly showItemNavigators?: boolean
+  readonly hidden?: boolean
+}
+
 /**
  * Shapes follow `src/types/extensionV2.ts`, the agreed extension contract.
  *
@@ -91,7 +120,7 @@ export interface WidgetHandle extends HandleCommon {
    * floating where its owner used to be.
    */
   setHidden(hidden: boolean): void
-  getOptions(): Readonly<IWidgetOptions> | undefined
+  getOptions(): Readonly<WidgetOptions> | undefined
   setOption(key: string, value: unknown): void
   setLabel(label: string): void
 
@@ -334,7 +363,8 @@ export function createWidgetHandles(
         },
         // Reads snapshot accessor values by design — a frozen copy must be
         // inert. Use `setOptions` to preserve live getters when writing.
-        getOptions: (w) => Object.freeze({ ...w.options }),
+        getOptions: (w) =>
+          Object.freeze({ ...w.options }) as Readonly<WidgetOptions>,
         setOption: (w, ...args) => {
           const [key, value] = args as unknown as [string, unknown]
           const patch = { [key]: value } as Partial<IWidgetOptions>
@@ -758,7 +788,7 @@ export interface WidgetDef {
   readonly type: string
   readonly name: string
   readonly value?: WidgetValue
-  readonly options?: Partial<IWidgetOptions>
+  readonly options?: WidgetOptions
   /** Display-only widgets — replaces the readOnly/opacity DOM fiddling. */
   readonly disabled?: boolean
   readonly hidden?: boolean
