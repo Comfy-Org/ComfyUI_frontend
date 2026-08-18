@@ -367,6 +367,17 @@ describe('CurrentUserPopoverWorkspace', () => {
     expect(state.showPricingTable).toHaveBeenCalledOnce()
   })
 
+  it('hides Plans & pricing for an enterprise workspace but keeps Manage plan', () => {
+    state.planSlug = 'enterprise_monthly'
+    state.canManageSubscription = true
+    renderComponent('team')
+
+    expect(
+      screen.queryByTestId('plans-pricing-menu-item')
+    ).not.toBeInTheDocument()
+    expect(screen.getByTestId('manage-plan-menu-item')).toBeInTheDocument()
+  })
+
   for (const workspaceType of ['personal', 'team'] as const) {
     it(`opens workspace plan management for a ${workspaceType} owner`, async () => {
       const user = userEvent.setup()

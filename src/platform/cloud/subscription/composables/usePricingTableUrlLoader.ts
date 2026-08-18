@@ -1,6 +1,10 @@
 import { useRoute, useRouter } from 'vue-router'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import {
+  isEnterprisePlanSlug,
+  isEnterpriseTier
+} from '@/platform/cloud/subscription/constants/tierPricing'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import {
   clearPreservedQuery,
@@ -102,7 +106,7 @@ export function usePricingTableUrlLoader() {
   const route = useRoute()
   const router = useRouter()
   const subscriptionDialog = useSubscriptionDialog()
-  const { teamCreditStops, fetchPlans } = useBillingContext()
+  const { subscription, teamCreditStops, fetchPlans } = useBillingContext()
   const { permissions } = useWorkspaceUI()
 
   /** Reads `?pricing=`, strips it, and opens the table when the gate allows. */
@@ -139,6 +143,14 @@ export function usePricingTableUrlLoader() {
     if (typeof param !== 'string' || !param) return
 
     if (!permissions.value.canManageSubscription) return
+    // Enterprise is sales-managed: the pricing table never opens for it, even
+    // from a deep link. The param was already stripped above.
+    if (
+      isEnterpriseTier(subscription.value?.tier) ||
+      isEnterprisePlanSlug(subscription.value?.planSlug)
+    ) {
+      return
+    }
 
     const teamCheckoutRequest = getTeamCheckoutRequest(
       param,

@@ -229,6 +229,10 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import {
+  isEnterprisePlanSlug,
+  isEnterpriseTier
+} from '@/platform/cloud/subscription/constants/tierPricing'
 import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { isCloud } from '@/platform/distribution/types'
@@ -303,8 +307,13 @@ const displayedCredits = computed(() => {
   })
 })
 
+const isEnterprisePlan = computed(
+  () =>
+    isEnterpriseTier(subscription.value?.tier) ||
+    isEnterprisePlanSlug(subscription.value?.planSlug)
+)
 const showPlansAndPricing = computed(
-  () => permissions.value.canManageSubscription
+  () => permissions.value.canManageSubscription && !isEnterprisePlan.value
 )
 const hasDelinquentSubscription = computed(
   () =>

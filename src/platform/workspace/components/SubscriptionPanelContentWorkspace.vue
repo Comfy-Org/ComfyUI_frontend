@@ -225,7 +225,10 @@
                     severity="warn"
                   />
                 </div>
-                <div class="flex items-baseline gap-1 font-inter">
+                <div
+                  v-if="!isEnterprisePlan"
+                  class="flex items-baseline gap-1 font-inter"
+                >
                   <span class="text-2xl font-semibold">{{ displayPrice }}</span>
                   <span class="text-base">{{ priceUnitLabel }}</span>
                 </div>
@@ -276,7 +279,8 @@
                   v-else-if="
                     !isSubscriptionCancelled &&
                     canAccessSubscriptionFeatures &&
-                    permissions.canManageSubscription
+                    permissions.canManageSubscription &&
+                    !isEnterprisePlan
                   "
                   size="lg"
                   variant="secondary"
@@ -417,6 +421,10 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
 import type { TierBenefit } from '@/platform/cloud/subscription/utils/tierBenefits'
+import {
+  isEnterprisePlanSlug,
+  isEnterpriseTier
+} from '@/platform/cloud/subscription/constants/tierPricing'
 import { getCommonTierBenefits } from '@/platform/cloud/subscription/utils/tierBenefits'
 import { isCloud } from '@/platform/distribution/types'
 import { useResubscribe } from '@/platform/workspace/composables/useResubscribe'
@@ -566,6 +574,12 @@ const scheduledPlanName = computed(() => {
     (plan) => plan.slug === subscription.value?.scheduledPlanSlug
   )
   if (!scheduledPlan) return ''
+  if (
+    isEnterprisePlanSlug(scheduledPlan.slug) ||
+    isEnterpriseTier(scheduledPlan.tier)
+  ) {
+    return t('subscription.tiers.enterprise.name')
+  }
   if (scheduledPlan.slug.startsWith('team')) {
     return t('subscription.teamPlanName')
   }
@@ -627,9 +641,18 @@ const subscriptionTierName = computed(() => {
     : baseName
 })
 
-const planDisplayName = computed(() =>
-  isTeamPlan.value ? t('subscription.teamPlanName') : subscriptionTierName.value
+const isEnterprisePlan = computed(
+  () =>
+    isEnterpriseTier(subscription.value?.tier) ||
+    isEnterprisePlanSlug(subscription.value?.planSlug)
 )
+
+const planDisplayName = computed(() => {
+  if (isEnterprisePlan.value) return t('subscription.tiers.enterprise.name')
+  return isTeamPlan.value
+    ? t('subscription.teamPlanName')
+    : subscriptionTierName.value
+})
 
 const tierKey = computed(() =>
   resolveSubscriptionTierKey(subscription.value?.tier)
@@ -643,6 +666,7 @@ const TEAM_PERK_KEYS = [
 ] as const
 
 const tierBenefits = computed((): TierBenefit[] => {
+  if (isEnterprisePlan.value) return []
   if (isTeamActive.value || showInactiveTeamSubscription.value) {
     return TEAM_PERK_KEYS.map((key) => ({
       key,

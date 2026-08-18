@@ -391,6 +391,56 @@ describe('SubscriptionPanelContentWorkspace', () => {
     )
   })
 
+  it('renders Enterprise without price, benefits, or a plan-change action', () => {
+    mockHasTeamPlan.value = false
+    mockPlanSlug.value = 'enterprise_monthly'
+    mockCurrentTeamCreditStop.value = null
+    renderComponent()
+
+    expect(screen.getByText('Enterprise')).toBeInTheDocument()
+    expect(screen.queryByText('$665')).not.toBeInTheDocument()
+    expect(screen.queryByText('USD / mo')).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: /change plan|upgrade plan/i })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getByText(`Renews on ${formatPanelDate(RENEWAL_DATE_ISO)}`)
+    ).toBeInTheDocument()
+  })
+
+  it('labels a scheduled change to Enterprise', () => {
+    const basePlans = mockPlans.value
+    mockScheduledPlanSlug.value = 'enterprise_monthly'
+    mockChangeAt.value = END_DATE_ISO
+    mockPlans.value = [
+      ...basePlans,
+      {
+        slug: 'enterprise_monthly',
+        tier: 'PRO',
+        duration: 'MONTHLY',
+        price_cents: 0,
+        credits_cents: 0,
+        max_seats: 1,
+        availability: { available: true },
+        seat_summary: {
+          seat_count: 1,
+          total_cost_cents: 0,
+          total_credits_cents: 0
+        }
+      }
+    ]
+    try {
+      renderComponent()
+      expect(
+        screen.getByText(
+          `Changes to Enterprise on ${formatPanelDate(END_DATE_ISO)}`
+        )
+      ).toBeInTheDocument()
+    } finally {
+      mockPlans.value = basePlans
+    }
+  })
+
   it('shows a scheduled plan change instead of the renewal date', () => {
     mockScheduledPlanSlug.value = 'pro-annual'
     mockChangeAt.value = END_DATE_ISO

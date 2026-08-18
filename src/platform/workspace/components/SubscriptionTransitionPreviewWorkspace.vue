@@ -257,7 +257,7 @@ defineEmits<{
   back: []
 }>()
 
-const { t, n } = useI18n()
+const { t, te, n } = useI18n()
 const { subscription } = useBillingContext()
 
 function openVerification() {
@@ -266,7 +266,10 @@ function openVerification() {
 }
 
 function formatTierName(tier: string): string {
-  return t(`subscription.tiers.${tier.toLowerCase()}.name`)
+  const nameKey = `subscription.tiers.${tier.toLowerCase()}.name`
+  if (te(nameKey)) return t(nameKey)
+  const lower = tier.toLowerCase()
+  return lower.charAt(0).toUpperCase() + lower.slice(1)
 }
 
 function isTeamTier(tier: string): boolean {
