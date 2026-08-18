@@ -3,7 +3,7 @@
     <!-- Loading state while subscription is being set up -->
     <div
       v-if="isSettingUp"
-      class="rounded-2xl border border-interface-stroke p-6"
+      class="rounded-2xl border border-interface-stroke/60 p-6"
     >
       <div class="flex items-center gap-2 py-4 text-muted-foreground">
         <i class="pi pi-spin pi-spinner" />
@@ -14,7 +14,7 @@
     <!-- Billing data still loading: avoid rendering a false Free/$0 plan -->
     <div
       v-else-if="isLoading && !subscription"
-      class="rounded-2xl border border-interface-stroke p-6"
+      class="rounded-2xl border border-interface-stroke/60 p-6"
     >
       <div class="flex items-center gap-2 py-4 text-muted-foreground">
         <i class="pi pi-spin pi-spinner" />
@@ -25,7 +25,7 @@
     <!-- Billing fetch failed: offer retry rather than a misleading Free plan -->
     <div
       v-else-if="error && !subscription"
-      class="flex flex-col items-start gap-3 rounded-2xl border border-interface-stroke p-6"
+      class="flex flex-col items-start gap-3 rounded-2xl border border-interface-stroke/60 p-6"
     >
       <div class="flex items-center gap-2 text-text-secondary">
         <i class="pi pi-exclamation-circle text-danger" />
@@ -67,7 +67,7 @@
         </div>
       </div>
 
-      <div class="rounded-2xl border border-interface-stroke p-6">
+      <div class="rounded-2xl border border-interface-stroke/60 p-6">
         <div>
           <div
             class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between md:gap-2"
@@ -242,7 +242,8 @@
 
         <div class="flex flex-col gap-6 pt-6 lg:flex-row lg:items-stretch">
           <div class="w-full lg:max-w-md">
-            <CreditsTile :zero-state="showZeroState" />
+            <MemberCreditsTile v-if="memberCap" />
+            <CreditsTile v-else :zero-state="showZeroState" />
           </div>
 
           <div
@@ -316,6 +317,8 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import CreditsTile from '@/platform/cloud/subscription/components/CreditsTile.vue'
+import MemberCreditsTile from '@/platform/workspace/components/MemberCreditsTile.vue'
+import { useMemberCreditDisplay } from '@/platform/workspace/composables/useMemberCreditDisplay'
 import SubscriptionFooterLinks from '@/platform/cloud/subscription/components/SubscriptionFooterLinks.vue'
 import DropdownMenu from '@/components/common/DropdownMenu.vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
@@ -390,6 +393,8 @@ const showZeroState = computed(
   () => showTeamSubscribePrompt.value || isMemberView.value
 )
 
+const { memberCap } = useMemberCreditDisplay()
+
 function handleSubscribeWorkspace() {
   showSubscriptionDialog({ reason: 'settings_billing_panel' })
 }
@@ -439,11 +444,13 @@ const subscriptionTierName = computed(() => {
     : baseName
 })
 
-const planDisplayName = computed(() =>
-  isInPersonalWorkspace.value
-    ? subscriptionTierName.value
+const planDisplayName = computed(() => {
+  if (isInPersonalWorkspace.value) return subscriptionTierName.value
+  // 'ENTERPRISE' is a wire tier not yet in the generated SubscriptionTier union.
+  return (subscription.value?.tier as string | null) === 'ENTERPRISE'
+    ? t('subscription.enterprisePlanName')
     : t('subscription.teamPlanName')
-)
+})
 
 const tierKey = computed(() => {
   const tier = subscription.value?.tier

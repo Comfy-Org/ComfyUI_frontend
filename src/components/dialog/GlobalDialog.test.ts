@@ -318,6 +318,22 @@ describe('shouldPreventRekaDismiss', () => {
     expect(event.defaultPrevented).toBe(false)
   })
 
+  it('prevents dismiss when clicking a menu trigger to close it', () => {
+    // A DropdownMenu trigger inside a dialog: clicking it again to close the
+    // menu must not tear down the surrounding dialog.
+    const trigger = document.createElement('button')
+    trigger.setAttribute('aria-haspopup', 'menu')
+    const icon = document.createElement('i')
+    trigger.appendChild(icon)
+    document.body.appendChild(trigger)
+
+    const event = makeEvent(icon)
+    onRekaPointerDownOutside({ dismissableMask: undefined }, event)
+
+    expect(event.defaultPrevented).toBe(true)
+    trigger.remove()
+  })
+
   it('prevents dismiss when the dialog is not the top-most (stacked)', () => {
     // A backgrounded dialog must never dismiss on an outside pointer — the
     // pointer belongs to the dialog stacked above it (e.g. Edit Keybinding

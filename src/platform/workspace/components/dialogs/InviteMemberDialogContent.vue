@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex w-full max-w-lg flex-col rounded-2xl border border-border-default bg-base-background"
+    class="flex w-132 max-w-full flex-col rounded-2xl border border-border-default bg-base-background"
   >
     <div
       class="flex h-12 items-center justify-between border-b border-border-default px-4"
@@ -35,7 +35,7 @@
             :value="email"
             :class="
               cn(
-                'rounded-full',
+                'rounded-full bg-tertiary-background-hover',
                 !EMAIL_REGEX.test(email) && 'bg-danger/20 text-danger'
               )
             "

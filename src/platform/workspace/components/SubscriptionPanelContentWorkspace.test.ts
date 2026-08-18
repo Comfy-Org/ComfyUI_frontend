@@ -144,7 +144,18 @@ vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
   useTeamWorkspaceStore: () => ({
     isInPersonalWorkspace: mockIsInPersonalWorkspace,
     isWorkspaceSubscribed: mockIsWorkspaceSubscribed,
-    members: mockMembers
+    members: mockMembers,
+    activeWorkspaceId: ref('ws-1'),
+    ensureMembersLoaded: vi.fn()
+  })
+}))
+
+vi.mock('@/composables/auth/useCurrentUser', () => ({
+  useCurrentUser: () => ({
+    userEmail: mockUserEmail,
+    userDisplayName: ref(''),
+    userPhotoUrl: ref(''),
+    handleSignOut: vi.fn()
   })
 }))
 

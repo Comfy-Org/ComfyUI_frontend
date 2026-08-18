@@ -31,6 +31,7 @@ export function useBillingContext(): BillingContext {
     isLegacyTeamPlan: computed(() => false),
     billingStatus: computed(() => null),
     subscriptionStatus: computed(() => null),
+    isPaused: computed(() => false),
     tier: computed(() => null),
     renewalDate: computed(() => null),
     getMaxSeats: (tierKey: string) => ({ creator: 5, pro: 20 })[tierKey] ?? 1,

@@ -1,5 +1,26 @@
 <template>
   <Toast />
+  <Toast group="disabled-nodes" position="top-right">
+    <template #message="slotProps">
+      <div class="flex min-w-0 flex-1 flex-col gap-2">
+        <span class="text-sm font-semibold">
+          {{ slotProps.message.summary }}
+        </span>
+        <span class="text-sm text-muted-foreground">
+          {{ slotProps.message.detail }}
+        </span>
+        <div class="flex justify-end">
+          <Button
+            size="sm"
+            variant="secondary"
+            @click="viewDisabledNodeDetails(slotProps.message)"
+          >
+            {{ $t('rightSidePanel.disabledNodes.viewDetails') }}
+          </Button>
+        </div>
+      </div>
+    </template>
+  </Toast>
   <Toast group="billing-operation" position="top-right">
     <template #message="slotProps">
       <div class="flex items-center gap-2">
@@ -15,12 +36,19 @@ import Toast from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
 import { nextTick, watch } from 'vue'
 
+import Button from '@/components/ui/button/Button.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 
 const toast = useToast()
 const toastStore = useToastStore()
 const settingStore = useSettingStore()
+
+function viewDisabledNodeDetails(message: object) {
+  useRightSidePanelStore().openPanel('errors')
+  toast.remove(message)
+}
 
 watch(
   () => toastStore.messagesToAdd,

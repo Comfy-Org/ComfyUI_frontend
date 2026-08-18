@@ -106,6 +106,7 @@ import {
 import type { MissingModelPipelineResult } from '@/platform/missingModel/missingModelPipeline'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
+import { useDisabledPartnerNodesStore } from '@/platform/workspace/stores/disabledPartnerNodesStore'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import {
   scanAllMediaCandidates,
@@ -1510,6 +1511,10 @@ export class ComfyApp {
 
         await this.runMissingMediaPipeline(silentAssetErrors)
       }
+
+      void useDisabledPartnerNodesStore().surfaceDisabledNodes({
+        silent: silentAssetErrors
+      })
 
       if (!deferWarnings) {
         useWorkflowService().showPendingWarnings(undefined, {

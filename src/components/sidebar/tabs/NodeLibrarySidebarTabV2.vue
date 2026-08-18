@@ -96,9 +96,11 @@
               class="flex min-h-0 flex-1 items-center justify-center px-6 py-8 text-center text-sm text-muted-foreground"
             >
               {{
-                $t('sideToolbar.nodeLibraryTab.noMatchingNodes', {
-                  query: searchQuery
-                })
+                disabledMatchCount > 0
+                  ? $t('nodeSearch.disabledByTeamAdmin', disabledMatchCount)
+                  : $t('sideToolbar.nodeLibraryTab.noMatchingNodes', {
+                      query: searchQuery
+                    })
               }}
             </div>
             <AllNodesPanel
@@ -150,6 +152,8 @@ import {
 } from '@/services/nodeOrganizationService'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { buildNodeDefTree, useNodeDefStore } from '@/stores/nodeDefStore'
+import { useDisabledPartnerNodesStore } from '@/platform/workspace/stores/disabledPartnerNodesStore'
+import { NodeSearchService } from '@/services/nodeSearchService'
 import type {
   NodeCategoryId,
   NodeSection,
@@ -276,6 +280,24 @@ useSearchQueryTracking('node_sidebar', searchQuery, filteredNodeDefs)
 const hasNoMatches = computed(
   () => searchQuery.value.length > 0 && filteredNodeDefs.value.length === 0
 )
+
+// When nothing matched, check whether the query WOULD have hit an
+// admin-disabled partner node so the empty state can say so.
+const disabledPartnerNodesStore = useDisabledPartnerNodesStore()
+const disabledNodeDefs = computed(() =>
+  Object.values(nodeDefStore.nodeDefsByName).filter((d) =>
+    disabledPartnerNodesStore.isNodeDefDisabled(d)
+  )
+)
+const disabledMatchCount = computed(() => {
+  if (!hasNoMatches.value || disabledNodeDefs.value.length === 0) return 0
+  return new NodeSearchService(disabledNodeDefs.value).searchNode(
+    searchQuery.value,
+    [],
+    { limit: 64 },
+    { matchWildcards: false }
+  ).length
+})
 
 const sections = computed(() => {
   return nodeOrganizationService.organizeNodesTab(activeNodes.value)

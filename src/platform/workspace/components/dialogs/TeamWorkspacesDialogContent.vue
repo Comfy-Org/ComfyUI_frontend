@@ -145,6 +145,7 @@ import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfil
 import { useWorkspaceSwitch } from '@/platform/workspace/composables/useWorkspaceSwitch'
 import { useWorkspaceTierLabel } from '@/platform/workspace/composables/useWorkspaceTierLabel'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { WORKSPACE_NAME_MAX_LENGTH } from '@/platform/workspace/workspaceConstants'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const { onConfirm } = defineProps<{
@@ -178,7 +179,11 @@ const tierLabels = computed(
 
 const isValidName = computed(() => {
   const name = workspaceName.value.trim()
-  return name.length >= 1 && name.length <= 50 && SAFE_NAME_REGEX.test(name)
+  return (
+    name.length >= 1 &&
+    name.length <= WORKSPACE_NAME_MAX_LENGTH &&
+    SAFE_NAME_REGEX.test(name)
+  )
 })
 
 function onCancel() {

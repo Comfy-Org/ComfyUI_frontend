@@ -1,5 +1,11 @@
 <template>
-  <BaseModalLayout content-title="" data-testid="settings-dialog" size="full">
+  <BaseModalLayout
+    content-title=""
+    data-testid="settings-dialog"
+    size="full"
+    header-height-class="h-22"
+    :content-padding="isWorkspacePanel ? 'flush' : 'default'"
+  >
     <template #leftPanelHeaderTitle>
       <i class="icon-[lucide--settings]" />
       <h2 class="text-neutral text-base">{{ $t('g.settings') }}</h2>
@@ -48,6 +54,7 @@
         id="keybinding-panel-header"
         class="flex-1"
       />
+      <WorkspaceSettingsHeader v-else-if="isWorkspacePanel" />
     </template>
 
     <template #header-right-area>
@@ -55,6 +62,7 @@
         v-if="activeCategoryKey === 'keybinding'"
         id="keybinding-panel-actions"
       />
+      <WorkspaceMenuButton v-else-if="isWorkspacePanel" />
     </template>
 
     <template #content>
@@ -93,8 +101,11 @@ import NavTitle from '@/components/widget/nav/NavTitle.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import ColorPaletteMessage from '@/platform/settings/components/ColorPaletteMessage.vue'
 import SettingsPanel from '@/platform/settings/components/SettingsPanel.vue'
+import WorkspaceMenuButton from '@/platform/workspace/components/dialogs/settings/WorkspaceMenuButton.vue'
+import WorkspaceSettingsHeader from '@/platform/workspace/components/dialogs/settings/WorkspaceSettingsHeader.vue'
 import { useSettingSearch } from '@/platform/settings/composables/useSettingSearch'
 import { useSettingUI } from '@/platform/settings/composables/useSettingUI'
+import { useSettingsNavigation } from '@/platform/settings/composables/useSettingsNavigation'
 import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
 import type { SettingTreeNode } from '@/platform/settings/settingStore'
 import type {
@@ -135,6 +146,14 @@ const { fetchBalance } = useBillingContext()
 const navRef = ref<HTMLElement | null>(null)
 const activeCategoryKey = ref<string | null>(defaultCategory.value?.key ?? null)
 
+// Let panels deep-link into a sibling panel (e.g. Overview → Members).
+const { requestedPanelKey } = useSettingsNavigation()
+watch(requestedPanelKey, (key) => {
+  if (!key) return
+  activeCategoryKey.value = key
+  requestedPanelKey.value = null
+})
+
 const searchableNavItems = computed(() =>
   navGroups.value.flatMap((g) =>
     g.items.map((item) => ({
@@ -171,6 +190,17 @@ const activePanel = computed(() => {
   if (!activeCategoryKey.value) return null
   return findPanelByKey(activeCategoryKey.value)
 })
+
+const WORKSPACE_PANEL_KEYS = [
+  'workspace',
+  'workspace-members',
+  'workspace-partner-nodes'
+]
+const isWorkspacePanel = computed(
+  () =>
+    !!activeCategoryKey.value &&
+    WORKSPACE_PANEL_KEYS.includes(activeCategoryKey.value)
+)
 
 const getGroupSortOrder = (group: SettingTreeNode): number =>
   Math.max(0, ...flattenTree<SettingParams>(group).map((s) => s.sortOrder ?? 0))

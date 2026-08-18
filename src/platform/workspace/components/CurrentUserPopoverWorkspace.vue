@@ -58,8 +58,8 @@
 
     <!-- Credits Section -->
 
-    <div class="flex items-center gap-2 px-4 py-2">
-      <i class="icon-[lucide--component] text-sm text-amber-400" />
+    <div class="relative flex items-center gap-2 px-4 py-2">
+      <i class="icon-[lucide--coins] text-sm text-amber-400" />
       <Skeleton
         v-if="isLoadingBalance"
         width="4rem"
@@ -69,16 +69,41 @@
       <span v-else class="text-base font-semibold text-base-foreground">{{
         displayedCredits
       }}</span>
-      <Button
-        v-tooltip="{ value: $t('credits.unified.tooltip'), showDelay: 300 }"
-        variant="muted-textonly"
-        size="icon-sm"
+      <span
+        v-if="isEdgeState"
         class="mr-auto"
-        :aria-label="$t('credits.unified.tooltip')"
-        data-testid="credits-info-button"
+        @mouseenter="isEdgePopoverOpen = true"
+        @mouseleave="isEdgePopoverOpen = false"
+        @focusin="isEdgePopoverOpen = true"
+        @focusout="isEdgePopoverOpen = false"
       >
-        <i class="icon-[lucide--circle-help]" />
-      </Button>
+        <Button
+          variant="muted-textonly"
+          size="icon-sm"
+          :aria-label="$t('workspacePanel.memberCredits.edgeExplainer')"
+          data-testid="member-credits-info-button"
+        >
+          <i class="icon-[lucide--info]" />
+        </Button>
+      </span>
+      <span v-else class="mr-auto" />
+      <div
+        v-if="isEdgeState && isEdgePopoverOpen && memberCap"
+        class="absolute top-1/2 right-full z-50 mr-3 w-72 -translate-y-1/2 rounded-lg border border-border-default bg-base-background p-3 shadow-lg"
+        data-testid="member-credits-edge-popover"
+      >
+        <p class="m-0 text-sm text-base-foreground">
+          {{ $t('workspacePanel.memberCredits.edgeLead') }}
+          {{ $t('workspacePanel.memberCredits.edgeExplainer') }}
+        </p>
+        <p class="m-0 mt-1 text-sm text-muted-foreground">
+          {{
+            $t('workspacePanel.memberCredits.monthlyLimit', {
+              n: memberCap.limit.toLocaleString()
+            })
+          }}
+        </p>
+      </div>
       <!-- Upgrade to add credits (free tier) -->
       <Button
         v-if="isActiveSubscription && permissions.canTopUp && isFreeTier"
@@ -126,6 +151,22 @@
           isCancelled
             ? $t('subscription.resubscribe')
             : $t('workspaceSwitcher.subscribe')
+        }}
+      </Button>
+    </div>
+
+    <div v-if="requestAction" class="px-4 py-1">
+      <Button
+        variant="secondary"
+        class="w-full"
+        :disabled="requestSent"
+        data-testid="member-credits-request-button"
+        @click="requestSent = true"
+      >
+        {{
+          requestSent
+            ? $t('workspacePanel.memberCredits.requested')
+            : $t(`workspacePanel.memberCredits.${requestAction}`)
         }}
       </Button>
     </div>
@@ -221,6 +262,7 @@ import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
+
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import WorkspaceSwitcherPopover from '@/platform/workspace/components/WorkspaceSwitcherPopover.vue'
@@ -233,6 +275,7 @@ import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeB
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { useMemberCreditDisplay } from '@/platform/workspace/composables/useMemberCreditDisplay'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
@@ -282,8 +325,17 @@ const subscriptionDialog = useSubscriptionDialog()
 const { locale } = useI18n()
 const isLoadingBalance = isLoading
 
+const { memberCap, displayedNumber, isEdgeState, requestAction } =
+  useMemberCreditDisplay()
+
+const requestSent = ref(false)
+const isEdgePopoverOpen = ref(false)
+
 const displayedCredits = computed(() => {
   if (initState.value !== 'ready') return ''
+
+  if (memberCap.value)
+    return Math.round(displayedNumber.value).toLocaleString(locale.value)
 
   // API field is named _micros but contains cents (naming inconsistency)
   const cents =

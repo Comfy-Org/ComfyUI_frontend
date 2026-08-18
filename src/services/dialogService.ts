@@ -10,6 +10,7 @@ import { t } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
 import { isCloud } from '@/platform/distribution/types'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useExternalLink } from '@/composables/useExternalLink'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import type {
@@ -558,11 +559,39 @@ export const useDialogService = () => {
     })
   }
 
+  async function showSetMemberCreditLimitDialog(props: {
+    memberId: string
+    memberName: string
+    creditsUsed?: number
+    currentLimit?: number | null
+  }) {
+    const { default: component } =
+      await import('@/platform/workspace/components/dialogs/SetMemberCreditLimitDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'set-member-credit-limit',
+      component,
+      props,
+      dialogComponentProps: workspaceDialogProps
+    })
+  }
+
   async function showInviteMemberDialog() {
     const { default: component } =
       await import('@/platform/workspace/components/dialogs/InviteMemberDialogContent.vue')
     return dialogStore.showDialog({
       key: 'invite-member',
+      component,
+      dialogComponentProps: {
+        ...workspaceDialogProps
+      }
+    })
+  }
+
+  async function showAutoReloadDialog() {
+    const { default: component } =
+      await import('@/platform/workspace/components/dialogs/AutoReloadDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'auto-reload',
       component,
       dialogComponentProps: {
         ...workspaceDialogProps
@@ -579,6 +608,46 @@ export const useDialogService = () => {
       dialogComponentProps: {
         ...workspaceDialogProps
       }
+    })
+  }
+
+  async function showMemberLimitDialog() {
+    const { default: component } =
+      await import('@/platform/workspace/components/dialogs/RequestMoreDialogContent.vue')
+    const { staticUrls } = useExternalLink()
+    return dialogStore.showDialog({
+      key: 'member-limit',
+      component,
+      props: {
+        dialogKey: 'member-limit',
+        title: t('workspacePanel.memberLimitDialog.title'),
+        message: t('workspacePanel.memberLimitDialog.message'),
+        onRequestMore: () =>
+          window.open(
+            staticUrls.teamPlanRequests,
+            '_blank',
+            'noopener,noreferrer'
+          )
+      },
+      dialogComponentProps: workspaceDialogProps
+    })
+  }
+
+  async function showWorkflowQueuedDialog() {
+    const { default: component } =
+      await import('@/platform/workspace/components/dialogs/RequestMoreDialogContent.vue')
+    const { staticUrls } = useExternalLink()
+    return dialogStore.showDialog({
+      key: 'workflow-queued',
+      component,
+      props: {
+        dialogKey: 'workflow-queued',
+        title: t('workspacePanel.workflowQueuedDialog.title'),
+        message: t('workspacePanel.workflowQueuedDialog.message'),
+        onRequestMore: () =>
+          window.open(staticUrls.discord, '_blank', 'noopener,noreferrer')
+      },
+      dialogComponentProps: workspaceDialogProps
     })
   }
 
@@ -729,9 +798,13 @@ export const useDialogService = () => {
     showEditWorkspaceDialog,
     showRemoveMemberDialog,
     showChangeMemberRoleDialog,
+    showSetMemberCreditLimitDialog,
     showRevokeInviteDialog,
     showInviteMemberDialog,
+    showAutoReloadDialog,
     showInviteMemberUpsellDialog,
+    showMemberLimitDialog,
+    showWorkflowQueuedDialog,
     showBillingComingSoonDialog,
     showCancelSubscriptionDialog,
     showDowngradeToPersonalDialog

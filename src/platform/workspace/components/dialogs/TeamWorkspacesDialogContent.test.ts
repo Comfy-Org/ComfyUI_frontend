@@ -232,7 +232,7 @@ describe('TeamWorkspacesDialogContent', () => {
       expect(findCreateButton(container)).toBeDisabled()
     })
 
-    it('disables create button for name exceeding 50 characters', async () => {
+    it('disables create button for name exceeding the character limit', async () => {
       const { container, user } = mountComponent()
       const input = container.querySelector(
         '#workspace-name-input'

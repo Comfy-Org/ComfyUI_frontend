@@ -1,6 +1,15 @@
 <template>
   <div
-    class="@container relative flex flex-col gap-6 rounded-2xl border border-interface-stroke bg-modal-panel-background px-6 py-5"
+    :class="
+      cn(
+        '@container relative flex flex-col gap-6 rounded-2xl border border-interface-stroke bg-modal-panel-background px-6 py-5 transition-opacity',
+        // Paused subscriptions can't spend credits, so dim the whole tile to
+        // read as frozen and defer to the Update-payment banner. A lapsed plan
+        // (frozen) reads the same way.
+        (isPaused || frozen) && 'opacity-50',
+        customClass
+      )
+    "
   >
     <Button
       variant="muted-textonly"
@@ -19,8 +28,10 @@
       </div>
       <Skeleton v-if="isLoadingBalance" width="8rem" height="2rem" />
       <div v-else class="flex items-baseline gap-2">
-        <i class="icon-[lucide--component] size-4 self-center text-credit" />
-        <span class="text-2xl leading-none font-bold">{{ displayTotal }}</span>
+        <i class="icon-[lucide--coins] size-4 self-center text-credit" />
+        <span class="text-2xl leading-none font-bold tabular-nums">{{
+          displayTotal
+        }}</span>
         <span class="text-sm text-muted @max-[300px]:hidden">{{
           $t('subscription.remaining')
         }}</span>
@@ -29,76 +40,27 @@
 
     <template v-if="showBreakdown">
       <div
-        v-if="emptyStateNotice"
-        class="flex items-start gap-2 rounded-lg bg-base-background p-3 text-sm"
-      >
-        <i
-          class="mt-0.5 icon-[lucide--info] size-4 shrink-0 text-base-foreground"
-        />
-        <div class="flex flex-col gap-1">
-          <span class="text-base-foreground">{{ emptyStateNotice.title }}</span>
-          <span class="text-muted">{{ emptyStateNotice.description }}</span>
-        </div>
-      </div>
-
-      <div
         v-if="showBar"
-        :class="cn('flex flex-col gap-2', isMonthlyDepleted && 'opacity-30')"
+        :class="cn('flex flex-col gap-2', isAllowanceDepleted && 'opacity-30')"
       >
         <div class="flex items-center justify-between text-sm">
-          <span class="text-text-primary">{{
-            $t('subscription.monthly')
-          }}</span>
+          <span class="text-muted">{{ cycleLabel }}</span>
           <span class="text-muted">
-            {{ refillsLabel }}
+            {{ cycleStatusLabel }}
           </span>
         </div>
         <div
           role="progressbar"
           :aria-valuenow="usage.used"
           :aria-valuemin="0"
-          :aria-valuemax="monthlyTotalCredits ?? 0"
-          :aria-valuetext="monthlyUsageLabel"
+          :aria-valuemax="allowanceTotalCredits ?? 0"
+          :aria-valuetext="cycleUsageLabel"
           class="h-2 w-full overflow-hidden rounded-full bg-secondary-background-hover"
         >
           <div
             class="h-full rounded-full bg-credit"
             :style="{ width: usedBarWidth }"
           />
-        </div>
-        <div class="flex items-center justify-between gap-2 text-sm">
-          <Skeleton
-            v-if="isLoadingBalance"
-            class="@max-[300px]:hidden"
-            width="5rem"
-            height="1rem"
-          />
-          <span v-else class="text-muted @max-[300px]:hidden">
-            {{ $t('subscription.creditsUsed', { used: usedDisplay }) }}
-          </span>
-          <Skeleton v-if="isLoadingBalance" width="9rem" height="1rem" />
-          <span
-            v-else
-            class="flex items-center gap-1 font-bold text-text-primary"
-          >
-            <i class="icon-[lucide--component] size-4 text-credit" />
-            <span class="@max-[180px]:hidden">
-              {{
-                $t('subscription.creditsLeftOfTotal', {
-                  remaining: monthlyBonusCredits,
-                  total: monthlyTotalDisplay
-                })
-              }}
-            </span>
-            <span class="hidden @max-[180px]:inline">
-              {{
-                $t('subscription.creditsLeftOfTotal', {
-                  remaining: monthlyRemainingCompact,
-                  total: monthlyTotalCompact
-                })
-              }}
-            </span>
-          </span>
         </div>
       </div>
 
@@ -118,7 +80,7 @@
               variant="muted-textonly"
               size="icon-sm"
               :aria-label="$t('subscription.additionalCreditsInfo')"
-              class="text-muted"
+              class="flex cursor-help appearance-none items-center border-none bg-transparent p-0 text-muted transition-colors hover:text-text-primary"
             >
               <i class="icon-[lucide--info] size-4" />
             </Button>
@@ -132,9 +94,9 @@
           <Skeleton v-if="isLoadingBalance" width="3rem" height="1rem" />
           <span
             v-else
-            class="flex items-center gap-1 font-bold text-text-primary"
+            class="flex items-center gap-1 font-bold text-text-primary tabular-nums"
           >
-            <i class="icon-[lucide--component] size-4 text-credit" />
+            <i class="icon-[lucide--coins] size-4 text-credit" />
             {{ displayPrepaid }}
           </span>
         </div>
@@ -156,15 +118,10 @@
       </Button>
       <Button
         v-else
-        :variant="isOutOfCredits ? 'inverted' : 'secondary'"
+        :variant="isOutOfCredits ? 'inverted' : 'tertiary'"
         size="lg"
-        :class="
-          cn(
-            'w-full font-normal',
-            !isOutOfCredits &&
-              'bg-interface-menu-component-surface-selected text-text-primary'
-          )
-        "
+        class="w-full font-normal"
+        :disabled="isPaused || frozen"
         @click="handleAddCredits"
       >
         {{ $t('subscription.addCredits') }}
@@ -178,6 +135,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { useEventListener } from '@vueuse/core'
 import Skeleton from 'primevue/skeleton'
 import { computed, onMounted } from 'vue'
+import type { HTMLAttributes } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { formatCredits } from '@/base/credits/comfyCredits'
@@ -186,40 +144,45 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useSubscriptionCredits } from '@/platform/cloud/subscription/composables/useSubscriptionCredits'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
-import {
-  DEFAULT_TIER_KEY,
-  TIER_TO_KEY,
-  getTierCredits
-} from '@/platform/cloud/subscription/constants/tierPricing'
-import { computeMonthlyUsage } from '@/platform/cloud/subscription/utils/creditsProgress'
 import { useTelemetry } from '@/platform/telemetry'
 import { consumePendingTopup } from '@/platform/telemetry/topupTracker'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useDialogService } from '@/services/dialogService'
 
-const { zeroState = false } = defineProps<{
+const {
+  zeroState = false,
+  frozen = false,
+  class: customClass
+} = defineProps<{
   /** Forces the zero-credit display (e.g. unsubscribed / member view). */
   zeroState?: boolean
+  /**
+   * Renders the full breakdown but dimmed and non-interactive, for a lapsed
+   * subscription that still has a shape to show. Mirrors the paused treatment.
+   */
+  frozen?: boolean
+  class?: HTMLAttributes['class']
 }>()
 
 const { locale, t } = useI18n()
 
 const {
   subscription,
+  isPaused,
   balance,
   isActiveSubscription,
   isFreeTier,
-  currentTeamCreditStop,
   fetchBalance,
   fetchStatus
 } = useBillingContext()
 const {
-  monthlyBonusCredits,
   prepaidCredits,
   totalCredits,
   monthlyBonusCreditsValue,
   prepaidCreditsValue,
-  isLoadingBalance
+  isLoadingBalance,
+  allowanceTotalCredits,
+  usage
 } = useSubscriptionCredits()
 const { permissions } = useWorkspaceUI()
 const { showPricingTable } = useSubscriptionDialog()
@@ -227,40 +190,18 @@ const { wrapWithErrorHandlingAsync } = useErrorHandling()
 const dialogService = useDialogService()
 const telemetry = useTelemetry()
 
-const tierKey = computed(() => {
-  const tier = subscription.value?.tier
-  if (!tier) return DEFAULT_TIER_KEY
-  return TIER_TO_KEY[tier] ?? DEFAULT_TIER_KEY
-})
-
-const monthlyTotalCredits = computed<number | null>(() => {
-  const teamStop = currentTeamCreditStop.value
-  if (teamStop) return teamStop.credits_monthly
-  return getTierCredits(tierKey.value)
-})
-
-const usage = computed(() =>
-  computeMonthlyUsage(
-    monthlyBonusCreditsValue.value,
-    monthlyTotalCredits.value ?? 0
-  )
+const cycleLabel = computed(() =>
+  subscription.value?.duration === 'ANNUAL'
+    ? t('subscription.yearly')
+    : t('subscription.monthly')
 )
 
-const refillsDateShort = computed(() => {
-  const raw = subscription.value?.renewalDate
-  if (!raw) return ''
-  const date = new Date(raw)
-  return Number.isNaN(date.getTime())
-    ? ''
-    : date.toLocaleDateString(locale.value, { month: 'short', day: 'numeric' })
-})
+const cycleUsedPercent = computed(() =>
+  Math.round(usage.value.usedFraction * 100)
+)
 
-const hasRefillsDate = computed(() => refillsDateShort.value !== '')
-
-const refillsLabel = computed(() =>
-  hasRefillsDate.value
-    ? t('subscription.refillsDate', { date: refillsDateShort.value })
-    : t('subscription.refillsNextCycle')
+const cycleStatusLabel = computed(() =>
+  t('subscription.percentUsed', { percent: cycleUsedPercent.value })
 )
 
 const formatCreditCount = (value: number) =>
@@ -270,82 +211,58 @@ const formatCreditCount = (value: number) =>
     numberOptions: { maximumFractionDigits: 0 }
   })
 
-const monthlyTotalDisplay = computed(() => {
-  const total = monthlyTotalCredits.value
+const allowanceTotalDisplay = computed(() => {
+  const total = allowanceTotalCredits.value
   return total === null ? '—' : formatCreditCount(total)
 })
 
 const usedDisplay = computed(() => formatCreditCount(usage.value.used))
-
-const compactNumber = computed(
-  () => new Intl.NumberFormat(locale.value, { notation: 'compact' })
-)
-const monthlyRemainingCompact = computed(() =>
-  compactNumber.value.format(monthlyBonusCreditsValue.value)
-)
-const monthlyTotalCompact = computed(() => {
-  const total = monthlyTotalCredits.value
-  return total === null ? '—' : compactNumber.value.format(total)
-})
 
 const displayTotal = computed(() => (zeroState ? '0' : totalCredits.value))
 const displayPrepaid = computed(() => (zeroState ? '0' : prepaidCredits.value))
 const usedBarWidth = computed(
   () => `${(usage.value.usedFraction * 100).toFixed(2)}%`
 )
-const monthlyUsageLabel = computed(() =>
-  t('subscription.monthlyUsageProgress', {
+const cycleUsageLabel = computed(() =>
+  t('subscription.usageProgress', {
     used: usedDisplay.value,
-    total: monthlyTotalDisplay.value
+    total: allowanceTotalDisplay.value
   })
 )
 
-const showBreakdown = computed(() => isActiveSubscription.value && !zeroState)
+const showBreakdown = computed(
+  () => (isActiveSubscription.value || frozen) && !zeroState
+)
 const showBar = computed(
   () =>
     showBreakdown.value &&
-    monthlyTotalCredits.value !== null &&
-    monthlyTotalCredits.value > 0
+    allowanceTotalCredits.value !== null &&
+    allowanceTotalCredits.value > 0
 )
 const showActionButton = computed(
-  () => isActiveSubscription.value && !zeroState && permissions.value.canTopUp
+  () =>
+    (isActiveSubscription.value || frozen) &&
+    !zeroState &&
+    permissions.value.canTopUp
 )
 
-const isMonthlyDepleted = computed(
+const isAllowanceDepleted = computed(
   () =>
+    !isPaused.value &&
+    !frozen &&
     showBar.value &&
     !isLoadingBalance.value &&
     balance.value != null &&
     monthlyBonusCreditsValue.value <= 0
 )
-const isOutOfCredits = computed(
-  () => isMonthlyDepleted.value && prepaidCreditsValue.value <= 0
-)
 const isSpendingAdditional = computed(
-  () => isMonthlyDepleted.value && prepaidCreditsValue.value > 0
+  () => isAllowanceDepleted.value && prepaidCreditsValue.value > 0
 )
-
-const emptyStateNotice = computed(() => {
-  if (isOutOfCredits.value) {
-    return {
-      title: hasRefillsDate.value
-        ? t('subscription.outOfCreditsTitle', { date: refillsDateShort.value })
-        : t('subscription.outOfCreditsTitleNoDate'),
-      description: t('subscription.outOfCreditsDescription')
-    }
-  }
-  if (isMonthlyDepleted.value) {
-    return {
-      title: hasRefillsDate.value
-        ? t('subscription.monthlyCreditsUsedUpTitle', {
-            date: refillsDateShort.value
-          })
-        : t('subscription.monthlyCreditsUsedUpTitleNoDate'),
-      description: t('subscription.monthlyCreditsUsedUpDescription')
-    }
-  }
-  return null
-})
+// Fully out (monthly depleted and no additional credits left): emphasize the
+// add-credits button. Spending-additional keeps the quieter tertiary.
+const isOutOfCredits = computed(
+  () => isAllowanceDepleted.value && prepaidCreditsValue.value <= 0
+)
 
 const handleRefresh = wrapWithErrorHandlingAsync(async () => {
   await Promise.all([fetchBalance(), fetchStatus()])

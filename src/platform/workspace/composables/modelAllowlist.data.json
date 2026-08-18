@@ -1,0 +1,3730 @@
+[
+  {
+    "name": "lilylilith/AnyPose - 2511-AnyPose-base-000006250",
+    "type": "lora"
+  },
+  {
+    "name": "lilylilith/AnyPose - 2511-AnyPose-helper-00006000",
+    "type": "lora"
+  },
+  {
+    "name": "yuvraj108c/ComfyUI-Upscaler-Onnx - 4x-AnimeSharp",
+    "type": "onnx"
+  },
+  {
+    "name": "yuvraj108c/ComfyUI-Upscaler-Onnx - 4x-ClearRealityV1",
+    "type": "onnx"
+  },
+  { "name": "Kim2091/ClearRealityV1 - 4x-ClearRealityV1", "type": "upscaler" },
+  {
+    "name": "yuvraj108c/ComfyUI-Upscaler-Onnx - 4x-UltraSharp",
+    "type": "onnx"
+  },
+  { "name": "Kim2091/UltraSharp - 4x-UltraSharp", "type": "upscaler" },
+  {
+    "name": "yuvraj108c/ComfyUI-Upscaler-Onnx - 4x-UltraSharpV2_Lite",
+    "type": "onnx"
+  },
+  {
+    "name": "yuvraj108c/ComfyUI-Upscaler-Onnx - 4x-WTP-UDS-Esrgan",
+    "type": "onnx"
+  },
+  {
+    "name": "yuvraj108c/ComfyUI-Upscaler-Onnx - 4x_foolhardy_Remacri",
+    "type": "onnx"
+  },
+  {
+    "name": "yuvraj108c/ComfyUI-Upscaler-Onnx - 4x_NMKD-Siax_200k",
+    "type": "onnx"
+  },
+  { "name": "uwg/upscaler - 4x_NMKD-Siax_200k", "type": "upscaler" },
+  {
+    "name": "yuvraj108c/ComfyUI-Upscaler-Onnx - 4x_RealisticRescaler_100000_G",
+    "type": "onnx"
+  },
+  {
+    "name": "yuvraj108c/ComfyUI-Upscaler-Onnx - 4x_UniversalUpscalerV2-Neutral_115000_swaG",
+    "type": "onnx"
+  },
+  {
+    "name": "yuvraj108c/ComfyUI-Upscaler-Onnx - 4xNomos2_otf_esrgan",
+    "type": "onnx"
+  },
+  { "name": "yo9otatara/model - 4xNomosUniDAT_otf", "type": "upscaler" },
+  { "name": "512 inpainting ema", "type": "checkpoint" },
+  { "name": "8x_NMKD-Faces_160000_G Upscaler", "type": "upscaler" },
+  {
+    "name": "Comfy-Org/ace_step_1.5_ComfyUI_files - ace_1.5_vae",
+    "type": "vae"
+  },
+  {
+    "name": "Comfy-Org/ace_step_1.5_ComfyUI_files - ace_step_1.5_turbo_aio",
+    "type": "checkpoint"
+  },
+  {
+    "name": "Comfy-Org/ACE-Step_ComfyUI_repackaged - ace_step_v1_3.5b",
+    "type": "checkpoint"
+  },
+  {
+    "name": "Comfy-Org/ace_step_1.5_ComfyUI_files - acestep_v1.5_turbo",
+    "type": "diffusion_model"
+  },
+  { "name": "Comfy-Org/HiDream-I1_ComfyUI - ae", "type": "vae" },
+  {
+    "name": "circlestone-labs/Anima - anima-preview",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "wangfuyun/AnimateLCM - AnimateLCM_sd15_t2v",
+    "type": "animatediff"
+  },
+  { "name": "wangfuyun/AnimateLCM - AnimateLCM_sd15_t2v_lora", "type": "lora" },
+  {
+    "name": "lrzjason/Anything2Real_2601 - anything2real_2601",
+    "type": "lora"
+  },
+  { "name": "ArchitectureRealMix", "type": "checkpoint" },
+  { "name": "AWPainting", "type": "checkpoint" },
+  { "name": "big lama", "type": "inpaint" },
+  { "name": "blindbox/\u5927\u6982\u662f\u76f2\u76d2", "type": "lora" },
+  {
+    "name": "Comfy-Org/HunyuanVideo_1.5_repackaged - byt5_small_glyphxl_fp16",
+    "type": "text_encoder"
+  },
+  {
+    "name": "Comfy-Org/HunyuanVideo_1.5_repackaged - capybara_v0.1",
+    "type": "diffusion_model"
+  },
+  { "name": "CarDos Anime", "type": "checkpoint" },
+  { "name": "Kijai/ChatGLM3-safetensors - chatglm3-4bit", "type": "llm" },
+  { "name": "Kijai/ChatGLM3-safetensors - chatglm3-8bit", "type": "llm" },
+  { "name": "Kijai/ChatGLM3-safetensors - chatglm3-fp16", "type": "llm" },
+  { "name": "ResembleAI/chatterbox - Cangjie5_TC", "type": "tts" },
+  { "name": "ResembleAI/chatterbox - conds", "type": "tts" },
+  {
+    "name": "ResembleAI/chatterbox - grapheme_mtl_merged_expanded_v1",
+    "type": "tts"
+  },
+  { "name": "ResembleAI/chatterbox - s3gen", "type": "tts" },
+  { "name": "ResembleAI/chatterbox - t3_mtl23ls_v2", "type": "tts" },
+  { "name": "ResembleAI/chatterbox - ve", "type": "tts" },
+  { "name": "ResembleAI/chatterbox - conds", "type": "tts" },
+  { "name": "ResembleAI/chatterbox - s3gen", "type": "tts" },
+  { "name": "ResembleAI/chatterbox - t3_cfg", "type": "tts" },
+  { "name": "ResembleAI/chatterbox - tokenizer", "type": "tts" },
+  { "name": "ResembleAI/chatterbox - ve", "type": "tts" },
+  { "name": "ResembleAI/chatterbox-turbo - added_tokens", "type": "tts" },
+  { "name": "ResembleAI/chatterbox-turbo - conds", "type": "tts" },
+  { "name": "ResembleAI/chatterbox-turbo - merges", "type": "tts" },
+  { "name": "ResembleAI/chatterbox-turbo - s3gen_meanflow", "type": "tts" },
+  { "name": "ResembleAI/chatterbox-turbo - special_tokens_map", "type": "tts" },
+  { "name": "ResembleAI/chatterbox-turbo - t3_turbo_v1", "type": "tts" },
+  { "name": "ResembleAI/chatterbox-turbo - tokenizer_config", "type": "tts" },
+  { "name": "ResembleAI/chatterbox-turbo - ve", "type": "tts" },
+  { "name": "ResembleAI/chatterbox-turbo - vocab", "type": "tts" },
+  { "name": "ResembleAI/chatterbox - conds", "type": "tts" },
+  { "name": "ResembleAI/chatterbox - s3gen", "type": "tts" },
+  {
+    "name": "Comfy-Org/Chroma1-Radiance_Repackaged - chroma-radiance-x0",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "lodestones/Chroma - chroma-unlocked-v33",
+    "type": "diffusion_model"
+  },
+  { "name": "Chroma1 HD fp8 scaled rev2", "type": "diffusion_model" },
+  {
+    "name": "Comfy-Org/Chroma1-HD_repackaged - Chroma1-HD-fp8mixed",
+    "type": "diffusion_model"
+  },
+  { "name": "lodestones/Chroma1-HD - Chroma1-HD", "type": "diffusion_model" },
+  { "name": "Chroma1 Radiance v0.3", "type": "diffusion_model" },
+  { "name": "Chroma1 Radiance v0.4", "type": "diffusion_model" },
+  {
+    "name": "Comfy-Org/Wan_2.2_ComfyUI_Repackaged - chrono_edit_14B_fp16",
+    "type": "diffusion_model"
+  },
+  { "name": "chronoedit distill lora", "type": "lora" },
+  { "name": "h94/IP-Adapter - model", "type": "clip_vision" },
+  { "name": "h94/IP-Adapter - model", "type": "clip_vision" },
+  {
+    "name": "Kijai/CLIPVisionModelWithProjection_fp16 - CLIP-ViT-H-fp16",
+    "type": "clip_vision"
+  },
+  {
+    "name": "Kwai-Kolors/Kolors-IP-Adapter-Plus - pytorch_model",
+    "type": "clip_vision"
+  },
+  {
+    "name": "Comfy-Org/HiDream-I1_ComfyUI - clip_g_hidream",
+    "type": "text_encoder"
+  },
+  {
+    "name": "comfyanonymous/flux_text_encoders - clip_l",
+    "type": "text_encoder"
+  },
+  {
+    "name": "Comfy-Org/HiDream-I1_ComfyUI - clip_l_hidream",
+    "type": "text_encoder"
+  },
+  {
+    "name": "comfyanonymous/clip_vision_g - clip_vision_g",
+    "type": "clip_vision"
+  },
+  {
+    "name": "Comfy-Org/Wan_2.1_ComfyUI_repackaged - clip_vision_h",
+    "type": "clip_vision"
+  },
+  { "name": "openai/clip-vit-large-patch14 - config", "type": "clip" },
+  { "name": "openai/clip-vit-large-patch14 - merges", "type": "clip" },
+  { "name": "openai/clip-vit-large-patch14 - model", "type": "clip" },
+  {
+    "name": "openai/clip-vit-large-patch14 - preprocessor_config",
+    "type": "clip"
+  },
+  {
+    "name": "openai/clip-vit-large-patch14 - special_tokens_map",
+    "type": "clip"
+  },
+  {
+    "name": "openai/clip-vit-large-patch14 - tokenizer_config",
+    "type": "clip"
+  },
+  { "name": "openai/clip-vit-large-patch14 - tokenizer", "type": "clip" },
+  { "name": "openai/clip-vit-large-patch14 - vocab", "type": "clip" },
+  {
+    "name": "TheDenk/cogvideox-2b-controlnet-canny-v1 - config",
+    "type": "controlnet"
+  },
+  {
+    "name": "TheDenk/cogvideox-2b-controlnet-canny-v1 - diffusion_pytorch_model",
+    "type": "controlnet"
+  },
+  {
+    "name": "TheDenk/cogvideox-2b-controlnet-hed-v1 - config",
+    "type": "controlnet"
+  },
+  {
+    "name": "TheDenk/cogvideox-2b-controlnet-hed-v1 - diffusion_pytorch_model",
+    "type": "controlnet"
+  },
+  {
+    "name": "TheDenk/cogvideox-5b-controlnet-canny-v1 - config",
+    "type": "controlnet"
+  },
+  {
+    "name": "TheDenk/cogvideox-5b-controlnet-canny-v1 - diffusion_pytorch_model",
+    "type": "controlnet"
+  },
+  {
+    "name": "TheDenk/cogvideox-5b-controlnet-hed-v1 - config",
+    "type": "controlnet"
+  },
+  {
+    "name": "TheDenk/cogvideox-5b-controlnet-hed-v1 - diffusion_pytorch_model",
+    "type": "controlnet"
+  },
+  { "name": "Kijai/CogVideoX-Fun-pruned - cogvideox_vae", "type": "cogvideo" },
+  {
+    "name": "Kijai/CogVideoX_GGUF - CogVideoX_5b_1_5_I2V_GGUF_Q4_0",
+    "type": "video"
+  },
+  {
+    "name": "Kijai/CogVideoX_GGUF - CogVideoX_5b_fun_1_1_GGUF_Q4_0",
+    "type": "video"
+  },
+  {
+    "name": "Kijai/CogVideoX_GGUF - CogVideoX_5b_fun_1_1_Pose_GGUF_Q4_0",
+    "type": "video"
+  },
+  {
+    "name": "Kijai/CogVideoX_GGUF - CogVideoX_5b_I2V_GGUF_Q4_0",
+    "type": "video"
+  },
+  {
+    "name": "Kijai/CogVideoX_GGUF - CogVideoX_5b_Interpolation_GGUF_Q4_0",
+    "type": "video"
+  },
+  {
+    "name": "Kijai/CogVideoX_GGUF - CogVideoX_5b_Tora_GGUF_Q4_0",
+    "type": "video"
+  },
+  {
+    "name": "MinusZoneAI/ComfyUI-CogVideoX-MZ - CogVideoX_5b_bf16",
+    "type": "video"
+  },
+  {
+    "name": "MinusZoneAI/ComfyUI-CogVideoX-MZ - CogVideoX_5b_fp8_4em",
+    "type": "video"
+  },
+  {
+    "name": "MinusZoneAI/ComfyUI-CogVideoX-MZ - CogVideoX_5b_fun_GGUF_Q4_0",
+    "type": "video"
+  },
+  {
+    "name": "MinusZoneAI/ComfyUI-CogVideoX-MZ - CogVideoX_5b_GGUF_Q4_0",
+    "type": "video"
+  },
+  { "name": "Kijai/CogVideoX-Fun-pruned - cogvideox_vae", "type": "vae" },
+  {
+    "name": "do9/collage_lora_qwenedit - collage_qwenedit_lora_V1",
+    "type": "lora"
+  },
+  {
+    "name": "comfyanonymous/ControlNet-v1-1_fp16_safetensors - control_v11f1p_sd15_depth_fp16",
+    "type": "controlnet"
+  },
+  {
+    "name": "comfyanonymous/ControlNet-v1-1_fp16_safetensors - control_v11p_sd15_openpose_fp16",
+    "type": "controlnet"
+  },
+  {
+    "name": "comfyanonymous/ControlNet-v1-1_fp16_safetensors - control_v11p_sd15_scribble_fp16",
+    "type": "controlnet"
+  },
+  { "name": "ControlNet T2I-Adapter Models", "type": "controlnet" },
+  {
+    "name": "Comfy-Org/Cosmos_Predict2_repackaged - cosmos_predict2_2B_t2i",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/Cosmos_Predict2_repackaged - cosmos_predict2_2B_video2world_480p_16fps",
+    "type": "diffusion_model"
+  },
+  { "name": "depth-anything/DA3-BASE - model", "type": "depth_estimation" },
+  {
+    "name": "depth-anything/DA3-GIANT-1.1 - model",
+    "type": "depth_estimation"
+  },
+  {
+    "name": "depth-anything/DA3-LARGE-1.1 - model",
+    "type": "depth_estimation"
+  },
+  { "name": "depth-anything/DA3-SMALL - model", "type": "depth_estimation" },
+  {
+    "name": "depth-anything/DA3METRIC-LARGE - model",
+    "type": "depth_estimation"
+  },
+  {
+    "name": "depth-anything/DA3MONO-LARGE - model",
+    "type": "depth_estimation"
+  },
+  {
+    "name": "depth-anything/DA3NESTED-GIANT-LARGE-1.1 - model",
+    "type": "depth_estimation"
+  },
+  {
+    "name": "Kijai/DynamiCrafter_pruned - dynamicrafter_1024_fp16_pruned",
+    "type": "checkpoint"
+  },
+  {
+    "name": "Kijai/DynamiCrafter_pruned - dynamicrafter_512_fp16_pruned",
+    "type": "checkpoint"
+  },
+  {
+    "name": "Kijai/DynamiCrafter_pruned - dynamicrafter_512_interp_fp16_pruned",
+    "type": "checkpoint"
+  },
+  {
+    "name": "Kijai/DynamiCrafter_pruned - dynamicrafter-CIL-1024-no-watermark-pruned-fp16",
+    "type": "checkpoint"
+  },
+  {
+    "name": "Kijai/DynamiCrafter_pruned - dynamicrafter-CIL-512-no-watermark-fixed-pruned-fp16",
+    "type": "checkpoint"
+  },
+  {
+    "name": "Kijai/DynamiCrafter_pruned - sketch_encoder-fp16",
+    "type": "checkpoint"
+  },
+  {
+    "name": "fofr/comfyui - stable-diffusion-2-1-clip-fp16",
+    "type": "text_encoder"
+  },
+  {
+    "name": "Kijai/DynamiCrafter_pruned - tooncrafter_512_interp-pruned-fp16",
+    "type": "checkpoint"
+  },
+  {
+    "name": "Kijai/DepthAnythingV2-safetensors - depth_anything_v2_metric_hypersim_vitl_fp32",
+    "type": "depth_estimation"
+  },
+  {
+    "name": "Kijai/DepthAnythingV2-safetensors - depth_anything_v2_metric_vkitti_vitl_fp32",
+    "type": "depth_estimation"
+  },
+  {
+    "name": "Kijai/DepthAnythingV2-safetensors - depth_anything_v2_vitb_fp16",
+    "type": "depth_estimation"
+  },
+  {
+    "name": "Kijai/DepthAnythingV2-safetensors - depth_anything_v2_vitb_fp32",
+    "type": "depth_estimation"
+  },
+  {
+    "name": "Nap/depth_anything_v2_vitg - depth_anything_v2_vitg_fp32",
+    "type": "depth_estimation"
+  },
+  {
+    "name": "Kijai/DepthAnythingV2-safetensors - depth_anything_v2_vitl_fp16",
+    "type": "depth_estimation"
+  },
+  {
+    "name": "Kijai/DepthAnythingV2-safetensors - depth_anything_v2_vitl_fp32",
+    "type": "depth_estimation"
+  },
+  {
+    "name": "Kijai/DepthAnythingV2-safetensors - depth_anything_v2_vits_fp16",
+    "type": "depth_estimation"
+  },
+  {
+    "name": "Kijai/DepthAnythingV2-safetensors - depth_anything_v2_vits_fp32",
+    "type": "depth_estimation"
+  },
+  { "name": "yo9otatara/model - DF2K_JPEG", "type": "upscaler" },
+  {
+    "name": "Dream Creation Virtual 3D | E-commerce Scene Key Visual Poster | Blind Box IP Display C4D Super Visual",
+    "type": "checkpoint"
+  },
+  { "name": "DreamShaper", "type": "checkpoint" },
+  { "name": "Lykon/DreamShaper - DreamShaper_8_pruned", "type": "checkpoint" },
+  {
+    "name": "hr16/DWPose-TorchScript-BatchSize5 - dw-ll_ucoco_384_bs5.torchscript",
+    "type": "pose_estimation"
+  },
+  { "name": "numz/SeedVR2_comfyUI - ema_vae_fp16", "type": "video" },
+  { "name": "jonathandinu/face-parsing - config", "type": "face_parsing" },
+  { "name": "jonathandinu/face-parsing - model", "type": "face_parsing" },
+  {
+    "name": "jonathandinu/face-parsing - preprocessor_config",
+    "type": "face_parsing"
+  },
+  { "name": "Bingsu/adetailer - face_yolov8m", "type": "detection" },
+  { "name": "Bingsu/adetailer - face_yolov8n", "type": "detection" },
+  {
+    "name": "Kijai/WanVideo_comfy - fantasytalking_fp16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - FastWan_T2V_14B_480p_lora_rank_128_bf16",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - FastWan_T2V_14B_480p_lora_rank_16_bf16",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - FastWan_T2V_14B_480p_lora_rank_64_bf16",
+    "type": "lora"
+  },
+  {
+    "name": "JunhaoZhuang/FlashVSR - diffusion_pytorch_model_streaming_dmd",
+    "type": "flashvsr"
+  },
+  { "name": "JunhaoZhuang/FlashVSR - LQ_proj_in", "type": "flashvsr" },
+  { "name": "JunhaoZhuang/FlashVSR - TCDecoder", "type": "flashvsr" },
+  {
+    "name": "JunhaoZhuang/FlashVSR-v1.1 - diffusion_pytorch_model_streaming_dmd",
+    "type": "flashvsr-v1.1"
+  },
+  {
+    "name": "JunhaoZhuang/FlashVSR-v1.1 - LQ_proj_in",
+    "type": "flashvsr-v1.1"
+  },
+  { "name": "JunhaoZhuang/FlashVSR-v1.1 - TCDecoder", "type": "flashvsr-v1.1" },
+  {
+    "name": "JunhaoZhuang/FlashVSR-v1.1 - Wan2.1_VAE",
+    "type": "flashvsr-v1.1"
+  },
+  { "name": "JunhaoZhuang/FlashVSR - Wan2.1_VAE", "type": "flashvsr" },
+  {
+    "name": "fal/flux-2-klein-4B-background-remove-lora - flux-background-remove-lora",
+    "type": "lora"
+  },
+  {
+    "name": "black-forest-labs/FLUX.2-klein-4b-fp8 - flux-2-klein-4b-fp8",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "fal/flux-2-klein-4B-object-remove-lora - flux-object-remove-lora",
+    "type": "lora"
+  },
+  {
+    "name": "fal/flux-2-klein-4B-outpaint-lora - flux-outpaint-lora",
+    "type": "lora"
+  },
+  {
+    "name": "fal/flux-2-klein-4B-zoom-lora - flux-red-zoom-lora",
+    "type": "lora"
+  },
+  {
+    "name": "fal/flux-2-klein-4b-spritesheet-lora - flux-spritesheet-lora",
+    "type": "lora"
+  },
+  {
+    "name": "Comfy-Org/flux2-klein-4B - flux-2-klein-4b",
+    "type": "diffusion_model"
+  },
+  { "name": "flux 2 klein 9b", "type": "diffusion_model" },
+  {
+    "name": "black-forest-labs/FLUX.2-klein-base-4b-fp8 - flux-2-klein-base-4b-fp8",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/flux2-klein-4B - flux-2-klein-base-4b",
+    "type": "diffusion_model"
+  },
+  { "name": "flux 2 klein base 9b fp8", "type": "diffusion_model" },
+  {
+    "name": "Comfy-Org/OneReward_repackaged - flux.1-fill-dev-OneReward-transformer_fp8",
+    "type": "diffusion_model"
+  },
+  { "name": "2000s Analog Core", "type": "lora" },
+  { "name": "80s Fantasy Movie", "type": "lora" },
+  {
+    "name": "Add Micro Details - Concept (Illustrious | Pony | NoobAI)",
+    "type": "lora"
+  },
+  { "name": "Adjust details AND photorealism", "type": "lora" },
+  { "name": "Amateur Photography", "type": "lora" },
+  { "name": "better faces cultures sdxl/FLUX", "type": "lora" },
+  { "name": "Boreal-FD: (Boring Reality Flux-Dev LoRA)", "type": "lora" },
+  { "name": "flux1 canny dev", "type": "diffusion_model" },
+  {
+    "name": "Cinematic Kodak Motion Picture \"Film Still\" Style XL + F1D + Illu + Pony + zit",
+    "type": "lora"
+  },
+  { "name": "Cinematic Shot\u2728", "type": "lora" },
+  { "name": "Comic book", "type": "lora" },
+  { "name": "Crystals [FLUX+SDXL+PONY+1.5]", "type": "lora" },
+  {
+    "name": "Cucoloris casting shadow (lighting modifiers) style XL + SD1.5 + F1D + Illu + Pony + zit",
+    "type": "lora"
+  },
+  { "name": "Cyberpunk Anime Style", "type": "lora" },
+  {
+    "name": "SDXL / Flux.1 D - Matte (Vanta)Black - Experiment",
+    "type": "lora"
+  },
+  { "name": "flux1 depth dev lora", "type": "lora" },
+  {
+    "name": "Detailed Perfection style (Hands + Feet + Face + Body + All in one) XL + F1D + SD1.5 + Pony + Illu + zit + zib",
+    "type": "lora"
+  },
+  {
+    "name": "Detailed style XL + F1D + SD1.5 (Hand focus + All in One) \"Detailed Perfection style extension\"",
+    "type": "lora"
+  },
+  { "name": "Detailifier - SD3.5/Flux/SDXL/Pony/(SD1.5)", "type": "lora" },
+  { "name": "Comfy-Org/flux1-dev - flux1-dev-fp8", "type": "checkpoint" },
+  { "name": "flux1 dev kontext", "type": "diffusion_model" },
+  {
+    "name": "Comfy-Org/flux1-kontext-dev_ComfyUI - flux1-dev-kontext_fp8_scaled",
+    "type": "diffusion_model"
+  },
+  { "name": "flux1 dev", "type": "diffusion_model" },
+  { "name": "Dissolve Style [FLUX+SDXL+SD1.5]", "type": "lora" },
+  { "name": "DreamART Style LORA", "type": "lora" },
+  { "name": "EYE DETAIL FLUX LORA  (& INPAINT)", "type": "lora" },
+  {
+    "name": "Facial Expressions \"Realistic + Anime\" (detailed emotions) style XL + SD1.5 + F1D + Illu + Pony + zit",
+    "type": "lora"
+  },
+  { "name": "FLUX \ud83c\udf1fFaeTastic Details", "type": "lora" },
+  {
+    "name": "Feet XL + SD 1.5 + F1D + Pony + Illustrious + zit",
+    "type": "lora"
+  },
+  { "name": "flux1 fill dev", "type": "diffusion_model" },
+  { "name": "Flat Colour Anime", "type": "lora" },
+  { "name": "Ghibli style Illustrious & Flux & PDXL", "type": "lora" },
+  { "name": "Granblue fantasy style", "type": "lora" },
+  {
+    "name": "Guns (Lots Of Guns) (Choose from list) XL + F1D + zit",
+    "type": "lora"
+  },
+  { "name": "Hand Detail FLUX & XL", "type": "lora" },
+  {
+    "name": "Hands XL + SD 1.5 + F1D + Pony + Illustrious + zit",
+    "type": "lora"
+  },
+  {
+    "name": "Hourglass Body Shape SD1.5/SDXL/PONY/FLUX | olaz",
+    "type": "lora"
+  },
+  { "name": "Hyperdetailed Colored Pencil", "type": "lora" },
+  {
+    "name": "iPhone Photo [FLUX\u2022SD3.5L] (Realism booster)",
+    "type": "lora"
+  },
+  {
+    "name": "Comfy-Org/FLUX.1-Krea-dev_ComfyUI - flux1-krea-dev_fp8_scaled",
+    "type": "diffusion_model"
+  },
+  { "name": "Lenovo UltraReal", "type": "lora" },
+  {
+    "name": "Character Design Sheet (HELPER) (3-PERSPECTIVES)+(COLOR PALETTE) - Z-IMAGE TURBO | Illustrious XL | FLUX | XL PONY | SD 1.5 - by YeiyeiArt",
+    "type": "lora"
+  },
+  {
+    "name": "FLUX Image Upgrader / Detail Maximizer / Contrast Fix for low CFG [+ILLUSTRIOUS / SDXL / SD 1.5]",
+    "type": "lora"
+  },
+  {
+    "name": "FLUX [pro] 1.1 Style Lora - Extreme Detailer for [FLUX + ILLUSTRIOUS]",
+    "type": "lora"
+  },
+  { "name": "Glass Sculptures", "type": "lora" },
+  {
+    "name": "Gundam RX78-2 outfit style \u9ad8\u8fbeRX78-2\u5916\u89c2\u98ce\u683c",
+    "type": "lora"
+  },
+  {
+    "name": "F.2 Midjourney V6.1 meets FLUX \ud83d\uddbc\ufe0f [+ILLUSTRIOUS / SDXL]",
+    "type": "lora"
+  },
+  {
+    "name": "Neurocore Anime Shadow Circuit by ChronoKnight - [FLUX, IL, ZIT]",
+    "type": "lora"
+  },
+  { "name": "Niji semi realism", "type": "lora" },
+  { "name": "Rawfully Stylish (dramatic lighting)", "type": "lora" },
+  { "name": "Retro Anime Flux - Style", "type": "lora" },
+  { "name": "zyd232's Ink Style", "type": "lora" },
+  { "name": "Niji anime style [illustrious|Flux|Pony]", "type": "lora" },
+  { "name": "\u5a1c\u4e4c\u65af\u5609nwsj_realistic", "type": "lora" },
+  { "name": "PhotorealTouch", "type": "lora" },
+  { "name": "Pokemon Trainer Sprite PixelArt", "type": "lora" },
+  {
+    "name": "FLUX -\u2013 Polyhedron_all // Perfect skin. Perfect hands. Perfect eyes. (m/f)",
+    "type": "lora"
+  },
+  { "name": "Realistic/Aesthetic Poses FluxDev", "type": "lora" },
+  {
+    "name": "Realistic Skin Texture style (Detailed Skin) XL + SD1.5 + F1D + Pony + Illu + Zit",
+    "type": "lora"
+  },
+  { "name": "flux1 redux dev", "type": "style_model" },
+  {
+    "name": "Comfy-Org/flux1-schnell - flux1-schnell-fp8",
+    "type": "checkpoint"
+  },
+  { "name": "flux1 schnell", "type": "diffusion_model" },
+  { "name": "Sci-fi Environments", "type": "lora" },
+  { "name": "Sinfully Stylish (dramatic lighting)", "type": "lora" },
+  { "name": "Smol Animals [FLUX+SDXL+1.5]", "type": "lora" },
+  {
+    "name": "[Style filter] Xu Er thick paint composition light texture enhancement",
+    "type": "lora"
+  },
+  {
+    "name": "The Space Marines Warhammer 40K | Flux + Pony + illustrious",
+    "type": "lora"
+  },
+  { "name": "UltraRealistic Lora Project", "type": "lora" },
+  {
+    "name": "Velvet's Mythic Fantasy Styles | Flux + Pony + illustrious",
+    "type": "lora"
+  },
+  { "name": "Wizard's Vintage Comic Book Cover", "type": "lora" },
+  { "name": "XLabs Flux Realism LoRA", "type": "lora" },
+  { "name": "yo9otatara/model - Flux1Dev_CNup-FP8", "type": "controlnet" },
+  {
+    "name": "Boreal-Flux-Dev2 (Boring Reality LoRA for Flux.2 Dev)",
+    "type": "lora"
+  },
+  { "name": "flux2 dev", "type": "diffusion_model" },
+  { "name": "Herbst Photo - analog film", "type": "lora" },
+  {
+    "name": "dx8152/Flux2-Klein-9B-Enhanced-Details - realistic",
+    "type": "lora"
+  },
+  { "name": "Lenovo UltraReal", "type": "lora" },
+  { "name": "Neo-Victorian | Style | Flux.2", "type": "lora" },
+  { "name": "flux2 vae", "type": "vae" },
+  {
+    "name": "Wanderer's Detailed Portraits | FLUX + ZiT + Klein",
+    "type": "lora"
+  },
+  { "name": "YFG ChatGPT 4o Style [Flux | ZIT]", "type": "lora" },
+  { "name": "YFG Fonts - Japanese Manga Posters [Flux]", "type": "lora" },
+  { "name": "YFG Soares [FLUX | ZIT]", "type": "lora" },
+  { "name": "YFG Spy World 50s [Flux]", "type": "lora" },
+  {
+    "name": "ostris/flux2_berthe_morisot - flux2_berthe_morisot",
+    "type": "lora"
+  },
+  { "name": "flux2 dev fp8mixed", "type": "diffusion_model" },
+  { "name": "Comfy-Org/flux2-dev - Flux2TurboComfyv2", "type": "lora" },
+  {
+    "name": "ByteZSzn/Flux.2-Turbo-ComfyUI - Flux_2-Turbo-LoRA_comfyui",
+    "type": "lora"
+  },
+  {
+    "name": "lllyasviel/fooocus_inpaint - fooocus_inpaint_head",
+    "type": "inpaint"
+  },
+  { "name": "lllyasviel/fooocus_inpaint - fooocus_lama", "type": "inpaint" },
+  { "name": "Comfy-Org/ltx-2 - gemma_3_12B_it", "type": "text_encoder" },
+  {
+    "name": "Comfy-Org/ltx-2 - gemma_3_12B_it_fp4_mixed",
+    "type": "text_encoder"
+  },
+  {
+    "name": "Comfy-Org/ltx-2 - gemma_3_12B_it_fp8_scaled",
+    "type": "text_encoder"
+  },
+  {
+    "name": "Comfy-Org/NewBie-image-Exp0.1_repackaged - gemma_3_4b_it_bf16",
+    "type": "text_encoder"
+  },
+  {
+    "name": "comfyanonymous/GLIGEN_pruned_safetensors - gligen_sd14_textbox_pruned",
+    "type": "gligen"
+  },
+  {
+    "name": "mcmonkey/google_t5-v1_1-xxl_encoderonly - t5xxl_fp8_e4m3fn",
+    "type": "text_encoder"
+  },
+  { "name": "Bingsu/adetailer - hand_yolov8s", "type": "detection" },
+  {
+    "name": "Comfy-Org/HiDream-I1_ComfyUI - hidream_e1_1_bf16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/HiDream-I1_ComfyUI - hidream_e1_full_bf16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/HiDream-I1_ComfyUI - hidream_i1_dev_fp8",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/HiDream-I1_ComfyUI - hidream_i1_fast_fp8",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/HiDream-I1_ComfyUI - hidream_i1_full_fp8",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/HuMo_ComfyUI - humo_17B_fp8_e4m3fn",
+    "type": "diffusion_model"
+  },
+  { "name": "tencent/Hunyuan3D-2mv - model.fp16", "type": "checkpoint" },
+  {
+    "name": "Comfy-Org/hunyuan3D_2.0_repackaged - hunyuan3d-dit-v2-mv-turbo_fp16",
+    "type": "checkpoint"
+  },
+  { "name": "tencent/Hunyuan3D-2mv - model.fp16", "type": "checkpoint" },
+  {
+    "name": "Comfy-Org/hunyuan3D_2.0_repackaged - hunyuan3d-dit-v2-mv_fp16",
+    "type": "checkpoint"
+  },
+  { "name": "tencent/Hunyuan3D-2 - model.fp16", "type": "checkpoint" },
+  {
+    "name": "Comfy-Org/hunyuan3D_2.0_repackaged - hunyuan3d-dit-v2_fp16",
+    "type": "checkpoint"
+  },
+  {
+    "name": "Comfy-Org/hunyuan3D_2.1_repackaged - hunyuan_3d_v2.1",
+    "type": "checkpoint"
+  },
+  {
+    "name": "Comfy-Org/HunyuanVideo_repackaged - hunyuan_video_t2v_720p_bf16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/HunyuanVideo_repackaged - hunyuan_video_vae_bf16",
+    "type": "vae"
+  },
+  {
+    "name": "Kijai/HunyuanVideo_comfy - hunyuan_video_vae_bf16",
+    "type": "vae"
+  },
+  {
+    "name": "Comfy-Org/HunyuanVideo_1.5_repackaged - hunyuanvideo1.5_1080p_sr_distilled_fp16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/HunyuanVideo_1.5_repackaged - hunyuanvideo1.5_480p_i2v_cfg_distilled_fp16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/HunyuanVideo_1.5_repackaged - hunyuanvideo1.5_480p_i2v_cfg_distilled_fp8_scaled",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/HunyuanVideo_1.5_repackaged - hunyuanvideo1.5_480p_i2v_fp16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/HunyuanVideo_1.5_repackaged - hunyuanvideo1.5_480p_t2v_cfg_distilled_fp16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/HunyuanVideo_1.5_repackaged - hunyuanvideo1.5_480p_t2v_cfg_distilled_fp8_scaled",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/HunyuanVideo_1.5_repackaged - hunyuanvideo1.5_480p_t2v_fp16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/HunyuanVideo_1.5_repackaged - hunyuanvideo1.5_720p_i2v_cfg_distilled_fp16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/HunyuanVideo_1.5_repackaged - hunyuanvideo1.5_720p_i2v_cfg_distilled_fp8_scaled",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/HunyuanVideo_1.5_repackaged - hunyuanvideo1.5_720p_i2v_fp16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/HunyuanVideo_1.5_repackaged - hunyuanvideo1.5_720p_sr_distilled_fp16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/HunyuanVideo_1.5_repackaged - hunyuanvideo1.5_720p_t2v_fp16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/HunyuanVideo_1.5_repackaged - hunyuanvideo15_latent_upsampler_1080p",
+    "type": "upscaler"
+  },
+  {
+    "name": "Comfy-Org/HunyuanVideo_1.5_repackaged - hunyuanvideo15_latent_upsampler_720p",
+    "type": "upscaler"
+  },
+  {
+    "name": "Comfy-Org/HunyuanVideo_1.5_repackaged - hunyuanvideo15_vae_fp16",
+    "type": "vae"
+  },
+  {
+    "name": "huchenlei/IC-Light-ldm - iclight_sd15_fbc_unet_ldm",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "huchenlei/IC-Light-ldm - iclight_sd15_fc_unet_ldm",
+    "type": "diffusion_model"
+  },
+  { "name": "80s Fantasy Movie", "type": "lora" },
+  {
+    "name": "Add Micro Details - Concept (Illustrious | Pony | NoobAI)",
+    "type": "lora"
+  },
+  { "name": "Adjust details AND photorealism", "type": "lora" },
+  { "name": "Aesthetic Quality Modifiers - Complete", "type": "lora" },
+  { "name": "Aesthetic Quality Modifiers - Masterpiece", "type": "lora" },
+  { "name": "AI styles dump (Anima/Illustrious/RouWei/Noob)", "type": "lora" },
+  {
+    "name": "Cucoloris casting shadow (lighting modifiers) style XL + SD1.5 + F1D + Illu + Pony + zit",
+    "type": "lora"
+  },
+  { "name": "Darker Than Dark", "type": "lora" },
+  { "name": "Detail Slider LoRA | Illustrious-XL", "type": "lora" },
+  {
+    "name": "Detailed Perfection style (Hands + Feet + Face + Body + All in one) XL + F1D + SD1.5 + Pony + Illu + zit + zib",
+    "type": "lora"
+  },
+  { "name": "Detailer IL", "type": "lora" },
+  { "name": "Flat Color - Style", "type": "lora" },
+  { "name": "Granblue fantasy style", "type": "lora" },
+  {
+    "name": "Hands XL + SD 1.5 + F1D + Pony + Illustrious + zit",
+    "type": "lora"
+  },
+  { "name": "Hyperdetailed Colored Pencil", "type": "lora" },
+  { "name": "Hyperrealistic [Pony | Illustrious]", "type": "lora" },
+  { "name": "Modern Retro Anime - FLUX - PONY - ILL - ZIT", "type": "lora" },
+  {
+    "name": "Neurocore Anime Shadow Circuit by ChronoKnight - [FLUX, IL, ZIT]",
+    "type": "lora"
+  },
+  { "name": "Niji semi realism", "type": "lora" },
+  { "name": "Norman Rockwell Style", "type": "lora" },
+  { "name": "Pony: People's Works v1-v6", "type": "lora" },
+  { "name": "Illustrious Realism Slider", "type": "lora" },
+  { "name": "Realistic filter [IL]", "type": "lora" },
+  {
+    "name": "Realistic Skin Texture style (Detailed Skin) XL + SD1.5 + F1D + Pony + Illu + Zit",
+    "type": "lora"
+  },
+  { "name": "REDTVPE'S ILLUSTRIOUS/NOOBAI STYLES", "type": "lora" },
+  { "name": "Retro Anisthetic Style | Illustrious", "type": "lora" },
+  {
+    "name": "Retro Sci-fi 90's anime style IllustriousXL/ZImageTurbo/Flux/Chroma",
+    "type": "lora"
+  },
+  { "name": "S1 Dramatic Lighting", "type": "lora" },
+  { "name": "Sinfully Stylish (dramatic lighting)", "type": "lora" },
+  { "name": "Stabilizer IL/NAI/CK", "type": "lora" },
+  {
+    "name": "Velvet's Mythic Fantasy Styles | Flux + Pony + illustrious",
+    "type": "lora"
+  },
+  { "name": "Illustrious-XL", "type": "checkpoint" },
+  {
+    "name": "lllyasviel/fooocus_inpaint - inpaint_v26.fooocus",
+    "type": "inpaint"
+  },
+  {
+    "name": "peteromallet/Qwen-Image-Edit-InSubject - InSubject-0.5",
+    "type": "lora"
+  },
+  { "name": "InteriorDesignSuperMix", "type": "checkpoint" },
+  {
+    "name": "h94/IP-Adapter-FaceID - ip-adapter-faceid-plusv2_sd15",
+    "type": "ip_adapter"
+  },
+  {
+    "name": "h94/IP-Adapter-FaceID - ip-adapter-faceid-plusv2_sdxl",
+    "type": "ip_adapter"
+  },
+  {
+    "name": "h94/IP-Adapter-FaceID - ip-adapter-faceid-plusv2_sdxl_lora",
+    "type": "lora"
+  },
+  {
+    "name": "h94/IP-Adapter-FaceID - ip-adapter-faceid-portrait_sdxl",
+    "type": "ip_adapter"
+  },
+  {
+    "name": "h94/IP-Adapter-FaceID - ip-adapter-faceid-portrait_sdxl_unnorm",
+    "type": "ip_adapter"
+  },
+  {
+    "name": "h94/IP-Adapter-FaceID - ip-adapter-faceid_sd15",
+    "type": "ip_adapter"
+  },
+  {
+    "name": "h94/IP-Adapter-FaceID - ip-adapter-faceid_sdxl",
+    "type": "ip_adapter"
+  },
+  {
+    "name": "h94/IP-Adapter-FaceID - ip-adapter-faceid_sdxl_lora",
+    "type": "lora"
+  },
+  {
+    "name": "h94/IP-Adapter - ip-adapter-full-face_sd15",
+    "type": "ip_adapter"
+  },
+  {
+    "name": "h94/IP-Adapter - ip-adapter-plus-face_sd15",
+    "type": "ip_adapter"
+  },
+  {
+    "name": "h94/IP-Adapter - ip-adapter-plus-face_sdxl_vit-h",
+    "type": "ip_adapter"
+  },
+  { "name": "h94/IP-Adapter - ip-adapter-plus_sd15", "type": "ip_adapter" },
+  {
+    "name": "h94/IP-Adapter - ip-adapter-plus_sdxl_vit-h",
+    "type": "ip_adapter"
+  },
+  { "name": "h94/IP-Adapter - ip-adapter_sd15", "type": "ip_adapter" },
+  {
+    "name": "h94/IP-Adapter - ip-adapter_sd15_light_v11",
+    "type": "ip_adapter"
+  },
+  { "name": "h94/IP-Adapter - ip-adapter_sd15_vit-G", "type": "ip_adapter" },
+  { "name": "h94/IP-Adapter - ip-adapter_sdxl", "type": "ip_adapter" },
+  { "name": "h94/IP-Adapter - ip-adapter_sdxl_vit-h", "type": "ip_adapter" },
+  {
+    "name": "ostris/ip-composition-adapter - ip_plus_composition_sd15",
+    "type": "ip_adapter"
+  },
+  {
+    "name": "ostris/ip-composition-adapter - ip_plus_composition_sdxl",
+    "type": "ip_adapter"
+  },
+  { "name": "Japanese Style Realistic (JSR)", "type": "checkpoint" },
+  {
+    "name": "Comfy-Org/NewBie-image-Exp0.1_repackaged - jina_clip_v2_bf16",
+    "type": "text_encoder"
+  },
+  {
+    "name": "RunDiffusion/Juggernaut-XL-v9 - Juggernaut-XL_v9_RunDiffusionPhoto_v2",
+    "type": "checkpoint"
+  },
+  {
+    "name": "kandinskylab/Kandinsky-5.0-I2V-Lite-5s - kandinsky5lite_i2v_5s",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "kandinskylab/Kandinsky-5.0-T2I-Lite - kandinsky5lite_t2i",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "kandinskylab/Kandinsky-5.0-T2V-Lite-sft-5s - kandinsky5lite_t2v_sft_5s",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kwai-Kolors/Kolors-IP-Adapter-FaceID-Plus - ipa-faceid-plus",
+    "type": "ip_adapter"
+  },
+  {
+    "name": "Kwai-Kolors/Kolors-IP-Adapter-Plus - ip_adapter_plus_general",
+    "type": "ip_adapter"
+  },
+  {
+    "name": "Kwai-Kolors/Kolors - diffusion_pytorch_model.fp16",
+    "type": "diffusers"
+  },
+  { "name": "Kwai-Kolors/Kolors - model_index", "type": "diffusers" },
+  { "name": "Kwai-Kolors/Kolors - scheduler_config", "type": "diffusers" },
+  { "name": "Kwai-Kolors/Kolors - config", "type": "diffusers" },
+  {
+    "name": "Kwai-Kolors/Kolors - pytorch_model-00001-of-00007",
+    "type": "diffusers"
+  },
+  {
+    "name": "Kwai-Kolors/Kolors - pytorch_model-00002-of-00007",
+    "type": "diffusers"
+  },
+  {
+    "name": "Kwai-Kolors/Kolors - pytorch_model-00003-of-00007",
+    "type": "diffusers"
+  },
+  {
+    "name": "Kwai-Kolors/Kolors - pytorch_model-00004-of-00007",
+    "type": "diffusers"
+  },
+  {
+    "name": "Kwai-Kolors/Kolors - pytorch_model-00005-of-00007",
+    "type": "diffusers"
+  },
+  {
+    "name": "Kwai-Kolors/Kolors - pytorch_model-00006-of-00007",
+    "type": "diffusers"
+  },
+  {
+    "name": "Kwai-Kolors/Kolors - pytorch_model-00007-of-00007",
+    "type": "diffusers"
+  },
+  {
+    "name": "Kwai-Kolors/Kolors - pytorch_model.bin.index",
+    "type": "diffusers"
+  },
+  { "name": "Kwai-Kolors/Kolors - tokenizer", "type": "diffusers" },
+  { "name": "Kwai-Kolors/Kolors - tokenizer_config", "type": "diffusers" },
+  { "name": "Kwai-Kolors/Kolors - vocab", "type": "diffusers" },
+  { "name": "Kwai-Kolors/Kolors - config", "type": "diffusers" },
+  {
+    "name": "stabilityai/sd-vae-ft-mse-original - vae-ft-mse-840000-ema-pruned",
+    "type": "lip_sync"
+  },
+  { "name": "ByteDance/LatentSync-1.6 - latentsync_unet", "type": "lip_sync" },
+  { "name": "ByteDance/LatentSync-1.6 - tiny", "type": "lip_sync" },
+  {
+    "name": "LayerDiffusion/layerdiffusion-v1 - layer_xl_bg2ble",
+    "type": "layer_model"
+  },
+  {
+    "name": "LayerDiffusion/layerdiffusion-v1 - layer_xl_bgble2fg",
+    "type": "layer_model"
+  },
+  {
+    "name": "LayerDiffusion/layerdiffusion-v1 - layer_xl_fg2ble",
+    "type": "layer_model"
+  },
+  {
+    "name": "LayerDiffusion/layerdiffusion-v1 - layer_xl_fgble2bg",
+    "type": "layer_model"
+  },
+  {
+    "name": "LayerDiffusion/layerdiffusion-v1 - layer_xl_transparent_attn",
+    "type": "layer_model"
+  },
+  {
+    "name": "LayerDiffusion/layerdiffusion-v1 - layer_xl_transparent_conv",
+    "type": "layer_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - lightx2v_14B_T2V_cfg_step_distill_lora_adaptive_rank_quantile_0.15_bf16",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - lightx2v_I2V_14B_480p_cfg_step_distill_rank128_bf16",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - lightx2v_I2V_14B_480p_cfg_step_distill_rank16_bf16",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - lightx2v_I2V_14B_480p_cfg_step_distill_rank256_bf16",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - lightx2v_I2V_14B_480p_cfg_step_distill_rank32_bf16",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - lightx2v_I2V_14B_480p_cfg_step_distill_rank4_bf16",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - lightx2v_I2V_14B_480p_cfg_step_distill_rank64_bf16",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - lightx2v_I2V_14B_480p_cfg_step_distill_rank8_bf16",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - lightx2v_T2V_14B_cfg_step_distill_v2_lora_rank128_bf16",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - lightx2v_T2V_14B_cfg_step_distill_v2_lora_rank16_bf16",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - lightx2v_T2V_14B_cfg_step_distill_v2_lora_rank32_bf16",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - lightx2v_T2V_14B_cfg_step_distill_v2_lora_rank4_bf16",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - lightx2v_T2V_14B_cfg_step_distill_v2_lora_rank64_bf16",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - lightx2v_T2V_14B_cfg_step_distill_v2_lora_rank8_bf16",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/LivePortrait_safetensors - appearance_feature_extractor",
+    "type": "face_animation"
+  },
+  {
+    "name": "Kijai/LivePortrait_safetensors - motion_extractor",
+    "type": "face_animation"
+  },
+  {
+    "name": "Kijai/LivePortrait_safetensors - spade_generator",
+    "type": "face_animation"
+  },
+  {
+    "name": "Kijai/LivePortrait_safetensors - stitching_retargeting_module",
+    "type": "face_animation"
+  },
+  {
+    "name": "Kijai/LivePortrait_safetensors - warping_module",
+    "type": "face_animation"
+  },
+  {
+    "name": "Kijai/LivePortrait_safetensors - appearance_feature_extractor",
+    "type": "face_animation"
+  },
+  {
+    "name": "Kijai/LivePortrait_safetensors - landmark",
+    "type": "face_animation"
+  },
+  {
+    "name": "Kijai/LivePortrait_safetensors - landmark_model",
+    "type": "face_animation"
+  },
+  {
+    "name": "Kijai/LivePortrait_safetensors - motion_extractor",
+    "type": "face_animation"
+  },
+  {
+    "name": "Kijai/LivePortrait_safetensors - spade_generator",
+    "type": "face_animation"
+  },
+  {
+    "name": "Kijai/LivePortrait_safetensors - stitching_retargeting_module",
+    "type": "face_animation"
+  },
+  {
+    "name": "Kijai/LivePortrait_safetensors - warping_module",
+    "type": "face_animation"
+  },
+  {
+    "name": "Comfy-Org/HiDream-I1_ComfyUI - llama_3.1_8b_instruct_fp8_scaled",
+    "type": "text_encoder"
+  },
+  {
+    "name": "Comfy-Org/HunyuanVideo_repackaged - llava_llama3_fp8_scaled",
+    "type": "text_encoder"
+  },
+  {
+    "name": "Kijai/llava-llama-3-8b-text-encoder-tokenizer - config",
+    "type": "llm"
+  },
+  {
+    "name": "Kijai/llava-llama-3-8b-text-encoder-tokenizer - generation_config",
+    "type": "llm"
+  },
+  {
+    "name": "Kijai/llava-llama-3-8b-text-encoder-tokenizer - model-00001-of-00004",
+    "type": "llm"
+  },
+  {
+    "name": "Kijai/llava-llama-3-8b-text-encoder-tokenizer - model-00002-of-00004",
+    "type": "llm"
+  },
+  {
+    "name": "Kijai/llava-llama-3-8b-text-encoder-tokenizer - model-00003-of-00004",
+    "type": "llm"
+  },
+  {
+    "name": "Kijai/llava-llama-3-8b-text-encoder-tokenizer - model-00004-of-00004",
+    "type": "llm"
+  },
+  {
+    "name": "Kijai/llava-llama-3-8b-text-encoder-tokenizer - model.safetensors.index",
+    "type": "llm"
+  },
+  {
+    "name": "Kijai/llava-llama-3-8b-text-encoder-tokenizer - special_tokens_map",
+    "type": "llm"
+  },
+  {
+    "name": "Kijai/llava-llama-3-8b-text-encoder-tokenizer - tokenizer_config",
+    "type": "llm"
+  },
+  {
+    "name": "Kijai/llava-llama-3-8b-text-encoder-tokenizer - tokenizer",
+    "type": "llm"
+  },
+  {
+    "name": "xtuner/llava-llama-3-8b-v1_1-transformers - config",
+    "type": "llm"
+  },
+  {
+    "name": "xtuner/llava-llama-3-8b-v1_1-transformers - generation_config",
+    "type": "llm"
+  },
+  {
+    "name": "xtuner/llava-llama-3-8b-v1_1-transformers - model-00001-of-00004",
+    "type": "llm"
+  },
+  {
+    "name": "xtuner/llava-llama-3-8b-v1_1-transformers - model-00002-of-00004",
+    "type": "llm"
+  },
+  {
+    "name": "xtuner/llava-llama-3-8b-v1_1-transformers - model-00003-of-00004",
+    "type": "llm"
+  },
+  {
+    "name": "xtuner/llava-llama-3-8b-v1_1-transformers - model-00004-of-00004",
+    "type": "llm"
+  },
+  {
+    "name": "xtuner/llava-llama-3-8b-v1_1-transformers - model.safetensors.index",
+    "type": "llm"
+  },
+  {
+    "name": "xtuner/llava-llama-3-8b-v1_1-transformers - preprocessor_config",
+    "type": "llm"
+  },
+  {
+    "name": "xtuner/llava-llama-3-8b-v1_1-transformers - special_tokens_map",
+    "type": "llm"
+  },
+  {
+    "name": "xtuner/llava-llama-3-8b-v1_1-transformers - tokenizer_config",
+    "type": "llm"
+  },
+  {
+    "name": "xtuner/llava-llama-3-8b-v1_1-transformers - tokenizer",
+    "type": "llm"
+  },
+  {
+    "name": "Comfy-Org/LongCat-Image - longcat_image_bf16",
+    "type": "diffusion_model"
+  },
+  { "name": "Comfy-Org/lotus - lotus-depth-d-v1-1", "type": "diffusion_model" },
+  {
+    "name": "Kijai/lotus-comfyui - lotus-depth-g-v1-0",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/lotus-comfyui - lotus-depth-g-v2-1-disparity-fp16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/lotus-comfyui - lotus-normal-g-v1-0-fp16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/lotus-comfyui - lotus-normal-g-v1-0",
+    "type": "diffusion_model"
+  },
+  { "name": "Lightricks/LTX-2 - ltx-2-19b-dev-fp4", "type": "checkpoint" },
+  { "name": "Lightricks/LTX-2 - ltx-2-19b-dev-fp8", "type": "checkpoint" },
+  {
+    "name": "Kijai/LTXV2_comfy - ltx-2-19b-dev-fp8_transformer_only",
+    "type": "diffusion_model"
+  },
+  { "name": "Lightricks/LTX-2 - ltx-2-19b-dev", "type": "checkpoint" },
+  {
+    "name": "Kijai/LTXV2_comfy - ltx-2-19b-dev_transformer_only_bf16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Lightricks/LTX-2 - ltx-2-19b-distilled-fp8",
+    "type": "checkpoint"
+  },
+  {
+    "name": "Kijai/LTXV2_comfy - ltx-2-19b-distilled-fp8_transformer_only",
+    "type": "diffusion_model"
+  },
+  { "name": "Lightricks/LTX-2 - ltx-2-19b-distilled-lora-384", "type": "lora" },
+  {
+    "name": "Kijai/LTXV2_comfy - ltx-2-19b-distilled-lora-resized_dynamic_fro095_avg_rank_242_bf16",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/LTXV2_comfy - ltx-2-19b-distilled-lora_resized_dynamic_fro09_avg_rank_175_bf16",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/LTXV2_comfy - ltx-2-19b-distilled-lora_resized_dynamic_fro09_avg_rank_175_fp8",
+    "type": "lora"
+  },
+  { "name": "Lightricks/LTX-2 - ltx-2-19b-distilled", "type": "checkpoint" },
+  {
+    "name": "Kijai/LTXV2_comfy - ltx-2-19b-distilled_transformer_only_bf16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/LTXV2_comfy - ltx-2-19b-embeddings_connector_dev_bf16",
+    "type": "text_encoder"
+  },
+  {
+    "name": "Kijai/LTXV2_comfy - ltx-2-19b-embeddings_connector_distill_bf16",
+    "type": "text_encoder"
+  },
+  {
+    "name": "Lightricks/LTX-2-19b-IC-LoRA-Canny-Control - ltx-2-19b-ic-lora-canny-control",
+    "type": "lora"
+  },
+  {
+    "name": "Lightricks/LTX-2-19b-IC-LoRA-Depth-Control - ltx-2-19b-ic-lora-depth-control",
+    "type": "lora"
+  },
+  {
+    "name": "Lightricks/LTX-2-19b-IC-LoRA-Detailer - ltx-2-19b-ic-lora-detailer",
+    "type": "lora"
+  },
+  {
+    "name": "Lightricks/LTX-2-19b-IC-LoRA-Pose-Control - ltx-2-19b-ic-lora-pose-control",
+    "type": "lora"
+  },
+  {
+    "name": "Lightricks/LTX-2-19b-LoRA-Camera-Control-Dolly-In - ltx-2-19b-lora-camera-control-dolly-in",
+    "type": "lora"
+  },
+  {
+    "name": "Lightricks/LTX-2-19b-LoRA-Camera-Control-Dolly-Left - ltx-2-19b-lora-camera-control-dolly-left",
+    "type": "lora"
+  },
+  {
+    "name": "Lightricks/LTX-2-19b-LoRA-Camera-Control-Dolly-Out - ltx-2-19b-lora-camera-control-dolly-out",
+    "type": "lora"
+  },
+  {
+    "name": "Lightricks/LTX-2-19b-LoRA-Camera-Control-Dolly-Right - ltx-2-19b-lora-camera-control-dolly-right",
+    "type": "lora"
+  },
+  {
+    "name": "Lightricks/LTX-2-19b-LoRA-Camera-Control-Jib-Down - ltx-2-19b-lora-camera-control-jib-down",
+    "type": "lora"
+  },
+  {
+    "name": "Lightricks/LTX-2-19b-LoRA-Camera-Control-Jib-Up - ltx-2-19b-lora-camera-control-jib-up",
+    "type": "lora"
+  },
+  {
+    "name": "Lightricks/LTX-2-19b-LoRA-Camera-Control-Static - ltx-2-19b-lora-camera-control-static",
+    "type": "lora"
+  },
+  {
+    "name": "MachineDelusions/LTX-2_Image2Video_Adapter_LoRa - LTX-2-Image2Vid-Adapter",
+    "type": "lora"
+  },
+  {
+    "name": "Lightricks/LTX-2 - ltx-2-spatial-upscaler-x2-1.0",
+    "type": "upscaler"
+  },
+  {
+    "name": "Lightricks/LTX-2 - ltx-2-temporal-upscaler-x2-1.0",
+    "type": "upscaler"
+  },
+  { "name": "Lightricks/LTX-2.3 - ltx-2.3-22b-dev", "type": "checkpoint" },
+  {
+    "name": "Lightricks/LTX-2.3 - ltx-2.3-22b-distilled-lora-384",
+    "type": "lora"
+  },
+  {
+    "name": "Lightricks/LTX-2.3 - ltx-2.3-spatial-upscaler-x2-1.0",
+    "type": "upscaler"
+  },
+  {
+    "name": "Lightricks/LTX-Video - ltx-video-2b-v0.9.5",
+    "type": "checkpoint"
+  },
+  { "name": "Lightricks/LTX-Video - ltx-video-2b-v0.9", "type": "checkpoint" },
+  {
+    "name": "Nebsh/LTX2_Animatediff_Lora - AnimateDiff_step2000",
+    "type": "lora"
+  },
+  {
+    "name": "Nebsh/LTX2_AtomicExplosion - AtomicExplosion_step_02000",
+    "type": "lora"
+  },
+  { "name": "kabachuha/ltx2-cakeify - ltx2-cakeify-v2", "type": "lora" },
+  {
+    "name": "kabachuha/ltx2-hydraulic-press - ltx2-crush-step-864",
+    "type": "lora"
+  },
+  { "name": "kabachuha/ltx2-eat - ltx2-eat-v2", "type": "lora" },
+  { "name": "kabachuha/ltx2-inflate-it - ltx2-inflate", "type": "lora" },
+  {
+    "name": "Nebsh/LTX2_Lora_Outfitcheck - Outfitcheck_step_02000",
+    "type": "lora"
+  },
+  {
+    "name": "Nebsh/LTX2_Outfitswitch - OutfitswitchV2_step_02000",
+    "type": "lora"
+  },
+  { "name": "valiantcat/LTX2-I2V-Smooth-LORA - ltx2-smooth", "type": "lora" },
+  { "name": "ltx2 squish", "type": "lora" },
+  {
+    "name": "Nebsh/LTX2_Lora_TimelapseHuman - Timelapse_Humanora_weights_step_02000",
+    "type": "lora"
+  },
+  { "name": "Kijai/LTXV2_comfy - LTX2_audio_vae_bf16", "type": "vae" },
+  { "name": "Kijai/LTXV2_comfy - LTX2_video_vae_bf16", "type": "vae" },
+  {
+    "name": "majicMIX realistic \u9ea6\u6a58\u5199\u5b9e",
+    "type": "checkpoint"
+  },
+  { "name": "Acly/MAT - MAT_Places512_G_fp16", "type": "inpaint" },
+  {
+    "name": "Kijai/MelBandRoFormer_comfy - MelBandRoformer_fp16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/MelBandRoFormer_comfy - MelBandRoformer_fp32",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/MimicMotion_pruned - MimicMotionMergedUnet_1-0-fp16",
+    "type": "motion"
+  },
+  {
+    "name": "Kijai/MimicMotion_pruned - MimicMotionMergedUnet_1-1-fp16",
+    "type": "motion"
+  },
+  { "name": "mistral 3 small flux2 bf16", "type": "text_encoder" },
+  { "name": "mistral 3 small flux2 fp8", "type": "text_encoder" },
+  { "name": "guoyww/animatediff - mm_sd_v14", "type": "animatediff" },
+  { "name": "guoyww/animatediff - mm_sd_v15", "type": "animatediff" },
+  { "name": "guoyww/animatediff - mm_sd_v15_v2", "type": "animatediff" },
+  { "name": "guoyww/animatediff - mm_sdxl_v10_beta", "type": "animatediff" },
+  { "name": "Kijai/WanVideo_comfy - mmaudio_vae_16k_bf16", "type": "vae" },
+  { "name": "Kijai/WanVideo_comfy - mmaudio_vae_16k_fp32", "type": "vae" },
+  {
+    "name": "Kijai/WanVideo_comfy - mmaudio_vocoder_bigvgan_best_netG_fp32",
+    "type": "vae"
+  },
+  {
+    "name": "Comfy-Org/mochi_preview_repackaged - mochi_preview_bf16",
+    "type": "diffusion_model"
+  },
+  { "name": "Comfy-Org/mochi_preview_repackaged - mochi_vae", "type": "vae" },
+  { "name": "model", "type": "checkpoint" },
+  { "name": "\u58a8\u5fc3 MoXin", "type": "lora" },
+  {
+    "name": "duongve/NetaYume-Lumina-Image-2.0 - NetaYumev35_pretrained_all_in_one",
+    "type": "checkpoint"
+  },
+  {
+    "name": "Comfy-Org/NewBie-image-Exp0.1_repackaged - NewBie-Image-Exp0.1-bf16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "lovis93/next-scene-qwen-image-lora-2509 - next-scene_lora_v1-3000",
+    "type": "lora"
+  },
+  { "name": "nlf l multi 0.3.2.torchscript", "type": "nlf" },
+  {
+    "name": "comfyanonymous/cosmos_1.0_text_encoder_and_VAE_ComfyUI - oldt5_xxl_fp8_e4m3fn_scaled",
+    "type": "text_encoder"
+  },
+  {
+    "name": "Comfy-Org/Omnigen2_ComfyUI_repackaged - omnigen2_fp16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - open-clip-xlm-roberta-large-vit-huge-14_visual_fp16",
+    "type": "clip_vision"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - open-clip-xlm-roberta-large-vit-huge-14_visual_fp32",
+    "type": "clip_vision"
+  },
+  { "name": "Comfy-Org/Ovis-Image - ovis_2.5", "type": "text_encoder" },
+  {
+    "name": "Comfy-Org/Ovis-Image - ovis_image_bf16",
+    "type": "diffusion_model"
+  },
+  { "name": "Bingsu/adetailer - person_yolov8m-seg", "type": "detection" },
+  {
+    "name": "Kijai/WanVideo_comfy - Phantom-Wan-14B_fp16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Phantom-Wan-1_3B_fp16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Phantom-Wan-1_3B_fp32",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "tarn59/pixel_art_style_lora_z_image_turbo - pixel_art_style_z_image_turbo",
+    "type": "lora"
+  },
+  { "name": "50s Noir Movie", "type": "lora" },
+  { "name": "50s Panavision Movie", "type": "lora" },
+  { "name": "80s Fantasy Movie", "type": "lora" },
+  {
+    "name": "Add Micro Details - Concept (Illustrious | Pony | NoobAI)",
+    "type": "lora"
+  },
+  { "name": "Aesthetic Quality Modifiers - Masterpiece", "type": "lora" },
+  { "name": "AI styles dump (Anima/Illustrious/RouWei/Noob)", "type": "lora" },
+  { "name": "Ars MidJourney Watercolor", "type": "lora" },
+  { "name": "Cartoon style", "type": "lora" },
+  { "name": "character sheet", "type": "lora" },
+  { "name": "Pony Detail Tweaker", "type": "lora" },
+  {
+    "name": "Detailed Perfection style (Hands + Feet + Face + Body + All in one) XL + F1D + SD1.5 + Pony + Illu + zit + zib",
+    "type": "lora"
+  },
+  { "name": "Detailifier - SD3.5/Flux/SDXL/Pony/(SD1.5)", "type": "lora" },
+  { "name": "Pony Diffusion V6 XL", "type": "checkpoint" },
+  { "name": "Dramatic Lighting Slider", "type": "lora" },
+  { "name": "DreamART Style LORA", "type": "lora" },
+  {
+    "name": "Feet XL + SD 1.5 + F1D + Pony + Illustrious + zit",
+    "type": "lora"
+  },
+  { "name": "Flat Colour Anime", "type": "lora" },
+  {
+    "name": "Hands XL + SD 1.5 + F1D + Pony + Illustrious + zit",
+    "type": "lora"
+  },
+  { "name": "Hyperrealistic [Pony | Illustrious]", "type": "lora" },
+  { "name": "Impressionism", "type": "lora" },
+  {
+    "name": "Low-key lighting Style XL + F1D + Illu + Pony + zit",
+    "type": "lora"
+  },
+  {
+    "name": "MeMaXL Flat Anime Style - Noob/Illustrious/Pony/XL",
+    "type": "lora"
+  },
+  { "name": "Niji semi realism", "type": "lora" },
+  { "name": "Not Artists Styles for Pony Diffusion V6 XL", "type": "lora" },
+  {
+    "name": "Illustrious  Pixel Art XL & 1.5 By creativehotia",
+    "type": "lora"
+  },
+  { "name": "Popyay's Epic Fantasy Style | Pony & SDXL", "type": "lora" },
+  { "name": "Rawfully Stylish (dramatic lighting)", "type": "lora" },
+  { "name": "Realism Lora By Stable Yogi (Pony)", "type": "lora" },
+  { "name": "Pony Realism Enhancer \u2728", "type": "lora" },
+  {
+    "name": "Realistic Skin Texture style (Detailed Skin) XL + SD1.5 + F1D + Pony + Illu + Zit",
+    "type": "lora"
+  },
+  { "name": "REDTVPE'S ILLUSTRIOUS/NOOBAI STYLES", "type": "lora" },
+  { "name": "Rococo palace interior pony", "type": "lora" },
+  { "name": "Sinfully Stylish (dramatic lighting)", "type": "lora" },
+  { "name": "Stained Glass", "type": "lora" },
+  {
+    "name": "Velvet's Mythic Fantasy Styles | Flux + Pony + illustrious",
+    "type": "lora"
+  },
+  { "name": "2000s Analog Core", "type": "lora" },
+  {
+    "name": "ProGamerGov/qwen-360-diffusion - qwen-360-diffusion-2512-int8-bf16-v2",
+    "type": "lora"
+  },
+  { "name": "80s Fantasy Movie", "type": "lora" },
+  { "name": "Aesthetic Quality Modifiers - Masterpiece", "type": "lora" },
+  { "name": "Amateur Photography", "type": "lora" },
+  { "name": "Dark Atmospheric Style - CE", "type": "lora" },
+  { "name": "Dark Ghibli Fairytales", "type": "lora" },
+  {
+    "name": "dx8152/Qwen-Edit-2509-Multiple-angles - \u955c\u5934\u8f6c\u6362",
+    "type": "lora"
+  },
+  { "name": "Flat Color - Style", "type": "lora" },
+  { "name": "Granblue fantasy style", "type": "lora" },
+  { "name": "Hyperdetailed Colored Pencil", "type": "lora" },
+  { "name": "Hyperdetailed Illustration", "type": "lora" },
+  {
+    "name": "alibaba-pai/Qwen-Image-2512-Fun-Controlnet-Union - Qwen-Image-2512-Fun-Controlnet-Union-2602",
+    "type": "controlnet"
+  },
+  {
+    "name": "lightx2v/Qwen-Image-2512-Lightning - Qwen-Image-2512-Lightning-4steps-V1.0-fp32",
+    "type": "lora"
+  },
+  {
+    "name": "lrzjason/QwenEdit-Anything2Real_Alpha - Anything2RealAlpha",
+    "type": "lora"
+  },
+  {
+    "name": "tarn59/apply_texture_qwen_image_edit_2509 - apply_texture_v2_qwen_image_edit_2509",
+    "type": "lora"
+  },
+  { "name": "Shakker-Labs/AWPortrait-QW - AWPortrait-QW_1.0", "type": "lora" },
+  { "name": "Clothes Try On (Clothing Transfer) - Qwen Edit", "type": "lora" },
+  { "name": "qwen-edit-skin", "type": "lora" },
+  {
+    "name": "dx8152/Qwen-Image-Edit-2509-Fusion - \u6eb6\u56fe",
+    "type": "lora"
+  },
+  {
+    "name": "dx8152/Qwen-Edit-2509-Light-Migration - \u53c2\u8003\u8272\u8c03",
+    "type": "lora"
+  },
+  {
+    "name": "dx8152/Qwen-Image-Edit-2509-Light_restoration - \u79fb\u9664\u5149\u5f71",
+    "type": "lora"
+  },
+  {
+    "name": "lightx2v/Qwen-Image-Lightning - Qwen-Image-Edit-2509-Lightning-4steps-V1.0-bf16",
+    "type": "lora"
+  },
+  {
+    "name": "lightx2v/Qwen-Image-Lightning - Qwen-Image-Edit-2509-Lightning-8steps-V1.0-bf16",
+    "type": "lora"
+  },
+  {
+    "name": "YaoJiefu/multiple-characters - \u591a\u6a21\u7279-\u5b8c\u6210",
+    "type": "lora"
+  },
+  {
+    "name": "lovis93/next-scene-qwen-image-lora-2509 - next-scene_lora-v2-3000",
+    "type": "lora"
+  },
+  {
+    "name": "valiantcat/Qwen-Image-Edit-2509-Passionate-kiss - qwen_image_edit_2509_Passionate-kiss",
+    "type": "lora"
+  },
+  {
+    "name": "valiantcat/Qwen-Image-Edit-2509-photous - QwenEdit2509_photous_000010000",
+    "type": "lora"
+  },
+  {
+    "name": "dx8152/Qwen-Image-Edit-2509-Relight - Qwen-Edit-Relight",
+    "type": "lora"
+  },
+  {
+    "name": "vafipas663/Qwen-Edit-2509-Upscale-LoRA - qwen-edit-enhance_000004250",
+    "type": "lora"
+  },
+  {
+    "name": "dx8152/Qwen-Image-Edit-2509-White_to_Scene - \u767d\u5e95\u56fe\u8f6c\u573a\u666f",
+    "type": "lora"
+  },
+  {
+    "name": "lilylilith/QIE-2511-MP-AnyLight - QIE-2511-AnyLight_",
+    "type": "lora"
+  },
+  {
+    "name": "prithivMLmods/QIE-2511-Extract-Outfit - QIE-2511-Extract-Outfit-4200",
+    "type": "lora"
+  },
+  {
+    "name": "lightx2v/Qwen-Image-Edit-2511-Lightning - Qwen-Image-Edit-2511-Lightning-4steps-V1.0-bf16",
+    "type": "lora"
+  },
+  {
+    "name": "lightx2v/Qwen-Image-Edit-2511-Lightning - Qwen-Image-Edit-2511-Lightning-4steps-V1.0-fp32",
+    "type": "lora"
+  },
+  {
+    "name": "EQUES/qwen-image-edit-2511-lineart-interpolation - pytorch_lora_weights",
+    "type": "lora"
+  },
+  {
+    "name": "prithivMLmods/Qwen-Image-Edit-2511-Midnight-Noir-Eyes-Spotlight - Qwen-Image-Edit-2511-Midnight-Noir-Eyes-Spotlight",
+    "type": "lora"
+  },
+  {
+    "name": "fal/Qwen-Image-Edit-2511-Multiple-Angles-LoRA - qwen-image-edit-2511-multiple-angles-lora",
+    "type": "lora"
+  },
+  {
+    "name": "prithivMLmods/Qwen-Image-Edit-2511-Noir-Comic-Book-Panel - Noir-Comic-Book-Panel_20",
+    "type": "lora"
+  },
+  {
+    "name": "prithivMLmods/QIE-2511-Object-Remover-v2 - Qwen-Image-Edit-2511-Object-Remover-v2-9200",
+    "type": "lora"
+  },
+  {
+    "name": "prithivMLmods/Qwen-Image-Edit-2511-Pixar-Inspired-3D - PI3_20",
+    "type": "lora"
+  },
+  {
+    "name": "prithivMLmods/QIE-2511-Studio-DeLight - QIE-2511-Studio-DeLight-5000",
+    "type": "lora"
+  },
+  {
+    "name": "prithivMLmods/Qwen-Image-Edit-2511-Ultra-Realistic-Portrait - URP_20",
+    "type": "lora"
+  },
+  {
+    "name": "prithivMLmods/QIE-2511-Zoom-Master - Qwen-Image-Edit-2511-Zoom-Master-8800",
+    "type": "lora"
+  },
+  {
+    "name": "Pr0f3ssi0n4ln00b/QIE_2511_Consistency_Lora - qe2511_consis_alpha_patched",
+    "type": "lora"
+  },
+  {
+    "name": "clayshoaf/Make-Wojak-2511 - qwen_2511_make_wojak_flexible",
+    "type": "lora"
+  },
+  {
+    "name": "clayshoaf/Make-Wojak-2511 - qwen_2511_make_wojak_strict",
+    "type": "lora"
+  },
+  { "name": "Qwen Image Edit Easy Inpaint LoRA", "type": "lora" },
+  {
+    "name": "lightx2v/Qwen-Image-Lightning - Qwen-Image-Edit-Lightning-4steps-V1.0-bf16",
+    "type": "lora"
+  },
+  { "name": "Outfit Extractor - Qwen Edit", "type": "lora" },
+  { "name": "Qwen Edit Reality Transform By Aldniki", "type": "lora" },
+  {
+    "name": "Comfy-Org/Qwen-Image-InstantX-ControlNets - Qwen-Image-InstantX-ControlNet-Inpainting",
+    "type": "controlnet"
+  },
+  {
+    "name": "Comfy-Org/Qwen-Image-InstantX-ControlNets - Qwen-Image-InstantX-ControlNet-Union",
+    "type": "controlnet"
+  },
+  {
+    "name": "lightx2v/Qwen-Image-Lightning - Qwen-Image-Lightning-4steps-V1.0",
+    "type": "lora"
+  },
+  {
+    "name": "lightx2v/Qwen-Image-Lightning - Qwen-Image-Lightning-8steps-V1.0",
+    "type": "lora"
+  },
+  {
+    "name": "Qwen-Image-Boreal (Boring Reality LoRA for Qwen)",
+    "type": "lora"
+  },
+  { "name": "Lenovo UltraReal", "type": "lora" },
+  { "name": "Blending - Style", "type": "lora" },
+  {
+    "name": "[LuisaP\u2764\ufe0f] \ud83e\udd16Cyber Hard edge Refiner QWEN / SD 1.5",
+    "type": "lora"
+  },
+  { "name": "Polaroid-style retro film look", "type": "lora" },
+  { "name": "Retro-Pop - CE", "type": "lora" },
+  {
+    "name": "[LuisaP\u2764\ufe0f] Z-IMAGE AND QWEN! PIXEL ART REFINER",
+    "type": "lora"
+  },
+  { "name": "Movie Poster - CE", "type": "lora" },
+  { "name": "NiceGirls UltraReal", "type": "lora" },
+  { "name": "Octane Render", "type": "lora" },
+  { "name": "Consistence Edit Lora", "type": "lora" },
+  { "name": "RealComic", "type": "lora" },
+  { "name": "Reality Simulator", "type": "lora" },
+  { "name": "Slime Girl Concept", "type": "lora" },
+  {
+    "name": "Kijai/WanVideo_comfy - Qwen2.5_3B_instruct_bf16",
+    "type": "text_encoder"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Qwen2.5_7B_instruct_bf16",
+    "type": "text_encoder"
+  },
+  { "name": "Qwen/Qwen3-TTS-12Hz-0.6B-Base - config", "type": "tts" },
+  {
+    "name": "Qwen/Qwen3-TTS-12Hz-0.6B-Base - generation_config",
+    "type": "tts"
+  },
+  { "name": "Qwen/Qwen3-TTS-12Hz-0.6B-Base - merges", "type": "tts" },
+  { "name": "Qwen/Qwen3-TTS-12Hz-0.6B-Base - model", "type": "tts" },
+  {
+    "name": "Qwen/Qwen3-TTS-12Hz-0.6B-Base - preprocessor_config",
+    "type": "tts"
+  },
+  { "name": "Qwen/Qwen3-TTS-12Hz-0.6B-Base - config", "type": "tts" },
+  { "name": "Qwen/Qwen3-TTS-12Hz-0.6B-Base - configuration", "type": "tts" },
+  { "name": "Qwen/Qwen3-TTS-12Hz-0.6B-Base - model", "type": "tts" },
+  {
+    "name": "Qwen/Qwen3-TTS-12Hz-0.6B-Base - preprocessor_config",
+    "type": "tts"
+  },
+  { "name": "Qwen/Qwen3-TTS-12Hz-0.6B-Base - tokenizer_config", "type": "tts" },
+  { "name": "Qwen/Qwen3-TTS-12Hz-0.6B-Base - vocab", "type": "tts" },
+  { "name": "Qwen/Qwen3-TTS-12Hz-1.7B-Base - config", "type": "tts" },
+  {
+    "name": "Qwen/Qwen3-TTS-12Hz-1.7B-Base - generation_config",
+    "type": "tts"
+  },
+  { "name": "Qwen/Qwen3-TTS-12Hz-1.7B-Base - merges", "type": "tts" },
+  { "name": "Qwen/Qwen3-TTS-12Hz-1.7B-Base - model", "type": "tts" },
+  {
+    "name": "Qwen/Qwen3-TTS-12Hz-1.7B-Base - preprocessor_config",
+    "type": "tts"
+  },
+  { "name": "Qwen/Qwen3-TTS-12Hz-1.7B-Base - config", "type": "tts" },
+  { "name": "Qwen/Qwen3-TTS-12Hz-1.7B-Base - configuration", "type": "tts" },
+  { "name": "Qwen/Qwen3-TTS-12Hz-1.7B-Base - model", "type": "tts" },
+  {
+    "name": "Qwen/Qwen3-TTS-12Hz-1.7B-Base - preprocessor_config",
+    "type": "tts"
+  },
+  { "name": "Qwen/Qwen3-TTS-12Hz-1.7B-Base - tokenizer_config", "type": "tts" },
+  { "name": "Qwen/Qwen3-TTS-12Hz-1.7B-Base - vocab", "type": "tts" },
+  { "name": "Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice - config", "type": "tts" },
+  {
+    "name": "Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice - generation_config",
+    "type": "tts"
+  },
+  { "name": "Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice - merges", "type": "tts" },
+  { "name": "Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice - model", "type": "tts" },
+  {
+    "name": "Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice - preprocessor_config",
+    "type": "tts"
+  },
+  { "name": "Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice - config", "type": "tts" },
+  {
+    "name": "Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice - configuration",
+    "type": "tts"
+  },
+  { "name": "Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice - model", "type": "tts" },
+  {
+    "name": "Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice - preprocessor_config",
+    "type": "tts"
+  },
+  {
+    "name": "Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice - tokenizer_config",
+    "type": "tts"
+  },
+  { "name": "Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice - vocab", "type": "tts" },
+  { "name": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice - config", "type": "tts" },
+  {
+    "name": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice - generation_config",
+    "type": "tts"
+  },
+  { "name": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice - merges", "type": "tts" },
+  { "name": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice - model", "type": "tts" },
+  {
+    "name": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice - preprocessor_config",
+    "type": "tts"
+  },
+  { "name": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice - config", "type": "tts" },
+  {
+    "name": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice - configuration",
+    "type": "tts"
+  },
+  { "name": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice - model", "type": "tts" },
+  {
+    "name": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice - preprocessor_config",
+    "type": "tts"
+  },
+  {
+    "name": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice - tokenizer_config",
+    "type": "tts"
+  },
+  { "name": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice - vocab", "type": "tts" },
+  { "name": "Qwen/Qwen3-TTS-Tokenizer-12Hz - config", "type": "tts" },
+  { "name": "Qwen/Qwen3-TTS-Tokenizer-12Hz - configuration", "type": "tts" },
+  { "name": "Qwen/Qwen3-TTS-Tokenizer-12Hz - model", "type": "tts" },
+  {
+    "name": "Qwen/Qwen3-TTS-Tokenizer-12Hz - preprocessor_config",
+    "type": "tts"
+  },
+  { "name": "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign - config", "type": "tts" },
+  {
+    "name": "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign - generation_config",
+    "type": "tts"
+  },
+  { "name": "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign - merges", "type": "tts" },
+  { "name": "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign - model", "type": "tts" },
+  {
+    "name": "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign - preprocessor_config",
+    "type": "tts"
+  },
+  { "name": "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign - config", "type": "tts" },
+  {
+    "name": "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign - configuration",
+    "type": "tts"
+  },
+  { "name": "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign - model", "type": "tts" },
+  {
+    "name": "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign - preprocessor_config",
+    "type": "tts"
+  },
+  {
+    "name": "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign - tokenizer_config",
+    "type": "tts"
+  },
+  { "name": "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign - vocab", "type": "tts" },
+  {
+    "name": "Comfy-Org/ace_step_1.5_ComfyUI_files - qwen_0.6b_ace15",
+    "type": "text_encoder"
+  },
+  {
+    "name": "Comfy-Org/ace_step_1.5_ComfyUI_files - qwen_1.7b_ace15",
+    "type": "text_encoder"
+  },
+  {
+    "name": "Comfy-Org/HunyuanVideo_1.5_repackaged - qwen_2.5_vl_7b",
+    "type": "text_encoder"
+  },
+  {
+    "name": "Comfy-Org/Qwen-Image_ComfyUI - qwen_2.5_vl_7b_fp8_scaled",
+    "type": "text_encoder"
+  },
+  {
+    "name": "Comfy-Org/Omnigen2_ComfyUI_repackaged - qwen_2.5_vl_fp16",
+    "type": "text_encoder"
+  },
+  {
+    "name": "circlestone-labs/Anima - qwen_3_06b_base",
+    "type": "text_encoder"
+  },
+  { "name": "Comfy-Org/z_image_turbo - qwen_3_4b", "type": "text_encoder" },
+  { "name": "qwen 3 4b fp4 flux2", "type": "text_encoder" },
+  { "name": "qwen 3 8b", "type": "text_encoder" },
+  {
+    "name": "Comfy-Org/vae-text-encorder-for-flux-klein-9b - qwen_3_8b_fp4mixed",
+    "type": "text_encoder"
+  },
+  {
+    "name": "Comfy-Org/flux2-klein-9B - qwen_3_8b_fp8mixed",
+    "type": "text_encoder"
+  },
+  {
+    "name": "Comfy-Org/ace_step_1.5_ComfyUI_files - qwen_4b_ace15",
+    "type": "text_encoder"
+  },
+  {
+    "name": "Comfy-Org/Qwen-Image_ComfyUI - qwen_image_2512_bf16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/Qwen-Image_ComfyUI - qwen_image_2512_fp8_e4m3fn",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/Qwen-Image-DiffSynth-ControlNets - qwen_image_canny_diffsynth_controlnet",
+    "type": "model_patch"
+  },
+  {
+    "name": "valiantcat/Qwen-Image-Edit-2511-Upscale2K - qwen_image_edit_2511_upscale",
+    "type": "lora"
+  },
+  {
+    "name": "Comfy-Org/Qwen-Image-Edit_ComfyUI - qwen_image_edit_2509_fp8_e4m3fn",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/Qwen-Image-Edit_ComfyUI - qwen_image_edit_2509_fp8mixed",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "zooeyy/Qwen-Edit-2511_LightingRemap_Alpha0.2 - Qwen-\u7f16\u8f91-2511_LightningRemap_Alpha0.2",
+    "type": "lora"
+  },
+  {
+    "name": "systms/SYSTMS-INFL8-LoRA-Qwen-Image-Edit-2511 - SYSTMS_INFL8_LoRA_Qwen_Image_Edit_2511",
+    "type": "lora"
+  },
+  {
+    "name": "Comfy-Org/Qwen-Image-Edit_ComfyUI - qwen_image_edit_2511_bf16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/Qwen-Image-Edit_ComfyUI - qwen_image_edit_fp8_e4m3fn",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/Qwen-Image_ComfyUI - qwen_image_fp8_e4m3fn",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/Qwen-Image-Layered_ComfyUI - qwen_image_layered_bf16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "DiffSynth-Studio/Qwen-Image-Layered-Control - qwen_image_layered_control_bf16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/Qwen-Image-Layered_ComfyUI - qwen_image_layered_fp8mixed",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/Qwen-Image-Layered_ComfyUI - qwen_image_layered_vae",
+    "type": "vae"
+  },
+  {
+    "name": "Comfy-Org/Qwen-Image-DiffSynth-ControlNets - qwen_image_union_diffsynth_lora",
+    "type": "lora"
+  },
+  { "name": "Comfy-Org/Qwen-Image_ComfyUI - qwen_image_vae", "type": "vae" },
+  { "name": "Qwen/Qwen2.5-VL-3B-Instruct - chat_template", "type": "llm" },
+  { "name": "Qwen/Qwen2.5-VL-3B-Instruct - config", "type": "llm" },
+  { "name": "Qwen/Qwen2.5-VL-3B-Instruct - generation_config", "type": "llm" },
+  { "name": "Qwen/Qwen2.5-VL-3B-Instruct - merges", "type": "llm" },
+  {
+    "name": "Qwen/Qwen2.5-VL-3B-Instruct - model-00001-of-00002",
+    "type": "llm"
+  },
+  {
+    "name": "Qwen/Qwen2.5-VL-3B-Instruct - model-00002-of-00002",
+    "type": "llm"
+  },
+  {
+    "name": "Qwen/Qwen2.5-VL-3B-Instruct - model.safetensors.index",
+    "type": "llm"
+  },
+  {
+    "name": "Qwen/Qwen2.5-VL-3B-Instruct - preprocessor_config",
+    "type": "llm"
+  },
+  { "name": "Qwen/Qwen2.5-VL-3B-Instruct - tokenizer", "type": "llm" },
+  { "name": "Qwen/Qwen2.5-VL-3B-Instruct - tokenizer_config", "type": "llm" },
+  { "name": "Qwen/Qwen2.5-VL-3B-Instruct - vocab", "type": "llm" },
+  { "name": "Qwen/Qwen2.5-VL-7B-Instruct - chat_template", "type": "llm" },
+  { "name": "Qwen/Qwen2.5-VL-7B-Instruct - config", "type": "llm" },
+  { "name": "Qwen/Qwen2.5-VL-7B-Instruct - generation_config", "type": "llm" },
+  { "name": "Qwen/Qwen2.5-VL-7B-Instruct - merges", "type": "llm" },
+  {
+    "name": "Qwen/Qwen2.5-VL-7B-Instruct - model-00001-of-00005",
+    "type": "llm"
+  },
+  {
+    "name": "Qwen/Qwen2.5-VL-7B-Instruct - model-00002-of-00005",
+    "type": "llm"
+  },
+  {
+    "name": "Qwen/Qwen2.5-VL-7B-Instruct - model-00003-of-00005",
+    "type": "llm"
+  },
+  {
+    "name": "Qwen/Qwen2.5-VL-7B-Instruct - model-00004-of-00005",
+    "type": "llm"
+  },
+  {
+    "name": "Qwen/Qwen2.5-VL-7B-Instruct - model-00005-of-00005",
+    "type": "llm"
+  },
+  {
+    "name": "Qwen/Qwen2.5-VL-7B-Instruct - model.safetensors.index",
+    "type": "llm"
+  },
+  {
+    "name": "Qwen/Qwen2.5-VL-7B-Instruct - preprocessor_config",
+    "type": "llm"
+  },
+  { "name": "Qwen/Qwen2.5-VL-7B-Instruct - tokenizer", "type": "llm" },
+  { "name": "Qwen/Qwen2.5-VL-7B-Instruct - tokenizer_config", "type": "llm" },
+  { "name": "Qwen/Qwen2.5-VL-7B-Instruct - vocab", "type": "llm" },
+  { "name": "Qwen/Qwen3-0.6B - config", "type": "llm" },
+  { "name": "Qwen/Qwen3-0.6B - generation_config", "type": "llm" },
+  { "name": "Qwen/Qwen3-0.6B - merges", "type": "llm" },
+  { "name": "Qwen/Qwen3-0.6B - model", "type": "llm" },
+  { "name": "Qwen/Qwen3-0.6B - tokenizer", "type": "llm" },
+  { "name": "Qwen/Qwen3-0.6B - tokenizer_config", "type": "llm" },
+  { "name": "Qwen/Qwen3-0.6B - vocab", "type": "llm" },
+  { "name": "Qwen/Qwen3-4B-Instruct-2507 - config", "type": "llm" },
+  { "name": "Qwen/Qwen3-4B-Instruct-2507 - generation_config", "type": "llm" },
+  { "name": "Qwen/Qwen3-4B-Instruct-2507 - merges", "type": "llm" },
+  {
+    "name": "Qwen/Qwen3-4B-Instruct-2507 - model-00001-of-00003",
+    "type": "llm"
+  },
+  {
+    "name": "Qwen/Qwen3-4B-Instruct-2507 - model-00002-of-00003",
+    "type": "llm"
+  },
+  {
+    "name": "Qwen/Qwen3-4B-Instruct-2507 - model-00003-of-00003",
+    "type": "llm"
+  },
+  {
+    "name": "Qwen/Qwen3-4B-Instruct-2507 - model.safetensors.index",
+    "type": "llm"
+  },
+  { "name": "Qwen/Qwen3-4B-Instruct-2507 - tokenizer", "type": "llm" },
+  { "name": "Qwen/Qwen3-4B-Instruct-2507 - tokenizer_config", "type": "llm" },
+  { "name": "Qwen/Qwen3-4B-Instruct-2507 - vocab", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-2B-Instruct - chat_template", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-2B-Instruct - config", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-2B-Instruct - generation_config", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-2B-Instruct - merges", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-2B-Instruct - model", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-2B-Instruct - preprocessor_config", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-2B-Instruct - tokenizer", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-2B-Instruct - tokenizer_config", "type": "llm" },
+  {
+    "name": "Qwen/Qwen3-VL-2B-Instruct - video_preprocessor_config",
+    "type": "llm"
+  },
+  { "name": "Qwen/Qwen3-VL-2B-Instruct - vocab", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-2B-Thinking - chat_template", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-2B-Thinking - config", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-2B-Thinking - generation_config", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-2B-Thinking - merges", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-2B-Thinking - model", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-2B-Thinking - preprocessor_config", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-2B-Thinking - tokenizer", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-2B-Thinking - tokenizer_config", "type": "llm" },
+  {
+    "name": "Qwen/Qwen3-VL-2B-Thinking - video_preprocessor_config",
+    "type": "llm"
+  },
+  { "name": "Qwen/Qwen3-VL-2B-Thinking - vocab", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-32B-Instruct - chat_template", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-32B-Instruct - config", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-32B-Instruct - generation_config", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-32B-Instruct - merges", "type": "llm" },
+  {
+    "name": "Qwen/Qwen3-VL-32B-Instruct - model-00001-of-00014",
+    "type": "llm"
+  },
+  {
+    "name": "Qwen/Qwen3-VL-32B-Instruct - model-00002-of-00014",
+    "type": "llm"
+  },
+  {
+    "name": "Qwen/Qwen3-VL-32B-Instruct - model-00003-of-00014",
+    "type": "llm"
+  },
+  {
+    "name": "Qwen/Qwen3-VL-32B-Instruct - model-00004-of-00014",
+    "type": "llm"
+  },
+  {
+    "name": "Qwen/Qwen3-VL-32B-Instruct - model-00005-of-00014",
+    "type": "llm"
+  },
+  {
+    "name": "Qwen/Qwen3-VL-32B-Instruct - model-00006-of-00014",
+    "type": "llm"
+  },
+  {
+    "name": "Qwen/Qwen3-VL-32B-Instruct - model-00007-of-00014",
+    "type": "llm"
+  },
+  {
+    "name": "Qwen/Qwen3-VL-32B-Instruct - model-00008-of-00014",
+    "type": "llm"
+  },
+  {
+    "name": "Qwen/Qwen3-VL-32B-Instruct - model-00009-of-00014",
+    "type": "llm"
+  },
+  {
+    "name": "Qwen/Qwen3-VL-32B-Instruct - model-00010-of-00014",
+    "type": "llm"
+  },
+  {
+    "name": "Qwen/Qwen3-VL-32B-Instruct - model-00011-of-00014",
+    "type": "llm"
+  },
+  {
+    "name": "Qwen/Qwen3-VL-32B-Instruct - model-00012-of-00014",
+    "type": "llm"
+  },
+  {
+    "name": "Qwen/Qwen3-VL-32B-Instruct - model-00013-of-00014",
+    "type": "llm"
+  },
+  {
+    "name": "Qwen/Qwen3-VL-32B-Instruct - model-00014-of-00014",
+    "type": "llm"
+  },
+  {
+    "name": "Qwen/Qwen3-VL-32B-Instruct - model.safetensors.index",
+    "type": "llm"
+  },
+  { "name": "Qwen/Qwen3-VL-32B-Instruct - preprocessor_config", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-32B-Instruct - tokenizer", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-32B-Instruct - tokenizer_config", "type": "llm" },
+  {
+    "name": "Qwen/Qwen3-VL-32B-Instruct - video_preprocessor_config",
+    "type": "llm"
+  },
+  { "name": "Qwen/Qwen3-VL-32B-Instruct - vocab", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-32B-Thinking - chat_template", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-32B-Thinking - config", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-32B-Thinking - generation_config", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-32B-Thinking - merges", "type": "llm" },
+  {
+    "name": "Qwen/Qwen3-VL-32B-Thinking - model-00001-of-00014",
+    "type": "llm"
+  },
+  {
+    "name": "Qwen/Qwen3-VL-32B-Thinking - model-00002-of-00014",
+    "type": "llm"
+  },
+  {
+    "name": "Qwen/Qwen3-VL-32B-Thinking - model-00003-of-00014",
+    "type": "llm"
+  },
+  {
+    "name": "Qwen/Qwen3-VL-32B-Thinking - model-00004-of-00014",
+    "type": "llm"
+  },
+  {
+    "name": "Qwen/Qwen3-VL-32B-Thinking - model-00005-of-00014",
+    "type": "llm"
+  },
+  {
+    "name": "Qwen/Qwen3-VL-32B-Thinking - model-00006-of-00014",
+    "type": "llm"
+  },
+  {
+    "name": "Qwen/Qwen3-VL-32B-Thinking - model-00007-of-00014",
+    "type": "llm"
+  },
+  {
+    "name": "Qwen/Qwen3-VL-32B-Thinking - model-00008-of-00014",
+    "type": "llm"
+  },
+  {
+    "name": "Qwen/Qwen3-VL-32B-Thinking - model-00009-of-00014",
+    "type": "llm"
+  },
+  {
+    "name": "Qwen/Qwen3-VL-32B-Thinking - model-00010-of-00014",
+    "type": "llm"
+  },
+  {
+    "name": "Qwen/Qwen3-VL-32B-Thinking - model-00011-of-00014",
+    "type": "llm"
+  },
+  {
+    "name": "Qwen/Qwen3-VL-32B-Thinking - model-00012-of-00014",
+    "type": "llm"
+  },
+  {
+    "name": "Qwen/Qwen3-VL-32B-Thinking - model-00013-of-00014",
+    "type": "llm"
+  },
+  {
+    "name": "Qwen/Qwen3-VL-32B-Thinking - model-00014-of-00014",
+    "type": "llm"
+  },
+  {
+    "name": "Qwen/Qwen3-VL-32B-Thinking - model.safetensors.index",
+    "type": "llm"
+  },
+  { "name": "Qwen/Qwen3-VL-32B-Thinking - preprocessor_config", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-32B-Thinking - tokenizer", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-32B-Thinking - tokenizer_config", "type": "llm" },
+  {
+    "name": "Qwen/Qwen3-VL-32B-Thinking - video_preprocessor_config",
+    "type": "llm"
+  },
+  { "name": "Qwen/Qwen3-VL-32B-Thinking - vocab", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-4B-Instruct - chat_template", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-4B-Instruct - config", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-4B-Instruct - generation_config", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-4B-Instruct - merges", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-4B-Instruct - model-00001-of-00002", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-4B-Instruct - model-00002-of-00002", "type": "llm" },
+  {
+    "name": "Qwen/Qwen3-VL-4B-Instruct - model.safetensors.index",
+    "type": "llm"
+  },
+  { "name": "Qwen/Qwen3-VL-4B-Instruct - preprocessor_config", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-4B-Instruct - tokenizer", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-4B-Instruct - tokenizer_config", "type": "llm" },
+  {
+    "name": "Qwen/Qwen3-VL-4B-Instruct - video_preprocessor_config",
+    "type": "llm"
+  },
+  { "name": "Qwen/Qwen3-VL-4B-Instruct - vocab", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-4B-Thinking - chat_template", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-4B-Thinking - config", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-4B-Thinking - generation_config", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-4B-Thinking - merges", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-4B-Thinking - model-00001-of-00002", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-4B-Thinking - model-00002-of-00002", "type": "llm" },
+  {
+    "name": "Qwen/Qwen3-VL-4B-Thinking - model.safetensors.index",
+    "type": "llm"
+  },
+  { "name": "Qwen/Qwen3-VL-4B-Thinking - preprocessor_config", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-4B-Thinking - tokenizer", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-4B-Thinking - tokenizer_config", "type": "llm" },
+  {
+    "name": "Qwen/Qwen3-VL-4B-Thinking - video_preprocessor_config",
+    "type": "llm"
+  },
+  { "name": "Qwen/Qwen3-VL-4B-Thinking - vocab", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-8B-Instruct - chat_template", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-8B-Instruct - config", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-8B-Instruct - generation_config", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-8B-Instruct - merges", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-8B-Instruct - model-00001-of-00004", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-8B-Instruct - model-00002-of-00004", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-8B-Instruct - model-00003-of-00004", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-8B-Instruct - model-00004-of-00004", "type": "llm" },
+  {
+    "name": "Qwen/Qwen3-VL-8B-Instruct - model.safetensors.index",
+    "type": "llm"
+  },
+  { "name": "Qwen/Qwen3-VL-8B-Instruct - preprocessor_config", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-8B-Instruct - tokenizer", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-8B-Instruct - tokenizer_config", "type": "llm" },
+  {
+    "name": "Qwen/Qwen3-VL-8B-Instruct - video_preprocessor_config",
+    "type": "llm"
+  },
+  { "name": "Qwen/Qwen3-VL-8B-Instruct - vocab", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-8B-Thinking - chat_template", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-8B-Thinking - config", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-8B-Thinking - generation_config", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-8B-Thinking - merges", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-8B-Thinking - model-00001-of-00004", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-8B-Thinking - model-00002-of-00004", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-8B-Thinking - model-00003-of-00004", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-8B-Thinking - model-00004-of-00004", "type": "llm" },
+  {
+    "name": "Qwen/Qwen3-VL-8B-Thinking - model.safetensors.index",
+    "type": "llm"
+  },
+  { "name": "Qwen/Qwen3-VL-8B-Thinking - preprocessor_config", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-8B-Thinking - tokenizer", "type": "llm" },
+  { "name": "Qwen/Qwen3-VL-8B-Thinking - tokenizer_config", "type": "llm" },
+  {
+    "name": "Qwen/Qwen3-VL-8B-Thinking - video_preprocessor_config",
+    "type": "llm"
+  },
+  { "name": "Qwen/Qwen3-VL-8B-Thinking - vocab", "type": "llm" },
+  { "name": "RealESRGAN x2plus", "type": "upscaler" },
+  {
+    "name": "yuvraj108c/ComfyUI-Upscaler-Onnx - RealESRGAN_x4",
+    "type": "onnx"
+  },
+  { "name": "RealESRGAN x4plus", "type": "upscaler" },
+  {
+    "name": "Comfy-Org/Real-ESRGAN_repackaged - RealESRGAN_x4plus",
+    "type": "upscaler"
+  },
+  { "name": "RealESRGAN x4plus anime 6B", "type": "upscaler" },
+  { "name": "Realism By Stable Yogi (Pony)", "type": "checkpoint" },
+  { "name": "RealVisXL V5.0", "type": "checkpoint" },
+  {
+    "name": "lrzjason/ObjectRemovalFluxFill - removal_timestep_alpha-2-1740",
+    "type": "lora"
+  },
+  { "name": "marduk191/rife - rife47", "type": "interpolation" },
+  { "name": "marduk191/rife - rife49", "type": "interpolation" },
+  {
+    "name": "Kijai/sam2-safetensors - sam2.1_hiera_base_plus-fp16",
+    "type": "sam"
+  },
+  { "name": "Kijai/sam2-safetensors - sam2.1_hiera_base_plus", "type": "sam" },
+  { "name": "Kijai/sam2-safetensors - sam2.1_hiera_large-fp16", "type": "sam" },
+  { "name": "Kijai/sam2-safetensors - sam2.1_hiera_large", "type": "sam" },
+  { "name": "Kijai/sam2-safetensors - sam2.1_hiera_small-fp16", "type": "sam" },
+  { "name": "Kijai/sam2-safetensors - sam2.1_hiera_small", "type": "sam" },
+  { "name": "Kijai/sam2-safetensors - sam2.1_hiera_tiny-fp16", "type": "sam" },
+  { "name": "Kijai/sam2-safetensors - sam2.1_hiera_tiny", "type": "sam" },
+  { "name": "Kijai/sam2-safetensors - sam2_hiera_base_plus", "type": "sam" },
+  { "name": "Kijai/sam2-safetensors - sam2_hiera_large", "type": "sam" },
+  { "name": "Kijai/sam2-safetensors - sam2_hiera_small", "type": "sam" },
+  { "name": "Kijai/sam2-safetensors - sam2_hiera_tiny", "type": "sam" },
+  { "name": "1038lab/sam3 - sam3", "type": "sam" },
+  { "name": "sam3d objects dinov2 vitl14 reg4 pretrain", "type": "sam3d" },
+  { "name": "Ruicheng/moge-vitl - model", "type": "sam3d" },
+  { "name": "jetjodh/sam-3d-objects - pipeline", "type": "sam3d" },
+  { "name": "jetjodh/sam-3d-objects - slat_decoder_gs", "type": "sam3d" },
+  { "name": "jetjodh/sam-3d-objects - slat_decoder_gs", "type": "sam3d" },
+  { "name": "jetjodh/sam-3d-objects - slat_decoder_gs_4", "type": "sam3d" },
+  { "name": "jetjodh/sam-3d-objects - slat_decoder_gs_4", "type": "sam3d" },
+  { "name": "jetjodh/sam-3d-objects - slat_decoder_mesh", "type": "sam3d" },
+  { "name": "jetjodh/sam-3d-objects - slat_decoder_mesh", "type": "sam3d" },
+  { "name": "jetjodh/sam-3d-objects - slat_generator", "type": "sam3d" },
+  { "name": "jetjodh/sam-3d-objects - slat_generator", "type": "sam3d" },
+  { "name": "jetjodh/sam-3d-objects - ss_decoder", "type": "sam3d" },
+  { "name": "jetjodh/sam-3d-objects - ss_decoder", "type": "sam3d" },
+  { "name": "jetjodh/sam-3d-objects - ss_generator", "type": "sam3d" },
+  { "name": "jetjodh/sam-3d-objects - ss_generator", "type": "sam3d" },
+  { "name": "jetjodh/sam-3d-body-dinov3 - mhr_model", "type": "sam3dbody" },
+  { "name": "jetjodh/sam-3d-body-dinov3 - model", "type": "sam3dbody" },
+  { "name": "jetjodh/sam-3d-body-dinov3 - model_config", "type": "sam3dbody" },
+  { "name": "sam vit b 01ec64", "type": "sam" },
+  { "name": "A-Mecha Musume A\u7d20\u4f53\u673a\u5a18", "type": "lora" },
+  {
+    "name": "Add More Details - Detail Enhancer / Tweaker (\u7ec6\u8282\u8c03\u6574) LoRA",
+    "type": "lora"
+  },
+  {
+    "name": "Anime Lineart / Manga-like (\u7ebf\u7a3f/\u7dda\u753b/\u30de\u30f3\u30ac\u98a8/\u6f2b\u753b\u98ce) Style",
+    "type": "lora"
+  },
+  { "name": "Anime Screencap Style LoRA", "type": "lora" },
+  {
+    "name": "Anime Tarot Card Art Style LoRA (\u5854\u7f57\u724c/\u30bf\u30ed\u30c3\u30c8\u30ab\u30fc\u30c9)",
+    "type": "lora"
+  },
+  { "name": "Arcane Style LoRA", "type": "lora" },
+  { "name": "blindbox/\u5927\u6982\u662f\u76f2\u76d2", "type": "lora" },
+  { "name": "\u3010Character / Art Style\u3011Fashion Girl", "type": "lora" },
+  { "name": "Cute_girl_mix4", "type": "lora" },
+  { "name": "Cyberpunk Anime Style", "type": "lora" },
+  {
+    "name": "Detail Tweaker LoRA (\u7ec6\u8282\u8c03\u6574LoRA)",
+    "type": "lora"
+  },
+  { "name": "Detailers By Stable Yogi", "type": "lora" },
+  { "name": "Doll Likeness - by EDG", "type": "lora" },
+  { "name": "epi_noiseoffset", "type": "lora" },
+  { "name": "epiCRealismHelper", "type": "lora" },
+  { "name": "Eye - LoRa", "type": "lora" },
+  { "name": "Hairstyles Collection", "type": "lora" },
+  {
+    "name": "Hands XL + SD 1.5 + F1D + Pony + Illustrious + zit",
+    "type": "lora"
+  },
+  { "name": "hanfu \u6c49\u670d", "type": "lora" },
+  { "name": "Hipoly 3D Model LoRA", "type": "lora" },
+  { "name": "Ink scenery | \u6c34\u58a8\u5c71\u6c34", "type": "lora" },
+  {
+    "name": "ICBINP - \"I Can't Believe It's Not Photography\"",
+    "type": "checkpoint"
+  },
+  {
+    "name": "LEOSAM's Clothing +/-  Adjuster  \u8863\u7269\u589e/\u51cf  LoRA",
+    "type": "lora"
+  },
+  {
+    "name": "LEOSAM's Instant photo \u62cd\u7acb\u5f97/Polaroid LoRA & LoHA",
+    "type": "lora"
+  },
+  { "name": "\u58a8\u5fc3 MoXin", "type": "lora" },
+  { "name": "\u5a1c\u4e4c\u65af\u5609nwsj_realistic", "type": "lora" },
+  {
+    "name": "Realistic Skin Texture style (Detailed Skin) XL + SD1.5 + F1D + Pony + Illu + Zit",
+    "type": "lora"
+  },
+  { "name": "Skin & Hands (male/female) from Polyhedron", "type": "lora" },
+  { "name": "Studio Ghibli Style LoRA", "type": "lora" },
+  { "name": "Thicker Lines Anime Style LoRA Mix", "type": "lora" },
+  { "name": "sd3.5 large controlnet blur", "type": "controlnet" },
+  { "name": "sd3.5 large controlnet canny", "type": "controlnet" },
+  { "name": "sd3.5 large controlnet depth", "type": "controlnet" },
+  {
+    "name": "Comfy-Org/stable-diffusion-3.5-fp8 - sd3.5_large_fp8_scaled",
+    "type": "checkpoint"
+  },
+  {
+    "name": "stabilityai/stable-diffusion-xl-base-1.0 - sd_xl_base_1.0",
+    "type": "checkpoint"
+  },
+  {
+    "name": "stabilityai/stable-diffusion-xl-refiner-1.0 - sd_xl_refiner_1.0",
+    "type": "checkpoint"
+  },
+  {
+    "name": "stabilityai/sdxl-turbo - sd_xl_turbo_1.0_fp16",
+    "type": "checkpoint"
+  },
+  { "name": "Comfy-Org/SDPose - sdpose_wholebody_fp16", "type": "checkpoint" },
+  { "name": "80s Fantasy Movie", "type": "lora" },
+  { "name": "Aesthetic Anime LoRA", "type": "lora" },
+  {
+    "name": "All Disney Princess XL LoRA Model from Ralph Breaks the Internet",
+    "type": "lora"
+  },
+  { "name": "Better Faces LoRA", "type": "lora" },
+  { "name": "Better Freckles Lora SDXL", "type": "lora" },
+  { "name": "Better Picture, More Details LoRA", "type": "lora" },
+  { "name": "Cyberpunk Anime Style", "type": "lora" },
+  {
+    "name": "SDXL / Flux.1 D - Matte (Vanta)Black - Experiment",
+    "type": "lora"
+  },
+  { "name": "Detail Tweaker XL", "type": "lora" },
+  {
+    "name": "Detailed Perfection style (Hands + Feet + Face + Body + All in one) XL + F1D + SD1.5 + Pony + Illu + zit + zib",
+    "type": "lora"
+  },
+  {
+    "name": "Detailed style XL + F1D + SD1.5 (Hand focus + All in One) \"Detailed Perfection style extension\"",
+    "type": "lora"
+  },
+  { "name": "DetailedEyes_XL", "type": "lora" },
+  { "name": "Detailers By Stable Yogi", "type": "lora" },
+  { "name": "Detailifier - SD3.5/Flux/SDXL/Pony/(SD1.5)", "type": "lora" },
+  { "name": "Dissolve Style [FLUX+SDXL+SD1.5]", "type": "lora" },
+  { "name": "Dynamic Poses FLUX + SDXL", "type": "lora" },
+  { "name": "Fantasy Wizard & Witches", "type": "lora" },
+  { "name": "Flat Colour Anime", "type": "lora" },
+  { "name": "Glass Sculptures", "type": "lora" },
+  { "name": "Hand Detail FLUX & XL", "type": "lora" },
+  {
+    "name": "Hands XL + SD 1.5 + F1D + Pony + Illustrious + zit",
+    "type": "lora"
+  },
+  {
+    "name": "Hourglass Body Shape SD1.5/SDXL/PONY/FLUX | olaz",
+    "type": "lora"
+  },
+  { "name": "Hyperdetailed Colored Pencil", "type": "lora" },
+  {
+    "name": "FLUX Image Upgrader / Detail Maximizer / Contrast Fix for low CFG [+ILLUSTRIOUS / SDXL / SD 1.5]",
+    "type": "lora"
+  },
+  { "name": "Juggernaut Cinematic XL LoRA", "type": "lora" },
+  { "name": "Logo.Redmond - Logo Lora", "type": "lora" },
+  {
+    "name": "MeMaXL Flat Anime Style - Noob/Illustrious/Pony/XL",
+    "type": "lora"
+  },
+  { "name": "Midjourney mimic", "type": "lora" },
+  { "name": "ParchartXL", "type": "lora" },
+  { "name": "Perfect Eyes XL", "type": "lora" },
+  { "name": "Pixel Art XL", "type": "lora" },
+  { "name": "sdxl polyhedron all 1 0 skin hands eyes m f", "type": "lora" },
+  { "name": "Popyay's Epic Fantasy Style | Pony & SDXL", "type": "lora" },
+  { "name": "Rawfully Stylish (dramatic lighting)", "type": "lora" },
+  { "name": "Real Humans", "type": "lora" },
+  {
+    "name": "Realistic Skin Texture style (Detailed Skin) XL + SD1.5 + F1D + Pony + Illu + Zit",
+    "type": "lora"
+  },
+  { "name": "Sci-fi Environments", "type": "lora" },
+  { "name": "Sinfully Stylish (dramatic lighting)", "type": "lora" },
+  {
+    "name": "Skin Realism (Acne, Skin Details, Imperfections) SDXL",
+    "type": "lora"
+  },
+  { "name": "Stabilizer IL/NAI/CK", "type": "lora" },
+  { "name": "STYLES | Illustrious/Noob", "type": "lora" },
+  { "name": "Vector illustration", "type": "lora" },
+  { "name": "WowifierXL", "type": "lora" },
+  { "name": "xl_more_art-full / xl_real / Enhancer", "type": "lora" },
+  { "name": "zyd232's Ink Style", "type": "lora" },
+  {
+    "name": "ByteDance/SDXL-Lightning - sdxl_lightning_2step_lora",
+    "type": "lora"
+  },
+  {
+    "name": "ByteDance/SDXL-Lightning - sdxl_lightning_4step_lora",
+    "type": "lora"
+  },
+  {
+    "name": "ByteDance/SDXL-Lightning - sdxl_lightning_8step_lora",
+    "type": "lora"
+  },
+  { "name": "Pony Diffusion V6 XL", "type": "vae" },
+  { "name": "VeryAladeen/Sec-4B - SeC-4B-bf16", "type": "sam" },
+  { "name": "VeryAladeen/Sec-4B - SeC-4B-fp16", "type": "sam" },
+  { "name": "VeryAladeen/Sec-4B - SeC-4B-fp32", "type": "sam" },
+  { "name": "AInVFX/SeedVR2_comfyUI - seedvr2_ema_3b-Q4_K_M", "type": "video" },
+  { "name": "AInVFX/SeedVR2_comfyUI - seedvr2_ema_3b-Q8_0", "type": "video" },
+  { "name": "numz/SeedVR2_comfyUI - seedvr2_ema_3b_fp16", "type": "video" },
+  {
+    "name": "numz/SeedVR2_comfyUI - seedvr2_ema_3b_fp8_e4m3fn",
+    "type": "video"
+  },
+  { "name": "AInVFX/SeedVR2_comfyUI - seedvr2_ema_7b-Q4_K_M", "type": "video" },
+  { "name": "numz/SeedVR2_comfyUI - seedvr2_ema_7b_fp16", "type": "video" },
+  {
+    "name": "AInVFX/SeedVR2_comfyUI - seedvr2_ema_7b_fp8_e4m3fn_mixed_block35_fp16",
+    "type": "video"
+  },
+  {
+    "name": "AInVFX/SeedVR2_comfyUI - seedvr2_ema_7b_sharp-Q4_K_M",
+    "type": "video"
+  },
+  {
+    "name": "numz/SeedVR2_comfyUI - seedvr2_ema_7b_sharp_fp16",
+    "type": "video"
+  },
+  {
+    "name": "AInVFX/SeedVR2_comfyUI - seedvr2_ema_7b_sharp_fp8_e4m3fn_mixed_block35_fp16",
+    "type": "video"
+  },
+  {
+    "name": "mattmdjaga/segformer_b2_clothes - config",
+    "type": "segmentation"
+  },
+  { "name": "mattmdjaga/segformer_b2_clothes - model", "type": "segmentation" },
+  {
+    "name": "mattmdjaga/segformer_b2_clothes - preprocessor_config",
+    "type": "segmentation"
+  },
+  { "name": "sayeed99/segformer_b3_clothes - config", "type": "segmentation" },
+  { "name": "sayeed99/segformer_b3_clothes - model", "type": "segmentation" },
+  {
+    "name": "sayeed99/segformer_b3_clothes - preprocessor_config",
+    "type": "segmentation"
+  },
+  { "name": "sayeed99/segformer-b3-fashion - config", "type": "segmentation" },
+  { "name": "sayeed99/segformer-b3-fashion - model", "type": "segmentation" },
+  {
+    "name": "sayeed99/segformer-b3-fashion - preprocessor_config",
+    "type": "segmentation"
+  },
+  { "name": "apple/Sharp - sharp_2572gikvuh", "type": "sharp" },
+  {
+    "name": "Comfy-Org/sigclip_vision_384 - sigclip_vision_patch14_384",
+    "type": "clip_vision"
+  },
+  {
+    "name": "Comfy-Org/stable-audio-open-1.0_repackaged - stable-audio-open-1.0",
+    "type": "checkpoint"
+  },
+  {
+    "name": "stabilityai/stable-zero123 - stable_zero123",
+    "type": "checkpoint"
+  },
+  { "name": "StableDiffusionVN/Flux - flux_vae", "type": "vae" },
+  {
+    "name": "Kijai/WanVideo_comfy - Stand-In_wan2.1_T2V_14B_ver1.0_fp16",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Stand-In_wan2.1_T2V_14B_ver1.0_fp32",
+    "type": "lora"
+  },
+  {
+    "name": "marduk191/rife - sudo_rife4_269.662_testV1_scale1",
+    "type": "interpolation"
+  },
+  { "name": "Kijai/SUPIR_pruned - SUPIR-v0F_fp16", "type": "checkpoint" },
+  { "name": "Kijai/SUPIR_pruned - SUPIR-v0Q_fp16", "type": "checkpoint" },
+  {
+    "name": "stabilityai/stable-video-diffusion-img2vid - svd",
+    "type": "checkpoint"
+  },
+  {
+    "name": "stabilityai/stable-video-diffusion-img2vid-xt - svd_xt",
+    "type": "checkpoint"
+  },
+  {
+    "name": "Comfy-Org/T2I-Adapter_ComfyUI_Repackaged - t2iadapter_depth_sd15v2",
+    "type": "controlnet"
+  },
+  { "name": "ComfyUI-Wiki/t5-base - t5-base", "type": "text_encoder" },
+  { "name": "google-t5/t5-base - model", "type": "text_encoder" },
+  {
+    "name": "comfyanonymous/flux_text_encoders - t5xxl_fp16",
+    "type": "text_encoder"
+  },
+  {
+    "name": "Comfy-Org/HiDream-I1_ComfyUI - t5xxl_fp8_e4m3fn_scaled",
+    "type": "text_encoder"
+  },
+  { "name": "Kijai/WanVideo_comfy - taew2_1", "type": "vae_approx" },
+  { "name": "Kijai/WanVideo_comfy - taew2_2", "type": "vae_approx" },
+  { "name": "Owen777/UltraFlux-v1 - diffusion_pytorch_model", "type": "vae" },
+  { "name": "infinith/UltraShape - ultrashape_v1", "type": "3d" },
+  {
+    "name": "Kijai/WanVideo_comfy - umt5-xxl-enc-bf16",
+    "type": "text_encoder"
+  },
+  {
+    "name": "Comfy-Org/Wan_2.1_ComfyUI_repackaged - umt5_xxl_fp16",
+    "type": "text_encoder"
+  },
+  {
+    "name": "Comfy-Org/Wan_2.1_ComfyUI_repackaged - umt5_xxl_fp8_e4m3fn_scaled",
+    "type": "text_encoder"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - UniAnimate-Wan2.1-14B-Lora-12000-fp16",
+    "type": "lora"
+  },
+  {
+    "name": "Comfy-Org/USO_1.0_Repackaged - uso-flux1-dit-lora-v1",
+    "type": "lora"
+  },
+  {
+    "name": "Comfy-Org/USO_1.0_Repackaged - uso-flux1-projector-v1",
+    "type": "model_patch"
+  },
+  {
+    "name": "Comfy-Org/stable-diffusion-v1-5-archive - v1-5-pruned-emaonly-fp16",
+    "type": "checkpoint"
+  },
+  { "name": "v2 1 768 ema pruned", "type": "checkpoint" },
+  { "name": "guoyww/animatediff - v2_lora_PanLeft", "type": "animatediff" },
+  { "name": "guoyww/animatediff - v2_lora_PanRight", "type": "animatediff" },
+  {
+    "name": "guoyww/animatediff - v2_lora_RollingAnticlockwise",
+    "type": "animatediff"
+  },
+  {
+    "name": "guoyww/animatediff - v2_lora_RollingClockwise",
+    "type": "animatediff"
+  },
+  { "name": "guoyww/animatediff - v2_lora_TiltDown", "type": "animatediff" },
+  { "name": "guoyww/animatediff - v2_lora_TiltUp", "type": "animatediff" },
+  { "name": "guoyww/animatediff - v2_lora_ZoomIn", "type": "animatediff" },
+  { "name": "guoyww/animatediff - v2_lora_ZoomOut", "type": "animatediff" },
+  { "name": "guoyww/animatediff - v3_sd15_mm", "type": "animatediff" },
+  {
+    "name": "stabilityai/sd-vae-ft-mse-original - vae-ft-mse-840000-ema-pruned",
+    "type": "vae"
+  },
+  {
+    "name": "LayerDiffusion/layerdiffusion-v1 - vae_transparent_decoder",
+    "type": "layer_model"
+  },
+  {
+    "name": "JunkyByte/easy_ViTPose - vitpose-l-wholebody",
+    "type": "detection"
+  },
+  { "name": "WAI-illustrious-SDXL", "type": "checkpoint" },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2.1-Fun-Control-14B_fp8_e5m2",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2.1-Fun-InP-14B_fp8_e5m2",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/Wan_2.1_ComfyUI_repackaged - wan2.1_flf2v_720p_14B_fp16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/Wan_2.1_ComfyUI_repackaged - wan2.1_fun_camera_v1.1_1.3B_bf16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/Wan_2.1_ComfyUI_repackaged - wan2.1_fun_camera_v1.1_14B_bf16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/Wan_2.1_ComfyUI_repackaged - wan2.1_fun_control_1.3B_bf16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/Wan_2.1_ComfyUI_repackaged - wan2.1_fun_inp_1.3B_bf16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2.1_I2V_14B_CineScale_ntk20_lora_rank16_fp16",
+    "type": "lora"
+  },
+  {
+    "name": "Comfy-Org/Wan_2.1_ComfyUI_repackaged - wan2.1_i2v_480p_14B_fp16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/Wan_2.1_ComfyUI_repackaged - wan2.1_infiniteTalk_multi_fp16",
+    "type": "model_patch"
+  },
+  {
+    "name": "Comfy-Org/Wan_2.1_ComfyUI_repackaged - wan2.1_infiniteTalk_single_fp16",
+    "type": "model_patch"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2.1_T2V_1.3B_CineScale_ntk20_lora_rank16_fp16",
+    "type": "lora"
+  },
+  {
+    "name": "TheDenk/wan2.1-t2v-1.3b-controlnet-canny-v1 - diffusion_pytorch_model",
+    "type": "controlnet"
+  },
+  {
+    "name": "TheDenk/wan2.1-t2v-1.3b-controlnet-depth-v1 - diffusion_pytorch_model",
+    "type": "controlnet"
+  },
+  {
+    "name": "TheDenk/wan2.1-t2v-1.3b-controlnet-hed-v1 - diffusion_pytorch_model",
+    "type": "controlnet"
+  },
+  {
+    "name": "Comfy-Org/Wan_2.1_ComfyUI_repackaged - wan2.1_t2v_1.3B_fp16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2.1_T2V_14B_CineScale_ntk20_lora_rank16_fp16",
+    "type": "lora"
+  },
+  {
+    "name": "TheDenk/wan2.1-t2v-14b-controlnet-canny-v1 - diffusion_pytorch_model",
+    "type": "controlnet"
+  },
+  {
+    "name": "TheDenk/wan2.1-t2v-14b-controlnet-depth-v1 - diffusion_pytorch_model",
+    "type": "controlnet"
+  },
+  {
+    "name": "TheDenk/wan2.1-t2v-14b-controlnet-hed-v1 - diffusion_pytorch_model",
+    "type": "controlnet"
+  },
+  {
+    "name": "Comfy-Org/Wan_2.1_ComfyUI_repackaged - wan2.1_t2v_14B_fp8_scaled",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/Wan_2.1_ComfyUI_repackaged - wan2.1_vace_1.3B_fp16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/Wan_2.1_ComfyUI_repackaged - wan2.1_vace_14B_fp16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2.2-Fun-A14B-InP-HIGH-HPS2.1_resized_dynamic_avg_rank_14_bf16",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2.2-Fun-A14B-InP-LOW-MPS_resized_dynamic_avg_rank_22_bf16",
+    "type": "lora"
+  },
+  {
+    "name": "yo9otatara/model - WAN2.2-HighNoise_SmartphoneSnapshotPhotoReality_v3_by-AI_Characters",
+    "type": "lora"
+  },
+  {
+    "name": "Phr00t/WAN2.2-14B-Rapid-AllInOne - wan2.2-i2v-rapid-aio",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2.2-Lightning_I2V-A14B-4steps-lora_HIGH_fp16",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2.2-Lightning_I2V-A14B-4steps-lora_LOW_fp16",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2.2-Lightning_T2V-A14B-4steps-lora_HIGH_fp16",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2.2-Lightning_T2V-A14B-4steps-lora_LOW_fp16",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2.2-Lightning_T2V-v1.1-A14B-4steps-lora_HIGH_fp16",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2.2-Lightning_T2V-v1.1-A14B-4steps-lora_LOW_fp16",
+    "type": "lora"
+  },
+  {
+    "name": "yo9otatara/model - WAN2.2-LowNoise_SmartphoneSnapshotPhotoReality_v3_by-AI_Characters",
+    "type": "lora"
+  },
+  {
+    "name": "Phr00t/WAN2.2-14B-Rapid-AllInOne - wan2.2-t2v-rapid-aio",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/Wan_2.2_ComfyUI_Repackaged - wan2.2_animate_14B_bf16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/Wan_2.2_ComfyUI_Repackaged - wan2.2_fun_camera_high_noise_14B_bf16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/Wan_2.2_ComfyUI_Repackaged - wan2.2_fun_camera_high_noise_14B_fp8_scaled",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/Wan_2.2_ComfyUI_Repackaged - wan2.2_fun_camera_low_noise_14B_bf16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/Wan_2.2_ComfyUI_Repackaged - wan2.2_fun_camera_low_noise_14B_fp8_scaled",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/Wan_2.2_ComfyUI_Repackaged - wan2.2_fun_control_5B_bf16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/Wan_2.2_ComfyUI_Repackaged - wan2.2_fun_control_high_noise_14B_bf16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/Wan_2.2_ComfyUI_Repackaged - wan2.2_fun_control_high_noise_14B_fp8_scaled",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/Wan_2.2_ComfyUI_Repackaged - wan2.2_fun_control_low_noise_14B_bf16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/Wan_2.2_ComfyUI_Repackaged - wan2.2_fun_control_low_noise_14B_fp8_scaled",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/Wan_2.2_ComfyUI_Repackaged - wan2.2_fun_inpaint_5B_bf16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/Wan_2.2_ComfyUI_Repackaged - wan2.2_fun_inpaint_high_noise_14B_bf16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/Wan_2.2_ComfyUI_Repackaged - wan2.2_fun_inpaint_high_noise_14B_fp8_scaled",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/Wan_2.2_ComfyUI_Repackaged - wan2.2_fun_inpaint_low_noise_14B_bf16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/Wan_2.2_ComfyUI_Repackaged - wan2.2_fun_inpaint_low_noise_14B_fp8_scaled",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "lightx2v/Wan2.2-Distill-Loras - wan2.2_i2v_A14b_high_noise_lora_rank64_lightx2v_4step_1022",
+    "type": "lora"
+  },
+  {
+    "name": "lightx2v/Wan2.2-Distill-Loras - wan2.2_i2v_A14b_low_noise_lora_rank64_lightx2v_4step_1022",
+    "type": "lora"
+  },
+  {
+    "name": "Comfy-Org/Wan_2.2_ComfyUI_Repackaged - wan2.2_i2v_high_noise_14B_fp16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/Wan_2.2_ComfyUI_Repackaged - wan2.2_i2v_high_noise_14B_fp8_scaled",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/Wan_2.2_ComfyUI_Repackaged - wan2.2_i2v_lightx2v_4steps_lora_v1_high_noise",
+    "type": "lora"
+  },
+  {
+    "name": "Comfy-Org/Wan_2.2_ComfyUI_Repackaged - wan2.2_i2v_lightx2v_4steps_lora_v1_low_noise",
+    "type": "lora"
+  },
+  {
+    "name": "Comfy-Org/Wan_2.2_ComfyUI_Repackaged - wan2.2_i2v_low_noise_14B_fp16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/Wan_2.2_ComfyUI_Repackaged - wan2.2_i2v_low_noise_14B_fp8_scaled",
+    "type": "diffusion_model"
+  },
+  { "name": "wan2.2 instareal highnoise", "type": "lora" },
+  { "name": "wan2.2 instareal lownoise", "type": "lora" },
+  {
+    "name": "Kijai/WanVideo_comfy - lightx2v_T2V_14B_cfg_step_distill_v2_lora_rank256_bf16",
+    "type": "lora"
+  },
+  {
+    "name": "Comfy-Org/Wan_2.2_ComfyUI_Repackaged - wan2.2_s2v_14B_bf16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/Wan_2.2_ComfyUI_Repackaged - wan2.2_s2v_14B_fp8_scaled",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "lightx2v/Wan2.2-Distill-Loras - wan2.2_t2v_A14b_high_noise_lora_rank64_lightx2v_4step_1217",
+    "type": "lora"
+  },
+  {
+    "name": "lightx2v/Wan2.2-Distill-Loras - wan2.2_t2v_A14b_low_noise_lora_rank64_lightx2v_4step_1217",
+    "type": "lora"
+  },
+  {
+    "name": "Comfy-Org/Wan_2.2_ComfyUI_Repackaged - wan2.2_t2v_high_noise_14B_fp16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/Wan_2.2_ComfyUI_Repackaged - wan2.2_t2v_high_noise_14B_fp8_scaled",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "lym00/Wan2.2_T2V_A14B_VACE-test - Wan2.2_T2V_High_Noise_14B_VACE_fp16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/Wan_2.2_ComfyUI_Repackaged - wan2.2_t2v_lightx2v_4steps_lora_v1.1_high_noise",
+    "type": "lora"
+  },
+  {
+    "name": "Comfy-Org/Wan_2.2_ComfyUI_Repackaged - wan2.2_t2v_lightx2v_4steps_lora_v1.1_low_noise",
+    "type": "lora"
+  },
+  {
+    "name": "Comfy-Org/Wan_2.2_ComfyUI_Repackaged - wan2.2_t2v_low_noise_14B_fp16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/Wan_2.2_ComfyUI_Repackaged - wan2.2_t2v_low_noise_14B_fp8_scaled",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "lym00/Wan2.2_T2V_A14B_VACE-test - Wan2.2_T2V_Low_Noise_14B_VACE_fp16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/Wan_2.2_ComfyUI_Repackaged - wan2.2_ti2v_5B_fp16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/Wan_2.2_ComfyUI_Repackaged - wan2.2_vae",
+    "type": "vae"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan21-14B-SCAIL-preview_comfy_bf16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy_fp8_scaled - Wan21-14B-SCAIL-preview_fp8_e4m3fn_scaled_KJ",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan21-OneToAllAnimation_1_3B_v2_fp16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan21-OneToAllAnimation_fp16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy_fp8_scaled - Wan21-OneToAllAnimation_fp8_e4m3fn_scaled_KJ",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan21-WanMove_fp16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy_fp8_scaled - Wan21-WanMove_fp8_scaled_e4m3fn_KJ",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan21_14B_VACE_lora_ditto_global_bf16",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan21_14B_VACE_lora_ditto_global_bf16_resized_average_rank_29",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan21_14B_VACE_lora_ditto_global_style_bf16.safetensors",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan21_14B_VACE_lora_ditto_sim2real_bf16.safetensors",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan21_AccVid_I2V_480P_14B_lora_rank32_fp16",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan21_AccVid_T2V_14B_lora_rank32_fp16",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan21_CausVid_14B_T2V_lora_rank32",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan21_CausVid_14B_T2V_lora_rank32_v1_5_no_first_block",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan21_CausVid_14B_T2V_lora_rank32_v2",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan21_CausVid_bidirect2_T2V_1_3B_lora_rank32",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan21_I2V_SteadyDancer_fp16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan21_PusaV1_LoRA_14B_rank512_bf16",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy_fp8_scaled - Wan21_SteadyDancer_fp8_e4m3fn_scaled_KJ",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan21_T2V_14B_lightx2v_cfg_step_distill_lora_rank32",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan21_T2V_14B_MoviiGen_lora_rank32_fp16",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan21_Uni3C_controlnet_fp16",
+    "type": "controlnet"
+  },
+  { "name": "FlippinRad Motion Morph", "type": "lora" },
+  {
+    "name": "ComfyUI-DDD 2D to 3D stereoscopic conversion and 3D stereoscopic generation",
+    "type": "lora"
+  },
+  { "name": "80s Fantasy Movie", "type": "lora" },
+  { "name": "Dark Ghibli Fairytales", "type": "lora" },
+  { "name": "Faceless Gods", "type": "lora" },
+  { "name": "Hyperdetailed Colored Pencil", "type": "lora" },
+  { "name": "IF-WAN", "type": "lora" },
+  { "name": "Instagirl WAN 2.2", "type": "lora" },
+  { "name": "Instareal WAN 2.2", "type": "lora" },
+  {
+    "name": "WAN2.2. T2I (HIGH/LOW Noise) -\u2013 Polyhedron_all: Perfect skin. Perfect hands. Perfect eyes. (m/f)",
+    "type": "lora"
+  },
+  { "name": "Technically Color WAN", "type": "lora" },
+  {
+    "name": "Wan2.2 T2V A14B VHS television style LoRA (80s) (90s) (phonk style) (2000s)",
+    "type": "lora"
+  },
+  { "name": "Text2Image - Vintage & Film grain", "type": "lora" },
+  { "name": "Candid Photography [Wan 2.2]", "type": "lora" },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan22_A14B_T2V_HIGH_Lightning_4steps_lora_250928_rank128_fp16",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan22_A14B_T2V_LOW_Lightning_4steps_lora_250928_rank64_fp16",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2.2-Fun-A14B-InP-HIGH-MPS_resized_dynamic_avg_rank_21_bf16",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2.2-Fun-A14B-InP-LOW-HPS2.1_resized_dynamic_avg_rank_15_bf16",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan22_TI2V_5B_Turbo_lora_rank_64_fp16",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan22_TI2V_5B_Turbo_lora_rank_adaptive_quantile_0.15_fp16",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2_1-Anisora-I2V-480P-14B_fp16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2_1-FLF2V-14B-720P_fp16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2_1-I2V-14B-480P_fp8_e4m3fn",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy_fp8_scaled - Wan2_1-I2V-14B-480p_fp8_e4m3fn_scaled_KJ",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2_1-I2V-14B-480P_fp8_e5m2",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy_fp8_scaled - Wan2_1-I2V-14B-480p_fp8_e5m2_scaled_KJ",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy_fp8_scaled - Wan2_1-I2V-14B-720p_fp8_e4m3fn_scaled_KJ",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2_1-I2V-14B-720P_fp8_e5m2",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy_fp8_scaled - Wan2_1-I2V-14B-720p_fp8_e5m2_scaled_KJ",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy_fp8_scaled - Wan2_1-I2V-14B-AniSoraV3_fp8_e4m3fn_scaled_KJ",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy_fp8_scaled - Wan2_1-I2V-14B-AniSoraV3_fp8_e5m2_scaled_KJ",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy_fp8_scaled - Wan2_1-I2V-14B-MAGREF_fp8_e4m3fn_scaled_KJ",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy_fp8_scaled - Wan2_1-I2V-14B-MAGREF_fp8_e5m2_scaled_KJ",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2_1-I2V-ATI-14B_fp16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2_1-I2V-ATI-14B_fp8_e4m3fn",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2_1-I2V-ATI-14B_fp8_e5m2",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2_1-InfiniteTalk-Multi_fp16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2_1-InfiniTetalk-Single_fp16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2_1-MiniMaxRemover_1_3B_fp16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2_1-MoviiGen1_1_fp16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2_1-SkyReels-V2-DF-14B-540P_fp16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2_1-SkyReels-V2-DF-14B-720P_fp16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2_1-SkyReels-V2-DF-14B-720P_fp8_e5m2",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2_1-SkyReels-V2-DF-1_3B-540P_fp32",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2_1-SkyReels-V2-I2V-14B-540P_fp16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2_1-SkyReels-V2-I2V-14B-540P_fp8_e5m2",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2_1-SkyReels-V2-I2V-14B-720P_fp16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2_1-SkyReels-V2-I2V-14B-720P_fp8_e5m2",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2_1-SkyReels-V2-T2V-14B-540P_fp16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2_1-SkyReels-V2-T2V-14B-720P_fp16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2_1-SkyReels-V2-T2V-14B-720P_fp8_e5m2",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2_1-T2V-1-3B-EchoShot_fp16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy_fp8_scaled - Wan2_1-T2V-14B-FastWan-480p_fp8_e4m3fn_scaled_KJ",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy_fp8_scaled - Wan2_1-T2V-14B-Phantom_fp8_e4m3fn_scaled_KJ",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy_fp8_scaled - Wan2_1-T2V-14B-Phantom_fp8_e5m2_scaled_KJ",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2_1-T2V-14B_CausVid_fp8_e4m3fn",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy_fp8_scaled - Wan2_1-T2V-14B_fp8_e4m3fn_scaled_KJ",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2_1-T2V-14B_fp8_e5m2",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy_fp8_scaled - Wan2_1-T2V-14B_fp8_e5m2_scaled_KJ",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2_1-T2V-1_3B_bf16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2_1-T2V-1_3B_fp32",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2_1-T2V_FastWan_1_3B_bf16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2_1-VACE_module_14B_bf16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2_1-VACE_module_1_3B_bf16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2_1_EchoShot_1_3B_lora_rank_128_fp16",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2_1_FantasyPortrait_fp16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2_1_kwai_recammaster_1_3B_step20000_bf16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2_1_Lumen-T2V-1.3B-V1.0_bf16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2_1_MTV-Crafter_motion_adapter_bf16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2_1_self_forcing_dmd_1_3B_lora_rank_32_fp16",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2_1_self_forcing_sid_v2_1_3B_lora_rank_32_fp16",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2_1_Skyreels-v2-I2V-720P_LoRA_rank_64_fp16",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2_1_Skyreels-v2-I2V-720P_LoRA_rank_adaptive_quantile_0.20_fp16",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2_1_Skyreels-v2-T2V-720P_LoRA_rank_64_fp16",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2_1_VACE_1_3B_preview_bf16",
+    "type": "diffusion_model"
+  },
+  { "name": "Kijai/WanVideo_comfy - Wan2_1_VAE_bf16", "type": "vae" },
+  { "name": "Kijai/WanVideo_comfy - Wan2_1_VAE_fp32", "type": "vae" },
+  {
+    "name": "Kijai/WanVideo_comfy_fp8_scaled - Wan2_2-Animate-14B_fp8_e4m3fn_scaled_KJ",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy_fp8_scaled - Wan2_2-Animate-14B_fp8_e5m2_scaled_KJ",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy_fp8_scaled - Wan2_2-Animate-14B_fp8_scaled_e4m3fn_KJ_v2",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy_fp8_scaled - Wan2_2-Animate-14B_fp8_scaled_e5m2_KJ_v2",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2_2-I2V-A14B-HIGH_bf16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy_fp8_scaled - Wan2_2-I2V-A14B-HIGH_fp8_e4m3fn_scaled_KJ",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy_fp8_scaled - Wan2_2-I2V-A14B-HIGH_fp8_e5m2_scaled_KJ",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2_2-I2V-A14B-LOW_bf16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy_fp8_scaled - Wan2_2-I2V-A14B-LOW_fp8_e4m3fn_scaled_KJ",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy_fp8_scaled - Wan2_2-I2V-A14B-LOW_fp8_e5m2_scaled_KJ",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy_fp8_scaled - Wan2_2-I2V_AniSoraV3_2_HIGH_14B_fp8_e4m3fn_scaled_KJ",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy_fp8_scaled - Wan2_2-I2V_AniSoraV3_2_LOW_14B_fp8_e4m3fn_scaled_KJ",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy_fp8_scaled - Wan2_2-T2V-A14B-HIGH_4_steps-250928-dyno-lightx2v_fp8_e4m3fn_scaled_KJ",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy_fp8_scaled - Wan2_2-T2V-A14B-HIGH_fp8_e5m2_scaled_KJ",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy_fp8_scaled - Wan2_2-T2V-A14B-LOW_fp8_e4m3fn_scaled_KJ",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy_fp8_scaled - Wan2_2-T2V-A14B-LOW_fp8_e5m2_scaled_KJ",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy_fp8_scaled - Wan2_2-T2V-A14B_HIGH_fp8_e4m3fn_scaled_KJ",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2_2-TI2V-5B-FastWanFullAttn_bf16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2_2-TI2V-5B-Turbo_fp16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy_fp8_scaled - Wan2_2-TI2V-5B_fp8_e4m3fn_scaled_KJ",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy_fp8_scaled - Wan2_2-TI2V-5B_fp8_e5m2_scaled_KJ",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2_2_5B_FastWanFullAttn_lora_rank_128_bf16",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2_2_Fun_VACE_module_A14B_HIGH_bf16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2_2_Fun_VACE_module_A14B_LOW_bf16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan2_2_I2V_AniSora_3_2_HIGH_rank_64_fp16",
+    "type": "lora"
+  },
+  { "name": "Kijai/WanVideo_comfy - Wan2_2_VAE_bf16", "type": "vae" },
+  {
+    "name": "Comfy-Org/Wan_2.1_ComfyUI_repackaged - wan_2.1_vae",
+    "type": "vae"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan_2_1_T2V_14B_480p_rCM_lora_average_rank_148_bf16",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan_2_1_T2V_14B_480p_rCM_lora_average_rank_83_bf16",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan_2_1_T2V_14B_720p_rCM_lora_average_rank_94_bf16",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan_2_1_T2V_1_3B_480p_rCM_lora_average_rank_64_bf16",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan_2_2_I2V_A14B_HIGH_lightx2v_MoE_distill_lora_rank_64_bf16",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan_2_2_Ovi_audio_model_bf16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - Wan_2_2_Ovi_video_model_bf16",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/Wan_2.1_ComfyUI_repackaged - wan_alpha_2.1_rgba_lora",
+    "type": "lora"
+  },
+  {
+    "name": "Comfy-Org/Wan_2.1_ComfyUI_repackaged - wan_alpha_2.1_vae_alpha_channel",
+    "type": "vae"
+  },
+  {
+    "name": "Comfy-Org/Wan_2.1_ComfyUI_repackaged - wan_alpha_2.1_vae_rgb_channel",
+    "type": "vae"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - WanAnimate_relight_lora_fp16",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - WanAnimate_relight_lora_fp16_resized_from_128_to_dynamic_22",
+    "type": "lora"
+  },
+  {
+    "name": "Kijai/WanVideo_comfy - WanVideo_MTV_Crafter_4DMoT_VQVAE_fp32",
+    "type": "vae"
+  },
+  {
+    "name": "Kijai/wav2vec2_safetensors - wav2vec2-chinese-base_fp16",
+    "type": "audio_encoder"
+  },
+  {
+    "name": "Comfy-Org/Wan_2.2_ComfyUI_Repackaged - wav2vec2_large_english_fp16",
+    "type": "audio_encoder"
+  },
+  {
+    "name": "Comfy-Org/HuMo_ComfyUI - whisper_large_v3_fp16",
+    "type": "audio_encoder"
+  },
+  {
+    "name": "Wuli-art/Qwen-Image-2512-Turbo-LoRA-2-Steps - Wuli-Qwen-Image-2512-Turbo-LoRA-2steps-V1.0-bf16",
+    "type": "lora"
+  },
+  { "name": "Wan-AI/Wan2.2-Animate-14B - yolov10m", "type": "detection" },
+  {
+    "name": "hr16/yolox-onnx - yolox_l.torchscript",
+    "type": "pose_estimation"
+  },
+  {
+    "name": "alibaba-pai/Z-Image-Turbo-Fun-Controlnet-Union-2.1 - Z-Image-Turbo-Fun-Controlnet-Tile-2.1-2601-8steps",
+    "type": "model_patch"
+  },
+  {
+    "name": "alibaba-pai/Z-Image-Turbo-Fun-Controlnet-Union-2.1 - Z-Image-Turbo-Fun-Controlnet-Tile-2.1-8steps",
+    "type": "model_patch"
+  },
+  {
+    "name": "alibaba-pai/Z-Image-Turbo-Fun-Controlnet-Union-2.1 - Z-Image-Turbo-Fun-Controlnet-Tile-2.1-lite-2601-8steps",
+    "type": "model_patch"
+  },
+  {
+    "name": "alibaba-pai/Z-Image-Turbo-Fun-Controlnet-Union-2.1 - Z-Image-Turbo-Fun-Controlnet-Union-2.0",
+    "type": "model_patch"
+  },
+  {
+    "name": "alibaba-pai/Z-Image-Turbo-Fun-Controlnet-Union-2.1 - Z-Image-Turbo-Fun-Controlnet-Union-2.1-2601-8steps",
+    "type": "model_patch"
+  },
+  {
+    "name": "alibaba-pai/Z-Image-Turbo-Fun-Controlnet-Union-2.1 - Z-Image-Turbo-Fun-Controlnet-Union-2.1-8steps",
+    "type": "model_patch"
+  },
+  {
+    "name": "alibaba-pai/Z-Image-Turbo-Fun-Controlnet-Union-2.1 - Z-Image-Turbo-Fun-Controlnet-Union-2.1-lite-2601-8steps",
+    "type": "model_patch"
+  },
+  {
+    "name": "alibaba-pai/Z-Image-Turbo-Fun-Controlnet-Union-2.1 - Z-Image-Turbo-Fun-Controlnet-Union-2.1",
+    "type": "model_patch"
+  },
+  {
+    "name": "alibaba-pai/Z-Image-Turbo-Fun-Controlnet-Union - Z-Image-Turbo-Fun-Controlnet-Union",
+    "type": "model_patch"
+  },
+  { "name": "Comfy-Org/z_image - z_image_bf16", "type": "diffusion_model" },
+  {
+    "name": "Comfy-Org/z_image_turbo - z_image_turbo_bf16",
+    "type": "diffusion_model"
+  },
+  { "name": "1980s Fantasy Movies Lora", "type": "lora" },
+  { "name": "2000s Analog Core", "type": "lora" },
+  { "name": "35mm Photo - Flux/Z-Turbo", "type": "lora" },
+  {
+    "name": "90's anime melancholy illustriousXL/ZImageTurbo/Flux/Chroma",
+    "type": "lora"
+  },
+  {
+    "name": "90s anime aesthetic illustriousXL/ZImageTurbo/Flux/Chroma",
+    "type": "lora"
+  },
+  { "name": "Amateur Photography", "type": "lora" },
+  { "name": "Animation Shot \u2728", "type": "lora" },
+  { "name": "Shakker-Labs/AWPortrait-Z - AWPortrait-Z", "type": "lora" },
+  { "name": "Arcane Style [LORA] [Z-Image]", "type": "lora" },
+  {
+    "name": "armored dress \u93a7\u88dd\u79ae\u670d  \u30a2\u30fc\u30de\u30fc\u30c9\u30ec\u30b9",
+    "type": "lora"
+  },
+  { "name": "Art Nouveau Style", "type": "lora" },
+  { "name": "Beautify - Supermodel face", "type": "lora" },
+  { "name": "Illustrious CAT Styles", "type": "lora" },
+  { "name": "Cinematic Shot\u2728", "type": "lora" },
+  { "name": "Classic Oil Painting - CE", "type": "lora" },
+  { "name": "Commodore 64 style pixel art", "type": "lora" },
+  {
+    "name": "D-ART | @18dart5 - Style LoRA [Anima | Flux.2 Klein | Z-image Turbo | Chroma | Illustratious | Flux | Pony Diffusion | NAI]",
+    "type": "lora"
+  },
+  { "name": "Da Vinci Drawing style - CE", "type": "lora" },
+  {
+    "name": "Dark Art Style illustriousXL/ZImageTurbo/Flux/Chroma",
+    "type": "lora"
+  },
+  { "name": "Dark Atmospheric Style - CE", "type": "lora" },
+  {
+    "name": "Dark Fantasy 90's anime style illustriousXL/ZImageTurbo/Flux/Chroma",
+    "type": "lora"
+  },
+  { "name": "Daubrez Painterly Style", "type": "lora" },
+  { "name": "Geometric - CE", "type": "lora" },
+  { "name": "Glowing Nightmare  [ZIT & IL & NAI]", "type": "lora" },
+  { "name": "GrainScape UltraReal", "type": "lora" },
+  { "name": "Granblue fantasy style", "type": "lora" },
+  { "name": "Grimoires & Books (Fantasy Game Asset)", "type": "lora" },
+  { "name": "Hard Edge Pixel Art", "type": "lora" },
+  { "name": "HeavyMetalStyle", "type": "lora" },
+  { "name": "horror - 77\u00ae", "type": "lora" },
+  { "name": "Horror Style", "type": "lora" },
+  { "name": "Hyperdetailed Illustration", "type": "lora" },
+  {
+    "name": "Japanese photo 1980s. Style (\u65e5\u672c\u306e1980\u5e74\u4ee3\u306e\u5199\u771f\u96c6)",
+    "type": "lora"
+  },
+  { "name": "Knight", "type": "lora" },
+  { "name": "Lenovo UltraReal", "type": "lora" },
+  { "name": "Line Drawing - CE", "type": "lora" },
+  { "name": "LOGH-FPA Fleet Style", "type": "lora" },
+  { "name": "Long Sleeve Super Crop", "type": "lora" },
+  {
+    "name": "Low Poly Zelda 64: Ocarina of Time Style + Characters / Nintendo N64 Style",
+    "type": "lora"
+  },
+  {
+    "name": "[LuisaP\u2764\ufe0f] Experimental Lora Pack - Z-IMAGE-TURBO",
+    "type": "lora"
+  },
+  {
+    "name": "[LuisaP\u2764\ufe0f] ZIMAGE & QWEN! Shadbase but from Ohio \ud83d\udc80",
+    "type": "lora"
+  },
+  {
+    "name": "[LuisaP\u2764\ufe0f] Z-IMAGE AND QWEN! PIXEL ART REFINER",
+    "type": "lora"
+  },
+  { "name": "Medieval - CE", "type": "lora" },
+  { "name": "Modern Retro Anime - FLUX - PONY - ILL - ZIT", "type": "lora" },
+  { "name": "Movie Poster - CE", "type": "lora" },
+  {
+    "name": "Neurocore Anime Shadow Circuit by ChronoKnight - [FLUX, IL, ZIT]",
+    "type": "lora"
+  },
+  { "name": "NEW ANIME CORE - ILL - FLUX - ZIT", "type": "lora" },
+  {
+    "name": "NEW FANTASY CORE - ILL-FLUX-PONY-SDXL- ZIT(detailer)",
+    "type": "lora"
+  },
+  { "name": "New Ukiyo-e style", "type": "lora" },
+  { "name": "NiceGirls UltraReal", "type": "lora" },
+  {
+    "name": "OB\u62cd\u7acb\u5f97\u4eba\u50cf\u6444\u5f71 Instant camera portrait photography",
+    "type": "lora"
+  },
+  { "name": "Octane Render", "type": "lora" },
+  { "name": "Pencil Drawing Enhancer - CE", "type": "lora" },
+  { "name": "PhotorealTouch", "type": "lora" },
+  {
+    "name": "Realistic Skin Texture style (Detailed Skin) XL + SD1.5 + F1D + Pony + Illu + Zit",
+    "type": "lora"
+  },
+  { "name": "Retro 80s Vaporwave", "type": "lora" },
+  {
+    "name": "Retro Neo Noir illustriousXL/ZImageTurbo/Flux/Chroma",
+    "type": "lora"
+  },
+  { "name": "Retro-Pop - CE", "type": "lora" },
+  {
+    "name": "Retro Sci-fi 90's anime style IllustriousXL/ZImageTurbo/Flux/Chroma",
+    "type": "lora"
+  },
+  { "name": "Retro Vintage Comics Style", "type": "lora" },
+  { "name": "Sketch (Style) [ZIT & SDXL]", "type": "lora" },
+  { "name": "Sony Alpha A7 III Style", "type": "lora" },
+  { "name": "The Look", "type": "lora" },
+  { "name": "UmeSky", "type": "lora" },
+  {
+    "name": "Velvet's Mythic Fantasy Styles | Flux + Pony + illustrious",
+    "type": "lora"
+  },
+  { "name": "Vintage Drawing - CE", "type": "lora" },
+  { "name": "Western Toon Style", "type": "lora" },
+  { "name": "YFG ChatGPT 4o Style [Flux | ZIT]", "type": "lora" },
+  {
+    "name": "Z Image Turbo / Flux - Realistic Water Droplets (Wet Effect) - By Devildonia",
+    "type": "lora"
+  },
+  { "name": "zyd232's Ink Style", "type": "lora" },
+  {
+    "name": "Lightricks/LTX-2.3-fp8 - ltx-2.3-22b-dev-fp8",
+    "type": "checkpoint"
+  },
+  {
+    "name": "FireRedTeam/FireRed-Image-Edit-1.0-ComfyUI - FireRed-Image-Edit-1.0-Lightning-8steps-v1.0",
+    "type": "lora"
+  },
+  {
+    "name": "FireRedTeam/FireRed-Image-Edit-1.1-ComfyUI - FireRed-Image-Edit-1.1-transformer",
+    "type": "diffusion_model"
+  },
+  {
+    "name": "Comfy-Org/ltx-2 - gemma-3-12b-it-abliterated_lora_rank64_bf16",
+    "type": "lora"
+  },
+  {
+    "name": "dx8152/Flux2-Klein-9B-Consistency - Klein-consistency",
+    "type": "lora"
+  },
+  {
+    "name": "fal/virtual-tryoff-lora - virtual-tryoff-lora_comfy",
+    "type": "lora"
+  }
+]

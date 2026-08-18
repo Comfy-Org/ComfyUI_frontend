@@ -56,7 +56,7 @@ describe('ChangeMemberRoleDialogContent', () => {
     mockChangeMemberRole.mockResolvedValue(undefined)
   })
 
-  it('shows promote copy and confirms with Make owner', async () => {
+  it('shows promote copy and confirms with Make admin', async () => {
     const { user } = renderDialog('owner')
 
     expect(

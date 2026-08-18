@@ -35,7 +35,7 @@ export const searchInputSizeConfig = {
     icon: 'size-4',
     iconPos: 'left-2.5',
     inputPl: 'pl-8',
-    inputText: 'text-xs',
+    inputText: 'text-sm',
     clearPos: 'left-2.5'
   },
   xl: {

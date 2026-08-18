@@ -90,7 +90,9 @@ export function useExternalLink() {
     githubFrontend: 'https://github.com/Comfy-Org/ComfyUI_frontend',
     githubElectron: 'https://github.com/Comfy-Org/electron',
     forum: 'https://forum.comfy.org/',
-    comfyOrg: 'https://www.comfy.org/'
+    comfyOrg: 'https://www.comfy.org/',
+    teamPlanRequests:
+      'https://comfy-org.portal.usepylon.com/forms/team-plan-requests'
   }
 
   /** Common doc paths for use with buildDocsUrl */

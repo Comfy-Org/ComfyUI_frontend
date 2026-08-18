@@ -14,7 +14,12 @@
       >
         <header
           data-component-id="LeftPanelHeader"
-          class="flex h-18 w-full shrink-0 items-center-safe gap-2 pr-3 pl-6"
+          :class="
+            cn(
+              'flex h-18 w-full shrink-0 items-center-safe gap-2 pr-3 pl-6',
+              headerHeightClass
+            )
+          "
         >
           <slot name="leftPanelHeaderTitle" />
           <Button
@@ -33,7 +38,12 @@
       <div class="flex flex-col overflow-hidden bg-base-background">
         <header
           v-if="$slots.header"
-          class="flex h-18 w-full items-center justify-between gap-2 px-6"
+          :class="
+            cn(
+              'flex h-18 w-full items-center justify-between gap-2 px-6',
+              headerHeightClass
+            )
+          "
         >
           <div class="flex min-w-0 flex-1 gap-2">
             <Button
@@ -151,20 +161,22 @@ const SIZE_CLASSES = {
 } as const
 
 type ModalSize = keyof typeof SIZE_CLASSES
-type ContentPadding = 'default' | 'compact' | 'none'
+type ContentPadding = 'default' | 'compact' | 'none' | 'flush'
 
 const {
   contentTitle,
   rightPanelTitle,
   size = 'lg',
   leftPanelWidth = '14rem',
-  contentPadding = 'default'
+  contentPadding = 'default',
+  headerHeightClass = 'h-18'
 } = defineProps<{
   contentTitle: string
   rightPanelTitle?: string
   size?: ModalSize
   leftPanelWidth?: string
   contentPadding?: ContentPadding
+  headerHeightClass?: string
 }>()
 
 const sizeClasses = computed(() => SIZE_CLASSES[size])
@@ -204,7 +216,10 @@ const contentContainerClass = computed(() =>
   cn(
     'flex scrollbar-custom min-h-0 flex-1 flex-col overflow-y-auto',
     contentPadding === 'default' && 'px-6 pt-0 pb-10',
-    contentPadding === 'compact' && 'px-6 pt-0 pb-2'
+    contentPadding === 'compact' && 'px-6 pt-0 pb-2',
+    // Keep the horizontal inset but let content run to the bottom edge (it
+    // clips there instead of ending above a padding gap).
+    contentPadding === 'flush' && 'px-6 pt-0'
   )
 )
 

@@ -8,3 +8,6 @@ export const WORKSPACE_STORAGE_KEYS = {
 } as const
 
 export const TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000
+
+/** Max length for a workspace name (create, rename, edit). */
+export const WORKSPACE_NAME_MAX_LENGTH = 30

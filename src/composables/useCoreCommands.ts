@@ -74,7 +74,19 @@ import { useDialogStore } from '@/stores/dialogStore'
 
 const moveSelectedNodesVersionAdded = '1.22.2'
 export function useCoreCommands(): ComfyCommand[] {
-  const { isActiveSubscription, showSubscriptionDialog } = useBillingContext()
+  const {
+    isActiveSubscription,
+    isInitialized: isBillingInitialized,
+    initialize: initializeBilling,
+    showSubscriptionDialog
+  } = useBillingContext()
+
+  // The context loads lazily (settings surfaces usually trigger it); gate on
+  // fetched state, not on not-yet-fetched state, or Run paywalls spuriously.
+  async function hasActiveSubscription(): Promise<boolean> {
+    if (!isBillingInitialized.value) await initializeBilling()
+    return isActiveSubscription.value
+  }
   const workflowService = useWorkflowService()
   const workflowStore = useWorkflowStore()
   const settingsDialog = useSettingsDialog()
@@ -502,7 +514,7 @@ export function useCoreCommands(): ComfyCommand[] {
         trigger_source?: ExecutionTriggerSource
       }) => {
         trackRunButton(metadata)
-        if (!isActiveSubscription.value) {
+        if (!(await hasActiveSubscription())) {
           showSubscriptionDialog({ reason: 'subscribe_to_run' })
           return
         }
@@ -525,7 +537,7 @@ export function useCoreCommands(): ComfyCommand[] {
         trigger_source?: ExecutionTriggerSource
       }) => {
         trackRunButton(metadata)
-        if (!isActiveSubscription.value) {
+        if (!(await hasActiveSubscription())) {
           showSubscriptionDialog({ reason: 'subscribe_to_run' })
           return
         }
@@ -547,7 +559,7 @@ export function useCoreCommands(): ComfyCommand[] {
         trigger_source?: ExecutionTriggerSource
       }) => {
         trackRunButton(metadata)
-        if (!isActiveSubscription.value) {
+        if (!(await hasActiveSubscription())) {
           showSubscriptionDialog({ reason: 'subscribe_to_run' })
           return
         }

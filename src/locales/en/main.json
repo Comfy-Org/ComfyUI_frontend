@@ -1089,6 +1089,7 @@
     "runWorkflow": "Run workflow (Shift to queue at front)",
     "runWorkflowFront": "Run workflow (Queue at front)",
     "runWorkflowDisabled": "Workflow contains unsupported nodes (highlighted red). Remove these to run the workflow.",
+    "runWorkflowDisabledNodes": "Workflows with disabled nodes cannot be run. Check the Errors tab for details.",
     "run": "Run",
     "stopRunInstant": "Stop Run (Instant)",
     "stopRunInstantTooltip": "Stop running",
@@ -1556,6 +1557,8 @@
     "3DViewer": "3DViewer",
     "Canvas Navigation": "Canvas Navigation",
     "PlanCredits": "Plan & Credits",
+    "Members": "Members",
+    "PartnerNodes": "Allowlist",
     "Vue Nodes": "Nodes 2.0",
     "VueNodes": "Nodes 2.0",
     "Nodes 2_0": "Nodes 2.0",
@@ -2586,21 +2589,12 @@
     "creditsRemainingThisYear": "Included (Refills {date})",
     "creditsYouveAdded": "Additional",
     "remaining": "remaining",
-    "refillsDate": "Refills {date}",
-    "refillsNextCycle": "Refills next cycle",
-    "creditsUsed": "{used} used",
-    "creditsLeftOfTotal": "{remaining} left of {total}",
-    "monthlyUsageProgress": "{used} of {total} monthly credits used",
+    "percentUsed": "{percent}% used",
+    "usageProgress": "{used} of {total} credits used",
     "additionalCreditsInfo": "About additional credits",
     "additionalCredits": "Additional credits",
     "additionalCreditsInUse": "In use",
-    "usedAfterMonthly": "Used after monthly runs out",
-    "monthlyCreditsUsedUpTitle": "Monthly credits are used up. Refills {date}",
-    "monthlyCreditsUsedUpTitleNoDate": "Monthly credits are used up",
-    "monthlyCreditsUsedUpDescription": "You're now spending additional credits.",
-    "outOfCreditsTitle": "You're out of credits. Credits refill {date}",
-    "outOfCreditsTitleNoDate": "You're out of credits",
-    "outOfCreditsDescription": "Add more credits to continue generating.",
+    "usedAfterMonthly": "Used after plan credits run out",
     "additionalCreditsTooltip": "Credits you add on top of your plan. Used after monthly credits run out. Each expires one year after purchase.",
     "monthlyCreditsInfo": "These credits refresh monthly and don't roll over",
     "viewMoreDetailsPlans": "View more details about plans & pricing",
@@ -2610,6 +2604,7 @@
     "planLoadError": "We couldn't load your plan details.",
     "planLoadErrorRetry": "Try again",
     "teamPlanName": "Team",
+    "enterprisePlanName": "Enterprise",
     "teamPlanIncludes": "Your plan includes everything in {plan}, plus:",
     "teamPerks": {
       "inviteMembers": "Invite members",
@@ -2845,9 +2840,36 @@
     "updatePassword": "Update Password"
   },
   "workspacePanel": {
+    "billingStatus": {
+      "warning": {
+        "title": "Payment declined",
+        "body": "Your last payment didn't go through. Your subscription will pause on {date} unless payment is updated."
+      },
+      "paused": {
+        "title": "Subscription paused",
+        "body": "This workspace's subscription is paused. Update payment to resume.",
+        "memberBody": "This workspace's subscription is paused. Your workspace admins need to update the payment method."
+      },
+      "outOfCredits": {
+        "title": "Out of credits",
+        "body": "Your team has used all its credits. Add more credits to continue generating or wait until credits refill on {date}.",
+        "bodyNoDate": "Your team has used all its credits. Add more credits to continue generating.",
+        "addCredits": "Add credits",
+        "dismiss": "Dismiss"
+      },
+      "ending": {
+        "title": "Your team plan ends on {date}",
+        "body": "Members keep full access until then. Reactivate to keep your shared credits and seats.",
+        "reactivate": "Reactivate plan"
+      },
+      "updatePayment": "Update payment"
+    },
+    "charactersLeft": "{count} character left | {count} characters left",
+    "doubleClickToRename": "Double-click to rename",
+    "editWorkspaceImage": "Edit workspace image",
     "invite": "Invite",
     "inviteMember": "Invite member",
-    "inviteLimitReached": "You've reached the maximum of {count} members",
+    "inviteLimitReached": "Your workspace is at the member limit",
     "tabs": {
       "dashboard": "Dashboard",
       "planCredits": "Plan & Credits",
@@ -2856,23 +2878,82 @@
     "dashboard": {
       "placeholder": "Dashboard workspace settings"
     },
+    "partnerNodes": {
+      "description": "Choose which partner nodes your team can use. Workflows with disabled nodes cannot be run.",
+      "searchPlaceholder": "Search partner nodes",
+      "selectAll": "Select all partner nodes",
+      "columns": {
+        "name": "Partner Node",
+        "partner": "Partner",
+        "nodes": "Nodes",
+        "lastModified": "Last modified"
+      },
+      "neverModified": "—",
+      "empty": "No partner nodes match your search.",
+      "selectedCount": "{count} node selected | {count} nodes selected",
+      "clearSelection": "Clear selection",
+      "loadError": "Failed to load partner nodes",
+      "updateError": "Failed to update partner nodes",
+      "autoEnableVerb": "auto-enable",
+      "autoEnableSubject": "newly added partner nodes",
+      "groupCount": "{enabled}/{total} enabled"
+    },
+    "allowlist": {
+      "tabs": {
+        "partnerNodes": "Partner nodes",
+        "models": "Models"
+      },
+      "enableAll": "Enable all",
+      "disableAll": "Disable all"
+    },
+    "models": {
+      "descriptionLead": "Choose which models your team can use.",
+      "descriptionImport": "The import model feature will be disabled.",
+      "descriptionWorkflows": "Workflows with disabled models cannot be run.",
+      "searchPlaceholder": "Search models",
+      "selectAll": "Select all models",
+      "columns": {
+        "name": "Model",
+        "type": "Type",
+        "lastModified": "Last modified"
+      },
+      "neverModified": "—",
+      "empty": "No models match your search.",
+      "selectedCount": "{count} model selected | {count} models selected",
+      "clearSelection": "Clear selection",
+      "autoEnableVerb": "auto-enable",
+      "autoEnableSubject": "newly added models"
+    },
     "members": {
       "header": "Members",
       "membersCount": "{count} of {maxSeats} members",
       "pendingInvitesCount": "{count} pending invite | {count} pending invites",
       "tabs": {
         "active": "Active",
+        "membersCount": "Members ({count})",
+        "pending": "Pending",
         "pendingCount": "Pending ({count})"
       },
+      "membersUsage": "{count} of {max} total members.",
       "columns": {
+        "email": "Email",
         "inviteDate": "Invite date",
         "expiryDate": "Expiry date",
-        "role": "Role"
+        "role": "Role",
+        "lastActivity": "Last activity",
+        "creditsUsed": "Credits used this month"
+      },
+      "activity": {
+        "justNow": "just now",
+        "minutesAgo": "{n} min ago",
+        "hoursAgo": "{n} hr ago",
+        "daysAgo": "{count} day ago | {count} days ago"
       },
       "actions": {
         "resendInvite": "Resend invite",
         "cancelInvite": "Cancel invite",
         "changeRole": "Change role",
+        "setCreditLimit": "Set credit limit",
         "removeMember": "Remove member"
       },
       "upsellBanner": "To add teammates, upgrade your plan.",
@@ -2883,10 +2964,20 @@
       "contactUs": "Contact us",
       "noInvites": "No pending invites",
       "noMembers": "No members",
-      "searchPlaceholder": "Search..."
+      "searchPlaceholder": "Search...",
+      "creditLimitDialog": {
+        "title": "Set a monthly credit limit for {name}",
+        "description": "Once they reach this limit, they’ll be unable to run workflows.",
+        "limitOption": "Limit monthly credit usage to:",
+        "noLimit": "No limit",
+        "warning": "This user has already spent {credits} credits. Setting the limit at or below their current usage will prevent further runs until next month.",
+        "invalidLimit": "Enter a credit limit greater than zero.",
+        "update": "Update limit"
+      }
     },
     "menu": {
       "editWorkspace": "Edit workspace details",
+      "renameWorkspace": "Rename Workspace",
       "leaveWorkspace": "Leave Workspace",
       "deleteWorkspace": "Delete Workspace",
       "deleteWorkspaceDisabledTooltip": "Cancel your workspace's active subscription first",
@@ -2896,6 +2987,115 @@
       "title": "Edit workspace details",
       "nameLabel": "Workspace name",
       "save": "Save"
+    },
+    "requestMore": "Request more",
+    "planCredits": {
+      "tabs": {
+        "overview": "Credits",
+        "activity": "Activity",
+        "invoices": "Invoices"
+      }
+    },
+    "overview": {
+      "perMonth": "mo",
+      "renewsOn": "Renews on {date}",
+      "paused": "Paused",
+      "managePayment": "Manage payment",
+      "changePlan": "Change plan",
+      "usd": "USD",
+      "nextInvoice": "Next month invoice",
+      "seeMore": "See more",
+      "learnMore": "Learn more",
+      "pricingTable": "Partner Nodes pricing table",
+      "messageSupport": "Message support",
+      "snapshot": {
+        "user": "User",
+        "lastActivity": "Last activity",
+        "creditsUsed": "Credits used",
+        "topSpenders": "Top spenders",
+        "recentActivity": "Recent activity",
+        "empty": {
+          "topSpenders": "No credits used yet this month",
+          "recentActivity": "No activity yet"
+        }
+      },
+      "inactive": {
+        "title": "Inactive team subscription",
+        "titleEnterprise": "Inactive enterprise subscription",
+        "subtitle": "Reactivate your team plan to add more members and run workflows",
+        "subtitleEnterprise": "Reactivate your enterprise plan to add more members and run workflows",
+        "reactivate": "Reactivate plan"
+      }
+    },
+    "activity": {
+      "columns": {
+        "date": "Date",
+        "user": "User",
+        "eventType": "Event type",
+        "eventDetails": "Event details",
+        "creditsUsed": "Credits"
+      },
+      "hoverCard": {
+        "totalCreditsUsed": "Total credits used",
+        "lastActivity": "Last activity",
+        "partnerNodeUsed": "Partner node used"
+      },
+      "fullActivity": "Full activity",
+      "perUserHint": "Looking for total usage per user?",
+      "seeMembers": "See Members"
+    },
+    "invoices": {
+      "columns": {
+        "date": "Date",
+        "eventType": "Event type",
+        "price": "Price"
+      },
+      "fullHistory": "Full invoice history"
+    },
+    "autoReload": {
+      "title": "Credit auto-reload",
+      "subtitle": "Automatically add credits when your balance runs low, within an optional monthly budget.",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "edit": "Edit",
+      "empty": {
+        "body": "Keep your workflows running with auto-reloaded credits. Set a monthly budget so charges don't surprise you.",
+        "cta": "Set up auto-reload"
+      },
+      "tile": {
+        "label": "Auto-reload",
+        "whenBelow": "when credits drop below",
+        "monthlyBudget": "Monthly budget",
+        "percentSpent": "{percent}% spent",
+        "spentOfBudget": "{spent} of {budget}"
+      },
+      "badge": {
+        "paused": "Paused",
+        "off": "Off"
+      },
+      "dialog": {
+        "title": "Auto-reload credits",
+        "thresholdLabel": "When credits drop below:",
+        "amountLabel": "Add this amount of credits:",
+        "budgetToggleLabel": "Monthly budget",
+        "budgetToggleHint": "Limit how much is auto-reloaded per month",
+        "budgetPlaceholderCredits": "Enter an amount of credits",
+        "budgetPlaceholderUsd": "Enter an amount of dollars",
+        "minReload": "Minimum amount is {amount}",
+        "allowsReloads": "Allows {count} reload /mo | Allows {count} reloads /mo",
+        "credits": "Credits",
+        "usd": "USD",
+        "cancel": "Cancel",
+        "update": "Update"
+      }
+    },
+    "memberLimitDialog": {
+      "title": "Workspace is at the member limit",
+      "message": "All seats are filled. To invite someone new, remove a member, rescind an invite, or request more seats."
+    },
+    "workflowQueuedDialog": {
+      "title": "Your workflow is queued",
+      "message": "Max workflow capacity reached. It'll start automatically as capacity opens up. If this happens often, you can also request for more capacity."
     },
     "leaveDialog": {
       "title": "Leave this workspace?",
@@ -2915,12 +3115,12 @@
       "error": "Failed to remove member"
     },
     "changeRoleDialog": {
-      "promoteTitle": "Make {name} an owner?",
+      "promoteTitle": "Make {name} an admin?",
       "promoteIntro": "They'll be able to:",
       "promotePermissionCredits": "Add additional credits",
       "promotePermissionManage": "Manage members, payment methods, and workspace settings",
-      "promotePermissionRoles": "Promote and demote other owners (except the workspace creator).",
-      "promoteConfirm": "Make owner",
+      "promotePermissionRoles": "Promote and demote other admins (except the workspace owner).",
+      "promoteConfirm": "Make admin",
       "demoteTitle": "Demote {name} to member?",
       "demoteMessage": "They'll lose admin access.",
       "demoteConfirm": "Demote to member",
@@ -2979,6 +3179,18 @@
       "failedToDeleteWorkspace": "Failed to delete workspace",
       "failedToLeaveWorkspace": "Failed to leave workspace",
       "failedToFetchWorkspaces": "Failed to load workspaces"
+    },
+    "memberCredits": {
+      "edgeLead": "The workspace is low on credits.",
+      "edgeExplainer": "This is what you can spend right now, not your monthly limit.",
+      "monthlyLimit": "Monthly limit: {n}",
+      "monthlyLimitLabel": "Monthly limit",
+      "percentUsed": "{n}% used",
+      "requestLimitIncrease": "Request limit increase",
+      "notifyOwner": "Notify workspace owner",
+      "requested": "Your workspace owner has been notified by email",
+      "tileLabel": "Credits",
+      "resetsOn": "Resets {date}"
     }
   },
   "teamWorkspacesDialog": {
@@ -2991,13 +3203,14 @@
     "newWorkspace": "New workspace",
     "namePlaceholder": "e.g. Marketing Team",
     "createWorkspace": "Create workspace",
-    "nameValidationError": "Name must be 1–50 characters using letters, numbers, spaces, or common punctuation."
+    "nameValidationError": "Name must be 1–30 characters using letters, numbers, spaces, or common punctuation."
   },
   "workspaceSwitcher": {
     "switchWorkspace": "Switch workspace",
     "subscribe": "Subscribe",
     "personal": "Personal",
     "roleOwner": "Owner",
+    "roleAdmin": "Admin",
     "roleMember": "Member",
     "createWorkspace": "Create a workspace",
     "maxWorkspacesReached": "You can only own 10 workspaces. Delete one to create a new one.",
@@ -3884,6 +4097,12 @@
     "noErrors": "No errors",
     "errorsDetected": "Error detected | Errors detected",
     "resolveBeforeRun": "Resolve before running the workflow",
+    "disabledNodes": {
+      "title": "Disabled node | Disabled nodes",
+      "message": "This node has been disabled by your team admin. Use a different node. | These nodes have been disabled by your team admin. Use different nodes.",
+      "toastDetail": "This node has been disabled by your team admin. | These nodes have been disabled by your team admin.",
+      "viewDetails": "View details"
+    },
     "expand": "Expand",
     "collapse": "Collapse",
     "executionErrorOccurred": "An error occurred during execution. Check the Errors tab for details.",
@@ -4383,7 +4602,11 @@
     "hideDevOnly": "Hide Dev-Only Nodes",
     "hideDevOnlyDescription": "Hides nodes marked as dev-only unless dev mode is enabled",
     "hideSubgraph": "Hide Subgraph Nodes",
-    "hideSubgraphDescription": "Temporarily hides subgraph nodes from node library and search"
+    "hideSubgraphDescription": "Temporarily hides subgraph nodes from node library and search",
+    "hideDisabledPartnerNodes": "Hide admin-disabled partner nodes"
+  },
+  "nodeSearch": {
+    "disabledByTeamAdmin": "This node has been disabled by your team admin. | These nodes have been disabled by your team admin."
   },
   "secrets": {
     "title": "API Keys & Secrets",

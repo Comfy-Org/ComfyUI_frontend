@@ -34,7 +34,9 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
 
 vi.mock('@/stores/nodeDefStore', () => ({
   useNodeDefStore: () => ({
-    getInputSpecForWidget: vi.fn()
+    getInputSpecForWidget: vi.fn(),
+    registerNodeDefFilter: vi.fn(),
+    nodeDefsByName: {}
   })
 }))
 

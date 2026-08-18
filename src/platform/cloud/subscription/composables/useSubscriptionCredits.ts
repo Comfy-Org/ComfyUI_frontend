@@ -6,6 +6,12 @@ import {
   formatCreditsFromCents
 } from '@/base/credits/comfyCredits'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import {
+  DEFAULT_TIER_KEY,
+  TIER_TO_KEY,
+  getTierCredits
+} from '@/platform/cloud/subscription/constants/tierPricing'
+import { computeMonthlyUsage } from '@/platform/cloud/subscription/utils/creditsProgress'
 
 /**
  * Composable for handling subscription credit calculations and formatting.
@@ -64,12 +70,44 @@ export function useSubscriptionCredits() {
     creditsFromMicros(toValue(billingContext.balance)?.prepaidBalanceMicros)
   )
 
+  // Total credits granted for the current billing cycle. Team plans read the
+  // credit stop; personal tiers read the tier grant. Annual plans front-load the
+  // whole year, so multiply the monthly nominal by the cycle length.
+  const cycleMonths = computed(() =>
+    toValue(billingContext.subscription)?.duration === 'ANNUAL' ? 12 : 1
+  )
+  const allowanceTotalCredits = computed<number | null>(() => {
+    const teamStop = toValue(billingContext.currentTeamCreditStop)
+    const tier = toValue(billingContext.subscription)?.tier
+    const tierKey = tier
+      ? (TIER_TO_KEY[tier] ?? DEFAULT_TIER_KEY)
+      : DEFAULT_TIER_KEY
+    const monthly = teamStop
+      ? teamStop.credits_monthly
+      : getTierCredits(tierKey)
+    return monthly === null ? null : monthly * cycleMonths.value
+  })
+
+  // Usage of that allowance drives the credits bar. Paused plans read as unused
+  // (credits are frozen), so force it to zero.
+  const usage = computed(() => {
+    const base = computeMonthlyUsage(
+      monthlyBonusCreditsValue.value,
+      allowanceTotalCredits.value ?? 0
+    )
+    return toValue(billingContext.isPaused)
+      ? { ...base, used: 0, usedFraction: 0 }
+      : base
+  })
+
   return {
     totalCredits,
     monthlyBonusCredits,
     prepaidCredits,
     monthlyBonusCreditsValue,
     prepaidCreditsValue,
-    isLoadingBalance
+    isLoadingBalance,
+    allowanceTotalCredits,
+    usage
   }
 }
