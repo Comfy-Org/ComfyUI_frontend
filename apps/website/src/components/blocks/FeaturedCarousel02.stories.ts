@@ -113,7 +113,10 @@ export const ImageSlides: Story = {
         eyebrow: 'Community spotlight',
         title: 'Product renders in one pass',
         body: 'Photoreal product shots straight from a workflow — swap materials, lighting, and camera moves without re-rendering from scratch.',
-        primaryCta: { label: 'Open workflow', href: '#' },
+        primaryCta: {
+          label: 'Open workflow',
+          href: 'https://comfy.org/workflows/e8099b642c9f-e8099b642c9f/'
+        },
         tags: ['Workflow']
       },
       {
@@ -126,8 +129,12 @@ export const ImageSlides: Story = {
         eyebrow: 'Tutorial',
         title: 'Clean plates, start to finish',
         body: 'A guided walkthrough of the clean-plate pipeline, from ingest to final comp.',
-        primaryCta: { label: 'Watch now', href: '#' },
-        secondaryCta: { label: 'Read the docs', href: '#', newTab: true }
+        primaryCta: { label: 'Watch now', href: '/learning' },
+        secondaryCta: {
+          label: 'Read the docs',
+          href: 'https://docs.comfy.org/',
+          newTab: true
+        }
       }
     ]
   }

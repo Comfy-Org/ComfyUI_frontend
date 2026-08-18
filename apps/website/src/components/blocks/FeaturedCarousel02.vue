@@ -60,6 +60,7 @@ const activeIndex = ref(0)
 
 function goTo(index: number): void {
   const count = slides.length
+  if (count === 0) return
   activeIndex.value = (index + count) % count
 }
 
@@ -130,7 +131,7 @@ useCarouselAutoplay({
         <div
           class="flex gap-4"
           :class="
-            prefersReducedMotion()
+            reduceMotion
               ? undefined
               : 'transition-transform duration-500 ease-out'
           "
