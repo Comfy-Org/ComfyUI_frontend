@@ -259,6 +259,14 @@ ported.
 in `destroy`: a mounted element owns listeners, timers and observers that node
 removal would otherwise leave running.
 
+If that DOM widget's `getValue` / `setValue` held an editor document, give the
+mount a `defaultValue` and synchronize through the `MountedValue` passed to
+`render`. Set `serialize: true` and, for frontend-only state, `sendToPrompt:
+false`; use the widget's `beforeSerialize` event when the live editor must be
+sampled immediately before writing. Once the document is a real widget value,
+normal workflow serialization also carries it through paste and duplicate — a
+`clone()` override and side cache are not another requirement.
+
 **If you are converting `node.addInput` / `removeInput` / `addOutput`** — the
 pack is almost certainly growing slots as the last one fills (the "Multi"
 combiner shape). **Use `node.inputs.add(name, type)` / `node.inputs.remove(ref)`**
@@ -381,11 +389,12 @@ load is correct.
 
 **If you are converting a read of `LiteGraph.NODE_SLOT_HEIGHT`,
 `NODE_TITLE_HEIGHT`, `ROUND_RADIUS` or `vueNodesMode`** — **use
-`comfy.constants`** (`slotHeight`, `titleHeight`, `cornerRadius`,
-`domRenderer`). It returns a frozen snapshot by value; do not hold the object.
-Reach for `domRenderer` only when you genuinely must pick a strategy —
-`widgets.mount` and `widgets.canvas` already work under both renderers, so
-needing it usually means the conversion took a wrong turn.
+the published answer to the operation, not another numeric renderer constant**.
+`getBounds`, `getSlotPosition`, `getScreenRect`, `widgets.mount` and
+`widgets.canvas` already account for layout and renderer choice. There is no
+published `comfy.constants`; if behavior truly requires reproducing the
+renderer geometry after those mechanisms are considered, name that specific
+gap rather than inventing one.
 
 **If you are converting `this._somethingPrivate = x` on a node** — handles hold
 no arbitrary properties. **Keep a `Map` keyed by `node.id`** and clear the entry
