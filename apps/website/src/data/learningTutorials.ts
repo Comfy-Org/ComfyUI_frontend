@@ -138,6 +138,7 @@ export const learningTutorials: readonly LearningTutorial[] = [
     slug: 'full-node-graph-basics',
     category: 'basics',
     episode: 1,
+    author: dougHogan,
     youtubeId: 'TQhIYT1ZYGQ',
     title: {
       en: 'ComfyUI Tutorial for Beginners: Full Node Graph Basics (2026)',
@@ -157,6 +158,7 @@ export const learningTutorials: readonly LearningTutorial[] = [
     slug: 'loras-style-transfer-controlnets',
     category: 'basics',
     episode: 2,
+    author: dougHogan,
     youtubeId: '-igiHGaxKek',
     title: {
       en: 'ComfyUI Tutorial for Beginners: LoRAs, Style Transfer & ControlNets (2026)',
