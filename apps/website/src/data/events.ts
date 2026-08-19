@@ -264,10 +264,14 @@ const events: readonly ComfyEvent[] = [
     ctaLabel: { en: 'Register', 'zh-CN': '报名' },
     featured: {
       order: 0,
-      media: eventVideo('08.27-MUTEK.mp4', {
-        en: 'MUTEK: Generative AI for 3D Projection Mapping',
-        'zh-CN': 'MUTEK：面向 3D 投影映射的生成式 AI'
-      })
+      media: eventVideo(
+        '08.27-MUTEK.mp4',
+        {
+          en: 'MUTEK: Generative AI for 3D Projection Mapping',
+          'zh-CN': 'MUTEK：面向 3D 投影映射的生成式 AI'
+        },
+        '08.27-MUTEK_thumb.jpeg'
+      )
     }
   },
   {
