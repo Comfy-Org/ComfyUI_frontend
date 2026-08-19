@@ -221,8 +221,8 @@ const events: readonly ComfyEvent[] = [
     },
     location: { en: 'Los Angeles, CA', 'zh-CN': '美国加州洛杉矶' },
     dateLabel: {
-      en: 'August 26, 2026 · 6PM PT',
-      'zh-CN': '2026年8月26日 · 下午6点（PT）'
+      en: 'August 26, 2026 · 6–9 PM PT',
+      'zh-CN': '2026年8月26日 · 下午6点至9点（PT）'
     },
     startDateTime: '2026-08-26T18:00:00-07:00',
     endDateTime: '2026-08-26T21:00:00-07:00',
@@ -251,7 +251,10 @@ const events: readonly ComfyEvent[] = [
       'zh-CN':
         '与 Moment Factory 合作的实操工作坊，探讨如何用 ComfyUI 将生成式 AI 融入大型空间设计，并在最后将 AI 生成的视觉投影到实体模型上。'
     },
-    location: { en: 'Montréal, QC', 'zh-CN': '加拿大魁北克蒙特利尔' },
+    location: {
+      en: 'Édifice Wilder, Montréal, QC',
+      'zh-CN': 'Édifice Wilder，加拿大魁北克蒙特利尔'
+    },
     dateLabel: {
       en: 'August 27, 2026 · 1:30PM ET',
       'zh-CN': '2026年8月27日 · 下午1:30（ET）'
