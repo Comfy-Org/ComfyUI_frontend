@@ -447,6 +447,24 @@ export const workspaceApi = {
   },
 
   /**
+   * Get credit balance for a specific workspace via an explicitly minted
+   * token, without switching the active workspace context.
+   */
+  async getBillingBalanceWithToken(
+    accessToken: string
+  ): Promise<BillingBalanceResponse> {
+    try {
+      const response = await workspaceApiClient.get<BillingBalanceResponse>(
+        workspaceApiUrl('/billing/balance'),
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  /**
    * Get available subscription plans
    * GET /api/billing/plans
    */

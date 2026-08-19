@@ -555,6 +555,22 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
    * callers onto a single in-flight mint, backs off after failure, and returns
    * null so callers fail closed rather than downgrade to the personal identity.
    */
+  /**
+   * Read-only token mint for a workspace the user is not switched into, used
+   * to peek at per-workspace data (e.g. switcher balances). Never touches the
+   * active workspace context or the stored token state.
+   */
+  async function peekWorkspaceToken(
+    workspaceId: string
+  ): Promise<string | null> {
+    try {
+      const minted = await requestToken(workspaceId)
+      return minted.token
+    } catch {
+      return null
+    }
+  }
+
   async function ensureWorkspaceToken(
     preferredWorkspaceId?: string
   ): Promise<string | null> {
@@ -1014,6 +1030,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     getWorkspaceAuthHeader,
     ensureWorkspaceAuthHeader,
     ensureWorkspaceToken,
+    peekWorkspaceToken,
     getWorkspaceToken,
     getUnifiedToken,
     clearWorkspaceContext

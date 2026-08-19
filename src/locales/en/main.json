@@ -3337,6 +3337,9 @@
     "nameValidationError": "Name must be 1–50 characters using letters, numbers, spaces, or common punctuation."
   },
   "workspaceSwitcher": {
+    "usingCreditsFrom": "Using credits from",
+    "noCredits": "No credits",
+    "scopeCaption": "Workspaces only affect which credits you use.",
     "switchWorkspace": "Switch workspace",
     "subscribe": "Subscribe",
     "personal": "Personal",

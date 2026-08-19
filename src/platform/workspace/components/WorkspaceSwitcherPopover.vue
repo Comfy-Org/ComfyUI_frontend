@@ -1,6 +1,12 @@
 <template>
   <div class="flex max-h-96 w-80 flex-col overflow-hidden rounded-lg">
     <div
+      v-if="!isCloud"
+      class="px-4 pt-3 pb-1 text-xs font-semibold tracking-wide text-muted-foreground uppercase"
+    >
+      {{ $t('workspaceSwitcher.usingCreditsFrom') }}
+    </div>
+    <div
       class="flex scrollbar-custom min-h-0 flex-1 flex-col"
       data-testid="workspace-switcher-list"
     >
@@ -64,11 +70,25 @@
                   v-if="isCurrentWorkspace(workspace)"
                   class="pi pi-check shrink-0 text-sm text-base-foreground"
                 />
+                <span
+                  v-else-if="rowBalanceLabel(workspace)"
+                  class="shrink-0 text-sm text-muted-foreground tabular-nums"
+                >
+                  {{ rowBalanceLabel(workspace) }}
+                </span>
               </button>
             </div>
           </div>
         </template>
       </template>
+    </div>
+
+    <div
+      v-if="!isCloud"
+      class="flex shrink-0 items-center gap-2 px-4 py-2 text-xs text-muted-foreground"
+    >
+      <i class="pi pi-info-circle text-xs" />
+      <span>{{ $t('workspaceSwitcher.scopeCaption') }}</span>
     </div>
 
     <!-- Create workspace button -->
@@ -109,12 +129,14 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { isCloud } from '@/platform/distribution/types'
+import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
+import { useWorkspaceBalances } from '@/platform/workspace/composables/useWorkspaceBalances'
 import { useWorkspaceSwitch } from '@/platform/workspace/composables/useWorkspaceSwitch'
 import { useWorkspaceTierLabel } from '@/platform/workspace/composables/useWorkspaceTierLabel'
 import type {
@@ -202,5 +224,30 @@ async function handleSelectWorkspace(workspace: AvailableWorkspace) {
 
 function handleCreateWorkspace() {
   emit('create')
+}
+
+const { locale } = useI18n()
+const { balanceByWorkspaceId, loadBalances } = useWorkspaceBalances()
+
+const peekableWorkspaceIds = computed(() =>
+  availableWorkspaces.value
+    .filter((w) => !isCurrentWorkspace(w))
+    .map((w) => w.id)
+)
+
+onMounted(() => loadBalances(peekableWorkspaceIds.value))
+watch(peekableWorkspaceIds, (ids) => loadBalances(ids))
+
+function rowBalanceLabel(workspace: AvailableWorkspace): string {
+  const state = balanceByWorkspaceId[workspace.id]
+  if (!state || state.status === 'loading' || state.status === 'error') {
+    return ''
+  }
+  if (state.cents <= 0) return t('workspaceSwitcher.noCredits')
+  return formatCreditsFromCents({
+    cents: state.cents,
+    locale: locale.value,
+    numberOptions: { minimumFractionDigits: 0, maximumFractionDigits: 0 }
+  })
 }
 </script>
