@@ -378,14 +378,21 @@ export class SubgraphHelper {
    * the id of the subgraph node it produced.
    */
   async convertSelectionToSubgraph(): Promise<string> {
+    const findSubgraphNodeIds = async () =>
+      (await this.comfyPage.nodeOps.getNodeRefsByTitle('New Subgraph')).map(
+        (node) => String(node.id)
+      )
+    const existingIds = new Set(await findSubgraphNodeIds())
+
     await this.page
       .getByTestId(TestIds.selectionToolbox.convertSubgraph)
       .click()
-    const findSubgraphNodes = () =>
-      this.comfyPage.nodeOps.getNodeRefsByTitle('New Subgraph')
-    await expect.poll(findSubgraphNodes).toHaveLength(1)
-    const [subgraphNode] = await findSubgraphNodes()
-    return String(subgraphNode.id)
+
+    const findAddedIds = async () =>
+      (await findSubgraphNodeIds()).filter((id) => !existingIds.has(id))
+    await expect.poll(findAddedIds).toHaveLength(1)
+    const [addedId] = await findAddedIds()
+    return addedId
   }
 
   async enterSubgraphWithFallback(nodeId: string): Promise<void> {
