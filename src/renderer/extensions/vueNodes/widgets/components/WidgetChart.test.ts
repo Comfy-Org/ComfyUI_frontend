@@ -4,15 +4,11 @@ import { describe, expect, it } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
-import type { ChartInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
+import type { ChartWidgetOptions } from './WidgetChart.types'
 import WidgetChart from './WidgetChart.vue'
 import { createMockWidget } from './widgetTestUtils'
-
-type ChartWidgetOptions = NonNullable<ChartInputSpec['options']> &
-  IWidgetOptions
 
 const i18n = createI18n({
   legacy: false,
