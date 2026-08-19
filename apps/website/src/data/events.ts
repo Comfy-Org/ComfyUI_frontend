@@ -201,11 +201,6 @@ export function deriveFeaturedEvents(
     }))
 }
 
-const showdownStreamHref: LocalizedText = {
-  en: 'https://www.youtube.com/live/VeG1bveKZco',
-  'zh-CN': 'https://www.youtube.com/live/VeG1bveKZco'
-}
-
 // zh-CN copy is a first pass and pending native review.
 const events: readonly ComfyEvent[] = [
   {
@@ -230,7 +225,15 @@ const events: readonly ComfyEvent[] = [
     media: eventImage('livestream-aug-19.jpg', {
       en: 'Using Comfy to Go Beyond the Models livestream',
       'zh-CN': '善用 Comfy，超越模型本身直播'
-    })
+    }),
+    featured: {
+      order: 0,
+      media: eventImage('livestream-aug-19.jpg', {
+        en: 'Using Comfy to Go Beyond the Models livestream',
+        'zh-CN': '善用 Comfy，超越模型本身直播'
+      }),
+      showTitle: false
+    }
   },
   {
     id: 'future-ai-post-production',
@@ -277,25 +280,12 @@ const events: readonly ComfyEvent[] = [
       'zh-CN': 'Purz 与 Allyson 现场对决开源与付费 AI 视频模型，实测效果对比。'
     },
     location: { en: 'Online', 'zh-CN': '线上' },
-    dateLabel: {
-      en: 'August 12, 2026 · 10AM PT',
-      'zh-CN': '2026年8月12日 · 上午10点（PT）'
-    },
+    media: eventImage('august-12-livestream_v2.png', {
+      en: 'Video Model Showdown livestream recording',
+      'zh-CN': '视频模型对决直播回放'
+    }),
     startDateTime: '2026-08-12T10:00:00-07:00',
-    link: { href: showdownStreamHref, newTab: true },
-    liveVideoId: 'VeG1bveKZco',
-    featured: {
-      order: 3,
-      media: eventVideo(
-        'august-12-livestream.mp4',
-        {
-          en: 'Video Model Showdown livestream',
-          'zh-CN': '视频模型对决直播'
-        },
-        'august-12-livestream.jpg'
-      ),
-      autoplayMs: 5000
-    }
+    recordingVideoId: 'VeG1bveKZco'
   },
   {
     id: 'comfy-creatives-model-jam',

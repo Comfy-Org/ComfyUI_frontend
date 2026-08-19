@@ -36,6 +36,7 @@ import type {
   NodeBoundsUpdate,
   NodeId,
   NodeLayout,
+  NodeLayoutLease,
   Point,
   RerouteId,
   RerouteLayout,
@@ -137,6 +138,8 @@ class LayoutStoreImpl implements LayoutStore {
   // CustomRef cache and trigger functions
   private nodeRefs = new Map<NodeId, Ref<NodeLayout | null>>()
   private nodeTriggers = new Map<NodeId, () => void>()
+  // Live holders per node ref; the ref is shared, so only the last release drops it
+  private nodeRefHolders = new Map<NodeId, number>()
 
   // New data structures for hit testing
   private linkLayouts = new Map<LinkId, LinkLayout>()
@@ -1018,12 +1021,31 @@ class LayoutStoreImpl implements LayoutStore {
   }
 
   /**
-   * Clean up refs and triggers for a node when its Vue component unmounts.
-   * This should be called from the component's onUnmounted hook.
+   * Retain the layout ref for a node beyond the current tick. The ref is
+   * shared by every holder of the same node id, so anything that keeps it --
+   * a node component, a coachmark, slot tracking -- must retain it and call
+   * the returned release when it is done. Transient `getNodeLayoutRef(id).value`
+   * reads do not retain.
    */
-  cleanupNodeRef(nodeId: NodeId): void {
-    this.nodeRefs.delete(nodeId)
-    this.nodeTriggers.delete(nodeId)
+  retainNodeLayoutRef(nodeId: NodeId): NodeLayoutLease {
+    const layout = this.getNodeLayoutRef(nodeId)
+    this.nodeRefHolders.set(nodeId, (this.nodeRefHolders.get(nodeId) ?? 0) + 1)
+
+    let released = false
+    const release = () => {
+      if (released) return
+      released = true
+      const remaining = (this.nodeRefHolders.get(nodeId) ?? 1) - 1
+      if (remaining > 0) {
+        this.nodeRefHolders.set(nodeId, remaining)
+        return
+      }
+      this.nodeRefHolders.delete(nodeId)
+      this.nodeRefs.delete(nodeId)
+      this.nodeTriggers.delete(nodeId)
+    }
+
+    return { layout, release }
   }
 
   /**
