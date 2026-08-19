@@ -44,35 +44,31 @@ describe('SettingsPlansSection', () => {
     mockFetchPlans.mockReset()
   })
 
-  it('fetches plans through the billing context on mount', () => {
+  it('renders team stops loaded through the billing context, re-snapping to the API default', async () => {
+    // Resolves after mount, like the real fetch: the slider is seeded from the
+    // static $700 stop, which the arriving breakpoints do not contain.
+    mockFetchPlans.mockImplementation(async () => {
+      useBillingPlans().teamCreditStops.value = {
+        default_stop_index: 1,
+        stops: [
+          {
+            id: 'team_300',
+            credits: 63_300,
+            monthly: { list_price_cents: 30_000, price_cents: 30_000 },
+            yearly: { list_price_cents: 30_000, price_cents: 30_000 }
+          },
+          {
+            id: 'team_900',
+            credits: 189_900,
+            monthly: { list_price_cents: 90_000, price_cents: 85_500 },
+            yearly: { list_price_cents: 90_000, price_cents: 81_000 }
+          }
+        ]
+      }
+    })
+
     renderSection()
-
-    expect(mockFetchPlans).toHaveBeenCalledTimes(1)
-  })
-
-  it('re-snaps the slider to the API default when stops arrive after mount', async () => {
-    renderSection()
-
     await userEvent.click(screen.getByRole('button', { name: 'Teams' }))
-    expect(screen.getByText('147,700')).toBeTruthy()
-
-    useBillingPlans().teamCreditStops.value = {
-      default_stop_index: 1,
-      stops: [
-        {
-          id: 'team_300',
-          credits: 63_300,
-          monthly: { list_price_cents: 30_000, price_cents: 30_000 },
-          yearly: { list_price_cents: 30_000, price_cents: 30_000 }
-        },
-        {
-          id: 'team_900',
-          credits: 189_900,
-          monthly: { list_price_cents: 90_000, price_cents: 85_500 },
-          yearly: { list_price_cents: 90_000, price_cents: 81_000 }
-        }
-      ]
-    }
 
     expect(await screen.findByText('189,900')).toBeTruthy()
     expect(screen.getByText('Generates ~17,235 5s videos*')).toBeTruthy()
