@@ -6,6 +6,7 @@
  * works in legacy canvas mode as well.
  */
 import { useChainCallback } from '@/composables/functional/useChainCallback'
+import { clearWidgetRelatedErrorScopes } from '@/composables/graph/widgetErrorClearing'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import { createPromotionErrorReconciler } from '@/core/graph/subgraph/createPromotionErrorReconciler'
 import { LiteGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
@@ -103,25 +104,25 @@ function installNodeHooks(node: LGraphNode): void {
       const hostExecId = getExecutionIdByNode(app.rootGraph, node)
       if (!hostExecId) return
 
-      const options = { min: widget.options?.min, max: widget.options?.max }
+      const executionErrorStore = useExecutionErrorStore()
+      const range = { min: widget.options?.min, max: widget.options?.max }
       const source = resolvePromotedWidgetSource(app.rootGraph, node, widget)
-      if (source?.sourceExecutionId) {
-        useExecutionErrorStore().clearWidgetRelatedErrors(
-          source.sourceExecutionId,
-          source.sourceWidgetName,
-          source.sourceWidgetName,
-          newValue,
-          options
-        )
-      }
-
-      useExecutionErrorStore().clearWidgetRelatedErrors(
-        hostExecId,
-        name,
-        widget.name,
-        newValue,
-        options
-      )
+      clearWidgetRelatedErrorScopes({
+        clearWidgetRelatedErrors: executionErrorStore.clearWidgetRelatedErrors,
+        host: {
+          executionId: hostExecId,
+          errorInputName: name,
+          widgetName: widget.name
+        },
+        source: source?.sourceExecutionId
+          ? {
+              executionId: source.sourceExecutionId,
+              widgetName: source.sourceWidgetName
+            }
+          : undefined,
+        value: newValue,
+        range
+      })
     }
   )
 }
