@@ -1307,7 +1307,6 @@ describe('useMediaAssetActions', () => {
         )
       })
       expect(mockDeleteAsset).not.toHaveBeenCalled()
-      expect(mockOutputLoadNew).toHaveBeenCalled()
     })
   })
 

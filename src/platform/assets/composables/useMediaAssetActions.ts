@@ -717,22 +717,6 @@ export function useMediaAssetActions() {
                 )
               })
 
-              // Update stores after deletions
-              const hasOutputAssets = assetArray.some((a) => {
-                const type = getAssetType(a)
-                return type === 'output' || type === 'temp'
-              })
-              const hasInputAssets = assetArray.some(
-                (a) => getAssetType(a) === 'input'
-              )
-
-              if (hasOutputAssets) {
-                await assetsStore.outputAssets.loadNew()
-              }
-              if (hasInputAssets) {
-                await assetsStore.inputAssets.loadNew()
-              }
-
               const rootGraph = app.rootGraph
               if (rootGraph) {
                 const deletedValues = new Set<string>()
