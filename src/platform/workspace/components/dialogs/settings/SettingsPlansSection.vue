@@ -10,7 +10,7 @@
     </div>
 
     <div class="flex flex-wrap items-center justify-between gap-3">
-      <ToggleGroup v-model="audience" type="single" variant="outline">
+      <ToggleGroup v-model="audienceModel" type="single" variant="outline">
         <ToggleGroupItem value="personal">
           {{ t('settingsPlans.personal') }}
         </ToggleGroupItem>
@@ -117,7 +117,7 @@
             :key="benefit"
             class="flex items-center gap-2"
           >
-            <i class="pi pi-check text-success-foreground text-xs" />
+            <i class="pi pi-check text-xs text-base-foreground" />
             <span class="text-sm text-base-foreground">{{ benefit }}</span>
           </div>
         </div>
@@ -205,7 +205,7 @@
             :key="perk"
             class="flex items-start gap-2"
           >
-            <i class="pi pi-check text-success-foreground mt-0.5 text-xs" />
+            <i class="pi pi-check mt-0.5 text-xs text-base-foreground" />
             <span class="text-sm text-base-foreground">{{ perk }}</span>
           </div>
           <span class="text-sm text-muted-foreground">
@@ -276,7 +276,15 @@ interface PlanCard {
 
 const { t, n } = useI18n()
 
-const audience = ref('personal')
+const audience = ref<'personal' | 'teams'>('personal')
+// Re-clicking the active item makes the reka-ui toggle group emit an empty
+// value; the section always shows one audience, so ignore deselection.
+const audienceModel = computed({
+  get: () => audience.value,
+  set: (value: string) => {
+    if (value === 'personal' || value === 'teams') audience.value = value
+  }
+})
 const billedYearly = ref(true)
 
 const plans = computed<PlanCard[]>(() => [

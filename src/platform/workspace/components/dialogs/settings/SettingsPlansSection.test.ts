@@ -79,6 +79,18 @@ describe('SettingsPlansSection', () => {
     expect(screen.queryByText('147,700')).toBeNull()
   })
 
+  it('keeps the active audience selected when its toggle is clicked again', async () => {
+    renderSection()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Personal' }))
+    expect(screen.getByText('Choose Standard')).toBeTruthy()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Teams' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Teams' }))
+    expect(screen.getByText('Team Plan')).toBeTruthy()
+    expect(screen.queryByText('Choose Standard')).toBeNull()
+  })
+
   it('renders the three personal cards with yearly pricing by default', () => {
     renderSection()
 
