@@ -6,14 +6,72 @@ import { render, screen } from '@testing-library/vue'
 
 import enMessages from '@/locales/en/main.json'
 import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBillingPlans'
+import type { Plan } from '@/platform/workspace/api/workspaceApi'
 
 import SettingsPlansSection from './SettingsPlansSection.vue'
 
-const { mockFetchPlans } = vi.hoisted(() => ({ mockFetchPlans: vi.fn() }))
+const {
+  mockFetchPlans,
+  mockCatalogPlans,
+  mockCurrentPlanSlug,
+  mockSubscribeToPersonal,
+  mockSubscribeToTeam
+} = vi.hoisted(() => ({
+  mockFetchPlans: vi.fn(),
+  mockCatalogPlans: { value: [] as unknown[] },
+  mockCurrentPlanSlug: { value: null as string | null },
+  mockSubscribeToPersonal: vi.fn(),
+  mockSubscribeToTeam: vi.fn()
+}))
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
-  useBillingContext: () => ({ fetchPlans: mockFetchPlans })
+  useBillingContext: () => ({
+    fetchPlans: mockFetchPlans,
+    plans: mockCatalogPlans,
+    currentPlanSlug: mockCurrentPlanSlug
+  })
 }))
+
+vi.mock(
+  '@/platform/workspace/composables/useSettingsPlansCheckout',
+  async () => {
+    const { ref } = await import('vue')
+    return {
+      useSettingsPlansCheckout: () => ({
+        isSubscribing: ref(false),
+        subscribeToPersonal: mockSubscribeToPersonal,
+        subscribeToTeam: mockSubscribeToTeam
+      })
+    }
+  }
+)
+
+function makeCatalogPlan(
+  slug: string,
+  tier: Plan['tier'],
+  duration: Plan['duration']
+): Plan {
+  return {
+    slug,
+    tier,
+    duration,
+    price_cents: 1600,
+    credits_cents: 4200,
+    max_seats: 1,
+    availability: { available: true },
+    seat_summary: {
+      seat_count: 1,
+      total_cost_cents: 1600,
+      total_credits_cents: 4200
+    }
+  }
+}
+
+const yearlyCatalog = () => [
+  makeCatalogPlan('standard-yearly', 'STANDARD', 'ANNUAL'),
+  makeCatalogPlan('creator-yearly', 'CREATOR', 'ANNUAL'),
+  makeCatalogPlan('pro-yearly', 'PRO', 'ANNUAL')
+]
 
 const i18n = createI18n({
   legacy: false,
@@ -41,7 +99,11 @@ function renderSection() {
 describe('SettingsPlansSection', () => {
   beforeEach(() => {
     useBillingPlans().teamCreditStops.value = null
+    mockCatalogPlans.value = []
+    mockCurrentPlanSlug.value = null
     mockFetchPlans.mockReset()
+    mockSubscribeToPersonal.mockReset()
+    mockSubscribeToTeam.mockReset()
   })
 
   it('fetches plans through the billing context on mount', () => {
@@ -159,5 +221,93 @@ describe('SettingsPlansSection', () => {
     expect(
       screen.getByRole('button', { name: 'Subscribe to Team Monthly' })
     ).toBeTruthy()
+  })
+
+  it('passes the tier key and selected cycle to the subscribe handler', async () => {
+    renderSection()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Choose Standard' })
+    )
+    expect(mockSubscribeToPersonal).toHaveBeenCalledWith('standard', 'yearly')
+
+    await userEvent.click(screen.getByRole('switch'))
+    await userEvent.click(screen.getByRole('button', { name: 'Choose Pro' }))
+    expect(mockSubscribeToPersonal).toHaveBeenCalledWith('pro', 'monthly')
+  })
+
+  it('disables the current plan card and keeps the others actionable', async () => {
+    mockCatalogPlans.value = yearlyCatalog()
+    mockCurrentPlanSlug.value = 'creator-yearly'
+    renderSection()
+
+    const currentButton = screen.getByRole('button', { name: 'Current Plan' })
+    expect(currentButton).toBeDisabled()
+    expect(
+      screen.getByRole('button', { name: 'Choose Standard' })
+    ).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Choose Pro' })).toBeEnabled()
+
+    await userEvent.click(currentButton)
+    expect(mockSubscribeToPersonal).not.toHaveBeenCalled()
+  })
+
+  it('marks no card current for a founder or legacy plan slug', () => {
+    mockCatalogPlans.value = yearlyCatalog()
+    mockCurrentPlanSlug.value = 'founders-edition-monthly'
+    renderSection()
+
+    expect(screen.queryByRole('button', { name: 'Current Plan' })).toBeNull()
+    expect(
+      screen.getByRole('button', { name: 'Choose Standard' })
+    ).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Choose Creator' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Choose Pro' })).toBeEnabled()
+  })
+
+  it('passes the selected API stop and cycle to the team subscribe handler', async () => {
+    useBillingPlans().teamCreditStops.value = {
+      default_stop_index: 1,
+      stops: [
+        {
+          id: 'team_300',
+          credits: 63_300,
+          monthly: { list_price_cents: 30_000, price_cents: 30_000 },
+          yearly: { list_price_cents: 30_000, price_cents: 30_000 }
+        },
+        {
+          id: 'team_900',
+          credits: 189_900,
+          monthly: { list_price_cents: 90_000, price_cents: 85_500 },
+          yearly: { list_price_cents: 90_000, price_cents: 81_000 }
+        }
+      ]
+    }
+    renderSection()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Teams' }))
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Subscribe to Team Yearly' })
+    )
+
+    expect(mockSubscribeToTeam).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'team_900' }),
+      'yearly'
+    )
+  })
+
+  it('disables the team button when the team plan for the cycle is current', async () => {
+    mockCurrentPlanSlug.value = 'team_per_credit_annual'
+    renderSection()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Teams' }))
+
+    const teamButton = screen.getByRole('button', { name: 'Current plan' })
+    expect(teamButton).toBeDisabled()
+
+    await userEvent.click(screen.getByRole('switch'))
+    expect(
+      screen.getByRole('button', { name: 'Subscribe to Team Monthly' })
+    ).toBeEnabled()
   })
 })
