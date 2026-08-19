@@ -196,7 +196,9 @@ vi.mock('@/stores/nodeOutputStore', () => ({
 vi.mock('@/stores/subgraphNavigationStore', () => ({
   useSubgraphNavigationStore: vi.fn(() => ({
     saveCurrentViewport: vi.fn(),
-    updateHash: vi.fn()
+    updateHash: vi.fn(),
+    exportState: vi.fn(() => []),
+    restoreState: vi.fn()
   }))
 }))
 
@@ -1703,20 +1705,6 @@ describe('ComfyApp', () => {
       )
     }
 
-    /** Mirrors `loadApiJson`/`importA1111`: the root graph is populated in
-     *  place and never configured, so it still carries the zero id. */
-    async function importWorkflow(
-      workflowService: WorkflowService,
-      graph: LGraph,
-      workflow: ComfyWorkflow
-    ): Promise<ComfyWorkflowJSON> {
-      workflowService.beforeLoadNewGraph()
-      app.clean()
-      const workflowData = { ...createWorkflowGraphData(), id: graph.id }
-      await workflowService.afterLoadNewGraph(workflow, workflowData)
-      return workflowData
-    }
-
     it('restores the failed run state when returning to a workflow tab', async () => {
       const workflowService = await useRealWorkflowService()
       const graph = new LGraph()
@@ -1748,46 +1736,45 @@ describe('ComfyApp', () => {
 
     it('gives each imported workflow its own restorable run errors', async () => {
       const workflowService = await useRealWorkflowService()
+      const workflowStore = useWorkflowStore()
       const graph = new LGraph()
       Reflect.set(app, 'rootGraphInternal', graph)
       Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      singletonApp.canvas = mockCanvas
+      Reflect.set(mockCanvas, 'ds', { scale: 1, offset: [0, 0] })
+      mockWorkspaceWorkflow.createNewTemporary.mockImplementation(
+        workflowStore.createNewTemporary
+      )
+      mockWorkspaceWorkflow.getWorkflowByPath.mockImplementation(
+        workflowStore.getWorkflowByPath
+      )
+      mockWorkspaceWorkflow.isActive.mockImplementation(workflowStore.isActive)
+      mockWorkspaceWorkflow.openWorkflow.mockImplementation(
+        async (workflow) => {
+          const loadedWorkflow = await workflowStore.openWorkflow(workflow)
+          mockWorkspaceWorkflow.activeWorkflow = loadedWorkflow
+          return loadedWorkflow
+        }
+      )
 
-      const importedA = markLoaded(
-        new ComfyWorkflow({
-          path: 'workflows/api-a.json',
-          modified: 0,
-          size: 0
-        })
-      )
-      const importedB = markLoaded(
-        new ComfyWorkflow({
-          path: 'workflows/api-b.json',
-          modified: 0,
-          size: 0
-        })
-      )
-
-      const firstImport = await importWorkflow(
-        workflowService,
-        graph,
-        importedA
-      )
-      expect(firstImport.id).not.toBe(zeroUuid)
-      expect(firstImport.id).toBe(graph.id)
+      await app.loadApiJson({}, 'api-a')
+      const importedA = mockWorkspaceWorkflow.activeWorkflow
+      const importedAId = importedA?.activeState?.id
+      if (!importedA || !importedAId) {
+        throw new Error('Expected the first imported workflow to have an id')
+      }
+      expect(importedAId).not.toBe(zeroUuid)
+      expect(importedAId).toBe(graph.id)
 
       const executionErrorStore = useExecutionErrorStore()
       executionErrorStore.recordNodeErrors(failedKSamplerErrors)
 
-      const secondImport = await importWorkflow(
-        workflowService,
-        graph,
-        importedB
-      )
-      expect(secondImport.id).not.toBe(firstImport.id)
+      await app.loadApiJson({}, 'api-b')
+      const importedBId = mockWorkspaceWorkflow.activeWorkflow?.activeState?.id
+      expect(importedBId).not.toBe(importedAId)
       expect(executionErrorStore.lastNodeErrors).toBeNull()
 
-      // Reopening the first import replays the state it persisted.
-      await switchToWorkflow(workflowService, graph, importedA, firstImport.id!)
+      await switchToWorkflow(workflowService, graph, importedA, importedAId)
 
       expect(executionErrorStore.lastNodeErrors).toEqual(failedKSamplerErrors)
     })
