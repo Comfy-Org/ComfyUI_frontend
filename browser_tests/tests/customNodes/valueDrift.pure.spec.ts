@@ -6,6 +6,7 @@ import {
   matchesTopologyExpectation,
   OUTPUT_TOPOLOGY_EXPECTATIONS_LITEGRAPH,
   OUTPUT_TOPOLOGY_EXPECTATIONS_VUE,
+  pendingRestoredPreviewWidgets,
   pendingRoundtripInitializations,
   rendererLedgerFor,
   ROUNDTRIP_NODE_LOSS_EXPECTATIONS_LITEGRAPH,
@@ -103,6 +104,33 @@ test('roundtrip initialization waits for pack-owned ready values', () => {
       },
       false
     )
+  ).toEqual([])
+})
+
+test('roundtrip waits for required canvas previews after reload', () => {
+  const required = {
+    iToolsLoadImagePlus: ['$$canvas-image-preview'],
+    LoadImageWithExif: ['$$canvas-image-preview']
+  }
+
+  expect(
+    pendingRestoredPreviewWidgets(required, {
+      iToolsLoadImagePlus: ['image', 'upload'],
+      LoadImageWithExif: [
+        'image',
+        'default_focal_mm',
+        'upload',
+        '$$canvas-image-preview'
+      ]
+    })
+  ).toEqual([
+    'iToolsLoadImagePlus: expected $$canvas-image-preview after reload, observed [image,upload]'
+  ])
+  expect(
+    pendingRestoredPreviewWidgets(required, {
+      iToolsLoadImagePlus: ['image', 'upload', '$$canvas-image-preview'],
+      LoadImageWithExif: ['image', 'upload', '$$canvas-image-preview']
+    })
   ).toEqual([])
 })
 

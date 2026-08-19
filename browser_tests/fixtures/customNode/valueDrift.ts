@@ -128,6 +128,21 @@ export function pendingRoundtripInitializations(
     )
 }
 
+export function pendingRestoredPreviewWidgets(
+  requiredByNode: Record<string, string[]>,
+  observedByNode: Record<string, string[]>
+): string[] {
+  return Object.entries(requiredByNode).flatMap(([node, required]) =>
+    required.flatMap((widget) =>
+      observedByNode[node]?.includes(widget)
+        ? []
+        : [
+            `${node}: expected ${widget} after reload, observed [${(observedByNode[node] ?? []).join(',')}]`
+          ]
+    )
+  )
+}
+
 export interface RoundtripNodeLossExpectation {
   reason: string
   restore: string

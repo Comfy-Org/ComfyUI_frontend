@@ -46,6 +46,7 @@ import {
   matchesTopologyExpectation,
   OUTPUT_TOPOLOGY_EXPECTATIONS_LITEGRAPH,
   OUTPUT_TOPOLOGY_EXPECTATIONS_VUE,
+  pendingRestoredPreviewWidgets,
   pendingRoundtripInitializations,
   rendererLedgerFor,
   ROUNDTRIP_INITIALIZATION_SIGNALS,
@@ -76,6 +77,7 @@ const target = new LocalDesktopTarget()
 // Measured optimum (deterministic across repeats, best ms/node); see PR.
 const BATCH_SIZE = 24
 const AUTO_RUN_BATCH = 10
+const ROUNDTRIP_INITIALIZATION_TIMEOUT_MS = 30_000
 // The auto-run disambiguation pass (re-run one node alone) waits longer than
 // the batch does: by then we are timing a single node, so we can afford to
 // distinguish "slow under load" from "genuinely hung" instead of misreading a
@@ -367,6 +369,10 @@ declare global {
     __cnRt?: {
       problems: string[]
       captureInitialWidgetCounts: () => void
+      previewWidgetState: () => {
+        requiredByNode: Record<string, string[]>
+        observedByNode: Record<string, string[]>
+      }
       snapshotAndConfigure: () => void
       compare: (label: string, strict: boolean) => void
       setAndStick: () => void
@@ -942,21 +948,43 @@ for (const entry of manifestEntries) {
                 packManaged,
                 exactValueDriftIndices,
                 exactValueDriftKeys,
-                allowedNodeLosses
+                allowedNodeLosses,
+                vueNodesEnabled
               ]) => {
                 window.app!.graph.clear()
                 window.app!.graph.last_node_id = window.__cnIdBase ?? 0
                 const created = new Map<
                   string,
-                  { type: string; widgetCount: number | null }
+                  {
+                    type: string
+                    widgetCount: number | null
+                    previewWidgetNames: string[]
+                  }
                 >()
                 for (const type of types) {
                   const node = window.LiteGraph!.createNode(type)
                   if (!node) continue
                   window.app!.graph.add(node)
+                  const widgets = node.widgets ?? []
+                  const uploadWidget = widgets.find(
+                    (widget) =>
+                      widget.type === 'button' && widget.name === 'upload'
+                  )
+                  const imageWidget = widgets.find(
+                    (widget) => widget.name === uploadWidget?.value
+                  )
+                  const expectsCanvasPreview =
+                    !vueNodesEnabled &&
+                    node.previewMediaType === 'image' &&
+                    imageWidget?.value !== null &&
+                    imageWidget?.value !== undefined &&
+                    imageWidget.value !== ''
                   created.set(String(node.id), {
                     type,
-                    widgetCount: null
+                    widgetCount: null,
+                    previewWidgetNames: expectsCanvasPreview
+                      ? ['$$canvas-image-preview']
+                      : []
                   })
                 }
                 window.__cnIdBase = window.app!.graph.last_node_id
@@ -1033,6 +1061,22 @@ for (const entry of manifestEntries) {
                       if (expected)
                         expected.widgetCount = (node.widgets ?? []).length
                     }
+                  },
+                  previewWidgetState() {
+                    const requiredByNode: Record<string, string[]> = {}
+                    const observedByNode: Record<string, string[]> = {}
+                    for (const [id, expected] of created) {
+                      if (expected.previewWidgetNames.length === 0) continue
+                      requiredByNode[expected.type] =
+                        expected.previewWidgetNames
+                      const node = window.app!.graph.nodes.find(
+                        (candidate) => String(candidate.id) === id
+                      )
+                      observedByNode[expected.type] = (node?.widgets ?? []).map(
+                        (widget) => widget.name
+                      )
+                    }
+                    return { requiredByNode, observedByNode }
                   },
                   snapshotAndConfigure() {
                     namesBefore = widgetNamesById()
@@ -1258,53 +1302,59 @@ for (const entry of manifestEntries) {
                 allowedWidgets,
                 allowedValueIndices,
                 allowedValueKeys,
-                Object.keys(expectedNodeLosses)
+                Object.keys(expectedNodeLosses),
+                vueNodesEnabled
               ] as const
             )
             await comfyPage.nextFrame()
             const waitForInitialization = async () => {
-              if (Object.keys(initializationSignals).length > 0)
-                await expect
-                  .poll(
-                    async () => {
-                      const values = await comfyPage.page.evaluate(
-                        (signals) => {
-                          const values: Record<string, unknown> = {}
-                          for (const [type, signal] of Object.entries(
-                            signals
-                          )) {
-                            const node = window.app!.graph.nodes.find(
-                              (candidate) => candidate.type === type
-                            ) as unknown as Record<string, unknown> | undefined
-                            if (
-                              signal.predicate === 'widget-count' ||
-                              signal.predicate === 'minimum-widget-count'
-                            ) {
-                              const widgets = (
-                                node as unknown as
-                                  | {
-                                      widgets?: unknown[]
-                                    }
-                                  | undefined
-                              )?.widgets
-                              values[type] = (widgets ?? []).length
-                            } else {
-                              values[type] = node?.[signal.property]
-                            }
-                          }
-                          return values
-                        },
-                        initializationSignals
-                      )
-                      return pendingRoundtripInitializations(
+              await expect
+                .poll(
+                  async () => {
+                    const values = await comfyPage.page.evaluate((signals) => {
+                      const values: Record<string, unknown> = {}
+                      for (const [type, signal] of Object.entries(signals)) {
+                        const node = window.app!.graph.nodes.find(
+                          (candidate) => candidate.type === type
+                        ) as unknown as Record<string, unknown> | undefined
+                        if (
+                          signal.predicate === 'widget-count' ||
+                          signal.predicate === 'minimum-widget-count'
+                        ) {
+                          const widgets = (
+                            node as unknown as
+                              | {
+                                  widgets?: unknown[]
+                                }
+                              | undefined
+                          )?.widgets
+                          values[type] = (widgets ?? []).length
+                        } else {
+                          values[type] = node?.[signal.property]
+                        }
+                      }
+                      return values
+                    }, initializationSignals)
+                    const pendingInitialization =
+                      pendingRoundtripInitializations(
                         initializationSignals,
                         values,
                         vueNodesEnabled
                       )
-                    },
-                    { timeout: 10_000 }
-                  )
-                  .toEqual([])
+                    const previewWidgetState = await comfyPage.page.evaluate(
+                      () => window.__cnRt!.previewWidgetState()
+                    )
+                    return [
+                      ...pendingInitialization,
+                      ...pendingRestoredPreviewWidgets(
+                        previewWidgetState.requiredByNode,
+                        previewWidgetState.observedByNode
+                      )
+                    ]
+                  },
+                  { timeout: ROUNDTRIP_INITIALIZATION_TIMEOUT_MS }
+                )
+                .toEqual([])
             }
             await waitForInitialization()
             await comfyPage.page.evaluate(() =>
