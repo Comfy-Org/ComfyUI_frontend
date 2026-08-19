@@ -302,6 +302,34 @@ export default defineConfig([
       ]
     }
   },
+  // A layout read inside a derivation runs on every recompute, and a derivation
+  // that measures the DOM cannot be tested without one. See
+  // docs/guidance/state-and-effects.md.
+  //
+  // 'warn' rather than 'error' because four pre-existing instances remain, in
+  // BrushCursor.vue, WorkflowTabs.vue and SubgraphBreadcrumb.vue. Promote to
+  // 'error' once those are derived from stores instead.
+  {
+    files: ['src/**/*.ts', 'src/**/*.vue'],
+    ignores: ['**/*.test.ts', '**/*.spec.ts'],
+    rules: {
+      'no-restricted-syntax': [
+        'warn',
+        {
+          selector:
+            "CallExpression[callee.name='computed'] CallExpression[callee.property.name='getBoundingClientRect']",
+          message:
+            'Do not measure the DOM inside a computed - every recompute becomes a layout read. Derive from a store instead. See docs/guidance/state-and-effects.md.'
+        },
+        {
+          selector:
+            "CallExpression[callee.name='computed'] CallExpression[callee.property.name=/^(getComputedStyle|querySelector|querySelectorAll)$/]",
+          message:
+            'Do not inspect the DOM inside a computed. Derive from a store instead. See docs/guidance/state-and-effects.md.'
+        }
+      ]
+    }
+  },
   {
     files: ['**/*.spec.ts'],
     ignores: ['browser_tests/tests/**/*.spec.ts', 'apps/*/e2e/**/*.spec.ts'],
@@ -486,6 +514,20 @@ export default defineConfig([
     files: ['apps/website/**/*.{ts,mts,vue}'],
     rules: {
       'import-x/no-unresolved': ['error', { ignore: ['^astro:'] }]
+    }
+  },
+  // reka-ui wrappers forward props via v-bind, which the rule cannot trace.
+  {
+    files: [
+      'apps/website/src/components/ui/accordion/*.vue',
+      'apps/website/src/components/ui/dialog/*.vue',
+      'apps/website/src/components/ui/navigation-menu/*.vue',
+      'apps/website/src/components/ui/sheet/*.vue',
+      'apps/website/src/components/ui/slider/*.vue',
+      'apps/website/src/components/ui/toggle-group/*.vue'
+    ],
+    rules: {
+      'vue/no-unused-properties': 'off'
     }
   },
   // i18n import enforcement
