@@ -17,7 +17,7 @@ import type { ProxyOptions } from 'vite'
 import { createHtmlPlugin } from 'vite-plugin-html'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
-import { comfyAPIPlugin } from './build/plugins'
+import { comfyAPIPlugin } from './build/plugins/comfyAPIPlugin.ts'
 
 dotenvConfig()
 
@@ -30,6 +30,7 @@ const DISABLE_TEMPLATES_PROXY = process.env.DISABLE_TEMPLATES_PROXY === 'true'
 const GENERATE_SOURCEMAP = process.env.GENERATE_SOURCEMAP !== 'false'
 const COLLECT_COVERAGE = process.env.COLLECT_COVERAGE === 'true'
 const IS_STORYBOOK = process.env.npm_lifecycle_event === 'storybook'
+const TEST_SYSTEM_TIME = Date.parse('2024-06-15T12:00:00Z')
 
 const CRITICAL_COVERAGE_DIRS = [
   'src/base',
@@ -163,7 +164,7 @@ const cloudProxyConfig =
 
 function handleGcsRedirect(
   proxyRes: IncomingMessage,
-  _req: IncomingMessage,
+  req: IncomingMessage,
   res: ServerResponse
 ) {
   const location = proxyRes.headers.location
@@ -185,8 +186,11 @@ function handleGcsRedirect(
     return
   }
 
-  // GCS redirect detected - fetch server-side to avoid CORS
-  fetch(location)
+  // GCS redirect detected - fetch server-side to avoid CORS. Range headers
+  // are forwarded and the partial-content response relayed so ranged reads
+  // behave like production, where the browser talks to GCS directly.
+  const rangeHeader = req.headers.range
+  fetch(location, rangeHeader ? { headers: { range: rangeHeader } } : undefined)
     .then(async (gcsResponse) => {
       if (!gcsResponse.body) {
         res.statusCode = 500
@@ -195,15 +199,21 @@ function handleGcsRedirect(
       }
 
       // Set response headers from GCS
-      res.statusCode = 200
+      res.statusCode = gcsResponse.status
       res.setHeader(
         'Content-Type',
         gcsResponse.headers.get('content-type') || 'application/octet-stream'
       )
 
-      const contentLength = gcsResponse.headers.get('content-length')
-      if (contentLength) {
-        res.setHeader('Content-Length', contentLength)
+      for (const header of [
+        'content-length',
+        'content-range',
+        'accept-ranges'
+      ]) {
+        const value = gcsResponse.headers.get(header)
+        if (value) {
+          res.setHeader(header, value)
+        }
       }
 
       // Convert Web ReadableStream to Node.js stream and pipe to client
@@ -714,9 +724,6 @@ export default defineConfig({
       process.env.npm_package_version
     ),
     __COMFYUI_FRONTEND_COMMIT__: JSON.stringify(GIT_COMMIT),
-    __SENTRY_ENABLED__: JSON.stringify(
-      !(process.env.NODE_ENV === 'development' || !process.env.SENTRY_DSN)
-    ),
     __SENTRY_DSN__: JSON.stringify(process.env.SENTRY_DSN || ''),
     __ALGOLIA_APP_ID__: JSON.stringify(process.env.ALGOLIA_APP_ID || ''),
     __ALGOLIA_API_KEY__: JSON.stringify(process.env.ALGOLIA_API_KEY || ''),
@@ -745,9 +752,23 @@ export default defineConfig({
     restoreMocks: true,
     unstubEnvs: true,
     unstubGlobals: true,
-    fakeTimers: { shouldAdvanceTime: true },
+    fakeTimers: { now: TEST_SYSTEM_TIME, shouldAdvanceTime: true },
     globals: true,
     environment: 'happy-dom',
+    environmentOptions: {
+      happyDOM: {
+        settings: {
+          // Stop happy-dom fetching real subresources. An <iframe src> or
+          // <link rel=stylesheet> pointing at a remote host issues a request
+          // that outlives the test; happy-dom aborts it during teardown and
+          // the resulting error is reported against whichever file is running
+          // then. Unit tests should never depend on the network.
+          disableIframePageLoading: true,
+          disableCSSFileLoading: true,
+          disableJavaScriptFileLoading: true
+        }
+      }
+    },
     // Pin the timezone so date-formatting assertions are deterministic
     // regardless of the contributor's local timezone (CI runs in UTC).
     env: { TZ: 'UTC' },
@@ -756,7 +777,8 @@ export default defineConfig({
     include: [
       'src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
       'packages/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
-      'scripts/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'
+      'scripts/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
+      'tools/oxlint-plugins/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'
     ],
     coverage: {
       provider: 'v8',
