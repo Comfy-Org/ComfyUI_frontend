@@ -56,12 +56,18 @@ describe('ViewHelperManager', () => {
   let camera: THREE.PerspectiveCamera
   let controls: OrbitControls
   let manager: ViewHelperManager
-  const cameraState = {
-    position: { x: 1, y: 2, z: 3 },
-    target: { x: 4, y: 5, z: 6 },
+  const cameraState: CameraState = {
+    position: new THREE.Vector3(1, 2, 3),
+    target: new THREE.Vector3(4, 5, 6),
     zoom: 1.5,
-    cameraType: 'perspective'
-  } as unknown as CameraState
+    cameraType: 'perspective',
+    quaternion: { x: 0, y: 0, z: 0, w: 1 },
+    fov: 35,
+    aspect: 1.5,
+    near: 0.1,
+    far: 1000,
+    frustum: { left: -2, right: 2, top: 2, bottom: -2 }
+  }
 
   beforeEach(() => {
     viewHelperInstances.length = 0
