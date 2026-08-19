@@ -267,6 +267,11 @@ sampled immediately before writing. Once the document is a real widget value,
 normal workflow serialization also carries it through paste and duplicate — a
 `clone()` override and side cache are not another requirement.
 
+If the old editor patched `ChangeTracker.undoRedo` to keep Ctrl+Z local, do not
+port the patch. Focused `input`, `textarea`, and `contenteditable` elements own
+their undo history, including while auto-queue-on-change is watching edits.
+Mount the editor and keep its own undo/redo handlers on that element.
+
 **If you are converting `node.addInput` / `removeInput` / `addOutput`** — the
 pack is almost certainly growing slots as the last one fills (the "Multi"
 combiner shape). **Use `node.inputs.add(name, type)` / `node.inputs.remove(ref)`**
