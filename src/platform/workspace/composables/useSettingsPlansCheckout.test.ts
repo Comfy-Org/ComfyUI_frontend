@@ -195,6 +195,32 @@ describe('useSettingsPlansCheckout', () => {
     expect(mockStartOperation).toHaveBeenCalledWith('op-3', 'subscription')
   })
 
+  it('keeps the checkout locked until the billing op reaches a terminal state', async () => {
+    const checkout = await setup()
+    let resolveOperation!: (value: { status: string }) => void
+    mockStartOperation.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveOperation = resolve
+      })
+    )
+    mockSubscribe.mockResolvedValue({
+      status: 'needs_payment_method',
+      payment_method_url: 'https://checkout.stripe.com/pay',
+      billing_op_id: 'op-lock'
+    })
+
+    const firstClick = checkout.subscribeToPersonal('standard', 'yearly')
+    await vi.waitFor(() => expect(mockStartOperation).toHaveBeenCalledTimes(1))
+    expect(checkout.isSubscribing.value).toBe(true)
+
+    await checkout.subscribeToPersonal('standard', 'yearly')
+    expect(mockSubscribe).toHaveBeenCalledTimes(1)
+
+    resolveOperation({ status: 'succeeded' })
+    await firstClick
+    expect(checkout.isSubscribing.value).toBe(false)
+  })
+
   it('warns about a blocked popup and keeps polling', async () => {
     const checkout = await setup()
     mockOpen.mockReturnValueOnce(null)
