@@ -491,8 +491,11 @@ export const useWorkflowService = () => {
     const workflowStore = useWorkspaceStore().workflow
     const { isAppMode } = useAppMode()
     const wasAppMode = isAppMode.value
+    const rootGraphId = adoptRootGraphId(workflowData)
 
-    useExecutionErrorStore().setActiveGraph(adoptRootGraphId(workflowData))
+    function activateRunErrors(workflow: ComfyWorkflow) {
+      useExecutionErrorStore().setActiveGraph(rootGraphId, workflow.path)
+    }
 
     // Determine the initial app mode for fresh loads from serialized state.
     // null means linearMode was never explicitly set (not builder-saved).
@@ -536,6 +539,7 @@ export const useWorkflowService = () => {
         ) {
           const loadedWorkflow =
             await workflowStore.openWorkflow(existingWorkflow)
+          activateRunErrors(loadedWorkflow)
           if (loadedWorkflow.initialMode === undefined) {
             // Prefer the file's linearMode over the draft's since the file
             // is the authoritative saved state.
@@ -566,11 +570,13 @@ export const useWorkflowService = () => {
         tempWorkflow.shareId = shareId
       }
       trackIfEnteringApp(tempWorkflow)
-      await workflowStore.openWorkflow(tempWorkflow)
+      const loadedWorkflow = await workflowStore.openWorkflow(tempWorkflow)
+      activateRunErrors(loadedWorkflow)
       return
     }
 
     const loadedWorkflow = await workflowStore.openWorkflow(value)
+    activateRunErrors(loadedWorkflow)
     if (shareId) {
       loadedWorkflow.shareId = shareId
     }

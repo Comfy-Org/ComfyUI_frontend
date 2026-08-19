@@ -933,6 +933,19 @@ describe('setActiveGraph', () => {
     expect(store.totalErrorCount).toBe(1)
   })
 
+  it('keeps workflows with the same graph id separate', () => {
+    const store = useExecutionErrorStore()
+
+    store.setActiveGraph(graphAId, 'workflows/a.json')
+    store.recordNodeErrors(nodeErrors)
+
+    store.setActiveGraph(graphAId, 'workflows/b.json')
+    expect(store.lastNodeErrors).toBeNull()
+
+    store.setActiveGraph(graphAId, 'workflows/a.json')
+    expect(store.lastNodeErrors).toEqual(nodeErrors)
+  })
+
   it('hides run errors while detached from a graph', () => {
     const store = useExecutionErrorStore()
 
