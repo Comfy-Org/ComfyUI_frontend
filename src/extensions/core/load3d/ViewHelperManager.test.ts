@@ -2,7 +2,7 @@ import * as THREE from 'three'
 import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { EventManagerInterface } from './interfaces'
+import type { CameraState, EventManagerInterface } from './interfaces'
 import { ViewHelperManager } from './ViewHelperManager'
 
 interface MockViewHelperInstance {
@@ -56,6 +56,12 @@ describe('ViewHelperManager', () => {
   let camera: THREE.PerspectiveCamera
   let controls: OrbitControls
   let manager: ViewHelperManager
+  const cameraState = {
+    position: { x: 1, y: 2, z: 3 },
+    target: { x: 4, y: 5, z: 6 },
+    zoom: 1.5,
+    cameraType: 'perspective'
+  } as unknown as CameraState
 
   beforeEach(() => {
     viewHelperInstances.length = 0
@@ -66,6 +72,7 @@ describe('ViewHelperManager', () => {
       {} as THREE.WebGLRenderer,
       () => camera,
       () => controls,
+      () => cameraState,
       events
     )
   })
@@ -89,6 +96,7 @@ describe('ViewHelperManager', () => {
         {} as THREE.WebGLRenderer,
         () => camera,
         () => controls,
+        () => cameraState,
         events
       )
 
@@ -148,39 +156,7 @@ describe('ViewHelperManager', () => {
       expect(events.emitEvent).not.toHaveBeenCalled()
     })
 
-    it('emits cameraChanged with a perspective state when the animation just finished', () => {
-      manager.createViewHelper(document.createElement('div'))
-      camera.position.set(1, 2, 3)
-      camera.zoom = 1.5
-      controls.target.set(4, 5, 6)
-      manager.viewHelper.animating = true
-      ;(
-        manager.viewHelper.update as unknown as {
-          mockImplementation(fn: () => void): void
-        }
-      ).mockImplementation(() => {
-        manager.viewHelper.animating = false
-      })
-
-      manager.update(0)
-
-      expect(events.emitEvent).toHaveBeenCalledWith('cameraChanged', {
-        position: expect.objectContaining({ x: 1, y: 2, z: 3 }),
-        target: expect.objectContaining({ x: 4, y: 5, z: 6 }),
-        zoom: 1.5,
-        cameraType: 'perspective'
-      })
-    })
-
-    it('reports orthographic when the active camera is an OrthographicCamera', () => {
-      const ortho = new THREE.OrthographicCamera()
-      ortho.zoom = 0.5
-      manager = new ViewHelperManager(
-        {} as THREE.WebGLRenderer,
-        () => ortho,
-        () => controls,
-        events
-      )
+    it('emits cameraChanged with the full camera state when the animation just finished', () => {
       manager.createViewHelper(document.createElement('div'))
       manager.viewHelper.animating = true
       ;(
@@ -195,7 +171,7 @@ describe('ViewHelperManager', () => {
 
       expect(events.emitEvent).toHaveBeenCalledWith(
         'cameraChanged',
-        expect.objectContaining({ cameraType: 'orthographic', zoom: 0.5 })
+        cameraState
       )
     })
   })
