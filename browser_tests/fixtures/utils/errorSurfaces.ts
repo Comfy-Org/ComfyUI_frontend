@@ -39,22 +39,24 @@ function installVisibleErrorRecorder(config: {
   if (target.__cnVisibleErrors !== undefined) return
   const seen = new Set<string>()
   const errors: VisibleError[] = []
+  const combinedSelector = selectors.map(({ selector }) => selector).join(',')
   target.__cnVisibleErrors = errors
   const sample = () => {
-    for (const { surface, selector } of selectors) {
-      for (const element of document.querySelectorAll(selector)) {
-        if (
-          !(element instanceof HTMLElement) ||
-          !element.checkVisibility({
-            checkOpacity: true,
-            checkVisibilityCSS: true
-          })
-        )
-          continue
-        const text = (element.innerText || element.textContent || '')
-          .replace(/\s+/g, ' ')
-          .trim()
-          .slice(0, 300)
+    for (const element of document.querySelectorAll(combinedSelector)) {
+      if (
+        !(element instanceof HTMLElement) ||
+        !element.checkVisibility({
+          checkOpacity: true,
+          checkVisibilityCSS: true
+        })
+      )
+        continue
+      const text = (element.innerText || element.textContent || '')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, 300)
+      for (const { surface, selector } of selectors) {
+        if (!element.matches(selector)) continue
         const key = `${surface}\u0000${text}`
         if (seen.has(key)) continue
         seen.add(key)

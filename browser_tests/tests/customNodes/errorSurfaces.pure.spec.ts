@@ -134,7 +134,7 @@ test('DOM churn is sampled at a fixed rate, not per mutation', async ({
               typeof globalThis & { __recorderQueries?: number }
           ).__recorderQueries
       )
-    await expect(state()).resolves.toBe(4)
+    await expect(state()).resolves.toBe(1)
 
     await probe.evaluate(() => {
       let parent = document.getElementById('root')!
@@ -145,11 +145,11 @@ test('DOM churn is sampled at a fixed rate, not per mutation', async ({
         parent = child
       }
     })
-    await expect(state()).resolves.toBe(4)
+    await expect(state()).resolves.toBe(1)
     await probe.clock.runFor(99)
-    await expect(state()).resolves.toBe(4)
+    await expect(state()).resolves.toBe(1)
     await probe.clock.runFor(1)
-    await expect(state()).resolves.toBe(8)
+    await expect(state()).resolves.toBe(2)
     await expect(
       expectNoVisibleErrors(probe, 'after DOM churn')
     ).resolves.toBeUndefined()

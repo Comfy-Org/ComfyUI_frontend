@@ -131,6 +131,9 @@ async function runPairsInIsolatedPages(
   const results: PairResult[] = []
   const errors: string[] = []
   for (const pair of pairs) {
+    const pairKey = `${pair.producer.nodeType}.${pair.producer.slotName} -> ${pair.consumer.nodeType}.${pair.consumer.slotName}`
+    const pairStart = Date.now()
+    console.log(`connectivity isolated pair: ${pairKey} starting`)
     const probe = await page.context().newPage()
     try {
       await trackVisibleErrors(probe)
@@ -163,6 +166,9 @@ async function runPairsInIsolatedPages(
       }
     } finally {
       if (!probe.isClosed()) await probe.close()
+      console.log(
+        `connectivity isolated pair: ${pairKey} completed in ${Date.now() - pairStart}ms`
+      )
     }
   }
   return { results, errors }
@@ -279,7 +285,11 @@ test('connectivity: representative edges cover every pairable slot through model
       isolatedPairs.length * ISOLATED_MS_PER_PAIR
   )
   const sweepStart = Date.now()
+  const sharedStart = Date.now()
   const sharedResults = await runPairsInPage(comfyPage.page, sharedPairs)
+  console.log(
+    `connectivity shared sweep: ${sharedPairs.length} pairs in ${Date.now() - sharedStart}ms`
+  )
   const isolated = await runPairsInIsolatedPages(comfyPage.page, isolatedPairs)
   const results = [...sharedResults, ...isolated.results]
   const sweepMs = Date.now() - sweepStart
