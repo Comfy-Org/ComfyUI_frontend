@@ -21,6 +21,37 @@ text below says "the World," read "the set of dedicated stores"; where it shows
 `world.getComponent(id, Component)`, read the matching store getter (for
 example `widgetValueStore.getWidget(widgetId)`).
 
+### Amendment (2026-07-05, PRs 13436/13449)
+
+Two stores joined the dedicated-store set: `linkStore` (link topology,
+keyed by target input slot in root-graph-scoped buckets — see
+[Link Topology Store](../architecture/link-topology-store.md)) and
+`rerouteStore` (reroute chain state with link membership derived from
+the links' `parentId` chains — see
+[Reroute Chain Store](../architecture/reroute-chain-store.md)). Both
+follow the proxy-returning registration pattern established by
+`BaseWidget`/`widgetValueStore`: the store bucket is a `reactive(Map)`,
+registration inserts the class's state object by reference and the class
+adopts the reactive proxy read back from the bucket, so class field
+writes are tracked without an action chokepoint. The `layoutStore` link
+connectivity mirror and the `slot._floatingLinks` sets were deleted in
+the same work; the layout store now holds geometry only.
+
+### Amendment (2026-07-15, PR 13458)
+
+Node badge rows remain plain `BadgeData`, but they are derived presentation
+data rather than authoritative entity state. Materializing them in a dedicated
+store duplicated settings, node definitions, palette, pricing, widget, link,
+and graph state. It also required registration, teardown, and cache lifecycle
+logic.
+
+Instead, `src/systems/badgeSystem.ts` keeps one lazy computed projection per
+node instance. Renderers query that projection through a temporary app-layer
+registration seam, which keeps the litegraph layer independent from the badge
+system's pricing dependencies. Badge rows remain transient: they are
+not serialized, transmitted through CRDT, or included in undo history. See
+[Node Badge Store](../architecture/node-badge-store.md) for the design history.
+
 ## Context
 
 The litegraph layer is built on deeply coupled OOP classes (`LGraphNode`, `LLink`, `Subgraph`, `BaseWidget`, `Reroute`, `LGraphGroup`, `SlotBase`). Each entity directly references its container and children — nodes hold widget arrays, widgets back-reference their node, links reference origin/target node IDs, subgraphs extend the graph class, and so on.
@@ -115,6 +146,15 @@ Components are plain data objects — no methods, no back-references to parent e
 | `LinkVisual`    | `color`, `path`, `_pos` (center point)                         |
 | `LinkState`     | `_dragging`, `data`                                            |
 
+> **Amended (2026-07-05):** `LinkEndpoints` shipped as
+> `LinkTopology { id, originNodeId, originSlot, targetNodeId,
+targetSlot, type, parentId? }` in a dedicated `linkStore`, keyed by
+> **target input slot** (not link id) in root-graph-scoped buckets, with
+> floating and subgraph-output links in an unkeyed side set. `LLink`
+> reads through the store's reactive proxy (`_state`). See
+> [Link Topology Store](../architecture/link-topology-store.md).
+> `LinkVisual` and `LinkState` remain unextracted.
+
 #### Subgraph (Node Components)
 
 A node carrying a subgraph gains these additional components. Subgraphs are not a separate entity kind — see [Subgraph Boundaries](../architecture/subgraph-boundaries-and-promotion.md).
@@ -140,6 +180,13 @@ A node carrying a subgraph gains these additional components. Subgraphs are not 
 | `SlotConnection` | `link` (input) or `links[]` (output), `widget` locator                              |
 | `SlotVisual`     | `pos`, `boundingRect`, `color_on`, `color_off`, `shape`                             |
 
+> **Amended (2026-07-05):** the input side of `SlotConnection` is
+> subsumed by the `linkStore` key — the input-slot→link mapping _is_ the
+> store's primary index (`isInputSlotConnected` / `getInputSlotLink`).
+> The `slot._floatingLinks` sets were deleted; floating-link attachment
+> is derived from the links' own endpoints (`slotFloatingLinks`). The
+> `input.link` / `output.links` class mirrors remain un-migrated.
+
 #### Reroute
 
 | Component       | Data (from `Reroute`)             |
@@ -147,6 +194,13 @@ A node carrying a subgraph gains these additional components. Subgraphs are not 
 | `Position`      | `pos` (shared)                    |
 | `RerouteLinks`  | `parentId`, input/output link IDs |
 | `RerouteVisual` | `color`, badge config             |
+
+> **Amended (2026-07-04):** `RerouteLinks` was superseded during design
+> review. The stored component is chain state only —
+> `RerouteChain { parentId, floating? }` — and link membership
+> (`linkIds` / `floatingLinkIds`) is derived from the links' `parentId`
+> chains rather than stored. See
+> [Reroute Chain Store](../architecture/reroute-chain-store.md).
 
 #### Group
 
@@ -199,6 +253,15 @@ Systems are pure functions that query the relevant store(s) for entities with sp
 - **LayoutSystem** — queries `Position` + `Dimensions` + structural components for auto-layout
 - **SelectionSystem** — queries `Position` for point entities and `Position` + `Dimensions` for box hit-testing
 
+Until a `RenderSystem` owns render orchestration, node badges use a registered
+query function so the legacy canvas can read the app-owned projection without
+importing the badge system. Once the `RenderSystem` can query entity data and
+compose renderer input, badge lookup should move there. That migration should
+delete the registration seam and remove badge projection access from
+`LGraphNode`; the render system will query `BadgeData` and pass plain draw data
+to the canvas. This keeps badge derivation app-owned without materializing its
+output as a second source of truth.
+
 System design is deferred to a future ADR. For detailed before/after walkthroughs of how lifecycle operations (node removal, link creation, subgraph nesting, etc.) transform under ECS, see [ECS Lifecycle Scenarios](../architecture/ecs-lifecycle-scenarios.md).
 
 ### Migration Strategy
@@ -209,7 +272,7 @@ System design is deferred to a future ADR. For detailed before/after walkthrough
 4. **Incremental extraction** — migrate one component at a time from classes into its dedicated store, using the bridge layer for backward compatibility
 5. **Deprecate class properties** — once all consumers read from the store, mark class properties as deprecated
 
-For the phased migration roadmap with shipping milestones, see [ECS Migration Plan](../architecture/ecs-migration-plan.md). For the full target architecture, see [ECS Target Architecture](../architecture/ecs-target-architecture.md). For an inventory of existing stores that already partially implement ECS patterns, see [Proto-ECS Stores](../architecture/proto-ecs-stores.md).
+For the phased migration roadmap with shipping milestones, see [ECS Migration Plan](../architecture/ecs/ecs-migration-plan.md). For the full target architecture, see [ECS Target Architecture](../architecture/ecs-target-architecture.md). For an inventory of existing stores that already partially implement ECS patterns, see [Proto-ECS Stores](../architecture/proto-ecs-stores.md).
 
 ### Relationship to ADR 0003 (Command Pattern / CRDT)
 
@@ -217,7 +280,7 @@ For the phased migration roadmap with shipping milestones, see [ECS Migration Pl
 
 - **Commands** (ADR 0003) describe mutation intent — serializable objects that can be logged, replayed, sent over a wire, or undone.
 - **Systems** (ADR 0008) are command handlers — they validate and execute mutations against the relevant stores.
-- **The dedicated stores** (ADR 0008) hold component data and expose mutation APIs (for example `useLayoutMutations()`, `widgetValueStore.setValue`); each owns its own transaction boundary.
+- **The dedicated stores** (ADR 0008) hold component data and expose mutation APIs (for example `useLayoutMutations(source)`, `widgetValueStore.setValue`); each owns its own transaction boundary.
 
 A store's imperative mutators are internal implementation. External callers submit commands; each mutating store wraps its writes in a transaction (the Y.js-backed `layoutStore` already does this). This follows Redux: internal mutation is imperative, while the public API is action-based.
 
@@ -268,9 +331,12 @@ Companion architecture documents that expand on the design in this ADR:
 | [Entity System Structural Problems](../architecture/entity-problems.md)                          | Detailed problem catalog with line-level code references motivating the ECS migration                    |
 | [Proto-ECS Stores](../architecture/proto-ecs-stores.md)                                          | Inventory of existing Pinia stores that already partially implement ECS patterns                         |
 | [ECS Target Architecture](../architecture/ecs-target-architecture.md)                            | Full target architecture showing how entities and interactions transform under ECS                       |
-| [ECS Migration Plan](../architecture/ecs-migration-plan.md)                                      | Phased migration roadmap with shipping milestones and go/no-go criteria                                  |
+| [ECS Migration Plan](../architecture/ecs/ecs-migration-plan.md)                                  | Phased migration roadmap with shipping milestones and go/no-go criteria                                  |
 | [ECS Lifecycle Scenarios](../architecture/ecs-lifecycle-scenarios.md)                            | Before/after walkthroughs of lifecycle operations (node removal, link creation, etc.)                    |
 | [Subgraph Boundaries and Widget Promotion](../architecture/subgraph-boundaries-and-promotion.md) | Design rationale for modeling subgraphs as node components, not separate entities                        |
+| [Link Topology Store](../architecture/link-topology-store.md)                                    | Design record for the `linkStore` — target-input-slot keying, root-scoped buckets, registration protocol |
+| [Reroute Chain Store](../architecture/reroute-chain-store.md)                                    | Design record for the `rerouteStore` — chain state, derived link membership, load-time id dedup          |
+| [Domain Glossary](../architecture/domain-glossary.md)                                            | Canonical vocabulary for links, reroutes, chains, and membership                                         |
 | [ADR 0009: Subgraph promoted widgets](0009-subgraph-promoted-widgets-use-linked-inputs.md)       | Follow-up decision for promoted widget identity and value ownership at subgraph boundaries               |
 | [Appendix: Critical Analysis](../architecture/appendix-critical-analysis.md)                     | Independent verification of the accuracy of the architecture documents                                   |
 | [Appendix: ECS Pattern Survey](../architecture/appendix-ecs-pattern-survey.md)                   | Survey of bitECS, miniplex, koota, ECSY, Thyseus, and Bevy — patterns adopted, departed, when to revisit |

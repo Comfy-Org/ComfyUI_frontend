@@ -149,7 +149,7 @@ deferred mutations against a command buffer; the substrate applies them at
 defined sync points in the schedule. This is the same shape Bevy uses
 and is the closest direct external analog to the per-store mutation layer
 [ADR 0003](../adr/0003-crdt-based-layout-system.md) describes for this
-codebase (realized as store mutation APIs such as `useLayoutMutations()`).
+codebase (realized as store mutation APIs such as `useLayoutMutations(source)`).
 
 We deliberately match the **shape** of this pattern: external callers
 submit commands; only the executor calls the World's imperative
@@ -386,6 +386,6 @@ keep the substrate at storage + identity and let Vue own scheduling.
   for the full target taxonomy and migration strategy.
 - [ECS Target Architecture](./ecs-target-architecture.md) for the full
   end-state shape.
-- [ECS Migration Plan](./ecs-migration-plan.md) for shipping milestones.
+- [ECS Migration Plan](./ecs/ecs-migration-plan.md) for shipping milestones.
 - [Appendix: Critical Analysis](./appendix-critical-analysis.md) for the
   independent verification of the architecture documents.

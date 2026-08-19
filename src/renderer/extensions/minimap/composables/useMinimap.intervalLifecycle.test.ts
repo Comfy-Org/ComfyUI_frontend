@@ -14,11 +14,26 @@ import {
 } from '@/utils/__tests__/litegraphTestUtils'
 
 const mockNodes = [
-  { id: 'node1', pos: [0, 0], size: [100, 50], outputs: [] },
-  { id: 'node2', pos: [200, 100], size: [150, 75], outputs: [] }
+  {
+    id: 'node1',
+    pos: [0, 0],
+    size: [100, 50],
+    renderingSize: [100, 50],
+    outputs: []
+  },
+  {
+    id: 'node2',
+    pos: [200, 100],
+    size: [150, 75],
+    renderingSize: [150, 75],
+    outputs: []
+  }
 ]
 
 const mockGraph = {
+  id: 'root',
+  rootGraph: { id: 'root' },
+  _groups: [],
   _nodes: mockNodes,
   links: createMockLinks([]),
   getNodeById: vi.fn((id: string) => mockNodes.find((n) => n.id === id)),
@@ -73,7 +88,10 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
 }))
 
 vi.mock('@/stores/executionStore', () => ({
-  useExecutionStore: vi.fn(() => ({ nodeProgressStates: {} }))
+  useExecutionStore: vi.fn(() => ({
+    nodeLocationProgressStates: {},
+    nodeProgressStates: {}
+  }))
 }))
 
 import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'

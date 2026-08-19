@@ -103,15 +103,3 @@ export interface MinimapGroupData {
   height: number
   color?: string
 }
-
-/**
- * Interface for minimap data sources (Dependency Inversion Principle)
- */
-export interface IMinimapDataSource {
-  getNodes(): MinimapNodeData[]
-  getLinks(): MinimapLinkData[]
-  getGroups(): MinimapGroupData[]
-  getBounds(): MinimapBounds
-  getNodeCount(): number
-  hasData(): boolean
-}
