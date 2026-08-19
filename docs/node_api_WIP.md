@@ -38,15 +38,15 @@ widget instance, not a Pinia store, not a Vue reactive proxy, not a constructor.
 > `interaction.state`, `node.changeScope`, `node.connectVeto`,
 > `node.fileDrop`, `node.geometry`, `node.menu`, `node.onPreview`,
 > `node.onSerialize`, `node.resolve`, `node.sizeConstraints`,
-> `queue.disableAutoQueue`, `serialization.control`, `settings`,
-> `slots.connect`, `slots.connectedType`, `slots.dynamic`, `slots.identity`,
-> `slots.layout`, `slots.localizedName`, `slots.moveLinks`,
+> `queue.disableAutoQueue`, `queue.settings`, `serialization.control`,
+> `settings`, `slots.connect`, `slots.connectedType`, `slots.dynamic`,
+> `slots.identity`, `slots.layout`, `slots.localizedName`, `slots.moveLinks`,
 > `slots.resolvedSource`, `slots.retype`, `slots.widgetConfig`, `storage`,
 > `supply.outputs`, `supply.resolved`, `ui.sidebarTab`, `viewport.changed`,
-> `widgets.canvas`,
-> `widgets.create`, `widgets.height`, `widgets.hidden`, `widgets.linked`,
-> `widgets.mount`, `widgets.reorder`, `widgets.textInteraction`,
-> `widgets.typeContext`, `workflow.open`, `workflow.textReplacements`.
+> `widgets.canvas`, `widgets.create`, `widgets.height`, `widgets.hidden`,
+> `widgets.linked`, `widgets.mount`, `widgets.reorder`,
+> `widgets.textInteraction`, `widgets.typeContext`, `workflow.open`,
+> `workflow.textReplacements`.
 >
 > **Specified only:** §4a declarative decorations (badges/anchors — note
 > `setSizeConstraints` and `widgets.canvas` DID ship), §4b chrome, §4c
