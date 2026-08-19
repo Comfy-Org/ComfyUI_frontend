@@ -17,7 +17,7 @@
  */
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LLink } from '@/lib/litegraph/src/LLink'
-import type { Size } from '@/lib/litegraph/src/interfaces'
+import type { Size as LiteGraphSize } from '@/lib/litegraph/src/interfaces'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { getLinkTypeColor } from '@/utils/litegraphUtil'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
@@ -25,7 +25,7 @@ import { st } from '@/i18n'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
 import { ComfyApiError } from './errors'
-import type { NodeHandle } from './nodeHandle'
+import type { NodeHandle, Size } from './nodeHandle'
 import { slotShapeOf } from './slotHandle'
 import type { SlotShape } from './slotHandle'
 import type { Resolver, Supplier } from './resolution'
@@ -1382,8 +1382,9 @@ export function createDefRegistry(): {
       }
 
       if (resized.length) {
-        install<[Size]>('onResize', (node, size) => {
+        install<[LiteGraphSize]>('onResize', (node, [width, height]) => {
           const id = String(node.id)
+          const size: Size = Object.freeze({ width, height })
           for (const { run, handleFor } of resized) run(handleFor(id), size)
         })
       }
