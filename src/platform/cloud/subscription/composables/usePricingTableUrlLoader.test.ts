@@ -49,10 +49,20 @@ const mockTeamCreditStops = vi.hoisted(() => ({
 }))
 const mockFetchPlans = vi.hoisted(() => vi.fn())
 
+const mockSubscription = vi.hoisted(() => ({
+  value: { tier: 'PRO', planSlug: 'pro-monthly' } as {
+    tier: string
+    planSlug: string
+  } | null
+}))
+const mockFetchStatus = vi.hoisted(() => vi.fn(() => Promise.resolve()))
+
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
     teamCreditStops: mockTeamCreditStops,
-    fetchPlans: mockFetchPlans
+    fetchPlans: mockFetchPlans,
+    subscription: mockSubscription,
+    fetchStatus: mockFetchStatus
   })
 }))
 
@@ -78,6 +88,8 @@ const TEAM_CREDIT_STOPS = {
 
 describe('usePricingTableUrlLoader', () => {
   beforeEach(() => {
+    mockSubscription.value = { tier: 'PRO', planSlug: 'pro-monthly' }
+    mockFetchStatus.mockClear()
     mockRouteQuery.value = {}
     mockPermissions.value = { canManageSubscription: true }
     mockTeamCreditStops.value = TEAM_CREDIT_STOPS
@@ -106,6 +118,38 @@ describe('usePricingTableUrlLoader', () => {
       expect.objectContaining({ reason: 'deep_link' })
     )
     expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
+  })
+
+  it('never opens for an enterprise workspace', async () => {
+    mockRouteQuery.value = { pricing: '1' }
+    mockSubscription.value = {
+      tier: 'ENTERPRISE',
+      planSlug: 'enterprise_monthly'
+    }
+
+    const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
+    await loadPricingTableFromUrl()
+
+    expect(mockShowPricingTable).not.toHaveBeenCalled()
+    expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
+  })
+
+  it('resolves billing status before deciding, catching a pre-load enterprise deep link', async () => {
+    mockRouteQuery.value = { pricing: '1' }
+    mockSubscription.value = null
+    mockFetchStatus.mockImplementation(() => {
+      mockSubscription.value = {
+        tier: 'ENTERPRISE',
+        planSlug: 'enterprise_monthly'
+      }
+      return Promise.resolve()
+    })
+
+    const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
+    await loadPricingTableFromUrl()
+
+    expect(mockFetchStatus).toHaveBeenCalledOnce()
+    expect(mockShowPricingTable).not.toHaveBeenCalled()
   })
 
   it('opens on the team tab for ?pricing=team', async () => {

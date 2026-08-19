@@ -106,7 +106,8 @@ export function usePricingTableUrlLoader() {
   const route = useRoute()
   const router = useRouter()
   const subscriptionDialog = useSubscriptionDialog()
-  const { subscription, teamCreditStops, fetchPlans } = useBillingContext()
+  const { subscription, teamCreditStops, fetchPlans, fetchStatus } =
+    useBillingContext()
   const { permissions } = useWorkspaceUI()
 
   /** Reads `?pricing=`, strips it, and opens the table when the gate allows. */
@@ -144,7 +145,19 @@ export function usePricingTableUrlLoader() {
 
     if (!permissions.value.canManageSubscription) return
     // Enterprise is sales-managed: the pricing table never opens for it, even
-    // from a deep link. The param was already stripped above.
+    // from a deep link. The loader can run before billing status resolves, so
+    // fetch it rather than deciding on an absent subscription.
+    if (!subscription.value) {
+      try {
+        await fetchStatus()
+      } catch (error) {
+        console.error(
+          '[usePricingTableUrlLoader] Failed to load billing status:',
+          error
+        )
+        return
+      }
+    }
     if (
       isEnterpriseTier(subscription.value?.tier) ||
       isEnterprisePlanSlug(subscription.value?.planSlug)
