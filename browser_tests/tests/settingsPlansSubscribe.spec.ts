@@ -151,12 +151,23 @@ test.describe('Local plans section subscribe', () => {
       }
     })
 
+    // The embedded credits tile reads the LEGACY rail off-cloud; flipping these
+    // with `subscribed` lets the test assert the tile reacts to the reconcile.
     await page.route('**/customers/**', (r) =>
       fulfillJson(
         r,
         r.request().url().includes('balance')
-          ? { amount_micros: 0, currency: 'usd' }
-          : { is_active: false }
+          ? { amount_micros: subscribed ? 6000 : 0, currency: 'usd' }
+          : subscribed
+            ? {
+                is_active: true,
+                subscription_status: 'active',
+                subscription_tier: 'STANDARD',
+                subscription_duration: 'ANNUAL',
+                renewal_date: '2099-01-01T00:00:00Z',
+                has_funds: true
+              }
+            : { is_active: false }
       )
     )
     await page.route('**/api/billing/plans', (r) =>
@@ -192,6 +203,7 @@ test.describe('Local plans section subscribe', () => {
       name: 'Choose Standard'
     })
     await expect(chooseStandard).toBeEnabled()
+    await expect(dialog.getByText('12,660')).toHaveCount(0)
     await chooseStandard.click()
 
     // The subscribe goes to the workspace rail on the ingest origin, never the
@@ -219,6 +231,12 @@ test.describe('Local plans section subscribe', () => {
     await expect(
       dialog.getByRole('button', { name: 'Choose Creator' })
     ).toBeEnabled()
+
+    // The embedded credits tile re-renders from the reconciled legacy balance
+    // (6000 micros -> 12,660 credits), proving the reconcile reaches the tile.
+    await expect(dialog.getByText('12,660').first()).toBeVisible({
+      timeout: 15_000
+    })
 
     expect(legacyCheckoutRequests).toEqual([])
   })
