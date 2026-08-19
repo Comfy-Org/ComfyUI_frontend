@@ -92,7 +92,7 @@ function stopPreview(event: Event): void {
         :aria-label="asset.label ?? asset.filename"
         :class="
           cn(
-            'relative cursor-pointer overflow-hidden rounded-lg',
+            'relative cursor-pointer overflow-hidden rounded-lg border-none p-0',
             multi && 'bg-agent-surface-hover aspect-square'
           )
         "
