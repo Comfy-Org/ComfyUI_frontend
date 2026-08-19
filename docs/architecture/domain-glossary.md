@@ -4,30 +4,58 @@ Canonical vocabulary for the graph domain. Terms are added as they are
 resolved during design work; keep entries implementation-free. Intended
 to grow into a proper reference document.
 
+Every entry gives a definition and, where the term is routinely confused with
+something else, an explicit **not**. If a design discussion needs a word that is
+not here, add it here rather than redefining it in the discussion.
+
 Design records that rely on this vocabulary:
 [Link Topology Store](link-topology-store.md),
 [Reroute Chain Store](reroute-chain-store.md),
 [Node Badge Store](node-badge-store.md),
-[ADR 0008](../adr/0008-entity-component-system.md).
+[ADR 0003](../adr/0003-crdt-based-layout-system.md),
+[ADR 0008](../adr/0008-entity-component-system.md),
+[ADR 0009](../adr/0009-subgraph-promoted-widgets-use-linked-inputs.md),
+[Subgraph Boundaries and Widget Promotion](subgraph-boundaries-and-promotion.md),
+[Extension API v2 Axioms](extension-api-v2-axioms.md).
 
-## Badges
+## Widgets & Values
 
-- **Badge** — a small visual annotation rendered on a node: its numeric
-  id, lifecycle state, source pack, execution price, or an
-  extension-provided marker. Badges are presentation state; they never
-  affect execution and are never persisted with the workflow.
-- **Badge kind** — the category a badge belongs to: **core** (identity /
-  lifecycle / source, projected from the node's definition and user
-  settings), **credits** (price of executing an API node, including
-  aggregated prices of nodes inside a subgraph), or **extension**
-  (provided by third-party code).
-- **Badge source** — the domain state a badge's content is computed
-  from (settings, node definition, palette, pricing, widget values,
-  input connectivity). A badge is always a projection of its sources;
-  it is never authored directly by a user.
+- **Widget** — the display/edit unit attached to a node input: it shows a valid
+  representation of the current Value, and when user interaction changes the
+  display it assigns the new value back to the Value. Not a sidebar tab, menu
+  item, or badge — those have no Value.
+- **Value** — the user-facing datum a Widget displays and writes back. Values
+  are persisted with the workflow. Not ephemeral display state (focus, hover,
+  an unblurred input buffer), which lives with the Widget instance and is never
+  serialized.
+- **Widget id** — the string key a Value is stored under,
+  `graphId:nodeId:name` (`src/types/widgetId.ts`). A Value is addressed by this
+  key, not by an object reference to a widget instance.
+- **Widget instance** — one live rendering of a Widget. Several instances may be
+  backed by the same Value at the same time (subgraph host plus interior,
+  preview surfaces, app mode). Instance identity is not durable and carries no
+  authority over the Value.
+- **Schema** — the structural definition a Widget is built from: type, name,
+  constraints, default. Sourced from the node definition's `INPUT_TYPES` /
+  `InputSpec`. Not the Value, and not the mutable per-instance options.
+- **Props** — mutable runtime configuration of a Widget instance (disabled,
+  hidden, min/max, callback). Distinct from Schema, which does not change over
+  a Widget's lifetime, and from Value, which the user owns.
+- **Promotion** — exposing an interior subgraph Widget on the subgraph's host
+  node so it can be edited from outside. Promotion creates a new projected
+  surface referencing the interior Value; it does not move or re-key the
+  interior Widget. Not the same as "convert widget to input".
+- **Promoted widget** — the projected Widget on the host node produced by
+  Promotion. Its authority is the interior Widget's Value; the host projection
+  is a view.
+- **DOM widget** — a Widget whose display is a DOM element positioned over the
+  canvas rather than drawn on it. A rendering strategy, not a separate kind of
+  Value.
 
-## Links & Reroutes
+## Graph & Subgraphs
 
+- **Node** — an instance of a node type in a graph, carrying inputs, outputs,
+  and widgets.
 - **Link** — a directed data connection from one node's output slot to
   another node's input slot. At most one live link targets a given input
   slot.
@@ -48,3 +76,81 @@ Design records that rely on this vocabulary:
 - **Floating slot marker** — the annotation on the last reroute of a
   floating chain recording which side (input or output) the chain still
   faces.
+- **Topology** — which nodes exist and how their slots are connected.
+  Independent of the Values held in those nodes' Widgets: editing a Value never
+  changes Topology, and moving a node never changes either.
+- **Subgraph definition** — the reusable graph body: the interior nodes, links,
+  and the input/output slots it exposes to a parent graph.
+- **Subgraph instance** — a node in a parent graph that stands for a Subgraph
+  definition. One definition can have many instances live in the same workflow;
+  interior state must never be written as if there were only one.
+
+## Layout & Presentation
+
+- **Layout** — the on-canvas visual state of a workflow: node positions, sizes,
+  collapse state, group bounds. Layout never affects execution. Not Topology.
+- **Badge** — a small visual annotation rendered on a node: its numeric
+  id, lifecycle state, source pack, execution price, or an
+  extension-provided marker. Badges are presentation state; they never
+  affect execution and are never persisted with the workflow.
+- **Badge kind** — the category a badge belongs to: **core** (identity /
+  lifecycle / source, projected from the node's definition and user
+  settings), **credits** (price of executing an API node, including
+  aggregated prices of nodes inside a subgraph), or **extension**
+  (provided by third-party code).
+- **Badge source** — the domain state a badge's content is computed
+  from (settings, node definition, palette, pricing, widget values,
+  input connectivity). A badge is always a projection of its sources;
+  it is never authored directly by a user.
+
+## Entity, Component, System
+
+Vocabulary from [ADR 0008](../adr/0008-entity-component-system.md), realised as
+the dedicated stores shipped in PR 12617. ADR 0008 is **Proposed**: these terms
+define the target the codebase is converging on, and existing stores vary in how
+closely they meet it.
+
+- **Entity** — a string id identifying a domain object (node, widget, slot,
+  link, reroute, group). An Entity is an id, not an object; behaviour never
+  hangs off it.
+- **Component** — a plain-data field stored against an Entity id. No methods, no
+  back-reference to a parent entity. Not a Vue component. `widgetValueStore` and
+  `previewExposureStore` hold true Components today; `domWidgetStore` and
+  `subgraphNavigationStore` still hold live entity objects.
+- **System** — logic that reads and mutates Components. Systems are the place
+  behaviour lives; they produce command batches rather than firing side effects
+  directly.
+- **Store** — the concrete home of Components in this codebase, keyed by string
+  ids: `widgetValueStore`, `domWidgetStore`, `nodeOutputStore`,
+  `subgraphNavigationStore`, `previewExposureStore` (Pinia), and `layoutStore`
+  (a Yjs-backed singleton). There is no single global "World" object; see
+  [ECS Pattern Survey](appendix-ecs-pattern-survey.md) for why that design was
+  dropped.
+- **Command** — a serializable, idempotent, deterministic description of a state
+  change. Every entity mutation must be expressible as one, so it can be
+  replayed, undone, and transmitted over CRDT
+  ([ADR 0003](../adr/0003-crdt-based-layout-system.md)). Not a fire-and-forget
+  imperative call.
+
+## Extension API v2 terms
+
+These name concepts in the **planned** v2 extension surface. They are not
+present in the shipping extension API; use them when discussing that design,
+not when describing current behaviour. See
+[Extension API v2 Axioms](extension-api-v2-axioms.md).
+
+- **Handle** — the opaque, typed accessor (`NodeHandle`, `WidgetHandle`) an
+  extension would use instead of a raw entity or a raw id.
+- **Mount** — the single DOM seam of a v2 Widget: a `mount(host, ctx)` callback
+  that runs once per instance, appends into a runtime-owned host element, and
+  returns cleanup.
+- **Recreate** — dispose an instance and build a fresh one from Schema. The
+  lifecycle for split views, promotion projections, and workflow load. Internal
+  instance state does not survive.
+- **Remount** — move an existing instance to a new host element without
+  disposing it, preserving instance state. Not Recreate; the two are separate
+  hooks precisely because they differ on state survival.
+- **Augmenter** — an extension that decorates an existing Widget type
+  (transform values, add handlers) rather than declaring a new one.
+- **Blueprint** — the serialized template a linked/cloned instance is
+  instantiated from.
