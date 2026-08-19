@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp, defineComponent, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -186,18 +184,11 @@ describe('useWorkflowPersistenceV2', () => {
   }> = []
 
   beforeEach(() => {
-    vi.useFakeTimers()
-    vi.setSystemTime(new Date('2025-01-01T00:00:00Z'))
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    localStorage.clear()
-    sessionStorage.clear()
-    vi.clearAllMocks()
     settingMocks.persistRef!.value = true
     settingMocks.values = {}
     mocks.state.graphChangedHandler = null
     mocks.state.currentGraph = { initial: true }
     mocks.serializeMock.mockImplementation(() => mocks.state.currentGraph)
-    mocks.loadGraphDataMock.mockReset()
     mocks.apiMock.clientId = 'test-client'
     mocks.apiMock.initialClientId = 'test-client'
     mocks.apiMock.addEventListener.mockImplementation(
@@ -208,9 +199,6 @@ describe('useWorkflowPersistenceV2', () => {
       }
     )
     mocks.apiMock.removeEventListener.mockImplementation(() => {})
-    openWorkflowMock.mockReset()
-    loadBlankWorkflowMock.mockReset()
-    commandStoreMocks.execute.mockReset()
     routeMocks.query = {}
     preservedQueryMocks.payloads = {}
   })
@@ -220,7 +208,6 @@ describe('useWorkflowPersistenceV2', () => {
       app.unmount()
       container.remove()
     }
-    vi.useRealTimers()
   })
 
   function mountWorkflowPersistence(): WorkflowPersistence {
@@ -698,6 +685,57 @@ describe('useWorkflowPersistenceV2', () => {
         expect(loadBlankWorkflowMock).toHaveBeenCalled()
       }
     )
+  })
+
+  it('flushes a pending workflow edit when the page is unloaded', async () => {
+    const workflowStore = useWorkflowStore()
+    const workflow = await workflowStore.createTemporary('Draft.json').load()
+    workflowStore.activeWorkflow = workflow
+    mountWorkflowPersistence()
+    await nextTick()
+
+    mocks.state.currentGraph = {
+      nodes: [],
+      extra: { marker: 'final-edit' }
+    }
+    mocks.state.graphChangedHandler?.()
+
+    const payloadKey = StorageKeys.draftPayload(workflow.path, 'personal')
+    expect(localStorage.getItem(payloadKey)).toBeNull()
+
+    window.dispatchEvent(new PageTransitionEvent('pagehide'))
+
+    const payload = JSON.parse(localStorage.getItem(payloadKey)!)
+    expect(JSON.parse(payload.data)).toEqual({
+      nodes: [],
+      extra: { marker: 'final-edit' }
+    })
+  })
+
+  it('does not flush a pending workflow edit after disposal', async () => {
+    const workflowStore = useWorkflowStore()
+    const workflow = await workflowStore.createTemporary('Draft.json').load()
+    workflowStore.activeWorkflow = workflow
+    mountWorkflowPersistence()
+
+    mocks.state.currentGraph = { nodes: [] }
+    const graphChangedHandler = mocks.state.graphChangedHandler
+    if (!graphChangedHandler) {
+      throw new Error('Graph change handler was not registered')
+    }
+    graphChangedHandler()
+
+    const mounted = mountedApps.pop()
+    if (!mounted) throw new Error('Failed to find mounted persistence app')
+    mounted.app.unmount()
+    mounted.container.remove()
+
+    window.dispatchEvent(new PageTransitionEvent('pagehide'))
+    await vi.runAllTimersAsync()
+
+    expect(
+      localStorage.getItem(StorageKeys.draftPayload(workflow.path, 'personal'))
+    ).toBeNull()
   })
 
   it('flushes the final source-workspace edit before blocking transition writes', async () => {

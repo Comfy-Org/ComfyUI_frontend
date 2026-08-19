@@ -56,7 +56,6 @@
  * The splash loader in index.html (z-9999) covers the screen during this
  * phase, so no separate loading indicator is needed here.
  */
-import { captureException } from '@sentry/vue'
 import { until } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { nextTick, onMounted, onUnmounted, ref, useTemplateRef } from 'vue'
@@ -71,6 +70,7 @@ import {
   remoteConfigState
 } from '@/platform/remoteConfig/remoteConfig'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useAuthStore } from '@/stores/authStore'
@@ -173,10 +173,8 @@ async function initialize(): Promise<void> {
   } catch (error) {
     if (generation !== initializationGeneration) return
     console.error('[WorkspaceAuthGate] Initialization failed:', error)
-    captureException(error, {
-      tags: {
-        error_type: 'workspace_auth_gate_initialization_failure'
-      }
+    reportError(error, {
+      errorType: 'workspace_auth_gate_initialization_failure'
     })
     initializationRetryable.value = isRetryableInitializationError(error)
     initializationState.value = 'error'

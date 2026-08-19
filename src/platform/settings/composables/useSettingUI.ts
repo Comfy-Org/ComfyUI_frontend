@@ -14,6 +14,7 @@ import {
 import type { SettingTreeNode } from '@/platform/settings/settingStore'
 import type { SettingPanelType, SettingParams } from '@/platform/settings/types'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { usePartnerNodeGovernanceStore } from '@/platform/workspace/stores/partnerNodeGovernanceStore'
 import type { NavGroupData } from '@/types/navTypes'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { buildTree } from '@/utils/treeUtil'
@@ -33,10 +34,9 @@ const CATEGORY_ICONS: Record<string, string> = {
   PlanCredits: 'icon-[lucide--receipt-text]',
   secrets: 'icon-[lucide--key-round]',
   'server-config': 'icon-[lucide--server]',
-  subscription: 'icon-[lucide--credit-card]',
   user: 'icon-[lucide--user]',
   workspace: 'icon-[lucide--building-2]',
-  'workspace-allowlist': 'icon-[lucide--list-checks]',
+  'workspace-allowlist': 'icon-[comfy--ai-model]',
   'workspace-members': 'icon-[lucide--users]'
 }
 
@@ -58,6 +58,7 @@ export function useSettingUI(
   const { flags } = useFeatureFlags()
   const { shouldRenderVueNodes } = useVueFeatureFlags()
   const { workspaceRole } = useWorkspaceUI()
+  const governanceStore = usePartnerNodeGovernanceStore()
 
   const settingRoot = computed<SettingTreeNode>(() => {
     const root = buildTree(
@@ -411,7 +412,12 @@ export function useSettingUI(
               ? CATEGORY_ICONS.PlanCredits
               : (CATEGORY_ICONS[child.key] ??
                 CATEGORY_ICONS[child.label] ??
-                'icon-[lucide--plug]')
+                'icon-[lucide--plug]'),
+          ...(child.key === 'workspace-allowlist' &&
+          governanceStore.status === 'ineligible' &&
+          governanceStore.providers.length > 0
+            ? { suffixIcon: 'icon-[lucide--crown]' }
+            : {})
         }))
       }))
   )

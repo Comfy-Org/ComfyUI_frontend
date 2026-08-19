@@ -52,7 +52,6 @@ function createAdapter() {
 
 describe('resolveSlotTargetCandidate', () => {
   beforeEach(() => {
-    document.body.innerHTML = ''
     layoutStore.initializeFromLiteGraph([])
     useSlotLinkDragUIState().clearCompatible()
   })

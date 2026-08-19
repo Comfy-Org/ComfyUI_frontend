@@ -20,9 +20,27 @@ vi.mock('@/platform/cloud/onboarding/composables/usePostAuthRedirect', () => ({
 vi.mock('@/base/webviewDetection', () => ({ isEmbeddedWebView: () => false }))
 vi.mock('@/platform/telemetry', () => ({ useTelemetry: () => undefined }))
 
-const inChina = vi.hoisted(() => ({ value: false }))
+const inChina = vi.hoisted(() => ({
+  value: false,
+  pending: null as Promise<boolean> | null,
+  /** Holds detection in its pending state; returns the settle function. */
+  defer(): (inChina: boolean) => void {
+    let settle!: (inChina: boolean) => void
+    this.pending = new Promise<boolean>((resolve) => {
+      settle = resolve
+    })
+    return settle
+  },
+  /** Detection that never settles, as on a network that blackholes. */
+  hang() {
+    this.pending = new Promise<boolean>(() => {})
+  },
+  reject(error: Error) {
+    this.pending = Promise.reject(error)
+  }
+}))
 vi.mock('@/utils/networkUtil', () => ({
-  isInChina: () => Promise.resolve(inChina.value)
+  isInChina: () => inChina.pending ?? Promise.resolve(inChina.value)
 }))
 
 const freeTier = vi.hoisted(() => ({ value: false }))
@@ -40,6 +58,8 @@ const MESSAGES = {
     login: { useEmailInstead: 'Use email instead' },
     signup: {
       signIn: 'Sign in',
+      signUpWithGoogle: 'Sign up with Google',
+      signUpWithGithub: 'Sign up with GitHub',
       regionRestrictionChina: 'Email sign-up is unavailable in your region.'
     }
   }
@@ -76,6 +96,7 @@ async function renderSignupView(url = '/cloud/signup') {
 
 beforeEach(() => {
   inChina.value = false
+  inChina.pending = null
   freeTier.value = false
 })
 
@@ -113,9 +134,112 @@ describe('CloudSignupView', () => {
 
     await user.click(screen.getByRole('button', { name: 'Use email instead' }))
 
-    expect(screen.getByTestId('signup-form')).toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.getByTestId('signup-form')).toBeInTheDocument()
+    })
     expect(
       screen.queryByText('Email sign-up is unavailable in your region.')
     ).not.toBeInTheDocument()
+  })
+
+  it('withholds the sign-up form while region detection is still pending', async () => {
+    const user = (await import('@testing-library/user-event')).default.setup()
+    const settle = inChina.defer()
+    await renderSignupView()
+
+    await user.click(screen.getByRole('button', { name: 'Use email instead' }))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('region-check-pending')).toBeInTheDocument()
+    })
+    expect(screen.queryByTestId('signup-form')).not.toBeInTheDocument()
+
+    settle(false)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('signup-form')).toBeInTheDocument()
+    })
+  })
+
+  it('releases the sign-up form when region detection fails', async () => {
+    const user = (await import('@testing-library/user-event')).default.setup()
+    inChina.reject(new Error('probe failed'))
+    await renderSignupView()
+
+    await user.click(screen.getByRole('button', { name: 'Use email instead' }))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('signup-form')).toBeInTheDocument()
+    })
+  })
+
+  it('keeps the form withheld however long detection takes', async () => {
+    // Fake timers must predate mount, or a fallback scheduled during mount runs
+    // on the real clock and escapes the drain below.
+    vi.useFakeTimers()
+    try {
+      const user = (await import('@testing-library/user-event')).default.setup({
+        advanceTimers: vi.advanceTimersByTime
+      })
+      inChina.hang()
+      await renderSignupView()
+
+      await user.click(
+        screen.getByRole('button', { name: 'Use email instead' })
+      )
+      expect(screen.getByTestId('region-check-pending')).toBeInTheDocument()
+
+      await vi.advanceTimersByTimeAsync(60_000)
+
+      expect(
+        screen.queryByTestId('signup-form'),
+        'a caller-side fallback deciding "not in China" on detection\'s behalf would resurrect the submit race this view exists to close'
+      ).not.toBeInTheDocument()
+      expect(screen.getByTestId('region-check-pending')).toBeInTheDocument()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('never renders the sign-up form inside China, pending or settled', async () => {
+    const user = (await import('@testing-library/user-event')).default.setup()
+    const settle = inChina.defer()
+    await renderSignupView()
+
+    await user.click(screen.getByRole('button', { name: 'Use email instead' }))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('region-check-pending')).toBeInTheDocument()
+    })
+    expect(screen.queryByTestId('signup-form')).not.toBeInTheDocument()
+
+    settle(true)
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('Email sign-up is unavailable in your region.')
+      ).toBeInTheDocument()
+    })
+    expect(screen.queryByTestId('signup-form')).not.toBeInTheDocument()
+  })
+
+  it.for([
+    ['pending', null],
+    ['inside China', true],
+    ['outside China', false]
+  ] as const)('offers social sign-up %s', async ([, resolved]) => {
+    if (resolved === null) {
+      inChina.defer()
+    } else {
+      inChina.value = resolved
+    }
+    await renderSignupView()
+
+    expect(
+      screen.getByRole('button', { name: 'Sign up with Google' })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Sign up with GitHub' })
+    ).toBeInTheDocument()
   })
 })
