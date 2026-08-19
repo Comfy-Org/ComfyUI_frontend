@@ -56,44 +56,55 @@ describe('useViewportKeepAlivePins', () => {
     `
     document.body.appendChild(root)
 
-    const video = root.querySelector('video') as HTMLVideoElement
-    Object.defineProperty(video, 'paused', { configurable: true, value: false })
-
-    const connector = new LinkConnector(() => {})
-    connector.state.connectingTo = 'input'
-    Object.defineProperty(connector, 'renderLinks', {
-      value: [{ node: { id: 'link-source' } }]
-    })
-
     const scope = effectScope()
-    const { pinnedNodeIds } = scope.run(() =>
-      useViewportKeepAlivePins({
-        getRoot: () => root,
-        getLinkConnector: () => connector
+    try {
+      const video = root.querySelector('video')
+      if (!(video instanceof HTMLVideoElement)) {
+        throw new Error('Test fixture is missing a video element')
+      }
+      Object.defineProperty(video, 'paused', {
+        configurable: true,
+        value: false
       })
-    )!
 
-    const input = root.querySelector('input')!
-    input.focus()
-    connector.events.dispatch('drag-started', undefined)
-    await nextTick()
+      const connector = new LinkConnector(() => {})
+      connector.state.connectingTo = 'input'
+      Object.defineProperty(connector, 'renderLinks', {
+        value: [{ node: { id: 'link-source' } }]
+      })
 
-    expect(pinnedNodeIds.value).toEqual(
-      new Set(['focused', 'playing', 'link-source'])
-    )
+      const { pinnedNodeIds } = scope.run(() =>
+        useViewportKeepAlivePins({
+          getRoot: () => root,
+          getLinkConnector: () => connector
+        })
+      )!
 
-    input.blur()
-    video.remove()
-    connector.state.connectingTo = undefined
-    connector.events.dispatch('reset', true)
-    await nextTick()
+      const input = root.querySelector('input')
+      if (!(input instanceof HTMLInputElement)) {
+        throw new Error('Test fixture is missing an input element')
+      }
+      input.focus()
+      connector.events.dispatch('drag-started', undefined)
+      await nextTick()
 
-    // Every pin is transient by construction, so with all three released the
-    // set is empty. Selection is deliberately not a pin: it is the one input
-    // that can be graph-sized, and a detached node keeps its selection state.
-    expect(pinnedNodeIds.value).toEqual(new Set())
+      expect(pinnedNodeIds.value).toEqual(
+        new Set(['focused', 'playing', 'link-source'])
+      )
 
-    scope.stop()
-    root.remove()
+      input.blur()
+      video.remove()
+      connector.state.connectingTo = undefined
+      connector.events.dispatch('reset', true)
+      await nextTick()
+
+      // Every pin is transient by construction, so with all three released the
+      // set is empty. Selection is deliberately not a pin: it is the one input
+      // that can be graph-sized, and a detached node keeps its selection state.
+      expect(pinnedNodeIds.value).toEqual(new Set())
+    } finally {
+      scope.stop()
+      root.remove()
+    }
   })
 })
