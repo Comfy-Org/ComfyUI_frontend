@@ -98,6 +98,7 @@ function onProseClick(event: MouseEvent): void {
 
 const proseClass = cn(
   'text-agent-fg text-sm wrap-break-word',
+  '[&_img]:mt-2 [&_img]:block [&_img]:h-auto [&_img]:max-w-full [&_img]:cursor-pointer [&_img]:object-contain',
   '[&_a]:text-agent-accent [&_a]:cursor-pointer [&_a]:underline',
   '[&_p]:my-0 [&_p]:pt-4 [&_p:first-child]:pt-0 [&_strong]:font-semibold',
   '[&_h1]:mt-0 [&_h1]:pt-4 [&_h1]:pb-2 [&_h1]:text-2xl [&_h1]:font-semibold',
@@ -113,10 +114,7 @@ const proseClass = cn(
 </script>
 
 <template>
-  <div
-    data-testid="markdown-stream"
-    class="max-w-full min-w-0 [&_img]:mt-2 [&_img]:block [&_img]:h-auto [&_img]:max-w-full [&_img]:cursor-pointer [&_img]:object-contain"
-  >
+  <div data-testid="markdown-stream" class="max-w-full min-w-0">
     <template v-for="(segment, index) in segments" :key="index">
       <CodeBlock
         v-if="segment.type === 'code'"
