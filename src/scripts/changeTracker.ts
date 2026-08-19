@@ -547,9 +547,10 @@ export class ChangeTracker {
           if (!app.ui.autoQueueEnabled || app.ui.autoQueueMode === 'instant') {
             if (
               activeEl?.tagName === 'INPUT' ||
-              (activeEl && 'type' in activeEl && activeEl.type === 'textarea')
+              activeEl?.tagName === 'TEXTAREA' ||
+              (activeEl instanceof HTMLElement && activeEl.isContentEditable)
             ) {
-              // Ignore events on inputs, they have their native history
+              // Ignore events on text editors, they have their native history
               return
             }
             bindInputEl = activeEl
