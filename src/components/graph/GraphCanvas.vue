@@ -185,11 +185,7 @@ import { useWorkflowAutoSave } from '@/platform/workflow/persistence/composables
 import { useWorkflowPersistenceV2 as useWorkflowPersistence } from '@/platform/workflow/persistence/composables/useWorkflowPersistenceV2'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculations'
-import type {
-  NodeBox,
-  NodeBoxSlot,
-  NodeBoxWidget
-} from '@/renderer/core/canvas/nodeBoxRenderer'
+import type { NodeBox } from '@/renderer/core/canvas/nodeBoxRenderer'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { Bounds, NodeId } from '@/renderer/core/layout/types'
@@ -206,6 +202,7 @@ import {
 } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 import { useViewportKeepAlive } from '@/renderer/extensions/vueNodes/composables/useViewportKeepAlive'
 import { useViewportKeepAlivePins } from '@/renderer/extensions/vueNodes/composables/useViewportKeepAlivePins'
+import { createNodeBox } from '@/renderer/extensions/vueNodes/utils/createNodeBox'
 import {
   applyLightThemeColor,
   isRenderableColor
@@ -328,7 +325,6 @@ const rawNodes = computed((): VueNodeData[] =>
 const nodeIds = computed(() =>
   Array.from(vueNodeLifecycle.nodeManager.value?.vueNodeData?.keys() ?? [])
 )
-const WIDGET_MARGIN = 15
 const nodeColors = computed(() => {
   const colors = new Map<
     NodeId,
@@ -427,9 +423,14 @@ function* getNodeBoxes(viewport: Bounds): Generator<NodeBox> {
 
   const colors = nodeColors.value
   const titleHeight = LiteGraph.NODE_TITLE_HEIGHT
-  const widgetHeight = LiteGraph.NODE_WIDGET_HEIGHT
   const nodeManager = vueNodeLifecycle.nodeManager.value
   const colourGetter = canvasStore.canvas?.colourGetter
+  const boxOptions = {
+    colourGetter,
+    getSlotPosition,
+    isSlotColorRenderable: isRenderableColor,
+    widgetHeight: LiteGraph.NODE_WIDGET_HEIGHT
+  }
 
   const nodeIds = layoutStore.queryNodesInBounds({
     ...viewport,
@@ -448,67 +449,7 @@ function* getNodeBoxes(viewport: Bounds): Generator<NodeBox> {
     const node = nodeManager?.getNode(nodeId)
     if (!node) continue
 
-    const [x, y, width, height] = node.boundingRect
-    const bounds = { x, y, width, height }
-    const renderedTitleHeight = Math.max(0, node.pos[1] - y)
-    const nodeColor = colors.get(nodeId)
-    if (node.flags?.collapsed) {
-      const box = {
-        bounds,
-        color: nodeColor?.body,
-        titleColor: nodeColor?.title,
-        titleHeight: renderedTitleHeight
-      }
-      nodeBoxCache.set(nodeId, box)
-      yield box
-      continue
-    }
-
-    const slots: NodeBoxSlot[] = []
-    const addSlot = (
-      slot: { type?: unknown; link?: unknown; links?: unknown },
-      index: number,
-      isInput: boolean
-    ) => {
-      const [slotX, slotY] = getSlotPosition(node, index, isInput)
-      const type = String(slot.type ?? '')
-      const connected = isInput
-        ? slot.link != null
-        : Array.isArray(slot.links) && slot.links.length > 0
-      const slotColor = connected
-        ? colourGetter?.getConnectedColor(type)
-        : colourGetter?.getDisconnectedColor(type)
-      slots.push({
-        x: slotX,
-        y: slotY,
-        color:
-          typeof slotColor === 'string' && isRenderableColor(slotColor)
-            ? slotColor
-            : undefined
-      })
-    }
-    node.inputs?.forEach((slot, index) => addSlot(slot, index, true))
-    node.outputs?.forEach((slot, index) => addSlot(slot, index, false))
-
-    const widgets: NodeBoxWidget[] = []
-    for (const widget of node.widgets ?? []) {
-      if (!node.isWidgetVisible(widget)) continue
-      widgets.push({
-        x: node.pos[0] + WIDGET_MARGIN,
-        y: node.pos[1] + widget.y,
-        width: node.size[0] - WIDGET_MARGIN * 2,
-        height: widgetHeight
-      })
-    }
-
-    const box = {
-      bounds,
-      color: nodeColor?.body,
-      titleColor: nodeColor?.title,
-      titleHeight: renderedTitleHeight,
-      slots,
-      widgets
-    }
+    const box = createNodeBox(node, colors.get(nodeId), boxOptions)
     nodeBoxCache.set(nodeId, box)
     yield box
   }
