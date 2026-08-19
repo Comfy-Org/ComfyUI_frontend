@@ -1562,9 +1562,9 @@ for (const entry of manifestEntries) {
 }
 
 const tiers: Array<[AllNodesTier, string]> = [
-  ['S1', 'every registered node mounts on the canvas renderer'],
-  ['S2', 'every registered node mounts on the DOM renderer'],
-  ['S3', 'registered-node save/reload outcomes match exact contracts'],
+  ['S1', 'every enrolled registered node mounts on the canvas renderer'],
+  ['S2', 'every enrolled registered node mounts on the DOM renderer'],
+  ['S3', 'enrolled registered-node save/reload outcomes match exact contracts'],
   ['S9', 'calibrated model-free node corpus executes']
 ]
 
