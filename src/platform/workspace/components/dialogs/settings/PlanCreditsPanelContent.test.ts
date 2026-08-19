@@ -71,6 +71,20 @@ describe('PlanCreditsPanelContent', () => {
     ).toBeNull()
   })
 
+  it('opens the platform usage page from the Activity tab', async () => {
+    const windowOpen = vi.spyOn(window, 'open').mockImplementation(() => null)
+    renderPanel()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Activity' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Full activity' }))
+
+    expect(windowOpen).toHaveBeenCalledWith(
+      expect.stringMatching(/\/profile\/usage$/),
+      '_blank',
+      'noopener,noreferrer'
+    )
+  })
+
   it('loads the usage log on the Activity tab', async () => {
     renderPanel()
 
@@ -83,7 +97,8 @@ describe('PlanCreditsPanelContent', () => {
   })
 
   it('reports usage-log refresh failures', async () => {
-    refreshSpy.mockRejectedValueOnce(new Error('refresh failed'))
+    const error = new Error('refresh failed')
+    refreshSpy.mockRejectedValueOnce(error)
     const consoleError = vi
       .spyOn(console, 'error')
       .mockImplementation(() => undefined)
@@ -92,7 +107,10 @@ describe('PlanCreditsPanelContent', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Activity' }))
 
     await waitFor(() =>
-      expect(consoleError).toHaveBeenCalledWith('Error refreshing usage logs')
+      expect(consoleError).toHaveBeenCalledWith(
+        'Error refreshing usage logs:',
+        error
+      )
     )
   })
 })
