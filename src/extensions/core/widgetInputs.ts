@@ -426,7 +426,6 @@ function getConfig(this: LGraphNode, widgetName: string) {
  * @param node The node to convert the widget to an input slot for.
  * @param widget The widget to convert to an input slot.
  * @returns The input slot that was converted from the widget or undefined if the widget is not found.
- * @knipIgnoreUnusedButUsedByCustomNodes
  */
 export function convertToInput(
   node: LGraphNode,
@@ -458,7 +457,7 @@ export function setWidgetConfig(slot: INodeInputSlot, config?: InputSpec) {
   if (!(slot instanceof NodeSlot)) return
   const graph = slot.node.graph
   if (!graph) return
-  const link = graph.links[slot.link ?? -1]
+  const link = graph.getLink(slot.link)
   if (!link) return
   const originNode = graph.getNodeById(link.origin_id)
   if (!originNode || !isPrimitiveNode(originNode)) return

@@ -11,8 +11,11 @@
     :data-ghost="nodeData.flags?.ghost || undefined"
     :class="
       cn(
-        'group/node lg-node absolute isolate text-sm',
+        'group/node lg-node absolute isolate text-xs',
         'flex flex-col contain-layout contain-style',
+        isLightTheme
+          ? 'drop-shadow-md drop-shadow-black/15'
+          : 'drop-shadow-xl drop-shadow-black/40',
         isRerouteNode
           ? 'h-(--node-height)'
           : 'min-h-(--node-height) min-w-(--min-node-width)',
@@ -65,19 +68,10 @@
       "
     />
     <div
-      :class="
-        cn(
-          'pointer-events-none absolute border border-solid border-component-node-border',
-          rootBorderShapeClass,
-          hasAnyError ? '-inset-1' : 'inset-0'
-        )
-      "
-    />
-    <div
       data-testid="node-inner-wrapper"
       :class="
         cn(
-          'flex flex-1 flex-col border border-solid border-transparent bg-node-component-header-surface',
+          'flex flex-1 flex-col bg-node-component-header-surface',
           'w-(--node-width)',
           !isRerouteNode && 'min-w-(--min-node-width)',
           shapeClass,
@@ -235,7 +229,7 @@
           <path
             d="M11 1L1 11M11 6L6 11"
             stroke="var(--color-muted-foreground)"
-            stroke-width="0.975"
+            stroke-width="2"
             stroke-linecap="round"
             stroke-linejoin="round"
           />
@@ -269,8 +263,7 @@ import type { CompassCorners } from '@/lib/litegraph/src/interfaces'
 import {
   LGraphCanvas,
   LGraphEventMode,
-  LiteGraph,
-  RenderShape
+  LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
@@ -296,12 +289,16 @@ import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
 import { useNodePreviewState } from '@/renderer/extensions/vueNodes/preview/useNodePreviewState'
 import { nonWidgetedInputs } from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
-import { applyLightThemeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
+import {
+  applyLightThemeColor,
+  shapeVariantClass
+} from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { app } from '@/scripts/app'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { isVideoOutput } from '@/utils/litegraphUtil'
 import {
@@ -309,6 +306,7 @@ import {
   getNodeByLocatorId
 } from '@/utils/graphTraversalUtil'
 import { cn } from '@comfyorg/tailwind-utils'
+import { toNodeId } from '@/types/nodeId'
 import { isTransparent } from '@/utils/colorUtil'
 
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
@@ -335,12 +333,16 @@ const { t } = useI18n()
 
 const { isSelectMode, isSelectOutputsMode } = useAppMode()
 const settingStore = useSettingStore()
+const colorPaletteStore = useColorPaletteStore()
+const isLightTheme = computed(
+  () => !!colorPaletteStore.completedActivePalette.light_theme
+)
 
 const { handleNodeCollapse, handleNodeTitleUpdate, handleNodeRightClick } =
   useNodeEventHandlers()
 const { bringNodeToFront } = useNodeZIndex()
 
-const nodeId = computed(() => String(nodeData.id))
+const nodeId = computed(() => nodeData.id)
 
 useVueElementTracking(nodeId.value, 'node')
 
@@ -349,7 +351,9 @@ const isSelected = computed(() => {
   return selectedNodeIds.value.has(nodeId.value)
 })
 
-const nodeLocatorId = computed(() => getLocatorIdFromNodeData(nodeData))
+const nodeLocatorId = computed(
+  () => getLocatorIdFromNodeData(nodeData) ?? undefined
+)
 const { executing, progress } = useNodeExecutionState(nodeLocatorId)
 const executionErrorStore = useExecutionErrorStore()
 const missingModelStore = useMissingModelStore()
@@ -359,16 +363,24 @@ const hasExecutionError = computed(
 )
 
 const hasAnyError = computed((): boolean => {
+  const locatorId = nodeLocatorId.value
+  const node = lgraphNode.value
+  const hasNodeScopedError =
+    locatorId !== undefined &&
+    (executionErrorStore.getNodeErrors(locatorId) ||
+      missingModelStore.hasMissingModelOnNode(locatorId))
+  const hasContainerError =
+    node !== null &&
+    (executionErrorStore.isContainerWithInternalError(node) ||
+      missingNodesErrorStore.isContainerWithMissingNode(node) ||
+      missingModelStore.isContainerWithMissingModel(node))
+
   return !!(
     hasExecutionError.value ||
     nodeData.hasErrors ||
     error ||
-    executionErrorStore.getNodeErrors(nodeLocatorId.value) ||
-    missingModelStore.hasMissingModelOnNode(nodeLocatorId.value) ||
-    (lgraphNode.value &&
-      (executionErrorStore.isContainerWithInternalError(lgraphNode.value) ||
-        missingNodesErrorStore.isContainerWithMissingNode(lgraphNode.value) ||
-        missingModelStore.isContainerWithMissingModel(lgraphNode.value)))
+    hasNodeScopedError ||
+    hasContainerError
   )
 })
 
@@ -426,10 +438,12 @@ async function nodeOnPointerdown(event: PointerEvent) {
     const result = LGraphCanvas.cloneNodes([lgraphNode.value])
     if (result?.created?.length) {
       const [newNode] = result.created
-      startDrag(event, `${newNode.id}`)
+      const newNodeId =
+        typeof newNode.id === 'number' ? toNodeId(newNode.id) : newNode.id
+      startDrag(event, newNodeId)
       layoutStore.isDraggingVueNodes.value = true
       await nextTick()
-      bringNodeToFront(`${newNode.id}`)
+      bringNodeToFront(newNodeId)
       return
     }
   }
@@ -501,7 +515,7 @@ onUnmounted(() => {
 })
 
 const baseResizeHandleClasses =
-  'absolute h-5 w-5 opacity-0 pointer-events-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40'
+  'absolute h-5 w-5 opacity-0 pointer-events-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40 touch-none'
 
 const mutations = useLayoutMutations()
 
@@ -569,27 +583,21 @@ const cursorClass = computed(() => {
     : 'cursor-grab'
 })
 
-const bodyRoundingClass = computed(() => {
-  switch (nodeData.shape) {
-    case RenderShape.BOX:
-      return ''
-    case RenderShape.CARD:
-      return 'rounded-br-2xl'
-    default:
-      return 'rounded-b-2xl'
-  }
-})
+const bodyRoundingClass = computed(() =>
+  shapeVariantClass(nodeData.shape, {
+    box: '',
+    card: 'rounded-br-xl',
+    default: 'rounded-b-xl'
+  })
+)
 
-const shapeClass = computed(() => {
-  switch (nodeData.shape) {
-    case RenderShape.BOX:
-      return ''
-    case RenderShape.CARD:
-      return 'rounded-tl-2xl rounded-br-2xl'
-    default:
-      return 'rounded-2xl'
-  }
-})
+const shapeClass = computed(() =>
+  shapeVariantClass(nodeData.shape, {
+    box: '',
+    card: 'rounded-tl-xl rounded-br-xl',
+    default: 'rounded-xl'
+  })
+)
 
 const isTransparentHeaderless = computed(
   () =>
@@ -598,62 +606,37 @@ const isTransparentHeaderless = computed(
     isTransparent(nodeData.bgcolor)
 )
 
-const rootBorderShapeClass = computed(() => {
-  if (isTransparentHeaderless.value) return 'border-0'
-
-  const isExpanded = hasAnyError.value
-  switch (nodeData.shape) {
-    case RenderShape.BOX:
-      return ''
-    case RenderShape.CARD:
-      return isExpanded
-        ? 'rounded-tl-[20px] rounded-br-[20px]'
-        : 'rounded-tl-2xl rounded-br-2xl'
-    default:
-      return isExpanded ? 'rounded-[20px]' : 'rounded-2xl'
-  }
-})
-
 const selectionShapeClass = computed(() => {
   if (isTransparentHeaderless.value) return 'border-0'
 
   const isExpanded = hasAnyError.value
-  switch (nodeData.shape) {
-    case RenderShape.BOX:
-      return ''
-    case RenderShape.CARD:
-      return isExpanded
-        ? 'rounded-tl-[23px] rounded-br-[23px]'
-        : 'rounded-tl-[19px] rounded-br-[19px]'
-    default:
-      return isExpanded ? 'rounded-[23px]' : 'rounded-[19px]'
-  }
+  return shapeVariantClass(nodeData.shape, {
+    box: '',
+    card: isExpanded
+      ? 'rounded-tl-[23px] rounded-br-[23px]'
+      : 'rounded-tl-[19px] rounded-br-[19px]',
+    default: isExpanded ? 'rounded-[19px]' : 'rounded-[15px]'
+  })
 })
 
 const BEFORE_OVERLAY_BASE =
   'before:pointer-events-none before:absolute before:inset-0'
 
-const bypassOverlayClass = computed(() => {
-  switch (nodeData.shape) {
-    case RenderShape.BOX:
-      return `${BEFORE_OVERLAY_BASE} before:bg-bypass/60`
-    case RenderShape.CARD:
-      return `before:rounded-tl-2xl before:rounded-br-2xl ${BEFORE_OVERLAY_BASE} before:bg-bypass/60`
-    default:
-      return `before:rounded-2xl ${BEFORE_OVERLAY_BASE} before:bg-bypass/60`
-  }
-})
+const bypassOverlayClass = computed(() =>
+  shapeVariantClass(nodeData.shape, {
+    box: `${BEFORE_OVERLAY_BASE} before:bg-bypass/60`,
+    card: `before:rounded-tl-xl before:rounded-br-xl ${BEFORE_OVERLAY_BASE} before:bg-bypass/60`,
+    default: `before:rounded-xl ${BEFORE_OVERLAY_BASE} before:bg-bypass/60`
+  })
+)
 
-const mutedOverlayClass = computed(() => {
-  switch (nodeData.shape) {
-    case RenderShape.BOX:
-      return BEFORE_OVERLAY_BASE
-    case RenderShape.CARD:
-      return `before:rounded-tl-2xl before:rounded-br-2xl ${BEFORE_OVERLAY_BASE}`
-    default:
-      return `before:rounded-2xl ${BEFORE_OVERLAY_BASE}`
-  }
-})
+const mutedOverlayClass = computed(() =>
+  shapeVariantClass(nodeData.shape, {
+    box: BEFORE_OVERLAY_BASE,
+    card: `before:rounded-tl-xl before:rounded-br-xl ${BEFORE_OVERLAY_BASE}`,
+    default: `before:rounded-xl ${BEFORE_OVERLAY_BASE}`
+  })
+)
 
 // Event handlers
 const handleCollapse = () => {
@@ -686,6 +669,7 @@ const handleEnterSubgraph = () => {
   }
 
   const locatorId = getLocatorIdFromNodeData(nodeData)
+  if (!locatorId) return
 
   const litegraphNode = getNodeByLocatorId(graph, locatorId)
 
@@ -711,6 +695,8 @@ const nodeOutputLocatorId = computed(() =>
 
 const lgraphNode = computed(() => {
   const locatorId = getLocatorIdFromNodeData(nodeData)
+  if (!locatorId) return null
+
   return getNodeByLocatorId(app.rootGraph, locatorId)
 })
 
@@ -718,7 +704,7 @@ const lgraphNode = computed(() => {
 // reaching through lgraphNode for promoted preview resolution.
 const { promotedPreviews } = usePromotedPreviews(lgraphNode)
 
-useGLSLPreview(lgraphNode)
+const { hideExecutedOutput } = useGLSLPreview(lgraphNode)
 
 const showAdvancedInputsButton = computed(() => {
   const node = lgraphNode.value
@@ -777,11 +763,20 @@ const hasVideoInput = computed(() => {
   )
 })
 
+const hasVideoEditWidget = computed(
+  () => nodeData.widgets?.some((widget) => widget.type === 'videoedit') ?? false
+)
+
 const nodeMedia = computed(() => {
   const newOutputs = nodeOutputs.nodeOutputs[nodeOutputLocatorId.value]
   const node = lgraphNode.value
 
-  if (!node || !newOutputs?.images?.length || node.hideOutputImages)
+  if (
+    !node ||
+    !newOutputs?.images?.length ||
+    node.hideOutputImages ||
+    hideExecutedOutput.value
+  )
     return undefined
 
   if (node instanceof SubgraphNode) return undefined
@@ -795,6 +790,8 @@ const nodeMedia = computed(() => {
     (!node.previewMediaType && hasVideoInput.value)
       ? 'video'
       : 'image'
+
+  if (type === 'video' && hasVideoEditWidget.value) return undefined
 
   return { type, urls } as const
 })

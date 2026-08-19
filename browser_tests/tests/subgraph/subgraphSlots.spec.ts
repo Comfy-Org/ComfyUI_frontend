@@ -6,6 +6,7 @@ import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/w
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { SubgraphHelper } from '@e2e/fixtures/helpers/SubgraphHelper'
+import { toNodeId } from '@/types/nodeId'
 import {
   expectSlotsWithinBounds,
   measureNodeSlotOffsets
@@ -460,16 +461,17 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
       const subgraphNodeAfter = comfyPage.vueNodes.getNodeLocator('19')
       await expect(subgraphNodeAfter).toBeVisible()
 
+      const subgraphNodeId = toNodeId(19)
       await expect
         .poll(() =>
-          comfyPage.page.evaluate(() => {
-            const node = window.app!.canvas.graph!.getNodeById('19')
+          comfyPage.page.evaluate((nodeId) => {
+            const node = window.app!.canvas.graph!.getNodeById(nodeId)
             if (!node) return null
             const widget = node.widgets?.find((entry: { name: string }) =>
               entry.name.includes('seed')
             )
             return widget?.label || widget?.name || null
-          })
+          }, subgraphNodeId)
         )
         .toBe(RENAMED_LABEL)
 
@@ -689,7 +691,8 @@ test(
       const emptySlotPos = await seedIOSlot.getOpenSlotPosition()
       await comfyPage.canvas.hover({ position: emptySlotPos })
       await comfyPage.page.mouse.down()
-      await stepsSlot.hover()
+      const { width, height } = (await stepsSlot.boundingBox())!
+      await stepsSlot.hover({ position: { x: (width * 3) / 4, y: height / 2 } })
       await expect.poll(hasSnap).toBe(true)
       await comfyPage.page.mouse.up()
 

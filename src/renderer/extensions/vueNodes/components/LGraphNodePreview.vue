@@ -43,6 +43,7 @@ import NodeSlots from '@/renderer/extensions/vueNodes/components/NodeSlots.vue'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useWidgetStore } from '@/stores/widgetStore'
+import { toNodeId } from '@/types/nodeId'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const {
@@ -70,7 +71,7 @@ const nodeData = computed<VueNodeData>(() => {
       // render their first option; lead with the requested value to show it.
       const leadValue = widgetValues?.[name]
       return {
-        nodeId: '-1',
+        nodeId: toNodeId('-1'),
         name,
         type: input.widgetType || input.type,
         value:
@@ -115,7 +116,7 @@ const nodeData = computed<VueNodeData>(() => {
   })
 
   return {
-    id: `preview-${nodeDef.name}`,
+    id: toNodeId(`preview-${nodeDef.name}`),
     title: nodeDef.display_name || nodeDef.name,
     type: nodeDef.name,
     mode: 0, // Normal mode

@@ -24,7 +24,7 @@ function toggleCategory(category: string) {
 }
 </script>
 <template>
-  <DropdownMenu button-class="icon-[lucide--list-filter]">
+  <DropdownMenu>
     <template #button>
       <Button size="icon" :aria-label="$t('g.filter')">
         <i class="icon-[lucide--list-filter]" />
@@ -52,7 +52,7 @@ function toggleCategory(category: string) {
       >
         <span
           class="flex-1"
-          v-text="$t(filterLabels?.[filter] ?? '') ?? filter"
+          v-text="filterLabels?.[filter] ? $t(filterLabels[filter]) : filter"
         />
         <DropdownMenuItemIndicator class="size-4 shrink-0">
           <i class="icon-[lucide--check]" />

@@ -10,7 +10,7 @@ export function syncLayoutStoreNodeBoundsFromGraph(graph: LGraph): void {
   if (nodes.length === 0) return
 
   const updates: NodeBoundsUpdate[] = nodes.map((node) => ({
-    nodeId: String(node.id),
+    nodeId: node.id,
     bounds: {
       x: node.pos[0],
       y: node.pos[1],

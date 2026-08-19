@@ -1,6 +1,8 @@
 import type { Bounds } from '@/renderer/core/layout/types'
+import type { CompositorWidgetValue } from '@/renderer/extensions/compositor/components/types'
 import type { CurveData } from '@/components/curve/types'
 import type { BoundingBox } from '@/types/boundingBoxes'
+import type { NodeId } from '@/types/nodeId'
 import type { WidgetId } from '@/types/widgetId'
 
 import type {
@@ -10,12 +12,7 @@ import type {
   RequiredProps,
   Size
 } from '../interfaces'
-import type {
-  CanvasPointer,
-  LGraphCanvas,
-  LGraphNode,
-  NodeId
-} from '../litegraph'
+import type { CanvasPointer, LGraphCanvas, LGraphNode } from '../litegraph'
 import type { CanvasPointerEvent } from './events'
 
 export interface NodeBindable {
@@ -47,6 +44,14 @@ export interface IWidgetOptions<TValues = unknown> {
   socketless?: boolean
   /** If `true`, the widget will not be rendered by the Vue renderer. */
   canvasOnly?: boolean
+  /**
+   * If `true`, the widget still renders on the node but is omitted from the
+   * right side panel. Unlike {@link IWidgetOptions.canvasOnly}, the node body
+   * keeps rendering it via the Vue renderer. Used for widgets that hold
+   * non-syncable state (e.g. a Three.js viewport) where a second instance in
+   * the panel would diverge from the one on the node.
+   */
+  hideInPanel?: boolean
   /** Used as a temporary override for determining the asset type in vue mode*/
   nodeType?: string
 
@@ -141,7 +146,9 @@ export type IWidget =
   | IBoundingBoxWidget
   | ICurveWidget
   | IPainterWidget
+  | ICompositorWidget
   | IRangeWidget
+  | IVideoEditWidget
   | IBoundingBoxesWidget
   | IColorsWidget
 
@@ -346,6 +353,14 @@ export interface IPainterWidget extends IBaseWidget<string, 'painter'> {
   value: string
 }
 
+export interface ICompositorWidget extends IBaseWidget<
+  CompositorWidgetValue,
+  'compositor'
+> {
+  type: 'compositor'
+  value: CompositorWidgetValue
+}
+
 export interface IBoundingBoxesWidget extends IBaseWidget<
   BoundingBox[],
   'boundingboxes'
@@ -381,6 +396,31 @@ export interface IRangeWidget extends IBaseWidget<
 > {
   type: 'range'
   value: RangeValue
+}
+
+export interface VideoEditTrim {
+  start_time: number
+  duration: number
+}
+
+export interface VideoEditValue {
+  trim?: VideoEditTrim
+  crop?: Bounds
+}
+
+export type VideoEditFeature = 'trim' | 'crop'
+
+export interface IWidgetVideoEditOptions extends IWidgetOptions {
+  features?: VideoEditFeature[]
+}
+
+export interface IVideoEditWidget extends IBaseWidget<
+  VideoEditValue,
+  'videoedit',
+  IWidgetVideoEditOptions
+> {
+  type: 'videoedit'
+  value: VideoEditValue
 }
 
 /**

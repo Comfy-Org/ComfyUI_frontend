@@ -1,6 +1,5 @@
 import type { FirebaseOptions } from 'firebase/app'
 
-import { isCloud } from '@/platform/distribution/types'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 
 const DEV_CONFIG: FirebaseOptions = {
@@ -28,15 +27,12 @@ const PROD_CONFIG: FirebaseOptions = {
 const BUILD_TIME_CONFIG = __USE_PROD_CONFIG__ ? PROD_CONFIG : DEV_CONFIG
 
 /**
- * Returns the Firebase configuration for the current environment.
- * - Cloud builds use runtime configuration delivered via feature flags
- * - OSS / localhost builds fall back to the build-time config determined by __USE_PROD_CONFIG__
+ * Firebase config for the current backend: the server's firebase_config (cloud builds),
+ * else the bundled DEV_CONFIG when the server reports a dev-tier backend, else the build-time default.
  */
 export function getFirebaseConfig(): FirebaseOptions {
-  if (!isCloud) {
-    return BUILD_TIME_CONFIG
-  }
-
   const runtimeConfig = remoteConfig.value.firebase_config
-  return runtimeConfig ?? BUILD_TIME_CONFIG
+  if (runtimeConfig) return runtimeConfig
+  if (remoteConfig.value.firebase_env === 'dev') return DEV_CONFIG
+  return BUILD_TIME_CONFIG
 }

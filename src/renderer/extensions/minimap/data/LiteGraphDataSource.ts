@@ -7,14 +7,14 @@ import { AbstractMinimapDataSource } from './AbstractMinimapDataSource'
  * LiteGraph data source implementation
  */
 export class LiteGraphDataSource extends AbstractMinimapDataSource {
-  getNodes(): MinimapNodeData[] {
+  protected buildNodes(): MinimapNodeData[] {
     if (!this.graph?._nodes) return []
 
     const executionStore = useExecutionStore()
     const nodeProgressStates = executionStore.nodeProgressStates
 
     return this.graph._nodes.map((node) => {
-      const nodeId = String(node.id)
+      const nodeId = node.id
       const executionState = nodeProgressStates[nodeId]?.state ?? null
 
       return {

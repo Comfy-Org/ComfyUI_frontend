@@ -9,6 +9,12 @@ const mockShowTopUpCreditsDialog = vi.fn()
 const mockExecute = vi.fn()
 const mockToastAdd = vi.fn()
 
+const { mockCaptureException } = vi.hoisted(() => ({
+  mockCaptureException: vi.fn()
+}))
+
+vi.mock('@sentry/vue', () => ({ captureException: mockCaptureException }))
+
 vi.mock('@/platform/updates/common/toastStore', () => ({
   useToastStore: () => ({ add: mockToastAdd })
 }))
@@ -39,15 +45,23 @@ vi.mock('@/stores/commandStore', () => ({
 }))
 
 // useTelemetry() returns null in OSS, a dispatcher in cloud — toggle via mockIsCloud.
-const { mockIsCloud, mockTrackHelpResourceClicked } = vi.hoisted(() => ({
+const {
+  mockIsCloud,
+  mockTrackHelpResourceClicked,
+  mockTrackAddApiCreditButtonClicked
+} = vi.hoisted(() => ({
   mockIsCloud: { value: true },
-  mockTrackHelpResourceClicked: vi.fn()
+  mockTrackHelpResourceClicked: vi.fn(),
+  mockTrackAddApiCreditButtonClicked: vi.fn()
 }))
 
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () =>
     mockIsCloud.value
-      ? { trackHelpResourceClicked: mockTrackHelpResourceClicked }
+      ? {
+          trackHelpResourceClicked: mockTrackHelpResourceClicked,
+          trackAddApiCreditButtonClicked: mockTrackAddApiCreditButtonClicked
+        }
       : null
 }))
 
@@ -60,8 +74,8 @@ Object.defineProperty(window, 'open', {
 
 describe('useSubscriptionActions', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockIsCloud.value = true
+    mockCaptureException.mockReset()
   })
 
   describe('handleAddApiCredits', () => {
@@ -69,6 +83,9 @@ describe('useSubscriptionActions', () => {
       const { handleAddApiCredits } = useSubscriptionActions()
       handleAddApiCredits()
       expect(mockShowTopUpCreditsDialog).toHaveBeenCalledOnce()
+      expect(mockTrackAddApiCreditButtonClicked).toHaveBeenCalledWith({
+        source: 'settings_billing_panel'
+      })
     })
   })
 
@@ -108,13 +125,47 @@ describe('useSubscriptionActions', () => {
       expect(mockTrackHelpResourceClicked).not.toHaveBeenCalled()
     })
 
-    it('should handle errors gracefully', async () => {
+    it('tells the user when contacting support fails, and stops loading', async () => {
       mockExecute.mockRejectedValueOnce(new Error('Command failed'))
       const { handleMessageSupport, isLoadingSupport } =
         useSubscriptionActions()
 
       await handleMessageSupport()
+
       expect(isLoadingSupport.value).toBe(false)
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: 'error',
+          detail: 'Command failed'
+        })
+      )
+    })
+
+    it('reports a failed support request so it is visible without the user', async () => {
+      const failure = new Error('Command failed')
+      mockExecute.mockRejectedValueOnce(failure)
+      const { handleMessageSupport } = useSubscriptionActions()
+
+      await handleMessageSupport()
+
+      expect(mockCaptureException).toHaveBeenCalledWith(failure, {
+        tags: { error_type: 'contact_support_failed' }
+      })
+    })
+
+    // Commands run arbitrary registered functions, including ones contributed
+    // by extensions, so the rejected value is not guaranteed to be an Error.
+    it('reports a thrown non-Error as an Error so it carries a stack', async () => {
+      mockExecute.mockRejectedValueOnce('Command failed')
+      const { handleMessageSupport } = useSubscriptionActions()
+
+      await handleMessageSupport()
+
+      expect(mockCaptureException).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'Command failed' }),
+        { tags: { error_type: 'contact_support_failed' } }
+      )
+      expect(mockCaptureException.mock.calls[0][0]).toBeInstanceOf(Error)
     })
   })
 

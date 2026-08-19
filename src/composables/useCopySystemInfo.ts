@@ -6,6 +6,7 @@ import {
   getSystemStatsColumns
 } from '@/components/common/systemStatsColumns'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
+import { t } from '@/i18n'
 import type { SystemStats } from '@/schemas/apiSchema'
 import { formatSize } from '@/utils/formatUtil'
 
@@ -15,7 +16,7 @@ function formatSystemInfoText(stats: SystemStats): string {
   for (const col of getSystemStatsColumns()) {
     const display = getColumnDisplayValue(stats, col)
     if (display !== undefined && display !== '') {
-      lines.push(`${col.header}: ${display}`)
+      lines.push(`${t(col.headerKey)}: ${display}`)
     }
   }
 

@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -21,6 +19,7 @@ import {
   readHostQuarantine
 } from '@/core/graph/subgraph/migration/proxyWidgetMigration'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+import { toLinkId } from '@/types/linkId'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
@@ -31,7 +30,6 @@ vi.mock('@/services/litegraphService', () => ({
 }))
 
 beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
   resetSubgraphFixtureState()
   LGraph.proxyWidgetMigrationFlush = undefined
 })
@@ -369,7 +367,7 @@ describe('flushProxyWidgetMigration', () => {
       const host = buildHost()
       const { primitive } = addPrimitiveWithTargets(host, { targetCount: 1 })
 
-      const danglingLinkId = 999_999
+      const danglingLinkId = toLinkId(999_999)
       expect(host.subgraph.links.has(danglingLinkId)).toBe(false)
       primitive.outputs[0].links = [
         ...(primitive.outputs[0].links ?? []),

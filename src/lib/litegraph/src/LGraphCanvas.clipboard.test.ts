@@ -1,10 +1,11 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
+import {
+  SUBGRAPH_INPUT_ID,
+  SUBGRAPH_OUTPUT_ID
+} from '@/lib/litegraph/src/constants'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { flushProxyWidgetMigration } from '@/core/graph/subgraph/migration/proxyWidgetMigration'
 import { autoExposeKnownPreviewNodes } from '@/core/graph/subgraph/promotionUtils'
-import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import {
   LGraph,
   LGraphCanvas,
@@ -14,6 +15,7 @@ import {
   createUuidv4
 } from '@/lib/litegraph/src/litegraph'
 import { remapClipboardSubgraphNodeIds } from '@/lib/litegraph/src/LGraphCanvas'
+import { toNodeId } from '@/types/nodeId'
 import type {
   ClipboardItems,
   ExportedSubgraph,
@@ -21,6 +23,8 @@ import type {
 } from '@/lib/litegraph/src/types/serialisation'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
+
+import { registerTestSubgraphNodeTypes } from './subgraph/__fixtures__/subgraphHelpers'
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({})
@@ -52,7 +56,7 @@ describe('remapClipboardSubgraphNodeIds', () => {
   it('remaps pasted subgraph interior IDs and proxyWidgets references', () => {
     const rootGraph = new LGraph()
     const existingNode = new LGraphNode('existing')
-    existingNode.id = 1
+    existingNode.id = toNodeId(1)
     rootGraph.add(existingNode)
 
     const subgraphId = createUuidv4()
@@ -69,11 +73,11 @@ describe('remapClipboardSubgraphNodeIds', () => {
       config: {},
       name: 'Pasted Subgraph',
       inputNode: {
-        id: -10,
+        id: SUBGRAPH_INPUT_ID,
         bounding: [0, 0, 10, 10]
       },
       outputNode: {
-        id: -20,
+        id: SUBGRAPH_OUTPUT_ID,
         bounding: [0, 0, 10, 10]
       },
       inputs: [],
@@ -124,7 +128,7 @@ describe('remapClipboardSubgraphNodeIds', () => {
   it('remaps pasted SubgraphNode previewExposures sourceNodeId references', () => {
     const rootGraph = new LGraph()
     const existingNode = new LGraphNode('existing')
-    existingNode.id = 1
+    existingNode.id = toNodeId(1)
     rootGraph.add(existingNode)
 
     const subgraphId = createUuidv4()
@@ -140,8 +144,8 @@ describe('remapClipboardSubgraphNodeIds', () => {
       },
       config: {},
       name: 'Pasted Subgraph',
-      inputNode: { id: -10, bounding: [0, 0, 10, 10] },
-      outputNode: { id: -20, bounding: [0, 0, 10, 10] },
+      inputNode: { id: SUBGRAPH_INPUT_ID, bounding: [0, 0, 10, 10] },
+      outputNode: { id: SUBGRAPH_OUTPUT_ID, bounding: [0, 0, 10, 10] },
       inputs: [],
       outputs: [],
       widgets: [],
@@ -189,7 +193,6 @@ describe('_deserializeItems paste-time migration & auto-expose', () => {
   const registeredTypesToCleanup: string[] = []
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     originalFlush = LGraph.proxyWidgetMigrationFlush
     originalAutoExpose = LGraph.autoExposePreviewNodes
   })
@@ -202,29 +205,6 @@ describe('_deserializeItems paste-time migration & auto-expose', () => {
     }
     registeredTypesToCleanup.length = 0
   })
-
-  function registerSubgraphNodeTypeOnCreate(rootGraph: LGraph): void {
-    rootGraph.events.addEventListener('subgraph-created', (e) => {
-      const { subgraph } = e.detail
-      class TestSubgraphNode extends SubgraphNode {
-        constructor() {
-          super(rootGraph, subgraph as Subgraph, {
-            id: -1,
-            type: subgraph.id,
-            pos: [0, 0],
-            size: [100, 100],
-            inputs: [],
-            outputs: [],
-            flags: {},
-            order: 0,
-            mode: 0
-          })
-        }
-      }
-      LiteGraph.registerNodeType(subgraph.id, TestSubgraphNode)
-      registeredTypesToCleanup.push(subgraph.id)
-    })
-  }
 
   function createCanvas(graph: LGraph): LGraphCanvas {
     const el = document.createElement('canvas')
@@ -239,6 +219,63 @@ describe('_deserializeItems paste-time migration & auto-expose', () => {
     return new LGraphCanvas(el, graph, { skip_render: true })
   }
 
+  function registerClipboardNodeType(type: string): void {
+    class ClipboardNode extends LGraphNode {
+      constructor() {
+        super('Clipboard Node')
+        this.addInput('input', '*')
+        this.addOutput('output', '*')
+      }
+    }
+    LiteGraph.registerNodeType(type, ClipboardNode)
+    registeredTypesToCleanup.push(type)
+  }
+
+  it('reconnects pasted inputs when clipboard node IDs differ from link endpoint types', () => {
+    const nodeType = 'test/clipboard-node-id-normalization'
+    registerClipboardNodeType(nodeType)
+
+    const rootGraph = new LGraph()
+    const canvas = createCanvas(rootGraph)
+
+    const source = LiteGraph.createNode(nodeType)!
+    source.id = toNodeId(1)
+    rootGraph.add(source)
+
+    const target = LiteGraph.createNode(nodeType)!
+    target.id = toNodeId(2)
+    rootGraph.add(target)
+    source.connect(0, target, 0)
+
+    const copied = canvas._serializeItems([target])
+    expect(copied.nodes?.[0]?.id).toBe(2)
+    expect(copied.links?.[0]?.origin_id).toBe(1)
+    expect(copied.links?.[0]?.target_id).toBe(2)
+
+    const copiedTarget = copied.nodes?.[0]
+    if (!copiedTarget) throw new Error('Expected copied target node')
+    copiedTarget.id = '2'
+
+    const result = canvas._deserializeItems(copied, {
+      connectInputs: true,
+      position: [300, 300]
+    })
+
+    const pastedTarget = result?.nodes.get(2)
+    if (!pastedTarget) throw new Error('Expected pasted target node')
+
+    const pastedInputLinkId = pastedTarget.inputs[0].link
+    expect(pastedInputLinkId).not.toBeNull()
+
+    if (pastedInputLinkId == null) {
+      throw new Error('Expected pasted input link')
+    }
+
+    const pastedInputLink = rootGraph._links.get(pastedInputLinkId)
+    expect(pastedInputLink?.origin_id).toBe(source.id)
+    expect(pastedInputLink?.target_id).toBe(pastedTarget.id)
+  })
+
   it('clears legacy proxyWidgets on a pasted SubgraphNode and applies host widget values', () => {
     LGraph.proxyWidgetMigrationFlush = (hostNode, nodeData) =>
       flushProxyWidgetMigration({
@@ -247,7 +284,7 @@ describe('_deserializeItems paste-time migration & auto-expose', () => {
       })
 
     const rootGraph = new LGraph()
-    registerSubgraphNodeTypeOnCreate(rootGraph)
+    registerTestSubgraphNodeTypes(rootGraph)
     const canvas = createCanvas(rootGraph)
 
     const subgraphId = createUuidv4()
@@ -264,8 +301,8 @@ describe('_deserializeItems paste-time migration & auto-expose', () => {
       },
       config: {},
       name: 'Pasted Subgraph',
-      inputNode: { id: -10, bounding: [0, 0, 10, 10] },
-      outputNode: { id: -20, bounding: [0, 0, 10, 10] },
+      inputNode: { id: SUBGRAPH_INPUT_ID, bounding: [0, 0, 10, 10] },
+      outputNode: { id: SUBGRAPH_OUTPUT_ID, bounding: [0, 0, 10, 10] },
       inputs: [],
       outputs: [],
       widgets: [],
@@ -323,7 +360,7 @@ describe('_deserializeItems paste-time migration & auto-expose', () => {
       autoExposeKnownPreviewNodes(hostNode)
 
     const rootGraph = new LGraph()
-    registerSubgraphNodeTypeOnCreate(rootGraph)
+    registerTestSubgraphNodeTypes(rootGraph)
     const canvas = createCanvas(rootGraph)
 
     const subgraphId = createUuidv4()
@@ -340,8 +377,8 @@ describe('_deserializeItems paste-time migration & auto-expose', () => {
       },
       config: {},
       name: 'Pasted Subgraph',
-      inputNode: { id: -10, bounding: [0, 0, 10, 10] },
-      outputNode: { id: -20, bounding: [0, 0, 10, 10] },
+      inputNode: { id: SUBGRAPH_INPUT_ID, bounding: [0, 0, 10, 10] },
+      outputNode: { id: SUBGRAPH_OUTPUT_ID, bounding: [0, 0, 10, 10] },
       inputs: [],
       outputs: [],
       widgets: [],

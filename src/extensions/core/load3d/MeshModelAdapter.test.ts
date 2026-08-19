@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { MeshModelAdapter } from './MeshModelAdapter'
 import type { ModelLoadContext } from './ModelAdapter'
@@ -93,10 +93,6 @@ function makeFbxLikeGroup(): THREE.Group {
 }
 
 describe('MeshModelAdapter', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   describe('identity', () => {
     it('identifies as a mesh adapter with full capabilities', () => {
       const adapter = new MeshModelAdapter()
@@ -108,6 +104,7 @@ describe('MeshModelAdapter', () => {
       expect(adapter.capabilities.exportable).toBe(true)
       expect([...adapter.capabilities.materialModes]).toEqual([
         'original',
+        'clay',
         'normal',
         'wireframe'
       ])

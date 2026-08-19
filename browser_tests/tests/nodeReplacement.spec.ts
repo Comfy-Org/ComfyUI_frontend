@@ -12,6 +12,7 @@ import {
   setupNodeReplacement
 } from '@e2e/fixtures/helpers/NodeReplacementHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { toNodeId } from '@/types/nodeId'
 
 const renderModes = [
   { name: 'vue nodes', vueNodesEnabled: true },
@@ -245,8 +246,10 @@ test.describe('Node replacement', { tag: ['@node', '@ui'] }, () => {
             .click()
 
           const replacedNodeOutputLinkCount = await comfyPage.page.evaluate(
-            () =>
-              window.app!.graph!.getNodeById(2)?.outputs[0]?.links?.length ?? 0
+            (nodeId) =>
+              window.app!.graph!.getNodeById(nodeId)?.outputs[0]?.links
+                ?.length ?? 0,
+            toNodeId(2)
           )
           expect(
             replacedNodeOutputLinkCount,
@@ -256,4 +259,36 @@ test.describe('Node replacement', { tag: ['@node', '@ui'] }, () => {
       })
     })
   }
+
+  test(
+    'Replacement keeps its position when enabling Vue Nodes',
+    { tag: ['@vue-nodes'] },
+    async ({ comfyPage }) => {
+      test.slow()
+      await setupNodeReplacement(comfyPage, mockNodeReplacementsSingle)
+      await loadWorkflowAndOpenErrorsTab(
+        comfyPage,
+        'missing/node_replacement_simple'
+      )
+      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
+      await comfyPage.nextFrame()
+
+      await getSwapNodesGroup(comfyPage.page)
+        .getByRole('button', { name: /replace node/i })
+        .click()
+
+      const [ksampler] = await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
+      await ksampler.dragBy({ x: 120, y: 90 })
+      await comfyPage.nextFrame()
+      const draggedPosition =
+        await ksampler.getProperty<[number, number]>('pos')
+
+      await comfyPage.menu.topbar.setVueNodesEnabled(true)
+      await comfyPage.vueNodes.waitForNodes()
+
+      await expect
+        .poll(() => ksampler.getProperty<[number, number]>('pos'))
+        .toEqual(draggedPosition)
+    }
+  )
 })

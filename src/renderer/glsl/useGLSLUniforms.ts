@@ -1,7 +1,7 @@
 import { computed } from 'vue'
 
 import type { ComputedRef } from 'vue'
-import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
 import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import type { UUID } from '@/utils/uuid'
@@ -9,8 +9,12 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 import { isCurveData } from '@/components/curve/curveUtils'
 import type { CurveData } from '@/components/curve/types'
+import { createPromotedHostWidgetIdLookup } from '@/core/graph/subgraph/promotionUtils'
+import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { GLSLRendererConfig } from '@/renderer/glsl/useGLSLRenderer'
 import { hexToInt } from '@/utils/colorUtil'
+import type { NodeId } from '@/types/nodeId'
+import type { WidgetId } from '@/types/widgetId'
 import { widgetId } from '@/types/widgetId'
 
 interface AutogrowGroup {
@@ -22,6 +26,7 @@ interface AutogrowGroup {
 interface UniformSource {
   nodeId: NodeId
   widgetName: string
+  hostWidgetId?: WidgetId
   /** Fallback getter for widgets not registered in widgetValueStore (e.g. hidden computed widgets). */
   directValue: () => unknown
 }
@@ -66,7 +71,8 @@ export function getAutogrowLimits(node: LGraphNode): GLSLRendererConfig {
 
 export function extractUniformSources(
   glslNode: LGraphNode,
-  subgraph: Subgraph
+  subgraph: Subgraph,
+  subgraphNode?: SubgraphNode
 ): UniformSources {
   const floats: UniformSource[] = []
   const ints: UniformSource[] = []
@@ -74,6 +80,10 @@ export function extractUniformSources(
   const curves: UniformSource[] = []
 
   if (!glslNode.inputs) return { floats, ints, bools, curves }
+
+  const hostWidgetIdForSource = subgraphNode
+    ? createPromotedHostWidgetIdLookup(subgraphNode)
+    : undefined
 
   for (const input of glslNode.inputs) {
     if (input.link == null) continue
@@ -92,8 +102,9 @@ export function extractUniformSources(
     if (link.origin_slot >= sourceNode.widgets.length) continue
     const widget = sourceNode.widgets[link.origin_slot]
     const source: UniformSource = {
-      nodeId: sourceNode.id as NodeId,
+      nodeId: sourceNode.id,
       widgetName: widget.name,
+      hostWidgetId: hostWidgetIdForSource?.(sourceNode.id, widget.name),
       directValue: () => widget.value
     }
 
@@ -132,12 +143,14 @@ export function useGLSLUniforms(
     if (!gId) return []
 
     if (subgraphSources) {
-      return subgraphSources.map(({ nodeId: nId, widgetName, directValue }) => {
-        const widget = widgetValueStore.getWidget(
-          widgetId(gId, nId, widgetName)
-        )
-        return coerce(widget?.value ?? directValue() ?? defaultValue)
-      })
+      return subgraphSources.map(
+        ({ nodeId: nId, widgetName, hostWidgetId, directValue }) => {
+          const widget = widgetValueStore.getWidget(
+            hostWidgetId ?? widgetId(gId, nId, widgetName)
+          )
+          return coerce(widget?.value ?? directValue() ?? defaultValue)
+        }
+      )
     }
 
     const nId = nodeId.value
@@ -162,7 +175,7 @@ export function useGLSLUniforms(
       if (!upstreamNode) break
       const upstreamWidgets = widgetValueStore.getNodeWidgets(
         gId,
-        upstreamNode.id as NodeId
+        upstreamNode.id
       )
       if (
         upstreamWidgets.length === 0 ||
@@ -216,9 +229,9 @@ export function useGLSLUniforms(
     const sources = uniformSources.value?.curves
     if (sources && sources.length > 0) {
       return sources
-        .map(({ nodeId: nId, widgetName, directValue }) => {
+        .map(({ nodeId: nId, widgetName, hostWidgetId, directValue }) => {
           const widget = widgetValueStore.getWidget(
-            widgetId(gId, nId, widgetName)
+            hostWidgetId ?? widgetId(gId, nId, widgetName)
           )
           const value = widget?.value ?? directValue()
           return isCurveData(value) ? (value as CurveData) : null
@@ -249,7 +262,7 @@ export function useGLSLUniforms(
 
       const upstreamWidgets = widgetValueStore.getNodeWidgets(
         gId,
-        upstreamNode.id as NodeId
+        upstreamNode.id
       )
       const curveWidget = upstreamWidgets.find((w) => isCurveData(w.value))
       if (!curveWidget) break

@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { EventManagerInterface } from './interfaces'
 import { RecordingManager } from './RecordingManager'
@@ -64,22 +64,21 @@ function makeStream(): MediaStream {
   } as unknown as MediaStream
 }
 
-function makeRenderer(): THREE.WebGLRenderer {
+function makeSourceCanvas(): HTMLCanvasElement {
   const canvas = document.createElement('canvas')
   canvas.width = 800
   canvas.height = 600
-  return { domElement: canvas } as unknown as THREE.WebGLRenderer
+  return canvas
 }
 
 describe('RecordingManager', () => {
   let scene: THREE.Scene
-  let renderer: THREE.WebGLRenderer
+  let sourceCanvas: HTMLCanvasElement
   let events: ReturnType<typeof makeMockEventManager>
   let manager: RecordingManager
   let rafSpy: ReturnType<typeof vi.spyOn>
 
   beforeEach(() => {
-    vi.clearAllMocks()
     MockMediaRecorder.instances = []
     vi.stubGlobal('MediaRecorder', MockMediaRecorder)
     vi.stubGlobal('URL', {
@@ -104,14 +103,9 @@ describe('RecordingManager', () => {
     vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => {})
 
     scene = new THREE.Scene()
-    renderer = makeRenderer()
+    sourceCanvas = makeSourceCanvas()
     events = makeMockEventManager()
-    manager = new RecordingManager(scene, renderer, events)
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
-    vi.restoreAllMocks()
+    manager = new RecordingManager(scene, sourceCanvas, events)
   })
 
   describe('construction', () => {

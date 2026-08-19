@@ -1,14 +1,14 @@
 import { setActivePinia } from 'pinia'
 import { createTestingPinia } from '@pinia/testing'
 import { describe, expect, test, vi } from 'vitest'
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
-import type { InputSpec } from '@/schemas/nodeDefSchema'
+import {
+  addAutogrow,
+  addDynamicCombo
+} from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useLitegraphService } from '@/services/litegraphService'
-import type { HasInitialMinSize } from '@/services/litegraphService'
 
 setActivePinia(createTestingPinia())
-type DynamicInputs = ('INT' | 'STRING' | 'IMAGE' | DynamicInputs)[][]
 type TestAutogrowNode = LGraphNode & {
   comfyDynamic: { autogrow: Record<string, unknown> }
 }
@@ -19,56 +19,17 @@ function nextTick() {
   return new Promise<void>((r) => requestAnimationFrame(() => r()))
 }
 
-function addDynamicCombo(node: LGraphNode, inputs: DynamicInputs) {
-  const namePrefix = `${node.widgets?.length ?? 0}`
-  function getSpec(
-    inputs: DynamicInputs,
-    depth: number = 0
-  ): { key: string; inputs: object }[] {
-    return inputs.map((group, groupIndex) => {
-      const inputs = group.map((input, inputIndex) => [
-        `${namePrefix}.${depth}.${inputIndex}`,
-        Array.isArray(input)
-          ? ['COMFY_DYNAMICCOMBO_V3', { options: getSpec(input, depth + 1) }]
-          : [input, { tooltip: `${groupIndex}` }]
-      ])
-      return {
-        key: `${groupIndex}`,
-        inputs: { required: Object.fromEntries(inputs) }
-      }
-    })
-  }
-  const inputSpec: Required<InputSpec> = [
-    'COMFY_DYNAMICCOMBO_V3',
-    { options: getSpec(inputs) }
-  ]
-  addNodeInput(
-    node,
-    transformInputSpecV1ToV2(inputSpec, { name: namePrefix, isOptional: false })
-  )
-}
-function addAutogrow(node: LGraphNode, template: unknown) {
-  addNodeInput(
-    node,
-    transformInputSpecV1ToV2(['COMFY_AUTOGROW_V3', { template }], {
-      name: `${node.inputs.length}`,
-      isOptional: false
-    })
-  )
-}
 function connectInput(node: LGraphNode, inputIndex: number, graph: LGraph) {
   const node2 = testNode()
   node2.addOutput('out', '*')
   graph.add(node2)
-  node2.connect(0, node, inputIndex)
+  const link = node2.connect(0, node, inputIndex)
+  if (!link) throw new Error(`failed to connect input ${inputIndex}`)
+  return link
 }
 function testNode() {
-  const node: LGraphNode & Partial<HasInitialMinSize> = new LGraphNode('test')
+  const node = new LGraphNode('test')
   node.widgets = []
-  node._initialMinSize = { width: 1, height: 1 }
-  node.constructor.nodeData = {
-    name: 'testnode'
-  } as typeof node.constructor.nodeData
   return node as LGraphNode & Required<Pick<LGraphNode, 'widgets'>>
 }
 
@@ -108,6 +69,76 @@ describe('Dynamic Combos', () => {
     expect(node.inputs.length).toBe(4)
     expect(node.inputs[1].name).toBe('0.0.0.0')
     expect(node.inputs[3].name).toBe('2.2.0.0')
+  })
+  test('Shrinking dynamic inputs preserves remaining connections and disconnects removed links', () => {
+    const graph = new LGraph()
+    const node = testNode()
+    addDynamicCombo(node, [[], ['IMAGE', 'IMAGE', 'IMAGE'], ['IMAGE']])
+    graph.add(node)
+    addNodeInput(node, { name: 'other', isOptional: false, type: 'IMAGE' })
+    node.widgets[0].value = '1'
+    const retained = connectInput(node, 1, graph)
+    const removed = [connectInput(node, 2, graph), connectInput(node, 3, graph)]
+    const removedSources = removed.map((link) =>
+      graph.getNodeById(link.origin_id)
+    )
+    const unrelated = connectInput(node, 4, graph)
+    const onConnectionsChange =
+      vi.fn<NonNullable<LGraphNode['onConnectionsChange']>>()
+    node.onConnectionsChange = onConnectionsChange
+
+    node.widgets[0].value = '2'
+
+    expect(node.getInputLink(1)).toBe(retained)
+    expect(node.getInputLink(2)).toBe(unrelated)
+    for (const link of removed) {
+      expect(graph.getLink(link.id)).toBeUndefined()
+    }
+    for (const source of removedSources) {
+      if (!source) throw new Error('Removed link source node not found')
+      expect(source.outputs[0].links).toEqual([])
+    }
+    const disconnectedLinks = onConnectionsChange.mock.calls
+      .filter(([, , connected]) => !connected)
+      .map(([, , , link]) => link)
+    expect(disconnectedLinks).toHaveLength(2)
+    expect(new Set(disconnectedLinks)).toEqual(new Set(removed))
+  })
+  test('Growing rebuild preserves retained connections', () => {
+    const graph = new LGraph()
+    const node = testNode()
+    addDynamicCombo(node, [[], ['IMAGE'], ['IMAGE', 'IMAGE']])
+    graph.add(node)
+    addNodeInput(node, { name: 'other', isOptional: false, type: 'IMAGE' })
+    node.widgets[0].value = '1'
+    const retained = connectInput(node, 1, graph)
+    const unrelated = connectInput(node, 2, graph)
+
+    node.widgets[0].value = '2'
+
+    expect(node.getInputLink(1)).toBe(retained)
+    expect(node.getInputLink(3)).toBe(unrelated)
+  })
+  test('Replacing a linked input emits one connected callback', () => {
+    const graph = new LGraph()
+    const node = testNode()
+    addDynamicCombo(node, [[], ['IMAGE'], ['IMAGE']])
+    graph.add(node)
+    node.widgets[0].value = '1'
+    const link = connectInput(node, 1, graph)
+    const onConnectionsChange = vi.fn()
+    node.onConnectionsChange = onConnectionsChange
+
+    node.widgets[0].value = '2'
+
+    expect(onConnectionsChange).toHaveBeenCalledOnce()
+    expect(onConnectionsChange).toHaveBeenCalledWith(
+      LiteGraph.INPUT,
+      1,
+      true,
+      link,
+      node.inputs[1]
+    )
   })
   test('Dynamically added widgets have tooltips', () => {
     const node = testNode()

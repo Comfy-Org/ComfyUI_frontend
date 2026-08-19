@@ -25,7 +25,9 @@
  * SOFTWARE.
  */
 import type { INodeOutputSlot } from '@/lib/litegraph/src/interfaces'
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
+import { toLinkId } from '@/types/linkId'
+import { parseNodeId } from '@/types/nodeId'
+import type { SerializedNodeId } from '@/types/nodeId'
 import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
 import type { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
 import type {
@@ -46,9 +48,10 @@ enum IoDirection {
   OUTPUT
 }
 
-function getNodeById(graph: ISerialisedGraph | LGraph, id: NodeId) {
+function getNodeById(graph: ISerialisedGraph | LGraph, id: SerializedNodeId) {
   if ((graph as LGraph).getNodeById) {
-    return (graph as LGraph).getNodeById(id)
+    const parsedNodeId = parseNodeId(id)
+    return parsedNodeId ? (graph as LGraph).getNodeById(parsedNodeId) : null
   }
   graph = graph as ISerialisedGraph
   return graph.nodes.find((node: ISerialisedNode) => node.id == id)!
@@ -129,9 +132,9 @@ export function fixBadLinks(
       // We can set to null (delete), so undefined means we haven't set it at all.
       if (patchedNode['inputs']![slot] !== undefined) {
         logger.log(
-          ` > Already set ${node.id}.inputs[${slot}] to ${patchedNode[
-            'inputs'
-          ]![slot]!} Skipping.`
+          ` > Already set ${node.id}.inputs[${slot}] to ${
+            patchedNode['inputs']![slot]!
+          } Skipping.`
         )
         return false
       }
@@ -145,7 +148,7 @@ export function fixBadLinks(
       }
       patchedNode['inputs']![slot] = linkIdToSet
       if (fix) {
-        inputSlot!.link = linkIdToSet
+        inputSlot!.link = linkIdToSet === null ? null : toLinkId(linkIdToSet)
       }
     } else {
       patchedNode['outputs'] = patchedNode['outputs'] || {}
@@ -178,7 +181,7 @@ export function fixBadLinks(
             node.outputs[slot] ||
             ({} satisfies Partial<INodeOutputSlot> as INodeOutputSlot)
           node.outputs[slot]!.links = node.outputs[slot]!.links || []
-          node.outputs[slot]!.links!.push(linkId)
+          node.outputs[slot]!.links!.push(toLinkId(linkId))
         }
       } else {
         const linkIdIndex =
@@ -224,7 +227,7 @@ export function fixBadLinks(
         has = !!nodeHasIt
       }
     } else {
-      const nodeHasIt = node.outputs?.[slot]?.links?.includes(linkId)
+      const nodeHasIt = node.outputs?.[slot]?.links?.includes(toLinkId(linkId))
       if (patchedNodeSlots[node.id]?.['outputs']?.[slot]?.['changes'][linkId]) {
         const patchedHasIt =
           patchedNodeSlots[node.id]!['outputs']![slot]?.links.includes(linkId)
@@ -280,15 +283,9 @@ export function fixBadLinks(
     return hasAny
   }
 
-  let links: Array<SerialisedLLinkArray | LLink> = []
-  if (!Array.isArray(graph.links)) {
-    links = Object.values(graph.links).reduce((acc, v) => {
-      acc[v.id] = v
-      return acc
-    }, links)
-  } else {
-    links = graph.links
-  }
+  const links: Array<SerialisedLLinkArray | LLink> = Array.isArray(graph.links)
+    ? graph.links
+    : Array.from((graph as LGraph).links.values())
 
   const linksReverse = [...links]
   linksReverse.reverse()
@@ -429,7 +426,8 @@ export function fixBadLinks(
     for (let i = data.deletedLinks.length - 1; i >= 0; i--) {
       logger.log(`Deleting link #${data.deletedLinks[i]}.`)
       if ((graph as LGraph).getNodeById) {
-        delete graph.links[data.deletedLinks[i]!]
+        const liveGraph = graph as LGraph
+        liveGraph.links.delete(toLinkId(data.deletedLinks[i]!))
       } else {
         graph = graph as ISerialisedGraph
         // Sometimes we got objects for links if passed after ComfyUI's loadGraphData modifies the

@@ -14,7 +14,6 @@ const zRendererType = z.enum([
 // Remove it after GroupNode is redesigned.
 export const zNodeId = z.union([z.number().int(), z.string()])
 const zNodeInputName = z.string()
-export type NodeId = z.infer<typeof zNodeId>
 
 /**
  * UUID identifier for a saved workflow.

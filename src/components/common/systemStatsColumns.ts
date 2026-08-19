@@ -8,37 +8,51 @@ type SystemInfoKey = keyof SystemStats['system']
 
 export type SystemStatsColumn = {
   field: SystemInfoKey
-  header: string
+  headerKey: string
   getValue?: () => string
   format?: (value: string) => string
   formatNumber?: (value: number) => string
 }
 
 const localColumns: SystemStatsColumn[] = [
-  { field: 'os', header: 'OS' },
-  { field: 'python_version', header: 'Python Version' },
-  { field: 'embedded_python', header: 'Embedded Python' },
-  { field: 'pytorch_version', header: 'Pytorch Version' },
-  { field: 'argv', header: 'Arguments' },
-  { field: 'ram_total', header: 'RAM Total', formatNumber: formatSize },
-  { field: 'ram_free', header: 'RAM Free', formatNumber: formatSize },
-  { field: 'installed_templates_version', header: 'Templates Version' }
+  { field: 'os', headerKey: 'g.systemStatsOS' },
+  { field: 'python_version', headerKey: 'g.systemStatsPythonVersion' },
+  { field: 'embedded_python', headerKey: 'g.systemStatsEmbeddedPython' },
+  { field: 'pytorch_version', headerKey: 'g.systemStatsPyTorchVersion' },
+  { field: 'argv', headerKey: 'g.systemStatsArguments' },
+  {
+    field: 'ram_total',
+    headerKey: 'g.systemStatsRAMTotal',
+    formatNumber: formatSize
+  },
+  {
+    field: 'ram_free',
+    headerKey: 'g.systemStatsRAMFree',
+    formatNumber: formatSize
+  },
+  {
+    field: 'installed_templates_version',
+    headerKey: 'g.systemStatsTemplatesVersion'
+  }
 ]
 
 const cloudColumns: SystemStatsColumn[] = [
-  { field: 'cloud_version', header: 'Cloud Version' },
+  { field: 'cloud_version', headerKey: 'g.systemStatsCloudVersion' },
   {
     field: 'comfyui_version',
-    header: 'ComfyUI Version',
+    headerKey: 'g.systemStatsComfyUIVersion',
     format: formatCommitHash
   },
   {
     field: 'comfyui_frontend_version',
-    header: 'Frontend Version',
+    headerKey: 'g.systemStatsFrontendVersion',
     getValue: () => frontendCommit,
     format: formatCommitHash
   },
-  { field: 'workflow_templates_version', header: 'Templates Version' }
+  {
+    field: 'workflow_templates_version',
+    headerKey: 'g.systemStatsTemplatesVersion'
+  }
 ]
 
 export function getSystemStatsColumns(): SystemStatsColumn[] {

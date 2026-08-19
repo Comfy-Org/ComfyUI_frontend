@@ -3,7 +3,9 @@
  */
 import { createTestingPinia } from '@pinia/testing'
 import { render, screen, fireEvent } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+
+import { toNodeId } from '@/types/nodeId'
 import { nextTick } from 'vue'
 
 import type {
@@ -68,15 +70,11 @@ describe('Vue Node - Subgraph Functionality', () => {
     } as LGLGraphNode)
   }
 
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   const createMockNodeData = (
     id: string,
     subgraphId?: string
   ): VueNodeData => ({
-    id,
+    id: toNodeId(id),
     title: 'Test Node',
     type: 'TestNode',
     mode: 0,

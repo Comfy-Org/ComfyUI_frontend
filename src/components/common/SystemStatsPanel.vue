@@ -13,7 +13,7 @@
       <div class="grid grid-cols-2 gap-2">
         <template v-for="col in systemColumns" :key="col.field">
           <div :class="cn('font-medium', isOutdated(col) && 'text-danger-100')">
-            {{ col.header }}
+            {{ $t(col.headerKey) }}
           </div>
           <div :class="cn(isOutdated(col) && 'text-danger-100')">
             {{ getColumnDisplayValue(stats, col) }}

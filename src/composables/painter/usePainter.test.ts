@@ -1,12 +1,12 @@
-import { createTestingPinia } from '@pinia/testing'
 import { render } from '@testing-library/vue'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { api } from '@/scripts/api'
+import { toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 
 import { usePainter } from './usePainter'
 
@@ -94,7 +94,10 @@ function makeWidget(name: string, value: unknown = null): IBaseWidget {
 /**
  * Mounts a thin wrapper component so Vue lifecycle hooks fire.
  */
-function mountPainter(nodeId = 'test-node', initialModelValue = '') {
+function mountPainter(
+  nodeId: NodeId = toNodeId('test-node'),
+  initialModelValue = ''
+) {
   let painter!: PainterResult
   const canvasEl = ref<HTMLCanvasElement | null>(null)
   const cursorEl = ref<HTMLElement | null>(null)
@@ -120,8 +123,6 @@ function mountPainter(nodeId = 'test-node', initialModelValue = '') {
 
 describe('usePainter', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.resetAllMocks()
     mockWidgets.length = 0
     for (const key of Object.keys(mockProperties)) {
       delete mockProperties[key]
@@ -353,7 +354,7 @@ describe('usePainter', () => {
       const maskWidget = makeWidget('mask', '')
       mockWidgets.push(maskWidget)
 
-      mountPainter('test-node', 'painter/existing.png [temp]')
+      mountPainter(toNodeId('test-node'), 'painter/existing.png [temp]')
 
       const result = await maskWidget.serializeValue!({} as LGraphNode, 0)
       expect(result).toBe('painter/existing.png [temp]')
@@ -375,7 +376,7 @@ describe('usePainter', () => {
         toBlob: (cb: BlobCallback) => cb(new Blob(['x']))
       } as unknown as HTMLCanvasElement
 
-      const { canvasEl } = mountPainter('test-node', '')
+      const { canvasEl } = mountPainter(toNodeId('test-node'), '')
       canvasEl.value = fakeCanvas
       await nextTick()
 
@@ -408,7 +409,7 @@ describe('usePainter', () => {
         toBlob: (cb: BlobCallback) => cb(new Blob(['x']))
       } as unknown as HTMLCanvasElement
 
-      const { canvasEl } = mountPainter('test-node', '')
+      const { canvasEl } = mountPainter(toNodeId('test-node'), '')
       canvasEl.value = fakeCanvas
       await nextTick()
 
@@ -434,7 +435,7 @@ describe('usePainter', () => {
         toBlob: (cb: BlobCallback) => cb(new Blob(['x']))
       } as unknown as HTMLCanvasElement
 
-      const { canvasEl } = mountPainter('test-node', '')
+      const { canvasEl } = mountPainter(toNodeId('test-node'), '')
       canvasEl.value = fakeCanvas
       await nextTick()
 
@@ -447,7 +448,7 @@ describe('usePainter', () => {
       const maskWidget = makeWidget('mask', '')
       mockWidgets.push(maskWidget)
 
-      mountPainter('test-node', 'painter/cached.png [temp]')
+      mountPainter(toNodeId('test-node'), 'painter/cached.png [temp]')
 
       const result = await maskWidget.serializeValue!({} as LGraphNode, 0)
       expect(result).toBe('painter/cached.png [temp]')
@@ -466,7 +467,7 @@ describe('usePainter', () => {
       } as unknown as HTMLCanvasElement
 
       const { painter, canvasEl, modelValue } = mountPainter(
-        'test-node',
+        toNodeId('test-node'),
         'painter/old-upload.png [temp]'
       )
       canvasEl.value = fakeCanvas
@@ -481,7 +482,7 @@ describe('usePainter', () => {
     it('calls api.apiURL with parsed filename params when modelValue is set', () => {
       vi.mocked(api.apiURL).mockClear()
 
-      mountPainter('test-node', 'painter/my-image.png [temp]')
+      mountPainter(toNodeId('test-node'), 'painter/my-image.png [temp]')
 
       expect(api.apiURL).toHaveBeenCalledWith(
         expect.stringContaining('filename=my-image.png')

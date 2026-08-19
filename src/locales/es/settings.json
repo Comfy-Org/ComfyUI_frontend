@@ -426,10 +426,6 @@
   "Comfy_Validation_Workflows": {
     "name": "Validar flujos de trabajo"
   },
-  "Comfy_VueNodes_AutoScaleLayout": {
-    "name": "Escalado automático del diseño (nodos Vue)",
-    "tooltip": "Escala automáticamente las posiciones de los nodos al cambiar a renderizado Vue para evitar superposiciones"
-  },
   "Comfy_VueNodes_Enabled": {
     "name": "Diseño moderno de nodos (nodos Vue)",
     "tooltip": "Moderno: Renderizado basado en DOM con interactividad mejorada, funciones nativas del navegador y diseño visual actualizado. Clásico: Renderizado tradicional en lienzo."
@@ -458,6 +454,9 @@
   },
   "Comfy_Workflow_ConfirmDelete": {
     "name": "Mostrar confirmación al eliminar flujos de trabajo"
+  },
+  "Comfy_Workflow_NamedValuesRestore": {
+    "name": "Restaurar valores de widget por nombre"
   },
   "Comfy_Workflow_Persist": {
     "name": "Persistir el estado del flujo de trabajo y restaurar en la (re)carga de la página"

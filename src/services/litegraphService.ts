@@ -1,4 +1,4 @@
-import _ from 'es-toolkit/compat'
+import { pick, zip } from 'es-toolkit/compat'
 
 import { downloadFile, openFileInNewTab } from '@/base/common/downloadUtil'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
@@ -11,7 +11,7 @@ import {
   isPreviewPseudoWidget
 } from '@/core/graph/subgraph/promotionUtils'
 import { applyDynamicInputs } from '@/core/graph/widgets/dynamicWidgets'
-import { st, t } from '@/i18n'
+import { resolveNodeDefSlotText, st, t } from '@/i18n'
 import {
   LGraphCanvas,
   LGraphEventMode,
@@ -39,7 +39,6 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { createPromotedMultilineWidget } from '@/renderer/extensions/vueNodes/widgets/utils/multilineTextarea'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useDialogService } from '@/services/dialogService'
@@ -62,6 +61,8 @@ import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWidgetStore } from '@/stores/widgetStore'
+import { parseNodeId } from '@/types/nodeId'
+import type { SerializedNodeId } from '@/types/nodeId'
 import { isBlueprintType } from '@/utils/blueprintUtils'
 import type { WidgetId } from '@/types/widgetId'
 import { normalizeI18nKey } from '@/utils/formatUtil'
@@ -120,10 +121,6 @@ async function reencodeAsPngBlob(
   })
 }
 
-export interface HasInitialMinSize {
-  _initialMinSize: { width: number; height: number }
-}
-
 export const CONFIG = Symbol()
 export const GET_CONFIG = Symbol()
 
@@ -170,6 +167,11 @@ export function getExtraOptionsForWidget(
   return options
 }
 
+function getMinSize(node: LGraphNode) {
+  node._initialMinSize ??= { width: 1, height: 1 }
+  return node._initialMinSize
+}
+
 /**
  * Service that augments litegraph with ComfyUI specific functionality.
  */
@@ -205,17 +207,16 @@ export const useLitegraphService = () => {
   }
 
   /**
-   * @internal The key for the node definition in the i18n file.
+   * @internal The node definition name used to resolve the node's i18n text.
    */
-  function nodeKey(node: LGraphNode): string {
-    return `nodeDefs.${normalizeI18nKey(node.constructor.nodeData!.name)}`
+  function nodeDefName(node: LGraphNode): string {
+    return node.constructor.nodeData?.name ?? ''
   }
   /**
    * @internal Add input sockets to the node. (No widget)
    */
   function addInputSocket(node: LGraphNode, inputSpec: InputSpec) {
     const inputName = inputSpec.name
-    const nameKey = `${nodeKey(node)}.inputs.${normalizeI18nKey(inputName)}.name`
     const widgetConstructor = widgetStore.widgets.get(
       inputSpec.widgetType ?? inputSpec.type
     )
@@ -225,19 +226,23 @@ export const useLitegraphService = () => {
     )
       return
 
-    const input = node.addInput(inputName, inputSpec.type, {
+    node.addInput(inputName, inputSpec.type, {
       shape: inputSpec.isOptional ? RenderShape.HollowCircle : undefined,
-      localized_name: st(nameKey, inputName)
+      localized_name: resolveNodeDefSlotText(
+        'name',
+        nodeDefName(node),
+        inputName,
+        inputSpec.display_name,
+        inputName
+      )
     })
-    input.label ??= inputSpec.display_name
   }
   /**
    * @internal Setup stroke styles for the node under various conditions.
    */
   function setupStrokeStyles(node: LGraphNode) {
     node.strokeStyles['running'] = function (this: LGraphNode) {
-      const nodeId = String(this.id)
-      const nodeLocatorId = useWorkflowStore().nodeIdToNodeLocatorId(nodeId)
+      const nodeLocatorId = useWorkflowStore().nodeIdToNodeLocatorId(this.id)
       const state =
         useExecutionStore().nodeLocationProgressStates[nodeLocatorId]?.state
       if (state === 'running') {
@@ -251,7 +256,7 @@ export const useLitegraphService = () => {
     }
     node.strokeStyles['executionError'] = function (this: LGraphNode) {
       if (app.lastExecutionError?.node_id == this.id) {
-        return { color: '#f0f', lineWidth: 3 }
+        return { color: LiteGraph.NODE_ERROR_COLOUR, lineWidth: 3 }
       }
     }
   }
@@ -278,7 +283,14 @@ export const useLitegraphService = () => {
       widgetInputSpec.type = inputSpec.widgetType
     }
     const inputName = inputSpec.name
-    const nameKey = `${nodeKey(node)}.inputs.${normalizeI18nKey(inputName)}.name`
+    const resolveLabel = (fallback: string) =>
+      resolveNodeDefSlotText(
+        'name',
+        nodeDefName(node),
+        inputName,
+        widgetInputSpec.display_name,
+        fallback
+      )
     const widgetConstructor = widgetStore.widgets.get(widgetInputSpec.type)
     if (!widgetConstructor || inputSpec.forceInput) return
 
@@ -294,8 +306,7 @@ export const useLitegraphService = () => {
     ) ?? {}
 
     if (widget) {
-      widget.label = st(
-        nameKey,
+      widget.label = resolveLabel(
         widget.label ?? widgetInputSpec.display_name ?? inputName
       )
       widget.options ??= {}
@@ -311,19 +322,13 @@ export const useLitegraphService = () => {
       const inputSpecV1 = transformInputSpecV2ToV1(widgetInputSpec)
       node.addInput(inputName, inputSpec.type, {
         shape: inputSpec.isOptional ? RenderShape.HollowCircle : undefined,
-        localized_name: st(nameKey, inputName),
+        localized_name: resolveLabel(inputName),
         widget: { name: inputName, [GET_CONFIG]: () => inputSpecV1 }
       })
     }
-    const castedNode = node as LGraphNode & HasInitialMinSize
-    castedNode._initialMinSize.width = Math.max(
-      castedNode._initialMinSize.width,
-      minWidth
-    )
-    castedNode._initialMinSize.height = Math.max(
-      castedNode._initialMinSize.height,
-      minHeight
-    )
+    const minSize = getMinSize(node)
+    minSize.width = Math.max(minSize.width, minWidth)
+    minSize.height = Math.max(minSize.height, minHeight)
   }
 
   /**
@@ -349,7 +354,6 @@ export const useLitegraphService = () => {
       // TODO: Fix the typing at the node spec level
       const type = output.type === 'COMFY_MATCHTYPE_V3' ? '*' : output.type
       const shapeOptions = is_list ? { shape: LiteGraph.GRID_SHAPE } : {}
-      const nameKey = `${nodeKey(node)}.outputs.${output.index}.name`
       const typeKey = `dataTypes.${normalizeI18nKey(type)}`
       const outputOptions = {
         ...shapeOptions,
@@ -357,7 +361,15 @@ export const useLitegraphService = () => {
         // e.g.
         // - type ("INT"); name ("Positive") => translate name
         // - type ("FLOAT"); name ("FLOAT") => translate type
-        localized_name: type !== name ? st(nameKey, name) : st(typeKey, name)
+        localized_name:
+          type !== name
+            ? resolveNodeDefSlotText(
+                'name',
+                nodeDefName(node),
+                output.index,
+                name
+              )
+            : st(typeKey, name)
       }
       node.addOutput(name, type, outputOptions)
     }
@@ -372,9 +384,9 @@ export const useLitegraphService = () => {
     const pad =
       node.widgets?.length &&
       !useSettingStore().get('LiteGraph.Node.DefaultPadding')
-    const castedNode = node as LGraphNode & HasInitialMinSize
-    s[0] = Math.max(castedNode._initialMinSize.width, s[0] + (pad ? 60 : 0))
-    s[1] = Math.max(castedNode._initialMinSize.height, s[1])
+    const minSize = getMinSize(node)
+    s[0] = Math.max(minSize.width, s[0] + (pad ? 60 : 0))
+    s[1] = Math.max(minSize.height, s[1])
     node.setSize(s)
   }
 
@@ -383,16 +395,11 @@ export const useLitegraphService = () => {
     subgraph: Subgraph,
     instanceData: ExportedSubgraphInstance
   ) {
-    const node = class ComfyNode
-      extends SubgraphNode
-      implements HasInitialMinSize
-    {
+    const node = class ComfyNode extends SubgraphNode {
       static comfyClass: string
       static override title: string
       static override category: string
       static override nodeData: ComfyNodeDefV1 & ComfyNodeDefV2
-
-      _initialMinSize = { width: 1, height: 1 }
 
       constructor() {
         super(app.rootGraph, subgraph, instanceData)
@@ -449,7 +456,7 @@ export const useLitegraphService = () => {
                 ...inputData,
                 // Whether the input has associated widget follows the
                 // original node definition.
-                ..._.pick(input, RESERVED_KEYS.concat('widget'))
+                ...pick(input, RESERVED_KEYS.concat('widget'))
               }
             : input
         })
@@ -461,7 +468,7 @@ export const useLitegraphService = () => {
 
         // Note: output name is not unique, so we cannot lookup output by name.
         // Use index instead.
-        data.outputs = _.zip(this.outputs, data.outputs).map(
+        data.outputs = zip(this.outputs, data.outputs).map(
           ([output, outputData]) => {
             // If there are extra outputs in the serialised node, use them directly.
             // There are currently custom nodes that dynamically add outputs via
@@ -471,7 +478,7 @@ export const useLitegraphService = () => {
             return outputData
               ? {
                   ...outputData,
-                  ..._.pick(output, RESERVED_KEYS)
+                  ...pick(output, RESERVED_KEYS)
                 }
               : output
           }
@@ -506,16 +513,11 @@ export const useLitegraphService = () => {
   }
 
   async function registerNodeDef(nodeId: string, nodeDefV1: ComfyNodeDefV1) {
-    const node = class ComfyNode
-      extends LGraphNode
-      implements HasInitialMinSize
-    {
+    const node = class ComfyNode extends LGraphNode {
       static comfyClass: string
       static override title: string
       static override category: string
       static override nodeData: ComfyNodeDefV1 & ComfyNodeDefV2
-
-      _initialMinSize = { width: 1, height: 1 }
 
       constructor(title: string) {
         super(title)
@@ -557,7 +559,7 @@ export const useLitegraphService = () => {
                 ...inputData,
                 // Whether the input has associated widget follows the
                 // original node definition.
-                ..._.pick(input, RESERVED_KEYS.concat('widget'))
+                ...pick(input, RESERVED_KEYS.concat('widget'))
               }
             : input
         })
@@ -569,7 +571,7 @@ export const useLitegraphService = () => {
 
         // Note: output name is not unique, so we cannot lookup output by name.
         // Use index instead.
-        data.outputs = _.zip(this.outputs, data.outputs).map(
+        data.outputs = zip(this.outputs, data.outputs).map(
           ([output, outputData]) => {
             // If there are extra outputs in the serialised node, use them directly.
             // There are currently custom nodes that dynamically add outputs via
@@ -579,7 +581,7 @@ export const useLitegraphService = () => {
             return outputData
               ? {
                   ...outputData,
-                  ..._.pick(output, RESERVED_KEYS)
+                  ...pick(output, RESERVED_KEYS)
                 }
               : output
           }
@@ -948,8 +950,10 @@ export const useLitegraphService = () => {
     return [x + w / dpi / 2, y + h / dpi / 2]
   }
 
-  function goToNode(nodeId: NodeId) {
-    const graphNode = app.canvas.graph?.getNodeById(nodeId)
+  function goToNode(nodeId: SerializedNodeId) {
+    const parsedNodeId = parseNodeId(nodeId)
+    if (!parsedNodeId) return
+    const graphNode = app.canvas.graph?.getNodeById(parsedNodeId)
     if (!graphNode) return
     app.canvas.animateToBounds(graphNode.boundingRect)
   }

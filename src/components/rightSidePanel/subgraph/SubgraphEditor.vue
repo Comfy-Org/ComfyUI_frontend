@@ -14,6 +14,7 @@ import {
   isRecommendedWidget,
   promoteWidget,
   pruneDisconnected,
+  refreshPromotedWidgetRendering,
   reorderSubgraphInputsByWidgetOrder
 } from '@/core/graph/subgraph/promotionUtils'
 import {
@@ -32,6 +33,7 @@ import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import { useLitegraphService } from '@/services/litegraphService'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import SubgraphNodeWidget from './SubgraphNodeWidget.vue'
@@ -116,7 +118,7 @@ function getActivePreviewRows(node: SubgraphNode): PreviewRow[] {
   const rootGraphId = node.rootGraph.id
   const exposures = previewExposureStore.getExposures(rootGraphId, hostLocator)
   return exposures.flatMap((exposure): PreviewRow[] => {
-    const sourceNode = node.subgraph._nodes_by_id[exposure.sourceNodeId]
+    const sourceNode = node.subgraph.getNodeById(exposure.sourceNodeId)
     if (!sourceNode) return []
     const realWidget = getPromotableWidgets(sourceNode).find(
       (candidate) => candidate.name === exposure.sourcePreviewName
@@ -148,7 +150,7 @@ function updateActivePromotedRows(
       value.map((row) => ({ widgetId: row.widget.widgetId }))
     )
   }
-  refreshPromotedWidgetRendering()
+  refreshActiveNodeRendering()
 }
 
 const interiorWidgets = computed<WidgetItem[]>(() => {
@@ -226,13 +228,11 @@ const filteredActivePreviews = computed<PreviewRow[]>(() =>
   )
 )
 
-function refreshPromotedWidgetRendering() {
+function refreshActiveNodeRendering() {
   const node = activeNode.value
   if (!node) return
 
-  node.computeSize(node.size)
-  node.setDirtyCanvas(true, true)
-  canvasStore.canvas?.setDirty(true, true)
+  refreshPromotedWidgetRendering([node])
 }
 
 function rowDisplayName(row: ActiveRow): string {
@@ -248,7 +248,7 @@ function rowDisplayName(row: ActiveRow): string {
 
 function isRowLinked(row: ActiveRow): boolean {
   if (row.kind !== 'promoted') return false
-  if (row.node.id === -1) return true
+  if (row.node.id === UNASSIGNED_NODE_ID) return true
   const source = promotedRowSource(row)
   return (
     !!activeNode.value &&
@@ -282,7 +282,7 @@ function demoteRow(row: ActiveRow) {
         sourceWidgetName: source.widgetName
       })
     }
-    refreshPromotedWidgetRendering()
+    refreshActiveNodeRendering()
     return
   }
   if (row.realWidget) {
@@ -294,7 +294,7 @@ function demoteRow(row: ActiveRow) {
     String(subgraphNode.id),
     row.exposure.name
   )
-  refreshPromotedWidgetRendering()
+  refreshActiveNodeRendering()
 }
 
 function promotePromotedRow(row: PromotedRow) {
