@@ -49,7 +49,6 @@ const i18n = createI18n({
         personal: 'Personal',
         roleOwner: 'Owner',
         roleMember: 'Member',
-        usingCreditsFrom: 'Using credits from',
         noCredits: 'No credits',
         scopeCaption: 'Workspaces only affect which credits you use.',
         createWorkspace: 'Create a team workspace',
@@ -144,10 +143,9 @@ describe('WorkspaceSwitcherPopover', () => {
     expect(screen.getByText('No credits')).toBeInTheDocument()
   })
 
-  it('shows the credits-scope framing off cloud and hides it on cloud', () => {
+  it('shows the credits-scope caption off cloud', () => {
     distributionMocks.isCloud = false
     renderComponent()
-    expect(screen.getByText('Using credits from')).toBeInTheDocument()
     expect(
       screen.getByText('Workspaces only affect which credits you use.')
     ).toBeInTheDocument()

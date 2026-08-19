@@ -3337,9 +3337,9 @@
     "nameValidationError": "Name must be 1–50 characters using letters, numbers, spaces, or common punctuation."
   },
   "workspaceSwitcher": {
-    "usingCreditsFrom": "Using credits from",
     "noCredits": "No credits",
     "scopeCaption": "Workspaces only affect which credits you use.",
+    "scopeTooltip": "On desktop, workspaces only choose which credit balance your partner node runs spend. Assets you create are saved to this computer; they're not synced to your Cloud workspace.",
     "switchWorkspace": "Switch workspace",
     "subscribe": "Subscribe",
     "personal": "Personal",

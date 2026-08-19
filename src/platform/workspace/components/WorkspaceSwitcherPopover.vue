@@ -1,12 +1,6 @@
 <template>
   <div class="flex max-h-96 w-80 flex-col overflow-hidden rounded-lg">
     <div
-      v-if="!isCloud"
-      class="px-4 pt-3 pb-1 text-xs font-semibold tracking-wide text-muted-foreground uppercase"
-    >
-      {{ $t('workspaceSwitcher.usingCreditsFrom') }}
-    </div>
-    <div
       class="flex scrollbar-custom min-h-0 flex-1 flex-col"
       data-testid="workspace-switcher-list"
     >
@@ -87,7 +81,13 @@
       v-if="!isCloud"
       class="flex shrink-0 items-center gap-2 px-4 py-2 text-xs text-muted-foreground"
     >
-      <i class="pi pi-info-circle text-xs" />
+      <i
+        v-tooltip.top="{
+          value: $t('workspaceSwitcher.scopeTooltip'),
+          showDelay: 300
+        }"
+        class="pi pi-info-circle text-xs"
+      />
       <span>{{ $t('workspaceSwitcher.scopeCaption') }}</span>
     </div>
 
