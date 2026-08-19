@@ -118,7 +118,6 @@ export const TestIds = {
     signInToRunButton: 'partner-sign-in-to-run-button',
     runGateCaption: 'partner-run-gate-caption',
     educationCard: 'partner-nodes-education-card',
-    educationCardGotIt: 'partner-nodes-education-got-it',
     educationCardDismiss: 'partner-nodes-education-dismiss'
   },
   nodeLibrary: {
