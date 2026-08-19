@@ -1,0 +1,575 @@
+---
+// A/B TEST PREVIEW — v2 supported-models directory ("explore" variant).
+// Not linked from anywhere. noindex. Delete this folder to remove the preview.
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import {
+  launches,
+  topPartnerApis,
+  useCaseWorkflows,
+  registryModels,
+  modalityMeta,
+  proxyImg,
+  dirLabel,
+  type LaunchModel
+} from '../../config/models-v2-demo'
+
+const hero = launches[0]
+const featured = launches.slice(0, 8)
+
+const hrefFor = (slug: string) => `/models-v2/${slug}`
+
+const kindTag = (l: LaunchModel) => (l.kind === 'open weights' ? 'open' : 'partner')
+const modTag = (l: LaunchModel) =>
+  l.modality === 'i2v' || l.modality === 'video' ? 'video'
+  : l.modality === 'audio' ? 'audio'
+  : 'image'
+
+const dirTag = (d: string) =>
+  d === 'partner_nodes' ? 'partner'
+  : d === 'loras' ? 'loras'
+  : d === 'audio_encoders' ? 'audio'
+  : d === 'vae' || d === 'text_encoders' || d === 'clip_vision' ? 'encoders'
+  : d === 'diffusion_models' || d === 'checkpoints' ? 'diffusion'
+  : 'other'
+
+const faqs: Array<[string, string]> = [
+  ['What does day-zero support mean?', 'When a new model releases, Comfy ships first-party support — nodes, templates, and a runnable workflow — the day the weights drop.'],
+  ['Is ComfyUI free?', 'ComfyUI is open source and free to run on your own GPU, forever. Comfy Cloud adds hosted GPUs with a free trial quota and paid tiers for scale.'],
+  ['Do partner models need separate accounts?', 'No. Kling, Grok, GPT Image, and other partner models run through your one Comfy account, on the same canvas as open models.'],
+  ['What VRAM do open models need?', 'Every family page lists per-variant VRAM in the checkpoints table — fp16, fp8, and GGUF builds cover cards from 12 GB up.']
+]
+
+const siteBase = Astro.site ?? 'https://comfy.org'
+const collectionJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  name: 'AI Models in ComfyUI',
+  url: new URL('/models-v2', siteBase).href,
+  mainEntity: {
+    '@type': 'ItemList',
+    itemListElement: launches.map((l, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      name: l.name,
+      url: new URL(`/models-v2/${l.slug}`, siteBase).href
+    }))
+  }
+}
+const breadcrumbJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://comfy.org' },
+    { '@type': 'ListItem', position: 2, name: 'AI Models' }
+  ]
+}
+const faqJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faqs.map(([q, a]) => ({
+    '@type': 'Question',
+    name: q,
+    acceptedAnswer: { '@type': 'Answer', text: a }
+  }))
+}
+
+const allCardTags: string[][] = [
+  ...launches.slice(0, 8).map((l) => ['launch', kindTag(l), modTag(l)]),
+  ...topPartnerApis.map((l) => ['partner', modTag(l)]),
+  ...registryModels.map((m) => [dirTag(m.directory), m.directory === 'partner_nodes' ? 'partner' : 'open'])
+]
+const tagCount = (tag: string) => allCardTags.filter((t2) => t2.includes(tag)).length
+const PILLS = [
+  ['all', 'All', allCardTags.length],
+  ['launch', 'Launches', tagCount('launch')],
+  ['open', 'Open weights', tagCount('open')],
+  ['partner', 'Partner APIs', tagCount('partner')],
+  ['video', 'Video', tagCount('video')],
+  ['image', 'Image + edit', tagCount('image')],
+  ['audio', 'Audio', tagCount('audio')],
+  ['diffusion', 'Diffusion', tagCount('diffusion')],
+  ['loras', 'LoRAs', tagCount('loras')],
+  ['encoders', 'VAE + encoders', tagCount('encoders')]
+] as const
+---
+
+<BaseLayout
+  title="AI Models in ComfyUI — v2 Preview"
+  description="Run 200+ open-weights and partner models with professional control. Preview of the next supported-models directory."
+  noindex={true}
+>
+  <Fragment slot="head">
+    <script is:inline type="application/ld+json" set:html={JSON.stringify(collectionJsonLd)} />
+    <script is:inline type="application/ld+json" set:html={JSON.stringify(breadcrumbJsonLd)} />
+    <script is:inline type="application/ld+json" set:html={JSON.stringify(faqJsonLd)} />
+  </Fragment>
+  <div class="fixed right-3 top-3 z-50 rounded-full border border-primary-comfy-yellow/40 bg-primary-comfy-ink/90 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-primary-comfy-yellow backdrop-blur">
+    A/B preview · noindex
+  </div>
+
+  <!-- HERO — the measured CVR leader gets the slot -->
+  <section class="mx-auto max-w-7xl px-5 pb-10 pt-12 sm:px-6 lg:px-8 lg:pt-20">
+    <div class="flex flex-col items-start gap-10 lg:flex-row lg:items-center lg:gap-16">
+      <div class="max-w-xl">
+        <p class="mb-3 text-[11px] font-semibold uppercase tracking-[0.25em] text-primary-warm-gray">
+          <a href="https://comfy.org" class="hover:text-primary-warm-white">Home</a> / AI models
+        </p>
+        <p class="mb-4 text-xs font-extrabold uppercase tracking-[0.35em] text-primary-comfy-yellow sm:text-sm">
+          Supported models
+        </p>
+        <h1 class="text-4xl font-light leading-[1.08] tracking-tight text-primary-warm-white sm:text-5xl lg:text-6xl">
+          Every model.<br />One graph.
+        </h1>
+        <p class="mt-5 text-base font-light leading-relaxed text-primary-comfy-canvas sm:text-lg">
+          Run 200+ open-weights and partner models with professional control —
+          FLUX, Wan, MiniMax, Kling, and every day-zero release. On your GPU or
+          on Comfy Cloud.
+        </p>
+        <div class="mt-7 flex flex-wrap gap-3">
+          <a
+            href={hrefFor(hero.slug)}
+            class="rounded-lg bg-primary-comfy-yellow px-6 py-3 text-sm font-extrabold uppercase tracking-wider text-primary-comfy-ink transition hover:brightness-110"
+          >
+            Run {hero.name} now
+          </a>
+          <a
+            href="https://comfy.org/workflows"
+            class="rounded-lg border border-white/20 bg-white/5 px-6 py-3 text-sm font-extrabold uppercase tracking-wider text-primary-warm-white transition hover:bg-white/10"
+          >
+            Browse workflows
+          </a>
+        </div>
+        <p class="mt-5 text-xs text-primary-warm-gray sm:text-sm">
+          {registryModels.length} models · day-zero releases weekly · 4M+ creators
+        </p>
+        <p class="mt-2 text-xs font-semibold uppercase tracking-widest text-primary-comfy-yellow/90">
+          5 free runs · no card · no watermark
+        </p>
+      </div>
+      <a
+        href={hrefFor(hero.slug)}
+        class="group relative w-full overflow-hidden rounded-2xl border border-white/10 lg:flex-1"
+      >
+        <img
+          src={hero.img}
+          alt={`${hero.name} example output`}
+          class="aspect-video w-full object-cover transition duration-500 group-hover:scale-[1.02]"
+          loading="eager"
+          fetchpriority="high"
+        />
+        <div class="flex items-center justify-between gap-3 bg-white/5 px-4 py-3 sm:px-5">
+          <span class="flex min-w-0 items-center gap-2">
+            {hero.dayZero && (
+              <span class="shrink-0 rounded bg-primary-comfy-yellow px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-widest text-primary-comfy-ink">Day zero</span>
+            )}
+            <span class="truncate text-sm font-semibold text-primary-warm-white">{hero.name} — {hero.blurb.split('.')[0].toLowerCase()}</span>
+          </span>
+          <span class="shrink-0 text-xs font-extrabold uppercase tracking-widest text-primary-comfy-yellow">Try it →</span>
+        </div>
+      </a>
+    </div>
+  </section>
+
+  <!-- SEARCH + FILTERS (sticky) -->
+  <section class="sticky top-0 z-30 border-b border-white/5 bg-primary-comfy-ink/95 py-4 backdrop-blur" id="model-filter-root">
+    <div class="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
+    <div class="flex flex-col gap-3 sm:flex-row">
+      <label class="flex flex-1 items-center gap-3 rounded-xl border border-white/15 bg-white/5 px-4 py-3.5 focus-within:border-primary-comfy-yellow/60 sm:px-5">
+        <svg class="h-4 w-4 shrink-0 text-primary-warm-gray" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.5"/><path d="M11 11l3.5 3.5" stroke="currentColor" stroke-width="1.5"/></svg>
+        <input
+          id="model-search"
+          type="search"
+          placeholder='Search 200+ models — try "flux", "wan", or "lora"'
+          class="w-full bg-transparent text-sm font-light text-primary-warm-white placeholder:text-primary-warm-gray focus:outline-none sm:text-base [&::-webkit-search-cancel-button]:hidden"
+        />
+        <button id="search-clear" class="hidden shrink-0 rounded-md px-1.5 text-lg font-light leading-none text-primary-warm-gray hover:text-primary-warm-white" aria-label="Clear search">×</button>
+      </label>
+      <span id="match-count" class="hidden rounded-xl border border-white/10 px-5 py-3.5 text-center text-xs font-semibold text-primary-warm-gray sm:block"></span>
+      <a
+        href="#browse-all"
+        class="rounded-xl border border-white/20 bg-white/5 px-5 py-3.5 text-center text-xs font-extrabold uppercase tracking-widest text-primary-warm-white transition hover:bg-white/10"
+      >
+        Browse all ↓
+      </a>
+    </div>
+    <div class="mt-3 flex items-center gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <span class="shrink-0 text-[11px] font-light text-primary-warm-gray">Try:</span>
+      {[
+        ['Newest launches', 'pill:launch'],
+        ['FLUX family', 'q:flux'],
+        ['Wan family', 'q:wan'],
+        ['Image to video', 'q:image to video'],
+        ['Music', 'q:music'],
+        ['LoRAs', 'pill:loras']
+      ].map(([label, action]) => (
+        <button
+          data-try={action}
+          class="shrink-0 rounded-full border border-white/12 bg-white/[0.04] px-3 py-1.5 text-[11px] text-primary-comfy-canvas transition hover:border-primary-comfy-yellow/50 hover:text-primary-warm-white"
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+    <div class="mt-3 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" id="modality-pills">
+      {PILLS.map(([value, label, count], i) => (
+        <button
+          data-pill={value}
+          class:list={[
+            'shrink-0 rounded-full px-4 py-2 text-xs font-extrabold uppercase tracking-widest transition',
+            i === 0
+              ? 'is-active bg-primary-comfy-yellow text-primary-comfy-ink'
+              : 'border border-white/15 bg-white/5 text-primary-comfy-canvas hover:bg-white/10'
+          ]}
+        >
+          {label} <span class="opacity-60">{count}</span>
+        </button>
+      ))}
+    </div>
+    </div>
+  </section>
+
+  <!-- FEATURED LAUNCHES -->
+  <section class="py-10 lg:py-14" data-cardsection>
+    <div class="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
+      <div class="mb-6 flex items-end justify-between gap-4">
+        <div>
+          <h2 class="text-sm font-extrabold uppercase tracking-[0.3em] text-primary-comfy-yellow">Featured launches</h2>
+          <p class="mt-1.5 text-sm font-light text-primary-warm-gray">The 2026 lineup, ordered by what actually converts.</p>
+        </div>
+      </div>
+      <ul class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        {featured.map((card) => {
+          const meta = modalityMeta[card.modality]
+          return (
+            <li
+              class="m-card"
+              data-name={`${card.name} ${card.publisher} ${meta.label} ${card.kind}`.toLowerCase()}
+              data-tags={`launch ${kindTag(card)} ${modTag(card)}`}
+            >
+              <a
+                href={hrefFor(card.slug)}
+                class="group flex h-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] transition hover:border-white/25 hover:bg-white/[0.07]"
+              >
+                <div class="relative aspect-video overflow-hidden bg-secondary-mauve/40">
+                  <img
+                    src={card.img}
+                    alt={card.name}
+                    loading="lazy"
+                    class="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
+                    onerror="this.style.display='none'"
+                  />
+                  {card.dayZero && (
+                    <span class="absolute left-3 top-3 rounded bg-primary-comfy-yellow px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-widest text-primary-comfy-ink">
+                      Day zero
+                    </span>
+                  )}
+                  <span class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-primary-comfy-ink/95 to-transparent px-3 pb-2.5 pt-8 text-right text-[11px] font-extrabold uppercase tracking-widest text-primary-comfy-yellow opacity-100 transition lg:opacity-0 lg:group-hover:opacity-100">
+                    Open playground →
+                  </span>
+                </div>
+                <div class="flex flex-1 flex-col gap-2.5 p-4">
+                  <div class="flex items-baseline justify-between gap-2">
+                    <span class="text-base font-semibold text-primary-warm-white">{card.name}</span>
+                    <span class="shrink-0 text-xs text-primary-warm-gray">{card.publisher}</span>
+                  </div>
+                  <p class="text-sm font-light leading-snug text-primary-comfy-canvas">{card.blurb}</p>
+                  <div class="mt-auto flex flex-wrap items-center gap-1.5 pt-1">
+                    <span
+                      class="rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider"
+                      style={`color:${meta.color};background:color-mix(in srgb, ${meta.color} 14%, transparent)`}
+                    >
+                      {meta.label}
+                    </span>
+                    <span class="rounded-full border border-white/15 px-2 py-0.5 text-[10px] text-primary-comfy-canvas">{card.kind}</span>
+                  </div>
+                  <div class="flex items-center justify-between text-[11px] text-primary-warm-gray">
+                    <span>{card.runs}</span>
+                    <span>{card.price}</span>
+                  </div>
+                </div>
+              </a>
+            </li>
+          )
+        })}
+      </ul>
+    </div>
+  </section>
+
+  <!-- TOP PARTNER APIS -->
+  <section class="bg-black/25 py-10 lg:py-14" data-cardsection>
+    <div class="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
+      <div class="mb-6">
+        <h2 class="text-sm font-extrabold uppercase tracking-[0.3em] text-primary-comfy-yellow">Top partner APIs</h2>
+        <p class="mt-1.5 text-sm font-light text-primary-warm-gray">Ranked by real usage across the platform — one subscription, one queue.</p>
+      </div>
+      <ul class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        {topPartnerApis.map((card) => {
+          const meta = modalityMeta[card.modality]
+          return (
+            <li
+              class="m-card"
+              data-name={`${card.name} ${card.publisher} ${meta.label}`.toLowerCase()}
+              data-tags={`partner ${modTag(card)}`}
+            >
+              <a
+                href={hrefFor(card.slug)}
+                class="group flex h-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] transition hover:border-white/25 hover:bg-white/[0.07]"
+              >
+                <div class="relative aspect-video overflow-hidden bg-secondary-mauve/40">
+                  <img src={card.img} alt={card.name} loading="lazy" class="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]" onerror="this.style.display='none'" />
+                  <span class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-primary-comfy-ink/95 to-transparent px-3 pb-2.5 pt-8 text-right text-[11px] font-extrabold uppercase tracking-widest text-primary-comfy-yellow opacity-100 transition lg:opacity-0 lg:group-hover:opacity-100">
+                    Open playground →
+                  </span>
+                </div>
+                <div class="flex flex-1 flex-col gap-2 p-4">
+                  <div class="flex items-baseline justify-between gap-2">
+                    <span class="text-base font-semibold text-primary-warm-white">{card.name}</span>
+                    <span class="shrink-0 text-xs text-primary-warm-gray">{card.publisher}</span>
+                  </div>
+                  <p class="text-sm font-light leading-snug text-primary-comfy-canvas">{card.blurb}</p>
+                  <div class="mt-auto flex items-center justify-between pt-1 text-[11px] text-primary-warm-gray">
+                    <span>{card.runs}</span>
+                    <span class="font-extrabold uppercase tracking-widest text-primary-comfy-yellow">Run it →</span>
+                  </div>
+                </div>
+              </a>
+            </li>
+          )
+        })}
+      </ul>
+    </div>
+  </section>
+
+  <!-- USE-CASE WORKFLOWS -->
+  <section class="py-10 lg:py-14">
+    <div class="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
+      <div class="mb-6 flex items-end justify-between gap-4">
+        <div>
+          <h2 class="text-sm font-extrabold uppercase tracking-[0.3em] text-primary-comfy-yellow">Start from the deliverable</h2>
+          <p class="mt-1.5 text-sm font-light text-primary-warm-gray">Top-converting use-case workflows, named after the thing you ship.</p>
+        </div>
+        <a href="https://comfy.org/workflows" class="hidden shrink-0 text-xs font-extrabold uppercase tracking-widest text-primary-comfy-canvas hover:text-primary-warm-white sm:block">All workflows →</a>
+      </div>
+      <ul class="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
+        {useCaseWorkflows.map((tile) => (
+          <li>
+            <a href={tile.href} class="group flex h-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] transition hover:border-white/25 hover:bg-white/[0.07]">
+              <div class="relative aspect-[4/3] overflow-hidden bg-secondary-mauve/40">
+                <img src={tile.img} alt={tile.title} loading="lazy" class="h-full w-full object-cover transition duration-500 group-hover:scale-[1.05]" onerror="this.style.display='none'" />
+              </div>
+              <div class="flex flex-1 flex-col gap-1.5 p-3.5 sm:p-4">
+                <span class="text-xs font-extrabold uppercase tracking-[0.15em] text-primary-warm-white sm:text-sm">{tile.title}</span>
+                <span class="hidden text-xs font-light leading-snug text-primary-warm-gray sm:block">{tile.desc}</span>
+                <span class="mt-auto pt-1 text-[10px] font-extrabold uppercase tracking-widest text-primary-comfy-yellow">{tile.count} →</span>
+              </div>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </section>
+
+  <!-- BROWSE ALL -->
+  <section class="bg-black/25 py-10 lg:py-14" data-cardsection id="browse-all">
+    <div class="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
+      <div class="mb-6 flex items-end justify-between gap-4">
+        <div>
+          <h2 class="text-sm font-extrabold uppercase tracking-[0.3em] text-primary-comfy-yellow">Browse all {registryModels.length} models</h2>
+          <p class="mt-1.5 text-sm font-light text-primary-warm-gray">Every supported file, live from the registry. Search and filters apply here too.</p>
+        </div>
+
+      </div>
+      <ul class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {registryModels.map((m) => (
+          <li
+            class="m-card"
+            data-name={`${m.displayName} ${m.directory} ${dirLabel[m.directory] ?? ''}`.toLowerCase()}
+            data-tags={`${dirTag(m.directory)} ${m.directory === 'partner_nodes' ? 'partner' : 'open'}`}
+          >
+            <a
+              href={`/models-v2/${m.slug}`}
+              class="flex h-full items-center gap-3 rounded-xl border border-white/10 bg-white/[0.04] p-3 transition hover:border-white/25 hover:bg-white/[0.07]"
+            >
+              <div class="relative h-12 w-20 shrink-0 overflow-hidden rounded-lg bg-secondary-mauve/40">
+                {m.thumbnailUrl && (
+                  <img src={proxyImg(m.thumbnailUrl, 160)} alt="" loading="lazy" class="h-full w-full object-cover" onerror="this.style.display='none'" />
+                )}
+              </div>
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-sm font-semibold text-primary-warm-white">{m.displayName}</p>
+                <p class="text-[11px] text-primary-warm-gray">{dirLabel[m.directory] ?? m.directory} · {m.workflowCount} workflows</p>
+              </div>
+              <span class="shrink-0 text-[10px] font-extrabold uppercase tracking-widest text-primary-comfy-yellow">Run →</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+      <p id="no-results" class="hidden pt-8 text-center text-sm font-light text-primary-warm-gray">
+        Nothing matches — try a shorter query, or clear the filter pill.
+      </p>
+    </div>
+  </section>
+
+  <!-- OPEN VS API -->
+  <section class="mx-auto max-w-7xl px-5 py-10 sm:px-6 lg:px-8 lg:py-14">
+    <div class="grid gap-5 lg:grid-cols-2">
+      <div class="rounded-2xl border border-[#96b4ff]/35 bg-white/[0.04] p-7">
+        <h3 class="text-sm font-extrabold uppercase tracking-[0.3em] text-[#96b4ff]">Open weights</h3>
+        <p class="mt-3 text-[15px] font-light leading-relaxed text-primary-comfy-canvas">
+          Download the checkpoint, chain your LoRAs, keep the graph forever. Open source lasts forever.
+        </p>
+        <a href="#browse-all" class="mt-4 inline-block text-xs font-extrabold uppercase tracking-widest text-primary-comfy-yellow">Browse open models →</a>
+      </div>
+      <div class="rounded-2xl border border-[#dbd6f2]/35 bg-white/[0.04] p-7">
+        <h3 class="text-sm font-extrabold uppercase tracking-[0.3em] text-[#dbd6f2]">Partner APIs</h3>
+        <p class="mt-3 text-[15px] font-light leading-relaxed text-primary-comfy-canvas">
+          Kling, Veo, Grok, and GPT Image on the same canvas as your open models. One subscription, one queue.
+        </p>
+        <a href="#browse-all" class="mt-4 inline-block text-xs font-extrabold uppercase tracking-widest text-primary-comfy-yellow">Browse partner models →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONVERSION BAND -->
+  <section class="mx-auto max-w-7xl px-5 pb-12 sm:px-6 lg:px-8 lg:pb-16">
+    <div class="flex flex-col items-start justify-between gap-3 rounded-2xl bg-primary-comfy-yellow px-6 py-5 sm:flex-row sm:items-center sm:px-8">
+      <p class="text-sm font-extrabold uppercase tracking-[0.15em] text-primary-comfy-ink sm:text-base">
+        Five free runs. One sign-in. No countdowns.
+      </p>
+      <a href="https://cloud.comfy.org?utm_source=models_v2_preview" class="shrink-0 text-xs font-extrabold uppercase tracking-widest text-primary-comfy-ink underline-offset-4 hover:underline">
+        Try Cloud for free →
+      </a>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="mx-auto max-w-7xl px-5 pb-16 sm:px-6 lg:grid lg:grid-cols-[280px_1fr] lg:gap-14 lg:px-8 lg:pb-24">
+    <div class="mb-6 lg:mb-0">
+      <h2 class="text-sm font-extrabold uppercase tracking-[0.3em] text-primary-comfy-yellow">Questions</h2>
+      <p class="mt-2 text-2xl font-semibold text-primary-warm-white">AI models in ComfyUI</p>
+    </div>
+    <div class="divide-y divide-white/10 border-t border-white/10">
+      {faqs.map(([q, a]) => (
+        <details class="group py-4">
+          <summary class="flex cursor-pointer list-none items-center justify-between gap-4 text-[15px] text-primary-warm-white [&::-webkit-details-marker]:hidden">
+            {q}
+            <span class="text-xl font-light text-primary-warm-gray transition group-open:rotate-45">+</span>
+          </summary>
+          <p class="mt-3 max-w-2xl text-sm font-light leading-relaxed text-primary-comfy-canvas">{a}</p>
+        </details>
+      ))}
+    </div>
+  </section>
+
+  <script>
+    function initModelFilters() {
+      const search = document.getElementById('model-search') as HTMLInputElement | null
+      const pillWrap = document.getElementById('modality-pills')
+      if (!search || !pillWrap || search.dataset.bound === '1') return
+      search.dataset.bound = '1'
+
+      const cards = [...document.querySelectorAll<HTMLElement>('.m-card')]
+      const sections = [...document.querySelectorAll<HTMLElement>('[data-cardsection]')]
+      const countEl = document.getElementById('match-count')
+      const noResults = document.getElementById('no-results')
+      let activePill = 'all'
+
+      const apply = () => {
+        const q = search.value.trim().toLowerCase()
+        let visible = 0
+        for (const card of cards) {
+          const matchQ = !q || (card.dataset.name ?? '').includes(q)
+          const tags = (card.dataset.tags ?? '').split(' ')
+          const matchP = activePill === 'all' || tags.includes(activePill)
+          const show = matchQ && matchP
+          card.style.display = show ? '' : 'none'
+          if (show) visible += 1
+        }
+        for (const section of sections) {
+          const any = [...section.querySelectorAll<HTMLElement>('.m-card')].some(
+            (c) => c.style.display !== 'none'
+          )
+          section.style.display = any ? '' : 'none'
+        }
+        if (countEl) {
+          countEl.textContent = `${visible} match${visible === 1 ? '' : 'es'}`
+          countEl.classList.toggle('hidden', !q && activePill === 'all')
+        }
+        noResults?.classList.toggle('hidden', visible > 0)
+      }
+
+      const clearBtn = document.getElementById('search-clear')
+      const syncClear = () => clearBtn?.classList.toggle('hidden', !search.value)
+      search.addEventListener('input', () => { syncClear(); apply() })
+      search.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault()
+          document.getElementById('browse-all')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }
+        if (e.key === 'Escape') {
+          search.value = ''
+          syncClear(); apply()
+        }
+      })
+      clearBtn?.addEventListener('click', () => {
+        search.value = ''
+        search.focus()
+        syncClear(); apply()
+      })
+      // shareable search state (?q=)
+      const params = new URLSearchParams(window.location.search)
+      const q0 = params.get('q')
+      if (q0) { search.value = q0; syncClear(); apply() }
+      search.addEventListener('change', () => {
+        const u = new URL(window.location.href)
+        if (search.value) u.searchParams.set('q', search.value)
+        else u.searchParams.delete('q')
+        window.history.replaceState({}, '', u)
+      })
+      document.querySelectorAll<HTMLElement>('[data-try]').forEach((chip) =>
+        chip.addEventListener('click', () => {
+          const [kind2, value] = (chip.dataset.try ?? '').split(/:(.*)/s)
+          if (kind2 === 'q') {
+            search.value = value
+            activePill = 'all'
+          } else {
+            search.value = ''
+            activePill = value
+          }
+          for (const b of pillWrap.querySelectorAll<HTMLElement>('[data-pill]')) {
+            const active = b.dataset.pill === activePill
+            b.classList.toggle('is-active', active)
+            b.classList.toggle('bg-primary-comfy-yellow', active)
+            b.classList.toggle('text-primary-comfy-ink', active)
+            b.classList.toggle('border', !active)
+            b.classList.toggle('border-white/15', !active)
+            b.classList.toggle('bg-white/5', !active)
+            b.classList.toggle('text-primary-comfy-canvas', !active)
+          }
+          syncClear()
+          apply()
+          document.getElementById('browse-all')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        })
+      )
+      pillWrap.addEventListener('click', (e) => {
+        const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-pill]')
+        if (!btn) return
+        activePill = btn.dataset.pill ?? 'all'
+        for (const b of pillWrap.querySelectorAll<HTMLElement>('[data-pill]')) {
+          const active = b === btn
+          b.classList.toggle('is-active', active)
+          b.classList.toggle('bg-primary-comfy-yellow', active)
+          b.classList.toggle('text-primary-comfy-ink', active)
+          b.classList.toggle('border', !active)
+          b.classList.toggle('border-white/15', !active)
+          b.classList.toggle('bg-white/5', !active)
+          b.classList.toggle('text-primary-comfy-canvas', !active)
+        }
+        apply()
+      })
+    }
+
+    initModelFilters()
+    document.addEventListener('astro:page-load', initModelFilters)
+  </script>
+</BaseLayout>

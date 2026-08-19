@@ -18,9 +18,18 @@ const SITEMAP_EXCLUDED_PATHNAMES = new Set([
   ...LOCALE_PREFIXES.map((prefix) => `${prefix}/booking-confirmation`)
 ])
 
+// /models-v2 is an unlinked, noindex A/B-test preview — keep every slug out
+// of the sitemap until it graduates or is deleted.
+const SITEMAP_EXCLUDED_PREFIXES = LOCALE_PREFIXES.map(
+  (prefix) => `${prefix}/models-v2`
+)
+
 function isExcludedFromSitemap(page: string): boolean {
   const pathname = new URL(page).pathname.replace(/\/$/, '')
-  return SITEMAP_EXCLUDED_PATHNAMES.has(pathname)
+  return (
+    SITEMAP_EXCLUDED_PATHNAMES.has(pathname) ||
+    SITEMAP_EXCLUDED_PREFIXES.some((prefix) => pathname.startsWith(prefix))
+  )
 }
 
 export default defineConfig({
