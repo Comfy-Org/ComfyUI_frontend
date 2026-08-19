@@ -5,7 +5,10 @@ import type {
   TemplateInfo,
   WorkflowTemplates
 } from '@/platform/workflow/templates/types/template'
-import { mockTemplateIndex } from '@e2e/fixtures/data/templateFixtures'
+import {
+  makeTemplate,
+  mockTemplateIndex
+} from '@e2e/fixtures/data/templateFixtures'
 import { TestIds } from '@e2e/fixtures/selectors'
 
 const ROUTE_PATTERN_WORKFLOW_TEMPLATES = /\/api\/workflow_templates(?:\?.*)?$/
@@ -162,4 +165,29 @@ export function createTemplateHelper(
     emptyConfig()
   )
   return new TemplateHelper(page, config)
+}
+
+/**
+ * Registers a single paid (partner-node) template whose workflow actually
+ * contains a partner node, so tests can exercise the paid-template surfaces.
+ */
+export async function mockPaidTemplate(
+  page: Page,
+  name: string,
+  workflowPath: string
+): Promise<TemplateHelper> {
+  const templates = createTemplateHelper(
+    page,
+    withTemplates([
+      makeTemplate({
+        name,
+        title: 'Paid Template',
+        description: 'Uses partner nodes.',
+        openSource: false
+      })
+    ])
+  )
+  await templates.mock()
+  await templates.mockWorkflow(name, workflowPath)
+  return templates
 }
