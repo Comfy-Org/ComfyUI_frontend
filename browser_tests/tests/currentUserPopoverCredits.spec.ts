@@ -185,9 +185,17 @@ test.describe('Current user popover credits row', { tag: '@cloud' }, () => {
 
       await page.getByRole('button', { name: 'Current user' }).click()
 
-      const managePlan = page.getByTestId('manage-plan-menu-item')
+      const managePlan = page.getByRole('button', { name: 'Manage plan' })
       await expect(managePlan).toBeVisible()
       await expect(managePlan).toHaveScreenshot('manage-plan-menu-item.png')
+
+      await managePlan.focus()
+      await page.keyboard.press('Shift+Tab')
+      await page.keyboard.press('Tab')
+      await expect(managePlan).toBeFocused()
+      await expect(managePlan).toHaveScreenshot(
+        'manage-plan-menu-item-focused.png'
+      )
     }
   )
 })
