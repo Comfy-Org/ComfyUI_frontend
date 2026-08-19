@@ -1309,5 +1309,32 @@ describe('ChangeTracker', () => {
         document.body.removeChild(editor)
       }
     })
+
+    it('leaves editor undo local while auto-queue watches changes', async () => {
+      const previousState = createState(1)
+      const currentState = createState(2)
+      const tracker = createTracker(currentState)
+      tracker.undoQueue.push(previousState)
+      const editor = document.createElement('div')
+      editor.contentEditable = 'true'
+      document.body.appendChild(editor)
+      editor.focus()
+      app.ui.autoQueueEnabled = true
+      app.ui.autoQueueMode = 'change'
+
+      try {
+        ChangeTracker.init()
+        window.dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'z', ctrlKey: true })
+        )
+        await vi.runAllTimersAsync()
+
+        expect(app.loadGraphData).not.toHaveBeenCalled()
+        expect(tracker.activeState).toEqual(currentState)
+        expect(tracker.undoQueue).toEqual([previousState])
+      } finally {
+        document.body.removeChild(editor)
+      }
+    })
   })
 })
