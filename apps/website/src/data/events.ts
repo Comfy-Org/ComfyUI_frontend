@@ -276,6 +276,41 @@ const events: readonly ComfyEvent[] = [
     }
   },
   {
+    id: 'ucan-agentic-commerce',
+    category: 'community',
+    title: {
+      en: 'UCAN: Agentic Commerce — Designing the Next Business Infrastructure ft. Jo Zhang',
+      'zh-CN': 'UCAN：智能体商务——设计下一代商业基础设施（特邀 Jo Zhang）'
+    },
+    description: {
+      en: 'A UCAN by Alibaba Design gathering on agentic commerce — where AI shifts from generating outputs to taking action across real business workflows. Jo Zhang joins speakers from Alibaba, Figma, Stripe, and more to explore designing for trust and AI as operational infrastructure.',
+      'zh-CN':
+        'UCAN（由阿里巴巴设计主办）关于智能体商务的聚会——探讨 AI 如何从生成内容转向在真实业务流程中采取行动。Jo Zhang 将与来自 Alibaba、Figma、Stripe 等机构的讲者一同，探讨如何为信任而设计，以及将 AI 作为运营基础设施。'
+    },
+    location: {
+      en: 'Plug and Play Tech Center, Sunnyvale, CA',
+      'zh-CN': 'Plug and Play 科技中心，加州森尼韦尔'
+    },
+    dateLabel: {
+      en: 'September 13, 2026 · 2:00–6:30 PM PT',
+      'zh-CN': '2026年9月13日 · 下午2:00至6:30（PT）'
+    },
+    startDateTime: '2026-09-13T14:00:00-07:00',
+    endDateTime: '2026-09-13T18:30:00-07:00',
+    link: {
+      href: {
+        en: 'https://luma.com/ucan-2026',
+        'zh-CN': 'https://luma.com/ucan-2026'
+      },
+      newTab: true
+    },
+    ctaLabel: { en: 'Register', 'zh-CN': '报名' },
+    media: eventImage('agentic-commerce.avif', {
+      en: 'UCAN: Agentic Commerce — Designing the Next Business Infrastructure',
+      'zh-CN': 'UCAN：智能体商务——设计下一代商业基础设施'
+    })
+  },
+  {
     id: 'beyond-the-models',
     category: 'livestream',
     title: {
