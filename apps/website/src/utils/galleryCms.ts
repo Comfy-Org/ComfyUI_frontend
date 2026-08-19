@@ -11,25 +11,26 @@ const GALLERY_QUERY = [
   'select[title]=true',
   'select[slug]=true',
   'select[href]=true',
-  'select[media]=true',
+  'select[thumbnail]=true',
+  'select[video]=true',
   'select[creator]=true',
   'select[team]=true',
   'select[tool]=true',
-  'populate[media][url]=true',
-  'populate[media][mimeType]=true',
+  'populate[thumbnail][url]=true',
+  'populate[video][url]=true',
   'populate[creators][name]=true',
   'populate[teams][name]=true',
   'populate[tools][name]=true'
 ].join('&')
 
 function toGalleryItem(doc: GalleryDoc, base: string): GalleryItem {
-  const mediaUrl = new URL(doc.media.url, base).toString()
-  const isVideo = doc.media.mimeType?.startsWith('video/') ?? false
+  const thumbnail = new URL(doc.thumbnail.url, base).toString()
 
   return {
     id: doc.slug,
     title: doc.title,
-    ...(isVideo ? { video: mediaUrl } : { image: mediaUrl }),
+    thumbnail,
+    ...(doc.video ? { video: new URL(doc.video.url, base).toString() } : {}),
     userAlias: doc.creator.name,
     teamAlias: doc.team?.name ?? '',
     tool: doc.tool.name,

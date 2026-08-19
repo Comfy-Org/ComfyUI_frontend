@@ -17,7 +17,8 @@ const ctaHref = 'https://comfy.org/workflows/model/grok'
 const items: GalleryItem[] = [
   {
     id: 'subway-swan',
-    image: 'https://media.comfy.org/website/gallery/subway-swan_compressed.png',
+    thumbnail:
+      'https://media.comfy.org/website/gallery/subway-swan_compressed.png',
     title: 'Subway Swan',
     userAlias: 'Purz Beats',
     teamAlias: 'Comfy',
@@ -26,6 +27,7 @@ const items: GalleryItem[] = [
   },
   {
     id: 'milos-little-wonder',
+    thumbnail: '/images/gallery/milos-little-wonder-poster.jpg',
     video:
       'https://media.comfy.org/website/gallery/milos-little-wonder_compressed.mp4',
     title: 'Milos Little Wonder',
@@ -36,7 +38,7 @@ const items: GalleryItem[] = [
   },
   {
     id: 'amber-passage',
-    image:
+    thumbnail:
       'https://media.comfy.org/website/gallery/amber-passage_compressed.jpg',
     title: 'Amber Passage',
     userAlias: 'Purz Beats',
@@ -47,6 +49,7 @@ const items: GalleryItem[] = [
   },
   {
     id: 'neon-revenant',
+    thumbnail: '/images/gallery/neon-revenant-poster.jpg',
     video:
       'https://media.comfy.org/website/gallery/neon-revenant_compressed.mp4',
     title: 'Neon Revenant',
@@ -57,7 +60,7 @@ const items: GalleryItem[] = [
   },
   {
     id: 'midnight-umami',
-    image:
+    thumbnail:
       'https://media.comfy.org/website/gallery/midnight_umami_compressed.png',
     title: 'Midnight Umami',
     userAlias: 'Purz Beats',

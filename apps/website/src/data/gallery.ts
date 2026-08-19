@@ -1,19 +1,39 @@
-export interface GalleryItem {
+/** Attribution and identity shared by the render model and the seed source. */
+interface GalleryItemBase {
   id: string
-  image?: string
-  video?: string
   title: string
   userAlias: string
   teamAlias: string
   tool: string
   href?: string
-  objectPosition?: string
-  objectFit?: string
+  /** Optional motion. When set, the card autoplays it over the thumbnail. */
+  video?: string
   /** Defaults to true. Set to false to hide this item from rendered lists. */
   visible?: boolean
 }
 
-export const galleryItems: GalleryItem[] = [
+/**
+ * View model a gallery card renders. Every item has a `thumbnail` still (the
+ * grid image, and the poster for a video); `video`, when present, autoplays over
+ * that still. The CMS guarantees the thumbnail (required field); see ticket 01.
+ */
+export interface GalleryItem extends GalleryItemBase {
+  thumbnail: string
+  objectPosition?: string
+  objectFit?: string
+}
+
+/**
+ * Seed *source* for the CMS: the original asset is an image or a video. The seed
+ * derives a thumbnail from it (the image itself, or a frame extracted from the
+ * video) and uploads both to Payload. This is not a render model — see
+ * `GalleryItem` for what components consume.
+ */
+export interface GallerySeedItem extends GalleryItemBase {
+  image?: string
+}
+
+export const galleryItems: GallerySeedItem[] = [
   {
     id: 'until-our-eye-interlink-harajuku',
     video: 'https://media.comfy.org/videos/compressed_512/eye.webm',
@@ -182,6 +202,6 @@ export const galleryItems: GalleryItem[] = [
 ]
 
 /** @knipIgnoreUsedByStackedPR */
-export function getGalleryItemById(id: string): GalleryItem | undefined {
+export function getGalleryItemById(id: string): GallerySeedItem | undefined {
   return galleryItems.find((item) => item.id === id)
 }

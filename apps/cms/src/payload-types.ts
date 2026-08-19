@@ -133,7 +133,8 @@ export interface Gallery {
   id: number;
   title: string;
   slug?: string | null;
-  media: number | Media;
+  thumbnail: number | Media;
+  video?: (number | null) | Media;
   creator: number | Creator;
   team?: (number | null) | Team;
   tool: number | Tool;
@@ -317,7 +318,8 @@ export interface PayloadMigration {
 export interface GallerySelect<T extends boolean = true> {
   title?: T;
   slug?: T;
-  media?: T;
+  thumbnail?: T;
+  video?: T;
   creator?: T;
   team?: T;
   tool?: T;

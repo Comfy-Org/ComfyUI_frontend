@@ -31,6 +31,8 @@ defineEmits<{ click: [] }>()
       <video
         v-if="item.video"
         :src="item.video"
+        :poster="item.thumbnail"
+        :aria-label="item.title"
         autoplay
         loop
         muted
@@ -40,7 +42,7 @@ defineEmits<{ click: [] }>()
       />
       <img
         v-else
-        :src="item.image"
+        :src="item.thumbnail"
         :alt="item.title"
         class="size-full transition-transform duration-300 group-hover:scale-105"
         :style="{ objectPosition, objectFit }"

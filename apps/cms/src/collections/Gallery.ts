@@ -34,10 +34,18 @@ export const Gallery: CollectionConfig = {
     },
     slugField(),
     {
-      name: 'media',
+      // The still shown in the grid, and the poster for a video item. Required
+      // on every item, so a video can never render without a poster (ticket 01).
+      name: 'thumbnail',
       type: 'upload',
       relationTo: 'media',
       required: true,
+    },
+    {
+      // Optional motion. When set, the card autoplays it over the thumbnail.
+      name: 'video',
+      type: 'upload',
+      relationTo: 'media',
     },
     {
       name: 'creator',

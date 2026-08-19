@@ -4,8 +4,9 @@ import { getPayload } from 'payload'
 
 import { galleryItems } from '../../../website/src/data/gallery'
 import config from '../payload.config'
+import { extractPoster } from './extractPoster'
 import { findOrCreateByField } from './findOrCreate'
-import { seedMedia } from './seedMedia'
+import { seedMedia, uploadMediaFile } from './seedMedia'
 
 const dirname = path.dirname(fileURLToPath(import.meta.url))
 const cacheDir = path.resolve(dirname, '../../.media-cache')
@@ -45,22 +46,40 @@ const seed = async (): Promise<void> => {
         })
       : undefined
 
-    const url = item.video ?? item.image
-    if (!url) {
+    // A video item's thumbnail is a frame extracted from the video; an image
+    // item's thumbnail is the image itself. Every item ends up with a thumbnail,
+    // satisfying the collection's required field.
+    let thumbnail: number
+    let video: number | undefined
+
+    if (item.video) {
+      const videoFilename = `${item.id}${mediaExtension(item.video)}`
+      video = await seedMedia(payload, cacheDir, {
+        url: item.video,
+        filename: videoFilename,
+        alt: item.title,
+      })
+
+      const posterPath = path.join(cacheDir, `${item.id}-poster.jpg`)
+      await extractPoster(path.join(cacheDir, videoFilename), posterPath)
+      thumbnail = await uploadMediaFile(payload, posterPath, { alt: item.title })
+    } else if (item.image) {
+      thumbnail = await seedMedia(payload, cacheDir, {
+        url: item.image,
+        filename: `${item.id}${mediaExtension(item.image)}`,
+        alt: item.title,
+      })
+    } else {
       throw new Error(`Gallery item ${item.id} has no media URL`)
     }
-    const media = await seedMedia(payload, cacheDir, {
-      url,
-      filename: `${item.id}${mediaExtension(url)}`,
-      alt: item.title,
-    })
 
     const status: 'draft' | 'published' = item.visible === false ? 'draft' : 'published'
 
     const data = {
       title: item.title,
       slug: item.id,
-      media,
+      thumbnail,
+      video,
       creator,
       team,
       tool,
