@@ -1,14 +1,12 @@
-import { storeToRefs } from 'pinia'
 import { computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import {
-  TIER_TO_KEY,
+  toTierKey,
   getTierPrice
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { formatUsdCents } from '@/utils/numberUtil'
 
 /**
@@ -24,8 +22,7 @@ import { formatUsdCents } from '@/utils/numberUtil'
  */
 export function useWorkspacePlanPricing() {
   const { t, locale } = useI18n()
-  const { isInPersonalWorkspace } = storeToRefs(useTeamWorkspaceStore())
-  const { subscription, teamCreditStops, currentTeamCreditStop } =
+  const { subscription, teamCreditStops, currentTeamCreditStop, isTeamPlan } =
     useBillingContext()
 
   const isYearly = computed(() => subscription.value?.duration === 'ANNUAL')
@@ -35,11 +32,11 @@ export function useWorkspacePlanPricing() {
   const tierKey = computed<TierKey>(() => {
     const tier = subscription.value?.tier
     if (!tier) return 'free'
-    return TIER_TO_KEY[tier] ?? 'standard'
+    return toTierKey(tier) ?? 'standard'
   })
 
   const subscribedStop = computed(() => {
-    if (isInPersonalWorkspace.value) return null
+    if (!isTeamPlan.value) return null
     const id = currentTeamCreditStop.value?.id
     const stops = teamCreditStops.value?.stops
     if (!id || !stops) return null
@@ -48,7 +45,6 @@ export function useWorkspacePlanPricing() {
 
   const hasStaleCreditStop = computed(
     () =>
-      !isInPersonalWorkspace.value &&
       !!currentTeamCreditStop.value &&
       !!teamCreditStops.value &&
       subscribedStop.value === null
@@ -68,7 +64,7 @@ export function useWorkspacePlanPricing() {
   })
 
   const priceUnitLabel = computed(() =>
-    teamMonthlyCostCents.value !== null || isInPersonalWorkspace.value
+    teamMonthlyCostCents.value !== null || !isTeamPlan.value
       ? t('subscription.usdPerMonth')
       : t('subscription.usdPerMonthPerMember')
   )

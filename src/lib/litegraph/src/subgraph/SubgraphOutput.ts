@@ -2,6 +2,7 @@ import { pull } from 'es-toolkit/compat'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LLink } from '@/lib/litegraph/src/LLink'
+import { toLinkId } from '@/types/linkId'
 import type { RerouteId } from '@/lib/litegraph/src/Reroute'
 import type {
   INodeInputSlot,
@@ -63,8 +64,11 @@ export class SubgraphOutput extends SubgraphSlot {
       if (links) pull(links, existingLink.id)
     }
 
+    const linkId = toLinkId(Number(subgraph.state.lastLinkId) + 1)
+    subgraph.state.lastLinkId = linkId
+
     const link = new LLink(
-      ++subgraph.state.lastLinkId,
+      linkId,
       slot.type,
       node.id,
       outputIndex,

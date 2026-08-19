@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
@@ -54,7 +52,6 @@ describe('Context Menu Extension API', () => {
   })
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     extensionStore = useExtensionStore()
     extensionService = useExtensionService()
 

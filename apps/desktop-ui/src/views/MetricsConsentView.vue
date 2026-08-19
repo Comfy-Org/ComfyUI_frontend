@@ -13,7 +13,7 @@
         <p class="text-neutral-400">
           {{ $t('install.moreInfo') }}
           <a
-            href="https://comfy.org/privacy"
+            href="https://comfy.org/privacy-policy"
             target="_blank"
             class="text-blue-400 underline hover:text-blue-300"
           >

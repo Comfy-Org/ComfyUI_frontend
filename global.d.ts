@@ -1,6 +1,5 @@
 declare const __COMFYUI_FRONTEND_VERSION__: string
 declare const __COMFYUI_FRONTEND_COMMIT__: string
-declare const __SENTRY_ENABLED__: boolean
 declare const __SENTRY_DSN__: string
 declare const __ALGOLIA_APP_ID__: string
 declare const __ALGOLIA_API_KEY__: string
@@ -41,6 +40,29 @@ interface GtagFunction {
   (...args: unknown[]): void
 }
 
+type SyftDataTraits = Record<string, string | number | null | undefined>
+
+interface SyftDataPendingFetch {
+  args: unknown[]
+  resolve: (value: unknown) => void
+  reject: (reason?: unknown) => void
+}
+
+interface SyftDataClient {
+  identify(email: string, traits?: SyftDataTraits): void
+  signup(email: string, traits?: SyftDataTraits): void
+  track(event: string, traits?: SyftDataTraits): void
+  page(...args: unknown[]): void
+  q?: unknown[][]
+  fi?: SyftDataPendingFetch[]
+  fetchID?: (...args: unknown[]) => Promise<unknown>
+}
+
+/** Installed by the Syft UMD instead of SyftDataClient when telemetry is opted out */
+interface SyftDisabledClient {
+  enable: () => void
+}
+
 interface Window {
   __CONFIG__: {
     gtm_container_id?: string
@@ -78,6 +100,8 @@ interface Window {
   }
   dataLayer?: Array<Record<string, unknown>>
   gtag?: GtagFunction
+  syft?: SyftDataClient | SyftDisabledClient
+  syftc?: { sourceId?: string; enabled?: boolean }
   ire_o?: string
   ire?: ImpactQueueFunction
   rewardful?: RewardfulQueueFunction

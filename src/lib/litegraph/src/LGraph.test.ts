@@ -17,6 +17,8 @@ import type { UUID } from '@/utils/uuid'
 import { zeroUuid } from '@/utils/uuid'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { toLinkId } from '@/types/linkId'
+import { toRerouteId } from '@/types/rerouteId'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import {
@@ -132,7 +134,7 @@ describe('LGraph', () => {
 
     emptySubgraph.inputNode.pos = [0, 0]
     // Reroute needs offset of ~20y to align with first slot
-    const reroute = new Reroute(1, emptySubgraph, [0, 20])
+    const reroute = new Reroute(toRerouteId(1), emptySubgraph, [0, 20])
 
     node.snapToGrid(10)
     reroute.snapToGrid(10)
@@ -274,6 +276,12 @@ describe('Graph Clearing and Callbacks', () => {
     // Track callback invocations
     const nodeRemovedCallbacks = new Set<string>()
     const graphRemovedCallbacks = new Set<string>()
+    const beforeRemovedNodes: LGraphNode[] = []
+
+    graph.events.addEventListener('node:before-removed', (event) => {
+      expect(event.detail.node.graph).toBe(graph)
+      beforeRemovedNodes.push(event.detail.node)
+    })
 
     // Set up node.onRemoved() callbacks
     node1.onRemoved = () => {
@@ -299,6 +307,8 @@ describe('Graph Clearing and Callbacks', () => {
     expect(nodeRemovedCallbacks).toContain(String(node2.id))
     expect(graphRemovedCallbacks).toContain(String(node1.id))
     expect(graphRemovedCallbacks).toContain(String(node2.id))
+    expect(beforeRemovedNodes).toHaveLength(2)
+    expect(new Set(beforeRemovedNodes)).toEqual(new Set([node1, node2]))
 
     // Verify nodes were actually removed
     expect(graph.nodes.length).toBe(0)
@@ -432,13 +442,26 @@ describe('node:before-removed event', () => {
       'onNodeRemoved(graph=null)'
     ])
   })
+
+  it('keeps floating links available during clear removal callbacks', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('node')
+    node.addOutput('output', '*')
+    graph.add(node)
+    const link = new LLink(toLinkId(1), '*', node.id, 0, UNASSIGNED_NODE_ID, -1)
+    graph.addFloatingLink(link)
+    node.onRemoved = vi.fn(() => {
+      expect(graph.floatingLinks.get(link.id)).toBe(link)
+    })
+
+    graph.clear()
+
+    expect(node.onRemoved).toHaveBeenCalledOnce()
+    expect(graph.floatingLinks.size).toBe(0)
+  })
 })
 
 describe('Subgraph Definition Garbage Collection', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   function createSubgraphWithNodes(rootGraph: LGraph, nodeCount: number) {
     const subgraph = rootGraph.createSubgraph(createTestSubgraphData())
 
@@ -744,7 +767,14 @@ describe('ensureGlobalIdUniqueness', () => {
     subgraph._nodes.push(subNodeB)
     subgraph._nodes_by_id[subNodeB.id] = subNodeB
 
-    const link = new LLink(1, 'number', subNodeA.id, 0, subNodeB.id, 0)
+    const link = new LLink(
+      toLinkId(1),
+      'number',
+      subNodeA.id,
+      0,
+      subNodeB.id,
+      0
+    )
     subgraph._links.set(link.id, link)
 
     rootGraph.ensureGlobalIdUniqueness()
@@ -818,14 +848,9 @@ describe('_removeDuplicateLinks', () => {
     source: LGraphNode,
     target: LGraphNode
   ) {
-    const dup = new LLink(
-      ++graph.state.lastLinkId,
-      'number',
-      source.id,
-      0,
-      target.id,
-      0
-    )
+    const linkId = toLinkId(Number(graph.state.lastLinkId) + 1)
+    graph.state.lastLinkId = linkId
+    const dup = new LLink(linkId, 'number', source.id, 0, target.id, 0)
     graph._links.set(dup.id, dup)
     source.outputs[0].links!.push(dup.id)
     return dup
@@ -1001,8 +1026,10 @@ describe('Subgraph Unpacking', () => {
 
   function duplicateExistingLink(graph: LGraph, source: LGraphNode) {
     const existingLink = graph._links.values().next().value!
+    const linkId = toLinkId(Number(graph.state.lastLinkId) + 1)
+    graph.state.lastLinkId = linkId
     const dup = new LLink(
-      ++graph.state.lastLinkId,
+      linkId,
       existingLink.type,
       existingLink.origin_id,
       existingLink.origin_slot,
@@ -1093,7 +1120,6 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
   const SHARED_NODE_IDS = [3, 8, 37]
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     LiteGraph.registerNodeType('dummy', DummyNode)
   })
 

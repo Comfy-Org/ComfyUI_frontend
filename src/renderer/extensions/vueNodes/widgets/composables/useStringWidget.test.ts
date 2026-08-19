@@ -23,8 +23,30 @@ vi.mock('@/lib/litegraph/src/litegraph', async (importOriginal) => {
   const actual = await importOriginal<typeof Litegraph>()
   return { ...actual, resolveNodeRootGraphId: vi.fn(() => 'root') }
 })
+const { widgetStoreMock } = vi.hoisted(() => {
+  const map = new Map<
+    string,
+    { type: string; value: unknown; options: unknown }
+  >()
+  return {
+    widgetStoreMock: {
+      map,
+      getWidget: (id: string) => map.get(id),
+      registerWidget: (
+        id: string,
+        init: { type: string; value: unknown; options: unknown }
+      ) => {
+        const existing = map.get(id)
+        if (existing) return existing
+        const state = { ...init }
+        map.set(id, state)
+        return state
+      }
+    }
+  }
+})
 vi.mock('@/stores/widgetValueStore', () => ({
-  useWidgetValueStore: () => ({ getWidget: () => undefined })
+  useWidgetValueStore: () => widgetStoreMock
 }))
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({ get: () => false })
@@ -46,6 +68,7 @@ function createStringWidget(node: LGraphNode) {
 describe('useStringWidget (multiline)', () => {
   function setup() {
     vi.clearAllMocks()
+    widgetStoreMock.map.clear()
     const node = createMockDOMWidgetNode()
     const widget = createStringWidget(node)
     const callback = vi.fn<(value: string) => void>()
@@ -53,8 +76,26 @@ describe('useStringWidget (multiline)', () => {
     const inputEl = widget.element
     document.body.append(inputEl)
     onTestFinished(() => inputEl.remove())
-    return { widget, inputEl, callback }
+    return { node, widget, inputEl, callback }
   }
+
+  it('writes the value into the store when no entry exists yet', () => {
+    const { node } = setup()
+
+    // The real DOMWidget value setter delegates to options.setValue
+    // (domWidget.ts). Invoke the actual closure the composable registered.
+    const addDOMWidget = node.addDOMWidget as unknown as {
+      mock: { calls: unknown[][] }
+    }
+    const options = addDOMWidget.mock.calls[0][3] as {
+      setValue: (v: string) => void
+    }
+    options.setValue('from-execution')
+
+    const entries = [...widgetStoreMock.map.values()]
+    expect(entries.some((s) => s.value === 'from-execution')).toBe(true)
+    expect(entries.every((s) => s.type === 'customtext')).toBe(true)
+  })
 
   it('fires the widget callback on input', () => {
     const { inputEl, callback } = setup()

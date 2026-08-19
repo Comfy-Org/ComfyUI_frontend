@@ -5,7 +5,7 @@
       showDelay: 600
     }"
     class="subscribe-to-run-button h-8 gap-1.5 rounded-lg px-4 whitespace-nowrap"
-    variant="gradient"
+    variant="subscribe"
     size="unset"
     data-testid="subscribe-to-run-button"
     @click="handleSubscribeToRun"
@@ -54,6 +54,6 @@ function handleSubscribeToRun() {
     trackRunButton({ subscribe_to_run: true })
   }
 
-  showSubscriptionDialog()
+  showSubscriptionDialog({ reason: 'subscribe_to_run' })
 }
 </script>

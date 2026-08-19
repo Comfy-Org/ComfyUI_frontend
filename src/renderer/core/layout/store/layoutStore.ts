@@ -10,7 +10,9 @@ import type { ComputedRef, Ref } from 'vue'
 import * as Y from 'yjs'
 
 import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
+import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
+import { toRerouteId } from '@/types/rerouteId'
 
 import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
 import { LayoutSource } from '@/renderer/core/layout/types'
@@ -34,11 +36,13 @@ import type {
   NodeBoundsUpdate,
   NodeId,
   NodeLayout,
+  NodeLayoutLease,
   Point,
   RerouteId,
   RerouteLayout,
   ResizeNodeOperation,
   SetNodeZIndexOperation,
+  SlotId,
   SlotLayout
 } from '@/renderer/core/layout/types'
 import {
@@ -65,13 +69,16 @@ type YEventChange = {
 
 const logger = log.getLogger('LayoutStore')
 
+/** Fields whose value changes move a node on screen. */
+const NODE_GEOMETRY_KEYS = new Set(['position', 'size', 'bounds'])
+
 // Utility functions
 function asRerouteId(id: string | number): RerouteId {
-  return Number(id)
+  return toRerouteId(Number(id))
 }
 
 function asLinkId(id: string | number): LinkId {
-  return Number(id)
+  return toLinkId(Number(id))
 }
 
 interface LinkData {
@@ -85,7 +92,7 @@ interface LinkData {
 interface RerouteData {
   id: RerouteId
   position: Point
-  parentId: LinkId
+  parentId: RerouteId
   linkIds: LinkId[]
 }
 
@@ -97,9 +104,9 @@ interface TypedYMap<T> {
 
 class LayoutStoreImpl implements LayoutStore {
   private static readonly REROUTE_DEFAULTS: RerouteData = {
-    id: 0,
+    id: toRerouteId(0),
     position: { x: 0, y: 0 },
-    parentId: 0,
+    parentId: toRerouteId(0),
     linkIds: []
   }
 
@@ -112,6 +119,7 @@ class LayoutStoreImpl implements LayoutStore {
 
   // Vue reactivity layer
   private version = 0
+  private _nodeGeometryVersion = 0
   private currentSource: LayoutSource =
     ACTOR_CONFIG.DEFAULT_SOURCE as LayoutSource
   private currentActor = `${ACTOR_CONFIG.USER_PREFIX}${Math.random()
@@ -130,17 +138,19 @@ class LayoutStoreImpl implements LayoutStore {
   // CustomRef cache and trigger functions
   private nodeRefs = new Map<NodeId, Ref<NodeLayout | null>>()
   private nodeTriggers = new Map<NodeId, () => void>()
+  // Live holders per node ref; the ref is shared, so only the last release drops it
+  private nodeRefHolders = new Map<NodeId, number>()
 
   // New data structures for hit testing
   private linkLayouts = new Map<LinkId, LinkLayout>()
   private linkSegmentLayouts = new Map<string, LinkSegmentLayout>() // Internal string key: ${linkId}:${rerouteId ?? 'final'}
-  private slotLayouts = new Map<string, SlotLayout>()
+  private slotLayouts = new Map<SlotId, SlotLayout>()
   private rerouteLayouts = new Map<RerouteId, RerouteLayout>()
 
   // Spatial index managers
   private spatialIndex: SpatialIndexManager<NodeId> // For nodes
   private linkSegmentSpatialIndex: SpatialIndexManager<string> // For link segments (single index for all link geometry)
-  private slotSpatialIndex: SpatialIndexManager<string> // For slots
+  private slotSpatialIndex: SpatialIndexManager<SlotId> // For slots
   private rerouteSpatialIndex: SpatialIndexManager<string> // For reroutes
 
   // Vue dragging state for selection toolbox (public ref for direct mutation)
@@ -162,6 +172,51 @@ class LayoutStoreImpl implements LayoutStore {
     return this.slotLayouts.size > 0
   }
 
+  /**
+   * Number of tracked nodes, without materialising their layouts.
+   * Callers that only need a count or emptiness check should prefer this over
+   * `getAllNodes()`, which rebuilds the full layout map on every access.
+   */
+  get nodeCount(): number {
+    return this.ynodes.size
+  }
+
+  /**
+   * Counter bumped when the Yjs-backed node, link and reroute maps change, for
+   * use as a cache key.
+   *
+   * Scope is exactly those maps. Slot, link and reroute *geometry* live in
+   * plain Maps that are mutated without bumping this, so a cache over
+   * `updateSlotLayout`/`clearAllSlotLayouts` output cannot be keyed on it.
+   * Anything deriving node geometry from this should also read that geometry
+   * from this store, so key and data stay consistent.
+   *
+   * Local per-peer counter, not a CRDT document version: two peers holding
+   * identical layouts will hold different values, so it is not meaningful to
+   * compare across peers.
+   */
+  get layoutVersion(): number {
+    return this.version
+  }
+
+  /**
+   * Counter bumped only when node geometry changes: a node is added or
+   * removed, or an existing node's position, size or bounds is written.
+   *
+   * `layoutVersion` counts operations, so it also moves for changes nothing
+   * renders from geometry - `setNodeZIndex` alone fires on every widget
+   * pointerdown. Consumers that rebuild geometry-derived state should key on
+   * this instead, or they repaint for edits that cannot move a pixel.
+   *
+   * Backed by `observeDeep`, so it covers writes that never touch a top-level
+   * key - a move mutates fields inside a node's own map - and therefore also
+   * covers remote changes arriving through `applyUpdate`, which run no local
+   * operation handler.
+   */
+  get nodeGeometryVersion(): number {
+    return this._nodeGeometryVersion
+  }
+
   setPendingSlotSync(value: boolean): void {
     this._pendingSlotSync = value
   }
@@ -176,8 +231,26 @@ class LayoutStoreImpl implements LayoutStore {
     // Initialize spatial index managers
     this.spatialIndex = new SpatialIndexManager<NodeId>()
     this.linkSegmentSpatialIndex = new SpatialIndexManager<string>() // Single index for all link geometry
-    this.slotSpatialIndex = new SpatialIndexManager<string>()
+    this.slotSpatialIndex = new SpatialIndexManager<SlotId>()
     this.rerouteSpatialIndex = new SpatialIndexManager<string>()
+
+    // Geometry-only counter. observeDeep because a move writes fields inside a
+    // node's own map rather than a top-level key, so `observe` never sees it,
+    // and because remote updates run no local operation handler.
+    this.ynodes.observeDeep((events) => {
+      for (const event of events) {
+        const changedKeys =
+          event.target === this.ynodes
+            ? // Whole nodes added or removed.
+              ['position']
+            : [...event.changes.keys.keys()]
+
+        if (changedKeys.some((key) => NODE_GEOMETRY_KEYS.has(key))) {
+          this._nodeGeometryVersion++
+          return
+        }
+      }
+    })
 
     // Listen for Yjs changes and trigger Vue reactivity
     this.ynodes.observe((event: Y.YMapEvent<NodeLayoutMap>) => {
@@ -372,13 +445,6 @@ class LayoutStoreImpl implements LayoutStore {
   }
 
   /**
-   * Get current version for change detection
-   */
-  getVersion(): ComputedRef<number> {
-    return computed(() => this.version)
-  }
-
-  /**
    * Query node at point (non-reactive for performance)
    */
   queryNodeAtPoint(point: Point): NodeId | null {
@@ -415,20 +481,18 @@ class LayoutStoreImpl implements LayoutStore {
   updateLinkLayout(linkId: LinkId, layout: LinkLayout): void {
     const existing = this.linkLayouts.get(linkId)
 
-    // Short-circuit if bounds and centerPos unchanged
     if (
       existing &&
       isBoundsEqual(existing.bounds, layout.bounds) &&
       isPointEqual(existing.centerPos, layout.centerPos)
     ) {
-      // Only update path if provided (for hit detection)
       if (layout.path) {
         existing.path = layout.path
       }
       return
     }
 
-    this.linkLayouts.set(linkId, layout)
+    this.linkLayouts.set(linkId, { ...layout, id: linkId })
   }
 
   /**
@@ -440,11 +504,10 @@ class LayoutStoreImpl implements LayoutStore {
       this.cleanupLinkSegments(linkId)
     }
   }
-
   /**
    * Update slot layout data
    */
-  updateSlotLayout(key: string, layout: SlotLayout): void {
+  updateSlotLayout(key: SlotId, layout: SlotLayout): void {
     const existing = this.slotLayouts.get(key)
 
     if (existing) {
@@ -469,7 +532,7 @@ class LayoutStoreImpl implements LayoutStore {
    * Batch update slot layouts and spatial index in one pass
    */
   batchUpdateSlotLayouts(
-    updates: Array<{ key: string; layout: SlotLayout }>
+    updates: Array<{ key: SlotId; layout: SlotLayout }>
   ): void {
     if (!updates.length) return
 
@@ -496,7 +559,7 @@ class LayoutStoreImpl implements LayoutStore {
   /**
    * Delete slot layout data
    */
-  deleteSlotLayout(key: string): void {
+  deleteSlotLayout(key: SlotId): void {
     const deleted = this.slotLayouts.delete(key)
     if (deleted) {
       // Remove from spatial index
@@ -557,11 +620,10 @@ class LayoutStoreImpl implements LayoutStore {
   getLinkLayout(linkId: LinkId): LinkLayout | null {
     return this.linkLayouts.get(linkId) || null
   }
-
   /**
    * Get slot layout data
    */
-  getSlotLayout(key: string): SlotLayout | null {
+  getSlotLayout(key: SlotId): SlotLayout | null {
     return this.slotLayouts.get(key) || null
   }
 
@@ -576,7 +638,7 @@ class LayoutStoreImpl implements LayoutStore {
    * Returns all slot layout keys currently tracked by the store.
    * Useful for global passes without relying on spatial queries.
    */
-  getAllSlotKeys(): string[] {
+  getAllSlotKeys(): SlotId[] {
     return Array.from(this.slotLayouts.keys())
   }
 
@@ -591,13 +653,11 @@ class LayoutStoreImpl implements LayoutStore {
     const key = makeLinkSegmentKey(linkId, rerouteId)
     const existing = this.linkSegmentLayouts.get(key)
 
-    // Short-circuit if bounds and centerPos unchanged (prevents spatial index churn)
     if (
       existing &&
       isBoundsEqual(existing.bounds, layout.bounds) &&
       isPointEqual(existing.centerPos, layout.centerPos)
     ) {
-      // Only update path if provided (for hit detection)
       if (layout.path) {
         existing.path = layout.path
       }
@@ -620,10 +680,8 @@ class LayoutStoreImpl implements LayoutStore {
     }
 
     if (existing) {
-      // Update spatial index
       this.linkSegmentSpatialIndex.update(key, layout.bounds)
     } else {
-      // Insert into spatial index
       this.linkSegmentSpatialIndex.insert(key, layout.bounds)
     }
 
@@ -637,11 +695,9 @@ class LayoutStoreImpl implements LayoutStore {
     const key = makeLinkSegmentKey(linkId, rerouteId)
     const deleted = this.linkSegmentLayouts.delete(key)
     if (deleted) {
-      // Remove from spatial index
       this.linkSegmentSpatialIndex.remove(key)
     }
   }
-
   /**
    * Query link segment at point (returns structured data)
    */
@@ -794,7 +850,7 @@ class LayoutStoreImpl implements LayoutStore {
   queryItemsInBounds(bounds: Bounds): {
     nodes: NodeId[]
     links: LinkId[]
-    slots: string[]
+    slots: SlotId[]
     reroutes: RerouteId[]
   } {
     // Query segments and union their linkIds
@@ -965,12 +1021,31 @@ class LayoutStoreImpl implements LayoutStore {
   }
 
   /**
-   * Clean up refs and triggers for a node when its Vue component unmounts.
-   * This should be called from the component's onUnmounted hook.
+   * Retain the layout ref for a node beyond the current tick. The ref is
+   * shared by every holder of the same node id, so anything that keeps it --
+   * a node component, a coachmark, slot tracking -- must retain it and call
+   * the returned release when it is done. Transient `getNodeLayoutRef(id).value`
+   * reads do not retain.
    */
-  cleanupNodeRef(nodeId: NodeId): void {
-    this.nodeRefs.delete(nodeId)
-    this.nodeTriggers.delete(nodeId)
+  retainNodeLayoutRef(nodeId: NodeId): NodeLayoutLease {
+    const layout = this.getNodeLayoutRef(nodeId)
+    this.nodeRefHolders.set(nodeId, (this.nodeRefHolders.get(nodeId) ?? 0) + 1)
+
+    let released = false
+    const release = () => {
+      if (released) return
+      released = true
+      const remaining = (this.nodeRefHolders.get(nodeId) ?? 1) - 1
+      if (remaining > 0) {
+        this.nodeRefHolders.set(nodeId, remaining)
+        return
+      }
+      this.nodeRefHolders.delete(nodeId)
+      this.nodeRefs.delete(nodeId)
+      this.nodeTriggers.delete(nodeId)
+    }
+
+    return { layout, release }
   }
 
   /**

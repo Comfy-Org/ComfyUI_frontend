@@ -1,8 +1,6 @@
-import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { fromAny } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
 import type { Slots } from 'vue'
 import { h } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -12,8 +10,16 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import WidgetActions from './WidgetActions.vue'
 
-const { mockGetInputSpecForWidget } = vi.hoisted(() => ({
-  mockGetInputSpecForWidget: vi.fn()
+const {
+  mockGetInputSpecForWidget,
+  mockIsFavorited,
+  mockToggleFavorite,
+  mockTrackWidgetFavoriteToggled
+} = vi.hoisted(() => ({
+  mockGetInputSpecForWidget: vi.fn(),
+  mockIsFavorited: vi.fn().mockReturnValue(false),
+  mockToggleFavorite: vi.fn(),
+  mockTrackWidgetFavoriteToggled: vi.fn()
 }))
 
 vi.mock('@/core/graph/subgraph/promotionUtils', () => ({
@@ -36,8 +42,14 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
 
 vi.mock('@/stores/workspace/favoritedWidgetsStore', () => ({
   useFavoritedWidgetsStore: () => ({
-    isFavorited: vi.fn().mockReturnValue(false),
-    toggleFavorite: vi.fn()
+    isFavorited: mockIsFavorited,
+    toggleFavorite: mockToggleFavorite
+  })
+}))
+
+vi.mock('@/platform/telemetry', () => ({
+  useTelemetry: () => ({
+    trackWidgetFavoriteToggled: mockTrackWidgetFavoriteToggled
   })
 }))
 
@@ -74,12 +86,11 @@ const i18n = createI18n({
 
 describe('WidgetActions', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.resetAllMocks()
     mockGetInputSpecForWidget.mockReturnValue({
       type: 'INT',
       default: 42
     })
+    mockIsFavorited.mockReturnValue(false)
   })
 
   function createMockWidget(
@@ -204,5 +215,47 @@ describe('WidgetActions', () => {
     await user.click(screen.getByRole('button', { name: /Reset/ }))
 
     expect(onResetToDefault).toHaveBeenCalledWith('option1')
+  })
+
+  it('tracks widget favorite toggled with is_favorited true when favoriting', async () => {
+    mockIsFavorited.mockReturnValue(false)
+
+    const widget = createMockWidget()
+    const node = createMockNode()
+
+    const { user } = renderWidgetActions(widget, node)
+
+    await user.click(screen.getByRole('button', { name: /Favorite/ }))
+
+    expect(mockTrackWidgetFavoriteToggled).toHaveBeenCalledExactlyOnceWith({
+      node_type: 'TestNode',
+      widget_name: 'test_widget',
+      widget_type: 'number',
+      is_favorited: true,
+      source: 'right_side_panel'
+    })
+    expect(mockToggleFavorite).toHaveBeenCalledExactlyOnceWith(
+      node,
+      'test_widget'
+    )
+  })
+
+  it('tracks widget favorite toggled with is_favorited false when unfavoriting', async () => {
+    mockIsFavorited.mockReturnValue(true)
+
+    const widget = createMockWidget()
+    const node = createMockNode()
+
+    const { user } = renderWidgetActions(widget, node)
+
+    await user.click(screen.getByRole('button', { name: /Unfavorite/ }))
+
+    expect(mockTrackWidgetFavoriteToggled).toHaveBeenCalledExactlyOnceWith({
+      node_type: 'TestNode',
+      widget_name: 'test_widget',
+      widget_type: 'number',
+      is_favorited: false,
+      source: 'right_side_panel'
+    })
   })
 })

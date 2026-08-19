@@ -758,6 +758,18 @@ export function appendQuarantine(
   entries: readonly ProxyWidgetErrorQuarantineEntry[]
 ): void {
   if (entries.length === 0) return
+
+  for (const {
+    originalEntry: [sourceNodeId, inputName],
+    hostValue
+  } of entries) {
+    if (sourceNodeId !== '-1' || hostValue === undefined) continue
+
+    const input = hostNode.inputs.find((input) => input.name === inputName)
+    if (input?.widgetId)
+      useWidgetValueStore().setValue(input.widgetId, hostValue)
+  }
+
   const existing = parseProxyWidgetErrorQuarantine(
     hostNode.properties[QUARANTINE_PROPERTY]
   )

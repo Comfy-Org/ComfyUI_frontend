@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, vi } from 'vitest'
 
 import type {
@@ -46,7 +44,6 @@ describe('LGraphNode', () => {
   let origLiteGraph: typeof LiteGraph
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     origLiteGraph = Object.assign({}, LiteGraph)
     // @ts-expect-error Intended: Force remove an otherwise readonly non-optional property
     delete origLiteGraph.Classes
@@ -64,7 +61,6 @@ describe('LGraphNode', () => {
     node.size = [150, 100] // Example size
 
     // Reset mocks if needed
-    vi.clearAllMocks()
   })
 
   afterEach(() => {
@@ -101,7 +97,7 @@ describe('LGraphNode', () => {
     }
     node.configure(configureData)
     expect(node.pos).toEqual(new Float64Array([50, 60]))
-    expect(node.size).toEqual(new Float64Array([70, 80]))
+    expect(Array.from(node.size)).toEqual([70, 80])
   })
 
   test('should configure inputs correctly', () => {
@@ -151,6 +147,57 @@ describe('LGraphNode', () => {
   })
 
   describe('Disconnect I/O Slots', () => {
+    function createConnectedPair() {
+      const graph = new LGraph()
+      const sourceNode = new LGraphNode('source')
+      const targetNode = new LGraphNode('target')
+      sourceNode.addOutput('output', '*')
+      targetNode.addInput('input', '*')
+      graph.add(sourceNode)
+      graph.add(targetNode)
+      expect(sourceNode.connect(0, targetNode, 0)).not.toBeNull()
+      return { graph, sourceNode, targetNode }
+    }
+
+    function observeDisconnectedInput(targetNode: LGraphNode) {
+      const onConnectionsChange = vi.fn<
+        NonNullable<LGraphNode['onConnectionsChange']>
+      >(function (_type, slot, isConnected) {
+        expect(isConnected).toBe(false)
+        expect(this.isInputConnected(slot)).toBe(false)
+        expect(this.getInputLink(slot)).toBeNull()
+      })
+      targetNode.onConnectionsChange = onConnectionsChange
+      return onConnectionsChange
+    }
+
+    test('exposes disconnected state in callbacks when an output is disconnected', () => {
+      const { sourceNode, targetNode } = createConnectedPair()
+      const onConnectionsChange = observeDisconnectedInput(targetNode)
+
+      expect(sourceNode.disconnectOutput(0)).toBe(true)
+
+      expect(onConnectionsChange).toHaveBeenCalledOnce()
+    })
+
+    test('exposes disconnected state in callbacks when an input is disconnected', () => {
+      const { targetNode } = createConnectedPair()
+      const onConnectionsChange = observeDisconnectedInput(targetNode)
+
+      expect(targetNode.disconnectInput(0)).toBe(true)
+
+      expect(onConnectionsChange).toHaveBeenCalledOnce()
+    })
+
+    test('exposes disconnected state in callbacks when the source is removed', () => {
+      const { graph, sourceNode, targetNode } = createConnectedPair()
+      const onConnectionsChange = observeDisconnectedInput(targetNode)
+
+      graph.remove(sourceNode)
+
+      expect(onConnectionsChange).toHaveBeenCalledOnce()
+    })
+
     test('should disconnect input correctly', () => {
       const node1 = new LGraphNode('SourceNode')
       const node2 = new LGraphNode('TargetNode')
@@ -185,7 +232,7 @@ describe('LGraphNode', () => {
       expect(disconnected).toBe(true)
       expect(node2.inputs[0].link).toBeNull()
       expect(node1.outputs[0].links?.length).toBe(0)
-      expect(graph._links.has(link?.id ?? -1)).toBe(false)
+      expect(graph._links.has(link!.id)).toBe(false)
 
       // Test disconnecting by slot name
       node1.connect(0, node2, 0)
@@ -248,8 +295,8 @@ describe('LGraphNode', () => {
       expect(disconnectedSpecific).toBe(true)
       expect(targetNode1.inputs[0].link).toBeNull()
       expect(sourceNode.outputs[0].links?.length).toBe(1)
-      expect(graph._links.has(link1?.id ?? -1)).toBe(false)
-      expect(graph._links.has(link2?.id ?? -1)).toBe(true)
+      expect(graph._links.has(link1!.id)).toBe(false)
+      expect(graph._links.has(link2!.id)).toBe(true)
 
       // Test disconnecting by slot name
       const link3 = sourceNode.connect(1, targetNode1, 0)
@@ -271,8 +318,8 @@ describe('LGraphNode', () => {
       expect(sourceNode.outputs[0].links).toBeNull()
       expect(targetNode1.inputs[0].link).toBeNull()
       expect(targetNode2.inputs[0].link).toBeNull()
-      expect(graph._links.has(link2?.id ?? -1)).toBe(false)
-      expect(graph._links.has(link4?.id ?? -1)).toBe(false)
+      expect(graph._links.has(link2!.id)).toBe(false)
+      expect(graph._links.has(link4!.id)).toBe(false)
 
       // Test disconnecting non-existent slot
       const invalidDisconnect = sourceNode.disconnectOutput(999)

@@ -1,8 +1,7 @@
 import { render } from '@testing-library/vue'
-import { createPinia, setActivePinia } from 'pinia'
 import { defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { useNodeMenuOptions } from '@/composables/graph/useNodeMenuOptions'
 import type { Positionable } from '@/lib/litegraph/src/litegraph'
@@ -70,10 +69,6 @@ const getBypassLabel = (selected: LGraphNode[]): string => {
 }
 
 describe('useNodeMenuOptions.getBypassOption', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-  })
-
   it('labels as "Bypass" when no node is bypassed', () => {
     expect(getBypassLabel([nodeWithMode(LGraphEventMode.ALWAYS, 1)])).toBe(
       'contextMenu.Bypass'

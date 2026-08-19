@@ -103,6 +103,61 @@ describe('WorkspaceSwitcherPopover', () => {
     billingMocks.subscription.value = null
   })
 
+  it.for([
+    {
+      type: 'personal',
+      plan: 'free',
+      isSubscribed: true,
+      subscriptionPlan: null,
+      subscriptionTier: 'FREE'
+    },
+    {
+      type: 'personal',
+      plan: 'paid',
+      isSubscribed: true,
+      subscriptionPlan: 'PRO_MONTHLY',
+      subscriptionTier: 'PRO'
+    },
+    {
+      type: 'team',
+      plan: 'free',
+      isSubscribed: false,
+      subscriptionPlan: null,
+      subscriptionTier: null
+    },
+    {
+      type: 'team',
+      plan: 'paid',
+      isSubscribed: true,
+      subscriptionPlan: 'team_per_credit_monthly',
+      subscriptionTier: null
+    }
+  ] as const)(
+    'shows a renamed $type workspace name on a $plan plan',
+    ({ type, isSubscribed, subscriptionPlan, subscriptionTier }) => {
+      renderComponent({
+        workspaces: [
+          createWorkspaceState({
+            id: `ws-${type}`,
+            name: 'My Creative Workspace',
+            type,
+            role: 'owner',
+            isSubscribed,
+            subscriptionPlan,
+            subscriptionTier
+          })
+        ],
+        activeWorkspaceId: `ws-${type}`
+      })
+
+      expect(screen.getByText('My Creative Workspace')).toHaveAttribute(
+        'title',
+        'My Creative Workspace'
+      )
+      expect(screen.queryByText('Personal')).not.toBeInTheDocument()
+    }
+  )
+
   it('exposes the full team workspace name as a tooltip on the row', () => {
     renderComponent()
 
@@ -160,5 +215,28 @@ describe('WorkspaceSwitcherPopover', () => {
     })
 
     expect(screen.getByText('Pro')).toBeInTheDocument()
+  })
+
+  it('renders every workspace row inside the scroll region and keeps the create-workspace footer outside it', () => {
+    const workspaceNames = Array.from({ length: 25 }, (_, i) => `Team ${i}`)
+    const workspaces = workspaceNames.map((name, i) =>
+      createWorkspaceState({
+        id: `ws-${i}`,
+        name,
+        type: 'team',
+        role: 'member'
+      })
+    )
+
+    renderComponent({ activeWorkspaceId: 'ws-0', workspaces })
+
+    const list = screen.getByTestId('workspace-switcher-list')
+
+    workspaceNames.forEach((name) => {
+      expect(list).toContainElement(screen.getByText(name))
+    })
+
+    const createWorkspaceButton = screen.getByText('Create a team workspace')
+    expect(list).not.toContainElement(createWorkspaceButton)
   })
 })

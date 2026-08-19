@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed, provide } from 'vue'
-
-import { useAppModeWidgetResizing } from '@/components/builder/useAppModeWidgetResizing'
-import { useResolvedSelectedInputs } from '@/components/builder/useResolvedSelectedInputs'
 import { useI18n } from 'vue-i18n'
 
+import WidgetDescription from '@/components/builder/WidgetDescription.vue'
+import { useAppModeWidgetResizing } from '@/components/builder/useAppModeWidgetResizing'
+import { useResolvedSelectedInputs } from '@/components/builder/useResolvedSelectedInputs'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { extractVueNodeData } from '@/composables/graph/useGraphNodeManager'
@@ -22,7 +22,7 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { parseImageWidgetValue } from '@/utils/imageUtil'
 import { cn } from '@comfyorg/tailwind-utils'
-import { HideLayoutFieldKey } from '@/types/widgetTypes'
+import { HideLayoutFieldKey, WidgetHeightKey } from '@/types/widgetTypes'
 import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import { promptRenameWidget } from '@/utils/widgetUtil'
 
@@ -33,6 +33,7 @@ interface WidgetEntry {
     widgets: NonNullable<ReturnType<typeof nodeToNodeData>['widgets']>
   }
   action: { widget: IBaseWidget; node: LGraphNode }
+  description?: string
 }
 
 const { mobile = false, builderMode = false } = defineProps<{
@@ -50,6 +51,7 @@ const { onPointerDown } = useAppModeWidgetResizing((widget, config) =>
 )
 
 provide(HideLayoutFieldKey, true)
+provide(WidgetHeightKey, mobile ? 'h-10' : 'h-7')
 
 const resolvedInputs = useResolvedSelectedInputs()
 
@@ -82,6 +84,7 @@ const mappedSelections = computed((): WidgetEntry[] => {
       {
         key: widgetId,
         persistedHeight: config?.height,
+        description: config?.description,
         nodeData: {
           ...fullNodeData,
           widgets: [matchingWidget]
@@ -125,7 +128,7 @@ function nodeToNodeData(node: LGraphNode) {
 
   return {
     ...nodeData,
-    hasErrors: !!executionErrorStore.lastNodeErrors?.[node.id],
+    hasErrors: !!executionErrorStore.surfacedNodeErrors?.[node.id],
     dropIndicator,
     onDragDrop: node.onDragDrop,
     onDragOver: node.onDragOver
@@ -147,7 +150,13 @@ defineExpose({ handleDragDrop })
 </script>
 <template>
   <div
-    v-for="{ key, persistedHeight, nodeData, action } in mappedSelections"
+    v-for="{
+      key,
+      persistedHeight,
+      nodeData,
+      action,
+      description
+    } in mappedSelections"
     :key
     :class="
       cn(
@@ -211,6 +220,24 @@ defineExpose({ handleDragDrop })
       </Popover>
     </div>
     <div
+      v-if="description || builderMode"
+      data-testid="app-mode-widget-description"
+      :class="
+        cn(
+          'h-5 px-5',
+          description ? 'text-muted-foreground' : 'text-muted-background'
+        )
+      "
+    >
+      <WidgetDescription
+        :description
+        label-class="drag-handle"
+        label-type="div"
+        :disabled="!builderMode"
+        :widget="action.widget"
+      />
+    </div>
+    <div
       :style="
         persistedHeight
           ? { '--persisted-height': `${persistedHeight}px` }
@@ -236,7 +263,7 @@ defineExpose({ handleDragDrop })
           :node-data
           :class="
             cn(
-              'gap-y-3 rounded-lg py-1 [&_textarea]:resize-y **:[.col-span-2]:grid-cols-1 not-md:**:[.h-7]:h-10',
+              'gap-y-3 rounded-lg py-1 [&_textarea]:resize-y **:[.col-span-2]:grid-cols-1',
               nodeData.hasErrors && 'ring-2 ring-node-stroke-error ring-inset'
             )
           "

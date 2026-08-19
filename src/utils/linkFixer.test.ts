@@ -1,10 +1,15 @@
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
+import type { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
 import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
 import type {
   ISerialisedGraph,
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
+
+import { toLinkId } from '@/types/linkId'
+import { toNodeId } from '@/types/nodeId'
 
 import { fixBadLinks } from './linkFixer'
 
@@ -255,6 +260,40 @@ describe('fixBadLinks', () => {
       deleted: 1
     })
     expect(graph.links).toEqual([])
+  })
+
+  it('deletes stale links from live graph link maps', () => {
+    const linkId = toLinkId(1)
+    const originNode = fromAny<LGraphNode, unknown>({
+      id: toNodeId(1),
+      outputs: [{ links: [linkId] }]
+    })
+    const link = fromPartial<LLink>({
+      id: linkId,
+      origin_id: originNode.id,
+      origin_slot: 0,
+      target_id: toNodeId(2),
+      target_slot: 0,
+      type: '*'
+    })
+    const links = new Map([[linkId, link]])
+    const graph = fromAny<LGraph, unknown>({
+      links,
+      getNodeById: vi.fn((nodeId) =>
+        nodeId === originNode.id ? originNode : null
+      )
+    })
+
+    const result = fixBadLinks(graph, { fix: true, silent: true })
+
+    expect(result).toMatchObject({
+      hasBadLinks: false,
+      fixed: true,
+      patched: 1,
+      deleted: 1
+    })
+    expect(links.has(linkId)).toBe(false)
+    expect(originNode.outputs?.[0]?.links).toEqual([])
   })
 
   it('suppresses logger calls in silent mode while still applying fixes', () => {

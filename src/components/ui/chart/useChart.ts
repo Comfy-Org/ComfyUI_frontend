@@ -12,7 +12,7 @@ import {
   PointElement,
   Tooltip
 } from 'chart.js'
-import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 
 import type { Ref } from 'vue'
 
@@ -129,7 +129,7 @@ export function useChart(
   data: Ref<ChartData>,
   options?: Ref<ChartOptions | undefined>
 ) {
-  const chartInstance = ref<Chart | null>(null)
+  const chartInstance = shallowRef<Chart | null>(null)
 
   function createChart() {
     if (!canvasRef.value) return
