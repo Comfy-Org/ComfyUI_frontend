@@ -420,6 +420,35 @@ describe('SubgraphWidgetPromotion', () => {
 
       expect(promotedWidgetStateByName(subgraphNode, 'value').value).toBe(99)
     })
+
+    it('keeps sibling hosts of one definition isolated across a rebind', async () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'value', type: 'STRING' }]
+      })
+      const { node: interiorNode, input: interiorInput } = createNodeWithWidget(
+        'Interior',
+        'text',
+        'seeded',
+        'STRING'
+      )
+      subgraph.add(interiorNode)
+      subgraph.inputNode.slots[0].connect(interiorNode.inputs[0], interiorNode)
+
+      const hostA = createTestSubgraphNode(subgraph, { id: 101 })
+      const hostB = createTestSubgraphNode(subgraph, { id: 102 })
+
+      hostA.widgets[0].value = 'a-edit'
+      hostB.widgets[0].value = 'b-edit'
+      expect(promotedWidgetStateByName(hostA, 'value').value).toBe('a-edit')
+      expect(promotedWidgetStateByName(hostB, 'value').value).toBe('b-edit')
+
+      interiorNode.disconnectInput(0)
+      await Promise.resolve()
+      subgraph.inputNode.slots[0].connect(interiorInput, interiorNode)
+
+      expect(promotedWidgetStateByName(hostA, 'value').value).not.toBe('b-edit')
+      expect(promotedWidgetStateByName(hostB, 'value').value).not.toBe('a-edit')
+    })
   })
 
   describe('Nested Subgraph Widget Promotion', () => {
