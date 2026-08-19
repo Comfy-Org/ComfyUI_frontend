@@ -10,6 +10,11 @@ import {
   normalizePendingWarnings,
   updatePendingWarnings
 } from '@/platform/workflow/core/utils/pendingWarnings'
+import {
+  areWorkflowIdsEquivalent,
+  ensureWorkflowId,
+  getLegacyWorkflowId
+} from '@/platform/workflow/core/utils/workflowId'
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 import {
   ComfyWorkflow,
@@ -35,40 +40,13 @@ import { useWorkspaceStore } from '@/stores/workspaceStore'
 import {
   appendJsonExt,
   appendWorkflowJsonExt,
-  generateUUID,
-  isValidUuid
+  generateUUID
 } from '@/utils/formatUtil'
 import type { AppMode } from '@/utils/appMode'
 
 function linearModeToAppMode(linearMode: unknown): AppMode | null {
   if (typeof linearMode !== 'boolean') return null
   return linearMode ? 'app' : 'graph'
-}
-
-/**
- * Normalize a workflow id for the same-path reuse equality check in
- * `afterLoadNewGraph`. Non-UUID ids (empty, slug, or otherwise malformed) are
- * collapsed to `undefined` so that subsequent loads of a file whose stored
- * legacy id was rewritten by `ensureWorkflowId` still match the active tab
- * instead of opening a duplicate.
- */
-function normalizeWorkflowIdForReuse(id: unknown): string | undefined {
-  return isValidUuid(id) ? id : undefined
-}
-
-/**
- * Returns the workflow payload with a UUID-shaped `id`, preserving the
- * existing one when valid and otherwise substituting `fallbackId` (or a fresh
- * UUID). Used before passing data to `ChangeTracker.reset` so a slug id on the
- * incoming payload cannot overwrite the migrated UUID already stored on the
- * reused workflow.
- */
-function withMigratedId(
-  workflowData: ComfyWorkflowJSON,
-  fallbackId: string | undefined
-): ComfyWorkflowJSON {
-  if (isValidUuid(workflowData.id)) return workflowData
-  return { ...workflowData, id: fallbackId ?? generateUUID() }
 }
 
 export const useWorkflowService = () => {
@@ -520,16 +498,15 @@ export const useWorkflowService = () => {
         //
         // This prevents accidental duplicate tabs when startup/load flows
         // invoke loadGraphData more than once for the same workflow name.
-        const existingId = normalizeWorkflowIdForReuse(
-          existingWorkflow?.activeState?.id
-        )
-        const incomingId = normalizeWorkflowIdForReuse(workflowData.id)
+        const existingId = existingWorkflow?.activeState?.id
         const isSameActiveWorkflowLoad =
           !!existingWorkflow &&
           workflowStore.isActive(existingWorkflow) &&
-          (existingId === undefined ||
-            incomingId === undefined ||
-            existingId === incomingId)
+          areWorkflowIdsEquivalent(
+            existingId,
+            workflowData.id,
+            existingWorkflow.legacyId
+          )
 
         if (
           existingWorkflow &&
@@ -550,8 +527,9 @@ export const useWorkflowService = () => {
           if (shareId) {
             loadedWorkflow.shareId = shareId
           }
+          loadedWorkflow.legacyId ??= getLegacyWorkflowId(workflowData.id)
           loadedWorkflow.changeTracker.reset(
-            withMigratedId(workflowData, existingId)
+            ensureWorkflowId(workflowData, loadedWorkflow.activeState?.id)
           )
           loadedWorkflow.changeTracker.restore()
           return
@@ -579,11 +557,9 @@ export const useWorkflowService = () => {
       loadedWorkflow.initialMode = freshLoadMode
       trackIfEnteringApp(loadedWorkflow)
     }
+    loadedWorkflow.legacyId ??= getLegacyWorkflowId(workflowData.id)
     loadedWorkflow.changeTracker.reset(
-      withMigratedId(
-        workflowData,
-        normalizeWorkflowIdForReuse(loadedWorkflow.activeState?.id)
-      )
+      ensureWorkflowId(workflowData, loadedWorkflow.activeState?.id)
     )
     loadedWorkflow.changeTracker.restore()
   }
