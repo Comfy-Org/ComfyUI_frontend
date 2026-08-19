@@ -2,7 +2,9 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { applyLayoutOnlyDeclarations } from '@/services/layoutOnlyNodeTypes'
 import { useExtensionStore } from '@/stores/extensionStore'
+import { createTestNodeDef } from '@/utils/__tests__/litegraphTestUtils'
 
 describe('extensionStore', () => {
   beforeEach(() => {
@@ -45,6 +47,29 @@ describe('extensionStore', () => {
       } finally {
         warnSpy.mockRestore()
       }
+    })
+
+    it('ignores layout-only declarations from disabled extensions', () => {
+      const store = useExtensionStore()
+      store.loadDisabledExtensionNames(['disabled.layout-only'])
+
+      store.registerExtension({
+        name: 'enabled.layout-only',
+        layoutOnlyNodeTypes: ['EnabledStickyNote']
+      })
+      store.registerExtension({
+        name: 'disabled.layout-only',
+        layoutOnlyNodeTypes: ['DisabledStickyNote']
+      })
+
+      const nodeDefs = {
+        EnabledStickyNote: createTestNodeDef('EnabledStickyNote'),
+        DisabledStickyNote: createTestNodeDef('DisabledStickyNote')
+      }
+      applyLayoutOnlyDeclarations(nodeDefs)
+
+      expect(nodeDefs.EnabledStickyNote.layout_only).toBe(true)
+      expect(nodeDefs.DisabledStickyNote.layout_only).toBeUndefined()
     })
   })
 

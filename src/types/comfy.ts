@@ -109,6 +109,17 @@ export interface ComfyExtension {
    */
   name: string
   /**
+   * Node types that are editor layout state only and never affect execution.
+   * Declared types get `layout_only: true` on their node definition and are
+   * excluded from Run on Change detection and App Mode input/output
+   * selection.
+   *
+   * Declare the full list at startup registration; changes require a reload.
+   * Declarations are ignored, with a console warning, for types whose node
+   * definition can affect execution (output slots or an output node).
+   */
+  layoutOnlyNodeTypes?: readonly string[]
+  /**
    * The commands defined by the extension
    */
   commands?: ComfyCommand[]

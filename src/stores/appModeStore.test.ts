@@ -27,7 +27,11 @@ import { ComfyWorkflow as ComfyWorkflowClass } from '@/platform/workflow/managem
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
-import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
+import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
+import {
+  createMockChangeTracker,
+  createTestNodeDef
+} from '@/utils/__tests__/litegraphTestUtils'
 import type { WidgetId } from '@/types/widgetId'
 
 const mockEmptyWorkflowDialog = vi.hoisted(() => {
@@ -84,7 +88,7 @@ vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => mockSettings
 }))
 
-import { useAppModeStore } from './appModeStore'
+import { nodeTypeValidForApp, useAppModeStore } from './appModeStore'
 
 function createBuilderWorkflow(
   activeMode: string = 'builder:inputs'
@@ -170,6 +174,18 @@ describe('appModeStore', () => {
 
   afterEach(() => {
     vi.restoreAllMocks()
+  })
+
+  it('excludes layout-only node types from app mode', () => {
+    useNodeDefStore().updateNodeDefs([
+      ...Object.values(SYSTEM_NODE_DEFS),
+      createTestNodeDef('StickyNote', { layout_only: true })
+    ])
+
+    expect(nodeTypeValidForApp('Note')).toBe(false)
+    expect(nodeTypeValidForApp('MarkdownNote')).toBe(false)
+    expect(nodeTypeValidForApp('StickyNote')).toBe(false)
+    expect(nodeTypeValidForApp('KSampler')).toBe(true)
   })
 
   describe('enterBuilder', () => {

@@ -13,7 +13,9 @@ import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
+import { createTestNodeDef } from '@/utils/__tests__/litegraphTestUtils'
 
 const mockAssert = vi.hoisted(() => vi.fn())
 
@@ -222,6 +224,7 @@ describe('ChangeTracker', () => {
     vi.mocked(api.dispatchCustomEvent).mockReset()
     vi.useFakeTimers()
     setActivePinia(createTestingPinia({ stubActions: false }))
+    useNodeDefStore().updateNodeDefs(Object.values(SYSTEM_NODE_DEFS))
     resetSubgraphFixtureState()
     nodeIdCounter = 0
     ChangeTracker.isLoadingGraph = false
@@ -1177,6 +1180,43 @@ describe('ChangeTracker', () => {
           expectAutoQueueGraphChangedNotDispatched()
         }
       )
+
+      it('ignores content changes to a layout-only node type', () => {
+        useNodeDefStore().addNodeDef(
+          createTestNodeDef('StickyNote', { layout_only: true })
+        )
+        const initial = createState(1)
+        initial.nodes[0].type = 'StickyNote'
+        initial.nodes[0].widgets_values = ['Initial content']
+        const tracker = createTracker(initial)
+        const changed = structuredClone(initial)
+        changed.nodes[0].widgets_values = ['Updated content']
+        mockCanvasState(changed)
+
+        tracker.captureCanvasState()
+
+        expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+          'graphChanged',
+          changed
+        )
+        expectAutoQueueGraphChangedNotDispatched()
+      })
+
+      it('treats node types without a def as execution-relevant', () => {
+        const initial = createState(1)
+        initial.nodes[0].type = 'UnknownStickyNote'
+        initial.nodes[0].widgets_values = ['Initial content']
+        const tracker = createTracker(initial)
+        const changed = structuredClone(initial)
+        changed.nodes[0].widgets_values = ['Updated content']
+        mockCanvasState(changed)
+
+        tracker.captureCanvasState()
+
+        expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+          'autoQueueGraphChanged'
+        )
+      })
 
       it('clears redoQueue on new change', () => {
         const tracker = createTracker(createState(1))

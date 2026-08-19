@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, markRaw, ref } from 'vue'
 
+import { declareLayoutOnlyNodeTypes } from '@/services/layoutOnlyNodeTypes'
 import type { ComfyExtension } from '@/types/comfy'
 
 /**
@@ -69,6 +70,9 @@ export const useExtensionStore = defineStore('extension', () => {
     }
 
     extensionByName.value[extension.name] = markRaw(extension)
+    if (isExtensionEnabled(extension.name)) {
+      declareLayoutOnlyNodeTypes(extension.layoutOnlyNodeTypes ?? [])
+    }
   }
 
   function loadDisabledExtensionNames(names: string[]) {

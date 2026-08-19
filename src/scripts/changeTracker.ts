@@ -9,6 +9,7 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workfl
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
+import { isLayoutOnlyNodeType } from '@/services/layoutOnlyNodeTypes'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -85,7 +86,6 @@ const nonExecutionSlotProperties = new Set([
 ])
 
 const nonExecutionBoundaryNodeProperties = new Set(['bounding', 'pinned'])
-const nonExecutableNodeTypes = new Set(['Note', 'MarkdownNote'])
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -173,9 +173,7 @@ function normalizeSlotIndex(value: unknown): unknown {
 function isExecutableNodeState(value: unknown): boolean {
   const node = asRecord(value)
   return (
-    !node ||
-    typeof node.type !== 'string' ||
-    !nonExecutableNodeTypes.has(node.type)
+    !node || typeof node.type !== 'string' || !isLayoutOnlyNodeType(node.type)
   )
 }
 
