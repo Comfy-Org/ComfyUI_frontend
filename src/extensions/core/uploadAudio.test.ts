@@ -19,7 +19,11 @@ let capturedFileSelect:
   | undefined
 let capturedPaste: ((files: File[]) => Promise<File[] | never[]>) | undefined
 
-type AudioUploadWidget = (node: LGraphNode, inputName: string) => unknown
+type AudioUploadWidget = (
+  node: LGraphNode,
+  inputName: string,
+  inputData?: InputSpec
+) => unknown
 
 vi.mock('extendable-media-recorder', () => ({
   MediaRecorder: class MockMediaRecorder {}
@@ -113,9 +117,9 @@ function failResponse(status = 500) {
   }
 }
 
-function createAudioNode() {
+function createAudioNode(audioInputName = 'audio') {
   const audioWidget = {
-    name: 'audio',
+    name: audioInputName,
     value: 'previous.mp3',
     options: { values: ['previous.mp3'] },
     callback: vi.fn()
@@ -238,6 +242,21 @@ describe('Comfy.UploadAudio AUDIOUPLOAD widget', () => {
     expect(node.graph?.setDirtyCanvas).toHaveBeenCalledWith(true)
   })
 
+  it('uploads through a custom audio input named by the node definition', async () => {
+    const AUDIOUPLOAD = await loadAudioUploadWidget()
+    const { audioWidget, node } = createAudioNode('reference_audio')
+    AUDIOUPLOAD(node, 'upload', [
+      'AUDIOUPLOAD',
+      { audioInputName: 'reference_audio' }
+    ])
+    mockFetchApi.mockResolvedValueOnce(successResponse('uploaded.mp3'))
+
+    await capturedFileSelect!([createFile()])
+
+    expect(audioWidget.value).toBe('uploaded.mp3')
+    expect(audioWidget.options.values).toContain('uploaded.mp3')
+  })
+
   it('returns early when no files are provided', async () => {
     const AUDIOUPLOAD = await loadAudioUploadWidget()
     const { node } = createAudioNode()
@@ -302,5 +321,26 @@ describe('audio node definition setup', () => {
     )
 
     expect(nodeData.input?.required?.audioUI).toEqual(['AUDIO_UI', {}])
+  })
+
+  it('passes the audio_upload input name to the AUDIOUPLOAD widget', async () => {
+    const extension = await loadExtension('Comfy.UploadAudio')
+    const nodeData = createCustomAudioNodeDef()
+
+    await extension.beforeRegisterNodeDef!(fromAny({}), nodeData, fromAny({}))
+
+    expect(nodeData.input?.required?.upload).toEqual([
+      'AUDIOUPLOAD',
+      { audioInputName: 'reference_audio' }
+    ])
+  })
+
+  it('skips nodes without an audio_upload input', async () => {
+    const extension = await loadExtension('Comfy.UploadAudio')
+    const nodeData = createNodeDef({ audio: [['clip.mp3'], {}] })
+
+    await extension.beforeRegisterNodeDef!(fromAny({}), nodeData, fromAny({}))
+
+    expect(nodeData.input?.required?.upload).toBeUndefined()
   })
 })

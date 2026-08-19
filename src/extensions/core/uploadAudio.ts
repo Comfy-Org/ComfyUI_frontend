@@ -213,17 +213,22 @@ app.registerExtension({
     _nodeType: typeof LGraphNode,
     nodeData: ComfyNodeDef
   ) {
-    if (nodeData?.input?.required?.audio?.[1]?.audio_upload === true) {
-      nodeData.input.required.upload = ['AUDIOUPLOAD', {}]
+    const requiredInputs = nodeData.input?.required
+    const audioInputName = findAudioUploadInputName(requiredInputs)
+    if (requiredInputs && audioInputName) {
+      requiredInputs.upload = ['AUDIOUPLOAD', { audioInputName }]
     }
   },
   getCustomWidgets() {
     return {
-      AUDIOUPLOAD(node, inputName: string) {
+      AUDIOUPLOAD(node, inputName: string, inputData) {
+        const audioInputName = inputData?.[1]?.audioInputName
+        const audioWidgetName =
+          typeof audioInputName === 'string' ? audioInputName : 'audio'
         // The widget that allows user to select file.
         // @ts-expect-error fixme ts strict error
         const audioWidget = node.widgets.find(
-          (w) => w.name === 'audio'
+          (w) => w.name === audioWidgetName
         ) as IStringWidget
         // @ts-expect-error fixme ts strict error
         const audioUIWidget = node.widgets.find(
