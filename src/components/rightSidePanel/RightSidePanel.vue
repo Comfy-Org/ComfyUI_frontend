@@ -206,20 +206,24 @@ const tabs = computed<RightSidePanelTabList>(() => {
     list.push({
       label: () => t('rightSidePanel.errors'),
       value: 'errors',
-      icon: {
-        className: cn(
-          'ml-1',
-          hasBlockingError.value
-            ? 'icon-[lucide--octagon-alert] bg-node-stroke-error'
-            : 'icon-[lucide--triangle-alert] bg-warning-foreground'
-        ),
-        label: () =>
-          t(
-            hasBlockingError.value
-              ? 'rightSidePanel.severityErrorLabel'
-              : 'rightSidePanel.severitySetupLabel'
-          )
-      }
+      // No icon while the tab is only retained by a pending scan: with both
+      // severities absent there is no state for it to describe.
+      icon: hasRelevantErrors.value
+        ? {
+            className: cn(
+              'ml-1',
+              hasBlockingError.value
+                ? 'icon-[lucide--octagon-alert] bg-node-stroke-error'
+                : 'icon-[lucide--triangle-alert] bg-warning-foreground'
+            ),
+            label: () =>
+              t(
+                hasBlockingError.value
+                  ? 'rightSidePanel.severityErrorLabel'
+                  : 'rightSidePanel.severitySetupLabel'
+              )
+          }
+        : undefined
     })
   }
 

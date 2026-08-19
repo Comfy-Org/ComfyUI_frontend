@@ -587,7 +587,13 @@ function toggleSeverityFilter(severity: ErrorGroupSeverity) {
  */
 const selectionEmphasisSignature = computed(() =>
   hasSelection.value
-    ? Array.from(selectionMatchedGroupKeys.value).sort().join('\n')
+    ? [
+        ...selectionMatchedGroupKeys.value,
+        ...selectionMatchedCardIds.value,
+        ...selectionMatchedAssetNodeIds.value
+      ]
+        .sort()
+        .join('\n')
     : ''
 )
 
@@ -600,7 +606,8 @@ const severityIssueKeys = computed<Record<ErrorGroupSeverity, Set<string>>>(
         .flatMap((group) =>
           group.cards.flatMap((card) =>
             card.errors.map(
-              (error) => `${group.groupKey}|${card.id}|${error.message}`
+              (error, index) =>
+                `${group.groupKey}|${card.id}|${error.message}#${index}`
             )
           )
         )
@@ -609,15 +616,30 @@ const severityIssueKeys = computed<Record<ErrorGroupSeverity, Set<string>>>(
       ...missingPackGroups.value.flatMap((pack) =>
         pack.nodeTypes.map(
           (nodeType) =>
-            `pack|${pack.packId}|${typeof nodeType === 'string' ? nodeType : nodeType.type}`
+            `pack|${pack.packId}|${typeof nodeType === 'string' ? nodeType : `${nodeType.type}|${nodeType.nodeId}`}`
         )
       ),
-      ...swapNodeGroups.value.map((swap) => `swap|${swap.type}`),
+      ...swapNodeGroups.value.flatMap((swap) =>
+        swap.nodeTypes.map(
+          (nodeType) =>
+            `swap|${swap.type}|${typeof nodeType === 'string' ? nodeType : nodeType.nodeId}`
+        )
+      ),
       ...missingModelGroups.value.flatMap((group) =>
-        group.models.map((model) => `model|${group.directory}|${model.name}`)
+        group.models.flatMap((model) =>
+          model.referencingNodes.map(
+            (ref) =>
+              `model|${group.directory}|${model.name}|${ref.nodeId}|${ref.widgetName}`
+          )
+        )
       ),
       ...missingMediaGroups.value.flatMap((group) =>
-        group.items.map((item) => `media|${group.mediaType}|${item.name}`)
+        group.items.flatMap((item) =>
+          item.referencingNodes.map(
+            (ref) =>
+              `media|${group.mediaType}|${item.name}|${ref.nodeId}|${ref.widgetName}`
+          )
+        )
       )
     ])
   })

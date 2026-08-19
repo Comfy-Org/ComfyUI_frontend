@@ -820,6 +820,76 @@ describe('TabErrors.vue', () => {
     expect(screen.getByTestId('error-group-execution')).toBeInTheDocument()
   })
 
+  it('releases the filter when a hidden file gains another referencing node', async () => {
+    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    vi.mocked(getNodeByExecutionId).mockReturnValue(
+      fromAny<NonNullable<ReturnType<typeof getNodeByExecutionId>>, unknown>({
+        title: 'Node'
+      })
+    )
+
+    let mediaStore!: ReturnType<typeof useMissingMediaStore>
+    renderComponent((pinia) => {
+      useExecutionErrorStore(pinia).recordNodeErrors({
+        '1': nodeError(
+          [
+            validationError(
+              'required_input_missing',
+              'model',
+              {},
+              'Required input is missing',
+              'Input: model'
+            )
+          ],
+          'KSampler'
+        )
+      })
+      mediaStore = useMissingMediaStore(pinia)
+      mediaStore.setMissingMedia([
+        {
+          nodeId: '3',
+          nodeType: 'LoadImage',
+          widgetName: 'image',
+          mediaType: 'image',
+          name: 'a.png',
+          isMissing: true
+        }
+      ])
+    })
+
+    const user = userEvent.setup()
+    const errorChip = screen.getByTestId('errors-summary-filter-error')
+    await user.click(errorChip)
+    expect(
+      screen.queryByTestId('error-group-missing-media')
+    ).not.toBeInTheDocument()
+
+    // Same file, new referencing node: the name-level identity is unchanged
+    // but a new hidden row appeared, so the filter must release.
+    mediaStore.setMissingMedia([
+      {
+        nodeId: '3',
+        nodeType: 'LoadImage',
+        widgetName: 'image',
+        mediaType: 'image',
+        name: 'a.png',
+        isMissing: true
+      },
+      {
+        nodeId: '4',
+        nodeType: 'LoadImage',
+        widgetName: 'image',
+        mediaType: 'image',
+        name: 'a.png',
+        isMissing: true
+      }
+    ])
+    await nextTick()
+
+    expect(errorChip).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByTestId('error-group-missing-media')).toBeInTheDocument()
+  })
+
   it('shows only the chosen severity while its filter chip is pressed', async () => {
     const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
     vi.mocked(getNodeByExecutionId).mockReturnValue(
