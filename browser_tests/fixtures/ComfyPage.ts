@@ -29,6 +29,7 @@ import { ComfyNodeSearchBox } from '@e2e/fixtures/components/ComfyNodeSearchBox'
 import { ComfyNodeSearchBoxV2 } from '@e2e/fixtures/components/ComfyNodeSearchBoxV2'
 import { ConfirmDialog } from '@e2e/fixtures/components/ConfirmDialog'
 import { ContextMenu } from '@e2e/fixtures/components/ContextMenu'
+import { DialogChrome } from '@e2e/fixtures/components/DialogChrome'
 import { MediaLightbox } from '@e2e/fixtures/components/MediaLightbox'
 import { QueuePanel } from '@e2e/fixtures/components/QueuePanel'
 import { SettingDialog } from '@e2e/fixtures/components/SettingDialog'
@@ -184,6 +185,7 @@ export class ComfyPage {
   public readonly templates: ComfyTemplates
   public readonly settingDialog: SettingDialog
   public readonly confirmDialog: ConfirmDialog
+  public readonly dialogChrome: DialogChrome
   public readonly templatesDialog: TemplatesDialog
   public readonly titleEditor: TitleEditor
   public readonly mediaLightbox: MediaLightbox
@@ -241,6 +243,7 @@ export class ComfyPage {
     this.templates = new ComfyTemplates(page)
     this.settingDialog = new SettingDialog(page, this)
     this.confirmDialog = new ConfirmDialog(page)
+    this.dialogChrome = new DialogChrome(page)
     this.templatesDialog = new TemplatesDialog(page)
     this.titleEditor = new TitleEditor(page)
     this.mediaLightbox = new MediaLightbox(page)
