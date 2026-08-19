@@ -28,7 +28,12 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
     fetchPlans: mockFetchPlans,
     plans: mockCatalogPlans,
-    currentPlanSlug: mockCurrentPlanSlug
+    currentPlanSlug: mockCurrentPlanSlug,
+    // Deliberately inert: these track the legacy activeContext refresh, so the
+    // fetch-state tests fail if the section reads them instead of the
+    // useBillingPlans singleton.
+    isLoading: { value: false },
+    error: { value: null }
   })
 }))
 
@@ -98,8 +103,11 @@ function renderSection() {
 
 describe('SettingsPlansSection', () => {
   beforeEach(() => {
-    useBillingPlans().teamCreditStops.value = null
-    mockCatalogPlans.value = []
+    const billingPlans = useBillingPlans()
+    billingPlans.teamCreditStops.value = null
+    billingPlans.isLoading.value = false
+    billingPlans.error.value = null
+    mockCatalogPlans.value = yearlyCatalog()
     mockCurrentPlanSlug.value = null
     mockFetchPlans.mockReset()
     mockSubscribeToPersonal.mockReset()
@@ -309,5 +317,53 @@ describe('SettingsPlansSection', () => {
     expect(
       screen.getByRole('button', { name: 'Subscribe to Team Monthly' })
     ).toBeEnabled()
+  })
+
+  it('renders skeletons and no cards while the catalog is loading', () => {
+    mockCatalogPlans.value = []
+    useBillingPlans().isLoading.value = true
+    renderSection()
+
+    expect(screen.getByTestId('plans-skeleton')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Choose Standard' })).toBeNull()
+  })
+
+  it('shows the load error with a retry that re-dispatches the fetch', async () => {
+    mockCatalogPlans.value = []
+    useBillingPlans().error.value = 'network down'
+    renderSection()
+
+    expect(screen.getByText("We couldn't load your plan details.")).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Choose Standard' })).toBeNull()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
+    expect(mockFetchPlans).toHaveBeenCalledTimes(2)
+  })
+
+  it('shows the dedicated empty state when the catalog loads empty', () => {
+    mockCatalogPlans.value = []
+    renderSection()
+
+    expect(
+      screen.getByText('No plans are available right now. Check back soon.')
+    ).toBeTruthy()
+    expect(screen.queryByText("We couldn't load your plan details.")).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Choose Standard' })).toBeNull()
+  })
+
+  it('keeps cached cards rendered through a refetch and a refetch failure', () => {
+    useBillingPlans().isLoading.value = true
+    const { unmount } = renderSection()
+
+    expect(screen.getByRole('button', { name: 'Choose Standard' })).toBeTruthy()
+    expect(screen.queryByTestId('plans-skeleton')).toBeNull()
+    unmount()
+
+    useBillingPlans().isLoading.value = false
+    useBillingPlans().error.value = 'refetch failed'
+    renderSection()
+
+    expect(screen.getByRole('button', { name: 'Choose Standard' })).toBeTruthy()
+    expect(screen.queryByText("We couldn't load your plan details.")).toBeNull()
   })
 })
