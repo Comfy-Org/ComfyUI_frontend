@@ -71,7 +71,10 @@ const draftStoreMocks = vi.hoisted(() => ({
   saveDraft: vi.fn(() => true),
   getDraft: vi.fn(),
   removeDraft: vi.fn(),
-  markDraftUsed: vi.fn()
+  markDraftUsed: vi.fn(),
+  isPersistencePaused: vi.fn(() => false),
+  shouldNotifySaveFailure: vi.fn(() => true),
+  markSaveSucceeded: vi.fn()
 }))
 
 vi.mock('@/services/dialogService', () => ({
@@ -167,6 +170,8 @@ function enableWarningSettings() {
 describe('useWorkflowService', () => {
   beforeEach(() => {
     draftStoreMocks.saveDraft.mockReturnValue(true)
+    draftStoreMocks.isPersistencePaused.mockReturnValue(false)
+    draftStoreMocks.shouldNotifySaveFailure.mockReturnValue(true)
   })
 
   describe('showPendingWarnings', () => {
@@ -332,6 +337,21 @@ describe('useWorkflowService', () => {
       expect(stashPreviews).toHaveBeenCalledWith(activeWorkflow.path)
     })
 
+    it('should not save an active workflow while draft persistence is paused', () => {
+      vi.spyOn(useSettingStore(), 'get').mockImplementation((key: string) => {
+        return key === 'Comfy.Workflow.Persist'
+      })
+      draftStoreMocks.isPersistencePaused.mockReturnValue(true)
+      const activeWorkflow = createModeTestWorkflow({
+        path: 'workflows/startup.json'
+      })
+      workflowStore.activeWorkflow = activeWorkflow
+
+      useWorkflowService().beforeLoadNewGraph()
+
+      expect(draftStoreMocks.saveDraft).not.toHaveBeenCalled()
+    })
+
     it('should save active workflow state through the V2 draft store', () => {
       vi.spyOn(useSettingStore(), 'get').mockImplementation((key: string) => {
         return key === 'Comfy.Workflow.Persist'
@@ -348,7 +368,8 @@ describe('useWorkflowService', () => {
         JSON.stringify(activeWorkflow.activeState),
         {
           name: activeWorkflow.key,
-          isTemporary: activeWorkflow.isTemporary
+          isTemporary: activeWorkflow.isTemporary,
+          isModified: activeWorkflow.isModified
         }
       )
     })
@@ -366,6 +387,7 @@ describe('useWorkflowService', () => {
 
       useWorkflowService().beforeLoadNewGraph()
 
+      expect(draftStoreMocks.shouldNotifySaveFailure).toHaveBeenCalledWith()
       expect(addToastSpy).toHaveBeenCalledWith(
         expect.objectContaining({
           severity: 'error',
@@ -373,6 +395,27 @@ describe('useWorkflowService', () => {
           detail: t('toastMessages.failedToSaveDraft')
         })
       )
+    })
+
+    it('should suppress a repeated pre-load failure in the same episode', () => {
+      vi.spyOn(useSettingStore(), 'get').mockImplementation((key: string) => {
+        return key === 'Comfy.Workflow.Persist'
+      })
+      const addToastSpy = vi.spyOn(useToastStore(), 'add')
+      draftStoreMocks.saveDraft.mockReturnValue(false)
+      draftStoreMocks.shouldNotifySaveFailure
+        .mockReturnValueOnce(true)
+        .mockReturnValueOnce(false)
+      const activeWorkflow = createModeTestWorkflow({
+        path: 'workflows/test.json'
+      })
+      workflowStore.activeWorkflow = activeWorkflow
+
+      const service = useWorkflowService()
+      service.beforeLoadNewGraph()
+      service.beforeLoadNewGraph()
+
+      expect(addToastSpy).toHaveBeenCalledTimes(1)
     })
 
     it('should log and show an error toast when the V2 draft store throws', () => {

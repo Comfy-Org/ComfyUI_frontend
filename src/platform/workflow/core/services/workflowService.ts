@@ -10,6 +10,7 @@ import {
   normalizePendingWarnings,
   updatePendingWarnings
 } from '@/platform/workflow/core/utils/pendingWarnings'
+import { withWorkflowViewState } from '@/platform/workflow/persistence/base/workflowViewState'
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 import {
   ComfyWorkflow,
@@ -62,30 +63,52 @@ export const useWorkflowService = () => {
     })
   }
 
+  const getDraftStateWithView = (
+    activeWorkflow: ComfyWorkflow
+  ): ComfyWorkflowJSON | null => {
+    const activeState = activeWorkflow.activeState
+    if (!activeState) return null
+
+    return withWorkflowViewState(
+      activeState,
+      activeWorkflow.changeTracker?.ds,
+      settingStore.get('Comfy.EnableWorkflowViewRestore')
+    )
+  }
+
   const persistActiveWorkflowDraft = (activeWorkflow: ComfyWorkflow) => {
-    if (!settingStore.get('Comfy.Workflow.Persist') || !activeWorkflow.path) {
+    if (
+      workflowDraftStore.isPersistencePaused() ||
+      !settingStore.get('Comfy.Workflow.Persist') ||
+      !activeWorkflow.path
+    ) {
       return
     }
 
-    const activeState = activeWorkflow.activeState
-    if (!activeState) return
+    const draftState = getDraftStateWithView(activeWorkflow)
+    if (!draftState) return
 
     try {
       const saved = workflowDraftStore.saveDraft(
         activeWorkflow.path,
-        JSON.stringify(activeState),
+        JSON.stringify(draftState),
         {
           name: activeWorkflow.key,
-          isTemporary: activeWorkflow.isTemporary
+          isTemporary: activeWorkflow.isTemporary,
+          isModified: activeWorkflow.isModified
         }
       )
 
-      if (!saved) {
+      if (saved) {
+        workflowDraftStore.markSaveSucceeded()
+      } else if (workflowDraftStore.shouldNotifySaveFailure()) {
         showFailedToSaveDraftToast()
       }
     } catch (err) {
       console.error('Failed to persist active workflow draft', err)
-      showFailedToSaveDraftToast()
+      if (workflowDraftStore.shouldNotifySaveFailure()) {
+        showFailedToSaveDraftToast()
+      }
     }
   }
 
@@ -220,13 +243,14 @@ export const useWorkflowService = () => {
     const expectedPath =
       workflow.directory + '/' + appendWorkflowJsonExt(workflow.filename, isApp)
     if (workflow.path !== expectedPath) {
-      const existing = workflowStore.getWorkflowByPath(expectedPath)
-      if (existing && !existing.isTemporary) {
+      const existingWorkflow = workflowStore.getWorkflowByPath(expectedPath)
+      if (existingWorkflow && !existingWorkflow.isTemporary) {
         if ((await confirmOverwrite(expectedPath)) !== true) {
           await workflowStore.saveWorkflow(workflow)
           return true
         }
-        await deleteWorkflow(existing, true)
+        const deleted = await deleteWorkflow(existingWorkflow, true)
+        if (!deleted) return false
       }
       await renameWorkflow(workflow, expectedPath)
       toastStore.add({
