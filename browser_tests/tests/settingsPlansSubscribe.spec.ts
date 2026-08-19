@@ -1,5 +1,5 @@
 import { expect } from '@playwright/test'
-import type { Route } from '@playwright/test'
+import type { APIRequestContext, Page, Route } from '@playwright/test'
 
 import type {
   BillingPlansResponse,
@@ -12,14 +12,16 @@ import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import { CommandHelper } from '@e2e/fixtures/helpers/CommandHelper'
 
 /**
- * Local plans section checkout — FE-1600 (S2).
+ * Local plans section checkout and hardening — FE-1600.
  *
  * Off-cloud, the plan-card CTAs must subscribe through the workspace rail on
  * cloud ingest (never the legacy `/customers/cloud-subscription-checkout`),
  * open the Stripe page the backend returns, and flip the subscribed card to a
- * disabled "Current Plan" once op-polling reconciles. Billing mocks are
- * cross-origin (app on localhost, ingest on its own origin), so every fulfill
- * carries CORS headers and answers OPTIONS preflights.
+ * disabled "Current Plan" once op-polling reconciles. A failed plans fetch
+ * must surface an error with a working retry, and the cards must fit a mobile
+ * viewport. Billing mocks are cross-origin (app on localhost, ingest on its
+ * own origin), so every fulfill carries CORS headers and answers OPTIONS
+ * preflights.
  */
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 
@@ -87,7 +89,59 @@ function billingStatus(planSlug?: string): BillingStatusResponse {
   }
 }
 
-test.describe('Local plans section subscribe (FE-1600 S2)', () => {
+async function mockLegacyReads(page: Page) {
+  await page.route('**/customers/**', (r) =>
+    fulfillJson(
+      r,
+      r.request().url().includes('balance')
+        ? { amount_micros: 0, currency: 'usd' }
+        : { is_active: false }
+    )
+  )
+  await page.route('**/api/billing/status', (r) =>
+    fulfillJson(r, billingStatus())
+  )
+  await page.route('**/api/billing/balance', (r) =>
+    fulfillJson(r, { amount_micros: 0, currency: 'usd' })
+  )
+}
+
+// Boots the local app with a mocked Firebase session and opens the settings
+// dialog on Plan & Credits. window.open is stubbed so no test spawns a real
+// checkout popup; the opened URL lands in dataset.openedUrl.
+async function bootToPlansSection(page: Page, request: APIRequestContext) {
+  // A multi-user local server shows a user-selection screen unless a real
+  // user id is seeded (same approach as the ComfyPage fixture).
+  const usersResponse = await request.get(`${APP_URL}/api/users`)
+  const usersBody = (await usersResponse.json()) as {
+    users?: Record<string, string>
+  }
+  const userId = Object.keys(usersBody.users ?? {})[0]
+
+  await page.addInitScript((id) => {
+    if (id) localStorage.setItem('Comfy.userId', id)
+    window.open = (url) => {
+      document.documentElement.dataset.openedUrl = String(url)
+      return window
+    }
+  }, userId)
+
+  const auth = new CloudAuthHelper(page)
+  await auth.mockAuth()
+
+  await page.goto(APP_URL)
+  await page.waitForFunction(() => !!window.app?.extensionManager, null, {
+    timeout: 45_000
+  })
+
+  await new CommandHelper(page).executeCommand('Comfy.ShowSettingsDialog')
+  const dialog = page.getByTestId('settings-dialog')
+  await expect(dialog).toBeVisible()
+  await dialog.getByRole('button', { name: 'Plan & Credits' }).click()
+  return dialog
+}
+
+test.describe('Local plans section subscribe (FE-1600)', () => {
   test('subscribes via the workspace rail and flips the card to Current', async ({
     page,
     request
@@ -139,34 +193,7 @@ test.describe('Local plans section subscribe (FE-1600 S2)', () => {
       fulfillJson(r, { status: 'succeeded' })
     )
 
-    // A multi-user local server shows a user-selection screen unless a real
-    // user id is seeded (same approach as the ComfyPage fixture).
-    const usersResponse = await request.get(`${APP_URL}/api/users`)
-    const usersBody = (await usersResponse.json()) as {
-      users?: Record<string, string>
-    }
-    const userId = Object.keys(usersBody.users ?? {})[0]
-
-    await page.addInitScript((id) => {
-      if (id) localStorage.setItem('Comfy.userId', id)
-      window.open = (url) => {
-        document.documentElement.dataset.openedUrl = String(url)
-        return window
-      }
-    }, userId)
-
-    const auth = new CloudAuthHelper(page)
-    await auth.mockAuth()
-
-    await page.goto(APP_URL)
-    await page.waitForFunction(() => !!window.app?.extensionManager, null, {
-      timeout: 45_000
-    })
-
-    await new CommandHelper(page).executeCommand('Comfy.ShowSettingsDialog')
-    const dialog = page.getByTestId('settings-dialog')
-    await expect(dialog).toBeVisible()
-    await dialog.getByRole('button', { name: 'Plan & Credits' }).click()
+    const dialog = await bootToPlansSection(page, request)
 
     const chooseStandard = dialog.getByRole('button', {
       name: 'Choose Standard'
@@ -201,5 +228,76 @@ test.describe('Local plans section subscribe (FE-1600 S2)', () => {
     ).toBeEnabled()
 
     expect(legacyCheckoutRequests).toEqual([])
+  })
+
+  test('recovers from a failed plans fetch via retry', async ({
+    page,
+    request
+  }) => {
+    test.setTimeout(90_000)
+
+    let plansAvailable = false
+    await mockLegacyReads(page)
+    await page.route('**/api/billing/plans', async (r) => {
+      if (r.request().method() === 'OPTIONS') {
+        await r.fulfill({ status: 204, headers: CORS_HEADERS })
+        return
+      }
+      if (!plansAvailable) {
+        await r.fulfill({
+          status: 500,
+          contentType: 'application/json',
+          headers: CORS_HEADERS,
+          body: '{}'
+        })
+        return
+      }
+      await fulfillJson(r, plansResponse)
+    })
+
+    const dialog = await bootToPlansSection(page, request)
+
+    await expect(
+      dialog.getByText("We couldn't load your plan details.")
+    ).toBeVisible()
+    await expect(
+      dialog.getByRole('button', { name: 'Choose Standard' })
+    ).toHaveCount(0)
+
+    plansAvailable = true
+    await dialog.getByRole('button', { name: 'Try again' }).click()
+
+    await expect(
+      dialog.getByRole('button', { name: 'Choose Standard' })
+    ).toBeEnabled()
+    await expect(
+      dialog.getByText("We couldn't load your plan details.")
+    ).toHaveCount(0)
+  })
+
+  test('keeps the plans section within the viewport at mobile width', async ({
+    page,
+    request
+  }) => {
+    test.setTimeout(90_000)
+
+    await mockLegacyReads(page)
+    await page.route('**/api/billing/plans', (r) =>
+      fulfillJson(r, plansResponse)
+    )
+
+    const dialog = await bootToPlansSection(page, request)
+
+    const section = dialog.getByTestId('settings-plans-section')
+    await expect(
+      section.getByRole('button', { name: 'Choose Standard' })
+    ).toBeVisible()
+
+    await page.setViewportSize({ width: 390, height: 844 })
+
+    // 1px tolerance for subpixel rounding, mirroring keybindingPanel.spec.ts.
+    await expect
+      .poll(() => section.evaluate((el) => el.scrollWidth - el.clientWidth))
+      .toBeLessThanOrEqual(1)
   })
 })
