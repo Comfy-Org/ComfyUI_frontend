@@ -108,7 +108,10 @@ const {
     activeWorkflow: null as ComfyWorkflow | null,
     createNewTemporary: vi.fn(),
     openWorkflow: vi.fn(),
-    getWorkflowByPath: vi.fn(() => null)
+    getWorkflowByPath: vi.fn<(path: string) => ComfyWorkflow | null>(
+      () => null
+    ),
+    isActive: vi.fn<(workflow: ComfyWorkflow) => boolean>(() => false)
   },
   mockRefreshMissingModelPipeline: vi.fn(),
   mockImportA1111: vi.fn<typeof importA1111>(),
@@ -1787,6 +1790,39 @@ describe('ComfyApp', () => {
       await switchToWorkflow(workflowService, graph, importedA, firstImport.id!)
 
       expect(executionErrorStore.lastNodeErrors).toEqual(failedKSamplerErrors)
+    })
+
+    it('reuses the active workflow when importing the same file again', async () => {
+      await useRealWorkflowService()
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      const importedWorkflow = markLoaded(
+        new ComfyWorkflow({
+          path: 'workflows/repeat.json',
+          modified: 0,
+          size: -1
+        })
+      )
+      mockWorkspaceWorkflow.createNewTemporary.mockImplementation(
+        (_path, workflowData) => {
+          if (workflowData) {
+            importedWorkflow.changeTracker.activeState = workflowData
+          }
+          return importedWorkflow
+        }
+      )
+      mockWorkspaceWorkflow.getWorkflowByPath.mockImplementation(
+        () => mockWorkspaceWorkflow.activeWorkflow
+      )
+      mockWorkspaceWorkflow.isActive.mockImplementation(
+        (workflow) => mockWorkspaceWorkflow.activeWorkflow === workflow
+      )
+
+      await app.loadApiJson({}, 'repeat')
+      await app.loadApiJson({}, 'repeat')
+
+      expect(mockWorkspaceWorkflow.createNewTemporary).toHaveBeenCalledOnce()
     })
   })
 

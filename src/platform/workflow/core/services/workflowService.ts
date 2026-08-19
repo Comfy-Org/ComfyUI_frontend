@@ -526,11 +526,12 @@ export const useWorkflowService = () => {
         const isSameActiveWorkflowLoad =
           !!existingWorkflow &&
           workflowStore.isActive(existingWorkflow) &&
-          areWorkflowIdsEquivalent(
-            existingId,
-            workflowData.id,
-            existingWorkflow.legacyId
-          )
+          (existingWorkflow.isTemporary ||
+            areWorkflowIdsEquivalent(
+              existingId,
+              workflowData.id,
+              existingWorkflow.legacyId
+            ))
 
         if (
           existingWorkflow &&
