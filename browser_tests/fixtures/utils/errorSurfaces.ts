@@ -97,7 +97,13 @@ function installVisibleErrorRecorder(
           else if (node.parentElement) exact.add(node.parentElement)
         }
       } else if (mutation.target instanceof Element) {
-        exact.add(mutation.target)
+        if (
+          mutation.type !== 'attributes' ||
+          candidates.size > 0 ||
+          mutation.attributeName === 'class' ||
+          mutation.attributeName === 'data-testid'
+        )
+          exact.add(mutation.target)
       } else if (mutation.target.parentElement) {
         exact.add(mutation.target.parentElement)
       }

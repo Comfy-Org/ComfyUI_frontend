@@ -92,8 +92,10 @@ test('unrelated mutations do not rescan the document or mutated subtrees', async
   const selectorQueries = await page.evaluate(async () => {
     const originalDocumentQuery = document.querySelectorAll.bind(document)
     const originalElementQuery = Element.prototype.querySelectorAll
+    const originalMatches = Element.prototype.matches
     let documentQueries = 0
     let elementQueries = 0
+    let matches = 0
     document.querySelectorAll = ((selector: string) => {
       documentQueries += 1
       return originalDocumentQuery(selector)
@@ -102,16 +104,24 @@ test('unrelated mutations do not rescan the document or mutated subtrees', async
       elementQueries += 1
       return originalElementQuery.call(this, selector)
     }
+    Element.prototype.matches = function (this: Element, selector: string) {
+      matches += 1
+      return originalMatches.call(this, selector)
+    } as typeof Element.prototype.matches
     const root = document.getElementById('root')!
     for (let index = 0; index < 1_000; index += 1) {
-      root.dataset.index = String(index)
+      root.style.setProperty('--mutation-index', String(index))
       await Promise.resolve()
     }
     await new Promise((resolve) => setTimeout(resolve, 0))
-    return { documentQueries, elementQueries }
+    return { documentQueries, elementQueries, matches }
   })
 
-  expect(selectorQueries).toEqual({ documentQueries: 0, elementQueries: 0 })
+  expect(selectorQueries).toEqual({
+    documentQueries: 0,
+    elementQueries: 0,
+    matches: 0
+  })
   await expect(
     expectNoVisibleErrors(page, 'after DOM churn')
   ).resolves.toBeUndefined()
