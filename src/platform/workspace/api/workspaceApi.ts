@@ -36,8 +36,10 @@ import type {
 } from '@comfyorg/ingest-types'
 import axios from 'axios'
 
+import { getCloudIngestBaseUrl } from '@/config/comfyApi'
 import { attachUnifiedRemintInterceptor } from '@/platform/auth/unified/remintRetry'
 import { churnkeyAuthResponseSchema } from '@/platform/cloud/churnkey/churnkeyAuthSchema'
+import { isCloud } from '@/platform/distribution/types'
 import {
   UNKNOWN_ERROR_CODE,
   errorResponseFromBody
@@ -164,6 +166,14 @@ attachUnifiedRemintInterceptor(workspaceApiClient)
 
 async function getAuthHeaderOrThrow() {
   return useAuthStore().getAuthHeaderOrThrow()
+}
+
+// Billing READS resolve per endpoint, never via a client-wide baseURL: off-cloud
+// they go to cloud ingest (CORS-allowed for loopback), while every other
+// endpoint keeps the relative form so it stays unreachable from local.
+function resolveBillingUrl(path: string): string {
+  if (isCloud) return api.apiURL(path)
+  return `${getCloudIngestBaseUrl()}/api${path}`
 }
 
 function handleAxiosError(err: unknown): never {
@@ -417,7 +427,7 @@ export const workspaceApi = {
     const headers = await getAuthHeaderOrThrow()
     try {
       const response = await workspaceApiClient.get<BillingStatusResponse>(
-        api.apiURL('/billing/status'),
+        resolveBillingUrl('/billing/status'),
         { headers }
       )
       return response.data
@@ -434,7 +444,7 @@ export const workspaceApi = {
     const headers = await getAuthHeaderOrThrow()
     try {
       const response = await workspaceApiClient.get<BillingBalanceResponse>(
-        api.apiURL('/billing/balance'),
+        resolveBillingUrl('/billing/balance'),
         { headers }
       )
       return response.data
@@ -451,7 +461,7 @@ export const workspaceApi = {
     const headers = await getAuthHeaderOrThrow()
     try {
       const response = await workspaceApiClient.get<BillingPlansResponse>(
-        api.apiURL('/billing/plans'),
+        resolveBillingUrl('/billing/plans'),
         { headers }
       )
       return response.data

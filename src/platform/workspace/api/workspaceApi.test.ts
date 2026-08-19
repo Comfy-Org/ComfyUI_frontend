@@ -3,8 +3,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const {
   mockAxiosInstance,
   mockGetAuthHeaderOrThrow,
-  mockGetFirebaseAuthHeaderOrThrow
+  mockGetFirebaseAuthHeaderOrThrow,
+  mockIsCloud
 } = vi.hoisted(() => ({
+  mockIsCloud: { value: true },
   mockAxiosInstance: {
     get: vi.fn(),
     post: vi.fn(),
@@ -40,6 +42,12 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
+vi.mock('@/platform/distribution/types', () => ({
+  get isCloud() {
+    return mockIsCloud.value
+  }
+}))
+
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: () => ({
     getAuthHeaderOrThrow: mockGetAuthHeaderOrThrow,
@@ -53,6 +61,7 @@ const AUTH_HEADER = { Authorization: 'Bearer test-token' }
 
 describe('workspaceApi', () => {
   beforeEach(() => {
+    mockIsCloud.value = true
     mockGetAuthHeaderOrThrow.mockResolvedValue(AUTH_HEADER)
     mockGetFirebaseAuthHeaderOrThrow.mockResolvedValue(AUTH_HEADER)
   })
@@ -431,6 +440,56 @@ describe('workspaceApi', () => {
         code: 'UNAVAILABLE',
         message: 'Churnkey auth unavailable'
       })
+    })
+  })
+
+  describe('billing routing off cloud', () => {
+    beforeEach(() => {
+      mockIsCloud.value = false
+    })
+
+    it('routes billing reads to cloud ingest', async () => {
+      mockAxiosInstance.get.mockResolvedValue({ data: {} })
+
+      await workspaceApi.getBillingStatus()
+      await workspaceApi.getBillingBalance()
+      await workspaceApi.getBillingPlans()
+
+      expect(mockAxiosInstance.get).toHaveBeenNthCalledWith(
+        1,
+        'https://stagingcloud.comfy.org/api/billing/status',
+        { headers: AUTH_HEADER }
+      )
+      expect(mockAxiosInstance.get).toHaveBeenNthCalledWith(
+        2,
+        'https://stagingcloud.comfy.org/api/billing/balance',
+        { headers: AUTH_HEADER }
+      )
+      expect(mockAxiosInstance.get).toHaveBeenNthCalledWith(
+        3,
+        'https://stagingcloud.comfy.org/api/billing/plans',
+        { headers: AUTH_HEADER }
+      )
+    })
+
+    it('keeps mutating billing endpoints on the local relative form', async () => {
+      mockAxiosInstance.post.mockResolvedValue({ data: {} })
+
+      await workspaceApi.createTopup(1000, 'key-local')
+      await workspaceApi.subscribe('pro-monthly')
+
+      expect(mockAxiosInstance.post).toHaveBeenNthCalledWith(
+        1,
+        '/api/billing/topup',
+        { amount_cents: 1000, idempotency_key: 'key-local' },
+        { headers: AUTH_HEADER }
+      )
+      expect(mockAxiosInstance.post).toHaveBeenNthCalledWith(
+        2,
+        '/api/billing/subscribe',
+        { plan_slug: 'pro-monthly' },
+        { headers: AUTH_HEADER }
+      )
     })
   })
 
