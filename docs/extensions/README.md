@@ -39,6 +39,7 @@ Extensions are the primary way to add functionality to ComfyUI. They can be cust
 - [Understanding the shim system](./development.md#how-the-shim-works)
 - [Extension hooks and lifecycle](./core.md#extension-hooks)
 - [Build an extension with the published node API](../node-api/tutorial.md)
+- [Migrate LiteGraph code to the published API](../node-api/how-to.md)
 
 ### External Resources
 

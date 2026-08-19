@@ -158,6 +158,7 @@ final behavior contract a user experiences.
 
 ## Next steps
 
+- [Migration how-to](./how-to.md)
 - [Registration and lifecycle](./registration.md)
 - [Nodes and definitions](./nodes.md)
 - [Widgets](./widgets.md)
