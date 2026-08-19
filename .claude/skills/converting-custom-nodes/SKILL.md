@@ -289,10 +289,16 @@ wants the user's current selection, and is reaching into the canvas for it.
 
 **If you are writing to a node or widget handle** — every read and write is a
 **method**, never a property: `setTitle`, `setColor`, `setBgColor`, `setMode`,
-`setCollapsed`, `setProperty`, `getSize`/`setSize([w, h])` on nodes;
+`setCollapsed`, `setProperty`, `getSize`/`setSize({ width, height })` on nodes;
 `getValue`/`setValue`, `isHidden`/`setHidden`, `setOption` on widgets. Property
 syntax compiles and silently does nothing. See the table in
 `references/node-definitions.md`.
+
+**If the pack registered a custom renderer for a backend-declared widget
+type** — **use `comfy.defs.defineWidgetType(type, { render })`**, not an extra
+mounted widget. The renderer receives the declared widget's value, so it keeps
+the same positional `widgets_values` cell. Use `context.onNodeReady` when its
+DOM needs the owning node; constructors run before a node has an id or graph.
 
 **If you are converting `registerCustomNodes` / `extends LGraphNode` /
 `isVirtualNode` / `applyToGraph`** — identify which of four intents the node
@@ -300,6 +306,11 @@ serves (annotation, wire, value, or acting on other nodes) and use **`comfy.defs
 with `execution: 'frontend'` and, for wires and values, a pure `resolve`. See
 `references/node-definitions.md` — nodes that act on others mutate neighbours through
 handles in widget callbacks, never in `resolve`.
+
+**If the pack deletes and recreates a node to repair it after definitions
+change** — **use `comfy.graph.replace(node.id, node.type)`**. Same-type
+replacement intentionally creates a fresh registered instance while retaining
+the user's values, properties and compatible links in one undo step.
 
 **If you are converting `onResize` / `computeSize` / a per-frame `setSize`** —
 check whether the pack is enforcing a minimum, or growing to fit something it
@@ -390,6 +401,12 @@ including one your own Python side emits. For the built-in preview channel
 prefer `b.onPreview`, which answers "is this frame for my node?" — `backend.on`
 hands you the raw payload and leaves correlation to you.
 
+**If the pack adds its own file input beside a backend COMBO** — inspect the
+Python declaration before porting it. `image_upload`, `animated_image_upload`
+and `video_upload` in that input's options tell the host to supply the chooser,
+upload and preview. Delete the duplicate UI; adding another widget changes the
+positional wire format while recreating behavior core already owns.
+
 If a pack rewrites `graphToPrompt` only to name a cache or sidecar file, inspect
 its Python before declaring the feature impossible. A pack-owned preview route
 may already serve file inputs without a graph run; connected tensors can use
@@ -406,6 +423,11 @@ published queue, execution and backend mechanisms as missing.
 is shared with core and every other pack, and the id is where the value lives
 permanently. Re-declaring does not reset a stored value, so declaring on every
 load is correct.
+
+**If the pack replaces the canvas background draw method only to show an
+image** — **write `Comfy.Canvas.BackgroundImage` through `comfy.settings`**.
+The host loads and redraws it under both renderers. Preserve and restore the
+previous setting when the pack's temporary background mode stops.
 
 **If you are converting a read of `LiteGraph.NODE_SLOT_HEIGHT`,
 `NODE_TITLE_HEIGHT`, `ROUND_RADIUS` or `vueNodesMode`** — **use
@@ -430,10 +452,14 @@ whether it only wants to know the value changed. **Use `widget.on('change', (v,
 old) => …)`**, which is additive: no other pack can drop your listener by
 forgetting to call through.
 
-**If you are converting `widget.serializeValue = async () => {}`** — the pack is
-keeping a derived value out of what gets saved. **Use `serialize: false`** on
-the widget definition. Note the two are distinct: `options.serialize` gates the
-API prompt, `widget.serialize` gates workflow persistence.
+**If you are converting `widget.serializeValue`** — classify its return. A
+constant `undefined` becomes `serialize: false`; a synchronous substitute uses
+`widget.on('beforeSerialize', event => event.setSerializedValue(value))`. If it
+awaits derived state, an async `comfy.queue.guard` may commit that state before
+the prompt is built, but guards time out after five seconds. Anything that can
+legitimately take longer remains an API gap rather than a safe conversion.
+Note the two flags are distinct: `options.serialize` gates the API prompt,
+`widget.serialize` gates workflow persistence.
 
 **If you are converting `widget.type = 'converted-widget'`** — the pack is
 hiding a widget, not changing its kind. **Use `widget.setHidden(true)`.** The
