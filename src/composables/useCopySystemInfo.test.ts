@@ -5,7 +5,7 @@ import type { SystemStats } from '@/schemas/apiSchema'
 
 import { useCopySystemInfo } from './useCopySystemInfo'
 
-const mockCopyToClipboard = vi.fn()
+const mockCopyToClipboard = vi.fn<(text: string) => void>()
 const distributionFlags = vi.hoisted(() => ({ isCloud: false }))
 
 vi.mock('@/composables/useCopyToClipboard', () => ({
@@ -70,7 +70,7 @@ describe('useCopySystemInfo', () => {
       await copySystemInfo()
 
       expect(mockCopyToClipboard).toHaveBeenCalledTimes(1)
-      const text = mockCopyToClipboard.mock.calls[0][0] as string
+      const text = mockCopyToClipboard.mock.calls[0][0]
       expect(text).toContain('## System Info')
       expect(text).toContain('OS: Linux')
       expect(text).toContain('Python Version: 3.11.5')
@@ -84,7 +84,7 @@ describe('useCopySystemInfo', () => {
       const { copySystemInfo } = useCopySystemInfo(stats)
       await copySystemInfo()
 
-      const text = mockCopyToClipboard.mock.calls[0][0] as string
+      const text = mockCopyToClipboard.mock.calls[0][0]
       expect(text).not.toContain('## Devices')
     })
 
@@ -110,7 +110,7 @@ describe('useCopySystemInfo', () => {
       const { copySystemInfo } = useCopySystemInfo(cloudStats)
       await copySystemInfo()
 
-      const text = mockCopyToClipboard.mock.calls[0][0] as string
+      const text = mockCopyToClipboard.mock.calls[0][0]
       const truncated = fullCommitHash.slice(0, 7)
       expect(text).toContain('## System Info')
       expect(text).toContain('Cloud Version: 1.2.3')
