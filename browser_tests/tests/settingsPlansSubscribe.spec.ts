@@ -104,12 +104,19 @@ async function mockLegacyReads(page: Page) {
  * window.open is stubbed; the opened URL lands in dataset.openedUrl.
  */
 async function bootToPlansSection(page: Page, request: APIRequestContext) {
-  // Multi-user servers show a user-select screen unless a user id is seeded.
+  // Multi-user servers show a user-select screen unless a user id is seeded,
+  // and a fresh CI server has no users at all — find or create one.
   const usersResponse = await request.get(`${APP_URL}/api/users`)
   const usersBody = (await usersResponse.json()) as {
     users?: Record<string, string>
   }
-  const userId = Object.keys(usersBody.users ?? {})[0]
+  let userId = Object.keys(usersBody.users ?? {})[0]
+  if (!userId) {
+    const created = await request.post(`${APP_URL}/api/users`, {
+      data: { username: 'plans-subscribe-e2e' }
+    })
+    userId = (await created.json()) as string
+  }
 
   await page.addInitScript((id) => {
     if (id) localStorage.setItem('Comfy.userId', id)
