@@ -222,7 +222,10 @@ function handleGcsRedirect(
       for (const header of [
         'content-length',
         'content-range',
-        'accept-ranges'
+        'accept-ranges',
+        'cache-control',
+        'etag',
+        'last-modified'
       ]) {
         const value = gcsResponse.headers.get(header)
         if (value) {
