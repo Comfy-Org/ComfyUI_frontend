@@ -404,6 +404,11 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       })
     }
 
+    if (operation.workspaceId !== workspaceStore.activeWorkspaceId) {
+      resolveTerminal(opId)
+      return
+    }
+
     const billingContext = useBillingContext()
     if (operation.type === 'subscription') {
       await Promise.allSettled([billingContext.reconcileSubscriptionSuccess()])
@@ -412,6 +417,11 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         billingContext.fetchStatus(),
         billingContext.fetchBalance()
       ])
+    }
+
+    if (operation.workspaceId !== workspaceStore.activeWorkspaceId) {
+      resolveTerminal(opId)
+      return
     }
 
     if (operation.type === 'cancel') {
