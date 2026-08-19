@@ -248,9 +248,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { I18nT, useI18n } from 'vue-i18n'
 
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import Button from '@/components/ui/button/Button.vue'
 import CreditSlider from '@/components/ui/credit-slider/CreditSlider.vue'
 import Switch from '@/components/ui/switch/Switch.vue'
@@ -313,8 +314,13 @@ const VIDEO_PER_CREDIT =
   TIER_PRICING.pro.videoEstimate / TIER_PRICING.pro.credits
 
 // Team stops mirror UnifiedPricingTable: backend-sourced when the shared plans
-// state has them (S1 wires the fetch off-cloud), DES-197 fallback otherwise.
+// state has them, DES-197 fallback otherwise.
 const { teamCreditStops } = useBillingPlans()
+const { fetchPlans } = useBillingContext()
+
+onMounted(() => {
+  void fetchPlans()
+})
 
 const teamStops = computed(() => {
   const apiStops = teamCreditStops.value?.stops
@@ -336,6 +342,13 @@ const selectedTeamStop = computed(
     teamStops.value.find((stop) => stop.usd === teamUsd.value) ??
     defaultTeamStop.value
 )
+
+// API stops can resolve after mount with different breakpoints, leaving the
+// seeded slider USD matching no stop; snap it to the resolved default.
+watch(defaultTeamStop, (stop) => {
+  if (teamStops.value.some((s) => s.usd === teamUsd.value)) return
+  teamUsd.value = stop.usd
+})
 const teamVideoEstimate = computed(() =>
   Math.round(selectedTeamStop.value.credits * VIDEO_PER_CREDIT)
 )

@@ -1,12 +1,19 @@
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import { render, screen } from '@testing-library/vue'
 
 import enMessages from '@/locales/en/main.json'
+import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBillingPlans'
 
 import SettingsPlansSection from './SettingsPlansSection.vue'
+
+const { mockFetchPlans } = vi.hoisted(() => ({ mockFetchPlans: vi.fn() }))
+
+vi.mock('@/composables/billing/useBillingContext', () => ({
+  useBillingContext: () => ({ fetchPlans: mockFetchPlans })
+}))
 
 const i18n = createI18n({
   legacy: false,
@@ -32,6 +39,46 @@ function renderSection() {
 }
 
 describe('SettingsPlansSection', () => {
+  beforeEach(() => {
+    useBillingPlans().teamCreditStops.value = null
+    mockFetchPlans.mockReset()
+  })
+
+  it('fetches plans through the billing context on mount', () => {
+    renderSection()
+
+    expect(mockFetchPlans).toHaveBeenCalledTimes(1)
+  })
+
+  it('re-snaps the slider to the API default when stops arrive after mount', async () => {
+    renderSection()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Teams' }))
+    expect(screen.getByText('147,700')).toBeTruthy()
+
+    useBillingPlans().teamCreditStops.value = {
+      default_stop_index: 1,
+      stops: [
+        {
+          id: 'team_300',
+          credits: 63_300,
+          monthly: { list_price_cents: 30_000, price_cents: 30_000 },
+          yearly: { list_price_cents: 30_000, price_cents: 30_000 }
+        },
+        {
+          id: 'team_900',
+          credits: 189_900,
+          monthly: { list_price_cents: 90_000, price_cents: 85_500 },
+          yearly: { list_price_cents: 90_000, price_cents: 81_000 }
+        }
+      ]
+    }
+
+    expect(await screen.findByText('189,900')).toBeTruthy()
+    expect(screen.getByText('Generates ~17,235 5s videos*')).toBeTruthy()
+    expect(screen.queryByText('147,700')).toBeNull()
+  })
+
   it('renders the three personal cards with yearly pricing by default', () => {
     renderSection()
 
