@@ -167,47 +167,69 @@ async function runPairsInIsolatedPages(
   page: Page,
   pairs: PlannedPair[]
 ): Promise<{ results: PairResult[]; errors: string[] }> {
+  const browser = page.context().browser()
+  if (!browser) throw new Error('isolated connectivity requires a browser')
+  const browserSession = await browser.newBrowserCDPSession()
   const results: PairResult[] = []
   const errors: string[] = []
-  for (const pair of pairs) {
-    const pairKey = `${pair.producer.nodeType}.${pair.producer.slotName} -> ${pair.consumer.nodeType}.${pair.consumer.slotName}`
-    const pairStart = Date.now()
-    console.log(`connectivity isolated pair: ${pairKey} starting`)
-    const probe = await page.context().newPage()
-    try {
-      await trackVisibleErrors(probe)
-      await probe.goto(page.url())
-      await probe.waitForFunction(
-        ([producerType, consumerType]) =>
-          window.app?.extensionManager !== undefined &&
-          window.LiteGraph?.registered_node_types[producerType] !== undefined &&
-          window.LiteGraph.registered_node_types[consumerType] !== undefined,
-        [pair.producer.nodeType, pair.consumer.nodeType],
-        { timeout: 60_000 }
-      )
-      await expectNoVisibleErrors(
-        probe,
-        `before isolated pair ${pair.producer.nodeType} -> ${pair.consumer.nodeType}`
-      )
-      const consoleErrors = collectConsoleErrors(probe)
+  try {
+    for (const pair of pairs) {
+      const pairKey = `${pair.producer.nodeType}.${pair.producer.slotName} -> ${pair.consumer.nodeType}.${pair.consumer.slotName}`
+      const pairStart = Date.now()
+      console.log(`connectivity isolated pair: ${pairKey} starting`)
+      const probe = await page.context().newPage()
+      let targetClosed = false
       try {
-        const pairResults = await evaluateIsolatedPair(probe, pair)
-        results.push(...pairResults)
-        if (pairResults[0]?.outcome === 'ISOLATED_PAGE_HUNG') continue
+        await trackVisibleErrors(probe)
+        await probe.goto(page.url())
+        await probe.waitForFunction(
+          ([producerType, consumerType]) =>
+            window.app?.extensionManager !== undefined &&
+            window.LiteGraph?.registered_node_types[producerType] !==
+              undefined &&
+            window.LiteGraph.registered_node_types[consumerType] !== undefined,
+          [pair.producer.nodeType, pair.consumer.nodeType],
+          { timeout: 60_000 }
+        )
         await expectNoVisibleErrors(
           probe,
-          `after isolated pair ${pair.producer.nodeType} -> ${pair.consumer.nodeType}`
+          `before isolated pair ${pair.producer.nodeType} -> ${pair.consumer.nodeType}`
         )
+        const targetSession = await probe.context().newCDPSession(probe)
+        const { targetInfo } = await targetSession.send('Target.getTargetInfo')
+        await targetSession.detach()
+        const consoleErrors = collectConsoleErrors(probe)
+        try {
+          const pairResults = await evaluateIsolatedPair(probe, pair)
+          results.push(...pairResults)
+          if (pairResults[0]?.outcome === 'ISOLATED_PAGE_HUNG') {
+            const closed = probe.waitForEvent('close')
+            const response = await browserSession.send('Target.closeTarget', {
+              targetId: targetInfo.targetId
+            })
+            if (!response.success)
+              throw new Error(`failed to close hung target for ${pairKey}`)
+            await closed
+            targetClosed = true
+            continue
+          }
+          await expectNoVisibleErrors(
+            probe,
+            `after isolated pair ${pair.producer.nodeType} -> ${pair.consumer.nodeType}`
+          )
+        } finally {
+          consoleErrors.stop()
+          errors.push(...consoleErrors.errors)
+        }
       } finally {
-        consoleErrors.stop()
-        errors.push(...consoleErrors.errors)
+        if (!targetClosed && !probe.isClosed()) await probe.close()
+        console.log(
+          `connectivity isolated pair: ${pairKey} completed in ${Date.now() - pairStart}ms`
+        )
       }
-    } finally {
-      if (!probe.isClosed()) await probe.close()
-      console.log(
-        `connectivity isolated pair: ${pairKey} completed in ${Date.now() - pairStart}ms`
-      )
     }
+  } finally {
+    await browserSession.detach()
   }
   return { results, errors }
 }
