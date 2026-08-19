@@ -161,7 +161,7 @@ describe('usePartnerNodesInGraph', () => {
     ])
   })
 
-  it('recomputes when the graph changes', () => {
+  it('recomputes synchronously on graphChanged, not on the throttle trailing edge', () => {
     defineNodeDef('Partner', { apiNode: true, displayName: 'Partner' })
     const nodes: FakeNode[] = []
     hoisted.rootGraph = { nodes }
