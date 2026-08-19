@@ -95,7 +95,7 @@ describe('PlanCreditsPanelContent', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Activity' }))
     await userEvent.click(screen.getByRole('button', { name: 'Full activity' }))
 
-    expect(windowOpen).toHaveBeenCalledWith(
+    expect(windowOpen).toHaveBeenCalledExactlyOnceWith(
       expect.stringMatching(/\/profile\/usage$/),
       '_blank',
       'noopener,noreferrer'
@@ -124,7 +124,7 @@ describe('PlanCreditsPanelContent', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Activity' }))
 
     await waitFor(() =>
-      expect(consoleError).toHaveBeenCalledWith(
+      expect(consoleError).toHaveBeenCalledExactlyOnceWith(
         'Error refreshing usage logs:',
         error
       )

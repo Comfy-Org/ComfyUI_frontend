@@ -50,6 +50,9 @@ describe('SettingsPlansSection', () => {
     expect(screen.getByText('50,400')).toBeTruthy()
     expect(screen.getAllByText('credits a year')).toHaveLength(3)
 
+    expect(screen.getByText('263 per dollar')).toBeTruthy()
+    expect(screen.getAllByText('264 per dollar')).toHaveLength(2)
+
     expect(screen.getByText("What's included:")).toBeTruthy()
     expect(screen.getByText('Everything in Standard, plus:')).toBeTruthy()
     expect(screen.getByText('Everything in Creator, plus:')).toBeTruthy()
@@ -69,6 +72,9 @@ describe('SettingsPlansSection', () => {
 
     expect(screen.getByText('4,200')).toBeTruthy()
     expect(screen.getAllByText('credits a month')).toHaveLength(3)
+
+    expect(screen.getByText('210 per dollar')).toBeTruthy()
+    expect(screen.getAllByText('211 per dollar')).toHaveLength(2)
   })
 
   it('shows the team plan with the default credit stop on the Teams tab', async () => {
