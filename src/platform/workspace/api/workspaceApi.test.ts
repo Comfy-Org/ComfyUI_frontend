@@ -48,6 +48,12 @@ vi.mock('@/platform/distribution/types', () => ({
   }
 }))
 
+// Fixed sentinel so an ambient VITE_CLOUD_INGEST_BASE_URL cannot change the
+// asserted URLs; origin resolution itself is covered by comfyApi.test.ts.
+vi.mock('@/config/comfyApi', () => ({
+  getCloudIngestBaseUrl: () => 'https://ingest.example'
+}))
+
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: () => ({
     getAuthHeaderOrThrow: mockGetAuthHeaderOrThrow,
@@ -457,17 +463,17 @@ describe('workspaceApi', () => {
 
       expect(mockAxiosInstance.get).toHaveBeenNthCalledWith(
         1,
-        'https://stagingcloud.comfy.org/api/billing/status',
+        'https://ingest.example/api/billing/status',
         { headers: AUTH_HEADER }
       )
       expect(mockAxiosInstance.get).toHaveBeenNthCalledWith(
         2,
-        'https://stagingcloud.comfy.org/api/billing/balance',
+        'https://ingest.example/api/billing/balance',
         { headers: AUTH_HEADER }
       )
       expect(mockAxiosInstance.get).toHaveBeenNthCalledWith(
         3,
-        'https://stagingcloud.comfy.org/api/billing/plans',
+        'https://ingest.example/api/billing/plans',
         { headers: AUTH_HEADER }
       )
     })
