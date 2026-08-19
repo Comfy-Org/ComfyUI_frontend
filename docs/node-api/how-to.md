@@ -898,6 +898,61 @@ If a user capability remains after checking the supported alternatives, name
 that capability precisely as an API gap. Do not invent a plausible member or
 reintroduce the old object.
 
+## How do I document a refusal?
+
+A refusal is an architectural decision, not shorthand for “the conversion was
+hard” or “I did not find a method.” It must answer **why** the old mechanism or
+requested capability is outside the published contract.
+
+Every refusal record must include:
+
+1. **User behavior:** what the feature does from the user's point of view.
+2. **Mechanism:** the exact live object, prototype, store, DOM, prompt, or
+   renderer operation the original used.
+3. **Reason:** which ownership, determinism, wire-format, renderer-independence,
+   scope, or lifecycle guarantee that mechanism violates.
+4. **Outcome:** the supported replacement and remaining loss. State explicitly
+   when the loss is nothing.
+5. **Boundary:** the precise published capability or policy change that would
+   make the refused remainder supportable, or why it must remain host-owned.
+
+Keep those facts in one adjacent comment block. Use the existing terminal
+markers for the outcome rather than inventing another marker:
+
+```js
+// REFUSED: replacing LGraphCanvas.prototype.prompt to change the host's
+// numeric-entry behavior for every node and every pack.
+// Reason: a pack would own host-global editor behavior, and callback order
+// would decide which pack's replacement wins.
+// RESTORED: this pack's numeric editor uses comfy.ui.prompt from its own menu.
+// INOPERABLE: nothing.
+// Reconsider if the host publishes a scoped numeric-editor contribution.
+```
+
+When behavior is genuinely lost, name the loss rather than softening it:
+
+```js
+// REFUSED: wrapping graphToPrompt to replace the built prompt with an implicit
+// cross-product of widget values.
+// Reason: execution would depend on hidden frontend code rather than the saved
+// graph, and multiple wrappers would compose in load order.
+// DROPPED: one queue action no longer expands into undeclared executions.
+// This remains host-owned unless the graph gains a serializable fan-out node.
+```
+
+These are not valid reasons:
+
+- “not supported”;
+- “no API”;
+- “renderer internals are unavailable”;
+- “cannot be converted”;
+- a list of removed property names without the behavior they implemented.
+
+Those statements describe absence or effort, not a decision. If the behavior
+is acceptable but the public surface is merely missing, classify it as an API
+gap. If another published mechanism preserves it, convert through that
+mechanism and record the refused technique only as localized rationale.
+
 ## Migration safety checklist
 
 - Trace every `inputs`, `outputs`, `links`, `widgets`, and `properties` value to
