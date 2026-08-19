@@ -1,4 +1,4 @@
-import { render } from '@testing-library/vue'
+import { fireEvent, render } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, reactive } from 'vue'
@@ -11,6 +11,7 @@ import DomWidget from './DomWidget.vue'
 
 const mockUpdatePosition = vi.fn()
 const mockUpdateClipPath = vi.fn()
+const mockHandleWheel = vi.fn()
 const mockCanvasElement = document.createElement('canvas')
 const mockCanvasStore = {
   canvas: {
@@ -44,6 +45,10 @@ vi.mock('@/composables/element/useDomClipping', () => ({
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => mockCanvasStore
+}))
+
+vi.mock('@/renderer/core/canvas/useCanvasInteractions', () => ({
+  useCanvasInteractions: () => ({ handleWheel: mockHandleWheel })
 }))
 
 vi.mock('@/platform/settings/settingStore', () => ({
@@ -85,6 +90,7 @@ function createWidgetState(disabled: boolean): DomWidgetState {
 describe('DomWidget style', () => {
   afterEach(() => {
     useDomWidgetStore().clear()
+    mockHandleWheel.mockReset()
   })
 
   it('positions a newly mounted widget', () => {
@@ -130,5 +136,21 @@ describe('DomWidget style', () => {
     // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const root = container.querySelector('.dom-widget') as HTMLElement
     expect(root.style.pointerEvents).toBe('none')
+  })
+
+  it('hands wheel gestures to the canvas interaction layer', async () => {
+    const widgetState = createWidgetState(false)
+    const { container } = render(DomWidget, {
+      props: {
+        widgetState
+      }
+    })
+
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    const root = container.querySelector('.dom-widget') as HTMLElement
+    await fireEvent.wheel(root, { deltaY: 120 })
+
+    expect(mockHandleWheel).toHaveBeenCalledOnce()
+    expect(mockHandleWheel).toHaveBeenCalledWith(expect.any(WheelEvent))
   })
 })
