@@ -109,8 +109,13 @@ function installVisibleErrorRecorder(
   new MutationObserver((mutations) => {
     const subtrees = new Set<Element>()
     for (const mutation of mutations) {
-      for (const node of mutation.addedNodes)
-        if (node instanceof Element) subtrees.add(node)
+      for (const node of mutation.addedNodes) {
+        if (!(node instanceof Element)) continue
+        let ancestor = node.parentElement
+        while (ancestor && !subtrees.has(ancestor))
+          ancestor = ancestor.parentElement
+        if (!ancestor) subtrees.add(node)
+      }
     }
     for (const candidate of candidates)
       if (!candidate.isConnected) forgetCandidate(candidate)

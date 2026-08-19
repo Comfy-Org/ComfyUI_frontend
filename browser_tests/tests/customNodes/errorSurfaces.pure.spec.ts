@@ -129,3 +129,36 @@ test('unrelated class mutations do no error-selector work', async ({
     expectNoVisibleErrors(page, 'after DOM churn')
   ).resolves.toBeUndefined()
 })
+
+test('nested insertions scan only their outermost added subtree', async ({
+  page
+}) => {
+  await page.setContent('<main id="root"></main>')
+  const selectorQueries = await page.evaluate(async () => {
+    const originalElementQuery = Element.prototype.querySelectorAll
+    const originalMatches = Element.prototype.matches
+    let elementQueries = 0
+    let matches = 0
+    Element.prototype.querySelectorAll = function (selector: string) {
+      elementQueries += 1
+      return originalElementQuery.call(this, selector)
+    }
+    Element.prototype.matches = function (this: Element, selector: string) {
+      matches += 1
+      return originalMatches.call(this, selector)
+    } as typeof Element.prototype.matches
+    let parent = document.getElementById('root')!
+    for (let index = 0; index < 1_000; index += 1) {
+      const child = document.createElement('div')
+      parent.append(child)
+      parent = child
+    }
+    await Promise.resolve()
+    return { elementQueries, matches }
+  })
+
+  expect(selectorQueries).toEqual({ elementQueries: 1, matches: 1 })
+  await expect(
+    expectNoVisibleErrors(page, 'after nested insertion')
+  ).resolves.toBeUndefined()
+})
