@@ -14,6 +14,12 @@ vi.mock('@/composables/useCopyToClipboard', () => ({
 
 vi.mock('@/platform/distribution/types', () => distributionFlags)
 
+distributionFlags.isCloud = true
+vi.resetModules()
+const { useCopySystemInfo: useCloudCopySystemInfo } =
+  await import('./useCopySystemInfo')
+distributionFlags.isCloud = false
+
 const localStats: SystemStats = {
   system: {
     os: 'Linux',
@@ -106,8 +112,7 @@ describe('useCopySystemInfo', () => {
 
   describe('cloud distribution', () => {
     it('formats cloud-specific columns and formats commit hashes', async () => {
-      distributionFlags.isCloud = true
-      const { copySystemInfo } = useCopySystemInfo(cloudStats)
+      const { copySystemInfo } = useCloudCopySystemInfo(cloudStats)
       await copySystemInfo()
 
       const text = mockCopyToClipboard.mock.calls[0][0]

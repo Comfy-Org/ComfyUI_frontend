@@ -6,43 +6,38 @@ const frontendCommit = __COMFYUI_FRONTEND_COMMIT__
 
 type SystemInfoKey = keyof SystemStats['system']
 
-export type SystemStatsColumn = {
+export type SystemStatsColumn = Readonly<{
   field: SystemInfoKey
   headerKey: string
-  getValue?: () => string
   format?: (value: string) => string
   formatNumber?: (value: number) => string
-}
+  getValue?: () => string
+}>
 
-const localColumns: SystemStatsColumn[] = [
+const localColumns = [
+  { field: 'argv', headerKey: 'g.systemStatsArguments' },
+  { field: 'embedded_python', headerKey: 'g.systemStatsEmbeddedPython' },
+  {
+    field: 'installed_templates_version',
+    headerKey: 'g.systemStatsTemplatesVersion'
+  },
   { field: 'os', headerKey: 'g.systemStatsOS' },
   { field: 'python_version', headerKey: 'g.systemStatsPythonVersion' },
-  { field: 'embedded_python', headerKey: 'g.systemStatsEmbeddedPython' },
   { field: 'pytorch_version', headerKey: 'g.systemStatsPyTorchVersion' },
-  { field: 'argv', headerKey: 'g.systemStatsArguments' },
-  {
-    field: 'ram_total',
-    headerKey: 'g.systemStatsRAMTotal',
-    formatNumber: formatSize
-  },
   {
     field: 'ram_free',
     headerKey: 'g.systemStatsRAMFree',
     formatNumber: formatSize
   },
   {
-    field: 'installed_templates_version',
-    headerKey: 'g.systemStatsTemplatesVersion'
+    field: 'ram_total',
+    headerKey: 'g.systemStatsRAMTotal',
+    formatNumber: formatSize
   }
-]
+] as const satisfies readonly SystemStatsColumn[]
 
-const cloudColumns: SystemStatsColumn[] = [
+const cloudColumns = [
   { field: 'cloud_version', headerKey: 'g.systemStatsCloudVersion' },
-  {
-    field: 'comfyui_version',
-    headerKey: 'g.systemStatsComfyUIVersion',
-    format: formatCommitHash
-  },
   {
     field: 'comfyui_frontend_version',
     headerKey: 'g.systemStatsFrontendVersion',
@@ -50,14 +45,19 @@ const cloudColumns: SystemStatsColumn[] = [
     format: formatCommitHash
   },
   {
+    field: 'comfyui_version',
+    headerKey: 'g.systemStatsComfyUIVersion',
+    format: formatCommitHash
+  },
+  {
     field: 'workflow_templates_version',
     headerKey: 'g.systemStatsTemplatesVersion'
   }
-]
+] as const satisfies readonly SystemStatsColumn[]
 
-export function getSystemStatsColumns(): SystemStatsColumn[] {
-  return isCloud ? cloudColumns : localColumns
-}
+export const systemStatsColumns: readonly SystemStatsColumn[] = isCloud
+  ? cloudColumns
+  : localColumns
 
 export function getColumnDisplayValue(
   stats: SystemStats,

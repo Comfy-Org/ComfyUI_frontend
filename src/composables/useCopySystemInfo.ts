@@ -3,7 +3,7 @@ import type { MaybeRefOrGetter } from 'vue'
 
 import {
   getColumnDisplayValue,
-  getSystemStatsColumns
+  systemStatsColumns
 } from '@/components/common/systemStatsColumns'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { t } from '@/i18n'
@@ -13,7 +13,7 @@ import { formatSize } from '@/utils/formatUtil'
 function formatSystemInfoText(stats: SystemStats): string {
   const lines: string[] = ['## System Info']
 
-  for (const col of getSystemStatsColumns()) {
+  for (const col of systemStatsColumns) {
     const display = getColumnDisplayValue(stats, col)
     if (display !== undefined && display !== '') {
       lines.push(`${t(col.headerKey)}: ${display}`)

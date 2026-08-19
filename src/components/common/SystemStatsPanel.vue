@@ -11,7 +11,7 @@
         </Button>
       </div>
       <div class="grid grid-cols-2 gap-2">
-        <template v-for="col in systemColumns" :key="col.field">
+        <template v-for="col in systemStatsColumns" :key="col.field">
           <div :class="cn('font-medium', isOutdated(col) && 'text-danger-100')">
             {{ $t(col.headerKey) }}
           </div>
@@ -55,7 +55,7 @@ import DeviceInfo from '@/components/common/DeviceInfo.vue'
 import type { SystemStatsColumn } from '@/components/common/systemStatsColumns'
 import {
   getColumnDisplayValue,
-  getSystemStatsColumns
+  systemStatsColumns
 } from '@/components/common/systemStatsColumns'
 import Button from '@/components/ui/button/Button.vue'
 import { useCopySystemInfo } from '@/composables/useCopySystemInfo'
@@ -65,8 +65,6 @@ import { cn } from '@comfyorg/tailwind-utils'
 const { stats } = defineProps<{
   stats: SystemStats
 }>()
-
-const systemColumns = getSystemStatsColumns()
 
 const hasDevices = computed(() => stats.devices.length > 0)
 
