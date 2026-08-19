@@ -232,6 +232,7 @@
     "bookmarked": "Bookmarked",
     "essentials": "Essentials",
     "input": "Input",
+    "inputTooltip": "Input: {name}",
     "output": "Output",
     "community": "Community",
     "all": "All",
