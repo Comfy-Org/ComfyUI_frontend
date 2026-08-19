@@ -44,6 +44,7 @@ import { normalizeNodeDefs } from '@e2e/fixtures/customNode/typePairing'
 import { eligibleNodeTypesForTier } from '@e2e/fixtures/customNode/tierNodeExclusions'
 import {
   CANVAS_PREVIEW_IMAGE_PATH_PATTERN,
+  initializationSignalsForTypes,
   matchesTopologyExpectation,
   OUTPUT_TOPOLOGY_EXPECTATIONS_LITEGRAPH,
   OUTPUT_TOPOLOGY_EXPECTATIONS_VUE,
@@ -941,6 +942,10 @@ for (const entry of manifestEntries) {
           const mismatches: string[] = []
           for (let offset = 0; offset < keys.length; offset += BATCH_SIZE) {
             const chunk = keys.slice(offset, offset + BATCH_SIZE)
+            const chunkInitializationSignals = initializationSignalsForTypes(
+              initializationSignals,
+              chunk
+            )
             // Stage 1 - create the chunk and park the comparison rig on the
             // window; its closures carry state across the staged evaluates.
             await comfyPage.page.evaluate(
@@ -1356,10 +1361,10 @@ for (const entry of manifestEntries) {
                         }
                       }
                       return values
-                    }, initializationSignals)
+                    }, chunkInitializationSignals)
                     const pendingInitialization =
                       pendingRoundtripInitializations(
-                        initializationSignals,
+                        chunkInitializationSignals,
                         values,
                         vueNodesEnabled
                       )

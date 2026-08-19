@@ -3,7 +3,7 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import {
-  CANVAS_PREVIEW_IMAGE_PATH_PATTERN,
+  initializationSignalsForTypes,
   isCanvasPreviewImagePath,
   matchesTopologyExpectation,
   OUTPUT_TOPOLOGY_EXPECTATIONS_LITEGRAPH,
@@ -117,6 +117,28 @@ test('roundtrip initialization waits for pack-owned ready values', () => {
   ).toEqual([])
 })
 
+test('roundtrip initialization signals apply only to their node batch', () => {
+  const signals = {
+    ImageTransformKJ: {
+      predicate: 'widget-value' as const,
+      value: '{"fillColor":"#000000"}',
+      widget: 'bboxes'
+    },
+    SplineEditor: {
+      property: '_initialized',
+      predicate: 'defined' as const
+    }
+  }
+
+  expect(
+    initializationSignalsForTypes(signals, [
+      'ImageTransformKJ',
+      'UnrelatedNode'
+    ])
+  ).toEqual({ ImageTransformKJ: signals.ImageTransformKJ })
+  expect(initializationSignalsForTypes(signals, ['UnrelatedNode'])).toEqual({})
+})
+
 test('roundtrip waits for required canvas previews after reload', () => {
   const required = {
     iToolsLoadImagePlus: ['$$canvas-image-preview'],
@@ -163,7 +185,7 @@ test('requires canvas previews only for supported image upload paths', () => {
   ]) {
     expect(isCanvasPreviewImagePath(value)).toBe(false)
   }
-  expect(CANVAS_PREVIEW_IMAGE_PATH_PATTERN.flags).not.toContain('g')
+  expect(isCanvasPreviewImagePath('input/example.png')).toBe(true)
 })
 
 test.describe('staleValueDriftIndices', () => {

@@ -102,6 +102,16 @@ export const ROUNDTRIP_INITIALIZATION_SIGNALS: Record<
   }
 }
 
+export function initializationSignalsForTypes(
+  signals: Record<string, RoundtripInitializationSignal>,
+  types: readonly string[]
+): Record<string, RoundtripInitializationSignal> {
+  const typeSet = new Set(types)
+  return Object.fromEntries(
+    Object.entries(signals).filter(([type]) => typeSet.has(type))
+  )
+}
+
 function expectedInitializationValue(
   signal: RoundtripInitializationSignal
 ): string {
