@@ -2,7 +2,7 @@ import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 
 export const BYTEDANCE_REFERENCE_NODE_TYPE = 'ByteDance2ReferenceNode'
 
-export const REFERENCE_IMAGES_GROUP = 'model.reference_images'
+export const REFERENCE_IMAGES_PREFIX = 'model.reference_images.'
 
 function ordinalNames(prefix: string, count: number): string[] {
   return Array.from({ length: count }, (_, index) => `${prefix}_${index + 1}`)
