@@ -27,6 +27,12 @@ const ENDED_ENTERPRISE_STATUS = {
   subscription_status: 'ended'
 } satisfies BillingStatusResponse
 
+const CANCELLED_ACTIVE_ENTERPRISE_STATUS = {
+  ...ACTIVE_ENTERPRISE_STATUS,
+  cancel_at: '2027-04-25T00:00:00Z',
+  subscription_status: 'canceled'
+} satisfies BillingStatusResponse
+
 const UNKNOWN_TIER_STATUS = {
   ...TEAM_BILLING_STATUS,
   subscription_tier: 'FUTURE_TIER',
@@ -116,6 +122,33 @@ test.describe('Enterprise workspace billing', { tag: '@cloud' }, () => {
     await expect(popover.getByTestId('plans-pricing-menu-item')).toHaveCount(0)
   })
 
+  test('keeps a cancelled active Enterprise workspace sales-managed', async ({
+    page
+  }) => {
+    const workspace = await setupWorkspace(
+      page,
+      CANCELLED_ACTIVE_ENTERPRISE_STATUS
+    )
+    const content = await workspace.openWorkspaceSettings()
+
+    await expect(
+      content.getByRole('heading', { name: 'Enterprise' })
+    ).toBeVisible()
+    await expect(content.getByText('Canceled', { exact: true })).toBeVisible()
+    await expectNoSelfServicePlanActions(content)
+
+    await page
+      .getByTestId('settings-dialog')
+      .getByRole('button', { name: 'Close dialog' })
+      .click()
+    await page.getByRole('button', { name: 'Current user' }).click()
+    const popover = page.getByTestId('current-user-popover')
+    await expect(
+      popover.getByRole('button', { name: 'Resubscribe' })
+    ).toHaveCount(0)
+    await expect(popover.getByTestId('plans-pricing-menu-item')).toHaveCount(0)
+  })
+
   test('keeps an ended Enterprise workspace out of self-service recovery', async ({
     page
   }) => {
@@ -136,6 +169,15 @@ test.describe('Enterprise workspace billing', { tag: '@cloud' }, () => {
 
     await expect(page.getByTestId('queue-button')).toBeVisible()
     await expect(page.getByTestId('subscribe-to-run-button')).toHaveCount(0)
+
+    await page
+      .getByTestId('settings-dialog')
+      .getByRole('button', { name: 'Close dialog' })
+      .click()
+    await page.getByTestId('queue-button').click()
+    await expect(
+      page.getByRole('heading', { name: 'Choose a Plan' })
+    ).toHaveCount(0)
   })
 
   test('renders an unknown future tier without crashing', async ({ page }) => {
@@ -183,6 +225,17 @@ test.describe('Non-Enterprise billing regression', { tag: '@cloud' }, () => {
     ).toBeVisible()
     await expect(
       content.getByRole('button', { name: 'Billing & invoices' })
+    ).toBeVisible()
+
+    await page
+      .getByTestId('settings-dialog')
+      .getByRole('button', { name: 'Close dialog' })
+      .click()
+    await page.getByRole('button', { name: 'Current user' }).click()
+    await expect(
+      page
+        .getByTestId('current-user-popover')
+        .getByTestId('plans-pricing-menu-item')
     ).toBeVisible()
   })
 })
