@@ -212,7 +212,7 @@ export const SuccessAllSet: Story = {
 
 /**
  * Team success — "You're all set" with the inline "Invite your team" block
- * (FE-965 / DES-394). Team-only: gated on a team plan + teamWorkspacesEnabled.
+ * (FE-965 / DES-394).
  */
 export const TeamSuccessWithInvite: Story = {
   render: () => {

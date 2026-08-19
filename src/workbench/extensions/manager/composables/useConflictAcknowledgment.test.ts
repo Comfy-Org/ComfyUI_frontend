@@ -1,19 +1,9 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 describe('useConflictAcknowledgment', () => {
   beforeEach(() => {
-    // Set up Pinia for each test
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    // Clear localStorage before each test
-    localStorage.clear()
     // Reset modules to ensure fresh state
     vi.resetModules()
-  })
-
-  afterEach(() => {
-    localStorage.clear()
   })
 
   describe('initial state loading', () => {

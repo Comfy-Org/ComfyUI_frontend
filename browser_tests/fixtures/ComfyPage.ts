@@ -9,6 +9,12 @@ import {
   TOUR_SEEN_SETTING
 } from '@/platform/onboarding/onboardingTours'
 import { NodeBadgeMode } from '@/types/nodeSource'
+import {
+  EMPTY_BILLING_BALANCE,
+  EMPTY_BILLING_PLANS,
+  LEGACY_PERSONAL_BILLING_STATUS
+} from '@e2e/fixtures/data/cloudWorkspace'
+import { ZERO_BALANCE } from '@e2e/fixtures/data/subscriptionFixtures'
 import { ComfyActionbar } from '@e2e/fixtures/components/Actionbar'
 import { ComfyTemplates } from '@e2e/fixtures/components/Templates'
 import { ComfyMouse } from '@e2e/fixtures/ComfyMouse'
@@ -569,7 +575,22 @@ export const comfyPageFixture = base.extend<{
       await context.route('**/api/auth/session', (route) =>
         route.fulfill({ status: 204 })
       )
+      await context.route('**/api/billing/status', (route) =>
+        route.fulfill({ json: LEGACY_PERSONAL_BILLING_STATUS })
+      )
+      await context.route('**/api/billing/balance', (route) =>
+        route.fulfill({ json: EMPTY_BILLING_BALANCE })
+      )
+      await context.route('**/api/billing/plans', (route) =>
+        route.fulfill({ json: EMPTY_BILLING_PLANS })
+      )
+      await context.route('**/customers/balance', (route) =>
+        route.fulfill({ json: ZERO_BALANCE })
+      )
       await mockWorkspace(context, workspace('personal', 'owner'), [])
+    }
+
+    if (testInfo.tags.includes('@cloud') || testInfo.tags.includes('@auth')) {
       await comfyPage.cloudAuth.mockAuth()
     }
 
