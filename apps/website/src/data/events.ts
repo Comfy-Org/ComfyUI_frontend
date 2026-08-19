@@ -235,6 +235,42 @@ const events: readonly ComfyEvent[] = [
     ctaLabel: { en: 'Register', 'zh-CN': '报名' }
   },
   {
+    id: 'mutek-3d-projection-mapping',
+    category: 'community',
+    title: {
+      en: 'MUTEK: Generative AI for 3D Projection Mapping ft. Purz & Moment Factory',
+      'zh-CN': 'MUTEK：面向 3D 投影映射的生成式 AI，特邀 Purz 与 Moment Factory'
+    },
+    description: {
+      en: 'A hands-on workshop with Moment Factory on bringing generative AI into large-scale spatial design with ComfyUI, ending by projecting AI-generated visuals onto a physical maquette.',
+      'zh-CN':
+        '与 Moment Factory 合作的实操工作坊，探讨如何用 ComfyUI 将生成式 AI 融入大型空间设计，并在最后将 AI 生成的视觉投影到实体模型上。'
+    },
+    location: { en: 'Montréal, QC', 'zh-CN': '加拿大魁北克蒙特利尔' },
+    dateLabel: {
+      en: 'August 27, 2026 · 1:30PM ET',
+      'zh-CN': '2026年8月27日 · 下午1:30（ET）'
+    },
+    startDateTime: '2026-08-27T13:30:00-04:00',
+    endDateTime: '2026-08-27T15:30:00-04:00',
+    link: {
+      href: {
+        en: 'https://forum.mutek.org/en/shows/2026/generative-ai-for-3d-projection-mapping-from-concept-to-canvas',
+        'zh-CN':
+          'https://forum.mutek.org/en/shows/2026/generative-ai-for-3d-projection-mapping-from-concept-to-canvas'
+      },
+      newTab: true
+    },
+    ctaLabel: { en: 'Register', 'zh-CN': '报名' },
+    featured: {
+      order: 0,
+      media: eventVideo('08.27-MUTEK.mp4', {
+        en: 'MUTEK: Generative AI for 3D Projection Mapping',
+        'zh-CN': 'MUTEK：面向 3D 投影映射的生成式 AI'
+      })
+    }
+  },
+  {
     id: 'beyond-the-models',
     category: 'livestream',
     title: {
@@ -258,7 +294,7 @@ const events: readonly ComfyEvent[] = [
       'zh-CN': '善用 Comfy，超越模型本身直播'
     }),
     featured: {
-      order: 0,
+      order: 1,
       media: eventImage('livestream-aug-19.jpg', {
         en: 'Using Comfy to Go Beyond the Models livestream',
         'zh-CN': '善用 Comfy，超越模型本身直播'
@@ -287,7 +323,7 @@ const events: readonly ComfyEvent[] = [
     link: { href: launchesHref, newTab: false },
     liveVideoId: '4xS4LOn3CTE',
     featured: {
-      order: 2,
+      order: 3,
       media: eventVideo(
         'future-of-ai-post-production.mp4',
         {
@@ -452,7 +488,7 @@ const events: readonly ComfyEvent[] = [
     startDateTime: '2026-06-23',
     recordingVideoId: '31jiUhCEjJ4',
     featured: {
-      order: 1,
+      order: 2,
       media: eventVideo(
         'founders-live.mp4',
         {
