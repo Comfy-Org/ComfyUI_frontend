@@ -89,7 +89,10 @@ const {
     refreshNodeOutputs: vi.fn(),
     resetAllOutputsAndPreviews: vi.fn(),
     snapshotOutputs: vi.fn(),
-    restoreOutputs: vi.fn()
+    restoreOutputs: vi.fn(),
+    stashPreviewsForWorkflow: vi.fn(),
+    restorePreviewsForWorkflow: vi.fn(),
+    discardPreviewsForWorkflow: vi.fn()
   },
   mockWorkspaceWorkflow: {
     activeWorkflow: null as ComfyWorkflow | null,

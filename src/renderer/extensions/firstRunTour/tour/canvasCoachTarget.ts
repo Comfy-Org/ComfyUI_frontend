@@ -12,7 +12,7 @@ import type { NodeId } from '@/types/nodeId'
 export function canvasNodeTarget(nodeId: NodeId): RectTarget {
   const { camera } = useTransformState()
   const canvasStore = useCanvasStore()
-  const layout = layoutStore.getNodeLayoutRef(nodeId)
+  const { layout, release } = layoutStore.retainNodeLayoutRef(nodeId)
   const resolvedGraph = canvasStore.currentGraph
   const scope = effectScope(true)
   const canvasBounds = scope.run(() =>
@@ -51,6 +51,9 @@ export function canvasNodeTarget(nodeId: NodeId): RectTarget {
         stopResize()
       }
     },
-    dispose: () => scope.stop()
+    dispose: () => {
+      release()
+      scope.stop()
+    }
   }
 }
