@@ -3,11 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 
-import {
-  getCloudIngestBaseUrl,
-  getComfyApiBaseUrl,
-  getComfyPlatformBaseUrl
-} from './comfyApi'
+import { getComfyApiBaseUrl, getComfyPlatformBaseUrl } from './comfyApi'
 
 vi.mock('@/scripts/api', () => ({
   api: {
@@ -72,13 +68,21 @@ describe('getComfyPlatformBaseUrl', () => {
   })
 })
 
+// The resolver is computed at module load, so each case stubs the env first
+// and imports a fresh module — an ambient VITE_CLOUD_INGEST_BASE_URL (e.g. a
+// developer .env pointing at testcloud) must not leak into the assertions.
 describe('getCloudIngestBaseUrl', () => {
   afterEach(() => {
     vi.unstubAllEnvs()
     vi.resetModules()
   })
 
-  it('resolves the staging cloud origin in non-prod builds', () => {
+  it('resolves the staging cloud origin in non-prod builds', async () => {
+    vi.stubEnv('VITE_CLOUD_INGEST_BASE_URL', undefined)
+    vi.resetModules()
+
+    const { getCloudIngestBaseUrl } = await import('./comfyApi')
+
     expect(getCloudIngestBaseUrl()).toBe('https://stagingcloud.comfy.org')
   })
 
@@ -86,9 +90,9 @@ describe('getCloudIngestBaseUrl', () => {
     vi.stubEnv('VITE_CLOUD_INGEST_BASE_URL', 'https://testcloud.comfy.org')
     vi.resetModules()
 
-    const { getCloudIngestBaseUrl: rebuilt } = await import('./comfyApi')
+    const { getCloudIngestBaseUrl } = await import('./comfyApi')
 
-    expect(rebuilt()).toBe('https://testcloud.comfy.org')
+    expect(getCloudIngestBaseUrl()).toBe('https://testcloud.comfy.org')
   })
 })
 
