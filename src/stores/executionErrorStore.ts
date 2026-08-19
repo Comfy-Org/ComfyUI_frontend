@@ -1,5 +1,8 @@
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { whenever } from '@vueuse/core'
+
+import { classifyValidationErrorAbsorption } from '@/components/rightSidePanel/errors/missingResourceAbsorption'
 
 import { useNodeErrorFlagSync } from '@/composables/graph/useNodeErrorFlagSync'
 import {
@@ -16,6 +19,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
+import { ChangeTracker } from '@/scripts/changeTracker'
 import type {
   ExecutionErrorWsMessage,
   NodeError,
@@ -36,6 +40,7 @@ import {
   errorsForSlot,
   getInputConfigBounds,
   hasErrorForSlot,
+  isMissingNodePromptError,
   isValueStillOutOfRange
 } from '@/utils/executionErrorUtil'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
@@ -95,6 +100,77 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     void pendingAddedNodeScanRevision.value
     return (pendingAddedNodeScans.get(rootGraph)?.get(executionId) ?? 0) > 0
   }
+
+  whenever(
+    () => !missingNodesStore.hasMissingNodes,
+    () => {
+      if (
+        ChangeTracker.isLoadingGraph ||
+        !isMissingNodePromptError(lastPromptError.value)
+      ) {
+        return
+      }
+      lastPromptError.value = null
+    },
+    // The missing-node scan and prompt recording share a synchronous block; clear before recording the new error.
+    { flush: 'sync' }
+  )
+
+  /**
+   * The model/media analog of the missing-node retirement above: when a
+   * candidate leaves the store (installed + refreshed, node deleted or
+   * bypassed), the validation errors it was absorbing must retire with it —
+   * otherwise resolving the resource resurfaces them as blocking errors.
+   * Matching is by content, so a rescan that rebuilds equivalent candidates
+   * retires nothing.
+   */
+  watch(
+    () =>
+      [
+        missingModelStore.missingModelCandidates,
+        missingMediaStore.missingMediaCandidates
+      ] as const,
+    ([nextModels, nextMedia], [prevModels, prevMedia]) => {
+      const record = lastNodeErrors.value
+      if (!record) return
+
+      let changed = false
+      const updated: Record<string, NodeError> = {}
+      for (const [rawNodeId, nodeError] of Object.entries(record)) {
+        const executionId = tryNormalizeNodeExecutionId(rawNodeId)
+        if (!executionId) {
+          updated[rawNodeId] = nodeError
+          continue
+        }
+        const remaining = nodeError.errors.filter((error) => {
+          const wasAbsorbed = classifyValidationErrorAbsorption(
+            prevModels ?? null,
+            prevMedia ?? null,
+            error,
+            executionId
+          )
+          if (!wasAbsorbed) return true
+          return !!classifyValidationErrorAbsorption(
+            nextModels ?? null,
+            nextMedia ?? null,
+            error,
+            executionId
+          )
+        })
+        if (remaining.length === nodeError.errors.length) {
+          updated[rawNodeId] = nodeError
+        } else {
+          changed = true
+          if (remaining.length > 0) {
+            updated[rawNodeId] = { ...nodeError, errors: remaining }
+          }
+        }
+      }
+      if (changed) {
+        lastNodeErrors.value = Object.keys(updated).length > 0 ? updated : null
+      }
+    }
+  )
 
   /** Replaces the full record; empty or null means the run produced no errors. */
   function recordNodeErrors(nodeErrors: Record<string, NodeError> | null) {
@@ -458,29 +534,6 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     return ids
   })
 
-  const promptErrorCount = computed(() => (lastPromptError.value ? 1 : 0))
-
-  const nodeErrorCount = computed(() => {
-    if (!lastNodeErrors.value) return 0
-    let count = 0
-    for (const nodeError of Object.values(lastNodeErrors.value)) {
-      count += nodeError.errors.length
-    }
-    return count
-  })
-
-  const executionErrorCount = computed(() => (lastExecutionError.value ? 1 : 0))
-
-  const totalErrorCount = computed(
-    () =>
-      promptErrorCount.value +
-      nodeErrorCount.value +
-      executionErrorCount.value +
-      missingNodesStore.missingNodeCount +
-      missingModelStore.missingModelCount +
-      missingMediaStore.missingMediaCount
-  )
-
   /** Graph node IDs (as strings) that have errors in the current graph scope. */
   const activeGraphErrorNodeIds = computed<Set<string>>(() => {
     const ids = new Set<string>()
@@ -602,7 +655,6 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     hasMissingError,
     hasAnyError,
     allErrorExecutionIds,
-    totalErrorCount,
     lastExecutionErrorNodeId,
     activeGraphErrorNodeIds,
 
