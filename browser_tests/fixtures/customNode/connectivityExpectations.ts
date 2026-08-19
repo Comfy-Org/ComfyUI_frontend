@@ -18,6 +18,68 @@ export function pairExpectationKeys(groups: PairExpectationGroup[]): string[] {
   return groups.flatMap((group) => group.pairs)
 }
 
+export function pairExpectationNodeTypes(
+  groups: PairExpectationGroup[]
+): string[] {
+  const nodeTypes = new Set<string>()
+  for (const key of pairExpectationKeys(groups)) {
+    const sides = key.split(' -> ')
+    if (sides.length !== 2) throw new Error(`${key}: invalid pair key`)
+    for (const side of sides) {
+      const separator = side.lastIndexOf('.')
+      if (separator <= 0 || separator === side.length - 1)
+        throw new Error(`${key}: invalid pair endpoint`)
+      nodeTypes.add(side.slice(0, separator))
+    }
+  }
+  return [...nodeTypes].sort()
+}
+
+export const pairEndpointPacks: Readonly<Record<string, string>> = {
+  ACN_SparseCtrlLoaderAdvanced: 'comfyui-advanced-controlnet',
+  ADE_AnimateDiffCombine: 'comfyui-animatediff-evolved',
+  ADE_ValueScheduling: 'comfyui-animatediff-evolved',
+  AddLabel: 'ComfyUI-KJNodes',
+  AddNoise: 'core',
+  AddTextPrefix: 'core',
+  AdjustBrightness: 'core',
+  AnimaLLLiteApply: 'core',
+  'Basic data handling: Boolean And': 'basic_data_handling',
+  'Basic data handling: CastToInt': 'basic_data_handling',
+  CompositorTools3: 'comfyui-enricos-nodes',
+  FL_CodeNode: 'ComfyUI_Fill-Nodes',
+  FL_NodeLoader: 'ComfyUI_Fill-Nodes',
+  FL_NodePackLoader: 'ComfyUI_Fill-Nodes',
+  FL_TimeLine: 'ComfyUI_Fill-Nodes',
+  FL_VideoBatchSplitter: 'ComfyUI_Fill-Nodes',
+  'MathExpression|pysssss': 'ComfyUI-Custom-Scripts',
+  MultiImageLoader: 'WhatDreamsCost-ComfyUI',
+  VHS_SelectLatest: 'comfyui-videohelpersuite',
+  Vewd: 'vewd'
+}
+
+export function pairEndpointOwnershipIssues(
+  requiredNodeTypes: string[],
+  nodes: Array<{ type: string; pack: string }>,
+  installedPacks: ReadonlySet<string>
+): string[] {
+  const installed = new Set(
+    [...installedPacks].map((pack) => pack.toLowerCase())
+  )
+  return requiredNodeTypes.flatMap((nodeType) => {
+    const expectedPack = pairEndpointPacks[nodeType]
+    if (!expectedPack)
+      return [`${nodeType}: no endpoint pack attribution exists`]
+    if (expectedPack !== 'core' && !installed.has(expectedPack.toLowerCase()))
+      return []
+    const node = nodes.find((candidate) => candidate.type === nodeType)
+    if (!node) return [`${nodeType}: not registered by ${expectedPack}`]
+    return node.pack.toLowerCase() === expectedPack.toLowerCase()
+      ? []
+      : [`${nodeType}: expected ${expectedPack}, observed ${node.pack}`]
+  })
+}
+
 export const connectivityExpectations: ConnectivityExpectations = {
   isolatedNodeTypes: {
     FL_CodeNode: {

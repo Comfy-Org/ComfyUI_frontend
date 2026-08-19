@@ -17,7 +17,9 @@ import {
 } from '@e2e/fixtures/customNode/consoleErrorLedger'
 import {
   connectivityExpectations,
-  pairExpectationKeys
+  pairEndpointOwnershipIssues,
+  pairExpectationKeys,
+  pairExpectationNodeTypes
 } from '@e2e/fixtures/customNode/connectivityExpectations'
 import { failureSummary } from '@e2e/fixtures/customNode/failureReport'
 import {
@@ -59,11 +61,24 @@ const ISOLATED_MS_PER_PAIR = PLAN_SETUP_MS
 const DRAG_MS_PER_DRAG = 15_000
 const {
   isolatedNodeTypes,
-  connectRejected: connectRejectedGroups,
-  deterministicSlotContractMismatch: deterministicSlotContractMismatchGroups,
-  roundtripLost: roundtripLostGroups,
+  connectRejected: allConnectRejectedGroups,
+  deterministicSlotContractMismatch: allDeterministicSlotContractMismatchGroups,
+  roundtripLost: allRoundtripLostGroups,
   zeroPairDragExpectedNodeCounts
 } = connectivityExpectations
+const fullManifestPacks = new Set(
+  loadFullManifest().map((entry) => entry.pack.toLowerCase())
+)
+const appliesToSelectedManifest = ({ pack }: { pack: string }) =>
+  fullManifestPacks.has(pack.toLowerCase())
+const connectRejectedGroups = allConnectRejectedGroups.filter(
+  appliesToSelectedManifest
+)
+const deterministicSlotContractMismatchGroups =
+  allDeterministicSlotContractMismatchGroups.filter(appliesToSelectedManifest)
+const roundtripLostGroups = allRoundtripLostGroups.filter(
+  appliesToSelectedManifest
+)
 const connectRejected = pairExpectationKeys(connectRejectedGroups)
 const deterministicSlotContractMismatch = pairExpectationKeys(
   deterministicSlotContractMismatchGroups
@@ -74,6 +89,11 @@ const requiredPairKeys = [
   ...deterministicSlotContractMismatch,
   ...roundtripLost
 ]
+const requiredEndpointNodeTypes = pairExpectationNodeTypes([
+  ...connectRejectedGroups,
+  ...deterministicSlotContractMismatchGroups,
+  ...roundtripLostGroups
+])
 
 test.use({ initialSettings: customNodeSuiteSettings })
 
@@ -189,9 +209,17 @@ test('connectivity: representative edges cover every pairable slot through model
   const packTypes = nodes
     .filter((node) => installedPacks.has(node.pack))
     .map((node) => node.type)
+  expect(
+    pairEndpointOwnershipIssues(
+      requiredEndpointNodeTypes,
+      nodes,
+      installedPacks
+    ),
+    'ledgered connectivity endpoint attribution'
+  ).toEqual([])
   const knownNodeTypes = new Set([
     ...nodes.map((node) => node.type),
-    ...loadFullManifest().flatMap((entry) => entry.expectedNodes)
+    ...requiredEndpointNodeTypes
   ])
   const plan = planPairs(nodes, packTypes, requiredPairKeys, knownNodeTypes)
   const isolatedTypes = new Set(Object.keys(activeIsolatedNodeTypes))
