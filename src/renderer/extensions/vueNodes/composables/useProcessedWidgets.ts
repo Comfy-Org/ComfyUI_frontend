@@ -146,6 +146,7 @@ function buildSlotMetadata(
       originOutputName: link
         ? originNode?.outputs?.[link.originSlot]?.name
         : undefined,
+      promoted: input.widgetId !== undefined,
       type: String(input.type)
     }
     if (input.name) metadata.set(input.name, slotInfo)
@@ -375,7 +376,11 @@ function processWidget(
     )
 
   const slotInfo = ctx.slotMetadata.get(widgetState.name)
-  const visible = isWidgetVisible(options, ctx.showAdvanced, slotInfo?.linked)
+  const visible = isWidgetVisible(
+    options,
+    ctx.showAdvanced,
+    slotInfo?.linked || slotInfo?.promoted
+  )
   const isDisabled = slotInfo?.linked || widgetState.disabled
   const widgetOptions = isDisabled ? { ...options, disabled: true } : options
   const value = widgetState.value as WidgetValue

@@ -10,6 +10,7 @@ export interface WidgetSlotMetadata {
   linked: boolean
   originNodeId?: NodeId
   originOutputName?: string
+  promoted: boolean
   type: string
 }
 
