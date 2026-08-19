@@ -373,13 +373,13 @@ describe('defs.extend', () => {
         registry
           .forMajor((id) => comfy.graph.node(id)!)
           .extend('KSampler', (b) =>
-            b.onResized((_n, size) => sizes.push([...size]))
+            b.onResized((_n, size) => sizes.push(size))
           )
       )
 
       node.setSize([320, 180])
 
-      expect(sizes.at(-1)).toEqual([320, 180])
+      expect(sizes.at(-1)).toEqual({ width: 320, height: 180 })
     })
 
     it('reports the pointer entering and leaving', () => {
