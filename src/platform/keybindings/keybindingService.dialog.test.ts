@@ -229,4 +229,43 @@ describe('keybindingService - dialog gate', () => {
       document.body.removeChild(popper)
     }
   })
+
+  it('saves the workflow on Ctrl+S while a tab popover is open', async () => {
+    const popover = document.createElement('div')
+    popover.className = 'p-popover'
+    popover.setAttribute('role', 'dialog')
+    popover.setAttribute('aria-modal', 'true')
+    document.body.appendChild(popover)
+
+    try {
+      const event = createKeyboardEvent('s', document.body, { ctrlKey: true })
+      await keybindingService.keybindHandler(event)
+
+      expect(mockCommandExecute).toHaveBeenCalledWith('Comfy.SaveWorkflow')
+      expect(event.defaultPrevented).toBe(true)
+    } finally {
+      document.body.removeChild(popover)
+    }
+  })
+
+  it('saves the workflow on Ctrl+S once a masked dialog is closed', async () => {
+    const mask = document.createElement('div')
+    mask.style.display = 'none'
+    const dialog = document.createElement('div')
+    dialog.setAttribute('role', 'dialog')
+    dialog.setAttribute('aria-modal', 'true')
+    dialog.style.display = 'flex'
+    mask.appendChild(dialog)
+    document.body.appendChild(mask)
+
+    try {
+      const event = createKeyboardEvent('s', document.body, { ctrlKey: true })
+      await keybindingService.keybindHandler(event)
+
+      expect(mockCommandExecute).toHaveBeenCalledWith('Comfy.SaveWorkflow')
+      expect(event.defaultPrevented).toBe(true)
+    } finally {
+      document.body.removeChild(mask)
+    }
+  })
 })
