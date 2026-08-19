@@ -295,14 +295,14 @@ function createAssetService() {
    * tag. Bumping the request id keeps a walk that was already in flight from
    * repopulating the cache with pre-invalidation data.
    */
-  function invalidateInputAssets(): void {
-    void useAssetsStore().inputAssets.invalidate()
-  }
-
   function invalidateModelBuckets(): void {
     modelBucketsRequestId++
     modelBuckets = null
     pendingModelBuckets = null
+  }
+
+  function invalidateInputAssets(items?: AssetId[]): void {
+    void useAssetsStore().inputAssets.invalidate(items)
   }
 
   /**
@@ -934,7 +934,7 @@ function createAssetService() {
     }
 
     const asset = validateUploadedAssetResponse(await res.json())
-    invalidateInputAssets()
+    invalidateInputAssets([asset.id])
     return asset
   }
 
@@ -1048,7 +1048,8 @@ function createAssetService() {
           )
         )
       }
-      invalidateInputAssets()
+      const asset = result.data.type === 'sync' ? result.data.asset : undefined
+      invalidateInputAssets(asset && [asset.id])
       return result.data
     }
 
@@ -1064,7 +1065,8 @@ function createAssetService() {
         )
       )
     }
-    invalidateInputAssets()
+    const asset = result.data.type === 'sync' ? result.data.asset : undefined
+    invalidateInputAssets(asset && [asset.id])
     return result.data
   }
 

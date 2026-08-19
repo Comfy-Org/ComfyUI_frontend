@@ -94,7 +94,7 @@ describe('createSharedPagedList', () => {
     await scope.run(async () => {
       const a = useShared('outputs')
       useShared('inputs')
-      await a.invalidate(stale)
+      await a.invalidate(stale.map((i) => i.id))
       expect(list1.invalidate).toHaveBeenCalledWith(stale)
       expect(list2.invalidate).toHaveBeenCalledWith(stale)
     })

@@ -99,9 +99,9 @@ function assetsQueryInternal(
     return parseResult.data
   }
 
-  async function invalidate(stale?: Readonly<AssetItem[]>) {
+  async function invalidate(stale?: string[]) {
     if (stale) {
-      const ids = new Set(stale.map((item) => item.id))
+      const ids = new Set(stale)
       items.value = items.value.filter((item) => !ids.has(item.id))
       return
     }

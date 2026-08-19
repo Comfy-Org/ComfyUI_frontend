@@ -3,7 +3,7 @@ import type { MaybeRef } from 'vue'
 
 export type PagedList<T> = {
   hasMore: Readonly<MaybeRef<boolean>>
-  invalidate: (items?: Readonly<T[]>) => Promise<void>
+  invalidate: (items?: string[]) => Promise<void>
   isLoading: Readonly<MaybeRef<boolean>>
   items: Readonly<MaybeRef<T[]>>
   loadMore: () => Promise<void>
@@ -41,7 +41,7 @@ export function createSharedPagedList<TParams, TItem>(
 ) {
   const cache = new Map<string, CacheEntry<TItem>>()
 
-  async function invalidateItems(items: Readonly<TItem[]>) {
+  async function invalidateItems(items: string[]) {
     await Promise.all([...cache.values()].map((e) => e.list.invalidate(items)))
   }
 
@@ -63,7 +63,7 @@ export function createSharedPagedList<TParams, TItem>(
 
     onScopeDispose(() => --entry.refCount || cache.delete(key))
 
-    async function invalidate(stale?: Readonly<TItem[]>) {
+    async function invalidate(stale?: string[]) {
       if (stale) await invalidateItems(stale)
       else await Promise.all(overlapping(entry).map((e) => e.list.invalidate()))
     }
