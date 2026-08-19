@@ -128,6 +128,23 @@ Escalate or decline rather than guess when:
 A refusal costs a round trip. A wrong rewrite of working code is invisible until
 a user hits it.
 
+A refusal must answer **why**. Keep one adjacent comment block that records:
+
+1. the user-visible behavior;
+2. the exact old mechanism;
+3. the ownership, determinism, wire-format, renderer, scope or lifecycle
+   guarantee that makes the mechanism unacceptable;
+4. the supported remainder and exact user loss (`INOPERABLE: nothing` when
+   there is none); and
+5. the concrete API capability or policy change that would reverse the
+   decision, or why the behavior must remain host-owned.
+
+“Not supported”, “no API”, “renderer internals are unavailable”, and a list of
+removed property names are not reasons. They describe absence. If the behavior
+is acceptable and only a public destination is absent, that is `API-GAP`, not
+`REFUSED`. If the behavior survives through another published mechanism, name
+that destination and refuse only the old technique.
+
 **A partial conversion is worse than a punt.** Two checks enforce this and both
 fail the whole file:
 
