@@ -144,15 +144,6 @@ export const connectivityExpectations: ConnectivityExpectations = {
         'FL_VideoBatchSplitter exposes only the default 4 of 20 declared outputs',
       restore:
         'make object_info describe only materialized outputs and remove this entry'
-    },
-    {
-      id: 'timeline-node-loss',
-      pack: 'ComfyUI_Fill-Nodes',
-      pairs: ['FL_TimeLine.MODEL -> AddNoise.model'],
-      reason:
-        'FL_TimeLine replaces node.serialize and loses graph identity on reload',
-      restore:
-        'preserve LiteGraph serialization and remove this entry when the pair survives reload'
     }
   ],
   dynamicSlotCleanupStalled: [
@@ -170,6 +161,15 @@ export const connectivityExpectations: ConnectivityExpectations = {
     }
   ],
   roundtripLost: [
+    {
+      id: 'timeline-node-loss',
+      pack: 'ComfyUI_Fill-Nodes',
+      pairs: ['FL_TimeLine.MODEL -> AddNoise.model'],
+      reason:
+        'FL_TimeLine replaces node.serialize and loses graph identity on reload',
+      restore:
+        'preserve LiteGraph serialization and remove this entry when the pair survives reload'
+    },
     {
       id: 'vewd-dynamic-input-reload',
       pack: 'vewd',

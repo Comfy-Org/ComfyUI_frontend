@@ -604,8 +604,24 @@ function evaluatePairs(
           })
           continue
         }
-        const prompt = (await window.app!.graphToPrompt()) as {
+        let prompt: {
           output?: Record<string, { inputs?: Record<string, unknown> }>
+        }
+        try {
+          prompt = (await window.app!.graphToPrompt()) as typeof prompt
+        } catch (error) {
+          const detail = String(error)
+          if (
+            detail.startsWith('InvalidLinkError: No input node found for id')
+          ) {
+            report.push({
+              key,
+              outcome: 'ROUNDTRIP_LOST',
+              detail: `graphToPrompt rejected a restored dangling link: ${detail}`
+            })
+            continue
+          }
+          throw error
         }
         const promptInput =
           prompt.output?.[String(consumer.id)]?.inputs?.[pair.consumer.slotName]
