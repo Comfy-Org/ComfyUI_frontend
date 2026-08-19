@@ -17,7 +17,7 @@ interface TutorialAuthor {
   avatar?: string
 }
 
-export interface LearningTutorial {
+interface LearningTutorialBase {
   id: string
   /** Kebab-case, human-readable — the SEO slug in /learning/<category>/<slug>. */
   slug: string
@@ -28,10 +28,6 @@ export interface LearningTutorial {
   title: LocalizedText
   /** Optional authored copy; when absent the detail page uses a template. */
   description?: LocalizedText
-  /** Self-hosted MP4 source; omit for YouTube items (see youtubeId). */
-  videoSrc?: string
-  /** When set, the watch page embeds a YouTube iframe instead of <video>. */
-  youtubeId?: string
   href?: string
   /** CTA button label; defaults to "Try Workflow" when omitted. */
   ctaLabelKey?: TranslationKey
@@ -44,6 +40,18 @@ export interface LearningTutorial {
   /** Shown on the watch page's author card; the card hides when absent. */
   author?: TutorialAuthor
 }
+
+/** Exactly one video source: a self-hosted MP4 or a YouTube embed, never both. */
+type LearningVideoSource =
+  | { videoSrc: string; youtubeId?: never }
+  | { youtubeId: string; videoSrc?: never }
+
+/**
+ * A tutorial plays from exactly one source. Self-hosted items set `videoSrc`
+ * (an MP4 rendered via `<video>`); YouTube items set `youtubeId` (embedded in
+ * an iframe on the watch page).
+ */
+export type LearningTutorial = LearningTutorialBase & LearningVideoSource
 
 /** Category slugs, in nav order — also drives the /learning/[slug] routes. */
 export const learningCategories: readonly LearningCategory[] = [
@@ -725,10 +733,6 @@ export const getTutorialByCategoryAndSlug = (
 /** Privacy-friendly embed URL for the watch-page iframe (YouTube items). */
 export const youtubeEmbedUrl = (id: string): string =>
   `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&mute=1&rel=0`
-
-/** Canonical watch URL, used as the VideoObject contentUrl for YouTube items. */
-export const youtubeWatchUrl = (id: string): string =>
-  `https://www.youtube.com/watch?v=${id}`
 
 /** Canonical path for a category's directory page (wrap with localizeHref for zh-CN). */
 export const categoryPath = (category: LearningCategory): string =>

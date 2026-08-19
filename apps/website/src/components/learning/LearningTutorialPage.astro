@@ -10,8 +10,7 @@ import type { LearningTutorial } from '../../data/learningTutorials'
 import {
   learningCrumbs,
   tutorialDescription,
-  youtubeEmbedUrl,
-  youtubeWatchUrl
+  youtubeEmbedUrl
 } from '../../data/learningTutorials'
 import type { JsonLdNode } from '../../utils/jsonLd'
 import {
@@ -44,9 +43,7 @@ const video: JsonLdNode = videoObjectNode({
   name: title,
   description,
   thumbnailUrl: tutorial.poster,
-  contentUrl: tutorial.youtubeId
-    ? youtubeWatchUrl(tutorial.youtubeId)
-    : tutorial.videoSrc,
+  contentUrl: tutorial.videoSrc,
   embedUrl: tutorial.youtubeId
     ? youtubeEmbedUrl(tutorial.youtubeId)
     : undefined,
