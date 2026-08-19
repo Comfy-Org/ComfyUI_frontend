@@ -65,17 +65,17 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
   /**
    * Run errors belong to the workflow that produced them, so they are parked
-   * under its root graph id and follow that graph back into view rather than
-   * being discarded when another workflow is loaded.
+   * under its path and root graph id and follow that graph back into view
+   * rather than being discarded when another workflow is loaded.
    */
-  const runErrorsByGraphId = ref(new Map<UUID, RunErrorState>())
-  const activeGraphId = ref<UUID | null>(zeroUuid)
+  const runErrorsByWorkflow = ref(new Map<string, RunErrorState>())
+  const activeRunErrorKey = ref<string | null>(`:${zeroUuid}`)
   const isErrorOverlayOpen = ref(false)
 
   const activeRunErrors = computed<RunErrorState | undefined>(() =>
-    activeGraphId.value === null
+    activeRunErrorKey.value === null
       ? undefined
-      : runErrorsByGraphId.value.get(activeGraphId.value)
+      : runErrorsByWorkflow.value.get(activeRunErrorKey.value)
   )
 
   const lastNodeErrors = computed(
@@ -89,21 +89,21 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   )
 
   function updateActiveRunErrors(patch: Partial<RunErrorState>) {
-    const graphId = activeGraphId.value
-    if (graphId === null) return
+    const key = activeRunErrorKey.value
+    if (key === null) return
 
     const next: RunErrorState = {
       nodeErrors: null,
       executionError: null,
       promptError: null,
-      ...runErrorsByGraphId.value.get(graphId),
+      ...runErrorsByWorkflow.value.get(key),
       ...patch
     }
 
     if (Object.values(next).every((value) => value === null)) {
-      runErrorsByGraphId.value.delete(graphId)
+      runErrorsByWorkflow.value.delete(key)
     } else {
-      runErrorsByGraphId.value.set(graphId, next)
+      runErrorsByWorkflow.value.set(key, next)
     }
   }
 
@@ -112,9 +112,13 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
    * discarded graph shows nothing until the next one is loaded. The overlay is
    * dismissed on every move so it only ever reopens for the graph in front.
    */
-  function setActiveGraph(graphId: UUID | null) {
-    if (graphId === activeGraphId.value) return
-    activeGraphId.value = graphId
+  function setActiveGraph(graphId: UUID | null, workflowPath?: string) {
+    const key =
+      graphId === null
+        ? null
+        : `${workflowPath ?? workflowStore.activeWorkflow?.path ?? ''}:${graphId}`
+    if (key === activeRunErrorKey.value) return
+    activeRunErrorKey.value = key
     isErrorOverlayOpen.value = false
   }
 
@@ -182,8 +186,8 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
    *  loaded graph rather than the run, so only replacing or discarding the
    *  graph invalidates it. */
   function clearRunErrors() {
-    if (activeGraphId.value !== null) {
-      runErrorsByGraphId.value.delete(activeGraphId.value)
+    if (activeRunErrorKey.value !== null) {
+      runErrorsByWorkflow.value.delete(activeRunErrorKey.value)
     }
     isErrorOverlayOpen.value = false
   }
