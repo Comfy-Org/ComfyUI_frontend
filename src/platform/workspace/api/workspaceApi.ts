@@ -168,9 +168,10 @@ async function getAuthHeaderOrThrow() {
   return useAuthStore().getAuthHeaderOrThrow()
 }
 
-// Billing READS resolve per endpoint, never via a client-wide baseURL: off-cloud
-// they go to cloud ingest (CORS-allowed for loopback), while every other
-// endpoint keeps the relative form so it stays unreachable from local.
+// Billing endpoints with an off-cloud caller resolve per endpoint, never via a
+// client-wide baseURL: off-cloud they go to cloud ingest (CORS-allowed for
+// loopback), while every other endpoint keeps the relative form so it stays
+// unreachable from local.
 function resolveBillingUrl(path: string): string {
   if (isCloud) return api.apiURL(path)
   return `${getCloudIngestBaseUrl()}/api${path}`
@@ -506,7 +507,7 @@ export const workspaceApi = {
     const headers = await getAuthHeaderOrThrow()
     try {
       const response = await workspaceApiClient.post<SubscribeResponse>(
-        api.apiURL('/billing/subscribe'),
+        resolveBillingUrl('/billing/subscribe'),
         {
           plan_slug: planSlug,
           return_url: options.returnUrl,
@@ -649,7 +650,7 @@ export const workspaceApi = {
     const headers = await getAuthHeaderOrThrow()
     try {
       const response = await workspaceApiClient.get<BillingOpStatusResponse>(
-        api.apiURL(`/billing/ops/${opId}`),
+        resolveBillingUrl(`/billing/ops/${opId}`),
         { headers, timeout: 30_000 }
       )
       return response.data
