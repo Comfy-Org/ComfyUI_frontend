@@ -920,17 +920,38 @@ describe('setActiveGraph', () => {
 
   it('keeps each graph run errors separate and restores them on return', () => {
     const store = useExecutionErrorStore()
+    const executionError = {
+      prompt_id: 'graph-a-run',
+      timestamp: 0,
+      node_id: '1',
+      node_type: 'KSampler',
+      executed: [],
+      exception_message: 'fail',
+      exception_type: 'RuntimeError',
+      traceback: []
+    }
+    const promptError = {
+      type: 'execution',
+      message: 'prompt failed',
+      details: ''
+    }
 
     store.setActiveGraph(graphAId)
     store.recordNodeErrors(nodeErrors)
+    store.recordExecutionError(executionError)
+    store.recordPromptError(promptError)
 
     store.setActiveGraph(graphBId)
     expect(store.lastNodeErrors).toBeNull()
+    expect(store.lastExecutionError).toBeNull()
+    expect(store.lastPromptError).toBeNull()
     expect(store.totalErrorCount).toBe(0)
 
     store.setActiveGraph(graphAId)
     expect(store.lastNodeErrors).toEqual(nodeErrors)
-    expect(store.totalErrorCount).toBe(1)
+    expect(store.lastExecutionError).toEqual(executionError)
+    expect(store.lastPromptError).toEqual(promptError)
+    expect(store.totalErrorCount).toBe(3)
   })
 
   it('keeps workflows with the same graph id separate', () => {
