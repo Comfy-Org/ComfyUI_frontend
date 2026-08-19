@@ -15,6 +15,11 @@ import { fromPartial } from '@total-typescript/shoehorn'
 
 // Mock vue-i18n for useExternalLink
 const mockLocale = ref('en')
+const mockBillingState = vi.hoisted(() => ({
+  canAccessSubscriptionFeatures: true,
+  showsSubscribeUpsellUI: true,
+  showSubscriptionDialog: vi.fn()
+}))
 vi.mock('vue-i18n', async () => {
   const actual = await vi.importActual('vue-i18n')
   return {
@@ -207,10 +212,30 @@ vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: vi.fn(() => ({
-    canAccessSubscriptionFeatures: { value: true },
-    showSubscriptionDialog: vi.fn()
+    canAccessSubscriptionFeatures: {
+      get value() {
+        return mockBillingState.canAccessSubscriptionFeatures
+      }
+    },
+    showSubscriptionDialog: mockBillingState.showSubscriptionDialog
   }))
 }))
+
+vi.mock(
+  '@/platform/cloud/subscription/composables/useBillingPolicyCapabilities',
+  () => ({
+    useBillingPolicyCapabilities: () => ({
+      billingPolicyCapabilities: {
+        get value() {
+          return {
+            topUpAccess: 'allowed',
+            showsSubscribeUpsellUI: mockBillingState.showsSubscribeUpsellUI
+          }
+        }
+      }
+    })
+  })
+)
 
 describe('useCoreCommands', () => {
   const createMockNode = (id: number, comfyClass: string): LGraphNode => {
@@ -302,6 +327,8 @@ describe('useCoreCommands', () => {
 
   beforeEach(() => {
     mockDistributionState.isCloud = false
+    mockBillingState.canAccessSubscriptionFeatures = true
+    mockBillingState.showsSubscribeUpsellUI = true
     vi.mocked(app.refreshComboInNodes).mockResolvedValue(undefined)
     mockModelStoreRefresh.mockResolvedValue(undefined)
     mockMissingModelStoreRefresh.mockResolvedValue(undefined)
@@ -314,6 +341,18 @@ describe('useCoreCommands', () => {
 
     // Mock global confirm
     global.confirm = vi.fn().mockReturnValue(true)
+  })
+
+  it('does not open a subscribe dialog when the billing policy disables upsells', async () => {
+    mockBillingState.canAccessSubscriptionFeatures = false
+    mockBillingState.showsSubscribeUpsellUI = false
+    const queuePrompt = useCoreCommands().find(
+      (command) => command.id === 'Comfy.QueuePrompt'
+    )!
+
+    await queuePrompt.function()
+
+    expect(mockBillingState.showSubscriptionDialog).not.toHaveBeenCalled()
   })
 
   describe('ClearWorkflow command', () => {

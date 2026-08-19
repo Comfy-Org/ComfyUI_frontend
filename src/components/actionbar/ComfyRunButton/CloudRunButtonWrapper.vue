@@ -1,6 +1,10 @@
 <template>
   <ComfyQueueButton
-    v-if="!showsSubscribeToRunPrompt || paymentRecoveryLock"
+    v-if="
+      !showsSubscribeToRunPrompt ||
+      paymentRecoveryLock ||
+      !billingPolicyCapabilities.showsSubscribeUpsellUI
+    "
     :payment-recovery-lock="paymentRecoveryLock"
     @payment-recovery-click="showPaymentRecoveryDialog"
   />
@@ -15,6 +19,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import SubscribeToRunButton from '@/platform/cloud/subscription/components/SubscribeToRun.vue'
+import { useBillingPolicyCapabilities } from '@/platform/cloud/subscription/composables/useBillingPolicyCapabilities'
 import SubscriptionPausedDialog from '@/platform/workspace/components/SubscriptionPausedDialog.vue'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useDialogService } from '@/services/dialogService'
@@ -29,6 +34,7 @@ const {
   fetchBalance
 } = useBillingContext()
 const { flags } = useFeatureFlags()
+const { billingPolicyCapabilities } = useBillingPolicyCapabilities()
 const { permissions } = useWorkspaceUI()
 const dialogService = useDialogService()
 const dialogStore = useDialogStore()

@@ -32,7 +32,7 @@ export function deriveBillingPolicyState(input: {
     return {
       kind: input.canAccessSubscriptionFeatures
         ? `${distribution}AndTeam`
-        : `${distribution}TeamWithoutActiveSubscription`
+        : `${distribution}EnterpriseWithoutActiveSubscription`
     }
   }
 

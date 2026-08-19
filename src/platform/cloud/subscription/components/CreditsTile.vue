@@ -156,7 +156,7 @@
       </div>
     </template>
 
-    <template v-else-if="inactivePlan">
+    <template v-else-if="showsInactivePlanState">
       <div class="h-px w-full bg-interface-stroke" />
       <div class="flex flex-col gap-2">
         <div class="flex items-center justify-between gap-2 text-sm">
@@ -295,6 +295,11 @@ const creditPoolTotalCredits = computed<number | null>(() => {
     : monthlyCredits
 })
 
+const showsInactivePlanState = computed(
+  () =>
+    inactivePlan && billingPolicyCapabilities.value.topUpAccess !== 'allowed'
+)
+
 const usage = computed(() =>
   computeMonthlyUsage(
     monthlyBonusCreditsValue.value,
@@ -345,10 +350,14 @@ const creditPoolTotalCompact = computed(() => {
 })
 
 const displayTotal = computed(() =>
-  zeroState || inactivePlan ? formatCreditCount(0) : totalCredits.value
+  zeroState || showsInactivePlanState.value
+    ? formatCreditCount(0)
+    : totalCredits.value
 )
 const displayPrepaid = computed(() =>
-  zeroState || inactivePlan ? formatCreditCount(0) : prepaidCredits.value
+  zeroState || showsInactivePlanState.value
+    ? formatCreditCount(0)
+    : prepaidCredits.value
 )
 const usedBarWidth = computed(
   () => `${(usage.value.usedFraction * 100).toFixed(2)}%`
@@ -361,7 +370,10 @@ const monthlyUsageLabel = computed(() =>
 )
 
 const showBreakdown = computed(
-  () => canAccessSubscriptionFeatures.value && !zeroState && !inactivePlan
+  () =>
+    canAccessSubscriptionFeatures.value &&
+    !zeroState &&
+    !showsInactivePlanState.value
 )
 const showBar = computed(
   () =>
@@ -373,9 +385,9 @@ const showBar = computed(
 // including local/desktop) accounts have no workspace concept to gate on.
 const showActionButton = computed(
   () =>
-    canAccessSubscriptionFeatures.value &&
+    (billingPolicyCapabilities.value.topUpAccess === 'allowed' ||
+      billingPolicyCapabilities.value.showsSubscribeUpsellUI) &&
     !zeroState &&
-    !inactivePlan &&
     (type.value !== 'workspace' || permissions.value.canTopUp)
 )
 

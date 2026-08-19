@@ -388,7 +388,10 @@
       </div>
 
       <!-- View More Details - Outside main content -->
-      <div v-if="permissions.canManageSubscription" class="py-6">
+      <div
+        v-if="permissions.canManageSubscription && !isEnterprisePlan"
+        class="py-6"
+      >
         <Button
           variant="muted-textonly"
           class="text-sm text-muted"

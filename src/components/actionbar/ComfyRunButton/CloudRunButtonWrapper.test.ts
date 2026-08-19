@@ -1,13 +1,14 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 
 import CloudRunButtonWrapper from './CloudRunButtonWrapper.vue'
 
 const mockCanRunWorkflows = ref(true)
 const mockIsInitialized = ref(true)
 const mockBillingStatus = ref<string | null>('paid')
+const mockShowsSubscribeUpsellUI = ref(true)
 const state = vi.hoisted(() => ({
   v1PaymentRecovery: true,
   canManageSubscription: true,
@@ -45,6 +46,18 @@ vi.mock('@/composables/useFeatureFlags', () => ({
     }
   })
 }))
+
+vi.mock(
+  '@/platform/cloud/subscription/composables/useBillingPolicyCapabilities',
+  () => ({
+    useBillingPolicyCapabilities: () => ({
+      billingPolicyCapabilities: computed(() => ({
+        topUpAccess: 'allowed',
+        showsSubscribeUpsellUI: mockShowsSubscribeUpsellUI.value
+      }))
+    })
+  })
+)
 
 vi.mock('@/composables/useErrorHandling', () => ({
   useErrorHandling: () => ({ toastErrorHandler: state.toastErrorHandler })
@@ -98,6 +111,7 @@ describe('CloudRunButtonWrapper', () => {
     mockCanRunWorkflows.value = true
     mockIsInitialized.value = true
     mockBillingStatus.value = 'paid'
+    mockShowsSubscribeUpsellUI.value = true
     state.v1PaymentRecovery = true
     state.canManageSubscription = true
   })
@@ -129,6 +143,17 @@ describe('CloudRunButtonWrapper', () => {
 
     expect(screen.getByTestId('subscribe-to-run-button')).toBeInTheDocument()
     expect(screen.queryByTestId('queue-button')).not.toBeInTheDocument()
+  })
+
+  it('keeps the run button without a subscribe upsell when policy disables it', () => {
+    mockCanRunWorkflows.value = false
+    mockShowsSubscribeUpsellUI.value = false
+    renderWrapper()
+
+    expect(screen.getByTestId('queue-button')).toBeInTheDocument()
+    expect(
+      screen.queryByTestId('subscribe-to-run-button')
+    ).not.toBeInTheDocument()
   })
 
   it('refreshes stale billing state on focus and restores Run', async () => {

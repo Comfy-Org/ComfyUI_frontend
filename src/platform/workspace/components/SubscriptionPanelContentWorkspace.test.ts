@@ -398,6 +398,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
     renderComponent()
 
     expect(screen.getByText('Enterprise')).toBeInTheDocument()
+    expect(
+      screen.queryByText('View more details about plans & pricing')
+    ).not.toBeInTheDocument()
     expect(screen.queryByText('$665')).not.toBeInTheDocument()
     expect(screen.queryByText('USD / mo')).not.toBeInTheDocument()
     expect(

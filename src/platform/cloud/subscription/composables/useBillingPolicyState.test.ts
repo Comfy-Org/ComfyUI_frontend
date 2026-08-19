@@ -86,21 +86,18 @@ describe('deriveBillingPolicyState', () => {
   )
 
   it.for<[string, boolean]>([
-    ['LocalTeamWithoutActiveSubscription', false],
-    ['CloudTeamWithoutActiveSubscription', true]
-  ])(
-    'maps a lapsed Enterprise plan to the team no-subscription state %s (isCloud=%s)',
-    ([kind, isCloud]) => {
-      expect(
-        deriveBillingPolicyState({
-          isCloud,
-          canAccessSubscriptionFeatures: false,
-          isTeamPlan: false,
-          tier: runtimeTier('ENTERPRISE')
-        })
-      ).toEqual({ kind })
-    }
-  )
+    ['LocalEnterpriseWithoutActiveSubscription', false],
+    ['CloudEnterpriseWithoutActiveSubscription', true]
+  ])('maps a lapsed Enterprise plan to %s (isCloud=%s)', ([kind, isCloud]) => {
+    expect(
+      deriveBillingPolicyState({
+        isCloud,
+        canAccessSubscriptionFeatures: false,
+        isTeamPlan: false,
+        tier: runtimeTier('ENTERPRISE')
+      })
+    ).toEqual({ kind })
+  })
 
   it('classifies enterprise from the plan slug when the tier is absent', () => {
     expect(
@@ -111,7 +108,7 @@ describe('deriveBillingPolicyState', () => {
         tier: null,
         planSlug: 'enterprise_monthly'
       })
-    ).toEqual({ kind: 'CloudTeamWithoutActiveSubscription' })
+    ).toEqual({ kind: 'CloudEnterpriseWithoutActiveSubscription' })
   })
 
   it.for<[string, boolean]>([
