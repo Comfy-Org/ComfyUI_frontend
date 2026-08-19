@@ -233,7 +233,11 @@ const events: readonly ComfyEvent[] = [
       },
       newTab: true
     },
-    ctaLabel: { en: 'Register', 'zh-CN': '报名' }
+    ctaLabel: { en: 'Register', 'zh-CN': '报名' },
+    media: eventImage('08.26_la-meetup.avif', {
+      en: 'ComfyUI Official LA August Meet-Up',
+      'zh-CN': 'ComfyUI 官方洛杉矶八月见面会'
+    })
   },
   {
     id: 'mutek-3d-projection-mapping',
