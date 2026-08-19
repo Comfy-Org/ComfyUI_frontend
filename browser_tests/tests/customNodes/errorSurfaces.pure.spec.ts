@@ -69,6 +69,24 @@ test('a visible error toast fails after it clears before the assertion', async (
   expect(String(failure)).toContain('momentary')
 })
 
+test('an error class added after insertion fails after it clears', async ({
+  page
+}) => {
+  await page.setContent('<div id="t">late error</div>')
+  await page.evaluate(() => {
+    const toast = document.getElementById('t')!
+    toast.classList.add('p-toast-message-error')
+    setTimeout(() => toast.classList.remove('p-toast-message-error'), 800)
+  })
+  await expect(page.locator('#t')).not.toHaveClass('p-toast-message-error')
+  const failure = await expectNoVisibleErrors(page, 'class-added').then(
+    () => undefined,
+    (error: unknown) => error
+  )
+  expect(failure).toBeInstanceOf(Error)
+  expect(String(failure)).toContain('late error')
+})
+
 test('a hidden error fails when an ancestor mutation reveals it', async ({
   page
 }) => {

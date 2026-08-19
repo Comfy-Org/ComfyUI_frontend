@@ -18,14 +18,28 @@ const trackedPages = new WeakSet<Page>()
 const visibleErrorSurfaceSelectors = [
   {
     surface: 'errorOverlay',
-    selector: `[data-testid="${TestIds.dialogs.errorOverlay}"]`
+    selector: `[data-testid="${TestIds.dialogs.errorOverlay}"]`,
+    attribute: 'data-testid',
+    value: TestIds.dialogs.errorOverlay
   },
   {
     surface: 'errorDialog',
-    selector: `[data-testid="${TestIds.dialogs.errorDialog}"]`
+    selector: `[data-testid="${TestIds.dialogs.errorDialog}"]`,
+    attribute: 'data-testid',
+    value: TestIds.dialogs.errorDialog
   },
-  { surface: 'nodeRenderErrors', selector: '.node-error' },
-  { surface: 'errorToasts', selector: '.p-toast-message-error' }
+  {
+    surface: 'nodeRenderErrors',
+    selector: '.node-error',
+    attribute: 'class',
+    value: 'node-error'
+  },
+  {
+    surface: 'errorToasts',
+    selector: '.p-toast-message-error',
+    attribute: 'class',
+    value: 'p-toast-message-error'
+  }
 ]
 
 function installVisibleErrorRecorder(
@@ -104,11 +118,32 @@ function installVisibleErrorRecorder(
     for (const descendant of element.querySelectorAll(combinedSelector))
       recordMatchingSurfaces(descendant, true)
   }
+  const selectorAttributeMatches = (
+    element: Element,
+    attributeName: string | null
+  ) =>
+    selectors.some(
+      ({ attribute, value }) =>
+        attribute === attributeName &&
+        (attribute === 'class'
+          ? element.classList.contains(value)
+          : element.getAttribute(attribute) === value)
+    )
   for (const element of document.querySelectorAll(combinedSelector))
     recordMatchingSurfaces(element, true)
   new MutationObserver((mutations) => {
     const subtrees = new Set<Element>()
+    const changedCandidates = new Set<Element>()
     for (const mutation of mutations) {
+      if (mutation.type === 'attributes') {
+        if (
+          mutation.target instanceof Element &&
+          (candidates.has(mutation.target) ||
+            selectorAttributeMatches(mutation.target, mutation.attributeName))
+        )
+          changedCandidates.add(mutation.target)
+        continue
+      }
       for (const node of mutation.addedNodes) {
         if (!(node instanceof Element)) continue
         let ancestor = node.parentElement
@@ -120,7 +155,10 @@ function installVisibleErrorRecorder(
     for (const candidate of candidates)
       if (!candidate.isConnected) forgetCandidate(candidate)
     for (const element of subtrees) discover(element, true)
+    for (const element of changedCandidates) recordMatchingSurfaces(element)
   }).observe(document, {
+    attributes: true,
+    attributeFilter: ['class', 'data-testid'],
     childList: true,
     subtree: true
   })
