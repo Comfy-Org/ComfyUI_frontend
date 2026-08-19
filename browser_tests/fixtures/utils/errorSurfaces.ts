@@ -104,39 +104,18 @@ function installVisibleErrorRecorder(
     for (const descendant of element.querySelectorAll(combinedSelector))
       recordMatchingSurfaces(descendant, true)
   }
-  const sampleRelatedCandidates = (element: Element) => {
-    recordMatchingSurfaces(element)
-    for (const candidate of candidates) {
-      if (!candidate.isConnected) {
-        forgetCandidate(candidate)
-        continue
-      }
-      if (
-        candidate !== element &&
-        (candidate.contains(element) || element.contains(candidate))
-      )
-        recordMatchingSurfaces(candidate)
-    }
-  }
   for (const element of document.querySelectorAll(combinedSelector))
     recordMatchingSurfaces(element, true)
   new MutationObserver((mutations) => {
-    const exact = new Set<Element>()
     const subtrees = new Set<Element>()
     for (const mutation of mutations) {
-      if (mutation.type === 'childList') {
-        if (mutation.target instanceof Element) exact.add(mutation.target)
-        for (const node of mutation.addedNodes) {
-          if (node instanceof Element) subtrees.add(node)
-          else if (node.parentElement) exact.add(node.parentElement)
-        }
-      } else if (mutation.target instanceof Element) exact.add(mutation.target)
+      for (const node of mutation.addedNodes)
+        if (node instanceof Element) subtrees.add(node)
     }
-    for (const element of exact) sampleRelatedCandidates(element)
+    for (const candidate of candidates)
+      if (!candidate.isConnected) forgetCandidate(candidate)
     for (const element of subtrees) discover(element, true)
   }).observe(document, {
-    attributes: true,
-    attributeFilter: ['class', 'data-testid'],
     childList: true,
     subtree: true
   })

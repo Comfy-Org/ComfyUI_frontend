@@ -51,10 +51,13 @@ test('a closed page fails immediately with the real reason, not the sentinel', a
 test('a visible error toast fails after it clears before the assertion', async ({
   page
 }) => {
-  await page.setContent('<div id="t">momentary</div>')
+  await page.setContent('<main id="root"></main>')
   await page.evaluate(() => {
-    const toast = document.getElementById('t')!
-    toast.classList.add('p-toast-message-error')
+    const toast = document.createElement('div')
+    toast.id = 't'
+    toast.className = 'p-toast-message-error'
+    toast.textContent = 'momentary'
+    document.getElementById('root')!.append(toast)
     setTimeout(() => toast.remove(), 800)
   })
   await expect(page.locator('#t')).toHaveCount(0)
@@ -85,7 +88,7 @@ test('a hidden error fails when an ancestor mutation reveals it', async ({
   expect(String(failure)).toContain('revealed error')
 })
 
-test('unrelated mutations do not rescan the document or mutated subtrees', async ({
+test('unrelated class mutations do no error-selector work', async ({
   page
 }) => {
   await page.setContent('<main id="root"><span>content</span></main>')
@@ -110,7 +113,7 @@ test('unrelated mutations do not rescan the document or mutated subtrees', async
     } as typeof Element.prototype.matches
     const root = document.getElementById('root')!
     for (let index = 0; index < 1_000; index += 1) {
-      root.style.setProperty('--mutation-index', String(index))
+      root.classList.toggle('connectivity-churn', index % 2 === 0)
       await Promise.resolve()
     }
     await new Promise((resolve) => setTimeout(resolve, 0))
