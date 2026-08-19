@@ -127,7 +127,12 @@ function invokesNamedImport(text) {
   const code = withoutComments(text)
   const bindings = [...code.matchAll(/^\s*import\s*\{([^}]+)\}\s*from\b/gm)]
     .flatMap((match) => match[1].split(','))
-    .map((binding) => binding.trim().split(/\s+as\s+/).at(-1))
+    .map((binding) =>
+      binding
+        .trim()
+        .split(/\s+as\s+/)
+        .at(-1)
+    )
     .filter(Boolean)
   return bindings.some((binding) =>
     new RegExp(`^\\s*${binding}\\s*\\(`, 'm').test(code)
