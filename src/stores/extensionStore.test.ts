@@ -43,6 +43,18 @@ describe('extensionStore', () => {
       expect(store.extensions).toHaveLength(2)
     })
 
+    it('lists extensions in registration order', () => {
+      const store = useExtensionStore()
+      store.registerExtension({ name: 'z.ext' })
+      store.registerExtension({ name: '2' })
+      store.registerExtension({ name: 'a.ext' })
+      expect(store.extensions.map((ext) => ext.name)).toEqual([
+        'z.ext',
+        '2',
+        'a.ext'
+      ])
+    })
+
     it('warns when registering a disabled extension but still installs it', () => {
       const store = useExtensionStore()
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
