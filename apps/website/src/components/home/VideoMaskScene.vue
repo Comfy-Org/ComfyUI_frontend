@@ -12,7 +12,8 @@ import {
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
 
 const { src, active = true } = defineProps<{
-  /** Scene descriptor; its `assets/` siblings resolve alongside it. */
+  /** Scene descriptor; relative clip names resolve against its `assets/`
+   * sibling directory, absolute URLs pass through unchanged. */
   src: string
   /** Play only while the owning slide is showing. */
   active?: boolean
@@ -118,6 +119,10 @@ const onScreen = useElementVisibility(rootRef)
 const data = ref<SceneData>()
 const scenes = computed(() => data.value?.scenes ?? [])
 const assetsBase = `${src.slice(0, src.lastIndexOf('/'))}/assets/`
+
+function resolveVideoSrc(videoSrc: string) {
+  return videoSrc.startsWith('https://') ? videoSrc : assetsBase + videoSrc
+}
 
 /** Live DOM handles from the template `v-for`, index-aligned with
  * data.scenes; the rAF loop below writes their styles directly. */
@@ -321,7 +326,7 @@ onScopeDispose(() => {
           v-for="(video, vi) in scene.videos"
           :key="vi"
           :ref="(el) => setVideoEl(si, vi, el)"
-          :src="assetsBase + video.src"
+          :src="resolveVideoSrc(video.src)"
           muted
           playsinline
           preload="auto"
