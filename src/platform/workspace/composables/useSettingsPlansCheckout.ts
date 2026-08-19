@@ -72,53 +72,61 @@ export function useSettingsPlansCheckout() {
       return
     }
 
+    // The lock spans the whole checkout lifecycle — the subscribe call, then
+    // reconcile or op-polling to a terminal state (the poller's timeouts bound
+    // it) — so a second click cannot issue a duplicate checkout request.
     isSubscribing.value = true
-    let response: SubscribeResponse | void
     try {
-      response = await subscribe(planSlug, {
-        ...options,
-        returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,
-        cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`
-      })
-    } catch (error) {
-      showSubscribeError(error)
-      return
+      let response: SubscribeResponse | void
+      try {
+        response = await subscribe(planSlug, {
+          ...options,
+          returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,
+          cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`
+        })
+      } catch (error) {
+        showSubscribeError(error)
+        return
+      }
+
+      if (!response) {
+        showSubscribeError()
+        return
+      }
+
+      if (response.status === 'subscribed') {
+        // A refresh hiccup after a successful subscribe is not a failed subscribe.
+        await reconcileSubscriptionSuccess().catch((error: unknown) =>
+          console.error(
+            'Failed to refresh billing state after subscribe:',
+            error
+          )
+        )
+        return
+      }
+
+      if (
+        response.status === 'needs_payment_method' &&
+        response.payment_method_url
+      ) {
+        // The open runs after `await subscribe(...)`, so it's not a direct user
+        // gesture and can be popup-blocked; warn instead of failing silently.
+        const paymentWindow = window.open(response.payment_method_url, '_blank')
+        if (!paymentWindow) {
+          toast.add({
+            severity: 'warn',
+            summary: t('g.warning'),
+            detail: t('subscription.preview.paymentPopupBlocked')
+          })
+        }
+      }
+      await billingOperationStore.startOperation(
+        response.billing_op_id,
+        'subscription'
+      )
     } finally {
       isSubscribing.value = false
     }
-
-    if (!response) {
-      showSubscribeError()
-      return
-    }
-
-    if (response.status === 'subscribed') {
-      // A refresh hiccup after a successful subscribe is not a failed subscribe.
-      await reconcileSubscriptionSuccess().catch((error: unknown) =>
-        console.error('Failed to refresh billing state after subscribe:', error)
-      )
-      return
-    }
-
-    if (
-      response.status === 'needs_payment_method' &&
-      response.payment_method_url
-    ) {
-      // The open runs after `await subscribe(...)`, so it's not a direct user
-      // gesture and can be popup-blocked; warn instead of failing silently.
-      const paymentWindow = window.open(response.payment_method_url, '_blank')
-      if (!paymentWindow) {
-        toast.add({
-          severity: 'warn',
-          summary: t('g.warning'),
-          detail: t('subscription.preview.paymentPopupBlocked')
-        })
-      }
-    }
-    await billingOperationStore.startOperation(
-      response.billing_op_id,
-      'subscription'
-    )
   }
 
   function showSubscribeError(error?: unknown) {
