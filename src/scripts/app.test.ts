@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
@@ -49,6 +50,7 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { extractFilesFromDragEvent } from '@/utils/eventUtils'
+import { zeroUuid } from '@/utils/uuid'
 import type { importA1111 } from './pnginfo'
 
 type WorkflowService = ReturnType<typeof useWorkflowService>
@@ -86,6 +88,8 @@ const {
   mockNodeOutputStore: {
     refreshNodeOutputs: vi.fn(),
     resetAllOutputsAndPreviews: vi.fn(),
+    snapshotOutputs: vi.fn(),
+    restoreOutputs: vi.fn(),
     stashPreviewsForWorkflow: vi.fn(),
     restorePreviewsForWorkflow: vi.fn(),
     discardPreviewsForWorkflow: vi.fn()
@@ -94,7 +98,10 @@ const {
     activeWorkflow: null as ComfyWorkflow | null,
     createNewTemporary: vi.fn(),
     openWorkflow: vi.fn(),
-    getWorkflowByPath: vi.fn(() => null)
+    getWorkflowByPath: vi.fn<(path: string) => ComfyWorkflow | null>(
+      () => null
+    ),
+    isActive: vi.fn<(workflow: ComfyWorkflow) => boolean>(() => false)
   },
   mockRefreshMissingModelPipeline: vi.fn(),
   mockImportA1111: vi.fn<typeof importA1111>(),
@@ -176,7 +183,9 @@ vi.mock('@/stores/nodeOutputStore', () => ({
 vi.mock('@/stores/subgraphNavigationStore', () => ({
   useSubgraphNavigationStore: vi.fn(() => ({
     saveCurrentViewport: vi.fn(),
-    updateHash: vi.fn()
+    updateHash: vi.fn(),
+    exportState: vi.fn(() => []),
+    restoreState: vi.fn()
   }))
 }))
 
@@ -1127,6 +1136,190 @@ describe('ComfyApp', () => {
 
       expect(missingNodesStore.missingNodesError).toBeNull()
       expect(executionErrorStore.lastExecutionError).toBeNull()
+    })
+
+    it('records run errors after clearing the current workflow', () => {
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      const executionErrorStore = useExecutionErrorStore()
+
+      app.clean()
+      executionErrorStore.recordExecutionError({
+        prompt_id: 'after-clear',
+        timestamp: 0,
+        node_id: '1',
+        node_type: 'Test',
+        executed: [],
+        exception_message: 'fail',
+        exception_type: 'RuntimeError',
+        traceback: []
+      })
+
+      expect(executionErrorStore.lastExecutionError?.prompt_id).toBe(
+        'after-clear'
+      )
+    })
+  })
+
+  describe('workflow tab switching', () => {
+    const workflowAId = '11111111-1111-4111-8111-111111111111'
+    const workflowBId = '22222222-2222-4222-8222-222222222222'
+
+    const failedKSamplerErrors: Record<string, NodeError> = {
+      '1': {
+        errors: [
+          {
+            type: 'value_bigger_than_max',
+            message: 'Value 200 bigger than max of 100',
+            details: 'steps',
+            extra_info: { input_name: 'steps' }
+          }
+        ],
+        dependent_outputs: [],
+        class_type: 'KSampler'
+      }
+    }
+
+    function workflowGraphData(id: string): ComfyWorkflowJSON {
+      return { ...createWorkflowGraphData(), id }
+    }
+
+    function serialisedGraph(id: string): SerialisableGraph {
+      return {
+        id,
+        revision: 0,
+        version: 1,
+        state: {
+          lastGroupId: 0,
+          lastNodeId: 0,
+          lastLinkId: 0,
+          lastRerouteId: 0
+        },
+        nodes: [],
+        links: []
+      }
+    }
+
+    async function switchToWorkflow(
+      workflowService: WorkflowService,
+      graph: LGraph,
+      workflow: ComfyWorkflow,
+      workflowId: string
+    ) {
+      workflowService.beforeLoadNewGraph()
+      app.clean()
+      graph.configure(serialisedGraph(workflowId))
+      await workflowService.afterLoadNewGraph(
+        workflow,
+        workflowGraphData(workflowId)
+      )
+    }
+
+    it('restores the failed run state when returning to a workflow tab', async () => {
+      const workflowService = await useRealWorkflowService()
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+
+      const workflowA = markLoaded(
+        new ComfyWorkflow({ path: 'workflows/a.json', modified: 0, size: 0 })
+      )
+      const workflowB = markLoaded(
+        new ComfyWorkflow({ path: 'workflows/b.json', modified: 0, size: 0 })
+      )
+      await switchToWorkflow(workflowService, graph, workflowA, workflowAId)
+
+      const executionErrorStore = useExecutionErrorStore()
+      executionErrorStore.recordNodeErrors(failedKSamplerErrors)
+      expect(executionErrorStore.totalErrorCount).toBe(1)
+
+      await switchToWorkflow(workflowService, graph, workflowB, workflowBId)
+
+      expect(executionErrorStore.lastNodeErrors).toBeNull()
+      expect(executionErrorStore.totalErrorCount).toBe(0)
+
+      await switchToWorkflow(workflowService, graph, workflowA, workflowAId)
+
+      expect(executionErrorStore.lastNodeErrors).toEqual(failedKSamplerErrors)
+      expect(executionErrorStore.totalErrorCount).toBe(1)
+    })
+
+    it('gives each imported workflow its own restorable run errors', async () => {
+      const workflowService = await useRealWorkflowService()
+      const workflowStore = useWorkflowStore()
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      singletonApp.canvas = mockCanvas
+      Reflect.set(mockCanvas, 'ds', { scale: 1, offset: [0, 0] })
+      mockWorkspaceWorkflow.createNewTemporary.mockImplementation(
+        workflowStore.createNewTemporary
+      )
+      mockWorkspaceWorkflow.getWorkflowByPath.mockImplementation(
+        workflowStore.getWorkflowByPath
+      )
+      mockWorkspaceWorkflow.isActive.mockImplementation(workflowStore.isActive)
+      mockWorkspaceWorkflow.openWorkflow.mockImplementation(
+        async (workflow) => {
+          const loadedWorkflow = await workflowStore.openWorkflow(workflow)
+          mockWorkspaceWorkflow.activeWorkflow = loadedWorkflow
+          return loadedWorkflow
+        }
+      )
+
+      await app.loadApiJson({}, 'api-a')
+      const importedA = mockWorkspaceWorkflow.activeWorkflow
+      const importedAId = importedA?.activeState?.id
+      if (!importedA || !importedAId) {
+        throw new Error('Expected the first imported workflow to have an id')
+      }
+      expect(importedAId).not.toBe(zeroUuid)
+      expect(importedAId).toBe(graph.id)
+
+      const executionErrorStore = useExecutionErrorStore()
+      executionErrorStore.recordNodeErrors(failedKSamplerErrors)
+
+      await app.loadApiJson({}, 'api-b')
+      const importedBId = mockWorkspaceWorkflow.activeWorkflow?.activeState?.id
+      expect(importedBId).not.toBe(importedAId)
+      expect(executionErrorStore.lastNodeErrors).toBeNull()
+
+      await switchToWorkflow(workflowService, graph, importedA, importedAId)
+
+      expect(executionErrorStore.lastNodeErrors).toEqual(failedKSamplerErrors)
+    })
+
+    it('reuses the active workflow when importing the same file again', async () => {
+      await useRealWorkflowService()
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      const importedWorkflow = markLoaded(
+        new ComfyWorkflow({
+          path: 'workflows/repeat.json',
+          modified: 0,
+          size: -1
+        })
+      )
+      mockWorkspaceWorkflow.createNewTemporary.mockImplementation(
+        (_path, workflowData) => {
+          if (workflowData) {
+            importedWorkflow.changeTracker.activeState = workflowData
+          }
+          return importedWorkflow
+        }
+      )
+      mockWorkspaceWorkflow.getWorkflowByPath.mockImplementation(
+        () => mockWorkspaceWorkflow.activeWorkflow
+      )
+      mockWorkspaceWorkflow.isActive.mockImplementation(
+        (workflow) => mockWorkspaceWorkflow.activeWorkflow === workflow
+      )
+
+      await app.loadApiJson({}, 'repeat')
+      await app.loadApiJson({}, 'repeat')
+
+      expect(mockWorkspaceWorkflow.createNewTemporary).toHaveBeenCalledOnce()
     })
   })
 
