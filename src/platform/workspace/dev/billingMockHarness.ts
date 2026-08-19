@@ -227,6 +227,29 @@ function workspaces(): unknown {
   return { workspaces: list }
 }
 
+// The workspace IDs above are invented, so a real backend 404s the mint and the
+// app falls back to "Couldn't load your workspace". Answer the exchange locally.
+function workspaceToken(body?: string): unknown {
+  const list = (workspaces() as { workspaces: Array<Record<string, unknown>> })
+    .workspaces
+  let requestedId: string | undefined
+  try {
+    requestedId = body
+      ? (JSON.parse(body) as { workspace_id?: string }).workspace_id
+      : undefined
+  } catch {
+    requestedId = undefined
+  }
+  const target = list.find((w) => w.id === requestedId) ?? list[0]
+  return {
+    token: 'billingmock-workspace-token',
+    expires_at: new Date(Date.now() + 3_600_000).toISOString(),
+    workspace: { id: target.id, name: target.name, type: target.type },
+    role: target.role,
+    permissions: []
+  }
+}
+
 const subStatus = () =>
   ({
     active: 'active',
@@ -1971,6 +1994,7 @@ function renamedWorkspace(body?: string): unknown {
 }
 
 const ROUTES: Route[] = [
+  ['POST', /\/auth\/token/, workspaceToken],
   ['GET', /\/api\/workspaces(\?|$)/, workspaces],
   ['PATCH', /\/api\/workspaces\/[^/]+$/, renamedWorkspace],
   ['GET', /\/api\/billing\/status/, billingStatus],
