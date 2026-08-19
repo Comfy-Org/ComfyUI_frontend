@@ -3339,7 +3339,7 @@
   "workspaceSwitcher": {
     "noCredits": "No credits",
     "scopeCaption": "Workspaces only affect which credits you use.",
-    "scopeTooltip": "Runs that use partner nodes spend credits from this workspace. Everything you make — workflows and outputs — stays on this computer, not in any workspace.",
+    "scopeTooltip": "Runs that use partner nodes spend credits from this workspace. Your workflows and outputs stay on this computer, not in any workspace.",
     "switchWorkspace": "Switch workspace",
     "subscribe": "Subscribe",
     "personal": "Personal",
