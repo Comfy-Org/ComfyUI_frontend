@@ -23,16 +23,15 @@ import {
 } from '@e2e/fixtures/customNode/ComfyTarget'
 import {
   isForeignExecutionNoise,
-  staleRequiredLifecycleErrorRules,
   unallowlistedErrors,
-  unallowlistedGlobalExtensionErrorsForPacks,
-  unallowlistedLifecycleErrors
+  unallowlistedGlobalExtensionErrorsForPacks
 } from '@e2e/fixtures/customNode/consoleErrorLedger'
 import { failureSummary } from '@e2e/fixtures/customNode/failureReport'
 import {
   expectedNodeCountFor,
   loadAllManifestPackNames,
-  loadManifest
+  loadManifest,
+  packIdentity
 } from '@e2e/fixtures/customNode/manifest'
 import { describeRunOutcome } from '@e2e/fixtures/customNode/runResult'
 import {
@@ -42,6 +41,7 @@ import {
 import type { CustomNodeTier } from '@e2e/fixtures/customNode/manifest'
 import type { RawNodeDef } from '@e2e/fixtures/customNode/typePairing'
 import { normalizeNodeDefs } from '@e2e/fixtures/customNode/typePairing'
+import { eligibleNodeTypesForTier } from '@e2e/fixtures/customNode/tierNodeExclusions'
 import {
   matchesTopologyExpectation,
   OUTPUT_TOPOLOGY_EXPECTATIONS_LITEGRAPH,
@@ -81,11 +81,6 @@ const AUTO_RUN_BATCH = 10
 // distinguish "slow under load" from "genuinely hung" instead of misreading a
 // slow CPU run as a regression.
 const SINGLE_RERUN_TIMEOUT = 60_000
-// iTools' three deferred nodeCreated hooks measured ~9s to settle, so the
-// previous 10s left ~1s of margin and CI flipped red on a loaded runner with
-// the same code that passed the run before. The pinned counts stay exact - a
-// wrong count still fails, it just takes longer to say so.
-const ROUNDTRIP_INITIALIZATION_TIMEOUT_MS = 30_000
 const GRID_SPACING = { x: 420, y: 360 }
 
 type AllNodesTier = 'S1' | 'S2' | 'S3' | 'S9'
@@ -557,9 +552,9 @@ for (const entry of manifestEntries) {
       selectedTier: AllNodesTier,
       defs: Record<string, RawNodeDef>
     ) => {
-      const keys = packNodeKeysFromDefs(defs, entry.pack)
+      const registeredKeys = packNodeKeysFromDefs(defs, entry.pack)
       expect(
-        keys.length,
+        registeredKeys.length,
         `${entry.pack} not installed on this backend`
       ).toBeGreaterThan(0)
       async function runTier(
@@ -585,11 +580,18 @@ for (const entry of manifestEntries) {
         // remaining assertion stays green. At a fixed pin the count is
         // deterministic; a delta in either direction fails until the manifest
         // is deliberately recalibrated with the pin/core change that moved it.
-        console.log(`custom-nodes count: ${entry.pack} = ${keys.length}`)
+        console.log(
+          `custom-nodes count: ${entry.pack} = ${registeredKeys.length}`
+        )
         expect(
-          keys,
-          `${entry.pack} registers ${keys.length} nodes but ${expectedNodeCountFor(entry)} are expected on this backend - a pack node failed to register (or the pack changed); recalibrate only with the change that moved it`
+          registeredKeys,
+          `${entry.pack} registers ${registeredKeys.length} nodes but ${expectedNodeCountFor(entry)} are expected on this backend - a pack node failed to register (or the pack changed); recalibrate only with the change that moved it`
         ).toHaveLength(expectedNodeCountFor(entry))
+        const keys = eligibleNodeTypesForTier(
+          { identity: packIdentity(entry), pack: entry.pack },
+          selectedTier === 'S1' ? 'S1' : 'S2',
+          registeredKeys
+        )
         const declaredByKey = new Map(
           keys.map((key) => [key, declaredShape(defs[key])])
         )
@@ -788,20 +790,6 @@ for (const entry of manifestEntries) {
                 ))
               )
           }
-          await expect
-            .poll(
-              () =>
-                staleRequiredLifecycleErrorRules(
-                  entry.pack,
-                  'S2',
-                  vueNodesEnabled,
-                  consoleErrors.errors,
-                  1,
-                  keys
-                ),
-              { timeout: 5_000 }
-            )
-            .toEqual([])
           consoleErrors.stop()
           expect(
             failures,
@@ -814,16 +802,7 @@ for (const entry of manifestEntries) {
             ).toContain(ledgered)
           const unallowlisted = unallowlistedGlobalExtensionErrorsForPacks(
             installedManifestPacks,
-            unallowlistedErrors(
-              entry.pack,
-              unallowlistedLifecycleErrors(
-                entry.pack,
-                'S2',
-                vueNodesEnabled,
-                consoleErrors.errors,
-                keys
-              )
-            )
+            unallowlistedErrors(entry.pack, consoleErrors.errors)
           )
           const allowed = consoleErrors.errors.filter(
             (error) => !unallowlisted.includes(error)
@@ -844,6 +823,11 @@ for (const entry of manifestEntries) {
       })
 
       await runTier(['S3'], async () => {
+        const keys = eligibleNodeTypesForTier(
+          { identity: packIdentity(entry), pack: entry.pack },
+          'S3',
+          registeredKeys
+        )
         const allowedWidgets = packLedgerFor(WIDGET_SET_ALLOWLIST, entry.pack)
         for (const ledgered of Object.keys(allowedWidgets))
           expect(
@@ -1278,7 +1262,6 @@ for (const entry of manifestEntries) {
               ] as const
             )
             await comfyPage.nextFrame()
-            let completedRoundtripStages = 0
             const waitForInitialization = async () => {
               if (Object.keys(initializationSignals).length > 0)
                 await expect
@@ -1319,24 +1302,9 @@ for (const entry of manifestEntries) {
                         vueNodesEnabled
                       )
                     },
-                    { timeout: ROUNDTRIP_INITIALIZATION_TIMEOUT_MS }
+                    { timeout: 10_000 }
                   )
                   .toEqual([])
-              completedRoundtripStages += 1
-              await expect
-                .poll(
-                  () =>
-                    staleRequiredLifecycleErrorRules(
-                      entry.pack,
-                      'S3',
-                      vueNodesEnabled,
-                      consoleErrors.errors,
-                      completedRoundtripStages,
-                      chunk
-                    ),
-                  { timeout: 5_000 }
-                )
-                .toEqual([])
             }
             await waitForInitialization()
             await comfyPage.page.evaluate(() =>
@@ -1383,32 +1351,11 @@ for (const entry of manifestEntries) {
               observedKeyDrift.set(node, observed)
             }
           }
-          await expect
-            .poll(
-              () =>
-                staleRequiredLifecycleErrorRules(
-                  entry.pack,
-                  'S3',
-                  vueNodesEnabled,
-                  consoleErrors.errors,
-                  3
-                ),
-              { timeout: 5_000 }
-            )
-            .toEqual([])
           consoleErrors.stop()
           expect(
             unallowlistedGlobalExtensionErrorsForPacks(
               installedManifestPacks,
-              unallowlistedErrors(
-                entry.pack,
-                unallowlistedLifecycleErrors(
-                  entry.pack,
-                  'S3',
-                  vueNodesEnabled,
-                  consoleErrors.errors
-                )
-              )
+              unallowlistedErrors(entry.pack, consoleErrors.errors)
             ).filter((error) => !isForeignExecutionNoise(error)),
             `console errors during save/reload with VueNodes=${vueNodesEnabled}`
           ).toEqual([])
@@ -1451,6 +1398,7 @@ for (const entry of manifestEntries) {
       })
 
       await runTier(['S9'], async () => {
+        const keys = registeredKeys
         await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
 
         // A prior pack's slow CPU execution can still be draining when this tier

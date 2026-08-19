@@ -26,6 +26,10 @@ import {
   staleLocalExpectations
 } from '../browser_tests/fixtures/customNode/manifest'
 import { consoleErrorExclusionsForPacks } from '../browser_tests/fixtures/customNode/consoleErrorLedger'
+import {
+  CUSTOM_NODE_TIER_NODE_EXCLUSIONS,
+  tierNodeExclusionProblems
+} from '../browser_tests/fixtures/customNode/tierNodeExclusions'
 import { ROUNDTRIP_NODE_LOSS_EXPECTATIONS_LITEGRAPH } from '../browser_tests/fixtures/customNode/valueDrift'
 import {
   provesRefIsMissing,
@@ -265,6 +269,38 @@ for (const [pack, entry] of entries) {
   if (entry.class !== 'requires-gpu-runner' && !broken) stale.push(pack)
 }
 
+const tierNodeProblems = tierNodeExclusionProblems(
+  [...manifest.values()].map((entry) => ({
+    identity: packIdentity(entry),
+    pack: entry.pack
+  }))
+)
+const excludedTierSurfaces = CUSTOM_NODE_TIER_NODE_EXCLUSIONS.reduce(
+  (total, exclusion) => total + exclusion.tiers.length,
+  0
+)
+note('')
+note(
+  `## Tier-scoped node coverage exclusions - **${CUSTOM_NODE_TIER_NODE_EXCLUSIONS.length} node, ${excludedTierSurfaces} S-tier surfaces**`
+)
+note('')
+note(
+  'The pack still has an exact registration-count sentinel and its other nodes run. Only the named node is excluded from the named tiers.'
+)
+note('')
+for (const exclusion of CUSTOM_NODE_TIER_NODE_EXCLUSIONS) {
+  note(
+    `- **${exclusion.tiers.join('/')} - SKIP - NODE NOT EXERCISED - ${exclusion.pack} / ${exclusion.nodeType}**`
+  )
+  note(`  - pinned artifact: ${exclusion.identity}`)
+  note(`  - reason: ${exclusion.reason}`)
+  note(`  - to remove: ${exclusion.restore}`)
+  note(`  - ticket: ${exclusion.ticket}`)
+  process.stdout.write(
+    `::warning title=${exclusion.tiers.join('/')} node coverage skipped::${exclusion.pack} / ${exclusion.nodeType} - ${exclusion.reason}\n`
+  )
+}
+
 const nodeExclusions = [
   ...Object.entries(ROUNDTRIP_NODE_LOSS_EXPECTATIONS_LITEGRAPH).flatMap(
     ([pack, nodes]) =>
@@ -323,7 +359,7 @@ for (const exclusion of nodeExclusions) {
 }
 
 say('')
-const problems: string[] = [...inconclusive]
+const problems: string[] = [...inconclusive, ...tierNodeProblems]
 if (stale.length)
   problems.push(
     `${stale.join(', ')} now install cleanly - remove them from packQuarantine.json and let them back into the population`

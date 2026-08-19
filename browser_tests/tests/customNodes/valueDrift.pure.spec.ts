@@ -76,10 +76,6 @@ test('roundtrip initialization waits for pack-owned ready values', () => {
     iToolsPaintNode: {
       predicate: 'widget-count' as const,
       value: 33
-    },
-    iToolsCropImage: {
-      predicate: 'widget-count' as const,
-      valueByRenderer: { litegraph: 5, vue: 4 }
     }
   }
   expect(
@@ -88,16 +84,14 @@ test('roundtrip initialization waits for pack-owned ready values', () => {
       {
         LoadAudioUI: true,
         SAM3VideoSegmentation: undefined,
-        iToolsPaintNode: 32,
-        iToolsCropImage: 4
+        iToolsPaintNode: 32
       },
       false
     )
   ).toEqual([
     'LoadAudioUI (litegraph: expected false, observed true)',
     'SAM3VideoSegmentation (litegraph: expected defined, observed undefined)',
-    'iToolsPaintNode (litegraph: expected 33 widgets, observed 32)',
-    'iToolsCropImage (litegraph: expected 5 widgets, observed 4)'
+    'iToolsPaintNode (litegraph: expected 33 widgets, observed 32)'
   ])
   expect(
     pendingRoundtripInitializations(
@@ -105,36 +99,11 @@ test('roundtrip initialization waits for pack-owned ready values', () => {
       {
         LoadAudioUI: false,
         SAM3VideoSegmentation: {},
-        iToolsPaintNode: 33,
-        iToolsCropImage: 5
+        iToolsPaintNode: 33
       },
       false
     )
   ).toEqual([])
-  expect(
-    pendingRoundtripInitializations(
-      signals,
-      {
-        LoadAudioUI: false,
-        SAM3VideoSegmentation: {},
-        iToolsPaintNode: 33,
-        iToolsCropImage: 4
-      },
-      true
-    )
-  ).toEqual([])
-  expect(
-    pendingRoundtripInitializations(
-      signals,
-      {
-        LoadAudioUI: false,
-        SAM3VideoSegmentation: {},
-        iToolsPaintNode: 33,
-        iToolsCropImage: 5
-      },
-      true
-    )
-  ).toEqual(['iToolsCropImage (vue: expected 4 widgets, observed 5)'])
 })
 
 test.describe('staleValueDriftIndices', () => {

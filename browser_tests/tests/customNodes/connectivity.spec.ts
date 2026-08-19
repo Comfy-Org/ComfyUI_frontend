@@ -25,8 +25,10 @@ import { failureSummary } from '@e2e/fixtures/customNode/failureReport'
 import {
   loadAllManifestPackNames,
   loadFullManifest,
-  loadManifest
+  loadManifest,
+  packIdentity
 } from '@e2e/fixtures/customNode/manifest'
+import { eligibleNodeTypesForTier } from '@e2e/fixtures/customNode/tierNodeExclusions'
 import type {
   ConnectivityOutcome,
   PlannedPair,
@@ -201,9 +203,11 @@ test('connectivity: representative edges cover every pairable slot through model
   const defs = (await comfyPage.page.evaluate(() =>
     window.app!.api.getNodeDefs()
   )) as unknown as Record<string, RawNodeDef>
-  const nodes = normalizeNodeDefs(defs)
+  const registeredNodes = normalizeNodeDefs(defs)
   for (const [nodeType, isolation] of Object.entries(activeIsolatedNodeTypes)) {
-    const node = nodes.find((candidate) => candidate.type === nodeType)
+    const node = registeredNodes.find(
+      (candidate) => candidate.type === nodeType
+    )
     expect(
       node?.pack,
       `${nodeType} isolation is stale because the node is not registered`
@@ -214,7 +218,7 @@ test('connectivity: representative edges cover every pairable slot through model
   // Pack-specific expectations apply only where the pack is installed; on a
   // backend without it (e.g. a generic CI runner) the core sweep still runs
   // and the absence is reported, never fake-failed or fake-passed.
-  const nodeTypes = new Set(nodes.map((node) => node.type))
+  const nodeTypes = new Set(registeredNodes.map((node) => node.type))
   const installedEntries = connectivityEntries.filter((entry) =>
     isEntryInstalled(nodeTypes, entry)
   )
@@ -223,6 +227,25 @@ test('connectivity: representative edges cover every pairable slot through model
       console.log(`connectivity: ${entry.pack} not installed on this backend`)
   // Corpus = every node the installed packs register, from the live backend.
   const installedPacks = new Set(installedEntries.map((entry) => entry.pack))
+  const eligibleTypesByPack = new Map(
+    installedEntries.map((entry) => [
+      entry.pack,
+      new Set(
+        eligibleNodeTypesForTier(
+          { identity: packIdentity(entry), pack: entry.pack },
+          'S4',
+          registeredNodes
+            .filter((node) => node.pack === entry.pack)
+            .map((node) => node.type)
+        )
+      )
+    ])
+  )
+  const nodes = registeredNodes.filter(
+    (node) =>
+      !installedPacks.has(node.pack) ||
+      eligibleTypesByPack.get(node.pack)?.has(node.type)
+  )
   const packTypes = nodes
     .filter((node) => installedPacks.has(node.pack))
     .map((node) => node.type)
@@ -730,7 +753,17 @@ test('connectivity drags: one materialized in-pack link per applicable pack conn
     // Restrict the partner pool to the pack itself so the drag proves an
     // in-pack wiring; widget-backed primitive inputs render real slot dots
     // in Vue (verified empirically), so no slot type is excluded at plan time.
-    const packNodes = nodes.filter((node) => node.pack === entry.pack)
+    const registeredPackNodes = nodes.filter((node) => node.pack === entry.pack)
+    const eligiblePackNodeTypes = new Set(
+      eligibleNodeTypesForTier(
+        { identity: packIdentity(entry), pack: entry.pack },
+        'S5',
+        registeredPackNodes.map((node) => node.type)
+      )
+    )
+    const packNodes = registeredPackNodes.filter((node) =>
+      eligiblePackNodeTypes.has(node.type)
+    )
     const packPlan = planPairs(packNodes, entry.expectedNodes)
     if (packPlan.pairs.length === 0) {
       expect(

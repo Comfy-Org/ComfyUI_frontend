@@ -7,13 +7,11 @@ import {
   customExtensionStartupErrors,
   isForeignExecutionNoise,
   staleRequiredConnectivityErrorRulesForPacks,
-  staleRequiredLifecycleErrorRules,
   staleRequiredStartupErrorRulesForPacks,
   unallowlistedErrors,
   unallowlistedConnectivityErrorsForPacks,
   unallowlistedGlobalExtensionErrorsForPacks,
-  unallowlistedErrorsForPacks,
-  unallowlistedLifecycleErrors
+  unallowlistedErrorsForPacks
 } from '@e2e/fixtures/customNode/consoleErrorLedger'
 import { loadAllManifestPackNames } from '@e2e/fixtures/customNode/manifest'
 
@@ -163,83 +161,6 @@ test.describe('consoleErrorLedger', () => {
     ).toEqual([])
   })
 
-  test('requires the iTools crop failure in both renderer lifecycle tiers', () => {
-    const error =
-      "Error calling extension 'iTools.cropImage' method 'nodeCreated' {error: TypeError: Cannot read properties of undefined (reading 'draw')}"
-    expect(
-      unallowlistedGlobalExtensionErrorsForPacks(
-        ['comfyui-itools', 'Skimmed_CFG'],
-        [error]
-      )
-    ).toEqual([error])
-    expect(
-      unallowlistedGlobalExtensionErrorsForPacks(['Skimmed_CFG'], [error])
-    ).toEqual([error])
-    expect(
-      unallowlistedLifecycleErrors('comfyui-itools', 'S2', false, [error])
-    ).toEqual([])
-    expect(
-      unallowlistedLifecycleErrors('comfyui-itools', 'S2', true, [error])
-    ).toEqual([])
-    expect(
-      unallowlistedLifecycleErrors('Skimmed_CFG', 'S2', true, [error])
-    ).toEqual([error])
-    expect(
-      staleRequiredLifecycleErrorRules('comfyui-itools', 'S2', true, [error], 1)
-    ).toEqual([])
-    expect(
-      staleRequiredLifecycleErrorRules('comfyui-itools', 'S2', true, [], 1)
-    ).toEqual(['itools-crop-missing-preview: expected 1, observed 0'])
-    expect(
-      staleRequiredLifecycleErrorRules(
-        'comfyui-itools',
-        'S2',
-        true,
-        [error, error],
-        1
-      )
-    ).toEqual(['itools-crop-missing-preview: expected 1, observed 2'])
-    expect(
-      staleRequiredLifecycleErrorRules(
-        'comfyui-itools',
-        'S3',
-        true,
-        [error, error, error],
-        3
-      )
-    ).toEqual([])
-    expect(
-      staleRequiredLifecycleErrorRules('comfyui-itools', 'S3', true, [], 3)
-    ).toEqual(['itools-crop-missing-preview: expected 3, observed 0'])
-    expect(
-      staleRequiredLifecycleErrorRules('comfyui-itools', 'S3', true, [error], 3)
-    ).toEqual(['itools-crop-missing-preview: expected 3, observed 1'])
-    expect(
-      staleRequiredLifecycleErrorRules(
-        'comfyui-itools',
-        'S3',
-        true,
-        [error],
-        1,
-        ['iToolsCropImage']
-      )
-    ).toEqual([])
-    expect(
-      staleRequiredLifecycleErrorRules('comfyui-itools', 'S3', true, [], 1, [
-        'OtherNode'
-      ])
-    ).toEqual([])
-    expect(
-      staleRequiredLifecycleErrorRules(
-        'comfyui-itools',
-        'S3',
-        false,
-        [error, error, error],
-        3
-      )
-    ).toEqual([])
-  })
-
   test('cross-pack variant filters only via packs in scope', () => {
     // Both observed editor_base subclasses match the mechanism pattern.
     const kjErrors = [
@@ -315,30 +236,22 @@ test.describe('consoleErrorLedger', () => {
     ).toEqual(['ltx-sparse-track-null-image-size'])
   })
 
-  test('matches lower-cased VHS paths and requires the iTools hook failure', () => {
+  test('matches lower-cased VHS paths', () => {
     const vhs =
       "TypeError: Cannot read properties of undefined (reading 'target_id')\n" +
       'at get_links (http://localhost:8188/extensions/comfyui-videohelpersuite/js/VHS.core.js:2088:71)'
-    const itools =
-      "Error calling extension 'iTools.cropImage' method 'nodeCreated' {error: TypeError: Cannot read properties of undefined (reading 'draw')}"
     expect(
       unallowlistedConnectivityErrorsForPacks(
-        ['comfyui-videohelpersuite', 'comfyui-itools'],
-        [vhs, itools]
-      )
-    ).toEqual([])
-    expect(
-      staleRequiredConnectivityErrorRulesForPacks(
-        ['comfyui-videohelpersuite', 'comfyui-itools'],
-        [vhs, itools]
-      )
-    ).toEqual([])
-    expect(
-      staleRequiredConnectivityErrorRulesForPacks(
-        ['comfyui-videohelpersuite', 'comfyui-itools'],
+        ['comfyui-videohelpersuite'],
         [vhs]
       )
-    ).toEqual(['itools-vue-crop-missing-preview'])
+    ).toEqual([])
+    expect(
+      staleRequiredConnectivityErrorRulesForPacks(
+        ['comfyui-videohelpersuite'],
+        [vhs]
+      )
+    ).toEqual([])
   })
 
   test('allows only the exact pysssss None-default 404 without requiring it', () => {
