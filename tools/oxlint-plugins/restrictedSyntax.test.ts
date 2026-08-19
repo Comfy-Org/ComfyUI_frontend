@@ -90,6 +90,14 @@ const probes = [
     source: computedSource
   },
   {
+    file: path.join(computedProbeDir, 'reported.vue'),
+    source: `<script setup lang="ts">
+import { computed } from 'vue'
+computed(() => element.getBoundingClientRect())
+</script>
+`
+  },
+  {
     file: path.join(computedProbeDir, 'ignored.test.ts'),
     source:
       "import { computed } from 'vue'\ncomputed(() => element.getBoundingClientRect())\n"
@@ -179,6 +187,7 @@ describe('restricted syntax rules', () => {
       expect.stringContaining('Do not inspect the DOM'),
       expect.stringContaining('Do not inspect the DOM'),
       expect.stringContaining('Do not inspect the DOM'),
+      expect.stringContaining('Do not measure the DOM'),
       expect.stringContaining('Do not measure the DOM')
     ])
   })
@@ -189,7 +198,9 @@ describe('restricted syntax rules', () => {
       computedFindings.every(({ severity }) => severity === 'warning')
     ).toBe(true)
     expect(
-      computedFindings.every(({ filename }) => filename.endsWith('reported.ts'))
+      computedFindings.every(({ filename }) =>
+        /reported\.(?:ts|vue)$/.test(filename)
+      )
     ).toBe(true)
   })
 })
