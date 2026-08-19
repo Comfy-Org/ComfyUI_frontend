@@ -370,10 +370,8 @@ function perDollar(plan: PlanCard): number {
 const VIDEO_PER_CREDIT =
   TIER_PRICING.pro.videoEstimate / TIER_PRICING.pro.credits
 
-// Team stops mirror UnifiedPricingTable: backend-sourced when the shared plans
-// state has them, DES-197 fallback otherwise. The fetch lifecycle also lives on
-// this singleton — useBillingContext's isLoading/error track the legacy
-// activeContext refresh off-cloud, not the plans fetch.
+// The plans-fetch lifecycle lives on this singleton; useBillingContext's
+// isLoading/error track the legacy refresh instead.
 const {
   teamCreditStops,
   isLoading: isLoadingPlans,
@@ -383,8 +381,8 @@ const { fetchPlans, plans: catalogPlans, currentPlanSlug } = useBillingContext()
 const { isSubscribing, subscribeToPersonal, subscribeToTeam } =
   useSettingsPlansCheckout()
 
-// Fetched in setup rather than onMounted: isLoading flips synchronously, so the
-// first paint is the skeleton, never a flash of the empty state.
+// Setup-time so isLoading is set before the first paint (onMounted would
+// flash the empty state).
 void fetchPlans()
 
 const hasCatalog = computed(() => catalogPlans.value.length > 0)
@@ -397,9 +395,8 @@ const selectedCycle = computed<BillingCycle>(() =>
   billedYearly.value ? 'yearly' : 'monthly'
 )
 
-// Decision #8: the subscribed plan's card is a disabled "Current plan". A slug
-// outside the rendered catalog (founder, legacy plans) matches no card, so
-// every card stays actionable — cloud's existing behavior, inherited.
+// A slug outside the rendered catalog (founder, legacy plans) matches no
+// card, so every card stays actionable.
 function isCurrentPlan(tierKey: CheckoutTierKey): boolean {
   return (
     currentPlanSlug.value !== null &&

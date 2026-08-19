@@ -12,15 +12,8 @@ import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import { CommandHelper } from '@e2e/fixtures/helpers/CommandHelper'
 
 /**
- * Local plans section checkout and hardening — FE-1600.
- *
- * Off-cloud, the plan-card CTAs must subscribe through the workspace rail on
- * cloud ingest (never the legacy `/customers/cloud-subscription-checkout`),
- * open the Stripe page the backend returns, and flip the subscribed card to a
- * disabled "Current Plan" once op-polling reconciles. A failed plans fetch
- * must surface an error with a working retry, and the cards must fit a mobile
- * viewport. Billing mocks are cross-origin (app on localhost, ingest on its
- * own origin), so every fulfill carries CORS headers and answers OPTIONS
+ * Billing mocks are cross-origin (app on localhost, ingest on its own
+ * origin), so every fulfill carries CORS headers and answers OPTIONS
  * preflights.
  */
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
@@ -106,12 +99,12 @@ async function mockLegacyReads(page: Page) {
   )
 }
 
-// Boots the local app with a mocked Firebase session and opens the settings
-// dialog on Plan & Credits. window.open is stubbed so no test spawns a real
-// checkout popup; the opened URL lands in dataset.openedUrl.
+/**
+ * Boots the app with a mocked Firebase session and opens Plan & Credits.
+ * window.open is stubbed; the opened URL lands in dataset.openedUrl.
+ */
 async function bootToPlansSection(page: Page, request: APIRequestContext) {
-  // A multi-user local server shows a user-selection screen unless a real
-  // user id is seeded (same approach as the ComfyPage fixture).
+  // Multi-user servers show a user-select screen unless a user id is seeded.
   const usersResponse = await request.get(`${APP_URL}/api/users`)
   const usersBody = (await usersResponse.json()) as {
     users?: Record<string, string>
@@ -141,7 +134,7 @@ async function bootToPlansSection(page: Page, request: APIRequestContext) {
   return dialog
 }
 
-test.describe('Local plans section subscribe (FE-1600)', () => {
+test.describe('Local plans section subscribe', () => {
   test('subscribes via the workspace rail and flips the card to Current', async ({
     page,
     request
@@ -295,7 +288,7 @@ test.describe('Local plans section subscribe (FE-1600)', () => {
 
     await page.setViewportSize({ width: 390, height: 844 })
 
-    // 1px tolerance for subpixel rounding, mirroring keybindingPanel.spec.ts.
+    // 1px tolerance for subpixel rounding.
     await expect
       .poll(() => section.evaluate((el) => el.scrollWidth - el.clientWidth))
       .toBeLessThanOrEqual(1)

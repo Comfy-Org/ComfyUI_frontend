@@ -29,9 +29,8 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     fetchPlans: mockFetchPlans,
     plans: mockCatalogPlans,
     currentPlanSlug: mockCurrentPlanSlug,
-    // Deliberately inert: these track the legacy activeContext refresh, so the
-    // fetch-state tests fail if the section reads them instead of the
-    // useBillingPlans singleton.
+    // Inert on purpose: the fetch states must read the useBillingPlans
+    // singleton, not these.
     isLoading: { value: false },
     error: { value: null }
   })
