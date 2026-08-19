@@ -18,28 +18,14 @@ const trackedPages = new WeakSet<Page>()
 const visibleErrorSurfaceSelectors = [
   {
     surface: 'errorOverlay',
-    selector: `[data-testid="${TestIds.dialogs.errorOverlay}"]`,
-    attribute: 'data-testid',
-    value: TestIds.dialogs.errorOverlay
+    selector: `[data-testid="${TestIds.dialogs.errorOverlay}"]`
   },
   {
     surface: 'errorDialog',
-    selector: `[data-testid="${TestIds.dialogs.errorDialog}"]`,
-    attribute: 'data-testid',
-    value: TestIds.dialogs.errorDialog
+    selector: `[data-testid="${TestIds.dialogs.errorDialog}"]`
   },
-  {
-    surface: 'nodeRenderErrors',
-    selector: '.node-error',
-    attribute: 'class',
-    value: 'node-error'
-  },
-  {
-    surface: 'errorToasts',
-    selector: '.p-toast-message-error',
-    attribute: 'class',
-    value: 'p-toast-message-error'
-  }
+  { surface: 'nodeRenderErrors', selector: '.node-error' },
+  { surface: 'errorToasts', selector: '.p-toast-message-error' }
 ]
 
 function installVisibleErrorRecorder(
@@ -48,120 +34,36 @@ function installVisibleErrorRecorder(
   const target = window as VisibleErrorWindow
   if (target.__cnVisibleErrors !== undefined) return
   const seen = new Set<string>()
-  const candidates = new Set<Element>()
-  const visibilityObservers = new Map<Element, MutationObserver>()
   const errors: VisibleError[] = []
-  const combinedSelector = selectors.map(({ selector }) => selector).join(',')
   target.__cnVisibleErrors = errors
-  const record = (surface: string, element: Element) => {
-    if (
-      !(element instanceof HTMLElement) ||
-      !element.checkVisibility({
-        checkOpacity: true,
-        checkVisibilityCSS: true
-      })
-    )
-      return
-    const text = (element.innerText || element.textContent || '')
-      .replace(/\s+/g, ' ')
-      .trim()
-      .slice(0, 300)
-    const key = `${surface}\u0000${text}`
-    if (seen.has(key)) return
-    seen.add(key)
-    errors.push({ surface, text })
-  }
-  const forgetCandidate = (element: Element) => {
-    candidates.delete(element)
-    visibilityObservers.get(element)?.disconnect()
-    visibilityObservers.delete(element)
-  }
-  const bindVisibilityObserver = (candidate: Element) => {
-    visibilityObservers.get(candidate)?.disconnect()
-    const observer = new MutationObserver(() => {
-      if (!candidate.isConnected) {
-        forgetCandidate(candidate)
-        return
-      }
-      recordMatchingSurfaces(candidate)
-    })
-    for (
-      let ancestor = candidate.parentElement;
-      ancestor;
-      ancestor = ancestor.parentElement
-    )
-      observer.observe(ancestor, { attributes: true })
-    observer.observe(candidate, {
-      attributes: true,
-      characterData: true,
-      childList: true,
-      subtree: true
-    })
-    visibilityObservers.set(candidate, observer)
-  }
-  const recordMatchingSurfaces = (element: Element, bindVisibility = false) => {
-    if (!element.matches(combinedSelector)) {
-      if (candidates.has(element)) forgetCandidate(element)
-      return
-    }
-    candidates.add(element)
-    if (bindVisibility || !visibilityObservers.has(element))
-      bindVisibilityObserver(element)
+  const sample = () => {
     for (const { surface, selector } of selectors) {
-      if (!element.matches(selector)) continue
-      record(surface, element)
-    }
-  }
-  const discover = (element: Element, includeDescendants: boolean) => {
-    recordMatchingSurfaces(element, true)
-    if (!includeDescendants || element.childElementCount === 0) return
-    for (const descendant of element.querySelectorAll(combinedSelector))
-      recordMatchingSurfaces(descendant, true)
-  }
-  const selectorAttributeMatches = (
-    element: Element,
-    attributeName: string | null
-  ) =>
-    selectors.some(
-      ({ attribute, value }) =>
-        attribute === attributeName &&
-        (attribute === 'class'
-          ? element.classList.contains(value)
-          : element.getAttribute(attribute) === value)
-    )
-  for (const element of document.querySelectorAll(combinedSelector))
-    recordMatchingSurfaces(element, true)
-  new MutationObserver((mutations) => {
-    const subtrees = new Set<Element>()
-    const changedCandidates = new Set<Element>()
-    for (const mutation of mutations) {
-      if (mutation.type === 'attributes') {
+      for (const element of document.querySelectorAll(selector)) {
         if (
-          mutation.target instanceof Element &&
-          (candidates.has(mutation.target) ||
-            selectorAttributeMatches(mutation.target, mutation.attributeName))
+          !(element instanceof HTMLElement) ||
+          !element.checkVisibility({
+            checkOpacity: true,
+            checkVisibilityCSS: true
+          })
         )
-          changedCandidates.add(mutation.target)
-        continue
-      }
-      for (const node of mutation.addedNodes) {
-        if (!(node instanceof Element)) continue
-        let ancestor = node.parentElement
-        while (ancestor && !subtrees.has(ancestor))
-          ancestor = ancestor.parentElement
-        if (!ancestor) subtrees.add(node)
+          continue
+        const text = (element.innerText || element.textContent || '')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .slice(0, 300)
+        const key = `${surface}\u0000${text}`
+        if (seen.has(key)) continue
+        seen.add(key)
+        errors.push({ surface, text })
       }
     }
-    for (const candidate of candidates)
-      if (!candidate.isConnected) forgetCandidate(candidate)
-    for (const element of subtrees) discover(element, true)
-    for (const element of changedCandidates) recordMatchingSurfaces(element)
-  }).observe(document, {
-    attributes: true,
-    attributeFilter: ['class', 'data-testid'],
-    childList: true,
-    subtree: true
-  })
+  }
+  const sampleNextFrame = () => {
+    sample()
+    requestAnimationFrame(sampleNextFrame)
+  }
+  sample()
+  requestAnimationFrame(sampleNextFrame)
 }
 
 export async function trackVisibleErrors(page: Page): Promise<void> {
