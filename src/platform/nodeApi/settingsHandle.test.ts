@@ -76,6 +76,17 @@ describe('pack settings', () => {
     expect(settings.get('KJNodes.gridSize')).toBe(64)
   })
 
+  it('writes a core setting the pack did not declare', async () => {
+    await settings.set(
+      'Comfy.Canvas.BackgroundImage',
+      '/api/view?filename=background.png&type=output'
+    )
+
+    expect(settings.get('Comfy.Canvas.BackgroundImage')).toBe(
+      '/api/view?filename=background.png&type=output'
+    )
+  })
+
   it('refuses an id that is not namespaced', () => {
     // One flat space shared with core and every other pack, and the id is what
     // the value is stored under permanently — a collision is unrecoverable.
