@@ -36,6 +36,21 @@ function isAutoQueueOnChange(): boolean {
   )
 }
 
+function isEditableElement(element: Element | null): element is HTMLElement {
+  return (
+    element instanceof HTMLElement &&
+    (element.tagName === 'INPUT' ||
+      element.tagName === 'TEXTAREA' ||
+      element.isContentEditable)
+  )
+}
+
+function isUndoRedoShortcut(event: KeyboardEvent): boolean {
+  if ((!event.ctrlKey && !event.metaKey) || event.altKey) return false
+  const key = event.key.toUpperCase()
+  return key === 'Z' || (key === 'Y' && !event.shiftKey)
+}
+
 const nonExecutionGraphProperties = new Set([
   'id',
   'revision',
@@ -543,13 +558,11 @@ export class ChangeTracker {
         const activeEl = document.activeElement
         requestAnimationFrame(async () => {
           let bindInputEl: Element | null = null
+          const editingText = isEditableElement(activeEl)
+          if (editingText && isUndoRedoShortcut(e)) return
           // If we are auto queue in change mode then we do want to trigger on inputs
           if (!app.ui.autoQueueEnabled || app.ui.autoQueueMode === 'instant') {
-            if (
-              activeEl?.tagName === 'INPUT' ||
-              activeEl?.tagName === 'TEXTAREA' ||
-              (activeEl instanceof HTMLElement && activeEl.isContentEditable)
-            ) {
+            if (editingText) {
               // Ignore events on text editors, they have their native history
               return
             }
