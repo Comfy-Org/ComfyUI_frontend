@@ -1,6 +1,7 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import LocalRunButtonWrapper from './LocalRunButtonWrapper.vue'
@@ -146,5 +147,28 @@ describe('LocalRunButtonWrapper', () => {
       'Partner A',
       'Partner B'
     ])
+  })
+
+  it('restores the prior queue mode when the gate lifts', async () => {
+    __setQueueMode('instant')
+    gateState.gate.value = 'sign-in'
+    renderWrapper()
+    expect(__getQueueMode()).toBe('disabled')
+
+    gateState.gate.value = 'none'
+    await nextTick()
+    expect(__getQueueMode()).toBe('instant')
+  })
+
+  it('keeps a queue mode the user chose while gated', async () => {
+    gateState.gate.value = 'sign-in'
+    renderWrapper()
+    expect(__getQueueMode()).toBe('disabled')
+
+    __setQueueMode('instant')
+
+    gateState.gate.value = 'none'
+    await nextTick()
+    expect(__getQueueMode()).toBe('instant')
   })
 })

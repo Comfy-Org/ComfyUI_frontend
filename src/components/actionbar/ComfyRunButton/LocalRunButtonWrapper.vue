@@ -29,6 +29,7 @@ import ComfyQueueButton from '@/components/actionbar/ComfyRunButton/ComfyQueueBu
 import Button from '@/components/ui/button/Button.vue'
 import { usePartnerNodesRunGate } from '@/composables/billing/usePartnerNodesRunGate'
 import { useDialogService } from '@/services/dialogService'
+import type { AutoQueueMode } from '@/stores/queueSettingsStore'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 
 const { t } = useI18n()
@@ -38,11 +39,20 @@ const { mode: queueMode } = storeToRefs(useQueueSettingsStore())
 const root = useTemplateRef<HTMLElement>('root')
 
 // Auto-queue would keep submitting (and failing server-side) behind a gated
-// button; force it off.
+// button, so the gate forces it off and restores the user's mode when it lifts.
+let modeBeforeGate: AutoQueueMode | null = null
 watch(
   gate,
   (value) => {
-    if (value !== 'none') queueMode.value = 'disabled'
+    if (value !== 'none') {
+      if (modeBeforeGate === null && queueMode.value !== 'disabled') {
+        modeBeforeGate = queueMode.value
+        queueMode.value = 'disabled'
+      }
+    } else if (modeBeforeGate !== null) {
+      if (queueMode.value === 'disabled') queueMode.value = modeBeforeGate
+      modeBeforeGate = null
+    }
   },
   { immediate: true }
 )

@@ -25,13 +25,14 @@ export const usePartnerNodesInGraph = createSharedComposable(() => {
   const workflowStore = useWorkflowStore()
 
   const graphVersion = ref(0)
-  // graphChanged fires on every tracked mutation (drags, widget edits);
-  // throttle like the other consumers (e.g. useMinimapGraph).
+  // Leading + trailing: gate state reacts to a topology change immediately, yet
+  // a drag still re-scans at most twice per burst rather than every frame.
   const bumpGraphVersion = useThrottleFn(
     () => {
       graphVersion.value++
     },
     200,
+    true,
     true
   )
 
