@@ -26,6 +26,9 @@ export type ComfyEvent = {
   endDateTime?: string
   /** External target used when the event has no /events/[slug] page. */
   link?: { href: LocalizedText; newTab?: boolean }
+  /** Overrides the default "Livestream" label on the upcoming-list CTA (e.g.
+   * "Register" for in-person events that link out to a registration page). */
+  ctaLabel?: LocalizedText
   /** Past-gallery card art. */
   media?: EventMedia
   liveVideoId?: string
@@ -203,6 +206,34 @@ export function deriveFeaturedEvents(
 
 // zh-CN copy is a first pass and pending native review.
 const events: readonly ComfyEvent[] = [
+  {
+    id: 'la-august-meetup',
+    category: 'community',
+    title: {
+      en: 'ComfyUI Official LA August Meet-Up',
+      'zh-CN': 'ComfyUI 官方洛杉矶八月见面会'
+    },
+    description: {
+      en: 'Join us for the official ComfyUI meetup in LA, hosted at the new AI on the Lot office in Culver City.',
+      'zh-CN':
+        '欢迎参加在洛杉矶举办的官方 ComfyUI 见面会，地点位于卡尔弗城全新的 AI on the Lot 办公室。'
+    },
+    location: { en: 'Los Angeles, CA', 'zh-CN': '美国加州洛杉矶' },
+    dateLabel: {
+      en: 'August 26, 2026 · 6PM PT',
+      'zh-CN': '2026年8月26日 · 下午6点（PT）'
+    },
+    startDateTime: '2026-08-26T18:00:00-07:00',
+    endDateTime: '2026-08-26T21:00:00-07:00',
+    link: {
+      href: {
+        en: 'https://luma.com/nd0u29u8',
+        'zh-CN': 'https://luma.com/nd0u29u8'
+      },
+      newTab: true
+    },
+    ctaLabel: { en: 'Register', 'zh-CN': '报名' }
+  },
   {
     id: 'beyond-the-models',
     category: 'livestream',
