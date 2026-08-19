@@ -35,6 +35,7 @@ function installVisibleErrorRecorder(
   if (target.__cnVisibleErrors !== undefined) return
   const seen = new Set<string>()
   const errors: VisibleError[] = []
+  const combinedSelector = selectors.map(({ selector }) => selector).join(',')
   target.__cnVisibleErrors = errors
   const record = (surface: string, element: Element) => {
     if (
@@ -54,14 +55,16 @@ function installVisibleErrorRecorder(
     seen.add(key)
     errors.push({ surface, text })
   }
+  const recordMatchingSurfaces = (element: Element) => {
+    for (const { surface, selector } of selectors)
+      if (element.matches(selector)) record(surface, element)
+  }
   const sampleElement = (element: Element, includeDescendants: boolean) => {
-    for (const { surface, selector } of selectors) {
-      const closest = element.closest(selector)
-      if (closest) record(surface, closest)
-      if (!includeDescendants) continue
-      for (const descendant of element.querySelectorAll(selector))
-        record(surface, descendant)
-    }
+    const closest = element.closest(combinedSelector)
+    if (closest) recordMatchingSurfaces(closest)
+    if (!includeDescendants) return
+    for (const descendant of element.querySelectorAll(combinedSelector))
+      recordMatchingSurfaces(descendant)
   }
   for (const { surface, selector } of selectors)
     for (const element of document.querySelectorAll(selector))
