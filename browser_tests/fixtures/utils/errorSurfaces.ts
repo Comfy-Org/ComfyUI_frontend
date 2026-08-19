@@ -35,6 +35,7 @@ function installVisibleErrorRecorder(
   if (target.__cnVisibleErrors !== undefined) return
   const seen = new Set<string>()
   const candidates = new Set<Element>()
+  const visibilityObservers = new Map<Element, MutationObserver>()
   const errors: VisibleError[] = []
   const combinedSelector = selectors.map(({ selector }) => selector).join(',')
   target.__cnVisibleErrors = errors
@@ -56,25 +57,58 @@ function installVisibleErrorRecorder(
     seen.add(key)
     errors.push({ surface, text })
   }
-  const recordMatchingSurfaces = (element: Element) => {
-    if (!element.matches(combinedSelector)) return
+  const forgetCandidate = (element: Element) => {
+    candidates.delete(element)
+    visibilityObservers.get(element)?.disconnect()
+    visibilityObservers.delete(element)
+  }
+  const bindVisibilityObserver = (candidate: Element) => {
+    visibilityObservers.get(candidate)?.disconnect()
+    const observer = new MutationObserver(() => {
+      if (!candidate.isConnected) {
+        forgetCandidate(candidate)
+        return
+      }
+      recordMatchingSurfaces(candidate)
+    })
+    for (
+      let ancestor = candidate.parentElement;
+      ancestor;
+      ancestor = ancestor.parentElement
+    )
+      observer.observe(ancestor, { attributes: true })
+    observer.observe(candidate, {
+      attributes: true,
+      characterData: true,
+      childList: true,
+      subtree: true
+    })
+    visibilityObservers.set(candidate, observer)
+  }
+  const recordMatchingSurfaces = (element: Element, bindVisibility = false) => {
+    if (!element.matches(combinedSelector)) {
+      if (candidates.has(element)) forgetCandidate(element)
+      return
+    }
     candidates.add(element)
+    if (bindVisibility || !visibilityObservers.has(element))
+      bindVisibilityObserver(element)
     for (const { surface, selector } of selectors) {
       if (!element.matches(selector)) continue
       record(surface, element)
     }
   }
   const discover = (element: Element, includeDescendants: boolean) => {
-    recordMatchingSurfaces(element)
+    recordMatchingSurfaces(element, true)
     if (!includeDescendants || element.childElementCount === 0) return
     for (const descendant of element.querySelectorAll(combinedSelector))
-      recordMatchingSurfaces(descendant)
+      recordMatchingSurfaces(descendant, true)
   }
   const sampleRelatedCandidates = (element: Element) => {
     recordMatchingSurfaces(element)
     for (const candidate of candidates) {
       if (!candidate.isConnected) {
-        candidates.delete(candidate)
+        forgetCandidate(candidate)
         continue
       }
       if (
@@ -85,7 +119,7 @@ function installVisibleErrorRecorder(
     }
   }
   for (const element of document.querySelectorAll(combinedSelector))
-    recordMatchingSurfaces(element)
+    recordMatchingSurfaces(element, true)
   new MutationObserver((mutations) => {
     const exact = new Set<Element>()
     const subtrees = new Set<Element>()
@@ -96,23 +130,13 @@ function installVisibleErrorRecorder(
           if (node instanceof Element) subtrees.add(node)
           else if (node.parentElement) exact.add(node.parentElement)
         }
-      } else if (mutation.target instanceof Element) {
-        if (
-          mutation.type !== 'attributes' ||
-          candidates.size > 0 ||
-          mutation.attributeName === 'class' ||
-          mutation.attributeName === 'data-testid'
-        )
-          exact.add(mutation.target)
-      } else if (mutation.target.parentElement) {
-        exact.add(mutation.target.parentElement)
-      }
+      } else if (mutation.target instanceof Element) exact.add(mutation.target)
     }
     for (const element of exact) sampleRelatedCandidates(element)
     for (const element of subtrees) discover(element, true)
   }).observe(document, {
     attributes: true,
-    characterData: true,
+    attributeFilter: ['class', 'data-testid'],
     childList: true,
     subtree: true
   })
