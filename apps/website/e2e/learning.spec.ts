@@ -114,41 +114,34 @@ test.describe('Learning page @smoke', () => {
     }
   })
 
-  test('tutorials with a workflow link expose an external Try Workflow link', async ({
+  test('tutorials with a CTA link expose their labelled external link', async ({
     page
   }) => {
     const linkedTutorials = learningTutorials.filter(
       (tutorial) => tutorial.href
     )
-    const workflowLinks = page.getByRole('link', {
-      name: t('cta.tryWorkflow', 'en')
-    })
-    const hrefs = await workflowLinks.evaluateAll((links) =>
-      links.map((link) => link.getAttribute('href'))
-    )
+    expect(linkedTutorials.length).toBeGreaterThan(0)
     for (const tutorial of linkedTutorials) {
-      expect(hrefs).toContain(tutorial.href)
+      const link = page.locator(`a[href="${tutorial.href}"]`)
+      await expect(link).toContainText(
+        t(tutorial.ctaLabelKey ?? 'cta.tryWorkflow', 'en')
+      )
     }
   })
 
-  test('newTab tutorials open their workflow link in a new tab', async ({
+  test('newTab tutorials open their CTA link in a new tab', async ({
     page
   }) => {
-    const links = page.getByRole('link', { name: t('cta.tryWorkflow', 'en') })
-    const attrs = await links.evaluateAll((elements) =>
-      elements.map((element) => ({
-        href: element.getAttribute('href') ?? '',
-        target: element.getAttribute('target')
-      }))
+    const linkedTutorials = learningTutorials.filter(
+      (tutorial) => tutorial.href
     )
-    // The page-level CTA shares the label; only judge tutorial links.
-    const tutorialAttrs = attrs.filter(({ href }) =>
-      learningTutorials.some((item) => item.href === href)
-    )
-    expect(tutorialAttrs.length).toBeGreaterThan(0)
-    for (const { href, target } of tutorialAttrs) {
-      const tutorial = learningTutorials.find((item) => item.href === href)
-      expect(target, href).toBe(tutorial?.newTab ? '_blank' : null)
+    for (const tutorial of linkedTutorials) {
+      const link = page.locator(`a[href="${tutorial.href}"]`)
+      if (tutorial.newTab) {
+        await expect(link).toHaveAttribute('target', '_blank')
+      } else {
+        await expect(link).not.toHaveAttribute('target', '_blank')
+      }
     }
   })
 
@@ -331,11 +324,13 @@ test.describe('Learning tutorial page @smoke', () => {
     }
   })
 
-  test('links to the workflow from the title block', async ({ page }) => {
+  test('links to the CTA target from the title block', async ({ page }) => {
     await page.goto(tutorialPath(workflowTutorial))
 
-    const workflowLink = page.locator(`a[href="${workflowTutorial.href}"]`)
-    await expect(workflowLink).toHaveText(t('cta.tryWorkflow', 'en'))
+    const ctaLink = page.locator(`a[href="${workflowTutorial.href}"]`)
+    await expect(ctaLink).toHaveText(
+      t(workflowTutorial.ctaLabelKey ?? 'cta.tryWorkflow', 'en')
+    )
   })
 
   test('the chapter strip links to same-category siblings', async ({

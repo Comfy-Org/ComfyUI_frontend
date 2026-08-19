@@ -105,6 +105,10 @@ const translations = {
     en: 'Try Workflow',
     'zh-CN': '试用工作流'
   },
+  'cta.tryForFree': {
+    en: 'Try for Free',
+    'zh-CN': '免费试用'
+  },
   'cta.getStarted': {
     en: 'GET STARTED',
     'zh-CN': '快速开始'

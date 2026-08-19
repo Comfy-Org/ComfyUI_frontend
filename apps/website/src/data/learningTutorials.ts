@@ -5,6 +5,7 @@ import type {
   TranslationKey
 } from '../i18n/translations'
 
+import { externalLinks } from '../config/routes'
 import { t } from '../i18n/translations'
 
 export type LearningCategory = 'basics' | 'vfx' | 'animations' | 'ads'
@@ -32,6 +33,8 @@ export interface LearningTutorial {
   /** When set, the watch page embeds a YouTube iframe instead of <video>. */
   youtubeId?: string
   href?: string
+  /** CTA button label; defaults to "Try Workflow" when omitted. */
+  ctaLabelKey?: TranslationKey
   /** Open the workflow link in a new tab (e.g. cloud.comfy.org). */
   newTab?: boolean
   poster: string
@@ -150,6 +153,9 @@ export const learningTutorials: readonly LearningTutorial[] = [
         '面向初学者的 ComfyUI 节点图入门——了解节点、连线与运行队列如何协同，搭建你的第一条可用流程。'
     },
     poster: 'https://img.youtube.com/vi/TQhIYT1ZYGQ/maxresdefault.jpg',
+    href: externalLinks.cloudCta('learning_basics_node_graph'),
+    newTab: true,
+    ctaLabelKey: 'cta.tryForFree',
     tags: [fundamentalsTag, nodeGraphTag]
   },
   {
@@ -170,6 +176,9 @@ export const learningTutorials: readonly LearningTutorial[] = [
         '进阶了解 LoRA、风格迁移与 ControlNet——各自的作用，以及如何将它们接入 ComfyUI 工作流。'
     },
     poster: 'https://img.youtube.com/vi/-igiHGaxKek/maxresdefault.jpg',
+    href: externalLinks.cloudCta('learning_basics_loras'),
+    newTab: true,
+    ctaLabelKey: 'cta.tryForFree',
     tags: [fundamentalsTag, loraTag, controlNetTag, styleTransferTag]
   },
   {

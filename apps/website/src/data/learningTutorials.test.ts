@@ -63,6 +63,18 @@ describe('video source', () => {
   })
 })
 
+describe('basics CTA', () => {
+  it('sends basics tutorials to cloud signup with a Try for Free label', () => {
+    const basics = filterByCategory('basics')
+    expect(basics.length).toBeGreaterThan(0)
+    for (const tutorial of basics) {
+      expect(tutorial.href).toContain('cloud.comfy.org')
+      expect(tutorial.newTab).toBe(true)
+      expect(tutorial.ctaLabelKey).toBe('cta.tryForFree')
+    }
+  })
+})
+
 describe('recommendedFor', () => {
   it('only recommends tutorials from other categories', () => {
     const recommended = recommendedFor(firstVfx)

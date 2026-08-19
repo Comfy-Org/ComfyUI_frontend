@@ -103,7 +103,7 @@ const recommended = recommendedFor(tutorial).map((item) => ({
         :href="tutorial.href"
         :target="tutorial.newTab ? '_blank' : undefined"
       >
-        {{ t('cta.tryWorkflow', locale) }}
+        {{ t(tutorial.ctaLabelKey ?? 'cta.tryWorkflow', locale) }}
       </Button>
     </template>
 
