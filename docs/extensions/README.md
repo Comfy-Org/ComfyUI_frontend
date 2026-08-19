@@ -18,6 +18,7 @@ Extensions are the primary way to add functionality to ComfyUI. They can be cust
   - Best practices for extension development
 - **[Node ID Migration Notes](./node-id-migration.md)** - Compatibility guidance for branded node IDs and subgraph boundary sentinel values
 - **[Link Registration Migration Notes](./link-registration-migration.md)** - Guidance for handling defensive floating-link registration failures
+- **[Published Custom-Node API](../node-api/README.md)** - Supported API for node definitions, graph editing, widgets, execution, and host services
 
 ## Quick Links
 
@@ -33,6 +34,7 @@ Extensions are the primary way to add functionality to ComfyUI. They can be cust
 - [Developing extensions in dev mode](./development.md#development-workarounds)
 - [Understanding the shim system](./development.md#how-the-shim-works)
 - [Extension hooks and lifecycle](./core.md#extension-hooks)
+- [Build an extension with the published node API](../node-api/tutorial.md)
 
 ### External Resources
 
