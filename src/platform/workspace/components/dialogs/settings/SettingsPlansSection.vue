@@ -117,7 +117,7 @@
             :key="benefit"
             class="flex items-center gap-2"
           >
-            <i class="pi pi-check text-success-foreground text-xs" />
+            <i class="pi pi-check text-xs text-base-foreground" />
             <span class="text-sm text-base-foreground">{{ benefit }}</span>
           </div>
         </div>
@@ -205,7 +205,7 @@
             :key="perk"
             class="flex items-start gap-2"
           >
-            <i class="pi pi-check text-success-foreground mt-0.5 text-xs" />
+            <i class="pi pi-check mt-0.5 text-xs text-base-foreground" />
             <span class="text-sm text-base-foreground">{{ perk }}</span>
           </div>
           <span class="text-sm text-muted-foreground">
