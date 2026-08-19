@@ -107,6 +107,7 @@ describe('TabErrors.vue', () => {
               'Resolve errors before running the workflow',
             setupRequired: 'Setup required',
             finishSetupBeforeRun: 'Finish setup before running the workflow',
+            severityCountsStatus: '{errors} blocking, {setup} setup required',
             errorsFilter: '{count} Error | {count} Errors',
             errorsFilterActive:
               '{count} Error detected | {count} Errors detected',
@@ -740,10 +741,83 @@ describe('TabErrors.vue', () => {
     expect(
       screen.getByTestId('errors-summary-filter-missing')
     ).toHaveTextContent('2 Setup required')
+    expect(
+      within(hero).getByText('3 blocking, 2 setup required')
+    ).toBeInTheDocument()
 
     const contextStrip = screen.getByTestId('selection-context-strip')
     expect(contextStrip).toHaveTextContent('4 nodes affected')
     expect(contextStrip).not.toHaveTextContent(/errors/i)
+  })
+
+  it('releases the filter when a hidden issue is replaced by another', async () => {
+    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    vi.mocked(getNodeByExecutionId).mockReturnValue(
+      fromAny<NonNullable<ReturnType<typeof getNodeByExecutionId>>, unknown>({
+        title: 'Node'
+      })
+    )
+
+    let executionErrorStore!: ReturnType<typeof useExecutionErrorStore>
+    renderComponent((pinia) => {
+      executionErrorStore = useExecutionErrorStore(pinia)
+      executionErrorStore.recordNodeErrors({
+        '1': nodeError(
+          [
+            validationError(
+              'required_input_missing',
+              'model',
+              {},
+              'Required input is missing',
+              'Input: model'
+            )
+          ],
+          'KSampler'
+        )
+      })
+      useMissingMediaStore(pinia).setMissingMedia([
+        {
+          nodeId: '3',
+          nodeType: 'LoadImage',
+          widgetName: 'image',
+          mediaType: 'image',
+          name: 'a.png',
+          isMissing: true
+        }
+      ])
+    })
+
+    const user = userEvent.setup()
+    const missingChip = screen.getByTestId('errors-summary-filter-missing')
+    await user.click(missingChip)
+    expect(missingChip).toHaveAttribute('aria-pressed', 'true')
+    expect(
+      screen.queryByTestId('error-group-execution')
+    ).not.toBeInTheDocument()
+
+    // Hidden issue replaced in one update: the error total stays 1, but the
+    // new issue must not stay silently filtered out.
+    executionErrorStore.recordNodeErrors({
+      '5': nodeError(
+        [
+          validationError(
+            'required_input_missing',
+            'clip',
+            {},
+            'Required input is missing',
+            'Input: clip'
+          )
+        ],
+        'CLIPTextEncode'
+      )
+    })
+    await nextTick()
+
+    expect(screen.getByTestId('errors-summary-filter-missing')).toHaveAttribute(
+      'aria-pressed',
+      'false'
+    )
+    expect(screen.getByTestId('error-group-execution')).toBeInTheDocument()
   })
 
   it('shows only the chosen severity while its filter chip is pressed', async () => {
@@ -867,7 +941,6 @@ describe('TabErrors.vue', () => {
       }
     ])
     await nextTick()
-    await nextTick()
 
     expect(errorChip).toHaveAttribute('aria-pressed', 'false')
     expect(screen.getByTestId('error-group-missing-media')).toBeInTheDocument()
@@ -931,7 +1004,6 @@ describe('TabErrors.vue', () => {
     const missingMediaNode = new LGraphNode('LoadImage')
     missingMediaNode.id = toNodeId(3)
     canvasStore.selectedItems = [missingMediaNode]
-    await nextTick()
     await nextTick()
 
     expect(errorChip).toHaveAttribute('aria-pressed', 'false')
@@ -1017,7 +1089,6 @@ describe('TabErrors.vue', () => {
       )
     })
     await nextTick()
-    await nextTick()
 
     expect(errorChip).toHaveAttribute('aria-pressed', 'true')
     expect(
@@ -1067,7 +1138,6 @@ describe('TabErrors.vue', () => {
 
     executionErrorStore.recordNodeErrors(null)
     await nextTick()
-    await nextTick()
 
     // The filtered severity emptied, so the filter let go instead of lying
     // in wait; a later error must not silently hide the missing group again.
@@ -1086,7 +1156,6 @@ describe('TabErrors.vue', () => {
         'KSampler'
       )
     })
-    await nextTick()
     await nextTick()
 
     expect(screen.getByTestId('error-group-missing-media')).toBeInTheDocument()

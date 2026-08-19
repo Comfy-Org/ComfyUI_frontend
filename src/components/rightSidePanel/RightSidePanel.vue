@@ -211,7 +211,7 @@ const tabs = computed<RightSidePanelTabList>(() => {
           'ml-1',
           hasBlockingError.value
             ? 'icon-[lucide--octagon-alert] bg-node-stroke-error'
-            : 'icon-[lucide--triangle-alert] bg-warning-background'
+            : 'icon-[lucide--triangle-alert] bg-warning-foreground'
         ),
         label: () =>
           t(

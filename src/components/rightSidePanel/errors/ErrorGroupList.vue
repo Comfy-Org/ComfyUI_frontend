@@ -28,10 +28,17 @@
         v-else
         class="overflow-hidden rounded-lg border border-secondary-background"
       >
-        <!-- Errors summary hero. The status role sits on the summary row so
-             count changes announce without re-reading the chip labels. -->
+        <!-- Errors summary hero -->
         <div data-testid="errors-summary-hero" class="bg-base-foreground/5">
           <div role="status" class="flex items-center gap-2 p-2">
+            <span v-if="hasMixedSeverityTotals" class="sr-only">
+              {{
+                t('rightSidePanel.severityCountsStatus', {
+                  errors: errorCount,
+                  setup: missingCount
+                })
+              }}
+            </span>
             <span
               :class="
                 cn(
@@ -114,8 +121,7 @@
           </i18n-t>
         </div>
 
-        <!-- The engaged filter can empty the searched view; the message lives
-             inside the block so the chips stay mounted as the release control -->
+        <!-- In-block so the chips stay mounted as the release control -->
         <div
           v-if="visibleGroups.length === 0"
           role="status"
@@ -439,8 +445,8 @@ const SEVERITY_CHIP_CLASS = {
       'border-destructive-background-hover/50 text-destructive-background-hover'
   },
   missing: {
-    idle: 'border-interface-stroke text-warning-background',
-    active: 'border-warning-background/50 text-warning-background'
+    idle: 'border-interface-stroke text-warning-foreground',
+    active: 'border-warning-background/50 text-warning-foreground'
   }
 } as const
 
@@ -557,10 +563,8 @@ const severityTotals = computed(() => {
 })
 
 const severityFilter = ref<ErrorGroupSeverity | null>(null)
-// Gated on workflow-wide totals, not search-scoped counts: a search that
-// happens to empty one severity must not disable an engaged filter and show
-// exactly the severity the user excluded. The chip row shares this gate so
-// the release control stays mounted while the filter applies.
+// Workflow-wide, not search-scoped: a search emptying one severity must not
+// disable an engaged filter.
 const hasMixedSeverityTotals = computed(
   () => severityTotals.value.error > 0 && severityTotals.value.missing > 0
 )
@@ -587,16 +591,48 @@ const selectionEmphasisSignature = computed(() =>
     : ''
 )
 
-// Release-only, never auto-select. The filter lets go when the hidden
-// severity gains new entries, when the filtered severity empties (so it
-// cannot silently reassert later), or when the selection membership changes
-// to include the hidden severity. An unchanged selection does not release:
-// engaging the filter is the user's explicit call, even against it.
-watch(severityTotals, (next, prev) => {
+/** Issue identity per severity — membership, so same-count replacements are visible. */
+const severityIssueKeys = computed<Record<ErrorGroupSeverity, Set<string>>>(
+  () => ({
+    error: new Set(
+      allErrorGroups.value
+        .filter((group) => group.type === 'execution')
+        .flatMap((group) =>
+          group.cards.flatMap((card) =>
+            card.errors.map(
+              (error) => `${group.groupKey}|${card.id}|${error.message}`
+            )
+          )
+        )
+    ),
+    missing: new Set([
+      ...missingPackGroups.value.flatMap((pack) =>
+        pack.nodeTypes.map(
+          (nodeType) =>
+            `pack|${pack.packId}|${typeof nodeType === 'string' ? nodeType : nodeType.type}`
+        )
+      ),
+      ...swapNodeGroups.value.map((swap) => `swap|${swap.type}`),
+      ...missingModelGroups.value.flatMap((group) =>
+        group.models.map((model) => `model|${group.directory}|${model.name}`)
+      ),
+      ...missingMediaGroups.value.flatMap((group) =>
+        group.items.map((item) => `media|${group.mediaType}|${item.name}`)
+      )
+    ])
+  })
+)
+
+// Release-only, never auto-select; an unchanged selection does not release,
+// since engaging the filter against it is the user's explicit call.
+watch(severityIssueKeys, (next, prev) => {
   const active = severityFilter.value
   if (!active) return
   const hidden = HIDDEN_BY_FILTER[active]
-  if (next[hidden] > prev[hidden] || next[active] === 0) {
+  const hiddenGainedMember = [...next[hidden]].some(
+    (key) => !prev[hidden].has(key)
+  )
+  if (hiddenGainedMember || next[active].size === 0) {
     severityFilter.value = null
   }
 })
@@ -626,7 +662,7 @@ const hero = computed(() => {
   if (missingCount.value > 0) {
     return {
       count: missingCount.value,
-      countClass: 'text-warning-background',
+      countClass: 'text-warning-foreground',
       title: t('rightSidePanel.setupRequired'),
       description: t('rightSidePanel.finishSetupBeforeRun')
     }

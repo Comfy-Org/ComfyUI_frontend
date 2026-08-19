@@ -4228,6 +4228,7 @@
     "resolveErrorsBeforeRun": "Resolve errors before running the workflow",
     "setupRequired": "Setup required",
     "finishSetupBeforeRun": "Finish setup before running the workflow",
+    "severityCountsStatus": "{errors} blocking, {setup} setup required",
     "errorsFilter": "{count} Error | {count} Errors",
     "errorsFilterActive": "{count} Error detected | {count} Errors detected",
     "setupFilter": "{count} Setup required",
