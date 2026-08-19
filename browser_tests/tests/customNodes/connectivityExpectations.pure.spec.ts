@@ -18,6 +18,7 @@ test('connectivity pair expectations are attributable and disjoint', () => {
   const groups = [
     ...connectivityExpectations.connectRejected,
     ...connectivityExpectations.deterministicSlotContractMismatch,
+    ...connectivityExpectations.isolatedPageHung,
     ...connectivityExpectations.roundtripLost
   ]
   for (const group of groups) {

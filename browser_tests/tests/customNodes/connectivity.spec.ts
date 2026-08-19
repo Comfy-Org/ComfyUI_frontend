@@ -54,6 +54,8 @@ import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 const PLAN_SETUP_MS = 120_000
 const SWEEP_MS_PER_PAIR = 40
 const ISOLATED_MS_PER_PAIR = PLAN_SETUP_MS
+// The pinned defect starts after a 25ms timer; 5s is 200x that trigger delay.
+const ISOLATED_EXECUTION_TIMEOUT_MS = 5_000
 const PAIRS_PER_BATCH = 100
 // Same discipline for the drag pass, whose edge list grows with every
 // connectivity pack: one drag per edge per renderer. This test carried a flat
@@ -64,6 +66,7 @@ const {
   isolatedNodeTypes,
   connectRejected: allConnectRejectedGroups,
   deterministicSlotContractMismatch: allDeterministicSlotContractMismatchGroups,
+  isolatedPageHung: allIsolatedPageHungGroups,
   roundtripLost: allRoundtripLostGroups,
   zeroPairDragExpectedNodeCounts
 } = connectivityExpectations
@@ -77,6 +80,9 @@ const connectRejectedGroups = allConnectRejectedGroups.filter(
 )
 const deterministicSlotContractMismatchGroups =
   allDeterministicSlotContractMismatchGroups.filter(appliesToSelectedManifest)
+const isolatedPageHungGroups = allIsolatedPageHungGroups.filter(
+  appliesToSelectedManifest
+)
 const roundtripLostGroups = allRoundtripLostGroups.filter(
   appliesToSelectedManifest
 )
@@ -84,15 +90,18 @@ const connectRejected = pairExpectationKeys(connectRejectedGroups)
 const deterministicSlotContractMismatch = pairExpectationKeys(
   deterministicSlotContractMismatchGroups
 )
+const isolatedPageHung = pairExpectationKeys(isolatedPageHungGroups)
 const roundtripLost = pairExpectationKeys(roundtripLostGroups)
 const requiredPairKeys = [
   ...connectRejected,
   ...deterministicSlotContractMismatch,
+  ...isolatedPageHung,
   ...roundtripLost
 ]
 const requiredEndpointNodeTypes = pairExpectationNodeTypes([
   ...connectRejectedGroups,
   ...deterministicSlotContractMismatchGroups,
+  ...isolatedPageHungGroups,
   ...roundtripLostGroups
 ])
 
@@ -125,6 +134,35 @@ interface PairResult {
   detail?: string
 }
 
+async function evaluateIsolatedPair(
+  page: Page,
+  pair: PlannedPair
+): Promise<PairResult[]> {
+  const evaluation = evaluatePairs(page, [pair], { resetAfter: false }).then(
+    (results) => ({ kind: 'completed' as const, results }),
+    (error: unknown) => ({ kind: 'failed' as const, error })
+  )
+  let timeout: ReturnType<typeof setTimeout> | undefined
+  const deadline = new Promise<{ kind: 'timed-out' }>((resolve) => {
+    timeout = setTimeout(
+      () => resolve({ kind: 'timed-out' }),
+      ISOLATED_EXECUTION_TIMEOUT_MS
+    )
+  })
+  const result = await Promise.race([evaluation, deadline])
+  if (timeout !== undefined) clearTimeout(timeout)
+  if (result.kind === 'failed') throw result.error
+  if (result.kind === 'completed') return result.results
+  const key = `${pair.producer.nodeType}.${pair.producer.slotName} -> ${pair.consumer.nodeType}.${pair.consumer.slotName}`
+  return [
+    {
+      key,
+      outcome: 'ISOLATED_PAGE_HUNG',
+      detail: `page evaluation did not return within ${ISOLATED_EXECUTION_TIMEOUT_MS}ms`
+    }
+  ]
+}
+
 async function runPairsInIsolatedPages(
   page: Page,
   pairs: PlannedPair[]
@@ -153,10 +191,9 @@ async function runPairsInIsolatedPages(
       )
       const consoleErrors = collectConsoleErrors(probe)
       try {
-        const pairResults = await evaluatePairs(probe, [pair], {
-          resetAfter: false
-        })
+        const pairResults = await evaluateIsolatedPair(probe, pair)
         results.push(...pairResults)
+        if (pairResults[0]?.outcome === 'ISOLATED_PAGE_HUNG') continue
         await expectNoVisibleErrors(
           probe,
           `after isolated pair ${pair.producer.nodeType} -> ${pair.consumer.nodeType}`
@@ -310,6 +347,11 @@ test('connectivity: representative edges cover every pairable slot through model
         connectRejected.includes(result.key)
       ) &&
       !(
+        result.outcome ===
+          ('ISOLATED_PAGE_HUNG' satisfies ConnectivityOutcome) &&
+        isolatedPageHung.includes(result.key)
+      ) &&
+      !(
         result.outcome === ('ROUNDTRIP_LOST' satisfies ConnectivityOutcome) &&
         roundtripLost.includes(result.key)
       ) &&
@@ -398,6 +440,7 @@ test('connectivity: representative edges cover every pairable slot through model
   const staleEntries: string[] = []
   for (const [expectedPairs, expectedOutcome] of [
     [connectRejected, 'CONNECT_REJECTED'],
+    [isolatedPageHung, 'ISOLATED_PAGE_HUNG'],
     [roundtripLost, 'ROUNDTRIP_LOST'],
     [deterministicSlotContractMismatch, 'SLOT_CONTRACT_MISMATCH']
   ] as const)

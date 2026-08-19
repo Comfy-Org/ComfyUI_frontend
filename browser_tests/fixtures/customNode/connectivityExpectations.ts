@@ -2,6 +2,7 @@ export interface ConnectivityExpectations {
   isolatedNodeTypes: Record<string, { pack: string; reason: string }>
   connectRejected: PairExpectationGroup[]
   deterministicSlotContractMismatch: PairExpectationGroup[]
+  isolatedPageHung: PairExpectationGroup[]
   roundtripLost: PairExpectationGroup[]
   zeroPairDragExpectedNodeCounts: Partial<Record<string, number>>
 }
@@ -154,6 +155,20 @@ export const connectivityExpectations: ConnectivityExpectations = {
         'preserve LiteGraph serialization and remove this entry when the pair survives reload'
     }
   ],
+  isolatedPageHung: [
+    {
+      id: 'fill-code-node-dynamic-cleanup-hang',
+      pack: 'ComfyUI_Fill-Nodes',
+      pairs: [
+        'Basic data handling: Boolean And.BOOLEAN -> FL_CodeNode.use_file',
+        'Basic data handling: Boolean And.BOOLEAN -> FL_CodeNode.run_always'
+      ],
+      reason:
+        'FL_CodeNode enters a synchronous loop when its 25ms dynamic-slot cleanup repeatedly removes the fixed use_file or run_always index',
+      restore:
+        'advance or remove the current dynamic slot during cleanup and remove this entry when both pairs complete'
+    }
+  ],
   roundtripLost: [
     {
       id: 'vewd-dynamic-input-reload',
@@ -186,14 +201,11 @@ export const connectivityExpectations: ConnectivityExpectations = {
       pack: 'ComfyUI_Fill-Nodes',
       pairs: [
         'AddTextPrefix.texts -> FL_CodeNode.code_input',
-        'AddTextPrefix.texts -> FL_CodeNode.file',
-        'Basic data handling: Boolean And.BOOLEAN -> FL_CodeNode.use_file',
-        'Basic data handling: Boolean And.BOOLEAN -> FL_CodeNode.run_always'
+        'AddTextPrefix.texts -> FL_CodeNode.file'
       ],
       reason:
-        'FL_CodeNode treats its four declared dynamic inputs as removable during configure',
-      restore:
-        'preserve these four links during configure and remove this entry'
+        'FL_CodeNode treats code_input and file as removable during configure',
+      restore: 'preserve both links during configure and remove this entry'
     },
     {
       id: 'fill-timeline-dynamic-reload',

@@ -170,6 +170,7 @@ const entries = Object.entries(quarantine)
 const connectivityExclusions = [
   ...connectivityExpectations.connectRejected,
   ...connectivityExpectations.deterministicSlotContractMismatch,
+  ...connectivityExpectations.isolatedPageHung,
   ...connectivityExpectations.roundtripLost
 ].flatMap((group) => {
   const pack = manifestPackByFoldedName.get(group.pack.toLowerCase())
