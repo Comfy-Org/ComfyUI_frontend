@@ -142,14 +142,18 @@ test.describe('Events page — desktop @smoke', () => {
     const activeSlide = hero.locator('[aria-hidden="false"]')
 
     // The first featured slide is an image; advance to the first video slide.
-    // Each retry clicks once more, so this also waits out island hydration.
+    // Retry to wait out island hydration, but click only while the active slide
+    // is not yet the video slide so a slow render never overshoots past it.
     const videoSlideTitle = featuredEvents[firstVideoIndex].title.en
     await expect(async () => {
-      await nextSlide.click()
+      const activeLabel = await activeSlide
+        .locator('a')
+        .getAttribute('aria-label')
+      if (activeLabel !== videoSlideTitle) await nextSlide.click()
       await expect(activeSlide.locator('a')).toHaveAccessibleName(
         videoSlideTitle
       )
-    }).toPass()
+    }).toPass({ timeout: 15_000 })
     // Clicking left the button focused; drop that focus so only the hover holds
     // the slide, letting the pointer leaving be what releases the advance.
     await nextSlide.blur()
