@@ -194,6 +194,12 @@ describe('restricted syntax rules', () => {
 
   it('preserves computed-rule warning severity and test exclusions', () => {
     const computedFindings = findingsFor('no-dom-in-computed')
+    expect(computedFindings).toContainEqual(
+      expect.objectContaining({
+        filename: expect.stringMatching(/reported\.vue$/),
+        message: expect.stringContaining('Do not measure the DOM')
+      })
+    )
     expect(
       computedFindings.every(({ severity }) => severity === 'warning')
     ).toBe(true)
