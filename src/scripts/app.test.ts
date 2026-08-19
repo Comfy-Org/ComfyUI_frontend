@@ -1622,6 +1622,28 @@ describe('ComfyApp', () => {
       expect(missingNodesStore.missingNodesError).toBeNull()
       expect(executionErrorStore.lastExecutionError).toBeNull()
     })
+
+    it('records run errors after clearing the current workflow', () => {
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      const executionErrorStore = useExecutionErrorStore()
+
+      app.clean()
+      executionErrorStore.recordExecutionError({
+        prompt_id: 'after-clear',
+        timestamp: 0,
+        node_id: '1',
+        node_type: 'Test',
+        executed: [],
+        exception_message: 'fail',
+        exception_type: 'RuntimeError',
+        traceback: []
+      })
+
+      expect(executionErrorStore.lastExecutionError?.prompt_id).toBe(
+        'after-clear'
+      )
+    })
   })
 
   describe('workflow tab switching', () => {
