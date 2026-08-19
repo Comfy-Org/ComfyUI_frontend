@@ -17,6 +17,7 @@ import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import BrandButton from '../common/BrandButton.vue'
 import GalleryItemAttribution from './GalleryItemAttribution.vue'
+import GalleryMedia from './GalleryMedia.vue'
 
 const {
   items,
@@ -172,24 +173,9 @@ onUnmounted(() => {
         <div
           class="border-primary-comfy-yellow rounded-5xl flex max-h-full min-h-0 flex-1 items-center justify-center overflow-hidden border-2 bg-primary-comfy-ink p-4"
         >
-          <video
-            v-if="activeItem.video"
-            :key="activeItem.video"
-            :src="activeItem.video"
-            :poster="activeItem.thumbnail"
-            :aria-label="activeItem.title"
-            autoplay
-            loop
-            muted
-            playsinline
-            :class="transitioning ? 'opacity-0' : 'opacity-100'"
-            class="mx-auto max-h-full max-w-full rounded-4xl object-contain transition-opacity duration-200"
-          />
-          <img
-            v-else
-            :key="activeItem.thumbnail"
-            :src="activeItem.thumbnail"
-            :alt="activeItem.title"
+          <GalleryMedia
+            :key="activeItem.video ?? activeItem.thumbnail"
+            :item="activeItem"
             :class="transitioning ? 'opacity-0' : 'opacity-100'"
             class="mx-auto max-h-full max-w-full rounded-4xl object-contain transition-opacity duration-200"
           />
@@ -207,24 +193,9 @@ onUnmounted(() => {
         <div
           class="border-primary-comfy-yellow flex w-full flex-1 items-center overflow-hidden rounded-4xl border-2 bg-primary-comfy-ink p-3"
         >
-          <video
-            v-if="activeItem.video"
-            :key="activeItem.video"
-            :src="activeItem.video"
-            :poster="activeItem.thumbnail"
-            :aria-label="activeItem.title"
-            autoplay
-            loop
-            muted
-            playsinline
-            :class="transitioning ? 'opacity-0' : 'opacity-100'"
-            class="mx-auto max-h-full max-w-full rounded-3xl object-contain transition-opacity duration-200"
-          />
-          <img
-            v-else
-            :key="activeItem.thumbnail"
-            :src="activeItem.thumbnail"
-            :alt="activeItem.title"
+          <GalleryMedia
+            :key="activeItem.video ?? activeItem.thumbnail"
+            :item="activeItem"
             :class="transitioning ? 'opacity-0' : 'opacity-100'"
             class="mx-auto max-h-full max-w-full rounded-3xl object-contain transition-opacity duration-200"
           />

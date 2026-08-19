@@ -2,6 +2,7 @@
 import type { GalleryItem } from '../../data/gallery'
 import type { Locale } from '../../i18n/translations'
 import GalleryItemAttribution from './GalleryItemAttribution.vue'
+import GalleryMedia from './GalleryMedia.vue'
 
 const {
   item,
@@ -28,22 +29,8 @@ defineEmits<{ click: [] }>()
       class="rounded-4.5xl relative overflow-hidden"
       :style="{ aspectRatio: aspect }"
     >
-      <video
-        v-if="item.video"
-        :src="item.video"
-        :poster="item.thumbnail"
-        :aria-label="item.title"
-        autoplay
-        loop
-        muted
-        playsinline
-        class="size-full transition-transform duration-300 group-hover:scale-105"
-        :style="{ objectPosition, objectFit }"
-      />
-      <img
-        v-else
-        :src="item.thumbnail"
-        :alt="item.title"
+      <GalleryMedia
+        :item
         class="size-full transition-transform duration-300 group-hover:scale-105"
         :style="{ objectPosition, objectFit }"
       />
