@@ -8,6 +8,8 @@ import type {
 import type { WorkspaceTokenResponse } from '@/platform/workspace/stores/workspaceAuthStore'
 import type { operations } from '@/types/comfyRegistryTypes'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
+import { workspace } from '@e2e/fixtures/utils/workspaceMocks'
 
 type CustomerBalanceResponse = NonNullable<
   operations['GetCustomerBalance']['responses']['200']['content']['application/json']
@@ -164,4 +166,36 @@ test.describe('Current user popover credits row', { tag: '@cloud' }, () => {
     const resubscribeRight = resubscribeBox!.x + resubscribeBox!.width
     expect(resubscribeRight).toBeLessThanOrEqual(popoverRight)
   })
+
+  test(
+    'renders Manage plan as a plain full-width menu row',
+    { tag: '@screenshot' },
+    async ({ page }) => {
+      test.setTimeout(60_000)
+      await setupCloudApp(page, {
+        workspace: workspace('personal', 'owner'),
+        features: { subscription_required: false }
+      })
+      await page.goto(APP_URL)
+      await page.waitForFunction(() => !!window.app?.extensionManager, null, {
+        timeout: 45_000
+      })
+      await page.getByRole('button', { name: 'Close dialog' }).click()
+      await expect(page.getByTestId('dialog-overlay')).toBeHidden()
+
+      await page.getByRole('button', { name: 'Current user' }).click()
+
+      const managePlan = page.getByRole('button', { name: 'Manage plan' })
+      await expect(managePlan).toBeVisible()
+      await expect(managePlan).toHaveScreenshot('manage-plan-menu-item.png')
+
+      await managePlan.focus()
+      await page.keyboard.press('Shift+Tab')
+      await page.keyboard.press('Tab')
+      await expect(managePlan).toBeFocused()
+      await expect(managePlan).toHaveScreenshot(
+        'manage-plan-menu-item-focused.png'
+      )
+    }
+  )
 })
