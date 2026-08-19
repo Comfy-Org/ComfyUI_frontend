@@ -54,6 +54,7 @@ import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 const PLAN_SETUP_MS = 120_000
 const SWEEP_MS_PER_PAIR = 40
 const ISOLATED_MS_PER_PAIR = PLAN_SETUP_MS
+const PAIRS_PER_BATCH = 100
 // Same discipline for the drag pass, whose edge list grows with every
 // connectivity pack: one drag per edge per renderer. This test carried a flat
 // 120s cap over today's 6 packs (16 drags) until the since-removed cloud
@@ -445,7 +446,16 @@ async function runPairsInPage(
   page: Page,
   pairs: PlannedPair[]
 ): Promise<PairResult[]> {
-  return await evaluatePairs(page, pairs)
+  const results: PairResult[] = []
+  for (let start = 0; start < pairs.length; start += PAIRS_PER_BATCH) {
+    const batch = pairs.slice(start, start + PAIRS_PER_BATCH)
+    const firstKey = `${batch[0].producer.nodeType}.${batch[0].producer.slotName}`
+    console.log(
+      `connectivity shared batch: ${start + 1}-${start + batch.length}/${pairs.length} starting at ${firstKey}`
+    )
+    results.push(...(await evaluatePairs(page, batch)))
+  }
+  return results
 }
 
 function evaluatePairs(
