@@ -23,20 +23,6 @@ const distributionMocks = vi.hoisted(() => ({ isCloud: true }))
 
 vi.mock('@/platform/distribution/types', () => distributionMocks)
 
-const balanceMocks = vi.hoisted(() => ({
-  balanceByWorkspaceId: {} as Record<
-    string,
-    | { status: 'loading' }
-    | { status: 'ready'; cents: number }
-    | { status: 'error' }
-  >,
-  loadBalances: vi.fn()
-}))
-
-vi.mock('@/platform/workspace/composables/useWorkspaceBalances', () => ({
-  useWorkspaceBalances: () => balanceMocks
-}))
-
 const LONG_WORKSPACE_NAME =
   'Quantum Renaissance Collective for Hyperdimensional Latent Diffusion Research and Experimental Workflow Engineering'
 
@@ -49,7 +35,6 @@ const i18n = createI18n({
         personal: 'Personal',
         roleOwner: 'Owner',
         roleMember: 'Member',
-        noCredits: 'No credits',
         scopeCaption: 'Workspaces only affect which credits you use.',
         scopeTooltip:
           'Runs that use partner nodes spend credits from this workspace. Unlike on Cloud, every workspace saves to your usual output folder.',
@@ -121,30 +106,6 @@ function renderComponent(
 }
 
 describe('WorkspaceSwitcherPopover', () => {
-  it('shows per-workspace balances on non-active rows and asks for them on mount', () => {
-    balanceMocks.balanceByWorkspaceId['ws-team-long'] = {
-      status: 'ready',
-      cents: 1000
-    }
-    renderComponent()
-
-    // 1000 cents at the 2.11 credits-per-cent rate
-    expect(screen.getByText('2,110')).toBeInTheDocument()
-    expect(balanceMocks.loadBalances).toHaveBeenCalledWith(
-      expect.arrayContaining(['ws-team-long'])
-    )
-  })
-
-  it('labels an empty workspace "No credits" instead of a number', () => {
-    balanceMocks.balanceByWorkspaceId['ws-team-long'] = {
-      status: 'ready',
-      cents: 0
-    }
-    renderComponent()
-
-    expect(screen.getByText('No credits')).toBeInTheDocument()
-  })
-
   it('shows the credits-scope caption off cloud', () => {
     distributionMocks.isCloud = false
     renderComponent()
