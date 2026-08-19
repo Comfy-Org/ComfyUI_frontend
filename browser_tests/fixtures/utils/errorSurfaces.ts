@@ -36,30 +36,55 @@ function installVisibleErrorRecorder(
   const seen = new Set<string>()
   const errors: VisibleError[] = []
   target.__cnVisibleErrors = errors
-  const sample = () => {
+  const record = (surface: string, element: Element) => {
+    if (
+      !(element instanceof HTMLElement) ||
+      !element.checkVisibility({
+        checkOpacity: true,
+        checkVisibilityCSS: true
+      })
+    )
+      return
+    const text = (element.innerText || element.textContent || '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 300)
+    const key = `${surface}\u0000${text}`
+    if (seen.has(key)) return
+    seen.add(key)
+    errors.push({ surface, text })
+  }
+  const sampleElement = (element: Element, includeDescendants: boolean) => {
     for (const { surface, selector } of selectors) {
-      for (const element of document.querySelectorAll(selector)) {
-        if (
-          !(element instanceof HTMLElement) ||
-          !element.checkVisibility({
-            checkOpacity: true,
-            checkVisibilityCSS: true
-          })
-        )
-          continue
-        const text = (element.innerText || element.textContent || '')
-          .replace(/\s+/g, ' ')
-          .trim()
-          .slice(0, 300)
-        const key = `${surface}\u0000${text}`
-        if (seen.has(key)) continue
-        seen.add(key)
-        errors.push({ surface, text })
-      }
+      const closest = element.closest(selector)
+      if (closest) record(surface, closest)
+      if (!includeDescendants) continue
+      for (const descendant of element.querySelectorAll(selector))
+        record(surface, descendant)
     }
   }
-  sample()
-  new MutationObserver(sample).observe(document, {
+  for (const { surface, selector } of selectors)
+    for (const element of document.querySelectorAll(selector))
+      record(surface, element)
+  new MutationObserver((mutations) => {
+    const exact = new Set<Element>()
+    const subtrees = new Set<Element>()
+    for (const mutation of mutations) {
+      if (mutation.type === 'childList') {
+        if (mutation.target instanceof Element) exact.add(mutation.target)
+        for (const node of mutation.addedNodes) {
+          if (node instanceof Element) subtrees.add(node)
+          else if (node.parentElement) exact.add(node.parentElement)
+        }
+      } else if (mutation.target instanceof Element) {
+        subtrees.add(mutation.target)
+      } else if (mutation.target.parentElement) {
+        exact.add(mutation.target.parentElement)
+      }
+    }
+    for (const element of exact) sampleElement(element, false)
+    for (const element of subtrees) sampleElement(element, true)
+  }).observe(document, {
     attributes: true,
     characterData: true,
     childList: true,

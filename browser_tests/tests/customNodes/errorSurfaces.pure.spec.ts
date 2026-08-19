@@ -51,10 +51,12 @@ test('a closed page fails immediately with the real reason, not the sentinel', a
 test('a visible error toast fails after it clears before the assertion', async ({
   page
 }) => {
-  const html =
-    '<div id="t" class="p-toast-message-error">momentary</div>' +
-    '<script>setTimeout(() => document.getElementById("t").remove(), 800)</script>'
-  await page.goto(`data:text/html,${encodeURIComponent(html)}`)
+  await page.setContent('<div id="t">momentary</div>')
+  await page.evaluate(() => {
+    const toast = document.getElementById('t')!
+    toast.classList.add('p-toast-message-error')
+    setTimeout(() => toast.remove(), 800)
+  })
   await expect(page.locator('#t')).toHaveCount(0)
   const failure = await expectNoVisibleErrors(page, 'transient').then(
     () => undefined,
@@ -62,4 +64,33 @@ test('a visible error toast fails after it clears before the assertion', async (
   )
   expect(failure).toBeInstanceOf(Error)
   expect(String(failure)).toContain('momentary')
+})
+
+test('unrelated mutations do not rescan the full document', async ({
+  page
+}) => {
+  await page.setContent('<main id="root"></main>')
+  const fullDocumentQueries = await page.evaluate(async () => {
+    const original = document.querySelectorAll.bind(document)
+    let calls = 0
+    document.querySelectorAll = ((selector: string) => {
+      calls += 1
+      return original(selector)
+    }) as typeof document.querySelectorAll
+    const root = document.getElementById('root')!
+    for (let index = 0; index < 1_000; index += 1) {
+      const child = document.createElement('span')
+      root.append(child)
+      child.dataset.index = String(index)
+      child.textContent = String(index)
+      await Promise.resolve()
+    }
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    return calls
+  })
+
+  expect(fullDocumentQueries).toBe(0)
+  await expect(
+    expectNoVisibleErrors(page, 'after DOM churn')
+  ).resolves.toBeUndefined()
 })
