@@ -52,7 +52,7 @@ const i18n = createI18n({
         noCredits: 'No credits',
         scopeCaption: 'Workspaces only affect which credits you use.',
         scopeTooltip:
-          'Runs that use partner nodes spend credits from this workspace. Unlike on Cloud, your workflows and outputs stay on this computer, no matter which workspace you pick.',
+          'Runs that use partner nodes spend credits from this workspace. Unlike on Cloud, every workspace saves to your usual output folder.',
         createWorkspace: 'Create a team workspace',
         maxWorkspacesReached:
           'You can only own 10 workspaces. Delete one to create a new one.'
