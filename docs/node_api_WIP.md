@@ -5,6 +5,10 @@
 > finished document and is not intended to land on `main` in this form. When the
 > design settles, the durable parts become a proper ADR under `docs/adr/` and
 > this file goes away.
+>
+> Pack-facing documentation now lives in [`docs/node-api/`](./node-api/README.md).
+> This file remains the design history and migration rationale; it is not the
+> usage guide or the exhaustive runtime reference.
 
 # The published custom-node API
 
