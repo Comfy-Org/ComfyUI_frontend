@@ -182,9 +182,10 @@ export interface GraphHandle {
     position?: { x: number; y: number }
   ): NodeHandle | undefined
   /**
-   * Swaps a node for one of a different type, keeping what the user set and
-   * every link that still fits. `undefined` if the node is gone; throws if the
-   * type is not registered.
+   * Rebuilds a node, optionally as another type, keeping what the user set and
+   * every link that still fits. Replacing with the same type repairs a node
+   * whose registered definition changed without discarding its state.
+   * `undefined` if the node is gone; throws if the type is not registered.
    *
    * This is a real feature four packs ship — "Convert to Context Big", "Swap to
    * KSampler (Efficient)" — and all four hand-rolled it out of `graph.links`,
