@@ -28,9 +28,13 @@ const visibleErrorSurfaceSelectors = [
   { surface: 'errorToasts', selector: '.p-toast-message-error' }
 ]
 
-function installVisibleErrorRecorder(
+const visibleErrorSampleIntervalMs = 100
+
+function installVisibleErrorRecorder(config: {
   selectors: typeof visibleErrorSurfaceSelectors
-): void {
+  sampleIntervalMs: number
+}): void {
+  const { selectors, sampleIntervalMs } = config
   const target = window as VisibleErrorWindow
   if (target.__cnVisibleErrors !== undefined) return
   const seen = new Set<string>()
@@ -58,21 +62,22 @@ function installVisibleErrorRecorder(
       }
     }
   }
-  const sampleNextFrame = () => {
+  const sampleNext = () => {
     sample()
-    requestAnimationFrame(sampleNextFrame)
+    window.setTimeout(sampleNext, sampleIntervalMs)
   }
   sample()
-  requestAnimationFrame(sampleNextFrame)
+  window.setTimeout(sampleNext, sampleIntervalMs)
 }
 
 export async function trackVisibleErrors(page: Page): Promise<void> {
   if (trackedPages.has(page)) return
-  await page.addInitScript(
-    installVisibleErrorRecorder,
-    visibleErrorSurfaceSelectors
-  )
-  await page.evaluate(installVisibleErrorRecorder, visibleErrorSurfaceSelectors)
+  const config = {
+    selectors: visibleErrorSurfaceSelectors,
+    sampleIntervalMs: visibleErrorSampleIntervalMs
+  }
+  await page.addInitScript(installVisibleErrorRecorder, config)
+  await page.evaluate(installVisibleErrorRecorder, config)
   trackedPages.add(page)
 }
 

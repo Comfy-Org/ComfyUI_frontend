@@ -105,46 +105,55 @@ test('a hidden error fails when an ancestor mutation reveals it', async ({
   expect(String(failure)).toContain('revealed error')
 })
 
-test('DOM churn costs one bounded surface sample per frame', async ({
+test('DOM churn is sampled at a fixed rate, not per mutation', async ({
   page
 }) => {
-  await page.setContent('<main id="root"></main>')
-  const selectorQueries = await page.evaluate(async () => {
-    const originalDocumentQuery = document.querySelectorAll.bind(document)
-    const originalElementQuery = Element.prototype.querySelectorAll
-    const originalMatches = Element.prototype.matches
-    let documentQueries = 0
-    let elementQueries = 0
-    let matches = 0
-    document.querySelectorAll = ((selector: string) => {
-      documentQueries += 1
-      return originalDocumentQuery(selector)
-    }) as typeof document.querySelectorAll
-    Element.prototype.querySelectorAll = function (selector: string) {
-      elementQueries += 1
-      return originalElementQuery.call(this, selector)
-    }
-    Element.prototype.matches = function (this: Element, selector: string) {
-      matches += 1
-      return originalMatches.call(this, selector)
-    } as typeof Element.prototype.matches
-    let parent = document.getElementById('root')!
-    for (let index = 0; index < 1_000; index += 1) {
-      parent.classList.toggle('connectivity-churn', index % 2 === 0)
-      const child = document.createElement('div')
-      parent.append(child)
-      parent = child
-    }
-    await new Promise(requestAnimationFrame)
-    return { documentQueries, elementQueries, matches }
-  })
+  const probe = await page.context().newPage()
+  try {
+    const clockStart = new Date('2026-08-19T00:00:00Z')
+    await probe.clock.install({ time: clockStart })
+    await probe.clock.pauseAt(clockStart)
+    await probe.setContent('<main id="root"></main>')
+    await probe.evaluate(() => {
+      const target = window as Window &
+        typeof globalThis & { __recorderQueries?: number }
+      const originalDocumentQuery = document.querySelectorAll.bind(document)
+      target.__recorderQueries = 0
+      document.querySelectorAll = ((selector: string) => {
+        target.__recorderQueries! += 1
+        return originalDocumentQuery(selector)
+      }) as typeof document.querySelectorAll
+    })
+    await trackVisibleErrors(probe)
 
-  expect(selectorQueries).toEqual({
-    documentQueries: 4,
-    elementQueries: 0,
-    matches: 0
-  })
-  await expect(
-    expectNoVisibleErrors(page, 'after DOM churn')
-  ).resolves.toBeUndefined()
+    const state = () =>
+      probe.evaluate(
+        () =>
+          (
+            window as Window &
+              typeof globalThis & { __recorderQueries?: number }
+          ).__recorderQueries
+      )
+    await expect(state()).resolves.toBe(4)
+
+    await probe.evaluate(() => {
+      let parent = document.getElementById('root')!
+      for (let index = 0; index < 1_000; index += 1) {
+        parent.classList.toggle('connectivity-churn', index % 2 === 0)
+        const child = document.createElement('div')
+        parent.append(child)
+        parent = child
+      }
+    })
+    await expect(state()).resolves.toBe(4)
+    await probe.clock.runFor(99)
+    await expect(state()).resolves.toBe(4)
+    await probe.clock.runFor(1)
+    await expect(state()).resolves.toBe(8)
+    await expect(
+      expectNoVisibleErrors(probe, 'after DOM churn')
+    ).resolves.toBeUndefined()
+  } finally {
+    await probe.close()
+  }
 })
