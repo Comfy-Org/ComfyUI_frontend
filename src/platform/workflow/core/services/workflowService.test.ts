@@ -14,6 +14,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { app } from '@/scripts/app'
@@ -84,7 +85,9 @@ vi.mock('@/scripts/app', () => ({
   app: {
     canvas: { ds: { offset: [0, 0], scale: 1 } },
     rootGraph: { serialize: vi.fn(() => ({})), extra: {} },
-    loadGraphData: vi.fn()
+    loadGraphData: vi.fn(),
+    nodeOutputs: {},
+    nodePreviewImages: {}
   }
 }))
 
@@ -312,6 +315,21 @@ describe('useWorkflowService', () => {
           missingMediaCandidates: mediaCandidates
         })
       )
+    })
+
+    it('should stash node previews before app.clean() can revoke them', () => {
+      const activeWorkflow = createModeTestWorkflow({
+        path: 'workflows/test.json'
+      })
+      workflowStore.activeWorkflow = activeWorkflow
+      const stashPreviews = vi.spyOn(
+        useNodeOutputStore(),
+        'stashPreviewsForWorkflow'
+      )
+
+      useWorkflowService().beforeLoadNewGraph()
+
+      expect(stashPreviews).toHaveBeenCalledWith(activeWorkflow.path)
     })
 
     it('should save active workflow state through the V2 draft store', () => {
@@ -542,6 +560,20 @@ describe('useWorkflowService', () => {
       expect(closed).toBe(false)
       expect(workflowStore.closeWorkflow).not.toHaveBeenCalled()
     })
+
+    it('should release the closed workflow node previews', async () => {
+      const workflow = createModeTestWorkflow({
+        path: 'workflows/closing.json'
+      })
+      const discardPreviews = vi.spyOn(
+        useNodeOutputStore(),
+        'discardPreviewsForWorkflow'
+      )
+
+      await service.closeWorkflow(workflow, { warnIfUnsaved: false })
+
+      expect(discardPreviews).toHaveBeenCalledWith(workflow.path)
+    })
   })
 
   describe('afterLoadNewGraph', () => {
@@ -559,6 +591,16 @@ describe('useWorkflowService', () => {
       )
       vi.mocked(workflowStore.isActive).mockReturnValue(true)
       vi.mocked(workflowStore.openWorkflow).mockResolvedValue(existingWorkflow)
+    })
+
+    it('should restore the stashed previews of the newly active workflow', async () => {
+      workflowStore.activeWorkflow = existingWorkflow
+
+      await useWorkflowService().afterLoadNewGraph('repeat', makeWorkflowData())
+
+      expect(
+        useNodeOutputStore().restorePreviewsForWorkflow
+      ).toHaveBeenCalledWith(existingWorkflow.path)
     })
 
     it('should reuse the active workflow when loading the same path repeatedly', async () => {
