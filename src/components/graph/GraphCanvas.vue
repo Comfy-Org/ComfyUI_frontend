@@ -216,6 +216,7 @@ import { ChangeTracker } from '@/scripts/changeTracker'
 import { IS_CONTROL_WIDGET, updateControlWidgetLabel } from '@/scripts/widgets'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useNewUserService } from '@/services/useNewUserService'
+import { isNodeExcludedFromCulling } from '@/services/vueNodeCullingService'
 import { shouldIgnoreCopyPaste } from '@/workbench/eventHelpers'
 import { storeToRefs } from 'pinia'
 
@@ -401,9 +402,17 @@ watch(isLowQuality, (lowQuality) => {
       )
     : new Set()
 })
-const renderedNodeIds = computed(() =>
-  isLowQuality.value ? lodPinnedNodeIds.value : activeNodeIds.value
-)
+const renderedNodeIds = computed(() => {
+  if (!isLowQuality.value) return activeNodeIds.value
+
+  const nodeIds = new Set(lodPinnedNodeIds.value)
+  for (const nodeId of activeNodeIds.value) {
+    const nodeType =
+      vueNodeLifecycle.nodeManager.value?.vueNodeData.get(nodeId)?.type
+    if (isNodeExcludedFromCulling(nodeId, nodeType)) nodeIds.add(nodeId)
+  }
+  return nodeIds
+})
 watch(
   renderedNodeIds,
   () => setExpectedRenderedNodeIds(renderedNodeIds.value),
