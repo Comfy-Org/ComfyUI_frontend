@@ -11,6 +11,10 @@ If a member is absent from that declaration file, it is not published. The
 topic guides describe lifecycle, invariants, and recommended use; this page
 collects signatures and points to those guides.
 
+Only `comfy` is a runtime entry point. The named interfaces and type aliases
+below describe arguments, return values, callbacks, and snapshots reached from
+that object; they are not additional global services.
+
 ## Entry point
 
 ```js
@@ -65,6 +69,21 @@ See [Registration, lifecycle, and globals](./registration.md).
 
 `onNodeDragEnd` is Nodes 2.0 only. See
 [Graphs and groups](./graph.md#node-and-graph-observation).
+
+### Observation payloads
+
+| Type                | Fields or values                                                |
+| ------------------- | --------------------------------------------------------------- |
+| `NodeMoveEvent`     | `node`, `position: { x, y }`                                    |
+| `NodeChangeOptions` | `scope?: 'visible' \| 'document'`                               |
+| `NodeChangeScope`   | `'visible' \| 'document'`                                       |
+| `TrackedProperty`   | `title`, `mode`, `color`, `bgcolor`, `shape`, or `showAdvanced` |
+| `NodeChangeEvent`   | `node`, `graphId`, `property`, `from`, `to`                     |
+| `Unsubscribe`       | `() => void`                                                    |
+
+The document scope includes the root and all subgraph definitions. Since node
+IDs are graph-local, key records from `NodeChangeEvent` by both `graphId` and
+`node.id`.
 
 ## `DefRegistry`
 
@@ -123,6 +142,49 @@ Related types: `NodeDef`, `NodeDefinition`, `DefSelector`, `NodeCreatedEvent`,
 `PropertyChangeEvent`, `BeforeConnectEvent`, `UnplacedLinkEvent`,
 `NodeMenuItem`, `NodeSubMenuItem`, and `NodeColor`.
 
+### Definition data
+
+`NodeDef` is the frozen read view returned by `get()`, `all()`, and
+`builder.def`:
+
+| Field          | Type or contents                                                                 |
+| -------------- | -------------------------------------------------------------------------------- |
+| `type`         | Registered type name                                                             |
+| `title`        | Display title                                                                    |
+| `category`     | Palette category                                                                 |
+| `description`  | Backend description                                                              |
+| `inputs`       | `name`, `type`, optional `localizedName`, optional combo `values`, and `options` |
+| `outputs`      | `name` and `type`                                                                |
+| `isOutputNode` | Whether it is an execution output                                                |
+| `hidden`       | Hidden backend declarations; these are not connectable slots                     |
+| `source`       | Supplying pack, when reported by the backend                                     |
+
+`NodeDefinition` declares a frontend-owned type. It requires `type` and may
+set `title`, `category`, `description`, `inputs`, `outputs`, `widgets`,
+`execution`, `resolve`, and `supply`. It can also declare `onCreated`,
+`onExecuted`, `onConfigured`, `onConnectionsChanged`, `onPropertyChanged`,
+`onDragOver`, `onDrop`, `onRemoved`, and `onSerialize` callbacks directly.
+
+`DefSelector` is a type string, string array, regular expression, predicate
+over `NodeDef`, or `{ category: string | RegExp }`.
+
+### Definition callback payloads
+
+| Type                    | Fields and behavior                                                       |
+| ----------------------- | ------------------------------------------------------------------------- |
+| `NodeCreatedEvent`      | `restored`, `loading`                                                     |
+| `ExecutionResult`       | `images`, `text`, and passthrough `raw`                                   |
+| `PreviewFrame`          | `blob`, temporary object `url`                                            |
+| `ConnectionChangeEvent` | `side`, `index`, `connected`, optional `peerNodeId`, optional `peerIndex` |
+| `PropertyChangeEvent`   | `name`, `value`, `previous`, `setValue(value)`, `reject()`                |
+| `BeforeConnectEvent`    | `side`, `index`, optional `peerNodeId`, `peerIndex`, and `peerType`       |
+| `UnplacedLinkEvent`     | `side`, `peerNodeId`, `peerIndex`, `type`, `replaceExisting`              |
+
+`NodeMenuItem` has a string or node-dependent `label`, optional `when`,
+optional `run`, optional one-level `items`, and optional numeric `order`.
+`NodeSubMenuItem` contains `label` and `run(node)`. `NodeColor` contains
+`color`, `bgColor`, and `groupColor`.
+
 See [Nodes and definitions](./nodes.md).
 
 ## `GraphHandle`
@@ -169,6 +231,9 @@ Read-only graph scope with `id`, optional `name`, `nodes()`, `node(id)`,
 Provides `id`, title and color getter/setters, `nodes()`, `getBounds()`, and
 `centerOn()`.
 
+`NodeInit` accepts optional `title` and `position`. `Point` is `{ x, y }`,
+`Size` is `{ width, height }`, and `Bounds` is `{ x, y, width, height }`.
+
 See [Graphs and groups](./graph.md).
 
 ## `NodeHandle`
@@ -206,6 +271,21 @@ Every node handle has `isDeleted`, `id`, `graphId`, `type`, and `comfyClass`.
 
 Related types: `NodeMode`, `NodeShape`, `NodeSnapshot`, `BadgeDef`, `Point`,
 `Size`, `Bounds`, and `SizeConstraints`.
+
+### Node data types
+
+| Type              | Shape or values                                                             |
+| ----------------- | --------------------------------------------------------------------------- |
+| `NodeMode`        | `always`, `never`, `bypass`, `on-event`, or `on-trigger`                    |
+| `NodeShape`       | `default`, `box`, `round`, `circle`, or `card`                              |
+| `BadgeDef`        | `text`, optional `color`, `bgColor`, and `onClick()`                        |
+| `SizeConstraints` | Optional `minWidth`, `minHeight`, `maxWidth`, `maxHeight`, and `autoHeight` |
+| `NodeSnapshot`    | Identity, title, mode/flags/colors/shape, `position`, and `size`            |
+
+Every live handle implements `HandleCommon`, whose `isDeleted` flag remains
+safe to read after removal. Other reads return inert absence and mutating a
+deleted handle throws unless the requested end state is already achieved by an
+idempotent removal or disconnect.
 
 See [Nodes and definitions](./nodes.md).
 
@@ -249,6 +329,31 @@ Related types: `SlotId`, `SlotRef`, `SlotType`, `SlotShape`, `SlotOptions`,
 `SlotPatch`, `InputSlotPatch`, `SlotSnapshot`, `LinkInfo`, `InputWidgetConfig`,
 and `ResolvedInputSource`.
 
+### Slot and link data
+
+| Type                | Shape or values                                                                                            |
+| ------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `SlotId`            | Stable branded string                                                                                      |
+| `SlotRef`           | Slot ID, exact name, or explicit `{ index }`                                                               |
+| `SlotType`          | String or string array; arrays normalize to the comma-separated wire type                                  |
+| `SlotShape`         | `default`, `optional`, `list`, or `directional`                                                            |
+| `SlotDirection`     | `none`, `up`, `down`, `left`, `right`, or `center`                                                         |
+| `SlotPosition`      | `{ x, y }` relative to the node body                                                                       |
+| `InputWidgetConfig` | String or combo-array `type`, plus optional frozen `options`                                               |
+| `LinkInfo`          | `id`, `sourceNodeId`, `sourceSlotId`, `targetNodeId`, `targetSlotId`, `type`, `sourceIndex`, `targetIndex` |
+
+`SlotOptions` configures a newly added slot with `shape`, `localizedName`,
+`position`, `direction`, `widget`, and `widgetConfig`. `SlotPatch` can change
+`name`, `label`, `localizedName`, `type`, `position`, `direction`, `color`,
+`colorWhenUnconnected`, and `shape`; `InputSlotPatch` adds `widget` and
+`widgetConfig`. Use `null` where the declaration says it restores the host
+default.
+
+`SlotSnapshot` contains stable identity plus current index, name, type, label,
+localized name, position, direction, shape, and connection state.
+`ResolvedInputSource` is an output (`graphId`, `nodeId`, `outputIndex`), a
+literal value, or an omission with a reason.
+
 See [Slots and links](./slots.md).
 
 ## Widgets
@@ -287,6 +392,71 @@ Related types: `WidgetValue`, `WidgetOptions`, `WidgetDef`,
 `CanvasPointerEvent`, `CanvasTheme`, `WidgetTypeDef`, `WidgetTypeValue`,
 `WidgetTypeContext`, and the `WidgetText*` event types.
 
+### Widget declarations and mounted values
+
+| Type           | Important fields or methods                                                        |
+| -------------- | ---------------------------------------------------------------------------------- |
+| `WidgetDef`    | `type`, `name`, optional value/options/disabled/hidden/serialize fields            |
+| `MountDef`     | `name`, `render`, optional teardown/layout/visibility/serialization/default fields |
+| `MountedData`  | String, number, boolean, object, or `null`                                         |
+| `MountedValue` | `get()`, `set(value)`, `onChange(listener)`                                        |
+| `CanvasHandle` | `widget`, `redraw()`                                                               |
+
+`WidgetValue` also allows `undefined`. `WidgetOptions` is an open, frozen
+record. Its named common fields are `on`, `off`, `max`, `min`, `precision`,
+`read_only`, `step`, `step2`, `multiline`, `property`, `socketless`,
+`canvasOnly`, `hideInPanel`, `nodeType`, `serialize`, `values`, `iconClass`,
+`disabled`, `useGrouping`, `placeholder`, `showThumbnails`,
+`showItemNavigators`, and `hidden`. Read with `getOptions()` and update through
+`setOption()`.
+
+`WidgetSerializeEvent` contains `context`, the unmodified `value`, and
+`setSerializedValue(value)`. Context is `workflow`, `prompt`, or `embedded`.
+
+### Canvas widget types
+
+`CanvasDef` requires `name` and `draw(context, size, theme, value)`. It may set
+`height`, value/serialization fields, and `onPointerDown`, `onPointerMove`,
+`onPointerUp`, and `onContextMenu` handlers. `CanvasPointerEvent` supplies
+widget-relative `x`, `y`, and the original `PointerEvent`.
+
+`CanvasTheme` supplies `surface`, `surfaceHovered`, `border`, `text`, and
+`textSecondary`. It is resolved afresh for each draw, so do not cache it.
+
+### Widget type registration
+
+`WidgetTypeData` is string, number, boolean, object, or `null`.
+`WidgetTypeValue` provides `get`, `set`, and `onChange`. `WidgetTypeContext`
+provides a frozen `getOptions()` snapshot and `onNodeReady(listener)`.
+
+`WidgetTypeDef` may declare `defaultValue`, `height`, `minWidth`, `minHeight`,
+and `serialize`, and must implement:
+
+```ts
+interface WidgetTypeDef {
+  render(
+    container: HTMLElement,
+    value: WidgetTypeValue,
+    name: string,
+    context: WidgetTypeContext
+  ): Unsubscribe | void
+}
+```
+
+### Host text-editor events
+
+All `WidgetTextInteractionEvent` variants contain the current `value`, a
+`WidgetTextSelection` (`start`, `end`), `menuEvent`, `setValue()`, and
+`focus()`:
+
+| Variant                | Additional fields                                                                                                       |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `WidgetTextInputEvent` | `kind: 'input' \| 'selection'`                                                                                          |
+| `WidgetTextWheelEvent` | `kind: 'wheel'`, `deltaY`, `ctrlKey`, `preventDefault()`                                                                |
+| `WidgetTextKeyEvent`   | `kind: 'keydown'`, `key`, `ctrlKey`, `altKey`, `shiftKey`, `metaKey`, `repeat`, `preventDefault()`, `stopPropagation()` |
+
+`WidgetTextEventBase` is the shared portion of those variants.
+
 See [Widgets](./widgets.md).
 
 ## `QueueHandle`
@@ -310,6 +480,18 @@ See [Widgets](./widgets.md).
 Related types: `RunOptions`, `RunSubmittedEvent`, `RunSubmission`,
 `RunRejectedEvent`, `RunRejectedNode`, `RunRejectionError`, and `AutoQueueMode`.
 
+### Queue payloads
+
+| Type                | Fields or values                                                        |
+| ------------------- | ----------------------------------------------------------------------- |
+| `RunOptions`        | Optional `nodes` and `batch`                                            |
+| `RunSubmittedEvent` | Accepted `promptIds`, optional `submissions`, rejected submission count |
+| `RunSubmission`     | `promptId`, executable `nodeCount`                                      |
+| `RunRejectionError` | `type`, `message`, `details`, optional `inputName`                      |
+| `RunRejectedNode`   | `nodeId`, `nodeType`, `errors`                                          |
+| `RunRejectedEvent`  | Optional HTTP `status`, top-level `error`, and per-node `nodeErrors`    |
+| `AutoQueueMode`     | `disabled`, `change`, or `instant`                                      |
+
 See [Execution](./execution.md).
 
 ## Resolution and supply
@@ -325,6 +507,33 @@ See [Execution](./execution.md).
 | `ResolvedSupply`                   | One winning, fully resolved edge.                              |
 | `ResolvedSource`                   | Final output, literal, or omission.                            |
 
+### Resolver view
+
+`InputRef` is `{ nodeId, input }`. `OutputResolution` is one of
+`{ omit: true }`, `{ forwardTo: InputRef }`, or `{ literal: WidgetValue }`.
+`ResolvedSource` is the corresponding final output, literal, or omission with
+a reason.
+
+`ResolvedNodeView` contains `id`, `type`, frozen `properties`, `groups`, raw
+numeric `mode`, `color`, `inputs`, `outputs`, `widgetValue(name)`, and
+`input(ref)`. Its `OwnInput` entries contain index/name/label/type, connection
+state, resolved `connectedType`, and optional `sourceNodeId`; `OwnOutput`
+contains index/name/label/type. `GroupMembership` contains `id` and `title`.
+
+`ResolveView` adds `self` and `nodesOfType(type)`. A `Resolver` returns a record
+keyed by its own output names.
+
+### Supplier view
+
+`UnconnectedInput` contains `nodeId`, `nodeType`, `input`, `name`, `type`,
+display `label`, `isWidgetInput`, `nodeTitle`, `nodeMode`, `nodeColor`,
+`nodeGroups`, and frozen `nodeProperties`. `SupplyView` exposes `self`,
+`nodesOfType()`, and `unconnectedInputs()`.
+
+Each `SuppliedEdge` contains `to: InputRef`, an optional `priority`, and `from`
+as the supplier's output, a literal, or one of the supplier's forwarded inputs.
+`ResolvedSupply` contains `supplierNodeId`, `to`, and the final `from` source.
+
 See [Execution and resolution](./execution.md#frontend-only-nodes).
 
 ## Application service handles
@@ -335,6 +544,12 @@ See [Execution and resolution](./execution.md#frontend-only-nodes).
 - `get(id): SettingValue | undefined`
 - `set(id, value): Promise<void>`
 - `onChange(id, listener): Unsubscribe`
+
+`SettingValue` is string, number, boolean, or a readonly string array.
+`SettingDef` contains `id`, `name`, declarative `type`, `defaultValue`, and
+optional `tooltip`, `category`, `options`, `attrs`, and `onChange`.
+`SettingOption` is a string or `{ value, label }`; `SettingAttrs` contains
+optional `min`, `max`, and `step`.
 
 ### `StorageHandle`
 
@@ -350,6 +565,11 @@ See [Execution and resolution](./execution.md#frontend-only-nodes).
 - `run(id): Promise<void>`
 - `has(id): boolean`
 
+`CommandDef` contains namespaced `id`, static or dynamic `label`, `run`, an
+optional `KeyCombo`, and optional canvas scope. `KeyCombo` contains `key` plus
+optional Ctrl/Alt/Shift/Meta flags. `NotifyDef` contains `summary` and optional
+`severity`, `detail`, and lifetime in milliseconds.
+
 ### `UiHandle`
 
 - `addSidebarTab(def): Unsubscribe`
@@ -358,6 +578,25 @@ See [Execution and resolution](./execution.md#frontend-only-nodes).
 - `showDialog(def): DialogHandle`
 - `showMenu(def): MenuHandle`
 - `prompt(def): Promise<string | undefined>`
+
+Sidebar definitions share `SidebarTabBase` (`id`, `title`, optional `icon` and
+`tooltip`). `MountedSidebarTab` adds `render(container)` and optional
+`destroy()`; `VueSidebarTab` adds a bundled `VueComponent`. `SidebarTabDef` is
+the union.
+
+Dialogs share `DialogBase` (`key`, optional `title`). `MountedDialog` adds
+`render(container)` and optional `destroy()`; `VueDialog` adds `component` and
+optional `props`. `DialogDef` is the union. `DialogHandle.close()` closes it.
+
+`PromptDef` contains `label`, optional initial `value`, and optional
+`placeholder`. `MenuDef` contains an anchoring `MouseEvent`, optional `title`,
+and `MenuItemDef` entries. A menu item has `label`, optional `disabled`, and
+either `submenu` or `run()`. `MenuHandle.close()` closes it.
+
+`BadgeContribution` contains namespaced `id`, `text`, and optional label,
+variant, icon, and tooltip. `ButtonContribution` contains namespaced `id`,
+icon, optional label/tooltip, and `run(event)`. Their `ChromeItemHandle` can
+`update()` all fields except identity or `remove()` the contribution.
 
 ### `BackendHandle`
 
@@ -371,6 +610,8 @@ See [Execution and resolution](./execution.md#frontend-only-nodes).
 
 - `open(data: WorkflowData): Promise<void>`
 - `applyTextReplacements(value: string): string`
+
+`WorkflowData` is parsed workflow JSON represented as a readonly record.
 
 See [Application services](./services.md).
 
@@ -399,6 +640,23 @@ This block is generated from `CAPABILITIES` in `comfyApi.ts`.
 
 Use `comfy.capabilities()` at runtime. The generated block exists for discovery
 and is checked against the implementation.
+
+## Host-plumbing declarations
+
+The generated declaration file is assembled from exported TypeScript
+declarations, so it also contains a few types used to connect this layer to the
+host: `PropSpec`, `HandleSpec`, `HandleToken`, `NodeCollections`,
+`NodeMoveSource`, `NodeDragEndSource`, and `ResolveOptions`. They are not
+reachable services or extension registration points. Packs should use
+`HandleCommon.isDeleted`, `comfy.sameEntity()`, the public observation methods,
+and slot handles instead of constructing those plumbing objects.
+
+For completeness, `PropSpec` contains `get`, optional `set`, and
+`readonlyHint`; `HandleSpec` contains `kind`, `props`, optional `methods`,
+`idMethods`, and `identityProps`; `HandleToken` is `{ kind, id }`; and
+`ResolveOptions.namedSlotsAvailable` controls host-side transitional slot
+lookup. `NodeCollections` and the two movement-source types are host providers,
+not pack callbacks.
 
 ## Errors and absence
 
