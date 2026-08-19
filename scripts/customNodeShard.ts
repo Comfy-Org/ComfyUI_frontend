@@ -16,6 +16,7 @@
  * exactly as the specs do.
  */
 import {
+  customNodesManifest,
   loadApplicableAutogrowCases,
   loadManifest,
   packIdentity
@@ -41,9 +42,11 @@ function expectedTestCount(): number {
     SLICE_INDEPENDENT_TESTS +
     expectedTierTestCount(entries) +
     TESTS_PER_PACK * entries.length +
-    entries.filter((entry) =>
-      hasCommittedProfile(entry.pack, packIdentity(entry))
-    ).length +
+    (customNodesManifest() === 'core'
+      ? entries.filter((entry) =>
+          hasCommittedProfile(entry.pack, packIdentity(entry))
+        ).length
+      : 0) +
     entries.filter((entry) => entry.tiers.includes('run')).length +
     loadApplicableAutogrowCases().length
   )

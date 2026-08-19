@@ -18,10 +18,9 @@ export function provesRequirementIsUnsatisfiable(
   expectedRequirement: string
 ): boolean {
   const diagnostic = diagnosticText(error)
-  return (
-    diagnostic.includes(expectedRequirement) &&
-    /(?:Could not find a version that satisfies the requirement|No matching distribution found|ResolutionImpossible)/i.test(
-      diagnostic
-    )
-  )
+  const escaped = expectedRequirement.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return new RegExp(
+    `(?:Could not find a version that satisfies the requirement|No matching distribution found for)\\s+${escaped}(?:\\s|\\(|$)`,
+    'i'
+  ).test(diagnostic)
 }

@@ -230,9 +230,7 @@ export function matchesTopologyExpectation(
   after: number
 ): boolean {
   if (expectation?.before !== before) return false
-  return Array.isArray(expectation.after)
-    ? expectation.after.includes(after)
-    : expectation.after === after
+  return expectation.after === after
 }
 
 export function rendererLedgerFor<T>(

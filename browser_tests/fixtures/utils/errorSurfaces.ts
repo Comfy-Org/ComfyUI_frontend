@@ -15,7 +15,7 @@ type VisibleErrorWindow = Window &
 
 const trackedPages = new WeakSet<Page>()
 
-export const visibleErrorSurfaceSelectors = [
+const visibleErrorSurfaceSelectors = [
   {
     surface: 'errorOverlay',
     selector: `[data-testid="${TestIds.dialogs.errorOverlay}"]`
@@ -28,37 +28,52 @@ export const visibleErrorSurfaceSelectors = [
   { surface: 'errorToasts', selector: '.p-toast-message-error' }
 ]
 
+function installVisibleErrorRecorder(
+  selectors: typeof visibleErrorSurfaceSelectors
+): void {
+  const target = window as VisibleErrorWindow
+  if (target.__cnVisibleErrors !== undefined) return
+  const seen = new Set<string>()
+  const errors: VisibleError[] = []
+  target.__cnVisibleErrors = errors
+  const sample = () => {
+    for (const { surface, selector } of selectors) {
+      for (const element of document.querySelectorAll(selector)) {
+        if (
+          !(element instanceof HTMLElement) ||
+          !element.checkVisibility({
+            checkOpacity: true,
+            checkVisibilityCSS: true
+          })
+        )
+          continue
+        const text = (element.innerText || element.textContent || '')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .slice(0, 300)
+        const key = `${surface}\u0000${text}`
+        if (seen.has(key)) continue
+        seen.add(key)
+        errors.push({ surface, text })
+      }
+    }
+  }
+  sample()
+  new MutationObserver(sample).observe(document, {
+    attributes: true,
+    characterData: true,
+    childList: true,
+    subtree: true
+  })
+}
+
 export async function trackVisibleErrors(page: Page): Promise<void> {
   if (trackedPages.has(page)) return
-  await page.addInitScript((selectors) => {
-    const target = window as VisibleErrorWindow
-    const seen = new Set<string>()
-    target.__cnVisibleErrors = []
-    const sample = () => {
-      for (const { surface, selector } of selectors) {
-        for (const element of document.querySelectorAll(selector)) {
-          if (
-            !(element instanceof HTMLElement) ||
-            !element.checkVisibility({
-              checkOpacity: true,
-              checkVisibilityCSS: true
-            })
-          )
-            continue
-          const text = (element.innerText || element.textContent || '')
-            .replace(/\s+/g, ' ')
-            .trim()
-            .slice(0, 300)
-          const key = `${surface}\u0000${text}`
-          if (seen.has(key)) continue
-          seen.add(key)
-          target.__cnVisibleErrors!.push({ surface, text })
-        }
-      }
-      requestAnimationFrame(sample)
-    }
-    requestAnimationFrame(sample)
-  }, visibleErrorSurfaceSelectors)
+  await page.addInitScript(
+    installVisibleErrorRecorder,
+    visibleErrorSurfaceSelectors
+  )
+  await page.evaluate(installVisibleErrorRecorder, visibleErrorSurfaceSelectors)
   trackedPages.add(page)
 }
 
@@ -101,8 +116,12 @@ export async function expectNoVisibleErrors(
     `${context}: visible-error recorder was not installed before navigation`
   ).toBe(true)
   const history = await page.evaluate(
-    () => (window as VisibleErrorWindow).__cnVisibleErrors ?? []
+    () => (window as VisibleErrorWindow).__cnVisibleErrors
   )
+  expect(
+    history,
+    `${context}: visible-error recorder sentinel is missing`
+  ).toBeDefined()
   expect(history, `${context}: transient visible errors`).toEqual([])
   for (const [surface, locator] of Object.entries(errorSurfaces(page)))
     expect(

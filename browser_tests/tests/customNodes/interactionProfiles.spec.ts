@@ -11,7 +11,11 @@ import {
   loadPackProfiles,
   recordPackProfiles
 } from '@e2e/fixtures/customNode/interactionProfiles'
-import { loadManifest, packIdentity } from '@e2e/fixtures/customNode/manifest'
+import {
+  customNodesManifest,
+  loadManifest,
+  packIdentity
+} from '@e2e/fixtures/customNode/manifest'
 import type { RawNodeDef } from '@e2e/fixtures/customNode/typePairing'
 import {
   isTypeCompatible,
@@ -77,9 +81,14 @@ test.beforeEach(({ comfyPage }) => {
   trackSubmittedPrompts(comfyPage.page)
 })
 
-for (const entry of loadManifest().filter((row) =>
-  hasCommittedProfile(row.pack, packIdentity(row))
-)) {
+const interactionProfileEntries =
+  customNodesManifest() === 'core'
+    ? loadManifest().filter((row) =>
+        hasCommittedProfile(row.pack, packIdentity(row))
+      )
+    : []
+
+for (const entry of interactionProfileEntries) {
   test(`interaction profiles: ${entry.pack} @custom-nodes`, async ({
     comfyPage
   }) => {

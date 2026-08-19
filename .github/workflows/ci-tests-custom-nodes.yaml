@@ -508,7 +508,11 @@ jobs:
               audio.writeframes(b'\0\0' * 8000)
           PY
           cp ComfyUI/input/000_custom_node_probe.wav ComfyUI/input/001_custom_node_probe.wav
-          if ! pnpm --silent custom-node-shard | cut -f1 | grep -qix comfyui-videohelpersuite; then
+          pack_rows=$(pnpm --silent custom-node-shard) || {
+            echo '::error::could not resolve the custom-node shard manifest'
+            exit 1
+          }
+          if ! cut -f1 <<<"$pack_rows" | grep -qix comfyui-videohelpersuite; then
             echo 'This shard has no run-tier pack; staged only deterministic media probes.'
             exit 0
           fi

@@ -32,5 +32,14 @@ describe('custom-node quarantine probes', () => {
         'Imath>=3.1.0'
       )
     ).toBe(false)
+    expect(
+      provesRequirementIsUnsatisfiable(
+        {
+          stderr:
+            'Collecting Imath>=3.1.0\nCould not find a version that satisfies the requirement Other>=1.0'
+        },
+        'Imath>=3.1.0'
+      )
+    ).toBe(false)
   })
 })

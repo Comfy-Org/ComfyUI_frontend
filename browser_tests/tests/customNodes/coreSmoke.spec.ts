@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import {
   comfyExpect as expect,
   comfyPageFixture as test
@@ -19,9 +19,9 @@ import { assetPath } from '@e2e/fixtures/utils/paths'
 // Core-only, model-free workflow: the bundled default template references
 // model files a scoped test backend does not have, which rightly trips the
 // error surfaces this suite asserts are clean.
-const smokeWorkflow = JSON.parse(
+const smokeWorkflowInput: unknown = JSON.parse(
   readFileSync(resolve(assetPath('customNodes/core_smoke.json')), 'utf-8')
-) as ComfyWorkflowJSON
+)
 
 test.use({ initialSettings: customNodeSuiteSettings })
 
@@ -57,6 +57,17 @@ test.describe('smoke: core workflow @custom-nodes', () => {
   test('loads without console errors in both renderers', async ({
     comfyPage
   }) => {
+    const validationErrors: string[] = []
+    const smokeWorkflow = await validateComfyWorkflow(
+      smokeWorkflowInput,
+      (error) => validationErrors.push(error)
+    )
+    expect(validationErrors, 'core smoke fixture schema errors').toEqual([])
+    expect(
+      smokeWorkflow,
+      'core smoke fixture must be a valid workflow'
+    ).not.toBeNull()
+    if (!smokeWorkflow) throw new Error('core smoke fixture validation failed')
     for (const vueNodesEnabled of [false, true]) {
       const consoleErrors = collectConsoleErrors(comfyPage.page)
       await comfyPage.settings.setSetting(

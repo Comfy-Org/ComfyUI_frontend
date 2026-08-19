@@ -1,4 +1,5 @@
 import { readFileSync, writeFileSync } from 'node:fs'
+import { posix, win32 } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
 import { parse } from 'yaml'
@@ -200,6 +201,14 @@ export function validateCuratedCloudOverlay(
     if (typeof entry.workflow !== 'string' || entry.workflow === '')
       throw new Error(
         `curated overlay: ${pack} workflow must be a non-empty path relative to browser_tests/`
+      )
+    if (
+      posix.isAbsolute(entry.workflow) ||
+      win32.isAbsolute(entry.workflow) ||
+      entry.workflow.split(/[\\/]/).includes('..')
+    )
+      throw new Error(
+        `curated overlay: ${pack} workflow must stay inside browser_tests/`
       )
     if (!isStringArray(entry.tiers) || entry.tiers.length === 0)
       throw new Error(

@@ -71,4 +71,22 @@ describe('cloud run overlay', () => {
       })
     ).toThrow(/expectedRunnableCount/)
   })
+
+  it.each([
+    '/tmp/workflow.json',
+    'C:\\tmp\\workflow.json',
+    '../workflow.json',
+    'assets/../../workflow.json',
+    'assets\\..\\workflow.json'
+  ])('rejects workflow paths outside browser_tests: %s', (workflow) => {
+    expect(() =>
+      validateCuratedCloudOverlay({
+        pack: {
+          workflow,
+          tiers: ['load', 'run'],
+          expectedRunnableCount: 1
+        }
+      })
+    ).toThrow(/inside browser_tests/)
+  })
 })

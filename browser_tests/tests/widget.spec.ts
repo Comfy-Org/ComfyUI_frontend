@@ -415,9 +415,8 @@ test.describe('Load audio widget', { tag: ['@screenshot', '@widget'] }, () => {
     const audioWidget = await loadAudioNode.getWidgetByName('audio')
     const uploadWidget = await loadAudioNode.getWidgetByName('upload')
     const filename = 'test-audio.wav'
-    const uploadResponse = comfyPage.page.waitForResponse(
-      (response) =>
-        response.url().includes('/upload/image') && response.status() === 200
+    const uploadResponse = comfyPage.page.waitForResponse((response) =>
+      response.url().includes('/upload/image')
     )
     const fileChooser = comfyPage.page.waitForEvent('filechooser')
 
@@ -429,8 +428,8 @@ test.describe('Load audio widget', { tag: ['@screenshot', '@widget'] }, () => {
       buffer: getWav(),
       mimeType: 'audio/x-wav'
     })
-    await uploadResponse
     comfyFiles.deleteAfterTest({ filename, type: 'input' })
+    expect((await uploadResponse).status()).toBe(200)
 
     await expect.poll(() => audioWidget.getValue()).toBe(filename)
     await expect(audioPreview).toBeVisible()

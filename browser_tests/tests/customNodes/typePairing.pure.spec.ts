@@ -241,7 +241,8 @@ test.describe('typePairing', () => {
     )
 
     expect(plan.requiredPairIssues).toEqual([
-      'LatentSource.missing -> LatentSink.latent: declared slot is no longer present'
+      'LatentSource.missing -> LatentSink.latent: declared slot is no longer present',
+      'AbsentSource.output -> LatentSink.latent: unknown node type(s): AbsentSource'
     ])
   })
 

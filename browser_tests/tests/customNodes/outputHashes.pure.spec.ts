@@ -177,6 +177,9 @@ test.describe('S15 output hashes', () => {
 
   test('a truncated PNG chunk throws instead of hashing', () => {
     const good = pngWith({ idat: Buffer.from([1, 2, 3]) })
+    expect(() => hashPngPixels(good.subarray(0, good.length - 12))).toThrow(
+      /no IEND/
+    )
     // Cut inside the IDAT chunk (13 = IEND's 12 bytes + 1 byte of IDAT crc)
     // so the chunk header is readable but its declared length overruns.
     expect(() => hashPngPixels(good.subarray(0, good.length - 13))).toThrow(

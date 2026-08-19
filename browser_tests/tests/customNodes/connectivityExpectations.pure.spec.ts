@@ -18,6 +18,7 @@ test('connectivity pair expectations are attributable and disjoint', () => {
     ...connectivityExpectations.roundtripLost
   ]
   for (const group of groups) {
+    expect(group.id).toBeTruthy()
     expect(group.pack).toBeTruthy()
     expect(group.reason).toBeTruthy()
     expect(group.restore).toBeTruthy()

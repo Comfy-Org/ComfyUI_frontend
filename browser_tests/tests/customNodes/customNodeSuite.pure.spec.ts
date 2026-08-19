@@ -12,8 +12,10 @@ import {
   waitForQueueQuiet
 } from '@e2e/fixtures/utils/customNodeSuite'
 import type {
+  ActivePathPointer,
   DraftIndexV2,
-  DraftPayloadV2
+  DraftPayloadV2,
+  OpenPathsPointer
 } from '@/platform/workflow/persistence/base/draftTypes'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 
@@ -109,8 +111,10 @@ test('preseeds a restorable blank workflow before first boot', async ({
           .sort(),
         index,
         payload,
-        active: JSON.parse(localStorage.getItem(keys.active)!),
-        open: JSON.parse(localStorage.getItem(keys.open)!),
+        active: JSON.parse(
+          localStorage.getItem(keys.active)!
+        ) as ActivePathPointer,
+        open: JSON.parse(localStorage.getItem(keys.open)!) as OpenPathsPointer,
         path
       }
     },

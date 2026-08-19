@@ -51,12 +51,7 @@ export class SubgraphSlotReference {
           throw new Error(`${type} slot '${slotName}' has no position`)
         }
 
-        // Convert from offset to canvas coordinates
-        const canvasPos = window.app!.canvas.ds.convertOffsetToCanvas([
-          slot.pos[0],
-          slot.pos[1]
-        ])
-        return canvasPos
+        return window.app!.canvasPosToClientPos([slot.pos[0], slot.pos[1]])
       },
       [this.type, this.slotName] as const
     )
@@ -86,12 +81,10 @@ export class SubgraphSlotReference {
           throw new Error(`No ${type} node found in subgraph`)
         }
 
-        // Convert from offset to canvas coordinates
-        const canvasPos = window.app!.canvas.ds.convertOffsetToCanvas([
+        return window.app!.canvasPosToClientPos([
           node.emptySlot.pos[0],
           node.emptySlot.pos[1]
         ])
-        return canvasPos
       },
       [this.type] as const
     )
@@ -251,25 +244,17 @@ class NodeWidgetReference {
   }
 
   async click() {
-    await this.node.comfyPage.canvas.click({
-      position: await this.getPosition()
-    })
+    const pos = await this.getPosition()
+    await this.node.comfyPage.page.mouse.click(pos.x, pos.y)
+    await this.node.comfyPage.nextFrame()
   }
 
   async dragHorizontal(delta: number) {
     const pos = await this.getPosition()
-    const canvas = this.node.comfyPage.canvas
-    const canvasPos = (await canvas.boundingBox())!
-    await this.node.comfyPage.canvasOps.dragAndDrop(
-      {
-        x: canvasPos.x + pos.x,
-        y: canvasPos.y + pos.y
-      },
-      {
-        x: canvasPos.x + pos.x + delta,
-        y: canvasPos.y + pos.y
-      }
-    )
+    await this.node.comfyPage.canvasOps.dragAndDrop(pos, {
+      x: pos.x + delta,
+      y: pos.y
+    })
   }
 
   async getValue() {
@@ -350,7 +335,9 @@ export class NodeReference {
       modifiers?: ('Shift' | 'Control' | 'Alt' | 'Meta')[]
     }
   ): Promise<void> {
-    const titlePos = await this.getTitlePosition()
+    const titlePos = await this.comfyPage.canvasOps.toAbsolute(
+      await this.getTitlePosition()
+    )
     const target = { x: titlePos.x + delta.x, y: titlePos.y + delta.y }
     const modifiers = options?.modifiers ?? []
     const keyboard = this.comfyPage.page.keyboard

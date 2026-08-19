@@ -73,6 +73,7 @@ export type ConnectivityOutcome =
   | 'CONNECT_REJECTED'
   | 'ROUNDTRIP_LOST'
   | 'SLOT_CONTRACT_MISMATCH'
+  | 'THREW'
   | 'WIDGET_ONLY_ON_INSTANCE'
 
 export function packOf(pythonModule: string | undefined): string {
@@ -199,7 +200,8 @@ function slotRef(node: NormalizedNode, slot: NormalizedSlot): SlotRef {
 export function planPairs(
   all: NormalizedNode[],
   corpusTypes: string[],
-  requiredPairKeys: string[] = []
+  requiredPairKeys: string[] = [],
+  knownNodeTypes: ReadonlySet<string> = new Set(all.map((node) => node.type))
 ): PairingPlan {
   const sorted = [...all].sort((a, b) => a.type.localeCompare(b.type))
   const pairable = (slot: NormalizedSlot) =>
@@ -323,6 +325,19 @@ export function planPairs(
     }
     const producerNode = all.find((node) => node.type === producerSide[0])
     const consumerNode = all.find((node) => node.type === consumerSide[0])
+    const unknownEndpoints = [
+      !producerNode ? producerSide[0] : null,
+      !consumerNode ? consumerSide[0] : null
+    ].filter(
+      (nodeType): nodeType is string =>
+        nodeType !== null && !knownNodeTypes.has(nodeType)
+    )
+    if (unknownEndpoints.length > 0) {
+      plan.requiredPairIssues.push(
+        `${key}: unknown node type(s): ${unknownEndpoints.join(', ')}`
+      )
+      continue
+    }
     if (!producerNode || !consumerNode) continue
     if (
       !corpusTypeSet.has(producerNode.type) &&

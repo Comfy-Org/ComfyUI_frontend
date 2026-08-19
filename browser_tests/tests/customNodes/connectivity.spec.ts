@@ -22,6 +22,7 @@ import {
 import { failureSummary } from '@e2e/fixtures/customNode/failureReport'
 import {
   loadAllManifestPackNames,
+  loadFullManifest,
   loadManifest
 } from '@e2e/fixtures/customNode/manifest'
 import type {
@@ -39,8 +40,7 @@ import {
 } from '@e2e/fixtures/utils/consoleErrorCollector'
 import {
   expectNoVisibleErrors,
-  trackVisibleErrors,
-  visibleErrorSurfaceSelectors
+  trackVisibleErrors
 } from '@e2e/fixtures/utils/errorSurfaces'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 
@@ -51,6 +51,7 @@ import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 // that floor and the sweep logs its actual rate so it can be tightened.
 const PLAN_SETUP_MS = 120_000
 const SWEEP_MS_PER_PAIR = 40
+const ISOLATED_MS_PER_PAIR = PLAN_SETUP_MS
 // Same discipline for the drag pass, whose edge list grows with every
 // connectivity pack: one drag per edge per renderer. This test carried a flat
 // 120s cap over today's 6 packs (16 drags) until the since-removed cloud
@@ -103,11 +104,6 @@ interface PairResult {
   detail?: string
 }
 
-interface PairEvaluation {
-  results: PairResult[]
-  visibleErrors: Array<{ surface: string; text: string }>
-}
-
 async function runPairsInIsolatedPages(
   page: Page,
   pairs: PlannedPair[]
@@ -133,14 +129,14 @@ async function runPairsInIsolatedPages(
       )
       const consoleErrors = collectConsoleErrors(probe)
       try {
-        const evaluation = await evaluatePairs(probe, [pair], {
+        const pairResults = await evaluatePairs(probe, [pair], {
           resetAfter: false
         })
-        results.push(...evaluation.results)
-        expect(
-          evaluation.visibleErrors,
-          `after isolated pair ${pair.producer.nodeType} -> ${pair.consumer.nodeType}: transient visible errors`
-        ).toEqual([])
+        results.push(...pairResults)
+        await expectNoVisibleErrors(
+          probe,
+          `after isolated pair ${pair.producer.nodeType} -> ${pair.consumer.nodeType}`
+        )
       } finally {
         consoleErrors.stop()
         errors.push(...consoleErrors.errors)
@@ -193,7 +189,11 @@ test('connectivity: representative edges cover every pairable slot through model
   const packTypes = nodes
     .filter((node) => installedPacks.has(node.pack))
     .map((node) => node.type)
-  const plan = planPairs(nodes, packTypes, requiredPairKeys)
+  const knownNodeTypes = new Set([
+    ...nodes.map((node) => node.type),
+    ...loadFullManifest().flatMap((entry) => entry.expectedNodes)
+  ])
+  const plan = planPairs(nodes, packTypes, requiredPairKeys, knownNodeTypes)
   const isolatedTypes = new Set(Object.keys(activeIsolatedNodeTypes))
   const isolatedPairs = plan.pairs.filter(
     (pair) =>
@@ -245,7 +245,11 @@ test('connectivity: representative edges cover every pairable slot through model
   // values and links flow through the same stores in both renderers). The
   // curated drag test below covers real pointer wiring under BOTH renderers.
   const consoleErrors = collectConsoleErrors(comfyPage.page)
-  test.setTimeout(PLAN_SETUP_MS + plan.pairs.length * SWEEP_MS_PER_PAIR)
+  test.setTimeout(
+    PLAN_SETUP_MS +
+      sharedPairs.length * SWEEP_MS_PER_PAIR +
+      isolatedPairs.length * ISOLATED_MS_PER_PAIR
+  )
   const sweepStart = Date.now()
   const sharedResults = await runPairsInPage(comfyPage.page, sharedPairs)
   const isolated = await runPairsInIsolatedPages(comfyPage.page, isolatedPairs)
@@ -338,10 +342,20 @@ test('connectivity: representative edges cover every pairable slot through model
   // actually has. Node types contain dots (MathExpression|pysssss.expression),
   // so the slot name is split from the right.
   const liveNodeTypes = new Set(nodes.map((node) => node.type))
-  const keyIsAnswerable = (key: string) =>
-    key
-      .split(' -> ')
-      .every((side) => liveNodeTypes.has(side.slice(0, side.lastIndexOf('.'))))
+  const keyIsAnswerable = (key: string): boolean | null => {
+    const sides = key.split(' -> ')
+    if (sides.length !== 2) return null
+    const nodeTypes = sides.map((side) => {
+      const separator = side.lastIndexOf('.')
+      return separator > 0 && separator < side.length - 1
+        ? side.slice(0, separator)
+        : null
+    })
+    if (nodeTypes.some((nodeType) => nodeType === null)) return null
+    return nodeTypes.every(
+      (nodeType) => nodeType !== null && liveNodeTypes.has(nodeType)
+    )
+  }
   const staleEntries: string[] = []
   for (const [expectedPairs, expectedOutcome] of [
     [connectRejected, 'CONNECT_REJECTED'],
@@ -350,7 +364,12 @@ test('connectivity: representative edges cover every pairable slot through model
   ] as const)
     for (const key of expectedPairs) {
       const observed = outcomeByKey.get(key)
-      if (!keyIsAnswerable(key)) continue
+      const answerable = keyIsAnswerable(key)
+      if (answerable === null) {
+        staleEntries.push(`${key}: invalid pair key`)
+        continue
+      }
+      if (!answerable) continue
       if (observed !== expectedOutcome)
         staleEntries.push(
           `${key}: expected ${expectedOutcome}, observed ${observed ?? 'nothing'} - remove the stale entry`
@@ -388,16 +407,16 @@ async function runPairsInPage(
   page: Page,
   pairs: PlannedPair[]
 ): Promise<PairResult[]> {
-  return (await evaluatePairs(page, pairs)).results
+  return await evaluatePairs(page, pairs)
 }
 
 function evaluatePairs(
   page: Page,
   pairs: PlannedPair[],
   { resetAfter = true }: { resetAfter?: boolean } = {}
-): Promise<PairEvaluation> {
-  const payload = [pairs, resetAfter, visibleErrorSurfaceSelectors] as const
-  return page.evaluate(async ([pairsInPage, resetAfter, errorSelectors]) => {
+): Promise<PairResult[]> {
+  const payload = [pairs, resetAfter] as const
+  return page.evaluate(async ([pairsInPage, resetAfter]) => {
     const graph = window.app!.graph
     let nextNodeId = graph.last_node_id
     const resetGraph = () => {
@@ -488,44 +507,13 @@ function evaluatePairs(
       } catch (error) {
         report.push({
           key,
-          outcome: 'SLOT_CONTRACT_MISMATCH',
+          outcome: 'THREW',
           detail: `threw: ${String(error)}`
         })
       }
     }
     if (resetAfter) resetGraph()
-    const visibleErrors =
-      (
-        window as Window & {
-          __cnVisibleErrors?: Array<{ surface: string; text: string }>
-        }
-      ).__cnVisibleErrors ?? []
-    const currentVisibleErrors = errorSelectors.flatMap(
-      ({ surface, selector }) =>
-        [...document.querySelectorAll(selector)].flatMap((element) => {
-          if (
-            !(element instanceof HTMLElement) ||
-            !element.checkVisibility({
-              checkOpacity: true,
-              checkVisibilityCSS: true
-            })
-          )
-            return []
-          return [
-            {
-              surface,
-              text: (element.innerText || element.textContent || '')
-                .replace(/\s+/g, ' ')
-                .trim()
-                .slice(0, 300)
-            }
-          ]
-        })
-    )
-    return {
-      results: report,
-      visibleErrors: [...visibleErrors, ...currentVisibleErrors]
-    }
+    return report
   }, payload)
 }
 

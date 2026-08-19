@@ -110,6 +110,7 @@ export function hashPngPixels(file: Buffer): string {
   const hash = createHash('sha256')
   let offset = 8
   let sawIdat = false
+  let sawIend = false
   while (offset + 8 <= file.length) {
     const length = file.readUInt32BE(offset)
     const chunkType = file.toString('latin1', offset + 4, offset + 8)
@@ -121,10 +122,14 @@ export function hashPngPixels(file: Buffer): string {
       hash.update(file.subarray(offset + 8, offset + 8 + length))
       sawIdat = true
     }
-    if (chunkType === 'IEND') break
+    if (chunkType === 'IEND') {
+      sawIend = true
+      break
+    }
     offset += 12 + length
   }
   if (!sawIdat) throw new Error('PNG has no IDAT chunk - truncated file?')
+  if (!sawIend) throw new Error('PNG has no IEND chunk - truncated file?')
   return `sha256:${hash.digest('hex')}`
 }
 

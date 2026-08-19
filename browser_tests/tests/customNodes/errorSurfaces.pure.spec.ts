@@ -29,7 +29,8 @@ test('a persistent error toast fails carrying its visible text', async ({
   )
   expect(failure).toBeInstanceOf(Error)
   const message = (failure as Error).message
-  expect(message).toContain('at startup: errorToasts')
+  expect(message).toContain('at startup: transient visible errors')
+  expect(message).toContain('errorToasts')
   expect(message).toContain('Failed to load workspace: HTTP 502')
   expect(message).toContain('Settings seed rejected')
 })

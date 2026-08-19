@@ -610,7 +610,7 @@ for (const entry of manifestEntries) {
               ? [true]
               : [false, true]
         for (const vueNodesEnabled of rendererPasses) {
-          const rawOutputTopologyExpectations = packLedgerFor(
+          const outputTopologyExpectations = packLedgerFor(
             rendererLedgerFor(
               vueNodesEnabled,
               OUTPUT_TOPOLOGY_EXPECTATIONS_LITEGRAPH,
@@ -618,7 +618,6 @@ for (const entry of manifestEntries) {
             ),
             entry.pack
           )
-          const outputTopologyExpectations = rawOutputTopologyExpectations
           const observedOutputTopologies = new Set<string>()
           for (const ledgered of Object.keys(outputTopologyExpectations))
             expect(
