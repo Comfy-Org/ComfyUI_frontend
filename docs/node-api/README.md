@@ -48,13 +48,16 @@ mechanism and preserve the feature.
    lifecycle, mutation, and serialization.
 2. [Tutorial](./tutorial.md) builds a small extension around an existing backend
    node.
-3. [Registration and lifecycle](./registration.md) covers module loading,
+3. [Migration how-to](./how-to.md) maps common LiteGraph and legacy `app`
+   mechanisms to behavior-preserving published API replacements.
+4. [Registration and lifecycle](./registration.md) covers module loading,
    capability probing, definition registration, globals, and teardown.
 
 ## Guides
 
 | Guide                                      | Covers                                                                                                               |
 | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| [Migration how-to](./how-to.md)            | task-oriented LiteGraph-to-API recipes, intent forks, before/after examples, and migration traps                     |
 | [Nodes and definitions](./nodes.md)        | `NodeDef`, `NodeDefBuilder`, `NodeHandle`, lifecycle hooks, properties, menus, badges, and frontend node definitions |
 | [Graphs and groups](./graph.md)            | visible/root/subgraph scopes, selection, geometry, editing, undo batches, groups, and graph events                   |
 | [Slots and links](./slots.md)              | slot identity, lookup, dynamic slots, connections, link-preserving operations, and resolved sources                  |
