@@ -25,6 +25,9 @@ const stubs = {
     props: ['embedded'],
     template: '<section aria-label="Local credits overview" />'
   },
+  SettingsPlansSection: {
+    template: '<section aria-label="Plans section" />'
+  },
   SubscriptionFooterLinks: {
     template: '<footer aria-label="Subscription links" />'
   },
@@ -57,11 +60,16 @@ describe('PlanCreditsPanelContent', () => {
     expect(screen.queryByRole('region', { name: 'Usage logs' })).toBeNull()
   })
 
-  it('shows the existing credits UI instead of subscription plans on local', () => {
+  it('shows the credits card first and the plans section below it on local', () => {
     renderPanel({ cloud: false })
 
+    const creditsCard = screen.getByRole('region', {
+      name: 'Local credits overview'
+    })
+    const plansSection = screen.getByRole('region', { name: 'Plans section' })
     expect(
-      screen.getByRole('region', { name: 'Local credits overview' })
+      creditsCard.compareDocumentPosition(plansSection) &
+        Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy()
     expect(
       screen.getByRole('contentinfo', { name: 'Subscription links' })
@@ -69,6 +77,15 @@ describe('PlanCreditsPanelContent', () => {
     expect(
       screen.queryByRole('region', { name: 'Plan and credits overview' })
     ).toBeNull()
+  })
+
+  it('never shows the plans section on cloud', () => {
+    renderPanel({ cloud: true })
+
+    expect(screen.queryByRole('region', { name: 'Plans section' })).toBeNull()
+    expect(
+      screen.getByRole('region', { name: 'Plan and credits overview' })
+    ).toBeTruthy()
   })
 
   it('opens the platform usage page from the Activity tab', async () => {
