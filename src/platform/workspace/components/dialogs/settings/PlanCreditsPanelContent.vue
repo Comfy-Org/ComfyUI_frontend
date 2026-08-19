@@ -68,10 +68,12 @@ const tabs = computed<{ key: View; label: string }[]>(() => [
 
 const activeView = ref<View>('overview')
 
-const fullActivityUrl = `${getComfyPlatformBaseUrl()}/profile/usage`
-
 function openFullActivity() {
-  window.open(fullActivityUrl, '_blank', 'noopener,noreferrer')
+  window.open(
+    `${getComfyPlatformBaseUrl()}/profile/usage`,
+    '_blank',
+    'noopener,noreferrer'
+  )
 }
 
 const usageLogsTable = useTemplateRef('usageLogsTable')
