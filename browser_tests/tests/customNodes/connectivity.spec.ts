@@ -54,8 +54,7 @@ import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 const PLAN_SETUP_MS = 120_000
 const SWEEP_MS_PER_PAIR = 40
 const ISOLATED_MS_PER_PAIR = PLAN_SETUP_MS
-// The pinned defect starts after a 25ms timer; 5s is 200x that trigger delay.
-const ISOLATED_EXECUTION_TIMEOUT_MS = 5_000
+const DYNAMIC_CLEANUP_SETTLE_MS = 50
 const PAIRS_PER_BATCH = 100
 // Same discipline for the drag pass, whose edge list grows with every
 // connectivity pack: one drag per edge per renderer. This test carried a flat
@@ -66,7 +65,7 @@ const {
   isolatedNodeTypes,
   connectRejected: allConnectRejectedGroups,
   deterministicSlotContractMismatch: allDeterministicSlotContractMismatchGroups,
-  isolatedPageHung: allIsolatedPageHungGroups,
+  dynamicSlotCleanupStalled: allDynamicSlotCleanupStalledGroups,
   roundtripLost: allRoundtripLostGroups,
   zeroPairDragExpectedNodeCounts
 } = connectivityExpectations
@@ -80,9 +79,8 @@ const connectRejectedGroups = allConnectRejectedGroups.filter(
 )
 const deterministicSlotContractMismatchGroups =
   allDeterministicSlotContractMismatchGroups.filter(appliesToSelectedManifest)
-const isolatedPageHungGroups = allIsolatedPageHungGroups.filter(
-  appliesToSelectedManifest
-)
+const dynamicSlotCleanupStalledGroups =
+  allDynamicSlotCleanupStalledGroups.filter(appliesToSelectedManifest)
 const roundtripLostGroups = allRoundtripLostGroups.filter(
   appliesToSelectedManifest
 )
@@ -90,18 +88,20 @@ const connectRejected = pairExpectationKeys(connectRejectedGroups)
 const deterministicSlotContractMismatch = pairExpectationKeys(
   deterministicSlotContractMismatchGroups
 )
-const isolatedPageHung = pairExpectationKeys(isolatedPageHungGroups)
+const dynamicSlotCleanupStalled = pairExpectationKeys(
+  dynamicSlotCleanupStalledGroups
+)
 const roundtripLost = pairExpectationKeys(roundtripLostGroups)
 const requiredPairKeys = [
   ...connectRejected,
   ...deterministicSlotContractMismatch,
-  ...isolatedPageHung,
+  ...dynamicSlotCleanupStalled,
   ...roundtripLost
 ]
 const requiredEndpointNodeTypes = pairExpectationNodeTypes([
   ...connectRejectedGroups,
   ...deterministicSlotContractMismatchGroups,
-  ...isolatedPageHungGroups,
+  ...dynamicSlotCleanupStalledGroups,
   ...roundtripLostGroups
 ])
 
@@ -134,35 +134,6 @@ interface PairResult {
   detail?: string
 }
 
-async function evaluateIsolatedPair(
-  page: Page,
-  pair: PlannedPair
-): Promise<PairResult[]> {
-  const evaluation = evaluatePairs(page, [pair], { resetAfter: false }).then(
-    (results) => ({ kind: 'completed' as const, results }),
-    (error: unknown) => ({ kind: 'failed' as const, error })
-  )
-  let timeout: ReturnType<typeof setTimeout> | undefined
-  const deadline = new Promise<{ kind: 'timed-out' }>((resolve) => {
-    timeout = setTimeout(
-      () => resolve({ kind: 'timed-out' }),
-      ISOLATED_EXECUTION_TIMEOUT_MS
-    )
-  })
-  const result = await Promise.race([evaluation, deadline])
-  if (timeout !== undefined) clearTimeout(timeout)
-  if (result.kind === 'failed') throw result.error
-  if (result.kind === 'completed') return result.results
-  const key = `${pair.producer.nodeType}.${pair.producer.slotName} -> ${pair.consumer.nodeType}.${pair.consumer.slotName}`
-  return [
-    {
-      key,
-      outcome: 'ISOLATED_PAGE_HUNG',
-      detail: `page evaluation did not return within ${ISOLATED_EXECUTION_TIMEOUT_MS}ms`
-    }
-  ]
-}
-
 async function runPairsInIsolatedPages(
   page: Page,
   pairs: PlannedPair[]
@@ -189,15 +160,13 @@ async function runPairsInIsolatedPages(
         probe,
         `before isolated pair ${pair.producer.nodeType} -> ${pair.consumer.nodeType}`
       )
-      const executionSession = await probe.context().newCDPSession(probe)
       const consoleErrors = collectConsoleErrors(probe)
       try {
-        const pairResults = await evaluateIsolatedPair(probe, pair)
+        const pairResults = await evaluatePairs(probe, [pair], {
+          resetAfter: false,
+          stalledCleanupKeys: dynamicSlotCleanupStalled
+        })
         results.push(...pairResults)
-        if (pairResults[0]?.outcome === 'ISOLATED_PAGE_HUNG') {
-          await executionSession.send('Runtime.terminateExecution')
-          continue
-        }
         await expectNoVisibleErrors(
           probe,
           `after isolated pair ${pair.producer.nodeType} -> ${pair.consumer.nodeType}`
@@ -205,7 +174,6 @@ async function runPairsInIsolatedPages(
       } finally {
         consoleErrors.stop()
         errors.push(...consoleErrors.errors)
-        await executionSession.detach()
       }
     } finally {
       if (!probe.isClosed()) await probe.close()
@@ -353,8 +321,8 @@ test('connectivity: representative edges cover every pairable slot through model
       ) &&
       !(
         result.outcome ===
-          ('ISOLATED_PAGE_HUNG' satisfies ConnectivityOutcome) &&
-        isolatedPageHung.includes(result.key)
+          ('DYNAMIC_SLOT_CLEANUP_STALLED' satisfies ConnectivityOutcome) &&
+        dynamicSlotCleanupStalled.includes(result.key)
       ) &&
       !(
         result.outcome === ('ROUNDTRIP_LOST' satisfies ConnectivityOutcome) &&
@@ -445,7 +413,7 @@ test('connectivity: representative edges cover every pairable slot through model
   const staleEntries: string[] = []
   for (const [expectedPairs, expectedOutcome] of [
     [connectRejected, 'CONNECT_REJECTED'],
-    [isolatedPageHung, 'ISOLATED_PAGE_HUNG'],
+    [dynamicSlotCleanupStalled, 'DYNAMIC_SLOT_CLEANUP_STALLED'],
     [roundtripLost, 'ROUNDTRIP_LOST'],
     [deterministicSlotContractMismatch, 'SLOT_CONTRACT_MISMATCH']
   ] as const)
@@ -509,10 +477,20 @@ async function runPairsInPage(
 function evaluatePairs(
   page: Page,
   pairs: PlannedPair[],
-  { resetAfter = true }: { resetAfter?: boolean } = {}
+  {
+    resetAfter = true,
+    stalledCleanupKeys = []
+  }: { resetAfter?: boolean; stalledCleanupKeys?: string[] } = {}
 ): Promise<PairResult[]> {
-  const payload = [pairs, resetAfter] as const
-  return page.evaluate(async ([pairsInPage, resetAfter]) => {
+  const payload = [
+    pairs,
+    resetAfter,
+    stalledCleanupKeys,
+    DYNAMIC_CLEANUP_SETTLE_MS
+  ] as const
+  return page.evaluate(async (payloadInPage) => {
+    const [pairsInPage, resetAfter, stalledKeys, cleanupSettleMs] =
+      payloadInPage
     const graph = window.app!.graph
     let nextNodeId = graph.last_node_id
     const resetGraph = () => {
@@ -541,6 +519,35 @@ function evaluatePairs(
         }
         graph.add(producer)
         graph.add(consumer)
+        let stalledCleanup: string | undefined
+        if (stalledKeys.includes(key)) {
+          const removeInput = consumer.removeInput.bind(consumer)
+          let priorNoProgress:
+            | { slotIndex: number; inputCount: number }
+            | undefined
+          consumer.removeInput = (slotIndex) => {
+            const inputCount = consumer.inputs.length
+            const removed = removeInput(slotIndex)
+            if (consumer.inputs.length !== inputCount) {
+              priorNoProgress = undefined
+              return removed
+            }
+            if (
+              priorNoProgress?.slotIndex === slotIndex &&
+              priorNoProgress.inputCount === inputCount
+            ) {
+              stalledCleanup = `removeInput(${slotIndex}) left ${inputCount} inputs unchanged on consecutive cleanup iterations`
+              const unlinkedIndex = consumer.inputs.findIndex(
+                (input) => input.link == null
+              )
+              if (unlinkedIndex >= 0) removeInput(unlinkedIndex)
+              priorNoProgress = undefined
+              return removed
+            }
+            priorNoProgress = { slotIndex, inputCount }
+            return removed
+          }
+        }
         // Pack nodeCreated hooks commonly defer widget/editor initialization
         // with setTimeout(0). Let that required mount work finish before this
         // sweep serializes the pair. Without the yield, a 1,000-pair browser
@@ -574,6 +581,17 @@ function evaluatePairs(
         if (!link || consumer.inputs[inIndex]?.link == null) {
           report.push({ key, outcome: 'CONNECT_REJECTED' })
           continue
+        }
+        if (stalledKeys.includes(key)) {
+          await new Promise((resolve) => setTimeout(resolve, cleanupSettleMs))
+          if (stalledCleanup !== undefined) {
+            report.push({
+              key,
+              outcome: 'DYNAMIC_SLOT_CLEANUP_STALLED',
+              detail: stalledCleanup
+            })
+            continue
+          }
         }
         const serialized = graph.serialize()
         graph.configure(serialized)

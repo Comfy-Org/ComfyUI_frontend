@@ -71,7 +71,7 @@ export interface PairingPlan {
 export type ConnectivityOutcome =
   | 'PASS'
   | 'CONNECT_REJECTED'
-  | 'ISOLATED_PAGE_HUNG'
+  | 'DYNAMIC_SLOT_CLEANUP_STALLED'
   | 'ROUNDTRIP_LOST'
   | 'SLOT_CONTRACT_MISMATCH'
   | 'THREW'

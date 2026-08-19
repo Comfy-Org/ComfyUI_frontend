@@ -2,7 +2,7 @@ export interface ConnectivityExpectations {
   isolatedNodeTypes: Record<string, { pack: string; reason: string }>
   connectRejected: PairExpectationGroup[]
   deterministicSlotContractMismatch: PairExpectationGroup[]
-  isolatedPageHung: PairExpectationGroup[]
+  dynamicSlotCleanupStalled: PairExpectationGroup[]
   roundtripLost: PairExpectationGroup[]
   zeroPairDragExpectedNodeCounts: Partial<Record<string, number>>
 }
@@ -155,7 +155,7 @@ export const connectivityExpectations: ConnectivityExpectations = {
         'preserve LiteGraph serialization and remove this entry when the pair survives reload'
     }
   ],
-  isolatedPageHung: [
+  dynamicSlotCleanupStalled: [
     {
       id: 'fill-code-node-dynamic-cleanup-hang',
       pack: 'ComfyUI_Fill-Nodes',
