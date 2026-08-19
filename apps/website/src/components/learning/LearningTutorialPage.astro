@@ -9,7 +9,9 @@ import { externalLinks, localizeHref } from '../../config/routes'
 import type { LearningTutorial } from '../../data/learningTutorials'
 import {
   learningCrumbs,
-  tutorialDescription
+  tutorialDescription,
+  youtubeEmbedUrl,
+  youtubeWatchUrl
 } from '../../data/learningTutorials'
 import type { JsonLdNode } from '../../utils/jsonLd'
 import {
@@ -42,7 +44,12 @@ const video: JsonLdNode = videoObjectNode({
   name: title,
   description,
   thumbnailUrl: tutorial.poster,
-  contentUrl: tutorial.videoSrc,
+  contentUrl: tutorial.youtubeId
+    ? youtubeWatchUrl(tutorial.youtubeId)
+    : tutorial.videoSrc,
+  embedUrl: tutorial.youtubeId
+    ? youtubeEmbedUrl(tutorial.youtubeId)
+    : undefined,
   uploadDate: tutorial.publishedDate,
   locale
 })

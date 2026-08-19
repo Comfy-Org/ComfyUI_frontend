@@ -5,7 +5,9 @@ import {
   filterByCategory,
   learningCategories,
   learningTutorials,
-  recommendedFor
+  recommendedFor,
+  youtubeEmbedUrl,
+  youtubeWatchUrl
 } from './learningTutorials'
 
 const firstVfx = filterByCategory('vfx')[0]
@@ -39,6 +41,25 @@ describe('categoryChapters', () => {
     const episodes = categoryChapters(firstVfx).map((item) => item.episode)
     expect(episodes).toEqual([...episodes].sort((a, b) => a - b))
     expect(categoryChapters(firstVfx)[0]).toEqual(secondVfx)
+  })
+})
+
+describe('video source', () => {
+  it('plays via exactly one of videoSrc or youtubeId', () => {
+    for (const tutorial of learningTutorials) {
+      expect(Boolean(tutorial.videoSrc) !== Boolean(tutorial.youtubeId)).toBe(
+        true
+      )
+    }
+  })
+
+  it('builds nocookie embed and canonical watch URLs from an id', () => {
+    expect(youtubeEmbedUrl('abc123')).toBe(
+      'https://www.youtube-nocookie.com/embed/abc123?autoplay=1&mute=1&rel=0'
+    )
+    expect(youtubeWatchUrl('abc123')).toBe(
+      'https://www.youtube.com/watch?v=abc123'
+    )
   })
 })
 

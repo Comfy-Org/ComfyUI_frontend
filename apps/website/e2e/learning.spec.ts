@@ -26,6 +26,12 @@ const categoryNav = (page: Page, locale: 'en' | 'zh-CN' = 'en') =>
 // metadata helpers, so these assertions catch a regression in the helpers or
 // the underlying strings — not just the wiring.
 const EXPECTED_META = {
+  basics: {
+    heading: 'ComfyUI Basics',
+    description:
+      'Beginner ComfyUI tutorials — learn the node graph, LoRAs, style transfer, and ControlNets from the ground up.',
+    title: 'ComfyUI Basics - Comfy'
+  },
   vfx: {
     heading: 'VFX Tutorials',
     description:
@@ -239,6 +245,16 @@ test.describe('Learning category pages @smoke', () => {
 
 test.describe('Learning tutorial page @smoke', () => {
   const [firstTutorial] = learningTutorials
+  const selfHostedTutorial = learningTutorials.find(
+    (tutorial) => tutorial.videoSrc && !tutorial.youtubeId
+  )
+  const youtubeTutorial = learningTutorials.find(
+    (tutorial) => tutorial.youtubeId
+  )
+  const workflowTutorial = learningTutorials.find((tutorial) => tutorial.href)
+  if (!selfHostedTutorial || !youtubeTutorial || !workflowTutorial) {
+    throw new Error('expected self-hosted, youtube, and workflow tutorials')
+  }
 
   test('a thumbnail navigates to the dedicated tutorial page', async ({
     page
@@ -257,10 +273,10 @@ test.describe('Learning tutorial page @smoke', () => {
   test('the page exposes an indexable heading and autoplay video', async ({
     page
   }) => {
-    await page.goto(tutorialPath(firstTutorial))
+    await page.goto(tutorialPath(selfHostedTutorial))
 
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-      firstTutorial.title.en
+      selfHostedTutorial.title.en
     )
     // Attribute-level autoplay check: blockExternalMedia aborts the video
     // request, so actual playback never starts in e2e.
@@ -268,6 +284,20 @@ test.describe('Learning tutorial page @smoke', () => {
     await expect(video).toBeVisible()
     await expect(video).toHaveAttribute('autoplay', '')
     await expect(video).toHaveAttribute('muted', '')
+  })
+
+  test('youtube tutorials embed a nocookie iframe instead of a video', async ({
+    page
+  }) => {
+    await page.goto(tutorialPath(youtubeTutorial))
+
+    await expect(page.locator('video')).toHaveCount(0)
+    const iframe = page.locator('iframe[src*="youtube-nocookie.com/embed/"]')
+    await expect(iframe).toBeVisible()
+    await expect(iframe).toHaveAttribute(
+      'src',
+      new RegExp(`/embed/${youtubeTutorial.youtubeId}\\b`)
+    )
   })
 
   test('the breadcrumb links back to the directory and category', async ({
@@ -302,10 +332,9 @@ test.describe('Learning tutorial page @smoke', () => {
   })
 
   test('links to the workflow from the title block', async ({ page }) => {
-    if (!firstTutorial.href) throw new Error('expected a workflow link')
-    await page.goto(tutorialPath(firstTutorial))
+    await page.goto(tutorialPath(workflowTutorial))
 
-    const workflowLink = page.locator(`a[href="${firstTutorial.href}"]`)
+    const workflowLink = page.locator(`a[href="${workflowTutorial.href}"]`)
     await expect(workflowLink).toHaveText(t('cta.tryWorkflow', 'en'))
   })
 
