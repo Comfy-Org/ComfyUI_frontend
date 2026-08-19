@@ -267,6 +267,12 @@ sampled immediately before writing. Once the document is a real widget value,
 normal workflow serialization also carries it through paste and duplicate — a
 `clone()` override and side cache are not another requirement.
 
+Count those cells per widget before consolidating an interface. Two legacy DOM
+rows with workflow serialization enabled produce two positional
+`widgets_values` entries even when both values are empty and neither reaches
+the prompt. Replacing them with one larger mount changes the wire format; keep
+two mounts, or prove from the widget flags that one row was never serialized.
+
 If the old editor patched `ChangeTracker.undoRedo` to keep Ctrl+Z local, do not
 port the patch. Focused `input`, `textarea`, and `contenteditable` elements own
 their undo history, including while auto-queue-on-change is watching edits.
@@ -383,6 +389,15 @@ host is served, and `on(event, detail => …)` subscribes to any backend message
 including one your own Python side emits. For the built-in preview channel
 prefer `b.onPreview`, which answers "is this frame for my node?" — `backend.on`
 hands you the raw payload and leaves correlation to you.
+
+If a pack rewrites `graphToPrompt` only to name a cache or sidecar file, inspect
+its Python before declaring the feature impossible. A pack-owned preview route
+may already serve file inputs without a graph run; connected tensors can use
+`queue.run({ nodes: [node] })`, then refresh the sidecar from `b.onExecuted` and
+`execution_cached`. A hidden id declared as `UNIQUE_ID` is supplied by the host.
+A hidden string default such as `"0"` is instead a pack-backend identity bug:
+record the simultaneous-node limitation precisely, but do not mislabel the
+published queue, execution and backend mechanisms as missing.
 
 **If you are converting `app.ui.settings.getSettingValue` / `addSetting`, or a
 `settings: [...]` array in `registerExtension`** — **use `comfy.settings`**:
