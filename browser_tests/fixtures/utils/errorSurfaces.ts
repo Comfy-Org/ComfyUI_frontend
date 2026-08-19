@@ -62,7 +62,7 @@ function installVisibleErrorRecorder(
   const sampleElement = (element: Element, includeDescendants: boolean) => {
     const closest = element.closest(combinedSelector)
     if (closest) recordMatchingSurfaces(closest)
-    if (!includeDescendants) return
+    if (!includeDescendants || element.childElementCount === 0) return
     for (const descendant of element.querySelectorAll(combinedSelector))
       recordMatchingSurfaces(descendant)
   }
