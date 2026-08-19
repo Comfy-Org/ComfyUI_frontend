@@ -435,8 +435,6 @@ describe('nodeOutputStore getPreviewParam', () => {
 
 describe('nodeOutputStore getNodeImageUrlsByExecutionId', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
     vi.mocked(litegraphUtil.isAnimatedOutput).mockReturnValue(false)
     vi.mocked(litegraphUtil.isVideoNode).mockReturnValue(false)
     app.nodeOutputs = {}
