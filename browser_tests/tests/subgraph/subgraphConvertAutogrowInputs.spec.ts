@@ -7,12 +7,21 @@ import {
   REFERENCE_IMAGES_PREFIX,
   byteDanceReferenceNodeDef
 } from '@e2e/fixtures/data/byteDanceReferenceNodeDef'
-import { getConnectedInputs } from '@e2e/fixtures/utils/nodeInputLinks'
+import {
+  getConnectedInputs,
+  getInputNames
+} from '@e2e/fixtures/utils/nodeInputLinks'
 import { routeObjectInfoFromSetupApi } from '@e2e/fixtures/utils/objectInfo'
 
 const REFERENCE_NODE_ID = '26'
 const IMAGE_1 = `${REFERENCE_IMAGES_PREFIX}image_1`
 const IMAGE_2 = `${REFERENCE_IMAGES_PREFIX}image_2`
+// Autogrow keeps one empty slot past the last connected one.
+const REFERENCE_IMAGE_SLOTS = [
+  IMAGE_1,
+  IMAGE_2,
+  `${REFERENCE_IMAGES_PREFIX}image_3`
+]
 
 const BLEND_NODE_ID = '3'
 const BLEND_INPUT_PREFIX = 'image'
@@ -88,6 +97,12 @@ test.describe(
             { name: IMAGE_1, originNodeId: '18' },
             { name: IMAGE_2, originNodeId: '19' }
           ])
+
+        await expect
+          .poll(() =>
+            getInputNames(comfyPage, REFERENCE_NODE_ID, REFERENCE_IMAGES_PREFIX)
+          )
+          .toEqual(REFERENCE_IMAGE_SLOTS)
       })
 
       // Reported in #bug-dump: converting the upstream Load Image nodes into a
@@ -115,6 +130,16 @@ test.describe(
               { name: IMAGE_1, originNodeId: subgraphNodeId },
               { name: IMAGE_2, originNodeId: subgraphNodeId }
             ])
+
+          await expect
+            .poll(() =>
+              getInputNames(
+                comfyPage,
+                REFERENCE_NODE_ID,
+                REFERENCE_IMAGES_PREFIX
+              )
+            )
+            .toEqual(REFERENCE_IMAGE_SLOTS)
         }
       )
     })

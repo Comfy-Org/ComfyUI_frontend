@@ -7,6 +7,25 @@ interface ConnectedInput {
   originNodeId: string
 }
 
+/** Names of a node's input slots starting with `namePrefix`, in slot order. */
+export async function getInputNames(
+  comfyPage: ComfyPage,
+  nodeId: string,
+  namePrefix: string
+): Promise<string[]> {
+  return comfyPage.page.evaluate(
+    ({ nodeId, namePrefix }) => {
+      const node = window.app!.canvas.graph!.getNodeById(nodeId)
+      if (!node) throw new Error(`Node ${nodeId} not found`)
+
+      return node.inputs
+        .map((input) => input.name)
+        .filter((name) => name.startsWith(namePrefix))
+    },
+    { nodeId: toNodeId(nodeId), namePrefix }
+  )
+}
+
 /**
  * Connected input slots of a node whose name starts with `namePrefix`, in slot
  * order, paired with the node each link originates from.
