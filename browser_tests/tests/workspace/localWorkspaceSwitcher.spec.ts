@@ -16,11 +16,13 @@ test.describe('Local workspace switcher', { tag: '@auth' }, () => {
     const localOrigin = new URL(page.url()).origin
     const billingRequestUrls: string[] = []
     const localBillingRequestUrls: string[] = []
+    const billingAuthorizationHeaders: string[] = []
     let tokenRequestBody: unknown
 
     page.on('request', (request) => {
       if (!request.url().includes('/api/billing/')) return
       billingRequestUrls.push(request.url())
+      billingAuthorizationHeaders.push(request.headers().authorization ?? '')
       if (new URL(request.url()).origin === localOrigin) {
         localBillingRequestUrls.push(request.url())
       }
@@ -72,6 +74,9 @@ test.describe('Local workspace switcher', { tag: '@auth' }, () => {
       ])
     )
     expect(localBillingRequestUrls).toEqual([])
+    await expect
+      .poll(() => billingAuthorizationHeaders)
+      .toContain('Bearer mock-workspace-token-ws-team')
     await expect
       .poll(() => comfyPage.menu.topbar.getTabNames())
       .toContain(workflowName)
