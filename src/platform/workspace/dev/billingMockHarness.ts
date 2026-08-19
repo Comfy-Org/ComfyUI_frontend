@@ -39,7 +39,7 @@ function currentUserEmail(): string {
     return 'you@comfy.org'
   }
 }
-type Tier = 'free' | 'standard' | 'creator' | 'pro' | 'enterprise'
+type Tier = 'free' | 'standard' | 'creator' | 'pro' | 'team' | 'enterprise'
 type State =
   | 'active'
   | 'cancelled'
@@ -83,7 +83,7 @@ interface UiState {
 const DEFAULTS: MockCfg = {
   ws: 'team',
   role: 'owner',
-  tier: 'creator',
+  tier: 'team',
   state: 'active',
   balance: 'partial',
   roleChange: '200',
@@ -99,7 +99,6 @@ const cfg: MockCfg = { ...DEFAULTS }
 // validation so a persisted value that's no longer valid (e.g. after renaming
 // 'funded' → 'full') is dropped rather than silently desyncing the picker.
 const OPTIONS: Record<
-  | 'ws'
   | 'role'
   | 'tier'
   | 'state'
@@ -109,9 +108,8 @@ const OPTIONS: Record<
   | 'selfCap',
   string[]
 > = {
-  ws: ['personal', 'team'],
   role: ['owner', 'admin', 'member'],
-  tier: ['free', 'standard', 'creator', 'pro', 'enterprise'],
+  tier: ['free', 'standard', 'creator', 'pro', 'team', 'enterprise'],
   state: ['active', 'cancelled', 'inactive', 'changing', 'at_risk', 'paused'],
   balance: ['full', 'partial', 'low', 'empty'],
   roleChange: ['200', '500'],
@@ -130,6 +128,7 @@ function loadCfg(): void {
       if (typeof value === 'string' && !opts.includes(value)) delete saved[key]
     }
     Object.assign(cfg, saved)
+    cfg.ws = 'team'
   } catch {
     /* ignore */
   }
@@ -157,6 +156,7 @@ const TIER: Record<Tier, string> = {
   standard: 'STANDARD',
   creator: 'CREATOR',
   pro: 'PRO',
+  team: 'TEAM',
   enterprise: 'ENTERPRISE'
 }
 // [price_cents, credits] per personal tier (monthly). Enterprise is a team-level
@@ -167,12 +167,29 @@ const PRICING: Record<Tier, [number, number]> = {
   standard: [2000, 4200],
   creator: [3500, 7400],
   pro: [10000, 21100],
+  team: [63000, 147700],
   enterprise: [10000, 21100]
 }
 // Team monthly credit allotment (credit_stop.credits_monthly). The CreditsTile
 // derives "used of total" from this, so balances below are expressed as credit
 // counts relative to it, not raw micros.
 const TEAM_MONTHLY_CREDITS = 56_900
+
+// canManageMembers requires hasMemberSeats, which needs BOTH max_seats and
+// occupied_seats as integers on /billing/status — absent them the owner loses
+// every member action.
+const MAX_SEATS: Record<Tier, number> = {
+  free: 1,
+  standard: 1,
+  creator: 5,
+  pro: 20,
+  team: 50,
+  enterprise: 100
+}
+
+function occupiedSeatCount(): number {
+  return (members() as { members: unknown[] }).members.length
+}
 
 // Balance *_micros fields are actually cents; credits = cents * CREDITS_PER_USD /
 // 100, so cents = round(credits * 100 / 211).
@@ -277,6 +294,8 @@ function billingStatus(): unknown {
           : 'paid',
     renewal_date: FUTURE,
     cancel_at: cfg.state === 'cancelled' ? CANCEL_AT : undefined,
+    max_seats: MAX_SEATS[cfg.tier],
+    occupied_seats: occupiedSeatCount(),
     // Presence marks a new credit-slider team plan (vs. legacy) and gives the
     // CreditsTile a team-scale monthly total to measure usage against.
     team_credit_stop: {
@@ -2199,7 +2218,6 @@ function buildPanel(): void {
     `<span style="display:flex;align-items:center;gap:8px"><span id="cbm-collapse" title="collapse" style="cursor:pointer;opacity:.7;padding:0 4px;border:1px solid #3a3d46;border-radius:4px;line-height:1.4">${ui.collapsed ? '+' : '–'}</span>` +
     `<span id="cbm-close" title="turn off the harness" style="cursor:pointer;opacity:.7;padding:0 4px">✕</span></span></div>` +
     `<div id="cbm-body"${ui.collapsed ? ' style="display:none"' : ''}>` +
-    row('workspace', 'ws', OPTIONS.ws) +
     row('role', 'role', OPTIONS.role) +
     row('member cap', 'selfCap', OPTIONS.selfCap) +
     `<label style="display:flex;gap:6px;margin:4px 0"><input type="checkbox" id="cbm-capSpent"${cfg.capSpent ? ' checked' : ''}/><span style="opacity:.7">cap fully spent (limit reached)</span></label>` +
@@ -2211,7 +2229,7 @@ function buildPanel(): void {
     row('roleChange', 'roleChange', OPTIONS.roleChange) +
     `<label style="display:flex;gap:6px;margin:4px 0"><input type="checkbox" id="cbm-multiWs"${cfg.multiWs ? ' checked' : ''}/><span style="opacity:.7">2nd workspace (switcher)</span></label>` +
     `<hr style="border:0;border-top:1px solid #2a2c33;margin:6px 0"/>` +
-    `<div style="font-size:10px;opacity:.55;margin-top:4px">change → saves + reloads · personal=/customers · team=/api/billing</div>` +
+    `<div style="font-size:10px;opacity:.55;margin-top:4px">change → saves + reloads</div>` +
     `</div>`
   document.body.appendChild(wrap)
 
