@@ -6,8 +6,7 @@ const files = execFileSync(
   { encoding: 'utf8' }
 )
   .split('\0')
-  .filter((file) => /\.(?:js|ts|vue|mts)$/.test(file))
-
+  .filter((file) => /\.(?:js|ts|tsx|vue|mts)$/.test(file))
 if (files.length > 0) {
   const fix = process.argv.includes('--fix') ? ['--fix'] : []
   run('oxlint', ['--type-aware', ...fix, ...files])
