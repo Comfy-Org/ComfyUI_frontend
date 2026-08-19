@@ -1428,6 +1428,32 @@ describe('billingOperationStore', () => {
       })
     })
 
+    it('does not update a new workspace after cancellation completes', async () => {
+      let finishRefresh: () => void = () => {}
+      mockFetchStatus.mockImplementationOnce(
+        () =>
+          new Promise<void>((resolve) => {
+            finishRefresh = resolve
+          })
+      )
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'succeeded',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      const terminal = store.startOperation('op-1', 'cancel')
+      await vi.advanceTimersByTimeAsync(0)
+      expect(mockFetchStatus).toHaveBeenCalledOnce()
+
+      mockActiveWorkspaceId.value = 'workspace-2'
+      finishRefresh()
+      await terminal
+
+      expect(mockUpdateActiveWorkspace).not.toHaveBeenCalled()
+    })
+
     it('resolves the terminal outcome even when the post-success refresh fails', async () => {
       mockFetchStatus.mockRejectedValueOnce(new Error('refresh failed'))
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
