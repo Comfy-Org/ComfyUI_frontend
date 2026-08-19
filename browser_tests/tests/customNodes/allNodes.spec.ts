@@ -43,6 +43,7 @@ import type { RawNodeDef } from '@e2e/fixtures/customNode/typePairing'
 import { normalizeNodeDefs } from '@e2e/fixtures/customNode/typePairing'
 import { eligibleNodeTypesForTier } from '@e2e/fixtures/customNode/tierNodeExclusions'
 import {
+  CANVAS_PREVIEW_IMAGE_PATH_PATTERN,
   matchesTopologyExpectation,
   OUTPUT_TOPOLOGY_EXPECTATIONS_LITEGRAPH,
   OUTPUT_TOPOLOGY_EXPECTATIONS_VUE,
@@ -949,7 +950,8 @@ for (const entry of manifestEntries) {
                 exactValueDriftIndices,
                 exactValueDriftKeys,
                 allowedNodeLosses,
-                vueNodesEnabled
+                vueNodesEnabled,
+                canvasPreviewImagePathPattern
               ]) => {
                 window.app!.graph.clear()
                 window.app!.graph.last_node_id = window.__cnIdBase ?? 0
@@ -961,6 +963,10 @@ for (const entry of manifestEntries) {
                     previewWidgetNames: string[]
                   }
                 >()
+                const acceptedImagePathPattern = new RegExp(
+                  canvasPreviewImagePathPattern.source,
+                  canvasPreviewImagePathPattern.flags
+                )
                 for (const type of types) {
                   const node = window.LiteGraph!.createNode(type)
                   if (!node) continue
@@ -976,9 +982,7 @@ for (const entry of manifestEntries) {
                   const expectsCanvasPreview =
                     !vueNodesEnabled &&
                     node.previewMediaType === 'image' &&
-                    imageWidget?.value !== null &&
-                    imageWidget?.value !== undefined &&
-                    imageWidget.value !== ''
+                    acceptedImagePathPattern.test(String(imageWidget?.value))
                   created.set(String(node.id), {
                     type,
                     widgetCount: null,
@@ -1303,7 +1307,11 @@ for (const entry of manifestEntries) {
                 allowedValueIndices,
                 allowedValueKeys,
                 Object.keys(expectedNodeLosses),
-                vueNodesEnabled
+                vueNodesEnabled,
+                {
+                  source: CANVAS_PREVIEW_IMAGE_PATH_PATTERN.source,
+                  flags: CANVAS_PREVIEW_IMAGE_PATH_PATTERN.flags
+                }
               ] as const
             )
             await comfyPage.nextFrame()
@@ -1329,6 +1337,20 @@ for (const entry of manifestEntries) {
                               | undefined
                           )?.widgets
                           values[type] = (widgets ?? []).length
+                        } else if (signal.predicate === 'widget-value') {
+                          const widgets = (
+                            node as unknown as
+                              | {
+                                  widgets?: Array<{
+                                    name: string
+                                    value: unknown
+                                  }>
+                                }
+                              | undefined
+                          )?.widgets
+                          values[type] = widgets?.find(
+                            (widget) => widget.name === signal.widget
+                          )?.value
                         } else {
                           values[type] = node?.[signal.property]
                         }

@@ -66,6 +66,7 @@ export const ROUNDTRIP_VALUE_ALLOWED_KEYS_VUE = {
 export type RoundtripInitializationSignal =
   | { property: string; predicate: 'defined' }
   | { property: string; predicate: 'equals'; value: unknown }
+  | { predicate: 'widget-value'; value: unknown; widget: string }
   | { predicate: 'widget-count'; value: number }
   | { predicate: 'minimum-widget-count'; value: number }
 
@@ -73,6 +74,13 @@ export const ROUNDTRIP_INITIALIZATION_SIGNALS: Record<
   string,
   Record<string, RoundtripInitializationSignal>
 > = {
+  'ComfyUI-KJNodes': {
+    ImageTransformKJ: {
+      predicate: 'widget-value',
+      value: '{"fillColor":"#000000"}',
+      widget: 'bboxes'
+    }
+  },
   'WhatDreamsCost-ComfyUI': {
     LoadAudioUI: {
       property: '_initializing',
@@ -101,6 +109,8 @@ function expectedInitializationValue(
   if (signal.predicate === 'minimum-widget-count')
     return `>= ${signal.value} widgets`
   if (signal.predicate === 'widget-count') return `${signal.value} widgets`
+  if (signal.predicate === 'widget-value')
+    return `${signal.widget} = ${JSON.stringify(signal.value)}`
   return JSON.stringify(signal.value)
 }
 
@@ -140,6 +150,15 @@ export function pendingRestoredPreviewWidgets(
             `${node}: expected ${widget} after reload, observed [${(observedByNode[node] ?? []).join(',')}]`
           ]
     )
+  )
+}
+
+export const CANVAS_PREVIEW_IMAGE_PATH_PATTERN =
+  /\.(?:jpe?g|png|webp)(?:\s*\[(?:input|output|temp)\])?\s*$/i
+
+export function isCanvasPreviewImagePath(value: unknown): value is string {
+  return (
+    typeof value === 'string' && CANVAS_PREVIEW_IMAGE_PATH_PATTERN.test(value)
   )
 }
 

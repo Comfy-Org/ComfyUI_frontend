@@ -3,6 +3,8 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import {
+  CANVAS_PREVIEW_IMAGE_PATH_PATTERN,
+  isCanvasPreviewImagePath,
   matchesTopologyExpectation,
   OUTPUT_TOPOLOGY_EXPECTATIONS_LITEGRAPH,
   OUTPUT_TOPOLOGY_EXPECTATIONS_VUE,
@@ -77,6 +79,11 @@ test('roundtrip initialization waits for pack-owned ready values', () => {
     iToolsPaintNode: {
       predicate: 'widget-count' as const,
       value: 33
+    },
+    ImageTransformKJ: {
+      predicate: 'widget-value' as const,
+      value: '{"fillColor":"#000000"}',
+      widget: 'bboxes'
     }
   }
   expect(
@@ -85,14 +92,16 @@ test('roundtrip initialization waits for pack-owned ready values', () => {
       {
         LoadAudioUI: true,
         SAM3VideoSegmentation: undefined,
-        iToolsPaintNode: 32
+        iToolsPaintNode: 32,
+        ImageTransformKJ: ''
       },
       false
     )
   ).toEqual([
     'LoadAudioUI (litegraph: expected false, observed true)',
     'SAM3VideoSegmentation (litegraph: expected defined, observed undefined)',
-    'iToolsPaintNode (litegraph: expected 33 widgets, observed 32)'
+    'iToolsPaintNode (litegraph: expected 33 widgets, observed 32)',
+    'ImageTransformKJ (litegraph: expected bboxes = "{\\"fillColor\\":\\"#000000\\"}", observed "")'
   ])
   expect(
     pendingRoundtripInitializations(
@@ -100,7 +109,8 @@ test('roundtrip initialization waits for pack-owned ready values', () => {
       {
         LoadAudioUI: false,
         SAM3VideoSegmentation: {},
-        iToolsPaintNode: 33
+        iToolsPaintNode: 33,
+        ImageTransformKJ: '{"fillColor":"#000000"}'
       },
       false
     )
@@ -132,6 +142,28 @@ test('roundtrip waits for required canvas previews after reload', () => {
       LoadImageWithExif: ['image', 'upload', '$$canvas-image-preview']
     })
   ).toEqual([])
+})
+
+test('requires canvas previews only for supported image upload paths', () => {
+  for (const value of [
+    'input/example.png',
+    'example.JPG',
+    'example.jpeg [output]',
+    'nested/example.webp[temp]'
+  ]) {
+    expect(isCanvasPreviewImagePath(value)).toBe(true)
+  }
+
+  for (const value of [
+    '(upload a mesh file)',
+    'example.glb',
+    '',
+    null,
+    undefined
+  ]) {
+    expect(isCanvasPreviewImagePath(value)).toBe(false)
+  }
+  expect(CANVAS_PREVIEW_IMAGE_PATH_PATTERN.flags).not.toContain('g')
 })
 
 test.describe('staleValueDriftIndices', () => {
