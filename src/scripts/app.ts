@@ -79,6 +79,7 @@ import {
 } from '@/scripts/domWidget'
 import { useAccountPreconditionDialog } from '@/platform/cloud/subscription/composables/useAccountPreconditionDialog'
 import { resolveAccountPrecondition } from '@/platform/errorCatalog/accountPreconditionRouting'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
 import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -1640,7 +1641,13 @@ export class ComfyApp {
     let queueResultOverride: boolean | null = null
 
     // Get auth token for backend nodes - uses workspace token if enabled, otherwise Firebase token
+    const workspaceIdBeforeAuthentication =
+      useTeamWorkspaceStore().activeWorkspaceId
     const comfyOrgAuthToken = await useAuthStore().getWorkspaceAuthToken()
+    const executionWorkspaceId = useTeamWorkspaceStore().activeWorkspaceId
+    const workspaceChangedWhileAuthenticating =
+      workspaceIdBeforeAuthentication !== executionWorkspaceId &&
+      (isCloud || workspaceIdBeforeAuthentication !== null)
     const comfyOrgApiKey = useApiKeyAuthStore().getApiKey()
 
     try {
@@ -1712,6 +1719,20 @@ export class ComfyApp {
               executionScope: isPartialExecution ? 'partial' : 'full',
               viewMode: getWorkflowMode(queuedWorkflow)
             })
+          }
+          if (
+            workspaceChangedWhileAuthenticating ||
+            executionWorkspaceId !== useTeamWorkspaceStore().activeWorkspaceId
+          ) {
+            useDialogService().showErrorDialog(
+              new Error(t('errorDialog.workspaceChangedDuringExecution')),
+              {
+                title: t('errorDialog.promptExecutionError'),
+                reportType: 'promptExecutionError'
+              }
+            )
+            queueResultOverride = false
+            break
           }
           try {
             api.authToken = comfyOrgAuthToken
