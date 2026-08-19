@@ -333,16 +333,24 @@ const events: readonly ComfyEvent[] = [
     },
     startDateTime: '2026-08-19T10:00:00-07:00',
     liveVideoId: 'IzTI8oK_Wg4',
-    media: eventImage('livestream-aug-19.jpg', {
-      en: 'Using Comfy to Go Beyond the Models livestream',
-      'zh-CN': '善用 Comfy，超越模型本身直播'
-    }),
-    featured: {
-      order: 1,
-      media: eventImage('livestream-aug-19.jpg', {
+    media: eventVideo(
+      '08.19-Tool_landscape.mp4',
+      {
         en: 'Using Comfy to Go Beyond the Models livestream',
         'zh-CN': '善用 Comfy，超越模型本身直播'
-      }),
+      },
+      'livestream-aug-19.jpg'
+    ),
+    featured: {
+      order: 1,
+      media: eventVideo(
+        '08.19-Tool_landscape.mp4',
+        {
+          en: 'Using Comfy to Go Beyond the Models livestream',
+          'zh-CN': '善用 Comfy，超越模型本身直播'
+        },
+        'livestream-aug-19.jpg'
+      ),
       showTitle: false
     }
   },
