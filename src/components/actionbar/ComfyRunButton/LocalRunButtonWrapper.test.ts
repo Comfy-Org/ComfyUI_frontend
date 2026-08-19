@@ -4,6 +4,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import type { AutoQueueMode } from '@/stores/queueSettingsStore'
+
 import LocalRunButtonWrapper from './LocalRunButtonWrapper.vue'
 
 type PartnerNode = { nodeName: string; displayName: string }
@@ -42,11 +44,11 @@ vi.mock('@/components/actionbar/ComfyRunButton/ComfyQueueButton.vue', () => ({
 
 vi.mock('@/stores/queueSettingsStore', async () => {
   const { reactive, ref } = await import('vue')
-  const mode = ref('instant')
+  const mode = ref<AutoQueueMode>('instant-idle')
   const store = reactive({ mode })
   return {
     useQueueSettingsStore: () => store,
-    __setQueueMode: (value: string) => {
+    __setQueueMode: (value: AutoQueueMode) => {
       mode.value = value
     },
     __getQueueMode: () => mode.value
@@ -56,8 +58,8 @@ vi.mock('@/stores/queueSettingsStore', async () => {
 const queueSettingsModule = await import('@/stores/queueSettingsStore')
 const { __setQueueMode, __getQueueMode } =
   queueSettingsModule as typeof queueSettingsModule & {
-    __setQueueMode: (value: string) => void
-    __getQueueMode: () => string
+    __setQueueMode: (value: AutoQueueMode) => void
+    __getQueueMode: () => AutoQueueMode
   }
 
 const i18n = createI18n({
@@ -85,7 +87,7 @@ describe('LocalRunButtonWrapper', () => {
   beforeEach(() => {
     gateState.gate.value = 'none'
     gateState.partnerNodes.value = []
-    __setQueueMode('instant')
+    __setQueueMode('instant-idle')
   })
 
   it('renders the normal queue button when not gated, leaving queue mode alone', () => {
@@ -94,7 +96,7 @@ describe('LocalRunButtonWrapper', () => {
     expect(
       screen.queryByTestId('partner-sign-in-to-run-button')
     ).not.toBeInTheDocument()
-    expect(__getQueueMode()).toBe('instant')
+    expect(__getQueueMode()).toBe('instant-idle')
   })
 
   it('replaces the queue button and disables auto-queue when gated', () => {
@@ -150,25 +152,27 @@ describe('LocalRunButtonWrapper', () => {
   })
 
   it('restores the prior queue mode when the gate lifts', async () => {
-    __setQueueMode('instant')
+    __setQueueMode('instant-idle')
     gateState.gate.value = 'sign-in'
     renderWrapper()
     expect(__getQueueMode()).toBe('disabled')
 
     gateState.gate.value = 'none'
     await nextTick()
-    expect(__getQueueMode()).toBe('instant')
+    expect(__getQueueMode()).toBe('instant-idle')
   })
 
-  it('keeps a queue mode the user chose while gated', async () => {
+  it('overrides a mid-gate auto-queue selection until the gate lifts', async () => {
     gateState.gate.value = 'sign-in'
     renderWrapper()
     expect(__getQueueMode()).toBe('disabled')
 
-    __setQueueMode('instant')
+    __setQueueMode('instant-running')
+    await nextTick()
+    expect(__getQueueMode()).toBe('disabled')
 
     gateState.gate.value = 'none'
     await nextTick()
-    expect(__getQueueMode()).toBe('instant')
+    expect(__getQueueMode()).toBe('instant-running')
   })
 })

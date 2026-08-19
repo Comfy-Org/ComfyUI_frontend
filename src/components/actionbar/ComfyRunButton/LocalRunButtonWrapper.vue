@@ -22,7 +22,7 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { nextTick, useTemplateRef, watch } from 'vue'
+import { computed, nextTick, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ComfyQueueButton from '@/components/actionbar/ComfyRunButton/ComfyQueueButton.vue'
@@ -39,19 +39,21 @@ const { mode: queueMode } = storeToRefs(useQueueSettingsStore())
 const root = useTemplateRef<HTMLElement>('root')
 
 // Auto-queue would keep submitting (and failing server-side) behind a gated
-// button, so the gate forces it off and restores the user's mode when it lifts.
-let modeBeforeGate: AutoQueueMode | null = null
+// button. While gated, force the mode to disabled and remember what to restore
+// — including a mode the user picks mid-gate — then reinstate it on lift.
+const isGated = computed(() => gate.value !== 'none')
+let modeToRestore: AutoQueueMode | null = null
 watch(
-  gate,
-  (value) => {
-    if (value !== 'none') {
-      if (modeBeforeGate === null && queueMode.value !== 'disabled') {
-        modeBeforeGate = queueMode.value
+  [isGated, queueMode],
+  ([gated, mode]) => {
+    if (gated) {
+      if (mode !== 'disabled') {
+        modeToRestore = mode
         queueMode.value = 'disabled'
       }
-    } else if (modeBeforeGate !== null) {
-      if (queueMode.value === 'disabled') queueMode.value = modeBeforeGate
-      modeBeforeGate = null
+    } else if (modeToRestore !== null) {
+      queueMode.value = modeToRestore
+      modeToRestore = null
     }
   },
   { immediate: true }
