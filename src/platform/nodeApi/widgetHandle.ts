@@ -583,7 +583,9 @@ export interface MountDef {
    * Fills the mounted container. Called once, with an element already attached
    * to the node.
    *
-   * `value` is present only when `defaultValue` was given — see below.
+   * `value` holds meaningful serialized state only when `defaultValue` was
+   * given. A decorative mount receives the same accessor for one render shape,
+   * but should not use it as storage.
    */
   render(container: HTMLElement, value: MountedValue): void
   /** Releases anything `render` retained — listeners, timers, observers. */
@@ -596,8 +598,8 @@ export interface MountDef {
   /**
    * Whether the value is written into the saved workflow.
    *
-   * Defaults to `false`, because most mounted things are decoration. Give
-   * `defaultValue` as well when the control genuinely holds one.
+   * Defaults to `true` when `defaultValue` makes this a value-holding control,
+   * and to `false` for a decorative mount.
    */
   readonly serialize?: boolean
   /**

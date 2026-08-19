@@ -1,6 +1,6 @@
 /**
- * Rewrites the implemented-capability list in `docs/node_api_WIP.md` from
- * `CAPABILITIES` in comfyApi.ts.
+ * Rewrites the implemented-capability lists in the node API design and
+ * reference docs from `CAPABILITIES` in comfyApi.ts.
  *
  *   node scripts/magic-patch/gen_capability_list.mjs [--check]
  *
@@ -15,9 +15,16 @@ import { readFileSync, writeFileSync } from 'node:fs'
 
 const API = new URL('../../src/platform/nodeApi/comfyApi.ts', import.meta.url)
   .pathname
-const DOC = new URL('../../docs/node_api_WIP.md', import.meta.url).pathname
+const DESIGN_DOC = new URL('../../docs/node_api_WIP.md', import.meta.url)
+  .pathname
+const REFERENCE_DOC = new URL(
+  '../../docs/node-api/reference.md',
+  import.meta.url
+).pathname
 const START = '> **Implemented (v1.0):**'
 const END = '> **Specified only:**'
+const REFERENCE_START = '<!-- node-api-capabilities:start -->'
+const REFERENCE_END = '<!-- node-api-capabilities:end -->'
 
 export function implementedCapabilities() {
   const source = readFileSync(API, 'utf8')
@@ -41,31 +48,73 @@ function render(names) {
   return out.join('\n')
 }
 
-const doc = readFileSync(DOC, 'utf8')
-const from = doc.indexOf(START)
-const to = doc.indexOf(END)
-if (from === -1 || to === -1) {
-  console.error(`Could not find the capability block in ${DOC}`)
+function renderReference(names) {
+  const out = []
+  let current = ''
+  for (const name of names) {
+    const part = `\`${name}\``
+    if (`${current}${part}, `.length > 78) {
+      out.push(current.trimEnd())
+      current = ''
+    }
+    current += `${part}, `
+  }
+  out.push(current.trimEnd().replace(/,$/, '.'))
+  return out.join('\n')
+}
+
+function updateDesign(names) {
+  const doc = readFileSync(DESIGN_DOC, 'utf8')
+  const from = doc.indexOf(START)
+  const to = doc.indexOf(END)
+  if (from === -1 || to === -1) {
+    throw new Error(`Could not find the capability block in ${DESIGN_DOC}`)
+  }
+  return {
+    path: DESIGN_DOC,
+    source: doc,
+    next: doc.slice(0, from) + render(names) + '\n>\n' + doc.slice(to)
+  }
+}
+
+function updateReference(names) {
+  const doc = readFileSync(REFERENCE_DOC, 'utf8')
+  const from = doc.indexOf(REFERENCE_START)
+  const to = doc.indexOf(REFERENCE_END)
+  if (from === -1 || to === -1) {
+    throw new Error(`Could not find the capability block in ${REFERENCE_DOC}`)
+  }
+  return {
+    path: REFERENCE_DOC,
+    source: doc,
+    next:
+      doc.slice(0, from + REFERENCE_START.length) +
+      `\n\n${renderReference(names)}\n` +
+      doc.slice(to)
+  }
+}
+
+const names = implementedCapabilities()
+let updates
+try {
+  updates = [updateDesign(names), updateReference(names)]
+} catch (error) {
+  console.error(error instanceof Error ? error.message : error)
   process.exit(2)
 }
-const next =
-  doc.slice(0, from) +
-  render(implementedCapabilities()) +
-  '\n>\n' +
-  doc.slice(to)
 
 if (process.argv.includes('--check')) {
-  if (next !== doc) {
+  const stale = updates.filter(({ source, next }) => source !== next)
+  if (stale.length) {
     console.error(
-      'docs/node_api_WIP.md lists different capabilities than CAPABILITIES.\n' +
+      `${stale.map(({ path }) => path).join(', ')} list different ` +
+        'capabilities than CAPABILITIES.\n' +
         'Run: node scripts/magic-patch/gen_capability_list.mjs'
     )
     process.exit(1)
   }
-  console.error(
-    `capability list is current (${implementedCapabilities().length})`
-  )
+  console.error(`capability lists are current (${names.length})`)
 } else {
-  writeFileSync(DOC, next)
-  console.error(`wrote ${implementedCapabilities().length} capabilities`)
+  for (const { path, next } of updates) writeFileSync(path, next)
+  console.error(`wrote ${names.length} capabilities to ${updates.length} docs`)
 }

@@ -214,12 +214,10 @@ export interface GraphHandle {
    * expect consecutive changes to differ by one. Coalesced edits are free to
    * advance it once, and `batch()` exists precisely so they can.
    *
-   * NOT bumped by widget values. A pack watching this to catch every edit will
-   * miss someone typing in a field. Four packs in the corpus wrote
-   * `graph._version++` by hand immediately after setting a widget value, which
-   * is what reaching for this counter to mean "something changed" looks like.
-   * Setting a value through this API already redraws, and a canvas widget
-   * holding state the API cannot see has `redraw()`.
+   * A widget value committed by the user or through
+   * `WidgetHandle.setValue()` advances it through the same host protocol. Data
+   * a pack keeps outside graph and widget state does not; a canvas widget
+   * holding such data has `redraw()`.
    */
   readonly version: number
   /** Diagnostics: live handle-cache slots across all kinds. */

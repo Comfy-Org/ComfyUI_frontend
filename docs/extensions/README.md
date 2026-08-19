@@ -22,6 +22,7 @@ Extensions are the primary way to add functionality to ComfyUI. They can be cust
 - **[Connection Callbacks Migration Notes](./connection-callbacks-migration.md)** - Callback signatures are unchanged, but node removal and subgraph boundaries fire them in a specific order
 - **[Serialization Callbacks Migration Notes](./serialization-callbacks-migration.md)** - `LGraph.configure()` now needs an active Pinia instance; persist extension data via `properties`/`extra`, not by enumerating node fields
 - **[Node Geometry Migration Notes](./node-geometry-migration.md)** - `node.size` always reflects the requested size now; use `getBounding()` for the node's actual rendered footprint
+- **[Published Custom-Node API](../node-api/README.md)** - Supported API for node definitions, graph editing, widgets, execution, and host services
 
 ## Quick Links
 
@@ -37,6 +38,7 @@ Extensions are the primary way to add functionality to ComfyUI. They can be cust
 - [Developing extensions in dev mode](./development.md#development-workarounds)
 - [Understanding the shim system](./development.md#how-the-shim-works)
 - [Extension hooks and lifecycle](./core.md#extension-hooks)
+- [Build an extension with the published node API](../node-api/tutorial.md)
 
 ### External Resources
 
