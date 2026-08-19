@@ -198,13 +198,23 @@ test.describe('Events page — desktop @smoke', () => {
         // fall back to the default "Livestream" label.
         const ctaLabel =
           event.ctaLabel?.[locale] ?? t('events.upcoming.livestream', locale)
-        const ctaLink = row.getByRole('link', { name: new RegExp(ctaLabel) })
+        const ctaLink = row.getByRole('link', {
+          name: `${event.title[locale]} — ${ctaLabel}`,
+          exact: true
+        })
         // Events with a stream open their own detail page (dialog over the
         // directory); the rest link to the event's page.
+        const eventLink = event.link
         const expectedHref = eventVideoId(event)
           ? localizeHref(eventPath(event), locale)
-          : event.link!.href[locale]
-        await expect(ctaLink).toHaveAttribute('href', expectedHref)
+          : eventLink?.href[locale]
+        if (expectedHref) {
+          await expect(ctaLink).toHaveAttribute('href', expectedHref)
+        }
+        // External registration links open in a new tab.
+        if (!eventVideoId(event) && eventLink?.newTab) {
+          await expect(ctaLink).toHaveAttribute('target', '_blank')
+        }
       }
     }
   })

@@ -192,7 +192,8 @@ export function deriveFeaturedEvents(
     .map(({ event, featured }) => ({
       id: event.id,
       eyebrow:
-        eventStatus(event, now) === 'upcoming'
+        eventStatus(event, now) === 'upcoming' &&
+        event.category === 'livestream'
           ? UPCOMING_LIVESTREAM
           : undefined,
       title: event.title,
