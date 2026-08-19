@@ -295,7 +295,7 @@ describe('duplicating a node', () => {
   })
 })
 
-describe('replacing a node with another type', () => {
+describe('replacing a node', () => {
   let graph: LGraph
   let api: GraphHandle
 
@@ -387,6 +387,31 @@ describe('replacing a node with another type', () => {
     const swapped = api.replace(String(node.id), 'Big')!
 
     expect(swapped.widgets.get('seed')?.getValue()).toBe(42)
+  })
+
+  it('rebuilds the same type without losing values or links', () => {
+    const node = small()
+    const upstream = LiteGraph.createNode('Peer')!
+    const downstream = LiteGraph.createNode('Peer')!
+    graph.add(upstream)
+    graph.add(downstream)
+    upstream.connect('ctx', node, 'ctx')
+    node.connect('model', downstream, 'model')
+    node.widgets![0].value = 42
+    const originalId = String(node.id)
+
+    const rebuilt = api.replace(originalId, 'Small')!
+
+    expect(rebuilt.id).not.toBe(originalId)
+    expect(api.node(originalId)).toBeUndefined()
+    expect(rebuilt.widgets.get('seed')?.getValue()).toBe(42)
+    expect(rebuilt.inputs.byName('ctx')?.source()?.nodeId).toBe(
+      String(upstream.id)
+    )
+    expect(rebuilt.outputs.byName('model')?.targets()).toContainEqual({
+      nodeId: String(downstream.id),
+      inputIndex: 1
+    })
   })
 
   it('carries a title the user chose, but not the old type name', () => {
