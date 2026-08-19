@@ -43,7 +43,7 @@
       "maskGroupOffset": [0, 0],
       "videos": [
         {
-          "src": "eye.webm",
+          "src": "https://media.comfy.org/website/homepage/scene-3/eye.webm",
           "srcW": 1056,
           "srcH": 784,
           "ip": 604,
@@ -54,7 +54,7 @@
           "anchor": [528, 392]
         },
         {
-          "src": "eye.webm",
+          "src": "https://media.comfy.org/website/homepage/scene-3/eye.webm",
           "srcW": 1056,
           "srcH": 784,
           "ip": 352,
@@ -179,7 +179,7 @@
       "maskGroupOffset": [-60.66, 0],
       "videos": [
         {
-          "src": "swings.webm",
+          "src": "https://media.comfy.org/website/homepage/scene-3/swings.webm",
           "srcW": 1056,
           "srcH": 784,
           "ip": 790,
@@ -190,7 +190,7 @@
           "anchor": [528, 392]
         },
         {
-          "src": "swings.webm",
+          "src": "https://media.comfy.org/website/homepage/scene-3/swings.webm",
           "srcW": 1056,
           "srcH": 784,
           "ip": 411,
@@ -201,7 +201,7 @@
           "anchor": [528, 392]
         },
         {
-          "src": "swings.webm",
+          "src": "https://media.comfy.org/website/homepage/scene-3/swings.webm",
           "srcW": 1056,
           "srcH": 784,
           "ip": 360,
@@ -298,7 +298,7 @@
           "anchor": [528, 392]
         },
         {
-          "src": "swings.webm",
+          "src": "https://media.comfy.org/website/homepage/scene-3/swings.webm",
           "srcW": 1056,
           "srcH": 784,
           "ip": 243,
@@ -309,7 +309,7 @@
           "anchor": [528, 392]
         },
         {
-          "src": "flower.webm",
+          "src": "https://media.comfy.org/website/homepage/scene-3/flower.webm",
           "srcW": 1056,
           "srcH": 784,
           "ip": 0,
@@ -384,7 +384,7 @@
           "anchor": [528, 392]
         },
         {
-          "src": "paul_trillo.webm",
+          "src": "https://media.comfy.org/website/homepage/scene-3/paul_trillo.webm",
           "srcW": 1056,
           "srcH": 784,
           "ip": 253,
@@ -403,7 +403,7 @@
           "anchor": [528, 392]
         },
         {
-          "src": "dududu.webm",
+          "src": "https://media.comfy.org/website/homepage/scene-3/dududu.webm",
           "srcW": 1056,
           "srcH": 784,
           "ip": 0,
