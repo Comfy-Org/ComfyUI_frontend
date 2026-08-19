@@ -278,18 +278,33 @@ describe('promoted subgraph widgets', () => {
     cleanupComplexPromotionFixtureNodeType()
   })
 
-  function processHostWidget(graph: LGraph, hostNode: SubgraphNode) {
+  function processHostWidget(
+    graph: LGraph,
+    hostNode: SubgraphNode,
+    explicitWidgetIds = true
+  ) {
     const id = hostNode.widgets[0]?.widgetId
     if (!id) throw new Error('Expected the promoted host widget to be keyed')
     return computeProcessedWidgets({
       nodeData: hostNode._state,
-      widgetIds: [id],
+      widgetIds: explicitWidgetIds ? [id] : undefined,
       graphId: graph.id,
       showAdvanced: false,
       isGraphReady: true,
       rootGraph: graph,
       ui: noopUi
     })[0]
+  }
+
+  function setHostWidgetOptions(
+    hostNode: SubgraphNode,
+    options: IBaseWidget['options']
+  ) {
+    const id = hostNode.widgets[0]?.widgetId
+    if (!id) throw new Error('Expected the promoted host widget to be keyed')
+    const state = useWidgetValueStore().getWidget(id)
+    if (!state) throw new Error('Expected promoted host widget state')
+    state.options = options
   }
 
   function recordInteriorError() {
@@ -322,6 +337,27 @@ describe('promoted subgraph widgets', () => {
     expect(processHostWidget(graph, hostNode).simplified.nodeLocatorId).toBe(
       createNodeLocatorId(subgraph.id, INTERIOR_ID)
     )
+  })
+
+  it('shows an advanced promoted widget on the node canvas', () => {
+    const { graph, hostNode } = setupComplexPromotionFixture()
+    setHostWidgetOptions(hostNode, { advanced: true })
+
+    expect(processHostWidget(graph, hostNode, false).visible).toBe(true)
+  })
+
+  it('shows a selected advanced promoted widget in App Mode', () => {
+    const { graph, hostNode } = setupComplexPromotionFixture()
+    setHostWidgetOptions(hostNode, { advanced: true })
+
+    expect(processHostWidget(graph, hostNode).visible).toBe(true)
+  })
+
+  it('keeps explicitly hidden promoted widgets hidden', () => {
+    const { graph, hostNode } = setupComplexPromotionFixture()
+    setHostWidgetOptions(hostNode, { advanced: true, hidden: true })
+
+    expect(processHostWidget(graph, hostNode).visible).toBe(false)
   })
 
   it('clears errors on both the interior source and the host', () => {
