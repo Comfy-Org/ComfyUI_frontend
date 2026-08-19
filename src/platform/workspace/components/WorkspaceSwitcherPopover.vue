@@ -82,7 +82,7 @@
       class="flex shrink-0 items-center gap-2 px-4 py-2 text-xs text-muted-foreground"
     >
       <i
-        v-tooltip.top="{
+        v-tooltip.left="{
           value: $t('workspaceSwitcher.scopeTooltip'),
           showDelay: 300
         }"

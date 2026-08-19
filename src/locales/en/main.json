@@ -3339,7 +3339,7 @@
   "workspaceSwitcher": {
     "noCredits": "No credits",
     "scopeCaption": "Workspaces only affect which credits you use.",
-    "scopeTooltip": "On desktop, workspaces only choose which credit balance your partner node runs spend. Assets you create are saved to this computer; they're not synced to your Cloud workspace.",
+    "scopeTooltip": "Runs that use partner nodes spend credits from this workspace. Everything you make — workflows and outputs — stays on this computer, not in any workspace.",
     "switchWorkspace": "Switch workspace",
     "subscribe": "Subscribe",
     "personal": "Personal",
