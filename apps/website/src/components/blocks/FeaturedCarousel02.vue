@@ -300,7 +300,7 @@ useCarouselAutoplay({
           v-for="(slide, index) in slides"
           :key="slide.id"
           type="button"
-          class="size-2 rounded-full transition-all duration-300"
+          class="size-3 rounded-full transition-all duration-300"
           :class="
             index === activeIndex
               ? 'scale-125 bg-primary-warm-white'
