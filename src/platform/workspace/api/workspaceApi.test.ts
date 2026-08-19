@@ -486,12 +486,12 @@ describe('workspaceApi', () => {
       await workspaceApi.getBillingOpStatus('op-1')
 
       expect(mockAxiosInstance.post).toHaveBeenCalledWith(
-        'https://stagingcloud.comfy.org/api/billing/subscribe',
+        'https://ingest.example/api/billing/subscribe',
         { plan_slug: 'pro-monthly' },
         { headers: AUTH_HEADER }
       )
       expect(mockAxiosInstance.get).toHaveBeenCalledWith(
-        'https://stagingcloud.comfy.org/api/billing/ops/op-1',
+        'https://ingest.example/api/billing/ops/op-1',
         { headers: AUTH_HEADER, timeout: 30_000 }
       )
     })
