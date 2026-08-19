@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import {
+  useDebounceFn,
   useElementHover,
   useEventListener,
   useIntersectionObserver
@@ -57,19 +58,58 @@ const {
 }>()
 
 const activeIndex = ref(0)
+const trackEl = useTemplateRef<HTMLElement>('trackEl')
 
+// The track is a scroll-snap scroller, so swiping is the browser's own
+// gesture: taps on the slide controls (play/unmute) and horizontal pans are
+// disambiguated natively and never fight each other.
 function goTo(index: number): void {
   const count = slides.length
   if (count === 0) return
-  activeIndex.value = (index + count) % count
+  const next = (index + count) % count
+  activeIndex.value = next
+  const el = trackEl.value
+  const slide = el?.children.item(next)
+  const origin = el?.children.item(0)
+  if (el && slide instanceof HTMLElement && origin instanceof HTMLElement) {
+    el.scrollTo({
+      left: slide.offsetLeft - origin.offsetLeft,
+      behavior: reduceMotion.value ? 'auto' : 'smooth'
+    })
+  }
 }
+
+// After a user swipe settles, adopt the nearest snapped slide as active.
+// Debounced so the smooth scrolls from goTo (which already set activeIndex)
+// don't flick the index — and the mounted VideoPlayer — across every
+// intermediate slide they pass.
+const syncActiveFromScroll = useDebounceFn(() => {
+  const el = trackEl.value
+  if (!el) return
+  const origin = el.children.item(0)
+  if (!(origin instanceof HTMLElement)) return
+  let nearest = activeIndex.value
+  let bestDistance = Infinity
+  for (const [index, child] of Array.from(el.children).entries()) {
+    if (!(child instanceof HTMLElement)) continue
+    const distance = Math.abs(
+      child.offsetLeft - origin.offsetLeft - el.scrollLeft
+    )
+    if (distance < bestDistance) {
+      bestDistance = distance
+      nearest = index
+    }
+  }
+  activeIndex.value = nearest
+}, 150)
 
 const autoplayDelay = computed(
   () => slides[activeIndex.value]?.autoplayMs ?? DEFAULT_AUTOPLAY_MS
 )
 
-// Respect prefers-reduced-motion (WCAG 2.2.2): no auto-advance and no slide
-// animation; VideoPlayer suppresses its own autoplay.
+// Respect prefers-reduced-motion (WCAG 2.2.2): no auto-advance, and
+// programmatic slide changes jump instead of smooth-scrolling; VideoPlayer
+// suppresses its own autoplay.
 const reduceMotion = computed(() => prefersReducedMotion())
 
 const rootEl = useTemplateRef<HTMLElement>('rootEl')
@@ -134,130 +174,122 @@ useCarouselAutoplay({
 <template>
   <section :class="cn('w-full px-6 lg:px-12', className)">
     <div ref="rootEl" class="max-w-9xl mx-auto">
-      <div class="overflow-clip">
-        <div
-          class="flex gap-4"
-          :class="
-            reduceMotion
-              ? undefined
-              : 'transition-transform duration-500 ease-out'
-          "
-          :style="{
-            transform: `translateX(calc(${-activeIndex} * (100% + 1rem)))`
-          }"
+      <div
+        ref="trackEl"
+        class="flex snap-x snap-mandatory scrollbar-none gap-4 overflow-x-auto overscroll-x-contain"
+        @scroll.passive="syncActiveFromScroll"
+      >
+        <article
+          v-for="(slide, index) in slides"
+          :key="slide.id"
+          class="bg-transparency-white-t4 lg:rounded-5xl flex w-full shrink-0 snap-center flex-col gap-4 rounded-4xl p-2 lg:flex-row lg:gap-8"
+          :aria-hidden="index !== activeIndex"
+          :inert="index !== activeIndex"
         >
-          <article
-            v-for="(slide, index) in slides"
-            :key="slide.id"
-            class="bg-transparency-white-t4 lg:rounded-5xl flex w-full shrink-0 flex-col gap-4 rounded-4xl p-2 lg:flex-row lg:gap-8"
-            :aria-hidden="index !== activeIndex"
-            :inert="index !== activeIndex"
-          >
-            <!-- lg:min-w-0 stops aspect-video's transferred min-width from
+          <!-- lg:min-w-0 stops aspect-video's transferred min-width from
                  blowing the row out horizontally when the content column is
                  taller than the media's natural 16:9 height. -->
-            <div class="relative aspect-video w-full lg:min-w-0 lg:flex-1">
-              <VideoPlayer
-                v-if="slide.media.type === 'video' && index === activeIndex"
-                :locale
-                :src="slide.media.src"
-                :poster="slide.media.poster"
-                :aria-label="slide.media.alt"
-                autoplay
-                mute-only
-                class="lg:rounded-4.5xl absolute inset-0 aspect-auto h-full rounded-3xl border-0"
-              />
-              <img
-                v-else-if="
-                  slide.media.type === 'image'
-                    ? slide.media.src
-                    : slide.media.poster
+          <div class="relative aspect-video w-full lg:min-w-0 lg:flex-1">
+            <VideoPlayer
+              v-if="slide.media.type === 'video' && index === activeIndex"
+              :locale
+              :src="slide.media.src"
+              :poster="slide.media.poster"
+              :aria-label="slide.media.alt"
+              autoplay
+              mute-only
+              class="lg:rounded-4.5xl absolute inset-0 aspect-auto h-full rounded-3xl border-0"
+            />
+            <img
+              v-else-if="
+                slide.media.type === 'image'
+                  ? slide.media.src
+                  : slide.media.poster
+              "
+              :src="
+                slide.media.type === 'image'
+                  ? slide.media.src
+                  : slide.media.poster
+              "
+              :alt="slide.media.alt"
+              :loading="index === 0 ? 'eager' : 'lazy'"
+              decoding="async"
+              class="lg:rounded-4.5xl absolute inset-0 size-full rounded-3xl object-cover object-center"
+            />
+            <div
+              v-else
+              class="lg:rounded-4.5xl absolute inset-0 rounded-3xl bg-black"
+            />
+          </div>
+
+          <div
+            class="flex w-full flex-col justify-center p-4 lg:min-w-0 lg:flex-1 lg:p-6"
+          >
+            <p
+              v-if="slide.eyebrow"
+              class="text-primary-comfy-yellow text-sm font-bold tracking-[0.7px] uppercase"
+            >
+              {{ slide.eyebrow }}
+            </p>
+            <h2
+              class="mt-7 max-w-200 text-3xl leading-[135%] font-medium text-primary-comfy-canvas"
+            >
+              {{ slide.title }}
+            </h2>
+            <p
+              v-if="slide.body"
+              class="mt-5 max-w-160 text-[17px] leading-[160%] font-light text-primary-comfy-canvas"
+            >
+              {{ slide.body }}
+            </p>
+
+            <div
+              v-if="slide.primaryCta || slide.secondaryCta"
+              class="mt-10 flex flex-wrap gap-3 lg:gap-4 xl:mt-16"
+            >
+              <Button
+                v-if="slide.primaryCta"
+                :href="slide.primaryCta.href"
+                :target="slide.primaryCta.newTab ? '_blank' : undefined"
+                :rel="
+                  resolveRel({
+                    target: slide.primaryCta.newTab ? '_blank' : undefined
+                  })
                 "
-                :src="
-                  slide.media.type === 'image'
-                    ? slide.media.src
-                    : slide.media.poster
+              >
+                {{ slide.primaryCta.label }}
+              </Button>
+              <Button
+                v-if="slide.secondaryCta"
+                variant="outline"
+                :href="slide.secondaryCta.href"
+                :target="slide.secondaryCta.newTab ? '_blank' : undefined"
+                :rel="
+                  resolveRel({
+                    target: slide.secondaryCta.newTab ? '_blank' : undefined
+                  })
                 "
-                :alt="slide.media.alt"
-                :loading="index === 0 ? 'eager' : 'lazy'"
-                decoding="async"
-                class="lg:rounded-4.5xl absolute inset-0 size-full rounded-3xl object-cover object-center"
-              />
-              <div
-                v-else
-                class="lg:rounded-4.5xl absolute inset-0 rounded-3xl bg-black"
-              />
+              >
+                {{ slide.secondaryCta.label }}
+              </Button>
             </div>
 
             <div
-              class="flex w-full flex-col justify-center p-4 lg:min-w-0 lg:flex-1 lg:p-6"
+              v-if="slide.tags?.length"
+              class="mt-10 flex flex-wrap gap-2 xl:mt-14"
             >
-              <p
-                v-if="slide.eyebrow"
-                class="text-primary-comfy-yellow text-sm font-bold tracking-[0.7px] uppercase"
+              <Badge
+                v-for="tag in slide.tags"
+                :key="tag"
+                variant="subtle"
+                size="md"
+                class="py-2 text-primary-comfy-canvas"
               >
-                {{ slide.eyebrow }}
-              </p>
-              <h2
-                class="mt-7 max-w-200 text-3xl leading-[135%] font-medium text-primary-comfy-canvas"
-              >
-                {{ slide.title }}
-              </h2>
-              <p
-                v-if="slide.body"
-                class="mt-5 max-w-160 text-[17px] leading-[160%] font-light text-primary-comfy-canvas"
-              >
-                {{ slide.body }}
-              </p>
-
-              <div
-                v-if="slide.primaryCta || slide.secondaryCta"
-                class="mt-10 flex flex-wrap gap-3 lg:gap-4 xl:mt-16"
-              >
-                <Button
-                  v-if="slide.primaryCta"
-                  :href="slide.primaryCta.href"
-                  :target="slide.primaryCta.newTab ? '_blank' : undefined"
-                  :rel="
-                    resolveRel({
-                      target: slide.primaryCta.newTab ? '_blank' : undefined
-                    })
-                  "
-                >
-                  {{ slide.primaryCta.label }}
-                </Button>
-                <Button
-                  v-if="slide.secondaryCta"
-                  variant="outline"
-                  :href="slide.secondaryCta.href"
-                  :target="slide.secondaryCta.newTab ? '_blank' : undefined"
-                  :rel="
-                    resolveRel({
-                      target: slide.secondaryCta.newTab ? '_blank' : undefined
-                    })
-                  "
-                >
-                  {{ slide.secondaryCta.label }}
-                </Button>
-              </div>
-
-              <div
-                v-if="slide.tags?.length"
-                class="mt-10 flex flex-wrap gap-2 xl:mt-14"
-              >
-                <Badge
-                  v-for="tag in slide.tags"
-                  :key="tag"
-                  variant="subtle"
-                  size="md"
-                  class="py-2 text-primary-comfy-canvas"
-                >
-                  {{ tag }}
-                </Badge>
-              </div>
+                {{ tag }}
+              </Badge>
             </div>
-          </article>
-        </div>
+          </div>
+        </article>
       </div>
 
       <div
