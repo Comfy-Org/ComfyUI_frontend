@@ -13,6 +13,7 @@ import {
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { defaultGraph, defaultGraphJSON } from '@/scripts/defaultGraph'
@@ -77,12 +78,16 @@ describe('useWorkflowStore', () => {
       data?: string
       name?: string
       isTemporary?: boolean
+      isModified?: boolean
     } = {}
   ) => {
     const draftStore = useWorkflowDraftStoreV2()
     draftStore.saveDraft(path, options.data ?? '{"dirty":true}', {
       name: options.name ?? path.split('/').at(-1) ?? path,
-      isTemporary: options.isTemporary ?? false
+      isTemporary: options.isTemporary ?? false,
+      ...(options.isModified === undefined
+        ? {}
+        : { isModified: options.isModified })
     })
     return draftStore
   }
@@ -324,6 +329,40 @@ describe('useWorkflowStore', () => {
       expect(workflow.isModified).toBe(true)
     })
 
+    it('should restore a clean persisted V2 draft from metadata', async () => {
+      enableWorkflowPersistence()
+
+      await syncRemoteWorkflowsWithMeta([
+        { path: 'a.json', modified: 100, size: 1 }
+      ])
+
+      const workflow = store.getWorkflowByPath('workflows/a.json')!
+      const draftGraph = JSON.parse(defaultGraphJSON)
+      draftGraph.extra = {
+        ...(draftGraph.extra ?? {}),
+        ds: { scale: 1.25, offset: [40, 80] }
+      }
+
+      saveV2Draft(workflow.path, {
+        data: JSON.stringify(draftGraph),
+        name: 'a.json',
+        isModified: false
+      })
+
+      vi.mocked(api.getUserData).mockResolvedValue({
+        status: 200,
+        text: () => Promise.resolve(defaultGraphJSON)
+      } as Response)
+
+      await workflow.load()
+
+      expect(workflow.activeState?.extra?.ds).toEqual({
+        scale: 1.25,
+        offset: [40, 80]
+      })
+      expect(workflow.isModified).toBe(false)
+    })
+
     it('should discard a stale V2 draft when the remote workflow is newer', async () => {
       enableWorkflowPersistence()
       const remoteModifiedAt = Date.now() + 60_000
@@ -353,6 +392,38 @@ describe('useWorkflowStore', () => {
       expect(workflow.activeState?.extra?.draftMarker).toBeUndefined()
       expect(workflow.isModified).toBe(false)
       expect(draftStore.getDraft(workflow.path)).toBeNull()
+    })
+
+    it('should preserve a restored temporary V2 draft despite its synthetic timestamp', async () => {
+      enableWorkflowPersistence()
+
+      const path = 'workflows/restored-temporary.json'
+      const baseGraph = JSON.parse(defaultGraphJSON) as ComfyWorkflowJSON
+      const draftGraph: ComfyWorkflowJSON = {
+        ...baseGraph,
+        extra: {
+          ...(baseGraph.extra ?? {}),
+          draftMarker: 'restored-temporary'
+        }
+      }
+      const draftStore = saveV2Draft(path, {
+        data: JSON.stringify(draftGraph),
+        name: 'restored-temporary.json',
+        isTemporary: true
+      })
+
+      const workflow = store.createTemporary('restored-temporary.json')
+      // Recreate the startup invariant: a temporary workflow receives a fresh
+      // synthetic timestamp after the older draft was persisted/migrated.
+      workflow.lastModified = Date.now() + 60_000
+
+      await workflow.load()
+
+      expect(workflow.activeState?.extra?.draftMarker).toBe(
+        'restored-temporary'
+      )
+      expect(workflow.isModified).toBe(true)
+      expect(draftStore.getDraft(path)).not.toBeNull()
     })
 
     it('should load and open a remote workflow', async () => {
