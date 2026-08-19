@@ -12,23 +12,80 @@ import {
 const UUID = '9cea40bb-b0cf-4b40-a758-8935cfe8d52f'
 const OTHER_UUID = '11111111-2222-3333-4444-555555555555'
 
+interface WorkflowIdComparisonCase {
+  label: string
+  existingId?: string
+  incomingId?: string
+  existingLegacyId?: string
+  expected?: true
+}
+
+const comparisonCases = [
+  {
+    label: 'equal UUIDs',
+    existingId: UUID,
+    incomingId: UUID,
+    expected: true
+  },
+  {
+    label: 'equivalent UUID casing',
+    existingId: UUID,
+    incomingId: UUID.toUpperCase(),
+    expected: true
+  },
+  {
+    label: 'different UUIDs',
+    existingId: UUID,
+    incomingId: OTHER_UUID
+  },
+  {
+    label: 'equal legacy ids',
+    existingId: 'legacy-a',
+    incomingId: 'legacy-a',
+    expected: true
+  },
+  {
+    label: 'different legacy ids',
+    existingId: 'legacy-a',
+    incomingId: 'legacy-b'
+  },
+  {
+    label: 'matching migration alias',
+    existingId: UUID,
+    incomingId: 'legacy-a',
+    existingLegacyId: 'legacy-a',
+    expected: true
+  },
+  {
+    label: 'unrelated legacy id',
+    existingId: UUID,
+    incomingId: 'legacy-b',
+    existingLegacyId: 'legacy-a'
+  },
+  {
+    label: 'missing incoming id',
+    existingId: UUID,
+    expected: true
+  },
+  {
+    label: 'missing existing id',
+    incomingId: UUID,
+    expected: true
+  }
+] as const satisfies readonly WorkflowIdComparisonCase[]
+
 describe('workflowId', () => {
-  it.for([
-    ['equal UUIDs', UUID, UUID, undefined, true],
-    ['equivalent UUID casing', UUID, UUID.toUpperCase(), undefined, true],
-    ['different UUIDs', UUID, OTHER_UUID, undefined, false],
-    ['equal legacy ids', 'legacy-a', 'legacy-a', undefined, true],
-    ['different legacy ids', 'legacy-a', 'legacy-b', undefined, false],
-    ['matching migration alias', UUID, 'legacy-a', 'legacy-a', true],
-    ['unrelated legacy id', UUID, 'legacy-b', 'legacy-a', false],
-    ['missing incoming id', UUID, undefined, undefined, true],
-    ['missing existing id', undefined, UUID, undefined, true]
-  ] as const)(
-    'compares %s',
-    ([, existingId, incomingId, legacyId, expected]) => {
-      expect(areWorkflowIdsEquivalent(existingId, incomingId, legacyId)).toBe(
-        expected
-      )
+  it.for(comparisonCases)(
+    'compares $label',
+    ({
+      existingId,
+      incomingId,
+      existingLegacyId,
+      expected
+    }: WorkflowIdComparisonCase) => {
+      expect(
+        areWorkflowIdsEquivalent(existingId, incomingId, existingLegacyId)
+      ).toBe(expected ?? false)
     }
   )
 
