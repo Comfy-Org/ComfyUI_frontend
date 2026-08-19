@@ -1,4 +1,3 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { NodeExecutionId } from '@/types/nodeIdentification'
@@ -58,8 +57,6 @@ function makeModelCandidate(
 
 describe('missingModelStore', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
-    vi.restoreAllMocks()
     mockNodeLocatorIdToNodeExecutionId.mockImplementation(
       (nodeLocatorId: string) => nodeLocatorId
     )

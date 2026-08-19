@@ -32,10 +32,9 @@ type RemoteConfigState = 'unloaded' | 'anonymous' | 'authenticated' | 'error'
  */
 export const remoteConfigState = ref<RemoteConfigState>('unloaded')
 
-/**
- * Whether the authenticated config has been loaded.
- * Use this to gate access to user-specific feature flags like teamWorkspacesEnabled.
- */
+export const remoteConfigErrorStatus = ref<number | null>(null)
+
+/** Whether the authenticated config has been loaded. */
 export const isAuthenticatedConfigLoaded = computed(
   () => remoteConfigState.value === 'authenticated'
 )
@@ -55,20 +54,12 @@ export function configValueOrDefault<K extends keyof RemoteConfig>(
   return configValue || defaultValue
 }
 
-export const cachedTeamWorkspacesEnabled = useStorage<boolean | undefined>(
-  'team_workspaces_enabled' satisfies `${ServerFeatureFlag.TEAM_WORKSPACES_ENABLED}`,
-  undefined
-)
-
-export const cachedConsolidatedBillingEnabled = useStorage<boolean | undefined>(
-  'consolidated_billing_enabled' satisfies `${ServerFeatureFlag.CONSOLIDATED_BILLING_ENABLED}`,
-  undefined
-)
-
 export const cachedBillingControlEnabled = useStorage<boolean | undefined>(
   'billing_control_enabled' satisfies `${ServerFeatureFlag.BILLING_CONTROL_ENABLED}`,
   undefined
 )
+
+export const cachedLegacyBillingMigrationEnabled = ref<boolean | undefined>()
 
 export const cachedV1PaymentRecovery = useStorage<boolean | undefined>(
   'v1_payment_recovery' satisfies `${ServerFeatureFlag.V1_PAYMENT_RECOVERY}`,

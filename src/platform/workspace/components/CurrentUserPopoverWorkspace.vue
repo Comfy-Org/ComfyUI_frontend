@@ -25,7 +25,7 @@
     </div>
 
     <!-- Workspace Selector -->
-    <div class="relative">
+    <div v-if="!accountActionsOnly" class="relative">
       <div
         ref="workspaceSwitcherTrigger"
         v-tooltip="{ value: workspaceName, showDelay: 300 }"
@@ -60,8 +60,8 @@
 
     <!-- Credits Section -->
 
-    <div class="flex items-center gap-2 px-4 py-2">
-      <i class="icon-[lucide--component] text-sm text-credit" />
+    <div v-if="!accountActionsOnly" class="flex items-center gap-2 px-4 py-2">
+      <i class="icon-[lucide--coins] text-sm text-credit" />
       <Skeleton
         v-if="isLoadingBalance"
         width="4rem"
@@ -129,10 +129,10 @@
       </Button>
     </div>
 
-    <Divider class="mx-0 my-2" />
+    <Divider v-if="!accountActionsOnly" class="mx-0 my-2" />
 
     <div
-      v-if="showPlansAndPricing"
+      v-if="!accountActionsOnly && showPlansAndPricing"
       class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
       data-testid="plans-pricing-menu-item"
       @click="handleOpenPlansAndPricing"
@@ -143,20 +143,22 @@
       }}</span>
     </div>
 
-    <div
-      v-if="showManagePlan"
+    <button
+      v-if="!accountActionsOnly && showManagePlan"
+      type="button"
       class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
       data-testid="manage-plan-menu-item"
       @click="handleOpenPlanAndCreditsSettings"
     >
-      <i class="icon-[lucide--file-text] text-sm text-muted-foreground" />
+      <i class="icon-[lucide--credit-card] size-4 text-muted-foreground" />
       <span class="flex-1 text-sm text-base-foreground">{{
         $t('subscription.managePlan')
       }}</span>
-    </div>
+    </button>
 
     <!-- Partner Nodes Pricing (always shown) -->
     <div
+      v-if="!accountActionsOnly"
       class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
       data-testid="partner-nodes-menu-item"
       @click="handleOpenPartnerNodesInfo"
@@ -167,10 +169,11 @@
       }}</span>
     </div>
 
-    <Divider class="mx-0 my-2" />
+    <Divider v-if="!accountActionsOnly" class="mx-0 my-2" />
 
     <!-- Workspace Settings (always shown) -->
     <div
+      v-if="!accountActionsOnly"
       class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
       data-testid="workspace-settings-menu-item"
       @click="handleOpenWorkspaceSettings"
@@ -258,6 +261,10 @@ const emit = defineEmits<{
   close: []
 }>()
 
+const { accountActionsOnly = false } = defineProps<{
+  accountActionsOnly?: boolean
+}>()
+
 const { buildDocsUrl, docsPaths } = useExternalLink()
 
 const { userDisplayName, userEmail, userPhotoUrl, handleSignOut } =
@@ -265,6 +272,7 @@ const { userDisplayName, userEmail, userPhotoUrl, handleSignOut } =
 const settingsDialog = useSettingsDialog()
 const dialogService = useDialogService()
 const {
+  billingStatus,
   canAccessSubscriptionFeatures,
   isFreeTier,
   subscription,
@@ -298,15 +306,22 @@ const displayedCredits = computed(() => {
 const showPlansAndPricing = computed(
   () => permissions.value.canManageSubscription
 )
+const hasDelinquentSubscription = computed(
+  () =>
+    (billingStatus.value === 'payment_failed' ||
+      billingStatus.value === 'paused') &&
+    Boolean(subscription.value?.planSlug)
+)
 const showManagePlan = computed(
   () =>
     permissions.value.canManageSubscription &&
-    canAccessSubscriptionFeatures.value
+    (canAccessSubscriptionFeatures.value || hasDelinquentSubscription.value)
 )
 const showSubscribeAction = computed(
   () =>
     (isCancelled.value && permissions.value.canManageSubscriptionLifecycle) ||
     (!canAccessSubscriptionFeatures.value &&
+      !hasDelinquentSubscription.value &&
       permissions.value.canManageSubscription)
 )
 
@@ -370,7 +385,7 @@ const toggleWorkspaceSwitcher = () => {
 }
 
 const refreshBalance = () => {
-  void fetchBalance()
+  if (!accountActionsOnly) void fetchBalance()
 }
 
 defineExpose({ refreshBalance })

@@ -26,6 +26,7 @@ import { useAppMode } from '@/composables/useAppMode'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
@@ -348,6 +349,7 @@ export const useWorkflowService = () => {
     }
 
     await workflowStore.closeWorkflow(workflow)
+    useNodeOutputStore().discardPreviewsForWorkflow(workflow.path)
     return true
   }
 
@@ -423,6 +425,9 @@ export const useWorkflowService = () => {
         missingMediaCandidates: mediaCandidates ?? undefined
       })
 
+      // Hand the previews to the store before `app.clean()` revokes them
+      useNodeOutputStore().stashPreviewsForWorkflow(activeWorkflow.path)
+
       // Capture thumbnail before loading new graph
       void workflowThumbnail.storeThumbnail(activeWorkflow)
       domWidgetStore.clear()
@@ -444,6 +449,17 @@ export const useWorkflowService = () => {
    * @param workflowData The initial workflow data loaded to the graph editor.
    */
   const afterLoadNewGraph = async (
+    value: string | ComfyWorkflow | null,
+    workflowData: ComfyWorkflowJSON,
+    shareId?: string
+  ) => {
+    await activateLoadedWorkflow(value, workflowData, shareId)
+    useNodeOutputStore().restorePreviewsForWorkflow(
+      useWorkspaceStore().workflow.activeWorkflow?.path
+    )
+  }
+
+  const activateLoadedWorkflow = async (
     value: string | ComfyWorkflow | null,
     workflowData: ComfyWorkflowJSON,
     shareId?: string

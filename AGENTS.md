@@ -4,6 +4,7 @@ See @docs/guidance/\*.md for file-type-specific conventions (auto-loaded by glob
 
 - `docs/guidance/engineering.md` — general engineering guidelines, project philosophy, code-review checklist, external resource links
 - `docs/guidance/vue-components.md` — Vue 3 Composition API best practices
+- `docs/guidance/state-and-effects.md` — modelling a feature's state: one discriminated union, named events, a pure transition, effects reserved for synchronising outward
 - `docs/guidance/typescript.md` — TypeScript type-safety rules
 - `docs/guidance/vitest.md` — Vitest unit/component test conventions
 - `docs/guidance/playwright.md` — Playwright E2E conventions and API-mock typing table
@@ -237,6 +238,23 @@ All architectural decisions are documented in `docs/adr/`. Code changes must be 
 ## Agent-only rules
 
 Rules for agent-based coding tasks.
+
+### PR Review Comment Resolution
+
+**Never resolve review comments on PRs where you are the author.**
+
+Per the team's [PR guidelines](CONTRIBUTING.md#comment-resolution),
+resolving comments is the reviewer's prerogative. As author, you may only
+resolve:
+
+- Automated review comments (Coderabbit, Claude, etc.)
+- Trivial single-interpretation comments (e.g. fixing a typo exactly as
+  suggested)
+- Comments addressed via GitHub's "Apply suggestion" feature used as-is
+
+For all other comments: reply in the thread explaining what you changed
+(or why you disagree), then re-assign the PR to the reviewer.
+**Do not click Resolve.**
 
 ### Chrome DevTools MCP
 

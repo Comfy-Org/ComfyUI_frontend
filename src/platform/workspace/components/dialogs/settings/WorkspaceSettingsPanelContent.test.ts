@@ -38,7 +38,6 @@ const stubs = {
 
 describe('WorkspaceSettingsPanelContent', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockFetchMembers.mockResolvedValue(undefined)
     mockFetchPendingInvites.mockResolvedValue(undefined)
   })

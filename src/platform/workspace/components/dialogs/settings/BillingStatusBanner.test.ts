@@ -6,8 +6,8 @@ import { createI18n } from 'vue-i18n'
 
 import type {
   BillingStatus,
-  CurrentTeamCreditStop,
   Plan,
+  TeamCreditStopSummary,
   TeamCreditStops,
   WorkspaceType
 } from '@/platform/workspace/api/workspaceApi'
@@ -67,7 +67,7 @@ const state = vi.hoisted(() => ({
   } as Subscription | null,
   plans: [] as RuntimePlan[],
   teamCreditStops: null as TeamCreditStops | null,
-  currentTeamCreditStop: null as CurrentTeamCreditStop | null,
+  currentTeamCreditStop: null as TeamCreditStopSummary | null,
   renewalDate: null as string | null,
   workspaceType: 'team' as string,
   canManageSubscription: true,
@@ -232,7 +232,6 @@ describe('BillingStatusBanner', () => {
     state.canManageSubscription = true
     state.canManageSubscriptionLifecycle = true
     state.canTopUp = true
-    vi.clearAllMocks()
   })
 
   it('renders nothing for a healthy funded team', () => {
