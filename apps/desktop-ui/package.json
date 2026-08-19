@@ -6,7 +6,7 @@
     "dev": "pnpm -w exec vite --config apps/desktop-ui/vite.config.mts",
     "build": "pnpm -w exec vite build --config apps/desktop-ui/vite.config.mts",
     "preview": "pnpm -w exec vite preview --config apps/desktop-ui/vite.config.mts",
-    "lint": "eslint src --cache",
+    "lint": "pnpm -w exec oxlint --config tools/oxlint-plugins/customRules.config.json apps/desktop-ui/src && eslint src --cache",
     "typecheck": "vue-tsc --noEmit -p tsconfig.json",
     "test:unit": "vitest run --config vitest.config.mts",
     "storybook": "storybook dev -p 6007",
