@@ -34,6 +34,7 @@ function installVisibleErrorRecorder(
   const target = window as VisibleErrorWindow
   if (target.__cnVisibleErrors !== undefined) return
   const seen = new Set<string>()
+  const candidates = new Set<Element>()
   const errors: VisibleError[] = []
   const combinedSelector = selectors.map(({ selector }) => selector).join(',')
   target.__cnVisibleErrors = errors
@@ -56,19 +57,35 @@ function installVisibleErrorRecorder(
     errors.push({ surface, text })
   }
   const recordMatchingSurfaces = (element: Element) => {
-    for (const { surface, selector } of selectors)
-      if (element.matches(selector)) record(surface, element)
+    if (!element.matches(combinedSelector)) return
+    candidates.add(element)
+    for (const { surface, selector } of selectors) {
+      if (!element.matches(selector)) continue
+      record(surface, element)
+    }
   }
-  const sampleElement = (element: Element, includeDescendants: boolean) => {
-    const closest = element.closest(combinedSelector)
-    if (closest) recordMatchingSurfaces(closest)
+  const discover = (element: Element, includeDescendants: boolean) => {
+    recordMatchingSurfaces(element)
     if (!includeDescendants || element.childElementCount === 0) return
     for (const descendant of element.querySelectorAll(combinedSelector))
       recordMatchingSurfaces(descendant)
   }
-  for (const { surface, selector } of selectors)
-    for (const element of document.querySelectorAll(selector))
-      record(surface, element)
+  const sampleRelatedCandidates = (element: Element) => {
+    recordMatchingSurfaces(element)
+    for (const candidate of candidates) {
+      if (!candidate.isConnected) {
+        candidates.delete(candidate)
+        continue
+      }
+      if (
+        candidate !== element &&
+        (candidate.contains(element) || element.contains(candidate))
+      )
+        recordMatchingSurfaces(candidate)
+    }
+  }
+  for (const element of document.querySelectorAll(combinedSelector))
+    recordMatchingSurfaces(element)
   new MutationObserver((mutations) => {
     const exact = new Set<Element>()
     const subtrees = new Set<Element>()
@@ -80,13 +97,13 @@ function installVisibleErrorRecorder(
           else if (node.parentElement) exact.add(node.parentElement)
         }
       } else if (mutation.target instanceof Element) {
-        subtrees.add(mutation.target)
+        exact.add(mutation.target)
       } else if (mutation.target.parentElement) {
         exact.add(mutation.target.parentElement)
       }
     }
-    for (const element of exact) sampleElement(element, false)
-    for (const element of subtrees) sampleElement(element, true)
+    for (const element of exact) sampleRelatedCandidates(element)
+    for (const element of subtrees) discover(element, true)
   }).observe(document, {
     attributes: true,
     characterData: true,

@@ -66,30 +66,52 @@ test('a visible error toast fails after it clears before the assertion', async (
   expect(String(failure)).toContain('momentary')
 })
 
-test('unrelated mutations do not rescan the full document', async ({
+test('a hidden error fails when an ancestor mutation reveals it', async ({
   page
 }) => {
-  await page.setContent('<main id="root"></main>')
-  const fullDocumentQueries = await page.evaluate(async () => {
-    const original = document.querySelectorAll.bind(document)
-    let calls = 0
+  await page.setContent(
+    '<section id="container" hidden>' +
+      '<div class="p-toast-message-error">revealed error</div>' +
+      '</section>'
+  )
+  await page.evaluate(() => {
+    document.getElementById('container')!.removeAttribute('hidden')
+  })
+  const failure = await expectNoVisibleErrors(page, 'revealed').then(
+    () => undefined,
+    (error: unknown) => error
+  )
+  expect(failure).toBeInstanceOf(Error)
+  expect(String(failure)).toContain('revealed error')
+})
+
+test('unrelated mutations do not rescan the document or mutated subtrees', async ({
+  page
+}) => {
+  await page.setContent('<main id="root"><span>content</span></main>')
+  const selectorQueries = await page.evaluate(async () => {
+    const originalDocumentQuery = document.querySelectorAll.bind(document)
+    const originalElementQuery = Element.prototype.querySelectorAll
+    let documentQueries = 0
+    let elementQueries = 0
     document.querySelectorAll = ((selector: string) => {
-      calls += 1
-      return original(selector)
+      documentQueries += 1
+      return originalDocumentQuery(selector)
     }) as typeof document.querySelectorAll
+    Element.prototype.querySelectorAll = function (selector: string) {
+      elementQueries += 1
+      return originalElementQuery.call(this, selector)
+    }
     const root = document.getElementById('root')!
     for (let index = 0; index < 1_000; index += 1) {
-      const child = document.createElement('span')
-      root.append(child)
-      child.dataset.index = String(index)
-      child.textContent = String(index)
+      root.dataset.index = String(index)
       await Promise.resolve()
     }
     await new Promise((resolve) => setTimeout(resolve, 0))
-    return calls
+    return { documentQueries, elementQueries }
   })
 
-  expect(fullDocumentQueries).toBe(0)
+  expect(selectorQueries).toEqual({ documentQueries: 0, elementQueries: 0 })
   await expect(
     expectNoVisibleErrors(page, 'after DOM churn')
   ).resolves.toBeUndefined()
