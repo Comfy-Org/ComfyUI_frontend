@@ -317,5 +317,14 @@ test.describe('Local plans section subscribe', () => {
     await expect
       .poll(() => section.evaluate((el) => el.scrollWidth - el.clientWidth))
       .toBeLessThanOrEqual(1)
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () =>
+            document.documentElement.scrollWidth -
+            document.documentElement.clientWidth
+        )
+      )
+      .toBeLessThanOrEqual(1)
   })
 })
