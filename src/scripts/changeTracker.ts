@@ -235,8 +235,8 @@ const lastProjectionByTracker = new WeakMap<
 >()
 
 /**
- * Memoizes by snapshot identity. Callers must replace snapshots rather than
- * mutate them in place; graphChanged listener mutation is unsupported.
+ * Memoizes by snapshot identity after synchronous graphChanged listeners run.
+ * Mutating a snapshot after dispatch returns was already racy and is unsupported.
  */
 function executionStateOf(
   tracker: ChangeTracker,
@@ -403,15 +403,18 @@ export class ChangeTracker {
       )
     }
 
+    api.dispatchCustomEvent('graphChanged', this.activeState)
+
+    const shouldCompareExecutionState = !!previousState && isAutoQueueOnChange()
+    if (!shouldCompareExecutionState) lastProjectionByTracker.delete(this)
+
     const autoQueueGraphChanged =
-      !!previousState &&
-      isAutoQueueOnChange() &&
+      shouldCompareExecutionState &&
       !_.isEqual(
         executionStateOf(this, previousState),
         executionStateOf(this, this.activeState)
       )
 
-    api.dispatchCustomEvent('graphChanged', this.activeState)
     if (autoQueueGraphChanged) {
       api.dispatchCustomEvent('autoQueueGraphChanged')
     }
