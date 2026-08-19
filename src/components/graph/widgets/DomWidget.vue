@@ -5,6 +5,7 @@
     class="dom-widget size-full"
     :title="tooltip"
     :style="style"
+    @wheel="handleWheel"
   >
     <component
       :is="widget.component"
@@ -26,6 +27,7 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useAbsolutePosition } from '@/composables/element/useAbsolutePosition'
 import { useDomClipping } from '@/composables/element/useDomClipping'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { isComponentWidget, isDOMWidget } from '@/scripts/domWidget'
 import type { DomWidgetState } from '@/stores/domWidgetStore'
@@ -46,6 +48,7 @@ const { style: positionStyle, updatePosition } = useAbsolutePosition({
 const { style: clippingStyle, updateClipPath } = useDomClipping()
 
 const canvasStore = useCanvasStore()
+const { handleWheel } = useCanvasInteractions()
 const settingStore = useSettingStore()
 const enableDomClipping = computed(() =>
   settingStore.get('Comfy.DOMClippingEnabled')
