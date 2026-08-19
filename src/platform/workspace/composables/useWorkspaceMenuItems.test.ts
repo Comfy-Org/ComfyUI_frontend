@@ -13,6 +13,7 @@ const state = vi.hoisted(() => ({
   isFreeTier: false,
   isInPersonalWorkspace: false,
   planSlug: 'pro-monthly' as string | null,
+  tier: null as string | null,
   isSubscriptionCancelled: false
 }))
 
@@ -33,7 +34,8 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     isFreeTier: computed(() => state.isFreeTier),
     subscription: computed(() => ({
       endDate: '2026-08-01T00:00:00Z',
-      planSlug: state.planSlug
+      planSlug: state.planSlug,
+      tier: state.tier
     }))
   })
 }))
@@ -81,6 +83,7 @@ describe('useWorkspaceMenuItems', () => {
     state.isFreeTier = false
     state.isInPersonalWorkspace = false
     state.planSlug = 'pro-monthly'
+    state.tier = null
     state.isSubscriptionCancelled = false
   })
 
@@ -113,6 +116,17 @@ describe('useWorkspaceMenuItems', () => {
   it('withholds cancellation from an enterprise plan', () => {
     state.canManageSubscriptionLifecycle = true
     state.planSlug = 'enterprise_monthly'
+
+    const { menuItems } = useWorkspaceMenuItems()
+
+    expect(menuItems.value.map((item) => item.label)).not.toContain(
+      'subscription.cancelPlan'
+    )
+  })
+
+  it('withholds cancellation from an enterprise tier with a non-enterprise slug', () => {
+    state.canManageSubscriptionLifecycle = true
+    state.tier = 'ENTERPRISE'
 
     const { menuItems } = useWorkspaceMenuItems()
 
