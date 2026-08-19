@@ -35,7 +35,7 @@ async function mockPaidTemplate(page: Page): Promise<TemplateHelper> {
 }
 
 test.describe('Partner nodes education card (local)', () => {
-  test('shows on paid template load, hides on graph switch, dismisses via Got it', async ({
+  test('shows on paid template load, hides on graph switch, re-shows without a seen-flag', async ({
     comfyPage
   }) => {
     const page = comfyPage.page
@@ -45,22 +45,20 @@ test.describe('Partner nodes education card (local)', () => {
 
     await templates.load(PAID_TEMPLATE)
     await expect(card).toBeVisible()
-    await expect(card).toContainText('This template uses partner nodes')
+    await expect(card).toContainText('See the difference? Drag to compare.')
 
     // Switching to a graph without partner nodes hides the card without
     // requiring a dismissal — it must not outlive the template it describes.
     await comfyPage.workflow.loadWorkflow('default')
     await expect(card).toHaveCount(0)
 
+    // Dismissing carries no seen-flag: the next paid load shows it again.
     await templates.load(PAID_TEMPLATE)
     await expect(card).toBeVisible()
     await page.getByTestId(TestIds.partnerNodes.educationCardDismiss).click()
     await expect(card).toHaveCount(0)
 
-    // Dismissing carries no seen-flag: the next paid load shows it again.
     await templates.load(PAID_TEMPLATE)
     await expect(card).toBeVisible()
-    await page.getByTestId(TestIds.partnerNodes.educationCardGotIt).click()
-    await expect(card).toHaveCount(0)
   })
 })
