@@ -27,7 +27,8 @@
     "prepack": "npm run build",
     "prepare": "npm run build",
     "test": "vitest run",
-    "check:purity": "node scripts/check-purity.mjs"
+    "check:purity": "node scripts/check-purity.mjs",
+    "verify:corpus": "node scripts/verify-corpus.mjs"
   },
   "dependencies": {
     "yjs": "^13.6.27"

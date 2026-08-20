@@ -12,6 +12,35 @@ self-verified at generation time: replaying its op stream from its
 `base_workflow` converges (under `workflow_ops.canonical`) onto its recorded
 `workflow_final`.
 
+## Provenance and drift verification
+
+`MANIFEST.json` pins the source repository and exact comfy-cli commit used by
+the V1-007 generator, the historical generator command and environment, and a
+SHA-256 digest for every corpus data file. Each file also identifies the
+generator path that produced it (or says that it was hand-authored). Run
+`npm run verify:corpus` after any fixture change; the same command runs in CI
+and fails for changed, missing, or unlisted fixture files.
+
+The pinned source checkout is reproduced with:
+
+```sh
+git clone https://github.com/Comfy-Org/comfy-cli.git
+cd comfy-cli
+git checkout --detach 7e732242d971daf0d2d30f22f997abfacd78986e
+uv sync --frozen
+uv run <crdt-spike-checkout>/gen_fixtures.py
+git -C <comfy-multi-player-checkout> diff -- fixtures/
+```
+
+The generator itself lived at `crdt-spike/gen_fixtures.py` in the historical
+V1-007 workspace and was not graduated into either repository. Therefore the
+last command requires an archived V1-007 spike checkout and is a documented
+manual/nightly procedure, not a network-dependent CI job. Do not substitute a
+new generator silently: archive it, record its exact command and runtime here,
+update the pinned source SHA if appropriate, regenerate, inspect the fixture
+diff, then update all manifest hashes. The frontend-only notes session remains
+hand-authored as described below and must not be overwritten by Python.
+
 Consumed by `test/replay.test.ts`: each session is replayed onto a doc minted
 from the session's `base_workflow`, and the canonicalized projection must
 deep-equal the canonicalized `workflow_final`
