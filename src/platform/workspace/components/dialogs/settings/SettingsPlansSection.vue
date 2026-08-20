@@ -248,9 +248,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { I18nT, useI18n } from 'vue-i18n'
 
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import Button from '@/components/ui/button/Button.vue'
 import CreditSlider from '@/components/ui/credit-slider/CreditSlider.vue'
 import Switch from '@/components/ui/switch/Switch.vue'
@@ -320,6 +321,11 @@ const VIDEO_PER_CREDIT =
 
 // Backend-sourced stops when the shared plans state has them, DES-197 fallback otherwise.
 const { teamCreditStops } = useBillingPlans()
+const { fetchPlans } = useBillingContext()
+
+onMounted(() => {
+  void fetchPlans()
+})
 
 const teamStops = computed(() => {
   const apiStops = teamCreditStops.value?.stops
@@ -341,6 +347,12 @@ const selectedTeamStop = computed(
     teamStops.value.find((stop) => stop.usd === teamUsd.value) ??
     defaultTeamStop.value
 )
+
+// Re-snap the slider when late API stops leave the seeded USD matching none.
+watch(defaultTeamStop, (stop) => {
+  if (teamStops.value.some((s) => s.usd === teamUsd.value)) return
+  teamUsd.value = stop.usd
+})
 const teamVideoEstimate = computed(() =>
   Math.round(selectedTeamStop.value.credits * VIDEO_PER_CREDIT)
 )

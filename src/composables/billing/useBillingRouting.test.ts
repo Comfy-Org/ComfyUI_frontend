@@ -58,14 +58,26 @@ describe('useBillingRouting', () => {
     mockActiveWorkspaceBillingRail.value = null
   })
 
-  it('uses legacy billing off Cloud', () => {
+  it('keeps account operations legacy off Cloud while the plans rail uses workspace billing', () => {
     mockIsCloud.value = false
     mockActiveWorkspace.value = team
 
-    const { type, shouldUseWorkspaceBilling } = useBillingRouting()
+    const { type, shouldUseWorkspaceBilling, shouldUseUnifiedPricing } =
+      useBillingRouting()
 
     expect(type.value).toBe('legacy')
     expect(shouldUseWorkspaceBilling.value).toBe(false)
+    expect(shouldUseUnifiedPricing.value).toBe(true)
+  })
+
+  it('routes the plans rail to workspace billing off Cloud before any workspace loads', () => {
+    mockIsCloud.value = false
+    mockActiveWorkspace.value = null
+
+    const { type, shouldUseUnifiedPricing } = useBillingRouting()
+
+    expect(type.value).toBe('legacy')
+    expect(shouldUseUnifiedPricing.value).toBe(true)
   })
 
   it('uses workspace billing for a Cloud personal workspace', () => {
@@ -117,11 +129,12 @@ describe('useBillingRouting', () => {
     expect(shouldUseWorkspaceBilling.value).toBe(true)
   })
 
-  it('defaults to legacy while the workspace has not loaded', () => {
+  it('defaults to legacy while the Cloud workspace has not loaded', () => {
     mockActiveWorkspace.value = null
 
-    const { type } = useBillingRouting()
+    const { type, shouldUseUnifiedPricing } = useBillingRouting()
 
     expect(type.value).toBe('legacy')
+    expect(shouldUseUnifiedPricing.value).toBe(false)
   })
 })

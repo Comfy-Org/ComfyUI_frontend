@@ -68,6 +68,32 @@ describe('getComfyPlatformBaseUrl', () => {
   })
 })
 
+// Resolved at module load, so each case stubs the env and imports a fresh module.
+describe('getCloudIngestBaseUrl', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    vi.resetModules()
+  })
+
+  it('resolves the staging cloud origin in non-prod builds', async () => {
+    vi.stubEnv('VITE_CLOUD_INGEST_BASE_URL', undefined)
+    vi.resetModules()
+
+    const { getCloudIngestBaseUrl } = await import('./comfyApi')
+
+    expect(getCloudIngestBaseUrl()).toBe('https://stagingcloud.comfy.org')
+  })
+
+  it('honors the VITE_CLOUD_INGEST_BASE_URL build-time override', async () => {
+    vi.stubEnv('VITE_CLOUD_INGEST_BASE_URL', 'https://testcloud.comfy.org')
+    vi.resetModules()
+
+    const { getCloudIngestBaseUrl } = await import('./comfyApi')
+
+    expect(getCloudIngestBaseUrl()).toBe('https://testcloud.comfy.org')
+  })
+})
+
 describe('compatibility with comfyui servers that predate the override keys', () => {
   const originalConfig = remoteConfig.value
 
