@@ -66,8 +66,7 @@ export function useSettingsPlansCheckout() {
       showSubscribeError()
       return
     }
-    // Q-SUB: API-key-only users go through the existing sign-in touchpoint
-    // before checkout; a Firebase session skips straight through.
+    // Without a Firebase session, require sign-in before checkout.
     if (!authStore.currentUser && !(await dialogService.showSignInDialog())) {
       return
     }

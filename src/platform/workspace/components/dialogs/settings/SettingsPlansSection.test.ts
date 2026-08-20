@@ -112,8 +112,7 @@ describe('SettingsPlansSection', () => {
   })
 
   it('renders team stops loaded through the billing context, re-snapping to the API default', async () => {
-    // Resolves after mount, like the real fetch: the slider is seeded from the
-    // static $700 stop, which the arriving breakpoints do not contain.
+    // Resolves after mount so the seeded $700 stop is absent from the new breakpoints.
     mockFetchPlans.mockImplementation(async () => {
       useBillingPlans().teamCreditStops.value = {
         default_stop_index: 1,

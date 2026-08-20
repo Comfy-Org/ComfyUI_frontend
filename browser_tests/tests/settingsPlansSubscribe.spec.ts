@@ -12,9 +12,10 @@ import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import { CommandHelper } from '@e2e/fixtures/helpers/CommandHelper'
 
 /**
- * Billing mocks are cross-origin (app on localhost, ingest on its own
- * origin), so every fulfill carries CORS headers and answers OPTIONS
- * preflights.
+ * Off-cloud, the plan-card CTAs subscribe via the workspace rail on cloud
+ * ingest (never the legacy checkout shortlink), open the returned Stripe page,
+ * and flip the card to disabled "Current Plan" after op-polling. Mocks are
+ * cross-origin, so fulfills carry CORS headers and answer OPTIONS preflights.
  */
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 

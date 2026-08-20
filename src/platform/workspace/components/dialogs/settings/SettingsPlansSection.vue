@@ -334,8 +334,6 @@ interface PlanCard {
 const { t, n } = useI18n()
 
 const audience = ref<'personal' | 'teams'>('personal')
-// Re-clicking the active item makes the reka-ui toggle group emit an empty
-// value; the section always shows one audience, so ignore deselection.
 const audienceModel = computed({
   get: () => audience.value,
   set: (value: string) => {
@@ -403,8 +401,8 @@ const selectedCycle = computed<BillingCycle>(() =>
   billedYearly.value ? 'yearly' : 'monthly'
 )
 
-// A slug outside the rendered catalog (founder, legacy plans) matches no
-// card, so every card stays actionable.
+// True only when the tier's catalog slug is the current plan. A founder or
+// legacy slug matches no rendered card, so every card stays actionable.
 function isCurrentPlan(tierKey: CheckoutTierKey): boolean {
   return (
     currentPlanSlug.value !== null &&
@@ -438,8 +436,7 @@ const selectedTeamStop = computed(
     defaultTeamStop.value
 )
 
-// API stops can resolve after mount with different breakpoints, leaving the
-// seeded slider USD matching no stop; snap it to the resolved default.
+// Re-snap the slider when late API stops leave the seeded USD matching none.
 watch(defaultTeamStop, (stop) => {
   if (teamStops.value.some((s) => s.usd === teamUsd.value)) return
   teamUsd.value = stop.usd

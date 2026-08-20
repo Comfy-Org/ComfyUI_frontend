@@ -21,9 +21,7 @@ const BUILD_TIME_PLATFORM_BASE_URL = __USE_PROD_CONFIG__
   : (import.meta.env.VITE_STAGING_PLATFORM_BASE_URL ??
     STAGING_PLATFORM_BASE_URL)
 
-// Two-tier only: no remote-config override, because this URL is consumed
-// off-cloud where remoteConfig is served by the local ComfyUI server and never
-// carries cloud keys.
+// Build-time only: consumed off-cloud, where remoteConfig never carries cloud keys.
 const BUILD_TIME_CLOUD_INGEST_BASE_URL = __USE_PROD_CONFIG__
   ? PROD_CLOUD_INGEST_BASE_URL
   : (import.meta.env.VITE_CLOUD_INGEST_BASE_URL ??

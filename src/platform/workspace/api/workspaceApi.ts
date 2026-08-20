@@ -168,10 +168,8 @@ async function getAuthHeaderOrThrow() {
   return useAuthStore().getAuthHeaderOrThrow()
 }
 
-// Billing endpoints with an off-cloud caller resolve per endpoint, never via a
-// client-wide baseURL: off-cloud they go to cloud ingest (CORS-allowed for
-// loopback), while every other endpoint keeps the relative form so it stays
-// unreachable from local.
+// Off-cloud, resolve to cloud ingest; on-cloud, keep the relative form. Applied
+// per endpoint so only the routed billing calls leave local.
 function resolveBillingUrl(path: string): string {
   if (isCloud) return api.apiURL(path)
   return `${getCloudIngestBaseUrl()}/api${path}`
