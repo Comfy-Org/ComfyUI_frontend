@@ -35,13 +35,17 @@ function routeOf(file: string): string {
 function alternatesIn(html: string): { hreflang: string; href: string }[] {
   const out: { hreflang: string; href: string }[] = []
   const re = /<link\s+rel="alternate"\s+hreflang="([^"]+)"\s+href="([^"]+)"/g
-  for (const match of html.matchAll(re)) out.push({ hreflang: match[1], href: match[2] })
+  for (const match of html.matchAll(re))
+    out.push({ hreflang: match[1], href: match[2] })
   return out
 }
 
 const files = htmlFiles(DIST)
 const built = new Set(files.map(routeOf))
-const alternatesByRoute = new Map<string, { hreflang: string; href: string }[]>()
+const alternatesByRoute = new Map<
+  string,
+  { hreflang: string; href: string }[]
+>()
 const errors: string[] = []
 
 for (const file of files) {
@@ -62,7 +66,9 @@ for (const file of files) {
     }
     const target = href.slice(ORIGIN.length) || '/'
     if (!built.has(target)) {
-      errors.push(`${route}: alternate ${hreflang} -> ${target} was not built (404)`)
+      errors.push(
+        `${route}: alternate ${hreflang} -> ${target} was not built (404)`
+      )
     }
   }
 }
@@ -75,14 +81,20 @@ for (const [route, alternates] of alternatesByRoute) {
     if (target === route) continue
     const back = alternatesByRoute.get(target)
     if (!back) continue // already reported as unbuilt
-    if (!back.some((entry) => (entry.href.slice(ORIGIN.length) || '/') === route)) {
+    if (
+      !back.some((entry) => (entry.href.slice(ORIGIN.length) || '/') === route)
+    ) {
       errors.push(`${route}: lists ${target}, which does not list it back`)
     }
   }
 }
 
-const withCluster = [...alternatesByRoute.values()].filter((list) => list.length > 0).length
-console.log(
+const withCluster = [...alternatesByRoute.values()].filter(
+  (list) => list.length > 0
+).length
+// The repo's lint config allows console.warn and console.error only, and this
+// runs in CI where the summary belongs on stderr with the failures anyway.
+console.warn(
   `[hreflang] ${files.length} pages built, ${withCluster} in a language cluster, ` +
     `${files.length - withCluster} standalone.`
 )
@@ -93,4 +105,6 @@ if (errors.length > 0) {
   if (errors.length > 40) console.error(`  …and ${errors.length - 40} more.`)
   process.exit(1)
 }
-console.log('[hreflang] every alternate resolves and every cluster is reciprocal.')
+console.warn(
+  '[hreflang] every alternate resolves and every cluster is reciprocal.'
+)

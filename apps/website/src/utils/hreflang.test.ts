@@ -28,7 +28,11 @@ const FILES = [
 
 describe('mirroredRoutes', () => {
   it('keeps only routes that exist in both locales', () => {
-    expect([...mirroredRoutes(FILES)].sort()).toEqual(['/', '/about/', '/cloud/pricing/'])
+    expect([...mirroredRoutes(FILES)].sort()).toEqual([
+      '/',
+      '/about/',
+      '/cloud/pricing/'
+    ])
   })
 
   it('excludes an English-only page, so it is never advertised', () => {
@@ -85,13 +89,19 @@ describe('alternatesFor', () => {
     // The whole point: /affiliates/ and every /p/supported-models/ page are
     // English only, and a cluster that links a 404 is worse than no cluster.
     expect(alternatesFor('/affiliates/', SITE, { mirrored })).toEqual([])
-    expect(alternatesFor('/p/supported-models/wan/', SITE, { mirrored })).toEqual([])
+    expect(
+      alternatesFor('/p/supported-models/wan/', SITE, { mirrored })
+    ).toEqual([])
   })
 
   it('lets a dynamic route answer for itself', () => {
     // Only the page knows whether its slug built in the other locale.
-    expect(alternatesFor('/customers/ubisoft/', SITE, { mirrored, hasTwin: true })).toHaveLength(3)
-    expect(alternatesFor('/customers/ubisoft/', SITE, { mirrored, hasTwin: false })).toEqual([])
+    expect(
+      alternatesFor('/customers/ubisoft/', SITE, { mirrored, hasTwin: true })
+    ).toHaveLength(3)
+    expect(
+      alternatesFor('/customers/ubisoft/', SITE, { mirrored, hasTwin: false })
+    ).toEqual([])
   })
 })
 
