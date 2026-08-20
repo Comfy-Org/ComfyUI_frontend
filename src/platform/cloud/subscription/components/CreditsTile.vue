@@ -236,7 +236,7 @@ import {
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import { computeMonthlyUsage } from '@/platform/cloud/subscription/utils/creditsProgress'
 import { useTelemetry } from '@/platform/telemetry'
-import { consumePendingTopup } from '@/platform/telemetry/topupTracker'
+import { usePendingTopup } from '@/platform/workspace/composables/usePendingTopup'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useDialogService } from '@/services/dialogService'
 
@@ -422,7 +422,7 @@ function handleUpgradeToAddCredits() {
 }
 
 async function handleWindowFocus() {
-  if (consumePendingTopup()) {
+  if (usePendingTopup().consumePendingTopup()) {
     await handleRefresh()
   }
 }

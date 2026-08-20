@@ -259,8 +259,8 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useTelemetry } from '@/platform/telemetry'
-import { clearTopupTracking } from '@/platform/telemetry/topupTracker'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+import { usePendingTopup } from '@/platform/workspace/composables/usePendingTopup'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -391,7 +391,7 @@ function openTopupVerification() {
 
 function handleClose(clearTracking = true) {
   if (clearTracking) {
-    clearTopupTracking()
+    usePendingTopup().clearPendingTopup()
   }
   dialogStore.closeDialog({ key: 'top-up-credits' })
 }

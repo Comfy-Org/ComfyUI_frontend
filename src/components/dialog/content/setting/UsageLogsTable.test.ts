@@ -35,10 +35,17 @@ vi.mock('@/services/customerEventsService', () => ({
 }))
 
 const mockTelemetry = vi.hoisted(() => ({
-  checkForCompletedTopup: vi.fn()
+  trackApiCreditTopupSucceeded: vi.fn()
 }))
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => mockTelemetry
+}))
+
+const mockPendingTopup = vi.hoisted(() => ({
+  isPendingTopupCompleted: vi.fn().mockReturnValue(true)
+}))
+vi.mock('@/platform/workspace/composables/usePendingTopup', () => ({
+  usePendingTopup: () => mockPendingTopup
 }))
 
 const mockBillingRouting = vi.hoisted(() => ({
@@ -466,9 +473,10 @@ describe('UsageLogsTable', () => {
       resolveLegacy(legacyResponse)
 
       await waitFor(() => {
-        expect(mockTelemetry.checkForCompletedTopup).toHaveBeenCalledWith(
+        expect(mockPendingTopup.isPendingTopupCompleted).toHaveBeenCalledWith(
           legacyResponse.events
         )
+        expect(mockTelemetry.trackApiCreditTopupSucceeded).toHaveBeenCalled()
       })
     })
   })

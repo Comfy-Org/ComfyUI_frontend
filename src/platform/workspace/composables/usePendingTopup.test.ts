@@ -1,12 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import {
-  consumePendingTopup,
-  startTopupTracking,
-  checkForCompletedTopup,
-  clearTopupTracking
-} from '@/platform/telemetry/topupTracker'
 import type { AuditLog } from '@/services/customerEventsService'
+
+import { usePendingTopup } from './usePendingTopup'
 
 // Mock localStorage
 const mockLocalStorage = vi.hoisted(() => ({
@@ -20,25 +16,23 @@ Object.defineProperty(window, 'localStorage', {
   writable: true
 })
 
-// Mock telemetry
-const mockTelemetry = vi.hoisted(() => ({
-  trackApiCreditTopupSucceeded: vi.fn()
-}))
+describe('usePendingTopup', () => {
+  const {
+    startPendingTopup,
+    isPendingTopupCompleted,
+    clearPendingTopup,
+    consumePendingTopup
+  } = usePendingTopup()
 
-vi.mock('@/platform/telemetry', () => ({
-  useTelemetry: vi.fn(() => mockTelemetry)
-}))
-
-describe('topupTracker', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
-  describe('startTopupTracking', () => {
+  describe('startPendingTopup', () => {
     it('should save current timestamp to localStorage', () => {
       const beforeTimestamp = Date.now()
 
-      startTopupTracking()
+      startPendingTopup()
 
       expect(mockLocalStorage.setItem).toHaveBeenCalledWith(
         'pending_topup_timestamp',
@@ -54,32 +48,23 @@ describe('topupTracker', () => {
     })
   })
 
-  describe('checkForCompletedTopup', () => {
+  describe('isPendingTopupCompleted', () => {
     it('should return false if no pending topup exists', () => {
       mockLocalStorage.getItem.mockReturnValue(null)
 
-      const result = checkForCompletedTopup([])
-
-      expect(result).toBe(false)
-      expect(mockTelemetry.trackApiCreditTopupSucceeded).not.toHaveBeenCalled()
+      expect(isPendingTopupCompleted([])).toBe(false)
     })
 
     it('should return false if events array is empty', () => {
       mockLocalStorage.getItem.mockReturnValue(Date.now().toString())
 
-      const result = checkForCompletedTopup([])
-
-      expect(result).toBe(false)
-      expect(mockTelemetry.trackApiCreditTopupSucceeded).not.toHaveBeenCalled()
+      expect(isPendingTopupCompleted([])).toBe(false)
     })
 
     it('should return false if events array is null', () => {
       mockLocalStorage.getItem.mockReturnValue(Date.now().toString())
 
-      const result = checkForCompletedTopup(null)
-
-      expect(result).toBe(false)
-      expect(mockTelemetry.trackApiCreditTopupSucceeded).not.toHaveBeenCalled()
+      expect(isPendingTopupCompleted(null)).toBe(false)
     })
 
     it('should auto-cleanup if timestamp is older than 24 hours', () => {
@@ -95,16 +80,13 @@ describe('topupTracker', () => {
         }
       ]
 
-      const result = checkForCompletedTopup(events)
-
-      expect(result).toBe(false)
+      expect(isPendingTopupCompleted(events)).toBe(false)
       expect(mockLocalStorage.removeItem).toHaveBeenCalledWith(
         'pending_topup_timestamp'
       )
-      expect(mockTelemetry.trackApiCreditTopupSucceeded).not.toHaveBeenCalled()
     })
 
-    it('should detect completed topup and fire telemetry', () => {
+    it('should detect a completed topup and clear the marker', () => {
       const startTimestamp = Date.now() - 5 * 60 * 1000 // 5 minutes ago
       mockLocalStorage.getItem.mockReturnValue(startTimestamp.toString())
 
@@ -123,10 +105,7 @@ describe('topupTracker', () => {
         }
       ]
 
-      const result = checkForCompletedTopup(events)
-
-      expect(result).toBe(true)
-      expect(mockTelemetry.trackApiCreditTopupSucceeded).toHaveBeenCalledOnce()
+      expect(isPendingTopupCompleted(events)).toBe(true)
       expect(mockLocalStorage.removeItem).toHaveBeenCalledWith(
         'pending_topup_timestamp'
       )
@@ -145,10 +124,7 @@ describe('topupTracker', () => {
         }
       ]
 
-      const result = checkForCompletedTopup(events)
-
-      expect(result).toBe(true)
-      expect(mockTelemetry.trackApiCreditTopupSucceeded).toHaveBeenCalledOnce()
+      expect(isPendingTopupCompleted(events)).toBe(true)
       expect(mockLocalStorage.removeItem).toHaveBeenCalledWith(
         'pending_topup_timestamp'
       )
@@ -167,10 +143,7 @@ describe('topupTracker', () => {
         }
       ]
 
-      const result = checkForCompletedTopup(events)
-
-      expect(result).toBe(false)
-      expect(mockTelemetry.trackApiCreditTopupSucceeded).not.toHaveBeenCalled()
+      expect(isPendingTopupCompleted(events)).toBe(false)
       expect(mockLocalStorage.removeItem).not.toHaveBeenCalled()
     })
 
@@ -187,10 +160,7 @@ describe('topupTracker', () => {
         }
       ]
 
-      const result = checkForCompletedTopup(events)
-
-      expect(result).toBe(false)
-      expect(mockTelemetry.trackApiCreditTopupSucceeded).not.toHaveBeenCalled()
+      expect(isPendingTopupCompleted(events)).toBe(false)
     })
 
     it('should only match credit_added events, not other event types', () => {
@@ -212,16 +182,13 @@ describe('topupTracker', () => {
         }
       ]
 
-      const result = checkForCompletedTopup(events)
-
-      expect(result).toBe(false)
-      expect(mockTelemetry.trackApiCreditTopupSucceeded).not.toHaveBeenCalled()
+      expect(isPendingTopupCompleted(events)).toBe(false)
     })
   })
 
-  describe('clearTopupTracking', () => {
+  describe('clearPendingTopup', () => {
     it('should remove pending topup from localStorage', () => {
-      clearTopupTracking()
+      clearPendingTopup()
 
       expect(mockLocalStorage.removeItem).toHaveBeenCalledWith(
         'pending_topup_timestamp'

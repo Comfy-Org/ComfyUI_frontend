@@ -162,8 +162,8 @@ import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useTelemetry } from '@/platform/telemetry'
-import { clearTopupTracking } from '@/platform/telemetry/topupTracker'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+import { usePendingTopup } from '@/platform/workspace/composables/usePendingTopup'
 import { useDialogStore } from '@/stores/dialogStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -243,7 +243,7 @@ function handlePresetClick(amount: number) {
 
 function handleClose(clearTracking = true) {
   if (clearTracking) {
-    clearTopupTracking()
+    usePendingTopup().clearPendingTopup()
   }
   dialogStore.closeDialog({ key: 'top-up-credits' })
 }
