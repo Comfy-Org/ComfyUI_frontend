@@ -169,7 +169,7 @@ async function getAuthHeaderOrThrow() {
 }
 
 // Off-cloud, resolve to cloud ingest; on-cloud, keep the relative form. Applied
-// per endpoint so only the billing reads route off local.
+// per endpoint so only the routed billing calls leave local.
 function resolveBillingUrl(path: string): string {
   if (isCloud) return api.apiURL(path)
   return `${getCloudIngestBaseUrl()}/api${path}`
@@ -505,7 +505,7 @@ export const workspaceApi = {
     const headers = await getAuthHeaderOrThrow()
     try {
       const response = await workspaceApiClient.post<SubscribeResponse>(
-        api.apiURL('/billing/subscribe'),
+        resolveBillingUrl('/billing/subscribe'),
         {
           plan_slug: planSlug,
           return_url: options.returnUrl,
@@ -648,7 +648,7 @@ export const workspaceApi = {
     const headers = await getAuthHeaderOrThrow()
     try {
       const response = await workspaceApiClient.get<BillingOpStatusResponse>(
-        api.apiURL(`/billing/ops/${opId}`),
+        resolveBillingUrl(`/billing/ops/${opId}`),
         { headers, timeout: 30_000 }
       )
       return response.data

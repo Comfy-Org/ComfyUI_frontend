@@ -122,8 +122,18 @@
           </div>
         </div>
 
-        <Button variant="secondary" size="lg" class="mt-auto w-full">
-          {{ t('settingsPlans.choosePlan', { tier: plan.name }) }}
+        <Button
+          variant="secondary"
+          size="lg"
+          class="mt-auto w-full"
+          :disabled="isCurrentPlan(plan.key) || isSubscribing"
+          @click="subscribeToPersonal(plan.key, selectedCycle)"
+        >
+          {{
+            isCurrentPlan(plan.key)
+              ? t('subscription.currentPlan')
+              : t('settingsPlans.choosePlan', { tier: plan.name })
+          }}
         </Button>
       </div>
     </div>
@@ -176,11 +186,19 @@
             </span>
           </div>
 
-          <Button variant="secondary" size="lg" class="mt-auto w-full">
+          <Button
+            variant="secondary"
+            size="lg"
+            class="mt-auto w-full"
+            :disabled="isTeamCurrentPlan || isSubscribing"
+            @click="subscribeToTeam(selectedTeamStop, selectedCycle)"
+          >
             {{
-              billedYearly
-                ? t('subscription.teamPlan.cta')
-                : t('subscription.teamPlan.ctaMonthly')
+              isTeamCurrentPlan
+                ? t('subscription.teamPlan.currentPlan')
+                : billedYearly
+                  ? t('subscription.teamPlan.cta')
+                  : t('subscription.teamPlan.ctaMonthly')
             }}
           </Button>
         </div>
@@ -261,13 +279,18 @@ import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBi
 import {
   DEFAULT_TEAM_PLAN_STOP_INDEX,
   TEAM_PLAN_CREDIT_STOPS,
+  getTeamPlanSlug,
   mapApiTeamCreditStops
 } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import { TIER_PRICING } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { TierPricing } from '@/platform/cloud/subscription/constants/tierPricing'
+import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
+import { useSettingsPlansCheckout } from '@/platform/workspace/composables/useSettingsPlansCheckout'
+import { findPlanSlug } from '@/platform/workspace/composables/useSubscriptionCheckout'
+import type { CheckoutTierKey } from '@/platform/workspace/composables/useSubscriptionCheckout'
 
 interface PlanCard {
-  key: string
+  key: CheckoutTierKey
   name: string
   pricing: TierPricing
   benefits: string[]
@@ -321,11 +344,31 @@ const VIDEO_PER_CREDIT =
 
 // Backend-sourced stops when the shared plans state has them, DES-197 fallback otherwise.
 const { teamCreditStops } = useBillingPlans()
-const { fetchPlans } = useBillingContext()
+const { fetchPlans, plans: catalogPlans, currentPlanSlug } = useBillingContext()
+const { isSubscribing, subscribeToPersonal, subscribeToTeam } =
+  useSettingsPlansCheckout()
 
 onMounted(() => {
   void fetchPlans()
 })
+
+const selectedCycle = computed<BillingCycle>(() =>
+  billedYearly.value ? 'yearly' : 'monthly'
+)
+
+// True only when the tier's catalog slug is the current plan. A founder or
+// legacy slug matches no rendered card, so every card stays actionable.
+function isCurrentPlan(tierKey: CheckoutTierKey): boolean {
+  return (
+    currentPlanSlug.value !== null &&
+    findPlanSlug(catalogPlans.value, tierKey, selectedCycle.value) ===
+      currentPlanSlug.value
+  )
+}
+
+const isTeamCurrentPlan = computed(
+  () => currentPlanSlug.value === getTeamPlanSlug(selectedCycle.value)
+)
 
 const teamStops = computed(() => {
   const apiStops = teamCreditStops.value?.stops

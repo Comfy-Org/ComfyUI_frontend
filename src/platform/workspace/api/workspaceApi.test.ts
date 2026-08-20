@@ -477,11 +477,29 @@ describe('workspaceApi', () => {
       )
     })
 
-    it('keeps mutating billing endpoints on the local relative form', async () => {
+    it('routes subscribe and billing-op polling to cloud ingest', async () => {
+      mockAxiosInstance.post.mockResolvedValue({ data: {} })
+      mockAxiosInstance.get.mockResolvedValue({ data: {} })
+
+      await workspaceApi.subscribe('pro-monthly')
+      await workspaceApi.getBillingOpStatus('op-1')
+
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        'https://ingest.example/api/billing/subscribe',
+        { plan_slug: 'pro-monthly' },
+        { headers: AUTH_HEADER }
+      )
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith(
+        'https://ingest.example/api/billing/ops/op-1',
+        { headers: AUTH_HEADER, timeout: 30_000 }
+      )
+    })
+
+    it('keeps unused billing endpoints on the local relative form', async () => {
       mockAxiosInstance.post.mockResolvedValue({ data: {} })
 
       await workspaceApi.createTopup(1000, 'key-local')
-      await workspaceApi.subscribe('pro-monthly')
+      await workspaceApi.previewSubscribe('pro-monthly')
 
       expect(mockAxiosInstance.post).toHaveBeenNthCalledWith(
         1,
@@ -491,7 +509,7 @@ describe('workspaceApi', () => {
       )
       expect(mockAxiosInstance.post).toHaveBeenNthCalledWith(
         2,
-        '/api/billing/subscribe',
+        '/api/billing/preview-subscribe',
         { plan_slug: 'pro-monthly' },
         { headers: AUTH_HEADER }
       )
