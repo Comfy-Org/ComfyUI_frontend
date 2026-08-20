@@ -266,16 +266,11 @@ function extractApiModels(files: string[]): ApiModelData[] {
   }
 
   if (unmapped.size > 0) {
-    const errorMsg =
+    throw new Error(
       `Unmapped API provider prefixes found in template files:\n` +
-      Array.from(unmapped).join('\n') +
-      `\nYou MUST add them to API_PROVIDER_MAP in generate-models.ts.`
-
-    if (process.env.VERCEL) {
-      console.warn(`\n[WARNING] ${errorMsg}\n`)
-    } else {
-      throw new Error(errorMsg)
-    }
+        Array.from(unmapped).join('\n') +
+        `\nYou MUST add them to API_PROVIDER_MAP in generate-models.ts.`
+    )
   }
   return [...counts.entries()].map(([slug, count]) => {
     const found = Object.values(API_PROVIDER_MAP).find((e) => e.slug === slug)!
