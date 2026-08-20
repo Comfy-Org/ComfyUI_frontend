@@ -59,7 +59,7 @@ describe('keybindingService - dialog gate', () => {
   function createKeyboardEvent(
     key: string,
     target: HTMLElement = document.body,
-    modifiers: { ctrlKey?: boolean } = {}
+    modifiers: { ctrlKey?: boolean; metaKey?: boolean } = {}
   ): KeyboardEvent {
     const event = new KeyboardEvent('keydown', {
       key,
@@ -146,16 +146,25 @@ describe('keybindingService - dialog gate', () => {
     }
   })
 
-  it('still suppresses the browser default for Ctrl+S while a dialog is open', async () => {
-    const dialogStore = useDialogStore()
-    dialogStore.dialogStack.push(createTestDialogInstance('templates-dialog'))
+  it.for([
+    { label: 'Ctrl+S', modifiers: { ctrlKey: true } },
+    { label: 'Meta+S', modifiers: { metaKey: true } }
+  ] as {
+    label: string
+    modifiers: { ctrlKey?: boolean; metaKey?: boolean }
+  }[])(
+    'still suppresses the browser default for $label while a dialog is open',
+    async ({ modifiers }) => {
+      const dialogStore = useDialogStore()
+      dialogStore.dialogStack.push(createTestDialogInstance('templates-dialog'))
 
-    const event = createKeyboardEvent('s', document.body, { ctrlKey: true })
-    await keybindingService.keybindHandler(event)
+      const event = createKeyboardEvent('s', document.body, modifiers)
+      await keybindingService.keybindHandler(event)
 
-    expect(mockCommandExecute).not.toHaveBeenCalled()
-    expect(event.preventDefault).toHaveBeenCalled()
-  })
+      expect(mockCommandExecute).not.toHaveBeenCalled()
+      expect(event.preventDefault).toHaveBeenCalled()
+    }
+  )
 
   it('executes a global keybinding while a reka popover is open', async () => {
     const popper = document.createElement('div')
