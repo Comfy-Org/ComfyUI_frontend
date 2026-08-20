@@ -123,6 +123,7 @@ export {
   registerNodeState,
   unregisterNodeState
 } from './LGraphNode'
+export { outputLinks } from './node/slotLinks'
 export { LLink } from './LLink'
 export { createBounds } from './measure'
 export { Reroute, type RerouteId } from './Reroute'

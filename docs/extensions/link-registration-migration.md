@@ -1,5 +1,8 @@
 # Link Registration Migration Notes
 
+For migration from direct `input.link` / `output.links` access, see
+[Slot topology migration](./slot-topology-migration.md).
+
 `LinkNetwork.addFloatingLink(link)` now returns `LLink | undefined`.
 
 For a new runtime link, pass the unassigned link id and use the returned link:

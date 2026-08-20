@@ -21,7 +21,9 @@ import {
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
+import type { LLink } from '@/lib/litegraph/src/LLink'
 import { snapPoint } from '@/lib/litegraph/src/measure'
+import { outputLinks as readOutputLinks } from '@/lib/litegraph/src/node/slotLinks'
 import type { Vector2 } from '@/lib/litegraph/src/litegraph'
 import type {
   IBaseWidget,
@@ -196,6 +198,14 @@ export function sanitizeNodeName(string: string) {
   return String(string).replace(/[&<>"'`=]/g, function fromEntityMap(s) {
     return entityMap[s as keyof typeof entityMap]
   })
+}
+
+export function outputLinks(
+  graph: LGraph,
+  nodeId: LGraphNode['id'],
+  slot: number
+): LLink[] {
+  return readOutputLinks(graph, nodeId, slot)
 }
 
 function syncPromotedComboHostOptions(rootGraph: LGraph): void {
