@@ -11,10 +11,16 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
+import { api } from '@/scripts/api'
+import { downloadBlob } from '@/base/common/downloadUtil'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
+import type { ReplyAsset } from '../../../utils/replyAssets'
 import AgentTooltip from '../AgentTooltip.vue'
 
-const { markdown } = defineProps<{ markdown: string }>()
+const { markdown, assets = [] } = defineProps<{
+  markdown: string
+  assets?: ReplyAsset[]
+}>()
 const emit = defineEmits<{ feedback: [vote: 'up' | 'down' | null] }>()
 
 const { t } = useI18n()
@@ -34,10 +40,34 @@ function copyPlainText(): void {
   )
   void copy(doc.body.textContent?.trim() ?? '')
 }
+
+const downloading = ref(false)
+
+async function downloadAssets(): Promise<void> {
+  if (downloading.value) return
+  downloading.value = true
+  try {
+    for (const asset of assets) {
+      try {
+        const apiBase = api.apiURL('/')
+        const route = asset.url.includes(apiBase)
+          ? asset.url.slice(asset.url.indexOf(apiBase) + api.apiURL('').length)
+          : asset.url
+        const response = await api.fetchApi(route)
+        if (!response.ok) continue
+        downloadBlob(asset.filename, await response.blob())
+      } catch {
+        continue
+      }
+    }
+  } finally {
+    downloading.value = false
+  }
+}
 </script>
 
 <template>
-  <div class="text-agent-fg-muted flex w-full items-center justify-end gap-1">
+  <div class="text-agent-fg-muted flex w-full items-center justify-start gap-1">
     <AgentTooltip :label="t('agent.helpful')">
       <button
         type="button"
@@ -51,7 +81,7 @@ function copyPlainText(): void {
         "
         @click="setVote('up')"
       >
-        <span class="icon-[lucide--thumbs-up] size-4" />
+        <span class="icon-[lucide--thumbs-up] size-3" />
       </button>
     </AgentTooltip>
     <AgentTooltip :label="t('agent.notHelpful')">
@@ -67,7 +97,18 @@ function copyPlainText(): void {
         "
         @click="setVote('down')"
       >
-        <span class="icon-[lucide--thumbs-down] size-4" />
+        <span class="icon-[lucide--thumbs-down] size-3" />
+      </button>
+    </AgentTooltip>
+    <AgentTooltip v-if="assets.length" :label="t('agent.downloadAssets')">
+      <button
+        type="button"
+        :aria-label="t('agent.downloadAssets')"
+        :disabled="downloading"
+        class="hover:bg-agent-surface-hover hover:text-agent-fg focus-visible:ring-agent-accent text-agent-fg-muted flex size-6 cursor-pointer items-center justify-center rounded-lg transition-colors focus-visible:ring-2 focus-visible:outline-none"
+        @click="downloadAssets"
+      >
+        <span class="icon-[lucide--download] size-3" />
       </button>
     </AgentTooltip>
     <div
@@ -88,7 +129,7 @@ function copyPlainText(): void {
           <span
             :class="
               cn(
-                'size-4',
+                'size-3',
                 copied ? 'icon-[lucide--check]' : 'icon-[lucide--copy]'
               )
             "
@@ -100,7 +141,7 @@ function copyPlainText(): void {
           :aria-label="t('agent.copyMarkdown')"
           class="focus-visible:ring-agent-accent flex size-6 cursor-pointer items-center justify-center rounded-r-lg text-inherit focus-visible:z-10 focus-visible:ring-2 focus-visible:outline-none"
         >
-          <span class="icon-[lucide--chevron-down] size-4" />
+          <span class="icon-[lucide--chevron-down] size-3" />
         </DropdownMenuTrigger>
         <DropdownMenuPortal>
           <DropdownMenuContent

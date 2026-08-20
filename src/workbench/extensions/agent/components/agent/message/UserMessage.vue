@@ -60,7 +60,7 @@ const { copy, copied } = useClipboard({ copiedDuring: 2000, legacy: true })
     </div>
     <div
       v-if="text"
-      class="border-agent-border bg-agent-surface-raised text-agent-fg w-fit max-w-full rounded-[10px] border px-2.5 py-1.5 text-sm whitespace-pre-wrap"
+      class="border-agent-border bg-agent-surface-raised text-agent-fg w-fit max-w-full rounded-[10px] border px-2.5 py-1.5 text-sm wrap-break-word whitespace-pre-wrap"
     >
       {{ text }}
     </div>
@@ -78,7 +78,7 @@ const { copy, copied } = useClipboard({ copiedDuring: 2000, legacy: true })
           <span
             :class="
               cn(
-                'size-4',
+                'size-3',
                 copied ? 'icon-[lucide--check]' : 'icon-[lucide--copy]'
               )
             "
