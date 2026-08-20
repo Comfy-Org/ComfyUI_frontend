@@ -47,6 +47,15 @@ describe('seedance 2.5 workflow links', () => {
       'cloud.comfy.org/?template=api_seedance2_5_r2v'
     )
   })
+
+  it('keeps the draft CTA on a template that costs nothing to run', () => {
+    // The step above this CTA promises "zero credits" in both locales, so it
+    // has to open a Cloud template that is not an `api_` one; those bill per
+    // render.
+    expect(seedancePage.steps?.primaryCta?.href).toMatch(
+      /cloud\.comfy\.org\/\?template=(?!api_)/
+    )
+  })
 })
 
 describe('seedance 2.5 landing copy', () => {
