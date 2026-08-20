@@ -175,6 +175,7 @@
     "eslint-plugin-better-tailwindcss": "catalog:",
     "eslint-plugin-import-x": "catalog:",
     "eslint-plugin-oxlint": "catalog:",
+    "eslint-plugin-perfectionist": "catalog:",
     "eslint-plugin-playwright": "catalog:",
     "eslint-plugin-storybook": "catalog:",
     "eslint-plugin-testing-library": "catalog:",

@@ -24,7 +24,10 @@
     "vitest",
     "vue"
   ],
-  "jsPlugins": ["./tools/oxlint-plugins/comfy.ts"],
+  "jsPlugins": [
+    "./tools/oxlint-plugins/comfy.ts",
+    "eslint-plugin-perfectionist"
+  ],
   "rules": {
     "comfy/no-duplicate-ingest-type": "error",
     "no-async-promise-executor": "off",
@@ -123,6 +126,34 @@
     "vue/no-import-compiler-macros": "error"
   },
   "overrides": [
+    {
+      "files": ["src/**/*.ts"],
+      "rules": {
+        "perfectionist/sort-modules": [
+          "warn",
+          {
+            "type": "unsorted",
+            "partitionByComment": false,
+            "partitionByNewLine": false,
+            "newlinesBetween": "ignore",
+            "groups": [
+              ["declare-interface", "declare-type"],
+              "declare-function",
+              "declare-class",
+              "enum",
+              ["interface", "type"],
+              "function",
+              "class",
+              "unknown",
+              ["export-interface", "export-type"],
+              "export-enum",
+              ["export-function", "export-default-function"],
+              ["export-class", "export-default-class"]
+            ]
+          }
+        ]
+      }
+    },
     {
       "files": ["**/*.{stories,test,spec}.ts", "**/*.stories.vue"],
       "rules": {
