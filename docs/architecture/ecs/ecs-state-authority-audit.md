@@ -8,6 +8,11 @@ authoritative records from compatibility accessors, derived projections, and
 transient renderer caches. It identifies dual sources where the migration is
 not complete.
 
+For PR 14246, the desired endpoints in this audit prioritize one store authority
+per durable Component or Entity concern and removal of synchronization mirrors.
+References to commands, replay, transactions, or CRDT transport describe possible
+later architecture, not requirements for this data-centralization phase.
+
 The governing decisions remain
 [ADR 0003](../../adr/0003-crdt-based-layout-system.md) and
 [ADR 0008](../../adr/0008-entity-component-system.md). See
@@ -215,8 +220,8 @@ target.
   deterministic replay, transaction integration, or defined undo behavior.
 - **Desired endpoint:** keep compatibility at a controlled serialization
   adapter, isolate namespaced extension payloads as validated copied plain data,
-  and prevent hooks from mutating canonical workflow fields. Extension payload
-  changes must have an explicit command/replay/undo contract.
+  and prevent hooks from mutating canonical workflow fields. A command/replay
+  contract for extension payload changes is deferred beyond this phase.
 
 ### Unknown-node fallback records
 

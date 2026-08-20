@@ -28,21 +28,22 @@ second copy.
 
 ## What remains
 
-The ECS is only partly command-driven:
+This phase still has authority-centralization work:
 
-- Serializable operations currently cover layout, not all graph mutations.
-- Cross-store changes have no workflow-wide transaction or rollback boundary.
-- Undo/redo remains snapshot-based.
-- Slots, widgets, and substantial graph behavior remain class-based.
-- Widget order and live graph registries retain transitional dual
-  representations.
+- Slots, graph/subgraph definitions, groups, properties, metadata, and some
+  durable render inputs remain class-owned.
+- Widget values/order, outputs/previews, z-order, unknown-node records, and live
+  graph registries retain duplicate or competing representations.
+- Lifecycle and invalidation logic remains distributed across stores and legacy
+  classes.
 - Extension compatibility and large-workflow performance need broader evidence
   before bridge APIs can be removed.
 
 The immediate priority is to prove mixed undo/load-failure behavior, recursive
-identity handling, extension compatibility, and renderer performance. The next
-architectural step is to define mutation and transaction boundaries before
-extracting more systems or removing legacy facades.
+identity handling, extension compatibility, and renderer performance while
+centralizing the remaining Component and Entity data and deleting synchronization
+bridges. A system-wide Command pattern, command replay/undo, workflow
+transactions, and CRDT support beyond layout are later work outside this phase.
 
 ## Reference map
 

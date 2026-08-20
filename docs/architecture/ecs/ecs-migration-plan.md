@@ -23,6 +23,19 @@ The implementation has no central ECS `World`. Each concern defines its own
 identity, scope, storage, and cleanup. Layout uses Yjs. The other migrated
 stores use reactive Pinia state.
 
+### Scope of this phase
+
+PR 14246 is a data-architecture phase. Its goal is to centralize Component and
+Entity data so each durable concern has one store authority, then remove
+duplicate representations and state-synchronization logic distributed across
+classes, renderers, and stores.
+
+This phase does not require a system-wide Command pattern, command-based undo or
+replay, a workflow transaction bus, or CRDT compatibility beyond the existing
+Yjs-backed layout store. Those remain possible later architecture work and are
+documented so current APIs do not foreclose them, not as acceptance criteria for
+this phase.
+
 ## Work completed
 
 | Concern              | Current result                                                                                                                                                                                                                                                                                                                                                           |
@@ -73,17 +86,8 @@ not separate architecture changes.
 
 ## Current boundaries
 
-The following boundaries remain:
+The following authority boundaries remain in this phase:
 
-- `LGraph`, `LGraphNode`, `LLink`, `Reroute`, slot classes, and widget classes
-  still contain behavior and coordinate mutations.
-- Only layout has serializable operation-shaped writes. Topology uses validated
-  store actions; node, reroute, widget, slot, and extension state still allow
-  direct reactive or class mutation.
-- No transaction spans Pinia stores, Yjs, legacy registries, callbacks, and
-  undo history. Cross-store consistency relies on orchestration order.
-- Undo and redo restore serialized snapshots. They do not replay or invert ECS
-  commands.
 - `NodeState.inputs` and `outputs` contain slot class instances. Slot data is
   not yet a plain component model.
 - Widget order exists in both the store and `LGraphNode.widgets` during the
@@ -123,7 +127,7 @@ The following boundaries remain:
 - Prompt construction awaits arbitrary widget `serializeValue` hooks. Current
   hooks can mutate widget/workflow shadows, choose random values, capture media,
   upload files, and update UI state, so execution input assembly is neither a
-  pure store read nor a deterministic, replayable mutation boundary.
+  pure store read nor isolated from unrelated effects.
 - Node z-order exists in layout state and legacy `_nodes` ordering.
   `sendToBack` currently updates only the legacy ordering path.
 - Widget and preview stores lack the owner-scoped cleanup available in node,
@@ -131,6 +135,10 @@ The following boundaries remain:
   records until root cleanup.
 - Link paths, slot bounds, and hit-test geometry are transient renderer caches,
   not persistent layout components.
+
+The current implementation also has no system-wide command protocol, workflow
+transaction, command replay, or command-based undo. These are factual limits,
+but they are not blockers for completing this data-centralization phase.
 
 ## Work remaining
 
@@ -156,22 +164,7 @@ Before broadening or removing compatibility paths:
 These are behavioral gates. Additional store-internal tests are lower priority
 unless they cover a new invariant.
 
-### 2. Establish mutation boundaries
-
-- Define which graph-domain changes must become serializable commands and
-  which transient or derived changes intentionally remain outside command
-  history.
-- Route topology rewires, reroute-chain edits, node shell changes, widget
-  changes, subgraph edits, replacement, and promotion through explicit mutation
-  boundaries instead of public proxy writes.
-- Specify deterministic allocation, idempotency, rejection, and duplicate
-  delivery behavior for each command or batch.
-- Introduce a workflow-level transaction boundary, or documented compensation
-  model, for changes spanning stores, layout, legacy registries, and callbacks.
-- Define how command batches integrate with snapshot-based undo. Do not claim
-  replayable or command-based undo until this is implemented and tested.
-
-### 3. Extract remaining behavior
+### 2. Centralize remaining Component and Entity data
 
 - Add plain store-owned graph and subgraph definition records for membership,
   metadata, ordered entity IDs, and subgraph interfaces. Keep live object
@@ -182,8 +175,6 @@ unless they cover a new invariant.
   legacy `app` and node-image fields as compatibility projections.
 - Make one layout ordering action update both Vue z-index and the legacy draw
   projection; remove the asymmetric `sendToBack` mutation.
-- Move connectivity orchestration out of graph/node classes while preserving
-  synchronous validation and notification callbacks during the bridge period.
 - Extract serialization only after stores contain sufficient authoritative
   data and parity can be checked against the existing wire format.
 - Move legacy geometry projection ownership out of `LGraphNode` without
@@ -197,16 +188,12 @@ unless they cover a new invariant.
   compatibility property facades.
 - Preserve serialization compatibility through a controlled adapter: isolate
   namespaced extension payloads as validated plain data and prevent persistence
-  hooks from mutating canonical workflow and store-backed fields. Define how
-  those payload mutations participate in commands, replay, and undo.
-- Separate prompt value resolution from prompt assembly. Declare and run media
-  capture/upload as explicit pre-execution effects, route durable graph changes
-  through commands, and record resolved values in the execution snapshot so
-  retries and replay do not rerun hidden widget effects.
-- Include graph `config`, `extra`, and `revision` metadata in command schemas,
-  transaction boundaries, serialization parity, and undo coverage.
-- Derive or emit graph invalidation revision once per committed mutation batch;
-  remove scattered caller-owned `_version` increments.
+  hooks from mutating canonical workflow and store-backed fields.
+- Move graph `config`, `extra`, and `revision` into a focused store-owned plain
+  data record while preserving serialization compatibility.
+- Derive graph invalidation from authoritative store revisions or one
+  centralized compatibility projection; remove scattered caller-owned
+  `_version` increments.
 - Store opaque unknown-node fallback records by scoped node identity, define
   their remapping and replacement lifecycle, and retain `last_serialization`
   only as a compatibility facade.
@@ -214,17 +201,15 @@ unless they cover a new invariant.
   serialized `order` is ignored and recomputed or retained only as explicit
   wire compatibility, not as an independent mutation channel.
 - Move allocation counters behind the workflow identity owner. Creation/import
-  commands must carry assigned IDs rather than deriving them from ambient
-  mutable counters during replay.
+  must no longer derive IDs from mutable state distributed across class and
+  import paths.
 - Route delayed widget restoration through scoped store state and isolate
   serialized widget arrays/maps as wire compatibility projections rather than
   production mutation channels.
 - Add owner/node cleanup for widget and preview records before treating failed
   configure, replacement, and subgraph release as contained operations.
-- Move render and execution behavior incrementally rather than creating empty
-  system abstractions ahead of consumers.
 
-### 4. Retire compatibility paths
+### 3. Retire duplicate state and synchronization bridges
 
 A compatibility path can be removed per concern only when:
 
@@ -240,6 +225,20 @@ indexed `graph.links[id]`, legacy layout aliases, duplicate widget-order
 ownership, and class-owned component fields. They should not be removed as one
 large final phase.
 
+## Later architecture work outside this phase
+
+- Define which graph-domain changes should become serializable commands.
+- Introduce deterministic command reducers, idempotency, replay, and transport
+  only when a concrete collaboration or operation-history consumer requires
+  them.
+- Define workflow-wide transaction or compensation semantics independently of
+  state centralization.
+- Decide whether undo remains snapshot-based or adopts command inverses.
+- Separate prompt value resolution from effectful media capture/upload if queue
+  retry or replay requirements demand it.
+- Extend CRDT compatibility beyond layout only through the multiplayer
+  integration contract, not by making every store Yjs-backed.
+
 ## Explicit non-goals
 
 - Reintroducing a universal `World` registry.
@@ -254,18 +253,24 @@ large final phase.
 
 ## Completion criteria
 
-The migration is complete when, for every durable graph-domain concern:
+This data-centralization phase is complete when, for every durable Component or
+Entity concern included in PR 14246:
 
-1. One authority and one supported mutation boundary are documented.
+1. One dedicated store is the documented runtime authority.
 2. Lifecycle registration, transfer, teardown, and failed-operation behavior
    are explicit and tested across nested graphs.
-3. Serialization and undo restore the same authoritative state.
+3. Renderers, serialization, execution, and compatibility APIs read that
+   authority rather than maintaining durable mirrors.
 4. Derived and transient data cannot become competing persisted authorities.
-5. Legacy classes no longer own domain behavior that has a store/system owner.
-6. Remaining compatibility APIs are deliberate supported surfaces rather than
-   synchronization bridges.
+5. Duplicate class/store representations and their synchronization logic are
+   removed; retained class APIs are projections or behavior adapters.
+6. Components are plain data and Entities have explicit scoped identity and
+   lifecycle ownership.
 7. Extension and renderer compatibility meet documented correctness and
    performance gates.
+
+System-wide commands, command replay/undo, workflow transactions, and broader
+CRDT compatibility are explicitly not completion criteria for this phase.
 
 ## References
 

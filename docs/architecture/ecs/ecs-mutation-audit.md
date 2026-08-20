@@ -112,10 +112,11 @@ command values. Replaying a snapshot can also invoke configure and lifecycle
 callbacks whose external effects are absent from the snapshot. Equal
 serialized state does not imply equal callback history.
 
-## What must remain before "command-driven" is accurate system-wide
+## Later command-driven architecture
 
-The migration is not complete until all items below hold for every
-authoritative graph-domain mutation, including extensions:
+The current phase is about data centralization, not implementing this model.
+None of the items below is a completion criterion for PR 14246. If the system
+later adopts command-driven mutation, that work would need to address:
 
 1. Define serializable command schemas for graph metadata, node, link, reroute,
    widget, slot, group, subgraph-definition, property, and promotion mutations.

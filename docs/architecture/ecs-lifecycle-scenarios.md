@@ -38,10 +38,9 @@ registration, reroute anchoring, callbacks, dirtying, `_version`, and snapshot
 undo. Slot connectivity is not mirrored: deprecated `input.link` and
 `output.links` accessors derive from `linkStore` and ignore writes.
 
-The target is one validated topology command or batch that preserves extension
-veto/callback semantics during the compatibility period. It must commit link and
-reroute state, legacy adapters, invalidation, and undo visibility as one defined
-unit.
+The target for this phase is one topology mutation owner that preserves
+extension veto/callback semantics while updating authoritative link and reroute
+stores. A serializable command or workflow transaction is not required.
 
 ### Node removal and graph clear
 
@@ -87,29 +86,25 @@ implementations can mutate workflow shadows or UI and perform media/upload
 effects. Resolved execution values are not currently a deterministic command or
 recorded pre-execution effect boundary.
 
-## Target requirements
+## Data-centralization requirements for this phase
 
-The dedicated-store architecture does not make these properties automatic. A
-replacement lifecycle must provide them explicitly:
+The replacement lifecycle for this phase must provide:
 
-1. Serializable commands with deterministic assigned IDs and preconditions.
-2. One workflow transaction or documented compensation model across stores,
-   Yjs, legacy adapters, callbacks, invalidation, and undo capture.
-3. Concern-specific identity and owner cleanup rather than one universal key or
+1. Concern-specific identity and owner cleanup rather than one universal key or
    `clearGraph` convention.
-4. Store-owned plain graph/subgraph definitions, slot/widget schemas, properties,
+2. Store-owned plain graph/subgraph definitions, slot/widget schemas, properties,
    outputs, unknown-node records, metadata, and other durable render inputs.
-5. Callback/event compatibility that is preserved, measured, or deliberately
+3. Callback/event compatibility that is preserved, measured, or deliberately
    versioned; systems cannot simply eliminate callbacks during migration.
-6. Explicit snapshot or inverse-command undo integration and failed-batch tests.
-7. Derived execution order, invalidation revision, badges, and transient geometry
+4. Existing snapshot undo and persistence restoring the same centralized data.
+5. Derived execution order, invalidation revision, badges, and transient geometry
    that cannot become competing persisted authorities.
-8. A controlled extension persistence adapter that validates and copies
-   namespaced plain data, protects canonical store-backed fields, and defines
-   replay and undo semantics.
-9. An explicit pre-execution effect stage for widget value resolution, with
-   resolved inputs recorded for retry/replay and durable changes dispatched as
-   commands.
+6. A controlled extension persistence adapter that protects canonical
+   store-backed fields from becoming secondary authorities.
+
+Serializable commands, command replay or inverse undo, workflow-wide
+transactions, and broader CRDT compatibility are later architecture work, not
+requirements for this phase.
 
 The [migration plan](ecs/ecs-migration-plan.md) defines sequencing and completion
 criteria. This document intentionally avoids hypothetical system APIs until a

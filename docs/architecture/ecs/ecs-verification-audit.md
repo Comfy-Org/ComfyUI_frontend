@@ -255,10 +255,11 @@ Representative evidence:
 
 ## Prioritized missing behavioral scenarios
 
-1. P0, undo/redo across a mixed transaction. Replace or remove a node with
+1. P0, undo/redo across a mixed operation. Replace or remove a node with
    links, reroutes, promoted widgets, and layout; undo and redo; assert every
    store, callback-visible state, renderer, and serialization agree. Current
-   tests validate each concern but not transactional restoration across them.
+   tests validate each concern but not restoration of all centralized state
+   across one user-visible operation.
 2. P0, failed or interrupted workflow load. Force a configure callback to
    throw after some nested definitions register, then load another workflow.
    Assert no node/link/reroute/layout/widget ownership leaks from the failed
