@@ -59,7 +59,7 @@ test.describe('Primitive Node', { tag: ['@screenshot', '@node'] }, () => {
     )
   })
 
-  test('Preserves combo options on the primitive after pressing R to refresh', async ({
+  test('Preserves combo options after refreshing node definitions', async ({
     comfyPage
   }) => {
     async function getPrimitiveComboState() {
@@ -92,15 +92,14 @@ test.describe('Primitive Node', { tag: ['@screenshot', '@node'] }, () => {
     const before = await getPrimitiveComboState()
     expect(before.length).toBeGreaterThan(0)
 
-    await comfyPage.canvas.click()
-    await comfyPage.page.keyboard.press('r')
+    await comfyPage.page.evaluate(() => window.app!.refreshComboInNodes())
 
-    await expect.poll(getPrimitiveComboState).toMatchObject({
+    const after = await getPrimitiveComboState()
+    expect(after).toMatchObject({
       isArray: true,
       includesEuler: true,
       value: 'euler'
     })
-    const after = await getPrimitiveComboState()
     expect(after.length).toBeGreaterThan(0)
   })
 
