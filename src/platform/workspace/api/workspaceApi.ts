@@ -1,7 +1,47 @@
+import type {
+  AcceptInviteResponse,
+  BillingBalanceResponse,
+  BillingEventsResponse,
+  BillingOpStatusResponse,
+  BillingPlansResponse,
+  BillingStatus,
+  BillingStatusResponse as GeneratedBillingStatusResponse,
+  CancelSubscriptionRequest,
+  CancelSubscriptionResponse,
+  ChurnkeyAuthResponse,
+  CreateInviteRequest,
+  CreateTopupRequest,
+  CreateTopupResponse,
+  CreateWorkspaceRequest,
+  ListInvitesResponse,
+  ListMembersResponse,
+  ListWorkspacesResponse,
+  Member as GeneratedMember,
+  PaymentPortalRequest,
+  PaymentPortalResponse,
+  PendingInvite,
+  Plan,
+  PreviewSubscribeRequest as GeneratedPreviewSubscribeRequest,
+  PreviewSubscribeResponse,
+  ResubscribeRequest,
+  ResubscribeResponse,
+  SubscribeRequest,
+  SubscribeResponse,
+  SubscriptionDuration,
+  SubscriptionTier,
+  TeamCreditStops,
+  TeamCreditStopSummary,
+  UpdateWorkspaceRequest,
+  WorkspaceWithRole
+} from '@comfyorg/ingest-types'
 import axios from 'axios'
 
 import { attachUnifiedRemintInterceptor } from '@/platform/auth/unified/remintRetry'
-import type { SubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
+import { churnkeyAuthResponseSchema } from '@/platform/cloud/churnkey/churnkeyAuthSchema'
+import {
+  UNKNOWN_ERROR_CODE,
+  errorResponseFromBody
+} from '@/platform/remote/comfyui/errors'
 import type {
   WorkspaceId,
   WorkspaceInviteId
@@ -12,42 +52,19 @@ import type { UserId } from '@/types/authTypes'
 
 export type WorkspaceType = 'personal' | 'team'
 export type WorkspaceRole = 'owner' | 'member'
+export type BillingRail = NonNullable<
+  GeneratedBillingStatusResponse['billing_rail']
+>
 
-interface Workspace {
-  id: WorkspaceId
-  name: string
-  type: WorkspaceType
-  created_at: string
-  joined_at: string
-}
+export type { WorkspaceWithRole }
 
-export interface WorkspaceWithRole extends Workspace {
-  role: WorkspaceRole
-  subscription_tier?: SubscriptionTier
-}
+export type { ListWorkspacesResponse }
 
-export interface Member {
-  id: UserId
-  name: string
-  email: string
-  joined_at: string
-  role: WorkspaceRole
-  // True when this member is the workspace's original owner/creator
-  // (member.id == workspace.created_by_user_id). Gates the creator-only
-  // billing lifecycle actions (cancel / reactivate / downgrade).
-  // Optional: the cloud OpenAPI does not carry this field yet.
-  is_original_owner?: boolean
-}
-
-interface PaginationInfo {
-  offset: number
-  limit: number
-  total: number
-}
-
-interface ListMembersResponse {
-  members: Member[]
-  pagination: PaginationInfo
+export type Member = GeneratedMember & {
+  // Per-member monthly credit limit UI (FE-1277). The cloud OpenAPI carries
+  // neither usage nor limit yet; persistence and real usage land in FE-1278.
+  credits_used_this_month?: number
+  monthly_credit_limit?: number | null
 }
 
 export interface ListMembersParams {
@@ -55,114 +72,19 @@ export interface ListMembersParams {
   limit?: number
 }
 
-export interface PendingInvite {
-  id: WorkspaceInviteId
-  email: string
-  token: string
-  invited_at: string
-  expires_at: string
-}
-
-interface ListInvitesResponse {
-  invites: PendingInvite[]
-}
-
-interface CreateInviteRequest {
-  email: string
-}
-
-interface AcceptInviteResponse {
-  workspace_id: WorkspaceId
-  workspace_name: string
-}
-
-interface CreateWorkspacePayload {
-  name: string
-}
-
-interface UpdateWorkspacePayload {
-  name: string
-}
-
-interface ListWorkspacesResponse {
-  workspaces: WorkspaceWithRole[]
-}
+export type { PendingInvite }
 
 export type { SubscriptionTier }
-export type SubscriptionDuration = 'MONTHLY' | 'ANNUAL'
-type PlanAvailabilityReason =
-  | 'same_plan'
-  | 'incompatible_transition'
-  | 'requires_team'
-  | 'requires_personal'
-  | 'exceeds_max_seats'
+export type { SubscriptionDuration }
 
-interface PlanAvailability {
-  available: boolean
-  reason?: PlanAvailabilityReason
-}
-
-interface PlanSeatSummary {
-  seat_count: number
-  total_cost_cents: number
-  total_credits_cents: number
-}
-
-export interface Plan {
-  slug: string
-  tier: SubscriptionTier
-  duration: SubscriptionDuration
-  price_cents: number
-  credits_cents: number
-  max_seats: number
-  availability: PlanAvailability
-  seat_summary: PlanSeatSummary
-}
-
-interface TeamCreditStopPrice {
-  list_price_cents: number
-  price_cents: number
-}
-
-interface TeamCreditStop {
-  id: string
-  credits: number
-  monthly: TeamCreditStopPrice
-  yearly: TeamCreditStopPrice
-}
-
-export interface TeamCreditStops {
-  default_stop_index: number
-  stops: TeamCreditStop[]
-}
-
-interface BillingPlansResponse {
-  current_plan_slug?: string
-  plans: Plan[]
-  team_credit_stops?: TeamCreditStops
-}
-
-type SubscriptionTransitionType =
-  | 'new_subscription'
-  | 'upgrade'
-  | 'downgrade'
-  | 'duration_change'
-
-interface PreviewSubscribeRequest {
-  plan_slug: string
-  team_credit_stop_id?: string
-  billing_cycle?: SubscribeBillingCycle
-}
+export type { Plan }
+export type { BillingPlansResponse }
+export type { TeamCreditStops }
+export type { TeamCreditStopSummary }
 
 type SubscribeBillingCycle = 'monthly' | 'yearly'
 
-interface SubscribeRequest {
-  plan_slug: string
-  idempotency_key?: string
-  return_url?: string
-  cancel_url?: string
-  /** Required for the per-credit Team plan; selects the slider stop. */
-  team_credit_stop_id?: string
+interface PreviewSubscribeRequest extends GeneratedPreviewSubscribeRequest {
   billing_cycle?: SubscribeBillingCycle
 }
 
@@ -171,6 +93,8 @@ export interface SubscribeOptions {
   cancelUrl?: string
   teamCreditStopId?: string
   billingCycle?: SubscribeBillingCycle
+  confirmReactivation?: boolean
+  prorationAt?: string
 }
 
 export interface PreviewSubscribeOptions {
@@ -178,153 +102,47 @@ export interface PreviewSubscribeOptions {
   billingCycle?: SubscribeBillingCycle
 }
 
-type SubscribeStatus = 'subscribed' | 'needs_payment_method' | 'pending_payment'
+export type { SubscribeResponse }
 
-export interface SubscribeResponse {
-  billing_op_id: string
-  status: SubscribeStatus
-  effective_at?: string
-  payment_method_url?: string
-}
+export type { PreviewSubscribeResponse }
 
-interface CancelSubscriptionRequest {
-  idempotency_key?: string
-}
+export type BillingSubscriptionStatus = NonNullable<
+  GeneratedBillingStatusResponse['subscription_status']
+>
 
-interface CancelSubscriptionResponse {
-  billing_op_id: string
-  cancel_at: string
-}
+export type { BillingStatus }
 
-interface ResubscribeRequest {
-  idempotency_key?: string
-}
+type SpecRequiredButOmittedByOlderDeployments =
+  | 'max_seats'
+  | 'occupied_seats'
+  | 'team_credit_stop'
 
-interface ResubscribeResponse {
-  billing_op_id: string
-  status: 'active'
-  message?: string
-}
+export type BillingStatusResponse = Omit<
+  GeneratedBillingStatusResponse,
+  SpecRequiredButOmittedByOlderDeployments
+> &
+  Partial<
+    Pick<
+      GeneratedBillingStatusResponse,
+      SpecRequiredButOmittedByOlderDeployments
+    >
+  > & {
+    // Not yet part of the ingest OpenAPI spec; scheduled-plan-change display
+    // ships ahead of the backend documenting these fields.
+    scheduled_plan_slug?: string
+    change_at?: string
+  }
 
-interface PaymentPortalRequest {
-  return_url?: string
-}
-
-interface PaymentPortalResponse {
-  url: string
-}
-
-interface PreviewPlanInfo {
-  slug: string
-  tier: SubscriptionTier
-  duration: SubscriptionDuration
-  price_cents: number
-  credits_cents: number
-  seat_summary: PlanSeatSummary
-  period_start?: string
-  period_end?: string
-}
-
-export interface PreviewSubscribeResponse {
-  allowed: boolean
-  reason?: string
-  transition_type: SubscriptionTransitionType
-  effective_at: string
-  is_immediate: boolean
-  cost_today_cents: number
-  cost_next_period_cents: number
-  credits_today_cents: number
-  credits_next_period_cents: number
-  current_plan?: PreviewPlanInfo
-  new_plan: PreviewPlanInfo
-}
-
-export type BillingSubscriptionStatus =
-  | 'active'
-  | 'scheduled'
-  | 'ended'
-  | 'canceled'
-
-export type BillingStatus =
-  | 'awaiting_payment_method'
-  | 'pending_payment'
-  | 'paid'
-  | 'payment_failed'
-  | 'inactive'
-
-export interface CurrentTeamCreditStop {
-  id: string
-  credits_monthly: number
-  stop_usd: number
-}
-
-export interface BillingStatusResponse {
-  is_active: boolean
-  subscription_status?: BillingSubscriptionStatus
-  subscription_tier?: SubscriptionTier
-  subscription_duration?: SubscriptionDuration
-  plan_slug?: string
-  billing_status?: BillingStatus
-  has_funds: boolean
-  cancel_at?: string
-  renewal_date?: string
-  team_credit_stop?: CurrentTeamCreditStop
-}
-
-export interface BillingBalanceResponse {
-  amount_micros: number
-  prepaid_balance_micros?: number
-  cloud_credit_balance_micros?: number
-  pending_charges_micros?: number
-  effective_balance_micros?: number
-  currency: string
-}
-
-interface CreateTopupRequest {
-  amount_cents: number
-  idempotency_key?: string
-}
-
-type TopupStatus = 'pending' | 'completed' | 'failed'
-
-export interface CreateTopupResponse {
-  billing_op_id: string
-  topup_id: string
-  status: TopupStatus
-  amount_cents: number
-}
-
-type BillingOpStatus = 'pending' | 'succeeded' | 'failed'
-
-export interface BillingOpStatusResponse {
-  id: string
-  status: BillingOpStatus
-  error_message?: string
-  started_at: string
-  completed_at?: string
-}
-
-interface BillingEvent {
-  event_type: string
-  event_id: string
-  params?: Record<string, unknown>
-  createdAt: string
-}
-
-interface BillingEventsResponse {
-  total: number
-  events: BillingEvent[]
-  page: number
-  limit: number
-  totalPages: number
-}
+export type { BillingBalanceResponse }
+export type { CreateTopupResponse }
+export type { BillingOpStatusResponse }
 
 interface GetBillingEventsParams {
   page?: number
   limit?: number
 }
 
-class WorkspaceApiError extends Error {
+export class WorkspaceApiError extends Error {
   constructor(
     message: string,
     public readonly status?: number,
@@ -351,8 +169,17 @@ async function getAuthHeaderOrThrow() {
 function handleAxiosError(err: unknown): never {
   if (axios.isAxiosError(err)) {
     const status = err.response?.status
-    const message = err.response?.data?.message ?? err.message
-    throw new WorkspaceApiError(message, status)
+    const { code, message } = errorResponseFromBody(
+      err.response?.data,
+      err.message
+    )
+    // Callers compare `code` against server-defined values, so the parser's
+    // "no code reported" sentinel must stay out of that contract.
+    throw new WorkspaceApiError(
+      message,
+      status,
+      code === UNKNOWN_ERROR_CODE ? undefined : code
+    )
   }
   throw err
 }
@@ -379,7 +206,7 @@ export const workspaceApi = {
    * Create a new workspace
    * POST /api/workspaces
    */
-  async create(payload: CreateWorkspacePayload): Promise<WorkspaceWithRole> {
+  async create(payload: CreateWorkspaceRequest): Promise<WorkspaceWithRole> {
     const headers = await getAuthHeaderOrThrow()
     try {
       const response = await workspaceApiClient.post<WorkspaceWithRole>(
@@ -399,7 +226,7 @@ export const workspaceApi = {
    */
   async update(
     workspaceId: WorkspaceId,
-    payload: UpdateWorkspacePayload
+    payload: UpdateWorkspaceRequest
   ): Promise<WorkspaceWithRole> {
     const headers = await getAuthHeaderOrThrow()
     try {
@@ -549,6 +376,20 @@ export const workspaceApi = {
     }
   },
 
+  async resendInvite(inviteId: WorkspaceInviteId): Promise<PendingInvite> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response = await workspaceApiClient.post<PendingInvite>(
+        api.apiURL(`/workspace/invites/${encodeURIComponent(inviteId)}/resend`),
+        null,
+        { headers }
+      )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
   /**
    * Accept a workspace invite.
    * POST /api/invites/:token/accept
@@ -661,7 +502,9 @@ export const workspaceApi = {
           return_url: options.returnUrl,
           cancel_url: options.cancelUrl,
           team_credit_stop_id: options.teamCreditStopId,
-          billing_cycle: options.billingCycle
+          billing_cycle: options.billingCycle,
+          confirm_reactivation: options.confirmReactivation,
+          proration_at: options.prorationAt
         } satisfies SubscribeRequest,
         { headers }
       )
@@ -689,6 +532,19 @@ export const workspaceApi = {
           { headers }
         )
       return response.data
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  async getChurnkeyAuth(): Promise<ChurnkeyAuthResponse> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response = await workspaceApiClient.get<unknown>(
+        api.apiURL('/billing/churnkey/auth'),
+        { headers }
+      )
+      return churnkeyAuthResponseSchema.parse(response.data)
     } catch (err) {
       handleAxiosError(err)
     }
@@ -784,7 +640,7 @@ export const workspaceApi = {
     try {
       const response = await workspaceApiClient.get<BillingOpStatusResponse>(
         api.apiURL(`/billing/ops/${opId}`),
-        { headers }
+        { headers, timeout: 30_000 }
       )
       return response.data
     } catch (err) {

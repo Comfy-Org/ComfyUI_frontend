@@ -770,6 +770,9 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       : '3d'
 
     const uploadedPath = await Load3dUtils.uploadFile(file, subfolder)
+    if (!uploadedPath) return
+
+    sceneConfig.value.backgroundRenderMode = 'tiled'
     sceneConfig.value.backgroundImage = uploadedPath
     await load3d?.setBackgroundImage(uploadedPath)
   }

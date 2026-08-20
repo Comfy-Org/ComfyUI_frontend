@@ -100,7 +100,6 @@ describe('useLoad3d', () => {
   let mockToastStore: ReturnType<typeof useToastStore>
 
   beforeEach(() => {
-    vi.clearAllMocks()
     nodeToLoad3dMap.clear()
     vi.mocked(getActivePinia).mockReturnValue(null as unknown as Pinia)
     settingGetMock.mockImplementation((key: string) =>
@@ -229,10 +228,6 @@ describe('useLoad3d', () => {
       typeof useToastStore
     >
     vi.mocked(useToastStore).mockReturnValue(mockToastStore)
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   describe('initialization', () => {
@@ -454,8 +449,6 @@ describe('useLoad3d', () => {
 
   describe('zoom watcher', () => {
     it('calls load3d.handleResize after debounce when canvas appScalePercentage changes', async () => {
-      vi.useFakeTimers()
-
       const canvasStore = reactive({ appScalePercentage: 100 })
       vi.mocked(getActivePinia).mockReturnValue({} as unknown as Pinia)
       vi.mocked(useCanvasStore).mockReturnValue(
@@ -474,13 +467,9 @@ describe('useLoad3d', () => {
 
       vi.advanceTimersByTime(150)
       expect(mockLoad3d.handleResize).toHaveBeenCalledOnce()
-
-      vi.useRealTimers()
     })
 
     it('debounces rapid zoom changes into a single handleResize call', async () => {
-      vi.useFakeTimers()
-
       const canvasStore = reactive({ appScalePercentage: 100 })
       vi.mocked(getActivePinia).mockReturnValue({} as unknown as Pinia)
       vi.mocked(useCanvasStore).mockReturnValue(
@@ -502,8 +491,6 @@ describe('useLoad3d', () => {
 
       vi.advanceTimersByTime(150)
       expect(mockLoad3d.handleResize).toHaveBeenCalledOnce()
-
-      vi.useRealTimers()
     })
   })
 
@@ -832,6 +819,44 @@ describe('useLoad3d', () => {
 
       expect(composable.sceneConfig.value.backgroundImage).toBe('')
       expect(mockLoad3d.setBackgroundImage).toHaveBeenCalledWith('')
+    })
+
+    it('should reset a leftover panorama mode to tiled when uploading a new image', async () => {
+      vi.mocked(Load3dUtils.uploadFile).mockResolvedValue('uploaded-image.jpg')
+
+      const composable = useLoad3d(mockNode)
+      const containerRef = document.createElement('div')
+
+      await composable.initializeLoad3d(containerRef)
+      composable.sceneConfig.value.backgroundRenderMode = 'panorama'
+      await nextTick()
+
+      const file = new File([''], 'test.jpg', { type: 'image/jpeg' })
+      await composable.handleBackgroundImageUpdate(file)
+
+      expect(composable.sceneConfig.value.backgroundRenderMode).toBe('tiled')
+      await nextTick()
+      expect(mockLoad3d.setBackgroundRenderMode).toHaveBeenLastCalledWith(
+        'tiled'
+      )
+    })
+
+    it('should not clear the background or touch render mode when the upload fails', async () => {
+      vi.mocked(Load3dUtils.uploadFile).mockResolvedValue(undefined)
+
+      const composable = useLoad3d(mockNode)
+      const containerRef = document.createElement('div')
+
+      await composable.initializeLoad3d(containerRef)
+      composable.sceneConfig.value.backgroundImage = 'existing.jpg'
+      composable.sceneConfig.value.backgroundRenderMode = 'panorama'
+      await nextTick()
+
+      const file = new File([''], 'test.jpg', { type: 'image/jpeg' })
+      await composable.handleBackgroundImageUpdate(file)
+
+      expect(composable.sceneConfig.value.backgroundImage).toBe('existing.jpg')
+      expect(composable.sceneConfig.value.backgroundRenderMode).toBe('panorama')
     })
   })
 

@@ -1,7 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
 import { render } from '@testing-library/vue'
 import type { RenderOptions } from '@testing-library/vue'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { toNodeId } from '@/types/nodeId'
 import { defineComponent, nextTick } from 'vue'
@@ -156,10 +156,6 @@ function renderSlotsWithTracking(
 
 const INPUT_SLOT_SELECTOR = '.stub-input-slot'
 const OUTPUT_SLOT_SELECTOR = '.stub-output-slot'
-
-afterEach(() => {
-  vi.restoreAllMocks()
-})
 
 function querySlotElements(
   container: Element,

@@ -16,8 +16,13 @@ const maybeLocalOptions: PlaywrightTestConfig = process.env.PLAYWRIGHT_LOCAL
     }
   : {
       retries: process.env.CI ? 3 : 0,
+      workers: process.env.CI ? 2 : undefined,
       use: {
-        trace: 'on-first-retry'
+        trace: 'on-first-retry',
+        video: process.env.RECORD_VIDEO === 'true' ? 'on' : undefined,
+        launchOptions: {
+          slowMo: Number(process.env.SLOW_MO) || 0
+        }
       }
     }
 
@@ -25,7 +30,7 @@ export default defineConfig({
   testDir: './browser_tests',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  reporter: 'html',
+  reporter: process.env.PLAYWRIGHT_BLOB_OUTPUT_DIR ? 'blob' : 'html',
   ...maybeLocalOptions,
 
   globalSetup: './browser_tests/globalSetup.ts',
@@ -80,13 +85,20 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
       timeout: 15000,
       grep: /@cloud/,
-      grepInvert: /@oss/
+      grepInvert: /@oss|@mobile-ios/
     },
 
     {
       name: 'mobile-chrome',
       use: { ...devices['Pixel 5'], hasTouch: true },
-      grep: /@mobile/
+      grep: /@mobile\b/,
+      grepInvert: /@mobile-ios/
+    },
+
+    {
+      name: 'mobile-safari',
+      use: { ...devices['iPhone 15'] },
+      grep: /@mobile-ios/
     }
   ]
 })
