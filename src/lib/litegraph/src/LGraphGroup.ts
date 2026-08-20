@@ -19,6 +19,7 @@ import {
   containsCentre,
   containsRect,
   createBounds,
+  expandRectToGrid,
   isInRect,
   isInRectangle,
   isPointInRect,
@@ -325,6 +326,9 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
 
   /**
    * Resizes and moves the group to neatly fit all given {@link objects}.
+   *
+   * When {@link LiteGraph.alwaysSnapToGrid} is enabled, the group is then
+   * expanded so that all four of its borders line up with the grid.
    * @param objects All objects that should be inside the group
    * @param padding Value in graph units to add to all sides of the group.  Default: 10
    */
@@ -336,6 +340,11 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     this.pos[1] = boundingBox[1] - this.titleHeight
     this.size[0] = boundingBox[2]
     this.size[1] = boundingBox[3] + this.titleHeight
+
+    const snapTo = LiteGraph.alwaysSnapToGrid
+      ? this.graph?.getSnapToGridSize()
+      : undefined
+    if (snapTo) expandRectToGrid(this._bounding, snapTo)
   }
 
   /**
