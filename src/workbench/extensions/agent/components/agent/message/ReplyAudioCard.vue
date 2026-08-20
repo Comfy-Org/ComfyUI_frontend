@@ -37,7 +37,7 @@ function download(): void {
 
 <template>
   <div
-    class="border-agent-border flex w-full items-center gap-2.5 rounded-[10px] border px-3 py-2.5"
+    class="group/audio border-agent-border flex w-full items-center gap-2.5 rounded-[10px] border px-3 py-2.5"
   >
     <audio
       :ref="(el) => (audioRef = el as HTMLAudioElement)"
@@ -55,7 +55,7 @@ function download(): void {
       <span
         :class="
           cn(
-            'size-4',
+            'size-4.5',
             isPlaying ? 'icon-[lucide--pause]' : 'icon-[lucide--play]'
           )
         "
@@ -73,6 +73,7 @@ function download(): void {
         </span>
         <Slider
           class="min-w-0 flex-1"
+          thumb-class="opacity-0 transition-opacity group-hover/audio:opacity-100 focus-visible:opacity-100"
           :model-value="[progressRatio]"
           :max="100"
           :step="0.1"
@@ -85,7 +86,7 @@ function download(): void {
             class="hover:bg-agent-surface-hover hover:text-agent-fg focus-visible:ring-agent-accent text-agent-fg-muted flex size-6 cursor-pointer items-center justify-center rounded-lg transition-colors focus-visible:ring-2 focus-visible:outline-none"
             @click="toggleMute"
           >
-            <span :class="cn('size-4', volumeIcon)" />
+            <span :class="cn('size-4.5', volumeIcon)" />
           </button>
           <button
             type="button"
@@ -93,7 +94,7 @@ function download(): void {
             class="hover:bg-agent-surface-hover hover:text-agent-fg focus-visible:ring-agent-accent text-agent-fg-muted flex size-6 cursor-pointer items-center justify-center rounded-lg transition-colors focus-visible:ring-2 focus-visible:outline-none"
             @click="download"
           >
-            <span class="icon-[lucide--download] size-4" />
+            <span class="icon-[lucide--download] size-4.5" />
           </button>
         </div>
       </div>
