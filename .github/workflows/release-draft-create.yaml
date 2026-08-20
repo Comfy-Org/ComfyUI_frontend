@@ -81,9 +81,9 @@ jobs:
       - name: Create release
         id: create_release
         uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
+          # GITHUB_TOKEN is refused on core/* lines with a 403, even with contents: write.
+          token: ${{ secrets.PR_GH_TOKEN }}
           files: |
             dist.zip
             dist-desktop.zip
