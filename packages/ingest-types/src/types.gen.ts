@@ -8030,7 +8030,7 @@ export type ExecutePromptErrors = {
    */
   402: PromptErrorResponse
   /**
-   * Workspace governance policy blocks one or more partner providers (error.type PARTNER_NODE_DISABLED; error.class_types lists the offending nodes, error.providers the disabled providers)
+   * Workspace governance policy blocks one or more partner providers (error.type PARTNER_NODE_DISABLED; node_errors identifies each denied prompt node, capped at 100 occurrences; error.class_types and error.providers summarize the denied node types and providers)
    */
   403: PromptErrorResponse
   /**
