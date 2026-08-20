@@ -17,7 +17,8 @@ import type { ConflictDetectionResult } from '@/workbench/extensions/manager/typ
 import type * as ConflictUtils from '@/workbench/extensions/manager/utils/conflictUtils'
 import {
   checkAcceleratorCompatibility,
-  checkOSCompatibility
+  checkOSCompatibility,
+  normalizeAcceleratorList
 } from '@/workbench/extensions/manager/utils/systemCompatibility'
 import { checkVersionCompatibility } from '@/workbench/extensions/manager/utils/versionUtil'
 
@@ -53,7 +54,8 @@ vi.mock('@/workbench/extensions/manager/utils/versionUtil', () => ({
 vi.mock('@/workbench/extensions/manager/utils/systemCompatibility', () => ({
   checkOSCompatibility: vi.fn(() => null),
   checkAcceleratorCompatibility: vi.fn(() => null),
-  normalizeOSList: vi.fn((list) => list)
+  normalizeOSList: vi.fn((list) => list),
+  normalizeAcceleratorList: vi.fn(() => ['CUDA'])
 }))
 
 vi.mock('@/workbench/extensions/manager/utils/conflictUtils', async () => {
@@ -461,6 +463,22 @@ describe('useConflictDetection', () => {
       } as components['schemas']['NodeVersion'])
 
       expect(checkOSCompatibility).toHaveBeenCalledWith(['Linux'], undefined)
+      expect(checkAcceleratorCompatibility).toHaveBeenCalledWith(
+        ['CUDA'],
+        undefined
+      )
+    })
+
+    it('normalizes Registry accelerator classifiers before compatibility checks', () => {
+      const { checkNodeCompatibility } = useConflictDetection()
+      checkNodeCompatibility({
+        status: 'NodeVersionStatusActive',
+        supported_accelerators: ['GPU :: NVIDIA CUDA']
+      } as components['schemas']['NodeVersion'])
+
+      expect(normalizeAcceleratorList).toHaveBeenCalledWith([
+        'GPU :: NVIDIA CUDA'
+      ])
       expect(checkAcceleratorCompatibility).toHaveBeenCalledWith(
         ['CUDA'],
         undefined
