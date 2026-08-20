@@ -10,7 +10,7 @@ import {
   DEFAULT_TEAM_MEMBERS,
   TEAM_WORKSPACE
 } from '@e2e/fixtures/data/cloudWorkspace'
-import { AssetsHelper, createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
+import { AssetsHelper } from '@e2e/fixtures/helpers/AssetsHelper'
 import { CloudWorkspaceMockHelper } from '@e2e/fixtures/helpers/CloudWorkspaceMockHelper'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { member } from '@e2e/fixtures/utils/workspaceMocks'
@@ -235,23 +235,25 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
     )
 
     const assets = new AssetsHelper(page)
-    await assets.mockOutputHistory([
-      createMockJob({
-        id: 'account-switch-job',
-        preview_output: {
-          filename: 'account-switch.webp',
-          subfolder: '',
-          type: 'output',
-          nodeId: '9',
-          mediaType: 'images'
+    await assets.mockCloudAssets({
+      assets: [
+        {
+          id: 'account-switch-job',
+          name: 'account-switch.webp',
+          mime_type: 'image/webp',
+          tags: ['output'],
+          preview_url: '/api/view?filename=account-switch.webp&type=output',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         }
-      })
-    ])
-    await assets.mockEmptyCloudAssets()
+      ],
+      total: 1,
+      has_more: false
+    })
 
-    let jobsAuthorization: string | null = null
-    await page.route('**/api/jobs?*', async (route) => {
-      jobsAuthorization = await route.request().headerValue('authorization')
+    let assetsAuthorization: string | null = null
+    await page.route(/\/api\/assets(?:\?.*)?$/, async (route) => {
+      assetsAuthorization = await route.request().headerValue('authorization')
       await route.fallback()
     })
 
@@ -260,9 +262,9 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
     await page.route('**/api/view?*', async (route) => {
       viewCookie = await route.request().headerValue('cookie')
       const bearerOwner =
-        jobsAuthorization === null
+        assetsAuthorization === null
           ? null
-          : jobsAuthorization.endsWith(`-${ACCOUNT_B.id}`)
+          : assetsAuthorization.endsWith(`-${ACCOUNT_B.id}`)
             ? ACCOUNT_B.id
             : ACCOUNT_A.id
       const cookieOwner = viewCookie?.includes(
@@ -359,7 +361,7 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
           image.evaluate((element: HTMLImageElement) => element.naturalWidth)
         )
         .toBeGreaterThan(0)
-      expect(jobsAuthorization).toBe(`Bearer workspace-jwt-${ACCOUNT_B.id}`)
+      expect(assetsAuthorization).toBe(`Bearer workspace-jwt-${ACCOUNT_B.id}`)
       expect(viewCookie).toContain(`mock-cloud-session=${ACCOUNT_B.id}`)
       expect(viewStatus).toBe(200)
     })
