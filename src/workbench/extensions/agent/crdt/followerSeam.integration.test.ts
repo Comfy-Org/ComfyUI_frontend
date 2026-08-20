@@ -1,9 +1,8 @@
 /**
- * Follower-seam integration E2E — the "frame arrived but graph not applied"
+ * Follower-seam integration test — the "frame arrived but graph not applied"
  * guard.
  *
- * This wires the WHOLE follower path end-to-end with NO mocked applier and NO
- * mocked doc:
+ * This wires the WHOLE follower path with NO mocked applier and NO mocked doc:
  *
  *   real @comfyorg/comfy-multi-player applier (initDoc + applyOps add_node)
  *     → Y.encodeStateAsUpdate → base64 update_b64
@@ -16,13 +15,13 @@
  *     → real LitegraphMutator.applyBatch
  *     → a REAL LGraph, asserted to actually gain the node.
  *
- * The only thing NOT exercised versus a live browser is the WebSocket byte hop
- * and the pixel raster — everything from the api.ts message boundary through the
- * litegraph graph mutation is the real shipping code. This reproduces the class
- * of bug where a frame was received and validated but the canvas never changed
- * (the original bug applied the semantic update into layoutStore, whose root
- * `nodes` map collided, so no node rendered). See AGENTS.md invariant
- * "browser-observable E2E".
+ * This is an integration test, NOT a browser-observable E2E: the WebSocket byte
+ * hop and the pixel raster are not exercised. Everything from the api.ts message
+ * boundary through the litegraph graph mutation is the real shipping code. It
+ * reproduces the class of bug where a frame was received and validated but the
+ * canvas never changed (the original bug applied the semantic update into
+ * layoutStore, whose root `nodes` map collided, so no node rendered). The
+ * browser-observable E2E invariant in AGENTS.md is satisfied separately.
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import * as Y from 'yjs'
@@ -53,12 +52,8 @@ class FrameTransport extends EventTarget implements DocFrameTransport {
   send(frame: string): void {
     this.sent.push(frame)
   }
-  addEventListener(type: string, listener: EventListener): void {
-    super.addEventListener(type, listener)
-  }
-  removeEventListener(type: string, listener: EventListener): void {
-    super.removeEventListener(type, listener)
-  }
+  // addEventListener/removeEventListener are inherited from EventTarget and
+  // structurally satisfy DocFrameTransport; no redefinition needed.
   /** Simulate a server → client frame arriving on the socket. */
   deliver(type: string, data: unknown): void {
     this.dispatchEvent(new CustomEvent(type, { detail: data }))
@@ -67,7 +62,7 @@ class FrameTransport extends EventTarget implements DocFrameTransport {
 
 /** A minimal but real litegraph node type so createNode returns a real node. */
 class FollowerSeamE2eNode extends LGraphNode {
-  static title = 'Follower Seam E2E Node'
+  static override title = 'Follower Seam E2E Node'
   constructor(title?: string) {
     super(title ?? FollowerSeamE2eNode.title)
   }
@@ -106,7 +101,7 @@ function realApplierAddNodeUpdate(): Uint8Array {
   return Y.encodeStateAsUpdate(doc)
 }
 
-describe('follower seam E2E (real applier → real seam → real LGraph)', () => {
+describe('follower seam integration (real applier → real seam → real LGraph)', () => {
   beforeAll(() => {
     if (!LiteGraph.registered_node_types[TEST_NODE_TYPE])
       LiteGraph.registerNodeType(TEST_NODE_TYPE, FollowerSeamE2eNode)
