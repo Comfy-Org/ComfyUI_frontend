@@ -245,7 +245,7 @@ useCarouselAutoplay({
 
             <div
               v-if="slide.primaryCta || slide.secondaryCta"
-              class="mt-10 flex flex-wrap gap-3 lg:gap-4 xl:mt-16"
+              class="mt-10 flex flex-col items-start gap-3 sm:flex-row lg:flex-col lg:gap-4 xl:mt-16 xl:flex-row"
             >
               <Button
                 v-if="slide.primaryCta"
