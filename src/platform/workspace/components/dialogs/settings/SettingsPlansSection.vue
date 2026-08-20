@@ -300,8 +300,6 @@ interface PlanCard {
 const { t, n } = useI18n()
 
 const audience = ref<'personal' | 'teams'>('personal')
-// Re-clicking the active item makes the reka-ui toggle group emit an empty
-// value; the section always shows one audience, so ignore deselection.
 const audienceModel = computed({
   get: () => audience.value,
   set: (value: string) => {
@@ -344,8 +342,7 @@ function perDollar(plan: PlanCard): number {
 const VIDEO_PER_CREDIT =
   TIER_PRICING.pro.videoEstimate / TIER_PRICING.pro.credits
 
-// Team stops mirror UnifiedPricingTable: backend-sourced when the shared plans
-// state has them, DES-197 fallback otherwise.
+// Backend-sourced stops when the shared plans state has them, DES-197 fallback otherwise.
 const { teamCreditStops } = useBillingPlans()
 const { fetchPlans, plans: catalogPlans, currentPlanSlug } = useBillingContext()
 const { isSubscribing, subscribeToPersonal, subscribeToTeam } =
@@ -394,8 +391,7 @@ const selectedTeamStop = computed(
     defaultTeamStop.value
 )
 
-// API stops can resolve after mount with different breakpoints, leaving the
-// seeded slider USD matching no stop; snap it to the resolved default.
+// Re-snap the slider when late API stops leave the seeded USD matching none.
 watch(defaultTeamStop, (stop) => {
   if (teamStops.value.some((s) => s.usd === teamUsd.value)) return
   teamUsd.value = stop.usd
