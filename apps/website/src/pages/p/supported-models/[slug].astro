@@ -95,7 +95,10 @@ const faqPage: JsonLdNode = {
       name: `Is ${displayName} free to use in ComfyUI?`,
       acceptedAnswer: {
         '@type': 'Answer',
-        text: `ComfyUI is free and open source. ${model.huggingFaceUrl ? `${displayName} weights are available to download from Hugging Face.` : `${displayName} is available as a cloud API through Comfy Cloud.`} You only pay for compute when running on Comfy Cloud; local inference on your own hardware is always free.`,
+        text:
+          model.directory === 'partner_nodes' && !model.huggingFaceUrl
+            ? `This model runs exclusively on Comfy Cloud. Pay-per-compute pricing applies - see comfy.org/cloud/pricing`
+            : `ComfyUI is free and open source. ${model.huggingFaceUrl ? `${displayName} weights are available to download from Hugging Face.` : `${displayName} is available as a cloud API through Comfy Cloud.`} You only pay for compute when running on Comfy Cloud; local inference on your own hardware is always free.`,
       },
     },
   ],
