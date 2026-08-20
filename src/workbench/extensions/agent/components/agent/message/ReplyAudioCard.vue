@@ -49,7 +49,7 @@ function download(): void {
     <button
       type="button"
       :aria-label="isPlaying ? t('g.pause') : t('g.play')"
-      class="border-agent-border bg-agent-surface-raised text-agent-fg hover:bg-agent-surface-hover flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-md border transition-colors"
+      class="border-agent-border bg-agent-surface-raised text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-md border transition-colors"
       @click="togglePlayPause"
     >
       <span
