@@ -302,7 +302,7 @@ describe('promoted subgraph widgets', () => {
   ) {
     const id = hostNode.widgets[0]?.widgetId
     if (!id) throw new Error('Expected the promoted host widget to be keyed')
-    if (!useWidgetValueStore().setOptions(id, options)) {
+    if (!useWidgetValueStore().updateOptions(id, options)) {
       throw new Error('Expected promoted host widget state')
     }
   }

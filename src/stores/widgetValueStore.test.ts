@@ -216,14 +216,21 @@ describe('useWidgetValueStore', () => {
       ).toBe(false)
     })
 
-    it('setOptions replaces registered widget options and reports missing widgets', () => {
+    it('updateOptions preserves existing options and reports missing widgets', () => {
       const store = useWidgetValueStore()
-      store.registerWidget(seedA, state('number', 100))
+      store.registerWidget(
+        seedA,
+        state('number', 100, { options: { min: 0, max: 10 } })
+      )
 
-      expect(store.setOptions(seedA, { advanced: true })).toBe(true)
-      expect(store.getWidget(seedA)?.options).toEqual({ advanced: true })
+      expect(store.updateOptions(seedA, { advanced: true })).toBe(true)
+      expect(store.getWidget(seedA)?.options).toEqual({
+        min: 0,
+        max: 10,
+        advanced: true
+      })
       expect(
-        store.setOptions(widgetId(graphA, toNodeId('missing'), 'seed'), {})
+        store.updateOptions(widgetId(graphA, toNodeId('missing'), 'seed'), {})
       ).toBe(false)
     })
 
