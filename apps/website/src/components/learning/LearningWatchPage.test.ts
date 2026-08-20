@@ -2,18 +2,28 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
+import type { LearningTutorial } from '../../data/learningTutorials'
+
 import { filterByCategory } from '../../data/learningTutorials'
 import LearningWatchPage from './LearningWatchPage.vue'
 
-const youtubeTutorial = filterByCategory('basics')[0]
-const hostedTutorial = filterByCategory('vfx')[0]
+const youtubeTutorial = filterByCategory('basics').find(
+  (tutorial) => tutorial.youtubeId !== undefined
+)
+if (!youtubeTutorial)
+  throw new Error('Expected a Basics tutorial with youtubeId')
+
+const hostedTutorial = filterByCategory('vfx').find(
+  (tutorial) => tutorial.videoSrc !== undefined
+)
+if (!hostedTutorial) throw new Error('Expected a VFX tutorial with videoSrc')
 
 const stubs = {
   LearningVideoEmbed: { template: '<div data-testid="youtube-embed" />' },
   VideoPlayer: { template: '<div data-testid="hosted-video" />' }
 }
 
-function renderWatchPage(tutorial: typeof youtubeTutorial) {
+function renderWatchPage(tutorial: LearningTutorial) {
   render(LearningWatchPage, {
     props: { tutorial, locale: 'en' },
     global: { stubs }
@@ -22,7 +32,6 @@ function renderWatchPage(tutorial: typeof youtubeTutorial) {
 
 describe('LearningWatchPage', () => {
   it('embeds the YouTube player for tutorials with a youtubeId', () => {
-    expect(youtubeTutorial.youtubeId).toBeTruthy()
     renderWatchPage(youtubeTutorial)
 
     expect(screen.getByTestId('youtube-embed')).toBeTruthy()
@@ -30,7 +39,6 @@ describe('LearningWatchPage', () => {
   })
 
   it('falls back to the hosted VideoPlayer for self-hosted tutorials', () => {
-    expect(hostedTutorial.videoSrc).toBeTruthy()
     renderWatchPage(hostedTutorial)
 
     expect(screen.getByTestId('hosted-video')).toBeTruthy()
