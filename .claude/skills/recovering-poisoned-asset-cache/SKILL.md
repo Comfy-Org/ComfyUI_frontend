@@ -72,6 +72,22 @@ So a redeploy leaves the poisoned vendor URLs exactly where they were.
 
 ### The mechanism
 
+**In production, set the `ASSET_CACHE_BUST` repository variable** on
+`Comfy-Org/ComfyUI_frontend` (Settings → Secrets and variables → Actions →
+Variables) to today's date, e.g. `20260818`. Then deploy as normal.
+
+A repo variable rather than a one-off build input is the whole point: the salt
+has to apply to **every subsequent build**, not just the recovery one. A manual
+one-shot build would fix the incident and then the next routine deploy would
+revert every filename to the poisoned names.
+
+`cloud-dispatch-build.yaml` reads the variable into the `frontend-asset-build`
+dispatch payload as `asset_cache_bust`; `frontend-asset-predeploy.yml` in
+`Comfy-Org/cloud` passes it to both `pnpm build` invocations. Unset, the
+payload field is empty and the build is byte-identical to today's.
+
+Locally, or for a manual verification build:
+
 ```bash
 ASSET_CACHE_BUST=20260818 pnpm build:cloud
 ```
@@ -93,12 +109,16 @@ six months later and cannot collide.
 
 ### The trap
 
-**Only ever increment `ASSET_CACHE_BUST`. Never clear it.**
+**Only ever increment `ASSET_CACHE_BUST`. Never clear it, and never delete the
+repository variable.**
 
 Clearing it reverts every filename to exactly the names that were poisoned, and
 any client still holding those entries breaks again — with no new deploy to
 blame. Treat it as a permanent, monotonic deploy variable: once set, it stays
 set, and the next incident bumps it.
+
+This is the failure mode to watch for during a repo-settings cleanup: the
+variable looks like leftover incident debris precisely when it is doing its job.
 
 The salt changes the _filename_, not the content hash — `xtsTai4I` above is
 unchanged. That is deliberate and sufficient: caches key on URL.
