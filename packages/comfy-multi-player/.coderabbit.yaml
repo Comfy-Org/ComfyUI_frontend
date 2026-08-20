@@ -1,0 +1,8 @@
+reviews:
+  path_instructions:
+    - path: "src/**"
+      instructions: >-
+        Review against docs/INVARIANTS.md and every applicable profile in
+        .agents/checks/. Cite stable KA-* and FC-* IDs. Treat purity,
+        convergence/idempotency, op identity, catalog pinning, and follower
+        boundary violations as correctness issues.
