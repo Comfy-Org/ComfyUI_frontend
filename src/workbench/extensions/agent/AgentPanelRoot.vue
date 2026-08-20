@@ -82,6 +82,7 @@ import type {
 import { createAgentEventSource } from './services/agent/agentEventSource'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
+import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
 
 const { t } = useI18n()
 const toast = useToastStore()
@@ -101,6 +102,8 @@ const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 const bindingStore = useAgentWorkflowTabBindingStore()
 const draftStore = useAgentDraftStore()
+const crdtWorkflowId = computed(() => draftStore.workflowId)
+const { status: crdtStatus } = useAgentCrdtFollower(crdtWorkflowId)
 const agentPanelStore = useAgentPanelStore()
 const { dismissedSelectionSignature } = storeToRefs(agentPanelStore)
 const agentNodeSelectionStore = useAgentNodeSelectionStore()
@@ -1166,6 +1169,22 @@ function onPanelDrop(event: DragEvent): void {
       data-testid="agent-file-input"
       @change="onFilesPicked"
     />
+    <div
+      v-if="crdtStatus.enabled"
+      class="border-b border-border-default bg-base-background px-3 py-1 font-mono text-muted"
+      data-testid="agent-crdt-status"
+    >
+      {{
+        t('agent.crdtStatus', {
+          connection: crdtStatus.connected
+            ? t('agent.crdtConnected')
+            : t('agent.crdtDisconnected'),
+          workflowId: crdtStatus.workflowId ?? t('agent.crdtNoDocument'),
+          updates: crdtStatus.updatesApplied,
+          frame: crdtStatus.lastFrameType ?? '—'
+        })
+      }}
+    </div>
     <AgentPanel
       ref="panelRef"
       :entries
