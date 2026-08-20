@@ -339,25 +339,22 @@ describe('promoted subgraph widgets', () => {
     )
   })
 
-  it('shows an advanced promoted widget on the node canvas', () => {
+  it.for([
+    ['shows on the node canvas', { advanced: true }, false, true],
+    ['shows when selected in App Mode', { advanced: true }, true, true],
+    [
+      'stays hidden when explicitly hidden',
+      { advanced: true, hidden: true },
+      true,
+      false
+    ]
+  ] as const)('%s', ([, options, explicitWidgetIds, visible]) => {
     const { graph, hostNode } = setupComplexPromotionFixture()
-    setHostWidgetOptions(hostNode, { advanced: true })
+    setHostWidgetOptions(hostNode, options)
 
-    expect(processHostWidget(graph, hostNode, false).visible).toBe(true)
-  })
-
-  it('shows a selected advanced promoted widget in App Mode', () => {
-    const { graph, hostNode } = setupComplexPromotionFixture()
-    setHostWidgetOptions(hostNode, { advanced: true })
-
-    expect(processHostWidget(graph, hostNode).visible).toBe(true)
-  })
-
-  it('keeps explicitly hidden promoted widgets hidden', () => {
-    const { graph, hostNode } = setupComplexPromotionFixture()
-    setHostWidgetOptions(hostNode, { advanced: true, hidden: true })
-
-    expect(processHostWidget(graph, hostNode).visible).toBe(false)
+    expect(processHostWidget(graph, hostNode, explicitWidgetIds).visible).toBe(
+      visible
+    )
   })
 
   it('clears errors on both the interior source and the host', () => {
