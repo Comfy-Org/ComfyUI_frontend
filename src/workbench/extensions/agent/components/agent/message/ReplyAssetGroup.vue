@@ -60,16 +60,18 @@ watch(
     for (const { url, filename, kind } of lookups) {
       if (kind === '3D' && !(url in modelThumbnails.value)) {
         modelThumbnails.value[url] = ''
-        void findServerPreviewUrl(filename).then(async (preview) => {
-          if (preview) {
-            modelThumbnails.value[url] = preview
-            return
-          }
-          const { generateModelThumbnail } =
-            await import('@/components/load3d/modelThumbnail')
-          const generated = await generateModelThumbnail(url, filename)
-          if (generated) modelThumbnails.value[url] = generated
-        })
+        void findServerPreviewUrl(filename)
+          .then(async (preview) => {
+            if (preview) {
+              modelThumbnails.value[url] = preview
+              return
+            }
+            const { generateModelThumbnail } =
+              await import('@/components/load3d/modelThumbnail')
+            const generated = await generateModelThumbnail(url, filename)
+            if (generated) modelThumbnails.value[url] = generated
+          })
+          .catch(() => {})
       }
       if (!(url in assetNames.value)) {
         assetNames.value[url] = ''
