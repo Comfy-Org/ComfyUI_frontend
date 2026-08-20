@@ -4970,6 +4970,10 @@
     "running": "Running…"
   },
   "agent": {
+    "crdtStatus": "CRDT {connection} · {workflowId} · {updates} updates · {frame}",
+    "crdtConnected": "connected",
+    "crdtDisconnected": "disconnected",
+    "crdtNoDocument": "no document",
     "title": "Comfy Agent",
     "askComfyAgent": "Ask Comfy Agent",
     "caption": "The AI agent can make mistakes",
