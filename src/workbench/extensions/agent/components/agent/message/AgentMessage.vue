@@ -8,7 +8,9 @@ import type {
   TabLinkPart,
   TextPart
 } from '../../../services/agent/agentMessageParts'
+import { htmlReplyAssets } from '../../../utils/replyAssets'
 import { cn } from '@comfyorg/tailwind-utils'
+import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 
 import MarkdownStream from './MarkdownStream.vue'
 import MessageFeedback from './MessageFeedback.vue'
@@ -55,6 +57,10 @@ const markdown = computed(() =>
 
 const showActions = computed(
   () => !message.streaming && markdown.value.length > 0
+)
+
+const replyAssets = computed(() =>
+  showActions.value ? htmlReplyAssets(renderMarkdownToHtml(markdown.value)) : []
 )
 
 const hasTools = computed(() =>
@@ -111,6 +117,7 @@ const hasTools = computed(() =>
     <MessageFeedback
       v-if="showActions"
       :markdown
+      :assets="replyAssets"
       @feedback="emit('feedback', $event)"
     />
   </div>

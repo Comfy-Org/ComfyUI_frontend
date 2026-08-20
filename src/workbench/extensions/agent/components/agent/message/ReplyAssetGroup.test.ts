@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -10,6 +10,19 @@ import ReplyAssetGroup from './ReplyAssetGroup.vue'
 const showDialog = vi.hoisted(() => vi.fn())
 vi.mock('@/stores/dialogStore', () => ({
   useDialogStore: () => ({ showDialog })
+}))
+
+const isAssetPreviewSupported = vi.hoisted(() => vi.fn(() => false))
+const findServerPreviewUrl = vi.hoisted(() =>
+  vi.fn(async (): Promise<string | null> => null)
+)
+const findOutputAsset = vi.hoisted(() =>
+  vi.fn(async (): Promise<{ name: string } | undefined> => undefined)
+)
+vi.mock('@/platform/assets/utils/assetPreviewUtil', () => ({
+  isAssetPreviewSupported,
+  findServerPreviewUrl,
+  findOutputAsset
 }))
 
 const image = (n: number): ReplyAsset => ({
@@ -61,6 +74,9 @@ const toggle = () =>
 describe('ReplyAssetGroup', () => {
   beforeEach(() => {
     showDialog.mockClear()
+    isAssetPreviewSupported.mockReset().mockReturnValue(false)
+    findServerPreviewUrl.mockReset().mockResolvedValue(null)
+    findOutputAsset.mockReset().mockResolvedValue(undefined)
   })
 
   it('renders image and video previews inline', () => {
@@ -123,6 +139,44 @@ describe('ReplyAssetGroup', () => {
       })
     )
     expect(screen.queryByTestId('lightbox')).not.toBeInTheDocument()
+  })
+
+  it('renders the server preview image on a 3D tile when one exists', async () => {
+    isAssetPreviewSupported.mockReturnValue(true)
+    findServerPreviewUrl.mockResolvedValue('https://x/mesh_preview.png')
+    renderGroup([model])
+
+    const thumb = await screen.findByRole('img', { name: 'mesh.glb' })
+    expect(thumb).toHaveAttribute('src', 'https://x/mesh_preview.png')
+    expect(findServerPreviewUrl).toHaveBeenCalledWith('mesh.glb')
+  })
+
+  it('keeps the 3D icon tile when no server preview exists', async () => {
+    isAssetPreviewSupported.mockReturnValue(true)
+    renderGroup([model])
+
+    await waitFor(() =>
+      expect(findServerPreviewUrl).toHaveBeenCalledWith('mesh.glb')
+    )
+    expect(screen.queryByRole('img')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'mesh.glb' })).toBeInTheDocument()
+  })
+
+  it('skips preview lookups when the asset API is unavailable', () => {
+    renderGroup([model, audio])
+
+    expect(findServerPreviewUrl).not.toHaveBeenCalled()
+    expect(findOutputAsset).not.toHaveBeenCalled()
+  })
+
+  it('shows the resolved asset name on audio rows, falling back to filename', async () => {
+    isAssetPreviewSupported.mockReturnValue(true)
+    findOutputAsset.mockResolvedValue({ name: 'qa_audio_opus_00001' })
+    renderGroup([audio])
+
+    expect(await screen.findByText('qa_audio_opus_00001')).toBeInTheDocument()
+    expect(findOutputAsset).toHaveBeenCalledWith('song.mp3')
+    expect(screen.queryByText('song.mp3')).not.toBeInTheDocument()
   })
 
   it('collapses past three rows behind Show more and returns with Show less', async () => {

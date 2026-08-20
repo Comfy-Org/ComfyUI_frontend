@@ -89,6 +89,22 @@ export function tokenReplyAssets(token: Token): ReplyAsset[] | null {
   return combined.assets.length ? selectAssets(combined) : null
 }
 
+export function htmlReplyAssets(html: string): ReplyAsset[] {
+  const doc = new DOMParser().parseFromString(html, 'text/html')
+  const seen = new Set<string>()
+  const out: ReplyAsset[] = []
+  for (const element of doc.querySelectorAll('a[href], img[src]')) {
+    const href =
+      element.getAttribute('href') ?? element.getAttribute('src') ?? ''
+    const asset = classifyAssetUrl(href)
+    if (asset && !seen.has(asset.url)) {
+      seen.add(asset.url)
+      out.push(asset)
+    }
+  }
+  return out
+}
+
 export function replyAssetResultItem(asset: ReplyAsset): ResultItemImpl {
   const item = new ResultItemImpl({
     filename: asset.filename,
