@@ -51,6 +51,11 @@ export default defineConfig({
     '/cloud/enterprise-case-studies/how-series-entertainment-rebuilt-game-and-video-production-with-comfyui':
       '/customers/series-entertainment/',
     '/zh-CN/terms-of-service': '/terms-of-service/',
+    // Affiliates exists in English only. Without these a reader who swaps the
+    // locale prefix by hand gets a 404 instead of the page they asked for, which
+    // is the same reason the line above exists.
+    '/zh-CN/affiliates': '/affiliates',
+    '/zh-CN/affiliates/terms': '/affiliates/terms',
     '/minimax': { status: 307, destination: '/minimax-h3/' },
     '/zh-CN/minimax': { status: 307, destination: '/zh-CN/minimax-h3/' }
   },
