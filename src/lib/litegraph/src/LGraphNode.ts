@@ -1,4 +1,4 @@
-import { shallowReactive, toValue, watch } from 'vue'
+import { shallowReactive, toValue } from 'vue'
 
 import {
   calculateInputSlotPosFromSlot,
@@ -58,6 +58,7 @@ import type { Reroute, RerouteId } from './Reroute'
 import { getNodeInputOnPos, getNodeOutputOnPos } from './canvas/measureSlots'
 import type { IDrawBoundingOptions } from './draw'
 import { createGeometryView } from './infrastructure/createGeometryView'
+import { createMutationView } from './infrastructure/createMutationView'
 import { NullGraphError } from './infrastructure/NullGraphError'
 import type { ReadOnlyRectangle } from './infrastructure/Rectangle'
 import { Rectangle } from './infrastructure/Rectangle'
@@ -401,30 +402,43 @@ export class LGraphNode
     this._state.flags = value
   }
 
-  /** Mutate in place; assigning a new array drops the renderer's tracking. */
-  widgets?: IBaseWidget[]
+  private readonly _widgets = shallowReactive<IBaseWidget[]>([])
+  private readonly widgetsView = createMutationView(this._widgets, {
+    commit: () => {
+      this._widgetSlotsDirty = true
+      this.syncWidgetOrder(this._widgets)
+    }
+  })
+  private hasWidgets = false
+  declare widgets?: IBaseWidget[]
 
-  private createWidgetsArray(): IBaseWidget[] {
-    const widgets = shallowReactive<IBaseWidget[]>([])
-    watch(widgets, () => this.syncWidgetOrder(widgets))
-    return widgets
+  private getWidgets(): IBaseWidget[] | undefined {
+    return this.hasWidgets ? this.widgetsView : undefined
+  }
+
+  private setWidgets(value: IBaseWidget[] | undefined): void {
+    if (value === undefined) {
+      if (!this.hasWidgets) return
+      this.hasWidgets = false
+      this._widgets.splice(0)
+      this._widgetSlotsDirty = true
+      this.syncWidgetOrder(this._widgets)
+      return
+    }
+
+    this.hasWidgets = true
+    this.widgetsView.splice(0, this.widgetsView.length, ...value)
   }
 
   private syncWidgetOrder(widgets: readonly IBaseWidget[]): void {
     const graphId = this.graph?.rootGraph.id
     if (!graphId) return
 
-    const widgetValueStore = useWidgetValueStore()
-    const widgetIds = getWidgetIds(widgets)
-    const liveWidgetIds = new Set(widgetIds)
-    for (const widgetId of widgetValueStore.getNodeWidgetIds(
+    useWidgetValueStore().replaceNodeWidgetOrder(
       graphId,
-      this.id
-    )) {
-      if (!liveWidgetIds.has(widgetId))
-        widgetValueStore.removeNodeWidgetOrder(widgetId)
-    }
-    widgetValueStore.setNodeWidgetOrder(graphId, this.id, widgetIds)
+      this.id,
+      getWidgetIds(widgets)
+    )
   }
 
   /**
@@ -1040,6 +1054,12 @@ export class LGraphNode
   }
 
   constructor(title: string, type?: string) {
+    Object.defineProperty(this, 'widgets', {
+      get: () => this.getWidgets(),
+      set: (value: IBaseWidget[] | undefined) => this.setWidgets(value),
+      configurable: true,
+      enumerable: true
+    })
     this._state = {
       flags: {},
       graphId: zeroUuid,
@@ -2215,7 +2235,7 @@ export class LGraphNode
     callback: IBaseWidget['callback'] | string | null,
     options?: IWidgetOptions | string
   ): WidgetTypeMap[Type] | IBaseWidget {
-    this.widgets ||= this.createWidgetsArray()
+    this.widgets ||= []
 
     if (!options && callback && typeof callback === 'object') {
       options = callback
@@ -2263,7 +2283,7 @@ export class LGraphNode
   addCustomWidget<TPlainWidget extends IBaseWidget>(
     custom_widget: TPlainWidget
   ): TPlainWidget | WidgetTypeMap[TPlainWidget['type']] {
-    this.widgets ||= this.createWidgetsArray()
+    this.widgets ||= []
     const widget = toConcreteWidget(custom_widget, this, false) ?? custom_widget
     this.widgets.push(widget)
     this._widgetSlotsDirty = true

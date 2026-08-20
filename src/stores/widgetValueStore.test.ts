@@ -202,6 +202,20 @@ describe('useWidgetValueStore', () => {
 
       expect(store.getNodeWidgetIds(graphA, toNodeId('node-1'))).toEqual([seed])
     })
+
+    it('replaces order using retained widget state', () => {
+      const store = useWidgetValueStore()
+      const seed = widgetId(graphA, toNodeId('node-1'), 'seed')
+      const steps = widgetId(graphA, toNodeId('node-1'), 'steps')
+      store.registerWidget(seed, state('number', 1))
+      store.registerWidget(steps, state('number', 20))
+      store.removeNodeWidgetOrder(seed)
+
+      store.replaceNodeWidgetOrder(graphA, toNodeId('node-1'), [seed])
+
+      expect(store.getNodeWidgetIds(graphA, toNodeId('node-1'))).toEqual([seed])
+      expect(store.getWidget(steps)?.value).toBe(20)
+    })
   })
 
   describe('value mutation', () => {

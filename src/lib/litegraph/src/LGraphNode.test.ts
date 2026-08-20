@@ -12,6 +12,7 @@ import type { Rect } from '@/lib/litegraph/src/interfaces'
 import { resizeNodeLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
@@ -1176,6 +1177,30 @@ describe('_setConcreteSlots', () => {
 describe('widgets array reactivity', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  test('keeps one view and synchronizes direct replacements and mutations', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.addWidget('number', 'a', 1, () => undefined, {})
+    node.addWidget('number', 'b', 2, () => undefined, {})
+    node.addWidget('number', 'c', 3, () => undefined, {})
+    graph.add(node)
+
+    const widgets = node.widgets!
+    const removedWidgetId = widgets[0].widgetId!
+    node.widgets = [widgets[2], widgets[0], widgets[1]]
+    node.widgets.splice(1, 1)
+
+    const widgetValueStore = useWidgetValueStore()
+    expect(node.widgets).toBe(widgets)
+    expect(node.widgets.map((widget) => widget.name)).toEqual(['c', 'b'])
+    expect(
+      widgetValueStore
+        .getNodeWidgets(graph.rootGraph.id, node.id)
+        .map((widget) => widget.name)
+    ).toEqual(['c', 'b'])
+    expect(widgetValueStore.getWidget(removedWidgetId)?.value).toBe(1)
   })
 
   test('notifies readers when a widget is removed in place', async () => {
