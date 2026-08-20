@@ -12,8 +12,15 @@ import { unprefixed, ZH_HREFLANG, ZH_PREFIX } from './hreflangRoutes'
 export interface BuiltSite {
   /** Every built route, mapped to the alternates its HTML emits. */
   pages: Map<string, Alternate[]>
-  /** Sitemap URL -> the hreflang values it advertises. `null` when absent. */
-  sitemap: Map<string, Set<string>> | null
+  /**
+   * Sitemap URL -> the alternates it advertises, in document order. `null` when
+   * the sitemap is absent.
+   *
+   * Deliberately the full pairs rather than a set of language names: comparing
+   * names alone accepts a sitemap whose `zh-Hans` link points at the English URL,
+   * which is the same lie the page-side rules already refuse.
+   */
+  sitemap: Map<string, Alternate[]> | null
   origin: string
 }
 
@@ -38,6 +45,55 @@ function expectedAlternates(
   ])
 }
 
+/**
+ * The rules a cluster must satisfy wherever it is declared.
+ *
+ * Applied to the page tags AND to the sitemap entries, because a cluster is
+ * only as good as its weaker declaration: a sitemap naming the right languages
+ * while pointing `zh-Hans` at the English URL misdescribes the site exactly as
+ * a page doing the same would.
+ */
+function clusterErrors(
+  route: string,
+  alternates: Alternate[],
+  origin: string,
+  source: string
+): string[] {
+  const errors: string[] = []
+  const seen = new Set<string>()
+  for (const { hreflang, href } of alternates) {
+    if (seen.has(hreflang)) {
+      errors.push(
+        `${route}: ${source} declares hreflang="${hreflang}" more than once`
+      )
+    }
+    seen.add(hreflang)
+
+    if (!href.startsWith(origin)) {
+      errors.push(
+        `${route}: ${source} alternate ${hreflang} points off-origin (${href})`
+      )
+    }
+  }
+
+  // Reciprocity alone accepts a cluster whose two locales are swapped: each
+  // side still lists the other, so every link resolves while the labels lie.
+  if (alternates.length > 0) {
+    for (const [hreflang, href] of expectedAlternates(route, origin)) {
+      if (
+        !alternates.some(
+          (entry) => entry.hreflang === hreflang && entry.href === href
+        )
+      ) {
+        errors.push(
+          `${route}: ${source} expects ${hreflang} -> ${href}, but does not declare it`
+        )
+      }
+    }
+  }
+  return errors
+}
+
 export function auditBuiltSite({
   pages,
   sitemap,
@@ -47,40 +103,16 @@ export function auditBuiltSite({
   const routeOfHref = (href: string) => href.slice(origin.length) || '/'
 
   for (const [route, alternates] of pages) {
-    const seen = new Set<string>()
-    for (const { hreflang, href } of alternates) {
-      if (seen.has(hreflang)) {
-        errors.push(`${route}: emits hreflang="${hreflang}" more than once`)
-      }
-      seen.add(hreflang)
+    errors.push(...clusterErrors(route, alternates, origin, 'page'))
 
-      if (!href.startsWith(origin)) {
-        errors.push(
-          `${route}: alternate ${hreflang} points off-origin (${href})`
-        )
-        continue
-      }
+    // Only the pages can be checked against what was actually built.
+    for (const { hreflang, href } of alternates) {
+      if (!href.startsWith(origin)) continue
       const target = routeOfHref(href)
       if (!pages.has(target)) {
         errors.push(
           `${route}: alternate ${hreflang} -> ${target} was not built (404)`
         )
-      }
-    }
-
-    // Reciprocity alone accepts a cluster whose two locales are swapped: each
-    // page still lists the other, so every link resolves while the labels lie.
-    if (alternates.length > 0) {
-      for (const [hreflang, href] of expectedAlternates(route, origin)) {
-        if (
-          !alternates.some(
-            (entry) => entry.hreflang === hreflang && entry.href === href
-          )
-        ) {
-          errors.push(
-            `${route}: expects ${hreflang} -> ${href}, but does not emit it`
-          )
-        }
       }
     }
   }
@@ -112,7 +144,12 @@ export function auditBuiltSite({
     }
   }
 
-  for (const [route, langs] of sitemap) {
+  for (const [route, sitemapAlternates] of sitemap) {
+    errors.push(...clusterErrors(route, sitemapAlternates, origin, 'sitemap'))
+
+    const langs = new Set(
+      sitemapAlternates.map((alternate) => alternate.hreflang)
+    )
     const onPage = new Set(
       (pages.get(route) ?? []).map((alternate) => alternate.hreflang)
     )

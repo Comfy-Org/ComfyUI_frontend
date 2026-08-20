@@ -41,20 +41,22 @@ function alternatesIn(html: string): Alternate[] {
   return out
 }
 
-function sitemapAlternates(): Map<string, Set<string>> | null {
+function sitemapAlternates(): Map<string, Alternate[]> | null {
   const sitemapPath = join(DIST, 'sitemap-0.xml')
   if (!existsSync(sitemapPath)) return null
 
-  const entries = new Map<string, Set<string>>()
+  const entries = new Map<string, Alternate[]>()
   const xml = readFileSync(sitemapPath, 'utf-8')
   for (const entry of xml.matchAll(/<url>(.*?)<\/url>/gs)) {
     const block = entry[1]
     const loc = /<loc>([^<]+)<\/loc>/.exec(block)?.[1]
     if (!loc?.startsWith(ORIGIN)) continue
-    const langs = new Set(
-      [...block.matchAll(/hreflang="([^"]+)"/g)].map((match) => match[1])
-    )
-    entries.set(loc.slice(ORIGIN.length) || '/', langs)
+    // Kept as a list, not a set: a language repeated in one entry is itself a
+    // defect, and collapsing it here would hide it from the audit.
+    const alternates = [
+      ...block.matchAll(/hreflang="([^"]+)"\s+href="([^"]+)"/g)
+    ].map((match) => ({ hreflang: match[1], href: match[2] }))
+    entries.set(loc.slice(ORIGIN.length) || '/', alternates)
   }
   return entries
 }
@@ -75,7 +77,7 @@ const withCluster = [...pages.values()].filter((list) => list.length > 0).length
 console.warn(
   `[hreflang] ${files.length} pages built, ${withCluster} in a language cluster, ` +
     `${files.length - withCluster} standalone, ` +
-    `${[...(sitemap?.values() ?? [])].filter((langs) => langs.size > 0).length} sitemap entries with alternates.`
+    `${[...(sitemap?.values() ?? [])].filter((list) => list.length > 0).length} sitemap entries with alternates.`
 )
 
 if (errors.length > 0) {
