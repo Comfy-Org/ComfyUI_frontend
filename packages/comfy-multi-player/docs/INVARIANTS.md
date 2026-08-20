@@ -23,7 +23,7 @@ This is the machine-addressable review log for the package. IDs are stable; do n
 ### KA-3 — The op layer stays pure & portable
 **Rule:** Applier, projection, and mint have zero DOM/framework/LiteGraph/server-only dependencies and run identically in browser and host; assert `yjs`-only directly, not merely by denylist.  
 **Why:** A peer, edge, browser, and Node host must execute one implementation identically.  
-**Enforced by:** `scripts/check-purity.mjs`, `test/purity.test.ts`, and [`purity`](../.agents/checks/purity.md). Positive `yjs`-only assertion is **UNGUARDED — see roadmap issue #22**.
+**Enforced by:** `scripts/check-purity.mjs`, `test/purity.test.ts`, `test/parity.test.ts`, and [`purity`](../.agents/checks/purity.md). Cross-language implementations must pass the canonical golden vectors in `fixtures/golden-vectors/`.
 
 ### KA-4 — The applier is deterministic and idempotent
 **Rule:** Same op-set + causal order gives the same projection; duplicate `op_id` is a true no-op with byte-identical `encodeStateAsUpdate`.  

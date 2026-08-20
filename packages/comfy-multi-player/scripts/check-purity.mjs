@@ -19,7 +19,7 @@
  */
 
 import { spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
@@ -49,12 +49,23 @@ function fail(msg) {
 }
 
 // --------------------------------------------------------------------------
-// 1. Dependency-tree scan
+// 1. Positive runtime-dependency assertion + dependency-tree scan
 // --------------------------------------------------------------------------
+
+const packageJson = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
+const declaredRuntimeDependencies = Object.keys(packageJson.dependencies ?? {}).sort();
+if (
+  declaredRuntimeDependencies.length !== 1 ||
+  declaredRuntimeDependencies[0] !== "yjs"
+) {
+  fail(
+    `runtime dependencies must be exactly {yjs}; found {${declaredRuntimeDependencies.join(", ")}}`,
+  );
+}
 
 // npm ls exits non-zero on tree problems but still prints JSON — parse stdout
 // regardless and only fail if there is no usable output.
-const ls = spawnSync("npm", ["ls", "--json", "--all"], {
+const ls = spawnSync("npm", ["ls", "--omit=dev", "--json", "--all"], {
   cwd: root,
   encoding: "utf8",
   maxBuffer: 64 * 1024 * 1024,
@@ -68,6 +79,32 @@ try {
   process.exit(2);
 }
 
+// npm's logical tree nests transitive dependencies under their direct root.
+// Ignore `extraneous` packages because development worktrees may share a
+// node_modules directory; they are not part of this package's production
+// graph. yjs itself has implementation dependencies (currently lib0), but it
+// must be the graph's sole production root.
+// A production root must be actually installed and valid: present in the tree
+// with a version/resolved, and not missing/invalid/extraneous. A MISSING yjs
+// node must fail the gate, not silently pass it.
+const isInstalledProdRoot = (child) =>
+  child &&
+  typeof child === "object" &&
+  ("version" in child || "resolved" in child) &&
+  !child.missing &&
+  !child.invalid &&
+  !child.extraneous;
+const resolvedRuntimeRoots = Object.entries(tree.dependencies ?? {})
+  .filter(([, child]) => isInstalledProdRoot(child))
+  .map(([name]) => name)
+  .sort();
+if (resolvedRuntimeRoots.length !== 1 || resolvedRuntimeRoots[0] !== "yjs") {
+  fail(
+    `resolved production dependency roots must be exactly {yjs}; found {${resolvedRuntimeRoots.join(", ")}}`,
+  );
+}
+console.log("runtime dependency roots exactly {yjs} (declared and resolved production graph)");
+
 const violations = new Map(); // name -> path through the tree
 (function walk(node, path) {
   for (const [name, child] of Object.entries(node?.dependencies ?? {})) {
@@ -75,7 +112,7 @@ const violations = new Map(); // name -> path through the tree
     // jsdom/happy-dom peers) — only packages actually present in the tree count.
     const installed =
       child && typeof child === "object" && ("version" in child || "resolved" in child);
-    if (!installed) continue;
+    if (!installed || child.extraneous) continue;
     const here = [...path, name];
     if (BANNED.some((re) => re.test(name)) && !violations.has(name)) {
       violations.set(name, here.join(" > "));
