@@ -4,9 +4,37 @@ import sitemap from '@astrojs/sitemap'
 import vue from '@astrojs/vue'
 import tailwindcss from '@tailwindcss/vite'
 import { isExcludedFromSitemap } from './src/config/indexing'
+import { readdirSync } from 'node:fs'
+import { join, relative, sep } from 'node:path'
+import {
+  mirroredRoutes,
+  unprefixed,
+  ZH_HREFLANG,
+  ZH_PREFIX
+} from './src/utils/hreflangRoutes'
 
 const LOCALES = ['en', 'zh-CN'] as const
 const DEFAULT_LOCALE = 'en'
+
+/** Page files as `/src/pages/...` paths, the shape `mirroredRoutes` expects. */
+function pageFiles(dir: string): string[] {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const full = join(dir, entry.name)
+    if (entry.isDirectory()) return pageFiles(full)
+    if (!entry.name.endsWith('.astro')) return []
+    const rel = relative(process.cwd(), full).split(sep).join('/')
+    return [`/${rel.replace(/^src\//, 'src/')}`]
+  })
+}
+
+// The sitemap advertises the same cluster the pages do, from the same rule, so
+// the two cannot disagree about which pages have a twin. Alternates on a URL
+// whose twin does not exist would be the markup bug all over again, in a file
+// search engines read first.
+const MIRRORED_ROUTES = mirroredRoutes(
+  pageFiles(join(process.cwd(), 'src', 'pages'))
+)
+
 export default defineConfig({
   site: 'https://comfy.org',
   output: 'static',
@@ -34,7 +62,19 @@ export default defineConfig({
     vue(),
     mdx(),
     sitemap({
-      filter: (page) => !isExcludedFromSitemap(page)
+      filter: (page) => !isExcludedFromSitemap(page),
+      serialize(item) {
+        const { origin, pathname } = new URL(item.url)
+        const path = unprefixed(pathname)
+        if (!MIRRORED_ROUTES.has(path)) return item
+
+        item.links = [
+          { lang: 'en', url: `${origin}${path}` },
+          { lang: ZH_HREFLANG, url: `${origin}${ZH_PREFIX}${path}` },
+          { lang: 'x-default', url: `${origin}${path}` }
+        ]
+        return item
+      }
     })
   ],
   vite: {

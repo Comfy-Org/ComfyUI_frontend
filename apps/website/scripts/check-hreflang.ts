@@ -11,7 +11,7 @@
  *   - a page emits alternates without also being reachable as its own alternate
  *   - the same hreflang value is emitted twice on one page
  */
-import { readdirSync, readFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
 
 const DIST = join(process.cwd(), 'dist')
@@ -89,6 +89,45 @@ for (const [route, alternates] of alternatesByRoute) {
   }
 }
 
+// The sitemap must advertise exactly the cluster the pages do. A URL carrying
+// alternates in one place and not the other is the same lie told twice.
+const sitemapPath = join(DIST, 'sitemap-0.xml')
+const sitemapEntries = new Map<string, Set<string>>()
+if (existsSync(sitemapPath)) {
+  const xml = readFileSync(sitemapPath, 'utf-8')
+  for (const entry of xml.matchAll(/<url>(.*?)<\/url>/gs)) {
+    const block = entry[1]
+    const loc = /<loc>([^<]+)<\/loc>/.exec(block)?.[1]
+    if (!loc?.startsWith(ORIGIN)) continue
+    const langs = new Set(
+      [...block.matchAll(/hreflang="([^"]+)"/g)].map((match) => match[1])
+    )
+    sitemapEntries.set(loc.slice(ORIGIN.length) || '/', langs)
+  }
+
+  for (const [route, langs] of sitemapEntries) {
+    const onPage = new Set(
+      (alternatesByRoute.get(route) ?? []).map(
+        (alternate) => alternate.hreflang
+      )
+    )
+    const sitemapOnly = [...langs].filter((lang) => !onPage.has(lang))
+    const pageOnly = [...onPage].filter((lang) => !langs.has(lang))
+    if (sitemapOnly.length > 0) {
+      errors.push(
+        `${route}: sitemap advertises ${sitemapOnly.join(', ')} that the page does not`
+      )
+    }
+    if (pageOnly.length > 0) {
+      errors.push(
+        `${route}: page advertises ${pageOnly.join(', ')} that the sitemap does not`
+      )
+    }
+  }
+} else {
+  errors.push('sitemap-0.xml is missing, so its alternates cannot be checked')
+}
+
 const withCluster = [...alternatesByRoute.values()].filter(
   (list) => list.length > 0
 ).length
@@ -96,7 +135,8 @@ const withCluster = [...alternatesByRoute.values()].filter(
 // runs in CI where the summary belongs on stderr with the failures anyway.
 console.warn(
   `[hreflang] ${files.length} pages built, ${withCluster} in a language cluster, ` +
-    `${files.length - withCluster} standalone.`
+    `${files.length - withCluster} standalone, ` +
+    `${[...sitemapEntries.values()].filter((langs) => langs.size > 0).length} sitemap entries with alternates.`
 )
 
 if (errors.length > 0) {

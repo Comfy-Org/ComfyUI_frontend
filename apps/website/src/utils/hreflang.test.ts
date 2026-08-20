@@ -1,13 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import {
-  alternatesFor,
-  mirroredRoutes,
-  ogLocale,
-  ogLocaleAlternate,
-  unprefixed,
-  ZH_HREFLANG
-} from './hreflang'
+import { alternatesFor, ogLocale, ogLocaleAlternate } from './hreflang'
+import { mirroredRoutes, unprefixed, ZH_HREFLANG } from './hreflangRoutes'
 
 const SITE = 'https://comfy.org'
 
@@ -41,6 +35,19 @@ describe('mirroredRoutes', () => {
 
   it('excludes 404 even when both trees have one', () => {
     expect(mirroredRoutes(FILES).has('/404/')).toBe(false)
+  })
+
+  it('excludes the transactional pages the sitemap also excludes', () => {
+    // Claiming two pages are translations while asking for neither to be
+    // indexed is a contradiction, and it is what made the page tags and the
+    // sitemap disagree on 8 URLs.
+    const files = [
+      '/src/pages/payment/success.astro',
+      '/src/pages/booking-confirmation.astro',
+      '/src/pages/zh-CN/payment/success.astro',
+      '/src/pages/zh-CN/booking-confirmation.astro'
+    ]
+    expect([...mirroredRoutes(files)]).toEqual([])
   })
 
   it('excludes dynamic routes, whose slug sets the file tree cannot see', () => {
