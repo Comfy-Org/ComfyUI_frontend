@@ -82,8 +82,8 @@ describe('NodeInputSlot', () => {
     expect(input?.isConnected).toBe(true)
   })
 
-  it('ignores writes, warns, and keeps the store-derived value', () => {
-    const { target, link } = createConnectedPair()
+  it('routes null assignment through disconnectInput', () => {
+    const { target } = createConnectedPair()
     const input: { link?: LinkId | null } = target.inputs[0]
 
     expect(() => {
@@ -93,7 +93,20 @@ describe('NodeInputSlot', () => {
       expect.stringContaining('Assignment to input.link is deprecated'),
       undefined
     )
+    expect(target.inputs[0].link).toBeNull()
+  })
+
+  it('does not move a link from an id-only assignment', () => {
+    const { graph, source, target, link } = createConnectedPair()
+    const otherTarget = new LGraphNode('Other target')
+    otherTarget.addInput('in', 'INT')
+    graph.add(otherTarget)
+
+    otherTarget.inputs[0].link = link.id
+
     expect(target.inputs[0].link).toBe(link.id)
+    expect(otherTarget.inputs[0].link).toBeNull()
+    expect(source.outputs[0].links).toEqual([link.id])
   })
 })
 

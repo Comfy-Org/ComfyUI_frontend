@@ -8,11 +8,13 @@ import type {
   Point
 } from '@/lib/litegraph/src/interfaces'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { createArrayMutationView } from '@/lib/litegraph/src/infrastructure/createMutationView'
 import { NodeSlot } from '@/lib/litegraph/src/node/NodeSlot'
 import type { IDrawOptions } from '@/lib/litegraph/src/node/NodeSlot'
 import {
   outputHasLinks,
-  outputLinkIds
+  outputLinkIds,
+  outputLinks
 } from '@/lib/litegraph/src/node/slotLinks'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
@@ -22,24 +24,54 @@ import { warnDeprecated } from '@/lib/litegraph/src/utils/feedback'
 export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
   _data?: unknown
   slot_index?: number
+  private readonly legacyLinkIds!: LinkId[]
+  private readonly legacyLinksView!: LinkId[]
+  private legacyLinksPresent!: boolean
 
   /**
-   * @deprecated Reads return a fresh store-derived array; writes fire telemetry
-   * and are ignored, since the store cannot be mutated through the mirror.
-   * First-party code uses the slotLinks helpers.
+   * @deprecated Reads return a stable store-derived view. Removing ids from the
+   * view disconnects them; additions are discarded. First-party code uses the
+   * slotLinks helpers and node topology methods.
    */
-  get links(): readonly LinkId[] | null {
+  get links(): LinkId[] | null {
     warnDeprecated(
-      'output.links is deprecated. Read connectivity via node.isOutputConnected(slot) / node.getOutputNodes(slot); enumerate links via outputLinks(graph, node.id, slot); mutate via node.connect() / node.disconnectOutput().'
+      'output.links is deprecated. Read connectivity via node.isOutputConnected(slot) / node.getOutputNodes(slot); mutate via node.connect() / node.disconnectOutput().'
     )
-    const ids = linkIdsOf(this)
-    return ids.length ? Object.freeze(ids) : null
+    this.synchronizeLegacyLinks()
+    return this.legacyLinksPresent ? this.legacyLinksView : null
   }
 
-  set links(_value: readonly LinkId[] | null) {
+  set links(value: readonly LinkId[] | null) {
     warnDeprecated(
-      'Assignment to output.links is deprecated and has no effect; connectivity is derived from the link store. Mutate via node.connect() / node.disconnectOutput().'
+      'Assignment to output.links is deprecated; removals disconnect through the link store. Add links via node.connect().'
     )
+    this.legacyLinksPresent = value !== null
+    this.legacyLinkIds.splice(0, this.legacyLinkIds.length, ...(value ?? []))
+    this.commitLegacyLinks()
+  }
+
+  private synchronizeLegacyLinks(preservePresence = false): void {
+    const hadIds = this.legacyLinkIds.length > 0
+    const ids = linkIdsOf(this)
+    this.legacyLinkIds.splice(0, this.legacyLinkIds.length, ...ids)
+    if (ids.length) this.legacyLinksPresent = true
+    else if (hadIds && !preservePresence) this.legacyLinksPresent = false
+  }
+
+  private commitLegacyLinks(): void {
+    const { graph } = this._node
+    const slot = indexOf(this)
+    if (!graph || slot === -1) {
+      this.legacyLinkIds.splice(0)
+      return
+    }
+
+    const desired = new Set(this.legacyLinkIds)
+    for (const link of outputLinks(graph, this._node.id, slot)) {
+      if (desired.has(link.id)) continue
+      graph.getNodeById(link.target_id)?.disconnectInput(link.target_slot)
+    }
+    this.synchronizeLegacyLinks(true)
   }
 
   get isWidgetInputSlot(): false {
@@ -61,6 +93,20 @@ export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
     // ctor's Object.assign does not trip the deprecated setter above.
     const { links: _legacyLinks, ...rest } = slot
     super(rest, node)
+
+    const legacyLinkIds: LinkId[] = []
+    Object.defineProperties(this, {
+      legacyLinkIds: { value: legacyLinkIds },
+      legacyLinksView: {
+        value: createArrayMutationView(
+          legacyLinkIds,
+          () => this.commitLegacyLinks(),
+          () => this.synchronizeLegacyLinks()
+        )
+      },
+      legacyLinksPresent: { value: false, writable: true }
+    })
+
     this._data = slot._data
     this.slot_index = slot.slot_index
   }

@@ -90,10 +90,12 @@ export function createMutationView<
 
 export function createArrayMutationView<TValue>(
   target: TValue[],
-  commit: () => void
+  commit: () => void,
+  synchronize?: () => void
 ): TValue[] {
   return createMutationView(target, {
     commit,
+    synchronize,
     shouldCommitMethod: (property) => arrayMutationMethods.has(property)
   })
 }
