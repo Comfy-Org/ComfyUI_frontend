@@ -114,7 +114,10 @@ export function useMediaAssetActions() {
       const toDelete = allOutputIds.length > 0 ? allOutputIds : [asset.id]
       await Promise.all(toDelete.map((id) => assetService.deleteAsset(id)))
     }
-    if (jobId) await api.deleteItem('history', jobId)
+    if (jobId) {
+      await api.deleteItem('history', jobId)
+      if (!flags.assetsEnabled) await useAssetsStore().outputAssets.invalidate()
+    }
   }
 
   /**
