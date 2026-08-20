@@ -1,13 +1,22 @@
 /**
  * Follower-owned reader for the CRDT semantic doc (schema v1).
  *
- * This is the ONLY schema-aware code on the follower. It mirrors the
- * `@comfyorg/comfy-multi-player` doc layout (root maps `nodes` / `links`,
- * per-node `type` / `pos` / `widgets`) using raw `yjs`, because FE consumption
- * of that package is an unresolved product decision (ADR-009). When the FE
- * adopts the package, replace `readDocSnapshot` with its `nodesMap` / `linksMap`
- * / `project` helpers; the diff and mutator stay unchanged. The shape is pinned
- * by `docSchema.test.ts` so drift is caught mechanically.
+ * This is the ONLY schema-aware code on the follower. It consumes
+ * `@comfyorg/comfy-multi-player` — the ONE shared applier/doc package (pinned by
+ * git SHA, imported identically by the cloud doc-host) — for the doc layout:
+ * the root-map accessors (`nodesMap` / `linksMap`) and the reserved
+ * opaque-widgets key. It deliberately does NOT import `applyOps` / `project` —
+ * a follower never writes the shared doc (CRDT invariant #6), it only reads root
+ * maps into a plain FE-domain snapshot. Reading via the package's
+ * `nodesMap`/`linksMap` (thin `doc.getMap` wrappers) produces no Yjs struct
+ * update, so the follower stays read-only.
+ *
+ * FE consumption is RESOLVED (was ADR-009): the package installs cleanly as a
+ * git-SHA dependency (both `dist` types and runtime), so key names / schema
+ * version can no longer drift from the host — they are the same symbols. The
+ * remaining local constants (`NODES_KEY`/`LINKS_KEY`/`WIDGETS_KEY`) mirror the
+ * layout the package encodes in `nodesMap`/`linksMap`/`createNodeMap` (it does
+ * not export those names as constants); `docSchema.test.ts` pins them.
  *
  * Schema v1 (docs/multiplayer-schema.md §1, comfy-multi-player docs/INVARIANTS):
  *   doc
@@ -17,6 +26,11 @@
  *   └── Y.Map 'links'  key String(id) → tuple [id, originId, originSlot,
  *                        targetId, targetSlot, type]
  */
+import {
+  linksMap,
+  nodesMap,
+  OPAQUE_WIDGETS_KEY
+} from '@comfyorg/comfy-multi-player'
 import * as Y from 'yjs'
 
 import { toNodeId } from '@/types/nodeId'
@@ -26,7 +40,7 @@ import type { LinkId, LinkSpec, NodeSpec } from './graphMutations'
 export const NODES_KEY = 'nodes'
 export const LINKS_KEY = 'links'
 export const WIDGETS_KEY = 'widgets'
-export const OPAQUE_WIDGETS_KEY = '__widgets_opaque'
+export { OPAQUE_WIDGETS_KEY }
 
 export interface DocSnapshot {
   readonly nodes: ReadonlyMap<string, NodeSpec>
@@ -101,16 +115,14 @@ function readLink(id: string, raw: unknown): LinkSpec | null {
  */
 export function readDocSnapshot(doc: Y.Doc): DocSnapshot {
   const nodes = new Map<string, NodeSpec>()
-  const ynodes = doc.getMap<Y.Map<unknown>>(NODES_KEY)
-  ynodes.forEach((node, id) => {
+  nodesMap(doc).forEach((node, id) => {
     if (!(node instanceof Y.Map)) return
     const spec = readNode(id, node)
     if (spec) nodes.set(id, spec)
   })
 
   const links = new Map<LinkId, LinkSpec>()
-  const ylinks = doc.getMap<unknown>(LINKS_KEY)
-  ylinks.forEach((raw, id) => {
+  linksMap(doc).forEach((raw, id) => {
     const spec = readLink(id, raw)
     if (spec) links.set(id, spec)
   })
