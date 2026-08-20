@@ -13,6 +13,7 @@ import type {
   SerialisableGraph,
   SerialisableLLink
 } from './types/serialisation'
+import { NodeSlotType } from './types/globalEnums'
 
 type ConfiguredGraph = (ISerialisedGraph | SerialisableGraph) &
   Partial<Pick<ExportedSubgraph, 'inputs' | 'outputs' | 'reroutes'>>
@@ -106,44 +107,67 @@ export function detachSerialisedLinks(
 }
 
 /**
- * Re-points each link's `target_slot` at the index of the serialized input
- * that references it. Node `configure()` overrides may reorder a node's
- * serialized inputs in place to match the current node definition (e.g.
- * widget-to-input conversions, Comfy-Org/ComfyUI_frontend#3348), invalidating
- * the slot indices stored on links.
+ * Re-points each link's `target_slot` at the configured input with the same
+ * name as the serialized input that references it. Replays moved connections
+ * because dynamic inputs may grow additional named slots in response.
  *
  * @param graph The graph whose links to realign
  * @param nodesData The serialized node data the graph's nodes were configured
- * from, after any in-place input reordering by node `configure()` overrides
+ * from
  */
 export function realignInputLinkSlots(
   graph: LGraph,
   nodesData: Iterable<ISerialisedNode>
 ): void {
-  const referencedSlots = new Map<LLink, number[]>()
-
   for (const nodeData of nodesData) {
-    for (const [slot, input] of (nodeData.inputs ?? []).entries()) {
+    const node = graph.getNodeById(toNodeId(nodeData.id))
+    if (!node) continue
+
+    const referencedNames = new Map<LLink, string[]>()
+    for (const input of nodeData.inputs ?? []) {
       if (input.link == null) continue
       const link = graph.links.get(toLinkId(input.link))
       if (!link || link.target_id !== toNodeId(nodeData.id)) continue
-      const slots = referencedSlots.get(link) ?? []
-      slots.push(slot)
-      referencedSlots.set(link, slots)
+      const names = referencedNames.get(link) ?? []
+      names.push(input.name)
+      referencedNames.set(link, names)
     }
-  }
 
-  const updates: EndpointUpdate[] = []
-  for (const [link, slots] of referencedSlots) {
-    const slot = slots.includes(link.target_slot) ? link.target_slot : slots[0]
-    if (link.target_slot === slot) continue
-    updates.push({
-      topology: link._state,
-      patch: { targetSlot: slot }
-    })
-  }
-  const result = useLinkStore().updateEndpoints(graphScopeOf(graph), updates)
-  if (!result.ok) {
-    console.error('Failed to realign input link slots', result.error)
+    for (let pass = 0; pass < referencedNames.size; pass++) {
+      const moved: { link: LLink; slot: number }[] = []
+      for (const [link, names] of referencedNames) {
+        const slots = node.inputs.flatMap((input, slot) =>
+          names.includes(input.name) ? [slot] : []
+        )
+        if (!slots.length) continue
+        const slot = slots.includes(link.target_slot)
+          ? link.target_slot
+          : slots[0]
+        if (link.target_slot !== slot) moved.push({ link, slot })
+      }
+      if (!moved.length) break
+
+      const updates: EndpointUpdate[] = moved.map(({ link, slot }) => ({
+        topology: link._state,
+        patch: { targetSlot: slot }
+      }))
+      const result = useLinkStore().updateEndpoints(
+        graphScopeOf(graph),
+        updates
+      )
+      if (!result.ok) {
+        console.error('Failed to realign input link slots', result.error)
+        break
+      }
+      for (const { link, slot } of moved) {
+        node.onConnectionsChange?.(
+          NodeSlotType.INPUT,
+          slot,
+          true,
+          link,
+          node.inputs[slot]
+        )
+      }
+    }
   }
 }
