@@ -28,7 +28,7 @@ For the accuracy and status audit of the accompanying design records, see
 | Lifecycle events                                          | `node:added`, `node:before-removed`, `node:removed`; error and telemetry observers           | callback ordering and removal tests                                                                                                                                 | Good; extension corpus remains required                 |
 | Removed extension graph triggers                          | deletion of `node:slot-links:changed` and `node:slot-errors:changed` emitters/types          | internal consumers use store/error projections; no compatibility event exists                                                                                       | Partial; ecosystem usage requires measurement           |
 | Recursive identity, replacement, clipboard, and insertion | allocation/normalization, `replaceWithMapping`, workflow insertion                           | identity, replacement, clipboard, serialization, and browser tests below                                                                                            | Strong                                                  |
-| Allocation and widget compatibility shadows               | serialized `LGraph.state`; `widgets_values` / `widgets_values_named`                         | allocation, serialization, dynamic-widget, clipboard, and promotion tests                                                                                           | Partial; no command boundary or single widget authority |
+| Allocation and widget compatibility shadows               | serialized `LGraph.state`; `widgets_values` / `widgets_values_named`                         | allocation, serialization, dynamic-widget, clipboard, and promotion tests                                                                                           | Partial; widget values still have competing authorities |
 | Persistence and undo bridge                               | class serialization, store-backed topology, `ChangeTracker` snapshots                        | serialization tests are strong; mixed multi-store undo/redo remains partial                                                                                         | Partial                                                 |
 
 ## Evidence by invariant
@@ -113,7 +113,10 @@ across renderer changes and subgraph navigation.
 Representative evidence:
 
 - `browser_tests/tests/vueNodes/layout/rendererToggleGeometry.spec.ts`: slot and
-  node geometry across Vue-to-legacy round trips and repeated toggles.
+  node geometry follows drag mutations across Vue-to-legacy round trips and
+  repeated toggles.
+- `src/renderer/extensions/vueNodes/composables/useSlotElementTracking.test.ts`:
+  cached slot geometry reacts to root-scoped node layout movement.
 - `browser_tests/tests/vueNodes/layout/subgraphLayoutSync.spec.ts`: layout sync in
   an owned subgraph.
 - `browser_tests/tests/vueNodes/rerouteGeometry.spec.ts`: reroute geometry across

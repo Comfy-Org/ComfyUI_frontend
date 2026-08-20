@@ -101,9 +101,10 @@ target.
   `LGraphNode.widgets` remains the ordered live widget-object collection used
   by legacy drawing and extension APIs. `node.widgets_values` and
   `widgets_values_named` remain delayed-load/wire compatibility shadows and are
-  still mutated by some production consumers. **This is triple
-  representation:** store state/order, live widget objects, and serialized
-  arrays/maps require reconciliation.
+  still mutated by some production consumers. Property-bound widgets can also
+  mirror their value in `node.properties`. **This is at least triple
+  representation:** store state/order, live widget objects, serialized
+  arrays/maps, and for some widgets node properties require reconciliation.
 - **Reads:** store getters power Vue/UI/pricing paths; legacy renderer,
   serialization, and extensions read widget instances and `node.widgets`.
 - **Writes:** `registerWidget`, `setValue`, `setNodeWidgetOrder`, deletion, and
@@ -175,11 +176,10 @@ target.
 - **Reads and persistence:** mint/observe helpers mutate ambient counters;
   configure restores them and graph serialization emits them. Compatibility
   setters and clipboard/import paths can assign or increment them directly.
-- **Risk:** future durable identity depends on mutable class state outside a
-  store or command. Replay and duplicate delivery can allocate different IDs
-  unless assigned IDs are already recorded in the operation.
+- **Risk:** future durable identity depends on mutable class state outside its
+  own authority, so creation and import paths can allocate inconsistently.
 - **Desired endpoint:** workflow identity ownership behind one mutation
-  boundary; creation and import commands carry deterministic assigned IDs.
+  boundary, with creation and import receiving deterministic assigned IDs.
 
 ### Durable graph and subgraph definitions
 
@@ -276,9 +276,12 @@ target.
   invokes live widget callbacks as behavior adapters.
 - **Errors:** Vue derives node and widget errors from error stores, including
   promoted-widget and container resolution. `node.has_errors` is an untracked
-  legacy-canvas projection synchronized by app hooks.
+  legacy-canvas projection synchronized by app hooks. Input
+  `SlotBase.hasErrors` is another mutable legacy drawing projection populated
+  by the same synchronization path.
 - **Risk:** z-order is a true competing rendering authority; widget existence,
-  schema, callbacks, and legacy error flags remain class-side bridge inputs.
+  schema, callbacks, and node/slot legacy error flags remain class-side bridge
+  inputs.
 - **Desired endpoint:** render snapshots from store-owned durable data, with
   live callbacks isolated to explicit interaction and extension adapters.
 
@@ -295,6 +298,10 @@ target.
   canvas interactions update view stores and temporary render objects.
 - **Lifecycle:** rebuilt or cleared on render/configuration/graph switch;
   DOM widgets register/unregister or activate/deactivate separately.
+- **Derivation:** Vue slot positions combine a measured DOM-relative offset
+  with the reactive root-scoped node layout. Node movement invalidates the
+  slot cache from the durable layout authority rather than synchronizing a
+  second node position.
 - **Risks:** this geometry is intentionally not Yjs-backed or durable. Calling
   it authoritative without the “transient view” qualifier would imply a second
   layout source; stale caches can still produce visual/hit-test disagreement.

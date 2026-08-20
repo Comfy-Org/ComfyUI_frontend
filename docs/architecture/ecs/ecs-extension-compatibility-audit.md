@@ -128,11 +128,12 @@ Derived first-party rows are recomputed on read; extension entries remain on
 `node.onSerialize`, `node.onConfigure`, `graph.onSerialize`, and
 `graph.onConfigure` remain compatibility surfaces, but currently expose full
 node/workflow DTOs or live objects. Extensions can therefore mutate canonical
-store-backed persistence fields outside store actions and command boundaries.
+store-backed persistence fields outside store actions.
 The migration must measure this usage before replacing it with a controlled
-adapter for validated, namespaced plain-data payloads. That adapter must define
-serialization, configuration, replay, and undo behavior without allowing
-extension payload hooks to rewrite canonical fields.
+adapter for validated, namespaced plain-data payloads. This phase requires the
+adapter to define serialization and configuration behavior without allowing
+extension payload hooks to rewrite canonical fields. Replay and command-based
+undo contracts are later architecture work.
 
 ### Custom-widget constructors
 
@@ -149,7 +150,8 @@ implementations can resolve random dynamic prompts, mutate workflow value
 shadows, capture media, upload files, and update UI state. Extensions must not
 assume this is a pure serialization callback. The ECS target must retain needed
 pre-queue effects through an explicit effect boundary while recording resolved
-execution inputs and routing durable graph changes through commands.
+execution inputs. Routing durable graph changes through serializable commands
+is later architecture work outside this data-centralization phase.
 
 ## Unsupported behavior
 
