@@ -37,7 +37,7 @@ const mockDialogService = vi.hoisted(() => ({
 
 const mockToastErrorHandler = vi.hoisted(() => vi.fn())
 const mockTrackAuthFailed = vi.hoisted(() => vi.fn())
-const mockStartTopupTracking = vi.hoisted(() => vi.fn())
+const mockStartPendingTopup = vi.hoisted(() => vi.fn())
 const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
 const mockBillingState = vi.hoisted(() => ({
   canAccessSubscriptionFeatures: false
@@ -67,9 +67,12 @@ vi.mock('@/platform/distribution/types', () => ({
 
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: vi.fn(() => ({
-    trackAuthFailed: mockTrackAuthFailed,
-    startTopupTracking: mockStartTopupTracking
+    trackAuthFailed: mockTrackAuthFailed
   }))
+}))
+
+vi.mock('@/platform/workspace/composables/usePendingTopup', () => ({
+  usePendingTopup: () => ({ startPendingTopup: mockStartPendingTopup })
 }))
 
 vi.mock('@/platform/updates/common/toastStore', () => ({
@@ -145,9 +148,9 @@ describe('useAuthActions.purchaseCreditsDirect', () => {
 
     await purchaseCreditsDirect(25)
 
-    expect(mockStartTopupTracking).toHaveBeenCalledOnce()
+    expect(mockStartPendingTopup).toHaveBeenCalledOnce()
     expect(open).toHaveBeenCalledWith('https://checkout.stripe.test', '_blank')
-    expect(mockStartTopupTracking.mock.invocationCallOrder[0]).toBeLessThan(
+    expect(mockStartPendingTopup.mock.invocationCallOrder[0]).toBeLessThan(
       open.mock.invocationCallOrder[0]
     )
   })
@@ -159,7 +162,7 @@ describe('useAuthActions.purchaseCreditsDirect', () => {
 
     await expect(purchaseCreditsDirect(25)).rejects.toThrow()
 
-    expect(mockStartTopupTracking).not.toHaveBeenCalled()
+    expect(mockStartPendingTopup).not.toHaveBeenCalled()
     expect(open).not.toHaveBeenCalled()
   })
 
@@ -172,7 +175,7 @@ describe('useAuthActions.purchaseCreditsDirect', () => {
 
     await expect(purchaseCreditsDirect(25)).rejects.toThrow('network down')
 
-    expect(mockStartTopupTracking).not.toHaveBeenCalled()
+    expect(mockStartPendingTopup).not.toHaveBeenCalled()
     expect(open).not.toHaveBeenCalled()
   })
 })

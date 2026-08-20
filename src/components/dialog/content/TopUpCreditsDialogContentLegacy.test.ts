@@ -53,8 +53,8 @@ vi.mock('@/platform/telemetry', () => ({
   })
 }))
 
-vi.mock('@/platform/telemetry/topupTracker', () => ({
-  clearTopupTracking: vi.fn()
+vi.mock('@/platform/workspace/composables/usePendingTopup', () => ({
+  usePendingTopup: () => ({ clearPendingTopup: vi.fn() })
 }))
 
 vi.mock('@/composables/useExternalLink', () => ({

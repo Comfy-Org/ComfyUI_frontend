@@ -34,7 +34,7 @@ const state = vi.hoisted(() => ({
   showPricingTable: vi.fn(),
   showTopUpCreditsDialog: vi.fn(),
   trackAddApiCreditButtonClicked: vi.fn(),
-  checkForCompletedTopup: vi.fn(),
+  trackApiCreditTopupSucceeded: vi.fn(),
   getMyEvents: vi.fn(
     async (): Promise<CustomerEventsResult> => ({ events: [] })
   ),
@@ -98,7 +98,7 @@ vi.mock('@/services/dialogService', () => ({
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({
     trackAddApiCreditButtonClicked: state.trackAddApiCreditButtonClicked,
-    checkForCompletedTopup: state.checkForCompletedTopup
+    trackApiCreditTopupSucceeded: state.trackApiCreditTopupSucceeded
   })
 }))
 
@@ -544,19 +544,20 @@ describe('CreditsTile', () => {
     activeProSubscription()
     state.type = 'legacy'
     localStorage.setItem('pending_topup_timestamp', Date.now().toString())
-    const events = [{ event_type: 'credit_added' }]
+    const events = [
+      {
+        event_type: 'credit_added',
+        createdAt: new Date(Date.now() + 1000).toISOString()
+      }
+    ]
     state.getMyEvents.mockResolvedValueOnce({ events })
-    state.checkForCompletedTopup.mockImplementationOnce(() => {
-      localStorage.removeItem('pending_topup_timestamp')
-      return true
-    })
 
     renderTile()
 
     await waitFor(() =>
       expect(localStorage.getItem('pending_topup_timestamp')).toBeNull()
     )
-    expect(state.checkForCompletedTopup).toHaveBeenCalledWith(events)
+    expect(state.trackApiCreditTopupSucceeded).toHaveBeenCalled()
     vi.clearAllMocks()
 
     window.dispatchEvent(new Event('focus'))
@@ -570,13 +571,15 @@ describe('CreditsTile', () => {
     state.type = 'legacy'
     localStorage.setItem('pending_topup_timestamp', Date.now().toString())
     state.customerEventsError = 'events unavailable'
+    const retryEvents = [
+      {
+        event_type: 'credit_added',
+        createdAt: new Date(Date.now() + 1000).toISOString()
+      }
+    ]
     state.getMyEvents
       .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce({ events: [{ event_type: 'credit_added' }] })
-    state.checkForCompletedTopup.mockImplementationOnce(() => {
-      localStorage.removeItem('pending_topup_timestamp')
-      return true
-    })
+      .mockResolvedValueOnce({ events: retryEvents })
 
     renderTile()
     await waitFor(() =>
