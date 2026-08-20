@@ -20,8 +20,10 @@ type QueryOptions = {
   onError?: (reason: string, error?: unknown) => void
 }
 
-// @ts-expect-error tags must be stubbed into ingest-types
-type _TagsStubCheck = ListAssetsData['query']['tags_any']
+// @ts-expect-error check result is unused
+type _TagsStubCheck =
+  // @ts-expect-error tags must be stubbed into ingest-types
+  ListAssetsData['query']['tags_any']
 type AssetParams = ListAssetsData['query'] & {
   tags_all?: string[]
   tags_any?: string[]
