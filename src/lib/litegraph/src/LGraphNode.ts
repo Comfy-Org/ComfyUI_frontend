@@ -17,7 +17,6 @@ import { graphScopeOf } from '@/types/graphScopeId'
 import type { GraphScope } from '@/types/graphScopeId'
 import { mintLinkId } from './idAllocation'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { UNASSIGNED_NODE_ID, toNodeId, serializeNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import type { NodeState } from '@/types/nodeState'
@@ -125,7 +124,6 @@ import {
   diffNamedValuesShadow
 } from './utils/namedValuesShadowDiff'
 import { reportNamedValuesShadowDiff } from './utils/namedValuesShadowDiffTelemetry'
-import { getWidgetIds } from './utils/widget'
 import { distributeSpace } from './utils/spaceDistribution'
 import { truncateText } from './utils/textUtils'
 import { BaseWidget } from './widgets/BaseWidget'
@@ -403,18 +401,6 @@ export class LGraphNode
   }
 
   declare widgets?: IBaseWidget[]
-
-  private syncWidgetOrder(widgets: readonly IBaseWidget[]): void {
-    this._widgetSlotsDirty = true
-    const graphId = this.graph?.rootGraph.id
-    if (!graphId) return
-
-    useWidgetValueStore().replaceNodeWidgetOrder(
-      graphId,
-      this.id,
-      getWidgetIds(widgets)
-    )
-  }
 
   /**
    * The amount of space available for widgets to grow into.
@@ -1029,7 +1015,7 @@ export class LGraphNode
   }
 
   constructor(title: string, type?: string) {
-    initializeWidgetsView(this, (widgets) => this.syncWidgetOrder(widgets))
+    initializeWidgetsView(this)
     this._state = {
       flags: {},
       graphId: zeroUuid,

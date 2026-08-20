@@ -2,8 +2,10 @@ import { shallowReactive } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 import { createArrayMutationView } from '../infrastructure/createMutationView'
+import { getWidgetIds } from '../utils/widget'
 
 interface WidgetsViewState {
   target: IBaseWidget[]
@@ -13,6 +15,21 @@ interface WidgetsViewState {
 }
 
 const states = new WeakMap<LGraphNode, WidgetsViewState>()
+
+function syncWidgetOrder(
+  node: LGraphNode,
+  widgets: readonly IBaseWidget[]
+): void {
+  node._widgetSlotsDirty = true
+  const graphId = node.graph?.rootGraph.id
+  if (!graphId) return
+
+  useWidgetValueStore().replaceNodeWidgetOrder(
+    graphId,
+    node.id,
+    getWidgetIds(widgets)
+  )
+}
 
 function defineWidgetsView(node: LGraphNode, state: WidgetsViewState): void {
   Object.defineProperty(node, 'widgets', {
@@ -34,11 +51,10 @@ function defineWidgetsView(node: LGraphNode, state: WidgetsViewState): void {
   })
 }
 
-export function initializeWidgetsView(
-  node: LGraphNode,
-  commit: (widgets: readonly IBaseWidget[]) => void
-): void {
+export function initializeWidgetsView(node: LGraphNode): void {
   const target = shallowReactive<IBaseWidget[]>([])
+  const commit = (widgets: readonly IBaseWidget[]) =>
+    syncWidgetOrder(node, widgets)
   const state: WidgetsViewState = {
     target,
     view: createArrayMutationView(target, () => commit(target)),

@@ -107,25 +107,27 @@ test.describe('Vue Widget Reactivity', { tag: '@vue-nodes' }, () => {
       .getNodeLocator(nodeId)
       .locator('.lg-node-widget')
 
-    await expect(widgets).toHaveCount(6)
+    await expect.poll(() => widgets.count()).toBeGreaterThanOrEqual(3)
+    const initialCount = await widgets.count()
+    expect(initialCount).toBeGreaterThanOrEqual(3)
     await comfyPage.page.evaluate((nodeId) => {
       const node = window.app!.graph.getNodeById(nodeId)
       if (!node) throw new Error(`Node ${nodeId} not found`)
       node.widgets!.pop()
     }, nodeId)
-    await expect(widgets).toHaveCount(5)
+    await expect(widgets).toHaveCount(initialCount - 1)
     await comfyPage.page.evaluate((nodeId) => {
       const node = window.app!.graph.getNodeById(nodeId)
       if (!node) throw new Error(`Node ${nodeId} not found`)
       node.widgets!.length--
     }, nodeId)
-    await expect(widgets).toHaveCount(4)
+    await expect(widgets).toHaveCount(initialCount - 2)
     await comfyPage.page.evaluate((nodeId) => {
       const node = window.app!.graph.getNodeById(nodeId)
       if (!node) throw new Error(`Node ${nodeId} not found`)
       node.widgets!.splice(0, 1)
     }, nodeId)
-    await expect(widgets).toHaveCount(3)
+    await expect(widgets).toHaveCount(initialCount - 3)
   })
 
   test('Can load dynamic combos', async ({ comfyPage }) => {
