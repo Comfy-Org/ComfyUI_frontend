@@ -3,6 +3,7 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 const SHARE_AUTH_STORAGE_KEY = 'Comfy.PreservedQuery.share_auth'
+const INVITE_STORAGE_KEY = 'Comfy.PreservedQuery.invite'
 
 /**
  * Cloud distribution E2E tests.
@@ -38,6 +39,20 @@ test.describe('Cloud distribution UI', { tag: '@cloud' }, () => {
         )
       )
       .toBe(JSON.stringify({ share: 'abc' }))
+  })
+
+  /** A new invitee has no account, so login dead-ends on user-not-found. */
+  test('routes an invited logged-out visitor to signup instead of login', async ({
+    page
+  }) => {
+    await page.goto(new URL('/?invite=test-invite-token', APP_URL).toString())
+
+    await expect(page).toHaveURL(/\/cloud\/signup/, { timeout: 10_000 })
+    await expect
+      .poll(() =>
+        page.evaluate((key) => sessionStorage.getItem(key), INVITE_STORAGE_KEY)
+      )
+      .toBe(JSON.stringify({ invite: 'test-invite-token' }))
   })
 
   test('cloud login page renders sign-in options', async ({ page }) => {
