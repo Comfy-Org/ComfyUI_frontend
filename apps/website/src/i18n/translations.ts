@@ -602,8 +602,8 @@ const translations = {
     'zh-CN': '测试版'
   },
   'api.steps.beta.description': {
-    en: 'Serverless API \u2014 dedicated endpoints with your models and nodes.',
-    'zh-CN': 'Serverless API\u2014\u2014专用端点，你的模型、你的节点。'
+    en: 'Serverless API \u2014 dedicated endpoints with your models and custom nodes.',
+    'zh-CN': 'Serverless API——专用端点，你的模型、你的自定义节点。'
   },
   'api.steps.beta.cta': {
     en: 'JOIN BETA',
