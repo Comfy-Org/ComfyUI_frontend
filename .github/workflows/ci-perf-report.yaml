@@ -73,9 +73,23 @@ jobs:
           if-no-files-found: warn
 
       - name: Save perf baseline to perf-data branch
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.perf.outcome == 'success'
-        continue-on-error: true
+        # Save completed measurements even when another benchmark fails.  On
+        # main, a missing/empty report is an error: otherwise every later PR
+        # silently compares against an increasingly stale baseline.
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && !cancelled()
         run: |
+          trap 'git worktree remove /tmp/perf-data --force 2>/dev/null || true' EXIT
+          if ! test -s test-results/perf-metrics.json; then
+            echo "::error::perf-metrics.json is missing or empty; refusing to skip the main-branch baseline update"
+            exit 1
+          fi
+          MEASUREMENT_COUNT=$(node -e "const report=require('./test-results/perf-metrics.json'); process.stdout.write(String(report.measurements?.length ?? 0))")
+          if test "$MEASUREMENT_COUNT" -eq 0; then
+            echo "::error::perf-metrics.json contains no measurements; refusing to skip the main-branch baseline update"
+            exit 1
+          fi
+          echo "Saving $MEASUREMENT_COUNT completed perf measurement(s)"
+
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config url."https://x-access-token:${GH_TOKEN}@github.com/".insteadOf "https://github.com/"
