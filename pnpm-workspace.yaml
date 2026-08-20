@@ -161,6 +161,7 @@ catalog:
 cleanupUnusedCatalogs: true
 
 allowBuilds:
+  '@comfyorg/comfy-multi-player@git+ssh://git@github.com/Comfy-Org/comfy-multi-player.git#6793d754c84c9bec97fbd2fb4d54ce187a2c83ba': true
   '@firebase/util': false
   '@sentry/cli': true
   '@tailwindcss/oxide': true
