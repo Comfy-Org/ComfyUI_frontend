@@ -16,6 +16,7 @@ import {
 } from '../utils/banner'
 import { fetchGitHubStars, formatStarCount } from '../utils/github'
 import { buildPageGraph, pageContext } from '../utils/jsonLd'
+import { alternatesFor, ogLocale, ogLocaleAlternate } from '../utils/hreflang'
 import type { Crumb, JsonLdNode, WebPageType } from '../utils/jsonLd'
 import JsonLdGraph from '../components/common/JsonLdGraph.astro'
 
@@ -29,6 +30,12 @@ interface Props {
   breadcrumbs?: Crumb[]
   mainEntityId?: string
   extraJsonLd?: (JsonLdNode | null | undefined)[]
+  /**
+   * Whether this page's twin exists in the other locale. Only a dynamic route
+   * knows that about itself, since each locale's `getStaticPaths` reads its own
+   * content; leave it unset and the page tree decides.
+   */
+  hasLocaleTwin?: boolean
 }
 
 const {
@@ -41,6 +48,7 @@ const {
   breadcrumbs,
   mainEntityId,
   extraJsonLd,
+  hasLocaleTwin,
 } = Astro.props
 
 const keywordsContent = keywords && keywords.length > 0 ? keywords.join(', ') : undefined
@@ -52,6 +60,13 @@ const { siteUrl, locale, url } = pageContext(
 )
 const canonicalURL = new URL(url)
 const shouldNoindex = noindex || isNoindexPathname(Astro.url.pathname)
+// en <-> zh-CN alternates, empty when this page has no twin: advertising a URL
+// that 404s is worse for the cluster than advertising nothing.
+const localeAlternates = alternatesFor(canonicalURL.pathname, canonicalURL.origin, {
+  hasTwin: hasLocaleTwin,
+})
+const openGraphLocale = ogLocale(locale)
+const openGraphLocaleAlternate = ogLocaleAlternate(locale, localeAlternates)
 const ogImageURL = new URL(ogImage, Astro.site ?? 'https://comfy.org')
 const rawStars = await fetchGitHubStars('Comfy-Org', 'ComfyUI')
 const githubStars = rawStars ? formatStarCount(rawStars) : ''
@@ -110,6 +125,11 @@ const structuredData = shouldNoindex
     <link rel="manifest" href="/site.webmanifest" />
     <meta name="theme-color" content="#211927" />
     <link rel="canonical" href={canonicalURL.href} />
+    {
+      localeAlternates.map((alternate) => (
+        <link rel="alternate" hreflang={alternate.hreflang} href={alternate.href} />
+      ))
+    }
     <link rel="preconnect" href="https://www.googletagmanager.com" />
     <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
 
@@ -121,7 +141,12 @@ const structuredData = shouldNoindex
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:url" content={canonicalURL.href} />
-    <meta property="og:locale" content={locale} />
+    <meta property="og:locale" content={openGraphLocale} />
+    {
+      openGraphLocaleAlternate && (
+        <meta property="og:locale:alternate" content={openGraphLocaleAlternate} />
+      )
+    }
     <meta property="og:site_name" content="Comfy" />
 
     <!-- Twitter -->
