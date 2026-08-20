@@ -13,8 +13,9 @@ import { LayoutFollowerBridge } from './layoutFollowerBridge'
 class TestTransport extends EventTarget implements DocFrameTransport {
   readonly sent: string[] = []
 
-  send(frame: string): void {
+  send(frame: string): boolean {
     this.sent.push(frame)
+    return true
   }
 
   receive(type: string, data: unknown): void {
