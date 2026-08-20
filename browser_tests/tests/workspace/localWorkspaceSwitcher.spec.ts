@@ -58,6 +58,14 @@ test.describe('Local workspace switcher', { tag: '@auth' }, () => {
     await expect(panel.getByText(TEAM_WORKSPACE_NAME)).toBeVisible()
     await expect(panel.getByText('Owner')).toHaveCount(2)
     await expect(panel.getByText('Member')).toHaveCount(1)
+    const scopeCaption = panel.getByText(
+      'Workspaces only affect which credits you use.'
+    )
+    await expect(scopeCaption).toBeVisible()
+    await scopeCaption.locator('..').locator('.pi-info-circle').hover()
+    await expect(page.getByRole('tooltip')).toHaveText(
+      'Runs that use partner nodes spend credits from this workspace. Unlike on Cloud, every workspace saves to your usual output folder.'
+    )
 
     await panel.getByText(TEAM_WORKSPACE_NAME, { exact: true }).click()
 
