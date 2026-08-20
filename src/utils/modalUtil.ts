@@ -4,9 +4,13 @@ const REKA_OPEN_DIALOG_SELECTOR = '[role="dialog"][data-state="open"]'
 /**
  * Popovers and dropdowns also render as role="dialog", but they neither trap
  * focus nor block the page, so they must not suppress global shortcuts.
+ *
+ * PrimeVue is matched on `data-pc-name` rather than only its theme class,
+ * because most Popover call sites pass `unstyled`, which drops `.p-popover`
+ * while keeping the attribute.
  */
 const NON_MODAL_OVERLAY_SELECTOR =
-  '.p-popover, [data-reka-popper-content-wrapper]'
+  '.p-popover, [data-pc-name="popover"], [data-reka-popper-content-wrapper]'
 
 /**
  * Overlays are commonly hidden by toggling `display` on an ancestor (a mask or
