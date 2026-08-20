@@ -159,41 +159,41 @@ test.describe(
       )
 
       // Open bug #14495 — drop `test.fail` when the fix lands.
-      test.fail(
-        'Promoted STRING widget edit survives a rebind of the interior link',
-        async ({ comfyPage }) => {
-          await comfyPage.workflow.loadWorkflow(
-            'subgraphs/subgraph-with-promoted-text-widget'
-          )
-          await comfyPage.vueNodes.waitForNodes()
+      test('Promoted STRING widget edit survives a rebind of the interior link', async ({
+        comfyPage
+      }) => {
+        await comfyPage.workflow.loadWorkflow(
+          'subgraphs/subgraph-with-promoted-text-widget'
+        )
+        await comfyPage.vueNodes.waitForNodes()
 
-          const hostValue = 'promoted-value-rebind-test'
-          const promotedTextarea = comfyPage.vueNodes
-            .getNodeLocator('11')
-            .getByRole('textbox', { name: 'text' })
-          await promotedTextarea.fill(hostValue)
-          await expect(promotedTextarea).toHaveValue(hostValue)
+        const hostValue = 'promoted-value-rebind-test'
+        const promotedTextarea = comfyPage.vueNodes
+          .getNodeLocator('11')
+          .getByRole('textbox', { name: 'text' })
+        await promotedTextarea.fill(hostValue)
+        await expect(promotedTextarea).toHaveValue(hostValue)
 
-          await comfyPage.vueNodes.enterSubgraph('11')
-          await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
+        await comfyPage.vueNodes.enterSubgraph('11')
+        await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
 
-          const interiorNodes = await comfyPage.nodeOps.getNodeRefsByType(
-            'CLIPTextEncode',
-            true
-          )
-          expect(
-            interiorNodes,
-            'Expected exactly one interior CLIPTextEncode'
-          ).toHaveLength(1)
+        const interiorNodes = await comfyPage.nodeOps.getNodeRefsByType(
+          'CLIPTextEncode',
+          true
+        )
+        expect(
+          interiorNodes,
+          'Expected exactly one interior CLIPTextEncode'
+        ).toHaveLength(1)
 
-          await comfyPage.subgraph.rebindPromotedInput(interiorNodes[0], 'text')
+        await comfyPage.subgraph.rebindPromotedInput(interiorNodes[0], 'text')
 
-          await comfyPage.subgraph.exitViaBreadcrumb()
-          await comfyPage.vueNodes.waitForNodes()
+        await comfyPage.subgraph.exitViaBreadcrumb()
+        await comfyPage.vueNodes.waitForNodes()
 
-          await expect(promotedTextarea).toHaveValue(hostValue)
-        }
-      )
+        test.fail()
+        await expect(promotedTextarea).toHaveValue(hostValue)
+      })
     })
 
     test.describe('Manual Promote/Demote via Context Menu', () => {

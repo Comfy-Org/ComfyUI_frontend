@@ -425,12 +425,11 @@ describe('SubgraphWidgetPromotion', () => {
       const subgraph = createTestSubgraph({
         inputs: [{ name: 'value', type: 'STRING' }]
       })
-      const { node: interiorNode, input: interiorInput } = createNodeWithWidget(
-        'Interior',
-        'text',
-        'seeded',
-        'STRING'
-      )
+      const {
+        node: interiorNode,
+        widget: interiorWidget,
+        input: interiorInput
+      } = createNodeWithWidget('Interior', 'text', 'seeded', 'STRING')
       subgraph.add(interiorNode)
       subgraph.inputNode.slots[0].connect(interiorNode.inputs[0], interiorNode)
 
@@ -441,6 +440,7 @@ describe('SubgraphWidgetPromotion', () => {
       hostB.widgets[0].value = 'b-edit'
       expect(promotedWidgetStateByName(hostA, 'value').value).toBe('a-edit')
       expect(promotedWidgetStateByName(hostB, 'value').value).toBe('b-edit')
+      expect(interiorWidget.value).toBe('seeded')
 
       interiorNode.disconnectInput(0)
       await Promise.resolve()
