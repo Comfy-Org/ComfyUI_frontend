@@ -1,7 +1,8 @@
 {
   "format_version": 1,
-  "comment": "Canonical language-agnostic op-applier/project conformance vectors. Each referenced JSONL header records base_workflow and workflow_final; following lines are the op stream.",
+  "comment": "Canonical language-agnostic op-applier/project conformance vectors. Success sessions are listed in cases; rejection/retry ApplyResult and mutation vectors are listed in result_cases.",
   "catalog": "../catalog.json",
+  "result_cases": "rejection-retry.json",
   "cases": [
     { "name": "large-build", "session": "../session-large-build.session.jsonl" },
     { "name": "edit-heavy", "session": "../session-edit-heavy.session.jsonl" },
