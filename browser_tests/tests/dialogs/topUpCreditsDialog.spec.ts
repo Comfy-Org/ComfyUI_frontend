@@ -29,13 +29,34 @@ test.describe('TopUpCredits dialog', { tag: '@ui' }, () => {
     )
   })
 
-  test('selecting a preset amount updates the pay amount', async () => {
+  test('preset amounts update both dollars and credits', async () => {
     await dialog.open()
 
-    // Default preset is $50, click $10 instead
+    await expect(dialog.payAmountInput).toHaveValue('50')
+    await expect(dialog.getAmountInput).toHaveValue('10,550')
+
     await dialog.preset10.click()
 
     await expect(dialog.payAmountInput).toHaveValue('10')
+    await expect(dialog.getAmountInput).toHaveValue('2,110')
+  })
+
+  test('dollar increments update the credit conversion', async () => {
+    await dialog.open()
+
+    await dialog.incrementPayAmountButton.click()
+
+    await expect(dialog.payAmountInput).toHaveValue('55')
+    await expect(dialog.getAmountInput).toHaveValue('11,605')
+  })
+
+  test('credit increments update the dollar conversion', async () => {
+    await dialog.open()
+
+    await dialog.incrementGetAmountButton.click()
+
+    await expect(dialog.getAmountInput).toHaveValue('11,605')
+    await expect(dialog.payAmountInput).toHaveValue('55')
   })
 
   test('close button dismisses dialog', async () => {
