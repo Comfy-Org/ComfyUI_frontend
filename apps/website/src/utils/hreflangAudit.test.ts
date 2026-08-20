@@ -114,12 +114,23 @@ describe('auditBuiltSite', () => {
     ])
   })
 
-  it('reports a sitemap and a page that disagree about the cluster', () => {
+  it('reports a sitemap advertising a locale the page does not', () => {
     const site = healthySite()
     site.sitemap?.set('/about/', new Set(['en', 'zh-Hans', 'x-default', 'ja']))
 
     expect(auditBuiltSite(site)).toContain(
       '/about/: sitemap advertises ja that the page does not'
+    )
+  })
+
+  it('reports a page advertising a locale the sitemap does not', () => {
+    // The other direction of the same drift: the sitemap dropping x-default
+    // while the pages keep emitting it.
+    const site = healthySite()
+    site.sitemap?.set('/about/', new Set(['en', 'zh-Hans']))
+
+    expect(auditBuiltSite(site)).toContain(
+      '/about/: page advertises x-default that the sitemap does not'
     )
   })
 })
