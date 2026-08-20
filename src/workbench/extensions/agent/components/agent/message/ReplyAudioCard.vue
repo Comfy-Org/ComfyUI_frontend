@@ -61,11 +61,11 @@ function download(): void {
         "
       />
     </button>
-    <div class="flex min-w-0 flex-1 flex-col gap-1.5">
+    <div class="flex min-w-0 flex-1 flex-col">
       <span class="text-agent-fg truncate text-sm/4 font-medium">{{
         title
       }}</span>
-      <div class="flex items-center gap-2.5">
+      <div class="flex h-6 items-center gap-4">
         <span
           class="text-agent-fg-subtle text-xs whitespace-nowrap tabular-nums"
         >
@@ -78,23 +78,25 @@ function download(): void {
           :step="0.1"
           @update:model-value="onScrub"
         />
+        <div class="flex shrink-0 items-center gap-2">
+          <button
+            type="button"
+            :aria-label="muted ? t('g.unmute') : t('g.mute')"
+            class="hover:bg-agent-surface-hover hover:text-agent-fg focus-visible:ring-agent-accent text-agent-fg-muted flex size-6 cursor-pointer items-center justify-center rounded-lg transition-colors focus-visible:ring-2 focus-visible:outline-none"
+            @click="toggleMute"
+          >
+            <span :class="cn('size-4', volumeIcon)" />
+          </button>
+          <button
+            type="button"
+            :aria-label="t('g.download')"
+            class="hover:bg-agent-surface-hover hover:text-agent-fg focus-visible:ring-agent-accent text-agent-fg-muted flex size-6 cursor-pointer items-center justify-center rounded-lg transition-colors focus-visible:ring-2 focus-visible:outline-none"
+            @click="download"
+          >
+            <span class="icon-[lucide--download] size-4" />
+          </button>
+        </div>
       </div>
     </div>
-    <button
-      type="button"
-      :aria-label="muted ? t('g.unmute') : t('g.mute')"
-      class="hover:bg-agent-surface-hover hover:text-agent-fg focus-visible:ring-agent-accent text-agent-fg-muted flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-lg transition-colors focus-visible:ring-2 focus-visible:outline-none"
-      @click="toggleMute"
-    >
-      <span :class="cn('size-4', volumeIcon)" />
-    </button>
-    <button
-      type="button"
-      :aria-label="t('g.download')"
-      class="hover:bg-agent-surface-hover hover:text-agent-fg focus-visible:ring-agent-accent text-agent-fg-muted flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-lg transition-colors focus-visible:ring-2 focus-visible:outline-none"
-      @click="download"
-    >
-      <span class="icon-[lucide--download] size-4" />
-    </button>
   </div>
 </template>
