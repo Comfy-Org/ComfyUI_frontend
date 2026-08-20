@@ -22,6 +22,15 @@ vi.mock('@/scripts/api', () => ({
 const downloadBlob = vi.hoisted(() => vi.fn())
 vi.mock('@/base/common/downloadUtil', () => ({ downloadBlob }))
 
+const isAssetPreviewSupported = vi.hoisted(() => vi.fn(() => false))
+const findOutputAsset = vi.hoisted(() =>
+  vi.fn(async (): Promise<{ name: string } | undefined> => undefined)
+)
+vi.mock('@/platform/assets/utils/assetPreviewUtil', () => ({
+  isAssetPreviewSupported,
+  findOutputAsset
+}))
+
 const asset: ReplyAsset = {
   url: 'http://x/api/view?filename=song.mp3',
   filename: 'song.mp3',
@@ -47,6 +56,8 @@ describe('ReplyAudioCard', () => {
   beforeEach(() => {
     fetchApi.mockClear()
     downloadBlob.mockClear()
+    isAssetPreviewSupported.mockReset().mockReturnValue(false)
+    findOutputAsset.mockReset().mockResolvedValue(undefined)
   })
 
   it('shows the title and a time readout without fetching the audio', () => {
@@ -104,5 +115,21 @@ describe('ReplyAudioCard', () => {
       expect(downloadBlob).toHaveBeenCalledWith('song.mp3', expect.any(Blob))
     )
     expect(fetchApi).toHaveBeenCalledWith('/view?filename=song.mp3')
+  })
+
+  it('downloads under the resolved display name instead of the hash', async () => {
+    isAssetPreviewSupported.mockReturnValue(true)
+    findOutputAsset.mockResolvedValue({ name: 'qa_audio_mp3_00001' })
+    renderCard()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Download' }))
+
+    await waitFor(() =>
+      expect(downloadBlob).toHaveBeenCalledWith(
+        'qa_audio_mp3_00001.mp3',
+        expect.any(Blob)
+      )
+    )
+    expect(findOutputAsset).toHaveBeenCalledWith('song.mp3')
   })
 })

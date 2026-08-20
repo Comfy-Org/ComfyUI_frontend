@@ -218,7 +218,7 @@ function stopPreview(event: Event): void {
       />
     </button>
 
-    <div v-if="audio.length" class="flex flex-col gap-2">
+    <div v-if="audio.length" class="flex flex-col gap-1">
       <ReplyAudioCard
         v-for="asset in visibleAudio"
         :key="asset.url"
