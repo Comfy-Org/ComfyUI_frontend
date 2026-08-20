@@ -110,38 +110,37 @@ test.describe(
       // the downstream node; the rest are silently dropped. The plain
       // multi-input node above keeps all of its links through the same
       // conversion, so the loss is specific to autogrow groups.
-      // Marked `fail` until the conversion stops dropping them.
-      test.fail(
-        'keeps every link when its sources become a subgraph',
-        async ({ comfyPage }) => {
-          await comfyPage.nodeOps.selectNodes(['Load Image'])
-          const subgraphNodeId =
-            await comfyPage.subgraph.convertSelectionToSubgraph()
+      test('keeps every link when its sources become a subgraph', async ({
+        comfyPage
+      }) => {
+        await comfyPage.nodeOps.selectNodes(['Load Image'])
+        expect(await comfyPage.nodeOps.getSelectedNodeIds()).toEqual([
+          '18',
+          '19'
+        ])
+        const subgraphNodeId =
+          await comfyPage.subgraph.convertSelectionToSubgraph()
 
-          await expect
-            .poll(() =>
-              getConnectedInputs(
-                comfyPage,
-                REFERENCE_NODE_ID,
-                REFERENCE_IMAGES_PREFIX
-              )
+        test.fail()
+        await expect
+          .poll(() =>
+            getConnectedInputs(
+              comfyPage,
+              REFERENCE_NODE_ID,
+              REFERENCE_IMAGES_PREFIX
             )
-            .toEqual([
-              { name: IMAGE_1, originNodeId: subgraphNodeId },
-              { name: IMAGE_2, originNodeId: subgraphNodeId }
-            ])
+          )
+          .toEqual([
+            { name: IMAGE_1, originNodeId: subgraphNodeId },
+            { name: IMAGE_2, originNodeId: subgraphNodeId }
+          ])
 
-          await expect
-            .poll(() =>
-              getInputNames(
-                comfyPage,
-                REFERENCE_NODE_ID,
-                REFERENCE_IMAGES_PREFIX
-              )
-            )
-            .toEqual(REFERENCE_IMAGE_SLOTS)
-        }
-      )
+        await expect
+          .poll(() =>
+            getInputNames(comfyPage, REFERENCE_NODE_ID, REFERENCE_IMAGES_PREFIX)
+          )
+          .toEqual(REFERENCE_IMAGE_SLOTS)
+      })
     })
   }
 )
