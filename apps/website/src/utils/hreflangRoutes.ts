@@ -64,9 +64,17 @@ export function mirroredRoutes(files: string[]): Set<string> {
   )
 }
 
-/** The path with any locale prefix removed, always with a trailing slash. */
+/**
+ * The path with any locale prefix removed, always with a trailing slash.
+ *
+ * The prefix has to be a whole segment. A bare `startsWith` also matches a route
+ * like `/zh-CN-guide/`, which would be stripped to `-guide/` and clustered with
+ * whatever page happens to own that path.
+ */
 export function unprefixed(pathname: string): string {
-  const path = pathname.startsWith(ZH_PREFIX)
+  const isLocalePrefixed =
+    pathname === ZH_PREFIX || pathname.startsWith(`${ZH_PREFIX}/`)
+  const path = isLocalePrefixed
     ? pathname.slice(ZH_PREFIX.length) || '/'
     : pathname
   return path.endsWith('/') ? path : `${path}/`

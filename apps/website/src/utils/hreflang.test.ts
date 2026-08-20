@@ -65,6 +65,13 @@ describe('unprefixed', () => {
     expect(unprefixed('/zh-CN')).toBe('/')
     expect(unprefixed('/')).toBe('/')
   })
+
+  it('only strips a whole segment, not a route that merely starts with it', () => {
+    // `/zh-CN-guide/` is an English route. Stripped, it would become `-guide/`
+    // and be clustered with whatever owns that path.
+    expect(unprefixed('/zh-CN-guide/')).toBe('/zh-CN-guide/')
+    expect(unprefixed('/zh-CNish/')).toBe('/zh-CNish/')
+  })
 })
 
 describe('alternatesFor', () => {
