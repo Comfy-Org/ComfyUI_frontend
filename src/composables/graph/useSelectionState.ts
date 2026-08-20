@@ -8,7 +8,12 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import {
-  hasImageOutput,
+  BATCH_IMAGES_NODE_TYPE,
+  canAppendToBatch,
+  canCreateBatch,
+  resolveBatchImagesSelection
+} from '@/utils/batchImagesUtil'
+import {
   isImageNode,
   isLGraphGroup,
   isLGraphNode,
@@ -80,8 +85,16 @@ export function useSelectionState() {
   })
 
   const hasImageNode = computed(() => isSingleImageNode.value)
-  const hasMultipleImageOutputNodes = computed(
-    () => selectedNodes.value.filter((node) => hasImageOutput(node)).length > 1
+  const batchImagesSelection = computed(() =>
+    resolveBatchImagesSelection(selectedNodes.value)
+  )
+  const canBatchSelectedImages = computed(
+    () =>
+      canCreateBatch(batchImagesSelection.value) &&
+      !!nodeDefStore.nodeDefsByName?.[BATCH_IMAGES_NODE_TYPE]
+  )
+  const canAddSelectedImagesToBatch = computed(() =>
+    canAppendToBatch(batchImagesSelection.value)
   )
   const hasOutputNodesSelected = computed(
     () => filterOutputNodes(selectedNodes.value).length > 0
@@ -134,7 +147,8 @@ export function useSelectionState() {
     isSingleImageNode,
     hasSubgraphs,
     hasImageNode,
-    hasMultipleImageOutputNodes,
+    canBatchSelectedImages,
+    canAddSelectedImagesToBatch,
     hasOutputNodesSelected,
     selectedNodesStates,
     computeSelectionFlags

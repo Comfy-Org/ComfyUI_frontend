@@ -122,6 +122,16 @@ let nodeDefMock = {
 
 let nodeDefsByNameMock: Record<string, unknown> = {}
 
+const createMockBatchImagesNode = (feeding: LGraphNode[] = []) =>
+  createMockLGraphNode({
+    id: 'batch',
+    type: 'BatchImagesNode',
+    outputs: [{ name: 'IMAGE', type: 'IMAGE' }],
+    inputs: feeding.map(() => ({ name: 'image', type: 'IMAGE' })),
+    graph: {} as LGraphNode['graph'],
+    getInputNode: (slot: number) => feeding[slot] ?? null
+  })
+
 vi.mock('@/stores/nodeDefStore', () => ({
   useNodeDefStore: () => ({
     fromLGraphNode: vi.fn(() => nodeDefMock),
@@ -443,6 +453,33 @@ describe('SelectionToolbox', () => {
         createMockLGraphNode({ outputs: [{ name: 'IMAGE', type: 'IMAGE' }] }),
         createMockLGraphNode({ outputs: [{ name: 'IMAGE', type: 'IMAGE' }] })
       ]
+      const { container } = renderComponent()
+      expect(
+        container.querySelector('[data-testid="batch-images-button"]')
+      ).toBeFalsy()
+    })
+
+    it('should show batch images button when a batch node and an unwired image node are selected', () => {
+      nodeDefsByNameMock = {}
+      canvasStore.selectedItems = [
+        createMockBatchImagesNode(),
+        createMockLGraphNode({
+          id: 'fresh',
+          outputs: [{ name: 'IMAGE', type: 'IMAGE' }]
+        })
+      ]
+      const { container } = renderComponent()
+      expect(
+        container.querySelector('[data-testid="batch-images-button"]')
+      ).toBeTruthy()
+    })
+
+    it('should hide batch images button when every selected image node already feeds the batch node', () => {
+      const wired = createMockLGraphNode({
+        id: 'wired',
+        outputs: [{ name: 'IMAGE', type: 'IMAGE' }]
+      })
+      canvasStore.selectedItems = [createMockBatchImagesNode([wired]), wired]
       const { container } = renderComponent()
       expect(
         container.querySelector('[data-testid="batch-images-button"]')

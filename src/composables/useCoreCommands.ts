@@ -1,6 +1,7 @@
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
+import { useBatchImages } from '@/composables/graph/useBatchImages'
 import { useSubgraphOperations } from '@/composables/graph/useSubgraphOperations'
 import { startModelNodeDragFromAsset } from '@/composables/node/startModelNodeDragFromAsset'
 import { useExternalLink } from '@/composables/useExternalLink'
@@ -42,7 +43,6 @@ import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDi
 import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
 import type { ComfyCommand } from '@/stores/commandStore'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useModelStore } from '@/stores/modelStore'
 import { useHelpCenterStore } from '@/stores/helpCenterStore'
@@ -56,7 +56,6 @@ import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { ensureWorkflowSuffix, getWorkflowSuffix } from '@/utils/formatUtil'
-import { hasImageOutput, isLGraphNode } from '@/utils/litegraphUtil'
 import {
   getAllNonIoNodesInSubgraph,
   getExecutionIdsForSelectedNodes
@@ -1071,52 +1070,16 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Batch Selected Images',
       versionAdded: '1.49.3',
       function: () => {
-        const canvas = canvasStore.getCanvas()
-        const imageNodes = [...canvas.selectedItems]
-          .filter(isLGraphNode)
-          .filter((node) => hasImageOutput(node))
-          .sort((a, b) => a.pos[1] - b.pos[1] || a.pos[0] - b.pos[0])
-        if (imageNodes.length < 2) return
-
-        const nodeDef = useNodeDefStore().nodeDefsByName['BatchImagesNode']
-        if (!nodeDef) {
-          toastStore.add({
-            severity: 'error',
-            summary: t('toastMessages.batchImagesNodeUnavailable')
-          })
-          return
-        }
-
-        const right = Math.max(
-          ...imageNodes.map((node) => node.pos[0] + node.size[0])
-        )
-        const centerY =
-          imageNodes.reduce(
-            (sum, node) => sum + node.pos[1] + node.size[1] / 2,
-            0
-          ) / imageNodes.length
-
-        const batchNode = useLitegraphService().addNodeOnGraph(nodeDef, {
-          pos: [right + 100, centerY]
-        })
-        if (!batchNode) return
-        batchNode.pos = [right + 100, centerY - batchNode.size[1] / 2]
-
-        for (const source of imageNodes) {
-          const outputIndex = source.outputs.findIndex(
-            (output) => output.type === 'IMAGE'
-          )
-          // Connecting the last free slot makes autogrow add the next one
-          const inputIndex = batchNode.inputs.findIndex(
-            (input) => input.link == null && input.type === 'IMAGE'
-          )
-          if (inputIndex === -1) break
-          source.connect(outputIndex, batchNode, inputIndex)
-        }
-
-        canvas.deselectAll()
-        canvas.select(batchNode)
-        canvasStore.updateSelectedItems()
+        useBatchImages().batchSelectedImages()
+      }
+    },
+    {
+      id: 'Comfy.Graph.AddSelectedImagesToBatch',
+      icon: 'icon-[lucide--image-plus]',
+      label: 'Add Selected Images to Batch',
+      versionAdded: '1.49.3',
+      function: () => {
+        useBatchImages().addSelectedImagesToBatch()
       }
     },
     {

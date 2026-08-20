@@ -72,7 +72,6 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 import { useExtensionService } from '@/services/extensionService'
 import { useCommandStore } from '@/stores/commandStore'
 import type { ComfyCommandImpl } from '@/stores/commandStore'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 import FrameNodes from './selectionToolbox/FrameNodes.vue'
 import NodeOptionsButton from './selectionToolbox/NodeOptionsButton.vue'
@@ -80,7 +79,6 @@ import VerticalDivider from './selectionToolbox/VerticalDivider.vue'
 
 const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()
-const nodeDefStore = useNodeDefStore()
 const extensionService = useExtensionService()
 const canvasInteractions = useCanvasInteractions()
 
@@ -112,7 +110,8 @@ const {
   isSingleImageNode,
   hasAny3DNodeSelected,
   hasOutputNodesSelected,
-  hasMultipleImageOutputNodes,
+  canBatchSelectedImages,
+  canAddSelectedImagesToBatch,
   canOpenNodeInfo
 } = useSelectionState()
 
@@ -121,9 +120,7 @@ const showConvertToSubgraph = computed(() => hasAnySelection.value)
 const showArrange = computed(() => hasMultipleSelection.value)
 const showFrameNodes = computed(() => hasMultipleSelection.value)
 const showBatchImages = computed(
-  () =>
-    hasMultipleImageOutputNodes.value &&
-    !!nodeDefStore.nodeDefsByName?.['BatchImagesNode']
+  () => canBatchSelectedImages.value || canAddSelectedImagesToBatch.value
 )
 const showSubgraphButtons = computed(() => isSingleSubgraph.value)
 
