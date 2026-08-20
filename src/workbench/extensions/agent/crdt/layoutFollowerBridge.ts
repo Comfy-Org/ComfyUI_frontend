@@ -1,5 +1,4 @@
-import type { DocOp, DocUpdate } from './docFrameClient'
-import type { DocFrameClient } from './docFrameClient'
+import type { DocOp, DocUpdate, DocFrameClient } from './docFrameClient'
 import { FollowerDoc } from './followerDoc'
 
 interface RemoteLayoutStore {
