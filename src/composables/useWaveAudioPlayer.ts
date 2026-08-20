@@ -61,12 +61,7 @@ export function useWaveAudioPlayer(options: UseWaveAudioPlayerOptions) {
       averages.push(sum / (end - start))
     }
 
-    const peak = Math.max(...averages)
-    const trough = Math.min(...averages)
-    if (peak === 0 || (peak - trough) / peak < 0.05) {
-      bars.value = generatePlaceholderBars()
-      return
-    }
+    const peak = Math.max(...averages) || 1
     bars.value = averages.map((avg) => ({
       height: Math.max(8, (avg / peak) * 100)
     }))

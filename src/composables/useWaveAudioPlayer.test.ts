@@ -129,7 +129,7 @@ describe('useWaveAudioPlayer', () => {
     })
   }
 
-  it('keeps varied placeholder bars for silent audio', async () => {
+  it('renders silence as the minimum-height floor', async () => {
     mockDecodedChannel(new Float32Array(80))
 
     const src = ref('/audio.wav')
@@ -137,12 +137,11 @@ describe('useWaveAudioPlayer', () => {
     await vi.waitFor(() => expect(loading.value).toBe(false))
 
     for (const bar of bars.value) {
-      expect(bar.height).toBeGreaterThanOrEqual(10)
-      expect(bar.height).toBeLessThanOrEqual(70)
+      expect(bar.height).toBe(8)
     }
   })
 
-  it('keeps varied placeholder bars for constant-amplitude audio', async () => {
+  it('renders constant-amplitude audio as uniform full bars', async () => {
     mockDecodedChannel(new Float32Array(80).fill(0.5))
 
     const src = ref('/audio.wav')
@@ -150,8 +149,7 @@ describe('useWaveAudioPlayer', () => {
     await vi.waitFor(() => expect(loading.value).toBe(false))
 
     for (const bar of bars.value) {
-      expect(bar.height).toBeGreaterThanOrEqual(10)
-      expect(bar.height).toBeLessThanOrEqual(70)
+      expect(bar.height).toBe(100)
     }
   })
 
