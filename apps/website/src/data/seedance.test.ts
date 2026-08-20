@@ -43,7 +43,7 @@ describe('seedance 2.5 workflow links', () => {
   it('keeps the run CTAs on Cloud, which is a separate deliberate choice', () => {
     // Reference-to-video on Cloud is the "run it" path chosen for this launch;
     // linking the hub instead would undo that, so it is pinned here.
-    expect(seedancePage.hero.primaryCta.href).toContain(
+    expect(seedancePage.hero.primaryCta?.href).toContain(
       'cloud.comfy.org/?template=api_seedance2_5_r2v'
     )
   })
