@@ -68,9 +68,7 @@ describe('getComfyPlatformBaseUrl', () => {
   })
 })
 
-// The resolver is computed at module load, so each case stubs the env first
-// and imports a fresh module — an ambient VITE_CLOUD_INGEST_BASE_URL (e.g. a
-// developer .env pointing at testcloud) must not leak into the assertions.
+// Resolved at module load, so each case stubs the env and imports a fresh module.
 describe('getCloudIngestBaseUrl', () => {
   afterEach(() => {
     vi.unstubAllEnvs()

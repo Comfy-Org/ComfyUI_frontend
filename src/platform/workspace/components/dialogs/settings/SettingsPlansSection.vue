@@ -351,8 +351,7 @@ const selectedTeamStop = computed(
     defaultTeamStop.value
 )
 
-// API stops can resolve after mount with different breakpoints, leaving the
-// seeded slider USD matching no stop; snap it to the resolved default.
+// Re-snap the slider when late API stops leave the seeded USD matching none.
 watch(defaultTeamStop, (stop) => {
   if (teamStops.value.some((s) => s.usd === teamUsd.value)) return
   teamUsd.value = stop.usd

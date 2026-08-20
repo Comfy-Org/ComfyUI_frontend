@@ -48,8 +48,7 @@ vi.mock('@/platform/distribution/types', () => ({
   }
 }))
 
-// Fixed sentinel so an ambient VITE_CLOUD_INGEST_BASE_URL cannot change the
-// asserted URLs; origin resolution itself is covered by comfyApi.test.ts.
+// Fixed sentinel origin; resolution itself is covered by comfyApi.test.ts.
 vi.mock('@/config/comfyApi', () => ({
   getCloudIngestBaseUrl: () => 'https://ingest.example'
 }))
