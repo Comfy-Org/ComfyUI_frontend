@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import Badge from '@/components/ui/badge/Badge.vue'
+
 import type { Locale } from '../../../i18n/translations'
 
 import { externalLinks } from '../../../config/routes'
@@ -35,7 +37,7 @@ const steps = [
     <div
       v-for="step in steps"
       :key="step.number"
-      class="bg-primary-comfy-ink flex flex-col justify-between rounded-3xl border border-white/10"
+      class="flex flex-col justify-between rounded-3xl border border-white/10 bg-primary-comfy-ink"
     >
       <img
         :src="step.image"
@@ -46,7 +48,7 @@ const steps = [
         <p class="text-primary-comfy-yellow text-sm font-bold tracking-wider">
           {{ step.number }}
         </p>
-        <h3 class="text-primary-comfy-canvas mt-2 text-3xl font-medium">
+        <h3 class="mt-2 text-3xl font-medium text-primary-comfy-canvas">
           {{ t(step.titleKey, locale) }}
         </h3>
         <p class="mt-3 text-sm text-smoke-700">
@@ -76,6 +78,23 @@ const steps = [
         >
           {{ t('api.hero.viewDocs', locale) }}
         </BrandButton>
+      </div>
+
+      <div
+        class="mt-6 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-center text-sm text-smoke-700"
+      >
+        <Badge variant="accent" size="xs">
+          {{ t('api.steps.beta.badge', locale) }}
+        </Badge>
+        <span>{{ t('api.steps.beta.description', locale) }}</span>
+        <a
+          :href="externalLinks.serverlessBeta"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="text-primary-comfy-yellow font-bold tracking-widest whitespace-nowrap uppercase hover:underline"
+        >
+          {{ t('api.steps.beta.cta', locale) }}
+        </a>
       </div>
     </template>
   </CardGridSection>
