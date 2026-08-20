@@ -25,12 +25,18 @@ test('@vue-nodes In App Mode, widget width updates with panel size', async ({
     ])
   })
 
-  const getWidth = async () =>
+  const getRenderedWidth = async () =>
     (await comfyPage.appMode.linearWidgets.locator('canvas').boundingBox())
       ?.width ?? 0
+  const getWidgetWidth = () =>
+    comfyPage.page.evaluate(
+      (nodeId) => window.app!.graph.getNodeById(nodeId)!.widgets![0].width ?? 0,
+      legacyNodeId
+    )
 
   await test.step('Mouse clicks resolve to button regions', async () => {
     const legacyWidget = comfyPage.appMode.linearWidgets.locator('canvas')
+    await expect(legacyWidget).toBeVisible()
     const { width, height } = (await legacyWidget.boundingBox())!
 
     const nodeRef = await comfyPage.nodeOps.getNodeRefById(legacyNodeId)
@@ -43,17 +49,22 @@ test('@vue-nodes In App Mode, widget width updates with panel size', async ({
   })
 
   await test.step('Resize to update width', async () => {
-    await expect.poll(getWidth).toBeGreaterThan(0)
-    const initialWidth = await getWidth()
+    await expect.poll(getRenderedWidth).toBeGreaterThan(0)
+    await expect.poll(getWidgetWidth).toBeGreaterThan(0)
+    const initialRenderedWidth = await getRenderedWidth()
+    const initialWidgetWidth = await getWidgetWidth()
 
     const gutter = comfyPage.page.getByRole('separator')
 
     await expect(gutter).toBeVisible()
     await comfyMouse.dragElementBy(gutter, { x: -200 })
-    await expect.poll(getWidth).toBeGreaterThan(initialWidth)
-    const intermediateWidth = await getWidth()
+    await expect.poll(getRenderedWidth).toBeGreaterThan(initialRenderedWidth)
+    await expect.poll(getWidgetWidth).toBeGreaterThan(initialWidgetWidth)
+    const intermediateRenderedWidth = await getRenderedWidth()
+    const intermediateWidgetWidth = await getWidgetWidth()
 
     await comfyMouse.dragElementBy(gutter, { x: 100 })
-    await expect.poll(getWidth).toBeLessThan(intermediateWidth)
+    await expect.poll(getRenderedWidth).toBeLessThan(intermediateRenderedWidth)
+    await expect.poll(getWidgetWidth).toBeLessThan(intermediateWidgetWidth)
   })
 })
