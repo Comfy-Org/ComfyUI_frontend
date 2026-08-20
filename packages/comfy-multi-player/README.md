@@ -303,6 +303,14 @@ Both the frontend and the server must pin the **same** SHA. Conflict resolution
 is a cross-process agreement about which write wins; two peers running
 different versions of these rules can disagree about the outcome.
 
+A git dependency runs this package's `prepare` build to produce `dist/` on
+install, so both the types and the runtime resolve from the pinned SHA. Package
+managers that gate install-time build scripts must allow it explicitly — for
+pnpm, add an `allowBuilds` entry in the consumer's `pnpm-workspace.yaml` keyed by
+the fully-resolved git spec. See
+[`docs/decisions/ADR-004-consumers-pin-by-sha-no-registry-yet.md`](docs/decisions/ADR-004-consumers-pin-by-sha-no-registry-yet.md)
+for the consumption decision and the future registry-publish option.
+
 ## Develop
 
 ```bash
