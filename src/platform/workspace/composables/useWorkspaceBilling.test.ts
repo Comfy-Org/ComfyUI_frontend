@@ -30,7 +30,7 @@ const mockShow = vi.hoisted(() => vi.fn())
 const mockStartOperation = vi.hoisted(() => vi.fn())
 const mockGetOperation = vi.hoisted(() => vi.fn())
 const mockSetWorkspaceBillingRail = vi.hoisted(() => vi.fn())
-const mockCaptureException = vi.hoisted(() => vi.fn())
+const mockReportError = vi.hoisted(() => vi.fn())
 const mockActiveWorkspaceId = vi.hoisted(() => ({ value: 'workspace-1' }))
 
 // Hoisted so the vi.mock factory below can reference it: a plain top-level
@@ -75,8 +75,8 @@ vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
   })
 }))
 
-vi.mock('@sentry/vue', () => ({
-  captureException: mockCaptureException
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: mockReportError
 }))
 
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
@@ -322,7 +322,7 @@ describe('useWorkspaceBilling', () => {
         undefined,
         actionUrl
       )
-      expect(mockCaptureException).not.toHaveBeenCalled()
+      expect(mockReportError).not.toHaveBeenCalled()
     })
 
     it('recovers a pending top-up as a top-up, not a subscription', async () => {
@@ -359,11 +359,11 @@ describe('useWorkspaceBilling', () => {
       const billing = setupBilling()
       await billing.fetchStatus()
 
-      expect(mockCaptureException).toHaveBeenCalledWith(
+      expect(mockReportError).toHaveBeenCalledWith(
         expect.objectContaining({
           message: expect.stringContaining('seat_change')
         }),
-        { tags: { error_type: 'billing_unknown_resume_mode' } }
+        { errorType: 'billing_unknown_resume_mode' }
       )
       // Recovery is preserved deliberately: without it the customer has no way
       // back to the payment page, while a wrong panel clears on reload.

@@ -267,6 +267,15 @@ export interface LayoutChange {
   operation: LayoutOperation
 }
 
+/**
+ * A retained node layout ref. The ref is shared by every holder of the same
+ * node id, so the store keeps it alive until the last lease is released.
+ */
+export interface NodeLayoutLease {
+  layout: Ref<NodeLayout | null>
+  release: () => void
+}
+
 // Store interfaces
 export interface LayoutStore {
   /** Node count, without materialising layouts as `getAllNodes()` does. */
@@ -283,6 +292,12 @@ export interface LayoutStore {
 
   // CustomRef accessors for shared write access
   getNodeLayoutRef(nodeId: NodeId): Ref<NodeLayout | null>
+  /**
+   * Retain `getNodeLayoutRef` beyond the current tick. Anything that keeps the
+   * ref -- a node component, a coachmark, slot tracking -- must retain it and
+   * release when done; transient `.value` reads do not.
+   */
+  retainNodeLayoutRef(nodeId: NodeId): NodeLayoutLease
   getNodesInBounds(bounds: Bounds): ComputedRef<NodeId[]>
   getAllNodes(): ComputedRef<ReadonlyMap<NodeId, NodeLayout>>
 
