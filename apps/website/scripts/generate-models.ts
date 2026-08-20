@@ -77,7 +77,58 @@ const API_PROVIDER_MAP: Record<string, { name: string; slug: string }> = {
   veo3: { name: 'Veo 3', slug: 'veo-3' },
   flux2: { name: 'Flux 2 (API)', slug: 'flux-2-api' },
   wavespeed: { name: 'Wavespeed', slug: 'wavespeed' },
-  wavespped: { name: 'Wavespeed', slug: 'wavespeed' }
+  wavespped: { name: 'Wavespeed', slug: 'wavespeed' },
+  'wan2-1': { name: 'Wan 2.1', slug: 'wan2-1' },
+  'z-image-turbo': { name: 'Z Image Turbo', slug: 'z-image-turbo' },
+  'wan2-2': { name: 'Wan 2.2', slug: 'wan2-2' },
+  'gemini3-pro-image-preview': {
+    name: 'Gemini 3 Pro Image Preview',
+    slug: 'gemini3-pro-image-preview'
+  },
+  'ltx-2-3': { name: 'LTX 2.3', slug: 'ltx-2-3' },
+  'flux-1': { name: 'Flux 1', slug: 'flux-1' },
+  'ltx-2': { name: 'LTX 2', slug: 'ltx-2' },
+  'nano-banana-2': { name: 'Nano Banana 2', slug: 'nano-banana-2' },
+  'kling-3-0': { name: 'Kling 3.0', slug: 'kling-3-0' },
+  'seedance-2-0': { name: 'Seedance 2.0', slug: 'seedance-2-0' },
+  'flux-2-klein': { name: 'Flux 2 Klein', slug: 'flux-2-klein' },
+  'kling-o3': { name: 'Kling O3', slug: 'kling-o3' },
+  sdxl: { name: 'SDXL', slug: 'sdxl' },
+  'flux-1-kontext': { name: 'Flux 1 Kontext', slug: 'flux-1-kontext' },
+  'wan2-2-animate': { name: 'Wan 2.2 Animate', slug: 'wan2-2-animate' },
+  'kling-o1': { name: 'Kling O1', slug: 'kling-o1' },
+  'flux-2-dev': { name: 'Flux 2 Dev', slug: 'flux-2-dev' },
+  'sd1-5': { name: 'SD 1.5', slug: 'sd1-5' },
+  'sd3-5': { name: 'SD 3.5', slug: 'sd3-5' },
+  'kling-2-6': { name: 'Kling 2.6', slug: 'kling-2-6' },
+  'gpt-image-1': { name: 'GPT Image 1', slug: 'gpt-image-1' },
+  'wan2-7': { name: 'Wan 2.7', slug: 'wan2-7' },
+  'seedance1-0-pro': { name: 'Seedance 1.0 Pro', slug: 'seedance1-0-pro' },
+  'kling-1-6': { name: 'Kling 1.6', slug: 'kling-1-6' },
+  'wan2-1-vace': { name: 'Wan 2.1 Vace', slug: 'wan2-1-vace' },
+  'wan2-6': { name: 'Wan 2.6', slug: 'wan2-6' },
+  'wan2-5': { name: 'Wan 2.5', slug: 'wan2-5' },
+  'flux-2': { name: 'Flux 2', slug: 'flux-2' },
+  'qwen-image-layered': {
+    name: 'Qwen Image Layered',
+    slug: 'qwen-image-layered'
+  },
+  'wan-ati': { name: 'Wan ATI', slug: 'wan-ati' },
+  'ltx-0-9-5': { name: 'LTX 0.9.5', slug: 'ltx-0-9-5' },
+  'qwen-image-2512': { name: 'Qwen Image 2512', slug: 'qwen-image-2512' },
+  'wan2-1-infinitetalk': {
+    name: 'Wan 2.1 InfiniteTalk',
+    slug: 'wan2-1-infinitetalk'
+  },
+  'gpt-image-1-5': { name: 'GPT Image 1.5', slug: 'gpt-image-1-5' },
+  'seedream-5-0-lite': { name: 'Seedream 5.0 Lite', slug: 'seedream-5-0-lite' },
+  'wan2-1-scail': { name: 'Wan 2.1 Scail', slug: 'wan2-1-scail' },
+  'seedream-4-0': { name: 'Seedream 4.0', slug: 'seedream-4-0' },
+  'seedance-1-5-pro': { name: 'Seedance 1.5 Pro', slug: 'seedance-1-5-pro' },
+  'kling-2-0': { name: 'Kling 2.0', slug: 'kling-2-0' },
+  'hunyuan-3d': { name: 'Hunyuan 3D', slug: 'hunyuan-3d' },
+  'flux-1-krea-dev': { name: 'Flux 1 Krea Dev', slug: 'flux-1-krea-dev' },
+  'seedream-4-5': { name: 'Seedream 4.5', slug: 'seedream-4-5' }
 }
 
 // Stub entries that exist only to issue 301 redirects from old slugs to
