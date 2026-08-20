@@ -4,8 +4,10 @@ import { getPreservedQueryParam } from '@/platform/navigation/preservedQueryMana
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 
 const firstNonEmpty = (value: LocationQuery[string]): string | undefined => {
-  const raw = Array.isArray(value) ? value[0] : value
-  return raw ? raw : undefined
+  if (Array.isArray(value)) {
+    return value.find((item): item is string => !!item)
+  }
+  return value ? value : undefined
 }
 
 const hasInviteInFlight = (query: LocationQuery): boolean => {

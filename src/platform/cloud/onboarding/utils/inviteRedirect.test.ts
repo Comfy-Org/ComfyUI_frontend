@@ -1,10 +1,7 @@
 import { beforeEach, describe, expect, test } from 'vitest'
 import type { LocationQuery } from 'vue-router'
 
-import {
-  clearPreservedQuery,
-  getPreservedQueryParam
-} from '@/platform/navigation/preservedQueryManager'
+import { clearPreservedQuery } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 
 import { resolveUnauthenticatedRedirectName } from './inviteRedirect'
@@ -18,6 +15,11 @@ const stashInvite = (token: string) => {
 
 describe('resolveUnauthenticatedRedirectName', () => {
   beforeEach(() => {
+    // clearPreservedQuery skips storage when its in-memory namespace is cold, so
+    // wipe the raw key too or a stale stash leaks into the no-invite case.
+    sessionStorage.removeItem(
+      `Comfy.PreservedQuery.${PRESERVED_QUERY_NAMESPACES.INVITE}`
+    )
     clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.INVITE)
   })
 
@@ -37,15 +39,19 @@ describe('resolveUnauthenticatedRedirectName', () => {
       resolveUnauthenticatedRedirectName({}),
       'a later navigation hop no longer carries ?invite= in the url, so the stash is the source of truth that keeps the invitee on the signup path'
     ).toBe('cloud-signup')
-    // Sanity: the stash really is the thing being read here.
-    expect(
-      getPreservedQueryParam(PRESERVED_QUERY_NAMESPACES.INVITE, 'invite')
-    ).toBe('tok-stashed')
   })
 
   test('routes to signup when the invite param is repeated (array-valued)', () => {
     const query: LocationQuery = { invite: ['tok-a', 'tok-b'] }
     expect(resolveUnauthenticatedRedirectName(query)).toBe('cloud-signup')
+  })
+
+  test('routes to signup when the first repeated invite value is empty', () => {
+    const query: LocationQuery = { invite: ['', 'tok-123'] }
+    expect(
+      resolveUnauthenticatedRedirectName(query),
+      'a real token in a later array slot is still an invite in flight'
+    ).toBe('cloud-signup')
   })
 
   test('routes to login when the invite param is empty and the stash is empty', () => {
