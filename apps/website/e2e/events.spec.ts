@@ -212,7 +212,7 @@ test.describe('Events page — desktop @smoke', () => {
         const eventLink = event.link
         const expectedHref = eventVideoId(event)
           ? localizeHref(eventPath(event), locale)
-          : (event.link!.href[locale] ?? event.link!.href.en)
+          : (eventLink?.href[locale] ?? eventLink?.href.en)
         if (expectedHref) {
           await expect(ctaLink).toHaveAttribute('href', expectedHref)
         }
