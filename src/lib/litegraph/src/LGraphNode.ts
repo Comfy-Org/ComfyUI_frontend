@@ -1,4 +1,4 @@
-import { shallowReactive, toValue } from 'vue'
+import { shallowReactive, toValue, watch } from 'vue'
 
 import {
   calculateInputSlotPosFromSlot,
@@ -403,6 +403,29 @@ export class LGraphNode
 
   /** Mutate in place; assigning a new array drops the renderer's tracking. */
   widgets?: IBaseWidget[]
+
+  private createWidgetsArray(): IBaseWidget[] {
+    const widgets = shallowReactive<IBaseWidget[]>([])
+    watch(widgets, () => this.syncWidgetOrder(widgets))
+    return widgets
+  }
+
+  private syncWidgetOrder(widgets: readonly IBaseWidget[]): void {
+    const graphId = this.graph?.rootGraph.id
+    if (!graphId) return
+
+    const widgetValueStore = useWidgetValueStore()
+    const widgetIds = getWidgetIds(widgets)
+    const liveWidgetIds = new Set(widgetIds)
+    for (const widgetId of widgetValueStore.getNodeWidgetIds(
+      graphId,
+      this.id
+    )) {
+      if (!liveWidgetIds.has(widgetId))
+        widgetValueStore.removeNodeWidgetOrder(widgetId)
+    }
+    widgetValueStore.setNodeWidgetOrder(graphId, this.id, widgetIds)
+  }
 
   /**
    * The amount of space available for widgets to grow into.
@@ -2192,7 +2215,7 @@ export class LGraphNode
     callback: IBaseWidget['callback'] | string | null,
     options?: IWidgetOptions | string
   ): WidgetTypeMap[Type] | IBaseWidget {
-    this.widgets ||= shallowReactive([])
+    this.widgets ||= this.createWidgetsArray()
 
     if (!options && callback && typeof callback === 'object') {
       options = callback
@@ -2240,7 +2263,7 @@ export class LGraphNode
   addCustomWidget<TPlainWidget extends IBaseWidget>(
     custom_widget: TPlainWidget
   ): TPlainWidget | WidgetTypeMap[TPlainWidget['type']] {
-    this.widgets ||= shallowReactive([])
+    this.widgets ||= this.createWidgetsArray()
     const widget = toConcreteWidget(custom_widget, this, false) ?? custom_widget
     this.widgets.push(widget)
     this._widgetSlotsDirty = true
