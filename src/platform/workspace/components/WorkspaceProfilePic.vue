@@ -1,10 +1,7 @@
 <template>
   <div
     class="flex aspect-square size-8 items-center justify-center rounded-md text-base font-semibold text-white"
-    :style="{
-      backgroundColor,
-      textShadow: '0 1px 2px rgba(0, 0, 0, 0.2)'
-    }"
+    :style="{ backgroundColor }"
   >
     {{ letter }}
   </div>
