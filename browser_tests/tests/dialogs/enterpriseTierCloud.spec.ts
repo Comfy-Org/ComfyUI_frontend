@@ -33,7 +33,7 @@ const CANCELLED_ACTIVE_ENTERPRISE_STATUS = {
   subscription_status: 'canceled'
 } satisfies BillingStatusResponse
 
-const UNKNOWN_TIER_STATUS = {
+const ACTIVE_UNRECOGNIZED_TIER_STATUS = {
   ...TEAM_BILLING_STATUS,
   subscription_tier: 'FUTURE_TIER',
   plan_slug: 'future-tier-monthly'
@@ -179,27 +179,6 @@ test.describe('Enterprise workspace billing', { tag: '@cloud' }, () => {
       page.getByRole('heading', { name: 'Choose a Plan' })
     ).toHaveCount(0)
   })
-
-  test('renders an unknown future tier without crashing', async ({ page }) => {
-    const pageErrors: string[] = []
-    page.on('pageerror', (error) => pageErrors.push(error.message))
-
-    const workspace = await setupWorkspace(page, TEAM_BILLING_STATUS)
-    await page.route('**/api/billing/status', (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(UNKNOWN_TIER_STATUS)
-      })
-    )
-    const content = await workspace.openWorkspaceSettings()
-
-    await expect(content.getByText('Total credits')).toBeVisible()
-    await expect(
-      content.getByRole('button', { name: 'Add credits' })
-    ).toBeVisible()
-    expect(pageErrors).toEqual([])
-  })
 })
 
 test.describe('Non-Enterprise billing regression', { tag: '@cloud' }, () => {
@@ -237,5 +216,32 @@ test.describe('Non-Enterprise billing regression', { tag: '@cloud' }, () => {
         .getByTestId('current-user-popover')
         .getByTestId('plans-pricing-menu-item')
     ).toBeVisible()
+  })
+})
+
+test.describe('Unrecognized billing tier regression', { tag: '@cloud' }, () => {
+  test.describe.configure({ timeout: 60_000 })
+
+  test('keeps an active subscription usable when its tier is unrecognized', async ({
+    page
+  }) => {
+    const pageErrors: string[] = []
+    page.on('pageerror', (error) => pageErrors.push(error.message))
+
+    const workspace = await setupWorkspace(page, TEAM_BILLING_STATUS)
+    await page.route('**/api/billing/status', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(ACTIVE_UNRECOGNIZED_TIER_STATUS)
+      })
+    )
+    const content = await workspace.openWorkspaceSettings()
+
+    await expect(content.getByText('Total credits')).toBeVisible()
+    await expect(
+      content.getByRole('button', { name: 'Add credits' })
+    ).toBeVisible()
+    expect(pageErrors).toEqual([])
   })
 })
