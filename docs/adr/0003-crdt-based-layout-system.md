@@ -6,6 +6,8 @@ Date: 2025-08-27
 
 Proposed
 
+Implementation status: Partial
+
 ## Context
 
 ComfyUI's node graph editor currently suffers from fundamental architectural limitations around spatial data management that prevent us from achieving key product goals.
@@ -43,8 +45,12 @@ We will implement a centralized layout management system using CRDT (Conflict-fr
 
 This solution applies proven centralized state management patterns:
 
-- **Centralized Store**: All spatial data (position, size, bounds, transform) managed in a single CRDT-backed store
-- **Command Interface**: All mutations flow through explicit commands rather than direct property access
+- **Centralized Store**: Durable entity geometry (requested position, size,
+  bounds, and z-order) is managed in one CRDT-backed store; transient renderer
+  measurements remain local projections as clarified by later amendments.
+- **Command Interface**: Durable entity-geometry mutations flow through explicit
+  operations rather than direct property access. This is not a claim that every
+  graph-domain mutation is command-driven.
 - **Observer Pattern**: Independent systems (rendering, interaction, layout) subscribe to state changes
 - **Domain Separation**: Layout logic completely separated from rendering and UI concerns
 
@@ -56,7 +62,7 @@ This provides single source of truth, predictable state updates, and natural sys
 
    ```typescript
    // Instead of: node.position = {x, y}
-   layoutStore.moveNode(nodeId, { x, y })
+   useLayoutMutations(source).moveNode(rootGraphId, nodeId, { x, y })
    ```
 
 2. **Command Pattern**: All spatial mutations flow through explicit commands:
@@ -151,9 +157,10 @@ history promised above is struck, and the Yjs document runs with the default
 Transmission stays a capability of the document rather than of the store:
 `applyUpdate` / `getStateAsUpdate` were removed as callerless (see
 [Removed CRDT sync seam](../architecture/ecs/ecs-migration-plan.md)) and are a few
-lines against `this.ydoc` to reinstate. `LayoutOperation` is still the
-serializable command shape every mutation goes through. Producers supply the
-operation source; the store stamps its session actor at submission.
+lines against `this.ydoc` to reinstate. `LayoutOperation` is the serializable
+command shape for persistent node, group, and reroute geometry mutations.
+Transient renderer measurements remain outside that command stream. Producers
+supply the operation source; the store stamps its session actor at submission.
 
 Entity geometry registers and unregisters with the entity that owns it
 (`LGraph.add` / `LGraph.remove`) rather than being seeded per graph on renderer
@@ -172,9 +179,9 @@ it into the first through `batchUpdateNodeBounds`.
 
 A measurement is not a command. Replayed on a peer with different fonts, locale,
 browser, or installed custom-node versions it produces a different — and equally
-correct — answer, so it is neither deterministic nor meaningfully undoable. This
-is the contract in ADR 0008 that every mutation is supposed to satisfy, and the
-observer's write is the one place in the layout system that structurally cannot.
+correct — answer, so it is neither deterministic nor meaningfully undoable. The
+command contract applies to durable requested layout, not transient renderer
+measurement. Persisting the observer's write would violate that boundary.
 
 Three consequences follow, and they are the reason to act rather than to
 document and move on:

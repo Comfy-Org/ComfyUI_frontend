@@ -1,7 +1,7 @@
 # ECS migration verification audit (PR 14246)
 
 Status: Current implementation audit
-Verified: 2026-08-16 against PR 14246
+Verified: 2026-08-20 against `13a302eadda871b939b148ecb87e3d845ceefff2`
 Scope: Behavioral evidence added or materially changed by PR 14246
 
 Evidence is grouped by invariant rather than implementation unit. A `Strong`
@@ -10,6 +10,26 @@ boundaries, while `Partial` indicates a material gap.
 
 For the accuracy and status audit of the accompanying design records, see
 [ecs-documentation-audit.md](ecs-documentation-audit.md).
+
+## PR change coverage
+
+| Production change cluster                                 | Representative implementation                                                                | Behavioral evidence                                                                                                                                                 | Assessment                                              |
+| --------------------------------------------------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| Node shell and Vue lifecycle                              | `nodeDataStore`; `GraphCanvas`; removal of `useGraphNodeManager` and `useVueNodeLifecycle`   | store collision, lifecycle, registration, and renderer-toggle tests below                                                                                           | Strong                                                  |
+| Link/slot topology and dynamic slot reorder               | `linkStore`; `slotLinks`; `dynamicWidgets`; `replaceNodeInputs`                              | store collision, clipboard/insertion, link interaction, and slot realignment tests                                                                                  | Strong                                                  |
+| Reroute chain and floating links                          | `rerouteStore`; `Reroute`; floating-link interaction                                         | store, lifecycle, serialization, subgraph identity, and browser interaction tests                                                                                   | Strong                                                  |
+| Widget order, live adapters, and promotion                | `widgetValueStore`; `useProcessedWidgets`; promotion migration and error resolution          | widget/promotion tests below; explicit divergence and missing-media coverage remains required                                                                       | Good                                                    |
+| Promoted-widget panel behavior                            | `WidgetActions`; `SubgraphEditor` host promotion, interior-node favorites, boundary demotion | `WidgetActions.test.ts`; `SubgraphEditor.test.ts`                                                                                                                   | Good                                                    |
+| Layout and renderer switching                             | `layoutStore`; `graphLayoutAttachment`; `arrangeForLegacyRender`; `notifyLayoutChanges`      | renderer-toggle, subgraph layout, and geometry-view tests                                                                                                           | Good; legacy rearrangement remains a bridge             |
+| Minimap and graph consumers                               | unified `MinimapDataSource`; store-backed traversal, pricing, arrangement, and selection     | topology and renderer tests exercise inputs indirectly; no focused large-workflow minimap budget                                                                    | Partial                                                 |
+| First-run-tour role inference                             | virtual consumers are skipped while collecting producer input-name evidence                  | existing tests exclude virtual prompt/source candidates, but do not directly cover this changed branch                                                              | Partial; add a virtual-consumer evidence regression     |
+| First-run-tour coach target                               | root-scoped read-only layout lookup; no target for absent layout or changed graph            | `canvasCoachTarget.test.ts` covers absent layout, graph changes, movement, and disposal; it does not explicitly assert root ID lookup or absence of layout creation | Partial; add ownership-boundary assertions              |
+| Badges and error projections                              | `badgeSystem`; `nodeErrorState`; `useNodeErrorFlagSync`                                      | badge system, widget-error, promoted-error, and flag-sync tests                                                                                                     | Good                                                    |
+| Lifecycle events                                          | `node:added`, `node:before-removed`, `node:removed`; error and telemetry observers           | callback ordering and removal tests                                                                                                                                 | Good; extension corpus remains required                 |
+| Removed extension graph triggers                          | deletion of `node:slot-links:changed` and `node:slot-errors:changed` emitters/types          | internal consumers use store/error projections; no compatibility event exists                                                                                       | Partial; ecosystem usage requires measurement           |
+| Recursive identity, replacement, clipboard, and insertion | allocation/normalization, `replaceWithMapping`, workflow insertion                           | identity, replacement, clipboard, serialization, and browser tests below                                                                                            | Strong                                                  |
+| Allocation and widget compatibility shadows               | serialized `LGraph.state`; `widgets_values` / `widgets_values_named`                         | allocation, serialization, dynamic-widget, clipboard, and promotion tests                                                                                           | Partial; no command boundary or single widget authority |
+| Persistence and undo bridge                               | class serialization, store-backed topology, `ChangeTracker` snapshots                        | serialization tests are strong; mixed multi-store undo/redo remains partial                                                                                         | Partial                                                 |
 
 ## Evidence by invariant
 
@@ -153,6 +173,11 @@ Representative evidence:
   unrelated links and disconnects removed links.
 - `src/lib/litegraph/src/LGraph.inputSlotRealign.test.ts`: rejected aliases and
   slot movement realign registered topology.
+- `src/platform/workflow/core/utils/workflowToClipboardItems.test.ts` and
+  `workflowToClipboardItems.integration.test.ts`: recursive conversion,
+  flattening, and identity remapping without a temporary graph.
+- `src/platform/workflow/core/services/workflowService.insertWorkflow.test.ts`:
+  direct insertion preserves topology and subgraph definitions.
 - `browser_tests/tests/copyPaste.spec.ts`: pinned-node paste lands at the cursor.
 - `browser_tests/tests/vueNodes/interactions/links/linkInteraction.spec.ts`:
   floating-reroute interaction.
@@ -172,6 +197,24 @@ Representative evidence:
   overrides.
 - `src/renderer/extensions/vueNodes/composables/usePartitionedBadges.test.ts`
   and `src/lib/litegraph/src/nodeBadgeDraw.test.ts`: Vue and legacy projections.
+
+### Error projections: Good
+
+Invariant: Vue derives current host/source errors from authoritative error
+stores, while the legacy node flag remains only a synchronized canvas
+projection.
+
+Representative evidence:
+
+- `src/composables/graph/useNodeErrorFlagSync.test.ts`: node flag projection and
+  lifecycle cleanup.
+- `src/platform/missingMedia/missingMediaScan.promotedWidget.test.ts` and
+  `missingMediaStore.test.ts`: promoted source/host resolution and store state.
+- `src/platform/missingModel/missingModelStore.test.ts` and
+  `missingModelScan.test.ts`: locator-scoped missing-model state.
+- `browser_tests/tests/propertiesPanel/errorsTabMissingMedia.spec.ts`,
+  `errorsTabMissingModels.spec.ts`, and `errorsTabMissingNodes.spec.ts`:
+  browser-level error grouping and presentation.
 
 ### Performance: Partial
 
@@ -205,6 +248,10 @@ Representative evidence:
   drawing and serialization do not emit deprecation warnings.
 - `src/extensions/core/widgetInputs.test.ts`: stale extension-facing link state
   recovers through the graph/store boundary.
+- `src/lib/litegraph/src/LGraphNode.test.ts`: prototype enumeration and
+  deprecated `type` mutation behavior.
+- `src/lib/litegraph/src/nodeBadgeDraw.test.ts`: fixed top-right badge placement
+  and retained extension badge rows.
 
 ## Prioritized missing behavioral scenarios
 

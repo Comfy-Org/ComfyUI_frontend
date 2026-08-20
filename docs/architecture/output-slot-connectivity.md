@@ -13,10 +13,9 @@ the output-side counterpart to the input-side migration shipped in
 `SlotConnectionDot` show connected state and removes the last renderer
 dependency on `output.links[]`.
 
-This phase does not extract a Slot entity, add a store, or delete any
-mirror field. Those stay in the deferred `SlotConnection` phase. What it
-does is the smallest change that clears the reader debt and lets the
-output dot show connection state.
+This phase did not extract a Slot entity or add a store. It ultimately deleted
+the mutable connectivity mirrors while retaining deprecated, read-only
+compatibility accessors; Decision 6 records the shipped result.
 
 ## Motivation
 
@@ -45,7 +44,12 @@ This phase adds read-only accessors over state the store already holds.
 It needs no new plain-data component, registration trio, chokepoint, or
 class adoption, though each sibling store required all four.
 
-## Decision 2: Output connectivity is a derived reverse index
+## Historical decision 2: derive a reverse index
+
+This computed design was superseded. The current `originIndex` is a reactive
+secondary index maintained atomically with primary topology and target
+occupancy during registration, endpoint updates, and deletion.
+`getOutputSlotLinks` reads that index; floating links are not indexed.
 
 The store already exposes `graphTopologies(graphId)` over every
 registered `LinkTopology`. "Which links leave output slot _(node, slot)_"
@@ -103,7 +107,10 @@ Floating and fully-assigned links share one root-wide ID namespace and topology
 collection; endpoint state determines which compatibility view and indexes
 expose them.
 
-## Decision 4: Migrate readers incrementally, keep the mirror written by hand
+## Historical decision 4: migrate readers while writing the mirror
+
+This bridge was superseded by Decision 6. It is retained only to explain the
+incremental rollout.
 
 This follows the #13455 discipline for `input.link`: move the readers to
 the store, leave the field in place, and keep writing it at the
@@ -216,7 +223,7 @@ enumerate links → `outputLinks(graph, node.id, slot)` / `outputLinkIds`
 
 ## Scope
 
-In scope: the derived output-side index, the two queries, the output-dot
+In scope: the maintained output-side index, the two queries, the output-dot
 reader migration, and wiring `connected` from `NodeSlots` into
 `InputSlot` / `OutputSlot` (whose `lg-slot--connected` class reaches the
 dot via CSS).
@@ -235,14 +242,11 @@ Out of scope, each a piece of the deferred `SlotConnection` phase:
   nothing resolves store-returned ids against `graph.links` across the
   id spaces anymore.
 
-## Open questions
+## Historical open questions
 
-1. **Index granularity.** One `computed` per graph rebuilds the whole
-   origin index on any link change in that graph, the same cost model as
-   `rerouteStore`. If profiling on large graphs shows this is hot, the
-   fallback is an incrementally maintained `Map` updated in `place` and
-   `displace`, which is more code and carries drift risk. Start with the
-   derived version and measure before optimizing.
+1. **Index granularity. Resolved:** the store maintains `originIndex`
+   atomically with topology and target occupancy. The earlier one-computed-per-
+   graph design is retained above as historical context.
 2. **Return type of `getOutputSlotLinks`.** Resolved: a set of
    `LinkTopology`, per Decision 3. Bare ids looked sufficient until the
    reader migration surfaced both the endpoint needs (minimap, widget

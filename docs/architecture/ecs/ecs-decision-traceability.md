@@ -1,7 +1,7 @@
 # ECS decision traceability
 
 Status: Current implementation audit
-Verified: 2026-08-16 against PR 14246
+Verified: 2026-08-20 against `13a302eadda871b939b148ecb87e3d845ceefff2`
 
 This audit maps the implementation on `feature/ecs-migration` to the principles in
 [ADR 0003](../../adr/0003-crdt-based-layout-system.md) and

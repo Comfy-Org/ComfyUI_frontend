@@ -1,7 +1,10 @@
-# Node Badge Store
+# Node badge store, historical reversed design
 
 Date: 2026-07-05 (updated 2026-07-15)
-Status: Superseded on this branch by a derive-on-read prototype — see
+Status: Historical: reversed
+Current result: no badge store; `nodeBadges()` derives `BadgeData` on read.
+
+Superseded on this branch by a derive-on-read prototype — see
 [Prototype: derive-on-read](#prototype-derive-on-read-2026-07-15) below.
 Slices A and B shipped as described; the prototype then removed the
 store. Follow-up to the
@@ -181,10 +184,10 @@ Frame-budget parity per ADR 0008's render mitigations applies.
    renderers append it after the store rows — thunks still evaluate per
    frame in the legacy canvas. The earlier "zero third-party writers"
    scan was wrong.
-2. **`node.badgePosition` — deleted**, along with the `BadgePosition`
-   enum. Zero uses outside this repo; the legacy canvas now always
-   renders badges top-right (the only surviving behaviour). A no-op
-   deprecated accessor remains and warns on access.
+2. **Configurable `node.badgePosition` behavior was removed**, along with the
+   `BadgePosition` enum. Zero uses outside this repo; the legacy canvas now
+   always renders badges top-right. A deprecated no-op accessor remains and
+   warns on access.
 3. **Subgraph credits aggregation triggers — event-bumped revision.**
    `litegraph:set-graph`, `subgraph-converted`, and
    `afterConfigureGraph` bump `bumpSubgraphCreditsRevision()`; swap to

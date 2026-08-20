@@ -1,7 +1,7 @@
 # ECS migration summary
 
 Status: Partial
-Verified: 2026-08-16 against PR 14246
+Verified: 2026-08-20 against `13a302eadda871b939b148ecb87e3d845ceefff2`
 
 The graph architecture is moving state and behavior out of LiteGraph classes
 and into dedicated Pinia stores and focused systems. PR 14246 establishes the

@@ -97,9 +97,10 @@ queries — presence is all any of them needed — which deletes the
 `useGraphNodeManager`, the dead `node:slot-errors:changed` handler
 (zero emitters repo-wide), and the node-removal refresh-all loop.
 With their last listeners gone, both trigger actions are deleted
-outright — emitters, event-map entries, and types (the badge system
-sources connectivity from `linkStore`, not events; resurrect from git
-if a consumer ever materialises). Readers get the root graph id from
+outright — emitters, event-map entries, and types. This is an extension-facing
+change: connectivity observers must use reactive `linkStore`/`slotLinks`
+queries or `onConnectionsChange`; error observers must use the dedicated error
+stores or `nodeErrorState`. Readers get the root graph id from
 `canvasStore.rootGraphId`, the shared tracked accessor, rather than
 per-site `canvas?.graph?.rootGraph.id` chains.
 Shipped ahead of the store itself (2026-07-05).
@@ -138,10 +139,9 @@ Follows the shipped trio convention (`LLink` / `Reroute`):
   read of the store's `NodeState`. The one measured tight loop that reads
   `id` per node — `LGraph.computeExecutionOrder` — hoists it to a local
   once per iteration.
-  `LGraphNodeProperties`' instrumented descriptors keep their
-  get/set + `node:property:changed` emission but store the value in
-  `_state` instead of a closure — trigger consumers (minimap,
-  `useErrorClearingHooks`) keep working unchanged.
+  The former `LGraphNodeProperties` own-property instrumentation was deleted.
+  Internal observers use typed graph lifecycle events or reactive store reads
+  instead of descriptor-triggered shell snapshots.
 - `serialize()` / `toJSON` are unaffected: they read each field through
   its accessor, so the wire format is identical. Raw enumeration is not —
   see Decision 7.
@@ -196,18 +196,13 @@ extension authors:
 - **Raw enumeration no longer carries these fields.** They are prototype
   accessors, not own properties, so for a non-instrumented node
   `Object.keys(node)`, `{ ...node }`, `Object.assign({}, node)`, and
-  `JSON.stringify(node)` do not include them. (`LGraphNodeProperties`
-  instruments `title` / `mode` / `color` / `bgcolor` / `showAdvanced`
-  with own enumerable accessors, so those reappear on instrumented
-  nodes — do not rely on either behavior.) To snapshot shell state, read
+  `JSON.stringify(node)` do not include them. To snapshot shell state, read
   the node's accessors or the registered `NodeState` from
   `useNodeDataStore().getNode(rootGraphId, id)`, not a spread of the node.
-- **`type` is now read-only.** It is a getter with no setter on every
-  node class; assigning `node.type = …` fails type-checking and throws in
-  strict mode. `type` is fixed at construction (`LiteGraph.createNode` /
-  the `LGraphNode(title, type)` constructor); deserialization sets it via
-  `configure`. Extensions that need a different type should create the
-  correct node rather than mutating an existing one.
+- **`type` mutation is deprecated.** The compatibility setter warns and updates
+  the store-backed state. New code should treat type as fixed at construction
+  (`LiteGraph.createNode` / `LGraphNode(title, type)`) and create the correct
+  node instead of mutating an existing one.
 
 `inputs` and `outputs` became prototype accessors in the same way
 (Decision 3), with the same enumeration consequence: they are absent from

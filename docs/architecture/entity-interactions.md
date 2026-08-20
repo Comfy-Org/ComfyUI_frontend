@@ -282,9 +282,9 @@ stateDiagram-v2
         new LLink(id, type, origin, slot, target, slot)
         _addLink sets graph._links entry and
         registers topology in linkStore
-        (keyed by target input slot).
-        Output slot.links[] updated.
-        Input slot.link set.
+        (keyed by root-wide LinkId).
+        Target/origin indexes expose slot connectivity;
+        deprecated slot accessors derive from the store.
     end note
 
     note right of Removed
@@ -408,7 +408,7 @@ lastRerouteId, lastGroupId)"]
     %% LinkStore
     Graph -->|"_addLink()/_removeLink() register/unregister"| LKS
     Link <-->|"_state IS the store entry (endpoint accessors)"| LKS
-    LKS -.->|"keyed by rootGraphId + targetNodeId:targetSlot"| Link
+    LKS -.->|"root bucket + LinkId; owner-qualified endpoint indexes"| Link
 
     %% RerouteStore
     Graph -->|"_addReroute()/_removeReroute()"| RRS

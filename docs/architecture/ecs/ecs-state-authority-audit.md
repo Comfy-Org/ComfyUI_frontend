@@ -1,7 +1,7 @@
 # ECS state authority audit
 
 Status: Current implementation audit
-Verified: 2026-08-16 against PR 14246
+Verified: 2026-08-20 against `13a302eadda871b939b148ecb87e3d845ceefff2`
 
 This audit records state ownership on `feature/ecs-migration`. It distinguishes
 authoritative records from compatibility accessors, derived projections, and
@@ -29,7 +29,8 @@ target.
 - **Lifecycle:** `LGraph.add` registers; `LGraph.remove`, `clearOwner`, and
   `clearGraph` unregister with raw-identity checks.
 - **Risks:** `LGraphNode` still owns substantial non-shell state and behavior;
-  accessor fields differ from old enumerable own properties.
+  `boxcolor` is durable serialized render state outside `NodeState`; accessor
+  fields differ from old enumerable own properties.
 - **Desired endpoint:** store-owned plain node data, with class accessors only
   as an explicitly supported extension adapter until callers migrate.
 
@@ -93,16 +94,20 @@ target.
   buckets.
 - **Compatibility view/mirror:** `BaseWidget` adopts store state, while
   `LGraphNode.widgets` remains the ordered live widget-object collection used
-  by legacy drawing and extension APIs. **This is dual representation:** store
-  order and class array order require reconciliation.
+  by legacy drawing and extension APIs. `node.widgets_values` and
+  `widgets_values_named` remain delayed-load/wire compatibility shadows and are
+  still mutated by some production consumers. **This is triple
+  representation:** store state/order, live widget objects, and serialized
+  arrays/maps require reconciliation.
 - **Reads:** store getters power Vue/UI/pricing paths; legacy renderer,
   serialization, and extensions read widget instances and `node.widgets`.
 - **Writes:** `registerWidget`, `setValue`, `setNodeWidgetOrder`, deletion, and
   legacy widget/class APIs.
 - **Lifecycle:** widget construction/attachment registers; removal unregisters;
   graph teardown calls `clearGraph`.
-- **Risks:** renames and reordering can diverge across the store order and
-  object array; promoted widgets have host-boundary identity rules.
+- **Risks:** values, renames, and reordering can diverge across store state,
+  object arrays, and serialized shadows; promoted widgets have host-boundary
+  identity rules.
 - **Desired endpoint:** store values/render metadata/order are canonical;
   widget instances become behavior adapters assembled from that order.
 
@@ -158,6 +163,120 @@ target.
 - **Desired endpoint:** one explicit lifecycle coordinator maintains graph
   instances as compatibility shells while stores own domain data.
 
+### ID allocation state
+
+- **Authority:** serialized `LGraph.state` owns mutable node, link, group, and
+  reroute allocation counters shared through the root graph.
+- **Reads and persistence:** mint/observe helpers mutate ambient counters;
+  configure restores them and graph serialization emits them. Compatibility
+  setters and clipboard/import paths can assign or increment them directly.
+- **Risk:** future durable identity depends on mutable class state outside a
+  store or command. Replay and duplicate delivery can allocate different IDs
+  unless assigned IDs are already recorded in the operation.
+- **Desired endpoint:** workflow identity ownership behind one mutation
+  boundary; creation and import commands carry deterministic assigned IDs.
+
+### Durable graph and subgraph definitions
+
+- **Authority:** `LGraph` owns ordered node/group membership, graph metadata,
+  `config`, `extra`, `revision`, and the subgraph registry. `Subgraph` owns durable name,
+  description, and ordered input/output/widget definitions.
+- **Reads and persistence:** graph algorithms and renderers traverse live
+  collections; `LGraph.asSerialisable` and subgraph serialization walk those
+  objects directly.
+- **Writes:** graph and subgraph methods mutate live arrays, maps, and metadata.
+  There is no plain store record or serializable mutation boundary for these
+  concerns.
+- **Risk:** these classes are authorities, not only compatibility shells. The
+  workflow cannot yet be reconstructed or serialized from dedicated stores.
+- **Desired endpoint:** store-owned plain graph-definition records with live
+  collections retained as runtime adapters.
+
+### Graph invalidation revision
+
+- **Authority:** mutable `LGraph._version` is incremented directly from graph,
+  node, canvas, widget, slot, and subgraph mutation paths.
+- **Risk:** invalidation is neither derived from authoritative store revisions
+  nor emitted once at a committed workflow transaction boundary. Callers can
+  miss, duplicate, or expose intermediate increments.
+- **Desired endpoint:** derive concern revisions or emit one workflow revision
+  after a successful mutation batch; retain `_version` only as a compatibility
+  projection.
+
+### Extension-controlled persistence hooks
+
+- **Authority channel:** `LGraphNode.onSerialize` and `LGraph.onSerialize` can
+  mutate complete node and workflow DTOs after canonical fields are assembled.
+  Generic node configuration copies almost every serialized field onto the live
+  class before `node.onConfigure`; graph configuration similarly exposes the
+  input workflow and later invokes `graph.onConfigure`.
+- **Risk:** these are unbounded durable mutation channels. Extensions can
+  replace store-backed fields without a schema, ownership checks, validation,
+  deterministic replay, transaction integration, or defined undo behavior.
+- **Desired endpoint:** keep compatibility at a controlled serialization
+  adapter, isolate namespaced extension payloads as validated copied plain data,
+  and prevent hooks from mutating canonical workflow fields. Extension payload
+  changes must have an explicit command/replay/undo contract.
+
+### Unknown-node fallback records
+
+- **Authority:** when a node type cannot be instantiated, the live node's
+  `last_serialization` retains the complete opaque serialized record.
+- **Reads and persistence:** `LGraphNode.serialize` returns this record instead
+  of serializing current store-backed shell, slot, widget, and render state.
+- **Writes:** workflow load, subgraph unpack, and API loading assign or patch
+  the class field directly.
+- **Risk:** one class-owned shadow record can override every migrated component
+  at save time and lacks store ownership, scoped cleanup, or a command boundary.
+- **Desired endpoint:** a scoped opaque serialized-node component with explicit
+  ID remapping, replacement transfer, mutation, and teardown; keep the class
+  field only as a facade.
+
+### Execution order
+
+- **Authority:** `computeExecutionOrder` derives scheduling order from topology
+  and writes `LGraphNode.order`; configure also restores serialized `order`, and
+  serialization emits it again.
+- **Risk:** nominally derived scheduling data can behave as independently
+  durable class state and bypass topology-derived recomputation.
+- **Desired endpoint:** classify order as a derived projection. Either discard
+  loaded values and recompute, or retain them only as explicit wire
+  compatibility without a public mutation channel.
+
+## Execution output and preview state
+
+- **Authority:** `app.nodeOutputs` and `app.nodePreviewImages` remain legacy
+  authorities mirrored by `nodeOutputStore`; some load paths assign the app
+  maps directly. Legacy rendering also projects output into `node.imgs`,
+  `node.images`, and `node.imageIndex`.
+- **Reads:** Vue/store consumers use store getters, while legacy and loading
+  paths still read or write the app and node fields.
+- **Writes:** store actions update both Pinia refs and app maps; job loading can
+  bypass the store.
+- **Risk:** direct legacy writes can leave store consumers stale, so output and
+  preview rendering do not yet have one authority.
+- **Desired endpoint:** canonical output and preview maps in
+  `nodeOutputStore`, with app and node fields as compatibility projections.
+
+## Renderer projections still backed by live objects
+
+- **Node order:** layout owns `zIndex`, while legacy drawing also depends on
+  `LGraph._nodes` order. `bringToFront` updates both; `sendToBack` updates only
+  the legacy array. Renderer switching sorts the array from layout state.
+- **Minimap:** topology is owner-filtered from `linkStore`, but geometry comes
+  through live node/group facades and execution state uses definition
+  locators. The former renderer-specific minimap data-source split is removed.
+- **Widgets:** Vue starts from store-owned `WidgetId[]` order, filters against
+  live `node.widgets`, reconstructs connection metadata from `linkStore`, and
+  invokes live widget callbacks as behavior adapters.
+- **Errors:** Vue derives node and widget errors from error stores, including
+  promoted-widget and container resolution. `node.has_errors` is an untracked
+  legacy-canvas projection synchronized by app hooks.
+- **Risk:** z-order is a true competing rendering authority; widget existence,
+  schema, callbacks, and legacy error flags remain class-side bridge inputs.
+- **Desired endpoint:** render snapshots from store-owned durable data, with
+  live callbacks isolated to explicit interaction and extension adapters.
+
 ## Transient view geometry
 
 - **Authority:** `layoutStore` plain maps and spatial indexes own link paths,
@@ -181,14 +300,26 @@ target.
 
 1. Node, link, and reroute class fields generally share store proxies and are
    compatibility views, not duplicate state.
-2. Widget store order and `LGraphNode.widgets` are genuine dual
-   representations during migration.
+2. Widget store state/order, `LGraphNode.widgets`, and serialized
+   `widgets_values` shadows are genuine competing representations during
+   migration.
 3. Slot data/order remains class-array authority while slot connectivity is
    separately authoritative in `linkStore`.
 4. `LGraph` object registries and dedicated plain-data stores coexist and rely
    on graph lifecycle chokepoints.
-5. Durable entity geometry is Yjs-backed; link/slot/hit-test geometry is a
-   separate transient cache, not durable authority.
+5. `boxcolor` remains class-owned durable node visual state.
+6. Graph invalidation `_version` and durable graph metadata remain directly
+   class-owned.
+7. Serialized allocation counters remain mutable class-owned workflow state.
+8. Unknown-node `last_serialization` can shadow the complete store-backed node
+   record during persistence.
+9. Execution order is topology-derived but also class-owned and persisted.
+10. Output and preview maps are mirrored between `nodeOutputStore` and legacy
+    app/node fields.
+11. Node z-order and legacy `_nodes` ordering can independently affect visible
+    stacking.
+12. Durable entity geometry is Yjs-backed; link/slot/hit-test geometry is a
+    separate transient cache, not durable authority.
 
 Related design documents are [Node Data Store](../node-data-store.md),
 [Link Topology Store](../link-topology-store.md),
