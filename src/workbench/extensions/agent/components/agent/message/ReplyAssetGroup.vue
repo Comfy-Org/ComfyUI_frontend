@@ -60,8 +60,15 @@ watch(
     for (const { url, filename, kind } of lookups) {
       if (kind === '3D' && !(url in modelThumbnails.value)) {
         modelThumbnails.value[url] = ''
-        void findServerPreviewUrl(filename).then((preview) => {
-          if (preview) modelThumbnails.value[url] = preview
+        void findServerPreviewUrl(filename).then(async (preview) => {
+          if (preview) {
+            modelThumbnails.value[url] = preview
+            return
+          }
+          const { generateModelThumbnail } =
+            await import('@/components/load3d/modelThumbnail')
+          const generated = await generateModelThumbnail(url, filename)
+          if (generated) modelThumbnails.value[url] = generated
         })
       }
       if (!(url in assetNames.value)) {
@@ -84,6 +91,17 @@ const MediaLightbox = defineAsyncComponent(
   () => import('@/components/sidebar/tabs/queue/MediaLightbox.vue')
 )
 
+function refreshModelThumbnail(asset: ReplyAsset, retry = true): void {
+  if (!isAssetPreviewSupported() || modelThumbnails.value[asset.url]) return
+  void findServerPreviewUrl(asset.filename).then((preview) => {
+    if (preview) {
+      modelThumbnails.value[asset.url] = preview
+    } else if (retry) {
+      setTimeout(() => refreshModelThumbnail(asset, false), 2000)
+    }
+  })
+}
+
 function inspect(asset: ReplyAsset): void {
   if (asset.kind === '3D') {
     useDialogStore().showDialog({
@@ -95,7 +113,8 @@ function inspect(asset: ReplyAsset): void {
         renderer: 'reka',
         size: 'full',
         contentClass: 'left-1/2 w-[80vw] sm:max-w-[80vw] h-[80vh] max-h-[80vh]',
-        maximizable: true
+        maximizable: true,
+        onClose: () => refreshModelThumbnail(asset)
       }
     })
     return

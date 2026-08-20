@@ -25,6 +25,13 @@ vi.mock('@/platform/assets/utils/assetPreviewUtil', () => ({
   findOutputAsset
 }))
 
+const generateModelThumbnail = vi.hoisted(() =>
+  vi.fn(async (): Promise<string | null> => null)
+)
+vi.mock('@/components/load3d/modelThumbnail', () => ({
+  generateModelThumbnail
+}))
+
 const image = (n: number): ReplyAsset => ({
   url: `https://x/i${n}.png`,
   filename: `i${n}.png`,
@@ -77,6 +84,7 @@ describe('ReplyAssetGroup', () => {
     isAssetPreviewSupported.mockReset().mockReturnValue(false)
     findServerPreviewUrl.mockReset().mockResolvedValue(null)
     findOutputAsset.mockReset().mockResolvedValue(undefined)
+    generateModelThumbnail.mockReset().mockResolvedValue(null)
   })
 
   it('renders image and video previews inline', () => {
@@ -177,6 +185,33 @@ describe('ReplyAssetGroup', () => {
     expect(await screen.findByText('qa_audio_opus_00001')).toBeInTheDocument()
     expect(findOutputAsset).toHaveBeenCalledWith('song.mp3')
     expect(screen.queryByText('song.mp3')).not.toBeInTheDocument()
+  })
+
+  it('generates a thumbnail offscreen when the server has none', async () => {
+    isAssetPreviewSupported.mockReturnValue(true)
+    generateModelThumbnail.mockResolvedValue('data:image/png;base64,gen')
+    renderGroup([model])
+
+    const thumb = await screen.findByRole('img', { name: 'mesh.glb' })
+    expect(thumb).toHaveAttribute('src', 'data:image/png;base64,gen')
+    expect(generateModelThumbnail).toHaveBeenCalledWith(
+      'https://x/mesh.glb',
+      'mesh.glb'
+    )
+  })
+
+  it('refreshes the tile thumbnail after the viewer closes', async () => {
+    isAssetPreviewSupported.mockReturnValue(true)
+    renderGroup([model])
+    await waitFor(() => expect(findServerPreviewUrl).toHaveBeenCalled())
+    await userEvent.click(screen.getByRole('button', { name: 'mesh.glb' }))
+
+    findServerPreviewUrl.mockResolvedValue('https://x/mesh_preview.png')
+    const dialog = showDialog.mock.calls.at(-1)?.[0]
+    dialog.dialogComponentProps.onClose()
+
+    const thumb = await screen.findByRole('img', { name: 'mesh.glb' })
+    expect(thumb).toHaveAttribute('src', 'https://x/mesh_preview.png')
   })
 
   it('titles the 3D viewer with the resolved asset name', async () => {
