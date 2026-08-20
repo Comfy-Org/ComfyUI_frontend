@@ -2623,6 +2623,23 @@
     },
     "personalDataConsentRequired": "You must agree to the processing of your personal data."
   },
+  "settingsPlans": {
+    "title": "Plans",
+    "subtitle": "Plans run on Comfy Cloud and their credits work on this install too.",
+    "personal": "Personal",
+    "teams": "Teams",
+    "billedYearlyToggle": "Billed yearly",
+    "creditsAYear": "{credits} credits a year",
+    "creditsAMonth": "{credits} credits a month",
+    "perDollar": "{credits} per dollar",
+    "choosePlan": "Choose {tier}",
+    "creditsPerMonth": "{credits} credits per month",
+    "comingSharedWorkflows": "Shared workflows & assets",
+    "comingProjects": "Projects",
+    "enterpriseCopy": "Need more members? Looking for more flexibility or custom features?",
+    "contactUs": "Contact us",
+    "checkoutCaption": "Checkout happens right here: payment details handled securely by Stripe. Prefer no plan? Keep topping up, anytime."
+  },
   "credits": {
     "activity": "Activity",
     "workspaceCredits": "Workspace credits",
