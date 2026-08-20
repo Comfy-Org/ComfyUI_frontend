@@ -17,6 +17,7 @@ import LayoutDefault from '@/views/layouts/LayoutDefault.vue'
 
 import { captureOAuthRequestId } from '@/platform/cloud/oauth/oauthState'
 import { installDesktopLoginRedemption } from '@/platform/cloud/onboarding/desktopLoginRedemption'
+import { resolveUnauthenticatedRedirectName } from '@/platform/cloud/onboarding/utils/inviteRedirect'
 import { installPreservedQueryTracker } from '@/platform/navigation/preservedQueryTracker'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { preserveLoggedOutShareAuthAttribution } from '@/platform/workflow/sharing/utils/shareAuthAttribution'
@@ -216,7 +217,7 @@ if (isCloud) {
     // Check if route requires authentication
     if (to.meta.requiresAuth && !isLoggedIn) {
       return next({
-        name: 'cloud-login',
+        name: resolveUnauthenticatedRedirectName(to.query),
         query
       })
     }
@@ -230,9 +231,9 @@ if (isCloud) {
         return loginSuccess ? next() : next(false)
       }
 
-      // For web, redirect to login
+      // For web, redirect to login (or signup when an invite is in flight)
       return next({
-        name: 'cloud-login',
+        name: resolveUnauthenticatedRedirectName(to.query),
         query
       })
     }
