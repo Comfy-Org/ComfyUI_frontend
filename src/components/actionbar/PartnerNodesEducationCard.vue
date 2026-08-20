@@ -203,8 +203,10 @@ interface ComparisonRow {
   partner: boolean
 }
 
-const OPEN_SOURCE_MODEL_VIDEO = '/assets/videos/ltx-open.mp4'
-const PARTNER_MODEL_VIDEO = '/assets/videos/ltx-partner.mp4'
+const OPEN_SOURCE_MODEL_VIDEO =
+  'https://media.comfy.org/website/partner-nodes/ltx-open-1280.webm'
+const PARTNER_MODEL_VIDEO =
+  'https://media.comfy.org/website/partner-nodes/ltx-partner-1280.webm'
 
 const comparisonRows: ComparisonRow[] = [
   { key: 'noDownload', open: false, partner: true },
