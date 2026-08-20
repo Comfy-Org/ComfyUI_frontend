@@ -31,7 +31,7 @@ test('@vue-nodes In App Mode, widget width updates with panel size', async ({
   const getWidgetWidth = () =>
     comfyPage.page.evaluate((nodeId) => {
       const widget = window
-        .app!.canvas.graph?.getNodeById(nodeId)
+        .app!.rootGraph.getNodeById(nodeId)
         ?.widgets?.find((widget) => widget.name === 'legacy_widget')
       return widget?.width ?? 0
     }, legacyNodeId)
