@@ -24,25 +24,28 @@ async function renderThumbnail(
   modelUrl: string,
   assetName: string
 ): Promise<string | null> {
-  const { createLoad3d } = await import('@/extensions/core/load3d/createLoad3d')
-  const load3d = createLoad3d(document.createElement('div'), {
-    width: 256,
-    height: 256,
-    isViewerMode: true
-  })
   try {
-    await load3d.loadModel(modelUrl)
-    const dataUrl = await load3d.captureThumbnail(256, 256)
-    if (isAssetPreviewSupported()) {
-      void fetch(dataUrl)
-        .then((response) => response.blob())
-        .then((blob) => persistThumbnail(assetName, blob))
-        .catch(() => {})
+    const { createLoad3d } =
+      await import('@/extensions/core/load3d/createLoad3d')
+    const load3d = createLoad3d(document.createElement('div'), {
+      width: 256,
+      height: 256,
+      isViewerMode: true
+    })
+    try {
+      await load3d.loadModel(modelUrl)
+      const dataUrl = await load3d.captureThumbnail(256, 256)
+      if (isAssetPreviewSupported()) {
+        void fetch(dataUrl)
+          .then((response) => response.blob())
+          .then((blob) => persistThumbnail(assetName, blob))
+          .catch(() => {})
+      }
+      return dataUrl
+    } finally {
+      load3d.remove()
     }
-    return dataUrl
   } catch {
     return null
-  } finally {
-    load3d.remove()
   }
 }
