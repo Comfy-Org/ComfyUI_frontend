@@ -11,9 +11,8 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
-import { api } from '@/scripts/api'
-import { downloadBlob } from '@/base/common/downloadUtil'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
+import { downloadReplyAsset } from '../../../utils/downloadReplyAsset'
 import type { ReplyAsset } from '../../../utils/replyAssets'
 import AgentTooltip from '../AgentTooltip.vue'
 
@@ -49,13 +48,7 @@ async function downloadAssets(): Promise<void> {
   try {
     for (const asset of assets) {
       try {
-        const apiBase = api.apiURL('/')
-        const route = asset.url.includes(apiBase)
-          ? asset.url.slice(asset.url.indexOf(apiBase) + api.apiURL('').length)
-          : asset.url
-        const response = await api.fetchApi(route)
-        if (!response.ok) continue
-        downloadBlob(asset.filename, await response.blob())
+        await downloadReplyAsset(asset)
       } catch {
         continue
       }

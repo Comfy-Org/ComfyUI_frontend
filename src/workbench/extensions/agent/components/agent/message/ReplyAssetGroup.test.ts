@@ -64,9 +64,10 @@ function renderGroup(assets: ReplyAsset[]) {
           template:
             '<div data-testid="lightbox" :data-active="activeIndex" :data-count="allGalleryItems.length" />'
         },
-        WaveAudioPlayer: {
-          props: ['src'],
-          template: '<div data-testid="audio-player" :data-src="src" />'
+        ReplyAudioCard: {
+          props: ['asset', 'title'],
+          template:
+            '<div data-testid="audio-card" :data-title="title" :data-src="asset.url" />'
         }
       }
     }
@@ -124,14 +125,28 @@ describe('ReplyAssetGroup', () => {
     pause.mockRestore()
   })
 
-  it('renders audio as non-clickable rows with file name and player', () => {
+  it('renders an audio card per audio asset outside the visual grid', () => {
     renderGroup([audio])
 
-    expect(screen.getByText('song.mp3')).toBeInTheDocument()
-    expect(screen.getByTestId('audio-player').dataset.src).toBe(
-      'https://x/song.mp3'
-    )
+    const card = screen.getByTestId('audio-card')
+    expect(card.dataset.src).toBe('https://x/song.mp3')
+    expect(card.dataset.title).toBe('song.mp3')
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
+  })
+
+  it('collapses long audio lists behind Show more', async () => {
+    renderGroup(
+      Array.from({ length: 6 }, (_, n) => ({
+        ...audio,
+        url: `https://x/song${n}.mp3`,
+        filename: `song${n}.mp3`
+      }))
+    )
+
+    expect(screen.getAllByTestId('audio-card')).toHaveLength(5)
+
+    await userEvent.click(screen.getByRole('button'))
+    expect(screen.getAllByTestId('audio-card')).toHaveLength(6)
   })
 
   it('opens the 3D viewer dialog instead of the lightbox', async () => {
@@ -177,14 +192,17 @@ describe('ReplyAssetGroup', () => {
     expect(findOutputAsset).not.toHaveBeenCalled()
   })
 
-  it('shows the resolved asset name on audio rows, falling back to filename', async () => {
+  it('titles audio cards with the resolved asset name, falling back to filename', async () => {
     isAssetPreviewSupported.mockReturnValue(true)
     findOutputAsset.mockResolvedValue({ name: 'qa_audio_opus_00001' })
     renderGroup([audio])
 
-    expect(await screen.findByText('qa_audio_opus_00001')).toBeInTheDocument()
+    await waitFor(() =>
+      expect(screen.getByTestId('audio-card').dataset.title).toBe(
+        'qa_audio_opus_00001'
+      )
+    )
     expect(findOutputAsset).toHaveBeenCalledWith('song.mp3')
-    expect(screen.queryByText('song.mp3')).not.toBeInTheDocument()
   })
 
   it('generates a thumbnail offscreen when the server has none', async () => {
