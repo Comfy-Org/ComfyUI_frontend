@@ -538,37 +538,33 @@ export const comfyPageFixture = base.extend<{
     const isVueNodes = testInfo.tags.includes('@vue-nodes')
     comfyPage.isVueNodes = isVueNodes
 
-    try {
-      await comfyPage.setupSettings({
-        'Comfy.UseNewMenu': 'Top',
-        // Hide canvas menu/info/selection toolbox by default.
-        'Comfy.Graph.CanvasInfo': false,
-        'Comfy.Graph.CanvasMenu': false,
-        'Comfy.Canvas.SelectionToolbox': false,
-        // Hide all badges by default.
-        'Comfy.NodeBadge.NodeIdBadgeMode': NodeBadgeMode.None,
-        'Comfy.NodeBadge.NodeSourceBadgeMode': NodeBadgeMode.None,
-        // Disable tooltips by default to avoid flakiness.
-        'Comfy.EnableTooltips': false,
-        'Comfy.userId': userId,
-        // Set tutorial completed to true to avoid loading the tutorial workflow.
-        'Comfy.TutorialCompleted': true,
-        // An auto-opened tour's blocker would break unrelated tests.
-        [TOUR_SEEN_SETTING]: [...ENTRY_PATHS],
-        'Comfy.Queue.MaxHistoryItems': 64,
-        'Comfy.SnapToGrid.GridSize': testComfySnapToGridGridSize,
-        // Disable toast warning about version compatibility, as they may or
-        // may not appear - depending on upstream ComfyUI dependencies
-        'Comfy.VersionCompatibility.DisableWarnings': true,
-        // Disable errors tab to prevent missing model detection from
-        // rendering error indicators on nodes during unrelated tests.
-        'Comfy.RightSidePanel.ShowErrorsTab': false,
-        ...(isVueNodes && { 'Comfy.VueNodes.Enabled': true }),
-        ...initialSettings
-      })
-    } catch (e) {
-      console.error(e)
-    }
+    await comfyPage.setupSettings({
+      'Comfy.UseNewMenu': 'Top',
+      // Hide canvas menu/info/selection toolbox by default.
+      'Comfy.Graph.CanvasInfo': false,
+      'Comfy.Graph.CanvasMenu': false,
+      'Comfy.Canvas.SelectionToolbox': false,
+      // Hide all badges by default.
+      'Comfy.NodeBadge.NodeIdBadgeMode': NodeBadgeMode.None,
+      'Comfy.NodeBadge.NodeSourceBadgeMode': NodeBadgeMode.None,
+      // Disable tooltips by default to avoid flakiness.
+      'Comfy.EnableTooltips': false,
+      'Comfy.userId': userId,
+      // Set tutorial completed to true to avoid loading the tutorial workflow.
+      'Comfy.TutorialCompleted': true,
+      // An auto-opened tour's blocker would break unrelated tests.
+      [TOUR_SEEN_SETTING]: [...ENTRY_PATHS],
+      'Comfy.Queue.MaxHistoryItems': 64,
+      'Comfy.SnapToGrid.GridSize': testComfySnapToGridGridSize,
+      // Disable toast warning about version compatibility, as they may or
+      // may not appear - depending on upstream ComfyUI dependencies
+      'Comfy.VersionCompatibility.DisableWarnings': true,
+      // Disable errors tab to prevent missing model detection from
+      // rendering error indicators on nodes during unrelated tests.
+      'Comfy.RightSidePanel.ShowErrorsTab': false,
+      ...(isVueNodes && { 'Comfy.VueNodes.Enabled': true }),
+      ...initialSettings
+    })
 
     if (testInfo.tags.includes('@cloud')) {
       const context = page.context()
