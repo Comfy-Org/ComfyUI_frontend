@@ -1,18 +1,19 @@
 import type { DocOp, DocUpdate, DocFrameClient } from './docFrameClient'
 import { FollowerDoc } from './followerDoc'
 
-interface RemoteLayoutStore {
-  applyUpdate(update: Uint8Array): void
-}
-
+/**
+ * Bridges server doc frames to the follower's semantic {@link FollowerDoc} and
+ * re-dispatches them. It does NOT touch the layout store: the semantic doc is
+ * projected into the canvas by `SemanticProjector` (ADR-009). Applying the raw
+ * semantic update into `layoutStore` was the original render bug — both docs
+ * expose a root map named `nodes`, so semantic entries corrupted the layout doc
+ * and no node ever rendered.
+ */
 export class LayoutFollowerBridge extends EventTarget {
   readonly follower = new FollowerDoc()
   private workflowId: string | null = null
 
-  constructor(
-    private readonly client: DocFrameClient,
-    private readonly layoutStore: RemoteLayoutStore
-  ) {
+  constructor(private readonly client: DocFrameClient) {
     super()
     client.addEventListener('doc_update', this.onDocUpdate)
     client.addEventListener('doc_subscribed', this.forwardFrame)
@@ -54,7 +55,6 @@ export class LayoutFollowerBridge extends EventTarget {
     const update = event.detail as DocUpdate
     if (update.workflowId !== this.workflowId) return
     this.follower.applyRemoteUpdate(update.update)
-    this.layoutStore.applyUpdate(update.update)
     this.dispatchEvent(new CustomEvent('doc_update', { detail: update }))
   }
 
