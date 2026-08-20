@@ -76,14 +76,20 @@ export function useMaskEditorSaver() {
 
     const [maskedImage, paintLayer, paintedImage, paintedMaskedImage] =
       await Promise.all([
-        createMaskedImage(imgCanvas, maskCanvas, filenames.maskedImage),
+        createMaskedImage(
+          imgCanvas,
+          maskCanvas,
+          filenames.maskedImage,
+          editorStore.maskOutputOpacity
+        ),
         createPaintLayer(paintCanvas, filenames.paint),
         createPaintedImage(imgCanvas, paintCanvas, filenames.paintedImage),
         createPaintedMaskedImage(
           imgCanvas,
           paintCanvas,
           maskCanvas,
-          filenames.paintedMaskedImage
+          filenames.paintedMaskedImage,
+          editorStore.maskOutputOpacity
         )
       ])
 
@@ -104,7 +110,8 @@ export function useMaskEditorSaver() {
    */
   function applyMaskAsAlpha(
     ctx: CanvasRenderingContext2D,
-    maskCanvas: HTMLCanvasElement
+    maskCanvas: HTMLCanvasElement,
+    outputOpacity: number
   ): ImageData {
     const maskCtx = maskCanvas.getContext('2d')!
     const maskData = maskCtx.getImageData(
@@ -121,7 +128,8 @@ export function useMaskEditorSaver() {
       ctx.canvas.height
     )
     for (let i = 0; i < imageData.data.length; i += 4) {
-      imageData.data[i + 3] = 255 - maskData.data[i + 3]
+      const scaledMaskAlpha = maskData.data[i + 3] * outputOpacity
+      imageData.data[i + 3] = 255 - Math.round(scaledMaskAlpha)
     }
     ctx.putImageData(imageData, 0, 0)
 
@@ -131,7 +139,8 @@ export function useMaskEditorSaver() {
   async function createMaskedImage(
     imgCanvas: HTMLCanvasElement,
     maskCanvas: HTMLCanvasElement,
-    filename: string
+    filename: string,
+    outputOpacity: number
   ): Promise<EditorOutputLayer> {
     const canvas = document.createElement('canvas')
     canvas.width = imgCanvas.width
@@ -140,7 +149,7 @@ export function useMaskEditorSaver() {
 
     ctx.drawImage(imgCanvas, 0, 0)
 
-    const imageData = applyMaskAsAlpha(ctx, maskCanvas)
+    const imageData = applyMaskAsAlpha(ctx, maskCanvas, outputOpacity)
 
     const blob = await encodeRgbaAsPng(imageData)
     const ref = createFileRef(filename)
@@ -184,7 +193,8 @@ export function useMaskEditorSaver() {
     imgCanvas: HTMLCanvasElement,
     paintCanvas: HTMLCanvasElement,
     maskCanvas: HTMLCanvasElement,
-    filename: string
+    filename: string,
+    outputOpacity: number
   ): Promise<EditorOutputLayer> {
     const canvas = document.createElement('canvas')
     canvas.width = imgCanvas.width
@@ -196,7 +206,7 @@ export function useMaskEditorSaver() {
     ctx.globalCompositeOperation = 'source-over'
     ctx.drawImage(paintCanvas, 0, 0)
 
-    const imageData = applyMaskAsAlpha(ctx, maskCanvas)
+    const imageData = applyMaskAsAlpha(ctx, maskCanvas, outputOpacity)
 
     const blob = await encodeRgbaAsPng(imageData)
     const ref = createFileRef(filename)

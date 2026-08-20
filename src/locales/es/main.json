@@ -2601,6 +2601,7 @@
     "maskBlendingOptions": "Opciones de fusión de máscara",
     "maskLayer": "Capa de máscara",
     "maskOpacity": "Opacidad de máscara",
+    "maskOutputOpacity": "Opacidad de la máscara de salida",
     "maskTolerance": "Tolerancia de máscara",
     "method": "Método",
     "mirrorHorizontal": "Espejar horizontalmente",

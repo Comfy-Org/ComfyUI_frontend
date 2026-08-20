@@ -13,6 +13,15 @@
       @update:model-value="onMaskOpacityChange"
     />
 
+    <SliderControl
+      :label="t('maskEditor.maskOutputOpacity')"
+      :min="0"
+      :max="1"
+      :step="0.01"
+      :model-value="store.maskOutputOpacity"
+      @update:model-value="store.setMaskOutputOpacity"
+    />
+
     <span class="text-left font-sans text-xs text-(--descrip-text)">{{
       t('maskEditor.maskBlendingOptions')
     }}</span>

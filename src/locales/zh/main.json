@@ -2601,6 +2601,7 @@
     "maskBlendingOptions": "遮罩混合设置",
     "maskLayer": "遮罩层",
     "maskOpacity": "遮罩不透明度",
+    "maskOutputOpacity": "输出遮罩不透明度",
     "maskTolerance": "遮罩阈值",
     "method": "方法",
     "mirrorHorizontal": "水平翻转",

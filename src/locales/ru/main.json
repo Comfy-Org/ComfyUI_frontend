@@ -2601,6 +2601,7 @@
     "maskBlendingOptions": "Параметры смешивания маски",
     "maskLayer": "Слой маски",
     "maskOpacity": "Непрозрачность маски",
+    "maskOutputOpacity": "Непрозрачность выходной маски",
     "maskTolerance": "Допуск маски",
     "method": "Метод",
     "mirrorHorizontal": "Отразить по горизонтали",
