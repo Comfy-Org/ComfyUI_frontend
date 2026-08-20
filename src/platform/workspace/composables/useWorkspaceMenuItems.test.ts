@@ -286,6 +286,28 @@ describe('useWorkspaceMenuItems', () => {
     )
   })
 
+  it('hides Delete for an enterprise workspace owner', () => {
+    state.canManageSubscription = true
+    state.planSlug = 'enterprise_monthly'
+
+    const { menuItems } = useWorkspaceMenuItems()
+
+    expect(menuItems.value.map((item) => item.label)).not.toContain(
+      'workspacePanel.menu.deleteWorkspace'
+    )
+  })
+
+  it('keeps Leave available for an enterprise workspace member', () => {
+    state.canLeaveWorkspace = true
+    state.planSlug = 'enterprise_monthly'
+
+    const { menuItems } = useWorkspaceMenuItems()
+
+    expect(menuItems.value.map((item) => item.label)).toEqual([
+      'workspacePanel.menu.leaveWorkspace'
+    ])
+  })
+
   it('disables Delete while the additional workspace is subscribed', () => {
     state.canManageSubscription = true
     state.isDeleteDisabled = true

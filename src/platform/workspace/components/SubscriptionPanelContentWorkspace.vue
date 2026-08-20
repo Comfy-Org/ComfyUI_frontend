@@ -579,14 +579,15 @@ const formattedChangeDate = computed(() =>
 )
 
 const scheduledPlanName = computed(() => {
+  const scheduledPlanSlug = subscription.value?.scheduledPlanSlug
+  if (isEnterprisePlanSlug(scheduledPlanSlug)) {
+    return t('subscription.tiers.enterprise.name')
+  }
   const scheduledPlan = plans.value.find(
-    (plan) => plan.slug === subscription.value?.scheduledPlanSlug
+    (plan) => plan.slug === scheduledPlanSlug
   )
   if (!scheduledPlan) return ''
-  if (
-    isEnterprisePlanSlug(scheduledPlan.slug) ||
-    isEnterpriseTier(scheduledPlan.tier)
-  ) {
+  if (isEnterpriseTier(scheduledPlan.tier)) {
     return t('subscription.tiers.enterprise.name')
   }
   if (scheduledPlan.slug.startsWith('team')) {

@@ -460,37 +460,16 @@ describe('SubscriptionPanelContentWorkspace', () => {
     ).toBeInTheDocument()
   })
 
-  it('labels a scheduled change to Enterprise', () => {
-    const basePlans = mockPlans.value
+  it('labels a scheduled change to Enterprise outside the self-serve catalog', () => {
     mockScheduledPlanSlug.value = 'enterprise_monthly'
     mockChangeAt.value = END_DATE_ISO
-    mockPlans.value = [
-      ...basePlans,
-      {
-        slug: 'enterprise_monthly',
-        tier: 'PRO',
-        duration: 'MONTHLY',
-        price_cents: 0,
-        credits_cents: 0,
-        max_seats: 1,
-        availability: { available: true },
-        seat_summary: {
-          seat_count: 1,
-          total_cost_cents: 0,
-          total_credits_cents: 0
-        }
-      }
-    ]
-    try {
-      renderComponent()
-      expect(
-        screen.getByText(
-          `Changes to Enterprise on ${formatPanelDate(END_DATE_ISO)}`
-        )
-      ).toBeInTheDocument()
-    } finally {
-      mockPlans.value = basePlans
-    }
+    renderComponent()
+
+    expect(
+      screen.getByText(
+        `Changes to Enterprise on ${formatPanelDate(END_DATE_ISO)}`
+      )
+    ).toBeInTheDocument()
   })
 
   it('shows a scheduled plan change instead of the renewal date', () => {

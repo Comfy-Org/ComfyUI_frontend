@@ -67,6 +67,12 @@ export function useWorkspaceMenuItems() {
     void showLeaveWorkspaceDialog()
   }
 
+  const isEnterprisePlan = computed(
+    () =>
+      isEnterpriseTier(subscription.value?.tier) ||
+      isEnterprisePlanSlug(subscription.value?.planSlug)
+  )
+
   const canCancelPlan = computed(
     () =>
       permissions.value.canManageSubscriptionLifecycle &&
@@ -76,16 +82,15 @@ export function useWorkspaceMenuItems() {
           Boolean(subscription.value?.planSlug))) &&
       !isSubscriptionCancelled.value &&
       !isFreeTier.value &&
-      // Enterprise cancellation goes through sales; an unknown tier has no
-      // self-serve lifecycle either. Neither shows Cancel plan.
-      !isEnterpriseTier(subscription.value?.tier) &&
-      !isEnterprisePlanSlug(subscription.value?.planSlug) &&
+      !isEnterprisePlan.value &&
       !isUnknownTier(subscription.value?.tier)
   )
 
   const canDeleteWorkspace = computed(
     () =>
-      permissions.value.canManageSubscription && !isInPersonalWorkspace.value
+      permissions.value.canManageSubscription &&
+      !isInPersonalWorkspace.value &&
+      !isEnterprisePlan.value
   )
 
   const deleteTooltip = computed(() => {
