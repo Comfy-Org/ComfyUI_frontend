@@ -14,7 +14,7 @@
       class="size-7 shrink-0 rounded-full bg-muted-foreground/15 hover:bg-muted-foreground/25"
       :aria-label="isPlaying ? $t('g.pause') : $t('g.play')"
       :loading="loading"
-      @click.stop="togglePlayPause"
+      @click="togglePlayPauseUnlessSelectionModifier"
     >
       <i
         v-if="!isPlaying"
@@ -221,8 +221,11 @@ function stopUnlessSelectionModifier(event: MouseEvent) {
 }
 
 function seekUnlessSelectionModifier(event: MouseEvent) {
-  if (hasSelectionModifier(event)) return
-  handleWaveformClick(event)
+  if (!hasSelectionModifier(event)) handleWaveformClick(event)
+}
+
+function togglePlayPauseUnlessSelectionModifier(event: MouseEvent) {
+  if (!hasSelectionModifier(event)) togglePlayPause()
 }
 
 function handleProgressClick(event: MouseEvent) {

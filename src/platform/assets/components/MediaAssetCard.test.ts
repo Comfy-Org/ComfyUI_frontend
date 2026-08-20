@@ -82,7 +82,10 @@ function dispatchDragStart(
 }
 
 // The media preview is an async component, and transforming its chunk on a cold
-// cache regularly outlasts vi.waitFor's 1s default.
+// cache regularly outlasts vi.waitFor's 1s default — which in turn needs room
+// under the per-test timeout, whose 5s default it would otherwise consume.
+vi.setConfig({ testTimeout: 15000 })
+
 function findMediaElement(container: Element, tag: 'audio' | 'video') {
   return vi.waitFor(
     () => {
@@ -236,9 +239,12 @@ describe('MediaAssetCard', () => {
       const playButton = screen.getByRole('button', { name: 'g.play' })
       // eslint-disable-next-line testing-library/no-node-access -- the waveform strip has no interactive role
       const waveform = playButton.nextElementSibling!
-      // happy-dom lays nothing out, so the seek ratio needs a width to divide by.
+      // happy-dom lays nothing out, so the seek ratio needs a width to divide
+      // by, and userEvent always clicks at clientX 0 — straddling the origin
+      // puts that click mid-strip, a real seek to 0:05 rather than the 0:00
+      // already showing.
       vi.spyOn(waveform, 'getBoundingClientRect').mockReturnValue(
-        new DOMRect(0, 0, 100, 32)
+        new DOMRect(-50, 0, 100, 32)
       )
       return {
         ...rendered,
@@ -264,6 +270,7 @@ describe('MediaAssetCard', () => {
 
         expect(emitted().select).toHaveLength(1)
         expect(playSpy).not.toHaveBeenCalled()
+        expect(screen.getByText('0:00 / 0:10')).toBeInTheDocument()
       }
     )
 
@@ -273,6 +280,7 @@ describe('MediaAssetCard', () => {
 
       await user.click(waveform)
 
+      expect(screen.getByText('0:05 / 0:10')).toBeInTheDocument()
       expect(playSpy).toHaveBeenCalled()
       expect(emitted().select).toBeUndefined()
       expect(emitted()['toggle-selection']).toBeUndefined()
@@ -303,6 +311,18 @@ describe('MediaAssetCard', () => {
 
       expect(playSpy).toHaveBeenCalledTimes(1)
       expect(emitted().select).toBeUndefined()
+    })
+
+    it('selects without toggling playback from a modifier click on play', async () => {
+      const user = userEvent.setup()
+      const { emitted, playButton, playSpy } = await renderAudioCard()
+
+      await user.keyboard('{Shift>}')
+      await user.click(playButton)
+      await user.keyboard('{/Shift}')
+
+      expect(emitted().select).toHaveLength(1)
+      expect(playSpy).not.toHaveBeenCalled()
     })
   })
 
