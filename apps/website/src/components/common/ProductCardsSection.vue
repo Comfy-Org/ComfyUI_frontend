@@ -11,11 +11,11 @@ import SectionLabel from './SectionLabel.vue'
 type Product = 'local' | 'cloud' | 'api' | 'enterprise'
 
 const {
-  locale = 'en',
+  locale,
   excludeProduct,
   labelKey = ''
 } = defineProps<{
-  locale?: Locale
+  locale: Locale
   excludeProduct?: Product
   labelKey?: TranslationKey
 }>()

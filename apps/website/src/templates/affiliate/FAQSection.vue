@@ -5,7 +5,7 @@ import FAQSplit01 from '../../components/blocks/FAQSplit01.vue'
 import { affiliateFaqs } from '../../data/affiliateFaq'
 import { t } from '../../i18n/translations'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale } = defineProps<{ locale: Locale }>()
 
 const faqs = affiliateFaqs.map((faq) => ({
   id: faq.id,

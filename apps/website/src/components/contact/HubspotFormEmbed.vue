@@ -5,8 +5,8 @@ import type { Locale } from '../../i18n/translations'
 
 import { t } from '../../i18n/translations'
 
-const { locale = 'en' } = defineProps<{
-  locale?: Locale
+const { locale } = defineProps<{
+  locale: Locale
 }>()
 
 const HUBSPOT_CONTACT_PORTAL_ID = '244637579'

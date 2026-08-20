@@ -5,7 +5,7 @@ import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { mcpCtas } from './ctas'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale } = defineProps<{ locale: Locale }>()
 
 const ctas = mcpCtas(locale)
 

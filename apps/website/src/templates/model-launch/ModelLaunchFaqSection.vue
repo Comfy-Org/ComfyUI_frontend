@@ -5,9 +5,9 @@ import type { ModelLaunchFaqSection } from './types'
 import FAQSplit01 from '../../components/blocks/FAQSplit01.vue'
 import { t } from '../../i18n/translations'
 
-const { locale = 'en', faq } = defineProps<{
+const { locale, faq } = defineProps<{
   faq: ModelLaunchFaqSection
-  locale?: Locale
+  locale: Locale
 }>()
 
 const faqs = faq.items.map((item) => ({

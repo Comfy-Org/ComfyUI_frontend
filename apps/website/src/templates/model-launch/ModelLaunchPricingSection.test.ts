@@ -13,7 +13,7 @@ if (!pricing) throw new Error('minimaxPage.pricing is no longer defined')
 
 describe('ModelLaunchPricingSection', () => {
   it('still renders the /minimax banner from its page config', () => {
-    render(ModelLaunchPricingSection, { props: { pricing } })
+    render(ModelLaunchPricingSection, { props: { pricing, locale: 'en' } })
 
     expect(
       screen.getByText("Start free. Upgrade when you're ready.")
@@ -39,7 +39,7 @@ describe('ModelLaunchPricingSection', () => {
 
   it('omits the banner when a page config does not define one', () => {
     render(ModelLaunchPricingSection, {
-      props: { pricing: { defaultBillingCycle: 'monthly' } }
+      props: { pricing: { defaultBillingCycle: 'monthly' }, locale: 'en' }
     })
 
     expect(screen.queryByRole('link', { name: 'TRY FREE' })).toBeNull()

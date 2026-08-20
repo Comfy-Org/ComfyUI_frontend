@@ -6,7 +6,7 @@ import { t } from '../../../i18n/translations'
 import BrandButton from '../../common/BrandButton.vue'
 import CardGridSection from '../shared/CardGridSection.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale } = defineProps<{ locale: Locale }>()
 
 const steps = [
   {

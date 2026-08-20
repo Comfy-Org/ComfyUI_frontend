@@ -5,9 +5,9 @@ import type { ModelLaunchPricing } from './types'
 import PricingFreeBanner from '../../components/pricing/PricingFreeBanner.vue'
 import PricingSection from '../../components/pricing/PricingSection.vue'
 
-const { locale = 'en', pricing } = defineProps<{
+const { locale, pricing } = defineProps<{
   pricing: ModelLaunchPricing
-  locale?: Locale
+  locale: Locale
 }>()
 </script>
 

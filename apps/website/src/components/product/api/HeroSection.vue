@@ -11,7 +11,7 @@ import BrandButton from '../../common/BrandButton.vue'
 import ProductHeroBadge from '../../common/ProductHeroBadge.vue'
 import { stampCycleAt } from './stampCycle'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale } = defineProps<{ locale: Locale }>()
 
 const canvasRef = ref<HTMLCanvasElement>()
 const isIllustrationVisible = useMediaQuery('(min-width: 64rem)')

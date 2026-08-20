@@ -6,7 +6,7 @@ import type { Reason } from '../shared/ReasonSection.vue'
 
 import ReasonSection from '../shared/ReasonSection.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale } = defineProps<{ locale: Locale }>()
 
 interface CloudReason extends Reason {
   badge?: boolean

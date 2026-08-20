@@ -3,7 +3,7 @@ import type { Locale } from '../../i18n/translations'
 
 import { t } from '../../i18n/translations'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale } = defineProps<{ locale: Locale }>()
 
 const investors = [
   { name: 'CRAFT', icon: '/icons/investors/craft.svg' },
@@ -48,7 +48,7 @@ const investors = [
           <span
             class="bg-primary-comfy-yellow text-primary-comfy-ink flex h-full items-center px-2 text-sm font-bold tracking-wider"
           >
-            OUR
+            {{ t('about.story.investorsLabelPrefix', locale) }}
           </span>
         </div>
         <!-- Union connector (overlaps both badges to eliminate seams) -->
@@ -62,7 +62,7 @@ const investors = [
           <span
             class="bg-primary-comfy-yellow text-primary-comfy-ink flex h-full items-center px-3 text-lg font-bold tracking-wider"
           >
-            INVESTORS
+            {{ t('about.story.investorsLabelNoun', locale) }}
           </span>
           <img src="/icons/node-right.svg" alt="" class="h-full w-auto" />
         </div>

@@ -7,11 +7,11 @@ import { test } from './fixtures/blockExternalMedia'
 
 const PATH = '/wan-3.0'
 const ZH_PATH = '/zh-CN/wan-3.0'
-const HERO_TITLE = t('wan3.hero.title')
-const HERO_EYEBROW = t('wan3.hero.eyebrow')
-const HERO_CTA = t('wan3.hero.primaryCta')
-const RUN_OPTIONS_HEADING = t('wan3.runOptions.heading')
-const REVIEWS_HEADING = t('wan3.reviews.heading')
+const HERO_TITLE = t('wan3.hero.title', 'en')
+const HERO_EYEBROW = t('wan3.hero.eyebrow', 'en')
+const HERO_CTA = t('wan3.hero.primaryCta', 'en')
+const RUN_OPTIONS_HEADING = t('wan3.runOptions.heading', 'en')
+const REVIEWS_HEADING = t('wan3.reviews.heading', 'en')
 const MODELS_ROUTE = getRoutes('en').models
 
 test.describe('Wan 3.0 announcement page @smoke', () => {
@@ -51,15 +51,15 @@ test.describe('Wan 3.0 announcement page @smoke', () => {
 
   test('breadcrumb trail links to the models catalog', async ({ page }) => {
     const modelsCrumb = page
-      .getByRole('navigation', { name: t('ui.breadcrumb') })
-      .getByRole('link', { name: t('models.breadcrumb.models') })
+      .getByRole('navigation', { name: t('ui.breadcrumb', 'en') })
+      .getByRole('link', { name: t('models.breadcrumb.models', 'en') })
     await expect(modelsCrumb).toHaveAttribute('href', MODELS_ROUTE)
   })
 
   test('footer links back to this page', async ({ page }) => {
     const footerLink = page
       .locator('footer')
-      .getByRole('link', { name: t('footer.wan3') })
+      .getByRole('link', { name: t('footer.wan3', 'en') })
     await expect(footerLink).toHaveAttribute('href', getRoutes('en').wan3)
   })
 

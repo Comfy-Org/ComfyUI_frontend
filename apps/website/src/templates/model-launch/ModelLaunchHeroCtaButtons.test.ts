@@ -7,7 +7,7 @@ import ModelLaunchHeroCtaButtons from './ModelLaunchHeroCtaButtons.vue'
 describe('ModelLaunchHeroCtaButtons', () => {
   it('renders no links when neither CTA is given', () => {
     render(ModelLaunchHeroCtaButtons, {
-      props: { primaryVariant: 'solid' }
+      props: { primaryVariant: 'solid', locale: 'en' }
     })
 
     expect(screen.queryAllByRole('link')).toHaveLength(0)
@@ -17,7 +17,8 @@ describe('ModelLaunchHeroCtaButtons', () => {
     render(ModelLaunchHeroCtaButtons, {
       props: {
         primaryCta: { labelKey: 'cta.getStarted', href: '/get-started' },
-        primaryVariant: 'solid'
+        primaryVariant: 'solid',
+        locale: 'en'
       }
     })
 
@@ -35,6 +36,7 @@ describe('ModelLaunchHeroCtaButtons', () => {
           target: '_blank'
         },
         primaryVariant: 'outline-light',
+        locale: 'en',
         secondaryCta: { labelKey: 'nav.docs', href: '/docs' }
       }
     })

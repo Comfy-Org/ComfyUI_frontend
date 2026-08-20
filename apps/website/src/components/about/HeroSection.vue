@@ -8,7 +8,7 @@ import BrandButton from '../common/BrandButton.vue'
 import SectionLabel from '../common/SectionLabel.vue'
 import VideoPlayer from '../common/VideoPlayer.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale } = defineProps<{ locale: Locale }>()
 
 const sectionRef = ref<HTMLElement>()
 const logoRef = ref<HTMLElement>()
@@ -38,7 +38,7 @@ useHeroAnimation({
       >
         <img
           src="https://media.comfy.org/website/about/c.webp"
-          alt="Comfy 3D logo"
+          :alt="t('ui.alt.comfy3dLogo', locale)"
           class="mx-auto w-full max-w-md lg:max-w-none"
         />
       </div>

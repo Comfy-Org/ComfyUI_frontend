@@ -20,9 +20,9 @@ import Button from '../ui/button/Button.vue'
 import VideoPlayer from '../common/VideoPlayer.vue'
 import Badge from '../ui/badge/Badge.vue'
 
-const { tutorial, locale = 'en' } = defineProps<{
+const { tutorial, locale } = defineProps<{
   tutorial: LearningTutorial
-  locale?: Locale
+  locale: Locale
 }>()
 
 const breadcrumbs = [

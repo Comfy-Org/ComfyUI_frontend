@@ -4,7 +4,7 @@ import type { Locale } from '../../../i18n/translations'
 import { t } from '../../../i18n/translations'
 import CardGridSection from '../shared/CardGridSection.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale } = defineProps<{ locale: Locale }>()
 
 const cards = [
   {

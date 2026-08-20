@@ -35,6 +35,14 @@ jobs:
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
 
+      # astro check covers .astro/.ts; vue-tsc covers .vue internals. Both are
+      # needed for the required `locale` prop to be enforced everywhere.
+      - name: Typecheck website
+        run: pnpm typecheck:website
+
+      - name: Validate locale props
+        run: pnpm --filter @comfyorg/website validate:locale
+
       - name: Build website
         env:
           WEBSITE_ASHBY_API_KEY: ${{ secrets.WEBSITE_ASHBY_API_KEY }}

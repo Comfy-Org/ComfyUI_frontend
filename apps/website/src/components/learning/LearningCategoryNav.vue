@@ -17,8 +17,8 @@ import {
 import { localizeHref } from '../../config/routes'
 import { t } from '../../i18n/translations'
 
-const { locale = 'en', category } = defineProps<{
-  locale?: Locale
+const { locale, category } = defineProps<{
+  locale: Locale
   category?: LearningCategory
 }>()
 

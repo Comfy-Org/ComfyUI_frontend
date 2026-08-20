@@ -7,7 +7,7 @@ import SectionHeader from '../../components/common/SectionHeader.vue'
 import { affiliateBrandAssets } from '../../data/affiliateBrandAssets'
 import { t } from '../../i18n/translations'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale } = defineProps<{ locale: Locale }>()
 
 const assets = affiliateBrandAssets.map((asset) =>
   asset.id === 'icon' ? { ...asset, preview: '/icons/comfyicon.svg' } : asset

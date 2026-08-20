@@ -8,7 +8,7 @@ import type { CardWorkflowItem } from '../../components/blocks/CardWorkflow01.vu
 import { featuredProjects } from '../../data/fdct'
 import { t } from '../../i18n/translations'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale } = defineProps<{ locale: Locale }>()
 
 const items = computed<CardWorkflowItem[]>(() =>
   featuredProjects(locale).map((project) => ({

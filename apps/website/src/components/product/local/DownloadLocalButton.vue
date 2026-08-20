@@ -12,8 +12,8 @@ import { t } from '../../../i18n/translations'
 import { captureDownloadClick } from '../../../scripts/posthog'
 import BrandButton from '../../common/BrandButton.vue'
 
-const { locale = 'en', class: customClass = '' } = defineProps<{
-  locale?: Locale
+const { locale, class: customClass = '' } = defineProps<{
+  locale: Locale
   class?: HTMLAttributes['class']
 }>()
 

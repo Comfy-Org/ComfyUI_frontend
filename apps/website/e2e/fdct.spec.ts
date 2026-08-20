@@ -14,7 +14,7 @@ import { test } from './fixtures/blockExternalMedia'
 // one snapshot; localized fields (titles, descriptions, tags) are asserted per
 // locale. The Featured projects grid is its own curated list, independent of
 // the technologist dialogs.
-const projects = featuredProjectsOf()
+const projects = featuredProjectsOf('en')
 const technologists = technologistsOf('en')
 
 const builderReasonKeys = [

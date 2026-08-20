@@ -3,9 +3,9 @@ import type { Locale } from '../../i18n/translations'
 import type { StoryCard as StoryCardType } from '../../utils/customers'
 import StoryCard from './StoryCard.vue'
 
-const { stories, locale = 'en' } = defineProps<{
+const { stories, locale } = defineProps<{
   stories: StoryCardType[]
-  locale?: Locale
+  locale: Locale
 }>()
 </script>
 

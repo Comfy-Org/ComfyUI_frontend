@@ -5,8 +5,8 @@ import type { Locale } from '../../i18n/translations'
 import { useNodesByCategory } from '../../composables/useNodesByCategory'
 import { t } from '../../i18n/translations'
 
-const { locale = 'en', nodes } = defineProps<{
-  locale?: Locale
+const { locale, nodes } = defineProps<{
+  locale: Locale
   nodes: readonly PackNode[]
 }>()
 

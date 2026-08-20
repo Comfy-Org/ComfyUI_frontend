@@ -8,8 +8,8 @@ import { t } from '../../i18n/translations'
 import SectionLabel from '../common/SectionLabel.vue'
 import HubspotFormEmbed from './HubspotFormEmbed.vue'
 
-const { locale = 'en' } = defineProps<{
-  locale?: Locale
+const { locale } = defineProps<{
+  locale: Locale
 }>()
 
 function tk(suffix: string): TranslationKey {

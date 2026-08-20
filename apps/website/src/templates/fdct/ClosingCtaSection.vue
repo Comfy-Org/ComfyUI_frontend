@@ -6,7 +6,7 @@ import { localizeHref } from '../../config/routes'
 import { fdctPage } from '../../data/fdct'
 import { t } from '../../i18n/translations'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale } = defineProps<{ locale: Locale }>()
 </script>
 
 <template>

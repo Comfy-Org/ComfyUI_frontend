@@ -59,8 +59,8 @@ const article = articleNode({
     description={entry.data.description}
     image={entry.data.cover}
   />
-  <CustomerArticle entry={entry} />
-  <WhatsNextSection
+  <CustomerArticle locale={locale} entry={entry} />
+  <WhatsNextSection locale={locale}
     title={next.data.title}
     image={next.data.cover}
     href={`/customers/${storySlug(next.id)}`}

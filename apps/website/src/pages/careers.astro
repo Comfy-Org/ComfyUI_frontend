@@ -52,11 +52,11 @@ const roles = itemListNode(
   ]}
   extraJsonLd={[roles]}
 >
-  <HeroSection />
-  <RolesSection departments={departments} client:visible />
-  <WhyJoinSection client:visible />
+  <HeroSection locale={locale} />
+  <RolesSection locale={locale} departments={departments} client:visible />
+  <WhyJoinSection locale={locale} client:visible />
   <TeamPhotosSection client:visible />
-  <FAQSection
+  <FAQSection locale={locale}
     headingKey="careers.faq.heading"
     faqPrefix="careers.faq"
     faqCount={8}

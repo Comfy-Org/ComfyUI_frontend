@@ -15,20 +15,15 @@ import type { CalendarEvent } from '../../utils/calendar'
 
 import { t } from '../../i18n/translations'
 
-const {
-  title,
-  description,
-  youtubeVideoId,
-  calendarEvent,
-  locale = 'en'
-} = defineProps<{
-  title: string
-  description: string
-  youtubeVideoId: string
-  /** Future events: offer adding the stream to the visitor's calendar. */
-  calendarEvent?: CalendarEvent
-  locale?: Locale
-}>()
+const { title, description, youtubeVideoId, calendarEvent, locale } =
+  defineProps<{
+    title: string
+    description: string
+    youtubeVideoId: string
+    /** Future events: offer adding the stream to the visitor's calendar. */
+    calendarEvent?: CalendarEvent
+    locale: Locale
+  }>()
 
 const dialogEl = useTemplateRef<HTMLDialogElement>('dialogEl')
 
@@ -41,7 +36,10 @@ const embedUrl = computed(
 // fallback for browsers without it and is often stripped.
 const previousEntryUrl = () => {
   const nav = window.navigation
-  if (nav) return nav.entries()[nav.currentEntry.index - 1]?.url ?? null
+  const currentIndex = nav?.currentEntry?.index
+  if (nav && currentIndex !== undefined) {
+    return nav.entries()[currentIndex - 1]?.url ?? null
+  }
   return document.referrer || null
 }
 

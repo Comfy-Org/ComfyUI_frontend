@@ -21,6 +21,6 @@ const { siteUrl, locale } = pageContext(
     { name: t('breadcrumb.contact', locale) },
   ]}
 >
-  <FormSection client:load />
+  <FormSection locale={locale} client:load />
   <SocialProofBarSection />
 </BaseLayout>

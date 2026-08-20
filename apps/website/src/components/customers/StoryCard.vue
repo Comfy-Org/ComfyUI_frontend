@@ -3,9 +3,9 @@ import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import type { StoryCard } from '../../utils/customers'
 
-const { story, locale = 'en' } = defineProps<{
+const { story, locale } = defineProps<{
   story: StoryCard
-  locale?: Locale
+  locale: Locale
 }>()
 
 const prefix = locale === 'zh-CN' ? '/zh-CN' : ''

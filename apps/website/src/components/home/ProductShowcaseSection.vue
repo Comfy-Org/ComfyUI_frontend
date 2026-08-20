@@ -7,7 +7,7 @@ import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import NodeBadge from '../common/NodeBadge.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale } = defineProps<{ locale: Locale }>()
 
 const features = [
   {

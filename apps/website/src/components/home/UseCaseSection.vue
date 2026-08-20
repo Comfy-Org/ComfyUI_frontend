@@ -12,7 +12,7 @@ import BrandButton from '../common/BrandButton.vue'
 import BlobMedia from './BlobMedia.vue'
 import BlobRail from './BlobRail.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale } = defineProps<{ locale: Locale }>()
 
 interface Category {
   label: string

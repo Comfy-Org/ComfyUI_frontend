@@ -13,9 +13,9 @@ import SectionLabel from '../common/SectionLabel.vue'
 
 type Status = 'success' | 'failed'
 
-const { status, locale = 'en' } = defineProps<{
+const { status, locale } = defineProps<{
   status: Status
-  locale?: Locale
+  locale: Locale
 }>()
 
 const primaryHref =

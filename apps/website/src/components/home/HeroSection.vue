@@ -7,7 +7,7 @@ import { useHeroLogo } from '../../composables/useHeroLogo'
 import { t } from '../../i18n/translations'
 import BrandButton from '../common/BrandButton.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale } = defineProps<{ locale: Locale }>()
 
 const logoContainer = ref<HTMLElement>()
 const { loaded: logoLoaded } = useHeroLogo(logoContainer)
@@ -24,7 +24,7 @@ const { loaded: logoLoaded } = useHeroLogo(logoContainer)
       <img
         v-show="!logoLoaded"
         src="https://media.comfy.org/website/homepage/hero-logo-seq/Logo00.webp"
-        alt="Comfy logo"
+        :alt="t('ui.alt.comfyLogo', locale)"
         class="w-3/5"
       />
     </div>

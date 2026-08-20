@@ -9,7 +9,7 @@ import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { mcpDemoPrompts, thumbUrls, visibleWindow } from './mcpDemoPrompts'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale } = defineProps<{ locale: Locale }>()
 
 const VISIBLE_CARDS = 5
 

@@ -23,7 +23,7 @@ type VideoTrack = {
 }
 
 const {
-  locale = 'en',
+  locale,
   badgeText,
   badgeLogoSrc,
   badgeLogoAlt,
@@ -47,7 +47,7 @@ const {
   videoHideControls = false,
   class: className
 } = defineProps<{
-  locale?: Locale
+  locale: Locale
   class?: HTMLAttributes['class']
   badgeText: string
   badgeLogoSrc?: string

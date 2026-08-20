@@ -5,7 +5,7 @@ import ChecklistSplit01 from '../../components/blocks/ChecklistSplit01.vue'
 import { affiliateAudienceCriteria } from '../../data/affiliateAudience'
 import { t } from '../../i18n/translations'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale } = defineProps<{ locale: Locale }>()
 
 const criteria = affiliateAudienceCriteria.map((criterion) => ({
   id: criterion.id,

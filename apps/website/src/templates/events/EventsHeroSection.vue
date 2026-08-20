@@ -9,7 +9,7 @@ import HeroCentered01 from '../../components/blocks/HeroCentered01.vue'
 import { featuredEvents } from '../../data/events'
 import { t } from '../../i18n/translations'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale } = defineProps<{ locale: Locale }>()
 
 const slides = computed<FeaturedSlide[]>(() =>
   featuredEvents.map((event) => ({
