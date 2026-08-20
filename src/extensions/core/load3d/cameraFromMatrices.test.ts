@@ -132,6 +132,35 @@ describe('computeCameraFromMatrices', () => {
     ).toThrow(/intrinsics/)
   })
 
+  it.for<[label: string, value: number, expectedError: RegExp]>([
+    ['NaN', Number.NaN, /extrinsics\[0\]\[3\].*NaN/],
+    ['Infinity', Number.POSITIVE_INFINITY, /extrinsics\[0\]\[3\].*Infinity/]
+  ])('throws when extrinsics contains %s', ([, value, expectedError]) => {
+    expect(() =>
+      computeCameraFromMatrices(
+        extrinsics(IDENTITY_R, [value, 0, 0]),
+        intrinsics(500, 500, 320, 240)
+      )
+    ).toThrow(expectedError)
+  })
+
+  it.for([
+    {
+      label: 'NaN fx',
+      matrix: intrinsics(Number.NaN, 500, 320, 240),
+      expectedError: /intrinsics\[0\]\[0\].*NaN/
+    },
+    {
+      label: 'infinite cy',
+      matrix: intrinsics(500, 500, 320, Number.POSITIVE_INFINITY),
+      expectedError: /intrinsics\[1\]\[2\].*Infinity/
+    }
+  ])('throws when intrinsics contains $label', ({ matrix, expectedError }) => {
+    expect(() =>
+      computeCameraFromMatrices(extrinsics(IDENTITY_R, [0, 0, 0]), matrix)
+    ).toThrow(expectedError)
+  })
+
   it.for<[label: string, fy: number]>([
     ['zero', 0],
     ['NaN', Number.NaN],
