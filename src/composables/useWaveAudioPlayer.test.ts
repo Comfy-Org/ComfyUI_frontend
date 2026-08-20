@@ -113,4 +113,58 @@ describe('useWaveAudioPlayer', () => {
     useWaveAudioPlayer({ src })
     expect(mockFetchApi).not.toHaveBeenCalled()
   })
+
+  function mockDecodedChannel(channel: Float32Array) {
+    globalThis.AudioContext = fromAny<typeof AudioContext, unknown>(
+      class {
+        decodeAudioData = vi.fn(() =>
+          Promise.resolve({ getChannelData: () => channel })
+        )
+        close = vi.fn().mockResolvedValue(undefined)
+      }
+    )
+    mockFetchApi.mockResolvedValue({
+      ok: true,
+      arrayBuffer: () => Promise.resolve(new ArrayBuffer(8))
+    })
+  }
+
+  it('keeps varied placeholder bars for silent audio', async () => {
+    mockDecodedChannel(new Float32Array(80))
+
+    const src = ref('/audio.wav')
+    const { bars, loading } = useWaveAudioPlayer({ src, barCount: 10 })
+    await vi.waitFor(() => expect(loading.value).toBe(false))
+
+    for (const bar of bars.value) {
+      expect(bar.height).toBeGreaterThanOrEqual(10)
+      expect(bar.height).toBeLessThanOrEqual(70)
+    }
+  })
+
+  it('keeps varied placeholder bars for constant-amplitude audio', async () => {
+    mockDecodedChannel(new Float32Array(80).fill(0.5))
+
+    const src = ref('/audio.wav')
+    const { bars, loading } = useWaveAudioPlayer({ src, barCount: 10 })
+    await vi.waitFor(() => expect(loading.value).toBe(false))
+
+    for (const bar of bars.value) {
+      expect(bar.height).toBeGreaterThanOrEqual(10)
+      expect(bar.height).toBeLessThanOrEqual(70)
+    }
+  })
+
+  it('normalizes bars for audio with real dynamic range', async () => {
+    const channel = new Float32Array(80)
+    channel.fill(1, 40)
+    mockDecodedChannel(channel)
+
+    const src = ref('/audio.wav')
+    const { bars, loading } = useWaveAudioPlayer({ src, barCount: 10 })
+    await vi.waitFor(() => expect(loading.value).toBe(false))
+
+    expect(bars.value[0].height).toBe(8)
+    expect(bars.value[9].height).toBe(100)
+  })
 })
