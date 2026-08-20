@@ -364,6 +364,19 @@ describe('CreditsTile', () => {
     expect(screen.getByText('Add credits')).toBeInTheDocument()
   })
 
+  it('does not borrow a catalog monthly pool for an unrecognized tier', () => {
+    activeProSubscription()
+    state.tier = runtimeTier('GALACTIC')
+    state.subscription = {
+      tier: runtimeTier('GALACTIC'),
+      duration: 'MONTHLY',
+      renewalDate: '2026-02-20T12:00:00Z'
+    }
+    const { container } = renderTile()
+
+    expect(container.textContent).not.toContain('left of')
+  })
+
   it('shows only the balance with no breakdown when there is no active subscription', () => {
     state.canAccessSubscriptionFeatures = false
     state.balance = { amountMicros: 500 }

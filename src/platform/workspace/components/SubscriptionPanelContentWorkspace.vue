@@ -226,7 +226,7 @@
                   />
                 </div>
                 <div
-                  v-if="!isEnterprisePlan"
+                  v-if="!isNonCatalogPlan"
                   class="flex items-baseline gap-1 font-inter"
                 >
                   <span class="text-2xl font-semibold">{{ displayPrice }}</span>
@@ -266,7 +266,7 @@
                   v-if="
                     isSubscriptionCancelled &&
                     permissions.canManageSubscriptionLifecycle &&
-                    !isEnterprisePlan
+                    !isNonCatalogPlan
                   "
                   size="lg"
                   variant="primary"
@@ -281,7 +281,7 @@
                     !isSubscriptionCancelled &&
                     canAccessSubscriptionFeatures &&
                     permissions.canManageSubscription &&
-                    !isEnterprisePlan
+                    !isNonCatalogPlan
                   "
                   size="lg"
                   variant="secondary"
@@ -325,7 +325,7 @@
 
           <div
             v-if="
-              !isEnterprisePlan &&
+              !isNonCatalogPlan &&
               (canAccessSubscriptionFeatures ||
                 isPersonalFree ||
                 showInactiveTeamSubscription)
@@ -389,7 +389,7 @@
 
       <!-- View More Details - Outside main content -->
       <div
-        v-if="permissions.canManageSubscription && !isEnterprisePlan"
+        v-if="permissions.canManageSubscription && !isNonCatalogPlan"
         class="py-6"
       >
         <Button
@@ -428,7 +428,8 @@ import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useF
 import type { TierBenefit } from '@/platform/cloud/subscription/utils/tierBenefits'
 import {
   isEnterprisePlanSlug,
-  isEnterpriseTier
+  isEnterpriseTier,
+  isUnknownTier
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import { getCommonTierBenefits } from '@/platform/cloud/subscription/utils/tierBenefits'
 import { isCloud } from '@/platform/distribution/types'
@@ -496,8 +497,9 @@ const isSubscriptionEnded = computed(() => {
 // stays active until its end date, so it keeps the subscribed treatment.
 const showSubscribePrompt = computed(() => {
   if (!permissions.value.canManageSubscription) return false
-  // An ended enterprise plan is reinstated by sales, never self-serve.
-  if (isEnterprisePlan.value) return false
+  // Ended enterprise plans are reinstated by sales; unknown tiers cannot
+  // offer a checkout we can't price. Neither self-serves.
+  if (isNonCatalogPlan.value) return false
   if (isSubscriptionEnded.value) return true
   if (isSubscriptionCancelled.value) return false
   if (
@@ -590,6 +592,9 @@ const scheduledPlanName = computed(() => {
   if (scheduledPlan.slug.startsWith('team')) {
     return t('subscription.teamPlanName')
   }
+  if (isUnknownTier(scheduledPlan.tier)) {
+    return t('subscription.unknownTierName')
+  }
   return t(
     `subscription.tiers.${resolveSubscriptionTierKey(scheduledPlan.tier)}.name`
   )
@@ -654,8 +659,19 @@ const isEnterprisePlan = computed(
     isEnterprisePlanSlug(subscription.value?.planSlug)
 )
 
+const isUnknownTierPlan = computed(() =>
+  isUnknownTier(subscription.value?.tier)
+)
+
+// Enterprise and unrecognized tiers share the same gate set: no catalog
+// content and no self-serve plan actions. Only the displayed name differs.
+const isNonCatalogPlan = computed(
+  () => isEnterprisePlan.value || isUnknownTierPlan.value
+)
+
 const planDisplayName = computed(() => {
   if (isEnterprisePlan.value) return t('subscription.tiers.enterprise.name')
+  if (isUnknownTierPlan.value) return t('subscription.unknownTierName')
   return isTeamPlan.value
     ? t('subscription.teamPlanName')
     : subscriptionTierName.value
@@ -673,7 +689,7 @@ const TEAM_PERK_KEYS = [
 ] as const
 
 const tierBenefits = computed((): TierBenefit[] => {
-  if (isEnterprisePlan.value) return []
+  if (isNonCatalogPlan.value) return []
   if (isTeamActive.value || showInactiveTeamSubscription.value) {
     return TEAM_PERK_KEYS.map((key) => ({
       key,

@@ -134,6 +134,20 @@ describe('usePricingTableUrlLoader', () => {
     expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
   })
 
+  it('never opens for an unrecognized tier', async () => {
+    mockRouteQuery.value = { pricing: '1' }
+    mockSubscription.value = {
+      tier: 'GALACTIC',
+      planSlug: 'galactic_monthly'
+    }
+
+    const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
+    await loadPricingTableFromUrl()
+
+    expect(mockShowPricingTable).not.toHaveBeenCalled()
+    expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
+  })
+
   it('resolves billing status before deciding, catching a pre-load enterprise deep link', async () => {
     mockRouteQuery.value = { pricing: '1' }
     mockSubscription.value = null

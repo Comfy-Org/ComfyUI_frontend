@@ -118,6 +118,8 @@ const personalUiConfig: MenuUiConfig = {
 const mockUiConfig = ref<MenuUiConfig>(ownerUiConfig)
 
 const mockSubscriptionTier = ref<SubscriptionInfo['tier']>('PRO')
+const runtimeTier = (tier: string) =>
+  tier as unknown as SubscriptionInfo['tier']
 const mockPlanSlug = ref('team-monthly')
 const mockHasTeamPlan = ref(true)
 const mockPlans = ref<Plan[]>([
@@ -435,6 +437,27 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(
       screen.queryByRole('button', { name: /subscribe|reactivate/i })
     ).not.toBeInTheDocument()
+  })
+
+  it('renders an unrecognized tier as Current plan without catalog content', () => {
+    mockHasTeamPlan.value = false
+    mockSubscriptionTier.value = runtimeTier('GALACTIC')
+    mockPlanSlug.value = 'galactic_monthly'
+    mockCurrentTeamCreditStop.value = null
+    renderComponent()
+
+    expect(screen.getByText('Current plan')).toBeInTheDocument()
+    expect(screen.queryByText('$665')).not.toBeInTheDocument()
+    expect(screen.queryByText('USD / mo')).not.toBeInTheDocument()
+    expect(
+      screen.queryByText('View more details about plans & pricing')
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: /change plan|upgrade plan/i })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getByText(`Renews on ${formatPanelDate(RENEWAL_DATE_ISO)}`)
+    ).toBeInTheDocument()
   })
 
   it('labels a scheduled change to Enterprise', () => {

@@ -233,6 +233,7 @@ import {
   DEFAULT_TIER_KEY,
   isEnterprisePlanSlug,
   isEnterpriseTier,
+  isUnknownTier,
   toTierKey,
   getTierCredits
 } from '@/platform/cloud/subscription/constants/tierPricing'
@@ -286,7 +287,8 @@ const creditPoolTotalCredits = computed<number | null>(() => {
   const monthlyCredits =
     currentTeamCreditStop.value?.credits_monthly ??
     (isEnterpriseTier(subscription.value?.tier) ||
-    isEnterprisePlanSlug(subscription.value?.planSlug)
+    isEnterprisePlanSlug(subscription.value?.planSlug) ||
+    isUnknownTier(subscription.value?.tier)
       ? null
       : getTierCredits(tierKey.value))
   if (monthlyCredits === null) return null

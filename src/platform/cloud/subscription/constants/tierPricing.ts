@@ -75,6 +75,15 @@ export function isEnterprisePlanSlug(slug: string | null | undefined): boolean {
   return slug?.toLowerCase().startsWith(ENTERPRISE_PLAN_SLUG_PREFIX) === true
 }
 
+// A tier the FE cannot map to its catalog (and that isn't the workspace-level
+// TEAM or sales-managed ENTERPRISE). It renders as "Current plan" with no
+// catalog content and no self-serve plan actions: price and feature claims
+// must never be borrowed for a plan we cannot identify (FE-1662 story 6).
+export function isUnknownTier(tier: string | null | undefined): boolean {
+  if (tier == null || tier === 'TEAM' || isEnterpriseTier(tier)) return false
+  return toTierKey(tier as IngestSubscriptionTier) === null
+}
+
 // Includes the workspace-level TEAM, which toTierKey maps to null: a catalog
 // key is not a usable test for "is on a paid plan".
 export function hasActivePaidPlan(

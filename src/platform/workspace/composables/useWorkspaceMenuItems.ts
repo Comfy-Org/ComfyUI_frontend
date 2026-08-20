@@ -6,7 +6,8 @@ import type { MenuItem } from 'primevue/menuitem'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import {
   isEnterprisePlanSlug,
-  isEnterpriseTier
+  isEnterpriseTier,
+  isUnknownTier
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useDialogService } from '@/services/dialogService'
@@ -75,9 +76,11 @@ export function useWorkspaceMenuItems() {
           Boolean(subscription.value?.planSlug))) &&
       !isSubscriptionCancelled.value &&
       !isFreeTier.value &&
-      // Enterprise cancellation goes through sales, never self-serve.
+      // Enterprise cancellation goes through sales; an unknown tier has no
+      // self-serve lifecycle either. Neither shows Cancel plan.
       !isEnterpriseTier(subscription.value?.tier) &&
-      !isEnterprisePlanSlug(subscription.value?.planSlug)
+      !isEnterprisePlanSlug(subscription.value?.planSlug) &&
+      !isUnknownTier(subscription.value?.tier)
   )
 
   const canDeleteWorkspace = computed(
