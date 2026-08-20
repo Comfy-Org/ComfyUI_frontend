@@ -1,7 +1,10 @@
-import { expect } from '@playwright/test'
+import { expect, mergeTests } from '@playwright/test'
 
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import { dialogChromeFixture } from '@e2e/fixtures/dialogChromeFixture'
 import { TestIds } from '@e2e/fixtures/selectors'
+
+const test = mergeTests(comfyPageFixture, dialogChromeFixture)
 
 /**
  * Contract shared by every dialog rendered through `GlobalDialog`, exercised
@@ -11,13 +14,13 @@ import { TestIds } from '@e2e/fixtures/selectors'
  */
 test.describe('Dialog chrome', { tag: '@ui' }, () => {
   test('moves focus onto the content autofocus target when opened', async ({
-    comfyPage
+    comfyPage,
+    dialogChrome
   }) => {
-    const chrome = comfyPage.dialogChrome
+    await expect(comfyPage.canvas).toBeVisible()
+    await dialogChrome.openPrompt()
 
-    await chrome.openPrompt()
-
-    const dialog = chrome.dialogs
+    const dialog = dialogChrome.dialogs
     await expect(dialog).toBeVisible()
     await expect(
       dialog.locator('input[autofocus]'),
@@ -25,54 +28,60 @@ test.describe('Dialog chrome', { tag: '@ui' }, () => {
     ).toBeFocused()
   })
 
-  test('keeps Tab focus inside a modal dialog', async ({ comfyPage }) => {
-    const chrome = comfyPage.dialogChrome
-    await chrome.openPrompt()
-    const dialog = chrome.dialogs
+  test('keeps Tab focus inside a modal dialog', async ({
+    comfyPage,
+    dialogChrome
+  }) => {
+    await dialogChrome.openPrompt()
+    const dialog = dialogChrome.dialogs
     await expect(dialog).toBeVisible()
 
+    // Containment must hold after every press, so this asserts immediately
+    // rather than polling — polling would let a transient escape recover
+    // unnoticed, which is the regression the test exists to catch. Reka's
+    // FocusScope handles Tab synchronously, so there is no race to lose.
     for (let press = 1; press <= 6; press++) {
       await comfyPage.page.keyboard.press('Tab')
       expect(
-        await chrome.isFocusInside(dialog),
+        await dialogChrome.isFocusInside(dialog),
         `focus escaped the modal dialog after ${press} Tab press(es)`
       ).toBe(true)
     }
   })
 
   test('makes the page pointer-inert while a modal dialog is open', async ({
-    comfyPage
+    comfyPage,
+    dialogChrome
   }) => {
-    const chrome = comfyPage.dialogChrome
-    expect(await chrome.isPageInert()).toBe(false)
+    expect(await dialogChrome.isPageInert()).toBe(false)
 
-    await chrome.openPrompt()
-    await expect(chrome.dialogs).toBeVisible()
-    await expect.poll(() => chrome.isPageInert()).toBe(true)
+    await dialogChrome.openPrompt()
+    await expect(dialogChrome.dialogs).toBeVisible()
+    await expect.poll(() => dialogChrome.isPageInert()).toBe(true)
 
     await comfyPage.page.keyboard.press('Escape')
-    await expect(chrome.dialogs).toBeHidden()
+    await expect(dialogChrome.dialogs).toBeHidden()
     await expect
-      .poll(() => chrome.isPageInert(), {
+      .poll(() => dialogChrome.isPageInert(), {
         message: 'page stayed inert after the modal dialog closed'
       })
       .toBe(false)
   })
 
-  test('restores focus to the invoking element when closed', async ({
-    comfyPage
+  test('restores focus to the previously focused element when closed', async ({
+    comfyPage,
+    dialogChrome
   }) => {
-    const chrome = comfyPage.dialogChrome
     const settingsButton = comfyPage.page
       .getByTestId(TestIds.sidebar.toolbar)
       .getByRole('button', { name: /^Settings/ })
     await settingsButton.focus()
     await expect(settingsButton).toBeFocused()
 
-    await chrome.openConfirm()
-    await expect(chrome.dialogs).toBeVisible()
+    await dialogChrome.openConfirm()
+    await expect(dialogChrome.dialogs).toBeVisible()
     await comfyPage.page.keyboard.press('Escape')
-    await expect(chrome.dialogs).toBeHidden()
+    await expect(dialogChrome.dialogs).toBeHidden()
 
     await expect(
       settingsButton,
@@ -80,32 +89,40 @@ test.describe('Dialog chrome', { tag: '@ui' }, () => {
     ).toBeFocused()
   })
 
-  test('closes only the top-most dialog on Escape', async ({ comfyPage }) => {
-    const chrome = comfyPage.dialogChrome
+  test('closes only the top-most dialog on Escape', async ({
+    comfyPage,
+    dialogChrome
+  }) => {
     await comfyPage.settingDialog.open()
-    await chrome.openConfirm()
+    await dialogChrome.openConfirm()
 
-    await expect(chrome.dialogs).toHaveCount(2)
+    await expect(dialogChrome.dialogs).toHaveCount(2)
 
     await comfyPage.page.keyboard.press('Escape')
 
-    await expect(chrome.dialogs).toHaveCount(1)
+    await expect(dialogChrome.dialogs).toHaveCount(1)
     expect(
-      await chrome.openDialogKeys(),
+      await dialogChrome.openDialogKeys(),
       'Escape dismissed the container dialog instead of only the top-most one'
     ).toEqual(['global-settings'])
 
     await comfyPage.page.keyboard.press('Escape')
-    await expect(chrome.dialogs).toHaveCount(0)
+    await expect(dialogChrome.dialogs).toHaveCount(0)
   })
 
-  test('stacks a later dialog above an earlier one', async ({ comfyPage }) => {
-    const chrome = comfyPage.dialogChrome
+  test('stacks a later dialog above an earlier one', async ({
+    comfyPage,
+    dialogChrome
+  }) => {
     await comfyPage.settingDialog.open()
-    await chrome.openConfirm()
-    await expect(chrome.dialogs).toHaveCount(2)
+    await dialogChrome.openConfirm()
+    await expect(dialogChrome.dialogs).toHaveCount(2)
+    await expect(
+      dialogChrome.overlays,
+      'each stacked dialog renders its own scrim'
+    ).toHaveCount(2)
 
-    const [lower, upper] = await chrome.stackingOrder()
+    const [lower, upper] = await dialogChrome.stackingOrder()
     expect(
       upper,
       'the dialog opened last must render above the one opened first'
@@ -113,15 +130,14 @@ test.describe('Dialog chrome', { tag: '@ui' }, () => {
   })
 
   test('leaves the page interactive for a non-modal container dialog', async ({
-    comfyPage
+    comfyPage,
+    dialogChrome
   }) => {
-    const chrome = comfyPage.dialogChrome
-
     await comfyPage.settingDialog.open()
     await expect(comfyPage.settingDialog.root).toBeVisible()
 
     expect(
-      await chrome.isPageInert(),
+      await dialogChrome.isPageInert(),
       'Settings is non-modal so that the nested PrimeVue dialogs it hosts keep pointer events'
     ).toBe(false)
   })
@@ -148,14 +164,18 @@ test.describe('Dialog chrome', { tag: '@ui' }, () => {
       if ((await select.getAttribute('aria-expanded')) !== 'true')
         await select.click()
       await expect(select).toHaveAttribute('aria-expanded', 'true')
-    }).toPass({ timeout: 20_000 })
+    }).toPass({ timeout: 10_000 })
 
     await expect(
       settings.root,
       'opening a body-portaled PrimeVue overlay must not read as an outside interaction'
     ).toBeVisible()
 
-    await comfyPage.page.getByRole('option').first().click()
+    // Re-selecting the current value keeps the assertion about the overlay
+    // interaction rather than about changing a persisted setting.
+    await comfyPage.page
+      .getByRole('option', { name: 'Top', exact: true })
+      .click()
 
     await expect(
       settings.root,
