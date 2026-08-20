@@ -74,6 +74,41 @@ describe('galleryCollection', () => {
     ])
   })
 
+  it('requests the zh-CN locale and carries the localized title through', async () => {
+    const body = {
+      docs: [
+        {
+          slug: 'neon-nights',
+          title: '霓虹之夜',
+          thumbnail: { url: '/api/media/file/neon-poster.webp' },
+          video: { url: '/api/media/file/neon.webm' },
+          creator: { name: 'ShaneF Motion Design' },
+          tool: { name: 'ComfyUI' }
+        }
+      ]
+    }
+    const fetchImpl = vi.fn(
+      async () =>
+        new Response(JSON.stringify(body), {
+          status: 200,
+          headers: { 'content-type': 'application/json' }
+        })
+    )
+
+    const items = await loadList(galleryCollection, {
+      cmsUrl: CMS_URL,
+      locale: 'zh-CN',
+      fetchImpl: fetchImpl as unknown as typeof fetch
+    })
+
+    expect(fetchImpl).toHaveBeenCalledWith(
+      `${CMS_URL}/api/gallery?${GALLERY_QUERY}&locale=zh-CN`,
+      { headers: undefined }
+    )
+    // The localized title is the source for the card alt / video aria-label.
+    expect(items[0].title).toBe('霓虹之夜')
+  })
+
   it('rejects a doc that is missing the required thumbnail', async () => {
     const body = {
       docs: [

@@ -33,6 +33,13 @@ export interface LoadContentOptions {
   cmsUrl?: string
   /** Fetch unpublished drafts. Callers supply this (preview builds pass `true`). */
   draft?: boolean
+  /**
+   * CMS locale to request (e.g. `zh-CN`). Non-default locales append the Payload
+   * REST `locale` param; the default (`en`)/absent case sends no param, leaving
+   * the default request path unchanged. Relies on the CMS fallback to `en` for
+   * fields with no value in the requested locale.
+   */
+  locale?: string
   /** Payload API key for authenticated draft reads (used only with `draft`). */
   apiKey?: string
   /** Injectable fetch, for tests. */
@@ -61,12 +68,17 @@ export async function loadList<TDoc, TItem>(
   options: LoadContentOptions = {}
 ): Promise<TItem[]> {
   const base = resolveCmsBase(options.cmsUrl)
-  const { draft = false, apiKey } = options
+  const { draft = false, locale, apiKey } = options
   const fetchImpl = options.fetchImpl ?? fetch
 
-  const query = draft
-    ? `${collection.list.query}&draft=true`
-    : collection.list.query
+  // The default locale (`en`) is requested by sending no `locale` param, so the
+  // default request path is byte-for-byte unchanged. Only non-default locales
+  // append it.
+  const localized =
+    locale && locale !== 'en'
+      ? `${collection.list.query}&locale=${locale}`
+      : collection.list.query
+  const query = draft ? `${localized}&draft=true` : localized
   const headers =
     draft && apiKey ? { Authorization: `users API-Key ${apiKey}` } : undefined
 

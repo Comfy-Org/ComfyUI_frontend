@@ -70,6 +70,67 @@ describe('loadList', () => {
     ])
   })
 
+  it('appends the locale param for a non-default locale', async () => {
+    const fetchImpl = vi.fn(async () => jsonResponse({ docs: [] }))
+
+    await loadList(testCollection, {
+      cmsUrl: 'https://cms.test',
+      locale: 'zh-CN',
+      fetchImpl: fetchImpl as unknown as typeof fetch
+    })
+
+    expect(fetchImpl).toHaveBeenCalledWith(
+      'https://cms.test/api/things?limit=10&locale=zh-CN',
+      expect.anything()
+    )
+  })
+
+  it('sends no locale param for the default en locale', async () => {
+    const fetchImpl = vi.fn(async () => jsonResponse({ docs: [] }))
+
+    await loadList(testCollection, {
+      cmsUrl: 'https://cms.test',
+      locale: 'en',
+      fetchImpl: fetchImpl as unknown as typeof fetch
+    })
+
+    expect(fetchImpl).toHaveBeenCalledWith(
+      'https://cms.test/api/things?limit=10',
+      expect.anything()
+    )
+  })
+
+  it('sends no locale param when none is given', async () => {
+    const fetchImpl = vi.fn(async () => jsonResponse({ docs: [] }))
+
+    await loadList(testCollection, {
+      cmsUrl: 'https://cms.test',
+      fetchImpl: fetchImpl as unknown as typeof fetch
+    })
+
+    expect(fetchImpl).toHaveBeenCalledWith(
+      'https://cms.test/api/things?limit=10',
+      expect.anything()
+    )
+  })
+
+  it('combines locale and draft params', async () => {
+    const fetchImpl = vi.fn(async () => jsonResponse({ docs: [] }))
+
+    await loadList(testCollection, {
+      cmsUrl: 'https://cms.test',
+      locale: 'zh-CN',
+      draft: true,
+      apiKey: 'secret-key',
+      fetchImpl: fetchImpl as unknown as typeof fetch
+    })
+
+    expect(fetchImpl).toHaveBeenCalledWith(
+      'https://cms.test/api/things?limit=10&locale=zh-CN&draft=true',
+      { headers: { Authorization: 'users API-Key secret-key' } }
+    )
+  })
+
   it('requests drafts with the API-key header when draft + apiKey are set', async () => {
     const fetchImpl = vi.fn(async () => jsonResponse({ docs: [] }))
 

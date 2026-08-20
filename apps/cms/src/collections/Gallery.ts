@@ -28,9 +28,14 @@ export const Gallery: CollectionConfig = {
   },
   fields: [
     {
+      // The only localized field: an editor enters per-locale titles and the
+      // zh-CN gallery renders the Chinese one (falling back to en when missing).
+      // The rendered alt / video aria-label is this title, so localizing it also
+      // localizes the on-page text alternative for free.
       name: 'title',
       type: 'text',
       required: true,
+      localized: true,
     },
     slugField(),
     {

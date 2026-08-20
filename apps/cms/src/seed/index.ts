@@ -13,6 +13,20 @@ const cacheDir = path.resolve(dirname, '../../.media-cache')
 
 const mediaExtension = (url: string): string => path.extname(new URL(url).pathname) || '.bin'
 
+// Chinese titles for a subset of gallery items, keyed by slug. Items absent from
+// this map keep only an `en` title and exercise the CMS fallback (a zh-CN visitor
+// sees the English title). Only `title` is localized — see the gallery spec.
+const ZH_CN_TITLES: Record<string, string> = {
+  'neon-nights': '霓虹之夜',
+  autopoiesis: '自创生',
+  fall: '坠落',
+  'origami-world': '折纸世界',
+  'good-good-summer': '会是一个很棒很棒的夏天',
+  'show-you-my-garden': '带你看我的花园',
+  'goodbye-beijing': '再见北京',
+  'desert-landing': '沙漠降落',
+}
+
 // Dummy publish dates, one day apart, ascending with the static gallery order so
 // that sorting by publishedAt reproduces the hand-curated sequence on the site.
 const PUBLISHED_AT_BASE = Date.UTC(2024, 0, 1)
@@ -93,17 +107,27 @@ const seed = async (): Promise<void> => {
       where: { slug: { equals: item.id } },
       limit: 1,
     })
-    if (existing.docs.length > 0) {
+    // The base write targets the default (`en`) locale, so existing titles land
+    // as the English value.
+    const docId =
+      existing.docs.length > 0
+        ? (await payload.update({ collection: 'gallery', id: existing.docs[0].id, data })).id
+        : (await payload.create({ collection: 'gallery', data })).id
+
+    // Add a Chinese title for the subset with one; a second locale-scoped update
+    // writes only the zh-CN `title`, leaving every other (unlocalized) field as
+    // set above.
+    const zhTitle = ZH_CN_TITLES[item.id]
+    if (zhTitle) {
       await payload.update({
         collection: 'gallery',
-        id: existing.docs[0].id,
-        data,
+        id: docId,
+        locale: 'zh-CN',
+        data: { title: zhTitle },
       })
-    } else {
-      await payload.create({ collection: 'gallery', data })
     }
 
-    payload.logger.info(`Seeded gallery item: ${item.id}`)
+    payload.logger.info(`Seeded gallery item: ${item.id}${zhTitle ? ' (+zh-CN)' : ''}`)
   }
 
   payload.logger.info(`Seed complete: ${galleryItems.length} gallery items`)
