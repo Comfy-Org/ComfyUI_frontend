@@ -1,229 +1,91 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import type { AuditLog } from '@/services/customerEventsService'
 
 import { usePendingTopup } from './usePendingTopup'
 
-// Mock localStorage
-const mockLocalStorage = vi.hoisted(() => ({
-  getItem: vi.fn(),
-  setItem: vi.fn(),
-  removeItem: vi.fn()
-}))
+const STORAGE_KEY = 'pending_topup_timestamp'
 
-Object.defineProperty(window, 'localStorage', {
-  value: mockLocalStorage,
-  writable: true
-})
+function creditAddedEvent(atMs: number): AuditLog {
+  return {
+    event_type: 'credit_added',
+    createdAt: new Date(atMs).toISOString()
+  } as AuditLog
+}
 
 describe('usePendingTopup', () => {
-  const {
-    startPendingTopup,
-    isPendingTopupCompleted,
-    clearPendingTopup,
-    consumePendingTopup
-  } = usePendingTopup()
-
   beforeEach(() => {
-    vi.clearAllMocks()
+    localStorage.clear()
+  })
+  afterEach(() => {
+    localStorage.clear()
   })
 
-  describe('startPendingTopup', () => {
-    it('should save current timestamp to localStorage', () => {
-      const beforeTimestamp = Date.now()
+  it('startPendingTopup writes the marker; pendingTopupNeedsRefresh reflects it', () => {
+    const { startPendingTopup, pendingTopupNeedsRefresh } = usePendingTopup()
+    expect(pendingTopupNeedsRefresh()).toBe(false)
+    startPendingTopup()
+    expect(localStorage.getItem(STORAGE_KEY)).not.toBeNull()
+    expect(pendingTopupNeedsRefresh()).toBe(true)
+  })
 
-      startPendingTopup()
+  it('pendingTopupNeedsRefresh is false and clears an expired marker', () => {
+    const { pendingTopupNeedsRefresh } = usePendingTopup()
+    localStorage.setItem(
+      STORAGE_KEY,
+      String(Date.now() - (24 * 60 * 60 * 1000 + 1000))
+    )
+    expect(pendingTopupNeedsRefresh()).toBe(false)
+    expect(localStorage.getItem(STORAGE_KEY)).toBeNull()
+  })
 
-      expect(mockLocalStorage.setItem).toHaveBeenCalledWith(
-        'pending_topup_timestamp',
-        expect.any(String)
-      )
-
-      const savedTimestamp = parseInt(
-        mockLocalStorage.setItem.mock.calls[0][1],
-        10
-      )
-      expect(savedTimestamp).toBeGreaterThanOrEqual(beforeTimestamp)
-      expect(savedTimestamp).toBeLessThanOrEqual(Date.now())
-    })
+  it('pendingTopupNeedsRefresh clears an unparseable marker', () => {
+    const { pendingTopupNeedsRefresh } = usePendingTopup()
+    localStorage.setItem(STORAGE_KEY, 'not-a-number')
+    expect(pendingTopupNeedsRefresh()).toBe(false)
+    expect(localStorage.getItem(STORAGE_KEY)).toBeNull()
   })
 
   describe('isPendingTopupCompleted', () => {
-    it('should return false if no pending topup exists', () => {
-      mockLocalStorage.getItem.mockReturnValue(null)
-
-      expect(isPendingTopupCompleted([])).toBe(false)
+    it('is false when no marker is set', () => {
+      const { isPendingTopupCompleted } = usePendingTopup()
+      expect(isPendingTopupCompleted([creditAddedEvent(Date.now())])).toBe(
+        false
+      )
     })
 
-    it('should return false if events array is empty', () => {
-      mockLocalStorage.getItem.mockReturnValue(Date.now().toString())
-
+    it('is false when there are no events', () => {
+      const { startPendingTopup, isPendingTopupCompleted } = usePendingTopup()
+      startPendingTopup()
       expect(isPendingTopupCompleted([])).toBe(false)
-    })
-
-    it('should return false if events array is null', () => {
-      mockLocalStorage.getItem.mockReturnValue(Date.now().toString())
-
       expect(isPendingTopupCompleted(null)).toBe(false)
     })
 
-    it('should auto-cleanup if timestamp is older than 24 hours', () => {
-      const oldTimestamp = Date.now() - 25 * 60 * 60 * 1000 // 25 hours ago
-      mockLocalStorage.getItem.mockReturnValue(oldTimestamp.toString())
-
-      const events: AuditLog[] = [
-        {
-          event_id: 'test-1',
-          event_type: 'credit_added',
-          createdAt: new Date().toISOString(),
-          params: { amount: 500 }
-        }
-      ]
-
-      expect(isPendingTopupCompleted(events)).toBe(false)
-      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith(
-        'pending_topup_timestamp'
-      )
+    it('is true and clears the marker when a credit_added event lands after tracking', () => {
+      const { startPendingTopup, isPendingTopupCompleted } = usePendingTopup()
+      startPendingTopup()
+      expect(
+        isPendingTopupCompleted([creditAddedEvent(Date.now() + 1000)])
+      ).toBe(true)
+      expect(localStorage.getItem(STORAGE_KEY)).toBeNull()
     })
 
-    it('should detect a completed topup and clear the marker', () => {
-      const startTimestamp = Date.now() - 5 * 60 * 1000 // 5 minutes ago
-      mockLocalStorage.getItem.mockReturnValue(startTimestamp.toString())
-
-      const events: AuditLog[] = [
-        {
-          event_id: 'test-1',
-          event_type: 'api_usage_completed',
-          createdAt: new Date(startTimestamp - 1000).toISOString(),
-          params: {}
-        },
-        {
-          event_id: 'test-2',
-          event_type: 'credit_added',
-          createdAt: new Date(startTimestamp + 1000).toISOString(),
-          params: { amount: 500 }
-        }
-      ]
-
-      expect(isPendingTopupCompleted(events)).toBe(true)
-      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith(
-        'pending_topup_timestamp'
-      )
-    })
-
-    it('should detect completed topup for topup_completed (unified billing feed)', () => {
-      const startTimestamp = Date.now() - 5 * 60 * 1000 // 5 minutes ago
-      mockLocalStorage.getItem.mockReturnValue(startTimestamp.toString())
-
-      const events: AuditLog[] = [
-        {
-          event_id: 'evt-topup',
-          event_type: 'topup_completed',
-          createdAt: new Date(startTimestamp + 1000).toISOString(),
-          params: {}
-        }
-      ]
-
-      expect(isPendingTopupCompleted(events)).toBe(true)
-      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith(
-        'pending_topup_timestamp'
-      )
-    })
-
-    it('should not detect topup if credit_added event is before tracking started', () => {
-      const startTimestamp = Date.now()
-      mockLocalStorage.getItem.mockReturnValue(startTimestamp.toString())
-
-      const events: AuditLog[] = [
-        {
-          event_id: 'test-1',
-          event_type: 'credit_added',
-          createdAt: new Date(startTimestamp - 1000).toISOString(), // Before tracking
-          params: { amount: 500 }
-        }
-      ]
-
-      expect(isPendingTopupCompleted(events)).toBe(false)
-      expect(mockLocalStorage.removeItem).not.toHaveBeenCalled()
-    })
-
-    it('should ignore events without createdAt timestamp', () => {
-      const startTimestamp = Date.now()
-      mockLocalStorage.getItem.mockReturnValue(startTimestamp.toString())
-
-      const events: AuditLog[] = [
-        {
-          event_id: 'test-1',
-          event_type: 'credit_added',
-          createdAt: undefined,
-          params: { amount: 500 }
-        }
-      ]
-
-      expect(isPendingTopupCompleted(events)).toBe(false)
-    })
-
-    it('should only match credit_added events, not other event types', () => {
-      const startTimestamp = Date.now()
-      mockLocalStorage.getItem.mockReturnValue(startTimestamp.toString())
-
-      const events: AuditLog[] = [
-        {
-          event_id: 'test-1',
-          event_type: 'api_usage_completed',
-          createdAt: new Date(startTimestamp + 1000).toISOString(),
-          params: {}
-        },
-        {
-          event_id: 'test-2',
-          event_type: 'account_created',
-          createdAt: new Date(startTimestamp + 2000).toISOString(),
-          params: {}
-        }
-      ]
-
-      expect(isPendingTopupCompleted(events)).toBe(false)
+    it('ignores credit events that predate tracking', () => {
+      const { startPendingTopup, isPendingTopupCompleted } = usePendingTopup()
+      startPendingTopup()
+      expect(
+        isPendingTopupCompleted([creditAddedEvent(Date.now() - 60_000)])
+      ).toBe(false)
+      expect(localStorage.getItem(STORAGE_KEY)).not.toBeNull()
     })
   })
 
-  describe('clearPendingTopup', () => {
-    it('should remove pending topup from localStorage', () => {
-      clearPendingTopup()
-
-      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith(
-        'pending_topup_timestamp'
-      )
-    })
-  })
-
-  describe('consumePendingTopup', () => {
-    it('returns false and clears nothing when no marker exists', () => {
-      mockLocalStorage.getItem.mockReturnValue(null)
-
-      expect(consumePendingTopup()).toBe(false)
-      expect(mockLocalStorage.removeItem).not.toHaveBeenCalled()
-    })
-
-    it('clears and returns true for a fresh marker', () => {
-      mockLocalStorage.getItem.mockReturnValue(
-        (Date.now() - 5 * 60 * 1000).toString()
-      )
-
-      expect(consumePendingTopup()).toBe(true)
-      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith(
-        'pending_topup_timestamp'
-      )
-    })
-
-    it('clears and returns false for a marker older than 24 hours', () => {
-      mockLocalStorage.getItem.mockReturnValue(
-        (Date.now() - 25 * 60 * 60 * 1000).toString()
-      )
-
-      expect(consumePendingTopup()).toBe(false)
-      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith(
-        'pending_topup_timestamp'
-      )
-    })
+  it('clearPendingTopup removes the marker', () => {
+    const { startPendingTopup, clearPendingTopup, pendingTopupNeedsRefresh } =
+      usePendingTopup()
+    startPendingTopup()
+    clearPendingTopup()
+    expect(localStorage.getItem(STORAGE_KEY)).toBeNull()
+    expect(pendingTopupNeedsRefresh()).toBe(false)
   })
 })

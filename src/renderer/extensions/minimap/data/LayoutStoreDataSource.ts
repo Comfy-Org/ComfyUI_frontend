@@ -11,7 +11,7 @@ let executionStore: ReturnType<typeof useExecutionStore> | null = null
  * Layout Store data source implementation
  */
 export class LayoutStoreDataSource extends AbstractMinimapDataSource {
-  getNodes(): MinimapNodeData[] {
+  protected buildNodes(): MinimapNodeData[] {
     const allNodes = layoutStore.getAllNodes().value
     if (allNodes.size === 0) return []
 
@@ -23,8 +23,7 @@ export class LayoutStoreDataSource extends AbstractMinimapDataSource {
     const nodes: MinimapNodeData[] = []
 
     for (const [nodeId, layout] of allNodes) {
-      // Find corresponding LiteGraph node for additional properties
-      const graphNode = this.graph?._nodes?.find((n) => n.id === nodeId)
+      const graphNode = this.graph?.getNodeById(nodeId)
 
       const executionState =
         nodeProgressStates[createNodeLocatorId(null, nodeId)]?.state ?? null
@@ -46,7 +45,7 @@ export class LayoutStoreDataSource extends AbstractMinimapDataSource {
   }
 
   getNodeCount(): number {
-    return layoutStore.getAllNodes().value.size
+    return layoutStore.nodeCount
   }
 
   hasData(): boolean {

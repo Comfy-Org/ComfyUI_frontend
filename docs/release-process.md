@@ -48,14 +48,32 @@ later ship as v1.40.2). Same commits, no divergence — the branch just prevents
 ## Release Sheriff Assignment
 
 `pr-assign-release-sheriff.yaml` assigns the on-call release sheriff to any
-open backport PR (label `backport`, or a `[backport ...]` title) and any
-release version-bump PR (label `Release`, or a `version-bump-<version>`
-branch) that has no assignee. It also requests their review, since backport merges are
-gated on an approval. Existing assignees and review requests are never
-overwritten.
+open PR that has no assignee and is either:
 
-It runs on PR events and hourly — the hourly sweep is what catches strays that
-were opened while nobody was looking.
+- a backport (label `backport`, or a `[backport ...]` title);
+- a release version bump (label `Release`, or a `version-bump-<version>`
+  branch);
+- opened by automation — `dependabot`, `comfy-pr-bot`, or `cloud-code-bot`.
+
+It also requests their review, since backport merges are gated on an approval.
+Existing assignees and review requests are never overwritten.
+
+When the sheriff wrote the PR themselves, the review is requested from the
+**next person in the rotation** instead — GitHub rejects a self-review request,
+so previously those PRs were assigned to their own author with nobody asked to
+review, and then waited on an approval that had never been requested. The order
+comes from the Datadog layer's member list, so it needs no separate config. If
+nobody in the rotation can stand in, the run says so rather than staying quiet.
+
+Automation-authored PRs are included because nobody feels addressed by what a
+robot opens: they accumulated unassigned for weeks. Note these are matched by
+author rather than by content, so a dependency bump counts as sheriff work.
+
+It runs on PR events and hourly. Bot PRs are picked up by the hourly sweep
+rather than on open — the `pull_request_target` gate matches labels, titles and
+branches, and teaching it about bot logins would duplicate the author list in a
+second syntax (the webhook says `dependabot[bot]` where `gh` says
+`app/dependabot`), which would drift.
 
 The rotation itself lives in Datadog On-Call ("Frontend Team – Oncall
 Schedule", layer "Release Sheriff") and is read at execution time, so handovers
@@ -89,6 +107,38 @@ unreachable Datadog — the job still assigns `fallbackGithubLogin` so PRs are
 never left unowned, but **exits non-zero** so the degradation is visible. A
 green run means a real sheriff was resolved from Datadog.
 
+Tag coverage is checked for the **whole rotation**, not just whoever is on call,
+and a member without one fails the run. Someone added to the layer without a tag
+otherwise works fine until their own shift begins — the breakage surfaces weeks
+after the cause, on whoever happens to be sheriff. This is a configuration
+check, so it fails even when today's assignment succeeded.
+
+A failed run also posts to **#frontend-releases** with the reason, because a
+failing scheduled workflow otherwise only notifies whoever last pushed to
+`main` — in practice nobody, which is how the placeholder config survived for
+weeks. Needs the `SLACK_BOT_TOKEN` secret; the post is `continue-on-error`, so
+Slack being down never masks the underlying result.
+
+It alerts on the **transition** into failure, not on every failing run: the job
+runs hourly, so a lasting breakage would otherwise post around the clock until
+someone fixed it, and a channel that cries wolf gets muted.
+
+The check walks recent **scheduled** runs and reads the conclusion of the
+`Assign release sheriff` **step**, not of the run. A run that died in checkout
+failed without ever reaching the sheriff, and treating that as "already
+alerted" would swallow the next real failure. Scheduled runs are used because
+the `pull_request_target` gate skips most other runs, so they are the ones
+dense in runs that decided anything. If the check itself cannot run it fails
+open and alerts, since a duplicate beats a silence.
+
+Only scheduled runs **alert**, for the same reason: a run can recognise a
+duplicate only within the history it reads, so the runs that post have to be
+the runs that get read back. While the two sets differed, every PR-triggered
+failure was invisible to every other one — five posts in nine minutes when a
+rotation member turned up without a `github:` tag. PR-triggered runs still go
+red on the PR itself; the alert rides the hourly sweep instead, so a new
+breakage is announced within the hour rather than on the spot.
+
 ## Publishing
 
 Merged PRs with the `Release` label trigger `release-draft-create.yaml`,
@@ -103,12 +153,12 @@ branch has unreleased commits, it triggers a patch bump and drafts a PR to
 
 ## Workflows
 
-| Workflow                         | Purpose                                          |
-| -------------------------------- | ------------------------------------------------ |
-| `release-version-bump.yaml`      | Bump version, create Release PR                  |
-| `release-draft-create.yaml`      | Build + publish to GitHub/PyPI/npm               |
-| `release-branch-create.yaml`     | Create `core/` + `cloud/` branches (minor/major) |
-| `release-weekly-comfyui.yaml`    | Weekly auto-patch + ComfyUI requirements PR      |
-| `pr-backport.yaml`               | Cherry-pick fixes to stable branches             |
-| `cloud-backport-tag.yaml`        | Tag cloud branch merges                          |
-| `pr-assign-release-sheriff.yaml` | Assign on-call sheriff to backport/release PRs   |
+| Workflow                         | Purpose                                            |
+| -------------------------------- | -------------------------------------------------- |
+| `release-version-bump.yaml`      | Bump version, create Release PR                    |
+| `release-draft-create.yaml`      | Build + publish to GitHub/PyPI/npm                 |
+| `release-branch-create.yaml`     | Create `core/` + `cloud/` branches (minor/major)   |
+| `release-weekly-comfyui.yaml`    | Weekly auto-patch + ComfyUI requirements PR        |
+| `pr-backport.yaml`               | Cherry-pick fixes to stable branches               |
+| `cloud-backport-tag.yaml`        | Tag cloud branch merges                            |
+| `pr-assign-release-sheriff.yaml` | Assign on-call sheriff to backport/release/bot PRs |

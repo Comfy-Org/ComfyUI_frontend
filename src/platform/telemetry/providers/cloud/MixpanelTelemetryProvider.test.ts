@@ -51,13 +51,8 @@ const waitForMixpanelInit = () =>
 
 type ConfigWindow = { __CONFIG__?: { mixpanel_token?: string } }
 
-beforeEach(() => {
-  localStorage.clear()
-})
-
 describe('MixpanelTelemetryProvider — without configured token', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     delete (window as unknown as ConfigWindow).__CONFIG__
   })
 
@@ -81,7 +76,6 @@ describe('MixpanelTelemetryProvider — without configured token', () => {
 
 describe('MixpanelTelemetryProvider — with configured token', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     ;(window as unknown as ConfigWindow).__CONFIG__ = {
       mixpanel_token: 'test-token'
     }
@@ -274,7 +268,6 @@ describe('MixpanelTelemetryProvider — with configured token', () => {
 
 describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     ;(window as unknown as ConfigWindow).__CONFIG__ = {
       mixpanel_token: 'test-token'
     }

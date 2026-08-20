@@ -29,6 +29,7 @@ import {
   getPreservedQueryParam
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+import { invalidateRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { useTelemetry } from '@/platform/telemetry'
 import { api } from '@/scripts/api'
 import { useDialogService } from '@/services/dialogService'
@@ -37,6 +38,7 @@ import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuth
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import type { AuthHeader } from '@/types/authTypes'
 import type { operations } from '@/types/comfyRegistryTypes'
+import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 
 type CreditPurchaseResponse =
@@ -146,6 +148,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
     if (identityChanged) {
       useTeamWorkspaceStore().resetForIdentityChange()
+      invalidateRemoteConfig()
     }
 
     // A direct account switch (A -> B, or sign-out) must re-handshake the
@@ -355,10 +358,10 @@ export const useAuthStore = defineStore('auth', () => {
           // Customer not found is expected for new users
           return null
         }
-        const errorData = await response.json()
+        const { message } = await parseErrorResponse(response)
         throw new AuthStoreError(
           t('toastMessages.failedToFetchBalance', {
-            error: errorData.message
+            error: message
           })
         )
       }
@@ -724,11 +727,12 @@ export const useAuthStore = defineStore('auth', () => {
     )
 
     if (!response.ok) {
-      const errorData = await response.json()
+      const { message } = await parseErrorResponse(response)
       throw new AuthStoreError(
         t('toastMessages.failedToInitiateCreditPurchase', {
-          error: errorData.message
-        })
+          error: message
+        }),
+        response.status
       )
     }
 
@@ -763,10 +767,10 @@ export const useAuthStore = defineStore('auth', () => {
     )
 
     if (!response.ok) {
-      const errorData = await response.json()
+      const { message } = await parseErrorResponse(response)
       throw new AuthStoreError(
         t('toastMessages.failedToAccessBillingPortal', {
-          error: errorData.message
+          error: message
         })
       )
     }

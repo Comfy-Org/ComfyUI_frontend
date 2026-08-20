@@ -1,7 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
 import PrimeVue from 'primevue/config'
 import Tooltip from 'primevue/tooltip'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, onMounted, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -157,8 +157,6 @@ describe('UsageLogsTable', () => {
   ])
 
   beforeEach(() => {
-    vi.clearAllMocks()
-
     mockCustomerEventsService.getMyEvents.mockResolvedValue(mockEventsResponse)
     mockWorkspaceApi.getBillingEvents.mockResolvedValue(mockEventsResponse)
     mockBillingRouting.shouldUseWorkspaceBilling = false
@@ -211,10 +209,6 @@ describe('UsageLogsTable', () => {
     )
     mockCustomerEventsService.error.value = null
     mockCustomerEventsService.isLoading.value = false
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   function renderComponent() {
@@ -438,6 +432,7 @@ describe('UsageLogsTable', () => {
     })
 
     it('runs top-up completion telemetry for a superseded response', async () => {
+      mockPendingTopup.isPendingTopupCompleted.mockReturnValue(true)
       let resolveLegacy!: (value: ReturnType<typeof makeEventsResponse>) => void
       mockCustomerEventsService.getMyEvents.mockReturnValue(
         new Promise((resolve) => {

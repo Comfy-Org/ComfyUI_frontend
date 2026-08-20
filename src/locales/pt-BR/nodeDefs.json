@@ -58,6 +58,72 @@
       }
     }
   },
+  "AddLayer": {
+    "display_name": "Adicionar Camada",
+    "inputs": {
+      "blend_mode": {
+        "name": "modo_de_mesclagem",
+        "tooltip": "Modo de mesclagem inicial."
+      },
+      "flip_h": {
+        "name": "inverter_h",
+        "tooltip": "Inverter a camada horizontalmente."
+      },
+      "flip_v": {
+        "name": "inverter_v",
+        "tooltip": "Inverter a camada verticalmente."
+      },
+      "height": {
+        "name": "altura",
+        "tooltip": "Altura inicial de exibição. 0 mantém a altura nativa da imagem."
+      },
+      "image": {
+        "name": "imagem",
+        "tooltip": "Conteúdo da camada em seu tamanho nativo. Um lote expande para camadas consecutivas."
+      },
+      "layers": {
+        "name": "camadas",
+        "tooltip": "Pilha de camadas para anexar. Deixe desconectado para iniciar uma nova pilha."
+      },
+      "mask": {
+        "name": "máscara",
+        "tooltip": "Máscara de transparência para esta camada. Áreas mascaradas (valor 1) tornam-se transparentes, multiplicando com qualquer canal alfa que a imagem já possua."
+      },
+      "name": {
+        "name": "nome",
+        "tooltip": "Nome da camada exibido no editor de composição."
+      },
+      "opacity": {
+        "name": "opacidade",
+        "tooltip": "Opacidade inicial da camada."
+      },
+      "rotation": {
+        "name": "rotação",
+        "tooltip": "Rotação inicial em graus, no sentido horário."
+      },
+      "width": {
+        "name": "largura",
+        "tooltip": "Largura inicial de exibição. 0 mantém a largura nativa da imagem."
+      },
+      "x": {
+        "name": "x",
+        "tooltip": "Posicionamento horizontal inicial na tela."
+      },
+      "y": {
+        "name": "y",
+        "tooltip": "Posicionamento vertical inicial na tela."
+      },
+      "z_index": {
+        "name": "z_index",
+        "tooltip": "Sobreposição de empilhamento. As camadas são ordenadas de forma estável por z_index; valores iguais mantêm a ordem da lista."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "A pilha de camadas com esta camada anexada."
+      }
+    }
+  },
   "AddNoise": {
     "display_name": "AddNoise",
     "inputs": {
@@ -824,7 +890,7 @@
       },
       "model": {
         "name": "modelo",
-        "tooltip": "Seedance 2.0 para máxima qualidade; Seedance 2.0 Fast para otimização de velocidade."
+        "tooltip": "Seedance 2.5 para o modelo mais recente, vídeos de até 30 segundos e saída em mp4/mov; Seedance 2.0 para qualidade máxima e 1080p/4k; Fast para otimização de velocidade; Mini para a geração mais rápida e de menor custo."
       },
       "model_duration": {
         "name": "duração"
@@ -832,11 +898,11 @@
       "model_generate_audio": {
         "name": "gerar_áudio"
       },
+      "model_output_format": {
+        "name": "formato_de_saida"
+      },
       "model_prompt": {
         "name": "prompt"
-      },
-      "model_ratio": {
-        "name": "proporção"
       },
       "model_resolution": {
         "name": "resolução"
@@ -865,7 +931,7 @@
       },
       "model": {
         "name": "modelo",
-        "tooltip": "Seedance 2.0 para máxima qualidade; Seedance 2.0 Fast para otimização de velocidade."
+        "tooltip": "Seedance 2.5 para o modelo mais recente, vídeos de até 30 segundos e saída em mp4/mov; Seedance 2.0 para qualidade máxima e 1080p/4k; Fast para otimização de velocidade; Mini para a geração mais rápida e de menor custo."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -879,6 +945,9 @@
       "model_generate_audio": {
         "name": "gerar_áudio"
       },
+      "model_output_format": {
+        "name": "formato_de_saida"
+      },
       "model_prompt": {
         "name": "prompt"
       },
@@ -887,6 +956,9 @@
       },
       "model_resolution": {
         "name": "resolução"
+      },
+      "model_video_editing": {
+        "name": "edição_de_vídeo"
       },
       "seed": {
         "name": "semente",
@@ -912,13 +984,16 @@
       },
       "model": {
         "name": "modelo",
-        "tooltip": "Seedance 2.0 para máxima qualidade; Seedance 2.0 Fast para otimização de velocidade."
+        "tooltip": "Seedance 2.5 para o modelo mais recente, vídeos de até 30 segundos e saída em mp4/mov; Seedance 2.0 para qualidade máxima e 1080p/4k; Fast para otimização de velocidade; Mini para a geração mais rápida e de menor custo."
       },
       "model_duration": {
         "name": "duração"
       },
       "model_generate_audio": {
         "name": "gerar_áudio"
+      },
+      "model_output_format": {
+        "name": "formato_de_saida"
       },
       "model_prompt": {
         "name": "prompt"
@@ -1268,6 +1343,69 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "ByteDanceSeedreamLayerSeparationNode": {
+    "description": "Decompõe uma imagem em uma placa de fundo mais até 16 camadas transparentes reposicionáveis, cada uma com ordem de empilhamento, caixa delimitadora, nome e descrição.",
+    "display_name": "ByteDance Seedream 5.0 Pro Separação de Camadas",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "crop_layers": {
+        "name": "recortar camadas",
+        "tooltip": "Geometria dos lotes de saída das camadas/máscaras (layer_stack não é afetado e sempre é justo). Tela cheia: cada camada em uma tela do tamanho da base na posição da sua caixa delimitadora - recomponha diretamente com ImageCompositeMasked. Tamanho mínimo: cada camada recortada para sua caixa delimitadora (preenchida até a maior camada para o lote) - tensores muito menores; reconstrua o posicionamento com Camadas a partir de Caixas Delimitadoras usando a saída bboxes."
+      },
+      "image": {
+        "name": "imagem",
+        "tooltip": "A imagem a ser separada. Exatamente uma imagem, com pelo menos 512x512 pixels, proporção entre 1:16 e 16:1. Entradas maiores que cerca de 4MP serão redimensionadas antes do upload."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Como separar a imagem. Deixe em branco para detectar automaticamente e separar todos os elementos principais. Descreva os elementos em linguagem natural para controlar a separação, ou aponte regiões exatas com tags <bbox>esquerda topo direita base</bbox> (coordenadas em permil de 0-1000)."
+      },
+      "prompt_optimization": {
+        "name": "otimização do prompt",
+        "tooltip": "Modo de otimização do prompt: 'standard' oferece maior qualidade, 'fast' reduz o tempo de geração."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed a ser usada para geração."
+      },
+      "size": {
+        "name": "tamanho",
+        "tooltip": "Nível de resolução de saída. 'auto' segue o tamanho da imagem de entrada (limitado à faixa de 1K-2K)."
+      },
+      "watermark": {
+        "name": "marca d'água",
+        "tooltip": "Se deve adicionar uma marca d'água \"Gerado por IA\" às imagens."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "imagem base",
+        "tooltip": "A imagem base (placa de fundo) sobre a qual as camadas são empilhadas."
+      },
+      "1": {
+        "name": "máscara base",
+        "tooltip": "Transparência da imagem base (1 = transparente, convenção LoadImage); atualmente sempre totalmente opaca."
+      },
+      "2": {
+        "name": "camadas",
+        "tooltip": "Camadas transparentes ordenadas de baixo para cima. Modo tela cheia: posicionadas em uma tela preta do tamanho da base na posição da caixa delimitadora. Modo tamanho mínimo: recortadas para sua caixa delimitadora, ancoradas no canto superior esquerdo, preenchidas até a maior camada."
+      },
+      "3": {
+        "name": "máscaras",
+        "tooltip": "Transparência por camada, alinhada por índice com o lote de camadas (1 = transparente, convenção LoadImage). Para composição estilo ImageCompositeMasked, adicione InvertMask primeiro."
+      },
+      "4": {
+        "name": "bboxes",
+        "tooltip": "Uma caixa de posicionamento por camada, alinhada por índice com o lote de camadas (alimente ambos, mais máscaras, em Camadas a partir de Caixas Delimitadoras para reconstruir o posicionamento por camada): {x, y, width, height, metadata: {name, desc, z_index, native_size, content_rect, flags}}. content_rect = [esquerda, topo, largura, altura] é a região de conteúdo da camada dentro de sua própria moldura; ela pousa na tela na posição da caixa mais esse deslocamento."
+      },
+      "5": {
+        "name": "pilha de camadas",
+        "tooltip": "Documento de camadas pronto para edição para Criar Imagem em Camadas: a placa base mais cada elemento como sua própria camada nomeada, recortada e posicionada corretamente com ordem de empilhamento. Conecte diretamente ou estenda com Adicionar Camada."
       }
     }
   },
@@ -5686,6 +5824,9 @@
       "model_number_of_images": {
         "name": "número_de_imagens"
       },
+      "model_quality": {
+        "name": "qualidade"
+      },
       "model_resolution": {
         "name": "resolução"
       },
@@ -5724,6 +5865,10 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "O prompt de texto usado para gerar a imagem"
+      },
+      "quality": {
+        "name": "qualidade",
+        "tooltip": "Nível de qualidade, suportado apenas pelo modelo grok-imagine-image-2.0."
       },
       "resolution": {
         "name": "resolução"
@@ -5818,19 +5963,19 @@
       },
       "image": {
         "name": "image",
-        "tooltip": "Imagem inicial opcional para grok-imagine-video. Obrigatória para grok-imagine-video-1.5."
+        "tooltip": "Imagem inicial opcional. Se omitida, o vídeo é gerado apenas a partir do prompt de texto."
       },
       "model": {
         "name": "model",
-        "tooltip": "grok-imagine-video-1.5 atualmente sempre requer uma imagem de entrada."
+        "tooltip": "O modelo a ser usado para a geração de vídeo."
       },
       "prompt": {
         "name": "prompt",
-        "tooltip": "Descrição em texto do vídeo desejado."
+        "tooltip": "Descrição em texto do vídeo desejado. Opcional para grok-imagine-video-1.5 quando uma imagem de entrada é fornecida."
       },
       "resolution": {
         "name": "resolution",
-        "tooltip": "A resolução do vídeo de saída."
+        "tooltip": "A resolução do vídeo de saída. 1080p está disponível apenas para grok-imagine-video-1.5."
       },
       "seed": {
         "name": "seed",
@@ -5844,7 +5989,7 @@
     }
   },
   "GrokVideoReferenceNode": {
-    "description": "Gere vídeo guiado por imagens de referência como referências de estilo e conteúdo.",
+    "description": "Gere um vídeo guiado por imagens de referência, com referências de vozes predefinidas opcionais.",
     "display_name": "Grok Referência-para-Vídeo",
     "inputs": {
       "control_after_generate": {
@@ -6925,6 +7070,27 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "ImageCompositor": {
+    "display_name": "Criar Imagem em Camadas",
+    "inputs": {
+      "compositor": {
+        "name": "compositor",
+        "tooltip": "Composição em camadas salva pelo editor de compositor."
+      },
+      "layers": {
+        "name": "layers",
+        "tooltip": "Pilha de camadas para compor; construa-a com Adicionar Camada. Os itens são empilhados pelo z_index, quadros em lote dentro de um item expandem para camadas consecutivas, e o posicionamento, opacidade e modo de mesclagem do item definem a composição inicial. Sem um canvas de documento explícito, o tamanho é o máximo possível das camadas posicionadas. Uma composição salva que corresponda às entradas atuais tem prioridade."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Imagem composta. Possui canal alfa quando a composição tem áreas transparentes (ex: fundo oculto), caso contrário, RGB simples."
+      },
+      "1": {
+        "tooltip": "Transparência da composição (1 = totalmente transparente). Todos zeros quando a composição é opaca."
       }
     }
   },
@@ -8650,7 +8816,7 @@
   },
   "LTXVConcatAVLatent": {
     "description": "Mescla um latente de vídeo e um latente de áudio em um latente AV conjunto (qualquer modelo AV, ex: LTXV ou MiniMax H3).",
-    "display_name": "LTXVConcatAVLatent",
+    "display_name": "Concatenar latente AV",
     "inputs": {
       "audio_latent": {
         "name": "audio_latent"
@@ -8766,6 +8932,67 @@
       "2": {
         "name": "latent",
         "tooltip": null
+      }
+    }
+  },
+  "LTXVDualCFGGuider": {
+    "description": "Escalas CFG separadas para as modalidades de vídeo e áudio de um latent LTXV-AV compactado.",
+    "display_name": "LTXV Dual CFG Guider",
+    "inputs": {
+      "audio_cfg": {
+        "name": "audio_cfg"
+      },
+      "model": {
+        "name": "model"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "video_cfg": {
+        "name": "video_cfg"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVDurationPredictor": {
+    "description": "Prevê a duração natural da cena para um prompt usando o duration head do LTX 2.4 (carregado com ModelPatchLoader) e ajusta para a grade de quadros 8k+1 do VAE.",
+    "display_name": "LTXV Duration Predictor",
+    "inputs": {
+      "duration_head": {
+        "name": "duration_head",
+        "tooltip": "Duration head do LTX 2.4 carregado com ModelPatchLoader."
+      },
+      "frame_rate": {
+        "name": "frame_rate"
+      },
+      "max_seconds": {
+        "name": "max_seconds"
+      },
+      "min_seconds": {
+        "name": "min_seconds"
+      },
+      "model": {
+        "name": "model"
+      },
+      "positive": {
+        "name": "positive"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "num_frames",
+        "tooltip": null
+      },
+      "1": {
+        "name": "seconds",
+        "tooltip": "Duração prevista bruta (sem limite)."
       }
     }
   },
@@ -8888,6 +9115,29 @@
       }
     }
   },
+  "LTXVModalityGuidance": {
+    "description": "Orientação cross-modal (áudio-vídeo) para LTXV-AV. Executa uma passagem extra por etapa com a cross-attention a2v/v2a desconectada, depois direciona o resultado para a previsão acoplada - fortalecendo a sincronização áudio-visual (ex: sincronização labial). O valor padrão de modality_scale é 3.0. Pode ser usado junto com o dual-CFG guider e STG. Defina como 1.0 para desabilitar (sem passagem extra).",
+    "display_name": "LTXV Modality Guidance (acoplamento A/V)",
+    "inputs": {
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "modality_scale": {
+        "name": "modality_scale"
+      },
+      "model": {
+        "name": "model"
+      },
+      "start_percent": {
+        "name": "start_percent"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LTXVPreprocess": {
     "display_name": "LTXVPreprocess",
     "inputs": {
@@ -8985,8 +9235,8 @@
     }
   },
   "LTXVSeparateAVLatent": {
-    "description": "LTXV Separar AV Latent",
-    "display_name": "LTXVSeparateAVLatent",
+    "description": "Divide um latente AV conjunto em seus latentes de vídeo e áudio (qualquer modelo AV, por exemplo, LTXV ou MiniMax H3).",
+    "display_name": "Separar latente AV",
     "inputs": {
       "av_latent": {
         "name": "av_latent"
@@ -8999,6 +9249,33 @@
       },
       "1": {
         "name": "audio_latent",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVSpatioTemporalGuidance": {
+    "description": "Executa uma passagem extra por etapa com a self-attention dos blocos selecionados degradada para um value-passthrough, depois orienta para longe disso - melhorando o detalhe espacial e a coerência do movimento.",
+    "display_name": "LTXV Spatio-Temporal Guidance (STG)",
+    "inputs": {
+      "blocks": {
+        "name": "blocks",
+        "tooltip": "Índices dos blocos transformer separados por vírgula para perturbar."
+      },
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "model": {
+        "name": "model"
+      },
+      "scale": {
+        "name": "scale"
+      },
+      "start_percent": {
+        "name": "start_percent"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -9413,6 +9690,45 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "LayersFromBoundingBoxes": {
+    "description": "Transforme um lote de imagens e suas caixas delimitadoras em uma pilha de camadas, uma camada por quadro, cada uma posicionada por sua própria caixa. Use isto quando um nó emitir camadas como um lote - um lote carrega um único posicionamento para cada quadro, então as posições individuais seriam perdidas de outra forma.",
+    "display_name": "Camadas a partir de Caixas Delimitadoras",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "Caixas de posicionamento, alinhadas por índice com o lote de imagens. Aceita caixas delimitadoras (x, y, largura, altura), elementos normalizados (com um 'bbox' - estes precisam de canvas_width/canvas_height para converter em pixels), ou uma string JSON de qualquer um deles. Quadros sem caixa correspondente são posicionados na origem. A largura/altura de uma caixa escala a camada para caber nela. metadata.name (ou desc) e metadata.z_index são usados quando presentes, e metadata.content_rect (relativo ao quadro) recorta o quadro para seu conteúdo real."
+      },
+      "canvas_height": {
+        "name": "canvas_height",
+        "tooltip": "Altura do canvas do documento. 0 deriva a partir das camadas posicionadas."
+      },
+      "canvas_width": {
+        "name": "canvas_width",
+        "tooltip": "Largura do canvas do documento. 0 deriva a partir das camadas posicionadas."
+      },
+      "crop_to_content": {
+        "name": "crop_to_content",
+        "tooltip": "Recorta cada quadro para metadata.content_rect quando presente e posiciona o conteúdo na posição da caixa mais o deslocamento do retângulo. Mantenha ativado para lotes cujos quadros são preenchidos - mantém apenas o conteúdo real em seu local verdadeiro."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Lote de imagens; cada quadro se torna uma camada."
+      },
+      "layers": {
+        "name": "layers",
+        "tooltip": "Pilha de camadas para adicionar. Deixe desconectado para iniciar uma nova pilha."
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "Transparência por quadro, alinhada por índice com o lote de imagens (1 = transparente, convenção LoadImage)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "A pilha de camadas, pronta para Criar Imagem em Camadas."
       }
     }
   },
@@ -9950,6 +10266,121 @@
     "outputs": {
       "0": {
         "name": "conditioning",
+        "tooltip": null
+      }
+    }
+  },
+  "LtxApi25AudioToVideo": {
+    "description": "Gere um vídeo guiado por uma faixa de áudio, com uma imagem opcional para o primeiro quadro.",
+    "display_name": "LTX 2.5 Áudio para Vídeo",
+    "inputs": {
+      "audio": {
+        "name": "áudio",
+        "tooltip": "Faixa de áudio que guia o vídeo. Seu comprimento (2-20 segundos) define a duração do vídeo."
+      },
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "image": {
+        "name": "imagem",
+        "tooltip": "Primeiro quadro opcional a ser usado para o vídeo."
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Semente para determinar se o nó deve ser executado novamente; os resultados reais são não determinísticos independentemente da semente."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LtxApi25ImageToVideo": {
+    "description": "Vídeos de qualidade profissional com duração e resolução personalizáveis a partir da imagem inicial.",
+    "display_name": "LTX 2.5 Imagem para Vídeo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "image": {
+        "name": "imagem",
+        "tooltip": "Primeiro quadro a ser usado para o vídeo."
+      },
+      "last_frame": {
+        "name": "último_quadro",
+        "tooltip": "Último quadro a ser usado para o vídeo."
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "model_duration": {
+        "name": "duração"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "gerar_áudio"
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Semente para determinar se o nó deve ser executado novamente; os resultados reais são não determinísticos independentemente da semente."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LtxApi25TextToVideo": {
+    "description": "Vídeos de qualidade profissional com duração e resolução personalizáveis.",
+    "display_name": "LTX 2.5 Texto para Vídeo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "model_duration": {
+        "name": "duração"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "gerar_áudio"
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Semente para determinar se o nó deve ser executado novamente; os resultados reais são não determinísticos independentemente da semente."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -11781,6 +12212,17 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "ModelAttentionBackend": {
+    "display_name": "ModelAttentionBackend",
+    "inputs": {
+      "attention": {
+        "name": "attention"
+      },
+      "model": {
+        "name": "model"
       }
     }
   },
@@ -15167,7 +15609,7 @@
     "description": "Visualize qualquer valor de entrada como texto.",
     "display_name": "Pré-visualizar como Texto",
     "inputs": {
-      "preview_mode": "Modo de visualização",
+      "preview_mode": {},
       "preview_text": {},
       "source": {
         "name": "source"
@@ -15518,6 +15960,96 @@
       },
       "vae": {
         "name": "vae"
+      }
+    }
+  },
+  "QwenImageEditApi": {
+    "description": "Edita ou combina até 3 imagens de referência guiadas por um prompt de texto usando os modelos Qwen-Image 3.0.",
+    "display_name": "Qwen Image 3 Edit",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Modelo a ser utilizado."
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "Número de imagens a serem geradas, retornadas em lote."
+      },
+      "prompt_extend": {
+        "name": "prompt_extend",
+        "tooltip": "Se o prompt deve ser aprimorado com assistência de IA."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed a ser utilizada para a geração."
+      },
+      "size": {
+        "name": "size",
+        "tooltip": "Resolução de saída. 'match input' reutiliza o tamanho da primeira imagem de referência, 'auto' permite que o modelo escolha um tamanho com a mesma proporção, 'custom' define uma largura e altura explícitas."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Se deve adicionar uma marca d'água gerada por IA ao resultado."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QwenImageTextToImageApi": {
+    "description": "Gera imagens a partir de um prompt de texto usando os modelos Qwen-Image 3.0.",
+    "display_name": "Qwen Image 3 Text to Image",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Modelo a ser utilizado."
+      },
+      "model_height": {
+        "name": "height"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_width": {
+        "name": "width"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "Número de imagens a serem geradas, retornadas em lote."
+      },
+      "prompt_extend": {
+        "name": "prompt_extend",
+        "tooltip": "Se o prompt deve ser aprimorado com assistência de IA."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed a ser utilizada para a geração."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Se deve adicionar uma marca d'água gerada por IA ao resultado."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },

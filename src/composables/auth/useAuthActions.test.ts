@@ -1,5 +1,4 @@
 import { FirebaseError } from 'firebase/app'
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useAuthActions } from '@/composables/auth/useAuthActions'
@@ -8,11 +7,16 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workfl
 type ModifiedWorkflow = Pick<ComfyWorkflow, 'path' | 'isModified'>
 
 const mockAuthStore = vi.hoisted(() => ({
-  login: vi.fn().mockResolvedValue(undefined),
-  loginWithGoogle: vi.fn().mockResolvedValue(undefined),
-  loginWithGithub: vi.fn().mockResolvedValue(undefined),
-  register: vi.fn().mockResolvedValue(undefined),
-  logout: vi.fn().mockResolvedValue(undefined)
+  login: vi.fn(async () => undefined),
+  loginWithGoogle: vi.fn(async () => undefined),
+  loginWithGithub: vi.fn(async () => undefined),
+  register: vi.fn(async () => undefined),
+  logout: vi.fn(async () => undefined),
+  initiateCreditPurchase: vi.fn(
+    async (): Promise<{ checkout_url?: string }> => ({
+      checkout_url: 'https://checkout.stripe.test'
+    })
+  )
 }))
 
 const mockToastStore = vi.hoisted(() => ({
@@ -24,7 +28,7 @@ const mockWorkflowStore = vi.hoisted(() => ({
 }))
 
 const mockWorkflowService = vi.hoisted(() => ({
-  saveWorkflow: vi.fn().mockResolvedValue(true)
+  saveWorkflow: vi.fn(async () => true)
 }))
 
 const mockDialogService = vi.hoisted(() => ({
@@ -33,7 +37,11 @@ const mockDialogService = vi.hoisted(() => ({
 
 const mockToastErrorHandler = vi.hoisted(() => vi.fn())
 const mockTrackAuthFailed = vi.hoisted(() => vi.fn())
+const mockStartPendingTopup = vi.hoisted(() => vi.fn())
 const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
+const mockBillingState = vi.hoisted(() => ({
+  canAccessSubscriptionFeatures: false
+}))
 const mockClearAllWorkflowStorage = vi.hoisted(() => vi.fn())
 
 const knownAuthErrorCodes = new Set([
@@ -63,6 +71,10 @@ vi.mock('@/platform/telemetry', () => ({
   }))
 }))
 
+vi.mock('@/platform/workspace/composables/usePendingTopup', () => ({
+  usePendingTopup: () => ({ startPendingTopup: mockStartPendingTopup })
+}))
+
 vi.mock('@/platform/updates/common/toastStore', () => ({
   useToastStore: vi.fn(() => mockToastStore)
 }))
@@ -89,7 +101,9 @@ vi.mock('@/stores/authStore', () => ({
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: vi.fn(() => ({
-    canAccessSubscriptionFeatures: { value: false },
+    canAccessSubscriptionFeatures: {
+      value: mockBillingState.canAccessSubscriptionFeatures
+    },
     isFreeTier: { value: true },
     type: { value: 'free' }
   }))
@@ -120,12 +134,54 @@ function makeWorkflow(path: string): ModifiedWorkflow {
 
 beforeEach(() => {
   mockDistributionState.isCloud = false
+  mockBillingState.canAccessSubscriptionFeatures = false
+})
+
+describe('useAuthActions.purchaseCreditsDirect', () => {
+  beforeEach(() => {
+    mockBillingState.canAccessSubscriptionFeatures = true
+  })
+
+  it('starts top-up tracking before opening Stripe checkout', async () => {
+    const open = vi.spyOn(window, 'open').mockImplementation(() => null)
+    const { purchaseCreditsDirect } = useAuthActions()
+
+    await purchaseCreditsDirect(25)
+
+    expect(mockStartPendingTopup).toHaveBeenCalledOnce()
+    expect(open).toHaveBeenCalledWith('https://checkout.stripe.test', '_blank')
+    expect(mockStartPendingTopup.mock.invocationCallOrder[0]).toBeLessThan(
+      open.mock.invocationCallOrder[0]
+    )
+  })
+
+  it('does not start tracking or open checkout when no checkout URL is returned', async () => {
+    const open = vi.spyOn(window, 'open').mockImplementation(() => null)
+    mockAuthStore.initiateCreditPurchase.mockResolvedValueOnce({})
+    const { purchaseCreditsDirect } = useAuthActions()
+
+    await expect(purchaseCreditsDirect(25)).rejects.toThrow()
+
+    expect(mockStartPendingTopup).not.toHaveBeenCalled()
+    expect(open).not.toHaveBeenCalled()
+  })
+
+  it('does not start tracking or open checkout when the purchase request rejects', async () => {
+    const open = vi.spyOn(window, 'open').mockImplementation(() => null)
+    mockAuthStore.initiateCreditPurchase.mockRejectedValueOnce(
+      new Error('network down')
+    )
+    const { purchaseCreditsDirect } = useAuthActions()
+
+    await expect(purchaseCreditsDirect(25)).rejects.toThrow('network down')
+
+    expect(mockStartPendingTopup).not.toHaveBeenCalled()
+    expect(open).not.toHaveBeenCalled()
+  })
 })
 
 describe('useAuthActions.logout', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
-    vi.clearAllMocks()
     mockDistributionState.isCloud = true
     mockWorkflowStore.modifiedWorkflows = []
   })
@@ -283,8 +339,6 @@ describe('useAuthActions.logout', () => {
 
 describe('useAuthActions auth flow error telemetry', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
-    vi.clearAllMocks()
     mockWorkflowStore.modifiedWorkflows = []
   })
 
@@ -361,11 +415,6 @@ describe('useAuthActions auth flow error telemetry', () => {
 })
 
 describe('useAuthActions.reportError', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-    vi.clearAllMocks()
-  })
-
   it('shows the friendly message for a known Firebase auth code', () => {
     const { reportError } = useAuthActions()
 

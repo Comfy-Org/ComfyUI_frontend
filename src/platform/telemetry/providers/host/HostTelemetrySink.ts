@@ -272,10 +272,6 @@ export class HostTelemetrySink implements TelemetryProvider {
     this.capture(TelemetryEvents.WORKFLOW_CREATED, metadata)
   }
 
-  trackWorkflowExecution(): void {
-    this.capture(TelemetryEvents.EXECUTION_START)
-  }
-
   trackExecutionError(metadata: ExecutionErrorMetadata): void {
     this.capture(TelemetryEvents.EXECUTION_ERROR, metadata)
   }

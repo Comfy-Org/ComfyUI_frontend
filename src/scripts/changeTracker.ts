@@ -2,6 +2,7 @@ import { useDebounceFn } from '@vueuse/core'
 import _ from 'es-toolkit/compat'
 
 import { assert } from '@/base/assert'
+import { LAYER_EDITOR_DIALOG_KEY } from '@/renderer/extensions/layerEditor/composables/layerEditorDialog'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/litegraph'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
@@ -462,6 +463,10 @@ export class ChangeTracker {
 
   private static _checkStateWarned = false
 
+  static resetCheckStateWarningForTest() {
+    ChangeTracker._checkStateWarned = false
+  }
+
   async updateState(source: ComfyWorkflowJSON[], target: ComfyWorkflowJSON[]) {
     const prevState = source.pop()
     if (prevState) {
@@ -531,6 +536,9 @@ export class ChangeTracker {
         const comfyApp = app.constructor as typeof ComfyApp
         if (comfyApp.maskeditor_is_opended?.()) return
         if (isModalOpen(dialogStore.dialogStack.length)) return
+
+        // The layer editor has its own session-local undo history
+        if (useDialogStore().isDialogOpen(LAYER_EDITOR_DIALOG_KEY)) return
 
         const activeEl = document.activeElement
         requestAnimationFrame(async () => {

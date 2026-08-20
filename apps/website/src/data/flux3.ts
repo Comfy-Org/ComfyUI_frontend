@@ -1,18 +1,43 @@
-import type { ModelLaunchPage } from '../templates/model-launch/types'
+import type {
+  ModelLaunchMedia,
+  ModelLaunchPage
+} from '../templates/model-launch/types'
 
 import { externalLinks } from '../config/routes'
 
 // Flux 3 launch footage, encoded to the site's web video profile and served
-// from media.comfy.org.
+// from media.comfy.org. Posters are pending: add each clip's `posterSrc` once
+// the stills reach the CDN.
 const media = {
-  hero: 'https://media.comfy.org/website/flux-3/hero.mp4',
-  card1: 'https://media.comfy.org/website/flux-3/card-1.webm',
-  card2: 'https://media.comfy.org/website/flux-3/card-2.webm',
-  card3: 'https://media.comfy.org/website/flux-3/card-3.webm',
-  card4: 'https://media.comfy.org/website/flux-3/card-4.webm',
-  card5: 'https://media.comfy.org/website/flux-3/card-5.webm',
-  card6: 'https://media.comfy.org/website/flux-3/card-6.webm'
-} as const
+  hero: {
+    kind: 'video',
+    src: 'https://media.comfy.org/website/flux-3/hero.mp4'
+  },
+  card1: {
+    kind: 'video',
+    src: 'https://media.comfy.org/website/flux-3/card-1.webm'
+  },
+  card2: {
+    kind: 'video',
+    src: 'https://media.comfy.org/website/flux-3/card-2.webm'
+  },
+  card3: {
+    kind: 'video',
+    src: 'https://media.comfy.org/website/flux-3/card-3.webm'
+  },
+  card4: {
+    kind: 'video',
+    src: 'https://media.comfy.org/website/flux-3/card-4.webm'
+  },
+  card5: {
+    kind: 'video',
+    src: 'https://media.comfy.org/website/flux-3/card-5.webm'
+  },
+  card6: {
+    kind: 'video',
+    src: 'https://media.comfy.org/website/flux-3/card-6.webm'
+  }
+} as const satisfies Record<string, ModelLaunchMedia>
 
 export const flux3Page: ModelLaunchPage = {
   metaTitleKey: 'flux3.meta.title',
@@ -20,7 +45,7 @@ export const flux3Page: ModelLaunchPage = {
   breadcrumbLabelKey: 'flux3.breadcrumb.model',
   breadcrumbUpdatedKey: 'flux3.breadcrumb.updated',
   hero: {
-    videoSrc: media.hero,
+    videoSrc: media.hero.src,
     titleKey: 'flux3.hero.title',
     titleRestKey: 'flux3.hero.titleRest',
     descriptionKey: 'flux3.hero.description',
@@ -48,7 +73,7 @@ export const flux3Page: ModelLaunchPage = {
           en: 'A peaceful pixelated lake valley holds every detail as the camera pushes in.',
           'zh-CN': '宁静的像素风湖谷，镜头推进时每个细节都清晰保留。'
         },
-        mediaSrc: media.card1,
+        media: media.card1,
         href: externalLinks.workflows
       },
       {
@@ -60,7 +85,7 @@ export const flux3Page: ModelLaunchPage = {
           en: 'Three dancers, three rooms, one rhythm, timing locked across every panel.',
           'zh-CN': '三位舞者、三个房间、同一个节奏，每一格画面的节拍都锁得住。'
         },
-        mediaSrc: media.card2,
+        media: media.card2,
         href: externalLinks.workflows
       },
       {
@@ -72,7 +97,7 @@ export const flux3Page: ModelLaunchPage = {
           en: 'Shattered porcelain reassembles on white, every fragment tracked in reverse.',
           'zh-CN': '碎裂的青花瓷在白色背景上复原，每一片碎片都被倒放追踪。'
         },
-        mediaSrc: media.card3,
+        media: media.card3,
         href: externalLinks.workflows
       },
       {
@@ -84,7 +109,7 @@ export const flux3Page: ModelLaunchPage = {
           en: 'A drone crosses from one environment to the next.',
           'zh-CN': '无人机从一个场景穿越到下一个场景。'
         },
-        mediaSrc: media.card4,
+        media: media.card4,
         href: externalLinks.workflows
       },
       {
@@ -96,7 +121,7 @@ export const flux3Page: ModelLaunchPage = {
           en: 'Outlaws ride into town, hooves and crowd noise with the frame.',
           'zh-CN': '匪徒骑马进城，马蹄声与人群嘈杂声随画面同步生成。'
         },
-        mediaSrc: media.card5,
+        media: media.card5,
         href: externalLinks.workflows
       },
       {
@@ -108,7 +133,7 @@ export const flux3Page: ModelLaunchPage = {
           en: 'A bear closes in at the checkpoint, game-engine look held steady.',
           'zh-CN': '一头熊在检查站前逼近，游戏引擎般的质感稳定统一。'
         },
-        mediaSrc: media.card6,
+        media: media.card6,
         href: externalLinks.workflows
       }
     ]
