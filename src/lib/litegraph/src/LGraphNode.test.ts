@@ -15,6 +15,7 @@ import { LayoutSource } from '@/renderer/core/layout/types'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import {
   LGraphNode,
@@ -1201,6 +1202,28 @@ describe('widgets array reactivity', () => {
         .map((widget) => widget.name)
     ).toEqual(['c', 'b'])
     expect(widgetValueStore.getWidget(removedWidgetId)?.value).toBe(1)
+  })
+
+  test('normalizes widget class fields when attaching the node', () => {
+    class NodeWithWidgetField extends LGraphNode {
+      override widgets: IBaseWidget[] = []
+    }
+
+    const graph = new LGraph()
+    const node = new NodeWithWidgetField('test')
+    node.addWidget('number', 'a', 1, () => undefined, {})
+    node.addWidget('number', 'b', 2, () => undefined, {})
+    graph.add(node)
+
+    const widgets = node.widgets
+    node.widgets.reverse()
+
+    expect(node.widgets).toBe(widgets)
+    expect(
+      useWidgetValueStore()
+        .getNodeWidgets(graph.rootGraph.id, node.id)
+        .map((widget) => widget.name)
+    ).toEqual(['b', 'a'])
   })
 
   test('notifies readers when a widget is removed in place', async () => {

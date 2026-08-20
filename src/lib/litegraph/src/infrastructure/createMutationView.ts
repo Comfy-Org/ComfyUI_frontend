@@ -2,8 +2,21 @@ interface MutationViewOptions<TValue> {
   commit: () => void
   mapValue?: (property: PropertyKey, value: unknown) => unknown
   observe?: ArrayLike<TValue>
+  shouldCommitMethod?: (property: PropertyKey) => boolean
   synchronize?: () => void
 }
+
+const arrayMutationMethods = new Set<PropertyKey>([
+  'copyWithin',
+  'fill',
+  'pop',
+  'push',
+  'reverse',
+  'shift',
+  'sort',
+  'splice',
+  'unshift'
+])
 
 export function createMutationView<
   TValue,
@@ -14,7 +27,8 @@ export function createMutationView<
     synchronize,
     commit,
     observe = target,
-    mapValue = (_property, value) => value
+    mapValue = (_property, value) => value,
+    shouldCommitMethod = () => true
   }: MutationViewOptions<TValue>
 ): TTarget {
   function commitIfChanged(previous: TValue[]): void {
@@ -31,21 +45,55 @@ export function createMutationView<
       const value = mapValue(property, Reflect.get(target, property, target))
       if (property === 'constructor') return value
       if (typeof value !== 'function') return value
+      if (!shouldCommitMethod(property)) return value.bind(target)
 
       return (...args: unknown[]) => {
         synchronize?.()
         const previous = Array.from(observe)
-        const result = Reflect.apply(value, target, args)
-        commitIfChanged(previous)
-        return result === target ? receiver : result
+        try {
+          const result = Reflect.apply(value, target, args)
+          return result === target ? receiver : result
+        } finally {
+          commitIfChanged(previous)
+        }
       }
     },
     set(target, property, value) {
       synchronize?.()
       const previous = Array.from(observe)
-      const updated = Reflect.set(target, property, value, target)
-      commitIfChanged(previous)
-      return updated
+      try {
+        return Reflect.set(target, property, value, target)
+      } finally {
+        commitIfChanged(previous)
+      }
+    },
+    deleteProperty(target, property) {
+      synchronize?.()
+      const previous = Array.from(observe)
+      try {
+        return Reflect.deleteProperty(target, property)
+      } finally {
+        commitIfChanged(previous)
+      }
+    },
+    defineProperty(target, property, attributes) {
+      synchronize?.()
+      const previous = Array.from(observe)
+      try {
+        return Reflect.defineProperty(target, property, attributes)
+      } finally {
+        commitIfChanged(previous)
+      }
     }
+  })
+}
+
+export function createArrayMutationView<TValue>(
+  target: TValue[],
+  commit: () => void
+): TValue[] {
+  return createMutationView(target, {
+    commit,
+    shouldCommitMethod: (property) => arrayMutationMethods.has(property)
   })
 }

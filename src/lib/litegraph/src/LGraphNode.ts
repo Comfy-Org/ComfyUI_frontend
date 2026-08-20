@@ -53,12 +53,12 @@ import {
   outputHasLinks,
   outputLinks
 } from './node/slotLinks'
+import { initializeWidgetsView } from './node/widgetsView'
 import { anchorRerouteChain } from './Reroute'
 import type { Reroute, RerouteId } from './Reroute'
 import { getNodeInputOnPos, getNodeOutputOnPos } from './canvas/measureSlots'
 import type { IDrawBoundingOptions } from './draw'
 import { createGeometryView } from './infrastructure/createGeometryView'
-import { createMutationView } from './infrastructure/createMutationView'
 import { NullGraphError } from './infrastructure/NullGraphError'
 import type { ReadOnlyRectangle } from './infrastructure/Rectangle'
 import { Rectangle } from './infrastructure/Rectangle'
@@ -402,35 +402,10 @@ export class LGraphNode
     this._state.flags = value
   }
 
-  private readonly _widgets = shallowReactive<IBaseWidget[]>([])
-  private readonly widgetsView = createMutationView(this._widgets, {
-    commit: () => {
-      this._widgetSlotsDirty = true
-      this.syncWidgetOrder(this._widgets)
-    }
-  })
-  private hasWidgets = false
   declare widgets?: IBaseWidget[]
 
-  private getWidgets(): IBaseWidget[] | undefined {
-    return this.hasWidgets ? this.widgetsView : undefined
-  }
-
-  private setWidgets(value: IBaseWidget[] | undefined): void {
-    if (value === undefined) {
-      if (!this.hasWidgets) return
-      this.hasWidgets = false
-      this._widgets.splice(0)
-      this._widgetSlotsDirty = true
-      this.syncWidgetOrder(this._widgets)
-      return
-    }
-
-    this.hasWidgets = true
-    this.widgetsView.splice(0, this.widgetsView.length, ...value)
-  }
-
   private syncWidgetOrder(widgets: readonly IBaseWidget[]): void {
+    this._widgetSlotsDirty = true
     const graphId = this.graph?.rootGraph.id
     if (!graphId) return
 
@@ -1054,12 +1029,7 @@ export class LGraphNode
   }
 
   constructor(title: string, type?: string) {
-    Object.defineProperty(this, 'widgets', {
-      get: () => this.getWidgets(),
-      set: (value: IBaseWidget[] | undefined) => this.setWidgets(value),
-      configurable: true,
-      enumerable: true
-    })
+    initializeWidgetsView(this, (widgets) => this.syncWidgetOrder(widgets))
     this._state = {
       flags: {},
       graphId: zeroUuid,
@@ -2286,7 +2256,6 @@ export class LGraphNode
     this.widgets ||= []
     const widget = toConcreteWidget(custom_widget, this, false) ?? custom_widget
     this.widgets.push(widget)
-    this._widgetSlotsDirty = true
 
     // Only register with store if node has a valid ID (is already in a graph).
     // If the node isn't in a graph yet (id === -1), registration happens
@@ -2330,24 +2299,9 @@ export class LGraphNode
         }
       }
     }
-    this._widgetSlotsDirty = true
 
     widget.onRemove?.()
     this.widgets.splice(widgetIndex, 1)
-
-    const graphId = this.graph?.rootGraph.id
-    if (graphId) {
-      const widgetValueStore = useWidgetValueStore()
-      // Drop the widget from the render order but keep its stored value, so a
-      // remove-then-re-add of the same widget id preserves what the user set.
-      if (widget.widgetId)
-        widgetValueStore.removeNodeWidgetOrder(widget.widgetId)
-      widgetValueStore.setNodeWidgetOrder(
-        graphId,
-        this.id,
-        getWidgetIds(this.widgets)
-      )
-    }
   }
 
   ensureWidgetRemoved(widget: IBaseWidget): void {
