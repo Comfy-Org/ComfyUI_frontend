@@ -2,22 +2,22 @@
 // rust, amber, olive, teal, slate, plum, mauve, taupe,
 // brick, gold, sage, steel, indigo, magenta, rosewood, graphite.
 export const WORKSPACE_AVATAR_PALETTE = [
-  '#A06856',
-  '#97794E',
-  '#5A6B52',
-  '#4E6E6A',
-  '#4A5578',
-  '#6E5A78',
-  '#9A6A74',
-  '#6B655C',
-  '#8F5656',
-  '#837B4D',
-  '#5C7C5C',
-  '#4D6E86',
-  '#5A5F8C',
-  '#8C5586',
-  '#8C5A73',
-  '#66707A'
+  '#A97260',
+  '#987A4F',
+  '#708566',
+  '#5F8782',
+  '#717EA7',
+  '#8E7799',
+  '#A0737D',
+  '#867E73',
+  '#A97070',
+  '#888050',
+  '#658865',
+  '#5C84A0',
+  '#777CA8',
+  '#A66C9F',
+  '#A3708A',
+  '#75808C'
 ] as const
 
 export function workspaceAvatarColor(
