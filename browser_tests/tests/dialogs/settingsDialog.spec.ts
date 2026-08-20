@@ -241,54 +241,66 @@ test.describe('Settings dialog - opening', { tag: '@ui' }, () => {
     await comfyPage.page.keyboard.press('Escape')
     await expect(settingsLocator).toBeHidden()
   })
-
-  test('Should persist keybinding setting', async ({ comfyPage }) => {
-    await comfyPage.page.keyboard.press('Control+,')
-
-    const settingsDialog = comfyPage.page.getByTestId(TestIds.dialogs.settings)
-    await expect(settingsDialog).toBeVisible()
-    await settingsDialog
-      .locator('nav [role="button"]', { hasText: 'Keybinding' })
-      .click()
-    await expect(
-      comfyPage.page.getByPlaceholder('Search Keybindings...')
-    ).toBeVisible()
-
-    const newBlankWorkflowRow = comfyPage.page.locator('tr', {
-      has: comfyPage.page.getByRole('cell', { name: 'New Blank Workflow' })
-    })
-    await newBlankWorkflowRow.click()
-
-    const addKeybindingButton = newBlankWorkflowRow.locator(
-      '.icon-\\[lucide--plus\\]'
-    )
-    await addKeybindingButton.click()
-
-    const input = comfyPage.page.getByPlaceholder('Enter your keybind')
-    await input.press('Alt+n')
-
-    const requestPromise = comfyPage.page.waitForRequest(
-      (req) =>
-        req.url().includes('/api/settings') &&
-        !req.url().includes('/api/settings/') &&
-        req.method() === 'POST'
-    )
-
-    const saveButton = comfyPage.page
-      .getByLabel('Modify keybinding')
-      .getByText('Save')
-    await saveButton.click()
-
-    const request = await requestPromise
-    const expectedSetting: Keybinding = {
-      commandId: 'Comfy.NewBlankWorkflow',
-      combo: {
-        key: 'n',
-        ctrl: false,
-        alt: true,
-        shift: false
-      }
-    }
-    expect(request.postData()).toContain(JSON.stringify(expectedSetting))
-  })
 })
+
+test.describe(
+  'Settings dialog - keybinding persistence',
+  { tag: '@ui' },
+  () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
+    })
+
+    test('Should persist keybinding setting', async ({ comfyPage }) => {
+      await comfyPage.page.keyboard.press('Control+,')
+
+      const settingsDialog = comfyPage.page.getByTestId(
+        TestIds.dialogs.settings
+      )
+      await expect(settingsDialog).toBeVisible()
+      await settingsDialog
+        .locator('nav [role="button"]', { hasText: 'Keybinding' })
+        .click()
+      await expect(
+        comfyPage.page.getByPlaceholder('Search Keybindings...')
+      ).toBeVisible()
+
+      const newBlankWorkflowRow = comfyPage.page.locator('tr', {
+        has: comfyPage.page.getByRole('cell', { name: 'New Blank Workflow' })
+      })
+      await newBlankWorkflowRow.click()
+
+      const addKeybindingButton = newBlankWorkflowRow.locator(
+        '.icon-\\[lucide--plus\\]'
+      )
+      await addKeybindingButton.click()
+
+      const input = comfyPage.page.getByPlaceholder('Enter your keybind')
+      await input.press('Alt+n')
+
+      const requestPromise = comfyPage.page.waitForRequest(
+        (req) =>
+          req.url().includes('/api/settings') &&
+          !req.url().includes('/api/settings/') &&
+          req.method() === 'POST'
+      )
+
+      const saveButton = comfyPage.page
+        .getByLabel('Modify keybinding')
+        .getByText('Save')
+      await saveButton.click()
+
+      const request = await requestPromise
+      const expectedSetting: Keybinding = {
+        commandId: 'Comfy.NewBlankWorkflow',
+        combo: {
+          key: 'n',
+          ctrl: false,
+          alt: true,
+          shift: false
+        }
+      }
+      expect(request.postData()).toContain(JSON.stringify(expectedSetting))
+    })
+  }
+)

@@ -536,8 +536,10 @@ test.describe('Canvas zoom speed setting', { tag: '@ui' }, () => {
     const maxSpeed = 2.5
     await comfyPage.settings.setSetting('Comfy.Graph.ZoomSpeed', maxSpeed)
 
-    await expect
-      .poll(() => comfyPage.settings.getSetting('Comfy.Graph.ZoomSpeed'))
-      .toBe(maxSpeed)
+    await test.step('Setting should persist', async () => {
+      await expect
+        .poll(() => comfyPage.settings.getSetting('Comfy.Graph.ZoomSpeed'))
+        .toBe(maxSpeed)
+    })
   })
 })
