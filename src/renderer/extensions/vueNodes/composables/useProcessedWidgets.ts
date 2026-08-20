@@ -167,11 +167,11 @@ function getHostNode(
 function isWidgetVisible(
   options: IWidgetOptions,
   showAdvanced: boolean,
-  linked = false
+  ignoreAdvanced = false
 ): boolean {
   const hidden = options.hidden ?? false
   const advanced = options.advanced ?? false
-  return !hidden && (!advanced || showAdvanced || linked)
+  return !hidden && (!advanced || showAdvanced || ignoreAdvanced)
 }
 
 function hasWidgetError(
