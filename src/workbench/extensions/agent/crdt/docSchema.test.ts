@@ -1,3 +1,4 @@
+import { SCHEMA_VERSION, mint } from '@comfyorg/comfy-multi-player'
 import { describe, expect, it } from 'vitest'
 import * as Y from 'yjs'
 
@@ -100,5 +101,39 @@ describe('readDocSnapshot', () => {
     Y.applyUpdate(follower, Y.encodeStateAsUpdate(host))
 
     expect(readDocSnapshot(follower).nodes.get('1')?.type).toBe('LoadImage')
+  })
+})
+
+/**
+ * Cross-package parity: the follower must read what the REAL host writes. Rather
+ * than hand-build a fixture, mint a doc with the shared package's own `mint()`
+ * (the same code the cloud doc-host runs), fork a follower from that snapshot
+ * the way a real replica does, and assert the follower's reader projects it. If
+ * the upstream doc layout changes, this reddens against the real writer, not a
+ * mirror of it.
+ */
+describe('readDocSnapshot ⇄ comfy-multi-player mint parity', () => {
+  it('reads a node minted by the shared package through the snapshot fork', () => {
+    const catalog = { types: { LoadImage: { widget_order: ['image'] } } }
+    const workflow = {
+      nodes: [
+        { id: 3, type: 'LoadImage', pos: [12, 34], widgets_values: ['x.png'] }
+      ],
+      links: []
+    }
+    const minted = mint(workflow, catalog)
+    const follower = new Y.Doc()
+    Y.applyUpdate(follower, Y.encodeStateAsUpdate(minted))
+
+    expect(readDocSnapshot(follower).nodes.get('3')).toEqual({
+      id: toNodeId('3'),
+      type: 'LoadImage',
+      pos: [12, 34],
+      widgets: { image: 'x.png' }
+    })
+  })
+
+  it('re-exports the package SCHEMA_VERSION the follower is written against', () => {
+    expect(SCHEMA_VERSION).toBe(1)
   })
 })
