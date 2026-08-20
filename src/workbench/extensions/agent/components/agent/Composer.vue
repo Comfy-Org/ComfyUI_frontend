@@ -466,7 +466,9 @@ defineExpose({
             <span
               class="icon-[lucide--mouse-pointer-click] size-[14px] shrink-0"
             />
-            <span>{{ placeholderHint.addNodes }},</span>
+            <span class="underline decoration-dashed underline-offset-2"
+              >{{ placeholderHint.addNodes }},</span
+            >
           </button>
           <span>{{ placeholderHint.dragAssets }}</span>
         </div>
