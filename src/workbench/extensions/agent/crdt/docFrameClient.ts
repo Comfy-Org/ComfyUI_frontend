@@ -45,7 +45,19 @@ export type ServerDocFrame =
   | { type: 'awareness'; data: DocAwareness }
 
 export interface DocFrameTransport {
-  send(frame: string): void
+  /**
+   * Best-effort send. Returns `true` when the frame left the transport and
+   * `false` when the transport cannot currently carry it (socket not OPEN).
+   *
+   * It MUST NOT throw. "The socket is not connected yet" is a normal,
+   * recoverable state of a follower that mounted while `createSocket` was still
+   * awaiting its auth token — not an exception. Throwing here aborted the
+   * `watch(..., { immediate: true })` subscribe (leaving the follower
+   * permanently inert) and aborted `onBeforeUnmount` before `client.destroy()`
+   * (leaking listeners and a live projector). Callers reconcile intent against
+   * the returned boolean instead.
+   */
+  send(frame: string): boolean
   addEventListener(type: string, listener: EventListener): void
   removeEventListener(type: string, listener: EventListener): void
 }
@@ -189,23 +201,26 @@ export class DocFrameClient extends EventTarget {
     }
   }
 
-  subscribe(workflowId: string, stateVector: Uint8Array): void {
-    this.send('doc_subscribe', {
+  /** @returns whether the subscribe frame actually left the transport. */
+  subscribe(workflowId: string, stateVector: Uint8Array): boolean {
+    return this.send('doc_subscribe', {
       v: DOC_PROTOCOL_VERSION,
       workflow_id: workflowId,
       state_vector_b64: encodeBase64(stateVector)
     })
   }
 
-  unsubscribe(workflowId: string): void {
-    this.send('doc_unsubscribe', {
+  /** @returns whether the unsubscribe frame actually left the transport. */
+  unsubscribe(workflowId: string): boolean {
+    return this.send('doc_unsubscribe', {
       v: DOC_PROTOCOL_VERSION,
       workflow_id: workflowId
     })
   }
 
-  sendOps(workflowId: string, tab: string, ops: DocOp[]): void {
-    this.send('doc_ops', {
+  /** @returns whether the ops frame actually left the transport. */
+  sendOps(workflowId: string, tab: string, ops: DocOp[]): boolean {
+    return this.send('doc_ops', {
       v: DOC_PROTOCOL_VERSION,
       workflow_id: workflowId,
       tab,
@@ -219,7 +234,7 @@ export class DocFrameClient extends EventTarget {
     this.listeners.clear()
   }
 
-  private send(type: string, data: Record<string, unknown>): void {
-    this.transport.send(JSON.stringify({ type, data }))
+  private send(type: string, data: Record<string, unknown>): boolean {
+    return this.transport.send(JSON.stringify({ type, data }))
   }
 }

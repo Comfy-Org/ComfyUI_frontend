@@ -29,11 +29,14 @@ export interface AgentCrdtStatus {
   lastFrameType: string | null
 }
 
-const apiTransport: DocFrameTransport = {
+export const apiTransport: DocFrameTransport = {
   send(frame) {
-    if (api.socket?.readyState !== WebSocket.OPEN)
-      throw new Error('The ComfyUI WebSocket is not connected')
+    // Never throws: a closed socket is a recoverable state, not an error. See
+    // DocFrameTransport.send — throwing here aborted both the immediate
+    // subscribe watcher and the unmount hook.
+    if (api.socket?.readyState !== WebSocket.OPEN) return false
     api.socket.send(frame)
+    return true
   },
   addEventListener(type, listener) {
     api.addCustomEventListener(type, listener)
@@ -95,16 +98,41 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
   const onOpsResult: EventListener = (event) => {
     lastFrameType.value = event.type
   }
+  const onSchemaError: EventListener = (event) => {
+    // KA-11 fail-closed: the bridge refused to propagate an unreadable doc, so
+    // nothing was projected. Surface it as its own status rather than as a
+    // generic "disconnected", which is indistinguishable from "never connected".
+    connected.value = false
+    lastFrameType.value = event.type
+  }
   const onReconnected: EventListener = () => {
     connected.value = false
     projector.reset()
     bridge.resubscribe()
   }
+  /**
+   * Re-drive subscription intent whenever the socket may have become usable.
+   *
+   * `reconnected` fires only on a RE-connect (`api.ts` guards the dispatch with
+   * `isReconnect`), so it can never repair a follower that mounted while the
+   * first socket was still being opened — `createSocket` awaits an auth token
+   * before `new WebSocket(...)`, and a panel mounted inside that window used to
+   * stay inert forever. The ComfyUI server sends a `status` frame immediately
+   * on every accepted connection, first one included, so it is the earliest
+   * signal available that the socket can now carry a frame. `reconcile()` is a
+   * no-op once intent and reality agree, so the extra `status` traffic costs
+   * nothing.
+   */
+  const onSocketActivity: EventListener = () => {
+    bridge.reconcile()
+  }
 
   bridge.addEventListener('doc_subscribed', onSubscribed)
   bridge.addEventListener('doc_update', onUpdate)
   bridge.addEventListener('doc_ops_result', onOpsResult)
+  bridge.addEventListener('schema_error', onSchemaError)
   api.addEventListener('reconnected', onReconnected)
+  api.addEventListener('status', onSocketActivity)
 
   watch(
     workflowId,
@@ -119,12 +147,22 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
   )
 
   onBeforeUnmount(() => {
-    api.removeEventListener('reconnected', onReconnected)
-    bridge.removeEventListener('doc_subscribed', onSubscribed)
-    bridge.removeEventListener('doc_update', onUpdate)
-    bridge.removeEventListener('doc_ops_result', onOpsResult)
-    bridge.destroy()
-    client.destroy()
+    // Teardown must be total. Anything that survives keeps a projector wired to
+    // the live `app.graph`, so a remount would apply every subsequent update
+    // twice. `bridge.destroy()` and the transport send it performs are
+    // failure-tolerant by construction now, but the try/finally makes the
+    // "client.destroy() always runs" guarantee local and readable.
+    try {
+      api.removeEventListener('reconnected', onReconnected)
+      api.removeEventListener('status', onSocketActivity)
+      bridge.removeEventListener('doc_subscribed', onSubscribed)
+      bridge.removeEventListener('doc_update', onUpdate)
+      bridge.removeEventListener('doc_ops_result', onOpsResult)
+      bridge.removeEventListener('schema_error', onSchemaError)
+      bridge.destroy()
+    } finally {
+      client.destroy()
+    }
   })
 
   const status = computed<AgentCrdtStatus>(() => ({

@@ -49,8 +49,9 @@ const TEST_NODE_TYPE = 'FollowerSeamE2eNode'
  */
 class FrameTransport extends EventTarget implements DocFrameTransport {
   readonly sent: string[] = []
-  send(frame: string): void {
+  send(frame: string): boolean {
     this.sent.push(frame)
+    return true
   }
   // addEventListener/removeEventListener are inherited from EventTarget and
   // structurally satisfy DocFrameTransport; no redefinition needed.
