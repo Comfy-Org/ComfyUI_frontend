@@ -33,6 +33,7 @@ import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingH
 import { setTelemetryRegistry } from '@/platform/telemetry'
 import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
 import * as executionContextUtils from '@/platform/telemetry/utils/getExecutionContext'
+import { isCloud } from '@/platform/distribution/types'
 
 import { PromptExecutionError, api } from '@/scripts/api'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -60,6 +61,7 @@ const {
   mockToastStore,
   mockExtensionService,
   mockNodeOutputStore,
+  mockTeamWorkspaceStore,
   mockWorkspaceWorkflow,
   mockRefreshMissingModelPipeline,
   mockImportA1111,
@@ -86,6 +88,9 @@ const {
   mockNodeOutputStore: {
     refreshNodeOutputs: vi.fn(),
     resetAllOutputsAndPreviews: vi.fn()
+  },
+  mockTeamWorkspaceStore: {
+    activeWorkspaceId: 'workspace-a' as string | null
   },
   mockWorkspaceWorkflow: {
     activeWorkflow: null as ComfyWorkflow | null,
@@ -117,6 +122,10 @@ vi.mock('@/stores/apiKeyAuthStore', () => ({
 
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: vi.fn(() => mockAuthStore)
+}))
+
+vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
+  useTeamWorkspaceStore: vi.fn(() => mockTeamWorkspaceStore)
 }))
 
 vi.mock('@/platform/settings/settingStore', () => ({
@@ -281,6 +290,7 @@ describe('ComfyApp', () => {
     })
     mockApiKeyAuthStore.getApiKey.mockReturnValue(undefined)
     mockAuthStore.getWorkspaceAuthToken.mockResolvedValue(undefined)
+    mockTeamWorkspaceStore.activeWorkspaceId = 'workspace-a'
     mockExtensionService.invokeExtensions.mockReturnValue([])
     mockExtensionService.invokeExtensionsAsync.mockResolvedValue(undefined)
     vi.mocked(extractFilesFromDragEvent).mockResolvedValue([])
@@ -333,6 +343,88 @@ describe('ComfyApp', () => {
       resolveToken('workspace-token')
       await expect(submission).resolves.toBe(true)
       expect(queuePrompt).toHaveBeenCalledOnce()
+    })
+
+    it.skipIf(isCloud)(
+      'uses a workspace initialized while local authentication is pending',
+      async () => {
+        prepareEmptyPromptQueue()
+        mockTeamWorkspaceStore.activeWorkspaceId = null
+        mockAuthStore.getWorkspaceAuthToken.mockImplementationOnce(async () => {
+          mockTeamWorkspaceStore.activeWorkspaceId = 'workspace-a'
+          return 'workspace-token'
+        })
+        const queuePrompt = vi
+          .spyOn(api, 'queuePrompt')
+          .mockImplementation(() => {
+            expect(api.authToken).toBe('workspace-token')
+            return Promise.resolve({ prompt_id: 'job-1', error: '' })
+          })
+
+        await expect(app.queuePrompt(0)).resolves.toBe(true)
+
+        expect(queuePrompt).toHaveBeenCalledOnce()
+      }
+    )
+
+    it.skipIf(!isCloud)(
+      'does not submit when a cloud workspace appears during authentication',
+      async () => {
+        prepareEmptyPromptQueue()
+        mockTeamWorkspaceStore.activeWorkspaceId = null
+        mockAuthStore.getWorkspaceAuthToken.mockImplementationOnce(async () => {
+          mockTeamWorkspaceStore.activeWorkspaceId = 'workspace-a'
+          return 'firebase-token'
+        })
+        const queuePrompt = vi.spyOn(api, 'queuePrompt')
+        const showDialog = vi.spyOn(useDialogStore(), 'showDialog')
+
+        await expect(app.queuePrompt(0)).resolves.toBe(false)
+
+        expect(queuePrompt).not.toHaveBeenCalled()
+        expect(showDialog).toHaveBeenCalledOnce()
+      }
+    )
+
+    it('does not submit when the workspace changes during authentication', async () => {
+      prepareEmptyPromptQueue()
+      mockAuthStore.getWorkspaceAuthToken.mockImplementationOnce(async () => {
+        mockTeamWorkspaceStore.activeWorkspaceId = 'workspace-b'
+        return 'workspace-token-a'
+      })
+      const queuePrompt = vi.spyOn(api, 'queuePrompt')
+      const showDialog = vi.spyOn(useDialogStore(), 'showDialog')
+
+      await expect(app.queuePrompt(0)).resolves.toBe(false)
+
+      expect(queuePrompt).not.toHaveBeenCalled()
+      expect(showDialog).toHaveBeenCalledOnce()
+    })
+
+    it('does not submit a prompt after the active workspace changes', async () => {
+      prepareEmptyPromptQueue()
+      let finishPromptBuild: () => void = () => {}
+      vi.spyOn(app, 'graphToPrompt').mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            finishPromptBuild = () =>
+              resolve({
+                output: {},
+                workflow: createWorkflowGraphData()
+              })
+          })
+      )
+      const queuePrompt = vi.spyOn(api, 'queuePrompt')
+      const showDialog = vi.spyOn(useDialogStore(), 'showDialog')
+
+      const submission = app.queuePrompt(0)
+      await vi.waitFor(() => expect(app.graphToPrompt).toHaveBeenCalledOnce())
+      mockTeamWorkspaceStore.activeWorkspaceId = 'workspace-b'
+      finishPromptBuild()
+
+      await expect(submission).resolves.toBe(false)
+      expect(queuePrompt).not.toHaveBeenCalled()
+      expect(showDialog).toHaveBeenCalledOnce()
     })
 
     it('preserves missing node packs when submitting a prompt', async () => {
