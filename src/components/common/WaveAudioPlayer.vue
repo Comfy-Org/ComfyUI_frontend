@@ -5,8 +5,8 @@
     :class="
       cn('flex w-full gap-2', align === 'center' ? 'items-center' : 'items-end')
     "
-    @pointerdown.stop
-    @click.stop
+    @pointerdown="stopUnlessSelectionModifier"
+    @click="stopUnlessSelectionModifier"
   >
     <Button
       variant="textonly"
@@ -32,7 +32,7 @@
         )
       "
       :style="{ height: height + 'px' }"
-      @click="handleWaveformClick"
+      @click="seekUnlessSelectionModifier"
     >
       <div
         v-for="(bar, index) in bars"
@@ -211,6 +211,19 @@ const {
   src: toRef(() => src),
   barCount
 })
+
+function hasSelectionModifier(event: MouseEvent) {
+  return event.shiftKey || event.metaKey || event.ctrlKey
+}
+
+function stopUnlessSelectionModifier(event: MouseEvent) {
+  if (!hasSelectionModifier(event)) event.stopPropagation()
+}
+
+function seekUnlessSelectionModifier(event: MouseEvent) {
+  if (hasSelectionModifier(event)) return
+  handleWaveformClick(event)
+}
 
 function handleProgressClick(event: MouseEvent) {
   if (!progressRef.value) return
