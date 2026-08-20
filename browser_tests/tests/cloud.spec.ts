@@ -47,7 +47,9 @@ test.describe('Cloud distribution UI', { tag: '@cloud' }, () => {
   }) => {
     await page.goto(new URL('/?invite=test-invite-token', APP_URL).toString())
 
-    await expect(page).toHaveURL(/\/cloud\/signup/, { timeout: 10_000 })
+    await expect
+      .poll(() => new URL(page.url()).pathname, { timeout: 10_000 })
+      .toBe('/cloud/signup')
     await expect
       .poll(() =>
         page.evaluate((key) => sessionStorage.getItem(key), INVITE_STORAGE_KEY)
