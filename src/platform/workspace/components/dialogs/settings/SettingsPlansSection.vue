@@ -1,5 +1,8 @@
 <template>
-  <section class="flex shrink-0 flex-col gap-4">
+  <section
+    data-testid="settings-plans-section"
+    class="flex shrink-0 flex-col gap-4"
+  >
     <div class="flex flex-col gap-1">
       <h3 class="m-0 text-base font-semibold text-base-foreground">
         {{ t('settingsPlans.title') }}
@@ -9,155 +12,66 @@
       </p>
     </div>
 
-    <div class="flex flex-wrap items-center justify-between gap-3">
-      <ToggleGroup v-model="audienceModel" type="single" variant="outline">
-        <ToggleGroupItem value="personal">
-          {{ t('settingsPlans.personal') }}
-        </ToggleGroupItem>
-        <ToggleGroupItem value="teams">
-          {{ t('settingsPlans.teams') }}
-        </ToggleGroupItem>
-      </ToggleGroup>
+    <template v-if="hasCatalog">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <ToggleGroup v-model="audienceModel" type="single" variant="outline">
+          <ToggleGroupItem value="personal">
+            {{ t('settingsPlans.personal') }}
+          </ToggleGroupItem>
+          <ToggleGroupItem value="teams">
+            {{ t('settingsPlans.teams') }}
+          </ToggleGroupItem>
+        </ToggleGroup>
 
-      <div class="flex items-center gap-2">
-        <Switch v-model="billedYearly" />
-        <span class="text-sm font-semibold text-base-foreground">
-          {{ t('settingsPlans.billedYearlyToggle') }}
-        </span>
-        <span
-          class="rounded-full bg-base-foreground px-2 py-0.5 text-2xs font-bold text-base-background"
-        >
-          {{ t('subscription.saveYearly') }}
-        </span>
-      </div>
-    </div>
-
-    <div
-      v-if="audience === 'personal'"
-      class="flex flex-col items-stretch gap-4 xl:flex-row"
-    >
-      <div
-        v-for="plan in plans"
-        :key="plan.key"
-        class="flex flex-1 flex-col gap-4 rounded-2xl border border-interface-stroke p-6"
-      >
-        <span class="text-base font-bold text-base-foreground">
-          {{ plan.name }}
-        </span>
-
-        <div class="flex flex-col gap-1">
-          <div class="flex items-baseline gap-2">
-            <span
-              class="text-[28px] leading-normal font-semibold text-base-foreground tabular-nums"
-            >
-              ${{ billedYearly ? plan.pricing.yearly : plan.pricing.monthly }}
-            </span>
-            <span class="text-base text-muted-foreground">
-              {{ t('subscription.usdPerMonth') }}
-            </span>
-          </div>
-          <span class="text-sm text-muted-foreground tabular-nums">
-            {{
-              billedYearly
-                ? t('subscription.billedYearly', {
-                    total: `$${plan.pricing.yearly * 12}`
-                  })
-                : t('subscription.billedMonthly')
-            }}
+        <div class="flex items-center gap-2">
+          <Switch v-model="billedYearly" />
+          <span class="text-sm font-semibold text-base-foreground">
+            {{ t('settingsPlans.billedYearlyToggle') }}
           </span>
-        </div>
-
-        <div class="border-t border-interface-stroke" />
-
-        <div class="flex flex-col gap-1">
-          <div class="flex items-center gap-1.5">
-            <i
-              class="icon-[lucide--coins] size-4 shrink-0 bg-credit"
-              aria-hidden="true"
-            />
-            <I18nT
-              :keypath="
-                billedYearly
-                  ? 'settingsPlans.creditsAYear'
-                  : 'settingsPlans.creditsAMonth'
-              "
-              tag="span"
-              class="text-sm text-base-foreground"
-            >
-              <template #credits>
-                <span class="font-bold tabular-nums">
-                  {{
-                    n(
-                      billedYearly
-                        ? plan.pricing.credits * 12
-                        : plan.pricing.credits
-                    )
-                  }}
-                </span>
-              </template>
-            </I18nT>
-          </div>
-          <span class="text-sm text-muted-foreground tabular-nums">
-            {{ t('settingsPlans.perDollar', { credits: perDollar(plan) }) }}
-          </span>
-        </div>
-
-        <div class="flex flex-col gap-2">
-          <span class="text-sm text-muted-foreground">
-            {{
-              plan.everythingIn
-                ? t('subscription.everythingInPlus', {
-                    plan: plan.everythingIn
-                  })
-                : t('subscription.whatsIncluded')
-            }}
-          </span>
-          <div
-            v-for="benefit in plan.benefits"
-            :key="benefit"
-            class="flex items-center gap-2"
+          <span
+            class="rounded-full bg-base-foreground px-2 py-0.5 text-2xs font-bold text-base-background"
           >
-            <i class="pi pi-check text-xs text-base-foreground" />
-            <span class="text-sm text-base-foreground">{{ benefit }}</span>
-          </div>
+            {{ t('subscription.saveYearly') }}
+          </span>
         </div>
-
-        <Button
-          variant="secondary"
-          size="lg"
-          class="mt-auto w-full"
-          :disabled="isCurrentPlan(plan.key) || isSubscribing"
-          @click="subscribeToPersonal(plan.key, selectedCycle)"
-        >
-          {{
-            isCurrentPlan(plan.key)
-              ? t('subscription.currentPlan')
-              : t('settingsPlans.choosePlan', { tier: plan.name })
-          }}
-        </Button>
       </div>
-    </div>
 
-    <template v-else>
       <div
-        class="flex flex-col rounded-2xl border border-interface-stroke xl:flex-row"
+        v-if="audience === 'personal'"
+        class="flex flex-col items-stretch gap-4 xl:flex-row"
       >
-        <div class="flex flex-1 flex-col gap-4 p-6">
+        <div
+          v-for="plan in plans"
+          :key="plan.key"
+          class="flex flex-1 flex-col gap-4 rounded-2xl border border-interface-stroke p-6"
+        >
+          <span class="text-base font-bold text-base-foreground">
+            {{ plan.name }}
+          </span>
+
           <div class="flex flex-col gap-1">
-            <span class="text-base font-bold text-base-foreground">
-              {{ t('subscription.teamPlan.name') }}
+            <div class="flex items-baseline gap-2">
+              <span
+                class="text-[28px] leading-normal font-semibold text-base-foreground tabular-nums"
+              >
+                ${{ billedYearly ? plan.pricing.yearly : plan.pricing.monthly }}
+              </span>
+              <span class="text-base text-muted-foreground">
+                {{ t('subscription.usdPerMonth') }}
+              </span>
+            </div>
+            <span class="text-sm text-muted-foreground tabular-nums">
+              {{
+                billedYearly
+                  ? t('subscription.billedYearly', {
+                      total: `$${plan.pricing.yearly * 12}`
+                    })
+                  : t('subscription.billedMonthly')
+              }}
             </span>
-            <p class="m-0 max-w-md text-sm text-muted-foreground">
-              {{ t('subscription.teamPlan.tagline') }}
-            </p>
           </div>
 
-          <CreditSlider
-            v-model="teamUsd"
-            :stops="teamStops"
-            :default-stop-index="teamDefaultStopIndex"
-            :cycle="billedYearly ? 'yearly' : 'monthly'"
-          />
+          <div class="border-t border-interface-stroke" />
 
           <div class="flex flex-col gap-1">
             <div class="flex items-center gap-1.5">
@@ -166,112 +80,232 @@
                 aria-hidden="true"
               />
               <I18nT
-                keypath="settingsPlans.creditsPerMonth"
+                :keypath="
+                  billedYearly
+                    ? 'settingsPlans.creditsAYear'
+                    : 'settingsPlans.creditsAMonth'
+                "
                 tag="span"
                 class="text-sm text-base-foreground"
               >
                 <template #credits>
                   <span class="font-bold tabular-nums">
-                    {{ n(selectedTeamStop.credits) }}
+                    {{
+                      n(
+                        billedYearly
+                          ? plan.pricing.credits * 12
+                          : plan.pricing.credits
+                      )
+                    }}
                   </span>
                 </template>
               </I18nT>
             </div>
+            <span class="text-sm text-muted-foreground tabular-nums">
+              {{ t('settingsPlans.perDollar', { credits: perDollar(plan) }) }}
+            </span>
+          </div>
+
+          <div class="flex flex-col gap-2">
             <span class="text-sm text-muted-foreground">
               {{
-                t('subscription.videoEstimate', {
-                  count: n(teamVideoEstimate)
-                })
+                plan.everythingIn
+                  ? t('subscription.everythingInPlus', {
+                      plan: plan.everythingIn
+                    })
+                  : t('subscription.whatsIncluded')
               }}
             </span>
+            <div
+              v-for="benefit in plan.benefits"
+              :key="benefit"
+              class="flex items-center gap-2"
+            >
+              <i class="pi pi-check text-xs text-base-foreground" />
+              <span class="text-sm text-base-foreground">{{ benefit }}</span>
+            </div>
           </div>
 
           <Button
             variant="secondary"
             size="lg"
             class="mt-auto w-full"
-            :disabled="isTeamCurrentPlan || isSubscribing"
-            @click="subscribeToTeam(selectedTeamStop, selectedCycle)"
+            :disabled="isCurrentPlan(plan.key) || isSubscribing"
+            @click="subscribeToPersonal(plan.key, selectedCycle)"
           >
             {{
-              isTeamCurrentPlan
-                ? t('subscription.teamPlan.currentPlan')
-                : billedYearly
-                  ? t('subscription.teamPlan.cta')
-                  : t('subscription.teamPlan.ctaMonthly')
+              isCurrentPlan(plan.key)
+                ? t('subscription.currentPlan')
+                : t('settingsPlans.choosePlan', { tier: plan.name })
             }}
           </Button>
         </div>
+      </div>
+
+      <template v-else>
+        <div
+          class="flex flex-col rounded-2xl border border-interface-stroke xl:flex-row"
+        >
+          <div class="flex flex-1 flex-col gap-4 p-6">
+            <div class="flex flex-col gap-1">
+              <span class="text-base font-bold text-base-foreground">
+                {{ t('subscription.teamPlan.name') }}
+              </span>
+              <p class="m-0 max-w-md text-sm text-muted-foreground">
+                {{ t('subscription.teamPlan.tagline') }}
+              </p>
+            </div>
+
+            <CreditSlider
+              v-model="teamUsd"
+              :stops="teamStops"
+              :default-stop-index="teamDefaultStopIndex"
+              :cycle="billedYearly ? 'yearly' : 'monthly'"
+            />
+
+            <div class="flex flex-col gap-1">
+              <div class="flex items-center gap-1.5">
+                <i
+                  class="icon-[lucide--coins] size-4 shrink-0 bg-credit"
+                  aria-hidden="true"
+                />
+                <I18nT
+                  keypath="settingsPlans.creditsPerMonth"
+                  tag="span"
+                  class="text-sm text-base-foreground"
+                >
+                  <template #credits>
+                    <span class="font-bold tabular-nums">
+                      {{ n(selectedTeamStop.credits) }}
+                    </span>
+                  </template>
+                </I18nT>
+              </div>
+              <span class="text-sm text-muted-foreground">
+                {{
+                  t('subscription.videoEstimate', {
+                    count: n(teamVideoEstimate)
+                  })
+                }}
+              </span>
+            </div>
+
+            <Button
+              variant="secondary"
+              size="lg"
+              class="mt-auto w-full"
+              :disabled="isTeamCurrentPlan || isSubscribing"
+              @click="subscribeToTeam(selectedTeamStop, selectedCycle)"
+            >
+              {{
+                isTeamCurrentPlan
+                  ? t('subscription.teamPlan.currentPlan')
+                  : billedYearly
+                    ? t('subscription.teamPlan.cta')
+                    : t('subscription.teamPlan.ctaMonthly')
+              }}
+            </Button>
+          </div>
+
+          <div
+            class="h-px w-full shrink-0 self-stretch bg-interface-stroke xl:h-auto xl:w-px"
+          />
+
+          <div class="flex flex-col gap-3 p-6 xl:w-80">
+            <span class="text-base font-semibold text-base-foreground">
+              {{ t('subscription.teamPlan.detailsTitle') }}
+            </span>
+            <span class="text-sm text-muted-foreground">
+              {{
+                t('subscription.everythingInPlus', {
+                  plan: t('subscription.tiers.pro.name')
+                })
+              }}
+            </span>
+            <div
+              v-for="perk in teamPerks"
+              :key="perk"
+              class="flex items-start gap-2"
+            >
+              <i class="pi pi-check mt-0.5 text-xs text-base-foreground" />
+              <span class="text-sm text-base-foreground">{{ perk }}</span>
+            </div>
+            <span class="text-sm text-muted-foreground">
+              {{ t('subscription.teamPlan.comingSoonLabel') }}
+            </span>
+            <div
+              v-for="item in teamComingSoon"
+              :key="item"
+              class="flex items-start gap-2"
+            >
+              <i class="pi pi-clock mt-0.5 text-xs text-muted-foreground" />
+              <span class="text-sm text-muted-foreground">{{ item }}</span>
+            </div>
+          </div>
+        </div>
 
         <div
-          class="h-px w-full shrink-0 self-stretch bg-interface-stroke xl:h-auto xl:w-px"
-        />
-
-        <div class="flex flex-col gap-3 p-6 xl:w-80">
-          <span class="text-base font-semibold text-base-foreground">
-            {{ t('subscription.teamPlan.detailsTitle') }}
-          </span>
-          <span class="text-sm text-muted-foreground">
-            {{
-              t('subscription.everythingInPlus', {
-                plan: t('subscription.tiers.pro.name')
-              })
-            }}
-          </span>
-          <div
-            v-for="perk in teamPerks"
-            :key="perk"
-            class="flex items-start gap-2"
-          >
-            <i class="pi pi-check mt-0.5 text-xs text-base-foreground" />
-            <span class="text-sm text-base-foreground">{{ perk }}</span>
+          class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-interface-stroke px-6 py-4"
+        >
+          <div class="flex items-center gap-4">
+            <span
+              class="text-2xs font-bold tracking-widest text-credit uppercase"
+            >
+              {{ t('subscription.enterprise.name') }}
+            </span>
+            <span class="text-sm text-muted-foreground">
+              {{ t('settingsPlans.enterpriseCopy') }}
+            </span>
           </div>
-          <span class="text-sm text-muted-foreground">
-            {{ t('subscription.teamPlan.comingSoonLabel') }}
-          </span>
-          <div
-            v-for="item in teamComingSoon"
-            :key="item"
-            class="flex items-start gap-2"
-          >
-            <i class="pi pi-clock mt-0.5 text-xs text-muted-foreground" />
-            <span class="text-sm text-muted-foreground">{{ item }}</span>
-          </div>
+          <Button variant="secondary" size="lg">
+            {{ t('settingsPlans.contactUs') }}
+          </Button>
         </div>
-      </div>
+      </template>
 
-      <div
-        class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-interface-stroke px-6 py-4"
-      >
-        <div class="flex items-center gap-4">
-          <span
-            class="text-2xs font-bold tracking-widest text-credit uppercase"
-          >
-            {{ t('subscription.enterprise.name') }}
-          </span>
-          <span class="text-sm text-muted-foreground">
-            {{ t('settingsPlans.enterpriseCopy') }}
-          </span>
-        </div>
-        <Button variant="secondary" size="lg">
-          {{ t('settingsPlans.contactUs') }}
-        </Button>
-      </div>
+      <p class="m-0 text-sm text-muted-foreground">
+        {{ t('settingsPlans.checkoutCaption') }}
+      </p>
     </template>
 
-    <p class="m-0 text-sm text-muted-foreground">
-      {{ t('settingsPlans.checkoutCaption') }}
+    <div
+      v-else-if="isLoadingPlans"
+      data-testid="plans-skeleton"
+      class="flex flex-col items-stretch gap-4 xl:flex-row"
+    >
+      <Skeleton v-for="i in 3" :key="i" class="h-72 flex-1 rounded-2xl" />
+    </div>
+
+    <div
+      v-else-if="planLoadError"
+      class="flex flex-col items-start gap-3 rounded-2xl border border-interface-stroke p-6"
+    >
+      <div class="flex items-center gap-2 text-text-secondary">
+        <i class="pi pi-exclamation-circle text-danger" aria-hidden="true" />
+        <span class="text-sm">{{ t('subscription.planLoadError') }}</span>
+      </div>
+      <Button variant="secondary" size="lg" @click="retryFetchPlans">
+        {{ t('subscription.planLoadErrorRetry') }}
+      </Button>
+    </div>
+
+    <p
+      v-else
+      class="m-0 rounded-2xl border border-interface-stroke p-6 text-sm text-muted-foreground"
+    >
+      {{ t('settingsPlans.noPlansAvailable') }}
     </p>
   </section>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { I18nT, useI18n } from 'vue-i18n'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import Button from '@/components/ui/button/Button.vue'
 import CreditSlider from '@/components/ui/credit-slider/CreditSlider.vue'
+import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import Switch from '@/components/ui/switch/Switch.vue'
 import ToggleGroup from '@/components/ui/toggle-group/ToggleGroup.vue'
 import ToggleGroupItem from '@/components/ui/toggle-group/ToggleGroupItem.vue'
@@ -342,15 +376,26 @@ function perDollar(plan: PlanCard): number {
 const VIDEO_PER_CREDIT =
   TIER_PRICING.pro.videoEstimate / TIER_PRICING.pro.credits
 
-// Backend-sourced stops when the shared plans state has them, DES-197 fallback otherwise.
-const { teamCreditStops } = useBillingPlans()
+// The plans-fetch lifecycle lives on this singleton; useBillingContext's
+// isLoading/error track the legacy refresh instead.
+const {
+  teamCreditStops,
+  isLoading: isLoadingPlans,
+  error: planLoadError
+} = useBillingPlans()
 const { fetchPlans, plans: catalogPlans, currentPlanSlug } = useBillingContext()
 const { isSubscribing, subscribeToPersonal, subscribeToTeam } =
   useSettingsPlansCheckout()
 
-onMounted(() => {
-  void fetchPlans()
-})
+// Setup-time so isLoading is set before the first paint (onMounted would
+// flash the empty state).
+void fetchPlans()
+
+const hasCatalog = computed(() => catalogPlans.value.length > 0)
+
+async function retryFetchPlans() {
+  await fetchPlans()
+}
 
 const selectedCycle = computed<BillingCycle>(() =>
   billedYearly.value ? 'yearly' : 'monthly'

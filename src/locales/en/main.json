@@ -2638,6 +2638,7 @@
     "comingProjects": "Projects",
     "enterpriseCopy": "Need more members? Looking for more flexibility or custom features?",
     "contactUs": "Contact us",
+    "noPlansAvailable": "No plans are available right now. Check back soon.",
     "checkoutCaption": "Checkout happens right here: payment details handled securely by Stripe. Prefer no plan? Keep topping up, anytime."
   },
   "credits": {

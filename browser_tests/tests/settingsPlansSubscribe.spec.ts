@@ -1,5 +1,5 @@
 import { expect } from '@playwright/test'
-import type { Route } from '@playwright/test'
+import type { APIRequestContext, Page, Route } from '@playwright/test'
 
 import type {
   BillingPlansResponse,
@@ -83,7 +83,66 @@ function billingStatus(planSlug?: string): BillingStatusResponse {
   }
 }
 
-test.describe('Local plans section subscribe (FE-1600 S2)', () => {
+async function mockLegacyReads(page: Page) {
+  await page.route('**/customers/**', (r) =>
+    fulfillJson(
+      r,
+      r.request().url().includes('balance')
+        ? { amount_micros: 0, currency: 'usd' }
+        : { is_active: false }
+    )
+  )
+  await page.route('**/api/billing/status', (r) =>
+    fulfillJson(r, billingStatus())
+  )
+  await page.route('**/api/billing/balance', (r) =>
+    fulfillJson(r, { amount_micros: 0, currency: 'usd' })
+  )
+}
+
+/**
+ * Boots the app with a mocked Firebase session and opens Plan & Credits.
+ * window.open is stubbed; the opened URL lands in dataset.openedUrl.
+ */
+async function bootToPlansSection(page: Page, request: APIRequestContext) {
+  // Multi-user servers show a user-select screen unless a user id is seeded,
+  // and a fresh CI server has no users at all — find or create one.
+  const usersResponse = await request.get(`${APP_URL}/api/users`)
+  const usersBody = (await usersResponse.json()) as {
+    users?: Record<string, string>
+  }
+  let userId = Object.keys(usersBody.users ?? {})[0]
+  if (!userId) {
+    const created = await request.post(`${APP_URL}/api/users`, {
+      data: { username: 'plans-subscribe-e2e' }
+    })
+    userId = (await created.json()) as string
+  }
+
+  await page.addInitScript((id) => {
+    if (id) localStorage.setItem('Comfy.userId', id)
+    window.open = (url) => {
+      document.documentElement.dataset.openedUrl = String(url)
+      return window
+    }
+  }, userId)
+
+  const auth = new CloudAuthHelper(page)
+  await auth.mockAuth()
+
+  await page.goto(APP_URL)
+  await page.waitForFunction(() => !!window.app?.extensionManager, null, {
+    timeout: 45_000
+  })
+
+  await new CommandHelper(page).executeCommand('Comfy.ShowSettingsDialog')
+  const dialog = page.getByTestId('settings-dialog')
+  await expect(dialog).toBeVisible()
+  await dialog.getByRole('button', { name: 'Plan & Credits' }).click()
+  return dialog
+}
+
+test.describe('Local plans section subscribe', () => {
   test('subscribes via the workspace rail and flips the card to Current', async ({
     page,
     request
@@ -146,41 +205,7 @@ test.describe('Local plans section subscribe (FE-1600 S2)', () => {
       fulfillJson(r, { status: 'succeeded' })
     )
 
-    // A multi-user server boots to a user-selection screen unless a real user
-    // id is seeded, and a fresh CI server has no users at all — find or create
-    // one, same approach as the ComfyPage fixture.
-    const usersResponse = await request.get(`${APP_URL}/api/users`)
-    const usersBody = (await usersResponse.json()) as {
-      users?: Record<string, string>
-    }
-    let userId = Object.keys(usersBody.users ?? {})[0]
-    if (!userId) {
-      const created = await request.post(`${APP_URL}/api/users`, {
-        data: { username: 'plans-subscribe-e2e' }
-      })
-      userId = (await created.json()) as string
-    }
-
-    await page.addInitScript((id) => {
-      if (id) localStorage.setItem('Comfy.userId', id)
-      window.open = (url) => {
-        document.documentElement.dataset.openedUrl = String(url)
-        return window
-      }
-    }, userId)
-
-    const auth = new CloudAuthHelper(page)
-    await auth.mockAuth()
-
-    await page.goto(APP_URL)
-    await page.waitForFunction(() => !!window.app?.extensionManager, null, {
-      timeout: 45_000
-    })
-
-    await new CommandHelper(page).executeCommand('Comfy.ShowSettingsDialog')
-    const dialog = page.getByTestId('settings-dialog')
-    await expect(dialog).toBeVisible()
-    await dialog.getByRole('button', { name: 'Plan & Credits' }).click()
+    const dialog = await bootToPlansSection(page, request)
 
     const chooseStandard = dialog.getByRole('button', {
       name: 'Choose Standard'
@@ -222,5 +247,85 @@ test.describe('Local plans section subscribe (FE-1600 S2)', () => {
     })
 
     expect(legacyCheckoutRequests).toEqual([])
+  })
+
+  test('recovers from a failed plans fetch via retry', async ({
+    page,
+    request
+  }) => {
+    test.setTimeout(90_000)
+
+    let plansAvailable = false
+    await mockLegacyReads(page)
+    await page.route('**/api/billing/plans', async (r) => {
+      if (r.request().method() === 'OPTIONS') {
+        await r.fulfill({ status: 204, headers: CORS_HEADERS })
+        return
+      }
+      if (!plansAvailable) {
+        await r.fulfill({
+          status: 500,
+          contentType: 'application/json',
+          headers: CORS_HEADERS,
+          body: '{}'
+        })
+        return
+      }
+      await fulfillJson(r, plansResponse)
+    })
+
+    const dialog = await bootToPlansSection(page, request)
+
+    await expect(
+      dialog.getByText("We couldn't load your plan details.")
+    ).toBeVisible()
+    await expect(
+      dialog.getByRole('button', { name: 'Choose Standard' })
+    ).toHaveCount(0)
+
+    plansAvailable = true
+    await dialog.getByRole('button', { name: 'Try again' }).click()
+
+    await expect(
+      dialog.getByRole('button', { name: 'Choose Standard' })
+    ).toBeEnabled()
+    await expect(
+      dialog.getByText("We couldn't load your plan details.")
+    ).toHaveCount(0)
+  })
+
+  test('keeps the plans section within the viewport at mobile width', async ({
+    page,
+    request
+  }) => {
+    test.setTimeout(90_000)
+
+    await mockLegacyReads(page)
+    await page.route('**/api/billing/plans', (r) =>
+      fulfillJson(r, plansResponse)
+    )
+
+    const dialog = await bootToPlansSection(page, request)
+
+    const section = dialog.getByTestId('settings-plans-section')
+    await expect(
+      section.getByRole('button', { name: 'Choose Standard' })
+    ).toBeVisible()
+
+    await page.setViewportSize({ width: 390, height: 844 })
+
+    // 1px tolerance for subpixel rounding.
+    await expect
+      .poll(() => section.evaluate((el) => el.scrollWidth - el.clientWidth))
+      .toBeLessThanOrEqual(1)
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () =>
+            document.documentElement.scrollWidth -
+            document.documentElement.clientWidth
+        )
+      )
+      .toBeLessThanOrEqual(1)
   })
 })
