@@ -18,6 +18,11 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
+vi.mock('@/platform/assets/utils/assetPreviewUtil', () => ({
+  isAssetPreviewSupported: () => false,
+  findOutputAsset: async () => undefined
+}))
+
 vi.mock('@vueuse/core', async (importOriginal) => {
   const { ref } = await import('vue')
   return {
