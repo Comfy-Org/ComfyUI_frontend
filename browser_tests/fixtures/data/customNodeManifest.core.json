@@ -134,7 +134,7 @@
     "workflow": "assets/customNodes/was_number_text_run.json",
     "expectedNodes": ["Constant Number", "Number to Text", "Text to Console"],
     "expectedNodeCount": 220,
-    "expectedRunnableCount": 163,
+    "expectedRunnableCount": 162,
     "expectedExtensions": [],
     "requiresGpu": false,
     "requiresModels": [],

@@ -137,6 +137,8 @@ const AUTO_RUN_EXCLUDE: Record<string, Record<string, string>> = {
       'runs CLIPSeg inference, which downloads its model on first use; same network/model-dependent class as CLIPSeg Model Loader',
     'True Random.org Number Generator':
       'fetches entropy from random.org at validation/execution; network-dependent',
+    'Text Random Prompt':
+      'calls the Lexica API with requests.get and no timeout at execution; network-dependent',
     'Create Video from Path':
       'invokes ffmpeg on a filesystem path; FileNotFoundError on CI runners, environment-variable',
     'Create Grid Image':
