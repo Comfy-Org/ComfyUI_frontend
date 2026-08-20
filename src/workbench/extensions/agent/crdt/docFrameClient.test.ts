@@ -124,10 +124,7 @@ describe('doc frame client', () => {
   it('resubscribes from its state vector without echoing remote updates', () => {
     const transport = new TestTransport()
     const client = new DocFrameClient(transport)
-    const projected = new Y.Doc()
-    const bridge = new LayoutFollowerBridge(client, {
-      applyUpdate: (update: Uint8Array) => Y.applyUpdate(projected, update)
-    })
+    const bridge = new LayoutFollowerBridge(client)
     bridge.subscribe('wf-1')
     const source = new Y.Doc()
     source.getMap('nodes').set('one', 1)
@@ -154,7 +151,8 @@ describe('doc frame client', () => {
     expect(
       frames.filter((frame) => frame.type === 'doc_subscribe')
     ).toHaveLength(3)
-    expect(projected.getMap('nodes').toJSON()).toEqual({ one: 1 })
+    // The bridge holds semantic state in its FollowerDoc; SemanticProjector
+    // (ADR-009) renders it to the canvas. It must never write into layoutStore.
     expect(bridge.follower.doc.getMap('nodes').toJSON()).toEqual({ one: 1 })
   })
 

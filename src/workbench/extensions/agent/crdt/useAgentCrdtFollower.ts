@@ -1,13 +1,23 @@
 import { computed, onBeforeUnmount, readonly, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
+// The follower composable is the composition root that wires renderer-layer
+// concretes (layout store, litegraph) into the layer-agnostic CRDT seam. This
+// is the single, documented workbench→renderer boundary crossing (ADR-009);
+// the mutator/projector/diff themselves stay free of renderer imports.
 // eslint-disable-next-line import-x/no-restricted-paths
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+// eslint-disable-next-line import-x/no-restricted-paths
+import { LayoutSource } from '@/renderer/core/layout/types'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
 
 import type { DocFrameTransport, DocOp } from './docFrameClient'
 import { DocFrameClient } from './docFrameClient'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
+import { LitegraphMutator } from './litegraphMutator'
+import { SemanticProjector } from './semanticProjector'
 
 const enabled = import.meta.env.VITE_AGENT_CRDT_FOLLOWER === 'true'
 
@@ -55,8 +65,22 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
   }
 
   const client = new DocFrameClient(apiTransport)
-  const bridge = new LayoutFollowerBridge(client, layoutStore)
+  const bridge = new LayoutFollowerBridge(client)
   const tabId = crypto.randomUUID()
+  const mutator = new LitegraphMutator({
+    getGraph: () => app.graph ?? null,
+    createNode: (type) => LiteGraph.createNode(type),
+    runRemoteScope: (apply) => {
+      const previousSource = layoutStore.getCurrentSource()
+      layoutStore.setSource(LayoutSource.External)
+      try {
+        apply()
+      } finally {
+        layoutStore.setSource(previousSource)
+      }
+    }
+  })
+  const projector = new SemanticProjector(mutator, { actor: tabId })
 
   const onSubscribed: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
@@ -66,12 +90,14 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
   const onUpdate: EventListener = (event) => {
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
+    projector.project(bridge.follower.doc)
   }
   const onOpsResult: EventListener = (event) => {
     lastFrameType.value = event.type
   }
   const onReconnected: EventListener = () => {
     connected.value = false
+    projector.reset()
     bridge.resubscribe()
   }
 
@@ -85,6 +111,7 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     (next) => {
       connected.value = false
       subscribedWorkflowId.value = next
+      projector.reset()
       if (next === null) bridge.unsubscribe()
       else bridge.subscribe(next)
     },
