@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import type { IngestSubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import { deriveBillingPolicyState } from './useBillingPolicyState'
 
 describe('deriveBillingPolicyState', () => {
@@ -107,6 +108,27 @@ describe('deriveBillingPolicyState', () => {
           canAccessSubscriptionFeatures: true,
           isTeamPlan: false,
           tier: 'TEAM'
+        })
+      ).toEqual({ kind })
+    }
+  )
+
+  // The tier union is generated from the backend spec, so a value outside it is
+  // reachable at runtime even though the type forbids it. It must resolve to the
+  // restrictive state, not Unknown: Unknown grants topUpAccess 'allowed', which
+  // would hand paid-plan access to a tier purely for being unrecognised.
+  it.for([
+    ['CloudWithoutActiveSubscription', true],
+    ['LocalWithoutActiveSubscription', false]
+  ] as const)(
+    'resolves an unrecognised tier as %s (isCloud=%s)',
+    ([kind, isCloud]) => {
+      expect(
+        deriveBillingPolicyState({
+          isCloud,
+          canAccessSubscriptionFeatures: true,
+          isTeamPlan: false,
+          tier: 'ENTERPRISE' as IngestSubscriptionTier
         })
       ).toEqual({ kind })
     }
