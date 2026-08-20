@@ -59,6 +59,64 @@ describe('LGraphNode node-data adoption', () => {
     expect(statesIn(subgraph)[0]?.flags.collapsed).toBe(true)
   })
 
+  it('exposes enumerable own collection fields without replacing their views', () => {
+    const { node } = addNodeToSubgraph()
+    node.addWidget('text', 'prompt', '', () => undefined)
+    const inputs = node.inputs
+    const outputs = node.outputs
+    const widgets = node.widgets
+
+    node.inputs = []
+    node.outputs = []
+    node.widgets = [...widgets!]
+
+    expect(Object.hasOwn(node, 'inputs')).toBe(true)
+    expect(Object.hasOwn(node, 'outputs')).toBe(true)
+    expect(Object.hasOwn(node, 'widgets')).toBe(true)
+    expect(Object.keys(node)).toEqual(
+      expect.arrayContaining(['inputs', 'outputs', 'widgets'])
+    )
+    expect(node.inputs).toBe(inputs)
+    expect(node.outputs).toBe(outputs)
+    expect(node.widgets).toBe(widgets)
+  })
+
+  it('lets translation hooks persist slot labels', () => {
+    const node = new LGraphNode('Node')
+    const input = node.addInput('prompt', 'STRING')
+    input.widget = { name: 'prompt' }
+    node.addOutput('result', 'STRING')
+    node.addWidget('text', 'prompt', '', () => undefined)
+
+    const translations: Record<
+      'inputs' | 'outputs' | 'widgets',
+      Record<string, string>
+    > = {
+      inputs: { prompt: 'Translated prompt' },
+      outputs: { result: 'Translated result' },
+      widgets: { prompt: 'Translated prompt' }
+    }
+    for (const key of ['inputs', 'outputs', 'widgets'] as const) {
+      if (!Object.hasOwn(node, key)) continue
+      for (const item of node[key] ?? []) {
+        const label = translations[key][item.name]
+        if (label) item.label = label
+      }
+    }
+
+    const serialised = node.serialize()
+    expect(serialised.inputs?.[0].label).toBe('Translated prompt')
+    expect(serialised.outputs?.[0].label).toBe('Translated result')
+
+    const restored = new LGraphNode('Node')
+    const restoredInput = restored.addInput('prompt', 'STRING')
+    restoredInput.widget = { name: 'prompt' }
+    restored.addOutput('result', 'STRING')
+    restored.addWidget('text', 'prompt', '', () => undefined)
+    restored.configure(serialised)
+    expect(restored.widgets?.[0].label).toBe('Translated prompt')
+  })
+
   it('vacates its store entry on remove', () => {
     const { subgraph, node } = addNodeToSubgraph()
 

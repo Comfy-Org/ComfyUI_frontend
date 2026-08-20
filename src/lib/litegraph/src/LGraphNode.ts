@@ -1027,6 +1027,12 @@ export class LGraphNode
       type: type ?? '',
       titleMode: this.title_mode
     }
+    for (const property of ['inputs', 'outputs'] as const) {
+      Object.defineProperty(this, property, {
+        ...Object.getOwnPropertyDescriptor(LGraphNode.prototype, property),
+        enumerable: true
+      })
+    }
     this.size = [LiteGraph.NODE_WIDTH, 60]
     this.pos = [10, 10]
     this.strokeStyles = {
