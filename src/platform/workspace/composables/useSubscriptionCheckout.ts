@@ -300,7 +300,9 @@ export function useSubscriptionCheckout(
     error: unknown,
     isCurrent: () => boolean = () => true
   ) {
-    let requiresRecovery = hasErrorCode(error, 'SUBSCRIPTION_PAYMENT_REQUIRED')
+    let requiresRecovery =
+      hasErrorCode(error, 'SUBSCRIPTION_PAYMENT_REQUIRED') ||
+      hasErrorCode(error, 'OUTSTANDING_PAYMENT_REQUIRED')
     if (!requiresRecovery && hasErrorCode(error, 'TRANSITION_NOT_ALLOWED')) {
       try {
         requiresRecovery =
