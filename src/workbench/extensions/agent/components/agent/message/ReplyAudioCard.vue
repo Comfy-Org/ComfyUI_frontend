@@ -55,7 +55,7 @@ function download(): void {
       <span
         :class="
           cn(
-            'size-4.5',
+            'size-4',
             isPlaying ? 'icon-[lucide--pause]' : 'icon-[lucide--play]'
           )
         "
@@ -86,7 +86,7 @@ function download(): void {
             class="hover:bg-agent-surface-hover hover:text-agent-fg focus-visible:ring-agent-accent text-agent-fg-muted flex size-6 cursor-pointer items-center justify-center rounded-lg transition-colors focus-visible:ring-2 focus-visible:outline-none"
             @click="toggleMute"
           >
-            <span :class="cn('size-4.5', volumeIcon)" />
+            <span :class="cn('size-4', volumeIcon)" />
           </button>
           <button
             type="button"
@@ -94,7 +94,7 @@ function download(): void {
             class="hover:bg-agent-surface-hover hover:text-agent-fg focus-visible:ring-agent-accent text-agent-fg-muted flex size-6 cursor-pointer items-center justify-center rounded-lg transition-colors focus-visible:ring-2 focus-visible:outline-none"
             @click="download"
           >
-            <span class="icon-[lucide--download] size-4.5" />
+            <span class="icon-[lucide--download] size-4" />
           </button>
         </div>
       </div>
