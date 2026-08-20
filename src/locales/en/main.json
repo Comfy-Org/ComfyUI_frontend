@@ -381,6 +381,8 @@
     "ready": "Ready",
     "play": "Play",
     "pause": "Pause",
+    "mute": "Mute",
+    "unmute": "Unmute",
     "playPause": "Play/Pause",
     "playRecording": "Play Recording",
     "playing": "Playing",
