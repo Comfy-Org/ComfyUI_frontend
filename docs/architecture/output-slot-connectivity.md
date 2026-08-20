@@ -44,52 +44,13 @@ This phase adds read-only accessors over state the store already holds.
 It needs no new plain-data component, registration trio, chokepoint, or
 class adoption, though each sibling store required all four.
 
-## Historical decision 2: derive a reverse index
+## Historical decision 2: do not derive a reverse index on demand
 
-This computed design was superseded. The current `originIndex` is a reactive
-secondary index maintained atomically with primary topology and target
-occupancy during registration, endpoint updates, and deletion.
-`getOutputSlotLinks` reads that index; floating links are not indexed.
-
-The store already exposes `graphTopologies(graphId)` over every
-registered `LinkTopology`. "Which links leave output slot _(node, slot)_"
-is a reverse index over origin endpoints. This is the same pattern
-`rerouteStore` uses for link membership
-([reroute store](reroute-chain-store.md)): a per-graph cached `computed`
-that Vue invalidates when link state changes. Nothing is stored, so the
-membership is always derived and cannot drift from the topology.
-
-```ts
-type OriginIndex = Map<
-  OriginSlotKey /* `${originNodeId}:${originSlot}` */,
-  Set<LinkTopology>
->
-
-const outputIndexes = new Map<UUID, ComputedRef<OriginIndex>>()
-
-function outputIndex(graphId: UUID): ComputedRef<OriginIndex> {
-  const existing = outputIndexes.get(graphId)
-  if (existing) return existing
-  const next = computed(() => {
-    const index: OriginIndex = new Map()
-    for (const t of graphTopologies(graphId)) {
-      if (isFloatingTopology(t)) continue
-      const key = originKey(t.originNodeId, t.originSlot)
-      const links = index.get(key) ?? new Set<LinkTopology>()
-      links.add(t)
-      index.set(key, links)
-    }
-    return index
-  })
-  outputIndexes.set(graphId, next)
-  return next
-}
-```
-
-The index is populated from the owner-scoped topology collection. Floating
-links are skipped (`isFloatingTopology`): the queries see fully-assigned links
-only, matching the mirror they replace (Decision 6). A `SUBGRAPH_INPUT_ID`
-origin indexes like any other id.
+The initial design built a cached `computed` index by scanning every topology.
+It was not shipped. The implemented
+[`linkStore`](../../src/stores/linkStore.ts) maintains `originIndex` atomically
+with topology changes, and `getOutputSlotLinks` reads it directly. Floating
+links are not indexed.
 
 ## Decision 3: Two public queries, mirroring the input pair
 

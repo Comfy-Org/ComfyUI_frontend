@@ -35,8 +35,9 @@ keys. There is no central World or universal entity-ID representation.
   order, and transient renderer geometry should not become independent persisted
   components unless a measured requirement establishes new authority.
 - **Command-shaped durable mutation:** the target requires serializable,
-  deterministic, idempotent operations. Only layout currently implements this
-  shape; general graph mutation remains imperative and snapshot-undone.
+  deterministic, idempotent, replayable, undoable, and CRDT-transmittable
+  operations. Only layout currently implements this shape; imperative,
+  snapshot-undone general graph mutation is deferred to the next phase.
 
 ## Patterns not implied by the decision
 

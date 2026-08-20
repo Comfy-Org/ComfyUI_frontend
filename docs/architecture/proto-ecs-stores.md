@@ -205,14 +205,15 @@ objects do not instantiate the mutation composable at module scope.
 
 ### ECS Alignment
 
-| Aspect                       | ECS-like  | Why                                                 |
-| ---------------------------- | --------- | --------------------------------------------------- |
-| Position data extracted      | Yes       | Closest to the ECS `Position` component             |
-| CRDT-ready                   | Yes       | Enables collaboration (ADR 0003)                    |
-| Covers multiple entity kinds | Yes       | Nodes, groups, and reroutes in one store            |
-| Mutation API (composable)    | Partially | System-like, but called from entities, not a system |
-| Module-scope access          | **No**    | Domain objects import store at module level         |
-| Per-store keying             | Yes       | Uses root-scoped node/group/reroute layout keys     |
+| Aspect                           | ECS-like  | Why                                                         |
+| -------------------------------- | --------- | ----------------------------------------------------------- |
+| Position data extracted          | Yes       | Closest to the ECS `Position` component                     |
+| CRDT-ready                       | Yes       | Enables collaboration (ADR 0003)                            |
+| Covers multiple entity kinds     | Yes       | Nodes, groups, and reroutes in one store                    |
+| Mutation API (composable)        | Partially | System-like, but called from entities, not a system         |
+| Direct store access              | Partially | Domain objects and `graphLayoutAttachment` import the store |
+| Module-scope mutation composable | Yes       | Domain objects do not instantiate it at module scope        |
+| Per-store keying                 | Yes       | Uses root-scoped node/group/reroute layout keys             |
 
 ## 5. Pattern Analysis
 
