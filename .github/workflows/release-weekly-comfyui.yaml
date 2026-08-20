@@ -179,6 +179,8 @@ jobs:
 
   publish-pypi:
     needs: [resolve-version, trigger-release-if-needed]
+    outputs:
+      pypi_confirmed: ${{ steps.pypi-wait.outputs.confirmed }}
     if: >
       always() &&
       needs.resolve-version.result == 'success' &&
@@ -186,30 +188,25 @@ jobs:
        needs.trigger-release-if-needed.result == 'skipped')
     runs-on: ubuntu-latest
     steps:
-      - name: Wait for release PR to be created and merged
+      - name: Check out release scripts
+        uses: actions/checkout@v7
+        with:
+          sparse-checkout: scripts/cicd
+          sparse-checkout-cone-mode: false
+
+      # The tag checkout below replaces the workspace, and the tag predates these.
+      - name: Stage release scripts
+        run: cp -r scripts/cicd "$RUNNER_TEMP/cicd"
+
+      - name: Wait for the release tag
         if: needs.trigger-release-if-needed.result == 'success'
         env:
           GH_TOKEN: ${{ secrets.PR_GH_TOKEN }}
-        run: |
-          set -euo pipefail
-
-          TARGET_VERSION="${{ needs.resolve-version.outputs.target_version }}"
-          TARGET_BRANCH="${{ needs.resolve-version.outputs.target_branch }}"
-          echo "Waiting for version bump PR for v${TARGET_VERSION} on ${TARGET_BRANCH} to be merged..."
-
-          # Poll for up to 30 minutes (a human or automation needs to merge the version bump PR)
-          for i in $(seq 1 60); do
-            # Check if the tag exists (release-draft-create creates a tag on merge)
-            if gh api "repos/Comfy-Org/ComfyUI_frontend/git/ref/tags/v${TARGET_VERSION}" --silent 2>/dev/null; then
-              echo "✅ Tag v${TARGET_VERSION} found — release PR has been merged"
-              exit 0
-            fi
-            echo "Attempt $i/60: Tag v${TARGET_VERSION} not found yet, waiting 30s..."
-            sleep 30
-          done
-
-          echo "❌ Timed out waiting for tag v${TARGET_VERSION}"
-          exit 1
+          REPO: ${{ github.repository }}
+          TARGET_VERSION: ${{ needs.resolve-version.outputs.target_version }}
+          TARGET_BRANCH: ${{ needs.resolve-version.outputs.target_branch }}
+          RUN_ID: ${{ github.run_id }}
+        run: '$RUNNER_TEMP/cicd/wait-for-release-tag.sh'
 
       - name: Checkout code at target version
         uses: actions/checkout@v7
@@ -262,27 +259,12 @@ jobs:
           password: ${{ secrets.PYPI_TOKEN }}
           packages-dir: comfyui_frontend_package/dist
 
-      - name: Wait for PyPI propagation
-        run: |
-          set -euo pipefail
-
-          TARGET_VERSION="${{ needs.resolve-version.outputs.target_version }}"
-          PACKAGE="comfyui-frontend-package"
-          echo "Waiting for ${PACKAGE}==${TARGET_VERSION} to be available on PyPI..."
-
-          # Wait up to 15 minutes (polling every 30 seconds)
-          for i in $(seq 1 30); do
-            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "https://pypi.org/pypi/${PACKAGE}/${TARGET_VERSION}/json")
-            if [ "$HTTP_CODE" = "200" ]; then
-              echo "✅ ${PACKAGE}==${TARGET_VERSION} is available on PyPI"
-              exit 0
-            fi
-            echo "Attempt $i/30: PyPI returned HTTP ${HTTP_CODE}, waiting 30s..."
-            sleep 30
-          done
-
-          echo "❌ Timed out waiting for ${PACKAGE}==${TARGET_VERSION} on PyPI"
-          exit 1
+      - name: Wait for the version to be installable
+        id: pypi-wait
+        env:
+          PACKAGE: comfyui-frontend-package
+          TARGET_VERSION: ${{ needs.resolve-version.outputs.target_version }}
+        run: '$RUNNER_TEMP/cicd/wait-for-pypi-version.sh'
 
       - name: Summary
         run: |
@@ -290,7 +272,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- Package: comfyui-frontend-package" >> $GITHUB_STEP_SUMMARY
           echo "- Version: ${{ needs.resolve-version.outputs.target_version }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Status: ✅ Published and confirmed available" >> $GITHUB_STEP_SUMMARY
+          echo "- Installable from PyPI: ${{ steps.pypi-wait.outputs.confirmed }}" >> $GITHUB_STEP_SUMMARY
 
   create-comfyui-pr:
     needs:
@@ -372,7 +354,11 @@ jobs:
           EOF
           )
 
-          PYPI_NOTE="✅ **PyPI package confirmed available** — \`comfyui-frontend-package==${{ needs.resolve-version.outputs.target_version }}\` has been published and verified."
+          if [ "${{ needs.publish-pypi.outputs.pypi_confirmed }}" = "true" ]; then
+            PYPI_NOTE="✅ **PyPI package confirmed available** — \`comfyui-frontend-package==${{ needs.resolve-version.outputs.target_version }}\` has been published and verified."
+          else
+            PYPI_NOTE="⚠️ **PyPI availability unconfirmed** — \`comfyui-frontend-package==${{ needs.resolve-version.outputs.target_version }}\` was not installable from PyPI before the wait expired. CI here may fail until the index catches up."
+          fi
           BODY=$''"${PYPI_NOTE}"$'\n\n'"${BODY}"
 
           # Save to file for later use
@@ -459,3 +445,21 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### PR Body:" >> $GITHUB_STEP_SUMMARY
           cat pr-body.txt >> $GITHUB_STEP_SUMMARY
+
+  release-done:
+    name: Verify release reached users
+    needs: [resolve-version, publish-pypi]
+    if: always() && needs.publish-pypi.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout ComfyUI_frontend
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Assert the release reached users
+        env:
+          PACKAGE: comfyui-frontend-package
+          TARGET_VERSION: ${{ needs.resolve-version.outputs.target_version }}
+          TARGET_BRANCH: ${{ needs.resolve-version.outputs.target_branch }}
+        run: ./scripts/cicd/assert-release-shipped.sh

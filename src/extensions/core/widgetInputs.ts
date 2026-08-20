@@ -1,3 +1,5 @@
+import { intersection } from 'es-toolkit/compat'
+
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
@@ -6,6 +8,7 @@ import type {
   ISlotType,
   LLink
 } from '@/lib/litegraph/src/litegraph'
+import type { IWidgetLocator } from '@/lib/litegraph/src/interfaces'
 import { NodeSlot } from '@/lib/litegraph/src/node/NodeSlot'
 import type {
   IBaseWidget,
@@ -13,6 +16,10 @@ import type {
 } from '@/lib/litegraph/src/types/widgets'
 import { assetService } from '@/platform/assets/services/assetService'
 import { createAssetWidget } from '@/platform/assets/utils/createAssetWidget'
+import {
+  getComboSpecComboOptions,
+  isComboInputSpec
+} from '@/schemas/nodeDefSchema'
 import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
 import {
@@ -55,19 +62,66 @@ export class PrimitiveNode extends LGraphNode {
     applyFirstWidgetValueToGraph(this, extraLinks, () => v)
   }
 
-  override refreshComboInNode() {
+  override refreshComboInNode(defs?: Record<string, ComfyNodeDef>): void {
     const widget = this.widgets?.[0]
-    if (widget?.type === 'combo') {
-      // @ts-expect-error fixme ts strict error
-      widget.options.values = this.outputs[0].widget[GET_CONFIG]()[0]
+    if (widget?.type !== 'combo') return
 
-      // @ts-expect-error fixme ts strict error
-      if (!widget.options.values.includes(widget.value as string)) {
-        // @ts-expect-error fixme ts strict error
-        widget.value = widget.options.values[0]
-        widget.callback?.(widget.value)
-      }
+    const newValues = this._resolveComboValues(defs)
+    if (newValues === undefined) return
+
+    widget.options.values = newValues
+
+    const value = widget.value
+    if (
+      (typeof value !== 'string' && typeof value !== 'number') ||
+      !newValues.includes(value)
+    ) {
+      widget.value = newValues[0]
+      widget.callback?.(widget.value)
     }
+  }
+
+  private _resolveComboValues(
+    defs?: Record<string, ComfyNodeDef>
+  ): (string | number)[] | undefined {
+    const fromDefs = defs ? this._comboValuesFromDefs(defs) : undefined
+    if (fromDefs !== undefined) return fromDefs
+
+    const slotWidget = this.outputs?.[0]?.widget
+    const config = slotWidget?.[GET_CONFIG]?.()
+    if (!config || !isComboInputSpec(config)) return undefined
+
+    return getComboSpecComboOptions(config)
+  }
+
+  private _comboValuesFromDefs(
+    defs: Record<string, ComfyNodeDef>
+  ): (string | number)[] | undefined {
+    const graph = this.graph
+    const links = this.outputs?.[0]?.links
+    if (!graph || !links?.length) return undefined
+
+    let values: (string | number)[] | undefined
+    for (const linkId of links) {
+      const link = graph.links.get(linkId)
+      const targetNode = graph.getNodeById(link?.target_id)
+      const targetType = targetNode?.type
+      const targetInput = link
+        ? targetNode?.inputs[link.target_slot]
+        : undefined
+      const inputName = targetInput?.widget?.name ?? targetInput?.name
+      if (!targetType || !inputName) return undefined
+
+      const def = defs[targetType]
+      const inputSpec =
+        def?.input?.required?.[inputName] ?? def?.input?.optional?.[inputName]
+      if (!inputSpec || !isComboInputSpec(inputSpec)) return undefined
+
+      const options = getComboSpecComboOptions(inputSpec)
+      values = values === undefined ? options : intersection(values, options)
+    }
+
+    return values
   }
 
   override onAfterGraphConfigured() {
@@ -139,7 +193,7 @@ export class PrimitiveNode extends LGraphNode {
     return true
   }
 
-  private _onFirstConnection(recreating?: boolean) {
+  private _onFirstConnection(recreating = false) {
     // First connection can fire before the graph is ready on initial load so random things can be missing
     if (!this.outputs[0].links || !this.graph) {
       this.onLastDisconnect()
@@ -155,15 +209,15 @@ export class PrimitiveNode extends LGraphNode {
     const input = theirNode.inputs[link.target_slot]
     if (!input) return
 
-    let widget
+    let widget: IWidgetLocator
     if (!input.widget) {
-      if (!(input.type in ComfyWidgets)) return
-      widget = { name: input.name, [GET_CONFIG]: () => [input.type, {}] } //fake widget
+      const inputType = input.type
+      if (typeof inputType !== 'string' || !(inputType in ComfyWidgets)) return
+      widget = { name: input.name, [GET_CONFIG]: () => [inputType, {}] } //fake widget
     } else {
       widget = input.widget
     }
 
-    // @ts-expect-error fixme ts strict error
     const config = widget[GET_CONFIG]?.()
     if (!config) return
 
@@ -177,7 +231,6 @@ export class PrimitiveNode extends LGraphNode {
       widget[CONFIG] ?? config,
       theirNode,
       widget.name,
-      // @ts-expect-error fixme ts strict error
       recreating
     )
   }
@@ -335,7 +388,7 @@ export class PrimitiveNode extends LGraphNode {
 
       return
     }
-    const config1 = (output.widget?.[GET_CONFIG] as () => InputSpec)?.()
+    const config1 = output.widget?.[GET_CONFIG]?.()
     if (!config1) return
     const isNumber = config1[0] === 'INT' || config1[0] === 'FLOAT'
     if (!isNumber || !this.graph) return
@@ -356,7 +409,7 @@ export class PrimitiveNode extends LGraphNode {
   private _isValidConnection(input: INodeInputSlot, forceUpdate?: boolean) {
     // Only allow connections where the configs match
     const output = this.outputs?.[0]
-    const config2 = (input.widget?.[GET_CONFIG] as () => InputSpec)?.()
+    const config2 = input.widget?.[GET_CONFIG]?.()
     if (!config2) return false
 
     return !!mergeIfValid.call(
@@ -405,11 +458,7 @@ export class PrimitiveNode extends LGraphNode {
 export function getWidgetConfig(
   slot: INodeInputSlot | INodeOutputSlot
 ): InputSpec {
-  return (slot.widget?.[CONFIG] ??
-    (slot.widget?.[GET_CONFIG] as () => InputSpec)?.() ?? [
-      '*',
-      {}
-    ]) as InputSpec
+  return slot.widget?.[CONFIG] ?? slot.widget?.[GET_CONFIG]?.() ?? ['*', {}]
 }
 
 function getConfig(this: LGraphNode, widgetName: string) {
@@ -570,14 +619,7 @@ app.registerExtension({
       const input = this.inputs[slot]
       if (!input.widget) {
         // Not a widget input or already handled input
-        if (
-          !(input.type in ComfyWidgets) &&
-          !(
-            (
-              input.widget?.[GET_CONFIG] as (() => InputSpec) | undefined
-            )?.()?.[0] instanceof Array
-          )
-        ) {
+        if (typeof input.type !== 'string' || !(input.type in ComfyWidgets)) {
           return r //also Not a ComfyWidgets input or combo (do nothing)
         }
       }
