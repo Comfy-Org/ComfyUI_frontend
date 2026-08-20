@@ -183,6 +183,21 @@
       ]
     },
     {
+      "class": "repo-tooling",
+      "tier": "R2",
+      "why": "the root toolchain configs, which matched NO path rule before this and so floored at the default R0 — the same \"nothing matched anything\" gap app-code closes for product code, left open for the repo's own tooling. These files decide what the quality gates actually check (eslint.config.ts, .oxlintrc.json, .oxfmtrc.json, .stylelintrc.json, knip.config.ts, lint-staged.config.ts), what the e2e suites run (playwright*.config.ts) and how the site deploys (apps/website/vercel.json) — weakening one silently weakens every PR that follows it, and that is not visible in the diff of those later PRs. R2 is the same \"standard — normal review\" lane build-config carries, for the same reason. `*` does not cross separators, so the *.config.* globs are ROOT-ONLY by construction. The build entry points already covered by build-config (**/vite.config.*, tsconfig*.json, index.html, scripts/**) stay there rather than being restated here; *.config.mts overlaps build-config on vite.config.mts alone, which is harmless because both rules are R2 and worst-wins means a rule can only ever raise a tier",
+      "paths": [
+        "*.config.ts",
+        "*.config.js",
+        "*.config.mjs",
+        "*.config.mts",
+        ".oxlintrc.json",
+        ".oxfmtrc.json",
+        ".stylelintrc.json",
+        "**/vercel.json"
+      ]
+    },
+    {
       "class": "core-infra",
       "tier": "R2",
       "why": "cross-cutting state, API layer, routing, bootstrap, canvas engine and published packages — blast radius is every feature, and packages/** breaks consumers out of band",
@@ -196,6 +211,20 @@
         "src/core/**",
         "src/lib/litegraph/**",
         "packages/**"
+      ]
+    },
+    {
+      "class": "app-code",
+      "tier": "R2",
+      "why": "ordinary product code — the app users actually run. R2 is the rubric's \"standard — normal review\" lane, and without this rule the general case of a src/ or apps/ path matched NOTHING: an ordinary product PR floored at the default R0 and was graded off the provenance axis alone, which collapses R1 and R2 into one indistinguishable lane. This is the catchall under the specific R3/R2 classes above, not a replacement for them — worst-wins means auth, serialization, extension-contract and core-infra keep their higher tiers wherever they also match. `**` crosses directory separators, so these globs cover src/renderer/**, src/components/**, src/composables/**, src/extensions/** and the src/platform/** remainder without enumerating them. KNOWN COST: tests and stories in this repo sit NEXT TO the module they exercise (src/foo.test.ts, src/foo.stories.ts), and the map format has no negation — so a test-only or story-only PR under src/ now floors R2 instead of R0. Accepted deliberately: under-grading product code is the dangerous direction, over-grading a test-only PR is merely noisy. browser_tests/** sits outside src/ and apps/ and is unaffected",
+      "paths": [
+        "src/**/*.ts",
+        "src/**/*.tsx",
+        "src/**/*.vue",
+        "src/**/*.js",
+        "apps/**/*.ts",
+        "apps/**/*.vue",
+        "apps/**/*.astro"
       ]
     },
 
