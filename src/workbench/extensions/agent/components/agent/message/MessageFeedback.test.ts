@@ -1,13 +1,22 @@
 // @vitest-environment jsdom
 import userEvent from '@testing-library/user-event'
-import { render, screen, within } from '@testing-library/vue'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { i18n } from '@/i18n'
 
+import type { ReplyAsset } from '../../../utils/replyAssets'
 import MessageFeedback from './MessageFeedback.vue'
 
 const clipboard = vi.hoisted(() => ({ copy: vi.fn() }))
+
+const fetchApi = vi.hoisted(() => vi.fn())
+vi.mock('@/scripts/api', () => ({
+  api: {
+    apiURL: (route: string) => '/api' + route,
+    fetchApi
+  }
+}))
 
 vi.mock('@vueuse/core', async (importOriginal) => {
   const { ref } = await import('vue')
@@ -24,10 +33,10 @@ vi.mock('@vueuse/core', async (importOriginal) => {
 
 const markdownSource = '# Title\n\n**bold** move'
 
-function renderFeedback() {
+function renderFeedback(assets?: ReplyAsset[]) {
   const user = userEvent.setup()
   const utils = render(MessageFeedback, {
-    props: { markdown: markdownSource },
+    props: { markdown: markdownSource, assets },
     global: { plugins: [i18n] }
   })
   return { user, ...utils }
@@ -36,6 +45,7 @@ function renderFeedback() {
 describe('MessageFeedback', () => {
   beforeEach(() => {
     clipboard.copy.mockClear()
+    fetchApi.mockReset()
   })
 
   it('emits the vote, then null when the same vote is clicked again', async () => {
@@ -105,6 +115,36 @@ describe('MessageFeedback', () => {
 
     expect(clipboard.copy).toHaveBeenCalledWith(markdownSource)
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+  })
+
+  it('hides the download action when the reply has no assets', () => {
+    renderFeedback()
+
+    expect(
+      screen.queryByRole('button', { name: 'Download assets' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('downloads every reply asset from the download action', async () => {
+    fetchApi.mockResolvedValue({
+      ok: true,
+      blob: () => Promise.resolve(new Blob(['x']))
+    })
+    const createObjectURL = vi.fn(() => 'blob:mock')
+    const revokeObjectURL = vi.fn()
+    URL.createObjectURL = createObjectURL
+    URL.revokeObjectURL = revokeObjectURL
+    const { user } = renderFeedback([
+      { url: 'https://x/a.png', filename: 'a.png', kind: 'image' },
+      { url: 'https://x/mesh.glb', filename: 'mesh.glb', kind: '3D' }
+    ])
+
+    await user.click(screen.getByRole('button', { name: 'Download assets' }))
+
+    await waitFor(() => expect(fetchApi).toHaveBeenCalledTimes(2))
+    expect(fetchApi).toHaveBeenCalledWith('https://x/a.png')
+    expect(fetchApi).toHaveBeenCalledWith('https://x/mesh.glb')
+    await waitFor(() => expect(revokeObjectURL).toHaveBeenCalledTimes(2))
   })
 
   it('Escape closes the markdown menu without copying', async () => {

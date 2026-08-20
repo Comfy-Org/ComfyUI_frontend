@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   classifyAssetUrl,
+  htmlReplyAssets,
   replyAssetResultItem,
   tokenReplyAssets
 } from './replyAssets'
@@ -13,6 +14,25 @@ const view = (filename: string) =>
 function firstTokenAssets(text: string) {
   return tokenReplyAssets(marked.lexer(text)[0])
 }
+
+describe('htmlReplyAssets', () => {
+  it('collects unique media assets from anchors and images, in order', () => {
+    const html =
+      `<p><a href="${view('a.png')}">a</a>` +
+      `<img src="${view('mesh.glb')}" />` +
+      `<a href="${view('a.png')}">duplicate</a>` +
+      '<a href="https://cloud.comfy.org/docs">not an asset</a></p>'
+
+    expect(htmlReplyAssets(html).map((asset) => asset.filename)).toEqual([
+      'a.png',
+      'mesh.glb'
+    ])
+  })
+
+  it('returns no assets for asset-free html', () => {
+    expect(htmlReplyAssets('<p>plain <b>text</b></p>')).toEqual([])
+  })
+})
 
 describe('classifyAssetUrl', () => {
   it.for([
