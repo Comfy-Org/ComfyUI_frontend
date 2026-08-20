@@ -165,4 +165,12 @@ describe('useWaveAudioPlayer', () => {
     expect(bars.value[0].height).toBe(8)
     expect(bars.value[9].height).toBe(100)
   })
+
+  it('skips the waveform fetch entirely when waveform is disabled', () => {
+    const src = ref('/audio.wav')
+    const { loading } = useWaveAudioPlayer({ src, waveform: false })
+
+    expect(mockFetchApi).not.toHaveBeenCalled()
+    expect(loading.value).toBe(false)
+  })
 })
