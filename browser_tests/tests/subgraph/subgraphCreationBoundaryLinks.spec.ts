@@ -29,8 +29,8 @@ test(
       // view, so clicking its title silently misses and the selection is left
       // holding KSampler alone.
       await comfyPage.command.executeCommand('Comfy.Canvas.FitView')
-      const vaeDecode = await comfyPage.nodeOps.getNodeRefById('8')
-      await vaeDecode.waitForTitleInView()
+      const vaeDecode = await comfyPage.vueNodes.getFixtureByTitle('VAE Decode')
+      await expect(vaeDecode.header).toBeInViewport({ ratio: 1 })
 
       await comfyPage.nodeOps.selectNodes(['KSampler', 'VAE Decode'])
       expect(

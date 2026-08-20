@@ -356,20 +356,6 @@ export class NodeReference {
     const nodeSize = await this.getSize()
     return { x: nodePos.x + nodeSize.width / 2, y: nodePos.y - 15 }
   }
-  async waitForTitleInView(): Promise<void> {
-    const canvas = await this.comfyPage.canvas.boundingBox()
-    if (!canvas) throw new Error('Canvas bounding box not available')
-
-    let previousX = Number.NaN
-    await expect
-      .poll(async () => {
-        const { x } = await this.getTitlePosition()
-        const settledInView = x === previousX && x < canvas.width
-        previousX = x
-        return settledInView
-      })
-      .toBe(true)
-  }
   async dragBy(
     delta: Position,
     options?: {
