@@ -18,8 +18,6 @@ import {
   ZH_PREFIX
 } from './hreflangRoutes'
 
-export { ZH_HREFLANG, ZH_PREFIX } from './hreflangRoutes'
-
 export interface Alternate {
   hreflang: string
   href: string

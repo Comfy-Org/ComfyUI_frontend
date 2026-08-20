@@ -21,7 +21,7 @@ export const ZH_PREFIX = '/zh-CN'
  * elsewhere not to index either, is a contradiction; keeping one list means the
  * markup and the sitemap cannot drift apart on it.
  */
-export const NON_CLUSTERED_ROUTES: ReadonlySet<string> = new Set([
+const NON_CLUSTERED_ROUTES: ReadonlySet<string> = new Set([
   '/404/',
   '/payment/success/',
   '/payment/failed/',
@@ -30,7 +30,7 @@ export const NON_CLUSTERED_ROUTES: ReadonlySet<string> = new Set([
 ])
 
 /** `/src/pages/cloud/pricing.astro` -> `/cloud/pricing/`, index files -> their directory. */
-export function routeOf(file: string): string {
+function routeOf(file: string): string {
   const withoutRoot = file.replace(/^\/src\/pages/, '').replace(/\.astro$/, '')
   const withoutIndex = withoutRoot.replace(/\/index$/, '')
   return withoutIndex === '' ? '/' : `${withoutIndex}/`
