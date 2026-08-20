@@ -40,7 +40,9 @@ function routeOf(file: string): string {
  * is not guaranteed to build in Chinese, and the file tree cannot see that. Those
  * pages pass their own alternates instead (see `alternatesFor`).
  */
-export function mirroredRoutes(files: string[] = Object.keys(PAGE_FILES)): Set<string> {
+export function mirroredRoutes(
+  files: string[] = Object.keys(PAGE_FILES)
+): Set<string> {
   const english = new Set<string>()
   const chinese = new Set<string>()
 
@@ -94,7 +96,7 @@ export function alternatesFor(
     { hreflang: ZH_HREFLANG, href: chineseHref },
     // x-default points at English: it is what a reader with no matching
     // language preference should get.
-    { hreflang: 'x-default', href: englishHref },
+    { hreflang: 'x-default', href: englishHref }
   ]
 }
 
@@ -104,7 +106,10 @@ export function ogLocale(locale: string): string {
 }
 
 /** The OG identifier for the other language, when this page has one. */
-export function ogLocaleAlternate(locale: string, alternates: Alternate[]): string | null {
+export function ogLocaleAlternate(
+  locale: string,
+  alternates: Alternate[]
+): string | null {
   if (alternates.length === 0) return null
   return locale === 'zh-CN' ? 'en_US' : 'zh_CN'
 }
