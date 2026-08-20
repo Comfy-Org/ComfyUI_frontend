@@ -128,7 +128,23 @@ const API_PROVIDER_MAP: Record<string, { name: string; slug: string }> = {
   'kling-2-0': { name: 'Kling 2.0', slug: 'kling-2-0' },
   'hunyuan-3d': { name: 'Hunyuan 3D', slug: 'hunyuan-3d' },
   'flux-1-krea-dev': { name: 'Flux 1 Krea Dev', slug: 'flux-1-krea-dev' },
-  'seedream-4-5': { name: 'Seedream 4.5', slug: 'seedream-4-5' }
+  'seedream-4-5': { name: 'Seedream 4.5', slug: 'seedream-4-5' },
+  anthropic: { name: 'Anthropic Claude', slug: 'anthropic-claude' },
+  beeble: { name: 'Beeble', slug: 'beeble' },
+  elevenlabs: { name: 'ElevenLabs', slug: 'elevenlabs' },
+  flux: { name: 'Flux', slug: 'flux' },
+  happyhorse1: { name: 'Happyhorse1', slug: 'happyhorse1' },
+  heygen: { name: 'HeyGen', slug: 'heygen' },
+  krea2: { name: 'Krea 2', slug: 'krea-2' },
+  ltx2: { name: 'LTX 2', slug: 'ltx-2' },
+  minimax: { name: 'MiniMax', slug: 'minimax' },
+  openrouter: { name: 'OpenRouter', slug: 'openrouter' },
+  quiver: { name: 'Quiver', slug: 'quiver' },
+  qwen3: { name: 'Qwen 3', slug: 'qwen-3' },
+  rodin3d: { name: 'Rodin 3D', slug: 'rodin-3d' },
+  seedance2: { name: 'Seedance 2', slug: 'seedance-2' },
+  sonilo: { name: 'Sonilo', slug: 'sonilo' },
+  sync: { name: 'Sync', slug: 'sync' }
 }
 
 // Stub entries that exist only to issue 301 redirects from old slugs to
@@ -229,12 +245,32 @@ interface ApiModelData {
 
 function extractApiModels(files: string[]): ApiModelData[] {
   const counts = new Map<string, number>()
+  const unmapped = new Set<string>()
   for (const file of files) {
     if (!file.startsWith('api_')) continue
-    const prefix = file.slice(4).split('_')[0]
+    const prefix = file
+      .slice(4)
+      .replace(/\.json$/, '')
+      .split('_')[0]
+      .toLowerCase()
+
+    // Ignore known non-providers or upstream typos until fixed
+    if (prefix === 'king' || prefix === 'from') continue
+
     const entry = API_PROVIDER_MAP[prefix]
-    if (!entry) continue
+    if (!entry) {
+      unmapped.add(`- ${prefix} (from ${file})`)
+      continue
+    }
     counts.set(entry.slug, (counts.get(entry.slug) ?? 0) + 1)
+  }
+
+  if (unmapped.size > 0) {
+    throw new Error(
+      `Unmapped API provider prefixes found in template files:\n` +
+        Array.from(unmapped).join('\n') +
+        `\nYou MUST add them to API_PROVIDER_MAP in generate-models.ts.`
+    )
   }
   return [...counts.entries()].map(([slug, count]) => {
     const found = Object.values(API_PROVIDER_MAP).find((e) => e.slug === slug)!

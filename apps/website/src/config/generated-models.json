@@ -16,6 +16,14 @@
     "displayName": "Kling AI"
   },
   {
+    "slug": "seedance-2",
+    "name": "Seedance 2",
+    "huggingFaceUrl": "",
+    "directory": "partner_nodes",
+    "workflowCount": 15,
+    "displayName": "Seedance 2"
+  },
+  {
     "slug": "grok-imagine",
     "name": "Grok Imagine",
     "huggingFaceUrl": "",
@@ -88,6 +96,14 @@
     "displayName": "Gemini Image"
   },
   {
+    "slug": "happyhorse1",
+    "name": "Happyhorse1",
+    "huggingFaceUrl": "",
+    "directory": "partner_nodes",
+    "workflowCount": 7,
+    "displayName": "Happyhorse1"
+  },
+  {
     "slug": "bria-ai",
     "name": "Bria AI",
     "huggingFaceUrl": "",
@@ -96,12 +112,28 @@
     "displayName": "Bria AI"
   },
   {
+    "slug": "elevenlabs",
+    "name": "ElevenLabs",
+    "huggingFaceUrl": "",
+    "directory": "partner_nodes",
+    "workflowCount": 6,
+    "displayName": "ElevenLabs"
+  },
+  {
     "slug": "hunyuan-3d",
     "name": "Hunyuan 3D",
     "huggingFaceUrl": "",
     "directory": "partner_nodes",
     "workflowCount": 6,
     "displayName": "Hunyuan 3D"
+  },
+  {
+    "slug": "openrouter",
+    "name": "OpenRouter",
+    "huggingFaceUrl": "",
+    "directory": "partner_nodes",
+    "workflowCount": 6,
+    "displayName": "OpenRouter"
   },
   {
     "slug": "topaz-labs",
@@ -120,6 +152,30 @@
     "displayName": "Magnific AI"
   },
   {
+    "slug": "rodin-3d",
+    "name": "Rodin 3D",
+    "huggingFaceUrl": "",
+    "directory": "partner_nodes",
+    "workflowCount": 5,
+    "displayName": "Rodin 3D"
+  },
+  {
+    "slug": "anthropic-claude",
+    "name": "Anthropic Claude",
+    "huggingFaceUrl": "",
+    "directory": "partner_nodes",
+    "workflowCount": 4,
+    "displayName": "Anthropic Claude"
+  },
+  {
+    "slug": "heygen",
+    "name": "HeyGen",
+    "huggingFaceUrl": "",
+    "directory": "partner_nodes",
+    "workflowCount": 4,
+    "displayName": "HeyGen"
+  },
+  {
     "slug": "runway",
     "name": "Runway",
     "huggingFaceUrl": "",
@@ -128,12 +184,28 @@
     "displayName": "Runway"
   },
   {
+    "slug": "ltx-2",
+    "name": "LTX 2",
+    "huggingFaceUrl": "",
+    "directory": "partner_nodes",
+    "workflowCount": 3,
+    "displayName": "LTX 2"
+  },
+  {
     "slug": "meshy-ai",
     "name": "Meshy AI",
     "huggingFaceUrl": "",
     "directory": "partner_nodes",
     "workflowCount": 3,
     "displayName": "Meshy AI"
+  },
+  {
+    "slug": "minimax",
+    "name": "MiniMax",
+    "huggingFaceUrl": "",
+    "directory": "partner_nodes",
+    "workflowCount": 3,
+    "displayName": "MiniMax"
   },
   {
     "slug": "nano-banana",
@@ -152,20 +224,28 @@
     "displayName": "Pixverse"
   },
   {
-    "slug": "rodin-3d",
-    "name": "Rodin 3D",
-    "huggingFaceUrl": "",
-    "directory": "partner_nodes",
-    "workflowCount": 3,
-    "displayName": "Rodin 3D"
-  },
-  {
     "slug": "wavespeed",
     "name": "Wavespeed",
     "huggingFaceUrl": "",
     "directory": "partner_nodes",
     "workflowCount": 3,
     "displayName": "Wavespeed"
+  },
+  {
+    "slug": "beeble",
+    "name": "Beeble",
+    "huggingFaceUrl": "",
+    "directory": "partner_nodes",
+    "workflowCount": 2,
+    "displayName": "Beeble"
+  },
+  {
+    "slug": "flux",
+    "name": "Flux",
+    "huggingFaceUrl": "",
+    "directory": "partner_nodes",
+    "workflowCount": 2,
+    "displayName": "Flux"
   },
   {
     "slug": "ideogram",
@@ -176,12 +256,68 @@
     "displayName": "Ideogram"
   },
   {
+    "slug": "krea-2",
+    "name": "Krea 2",
+    "huggingFaceUrl": "",
+    "directory": "partner_nodes",
+    "workflowCount": 2,
+    "displayName": "Krea 2"
+  },
+  {
+    "slug": "quiver",
+    "name": "Quiver",
+    "huggingFaceUrl": "",
+    "directory": "partner_nodes",
+    "workflowCount": 2,
+    "displayName": "Quiver"
+  },
+  {
+    "slug": "qwen-3",
+    "name": "Qwen 3",
+    "huggingFaceUrl": "",
+    "directory": "partner_nodes",
+    "workflowCount": 2,
+    "displayName": "Qwen 3"
+  },
+  {
+    "slug": "sonilo",
+    "name": "Sonilo",
+    "huggingFaceUrl": "",
+    "directory": "partner_nodes",
+    "workflowCount": 2,
+    "displayName": "Sonilo"
+  },
+  {
+    "slug": "sync",
+    "name": "Sync",
+    "huggingFaceUrl": "",
+    "directory": "partner_nodes",
+    "workflowCount": 2,
+    "displayName": "Sync"
+  },
+  {
+    "slug": "flux-2-api",
+    "name": "Flux 2 (API)",
+    "huggingFaceUrl": "",
+    "directory": "partner_nodes",
+    "workflowCount": 1,
+    "displayName": "Flux 2 (API)"
+  },
+  {
     "slug": "veo-2",
     "name": "Veo 2",
     "huggingFaceUrl": "",
     "directory": "partner_nodes",
     "workflowCount": 1,
     "displayName": "Veo 2"
+  },
+  {
+    "slug": "veo-3",
+    "name": "Veo 3",
+    "huggingFaceUrl": "",
+    "directory": "partner_nodes",
+    "workflowCount": 1,
+    "displayName": "Veo 3"
   },
   {
     "slug": "umt5-xxl-fp8-e4m3fn-scaled",
