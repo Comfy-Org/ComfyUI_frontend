@@ -1,5 +1,5 @@
 import cloneDeep from 'es-toolkit/compat/cloneDeep'
-import * as Sentry from '@sentry/vue'
+import { addBreadcrumb } from '@sentry/vue'
 import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { t } from '@/i18n'
 import type { IContextMenuValue } from '@/lib/litegraph/src/litegraph'
@@ -383,7 +383,7 @@ export function promoteWidget(
     }
     const result = promoteValueWidgetViaSubgraphInput(parent, node, widget)
     if (!result.ok) {
-      Sentry.addBreadcrumb({
+      addBreadcrumb({
         category: 'subgraph',
         level: 'warning',
         message: `Failed to promote widget "${source.sourceWidgetName}" on node ${node.id}: ${result.reason}`
@@ -391,7 +391,7 @@ export function promoteWidget(
     }
   }
   refreshPromotedWidgetRendering(parents)
-  Sentry.addBreadcrumb({
+  addBreadcrumb({
     category: 'subgraph',
     message: `Promoted widget "${source.sourceWidgetName}" on node ${node.id}`,
     level: 'info'
@@ -458,7 +458,7 @@ export function demoteWidget(
     }
   }
   refreshPromotedWidgetRendering(parents)
-  Sentry.addBreadcrumb({
+  addBreadcrumb({
     category: 'subgraph',
     message: `Demoted widget "${source.sourceWidgetName}" on node ${node.id}`,
     level: 'info'
@@ -619,7 +619,7 @@ export function promoteRecommendedWidgets(subgraphNode: SubgraphNode) {
   for (const [n, w] of filteredWidgets) {
     const result = promoteValueWidgetViaSubgraphInput(subgraphNode, n, w)
     if (!result.ok) {
-      Sentry.addBreadcrumb({
+      addBreadcrumb({
         category: 'subgraph',
         level: 'warning',
         message: `Failed to promote widget "${getWidgetName(w)}" on node ${n.id}: ${result.reason}`
@@ -665,7 +665,7 @@ export function pruneDisconnected(subgraphNode: SubgraphNode) {
   }
 
   refreshPromotedWidgetRendering([subgraphNode])
-  Sentry.addBreadcrumb({
+  addBreadcrumb({
     category: 'subgraph',
     message: `Pruned ${removedEntries.length} disconnected promoted widget input(s) from subgraph node ${subgraphNode.id}`,
     level: 'info'
