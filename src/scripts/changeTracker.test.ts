@@ -233,6 +233,84 @@ describe('ChangeTracker', () => {
     vi.clearAllTimers()
   })
 
+  describe('updateModified', () => {
+    it('reuses a current-state projection as the next previous-state projection', () => {
+      const initial = createState(1)
+      initial.nodes[0].widgets_values = [1]
+      const first = structuredClone(initial)
+      first.nodes[0].widgets_values = [2]
+      const second = structuredClone(first)
+      second.nodes[0].widgets_values = [3]
+      const firstProjectionTraversals = vi.fn()
+      const trackedFirst = new Proxy(first, {
+        ownKeys(target) {
+          firstProjectionTraversals()
+          return Reflect.ownKeys(target)
+        }
+      })
+      const tracker = createTracker(initial)
+
+      tracker.activeState = trackedFirst
+      tracker.updateModified(initial)
+      tracker.activeState = second
+      tracker.updateModified(trackedFirst)
+
+      expect(firstProjectionTraversals).toHaveBeenCalledOnce()
+    })
+
+    it('recomputes the projection for a different but equivalent state object', () => {
+      const initial = createState(1)
+      initial.nodes[0].widgets_values = [1]
+      const first = structuredClone(initial)
+      first.nodes[0].widgets_values = [2]
+      const equivalent = structuredClone(first)
+      const equivalentProjectionTraversals = vi.fn()
+      const trackedEquivalent = new Proxy(equivalent, {
+        ownKeys(target) {
+          equivalentProjectionTraversals()
+          return Reflect.ownKeys(target)
+        }
+      })
+      const tracker = createTracker(initial)
+
+      tracker.activeState = first
+      tracker.updateModified(initial)
+      vi.mocked(api.dispatchCustomEvent).mockClear()
+      tracker.activeState = trackedEquivalent
+      tracker.updateModified(first)
+
+      expect(equivalentProjectionTraversals).toHaveBeenCalledOnce()
+      expectAutoQueueGraphChangedNotDispatched()
+    })
+
+    it('releases the cached projection when Run on change is disabled', () => {
+      const initial = createState(1)
+      initial.nodes[0].widgets_values = [1]
+      const first = structuredClone(initial)
+      first.nodes[0].widgets_values = [2]
+      const second = structuredClone(first)
+      second.nodes[0].widgets_values = [3]
+      const firstProjectionTraversals = vi.fn()
+      const trackedFirst = new Proxy(first, {
+        ownKeys(target) {
+          firstProjectionTraversals()
+          return Reflect.ownKeys(target)
+        }
+      })
+      const tracker = createTracker(initial)
+
+      tracker.activeState = trackedFirst
+      tracker.updateModified(initial)
+      useQueueSettingsStore().mode = 'disabled'
+      tracker.updateModified(trackedFirst)
+      useQueueSettingsStore().mode = 'change'
+      tracker.activeState = second
+      tracker.updateModified(trackedFirst)
+
+      expect(firstProjectionTraversals).toHaveBeenCalledTimes(2)
+    })
+  })
+
   describe('captureCanvasState', () => {
     describe('guards', () => {
       it('is a no-op when app.graph is falsy', () => {
@@ -365,14 +443,38 @@ describe('ChangeTracker', () => {
         )
       })
 
-      it('decides execution relevance before graphChanged listeners run', () => {
+      it('detects a change after a listener mutates the prior checkpoint', () => {
+        const initial = createState(1)
+        initial.nodes[0].widgets_values = [0]
+        const canvasState = structuredClone(initial)
+        canvasState.nodes[0].widgets_values = [1]
+        const tracker = createTracker(initial)
+        mockCanvasState(canvasState)
+        vi.mocked(api.dispatchCustomEvent).mockImplementationOnce((event) => {
+          if (event === 'graphChanged') {
+            tracker.activeState.nodes[0].widgets_values = [2]
+          }
+          return true
+        })
+
+        tracker.captureCanvasState()
+        vi.mocked(api.dispatchCustomEvent).mockClear()
+        mockCanvasState(canvasState)
+        tracker.captureCanvasState()
+
+        expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+          'autoQueueGraphChanged'
+        )
+      })
+
+      it('honors a listener mutation that masks the next canvas change', () => {
         const initial = createState(1)
         initial.nodes[0].widgets_values = [1]
         const changed = structuredClone(initial)
         changed.nodes[0].widgets_values = [2]
         const tracker = createTracker(initial)
         mockCanvasState(changed)
-        vi.mocked(api.dispatchCustomEvent).mockImplementation((event) => {
+        vi.mocked(api.dispatchCustomEvent).mockImplementationOnce((event) => {
           if (event === 'graphChanged') {
             tracker.activeState.nodes[0].widgets_values = [1]
           }
@@ -380,10 +482,10 @@ describe('ChangeTracker', () => {
         })
 
         tracker.captureCanvasState()
+        mockCanvasState(initial)
+        tracker.captureCanvasState()
 
-        expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
-          'autoQueueGraphChanged'
-        )
+        expectAutoQueueGraphChangedNotDispatched()
       })
 
       it('squashes late serialized updates into the captured state', async () => {
