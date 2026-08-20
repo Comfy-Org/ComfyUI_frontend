@@ -1715,12 +1715,8 @@ const translations = {
 
   // LearningCallToActionSection
   'learning.cta.heading': {
-    en: 'Schedule a demo and see how ComfyUI fits your team’s creative needs.',
-    'zh-CN': '预约演示，了解 ComfyUI 如何契合你的团队创作需求。'
-  },
-  'learning.cta.contactSales': {
-    en: 'Contact Sales',
-    'zh-CN': '联系销售'
+    en: 'Everything Comfy ships. All in one place.',
+    'zh-CN': 'Comfy 的全部内容，一处尽享。'
   },
   'learning.cta.runComfy': {
     en: 'Run Comfy for free',
@@ -5027,9 +5023,9 @@ const translations = {
     'zh-CN': 'Seedance 2.5 已上线'
   },
   'seedance.hero.description': {
-    en: "ByteDance's cinematic video model — multi-shot sequences with native audio, text or image in. You direct on the canvas; Seedance renders the cut.",
+    en: "ByteDance's cinematic video model — multi-shot sequences with native audio, text or image in. You direct on the canvas; Seedance renders the cut. Now available in 1080p with video extension.",
     'zh-CN':
-      '字节跳动的电影级视频模型：多镜头序列，原生音频，支持文本或图像输入。你在画布上执导，Seedance 负责渲染成片。'
+      '字节跳动的电影级视频模型：多镜头序列，原生音频，支持文本或图像输入。你在画布上执导，Seedance 负责渲染成片。现已支持 1080p 及视频扩展。'
   },
   'seedance.hero.primaryCta': {
     en: 'RUN SEEDANCE 2.5',
