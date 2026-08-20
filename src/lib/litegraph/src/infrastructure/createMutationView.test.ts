@@ -1,13 +1,16 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { createGeometryView } from './createGeometryView'
+import {
+  createArrayMutationView,
+  createMutationView
+} from './createMutationView'
 import { Rectangle } from './Rectangle'
 
-describe('createGeometryView', () => {
+describe('createMutationView', () => {
   it('commits direct and method mutations only when observed values change', () => {
     const target = new Float64Array([1, 2])
     const commit = vi.fn()
-    const view = createGeometryView(target, { commit })
+    const view = createMutationView(target, { commit })
 
     view[0] = 3
     view[0] = 3
@@ -21,7 +24,7 @@ describe('createGeometryView', () => {
   it('synchronizes before reads and preserves chained mutator identity', () => {
     const target = new Float64Array([1, 2])
     const synchronize = vi.fn(() => target.set([3, 4]))
-    const view = createGeometryView(target, {
+    const view = createMutationView(target, {
       synchronize,
       commit: vi.fn()
     })
@@ -32,17 +35,17 @@ describe('createGeometryView', () => {
   })
 
   it('leaves constructor identity intact for external clone helpers', () => {
-    const view = createGeometryView([1, 2], { commit: vi.fn() })
+    const view = createMutationView([1, 2], { commit: vi.fn() })
 
     expect(view.constructor).toBe(Array)
   })
 
-  it('observes a shared parent buffer and maps nested geometry views', () => {
+  it('observes a shared parent buffer and maps nested views', () => {
     const bounds = new Rectangle(1, 2, 3, 4)
     const commit = vi.fn()
-    const pos = createGeometryView(bounds.pos, { commit, observe: bounds })
-    const size = createGeometryView(bounds.size, { commit, observe: bounds })
-    const view = createGeometryView(bounds, {
+    const pos = createMutationView(bounds.pos, { commit, observe: bounds })
+    const size = createMutationView(bounds.size, { commit, observe: bounds })
+    const view = createMutationView(bounds, {
       commit,
       mapValue: (property, value) => {
         if (property === 'pos') return pos
@@ -58,5 +61,32 @@ describe('createGeometryView', () => {
     expect(view.size).toBe(size)
     expect([...bounds]).toEqual([10, 2, 3, 20])
     expect(commit).toHaveBeenCalledTimes(2)
+  })
+
+  it('commits mutations that throw or bypass assignment', () => {
+    const target = Object.assign([1, 2], {
+      mutateThenThrow(this: number[]) {
+        this[0] = 3
+        throw new Error('failed mutation')
+      }
+    })
+    const commit = vi.fn()
+    const view = createMutationView(target, { commit })
+
+    expect(() => view.mutateThenThrow()).toThrow('failed mutation')
+    delete view[1]
+    Object.defineProperty(view, '0', { value: 4 })
+
+    expect(commit).toHaveBeenCalledTimes(3)
+  })
+
+  it('only observes mutating array methods', () => {
+    const commit = vi.fn()
+    const view = createArrayMutationView([1, 2], commit)
+
+    expect(view.map((value) => value * 2)).toEqual([2, 4])
+    view.reverse()
+
+    expect(commit).toHaveBeenCalledOnce()
   })
 })

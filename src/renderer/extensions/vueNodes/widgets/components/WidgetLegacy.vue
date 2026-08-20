@@ -65,7 +65,7 @@ onMounted(() => {
   canvasEl.value.width *= scaleFactor
   bindWidget()
   if (!widgetInstance) return
-  useResizeObserver(canvasEl.value.parentElement, draw)
+  useResizeObserver(canvasEl, draw)
   watch(() => useColorPaletteStore().activePaletteId, draw)
   pointer = new CanvasPointer(canvasEl.value)
 })
@@ -79,8 +79,8 @@ watch(() => canvasStore.currentGraph, bindWidget)
 function draw() {
   if (!widgetInstance || !node) return
   const width =
-    canvasEl.value.parentElement.clientWidth ||
-    canvasEl.value.getBoundingClientRect().width
+    canvasEl.value.getBoundingClientRect().width ||
+    canvasEl.value.parentElement.clientWidth
   // Priority: computedHeight (from litegraph) > computeLayoutSize > computeSize
   let height = 20
   if (widgetInstance.computedHeight) {

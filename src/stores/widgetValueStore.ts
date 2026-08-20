@@ -209,6 +209,27 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     order.splice(0, order.length, ...nextOrder)
   }
 
+  function replaceNodeWidgetOrder(
+    graphId: UUID,
+    localNodeId: NodeId,
+    orderedWidgetIds: readonly WidgetId[]
+  ): void {
+    const widgetStates = getGraphWidgetStates(graphId)
+    const nextOrder = orderedWidgetIds.filter(
+      (id) => widgetStates.get(id)?.nodeId === localNodeId
+    )
+    const graphOrders = getGraphNodeWidgetOrders(graphId)
+    const order = graphOrders.get(localNodeId)
+
+    if (nextOrder.length === 0) {
+      graphOrders.delete(localNodeId)
+    } else if (order) {
+      order.splice(0, order.length, ...nextOrder)
+    } else {
+      graphOrders.set(localNodeId, reactive([...nextOrder]))
+    }
+  }
+
   function clearGraph(graphId: UUID): void {
     graphWidgetStates.value.delete(graphId)
     graphWidgetRenderStates.value.delete(graphId)
@@ -224,6 +245,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     getNodeWidgets,
     getNodeWidgetIds,
     setNodeWidgetOrder,
+    replaceNodeWidgetOrder,
     removeNodeWidgetOrder,
     clearGraph
   }

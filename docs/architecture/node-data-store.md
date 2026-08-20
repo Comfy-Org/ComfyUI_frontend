@@ -216,23 +216,23 @@ explicitly so the wire format is unchanged. Assigning
 `node.inputs = [...]` still works and now replaces the array contents in
 place rather than swapping the array.
 
-`node.widgets` remains a plain array, but its render order is owned by
-`widgetValueStore`. `addWidget` / `addCustomWidget` / `removeWidget` keep
-the two in step; a bare `node.widgets.splice(…)` does not, and the widget
-will keep rendering until something else invalidates the computed. This
-regressed deliberately — the previous self-healing came from a
-`shallowReactive` reconciliation performed _during_ every `node.widgets`
-read, which is exactly the augmentation this phase removes. Runtime
-detection of a bare splice would require reinstating that proxy, so the
-guidance is documented on the field instead of enforced.
+`node.widgets` is now an own accessor backed by a mutation-tracked array Proxy.
+Its render order is owned by `widgetValueStore`. Array mutations, indexed and
+`length` writes, and assignment to `node.widgets` synchronize that order.
+Assignment copies the supplied contents into the tracked array, so extensions
+must not depend on the assigned array retaining its identity. Extensions must
+also not depend on `widgets` being an own data property or on the exact shape of
+its property descriptor. Read and mutate `node.widgets` through its array API,
+or prefer `addWidget` / `addCustomWidget` / `removeWidget` for lifecycle-aware
+changes.
 
 Extension migration map: read a field → `node.<field>` (reactive) or
 `useNodeDataStore().getNode(rootGraphId, node.id)`; snapshot all shell
 state → read that `NodeState`, not `{ ...node }`; set `title` / `mode` /
 colours / `flags` / `shape` / `showAdvanced` → assign the accessor (writes
 through to the store); set `type` → construct the intended node type;
-add or remove a widget → `node.addWidget` / `node.removeWidget`, not a
-`node.widgets` splice.
+add or remove a widget → prefer `node.addWidget` / `node.removeWidget`; reorder
+existing widgets → mutate `node.widgets` in place.
 
 ## Scope
 

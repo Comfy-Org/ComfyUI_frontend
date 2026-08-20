@@ -43,6 +43,7 @@ import {
   outputHasLinks,
   outputLinks
 } from './node/slotLinks'
+import { normalizeWidgetsView } from './node/widgetsView'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { UNASSIGNED_NODE_ID, parseNodeId, toNodeId } from '@/types/nodeId'
@@ -1164,6 +1165,7 @@ export class LGraph
       node.flags.ghost = true
     }
 
+    normalizeWidgetsView(node)
     node.graph = this
 
     while (!registerNodeState(this, node)) node.id = mintNodeId(state)

@@ -17,7 +17,6 @@ import { graphScopeOf } from '@/types/graphScopeId'
 import type { GraphScope } from '@/types/graphScopeId'
 import { mintLinkId } from './idAllocation'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { UNASSIGNED_NODE_ID, toNodeId, serializeNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import type { NodeState } from '@/types/nodeState'
@@ -53,11 +52,12 @@ import {
   outputHasLinks,
   outputLinks
 } from './node/slotLinks'
+import { initializeWidgetsView } from './node/widgetsView'
 import { anchorRerouteChain } from './Reroute'
 import type { Reroute, RerouteId } from './Reroute'
 import { getNodeInputOnPos, getNodeOutputOnPos } from './canvas/measureSlots'
 import type { IDrawBoundingOptions } from './draw'
-import { createGeometryView } from './infrastructure/createGeometryView'
+import { createMutationView } from './infrastructure/createMutationView'
 import { NullGraphError } from './infrastructure/NullGraphError'
 import type { ReadOnlyRectangle } from './infrastructure/Rectangle'
 import { Rectangle } from './infrastructure/Rectangle'
@@ -124,7 +124,6 @@ import {
   diffNamedValuesShadow
 } from './utils/namedValuesShadowDiff'
 import { reportNamedValuesShadowDiff } from './utils/namedValuesShadowDiffTelemetry'
-import { getWidgetIds } from './utils/widget'
 import { distributeSpace } from './utils/spaceDistribution'
 import { truncateText } from './utils/textUtils'
 import { BaseWidget } from './widgets/BaseWidget'
@@ -401,8 +400,7 @@ export class LGraphNode
     this._state.flags = value
   }
 
-  /** Mutate in place; assigning a new array drops the renderer's tracking. */
-  widgets?: IBaseWidget[]
+  declare widgets?: IBaseWidget[]
 
   /**
    * The amount of space available for widgets to grow into.
@@ -647,11 +645,11 @@ export class LGraphNode
   _pos: Point = this._posSize.pos
   _size: Size = this._posSize.size
   private readonly _renderedSize: Size = [0, 0]
-  private readonly posView = createGeometryView(this._pos, {
+  private readonly posView = createMutationView(this._pos, {
     commit: () => this._positionUpdated(),
     synchronize: () => this.refreshGeometry()
   })
-  private readonly sizeView = createGeometryView(this._size, {
+  private readonly sizeView = createMutationView(this._size, {
     commit: () => this._sizeUpdated(),
     synchronize: () => this.refreshGeometry()
   })
@@ -1017,6 +1015,7 @@ export class LGraphNode
   }
 
   constructor(title: string, type?: string) {
+    initializeWidgetsView(this)
     this._state = {
       flags: {},
       graphId: zeroUuid,
@@ -2192,7 +2191,7 @@ export class LGraphNode
     callback: IBaseWidget['callback'] | string | null,
     options?: IWidgetOptions | string
   ): WidgetTypeMap[Type] | IBaseWidget {
-    this.widgets ||= shallowReactive([])
+    this.widgets ||= []
 
     if (!options && callback && typeof callback === 'object') {
       options = callback
@@ -2240,10 +2239,9 @@ export class LGraphNode
   addCustomWidget<TPlainWidget extends IBaseWidget>(
     custom_widget: TPlainWidget
   ): TPlainWidget | WidgetTypeMap[TPlainWidget['type']] {
-    this.widgets ||= shallowReactive([])
+    this.widgets ||= []
     const widget = toConcreteWidget(custom_widget, this, false) ?? custom_widget
     this.widgets.push(widget)
-    this._widgetSlotsDirty = true
 
     // Only register with store if node has a valid ID (is already in a graph).
     // If the node isn't in a graph yet (id === -1), registration happens
@@ -2287,24 +2285,9 @@ export class LGraphNode
         }
       }
     }
-    this._widgetSlotsDirty = true
 
     widget.onRemove?.()
     this.widgets.splice(widgetIndex, 1)
-
-    const graphId = this.graph?.rootGraph.id
-    if (graphId) {
-      const widgetValueStore = useWidgetValueStore()
-      // Drop the widget from the render order but keep its stored value, so a
-      // remove-then-re-add of the same widget id preserves what the user set.
-      if (widget.widgetId)
-        widgetValueStore.removeNodeWidgetOrder(widget.widgetId)
-      widgetValueStore.setNodeWidgetOrder(
-        graphId,
-        this.id,
-        getWidgetIds(this.widgets)
-      )
-    }
   }
 
   ensureWidgetRemoved(widget: IBaseWidget): void {

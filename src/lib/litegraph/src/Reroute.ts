@@ -17,7 +17,7 @@ import type { LGraph } from './LGraph'
 import type { LGraphNode } from './LGraphNode'
 import { LLink } from './LLink'
 import type { LinkId } from './LLink'
-import { createGeometryView } from './infrastructure/createGeometryView'
+import { createMutationView } from './infrastructure/createMutationView'
 import type {
   CanvasColour,
   INodeInputSlot,
@@ -63,7 +63,7 @@ export class Reroute
   private readonly network: WeakRef<LinkNetwork>
   private readonly rootGraphId: UUID
   private readonly position: Point = [0, 0]
-  private readonly positionView = createGeometryView(this.position, {
+  private readonly positionView = createMutationView(this.position, {
     synchronize: () => this.syncPosition(),
     commit: () => this.commitPosition()
   })
