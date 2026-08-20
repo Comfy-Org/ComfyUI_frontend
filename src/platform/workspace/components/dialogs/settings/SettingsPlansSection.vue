@@ -359,9 +359,8 @@ const selectedCycle = computed<BillingCycle>(() =>
   billedYearly.value ? 'yearly' : 'monthly'
 )
 
-// Decision #8: the subscribed plan's card is a disabled "Current plan". A slug
-// outside the rendered catalog (founder, legacy plans) matches no card, so
-// every card stays actionable — cloud's existing behavior, inherited.
+// True only when the tier's catalog slug is the current plan. A founder or
+// legacy slug matches no rendered card, so every card stays actionable.
 function isCurrentPlan(tierKey: CheckoutTierKey): boolean {
   return (
     currentPlanSlug.value !== null &&

@@ -12,14 +12,10 @@ import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import { CommandHelper } from '@e2e/fixtures/helpers/CommandHelper'
 
 /**
- * Local plans section checkout — FE-1600 (S2).
- *
- * Off-cloud, the plan-card CTAs must subscribe through the workspace rail on
- * cloud ingest (never the legacy `/customers/cloud-subscription-checkout`),
- * open the Stripe page the backend returns, and flip the subscribed card to a
- * disabled "Current Plan" once op-polling reconciles. Billing mocks are
- * cross-origin (app on localhost, ingest on its own origin), so every fulfill
- * carries CORS headers and answers OPTIONS preflights.
+ * Off-cloud, the plan-card CTAs subscribe via the workspace rail on cloud
+ * ingest (never the legacy checkout shortlink), open the returned Stripe page,
+ * and flip the card to disabled "Current Plan" after op-polling. Mocks are
+ * cross-origin, so fulfills carry CORS headers and answer OPTIONS preflights.
  */
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 
