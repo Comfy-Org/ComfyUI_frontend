@@ -278,18 +278,33 @@ describe('promoted subgraph widgets', () => {
     cleanupComplexPromotionFixtureNodeType()
   })
 
-  function processHostWidget(graph: LGraph, hostNode: SubgraphNode) {
+  function processHostWidget(
+    graph: LGraph,
+    hostNode: SubgraphNode,
+    explicitWidgetIds = true
+  ) {
     const id = hostNode.widgets[0]?.widgetId
     if (!id) throw new Error('Expected the promoted host widget to be keyed')
     return computeProcessedWidgets({
       nodeData: hostNode._state,
-      widgetIds: [id],
+      widgetIds: explicitWidgetIds ? [id] : undefined,
       graphId: graph.id,
       showAdvanced: false,
       isGraphReady: true,
       rootGraph: graph,
       ui: noopUi
     })[0]
+  }
+
+  function setHostWidgetOptions(
+    hostNode: SubgraphNode,
+    options: IBaseWidget['options']
+  ) {
+    const id = hostNode.widgets[0]?.widgetId
+    if (!id) throw new Error('Expected the promoted host widget to be keyed')
+    if (!useWidgetValueStore().updateOptions(id, options)) {
+      throw new Error('Expected promoted host widget state')
+    }
   }
 
   function recordInteriorError() {
@@ -321,6 +336,24 @@ describe('promoted subgraph widgets', () => {
 
     expect(processHostWidget(graph, hostNode).simplified.nodeLocatorId).toBe(
       createNodeLocatorId(subgraph.id, INTERIOR_ID)
+    )
+  })
+
+  it.for([
+    ['shows on the node canvas', { advanced: true }, false, true],
+    ['shows when selected in App Mode', { advanced: true }, true, true],
+    [
+      'stays hidden when explicitly hidden',
+      { advanced: true, hidden: true },
+      true,
+      false
+    ]
+  ] as const)('%s', ([, options, explicitWidgetIds, visible]) => {
+    const { graph, hostNode } = setupComplexPromotionFixture()
+    setHostWidgetOptions(hostNode, options)
+
+    expect(processHostWidget(graph, hostNode, explicitWidgetIds).visible).toBe(
+      visible
     )
   })
 

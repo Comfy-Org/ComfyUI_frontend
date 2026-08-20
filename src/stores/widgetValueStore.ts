@@ -157,6 +157,16 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     return true
   }
 
+  function updateOptions(
+    widgetId: WidgetId,
+    options: Partial<WidgetState['options']>
+  ): boolean {
+    const state = getWidget(widgetId)
+    if (!state) return false
+    state.options = { ...state.options, ...options }
+    return true
+  }
+
   function deleteWidget(widgetId: WidgetId): boolean {
     if (!isWidgetId(widgetId)) return false
 
@@ -241,6 +251,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     getWidget,
     getWidgetRenderState,
     setValue,
+    updateOptions,
     deleteWidget,
     getNodeWidgets,
     getNodeWidgetIds,

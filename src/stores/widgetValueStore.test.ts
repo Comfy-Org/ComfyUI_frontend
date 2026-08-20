@@ -230,6 +230,24 @@ describe('useWidgetValueStore', () => {
       ).toBe(false)
     })
 
+    it('updateOptions preserves existing options and reports missing widgets', () => {
+      const store = useWidgetValueStore()
+      store.registerWidget(
+        seedA,
+        state('number', 100, { options: { min: 0, max: 10 } })
+      )
+
+      expect(store.updateOptions(seedA, { advanced: true })).toBe(true)
+      expect(store.getWidget(seedA)?.options).toEqual({
+        min: 0,
+        max: 10,
+        advanced: true
+      })
+      expect(
+        store.updateOptions(widgetId(graphA, toNodeId('missing'), 'seed'), {})
+      ).toBe(false)
+    })
+
     it('deleteWidget removes registered widgets from node order', () => {
       const store = useWidgetValueStore()
       const steps = widgetId(graphA, toNodeId('node-1'), 'steps')
