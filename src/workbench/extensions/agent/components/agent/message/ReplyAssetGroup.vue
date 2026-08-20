@@ -1,8 +1,13 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, ref } from 'vue'
+import { computed, defineAsyncComponent, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import WaveAudioPlayer from '@/components/common/WaveAudioPlayer.vue'
+import {
+  findOutputAsset,
+  findServerPreviewUrl,
+  isAssetPreviewSupported
+} from '@/platform/assets/utils/assetPreviewUtil'
 import { useDialogStore } from '@/stores/dialogStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -44,6 +49,33 @@ const galleryItems = computed(() =>
   galleryAssets.value.map(replyAssetResultItem)
 )
 const galleryIndex = ref(-1)
+
+const modelThumbnails = ref<Record<string, string>>({})
+const audioNames = ref<Record<string, string>>({})
+
+watch(
+  () => assets.filter((asset) => asset.kind === '3D' || asset.kind === 'audio'),
+  (lookups) => {
+    if (!isAssetPreviewSupported()) return
+    for (const { url, filename, kind } of lookups) {
+      if (kind === '3D' && !(url in modelThumbnails.value)) {
+        modelThumbnails.value[url] = ''
+        void findServerPreviewUrl(filename).then((preview) => {
+          if (preview) modelThumbnails.value[url] = preview
+        })
+      }
+      if (kind === 'audio' && !(url in audioNames.value)) {
+        audioNames.value[url] = ''
+        void findOutputAsset(filename)
+          .then((record) => {
+            if (record?.name) audioNames.value[url] = record.name
+          })
+          .catch(() => {})
+      }
+    }
+  },
+  { immediate: true }
+)
 
 const Load3dViewerContent = defineAsyncComponent(
   () => import('@/components/load3d/Load3dViewerContent.vue')
@@ -93,7 +125,8 @@ function stopPreview(event: Event): void {
         :class="
           cn(
             'relative cursor-pointer overflow-hidden rounded-lg border-none p-0',
-            multi && 'bg-agent-surface-hover aspect-square'
+            multi && 'bg-agent-surface-hover aspect-square',
+            !multi && asset.kind === '3D' && 'justify-self-end'
           )
         "
         @click="inspect(asset)"
@@ -116,6 +149,13 @@ function stopPreview(event: Event): void {
           :class="multi ? 'size-full object-cover' : 'block h-auto max-w-full'"
           @mouseenter="playPreview"
           @mouseleave="stopPreview"
+        />
+        <img
+          v-else-if="modelThumbnails[asset.url]"
+          :src="modelThumbnails[asset.url]"
+          :alt="asset.label ?? asset.filename"
+          loading="lazy"
+          :class="multi ? 'size-full object-cover' : 'block h-auto max-w-full'"
         />
         <span
           v-else
@@ -152,7 +192,7 @@ function stopPreview(event: Event): void {
         class="border-agent-border rounded-lg border px-3 py-2"
       >
         <div class="text-agent-fg mb-1 truncate text-xs">
-          {{ asset.filename }}
+          {{ audioNames[asset.url] || asset.filename }}
         </div>
         <WaveAudioPlayer :src="asset.url" />
       </div>
