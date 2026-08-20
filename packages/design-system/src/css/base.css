@@ -1,8 +1,13 @@
 /*
- * Design System Base — Brand tokens + fonts only.
- * For marketing sites that don't use PrimeVue or the node editor.
- * Import the full style.css instead for the desktop app.
+ * Design System Base — the brand surface.
+ * Brand colours, the brand typeface, and the shared neutral ramps. No PrimeVue,
+ * no node editor, no icon plugins. This is what marketing sites import.
+ * Import the full style.css instead for the app and the desktop shell.
+ *
+ * Inter is not here: it is the app's UI typeface, and the brand surfaces do not
+ * serve its woff2 files. style.css loads it from fonts.css.
  */
 
-@import './fonts.css';
+@import './_brand.css';
+@import './brand-fonts.css';
 @import './_palette.css';

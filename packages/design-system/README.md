@@ -32,16 +32,45 @@ For the palette and fonts without the Tailwind layers or icon plugins:
 
 ## Exports
 
-| Path                 | Contents                                                   |
-| -------------------- | ---------------------------------------------------------- |
-| `./css/style.css`    | Full theme — palette, fonts, Tailwind layers, icon plugins |
-| `./css/base.css`     | Palette and fonts only                                     |
-| `./css/_palette.css` | Color variables                                            |
-| `./css/fonts.css`    | Font faces                                                 |
-| `./icons/*.svg`      | Comfy icon set source SVGs                                 |
+| Path                    | Contents                                                        |
+| ----------------------- | --------------------------------------------------------------- |
+| `./css/style.css`       | Full theme — brand, palette, app tokens, Tailwind layers, icons |
+| `./css/base.css`        | Brand surface — brand colors, PP Formula, shared neutral ramps  |
+| `./css/_brand.css`      | Brand colors and brand typeface tokens                          |
+| `./css/_palette.css`    | Shared neutral ramps (charcoal, ash, smoke, plum, ink)          |
+| `./css/brand-fonts.css` | PP Formula `@font-face` declarations                            |
+| `./css/fonts.css`       | Inter `@font-face` declarations                                 |
+| `./icons/*.svg`         | Comfy icon set source SVGs                                      |
 
 Icons are exposed to Tailwind as `icon-[comfy--*]` and `icon-mask-[comfy--*]`
 utilities. Size them with `size-*`, not font-size classes.
+
+## Two design systems, one package
+
+This package ships both the **company brand system** and the **ComfyUI app
+system**. The file a token lives in is what tells them apart — there is no
+naming convention that reliably does, and several token names predate the
+split.
+
+| File           | System      | What belongs here                                                 |
+| -------------- | ----------- | ----------------------------------------------------------------- |
+| `_brand.css`   | Brand       | Anything the Brand Guidelines define: brand colors, PP Formula    |
+| `_palette.css` | Shared      | Raw neutral ramps both systems build on — no brand values         |
+| `style.css`    | ComfyUI app | Semantic roles, node-editor and PrimeVue tokens, the icon plugins |
+
+Which entry point you import follows from that. A marketing site or any surface
+that carries the brand but not the app imports `base.css`. The app and the
+desktop shell import `style.css`, which is `base.css` plus everything product.
+
+The rule that keeps this true: **a token is declared in exactly one file.** If
+you need a brand value on an app surface, import it — do not redeclare it in
+`style.css`, and do not redeclare it in a consuming app's own `@theme`. A
+second declaration silently wins over the package and is invisible until the
+two values disagree, which is how the brand yellow spent months drifting.
+`apps/website/src/data/brandColors.test.ts` enforces this.
+
+Fonts are the one thing the package does not ship: `@font-face` declarations
+point at `/fonts/*.woff2`, and each consuming app serves the binaries itself.
 
 ## Consuming tokens
 

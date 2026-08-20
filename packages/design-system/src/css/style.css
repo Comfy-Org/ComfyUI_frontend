@@ -1,6 +1,7 @@
 @layer theme, base, primevue, components, utilities;
 
 @import './fonts.css';
+@import './_brand.css';
 @import './_palette.css';
 @import 'tailwindcss/theme' layer(theme);
 @import 'tailwindcss/utilities' layer(utilities);
@@ -215,8 +216,6 @@
   /* Semantic tokens - light mode */
   --muted-foreground: var(--color-charcoal-200);
   --base-foreground: var(--color-charcoal-800);
-  --brand-yellow: var(--color-electric-400);
-  --brand-blue: var(--color-sapphire-700);
   --secondary-background: var(--color-smoke-200);
   --secondary-background-hover: var(--color-smoke-400);
   --secondary-background-selected: var(--color-smoke-600);
@@ -368,8 +367,6 @@
   /* Semantic tokens - dark mode */
   --muted-foreground: var(--color-smoke-800);
   --base-foreground: var(--color-white);
-  --brand-yellow: var(--color-electric-400);
-  --brand-blue: var(--color-sapphire-700);
   --secondary-background: var(--color-charcoal-600);
   --secondary-background-hover: var(--color-charcoal-400);
   --secondary-background-selected: var(--color-charcoal-200);
@@ -563,8 +560,6 @@
   --color-border-subtle: var(--border-subtle);
   --color-muted-background: var(--muted-background);
   --color-accent-background: var(--accent-background);
-  --color-brand-yellow: var(--brand-yellow);
-  --color-brand-blue: var(--brand-blue);
 }
 
 @custom-variant dark-theme {

@@ -23,29 +23,29 @@ const hasEmbedLoadError = ref(false)
 const hubspotContactFormId = computed(() => hubspotContactFormIds[locale])
 
 const hubspotFormStyles: Record<`--${string}`, string> = {
-  '--hsf-global__font-family': "'PP Formula', sans-serif",
+  '--hsf-global__font-family': 'var(--font-formula)',
   '--hsf-global__color': 'var(--color-primary-comfy-canvas)',
   '--hsf-background__background-color': 'var(--color-primary-comfy-ink)',
   '--hsf-background__border-width': '0',
   '--hsf-background__padding': '0',
-  '--hsf-button__font-family': "'PP Formula', sans-serif",
+  '--hsf-button__font-family': 'var(--font-formula)',
   '--hsf-button__font-size': '14px',
   '--hsf-button__color': 'var(--color-primary-comfy-ink)',
   '--hsf-button__background-color': 'var(--color-primary-comfy-yellow)',
   '--hsf-button__border-radius': '16px',
   '--hsf-button__padding': '10px 24px',
-  '--hsf-richtext__font-family': "'PP Formula', sans-serif",
+  '--hsf-richtext__font-family': 'var(--font-formula)',
   '--hsf-richtext__color': 'var(--color-primary-comfy-canvas)',
-  '--hsf-heading__font-family': "'PP Formula', sans-serif",
+  '--hsf-heading__font-family': 'var(--font-formula)',
   '--hsf-heading__color': 'var(--color-primary-comfy-canvas)',
-  '--hsf-field-label__font-family': "'PP Formula', sans-serif",
+  '--hsf-field-label__font-family': 'var(--font-formula)',
   '--hsf-field-label__font-size': '12px',
   '--hsf-field-label__color': 'var(--color-primary-comfy-canvas)',
-  '--hsf-field-description__font-family': "'PP Formula', sans-serif",
+  '--hsf-field-description__font-family': 'var(--font-formula)',
   '--hsf-field-description__color': 'var(--color-primary-comfy-canvas)',
-  '--hsf-field-footer__font-family': "'PP Formula', sans-serif",
+  '--hsf-field-footer__font-family': 'var(--font-formula)',
   '--hsf-field-footer__color': 'var(--color-primary-comfy-canvas)',
-  '--hsf-field-input__font-family': "'PP Formula', sans-serif",
+  '--hsf-field-input__font-family': 'var(--font-formula)',
   '--hsf-field-input__color': 'var(--color-primary-comfy-canvas)',
   '--hsf-field-input__background-color': '#2a2230',
   '--hsf-field-input__placeholder-color': '#585159',
@@ -54,7 +54,7 @@ const hubspotFormStyles: Record<`--${string}`, string> = {
   '--hsf-field-input__border-style': 'solid',
   '--hsf-field-input__border-radius': '16px',
   '--hsf-field-input__padding': '16px',
-  '--hsf-field-textarea__font-family': "'PP Formula', sans-serif",
+  '--hsf-field-textarea__font-family': 'var(--font-formula)',
   '--hsf-field-textarea__color': 'var(--color-primary-comfy-canvas)',
   '--hsf-field-textarea__background-color': '#2a2230',
   '--hsf-field-textarea__placeholder-color': '#585159',
@@ -73,8 +73,8 @@ const hubspotFormStyles: Record<`--${string}`, string> = {
   '--hsf-field-radio__border-color': '#464147',
   '--hsf-field-radio__border-width': '1px',
   '--hsf-field-radio__border-style': 'solid',
-  '--hsf-erroralert__font-family': "'PP Formula', sans-serif",
-  '--hsf-infoalert__font-family': "'PP Formula', sans-serif"
+  '--hsf-erroralert__font-family': 'var(--font-formula)',
+  '--hsf-infoalert__font-family': 'var(--font-formula)'
 }
 
 onMounted(() => {
@@ -101,7 +101,7 @@ onMounted(() => {
   <div class="min-h-[640px] w-full">
     <p
       v-if="hasEmbedLoadError"
-      class="text-primary-comfy-canvas text-sm/6"
+      class="text-sm/6 text-primary-comfy-canvas"
       role="status"
     >
       {{ t('contact.form.embedLoadErrorPrefix', locale) }}

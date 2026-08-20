@@ -1,7 +1,6 @@
 @theme {
   /* Font Families */
   --font-inter: 'Inter', sans-serif;
-  --font-formula: 'PP Formula', 'Inter', sans-serif;
 
   /* Palette Colors */
   --color-transparency-white-t8: rgb(255 255 255 / 0.08);
@@ -53,14 +52,4 @@
 
   --color-white: #ffffff;
   --color-black: #000000;
-
-  /* Brand Colors */
-  --color-electric-400: #f2ff59;
-  --color-sapphire-700: #172dd7;
-  --color-primary-comfy-ink: #211927;
-  --color-primary-comfy-canvas: #c2bfb9;
-  --color-primary-warm-white: #f0efed;
-  --color-primary-warm-gray: #7e7c78;
-  --color-brand-yellow: var(--color-electric-400);
-  --color-brand-blue: var(--color-sapphire-700);
 }
