@@ -51,7 +51,7 @@ const galleryItems = computed(() =>
 const galleryIndex = ref(-1)
 
 const modelThumbnails = ref<Record<string, string>>({})
-const audioNames = ref<Record<string, string>>({})
+const assetNames = ref<Record<string, string>>({})
 
 watch(
   () => assets.filter((asset) => asset.kind === '3D' || asset.kind === 'audio'),
@@ -64,11 +64,11 @@ watch(
           if (preview) modelThumbnails.value[url] = preview
         })
       }
-      if (kind === 'audio' && !(url in audioNames.value)) {
-        audioNames.value[url] = ''
+      if (!(url in assetNames.value)) {
+        assetNames.value[url] = ''
         void findOutputAsset(filename)
           .then((record) => {
-            if (record?.name) audioNames.value[url] = record.name
+            if (record?.name) assetNames.value[url] = record.name
           })
           .catch(() => {})
       }
@@ -88,13 +88,13 @@ function inspect(asset: ReplyAsset): void {
   if (asset.kind === '3D') {
     useDialogStore().showDialog({
       key: 'asset-3d-viewer',
-      title: asset.filename,
+      title: assetNames.value[asset.url] || asset.filename,
       component: Load3dViewerContent,
       props: { modelUrl: asset.url },
       dialogComponentProps: {
         renderer: 'reka',
         size: 'full',
-        contentClass: 'w-[80vw] h-[80vh] max-h-[80vh]',
+        contentClass: 'left-1/2 w-[80vw] sm:max-w-[80vw] h-[80vh] max-h-[80vh]',
         maximizable: true
       }
     })
@@ -192,7 +192,7 @@ function stopPreview(event: Event): void {
         class="border-agent-border rounded-lg border px-3 py-2"
       >
         <div class="text-agent-fg mb-1 truncate text-xs">
-          {{ audioNames[asset.url] || asset.filename }}
+          {{ assetNames[asset.url] || asset.filename }}
         </div>
         <WaveAudioPlayer :src="asset.url" />
       </div>

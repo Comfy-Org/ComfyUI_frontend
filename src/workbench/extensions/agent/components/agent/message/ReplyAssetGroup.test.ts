@@ -179,6 +179,21 @@ describe('ReplyAssetGroup', () => {
     expect(screen.queryByText('song.mp3')).not.toBeInTheDocument()
   })
 
+  it('titles the 3D viewer with the resolved asset name', async () => {
+    isAssetPreviewSupported.mockReturnValue(true)
+    findOutputAsset.mockResolvedValue({ name: '3d/ComfyUI_00001_.glb' })
+    renderGroup([model])
+
+    await waitFor(() =>
+      expect(findOutputAsset).toHaveBeenCalledWith('mesh.glb')
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'mesh.glb' }))
+
+    expect(showDialog).toHaveBeenCalledWith(
+      expect.objectContaining({ title: '3d/ComfyUI_00001_.glb' })
+    )
+  })
+
   it('collapses past three rows behind Show more and returns with Show less', async () => {
     renderGroup(Array.from({ length: 13 }, (_, n) => image(n)))
 
