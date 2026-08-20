@@ -165,6 +165,29 @@ describe('useSlotElementTracking', () => {
     expect(registryStore.getNode(NODE_ID)).toBeUndefined()
   })
 
+  it('updates cached slot geometry when the node layout moves', async () => {
+    const { unmount } = await mountAndRegisterSlot('input')
+    const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
+    const before = layoutStore.getSlotLayout(slotKey)
+    if (!before) throw new Error('Expected initial slot layout')
+
+    layoutStore.applyOperation({
+      type: 'moveNode',
+      graphId: ROOT_GRAPH_ID,
+      nodeId: NODE_ID,
+      position: { x: 120, y: 90 },
+      timestamp: Date.now(),
+      source: LayoutSource.Vue,
+      actor: 'test'
+    })
+    await nextTick()
+
+    const after = layoutStore.getSlotLayout(slotKey)
+    expect(after?.position.x).toBe(before.position.x + 120)
+    expect(after?.position.y).toBe(before.position.y + 90)
+    unmount()
+  })
+
   it('clears pendingSlotSync when slot layouts already exist', () => {
     // Seed a slot layout (simulates slot layouts persisting through undo/redo)
     const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)

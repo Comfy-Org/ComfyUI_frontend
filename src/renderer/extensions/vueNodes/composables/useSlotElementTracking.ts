@@ -74,7 +74,7 @@ export function requestSlotLayoutSyncForAllNodes(): void {
 function viewedNodeLayout(nodeId: NodeId) {
   const { rootGraphId } = useCanvasStore()
   if (!rootGraphId) return null
-  return layoutStore.getNodeLayout(rootGraphId, nodeId)
+  return layoutStore.getNodeLayoutRef(rootGraphId, nodeId).value
 }
 
 function createSlotLayout(options: {
