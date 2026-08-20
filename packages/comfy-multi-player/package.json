@@ -27,6 +27,7 @@
     "prepack": "npm run build",
     "prepare": "npm run build",
     "test": "vitest run",
+    "test:mutation": "stryker run",
     "check:purity": "node scripts/check-purity.mjs",
     "verify:corpus": "node scripts/verify-corpus.mjs"
   },
@@ -34,6 +35,8 @@
     "yjs": "^13.6.27"
   },
   "devDependencies": {
+    "@stryker-mutator/core": "^10.0.0",
+    "@stryker-mutator/vitest-runner": "^10.0.0",
     "@types/node": "^24.0.0",
     "fast-check": "^4.9.0",
     "typescript": "^5.9.0",
