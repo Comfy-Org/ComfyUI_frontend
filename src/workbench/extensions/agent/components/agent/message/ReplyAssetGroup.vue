@@ -2,7 +2,6 @@
 import { computed, defineAsyncComponent, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import WaveAudioPlayer from '@/components/common/WaveAudioPlayer.vue'
 import {
   findOutputAsset,
   findServerPreviewUrl,
@@ -13,6 +12,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import type { ReplyAsset } from '../../../utils/replyAssets'
 import { replyAssetResultItem } from '../../../utils/replyAssets'
+import ReplyAudioCard from './ReplyAudioCard.vue'
 
 const { assets } = defineProps<{ assets: ReplyAsset[] }>()
 
@@ -33,6 +33,18 @@ const visibleVisual = computed(() =>
 )
 
 const multi = computed(() => visual.value.length > 1)
+
+const AUDIO_COLLAPSED_COUNT = 5
+
+const audioExpanded = ref(false)
+const audioCollapsible = computed(
+  () => audio.value.length > AUDIO_COLLAPSED_COUNT
+)
+const visibleAudio = computed(() =>
+  audioExpanded.value || !audioCollapsible.value
+    ? audio.value
+    : audio.value.slice(0, AUDIO_COLLAPSED_COUNT)
+)
 
 const gridColsClass = computed(() => {
   const count = visual.value.length
@@ -206,17 +218,29 @@ function stopPreview(event: Event): void {
       />
     </button>
 
-    <div v-if="audio.length" class="flex flex-col gap-1">
-      <div
-        v-for="asset in audio"
+    <div v-if="audio.length" class="flex flex-col gap-2">
+      <ReplyAudioCard
+        v-for="asset in visibleAudio"
         :key="asset.url"
-        class="border-agent-border rounded-lg border px-3 py-2"
+        :asset
+        :title="assetNames[asset.url] || asset.filename"
+      />
+      <button
+        v-if="audioCollapsible"
+        type="button"
+        class="border-agent-border text-agent-fg hover:bg-agent-surface-hover flex cursor-pointer items-center gap-1 self-center rounded-full border px-3 py-1 text-xs"
+        @click="audioExpanded = !audioExpanded"
       >
-        <div class="text-agent-fg mb-1 truncate text-xs">
-          {{ assetNames[asset.url] || asset.filename }}
-        </div>
-        <WaveAudioPlayer :src="asset.url" />
-      </div>
+        {{ audioExpanded ? t('agent.showLess') : t('agent.showMore') }}
+        <span
+          :class="
+            cn(
+              'icon-[lucide--chevron-down] size-3',
+              audioExpanded && 'rotate-180'
+            )
+          "
+        />
+      </button>
     </div>
 
     <MediaLightbox
