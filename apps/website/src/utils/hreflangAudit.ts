@@ -1,0 +1,134 @@
+/**
+ * The rules `scripts/check-hreflang.ts` enforces against the built site.
+ *
+ * Separated from the crawler so they can be tested against fixtures rather than
+ * a full build. A guard nobody has watched fail is not a guard, and two of these
+ * rules exist because the first version of the crawler passed a broken cluster.
+ */
+import type { Alternate } from './hreflang'
+
+import { unprefixed, ZH_HREFLANG, ZH_PREFIX } from './hreflangRoutes'
+
+export interface BuiltSite {
+  /** Every built route, mapped to the alternates its HTML emits. */
+  pages: Map<string, Alternate[]>
+  /** Sitemap URL -> the hreflang values it advertises. `null` when absent. */
+  sitemap: Map<string, Set<string>> | null
+  origin: string
+}
+
+/**
+ * The exact locale-to-URL mapping a clustered route must emit.
+ *
+ * Derived from the same prefix rule the pages and the sitemap use, so there is
+ * one definition of what the Chinese twin of a URL is.
+ */
+function expectedAlternates(
+  route: string,
+  origin: string
+): Map<string, string> {
+  const path = unprefixed(route)
+  const english = `${origin}${path}`
+  const chinese = `${origin}${ZH_PREFIX}${path === '/' ? '/' : path}`
+
+  return new Map([
+    ['en', english],
+    [ZH_HREFLANG, chinese],
+    ['x-default', english]
+  ])
+}
+
+export function auditBuiltSite({
+  pages,
+  sitemap,
+  origin
+}: BuiltSite): string[] {
+  const errors: string[] = []
+  const routeOfHref = (href: string) => href.slice(origin.length) || '/'
+
+  for (const [route, alternates] of pages) {
+    const seen = new Set<string>()
+    for (const { hreflang, href } of alternates) {
+      if (seen.has(hreflang)) {
+        errors.push(`${route}: emits hreflang="${hreflang}" more than once`)
+      }
+      seen.add(hreflang)
+
+      if (!href.startsWith(origin)) {
+        errors.push(
+          `${route}: alternate ${hreflang} points off-origin (${href})`
+        )
+        continue
+      }
+      const target = routeOfHref(href)
+      if (!pages.has(target)) {
+        errors.push(
+          `${route}: alternate ${hreflang} -> ${target} was not built (404)`
+        )
+      }
+    }
+
+    // Reciprocity alone accepts a cluster whose two locales are swapped: each
+    // page still lists the other, so every link resolves while the labels lie.
+    if (alternates.length > 0) {
+      for (const [hreflang, href] of expectedAlternates(route, origin)) {
+        if (
+          !alternates.some(
+            (entry) => entry.hreflang === hreflang && entry.href === href
+          )
+        ) {
+          errors.push(
+            `${route}: expects ${hreflang} -> ${href}, but does not emit it`
+          )
+        }
+      }
+    }
+  }
+
+  // Reciprocity: if A lists B, B must list A. A one-way cluster is discarded.
+  for (const [route, alternates] of pages) {
+    for (const { hreflang, href } of alternates) {
+      if (hreflang === 'x-default') continue
+      const target = routeOfHref(href)
+      if (target === route) continue
+      const back = pages.get(target)
+      if (!back) continue // already reported as unbuilt
+      if (!back.some((entry) => routeOfHref(entry.href) === route)) {
+        errors.push(`${route}: lists ${target}, which does not list it back`)
+      }
+    }
+  }
+
+  if (!sitemap) {
+    errors.push('sitemap-0.xml is missing, so its alternates cannot be checked')
+    return errors
+  }
+
+  // Comparing only the sitemap's own entries never sees a clustered page the
+  // sitemap leaves out, which is the direction this actually drifted.
+  for (const [route, alternates] of pages) {
+    if (alternates.length > 0 && !sitemap.has(route)) {
+      errors.push(`${route}: advertises alternates but the sitemap omits it`)
+    }
+  }
+
+  for (const [route, langs] of sitemap) {
+    const onPage = new Set(
+      (pages.get(route) ?? []).map((alternate) => alternate.hreflang)
+    )
+    const sitemapOnly = [...langs].filter((lang) => !onPage.has(lang))
+    const pageOnly = [...onPage].filter((lang) => !langs.has(lang))
+    if (sitemapOnly.length > 0) {
+      errors.push(
+        `${route}: sitemap advertises ${sitemapOnly.join(', ')} that the page does not`
+      )
+    }
+    if (pageOnly.length > 0) {
+      errors.push(
+        `${route}: page advertises ${pageOnly.join(', ')} that the sitemap does not`
+      )
+    }
+  }
+
+  return errors
+}
