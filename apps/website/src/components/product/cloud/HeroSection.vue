@@ -29,55 +29,51 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
           height="510.823"
           rx="81.9867"
           transform="matrix(-0.866025 0.5 -0.866025 -0.5 924.132 890.858)"
-          fill="#211927"
+          class="fill-primary-comfy-ink"
           stroke="#4D3762"
           stroke-width="3"
         />
         <rect
-          class="cloud-panel-back cloud-panel1-sm1-b"
+          class="cloud-panel-back cloud-panel1-sm1-b fill-primary-comfy-ink"
           x="-2.59808"
           y="3.12924e-07"
           width="326.372"
           height="326.373"
           rx="52.0171"
           transform="matrix(-0.866025 0.5 -0.866025 -0.5 764.394 726.171)"
-          fill="#211927"
           stroke="#4D3762"
           stroke-width="3"
         />
         <rect
-          class="cloud-panel-back cloud-panel1-sm2-b"
+          class="cloud-panel-back cloud-panel1-sm2-b fill-primary-comfy-ink"
           x="-2.59808"
           y="3.12924e-07"
           width="326.372"
           height="326.373"
           rx="52.0171"
           transform="matrix(-0.866025 0.5 -0.866025 -0.5 764.394 726.171)"
-          fill="#211927"
           stroke="#4D3762"
           stroke-width="3"
         />
         <rect
-          class="cloud-panel-front cloud-panel1-sm1-f"
+          class="cloud-panel-front cloud-panel1-sm1-f fill-primary-comfy-ink"
           x="-2.59808"
           y="3.12924e-07"
           width="326.372"
           height="326.373"
           rx="52.0171"
           transform="matrix(-0.866025 0.5 -0.866025 -0.5 764.394 726.171)"
-          fill="#211927"
           stroke="#4D3762"
           stroke-width="3"
         />
         <rect
-          class="cloud-panel-front cloud-panel1-sm2-f"
+          class="cloud-panel-front cloud-panel1-sm2-f fill-primary-comfy-ink"
           x="-2.59808"
           y="3.12924e-07"
           width="326.372"
           height="326.373"
           rx="52.0171"
           transform="matrix(-0.866025 0.5 -0.866025 -0.5 764.394 726.171)"
-          fill="#211927"
           stroke="#4D3762"
           stroke-width="3"
         />
@@ -90,55 +86,51 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
           height="432.47"
           rx="48.7555"
           transform="matrix(-0.866025 0.5 0 1 387.119 24.7041)"
-          fill="#211927"
+          class="fill-primary-comfy-ink"
           stroke="#4D3762"
           stroke-width="3"
         />
         <rect
-          class="cloud-panel-back cloud-panel2-sm1-b"
+          class="cloud-panel-back cloud-panel2-sm1-b fill-primary-comfy-ink"
           x="-1.29904"
           y="2.25"
           width="326.9"
           height="326.901"
           rx="48.7555"
           transform="matrix(-0.866025 0.5 0 1 435.32457 183.057)"
-          fill="#211927"
           stroke="#4D3762"
           stroke-width="3"
         />
         <rect
-          class="cloud-panel-back cloud-panel2-sm2-b"
+          class="cloud-panel-back cloud-panel2-sm2-b fill-primary-comfy-ink"
           x="-1.29904"
           y="2.25"
           width="326.9"
           height="326.901"
           rx="48.7555"
           transform="matrix(-0.866025 0.5 0 1 435.32457 183.057)"
-          fill="#211927"
           stroke="#4D3762"
           stroke-width="3"
         />
         <rect
-          class="cloud-panel-front cloud-panel2-sm1-f"
+          class="cloud-panel-front cloud-panel2-sm1-f fill-primary-comfy-ink"
           x="-1.29904"
           y="2.25"
           width="326.9"
           height="326.901"
           rx="48.7555"
           transform="matrix(-0.866025 0.5 0 1 435.32457 183.057)"
-          fill="#211927"
           stroke="#4D3762"
           stroke-width="3"
         />
         <rect
-          class="cloud-panel-front cloud-panel2-sm2-f"
+          class="cloud-panel-front cloud-panel2-sm2-f fill-primary-comfy-ink"
           x="-1.29904"
           y="2.25"
           width="326.9"
           height="326.901"
           rx="48.7555"
           transform="matrix(-0.866025 0.5 0 1 435.32457 183.057)"
-          fill="#211927"
           stroke="#4D3762"
           stroke-width="3"
         />
@@ -151,55 +143,51 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
           height="432.47"
           rx="48.7555"
           transform="matrix(0.866025 0.5 0 1 578.635 23.4051)"
-          fill="#211927"
+          class="fill-primary-comfy-ink"
           stroke="#4D3762"
           stroke-width="3"
         />
         <rect
-          class="cloud-panel-back cloud-panel3-sm1-b"
+          class="cloud-panel-back cloud-panel3-sm1-b fill-primary-comfy-ink"
           x="1.29904"
           y="2.25"
           width="326.9"
           height="326.901"
           rx="48.7555"
           transform="matrix(0.866025 0.5 0 1 530.436 181.758)"
-          fill="#211927"
           stroke="#4D3762"
           stroke-width="3"
         />
         <rect
-          class="cloud-panel-back cloud-panel3-sm2-b"
+          class="cloud-panel-back cloud-panel3-sm2-b fill-primary-comfy-ink"
           x="1.29904"
           y="2.25"
           width="326.9"
           height="326.901"
           rx="48.7555"
           transform="matrix(0.866025 0.5 0 1 530.436 181.758)"
-          fill="#211927"
           stroke="#4D3762"
           stroke-width="3"
         />
         <rect
-          class="cloud-panel-front cloud-panel3-sm1-f"
+          class="cloud-panel-front cloud-panel3-sm1-f fill-primary-comfy-ink"
           x="1.29904"
           y="2.25"
           width="326.9"
           height="326.901"
           rx="48.7555"
           transform="matrix(0.866025 0.5 0 1 530.436 181.758)"
-          fill="#211927"
           stroke="#4D3762"
           stroke-width="3"
         />
         <rect
-          class="cloud-panel-front cloud-panel3-sm2-f"
+          class="cloud-panel-front cloud-panel3-sm2-f fill-primary-comfy-ink"
           x="1.29904"
           y="2.25"
           width="326.9"
           height="326.901"
           rx="48.7555"
           transform="matrix(0.866025 0.5 0 1 530.436 181.758)"
-          fill="#211927"
           stroke="#4D3762"
           stroke-width="3"
         />
@@ -209,7 +197,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
           <!-- Yellow center (static) -->
           <path
             d="M541.711 624.12L541.724 574.634C541.726 568.056 537.111 560.058 531.417 556.77L488.58 532.038C484.973 529.956 478.487 530.052 474.881 532.136L432.031 556.89C426.335 560.181 421.716 568.181 421.714 574.76L421.701 624.246C421.7 628.41 424.86 634.074 428.467 636.156L471.304 660.888C476.998 664.176 486.232 664.173 491.929 660.883L534.778 636.128C538.392 634.041 541.71 628.293 541.711 624.12Z"
-            fill="#F2FF59"
+            class="fill-primary-comfy-yellow"
             stroke="#4D3762"
             stroke-width="3"
           />
@@ -217,19 +205,19 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
           <g class="cloud-float-top">
             <path
               d="M429.565 552.893L472.414 577.647C478.111 580.938 487.344 580.94 493.039 577.653L535.876 552.921C539.482 550.838 542.642 545.173 542.641 541.009L542.628 491.523C542.626 484.944 538.007 476.944 532.311 473.653L489.461 448.899C485.855 446.815 479.37 446.72 475.763 448.803L432.926 473.535C427.232 476.822 422.617 484.82 422.619 491.399L422.632 540.885C422.633 545.058 425.951 550.805 429.565 552.893Z"
-              fill="#211927"
+              class="fill-primary-comfy-ink"
               stroke="#4D3762"
               stroke-width="3"
             />
             <path
               d="M608.255 518.036L565.406 493.282C559.71 489.991 550.476 489.988 544.781 493.276L501.945 518.008C498.338 520.09 495.178 525.755 495.18 529.92L495.193 579.406C495.194 585.984 499.813 593.985 505.51 597.276L548.359 622.03C551.965 624.113 558.45 624.208 562.057 622.126L604.894 597.394C610.588 594.106 615.203 586.108 615.201 579.53L615.188 530.044C615.187 525.871 611.869 520.123 608.255 518.036Z"
-              fill="#211927"
+              class="fill-primary-comfy-ink"
               stroke="#4D3762"
               stroke-width="3"
             />
             <path
               d="M358.991 518.037L401.84 493.282C407.536 489.992 416.77 489.989 422.465 493.277L465.301 518.009C468.908 520.091 472.068 525.756 472.067 529.921L472.053 579.407C472.052 585.985 467.433 593.986 461.736 597.277L418.887 622.031C415.281 624.114 408.796 624.209 405.189 622.127L362.352 597.395C356.658 594.107 352.043 586.109 352.045 579.531L352.058 530.045C352.059 525.872 355.377 520.124 358.991 518.037Z"
-              fill="#211927"
+              class="fill-primary-comfy-ink"
               stroke="#4D3762"
               stroke-width="3"
             />
@@ -238,7 +226,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
           <g class="cloud-float-left">
             <path
               d="M397.664 624.12L397.677 574.634C397.679 568.056 393.064 560.058 387.37 556.77L344.533 532.038C340.926 529.956 334.44 530.052 330.834 532.135L287.985 556.89C282.288 560.181 277.669 568.181 277.667 574.759L277.654 624.245C277.653 628.41 280.814 634.074 284.421 636.156L327.257 660.888C332.952 664.176 342.186 664.173 347.882 660.882L390.731 636.128C394.345 634.041 397.663 628.293 397.664 624.12Z"
-              fill="#211927"
+              class="fill-primary-comfy-ink"
               stroke="#4D3762"
               stroke-width="3"
             />
@@ -246,7 +234,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
           <!-- Yellow center (repeated for layering) -->
           <path
             d="M541.711 624.12L541.724 574.634C541.726 568.056 537.111 560.058 531.417 556.77L488.58 532.038C484.973 529.956 478.487 530.052 474.881 532.136L432.031 556.89C426.335 560.181 421.716 568.181 421.714 574.76L421.701 624.246C421.7 628.41 424.86 634.074 428.467 636.156L471.304 660.888C476.998 664.176 486.232 664.173 491.929 660.883L534.778 636.128C538.392 634.041 541.71 628.293 541.711 624.12Z"
-            fill="#F2FF59"
+            class="fill-primary-comfy-yellow"
             stroke="#4D3762"
             stroke-width="3"
           />
@@ -260,7 +248,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
             />
             <path
               d="M496.105 666.027L496.092 616.541C496.091 609.963 500.705 601.965 506.4 598.677L549.236 573.945C552.843 571.863 559.329 571.959 562.935 574.043L605.785 598.797C611.481 602.088 616.1 610.088 616.102 616.667L616.115 666.153C616.116 670.317 612.956 675.981 609.349 678.063L566.512 702.795C560.818 706.083 551.584 706.08 545.888 702.79L503.038 678.035C499.425 675.948 496.106 670.2 496.105 666.027Z"
-              fill="#211927"
+              class="fill-primary-comfy-ink"
               stroke="#4D3762"
               stroke-width="3"
             />
@@ -290,7 +278,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
           height="326.373"
           rx="52.0171"
           transform="matrix(-0.866025 0.5 -0.866025 -0.5 764.39 519.23)"
-          fill="#211927"
+          class="fill-primary-comfy-ink"
           stroke="#4D3762"
           stroke-width="3"
         />
@@ -300,7 +288,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
           <!-- Yellow center (static) -->
           <path
             d="M541.703 504.44L541.716 454.955C541.718 448.376 537.103 440.378 531.409 437.09L488.572 412.359C484.965 410.276 478.479 410.373 474.873 412.456L432.024 437.21C426.327 440.501 421.708 448.501 421.707 455.08L421.693 504.566C421.692 508.731 424.853 514.394 428.46 516.477L471.296 541.208C476.991 544.496 486.225 544.493 491.921 541.203L534.77 516.449C538.384 514.361 541.702 508.613 541.703 504.44Z"
-            fill="#F2FF59"
+            class="fill-primary-comfy-yellow"
             stroke="#4D3762"
             stroke-width="3"
           />
@@ -314,13 +302,13 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
             />
             <path
               d="M608.248 398.356L565.398 373.602C559.702 370.311 550.468 370.308 544.774 373.596L501.937 398.328C498.33 400.41 495.171 406.075 495.172 410.24L495.185 459.726C495.187 466.305 499.806 474.305 505.502 477.596L548.351 502.35C551.958 504.433 558.443 504.528 562.049 502.446L604.886 477.714C610.581 474.426 615.195 466.428 615.194 459.85L615.181 410.364C615.18 406.191 611.861 400.443 608.248 398.356Z"
-              fill="#211927"
+              class="fill-primary-comfy-ink"
               stroke="#4D3762"
               stroke-width="3"
             />
             <path
               d="M358.979 398.357L401.828 373.602C407.525 370.312 416.759 370.309 422.453 373.597L465.29 398.329C468.896 400.411 472.056 406.076 472.055 410.241L472.042 459.727C472.04 466.305 467.421 474.306 461.725 477.597L418.875 502.351C415.269 504.434 408.784 504.529 405.177 502.447L362.341 477.715C356.646 474.427 352.031 466.429 352.033 459.851L352.046 410.365C352.047 406.192 355.365 400.444 358.979 398.357Z"
-              fill="#211927"
+              class="fill-primary-comfy-ink"
               stroke="#4D3762"
               stroke-width="3"
             />
@@ -337,7 +325,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
           <!-- Yellow center (repeated for layering) -->
           <path
             d="M541.703 504.44L541.716 454.955C541.718 448.376 537.103 440.378 531.409 437.09L488.572 412.359C484.965 410.276 478.479 410.373 474.873 412.456L432.024 437.21C426.327 440.501 421.708 448.501 421.707 455.08L421.693 504.566C421.692 508.731 424.853 514.394 428.46 516.477L471.296 541.208C476.991 544.496 486.225 544.493 491.921 541.203L534.77 516.449C538.384 514.361 541.702 508.613 541.703 504.44Z"
-            fill="#F2FF59"
+            class="fill-primary-comfy-yellow"
             stroke="#4D3762"
             stroke-width="3"
           />
@@ -351,7 +339,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
             />
             <path
               d="M496.094 546.35L496.081 496.864C496.079 490.286 500.694 482.288 506.388 479L549.225 454.268C552.832 452.186 559.317 452.282 562.924 454.366L605.773 479.12C611.469 482.411 616.089 490.411 616.09 496.99L616.103 546.476C616.104 550.64 612.944 556.304 609.337 558.386L566.501 583.118C560.806 586.406 551.572 586.403 545.876 583.113L503.027 558.358C499.413 556.271 496.095 550.523 496.094 546.35Z"
-              fill="#211927"
+              class="fill-primary-comfy-ink"
               stroke="#4D3762"
               stroke-width="3"
             />

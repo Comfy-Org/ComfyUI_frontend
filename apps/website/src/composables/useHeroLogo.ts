@@ -4,6 +4,8 @@ import { onMounted, onUnmounted, ref } from 'vue'
 import * as THREE from 'three'
 import { SVGLoader } from 'three/addons/loaders/SVGLoader.js'
 
+import { readDesignToken } from '@comfyorg/shared-frontend-utils/designTokens'
+
 import { prefersReducedMotion } from './useReducedMotion'
 
 const IMAGE_COUNT = 16
@@ -17,7 +19,7 @@ interface HeroLogoConfig {
   tiltZ: number
   zoom: number
   fov: number
-  logoColor: string
+  logoColor?: string
   extrudeDepth: number
   cursorTiltStrength: number
   bgScale: number
@@ -36,7 +38,6 @@ const DEFAULTS: HeroLogoConfig = {
   tiltZ: -0.1,
   zoom: 7,
   fov: 50,
-  logoColor: '#F2FF59',
   extrudeDepth: 200,
   cursorTiltStrength: 0.5,
   bgScale: 0.8,
@@ -207,7 +208,7 @@ export function useHeroLogo(
       shapeGeo.translate(-cx, -cy, 0)
       shapeGeo.scale(s, -s, s)
       const shapeMat = new THREE.MeshBasicMaterial({
-        color: cfg.logoColor,
+        color: cfg.logoColor ?? readDesignToken('--color-primary-comfy-yellow'),
         side: THREE.DoubleSide,
         depthTest: false,
         depthWrite: false,

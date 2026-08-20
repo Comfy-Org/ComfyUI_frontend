@@ -59,11 +59,11 @@ export const BrandColors: Story = {
     template: `
       <div class="flex flex-col items-center gap-12">
         <div class="flex flex-col items-center gap-2">
-          <span class="text-xs text-neutral-400">#F0FF41 (Yellow)</span>
+          <span class="text-xs text-neutral-400">electric-400 (Yellow)</span>
           <LogoComfyWaveLoader size="lg" color="yellow" />
         </div>
         <div class="flex flex-col items-center gap-2">
-          <span class="text-xs text-neutral-400">#172DD7 (Blue)</span>
+          <span class="text-xs text-neutral-400">sapphire-700 (Blue)</span>
           <LogoComfyWaveLoader size="lg" color="blue" />
         </div>
         <div class="flex flex-col items-center gap-2">

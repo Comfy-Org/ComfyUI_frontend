@@ -49,12 +49,12 @@ onMounted(() => {
         aria-hidden="true"
       >
         <g>
-          <rect width="1600" height="1046" fill="#211927" />
+          <rect width="1600" height="1046" class="fill-primary-comfy-ink" />
           <rect
             width="800"
             height="800"
             transform="translate(712 112)"
-            fill="#211927"
+            class="fill-primary-comfy-ink"
           />
 
           <!-- Ripple rings -->
@@ -240,16 +240,14 @@ onMounted(() => {
               stroke-width="2"
             />
             <path
-              class="block-piece"
+              class="block-piece fill-primary-comfy-yellow"
               d="M1098.18 582.085L1098.2 528.1C1098.2 520.924 1093.16 512.198 1086.95 508.612L1040.22 481.632C1036.29 479.36 1029.21 479.465 1025.28 481.738L978.532 508.743C972.318 512.333 967.279 521.06 967.277 528.237L967.263 582.221C967.261 586.765 970.709 592.943 974.644 595.215L1021.37 622.195C1027.59 625.782 1037.66 625.779 1043.87 622.189L1090.62 595.185C1094.56 592.907 1098.18 586.637 1098.18 582.085Z"
-              fill="#F2FF59"
               stroke="#4D3762"
               stroke-width="2"
             />
             <path
-              class="block-piece"
+              class="block-piece fill-primary-comfy-yellow"
               d="M1125.42 582.085L1125.41 528.1C1125.4 520.924 1130.44 512.198 1136.65 508.612L1183.38 481.632C1187.32 479.36 1194.39 479.465 1198.32 481.738L1245.07 508.743C1251.28 512.333 1256.32 521.06 1256.32 528.237L1256.34 582.221C1256.34 586.765 1252.89 592.943 1248.96 595.215L1202.23 622.195C1196.01 625.782 1185.94 625.779 1179.73 622.189L1132.98 595.184C1129.04 592.907 1125.42 586.637 1125.42 582.085Z"
-              fill="#F2FF59"
               stroke="#4D3762"
               stroke-width="2"
             />
@@ -296,9 +294,8 @@ onMounted(() => {
               stroke-width="2"
             />
             <path
-              class="block-piece"
+              class="block-piece fill-primary-comfy-yellow"
               d="M1175.17 445.81L1175.18 391.826C1175.18 384.649 1170.15 375.924 1163.94 372.337L1117.21 345.357C1113.27 343.086 1106.2 343.191 1102.26 345.464L1055.52 372.468C1049.3 376.058 1044.26 384.786 1044.26 391.962L1044.25 445.947C1044.25 450.49 1047.69 456.669 1051.63 458.941L1098.36 485.921C1104.57 489.507 1114.64 489.505 1120.86 485.915L1167.6 458.91C1171.55 456.633 1175.17 450.363 1175.17 445.81Z"
-              fill="#F2FF59"
               stroke="#4D3762"
               stroke-width="2"
             />
@@ -350,8 +347,14 @@ onMounted(() => {
             y2="562.554"
             gradientUnits="userSpaceOnUse"
           >
-            <stop stop-color="#211927" stop-opacity="0" />
-            <stop offset="1" stop-color="#211927" />
+            <stop
+              style="stop-color: var(--color-primary-comfy-ink)"
+              stop-opacity="0"
+            />
+            <stop
+              offset="1"
+              style="stop-color: var(--color-primary-comfy-ink)"
+            />
           </linearGradient>
           <clipPath id="enterpriseHeroBlockClip">
             <rect width="1600" height="1046" fill="white" />

@@ -1,3 +1,4 @@
+import { readDesignToken } from '@comfyorg/shared-frontend-utils/designTokens'
 import type { ChartData, ChartOptions, ChartType } from 'chart.js'
 import {
   BarController,
@@ -29,15 +30,10 @@ Chart.register(
   Tooltip
 )
 
-function getCssVar(name: string): string {
-  return getComputedStyle(document.documentElement)
-    .getPropertyValue(name)
-    .trim()
-}
-
 function getDefaultOptions(type: ChartType): ChartOptions {
-  const foreground = getCssVar('--color-base-foreground') || '#ffffff'
-  const muted = getCssVar('--color-muted-foreground') || '#8a8a8a'
+  const foreground = readDesignToken('--color-base-foreground', '--color-white')
+  const muted = readDesignToken('--color-muted-foreground', '--color-smoke-800')
+  const fontFamily = readDesignToken('--font-inter')
 
   return {
     responsive: true,
@@ -52,7 +48,7 @@ function getDefaultOptions(type: ChartType): ChartOptions {
           boxWidth: 8,
           boxHeight: 8,
           padding: 16,
-          font: { family: 'Inter', size: 11 },
+          font: { family: fontFamily, size: 11 },
           generateLabels(chart) {
             const datasets = chart.data.datasets
             return datasets.map((dataset, i) => {
@@ -87,7 +83,7 @@ function getDefaultOptions(type: ChartType): ChartOptions {
       x: {
         ticks: {
           color: muted,
-          font: { family: 'Inter', size: 11 },
+          font: { family: fontFamily, size: 11 },
           padding: 8
         },
         grid: {
@@ -100,7 +96,7 @@ function getDefaultOptions(type: ChartType): ChartOptions {
       y: {
         ticks: {
           color: muted,
-          font: { family: 'Inter', size: 11 },
+          font: { family: fontFamily, size: 11 },
           padding: 4
         },
         grid: {
