@@ -216,6 +216,17 @@ describe('useWidgetValueStore', () => {
       ).toBe(false)
     })
 
+    it('setOptions replaces registered widget options and reports missing widgets', () => {
+      const store = useWidgetValueStore()
+      store.registerWidget(seedA, state('number', 100))
+
+      expect(store.setOptions(seedA, { advanced: true })).toBe(true)
+      expect(store.getWidget(seedA)?.options).toEqual({ advanced: true })
+      expect(
+        store.setOptions(widgetId(graphA, toNodeId('missing'), 'seed'), {})
+      ).toBe(false)
+    })
+
     it('deleteWidget removes registered widgets from node order', () => {
       const store = useWidgetValueStore()
       const steps = widgetId(graphA, toNodeId('node-1'), 'steps')

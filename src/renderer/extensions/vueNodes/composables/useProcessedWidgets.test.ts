@@ -302,9 +302,9 @@ describe('promoted subgraph widgets', () => {
   ) {
     const id = hostNode.widgets[0]?.widgetId
     if (!id) throw new Error('Expected the promoted host widget to be keyed')
-    const state = useWidgetValueStore().getWidget(id)
-    if (!state) throw new Error('Expected promoted host widget state')
-    state.options = options
+    if (!useWidgetValueStore().setOptions(id, options)) {
+      throw new Error('Expected promoted host widget state')
+    }
   }
 
   function recordInteriorError() {
