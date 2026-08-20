@@ -9,7 +9,7 @@ import type { LGraph } from './LGraph'
 import { LGraphCanvas } from './LGraphCanvas'
 import { LGraphNode } from './LGraphNode'
 import { strokeShape } from './draw'
-import { createGeometryView } from './infrastructure/createGeometryView'
+import { createMutationView } from './infrastructure/createMutationView'
 import type {
   ColorOption,
   IColorable,
@@ -74,17 +74,17 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   /** Title text colour, cached until the background colour changes */
   _titleTextColor: string = LGraphGroup.defaultColour
 
-  readonly _pos: Point = createGeometryView(this.bounds.pos, {
+  readonly _pos: Point = createMutationView(this.bounds.pos, {
     synchronize: () => this.syncBoundsFromStore(),
     commit: () => this.commitBounds(),
     observe: this.bounds
   })
-  readonly _size: Size = createGeometryView(this.bounds.size, {
+  readonly _size: Size = createMutationView(this.bounds.size, {
     synchronize: () => this.syncBoundsFromStore(),
     commit: () => this.commitBounds(),
     observe: this.bounds
   })
-  readonly _bounding = createGeometryView(this.bounds, {
+  readonly _bounding = createMutationView(this.bounds, {
     synchronize: () => this.syncBoundsFromStore(),
     commit: () => this.commitBounds(),
     mapValue: (property, value) => {

@@ -58,7 +58,7 @@ import { anchorRerouteChain } from './Reroute'
 import type { Reroute, RerouteId } from './Reroute'
 import { getNodeInputOnPos, getNodeOutputOnPos } from './canvas/measureSlots'
 import type { IDrawBoundingOptions } from './draw'
-import { createGeometryView } from './infrastructure/createGeometryView'
+import { createMutationView } from './infrastructure/createMutationView'
 import { NullGraphError } from './infrastructure/NullGraphError'
 import type { ReadOnlyRectangle } from './infrastructure/Rectangle'
 import { Rectangle } from './infrastructure/Rectangle'
@@ -659,11 +659,11 @@ export class LGraphNode
   _pos: Point = this._posSize.pos
   _size: Size = this._posSize.size
   private readonly _renderedSize: Size = [0, 0]
-  private readonly posView = createGeometryView(this._pos, {
+  private readonly posView = createMutationView(this._pos, {
     commit: () => this._positionUpdated(),
     synchronize: () => this.refreshGeometry()
   })
-  private readonly sizeView = createGeometryView(this._size, {
+  private readonly sizeView = createMutationView(this._size, {
     commit: () => this._sizeUpdated(),
     synchronize: () => this.refreshGeometry()
   })
