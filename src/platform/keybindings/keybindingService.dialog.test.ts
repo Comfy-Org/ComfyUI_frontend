@@ -67,7 +67,6 @@ describe('keybindingService - dialog gate', () => {
       cancelable: true,
       ...modifiers
     })
-    event.preventDefault = vi.fn()
     event.composedPath = vi.fn(() => [target])
     return event
   }
@@ -106,7 +105,7 @@ describe('keybindingService - dialog gate', () => {
       await keybindingService.keybindHandler(event)
 
       expect(mockCommandExecute).not.toHaveBeenCalled()
-      expect(event.preventDefault).not.toHaveBeenCalled()
+      expect(event.defaultPrevented).toBe(false)
     } finally {
       document.body.removeChild(dialog)
     }
@@ -123,7 +122,7 @@ describe('keybindingService - dialog gate', () => {
       await keybindingService.keybindHandler(event)
 
       expect(mockCommandExecute).not.toHaveBeenCalled()
-      expect(event.preventDefault).not.toHaveBeenCalled()
+      expect(event.defaultPrevented).toBe(false)
     } finally {
       document.body.removeChild(dialog)
     }
@@ -140,7 +139,7 @@ describe('keybindingService - dialog gate', () => {
       await keybindingService.keybindHandler(event)
 
       expect(mockCommandExecute).not.toHaveBeenCalled()
-      expect(event.preventDefault).not.toHaveBeenCalled()
+      expect(event.defaultPrevented).toBe(false)
     } finally {
       document.body.removeChild(dialog)
     }
@@ -162,7 +161,7 @@ describe('keybindingService - dialog gate', () => {
       await keybindingService.keybindHandler(event)
 
       expect(mockCommandExecute).not.toHaveBeenCalled()
-      expect(event.preventDefault).toHaveBeenCalled()
+      expect(event.defaultPrevented).toBe(true)
     }
   )
 
