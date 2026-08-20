@@ -10,6 +10,11 @@ import {
   normalizePendingWarnings,
   updatePendingWarnings
 } from '@/platform/workflow/core/utils/pendingWarnings'
+import {
+  areWorkflowIdsEquivalent,
+  ensureWorkflowId,
+  getLegacyWorkflowId
+} from '@/platform/workflow/core/utils/workflowId'
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 import {
   ComfyWorkflow,
@@ -493,12 +498,15 @@ export const useWorkflowService = () => {
         //
         // This prevents accidental duplicate tabs when startup/load flows
         // invoke loadGraphData more than once for the same workflow name.
+        const existingId = existingWorkflow?.activeState?.id
         const isSameActiveWorkflowLoad =
           !!existingWorkflow &&
           workflowStore.isActive(existingWorkflow) &&
-          (existingWorkflow.activeState?.id === undefined ||
-            workflowData.id === undefined ||
-            existingWorkflow.activeState.id === workflowData.id)
+          areWorkflowIdsEquivalent(
+            existingId,
+            workflowData.id,
+            existingWorkflow.legacyId
+          )
 
         if (
           existingWorkflow &&
@@ -519,7 +527,10 @@ export const useWorkflowService = () => {
           if (shareId) {
             loadedWorkflow.shareId = shareId
           }
-          loadedWorkflow.changeTracker.reset(workflowData)
+          loadedWorkflow.legacyId ??= getLegacyWorkflowId(workflowData.id)
+          loadedWorkflow.changeTracker.reset(
+            ensureWorkflowId(workflowData, loadedWorkflow.activeState?.id)
+          )
           loadedWorkflow.changeTracker.restore()
           return
         }
@@ -546,7 +557,10 @@ export const useWorkflowService = () => {
       loadedWorkflow.initialMode = freshLoadMode
       trackIfEnteringApp(loadedWorkflow)
     }
-    loadedWorkflow.changeTracker.reset(workflowData)
+    loadedWorkflow.legacyId ??= getLegacyWorkflowId(workflowData.id)
+    loadedWorkflow.changeTracker.reset(
+      ensureWorkflowId(workflowData, loadedWorkflow.activeState?.id)
+    )
     loadedWorkflow.changeTracker.restore()
   }
 
