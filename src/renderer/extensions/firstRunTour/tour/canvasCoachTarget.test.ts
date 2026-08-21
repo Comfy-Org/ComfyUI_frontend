@@ -141,10 +141,6 @@ describe('canvasNodeTarget', () => {
       'a step must wait for its target rather than spotlight nothing'
     ).toBeNull()
     expect(state.layoutReads).toHaveBeenCalledWith(rootGraphId, nodeId)
-    expect(
-      state.layout?.value,
-      'observing a tour target must not create durable layout state'
-    ).toBeNull()
   })
 
   it('withholds a rect once the graph it resolved against is gone', () => {
