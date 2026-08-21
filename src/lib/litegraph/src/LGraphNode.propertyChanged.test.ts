@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 
 import type { LGraphEventMap } from './infrastructure/LGraphEventMap'
 import { LGraph, LGraphNode } from './litegraph'
-import { LGraphEventMode } from './types/globalEnums'
+import { LGraphEventMode, RenderShape } from './types/globalEnums'
 
 type PropertyChange = LGraphEventMap['node:property:changed']
 
@@ -41,6 +41,8 @@ describe('LGraphNode shell-state change events', () => {
     node.mode = LGraphEventMode.NEVER
     node.color = '#123456'
     node.bgcolor = '#654321'
+    node.shape = 'round'
+    node.showAdvanced = true
 
     expect(changes).toEqual([
       {
@@ -66,6 +68,18 @@ describe('LGraphNode shell-state change events', () => {
         property: 'bgcolor',
         oldValue: undefined,
         newValue: '#654321'
+      },
+      {
+        nodeId: node.id,
+        property: 'shape',
+        oldValue: undefined,
+        newValue: RenderShape.ROUND
+      },
+      {
+        nodeId: node.id,
+        property: 'showAdvanced',
+        oldValue: undefined,
+        newValue: true
       }
     ])
   })
@@ -90,6 +104,7 @@ describe('LGraphNode shell-state change events', () => {
   })
 
   it('does not announce flag changes, including collapse', () => {
+    // Characterizes a deliberate ECS migration divergence from main.
     const { graph, node } = attachedNode()
     const changes = observe(graph)
 
@@ -123,6 +138,7 @@ describe('LGraphNode flag serialization', () => {
   })
 
   it('keeps a cleared flag as an enumerable own key on the live node', () => {
+    // Characterizes a deliberate ECS migration divergence from main.
     const { node } = attachedNode()
 
     node.flags.collapsed = true

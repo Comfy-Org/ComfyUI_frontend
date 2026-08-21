@@ -1,5 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
-import { fromPartial } from '@total-typescript/shoehorn'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -39,17 +39,25 @@ import {
   setWidgetConfig
 } from './widgetInputs'
 
+beforeEach(() => {
+  appState.configuringGraph = false
+  app.canvas.graph = null
+})
+
 /**
  * `registerExtension` is a mock, and `mockReset: true` clears its calls before
  * the first test runs — so the registered extension is captured at collection.
  */
-const widgetInputsExtension = vi.mocked(app.registerExtension).mock.calls[0][0]
+const widgetInputsExtension = vi.mocked(app.registerExtension).mock
+  .calls[0]?.[0]
+if (!widgetInputsExtension)
+  throw new Error('Comfy.WidgetInputs was not registered on import')
 
 /**
  * Applies the extension's `beforeRegisterNodeDef` to a throwaway node class.
  * `prepare` runs first, so hooks it installs are the ones the extension chains.
  */
-async function registerNodeType(
+async function applyNodeDefHooks(
   prepare?: (nodeType: typeof LGraphNode) => void
 ) {
   class TestNodeType extends LGraphNode {
@@ -122,9 +130,7 @@ describe('mergeIfValid', () => {
     // The call shape used by groupNode.ts: `config1` is supplied explicitly and
     // the "slot" is a bare object whose `widget` is the spec itself.
     const spec: InputSpec = ['INT', { min: 0, max: 100 }]
-    const output = { widget: spec } as unknown as Parameters<
-      typeof mergeIfValid
-    >[0]
+    const output: Parameters<typeof mergeIfValid>[0] = fromAny({ widget: spec })
 
     const { customConfig } = mergeIfValid(
       output,
@@ -208,7 +214,6 @@ describe('convertToInput', () => {
 describe('setWidgetConfig', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    appState.configuringGraph = false
     widgetInputsExtension.registerCustomNodes?.(app)
   })
 
@@ -280,13 +285,12 @@ describe('setWidgetConfig', () => {
 describe('Comfy.WidgetInputs node-def hooks', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    appState.configuringGraph = false
   })
 
   describe('onGraphConfigured', () => {
     it('resolves GET_CONFIG from the node definition, chaining the original hook', async () => {
       const original = vi.fn()
-      const TestNodeType = await registerNodeType((nodeType) => {
+      const TestNodeType = await applyNodeDefHooks((nodeType) => {
         nodeType.prototype.onGraphConfigured = original
       })
       TestNodeType.nodeData = fromPartial({
@@ -308,7 +312,7 @@ describe('Comfy.WidgetInputs node-def hooks', () => {
     })
 
     it('removes widget inputs that no longer have a backing widget', async () => {
-      const TestNodeType = await registerNodeType()
+      const TestNodeType = await applyNodeDefHooks()
       const node = new TestNodeType('Test')
       node.addInput('orphan', 'INT')
       node.inputs[0].widget = { name: 'orphan' }
@@ -321,7 +325,7 @@ describe('Comfy.WidgetInputs node-def hooks', () => {
 
   describe('onConfigure', () => {
     it('restores GET_CONFIG on pasted nodes', async () => {
-      const TestNodeType = await registerNodeType()
+      const TestNodeType = await applyNodeDefHooks()
       TestNodeType.nodeData = fromPartial({
         input: { required: { steps: ['INT', { max: 50 }] } }
       })
@@ -338,7 +342,7 @@ describe('Comfy.WidgetInputs node-def hooks', () => {
     })
 
     it('defers to onGraphConfigured while a whole graph is loading', async () => {
-      const TestNodeType = await registerNodeType()
+      const TestNodeType = await applyNodeDefHooks()
       appState.configuringGraph = true
       const node = new TestNodeType('Test')
       node.addInput('steps', 'INT')
@@ -356,7 +360,7 @@ describe('Comfy.WidgetInputs node-def hooks', () => {
     })
 
     async function targetIn(graph: LGraph) {
-      const TestNodeType = await registerNodeType()
+      const TestNodeType = await applyNodeDefHooks()
       const node = new TestNodeType('Test')
       graph.add(node)
       node.pos = [400, 400]
