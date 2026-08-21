@@ -3,10 +3,15 @@
  *
  * One implementation of op→doc semantics, used identically by the browser
  * and the server doc host. The op vocabulary is frozen at six kinds; the
- * normative contract is comfy-cli's `docs/op-vocabulary-v1.md` (branch
- * `fix/validate-lowers-ui-to-api`) and the stamp shapes minted by
- * `comfy_cli/workflow_ops.py` (`_new_op`). The Y.Doc layout and op-semantics
- * reference is docs/multiplayer-schema.md.
+ * normative contract is comfy-cli's `docs/op-vocabulary-v1.md` and the stamp
+ * shapes minted by `comfy_cli/workflow_ops.py` (`_new_op`), both pinned at
+ * comfy-cli commit `7e732242d971daf0d2d30f22f997abfacd78986e` — by SHA and
+ * never by branch, because a branch re-targets silently and a contract that
+ * moves under a citation is the FC-10 failure. Section numbers quoted in this
+ * package are section numbers AT THAT COMMIT. The pin registry, how the SHA was
+ * established, and the amendments upstream has since added are in
+ * docs/upstream-pins.json (`npm run check:pins`). The Y.Doc layout and
+ * op-semantics reference is docs/multiplayer-schema.md.
  *
  * Public surface:
  *  - `mint(workflow, catalog)` — workflow JSON → fresh Y.Doc (the bootstrap

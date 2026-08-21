@@ -68,7 +68,7 @@ This is the machine-addressable review log for the package. IDs are stable; do n
 ### KA-12 — Catalog pinned at mint
 **Rule:** `meta.catalog_version` cites the catalog by SHA, not branch; reject widget writes to uncatalogued classes loudly.  
 **Why:** Replay semantics must not drift with a moving vocabulary.  
-**Enforced by:** `test/roundtrip.test.ts`, [`catalog-pinning`](../.agents/checks/catalog-pinning.md), and [ADR-003](decisions/ADR-003-catalog-sha-at-mint.md). Branch-pin lint is **UNGUARDED — see roadmap**.
+**Enforced by:** `test/roundtrip.test.ts`, [`catalog-pinning`](../.agents/checks/catalog-pinning.md), [ADR-003](decisions/ADR-003-catalog-sha-at-mint.md), and — for the *citations* rather than `meta.catalog_version` itself — `scripts/check-pins.mjs` (`npm run check:pins`) with `docs/upstream-pins.json` and `test/upstream-pins.test.ts`. The rule's second clause is narrower than it looks: **`meta.catalog_version` is still UNGUARDED at the write sites — see roadmap.** Neither `mint()` nor `initDoc()` rejects a branch-shaped catalog version; only the citations are linted.
 
 ## FORECLOSE
 
@@ -112,5 +112,6 @@ This is the machine-addressable review log for the package. IDs are stable; do n
 **Enforced by:** [`op-identity`](../.agents/checks/op-identity.md); logical-clock evolution is **UNGUARDED — see roadmap**.
 
 ### FC-10 — Never cite the frozen vocabulary/catalog by moving branch instead of SHA
-**Why:** A moving reference causes silent contract drift.  
-**Enforced by:** [`catalog-pinning`](../.agents/checks/catalog-pinning.md) and [ADR-003](decisions/ADR-003-catalog-sha-at-mint.md). Automated lint is **UNGUARDED — see roadmap**.
+**Rule:** Every cross-repository citation names a commit SHA registered in `docs/upstream-pins.json` with the derivation that established it; the branch a pin replaced may be recorded as provenance but is never the citation. Moving a pin is a contract change — re-read the cited sections, reconcile the code, then move the registry and every citation together.  
+**Why:** A moving reference causes silent contract drift. Observed, not hypothetical: the branch this package cited for the op vocabulary was deleted upstream on 2026-08-21 while three citations still named it, and two contract drifts reached this repository through it: the `reset_doc` deferred status (`docs/api-contract-proposal.md` Q5) and the batch-policy error codes (#19 — the pinned revision names one code, `workflow_clear_not_batchable`; the amendment already cited by SHA in Amendment A1 names two).  
+**Enforced by:** `scripts/check-pins.mjs` (`npm run check:pins`, offline in CI; `-- --verify-remote` also proves each pinned SHA still resolves, each cited Markdown section still has its heading, and each cited Python symbol still has its definition, at that revision), `test/upstream-pins.test.ts`, [`catalog-pinning`](../.agents/checks/catalog-pinning.md), and [ADR-003](decisions/ADR-003-catalog-sha-at-mint.md).

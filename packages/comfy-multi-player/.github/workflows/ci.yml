@@ -46,5 +46,13 @@ jobs:
       - name: Import-graph gate
         run: npm run check:imports
 
+      # Offline only: asserts the citation sites and docs/upstream-pins.json
+      # agree on one SHA and that nothing cites upstream by a moving branch.
+      # Reachability of each pinned SHA needs the network and is a maintainer
+      # step (`npm run check:pins -- --verify-remote`), because a check that
+      # cannot reach GitHub must report INCONCLUSIVE rather than pass.
+      - name: Citation-pin gate (FC-10)
+        run: npm run check:pins
+
       - name: Tests
         run: npm test

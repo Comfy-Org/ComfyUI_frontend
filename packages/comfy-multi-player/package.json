@@ -28,6 +28,7 @@
     "test": "vitest run",
     "test:mutation": "stryker run",
     "check:purity": "node scripts/check-purity.mjs",
+    "check:pins": "node scripts/check-pins.mjs",
     "check:profile-claims": "node scripts/check-profile-claims.mjs",
     "check:imports": "node scripts/check-import-graph.mjs",
     "verify:corpus": "node scripts/verify-corpus.mjs"

@@ -2,8 +2,12 @@
  * Types and constants for @comfyorg/comfy-multi-player.
  *
  * The op vocabulary is frozen at six kinds; the normative contract is
- * comfy-cli's `docs/op-vocabulary-v1.md` (branch `fix/validate-lowers-ui-to-api`)
- * and the stamp shapes minted by `comfy_cli/workflow_ops.py` (`_new_op`).
+ * comfy-cli's `docs/op-vocabulary-v1.md` and the stamp shapes minted by
+ * `comfy_cli/workflow_ops.py` (`_new_op`), pinned by SHA at comfy-cli
+ * `7e732242d971daf0d2d30f22f997abfacd78986e` (FC-10: never by branch — the
+ * branch this file used to cite has since been deleted upstream). Every `§`
+ * below is a section of that revision; see docs/upstream-pins.json for the pin
+ * registry and the amendments upstream has added since.
  * The doc layout + op semantics reference is docs/multiplayer-schema.md.
  */
 

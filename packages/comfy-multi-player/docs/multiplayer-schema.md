@@ -27,11 +27,19 @@ sign-off.
 
 Normative inputs, in precedence order:
 
-1. **The frozen op vocabulary** — comfy-cli `docs/op-vocabulary-v1.md`
-   (branch `fix/validate-lowers-ui-to-api`, cite by commit SHA). Op kinds,
-   envelope, stamp shapes, conflict rules, batch protocol. This document never
-   contradicts it; where it is silent (storage layout, transport, projection),
-   this document decides.
+1. **The frozen op vocabulary** — comfy-cli `docs/op-vocabulary-v1.md`, pinned
+   at commit `7e732242d971daf0d2d30f22f997abfacd78986e`, plus amendment v1.2
+   (§11) at commit `1201b676275ce7e9b5cdb90f135b6e115ba9df10` (Amendment A1
+   below). Op kinds, envelope, stamp shapes, conflict rules, batch protocol.
+   This document never contradicts it; where it is silent (storage layout,
+   transport, projection), this document decides. Every `§n` this document
+   quotes from the vocabulary is a section of the pinned revision — the earlier
+   branch citation here has since been deleted upstream, which is exactly the
+   FC-10 failure mode. `docs/upstream-pins.json` is the registry, records how
+   each SHA was established, and lists the amendments upstream has added since;
+   `npm run check:pins` holds this document and the registry to the same SHA.
+   Moving a pin is a contract change: re-read the cited sections, reconcile the
+   applier, then move the registry and every citation together.
 2. **The V1-007 spike** — `docs/spike-report-v1-007.md` (verdicts) and
    `fixtures/` (the evidence: three replayable sessions, six LWW vectors, the
    exported catalog, machine-captured findings). Every DECISION below cites
@@ -587,10 +595,16 @@ topology (§2.2), watermark implementation status (§4).
 ## Amendment A1 — 2026-08-12 — concrete-input contention; id-type identity
 
 Tracks comfy-cli `docs/op-vocabulary-v1.md` **amendment v1.2**, cited by SHA:
-`1201b676275ce7e9b5cdb90f135b6e115ba9df10` (branch
-`kishore/v1-032-connect-lww`). This document and that one must move together;
-read §11.1/§11.2 there for the normative rule, the rejected alternatives, and
-the batch caveat. No `SCHEMA_VERSION` bump: the Y.Doc LAYOUT is unchanged —
+`1201b676275ce7e9b5cdb90f135b6e115ba9df10`. Read §11.1/§11.2 there for the
+normative rule, the rejected alternatives, and the batch caveat; this document
+and that one must move together. The branch that carried the amendment
+(`kishore/v1-032-connect-lww`) no longer exists, which is why the SHA is the
+citation and the branch name is not — the commit still resolves, and its
+`docs/op-vocabulary-v1.md` is byte-identical to the rebased
+`a534630fda3b11acb49481dbc479aaed46fe2b39`. Note that this SHA is *ahead* of the
+base vocabulary pin in "Normative inputs" above: amendment v1.1 (§10) is already
+present at it and this package has not adopted it, which is the `reset_doc` drift
+tracked as Q5 in `docs/api-contract-proposal.md`. No `SCHEMA_VERSION` bump: the Y.Doc LAYOUT is unchanged —
 only which targets `__stamps` gates, and how a target key spells a node id.
 
 **Found by adversarial testing, not by review.** The cloud-side suite

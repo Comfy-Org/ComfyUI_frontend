@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "purpose": "FC-10 / KA-12 registry of every cross-repository document this package cites normatively, pinned by immutable commit SHA. A citation pinned to a branch silently re-targets when the other repository moves, so a statement that was true when written becomes a claim about a document that no longer says it. Verified offline by `npm run check:pins`; verified against the remote by `npm run check:pins -- --verify-remote`.",
+  "pins": {
+    "comfy-cli/op-vocabulary-v1": {
+      "repo": "https://github.com/Comfy-Org/comfy-cli.git",
+      "path": "docs/op-vocabulary-v1.md",
+      "commit": "7e732242d971daf0d2d30f22f997abfacd78986e",
+      "blob_sha1": "5c604599cc26730dcb53a3a392431b42fd40fa74",
+      "content_sha256": "e275b62d28b606219d06c9302575980164ea5ad8937adbea660da658bb21ab3d",
+      "sections_cited": ["1", "1.2", "1.5", "1.6", "2", "3", "4", "7", "8.1", "8.2", "8.3", "8.4", "8.5", "8.6", "8.7"],
+      "established_by": "The citing lines were written in comfy-multi-player d81620f601aad620978d612dc34be630b1fbbc06 (2026-08-13T01:39:45-0700). The last commit touching docs/op-vocabulary-v1.md on the cited branch at or before that instant is 7e73224 (2026-08-12T02:01:23-0700), so this is the revision the package was written against. Corroborated independently: fixtures/MANIFEST.json already pins the corpus generator to the same commit, so the op corpus and the op vocabulary resolve to one upstream revision.",
+      "cited_by": ["src/index.ts", "src/types.ts", "docs/multiplayer-schema.md", "README.md"],
+      "former_branch_citation": "fix/validate-lowers-ui-to-api",
+      "branch_status": "DELETED upstream on 2026-08-21T06:03:03Z when comfy-cli PR #511 squash-merged. The branch pointer this repository cited no longer resolves; the SHA still does.",
+      "upstream_head_observed": {
+        "date": "2026-08-21",
+        "ref": "main",
+        "commit": "3ff9f55a5841407bfee67e520c2485e5d46ff488",
+        "content_sha256": "7bd2e31e784f3aaa2c48a2340d51cbcc24623b6bd28e8b612d0589423c19f6ee",
+        "drift": "Upstream has moved past the pin: amendments v1.1 (§10), v1.3 (§12) and v1.4 (§13) all post-date it. See docs/api-contract-proposal.md Q5 and Amendment A1 in docs/multiplayer-schema.md. Moving this pin is a deliberate contract change, not a refresh: re-read each section in sections_cited, reconcile the applier, then move commit, blob_sha1, content_sha256 and every cited_by site together."
+      }
+    },
+    "comfy-cli/op-vocabulary-v1@amendment-v1.2": {
+      "repo": "https://github.com/Comfy-Org/comfy-cli.git",
+      "path": "docs/op-vocabulary-v1.md",
+      "commit": "1201b676275ce7e9b5cdb90f135b6e115ba9df10",
+      "blob_sha1": "1a487a04718b2eff4964404e6377fbf15020ee5f",
+      "content_sha256": "5473991baa526dc4c2d57758b15ab45f00c985b2b24cced1efa930c98d0a6317",
+      "sections_cited": ["11", "11.1", "11.2"],
+      "established_by": "Already cited by SHA in docs/multiplayer-schema.md Amendment A1; only its branch label was moving. The amendment was later rebased onto the PR #511 branch as a534630fda3b11acb49481dbc479aaed46fe2b39, whose docs/op-vocabulary-v1.md blob is byte-identical (git blob 1a487a04718b2eff4964404e6377fbf15020ee5f), so the rebase did not change the cited content.",
+      "cited_by": ["docs/multiplayer-schema.md"],
+      "former_branch_citation": "kishore/v1-032-connect-lww",
+      "branch_status": "DELETED upstream. The commit survives on kishore/archive/v1-032-connect-lww-prerebase and resolves through the GitHub API; the branch label in Amendment A1 is retained as historical context only.",
+      "upstream_head_observed": {
+        "date": "2026-08-21",
+        "ref": "main",
+        "commit": "3ff9f55a5841407bfee67e520c2485e5d46ff488",
+        "content_sha256": "7bd2e31e784f3aaa2c48a2340d51cbcc24623b6bd28e8b612d0589423c19f6ee",
+        "drift": "§11/§11.1/§11.2 still exist on main with the same numbering. This pin is ahead of comfy-cli/op-vocabulary-v1 above: the package adopted amendment v1.2 (§11) without adopting amendment v1.1 (§10), which is older and already present at this same commit. That gap is the reset_doc drift tracked as Q5."
+      }
+    },
+    "comfy-cli/workflow_ops": {
+      "repo": "https://github.com/Comfy-Org/comfy-cli.git",
+      "path": "comfy_cli/workflow_ops.py",
+      "commit": "7e732242d971daf0d2d30f22f997abfacd78986e",
+      "blob_sha1": "c0fa6f4160b2d28bd1f4be081a7cb596f44a221c",
+      "content_sha256": "22dfb8ac0747dc7153a61012340b4ce31158dc68a34997abc584f35fb0325f31",
+      "sections_cited": ["_new_op", "_stamp_key", "_write_target", "apply_op", "canonical"],
+      "established_by": "src/applier.ts calls itself a faithful port of workflow_ops.apply_op, and src/stamps.ts mirrors _stamp_key/_write_target; both were written in d81620f against the same branch state as the vocabulary above. fixtures/MANIFEST.json pins the identical commit as the corpus generator, and every recorded session in fixtures/ was produced by this exact file.",
+      "cited_by": ["src/index.ts", "src/types.ts", "docs/spike-report-v1-007.md"],
+      "former_branch_citation": "pr511-reconcile",
+      "branch_status": "DELETED upstream. docs/spike-report-v1-007.md cited the generator branch by the name it carried during the V1-007 spike; the branch was later renamed to fix/validate-lowers-ui-to-api (comfy-cli PR #511) and deleted on merge. The commit is established from fixtures/MANIFEST.json, not from the branch name.",
+      "upstream_head_observed": {
+        "date": "2026-08-21",
+        "ref": "main",
+        "commit": "3ff9f55a5841407bfee67e520c2485e5d46ff488",
+        "content_sha256": "0a9ce9da04dd7258263a0d31bd8eacd12d16ecc56f2d43af6b040b297c7e4173",
+        "drift": "838 lines changed since the pin. Regenerating the corpus against head would change recorded outputs; fixtures/README.md documents the regeneration procedure and requires the pinned checkout."
+      }
+    }
+  }
+}

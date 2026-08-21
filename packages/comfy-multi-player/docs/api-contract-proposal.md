@@ -298,11 +298,30 @@ written down, but reject it with an accurate code and message (it is not
 fix the declared payload shape now so the type does not teach the wrong
 contract.
 
-**Root cause worth fixing separately.** This repo cites the vocabulary by
-**branch** — in two source files and in the schema document, and in the README
-until this PR. The vocabulary itself says
-downstream repos cite it by commit SHA and upgrade by moving the SHA. Citing a
-moving branch is how a frozen contract drifts without anyone noticing.
+**Root cause, now fixed.** This repo cited the vocabulary by **branch** — in two
+source files and in the schema document, and in the README until this PR. The
+vocabulary itself says downstream repos cite it by commit SHA and upgrade by
+moving the SHA. Citing a moving branch is how a frozen contract drifts without
+anyone noticing, and this is the drift it produced.
+
+The citations are now pinned (FC-10): the vocabulary at comfy-cli
+`7e732242d971daf0d2d30f22f997abfacd78986e`, registered in
+`docs/upstream-pins.json` and held there by `npm run check:pins`. The branch was
+deleted upstream on 2026-08-21 when comfy-cli PR #511 merged, so the citations
+this question is about had already stopped resolving.
+
+Pinning makes the size of Q5 exactly measurable, and it is larger than "the
+deferred flag is stale". `reset_doc` was un-deferred by vocabulary **amendment
+v1.1 (§10)**, which is already present at
+`1201b676275ce7e9b5cdb90f135b6e115ba9df10` — the commit this package *already*
+cites by SHA for amendment v1.2 in schema Amendment A1. So the package adopted
+v1.2 while skipping the older v1.1 in the same document, and the branch pin is
+why nobody could see the two citations pointed at different revisions. Upstream
+`main` has since added **v1.3 (§12)** and **v1.4 (§13)**; neither is reflected
+here. Deciding Q5 therefore means deciding which revision this package tracks,
+not just what `DEFERRED_OPS` contains. `docs/upstream-pins.json` records the
+observed upstream head and the amendments that post-date each pin, so the
+candidate revisions are enumerable rather than a matter of recollection.
 
 ### Q6. The carve-outs — accept them explicitly
 

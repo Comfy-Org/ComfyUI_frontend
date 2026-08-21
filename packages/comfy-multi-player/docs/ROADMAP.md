@@ -8,12 +8,12 @@ V1 is an op-based Yjs document applier implemented once in the shared `@comfyorg
 
 - ~~**Positive purity assertion (#22):**~~ **CLOSED.** `scripts/check-purity.mjs` asserts directly that the declared and resolved production dependency roots are exactly `{yjs}`, and `scripts/check-import-graph.mjs` asserts the same per source module via `src-runtime-dep-is-yjs-only`. A cross-language parity guard is still only warranted if a second-language implementation is proposed; the preferred policy remains no second implementation (tracked in the separate bullet below).
 - **Property tests (#24):** cover arbitrary op sequences, legal causal permutations, retries, batch boundaries, actor counts, byte-identical idempotency, and schema-version failure on the normal read path.
-- **Catalog-SHA lint (#22):** fail on moving branch/tag citations in vocabulary and catalog references.
+- **Catalog-SHA lint (#22):** ~~fail on moving branch/tag citations in vocabulary and catalog references.~~ **Landed** as `scripts/check-pins.mjs` + `docs/upstream-pins.json` + `test/upstream-pins.test.ts`. Offline in CI; `npm run check:pins -- --verify-remote` additionally proves each pinned SHA still resolves upstream and each cited section still exists at it, and reports INCONCLUSIVE rather than passing when it cannot reach GitHub. Remaining, and the reason KA-12 keeps a scoped UNGUARDED marker: `meta.catalog_version`'s own sha256 shape is asserted by `test/catalog-sha-binding-integration.test.ts` but is not rejected at either write site — neither `mint()` (`src/mint.ts`) nor the public `initDoc()` (`src/doc.ts`) validates it, so `mint(workflow, catalog, "main")` still succeeds. That is Q4, not this lint.
 - **Conformance-corpus provenance (#23):** record generator repository and commit SHA, command, environment, and manifest; regenerate and diff in CI.
 - **Cross-language parity guard (#22):** if the single-package decision is deliberately revisited, both implementations must pass shared golden vectors before merge.
 - **Reject-without-mutation (#10):** preserve the byte-identical rejection contract while fixing validation ordering in a later behavior ticket.
 
-These are follow-up behavior/CI tickets. The remaining ones do not change op semantics. The CI baseline is no longer frozen: it now runs `verify:corpus`, `build`, `check:purity`, `check:profile-claims`, `check:imports` and `test`, and this list must be updated when a gate is added.
+These are follow-up behavior/CI tickets. The remaining ones do not change op semantics. The CI baseline is no longer frozen: it now runs `verify:corpus`, `build`, `check:purity`, `check:profile-claims`, `check:imports`, `check:pins` and `test`, and this list must be updated when a gate is added.
 
 ## Repository plan
 

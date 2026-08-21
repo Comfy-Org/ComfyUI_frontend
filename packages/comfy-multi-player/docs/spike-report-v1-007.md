@@ -9,12 +9,27 @@
 > a second, divergent applier in a production repo was a hazard rather than a
 > reference. References to `applier.mjs` below describe the code as it was
 > during the spike.
+>
+> **Provenance resolution (FC-10, added later.** The body below is unedited
+> except for one inline `FC-10-historical` marker in the scope paragraph, which
+> is what tells `npm run check:pins` that the dead branch name there is a
+> preserved historical record rather than a live citation.**)**
+> The scope paragraph cites the generator by the moving branch
+> `pr511-reconcile`. That branch no longer exists: it was renamed to
+> `fix/validate-lowers-ui-to-api` (comfy-cli PR #511) and deleted when the PR
+> merged on 2026-08-21. The generator revision is established from
+> `fixtures/MANIFEST.json`, which pins comfy-cli
+> `7e732242d971daf0d2d30f22f997abfacd78986e` as the commit that produced these
+> exact session files — not from the branch name. See `docs/upstream-pins.json`.
+> Its "`workflow_ops._stamp_key`, lines 273–291" is a line-number citation into
+> a file that has since grown: at the pinned commit `_stamp_key` is at line 315,
+> and on comfy-cli `main` it is at line 340. Cite the symbol, not the line.
 
 # V1-007 SPIKE report — CRDT schema validation against real op streams
 
 Scope: validate the candidate Yjs schema by replaying team-authored op streams
 produced by the real `comfy_cli.workflow_ops` primitives (branch
-`pr511-reconcile`, prod `object_info.json` catalog from
+`pr511-reconcile`, prod `object_info.json` catalog from <!-- FC-10-historical: dead branch preserved as the spike's record; the revision is pinned in docs/upstream-pins.json -->
 `services/ingest/data/`), through a prototype applier
 (`applier.mjs`), against the exact convergence semantics of `apply_op`
 (idempotency via `op_id`, delete-wins, stamp-LWW `[base_version, actor, op_id]`

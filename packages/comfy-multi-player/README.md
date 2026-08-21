@@ -193,8 +193,19 @@ The normative definition of the op envelope and the six kinds is
 `docs/op-vocabulary-v1.md` in
 [comfy-cli](https://github.com/Comfy-Org/comfy-cli), which mints these ops on
 the agent side. The `Op` types here mirror those minted shapes field for field;
-a divergence is a bug here. Which revision of that document this package tracks
-is an [open question](docs/api-contract-proposal.md).
+a divergence is a bug here.
+
+This package tracks that document at comfy-cli commit
+`7e732242d971daf0d2d30f22f997abfacd78986e`, plus amendment v1.2 (§11) at
+`1201b676275ce7e9b5cdb90f135b6e115ba9df10`. Cross-repository citations are
+pinned by SHA and never by branch (FC-10): the branch this package used to cite
+was deleted upstream, and a citation that re-targets is how a frozen contract
+drifts without anyone noticing. Every `§` quoted here is a section of the pinned
+revision. [`docs/upstream-pins.json`](docs/upstream-pins.json) is the registry —
+how each SHA was established, which files cite it, and which upstream amendments
+post-date the pin and are therefore **not** implemented here (the `reset_doc`
+status is one; see [Q5](docs/api-contract-proposal.md)). `npm run check:pins`
+holds the citations and the registry to the same SHA.
 
 There is **no** op for groups, node positions after creation, pan, or zoom.
 Those edits are not expressible and do not travel on the op channel.
