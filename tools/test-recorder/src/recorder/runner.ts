@@ -97,8 +97,17 @@ export async function runRecording(
   ])
   console.log()
 
+  // An aborted run must not leave the temp spec behind: it calls page.pause(),
+  // so a later `pnpm test:browser` would hang on it forever.
+  const cleanUp = () => cleanupRecordingTemplate(browserTestsDir)
+  const onSignal = () => {
+    cleanUp()
+    process.exit(130)
+  }
+  process.once('SIGINT', onSignal)
+  process.once('SIGTERM', onSignal)
+
   try {
-    // Run the test in headed mode with PWDEBUG to force inspector
     const result = spawnSync(
       'pnpm',
       [
@@ -115,7 +124,11 @@ export async function runRecording(
         stdio: 'inherit',
         env: {
           ...process.env,
-          PWDEBUG: '1',
+          // Deliberately NOT setting PWDEBUG: it breaks on the first Playwright
+          // action, which happens inside the fixture's own setup — the user
+          // lands in ComfyPage internals looking at about:blank. The template's
+          // page.pause() opens the Inspector at the right moment instead.
+          COMFY_TEST_RECORDING: '1',
           PLAYWRIGHT_LOCAL: '1',
           // Record against the dev server the environment check verified.
           // Without this the fixture falls back to the backend's own bundled
@@ -158,7 +171,8 @@ export async function runRecording(
       error: `Recording failed: ${err instanceof Error ? err.message : String(err)}`
     }
   } finally {
-    // Always clean up the temp recording file
-    cleanupRecordingTemplate(browserTestsDir)
+    process.off('SIGINT', onSignal)
+    process.off('SIGTERM', onSignal)
+    cleanUp()
   }
 }

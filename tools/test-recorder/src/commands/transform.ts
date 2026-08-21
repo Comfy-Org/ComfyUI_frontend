@@ -11,6 +11,7 @@ export async function runTransform(
     testName?: string
     tags?: string[]
     output?: string
+    workflow?: string
   } = {}
 ): Promise<void> {
   header('Transform Codegen → Conventions')
@@ -31,7 +32,11 @@ export async function runTransform(
   const inferredName = basename(filePath).replace(/\.raw\.spec\.ts$/, '')
   const testName = options.testName ?? (inferredName || 'test')
   const tags = options.tags ?? ['@canvas']
-  const result = transform(rawCode, { testName, tags })
+  const result = transform(rawCode, {
+    testName,
+    tags,
+    workflow: options.workflow
+  })
 
   // Print summary
   console.log('  Transforms applied:')

@@ -33,19 +33,39 @@ function toSlug(description: string): string {
     .replace(/^-+|-+$/g, '')
 }
 
-function readMultiline(): Promise<string> {
+const PASTE_SENTINEL = '.'
+
+/**
+ * Reads pasted code until a lone "." line, or until EOF.
+ *
+ * The sentinel matters: Ctrl+D closes stdin for good, and every prompt after
+ * this point would then read EOF and hang unsettled. Callers get told whether
+ * stdin survived so they can degrade instead of stalling.
+ */
+function readMultiline(): Promise<{ code: string; stdinOpen: boolean }> {
   return new Promise((resolve) => {
     const lines: string[] = []
     const rl = createInterface({ input: process.stdin })
-    rl.on('line', (line) => lines.push(line))
-    rl.on('close', () => resolve(lines.join('\n')))
+    let sentinelUsed = false
+
+    rl.on('line', (line) => {
+      if (line.trim() === PASTE_SENTINEL) {
+        sentinelUsed = true
+        rl.close()
+        return
+      }
+      lines.push(line)
+    })
+    rl.on('close', () => {
+      resolve({ code: lines.join('\n'), stdinOpen: sentinelUsed })
+    })
   })
 }
 
 export async function runRecord(): Promise<void> {
   // ── Step 1: Environment Check ──────────────────────────────
-  stepHeader(1, 7, 'Environment Check')
-  const { allPassed } = await runChecks()
+  stepHeader(1, 6, 'Environment Check')
+  const { allPassed } = await runChecks(undefined, { showHeader: false })
   if (!allPassed) {
     blank()
     fail('Some required checks failed. Fix the issues above.')
@@ -53,7 +73,7 @@ export async function runRecord(): Promise<void> {
   }
 
   // ── Step 2: Project Setup ──────────────────────────────────
-  stepHeader(2, 7, 'Project Setup')
+  stepHeader(2, 6, 'Project Setup')
 
   let projectRoot: string
   try {
@@ -77,12 +97,8 @@ export async function runRecord(): Promise<void> {
   s.stop('Dependencies installed')
   pass('Project ready', projectRoot)
 
-  // ── Step 3: Backend & Dev Server ───────────────────────────
-  stepHeader(3, 7, 'Backend & Dev Server')
-  pass('Services checked in Step 1')
-
-  // ── Step 4: Configure Your Test ────────────────────────────
-  stepHeader(4, 7, 'Configure Your Test')
+  // ── Step 3: Configure Your Test ────────────────────────────
+  stepHeader(3, 6, 'Configure Your Test')
 
   const description = await text({
     message: 'What are you testing?',
@@ -132,26 +148,32 @@ export async function runRecord(): Promise<void> {
   }
 
   const workflows = listWorkflows(projectRoot)
+  // The two starting points nearly every test uses go first; the remaining
+  // ~150 assets would otherwise bury them off the top of the screen.
+  const common = workflows.filter((wf) => wf === 'default')
+  const rest = workflows.filter((wf) => wf !== 'default')
   const workflowOptions: {
     value: string
     label: string
     hint?: string
   }[] = [
     { value: '', label: '(empty canvas)', hint: 'start fresh' },
-    ...workflows.map((wf) => ({ value: wf, label: wf }))
+    ...common.map((wf) => ({ value: wf, label: wf, hint: 'standard graph' })),
+    ...rest.map((wf) => ({ value: wf, label: wf }))
   ]
 
   const selectedWorkflow = await select({
-    message: 'Start with a pre-loaded workflow?',
-    options: workflowOptions
+    message: `Start with a pre-loaded workflow? (${workflows.length} available — type-ahead is not supported, use ↑/↓)`,
+    options: workflowOptions,
+    maxItems: 12
   })
   if (isCancel(selectedWorkflow)) {
     cancel('Operation cancelled')
     process.exit(0)
   }
 
-  // ── Step 5: Record ─────────────────────────────────────────
-  stepHeader(5, 7, 'Record')
+  // ── Step 4: Record ─────────────────────────────────────────
+  stepHeader(4, 6, 'Record')
 
   const result = await runRecording({
     testName: slug,
@@ -163,21 +185,19 @@ export async function runRecord(): Promise<void> {
     process.exit(1)
   }
 
-  // ── Step 6: Paste & Transform ──────────────────────────────
-  stepHeader(6, 7, 'Paste & Transform')
+  // ── Step 5: Paste & Transform ──────────────────────────────
+  stepHeader(5, 6, 'Paste & Transform')
 
   info([
     'Copy the generated code from the Playwright Inspector.',
     '',
-    'Paste your code below, then press ' +
-      pc.bold('Ctrl+D') +
-      ' (Mac/Linux) or ' +
-      pc.bold('Ctrl+Z') +
-      ' (Windows) when done:'
+    'Paste your code below. When you are done, type a single ' +
+      pc.bold('.') +
+      ' on its own line and press Enter:'
   ])
   blank()
 
-  const pastedCode = await readMultiline()
+  const { code: pastedCode, stdinOpen } = await readMultiline()
 
   if (!pastedCode.trim()) {
     blank()
@@ -190,7 +210,8 @@ export async function runRecord(): Promise<void> {
 
   const transformResult = transform(pastedCode, {
     testName: slug,
-    tags: selectedTags as string[]
+    tags: selectedTags as string[],
+    workflow: (selectedWorkflow as string) || undefined
   })
 
   blank()
@@ -212,8 +233,8 @@ export async function runRecord(): Promise<void> {
   blank()
   pass('Test saved', outputPath)
 
-  // ── Step 7: Finalize ───────────────────────────────────────
-  stepHeader(7, 7, 'Finalize')
+  // ── Step 6: Finalize ───────────────────────────────────────
+  stepHeader(6, 6, 'Finalize')
 
   box([
     'Run your test:',
@@ -223,6 +244,19 @@ export async function runRecord(): Promise<void> {
     pc.cyan('  pnpm exec playwright test --ui')
   ])
   blank()
+
+  if (!stdinOpen) {
+    // Ctrl+D ended the paste, so stdin is at EOF and no further prompt can be
+    // answered. Print the follow-up instead of hanging on a dead prompt.
+    blank()
+    info([
+      'Test saved. To open a PR for it, run:',
+      pc.cyan(`  comfy-test pr ${outputPath}`),
+      '',
+      'Next time, end the paste with a single "." line to stay interactive.'
+    ])
+    return
+  }
 
   const wantPr = await confirm({
     message: 'Create a Pull Request now?'

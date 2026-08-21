@@ -28,8 +28,15 @@ const maybeLocalOptions: PlaywrightTestConfig = process.env.PLAYWRIGHT_LOCAL
 
 export default defineConfig({
   testDir: './browser_tests',
-  // Untransformed recorder output — still bare codegen, not a runnable spec
-  testIgnore: '**/*.raw.spec.ts',
+  testIgnore: [
+    // Untransformed recorder output — still bare codegen, not a runnable spec
+    '**/*.raw.spec.ts',
+    // The recorder's scratch spec calls page.pause(), so collecting it outside
+    // a recording session hangs the suite. comfy-test opts back in.
+    ...(process.env.COMFY_TEST_RECORDING
+      ? []
+      : ['**/_recording-session.spec.ts'])
+  ],
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   reporter: process.env.PLAYWRIGHT_BLOB_OUTPUT_DIR ? 'blob' : 'html',

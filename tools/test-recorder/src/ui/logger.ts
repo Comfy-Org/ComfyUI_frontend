@@ -31,13 +31,51 @@ export function header(text: string) {
   console.log()
 }
 
+// eslint-disable-next-line no-control-regex
+const ANSI = /\[[0-9;]*m/g
+
+/**
+ * Colour codes and emoji both lie about how wide a line is: ANSI escapes count
+ * toward .length without occupying a cell, and emoji occupy two cells while
+ * counting as one. Measuring naively skews the right-hand border.
+ */
+export function displayWidth(text: string): number {
+  const plain = text.replace(ANSI, '')
+  let width = 0
+  for (const char of plain) {
+    const code = char.codePointAt(0) ?? 0
+    const wide =
+      (code >= 0x1100 && code <= 0x115f) ||
+      (code >= 0x2e80 && code <= 0xa4cf) ||
+      (code >= 0xac00 && code <= 0xd7a3) ||
+      (code >= 0xf900 && code <= 0xfaff) ||
+      (code >= 0xfe30 && code <= 0xfe6f) ||
+      (code >= 0xff00 && code <= 0xff60) ||
+      (code >= 0xffe0 && code <= 0xffe6) ||
+      (code >= 0x1f300 && code <= 0x1f64f) ||
+      (code >= 0x1f900 && code <= 0x1f9ff) ||
+      (code >= 0x1f680 && code <= 0x1f6ff)
+    // Variation selectors and combining marks render into the previous cell
+    if (
+      code === 0xfe0f ||
+      code === 0xfe0e ||
+      (code >= 0x300 && code <= 0x36f)
+    ) {
+      continue
+    }
+    width += wide ? 2 : 1
+  }
+  return width
+}
+
 export function box(lines: string[]) {
   if (lines.length === 0) return
-  const maxLen = Math.max(...lines.map((l) => l.length))
+  const maxLen = Math.max(...lines.map(displayWidth))
   const border = '─'.repeat(maxLen + 4)
   console.log(`  ┌${border}┐`)
   for (const line of lines) {
-    console.log(`  │  ${line.padEnd(maxLen + 2)}│`)
+    const padding = ' '.repeat(maxLen - displayWidth(line))
+    console.log(`  │  ${line}${padding}  │`)
   }
   console.log(`  └${border}┘`)
 }

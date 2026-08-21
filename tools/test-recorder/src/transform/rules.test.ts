@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { transform } from './engine'
 import { transformRules, structuralTransforms } from './rules'
 
 describe('transformRules', () => {
@@ -137,5 +138,39 @@ test('x', async ({ comfyPage }) => {})`
 
     const result = wrapInDescribe.apply(input, 'my_test-name', ['@canvas'])
     expect(result).toContain('"my test name"')
+  })
+})
+
+describe('load-recorded-workflow', () => {
+  const raw = `import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+
+test('test', async ({ comfyPage }) => {
+  await comfyPage.canvas.click()
+})`
+
+  it('loads the workflow the recording started from', () => {
+    const result = transform(raw, { testName: 't', workflow: 'default' })
+    expect(result.code).toContain(
+      "await comfyPage.workflow.loadWorkflow('default')"
+    )
+  })
+
+  it('adds nothing when recording started on an empty canvas', () => {
+    const result = transform(raw, { testName: 't' })
+    expect(result.code).not.toContain('loadWorkflow')
+  })
+
+  it('does not double-load a workflow the code already loads', () => {
+    const already = raw.replace(
+      'await comfyPage.canvas.click()',
+      "await comfyPage.workflow.loadWorkflow('other')"
+    )
+    const result = transform(already, { testName: 't', workflow: 'default' })
+    expect(result.code.match(/loadWorkflow/g)).toHaveLength(1)
+  })
+
+  it('escapes quotes in workflow names', () => {
+    const result = transform(raw, { testName: 't', workflow: "it's/one" })
+    expect(result.code).toContain("loadWorkflow('it\\'s/one')")
   })
 })
