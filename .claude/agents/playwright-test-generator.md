@@ -74,7 +74,7 @@ Generated tests MUST use ComfyUI fixtures, not generic `@playwright/test`:
 import {
   comfyPageFixture as test,
   comfyExpect as expect
-} from '../fixtures/ComfyPage'
+} from '@e2e/fixtures/ComfyPage'
 ```
 
 ### Fixture Object
@@ -112,7 +112,7 @@ Every generated test must:
 
 - ❌ `page.goto()` — fixture handles navigation
 - ❌ `page.waitForTimeout()` — use `comfyPage.nextFrame()` or retrying assertions
-- ❌ `import from '@playwright/test'` — use `from '../fixtures/ComfyPage'`
+- ❌ `import from '@playwright/test'` — use `from '@e2e/fixtures/ComfyPage'`
 - ❌ Bare `page.` references — use `comfyPage.page.` if you need raw page access
 
 ### Reference
