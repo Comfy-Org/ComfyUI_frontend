@@ -14,7 +14,10 @@ import { setBackendNodeText, st, t } from '@/i18n'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
-import { createMutationView } from '@/lib/litegraph/src/infrastructure/createMutationView'
+import {
+  createArrayMutationView,
+  createMutationView
+} from '@/lib/litegraph/src/infrastructure/createMutationView'
 import {
   inputAsSerialisable,
   LGraph,
@@ -247,6 +250,32 @@ export interface QueuePromptOptions {
   intent?: WorkflowQueueIntent
 }
 
+function createNodeOutputsMutationView(
+  outputs: Record<string, NodeExecutionOutput>,
+  commit: () => void
+): Record<string, NodeExecutionOutput> {
+  const outputViews = new WeakMap<object, object>()
+  const arrayViews = new WeakMap<object, object>()
+  const mapArray = (_property: PropertyKey, value: unknown): unknown => {
+    if (!Array.isArray(value)) return value
+    const existing = arrayViews.get(value)
+    if (existing) return existing
+    const view = createArrayMutationView(value, commit)
+    arrayViews.set(value, view)
+    return view
+  }
+  const mapOutput = (_property: PropertyKey, value: unknown): unknown => {
+    if (value === null || typeof value !== 'object' || Array.isArray(value))
+      return value
+    const existing = outputViews.get(value)
+    if (existing) return existing
+    const view = createMutationView(value, { commit, mapValue: mapArray })
+    outputViews.set(value, view)
+    return view
+  }
+  return createMutationView(outputs, { commit, mapValue: mapOutput })
+}
+
 export class ComfyApp {
   /**
    * List of entries to queue
@@ -279,12 +308,13 @@ export class ComfyApp {
   ui: ComfyUI
   extensionManager!: ExtensionManager
   private readonly nodeOutputsData: Record<string, NodeExecutionOutput> = {}
-  private readonly _nodeOutputs = createMutationView(this.nodeOutputsData, {
-    commit: () => {
+  private readonly _nodeOutputs = createNodeOutputsMutationView(
+    this.nodeOutputsData,
+    () => {
       if (this.vueAppReady)
         useNodeOutputStore().replaceOutputsFromLegacy(this.nodeOutputsData)
     }
-  })
+  )
   nodePreviewImages: Record<string, string[]>
 
   private rootGraphInternal: LGraph | undefined
