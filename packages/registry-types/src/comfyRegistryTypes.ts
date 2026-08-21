@@ -5323,7 +5323,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Retrieve all nodes */
+        /**
+         * Retrieve all nodes
+         * @description Returns at most the first 10 nodes for the publisher. This operation takes no pagination parameters and its response carries no total or page metadata, so a truncated result is indistinguishable from a complete one — including when include_banned=false filters the list. Use listNodesForPublisherV2 for a complete, paginated listing.
+         */
         get: operations["listNodesForPublisher"];
         put?: never;
         /** Create a new custom node */
@@ -7693,7 +7696,7 @@ export interface components {
             ratio?: "16:9" | "4:3" | "1:1" | "3:4" | "9:16" | "21:9" | "adaptive";
             /**
              * @description Video resolution. Seedance 2.5, 2.0 & 2.0 fast, 1.5 pro, 1.0 lite default: 720p. Seedance 1.0 pro & pro-fast default: 1080p.
-             *     Note: Seedance 2.0 & 2.0 fast do not support 1080p. Seedance 2.5 supports 480p and 720p only.
+             *     Note: Seedance 2.0 & 2.0 fast do not support 1080p. Seedance 2.5 supports 480p, 720p, and 1080p.
              * @enum {string}
              */
             resolution?: "480p" | "720p" | "1080p" | "4k";
@@ -19255,6 +19258,7 @@ export interface operations {
     ListAllComfyNodes: {
         parameters: {
             query?: {
+                /** @description The number of items to include per page. A value above the maximum is clamped down to it; 0 and negative values are accepted and select the default. (That is why no minimum is declared — sub-1 is meaningful here, not invalid.) The page size actually served is echoed back as page_size, so a clamp is always detectable. */
                 pageSize?: number;
                 /** @description Page number (1-based indexing) */
                 page?: number;
@@ -19279,6 +19283,8 @@ export interface operations {
                 content: {
                     "application/json": {
                         comfy_nodes?: components["schemas"]["ComfyNode"][];
+                        /** @description The page size actually served. The server clamps pageSize to the documented maximum, so this can be smaller than the requested value; paginate with this number rather than the one you asked for, or you will skip rows. */
+                        page_size?: number;
                         /** @description Total number of comfy nodes */
                         total?: number;
                     };
@@ -20286,13 +20292,13 @@ export interface operations {
             query?: {
                 /** @description Page number of the nodes list */
                 page?: number;
-                /** @description Number of nodes to return per page */
+                /** @description Number of nodes to return per page. Values above the declared maximum are outside the contract, but this service does not reject them: it serves the maximum instead, and the page size actually served is echoed back as limit (and drives totalPages), so a clamp is always detectable by the caller. Treat the maximum as the real page stride — a client that asks for more and assumes it received more will miss rows. 0 and negative values are also accepted and select the default, which is why no minimum is declared: sub-1 is meaningful here, not invalid. */
                 limit?: number;
                 /** @description Filter nodes by supported operating systems */
                 supported_os?: string;
                 /** @description Filter nodes by supported accelerator */
                 supported_accelerator?: string;
-                /** @description Number of nodes to return per page */
+                /** @description Whether to include banned nodes in the results. Defaults to including them; pass false to exclude. */
                 include_banned?: boolean;
                 /** @description Retrieve nodes created or updated after this timestamp (ISO 8601 format) */
                 timestamp?: string;
@@ -20587,7 +20593,7 @@ export interface operations {
             query?: {
                 /** @description The page number to retrieve. */
                 page?: number;
-                /** @description The number of items to include per page. */
+                /** @description The number of items to include per page. A value above the maximum is clamped down to it; 0 and negative values are accepted and select the default. (That is why no minimum is declared — sub-1 is meaningful here, not invalid.) totalNumberOfPages is computed from the page size actually served, so a clamp is always detectable. */
                 limit?: number;
             };
             header?: never;
@@ -20752,7 +20758,7 @@ export interface operations {
             query?: {
                 /** @description Page number of the nodes list */
                 page?: number;
-                /** @description Number of nodes to return per page */
+                /** @description Number of nodes to return per page. Values above the declared maximum are outside the contract, but this service does not reject them: it serves the maximum instead, and the page size actually served is echoed back as limit (and drives totalPages), so a clamp is always detectable by the caller. Treat the maximum as the real page stride — a client that asks for more and assumes it received more will miss rows. 0 and negative values are also accepted and select the default, which is why no minimum is declared: sub-1 is meaningful here, not invalid. */
                 limit?: number;
                 /** @description Keyword to search the nodes */
                 search?: string;
@@ -20764,7 +20770,7 @@ export interface operations {
                 supported_os?: string;
                 /** @description Filter nodes by supported accelerator */
                 supported_accelerator?: string;
-                /** @description Number of nodes to return per page */
+                /** @description Whether to include banned nodes in the results. Defaults to including them; pass false to exclude. */
                 include_banned?: boolean;
             };
             header?: never;
@@ -35248,7 +35254,7 @@ export interface operations {
     listNodesForPublisher: {
         parameters: {
             query?: {
-                /** @description Number of nodes to return per page */
+                /** @description Whether to include banned nodes in the results. Defaults to including them; pass false to exclude. */
                 include_banned?: boolean;
             };
             header?: never;
@@ -35769,11 +35775,11 @@ export interface operations {
     listNodesForPublisherV2: {
         parameters: {
             query?: {
-                /** @description Number of nodes to return per page */
+                /** @description Whether to include banned nodes in the results. Defaults to including them; pass false to exclude. */
                 include_banned?: boolean;
                 /** @description Page number of the nodes list */
                 page?: number;
-                /** @description Number of nodes to return per page */
+                /** @description Number of nodes to return per page. Values above the declared maximum are outside the contract, but this service does not reject them: it serves the maximum instead, and the page size actually served is echoed back as limit (and drives totalPages), so a clamp is always detectable by the caller. Treat the maximum as the real page stride — a client that asks for more and assumes it received more will miss rows. 0 and negative values are also accepted and select the default, which is why no minimum is declared: sub-1 is meaningful here, not invalid. */
                 limit?: number;
             };
             header?: never;
