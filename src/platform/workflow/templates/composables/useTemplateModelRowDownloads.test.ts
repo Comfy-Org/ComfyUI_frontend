@@ -356,6 +356,69 @@ describe('useTemplateModelRowDownloads', () => {
     })
   })
 
+  it('does not fan out directory-less progress across ambiguous model rows', async () => {
+    const useTemplateModelRowDownloads = await loadComposable()
+    let onDesktopProgress!: (progress: ComfyDownloadProgress) => void
+    const sharedUrl =
+      'https://huggingface.co/org/model/resolve/main/shared.safetensors'
+    const checkpoint = model('shared.safetensors', sharedUrl)
+    const lora = { ...checkpoint, directory: 'loras' }
+    const downloads = useTemplateModelRowDownloads({
+      loadFolderPaths: vi.fn(),
+      dispatchDownload: () => ({
+        status: 'host-requested',
+        host: 'desktop2',
+        hostResult: new Promise<boolean>(() => undefined)
+      }),
+      subscribeDesktopProgress: (listener) => {
+        onDesktopProgress = listener
+        return () => undefined
+      },
+      subscribeLegacyProgress: noLegacySubscription
+    })
+    downloads.request(checkpoint)
+    downloads.request(lora)
+
+    onDesktopProgress({
+      url: sharedUrl,
+      filename: checkpoint.name,
+      progress: 1,
+      status: 'completed'
+    })
+
+    expect(downloads.stateFor(checkpoint)).toEqual({
+      status: 'starting',
+      attempt: 1
+    })
+    expect(downloads.stateFor(lora)).toEqual({
+      status: 'starting',
+      attempt: 1
+    })
+
+    onDesktopProgress({
+      url: sharedUrl,
+      filename: lora.name,
+      directory: lora.directory,
+      progress: 1,
+      status: 'completed'
+    })
+    onDesktopProgress({
+      url: sharedUrl,
+      filename: checkpoint.name,
+      progress: 1,
+      status: 'completed'
+    })
+
+    expect(downloads.stateFor(checkpoint)).toEqual({
+      status: 'done',
+      attempt: 1
+    })
+    expect(downloads.stateFor(lora)).toEqual({
+      status: 'done',
+      attempt: 1
+    })
+  })
+
   it('maps and correlates legacy progress by URL and filename', async () => {
     const useTemplateModelRowDownloads = await loadComposable()
     let onLegacyProgress!: (download: ElectronDownload) => void
