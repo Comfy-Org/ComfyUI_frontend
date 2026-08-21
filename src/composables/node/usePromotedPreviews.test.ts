@@ -7,7 +7,10 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+import {
+  getPreviewExposureHostLocator,
+  usePreviewExposureStore
+} from '@/stores/previewExposureStore'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 
@@ -93,7 +96,7 @@ function exposePreview(
 ) {
   usePreviewExposureStore().addExposure(
     setup.subgraphNode.rootGraph.id,
-    String(setup.subgraphNode.id),
+    getPreviewExposureHostLocator(setup.subgraphNode),
     { sourceNodeId, sourcePreviewName }
   )
 }
@@ -300,7 +303,7 @@ describe(usePromotedPreviews, () => {
     const store = usePreviewExposureStore()
     store.addExposure(
       outerSetup.subgraphNode.rootGraph.id,
-      String(innerHost.id),
+      getPreviewExposureHostLocator(innerHost),
       {
         sourceNodeId: String(leafNode.id),
         sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
@@ -308,7 +311,7 @@ describe(usePromotedPreviews, () => {
     )
     store.addExposure(
       outerSetup.subgraphNode.rootGraph.id,
-      String(outerSetup.subgraphNode.id),
+      getPreviewExposureHostLocator(outerSetup.subgraphNode),
       {
         sourceNodeId: String(innerHost.id),
         sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
@@ -348,10 +351,9 @@ describe(usePromotedPreviews, () => {
     const secondHost = createTestSubgraphNode(outerSetup.subgraph, { id: 12 })
     const firstHostLocator = String(firstHost.id)
     const secondHostLocator = String(secondHost.id)
-    const firstNestedLocator = `${firstHostLocator}:${innerHost.id}`
-    const secondNestedLocator = `${secondHostLocator}:${innerHost.id}`
-    const firstLeafExecutionId = `${firstNestedLocator}:${leafNode.id}`
-    const secondLeafExecutionId = `${secondNestedLocator}:${leafNode.id}`
+    const nestedLocator = getPreviewExposureHostLocator(innerHost)
+    const firstLeafExecutionId = `${firstHostLocator}:${innerHost.id}:${leafNode.id}`
+    const secondLeafExecutionId = `${secondHostLocator}:${innerHost.id}:${leafNode.id}`
 
     const store = usePreviewExposureStore()
     store.addExposure(firstHost.rootGraph.id, firstHostLocator, {
@@ -362,11 +364,7 @@ describe(usePromotedPreviews, () => {
       sourceNodeId: String(innerHost.id),
       sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
     })
-    store.addExposure(firstHost.rootGraph.id, firstNestedLocator, {
-      sourceNodeId: String(leafNode.id),
-      sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
-    })
-    store.addExposure(firstHost.rootGraph.id, secondNestedLocator, {
+    store.addExposure(firstHost.rootGraph.id, nestedLocator, {
       sourceNodeId: String(leafNode.id),
       sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
     })

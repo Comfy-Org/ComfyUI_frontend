@@ -16,7 +16,10 @@ import {
 } from '@/composables/node/canvasImagePreviewTypes'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLitegraphService } from '@/services/litegraphService'
-import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+import {
+  getPreviewExposureHostLocator,
+  usePreviewExposureStore
+} from '@/stores/previewExposureStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { toNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
@@ -221,7 +224,7 @@ function isPreviewExposed(
   subgraphNode: SubgraphNode,
   source: PromotedWidgetSource
 ): boolean {
-  const hostLocator = String(subgraphNode.id)
+  const hostLocator = getPreviewExposureHostLocator(subgraphNode)
   return usePreviewExposureStore()
     .getExposures(subgraphNode.rootGraph.id, hostLocator)
     .some(
@@ -353,7 +356,7 @@ function promotePreviewViaExposure(
 ): void {
   const store = usePreviewExposureStore()
   const rootGraphId = subgraphNode.rootGraph.id
-  const hostLocator = String(subgraphNode.id)
+  const hostLocator = getPreviewExposureHostLocator(subgraphNode)
   const existing = store
     .getExposures(rootGraphId, hostLocator)
     .some(
@@ -450,7 +453,7 @@ export function demoteWidget(
 
     if (isPreviewPseudoWidget(widget)) {
       const previewStore = usePreviewExposureStore()
-      const hostLocator = String(parent.id)
+      const hostLocator = getPreviewExposureHostLocator(parent)
       const exposure = previewStore
         .getExposures(parent.rootGraph.id, hostLocator)
         .find(
