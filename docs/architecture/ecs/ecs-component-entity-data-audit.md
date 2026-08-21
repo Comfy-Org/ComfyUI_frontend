@@ -1,48 +1,48 @@
 # ECS Component and Entity data audit
 
-Status: Current implementation audit
-Verified: 2026-08-21 against `95f1c114bdafbf944caad7d10a1f2f998f190659`
-Scope: Work remaining under
+Status: Scoped migration implemented; structural follow-up remains
+Verified: 2026-08-21 against `73c3c633f`
+Scope: Implementation record for
 [Centralize remaining Component and Entity data](ecs-migration-plan.md#2-centralize-remaining-component-and-entity-data)
 
-This audit verifies the current authority, compatibility projection, and
-lifecycle boundary for every concern in that section. `Open` means the planned
-authority does not exist. `Partial` means a store or centralized mechanism
-exists, but a live class, legacy map, or caller still owns part of the durable
-state or mutation policy.
+This audit records the baseline, implementation, and remaining structural work
+for every concern in that section. `Implemented` means the scoped authority move
+landed with its compatibility boundary and tests. It does not mean all legacy
+facades or broader ECS architecture work have been removed.
 
 ## Summary
 
-No item in this section is complete. The implementation has useful foundations:
-node shell fields, topology, persistent layout, widget values, and preview
-exposures have store-backed authorities. The remaining gaps are not uniformly
-"add a store." Most require moving serialization, lifecycle, or compatibility
-projection ownership away from live LiteGraph classes without changing their
-extension-visible behavior.
+All 19 scoped concerns are implemented. Compatibility facades remain where
+extensions or legacy rendering require their object identity and mutation
+behavior. Five larger structural slices remain and are listed separately below.
 
-| Concern                             | Status   | Verified current boundary                                                                                                                                                |
-| ----------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Graph and subgraph definitions      | Open     | `LGraph` and `Subgraph` own membership, order, metadata, and interfaces; serializers enumerate the live registries.                                                      |
-| Remaining node visuals              | Partial  | `NodeState` owns most shell visuals; `LGraphNode.boxcolor` remains a directly configured and serialized class field.                                                     |
-| Outputs and transient previews      | Open     | `nodeOutputStore` mirrors and sometimes reads `app.nodeOutputs`, `app.nodePreviewImages`, and live node image fields rather than projecting compatibility state outward. |
-| Node ordering                       | Partial  | Layout z-index is canonical for Vue and renderer switching; `sendToBack` mutates only legacy `_nodes` order.                                                             |
-| Store-driven serialization          | Complete | Graph, node, group, topology, reroute, and subgraph DTOs enumerate store authorities; class adapters remain only for extension hooks and compatibility projections.      |
-| Legacy node geometry projection     | Partial  | Layout is authoritative, but `LGraphNode` owns stable mutable buffers, version tracking, synchronization, and write-through callbacks for `pos` and `size`.              |
-| Link non-topological state          | Complete | `linkStateStore` owns separate persistent color and runtime execution, interaction, render, and hit-test records on the topology lifecycle.                              |
-| Plain slot descriptors              | Complete | Store-owned node arrays contain plain reactive descriptors; stable class projections retain extension behavior, connectivity, callbacks, drawing, and geometry.          |
-| Node properties                     | Complete | `NodeState` owns the stable mutable dictionary while `LGraphNode.properties` preserves direct mutation, assignment, callback, configure, and serialization behavior.     |
-| Group presentation                  | Complete | Graph-definition records own group title, color, font, font size, and flags behind mutable compatibility accessors; layout continues to own geometry.                    |
-| Preview-exposure persistence        | Partial  | `previewExposureStore` is authoritative for runtime lookup and serialization; raw host keys and root-only cleanup remain.                                                |
-| Extension persistence adapter       | Complete | Validated extension payloads hydrate and project through a namespace; legacy hooks receive isolated compatibility views that cannot rewrite canonical fields.            |
-| Graph metadata                      | Open     | `revision`, `config`, and `extra` are public class fields configured and serialized directly.                                                                            |
-| Graph invalidation                  | Complete | `batchVersionUpdates()` provides one graph-scoped invalidation policy while preserving synchronous compatibility updates and coalescing composite mutations.             |
-| Unknown-node fallback               | Complete | `NodeState` owns the opaque fallback DTO while compatibility access, replacement discovery, and selected live-field serialization overrides remain intact.               |
-| Execution order                     | Partial  | Topology recomputation writes `node.order`, but the mutable field is also configured and serialized as wire state.                                                       |
-| Entity ID allocation                | Partial  | Root and subgraphs share `LGraph.state`; helper APIs exist, but configure, clipboard, and compatibility setters can still observe or mutate class-owned counters.        |
-| Delayed widget restoration          | Complete | Wire shadows are parsed into store-owned restoration state at configure; registered and delayed widgets restore without reading mutable node shadows.                    |
-| Widget and preview-exposure cleanup | Partial  | Both stores clear a root; neither has complete owner/node cleanup wired through remove, replacement, failed configure, and released-subgraph teardown.                   |
+| Concern                             | Status      | Current boundary                                                                              |
+| ----------------------------------- | ----------- | --------------------------------------------------------------------------------------------- |
+| Graph and subgraph definitions      | Implemented | Root-scoped records own ordered membership, registries, and subgraph definition metadata.     |
+| Remaining node visuals              | Implemented | `NodeState` owns `boxcolor` behind an enumerable compatibility accessor.                      |
+| Outputs and transient previews      | Implemented | Store maps own reads; legacy output-map writes commit through stable nested mutation views.   |
+| Node ordering                       | Implemented | One action updates canonical layout z-index and legacy node-array order.                      |
+| Store-driven serialization          | Implemented | Graph, node, group, topology, reroute, and subgraph DTOs enumerate store authorities.         |
+| Legacy node geometry projection     | Implemented | The layout adapter owns stable mutable geometry views and write-through.                      |
+| Link non-topological state          | Implemented | Separate persistent and runtime records follow topology lifecycle.                            |
+| Plain slot descriptors              | Implemented | Plain reactive descriptors back stable slot-class projections with native callback semantics. |
+| Node properties                     | Implemented | `NodeState` owns the stable mutable property dictionary behind compatibility behavior.        |
+| Group presentation                  | Implemented | Graph-definition records own presentation while layout owns geometry.                         |
+| Preview-exposure persistence        | Implemented | Owner-scoped locators key runtime lookup and serialization; raw IDs are hydration-only input. |
+| Extension persistence adapter       | Implemented | Validated namespaced payloads and isolated hook views preserve canonical fields.              |
+| Graph metadata                      | Implemented | A graph-keyed store owns revision, config, and extra behind compatibility accessors.          |
+| Graph invalidation                  | Implemented | Graph-scoped batching coalesces composite mutations behind `_version`.                        |
+| Unknown-node fallback               | Implemented | `NodeState` owns opaque fallback DTOs behind `last_serialization`.                            |
+| Execution order                     | Implemented | Graph-scoped derived records own execution order behind the node projection.                  |
+| Entity ID allocation                | Implemented | Root-keyed allocation state and shared helpers own minting and observation.                   |
+| Delayed widget restoration          | Implemented | Store-owned restoration state feeds registered and delayed widgets.                           |
+| Widget and preview-exposure cleanup | Implemented | Removal, replacement, teardown, and failed configure clear node-owned records.                |
 
-## Verified authority and mutation paths
+## Pre-migration baseline findings
+
+The following sections preserve the verified baseline used to derive the 19
+implementation commits. They describe the code before those commits, not the
+current authority boundaries.
 
 ### Graph definitions, metadata, execution order, and identity
 
@@ -187,7 +187,7 @@ Representative implementation:
 - `src/utils/executionUtil.ts`: workflow and prompt construction.
 - `src/extensions/core/dynamicPrompts.ts`: queue-time workflow projection write.
 
-## Corrections to the prior plan wording
+## Corrections established by the baseline audit
 
 1. Preview-exposure persistence has already moved to a store for runtime reads
    and serialization. Remaining work is scoped host/source cleanup and the
@@ -205,19 +205,19 @@ Representative implementation:
    node/owner cleanup across remove, replacement, failed configure, and released
    subgraphs.
 
-## Dependency order
+## Implemented migration sequence rationale
 
-The smallest safe sequence follows the serialization dependencies:
+The implemented sequence followed the serialization dependencies:
 
-1. Finish narrow authorities and lifecycle first: `boxcolor`, ordering,
+1. Finished narrow authorities and lifecycle first: `boxcolor`, ordering,
    output/preview directionality, widget/preview owner cleanup, and graph
    metadata/identity ownership.
-2. Move class projections only behind compatibility adapters: node geometry,
+2. Moved class projections behind compatibility adapters: node geometry,
    slot descriptors, group presentation, link runtime categories, properties,
    and unknown-node fallback records.
-3. Parse widget and extension compatibility payloads at workflow boundaries and
-   remove first-party writes to wire shadows.
-4. Add a store-record serializer beside the current class serializer and prove
+3. Parsed widget and extension compatibility payloads at workflow boundaries
+   and removed first-party writes to wire shadows.
+4. Added a store-record serializer beside the mutable serializer and proved
    normalized differential parity before changing production serialization.
 
 This ordering does not require a universal ECS world, command replay, or a new
@@ -258,10 +258,33 @@ Post-review regression verification restored legacy output-map write-through,
 kept widget output changes observable by preview rendering, and removed a
 redundant MatchType slot wrapper that hid descriptor updates from Vue.
 
+| Review follow-up                    | Commit      | Result                                                                                  |
+| ----------------------------------- | ----------- | --------------------------------------------------------------------------------------- |
+| Graph extension isolation           | `b8fdbf860` | Configure payloads remain in isolated persistence records and hook views.               |
+| Nested legacy output mutations      | `cceb56330` | Output fields and their immediate arrays commit through stable mutation views.          |
+| Populated graph ID changes          | `17546ff13` | Populated graphs reject ID reassignment instead of splitting scoped store state.        |
+| Native slot callback array behavior | `73c3c633f` | Callback-bearing array methods now receive and mutate the extension-visible slot array. |
+
+## Verified current limitations
+
+- Slot descriptors remain behind a virtual slot-class array. Native callback
+  behavior is preserved, but complete reflection compatibility still requires
+  restoring real extension-visible slot arrays.
+- `graphDefinitionStore` still contains live node, group, subgraph, and
+  interface instances. Persisted UUIDs remain runtime store keys; populated
+  graph IDs are therefore immutable until instance-scoped identity replaces
+  that keying model.
+- Store-driven persistence joins and compatibility adaptation still live in
+  and around `LGraph`.
+- Replacement configure is destructive on failure, while additive configure
+  has only best-effort rollback.
+- `SubgraphNode` still owns promoted-widget projection, preview hydration, and
+  host persistence responsibilities.
+
 ## Structural follow-up plan
 
-The compatibility fixes above should land before further authority moves. The
-remaining structural work should proceed as vertical slices rather than adding
+These are future structural improvements, not incomplete rows in the scoped
+19-concern migration. They should proceed as vertical slices rather than adding
 more projections to `LGraph` and `LGraphNode`.
 
 1. **Replace the slot virtual array.** Keep extension-visible input and output
