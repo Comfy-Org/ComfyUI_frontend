@@ -27,16 +27,6 @@ type ElectronDownload = {
   totalBytes?: number
 }
 
-type NormalizedElectronDownload = ElectronDownload & {
-  status: DownloadStatus
-  receivedBytes: number
-  totalBytes: number
-}
-
-type NormalizeElectronDownloadState = (
-  download: DownloadState
-) => NormalizedElectronDownload
-
 type ElectronDownloadStore = {
   findByUrl: (url: string) => ElectronDownload | undefined
   initialize: () => Promise<void>
@@ -46,7 +36,6 @@ type ElectronDownloadStore = {
 }
 
 type ElectronDownloadStoreModule = {
-  normalizeElectronDownloadState: NormalizeElectronDownloadState
   useElectronDownloadStore: () => ElectronDownloadStore
 }
 
@@ -56,8 +45,6 @@ function isElectronDownloadStoreModule(
   return (
     typeof value === 'object' &&
     value !== null &&
-    'normalizeElectronDownloadState' in value &&
-    typeof value.normalizeElectronDownloadState === 'function' &&
     'useElectronDownloadStore' in value &&
     typeof value.useElectronDownloadStore === 'function'
   )
@@ -108,37 +95,6 @@ function progressUpdate(overrides: Partial<ElectronDownload> = {}) {
   }
 }
 
-describe('normalizeElectronDownloadState', () => {
-  it('maps restored state, bytes, and a valid byte fraction', () => {
-    expect(
-      getModule().normalizeElectronDownloadState(
-        downloadState({ state: DownloadStatus.PAUSED })
-      )
-    ).toEqual({
-      url: 'https://example.com/model.safetensors',
-      filename: 'model.safetensors',
-      status: DownloadStatus.PAUSED,
-      receivedBytes: 256,
-      totalBytes: 1024,
-      progress: 0.25
-    })
-  })
-
-  it('keeps restored bytes without inventing a fraction for an empty total', () => {
-    expect(
-      getModule().normalizeElectronDownloadState(
-        downloadState({ receivedBytes: 0, totalBytes: 0 })
-      )
-    ).toEqual({
-      url: 'https://example.com/model.safetensors',
-      filename: 'model.safetensors',
-      status: DownloadStatus.IN_PROGRESS,
-      receivedBytes: 0,
-      totalBytes: 0
-    })
-  })
-})
-
 describe('useElectronDownloadStore progress observation', () => {
   let emitProgress: ((download: ElectronDownload) => void) | undefined
 
@@ -151,6 +107,41 @@ describe('useElectronDownloadStore progress observation', () => {
       .mockImplementation((listener: (download: ElectronDownload) => void) => {
         emitProgress = listener
       })
+  })
+
+  it('restores status, bytes, and a valid byte fraction', async () => {
+    downloadManager.getAllDownloads.mockResolvedValueOnce([
+      downloadState({ state: DownloadStatus.PAUSED })
+    ])
+    const store = getModule().useElectronDownloadStore()
+
+    await vi.waitFor(() => {
+      expect(store.findByUrl('https://example.com/model.safetensors')).toEqual({
+        url: 'https://example.com/model.safetensors',
+        filename: 'model.safetensors',
+        status: DownloadStatus.PAUSED,
+        receivedBytes: 256,
+        totalBytes: 1024,
+        progress: 0.25
+      })
+    })
+  })
+
+  it('keeps restored bytes without inventing a fraction for an empty total', async () => {
+    downloadManager.getAllDownloads.mockResolvedValueOnce([
+      downloadState({ receivedBytes: 0, totalBytes: 0 })
+    ])
+    const store = getModule().useElectronDownloadStore()
+
+    await vi.waitFor(() => {
+      expect(store.findByUrl('https://example.com/model.safetensors')).toEqual({
+        url: 'https://example.com/model.safetensors',
+        filename: 'model.safetensors',
+        status: DownloadStatus.IN_PROGRESS,
+        receivedBytes: 0,
+        totalBytes: 0
+      })
+    })
   })
 
   it('installs the live listener before awaiting the restored snapshot', () => {

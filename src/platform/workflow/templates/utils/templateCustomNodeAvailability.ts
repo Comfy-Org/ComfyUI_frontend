@@ -8,7 +8,7 @@ export type TemplateCustomNodeManagerCapability =
   | 'legacy'
   | 'incompatible'
 
-export type TemplateCustomNodeUnavailableReason =
+type TemplateCustomNodeUnavailableReason =
   | 'manager-disabled'
   | 'manager-legacy'
   | 'manager-incompatible'

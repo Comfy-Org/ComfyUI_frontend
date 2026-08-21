@@ -1,11 +1,11 @@
 import type { TemplateModelDownloadState } from '@/platform/workflow/templates/utils/templateModelDownloadState'
 
-export interface TemplateDetailLink {
+interface TemplateDetailLink {
   label: string
   href: string
 }
 
-export type TemplateDetailRowStatus =
+type TemplateDetailRowStatus =
   | {
       kind: 'installed'
       label: string
