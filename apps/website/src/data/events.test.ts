@@ -84,6 +84,49 @@ describe('toCalendarEvent', () => {
       '2026-08-05T23:00:00.000Z'
     )
   })
+
+  it('falls back to English content when localized keys are missing', () => {
+    const partialEvent = eventAt('partial', {
+      title: { en: 'English Title', 'zh-CN': '中文标题' },
+      description: { en: 'English Description', 'zh-CN': '中文描述' },
+      location: { en: 'Online', 'zh-CN': '线上' },
+      link: {
+        href: { en: 'https://comfy.org/en', 'zh-CN': 'https://comfy.org/zh' }
+      }
+    })
+
+    const calendarEvent = toCalendarEvent(partialEvent, 'ja')
+
+    expect(calendarEvent.title).toBe('English Title')
+    // The description assertion includes the generated URL appended after two newlines
+    expect(calendarEvent.description).toBe(
+      'English Description\n\nhttps://comfy.org/en'
+    )
+    expect(calendarEvent.location).toBe('Online')
+  })
+
+  it('falls back to English content when localized keys are empty strings', () => {
+    const emptyEvent = eventAt('empty', {
+      title: { en: 'English Title', 'zh-CN': '中文标题', ja: '' },
+      description: { en: 'English Description', 'zh-CN': '中文描述', ja: '' },
+      location: { en: 'Online', 'zh-CN': '线上', ja: '' },
+      link: {
+        href: {
+          en: 'https://comfy.org/en',
+          'zh-CN': 'https://comfy.org/zh',
+          ja: ''
+        }
+      }
+    })
+
+    const calendarEvent = toCalendarEvent(emptyEvent, 'ja')
+
+    expect(calendarEvent.title).toBe('English Title')
+    expect(calendarEvent.description).toBe(
+      'English Description\n\nhttps://comfy.org/en'
+    )
+    expect(calendarEvent.location).toBe('Online')
+  })
 })
 
 describe('eventStatus', () => {
@@ -226,6 +269,88 @@ describe('eventJsonLdNode', () => {
     expect(eventJsonLdNode(event, input)).toMatchObject({
       eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
       location: { '@type': 'Place', name: 'San Francisco' }
+    })
+  })
+
+  it('falls back to English content when localized keys are missing', () => {
+    const partialOnlineEvent = eventAt('partial-online', {
+      title: { en: 'English Title', 'zh-CN': '中文标题' },
+      description: { en: 'English Description', 'zh-CN': '中文描述' },
+      location: { en: 'Online', 'zh-CN': '线上' },
+      link: {
+        href: { en: 'https://comfy.org/en', 'zh-CN': 'https://comfy.org/zh' }
+      }
+    })
+
+    const jsonLdOnline = eventJsonLdNode(partialOnlineEvent, {
+      ...input,
+      locale: 'ja'
+    })
+
+    expect(jsonLdOnline.name).toBe('English Title')
+    expect(jsonLdOnline.description).toBe('English Description')
+    expect(jsonLdOnline.location).toMatchObject({
+      '@type': 'VirtualLocation',
+      url: 'https://comfy.org/en'
+    })
+
+    const partialOfflineEvent = eventAt('partial-offline', {
+      title: { en: 'English Title', 'zh-CN': '中文标题' },
+      description: { en: 'English Description', 'zh-CN': '中文描述' },
+      location: { en: 'San Francisco', 'zh-CN': '旧金山' }
+    })
+
+    const jsonLdOffline = eventJsonLdNode(partialOfflineEvent, {
+      ...input,
+      locale: 'ja'
+    })
+
+    expect(jsonLdOffline.location).toMatchObject({
+      '@type': 'Place',
+      name: 'San Francisco'
+    })
+  })
+
+  it('falls back to English content when localized keys are empty strings', () => {
+    const emptyOnlineEvent = eventAt('empty-online', {
+      title: { en: 'English Title', 'zh-CN': '中文标题', ja: '' },
+      description: { en: 'English Description', 'zh-CN': '中文描述', ja: '' },
+      location: { en: 'Online', 'zh-CN': '线上', ja: '' },
+      link: {
+        href: {
+          en: 'https://comfy.org/en',
+          'zh-CN': 'https://comfy.org/zh',
+          ja: ''
+        }
+      }
+    })
+
+    const jsonLdOnline = eventJsonLdNode(emptyOnlineEvent, {
+      ...input,
+      locale: 'ja'
+    })
+
+    expect(jsonLdOnline.name).toBe('English Title')
+    expect(jsonLdOnline.description).toBe('English Description')
+    expect(jsonLdOnline.location).toMatchObject({
+      '@type': 'VirtualLocation',
+      url: 'https://comfy.org/en'
+    })
+
+    const emptyOfflineEvent = eventAt('empty-offline', {
+      title: { en: 'English Title', 'zh-CN': '中文标题', ja: '' },
+      description: { en: 'English Description', 'zh-CN': '中文描述', ja: '' },
+      location: { en: 'San Francisco', 'zh-CN': '旧金山', ja: '' }
+    })
+
+    const jsonLdOffline = eventJsonLdNode(emptyOfflineEvent, {
+      ...input,
+      locale: 'ja'
+    })
+
+    expect(jsonLdOffline.location).toMatchObject({
+      '@type': 'Place',
+      name: 'San Francisco'
     })
   })
 })

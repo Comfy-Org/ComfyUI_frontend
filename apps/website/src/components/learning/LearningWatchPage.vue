@@ -9,7 +9,8 @@ import {
   learningCrumbs,
   recommendedFor,
   tutorialDescription,
-  tutorialPath
+  tutorialPath,
+  tutorialTitle
 } from '../../data/learningTutorials'
 import { t } from '../../i18n/translations'
 import WatchAuthorCard from '../blocks/WatchAuthorCard.vue'
@@ -30,19 +31,19 @@ const breadcrumbs = [
     label: crumb.name,
     href: localizeHref(crumb.path, locale)
   })),
-  { label: tutorial.title[locale] }
+  { label: tutorialTitle(tutorial, locale) }
 ]
 
 const chapters = categoryChapters(tutorial).map((item) => ({
   id: item.id,
-  label: item.title[locale],
+  label: tutorialTitle(item, locale),
   href: localizeHref(tutorialPath(item), locale),
   poster: item.poster
 }))
 
 const recommended = recommendedFor(tutorial).map((item) => ({
   id: item.id,
-  title: item.title[locale],
+  title: tutorialTitle(item, locale),
   tag: t(categoryLabelKeys[item.category], locale),
   href: localizeHref(tutorialPath(item), locale),
   poster: item.poster
@@ -54,7 +55,7 @@ const recommended = recommendedFor(tutorial).map((item) => ({
     :breadcrumbs
     :breadcrumbs-label="t('ui.breadcrumb', locale)"
     :eyebrow="t('learning.watch.nowWatching', locale)"
-    :title="tutorial.title[locale]"
+    :title="tutorialTitle(tutorial, locale)"
     :description="tutorialDescription(tutorial, locale)"
     :read-more-label="t('ui.readMore', locale)"
     :read-less-label="t('ui.readLess', locale)"
@@ -65,7 +66,7 @@ const recommended = recommendedFor(tutorial).map((item) => ({
       :src="tutorial.videoSrc"
       :poster="tutorial.poster"
       :tracks="tutorial.caption"
-      :aria-label="tutorial.title[locale]"
+      :aria-label="tutorialTitle(tutorial, locale)"
       autoplay
       autoplay-unmuted
       class="w-full"
@@ -73,8 +74,8 @@ const recommended = recommendedFor(tutorial).map((item) => ({
 
     <template v-if="tutorial.author" #author>
       <WatchAuthorCard
-        :name="tutorial.author.name[locale]"
-        :detail="tutorial.author.detail?.[locale]"
+        :name="tutorial.author.name[locale] ?? tutorial.author.name.en"
+        :detail="tutorial.author.detail?.[locale] ?? tutorial.author.detail?.en"
         :avatar="tutorial.author.avatar"
       />
     </template>

@@ -303,6 +303,7 @@ describe('rankByRelevanceThenUsage', () => {
     const order = (hits: SearchResult[]) =>
       rankByRelevanceThenUsage(hits).map((h) => h.id)
 
+
     const expected = order([a, b, c])
     for (const permutation of [
       [c, b, a],
@@ -326,10 +327,8 @@ describe('rankByRelevanceThenUsage', () => {
     const ids = rankByRelevanceThenUsage([weak, strong, nearStrong]).map(
       (h) => h.id
     )
-    expect(
-      ids,
-      "near leads on usage inside strong's band; weak stays last on score"
-    ).toEqual(['near', 'strong', 'weak'])
+    // near leads on usage inside strong's band; weak stays last on score
+    expect(ids).toEqual(['near', 'strong', 'weak'])
   })
 
   it('lets curation lift a near-equal match above a slightly better one', () => {
@@ -365,9 +364,10 @@ describe('rankByRelevanceThenUsage', () => {
     const zero = curatedHit('zero', 1.0, 900, 0)
     const unset = hit('unset', 1.0, 1)
 
-    expect(
-      rankByRelevanceThenUsage([unset, zero]).map((h) => h.id),
-      'a demoting zero would drop `zero` a bucket and let `unset` win on score'
-    ).toEqual(['zero', 'unset'])
+    // a demoting zero would drop `zero` a bucket and let `unset` win on score
+    expect(rankByRelevanceThenUsage([unset, zero]).map((h) => h.id)).toEqual([
+      'zero',
+      'unset'
+    ])
   })
 })

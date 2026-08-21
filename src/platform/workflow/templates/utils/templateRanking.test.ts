@@ -5,10 +5,8 @@ import { searchRankBoost } from '@/platform/workflow/templates/utils/templateRan
 describe('searchRankBoost', () => {
   it('treats unset, zero and non-numeric ranks as the same neutral baseline', () => {
     expect(searchRankBoost(undefined)).toBe(0)
-    expect(
-      searchRankBoost(0),
-      'tooling writes an explicit 0 for uncurated templates, so 0 must not demote'
-    ).toBe(0)
+    // tooling writes an explicit 0 for uncurated templates, so 0 must not demote
+    expect(searchRankBoost(0)).toBe(0)
     expect(searchRankBoost(Number.NaN)).toBe(0)
   })
 
