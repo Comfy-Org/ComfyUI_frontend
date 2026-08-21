@@ -1715,12 +1715,8 @@ const translations = {
 
   // LearningCallToActionSection
   'learning.cta.heading': {
-    en: 'Schedule a demo and see how ComfyUI fits your team’s creative needs.',
-    'zh-CN': '预约演示，了解 ComfyUI 如何契合你的团队创作需求。'
-  },
-  'learning.cta.contactSales': {
-    en: 'Contact Sales',
-    'zh-CN': '联系销售'
+    en: 'Everything Comfy ships. All in one place.',
+    'zh-CN': 'Comfy 的全部内容，一处尽享。'
   },
   'learning.cta.runComfy': {
     en: 'Run Comfy for free',

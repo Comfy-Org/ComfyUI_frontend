@@ -373,6 +373,28 @@ export class SubgraphHelper {
       .then((m) => m.clickMenuItemExact(`Un-Promote Widget: ${widgetName}`))
   }
 
+  /**
+   * Converts the current canvas selection via the selection toolbox and returns
+   * the id of the subgraph node it produced.
+   */
+  async convertSelectionToSubgraph(): Promise<string> {
+    const findSubgraphNodeIds = async () =>
+      (await this.comfyPage.nodeOps.getNodeRefsByTitle('New Subgraph')).map(
+        (node) => String(node.id)
+      )
+    const existingIds = new Set(await findSubgraphNodeIds())
+
+    await this.page
+      .getByTestId(TestIds.selectionToolbox.convertSubgraph)
+      .click()
+
+    const findAddedIds = async () =>
+      (await findSubgraphNodeIds()).filter((id) => !existingIds.has(id))
+    await expect.poll(findAddedIds).toHaveLength(1)
+    const [addedId] = await findAddedIds()
+    return addedId
+  }
+
   async enterSubgraphWithFallback(nodeId: string): Promise<void> {
     const targetNodeId = parseNodeId(nodeId)
     if (!targetNodeId) {
