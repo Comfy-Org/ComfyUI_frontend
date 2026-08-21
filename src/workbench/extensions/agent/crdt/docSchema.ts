@@ -2,18 +2,25 @@
  * Follower-owned reader for the CRDT semantic doc (schema v1).
  *
  * This is the ONLY schema-aware code on the follower. It consumes
- * `@comfyorg/comfy-multi-player` — the ONE shared applier/doc package (pinned by
- * git SHA, imported identically by the cloud doc-host) — for the doc layout:
- * the root-map accessors (`nodesMap` / `linksMap`) and the reserved
- * opaque-widgets key. It deliberately does NOT import `applyOps` / `project` —
- * a follower never writes the shared doc (CRDT invariant #6), it only reads root
- * maps into a plain FE-domain snapshot. Reading via the package's
- * `nodesMap`/`linksMap` (thin `doc.getMap` wrappers) produces no Yjs struct
- * update, so the follower stays read-only.
+ * `@comfyorg/comfy-multi-player` — the ONE shared applier/doc package, pinned to
+ * an EXACT public-npm version and imported identically by the cloud doc-host
+ * (`Comfy-Org/cloud`, `services/agent/dochost`, which pins the same `0.1.0`) —
+ * for the doc layout: the root-map accessors (`nodesMap` / `linksMap`) and the
+ * reserved opaque-widgets key. It deliberately does NOT import
+ * `applyOps` / `project` — a follower never writes the shared doc (CRDT
+ * invariant #6), it only reads root maps into a plain FE-domain snapshot.
+ * Reading via the package's `nodesMap`/`linksMap` (thin `doc.getMap` wrappers)
+ * produces no Yjs struct update, so the follower stays read-only.
  *
- * FE consumption is RESOLVED (was ADR-009): the package installs cleanly as a
- * git-SHA dependency (both `dist` types and runtime), so key names / schema
- * version can no longer drift from the host — they are the same symbols. The
+ * FE consumption is RESOLVED (was ADR-009): the package installs cleanly from
+ * the public registry (both `dist` types and runtime) with no credential, so key
+ * names / schema version can no longer drift from the host — they are the same
+ * symbols. `0.1.0` is the published build of what was previously pinned as git
+ * SHA `6793d754`; the two share an identical `src/` tree, so the registry switch
+ * changed the transport and nothing else. NOTE `0.1.0` predates the package's
+ * fail-closed hardening (schema-version-on-read, encodability predicate, payload
+ * bounds, read-only snapshot surface) — those are on its `main`, unpublished.
+ * The
  * remaining local constants (`NODES_KEY`/`LINKS_KEY`/`WIDGETS_KEY`) mirror the
  * layout the package encodes in `nodesMap`/`linksMap`/`createNodeMap` (it does
  * not export those names as constants); `docSchema.test.ts` pins them.
