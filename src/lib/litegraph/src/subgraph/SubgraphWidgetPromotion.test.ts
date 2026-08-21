@@ -402,6 +402,33 @@ describe('SubgraphWidgetPromotion', () => {
       expect(promotedInputs(subgraphNode)).toHaveLength(0)
     })
 
+    it('preserves a promoted STRING widget edit through disconnect and reconnect', async () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'value', type: 'STRING' }]
+      })
+
+      const { node: interiorNode, input: interiorInput } = createNodeWithWidget(
+        'Interior',
+        'text',
+        'A',
+        'STRING'
+      )
+      const subgraphNode = setupPromotedWidget(subgraph, interiorNode)
+
+      const hostWidget = subgraphNode.widgets[0]
+      hostWidget.value = 'B'
+      expect(promotedWidgetStateByName(subgraphNode, 'value').value).toBe('B')
+
+      subgraph.inputNode.slots[0].disconnect()
+      // The store deletion on full disconnect is deferred to a microtask; yield
+      // once so a reconnect below reproduces the same interleaving as real UI
+      // interactions instead of racing ahead of the delete guard.
+      await Promise.resolve()
+      subgraph.inputNode.slots[0].connect(interiorInput, interiorNode)
+
+      expect(promotedWidgetStateByName(subgraphNode, 'value').value).toBe('B')
+    })
+
     it('writes canvas edits back to the host widget store', () => {
       const subgraph = createTestSubgraph({
         inputs: [{ name: 'value', type: 'number' }]
@@ -734,6 +761,27 @@ describe('SubgraphWidgetPromotion', () => {
       hostNode.serialize()
 
       expect(interiorWidget.value).toBe(42)
+    })
+
+    it('does not mutate interior widget values when configuring the host from serialized widgets_values', () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'value', type: 'number' }]
+      })
+      const { node: interiorNode, widget: interiorWidget } =
+        createNodeWithWidget('Interior')
+      subgraph.add(interiorNode)
+      subgraph.inputNode.slots[0].connect(interiorNode.inputs[0], interiorNode)
+
+      const hostNode = createTestSubgraphNode(subgraph)
+      writePromotedWidgetValue(hostNode, 0, 99)
+      const serialized = hostNode.serialize()
+
+      interiorWidget.value = 7
+
+      hostNode.configure(serialized)
+
+      expect(interiorWidget.value).toBe(7)
+      expect(promotedWidgetStateByName(hostNode, 'value').value).toBe(99)
     })
 
     describe('host widget values', () => {

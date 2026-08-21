@@ -95,6 +95,9 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
   private _eventAbortController = new AbortController()
 
+  /** True for the duration of {@link configure}; suppresses promoted-widget interior write-back. */
+  private _configuring = false
+
   constructor(
     graph: GraphOrSubgraph,
     readonly subgraph: Subgraph,
@@ -257,7 +260,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   }
 
   private _projectPromotedWidget(
-    input: INodeInputSlot
+    input: INodeInputSlot,
+    interiorWidget?: IBaseWidget
   ): IBaseWidget | undefined {
     if (input._widget) return input._widget
 
@@ -265,6 +269,19 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     if (!id) return
 
     const store = useWidgetValueStore()
+    // Writes both to the store (the runtime source of truth for the host
+    // display) and back to the interior widget, so a full disconnect/
+    // reconnect of the promoted input — which deletes and re-registers the
+    // store entry, seeded from interiorWidget.value — does not revert the
+    // edit. See #14495.
+    const writeBack = (next: unknown) => {
+      store.setValue(id, next)
+      // super.configure()'s legacy widgets_values loop also assigns through
+      // this setter; _configuring keeps that deserialization from reaching
+      // interiorWidget.
+      if (this._configuring) return
+      if (interiorWidget && isWidgetValue(next)) interiorWidget.value = next
+    }
     const widget: IBaseWidget = {
       get name() {
         return store.getWidget(id)?.name ?? input.name
@@ -294,14 +311,14 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         return isWidgetValue(value) ? value : undefined
       },
       set value(next) {
-        store.setValue(id, next)
+        writeBack(next)
       },
       // Canvas edits operate on a transient concrete widget (toConcreteWidget),
       // so the value setter above is never invoked; BaseWidget.setValue writes
       // its own local state and then calls this callback, which is the only
       // bridge back to the store.
       callback(next) {
-        store.setValue(id, next)
+        writeBack(next)
       }
     }
     Object.defineProperty(widget, 'widgetId', {
@@ -482,9 +499,14 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       )
     )
 
-    super.configure(info)
-    if (!info.widgets_values_named || !LiteGraph.namedValuesRestore)
-      this._applyPromotedWidgetValues(info.widgets_values)
+    this._configuring = true
+    try {
+      super.configure(info)
+      if (!info.widgets_values_named || !LiteGraph.namedValuesRestore)
+        this._applyPromotedWidgetValues(info.widgets_values)
+    } finally {
+      this._configuring = false
+    }
   }
 
   private _applyPromotedWidgetValues(
@@ -674,7 +696,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     })
     input._widget =
       this.createPromotedHostWidget(input, id, interiorWidget) ??
-      this._projectPromotedWidget(input)
+      this._projectPromotedWidget(input, interiorWidget)
     this._setConcreteSlots()
 
     this.subgraph.events.dispatch('widget-promoted', {
