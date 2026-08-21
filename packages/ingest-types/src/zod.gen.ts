@@ -1394,6 +1394,7 @@ export const zJobDetailResponse = z.object({
   user_id: z.string().optional(),
   workflow: z.record(z.unknown()).optional(),
   workflow_id: z.string().optional(),
+  workflow_version_id: z.string().optional(),
   workspace_id: z.string().optional()
 })
 

@@ -890,7 +890,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Seedance 2.0 לאיכות מרבית; Fast לאופטימיזציית מהירות; Mini לדור מהיר וזול במיוחד."
+        "tooltip": "Seedance 2.5 עבור הדגם החדש ביותר, סרטונים באורך של עד 30 שניות ופלט mp4/mov; Seedance 2.0 לאיכות מרבית ול־1080p/4k; Fast למיטוב מהירות; Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
       },
       "model_duration": {
         "name": "duration"
@@ -931,7 +931,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Seedance 2.0 לאיכות מרבית; Fast לאופטימיזציית מהירות; Mini לדור מהיר וזול במיוחד."
+        "tooltip": "Seedance 2.5 עבור הדגם החדש ביותר, סרטונים באורך של עד 30 שניות ופלט mp4/mov; Seedance 2.0 לאיכות מרבית ול־1080p/4k; Fast למיטוב מהירות; Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -984,7 +984,7 @@
       },
       "model": {
         "name": "מודל",
-        "tooltip": "Seedance 2.0 לאיכות מרבית; Fast לאופטימיזציית מהירות; Mini לדור המהיר והחסכוני ביותר."
+        "tooltip": "Seedance 2.5 עבור הדגם החדש ביותר, סרטונים באורך של עד 30 שניות ופלט mp4/mov; Seedance 2.0 לאיכות מרבית ול־1080p/4k; Fast למיטוב מהירות; Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
       },
       "model_duration": {
         "name": "משך"
@@ -5963,15 +5963,15 @@
       },
       "image": {
         "name": "image",
-        "tooltip": "תמונת התחלה אופציונלית עבור grok-imagine-video. חובה עבור grok-imagine-video-1.5."
+        "tooltip": "תמונת התחלה אופציונלית. אם היא לא מסופקת, הווידאו נוצר מהפרומפט הטקסטואלי בלבד."
       },
       "model": {
         "name": "model",
-        "tooltip": "grok-imagine-video-1.5 דורש תמיד תמונת קלט."
+        "tooltip": "המודל שישמש ליצירת הווידאו."
       },
       "prompt": {
         "name": "prompt",
-        "tooltip": "תיאור טקסטואלי של הווידאו הרצוי."
+        "tooltip": "תיאור טקסטואלי של הווידאו הרצוי. אופציונלי עבור grok-imagine-video-1.5 כאשר מסופקת תמונת קלט."
       },
       "resolution": {
         "name": "resolution",
@@ -5989,7 +5989,7 @@
     }
   },
   "GrokVideoReferenceNode": {
-    "description": "יצירת וידאו מונחה על ידי תמונות ייחוס כסגנון ותוכן.",
+    "description": "יצירת וידאו בהנחיית תמונות רפרנס, עם רפרנסים אופציונליים לקולות מוגדרים מראש.",
     "display_name": "Grok Reference-to-Video",
     "inputs": {
       "control_after_generate": {
@@ -8816,7 +8816,7 @@
   },
   "LTXVConcatAVLatent": {
     "description": "מיזוג לטנט וידאו ולטנט אודיו ללטנט AV משותף (כל מודל AV, לדוג' LTXV או MiniMax H3).",
-    "display_name": "LTXVConcatAVLatent",
+    "display_name": "שרשור לטנט AV",
     "inputs": {
       "audio_latent": {
         "name": "audio_latent"
@@ -9235,8 +9235,8 @@
     }
   },
   "LTXVSeparateAVLatent": {
-    "description": "LTXV הפרדת AV Latent",
-    "display_name": "LTXVSeparate AV Latent",
+    "description": "פיצול לטנט AV משותף ללטנטים של הווידאו והשמע (כל מודל AV, למשל LTXV או MiniMax H3).",
+    "display_name": "הפרדת לטנט AV",
     "inputs": {
       "av_latent": {
         "name": "av_latent"
