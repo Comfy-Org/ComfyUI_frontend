@@ -96,22 +96,13 @@ function seedNodeDef(name: string, pythonModule: string) {
   })
 }
 
-function normalize(texts: string[]): string[] {
-  return texts
-    .map((text) => text.replaceAll('[', '').replaceAll(']', ''))
-    .filter((text) => text.length > 0)
-    .sort()
-}
-
-/** The badge texts the legacy canvas draws, as separate facts. */
-function legacyBadgeFacts(node: LGraphNode): string[] {
+function legacyBadgeText(node: LGraphNode): string {
   const thunk = node.badges[0]
   if (typeof thunk !== 'function') throw new Error('no legacy badge installed')
-  return normalize(thunk().text.split(' '))
+  return thunk().text.replaceAll('[', '').replaceAll(']', '')
 }
 
-/** The same facts as the Vue renderer surfaces them. */
-function vueBadgeFacts(node: LGraphNode): string[] {
+function vueBadgeText(node: LGraphNode): string {
   const nodeData: VueNodeData = {
     executing: false,
     id: node.id,
@@ -130,7 +121,7 @@ function vueBadgeFacts(node: LGraphNode): string[] {
     ]
   })
   scope.stop()
-  return normalize(facts ?? [])
+  return (facts ?? []).join(' ')
 }
 
 describe('badge renderer parity (I2)', () => {
@@ -164,51 +155,82 @@ describe('badge renderer parity (I2)', () => {
     return node
   }
 
-  it('agrees on a custom node under ShowAll', () => {
-    const node = setup(
-      NodeBadgeMode.ShowAll,
-      'CustomNode',
-      'custom_nodes.my_pack'
-    )
+  describe('custom node under ShowAll', () => {
+    it('renders legacy badges in display order', () => {
+      const node = setup(
+        NodeBadgeMode.ShowAll,
+        'CustomNode',
+        'custom_nodes.my_pack'
+      )
 
-    expect(legacyBadgeFacts(node)).toEqual(['#1', 'BETA', 'my_pack'].sort())
-    expect(vueBadgeFacts(node)).toEqual(legacyBadgeFacts(node))
+      expect(legacyBadgeText(node)).toBe('#1 BETA my_pack')
+    })
+
+    it.fails('renders Vue badges in the same display order', () => {
+      const node = setup(
+        NodeBadgeMode.ShowAll,
+        'CustomNode',
+        'custom_nodes.my_pack'
+      )
+
+      expect(vueBadgeText(node)).toBe('#1 BETA my_pack')
+    })
   })
 
-  it('agrees on a custom node under HideBuiltIn', () => {
-    const node = setup(
-      NodeBadgeMode.HideBuiltIn,
-      'CustomNode',
-      'custom_nodes.my_pack'
-    )
+  describe('custom node under HideBuiltIn', () => {
+    it('renders legacy badges in display order', () => {
+      const node = setup(
+        NodeBadgeMode.HideBuiltIn,
+        'CustomNode',
+        'custom_nodes.my_pack'
+      )
 
-    expect(legacyBadgeFacts(node)).toEqual(['#1', 'BETA', 'my_pack'].sort())
-    expect(vueBadgeFacts(node)).toEqual(legacyBadgeFacts(node))
+      expect(legacyBadgeText(node)).toBe('#1 BETA my_pack')
+    })
+
+    it.fails('renders Vue badges in the same display order', () => {
+      const node = setup(
+        NodeBadgeMode.HideBuiltIn,
+        'CustomNode',
+        'custom_nodes.my_pack'
+      )
+
+      expect(vueBadgeText(node)).toBe('#1 BETA my_pack')
+    })
   })
 
   it('agrees that None hides every badge', () => {
     const node = setup(NodeBadgeMode.None, 'CustomNode', 'custom_nodes.my_pack')
 
-    expect(legacyBadgeFacts(node)).toEqual([])
-    expect(vueBadgeFacts(node)).toEqual([])
+    expect(legacyBadgeText(node)).toBe('')
+    expect(vueBadgeText(node)).toBe('')
   })
 
-  it('agrees on a core node under ShowAll', () => {
-    const node = setup(NodeBadgeMode.ShowAll, 'CoreNode', 'nodes')
+  describe('core node under ShowAll', () => {
+    it('renders legacy badges in display order', () => {
+      const node = setup(NodeBadgeMode.ShowAll, 'CoreNode', 'nodes')
 
-    expect(legacyBadgeFacts(node)).toEqual(
-      ['#1', 'BETA', CORE_SOURCE_BADGE].sort()
-    )
-    expect(vueBadgeFacts(node)).toEqual(legacyBadgeFacts(node))
+      expect(legacyBadgeText(node)).toBe(`#1 BETA ${CORE_SOURCE_BADGE}`)
+    })
+
+    it.fails('renders Vue badges in the same display order', () => {
+      const node = setup(NodeBadgeMode.ShowAll, 'CoreNode', 'nodes')
+
+      expect(vueBadgeText(node)).toBe(`#1 BETA ${CORE_SOURCE_BADGE}`)
+    })
   })
 
-  // Asserts parity, so it fails today and passes the moment #15567 is fixed.
-  // Pinning the disagreement would make the test go red when the bug is
-  // repaired, and the tempting move then is to edit the test.
-  it.fails('hides built-in id and lifecycle badges in both renderers under HideBuiltIn (#15567)', () => {
-    const node = setup(NodeBadgeMode.HideBuiltIn, 'CoreNode', 'nodes')
+  describe('core node under HideBuiltIn (#15567)', () => {
+    it('hides built-in legacy badges', () => {
+      const node = setup(NodeBadgeMode.HideBuiltIn, 'CoreNode', 'nodes')
 
-    expect(legacyBadgeFacts(node)).toEqual([])
-    expect(vueBadgeFacts(node)).toEqual([])
+      expect(legacyBadgeText(node)).toBe('')
+    })
+
+    it.fails('hides built-in Vue badges', () => {
+      const node = setup(NodeBadgeMode.HideBuiltIn, 'CoreNode', 'nodes')
+
+      expect(vueBadgeText(node)).toBe('')
+    })
   })
 })

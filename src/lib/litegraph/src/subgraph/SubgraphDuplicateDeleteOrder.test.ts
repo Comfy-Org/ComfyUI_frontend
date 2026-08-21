@@ -82,10 +82,27 @@ function instantiate(
 }
 
 function promotedValueOf(node: SubgraphNode): unknown {
-  const id = node.inputs.find(
-    (input) => input.name === PROMOTED_INPUT
-  )?.widgetId
+  const id = promotedId(node)
   return id ? useWidgetValueStore().getWidget(id)?.value : undefined
+}
+
+function promotedId(node: SubgraphNode) {
+  return node.inputs.find((input) => input.name === PROMOTED_INPUT)?.widgetId
+}
+
+function convertPromotedWidgetNode(rootGraph: LGraph): SubgraphNode {
+  const producer = new LGraphNodeClass('Producer')
+  producer.addOutput('out', 'number')
+  rootGraph.add(producer)
+
+  const node = new LGraphNodeClass('Convertible')
+  const input = node.addInput(PROMOTED_INPUT, 'number')
+  input.widget = { name: PROMOTED_INPUT }
+  node.addWidget('number', PROMOTED_INPUT, 0, () => {})
+  rootGraph.add(node)
+
+  if (!producer.connect(0, node, 0)) throw new Error('expected an input link')
+  return rootGraph.convertToSubgraph(new Set([node])).node
 }
 
 interface DuplicatedSubgraphScenario {
@@ -133,7 +150,7 @@ function buildScenario(): DuplicatedSubgraphScenario {
   }
 }
 
-async function expectSurvivorUndamaged(
+function expectSurvivorUndamaged(
   scenario: DuplicatedSubgraphScenario,
   removeFirst: 0 | 1
 ) {
@@ -149,7 +166,6 @@ async function expectSurvivorUndamaged(
   )?.widgetId
 
   rootGraph.remove(removed)
-  await Promise.resolve()
 
   expect(survivorWidgetId).not.toBe(
     removed.inputs.find((input) => input.name === PROMOTED_INPUT)?.widgetId
@@ -167,7 +183,6 @@ async function expectSurvivorUndamaged(
   expect(rootGraph.subgraphs.get(definition.id)).toBe(definition)
 
   rootGraph.remove(survivor)
-  await Promise.resolve()
   expect(rootGraph.subgraphs.has(definition.id)).toBe(false)
 }
 
@@ -176,33 +191,31 @@ describe('duplicated subgraph deleted in both orders (I4)', () => {
     resetSubgraphFixtureState()
   })
 
-  it('deleting the original leaves the copy addressing its own state', async () => {
-    await expectSurvivorUndamaged(buildScenario(), 0)
+  it('deleting the original leaves the copy addressing its own state', () => {
+    expectSurvivorUndamaged(buildScenario(), 0)
   })
 
-  it('deleting the copy leaves the original addressing its own state', async () => {
-    await expectSurvivorUndamaged(buildScenario(), 1)
+  it('deleting the copy leaves the original addressing its own state', () => {
+    expectSurvivorUndamaged(buildScenario(), 1)
   })
 
-  // Asserts independent ownership, so it fails today and passes the moment
-  // #15565 is fixed. Pinning the collision instead would mean the test goes red
-  // when the bug is repaired, and the tempting move then is to edit the test.
-  it.fails('gives each instance added without configure its own promoted widget (#15565)', () => {
+  it.fails('releases promoted widget state when an instance is removed', () => {
+    const scenario = buildScenario()
+    const removed = scenario.instances[0]
+    const removedWidgetId = promotedId(removed)
+
+    scenario.rootGraph.remove(removed)
+
+    expect(
+      removedWidgetId && useWidgetValueStore().getWidget(removedWidgetId)
+    ).toBeUndefined()
+  })
+
+  it.fails('gives converted subgraphs independent promoted widgets (#15565)', () => {
     const rootGraph = createTestRootGraph()
     registerTestSubgraphNodeTypes(rootGraph)
-    const definition = createSharedDefinition(rootGraph)
-
-    const addWithoutConfigure = (): SubgraphNode => {
-      const node = LiteGraph.createNode(definition.id)
-      if (!node?.isSubgraphNode()) throw new Error('expected a SubgraphNode')
-      rootGraph.add(node)
-      return node
-    }
-    const first = addWithoutConfigure()
-    const second = addWithoutConfigure()
-
-    const promotedId = (node: SubgraphNode) =>
-      node.inputs.find((input) => input.name === PROMOTED_INPUT)?.widgetId
+    const first = convertPromotedWidgetNode(rootGraph)
+    const second = convertPromotedWidgetNode(rootGraph)
 
     expect(first.id).not.toBe(second.id)
     expect(promotedId(first)).not.toBe(promotedId(second))
@@ -210,11 +223,12 @@ describe('duplicated subgraph deleted in both orders (I4)', () => {
     const id = promotedId(first)
     if (!id) throw new Error('expected a promoted widget id')
     const before = promotedValueOf(second)
-    useWidgetValueStore().setValue(id, 999)
+    expect(useWidgetValueStore().setValue(id, 999)).toBe(true)
+    expect(promotedValueOf(first)).toBe(999)
     expect(promotedValueOf(second)).toBe(before)
   })
 
-  it('keeps the shared definition while an instance nested in another definition still references it', () => {
+  it.fails('keeps the shared definition only while a nested instance references it', () => {
     const { rootGraph, definition, instances } = buildScenario()
     const outer = rootGraph.createSubgraph(
       createTestSubgraphData({ name: 'Outer' })
@@ -222,7 +236,8 @@ describe('duplicated subgraph deleted in both orders (I4)', () => {
     const outerHost = LiteGraph.createNode(outer.id)
     if (!outerHost?.isSubgraphNode()) throw new Error('expected a SubgraphNode')
     rootGraph.add(outerHost)
-    instantiate(definition, outer, 333)
+    const nested = instantiate(definition, outer, 333)
+    const nestedWidgetId = promotedId(nested)
 
     for (const instance of instances) rootGraph.remove(instance)
 
@@ -230,5 +245,9 @@ describe('duplicated subgraph deleted in both orders (I4)', () => {
 
     rootGraph.remove(outerHost)
     expect(rootGraph.subgraphs.has(outer.id)).toBe(false)
+    expect(rootGraph.subgraphs.has(definition.id)).toBe(false)
+    expect(
+      nestedWidgetId && useWidgetValueStore().getWidget(nestedWidgetId)
+    ).toBeUndefined()
   })
 })

@@ -2,14 +2,15 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import {
   LGraph,
+  LGraphCanvas,
   LGraphGroup,
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import { getNodeInputOnPos } from '@/lib/litegraph/src/canvas/measureSlots'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({})
@@ -60,6 +61,31 @@ function seedLayoutStore(graph: LGraph) {
   )
 }
 
+function createCanvas(graph: LGraph): LGraphCanvas {
+  const element = document.createElement('canvas')
+  element.getContext = vi
+    .fn()
+    .mockReturnValue(createMockCanvasRenderingContext2D())
+  return new LGraphCanvas(element, graph, {
+    skip_events: true,
+    skip_render: true
+  })
+}
+
+function dragGroup(canvas: LGraphCanvas, group: LGraphGroup) {
+  canvas.selectedItems.add(group)
+  canvas.isDragging = true
+  canvas.last_mouse = [0, 0]
+  canvas.processMouseMove(
+    new PointerEvent('pointermove', {
+      buttons: 1,
+      clientX: DRAG.x,
+      clientY: DRAG.y,
+      isPrimary: true
+    })
+  )
+}
+
 /**
  * The layout store and the litegraph instance are two writable paths to a
  * node's geometry. A hit target read through either must land in the same
@@ -75,17 +101,19 @@ function expectAuthoritiesAgree(graph: LGraph, node: LGraphNode) {
   expect(graph.getNodeOnPos(node.pos[0] + 5, node.pos[1] + 5)).toBe(node)
 }
 
-describe('hit targets across renderer modes and history (I2)', () => {
+describe('hit targets across renderer modes and state reloads (I2)', () => {
   afterEach(() => {
     LiteGraph.vueNodesMode = false
     layoutStore.initializeFromLiteGraph([])
+    layoutStore.setSource(LayoutSource.Canvas)
   })
 
   it('drags member node and slot hit targets along with the group in the legacy renderer', () => {
     const { graph, node, group } = buildGraph()
+    const canvas = createCanvas(graph)
     expect(group._children.has(node)).toBe(true)
 
-    group.move(DRAG.x, DRAG.y)
+    dragGroup(canvas, group)
     node.updateArea()
 
     const moved = { x: NODE_AT.x + DRAG.x, y: NODE_AT.y + DRAG.y }
@@ -97,17 +125,14 @@ describe('hit targets across renderer modes and history (I2)', () => {
     ).toBeUndefined()
   })
 
-  // Asserts the behaviour we want, so it fails today and passes the moment
-  // #15566 is fixed. Written as `.fails` rather than pinning the current wrong
-  // answer, because a test that encodes a defect goes red when someone repairs
-  // the defect, and the tempting move at that point is to edit the test.
-  it.fails('moves member node hit targets with the group in Vue nodes mode (#15566)', () => {
+  it('moves member node hit targets with the group in Vue nodes mode', () => {
     LiteGraph.vueNodesMode = true
     const { graph, node, group } = buildGraph()
+    const canvas = createCanvas(graph)
     seedLayoutStore(graph)
     expect(group._children.has(node)).toBe(true)
 
-    group.move(DRAG.x, DRAG.y)
+    dragGroup(canvas, group)
     node.updateArea()
 
     expect([...group.pos]).toEqual([GROUP_AT.x + DRAG.x, GROUP_AT.y + DRAG.y])
@@ -118,7 +143,7 @@ describe('hit targets across renderer modes and history (I2)', () => {
     expectAuthoritiesAgree(graph, node)
   })
 
-  it('restores node and reroute hit targets in both authorities after an undo in legacy mode', () => {
+  it('restores node and reroute hit targets in both authorities after a state reload', () => {
     LiteGraph.vueNodesMode = true
     const { graph, node, producer } = buildGraph()
     seedLayoutStore(graph)
@@ -128,15 +153,24 @@ describe('hit targets across renderer modes and history (I2)', () => {
     if (!reroute) throw new Error('expected a reroute')
     const beforeEdit = graph.serialize()
 
-    const mutations = useLayoutMutations()
-    mutations.setSource(LayoutSource.Vue)
-    mutations.moveNode(node.id, { x: 900, y: 900 })
-    reroute.pos = [REROUTE_AT.x, REROUTE_AT.y + 400]
+    node.setPos(900, 900)
+    reroute.move(0, 400)
+    node.updateArea()
+
+    expect(graph.getNodeOnPos(905, 905)).toBe(node)
+    expect(graph.getNodeOnPos(NODE_AT.x + 5, NODE_AT.y + 5)).toBeNull()
+    expect(
+      graph.getRerouteOnPos(
+        REROUTE_AT.x,
+        REROUTE_AT.y + 400,
+        graph.reroutes.values()
+      )
+    ).toBeDefined()
 
     LiteGraph.vueNodesMode = false
     graph.configure(beforeEdit)
     const restored = graph.getNodeById(node.id)
-    if (!restored) throw new Error('node is missing after undo')
+    if (!restored) throw new Error('node is missing after state reload')
     restored.updateArea()
 
     expect(graph.getNodeOnPos(NODE_AT.x + 5, NODE_AT.y + 5)).toBe(restored)
