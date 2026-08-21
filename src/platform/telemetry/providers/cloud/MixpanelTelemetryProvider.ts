@@ -3,6 +3,7 @@ import { omit } from 'es-toolkit'
 import { watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { whenStoresReady } from '@/platform/telemetry/storeReadiness'
 import {
   checkForCompletedTopup as checkTopupUtil,
   clearTopupTracking as clearTopupUtil,
@@ -117,11 +118,17 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
               loaded: () => {
                 this.isInitialized = true
                 this.flushEventQueue() // flush events that were queued while initializing
-                useCurrentUser().onUserResolved((user) => {
-                  if (this.mixpanel && user.id) {
-                    this.mixpanel.identify(user.id)
-                  }
-                })
+                void whenStoresReady()
+                  .then(() => {
+                    useCurrentUser().onUserResolved((user) => {
+                      if (this.mixpanel && user.id) {
+                        this.mixpanel.identify(user.id)
+                      }
+                    })
+                  })
+                  .catch((error) => {
+                    console.error('Failed to identify Mixpanel user:', error)
+                  })
               }
             })
           })

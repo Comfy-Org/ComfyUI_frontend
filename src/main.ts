@@ -19,6 +19,10 @@ import {
   configValueOrDefault,
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
+import {
+  markStoresPending,
+  markStoresReady
+} from '@/platform/telemetry/storeReadiness'
 import { syncHostUserIdWithFirebaseAuth } from '@/platform/telemetry/hostUserIdSync'
 import { flushErrorReports } from '@/platform/telemetry/reportError'
 import '@/lib/litegraph/public/css/litegraph.css'
@@ -40,6 +44,8 @@ const hasHostTelemetryBridge = Boolean(window.__comfyDesktop2?.Telemetry)
 const { refreshRemoteConfig } =
   await import('@/platform/remoteConfig/refreshRemoteConfig')
 await refreshRemoteConfig({ useAuth: false })
+
+markStoresPending()
 
 if (isCloud) {
   const { initTelemetry } = await import('@/platform/telemetry/initTelemetry')
@@ -151,6 +157,8 @@ app
     firebaseApp,
     modules: [VueFireAuth()]
   })
+
+markStoresReady()
 
 if (isCloud && hasHostTelemetryBridge) {
   syncHostUserIdWithFirebaseAuth()
