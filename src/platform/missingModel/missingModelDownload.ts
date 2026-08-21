@@ -2,7 +2,6 @@ import { downloadUrlToHfRepoUrl, isCivitaiModelUrl } from '@/utils/formatUtil'
 import { isDesktop } from '@/platform/distribution/types'
 import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
-import type { ComfyDesktop2Bridge } from '@/types'
 
 const ALLOWED_SOURCES = [
   'https://civitai.com/',
@@ -43,16 +42,22 @@ export interface ModelWithUrl {
   directory: string
 }
 
-async function startDesktop2ModelDownload(
-  bridge: ComfyDesktop2Bridge,
-  model: ModelWithUrl
-): Promise<void> {
-  try {
-    await bridge.downloadModel?.(model.url, model.name, model.directory)
-  } catch (error: unknown) {
-    console.error('Failed to start Desktop2 model download:', error)
-  }
-}
+export type ModelDownloadDispatchOutcome =
+  | {
+      status: 'not-dispatched'
+      reason: 'not-downloadable' | 'missing-directory-path'
+    }
+  | { status: 'browser-requested' }
+  | {
+      status: 'host-requested'
+      host: 'desktop2' | 'electron'
+      hostResult: Promise<boolean>
+    }
+  | {
+      status: 'dispatch-failed'
+      host: 'desktop2' | 'electron'
+      error: unknown
+    }
 
 function openUrlInNewTab(url: string, downloadAs?: string): void {
   try {
@@ -118,32 +123,83 @@ export function isModelDownloadable(model: ModelWithUrl): boolean {
   return true
 }
 
-export function downloadModel(
+export function dispatchModelDownload(
   model: ModelWithUrl,
-  paths: Record<string, string[]>
-): void {
-  if (!isModelDownloadable(model)) return
+  paths: Record<string, string[]>,
+  { revealLegacyDownload = true }: { revealLegacyDownload?: boolean } = {}
+): ModelDownloadDispatchOutcome {
+  if (!isModelDownloadable(model)) {
+    return { status: 'not-dispatched', reason: 'not-downloadable' }
+  }
 
   const desktop2Bridge = window.__comfyDesktop2
   if (desktop2Bridge?.downloadModel && !desktop2Bridge.isRemote()) {
-    void startDesktop2ModelDownload(desktop2Bridge, model)
-    return
+    try {
+      return {
+        status: 'host-requested',
+        host: 'desktop2',
+        hostResult: Promise.resolve(
+          desktop2Bridge.downloadModel(model.url, model.name, model.directory)
+        )
+      }
+    } catch (error) {
+      return { status: 'dispatch-failed', host: 'desktop2', error }
+    }
   }
 
   if (!isDesktop) {
     openUrlInNewTab(model.url, model.name)
+    return { status: 'browser-requested' }
+  }
+
+  const savePath = paths[model.directory]?.[0]
+  if (!savePath) {
+    return { status: 'not-dispatched', reason: 'missing-directory-path' }
+  }
+
+  if (revealLegacyDownload) {
+    useSidebarTabStore().activeSidebarTabId = MODEL_LIBRARY_TAB_ID
+  }
+  try {
+    return {
+      status: 'host-requested',
+      host: 'electron',
+      hostResult: Promise.resolve(
+        useElectronDownloadStore().start({
+          url: model.url,
+          savePath,
+          filename: model.name
+        })
+      )
+    }
+  } catch (error) {
+    return { status: 'dispatch-failed', host: 'electron', error }
+  }
+}
+
+export function downloadModel(
+  model: ModelWithUrl,
+  paths: Record<string, string[]>
+): void {
+  const outcome = dispatchModelDownload(model, paths)
+
+  if (outcome.status === 'dispatch-failed') {
+    if (outcome.host === 'electron') throw outcome.error
+
+    console.error('Failed to start Desktop2 model download:', outcome.error)
     return
   }
 
-  const modelPaths = paths[model.directory]
-  if (modelPaths?.[0]) {
-    useSidebarTabStore().activeSidebarTabId = MODEL_LIBRARY_TAB_ID
-    void useElectronDownloadStore().start({
-      url: model.url,
-      savePath: modelPaths[0],
-      filename: model.name
+  if (outcome.status !== 'host-requested') return
+
+  if (outcome.host === 'desktop2') {
+    void outcome.hostResult.catch((error: unknown) => {
+      console.error('Failed to start Desktop2 model download:', error)
     })
+    return
   }
+
+  void outcome.hostResult.catch(() => undefined)
 }
 
 export interface ModelMetadata {
