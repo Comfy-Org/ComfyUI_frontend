@@ -1,3 +1,4 @@
+import { findProjectRoot } from '../recorder/runner'
 import { checkPlatform } from '../checks/platform'
 import { checkXcode } from '../checks/xcode'
 import { checkGit } from '../checks/git'
@@ -11,11 +12,20 @@ import { checkBackend } from '../checks/backend'
 import { header } from '../ui/logger'
 import type { CheckResult } from '../checks/types'
 
-export async function runChecks(): Promise<{
+export async function runChecks(projectRoot?: string): Promise<{
   results: CheckResult[]
   allPassed: boolean
 }> {
   header('Environment Check')
+
+  let root = projectRoot
+  if (!root) {
+    try {
+      root = findProjectRoot()
+    } catch {
+      // Not inside the repo — the dev-server identity probe is simply skipped
+    }
+  }
 
   const results: CheckResult[] = []
 
@@ -32,7 +42,7 @@ export async function runChecks(): Promise<{
   header('Services Check')
 
   results.push(await checkBackend())
-  results.push(await checkDevServer())
+  results.push(await checkDevServer(undefined, root))
 
   const requiredFailed = results.filter((r) => !r.ok && !r.optional)
   return { results, allPassed: requiredFailed.length === 0 }

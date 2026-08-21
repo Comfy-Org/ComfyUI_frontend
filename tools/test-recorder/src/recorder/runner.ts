@@ -3,6 +3,7 @@ import { existsSync, readdirSync, statSync } from 'node:fs'
 import { dirname, join, parse } from 'node:path'
 import pc from 'picocolors'
 import { generateRecordingTemplate, cleanupRecordingTemplate } from './template'
+import { devServerUrl } from '../checks/devServerUrl'
 import { box } from '../ui/logger'
 
 interface RunnerOptions {
@@ -116,11 +117,10 @@ export async function runRecording(
           ...process.env,
           PWDEBUG: '1',
           PLAYWRIGHT_LOCAL: '1',
-          // Record against the dev server the environment check requires.
+          // Record against the dev server the environment check verified.
           // Without this the fixture falls back to the backend's own bundled
           // frontend on :8188, so recordings miss local changes entirely.
-          PLAYWRIGHT_TEST_URL:
-            process.env.PLAYWRIGHT_TEST_URL ?? 'http://localhost:5173'
+          PLAYWRIGHT_TEST_URL: devServerUrl()
         }
       }
     )
