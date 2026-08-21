@@ -138,6 +138,78 @@ describe('MediaVideoTop', () => {
     }
   )
 
+  describe('click propagation while native controls are showing', () => {
+    async function renderPlayingHoveredVideo() {
+      const user = userEvent.setup()
+      const { container } = render(MediaVideoTop, {
+        props: {
+          asset: createVideoAsset('https://example.com/thumb.jpg')
+        }
+      })
+
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
+      const video = container.querySelector('video')!
+      vi.spyOn(video, 'getBoundingClientRect').mockReturnValue(
+        fromPartial({ top: 100, bottom: 300, height: 200 })
+      )
+      const bubbled = vi.fn()
+      // eslint-disable-next-line testing-library/no-node-access -- root wrapper has no role
+      container.firstElementChild!.addEventListener('click', bubbled)
+
+      await fireEvent.play(video)
+      // eslint-disable-next-line testing-library/no-node-access -- root wrapper has no role
+      await user.hover(container.firstElementChild!)
+      expect(video.controls).toBe(true)
+
+      return { video, bubbled, user }
+    }
+
+    it('stops a modifier-click aimed at the native control strip', async () => {
+      const { video, bubbled, user } = await renderPlayingHoveredVideo()
+
+      await user.keyboard('{Meta>}')
+      await user.pointer({
+        keys: '[MouseLeft]',
+        target: video,
+        coords: { clientY: 290 }
+      })
+      await user.keyboard('{/Meta}')
+
+      expect(bubbled).not.toHaveBeenCalled()
+    })
+
+    it('lets a modifier-click on the video body through to the card', async () => {
+      const { video, bubbled, user } = await renderPlayingHoveredVideo()
+
+      await user.keyboard('{Meta>}')
+      await user.pointer({
+        keys: '[MouseLeft]',
+        target: video,
+        coords: { clientY: 200 }
+      })
+      await user.keyboard('{/Meta}')
+
+      expect(bubbled).toHaveBeenCalledTimes(1)
+    })
+
+    it('lets a modifier-click through when the video has zero height', async () => {
+      const { video, bubbled, user } = await renderPlayingHoveredVideo()
+      vi.spyOn(video, 'getBoundingClientRect').mockReturnValue(
+        fromPartial({ top: 100, bottom: 100, height: 0 })
+      )
+
+      await user.keyboard('{Meta>}')
+      await user.pointer({
+        keys: '[MouseLeft]',
+        target: video,
+        coords: { clientY: 100 }
+      })
+      await user.keyboard('{/Meta}')
+
+      expect(bubbled).toHaveBeenCalledTimes(1)
+    })
+  })
+
   it('pauses playback from a subsequent click when native controls are disabled', async () => {
     const user = userEvent.setup()
     const { container } = render(MediaVideoTop, {
