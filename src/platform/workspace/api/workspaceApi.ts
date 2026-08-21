@@ -451,7 +451,7 @@ export const workspaceApi = {
     const headers = await getAuthHeaderOrThrow()
     try {
       const response = await workspaceApiClient.get<SavedPaymentMethod[]>(
-        api.apiURL('/billing/payment-methods'),
+        workspaceApiUrl('/billing/payment-methods'),
         { headers }
       )
       return response.data

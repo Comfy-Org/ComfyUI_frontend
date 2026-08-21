@@ -763,8 +763,7 @@ export function useSubscriptionCheckout(
         response = await previewSubscribe(
           getTeamPlanSlug(payload.billingCycle),
           {
-            teamCreditStopId: payload.stop.id,
-            billingCycle: payload.billingCycle
+            teamCreditStopId: payload.stop.id
           }
         )
       } catch (error) {
@@ -1032,7 +1031,6 @@ export function useSubscriptionCheckout(
       planSlug = getTeamPlanSlug(selectedBillingCycle.value)
       options = {
         teamCreditStopId: selectedTeamCheckout.value.stop.id,
-        billingCycle: selectedBillingCycle.value,
         ...(normalizedInput && { promotionCode: normalizedInput })
       }
     } else if (selectedTierKey.value) {
