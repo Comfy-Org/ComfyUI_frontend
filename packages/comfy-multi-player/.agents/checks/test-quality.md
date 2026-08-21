@@ -61,9 +61,9 @@ Why the projection is inadequate. `project()` must not reach either ledger, and 
 <!-- claim-absent: stampsMap :: src/project.ts -->
 <!-- claim-absent: appliedMap :: src/project.ts -->
 <!-- claim: export function stampsMap(doc: Y.Doc): Y.Map<unknown> {
-  return doc.getMap<unknown>("__stamps"); :: src/doc.ts -->
+  return doc.getMap<unknown>(ROOT_STAMPS); :: src/doc.ts -->
 <!-- claim: export function appliedMap(doc: Y.Doc): Y.Map<unknown> {
-  return doc.getMap<unknown>("__applied"); :: src/doc.ts -->
+  return doc.getMap<unknown>(ROOT_APPLIED); :: src/doc.ts -->
 
 The retired advice, banned in both copies — this file and the machine-consumed restatement in `.coderabbit.yaml`, which is the copy that runs on every PR and the one the earlier fixes never looked at. All `.coderabbit.yaml` needles are deliberately space-free: that block is a YAML folded scalar, so a needle containing a space could be split by a cosmetic rewrap, which would redden a positive claim and, worse, silently disarm a ban.
 

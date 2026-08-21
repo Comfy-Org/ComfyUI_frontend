@@ -131,14 +131,30 @@ export function widgetStorageOf(node: Y.Map<unknown>): WidgetStorage {
 // Root maps
 // ---------------------------------------------------------------------------
 
+/**
+ * The schema §1 root-map NAMES, as constants.
+ *
+ * The writer helpers below and the read-only snapshot surface (`src/read.ts`)
+ * both address the document by these keys. Naming them once is what keeps the
+ * two from drifting: a reader that hardcodes `"nodes"` while the layout moves
+ * silently reads an empty graph, which is the failure mode a consumer
+ * hand-mirroring the schema has (ADR-004).
+ */
+export const ROOT_NODES = "nodes";
+export const ROOT_LINKS = "links";
+export const ROOT_DEFINITIONS = "definitions";
+export const ROOT_META = "meta";
+export const ROOT_APPLIED = "__applied";
+export const ROOT_STAMPS = "__stamps";
+
 /** Root map holding one Y.Map per node, keyed by String(node id). */
 export function nodesMap(doc: Y.Doc): Y.Map<Y.Map<unknown>> {
-  return doc.getMap<Y.Map<unknown>>("nodes");
+  return doc.getMap<Y.Map<unknown>>(ROOT_NODES);
 }
 
 /** Root map holding one link record per link, keyed by String(link id). */
 export function linksMap(doc: Y.Doc): Y.Map<unknown> {
-  return doc.getMap<unknown>("links");
+  return doc.getMap<unknown>(ROOT_LINKS);
 }
 
 /**
@@ -146,12 +162,12 @@ export function linksMap(doc: Y.Doc): Y.Map<unknown> {
  * so interior writes stay bounded (schema §5.1), never a meta blob.
  */
 export function definitionsMap(doc: Y.Doc): Y.Map<Y.Map<unknown>> {
-  return doc.getMap<Y.Map<unknown>>("definitions");
+  return doc.getMap<Y.Map<unknown>>(ROOT_DEFINITIONS);
 }
 
 /** Root map holding schema_version, catalog_version, id high-water marks, and passthrough keys. */
 export function metaMap(doc: Y.Doc): Y.Map<unknown> {
-  return doc.getMap<unknown>("meta");
+  return doc.getMap<unknown>(ROOT_META);
 }
 
 /**
@@ -164,12 +180,12 @@ export function metaMap(doc: Y.Doc): Y.Map<unknown> {
  * schema's explicitly-conforming implementation.
  */
 export function appliedMap(doc: Y.Doc): Y.Map<unknown> {
-  return doc.getMap<unknown>("__applied");
+  return doc.getMap<unknown>(ROOT_APPLIED);
 }
 
 /** LWW bookkeeping: write-target key → winning stamp key (schema §3/§4). */
 export function stampsMap(doc: Y.Doc): Y.Map<unknown> {
-  return doc.getMap<unknown>("__stamps");
+  return doc.getMap<unknown>(ROOT_STAMPS);
 }
 
 /**

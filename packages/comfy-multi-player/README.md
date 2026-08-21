@@ -207,8 +207,8 @@ building conflict UI or your own bookkeeping — `applyOps` uses them internally
 
 The entrypoint exports the op layer (`mint`, `applyOps`, `project`, `migrate`),
 the KA-11 read gate, the stamp machinery above, the ADR-004 follower read
-surface (`nodesMap`, `linksMap`, `OPAQUE_WIDGETS_KEY`), and the types. That is
-the whole public surface.
+surface (`nodesMap`, `linksMap`, `OPAQUE_WIDGETS_KEY`), the safer snapshot
+surface below, and the types. That is the whole public surface.
 
 The three layout exports are a deliberate exception for the frontend follower
 documented by ADR-004. They are read-only by contract: that follower consumes
@@ -228,10 +228,55 @@ with no diagnostic. See [issue #18][issue-18] and KA-1, KA-2, KA-4, FC-5 in
 [docs/INVARIANTS.md](docs/INVARIANTS.md).
 
 General consumers should call `project(doc, catalog)` for canonical workflow
-JSON. There is no `./doc` subpath export and none will be added; only the three
-ADR-004 follower reads above are reachable from the package entrypoint.
+JSON, or use the safer snapshot surface below when projection cannot serve the
+read. There is no `./doc` subpath export and none will be added; only ADR-004's
+three deliberate layout exports remain reachable from the entrypoint.
 
 [issue-18]: https://github.com/Comfy-Org/comfy-multi-player/issues/18
+
+### Reading without a handle
+
+`project(doc, catalog)` is the full read and the first thing to reach for. Some
+callers cannot use it: a follower renders a document it has no catalog for, and
+a host's pre-apply guards run *before* it knows projecting is safe. For those,
+the entrypoint exports a snapshot surface that returns **plain, deep-frozen,
+deep-copied data** — never a live Yjs type, at any depth.
+
+| | |
+|---|---|
+| `readGraph(doc)` | `{ nodes, links }` keyed by `String(id)`. Each node carries `type`, `pos`, and `widgets` (name-keyed) or `__widgets_opaque`. Not the whole node — see below. |
+| `readMeta(doc)` | The `meta` root: `schema_version`, `catalog_version`, id high-water marks, and the §6 passthrough keys. |
+| `docCatalogPin(doc)` | The catalog SHA the document was minted with, or `""` when there is none to compare (KA-12). |
+| `hasNode(doc, id)` | Whether a node id already exists. |
+| `hasAppliedOp(doc, opId)` | Whether the document already applied this op — tells a genuine conflict from an idempotent replay. |
+| `appliedOpIds(doc)` | Every applied `op_id` (a set, not an order). |
+| `readStamps(doc)` | The LWW ledger: write-target key → `[base_version, actor, op_id]`. |
+| `OPAQUE_WIDGETS_KEY` | The reserved key above, as a constant, so consumers do not hardcode it. |
+
+Three properties hold mechanically, and `test/readonly-surface.test.ts` proves
+each by attempting the violation:
+
+- **No live handle escapes.** Nothing reachable from a return value is a
+  `Y.AbstractType`.
+- **It is a copy, not a view.** `Y.Map#get` hands back the object stored inside
+  the Yjs item, so returning it would let `snapshot.nodes["7"].pos[0] = 9` edit
+  the document in place. Every non-primitive is rebuilt.
+- **It is deep-frozen.** A write attempt throws `TypeError` instead of silently
+  no-oping.
+
+Reads also never materialize a root: `Y.Doc#getMap` *creates* the root it names,
+and a follower's document before its first frame has none, so every accessor
+checks `doc.share` first.
+
+`readGraph` deliberately returns a **subset** of each node's fields — the ones a
+follower renders — not the whole node. Copying every field costs about twice as
+much per frame for data nobody reads (`node scripts/bench-read.mjs 200`); adding
+a key is a one-line change, and `project()` remains the full-fidelity read.
+Subgraph definitions are not exposed: no consumer reads them, and an unread
+export is future reachability.
+
+None of this is a write path. Shared state changes through `applyOps`, and
+nothing else.
 
 ## Ops
 

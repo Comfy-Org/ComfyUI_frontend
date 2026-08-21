@@ -30,6 +30,9 @@
  *    hosts that need conflict identity or watermark bookkeeping;
  *  - the ADR-004 follower read surface (`nodesMap`, `linksMap`,
  *    `OPAQUE_WIDGETS_KEY`) for consuming the wire layout without applying ops;
+ *  - the safer snapshot surface (`readGraph`, `readMeta`, `docCatalogPin`,
+ *    `hasNode`, `hasAppliedOp`, `appliedOpIds`, `readStamps`) for consumers
+ *    that do not need ADR-004's live follower handles — see src/read.ts;
  *  - operation, workflow, catalog, and result types.
  *
  * Every other Y.Doc layout and low-level mutation helper is deliberately
@@ -61,3 +64,14 @@ export { project } from "./project.js";
 export { mint } from "./mint.js";
 export { migrate } from "./migrate.js";
 export { assertReadableSchema, readSchemaVersion } from "./schema-version.js";
+export {
+  appliedOpIds,
+  docCatalogPin,
+  hasAppliedOp,
+  hasNode,
+  readGraph,
+  readMeta,
+  readStamps,
+  type GraphSnapshot,
+  type NodeSnapshot,
+} from "./read.js";

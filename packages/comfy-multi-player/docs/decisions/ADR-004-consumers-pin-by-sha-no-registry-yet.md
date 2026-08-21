@@ -30,6 +30,14 @@ Verified 2026-08-20 (frontend `poc/fe-crdt-follower`, PR #15457):
   `project`, because a follower never writes the shared doc (KA-6). Consuming
   the package for *types and layout* does not imply running the applier.
 
+  **Amended 2026-08-20 (see [ADR-005](ADR-005-read-only-snapshot-surface.md)):**
+  that bullet describes the surface at the pinned SHA `6793d754`. Issue #18
+  removed most doc-layout helpers from the entrypoint; the ADR-004 follower trio
+  remains public for compatibility. ADR-005 adds `readGraph()` as the safer
+  migration target: unlike `nodesMap`, it returns plain frozen data. The
+  conclusion stands — a follower consumes this package for layout and never
+  runs the applier — while a lockstep pin bump can move it off live handles.
+
 ## Decision
 
 Consumers depend on this package by **immutable git SHA**, and the package is
