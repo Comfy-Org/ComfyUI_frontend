@@ -472,9 +472,13 @@ describe('useMinimap', () => {
       const minimap = await createAndInitializeMinimap()
 
       await minimap.init()
+      // The shouldPoll watcher already pauses once while inactive during
+      // setup. Clear that call so this assertion catches the destroy path.
+      mockIntervalPause.mockClear()
       minimap.destroy()
 
       expect(mockPause).toHaveBeenCalled()
+      expect(mockIntervalPause).toHaveBeenCalledTimes(1)
       expect(api.removeEventListener).toHaveBeenCalledWith(
         'graphChanged',
         expect.any(Function)
