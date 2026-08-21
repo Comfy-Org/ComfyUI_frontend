@@ -20,27 +20,27 @@ exposures have store-backed authorities. The remaining gaps are not uniformly
 projection ownership away from live LiteGraph classes without changing their
 extension-visible behavior.
 
-| Concern                             | Status   | Verified current boundary                                                                                                                                                  |
-| ----------------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Graph and subgraph definitions      | Open     | `LGraph` and `Subgraph` own membership, order, metadata, and interfaces; serializers enumerate the live registries.                                                        |
-| Remaining node visuals              | Partial  | `NodeState` owns most shell visuals; `LGraphNode.boxcolor` remains a directly configured and serialized class field.                                                       |
-| Outputs and transient previews      | Open     | `nodeOutputStore` mirrors and sometimes reads `app.nodeOutputs`, `app.nodePreviewImages`, and live node image fields rather than projecting compatibility state outward.   |
-| Node ordering                       | Partial  | Layout z-index is canonical for Vue and renderer switching; `sendToBack` mutates only legacy `_nodes` order.                                                               |
-| Store-driven serialization          | Open     | `LGraph.asSerialisable`, `LGraphNode.serialize`, group serializers, and subgraph serializers still walk live objects.                                                      |
-| Legacy node geometry projection     | Partial  | Layout is authoritative, but `LGraphNode` owns stable mutable buffers, version tracking, synchronization, and write-through callbacks for `pos` and `size`.                |
-| Link non-topological state          | Complete | `linkStateStore` owns separate persistent color and runtime execution, interaction, render, and hit-test records on the topology lifecycle.                                |
-| Plain slot descriptors              | Complete | Store-owned node arrays contain plain reactive descriptors; stable class projections retain extension behavior, connectivity, callbacks, drawing, and geometry.            |
-| Node properties                     | Complete | `NodeState` owns the stable mutable dictionary while `LGraphNode.properties` preserves direct mutation, assignment, callback, configure, and serialization behavior.       |
-| Group presentation                  | Complete | Graph-definition records own group title, color, font, font size, and flags behind mutable compatibility accessors; layout continues to own geometry.                      |
-| Preview-exposure persistence        | Partial  | `previewExposureStore` is authoritative for runtime lookup and serialization; raw host keys and root-only cleanup remain.                                                  |
-| Extension persistence adapter       | Open     | Graph and node `onSerialize` hooks receive the complete mutable canonical DTO; no validated extension namespace protects store-backed fields.                              |
-| Graph metadata                      | Open     | `revision`, `config`, and `extra` are public class fields configured and serialized directly.                                                                              |
-| Graph invalidation                  | Partial  | `incrementVersion()` centralizes the primitive, but graph, node, canvas, widget, slot, and subgraph callers still choose when `_version` changes.                          |
-| Unknown-node fallback               | Complete | `NodeState` owns the opaque fallback DTO while compatibility access, replacement discovery, and selected live-field serialization overrides remain intact.                 |
-| Execution order                     | Partial  | Topology recomputation writes `node.order`, but the mutable field is also configured and serialized as wire state.                                                         |
-| Entity ID allocation                | Partial  | Root and subgraphs share `LGraph.state`; helper APIs exist, but configure, clipboard, and compatibility setters can still observe or mutate class-owned counters.          |
-| Delayed widget restoration          | Partial  | Registered widgets use `widgetValueStore`; general configure and delayed dynamic-widget paths still consume or mutate `widgets_values` and `widgets_values_named` shadows. |
-| Widget and preview-exposure cleanup | Partial  | Both stores clear a root; neither has complete owner/node cleanup wired through remove, replacement, failed configure, and released-subgraph teardown.                     |
+| Concern                             | Status   | Verified current boundary                                                                                                                                                |
+| ----------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Graph and subgraph definitions      | Open     | `LGraph` and `Subgraph` own membership, order, metadata, and interfaces; serializers enumerate the live registries.                                                      |
+| Remaining node visuals              | Partial  | `NodeState` owns most shell visuals; `LGraphNode.boxcolor` remains a directly configured and serialized class field.                                                     |
+| Outputs and transient previews      | Open     | `nodeOutputStore` mirrors and sometimes reads `app.nodeOutputs`, `app.nodePreviewImages`, and live node image fields rather than projecting compatibility state outward. |
+| Node ordering                       | Partial  | Layout z-index is canonical for Vue and renderer switching; `sendToBack` mutates only legacy `_nodes` order.                                                             |
+| Store-driven serialization          | Open     | `LGraph.asSerialisable`, `LGraphNode.serialize`, group serializers, and subgraph serializers still walk live objects.                                                    |
+| Legacy node geometry projection     | Partial  | Layout is authoritative, but `LGraphNode` owns stable mutable buffers, version tracking, synchronization, and write-through callbacks for `pos` and `size`.              |
+| Link non-topological state          | Complete | `linkStateStore` owns separate persistent color and runtime execution, interaction, render, and hit-test records on the topology lifecycle.                              |
+| Plain slot descriptors              | Complete | Store-owned node arrays contain plain reactive descriptors; stable class projections retain extension behavior, connectivity, callbacks, drawing, and geometry.          |
+| Node properties                     | Complete | `NodeState` owns the stable mutable dictionary while `LGraphNode.properties` preserves direct mutation, assignment, callback, configure, and serialization behavior.     |
+| Group presentation                  | Complete | Graph-definition records own group title, color, font, font size, and flags behind mutable compatibility accessors; layout continues to own geometry.                    |
+| Preview-exposure persistence        | Partial  | `previewExposureStore` is authoritative for runtime lookup and serialization; raw host keys and root-only cleanup remain.                                                |
+| Extension persistence adapter       | Open     | Graph and node `onSerialize` hooks receive the complete mutable canonical DTO; no validated extension namespace protects store-backed fields.                            |
+| Graph metadata                      | Open     | `revision`, `config`, and `extra` are public class fields configured and serialized directly.                                                                            |
+| Graph invalidation                  | Partial  | `incrementVersion()` centralizes the primitive, but graph, node, canvas, widget, slot, and subgraph callers still choose when `_version` changes.                        |
+| Unknown-node fallback               | Complete | `NodeState` owns the opaque fallback DTO while compatibility access, replacement discovery, and selected live-field serialization overrides remain intact.               |
+| Execution order                     | Partial  | Topology recomputation writes `node.order`, but the mutable field is also configured and serialized as wire state.                                                       |
+| Entity ID allocation                | Partial  | Root and subgraphs share `LGraph.state`; helper APIs exist, but configure, clipboard, and compatibility setters can still observe or mutate class-owned counters.        |
+| Delayed widget restoration          | Complete | Wire shadows are parsed into store-owned restoration state at configure; registered and delayed widgets restore without reading mutable node shadows.                    |
+| Widget and preview-exposure cleanup | Partial  | Both stores clear a root; neither has complete owner/node cleanup wired through remove, replacement, failed configure, and released-subgraph teardown.                   |
 
 ## Verified authority and mutation paths
 
@@ -243,8 +243,8 @@ sequence above rather than the summary-table order.
 | 11       | Group presentation                  | Complete    | `3ac7b726a`  | Graph-definition records now back mutable presentation fields and serialization.                 |
 | 12       | Link non-topological state          | Complete    | `38b40988a`  | Separate persistent and runtime records now back compatible link fields with topology lifecycle. |
 | 13       | Node properties                     | Complete    | `f75b30dbd`  | Node state now owns stable mutable properties across lifecycle, callbacks, and serialization.    |
-| 14       | Unknown-node fallback               | Complete    | This commit  | Node state now owns unknown-node fallback records behind the compatibility accessor.             |
-| 15       | Delayed widget restoration          | Not started |              |                                                                                                  |
+| 14       | Unknown-node fallback               | Complete    | `ba4757f4c`  | Node state now owns unknown-node fallback records behind the compatibility accessor.             |
+| 15       | Delayed widget restoration          | Complete    | This commit  | Store-owned restoration state now hydrates configured and delayed widgets from wire shadows.     |
 | 16       | Extension persistence adapter       | Not started |              |                                                                                                  |
 | 17       | Execution order                     | Not started |              |                                                                                                  |
 | 18       | Graph invalidation                  | Not started |              |                                                                                                  |

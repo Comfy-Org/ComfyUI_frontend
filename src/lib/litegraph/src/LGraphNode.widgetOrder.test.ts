@@ -100,6 +100,26 @@ describe('LGraphNode widget ordering', () => {
       expect(node.widgets![1].value).toBe('Click') // button unchanged
       expect(node.widgets![2].value).toBe(12345) // seed
     })
+
+    it('restores positional values for widgets created after configure', () => {
+      node.configure({
+        id: 1,
+        type: 'TestNode',
+        pos: [0, 0],
+        size: [200, 100],
+        flags: {},
+        order: 0,
+        mode: 0,
+        widgets_values: [30, 12345]
+      })
+
+      node.addWidget('number', 'steps', 0, null, {})
+      node.addWidget('number', 'seed', 0, null, {})
+
+      expect(node.widgets!.map((widget) => widget.value)).toStrictEqual([
+        30, 12345
+      ])
+    })
   })
 
   describe('configure with widgets_values_named', () => {
@@ -159,6 +179,22 @@ describe('LGraphNode widget ordering', () => {
       )
 
       expect(node.widgets!.map((w) => w.value)).toStrictEqual([1, 5, 'test'])
+    })
+
+    it('restores delayed widgets by name and preserves the wire roundtrip', () => {
+      node.configure(mockNode([30, 12345], { steps: 30, seed: 12345 }))
+
+      node.addWidget('number', 'seed', 0, null, {})
+      node.addWidget('number', 'steps', 0, null, {})
+      node.serialize_widgets = true
+
+      expect(node.widgets!.map((widget) => widget.value)).toStrictEqual([
+        12345, 30
+      ])
+      expect(node.serialize()).toMatchObject({
+        widgets_values: [12345, 30],
+        widgets_values_named: { seed: 12345, steps: 30 }
+      })
     })
 
     it('should support restoration even when order has changed', () => {

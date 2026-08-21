@@ -23,6 +23,7 @@ import { graphScopeOf } from '@/types/graphScopeId'
 import type { GraphScope } from '@/types/graphScopeId'
 import { mintLinkId } from './idAllocation'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { UNASSIGNED_NODE_ID, toNodeId, serializeNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import type { NodeProperty, NodeState } from '@/types/nodeState'
@@ -1102,6 +1103,24 @@ export class LGraphNode
     // SubgraphNode callback.
     this._internalConfigureAfterSlots?.()
 
+    const getNamedValues = () => {
+      if (info.widgets_values_named) return info.widgets_values_named
+
+      const map = this.constructor.nodeData?.fallbackWidgetsValuesNames
+      if (!info.widgets_values || !map) return
+
+      return Object.fromEntries(
+        info.widgets_values.flatMap((v, i) => (map[i] ? [[map[i], v]] : []))
+      )
+    }
+    const namedValues = getNamedValues()
+    const graphId = this.graph?.rootGraph.id ?? zeroUuid
+    useWidgetValueStore().setNodeWidgetRestoration(graphId, this.id, {
+      positional: [...(info.widgets_values ?? [])],
+      named: namedValues ? { ...namedValues } : undefined,
+      restoreNamed: Boolean(namedValues && LiteGraph.namedValuesRestore)
+    })
+
     if (this.widgets) {
       for (const w of this.widgets) {
         if (!w) continue
@@ -1118,18 +1137,6 @@ export class LGraphNode
           )
       }
 
-      const getNamedValues = () => {
-        if (info.widgets_values_named) return info.widgets_values_named
-
-        const map = this.constructor.nodeData?.fallbackWidgetsValuesNames
-        if (!info.widgets_values || !map) return
-
-        return Object.fromEntries(
-          info.widgets_values.flatMap((v, i) => (map[i] ? [[map[i], v]] : []))
-        )
-      }
-
-      const namedValues = getNamedValues()
       if (namedValues) {
         const legacyShadow = computeLegacyWidgetShadow(
           this.widgets,
@@ -1142,20 +1149,16 @@ export class LGraphNode
         )
       }
 
-      if (namedValues && LiteGraph.namedValuesRestore) {
-        for (const widget of this.widgets) {
-          if (widget.serialize === false || !(widget.name in namedValues))
-            continue
-
-          widget.value = namedValues[widget.name]
-        }
-      } else if (info.widgets_values) {
-        let i = 0
-        for (const widget of this.widgets ?? []) {
-          if (widget.serialize === false) continue
-          if (i >= info.widgets_values.length) break
-          widget.value = info.widgets_values[i++]
-        }
+      let positionalIndex = 0
+      for (const widget of this.widgets) {
+        if (widget.serialize === false) continue
+        const restored = useWidgetValueStore().getRestoredWidgetValue(
+          graphId,
+          this.id,
+          widget.name,
+          positionalIndex++
+        )
+        if (restored) widget.value = restored.value
       }
     }
 
@@ -2232,6 +2235,17 @@ export class LGraphNode
     if (this.id !== UNASSIGNED_NODE_ID && isNodeBindable(widget)) {
       widget.setNodeId(this.id)
     }
+
+    const positionalIndex =
+      this.widgets.filter((candidate) => candidate.serialize !== false).length -
+      1
+    const restored = useWidgetValueStore().getRestoredWidgetValue(
+      this.graph?.rootGraph.id ?? zeroUuid,
+      this.id,
+      widget.name,
+      positionalIndex
+    )
+    if (restored) widget.value = restored.value
 
     return widget
   }

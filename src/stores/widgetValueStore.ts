@@ -16,6 +16,12 @@ export interface WidgetRenderState {
   tooltip?: string
 }
 
+interface WidgetRestorationState {
+  positional: readonly WidgetValue[]
+  named?: Readonly<Record<string, WidgetValue>>
+  restoreNamed: boolean
+}
+
 export function stripGraphPrefix(scopedId: SerializedNodeId): NodeId | null {
   return parseNodeId(String(scopedId).replace(/^(.*:)+/, ''))
 }
@@ -26,6 +32,51 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     new Map<UUID, Map<WidgetId, WidgetRenderState>>()
   )
   const graphNodeWidgetOrders = ref(new Map<UUID, Map<NodeId, WidgetId[]>>())
+  const graphWidgetRestorations = new Map<
+    UUID,
+    Map<NodeId, WidgetRestorationState>
+  >()
+
+  function setNodeWidgetRestoration(
+    graphId: UUID,
+    nodeId: NodeId,
+    restoration: WidgetRestorationState
+  ): void {
+    let graphRestorations = graphWidgetRestorations.get(graphId)
+    if (!graphRestorations) {
+      graphRestorations = new Map()
+      graphWidgetRestorations.set(graphId, graphRestorations)
+    }
+    graphRestorations.set(nodeId, restoration)
+  }
+
+  function getRestoredWidgetValue(
+    graphId: UUID,
+    nodeId: NodeId,
+    name: string,
+    positionalIndex: number
+  ): { value: WidgetValue } | undefined {
+    const restoration = graphWidgetRestorations.get(graphId)?.get(nodeId)
+    if (!restoration) return
+    if (restoration.restoreNamed && restoration.named) {
+      return Object.hasOwn(restoration.named, name)
+        ? { value: restoration.named[name] }
+        : undefined
+    }
+    return positionalIndex < restoration.positional.length
+      ? { value: restoration.positional[positionalIndex] }
+      : undefined
+  }
+
+  function getPositionalRestoredWidgetValue(
+    graphId: UUID,
+    nodeId: NodeId,
+    positionalIndex: number
+  ): WidgetValue | undefined {
+    return graphWidgetRestorations.get(graphId)?.get(nodeId)?.positional[
+      positionalIndex
+    ]
+  }
 
   function getGraphWidgetStates(graphId: UUID): Map<WidgetId, WidgetState> {
     const widgetStates = graphWidgetStates.value.get(graphId)
@@ -241,6 +292,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   }
 
   function clearNode(graphId: UUID, nodeId: NodeId): void {
+    graphWidgetRestorations.get(graphId)?.delete(nodeId)
     const widgetStates = graphWidgetStates.value.get(graphId)
     const widgetRenderStates = graphWidgetRenderStates.value.get(graphId)
     if (widgetStates) {
@@ -264,10 +316,14 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     graphWidgetStates.value.delete(graphId)
     graphWidgetRenderStates.value.delete(graphId)
     graphNodeWidgetOrders.value.delete(graphId)
+    graphWidgetRestorations.delete(graphId)
   }
 
   return {
     registerWidget,
+    setNodeWidgetRestoration,
+    getRestoredWidgetValue,
+    getPositionalRestoredWidgetValue,
     getWidget,
     getWidgetRenderState,
     setValue,
