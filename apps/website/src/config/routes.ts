@@ -22,6 +22,7 @@ const baseRoutes = {
   affiliateTerms: '/affiliates/terms',
   contact: '/contact',
   models: '/p/supported-models',
+  modelsShowcase: '/models',
   mcp: '/mcp',
   minimax: '/minimax-h3',
   minimaxMusic3: '/minimax-music-3',

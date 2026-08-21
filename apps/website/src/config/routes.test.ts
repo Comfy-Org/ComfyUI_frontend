@@ -28,6 +28,16 @@ describe('getRoutes models', () => {
   })
 })
 
+describe('getRoutes modelsShowcase', () => {
+  it('serves the models showcase page at its canonical path for en', () => {
+    expect(getRoutes('en').modelsShowcase).toBe('/models')
+  })
+
+  it('serves a localized models showcase path for zh-CN', () => {
+    expect(getRoutes('zh-CN').modelsShowcase).toBe('/zh-CN/models')
+  })
+})
+
 describe('getRoutes seedance', () => {
   it('serves the seedance page at its canonical path for en', () => {
     expect(getRoutes('en').seedance).toBe('/seedance-2.5')
