@@ -2,7 +2,6 @@
   "name": "@comfyorg/comfy-multi-player",
   "version": "0.1.0",
   "description": "Shared workflow-document package: CRDT op applier + JSON projection used identically by the browser and the server doc host.",
-  "private": true,
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -20,7 +19,7 @@
     "url": "git+https://github.com/Comfy-Org/comfy-multi-player.git"
   },
   "publishConfig": {
-    "access": "restricted"
+    "access": "public"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
