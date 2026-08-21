@@ -248,4 +248,8 @@ sequence above rather than the summary-table order.
 | 16       | Extension persistence adapter       | Complete | `287bf33f38` | Validated payloads round trip through a namespace while legacy hooks mutate isolated DTO views.  |
 | 17       | Execution order                     | Complete | `7f6c2783dd` | Graph-scoped derived records own execution order behind the compatible node projection.          |
 | 18       | Graph invalidation                  | Complete | `335b69420c` | Graph-scoped batching coalesces composite invalidations behind the compatible version counter.   |
-| 19       | Store-driven serialization          | Complete | This commit  | Store authorities now build wire DTOs after normalized parity against mutable serialization.     |
+| 19       | Store-driven serialization          | Complete | `458d292f1`  | Store authorities now build wire DTOs after normalized parity against mutable serialization.     |
+
+Final full-suite verification also tightened slot-projection deletion and
+updated test fixtures to preserve their store scope and projected-array
+contract.
