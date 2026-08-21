@@ -16,8 +16,9 @@ import reroutesComplex from './__fixtures__/assets/reroutesComplex.json'
  * workflow, save it, and everything you had is still there.
  *
  * Serialisation deliberately normalises — schema version is rewritten and
- * conflicting ids are reassigned — so this compares entity sets and counts
- * rather than bytes.
+ * conflicting ids are reassigned — so this compares entity sets rather than
+ * bytes. It compares them whole: a count survives an entity being renumbered,
+ * repointed at a different slot, or replaced outright.
  */
 
 interface RoundTripFixture {
@@ -49,6 +50,38 @@ function rerouteIds(graph: { extra?: { reroutes?: { id: number }[] } }) {
     .sort(ascending)
 }
 
+/**
+ * Links and groups are compared whole, not counted. A count survives a link
+ * being renumbered, repointed at a different slot, or replaced outright.
+ */
+function linkKeys(graph: Pick<ISerialisedGraph, 'links'>) {
+  return (graph.links ?? []).map((link) => JSON.stringify(link)).sort()
+}
+
+function floatingLinkKeys(graph: Pick<ISerialisedGraph, 'floatingLinks'>) {
+  return (graph.floatingLinks ?? []).map((link) => JSON.stringify(link)).sort()
+}
+
+function groupKeys(graph: Pick<ISerialisedGraph, 'groups'>) {
+  return (graph.groups ?? [])
+    .map(({ id, title, bounding }) => JSON.stringify({ id, title, bounding }))
+    .sort()
+}
+
+/**
+ * Every fixture ships with `groups: []`, so a group assertion against them
+ * unmodified compares nothing to nothing.
+ */
+function withGroups(graph: ISerialisedGraph): ISerialisedGraph {
+  return {
+    ...structuredClone(graph),
+    groups: [
+      { id: 1, title: 'first', bounding: [0, 0, 140, 90] },
+      { id: 2, title: 'second', bounding: [200, 40, 180, 120] }
+    ]
+  }
+}
+
 describe('LGraph round trip preserves the input', () => {
   for (const { name, graph } of fixtures) {
     describe(name, () => {
@@ -61,20 +94,24 @@ describe('LGraph round trip preserves the input', () => {
         expect(after).toEqual(before)
       })
 
-      test('keeps every link', () => {
-        const before = graph.links?.length ?? 0
+      test('keeps every link, with its endpoints', () => {
+        expect(linkKeys(roundTrip(graph))).toEqual(linkKeys(graph))
+      })
 
-        expect(roundTrip(graph).links?.length ?? 0).toBe(before)
+      test('keeps every floating link, with its endpoints', () => {
+        expect(floatingLinkKeys(roundTrip(graph))).toEqual(
+          floatingLinkKeys(graph)
+        )
       })
 
       test('keeps every reroute, by id', () => {
         expect(rerouteIds(roundTrip(graph))).toEqual(rerouteIds(graph))
       })
 
-      test('keeps every group', () => {
-        const before = graph.groups?.length ?? 0
+      test('keeps every group, by identity and bounds', () => {
+        const grouped = withGroups(graph)
 
-        expect(roundTrip(graph).groups?.length ?? 0).toBe(before)
+        expect(groupKeys(roundTrip(grouped))).toEqual(groupKeys(grouped))
       })
 
       test('does not mutate the workflow it was given', () => {
