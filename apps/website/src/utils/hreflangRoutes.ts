@@ -82,7 +82,7 @@ export interface Alternate {
  */
 export function clusterAlternates(path: string, origin: string): Alternate[] {
   const english = `${origin}${path}`
-  const chinese = `${origin}${ZH_PREFIX}${path === '/' ? '/' : path}`
+  const chinese = `${origin}${ZH_PREFIX}${path}`
 
   return [
     { hreflang: 'en', href: english },

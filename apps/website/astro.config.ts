@@ -22,7 +22,7 @@ function pageFiles(dir: string): string[] {
     if (entry.isDirectory()) return pageFiles(full)
     if (!entry.name.endsWith('.astro')) return []
     const rel = relative(process.cwd(), full).split(sep).join('/')
-    return [`/${rel.replace(/^src\//, 'src/')}`]
+    return [`/${rel}`]
   })
 }
 
