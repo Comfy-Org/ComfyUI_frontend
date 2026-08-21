@@ -1,5 +1,6 @@
 import { toString } from 'es-toolkit/compat'
 
+import { assert } from '@/base/assert'
 import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
@@ -981,7 +982,15 @@ export class LGraph
 
     node.id = parseNodeId(node.id) ?? UNASSIGNED_NODE_ID
 
-    if (node.id !== UNASSIGNED_NODE_ID && this._nodes_by_id[node.id] != null) {
+    const nodeWithSameId = this._nodes_by_id[node.id]
+    if (node.id !== UNASSIGNED_NODE_ID && nodeWithSameId != null) {
+      if (nodeWithSameId === node) {
+        assert(
+          false,
+          'LGraph.add: re-adding the same node instance (id collision with itself)'
+        )
+        return nodeWithSameId
+      }
       console.warn(
         'LiteGraph: there is already a node with this ID, changing it'
       )
@@ -1072,6 +1081,11 @@ export class LGraph
     // cannot be removed
     if (node.ignore_remove) {
       console.warn('LiteGraph: node cannot be removed', node)
+      return
+    }
+
+    if (node.graph !== this) {
+      assert(false, 'LGraph.remove: node does not belong to this graph')
       return
     }
 
