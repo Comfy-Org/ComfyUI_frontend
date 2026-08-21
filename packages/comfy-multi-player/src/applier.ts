@@ -99,7 +99,8 @@ import {
   stampsMap,
   widgetStorageOf,
 } from "./doc.js";
-import { compareStampKeys, stampKey, stampTargetKey } from "./stamps.js";
+import { sha256Hex } from "./digest.js";
+import { codePointCompare, compareStampKeys, stampKey, stampTargetKey } from "./stamps.js";
 import {
   DEFERRED_OPS,
   FROZEN_OPS,
@@ -141,7 +142,18 @@ export function applyOps(doc: Y.Doc, ops: Op[], catalog?: WidgetCatalog): ApplyR
     const op = ops[index]!;
     try {
       validateEnvelope(op);
+      // Digested BEFORE the dedupe gate and before the transaction: the
+      // canonicalizer walks attacker-controlled payload and can reject, and a
+      // rejection must not be able to land after a mutation (KA-4 / issue #10).
+      const digest = opDigest(op);
       if (bookkeeping.has(op.op_id)) {
+        const recorded = bookkeeping.get(op.op_id);
+        if (typeof recorded === "string" && recorded !== digest) {
+          throw new OpRejectedError(
+            "op_id_reuse",
+            `op_id '${op.op_id}' was already applied with a different payload`,
+          );
+        }
         // Idempotency gate BEFORE any mutation/transaction: a duplicate apply
         // is a true no-op (byte-identical encodeStateAsUpdate).
         skipped.push(op.op_id);
@@ -150,7 +162,7 @@ export function applyOps(doc: Y.Doc, ops: Op[], catalog?: WidgetCatalog): ApplyR
       doc.transact(() => {
         dispatch(doc, op, catalog);
         // comfy-cli records the op_id even for delete-wins/LWW-dropped no-ops.
-        mset(bookkeeping, op.op_id, 1);
+        mset(bookkeeping, op.op_id, digest);
       }, op.actor);
       applied.push(op.op_id);
     } catch (err) {
@@ -165,6 +177,58 @@ export function applyOps(doc: Y.Doc, ops: Op[], catalog?: WidgetCatalog): ApplyR
   }
 
   return { applied, skipped, failed, applied_count: applied.length, version: bookkeeping.size };
+}
+
+/**
+ * Deepest object/array nesting an op payload may carry. The frozen vocabulary
+ * bottoms out around four levels (`op.node.inputs[i].widget.name`); this is a
+ * bound on untrusted input, not a modelling limit. Without it a hostile
+ * payload turns the canonicalizer into a stack-exhaustion `RangeError` on
+ * what used to be the cheapest path in the applier (issue #14).
+ */
+const MAX_PAYLOAD_DEPTH = 64;
+
+/**
+ * Stable, key-order-independent JSON for an op: object keys sorted by code
+ * point at every depth, array order preserved, whole envelope included.
+ *
+ * NOT stored — see {@link opDigest}. Exposed to tests as the definition of
+ * what the digest is taken over.
+ */
+export function canonicalOp(op: Op): string {
+  const normalize = (value: unknown, depth: number): unknown => {
+    if (depth > MAX_PAYLOAD_DEPTH) {
+      throw new OpRejectedError(
+        "payload_too_deep",
+        `op payload nests deeper than ${MAX_PAYLOAD_DEPTH} levels`,
+      );
+    }
+    if (Array.isArray(value)) return value.map((child) => normalize(child, depth + 1));
+    if (typeof value === "object" && value !== null) {
+      return Object.fromEntries(
+        Object.entries(value)
+          .sort(([a], [b]) => codePointCompare(a, b))
+          .map(([key, child]) => [key, normalize(child, depth + 1)]),
+      );
+    }
+    return value;
+  };
+  return JSON.stringify(normalize(op, 0));
+}
+
+/**
+ * The value `__applied` records for an op: `sha256(canonicalOp(op))`.
+ *
+ * Storing the canonical payload itself is exact but unbounded — measured at
+ * ~326 bytes/op against schema §4's ≈64 byte budget, which pushes a doc past
+ * §4's 25%-of-bytes compaction trigger after a few dozen ops and turns every
+ * crossing into a doc-epoch bump plus a full follower re-fetch. A 64-hex
+ * digest is ~96 bytes/op and still satisfies ADR-007's "existing `op_id`
+ * accepted only if canonical bytes are identical": a false accept needs two
+ * different payloads under the SAME `op_id` whose SHA-256 also collides.
+ */
+export function opDigest(op: Op): string {
+  return sha256Hex(canonicalOp(op));
 }
 
 const FROZEN = new Set<string>(FROZEN_OPS);

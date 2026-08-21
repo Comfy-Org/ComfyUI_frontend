@@ -573,6 +573,10 @@ const ALL_REJECTION_CODES = [
   "shared_definition_unforked",
 ] as const;
 
+// These require an already-consumed op_id or an intentionally deep payload;
+// their byte-identity rows live in the focused issue-#12 regression suite.
+const OP_ID_REJECTION_CODES = ["op_id_reuse", "payload_too_deep"] as const;
+
 describe("KA-4 sweep completeness", () => {
   it("has a row for every rejection code the applier can reach", () => {
     const covered = new Set<string>([...CASES.map((c) => c.code), ...FIXTURE_CASES.map(([, make]) => make().code)]);
@@ -584,7 +588,11 @@ describe("KA-4 sweep completeness", () => {
   it("names every code the applier actually throws, so a new one cannot be added silently", () => {
     const src = readFileSync(new URL("../src/applier.ts", import.meta.url), "utf8");
     const thrown = new Set(Array.from(src.matchAll(/new OpRejectedError\(\s*"([a-z_]+)"/g), (m) => m[1] as string));
-    const known = new Set<string>([...ALL_REJECTION_CODES, "apply_failed"]);
+    const known = new Set<string>([
+      ...ALL_REJECTION_CODES,
+      ...OP_ID_REJECTION_CODES,
+      "apply_failed",
+    ]);
     for (const code of thrown) {
       expect(known.has(code), `src/applier.ts throws '${code}', which this sweep does not know about`).toBe(true);
     }

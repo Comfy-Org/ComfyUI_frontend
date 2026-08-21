@@ -117,7 +117,7 @@ describe("fuzz: malformed and adversarial op envelopes", () => {
     );
   });
 
-  it("duplicate op_id is an idempotent byte-level no-op even with adversarial retry payload", () => {
+  it("duplicate op_id with an adversarial retry payload is rejected byte-identically (#12)", () => {
     const base: WorkflowJSON = {
       nodes: [{ id: 1, type: "KSampler", widgets_values: [] }],
       links: [],
@@ -137,11 +137,45 @@ describe("fuzz: malformed and adversarial op envelopes", () => {
     const before = bytes(doc);
     const retry = { ...first, actor: "攻撃者\u0000", value: new Array(10_000).fill(null) } as Op;
 
+    // Pre-A3 this was pushed to `skipped` with `failed: null`, which is the
+    // silent write loss of issue #12: `op_id` is the final LWW tiebreak, so a
+    // reuse changes who wins, not just whether the write dedupes. The retry
+    // must be rejected loudly and must still leave the doc byte-identical.
     const result = applyOps(doc, [retry], catalog);
-    expect(result.failed).toBeNull();
-    expect(result.skipped).toEqual([first.op_id]);
+    expect(result.failed).toMatchObject({ index: 0, code: "op_id_reuse" });
+    expect(result.skipped).toEqual([]);
     expect(bytes(doc).equals(before)).toBe(true);
     expect(() => project(doc, catalog)).not.toThrow();
+  });
+
+  it("duplicate op_id with an identical retry payload is still a silent no-op", () => {
+    const base: WorkflowJSON = {
+      nodes: [{ id: 1, type: "KSampler", widgets_values: [] }],
+      links: [],
+    };
+    const doc = mint(base, catalog);
+    const op = {
+      op: "set_widget",
+      op_id: "e".repeat(32),
+      actor: "first",
+      base_version: 1,
+      stamp: [1, "first"],
+      node_id: 1,
+      widget: "steps",
+      value: 20,
+    } as Op;
+    expect(applyOps(doc, [op], catalog).failed).toBeNull();
+    const before = bytes(doc);
+
+    // Key order is not part of op identity: the canonical form sorts keys at
+    // every depth, so a re-serialized retry must still dedupe silently.
+    const reordered = Object.fromEntries(
+      Object.entries(op as unknown as Record<string, unknown>).reverse(),
+    ) as unknown as Op;
+    const result = applyOps(doc, [reordered], catalog);
+    expect(result.failed).toBeNull();
+    expect(result.skipped).toEqual([op.op_id]);
+    expect(bytes(doc).equals(before)).toBe(true);
   });
 });
 
@@ -187,10 +221,12 @@ describe("saved untrusted-input regression corpus", () => {
     });
   }
 
-  // Cycles cannot be represented in the JSON corpus. Keep this deterministic
-  // reproducer beside it until #14 adds depth/shape bounds.
-  // pins #14 — remove .fails once the payload size/depth/cost bounds land
-  it.fails("#14: cyclic-ish node payload is rejected before cloning/storage", () => {
+  // Cycles cannot be represented in the JSON corpus, so this deterministic
+  // reproducer sits beside it. The canonicalizer's depth bound (schema §4
+  // amendment A8) now covers it: a cycle exceeds MAX_PAYLOAD_DEPTH before it
+  // can exhaust the stack. The size/cost half of #14 is still open, so the
+  // corpus cases above stay pinned with `it.fails`.
+  it("#14: cyclic-ish node payload is rejected before cloning/storage", () => {
     const cycle: Record<string, unknown> = {};
     cycle["self"] = cycle;
     const doc = mint(emptyWorkflow, catalog);
@@ -213,8 +249,8 @@ describe("saved untrusted-input regression corpus", () => {
     expect(bytes(doc).equals(before)).toBe(true);
   });
 
-  // pins #14 — remove .fails once the payload size/depth/cost bounds land
-  it.fails("#14: deeply nested and huge payloads are rejected before cloning/storage", () => {
+  // Depth half of #14 closed by the canonicalizer's bound (amendment A8).
+  it("#14: deeply nested and huge payloads are rejected before cloning/storage", () => {
     let deep: unknown = "leaf";
     for (let depth = 0; depth < 256; depth++) deep = { child: deep };
     const doc = mint(emptyWorkflow, catalog);

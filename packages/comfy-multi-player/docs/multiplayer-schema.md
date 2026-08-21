@@ -403,17 +403,70 @@ so a raw key gave `7` and `"7"` two registers for one node.
 
 ## 4. Idempotency & stamp bookkeeping — cost and the compaction rule
 
-Two bookkeeping maps (§1 layout): `__applied` (op_id → 1, checked **before
-any mutation** so a duplicate apply is a true no-op — spike-verified
-byte-identical `encodeStateAsUpdate` after double-applying entire streams)
-and `__stamps` (write target → winning stamp key).
+Two bookkeeping maps (§1 layout): `__applied` (op_id → payload digest,
+checked **before any mutation** so a duplicate apply is a true no-op —
+spike-verified byte-identical `encodeStateAsUpdate` after double-applying
+entire streams) and `__stamps` (write target → winning stamp key).
 
-**Measured cost:** ≈64 bytes/op; 10.3 KB of the 39.6 KB large-build doc
-(26%) after only 162 ops. Growth is O(ops applied), forever. A structural
-check cannot replace op-id tracking: LWW already makes `set_widget` re-apply
-safe and payload-keyed identity makes `add_node`/`connect` nearly idempotent,
-but `delete_node`/`clear` replayed after a re-add would destroy state — so
-tracking stays mandatory.
+**Amendment A8 (issue #12): `__applied` records a digest of the op's
+canonical payload, not `1`.** `op_id` is minted by the creator and is also
+the final LWW tiebreak (§3 rule 2), so an `op_id` collision changes *who
+wins*, not merely whether a write dedupes. Gating on `op_id` presence alone
+pushed a reuse with a **different** payload to `skipped` with `failed: null`
+and silently dropped its write; `decisions/ADR-007-op-based-crdt-v1.md` had
+already ruled that out ("existing `op_id` accepted only if canonical bytes are
+identical … reused with differing payload/stamp = protocol violation, rejected
+without mutating state"). On an `op_id` hit an applier MUST compare digests
+and reject with `op_id_reuse` on mismatch; an identical replay stays a
+byte-identical skip.
+
+The recorded value is `sha256(canonical(op))` as 64 lowercase hex characters,
+where `canonical(op)` is the op object serialized as JSON with **every object
+key sorted by code point at every depth**, array order preserved, whole
+envelope including `op_id`, and the digest taken over that string's UTF-8
+bytes. Because `__applied` is replicated, every implementation MUST produce
+the same digest for the same op or a legitimate retry is rejected across a
+language boundary; `test/opid-payload-reuse.regression.test.ts` pins the
+canonical string AND the digest of a representative op as the cross-language
+vector, and `test/digest.test.ts` pins the implementation against a
+stdlib SHA-256. Note the residual hazard a digest does not remove: JSON number
+formatting and lone-surrogate escaping are not identical across languages, so
+the canonical form is only well-defined for payloads that round-trip through
+JSON — which the frozen vocabulary's payloads do.
+
+A value of `1` is a pre-A8 record: it is accepted as a duplicate and skips the
+comparison, so documents written before A8 keep working. **No `SCHEMA_VERSION`
+bump.** The layout is unchanged — `__applied` was always op_id → opaque
+marker, and §7 excludes `__`-prefixed maps from projection, so an older reader
+projects a newer document identically. Forward-compat holds (a new reader
+treats an old `1` as "cannot compare, accept"); backward-compat degrades only
+in conflict detection (an older reader ignores the digest and accepts a reuse),
+which is the behavior it had anyway.
+
+**Canonicalization is bounded.** It walks attacker-controlled payload, and it
+runs on the duplicate path, which previously short-circuited before reading
+the payload at all. Nesting deeper than 64 levels is rejected with
+`payload_too_deep` before any mutation; without the bound, anyone who knew one
+already-applied `op_id` could force a stack-exhaustion `RangeError` and abort
+the remainder of the batch (issue #14). The size/cost half of #14 is still
+open.
+
+**Measured cost:** the pre-A8 map was ≈64 bytes/op; 10.3 KB of the 39.6 KB
+large-build doc (26%). Recording the canonical payload verbatim was measured
+at ~326 bytes/op (the whole 162-op large-build doc goes 45.7 KB → 98.6 KB,
+bookkeeping 16% → 58%), which crosses the 25% compaction trigger below after
+roughly forty ops and turns every crossing into a doc-epoch bump and a full
+follower re-fetch — the ingress/egress blow-up FC-4 exists to prevent, reached
+through the bookkeeping map instead of through full-document replace. The
+digest is a fixed 64 characters regardless of payload size: re-measured on the
+same session it costs ~112 bytes/op, taking `__applied` to 18.2 KB and the doc
+to 56.0 KB (bookkeeping 16% → 32%). That is still above the 25% trigger, so
+compaction remains load-bearing and #12's fix does not make it optional — but
+the doc grows 13% rather than 116%. A structural check
+cannot replace op-id tracking: LWW already makes `set_widget` re-apply safe and
+payload-keyed identity makes `add_node`/`connect` nearly idempotent, but
+`delete_node`/`clear` replayed after a re-add would destroy state — so tracking
+stays mandatory.
 
 **DECISION — the compaction rule (host-only, two mechanisms):**
 
@@ -1460,3 +1513,27 @@ never reclaimed; §4's compaction carries forward "entries for still-live
 targets", so a compaction implementation must decide explicitly whether a
 `("node", id)` row for an absent node is still live — dropping it would let a
 post-compaction re-add of that id win by default.
+---
+
+## Amendment A8 — 2026-08-21 — `op_id` reuse is a protocol violation, and `__applied` records a payload digest (issue #12)
+
+The rule and its rationale are in §4 above, which this amendment rewrites in
+place. Recorded here for the amendment log:
+
+- **Ratified, not new policy.** `decisions/ADR-007-op-based-crdt-v1.md:68-70`
+  and `.agents/checks/op-identity.md` already required rejection of an `op_id`
+  reused with a differing payload. The applier accepted it silently, and
+  `test/fuzz-untrusted-input.test.ts` had pinned the accepting behavior; that
+  assertion is inverted by this change, which is the point.
+- **No `SCHEMA_VERSION` bump**, with the reasoning stated in §4: the layout is
+  unchanged, `__applied` is `__`-prefixed and excluded from projection, and a
+  pre-A8 `1` value is explicitly still accepted.
+- **New rejection code:** `op_id_reuse`. Plus `payload_too_deep` from the
+  canonicalizer's depth bound.
+- **Cross-language counterpart owed.** comfy-cli must adopt the same canonical
+  form and digest, or a document written by one and retried against the other
+  rejects a legitimate replay. `README.md` makes the vocabulary normative and
+  Amendment A1 cites its counterpart by SHA; this one has no counterpart yet
+  (KA-1, FC-10). The applier degrades safely in the meantime — a pre-A8 `1` is
+  always accepted — but two A8-aware implementations that disagree on
+  canonicalization do NOT degrade safely.

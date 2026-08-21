@@ -14,7 +14,9 @@
  *   ├── Y.Map 'meta'        — schema_version, catalog_version,
  *   │                         last_node_id, last_link_id,
  *   │                         groups/extra/… passthrough (plain values, §6)
- *   ├── Y.Map '__applied'   — op_id → 1 (idempotency, §4)
+ *   ├── Y.Map '__applied'   — op_id → sha256 of the canonical op payload
+ *   │                         (idempotency + op_id-reuse detection, §4
+ *   │                         amendment A8; a legacy `1` is a pre-A8 record)
  *   └── Y.Map '__stamps'    — write-target key → [base_version, actor, op_id] (§4)
  */
 
