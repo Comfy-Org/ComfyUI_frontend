@@ -91,17 +91,17 @@ function onRenameKeydown(session: ChatSession, event: KeyboardEvent): void {
 
 <template>
   <div class="flex h-full flex-col overflow-hidden">
-    <div class="flex h-10 shrink-0 items-center px-2">
+    <div class="flex h-10 shrink-0 items-center gap-1 px-2">
       <TooltipProvider v-bind="AGENT_REKA_TOOLTIP_PROVIDER_PROPS">
         <TooltipRoot disable-closing-trigger>
           <TooltipTrigger as-child>
             <button
               type="button"
-              class="text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg flex h-6 cursor-pointer items-center gap-1 rounded-sm px-2 py-1 text-xs font-normal transition-colors"
+              :aria-label="t('agent.backToPreviousChat')"
+              class="text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-sm transition-colors"
               @click="emit('back')"
             >
               <span class="icon-[lucide--chevron-left] size-4 shrink-0" />
-              <span>{{ t('agent.history') }}</span>
             </button>
           </TooltipTrigger>
           <TooltipPortal>
@@ -116,6 +116,9 @@ function onRenameKeydown(session: ChatSession, event: KeyboardEvent): void {
           </TooltipPortal>
         </TooltipRoot>
       </TooltipProvider>
+      <h2 class="text-agent-fg-muted m-0 text-xs font-normal">
+        {{ t('agent.history') }}
+      </h2>
     </div>
 
     <div class="min-h-0 flex-1 overflow-y-auto p-2">
