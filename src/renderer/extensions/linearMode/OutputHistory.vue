@@ -287,6 +287,10 @@ const keyHandlers: Record<string, 1 | -1> = {
 useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
   if (
     !(e.key in keyHandlers) ||
+    e.ctrlKey ||
+    e.metaKey ||
+    e.altKey ||
+    e.shiftKey ||
     e.target instanceof HTMLTextAreaElement ||
     e.target instanceof HTMLInputElement
   )
