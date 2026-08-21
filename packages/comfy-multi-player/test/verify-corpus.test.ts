@@ -16,6 +16,14 @@ function runAgainst(dir: string) {
   });
 }
 
+// The script's diagnostics are its contract, so assert the exact stderr/stdout
+// rather than a substring. `fail(messages)` prints one "corpus verification
+// FAILED:" header line followed by one "  - <message>" line per message, each
+// terminated by a newline (`console.error` appends "\n"); `corpusFail` rebuilds
+// that byte-for-byte so a wording drift is caught, not silently tolerated.
+const corpusFail = (...lines: string[]) =>
+  ["corpus verification FAILED:", ...lines.map((line) => `  - ${line}`), ""].join("\n");
+
 describe("verify-corpus fail-closed guards", () => {
   let dir: string;
   beforeEach(() => {
@@ -29,7 +37,9 @@ describe("verify-corpus fail-closed guards", () => {
     writeFileSync(join(dir, "MANIFEST.json"), JSON.stringify({ files: {} }));
     const run = runAgainst(dir);
     expect(run.status).toBe(1);
-    expect(run.stderr).toContain("must not be empty");
+    expect(run.stderr).toBe(
+      corpusFail("MANIFEST.json lists zero fixtures — the conformance corpus must not be empty"),
+    );
   });
 
   it("fails when a fixture is present but unlisted in the manifest", () => {
@@ -44,21 +54,29 @@ describe("verify-corpus fail-closed guards", () => {
     );
     const run = runAgainst(dir);
     expect(run.status).toBe(1);
-    expect(run.stderr).toContain("a.json is not listed");
+    expect(run.stderr).toBe(corpusFail("a.json is not listed in MANIFEST.json"));
   });
 
   it("fails closed on a malformed (non-JSON) manifest", () => {
     writeFileSync(join(dir, "MANIFEST.json"), "{ not valid json");
     const run = runAgainst(dir);
     expect(run.status).toBe(1);
-    expect(run.stderr).toContain("could not read fixtures/MANIFEST.json");
+    // Only the framing is ours; the JSON parser's message text is Node-version
+    // controlled, so pin our prefix exactly and require the trailing newline
+    // rather than asserting the whole line.
+    expect(
+      run.stderr.startsWith(
+        "corpus verification FAILED:\n  - could not read fixtures/MANIFEST.json: ",
+      ),
+    ).toBe(true);
+    expect(run.stderr.endsWith("\n")).toBe(true);
   });
 
   it("fails closed when files is not an object", () => {
     writeFileSync(join(dir, "MANIFEST.json"), JSON.stringify({ files: [] }));
     const run = runAgainst(dir);
     expect(run.status).toBe(1);
-    expect(run.stderr).toContain("MANIFEST.json must contain a files object");
+    expect(run.stderr).toBe(corpusFail("MANIFEST.json must contain a files object"));
   });
 
   it("passes on a non-empty manifest whose hashes match", () => {
@@ -71,6 +89,6 @@ describe("verify-corpus fail-closed guards", () => {
     );
     const run = runAgainst(dir);
     expect(run.status).toBe(0);
-    expect(run.stdout).toContain("PASSED (1 files)");
+    expect(run.stdout).toBe("corpus verification PASSED (1 files)\n");
   });
 });
