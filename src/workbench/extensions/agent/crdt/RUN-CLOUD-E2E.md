@@ -26,6 +26,11 @@ for the exact string `true`, so `1` or `on` will NOT enable it). Any `*.comfy.or
 `DEV_SERVER_COMFYUI_URL` auto-selects the cloud distribution and proxies `/api` + `/ws`
 to that host, so no other flag is needed to retarget a different ephemeral.
 
+Alternatively (R1a), any built bundle — including one built WITHOUT the env — can
+enable the follower at runtime: open the app with `?agentCrdtFollower=1`. The opt-in
+persists in `localStorage['Comfy.Agent.CrdtFollower']` until cleared with
+`?agentCrdtFollower=0`. See `followerGate.ts`.
+
 ## Verify
 
 - The status strip at the top of the agent panel (`data-testid="agent-crdt-status"`)
