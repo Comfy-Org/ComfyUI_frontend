@@ -68,6 +68,7 @@ export interface Config {
   blocks: {};
   collections: {
     gallery: Gallery;
+    events: Event;
     media: Media;
     creators: Creator;
     teams: Team;
@@ -81,6 +82,7 @@ export interface Config {
   collectionsJoins: {};
   collectionsSelect: {
     gallery: GallerySelect<false> | GallerySelect<true>;
+    events: EventsSelect<false> | EventsSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     creators: CreatorsSelect<false> | CreatorsSelect<true>;
     teams: TeamsSelect<false> | TeamsSelect<true>;
@@ -195,6 +197,43 @@ export interface Tool {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "events".
+ */
+export interface Event {
+  id: number;
+  title: string;
+  slug: string;
+  category: 'livestream' | 'hackathon' | 'community';
+  description: string;
+  startDateTime: string;
+  endDateTime?: string | null;
+  locationMode: 'online' | 'in-person';
+  locationName?: string | null;
+  href?: string | null;
+  newTab?: boolean | null;
+  ctaLabel?: string | null;
+  liveVideoId?: string | null;
+  recordingVideoId?: string | null;
+  cardMedia?: {
+    file?: (number | null) | Media;
+    poster?: (number | null) | Media;
+  };
+  isFeatured?: boolean | null;
+  featured?: {
+    order?: number | null;
+    autoplayMs?: number | null;
+    showTitle?: boolean | null;
+    media?: {
+      file?: (number | null) | Media;
+      poster?: (number | null) | Media;
+    };
+  };
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "users".
  */
 export interface User {
@@ -248,6 +287,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'gallery';
         value: number | Gallery;
+      } | null)
+    | ({
+        relationTo: 'events';
+        value: number | Event;
       } | null)
     | ({
         relationTo: 'media';
@@ -325,6 +368,48 @@ export interface GallerySelect<T extends boolean = true> {
   tool?: T;
   href?: T;
   publishedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "events_select".
+ */
+export interface EventsSelect<T extends boolean = true> {
+  title?: T;
+  slug?: T;
+  category?: T;
+  description?: T;
+  startDateTime?: T;
+  endDateTime?: T;
+  locationMode?: T;
+  locationName?: T;
+  href?: T;
+  newTab?: T;
+  ctaLabel?: T;
+  liveVideoId?: T;
+  recordingVideoId?: T;
+  cardMedia?:
+    | T
+    | {
+        file?: T;
+        poster?: T;
+      };
+  isFeatured?: T;
+  featured?:
+    | T
+    | {
+        order?: T;
+        autoplayMs?: T;
+        showTitle?: T;
+        media?:
+          | T
+          | {
+              file?: T;
+              poster?: T;
+            };
+      };
   updatedAt?: T;
   createdAt?: T;
   _status?: T;

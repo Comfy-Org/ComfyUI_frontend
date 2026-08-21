@@ -8,6 +8,7 @@ import sharp from 'sharp'
 import { Users } from './collections/Users'
 import { Media } from './collections/Media'
 import { Gallery } from './collections/Gallery'
+import { Events } from './collections/Events'
 import { Creators } from './collections/Creators'
 import { Teams } from './collections/Teams'
 import { Tools } from './collections/Tools'
@@ -39,7 +40,7 @@ export default buildConfig({
           }
         : false,
   },
-  collections: [Gallery, Media, Creators, Teams, Tools, Users],
+  collections: [Gallery, Events, Media, Creators, Teams, Tools, Users],
   endpoints: [rebuildWebsiteEndpoint],
   // Field-level localization for content (not admin chrome). Only fields marked
   // `localized` carry a per-locale value; everything else stays single-value.
