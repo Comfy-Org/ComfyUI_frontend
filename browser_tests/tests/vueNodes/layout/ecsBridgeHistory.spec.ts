@@ -1,0 +1,143 @@
+import {
+  comfyExpect as expect,
+  comfyPageFixture as test
+} from '@e2e/fixtures/ComfyPage'
+import { toNodeId } from '@/types/nodeId'
+
+test.describe(
+  'ECS bridge history',
+  { tag: ['@slow', '@subgraph', '@vue-nodes'] },
+  () => {
+    test.describe.configure({ timeout: 30_000 })
+
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+      await comfyPage.workflow.loadWorkflow(
+        'subgraphs/subgraph-with-promoted-text-widget'
+      )
+    })
+
+    test('restores promoted subgraph state after delete, undo, and redo', async ({
+      comfyPage
+    }) => {
+      const baseline = await comfyPage.page.evaluate(() =>
+        window.app!.graph!.serialize()
+      )
+      const promotedText = comfyPage.vueNodes
+        .getNodeLocator('11')
+        .getByRole('textbox', { name: 'text' })
+      await expect(promotedText).toBeVisible()
+
+      const host = await comfyPage.vueNodes.getFixtureByTitle('New Subgraph')
+      await host.title.click()
+      await comfyPage.keyboard.delete()
+
+      await expect(comfyPage.vueNodes.nodes).toHaveCount(0)
+      await expect(promotedText).toBeHidden()
+
+      await comfyPage.keyboard.undo()
+      await comfyPage.vueNodes.waitForNodes()
+
+      await expect(comfyPage.vueNodes.nodes).toHaveCount(1)
+      await expect(promotedText).toBeVisible()
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(() => window.app!.graph!.serialize())
+        )
+        .toEqual(baseline)
+
+      await comfyPage.vueNodes.enterSubgraph('11')
+      await expect(comfyPage.vueNodes.nodes).toHaveCount(2)
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(() => window.app!.canvas.graph!.links.size)
+        )
+        .toBe(6)
+
+      const interiorGeometry = await comfyPage.canvasOps.getNodeGeometry(
+        toNodeId('10')
+      )
+      comfyPage.canvasOps.expectSlotsOnNode(
+        interiorGeometry,
+        'after restoring the subgraph'
+      )
+
+      await comfyPage.subgraph.exitViaBreadcrumb()
+      await comfyPage.keyboard.redo()
+      await expect(comfyPage.vueNodes.nodes).toHaveCount(0)
+    })
+
+    test('preserves geometry through navigation, renderer toggle, and history', async ({
+      comfyPage
+    }) => {
+      const nodeId = toNodeId('11')
+      const before = await comfyPage.canvasOps.getNodeGeometry(nodeId)
+      const { header } =
+        await comfyPage.vueNodes.getFixtureByTitle('New Subgraph')
+      const headerBox = await header.boundingBox()
+      if (!headerBox) throw new Error('Subgraph header not found')
+
+      const start = {
+        x: headerBox.x + headerBox.width / 2,
+        y: headerBox.y + headerBox.height / 2
+      }
+      await comfyPage.canvasOps.dragAndDrop(start, {
+        x: start.x + 120,
+        y: start.y + 90
+      })
+      await comfyPage.nextFrame()
+
+      const moved = await comfyPage.canvasOps.getNodeGeometry(nodeId)
+      comfyPage.canvasOps.expectSlotsTrackedNode(moved, before)
+      await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(1)
+
+      await comfyPage.vueNodes.enterSubgraph(nodeId)
+      const interiorGeometry = await comfyPage.canvasOps.getNodeGeometry(
+        toNodeId('10')
+      )
+      comfyPage.canvasOps.expectSlotsOnNode(
+        interiorGeometry,
+        'while navigating the subgraph'
+      )
+      await comfyPage.subgraph.exitViaBreadcrumb()
+
+      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
+      await expect(comfyPage.vueNodes.nodes).toHaveCount(0)
+
+      await comfyPage.keyboard.undo()
+      const undone = await comfyPage.canvasOps.getNodeGeometry(nodeId)
+      expect(undone.pos[0]).toBeCloseTo(before.pos[0], 0)
+      expect(undone.pos[1]).toBeCloseTo(before.pos[1], 0)
+      expect(undone.size).toEqual(before.size)
+      comfyPage.canvasOps.expectSlotsOnNode(
+        undone,
+        'after undo in the legacy renderer'
+      )
+
+      await comfyPage.keyboard.redo()
+      const redone = await comfyPage.canvasOps.getNodeGeometry(nodeId)
+      expect(redone.pos[0]).toBeCloseTo(moved.pos[0], 0)
+      expect(redone.pos[1]).toBeCloseTo(moved.pos[1], 0)
+      expect(redone.size).toEqual(moved.size)
+      comfyPage.canvasOps.expectSlotsOnNode(
+        redone,
+        'after redo in the legacy renderer'
+      )
+
+      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+      await comfyPage.vueNodes.waitForNodes()
+      await expect(
+        comfyPage.vueNodes
+          .getNodeLocator(nodeId)
+          .getByRole('textbox', { name: 'text' })
+      ).toBeVisible()
+
+      await comfyPage.subgraph.serializeAndReload()
+      comfyPage.canvasOps.expectNodeGeometryPreserved(
+        await comfyPage.canvasOps.getNodeGeometry(nodeId),
+        moved,
+        'after serialization and reload'
+      )
+    })
+  }
+)
