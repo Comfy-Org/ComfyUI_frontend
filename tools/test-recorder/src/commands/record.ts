@@ -25,13 +25,7 @@ import { detectAgentClis } from '../checks/agentCli'
 import { runAgentRefactor } from '../agent/refactor'
 import { stepHeader } from '../ui/steps'
 import { pass, fail, warn, alert, info, blank, box } from '../ui/logger'
-
-function toSlug(description: string): string {
-  return description
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-}
+import { toSlug } from '../cli/slug'
 
 const PASTE_SENTINEL = '.'
 

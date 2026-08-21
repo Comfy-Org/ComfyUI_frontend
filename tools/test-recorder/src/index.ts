@@ -52,6 +52,32 @@ try {
       await runPr(filePath, args[2])
       break
     }
+    case 'plan': {
+      const { parseFlags } = await import('./cli/flags')
+      const { flags } = parseFlags(args.slice(1), [
+        'description',
+        'tags',
+        'workflow',
+        'name'
+      ])
+      if (!flags.description) {
+        console.log(
+          pc.red(
+            '  Usage: comfy-test plan --description "<what to test>" [--tags <a,b>] [--workflow <w>] [--name <n>]'
+          )
+        )
+        process.exit(1)
+      }
+      const tags = flags.tags?.split(',').filter(Boolean)
+      const { runPlan } = await import('./commands/plan')
+      await runPlan({
+        description: flags.description,
+        tags,
+        workflow: flags.workflow,
+        name: flags.name
+      })
+      break
+    }
     case 'check': {
       const { runChecks } = await import('./commands/check')
       const { allPassed } = await runChecks()
@@ -83,7 +109,8 @@ try {
 Usage: comfy-test <command>
 
 Commands:
-  record      Record a new browser test interactively
+  record      Record a new browser test interactively (needs a terminal)
+  plan        Print a test plan for an agent to hand to playwright-test-generator
   transform   Transform raw codegen output to conventions
   pr          Open a pull request for a generated test
   check       Check environment prerequisites
