@@ -8,22 +8,6 @@
     "displayName": "Seedance (ByteDance)"
   },
   {
-    "slug": "kling-ai",
-    "name": "Kling AI",
-    "huggingFaceUrl": "",
-    "directory": "partner_nodes",
-    "workflowCount": 16,
-    "displayName": "Kling AI"
-  },
-  {
-    "slug": "seedance-2",
-    "name": "Seedance 2",
-    "huggingFaceUrl": "",
-    "directory": "partner_nodes",
-    "workflowCount": 15,
-    "displayName": "Seedance 2"
-  },
-  {
     "slug": "grok-imagine",
     "name": "Grok Imagine",
     "huggingFaceUrl": "",
@@ -56,12 +40,12 @@
     "displayName": "Vidu"
   },
   {
-    "slug": "wan-api",
-    "name": "Wan (API)",
+    "slug": "kling-ai",
+    "name": "Kling AI",
     "huggingFaceUrl": "",
     "directory": "partner_nodes",
     "workflowCount": 10,
-    "displayName": "Wan (API)"
+    "displayName": "Kling AI"
   },
   {
     "slug": "luma-dream-machine",
@@ -88,6 +72,14 @@
     "displayName": "Recraft"
   },
   {
+    "slug": "seedance-2-0",
+    "name": "Seedance 2.0",
+    "huggingFaceUrl": "",
+    "directory": "partner_nodes",
+    "workflowCount": 8,
+    "displayName": "Seedance 2.0"
+  },
+  {
     "slug": "gemini-image",
     "name": "Gemini Image",
     "huggingFaceUrl": "",
@@ -102,6 +94,14 @@
     "directory": "partner_nodes",
     "workflowCount": 7,
     "displayName": "Happyhorse1"
+  },
+  {
+    "slug": "seedance-2",
+    "name": "Seedance 2",
+    "huggingFaceUrl": "",
+    "directory": "partner_nodes",
+    "workflowCount": 7,
+    "displayName": "Seedance 2"
   },
   {
     "slug": "bria-ai",
@@ -176,12 +176,36 @@
     "displayName": "HeyGen"
   },
   {
+    "slug": "kling-o3",
+    "name": "Kling O3",
+    "huggingFaceUrl": "",
+    "directory": "partner_nodes",
+    "workflowCount": 4,
+    "displayName": "Kling O3"
+  },
+  {
     "slug": "runway",
     "name": "Runway",
     "huggingFaceUrl": "",
     "directory": "partner_nodes",
     "workflowCount": 4,
     "displayName": "Runway"
+  },
+  {
+    "slug": "wan2-7",
+    "name": "Wan 2.7",
+    "huggingFaceUrl": "",
+    "directory": "partner_nodes",
+    "workflowCount": 4,
+    "displayName": "Wan 2.7"
+  },
+  {
+    "slug": "wan-api",
+    "name": "Wan (API)",
+    "huggingFaceUrl": "",
+    "directory": "partner_nodes",
+    "workflowCount": 4,
+    "displayName": "Wan (API)"
   },
   {
     "slug": "ltx-2",
@@ -206,14 +230,6 @@
     "directory": "partner_nodes",
     "workflowCount": 3,
     "displayName": "MiniMax"
-  },
-  {
-    "slug": "nano-banana",
-    "name": "Nano Banana",
-    "huggingFaceUrl": "",
-    "directory": "partner_nodes",
-    "workflowCount": 3,
-    "displayName": "Nano Banana"
   },
   {
     "slug": "pixverse",
@@ -256,12 +272,28 @@
     "displayName": "Ideogram"
   },
   {
+    "slug": "kling-2-6",
+    "name": "Kling 2.6",
+    "huggingFaceUrl": "",
+    "directory": "partner_nodes",
+    "workflowCount": 2,
+    "displayName": "Kling 2.6"
+  },
+  {
     "slug": "krea-2",
     "name": "Krea 2",
     "huggingFaceUrl": "",
     "directory": "partner_nodes",
     "workflowCount": 2,
     "displayName": "Krea 2"
+  },
+  {
+    "slug": "nano-banana-2",
+    "name": "Nano Banana 2",
+    "huggingFaceUrl": "",
+    "directory": "partner_nodes",
+    "workflowCount": 2,
+    "displayName": "Nano Banana 2"
   },
   {
     "slug": "quiver",
@@ -296,12 +328,28 @@
     "displayName": "Sync"
   },
   {
+    "slug": "wan2-6",
+    "name": "Wan 2.6",
+    "huggingFaceUrl": "",
+    "directory": "partner_nodes",
+    "workflowCount": 2,
+    "displayName": "Wan 2.6"
+  },
+  {
     "slug": "flux-2-api",
     "name": "Flux 2 (API)",
     "huggingFaceUrl": "",
     "directory": "partner_nodes",
     "workflowCount": 1,
     "displayName": "Flux 2 (API)"
+  },
+  {
+    "slug": "nano-banana",
+    "name": "Nano Banana",
+    "huggingFaceUrl": "",
+    "directory": "partner_nodes",
+    "workflowCount": 1,
+    "displayName": "Nano Banana"
   },
   {
     "slug": "veo-2",
