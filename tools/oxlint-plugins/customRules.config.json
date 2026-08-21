@@ -6,6 +6,23 @@
   "jsPlugins": ["./comfy.ts"],
   "overrides": [
     {
+      "files": ["**/*.spec.ts"],
+      "excludeFiles": [
+        "**/browser_tests/tests/**/*.spec.ts",
+        "**/apps/*/e2e/**/*.spec.ts"
+      ],
+      "rules": {
+        "comfy/no-misplaced-spec-files": "error"
+      }
+    },
+    {
+      "files": ["**/apps/*/src/**/*.{ts,tsx,vue}"],
+      "excludeFiles": ["**/*.test.ts", "**/*.spec.ts"],
+      "rules": {
+        "comfy/no-unsafe-error-assertion": "error"
+      }
+    },
+    {
       "files": [
         "**/apps/**/*.test.{ts,tsx}",
         "**/packages/**/*.test.{ts,tsx}",

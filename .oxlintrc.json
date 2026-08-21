@@ -126,6 +126,64 @@
   },
   "overrides": [
     {
+      "files": [
+        "src/**/*.ts",
+        "src/**/*.tsx",
+        "src/**/*.vue",
+        "apps/*/src/**/*.ts",
+        "apps/*/src/**/*.tsx",
+        "apps/*/src/**/*.vue"
+      ],
+      "excludeFiles": [
+        "**/*.test.ts",
+        "**/*.spec.ts",
+        "src/platform/remote/comfyui/jobs/jobTypes.ts"
+      ],
+      "rules": {
+        "comfy/no-unsafe-error-assertion": "error"
+      }
+    },
+    {
+      "files": ["src/**/*.ts", "src/**/*.vue"],
+      "excludeFiles": ["**/*.test.ts", "**/*.spec.ts"],
+      "rules": {
+        "comfy/no-dom-in-computed": "warn"
+      }
+    },
+    {
+      "files": ["src/platform/remote/**/*.ts", "src/platform/remote/**/*.vue"],
+      "excludeFiles": [
+        "**/*.test.ts",
+        "**/*.spec.ts",
+        "src/platform/remote/comfyui/jobs/jobTypes.ts"
+      ],
+      "rules": {
+        "comfy/no-new-zod-for-remote-api-types": "error"
+      }
+    },
+    {
+      "files": ["browser_tests/fixtures/data/**/*.ts"],
+      "rules": {
+        "comfy/no-playwright-imports-in-fixture-data": "error"
+      }
+    },
+    {
+      "files": ["browser_tests/tests/**/*.test.ts"],
+      "rules": {
+        "comfy/no-unit-test-files-in-browser-tests": "error"
+      }
+    },
+    {
+      "files": ["**/*.spec.ts"],
+      "excludeFiles": [
+        "browser_tests/tests/**/*.spec.ts",
+        "apps/*/e2e/**/*.spec.ts"
+      ],
+      "rules": {
+        "comfy/no-misplaced-spec-files": "error"
+      }
+    },
+    {
       "files": ["**/*.{stories,test,spec}.ts", "**/*.stories.vue"],
       "rules": {
         "no-console": "allow"
