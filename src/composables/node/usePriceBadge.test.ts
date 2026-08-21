@@ -58,7 +58,11 @@ describe('subgraph pricing', () => {
     'should return the number of api nodes if more than one exists',
     ({ subgraphWithNode }) => {
       const { subgraphNode, subgraph } = subgraphWithNode
-      for (let i = 0; i < 5; i++) subgraph.add(mockNode)
+      for (let i = 0; i < 5; i++) {
+        const node = new LGraphNode(`mock node ${i}`)
+        node.badges = [getCreditsBadge('$0.05/Run')]
+        subgraph.add(node)
+      }
       updateSubgraphCredits(subgraphNode)
       expect(subgraphNode.badges.length).toBe(1)
       expect(getBadgeText(subgraphNode)).toBe('Partner Nodes x 5')
