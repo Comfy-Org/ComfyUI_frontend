@@ -119,7 +119,7 @@ describe('CloudLoginView', () => {
 
     expect(
       screen.getByRole('button', {
-        name: 'Sign in with Google or Github instead'
+        name: 'Sign in with Google or GitHub instead'
       })
     ).toBeInTheDocument()
   })
