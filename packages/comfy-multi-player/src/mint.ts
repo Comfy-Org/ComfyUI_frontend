@@ -3,7 +3,10 @@
  * the lazy-mint at cutover). The mint() output is THE bootstrap snapshot:
  * every replica forks from it via `Y.applyUpdate(new Y.Doc(),
  * Y.encodeStateAsUpdate(minted))` — a replica MUST NEVER independently
- * re-seed the same base workflow (duplicate Yjs structs double on merge).
+ * re-seed the same base workflow. Under the v1 Y.Map-keyed layout the
+ * consequence is silent whole-node LWW clobber of a diverged replica's edits,
+ * not the Y.Array content doubling schema §9 describes; both halves are
+ * measured in `docs/INVARIANTS.md` KA-10.
  */
 
 import * as Y from "yjs";

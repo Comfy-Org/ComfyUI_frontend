@@ -412,7 +412,7 @@ function applySetWidget(doc: Y.Doc, op: SetWidgetOp, catalog?: WidgetCatalog): v
   if (prior != null && compareStampKeys(key, prior) <= 0) return; // lww-dropped
 
   if (interior !== null) {
-    const target = resolveInteriorNode(doc, interior.path.map(String));
+    const target = resolveInteriorNode(doc, interior.path.map(String), catalog);
     if (target === null) return; // head instance concurrently deleted → no-op (delete wins)
     const nodeType = String(target.get("type") ?? "");
     const widget = interior.inner_widget;
@@ -475,7 +475,7 @@ function projectedWidgetsLength(node: Y.Map<unknown>, order: readonly string[]):
  * not forked: schema §5.3 pins that a conforming applier must reject interior
  * writes to shared definitions until forking is specced and fixtured.
  */
-function resolveInteriorNode(doc: Y.Doc, path: string[]): Y.Map<unknown> | null {
+function resolveInteriorNode(doc: Y.Doc, path: string[], catalog?: WidgetCatalog): Y.Map<unknown> | null {
   const head = nodesMap(doc).get(path[0]!);
   if (!head) return null;
   let cur: Y.Map<unknown> = head;
@@ -489,7 +489,7 @@ function resolveInteriorNode(doc: Y.Doc, path: string[]): Y.Map<unknown> | null 
       );
     }
     const defId = String(def.get("id") ?? curType);
-    const instances = countDefinitionInstances(doc, defId);
+    const instances = countDefinitionInstances(doc, defId, catalog);
     if (instances > 1) {
       throw new OpRejectedError(
         "shared_definition_unforked",

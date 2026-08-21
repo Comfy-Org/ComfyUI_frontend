@@ -1,6 +1,8 @@
 # Mutation testing
 
-Stryker measures whether the test suite detects behavioral regressions in the load-bearing CRDT code. The initial scope is deliberately limited to `src/applier.ts`, `src/stamps.ts`, and `src/project.ts`; tests and the rest of `src/` are not mutated.
+Stryker measures whether the test suite detects behavioral regressions in the load-bearing CRDT code. The scope is `src/applier.ts`, `src/stamps.ts`, `src/project.ts`, `src/doc.ts` and `src/mint.ts`; tests, `src/index.ts` (re-exports only), `src/types.ts` (declarations), `src/exhaustive.ts` (a compile-time helper whose one runtime line is a `throw`) and `src/migrate.ts` are not mutated. Two semantic files remain unmeasured and should join the glob next: `src/migrate.ts` (kept out only because PR #30 owned it while this branch was written — #30 has merged and made it the fail-closed read gate) and `src/schema-version.ts`, which #60 added after this glob was set and which now holds the ONE definition of the schema read that `migrate()` and `project()` share.
+
+`src/doc.ts` and `src/mint.ts` were added in MUT-GLOB-KA4-1 and had never been mutated before that. Do not narrow the glob back: the two files carry the schema §1 doc layout, the §1.2 opaque-widgets routing, the §5.3 shared-definition instance count and the §9 bootstrap-snapshot path, and every one of those was unmeasured while the score read 80.00%.
 
 ## The score only means something because the run is pinned
 
@@ -25,9 +27,61 @@ The unpinned rows show what the pins are for. Unpinned and idle the number happe
 
 ## Current baseline
 
-Measured 2026-08-21 on the pinned settings, over 925 mutants: **80.00% overall** (`applier.ts` 77.79%, `stamps.ts` 89.00%, `project.ts` 83.14%), reproduced idle and under contention as above. The break threshold is **79%**, strictly under the measured score. It is deliberately not 80: the score is exactly 740/925, so a threshold equal to the measurement passes with zero margin and goes red the first time a sibling PR adds an uncovered line — reporting "mutation score regression" when it means "new code arrived". Raise the threshold whenever the score is raised; the ~1 point of headroom is for new code, not for measurement noise, which the pins have removed.
+Measured 2026-08-21 on the pinned settings over the five-file glob, at `main` = `9e3e38e`:
+**85.24% overall** across 1328 mutants (`applier.ts` 80.55%, `doc.ts` 94.09%, `mint.ts` 88.68%,
+`project.ts` 87.43%, `stamps.ts` 89.00%), with 1126 killed / 6 timeout / 168 survived / 28
+no-coverage. The break threshold is **84**, 1.24 points under the measured score for the reason #56
+recorded when it set the three-file threshold to 79 rather than to the 80.00% it had just measured:
+a threshold equal to the measurement passes with zero margin and goes red the first time a sibling
+PR adds an uncovered line, reporting "mutation score regression" when it means "new code arrived".
+Raise the threshold whenever the score is raised; the headroom is for new code, not for measurement
+noise, which the pins have removed. The timeouts-as-survivors floor — the score if every timeout
+were really a survivor — is 84.79%, which is also above the threshold, so the pass does not depend
+on how the 6 timeouts are classified.
+
+**Host conditions, stated because this number is load-sensitive by construction.** Both runs below
+were taken on a 28-core host at 1-minute load averages of **2.16** (baseline) and **0.85** (branch),
+Node 25.9.0, pins untouched. An earlier attempt at this measurement was made while the host carried
+five concurrent agents at load 15-19; one of its runs was killed by the OOM killer, and none of that
+attempt's figures are reported here. Refusing to publish a number measured under those conditions is
+the correct outcome, not a gap.
+
+Per-scope movement, kept because the *shape* of the change matters more than the headline. Both
+"before" columns are a real run of the SAME five-file glob against `origin/main` `9e3e38e` (passed
+on the command line with `--mutate`, pins untouched), so the only difference between the columns is
+this branch:
+
+| Scope | Before (`9e3e38e`) | After | What moved |
+| --- | --- | --- | --- |
+| five-file overall | 79.92% (1031/1290) | **85.24%** (1132/1328) | both rows below |
+| `applier.ts` + `stamps.ts` + `project.ts` | 81.52% (803/985) | 82.74% (815/985) | the KA-4 rejection sweep (`test/ka4-rejection-byte-identity.test.ts`) |
+| `doc.ts` + `mint.ts` | 74.75% (228/305, first ever run) | 92.42% (317/343) | `test/doc-mint-mutation-survivors.test.ts` |
+
+Reproducibility of the five-file glob, measured rather than asserted. At the previous base this
+branch was run twice, at load averages 2.99 and 8.90: identical to two decimals and in every
+per-file killed/timeout/survived/no-coverage column. At the base before that it was run twice more
+and the `Killed`, `Timeout`, `Survived` and `NoCoverage` **sets** were element-for-element
+identical, symmetric difference zero. What is stable is the survivor *list*, not merely the
+percentage. The overall score does move between bases — 85.31% at `32ab1f2`, 85.24% here — but only
+because `main` itself moved: #60 added one `project.ts` survivor. That is exactly why a "before" is
+re-measured at the same commit rather than quoted from a previous run.
+
+The `doc.ts` + `mint.ts` mutant total rises from 305 to 343 because the fix itself adds code, so the
+"after" column is measured over more surface, not less.
+
+The three-file scope reads 81.61% here rather than the 80.00% (740/925) `main` recorded when the pin
+landed, because #67 and #31 have since added tests and code. That is the point of re-measuring the
+baseline at the same commit rather than quoting a stored number: a "before" from a different `main`
+is not a before.
+
+Adding files to the glob moves the headline for two reasons at once — new mutants, and new tests — so compare per-file columns, never the single overall number, when judging whether a change helped.
 
 Earlier figures on this page do not survive. **63.70%** (once recorded here) and **74.81%** (recorded in the workspace) were produced with the knobs unpinned and are void — not low, not high, just not measurements of the test suite.
+
+One more figure is withdrawn rather than merely stale. An earlier revision of this branch cited
+**81.41%** as the "after" for the three-file scope. That number is `main`'s **unpinned, under
+contention** three-file figure from the two-by-two table above — a documented measurement artifact,
+not a measurement of this branch. Do not re-cite it.
 
 The triple **84.38% / 88.01% / 74.59%** was previously cited here as the proof of load-sensitivity. It is withdrawn, and for a sharper reason than staleness: those three runs differed in their `coverageAnalysis`/`timeoutMS`/`concurrency` *flags*, not in host load, so they never evidenced the load claim they were offered for. They do show the score is a function of the knobs. The load half is the two-by-two table above, measured here at fixed settings.
 

@@ -50,8 +50,13 @@ Y.applyUpdate(follower, Y.encodeStateAsUpdate(hostDoc));
 
 Do not call `mint()` twice on the same workflow to produce two replicas. Two
 independent mints create Yjs structures with different internal identities, and
-their contents **double** on the first merge. Each side looks correct alone, so
-this is silent until the merge.
+merging them is lossy. Under the v1 layout the loss is **silent whole-node
+clobber**, not doubling: nodes and links are `Y.Map`s keyed by id, so two mints
+of the same base resolve to last-writer-wins at each key and a diverged
+replica's edits are simply overwritten. (Doubling is the `Y.Array` form of the
+same hazard — schema §9 — and it does not apply to the v1 seeds; see
+`docs/INVARIANTS.md` KA-10, where both halves are measured rather than assumed.)
+Each side looks correct alone, so this is silent until the merge.
 
 ## The catalog, and why every call takes one
 
@@ -351,7 +356,7 @@ wrong:
 | **Dropped by last-writer-wins** — a higher stamp already owns that target | `applied` | no | yes |
 | **Delete-wins no-op** — the target node is gone | `applied` | no | yes |
 | Duplicate — already applied to this document | `skipped` | no | already was |
-| Rejected | `failed` | no (byte-identical) | **no** |
+| Rejected | `failed` | no (byte-identical) — **except four `connect` paths, see below** | **no** |
 
 `applied` means "this document is done with that op_id", not "your value won".
 A client that renders optimistically must clear a pending op when its effect
@@ -360,8 +365,19 @@ arrives on the update stream, not when the ack lists it as applied.
 **Batches abort the remainder.** If op *k* fails, ops 0..*k*-1 stay applied and
 ops *k*..*n* are not applied at all. Fix the failing op and resend the whole
 batch with the **same** `op_id`s: the prefix comes back in `skipped`, the
-remainder applies. Rejected ops consume nothing, so a batch is always
-retryable.
+remainder applies. Rejected ops consume no `op_id`, so a batch is retryable.
+
+**One exception, and it is not yet fixed.** Four `connect` rejections write
+before they validate, so the document is *not* byte-identical after them and a
+retry is not safe on its own: `output_slot_missing` with an empty destination
+slot (the concrete-input register claim is already written); `output_slot_missing`
+with an occupied destination slot (**the incumbent link has already been
+severed**); and the two `connect`+`inputcount` grow rejections
+(`unknown_widget`, `malformed_op`), which have already appended the grown slot.
+Yjs does not roll a `transact` body back on throw, so this is a property of
+write order inside each handler, not something the transaction provides. Issue
+#10; fix in flight on PR #34. Enumerated and held in
+`test/ka4-rejection-byte-identity.test.ts`.
 
 Rejection codes: `malformed_op`, `unknown_op`, `op_deferred`,
 `catalog_required`, `invalid_node_payload`, `unknown_widget`,
@@ -441,6 +457,15 @@ is closed.
 4. Two writes to the same target **inside one batch** share a `base_version`,
    so they resolve by `op_id`, not by position in the batch. "Last spec wins"
    is not true.
+5. An interior write into a subgraph definition that more than one node
+   instantiates is **rejected** (`shared_definition_unforked`), where comfy-cli
+   forks the definition instead. Schema §5.3 keeps forking OPEN and requires the
+   rejection until it is specced. Instances are counted by the definition the
+   node's `type` **resolves** to, so two nodes spelling one definition
+   differently — its id and its unique display name — are two instances. A
+   display name the pinned catalog describes as a node class is *not* a
+   spelling of the definition: naming a subgraph after the node it wraps is
+   common, and those nodes are classes, not instances.
 
 ### Opaque widgets
 

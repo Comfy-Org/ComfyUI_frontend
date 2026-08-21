@@ -77,6 +77,14 @@ from *k* onward are not applied at all. The failure is returned, not thrown:
 and does not consume its `op_id`, so fixing the failing op and resending the
 whole batch is always safe — the prefix returns in `skipped`.
 
+**Status: PARTIALLY FALSE TODAY.** The `op_id` half holds everywhere. The
+byte-identity half is swept per rejection code in
+`test/ka4-rejection-byte-identity.test.ts`, and four `connect` rejections
+validate *after* their first write, so the document is changed by a rejected op
+— in one of them an incumbent link is severed. Issue #10; fix in flight on
+PR #34. Until it lands, "resending the whole batch is always safe" is true for
+every rejection code except those four.
+
 **Why.** The alternative, rejecting the whole batch, throws away work the
 writer already considers accepted. The alternative to *that*, skipping the
 failing op and continuing, applies later ops that assumed the earlier one

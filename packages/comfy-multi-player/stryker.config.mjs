@@ -22,7 +22,21 @@
  */
 export default {
   testRunner: "vitest",
-  mutate: ["src/applier.ts", "src/stamps.ts", "src/project.ts"],
+  // `src/doc.ts` and `src/mint.ts` joined the glob in MUT-GLOB-KA4-1. They had
+  // never been mutation-tested, and they carry the schema §1 doc layout, the
+  // §1.2 opaque-widgets routing, the §5.3 shared-definition instance count and
+  // the §9 bootstrap-snapshot path. Working notes for the widening live
+  // outside this repository, in the in-app-agent workspace
+  // (reports/audit/mut-glob-ka4.md); everything load-bearing is restated here.
+  // `src/index.ts` (re-exports only), `src/types.ts` (declarations) and
+  // `src/exhaustive.ts` (compile-time helper; its one runtime line throws)
+  // remain out. Two semantic files should join next: `src/migrate.ts` (out only
+  // because PR #30 owned it while this branch was written) and
+  // `src/schema-version.ts`, which #60 added after this glob was set and which
+  // holds the ONE definition of the schema read that migrate() and project()
+  // share — exactly the kind of single point of truth a mutant should be
+  // aimed at.
+  mutate: ["src/applier.ts", "src/stamps.ts", "src/project.ts", "src/doc.ts", "src/mint.ts"],
   reporters: ["clear-text", "html", "json"],
   coverageAnalysis: "all",
   // Per-mutant budget = netTime * timeoutFactor + timeoutMS. Generous on
@@ -31,22 +45,24 @@ export default {
   timeoutFactor: 1.5,
   // Fixed worker count so the measurement does not vary with core count.
   concurrency: 4,
-  // Measured 2026-08-21 on the pinned settings above, at this commit: 80.00%
-  // overall over 925 mutants, run twice — once idle and once under 20 CPU
-  // spinners (load average 8.2 vs 33.8). Same score to two decimals, and the
-  // Survived (154) and NoCoverage (31) SETS were element-for-element identical;
-  // only one non-terminating loop mutant moved between Killed and Timeout,
-  // which is score-neutral. That stability is the whole point of the pins.
+  // Measured 2026-08-21 on the pinned settings above, over the five-file glob:
+  // 85.24% overall (1328 mutants; 1126 killed / 6 timeout / 168 survived / 28
+  // no-coverage), on an idle host (load average 0.85). The SAME glob run
+  // against the parent commit 9e3e38e scores 79.92% over 1290 mutants — a real
+  // baseline run, not a stored figure — so the delta is this branch and nothing
+  // else. See docs/mutation-testing.md.
   //
-  // Threshold sits strictly UNDER the measured score, not at it. 80.00% is
-  // exactly 740/925, so `break: 80` would pass with zero margin and turn red on
-  // the first uncovered line any sibling PR adds — a failure that would say
-  // "mutation score regression" while meaning "new code arrived". One point is
-  // roughly nine mutants of headroom. Raise it whenever the score is raised;
-  // the margin is for new code, NOT for measurement noise, which is now zero.
+  // Threshold sits strictly UNDER the measured score, not at it — the rule #56
+  // wrote in when it set the three-file threshold to 79 rather than to the
+  // 80.00% it had just measured (it raised it from 60; it never shipped 80). A
+  // threshold equal to the measurement passes with zero margin and turns red on
+  // the first uncovered line any sibling PR adds, a failure that would say
+  // "mutation score regression" while meaning "new code arrived". Raise it
+  // whenever the score is raised; the margin is for new code, NOT for
+  // measurement noise, which is now zero.
   thresholds: {
-    break: 79,
-    low: 79,
+    break: 84,
+    low: 84,
     high: 90,
   },
 };
