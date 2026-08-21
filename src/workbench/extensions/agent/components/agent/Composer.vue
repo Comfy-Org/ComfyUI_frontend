@@ -98,6 +98,19 @@ type MentionMatch =
   | { kind: 'node'; id: string; label: string; node: SelectedNode }
   | { kind: 'asset'; id: string; label: string; asset: AssetItem }
 
+/**
+ * Nodes already in the basket, hidden from the picker - re-picking one is a
+ * no-op and only makes the list harder to scan.
+ *
+ * Filtered here rather than out of `mentionNodes`, because that list also
+ * feeds `graphDupes`: dropping a staged node from it would stop its chip
+ * showing the `#id` that disambiguates it from a same-titled node still in
+ * the graph.
+ */
+const stagedKeys = computed(
+  () => new Set(selectionTags.map((tag) => selectedNodeKey(tag)))
+)
+
 const mentionMatches = computed<MentionMatch[]>(() => {
   if (!mentionOpen.value) return []
   const query = mentionQuery.value.toLowerCase()
@@ -105,7 +118,8 @@ const mentionMatches = computed<MentionMatch[]>(() => {
     ...mentionNodes.value
       .filter(
         (node) =>
-          node.title.toLowerCase().includes(query) || node.id.includes(query)
+          !stagedKeys.value.has(selectedNodeKey(node)) &&
+          (node.title.toLowerCase().includes(query) || node.id.includes(query))
       )
       .map(
         (node): MentionMatch => ({
@@ -387,7 +401,7 @@ defineExpose({
         <span
           v-for="tag in selectionTags"
           :key="selectedNodeKey(tag)"
-          class="bg-agent-surface-hover text-agent-fg inline-flex h-7 items-center gap-1 rounded-lg border border-neutral-200 px-2.5 text-xs/4 font-medium"
+          class="bg-agent-surface-hover text-agent-fg inline-flex h-7 items-center gap-1 rounded-lg border border-border-default px-2.5 text-xs/4 font-medium transition-colors hover:bg-tertiary-background-hover"
         >
           <button
             v-tooltip.top="buildAgentTooltipConfig(t('agent.focusNode'))"
@@ -395,10 +409,10 @@ defineExpose({
             :aria-label="
               t('agent.focusNodeLabel', { node: `${tag.title} #${tag.id}` })
             "
-            class="flex cursor-pointer items-center gap-1"
+            class="flex cursor-pointer items-center gap-1 p-0 transition-colors"
             @click="emit('focusTag', selectedNodeKey(tag))"
           >
-            <span class="icon-[comfy--node] size-3.5" />
+            <span class="text-agent-fg-muted icon-[comfy--node] size-3.5" />
             <span class="max-w-40 truncate">{{ tag.title }}</span>
             <span
               v-if="graphDupes.has(tag.title) || tagDupes.has(tag.title)"
