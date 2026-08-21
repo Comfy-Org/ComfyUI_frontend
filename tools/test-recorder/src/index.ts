@@ -65,7 +65,14 @@ switch (command) {
     await runList()
     break
   }
-  default:
+  default: {
+    // Help is a successful request; a typo is not.
+    const askedForHelp =
+      command === undefined || command === '--help' || command === 'help'
+    if (!askedForHelp) {
+      console.log(pc.red(`  Unknown command: ${command}`))
+      process.exitCode = 1
+    }
     console.log(`
 Usage: comfy-test <command>
 
@@ -80,6 +87,7 @@ Options:
   --help      Show help
 `)
     break
+  }
 }
 
 outro(pc.dim('https://github.com/Comfy-Org/ComfyUI_frontend'))

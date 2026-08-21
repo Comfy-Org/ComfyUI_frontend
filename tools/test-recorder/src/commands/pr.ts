@@ -34,7 +34,8 @@ export async function runPr(
     await createPr({
       testFilePath: absolute,
       testName,
-      description: description ?? `Adds the ${testName} browser test.`
+      description: description ?? `Adds the ${testName} browser test.`,
+      cwd: projectRoot
     })
     return
   }
