@@ -472,6 +472,9 @@ importers:
       '@atlaskit/pragmatic-drag-and-drop':
         specifier: ^1.3.1
         version: 1.8.1
+      '@comfyorg/comfy-multi-player':
+        specifier: 0.1.0
+        version: 0.1.0
       '@comfyorg/comfyui-desktop-bridge-types':
         specifier: 'catalog:'
         version: 0.2.0
@@ -1589,6 +1592,9 @@ packages:
   '@clack/prompts@1.7.0':
     resolution: {integrity: sha512-y7/yvZ2TPAnR9+jnc00klvNNLkJiXFFrQA/hlLCcxA9a2A4zQIOimyFQ9XfwYKiGD1fb5GY8vbKIIgO8d5Tb2A==}
     engines: {node: '>= 20.12.0'}
+
+  '@comfyorg/comfy-multi-player@0.1.0':
+    resolution: {integrity: sha512-m7Dt+Z/rLp56FM5KrX0flTXiTsacwIsVcaywFRPJZsfaaEpyuZ76sU2TcS3wwFY+giNavUVHg+KmsGOyiz1fqg==}
 
   '@comfyorg/comfyui-desktop-bridge-types@0.2.0':
     resolution: {integrity: sha512-V5Wj5KXDzTDm5GJAa0xBISjmndNIY5P79pRHQbLkkqJxgp/GPb/QGvcI+xG4ogol0ODJ4j/UBnUmkzpSafw8Aw==}
@@ -10027,6 +10033,10 @@ snapshots:
       fast-string-width: 3.0.2
       fast-wrap-ansi: 0.2.2
       sisteransi: 1.0.5
+
+  '@comfyorg/comfy-multi-player@0.1.0':
+    dependencies:
+      yjs: 13.6.31
 
   '@comfyorg/comfyui-desktop-bridge-types@0.2.0': {}
 
