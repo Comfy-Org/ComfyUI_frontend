@@ -1,9 +1,9 @@
 import type { Page, Route } from '@playwright/test'
 import type {
-  CreateAssetExportData,
-  CreateAssetExportResponse,
-  JobsListResponse,
-  ListAssetsResponse
+  ExportAssetsData,
+  ExportAssetsResponse,
+  ListAssetsResponse,
+  ListJobsResponse
 } from '@comfyorg/ingest-types'
 
 import type {
@@ -181,8 +181,8 @@ export class AssetsHelper {
     null
   private generatedJobs: RawJobListItem[] = []
   private cloudAssetsResponse: ListAssetsResponse | null = null
-  private assetExportRequests: CreateAssetExportData['body'][] = []
-  private assetExportResponse: CreateAssetExportResponse | null = null
+  private assetExportRequests: ExportAssetsData['body'][] = []
+  private assetExportResponse: ExportAssetsResponse | null = null
   private importedFiles: string[] = []
   private readonly jobDetailRouteHandlers = new Map<
     string,
@@ -251,7 +251,7 @@ export class AssetsHelper {
         }
       } satisfies {
         jobs: unknown[]
-        pagination: JobsListResponse['pagination']
+        pagination: ListJobsResponse['pagination']
       }
 
       await route.fulfill({
@@ -291,11 +291,10 @@ export class AssetsHelper {
   }
 
   async captureAssetExportRequests(
-    response: CreateAssetExportResponse = {
-      task_id: 'asset-export-task',
-      status: 'created'
+    response: ExportAssetsResponse = {
+      task_id: 'asset-export-task'
     }
-  ): Promise<CreateAssetExportData['body'][]> {
+  ): Promise<ExportAssetsData['body'][]> {
     this.assetExportRequests = []
     this.assetExportResponse = response
 
@@ -305,7 +304,7 @@ export class AssetsHelper {
 
     this.assetExportRouteHandler = async (route: Route) => {
       this.assetExportRequests.push(
-        route.request().postDataJSON() as CreateAssetExportData['body']
+        route.request().postDataJSON() as ExportAssetsData['body']
       )
 
       await route.fulfill({
