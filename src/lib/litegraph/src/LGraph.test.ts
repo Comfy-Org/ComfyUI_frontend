@@ -27,6 +27,7 @@ import type {
 import type { UUID } from '@/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/utils/uuid'
 import { useLinkStore } from '@/stores/linkStore'
+import { useGraphDefinitionStore } from '@/stores/graphDefinitionStore'
 import { useGraphMetadataStore } from '@/stores/graphMetadataStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
@@ -100,6 +101,31 @@ class ThrowingConfigureNode extends LGraphNode {
 }
 
 describe('LGraph', () => {
+  it('projects ordered membership from root-scoped definition records', () => {
+    const graph = new LGraph()
+    const first = new DummyNode()
+    const second = new DummyNode()
+    const group = new LGraphGroup()
+    graph.add(first)
+    graph.add(second)
+    graph.add(group)
+
+    const store = useGraphDefinitionStore()
+    const membership = store.membership(graph.id, graph.id)
+    expect(graph.nodes).toBe(membership.nodes)
+    expect(graph.groups).toBe(membership.groups)
+    expect(membership.nodes).toEqual([first, second])
+    expect(membership.groups).toEqual([group])
+
+    const previousId = graph.id
+    graph.id = createUuidv4()
+    expect(store.membership(graph.id, graph.id)).toBe(membership)
+
+    graph.clear()
+    expect(store.membership(previousId, previousId).nodes).toEqual([])
+    expect(store.membership(graph.id, graph.id).nodes).toEqual([])
+  })
+
   it('should serialize deterministic node order', async () => {
     LiteGraph.registerNodeType('dummy', DummyNode)
     const node1 = new DummyNode()

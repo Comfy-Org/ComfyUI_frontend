@@ -48,6 +48,7 @@ import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { clearNodeOwnedStoreState } from '@/stores/clearNodeOwnedStoreState'
 import { useEntityIdStore } from '@/stores/entityIdStore'
+import { useGraphDefinitionStore } from '@/stores/graphDefinitionStore'
 import { useGraphMetadataStore } from '@/stores/graphMetadataStore'
 import { UNASSIGNED_NODE_ID, parseNodeId, toNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
@@ -380,6 +381,11 @@ export class LGraph
   }
   set id(value: UUID) {
     const raw = toRaw(this)
+    const rootGraph = raw.rootGraph
+    if (!rootGraph || rootGraph === raw)
+      useGraphDefinitionStore().rekeyRoot(raw._id.value, value)
+    else
+      useGraphDefinitionStore().rekeyGraph(rootGraph.id, raw._id.value, value)
     useGraphMetadataStore().rekey(raw._id.value, value)
     useEntityIdStore().rekey(raw._id.value, value)
     raw._id.value = value
@@ -424,13 +430,37 @@ export class LGraph
   }
 
   readonly events = new CustomEventTarget<LGraphEventMap>()
-  readonly _subgraphs: Map<SubgraphId, Subgraph> = new Map()
+  get _subgraphs(): Map<SubgraphId, Subgraph> {
+    return useGraphDefinitionStore().subgraphs(this.id)
+  }
 
-  _nodes: (LGraphNode | SubgraphNode)[] = []
+  get _nodes(): (LGraphNode | SubgraphNode)[] {
+    return useGraphDefinitionStore().membership(
+      this.rootGraph?.id ?? this.id,
+      this.id
+    ).nodes
+  }
+  set _nodes(value: (LGraphNode | SubgraphNode)[]) {
+    useGraphDefinitionStore().membership(
+      this.rootGraph?.id ?? this.id,
+      this.id
+    ).nodes = value
+  }
   _nodes_by_id: Record<NodeId, LGraphNode> = {}
   _nodes_in_order: LGraphNode[] = []
   _nodes_executable: LGraphNode[] | null = null
-  _groups: LGraphGroup[] = []
+  get _groups(): LGraphGroup[] {
+    return useGraphDefinitionStore().membership(
+      this.rootGraph?.id ?? this.id,
+      this.id
+    ).groups
+  }
+  set _groups(value: LGraphGroup[]) {
+    useGraphDefinitionStore().membership(
+      this.rootGraph?.id ?? this.id,
+      this.id
+    ).groups = value
+  }
   iteration: number = 0
   globaltime: number = 0
   /** @deprecated Unused */
@@ -594,6 +624,7 @@ export class LGraph
 
   private resetAfterClear(): void {
     const graphId = this.id
+    const definitionStore = useGraphDefinitionStore()
     useGraphMetadataStore().clear(graphId)
     if (this.isRootGraph) useEntityIdStore().clear(graphId)
     if (this.isRootGraph && graphId !== zeroUuid) {
@@ -602,7 +633,10 @@ export class LGraph
       useLinkStore().clearGraph(toRootGraphId(graphId))
       useRerouteStore().clearGraph(toRootGraphId(graphId))
       useNodeDataStore().clearGraph(graphId)
+      definitionStore.clearRoot(graphId)
       layoutStore.clearGraph(graphId)
+    } else if (this.rootGraph) {
+      definitionStore.clearGraph(this.rootGraph.id, graphId)
     }
     this.id = this.isRootGraph ? createUuidv4() : zeroUuid
     this.revision = 0
@@ -2930,19 +2964,43 @@ export class Subgraph
   static MAX_NESTED_SUBGRAPHS = 1000
 
   /** The display name of the subgraph. */
-  name: string = 'Unnamed Subgraph'
+  get name(): string {
+    return useGraphDefinitionStore().definition(this.rootGraph.id, this.id).name
+  }
+  set name(value: string) {
+    useGraphDefinitionStore().definition(this.rootGraph.id, this.id).name =
+      value
+  }
   /** Optional description shown as tooltip when hovering over the subgraph node. */
-  description?: string
+  get description(): string | undefined {
+    return useGraphDefinitionStore().definition(this.rootGraph.id, this.id)
+      .description
+  }
+  set description(value: string | undefined) {
+    useGraphDefinitionStore().definition(
+      this.rootGraph.id,
+      this.id
+    ).description = value
+  }
 
   readonly inputNode = new SubgraphInputNode(this)
   readonly outputNode = new SubgraphOutputNode(this)
 
   /** Ordered list of inputs to the subgraph itself. Similar to a reroute, with the input side in the graph, and the output side in the subgraph. */
-  readonly inputs: SubgraphInput[] = []
+  get inputs(): SubgraphInput[] {
+    return useGraphDefinitionStore().definition(this.rootGraph.id, this.id)
+      .inputs
+  }
   /** Ordered list of outputs from the subgraph itself. Similar to a reroute, with the input side in the subgraph, and the output side in the graph. */
-  readonly outputs: SubgraphOutput[] = []
+  get outputs(): SubgraphOutput[] {
+    return useGraphDefinitionStore().definition(this.rootGraph.id, this.id)
+      .outputs
+  }
   /** A list of node widgets displayed in the parent graph, on the subgraph object. */
-  readonly widgets: ExposedWidget[] = []
+  get widgets(): ExposedWidget[] {
+    return useGraphDefinitionStore().definition(this.rootGraph.id, this.id)
+      .widgets
+  }
 
   private _rootGraph: LGraph
   override get rootGraph(): LGraph {
@@ -2962,6 +3020,7 @@ export class Subgraph
 
     super()
 
+    useGraphDefinitionStore().clearRoot(this.id)
     this._rootGraph = rootGraph
 
     const cloned = structuredClone(data)
