@@ -110,6 +110,8 @@ export default defineConfig([
       'dist/*',
       'packages/registry-types/src/comfyRegistryTypes.ts',
       'playwright-report/*',
+      'scripts/registry-census/detection-proof/**',
+      'src/__ecs_matrix__/**',
       'src/extensions/core/*',
       'src/scripts/*',
       'src/types/generatedManagerTypes.ts',
@@ -131,6 +133,7 @@ export default defineConfig([
             'packages/object-info-parser/vitest.config.ts',
             'vite.electron.config.mts',
             'vite.types.config.mts',
+            'vitest.matrix.config.mts',
             'vitest.timer.setup.ts'
           ]
         }

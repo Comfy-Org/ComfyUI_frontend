@@ -119,6 +119,7 @@ catalog:
   primevue: 4.2.5
   reka-ui: 2.6.2
   rollup-plugin-visualizer: ^6.0.4
+  start-server-and-test: ^3.0.11
   storybook: ^10.5.6
   stylelint: ^17.14.0
   tailwindcss: ^4.3.2
