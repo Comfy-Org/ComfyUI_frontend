@@ -7,7 +7,10 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
-const fixturesDir = join(root, "fixtures");
+// CORPUS_FIXTURES_DIR overrides the fixtures directory (used by the test that
+// exercises the fail-closed guards against synthetic manifests); defaults to
+// the real corpus.
+const fixturesDir = process.env.CORPUS_FIXTURES_DIR || join(root, "fixtures");
 const manifestPath = join(fixturesDir, "MANIFEST.json");
 
 function fail(messages) {
@@ -38,6 +41,14 @@ const fixtureFiles = readdirSync(fixturesDir)
   .sort();
 const manifestFiles = Object.keys(entries).sort();
 const errors = [];
+
+// Fail closed on an empty corpus: a manifest that lists zero fixtures makes
+// every downstream check vacuous (it would otherwise print "PASSED (0 files)"),
+// which is indistinguishable from a real pass. A conformance corpus must be
+// non-empty for its verification to mean anything.
+if (manifestFiles.length === 0) {
+  fail(["MANIFEST.json lists zero fixtures — the conformance corpus must not be empty"]);
+}
 
 for (const file of fixtureFiles) {
   if (!(file in entries)) errors.push(`${file} is not listed in MANIFEST.json`);
