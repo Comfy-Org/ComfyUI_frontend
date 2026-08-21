@@ -1,4 +1,5 @@
 import { isCloud } from '@/platform/distribution/types'
+import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -30,12 +31,6 @@ export const useSessionCookie = () => {
     })
   }
 
-  const readSessionError = async (response: Response): Promise<string> => {
-    const errorData: unknown = await response.json().catch(() => null)
-    const message = (errorData as { message?: unknown } | null)?.message
-    return typeof message === 'string' ? message : response.statusText
-  }
-
   const getSessionHeaderOrThrow = async (): Promise<Record<string, string>> => {
     const authStore = useAuthStore()
     const firebaseToken = await authStore.getIdToken()
@@ -60,7 +55,8 @@ export const useSessionCookie = () => {
     const response = await createSessionWithHeader(authHeader)
 
     if (!response.ok) {
-      throw new Error(await readSessionError(response))
+      const { message } = await parseErrorResponse(response)
+      throw new Error(message)
     }
   }
 
@@ -151,7 +147,8 @@ export const useSessionCookie = () => {
           })
 
           if (!response.ok) {
-            throw new Error(await readSessionError(response))
+            const { message } = await parseErrorResponse(response)
+            throw new Error(message)
           }
           confirmedSessionOwnerUid = null
         })
