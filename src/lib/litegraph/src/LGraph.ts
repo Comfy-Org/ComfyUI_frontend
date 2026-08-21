@@ -2876,7 +2876,8 @@ export class LGraph
 
       // copy all stored fields
       for (const i in data) {
-        if (LGraph.ConfigureProperties.has(i)) continue
+        if (LGraph.ConfigureProperties.has(i) || !GRAPH_CANONICAL_FIELDS.has(i))
+          continue
 
         // @ts-expect-error #574 Legacy property assignment
         this[i] = data[i]

@@ -127,6 +127,42 @@ describe('LGraph Serialisation', () => {
     expect(Object.hasOwn(node, 'legacyData')).toBe(false)
   })
 
+  test('isolates graph extension payloads from graph properties', ({
+    expect
+  }) => {
+    const graph = new LGraph()
+    let configuredData: object | undefined
+    graph.onConfigure = (data) => {
+      configuredData = data
+    }
+
+    graph.configure(
+      Object.assign(graph.asSerialisable(), {
+        extensions: { namespaced: { enabled: true } },
+        legacyData: { retained: true }
+      })
+    )
+
+    expect(configuredData).toMatchObject({
+      namespaced: { enabled: true },
+      legacyData: { retained: true }
+    })
+    expect(graph.asSerialisable().extensions).toEqual({
+      namespaced: { enabled: true },
+      legacyData: { retained: true }
+    })
+    expect(Object.hasOwn(graph, 'extensions')).toBe(false)
+    expect(Object.hasOwn(graph, 'legacyData')).toBe(false)
+
+    const clean = graph.asSerialisable()
+    delete clean.extensions
+    graph.configure(clean)
+    expect(configuredData).not.toHaveProperty('legacyData')
+    expect(graph.asSerialisable().extensions).toBeUndefined()
+    expect(Object.hasOwn(graph, 'extensions')).toBe(false)
+    expect(Object.hasOwn(graph, 'legacyData')).toBe(false)
+  })
+
   test('removes namespaced extension payload keys across serializations', ({
     expect,
     minimalGraph
