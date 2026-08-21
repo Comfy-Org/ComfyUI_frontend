@@ -47,6 +47,7 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     },
     isTeamPlan: { value: state.isTeamPlan },
     tier: { value: state.tier },
+    subscription: { value: null },
     type: { value: state.type }
   })
 }))
