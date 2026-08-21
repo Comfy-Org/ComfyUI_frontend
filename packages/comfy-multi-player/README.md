@@ -207,7 +207,9 @@ building conflict UI or your own bookkeeping — `applyOps` uses them internally
 
 The entrypoint exports the op layer (`mint`, `applyOps`, `project`, `migrate`),
 the KA-11 read gate, the stamp machinery above, the ADR-004 follower read
-surface (`nodesMap`, `linksMap`, `OPAQUE_WIDGETS_KEY`), the safer snapshot
+surface (`nodesMap`, `linksMap`, `OPAQUE_WIDGETS_KEY`), KA-1's `encodingLosses`
+diagnostic, the payload bounds (`MAX_OPS_PER_BATCH`, `MAX_PAYLOAD_DEPTH`,
+`MAX_COLLECTION_ENTRIES`, `MAX_OP_COST`, `opBoundsRefusal`), the safer snapshot
 surface below, and the types. That is the whole public surface.
 
 The three layout exports are a deliberate exception for the frontend follower
@@ -229,8 +231,9 @@ with no diagnostic. See [issue #18][issue-18] and KA-1, KA-2, KA-4, FC-5 in
 
 General consumers should call `project(doc, catalog)` for canonical workflow
 JSON, or use the safer snapshot surface below when projection cannot serve the
-read. There is no `./doc` subpath export and none will be added; only ADR-004's
-three deliberate layout exports remain reachable from the entrypoint.
+read. There is no `./doc` subpath export and none will be added; of `doc.ts`
+only ADR-004's three deliberate layout exports and KA-1's `encodingLosses`
+remain reachable from the entrypoint.
 
 [issue-18]: https://github.com/Comfy-Org/comfy-multi-player/issues/18
 
@@ -267,6 +270,24 @@ each by attempting the violation:
 Reads also never materialize a root: `Y.Doc#getMap` *creates* the root it names,
 and a follower's document before its first frame has none, so every accessor
 checks `doc.share` first.
+
+And this is not a way around the KA-11 read gate. `project()` refuses a document
+whose `meta.schema_version` this package cannot read; these functions read the
+same layout by the same key names, so they refuse it too — same
+`SchemaVersionError`, same predicate — **when the document carries content**. A
+document that carries *nothing* still reads as empty, because that is the
+follower's pre-first-frame document and there is nothing there to mis-key.
+
+That last clause is the one place the two paths differ, and it differs in
+disposition, not in predicate: for a content-free document `project()` refuses
+where these functions return empty (Amendment A12).
+
+If you want a structured error rather than a throw, **catch
+`SchemaVersionError`** — that is the supported pre-check and it is exact.
+`readSchemaVersion(doc) === SCHEMA_VERSION` is a usable approximation but it is
+*stricter* than the gate: it is `undefined` for the pre-first-frame document
+too, so a host gating on it alone refuses precisely the document the empty
+clause exists to allow.
 
 `readGraph` deliberately returns a **subset** of each node's fields — the ones a
 follower renders — not the whole node. Copying every field costs about twice as

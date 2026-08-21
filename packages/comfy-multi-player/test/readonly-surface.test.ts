@@ -34,6 +34,7 @@ import {
   mint,
   OPAQUE_WIDGETS_KEY,
   project,
+  SchemaVersionError,
   readGraph,
   readMeta,
   readStamps,
@@ -41,7 +42,14 @@ import {
   type WorkflowJSON,
 } from "../src/index.js";
 import * as publicApi from "../src/index.js";
-import { nodesMap } from "../src/doc.js";
+import {
+  metaMap,
+  nodesMap,
+  ROOT_DEFINITIONS,
+  ROOT_LINKS,
+  ROOT_META,
+  ROOT_NODES,
+} from "../src/doc.js";
 import { loadCatalog } from "./helpers.js";
 
 const catalog = loadCatalog();
@@ -352,6 +360,321 @@ describe("read-only surface — bounded walk", () => {
     expect(() => readMeta(doc)).toThrow(/nests deeper than 64 levels/);
     // A shallow value on the same document still reads.
     expect(docCatalogPin(doc)).toBe(CATALOG_SHA);
+  });
+});
+
+describe("read-only surface — the KA-11 read gate (#38)", () => {
+  /**
+   * The defect this block exists for: `project()` grew a schema-version read
+   * gate in #60, and a surface that reads the SAME layout by the SAME key
+   * names without one is a way AROUND that gate — `readGraph` would hand back
+   * v1 key names for a v2 document, which is precisely the KA-11
+   * mis-projection #60 refused. A guard a consumer can walk around is
+   * decorative.
+   *
+   * The rule has TWO clauses and both are load-bearing:
+   *   1. REFUSE when the document carries content under a schema this package
+   *      cannot read;
+   *   2. STAY EMPTY when it carries nothing. ADR-004's follower reads a
+   *      root-less document before its first frame and there is nothing there
+   *      to mis-key. NOT because #30 said so — #30 made `migrate()` REFUSE
+   *      that same document, which is a role split (a write may refuse an
+   *      incoherent request; a pure read need not) and is the one place this
+   *      surface's disposition differs from `project()`'s. Amendment A12.
+   *
+   * And the content question is asked WITHOUT naming a root, because the §1
+   * root names are v1's and renaming them is the canonical `SCHEMA_VERSION`
+   * bump trigger — a name-keyed probe is blind to exactly the document the
+   * gate exists to refuse.
+   *
+   * The "document is OLDER than the reader" arm is not constructible at
+   * `SCHEMA_VERSION = 1` (there is no v0). It is not re-implemented here: this
+   * gate delegates the comparison to `assertReadableSchema`, where #60's
+   * `test/schema-version-on-read.test.ts` reaches that arm through
+   * `assertSchemaVersionAgainst`.
+   */
+
+  /** A document that carries real content, with `meta.schema_version` forced to `version`. */
+  function docWithSchemaVersion(version: unknown): Y.Doc {
+    const doc = fixtureDoc();
+    metaMap(doc).set("schema_version", version);
+    return doc;
+  }
+
+  /** A document that carries content but makes no readable schema claim at all. */
+  function docWithContentAndNoMeta(): Y.Doc {
+    const doc = new Y.Doc();
+    const node = new Y.Map<unknown>();
+    node.set("type", "KSampler");
+    nodesMap(doc).set(String(KSAMPLER_ID), node);
+    expect(doc.share.has("meta"), "fixture must not carry a meta root").toBe(false);
+    return doc;
+  }
+
+  const UNREADABLE: [string, () => Y.Doc][] = [
+    ["newer than this package", () => docWithSchemaVersion(2)],
+    ["not an integer version", () => docWithSchemaVersion("1")],
+    ["a zero version", () => docWithSchemaVersion(0)],
+    ["absent from a document that has meta", () => {
+      const doc = fixtureDoc();
+      metaMap(doc).delete("schema_version");
+      return doc;
+    }],
+    ["absent because the document has no meta root", docWithContentAndNoMeta],
+  ];
+
+  for (const [what, build] of UNREADABLE) {
+    it(`refuses every accessor when the document carries content and its schema is ${what}`, () => {
+      const doc = build();
+      const bytesBefore = Buffer.from(Y.encodeStateAsUpdate(doc));
+      const sharedBefore = [...doc.share.keys()].sort();
+
+      const calls: [string, () => unknown][] = [
+        ["readGraph", () => readGraph(doc)],
+        ["readMeta", () => readMeta(doc)],
+        ["docCatalogPin", () => docCatalogPin(doc)],
+        ["hasNode", () => hasNode(doc, KSAMPLER_ID)],
+        ["hasAppliedOp", () => hasAppliedOp(doc, SET_WIDGET_OP_ID)],
+        ["appliedOpIds", () => appliedOpIds(doc)],
+        ["readStamps", () => readStamps(doc)],
+      ];
+      for (const [name, call] of calls) {
+        // Matched on the function's own name in the message, so a gate wired
+        // into only ONE accessor cannot pass this by throwing from another.
+        expect(call, `${name} must refuse`).toThrow(SchemaVersionError);
+        expect(call, `${name} must name itself in the refusal`).toThrow(
+          new RegExp(`^${name}: `),
+        );
+      }
+
+      // The refusal is byte-exact and materializes nothing (KA-11 posture).
+      expect(Buffer.from(Y.encodeStateAsUpdate(doc)).equals(bytesBefore)).toBe(true);
+      expect([...doc.share.keys()].sort()).toEqual(sharedBefore);
+    });
+
+    it(`is not a way around project()'s refusal when the schema is ${what}`, () => {
+      // The bypass, stated as an equivalence: whatever project() refuses to
+      // read, this surface refuses too. Both arms are asserted, so the test
+      // cannot pass because project() silently started accepting.
+      const doc = build();
+      expect(() => project(doc, catalog)).toThrow(SchemaVersionError);
+      expect(() => readGraph(doc)).toThrow(SchemaVersionError);
+    });
+  }
+
+  it("still reads a document whose schema IS this package's", () => {
+    // The positive control: without it every assertion above passes for a
+    // surface that refused unconditionally.
+    const doc = fixtureDoc();
+    expect(readMeta(doc)["schema_version"]).toBe(1);
+    expect(Object.keys(readGraph(doc).nodes).sort()).toEqual([
+      String(KSAMPLER_ID),
+      String(NOTE_ID),
+    ]);
+    expect(docCatalogPin(doc)).toBe(CATALOG_SHA);
+    expect(hasNode(doc, KSAMPLER_ID)).toBe(true);
+  });
+
+  it("stays empty for a document that carries nothing — the follower's pre-first-frame doc", () => {
+    // Clause 2. This document has no schema claim either, so clause 1 read
+    // alone would refuse it. Refusing IS what `migrate()` does for this
+    // document (#30), and deliberately not what a read does: see Amendment
+    // A12 for the role split and the `project()` disposition divergence.
+    const doc = new Y.Doc();
+    expect(doc.share.size).toBe(0);
+
+    expect(readGraph(doc)).toEqual({ nodes: {}, links: {} });
+    expect(readMeta(doc)).toEqual({});
+    expect(readStamps(doc)).toEqual({});
+    expect(docCatalogPin(doc)).toBe("");
+    expect(hasNode(doc, KSAMPLER_ID)).toBe(false);
+    expect(hasAppliedOp(doc, SET_WIDGET_OP_ID)).toBe(false);
+    expect(appliedOpIds(doc)).toEqual([]);
+    expect([...doc.share.keys()]).toEqual([]);
+  });
+
+  it("stays empty when roots exist but are empty — content, not root presence", () => {
+    // `Y.Doc#getMap` registers an EMPTY root immediately (the #20 defect), so
+    // an unrelated reader elsewhere in the process can put roots on a document
+    // that carries nothing. A presence-keyed gate would flip that document
+    // from "readable and empty" to "refused"; a content-keyed one does not.
+    const doc = new Y.Doc();
+    metaMap(doc);
+    nodesMap(doc);
+    expect([...doc.share.keys()].sort()).toEqual(["meta", "nodes"]);
+
+    expect(readGraph(doc)).toEqual({ nodes: {}, links: {} });
+    expect(readMeta(doc)).toEqual({});
+    expect(docCatalogPin(doc)).toBe("");
+    expect(hasNode(doc, KSAMPLER_ID)).toBe(false);
+    expect(appliedOpIds(doc)).toEqual([]);
+  });
+
+  it("refuses a v2 document that renamed its roots — the case a name-keyed probe cannot see", () => {
+    // THE reason the content probe reads `doc.store` rather than enumerating
+    // root names. KA-11 makes the schema §1 root-map NAMES the thing whose
+    // change requires a version bump, and `fixtures/golden-vectors/
+    // wire-layout.json` says so in as many words — so a v2 that renamed its
+    // roots is not an exotic hypothetical, it is the repo's own worked example
+    // of what a v2 is. A probe that asks "does `nodes` hold a key" asks in v1
+    // vocabulary and calls this document EMPTY.
+    //
+    // That is worse than a wrong error. On a follower that diffs successive
+    // snapshots, an empty graph is not "nothing to draw" — it is "delete every
+    // node".
+    const v2 = new Y.Doc();
+    v2.getMap<unknown>("graph").set("7", new Y.Map<unknown>());
+    v2.getMap<unknown>("header").set("schema_version", 2);
+    expect(Y.encodeStateAsUpdate(v2).length).toBeGreaterThan(2);
+    expect(() => project(v2, catalog)).toThrow(SchemaVersionError);
+    expect(() => readGraph(v2)).toThrow(SchemaVersionError);
+
+    // And the same for content under a root no version of this package names.
+    const foreign = new Y.Doc();
+    foreign.getMap<unknown>("whatever").set("k", 1);
+    expect(() => readGraph(foreign)).toThrow(SchemaVersionError);
+  });
+
+  it("refuses a document whose content was all deleted — tombstones are not nothing", () => {
+    // Everything live is gone, but the structs are there and the document
+    // still makes no schema claim. `Y.Map#size` and `keys()` both filter
+    // tombstones, so a liveness-keyed probe reads this as empty; the struct
+    // store does not.
+    const doc = new Y.Doc();
+    const nodes = doc.getMap<unknown>(ROOT_NODES);
+    nodes.set("1", new Y.Map<unknown>());
+    nodes.delete("1");
+    expect(nodes.size).toBe(0);
+    expect(() => project(doc, catalog)).toThrow(SchemaVersionError);
+    expect(() => readGraph(doc)).toThrow(SchemaVersionError);
+  });
+
+  it("calls an empty document empty whichever Y type registered its roots", () => {
+    // Both of these carry nothing: two bytes, zero structs. The only
+    // difference is which accessor some unrelated caller reached for. An
+    // earlier probe went through `doc.getMap` and treated the constructor
+    // clash from the Y.Array case as CONTENT, so the two disagreed about
+    // whether the document was empty — the exact "an unrelated call elsewhere
+    // in the process flips the disposition" failure the probe exists to avoid.
+    const asMap = new Y.Doc();
+    asMap.getMap<unknown>(ROOT_DEFINITIONS);
+    const asArray = new Y.Doc();
+    asArray.getArray<unknown>(ROOT_DEFINITIONS);
+    for (const doc of [asMap, asArray]) {
+      expect(Y.encodeStateAsUpdate(doc).length).toBe(2);
+      expect(readGraph(doc)).toEqual({ nodes: {}, links: {} });
+      expect(readMeta(doc)).toEqual({});
+      expect(docCatalogPin(doc)).toBe("");
+      expect(hasNode(doc, KSAMPLER_ID)).toBe(false);
+    }
+
+    // Scope, because the wording invites the wider reading: this is a claim
+    // about the GATE, not about every accessor. A clash on a root an accessor
+    // actually reads still throws Yjs's constructor error from `rootMap` —
+    // #55's documented posture for a malformed layout, unchanged here.
+    const clashOnLinks = new Y.Doc();
+    clashOnLinks.getArray<unknown>(ROOT_LINKS);
+    expect(() => readGraph(clashOnLinks)).toThrow(/already been defined/);
+    expect(docCatalogPin(clashOnLinks)).toBe("");
+  });
+
+  it("stays empty for a document holding only structs it cannot integrate", () => {
+    // Mid-arrival: a delta whose dependencies have not landed. Yjs buffers it
+    // in `store.pendingStructs`, registers the root, and integrates nothing —
+    // `encodeStateAsUpdate` is 20 bytes here, not 2, so "carries nothing" is
+    // not the same question as "has no bytes". No reader can see a pending
+    // struct, so the document really is carrying nothing YET, and a follower
+    // in this state needs an empty read rather than a throw.
+    const src = new Y.Doc();
+    src.transact(() => src.getMap<unknown>(ROOT_META).set("schema_version", 1));
+    const sv = Y.encodeStateVector(src);
+    src.transact(() => src.getMap<unknown>(ROOT_NODES).set("7", new Y.Map<unknown>()));
+
+    const partial = new Y.Doc();
+    Y.applyUpdate(partial, Y.encodeStateAsUpdate(src, sv));
+    expect(partial.store.pendingStructs, "fixture must actually be pending").not.toBeNull();
+    // `clients.size`, not `.values().every(...)` — the map is EMPTY here, and
+    // `every` over an empty list is vacuously true, so the weaker spelling
+    // would assert nothing at all.
+    expect(partial.store.clients.size, "nothing may have integrated").toBe(0);
+    expect([...partial.share.keys()], "but a root IS registered").toEqual([ROOT_NODES]);
+    expect(Y.encodeStateAsUpdate(partial).length).toBeGreaterThan(2);
+
+    expect(readGraph(partial)).toEqual({ nodes: {}, links: {} });
+    expect(readMeta(partial)).toEqual({});
+    expect(hasNode(partial, 7)).toBe(false);
+    expect(docCatalogPin(partial)).toBe("");
+  });
+
+  it("asks whether the document carries anything WITHOUT touching a root", () => {
+    // The content probe reads `doc.store`, never a root, and that is not an
+    // implementation detail — a probe that enumerated root NAMES would be
+    // asking the question in v1 vocabulary, which is the one vocabulary a v2
+    // document is allowed to change (KA-11; `wire-layout.json`). Counting root
+    // lookups is how that stays true: a readable document must cost exactly
+    // the `meta` read the gate's version check needs, plus the one root the
+    // accessor is actually for. A name-keyed probe walks a root first and the
+    // count goes to three.
+    const doc = fixtureDoc();
+    const real = doc.getMap.bind(doc);
+    const names: string[] = [];
+    doc.getMap = ((name?: string) => {
+      names.push(String(name));
+      return real(name as string);
+    }) as typeof doc.getMap;
+
+    expect(hasNode(doc, KSAMPLER_ID)).toBe(true);
+    expect(names, "one meta read for the gate, one nodes read for the answer").toEqual([
+      "meta",
+      "nodes",
+    ]);
+
+    names.length = 0;
+    expect(docCatalogPin(doc)).toBe(CATALOG_SHA);
+    expect(names).toEqual(["meta", "meta"]);
+  });
+
+  it("refuses a malformed root with the SAME error type project() gives it", () => {
+    // A root integrated as a different concrete Y type makes `doc.getMap`
+    // throw Yjs's constructor-clash `Error`. The content probe runs BEFORE the
+    // version check, so letting that escape would make this surface report a
+    // generic `Error` for a document `project()` refuses with a typed
+    // `SchemaVersionError` — and the typed error is the whole reason
+    // `assertReadableSchema` is exported for hosts to lift. The probe treats
+    // an untypable root as content instead, so the refusal type matches.
+    const doc = new Y.Doc();
+    doc.getArray<unknown>("nodes").push([1]);
+    metaMap(doc).set("schema_version", 2);
+    expect(() => project(doc, catalog)).toThrow(SchemaVersionError);
+    expect(() => readGraph(doc)).toThrow(SchemaVersionError);
+    expect(() => readStamps(doc)).toThrow(SchemaVersionError);
+
+    // Amendment A3's carve-out is unchanged where it always applied: when the
+    // clash is on `meta` ITSELF, both paths surface Yjs's own error, not a
+    // SchemaVersionError. Still fail-closed, still a throw, same on both.
+    const metaClash = new Y.Doc();
+    metaClash.getArray<unknown>("meta").push([1]);
+    nodesMap(metaClash).set("1", new Y.Map<unknown>());
+    for (const call of [() => project(metaClash, catalog), () => readGraph(metaClash)]) {
+      expect(call).toThrow(Error);
+      expect(call).not.toThrow(SchemaVersionError);
+    }
+  });
+
+  it("refuses as soon as ANY root carries content, not just the one being read", () => {
+    // `meta` alone, carrying a key that is not a schema claim: the graph is
+    // empty, so readGraph would return `{}` and look harmless — but the
+    // DOCUMENT is carrying content under a schema nobody has declared, and the
+    // next frame could fill `nodes` with a layout this package misreads.
+    const doc = new Y.Doc();
+    metaMap(doc).set("catalog_version", CATALOG_SHA);
+    expect(() => readGraph(doc)).toThrow(SchemaVersionError);
+    expect(() => docCatalogPin(doc)).toThrow(SchemaVersionError);
+
+    // And the same for a document carrying ONLY definitions.
+    const defsOnly = new Y.Doc();
+    defsOnly.getMap<unknown>("definitions").set("d1", new Y.Map<unknown>());
+    expect(() => readGraph(defsOnly)).toThrow(SchemaVersionError);
   });
 });
 

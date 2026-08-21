@@ -34,8 +34,14 @@ Verified 2026-08-20 (frontend `poc/fe-crdt-follower`, PR #15457):
   that bullet describes the surface at the pinned SHA `6793d754`. Issue #18
   removed most doc-layout helpers from the entrypoint; the ADR-004 follower trio
   remains public for compatibility. ADR-005 adds `readGraph()` as the safer
-  migration target: unlike `nodesMap`, it returns plain frozen data. The
-  conclusion stands — a follower consumes this package for layout and never
+  migration target: unlike `nodesMap`, it returns plain frozen data. **With one
+  caveat a migrating follower must handle:** `nodesMap` never throws, and
+  `readGraph` does — it carries the KA-11 read gate (Amendment A12), so a
+  document carrying content under an unreadable schema now refuses instead of
+  being read with v1 key names. A follower swapping one for the other must keep
+  its own schema guard or catch `SchemaVersionError` at the seam that handles
+  schema errors today, since that seam rethrows anything it does not recognise.
+  The conclusion stands — a follower consumes this package for layout and never
   runs the applier — while a lockstep pin bump can move it off live handles.
 
 ## Decision

@@ -774,6 +774,13 @@ the epoch; cross-epoch struct updates never merge.
   materialized root encodes to zero bytes (A3).
   Both entrypoints share ONE definition of the read, `readSchemaVersion` in
   `src/schema-version.ts`; `migrate()` holds no private copy. See Amendment A5.
+- **Refined by Amendment A12**: there is a THIRD read path — the snapshot
+  surface, `src/read.ts` — and its refusal is CONDITIONAL. It refuses a
+  document that carries content under a schema this package cannot read, and
+  returns its empty value for a document that carries nothing. Read A12 for
+  why the condition exists, for the one document class where its disposition
+  differs from `project()`'s, and for the constraint it puts on how "carries
+  content" may be asked.
 
 ---
 
@@ -1620,3 +1627,80 @@ authoritative for depth and cycles and retains `payload_too_deep` for both.
 Breadth, size, and batch refusals use `malformed_op`; no new rejection code is
 introduced. These are processing limits, not Y.Doc layout changes, so no
 `SCHEMA_VERSION` bump is required.
+
+---
+
+## Amendment A12 — 2026-08-21 — a third read path, with a CONDITIONAL fail-closed gate (issue #38, PR #55/#76)
+
+**Touches:** §10 (the read-path gate bullet), Amendment A5's "the gate moves
+onto the READ path" framing, Amendment A4's read-side-gate rule, and §1 (the
+root-map names, as a constraint on how the gate may be implemented).
+
+A5 moved the schema-version gate onto the read path because `migrate()` was a
+gate a low-context caller could skip. PR #55 then added a second reader —
+`src/read.ts`, the read-only snapshot surface — which reads the SAME layout by
+the SAME key names and had no gate at all. That re-opened exactly the hole A5
+closed, one function call to the left: a caller could route around
+`project()`'s refusal by calling `readGraph()` instead, and get v1 key names
+over a v2 document.
+
+**The rule.** Every accessor on the snapshot surface refuses a document that
+**carries content** under a schema this package cannot read — same
+`SchemaVersionError`, same predicate (`readSchemaVersion`), byte-exact,
+materializing no root — and **returns its empty value** for a document that
+carries **nothing**.
+
+**Why the condition, since a conditional gate deserves a reason.** ADR-004's
+frontend follower reads a document that has no roots at all between
+construction and its first `doc_update` frame. There is no content there to
+mis-key, and KA-11 is a rule about MIS-PROJECTING an incompatible document,
+not about refusing an empty one. (`migrate()` does refuse that document — A3 —
+and that is a role split, not a precedent: migrating a document that makes no
+claim about its own version is an incoherent WRITE request. Reading nothing
+out of it is not.)
+
+**ONE DISPOSITION DIVERGENCE FROM `project()`, stated here because A5's
+consumer-impact note recorded the opposite disposition as a defect.** A5
+records that a doc-host request whose snapshot folds to a **root-less
+document** changed from HTTP 200 with an empty graph to HTTP 400. The snapshot
+surface returns the empty graph for that same document. The two share a
+PREDICATE and differ in DISPOSITION, in exactly one document class — the one
+that carries nothing. A projection promises a workflow; a snapshot read
+promises whatever is there.
+
+**A CONSTRAINT ON THE IMPLEMENTATION, and this is the part a second
+implementation must copy.** "Does this document carry content" MUST NOT be
+asked by enumerating the §1 root-map names. Those names are v1's, and §10 plus
+KA-11 make a rename of them the canonical reason to bump `SCHEMA_VERSION` —
+so a name-keyed probe is blind to precisely the document the gate exists to
+refuse. Measured: a v2 document that renamed its roots carries real structs
+and `project()` refuses it, while a name-keyed probe called it empty and
+returned `{"nodes":{},"links":{}}`. On a follower that diffs successive
+snapshots, an empty graph is not "nothing to draw" — it is "delete every
+node". This implementation asks the struct store (`doc.store.clients`), which
+is vocabulary-free. A conforming implementation may ask differently, but it
+must be able to see content stored under names this version does not know.
+
+Corollaries of asking it that way, all deliberate:
+
+- a root REGISTERED but never written contributes no struct, so an unrelated
+  `getMap` elsewhere in the process cannot flip a document from "readable and
+  empty" to "refused". The frontend's own schema guard does exactly that on
+  every frame;
+- a document whose entries were all DELETED still carries structs, so it
+  refuses rather than reading as empty — the fail-closed direction, matching
+  `project()`;
+- structs buffered pending their dependencies are NOT counted: they are not
+  part of the document, `encodeStateAsUpdate` does not emit them, and no
+  reader can see them.
+
+**One reachable state hits the refusing clause, and refusing is intended.**
+The doc host is stateless, so its deltas carry a fresh clientID per request,
+and the relay joins a new subscriber to the fanout before sending it the
+catch-up. A follower can therefore integrate a delta before it has any `meta`:
+roots with content, no schema claim, refused. The frontend already refuses
+that state more strictly today. The empty-document clause covers "no frame has
+arrived yet", not "a frame arrived out of order".
+
+No `SCHEMA_VERSION` bump: no Y.Doc layout changes, and no currently-valid
+document becomes unreadable that `project()` did not already refuse.

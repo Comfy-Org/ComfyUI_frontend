@@ -54,12 +54,16 @@ The item-2 oracle, and the deference to the profile that owns it:
 <!-- claim: a delete-wins no-op that CONSUMES the `op_id` :: src/applier.ts -->
 <!-- claim: CLOSED by Amendment A7 :: docs/multiplayer-schema.md -->
 
-Why the projection is inadequate. `project()` must not reach either ledger, and it has two ways to do so: the raw root names, and the `doc.ts` accessors that are the realistic route (`src/project.ts` reaches doc state only through imported helpers, so a projection that started rendering stamps would add `stampsMap`, never the literal `__stamps`). All four spellings are banned. The two positive markers pin **both** halves of each accessor — the exported identifier and the root string in its body — because a ban is only as good as the name it enumerates: pinning the body alone would let `stampsMap` be renamed with both positive claims still green while `claim-absent: stampsMap` quietly became a ban on a string that exists nowhere.
+Why the projection is inadequate. `project()` must not reach either ledger, and it now has THREE ways to do so: the raw root names, the `ROOT_*` name constants, and the `doc.ts` accessors that are the realistic route (`src/project.ts` reaches doc state only through imported helpers, so a projection that started rendering stamps would add `stampsMap`, never the literal `__stamps`). All six spellings are banned. The `ROOT_STAMPS`/`ROOT_APPLIED` bans arrived with the read-only snapshot surface, which named the roots as constants so the writer helpers and the reader could not drift: that indirection is a route the four original bans did not enumerate, and a ban is only as good as the name it enumerates. For the same reason the positive markers pin **every** hop of each accessor — the exported identifier, the constant it resolves through, and the string that constant holds — because pinning the body alone would let `stampsMap` be renamed with the positive claims still green while `claim-absent: stampsMap` quietly became a ban on a string that exists nowhere.
 
 <!-- claim-absent: __stamps :: src/project.ts -->
 <!-- claim-absent: __applied :: src/project.ts -->
 <!-- claim-absent: stampsMap :: src/project.ts -->
 <!-- claim-absent: appliedMap :: src/project.ts -->
+<!-- claim-absent: ROOT_STAMPS :: src/project.ts -->
+<!-- claim-absent: ROOT_APPLIED :: src/project.ts -->
+<!-- claim: export const ROOT_APPLIED = "__applied"; :: src/doc.ts -->
+<!-- claim: export const ROOT_STAMPS = "__stamps"; :: src/doc.ts -->
 <!-- claim: export function stampsMap(doc: Y.Doc): Y.Map<unknown> {
   return doc.getMap<unknown>(ROOT_STAMPS); :: src/doc.ts -->
 <!-- claim: export function appliedMap(doc: Y.Doc): Y.Map<unknown> {
