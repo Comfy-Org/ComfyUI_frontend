@@ -94,9 +94,15 @@ export const useComfyManagerService = () => {
       errorContext: string
       routeSpecificErrors?: Record<number, string>
       isQueueOperation?: boolean
+      throwOnError?: boolean
     }
   ): Promise<T | null> => {
-    const { errorContext, routeSpecificErrors, isQueueOperation } = options
+    const {
+      errorContext,
+      routeSpecificErrors,
+      isQueueOperation,
+      throwOnError
+    } = options
 
     // Block service calls if not in NEW_UI state
     if (!isManagerServiceAvailable()) {
@@ -113,6 +119,7 @@ export const useComfyManagerService = () => {
       return response.data
     } catch (err) {
       handleRequestError(err, errorContext, routeSpecificErrors)
+      if (throwOnError) throw err
       return null
     } finally {
       isLoading.value = false
@@ -202,7 +209,12 @@ export const useComfyManagerService = () => {
 
     return executeRequest<null>(
       () => managerApiClient.post(ManagerRoute.QUEUE_TASK, task, { signal }),
-      { errorContext, routeSpecificErrors, isQueueOperation: true }
+      {
+        errorContext,
+        routeSpecificErrors,
+        isQueueOperation: true,
+        throwOnError: true
+      }
     )
   }
 

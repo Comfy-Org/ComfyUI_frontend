@@ -10,6 +10,7 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 
 import { normalizePackKeys } from '@/utils/packUtils'
+import { isAbortError } from '@/utils/typeGuardUtil'
 import { useManagerQueue } from '@/workbench/extensions/manager/composables/useManagerQueue'
 import { useComfyManagerService } from '@/workbench/extensions/manager/services/comfyManagerService'
 import type {
@@ -201,7 +202,7 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
   const enqueueTaskWithLogs = async (
     task: (taskId: string) => Promise<null>,
     taskName: string
-  ) => {
+  ): Promise<boolean> => {
     const taskId = uuidv4()
     const { logs } = useServerLogs({
       ui_id: taskId,
@@ -216,24 +217,28 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
 
       // Queue the task to the server
       await task(taskId)
+      return true
     } catch (error) {
       // Reset processing state on error
       managerQueue.isProcessing.value = false
 
-      // The server has authority over task history in general, but in rare
-      // case of client-side error, we add that to failed tasks from the client side
-      taskHistory.value[taskId] = {
-        ui_id: taskId,
-        client_id: api.clientId || 'unknown',
-        kind: 'error',
-        result: 'failed',
-        status: {
-          status_str: 'error',
-          completed: false,
-          messages: [error instanceof Error ? error.message : String(error)]
-        },
-        timestamp: new Date().toISOString()
+      taskIdToPackId.value.delete(taskId)
+
+      if (!isAbortError(error)) {
+        taskHistory.value[taskId] = {
+          ui_id: taskId,
+          client_id: api.clientId || 'unknown',
+          kind: 'error',
+          result: 'failed',
+          status: {
+            status_str: 'error',
+            completed: false,
+            messages: [error instanceof Error ? error.message : String(error)]
+          },
+          timestamp: new Date().toISOString()
+        }
       }
+      return false
     }
   }
 
@@ -260,7 +265,11 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
         taskIdToPackId.value.set(taskId, params.id)
         return managerService.installPack(params, taskId, signal)
       }
-      await enqueueTaskWithLogs(task, `${actionDescription} ${params.id}`)
+      const admitted = await enqueueTaskWithLogs(
+        task,
+        `${actionDescription} ${params.id}`
+      )
+      if (!admitted) installingPacksIds.value.delete(params.id)
     },
     { maxSize: 1 }
   )
