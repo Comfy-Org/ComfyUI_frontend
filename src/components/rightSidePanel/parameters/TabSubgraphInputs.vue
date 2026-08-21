@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useEventListener } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed, nextTick, ref, shallowRef, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -65,7 +66,26 @@ watch(
   { immediate: true }
 )
 
+// `node.inputs` is a plain litegraph array, not Vue-reactive, so promoting or
+// demoting a widget wouldn't otherwise invalidate this computed. Track the
+// same subgraph events SubgraphEditor.vue reacts to so the list — and the
+// AsyncSearchInput-driven `searchedWidgetsList` below, which keys off it —
+// stays in sync when nothing is typed into the search box.
+const promotionVersion = ref(0)
+useEventListener(
+  () => node.subgraph.events,
+  [
+    'widget-promoted',
+    'widget-demoted',
+    'input-added',
+    'removing-input',
+    'inputs-reordered'
+  ],
+  () => promotionVersion.value++
+)
+
 const widgetsList = computed((): NodeWidgetsList => {
+  void promotionVersion.value
   return promotedInputWidgets(node).map((widget) => ({ node, widget }))
 })
 
