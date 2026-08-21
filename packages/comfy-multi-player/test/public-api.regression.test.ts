@@ -7,7 +7,8 @@
  * without going through `applyOps` and bypass stamp gating (KA-2), idempotency
  * and convergence (KA-4), and the catalog check at mint (KA-12).
  *
- * ADR-004 deliberately retains three layout reads for the frontend follower.
+ * ADR-004 deliberately retains three layout reads for the frontend follower;
+ * KA-1 additionally exposes the read-only encoding-loss diagnostic.
  */
 import { describe, expect, it } from "vitest";
 import * as documentInternals from "../src/doc.js";
@@ -19,7 +20,12 @@ describe("public API", () => {
    * Fix: #18 — https://github.com/Comfy-Org/comfy-multi-player/issues/18
    */
   it("regression: keeps every non-follower src/doc.ts runtime export off the package entrypoint", () => {
-    const followerReadSurface = new Set(["nodesMap", "linksMap", "OPAQUE_WIDGETS_KEY"]);
+    const followerReadSurface = new Set([
+      "nodesMap",
+      "linksMap",
+      "OPAQUE_WIDGETS_KEY",
+      "encodingLosses",
+    ]);
     const internalNames = Object.keys(documentInternals).filter((name) => !followerReadSurface.has(name));
     expect(internalNames.length).toBeGreaterThan(0);
 
@@ -41,6 +47,7 @@ describe("public API", () => {
         nodesMap: expect.any(Function),
         linksMap: expect.any(Function),
         OPAQUE_WIDGETS_KEY: "__widgets_opaque",
+        encodingLosses: expect.any(Function),
       }),
     );
   });

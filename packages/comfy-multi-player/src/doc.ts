@@ -315,8 +315,124 @@ export function isStorableArrayItem(value: unknown): boolean {
   }
 }
 
-/** Defensive copy of a value destined for a Y.Map value slot, refused up front if the doc cannot hold it. */
-function cloneForMap(value: unknown, what: string): unknown {
+// ---------------------------------------------------------------------------
+// What a Y.Doc can actually TRANSMIT (KA-1 / KA-3)
+// ---------------------------------------------------------------------------
+
+/** One place inside a value where encoding is not the identity. */
+export interface EncodingLoss {
+  /** Path from the value's root: `""` for the value itself, then `.key` / `[i]`. */
+  path: string;
+  /** What the encode → decode round trip does to it. */
+  detail: string;
+}
+
+/**
+ * Where a value would NOT survive its own encoding — a DIFFERENT question from
+ * {@link isStorableMapValue}, and the reason both exist.
+ *
+ * Storability asks whether yjs accepts the write. Anything it accepts that is
+ * not a Y type is held as `ContentAny`: yjs keeps the caller's object BY
+ * REFERENCE and only lib0's `writeAny` (lib0 0.2.117 `encoding.js`) walks the
+ * interior, at encode time, where a non-`Uint8Array` object is rewritten as a
+ * bag of its own enumerable keys. So a `Map`, `Set`, `Date`, `RegExp`, `Error`,
+ * `ArrayBuffer` or `DataView` NESTED inside an accepted plain object — and a
+ * `Date` even at the top level, which storability accepts — is written as `{}`.
+ * No throw, no rejection, byte-identical replicas: the replica that applied the
+ * op holds the real value in memory and every replica that decodes the update
+ * holds the coerced one (KA-1/KA-3 determinism, not KA-4 byte identity).
+ *
+ * This function REPORTS that; it rejects nothing. Narrowing the accepted
+ * payload domain is a vocabulary amendment owed a comfy-cli counterpart, so a
+ * host that wants to reject, warn or measure calls this and decides for itself.
+ *
+ * Give it the value AS IT WILL BE STORED — i.e. the `structuredClone`, not the
+ * original — for the same reason the storability gate does: cloning is what
+ * turns a class instance or a prototype-less object into a plain, faithfully
+ * encodable one.
+ *
+ * A reference CYCLE is reported here too, and is the severe member: yjs accepts
+ * it and `encodeStateAsUpdate` then throws `RangeError` forever, so the
+ * document can never again be snapshotted, persisted or synced.
+ *
+ * Pinned against a real encode → decode round trip in
+ * `test/nested-encoding-loss.regression.test.ts`, so a lib0 upgrade that widens
+ * or narrows the coerced set fails the pin instead of drifting silently.
+ */
+export function encodingLosses(value: unknown): EncodingLoss[] {
+  const out: EncodingLoss[] = [];
+  walkForEncodingLoss(value, "", new Set<object>(), out, true);
+  return out;
+}
+
+function walkForEncodingLoss(
+  value: unknown,
+  path: string,
+  onPath: Set<object>,
+  out: EncodingLoss[],
+  isRoot: boolean,
+): void {
+  switch (typeof value) {
+    // Every double survives, including NaN, ±Infinity and -0; `undefined`,
+    // strings and booleans have their own wire types.
+    case "undefined":
+    case "boolean":
+    case "number":
+    case "string":
+      return;
+    case "bigint": {
+      // TYPE 122 is `writeBigInt64` — anything wider is truncated, not refused.
+      const kept = BigInt.asIntN(64, value);
+      if (kept !== value) {
+        out.push({ path, detail: `BigInt ${value} does not fit int64 and decodes as ${kept}` });
+      }
+      return;
+    }
+    case "function":
+    case "symbol":
+      out.push({ path, detail: `a ${typeof value} is written as undefined` });
+      return;
+  }
+  if (value === null) return;
+  const obj = value as object;
+  // A Y type is stored as ContentType, not ContentAny — but only as the value
+  // itself; nested inside a plain object it is walked like any other object.
+  if (isRoot && (obj instanceof Y.AbstractType || obj instanceof Y.Doc)) return;
+  if (onPath.has(obj)) {
+    out.push({ path, detail: "a reference cycle; encodeStateAsUpdate never terminates" });
+    return;
+  }
+  if (obj instanceof Uint8Array) return;
+  onPath.add(obj);
+  try {
+    if (Array.isArray(obj)) {
+      obj.forEach((item, i) => walkForEncodingLoss(item, `${path}[${String(i)}]`, onPath, out, false));
+      return;
+    }
+    const proto = Object.getPrototypeOf(obj) as object | null;
+    if (proto !== Object.prototype && proto !== null) {
+      const keys = Object.keys(obj);
+      out.push({
+        path,
+        detail: `${describeUnstorable(obj)} decodes as {${keys.join(", ")}} — its own enumerable keys and nothing else`,
+      });
+      return;
+    }
+    for (const [k, item] of Object.entries(obj)) {
+      walkForEncodingLoss(item, `${path}.${k}`, onPath, out, false);
+    }
+  } finally {
+    onPath.delete(obj);
+  }
+}
+
+/**
+ * Defensive copy of a value destined for a Y.Map value slot, refused up front
+ * if the doc cannot hold it. Exported so `mint` gates its passthrough writes
+ * through the same predicate the node builders use — the two sites had drifted,
+ * and mint's ungated ones surfaced yjs's raw `Unexpected content type` instead.
+ */
+export function cloneForMap(value: unknown, what: string): unknown {
   const cloned = structuredClone(value);
   if (!isStorableMapValue(cloned)) {
     throw new TypeError(`${what}: ${describeUnstorable(cloned)} cannot be stored in a Y.Doc`);

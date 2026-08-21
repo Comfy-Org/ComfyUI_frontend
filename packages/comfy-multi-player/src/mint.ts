@@ -12,6 +12,7 @@
 import * as Y from "yjs";
 import {
   appliedMap,
+  cloneForMap,
   createNodeMap,
   definitionsMap,
   linksMap,
@@ -55,6 +56,15 @@ interface SubgraphDef {
  *
  * `project(mint(w, catalog), catalog)` deep-equals `w` modulo the schema §7
  * canonicalization (sorted-by-id node/link order).
+ *
+ * Passthrough writes go through the SAME storability gate as the node builders
+ * ({@link cloneForMap}). They already failed on a value yjs cannot hold — the
+ * throw came from yjs itself, mid-build, as a bare `Unexpected content type`
+ * naming neither the workflow key nor the value. Nothing that mints today stops
+ * minting; only the diagnosis changes, and the two sites stop disagreeing about
+ * which error a caller sees. Both gates are SHALLOW: an unstorable value nested
+ * inside an accepted container still passes, and is silently coerced at encode
+ * time rather than rejected — see {@link encodingLosses}.
  */
 export function mint(workflow: WorkflowJSON, catalog: WidgetCatalog, catalogVersion = ""): Y.Doc {
   const doc = new Y.Doc();
@@ -73,7 +83,7 @@ export function mint(workflow: WorkflowJSON, catalog: WidgetCatalog, catalogVers
       if (RESERVED_META_KEYS.has(k) || k.startsWith("__")) {
         throw new TypeError(`mint: workflow key '${k}' collides with a reserved doc-meta key`);
       }
-      meta.set(k, structuredClone(v));
+      meta.set(k, cloneForMap(v, `mint: workflow.${k}`));
     }
 
     const nodes = nodesMap(doc);
@@ -83,7 +93,7 @@ export function mint(workflow: WorkflowJSON, catalog: WidgetCatalog, catalogVers
 
     const links = linksMap(doc);
     for (const ln of workflow.links ?? []) {
-      links.set(String((ln as unknown[])[0]), structuredClone(ln));
+      links.set(String((ln as unknown[])[0]), cloneForMap(ln, "mint: link"));
     }
 
     const defsIn = workflow["definitions"];
@@ -124,12 +134,12 @@ function mintDefinition(sg: SubgraphDef, catalog: WidgetCatalog): Y.Map<unknown>
       for (const ln of v) {
         const key = String((ln as unknown[])[0]);
         order.push(key);
-        lm.set(key, structuredClone(ln));
+        lm.set(key, cloneForMap(ln, `mint: definition link ${key}`));
       }
       dm.set("links", lm);
       dm.set("link_order", order);
     } else {
-      dm.set(k, structuredClone(v));
+      dm.set(k, cloneForMap(v, `mint: definition.${k}`));
     }
   }
   return dm;

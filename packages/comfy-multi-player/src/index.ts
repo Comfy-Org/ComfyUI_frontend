@@ -24,6 +24,8 @@
  *  - `readSchemaVersion(doc)` / `assertReadableSchema(doc, context)` — the
  *    KA-11 read gate, for a host that wants to refuse a mismatched document
  *    with its own structured error before it reads;
+ *  - `encodingLosses(value)` — a read-only diagnostic for values that Yjs
+ *    accepts but does not preserve across encode → decode;
  *  - stamp machinery (`compareStampKeys`, `stampKey`, `writeTarget`) for
  *    hosts that need conflict identity or watermark bookkeeping;
  *  - the ADR-004 follower read surface (`nodesMap`, `linksMap`,
@@ -46,7 +48,13 @@ export * from "./stamps.js";
  * read-only by contract: followers never write and never call `applyOps`
  * (KA-1, KA-6, FC-5); the host remains the sole op applier.
  */
-export { OPAQUE_WIDGETS_KEY, linksMap, nodesMap } from "./doc.js";
+export {
+  OPAQUE_WIDGETS_KEY,
+  encodingLosses,
+  linksMap,
+  nodesMap,
+  type EncodingLoss,
+} from "./doc.js";
 export { applyOps } from "./applier.js";
 export { project } from "./project.js";
 export { mint } from "./mint.js";
