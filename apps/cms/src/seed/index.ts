@@ -14,8 +14,9 @@ const cacheDir = path.resolve(dirname, '../../.media-cache')
 const mediaExtension = (url: string): string => path.extname(new URL(url).pathname) || '.bin'
 
 // Chinese titles for a subset of gallery items, keyed by slug. Items absent from
-// this map keep only an `en` title and exercise the CMS fallback (a zh-CN visitor
-// sees the English title). Only `title` is localized — see the gallery spec.
+// this map keep only `en` values and exercise the CMS fallback (a zh-CN visitor
+// sees the English text). The value seeds both the gallery `title` and the
+// item's media alt text.
 const ZH_CN_TITLES: Record<string, string> = {
   'neon-nights': '霓虹之夜',
   autopoiesis: '自创生',
@@ -60,6 +61,11 @@ const seed = async (): Promise<void> => {
         })
       : undefined
 
+    // The item's media reuses the (localized) title as alt text: the en title
+    // at the default locale, the Chinese title (when the item has one) at
+    // zh-CN.
+    const zhTitle = ZH_CN_TITLES[item.id]
+
     // A video item's thumbnail is a frame extracted from the video; an image
     // item's thumbnail is the image itself. Every item ends up with a thumbnail,
     // satisfying the collection's required field.
@@ -72,16 +78,21 @@ const seed = async (): Promise<void> => {
         url: item.video,
         filename: videoFilename,
         alt: item.title,
+        zhAlt: zhTitle,
       })
 
       const posterPath = path.join(cacheDir, `${item.id}-poster.jpg`)
       await extractPoster(path.join(cacheDir, videoFilename), posterPath)
-      thumbnail = await uploadMediaFile(payload, posterPath, { alt: item.title })
+      thumbnail = await uploadMediaFile(payload, posterPath, {
+        alt: item.title,
+        zhAlt: zhTitle,
+      })
     } else if (item.image) {
       thumbnail = await seedMedia(payload, cacheDir, {
         url: item.image,
         filename: `${item.id}${mediaExtension(item.image)}`,
         alt: item.title,
+        zhAlt: zhTitle,
       })
     } else {
       throw new Error(`Gallery item ${item.id} has no media URL`)
@@ -117,7 +128,6 @@ const seed = async (): Promise<void> => {
     // Add a Chinese title for the subset with one; a second locale-scoped update
     // writes only the zh-CN `title`, leaving every other (unlocalized) field as
     // set above.
-    const zhTitle = ZH_CN_TITLES[item.id]
     if (zhTitle) {
       await payload.update({
         collection: 'gallery',

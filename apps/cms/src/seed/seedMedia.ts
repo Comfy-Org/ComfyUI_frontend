@@ -6,11 +6,14 @@ import type { Payload } from 'payload'
 // Upload a local file to the media collection unless a doc with the same
 // filename already exists. The idempotency check and Payload's stored filename
 // both key on the file's basename, so `filePath` must be named as it should be
-// stored (callers place it in the cache under that name).
+// stored (callers place it in the cache under that name). Alt text is written
+// per locale (`alt` at the default locale, `zhAlt` at zh-CN) on both the
+// create and existing-doc paths, so re-running the seed restores alt values
+// lost when a schema change moves the column (e.g. localizing `alt`).
 export const uploadMediaFile = async (
   payload: Payload,
   filePath: string,
-  { alt }: { alt: string },
+  { alt, zhAlt }: { alt: string; zhAlt?: string },
 ): Promise<number> => {
   const filename = path.basename(filePath)
 
@@ -20,20 +23,36 @@ export const uploadMediaFile = async (
     limit: 1,
   })
 
-  if (existing.docs.length > 0) {
-    return existing.docs[0].id as number
+  const existingId = existing.docs.length > 0 ? (existing.docs[0].id as number) : undefined
+
+  if (existingId !== undefined) {
+    await payload.update({ collection: 'media', id: existingId, data: { alt } })
   }
 
   // Reuse the exact filename instead of letting Payload suffix it (-1, -2, …)
   // when a file of that name lingers in the upload dir from a prior seed — the
   // idempotency `find` above keys on this filename.
-  const created = await payload.create({
-    collection: 'media',
-    filePath,
-    data: { alt },
-    overwriteExistingFiles: true,
-  })
-  return created.id as number
+  const id =
+    existingId ??
+    ((
+      await payload.create({
+        collection: 'media',
+        filePath,
+        data: { alt },
+        overwriteExistingFiles: true,
+      })
+    ).id as number)
+
+  if (zhAlt) {
+    await payload.update({
+      collection: 'media',
+      id,
+      locale: 'zh-CN',
+      data: { alt: zhAlt },
+    })
+  }
+
+  return id
 }
 
 // Download the asset once into the gitignored cache, then upload it to the
@@ -42,7 +61,7 @@ export const uploadMediaFile = async (
 export const seedMedia = async (
   payload: Payload,
   cacheDir: string,
-  { url, filename, alt }: { url: string; filename: string; alt: string },
+  { url, filename, alt, zhAlt }: { url: string; filename: string; alt: string; zhAlt?: string },
 ): Promise<number> => {
   const cachePath = path.join(cacheDir, filename)
 
@@ -58,5 +77,5 @@ export const seedMedia = async (
     await rename(tempPath, cachePath)
   }
 
-  return uploadMediaFile(payload, cachePath, { alt })
+  return uploadMediaFile(payload, cachePath, { alt, zhAlt })
 }
