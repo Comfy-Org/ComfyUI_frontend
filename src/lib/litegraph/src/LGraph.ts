@@ -495,7 +495,26 @@ export class LGraph
   }
   set id(value: UUID) {
     const raw = toRaw(this)
+    if (raw._id.value === value) return
     const rootGraph = raw.rootGraph
+    const subgraphDefinition =
+      rootGraph && rootGraph !== raw
+        ? useGraphDefinitionStore().definition(rootGraph.id, raw._id.value)
+        : undefined
+    if (
+      raw._id.value !== zeroUuid &&
+      (raw._nodes.length > 0 ||
+        raw._groups.length > 0 ||
+        raw.links.size > 0 ||
+        raw.floatingLinks.size > 0 ||
+        raw.reroutes.size > 0 ||
+        raw._subgraphs.size > 0 ||
+        (subgraphDefinition &&
+          (subgraphDefinition.inputs.length > 0 ||
+            subgraphDefinition.outputs.length > 0 ||
+            subgraphDefinition.widgets.length > 0)))
+    )
+      throw new Error("Cannot change a populated graph's ID; clear it first")
     if (!rootGraph || rootGraph === raw)
       useGraphDefinitionStore().rekeyRoot(raw._id.value, value)
     else
@@ -754,6 +773,7 @@ export class LGraph
       useExecutionOrderStore().clearGraph(graphScopeOf(this))
       definitionStore.clearGraph(this.rootGraph.id, graphId)
     }
+    this.reroutes.clear()
     this.id = this.isRootGraph ? createUuidv4() : zeroUuid
     this.revision = 0
 
@@ -770,8 +790,6 @@ export class LGraph
     this._nodes_in_order = []
     // nodes that contain onExecute sorted in execution order
     this._nodes_executable = null
-
-    this.reroutes.clear()
 
     // other scene stuff
     this._groups = []
