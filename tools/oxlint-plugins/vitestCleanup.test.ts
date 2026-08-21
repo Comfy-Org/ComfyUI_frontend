@@ -160,6 +160,13 @@ afterEach(() => {
   vi.useRealTimers()
   vi.clearAllTimers()
 })
+
+afterAll(() => {
+  vi.useFakeTimers()
+  setTimeout(() => undefined, 1)
+  vi.clearAllTimers()
+  vi.useRealTimers()
+})
 `
 
 const unrelatedFixture = `const vi = {
@@ -247,11 +254,13 @@ describe('Vitest cleanup rules', () => {
     }
   })
 
-  it('reports timer cleanup in after hooks but allows timer setup in before hooks', () => {
+  it('reports timer cleanup in afterEach but allows setup and afterAll cleanup', () => {
     expectReportsAt(output, [145, 146])
     const plainOutput = stripVTControlCharacters(output)
     expect(plainOutput).not.toContain('invalid.test.ts:141:')
     expect(plainOutput).not.toContain('invalid.test.ts:142:')
+    expect(plainOutput).not.toContain('invalid.test.ts:152:')
+    expect(plainOutput).not.toContain('invalid.test.ts:153:')
   })
 
   it('handles aliases, namespaces, concise callbacks, and nested control flow', () => {

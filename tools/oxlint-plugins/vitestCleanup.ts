@@ -11,7 +11,7 @@ const REDUNDANT_TIMER_CLEANUP_METHODS = new Set([
 ])
 
 const MODULE_SCOPE_MOCK_METHODS = new Set(['spyOn', 'stubGlobal'])
-const AFTER_HOOK_IMPORTS = new Set(['afterAll', 'afterEach'])
+const AFTER_EACH_IMPORTS = new Set(['afterEach'])
 const BEFORE_ALL_IMPORTS = new Set(['beforeAll'])
 const HOOK_IMPORTS = new Set([
   'afterAll',
@@ -274,7 +274,7 @@ export const noRedundantVitestCleanup = {
             (REDUNDANT_CLEANUP_METHODS.has(methodName) &&
               runsDirectlyInHook(context, node)) ||
             (REDUNDANT_TIMER_CLEANUP_METHODS.has(methodName) &&
-              runsDirectlyInHook(context, node, AFTER_HOOK_IMPORTS))
+              runsDirectlyInHook(context, node, AFTER_EACH_IMPORTS))
           )
         ) {
           return
