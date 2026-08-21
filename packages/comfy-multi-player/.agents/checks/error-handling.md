@@ -8,4 +8,17 @@ Apply this profile to changes in op validation, dispatch, rejection, and the app
 - Preserve abort-remainder: when one op in a batch is rejected, the remainder must not apply. Do not add a path that continues applying trailing ops after a rejection.
 - Do not demand error handling on genuinely infallible pure code, and do not flag existing handling in untouched code. Focus on NEW or CHANGED error paths. Critical for swallowed or partial-mutation errors in the apply path; major for a new fail-open branch; minor for a missing rejection `code` specificity.
 
+## Machine-consumed copy
+
+The `src/**` `path_instructions` entry is an umbrella over every profile, so it is hosted by
+[`README.md`](README.md#the-machine-consumed-copy-coderabbityaml) rather than owned by one. Its one
+load-bearing sentence is this profile's mutate-before-throw rule, so the anchor for it lives here: if
+the generated block loses that requirement, CI fails rather than the bot quietly stopping to ask for
+it. The needle is space-free because the YAML carries it in a folded scalar. That block's content was
+moved byte-for-byte from a hand-written config and has **not** been audited — it still cites issue
+#10 as open, and #10 is closed; see
+[#80](https://github.com/Comfy-Org/comfy-multi-player/issues/80).
+
+<!-- claim: validate-before-mutate :: .coderabbit.yaml -->
+
 > Before reporting PASS for any check above, apply [vacuity.md](vacuity.md): P0 to every check, P1 to any guard this change adds, P10 to what that guard's test asserts on, P2 to any tool you ran, and P7 to any run you quote.

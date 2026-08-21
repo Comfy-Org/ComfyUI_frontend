@@ -18,4 +18,31 @@ Apply this profile to catalog metadata, minting, widget writes, fixtures, and pr
 - A citation that wraps across lines is still one citation. The lint joins continuation lines before matching, because `(branch` and the branch name routinely land on separate lines; a per-line rule here caught one of the three citations that motivated it.
 <!-- claim: const WINDOW_LINES = 3 :: scripts/check-pins.mjs -->
 
+## Machine-consumed copy
+
+The block below is the source of `.coderabbit.yaml`'s `path_instructions` entry for this profile's
+glob. It is not documentation of that entry — `npm run gen:coderabbit` emits the YAML from it and
+`npm run check:coderabbit` fails CI if the two disagree, so this is the only editable copy. Write it
+for the bot, which never loads this file: self-contained, no cross-references. See
+[`README.md`](README.md#the-machine-consumed-copy-coderabbityaml).
+
+<!-- coderabbit-instructions: {fixtures/**,.agents/checks/catalog-pinning.md} -->
+```text
+Apply .agents/checks/catalog-pinning.md (KA-12, FC-10). The widget catalog
+(fixtures/catalog.json) is pinned by sha256 at mint; the golden conformance
+corpus and lww-vectors are SHA-pinned and one-way. Flag any change that
+edits a pinned fixture without a corresponding manifest/SHA update, cites
+the catalog/vocabulary by a moving branch instead of a SHA, or would let the
+corpus drift without being regenerated in CI (verify:corpus).
+```
+<!-- /coderabbit-instructions -->
+
+The block's load-bearing phrase is anchored into the generated file, so a body replaced with
+plausible prose fails CI rather than regenerating cleanly. The needle is space-free because the YAML
+carries it in a folded scalar, where every space is a legal line break. This block's content was
+moved byte-for-byte from a hand-written config and has **not** been audited against the code — see
+[#80](https://github.com/Comfy-Org/comfy-multi-player/issues/80).
+
+<!-- claim: sha256 :: .coderabbit.yaml -->
+
 > Before reporting PASS for any check above, apply [vacuity.md](vacuity.md): P0 to every check, P1 to any guard this change adds, P10 to what that guard's test asserts on, P2 to any tool you ran, and P7 to any run you quote.

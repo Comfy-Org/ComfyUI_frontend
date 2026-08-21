@@ -31,6 +31,8 @@
     "check:purity": "node scripts/check-purity.mjs",
     "check:pins": "node scripts/check-pins.mjs",
     "check:profile-claims": "node scripts/check-profile-claims.mjs",
+    "check:coderabbit": "node scripts/gen-coderabbit-config.mjs",
+    "gen:coderabbit": "node scripts/gen-coderabbit-config.mjs --write",
     "check:imports": "node scripts/check-import-graph.mjs",
     "verify:corpus": "node scripts/verify-corpus.mjs"
   },

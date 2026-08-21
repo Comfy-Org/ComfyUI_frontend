@@ -15,4 +15,47 @@ Apply this profile to changes to `src/**`, exports, package metadata, build conf
 <!-- claim: "check:imports": "node scripts/check-import-graph.mjs" :: package.json -->
 <!-- claim: "check:purity": "node scripts/check-purity.mjs" :: package.json -->
 
+## Machine-consumed copies
+
+This profile's opening line already scopes it to "package metadata, build configuration, and
+dependencies", so it owns the two `.coderabbit.yaml` `path_instructions` entries below as well as
+the `src/**` half of its own subject. The blocks are the **source** of those entries:
+`npm run gen:coderabbit` emits the YAML from them and `npm run check:coderabbit` fails CI if the two
+disagree. Edit the block, never the generated region. See
+[`README.md`](README.md#the-machine-consumed-copy-coderabbityaml).
+
+Both blocks are moved here byte-for-byte from a hand-written config and their **content has not been
+audited** against the code — two known defects, including a CI-step list that omits four of the nine
+gates, are filed as [#80](https://github.com/Comfy-Org/comfy-multi-player/issues/80).
+
+<!-- coderabbit-instructions: scripts/** -->
+```text
+These scripts are the machine-enforced guards for the invariants
+(check-purity, verify-corpus). Changes that weaken a guard (turning a
+positive assertion into a denylist, skipping the corpus SHA check, or making
+a gate non-fatal) are correctness issues. Keep the purity gate a positive
+yjs-only assertion, not merely a denylist (issue #22).
+```
+<!-- /coderabbit-instructions -->
+
+<!-- coderabbit-instructions: {package.json,package-lock.json,tsconfig.json,.github/**,stryker.conf.*} -->
+```text
+Guard the build and CI contract. The production dependency set must stay
+yjs-only (KA-3/FC-3) — flag any new runtime dependency. Cite the frozen
+vocabulary/catalog by SHA, never a moving branch (FC-10). Do not remove or
+make non-fatal the build, purity, corpus-verify, or test CI steps.
+```
+<!-- /coderabbit-instructions -->
+
+Each block's load-bearing phrase is anchored into the generated file, so a body replaced with
+plausible-sounding prose fails CI rather than regenerating cleanly. Needles are space-free because
+the YAML carries them in a folded scalar, where any space is a legal line break — and each must be
+**unique to its own block**: the first draft anchored the build/CI block on `yjs-only`, which also
+appears in the `scripts/**` block, so that whole instruction could be replaced with "Looks fine to
+me." and both gates stayed green. Anchoring is only as good as the needle's uniqueness, and the way
+to know is to blank each body in turn and watch which claim goes stale.
+
+<!-- claim: denylist :: .coderabbit.yaml -->
+<!-- claim: corpus-verify :: .coderabbit.yaml -->
+
 > Before reporting PASS for any check above, apply [vacuity.md](vacuity.md): P0 to every check, P1 to any guard this change adds, P10 to what that guard's test asserts on, P2 to any tool you ran, and P7 to any run you quote.

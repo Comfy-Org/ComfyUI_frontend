@@ -631,6 +631,7 @@ npm run check:imports # module-graph gate: no cycles, src imports yjs only, no N
 npm run check:pins    # cross-repo citations are pinned by SHA, not a moving ref
 npm run verify:corpus # conformance fixtures match their pinned SHAs
 npm run check:profile-claims # .agents/checks prose still matches the code it restates
+npm run check:coderabbit     # .coderabbit.yaml still matches the profiles that generate it
 ```
 
 `fixtures/` holds the replay corpus: recorded op sessions with their starting

@@ -39,6 +39,48 @@ Repo conventions:
 - Never use `any` in tests; deliberate invalid inputs are cast narrowly (`as unknown as Op`) at the single line under test.
 - "Major" for missing tests on applier/ordering/fail-closed logic; "minor" for a missing peripheral edge case. An inadequate observable (see above) is "major" wherever a missing test would be: the coverage it reports is not coverage.
 
+## Machine-consumed copy
+
+The block below **is** `.coderabbit.yaml`'s `path_instructions` entry for `test/**`, not a
+description of it: `npm run gen:coderabbit` emits the YAML from this block and
+`npm run check:coderabbit` fails CI when the two disagree, so the file is a build product and this
+is the only editable copy. That is the structural fix for the reason item 2's oracle outlived its
+first correction: #43 (`7c454eb`) created both copies in one commit, #53 (`547ae7b`) corrected this
+file and left `.coderabbit.yaml` saying the retired thing, and it took #74 (`2e42423`) to find both
+by hand. The bot copy lived in a different file, in a different format, and was not greppable from
+this one.
+
+Write it for the bot: **self-contained**, since `path_instructions` are injected as literal text and
+this profile is never loaded alongside them. Keep item 3's accepted-op carve-out in it — the first
+draft of this block dropped it, which would have had the bot flagging seven existing suites that
+compare projections correctly.
+
+<!-- coderabbit-instructions: test/** -->
+```text
+This block is the complete instruction; .agents/checks/test-quality.md is
+the human copy of it and is NOT loaded for you, so do not assume context
+from it. Rejection tests must assert the document state, not only
+failed.code. For a REJECTED op the oracle is byte identity under
+Y.encodeStateAsUpdate plus the op_id absent from __applied, NOT the
+projection: project() renders neither __stamps nor __applied, so a write
+into either is invisible to it while the document has really diverged. Also
+verify a trailing valid op after a rejected one does not apply
+(abort-remainder). This byte rule is scoped to REJECTIONS only and is NOT a
+general preference for byte assertions. For an ACCEPTED op the default
+observable is the projection: accepted delete-wins and LWW-dropped no-ops
+deliberately consume an op_id, so their encoded state is intentionally NOT
+byte-identical, and convergence tests compare projections across arrival
+orders because the ledgers differ by construction. Never ask for byte
+identity on an accepted op or across two independently built docs, and do
+not ask for it where the property is really about one key or one root.
+Otherwise check only that the chosen observable can express the violation
+under test, preferring one that also names where it happened. Op-semantics
+tests need both arrival orders (convergence) and a double-apply no-op
+(idempotency). No `any` in tests; cast invalid inputs narrowly at the single
+line under test. Tests use Vitest under test/.
+```
+<!-- /coderabbit-instructions -->
+
 ## Claim anchors
 
 Every checkable fact this profile restates, and every phrase it has retired, pinned by `npm run check:profile-claims` (see [`README.md`](README.md)). Grouped, not scattered, because item 2's history is that the anchors are the load-bearing part of the document.
@@ -71,6 +113,10 @@ Why the projection is inadequate. `project()` must not reach either ledger, and 
 
 The retired advice, banned in both copies — this file and the machine-consumed restatement in `.coderabbit.yaml`, which is the copy that runs on every PR and the one the earlier fixes never looked at. All `.coderabbit.yaml` needles are deliberately space-free: that block is a YAML folded scalar, so a needle containing a space could be split by a cosmetic rewrap, which would redden a positive claim and, worse, silently disarm a ban.
 
+These three markers are **not** made redundant by the generator above, and the distinction is worth stating because "it is generated, so it cannot diverge" is only half true. `check:coderabbit` proves the YAML matches the *source block*; it says nothing about whether the source block still says the right thing. An author who re-typed the retired oracle into the block above and regenerated would pass that gate and fail these markers. Generation removes the transport copy; the markers hold the content.
+
+The limit of that, said plainly rather than left to be discovered: these are substring tripwires on two exact spellings. A **paraphrase** — "show the projection is identical before and after the rejected op" — regenerates cleanly and passes every gate in this repo. That was measured against this tree, not assumed. The ban set cannot simply be widened, because this block's own correct text contains `project()` and `projection`. The residue is #74's and is unchanged; someone still has to read the block.
+
 <!-- claim-absent: the projection must be unchanged :: .agents/checks/test-quality.md -->
 <!-- claim-absent: project(doc) :: .coderabbit.yaml -->
 <!-- claim: Y.encodeStateAsUpdate :: .coderabbit.yaml -->
@@ -84,6 +130,8 @@ The observable table and the conventions block:
 
 <!-- claim: [...metaMap(doc).keys()].sort() :: test/doc-mint-mutation-survivors.test.ts -->
 <!-- claim: [...doc.share.keys()] :: test/roundtrip.test.ts -->
+<!-- claim: "check:coderabbit": "node scripts/gen-coderabbit-config.mjs" :: package.json -->
+<!-- claim: "gen:coderabbit": "node scripts/gen-coderabbit-config.mjs --write" :: package.json -->
 <!-- claim: "test": "vitest run" :: package.json -->
 <!-- claim: "check:mutation-report": "node scripts/check-mutation-report.mjs" :: package.json -->
 <!-- claim: "verify:corpus": "node scripts/verify-corpus.mjs" :: package.json -->
