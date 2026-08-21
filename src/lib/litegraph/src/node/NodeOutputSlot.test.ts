@@ -3,7 +3,6 @@ import { fromAny } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { LinkId } from '@/lib/litegraph/src/LLink'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { NodeOutputSlot } from '@/lib/litegraph/src/node/NodeOutputSlot'
 import { toLinkId } from '@/types/linkId'
@@ -88,20 +87,23 @@ describe('NodeOutputSlot deprecated links getter', () => {
     source.graph!.add(secondTarget)
     const second = source.connect(0, secondTarget, 0)!
 
-    const links = source.outputs[0].links as LinkId[]
+    const slot = source.outputs[0]
+    const links = slot.links
+    if (!links) throw new Error('Expected connected output links')
     expect(links).toEqual([first.id, second.id])
     expect(links.pop()).toBe(second.id)
     expect(secondTarget.inputs[0].link).toBeNull()
     expect(target.inputs[0].link).toBe(first.id)
-    expect(source.outputs[0].links).toBe(links)
+    expect(slot.links).toBe(links)
     expect(links).toEqual([first.id])
   })
 
   it('synchronizes a retained array view with topology commands', () => {
     const { source, target } = createConnectedGraph()
-    const slot = source.outputs[0] as { links: LinkId[] | null }
+    const slot = source.outputs[0]
     slot.links = []
-    const links = slot.links!
+    const links = slot.links
+    if (!links) throw new Error('Expected retained output links')
     const first = source.connect(0, target, 0)!
 
     expect(links).toEqual([first.id])
@@ -111,11 +113,13 @@ describe('NodeOutputSlot deprecated links getter', () => {
 
   it('accepts unresolved additions without changing topology', () => {
     const { source } = createConnectedGraph()
-    const slot = source.outputs[0] as { links: LinkId[] | null }
+    const slot = source.outputs[0]
 
     slot.links = []
     expect(slot.links).toEqual([])
-    expect(() => slot.links!.push(toLinkId(404))).not.toThrow()
+    const links = slot.links
+    if (!links) throw new Error('Expected assigned output links')
+    expect(() => links.push(toLinkId(404))).not.toThrow()
     expect(slot.links).toEqual([])
   })
 })
