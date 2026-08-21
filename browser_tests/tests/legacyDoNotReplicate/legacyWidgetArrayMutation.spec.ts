@@ -9,28 +9,8 @@ test.describe('Legacy widget array mutation', { tag: '@vue-nodes' }, () => {
   test('Should display widgets in the order of the live widget array', async ({
     comfyPage
   }) => {
-    const nodeId = toNodeId(
-      await comfyPage.page.evaluate(() => {
-        const node = window.app!.graph.nodes.find(
-          (node) => (node.widgets?.length ?? 0) === 1
-        )
-        if (!node) throw new Error('Node with one widget not found')
-
-        node.addWidget('text', 'saola-workflow', '', () => {})
-        node.addWidget('text', 'okapi-resolution', '', () => {})
-
-        const element = document.createElement('div')
-        element.textContent = 'numbat-stage'
-        node.addDOMWidget('numbat-stage', 'numbat-stage', element, {
-          serialize: false
-        })
-
-        node.addWidget('button', 'quoll-upload', undefined, () => {})
-        node.addWidget('button', 'olm-link', undefined, () => {})
-        return String(node.id)
-      })
-    )
     const legacyApi = new BAD_DO_NOT_DO_THIS_LegacyApiHelper(comfyPage.page)
+    const nodeId = await legacyApi.addWidgetsForLegacyArrayReordering()
     await legacyApi.reorderWidgetsWithSplice(nodeId, [
       ['quoll-upload', 'saola-workflow'],
       ['olm-link', 'quoll-upload']
