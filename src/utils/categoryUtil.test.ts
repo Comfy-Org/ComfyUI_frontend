@@ -39,7 +39,9 @@ describe('getProviderIcon', () => {
   })
 
   it('returns the Comfy logo for Comfy Cloud', () => {
-    expect(getProviderIcon('Comfy Cloud')).toBe('icon-[comfy--comfy-c]')
+    expect(getProviderIcon('Comfy Cloud')).toBe(
+      'icon-[comfy--comfy-c] text-brand-yellow'
+    )
   })
 
   it('converts to lowercase', () => {

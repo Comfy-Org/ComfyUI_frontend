@@ -77,7 +77,7 @@
         "
       />
       <i
-        :class="cn(item.value.icon, 'size-4 shrink-0 text-muted-foreground')"
+        :class="cn('size-4 shrink-0 text-muted-foreground', item.value.icon)"
       />
       <span class="text-foreground min-w-0 flex-1 truncate text-sm">
         <slot name="folder" :node="item.value">

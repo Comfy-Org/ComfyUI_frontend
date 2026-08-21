@@ -187,6 +187,8 @@ export function usePartitionedBadges(nodeData: VueNodeData) {
     )
     const isCoreNode =
       nodeDef?.isCoreNode && displaySource === NodeBadgeMode.ShowAll
+    const isComfyCloudNode =
+      nodeDef?.python_module === 'comfy_api_nodes.nodes_comfy_cloud'
     const core: NodeBadgeProps[] = []
     const extension: NodeBadgeProps[] = []
     const pricing: { required: string; rest?: string }[] = []
@@ -223,6 +225,7 @@ export function usePartitionedBadges(nodeData: VueNodeData) {
 
     return {
       hasComfyBadge: isCoreNode && pricing.length === 0,
+      hasComfyCloudBadge: isComfyCloudNode,
       core,
       extension,
       pricing

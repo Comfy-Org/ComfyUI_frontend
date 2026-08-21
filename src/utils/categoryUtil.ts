@@ -113,7 +113,10 @@ export function getProviderIcon(providerName: string): string {
   const aliasedKey = Object.hasOwn(PROVIDER_ICON_ALIASES, iconKey)
     ? PROVIDER_ICON_ALIASES[iconKey]
     : iconKey
-  return `icon-[comfy--${aliasedKey}]`
+  const iconClass = `icon-[comfy--${aliasedKey}]`
+  return iconKey === 'comfy-cloud'
+    ? `${iconClass} text-brand-yellow`
+    : iconClass
 }
 
 /**
