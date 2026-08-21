@@ -20,6 +20,7 @@ interface Finding {
   readonly file: string
   readonly severity: string
   readonly name: string
+  readonly message: string
 }
 
 interface OxlintDiagnostic {
@@ -74,7 +75,8 @@ function lint(targets: string[]): Finding[] {
     .map((diagnostic) => ({
       file: diagnostic.filename ?? '',
       severity: diagnostic.severity ?? '',
-      name: /^'([^']+)'/.exec(diagnostic.message ?? '')?.[1] ?? ''
+      name: /^'([^']+)'/.exec(diagnostic.message ?? '')?.[1] ?? '',
+      message: diagnostic.message ?? ''
     }))
 }
 
@@ -228,10 +230,19 @@ describe('comfy/no-duplicate-ingest-type', () => {
 
   const reported = (file: string) =>
     findings.filter((f) => f.file.endsWith(file)).map((f) => f.name)
+  const messageFor = (name: string) =>
+    findings.find((finding) => finding.name === name)?.message ?? ''
 
   it('reports at error severity, so pnpm lint gates CI on it', () => {
     expect(findings.length).toBeGreaterThan(0)
     expect([...new Set(findings.map((f) => f.severity))]).toEqual(['error'])
+  })
+
+  it.for([
+    ['a re-declaration', 'Member'],
+    ['contract drift', 'Plan']
+  ])('cross-references the remote Zod rule from %s', ([, name]) => {
+    expect(messageFor(name)).toContain('comfy/no-new-zod-for-remote-api-types')
   })
 
   it.for([
