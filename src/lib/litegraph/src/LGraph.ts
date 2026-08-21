@@ -66,7 +66,11 @@ import {
 import type { DragAndScaleState } from './DragAndScale'
 import { LGraphCanvas } from './LGraphCanvas'
 import { Rectangle } from './infrastructure/Rectangle'
-import { LGraphGroup } from './LGraphGroup'
+import {
+  LGraphGroup,
+  registerGroupPresentation,
+  unregisterGroupPresentation
+} from './LGraphGroup'
 import {
   LGraphNode,
   registerNodeState,
@@ -1199,6 +1203,7 @@ export class LGraph
       this.setDirtyCanvas(true)
       this.change()
       node.graph = this
+      registerGroupPresentation(this, node)
       attachGroupLayout(this, node)
       this.incrementVersion()
       return
@@ -1290,6 +1295,7 @@ export class LGraph
         this._groups.splice(index, 1)
       }
       detachGroupLayout(node)
+      unregisterGroupPresentation(node)
       node.graph = undefined
       this.incrementVersion()
       this.setDirtyCanvas(true, true)

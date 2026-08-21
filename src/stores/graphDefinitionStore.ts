@@ -1,17 +1,30 @@
 import { defineStore } from 'pinia'
 
-import type { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
+import type {
+  IGraphGroupFlags,
+  LGraphGroup
+} from '@/lib/litegraph/src/LGraphGroup'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { Subgraph, SubgraphId } from '@/lib/litegraph/src/LGraph'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
 import type { ExposedWidget } from '@/lib/litegraph/src/types/serialisation'
+import type { GroupId } from '@/types/groupId'
 import type { UUID } from '@/utils/uuid'
+
+export interface GroupPresentation {
+  title: string
+  color?: string
+  font?: string
+  font_size: number
+  flags: IGraphGroupFlags
+}
 
 interface GraphMembership {
   nodes: (LGraphNode | SubgraphNode)[]
   groups: LGraphGroup[]
+  groupPresentation: Map<GroupId, GroupPresentation>
 }
 
 interface SubgraphDefinition {
@@ -47,13 +60,36 @@ export const useGraphDefinitionStore = defineStore('graphDefinition', () => {
     const definitions = root(rootGraphId)
     const existing = definitions.membershipByGraph.get(graphId)
     if (existing) return existing
-    const created: GraphMembership = { nodes: [], groups: [] }
+    const created: GraphMembership = {
+      nodes: [],
+      groups: [],
+      groupPresentation: new Map()
+    }
     definitions.membershipByGraph.set(graphId, created)
     return created
   }
 
   function subgraphs(rootGraphId: UUID) {
     return root(rootGraphId).subgraphs
+  }
+
+  function registerGroupPresentation(
+    rootGraphId: UUID,
+    graphId: UUID,
+    groupId: GroupId,
+    presentation: GroupPresentation
+  ): GroupPresentation {
+    const presentations = membership(rootGraphId, graphId).groupPresentation
+    presentations.set(groupId, presentation)
+    return presentations.get(groupId)!
+  }
+
+  function deleteGroupPresentation(
+    rootGraphId: UUID,
+    graphId: UUID,
+    groupId: GroupId
+  ): void {
+    membership(rootGraphId, graphId).groupPresentation.delete(groupId)
   }
 
   function definition(
@@ -124,8 +160,10 @@ export const useGraphDefinitionStore = defineStore('graphDefinition', () => {
   return {
     clearGraph,
     clearRoot,
+    deleteGroupPresentation,
     definition,
     membership,
+    registerGroupPresentation,
     rekeyGraph,
     rekeyRoot,
     subgraphs
