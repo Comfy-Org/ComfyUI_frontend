@@ -12,6 +12,7 @@ import {
   useWorkflowBookmarkStore,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
+import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
@@ -229,7 +230,10 @@ export function useWorkflowActionsMenu(
       : workflow?.changeTracker?.activeState?.extra?.linearData
     let hasLinearData: boolean
     if (rawLd) {
-      const { inputs, outputs } = pruneLinearData(rawLd)
+      const { inputs, outputs } = pruneLinearData(
+        rawLd,
+        isActive ? app.rootGraph : undefined
+      )
       hasLinearData = inputs.length > 0 || outputs.length > 0
     } else {
       hasLinearData = workflow?.path?.endsWith('.app.json') ?? false
