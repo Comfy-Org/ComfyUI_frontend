@@ -10,18 +10,6 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('@/platform/assets/utils/outputAssetUtil', () => ({
-  getOutputKey: ({
-    nodeId,
-    subfolder,
-    filename
-  }: {
-    nodeId?: string | null
-    subfolder?: string | null
-    filename?: string | null
-  }) =>
-    nodeId == null || subfolder == null || !filename
-      ? null
-      : `${nodeId}-${subfolder}-${filename}`,
   resolveOutputAssetItems: mocks.resolveOutputAssetItems
 }))
 

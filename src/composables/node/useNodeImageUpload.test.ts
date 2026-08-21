@@ -129,10 +129,24 @@ describe('useNodeImageUpload', () => {
     expect(onUploadStart).toHaveBeenCalledWith(files)
   })
 
-  it('calls onUploadComplete with valid paths on success', async () => {
+  it('invalidates input assets and only then calls onUploadComplete on success', async () => {
     mockFetchApi.mockResolvedValueOnce(successResponse('test.png'))
+    let invalidateResolve!: () => void
+    mockInvalidateInputs.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          invalidateResolve = resolve
+        })
+    )
 
-    await capturedDragOnDrop([createFile()])
+    const drop = capturedDragOnDrop([createFile()])
+    await vi.waitFor(() =>
+      expect(mockInvalidateInputs).toHaveBeenCalledTimes(1)
+    )
+    expect(onUploadComplete).not.toHaveBeenCalled()
+
+    invalidateResolve()
+    await drop
     expect(onUploadComplete).toHaveBeenCalledWith(['test.png'])
   })
 

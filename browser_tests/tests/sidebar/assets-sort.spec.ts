@@ -53,7 +53,7 @@ const CLOUD_ASSETS: Asset[] = SPECS.flatMap((spec) => {
       job_id: jobId,
       mime_type: 'image/png',
       tags: ['output'],
-      preview_url: `/api/view?filename=${spec.filename}&type=output`,
+      preview_url: `/api/view?filename=${spec.id}_extra.png&type=output`,
       created_at: new Date(spec.createTime).toISOString(),
       updated_at: new Date(spec.createTime).toISOString(),
       user_metadata: { executionTimeInSeconds: spec.durationSec }

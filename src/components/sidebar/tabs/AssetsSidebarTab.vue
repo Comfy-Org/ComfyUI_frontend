@@ -674,7 +674,6 @@ const copyJobId = async () => {
 }
 
 const handleApproachEnd = useDebounceFn(async () => {
-  if (activeTab.value === 'output' && !isInFolderView.value)
-    await assetsStore.outputAssets.loadMore()
+  if (!isInFolderView.value) await currentAssets.value.loadMore()
 }, 300)
 </script>

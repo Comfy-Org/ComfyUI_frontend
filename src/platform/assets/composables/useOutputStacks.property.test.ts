@@ -7,7 +7,6 @@ import { ref } from 'vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
 vi.mock('@/platform/assets/utils/outputAssetUtil', () => ({
-  getOutputKey: () => null,
   resolveOutputAssetItems: () => Promise.resolve([])
 }))
 

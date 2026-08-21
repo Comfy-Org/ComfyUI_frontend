@@ -201,14 +201,13 @@ const createInputMappingWidget = (
     }
   )
 
-  if (toValue(assetsStore.inputAssets.items).length === 0) {
-    void assetsStore.inputAssets.loadMore().then(() => {
-      // edge for users using nodes with 0 prior inputs
-      // force canvas refresh the first time they add an asset
-      // so they see filenames instead of hashes.
+  async function loadAll() {
+    while (toValue(assetsStore.inputAssets.hasMore)) {
+      await assetsStore.inputAssets.loadMore()
       node.setDirtyCanvas(true, false)
-    })
+    }
   }
+  void loadAll()
 
   bindDynamicValuesOption(widget, () =>
     getCloudInputAssetValues(node.comfyClass)

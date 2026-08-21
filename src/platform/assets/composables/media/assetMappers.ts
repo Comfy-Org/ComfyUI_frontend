@@ -141,8 +141,7 @@ export function unflattenOutputAssets(
       created_at: ordered.at(-1)!.created_at,
       user_metadata: {
         jobId: job_id,
-        // FIXME exploring job entries requires a node id...
-        nodeId: -1,
+        subfolder: '',
         ...representative.user_metadata,
         outputCount: ordered.length,
         allOutputs: ordered.map(flatAssetToResultItem)

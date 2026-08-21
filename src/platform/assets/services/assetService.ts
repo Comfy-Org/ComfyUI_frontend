@@ -1048,8 +1048,7 @@ function createAssetService() {
           )
         )
       }
-      const asset = result.data.type === 'sync' ? result.data.asset : undefined
-      invalidateInputAssets(asset && [asset.id])
+      invalidateInputAssets(data.asset && [data.asset.id])
       return result.data
     }
 

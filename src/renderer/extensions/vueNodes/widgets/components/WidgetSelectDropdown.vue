@@ -151,10 +151,6 @@ const acceptTypes = computed(() => {
 
 const layoutMode = ref<LayoutMode>(props.defaultLayoutMode ?? 'grid')
 
-function handleIsOpenUpdate(isOpen: boolean) {
-  if (isOpen) void assetsStore.outputAssets.loadMore()
-}
-
 const handleApproachEnd = useDebounceFn(async () => {
   if (assetsStore.outputAssets.hasMore)
     await assetsStore.outputAssets.loadMore()
@@ -193,7 +189,6 @@ async function updateFiles(files: File[]) {
       class="w-full"
       @update:selected="updateSelectedItems"
       @update:files="updateFiles"
-      @update:is-open="handleIsOpenUpdate"
       @approach-end="handleApproachEnd"
     />
   </WidgetLayoutField>

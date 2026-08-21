@@ -713,7 +713,8 @@ export function useMediaAssetActions() {
               const failed = results.filter((r) => r.status === 'rejected')
 
               // Log failed deletions for debugging
-              failed.forEach((result, index) => {
+              results.forEach((result, index) => {
+                if (result.status !== 'rejected') return
                 console.warn(
                   `Failed to delete asset ${assetArray[index].name}:`,
                   result.reason

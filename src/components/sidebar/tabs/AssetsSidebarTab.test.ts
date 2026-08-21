@@ -21,25 +21,27 @@ const folderAsset = vi.hoisted(() => ({
 vi.mock('@/stores/assetsStore', async () => {
   const { ref } = await import('vue')
 
+  const store = {
+    outputAssets: {
+      items: ref([folderAsset]),
+      isLoading: ref(false),
+      hasMore: ref(false),
+      loadMore: vi.fn(),
+      loadNew: vi.fn(),
+      invalidate: vi.fn()
+    },
+    inputAssets: {
+      items: ref([]),
+      isLoading: ref(false),
+      hasMore: ref(false),
+      loadMore: vi.fn(),
+      loadNew: vi.fn(),
+      invalidate: vi.fn()
+    }
+  }
+
   return {
-    useAssetsStore: () => ({
-      outputAssets: {
-        items: ref([folderAsset]),
-        isLoading: ref(false),
-        hasMore: ref(false),
-        loadMore: vi.fn(),
-        loadNew: vi.fn(),
-        invalidate: vi.fn()
-      },
-      inputAssets: {
-        items: ref([]),
-        isLoading: ref(false),
-        hasMore: ref(false),
-        loadMore: vi.fn(),
-        loadNew: vi.fn(),
-        invalidate: vi.fn()
-      }
-    })
+    useAssetsStore: () => store
   }
 })
 

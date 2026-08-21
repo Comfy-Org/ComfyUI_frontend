@@ -24,13 +24,19 @@ function createMockAssetItem(overrides: Partial<AssetItem> = {}): AssetItem {
 }
 
 const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
-const mockLoadMore = vi.hoisted(() => vi.fn(() => Promise.resolve()))
+const mockLoadMore = vi.hoisted(() =>
+  vi.fn(() => {
+    mockAssetsStoreState.inputAssets.hasMore = false
+    return Promise.resolve()
+  })
+)
 const mockGetInputName = vi.hoisted(() => vi.fn((hash: string) => hash))
 const mockGetAssets = vi.hoisted(() => vi.fn(() => [] as AssetItem[]))
 const mockAssetsStoreState = vi.hoisted(() => ({
   inputAssets: {
     items: [] as AssetItem[],
     isLoading: false,
+    hasMore: false,
     loadMore: mockLoadMore
   }
 }))
@@ -142,6 +148,7 @@ describe('useComboWidget', () => {
     mockDistributionState.isCloud = false
     mockAssetsStoreState.inputAssets.items = []
     mockAssetsStoreState.inputAssets.isLoading = false
+    mockAssetsStoreState.inputAssets.hasMore = false
   })
 
   it('should handle undefined spec', () => {
@@ -740,6 +747,7 @@ describe('useComboWidget', () => {
       mockDistributionState.isCloud = true
       mockAssetsStoreState.inputAssets.items = []
       mockAssetsStoreState.inputAssets.isLoading = false
+      mockAssetsStoreState.inputAssets.hasMore = true
 
       const constructor = useComboWidget()
       const mockWidget = createMockWidget({ type: 'combo' })
@@ -760,6 +768,7 @@ describe('useComboWidget', () => {
       mockDistributionState.isCloud = true
       mockAssetsStoreState.inputAssets.items = []
       mockAssetsStoreState.inputAssets.isLoading = false
+      mockAssetsStoreState.inputAssets.hasMore = true
       mockLoadMore.mockImplementationOnce(async () => {
         mockAssetsStoreState.inputAssets.items = [
           createMockAssetItem({
@@ -767,6 +776,7 @@ describe('useComboWidget', () => {
             hash: scenario.assetHash
           })
         ]
+        mockAssetsStoreState.inputAssets.hasMore = false
       })
 
       const constructor = useComboWidget()

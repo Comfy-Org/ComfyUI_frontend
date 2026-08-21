@@ -2,13 +2,13 @@ import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadat
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { isCloud } from '@/platform/distribution/types'
 import type { JobOutputAsset } from '@/platform/remote/comfyui/jobs/jobTypes'
+import { getOutputKey } from '@/platform/assets/utils/outputKeyUtil'
 import {
   getJobAssets,
   getJobDetail,
   getPreviewableOutputsFromJobDetail
 } from '@/services/jobOutputCache'
 import type { ResultItemImpl } from '@/stores/queueStore'
-import type { SerializedNodeId } from '@/types/nodeId'
 
 type OutputAssetMapOptions = {
   jobId: string
@@ -22,12 +22,6 @@ type OutputAssetMapOptions = {
 type ResolveOutputAssetItemsOptions = {
   createdAt?: string
   excludeOutputKey?: string
-}
-
-type OutputKeyParts = {
-  nodeId?: SerializedNodeId | null
-  subfolder?: string | null
-  filename?: string | null
 }
 
 function shouldLoadFullOutputs(
@@ -54,17 +48,7 @@ export function getTotalAssetOutputCount(
   return assets.reduce((sum, asset) => sum + getAssetOutputCount(asset), 0)
 }
 
-export function getOutputKey({
-  nodeId,
-  subfolder,
-  filename
-}: OutputKeyParts): string | null {
-  if (nodeId == null || subfolder == null || !filename) {
-    return null
-  }
-
-  return `${nodeId}-${subfolder}-${filename}`
-}
+export { getOutputKey } from '@/platform/assets/utils/outputKeyUtil'
 
 /**
  * Maps a job's outputs to AssetItems with ids derived from the composite
