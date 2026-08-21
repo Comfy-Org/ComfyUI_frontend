@@ -3,6 +3,9 @@ import { useClipboard } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
+import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
+import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+
 import type { UserAttachment } from '../../../stores/agent/agentConversationStore'
 import AgentTooltip from '../AgentTooltip.vue'
 
@@ -18,6 +21,13 @@ const {
 
 const { t } = useI18n()
 const { copy, copied } = useClipboard({ copiedDuring: 2000, legacy: true })
+
+/* The shared map's 'other' glyph is a checkmark, which reads as a status
+   rather than a file on this surface. */
+function attachmentIconClass(name: string): string {
+  const kind = getMediaTypeFromFilename(name)
+  return kind === 'other' ? 'icon-[lucide--file]' : iconForMediaType(kind)
+}
 </script>
 
 <template>
@@ -42,7 +52,9 @@ const { copy, copied } = useClipboard({ copiedDuring: 2000, legacy: true })
         class="m-0"
       >
         <img
-          v-if="item.previewUrl"
+          v-if="
+            item.previewUrl && getMediaTypeFromFilename(item.name) === 'image'
+          "
           :src="item.previewUrl"
           :alt="item.name"
           class="aspect-square w-full rounded-lg object-cover"
@@ -51,7 +63,11 @@ const { copy, copied } = useClipboard({ copiedDuring: 2000, legacy: true })
           v-else
           class="bg-agent-surface-raised flex aspect-square w-full items-center justify-center rounded-lg"
         >
-          <span class="text-agent-fg-subtle icon-[lucide--image] size-6" />
+          <span
+            :class="
+              cn(attachmentIconClass(item.name), 'text-agent-fg-subtle size-6')
+            "
+          />
         </div>
         <figcaption class="text-agent-fg-muted mt-0.5 truncate text-xs">
           {{ item.name }}

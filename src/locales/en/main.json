@@ -5018,7 +5018,7 @@
       "selectNode": "Select node"
     },
     "addFromAssets": "Add from assets panel",
-    "assetNotAttachable": "Only images and videos can be attached",
+    "assetNotAttachable": "Images, video, audio, 3D models, and text files can be attached",
     "attachmentTooLarge": "{name} is larger than {limit}",
     "attachmentUploadFailed": "{name} could not be uploaded",
     "changeWorkflowForChat": "Change the workflow for this chat",

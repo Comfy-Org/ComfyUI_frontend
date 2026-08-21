@@ -12,6 +12,7 @@ import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useAssetsStore } from '@/stores/assetsStore'
 
 const getServerFeature = vi.hoisted(() =>
   vi.fn((_name: string, defaultValue?: unknown) => defaultValue)
@@ -789,6 +790,91 @@ describe('AgentPanelRoot attach flow', () => {
 
     expect(await screen.findByText('movie.mp4')).toBeInTheDocument()
     await vi.waitFor(() => expect(uploaded).toEqual(['movie.mp4']))
+  })
+
+  // Jo's FE-1323 expansion: every approved format attaches through drag-drop.
+  // The MIME column mirrors what browsers actually report - glb, md, and wav
+  // drops often carry no type at all, so claiming must go by file name.
+  it.for([
+    ['clip.mp4', 'video/mp4'],
+    ['voice.m4a', ''],
+    ['movie.mov', 'video/quicktime'],
+    ['song.mp3', 'audio/mpeg'],
+    ['sound.wav', ''],
+    ['mesh.glb', ''],
+    ['notes.md', ''],
+    ['prompt.txt', 'text/plain']
+  ])('attaches a dropped %s and uploads it', async ([name, type]) => {
+    const uploaded = stubUploadFetch()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await nextTick()
+
+    expect(
+      dispatchDrag(screen.getByRole('textbox'), 'drop', {
+        files: [new File(['x'], name, { type })]
+      })
+    ).toBe(true)
+
+    expect(await screen.findByText(name)).toBeInTheDocument()
+    await vi.waitFor(() => expect(uploaded).toEqual([name]))
+  })
+
+  it('names every approved format in the picker accept list', async () => {
+    stubUploadFetch()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await nextTick()
+
+    const accept =
+      screen
+        .getByTestId<HTMLInputElement>('agent-file-input')
+        .getAttribute('accept') ?? ''
+    for (const extension of [
+      '.mp4',
+      '.m4a',
+      '.mov',
+      '.mp3',
+      '.wav',
+      '.glb',
+      '.md',
+      '.txt'
+    ]) {
+      expect(accept).toContain(extension)
+    }
+  })
+
+  it('refreshes the input asset library after an upload', async () => {
+    const uploaded = stubUploadFetch()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await nextTick()
+    const refresh = vi
+      .spyOn(useAssetsStore(), 'updateInputs')
+      .mockResolvedValue(undefined as never)
+
+    dispatchDrag(screen.getByRole('textbox'), 'drop', {
+      files: [new File(['x'], 'cat.png', { type: 'image/png' })]
+    })
+
+    await vi.waitFor(() => expect(uploaded).toEqual(['cat.png']))
+    await vi.waitFor(() => expect(refresh).toHaveBeenCalled())
+  })
+
+  it('keeps the 20MB limit for an oversize audio file', async () => {
+    getServerFeature.mockReturnValue(100 * 1024 * 1024)
+    const uploaded = stubUploadFetch()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await nextTick()
+
+    const song = fileOfSize('big.mp3', MAX_ATTACHMENT_BYTES + 1, 'audio/mpeg')
+    dispatchDrag(screen.getByRole('textbox'), 'drop', { files: [song] })
+    await nextTick()
+
+    expect(uploaded).toEqual([])
+    expect(useToastStore().messagesToAdd).toContainEqual(
+      expect.objectContaining({
+        severity: 'warn',
+        detail: 'big.mp3 is larger than 20MB'
+      })
+    )
   })
 
   it('claims a dragover carrying files so a drop can reach the panel', async () => {
