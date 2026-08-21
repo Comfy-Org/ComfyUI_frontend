@@ -53,7 +53,11 @@ const i18n = createI18n({
           downloadFailed: 'Download failed',
           downloadCancelled: 'Download cancelled',
           retryDownload: 'Retry',
-          retryDownloadNamed: 'Retry download for {model}'
+          retryDownloadNamed: 'Retry download for {model}',
+          installCustomNode: 'Install custom node',
+          installCustomNodeNamed: 'Install {node}',
+          disabled: 'Disabled',
+          inProgress: 'In progress'
         }
       }
     }
@@ -99,6 +103,7 @@ function renderDetail({
   cloudUrl,
   isPartnerNode = false,
   openPending = false,
+  setupEnabled = false,
   modelSetupEnabled = false,
   setupPending = false,
   requirementsMet = false,
@@ -109,6 +114,7 @@ function renderDetail({
   cloudUrl?: string
   isPartnerNode?: boolean
   openPending?: boolean
+  setupEnabled?: boolean
   modelSetupEnabled?: boolean
   setupPending?: boolean
   requirementsMet?: boolean
@@ -123,6 +129,7 @@ function renderDetail({
       cloudUrl,
       isPartnerNode,
       openPending,
+      setupEnabled,
       modelSetupEnabled,
       setupPending,
       requirementsMet,
@@ -357,6 +364,87 @@ describe('WorkflowTemplateDetail', () => {
       'https://example.com/model-source'
     )
     expect(screen.getByText('Unknown')).toBeInTheDocument()
+  })
+
+  it('presents custom-node states and emits only a proven install action', async () => {
+    const user = userEvent.setup()
+    const renderedGroups = [
+      {
+        id: 'custom-node-statuses',
+        label: 'Custom Nodes',
+        rows: [
+          {
+            id: 'custom-node:installed',
+            kind: 'custom-node',
+            name: 'Installed Nodes',
+            description: 'Required custom node package',
+            status: { kind: 'installed', label: 'Installed' }
+          },
+          {
+            id: 'custom-node:missing',
+            kind: 'custom-node',
+            name: 'Missing Nodes',
+            description: 'Required custom node package',
+            status: { kind: 'installable', label: 'Install custom node' }
+          },
+          {
+            id: 'custom-node:disabled',
+            kind: 'custom-node',
+            name: 'Disabled Nodes',
+            description: 'Required custom node package',
+            status: { kind: 'disabled', label: 'Disabled' }
+          },
+          {
+            id: 'custom-node:progress',
+            kind: 'custom-node',
+            name: 'Installing Nodes',
+            description: 'Required custom node package',
+            status: { kind: 'in-progress', label: 'In progress' }
+          },
+          {
+            id: 'custom-node:unknown',
+            kind: 'custom-node',
+            name: 'Unknown Nodes',
+            description: 'Required custom node package',
+            status: { kind: 'unknown', label: 'Unknown' }
+          },
+          {
+            id: 'custom-node:unavailable',
+            kind: 'custom-node',
+            name: 'Unavailable Nodes',
+            description: 'Required custom node package',
+            status: { kind: 'unavailable', label: 'Unavailable' }
+          }
+        ]
+      }
+    ] as const
+    const result = renderDetail({
+      renderedGroups,
+      setupEnabled: true,
+      starterPackAvailable: true
+    })
+
+    await user.click(
+      screen.getByRole('button', { name: 'Install Missing Nodes' })
+    )
+
+    expect(result.emitted('install-custom-node')).toEqual([
+      ['custom-node:missing']
+    ])
+    expect(result.emitted('download-model')).toBeUndefined()
+    expect(screen.getByRole('img', { name: 'Installed' })).toBeInTheDocument()
+    expect(screen.getByText('Disabled')).toBeInTheDocument()
+    expect(
+      screen.getByRole('status', { name: 'In progress' })
+    ).toBeInTheDocument()
+    expect(screen.getByText('Unknown')).toBeInTheDocument()
+    expect(screen.getByText('Unavailable')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Open without downloading' })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Download starter pack' })
+    ).toBeInTheDocument()
   })
 
   it('emits the exact row id for a model download and failed retry', async () => {
