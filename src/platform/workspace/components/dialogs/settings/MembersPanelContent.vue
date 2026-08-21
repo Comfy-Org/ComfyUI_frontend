@@ -1,7 +1,7 @@
 <template>
-  <div class="grow overflow-auto pt-6">
+  <div class="flex h-full flex-col pt-6">
     <div
-      class="border-inter flex size-full flex-col gap-2 rounded-2xl border border-interface-stroke p-6"
+      class="border-inter flex min-h-0 w-full flex-1 flex-col gap-2 rounded-2xl border border-interface-stroke p-6"
     >
       <!-- Section Header -->
       <div class="flex w-full items-center gap-9">
@@ -108,7 +108,7 @@
             <Button
               variant="muted-textonly"
               size="sm"
-              class="justify-start"
+              class="w-fit justify-self-start"
               @click="toggleSort('inviteDate')"
             >
               {{ $t('workspacePanel.members.columns.inviteDate') }}
@@ -117,7 +117,7 @@
             <Button
               variant="muted-textonly"
               size="sm"
-              class="justify-start"
+              class="w-fit justify-self-start"
               @click="toggleSort('expiryDate')"
             >
               {{ $t('workspacePanel.members.columns.expiryDate') }}
@@ -130,7 +130,12 @@
               variant="muted-textonly"
               size="sm"
               :class="
-                uiConfig.showCreditsColumn ? 'justify-start' : 'justify-end'
+                cn(
+                  'w-fit',
+                  uiConfig.showCreditsColumn
+                    ? 'justify-self-start'
+                    : 'justify-self-end'
+                )
               "
               @click="toggleSort('role')"
             >
@@ -151,6 +156,14 @@
 
         <!-- Members List -->
         <div class="min-h-0 flex-1 overflow-y-auto">
+          <!-- Empty States -->
+          <p
+            v-if="emptyStateMessage"
+            class="p-6 text-center text-sm text-muted-foreground"
+          >
+            {{ emptyStateMessage }}
+          </p>
+
           <!-- Active Members -->
           <template v-if="activeView === 'active'">
             <template v-if="isInPersonalWorkspace && maxSeats === 1">
@@ -165,7 +178,7 @@
 
             <template v-else>
               <MemberListItem
-                v-for="(member, index) in filteredMembers"
+                v-for="member in filteredMembers"
                 :key="member.id"
                 :member="member"
                 :is-current-user="isCurrentUser(member)"
@@ -180,7 +193,6 @@
                 "
                 :show-credits-column="uiConfig.showCreditsColumn"
                 :can-manage-members="permissions.canManageMembers"
-                :striped="index % 2 === 1"
                 :menu-items="memberMenus.get(member.id)"
               />
             </template>
@@ -191,6 +203,7 @@
             v-if="activeView === 'pending'"
             :invites="filteredPendingInvites"
             :grid-cols="uiConfig.pendingGridCols"
+            :search-query="searchQuery"
             @resend="handleResendInvite"
             @revoke="handleRevokeInvite"
           />
@@ -208,7 +221,7 @@
       @show-plans="showTeamPlans()"
     />
     <!-- Need More Members Footer -->
-    <div v-if="hasMemberSeats" class="flex items-center pt-2">
+    <div v-if="hasMemberSeats" class="flex shrink-0 items-center pt-2">
       <p class="text-sm text-muted-foreground">
         {{ $t('workspacePanel.members.needMoreMembers') }}
       </p>
@@ -225,6 +238,9 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Button from '@/components/ui/button/Button.vue'
 import MemberListItem from '@/platform/workspace/components/dialogs/settings/MemberListItem.vue'
@@ -268,6 +284,19 @@ const {
   handleResendInvite,
   handleRevokeInvite
 } = useMembersPanel()
+
+const { t } = useI18n()
+
+const emptyStateMessage = computed(() => {
+  if (activeView.value !== 'active') return null
+  if (isInPersonalWorkspace.value && maxSeats.value === 1) return null
+  if (filteredMembers.value.length > 0) return null
+
+  const query = searchQuery.value.trim()
+  return query
+    ? t('workspacePanel.members.noMembersMatch', { query })
+    : t('workspacePanel.members.noMembers')
+})
 
 function handleContactUs() {
   window.open(TEAM_PLAN_REQUEST_URL, '_blank', 'noopener,noreferrer')

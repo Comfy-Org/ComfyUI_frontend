@@ -1,5 +1,7 @@
 <template>
-  <MembersPanelContent :key="workspaceRole" />
+  <div class="flex min-h-0 flex-1 flex-col">
+    <MembersPanelContent :key="workspaceRole" />
+  </div>
 </template>
 
 <script setup lang="ts">

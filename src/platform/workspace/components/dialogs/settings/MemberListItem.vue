@@ -3,9 +3,8 @@
     :data-testid="`member-row-${member.id}`"
     :class="
       cn(
-        'grid w-full items-center rounded-lg p-2',
-        isSingleSeatPlan ? 'grid-cols-1' : gridCols,
-        striped && 'bg-secondary-background/50'
+        'grid w-full items-center border-b border-interface-stroke/30 p-2 last:border-0',
+        isSingleSeatPlan ? 'grid-cols-1' : gridCols
       )
     "
   >
@@ -97,7 +96,6 @@ const {
   showCreditsColumn = false,
   canManageMembers = false,
   isSingleSeatPlan = false,
-  striped = false,
   menuItems = []
 } = defineProps<{
   member: WorkspaceMember
@@ -108,7 +106,6 @@ const {
   showCreditsColumn?: boolean
   canManageMembers?: boolean
   isSingleSeatPlan?: boolean
-  striped?: boolean
   menuItems?: MenuItem[]
 }>()
 
