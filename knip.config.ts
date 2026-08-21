@@ -37,8 +37,17 @@ const config: KnipConfig = {
     },
     'apps/website': {
       entry: ['src/scripts/**/*.ts']
+    },
+    'tools/test-recorder': {
+      project: ['src/**/*.ts']
     }
   },
+  ignoreBinaries: [
+    // Optional host tools the recorder probes for and degrades without
+    'xcode-select',
+    'xclip',
+    'xsel'
+  ],
   ignoreDependencies: [
     // Weird importmap things
     '@iconify/json'
