@@ -41,6 +41,10 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
       { label: t('nav.pricing', locale), href: routes.cloudPricing },
       { label: t('nav.mcpServer', locale), href: routes.mcp },
       { label: t('nav.supportedModels', locale), href: routes.models },
+      {
+        label: t('footer.modelsShowcase', locale),
+        href: routes.modelsShowcase
+      },
       { label: t('footer.minimaxH3', locale), href: routes.minimax },
       {
         label: t('footer.minimaxMusic3', locale),
