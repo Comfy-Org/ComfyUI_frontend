@@ -28,6 +28,7 @@ export interface NodeState {
   title: string
   type: string
   bgcolor?: string
+  boxcolor?: string
   color?: string
   resizable?: boolean
   shape?: RenderShape

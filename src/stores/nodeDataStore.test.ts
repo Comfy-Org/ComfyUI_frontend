@@ -158,9 +158,11 @@ describe('nodeDataStore registration via LGraph', () => {
     const graph = new LGraph()
     const original = new LGraphNode('original')
     original.color = '#123456'
+    original.boxcolor = '#345678'
     graph.add(original)
     const replacement = new LGraphNode('replacement')
     replacement.id = original.id
+    replacement.boxcolor = '#abcdef'
     const registered = registeredState(graph, original)
     assert(registered)
 
@@ -168,10 +170,12 @@ describe('nodeDataStore registration via LGraph', () => {
     expect(replacement._state).toBe(registered)
     expect(replacement.title).toBe('replacement')
     expect(replacement.color).toBeUndefined()
+    expect(replacement.boxcolor).toBe('#abcdef')
     expect(registeredState(graph, replacement)).toBe(registered)
     expect(registered.graphId).toBe(graph.id)
     expect(original._graphScope).toBeUndefined()
     expect(original._state).not.toBe(registered)
+    expect(original.boxcolor).toBe('#345678')
 
     original.title = 'detached'
     expect(replacement.title).toBe('replacement')

@@ -453,7 +453,13 @@ export class LGraphNode
    * The overridden box color used to render the node.
    * @see {@link renderingBoxColor}
    */
-  boxcolor?: string
+  get boxcolor(): string | undefined {
+    return this._state.boxcolor
+  }
+
+  set boxcolor(value: string | undefined) {
+    this.setTrackedState('boxcolor', value)
+  }
 
   /** The fg color used to render the node. */
   get renderingColor(): string {
@@ -1027,7 +1033,7 @@ export class LGraphNode
       type: type ?? '',
       titleMode: this.title_mode
     }
-    for (const property of ['inputs', 'outputs'] as const) {
+    for (const property of ['inputs', 'outputs', 'boxcolor'] as const) {
       Object.defineProperty(this, property, {
         ...Object.getOwnPropertyDescriptor(LGraphNode.prototype, property),
         enumerable: true
@@ -4499,6 +4505,7 @@ function transferNodeState(node: LGraphNode, replacement: LGraphNode): void {
   const { graphId: _graphId, id: _id, ...replacementState } = replacement._state
   Object.assign(registeredState, {
     bgcolor: undefined,
+    boxcolor: undefined,
     color: undefined,
     resizable: undefined,
     shape: undefined,
