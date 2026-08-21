@@ -43,6 +43,11 @@ export interface FetchHistoryPageResult {
 
 /**
  * Fetches raw jobs from /jobs endpoint
+ *
+ * Rejects on any failure (network fault, non-ok response, parse error) so
+ * callers can preserve their last-known-good snapshot instead of treating a
+ * transient failure as an authoritative empty result. Logging is left to the
+ * caller, which knows whether the failure is user-visible.
  * @internal
  */
 async function fetchJobsRaw(
@@ -53,29 +58,17 @@ async function fetchJobsRaw(
 ): Promise<FetchJobsRawResult> {
   const statusParam = statuses.join(',')
   const url = `/jobs?status=${statusParam}&limit=${maxItems}&offset=${offset}`
-  try {
-    const res = await fetchApi(url)
-    if (!res.ok) {
-      console.error(`[Jobs API] Failed to fetch jobs: ${res.status}`)
-      return {
-        jobs: [],
-        total: 0,
-        offset,
-        limit: maxItems,
-        hasMore: false
-      }
-    }
-    const data = zJobsListResponse.parse(await res.json())
-    return {
-      jobs: data.jobs,
-      total: data.pagination.total,
-      offset: data.pagination.offset,
-      limit: data.pagination.limit,
-      hasMore: data.pagination.has_more
-    }
-  } catch (error) {
-    console.error('[Jobs API] Error fetching jobs:', error)
-    return { jobs: [], total: 0, offset, limit: maxItems, hasMore: false }
+  const res = await fetchApi(url)
+  if (!res.ok) {
+    throw new Error(`[Jobs API] Failed to fetch jobs: ${res.status}`)
+  }
+  const data = zJobsListResponse.parse(await res.json())
+  return {
+    jobs: data.jobs,
+    total: data.pagination.total,
+    offset: data.pagination.offset,
+    limit: data.pagination.limit,
+    hasMore: data.pagination.has_more
   }
 }
 

@@ -24,6 +24,7 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { tryNormalizeNodeExecutionId } from '@/types/nodeIdentification'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import { isAbortError } from '@/utils/typeGuardUtil'
 
 enum TaskItemDisplayStatus {
   Running = 'Running',
@@ -536,9 +537,11 @@ export const useQueueStore = defineStore('queue', () => {
     dirty = false
     isLoading.value = true
     try {
+      // Each snapshot is replaced only when its fetch succeeds; a rejected
+      // fetch leaves the last known good tasks in place.
       const [queueResult, historyResult] = await Promise.allSettled([
         api.getQueue({ throwOnError: true }),
-        api.getHistory(maxHistoryItems.value)
+        api.getHistory(maxHistoryItems.value, { throwOnError: true })
       ])
 
       if (queueResult.status === 'fulfilled') {
@@ -562,7 +565,7 @@ export const useQueueStore = defineStore('queue', () => {
           ...queue.Pending.map((j) => j.id)
         ])
         executionStore.reconcileInitializingJobs(activeJobIds)
-      } else {
+      } else if (!isAbortError(queueResult.reason)) {
         console.error('Failed to fetch queue:', queueResult.reason)
       }
 
@@ -605,7 +608,7 @@ export const useQueueStore = defineStore('queue', () => {
           historyTasks.value = nextHistoryTasks
         }
         hasFetchedHistorySnapshot.value = true
-      } else {
+      } else if (!isAbortError(historyResult.reason)) {
         console.error('Failed to fetch history:', historyResult.reason)
       }
     } finally {
