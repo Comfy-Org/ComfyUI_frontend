@@ -1,7 +1,35 @@
+import { mergeTests } from '@playwright/test'
+
 import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
+import { jobsApiMockFixture } from '@e2e/fixtures/jobsApiMockFixture'
+import {
+  createMockJob,
+  createMockJobRecords
+} from '@e2e/fixtures/utils/jobFixtures'
+
+const apiBackedTest = mergeTests(test, jobsApiMockFixture)
+
+const now = Date.now()
+const historyJobs = createMockJobRecords([
+  createMockJob({
+    id: 'history-completed',
+    status: 'completed',
+    create_time: now - 10_000,
+    execution_start_time: now - 10_000,
+    execution_end_time: now - 5_000
+  }),
+  createMockJob({
+    id: 'history-failed',
+    status: 'failed',
+    create_time: now - 20_000,
+    execution_start_time: now - 20_000,
+    execution_end_time: now - 15_000,
+    outputs_count: 0
+  })
+])
 
 test.describe('Queue Clear History Dialog', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -123,3 +151,47 @@ test.describe('Queue Clear History Dialog', { tag: '@ui' }, () => {
     await expect(clearButton).toBeEnabled()
   })
 })
+
+apiBackedTest.describe(
+  'Queue Clear History API-backed flow',
+  { tag: '@ui' },
+  () => {
+    apiBackedTest.beforeEach(async ({ comfyPage, jobsApi }) => {
+      await jobsApi.mockJobs(historyJobs)
+      await comfyPage.setup()
+      await comfyPage.queuePanel.overlayToggle.click()
+    })
+
+    apiBackedTest(
+      'clears terminal jobs through the history API and refreshes the queue UI',
+      async ({ comfyPage }) => {
+        const completedJob = comfyPage.page.locator(
+          '[data-job-id="history-completed"]'
+        )
+        const failedJob = comfyPage.page.locator(
+          '[data-job-id="history-failed"]'
+        )
+
+        await expect(completedJob).toBeVisible()
+        await expect(failedJob).toBeVisible()
+
+        await comfyPage.queuePanel.openClearHistoryDialog()
+        const dialog = comfyPage.confirmDialog.root
+        await expect(dialog).toBeVisible()
+
+        const clearRequest = comfyPage.page.waitForRequest(
+          (req) => req.url().includes('/api/history') && req.method() === 'POST'
+        )
+
+        await dialog.getByRole('button', { name: 'Clear' }).click()
+
+        const request = await clearRequest
+        expect(request.postDataJSON()).toEqual({ clear: true })
+
+        await expect(dialog).toBeHidden()
+        await expect(completedJob).toBeHidden()
+        await expect(failedJob).toBeHidden()
+      }
+    )
+  }
+)
