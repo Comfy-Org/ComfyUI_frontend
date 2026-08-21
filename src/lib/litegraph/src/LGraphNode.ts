@@ -444,7 +444,13 @@ export class LGraphNode
   set mode(value: LGraphEventMode) {
     this.setTrackedState('mode', value)
   }
-  last_serialization?: ISerialisedNode
+  get last_serialization(): ISerialisedNode | undefined {
+    return this._state.lastSerialization
+  }
+
+  set last_serialization(value: ISerialisedNode | undefined) {
+    this._state.lastSerialization = value
+  }
   serialize_widgets?: boolean
   /**
    * The overridden fg color used to render the node.
@@ -994,7 +1000,8 @@ export class LGraphNode
       'inputs',
       'outputs',
       'properties',
-      'boxcolor'
+      'boxcolor',
+      'last_serialization'
     ] as const) {
       Object.defineProperty(this, property, {
         ...Object.getOwnPropertyDescriptor(LGraphNode.prototype, property),
@@ -4465,6 +4472,7 @@ function transferNodeState(node: LGraphNode, replacement: LGraphNode): void {
     bgcolor: undefined,
     boxcolor: undefined,
     color: undefined,
+    lastSerialization: undefined,
     resizable: undefined,
     shape: undefined,
     showAdvanced: undefined,

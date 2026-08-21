@@ -36,7 +36,7 @@ extension-visible behavior.
 | Extension persistence adapter       | Open     | Graph and node `onSerialize` hooks receive the complete mutable canonical DTO; no validated extension namespace protects store-backed fields.                              |
 | Graph metadata                      | Open     | `revision`, `config`, and `extra` are public class fields configured and serialized directly.                                                                              |
 | Graph invalidation                  | Partial  | `incrementVersion()` centralizes the primitive, but graph, node, canvas, widget, slot, and subgraph callers still choose when `_version` changes.                          |
-| Unknown-node fallback               | Partial  | `last_serialization` is an opaque class-owned DTO that overrides normal serialization and follows only the live-node lifecycle.                                            |
+| Unknown-node fallback               | Complete | `NodeState` owns the opaque fallback DTO while compatibility access, replacement discovery, and selected live-field serialization overrides remain intact.                 |
 | Execution order                     | Partial  | Topology recomputation writes `node.order`, but the mutable field is also configured and serialized as wire state.                                                         |
 | Entity ID allocation                | Partial  | Root and subgraphs share `LGraph.state`; helper APIs exist, but configure, clipboard, and compatibility setters can still observe or mutate class-owned counters.          |
 | Delayed widget restoration          | Partial  | Registered widgets use `widgetValueStore`; general configure and delayed dynamic-widget paths still consume or mutate `widgets_values` and `widgets_values_named` shadows. |
@@ -57,9 +57,10 @@ extension-visible behavior.
 - Allocation helpers centralize mint/observe behavior over root-shared
   `LGraph.state`, but that state remains publicly replaceable and clipboard
   import still advances counters through the live graph.
-- Unknown node load stores the complete source DTO in
-  `LGraphNode.last_serialization`. Missing-node serialization returns that DTO
-  over current store-backed fields except for selected compatibility overrides.
+- Unknown node load stores the complete source DTO in `NodeState` behind the
+  `LGraphNode.last_serialization` compatibility accessor. Missing-node
+  serialization returns that DTO over current store-backed fields except for
+  selected compatibility overrides.
 
 Representative implementation:
 
@@ -241,8 +242,8 @@ sequence above rather than the summary-table order.
 | 10       | Plain slot descriptors              | Complete    | `cc53dad291` | Plain store descriptors now back stable extension-visible slot class projections.                |
 | 11       | Group presentation                  | Complete    | `3ac7b726a`  | Graph-definition records now back mutable presentation fields and serialization.                 |
 | 12       | Link non-topological state          | Complete    | `38b40988a`  | Separate persistent and runtime records now back compatible link fields with topology lifecycle. |
-| 13       | Node properties                     | Complete    | This commit  | Node state now owns stable mutable properties across lifecycle, callbacks, and serialization.    |
-| 14       | Unknown-node fallback               | Not started |              |                                                                                                  |
+| 13       | Node properties                     | Complete    | `f75b30dbd`  | Node state now owns stable mutable properties across lifecycle, callbacks, and serialization.    |
+| 14       | Unknown-node fallback               | Complete    | This commit  | Node state now owns unknown-node fallback records behind the compatibility accessor.             |
 | 15       | Delayed widget restoration          | Not started |              |                                                                                                  |
 | 16       | Extension persistence adapter       | Not started |              |                                                                                                  |
 | 17       | Execution order                     | Not started |              |                                                                                                  |

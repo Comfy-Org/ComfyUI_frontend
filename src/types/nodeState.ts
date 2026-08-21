@@ -8,6 +8,7 @@ import type {
   RenderShape,
   TitleMode
 } from '@/lib/litegraph/src/types/globalEnums'
+import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import type { NodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
 
@@ -23,6 +24,7 @@ export interface NodeState {
   graphId: UUID
   readonly id: NodeId
   inputs: InputSlotDescriptor[]
+  lastSerialization?: ISerialisedNode
   mode: LGraphEventMode
   outputs: OutputSlotDescriptor[]
   properties: Record<string, NodeProperty | undefined>
