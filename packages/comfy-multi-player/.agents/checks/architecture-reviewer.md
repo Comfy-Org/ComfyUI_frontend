@@ -8,3 +8,5 @@ Apply this profile to structural and design changes across `src/**`, the public 
 - Guard the single-implementation rule: any design that implies a second op-to-document implementation (for example a parallel path in Go, or a divergent browser vs host code path) is a blocking FC-3 concern. The browser and the Node doc host consume this one package.
 - Watch change amplification: a design where adding one op kind or one widget-storage strategy forces edits in many files signals a missing exhaustiveness seam (see issue #21). Prefer a single switch the compiler can prove exhaustive.
 - Do not report bugs, security, or performance here (other profiles cover those). Rate severity by impact on future maintainability and on the KEEP-ALIVE invariants in `docs/INVARIANTS.md`.
+
+> Before reporting PASS for any check above, apply [vacuity.md](vacuity.md): P0 to every check, P1 to any guard this change adds, P10 to what that guard's test asserts on, P2 to any tool you ran, and P7 to any run you quote.

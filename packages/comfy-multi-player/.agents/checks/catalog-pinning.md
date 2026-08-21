@@ -17,3 +17,5 @@ Apply this profile to catalog metadata, minting, widget writes, fixtures, and pr
 <!-- claim: has no ${anchor.what} in ${pin.path} :: scripts/check-pins.mjs -->
 - A citation that wraps across lines is still one citation. The lint joins continuation lines before matching, because `(branch` and the branch name routinely land on separate lines; a per-line rule here caught one of the three citations that motivated it.
 <!-- claim: const WINDOW_LINES = 3 :: scripts/check-pins.mjs -->
+
+> Before reporting PASS for any check above, apply [vacuity.md](vacuity.md): P0 to every check, P1 to any guard this change adds, P10 to what that guard's test asserts on, P2 to any tool you ran, and P7 to any run you quote.

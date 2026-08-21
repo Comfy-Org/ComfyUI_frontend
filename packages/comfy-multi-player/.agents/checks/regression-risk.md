@@ -25,3 +25,5 @@ Detect regressions by checking whether changed lines were previously touched by 
 | `git merge-base origin/main HEAD` fails | Fetch `origin/main` and retry; if it still fails, report INCONCLUSIVE. An empty diff from a bad base looks identical to a clean one |
 | Blame shows PR's own SHA | Skip (false positive)               |
 | File renamed             | Retry blame with `--follow`         |
+
+> Before reporting PASS for any check above, apply [vacuity.md](vacuity.md): P0 to every check, P1 to any guard this change adds, P10 to what that guard's test asserts on, P2 to any tool you ran, and P7 to any run you quote.

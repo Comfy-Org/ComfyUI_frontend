@@ -61,3 +61,5 @@ rather than silently leaving this prose describing a gate that no longer exists.
 <!-- claim: import-graph check INCONCLUSIVE :: scripts/check-import-graph.mjs -->
 <!-- claim: import-graph check FAILED :: scripts/check-import-graph.mjs -->
 <!-- claim: import-graph check PASSED :: scripts/check-import-graph.mjs -->
+
+> Before reporting PASS for any check above, apply [vacuity.md](vacuity.md): P0 to every check, P1 to any guard this change adds, P10 to what that guard's test asserts on, P2 to any tool you ran, and P7 to any run you quote.

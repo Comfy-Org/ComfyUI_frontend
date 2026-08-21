@@ -40,3 +40,5 @@ The exact rule set is the plugin's `recommended` config (currently eslint-plugin
 
 <!-- Staleness anchor: the run command this profile documents must stay the one the config expects. -->
 <!-- claim: npx eslint --no-config-lookup --config .agents/checks/eslint.strict.config.js :: .agents/checks/eslint.strict.config.js -->
+
+> Before reporting PASS for any check above, apply [vacuity.md](vacuity.md): P0 to every check, P1 to any guard this change adds, P10 to what that guard's test asserts on, P2 to any tool you ran, and P7 to any run you quote.
