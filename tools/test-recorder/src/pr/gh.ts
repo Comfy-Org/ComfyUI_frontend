@@ -1,5 +1,8 @@
 import { execSync, spawnSync } from 'node:child_process'
-import { pass, fail } from '../ui/logger'
+import { pass, fail, warn, info } from '../ui/logger'
+
+const DEFAULT_BASE_BRANCH = 'main'
+const DEFAULT_BASE_REF = `origin/${DEFAULT_BASE_BRANCH}`
 
 interface PrOptions {
   testFilePath: string
@@ -53,6 +56,25 @@ export async function createPr(options: PrOptions): Promise<PrResult> {
       encoding: 'utf-8',
       stdio: 'pipe'
     })
+
+  // The branch is cut from wherever HEAD is, so anything already sitting
+  // there rides along into the PR. Say so rather than shipping it silently.
+  const ahead = run('git', ['rev-list', '--count', `${DEFAULT_BASE_REF}..HEAD`])
+  const aheadCount = Number(ahead.stdout?.trim())
+  if (ahead.status === 0 && Number.isFinite(aheadCount) && aheadCount > 0) {
+    warn(
+      'Unrelated commits',
+      `HEAD is ${aheadCount} commit(s) ahead of ${DEFAULT_BASE_REF}`
+    )
+    info([
+      `The pull request will contain those ${aheadCount} commit(s) as well as`,
+      'the recorded test, because the branch is cut from where you are now.',
+      '',
+      'To open a PR with only the test, switch to an up-to-date base first:',
+      '',
+      `  git checkout ${DEFAULT_BASE_BRANCH} && git pull`
+    ])
+  }
 
   const checkout = run('git', ['checkout', '-b', branchName])
   if (checkout.status !== 0) {
