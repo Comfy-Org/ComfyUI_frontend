@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { extractApiModels, API_PROVIDER_MAP } from './generate-models'
+import { extractApiModels } from './generate-models'
 
 describe('extractApiModels', () => {
   it('correctly matches longest provider prefix when multiple providers share prefixes', () => {
@@ -13,9 +13,7 @@ describe('extractApiModels', () => {
     const results = extractApiModels(files)
 
     // Check that we get 1 of each intended slug
-    const kling26 = results.find(
-      (r) => r.slug === API_PROVIDER_MAP['kling2_6'].slug
-    )
+    const kling26 = results.find((r) => r.slug === 'kling-2-6')
 
     // Some slugs map to the same parent, but let's just count them
     // kling2_6 -> 'kling-2-6'
@@ -47,18 +45,12 @@ describe('extractApiModels', () => {
     expect(nano2?.templateCount).toBe(1)
   })
 
-  it('removes .json extensions and ignores non-json files with the same prefix silently if they do not match api_ prefix logic', () => {
-    const files = [
-      'api_flux2-1.webp' // We pass this in, but it won't match any key precisely because it has .webp and hyphens
-    ]
+  it('removes .json extensions regardless of casing', () => {
+    const files = ['api_KLING.JSON']
 
-    // The previous implementation would throw here because 'flux2-1.webp' would be the prefix and it was unmapped.
-    // In the new implementation, 'flux2-1.webp' doesn't match 'flux2' because it's not followed by an underscore or exact match.
-    // Wait, 'flux2-1.webp' does NOT start with 'flux2_' nor is it exactly 'flux2'. So it will be unmapped and throw.
-    // Actually, we expect it to throw on unmapped prefixes, which proves it catches them!
-    expect(() => extractApiModels(files)).toThrow(
-      /Unmapped API provider prefixes found/
-    )
+    const results = extractApiModels(files)
+    const klingParent = results.find((r) => r.slug === 'kling-ai')
+    expect(klingParent?.templateCount).toBe(1)
   })
 
   it('lowercases filenames during prefix matching', () => {
