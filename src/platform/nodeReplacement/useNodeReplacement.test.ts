@@ -567,6 +567,7 @@ describe('useNodeReplacement', () => {
 
       const graph = createMockGraph([placeholder], [link])
       placeholder.graph = graph
+      placeholder.order = 6
       Object.assign(app, { rootGraph: graph })
 
       vi.mocked(collectAllNodes).mockReturnValue([placeholder])
@@ -593,6 +594,8 @@ describe('useNodeReplacement', () => {
       expect(newNode.id).toBe(42)
       expect(newNode.pos).toEqual([300, 400])
       expect(newNode.size).toEqual([250, 150])
+      expect(newNode.order).toBe(6)
+      expect(placeholder.order).toBe(6)
       expect(graph._nodes[0]).toBe(newNode)
       expect(placeholder.onRemoved).toHaveBeenCalledOnce()
     })

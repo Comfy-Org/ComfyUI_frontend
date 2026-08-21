@@ -23,6 +23,7 @@ import { graphScopeOf } from '@/types/graphScopeId'
 import type { GraphScope } from '@/types/graphScopeId'
 import { mintLinkId } from './idAllocation'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
+import { useExecutionOrderStore } from '@/stores/executionOrderStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { UNASSIGNED_NODE_ID, toNodeId, serializeNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
@@ -282,6 +283,8 @@ const NAMED_SHAPES = {
  * @param type a type for the node
  */
 
+const wireExecutionOrders = new WeakMap<LGraphNode, number>()
+
 export class LGraphNode
   implements NodeLike, Positionable, IPinnable, IColorable
 {
@@ -443,7 +446,17 @@ export class LGraphNode
   locked?: boolean
 
   /** Execution order, automatically computed during run @see {@link LGraph.computeExecutionOrder} */
-  order: number = 0
+  get order(): number {
+    return this.graph
+      ? (useExecutionOrderStore().get(graphScopeOf(this.graph), this.id) ??
+          wireExecutionOrders.get(this) ??
+          0)
+      : (wireExecutionOrders.get(this) ?? 0)
+  }
+
+  set order(value: number) {
+    wireExecutionOrders.set(this, value)
+  }
   get mode(): LGraphEventMode {
     return this._state.mode
   }
@@ -1007,6 +1020,7 @@ export class LGraphNode
       'inputs',
       'outputs',
       'properties',
+      'order',
       'boxcolor',
       'last_serialization'
     ] as const) {

@@ -27,6 +27,7 @@ import type {
 import type { UUID } from '@/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/utils/uuid'
 import { useLinkStore } from '@/stores/linkStore'
+import { useExecutionOrderStore } from '@/stores/executionOrderStore'
 import { useGraphDefinitionStore } from '@/stores/graphDefinitionStore'
 import { useGraphMetadataStore } from '@/stores/graphMetadataStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
@@ -138,6 +139,60 @@ describe('LGraph', () => {
     const result2 = graph.serialize({ sortNodes: true })
 
     expect(result1).toEqual(result2)
+  })
+
+  it('projects graph-scoped derived execution order to extensions and wire data', () => {
+    const root = new LGraph()
+    const rootNode = new DummyNode()
+    root.add(rootNode)
+    const subgraph = createTestSubgraph({ rootGraph: root })
+    const subgraphNode = new DummyNode()
+    subgraph.add(subgraphNode)
+    const store = useExecutionOrderStore()
+
+    store.set(graphScopeOf(root), rootNode.id, 7)
+    store.set(graphScopeOf(subgraph), subgraphNode.id, 9)
+
+    expect(rootNode.order).toBe(7)
+    expect(subgraphNode.order).toBe(9)
+    expect(rootNode.serialize().order).toBe(7)
+    expect(subgraphNode.serialize().order).toBe(9)
+
+    root.updateExecutionOrder()
+    expect(rootNode.order).toBe(0)
+    expect(subgraphNode.order).toBe(9)
+  })
+
+  it('cleans derived order on removal while preserving the detached projection', () => {
+    const graph = new LGraph()
+    const first = new DummyNode()
+    const removed = new DummyNode()
+    graph.add(first)
+    graph.add(removed)
+    const scope = graphScopeOf(graph)
+    const store = useExecutionOrderStore()
+
+    expect(removed.order).toBe(1)
+    graph.remove(removed)
+
+    expect(store.get(scope, removed.id)).toBeUndefined()
+    expect(removed.order).toBe(1)
+    expect(first.order).toBe(0)
+  })
+
+  it('hydrates wire order before topology recomputation replaces it', () => {
+    const node = new DummyNode()
+    const data = node.serialize()
+    data.order = 12
+
+    node.configure(data)
+    expect(node.order).toBe(12)
+    expect(node.serialize().order).toBe(12)
+
+    const graph = new LGraph()
+    graph.add(node)
+    expect(node.order).toBe(0)
+    expect(node.serialize().order).toBe(0)
   })
 
   it('cleans partially configured node-owned records before rethrowing', () => {

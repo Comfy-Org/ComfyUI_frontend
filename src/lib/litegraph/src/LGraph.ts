@@ -48,6 +48,7 @@ import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { clearNodeOwnedStoreState } from '@/stores/clearNodeOwnedStoreState'
 import { useEntityIdStore } from '@/stores/entityIdStore'
+import { useExecutionOrderStore } from '@/stores/executionOrderStore'
 import { useGraphDefinitionStore } from '@/stores/graphDefinitionStore'
 import { useGraphMetadataStore } from '@/stores/graphMetadataStore'
 import { UNASSIGNED_NODE_ID, parseNodeId, toNodeId } from '@/types/nodeId'
@@ -269,8 +270,10 @@ function teardownOwnedGraphs(owner: LGraph): void {
       for (const node of graph._nodes) nodes.add(node)
     }
     for (const node of nodes) {
+      const order = node.order
       unregisterNodeState(node)
       node.graph = null
+      node.order = order
     }
     detachGraphLayouts([owner], { removeLayouts: !owner.isRootGraph })
   }
@@ -638,6 +641,7 @@ export class LGraph
     useGraphMetadataStore().clear(graphId)
     if (this.isRootGraph) useEntityIdStore().clear(graphId)
     if (this.isRootGraph && graphId !== zeroUuid) {
+      useExecutionOrderStore().clearRoot(graphId)
       usePreviewExposureStore().clearGraph(graphId)
       useWidgetValueStore().clearGraph(graphId)
       useLinkStore().clearGraph(toRootGraphId(graphId))
@@ -646,6 +650,7 @@ export class LGraph
       definitionStore.clearRoot(graphId)
       layoutStore.clearGraph(graphId)
     } else if (this.rootGraph) {
+      useExecutionOrderStore().clearGraph(graphScopeOf(this))
       definitionStore.clearGraph(this.rootGraph.id, graphId)
     }
     this.id = this.isRootGraph ? createUuidv4() : zeroUuid
@@ -984,21 +989,7 @@ export class LGraph
     if (L.length != this._nodes.length && LiteGraph.debug)
       console.warn('something went wrong, nodes missing')
 
-    /** Ensure type is set */
-    type OrderedLGraphNode = LGraphNode & { order: number }
-
-    /** Sets the order property of each provided node to its index in {@link nodes}. */
-    function setOrder(
-      nodes: LGraphNode[]
-    ): asserts nodes is OrderedLGraphNode[] {
-      const l = nodes.length
-      for (let i = 0; i < l; ++i) {
-        nodes[i].order = i
-      }
-    }
-
-    // save order number in the node
-    setOrder(L)
+    const topologyOrder = new Map(L.map((node, order) => [node.id, order]))
 
     // sort now by priority
     L.sort(function (A, B) {
@@ -1008,11 +999,15 @@ export class LGraph
       const Bp = B.constructor.priority || B.priority || 0
       // if same priority, sort by order
 
-      return Ap == Bp ? A.order - B.order : Ap - Bp
+      return Ap == Bp
+        ? (topologyOrder.get(A.id) ?? 0) - (topologyOrder.get(B.id) ?? 0)
+        : Ap - Bp
     })
 
-    // save order number in the node, again...
-    setOrder(L)
+    useExecutionOrderStore().replace(
+      graphScopeOf(this),
+      L.map((node) => node.id)
+    )
 
     return L
   }
@@ -1370,6 +1365,7 @@ export class LGraph
         unregisterAllLinkTopologies(subgraph)
         unregisterAllRerouteChains(subgraph)
         unregisterAllNodeStates(subgraph)
+        useExecutionOrderStore().clearGraph(graphScopeOf(subgraph))
         useGraphMetadataStore().clear(subgraph.id)
         this.rootGraph.subgraphs.delete(subgraph.id)
       }
@@ -1380,10 +1376,13 @@ export class LGraph
     node.onRemoved?.()
     clearNodeOwnedStoreState(node)
 
+    const order = node.order
+    useExecutionOrderStore().remove(graphScopeOf(this), node.id)
     unregisterNodeState(node)
     detachNodeLayout(node)
 
     node.graph = null
+    node.order = order
     this.incrementVersion()
 
     // remove from canvas render
