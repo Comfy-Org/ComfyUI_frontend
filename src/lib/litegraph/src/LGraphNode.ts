@@ -106,7 +106,7 @@ import { reportNamedValuesShadowDiff } from './utils/namedValuesShadowDiffTeleme
 import { distributeSpace } from './utils/spaceDistribution'
 import { truncateText } from './utils/textUtils'
 import { BaseWidget } from './widgets/BaseWidget'
-import { toConcreteWidget } from './widgets/widgetMap'
+import { isNumericWidget, toConcreteWidget } from './widgets/widgetMap'
 import type { WidgetTypeMap } from './widgets/widgetMap'
 
 // #region Types
@@ -1024,7 +1024,12 @@ export class LGraphNode
         for (const widget of this.widgets ?? []) {
           if (widget.serialize === false) continue
           if (i >= info.widgets_values.length) break
-          widget.value = info.widgets_values[i++]
+          const incoming = info.widgets_values[i++]
+          const isInvalid =
+            incoming == null ||
+            (typeof incoming === 'number' && !Number.isFinite(incoming))
+          if (isNumericWidget(widget) && isInvalid) continue
+          widget.value = incoming
         }
       }
     }
