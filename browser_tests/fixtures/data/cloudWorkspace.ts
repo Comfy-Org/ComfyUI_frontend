@@ -125,6 +125,18 @@ export const ENDED_STANDARD_BILLING_STATUS = {
   occupied_seats: 1
 } satisfies IngestBillingStatusResponse & { billing_rail: 'stripe' }
 
+export const PAYMENT_FAILED_TEAM_BILLING_STATUS = {
+  ...TEAM_BILLING_STATUS,
+  is_active: false,
+  billing_status: 'payment_failed'
+} satisfies IngestBillingStatusResponse
+
+export const PAUSED_TEAM_BILLING_STATUS = {
+  ...TEAM_BILLING_STATUS,
+  is_active: false,
+  billing_status: 'paused'
+} satisfies IngestBillingStatusResponse
+
 export const INACTIVE_TEAM_BILLING_STATUS = {
   ...TEAM_BILLING_STATUS,
   billing_status: 'inactive',
