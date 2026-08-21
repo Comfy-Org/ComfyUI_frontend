@@ -32,7 +32,7 @@ const estimate = computed(() => {
         class="text-primary-comfy-orange size-4 shrink-0"
         aria-hidden="true"
       />
-      <span class="ppformula-text-center text-sm text-primary-warm-white">
+      <span class="text-sm text-primary-warm-white">
         <span class="font-extrabold">
           {{ credits }}
         </span>
