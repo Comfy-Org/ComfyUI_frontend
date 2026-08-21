@@ -242,18 +242,15 @@ export function useSubscriptionCheckout(
     previewData.value = preview
     if (embeddedCheckoutEnabled) {
       reactivationRequired.value =
-        preview.requires_reactivation_confirmation ?? isSubscriptionCancelled()
+        preview.requires_reactivation_confirmation ?? true
     }
     quoteIsCurrent.value = true
     return true
   }
 
   function requiresReactivationConfirmation(): boolean {
-    if (
-      embeddedCheckoutEnabled &&
-      previewData.value?.requires_reactivation_confirmation !== undefined
-    ) {
-      return previewData.value.requires_reactivation_confirmation
+    if (embeddedCheckoutEnabled) {
+      return previewData.value?.requires_reactivation_confirmation ?? true
     }
     return isSubscriptionCancelled() || reactivationRequired.value
   }
@@ -544,16 +541,6 @@ export function useSubscriptionCheckout(
     return true
   }
 
-  // The reactivation guard below reads cached `subscription.isCancelled`. If
-  // the subscription was cancelled in another tab after this preview loaded,
-  // that cache is stale and the guard blocks a request the banner never
-  // actually disclosed as a reactivation. Refresh here, right before the
-  // guard, so a retry sees the real current transaction — but only install
-  // the refresh if it can actually feed the banner; one that can't (e.g. it
-  // comes back as a fresh subscribe) would leave every retry blocked on a
-  // screen that can never collect consent, so send the user back to pricing
-  // instead. Mirrors the fetchStatus() call useDowngradeToPersonal makes
-  // before its own reactivation guard.
   async function refreshPreviewOnReactivationBlock(
     planSlug: string,
     options?: PreviewSubscribeOptions

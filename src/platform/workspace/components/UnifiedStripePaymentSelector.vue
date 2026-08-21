@@ -70,8 +70,7 @@ const {
   amountCents: number
   currency: string
   /** Stripe payment method configuration governing which methods Elements
-   *  offers (served per-environment by the preview). Empty falls back to the
-   *  static card + Alipay set. */
+   *  offers (served per-environment by the preview). */
   paymentMethodConfigurationId?: string
   isLoading?: boolean
   /** A 3DS verification is pending: Complete verification (rendered by the
