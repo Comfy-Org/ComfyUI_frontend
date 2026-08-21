@@ -328,9 +328,10 @@ describe("#17 group 2: invalid states the wire still accepts (behaviour pinned, 
       { name: "images.image0", type: "MODEL", link: 100, grow_id: 100 },
     ]);
     // Sharper still: a grow WITHOUT `grow.inputcount` — this one — is
-    // identity-only and claims NO register at all, because the grown slot is
+    // identity-only and claims no LWW register, because the grown slot is
     // keyed by `grow_id` and there is nothing to contest (schema §3's
-    // autogrow row). The same op WITHOUT `grow` would claim `["input","1",0]`,
+    // autogrow row). Amendment A7 does record canonicalization metadata. The
+    // same op WITHOUT `grow` would claim `["input","1",0]`,
     // so a caller who believed `to_slot: 0` meant something got neither the
     // slot nor the LWW protection that goes with it.
     //
@@ -338,7 +339,10 @@ describe("#17 group 2: invalid states the wire still accepts (behaviour pinned, 
     // carries `grow.inputcount` DOES claim `("widget", to_node, inputcount)`,
     // sharing the connect's stamp (schema §8.3, vocabulary §8.4). Pinned
     // directly below so the two cases cannot be conflated again.
-    expect([...doc.getMap("__stamps").keys()]).toEqual([]);
+    expect([...doc.getMap("__stamps").keys()]).toEqual([
+      JSON.stringify(["grow", "1", "100", "images"]),
+      JSON.stringify(["grow_request", "1", "100", "images"]),
+    ]);
   });
 
   it("an autogrow connect carrying grow.inputcount DOES claim a stamped register", () => {
@@ -363,7 +367,11 @@ describe("#17 group 2: invalid states the wire still accepts (behaviour pinned, 
       catalog,
     );
     expect(result.failed).toBeNull();
-    expect([...doc.getMap("__stamps").keys()]).toEqual([JSON.stringify(["widget", "1", "steps"])]);
+    expect([...doc.getMap("__stamps").keys()]).toEqual([
+      JSON.stringify(["grow", "1", "101", "images"]),
+      JSON.stringify(["grow_request", "1", "101", "images"]),
+      JSON.stringify(["widget", "1", "steps"]),
+    ]);
   });
 
   it("set_widget with an inner_widget but no path writes the OUTER widget, not the named one", () => {

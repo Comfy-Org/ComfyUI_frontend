@@ -238,8 +238,9 @@ The CLI mints node and link ids as random integers in `[2^40, 2^53)` —
 leaderless, collision-free without coordination, always inside
 `Number.MAX_SAFE_INTEGER`, always above small frontend counter ids. The
 high-water marks in the document are **advisory**, never allocators. Two
-`add_node` ops with the same id and different payloads resolve first-writer-wins
-and are not gated; that is safe only because minted ids do not collide.
+`add_node` ops with the same id and different payloads are LWW-gated by
+node-presence stamp as of schema Amendment A7; minted ids still avoid the
+collision by construction.
 
 The vocabulary marks id representation explicitly open, pending the frontend
 stable-ID work.
@@ -378,9 +379,9 @@ them, or say which one is not acceptable:
 2. An autogrow `connect` racing a delete of its source leaves the grown slot
    present in one order and absent in the other. Structural, not a register —
    the same property that makes concurrent autogrows non-clobbering.
-3. Two `add_node` ops with the same id and different payloads resolve
-   first-writer-wins. Ruled out by construction for minted ids; reachable from
-   hand-authored or replayed streams. Ties to Q2.
+3. ~~Two `add_node` ops with the same id and different payloads resolved
+   first-writer-wins.~~ Closed by schema Amendment A7's node-presence stamp
+   gate. Still reachable from hand-authored or replayed streams. Ties to Q2.
 4. Two writes to the same target inside one batch share a `base_version`, so
    they resolve by `op_id`, not by spec order. **"Last spec wins" is not true**
    — it has never been true for widget writes, and now it is not true for

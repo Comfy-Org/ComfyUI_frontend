@@ -234,7 +234,7 @@ function dispatch(doc: Y.Doc, op: Op, catalog?: WidgetCatalog): void {
       applyDeleteNode(doc, op);
       return;
     case "clear":
-      applyClear(doc);
+      applyClear(doc, op);
       return;
     default:
       // Exhaustiveness guard (issue #21): with every `Op` member cased above,
@@ -301,7 +301,11 @@ function applyAddNode(doc: Y.Doc, op: AddNodeOp, catalog?: WidgetCatalog): void 
   }
   const nodes = nodesMap(doc);
   const key = String(op.node_id);
-  if (nodes.has(key)) return; // structural idempotency: id already present → no-op
+  const stamps = stampsMap(doc);
+  const targetKey = stampTargetKey(op);
+  const prior = stamps.get(targetKey) as StampKey | undefined;
+  const stamp = stampKey(op);
+  if (prior != null && compareStampKeys(stamp, prior) <= 0) return;
 
   // The op.node payload is authoritative (vocabulary §8.5) — inserted
   // verbatim, never re-derived from the catalog. The catalog IS needed here,
@@ -335,6 +339,15 @@ function applyAddNode(doc: Y.Doc, op: AddNodeOp, catalog?: WidgetCatalog): void 
     );
   }
   mset(nodes, key, nodeMap);
+  mset(stamps, targetKey, stamp);
+  // The payload's slot-level link references are mint-time state; the `links`
+  // map is the live authority and belongs to `connect` / `delete_node`. Left
+  // verbatim they let an add disown a link the doc still holds (source port
+  // empty while the destination still consumes it) or resurrect a severed one,
+  // and the outcome then depended on whether the concurrent delete had
+  // arrived. Everything else in the payload is still copied verbatim (FC-8) —
+  // only `inputs[].link` / `outputs[].links` are re-derived.
+  reconcileNodeLinkRefs(doc, op.node_id, nodeMap);
 
   // last_node_id is a max-register (vocabulary §8.3): write only on increase.
   const meta = metaMap(doc);
@@ -662,18 +675,9 @@ function requireOutputSlot(src: Y.Map<unknown>, op: ConnectOp): Y.Array<unknown>
  *
  * SCOPE. This is `applyConnect`'s op-only set. It is not a general property of
  * the applier, and the surrounding prose is scoped to `connect`'s delete-wins
- * returns for that reason. `applyAddNode` has the same shape behind a DIFFERENT
- * early return — `if (nodes.has(key)) return`, structural idempotency, which
- * also consumes the `op_id` — so an `add_node` whose payload fails the
- * catalogue check is `catalog_required` / `uncatalogued_widget_write` on a
- * replica that has not yet seen a rival same-id `add_node`, and an applied
- * no-op on one that has (`invalid_node_payload`, from the `createNodeMap`
- * try/catch, diverges the same way). Measured,
- * and identical on `main`. Left alone deliberately: hoisting the check above
- * that return would make a duplicate `add_node` with a bad payload REJECT where
- * it currently no-ops, which is a new rejection needing its own vocabulary
- * analysis, and the case sits next to schema §2.5 carve-out 3 (same-`node_id`
- * `add_node` is reachable only from hand-authored or replayed streams).
+ * returns for that reason. `applyAddNode` formerly had the same shape behind
+ * structural idempotency. Amendment A7's node-presence stamp gate closes that
+ * case: the same winning payload reaches validation in both arrival orders.
  *
  * It is a statement about WHERE the existing checks run, not a claim that every
  * op-only PROPERTY is checked. `link_id` and
@@ -876,6 +880,9 @@ function growInputSlot(
     mset(dst, "inputs", ins);
   }
   const insArr = ins as Y.Array<unknown>;
+  const family = grow.name.split(".", 1)[0]!;
+  const growStampKey = JSON.stringify(["grow", String(op.to_node), String(op.link_id), family]);
+  const stamps = stampsMap(doc);
   let existing = -1;
   insArr.forEach((slot: unknown, idx: number) => {
     if (slot instanceof Y.Map && slot.get("grow_id") === op.link_id) existing = idx;
@@ -901,12 +908,117 @@ function growInputSlot(
   slot.set("grow_id", op.link_id);
   if (grow.widget) slot.set("widget", { name: grow.widget });
   apush(insArr, slot);
-  const toIdx = insArr.length - 1;
+  mset(stamps, growStampKey, stampKey(op));
+  // Each grow's own REQUESTED name and shape ride alongside its stamp, in the
+  // `__` ledger rather than on the slot (the slot is projected). Canonical
+  // renaming has to replay every racing grow's own request; deriving them all
+  // from whichever op is currently executing made two grows that asked for
+  // different names in one family settle differently per arrival order.
+  mset(stamps, growRequestKey(op.to_node, op.link_id, family), [
+    grow.name,
+    grow.widget ?? null,
+    grow.inputcount != null,
+  ]);
+  const toIdx = normalizeGrowFamily(
+    { doc, inputs: insArr, dst, catalog, family },
+    op.to_node,
+    op.link_id,
+    insArr.length - 1,
+  );
 
   if (grow.inputcount != null) {
     applyInputcountBump(doc, dst, op, grow.inputcount, catalog);
   }
   return toIdx;
+}
+
+/** The destination-side context one autogrow family is canonicalized within. */
+interface GrowFamilyContext {
+  doc: Y.Doc;
+  inputs: Y.Array<unknown>;
+  dst: Y.Map<unknown>;
+  catalog: WidgetCatalog | undefined;
+  family: string;
+}
+
+/** What one grow ASKED for, recorded next to its stamp: `[name, widget, isInputcount]`. */
+type GrowRequest = [string, string | null, boolean];
+
+/** `__stamps` key holding a grow's own request, companion to its `["grow", ...]` stamp. */
+function growRequestKey(toNode: unknown, growId: unknown, family: string): string {
+  return JSON.stringify(["grow_request", String(toNode), String(growId), family]);
+}
+
+/**
+ * Canonicalize concurrent grown slots of one family by their op stamp,
+ * including the slot index recorded in each link tuple, so two replicas that
+ * saw the grows in different orders agree on names and indexes (#11).
+ *
+ * Returns the index this op's own slot ended up at; `appendedIndex` is the
+ * index it was appended to, used when the family holds a single grow or when
+ * the caller's grow somehow has no stamped record to rank.
+ */
+function normalizeGrowFamily(
+  ctx: GrowFamilyContext,
+  toNode: unknown,
+  currentGrowId: unknown,
+  appendedIndex: number,
+): number {
+  const { doc, inputs, dst, catalog, family } = ctx;
+  const stamps = stampsMap(doc);
+  const records: {
+    index: number;
+    slot: Y.Map<unknown>;
+    stamp: StampKey;
+    request: GrowRequest;
+  }[] = [];
+  inputs.forEach((value, index) => {
+    if (!(value instanceof Y.Map) || value.get("grow_id") == null) return;
+    const growId = value.get("grow_id");
+    const key = JSON.stringify(["grow", String(toNode), String(growId), family]);
+    const stamp = stamps.get(key) as StampKey | undefined;
+    const request = stamps.get(growRequestKey(toNode, growId, family)) as GrowRequest | undefined;
+    if (stamp && request) records.push({ index, slot: value, stamp, request });
+  });
+  if (records.length <= 1) return records[0]?.index ?? appendedIndex;
+  records.sort((a, b) => compareStampKeys(a.stamp, b.stamp));
+  const positions = records.map((record) => record.index).sort((a, b) => a - b);
+  const snapshots = records.map(({ slot }) => Object.fromEntries(slot.entries()));
+  const occupied = new Set<unknown>();
+  inputs.forEach((value) => {
+    if (value instanceof Y.Map && !records.some(({ slot }) => slot === value)) occupied.add(value.get("name"));
+  });
+  const templates = catalog?.types[String(dst.get("type") ?? "")]?.autogrow_templates;
+  const names: string[] = [];
+  for (const { request } of records) {
+    const [requested, widget, isInputcount] = request;
+    const name = isInputcount
+      ? nextInputcountName(inputs, requested, occupied)
+      : nextAutogrowName(inputs, requested, widget ? null : (templates?.[family] ?? null), occupied);
+    names.push(name);
+    occupied.add(name);
+  }
+  snapshots.forEach((snapshot, rank) => {
+    const target = records.find((record) => record.index === positions[rank])!.slot;
+    const desired = { ...snapshot, name: names[rank]! };
+    for (const key of [...target.keys()]) {
+      if (!(key in desired)) mdel(target, key);
+    }
+    for (const [key, value] of Object.entries(desired)) {
+      if (target.get(key) !== value) mset(target, key, value);
+    }
+    const linkId = snapshot["grow_id"];
+    const link = linksMap(doc).get(String(linkId));
+    if (Array.isArray(link)) {
+      const updated = [...link];
+      updated[4] = positions[rank];
+      mset(linksMap(doc), String(linkId), updated);
+    }
+  });
+  const wantedRank = snapshots.findIndex(
+    (snapshot) => String(snapshot["grow_id"]) === String(currentGrowId),
+  );
+  return wantedRank >= 0 ? positions[wantedRank]! : appendedIndex;
 }
 
 /**
@@ -962,8 +1074,9 @@ function nextAutogrowName(
   ins: Y.Array<unknown>,
   requested: string,
   template: { prefix?: string; names?: string[] } | null | undefined,
+  occupied?: Set<unknown>,
 ): string {
-  const taken = slotNames(ins);
+  const taken = occupied ?? slotNames(ins);
   if (!taken.has(requested)) return requested;
   const base = requested.split(".", 1)[0]!;
   const elem = (n: number): string => {
@@ -982,8 +1095,12 @@ function nextAutogrowName(
 }
 
 /** comfy-cli `_next_inputcount_name`: bare `{elem}_N` keys, next free N on collision. */
-function nextInputcountName(ins: Y.Array<unknown>, requested: string): string {
-  const taken = slotNames(ins);
+function nextInputcountName(
+  ins: Y.Array<unknown>,
+  requested: string,
+  occupied?: Set<unknown>,
+): string {
+  const taken = occupied ?? slotNames(ins);
   if (!taken.has(requested)) return requested;
   const sep = requested.lastIndexOf("_");
   const elem = sep >= 0 ? requested.slice(0, sep) : "";
@@ -1029,28 +1146,110 @@ function removeLink(doc: Y.Doc, linkId: unknown): void {
 // delete_node
 // ---------------------------------------------------------------------------
 
+/**
+ * `delete_node` writes TWO independent registers, and conflating them is a
+ * convergence bug:
+ *
+ * 1. **Node presence** — `("node", id)`, LWW-gated against a concurrent
+ *    re-add (issue #11).
+ * 2. **Link severance** — the link ids the op explicitly names in
+ *    `removed_links`. Removing a named link is monotonic (a link id is never
+ *    reissued) and concerns OTHER nodes' slots, so it commutes with a re-add
+ *    and must run even when the presence gate is lost. Gating it made
+ *    `[delete, add]` end with `links: []` and `[add, delete]` end with the
+ *    link still installed.
+ *
+ * Links merely INCIDENT to the node — not named by the op — are severed only
+ * when the node actually goes away, because a node that survives the gate
+ * keeps its own wiring.
+ */
 function applyDeleteNode(doc: Y.Doc, op: DeleteNodeOp): void {
   if (op.node_id === undefined) {
     throw new OpRejectedError("malformed_op", "delete_node: missing node_id");
   }
   const nodes = nodesMap(doc);
   const key = String(op.node_id);
-  if (nodes.has(key)) mdel(nodes, key); // absent target → still a no-op-with-cleanup (delete wins)
+  const stamps = stampsMap(doc);
+  const targetKey = stampTargetKey(op);
+  const prior = stamps.get(targetKey) as StampKey | undefined;
+  const stamp = stampKey(op);
+  const presenceWon = prior == null || compareStampKeys(stamp, prior) > 0;
+  if (presenceWon) {
+    mset(stamps, targetKey, stamp);
+    if (nodes.has(key)) mdel(nodes, key); // absent target → no-op-with-cleanup (delete wins)
+  }
 
   const links = linksMap(doc);
   const removed = new Set<unknown>(op.removed_links ?? []);
   const toDelete: string[] = [];
   links.forEach((ln: unknown, k: string) => {
     const tuple = ln as unknown[];
-    if (removed.has(tuple[0]) || tuple[1] === op.node_id || tuple[3] === op.node_id) toDelete.push(k);
+    if (removed.has(tuple[0])) {
+      toDelete.push(k);
+      return;
+    }
+    if (!presenceWon) return;
+    if (String(tuple[1]) === key || String(tuple[3]) === key) toDelete.push(k);
   });
   for (const k of toDelete) mdel(links, k);
 
+  scrubDanglingLinkRefs(doc);
+}
+
+/**
+ * Rewrite ONE node's slot-level link references from the live `links` map:
+ * `inputs[i].link` is the link whose tuple lands on slot `i`, and
+ * `outputs[j].links` is every link leaving slot `j`. Used after `add_node`
+ * replaces a node that was already present, where the payload's link
+ * references are mint-time state that the live links map has moved past.
+ * Writes are bounded by the node's degree.
+ */
+function reconcileNodeLinkRefs(doc: Y.Doc, nodeId: unknown, node: Y.Map<unknown>): void {
+  const id = String(nodeId);
+  const inbound = new Map<number, unknown>();
+  const outbound = new Map<number, unknown[]>();
+  linksMap(doc).forEach((ln: unknown) => {
+    const tuple = ln as unknown[];
+    if (String(tuple[1]) === id && typeof tuple[2] === "number") {
+      const port = outbound.get(tuple[2]) ?? [];
+      port.push(tuple[0]);
+      outbound.set(tuple[2], port);
+    }
+    if (String(tuple[3]) === id && typeof tuple[4] === "number") inbound.set(tuple[4], tuple[0]);
+  });
+
+  const ins = node.get("inputs");
+  if (ins instanceof Y.Array) {
+    ins.forEach((slot: unknown, idx: number) => {
+      if (!(slot instanceof Y.Map)) return;
+      const want = inbound.get(idx) ?? null;
+      if (slot.get("link") !== want) mset(slot, "link", want);
+    });
+  }
+  const outs = node.get("outputs");
+  if (outs instanceof Y.Array) {
+    outs.forEach((port: unknown, idx: number) => {
+      if (!(port instanceof Y.Map)) return;
+      const want = outbound.get(idx) ?? [];
+      const have = port.get("links");
+      const haveArr = have instanceof Y.Array ? have.toArray() : [];
+      if (haveArr.length === want.length && haveArr.every((v, i) => v === want[i])) return;
+      const replacement = new Y.Array<unknown>();
+      replacement.push(want);
+      mset(port, "links", replacement);
+    });
+  }
+}
+
+/**
+ * Drop input `link` / output `links` references to link ids that no longer
+ * exist. Write count is bounded by the removed links' degree; the scan is
+ * O(nodes) read cost, accepted — schema §11.
+ */
+function scrubDanglingLinkRefs(doc: Y.Doc): void {
   const keptIds = new Set<unknown>();
-  links.forEach((ln: unknown) => keptIds.add((ln as unknown[])[0]));
-  // Scrub dangling references (write count bounded by the deleted node's degree;
-  // the scan is O(nodes) read cost, accepted — schema §11).
-  nodes.forEach((node) => {
+  linksMap(doc).forEach((ln: unknown) => keptIds.add((ln as unknown[])[0]));
+  nodesMap(doc).forEach((node) => {
     const ins = node.get("inputs");
     if (ins instanceof Y.Array) {
       ins.forEach((slot: unknown) => {
@@ -1084,12 +1283,42 @@ function applyDeleteNode(doc: Y.Doc, op: DeleteNodeOp): void {
  * exists (schema §6). Preserves `extra`, `definitions`,
  * `last_node_id`/`last_link_id` (id-reuse guard), and `__stamps` (post-clear
  * writes still LWW correctly). O(doc) writes — inherent, standalone-only.
+ *
+ * `removed_nodes` is the AUTHORITATIVE target set (schema §6 amendment A7,
+ * FC-8: payloads are copied verbatim, never re-derived). Deriving the target
+ * set from `nodes.keys()` when the list was empty made the outcome depend on
+ * which concurrent `add_node` happened to arrive first (#11): a `clear([])`
+ * that outranks a concurrent add removed that add when it arrived second and
+ * kept it when it arrived first. A node the clear never saw is outside its
+ * scope and survives in both arrival orders.
+ *
+ * Links follow node presence exactly as `delete_node` does, rather than being
+ * wiped wholesale, so link survival is a function of the (now convergent)
+ * node set rather than of arrival order.
  */
-function applyClear(doc: Y.Doc): void {
+function applyClear(doc: Y.Doc, op: Extract<Op, { op: "clear" }>): void {
+  if (!Array.isArray(op.removed_nodes)) {
+    throw new OpRejectedError("malformed_op", "clear: missing removed_nodes");
+  }
   const nodes = nodesMap(doc);
-  for (const k of [...nodes.keys()]) mdel(nodes, k);
+  const stamps = stampsMap(doc);
+  const stamp = stampKey(op);
+  for (const nodeId of op.removed_nodes) {
+    const k = String(nodeId);
+    const targetKey = JSON.stringify(["node", k]);
+    const prior = stamps.get(targetKey) as StampKey | undefined;
+    if (prior != null && compareStampKeys(stamp, prior) <= 0) continue;
+    mset(stamps, targetKey, stamp);
+    if (nodes.has(k)) mdel(nodes, k);
+  }
   const links = linksMap(doc);
-  for (const k of [...links.keys()]) mdel(links, k);
+  const toDelete: string[] = [];
+  links.forEach((ln: unknown, k: string) => {
+    const tuple = ln as unknown[];
+    if (!nodes.has(String(tuple[1])) || !nodes.has(String(tuple[3]))) toDelete.push(k);
+  });
+  for (const k of toDelete) mdel(links, k);
+  scrubDanglingLinkRefs(doc);
   const meta = metaMap(doc);
   if (meta.has("groups")) mset(meta, "groups", []);
 }

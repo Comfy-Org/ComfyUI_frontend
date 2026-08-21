@@ -286,7 +286,12 @@ export interface DeleteNodeOp extends OpBase {
 
 export interface ClearOp extends OpBase {
   op: "clear";
-  /** Node ids present at mint time. Id counters are preserved across a clear. */
+  /**
+   * Node ids present at mint time — the AUTHORITATIVE target set (schema §6
+   * amendment A7). The applier never re-derives it from its own live `nodes`
+   * map, so an empty list removes nothing rather than emptying the graph.
+   * Id counters are preserved across a clear.
+   */
   removed_nodes: NodeId[];
 }
 

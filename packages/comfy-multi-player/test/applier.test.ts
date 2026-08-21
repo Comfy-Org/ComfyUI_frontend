@@ -188,7 +188,15 @@ describe("clear semantics (schema §6)", () => {
     const base = lww.base_workflow; // has groups + extra + config
     const doc = mint(base, catalog);
     const stampsBefore = stampsMap(doc).size;
-    const clear: ClearOp = { op: "clear", ...envelope("alice", 9), removed_nodes: [] };
+    // `removed_nodes` is the authoritative target set (§6 amendment A3): a
+    // minter records every node present at mint time, so the list is what a
+    // real `clear` carries. Deriving it from live `nodes.keys()` was the #11
+    // arrival-order hole.
+    const clear: ClearOp = {
+      op: "clear",
+      ...envelope("alice", 9),
+      removed_nodes: base.nodes.map((n) => n.id),
+    };
     expect(applyOps(doc, [clear], catalog).failed).toBeNull();
 
     const wf = project(doc, catalog);
@@ -199,7 +207,9 @@ describe("clear semantics (schema §6)", () => {
     expect(wf["config"]).toEqual(base["config"]);
     expect(wf["last_node_id"]).toBe(base["last_node_id"]); // id-reuse guard
     expect(wf["last_link_id"]).toBe(base["last_link_id"]);
-    expect(stampsMap(doc).size).toBe(stampsBefore); // __stamps preserved
+    // clear records one node-presence stamp per removed node so concurrent
+    // re-adds resolve by stamp rather than arrival order (#11).
+    expect(stampsMap(doc).size).toBe(stampsBefore + base.nodes.length);
   });
 
   it("does not invent a groups key on a workflow without one", () => {
@@ -212,7 +222,11 @@ describe("clear semantics (schema §6)", () => {
 
   it("does not touch definitions", () => {
     const doc = mint(lww.subgraph_base_workflow, catalog);
-    const clear: ClearOp = { op: "clear", ...envelope("alice", 1), removed_nodes: [] };
+    const clear: ClearOp = {
+      op: "clear",
+      ...envelope("alice", 1),
+      removed_nodes: lww.subgraph_base_workflow.nodes.map((n) => n.id),
+    };
     expect(applyOps(doc, [clear], catalog).failed).toBeNull();
     const wf = project(doc, catalog);
     expect(wf.nodes).toEqual([]);

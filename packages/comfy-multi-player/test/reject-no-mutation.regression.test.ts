@@ -605,8 +605,7 @@ describe("regression: rejected connect ops leave document bytes unchanged (#10)"
     expect(projections[0]).not.toEqual(projections[1]);
   });
 
-  it("§2.5 item 7 (add_node) still diverges — pinning the carve-out", () => {
-    // `nodes.has(key)` structural idempotency sits above the catalogue checks.
+  it("§2.5 item 7 (add_node) now converges under the node-presence stamp gate", () => {
     const bad = {
       op: "add_node", op_id: opId("cv7a"), actor: "human:x", base_version: 5, stamp: [5, "human:x"],
       node_id: 960, class_type: "LoadImage", pos: [0, 0],
@@ -630,7 +629,7 @@ describe("regression: rejected connect ops leave document bytes unchanged (#10)"
       for (const b of batches) applyOps(doc, b as unknown as Op[], catalog);
       return JSON.stringify(project(doc, catalog));
     });
-    expect(projections[0]).not.toEqual(projections[1]);
+    expect(projections[0]).toEqual(projections[1]);
   });
 
   it("§2.5 item 8 (interior path resolution) still diverges WITHOUT any deletion — pinning the carve-out", () => {

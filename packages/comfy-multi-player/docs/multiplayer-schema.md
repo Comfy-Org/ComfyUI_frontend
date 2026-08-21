@@ -259,10 +259,12 @@ vectors, both orders), plus the permutation suites of
 `test/connect-lww.test.ts` and `test/stamp-target-identity.test.ts`.
 
 **Eight carve-outs, stated rather than implied** (Amendment A1, extended by
-Amendment A6). Items 1-7 are each pinned by a test that will start failing the
-day it is closed; item 8 is pinned for `shared_definition_unforked`, the shape no
-other item covers. Read the RULE below the list before concluding anything about
-a rejection that is not named here:
+Amendment A6). Items 1, 2, and 4-6 are each pinned by a test that will start
+failing the day it is closed; item 8 is pinned for
+`shared_definition_unforked`, the shape no other item covers. Amendment A7
+closes items 3 and 7 and the concurrent-display-name half of item 2. Read the RULE
+below the list before concluding anything about a rejection that is not named
+here:
 
 1. `outputs[].links` is a set projected as an ordered array, appended in
    arrival order. Two connects out of ONE source into two DIFFERENT inputs
@@ -270,15 +272,18 @@ a rejection that is not named here:
    comparison does not.
 2. An autogrow `connect` grows a structural slot rather than writing a
    register, so racing a delete of its source leaves the grown slot present
-   in one order and absent in the other. Two concurrent autogrows also
+   in one order and absent in the other. ~~Two concurrent autogrows also
    assign their display names (`images.image1` / `images.image2`) by
-   arrival — vocabulary §3 already says that ordering is the one decision a
-   leaderless writer cannot make; comfy-cli's `canonical()` folds it out,
-   `project()` does not.
-3. Two `add_node` ops with the same `node_id` and different payloads resolve
-   first-writer-wins by arrival. Vocabulary §1.1 rules this out by
-   construction (`mint_id` draws 53-bit random ids), so it is a property of
-   hand-authored or replayed streams only.
+   arrival~~ — **the display-name half is CLOSED by Amendment A7**: names and
+   link tuple indexes are now assigned in stamp order without dropping either
+   grow. The source-delete race above is still open.
+3. ~~Two `add_node` ops with the same `node_id` and different payloads resolve
+   first-writer-wins by arrival.~~ **CLOSED by Amendment A7**: node presence
+   is LWW-gated on `("node", id)` and the winning op's payload is
+   authoritative. Vocabulary §1.1 makes the collision rare by construction
+   (`mint_id` draws 53-bit random ids), but delete-then-re-add reaches it on
+   purpose, which is why it had to close. **A7 is not ratified yet — this is
+   `api-contract-proposal.md` Q6 item 3.**
 
 4. A `connect` whose `from_slot` is a non-negative integer but OUT OF RANGE
    for its source, or which addresses an element that is not a slot record,
@@ -306,15 +311,11 @@ a rejection that is not named here:
    is rejected by a replica that still holds the node and applied as a no-op by
    one that does not; under §4 abort-remainder that reaches the projection.
    Measured. Amendment A6.
-7. The same shape in `applyAddNode`, behind a different early return:
-   `if (nodes.has(key)) return` is structural idempotency and also consumes the
-   `op_id`, while the catalogue checks (`catalog_required`,
-   `uncatalogued_widget_write`, `unknown_widget`) and the `createNodeMap`
-   try/catch (`invalid_node_payload`) sit below it. An `add_node` with a bad
-   payload racing a rival same-`node_id` `add_node` therefore resolves
-   differently by arrival order. Distinct from carve-out 3, which is about
-   which PAYLOAD wins, not about one replica discarding the rest of the batch.
-   Measured. Amendment A6.
+7. ~~The same shape used to recur in `applyAddNode`: structural idempotency
+   returned before payload validation.~~ **CLOSED by Amendment A7.** The
+   node-presence stamp gate makes the same winner reach validation in either
+   arrival order, so the abort-remainder outcome now converges. The former
+   still-diverges pin is now a positive convergence assertion.
 
 8. `resolveInteriorNode`'s own rejections — `not_a_subgraph`,
    `shared_definition_unforked`, `interior_node_not_found` — all read the
@@ -327,8 +328,8 @@ a rejection that is not named here:
 
 **The rule these come from, which is more useful than the list.** A rejection is
 arrival-order-dependent exactly when the check that raises it READS THE DOCUMENT
-and sits below an early return that consumes the `op_id` — a delete-wins return,
-`add_node`'s structural-idempotency return, or the interior null return. Under §4
+and sits below an early return that consumes the `op_id` — a delete-wins return
+or the interior null return. Under §4
 abort-remainder any such rejection also decides whether the REST OF THE BATCH
 applies, which is how a bookkeeping difference becomes a projection difference.
 Every precondition that depends on the OP ALONE is hoisted above those returns
@@ -370,10 +371,19 @@ Pins the code does not state (spike report, "what the freeze doc must pin"):
 Write-target keys are the spike applier's, normative. **Gated and committed**
 through `__stamps` (Amendment A1): the `set_widget` rows, the connect-embedded
 `inputcount` bump (§8.3, which shares the connect's stamp), and a **concrete**
-`connect`. The autogrow `connect` row and the `add_node`/`delete_node` rows
-define conflict *identity* (for `detect_conflict`-style consumers) and reserve
-the key shapes without gating — gating autogrow would silently discard one of
-two concurrent, deliberately non-clobbering grows.
+`connect`; and, since **Amendment A7** (issue #11), the `add_node` /
+`delete_node` / per-removed-node `clear` rows. A1 left node presence ungated,
+which resolved it by arrival order: `delete`→`add` kept the replacement while
+`add`→`delete` kept nothing, and a `clear` deleted or spared a concurrent
+`add_node` depending only on which arrived first. Under A7 the winning op's
+payload is authoritative for the node (§3 rule 3), so both orders agree.
+
+The autogrow `connect` row stays **ungated** — gating it would silently
+discard one of two concurrent, deliberately non-clobbering grows. A7 instead
+makes autogrow *canonical*: the grown slots of one family are ordered by their
+op stamps, and slot names and link tuple indexes are assigned from that order,
+so concurrent grows land on the same names in either arrival order without
+either grow being dropped.
 
 **Node ids in a target key are `String()`-normalized** (Amendment A1). `NodeId`
 is `string | number` by contract and `nodesMap` is keyed by `String(node_id)`,
@@ -384,8 +394,10 @@ so a raw key gave `7` and `"7"` two registers for one node.
 | `set_widget` (top-level) | `("widget", String(node_id), widget_name)` | yes |
 | `set_widget` (interior) | `("widget", resolved_path, inner_widget)` — all three address forms normalize here (§5.2) | yes |
 | `connect` (concrete slot) | `("input", String(to_node), to_slot)` | **yes (A1)** |
-| `connect` (autogrow) | `("input", String(to_node), "grow", base_name)` | no — identity only |
-| `add_node` / `delete_node` | `("node", String(node_id))` | no — identity only |
+| `connect` (autogrow) | `("input", String(to_node), "grow", base_name)` | no — identity only, canonicalized by stamp (A7) |
+| `add_node` / `delete_node` (presence) | `("node", String(node_id))` | **yes (A7)** |
+| `clear` (one row per entry in `removed_nodes`) | `("node", String(node_id))` | **yes (A7)** |
+| `delete_node` (severance of the link ids in `removed_links`) | none | no — monotonic, ungated (A7) |
 
 ---
 
@@ -520,6 +532,17 @@ Pinned semantics:
   `definitions`, preserves `last_node_id`/`last_link_id` (id-reuse guard:
   a merge must never resurrect a deleted node's identity), and preserves
   `__stamps` (post-clear writes still LWW correctly).
+- **Amendment A7 (issue #11): `clear.removed_nodes` is the authoritative
+  target set.** It records the node ids present at mint time; an applier MUST
+  NOT re-derive the set from its own live `nodes` map when the list is empty,
+  because that reads arrival-dependent state and made a `clear([])` remove or
+  spare a concurrent `add_node` purely by arrival order. Each listed id passes
+  the `("node", id)` LWW gate individually, so a higher-stamped concurrent add
+  survives the clear. Links are then removed **iff an endpoint is no longer
+  present**, the same rule `delete_node` uses, rather than being wiped
+  wholesale; when `removed_nodes` covers the whole graph this is identical to
+  emptying `links`. A `clear` whose `removed_nodes` is empty therefore removes
+  nothing — an empty list means the minting replica saw an empty graph.
 - Collaborative group editing requires new op kinds (a vocabulary amendment),
   not a schema change; until then groups are passthrough-with-clear.
 
@@ -678,13 +701,13 @@ and first-class definitions (§5.1) only shrink these):
 
 | Op kind | Y mutations avg / max | Bounded? |
 |---|---|---|
-| `add_node` | 2.1 / 3 | yes — one `nodes.set` + high-water mark |
+| `add_node` | 2.1 / 3 → **3.1 / 4 + degree under A7** | yes — one `nodes.set` + high-water mark + the `("node", id)` stamp; re-deriving link refs writes at most the node's degree |
 | `set_widget` (top-level) | 3.8 / 4 → **2 under §1.2** (widgets.set + stamp) | yes |
 | `set_widget` (interior) | whole-blob in prototype → **2 under §5.1** | yes (was the flagged violation; fixed by layout) |
 | `connect` (concrete) | 4–5.2 / 7 | yes — bounded by the displaced link's source degree |
-| `connect` (autogrow) | ~4 | yes — `grow_id` identity keeps replays non-clobbering |
-| `delete_node` | 4.7–5 / 6 | yes — writes bounded by the node's degree; the dangling-reference *scan* is O(nodes) read cost, accepted |
-| `clear` | O(doc) | **no — inherent.** Rare; standalone-only at the *authoring* surface (vocabulary §1.5: `apply_specs` rejects a spec batch containing it, code `workflow_clear_not_batchable`) — the *replay* surface (`apply_op` / `applyOps`, §4 abort-remainder) accepts it in any position and must, per `docs/portability.md`. SHOULD be host-mediated and never merged casually |
+| `connect` (autogrow) | ~4 → **+2 under A7** | yes — `grow_id` identity keeps replays non-clobbering; A7 adds the `("grow", …)` stamp and the `("grow_request", …)` row, plus renames bounded by the family's concurrent-grow count |
+| `delete_node` | 4.7–5 / 6 → **+1 under A7** | yes — writes bounded by the node's degree, plus the `("node", id)` stamp; the dangling-reference *scan* is O(nodes) read cost, accepted |
+| `clear` | O(doc), **+1 stamp per `removed_nodes` entry under A7** | **no — inherent.** Rare; standalone-only at the *authoring* surface (vocabulary §1.5: `apply_specs` rejects a spec batch containing it, code `workflow_clear_not_batchable`) — the *replay* surface (`apply_op` / `applyOps`, §4 abort-remainder) accepts it in any position and must, per `docs/portability.md`. SHOULD be host-mediated and never merged casually |
 
 ---
 
@@ -1347,3 +1370,93 @@ write" but **"does it read the document"** — and if it does not, it belongs in
   illustrative of it. That change is the durable one: this list was extended
   three times in a single review, and each omission read as a contradiction only
   because the sentence claimed the list was exhaustive.
+---
+
+## Amendment A7 — 2026-08-21 — stamp-gated node presence, canonical autogrow naming, scoped `clear` (issue #11)
+
+**Ratification still owed.** This amendment closes §2.5 carve-outs 2 and 3.
+Carve-out 3 is item 3 of `docs/api-contract-proposal.md` Q6, which asks
+maintainers to "confirm we are all fine with them, or say which one is not
+acceptable". That confirmation has NOT happened. Do not merge the
+implementation until it does.
+
+**Cross-language counterpart still owed.** `README.md` makes comfy-cli
+`docs/op-vocabulary-v1.md` normative for op semantics and calls a divergence
+"a bug here"; Amendment A1 cites its counterpart by SHA. This amendment has
+**no** comfy-cli counterpart yet, and the `clear` rule below genuinely
+diverges from the vocabulary's "`clear` empties nodes and links". A matching
+comfy-cli amendment must land and be SHA-cited here before merge (FC-10,
+KA-1). Until then this section is a proposal, not a pin.
+
+No `SCHEMA_VERSION` bump. The Y.Doc layout is unchanged: A7 adds `__stamps`
+rows (a ledger §7 already excludes from projection) and changes which targets
+the gate consults. Forward-compat holds — a new reader reads an old document
+and simply finds no `("node", id)` rows, which it treats as "unstamped", the
+same as a freshly minted node. Backward-compat holds for projection and
+degrades only for conflict resolution: an older reader ignores the new rows
+and falls back to arrival order, which is the behavior it had anyway.
+
+### The rules
+
+1. **Node presence is LWW-gated** on `("node", String(node_id))` for
+   `add_node`, `delete_node`, and each id in `clear.removed_nodes`. The
+   winning op's payload is authoritative (§3 rule 3); a losing op is an
+   accepted no-op that still consumes its `op_id`. This closes §2.5 carve-out
+   3 (`add_node` first-writer-wins by arrival).
+
+2. **`add_node` re-derives only `inputs[].link` and `outputs[].links`** from
+   the live `links` map. Everything else in the payload is copied verbatim
+   (FC-8). Link topology belongs to `connect`/`delete_node`, and a payload
+   carries mint-time link state: applied verbatim over a live node it could
+   disown a link the document still holds — leaving the source port empty
+   while the destination still consumed it — or resurrect a severed one, with
+   the outcome depending on whether the concurrent delete had arrived.
+
+3. **`delete_node` writes two independent registers.** Node presence is gated
+   as in rule 1. Severance of the link ids the op names in `removed_links` is
+   **ungated**: removing a named link is monotonic (link ids are never
+   reissued), concerns other nodes' slots, and commutes with a re-add. Gating
+   it made `[delete, add]` settle with `links: []` and `[add, delete]` settle
+   with the link still installed. Links merely INCIDENT to the node — not
+   named by the op — are severed only when the node itself is removed.
+
+4. **Autogrow stays ungated but is canonicalized.** §2.5 carve-out 2 said
+   concurrent grows assign display names by arrival. They now assign them by
+   stamp: the grown slots of one family are ordered by their ops' stamps, and
+   names and link tuple indexes are assigned from that order. Neither grow is
+   dropped, so the reason carve-out 2 existed (gating would discard one of two
+   deliberately non-clobbering grows) is respected. Each grow's own requested
+   name and shape are recorded next to its stamp under
+   `("grow_request", to_node, grow_id, family)`, because the canonical
+   assignment must replay every racing grow's own request — deriving them all
+   from whichever op happens to be executing made two grows that asked for
+   different names in one family settle differently per arrival order.
+
+5. **`clear.removed_nodes` is the authoritative target set.** It records the
+   node ids present at mint time. An applier MUST NOT re-derive the set from
+   its own live `nodes` map when the list is empty: that reads
+   arrival-dependent state, and a `clear([])` that outranked a concurrent
+   `add_node` removed the add when the add arrived first and spared it when
+   the add arrived second. Links are removed **iff an endpoint is no longer
+   present** — the same rule `delete_node` uses — rather than wiped wholesale;
+   when `removed_nodes` covers the whole graph that is identical to emptying
+   `links`. A `clear` whose `removed_nodes` is empty therefore removes
+   nothing. **This is the divergence from comfy-cli named above.**
+
+### What is NOT closed
+
+§2.5 carve-out 1 (`outputs[].links` ordering) is untouched. So is the
+pre-existing gap where a malformed op is validated only if it is not
+short-circuited first, which makes rejection itself arrival-order-dependent;
+that belongs to the envelope-validation order, not to this amendment.
+
+### Cost
+
+§11's counts move: `add_node` and `delete_node` each gain one `__stamps`
+write, `add_node` additionally writes at most its own degree when re-deriving
+link references, and `clear` gains one `__stamps` write **per removed node**
+on top of its already-O(doc) cost. `__stamps` rows for deleted node ids are
+never reclaimed; §4's compaction carries forward "entries for still-live
+targets", so a compaction implementation must decide explicitly whether a
+`("node", id)` row for an absent node is still live — dropping it would let a
+post-compaction re-add of that id win by default.

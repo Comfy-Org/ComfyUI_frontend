@@ -89,11 +89,39 @@ describe("applier rejections — add_node", () => {
     expect(snap(doc)).toEqual(before);
   });
 
-  it("is a structural no-op (not a failure) when the id already exists", () => {
+  it("is not a failure when the id already exists, and the winning payload is authoritative (#11)", () => {
     const doc = baseDoc();
     const before = snap(doc);
     const op: AddNodeOp = { op: "add_node", ...env("a", 1), node_id: 1, node: { id: 1, type: "KSampler" } as never };
     const r = applyOps(doc, [op], catalog);
+    expect(r.failed).toBeNull();
+    // Node presence is resolved through the `["node", id]` stamp register, not
+    // by arrival order (#11). The base doc's node 1 carries no stamp, so the
+    // op wins and its payload replaces it verbatim (FC-8). The old
+    // `nodes.has(key)` early return made delete->add and add->delete diverge.
+    expect(snap(doc).nodes.find((n) => n.id === 1)).toEqual({ id: 1, type: "KSampler" });
+    expect(snap(doc).nodes.map((n) => n.id)).toEqual(before.nodes.map((n) => n.id));
+  });
+
+  it("leaves the projection untouched when a lower-stamped add loses the node register (#11)", () => {
+    const doc = baseDoc();
+    const winner: AddNodeOp = {
+      op: "add_node",
+      ...env("z", 9),
+      node_id: 5,
+      node: { id: 5, type: "Note" } as never,
+    };
+    expect(applyOps(doc, [winner], catalog).failed).toBeNull();
+    const before = snap(doc);
+    const loser: AddNodeOp = {
+      op: "add_node",
+      ...env("a", 1),
+      node_id: 5,
+      node: { id: 5, type: "KSampler" } as never,
+    };
+    // An LWW-dropped op is an accepted no-op that still consumes its op_id, so
+    // it is projection-identical rather than byte-identical.
+    const r = applyOps(doc, [loser], catalog);
     expect(r.failed).toBeNull();
     expect(snap(doc)).toEqual(before);
   });
