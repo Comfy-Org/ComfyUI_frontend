@@ -1202,34 +1202,39 @@ export class LGraphNode
    * serialize the content
    */
   serialize(): ISerialisedNode {
+    return this.serializeFromStoreState(this._state)
+  }
+
+  serializeFromStoreState(state: NodeState): ISerialisedNode {
     // create serialization object
     const o: ISerialisedNode = {
-      id: serializeNodeId(this.id),
-      type: this.type,
+      id: serializeNodeId(state.id),
+      type: state.type,
       pos: [this.pos[0], this.pos[1]],
       size: [this.size[0], this.size[1]],
-      flags: LiteGraph.cloneObject(this.flags),
+      flags: LiteGraph.cloneObject(state.flags),
       order: this.order,
-      mode: this.mode,
-      showAdvanced: this.showAdvanced
+      mode: state.mode,
+      showAdvanced: state.showAdvanced
     }
 
     // special case for when there were errors
-    if (this.constructor === LGraphNode && this.last_serialization)
-      return { ...this.last_serialization, mode: o.mode, pos: o.pos }
+    if (this.constructor === LGraphNode && state.lastSerialization)
+      return { ...state.lastSerialization, mode: o.mode, pos: o.pos }
 
-    if (this.inputs)
-      o.inputs = this.inputs.map((input, i) =>
+    if (state.inputs)
+      o.inputs = state.inputs.map((input, i) =>
         inputAsSerialisable(input, this, i)
       )
-    if (this.outputs)
-      o.outputs = this.outputs.map((output, i) =>
+    if (state.outputs)
+      o.outputs = state.outputs.map((output, i) =>
         outputAsSerialisable(output, this, i)
       )
 
-    if (this.title && this.title != this.constructor.title) o.title = this.title
+    if (state.title && state.title != this.constructor.title)
+      o.title = state.title
 
-    if (this.properties) o.properties = LiteGraph.cloneObject(this.properties)
+    if (state.properties) o.properties = LiteGraph.cloneObject(state.properties)
 
     const { widgets } = this
     if (widgets?.length && this.serialize_widgets) {
@@ -1250,10 +1255,10 @@ export class LGraphNode
 
     if (!o.type && this.constructor.type) o.type = this.constructor.type
 
-    if (this.color) o.color = this.color
-    if (this.bgcolor) o.bgcolor = this.bgcolor
-    if (this.boxcolor) o.boxcolor = this.boxcolor
-    if (this.shape) o.shape = this.shape
+    if (state.color) o.color = state.color
+    if (state.bgcolor) o.bgcolor = state.bgcolor
+    if (state.boxcolor) o.boxcolor = state.boxcolor
+    if (state.shape) o.shape = state.shape
 
     let hookResult: unknown
     const serialised = runExtensionSerializeHook(

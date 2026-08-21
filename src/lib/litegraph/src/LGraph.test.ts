@@ -16,6 +16,7 @@ import {
   LiteGraph,
   LLink,
   Reroute,
+  serialiseMutableGraphParts,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 import type {
@@ -676,6 +677,27 @@ describe('Link serialization goldens (ADR-0008 topology-store migration)', () =>
     expect(reroutes.some((r) => r.parentId === undefined)).toBe(true)
     for (const reroute of reroutes) expectRerouteContractKeyOrder(reroute)
     expect(JSON.stringify(second.reroutes)).toBe(JSON.stringify(first.reroutes))
+  })
+})
+
+describe('Store-driven serialization parity', () => {
+  test('matches normalized mutable serialization across topology variants', ({
+    expect,
+    linkedNodesGraph,
+    reroutesComplexGraph,
+    floatingLinkGraph
+  }) => {
+    for (const graph of [
+      new LGraph(linkedNodesGraph),
+      reroutesComplexGraph,
+      new LGraph(floatingLinkGraph)
+    ]) {
+      const stored = graph.asSerialisable({ sortNodes: true })
+      const mutable = serialiseMutableGraphParts(graph, true)
+      expect(JSON.parse(JSON.stringify(stored))).toMatchObject(
+        JSON.parse(JSON.stringify(mutable))
+      )
+    }
   })
 })
 
