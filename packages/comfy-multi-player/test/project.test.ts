@@ -247,20 +247,23 @@ describe("set_widget applies the same catalog rules as add_node (#13)", () => {
       catalog,
     );
     applyOps(doc, [op({ op: "add_node", node_id: 5, node: { id: 5, type: "__proto__", inputs: [] } })], catalog);
+    const beforeConnect = Buffer.from(Y.encodeStateAsUpdate(doc));
     const result = applyOps(
       doc,
       [op({ op: "connect", from_node: 1, from_slot: 0, to_node: 5, link_id: 9, grow: { name: "image_1", type: "LATENT", inputcount: { widget: "inputcount", value: 2 } } })],
       catalog,
     );
     expect(result.failed?.code).toBe("uncatalogued_widget_write");
-    // NOT asserted: byte-identity. `applyConnect` appends the slot before it
-    // reaches the inputcount bump, and Yjs does not roll a transaction back on
-    // a throw, so this op mutates then fails — verified IDENTICAL on `main`
-    // (which rejects the same op as `apply_failed`, also after mutating). That
-    // is issue #10's mutate-before-fail class and belongs to #34/#59; asserting
-    // byte-identity here would pin a property this path has never had. What
-    // this PR is responsible for is that the write does not land and the
-    // document stays readable:
+    // Byte-identity IS asserted now. This comment used to say the opposite:
+    // `applyConnect` appended the grown slot before reaching the inputcount
+    // bump, so the op mutated and then failed, and #31 correctly declined to
+    // pin a property the path did not have, deferring it to #34/#59. #34
+    // hoisted `validateWidgetName` above the slot append, so the property
+    // holds and is worth pinning here rather than only in #34's own file —
+    // this is the test that would notice if the hoist were ever reverted for
+    // the `uncatalogued_widget_write` route specifically.
+    expect(Buffer.from(Y.encodeStateAsUpdate(doc)).equals(beforeConnect)).toBe(true);
+    // And, as before, the write does not land and the document stays readable:
     expect(project(doc, catalog).nodes.map((n) => n.id)).toEqual([1, 5]);
     expect(project(doc, catalog).nodes[1]!.widgets_values).toBeUndefined();
   });

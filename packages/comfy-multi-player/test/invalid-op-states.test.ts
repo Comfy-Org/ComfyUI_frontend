@@ -92,13 +92,33 @@ const wireOp = (shape: Record<string, unknown>): Op => shape as unknown as Op;
 //
 // "Doc untouched" is asserted per case here and holds for all three, but it is
 // NOT a general property of rejection in this package and must not be read as
-// one. A neighbouring path already violates it: an autogrow `connect` carrying
-// `grow.inputcount` appends the grown slot BEFORE `applyInputcountBump` can
-// throw `malformed_op` or `unknown_widget`, and a throwing `doc.transact` body
-// does not roll back — so that rejection leaves an orphaned slot behind and
-// records no `op_id`. That is issue #10 (reject-without-mutation), tracked in
-// `docs/ROADMAP.md`, pre-existing and out of scope here. Named so this file's
-// three green byte-identity assertions are not mistaken for a survey.
+// one. Named so this file's three green byte-identity assertions are not
+// mistaken for a survey.
+//
+// NARROWED (issue #10, PR #34) — and deliberately not retired. The two
+// rejection codes this note named are now hoisted above the slot append:
+// `malformed_op` for a non-string `grow.inputcount.widget` and `unknown_widget`
+// for one the catalogue cannot describe both reject byte-identically, pinned by
+// `test/reject-no-mutation.regression.test.ts`.
+//
+// The PATH ITSELF IS STILL NOT SAFE, so the warning stands as written.
+// `growInputSlot` still `apush`es the grown slot and only then calls
+// `applyInputcountBump`, which can still throw AFTER that append:
+//   - `mset(widgetsOf(dst), …)` on a value `structuredClone` accepts but Yjs
+//     cannot store (`Map`, `Set`, `RegExp`, `ArrayBuffer`, `Error`);
+//   - and a reference cycle is accepted outright, then makes
+//     `encodeStateAsUpdate` throw permanently.
+// Two more, outside this handler: `applyDeleteNode` reads `op.removed_links` —
+// an op-only value — only after `mdel(nodes, key)`, so a non-array deletes the
+// node and then throws; and `connect.link_id`/`link_type` are copied in with no
+// validation at all.
+// Tracked by #59, #61 and #68. `src/applier.ts`'s module JSDoc,
+// `docs/INVARIANTS.md` KA-4, `README.md` and contract D4 list the same four
+// holes; if you change one, change them all.
+//
+// A `Symbol` or throwing-`valueOf` `base_version` used to be a third trigger
+// here. Hoisting `stampKey` into `requireOpOnlyValid` closed it on every
+// `connect` path; measured byte-identical afterwards.
 // ---------------------------------------------------------------------------
 
 describe("#17 group 1: invalid states the runtime already rejects", () => {

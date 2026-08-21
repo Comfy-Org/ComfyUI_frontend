@@ -258,8 +258,11 @@ This is the property the fixture suite pins (checks c1/c2 + the six LWW
 vectors, both orders), plus the permutation suites of
 `test/connect-lww.test.ts` and `test/stamp-target-identity.test.ts`.
 
-**Three carve-outs, stated rather than implied** (Amendment A1; each is
-pinned by a test that will start failing the day it is closed):
+**Eight carve-outs, stated rather than implied** (Amendment A1, extended by
+Amendment A6). Items 1-7 are each pinned by a test that will start failing the
+day it is closed; item 8 is pinned for `shared_definition_unforked`, the shape no
+other item covers. Read the RULE below the list before concluding anything about
+a rejection that is not named here:
 
 1. `outputs[].links` is a set projected as an ordered array, appended in
    arrival order. Two connects out of ONE source into two DIFFERENT inputs
@@ -277,8 +280,68 @@ pinned by a test that will start failing the day it is closed):
    construction (`mint_id` draws 53-bit random ids), so it is a property of
    hand-authored or replayed streams only.
 
-Everything else — including concrete-input contention, which used to be a
-fourth, unstated carve-out — converges.
+4. A `connect` whose `from_slot` is a non-negative integer but OUT OF RANGE
+   for its source, or which addresses an element that is not a slot record,
+   racing that source's deletion, is rejected by a replica that still holds
+   the source and accepted as a register-claiming no-op by one that does not —
+   "is 5 in range" is unanswerable once the source is gone. Amendment A6. The
+   op-only half of the domain (integer, non-negative) is checked
+   unconditionally and does NOT carve out.
+5. The same shape on the DESTINATION axis. A `connect` rejected by a check that
+   must read `to_node` — `to_slot` out of range or not a slot record, an opaque
+   widget destination, or a `grow.inputcount.widget` the catalogue cannot
+   describe — racing `delete_node(to_node)` is rejected by a replica that still
+   holds the destination and accepted as a delete-wins no-op by one that does
+   not. Under §4 abort-remainder the two replicas then also disagree about the
+   REST OF THE BATCH, which makes this a projection divergence and not merely
+   an `__applied` one. Amendment A6. As on the source axis, every OP-ONLY
+   precondition is checked before the delete-wins return and does NOT carve
+   out; only the checks that must read the destination do.
+
+6. The same shape in `applySetWidget`. `if (!node) return` (and the interior
+   path's `resolveInteriorNode(...) === null` return) are delete-wins no-ops
+   that consume the `op_id`, and `rejectIfOpaqueWidgets`, `validateWidgetName`
+   and the `widget_out_of_range` check all READ the node, so they sit below
+   them. A `set_widget` refused by any of those, racing its target's deletion,
+   is rejected by a replica that still holds the node and applied as a no-op by
+   one that does not; under §4 abort-remainder that reaches the projection.
+   Measured. Amendment A6.
+7. The same shape in `applyAddNode`, behind a different early return:
+   `if (nodes.has(key)) return` is structural idempotency and also consumes the
+   `op_id`, while the catalogue checks (`catalog_required`,
+   `uncatalogued_widget_write`, `unknown_widget`) and the `createNodeMap`
+   try/catch (`invalid_node_payload`) sit below it. An `add_node` with a bad
+   payload racing a rival same-`node_id` `add_node` therefore resolves
+   differently by arrival order. Distinct from carve-out 3, which is about
+   which PAYLOAD wins, not about one replica discarding the rest of the batch.
+   Measured. Amendment A6.
+
+8. `resolveInteriorNode`'s own rejections — `not_a_subgraph`,
+   `shared_definition_unforked`, `interior_node_not_found` — all read the
+   document and all sit below the interior delete-wins return, so an interior
+   `set_widget` refused by any of them resolves differently by arrival order.
+   **`shared_definition_unforked` does not even need a deletion**: it flips
+   verdict when a concurrent `add_node` raises the definition's instance count,
+   so under §4 abort-remainder a trailing op in the same batch survives on one
+   replica only. Measured. Amendment A6.
+
+**The rule these come from, which is more useful than the list.** A rejection is
+arrival-order-dependent exactly when the check that raises it READS THE DOCUMENT
+and sits below an early return that consumes the `op_id` — a delete-wins return,
+`add_node`'s structural-idempotency return, or the interior null return. Under §4
+abort-remainder any such rejection also decides whether the REST OF THE BATCH
+applies, which is how a bookkeeping difference becomes a projection difference.
+Every precondition that depends on the OP ALONE is hoisted above those returns
+and does NOT carve out.
+
+**Items 1-8 are illustrative of that rule, not an exhaustive enumeration of it.**
+This list has been extended three times in one review, each time by someone
+probing a handler nobody had probed yet, and treating it as complete is what made
+each of those omissions look like a contradiction rather than a gap. If you need
+to know whether a specific rejection converges, apply the rule and measure both
+arrival orders; do not conclude "it is not in the list, therefore it converges".
+Everything that does NOT satisfy the rule — including concrete-input contention,
+which used to be an unstated carve-out of its own — converges.
 
 ---
 
@@ -683,13 +746,18 @@ code did not have. PR #6725 caught the id-type half the same way.
    * The **losing** connect is dropped whole — no link tuple, no slot write,
      no out-link entry — and still consumes its `op_id`, exactly like a
      losing `set_widget`.
-   * The register claim is **unconditional once the gate passes** and happens
-     BEFORE the source endpoint is resolved. A winning connect whose source
-     was concurrently deleted therefore leaves the input EMPTY: delete wins
-     over the new link, not over the register claim. Deferring the
-     retirement until the link is known installable would make the
-     incumbent's survival depend on when the delete arrived — the same class
-     of bug, one layer down.
+   * The register claim is **unconditional once the gate passes**. A winning
+     connect whose source was concurrently deleted therefore leaves the input
+     EMPTY: delete wins over the new link, not over the register claim.
+     Deferring the retirement until the link is known installable would make
+     the incumbent's survival depend on when the delete arrived — the same
+     class of bug, one layer down.
+     **Amended by A6:** this bullet used to say the claim happens BEFORE the
+     source endpoint is resolved. Since issue #10, `from_slot`'s op-only domain
+     is checked unconditionally ahead of the claim, and an EXISTING source's
+     slot record is resolved ahead of it, so that a rejected op mutates
+     nothing. The rationale above is unchanged and is exactly why the split is
+     drawn there; see §2.5 items 4-8 and the rule beneath them.
    * A stamp outlives the node it names; that is what makes the composed
      case converge, since a later lower-stamped connect is still dropped.
    * Autogrow stays UNGATED by explicit carve-out (§2.5 item 2).
@@ -1114,3 +1182,168 @@ semantics in `comfy-cli` clear the workflow down to its `id`, which would wipe `
 — and under this amendment no op could restore it, so the document would be permanently unreadable.
 It is not reachable today: `reset_doc` is deferred and rejected `op_deferred`, verified by probe on
 both builds. **This must be resolved before `reset_doc` is un-deferred.**
+
+---
+
+## Amendment A6 — 2026-08-21 — `from_slot` validation splits; the convergence carve-out RULE
+
+**Status:** landed with the issue-#10 validate-before-mutate fix (PR #34).
+**Touches:** §2.5 (carve-out list, new items 4-8, plus the generating rule that replaces its completeness claim), Amendment A1 bullet 3,
+Amendment A4's "before that op mutates anything" claim,
+`docs/api-contract-proposal.md` D3, D4 and D5, `docs/INVARIANTS.md` KA-4,
+`docs/ROADMAP.md`'s #10 bullet, and `README.md` (outcome table, delete-wins
+bullet, Known carve-outs).
+
+**Letter note:** drafted as A5 and renumbered to A6 on rebase when PR #60 landed
+A5 first — the allocation rule's "if your branch is not the one merging,
+renumber on rebase", executed rather than cited.
+
+### What changed
+
+`connect.from_slot` validation is now two checks, and the split is the reason
+the applier converges at all:
+
+1. **Op-only** — gathered into one function that reads nothing but the op, so
+   every replica reaches the same verdict in every document state. Runs
+   UNCONDITIONALLY, before the concrete-input register claim, before the source
+   is looked up, and before the `!dst` delete-wins return. It covers
+   `Number.isInteger(from_slot) && from_slot >= 0` (`output_slot_missing`); the
+   same domain on `to_slot` when there is no `grow`, i.e.
+   `Number.isInteger(to_slot) && to_slot >= 0` (`input_slot_missing`); a numeric
+   `to_slot` at all, a string `grow.inputcount.widget`, a structured-cloneable
+   `grow.inputcount.value`, and string `grow.name`/`grow.type` (all
+   `malformed_op`); and the evaluation of `stampKey`, which is op-only and used
+   to sit below the delete-wins return in the concrete branch.
+2. **State-dependent** — in range for the source's `outputs`, and addressing a
+   real slot record. Reachable only while the source node exists, because
+   neither fact is knowable once it is gone. Same code.
+
+### Why the split is load-bearing, not stylistic
+
+Issue #10's fix moved `from_slot` resolution ahead of the first mutation so a
+rejected op leaves the document byte-identical. Done naively — with the WHOLE
+check behind `if (src)` — that makes rejection depend on document state, which
+is strictly worse than the bug it fixes:
+
+| arrival order | `connect` with `from_slot: -1` racing `delete_node(from_node)` |
+| --- | --- |
+| connect, then delete | rejected; incumbent link on the target input SURVIVES |
+| delete, then connect | source already gone, malformation invisible; op ACCEPTED, register claimed, **incumbent link retired** |
+
+Same op-set, two legal orders, two different documents — §2.5's convergence
+requirement, violated by the fix rather than by the bug. It was measured, on
+`-1`, `0.5` and `NaN`, with the valid-`from_slot` control converging in the same
+run. Hoisting the op-only half above every document read closes it: a malformed
+op is now refused by every replica regardless of what else it has applied.
+
+### The residual, stated rather than implied
+
+The state-dependent half cannot be made order-independent **without changing
+the register's semantics or adding tombstones**. "Is `from_slot: 5`
+in range" is unanswerable once the source node is deleted, so a `connect` naming
+an out-of-range slot is rejected by a replica that still has the source and
+accepted as a register-claiming no-op by one that does not. This is **§2.5
+item 4**, and it is narrower than the three already listed: it
+applies only to a `from_slot` that is a non-negative integer AND out of range
+for its source AND racing that source's deletion.
+
+Three ways to close it were considered and all are worse than the carve-out:
+
+1. **Defer the source check back below the register claim.** Re-opens issue
+   #10 — the mutate-then-throw this amendment exists to fix.
+2. **Record each node's output arity in a tombstone that outlives deletion.**
+   §5 has no tombstones, and nothing else needs them.
+3. **Make the register claim conditional on the source resolving.** This does
+   NOT converge either — it moves the divergence rather than removing it.
+   Measured, with the incumbent link sourced from a node that is not deleted:
+   connect-then-delete claims the register, retires the incumbent, installs
+   the new link, and the delete then retires that link too, leaving the input
+   EMPTY; delete-then-connect becomes a total no-op, leaving the input still
+   holding the INCUMBENT. It also changes the outcome for a **valid** op — A1
+   bullet 3 and contract D5 both specify the input is left EMPTY — so it would
+   additionally be a vocabulary change to the concrete-input register needing a
+   comfy-cli counterpart. Rejected on both counts.
+
+The carve-out is the deliberate choice; `test/reject-no-mutation.regression.test.ts`
+pins the op-only vectors that DO converge, on both the source and the
+destination axis, and deliberately omits `from_slot: 5` so the omission is
+legible rather than an oversight.
+
+### The destination axis — §2.5 item 5, the same shape one node over
+
+The identical argument applies to `to_node`. `if (!dst) return` is a delete-wins
+no-op that CONSUMES the `op_id`, so any precondition evaluated below it makes a
+malformed op "applied" on a replica that has seen the delete and "rejected" on
+one that has not — and under §4 abort-remainder the rejection also discards the
+rest of the batch on one side only, turning a bookkeeping disagreement into a
+projection divergence. Measured: `[connect(malformed), add_node 900]` racing
+`delete_node(to_node)` yields `nodes={300,301}` in one order and
+`nodes={300,301,900}` in the other.
+
+So every op-only `connect` precondition is hoisted above that return too, and
+the residual is exactly the checks that must READ the destination: `to_slot` in
+range or addressing a slot record, an opaque widget destination, and a
+`grow.inputcount.widget` the catalogue cannot describe. None is answerable once
+the destination is gone, and the three alternatives above are rejected here for
+the same reasons.
+
+**Scope, stated precisely.** Items 4 and 5 are about `connect`. The identical
+shape in `applySetWidget` and `applyAddNode` is items **6 and 7** — enumerated
+rather than merely mentioned in passing, because §2.5's closing sentence claims
+completeness and "adjacent to carve-out 3" is not "listed in §2.5". All four are
+about WHERE an existing check runs rather than which properties are checked.
+
+None of items 4-7 is CLOSED here. Hoisting those checks would newly reject
+payloads `main` accepts — a `set_widget` naming a deleted node, a duplicate
+`add_node` with a bad payload — on handlers this amendment does not otherwise
+touch, so each needs its own vocabulary analysis. They are enumerated and
+pinned instead, on the principle that a convergence list claiming completeness
+must either list a divergence or stop claiming completeness. `connect.link_id` and
+`connect.link_type` are copied into the document with no validation whatsoever:
+an `undefined` `link_id` throws a raw `TypeError` mid-write and a `null` or
+object one is accepted. That behaviour is identical on `main`, is not part of
+issue #10's ordering class, and is left to #61/#68/#71 — a new rejection there
+would be a vocabulary change needing its own analysis. It is named here so that
+"every op-only precondition is hoisted" is not read as "every op-only property
+is validated".
+
+**This axis had to be found twice, both times the same way.** The first pass
+hoisted `from_slot` only; the second hoisted `to_slot`'s `typeof` check but left
+its integer/sign domain below the return — and both times the full suite stayed
+green while prose claimed the whole class was hoisted. The divergence was found
+by probing both arrival orders directly, not by reading. If a future change adds
+a `connect` precondition, the question is not "is it validated before the first
+write" but **"does it read the document"** — and if it does not, it belongs in
+`requireOpOnlyValid`.
+
+### Consequent corrections
+
+- **Amendment A4 (#31) claimed more than it shipped, and this amendment repairs
+  it rather than quietly benefiting from it.** A4 states that a name-keyed
+  widget write to an uncatalogued class is "rejected before that op mutates
+  anything" and that this "binds `add_node`, `set_widget`, and `connect`'s
+  `grow.inputcount` bump identically." That was false for the `connect` arm as
+  shipped: measured on `main`, an uncatalogued `grow.inputcount.widget` returned
+  `unknown_widget` with the grown slot already appended and the bytes changed.
+  Hoisting `validateWidgetName` above the slot append makes A4's sentence true.
+  One consequent behaviour delta, recorded because it is not obviously implied:
+  the check now also runs above `applyInputcountBump`'s LWW gate, so an
+  LWW-dropped bump naming an uncatalogued widget is REJECTED where it used to be
+  silently dropped. The catalogue is pinned at mint (KA-12), so both replicas
+  read the same catalogue and this does not diverge.
+
+- **A1 bullet 3** said the register claim "happens BEFORE the source endpoint is
+  resolved". That is no longer true for a source that EXISTS: the op-only domain
+  and the source's slot record are both resolved first. The property A1 was
+  protecting — *the incumbent's survival must not depend on when a delete
+  arrived* — is preserved for the op-only domain and explicitly carved out for
+  the in-range half. The bullet is amended, not deleted, because its rationale
+  is still the reason the split is drawn where it is.
+- **`api-contract-proposal.md` D5** carried the same sentence and is corrected
+  alongside it.
+- §2.5's closing sentence no longer enumerates completeness at all. It now
+  states the RULE that generates the carve-outs — a check that reads the document
+  and sits below an `op_id`-consuming early return — and marks items 1-8 as
+  illustrative of it. That change is the durable one: this list was extended
+  three times in a single review, and each omission read as a contradiction only
+  because the sentence claimed the list was exhaustive.

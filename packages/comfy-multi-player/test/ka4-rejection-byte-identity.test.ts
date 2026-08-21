@@ -23,16 +23,22 @@
  *     throws also skips its bookkeeping write, so it is silently
  *     non-idempotent: the retry re-runs the partial mutation.
  *
- * WHY YOU WILL NOT FIND `connect` ROWS FOR `output_slot_missing` AND THE
- * INPUTCOUNT GROW HERE. On this branch four `connect` rejections genuinely DO
- * mutate the document — Yjs does not roll a `transact` body back on throw, so
- * "untouched on reject" is a property of write order inside each handler, and
- * these four validate after their first write. That is issue #10, reproduced
- * and asserted below in `describe("KA-4 known violations …")`; the fix is in flight on
- * PR #34 (`fix/reject-no-mutation`), which is not an ancestor of this branch.
- * Adding those rows here would either go red in CI or force an assertion that
- * accommodates the bug, so they are listed as `KNOWN_KA4_VIOLATIONS` below and
- * belong in `CASES` the moment #34 lands.
+ * ISSUE #10 IS CLOSED FOR THIS SWEEP. Four `connect` rejections used to mutate
+ * the document before throwing — Yjs does not roll a `transact` body back on
+ * throw, so "untouched on reject" is a property of write order inside each
+ * handler, and those four validated after their first write. PR #34 hoisted the
+ * checks; the rows moved from `KNOWN_KA4_VIOLATIONS` into `CASES` and the block
+ * that asserted the bug was deleted, exactly as its own failure message
+ * instructed. `KNOWN_KA4_VIOLATIONS` is kept, empty, so a future regression has
+ * somewhere to be recorded rather than being bolted on again.
+ *
+ * The class is NOT fully closed. Four holes remain, enumerated identically in
+ * `src/applier.ts`, `docs/INVARIANTS.md` KA-4, `README.md` and contract D4:
+ * a value `structuredClone` accepts but Yjs cannot store; a reference cycle,
+ * accepted and then making the document permanently unencodable;
+ * `delete_node`'s `removed_links`, read from the op but only after the node is
+ * deleted; and `connect.link_id`/`link_type`, copied in unvalidated (#59, #61,
+ * #68). None is reachable through the rejection codes swept here.
  */
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
@@ -355,20 +361,56 @@ const CASES: Row[] = [
         grow: { name: "image_1", type: "X", inputcount: { widget: "inputcount", value: 2 } },
       }) as unknown as Op,
   },
+  // ---- issue #10: MIGRATED from KNOWN_KA4_VIOLATIONS when PR #34 landed -----
+  // These four validated after their first write until #34 hoisted the checks.
+  // They are ordinary rows now; the `KA-4 known violations` block that asserted
+  // the bug is gone, exactly as its own failure message instructed.
+  {
+    kind: "connect",
+    why: "from_slot out of range, empty destination slot",
+    code: "output_slot_missing",
+    build: () =>
+      ({ op: "connect", ...env(), link_id: 80, from_node: 1, from_slot: 99, to_node: 3, to_slot: 1, link_type: "X" }) as unknown as Op,
+  },
+  {
+    kind: "connect",
+    why: "from_slot out of range, OCCUPIED destination slot (the issue #10 repro)",
+    code: "output_slot_missing",
+    build: () =>
+      ({ op: "connect", ...env(), link_id: 81, from_node: 1, from_slot: 99, to_node: 3, to_slot: 0, link_type: "X" }) as unknown as Op,
+  },
+  {
+    kind: "connect+grow",
+    why: "inputcount widget absent from the destination's widget_order",
+    code: "unknown_widget",
+    build: () =>
+      ({
+        op: "connect", ...env(), link_id: 82, from_node: 1, from_slot: 0, to_node: 3, to_slot: null, link_type: "X",
+        grow: { name: "image_2", type: "X", inputcount: { widget: "nope", value: 2 } },
+      }) as unknown as Op,
+  },
+  {
+    kind: "connect+grow",
+    why: "non-string inputcount widget",
+    code: "malformed_op",
+    build: () =>
+      ({
+        op: "connect", ...env(), link_id: 83, from_node: 1, from_slot: 0, to_node: 3, to_slot: null, link_type: "X",
+        grow: { name: "image_3", type: "X", inputcount: { widget: 7, value: 2 } },
+      }) as unknown as Op,
+  },
 ];
 
 /**
- * Rejections that violate KA-4 on this branch. Each is reproduced in
- * the `KA-4 known violations (issue #10) are still violations` block below,
- * which asserts that each one still breaks byte-identity TODAY.
- * Move these into `CASES` when PR #34 (issue #10) is an ancestor.
+ * Rejections known to violate KA-4. EMPTY since #34 (issue #10) landed: the
+ * four `connect` rows it held are ordinary `CASES` rows now.
+ *
+ * Kept rather than deleted so a future regression has somewhere to be recorded
+ * deliberately, with the same discipline #58 used — assert the bug, name the
+ * fix, and let the assertion go red when it lands. If you add a row here, add
+ * a matching block that asserts it STILL breaks byte-identity today.
  */
-const KNOWN_KA4_VIOLATIONS = [
-  "connect / from_slot out of range, empty destination slot → output_slot_missing, but the concrete-input register claim (`__stamps`) is already written",
-  "connect / from_slot out of range, OCCUPIED destination slot → output_slot_missing, and the incumbent link has already been severed (the issue #10 repro)",
-  "connect+inputcount / widget absent from the destination's widget_order → unknown_widget, but the grown slot has already been appended",
-  "connect+inputcount / non-string widget → malformed_op, but the grown slot has already been appended",
-] as const;
+const KNOWN_KA4_VIOLATIONS: readonly string[] = [];
 
 describe("KA-4: a rejected op leaves the doc byte-identical and does not consume its op_id", () => {
   it.each(CASES.map((c) => [`${c.kind}: ${c.why} → ${c.code}`, c] as const))("%s", (_name, row) => {
@@ -393,13 +435,14 @@ describe("KA-4: a rejected op leaves the doc byte-identical and does not consume
     expect(res.applied_count).toBe(0);
   });
 
-  it("covers every kind the follow-up named, and records the ones issue #10 still breaks", () => {
+  it("covers every kind the follow-up named, and records that issue #10 leaves none of them broken", () => {
     // Guards against the table quietly losing a kind in a future edit.
     const kinds = new Set(CASES.map((c) => c.kind));
     for (const k of ["envelope", "reset_doc", "clear", "delete_node", "add_node", "set_widget", "connect", "connect+grow"]) {
       expect(kinds.has(k), `no KA-4 rejection row for '${k}'`).toBe(true);
     }
-    expect(KNOWN_KA4_VIOLATIONS.length).toBe(4);
+    // #34 (issue #10) landed: all four former violations are ordinary CASES rows now.
+    expect(KNOWN_KA4_VIOLATIONS.length).toBe(0);
   });
 });
 
@@ -546,78 +589,6 @@ describe("KA-4 sweep completeness", () => {
       expect(known.has(code), `src/applier.ts throws '${code}', which this sweep does not know about`).toBe(true);
     }
   });
-});
-
-/**
- * The four issue #10 violations, asserted rather than merely listed. Each MUST
- * still break byte-identity today; when PR #34 lands, these go red and the rows
- * move into `CASES`. A prose list cannot do that — it stays true-looking after
- * the bug is fixed.
- */
-const VIOLATION_BUILDERS: ReadonlyArray<readonly [string, string, () => Op]> = [
-  [
-    "connect / from_slot out of range, empty destination slot",
-    "output_slot_missing",
-    () =>
-      ({ op: "connect", ...env(), link_id: 80, from_node: 1, from_slot: 99, to_node: 3, to_slot: 1, link_type: "X" }) as unknown as Op,
-  ],
-  [
-    "connect / from_slot out of range, OCCUPIED destination slot",
-    "output_slot_missing",
-    () =>
-      ({ op: "connect", ...env(), link_id: 81, from_node: 1, from_slot: 99, to_node: 3, to_slot: 0, link_type: "X" }) as unknown as Op,
-  ],
-  [
-    "connect+inputcount / widget absent from the destination's widget_order",
-    "unknown_widget",
-    () =>
-      ({
-        op: "connect",
-        ...env(),
-        link_id: 82,
-        from_node: 1,
-        from_slot: 0,
-        to_node: 3,
-        to_slot: null,
-        link_type: "X",
-        grow: { name: "image_2", type: "X", inputcount: { widget: "nope", value: 2 } },
-      }) as unknown as Op,
-  ],
-  [
-    "connect+inputcount / non-string widget",
-    "malformed_op",
-    () =>
-      ({
-        op: "connect",
-        ...env(),
-        link_id: 83,
-        from_node: 1,
-        from_slot: 0,
-        to_node: 3,
-        to_slot: null,
-        link_type: "X",
-        grow: { name: "image_3", type: "X", inputcount: { widget: 7, value: 2 } },
-      }) as unknown as Op,
-  ],
-];
-
-describe("KA-4 known violations (issue #10) are still violations", () => {
-  it("the prose list and the executable list agree", () => {
-    expect(VIOLATION_BUILDERS.length).toBe(KNOWN_KA4_VIOLATIONS.length);
-  });
-
-  it.each(VIOLATION_BUILDERS.map(([name, code, build]) => [name, code, build] as const))(
-    "%s still mutates on rejection",
-    (_name, code, build) => {
-      const doc = mint(baseWorkflow(), catalog);
-      const before = bytes(doc);
-      const res = applyOps(doc, [build()], catalog);
-      expect(res.failed?.code).toBe(code);
-      // Deliberately asserting the BUG. When PR #34 lands this flips to true
-      // and this test goes red, which is the signal to move the row into CASES.
-      expect(bytes(doc).equals(before), "issue #10 is fixed: move this row into CASES").toBe(false);
-    },
-  );
 });
 
 describe("KA-4 abort-remainder: a rejection mid-batch leaves exactly the applied prefix (vocabulary §4)", () => {

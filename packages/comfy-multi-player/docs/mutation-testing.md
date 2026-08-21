@@ -21,7 +21,7 @@ A fifth run of the pinned config on Node 22 — the version `mutation.yml` uses 
 
 The pinned rows are identical to two decimals, and their `Survived` and `NoCoverage` sets are element-for-element identical — the survivor *list*, which is what a coverage-gap audit actually consumes, does not move. Only one non-terminating loop mutant swapped between `Killed` and `Timeout`, and both count as detected, so it is score-neutral.
 
-The unpinned rows show what the pins are for. Unpinned and idle the number happens to agree; unpinned and loaded it gains 1.41 points, because 13 mutants that really do survive — seven on `validateEnvelope`'s `typeof` guard at `src/applier.ts:106`, six in `project.ts`, none of them anywhere near a loop — exceed the default 5s budget and are scored as kills.
+The unpinned rows show what the pins are for. Unpinned and idle the number happens to agree; unpinned and loaded it gains 1.41 points, because 13 mutants that really do survive — seven on `validateEnvelope`'s `typeof` guard at `src/applier.ts:203`, six in `project.ts`, none of them anywhere near a loop — exceed the default 5s budget and are scored as kills.
 
 `stryker.config.mjs` pins `timeoutMS`, `timeoutFactor`, `concurrency` and `coverageAnalysis` for exactly this reason. **Do not unpin them.** A score produced with different values is not comparable to any score recorded here.
 

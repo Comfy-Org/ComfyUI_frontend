@@ -63,6 +63,16 @@ Three outcomes report as **applied**: the write landed, the write was dropped
 by last-writer-wins, or the target node was already deleted. All three consume
 the `op_id`; only the first changes the document.
 
+**Qualified by schema Amendment A6 (2026-08-21), the same qualifier D5 carries.**
+The deleted-target outcome is `applied` only for an op that is WELL FORMED ON ITS
+FACE. Every `connect` precondition that depends on the op alone — the
+`from_slot`/`to_slot` numeric domain, the `grow` payload shape, the
+`grow.inputcount.widget` type, and the cloneability of a widget value — is
+evaluated before the delete-wins return, so a malformed op naming a deleted node
+is `failed` and consumes nothing. Otherwise whether an op was rejected would
+depend on which replica had seen the delete first, and under §4 abort-remainder
+the two would then disagree about the rest of the batch.
+
 **Why.** `op_id` is also the final tiebreak in conflict resolution, so
 regenerating one on retry changes who wins, not just whether the op is
 deduplicated. And a client that treats `applied` as "my value is now in the
@@ -77,13 +87,25 @@ from *k* onward are not applied at all. The failure is returned, not thrown:
 and does not consume its `op_id`, so fixing the failing op and resending the
 whole batch is always safe — the prefix returns in `skipped`.
 
-**Status: PARTIALLY FALSE TODAY.** The `op_id` half holds everywhere. The
-byte-identity half is swept per rejection code in
-`test/ka4-rejection-byte-identity.test.ts`, and four `connect` rejections
-validate *after* their first write, so the document is changed by a rejected op
-— in one of them an incumbent link is severed. Issue #10; fix in flight on
-PR #34. Until it lands, "resending the whole batch is always safe" is true for
-every rejection code except those four.
+**Status: qualified, and narrower than it was (2026-08-21, #34).** The `op_id`
+half holds everywhere. The byte-identity half is swept per rejection code by
+`test/ka4-rejection-byte-identity.test.ts` (#58), which recorded four `connect`
+rejections that validated *after* their first write — one of them severing an
+incumbent link. **All four now hold**, and #34 additionally makes every op-only
+`connect`/`set_widget` precondition run before the delete-wins returns, so those
+rejections are order-independent too (schema Amendment A6).
+
+Four residual paths remain: a value `structuredClone` accepts but Yjs cannot
+store (`Map`, `Set`, `RegExp`, `ArrayBuffer`, `Error`) still mutates before
+throwing; a REFERENCE CYCLE is accepted outright and then makes
+`encodeStateAsUpdate` throw permanently; `delete_node` with a non-array
+`removed_links` deletes the node before it throws, because that value is read
+from the op but evaluated after the deletion; and `connect.link_id`/`link_type`
+are copied in unvalidated, so an `undefined` `link_id` mutates then throws and a
+`Symbol` one leaves the document unprojectable. Tracked by #59, #61 and #68;
+`docs/INVARIANTS.md` KA-4 and `README.md` carry the same four. Until they land,
+"resending the whole batch is always safe" is true for every rejection code the
+applier raises deliberately, and not for those four.
 
 **Why.** The alternative, rejecting the whole batch, throws away work the
 writer already considers accepted. The alternative to *that*, skipping the
@@ -95,18 +117,31 @@ landed.
 **Proposal.** A concrete input holds at most one link, so "who occupies this
 slot" is a scalar target resolved by the same stamp comparison as a widget
 write. The winner retires the displaced link whole — the link tuple and the old
-source's out-link entry both go. The loser writes nothing at all. The register
-claim happens **before** the source node is resolved, so a winning connect
-whose source was concurrently deleted leaves the input empty.
+source's out-link entry both go. The loser writes nothing at all. A winning
+connect whose source was concurrently deleted leaves the input empty.
+
+**Amended by schema Amendment A6 (2026-08-21).** The register claim no longer
+happens before *all* source resolution: `from_slot`'s op-only domain (a
+non-negative integer) is checked unconditionally ahead of the claim, and for a
+source that still exists its slot record is resolved ahead of the claim too, so
+that a rejected op leaves the document byte-identical (issue #10). What survives
+unchanged is the part this clause existed to guarantee — an ABSENT source is
+still a delete-wins no-op that claims the register and empties the input, and
+the incumbent's survival still does not depend on delete arrival for any op-only
+malformation. The one case that does depend on it — an in-domain but
+out-of-range `from_slot` racing its source's deletion — is carved out
+explicitly in schema §2.5 item 4.
 
 Autogrow connects are deliberately **not** gated: each grows its own slot keyed
 by the link id, so two concurrent grows both survive.
 
 **Why.** Without the gate, the occupant of an input was decided by arrival
 order, which composed with delete-wins to produce graphs where a link exists in
-one interleaving and not in the other. Claiming the register before resolving
-the source is what stops the incumbent's survival from depending on when a
-delete arrived. Gating autogrow would silently discard one of two writers'
+one interleaving and not in the other. Keeping the register claim independent of
+whether the SOURCE resolved is what stops the incumbent's survival from
+depending on when a delete arrived — which is why Amendment A6 hoists only the
+op-only half of `from_slot` validation above the claim and leaves the
+state-dependent half carved out rather than silently order-sensitive. Gating autogrow would silently discard one of two writers'
 connections — which is the opposite of the property we want.
 
 **Found by adversarial testing, not by review.** The interleaving suite drove
