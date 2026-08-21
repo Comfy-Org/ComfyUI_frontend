@@ -27,6 +27,7 @@
     "prepare": "npm run build",
     "test": "vitest run",
     "test:mutation": "stryker run",
+    "check:mutation-report": "node scripts/check-mutation-report.mjs",
     "check:purity": "node scripts/check-purity.mjs",
     "check:pins": "node scripts/check-pins.mjs",
     "check:profile-claims": "node scripts/check-profile-claims.mjs",

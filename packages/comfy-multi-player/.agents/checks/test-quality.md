@@ -14,6 +14,6 @@ Check for:
 
 Repo conventions:
 
-- Tests use **Vitest** (`npm test`) and live under **`test/`** (not colocated). Property tests use **fast-check**; conformance fixtures are SHA-pinned and verified in CI (`npm run verify:corpus`); mutation testing is **Stryker** (`npm run test:mutation`).
+- Tests use **Vitest** (`npm test`) and live under **`test/`** (not colocated). Property tests use **fast-check**; conformance fixtures are SHA-pinned and verified in CI (`npm run verify:corpus`); mutation testing is **Stryker** (`npm run test:mutation`, then `npm run check:mutation-report` — a score quoted without the second command is not a measurement, because Stryker scores a timeout as a kill; see `docs/mutation-testing.md`).
 - Never use `any` in tests; deliberate invalid inputs are cast narrowly (`as unknown as Op`) at the single line under test.
 - "Major" for missing tests on applier/ordering/fail-closed logic; "minor" for a missing peripheral edge case.

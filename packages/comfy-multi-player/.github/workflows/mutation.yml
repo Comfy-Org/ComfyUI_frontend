@@ -30,3 +30,23 @@ jobs:
 
       - name: Mutation tests
         run: npm run test:mutation
+
+      # Stryker scores a `Timeout` as killed, so a loaded runner inflates the
+      # score. `stryker.config.mjs` pins timeoutMS/concurrency; this re-derives
+      # the score from the JSON report, reports Timeout as its own outcome, and
+      # exits 2 INCONCLUSIVE when timeouts are material. Runs even when Stryker
+      # broke the threshold, so the failure is explained rather than just red.
+      - name: Check mutation report
+        if: always()
+        run: npm run check:mutation-report
+
+      # Without this the run discards reports/mutation/ and even a failure
+      # leaves nothing to inspect.
+      - name: Upload mutation report
+        if: always()
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
+        with:
+          name: mutation-report
+          path: reports/mutation/
+          retention-days: 14
+          if-no-files-found: error

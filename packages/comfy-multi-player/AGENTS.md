@@ -22,6 +22,8 @@ npm test
 
 Run all five commands before review. The purity gate asserts positively that the declared and resolved production dependency roots are exactly `{yjs}`, and adds a dependency denylist and a bare-Node import probe (issue #22, which raised the missing positive assertion, is closed). `check:imports` covers the same contract one layer down — it cruises the module graph with `.dependency-cruiser.cjs` and asserts the yjs-only and no-Node-builtin boundaries **per source module**, which is what the package-level gate structurally cannot see; it exits `2` (INCONCLUSIVE) rather than green if it analyzed too few modules to mean anything.
 
+Mutation testing (`npm run test:mutation`, nightly in `mutation.yml`) is only comparable across runs because `stryker.config.mjs` pins `timeoutMS`, `timeoutFactor`, `concurrency` and `coverageAnalysis`. Stryker scores a `Timeout` as killed, so with those unpinned the score rises with host load. Do not unpin them, and do not quote a score without running `npm run check:mutation-report` — it re-derives the number, reports `Timeout` separately, and exits 2 INCONCLUSIVE when timeouts are material.
+
 Reviewer-agent concern profiles live in `.agents/checks/`. Apply every relevant profile to semantic, export, dependency, catalog, and replication-boundary changes.
 
 ## Review comments

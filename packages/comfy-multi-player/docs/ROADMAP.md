@@ -13,7 +13,7 @@ V1 is an op-based Yjs document applier implemented once in the shared `@comfyorg
 - **Cross-language parity guard (#22):** if the single-package decision is deliberately revisited, both implementations must pass shared golden vectors before merge.
 - **Reject-without-mutation (#10):** preserve the byte-identical rejection contract while fixing validation ordering in a later behavior ticket.
 
-These are follow-up behavior/CI tickets. The remaining ones do not change op semantics. The CI baseline is no longer frozen: it now runs `verify:corpus`, `build`, `check:purity`, `check:profile-claims`, `check:imports`, `check:pins` and `test`, and this list must be updated when a gate is added.
+These are follow-up behavior/CI tickets. The remaining ones do not change op semantics. The CI baseline is no longer frozen: it now runs `verify:corpus`, `build`, `check:purity`, `check:profile-claims`, `check:imports`, `check:pins` and `test`; the nightly `mutation.yml` additionally runs `check:mutation-report`. This list must be updated when a gate is added.
 
 ## Repository plan
 
