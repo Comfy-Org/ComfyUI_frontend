@@ -267,6 +267,8 @@ describe('MediaAssetCard', () => {
       name: 'assetBrowser.ariaLabel.assetCard'
     })
     await user.tab()
+    expect(screen.getByRole('button', { name: 'g.play' })).toHaveFocus()
+    await user.tab()
     expect(selectionControl).toHaveFocus()
     await user.tab()
     const downloadButton = screen.getByRole('button', {

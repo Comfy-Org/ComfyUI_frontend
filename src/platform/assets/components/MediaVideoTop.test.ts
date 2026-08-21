@@ -2,8 +2,10 @@ import { fromPartial } from '@total-typescript/shoehorn'
 
 import { describe, expect, it, vi } from 'vitest'
 
-import { fireEvent, render } from '@testing-library/vue'
+import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { createI18n } from 'vue-i18n'
+import type { ComponentProps } from 'vue-component-type-helpers'
 
 import type { AssetMeta } from '../schemas/mediaAssetSchema'
 import MediaVideoTop from './MediaVideoTop.vue'
@@ -22,12 +24,21 @@ function createVideoAsset(
   })
 }
 
+function renderVideoTop(props: ComponentProps<typeof MediaVideoTop>) {
+  const i18n = createI18n({
+    legacy: false,
+    locale: 'en',
+    messages: { en: { g: { play: 'Play', pause: 'Pause' } } },
+    missingWarn: false,
+    fallbackWarn: false
+  })
+  return render(MediaVideoTop, { props, global: { plugins: [i18n] } })
+}
+
 describe('MediaVideoTop', () => {
   it('renders playable video with darkened paused overlay and play icon', () => {
-    const { container } = render(MediaVideoTop, {
-      props: {
-        asset: createVideoAsset('https://example.com/thumb.jpg')
-      }
+    const { container } = renderVideoTop({
+      asset: createVideoAsset('https://example.com/thumb.jpg')
     })
 
     // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
@@ -41,10 +52,8 @@ describe('MediaVideoTop', () => {
   })
 
   it('does not render source element when src is empty', () => {
-    const { container } = render(MediaVideoTop, {
-      props: {
-        asset: createVideoAsset('')
-      }
+    const { container } = renderVideoTop({
+      asset: createVideoAsset('')
     })
 
     // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
@@ -55,10 +64,8 @@ describe('MediaVideoTop', () => {
 
   it('emits playback events and hides paused overlay while playing', async () => {
     const user = userEvent.setup()
-    const { container, emitted } = render(MediaVideoTop, {
-      props: {
-        asset: createVideoAsset('https://example.com/thumb.jpg')
-      }
+    const { container, emitted } = renderVideoTop({
+      asset: createVideoAsset('https://example.com/thumb.jpg')
     })
 
     // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
@@ -83,10 +90,8 @@ describe('MediaVideoTop', () => {
 
   it('starts playback from click when controls are hidden', async () => {
     const user = userEvent.setup()
-    const { container } = render(MediaVideoTop, {
-      props: {
-        asset: createVideoAsset('https://example.com/thumb.jpg')
-      }
+    const { container } = renderVideoTop({
+      asset: createVideoAsset('https://example.com/thumb.jpg')
     })
 
     // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
@@ -113,10 +118,8 @@ describe('MediaVideoTop', () => {
     'does not start playback from a $modifier-click',
     async ({ keyDown, keyUp }) => {
       const user = userEvent.setup()
-      const { container } = render(MediaVideoTop, {
-        props: {
-          asset: createVideoAsset('https://example.com/thumb.jpg')
-        }
+      const { container } = renderVideoTop({
+        asset: createVideoAsset('https://example.com/thumb.jpg')
       })
 
       // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
@@ -140,11 +143,9 @@ describe('MediaVideoTop', () => {
 
   it('pauses playback from a subsequent click when native controls are disabled', async () => {
     const user = userEvent.setup()
-    const { container } = render(MediaVideoTop, {
-      props: {
-        asset: createVideoAsset('https://example.com/thumb.jpg'),
-        showNativeControls: false
-      }
+    const { container } = renderVideoTop({
+      asset: createVideoAsset('https://example.com/thumb.jpg'),
+      showNativeControls: false
     })
 
     // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
@@ -164,5 +165,55 @@ describe('MediaVideoTop', () => {
     await user.click(video)
 
     expect(pauseSpy).toHaveBeenCalledTimes(1)
+  })
+
+  it.for([
+    { name: 'Enter', key: '{Enter}' },
+    { name: 'Space', key: ' ' }
+  ])(
+    'toggles playback from $name when native controls are disabled',
+    async ({ key }) => {
+      const user = userEvent.setup()
+      const { container } = renderVideoTop({
+        asset: createVideoAsset('https://example.com/thumb.jpg'),
+        showNativeControls: false
+      })
+
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
+      const video = container.querySelector('video')!
+      const playSpy = vi
+        .spyOn(video, 'play')
+        .mockImplementation(() => Promise.resolve())
+      const pauseSpy = vi.spyOn(video, 'pause').mockImplementation(() => {})
+
+      Object.defineProperty(video, 'paused', {
+        value: true,
+        configurable: true
+      })
+
+      await user.tab()
+      expect(screen.getByRole('button', { name: 'Play' })).toHaveFocus()
+
+      await user.keyboard(key)
+      expect(playSpy).toHaveBeenCalledTimes(1)
+
+      await fireEvent.play(video)
+      Object.defineProperty(video, 'paused', {
+        value: false,
+        configurable: true
+      })
+      expect(screen.getByRole('button', { name: 'Pause' })).toHaveFocus()
+
+      await user.keyboard(key)
+      expect(pauseSpy).toHaveBeenCalledTimes(1)
+    }
+  )
+
+  it('leaves playback to the native controls when they are enabled', () => {
+    renderVideoTop({
+      asset: createVideoAsset('https://example.com/thumb.jpg')
+    })
+
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
 })
