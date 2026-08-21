@@ -122,6 +122,24 @@ export const structuralTransforms: StructuralTransform[] = [
     }
   },
   {
+    name: 'name-the-test',
+    description: 'Give the test a descriptive title',
+    apply: (code: string, testName: string) => {
+      // Codegen always emits test('test', ...). The repo's playwright
+      // valid-title rule rejects a title that just repeats the block name, so
+      // the pre-commit hook refuses every recording until this is renamed.
+      const readable = testName
+        .replace(/[-_]/g, ' ')
+        .replace(/\.spec\.ts$/, '')
+        .trim()
+      if (!readable) return code
+      return code.replace(
+        /(\btest(?:\.(?:only|skip|fixme))?\s*\(\s*)(['"])test\2/,
+        (_match, prefix: string) => `${prefix}'${readable} works as recorded'`
+      )
+    }
+  },
+  {
     name: 'wrap-in-describe',
     description: 'Wrap test in test.describe with tags and afterEach',
     apply: (code: string, testName: string, tags: string[]) => {
@@ -142,7 +160,7 @@ export const structuralTransforms: StructuralTransform[] = [
       const imports = testMatch[1]
       const testBody = testMatch[2]
 
-      return `${imports}test.describe(${descName}, { tag: [${tagStr}] }, () => {
+      return `${imports.replace(/\n*$/, '\n\n')}test.describe(${descName}, { tag: [${tagStr}] }, () => {
   test.afterEach(async ({ comfyPage }) => {
     await comfyPage.canvasOps.resetView()
   })
