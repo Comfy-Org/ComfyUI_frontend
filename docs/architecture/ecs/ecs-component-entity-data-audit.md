@@ -254,6 +254,10 @@ Final full-suite verification also tightened slot-projection deletion and
 updated test fixtures to preserve their store scope and projected-array
 contract.
 
+Post-review regression verification restored legacy output-map write-through,
+kept widget output changes observable by preview rendering, and removed a
+redundant MatchType slot wrapper that hid descriptor updates from Vue.
+
 ## Structural follow-up plan
 
 The compatibility fixes above should land before further authority moves. The
