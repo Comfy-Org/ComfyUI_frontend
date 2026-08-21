@@ -232,7 +232,7 @@ sequence above rather than the summary-table order.
 | -------- | ----------------------------------- | -------- | ------------ | ------------------------------------------------------------------------------------------------ |
 | 1        | Remaining node visuals              | Complete | `fa5dcd8ca`  | `boxcolor` moved into `NodeState` with an enumerable tracked compatibility accessor.             |
 | 2        | Node ordering                       | Complete | `06ae14e8b`  | One action now updates layout z-index and the legacy node array for front/back order.            |
-| 3        | Outputs and transient previews      | Complete | `570b38c2a`  | Store maps now own output and preview reads; legacy maps and node images are projections.        |
+| 3        | Outputs and transient previews      | Complete | `570b38c2a`  | Store maps own reads; the legacy output map commits mutations through a compatibility view.      |
 | 4        | Preview-exposure persistence        | Complete | `2212ed302`  | Host exposures use owner-scoped locators; raw node-ID entries are hydration-only input.          |
 | 5        | Widget and preview-exposure cleanup | Complete | `ecd148fa0`  | Node removal, replacement, teardown, and failed configure clear node-owned store records.        |
 | 6        | Graph metadata                      | Complete | `298bf3da0`  | Revision, config, and extra now use graph-keyed store records behind compatibility accessors.    |

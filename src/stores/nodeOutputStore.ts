@@ -445,7 +445,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     return clone(nodeOutputs.value)
   }
 
-  function restoreOutputs(
+  function replaceOutputsFromLegacy(
     outputs: Record<string, ExecutedWsMessage['output']>
   ) {
     const parsedOutputs = mapKeys(
@@ -453,6 +453,12 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
       (_, id) => executionIdToNodeLocatorId(app.rootGraph, id) ?? id
     )
     nodeOutputs.value = { ...parsedOutputs }
+  }
+
+  function restoreOutputs(
+    outputs: Record<string, ExecutedWsMessage['output']>
+  ) {
+    replaceOutputsFromLegacy(outputs)
     app.nodeOutputs = clone(nodeOutputs.value)
   }
 
@@ -517,6 +523,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     removeNodeOutputs,
     removeNodeOutputsForNode,
     snapshotOutputs,
+    replaceOutputsFromLegacy,
     restoreOutputs,
     resetAllOutputsAndPreviews,
 
