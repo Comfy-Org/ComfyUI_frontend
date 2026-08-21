@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
+import { app } from '@/scripts/app'
 
 async function flushPromises() {
   await new Promise((r) => setTimeout(r, 0))
@@ -42,19 +43,20 @@ vi.mock('vue-i18n', () => ({
   })
 }))
 
-// Mock the dialog store
-vi.mock('@/stores/dialogStore', () => ({
-  useDialogStore: vi.fn(() => ({
-    closeDialog: vi.fn()
-  }))
-}))
-
-// useTelemetry() returns null in OSS, a dispatcher in cloud — toggle via mockIsCloud.
-const { mockIsCloud, mockTrackTemplate } = vi.hoisted(() => ({
+const { mockCloseDialog, mockIsCloud, mockTrackTemplate } = vi.hoisted(() => ({
+  mockCloseDialog: vi.fn(),
   mockIsCloud: { value: true },
   mockTrackTemplate: vi.fn()
 }))
 
+// Mock the dialog store
+vi.mock('@/stores/dialogStore', () => ({
+  useDialogStore: vi.fn(() => ({
+    closeDialog: mockCloseDialog
+  }))
+}))
+
+// useTelemetry() returns null in OSS, a dispatcher in cloud — toggle via mockIsCloud.
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () =>
     mockIsCloud.value ? { trackTemplate: mockTrackTemplate } : null
@@ -64,6 +66,38 @@ vi.mock('@/platform/telemetry', () => ({
 global.fetch = vi.fn()
 
 type MockWorkflowTemplatesStore = ReturnType<typeof useWorkflowTemplatesStore>
+
+type PreparedWorkflowTestApi = {
+  prepareWorkflowTemplate: (
+    id: string,
+    sourceModule: string
+  ) => Promise<{
+    id: string
+    sourceModule: string
+    workflowName: string
+    workflow: { workflow: string }
+  } | null>
+  openPreparedWorkflowTemplate: (
+    prepared: {
+      id: string
+      sourceModule: string
+      workflowName: string
+      workflow: { workflow: string }
+    },
+    options?: { closeDialog?: boolean }
+  ) => Promise<boolean>
+}
+
+function supportsPreparedWorkflow(
+  value: object
+): value is PreparedWorkflowTestApi {
+  return (
+    'prepareWorkflowTemplate' in value &&
+    typeof value.prepareWorkflowTemplate === 'function' &&
+    'openPreparedWorkflowTemplate' in value &&
+    typeof value.openPreparedWorkflowTemplate === 'function'
+  )
+}
 
 describe('useTemplateWorkflows', () => {
   let mockWorkflowTemplatesStore: MockWorkflowTemplatesStore
@@ -296,6 +330,98 @@ describe('useTemplateWorkflows', () => {
 
     expect(result).toBe(true)
     expect(fetch).toHaveBeenCalledWith('mock-file-url/templates/template1.json')
+  })
+
+  describe('prepared template workflow', () => {
+    it('prepares workflow data without opening it', async () => {
+      mockWorkflowTemplatesStore.isLoaded = true
+      const workflows: object = useTemplateWorkflows()
+      const supportsPreparation = supportsPreparedWorkflow(workflows)
+      expect(supportsPreparation).toBe(true)
+      if (!supportsPreparation) return
+
+      const prepared = await workflows.prepareWorkflowTemplate(
+        'template1',
+        'default'
+      )
+
+      expect(prepared).toEqual({
+        id: 'template1',
+        sourceModule: 'default',
+        workflowName: 'template1',
+        workflow: { workflow: 'data' }
+      })
+      expect(mockTrackTemplate).not.toHaveBeenCalled()
+      expect(mockCloseDialog).not.toHaveBeenCalled()
+      expect(app.loadGraphData).not.toHaveBeenCalled()
+    })
+
+    it('opens prepared workflow data exactly once', async () => {
+      mockWorkflowTemplatesStore.isLoaded = true
+      const workflows: object = useTemplateWorkflows()
+      const supportsPreparation = supportsPreparedWorkflow(workflows)
+      expect(supportsPreparation).toBe(true)
+      if (!supportsPreparation) return
+      const prepared = await workflows.prepareWorkflowTemplate(
+        'template1',
+        'default'
+      )
+      expect(prepared).not.toBeNull()
+      if (!prepared) throw new Error('Expected a prepared workflow')
+
+      const result = await workflows.openPreparedWorkflowTemplate(prepared)
+
+      expect(result).toBe(true)
+      expect(mockTrackTemplate).toHaveBeenCalledOnce()
+      expect(mockTrackTemplate).toHaveBeenCalledWith({
+        workflow_name: 'template1',
+        template_source: 'default'
+      })
+      expect(mockCloseDialog).toHaveBeenCalledOnce()
+      expect(app.loadGraphData).toHaveBeenCalledOnce()
+      expect(app.loadGraphData).toHaveBeenCalledWith(
+        { workflow: 'data' },
+        true,
+        true,
+        'template1',
+        { openSource: 'template' }
+      )
+    })
+
+    it('can leave dialog closing to its caller', async () => {
+      mockWorkflowTemplatesStore.isLoaded = true
+      const workflows: object = useTemplateWorkflows()
+      const supportsPreparation = supportsPreparedWorkflow(workflows)
+      expect(supportsPreparation).toBe(true)
+      if (!supportsPreparation) return
+      const prepared = await workflows.prepareWorkflowTemplate(
+        'template1',
+        'default'
+      )
+      expect(prepared).not.toBeNull()
+      if (!prepared) throw new Error('Expected a prepared workflow')
+
+      const result = await workflows.openPreparedWorkflowTemplate(prepared, {
+        closeDialog: false
+      })
+
+      expect(result).toBe(true)
+      expect(mockCloseDialog).not.toHaveBeenCalled()
+      expect(app.loadGraphData).toHaveBeenCalledOnce()
+    })
+
+    it('keeps loadWorkflowTemplate as the compatible prepare-and-open path', async () => {
+      mockWorkflowTemplatesStore.isLoaded = true
+      const { loadWorkflowTemplate } = useTemplateWorkflows()
+
+      const result = await loadWorkflowTemplate('template1', 'default')
+
+      expect(result).toBe(true)
+      expect(fetch).toHaveBeenCalledOnce()
+      expect(mockTrackTemplate).toHaveBeenCalledOnce()
+      expect(mockCloseDialog).toHaveBeenCalledOnce()
+      expect(app.loadGraphData).toHaveBeenCalledOnce()
+    })
   })
 
   it('tracks template telemetry on load in cloud builds', async () => {
