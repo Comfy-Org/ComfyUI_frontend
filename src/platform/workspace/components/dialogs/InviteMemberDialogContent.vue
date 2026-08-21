@@ -26,7 +26,8 @@
           source="settings_members"
           :submit-label="$t('workspacePanel.invite')"
           :placeholder="$t('workspacePanel.inviteMemberDialog.placeholder')"
-          :max-seats="invitableSeats"
+          :max-seats="inviteFormMaxSeats"
+          :occupied-seats="inviteFormOccupiedSeats"
           tags-input-class="min-h-10 w-full bg-secondary-background"
           @submitted="onInvited"
         />
@@ -85,11 +86,8 @@ const step = ref<'form' | 'invited'>('form')
 const invitedEmails = ref<string[]>([])
 const inviteForm = ref<InstanceType<typeof InviteMembersForm>>()
 
-const invitableSeats = computed(() => {
-  if (maxSeats.value === null || occupiedSeats.value === null) return undefined
-  if (maxSeats.value === 0) return undefined
-  return Math.max(0, maxSeats.value - occupiedSeats.value)
-})
+const inviteFormMaxSeats = computed(() => maxSeats.value)
+const inviteFormOccupiedSeats = computed(() => occupiedSeats.value)
 const canSubmit = computed(
   () =>
     maxSeats.value !== null &&
