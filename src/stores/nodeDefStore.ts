@@ -207,6 +207,23 @@ export class ComfyNodeDefImpl
     return resolveNodeDefText('description', this.name, this.backendDescription)
   }
 
+  /**
+   * `display_name` and `description` are prototype accessors, and Playwright's
+   * `page.evaluate` serializes own enumerable properties only. Anything that
+   * carries a def out of the browser must materialize them or both silently
+   * arrive `undefined` — which is how the release locale collector would have
+   * written every node's `display_name` as its internal `name`.
+   */
+  toSerializable(): ComfyNodeDefImpl & {
+    display_name: string
+    description: string
+  } {
+    return Object.assign({}, this, {
+      display_name: this.display_name,
+      description: this.description
+    })
+  }
+
   get nodePath(): string {
     return (this.category ? this.category + '/' : '') + this.name
   }
