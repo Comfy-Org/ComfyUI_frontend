@@ -29,17 +29,17 @@ Before transforming, read these existing docs for full context:
 
 The programmatic transform engine lives in `tools/test-recorder/src/transform/rules.ts`. Apply these replacements in order:
 
-| Raw codegen                                       | Convention replacement                                                                    | Why                                      |
-| ------------------------------------------------- | ----------------------------------------------------------------------------------------- | ---------------------------------------- |
+| Raw codegen                                       | Convention replacement                                                                      | Why                                      |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------- | ---------------------------------------- |
 | `import { test, expect } from '@playwright/test'` | `import { comfyPageFixture as test, comfyExpect as expect } from '@e2e/fixtures/ComfyPage'` | Use custom fixtures with ComfyUI helpers |
-| `test('test', async ({ page }) =>`                | `test('descriptive-name', async ({ comfyPage }) =>`                                       | Use comfyPage fixture, descriptive names |
-| `await page.goto('http://...')`                   | **Remove entirely**                                                                       | Fixture handles navigation automatically |
-| `page.locator('canvas')`                          | `comfyPage.canvas`                                                                        | Pre-configured canvas locator            |
-| `page.waitForTimeout(N)`                          | `comfyPage.nextFrame()`                                                                   | Never use arbitrary waits                |
-| `page.getByPlaceholder('Search Nodes...')`        | `comfyPage.searchBox.input`                                                               | Use search box page object               |
-| `page` (bare reference)                           | `comfyPage.page`                                                                          | Access raw page through fixture          |
-| Bare `test(...)`                                  | `test.describe('Feature', { tag: ['@canvas'] }, () => { test(...) })`                     | All tests need describe + tags           |
-| No cleanup                                        | Add `test.afterEach(async ({ comfyPage }) => { await comfyPage.canvasOps.resetView() })`  | Canvas tests need cleanup                |
+| `test('test', async ({ page }) =>`                | `test('descriptive-name', async ({ comfyPage }) =>`                                         | Use comfyPage fixture, descriptive names |
+| `await page.goto('http://...')`                   | **Remove entirely**                                                                         | Fixture handles navigation automatically |
+| `page.locator('canvas')`                          | `comfyPage.canvas`                                                                          | Pre-configured canvas locator            |
+| `page.waitForTimeout(N)`                          | `comfyPage.nextFrame()`                                                                     | Never use arbitrary waits                |
+| `page.getByPlaceholder('Search Nodes...')`        | `comfyPage.searchBox.input`                                                                 | Use search box page object               |
+| `page` (bare reference)                           | `comfyPage.page`                                                                            | Access raw page through fixture          |
+| Bare `test(...)`                                  | `test.describe('Feature', { tag: ['@canvas'] }, () => { test(...) })`                       | All tests need describe + tags           |
+| No cleanup                                        | Add `test.afterEach(async ({ comfyPage }) => { await comfyPage.canvasOps.resetView() })`    | Canvas tests need cleanup                |
 
 ## Canvas Coordinates → Node References
 

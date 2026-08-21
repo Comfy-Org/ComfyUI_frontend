@@ -141,7 +141,7 @@ This guides you through a 6-step flow:
 5. **Transform** — paste the recorded code, ending with a single `.` on its own line, and it is rewritten to project conventions
 6. **PR creation** — creates a PR via `gh` CLI or gives manual instructions
 
-The dev server must be serving *this* checkout. Step 1 fails if the port is
+The dev server must be serving _this_ checkout. Step 1 fails if the port is
 held by a server started from a different folder. To use another port:
 
 ```bash
