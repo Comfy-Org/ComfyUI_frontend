@@ -1,10 +1,17 @@
 # Runs the custom-node regression suite against a backend that has the manifest
-# packs actually installed, so the load/run tiers execute for real. This is a
-# GATING check: if a pack fails to install or any tier is skipped, the job goes
-# red - a regression gate that let a broken pack through as a "skip" would be
-# pointless. Mark `custom-nodes-e2e-status` as the required status check in
-# branch protection; it fails closed if path detection or any matrix shard
-# fails.
+# packs actually installed, so the load/run tiers execute for real. Within a
+# run the result fails closed: if a pack fails to install or any tier is
+# skipped, the job goes red - a suite that let a broken pack through as a
+# "skip" would be pointless.
+#
+# NOT a PR gate yet: nightly schedule and manual dispatch only. PRs neither
+# trigger this workflow nor wait on any of its checks, and none of its checks
+# may be marked required in branch protection. Before ever adding a
+# pull_request trigger, resolve the untrusted-source surface: the install loop
+# fetches and pip-installs whatever the manifest's deployRefs point at
+# (setup.py executes at install time), so a fork PR editing the manifest could
+# aim it at attacker-controlled source. To test a branch, dispatch with the
+# `branch` input.
 #
 # The matrix keeps the six-pack Core depth suite intact and adds the pinned
 # Cloud snapshot as five breadth shards. The Cloud snapshot produces 87
@@ -15,16 +22,13 @@
 # The gate is deterministic at the SOURCE level: ComfyUI core is pinned at a
 # verified commit and every pack is installed at the exact deployRef the pinned
 # Cloud snapshot declares - a commit for git-sourced packs, or a registry
-# version's CDN artifact - so no source surface moves underneath a PR. Python
+# version's CDN artifact - so no source surface moves underneath a run. Python
 # dependencies still resolve fresh, and the runner image updates independently.
 name: 'CI: Tests Custom Nodes'
 
 on:
-  pull_request:
-    branches-ignore: [wip/*, draft/*, temp/*]
-  push:
-    branches: [main, master]
-  merge_group:
+  schedule:
+    - cron: '15 9 * * *'
   workflow_dispatch:
     inputs:
       detection_proof_row:
@@ -51,8 +55,7 @@ on:
 
 concurrency:
   # Dispatches get a per-run group: two manual runs (e.g. comparing branches)
-  # must not cancel each other, while PR pushes keep the usual per-ref
-  # supersede behavior.
+  # must not cancel each other, while overlapping nightlies supersede per-ref.
   group: ${{ github.event_name == 'workflow_dispatch' && format('{0}-dispatch-{1}', github.workflow, github.run_id) || format('{0}-{1}', github.workflow, github.ref) }}
   cancel-in-progress: true
 
@@ -60,26 +63,10 @@ env:
   COMFYUI_PIN: b08e6cf35fac50d3ca8470dffb3f9a1fbb7187d2
 
 jobs:
-  # Path gating lives here, not in a trigger-level `paths:` filter: a required
-  # check gated by trigger paths never creates a check run on an unrelated PR
-  # and leaves branch protection stuck Pending. A job-level `if:` still creates
-  # the check and marks it Skipped (= passing). Mirrors ci-tests-unit.yaml.
-  changes:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    outputs:
-      should-run: ${{ steps.changes.outputs.should-run }}
-    steps:
-      - uses: actions/checkout@v7
-      - id: changes
-        uses: ./.github/actions/changes-filter
-
   # Each job is intentionally one worker: the auto-run tier needs exclusive
   # access to its backend's queue. Parallelism comes from the shard matrix
   # instead, and every job owns a separate backend.
   custom_nodes_e2e:
-    needs: changes
     strategy:
       fail-fast: false
       matrix:
@@ -142,17 +129,6 @@ jobs:
             proof_row: '15'
           - shard: '5/5'
             proof_row: '15'
-    # Run only when non-docs code changed AND the PR is same-repo. Fork PRs can
-    # edit the manifest's deployRefs, and this job fetches and pip-installs
-    # whatever they point at (setup.py runs at install time), so an untrusted
-    # fork must not be able to aim the install at an attacker-controlled source.
-    # Fork PRs still get the environment-agnostic coverage via the main e2e
-    # shards. A skipped job counts as passing, so this stays required-safe.
-    if: >-
-      github.event_name == 'workflow_dispatch' ||
-      (needs.changes.outputs.should-run == 'true' &&
-      (github.event_name != 'pull_request' ||
-      github.event.pull_request.head.repo.full_name == github.repository))
     runs-on: ubuntu-latest
     # Recent green runs complete in 10-19 minutes per shard. 35 leaves room for a
     # slow dependency resolve without letting a wedged backend run indefinitely.
@@ -761,22 +737,13 @@ jobs:
   custom-nodes-e2e-status:
     name: custom-nodes-e2e-status
     if: always()
-    needs: [changes, custom_nodes_e2e]
+    needs: custom_nodes_e2e
     runs-on: ubuntu-latest
     steps:
-      - name: Enforce gate result
+      - name: Enforce suite result
         shell: bash
         env:
-          CHANGES_RESULT: ${{ needs.changes.result }}
-          SHOULD_RUN: ${{ needs.changes.outputs.should-run }}
           E2E_RESULT: ${{ needs.custom_nodes_e2e.result }}
-          EVENT_NAME: ${{ github.event_name }}
-          FORK_PR: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
         run: |
           set -euo pipefail
-          [ "$CHANGES_RESULT" = success ] || { echo "::error::change detection ended with $CHANGES_RESULT"; exit 1; }
-          if [ "$EVENT_NAME" != workflow_dispatch ] && { [ "$SHOULD_RUN" != true ] || [ "$FORK_PR" = true ]; }; then
-            [ "$E2E_RESULT" = skipped ] || { echo "::error::expected a policy skip, got $E2E_RESULT"; exit 1; }
-          else
-            [ "$E2E_RESULT" = success ] || { echo "::error::custom-node matrix ended with $E2E_RESULT"; exit 1; }
-          fi
+          [ "$E2E_RESULT" = success ] || { echo "::error::custom-node matrix ended with $E2E_RESULT"; exit 1; }
