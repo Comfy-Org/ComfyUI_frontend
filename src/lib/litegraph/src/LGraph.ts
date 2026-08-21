@@ -47,6 +47,7 @@ import { normalizeWidgetsView } from './node/widgetsView'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { clearNodeOwnedStoreState } from '@/stores/clearNodeOwnedStoreState'
+import { useGraphMetadataStore } from '@/stores/graphMetadataStore'
 import { UNASSIGNED_NODE_ID, parseNodeId, toNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import { forEachNode, visitGraphNodes } from '@/utils/graphTraversalUtil'
@@ -249,6 +250,7 @@ function teardownOwnedGraphs(owner: LGraph): void {
     for (const graph of ownedGraphs) {
       unregisterAllLinkTopologies(graph)
       unregisterAllRerouteChains(graph)
+      useGraphMetadataStore().clear(graph.id)
     }
     const nodes = new Set(lifecycleNodes)
     for (const graph of ownedGraphs) {
@@ -376,10 +378,17 @@ export class LGraph
     return toRaw(this)._id.value
   }
   set id(value: UUID) {
-    toRaw(this)._id.value = value
+    const raw = toRaw(this)
+    useGraphMetadataStore().rekey(raw._id.value, value)
+    raw._id.value = value
   }
 
-  revision: number = 0
+  get revision(): number {
+    return useGraphMetadataStore().get(this.id).revision
+  }
+  set revision(value: number) {
+    useGraphMetadataStore().get(this.id).revision = value
+  }
 
   private readonly _versionRef = shallowRef(-1)
   get _version(): number {
@@ -439,12 +448,22 @@ export class LGraph
   _last_trigger_time?: number
   filter?: string
   /** Must contain serialisable values, e.g. primitive types */
-  config: LGraphConfig = {}
+  get config(): LGraphConfig {
+    return useGraphMetadataStore().get(this.id).config
+  }
+  set config(value: LGraphConfig) {
+    useGraphMetadataStore().get(this.id).config = value
+  }
   vars: Dictionary<unknown> = {}
   nodes_executing: boolean[] = []
   nodes_actioning: (string | boolean)[] = []
   nodes_executedAction: string[] = []
-  extra: LGraphExtra = {}
+  get extra(): LGraphExtra {
+    return useGraphMetadataStore().get(this.id).extra
+  }
+  set extra(value: LGraphExtra) {
+    useGraphMetadataStore().get(this.id).extra = value
+  }
 
   /** @deprecated Deserialising a workflow sets this unused property. */
   version?: number
@@ -575,6 +594,7 @@ export class LGraph
 
   private resetAfterClear(): void {
     const graphId = this.id
+    useGraphMetadataStore().clear(graphId)
     if (this.isRootGraph && graphId !== zeroUuid) {
       usePreviewExposureStore().clearGraph(graphId)
       useWidgetValueStore().clearGraph(graphId)
@@ -1303,6 +1323,7 @@ export class LGraph
         unregisterAllLinkTopologies(subgraph)
         unregisterAllRerouteChains(subgraph)
         unregisterAllNodeStates(subgraph)
+        useGraphMetadataStore().clear(subgraph.id)
         this.rootGraph.subgraphs.delete(subgraph.id)
       }
       detachGraphLayouts(releasedSubgraphs)
