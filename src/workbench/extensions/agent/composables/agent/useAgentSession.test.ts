@@ -133,17 +133,6 @@ const historyRow = (
   content: { text }
 })
 
-function editableTurnId(session: object): unknown {
-  const candidate: unknown = Reflect.get(session, 'editableTurnId')
-  if (
-    typeof candidate !== 'object' ||
-    candidate === null ||
-    !('value' in candidate)
-  )
-    return undefined
-  return candidate.value
-}
-
 describe('useAgentSession (v1 composition root)', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -399,21 +388,21 @@ describe('useAgentSession (v1 composition root)', () => {
     await session.sendMessage('go')
     emit(delta('msg-1', 'working'))
     expect(session.isStreaming.value).toBe(true)
-    expect(editableTurnId(session)).toBeNull()
+    expect(session.editableTurnId.value).toBeNull()
 
     await session.stopTurn()
     expect(cancelMessage).toHaveBeenCalledWith('th-1', 'msg-1')
     expect(session.notices.value).toHaveLength(0)
     expect(session.isStreaming.value).toBe(true)
-    expect(editableTurnId(session)).toBeNull()
+    expect(session.editableTurnId.value).toBeNull()
 
     emit(delta('msg-1', ' Stopped at your request.'))
     emit(done('msg-1'))
     expect(session.isStreaming.value).toBe(false)
-    expect(editableTurnId(session)).toBe('msg-1')
+    expect(session.editableTurnId.value).toBe('msg-1')
 
     session.newChat()
-    expect(editableTurnId(session)).toBeNull()
+    expect(session.editableTurnId.value).toBeNull()
   })
 
   it('(d1) a normally completed turn is not editable', async () => {
@@ -425,7 +414,7 @@ describe('useAgentSession (v1 composition root)', () => {
     emit(done('msg-1'))
 
     expect(session.isStreaming.value).toBe(false)
-    expect(editableTurnId(session)).toBeNull()
+    expect(session.editableTurnId.value).toBeNull()
   })
 
   it('(d2) stopTurn rejecting with a network TypeError surfaces a notice, not an unhandled rejection', async () => {
@@ -448,7 +437,7 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(session.notices.value).toEqual([
       { level: 'error', text: 'fetch failed' }
     ])
-    expect(editableTurnId(session)).toBeNull()
+    expect(session.editableTurnId.value).toBeNull()
   })
 
   it('(d3) stopTurn before the POST acknowledgement cancels the acknowledged turn once', async () => {
