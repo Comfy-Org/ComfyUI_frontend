@@ -44,7 +44,8 @@ const makeNodeData = (overrides: Partial<NodeState> = {}): NodeState => ({
   inputs: [],
   outputs: [],
   flags: { collapsed: false },
-  ...overrides
+  ...overrides,
+  properties: overrides.properties ?? {}
 })
 
 // Explicit stubs to capture props for assertions

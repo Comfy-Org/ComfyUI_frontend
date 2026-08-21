@@ -65,6 +65,56 @@ describe('LGraphNode node-data adoption', () => {
     expect(statesIn(subgraph)[0]?.flags.collapsed).toBe(true)
   })
 
+  it('keeps direct property mutation and assignment store-backed', () => {
+    const { subgraph, node } = addNodeToSubgraph()
+    const properties = node.properties
+
+    node.properties.settings = { strength: 0.5 }
+    node.properties = { model: 'flux.safetensors' }
+
+    expect(node.properties).toBe(properties)
+    expect(statesIn(subgraph)[0]?.properties).toBe(properties)
+    expect(properties).toEqual({ model: 'flux.safetensors' })
+  })
+
+  it('orchestrates setProperty callbacks and property-backed widgets', () => {
+    const node = new LGraphNode('Node')
+    const widget = node.addWidget('text', 'model', '', () => undefined, {
+      property: 'model'
+    })
+    node.properties.model = 'old'
+    node.onPropertyChanged = vi.fn((_name, value) => value !== 'rejected')
+
+    node.setProperty('model', 'new')
+    expect(node.properties.model).toBe('new')
+    expect(widget.value).toBe('new')
+    expect(node.onPropertyChanged).toHaveBeenCalledWith('model', 'new', 'old')
+
+    node.setProperty('model', 'rejected')
+    expect(node.properties.model).toBe('new')
+  })
+
+  it('configures and round-trips properties through the store authority', () => {
+    const { subgraph, node } = addNodeToSubgraph()
+    const properties = node.properties
+    node.onPropertyChanged = vi.fn()
+    const serialised = {
+      ...node.serialize(),
+      properties: { nested: { value: 1 } }
+    }
+
+    node.configure(serialised)
+    const roundTrip = node.serialize()
+
+    expect(node.properties).toBe(properties)
+    expect(statesIn(subgraph)[0]?.properties).toBe(properties)
+    expect(node.onPropertyChanged).toHaveBeenCalledWith('nested', {
+      value: 1
+    })
+    expect(roundTrip.properties).toEqual(serialised.properties)
+    expect(roundTrip.properties).not.toBe(node.properties)
+  })
+
   it('stores plain slot descriptors behind stable class projections', () => {
     const { subgraph, node } = addNodeToSubgraph()
     const input = node.addInput('prompt', 'STRING')
@@ -102,7 +152,13 @@ describe('LGraphNode node-data adoption', () => {
     expect(Object.hasOwn(node, 'widgets')).toBe(true)
     expect(Object.hasOwn(node, 'boxcolor')).toBe(true)
     expect(Object.keys(node)).toEqual(
-      expect.arrayContaining(['inputs', 'outputs', 'widgets', 'boxcolor'])
+      expect.arrayContaining([
+        'inputs',
+        'outputs',
+        'properties',
+        'widgets',
+        'boxcolor'
+      ])
     )
     expect(node.inputs).toBe(inputs)
     expect(node.outputs).toBe(outputs)
