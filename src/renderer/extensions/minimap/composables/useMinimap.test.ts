@@ -425,12 +425,15 @@ describe('useMinimap', () => {
       const minimap = await createAndInitializeMinimap()
 
       await minimap.init()
+      // The shouldPoll watcher already pauses once while inactive during
+      // setup. Clear that call so this assertion catches the destroy path.
+      mockIntervalPause.mockClear()
       minimap.destroy()
 
       // Both loops: rAF drives viewport sync, the interval drives change
       // detection. One spy each, or deleting either pause here goes unnoticed.
       expect(mockPause).toHaveBeenCalled()
-      expect(mockIntervalPause).toHaveBeenCalled()
+      expect(mockIntervalPause).toHaveBeenCalledTimes(1)
       expect(api.removeEventListener).toHaveBeenCalledWith(
         'graphChanged',
         expect.any(Function)
