@@ -49,21 +49,27 @@ describe('ChatHistoryScreen', () => {
     i18n.global.locale.value = 'en'
   })
 
-  it('renders the 16px left chevron from the design', () => {
+  it('renders a separate back control and Chat History heading', () => {
     renderScreen()
 
-    const back = screen.getByRole('button', { name: 'Chat History' })
+    const back = screen.getByRole('button', {
+      name: 'Back to previous chat'
+    })
     // eslint-disable-next-line testing-library/no-node-access -- Iconify icons have no accessible role
     const icon = back.querySelector('.icon-\\[lucide--chevron-left\\]')
 
     expect(icon).toHaveClass('size-4')
+    expect(screen.getByRole('heading', { name: 'Chat History' })).toBeVisible()
+    expect(screen.queryByRole('button', { name: 'Chat History' })).toBeNull()
   })
 
   it('shows the exact back tooltip after hovering the control', async () => {
     const user = userEvent.setup()
     renderScreen()
 
-    const back = screen.getByRole('button', { name: 'Chat History' })
+    const back = screen.getByRole('button', {
+      name: 'Back to previous chat'
+    })
     expect(screen.queryByRole('tooltip', { hidden: true })).toBeNull()
     await user.hover(back)
 
@@ -76,7 +82,9 @@ describe('ChatHistoryScreen', () => {
     const user = userEvent.setup()
     const { emitted } = renderScreen()
 
-    await user.click(screen.getByRole('button', { name: 'Chat History' }))
+    await user.click(
+      screen.getByRole('button', { name: 'Back to previous chat' })
+    )
 
     expect(emitted().back).toEqual([[]])
   })

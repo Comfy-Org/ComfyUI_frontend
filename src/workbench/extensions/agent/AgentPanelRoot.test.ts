@@ -1680,6 +1680,50 @@ describe('AgentPanelRoot history', () => {
     )
   })
 
+  it('starts renaming from a single click on the current title', async () => {
+    await renderWithActiveThread()
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.newChatTitle')
+      })
+    )
+
+    const input = await screen.findByRole<HTMLInputElement>('textbox', {
+      name: i18n.global.t('g.rename')
+    })
+    expect(input).toHaveFocus()
+    expect(input.selectionStart).toBe(0)
+    expect(input.selectionEnd).toBe(input.value.length)
+    expect(
+      screen.queryByRole('button', { name: i18n.global.t('agent.history') })
+    ).toBeNull()
+  })
+
+  it('opens Chat History from its dedicated control', async () => {
+    await renderWithActiveThread()
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+
+    expect(
+      await screen.findByRole('heading', {
+        name: i18n.global.t('agent.history')
+      })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.backToPreviousChat')
+      })
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('textbox', { name: i18n.global.t('g.rename') })
+    ).toBeNull()
+  })
+
   it('abandons a rename on Escape', async () => {
     await renderWithActiveThread()
 
@@ -1706,7 +1750,9 @@ describe('AgentPanelRoot history', () => {
     await renderWithActiveThread()
 
     await userEvent.click(
-      screen.getByRole('button', { name: i18n.global.t('agent.newChatTitle') })
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
     )
     await userEvent.click(
       screen.getByRole('button', {
@@ -1922,7 +1968,11 @@ describe('AgentPanelRoot transcript copy', () => {
     )
     await nextTick()
 
-    await userEvent.click(screen.getByRole('button', { name: 'make a cat' }))
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
     await userEvent.click(
       await screen.findByRole('button', {
         name: i18n.global.t('agent.copyMarkdown')
@@ -2158,7 +2208,9 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(await screen.findAllByText('current')).not.toHaveLength(0)
 
     await userEvent.click(
-      screen.getByRole('button', { name: i18n.global.t('agent.newChatTitle') })
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
     )
     expect(
       await screen.findByText(i18n.global.t('agent.historyEmpty'))
@@ -2166,7 +2218,9 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(screen.queryByText('current')).not.toBeInTheDocument()
 
     await userEvent.click(
-      screen.getByRole('button', { name: i18n.global.t('agent.history') })
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.backToPreviousChat')
+      })
     )
     expect(await screen.findAllByText('current')).not.toHaveLength(0)
   })
