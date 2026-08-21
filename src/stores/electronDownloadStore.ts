@@ -11,27 +11,54 @@ export interface ElectronDownload extends Pick<
   'url' | 'filename'
 > {
   progress?: number
+  receivedBytes?: number
   savePath?: string
   status?: DownloadStatus
+  totalBytes?: number
+}
+
+export function normalizeElectronDownloadState({
+  url,
+  filename,
+  state,
+  receivedBytes,
+  totalBytes
+}: DownloadState): ElectronDownload {
+  const download: ElectronDownload = {
+    url,
+    filename,
+    status: state,
+    receivedBytes,
+    totalBytes
+  }
+
+  return Number.isFinite(receivedBytes) &&
+    receivedBytes >= 0 &&
+    Number.isFinite(totalBytes) &&
+    totalBytes > 0 &&
+    receivedBytes <= totalBytes
+    ? { ...download, progress: receivedBytes / totalBytes }
+    : download
 }
 
 /** Electron downloads store handler */
 export const useElectronDownloadStore = defineStore('downloads', () => {
   const downloads = ref<ElectronDownload[]>([])
   const DownloadManager = isDesktop ? electronAPI().DownloadManager : undefined
+  const progressListeners = new Set<(download: ElectronDownload) => void>()
+  let isProgressListenerInstalled = false
 
   const findByUrl = (url: string) =>
     downloads.value.find((download) => url === download.url)
 
-  const initialize = async () => {
-    if (!isDesktop || !DownloadManager) return
+  const notifyProgressListeners = (download: ElectronDownload) => {
+    for (const listener of progressListeners) listener(download)
+  }
 
-    const allDownloads = await DownloadManager.getAllDownloads()
+  const installProgressListener = () => {
+    if (!DownloadManager || isProgressListenerInstalled) return
 
-    for (const download of allDownloads) {
-      downloads.value.push(download)
-    }
-
+    isProgressListenerInstalled = true
     DownloadManager.onDownloadProgress((data) => {
       if (!findByUrl(data.url)) {
         downloads.value.push(data)
@@ -41,11 +68,40 @@ export const useElectronDownloadStore = defineStore('downloads', () => {
 
       if (download) {
         download.progress = data.progress
+        download.receivedBytes = undefined
+        download.totalBytes = undefined
         download.status = data.status
         download.filename = data.filename
         download.savePath = data.savePath
+        notifyProgressListeners(download)
       }
     })
+  }
+
+  const initialize = async () => {
+    if (!isDesktop || !DownloadManager) return
+
+    installProgressListener()
+
+    try {
+      const allDownloads = await DownloadManager.getAllDownloads()
+
+      for (const download of allDownloads) {
+        const normalizedDownload = normalizeElectronDownloadState(download)
+        downloads.value.push(normalizedDownload)
+        notifyProgressListeners(normalizedDownload)
+      }
+    } catch {
+      return
+    }
+  }
+
+  const subscribeToDownloadProgress = (
+    listener: (download: ElectronDownload) => void
+  ) => {
+    progressListeners.add(listener)
+
+    return () => progressListeners.delete(listener)
   }
 
   void initialize()
@@ -71,6 +127,7 @@ export const useElectronDownloadStore = defineStore('downloads', () => {
     cancel,
     findByUrl,
     initialize,
+    subscribeToDownloadProgress,
     inProgressDownloads: computed(() =>
       downloads.value.filter(
         ({ status }) => status !== DownloadStatus.COMPLETED
