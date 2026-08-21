@@ -68,12 +68,7 @@ const MESSAGES = {
 
 async function renderSignupView(
   url = '/cloud/signup',
-  messages: {
-    auth?: {
-      login?: Partial<typeof MESSAGES.auth.login>
-      signup?: Partial<typeof MESSAGES.auth.signup>
-    }
-  } = MESSAGES
+  messages: typeof MESSAGES = MESSAGES
 ) {
   const router = createRouter({
     history: createMemoryHistory(),
