@@ -38,5 +38,8 @@ jobs:
       - name: Purity gate
         run: npm run check:purity
 
+      - name: Profile-claim staleness gate
+        run: npm run check:profile-claims
+
       - name: Tests
         run: npm test

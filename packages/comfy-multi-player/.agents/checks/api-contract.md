@@ -17,3 +17,17 @@ Catch breaking changes to this package's public surface. Applies to `src/index.t
 - Check for a re-export alias or `migrate()` path before flagging.
 - Do not treat `__`-prefixed internal doc keys as public API.
 - Critical for removed/renamed exports or op kinds; high for changed signatures or wire shapes; medium for changed defaults. Cite the affected KA-*/FC-* ID where relevant.
+
+<!--
+Staleness anchors for rule 1 (the public export surface this profile restates).
+`scripts/check-profile-claims.mjs` verifies each substring below is still present
+verbatim in the cited file; if an export is removed or renamed, this profile fails
+CI so the prose above cannot silently describe a contract that no longer exists.
+-->
+<!-- claim: export { applyOps } from "./applier.js" :: src/index.ts -->
+<!-- claim: export { project } from "./project.js" :: src/index.ts -->
+<!-- claim: export { mint } from "./mint.js" :: src/index.ts -->
+<!-- claim: export { migrate } from "./migrate.js" :: src/index.ts -->
+<!-- claim: export * from "./types.js" :: src/index.ts -->
+<!-- claim: export * from "./stamps.js" :: src/index.ts -->
+<!-- claim: export * from "./doc.js" :: src/index.ts -->
