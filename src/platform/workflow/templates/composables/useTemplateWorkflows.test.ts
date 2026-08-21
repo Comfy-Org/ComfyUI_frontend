@@ -67,38 +67,6 @@ global.fetch = vi.fn()
 
 type MockWorkflowTemplatesStore = ReturnType<typeof useWorkflowTemplatesStore>
 
-type PreparedWorkflowTestApi = {
-  prepareWorkflowTemplate: (
-    id: string,
-    sourceModule: string
-  ) => Promise<{
-    id: string
-    sourceModule: string
-    workflowName: string
-    workflow: { workflow: string }
-  } | null>
-  openPreparedWorkflowTemplate: (
-    prepared: {
-      id: string
-      sourceModule: string
-      workflowName: string
-      workflow: { workflow: string }
-    },
-    options?: { closeDialog?: boolean }
-  ) => Promise<boolean>
-}
-
-function supportsPreparedWorkflow(
-  value: object
-): value is PreparedWorkflowTestApi {
-  return (
-    'prepareWorkflowTemplate' in value &&
-    typeof value.prepareWorkflowTemplate === 'function' &&
-    'openPreparedWorkflowTemplate' in value &&
-    typeof value.openPreparedWorkflowTemplate === 'function'
-  )
-}
-
 describe('useTemplateWorkflows', () => {
   let mockWorkflowTemplatesStore: MockWorkflowTemplatesStore
 
@@ -335,15 +303,9 @@ describe('useTemplateWorkflows', () => {
   describe('prepared template workflow', () => {
     it('prepares workflow data without opening it', async () => {
       mockWorkflowTemplatesStore.isLoaded = true
-      const workflows: object = useTemplateWorkflows()
-      const supportsPreparation = supportsPreparedWorkflow(workflows)
-      expect(supportsPreparation).toBe(true)
-      if (!supportsPreparation) return
+      const { prepareWorkflowTemplate } = useTemplateWorkflows()
 
-      const prepared = await workflows.prepareWorkflowTemplate(
-        'template1',
-        'default'
-      )
+      const prepared = await prepareWorkflowTemplate('template1', 'default')
 
       expect(prepared).toEqual({
         id: 'template1',
@@ -358,18 +320,13 @@ describe('useTemplateWorkflows', () => {
 
     it('opens prepared workflow data exactly once', async () => {
       mockWorkflowTemplatesStore.isLoaded = true
-      const workflows: object = useTemplateWorkflows()
-      const supportsPreparation = supportsPreparedWorkflow(workflows)
-      expect(supportsPreparation).toBe(true)
-      if (!supportsPreparation) return
-      const prepared = await workflows.prepareWorkflowTemplate(
-        'template1',
-        'default'
-      )
+      const { openPreparedWorkflowTemplate, prepareWorkflowTemplate } =
+        useTemplateWorkflows()
+      const prepared = await prepareWorkflowTemplate('template1', 'default')
       expect(prepared).not.toBeNull()
       if (!prepared) throw new Error('Expected a prepared workflow')
 
-      const result = await workflows.openPreparedWorkflowTemplate(prepared)
+      const result = await openPreparedWorkflowTemplate(prepared)
 
       expect(result).toBe(true)
       expect(mockTrackTemplate).toHaveBeenCalledOnce()
@@ -390,18 +347,13 @@ describe('useTemplateWorkflows', () => {
 
     it('can leave dialog closing to its caller', async () => {
       mockWorkflowTemplatesStore.isLoaded = true
-      const workflows: object = useTemplateWorkflows()
-      const supportsPreparation = supportsPreparedWorkflow(workflows)
-      expect(supportsPreparation).toBe(true)
-      if (!supportsPreparation) return
-      const prepared = await workflows.prepareWorkflowTemplate(
-        'template1',
-        'default'
-      )
+      const { openPreparedWorkflowTemplate, prepareWorkflowTemplate } =
+        useTemplateWorkflows()
+      const prepared = await prepareWorkflowTemplate('template1', 'default')
       expect(prepared).not.toBeNull()
       if (!prepared) throw new Error('Expected a prepared workflow')
 
-      const result = await workflows.openPreparedWorkflowTemplate(prepared, {
+      const result = await openPreparedWorkflowTemplate(prepared, {
         closeDialog: false
       })
 
