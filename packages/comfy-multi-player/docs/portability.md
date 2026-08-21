@@ -6,7 +6,7 @@ The TypeScript package is the reference implementation of semantic-op-to-Yjs-doc
 
 `fixtures/golden-vectors/conformance.json` is the canonical, language-agnostic conformance manifest. Every implementation in another language, including a future Go doc-host applier, **must pass the same vectors** before it can be considered behaviorally compatible. `test/parity.test.ts` runs the TypeScript reference against them.
 
-The manifest has a numeric `format_version`, a relative `catalog` path, ordered successful `cases`, and a `result_cases` path for rejection/retry parity. Each successful case names a relative session JSONL file. A session's first line is a JSON header containing `base_workflow` and the recorded `workflow_final`; each remaining line is one stamped semantic op in application order. A conforming runner must:
+The manifest has a numeric `format_version`, a relative `catalog` path, ordered successful `cases`, a `result_cases` path for rejection/retry parity, and a `wire_layout` path for the Y.Doc wire layout. All paths are manifest-relative. Each successful case names a relative session JSONL file. A session's first line is a JSON header containing `base_workflow` and the recorded `workflow_final`; each remaining line is one stamped semantic op in application order. A conforming runner must:
 
 1. initialize from `base_workflow` using the referenced catalog;
 2. apply every op in file order with no failures or skips;
@@ -14,6 +14,8 @@ The manifest has a numeric `format_version`, a relative `catalog` path, ordered 
 4. deep-compare it with `workflow_final` after sorting nodes and links by stringified ID and subgraphs by stringified ID, as specified by schema §7.
 
 For `result_cases`, a conforming runner must apply each case's ordered `batches` to one document and match every expected `ApplyResult` field (`applied`, `skipped`, normalized `failed`, `applied_count`, and `version`). `failed` is normalized to `index`, `code`, and `op_id` so implementation-specific message text is not contractual. It must also compare the encoded document immediately before and after each batch when `document_unchanged` is true. This pins malformed, deferred, and unknown rejection, abort-remainder, same-`op_id` retries, and cross-batch retry behavior for KA-3, KA-4, and FC-7.
+
+For `wire_layout`, a conforming runner must resolve the doc's root types by the names in `roots` and the reserved per-node key in `reserved_node_keys`, reading them out of an encoded bootstrap snapshot rather than transcribing them, and must refuse a document whose `schema_version` disagrees with the vector's. The vector records NAMES only; the root TYPE of each (all `Y.Map` at `SCHEMA_VERSION = 1`) and the value shapes under them are in schema §1, which a port still has to read. `test/wire-layout-contract.test.ts` is the TypeScript reference's own conformance to it.
 
 **Not vectored, but normative:** the schema §10 read gate is a conformance obligation the manifest cannot express. The vectors are all `applyOps` cases, so a runner in another language can pass 100% of them while accepting a document with no readable `meta.schema_version` as current — precisely the fail-open KA-11 forbids. Until a schema-version rejection vector exists, a conforming reader must implement it from the prose: an unreadable or disagreeing `meta.schema_version` is rejected, and both the rejection and the current-version no-op leave the encoded document unchanged.
 
